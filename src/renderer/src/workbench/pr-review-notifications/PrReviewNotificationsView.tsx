@@ -85,7 +85,7 @@ export function PrReviewNotificationsView({
         <div className="border-b border-border/60 px-3 py-2">
           <DetailHeader
             icon={<Bell className="size-3.5" />}
-            label="PR 评审"
+            label="评审通知"
             actions={
               <>
                 <span className="px-1 text-[11px] font-medium text-muted-foreground">
@@ -96,8 +96,8 @@ export function PrReviewNotificationsView({
                   variant="ghost"
                   size="icon-xs"
                   className="size-6"
-                  aria-label="刷新 PR 动态"
-                  title="刷新 PR 动态"
+                  aria-label="刷新评审动态"
+                  title="刷新评审动态"
                   disabled={refreshing}
                   onClick={() => onRefresh(true)}
                 >

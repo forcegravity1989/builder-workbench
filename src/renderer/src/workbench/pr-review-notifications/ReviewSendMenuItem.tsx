@@ -15,7 +15,7 @@ export function ReviewSendMenuItem({
       <DropdownMenuSeparator />
       <DropdownMenuItem disabled={disabled} onSelect={onSend}>
         <Send className="size-3.5" />
-        {reason ? `发送评审（${reason}）` : '发送评审'}
+        {reason ? `发送评审（${reason}）` : '发送评审…'}
       </DropdownMenuItem>
     </>
   )

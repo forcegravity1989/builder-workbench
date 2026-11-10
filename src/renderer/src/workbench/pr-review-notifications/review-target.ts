@@ -9,6 +9,8 @@ import type { PRComment } from '../../../../shared/github/comment-types'
 import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import type { Repo } from '../../../../shared/repo-types'
+import { isCodeHubGitRemote } from '../../../../shared/codehub'
+import { openCodeHubReview, readCodeHubReviewTracking } from './codehub-review'
 import {
   hasReviewProject,
   type ReviewRepoIdentity
@@ -34,6 +36,9 @@ export async function readReviewTracking(
   prNumber: number,
   roundStartedAt: string
 ): Promise<ReviewReadback> {
+  if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
+    return readCodeHubReviewTracking(repo, prNumber, roundStartedAt)
+  }
   const sourceContext = requireSourceContext(repo, 'github')
   const item = await lookupGitHubWorkItemForSource({
     repoPath: repo.path,
@@ -75,10 +80,14 @@ export async function readReviewTracking(
 export async function openReviewPr(identity: ReviewRepoIdentity, prNumber: number): Promise<void> {
   const repo = findRegisteredReviewRepo(identity)
   if (!repo) {
-    toast.error(`本机没有接入项目 ${identity.owner}/${identity.name}，无法进入 PR #${prNumber}`)
+    toast.error(`暂时无法访问项目 ${identity.path}，请检查项目接入或主机连接`)
     return
   }
   try {
+    if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
+      await openCodeHubReview(repo, prNumber)
+      return
+    }
     const sourceContext = requireSourceContext(repo, 'github')
     const item = await lookupGitHubWorkItemForSource({
       repoPath: repo.path,

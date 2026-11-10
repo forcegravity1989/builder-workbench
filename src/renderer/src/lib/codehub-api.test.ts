@@ -13,7 +13,7 @@ vi.mock('@/runtime/runtime-rpc-client', async () => ({
   ...(await vi.importActual<typeof RuntimeClientTarget>('@/runtime/runtime-client-target')),
   callRuntimeRpc: rpc
 }))
-import { codehubApi } from './codehub-api'
+import { codehubApi, createCodeHubApi } from './codehub-api'
 beforeEach(() => {
   vi.stubGlobal('window', {
     api: { codehub: { setIssueState: local, listTasks: local, viewer: local } }
@@ -37,6 +37,21 @@ it('uses the repo owner instead of the newly focused runtime for reads and write
     { kind: 'environment', environmentId: 'owner' },
     'codehub.viewer',
     { repoId: args.repoId, repoPath: args.repoPath },
+    { timeoutMs: 60_000 }
+  )
+  const bound = createCodeHubApi({
+    kind: 'task-source',
+    provider: 'codehub',
+    projectId: 'project',
+    hostId: 'runtime:review-source',
+    repoId: 'native-repo'
+  })
+  state.settings.activeRuntimeEnvironmentId = 'different-host'
+  await bound.setIssueState(args)
+  expect(rpc).toHaveBeenLastCalledWith(
+    { kind: 'environment', environmentId: 'review-source' },
+    'codehub.setIssueState',
+    { ...args, repoId: 'native-repo' },
     { timeoutMs: 60_000 }
   )
 })

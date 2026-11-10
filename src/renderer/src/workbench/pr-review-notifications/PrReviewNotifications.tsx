@@ -10,9 +10,10 @@ import {
   refreshOutgoingReview,
   getReviewNotifications,
   useReviewNotifications,
-  deleteReviewNotification,
-  sendReviewRequest
+  deleteReviewNotification
 } from './store'
+import { openReviewSendDialog } from './send-dialog-store'
+import { ReviewSendDialogHost } from './ReviewSendDialogHost'
 
 export function PrReviewNotifications(): React.JSX.Element {
   const notifications = useReviewNotifications()
@@ -47,18 +48,21 @@ export function PrReviewNotifications(): React.JSX.Element {
     return () => window.removeEventListener('focus', onFocus)
   }, [refresh])
   return (
-    <PrReviewNotificationsView
-      notifications={notifications}
-      error={error}
-      refreshing={refreshing}
-      onRefresh={refresh}
-      onError={setError}
-      onOpen={openReviewPr}
-      onDelete={deleteReviewNotification}
-      onResend={async (note) => {
-        await sendReviewRequest(note)
-      }}
-      missingProject={(note) => !findRegisteredReviewRepo(note.repo, repos)}
-    />
+    <>
+      <PrReviewNotificationsView
+        notifications={notifications}
+        error={error}
+        refreshing={refreshing}
+        onRefresh={refresh}
+        onError={setError}
+        onOpen={openReviewPr}
+        onDelete={deleteReviewNotification}
+        onResend={async (note) => {
+          openReviewSendDialog(note)
+        }}
+        missingProject={(note) => !findRegisteredReviewRepo(note.repo, repos)}
+      />
+      <ReviewSendDialogHost />
+    </>
   )
 }

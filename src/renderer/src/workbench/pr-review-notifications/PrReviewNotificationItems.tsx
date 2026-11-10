@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { isCodeHubHost } from '../../../../shared/codehub'
 import {
   AlertCircle,
   BellRing,
@@ -33,12 +34,8 @@ function formatTime(iso: string): string {
   }).format(date)
 }
 
-function ProjectLabel({ owner, name }: { owner: string; name: string }): React.JSX.Element {
-  return (
-    <span className="truncate text-[11px] text-muted-foreground">
-      {owner}/{name}
-    </span>
-  )
+function ProjectLabel({ path }: { path: string }): React.JSX.Element {
+  return <span className="truncate text-[11px] text-muted-foreground">{path}</span>
 }
 
 function CommentCountBadge({ count }: { count: number | null }): React.JSX.Element | null {
@@ -107,13 +104,13 @@ export function OutgoingReviewItem({
           type="button"
           className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground hover:text-foreground"
           onClick={onOpen}
-          title="打开 PR 详情"
+          title="打开评审详情"
         >
           <GitPullRequest className="size-3 shrink-0" />
-          PR #{note.prNumber}
+          {isCodeHubHost(note.repo.host) ? 'MR' : 'PR'} #{note.prNumber}
         </button>
         <div className="flex shrink-0 items-center gap-0.5">
-          <MetadataActionIcon label="打开 PR 详情" onClick={onOpen}>
+          <MetadataActionIcon label="打开评审详情" onClick={onOpen}>
             <ExternalLink className="size-3" />
           </MetadataActionIcon>
           <MetadataActionIcon label="删除这条评审通知" onClick={onDelete}>
@@ -126,11 +123,11 @@ export function OutgoingReviewItem({
         className="text-left text-[13px] font-semibold leading-snug break-words text-foreground hover:text-primary"
         onClick={onOpen}
       >
-        请求评审 PR #{note.prNumber} · 第 {note.round} 轮
+        请求评审 {isCodeHubHost(note.repo.host) ? 'MR' : 'PR'} #{note.prNumber} · 第 {note.round} 轮
       </button>
       <div className="flex flex-wrap gap-1">
         <ReviewStateBadge
-          label="PR"
+          label={isCodeHubHost(note.repo.host) ? 'MR' : 'PR'}
           state={
             status.error ? undefined : ((status.merged ? 'merged' : status.prState) ?? undefined)
           }
@@ -142,7 +139,7 @@ export function OutgoingReviewItem({
         <RoundBadge round={note.round} />
       </div>
       <div className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
-        <ProjectLabel owner={note.repo.owner} name={note.repo.name} />
+        <ProjectLabel path={note.repo.path} />
         <span>·</span>
         <span>发送于 {formatTime(note.sentAt)}</span>
         <span>·</span>
@@ -161,7 +158,10 @@ export function OutgoingReviewItem({
       ) : null}
       <div className="space-y-1 text-[11px] text-muted-foreground">
         {note.deliveries.map((delivery) => (
-          <p key={delivery.environmentId} className={delivery.ok ? '' : 'text-destructive'}>
+          <p
+            key={`${delivery.environmentId}:${delivery.pairingRevision}`}
+            className={delivery.ok ? '' : 'text-destructive'}
+          >
             {delivery.name} · {delivery.ok ? '已送达' : `未送达：${delivery.error ?? '未确认接收'}`}
           </p>
         ))}
@@ -187,48 +187,48 @@ export function IncomingReviewItem({
   missingProject: boolean
   onOpen: () => void
 }): React.JSX.Element {
+  const readbackError = missingProject ? '暂时无法访问该项目' : note.readbackError
   const state = note.readback?.prState ?? (note.readback?.merged ? 'merged' : null)
   return (
     <button
       type="button"
       className="group flex w-full flex-col gap-1.5 border-b border-border/50 pb-2.5 text-left last:border-b-0 last:pb-0"
       onClick={onOpen}
-      title="打开 PR 详情"
+      title="打开评审详情"
     >
       <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
         <GitPullRequest className="size-3 shrink-0" />
-        PR #{note.prNumber}
+        {isCodeHubHost(note.repo.host) ? 'MR' : 'PR'} #{note.prNumber}
       </span>
       <span className="text-[13px] font-semibold leading-snug break-words text-foreground group-hover:text-primary">
         {note.title}
       </span>
       <span className="flex flex-wrap gap-1">
         <ReviewStateBadge
-          label="PR"
-          state={note.readbackError ? undefined : (state ?? undefined)}
+          label={isCodeHubHost(note.repo.host) ? 'MR' : 'PR'}
+          state={readbackError ? undefined : (state ?? undefined)}
         />
         <ReviewChecksBadge
-          status={note.readbackError ? undefined : (note.readback?.checksState ?? undefined)}
+          status={readbackError ? undefined : (note.readback?.checksState ?? undefined)}
         />
-        {state === 'merged' || note.readbackError ? null : (
+        {state === 'merged' || readbackError ? null : (
           <CommentCountBadge count={note.readback?.openCommentCount ?? null} />
         )}
         <RoundBadge round={note.round} />
       </span>
       <span className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
-        <ProjectLabel owner={note.repo.owner} name={note.repo.name} />
+        <ProjectLabel path={note.repo.path} />
         <span>·</span>
         <span>{note.sender}</span>
         <span>·</span>
         <span>{formatTime(note.receivedAt)}</span>
       </span>
-      {note.readbackError ? (
+      {readbackError ? (
         <span className="text-[11px] text-destructive">
-          {note.readbackError}
+          {readbackError}
           {note.readback?.checkedAt ? ` · 上次 ${formatTime(note.readback.checkedAt)}` : ''}
         </span>
       ) : null}
-      {missingProject ? <span className="text-[10px] text-destructive">本机没有该项目</span> : null}
     </button>
   )
 }

@@ -1,11 +1,7 @@
 import { hostname, userInfo } from 'node:os'
 import { PullRequest } from '../../../../shared/rpc-contract/github-pull-request-params'
 import { defineMethod } from '../core'
-import {
-  hasReviewProject,
-  ReviewRepoSchema,
-  ReviewRequestSchema
-} from '../../../../shared/workbench/pr-review-request'
+import { ReviewRequestSchema } from '../../../../shared/workbench/pr-review-request'
 import { readReviewInbox, receiveReviewRequest } from '../../../workbench/review-inbox'
 
 export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
@@ -28,23 +24,15 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
     handler: () => ({ sender: `${userInfo().username}@${hostname()}`.slice(0, 100) })
   }),
   defineMethod({
-    name: 'workbench.review.project',
-    params: ReviewRepoSchema,
-    handler: (repo, { runtime }) => ({ available: hasReviewProject(runtime.listRepos(), repo) })
-  }),
-  defineMethod({
     name: 'workbench.review.receive',
     params: ReviewRequestSchema,
-    handler: async (request, { runtime, pairedDeviceId, authenticatedCallerFingerprint }) => {
-      if (!hasReviewProject(runtime.listRepos(), request.repo)) {
-        throw new Error('此主机没有接入该项目')
-      }
-      await receiveReviewRequest({
+    handler: async (request, { pairedDeviceId, authenticatedCallerFingerprint }) => {
+      const accepted = await receiveReviewRequest({
         ...request,
         senderId: pairedDeviceId ?? authenticatedCallerFingerprint ?? 'local',
         receivedAt: new Date().toISOString()
       })
-      return { accepted: true }
+      return { accepted }
     }
   }),
   defineMethod({

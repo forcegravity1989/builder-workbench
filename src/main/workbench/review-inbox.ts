@@ -5,11 +5,12 @@ import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data
 import { writePluginFileAtomically } from '../plugins/plugin-atomic-file-write'
 import {
   ReviewIncomingSchema,
+  migrateStoredReviewRequest,
   reviewRepositoryKey,
   type ReviewIncomingRequest
 } from '../../shared/workbench/pr-review-request'
 
-const InboxSchema = z.array(ReviewIncomingSchema)
+const InboxSchema = z.array(z.preprocess(migrateStoredReviewRequest, ReviewIncomingSchema))
 let writes: Promise<unknown> = Promise.resolve()
 const inboxPath = () => join(getCanonicalUserDataPath(), 'workbench-review-inbox.json')
 
@@ -36,7 +37,7 @@ export async function readReviewInbox(): Promise<ReviewIncomingRequest[]> {
   return [...latest.values()]
 }
 
-export function receiveReviewRequest(request: ReviewIncomingRequest): Promise<void> {
+export function receiveReviewRequest(request: ReviewIncomingRequest): Promise<boolean> {
   // A renderer reload must not lose a request already acknowledged by the runtime.
   const write = writes
     .catch(() => undefined)
@@ -51,14 +52,27 @@ export function receiveReviewRequest(request: ReviewIncomingRequest): Promise<vo
       )
       const previous = items[index]
       if (previous?.senderId === request.senderId) {
-        if (previous.cycleId === request.cycleId && previous.round >= request.round) {
-          return
+        if (previous.cycleId === request.cycleId && previous.round === request.round) {
+          if (
+            previous.sentAt !== request.sentAt ||
+            previous.cycleStartedAt !== request.cycleStartedAt ||
+            previous.title !== request.title ||
+            previous.sourceBranch !== request.sourceBranch ||
+            previous.targetBranch !== request.targetBranch ||
+            previous.sender !== request.sender
+          ) {
+            throw new Error('同一轮评审请求内容不一致，请刷新后重试')
+          }
+          return true
+        }
+        if (previous.cycleId === request.cycleId && previous.round > request.round) {
+          return false
         }
         if (
           previous.cycleId !== request.cycleId &&
           previous.cycleStartedAt >= request.cycleStartedAt
         ) {
-          return
+          return false
         }
       }
       // Persist arrival order independently of clock rollback and millisecond ties.
@@ -77,6 +91,7 @@ export function receiveReviewRequest(request: ReviewIncomingRequest): Promise<vo
       }
       await mkdir(getCanonicalUserDataPath(), { recursive: true })
       await writePluginFileAtomically(inboxPath(), JSON.stringify(items), { mode: 0o600 })
+      return true
     })
   writes = write
   return write

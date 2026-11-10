@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import type { Repo } from '../repo-types'
+import { splitGitRemoteKey } from '../git-remote-identity'
 
 export const ReviewRepoSchema = z.object({
-  owner: z.string().trim().min(1).max(100),
-  name: z.string().trim().min(1).max(100),
-  host: z.string().trim().min(1).max(200).optional()
+  host: z.string().trim().min(1).max(200),
+  path: z.string().trim().min(1).max(500)
 })
 export type ReviewRepoIdentity = z.infer<typeof ReviewRepoSchema>
 
@@ -40,15 +40,35 @@ export type ReviewPeerDelivery = ReviewPeerTarget & { ok: boolean; error?: strin
 export type ReviewSendResult = { sentAt: string; results: ReviewPeerDelivery[] }
 
 export function reviewRepositoryKey(repo: ReviewRepoIdentity): string {
-  return `${repo.host ?? 'github.com'}/${repo.owner}/${repo.name}`.toLowerCase()
+  return `${repo.host}/${repo.path}`.toLowerCase()
 }
 
 export function reviewRepoIdentity(
   repo: Pick<Repo, 'gitRemoteIdentity'>
 ): ReviewRepoIdentity | null {
-  const key = repo.gitRemoteIdentity?.canonicalKey
-  const match = key?.match(/^([^/]+)\/([^/]+)\/([^/]+)$/)
-  return match ? { host: match[1]!, owner: match[2]!, name: match[3]! } : null
+  const parts = splitGitRemoteKey(repo.gitRemoteIdentity?.canonicalKey, (host) => host)
+  return parts ? { host: parts.host, path: parts.tail } : null
+}
+
+// Internal trial archives used owner/name. Convert only stored data; RPC accepts the current schema.
+export function migrateStoredReviewRequest(value: unknown): unknown {
+  if (!value || typeof value !== 'object') {
+    return value
+  }
+  const request = value as Record<string, unknown>
+  const repo = request.repo as Record<string, unknown> | undefined
+  if (
+    repo &&
+    repo.path === undefined &&
+    typeof repo.owner === 'string' &&
+    typeof repo.name === 'string'
+  ) {
+    return {
+      ...request,
+      repo: { host: repo.host ?? 'github.com', path: `${repo.owner}/${repo.name}` }
+    }
+  }
+  return value
 }
 
 export function hasReviewProject(

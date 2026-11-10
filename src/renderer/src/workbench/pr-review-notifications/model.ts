@@ -3,6 +3,7 @@ import {
   reviewRepositoryKey,
   type ReviewIncomingRequest,
   type ReviewPeerDelivery,
+  type ReviewPeerTarget,
   type ReviewRepoIdentity,
   type ReviewRequestPayload
 } from '../../../../shared/workbench/pr-review-request'
@@ -26,8 +27,13 @@ export type ReviewOutgoingNote = ReviewRequestPayload &
 export type ReviewNotificationsState = {
   incoming: ReviewIncomingNote[]
   outgoing: ReviewOutgoingNote[]
+  pending: { request: ReviewRequestPayload; targets: ReviewPeerTarget[] }[]
 }
-export const EMPTY_REVIEW_NOTIFICATIONS: ReviewNotificationsState = { incoming: [], outgoing: [] }
+export const EMPTY_REVIEW_NOTIFICATIONS: ReviewNotificationsState = {
+  incoming: [],
+  outgoing: [],
+  pending: []
+}
 
 export function reviewNoteId(repo: ReviewRepoIdentity, prNumber: number): string {
   return `${reviewRepositoryKey(repo)}#${prNumber}`
@@ -68,13 +74,25 @@ export function recordSentReview(
     readback: null,
     readbackError: null
   }
-  return { ...state, outgoing: [next, ...state.outgoing.filter((note) => note.id !== id)] }
+  return {
+    ...state,
+    outgoing: [next, ...state.outgoing.filter((note) => note.id !== id)],
+    pending: state.pending.filter(
+      (attempt) => reviewNoteId(attempt.request.repo, attempt.request.prNumber) !== id
+    )
+  }
 }
 export function deleteOutgoingNote(
   state: ReviewNotificationsState,
   id: string
 ): ReviewNotificationsState {
-  return { ...state, outgoing: state.outgoing.filter((note) => note.id !== id) }
+  return {
+    ...state,
+    outgoing: state.outgoing.filter((note) => note.id !== id),
+    pending: state.pending.filter(
+      (attempt) => reviewNoteId(attempt.request.repo, attempt.request.prNumber) !== id
+    )
+  }
 }
 
 export function applyReviewReadback(

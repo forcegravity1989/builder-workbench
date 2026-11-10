@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { ReviewSendMenuItem } from './pr-review-notifications/ReviewSendMenuItem'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import {
@@ -19,7 +18,9 @@ import {
 } from '../../../shared/workbench/pr-review-request'
 import { requireSourceContext } from './task-reference-repo'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { sendReviewRequest } from './pr-review-notifications/store'
+import { openReviewSendDialog } from './pr-review-notifications/send-dialog-store'
+import { isCodeHubGitRemote } from '../../../shared/codehub'
+import { resolveCodeHubReviewTarget } from './pr-review-notifications/codehub-review'
 
 type ReviewTarget = {
   repo: ReviewRepoIdentity
@@ -39,9 +40,19 @@ type ReviewWorktreeRef = Pick<Worktree, 'branch' | 'head' | 'linkedPR'>
 async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Promise<TargetState> {
   const identity = reviewRepoIdentity(repo)
   if (!identity) {
-    return { status: 'blocked', reason: '该工作树没有 GitHub 远端' }
+    return { status: 'blocked', reason: '该工作树没有可识别的远端' }
   }
   const branch = worktree.branch.replace(/^refs\/heads\//, '')
+  if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
+    try {
+      const target = await resolveCodeHubReviewTarget(repo, branch, worktree.linkedPR)
+      return target
+        ? { status: 'ready', target }
+        : { status: 'blocked', reason: '分支没有关联的开放 MR' }
+    } catch (error) {
+      return { status: 'blocked', reason: error instanceof Error ? error.message : String(error) }
+    }
+  }
   // Why: 持久关联的 PR 优先按编号读状态，能区分「已合入/已关闭」与本分支
   // 没有开放 PR，菜单置灰原因才准确。
   if (worktree.linkedPR) {
@@ -181,22 +192,11 @@ export function WorkbenchSendReviewMenuItems({
     return null
   }
 
-  async function sendReview(): Promise<void> {
+  function sendReview(): void {
     if (targetState.status !== 'ready') {
       return
     }
-    const { target } = targetState
-    try {
-      await sendReviewRequest({
-        repo: target.repo,
-        prNumber: target.prNumber,
-        title: target.title,
-        sourceBranch: target.sourceBranch,
-        targetBranch: target.targetBranch
-      })
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
-    }
+    openReviewSendDialog(targetState.target)
   }
 
   return (
@@ -209,7 +209,7 @@ export function WorkbenchSendReviewMenuItems({
             ? targetState.reason
             : undefined
       }
-      onSend={() => void sendReview()}
+      onSend={sendReview}
     />
   )
 }

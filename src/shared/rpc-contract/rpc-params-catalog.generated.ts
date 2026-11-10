@@ -31,6 +31,7 @@ import {
   CodeHubMergeMr,
   CodeHubMrChanges,
   CodeHubMrChecks,
+  CodeHubMrForBranch,
   CodeHubSetIssueState,
   CodeHubSetReviewers,
   CodeHubUpdateIssueLabels,
@@ -576,7 +577,7 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
-import { ReviewRepoSchema, ReviewRequestSchema } from '../workbench/pr-review-request'
+import { ReviewRequestSchema } from '../workbench/pr-review-request'
 import {
   MilestoneReadRequestSchema,
   MilestoneSubmitRequestSchema
@@ -770,6 +771,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.mergeMr': CodeHubMergeMr,
   'codehub.mrChanges': CodeHubMrChanges,
   'codehub.mrChecks': CodeHubMrChecks,
+  'codehub.mrForBranch': CodeHubMrForBranch,
   'codehub.setIssueState': CodeHubSetIssueState,
   'codehub.setReviewers': CodeHubSetReviewers,
   'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
@@ -1255,7 +1257,6 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.review.comments': PullRequest,
   'workbench.review.identity': null,
   'workbench.review.inbox': null,
-  'workbench.review.project': ReviewRepoSchema,
   'workbench.review.receive': ReviewRequestSchema,
   'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,

@@ -2,7 +2,6 @@ import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import type {
   ReviewIncomingRequest,
   ReviewPeerTarget,
-  ReviewRepoIdentity,
   ReviewRequestPayload,
   ReviewSendResult
 } from '../../../../shared/workbench/pr-review-request'
@@ -13,14 +12,12 @@ export const readReviewInbox = () =>
 export const readReviewSender = () =>
   callRuntimeRpc<{ sender: string }>({ kind: 'local' }, 'workbench.review.identity')
 
-export async function discoverReviewTargets(repo: ReviewRepoIdentity): Promise<ReviewPeerTarget[]> {
+export async function listConnectedReviewTargets(): Promise<ReviewPeerTarget[]> {
   const [environments, snapshots] = await Promise.all([
     window.api.runtimeEnvironments.list(),
     window.api.runtimeEnvironments.getStatusSnapshots()
   ])
   const targets: ReviewPeerTarget[] = []
-  const failures: string[] = []
-  // Bounded sequential probes reuse authenticated connections; discovery never opens a disconnected host.
   for (const environment of environments) {
     const revision = environment.pairingRevision ?? environment.createdAt
     const snapshot = snapshots.find(
@@ -35,34 +32,11 @@ export async function discoverReviewTargets(repo: ReviewRepoIdentity): Promise<R
     ) {
       continue
     }
-    const target = {
+    targets.push({
       environmentId: environment.id,
       name: environment.name,
       pairingRevision: revision
-    }
-    try {
-      const result = await callRuntimeRpc<{ available: boolean }>(
-        { kind: 'environment', environmentId: target.environmentId },
-        'workbench.review.project',
-        repo,
-        {
-          timeoutMs: 10_000,
-          expectedEnvironmentPairingRevision: revision,
-          expectedEnvironmentRuntimeId: snapshot.status?.runtimeId
-        }
-      )
-      if (result.available) {
-        targets.push(target)
-      }
-    } catch (error) {
-      failures.push(
-        `${environment.name}: ${error instanceof Error ? error.message : String(error)}`
-      )
-    }
-  }
-  // An incomplete recipient set must not silently become "all same-project hosts".
-  if (failures.length) {
-    throw new Error(`无法确认同项目主机，尚未发送：${failures.join('；')}`)
+    })
   }
   return targets
 }

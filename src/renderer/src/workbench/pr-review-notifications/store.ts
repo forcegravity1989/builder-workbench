@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import {
   ReviewRequestSchema,
   type ReviewSendInput,
+  type ReviewPeerTarget,
   type ReviewSendResult
 } from '../../../../shared/workbench/pr-review-request'
 import {
@@ -19,12 +20,7 @@ import {
 } from './model'
 import { findRegisteredReviewRepo, readReviewTracking } from './review-target'
 import { readStoredReviewNotifications, writeStoredReviewNotifications } from './storage'
-import {
-  deliverReviewRequest,
-  discoverReviewTargets,
-  readReviewInbox,
-  readReviewSender
-} from './transport'
+import { deliverReviewRequest, readReviewInbox, readReviewSender } from './transport'
 
 let state: ReviewNotificationsState = EMPTY_REVIEW_NOTIFICATIONS
 let storageError: string | null = null
@@ -61,7 +57,10 @@ export function subscribeReviewNotifications(listener: () => void): () => void {
 export function useReviewNotifications(): ReviewNotificationsState {
   return useSyncExternalStore(subscribeReviewNotifications, getReviewNotifications)
 }
-export async function sendReviewRequest(input: ReviewSendInput): Promise<ReviewSendResult> {
+export async function sendReviewRequest(
+  input: ReviewSendInput,
+  targets: ReviewPeerTarget[]
+): Promise<ReviewSendResult> {
   const id = reviewNoteId(input.repo, input.prNumber)
   if (sending.has(id)) {
     throw new Error('这条评审请求正在发送')
@@ -73,22 +72,32 @@ export async function sendReviewRequest(input: ReviewSendInput): Promise<ReviewS
   try {
     writeStoredReviewNotifications(state)
     const previous = state.outgoing.find((note) => note.id === id)
-    const targets = previous
-      ? previous.deliveries.map(({ ok: _ok, error: _error, ...target }) => target)
-      : await discoverReviewTargets(input.repo)
     if (!targets.length) {
-      throw new Error('没有已连接且接入同项目的主机，尚未发送')
+      throw new Error('请选择收件主机，尚未发送')
     }
     const { sender } = await readReviewSender()
     const sentAt = new Date().toISOString()
-    const request = ReviewRequestSchema.parse({
-      ...input,
-      sender,
-      sentAt,
-      cycleId: previous?.cycleId ?? crypto.randomUUID(),
-      cycleStartedAt: previous?.cycleStartedAt ?? sentAt,
-      round: (previous?.round ?? 0) + 1
-    })
+    const pending = state.pending.find(
+      (attempt) => reviewNoteId(attempt.request.repo, attempt.request.prNumber) === id
+    )
+    const request =
+      pending?.request ??
+      ReviewRequestSchema.parse({
+        ...input,
+        sender,
+        sentAt,
+        cycleId: previous?.cycleId ?? crypto.randomUUID(),
+        cycleStartedAt: previous?.cycleStartedAt ?? sentAt,
+        round: (previous?.round ?? 0) + 1
+      })
+    // A lost acknowledgement must retry the exact request that may already be durable on a peer.
+    setState(
+      {
+        ...state,
+        pending: [{ request, targets }, ...state.pending.filter((attempt) => attempt !== pending)]
+      },
+      true
+    )
     const result = await deliverReviewRequest(request, targets)
     if (result.results.some((entry) => entry.ok)) {
       try {
@@ -147,7 +156,7 @@ async function refreshNoteReadback(
   try {
     const repo = findRegisteredReviewRepo(note.repo)
     if (!repo) {
-      throw new Error('本机没有该项目')
+      throw new Error('暂时无法访问该项目')
     }
     const readback = await readReviewTracking(repo, note.prNumber, note.sentAt)
     setState(applyReviewReadback(state, direction, key, readback, null))

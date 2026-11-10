@@ -9,7 +9,7 @@ const { api } = vi.hoisted(() => ({
     mrChanges: vi.fn()
   }
 }))
-vi.mock('@/lib/codehub-api', () => ({ codehubApi: api }))
+vi.mock('@/lib/codehub-api', () => ({ createCodeHubApi: () => api }))
 
 import {
   CODEHUB_DETAIL_CACHE_MAX,
@@ -51,6 +51,15 @@ it('builds collision-free keys from repoId, kind and iid', () => {
   )
   expect(getCodehubDetailCacheKey({ repoId: 'r1', kind: 'issue', iid: 8 })).not.toBe(
     getCodehubDetailCacheKey({ repoId: 'r1', kind: 'mr', iid: 8 })
+  )
+  const source = {
+    kind: 'task-source' as const,
+    provider: 'codehub' as const,
+    projectId: 'same',
+    hostId: 'local' as const
+  }
+  expect(getCodehubDetailCacheKey({ ...mrArgs, sourceContext: source })).not.toBe(
+    getCodehubDetailCacheKey({ ...mrArgs, sourceContext: { ...source, hostId: 'runtime:peer' } })
   )
 })
 
