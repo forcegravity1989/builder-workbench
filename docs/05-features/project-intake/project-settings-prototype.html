@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Workbench · 添加项目与项目墙</title>
     <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="../../../src/renderer/src/workbench/project-settings.css" />
     <link rel="stylesheet" href="prototype/project-settings.css" />
     <script src="prototype/project-wall-data.js" defer></script>
     <script src="prototype/project-wall-views.js" defer></script>
@@ -14,27 +15,22 @@
   <body>
     <!-- Refactored #497 / #345 design candidate; all data and writes are in-memory simulations. -->
     <header class="design-bar">
-      <strong>添加项目与项目墙</strong><span class="design-badge">设计原型</span>
-      <span class="design-note">G1 评审批注版 · 示例人物与数据 · 刷新重置</span
+      <strong>添加项目与项目墙</strong><span class="design-badge">原型 · 示例数据</span>
+      <span class="design-note">原型注释：G1 收窄稿 · 全部数据为示例 · 刷新重置</span
       ><span class="grow"></span> <label class="sr-only" for="viewer">观察身份</label
       ><select id="viewer" class="input">
         <option value="self">我自己的项目墙</option>
         <option value="peer">另一客户端看本机共享墙</option>
       </select>
-      <button class="btn btn-ghost" data-action="journey">旅程与信息取舍</button>
+      <button class="btn btn-ghost" data-action="scope">改动范围</button>
       <label class="sr-only" for="scenario">演示场景</label>
       <select id="scenario" class="input">
         <option value="mixed">日常项目</option>
         <option value="empty">首次使用</option>
         <option value="error">主机读取失败</option>
-        <option value="many">项目较多</option>
-        <option value="add-failure">添加失败</option>
         <option value="info-failure">信息提交失败</option>
         <option value="merged">信息已合入待更新</option>
-        <option value="stale">交付依据陈旧</option>
-        <option value="cross-version">验收版本不匹配</option>
-        <option value="future">验收日期在未来</option>
-        <option value="cross-promise">验收承诺不匹配</option>
+        <option value="unknown">版本状态未知</option>
       </select>
       <button class="btn btn-ghost" data-action="theme" aria-label="切换深浅色">深色</button>
       <button class="btn btn-ghost" data-action="reset">重置</button>
