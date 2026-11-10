@@ -37,6 +37,7 @@ import type { WorktreeContextMenuModel } from './use-worktree-context-menu-model
 import { WorktreeStatusMenuItems } from './WorktreeStatusMenuItems'
 import { WorktreeContextMenuOverlays } from './WorktreeContextMenuOverlays'
 import { WorkbenchVersionBindingMenuItems } from '@/workbench/WorkbenchVersionBindingMenuItems'
+import { WorkbenchSendReviewMenuItems } from '@/workbench/WorkbenchSendReviewMenuItems'
 import {
   CLOSE_ALL_CONTEXT_MENUS_EVENT,
   WORKTREE_CONTEXT_MENU_SCOPE_ATTR,
@@ -171,7 +172,10 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
             workspaceStatuses={workspaceStatuses}
           />
           {!isMultiContext && (
-            <WorkbenchVersionBindingMenuItems worktree={worktree} disabled={isDeleting} />
+            <>
+              <WorkbenchVersionBindingMenuItems worktree={worktree} disabled={isDeleting} />
+              <WorkbenchSendReviewMenuItems worktree={worktree} disabled={isDeleting} />
+            </>
           )}
           <DropdownMenuSeparator />
           {!isMultiContext && (
