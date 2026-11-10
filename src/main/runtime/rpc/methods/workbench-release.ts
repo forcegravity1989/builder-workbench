@@ -1,10 +1,10 @@
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import { ReleaseStatusRequestSchema } from '../../../../shared/workbench/release-status'
 import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-result'
 import { readReleaseStatus } from '../../../workbench/release-status'
 
 export const WORKBENCH_RELEASE_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.release.status',
     params: ReleaseStatusRequestSchema,
     handler: (params, { runtime }) =>
