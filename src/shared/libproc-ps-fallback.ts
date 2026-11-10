@@ -45,10 +45,10 @@ export function registerPsFallbackRequest(): number {
 
 // ps output follows its locale, zone and (without -ww) width, so only identically shaped invocations share a run.
 function flightKey(spec: Spec): string {
-  const shape = ['LC_ALL', 'LC_CTYPE', 'LC_TIME', 'LANG', 'TZ', 'COLUMNS'].map(
+  const outputEnvironment = ['LC_ALL', 'LC_CTYPE', 'LC_TIME', 'LANG', 'TZ', 'COLUMNS'].map(
     (name) => spec.env[name] ?? null
   )
-  return JSON.stringify([spec.args, shape, spec.maxOutputBytes ?? null])
+  return JSON.stringify([spec.args, outputEnvironment, spec.maxOutputBytes ?? null])
 }
 
 type PsForkBudget = {

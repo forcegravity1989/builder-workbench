@@ -1,10 +1,11 @@
+import { dispatchBrowserPageZoom } from '@/components/browser-pane/host-guest/browser-page-zoom'
 import { applyUIZoom } from '@/lib/ui-zoom'
 import { computeEditorFontSize, nextEditorFontZoomLevel } from '@/lib/editor-font-zoom'
 import { zoomLevelToPercent } from '@/components/settings/SettingsConstants'
 import { dispatchZoomLevelChanged } from '@/lib/zoom-events'
 import { stepUIZoomLevel } from '../../../../shared/ui-zoom-level'
 import { useAppStore } from '../../store'
-import { resolveZoomTarget } from '../resolve-zoom-target'
+import { focusedBrowserPageId, resolveZoomTarget } from '../resolve-zoom-target'
 
 export function registerZoomIpcBridge(unsubs: (() => void)[]): void {
   // Zoom handling for menu accelerators and keyboard fallback paths.
@@ -19,6 +20,13 @@ export function registerZoomIpcBridge(unsubs: (() => void)[]): void {
         activeElement: document.activeElement
       })
       if (target === 'terminal') {
+        return
+      }
+      if (target === 'browser') {
+        const browserPageId = focusedBrowserPageId(document.activeElement)
+        if (browserPageId) {
+          dispatchBrowserPageZoom({ browserPageId, direction })
+        }
         return
       }
       if (target === 'editor') {

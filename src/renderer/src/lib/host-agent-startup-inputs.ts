@@ -102,9 +102,9 @@ export async function prepareHostAgentStartupInputs(args: {
         args.agentArgs !== undefined
           ? args.agentArgs
           : agent
-            ? resolveTuiAgentLaunchArgs(agent, settings)
+            ? resolveTuiAgentLaunchArgs(agent, settings?.agentDefaultArgs)
             : undefined,
-      agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings) : undefined,
+      agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings?.agentDefaultEnv) : undefined,
       platform,
       shell: hostSettings
         ? resolveHostAgentStartupShell({

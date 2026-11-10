@@ -50,9 +50,9 @@ export function buildDirectWorkItemAgentStartupPlan(args: {
 
   const effectiveAgentArgs =
     args.agentArgs === undefined
-      ? resolveTuiAgentLaunchArgs(args.agent, args.settings)
+      ? resolveTuiAgentLaunchArgs(args.agent, args.settings?.agentDefaultArgs)
       : args.agentArgs
-  const effectiveAgentEnv = resolveTuiAgentLaunchEnv(args.agent, args.settings)
+  const effectiveAgentEnv = resolveTuiAgentLaunchEnv(args.agent, args.settings?.agentDefaultEnv)
   const sessionOptions = resolveInitialNativeChatSessionOptions(args.settings, {
     agent: args.agent,
     ...(args.promptDelivery === 'draft'

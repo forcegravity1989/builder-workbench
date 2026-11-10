@@ -23,6 +23,7 @@ describe('BrowserClientPageAutomationRuntime', () => {
     expect(fixture.executeRpc).toHaveBeenCalledWith(
       'browser.click',
       { x: 10, page: 'page-a' },
+      true,
       expect.any(AbortSignal)
     )
 
@@ -68,6 +69,22 @@ describe('BrowserClientPageAutomationRuntime', () => {
     expect(fixture.unregisterGuest).toHaveBeenCalledWith('page-a')
   })
 
+  it('retires an old automation session without stripping the guest needed by rollback', async () => {
+    const fixture = createFixture()
+    await fixture.runtime.execute(input(), new AbortController().signal)
+    await fixture.runtime.retire({
+      browserPageId: 'page-a',
+      pageHostGeneration: 9,
+      registration,
+      keepGuestBinding: true
+    })
+    expect(fixture.onTabClosed).toHaveBeenCalledWith(42)
+    expect(fixture.unregisterGuest).not.toHaveBeenCalled()
+    await expect(fixture.runtime.execute(input(), new AbortController().signal)).resolves.toEqual({
+      clicked: true
+    })
+  })
+
   it('rejects aborts and registration failures before RPC dispatch', async () => {
     const fixture = createFixture()
     const controller = new AbortController()
@@ -101,6 +118,7 @@ function input(overrides: Record<string, unknown> = {}) {
     browserProfileId: 'profile-a',
     method: 'browser.click' as const,
     params: { x: 10 },
+    agent: true,
     registration,
     ...overrides
   }

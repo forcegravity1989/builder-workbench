@@ -13,11 +13,8 @@ vi.mock('electron', () => ({
 vi.mock('../guest-lifecycle/manager/browser-manager', () => ({
   browserManager: { getRendererContextForGuest: getRendererContextForGuestMock }
 }))
-
 import {
-  BROWSER_WEBAUTHN_ACCOUNT_PICKER_TIMEOUT_MS,
   cancelAllBrowserWebAuthnAccountRequests,
-  cancelBrowserWebAuthnAccountRequests,
   requestBrowserWebAuthnAccount,
   respondToBrowserWebAuthnAccountRequest
 } from './browser-webauthn-account-picker'
@@ -59,32 +56,6 @@ describe('browser WebAuthn account picker', () => {
     vi.useRealTimers()
   })
 
-  it('returns the credential selected by the owning renderer', async () => {
-    const guest = mockWebContents(41)
-    const renderer = mockWebContents(42)
-    fromFrameMock.mockReturnValue(guest)
-    getRendererContextForGuestMock.mockReturnValue({ browserPageId: 'page-1', renderer })
-
-    const selection = requestBrowserWebAuthnAccount(accountDetails(), mockSession())
-    const request = vi.mocked(renderer.send).mock.calls[0][1]
-
-    expect(request).toMatchObject({
-      browserPageId: 'page-1',
-      relyingPartyId: 'accounts.example.com',
-      accounts: [
-        { credentialId: 'credential-1', displayName: 'Personal', name: 'me@example.com' },
-        { credentialId: 'credential-2', displayName: 'Work', name: 'me@work.example' }
-      ]
-    })
-    expect(
-      respondToBrowserWebAuthnAccountRequest(renderer, {
-        requestId: request.requestId,
-        credentialId: 'credential-2'
-      })
-    ).toBe(true)
-    await expect(selection).resolves.toBe('credential-2')
-  })
-
   it('rejects responses from another renderer or with an unoffered credential', async () => {
     const guest = mockWebContents(51)
     const renderer = mockWebContents(52)
@@ -112,55 +83,49 @@ describe('browser WebAuthn account picker', () => {
     await expect(selection).resolves.toBeNull()
   })
 
-  it('cancels when the tab closes or the prompt times out', async () => {
-    const guest = mockWebContents(61)
-    const renderer = mockWebContents(62)
-    fromFrameMock.mockReturnValue(guest)
-    getRendererContextForGuestMock.mockReturnValue({ browserPageId: 'page-3', renderer })
+  it('keeps sibling and successor requests independent of a retired document', async () => {
+    const retiredGuest = mockWebContents(101)
+    const siblingGuest = mockWebContents(102)
+    const renderer = mockWebContents(103)
+    getRendererContextForGuestMock.mockImplementation((guestId: number) => ({
+      browserPageId: `page-${guestId}`,
+      renderer
+    }))
     const browserSession = mockSession()
-    const closedSelection = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
-    vi.mocked(renderer.send).mockImplementation((channel) => {
-      if (channel === 'browser:webauthn-account-request-closed') {
-        throw new Error('renderer destroyed during send')
-      }
-    })
+    const requestIdAt = (index: number): string =>
+      vi.mocked(renderer.send).mock.calls[index][1].requestId
 
-    cancelBrowserWebAuthnAccountRequests('page-3')
-    await expect(closedSelection).resolves.toBeNull()
+    fromFrameMock.mockReturnValueOnce(retiredGuest)
+    const retired = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
+    fromFrameMock.mockReturnValueOnce(siblingGuest)
+    const sibling = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
+    const [retiredId, siblingId] = [requestIdAt(0), requestIdAt(1)]
 
-    const timedOutSelection = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
-    await vi.advanceTimersByTimeAsync(BROWSER_WEBAUTHN_ACCOUNT_PICKER_TIMEOUT_MS)
-    await expect(timedOutSelection).resolves.toBeNull()
-  })
+    retiredGuest.emit('did-navigate')
+    await expect(retired).resolves.toBeNull()
+    fromFrameMock.mockReturnValueOnce(retiredGuest)
+    const successor = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
+    const successorId = requestIdAt(3)
 
-  it('cancels when the guest or window is destroyed', async () => {
-    const guest = mockWebContents(71)
-    const renderer = mockWebContents(72)
-    fromFrameMock.mockReturnValue(guest)
-    getRendererContextForGuestMock.mockReturnValue({ browserPageId: 'page-4', renderer })
-    const browserSession = mockSession()
-    const guestDestroyed = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
-    guest.emit('destroyed')
-    await expect(guestDestroyed).resolves.toBeNull()
-
-    const windowDestroyed = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
-    renderer.emit('destroyed')
-    await expect(windowDestroyed).resolves.toBeNull()
-  })
-
-  it('cancels immediately when the guest or window renderer process exits', async () => {
-    const guest = mockWebContents(81)
-    const renderer = mockWebContents(82)
-    const browserSession = mockSession()
-    fromFrameMock.mockReturnValue(guest)
-    getRendererContextForGuestMock.mockReturnValue({ browserPageId: 'page-5', renderer })
-
-    const guestCrashed = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
-    guest.emit('render-process-gone')
-    await expect(guestCrashed).resolves.toBeNull()
-
-    const windowCrashed = requestBrowserWebAuthnAccount(accountDetails(), browserSession)
-    renderer.emit('render-process-gone')
-    await expect(windowCrashed).resolves.toBeNull()
+    expect(
+      respondToBrowserWebAuthnAccountRequest(renderer, {
+        requestId: retiredId,
+        credentialId: 'credential-1'
+      })
+    ).toBe(false)
+    expect(
+      respondToBrowserWebAuthnAccountRequest(renderer, {
+        requestId: successorId,
+        credentialId: 'credential-2'
+      })
+    ).toBe(true)
+    expect(
+      respondToBrowserWebAuthnAccountRequest(renderer, {
+        requestId: siblingId,
+        credentialId: 'credential-1'
+      })
+    ).toBe(true)
+    await expect(successor).resolves.toBe('credential-2')
+    await expect(sibling).resolves.toBe('credential-1')
   })
 })

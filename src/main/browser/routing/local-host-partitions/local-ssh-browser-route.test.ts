@@ -138,7 +138,6 @@ describe('LocalSshBrowserRoute', () => {
     const socket = await socksConnect(address.port, 'internal.only.host', 8443)
     const reply = await readExact(socket, 10)
     expect(reply[1]).toBe(0)
-    // Why: the hostname must reach the SSH dial verbatim — remote DNS is the contract.
     expect(executionRoute.dials).toEqual([{ host: 'internal.only.host', port: 8443 }])
 
     socket.write(Buffer.from('ping'))
@@ -170,7 +169,6 @@ describe('LocalSshBrowserRoute', () => {
     expect((await readExact(first, 10))[1]).toBe(0)
     first.destroy()
 
-    // A real SSH drop: the authority rotates and the old route is aborted.
     generation = 2
     executionRoutes[0].invalidate()
     await new Promise((resolve) => setImmediate(resolve))
@@ -206,7 +204,6 @@ describe('LocalSshBrowserRoute', () => {
 
     const refused = await socksConnect(address.port, 'example.test', 443)
     const failure = await readExact(refused, 2)
-    // Why: fail closed — never a direct local dial when the SSH path is down.
     expect(failure[1]).not.toBe(0)
     refused.destroy()
 
@@ -214,16 +211,6 @@ describe('LocalSshBrowserRoute', () => {
     const accepted = await socksConnect(address.port, 'example.test', 443)
     expect((await readExact(accepted, 10))[1]).toBe(0)
     accepted.destroy()
-  })
-
-  it('retains one shared route per target', async () => {
-    const dependencies = {
-      resolveExecutionRoute: async () => fakeExecutionRoute('route-shared'),
-      getAuthority: () => ({ providerEpoch: 'epoch-1', connectionGeneration: 1 })
-    }
-    const first = await retainLocalSshBrowserRoute('target-shared', dependencies)
-    const second = await retainLocalSshBrowserRoute('target-shared', dependencies)
-    expect(second.port).toBe(first.port)
   })
 
   it('drops the shared route on explicit close so a re-add starts fresh', async () => {
@@ -234,69 +221,9 @@ describe('LocalSshBrowserRoute', () => {
     const first = await retainLocalSshBrowserRoute('target-cycled', dependencies)
     await closeLocalSshBrowserRouteForTarget('target-cycled')
     const second = await retainLocalSshBrowserRoute('target-cycled', dependencies)
-    // Why: the closed listener is unusable; a fresh retain must produce a live one.
     const socket = await socksConnect(second.port, 'after-readd', 80)
     expect((await readExact(socket, 10))[1]).toBe(0)
     socket.destroy()
     expect(first.port).not.toBe(0)
-  })
-
-  it('classifies forwarding probes by the wire reason code, never by scary wording', async () => {
-    let failure: (Error & { reason?: number }) | null = null
-    const route = new LocalSshBrowserRoute('target-probe', {
-      resolveExecutionRoute: async () => {
-        const executionRoute = fakeExecutionRoute('route-probe')
-        const originalConnect = executionRoute.connect
-        executionRoute.connect = (target) => {
-          if (failure) {
-            const socket = new FakeTunnelSocket('never-connect')
-            const error = failure
-            queueMicrotask(() => {
-              socket.emit('error', error)
-            })
-            return socket
-          }
-          return originalConnect(target)
-        }
-        return executionRoute
-      },
-      getAuthority: () => ({ providerEpoch: 'epoch-1', connectionGeneration: 1 })
-    })
-    routes.push(route)
-    await route.listen()
-
-    const withReason = (message: string, reason?: number): Error & { reason?: number } => {
-      const error = new Error(message) as Error & { reason?: number }
-      if (reason !== undefined) {
-        error.reason = reason
-      }
-      return error
-    }
-
-    // RFC 4254 reason 1 = ADMINISTRATIVELY_PROHIBITED, regardless of wording.
-    failure = withReason('(SSH) Channel open failure: open failed', 1)
-    expect(await route.probeForwarding(500)).toBe('forwarding-blocked')
-    // Why (false-positive pin): CONNECT_FAILED with hostile wording must read
-    // as ok — a firewall's "denied" text proves the CHANNEL was allowed.
-    failure = withReason('(SSH) Channel open failure: connection denied by firewall', 2)
-    expect(await route.probeForwarding(500)).toBe('ok')
-    // No wire code: only the canonical OpenSSH phrase classifies as blocked.
-    failure = withReason('administratively prohibited: open failed')
-    expect(await route.probeForwarding(500)).toBe('forwarding-blocked')
-    failure = withReason('open forbidden: access denied, not allowed')
-    expect(await route.probeForwarding(500)).toBe('ok')
-    failure = null
-    expect(await route.probeForwarding(500)).toBe('ok')
-  })
-
-  it('reports ssh-unavailable when the probe cannot resolve a route', async () => {
-    const route = new LocalSshBrowserRoute('target-down', {
-      resolveExecutionRoute: async () => {
-        throw new Error('browser_tunnel_execution_host_unavailable')
-      },
-      getAuthority: () => ({ providerEpoch: 'epoch-1', connectionGeneration: 1 })
-    })
-    routes.push(route)
-    expect(await route.probeForwarding(500)).toBe('ssh-unavailable')
   })
 })

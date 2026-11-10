@@ -3,6 +3,47 @@ import { platformBindings } from './definitions-support'
 
 export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
   {
+    id: 'browser.find',
+    title: 'Find in Browser',
+    group: 'Browser',
+    scope: 'browser',
+    searchKeywords: ['shortcut', 'browser', 'find', 'search'],
+    defaultBindings: platformBindings(['Mod+F'])
+  },
+  {
+    id: 'browser.back',
+    title: 'Go Back in Browser',
+    group: 'Browser',
+    scope: 'browser',
+    searchKeywords: ['shortcut', 'browser', 'history', 'back', 'previous'],
+    defaultBindings: {
+      darwin: ['Mod+BracketLeft'],
+      linux: ['Alt+ArrowLeft'],
+      win32: ['Alt+ArrowLeft']
+    }
+  },
+  {
+    id: 'browser.forward',
+    title: 'Go Forward in Browser',
+    group: 'Browser',
+    scope: 'browser',
+    searchKeywords: ['shortcut', 'browser', 'history', 'forward', 'next'],
+    defaultBindings: {
+      darwin: ['Mod+BracketRight'],
+      linux: ['Alt+ArrowRight'],
+      win32: ['Alt+ArrowRight']
+    }
+  },
+  {
+    id: 'browser.showHistory',
+    title: 'Show Browser History',
+    group: 'Browser',
+    scope: 'browser',
+    searchKeywords: ['shortcut', 'browser', 'history', 'visited', 'clear'],
+    // Why Chrome's split: Ctrl+Y is redo (and readline yank) in pages on Linux/Windows.
+    defaultBindings: { darwin: ['Mod+Y'], linux: ['Mod+H'], win32: ['Mod+H'] }
+  },
+  {
     id: 'browser.reload',
     title: 'Reload Browser Page',
     group: 'Browser',
@@ -34,6 +75,20 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     searchKeywords: ['shortcut', 'browser', 'grab', 'copy', 'element'],
     defaultBindings: platformBindings(['Mod+C'])
   },
+  {
+    id: 'browser.annotateElement',
+    title: 'Annotate Page Element',
+    group: 'Browser',
+    scope: 'browser',
+    searchKeywords: ['shortcut', 'browser', 'annotate', 'comment', 'element'],
+    // Why: Ctrl+Shift+C is terminal copy on Linux/Windows, including web terminals in the page.
+    defaultBindings: {
+      darwin: ['Mod+Shift+C'],
+      linux: ['Alt+Shift+N'],
+      win32: ['Alt+Shift+N']
+    }
+  },
+
   {
     id: 'editor.find',
     title: 'Find in editor',

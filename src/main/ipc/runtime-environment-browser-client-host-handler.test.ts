@@ -116,7 +116,7 @@ describe('runtime environment browser client host handler', () => {
     )
 
     await expect(prepare(null, { selector: 'environment-a' })).resolves.toEqual({ kind: 'server' })
-    expect(getRuntimeEnvironmentStatusMock).not.toHaveBeenCalled()
+    expect(getRuntimeEnvironmentStatusMock).toHaveBeenCalledTimes(1)
     expect(startHostMock).not.toHaveBeenCalled()
     expect(closeHostMock).not.toHaveBeenCalled()
   })

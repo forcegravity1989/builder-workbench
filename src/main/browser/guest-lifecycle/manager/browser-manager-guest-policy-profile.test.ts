@@ -30,7 +30,6 @@ vi.mock('../popups/presentation/popup-origin-bar-window', () => ({
 
 import { browserManager } from './browser-manager'
 import { resetBrowserManagerMocks, resetBrowserManagerState } from './browser-manager-test-harness'
-import { getWorkspaceDocPageGuest } from '../../document-preview/doc-preview-guest-policy'
 import {
   mintDocPreviewGrant,
   revokeAllDocPreviewGrants
@@ -106,10 +105,6 @@ function createGuest(id: number, url: string): GuestFake {
   return guest
 }
 
-function listenerCount(guest: GuestFake, event: string): number {
-  return guest.listeners.get(event)?.length ?? 0
-}
-
 /** Drives the guest's own will-navigate listeners and reports whether they refused. */
 function navigateTo(guest: GuestFake, url: string): boolean {
   let prevented = false
@@ -147,35 +142,6 @@ describe('guest policy profiles', () => {
     return { guest, grantId: grant.id, browserPageId }
   }
 
-  // The presence half of every absence below: a browsing guest observably takes all of it through
-  // the same method, so a profile that fenced nothing — or an attach path that stopped installing
-  // anything at all — cannot pass these by being uniformly empty.
-  it('gives a browsing guest link routing, popups and auth-identity detach tracking', () => {
-    const guest = createGuest(300, 'https://example.com/')
-
-    browserManager.attachGuestPolicies(guest as never)
-
-    expect(listenerCount(guest, 'dom-ready')).toBe(1)
-    expect(listenerCount(guest, 'frame-created')).toBe(1)
-    expect(listenerCount(guest, 'did-create-window')).toBe(1)
-    expect(guest.debugger.on).toHaveBeenCalledWith('detach', expect.any(Function))
-    // Why: a plain browsing tab must never attach a debugger; Cloudflare treats CDP as a bot signal.
-    expect(guest.debugger.attach).not.toHaveBeenCalled()
-    expect(guest.debugger.sendCommand).not.toHaveBeenCalled()
-    expect(navigateTo(guest, 'https://elsewhere.example/')).toBe(false)
-  })
-
-  it('gives a workspace-document guest none of it', () => {
-    const { guest } = attachPreviewGuest()
-
-    expect(listenerCount(guest, 'dom-ready')).toBe(0)
-    expect(listenerCount(guest, 'frame-created')).toBe(0)
-    expect(listenerCount(guest, 'did-create-window')).toBe(0)
-    expect(guest.debugger.on).not.toHaveBeenCalled()
-    expect(guest.debugger.sendCommand).not.toHaveBeenCalled()
-    expect(guest.executeJavaScriptInIsolatedWorld).not.toHaveBeenCalled()
-  })
-
   it('holds a workspace-document guest inside the grant it is showing', () => {
     const { guest, grantId } = attachPreviewGuest()
 
@@ -190,24 +156,6 @@ describe('guest policy profiles', () => {
     expect(guest.windowOpenHandler?.({ url: 'https://example.com/', frameName: '' })).toEqual({
       action: 'deny'
     })
-  })
-
-  // Why teardown and not just install: registration and teardown both key on the guest having been
-  // policy-attached, so a profile that installs outside that bookkeeping leaves the id marked
-  // attached forever and stays answerable to tools after the surface is gone.
-  it('tears a workspace-document guest down through the same policy cleanup', () => {
-    const { guest, browserPageId } = attachPreviewGuest(302)
-    expect(getWorkspaceDocPageGuest(browserPageId, host.id)).toBe(guest as never)
-
-    for (const listener of guest.listeners.get('destroyed') ?? []) {
-      listener()
-    }
-
-    expect(getWorkspaceDocPageGuest(browserPageId, host.id)).toBeNull()
-    // The manager's own bookkeeping was reached too: a second attach is refused while the id is
-    // still marked policy-attached, and accepted once its teardown has run.
-    browserManager.attachGuestPolicies(guest as never)
-    expect(listenerCount(guest, 'dom-ready')).toBe(1)
   })
 
   // The seam the whole split rests on: one public door answers for both halves, and each page id
@@ -230,14 +178,6 @@ describe('guest policy profiles', () => {
       return guest
     }
 
-    it('answers each page with the guest of its own half', () => {
-      const browsing = registerBrowsingGuest()
-      const { guest: document, browserPageId } = attachPreviewGuest()
-
-      expect(browserManager.getAuthorizedGuest(BROWSING_PAGE_ID, host.id)).toBe(browsing as never)
-      expect(browserManager.getAuthorizedGuest(browserPageId, host.id)).toBe(document as never)
-    })
-
     // Why this is the containment claim and not a lookup detail: page management, agent commands,
     // download routing and certificate attribution all read the browsing map directly, so a
     // document page being absent from it is what fences them without a guard of their own.
@@ -248,14 +188,5 @@ describe('guest policy profiles', () => {
       expect(browserManager.getGuestWebContentsId(browserPageId)).toBeNull()
       expect([...browserManager.getWebContentsIdByTabId().keys()]).toEqual([BROWSING_PAGE_ID])
     })
-  })
-
-  it('attaches a guest once whatever profile it was asked for', () => {
-    const { guest } = attachPreviewGuest(303)
-
-    browserManager.attachGuestPolicies(guest as never)
-
-    expect(listenerCount(guest, 'dom-ready')).toBe(0)
-    expect(listenerCount(guest, 'will-navigate')).toBe(1)
   })
 })

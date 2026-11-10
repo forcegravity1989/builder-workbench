@@ -1,3 +1,4 @@
+import { trackBrowserExtensionMainWindow } from '../browser/extensions/tabs-and-windows/browser-extension-window-model'
 import { app, type BrowserWindow } from 'electron'
 import { createMainWindow, loadMainWindow } from '../window/createMainWindow'
 import {
@@ -181,6 +182,7 @@ export function openMainWindow(options: { revealOnDidFinishLoad?: boolean } = {}
     recordRendererReload: (ignoreCache) =>
       recordCrashBreadcrumb('renderer_reload_requested', { ignoreCache })
   })
+  trackBrowserExtensionMainWindow(window)
   state.mainWindow = window
   window.on('show', resumeSyntheticTitleSpinnerTimer)
   window.on('restore', resumeSyntheticTitleSpinnerTimer)

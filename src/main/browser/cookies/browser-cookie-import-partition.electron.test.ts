@@ -16,7 +16,7 @@ afterAll(() => {
   }
 })
 
-// Retry once when Electron startup times out before `ready`; keep later failures fatal.
+// Retry only pre-ready startup timeouts; retain later failures.
 const FIXTURE_LAUNCH_ATTEMPTS = 2
 
 function neverReachedElectronReady(fixtureResult: string): boolean {
@@ -79,8 +79,7 @@ async function run() {
     partitionKey: { topLevelSite: 'https://example.com', hasCrossSiteAncestor: true }
   })
   mark('partitioned cookie set')
-  // Why (STA-4797): a stale cookie on a domain the import DOES bring over. Narrowing the clear
-  // must not stop it removing this one, or imported sites inherit a session the site rejects.
+  // Merging preserves other cookie coordinates even on an imported domain.
   await targetSession.cookies.set({
     url: 'https://example.com/',
     name: 'superseded',
@@ -172,8 +171,8 @@ async function runFixture(): Promise<FixtureResult> {
       {
         name: 'stub-browser-session-registry',
         resolveId(source, importer) {
-          return source === '../sessions/profiles/browser-session-registry' &&
-            importer?.endsWith('browser-cookie-import.ts')
+          return source === '../../sessions/profiles/browser-session-registry' &&
+            importer?.replaceAll('\\', '/').endsWith('/cookies/chromium/finalize-import.ts')
             ? registryStubPath
             : null
         }
@@ -182,7 +181,7 @@ async function runFixture(): Promise<FixtureResult> {
     build: {
       emptyOutDir: false,
       lib: {
-        entry: join(process.cwd(), 'src/main/browser/browser-cookie-import.ts'),
+        entry: join(process.cwd(), 'src/main/browser/cookies/browser-cookie-import.ts'),
         formats: ['cjs'],
         fileName: () => 'browser-cookie-import.cjs'
       },
@@ -196,8 +195,7 @@ async function runFixture(): Promise<FixtureResult> {
   const executable = process.platform === 'linux' ? 'xvfb-run' : electronBinary
   for (let attempt = 1; ; attempt += 1) {
     rmSync(resultPath, { force: true })
-    // Why a fresh profile per attempt: a launch that never reached `ready` may have left the
-    // Chromium profile mid-initialization, and reusing it would bias the retry.
+    // A failed launch may leave its profile half-initialized; retry with a fresh one.
     const electronArgs = [fixturePath, `--user-data-dir=${join(root, `profile-${attempt}`)}`]
     const run = spawnSync(
       executable,
@@ -217,7 +215,7 @@ async function runFixture(): Promise<FixtureResult> {
 }
 
 describe('native Chromium excluded partition cookie under Electron', () => {
-  it('survives selective clearing unchanged without a lossy Electron reconstruction', async () => {
+  it('survives a native merge unchanged alongside other destination cookies', async () => {
     const result = await runFixture()
 
     expect(result.before.partitionKey).toEqual({
@@ -235,7 +233,8 @@ describe('native Chromium excluded partition cookie under Electron', () => {
       'http-google',
       'imported',
       'partitioned-google',
-      'stale'
+      'stale',
+      'superseded'
     ])
   }, 150_000)
 })

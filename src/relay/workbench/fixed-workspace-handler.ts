@@ -8,7 +8,7 @@ import { materialResult } from '../../main/workbench/version-material-error'
 import { WorkspaceScopeError } from '../../main/workbench/workspace-scope-error'
 import { ensureFixedBranchTracking } from '../../main/workbench/fixed-workspace-tracking'
 
-const exec = promisify(execFile)
+const runGitCommand = promisify(execFile)
 const Command = z.strictObject({
   repoPath: z.string().min(1),
   branch: z.string().min(1),
@@ -27,7 +27,7 @@ export function registerFixedWorkspaceRelay(dispatcher: Pick<RelayDispatcher, 'o
         .parse(params)
       await ensureFixedBranchTracking(
         (args) =>
-          exec('git', args, {
+          runGitCommand('git', args, {
             cwd: repoPath,
             env: buildRelayGitEnv(),
             timeout: 10000,
@@ -45,7 +45,7 @@ export function registerFixedWorkspaceRelay(dispatcher: Pick<RelayDispatcher, 'o
       const { repoPath, branch, source, expectedHead } = Command.parse(params)
       fixedWorkspaceRequestForBranch(branch)
       const git = (args: string[]) =>
-        exec('git', args, {
+        runGitCommand('git', args, {
           cwd: repoPath,
           env: buildRelayGitEnv(),
           timeout: 10000,

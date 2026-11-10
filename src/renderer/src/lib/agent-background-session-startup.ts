@@ -57,8 +57,8 @@ export async function prepareAgentBackgroundStartup({
   }
   const launchSettings = hostSettings ?? store.settings
   const cmdOverrides = launchSettings?.agentCmdOverrides ?? {}
-  const agentArgs = resolveTuiAgentLaunchArgs(agent, launchSettings)
-  const agentEnv = resolveTuiAgentLaunchEnv(agent, launchSettings)
+  const agentArgs = resolveTuiAgentLaunchArgs(agent, launchSettings?.agentDefaultArgs)
+  const agentEnv = resolveTuiAgentLaunchEnv(agent, launchSettings?.agentDefaultEnv)
   // Folder launch ownership cannot be derived from a repo row (#2989).
   const launchHost = resolveAgentBackgroundLaunchHost({
     store,

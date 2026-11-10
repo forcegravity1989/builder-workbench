@@ -183,7 +183,7 @@ export function HostAgentLaunchSettings({
           isEnabled={isTuiAgentEnabled(agent.id, settings.disabledTuiAgents)}
           isDefault={settings.defaultTuiAgent === agent.id}
           cmdOverride={settings.agentCmdOverrides[agent.id]}
-          argsOverride={resolveTuiAgentLaunchArgs(agent.id, settings)}
+          argsOverride={resolveTuiAgentLaunchArgs(agent.id, settings.agentDefaultArgs)}
           envOverride={{}}
           onSetDefault={() => save({ type: 'default', agent: agent.id })}
           onSetEnabled={(enabled) => save({ type: 'availability', agent: agent.id, enabled })}

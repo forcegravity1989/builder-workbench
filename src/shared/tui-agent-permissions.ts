@@ -3,12 +3,6 @@ import type { TuiAgent } from './tui-agent'
 
 export type AgentPermissionMode = 'yolo' | 'manual' | 'mixed'
 
-export const AUTO_TUI_AGENT_ARGS: Partial<Record<TuiAgent, string>> = {
-  claude: '--permission-mode auto',
-  'claude-agent-teams': '--permission-mode auto',
-  codex: '--approve-for-me'
-}
-
 export const YOLO_TUI_AGENT_ARGS: Partial<Record<TuiAgent, string>> = {
   claude: '--dangerously-skip-permissions',
   'claude-agent-teams': '--dangerously-skip-permissions',

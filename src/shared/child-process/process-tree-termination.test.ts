@@ -1,3 +1,4 @@
+import { windowsSystem32Binary } from './windows-system-binary'
 import { EventEmitter } from 'node:events'
 import type { ChildProcess } from 'node:child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -50,7 +51,7 @@ describe('forceTerminateProcessTree', () => {
       await Promise.resolve()
       expect(settled).toBe(false)
       expect(spawnMock).toHaveBeenCalledWith(
-        'taskkill',
+        windowsSystem32Binary('taskkill.exe'),
         ['/pid', '1234', '/t', '/f'],
         expect.objectContaining({ shell: false, windowsHide: true })
       )

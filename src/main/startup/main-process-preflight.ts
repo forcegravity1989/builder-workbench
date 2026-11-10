@@ -1,3 +1,4 @@
+import { BROWSER_EXTENSION_API_CUSTOM_SCHEME } from '../browser/extensions/api-runtime/browser-extension-api-scheme'
 import { app, ipcMain, powerMonitor, session } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import os from 'node:os'
@@ -290,7 +291,7 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   }
   // Why: Electron freezes the privileged scheme table at ready, so the doc-preview
   // scheme must be declared here or its webview loses fetch/secure-origin privileges.
-  registerDocPreviewSchemePrivileges()
+  registerDocPreviewSchemePrivileges([BROWSER_EXTENSION_API_CUSTOM_SCHEME])
   // Why: must precede app.whenReady() so Crashpad is installed before the
   // first renderer spawns; a CHECK before this point is still exit-code-only.
   startCrashpadCapture()

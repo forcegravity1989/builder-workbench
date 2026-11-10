@@ -1,5 +1,5 @@
 import type React from 'react'
-import * as Slot from 'radix-ui/slot'
+import { Slot } from 'radix-ui'
 
 /** Host-owned tokens a plugin theme cannot restyle; see `.plugin-security-chrome` in main.css. */
 export const SECURITY_SURFACE_CLASS = 'plugin-security-chrome'

@@ -1,5 +1,6 @@
+import { pairedRuntimeConnectionFromOffer } from '../../../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PairingOffer } from '../../../../shared/pairing'
+import type { PairingOffer } from '../../../../shared/mobile-relay-pairing-offer'
 import type {
   RemoteRuntimeSubscription,
   RemoteRuntimeSubscriptionCallbacks
@@ -35,7 +36,7 @@ describe('PairedRuntimeBrowserClientHost reconnect', () => {
     const attempts = mockAttempts()
     let state: 'active' | 'outcomeUnknown' = 'active'
     const host = new PairedRuntimeBrowserClientHost({
-      pairing,
+      connection: pairedRuntimeConnectionFromOffer(pairing),
       authorityRuntimeId: 'runtime-a',
       browserHostClientId: 'host-a',
       hostCapabilities: ['webview'],
@@ -71,7 +72,7 @@ describe('PairedRuntimeBrowserClientHost reconnect', () => {
     const handler = vi.fn(() => ({ status: 'completed' as const }))
     const onError = vi.fn()
     const host = new PairedRuntimeBrowserClientHost({
-      pairing,
+      connection: pairedRuntimeConnectionFromOffer(pairing),
       authorityRuntimeId: 'runtime-a',
       browserHostClientId: 'host-a',
       hostCapabilities: ['webview'],

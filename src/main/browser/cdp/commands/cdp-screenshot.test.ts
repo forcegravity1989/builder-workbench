@@ -1,9 +1,12 @@
+import type { WebContents } from 'electron'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { captureFullPageScreenshot, captureScreenshot } from './cdp-screenshot'
+import { runInRemoteCliBrowserScope } from '../../../runtime/desktop-browser-bridge/remote-cli-browser-scope'
+import { captureScreenshot } from './cdp-screenshot'
 
 function createMockWebContents() {
-  return {
+  const mock = {
+    id: 7,
     isDestroyed: vi.fn(() => false),
     invalidate: vi.fn(),
     capturePage: vi.fn(),
@@ -12,280 +15,44 @@ function createMockWebContents() {
       sendCommand: vi.fn()
     }
   }
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the mock implements every WebContents member the capture calls.
+  return Object.assign(mock, { guest: mock as unknown as WebContents })
 }
 
-describe('captureScreenshot', () => {
+const noHold = (): (() => void) => () => {}
+
+describe('an SSH host’s capture', () => {
+  let url = 'https://example.com/'
+  const asHost = <T>(run: () => Promise<T>): Promise<T> =>
+    runInRemoteCliBrowserScope('wt-1', run, undefined, () => url.startsWith('https:'))
+  const REFUSED =
+    "This page is not browsing through the SSH host, so the host's orca CLI cannot use it."
+
   afterEach(() => {
-    vi.useRealTimers()
+    url = 'https://example.com/'
   })
 
-  it('invalidates the guest before forwarding Page.captureScreenshot', async () => {
+  it('refuses a capture whose frame was drawn after the page moved to a desktop file', async () => {
     const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockResolvedValueOnce({ data: 'png-data' })
-    const onResult = vi.fn()
-    const onError = vi.fn()
-
-    captureScreenshot(webContents as never, { format: 'png' }, onResult, onError)
-    await Promise.resolve()
-
-    expect(webContents.invalidate).toHaveBeenCalledTimes(1)
-    expect(webContents.debugger.sendCommand).toHaveBeenCalledWith('Page.captureScreenshot', {
-      format: 'png'
+    webContents.debugger.sendCommand.mockImplementation(async () => {
+      url = 'file:///Users/me/private.txt'
+      return { data: 'private-pixels' }
     })
-    expect(onResult).toHaveBeenCalledWith({ data: 'png-data' })
-    expect(onError).not.toHaveBeenCalled()
+
+    await expect(
+      asHost(() => captureScreenshot(webContents.guest, { format: 'png' }, noHold))
+    ).rejects.toThrow(REFUSED)
   })
 
-  it('falls back to capturePage when Page.captureScreenshot stalls', async () => {
-    vi.useFakeTimers()
-
+  it('stops at the next probe once the page moved to a desktop file, never falling back', async () => {
+    // Fake timers do not carry the host command context into probes.
     const webContents = createMockWebContents()
     webContents.debugger.sendCommand.mockImplementation(() => new Promise(() => {}))
-    webContents.capturePage.mockResolvedValueOnce({
-      isEmpty: () => false,
-      toPNG: () => Buffer.from('fallback-png')
-    })
-    const onResult = vi.fn()
-    const onError = vi.fn()
+    const capture = asHost(() => captureScreenshot(webContents.guest, { format: 'png' }, noHold))
+    url = 'file:///Users/me/private.txt'
 
-    captureScreenshot(webContents as never, { format: 'png' }, onResult, onError)
-    await vi.advanceTimersByTimeAsync(8000)
-
-    expect(webContents.capturePage).toHaveBeenCalledTimes(1)
-    expect(onResult).toHaveBeenCalledWith({
-      data: Buffer.from('fallback-png').toString('base64')
-    })
-    expect(onError).not.toHaveBeenCalled()
-  })
-
-  it('crops the fallback image when the request includes a visible clip rect', async () => {
-    vi.useFakeTimers()
-
-    const croppedImage = {
-      isEmpty: () => false,
-      toPNG: () => Buffer.from('cropped-png')
-    }
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation(() => new Promise(() => {}))
-    webContents.capturePage.mockResolvedValueOnce({
-      isEmpty: () => false,
-      getSize: () => ({ width: 400, height: 300 }),
-      crop: vi.fn(() => croppedImage),
-      toPNG: () => Buffer.from('full-png')
-    })
-    const onResult = vi.fn()
-    const onError = vi.fn()
-
-    captureScreenshot(
-      webContents as never,
-      {
-        format: 'png',
-        clip: { x: 10, y: 20, width: 30, height: 40, scale: 2 }
-      },
-      onResult,
-      onError
-    )
-    await vi.advanceTimersByTimeAsync(8000)
-
-    const fallbackImage = await webContents.capturePage.mock.results[0]?.value
-    expect(fallbackImage.crop).toHaveBeenCalledWith({ x: 20, y: 40, width: 60, height: 80 })
-    expect(onResult).toHaveBeenCalledWith({
-      data: Buffer.from('cropped-png').toString('base64')
-    })
-    expect(onError).not.toHaveBeenCalled()
-  })
-
-  it('keeps the timeout error when the request needs beyond-viewport pixels', async () => {
-    vi.useFakeTimers()
-
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation(() => new Promise(() => {}))
-    webContents.capturePage.mockResolvedValueOnce({
-      isEmpty: () => false,
-      getSize: () => ({ width: 400, height: 300 }),
-      crop: vi.fn(),
-      toPNG: () => Buffer.from('full-png')
-    })
-    const onResult = vi.fn()
-    const onError = vi.fn()
-
-    captureScreenshot(
-      webContents as never,
-      {
-        format: 'png',
-        captureBeyondViewport: true,
-        clip: { x: 0, y: 0, width: 800, height: 1200, scale: 1 }
-      },
-      onResult,
-      onError
-    )
-    await vi.advanceTimersByTimeAsync(8000)
-
-    expect(onResult).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith(
-      'Screenshot timed out — the browser tab may not be visible or the window may not have focus.'
-    )
-  })
-
-  it('ignores the fallback result when CDP settles first after the timeout fires', async () => {
-    vi.useFakeTimers()
-
-    let resolveCapturePage: ((value: unknown) => void) | null = null
-    let resolveSendCommand: ((value: unknown) => void) | null = null
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveSendCommand = resolve
-        })
-    )
-    webContents.capturePage.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveCapturePage = resolve
-        })
-    )
-    const onResult = vi.fn()
-    const onError = vi.fn()
-
-    captureScreenshot(webContents as never, { format: 'png' }, onResult, onError)
-    await vi.advanceTimersByTimeAsync(8000)
-
-    expect(resolveSendCommand).toBeTypeOf('function')
-    resolveSendCommand!({ data: 'cdp-png' })
-    await Promise.resolve()
-
-    expect(resolveCapturePage).toBeTypeOf('function')
-    resolveCapturePage!({
-      isEmpty: () => false,
-      getSize: () => ({ width: 100, height: 100 }),
-      crop: vi.fn(),
-      toPNG: () => Buffer.from('fallback-png')
-    })
-    await Promise.resolve()
-
-    expect(onResult).toHaveBeenCalledTimes(1)
-    expect(onResult).toHaveBeenCalledWith({ data: 'cdp-png' })
-    expect(onError).not.toHaveBeenCalled()
-  })
-
-  it('reports the original timeout when the fallback capture is unavailable', async () => {
-    vi.useFakeTimers()
-
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation(() => new Promise(() => {}))
-    webContents.capturePage.mockResolvedValueOnce({
-      isEmpty: () => true,
-      toPNG: () => Buffer.from('unused')
-    })
-    const onResult = vi.fn()
-    const onError = vi.fn()
-
-    captureScreenshot(webContents as never, { format: 'png' }, onResult, onError)
-    await vi.advanceTimersByTimeAsync(8000)
-
-    expect(onResult).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith(
-      'Screenshot timed out — the browser tab may not be visible or the window may not have focus.'
-    )
-  })
-
-  it('reports the original timeout when fallback encoding fails', async () => {
-    vi.useFakeTimers()
-
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation(() => new Promise(() => {}))
-    webContents.capturePage.mockResolvedValueOnce({
-      isEmpty: () => {
-        throw new Error('native image unavailable')
-      }
-    })
-    const onResult = vi.fn()
-    const onError = vi.fn()
-
-    captureScreenshot(webContents as never, { format: 'png' }, onResult, onError)
-    await vi.advanceTimersByTimeAsync(8000)
-
-    expect(onResult).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith(
-      'Screenshot timed out — the browser tab may not be visible or the window may not have focus.'
-    )
-  })
-
-  it('reports the timeout when both CDP and fallback capture stall', async () => {
-    vi.useFakeTimers()
-
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation(() => new Promise(() => {}))
-    webContents.capturePage.mockImplementation(() => new Promise(() => {}))
-    const onResult = vi.fn()
-    const onError = vi.fn()
-
-    captureScreenshot(webContents as never, { format: 'png' }, onResult, onError)
-    await vi.advanceTimersByTimeAsync(8000)
-
-    expect(webContents.capturePage).toHaveBeenCalledTimes(1)
-    expect(onResult).not.toHaveBeenCalled()
-    expect(onError).not.toHaveBeenCalled()
-
-    await vi.advanceTimersByTimeAsync(1000)
-
-    expect(onError).toHaveBeenCalledWith(
-      'Screenshot timed out — the browser tab may not be visible or the window may not have focus.'
-    )
-  })
-})
-
-describe('captureFullPageScreenshot', () => {
-  it('uses cssContentSize so HiDPI pages are captured at the real page size', async () => {
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation((method: string) => {
-      if (method === 'Page.getLayoutMetrics') {
-        return Promise.resolve({
-          cssContentSize: { width: 640.25, height: 1280.75 },
-          contentSize: { width: 1280.5, height: 2561.5 }
-        })
-      }
-      if (method === 'Page.captureScreenshot') {
-        return Promise.resolve({ data: 'full-page-data' })
-      }
-      return Promise.resolve({})
-    })
-
-    await expect(captureFullPageScreenshot(webContents as never, 'png')).resolves.toEqual({
-      data: 'full-page-data',
-      format: 'png'
-    })
-    expect(webContents.debugger.sendCommand).toHaveBeenNthCalledWith(1, 'Page.getLayoutMetrics', {})
-    expect(webContents.debugger.sendCommand).toHaveBeenNthCalledWith(2, 'Page.captureScreenshot', {
-      format: 'png',
-      captureBeyondViewport: true,
-      clip: { x: 0, y: 0, width: 641, height: 1281, scale: 1 }
-    })
-  })
-
-  it('falls back to legacy contentSize when cssContentSize is unavailable', async () => {
-    const webContents = createMockWebContents()
-    webContents.debugger.sendCommand.mockImplementation((method: string) => {
-      if (method === 'Page.getLayoutMetrics') {
-        return Promise.resolve({
-          contentSize: { width: 800, height: 1600 }
-        })
-      }
-      if (method === 'Page.captureScreenshot') {
-        return Promise.resolve({ data: 'legacy-full-page-data' })
-      }
-      return Promise.resolve({})
-    })
-
-    await expect(captureFullPageScreenshot(webContents as never, 'jpeg')).resolves.toEqual({
-      data: 'legacy-full-page-data',
-      format: 'jpeg'
-    })
-    expect(webContents.debugger.sendCommand).toHaveBeenNthCalledWith(2, 'Page.captureScreenshot', {
-      format: 'jpeg',
-      captureBeyondViewport: true,
-      clip: { x: 0, y: 0, width: 800, height: 1600, scale: 1 }
-    })
+    await expect(capture).rejects.toThrow(REFUSED)
+    expect(webContents.debugger.sendCommand).toHaveBeenCalledTimes(1)
+    expect(webContents.capturePage).not.toHaveBeenCalled()
   })
 })

@@ -68,6 +68,7 @@ export async function initializeReadyFoundation(): Promise<void> {
       callback,
       session.defaultSession
     )
+    handleBrowserGuestLogin(event, webContents, details, authInfo, callback)
   })
   const canonicalUserDataPath = getCanonicalUserDataPath()
   installMainThreadHangWatchdog({ userDataPath: canonicalUserDataPath })
@@ -293,10 +294,21 @@ export async function initializeReadyFoundation(): Promise<void> {
       return currentStore.getSshTargets().map((target) => target.id)
     }
   })
+  browserSiteDisplayController.followZoomSettings(store)
+  browserManager.setSiteDisplayController(browserSiteDisplayController)
   try {
     // Why: awaited here so the first guest navigation cannot race the installer's fire-and-forget write.
     await applyBrowserSessionProxies(browserSessionRegistry.listProfiles(), store.getSettings())
   } catch {
     console.warn('[proxy] Failed to apply network proxy settings to browser sessions')
   }
+  await whenBrowserExtensionSessionsLoaded(3_000)
 }
+
+import { handleBrowserGuestLogin } from '../browser/guest-lifecycle/prompts/browser-http-auth-prompt'
+
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
+
+import { browserSiteDisplayController } from '../browser/site-settings/display/browser-site-display-controller'
+
+import { whenBrowserExtensionSessionsLoaded } from '../browser/extensions/profile-sessions/browser-extension-session-loader'

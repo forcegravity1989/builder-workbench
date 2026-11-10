@@ -1,6 +1,11 @@
+import { mkdtempSync, readFileSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { KnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
+import type {
+  KnownRuntimeEnvironment,
+  OrcadDeploymentLink
+} from '../../../../shared/runtime-environments'
 
 vi.mock('electron', () => ({
   app: { getPath: () => tmpdir() },
@@ -40,15 +45,32 @@ vi.mock('./paired-runtime-browser-client-host-composition', () => ({
   }
 }))
 
+import { deriveBrowserRoutePartition } from '../../routing/partitions/browser-route-identity'
+import { BrowserRoutePartitionBindingStore } from '../../routing/partitions/browser-route-partition-binding-store'
+import { resolveBrowserRoutePartitionBinding } from '../../routing/partitions/browser-route-partition-migration'
 import {
   configurePairedRuntimeBrowserClientHostsForOrcaProfile,
   getPairedRuntimeBrowserClientRouteIdentity,
-  startPairedRuntimeBrowserClientHost
+  startPairedRuntimeBrowserClientHost,
+  type ClientHostRouteIdentity
 } from './paired-runtime-browser-client-host-runtime'
+
+const SSH_DEPLOYMENT: OrcadDeploymentLink = {
+  sshTargetId: 'target-a',
+  sshTargetGeneration: 1,
+  localPort: 9999,
+  remotePort: 7777
+}
 
 function pairedEnvironment(
   id: string,
-  overrides: { pairingRevision?: number; publicKeyB64?: string } = {}
+  overrides: {
+    pairingRevision?: number
+    publicKeyB64?: string
+    pairedDeviceId?: string
+    deviceToken?: string
+    orcadDeployment?: OrcadDeploymentLink
+  } = {}
 ): KnownRuntimeEnvironment {
   return {
     id,
@@ -60,91 +82,141 @@ function pairedEnvironment(
     ...(overrides.pairingRevision === undefined
       ? {}
       : { pairingRevision: overrides.pairingRevision }),
+    ...(overrides.pairedDeviceId === undefined ? {} : { pairedDeviceId: overrides.pairedDeviceId }),
+    ...(overrides.orcadDeployment === undefined
+      ? {}
+      : { orcadDeployment: overrides.orcadDeployment }),
     preferredEndpointId: 'endpoint-a',
     endpoints: [
       {
         id: 'endpoint-a',
+        kind: 'websocket',
+        label: 'Endpoint A',
         endpoint: 'ws://127.0.0.1:9999',
-        deviceToken: 'token-a',
+        deviceToken: overrides.deviceToken ?? 'token-a',
         publicKeyB64: overrides.publicKeyB64 ?? 'key-a'
       }
     ]
-  } as KnownRuntimeEnvironment
+  }
 }
 
-/** Authority identity the client host records for `environment` under `authorityRuntimeId`. */
-async function connectionIdentity(
+async function routeIdentity(
   environment: KnownRuntimeEnvironment,
   authorityRuntimeId: string
-): Promise<{ current: string; legacy: string }> {
+): Promise<ClientHostRouteIdentity> {
   await startPairedRuntimeBrowserClientHost({ environment, authorityRuntimeId })
   const identity = getPairedRuntimeBrowserClientRouteIdentity(environment.id)
   if (!identity) {
     throw new Error('missing route identity')
   }
+  return identity
+}
+
+function pageIdentity(
+  identity: ClientHostRouteIdentity,
+  authorityConnectionIdentity: string,
+  executionHostIdentity: string
+) {
   return {
-    current: identity.authorityConnectionIdentity,
-    legacy: identity.legacyAuthorityConnectionIdentity
+    orcaProfileId: identity.orcaProfileId,
+    browserProfileId: 'default',
+    authorityConnectionIdentity,
+    executionHostIdentity
   }
+}
+
+function resolvePartition(filePath: string, identity: ClientHostRouteIdentity): string {
+  const store = new BrowserRoutePartitionBindingStore({ filePath })
+  const derived = resolveBrowserRoutePartitionBinding({
+    bindings: store,
+    identity: pageIdentity(
+      identity,
+      identity.authorityConnectionIdentity,
+      identity.executionHostIdentity
+    ),
+    compatibleIdentity: pageIdentity(
+      identity,
+      identity.pairingAuthorityConnectionIdentity,
+      identity.executionHostIdentity
+    ),
+    legacyIdentity: pageIdentity(
+      identity,
+      identity.legacyAuthorityConnectionIdentity,
+      identity.legacyExecutionHostIdentity
+    ),
+    storageScope: identity.storageScope
+  })
+  const persisted = store.get(derived.partition)
+  if (persisted === null) {
+    store.set(
+      derived.partition,
+      derived.bindingFingerprint,
+      identity.storageScope,
+      derived.aliasFingerprint
+    )
+  } else if (persisted !== derived.bindingFingerprint) {
+    throw new Error('browser_route_partition_binding_conflict')
+  }
+  return derived.partition
+}
+
+/** Models the pre-alias format: pairing identity and fingerprint only. */
+function resolvePartitionAsOlderBuild(filePath: string, identity: ClientHostRouteIdentity): string {
+  const derived = deriveBrowserRoutePartition(
+    pageIdentity(
+      identity,
+      identity.pairingAuthorityConnectionIdentity,
+      identity.executionHostIdentity
+    )
+  )
+  const persisted: { bindings: Record<string, { fingerprint: string }> } = JSON.parse(
+    readFileSync(filePath, 'utf8')
+  )
+  const bound = Object.entries(persisted.bindings).find(
+    ([, binding]) => binding.fingerprint === derived.bindingFingerprint
+  )
+  if (bound) {
+    return bound[0]
+  }
+  if (persisted.bindings[derived.partition] !== undefined) {
+    throw new Error('browser_route_partition_binding_conflict')
+  }
+  return derived.partition
+}
+
+function bindingStorePath(): string {
+  return join(
+    realpathSync(mkdtempSync(join(realpathSync(tmpdir()), 'orca-re-pair-partition-'))),
+    'bindings.json'
+  )
 }
 
 beforeEach(() => {
   compositions.length = 0
 })
 
-describe('client host authority connection identity', () => {
-  // Why: authorityRuntimeId is a per-process UUID. Hashing it into the current identity is the
-  // regression that minted a fresh partition on every remote restart and logged the user out.
-  it('survives the remote restarting, and keeps the pre-migration identity distinct', async () => {
+describe('client host identity for a server Orca re-pairs in place', () => {
+  it('adopts a per-process jar under the fingerprint an older build reads', async () => {
     configurePairedRuntimeBrowserClientHostsForOrcaProfile({ orcaProfileId: 'profile-a' })
-    const environment = pairedEnvironment('environment-restart')
-
-    const before = await connectionIdentity(environment, 'runtime-a')
-    const after = await connectionIdentity(environment, 'runtime-restarted')
-
-    expect(after.current).toBe(before.current)
-    expect(after.legacy).not.toBe(before.legacy)
-    expect(before.legacy).not.toBe(before.current)
-  })
-
-  // Why: each of these names a different server or a different trust decision, so sharing an
-  // identity would serve one of them the other's cookies.
-  it('separates environments, pairing revisions, and server keys', async () => {
-    configurePairedRuntimeBrowserClientHostsForOrcaProfile({ orcaProfileId: 'profile-a' })
-    const identities = [
-      await connectionIdentity(pairedEnvironment('environment-a'), 'runtime-a'),
-      await connectionIdentity(pairedEnvironment('environment-b'), 'runtime-a'),
-      await connectionIdentity(
-        pairedEnvironment('environment-a', { pairingRevision: 2 }),
-        'runtime-a'
-      ),
-      await connectionIdentity(
-        pairedEnvironment('environment-a', { publicKeyB64: 'key-rotated' }),
-        'runtime-a'
+    const filePath = bindingStorePath()
+    const identity = await routeIdentity(
+      pairedEnvironment('environment-runtime-era', { orcadDeployment: SSH_DEPLOYMENT }),
+      'runtime-a'
+    )
+    const legacy = deriveBrowserRoutePartition(
+      pageIdentity(
+        identity,
+        identity.legacyAuthorityConnectionIdentity,
+        identity.legacyExecutionHostIdentity
       )
-    ]
+    )
+    new BrowserRoutePartitionBindingStore({ filePath }).set(
+      legacy.partition,
+      legacy.bindingFingerprint,
+      identity.storageScope
+    )
 
-    expect(new Set(identities.map((entry) => entry.current)).size).toBe(identities.length)
-  })
-})
-
-describe('client host route identity lifetime', () => {
-  it('stops answering with a route identity once the host is retired by its own error', async () => {
-    configurePairedRuntimeBrowserClientHostsForOrcaProfile({ orcaProfileId: 'profile-a' })
-    const environment = pairedEnvironment('environment-retired')
-    await startPairedRuntimeBrowserClientHost({
-      environment,
-      authorityRuntimeId: 'runtime-a'
-    })
-    expect(getPairedRuntimeBrowserClientRouteIdentity(environment.id)).not.toBeNull()
-
-    const failure = new Error('lease fenced')
-    compositions.at(-1)?.options.onError(failure)
-    await vi.waitFor(() => {
-      expect(compositions.at(-1)?.closed).toEqual([failure])
-    })
-
-    // Why: a cookie import must fall through to the server RPC, not target the dead partition.
-    expect(getPairedRuntimeBrowserClientRouteIdentity(environment.id)).toBeNull()
+    expect(resolvePartition(filePath, identity)).toBe(legacy.partition)
+    expect(resolvePartitionAsOlderBuild(filePath, identity)).toBe(legacy.partition)
   })
 })

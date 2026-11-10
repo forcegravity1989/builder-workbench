@@ -1,3 +1,5 @@
+import { subscribeRuntimeEnvironment } from './runtime-environment-pairing-refresh'
+import { answerBrowserClientHostRequest } from './browser/client-hosting/browser-client-host-request-answer'
 import type {
   RuntimeClientEvent,
   RuntimeClientEventStreamMessage
@@ -19,18 +21,26 @@ export async function subscribeRuntimeClientEvents(
   // lost, not queued. The replay tag on the first post-reconnect response is
   // the renderer's only signal that mirrored event-derived state (e.g. the
   // per-environment SSH bucket) may have missed transitions and must resync.
-  onReplayedAfterReconnect?: () => void
+  onReplayedAfterReconnect?: () => void,
+  options: { hostsBrowserPages: boolean } = { hostsBrowserPages: false }
 ): Promise<RuntimeClientEventSubscription> {
-  const handle = await window.api.runtimeEnvironments.subscribe(
+  const handle = await subscribeRuntimeEnvironment(
     {
       selector: environmentId,
       method: 'runtime.clientEvents.subscribe',
+      ...(options.hostsBrowserPages ? { params: { browserHostRequests: true } } : {}),
       timeoutMs: 15_000,
       expectedEnvironmentPairingRevision: getRuntimeEnvironmentRevision(environmentId)
     },
     {
       onResponse: (response) => {
-        handleRuntimeClientEventResponse(response, onEvent, onError, onReplayedAfterReconnect)
+        handleRuntimeClientEventResponse(
+          environmentId,
+          response,
+          onEvent,
+          onError,
+          onReplayedAfterReconnect
+        )
       },
       onError
     }
@@ -39,6 +49,7 @@ export async function subscribeRuntimeClientEvents(
 }
 
 function handleRuntimeClientEventResponse(
+  environmentId: string,
   response: RuntimeRpcResponse<unknown>,
   onEvent: (event: RuntimeClientEvent) => void,
   onError: (error: unknown) => void,
@@ -66,6 +77,10 @@ function handleRuntimeClientEventResponse(
   if (message.type === 'end') {
     return
   }
+  if (message.type === 'browserHostRequested') {
+    void answerBrowserClientHostRequest(environmentId, message.requestId)
+    return
+  }
   if (message.type === 'sshStateChanged') {
     const state = admitSshConnectionState(message.state, message.targetId)
     if (state) {
@@ -85,6 +100,7 @@ function isRuntimeClientEvent(
 ): message is RuntimeClientEvent {
   return (
     message.type === 'reposChanged' ||
+    message.type === 'browserProfilesChanged' ||
     message.type === 'worktreesChanged' ||
     message.type === 'nativeChatLaunchDraftResolved' ||
     message.type === 'terminalSideEffects' ||

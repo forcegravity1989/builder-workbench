@@ -96,12 +96,3 @@ export function resolveStructuredNativeChatSupport(
   }
   return { supported: true }
 }
-
-/** An explicit per-agent choice wins over the global default surface. */
-export function nativeChatPreferenceFor(
-  settings: NativeChatDefaultSettings | null | undefined,
-  agent: string
-): boolean {
-  const override = settings?.nativeChatProviders?.[agent]
-  return typeof override === 'boolean' ? override : settings?.agentDefaultSurface === 'chat'
-}

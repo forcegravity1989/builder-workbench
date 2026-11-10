@@ -46,12 +46,11 @@ src/main/ai-vault/session-scanner-service-spawn.ts
 src/main/ai-vault/session-scanner-service-test-child.ts
 src/main/app-icon.ts
 src/main/automations/precheck-runner.ts
-src/main/browser/agent-browser-bridge-execution.ts
-src/main/browser/agent-browser-bridge-raw-process.ts
-src/main/browser/agent-browser-bridge-state.ts
-src/main/browser/agent-browser-bridge-types.ts
-src/main/browser/browser-route-egress-electron-launch.ts
-src/main/browser/browser-route-persisted-worker-electron-process.ts
+src/main/browser/agent-browser/helper-process/agent-browser-bridge-execution.ts
+src/main/browser/agent-browser/helper-process/agent-browser-bridge-raw-process.ts
+src/main/browser/agent-browser/session-routing/agent-browser-bridge-state.ts
+src/main/browser/agent-browser/session-lifecycle/agent-browser-session-state.ts
+src/main/browser/network/egress/browser-route-egress-electron-launch.ts
 src/main/codex-accounts/legacy-wsl-runtime-auth-drain-recovery-script-harness.ts
 src/main/codex-accounts/legacy-wsl-runtime-auth-drain-script-harness.ts
 src/main/codex-accounts/legacy-wsl-runtime-auth-drain-script-interference-shims.ts
@@ -183,3 +182,6 @@ src/shared/process-table-snapshot-reader.ts
 src/shared/pty-slave-line-discipline-echo.ts
 src/shared/ripgrep-process-availability.ts
 src/shared/shell-process-readiness.ts
+
+# Existing BW relay owner uses promisified execFile with explicit windowsHide.
+src/relay/workbench/fixed-workspace-handler.ts

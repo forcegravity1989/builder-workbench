@@ -53,7 +53,7 @@ function createHarness() {
   }
 
   const routeSessions = new BrowserRouteSessionRegistry({
-    // Storage identity, not the route key, names the partition: it survives an SSH reconnect.
+    // Storage identity survives SSH reconnects; route keys do not.
     derivePartition: (identity) => ({
       partition: `persist:${identity.executionHostIdentity}`,
       bindingFingerprint: `${identity.executionHostIdentity}`.padEnd(64, 'f')
@@ -69,6 +69,7 @@ function createHarness() {
   const dependencies = {
     orcaProfileId: 'orca-profile-a',
     authorityConnectionIdentity: 'authority-record-a',
+    pairingAuthorityConnectionIdentity: 'pairing-authority-record-a',
     legacyAuthorityConnectionIdentity: 'legacy-authority-record-a',
     storageScope: 'a'.repeat(64),
     retainNetworkRoute: vi.fn(async (executionHostKey: string) => ({

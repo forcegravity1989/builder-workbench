@@ -5,7 +5,7 @@ import {
   resolveContinuedRuntimeEnvironmentRevision
 } from '../../runtime-environment-revision'
 import { getEnvironmentSshTargetConnectionGeneration } from '../../../store/slices/runtime-environment-ssh'
-import { getLocalSshTargetConnectionGeneration } from '../../../store/slices/ssh/create-ssh-slice'
+import { getLocalSshTargetConnectionGeneration } from '../../../store/slices/ssh'
 import { getRuntimeEnvironmentConnectionGeneration } from '../../../store/slices/runtime-status-connection-generation'
 
 /** Fence by pairing/runtime incarnation and SSH target generation, not unrelated catalog/connection churn. */

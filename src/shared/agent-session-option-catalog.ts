@@ -93,11 +93,3 @@ export function mergeDiscoveredAuthoritativeModels(
 export function sessionOptionValueIsValid(value: unknown): value is SessionOptionValue {
   return typeof value === 'string' || typeof value === 'boolean'
 }
-
-import { OPENCODE_LAUNCH_OPTION_CATALOG } from './agent-session/options/agent-session-option-catalog-opencode'
-
-export function getAgentSessionOptionLaunchCatalog(
-  agent: AgentType
-): AgentSessionOptionCatalog | null {
-  return agent === 'opencode' ? OPENCODE_LAUNCH_OPTION_CATALOG : getAgentSessionOptionCatalog(agent)
-}

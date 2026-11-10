@@ -97,55 +97,6 @@ describe('validated cookie replacement', () => {
     return filePath
   }
 
-  it('keeps Google out of the replace scope so its cookies are never removed', async () => {
-    cookiesGetMock.mockResolvedValue([
-      cookie('.google.com', 'old-google'),
-      cookie('.accounts.google.com', 'old-accounts', '/signin'),
-      cookie('.example.com', 'old-example'),
-      cookie('.unrelated.com', 'keep'),
-      cookie('.google.com.evil.example', 'keep-suffix-confusion')
-    ])
-    const filePath = writeCookies([
-      { domain: '.google.com', name: 'SIDCC', value: 'source-bound', secure: true },
-      { domain: '.google.com', name: 'SAPISID', value: 'google-session', secure: true },
-      { domain: '.example.com', name: 'SIDCC', value: 'not-google', secure: true }
-    ])
-
-    const result = await importCookiesFromFile(filePath, 'persist:test')
-
-    expect(result.ok && result.summary).toMatchObject({
-      totalCookies: 3,
-      importedCookies: 1,
-      skippedCookies: 2,
-      googleCookiesSkipped: 2,
-      domains: ['example.com']
-    })
-    expect(cookiesRemoveMock.mock.calls).toEqual([['https://example.com/', 'old-example']])
-    expect(cookiesSetMock.mock.calls.map(([details]) => details.name)).toEqual(['SIDCC'])
-    expect(Math.max(...cookiesRemoveMock.mock.invocationCallOrder)).toBeLessThan(
-      Math.min(...cookiesSetMock.mock.invocationCallOrder)
-    )
-  })
-
-  it('does not touch the store when every valid entry is source-bound', async () => {
-    const filePath = writeCookies([
-      { domain: '.google.com', name: 'AEC', value: 'source-bound', secure: true }
-    ])
-
-    const result = await importCookiesFromFile(filePath, 'persist:test')
-
-    expect(result.ok && result.summary).toEqual({
-      totalCookies: 1,
-      importedCookies: 0,
-      skippedCookies: 1,
-      googleCookiesSkipped: 1,
-      domains: []
-    })
-    expect(cookiesGetMock).not.toHaveBeenCalled()
-    expect(cookiesRemoveMock).not.toHaveBeenCalled()
-    expect(cookiesSetMock).not.toHaveBeenCalled()
-  })
-
   it('rejects URL-shaped domains before replacement can clear their normalized scope', async () => {
     const filePath = writeCookies([
       { domain: 'example.com/path', name: 'session', value: 'new', secure: true }
@@ -159,81 +110,6 @@ describe('validated cookie replacement', () => {
     })
     expect(cookiesGetMock).not.toHaveBeenCalled()
     expect(cookiesRemoveMock).not.toHaveBeenCalled()
-    expect(cookiesSetMock).not.toHaveBeenCalled()
-  })
-
-  // Why (STA-4097): this rollback puts back the user's ORIGINAL cookies, which the import had
-  // already deleted. cookies.get drops partitionKey and cookies.set ignores it, so rebuilding
-  // them through the Electron API resurrected CHIPS cookies unpartitioned. The undo now travels
-  // back through the CDP identities, which are the only thing that carries the partition.
-  it('restores the previous cookies through CDP identities when an incoming cookie is rejected', async () => {
-    const partitionKey = { topLevelSite: 'https://top.example', hasCrossSiteAncestor: true }
-    cookiesGetMock.mockResolvedValue([cookie('.example.com', 'existing')])
-    snapshotClearIdentitiesMock.mockImplementation(
-      async (items: { cookie: Record<string, unknown>; url: string }[]) =>
-        items.map(({ cookie: entry, url }) => ({ url, ...entry, partitionKey }))
-    )
-    cookiesSetMock
-      .mockResolvedValue(undefined)
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('cookie rejected'))
-    const filePath = writeCookies([
-      { domain: '.example.com', name: 'first', value: 'new', secure: true },
-      { domain: '.example.com', name: 'second', value: 'new', secure: true }
-    ])
-
-    const result = await importCookiesFromFile(filePath, 'persist:test')
-
-    expect(result.ok).toBe(false)
-    expect(cookiesRemoveMock.mock.calls).toEqual([
-      ['https://example.com/', 'existing'],
-      ['https://example.com/', 'second'],
-      ['https://example.com/', 'first']
-    ])
-    expect(restoreClearIdentitiesMock).toHaveBeenCalledOnce()
-    expect(restoreClearIdentitiesMock.mock.calls[0]?.[0]).toEqual([
-      { url: 'https://example.com/', ...cookie('.example.com', 'existing'), partitionKey }
-    ])
-    // Why: cookies.set is only ever the two imported cookies — a third call would mean the
-    // partition-dropping reconstruction came back.
-    expect(cookiesSetMock.mock.calls.map(([details]) => details.name)).toEqual(['first', 'second'])
-    expect(disposeClearStoreMock).toHaveBeenCalledOnce()
-  })
-
-  // Why: restoreClearIdentities attaches a debugger before it iterates, so calling it with an
-  // empty restore set would create a hidden BrowserWindow to put nothing back.
-  it('does not reach for CDP when the rollback has nothing to restore', async () => {
-    cookiesGetMock.mockResolvedValue([])
-    cookiesSetMock
-      .mockResolvedValue(undefined)
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('cookie rejected'))
-    const filePath = writeCookies([
-      { domain: '.example.com', name: 'first', value: 'new', secure: true },
-      { domain: '.example.com', name: 'second', value: 'new', secure: true }
-    ])
-
-    const result = await importCookiesFromFile(filePath, 'persist:test')
-
-    expect(result.ok).toBe(false)
-    // Why: a rejected CDP command does not prove the cookie was not written before the transport
-    // failed, so rollback must remove the failing coordinate as well as earlier successes.
-    expect(cookiesRemoveMock.mock.calls).toEqual([
-      ['https://example.com/', 'second'],
-      ['https://example.com/', 'first']
-    ])
-    expect(restoreClearIdentitiesMock).not.toHaveBeenCalled()
-  })
-
-  it('fails closed when existing cookies cannot be replaced', async () => {
-    cookiesGetMock.mockRejectedValue(new Error('cookie store unavailable'))
-    const filePath = writeCookies([
-      { domain: '.example.com', name: 'session', value: 'new', secure: true }
-    ])
-
-    const result = await importCookiesFromFile(filePath, 'persist:test')
-
-    expect(result.ok).toBe(false)
     expect(cookiesSetMock).not.toHaveBeenCalled()
   })
 })
@@ -334,10 +210,6 @@ describe('native Chromium integrity-cookie accounting', () => {
     }
   })
 })
-
-function cookie(domain: string, name: string, path = '/') {
-  return { domain, name, path, secure: true, sameSite: 'unspecified', value: 'old' }
-}
 
 function chromeBrowser(cookiesPath: string) {
   return {

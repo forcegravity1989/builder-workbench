@@ -95,8 +95,8 @@ export function buildQuickComposerStartup(input: QuickComposerStartupInput): Qui
   const { agent, draftPrompt, prompt, settings } = input
   const launchInputs = input.hostStartup?.inputs ?? {
     cmdOverrides: settings?.agentCmdOverrides ?? {},
-    agentArgs: agent ? resolveTuiAgentLaunchArgs(agent, settings) : undefined,
-    agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings) : undefined,
+    agentArgs: agent ? resolveTuiAgentLaunchArgs(agent, settings?.agentDefaultArgs) : undefined,
+    agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings?.agentDefaultEnv) : undefined,
     platform: input.platform,
     shell: input.shell ?? undefined,
     isRemote: input.isRemote

@@ -51,7 +51,7 @@ export function projectAgentLaunchSettings(
     environmentNames: Object.fromEntries(
       (Object.keys(TUI_AGENT_CONFIG) as TuiAgent[]).map((agent) => [
         agent,
-        Object.keys(resolveTuiAgentLaunchEnv(agent, settings)).sort()
+        Object.keys(resolveTuiAgentLaunchEnv(agent, settings.agentDefaultEnv)).sort()
       ])
     ),
     permissionMode: resolveAgentPermissionModeSummary(settings)
@@ -99,7 +99,7 @@ export function agentLaunchSettingsMutationUpdates(
       }
     case 'environment-set':
     case 'environment-remove': {
-      const env = { ...resolveTuiAgentLaunchEnv(mutation.agent, settings) }
+      const env = { ...resolveTuiAgentLaunchEnv(mutation.agent, settings.agentDefaultEnv) }
       for (const name of Object.keys(env)) {
         if (
           name === mutation.name ||

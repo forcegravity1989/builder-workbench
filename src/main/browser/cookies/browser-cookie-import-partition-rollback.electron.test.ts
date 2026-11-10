@@ -147,9 +147,9 @@ async function runFixture(): Promise<FixtureResult> {
   writeFileSync(
     bundleEntryPath,
     [
-      `export { openCookieClearStore } from ${JSON.stringify(join(process.cwd(), 'src/main/browser/browser-cookie-clear-store.ts'))}`,
-      `export { removeTransplantableCookies } from ${JSON.stringify(join(process.cwd(), 'src/main/browser/browser-cookie-import-clear.ts'))}`,
-      `export { importedDomainScope } from ${JSON.stringify(join(process.cwd(), 'src/main/browser/browser-cookie-import-policy.ts'))}`
+      `export { openCookieClearStore } from ${JSON.stringify(join(process.cwd(), 'src/main/browser/cookies/browser-cookie-clear-store.ts'))}`,
+      `export { removeTransplantableCookies } from ${JSON.stringify(join(process.cwd(), 'src/main/browser/cookies/browser-cookie-import-clear.ts'))}`,
+      `export { importedDomainScope } from ${JSON.stringify(join(process.cwd(), 'src/main/browser/cookies/policy/cookie-import-scope.ts'))}`
     ].join('\n')
   )
   await buildVite({
@@ -187,8 +187,6 @@ async function runFixture(): Promise<FixtureResult> {
 }
 
 describe('non-Google partitioned cookie under a failed Electron cookie clear', () => {
-  // Why (STA-4090): a later fallback rejection must not permanently drop cookies already
-  // removed in the same clear — including CHIPS cookies cookies.set() cannot round-trip.
   it('keeps already-removed CHIPS and ordinary cookies after a later removal rejects', async () => {
     const result = await runFixture()
 

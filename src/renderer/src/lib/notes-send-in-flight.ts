@@ -3,7 +3,7 @@ import {
   type DiffCommentOwner
 } from '@/store/slices/diff-comments/diff-comment-owner'
 import { useAppViewExternalStore } from '@/store/retained-views/app-state-view'
-import type { DiffCommentDeliverySnapshot } from '@/store/slices/diff-comments/create-diff-comments-slice'
+import type { DiffCommentDeliverySnapshot } from '@/store/slices/diffComments'
 
 // Hold submitted notes out of later sends until delivery settles; restore on failure and let the owner remove delivered notes.
 const holds = new Map<unknown, number>()

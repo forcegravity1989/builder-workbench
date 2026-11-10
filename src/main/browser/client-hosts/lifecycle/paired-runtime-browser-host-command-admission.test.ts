@@ -1,5 +1,6 @@
+import { pairedRuntimeConnectionFromOffer } from '../../../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { PairingOffer } from '../../../../shared/pairing'
+import type { PairingOffer } from '../../../../shared/mobile-relay-pairing-offer'
 import type {
   RemoteRuntimeSubscription,
   RemoteRuntimeSubscriptionCallbacks
@@ -172,7 +173,6 @@ describe('paired runtime browser host command admission', () => {
     })
     await starting
 
-    // Why: the refresh is a deliberate transport failure, which without reconnect fences every page.
     await expect(lease.refreshPageInventory()).rejects.toThrow(
       'Browser host inventory refresh is unavailable'
     )
@@ -185,7 +185,7 @@ function createLease(
   overrides: Partial<PairedRuntimeBrowserHostLeaseOptions> = {}
 ): PairedRuntimeBrowserHostLease {
   return new PairedRuntimeBrowserHostLease({
-    pairing,
+    connection: pairedRuntimeConnectionFromOffer(pairing),
     authorityRuntimeId: 'runtime-a',
     browserHostClientId: 'host-a',
     hostCapabilities: ['webview'],

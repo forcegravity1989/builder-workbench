@@ -134,7 +134,7 @@ import {
 } from './browser-params'
 import { ScreencastAck, ScreencastUnsubscribe } from './browser-screencast-params'
 import { BrowserOpenUrlParams, BrowserTabCreateParams } from './browser-tab-create-params'
-import { ClientEventsUnsubscribeParams } from './client-events-params'
+import { ClientEventsSubscribeParams, ClientEventsUnsubscribeParams } from './client-events-params'
 import {
   NativeChatSessionOptionsMutation,
   PRBotAuthorOverrideUpdate,
@@ -1145,7 +1145,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'repo.sparsePresets': RepoSelector,
   'repo.update': RepoUpdate,
   'runtime.clientCapabilities.update': ClientCapabilitiesUpdate,
-  'runtime.clientEvents.subscribe': null,
+  'runtime.clientEvents.subscribe': ClientEventsSubscribeParams,
   'runtime.clientEvents.unsubscribe': ClientEventsUnsubscribeParams,
   'session.tabs.activate': ActivateTab,
   'session.tabs.close': CloseTab,

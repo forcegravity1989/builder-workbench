@@ -131,7 +131,7 @@ git rev-parse 'v1.4.251^{commit}'
 
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
-- 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。共享主机恢复复核另按上述 v1.4.251 补入导航取消未完成截图及旧快照回写的约束，仍沿用本仓文档失效时清除批注的行为；不因此迁入批注留存改造或远程实时批注。
+- 网页批注随 §0.6 的浏览器模块采用 Orca v1.4.255。原生批注与远程页面同步复用同一宿主身份和生命周期；不再保留旧的 BW 内层滚动标记实现。浏览器唯一行为定制为 §0.6 所述的不受信任证书显式继续访问。
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。

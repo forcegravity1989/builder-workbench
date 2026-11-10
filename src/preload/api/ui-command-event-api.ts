@@ -76,17 +76,7 @@ export type UiCommandEventApi = {
   onNewBrowserTab: (callback: () => void) => () => void
   onNewMarkdownTab: (callback: () => void) => () => void
   onNewSimulatorTab: (callback: () => void) => () => void
-  onRequestTabCreate: (
-    callback: (data: {
-      requestId: string
-      url: string
-      worktreeId?: string
-      browserPageId?: string
-      sessionProfileId?: string | null
-      sessionPartition?: string
-      activate?: boolean
-    }) => void
-  ) => () => void
+  onRequestTabCreate: (callback: (data: BrowserTabCreateRequest) => void) => () => void
   replyTabCreate: (reply: { requestId: string; browserPageId?: string; error?: string }) => void
   onRequestTabSetProfile: (
     callback: (data: {
@@ -106,15 +96,17 @@ export type UiCommandEventApi = {
     code?: 'browser_tab_not_found'
   }) => void
   onNewTerminalTab: (callback: () => void) => () => void
-  onFocusBrowserAddressBar: (callback: () => void) => () => void
+  onFocusBrowserAddressBar: (callback: (target: BrowserPageCommandTarget) => void) => () => void
   onFindInBrowserPage: (source: BrowserFindSource, callback: () => void) => () => void
-  onReloadBrowserPage: (callback: () => void) => () => void
-  onBrowserHistoryNavigate: (callback: (direction: 'back' | 'forward') => void) => () => void
-  onZoomBrowserPage: (callback: (direction: 'in' | 'out' | 'reset') => void) => () => void
+  onReloadBrowserPage: (callback: (target: BrowserPageCommandTarget) => void) => () => void
+  onBrowserHistoryNavigate: (
+    callback: (command: BrowserHistoryNavigateCommand) => void
+  ) => () => void
+  onZoomBrowserPage: (callback: (command: BrowserPageZoomCommand) => void) => () => void
   onScrollBrowserPage?: (
     callback: (event: { browserPageId: string; deltaX: number; deltaY: number }) => void
   ) => () => void
-  onHardReloadBrowserPage: (callback: () => void) => () => void
+  onHardReloadBrowserPage: (callback: (target: BrowserPageCommandTarget) => void) => () => void
   onCloseActiveTab: (callback: (payload?: CloseActiveTabPayload) => void) => () => void
   onCloseFloatingItem: (callback: (payload: { sourceId: string }) => void) => () => void
   onSelectFloatingIndex: (callback: (payload: { index: number }) => void) => () => void
@@ -231,4 +223,27 @@ export type UiCommandEventApi = {
   onResumeSleepingAgents: (callback: (data: { worktreeId: string }) => void) => () => void
   onTerminalZoom: (callback: (direction: 'in' | 'out' | 'reset') => void) => () => void
   onSystemResumed: (callback: () => void) => () => void
+  onBrowserPagePointerDown: (callback: (target: BrowserPageCommandTarget) => void) => () => void
+  onShowBrowserHistory: (callback: (target: BrowserPageCommandTarget) => void) => () => void
+  onBrowserPageTabShortcut: (callback: (input: BrowserPageTabShortcut) => void) => () => void
+  replyRemoteCliBrowserScope: (reply: RemoteCliBrowserScopeReply) => void
+  onRequestRemoteCliBrowserScope: (
+    callback: (data: RemoteCliBrowserScopeQuery) => void
+  ) => () => void
+  browserTabRequestsReady: () => void
 }
+
+import type { BrowserTabCreateRequest } from '../../shared/browser-tab-create-request'
+
+import type {
+  BrowserHistoryNavigateCommand,
+  BrowserPageCommandTarget,
+  BrowserPageTabShortcut
+} from '../../shared/browser-page-command-target'
+
+import type { BrowserPageZoomCommand } from '../../shared/browser-page-zoom'
+
+import type {
+  RemoteCliBrowserScopeQuery,
+  RemoteCliBrowserScopeReply
+} from '../../shared/desktop-browser-bridge-protocol'

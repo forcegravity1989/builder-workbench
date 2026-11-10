@@ -93,6 +93,9 @@ jobs:
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: node
+          cache-electron-package: 'true'
+      - name: Install Electron for browser wire probes
+        run: node node_modules/electron/install.js
       - name: Check browser, password, process and host protocols
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts

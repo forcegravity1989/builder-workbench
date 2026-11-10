@@ -28,6 +28,7 @@ export type RuntimeNotifier = {
   worktreesChanged(repoId: string, renamed?: { oldWorktreeId: string; newWorktreeId: string }): void
   worktreeBaseStatus?(event: WorktreeBaseStatusEvent): void
   worktreeRemoteBranchConflict?(event: WorktreeRemoteBranchConflictEvent): void
+  browserProfilesChanged?(): void
   reposChanged(): void
   activateWorktree(
     repoId: string,

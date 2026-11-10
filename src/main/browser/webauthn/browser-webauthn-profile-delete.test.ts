@@ -23,6 +23,9 @@ vi.mock('electron', () => ({
   webContents: { fromFrame: fromFrameMock }
 }))
 
+vi.mock('../../browser-passwords/browser-password-vaults', () => ({
+  forgetBrowserPasswordVault: () => true
+}))
 vi.mock('../guest-lifecycle/manager/browser-manager', () => ({
   browserManager: {
     getRendererContextForGuest: getRendererContextForGuestMock,
@@ -31,6 +34,16 @@ vi.mock('../guest-lifecycle/manager/browser-manager', () => ({
     notifyPermissionDenied: vi.fn(),
     removeCertificateRequestGuard: vi.fn()
   }
+}))
+
+// Extension loading and cleanup have their own tests (browser-extension-session-loader.test.ts).
+vi.mock('../extensions/profile-sessions/browser-extension-session-loader', () => ({
+  attachBrowserExtensionsToProfileSession: () => {},
+  detachBrowserExtensionsFromProfileSession: async () => {}
+}))
+
+vi.mock('../identity/browser-process-user-agent', () => ({
+  getBrowserProcessUserAgentIdentity: () => ({ mode: 'clean', userAgent: 'Mozilla/5.0 Test' })
 }))
 
 import { browserSessionRegistry } from '../sessions/profiles/browser-session-registry'
@@ -42,6 +55,7 @@ import {
 type MockSession = Electron.Session & EventEmitter
 
 function mockSession(): MockSession {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: this focused Electron Session double implements every member the exercised policy and WebAuthn paths read.
   return Object.assign(new EventEmitter(), {
     clearCache: vi.fn().mockResolvedValue(undefined),
     clearStorageData: vi.fn().mockResolvedValue(undefined),
@@ -49,6 +63,7 @@ function mockSession(): MockSession {
     setDisplayMediaRequestHandler: vi.fn(),
     setPermissionCheckHandler: vi.fn(),
     setPermissionRequestHandler: vi.fn(),
+    setUserAgent: vi.fn(),
     webRequest: { onBeforeSendHeaders: vi.fn() }
   }) as unknown as MockSession
 }

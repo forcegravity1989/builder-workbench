@@ -249,7 +249,7 @@ it('accepts string stdin with text output capture', () => {
     input,
     timeoutMs: 5_000
   })
-  expect(result.exitCode).toBe(0)
+  expect(result.code).toBe(0)
   expect(result.stdout).toBe(input + Buffer.from([0, 255]).toString('utf8'))
   expect(result.stderr).toBe('diagnostic λ')
   expect(result.outputTruncated).toBe(false)

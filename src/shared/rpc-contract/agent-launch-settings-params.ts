@@ -28,27 +28,3 @@ export const AgentLaunchSettingsMutation = z.discriminatedUnion('type', [
   z.object({ type: z.literal('environment-set'), agent: Agent, name: Name, value: Value }).strict(),
   z.object({ type: z.literal('environment-remove'), agent: Agent, name: Name }).strict()
 ])
-
-import { AGENT_PERMISSION_CHOICES } from '../agent-launch/permissions/tui-agent-permission-choice'
-
-const ChoiceValue = z
-  .string()
-  .min(1)
-  .max(512)
-  .refine((value) => !value.includes('\0'))
-
-export const OptionKey = ChoiceValue.refine(
-  (key) =>
-    !['__proto__', 'constructor', 'prototype', 'agentId', 'model', 'permissionMode'].includes(key)
-)
-
-export const ChoicePatch = z
-  .object({
-    model: ChoiceValue.nullable().optional(),
-    options: z
-      .record(OptionKey, ChoiceValue.nullable())
-      .refine((value) => Object.keys(value).length <= 32)
-      .optional(),
-    permissionMode: z.enum([...AGENT_PERMISSION_CHOICES, 'default']).optional()
-  })
-  .strict()

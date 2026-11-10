@@ -1,4 +1,6 @@
-import { vi, type Mock } from 'vitest'
+import { EventEmitter } from 'node:events'
+import { vi } from 'vitest'
+import type { Mock } from 'vitest'
 import type { AgentBrowserBridge } from '../agent-browser-bridge'
 import type { BrowserManager } from '../../guest-lifecycle/manager/browser-manager'
 
@@ -17,6 +19,7 @@ export function mockBrowserManager(
   worktrees = new Map<string, string>(),
   overrides: Partial<BrowserManager> = {}
 ): BrowserManager {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Bridge tests supply only the BrowserManager methods they exercise.
   return {
     getWebContentsIdByTabId: () => tabs,
     getTabIdForWebContentsId: (webContentsId: number) => {
@@ -28,17 +31,31 @@ export function mockBrowserManager(
       return null
     },
     getWorktreeIdForTab: (tabId: string) => worktrees.get(tabId),
+    getPopupPages: () => [],
     getGuestWebContentsId: vi.fn(() => null),
+    getSessionProfileIdForTab: vi.fn(() => null),
     getBrowserPageLoadError: vi.fn(() => null),
     getBrowserPageCertificateFailure: vi.fn(() => null),
     unregisterGuest: vi.fn(),
-    ensureWebviewVisible: vi.fn(async () => () => {}),
-    acquireAutomationVisibility: vi.fn(async () => () => {}),
+    holdPaintForCapture: () => () => {},
+    holdGuestActive: () => () => {},
+    showAgentViewportInPane: () => {},
+    beginAgentCommand: () => ({
+      agent: false,
+      run: (execute: () => Promise<unknown>) => execute(),
+      end: () => {}
+    }),
+    showAgentPointer: async () => {},
+    creditPageInput: () => {},
+    runPageCommand: (_pageId: string, _caller: unknown, execute: () => Promise<unknown>) =>
+      execute(),
+    isAgentUsingPage: () => false,
+    handOverAgentActivity: () => {},
     ...overrides
   } as unknown as BrowserManager
 }
 
-type MockEmitterListener = (...args: never[]) => void
+type MockEmitterListener = (...args: any[]) => void
 
 export type MockWebContentsDebugger = {
   isAttached: Mock<() => boolean>
@@ -58,8 +75,13 @@ export type MockWebContents = {
   on: Mock<(event: string, listener: MockEmitterListener) => void>
   removeListener: Mock<(event: string, listener: MockEmitterListener) => void>
   isDestroyed: () => boolean
+  isCrashed: () => boolean
   invalidate: Mock<() => void>
   focus: Mock<() => void>
+  // Offscreen by default; use 'webview' for guest-direct key input.
+  getType: Mock<() => string>
+  sendInputEvent: Mock<(event: Electron.KeyboardInputEvent) => void>
+  setIgnoreMenuShortcuts: Mock<(ignore: boolean) => void>
   debugger: MockWebContentsDebugger
 }
 
@@ -80,8 +102,12 @@ export function mockWebContents(
     on: vi.fn(),
     removeListener: vi.fn(),
     isDestroyed: () => false,
+    isCrashed: () => false,
     invalidate: vi.fn(),
     focus: vi.fn(),
+    getType: vi.fn(() => 'window'),
+    sendInputEvent: vi.fn(),
+    setIgnoreMenuShortcuts: vi.fn(),
     debugger: {
       isAttached: vi.fn(() => true),
       attach: vi.fn(),
@@ -93,13 +119,11 @@ export function mockWebContents(
   }
 }
 
-// Why: the bridge resolves webContents via dynamic require('electron').webContents.fromId
-// inside a try/catch. Override the private method to inject our mock.
+// Dynamic require('electron') bypasses the module mock; override the protected lookup.
 export function overrideBridgeWebContentsLookup(
   bridgePrototype: AgentBrowserBridge,
   webContentsFromIdMock: Mock
 ): void {
-  // Why defineProperty: getWebContents is protected, so a typed assignment is not expressible.
   Object.defineProperty(bridgePrototype, 'getWebContents', {
     configurable: true,
     enumerable: true,
@@ -111,14 +135,96 @@ export function overrideBridgeWebContentsLookup(
   })
 }
 
+// Raw-process execution subscribes to the child's exit event.
+export function createFakeAgentBrowserChild<T extends object>(fields: T): EventEmitter & T {
+  return Object.assign(new EventEmitter(), fields)
+}
+
+/** The agent-browser command a spawn ran: batch commands arrive on stdin, raw CLI tokens in argv. */
+export function agentBrowserCommandOf(
+  args: readonly string[],
+  stdin?: string | Uint8Array
+): string[] {
+  if (stdin !== undefined && args.includes('batch')) {
+    const [command]: string[][] = JSON.parse(
+      typeof stdin === 'string' ? stdin : Buffer.from(stdin).toString('utf8')
+    )
+    return command
+  }
+  let start = 0
+  while (args[start]?.startsWith('--')) {
+    start += 2
+  }
+  return args.slice(start).filter((arg) => arg !== '--json')
+}
+
+export function agentBrowserCommandsIn(stdinWrites: readonly string[]): string[][] {
+  return stdinWrites.map((stdin) => JSON.parse(stdin)[0])
+}
+
+type FakeAgentBrowserChild = EventEmitter & { kill: Mock }
+
+/** Answers each spawn once its command is known, which for batch is when stdin ends. */
+export function answerAgentBrowserCommands(
+  execFileMock: Mock,
+  stdinWrites: string[],
+  answer: (
+    command: string[],
+    cb: ExecFileCallback,
+    args: string[],
+    child: FakeAgentBrowserChild,
+    opts: { env?: NodeJS.ProcessEnv }
+  ) => void
+): void {
+  execFileMock.mockImplementation(
+    (_bin: string, args: string[], opts: { env?: NodeJS.ProcessEnv }, cb: ExecFileCallback) => {
+      const child = createFakeAgentBrowserChild({
+        kill: vi.fn(),
+        stdin: {
+          on: vi.fn(),
+          end: (text?: string) => {
+            if (text !== undefined) {
+              stdinWrites.push(text)
+            } else if (!args.includes('batch')) {
+              // Commands outside a batch were answered from argv at spawn.
+              return
+            }
+            answer(agentBrowserCommandOf(args, text), cb, args, child, opts)
+          }
+        }
+      })
+      if (!args.includes('batch')) {
+        answer(agentBrowserCommandOf(args), cb, args, child, opts)
+      }
+      return child
+    }
+  )
+}
+
+export type AgentBrowserSpawn = { command: string[]; args: string[]; cdp: string | undefined }
+
+/** Succeeds every spawn with `data` and records each command beside its argv and CDP endpoint. */
+export function succeedRecordingAgentBrowserSpawns(
+  execFileMock: Mock,
+  stdinWrites: string[],
+  data: unknown
+): AgentBrowserSpawn[] {
+  const spawns: AgentBrowserSpawn[] = []
+  answerAgentBrowserCommands(execFileMock, stdinWrites, (command, cb, args, _child, opts) => {
+    spawns.push({ command, args, cdp: opts.env?.AGENT_BROWSER_CDP })
+    cb(null, JSON.stringify({ success: true, data }), '')
+  })
+  return spawns
+}
+
 export function createSucceedWith(execFileMock: Mock, stdinWrites: string[]) {
   return function succeedWith(data: unknown): void {
     execFileMock.mockImplementation(
       (_bin: string, _args: string[], _opts: unknown, cb: ExecFileCallback) => {
         cb(null, JSON.stringify({ success: true, data }), '')
-        return {
+        return createFakeAgentBrowserChild({
           stdin: { on: vi.fn(), end: (text: string) => stdinWrites.push(text) }
-        }
+        })
       }
     )
   }

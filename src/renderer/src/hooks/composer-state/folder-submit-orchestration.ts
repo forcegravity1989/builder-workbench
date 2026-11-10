@@ -134,8 +134,10 @@ export function useFolderSubmitOrchestration(input: FolderSubmitOrchestrationInp
           ...(hostStartup.owner ? { hostStartup } : {}),
           autoRenameBranchFromWork: settings?.autoRenameBranchFromWork,
           agentCmdOverrides: settings?.agentCmdOverrides,
-          agentArgs: agent ? resolveTuiAgentLaunchArgs(agent, settings) : undefined,
-          agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings) : undefined,
+          agentArgs: agent
+            ? resolveTuiAgentLaunchArgs(agent, settings?.agentDefaultArgs)
+            : undefined,
+          agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings?.agentDefaultEnv) : undefined,
           sessionOptions: agent
             ? resolveInitialNativeChatSessionOptions(
                 {

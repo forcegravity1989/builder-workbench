@@ -1,3 +1,4 @@
+import type { BrowserClientHostRequestEvent } from './browser/client-hosting/browser-client-host-request-protocol'
 import type { CreateWorktreeResult } from './worktree/create-types'
 import type {
   WorktreeDefaultTabsLaunch,
@@ -10,6 +11,7 @@ import type { RuntimeNativeChatLaunchDraftResolution } from './runtime-types'
 
 export type RuntimeClientEvent =
   | { type: 'reposChanged' }
+  | { type: 'browserProfilesChanged' }
   | { type: 'worktreesChanged'; repoId: string }
   | ({ type: 'nativeChatLaunchDraftResolved' } & RuntimeNativeChatLaunchDraftResolution)
   | { type: 'terminalSideEffects'; batch: TerminalSideEffectBatch }
@@ -55,6 +57,7 @@ export type RuntimeClientEventStreamMessage =
       }
     })
   | RuntimeClientEvent
+  | BrowserClientHostRequestEvent
   | { type: 'end' }
 
 export type RuntimeActivateWorktreeEvent = Extract<RuntimeClientEvent, { type: 'activateWorktree' }>

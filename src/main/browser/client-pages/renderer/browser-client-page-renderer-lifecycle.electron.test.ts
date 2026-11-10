@@ -242,7 +242,10 @@ async function runFixture(): Promise<FixtureResult> {
   writeFileSync(htmlPath, '<!doctype html><body><script src="./renderer.js"></script></body>')
   await Promise.all([
     buildFixtureBundle({
-      entry: join(process.cwd(), 'src/main/browser/browser-client-page-renderer-bridge.ts'),
+      entry: join(
+        process.cwd(),
+        'src/main/browser/client-pages/renderer/browser-client-page-renderer-bridge.ts'
+      ),
       fileName: 'bridge.cjs',
       format: 'cjs',
       root,
