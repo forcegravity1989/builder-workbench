@@ -1,15 +1,113 @@
 {
   "schema_version": 3,
   "version": "v1.0",
-  "cycleId": "11b09ce2-9bc4-43b8-98d1-575e79beb4ed",
+  "cycleId": "a6dd7bdb-7e31-4eba-bd1c-0e5f75f6f000",
   "timeWindow": {
     "start": "2026-11-09",
-    "end": "2026-11-13"
+    "end": "2026-11-15"
   },
   "summary": {
     "progress": "",
-    "risks": ""
+    "risks": "",
+    "progressSource": {
+      "version": "v0.9",
+      "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+      "sourceCommit": "db7bbc14261bf6379db2c6be9e3fec050ac76ddd",
+      "revision": "sha256:c80472d2721cdcc51241f833fa34a0cc6d26defa05c684c21537beffa50974cd"
+    }
   },
-  "goals": [],
-  "tasks": []
+  "goals": [
+    {
+      "goalId": "G1",
+      "title": "【项目墙特性】原型评审与开发落地",
+      "acceptance": "1、项目墙呈现有价值信息 #345\n2、项目墙支持个人项目 #497\n3、 纳入的存量单逐条有结论：修复、关闭或明确不做。\n4、扫墙主旅程在真壳走通，杀进程重开后四项读数独立读回一致。",
+      "owner": "yuzhup",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G2",
+      "title": "消息通知聚焦 PR 评审旅程落地",
+      "acceptance": "1. 消息通知只围绕 PR 评审这一条旅程，不再铺开多群、多事件。\n2. 一名 Builder 在 BW 内发出或收到 PR 评审通知，整条旅程走通，包括回到 PR 完成评审并最终合入。\n",
+      "owner": "kanadead",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G3",
+      "title": "用户旅程盘点与存量问题清理",
+      "acceptance": "1. 旅程清单经人确认：分基础使用（导入项目、协作开发）与版本管理（定版、计划、开发、验收），含小旅程（如发起 PR 评审）；每条写清角色、入口、操作路径、可观察结果。\n2. v1.0 核心旅程在周二（11/10）前给出评审；旅程不求多，按优先级集中，不平均用力。\n3. 易用性改进聚焦引导窗口（类似里程碑引导）：文字精简，优先复用 Orca 原生能力。\n4. 沿旅程纳入处理的 BUG 与易用性问题逐条有结论：修复、关闭或明确转下版，修复以 PR 关联留痕。",
+      "owner": "all",
+      "metricTargets": []
+    }
+  ],
+  "tasks": [
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 345,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 497,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 479,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 489,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 563,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 499,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 568,
+      "goalId": "G2"
+    }
+  ],
+  "minutes": {
+    "consensus": [
+      "v1.0 核心旅程在周二（11/10）前给出评审；旅程不求多，按优先级集中，不平均用力。",
+      "易用性改进聚焦引导窗口（类似里程碑引导）：文字精简，优先复用 Orca 原生能力。",
+      "项目组概念不纳入项目墙特性本版范围，是否立项另行商议。"
+    ],
+    "followups": [
+      {
+        "id": "2d9541dd-31b5-4cb2-9789-423524bfa8be",
+        "text": "遗留事项已转到 #497 的评论建议跟踪，不再在这单独记录。",
+        "closed": false
+      }
+    ],
+    "confirmed": true,
+    "confirmedAt": "2026-11-09T11:47:11.740Z",
+    "sources": "本会话板面批注 3 条；会议 ID 未提供，未读取 eMeeting 语音转写稿。",
+    "updatedAt": "2026-11-09T11:33:08.538647Z"
+  },
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-11-09T11:44:32Z",
+    "archivePr": {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 598
+    }
+  }
 }
