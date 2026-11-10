@@ -202,3 +202,5 @@ export class RuntimeBrowserCommands {
     this.browserDialogDismiss = dialogs.browserDialogDismiss.bind(dialogs)
   }
 }
+
+export type { RuntimeBrowserCommandHost } from './browser/commands/browser-command-contracts'

@@ -46,7 +46,8 @@ export function ReviewNotesSendMenuContent({
   prompt,
   promptDelivery = 'submit-after-ready',
   launchSource = 'notes_send',
-  onPromptDelivered
+  onPromptDelivered,
+  onPromptHandedOff
 }: {
   worktreeId: string
   groupId: string
@@ -54,6 +55,7 @@ export function ReviewNotesSendMenuContent({
   promptDelivery?: 'auto-submit' | 'draft' | 'submit-after-ready'
   launchSource?: LaunchSource
   onPromptDelivered?: () => void
+  onPromptHandedOff?: (delivered: Promise<unknown>) => void
 }): React.JSX.Element {
   const hasPrompt = prompt.trim().length > 0
 
@@ -109,7 +111,8 @@ export function ReviewNotesSendMenuContent({
         )
       )
 
-      void send()
+      const sending = send()
+      const settled = sending
         .then((result) => {
           if (result.status === 'sent') {
             onSent()
@@ -141,8 +144,9 @@ export function ReviewNotesSendMenuContent({
         .finally(() => {
           toast.dismiss(pending)
         })
+      onPromptHandedOff?.(settled)
     },
-    []
+    [onPromptHandedOff]
   )
 
   const sendToAgentTarget = useCallback(
@@ -207,6 +211,7 @@ export function ReviewNotesSendMenuContent({
         promptDelivery={promptDelivery}
         launchSource={launchSource}
         onPromptDelivered={onPromptDelivered}
+        onPromptHandedOff={onPromptHandedOff}
       />
     </>
   )

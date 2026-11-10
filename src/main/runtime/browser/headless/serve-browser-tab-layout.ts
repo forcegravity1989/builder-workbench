@@ -1,12 +1,13 @@
+import type { Tab } from '../../../../shared/tab-types'
+import {
+  deriveActiveSurface,
+  pickNextActiveTabAfterClose,
+  pruneGroupLayout
+} from '../../../../shared/workspace-session-terminal-tab-close'
 // Persist headless browser tabs/pages like window-owned tabs; restart lists saved tabs but restores pages only on first use.
 
 import type { BrowserPage } from '../../../../shared/browser-workspace-types'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
-import { applyLayoutCommand } from '../../../../shared/workspace-layout/workspace-layout-commands'
-import { BLANK_BROWSER_TAB_STATE } from '../../../../shared/workspace-layout/workspace-layout-beside'
-import { loadWorkspaceLayout } from '../../../../shared/workspace-layout/workspace-layout-load'
-import { nameBasedLoadContext } from '../../../../shared/workspace-layout/workspace-layout-minted-ids'
-import { saveWorkspaceLayout } from '../../../../shared/workspace-layout/workspace-layout-save'
 import type { WorkspaceSessionState } from '../../../../shared/workspace-session-state-types'
 import { randomUUID } from 'node:crypto'
 
@@ -41,42 +42,74 @@ export function withOpenedServeBrowserTab(
   if (findSavedBrowserPage(session, page.worktreeId, page.pageId)) {
     return null
   }
-  const loaded = loadWorkspaceLayout(hostId, session, nameBasedLoadContext())
+  const worktreeId = page.worktreeId
+  const groups = session.tabGroups?.[worktreeId] ?? []
+  const group = groups.find((entry) => entry.id === page.groupId) ?? groups[0]
+  const groupId = group?.id ?? randomUUID()
   const now = Date.now()
-  const applied = applyLayoutCommand(
-    loaded.layout,
-    {
-      type: 'openBrowserTab',
-      workspace: page.worktreeId,
-      pageId: page.pageId,
-      ...(page.profileId ? { profileId: page.profileId } : {}),
-      ...(page.groupId ? { groupId: page.groupId } : {})
-    },
-    { mintId: randomUUID, mintLeafId: randomUUID, now: () => now }
-  )
-  if (!applied.ok) {
-    return null
-  }
-  const { facts } = loaded
-  const state = { ...BLANK_BROWSER_TAB_STATE, url: page.url, title: page.title }
   const savedPage = servePageRecord(page, now)
-  return saveWorkspaceLayout({
-    ...loaded,
-    layout: applied.model,
-    facts: {
-      ...facts,
-      browserTabs: {
-        ...facts.browserTabs,
-        [page.worktreeId]: { ...facts.browserTabs[page.worktreeId], [page.pageId]: state }
-      },
-      browserPagesByWorkspace: { ...facts.browserPagesByWorkspace, [page.pageId]: [savedPage] }
-    }
-  })
+  const tabs = session.unifiedTabs?.[worktreeId] ?? []
+  const tab: Tab = {
+    id: page.pageId,
+    entityId: page.pageId,
+    groupId,
+    worktreeId,
+    executionHostId: hostId,
+    contentType: 'browser',
+    label: page.title,
+    customLabel: null,
+    color: null,
+    sortOrder: tabs.length,
+    createdAt: now
+  }
+  const nextGroup = {
+    ...(group ?? { id: groupId, worktreeId }),
+    activeTabId: tab.id,
+    tabOrder: [...(group?.tabOrder ?? []), tab.id],
+    recentTabIds: [...(group?.recentTabIds ?? []), tab.id]
+  }
+  return {
+    ...session,
+    browserTabsByWorktree: {
+      ...session.browserTabsByWorktree,
+      [worktreeId]: [
+        ...(session.browserTabsByWorktree?.[worktreeId] ?? []),
+        {
+          ...savedPage,
+          sessionProfileId: page.profileId ?? null,
+          activePageId: page.pageId,
+          pageIds: [page.pageId]
+        }
+      ]
+    },
+    browserPagesByWorkspace: { ...session.browserPagesByWorkspace, [page.pageId]: [savedPage] },
+    unifiedTabs: { ...session.unifiedTabs, [worktreeId]: [...tabs, tab] },
+    tabGroups: {
+      ...session.tabGroups,
+      [worktreeId]: group
+        ? groups.map((entry) => (entry.id === groupId ? nextGroup : entry))
+        : [nextGroup]
+    },
+    tabGroupLayouts: {
+      ...session.tabGroupLayouts,
+      [worktreeId]: session.tabGroupLayouts?.[worktreeId] ?? { type: 'leaf', groupId }
+    },
+    activeGroupIdByWorktree: { ...session.activeGroupIdByWorktree, [worktreeId]: groupId },
+    activeBrowserTabIdByWorktree: {
+      ...session.activeBrowserTabIdByWorktree,
+      [worktreeId]: page.pageId
+    },
+    activeTabTypeByWorktree: { ...session.activeTabTypeByWorktree, [worktreeId]: 'browser' }
+  }
 }
 
 function servePageRecord(page: ServeBrowserPageState, createdAt: number): BrowserPage {
   return {
-    ...BLANK_BROWSER_TAB_STATE,
+    loading: false,
+    faviconUrl: null,
+    canGoBack: false,
+    canGoForward: false,
+    loadError: null,
     url: page.url,
     title: page.title,
     id: page.pageId,
@@ -169,7 +202,7 @@ export function withServeBrowserPageState(
 
 /** The partition without the tab showing the page, or null when no saved tab shows it. */
 export function withClosedServeBrowserTab(
-  hostId: ExecutionHostId,
+  _hostId: ExecutionHostId,
   session: WorkspaceSessionState,
   worktreeId: string,
   pageId: string
@@ -178,25 +211,64 @@ export function withClosedServeBrowserTab(
   if (!saved) {
     return null
   }
-  const loaded = loadWorkspaceLayout(hostId, session, nameBasedLoadContext())
-  const applied = applyLayoutCommand(
-    loaded.layout,
-    {
-      type: 'closeTabs',
-      workspace: worktreeId,
-      // Why (STA-11998): closeTabs takes the tab-bar id, which a window-saved tab keeps apart.
-      tabIds: [savedBrowserTabEntryId(session, worktreeId, saved.tabId)],
-      force: true
+  const closedIds = new Set([savedBrowserTabEntryId(session, worktreeId, saved.tabId)])
+  const tabs = (session.unifiedTabs?.[worktreeId] ?? []).filter((tab) => !closedIds.has(tab.id))
+  const groups = (session.tabGroups?.[worktreeId] ?? [])
+    .map((group) => {
+      const tabOrder = group.tabOrder.filter((id) => !closedIds.has(id))
+      const remaining = new Set(tabOrder)
+      return {
+        ...group,
+        tabOrder,
+        activeTabId: closedIds.has(group.activeTabId ?? '')
+          ? pickNextActiveTabAfterClose(group, closedIds, tabOrder, remaining)
+          : group.activeTabId,
+        recentTabIds: group.recentTabIds?.filter((id) => remaining.has(id))
+      }
+    })
+    .filter((group) => group.tabOrder.length > 0)
+  const groupIds = new Set(groups.map((group) => group.id))
+  const previousGroupId = session.activeGroupIdByWorktree?.[worktreeId]
+  const groupId = groupIds.has(previousGroupId ?? '') ? previousGroupId : groups[0]?.id
+  const layout = pruneGroupLayout(session.tabGroupLayouts?.[worktreeId], groupIds)
+  const { [saved.tabId]: _closed, ...pages } = session.browserPagesByWorkspace ?? {}
+  const next: WorkspaceSessionState = {
+    ...session,
+    browserTabsByWorktree: {
+      ...session.browserTabsByWorktree,
+      [worktreeId]: (session.browserTabsByWorktree?.[worktreeId] ?? []).filter(
+        (tab) => tab.id !== saved.tabId
+      )
     },
-    { mintId: randomUUID, mintLeafId: randomUUID, now: Date.now }
-  )
-  if (!applied.ok) {
-    return null
+    browserPagesByWorkspace: pages,
+    unifiedTabs: { ...session.unifiedTabs, [worktreeId]: tabs },
+    tabGroups: { ...session.tabGroups, [worktreeId]: groups },
+    tabGroupLayouts: { ...session.tabGroupLayouts },
+    activeGroupIdByWorktree: { ...session.activeGroupIdByWorktree }
   }
-  const { [saved.tabId]: _closed, ...pages } = loaded.facts.browserPagesByWorkspace ?? {}
-  return saveWorkspaceLayout({
-    ...loaded,
-    layout: applied.model,
-    facts: { ...loaded.facts, browserPagesByWorkspace: pages }
-  })
+  if (layout) {
+    next.tabGroupLayouts![worktreeId] = layout
+  } else {
+    delete next.tabGroupLayouts![worktreeId]
+  }
+  if (groupId) {
+    next.activeGroupIdByWorktree![worktreeId] = groupId
+  } else {
+    delete next.activeGroupIdByWorktree![worktreeId]
+  }
+  const surface = deriveActiveSurface(next, worktreeId, tabs, groups, groupId)
+  next.activeBrowserTabIdByWorktree = {
+    ...session.activeBrowserTabIdByWorktree,
+    [worktreeId]: surface.browserTabId
+  }
+  next.activeTabTypeByWorktree = { ...session.activeTabTypeByWorktree, [worktreeId]: surface.type }
+  next.activeTabIdByWorktree = {
+    ...session.activeTabIdByWorktree,
+    [worktreeId]: surface.terminalTabId
+  }
+  next.activeFileIdByWorktree = { ...session.activeFileIdByWorktree, [worktreeId]: surface.fileId }
+  if (session.activeWorktreeId === worktreeId) {
+    next.activeTabId = surface.terminalTabId
+  }
+  return next
 }

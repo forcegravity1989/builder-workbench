@@ -38,6 +38,7 @@ export type QuickLaunchAgentMenuItemsProps = {
   launchSource?: LaunchSource
   /** Called after a prompt is queued into the agent, or immediately for argv prompt launches. */
   onPromptDelivered?: () => void
+  onPromptHandedOff?: (delivered: Promise<unknown>) => void
 }
 
 function getCatalogEntry(agent: TuiAgent): { id: TuiAgent; label: string } | null {
@@ -104,7 +105,8 @@ function QuickLaunchAgentMenuItemsInner({
   prompt,
   promptDelivery,
   launchSource,
-  onPromptDelivered
+  onPromptDelivered,
+  onPromptHandedOff
 }: QuickLaunchAgentMenuItemsProps): React.JSX.Element | null {
   // Why: resolving only the SSH connectionId here made paired-runtime
   // worktrees fall back to LOCAL detection, listing the client's agents
@@ -153,6 +155,9 @@ function QuickLaunchAgentMenuItemsInner({
         )
         return
       }
+      if (result.promptDeliveryResult) {
+        onPromptHandedOff?.(result.promptDeliveryResult)
+      }
       if (!result.tabId) {
         // Why: paired web clients create the tab on the host; focus follows the
         // next session-tabs snapshot instead of a local tab id.
@@ -181,7 +186,16 @@ function QuickLaunchAgentMenuItemsInner({
         toast.message(getLaunchWatchdogTimeoutMessage(label))
       })
     },
-    [worktreeId, groupId, onFocusTerminal, prompt, promptDelivery, launchSource, onPromptDelivered]
+    [
+      worktreeId,
+      groupId,
+      onFocusTerminal,
+      prompt,
+      promptDelivery,
+      launchSource,
+      onPromptDelivered,
+      onPromptHandedOff
+    ]
   )
 
   const enabledDetectedIds = detectedIds ? filterEnabledTuiAgents(detectedIds, disabledAgents) : []
@@ -203,7 +217,10 @@ function QuickLaunchAgentMenuItemsInner({
                   'Couldn’t read agent settings. Check the host connection and try again.'
                 )
               : detectedIds && detectedIds.length > 0
-                ? translate('auto.components.tab.bar.QuickLaunchButton.8dea9b5cdf', 'No enabled agents')
+                ? translate(
+                    'auto.components.tab.bar.QuickLaunchButton.8dea9b5cdf',
+                    'No enabled agents'
+                  )
                 : translate(
                     'auto.components.tab.bar.QuickLaunchButton.e518f544b1',
                     'No agents detected'

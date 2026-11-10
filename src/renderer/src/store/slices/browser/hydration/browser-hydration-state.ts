@@ -3,7 +3,6 @@ import type {
   BrowserWorkspace
 } from '../../../../../../shared/browser-workspace-types'
 import { createNonSecureContextUuid } from '../../../../../../shared/non-secure-context-uuid'
-import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/layout-owner-switch'
 import { ORCA_BROWSER_BLANK_URL } from '../../../../../../shared/constants'
 import type { WorkspaceSessionState } from '../../../../../../shared/workspace-session-state-types'
 import { normalizeBrowserHistoryEntries } from '../../../../../../shared/workspace-session-browser-history'
@@ -49,10 +48,7 @@ export function projectHydratedBrowserSession(
         ? storedPages
         : [
             {
-              // Switch point: a frame names the page before its record lands; keep that id stable.
-              id:
-                (ORCA_LAYOUT_OWNER_IS_MAIN ? (tab.activePageId ?? tab.pageIds?.[0]) : undefined) ??
-                createNonSecureContextUuid(),
+              id: createNonSecureContextUuid(),
               workspaceId: tab.id,
               worktreeId,
               url: normalizeUrl(tab.url),

@@ -1,3 +1,4 @@
+import { DEFAULT_BROWSER_DEVTOOLS_DOCK_LAYOUT } from '../../../../../shared/browser-devtools-dock'
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
 import {
   DEFAULT_BROWSER_PAGE_ZOOM_LEVEL,
@@ -124,6 +125,11 @@ export function createUiUpdateActions(set: UISliceSet, get: UISliceGet): Partial
       const normalized = normalizeBrowserPageZoomLevel(level)
       void window.api.ui.set({ browserDefaultZoomLevel: normalized }).catch(console.error)
       set({ browserDefaultZoomLevel: normalized })
+    },
+    browserDevToolsDock: DEFAULT_BROWSER_DEVTOOLS_DOCK_LAYOUT,
+    setBrowserDevToolsDock: (layout) => {
+      void window.api.ui.set({ browserDevToolsDock: layout }).catch(console.error)
+      set({ browserDevToolsDock: layout })
     },
     browserKagiSessionLink: null,
     setBrowserKagiSessionLink: (link) => {

@@ -8,13 +8,13 @@ import type { CookiesGetFilter } from 'electron'
 const {
   appGetPathMock,
   clearPendingCookieImportMock,
-  execFileSyncMock,
+  runProcessMock,
   sessionFromPartitionMock,
   setPendingCookieImportMock
 } = vi.hoisted(() => ({
   appGetPathMock: vi.fn(),
   clearPendingCookieImportMock: vi.fn(),
-  execFileSyncMock: vi.fn(),
+  runProcessMock: vi.fn(),
   sessionFromPartitionMock: vi.fn(),
   setPendingCookieImportMock: vi.fn()
 }))
@@ -25,7 +25,7 @@ vi.mock('../sessions/profiles/browser-session-registry', () => ({
     clearPendingCookieImport: clearPendingCookieImportMock
   }
 }))
-vi.mock('node:child_process', () => ({ execFileSync: execFileSyncMock }))
+vi.mock('../../../shared/child-process/run-process', () => ({ runProcess: runProcessMock }))
 vi.mock('electron', () => ({
   app: { getPath: appGetPathMock },
   dialog: { showOpenDialog: vi.fn() },
@@ -189,7 +189,7 @@ describe('native Chromium import excludes the Google cookie family', () => {
     vi.clearAllMocks()
     tmpDir = mkdtempSync(join(tmpdir(), 'orca-google-exclusion-native-'))
     appGetPathMock.mockReturnValue(join(tmpDir, 'userData'))
-    execFileSyncMock.mockImplementation(() => {
+    runProcessMock.mockImplementation(() => {
       throw new Error('OS browser version lookup unavailable')
     })
     clearDataMock = vi.fn().mockResolvedValue(undefined)
@@ -240,7 +240,7 @@ describe('native Chromium import excludes the Google cookie family', () => {
       skippedCookies: 1,
       googleCookiesSkipped: 1
     })
-    expect(execFileSyncMock).not.toHaveBeenCalled()
+    expect(runProcessMock).not.toHaveBeenCalled()
     expect(cookiesSetMock.mock.calls.map(([details]) => details.name)).toEqual(['session'])
   })
 
@@ -265,7 +265,7 @@ describe('native Chromium import excludes the Google cookie family', () => {
       googleCookiesSkipped: 1,
       domains: []
     })
-    expect(execFileSyncMock).not.toHaveBeenCalled()
+    expect(runProcessMock).not.toHaveBeenCalled()
     expect(clearDataMock).not.toHaveBeenCalled()
     expect(cookiesSetMock).not.toHaveBeenCalled()
   })

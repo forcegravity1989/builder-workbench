@@ -64,6 +64,7 @@ function registerWorkspaceDocPage(browserPageId: string): void {
     browserPageId
   })
   const guest = {
+    isCurrentlyAudible: () => false,
     isFocused: () => false,
     isDestroyed: () => false,
     getURL: () => buildDocPreviewUrl(grant.id, grant.entryRelativePath),

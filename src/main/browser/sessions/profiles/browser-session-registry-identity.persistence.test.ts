@@ -4,7 +4,7 @@ import {
   IDENTITY_RECORD_PATH,
   installModuleMocks,
   seedMeta
-} from './browser-session-registry-persistence-test-fixture'
+} from './__mocks__/browser-session-registry-persistence-test-fixture'
 
 describe('BrowserSessionRegistry retired identity data', () => {
   beforeEach(() => {

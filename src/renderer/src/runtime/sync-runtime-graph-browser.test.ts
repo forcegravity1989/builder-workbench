@@ -148,7 +148,11 @@ describe('browser mobile session sync', () => {
       { hostRuntimeEnvironmentId: 'remote-host' }
     ])
     expect(
-      buildMobileSessionTabSnapshots({ ...mirrored, unifiedTabsByWorktree: {} })[0]?.tabs
+      buildMobileSessionTabSnapshots({
+        ...mirrored,
+        unifiedTabsByWorktree: {},
+        groupsByWorktree: {}
+      })[0]?.tabs
     ).toMatchObject([{ hostRuntimeEnvironmentId: 'remote-host' }])
     expect(buildMobileSessionTabSnapshots(state)[0]?.tabs[0]).toMatchObject({
       browserPageId: 'page-1'

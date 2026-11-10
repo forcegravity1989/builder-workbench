@@ -1,6 +1,6 @@
-import type { TabGroupLayoutNode } from '../tab-types'
+import type { TabGroup, TabGroupLayoutNode } from '../tab-types'
 import { buildSplitNode, replaceLeaf } from './tab-group-layout-tree'
-import type { LayoutGroup } from './workspace-layout-model'
+type LayoutGroup = Pick<TabGroup, 'id' | 'tabOrder'>
 
 /** Share group-tree operations with the renderer so headless drag splits survive the next persisted snapshot.
  * Groups hold membership/order; callers adapt per-view selections. These are tab-group splits, not terminal-pane splits. */

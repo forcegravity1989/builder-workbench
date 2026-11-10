@@ -1,3 +1,4 @@
+import type { BrowserDevToolsDockLayout } from '../../../../../shared/browser-devtools-dock'
 import type { PersistedUIState } from '../../../../../shared/persisted-ui-state-types'
 import type {
   ActivityGroupBy,
@@ -199,6 +200,8 @@ export type UISlicePersistence = {
   setBrowserDefaultSearchEngine: (engine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null) => void
   browserDefaultZoomLevel: number
   setBrowserDefaultZoomLevel: (level: number) => void
+  browserDevToolsDock: BrowserDevToolsDockLayout
+  setBrowserDevToolsDock: (layout: BrowserDevToolsDockLayout) => void
   browserKagiSessionLink: string | null
   setBrowserKagiSessionLink: (link: string | null) => void
 }

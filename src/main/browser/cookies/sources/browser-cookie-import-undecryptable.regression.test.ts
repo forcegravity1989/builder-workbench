@@ -6,7 +6,7 @@ import type { CookiesGetFilter } from 'electron'
 const {
   appGetPathMock,
   createDecipherivMock,
-  execFileSyncMock,
+  runProcessMock,
   sessionFromPartitionMock,
   dialogShowOpenDialogMock,
   setPendingCookieImportMock,
@@ -15,7 +15,7 @@ const {
 } = vi.hoisted(() => ({
   appGetPathMock: vi.fn(),
   createDecipherivMock: vi.fn(),
-  execFileSyncMock: vi.fn(),
+  runProcessMock: vi.fn(),
   sessionFromPartitionMock: vi.fn(),
   dialogShowOpenDialogMock: vi.fn(),
   setPendingCookieImportMock: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('../../sessions/profiles/browser-session-registry', () => ({
     clearPendingCookieImport: clearPendingCookieImportMock
   }
 }))
-vi.mock('node:child_process', () => ({ execFileSync: execFileSyncMock }))
+vi.mock('../../../../shared/child-process/run-process', () => ({ runProcess: runProcessMock }))
 vi.mock('node:fs', async (importOriginal) => ({ ...(await importOriginal<typeof NodeFs>()) }))
 vi.mock('electron', () => ({
   app: { getPath: appGetPathMock },
@@ -119,7 +119,7 @@ describe('importCookiesFromBrowser — undecryptable cookies', () => {
     })
     platformSpy = vi.spyOn(process, 'platform', 'get').mockReturnValue('linux')
     // Why: both secret-tool lookups failing is exactly the keyring-unavailable case.
-    execFileSyncMock.mockImplementation(() => {
+    runProcessMock.mockImplementation(() => {
       throw new Error('secret-tool: no such service')
     })
   })

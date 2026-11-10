@@ -43,6 +43,7 @@ type GuestFake = {
   windowOpenHandler: ((details: { url: string; frameName: string }) => unknown) | null
   webRtcPolicy: string | null
   isDestroyed: () => boolean
+  isCurrentlyAudible: () => boolean
   isFocused: () => boolean
   getURL: () => string
   getType: () => string
@@ -71,6 +72,7 @@ function createGuest(id: number, url: string): GuestFake {
     windowOpenHandler: null,
     webRtcPolicy: null,
     isDestroyed: () => false,
+    isCurrentlyAudible: () => false,
     isFocused: () => true,
     getURL: () => guest.url,
     getType: () => 'webview',

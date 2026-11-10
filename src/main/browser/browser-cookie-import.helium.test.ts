@@ -66,7 +66,7 @@ describe('detectInstalledBrowsers — Helium', () => {
       }
     })
 
-    const { detectInstalledBrowsers } = await import('./cookies/browser-cookie-import')
+    const { detectInstalledBrowsers } = await import('./cookies/sources/browser-cookie-detection')
     const detected = detectInstalledBrowsers()
     const helium = detected.find((b) => b.family === 'helium')
     expect(helium).toBeDefined()
@@ -86,7 +86,7 @@ describe('detectInstalledBrowsers — Helium', () => {
       }
     })
 
-    const { detectInstalledBrowsers } = await import('./cookies/browser-cookie-import')
+    const { detectInstalledBrowsers } = await import('./cookies/sources/browser-cookie-detection')
     const detected = detectInstalledBrowsers()
     expect(detected.find((b) => b.family === 'helium')).toBeUndefined()
   })
@@ -122,7 +122,7 @@ describe('detectInstalledBrowsers — Helium', () => {
       }
     })
 
-    const { detectInstalledBrowsers } = await import('./cookies/browser-cookie-import')
+    const { detectInstalledBrowsers } = await import('./cookies/sources/browser-cookie-detection')
     const detected = detectInstalledBrowsers()
     const helium = detected.find((b) => b.family === 'helium')
     expect(helium).toBeDefined()
@@ -139,7 +139,7 @@ describe('detectInstalledBrowsers — Helium', () => {
       }
     })
 
-    const { selectBrowserProfile } = await import('./cookies/browser-cookie-import')
+    const { selectBrowserProfile } = await import('./cookies/sources/browser-cookie-detection')
     const selected = selectBrowserProfile(
       {
         family: 'helium',

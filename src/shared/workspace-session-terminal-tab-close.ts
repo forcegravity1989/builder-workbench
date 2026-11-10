@@ -8,7 +8,6 @@ export type WorkspaceSessionTerminalTabCloseResult = {
   pinned: boolean
 }
 
-/** The tab a group shows after `closingIds` leave it: most recent remaining, else the closed tab's right neighbour, else the last. */
 export function pickNextActiveTabAfterClose(
   group: Pick<TabGroup, 'tabOrder' | 'recentTabIds'>,
   closingIds: ReadonlySet<string>,
@@ -74,7 +73,7 @@ function collectTabPtyIds(
   return ids
 }
 
-export function findUnifiedTerminalTabs(
+function findUnifiedTerminalTabs(
   session: WorkspaceSessionState,
   worktreeId: string,
   tabId: string
@@ -84,7 +83,7 @@ export function findUnifiedTerminalTabs(
   )
 }
 
-function deriveActiveSurface(
+export function deriveActiveSurface(
   session: WorkspaceSessionState,
   worktreeId: string,
   tabs: Tab[],
@@ -160,18 +159,6 @@ function deriveActiveSurface(
   return { terminalTabId: terminalFallback, browserTabId: null, fileId: null, type: 'terminal' }
 }
 
-/** Whether this session holds the terminal tab, as a row or a unified tab. */
-export function workspaceSessionListsTerminalTab(
-  session: WorkspaceSessionState,
-  worktreeId: string,
-  tabId: string
-): boolean {
-  return (
-    session.tabsByWorktree[worktreeId]?.some((tab) => tab.id === tabId) === true ||
-    findUnifiedTerminalTabs(session, worktreeId, tabId).length > 0
-  )
-}
-
 export function closeTerminalTabInWorkspaceSession(
   session: WorkspaceSessionState,
   worktreeId: string,
@@ -238,9 +225,6 @@ export function closeTerminalTabInWorkspaceSession(
       [worktreeId]: (session.tabsByWorktree[worktreeId] ?? []).filter((tab) => tab.id !== tabId)
     },
     terminalLayoutsByTabId: { ...session.terminalLayoutsByTabId },
-    ...(session.localOnlyScrollbackByTabId
-      ? { localOnlyScrollbackByTabId: { ...session.localOnlyScrollbackByTabId } }
-      : {}),
     unifiedTabs: { ...session.unifiedTabs, [worktreeId]: nextTabs },
     tabGroups: { ...session.tabGroups, [worktreeId]: nextGroups },
     tabGroupLayouts: { ...session.tabGroupLayouts },
@@ -249,7 +233,6 @@ export function closeTerminalTabInWorkspaceSession(
     sleepingAgentSessionsByPaneKey: { ...session.sleepingAgentSessionsByPaneKey }
   }
   delete next.terminalLayoutsByTabId[tabId]
-  delete next.localOnlyScrollbackByTabId?.[tabId]
   delete next.remoteSessionIdsByTabId![tabId]
   if (nextLayout) {
     next.tabGroupLayouts![worktreeId] = nextLayout

@@ -36,27 +36,30 @@ describe('browserManager grab operations', () => {
 
   describe('grab shortcut forwarding', () => {
     it('does not forward cmd/ctrl+c when the guest reports native copy should win', async () => {
-      const handler = guestOnMock.mock.calls.find(
-        ([eventName]) => eventName === 'before-input-event'
-      )?.[1]
-      expect(handler).toBeTypeOf('function')
+      const handlers = guestOnMock.mock.calls
+        .filter(([eventName]) => eventName === 'before-input-event')
+        .map(([, handler]) => handler)
+      expect(handlers.length).toBeGreaterThan(0)
 
       guestExecuteJavaScriptMock.mockResolvedValueOnce(false)
       const preventDefault = vi.fn()
-      handler?.(
-        { preventDefault } as never,
-        {
-          type: 'keyDown',
-          ...primaryModifier,
-          shift: false,
-          alt: false,
-          key: 'c'
-        } as never
-      )
+      for (const handler of handlers) {
+        handler(
+          { preventDefault } as never,
+          {
+            type: 'keyDown',
+            ...primaryModifier,
+            shift: false,
+            alt: false,
+            key: 'c'
+          } as never
+        )
+      }
 
       await Promise.resolve()
       await Promise.resolve()
 
+      expect(guestExecuteJavaScriptMock).toHaveBeenCalled()
       expect(preventDefault).not.toHaveBeenCalled()
       expect(rendererSendMock).not.toHaveBeenCalled()
     })

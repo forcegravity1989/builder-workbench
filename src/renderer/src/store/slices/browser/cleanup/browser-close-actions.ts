@@ -14,14 +14,6 @@ import { closeRemoteBrowserPageInOwningEnvironment } from '../hosts/browser-remo
 import { releaseDocPreviewGrant } from '@/lib/doc-preview-grants'
 import { destroyWorkspaceWebviews } from './browser-webview-cleanup'
 import { omitRecordKeys } from '../../worktrees/teardown/record-key-omission'
-import { landOnEmptiedWorktree } from '../../tabs/tabs-empty-workspace'
-import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../../../shared/layout-owner-switch'
-import { forgetDesktopCreatedServerTab } from '@/lib/desktop-created-server-tabs'
-import {
-  closeBrowserTabThroughLayoutOwner,
-  withDrawnBrowserPages,
-  type DrawnBrowserTab
-} from '../tabs/browser-tab-close-through-layout-owner'
 
 export function createBrowserCloseActions(
   set: BrowserSliceSet,
@@ -29,19 +21,17 @@ export function createBrowserCloseActions(
 ): Pick<BrowserSlice, 'closeBrowserTab' | 'shutdownWorktreeBrowsers'> {
   return {
     closeBrowserTab: (tabId, options) => {
-      forgetDesktopCreatedServerTab(tabId)
       // Cleanup unwinds unfinished creation: no host page close and no user reopen history.
       const isCleanup = options?.reason === 'cleanup'
-      const closeHere = (drawn?: DrawnBrowserTab): void => {
+      const closeHere = (): void => {
         let remotePagesToClose: { worktreeId: string; handle: RemoteBrowserPageHandle }[] = []
         // Collect grants outside reducer: revocation is main work and closed docs must become unreadable even if reduction bails.
         let docPageIdsToRelease: string[] = []
         let activeBrowserWorktreeIdToNotify: string | null = null
         set((current) => {
-          const s = drawn ? withDrawnBrowserPages(current, drawn) : current
-          // Main's frame already dropped a drawn tab's record.
-          let owningWorktreeId: string | null = drawn?.worktreeId ?? null
-          let closedWorkspace: BrowserWorkspace | null = drawn?.record ?? null
+          const s = current
+          let owningWorktreeId: string | null = null
+          let closedWorkspace: BrowserWorkspace | null = null
           const nextBrowserTabsByWorktree: Record<string, BrowserWorkspace[]> = {}
           for (const [worktreeId, tabs] of Object.entries(s.browserTabsByWorktree)) {
             const removedTab = tabs.find((tab) => tab.id === tabId) ?? null
@@ -246,28 +236,6 @@ export function createBrowserCloseActions(
               .catch(() => {})
           }
         }
-      }
-      // Switch point: main closes the tab first; today's close then runs over the tab as drawn.
-      const owningWorktreeId = ORCA_LAYOUT_OWNER_IS_MAIN
-        ? findWorkspace(get().browserTabsByWorktree, tabId)?.worktreeId
-        : undefined
-      if (
-        ORCA_LAYOUT_OWNER_IS_MAIN &&
-        closeBrowserTabThroughLayoutOwner(
-          get,
-          tabId,
-          isCleanup ? 'cleanup' : 'user',
-          (drawn) => closeHere(drawn),
-          // As today's tab-bar close: a cleanup keeps the selection and counts no interaction.
-          isCleanup || options?.preserveWorktreeSelection || !owningWorktreeId
-            ? undefined
-            : () => landOnEmptiedWorktree(set, get, owningWorktreeId)
-        )
-      ) {
-        if (!isCleanup) {
-          get().recordFeatureInteraction?.('terminal-tabs')
-        }
-        return
       }
       closeHere()
     },

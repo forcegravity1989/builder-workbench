@@ -1,4 +1,3 @@
-import { setManagedOrcadPairingRepairedListener } from '../managed-server/lifecycle/orcad-managed-pairing-repaired-listener'
 import { resetDesktopBrowserBridgeEnvironment } from './browser/desktop-browser-bridge-reconcile'
 import {
   registerRuntimeEnvironmentSubscriptionHandlers,
@@ -79,7 +78,6 @@ export function invalidateRuntimeEnvironmentTransport(environmentId: string): Pr
 }
 
 export function registerRuntimeEnvironmentHandlers(store: Store): void {
-  setManagedOrcadPairingRepairedListener(invalidateRuntimeEnvironmentTransport)
   // Why: keep direct re-registration safe even though register-core-handlers
   // normally guards this path; otherwise the binary send listener can stack.
   resetSharedControlSupport()

@@ -8,7 +8,7 @@ import {
   installModuleMocks,
   META_PATH,
   seedMeta
-} from './browser-session-registry-persistence-test-fixture'
+} from './__mocks__/browser-session-registry-persistence-test-fixture'
 
 describe('browser profile startup metadata reads', () => {
   beforeEach(() => {

@@ -5,7 +5,7 @@ const {
   appGetPathMock,
   clearPendingCookieImportMock,
   disposeClearStoreMock,
-  execFileSyncMock,
+  runProcessMock,
   restoreClearIdentitiesMock,
   sessionFromPartitionMock,
   setPendingCookieImportMock,
@@ -14,7 +14,7 @@ const {
   appGetPathMock: vi.fn(),
   clearPendingCookieImportMock: vi.fn(),
   disposeClearStoreMock: vi.fn(),
-  execFileSyncMock: vi.fn(),
+  runProcessMock: vi.fn(),
   restoreClearIdentitiesMock: vi.fn(),
   sessionFromPartitionMock: vi.fn(),
   setPendingCookieImportMock: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('../sessions/profiles/browser-session-registry', () => ({
     clearPendingCookieImport: clearPendingCookieImportMock
   }
 }))
-vi.mock('node:child_process', () => ({ execFileSync: execFileSyncMock }))
+vi.mock('../../../shared/child-process/run-process', () => ({ runProcess: runProcessMock }))
 vi.mock('electron', () => ({
   app: { getPath: appGetPathMock },
   dialog: { showOpenDialog: vi.fn() },
@@ -122,7 +122,7 @@ describe('native Chromium integrity-cookie accounting', () => {
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), 'orca-cookie-accounting-test-'))
     appGetPathMock.mockReset().mockReturnValue(join(tmpDir, 'userData'))
-    execFileSyncMock.mockReset().mockImplementation(() => {
+    runProcessMock.mockReset().mockImplementation(() => {
       throw new Error('OS browser version lookup unavailable')
     })
     clearPendingCookieImportMock.mockClear()

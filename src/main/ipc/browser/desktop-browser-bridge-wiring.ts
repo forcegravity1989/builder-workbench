@@ -29,7 +29,6 @@ import { rendererResolveRemoteCliWorkspace } from '../../browser/desktop-browser
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { RpcDispatcher } from '../../runtime/rpc/dispatcher'
 import { ALL_RPC_METHODS } from '../../runtime/rpc/methods/index'
-import { ensureOrcadManagedTunnel } from '../../managed-server/lifecycle/orcad-managed-tunnel'
 import { getSshTargetRegistryStore } from '../../ssh/ssh-target-registry'
 import type { SshConnectionManager } from '../../ssh/ssh-connection-manager'
 import { getRuntimeEnvironmentStatus } from '../runtime-environment-transport-routing'
@@ -133,7 +132,6 @@ export function installDesktopBrowserBridge(options: {
       return (status.result.capabilities ?? []).includes(DESKTOP_BROWSER_BRIDGE_RUNTIME_CAPABILITY)
     },
     subscribe: (environmentId) => async (callbacks) => {
-      await ensureOrcadManagedTunnel(userDataPath, environmentId)
       const connection = getPreferredPairedRuntimeConnection(
         resolveEnvironment(userDataPath, environmentId)
       )

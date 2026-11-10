@@ -1,3 +1,4 @@
+import type { BrowserProfileScope } from './browser-profile-scope'
 import type { BrowserExtensionGlobalSettings } from './browser/extensions/browser-extension-settings'
 import type { BrowserPasswordsGlobalSettings } from './browser-passwords-types'
 import type { ExecutionHostId } from './execution-host'
@@ -214,6 +215,9 @@ export type GlobalSettings = BrowserPasswordsGlobalSettings &
     openLinksInAppModifierInverts?: boolean
     /** Show link actions on plain click in the terminal and chat; off restores modifier-click-only terminal links. */
     terminalLinkActionPopoverEnabled?: boolean
+    terminalLinkClickBehavior?: 'actions' | 'open' | 'none'
+    terminalUrlMiddleClickBehavior?: 'open' | 'actions' | 'none'
+    openLinksInAppInBackground?: boolean
     /** Opt-in: open new coding-agent tabs in native chat instead of the raw terminal; optional for legacy settings. */
     openAgentTabsInChatByDefault?: boolean
     /** Experimental native chat surface for Claude/Codex sessions; off by default. */
@@ -263,6 +267,9 @@ export type GlobalSettings = BrowserPasswordsGlobalSettings &
     floatingTerminalEnabled: boolean
     /** Main-side new-page kill switch for paired Electron client-hosted browser placement. */
     browserClientHostedRemoteEnabled?: boolean
+    browserProfileScope?: BrowserProfileScope
+    browserDefaultProfileIdByHostId?: Partial<Record<ExecutionHostId, string>>
+    desktopBrowserBridgeNoticedTargetIds?: string[]
     /** Routes SSH-workspace browser pages through the workspace's SSH host; off = plain local browsing. */
     browserSshWorkspaceRoutingEnabled?: boolean
     /** Per-target opt-outs recorded from the routing error card's "Browse from this device instead". */
