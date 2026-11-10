@@ -62,9 +62,9 @@ describe('browser settings search copy', () => {
     expect(linkRoutingEntry?.keywords).not.toContain('cmd')
 
     const terminalActionsEntry = getBrowserPaneSearchEntries({ isMac: false }).find(
-      (entry) => entry.title === 'Show link actions'
+      (entry) => entry.title === 'Terminal URL clicks'
     )
-    expect(terminalActionsEntry?.description).toContain('Ctrl-click')
+    expect(terminalActionsEntry?.description).toContain('clicks on detected URLs')
     expect(terminalActionsEntry?.description).not.toContain('Cmd/Ctrl')
     expect(terminalActionsEntry?.keywords).toEqual(
       getTerminalLinkActionSearchKeywords({ isMac: false })
@@ -73,23 +73,22 @@ describe('browser settings search copy', () => {
     expect(terminalActionsEntry?.keywords).toContain('ctrl')
   })
 
-  // Why: shipping the opt-in must not reword this row for anyone who never enables
-  // it, so the default output has to stay byte-identical to the pre-feature copy.
-  it('keeps the pre-feature wording while inverting is off', () => {
+  // Native routing keeps sign-in pages in the system browser, independent of the modifier setting.
+  it('states the sign-in exception and platform shortcut while inverting is off', () => {
     expect(getBrowserLinkRoutingDescription({ isMac: true })).toBe(
-      "Open http(s) links in Orca's built-in browser — from the terminal, markdown, and the editor. ⇧⌘-click always uses your system browser."
+      'Open http(s) links from anywhere in Orca in its built-in browser. Sign-in pages and ⇧⌘-click always use your system browser.'
     )
     expect(getBrowserLinkRoutingDescription({ isMac: false })).toContain(
-      'Shift+Ctrl+click always uses your system browser.'
+      'Shift+Ctrl+click always use your system browser.'
     )
   })
 
   // Why: "always" would be a lie once the chord can land in Orca, so the nested row
   // takes over the claim.
-  it('drops the modifier claim once inverting is on', () => {
+  it('drops only the modifier claim once inverting is on', () => {
     const description = getBrowserLinkRoutingDescription({ isMac: true }, true)
     expect(description).not.toContain('click')
-    expect(description).not.toContain('system browser')
+    expect(description).toContain('Sign-in pages still open in your system browser.')
   })
 })
 
@@ -103,11 +102,15 @@ describe('browser link routing modifier copy', () => {
       'Default Zoom',
       'Link Routing',
       'Hold Shift to open in Orca',
-      'Show link actions',
+      'Terminal URL clicks',
       'Localhost Worktree Labels',
       'Session & Cookies',
       'Remote server workspaces',
-      'SSH workspaces'
+      'SSH workspaces',
+      'Browser identity',
+      'Site permissions',
+      'Profile for new tabs',
+      'Open links in the background'
     ])
   })
 
@@ -184,7 +187,9 @@ describe('Link Routing description localization', () => {
     expect(entry).toBeDefined()
 
     await i18n.changeLanguage('en')
-    expect(getBrowserLinkRoutingDescription({ isMac: true })).toContain("Orca's built-in browser")
+    expect(getBrowserLinkRoutingDescription({ isMac: true })).toContain(
+      'anywhere in Orca in its built-in browser'
+    )
   })
 
   it('renders the Korean copy for the invert-on variant', async () => {

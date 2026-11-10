@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getRemoteBrowserFrameStyle } from './remote-browser-frame-style'
 
 describe('getRemoteBrowserFrameStyle', () => {
-  it('fills the client viewport even when stale metadata reports an oversized bitmap', () => {
+  it('fits the CSS viewport aspect even when stale metadata reports an oversized bitmap', () => {
     expect(
       getRemoteBrowserFrameStyle({
         imageWidth: 2266,
@@ -11,14 +11,15 @@ describe('getRemoteBrowserFrameStyle', () => {
         deviceHeight: 609
       })
     ).toEqual({
-      width: '100%',
-      height: '100%',
-      objectFit: 'fill',
-      objectPosition: 'top left'
+      inset: 0,
+      margin: 'auto',
+      width: `min(100cqw, calc(100cqh * ${958 / 609}))`,
+      height: `min(100cqh, calc(100cqw / ${958 / 609}))`,
+      objectFit: 'fill'
     })
   })
 
-  it('keeps correctly sized frames filling the viewport', () => {
+  it('centers correctly sized frames within the available viewport', () => {
     expect(
       getRemoteBrowserFrameStyle({
         imageWidth: 958,
@@ -27,10 +28,11 @@ describe('getRemoteBrowserFrameStyle', () => {
         deviceHeight: 609
       })
     ).toEqual({
-      width: '100%',
-      height: '100%',
-      objectFit: 'fill',
-      objectPosition: 'top left'
+      inset: 0,
+      margin: 'auto',
+      width: `min(100cqw, calc(100cqh * ${958 / 609}))`,
+      height: `min(100cqh, calc(100cqw / ${958 / 609}))`,
+      objectFit: 'fill'
     })
   })
 
@@ -43,10 +45,11 @@ describe('getRemoteBrowserFrameStyle', () => {
         deviceHeight: 609
       })
     ).toEqual({
-      width: '100%',
-      height: '100%',
-      objectFit: 'fill',
-      objectPosition: 'top left'
+      inset: 0,
+      margin: 'auto',
+      width: `min(100cqw, calc(100cqh * ${999 / 609}))`,
+      height: `min(100cqh, calc(100cqw / ${999 / 609}))`,
+      objectFit: 'fill'
     })
   })
 
@@ -59,14 +62,15 @@ describe('getRemoteBrowserFrameStyle', () => {
         deviceHeight: 609
       })
     ).toEqual({
-      width: '100%',
-      height: '100%',
-      objectFit: 'fill',
-      objectPosition: 'top left'
+      inset: 0,
+      margin: 'auto',
+      width: `min(100cqw, calc(100cqh * ${999 / 609}))`,
+      height: `min(100cqh, calc(100cqw / ${999 / 609}))`,
+      objectFit: 'fill'
     })
   })
 
-  it('does not shrink malformed frame metadata below the viewport', () => {
+  it('ignores malformed bitmap dimensions when fitting the CSS viewport', () => {
     expect(
       getRemoteBrowserFrameStyle({
         imageWidth: 10,
@@ -75,10 +79,11 @@ describe('getRemoteBrowserFrameStyle', () => {
         deviceHeight: 609
       })
     ).toEqual({
-      width: '100%',
-      height: '100%',
-      objectFit: 'fill',
-      objectPosition: 'top left'
+      inset: 0,
+      margin: 'auto',
+      width: `min(100cqw, calc(100cqh * ${958 / 609}))`,
+      height: `min(100cqh, calc(100cqw / ${958 / 609}))`,
+      objectFit: 'fill'
     })
   })
 })

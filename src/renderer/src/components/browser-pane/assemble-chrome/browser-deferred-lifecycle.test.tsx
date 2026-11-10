@@ -16,6 +16,8 @@ type MockState = {
   updateBrowserPageState: () => void
   setBrowserPageUrl: () => void
   settings: { browserSshWorkspaceRoutingEnabled: boolean }
+  terminalStartupRestorationReady: boolean
+  sshConnectionStates: Map<string, { status: 'connected'; connectionGeneration: number }>
 }
 
 const mocks = vi.hoisted(() => ({
@@ -33,13 +35,16 @@ vi.mock('@/store/index', async () => {
   }
 })
 vi.mock('@/lib/worktree-runtime-owner', () => ({
-  getRuntimeEnvironmentIdForWorktree: () => null,
+  runtimeEnvironmentIdOrLocalUnlessTwin: () => null,
   getExecutionHostIdForWorktree: () => mocks.executionHostId
 }))
 vi.mock('@/components/contextual-tours/use-contextual-tour', () => ({
   useContextualTour: () => {}
 }))
-vi.mock('../host-guest/webview-registry', () => ({ destroyPersistentWebview: mocks.destroy }))
+vi.mock('../host-guest/webview-registry', () => ({
+  destroyPersistentWebview: mocks.destroy,
+  webviewRegistry: new Map()
+}))
 vi.mock('./BrowserMobileDriverOverlay', () => ({ BrowserMobileDriverOverlay: () => null }))
 vi.mock('./browser-page-pane', () => ({
   BrowserPagePane: ({ browserTab, isActive }: { browserTab: BrowserPage; isActive: boolean }) => (
@@ -107,7 +112,12 @@ function createState(): MockState {
     focusGroup: () => {},
     updateBrowserPageState: () => {},
     setBrowserPageUrl: () => {},
-    settings: { browserSshWorkspaceRoutingEnabled: true }
+    settings: { browserSshWorkspaceRoutingEnabled: true },
+    terminalStartupRestorationReady: true,
+    sshConnectionStates: new Map([
+      ['target-prepared', { status: 'connected', connectionGeneration: 1 }],
+      ['target-guarded', { status: 'connected', connectionGeneration: 1 }]
+    ])
   }
 }
 
@@ -141,7 +151,10 @@ describe('deferred browser lifecycle through the overlay and SSH gate', () => {
     mocks.prepare.mockReset().mockResolvedValue({ partition: 'persist:orca-browser-v1-routed' })
     Object.defineProperty(window, 'api', {
       configurable: true,
-      value: { browser: { prepareSshWorkspacePartition: mocks.prepare } }
+      value: {
+        browser: { prepareSshWorkspacePartition: mocks.prepare },
+        ui: { onBrowserPagePointerDown: () => () => {} }
+      }
     })
   })
   afterEach(() => {
@@ -248,7 +261,7 @@ describe('deferred browser lifecycle through the overlay and SSH gate', () => {
   )
 
   it('keeps a prepared SSH gate and its opened pages alive when switching tabs', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = 'ssh:target-prepared'
     const view = render(surface())
     await settle()
     const page = view.container.querySelector('[data-page-id="a-1"]')
@@ -277,7 +290,7 @@ describe('deferred browser lifecycle through the overlay and SSH gate', () => {
   })
 
   it('guards all pages, including inactive tabs, when SSH routing is enabled', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = 'ssh:target-guarded'
     mocks.state!.settings.browserSshWorkspaceRoutingEnabled = false
     const view = render(surface())
     selectPage('a-2')

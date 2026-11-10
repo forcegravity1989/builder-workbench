@@ -76,7 +76,13 @@ describe('webview registry drag listeners', () => {
 
     registerPersistentWebview('page-1', createWebview())
 
-    expect(addedListeners.map((entry) => entry.type)).toEqual(['dragstart', 'dragend', 'drop'])
+    expect(addedListeners.map((entry) => entry.type)).toEqual([
+      'dragstart',
+      'dragend',
+      'drop',
+      'pointerdown',
+      'pointermove'
+    ])
   })
 
   it('removes drag listeners after the last webview is destroyed', async () => {
@@ -86,7 +92,7 @@ describe('webview registry drag listeners', () => {
     registerPersistentWebview('page-1', createWebview())
     registerPersistentWebview('page-2', createWebview())
 
-    expect(addedListeners).toHaveLength(3)
+    expect(addedListeners).toHaveLength(5)
 
     destroyPersistentWebview('page-1')
 
@@ -94,7 +100,13 @@ describe('webview registry drag listeners', () => {
 
     destroyPersistentWebview('page-2')
 
-    expect(removedListeners.map((entry) => entry.type)).toEqual(['dragstart', 'dragend', 'drop'])
+    expect(removedListeners.map((entry) => entry.type)).toEqual([
+      'dragstart',
+      'dragend',
+      'drop',
+      'pointerdown',
+      'pointermove'
+    ])
     expect(unregisterGuestMock).toHaveBeenCalledWith({ browserPageId: 'page-1' })
     expect(unregisterGuestMock).toHaveBeenCalledWith({ browserPageId: 'page-2' })
   })
@@ -130,7 +142,7 @@ describe('webview registry drag listeners', () => {
     registerPersistentWebview('page-1', createWebview())
     registerPersistentWebview('page-2', createWebview())
 
-    expect(addedListeners).toHaveLength(3)
+    expect(addedListeners).toHaveLength(5)
   })
 
   it('profiles live webviews and registered browser guests for memory breadcrumbs', async () => {

@@ -93,6 +93,7 @@ vi.mock('@/components/terminal-pane/terminal-remote-file-download-open', () => (
 const storeState = {
   getKnownWorktreeById: () => ({ path: '/repo' }),
   persistedUIReady: true,
+  setContextualToursBlockingSurfaceVisible: vi.fn(),
   settings: { activeRuntimeEnvironmentId: 'env-1' },
   keybindings: {},
   browserPagesByWorkspace: {},
@@ -104,6 +105,8 @@ const storeState = {
   closeAgentSendPopoverTargetMode: () => undefined,
   addBrowserPageAnnotation: () => undefined,
   deleteBrowserPageAnnotation: () => undefined,
+  updateBrowserPageAnnotation: () => undefined,
+  removeDeliveredBrowserPageAnnotations: () => undefined,
   clearBrowserPageAnnotations: () => undefined,
   recordFeatureInteraction: () => undefined,
   openFile: (file: unknown) => {
@@ -220,6 +223,7 @@ describe('HtmlDocPreview browser chrome', () => {
         }
       },
       browser: {
+        onGuestEscape: () => () => undefined,
         unregisterGuest: () => Promise.resolve(),
         setGrabMode: (args: { browserPageId: string; enabled: boolean }) => {
           grabCalls.push(args)

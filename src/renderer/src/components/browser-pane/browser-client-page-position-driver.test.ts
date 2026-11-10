@@ -173,10 +173,8 @@ describe('client-hosted page position driver', () => {
     expect(frames.cancelled()).toHaveLength(1)
   })
 
-  // Why this is pinned: one loop now serves every overlay, so a host that throws must not take
-  // the others down with it — nothing would restart the loop, and a pane that merely moves fires
-  // no resize/scroll event to recover from.
-  it('keeps syncing the other hosts and reschedules when one host throws', async () => {
+  // One shared burst serves every overlay; a failed host must not block healthy hosts or later wakes.
+  it('isolates a failed host across settling and the next wake', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const broken = await attachHost('page-one', 10)
     const healthy = await attachHost('page-two', 20)
@@ -189,12 +187,19 @@ describe('client-hosted page position driver', () => {
     expect(healthy.host().style.top).toBe('12px')
     expect(frames.pending()).toBe(1)
 
-    // Still running a frame later, and the repeat failure is not re-logged every frame.
+    // The second settle frame still updates healthy hosts without repeating the warning.
     moveContainer(healthy.container, 333, 24)
     frames.runFrame()
 
     expect(healthy.host().style.left).toBe('333px')
+    expect(frames.pending()).toBe(0)
+
+    window.dispatchEvent(new Event('resize'))
     expect(frames.pending()).toBe(1)
+    moveContainer(healthy.container, 444, 36)
+    frames.runFrame()
+    expect(healthy.host().style.left).toBe('444px')
+    expect(healthy.host().style.top).toBe('36px')
     expect(warn).toHaveBeenCalledTimes(1)
   })
 

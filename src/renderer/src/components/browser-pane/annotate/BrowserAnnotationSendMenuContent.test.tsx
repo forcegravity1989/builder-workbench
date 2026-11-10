@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { BrowserAnnotationSendMenuContent } from './BrowserAnnotationSendMenuContent'
 
+vi.mock('@/i18n/use-translate', () => ({
+  useTranslate: () => (_key: string, fallback: string) => fallback
+}))
+
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenuCheckboxItem: 'checkbox',
   DropdownMenuSeparator: 'hr'

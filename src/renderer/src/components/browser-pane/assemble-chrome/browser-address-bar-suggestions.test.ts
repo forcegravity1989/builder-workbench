@@ -269,7 +269,7 @@ describe('browser address bar suggestions', () => {
       )
     })
 
-    it('folds the synthetic row away when history already offers the same url', () => {
+    it('merges matching history into the typed-address row without duplicating its URL', () => {
       const suggestions = buildBrowserAddressBarSuggestions({
         value: 'acme.dev',
         browserUrlHistory: [
@@ -284,7 +284,15 @@ describe('browser address bar suggestions', () => {
       })
 
       expect(suggestions).toEqual([
-        expect.objectContaining({ url: 'https://acme.dev/', title: 'Acme', isSearch: false })
+        expect.objectContaining({
+          url: 'https://acme.dev/',
+          title: 'acme.dev',
+          subtitle: '',
+          isSearch: false,
+          normalizedUrl: 'https://acme.dev',
+          lastVisitedAt: now,
+          visitCount: 4
+        })
       ])
     })
   })

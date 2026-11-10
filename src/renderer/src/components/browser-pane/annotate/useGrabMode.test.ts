@@ -18,10 +18,11 @@ function createReactHookHarness() {
     effects,
     react: {
       useCallback: <T extends (...args: never[]) => unknown>(callback: T): T => callback,
+      useEffectEvent: <T extends (...args: never[]) => unknown>(callback: T): T => callback,
       useEffect: (effect: () => void | (() => void), deps?: readonly unknown[]) => {
         effects.push({ effect, deps })
       },
-      useLayoutEffect: () => {},
+      useLayoutEffect: (effect: () => void) => effect(),
       useRef: <T>(initialValue: T): { current: T } => {
         const index = refIndex
         refIndex += 1
@@ -64,6 +65,7 @@ describe('useGrabMode', () => {
       removeEventListener: vi.fn(),
       api: {
         browser: {
+          onGuestEscape: vi.fn(() => () => {}),
           setGrabMode,
           awaitGrabSelection: vi.fn(() => new Promise(() => {})),
           cancelGrab: vi.fn()
@@ -100,6 +102,7 @@ describe('useGrabMode', () => {
       removeEventListener: vi.fn(),
       api: {
         browser: {
+          onGuestEscape: vi.fn(() => () => {}),
           setGrabMode: vi.fn(async () => ({ ok: false, reason: 'injection-failed' })),
           awaitGrabSelection: vi.fn(),
           cancelGrab: vi.fn()
@@ -238,6 +241,7 @@ describe('useGrabMode', () => {
       removeEventListener: vi.fn(),
       api: {
         browser: {
+          onGuestEscape: vi.fn(() => () => {}),
           setGrabMode: vi.fn(async () => ({ ok: true })),
           awaitGrabSelection,
           captureSelectionScreenshot,
@@ -289,6 +293,7 @@ describe('useGrabMode', () => {
       removeEventListener: vi.fn(),
       api: {
         browser: {
+          onGuestEscape: vi.fn(() => () => {}),
           setGrabMode,
           awaitGrabSelection: vi.fn(() => new Promise(() => {})),
           cancelGrab: vi.fn()
@@ -342,6 +347,7 @@ describe('useGrabMode', () => {
       removeEventListener: vi.fn(),
       api: {
         browser: {
+          onGuestEscape: vi.fn(() => () => {}),
           setGrabMode,
           awaitGrabSelection: vi.fn(() => new Promise(() => {})),
           cancelGrab: vi.fn()

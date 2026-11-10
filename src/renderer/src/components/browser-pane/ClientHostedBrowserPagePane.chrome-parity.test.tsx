@@ -7,6 +7,11 @@ import type {
   BrowserPage
 } from '../../../../shared/browser-workspace-types'
 import type {
+  BrowserHistoryNavigateCommand,
+  BrowserPageCommandTarget
+} from '../../../../shared/browser-page-command-target'
+import type { BrowserPageZoomCommand } from '../../../../shared/browser-page-zoom'
+import type {
   BrowserContextMenuRequestedEvent,
   BrowserPermissionDeniedEvent
 } from '../../../../shared/browser-guest-events'
@@ -44,10 +49,11 @@ let contextMenu = paneChannel<BrowserContextMenuRequestedEvent>()
 let contextMenuDismissed = paneChannel<{ browserPageId: string }>()
 let permissionDenied = paneChannel<BrowserPermissionDeniedEvent>()
 let findRequests = paneChannel<void>()
-let historyNavigate = paneChannel<'back' | 'forward'>()
-let reloadRequests = paneChannel<void>()
-let hardReloadRequests = paneChannel<void>()
-let zoomRequests = paneChannel<'in' | 'out' | 'reset'>()
+let historyNavigate = paneChannel<BrowserHistoryNavigateCommand>()
+let reloadRequests = paneChannel<BrowserPageCommandTarget>()
+let hardReloadRequests = paneChannel<BrowserPageCommandTarget>()
+let zoomRequests = paneChannel<BrowserPageZoomCommand>()
+let zoomPage = vi.fn(async () => ({ site: 'https://example.internal', zoomLevel: 1 }))
 let openDevTools = vi.fn(async () => true)
 let proceedCertificate = vi.fn(async () => ({ ok: true as const }))
 let openUrl = vi.fn(async () => {})
@@ -63,6 +69,7 @@ beforeEach(() => {
   reloadRequests = paneChannel()
   hardReloadRequests = paneChannel()
   zoomRequests = paneChannel()
+  zoomPage = vi.fn(async () => ({ site: 'https://example.internal', zoomLevel: 1 }))
   openDevTools = vi.fn(async () => true)
   proceedCertificate = vi.fn(async () => ({ ok: true as const }))
   openUrl = vi.fn(async () => {})
@@ -73,14 +80,15 @@ beforeEach(() => {
       onContextMenuDismissed: contextMenuDismissed.subscribe,
       onPermissionDenied: permissionDenied.subscribe,
       openDevTools,
+      zoomPage,
       proceedCertificate
     },
     ui: {
       onFindInBrowserPage: (_source: unknown, callback: () => void) =>
         findRequests.subscribe(callback),
       onBrowserHistoryNavigate: historyNavigate.subscribe,
-      onReloadBrowserPage: (callback: () => void) => reloadRequests.subscribe(callback),
-      onHardReloadBrowserPage: (callback: () => void) => hardReloadRequests.subscribe(callback),
+      onReloadBrowserPage: reloadRequests.subscribe,
+      onHardReloadBrowserPage: hardReloadRequests.subscribe,
       onZoomBrowserPage: zoomRequests.subscribe,
       writeClipboardText
     },
@@ -137,34 +145,33 @@ describe('ClientHostedBrowserPagePane chrome parity', () => {
   it('reloads and hard-reloads the retained guest from the forwarded chords', () => {
     const { webview } = renderPane()
 
-    act(() => reloadRequests.emit(undefined))
+    act(() => reloadRequests.emit({ browserPageId: 'page-a' }))
     expect(webview.reload).toHaveBeenCalledTimes(1)
     expect(webview.reloadIgnoringCache).not.toHaveBeenCalled()
 
-    act(() => hardReloadRequests.emit(undefined))
+    act(() => hardReloadRequests.emit({ browserPageId: 'page-a' }))
     expect(webview.reloadIgnoringCache).toHaveBeenCalledTimes(1)
   })
 
   it('walks history from the forwarded chords', () => {
     const { webview } = renderPane()
 
-    act(() => historyNavigate.emit('back'))
-    act(() => historyNavigate.emit('forward'))
+    act(() => historyNavigate.emit({ browserPageId: 'page-a', direction: 'back' }))
+    act(() => historyNavigate.emit({ browserPageId: 'page-a', direction: 'forward' }))
 
     expect(webview.goBack).toHaveBeenCalledTimes(1)
     expect(webview.goForward).toHaveBeenCalledTimes(1)
   })
 
-  it('zooms the retained guest and shows the level while the chord lands', () => {
-    const { webview } = renderPane()
+  it('routes site zoom to main and shows its returned level', async () => {
+    renderPane()
     // The HUD is aria-hidden until a zoom lands, so it has to be queried past that gate.
     const indicator = screen.getByRole('status', { hidden: true })
     expect(indicator.getAttribute('aria-hidden')).toBe('true')
 
-    act(() => zoomRequests.emit('in'))
+    await act(async () => zoomRequests.emit({ browserPageId: 'page-a', direction: 'in' }))
 
-    expect(webview.setZoomLevel).toHaveBeenCalledTimes(1)
-    expect(webview.setZoomLevel.mock.calls[0]![0]).toBeGreaterThan(0)
+    expect(zoomPage).toHaveBeenCalledExactlyOnceWith({ browserPageId: 'page-a', direction: 'in' })
     expect(indicator.getAttribute('aria-hidden')).toBe('false')
     expect(indicator.textContent).not.toBe('100%')
   })

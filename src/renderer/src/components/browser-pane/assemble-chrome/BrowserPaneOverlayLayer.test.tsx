@@ -89,10 +89,12 @@ describe('BrowserPaneOverlayLayer', () => {
     mocks.remotelyViewedPageIds.clear()
     mocks.focusGroup.mockClear()
     mocks.state = createState()
+    vi.stubGlobal('api', { ui: { onBrowserPagePointerDown: () => () => {} } })
   })
 
   afterEach(() => {
     cleanup()
+    vi.unstubAllGlobals()
     // The row store is module-level, so a leftover row would render an extra pane in every
     // sibling test.
     clearClientHostedBrowserRowSelection()

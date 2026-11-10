@@ -71,6 +71,7 @@ vi.mock('@/components/browser-pane/host-guest/webview-registry', async (importOr
 const storeState = {
   getKnownWorktreeById: () => ({ path: '/repo' }),
   persistedUIReady: true,
+  setContextualToursBlockingSurfaceVisible: vi.fn(),
   settings: {},
   keybindings: {},
   browserPagesByWorkspace: {},
@@ -82,6 +83,8 @@ const storeState = {
   closeAgentSendPopoverTargetMode: () => undefined,
   addBrowserPageAnnotation: () => undefined,
   deleteBrowserPageAnnotation: () => undefined,
+  updateBrowserPageAnnotation: () => undefined,
+  removeDeliveredBrowserPageAnnotations: () => undefined,
   clearBrowserPageAnnotations: () => undefined,
   recordFeatureInteraction: () => undefined,
   recordWorkspaceDocVisit: () => undefined,
@@ -157,7 +160,10 @@ describe('HtmlDocPreview failure messages', () => {
         }
       },
       ui: { writeClipboardText: () => Promise.resolve() },
-      browser: { setAnnotationViewportBridge: () => Promise.resolve(true) }
+      browser: {
+        onGuestEscape: () => () => undefined,
+        setAnnotationViewportBridge: () => Promise.resolve(true)
+      }
     }
     container = document.createElement('div')
     document.body.append(container)

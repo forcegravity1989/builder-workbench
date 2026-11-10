@@ -23,7 +23,7 @@ vi.mock('@/store/index', () => ({
   useAppStore: (selector: (state: unknown) => unknown) => selector(mocks.storeState)
 }))
 vi.mock('@/lib/worktree-runtime-owner', () => ({
-  getRuntimeEnvironmentIdForWorktree: () => null
+  runtimeEnvironmentIdOrLocalUnlessTwin: () => null
 }))
 vi.mock('./HtmlDocPreview', () => ({
   HtmlDocPreview: ({ holdsGuestFocus }: { holdsGuestFocus?: boolean }) => {

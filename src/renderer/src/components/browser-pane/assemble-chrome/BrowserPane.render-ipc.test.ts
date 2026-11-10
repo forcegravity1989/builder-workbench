@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 describe('BrowserPagePane render IPC boundary', () => {
   it('derives toolbar URLs without querying the webview', () => {
     const source = readFileSync(
-      fileURLToPath(new URL('./browser-page-pane', import.meta.url)),
+      fileURLToPath(new URL('./browser-page-pane.tsx', import.meta.url)),
       'utf8'
     )
     const start = source.indexOf('const isBlankTab =', source.indexOf('function BrowserPagePane'))

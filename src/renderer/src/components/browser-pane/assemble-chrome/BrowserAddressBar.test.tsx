@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserHistoryEntry } from '../../../../../shared/browser-workspace-types'
 import BrowserAddressBar from './BrowserAddressBar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 const mocks = vi.hoisted(() => ({
   browserUrlHistory: [] as BrowserHistoryEntry[],
@@ -67,7 +68,7 @@ function AddressBarHarness({
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   return (
-    <>
+    <TooltipProvider>
       <BrowserAddressBar
         pageId="page-1"
         value={value}
@@ -77,7 +78,7 @@ function AddressBarHarness({
         inputRef={inputRef}
       />
       <span data-current-address-value="true">{value}</span>
-    </>
+    </TooltipProvider>
   )
 }
 
