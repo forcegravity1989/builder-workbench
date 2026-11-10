@@ -66,6 +66,7 @@ function createGuest(): Electron.WebviewTag & {
     reload: ReturnType<typeof vi.fn>
   }
   Object.assign(webview, {
+    getWebContentsId: vi.fn(() => 42),
     getURL: vi.fn(() => 'https://example.internal/'),
     getTitle: vi.fn(() => 'Example'),
     isLoading: vi.fn(() => false),
@@ -223,11 +224,17 @@ describe('client-hosted browser pane over a dead guest', () => {
     })
 
     act(() => {
-      webview.dispatchEvent(new Event('did-start-loading'))
+      webview.dispatchEvent(
+        Object.assign(new Event('did-start-navigation'), {
+          isMainFrame: true,
+          isInPlace: false,
+          url: 'https://example.internal/next'
+        })
+      )
     })
 
     expect(screen.getByText('Client-hosted browser unavailable')).toBeTruthy()
-    // did-start-loading writes loading:true first; the loss must be the last word.
+    // Main-document navigation writes loading:true first; the loss must be the last word.
     expect(onUpdatePageState.mock.calls.at(-1)).toEqual(['page-a', { loading: false }])
   })
 
@@ -237,7 +244,15 @@ describe('client-hosted browser pane over a dead guest', () => {
     act(() => webview.dispatchEvent(new Event('destroyed')))
     onUpdatePageState.mockClear()
 
-    act(() => webview.dispatchEvent(new Event('did-start-loading')))
+    act(() =>
+      webview.dispatchEvent(
+        Object.assign(new Event('did-start-navigation'), {
+          isMainFrame: true,
+          isInPlace: false,
+          url: 'https://example.internal/next'
+        })
+      )
+    )
 
     expect(onUpdatePageState).not.toHaveBeenCalled()
     expect(screen.getByText('Client-hosted browser unavailable')).toBeTruthy()

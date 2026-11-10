@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store/index'
@@ -11,7 +11,7 @@ import { REMOTE_BROWSER_STREAM_LIVE } from './remote-browser-stream-status'
 // here: this suite is about the chrome the pane wraps around it, which owns focus and the URL field.
 const mocks = vi.hoisted(() => ({
   frameUrl: { current: null as string | null },
-  addressBarValue: { current: 'about:blank' }
+  pageUrl: { current: 'about:blank' }
 }))
 
 vi.mock('@/runtime/runtime-rpc-client', () => ({
@@ -100,8 +100,6 @@ vi.mock('./remote-browser-page-context-menu', () => ({
 
 vi.mock('./use-remote-browser-page-navigation', () => ({
   useRemoteBrowserPageNavigation: () => ({
-    addressBarValue: mocks.addressBarValue.current,
-    setAddressBarValue: vi.fn(),
     applyRemoteTabInfo: vi.fn(),
     scheduleRemoteTabInfoRefresh: vi.fn(),
     runRemoteNavigation: vi.fn(),
@@ -149,7 +147,7 @@ function page(): BrowserPage {
     id: PAGE_ID,
     workspaceId: 'workspace-a',
     worktreeId: 'worktree-a',
-    url: 'about:blank',
+    url: mocks.pageUrl.current,
     title: 'New Tab',
     loading: false,
     faviconUrl: null,
@@ -191,7 +189,7 @@ describe('RemoteBrowserPagePane address bar parity', () => {
   beforeEach(() => {
     frameCallbacks = []
     mocks.frameUrl.current = null
-    mocks.addressBarValue.current = 'about:blank'
+    mocks.pageUrl.current = 'about:blank'
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       frameCallbacks.push(callback)
       return frameCallbacks.length
@@ -218,7 +216,7 @@ describe('RemoteBrowserPagePane address bar parity', () => {
     vi.unstubAllGlobals()
   })
 
-  it('opens a new blank tab in the address bar with its text selected', () => {
+  it('opens a new blank tab with an empty focused address bar', () => {
     useAppStore.setState({
       pendingAddressBarFocusByPageId: { [PAGE_ID]: true },
       pendingAddressBarFocusByTabId: { [PAGE_ID]: true }
@@ -229,10 +227,11 @@ describe('RemoteBrowserPagePane address bar parity', () => {
     const input = addressBar()
     expect(document.activeElement).toBe(input)
     expect(input.selectionStart).toBe(0)
-    expect(input.selectionEnd).toBe('about:blank'.length)
+    expect(input.value).toBe('')
+    expect(input.selectionEnd).toBe(0)
   })
 
-  it('offers the shared URL history as suggestions once the bar has focus', () => {
+  it('offers the shared URL history as suggestions once the user types', () => {
     useAppStore.setState({
       browserUrlHistory: [
         {
@@ -249,11 +248,12 @@ describe('RemoteBrowserPagePane address bar parity', () => {
 
     renderPane()
 
-    expect(screen.getByText('Google Maps')).toBeTruthy()
+    act(() => fireEvent.change(addressBar(), { target: { value: 'maps' } }))
+    expect(within(screen.getByRole('listbox')).getByText('Google Maps')).toBeTruthy()
   })
 
   it('does not steal focus from a page the user is already on', () => {
-    mocks.addressBarValue.current = 'https://remote.internal/path'
+    mocks.pageUrl.current = 'https://remote.internal/path'
 
     renderPane()
 

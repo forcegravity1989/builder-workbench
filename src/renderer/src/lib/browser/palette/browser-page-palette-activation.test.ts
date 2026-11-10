@@ -318,13 +318,12 @@ describe('activateBrowserPagePaletteResult', () => {
     expect(mocks.activateAndRevealWorkspace).not.toHaveBeenCalled()
   })
 
-  it('reports a failed worktree activation distinguishably from a stale page', () => {
+  it('reports a blocked worktree activation without changing the active page', () => {
     mocks.activateAndRevealWorkspace.mockReturnValue(false)
+    const before = useAppStore.getState()
 
-    expect(activateBrowserPagePaletteResult(target)).toEqual({
-      status: 'failed',
-      reason: 'missing-worktree'
-    })
+    expect(activateBrowserPagePaletteResult(target)).toEqual({ status: 'blocked' })
+    expect(useAppStore.getState()).toBe(before)
     expect(useAppStore.getState().activeBrowserTabId).toBeNull()
   })
 })

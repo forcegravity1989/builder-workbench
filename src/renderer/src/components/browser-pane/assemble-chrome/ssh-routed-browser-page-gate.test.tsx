@@ -2,6 +2,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store/index'
+import { createGlobalSettingsFixture } from '../../../../../shared/global-settings-test-fixture'
 import type * as WorktreeRuntimeOwner from '@/lib/worktree-runtime-owner'
 
 const mocks = vi.hoisted(() => ({
@@ -36,9 +37,10 @@ describe('SshRoutedBrowserPageGate', () => {
   beforeEach(() => {
     targetId = `target-${++routeSequence}`
     const prior = useAppStore.getState()
+    const settings = createGlobalSettingsFixture(prior.settings ?? {})
     useAppStore.setState({
       settings: {
-        ...prior.settings,
+        ...settings,
         browserSshWorkspaceRoutingEnabled: true,
         browserSshWorkspaceRoutingDisabledTargetIds: [],
         browserSshWorkspaceRoutingProbeSkippedTargetIds: []
@@ -56,7 +58,9 @@ describe('SshRoutedBrowserPageGate', () => {
         ]
       ]),
       updateSettings: async (patch) => {
-        useAppStore.setState((state) => ({ settings: { ...state.settings, ...patch } }))
+        useAppStore.setState((state) => ({
+          settings: { ...(state.settings ?? settings), ...patch }
+        }))
       }
     })
     restoreStore = () =>

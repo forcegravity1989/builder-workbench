@@ -181,7 +181,7 @@ describe('BrowserAddressBar autocomplete preview', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('dismisses suggestions when Escape is pressed outside React input handling', async () => {
+  it('restores the typed query when Escape is pressed in the address bar', async () => {
     const onNavigate = vi.fn()
     const onSubmit = vi.fn()
 
@@ -206,7 +206,7 @@ describe('BrowserAddressBar autocomplete preview', () => {
     )
 
     await act(async () => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     })
 
     expect(container.querySelector('[data-current-address-value="true"]')?.textContent).toBe(

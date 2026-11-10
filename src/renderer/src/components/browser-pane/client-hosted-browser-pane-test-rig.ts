@@ -39,6 +39,7 @@ export function installClientHostedPaneApi(overrides?: {
     value: {
       browser: {
         onPopup: inert,
+        onGuestEscape: inert,
         onPermissionDenied: inert,
         onContextMenuRequested: inert,
         onContextMenuDismissed: inert,

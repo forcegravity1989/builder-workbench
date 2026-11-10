@@ -194,7 +194,7 @@ describe('client-hosted page position driver', () => {
     expect(healthy.host().style.left).toBe('333px')
     expect(frames.pending()).toBe(0)
 
-    window.dispatchEvent(new Event('resize'))
+    window.dispatchEvent(new Event('pointerdown'))
     expect(frames.pending()).toBe(1)
     moveContainer(healthy.container, 444, 36)
     frames.runFrame()
