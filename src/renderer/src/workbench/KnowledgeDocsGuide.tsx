@@ -180,14 +180,14 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
           <p className="kb-doc-lede">正在扫描仓库…</p>
         ) : !hasRepo ? (
           <p className="kb-doc-lede">
-            请先接入项目。
+            请先添加项目。
             <button
               type="button"
               className="wb-btn wb-btn-primary wb-btn-sm"
               style={{ marginLeft: 8 }}
               onClick={() => openAddProject()}
             >
-              + 接入项目
+              + 添加项目
             </button>
           </p>
         ) : audienceDocs.length === 0 ? (

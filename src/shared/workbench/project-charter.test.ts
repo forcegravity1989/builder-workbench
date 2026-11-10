@@ -135,7 +135,9 @@ north_star = ""
     expect(content).toContain('name = "  a  " # identity')
     expect(content).toContain('brief = "new\\nline" # summary')
     expect(content).toContain('north_star = "" # direction')
-    expect(content).toContain('custom = 12\r\n\r\n[chat]\r\ngroup = "untouched"\r\n')
+    expect(content).toContain(
+      'custom = 12\r\n\r\nowner = "李四"\r\n[chat]\r\ngroup = "untouched"\r\n'
+    )
     expect(parseProjectToml(content)).toEqual({
       ...before,
       owner: '李四',

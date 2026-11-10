@@ -124,7 +124,7 @@ export function KnowledgePage(): React.JSX.Element {
       ? `加载失败：${error}`
       : activeRepo
         ? `${docs.length} 份仓库文档 · ${repoLabel}`
-        : '请先接入项目'
+        : '请先添加项目'
 
   return (
     <div className={`wb-kb${editorOpen && tab === 'docs' ? ' is-ed' : ''}`} data-screen="kb">

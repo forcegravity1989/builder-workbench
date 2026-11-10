@@ -1,9 +1,9 @@
-# 纳入项目与项目信息记录规格
+# 添加项目与项目信息规格
 
 > 给设计、实现与验收者读取；本文管目标行为与判据，价值见 [intent](intent.md)，执行证据见 [STATUS](STATUS.md)。行为变化时改对应主题，不记录开发流水。
 > **状态：G1 设计已确认，生产实现与验证进行中**。浏览器批注及最终 AskUser 已确认范围与取舍。[当前可点原型](project-settings-prototype.html)覆盖添加、扫墙、打开与编辑；旧配置原型从 [Git 基线](https://github.com/forcegravity1989/builder-workbench/blob/b90c743851b98f5beaa33f26b8145beb92782103/docs/05-features/project-intake/project-settings-prototype.html)追溯。既有墙卡与跨主机原型仅作历史参考，不充当现行目标。
 
-## 添加项目与项目墙重构候选
+## 添加项目与项目墙
 
 归属 v1.0 G1，承接 #345、#497、#479、#489、#563、#499、#586。[可点原型](project-settings-prototype.html)经浏览器批注及最终取舍确认；实施与验证按仓外 plan 连续推进。本篇只保留最终目标；被替代的准入和读数方案从 Git 追溯。
 

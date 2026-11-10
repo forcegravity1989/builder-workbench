@@ -239,16 +239,16 @@ export function OverviewPage(): React.JSX.Element {
         </header>
         <div className="content">
           <section className="card" style={{ padding: 24, textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有接入项目。</p>
+            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
             <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
-              点左上角项目名打开项目墙，再「+ 接入项目」。
+              添加项目后，可在这里查看项目总览。
             </p>
             <button
               type="button"
               className="wb-btn wb-btn-primary"
               onClick={() => openAddProject()}
             >
-              + 接入项目
+              + 添加项目
             </button>
           </section>
         </div>
