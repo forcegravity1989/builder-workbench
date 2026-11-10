@@ -14,6 +14,7 @@ import {
   CodeHubSetReviewers,
   CodeHubListPipelines,
   CodeHubMrChecks,
+  CodeHubMrForBranch,
   CodeHubMrChanges,
   CodeHubViewTask,
   CodeHubListComments,
@@ -22,6 +23,11 @@ import {
 } from '../../../../shared/codehub-api'
 
 export const CODEHUB_METHODS = [
+  defineMethod({
+    name: 'codehub.mrForBranch',
+    params: CodeHubMrForBranch,
+    handler: (params, { runtime }) => runtime.codehub.mrForBranch(params)
+  }),
   defineMethod({
     name: 'codehub.viewer',
     params: CodeHubViewer,
