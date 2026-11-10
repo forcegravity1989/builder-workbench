@@ -10,14 +10,14 @@ description: >-
   Also use for reviewing real Issue sessions to improve this development workflow.
   Load historical week-screen context only when tracing its earlier decisions.
 metadata:
-  version: 0.4.7-pilot
+  version: 0.4.8-pilot
 ---
 
 # workbench-start — Workbench 开发与交付
 
 > 30 秒导读：先核对工作树与技术路线，再按用户目标分流。迁移重审受影响的决定，开发串起原则规定的六环；交付实现、受影响知识与对应层证据，推 PR 前过 subagent 全方位检视，经 PR 和人的判断后读回反哺。
 >
-> **状态：仓内 `0.4.7-pilot`。** 任何使用者都可以采用本入口。开发规则仍听目标仓 AGENTS；本方法不自动分发到 standard，实际效果按独立任务证据检验。
+> **状态：仓内 `0.4.8-pilot`。** 任何使用者都可以采用本入口。开发规则仍听目标仓 AGENTS；本方法不自动分发到 standard，实际效果按独立任务证据检验。
 
 ## 1. 适用范围与入口
 
@@ -91,7 +91,7 @@ metadata:
 
 ## 7. 从真实开发反馈改方法
 
-日常交付在原 Issue/PR 保留反馈与证据，不要求用户额外填表。交付时在 PR 留本次指标与用户输入摘要；人审或返工后重新提取、标注、统计并替换原评论，口径见 [真实任务反馈](references/workflow-feedback.md)。Codex 的环境、证据发布与会话脚本按需读 [执行参考](references/codex.md)。每周归并真实来源、修订原件，用下一周任务观察效果；不把统计正文加载到每次开工。
+交付收尾读取 [真实任务反馈](references/workflow-feedback.md)，从原始会话提取、逐条标注，用脚本生成指标评论，再读回评论和 PR 标题前缀。Codex 按 [执行参考](references/codex.md#会话反哺) 运行脚本。人审或返工发生变化时重算并原位更新评论。每周归并真实来源、修订原件，用下一周任务观察效果。
 
 修改方法前按第 1 节读取写作约定，先判断问题属于项目资料、读取路径还是执行规则。通用治理仍归 project-knowledge；开发分流与交付归本 Skill；确定性处理归脚本。不为每次纠正追加禁令，也不因没有发现就强行改规则。
 
