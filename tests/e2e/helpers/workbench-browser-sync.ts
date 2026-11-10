@@ -293,6 +293,7 @@ async function expectBrowserInPane(
       Math.abs(viewportSize.rendered.height * ratio - viewportSize.height)
     ).toBeLessThanOrEqual(2)
   }).toPass({ timeout: 10_000 })
+  await capture(page, info, `browser-split-before-guest-capture-${side}`)
   const captureName = `browser-split-guest-${side}`
   try {
     const webContentsId = await guest.evaluate((element) =>
@@ -303,7 +304,13 @@ async function expectBrowserInPane(
       if (!contents || contents.isDestroyed()) {
         throw new Error(`Missing guest webContents ${targetId}`)
       }
-      const screenshot = await contents.capturePage()
+      let timeout: ReturnType<typeof setTimeout> | undefined
+      const screenshot = await Promise.race([
+        contents.capturePage(),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('Guest capture timed out')), 5000)
+        })
+      ]).finally(() => clearTimeout(timeout))
       return {
         pngBase64: screenshot.toPNG().toString('base64'),
         webContentsId: contents.id,
