@@ -1,7 +1,13 @@
 import { parse } from 'smol-toml'
 import { renderProjectToml, type ProjectCharter } from './project-charter'
 
-export const EDITABLE_CHARTER_FIELDS = ['name', 'brief', 'benchmark', 'opportunity'] as const
+export const EDITABLE_CHARTER_FIELDS = [
+  'name',
+  'owner',
+  'brief',
+  'benchmark',
+  'opportunity'
+] as const
 
 /** Apply reviewed edits to the exact read revision, preserving unrelated TOML text. */
 export function editProjectToml(
@@ -75,7 +81,7 @@ export function editProjectToml(
     if (typeof previous !== 'string') {
       throw new Error(`名片字段 ${key} 不是文字，原文件未改动`)
     }
-    const next = intent[field].trim()
+    const next = (intent[field] ?? '').trim()
     if (previous.trim() === next) {
       continue
     }

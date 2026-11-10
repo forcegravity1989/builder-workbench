@@ -6,9 +6,21 @@ import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getPinnedSectionWorktrees } from '../../pinned-section-worktrees'
+import { buildWallProjects } from '@/workbench/workbench-wall-projects'
+import {
+  getRepoExecutionHostId,
+  getWorktreeExecutionHostId
+} from '../../../../../../shared/execution-host'
+import type { Repo } from '../../../../../../shared/repo-types'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { getProjectGroupSubtreeIds } from '../../../../../../shared/project-groups'
+import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
+import { findFolderWorkspaceOwner } from '@/lib/folder-workspace-runtime-owner'
+import { getFolderWorkspaceExecutionHostIdForRows } from './host-filtering'
 
 type VersionSidebarScope = {
   worktreeIdentities: ReadonlySet<string>
+  rows?: readonly Repo[]
 }
 
 type VersionScopedWorktreesArgs = {
@@ -19,18 +31,87 @@ type VersionScopedWorktreesArgs = {
 }
 
 export function useWorkbenchSidebarScope() {
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const activeRepoId = useAppStore((s) => s.activeRepoId)
+  const activeWorkspaceKey = useAppStore((s) => s.activeWorkspaceKey ?? s.activeWorktreeId)
+  const folders = useAppStore((s) => s.folderWorkspaces)
+  const activeHostId = useAppStore((s) => s.activeWorkspaceExecutionHostId)
+  const repos = useAppStore((s) => s.repos)
+  const groups = useAppStore((s) => s.projectGroups)
   const versionProjection = useVersionSidebarProjection()
-  const workbenchProject =
-    isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
-      ? versionProjection
+  const workbenchProject = useMemo(() => {
+    if (!isWorkbenchShell()) {
+      return undefined
+    }
+    const workspace = activeWorkspaceKey ? parseWorkspaceKey(activeWorkspaceKey) : null
+    const folder =
+      workspace?.type === 'folder'
+        ? findFolderWorkspaceOwner(
+            { ...useAppStore.getState(), folderWorkspaces: folders, projectGroups: groups },
+            workspace.folderWorkspaceId,
+            activeHostId ?? undefined
+          )
+        : null
+    const folderHost = folder
+      ? (activeHostId ??
+        getFolderWorkspaceExecutionHostIdForRows({
+          folderWorkspace: folder,
+          projectGroup: groups.find((group) => group.id === folder.projectGroupId),
+          defaultHostId: 'local'
+        }))
+      : null
+    const folderGroups = folder
+      ? groups.filter((group) => getProjectGroupHostId(group) === folderHost)
+      : []
+    const folderGroupIds = folder
+      ? getProjectGroupSubtreeIds(folderGroups, folder.projectGroupId)
+      : new Set<string>()
+    const repoId = activeRepoId ?? (folder ? null : (repos[0]?.id ?? null))
+    const project = repoId
+      ? buildWallProjects(repos, groups).find((item) =>
+          item.rows.some(
+            (row) =>
+              row.id === repoId && (!activeHostId || getRepoExecutionHostId(row) === activeHostId)
+          )
+        )
       : undefined
+    const rows = folder
+      ? repos.filter(
+          (row) =>
+            getRepoExecutionHostId(row) === folderHost &&
+            !!row.projectGroupId &&
+            folderGroupIds.has(row.projectGroupId)
+        )
+      : (project?.rows ??
+        repos.filter(
+          (row) =>
+            row.id === repoId && (!activeHostId || getRepoExecutionHostId(row) === activeHostId)
+        ))
+    const projectGroups = groups.filter(
+      (group) =>
+        (folder && getProjectGroupHostId(group) === folderHost && folderGroupIds.has(group.id)) ||
+        rows.some(
+          (row) =>
+            row.projectGroupId === group.id &&
+            getRepoExecutionHostId(row) === getProjectGroupHostId(group)
+        )
+    )
+    return {
+      repoId: repoId ?? '',
+      repoIds: rows.map((row) => row.id),
+      rows,
+      groups: projectGroups,
+      worktreeIdentities:
+        !folder && versionProjection.repoId === repoId
+          ? versionProjection.worktreeIdentities
+          : new Set<string>()
+    }
+  }, [activeRepoId, activeHostId, activeWorkspaceKey, folders, repos, groups, versionProjection])
   const workbenchScope = useMemo(
     () =>
-      workbenchProject && activeRepoId
-        ? { repoId: activeRepoId, repoIds: workbenchProject.repoIds }
+      workbenchProject
+        ? { repoId: workbenchProject.repoId, repoIds: workbenchProject.repoIds }
         : undefined,
-    [workbenchProject, activeRepoId]
+    [workbenchProject]
   )
   return { workbenchProject, workbenchScope }
 }
@@ -57,20 +138,28 @@ export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs
     )
   )
   const pinnedOnlyIdentities = new Set(
-    [...pinnedIdentities].filter((identity) => workbenchProject.worktreeIdentities.has(identity))
+    filteredWorktrees
+      .filter(
+        (tree) =>
+          pinnedIdentities.has(getWorktreeHostIdentity(tree)) &&
+          (workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree)) ||
+            !inProject(tree, workbenchProject))
+      )
+      .map(getWorktreeHostIdentity)
   )
   return {
     visibleWorktrees: filteredWorktrees.filter(
       (tree) =>
         pinnedIdentities.has(getWorktreeHostIdentity(tree)) ||
-        !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
+        (inProject(tree, workbenchProject) &&
+          !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree)))
     ),
     pinnedOnlyIdentities
   }
 }
 
 /**
- * Only the current version directory's trees are deduplicated; other projects stay native.
+ * The bottom list belongs to the current project; global pinned rows are retained separately.
  */
 export function scopeDetectedWorktreesForVersionSidebar<
   T extends { worktrees: readonly Worktree[] }
@@ -84,10 +173,23 @@ export function scopeDetectedWorktreesForVersionSidebar<
       {
         ...detected,
         worktrees: detected.worktrees.filter(
-          (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
+          (tree) =>
+            inProject(tree, workbenchProject) &&
+            !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
         )
       }
     ])
+  )
+}
+
+function inProject(tree: Worktree, scope: VersionSidebarScope): boolean {
+  return (
+    !scope.rows ||
+    scope.rows.some(
+      (row) =>
+        row.id === tree.repoId &&
+        getRepoExecutionHostId(row) === getWorktreeExecutionHostId(tree, row)
+    )
   )
 }
 

@@ -5,6 +5,7 @@ import type { VersionTreeDisplayInput } from './VersionNativeTrees'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
+import { useVersionSidebarProjection } from './version-sidebar-state'
 
 /**
  * Project identity stays beside the native toolbar, outside the tree scroller.
@@ -48,6 +49,7 @@ export function WorkbenchSidebarVersions({
   sortedIds,
   sortNow
 }: VersionTreeDisplayInput): React.JSX.Element {
+  const projection = useVersionSidebarProjection()
   const display = useMemo(
     () => ({ visibleWorktrees, filterOptions, sortedIds, sortNow }),
     [visibleWorktrees, filterOptions, sortedIds, sortNow]
@@ -60,7 +62,7 @@ export function WorkbenchSidebarVersions({
     >
       <WorkbenchVersionNav nativeDisplay={display} />
       <WorkbenchSidebarSectionHeader icon={FolderGit2}>
-        全部项目工作区
+        {projection.worktreeIdentities.size ? '其他工作区' : '工作区'}
       </WorkbenchSidebarSectionHeader>
     </div>
   )

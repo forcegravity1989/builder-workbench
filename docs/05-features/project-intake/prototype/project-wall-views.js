@@ -10,7 +10,7 @@
     const version = unknown ? '版本未知' : p.version || '未使用版本'
     const taskCount = p.tasks ? `${p.tasks.completed} / ${p.tasks.total}` : '—'
     return `<article class="project-card${s.config === p.id ? ' selected' : ''}" data-project="${esc(p.id)}">
-      <div class="card-top"><button class="project-name" data-action="open" data-id="${esc(p.id)}">${p.group ? icon('folder') : ''}${esc(p.name)}</button><div class="card-tools">${button('open-repo', 'external', p.remote ? '打开代码仓' : '打开本机文件夹', p.id)}${button('repo-settings', 'settings', '仓库设置', p.id)}${!W.project(p.id).hosts.includes('local') && p.remote ? button('clone-local', 'download', '克隆到本机', p.id) : ''}${button('overview', 'overview', `项目总览 ${p.name}`, p.id)}${button('config', 'edit', `项目信息 ${p.name}`, p.id)}${button('native-menu', 'more', p.group ? 'Orca 分组操作' : 'Orca 项目操作', p.id)}</div></div>
+      <div class="card-top"><button class="project-name" data-action="open" data-id="${esc(p.id)}">${p.group ? icon('folder') : ''}${esc(p.name)}</button><div class="card-tools">${button('open-repo', 'external', p.remote ? '打开代码仓' : '打开本机文件夹', p.id)}${button('repo-settings', 'settings', '仓库设置', p.id)}${!W.project(p.id).hosts.includes('local') && p.remote ? button('clone-local', 'download', '克隆到本机', p.id) : ''}${p.kind === 'git' ? button('overview', 'overview', `项目总览 ${p.name}`, p.id) : ''}${button('config', 'edit', `项目信息 ${p.name}`, p.id)}${button('native-menu', 'more', p.group ? 'Orca 分组操作' : 'Orca 项目操作', p.id)}</div></div>
       <div class="identity-row"><span class="owner-row"><span>项目负责人</span><span class="owner-value" title="${esc(p.builder?.trim() || '—')}">${esc(p.builder?.trim() || '—')}</span></span><span class="host-sources">${W.sourceTags(p)}</span></div>
       ${p.group ? `<details class="wall-repositories" open><summary><span>项目分组 · ${W.repoSlots(p).length} 个代码仓</span>${icon('chevron')}</summary>${W.renderMembers(p)}</details>` : ''}
       ${
@@ -28,7 +28,7 @@
       ]
         .map(
           ([label, value, target]) =>
-            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}"><span>${label}</span><b${value === '未达成' ? ' class="not-met"' : ''}>${esc(value)}</b></button>`
+            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}" title="${target === 'tasks' ? '任务已关闭／总数' : '复用对应页面的归档状态'}"><span>${label}</span><b>${esc(value)}</b></button>`
         )
         .join('')}</div>`
           : `<div class="unversioned"><p class="card-description">${esc(p.brief || '')}</p><span class="version-muted">${version}</span></div>`
@@ -128,7 +128,7 @@
       ],
       overview: [
         '复用 BW 项目总览',
-        '使用现有总览页面。本轮只调整墙卡入口和图标，不重做总览内容。'
+        '使用现有总览页面。#586 在总览名片标题增加编辑图标，打开项目墙同一套项目信息设置；不新增表单或提交流程。'
       ],
       version: [
         '复用 BW 版本总览',
@@ -208,20 +208,19 @@
     const fields = s.editing
       ? `<div class="wb-config-fields">${W.fields.map(([key, label]) => `<label for="field-${key}"><span>${label}${key === 'name' ? ' *' : ''}</span>${key === 'brief' || key === 'opportunity' ? `<textarea id="field-${key}"${p.pending ? ' disabled' : ''}>${esc(s.draft[key])}</textarea>` : `<input id="field-${key}" value="${esc(s.draft[key])}"${p.pending ? ' disabled' : ''}${key === 'name' ? ' required' : ''} />`}</label>`).join('')}</div>`
       : `<dl class="wb-config-facts">${W.fields.map(([key, label]) => `<div><dt>${label}</dt><dd>${esc(p[key]?.trim() || '—')}</dd></div>`).join('')}</dl>`
-    const info = `<div class="config-info-wrap">${section(
-      'info',
-      '项目信息',
-      '',
-      fields,
-      true
-    )}${button(
-      s.editing ? 'cancel-edit' : 'edit-info',
-      s.editing ? 'x' : 'edit',
-      s.editing ? '取消编辑' : '编辑项目信息',
-      '',
-      'wb-icon-button info-edit',
-      !W.available(p) || Boolean(p.pending)
-    )}</div>`
+    const info =
+      p.kind === 'folder'
+        ? W.annotation(
+            '普通文件夹只复用 Orca 名称与工作区能力；本轮不提供 BW 名片编辑。个人／团队仍可在上方修改。'
+          )
+        : `<div class="config-info-wrap">${section('info', '项目信息', '', fields, true)}${button(
+            s.editing ? 'cancel-edit' : 'edit-info',
+            s.editing ? 'x' : 'edit',
+            s.editing ? '取消编辑' : '编辑项目信息',
+            '',
+            'wb-icon-button info-edit',
+            !W.available(p) || Boolean(p.pending)
+          )}</div>`
     rail.innerHTML = `<header class="wb-config-header"><div><span class="wb-config-eyebrow">项目设置</span><h2>${esc(
       p.name
     )}</h2></div><div class="config-header-actions">${button(
@@ -270,6 +269,14 @@
       W.renderWall()
     } else {
       W.renderReuse()
+      if (s.reuse === 'overview' && W.project(s.active)?.kind === 'git') {
+        W.$('main')
+          .querySelector('.reuse-surface h1')
+          .insertAdjacentHTML(
+            'afterend',
+            button('config', 'edit', '编辑项目信息（与项目墙共用）', s.active)
+          )
+      }
     }
     W.renderConfig()
   }

@@ -58,16 +58,13 @@ const MetricsWorkspaceBoard = lazy(() =>
 const ProjectWallPage = lazy(() =>
   import('../workbench/ProjectWallPage').then((m) => ({ default: m.ProjectWallPage }))
 )
-const OnboardProjectPage = lazy(() =>
-  import('../workbench/OnboardProjectPage').then((m) => ({ default: m.OnboardProjectPage }))
-)
 
 function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element {
   const { activeView, activeWorktreeId, activePendingCreationId, creationLayoutActive } = layout
   const projectPage = useProjectPage()
   if (isWorkbenchShell() && activeView === 'activity') {
     if (projectPage?.kind === 'wall') {
-      return <ProjectWallPage configureRepoId={projectPage.configureRepoId} />
+      return <ProjectWallPage />
     }
     if (projectPage?.kind === 'version-overview') {
       return (
@@ -75,9 +72,6 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
           <VersionOverviewPage options={projectPage.options} />
         </MilestoneVersionOrigin>
       )
-    }
-    if (projectPage?.kind === 'onboard') {
-      return <OnboardProjectPage options={projectPage.options} />
     }
   }
   return (

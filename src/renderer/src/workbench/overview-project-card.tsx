@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, FilePenLine } from 'lucide-react'
+import { WorkbenchIconButton } from './WorkbenchIconButton'
 import type { ProjectCharter } from './project-charter'
 
 function charterRows(
@@ -7,6 +8,7 @@ function charterRows(
   c: ProjectCharter | null
 ): { k: string; v: string; mono?: boolean }[] {
   return [
+    { k: '项目负责人', v: c?.owner?.trim() || '—' },
     { k: '想做什么', v: c?.brief?.trim() || '(还没填)' },
     { k: '对标', v: c?.benchmark?.trim() || '(还没填)', mono: true },
     { k: '目标方向', v: c?.opportunity?.trim() || '(还没填)' },
@@ -20,7 +22,8 @@ export function ProjectCard({
   charter,
   remote,
   version,
-  notice
+  notice,
+  onEdit
 }: {
   projectName: string
   charter: ProjectCharter | null
@@ -28,27 +31,31 @@ export function ProjectCard({
   version: string | null
   /** 名片 PR 状态行(待合入/已合入未更新/没读到);无状态时不渲染。 */
   notice?: React.ReactNode
+  onEdit?: () => void
 }) {
   // 名片字段平时不看,默认收起为一行;展开状态不跨页保存。
   const [open, setOpen] = useState(false)
   const rows = charterRows(remote, charter)
   return (
     <section className="card" id="project-card">
-      <button
-        type="button"
-        className="card-toggle"
-        aria-expanded={open}
-        title={open ? '收起项目名片' : '展开项目名片'}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <ChevronRight size={14} aria-hidden className={`card-chevron${open ? ' is-open' : ''}`} />
-        <span className="card-title">{projectName}</span>
-        <span className="status" title="健康信号未知">
-          <span className="status-dot" />
-          未知
-        </span>
-        {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
-      </button>
+      <div className="wb-overview-charter-heading">
+        <button
+          type="button"
+          className="card-toggle"
+          aria-expanded={open}
+          title={open ? '收起项目名片' : '展开项目名片'}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <ChevronRight size={14} aria-hidden className={`card-chevron${open ? ' is-open' : ''}`} />
+          <span className="card-title">{projectName}</span>
+          <span className="status" title="健康信号未知">
+            <span className="status-dot" />
+            未知
+          </span>
+          {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
+        </button>
+        {onEdit && <WorkbenchIconButton label="编辑项目信息" icon={FilePenLine} onClick={onEdit} />}
+      </div>
       {notice}
       {open && (
         <div className="detail-grid">

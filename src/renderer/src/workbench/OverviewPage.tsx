@@ -1,11 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { parseExecutionHostId } from '../../../shared/execution-host'
-import { openProjectOnboard } from './project-page-state'
+import {
+  parseExecutionHostId,
+  getRepoExecutionHostId,
+  getWorktreeExecutionHostId
+} from '../../../shared/execution-host'
+import { openAddProject } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
-import { readProjectCharter, type ProjectCharter } from './project-charter'
+import type { ProjectCharter } from './project-charter'
+import { readRepoCharter } from './charter-port'
+import { ProjectSettingsRail } from './ProjectSettingsRail'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,
@@ -28,10 +38,28 @@ import './workbench-overview.css'
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const repoWorktrees = useAppStore((s) =>
+  const activeHostId = useAppStore((s) => s.activeWorkspaceExecutionHostId)
+  const registeredWorktrees = useAppStore((s) =>
     activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
   )
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
+  const activeRepo = activeRepoId
+    ? (findRepoForHost(repos, activeRepoId, { hostId: activeHostId ?? undefined }) ?? repos[0])
+    : repos[0]
+  const repoWorktrees = useMemo(
+    () =>
+      registeredWorktrees?.filter(
+        (tree) =>
+          activeRepo &&
+          getWorktreeExecutionHostId(tree, activeRepo) === getRepoExecutionHostId(activeRepo)
+      ),
+    [registeredWorktrees, activeRepo]
+  )
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsDirty, setSettingsDirty] = useState(false)
+  const [settingsBusy, setSettingsBusy] = useState(false)
+  const [confirmClose, setConfirmClose] = useState(false)
+  const [charterRefresh, setCharterRefresh] = useState(0)
+  const discardSettings = useRef<(() => void) | null>(null)
 
   /** Metrics/history read from the project's main worktree: the configuration baseline tree. */
   const baseScope = useMemo<NativeWorkspaceScope | null>(() => {
@@ -57,7 +85,12 @@ export function OverviewPage(): React.JSX.Element {
     [baseScope, baseWorktreeId]
   )
 
-  const charterKey = JSON.stringify([activeRepo?.id, activeRepo?.path])
+  const charterKey = JSON.stringify([
+    activeRepo?.id,
+    activeRepo?.path,
+    activeRepo && getRepoExecutionHostId(activeRepo),
+    charterRefresh
+  ])
   const [charterState, setCharter] = useState<{
     key: string
     value: ProjectCharter | null
@@ -113,7 +146,7 @@ export function OverviewPage(): React.JSX.Element {
       return
     }
     let cancelled = false
-    void readProjectCharter(activeRepo.path).then((r) => {
+    void readRepoCharter(activeRepo).then((r) => {
       if (!cancelled) {
         setCharter({ key: charterKey, value: r.charter })
       }
@@ -121,7 +154,7 @@ export function OverviewPage(): React.JSX.Element {
     return () => {
       cancelled = true
     }
-  }, [activeRepo?.path, charterKey])
+  }, [activeRepo, charterKey])
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
   const { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus } =
@@ -162,7 +195,7 @@ export function OverviewPage(): React.JSX.Element {
       reloadCatalog()
       refreshCharterStatus()
       if (activeRepo.path) {
-        void readProjectCharter(activeRepo.path).then((r) =>
+        void readRepoCharter(activeRepo).then((r) =>
           setCharter({ key: charterKey, value: r.charter })
         )
       }
@@ -213,7 +246,7 @@ export function OverviewPage(): React.JSX.Element {
             <button
               type="button"
               className="wb-btn wb-btn-primary"
-              onClick={() => openProjectOnboard()}
+              onClick={() => openAddProject()}
             >
               + 接入项目
             </button>
@@ -225,75 +258,121 @@ export function OverviewPage(): React.JSX.Element {
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
 
   return (
-    <div className="wb-ov">
-      <header className="page-head">
-        <h1>总览</h1>
-        <button
-          type="button"
-          className="wb-btn wb-btn-secondary wb-btn-sm"
-          disabled={updatingTrunk || !baseScope || !baseWorktreeId}
-          title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
-          onClick={() => void updateTrunk()}
-        >
-          {updatingTrunk ? '正在更新…' : '更新代码'}
-        </button>
-      </header>
+    <TooltipProvider>
+      <div className="wb-overview-with-settings">
+        <div className="wb-ov">
+          <header className="page-head">
+            <h1>总览</h1>
+            <button
+              type="button"
+              className="wb-btn wb-btn-secondary wb-btn-sm"
+              disabled={updatingTrunk || !baseScope || !baseWorktreeId}
+              title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
+              onClick={() => void updateTrunk()}
+            >
+              {updatingTrunk ? '正在更新…' : '更新代码'}
+            </button>
+          </header>
 
-      <div className="content">
-        <MetricProblemsPanel
-          className="wb-muted"
-          problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
-        />
-        {metricsSetup.notice && (
-          <p role="alert" className="wb-ov-alert">
-            {metricsSetup.notice}
-          </p>
-        )}
-        <ProjectCard
-          projectName={projectName}
-          charter={charter}
-          remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
-          version={version}
-          notice={
-            !charter ? (
-              <CharterPrNotice
-                status={charterStatus}
-                variant="overview"
-                updating={updatingMain}
-                onUpdateMain={() => void updateMainCheckout()}
-              />
-            ) : undefined
-          }
-        />
+          <div className="content">
+            <MetricProblemsPanel
+              className="wb-muted"
+              problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
+            />
+            {metricsSetup.notice && (
+              <p role="alert" className="wb-ov-alert">
+                {metricsSetup.notice}
+              </p>
+            )}
+            <ProjectCard
+              onEdit={activeRepo.kind !== 'folder' ? () => setSettingsOpen(true) : undefined}
+              projectName={projectName}
+              charter={charter}
+              remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
+              version={version}
+              notice={
+                !charter ? (
+                  <CharterPrNotice
+                    status={charterStatus}
+                    variant="overview"
+                    updating={updatingMain}
+                    onUpdateMain={() => void updateMainCheckout()}
+                  />
+                ) : undefined
+              }
+            />
 
-        <ProjectMilestones
-          scope={milestoneScope}
-          refreshToken={history?.baselineCommit}
-          updateFormal={updateTrunk}
-        />
+            <ProjectMilestones
+              scope={milestoneScope}
+              refreshToken={history?.baselineCommit}
+              updateFormal={updateTrunk}
+            />
 
-        <OverviewScoreboard
-          catalog={catalog}
-          readings={zoneReadings}
-          busy={busy}
-          onRefresh={() => void refreshReadings()}
-          anchor={metrics.anchor}
-          identity={identity}
-          plan={minutes?.planDocument ?? null}
-          version={version}
-          setupBusy={metricsSetup.busy || !baseScope}
-          onSetup={() => void metricsSetup.prepareMetrics()}
-          worktreeId={baseWorktreeId}
-        />
-      </div>
-      {refreshing && (
-        <div className="wb-ov-refresh-block" role="status" aria-live="polite">
-          <div className="wb-ov-refresh-card">
-            <RefreshCw size={16} className="wb-ov-refresh-spin" />
-            <span>正在重新采集指标读数…</span>
+            <OverviewScoreboard
+              catalog={catalog}
+              readings={zoneReadings}
+              busy={busy}
+              onRefresh={() => void refreshReadings()}
+              anchor={metrics.anchor}
+              identity={identity}
+              plan={minutes?.planDocument ?? null}
+              version={version}
+              setupBusy={metricsSetup.busy || !baseScope}
+              onSetup={() => void metricsSetup.prepareMetrics()}
+              worktreeId={baseWorktreeId}
+            />
           </div>
+          {refreshing && (
+            <div className="wb-ov-refresh-block" role="status" aria-live="polite">
+              <div className="wb-ov-refresh-card">
+                <RefreshCw size={16} className="wb-ov-refresh-spin" />
+                <span>正在重新采集指标读数…</span>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+        {settingsOpen && activeRepo.kind !== 'folder' && (
+          <ProjectSettingsRail
+            key={`${getRepoExecutionHostId(activeRepo)}:${activeRepo.id}`}
+            repo={activeRepo}
+            displayName={projectName}
+            onClose={() => {
+              if (!settingsBusy) {
+                if (settingsDirty) {
+                  setConfirmClose(true)
+                } else {
+                  setSettingsOpen(false)
+                }
+              }
+            }}
+            onDirtyChange={setSettingsDirty}
+            onBusyChange={setSettingsBusy}
+            discardRef={discardSettings}
+            onChanged={() => {
+              setCharterRefresh((value) => value + 1)
+              refreshCharterStatus()
+            }}
+          />
+        )}
+        <Dialog open={confirmClose} onOpenChange={setConfirmClose}>
+          <DialogContent>
+            <DialogTitle>还有未提交的修改</DialogTitle>
+            <DialogDescription>关闭设置会丢弃这些修改。</DialogDescription>
+            <Button variant="ghost" onClick={() => setConfirmClose(false)}>
+              继续编辑
+            </Button>
+            <Button
+              onClick={() => {
+                discardSettings.current?.()
+                setConfirmClose(false)
+                setSettingsOpen(false)
+              }}
+            >
+              丢弃并关闭
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   )
 }

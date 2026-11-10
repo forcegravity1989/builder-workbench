@@ -131,6 +131,7 @@ export async function probeRemoteCharter(params: CharterProbeRequest): Promise<C
 export function trimmedIntent(intent: CharterIntent): ProjectCharter {
   return {
     name: intent.name.trim(),
+    owner: (intent.owner ?? '').trim(),
     kind: intent.kind.trim(),
     brief: intent.brief.trim(),
     benchmark: intent.benchmark.trim(),

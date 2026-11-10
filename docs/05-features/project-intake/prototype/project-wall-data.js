@@ -92,9 +92,9 @@
         '消息通知：聚焦 PR 评审旅程落地',
         '用户旅程盘点与存量问题清理'
       ],
-      plan: '已归档',
+      plan: '已合入',
       tasks: { completed: 3, total: 7 },
-      acceptance: '待验收',
+      acceptance: '未创建',
       kind: 'git',
       remote: 'github.com/example/builder-workbench',
       path: 'E:/projects/builder-workbench'
@@ -113,9 +113,9 @@
         '让每条告警都能准确定位到对应服务、关联最近一次变更，并让值班同学在一次操作内找到完整排查上下文与处置记录',
         '降低日常巡检中的重复操作'
       ],
-      plan: '已归档',
+      plan: '已合入',
       tasks: { completed: 10, total: 10 },
-      acceptance: '未达成',
+      acceptance: '待合入',
       kind: 'git',
       remote: 'github.com/example/ops-dashboard',
       path: '/home/projects/ops-dashboard'
@@ -145,9 +145,9 @@
       hosts: ['local'],
       version: 'v1.0',
       goals: ['发布作品页', '完成移动端浏览验证'],
-      plan: '已归档',
+      plan: '已合入',
       tasks: { completed: 6, total: 6 },
-      acceptance: '已达成',
+      acceptance: '已合入',
       kind: 'git',
       remote: 'github.com/example/personal-site',
       path: 'E:/projects/personal-site'
@@ -187,7 +187,7 @@
       id: 'notes',
       name: '工作笔记',
       builder: '',
-      brief: '随手记录，按需整理。',
+      brief: '',
       benchmark: '',
       opportunity: '',
       hosts: ['local'],

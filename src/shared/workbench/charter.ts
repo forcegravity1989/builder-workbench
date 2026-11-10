@@ -8,6 +8,7 @@ export type CharterScope = z.infer<typeof CharterScopeSchema>
 
 export const CharterIntentSchema = z.strictObject({
   name: z.string(),
+  owner: z.string().optional(),
   kind: z.string(),
   brief: z.string(),
   benchmark: z.string(),

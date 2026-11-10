@@ -46,16 +46,20 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   execFileSync('git', ['commit', '-m', 'seed project settings verification'], { cwd: repoPath })
   const openWall = async () => {
     await page.getByRole('button', { name: '项目墙', exact: true }).click()
-    await expect(page.getByRole('heading', { name: '项目墙', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /^项目墙/ })).toBeVisible()
   }
   const openConfig = async () => {
-    await page.getByRole('button', { name: `配置 ${name}`, exact: true }).click()
+    await page
+      .locator('[data-workbench-project-key]')
+      .filter({ hasText: name })
+      .locator('[data-workbench-edit-charter]')
+      .click()
     await expect(page.getByRole('button', { name: '编辑项目信息', exact: true })).toBeEnabled()
   }
   await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
   await openWall()
   const toolbar = page.getByRole('group', { name: '项目墙操作' })
-  for (const label of ['刷新项目墙', '导入 Builder 主机', '接入项目', '关闭项目墙']) {
+  for (const label of ['刷新项目目录和墙卡信息', '批量导入主机', '添加项目', '关闭项目墙']) {
     await expect(toolbar.getByRole('button', { name: label, exact: true })).toHaveText('')
   }
   await openConfig()
@@ -63,42 +67,48 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
   await page.getByRole('textbox', { name: '对标', exact: true }).fill('新对标')
   await page.getByRole('textbox', { name: '愿景', exact: true }).fill('新愿景')
-  await expect(page.getByText('2 项变更未提交', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: '关闭项目配置', exact: true }).click()
-  const guard = page.getByRole('dialog', { name: '还有未提交的变更' })
+  await page.getByRole('textbox', { name: '项目负责人', exact: true }).fill('负责人甲')
+  await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
+  const guard = page.getByRole('dialog', { name: '还有未提交的修改' })
   await expect(guard).toBeVisible()
   await page.screenshot({ path: info.outputPath('bw-config-dirty-guard.jpg') })
   await guard.getByRole('button', { name: '继续编辑', exact: true }).click()
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('新愿景')
-  await page.getByRole('button', { name: '查看变更', exact: true }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
   const review = page.getByRole('dialog', { name: '确认项目信息变更' })
-  for (const value of ['原对标', '新对标', '原愿景', '新愿景']) {
+  for (const value of ['新对标', '新愿景', '负责人甲']) {
     await expect(review).toContainText(value)
   }
-  await expect(review.getByRole('button', { name: '保存到主机', exact: true })).toBeEnabled()
+  await expect(review.getByRole('button', { name: '确认保存', exact: true })).toBeEnabled()
   expect(readFileSync(file, 'utf8')).toBe(original)
   await page.screenshot({ path: info.outputPath('bw-config-review.jpg') })
 
   // Another writer changes the read revision before submit; the host must reject it.
   const concurrent = `${original}# 外部写入后保留\n`
   writeFileSync(file, concurrent)
-  await review.getByRole('button', { name: '保存到主机', exact: true }).click()
-  await expect(review.getByRole('alert')).toContainText('项目信息已变化')
+  await review.getByRole('button', { name: '确认保存', exact: true }).click()
+  await expect(
+    page.locator('[data-sonner-toast]').filter({ hasText: '项目信息操作失败' })
+  ).toContainText('项目信息已变化')
+  await expect(page.getByRole('button', { name: '开会话处理', exact: true })).toBeVisible()
   expect(readFileSync(file, 'utf8')).toBe(concurrent)
   await page.screenshot({ path: info.outputPath('bw-config-conflict.jpg') })
-  await review.getByRole('button', { name: '继续编辑', exact: true }).click()
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('新愿景')
-  await page.getByRole('button', { name: '重新读取项目信息', exact: true }).click()
+  await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   await guard.getByRole('button', { name: '丢弃并离开', exact: true }).click()
+  await openConfig()
+  await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('原愿景')
+  await page.getByRole('textbox', { name: '项目负责人', exact: true }).fill('负责人甲')
   await page.getByRole('textbox', { name: '对标', exact: true }).fill('新对标')
   await page.getByRole('textbox', { name: '愿景', exact: true }).fill('新愿景')
-  await page.getByRole('button', { name: '查看变更', exact: true }).click()
-  await review.getByRole('button', { name: '保存到主机', exact: true }).click()
+  await page.getByRole('button', { name: '保存', exact: true }).click()
+  await review.getByRole('button', { name: '确认保存', exact: true }).click()
   await expect(review).not.toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('已保存到本机，尚未共享', { exact: true })).toBeVisible()
   const saved = readFileSync(file, 'utf8')
   for (const preserved of [
+    'owner = "负责人甲"',
     'benchmark = "新对标"',
     'north_star = "新愿景"',
     'custom = "未知字段保留"',
@@ -114,7 +124,8 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await openWall()
   await openConfig()
   await expect(page.locator('.wb-config-facts')).toContainText('新愿景')
-  await expect(page.getByText('没有待提交的变更', { exact: true })).toBeVisible()
+  await expect(page.locator('.wb-config-footer')).toHaveCount(0)
+  await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
   expect(readFileSync(file, 'utf8')).toBe(saved)
   await page.screenshot({ path: info.outputPath('bw-config-reloaded.jpg') })
 }

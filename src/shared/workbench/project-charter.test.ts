@@ -12,6 +12,7 @@ import {
 describe('project-charter', () => {
   it('parses and renders round-trip fields', () => {
     const raw = `name = "workbench"
+owner = "张悦"
 kind = ""
 brief = "一张工作台"
 benchmark = "Linear"
@@ -21,6 +22,8 @@ opportunity = "纳入更多项目"
 `
     const parsed = parseProjectToml(raw)
     expect(parsed.name).toBe('workbench')
+    expect(parsed.owner).toBe('张悦')
+    expect(parseProjectToml('name = "legacy"').owner).toBe('')
     expect(parsed.brief).toBe('一张工作台')
     expect(parsed.opportunity).toBe('纳入更多项目')
     const again = parseProjectToml(renderProjectToml(parsed))
@@ -124,15 +127,21 @@ north_star = ""
     const before = parseProjectToml(raw)
     const { content, changed } = editProjectToml(raw, raw, {
       ...before,
+      owner: '李四',
       brief: 'new\nline',
       opportunity: ''
     })
-    expect(changed).toEqual(['brief', 'opportunity'])
+    expect(changed).toEqual(['owner', 'brief', 'opportunity'])
     expect(content).toContain('name = "  a  " # identity')
     expect(content).toContain('brief = "new\\nline" # summary')
     expect(content).toContain('north_star = "" # direction')
     expect(content).toContain('custom = 12\r\n\r\n[chat]\r\ngroup = "untouched"\r\n')
-    expect(parseProjectToml(content)).toEqual({ ...before, brief: 'new\nline', opportunity: '' })
+    expect(parseProjectToml(content)).toEqual({
+      ...before,
+      owner: '李四',
+      brief: 'new\nline',
+      opportunity: ''
+    })
   })
 
   it('rejects stale, invalid and nameless edits before producing a write', () => {

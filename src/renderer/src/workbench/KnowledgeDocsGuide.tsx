@@ -11,7 +11,7 @@ import {
   type KbNote
 } from './knowledge-demo-data'
 import { gapMark } from './knowledge-gap-utils'
-import { openProjectOnboard } from './project-page-state'
+import { openAddProject } from './project-page-state'
 
 type Props = {
   audience: KbAudience
@@ -185,7 +185,7 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
               type="button"
               className="wb-btn wb-btn-primary wb-btn-sm"
               style={{ marginLeft: 8 }}
-              onClick={() => openProjectOnboard()}
+              onClick={() => openAddProject()}
             >
               + 接入项目
             </button>

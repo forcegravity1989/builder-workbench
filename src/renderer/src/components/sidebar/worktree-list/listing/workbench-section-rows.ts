@@ -77,11 +77,7 @@ export function buildWorkbenchSectionRows({
           (targetKeys.has(row.key) ||
             (!!row.projectGroup?.id && rootGroupIds.has(row.projectGroup.id)))
       )
-    natural = [
-      ...prefix,
-      ...blocks.filter(isCurrent).flat(),
-      ...blocks.filter((block) => !isCurrent(block)).flat()
-    ]
+    natural = [...prefix, ...blocks.filter(isCurrent).flat()]
   }
   // Keep Pinned global even when the user explicitly groups the remaining list by host.
   return [...pinned, ...withHostSections(natural)]

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
+import { toast } from 'sonner'
 import type { Repo } from '../../../shared/repo-types'
 import type { CharterStatus } from '../../../shared/workbench/charter'
 import {
@@ -12,9 +13,14 @@ import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-chart
 import { readCharterPrStatus, readRepoCharter, submitProjectCharter } from './charter-port'
 import { ensureNamedWorktree, nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
+import { useDefaultAgentForTarget } from './version-cycle/metrics-setup'
+import type { AgentDetectionTarget } from '@/hooks/useDetectedAgents'
+import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
+import { openWorkflowDraft } from './open-workflow-draft'
 
 export const CHARTER_LABELS = {
   name: '项目名称',
+  owner: '项目负责人',
   brief: '想做什么',
   benchmark: '对标',
   opportunity: '愿景'
@@ -38,10 +44,32 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
   const [notice, setNotice] = useState<string | null>(null)
   const [canEdit, setCanEdit] = useState(false)
   const generation = useRef(0)
+  const retry = useRef<() => unknown>(() => {})
+  const lastOperation = useRef<'read' | 'submit' | 'update'>('read')
+  const hostId = getRepoExecutionHostId(repo)
+  const detectionTarget = useMemo<AgentDetectionTarget | undefined>(() => {
+    const host = parseExecutionHostId(hostId)
+    if (host?.kind === 'runtime') {
+      return { kind: 'runtime', environmentId: host.environmentId }
+    }
+    if (host?.kind === 'ssh') {
+      return { kind: 'ssh', connectionId: host.targetId }
+    }
+    return host?.kind === 'local' ? { kind: 'local' } : undefined
+  }, [hostId])
+  const agent = useDefaultAgentForTarget(detectionTarget)
   const reload = useCallback(async () => {
+    lastOperation.current = 'read'
     const request = ++generation.current
     setLoading(true)
     setError(null)
+    setNotice(null)
+    if (repo.kind === 'folder') {
+      setForm(null)
+      setCanEdit(false)
+      setLoading(false)
+      return
+    }
     try {
       const [read, nextStatus] = await Promise.all([
         readRepoCharter(repo),
@@ -57,9 +85,9 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
       const baseline = read.charter ?? { ...EMPTY_CHARTER, name: repo.displayName }
       const saved = drafts.get(key)
       const proposalReadBack =
-        saved?.pending &&
+        saved &&
         EDITABLE_CHARTER_FIELDS.every(
-          (field) => saved.value[field].trim() === baseline[field].trim()
+          (field) => (saved.value[field] ?? '').trim() === (baseline[field] ?? '').trim()
         )
       if (proposalReadBack && !nextStatus.queryFailed) {
         drafts.delete(key)
@@ -105,7 +133,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
   }, [reload, cancelPendingRead])
   const changes = form
     ? EDITABLE_CHARTER_FIELDS.filter(
-        (field) => form.value[field].trim() !== form.baseline[field].trim()
+        (field) => (form.value[field] ?? '').trim() !== (form.baseline[field] ?? '').trim()
       )
     : []
   const dirty = changes.length > 0 && !form?.pending
@@ -120,7 +148,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
     const next = { ...form, value: { ...form.value, [field]: value } }
     if (
       EDITABLE_CHARTER_FIELDS.some(
-        (field) => next.value[field].trim() !== next.baseline[field].trim()
+        (field) => (next.value[field] ?? '').trim() !== (next.baseline[field] ?? '').trim()
       )
     ) {
       drafts.set(key, next)
@@ -166,7 +194,9 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
       return false
     }
     setBusy(true)
+    lastOperation.current = 'submit'
     setError(null)
+    setNotice(null)
     try {
       const { scope } = await mainScope()
       const tree = await ensureNamedWorktree(scope, CHARTER_BRANCH, 'project')
@@ -214,7 +244,9 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
       return
     }
     setBusy(true)
+    lastOperation.current = 'update'
     setError(null)
+    setNotice(null)
     try {
       const { main, scope } = await mainScope()
       const result = await updateTrunkCode(
@@ -232,6 +264,86 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
     } finally {
       setBusy(false)
     }
+  }
+  useEffect(() => {
+    if (!error) {
+      return
+    }
+    toast.error('项目信息操作失败', {
+      id: `project-info:${key}`,
+      description: `${error}。可重试，或开会话让模型处理。`,
+      duration: 60_000,
+      action: {
+        label: '开会话处理',
+        onClick: () => {
+          void (async () => {
+            if (!agent) {
+              throw new Error('请先在原生设置中配置可用会话工具')
+            }
+            const { main, scope } = await mainScope()
+            useAppStore.getState().setActiveWorktree(main.id, scope.hostId)
+            if (scope.runtimeOwnerEnvironmentId) {
+              await activateWebRuntimeSessionWorktree({
+                worktreeId: main.id,
+                environmentId: scope.runtimeOwnerEnvironmentId
+              })
+            }
+            await openWorkflowDraft(
+              agent,
+              main.id,
+              [
+                '请检查当前项目的项目信息提交失败，先读取仓库规则并确认已有 bw/project 分支和 PR/MR，避免重复提交。',
+                `错误：${error}`,
+                `用户保留的名片输入：${JSON.stringify(form?.value ?? null)}`,
+                '仅处理 .bw/project.toml 的这次修改，沿现有评审流程；不要自动合入、覆盖其他改动或修改个人/团队本地属性。'
+              ].join('\n')
+            )
+            useAppStore.getState().setActiveView('terminal')
+          })().catch((cause) => toast.error(cause instanceof Error ? cause.message : String(cause)))
+        }
+      },
+      cancel: {
+        label: '重试',
+        onClick: () => {
+          void retry.current()
+        }
+      }
+    })
+    // The toast captures this failure and its draft; retry resolves the latest operation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, key, agent])
+  useEffect(() => {
+    if (notice) {
+      toast.success(notice, { id: `project-info:${key}` })
+    }
+  }, [notice, key])
+  retry.current = async () => {
+    if (busy) {
+      return
+    }
+    if (lastOperation.current !== 'submit') {
+      return lastOperation.current === 'update' ? update() : reload()
+    }
+    if (!dirty || !form?.value.name.trim() || !canEdit) {
+      return
+    }
+    setBusy(true)
+    const latest = await readCharterPrStatus(repo)
+    setStatus(latest)
+    setBusy(false)
+    if (
+      latest.pr?.state === 'open' ||
+      (latest.pr?.state === 'merged' && latest.headMatchesProposal !== true)
+    ) {
+      setError(null)
+      setNotice(
+        latest.pr.state === 'open'
+          ? '发现已有评审，可先查看；当前输入已保留'
+          : '评审已合入，可以更新项目信息'
+      )
+      return
+    }
+    return submit()
   }
   useEffect(() => {
     if (!dirty) {

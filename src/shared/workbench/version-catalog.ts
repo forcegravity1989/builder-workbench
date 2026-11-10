@@ -64,6 +64,18 @@ export type VersionCatalogEntry = {
   state: 'working' | 'retired'
 }
 
+/** Sidebar and wall use the same default version ordering. */
+export function compareVersionDisplayOrder(
+  a: Pick<VersionCatalogEntry, 'state' | 'version'>,
+  b: Pick<VersionCatalogEntry, 'state' | 'version'>
+): number {
+  return a.state !== b.state
+    ? a.state === 'working'
+      ? -1
+      : 1
+    : compareMaterialVersions(b.version, a.version)
+}
+
 /**
  * 从原生登记集合提取存活绑定实例。输入是调用方已经聚合好的登记快照
  * （renderer store 含配对宿主同步行）；归档树不算存活工作区。

@@ -263,6 +263,9 @@
       action?.()
     },
     'edit-info': () => {
+      if (W.project(s.config).kind === 'folder') {
+        return
+      }
       if (!W.available(W.project(s.config))) {
         W.toast('主机离线，恢复连接后可编辑')
         return

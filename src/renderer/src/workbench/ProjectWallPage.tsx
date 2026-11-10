@@ -1,217 +1,154 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { FileInput, LoaderCircle, Plus, RefreshCw, X } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
-import { closeProjectPage, openProjectOnboard } from './project-page-state'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { closeProjectPage, openAddProject } from './project-page-state'
 import { switchActiveProject } from './switch-active-project'
+import { continueProjectWork } from './continue-project-work'
 import {
   buildWallProjects,
-  countWallProjectWorktrees,
-  type WallProject
+  isWallRowVisible,
+  wallProjectVisibility
 } from './workbench-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
-import { useWallAdoptions } from './use-wall-adoptions'
-import { ensureWallProjectGroup, removeRepoFromWallProject } from './wall-project-repo-actions'
+import { useWallCharters } from './use-wall-charters'
 import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
-import { ProjectWallCard, type CardHostTag, type WallCardView } from './ProjectWallCard'
+import { ProjectWallCard, type WallCardView } from './ProjectWallCard'
 import { useWallReadings } from './use-wall-readings'
-import type { WallCardReadings } from './wall-card-readings'
+import { useWallNativeProjectActions } from './wall-native-project-actions'
+import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import './workbench-wall.css'
 import './project-settings.css'
 
-const READINGS_LOADING: WallCardReadings = {
-  version: { kind: 'loading' },
-  progress: { kind: 'loading' },
-  sessions: { kind: 'unknown' },
-  prs: { kind: 'loading' }
-}
-
-async function startAddRepoSlot(project: WallProject): Promise<void> {
-  const groupId = await ensureWallProjectGroup(project)
-  if (!groupId) {
-    return
-  }
-  openProjectOnboard({
-    attachToGroupId: groupId,
-    seedName: project.name,
-    attachLabel: project.name
-  })
-}
-
-export function ProjectWallPage({
-  configureRepoId
-}: { configureRepoId?: string } = {}): React.JSX.Element {
+export function ProjectWallPage() {
   const repos = useAppStore((s) => s.repos)
-  const projectGroups = useAppStore((s) => s.projectGroups)
-  const activeRepoId = useAppStore((s) => s.activeRepoId)
-  const runtimeEnvironments = useAppStore((s) => s.runtimeEnvironments)
-  const runtimeStatusByEnvironmentId = useAppStore((s) => s.runtimeStatusByEnvironmentId)
-  const sshTargetLabels = useAppStore((s) => s.sshTargetLabels)
-  const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
-  const fetchReposForAllHosts = useAppStore((s) => s.fetchReposForAllHosts)
-  const fetchAllWorktrees = useAppStore((s) => s.fetchAllWorktrees)
-
-  const [adoptionToken, setAdoptionToken] = useState(0)
+  const groups = useAppStore((s) => s.projectGroups)
+  const environments = useAppStore((s) => s.runtimeEnvironments)
+  const statuses = useAppStore((s) => s.runtimeStatusByEnvironmentId)
+  const sshLabels = useAppStore((s) => s.sshTargetLabels)
+  const [token, setToken] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  const [partialRefresh, setPartialRefresh] = useState(false)
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null)
   const [importOpen, setImportOpen] = useState(false)
-  const [switchingKey, setSwitchingKey] = useState<string | null>(null)
-  const [busyRepoId, setBusyRepoId] = useState<string | null>(null)
-  const [configurationKey, setConfigurationKey] = useState<string | null | undefined>(undefined)
-  const [draftDirty, setDraftDirty] = useState(false)
-  const [configurationBusy, setConfigurationBusy] = useState(false)
+  const [switching, setSwitching] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [location, setLocation] = useState('all')
+  const [type, setType] = useState('all')
+  const [dirty, setDirty] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null)
-  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 680px)').matches)
-  const configurationTrigger = useRef<HTMLButtonElement | null>(null)
-  const discardCurrent = useRef<(() => void) | null>(null)
+  const discard = useRef<(() => void) | null>(null)
+  const trigger = useRef<HTMLButtonElement | null>(null)
+  const hasProjects = repos.some(isWallRowVisible)
+  const projects = useMemo(
+    () =>
+      buildWallProjects(
+        repos
+          .filter(isWallRowVisible)
+          .filter(
+            (repo) =>
+              (type === 'all' || (repo.projectVisibility ?? 'personal') === type) &&
+              (location === 'all' ||
+                (getRepoExecutionHostId(repo) === 'local') === (location === 'local'))
+          ),
+        groups,
+        {
+          environmentIds: new Set(environments.map((environment) => environment.id))
+        }
+      ),
+    [repos, groups, environments, type, location]
+  )
+  const charters = useWallCharters(projects, token)
+  const readings = useWallReadings(projects, token)
+  const cards: WallCardView[] = projects.map((project) => ({
+    project,
+    primaryRepo: project.rows[0],
+    charter: charters[project.key] ?? null,
+    displayName: project.group?.name || charters[project.key]?.name?.trim() || project.name,
+    readings: readings[project.key] ?? { kind: 'loading' },
+    hostTags: project.hostIds.map((hostId) => ({
+      ...buildWallHostFact(hostId, environments, statuses, sshLabels),
+      hostId,
+      isLocal: hostId === 'local'
+    }))
+  }))
+  const selectedCard = cards.find((card) => card.project.key === selected)
   const leave = (action: () => void) => {
-    if (configurationBusy) {
+    if (busy) {
       return
     }
-    if (draftDirty) {
+    if (dirty) {
       setLeaveAction(() => action)
     } else {
       action()
     }
   }
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 680px)')
-    const changed = () => setNarrow(media.matches)
-    media.addEventListener('change', changed)
-    return () => media.removeEventListener('change', changed)
-  }, [])
-
-  // 墙的主机目录 = 当前配对集合:已删主机的残留注册行不上墙(可重算,铁律一)。
-  const hostCatalog = useMemo(
-    () => ({ environmentIds: new Set(runtimeEnvironments.map((env) => env.id)) }),
-    [runtimeEnvironments]
-  )
-  const wallProjects = useMemo(
-    () => buildWallProjects(repos, projectGroups, hostCatalog),
-    [repos, projectGroups, hostCatalog]
-  )
-  // 上墙判据:能读到 .bw/project.toml(或本机有名片 PR 证据)的项目才上墙。
-  const { adoptionByKey, loadCount } = useWallAdoptions(wallProjects, adoptionToken)
-  // 墙卡读数:只给已上墙的项目读(gh/RPC 调用不便宜),与名片同一刷新 token。
-  const adoptedProjects = useMemo(
-    () => wallProjects.filter((project) => adoptionByKey[project.key]?.adopted),
-    [wallProjects, adoptionByKey]
-  )
-  const readingsByKey = useWallReadings(adoptedProjects, adoptionToken)
-
-  const refreshWall = useCallback(async () => {
+  const native = useWallNativeProjectActions(leave)
+  const refresh = useCallback(async () => {
     setRefreshing(true)
+    setPartialRefresh(false)
     try {
-      // 刷新 = 重读本机与已配对主机的仓库目录、工作树与名片数据,作用整面墙。
-      // 成本清单(H 配对主机/R 仓行/P 上墙项目/S 仓槽):H×4 RPC + R×1 工作树 RPC +
-      // 每项目名片逐行读到即止(全读不到的本机行再 1 次 PR 状态 RPC)+ 每项目 4 个
-      // 材料 RPC + 每 GitHub 任务仓 1 次 gh GraphQL 批量 + 每 CodeHub 任务 1 次
-      // codehub-cli viewTask(只读 Issue)+ 每槽 PR 计数逐页;
-      // 会话计数 0 外部调用(store 现算)。查询键不变不重发是防风暴闸。
-      await fetchReposForAllHosts()
-      await fetchAllWorktrees()
-      setAdoptionToken((n) => n + 1)
+      await Promise.all([
+        useAppStore
+          .getState()
+          .fetchReposForAllHosts({ onRepoCatalogError: () => setPartialRefresh(true) }),
+        useAppStore.getState().fetchProjectGroupsForAllHosts()
+      ])
+      await useAppStore.getState().fetchAllWorktrees()
+      setToken((value) => value + 1)
+      setUpdatedAt(new Date().toLocaleTimeString())
+    } catch (error) {
+      setPartialRefresh(true)
+      toast.error(String(error))
     } finally {
       setRefreshing(false)
     }
-  }, [fetchReposForAllHosts, fetchAllWorktrees])
-
-  const cards = useMemo((): WallCardView[] => {
-    const views: WallCardView[] = []
-    for (const project of wallProjects) {
-      const adoption = adoptionByKey[project.key]
-      if (!adoption?.adopted) {
-        continue
-      }
-      const hostTags: CardHostTag[] = project.hostIds.map((hostId) => {
-        const fact = buildWallHostFact(
-          hostId,
-          runtimeEnvironments,
-          runtimeStatusByEnvironmentId,
-          sshTargetLabels
-        )
-        const hostRows = project.rows.filter((row) => getRepoExecutionHostId(row) === hostId)
-        return {
-          hostId,
-          label: fact.label,
-          online: fact.online,
-          isLocal: hostId === LOCAL_EXECUTION_HOST_ID,
-          worktreeCount: countWallProjectWorktrees(hostRows, worktreesByRepo)
-        }
-      })
-      views.push({
-        project,
-        displayName: adoption.charter?.name?.trim() || project.name,
-        brief: adoption.charter?.brief?.trim() || '',
-        readings: readingsByKey[project.key] ?? READINGS_LOADING,
-        isActive: project.repoIds.includes(activeRepoId ?? ''),
-        charter: adoption.charter,
-        status: adoption.status,
-        worktreeCount: countWallProjectWorktrees(project.rows, worktreesByRepo),
-        hostTags,
-        remoteWorktreeCount: hostTags
-          .filter((tag) => !tag.isLocal)
-          .reduce((total, tag) => total + tag.worktreeCount, 0),
-        primaryRepo: project.rows.find((row) => row.id === project.primaryRepoId)
-      })
-    }
-    return views
-  }, [
-    wallProjects,
-    adoptionByKey,
-    readingsByKey,
-    activeRepoId,
-    worktreesByRepo,
-    runtimeEnvironments,
-    runtimeStatusByEnvironmentId,
-    sshTargetLabels
-  ])
-
-  const selectedCard = cards.find(
-    (card) =>
-      card.project.key === configurationKey ||
-      (configurationKey === undefined &&
-        configureRepoId &&
-        card.project.repoIds.includes(configureRepoId))
+  }, [])
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+  const filtered = cards.filter((card) =>
+    card.displayName.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   )
-  const closeConfiguration = () =>
-    leave(() => {
-      setConfigurationKey(null)
-      setDraftDirty(false)
-      setConfigurationBusy(false)
-      configurationTrigger.current?.focus()
-    })
-
   return (
     <TooltipProvider>
       <div className="wb-wall-page" aria-label="项目墙" data-screen="wall">
-        <div className="wb-wall" inert={narrow && Boolean(selectedCard)}>
+        <main className="wb-wall">
           <header className="page-head">
-            <h1>项目墙</h1>
+            <div>
+              <h1>
+                项目墙 <small>{cards.length} 个项目</small>
+              </h1>
+            </div>
             <div className="page-actions" role="group" aria-label="项目墙操作">
               <WorkbenchIconButton
-                label="刷新项目墙"
+                label="刷新项目目录和墙卡信息"
                 icon={refreshing ? LoaderCircle : RefreshCw}
                 className={refreshing ? 'wb-icon-spin' : ''}
                 disabled={refreshing}
+                onClick={() => void refresh()}
                 data-workbench-refresh
-                onClick={() => void refreshWall()}
               />
               <WorkbenchIconButton
-                label="导入 Builder 主机"
+                label="批量导入主机"
                 icon={FileInput}
-                data-workbench-import-hosts
                 onClick={() => setImportOpen(true)}
+                data-workbench-import-hosts
               />
               <WorkbenchIconButton
-                label="接入项目"
+                label="添加项目"
                 icon={Plus}
+                onClick={() => leave(openAddProject)}
                 data-workbench-onboard
-                onClick={() => leave(() => openProjectOnboard())}
               />
               <WorkbenchIconButton
                 label="关闭项目墙"
@@ -220,103 +157,189 @@ export function ProjectWallPage({
               />
             </div>
           </header>
-          <div className="wallbar" aria-label="项目墙概况">
-            <span>共 {cards.length} 个项目</span>
-          </div>
-
-          {cards.length === 0 ? (
-            <div className="wb-card empty-center">
-              {loadCount === 0 ? (
-                '正在读取项目名片…'
-              ) : wallProjects.length === 0 ? (
-                <>
-                  还没有接入任何项目。
-                  <br />
-                  点击「接入项目」打开本地仓库或克隆远端仓库。
-                </>
-              ) : (
-                <>
-                  还没有能读到 <code>.bw/project.toml</code> 的项目。
-                  <br />
-                  未纳入的项目留在左侧 Orca Projects；接入项目或导入 Builder 主机后刷新。
-                </>
-              )}
-              <div style={{ marginTop: 12 }}>
-                <button
-                  type="button"
-                  className="wb-btn wb-btn-primary"
-                  onClick={() => {
-                    leave(() => openProjectOnboard())
-                  }}
-                >
-                  + 接入项目
-                </button>
+          <p className="wall-principles">聚焦目标 · 关注引领指标 · 建立记分表 · 保持问责节奏</p>
+          {hasProjects && (
+            <div className="wallbar">
+              <Input
+                aria-label="搜索项目"
+                placeholder="搜索项目"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <div role="group" aria-label="项目来源">
+                {[
+                  ['all', '全部'],
+                  ['local', '本机'],
+                  ['remote', '远程']
+                ].map(([value, label]) => (
+                  <Button
+                    key={value}
+                    size="xs"
+                    variant={location === value ? 'secondary' : 'ghost'}
+                    aria-pressed={location === value}
+                    onClick={() => leave(() => setLocation(value))}
+                  >
+                    {label}
+                  </Button>
+                ))}
               </div>
-            </div>
-          ) : (
-            <div className="wall-grid">
-              {cards.map((card) => (
-                <ProjectWallCard
-                  key={card.project.key}
-                  card={card}
-                  configured={selectedCard?.project.key === card.project.key}
-                  switching={switchingKey === card.project.key}
-                  onOpen={() =>
-                    leave(() => {
-                      setSwitchingKey(card.project.key)
-                      void switchActiveProject(card.project.primaryRepoId)
-                        .catch((error) => toast.error(String(error)))
-                        .finally(() => setSwitchingKey(null))
-                    })
-                  }
-                  onConfigure={(trigger) => {
-                    if (selectedCard?.project.key === card.project.key) {
-                      return
-                    }
-                    leave(() => {
-                      configurationTrigger.current = trigger
-                      setConfigurationKey(card.project.key)
-                      setDraftDirty(false)
-                      setConfigurationBusy(false)
-                    })
-                  }}
-                />
-              ))}
+              <div role="group" aria-label="项目类型">
+                {[
+                  ['all', '全部类型'],
+                  ['team', '团队'],
+                  ['personal', '个人']
+                ].map(([value, label]) => (
+                  <Button
+                    key={value}
+                    size="xs"
+                    variant={type === value ? 'secondary' : 'ghost'}
+                    aria-pressed={type === value}
+                    onClick={() => leave(() => setType(value))}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <span
+                title={
+                  partialRefresh
+                    ? '部分主机未连接，保留上次读取结果；恢复连接后可刷新'
+                    : '刷新会重读已登记主机的项目、工作区及墙卡信息，不会更新代码仓'
+                }
+              >
+                {refreshing
+                  ? '刷新中…'
+                  : partialRefresh
+                    ? '部分主机未更新'
+                    : updatedAt
+                      ? `刷新于 ${updatedAt}`
+                      : ''}
+              </span>
             </div>
           )}
-        </div>
-        {selectedCard?.primaryRepo ? (
+          {!hasProjects ? (
+            <div className="empty-center">
+              <h2>从一个项目开始</h2>
+              <p>打开已有文件夹、克隆代码仓，或新建项目。</p>
+              <Button onClick={openAddProject}>添加项目</Button>
+            </div>
+          ) : !filtered.length ? (
+            <p className="empty-center">没有匹配的项目</p>
+          ) : (
+            (['team', 'personal'] as const).map((category) => {
+              const items = filtered.filter(
+                (card) => wallProjectVisibility(card.project) === category
+              )
+              return (
+                items.length > 0 && (
+                  <section className="wall-group" key={category}>
+                    <h2>
+                      {category === 'team' ? '团队项目' : '个人项目'} <small>{items.length}</small>
+                    </h2>
+                    <div className="wall-grid">
+                      {items.map((card) => (
+                        <ProjectWallCard
+                          key={card.project.key}
+                          card={card}
+                          switching={switching === card.project.key}
+                          configured={selectedCard?.project.key === card.project.key}
+                          nativeMenu={native.projectMenu(card.project)}
+                          repoMenu={native.repoMenu}
+                          onRepoSettings={native.settingsFor}
+                          onClone={(slot) =>
+                            leave(() =>
+                              useAppStore
+                                .getState()
+                                .openModal('add-repo', { initialCloneUrl: slot.remoteUrl })
+                            )
+                          }
+                          onOpen={(repo = card.primaryRepo) =>
+                            leave(() => {
+                              setSwitching(card.project.key)
+                              void continueProjectWork(repo)
+                                .catch((error) => toast.error(String(error)))
+                                .finally(() => setSwitching(null))
+                            })
+                          }
+                          onOverview={() =>
+                            leave(() => {
+                              void switchActiveProject(
+                                card.primaryRepo.id,
+                                getRepoExecutionHostId(card.primaryRepo)
+                              )
+                            })
+                          }
+                          onConfigure={(button) =>
+                            leave(() => {
+                              trigger.current = button
+                              setSelected(card.project.key)
+                              setDirty(false)
+                            })
+                          }
+                          onStage={(stage) =>
+                            leave(() => {
+                              if (card.readings.kind !== 'version') {
+                                return
+                              }
+                              const { catalog, version } = card.readings
+                              const repoId = catalog.scope?.repoId ?? card.primaryRepo.id
+                              useAppStore.getState().setActiveRepo(repoId)
+                              useAppStore.setState({
+                                activeWorkspaceExecutionHostId:
+                                  catalog.scope?.hostId ?? getRepoExecutionHostId(card.primaryRepo)
+                              })
+                              if (stage === 'tasks') {
+                                void openVersionTasks({
+                                  catalog,
+                                  version,
+                                  entry:
+                                    catalog.catalog?.entries.find(
+                                      (entry) => entry.version === version
+                                    ) ?? null
+                                }).catch((error) => toast.error(String(error)))
+                              } else {
+                                navigateVersionWorkflow({
+                                  catalog,
+                                  version,
+                                  workflow: stage,
+                                  projectKey: repoId
+                                })
+                              }
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )
+              )
+            })
+          )}
+        </main>
+        {selectedCard && (
           <ProjectSettingsRail
             key={selectedCard.project.key}
-            card={selectedCard}
-            onClose={closeConfiguration}
-            discardRef={discardCurrent}
-            onDirtyChange={setDraftDirty}
-            onBusyChange={setConfigurationBusy}
-            busyRepoId={busyRepoId}
-            leave={leave}
-            onChanged={() => setAdoptionToken((n) => n + 1)}
-            onAddRepo={() =>
+            repo={selectedCard.primaryRepo}
+            rows={selectedCard.project.rows}
+            displayName={selectedCard.displayName}
+            onClose={() =>
               leave(() => {
-                void startAddRepoSlot(selectedCard.project).catch((error) =>
-                  toast.error(String(error))
-                )
+                setSelected(null)
+                setDirty(false)
+                trigger.current?.focus()
               })
             }
-            onRemoveRepo={(repoId) =>
-              leave(() => {
-                setBusyRepoId(repoId)
-                void removeRepoFromWallProject({ project: selectedCard.project, repoId })
-                  .catch((error) => toast.error(String(error)))
-                  .finally(() => setBusyRepoId(null))
-              })
-            }
+            discardRef={discard}
+            onDirtyChange={setDirty}
+            onBusyChange={setBusy}
+            onChanged={() => setToken((value) => value + 1)}
           />
-        ) : null}
+        )}
+        {native.dialogs}
         <ImportBuilderHostsDialog
           open={importOpen}
           onClose={() => setImportOpen(false)}
-          onImported={refreshWall}
+          onImported={refresh}
         />
         <Dialog
           open={leaveAction !== null}
@@ -326,31 +349,23 @@ export function ProjectWallPage({
             }
           }}
         >
-          <DialogContent showCloseButton={false}>
-            <DialogTitle>还有未提交的变更</DialogTitle>
-            <DialogDescription>离开当前配置会丢弃这些变更。</DialogDescription>
-            <div className="wb-config-actions">
-              <button
-                type="button"
-                className="wb-btn wb-btn-secondary"
-                onClick={() => setLeaveAction(null)}
-              >
-                继续编辑
-              </button>
-              <button
-                type="button"
-                className="wb-btn wb-btn-ghost"
-                onClick={() => {
-                  const action = leaveAction
-                  discardCurrent.current?.()
-                  setLeaveAction(null)
-                  setDraftDirty(false)
-                  action?.()
-                }}
-              >
-                丢弃并离开
-              </button>
-            </div>
+          <DialogContent>
+            <DialogTitle>还有未提交的修改</DialogTitle>
+            <DialogDescription>离开当前设置会丢弃这些修改。</DialogDescription>
+            <Button variant="ghost" onClick={() => setLeaveAction(null)}>
+              继续编辑
+            </Button>
+            <Button
+              onClick={() => {
+                const action = leaveAction
+                discard.current?.()
+                setLeaveAction(null)
+                setDirty(false)
+                action?.()
+              }}
+            >
+              丢弃并离开
+            </Button>
           </DialogContent>
         </Dialog>
       </div>

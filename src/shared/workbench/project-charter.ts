@@ -11,6 +11,7 @@ export const CHARTER_BRANCH = 'bw/project'
 
 export type ProjectCharter = {
   name: string
+  owner?: string
   kind: string
   brief: string
   benchmark: string
@@ -20,6 +21,7 @@ export type ProjectCharter = {
 
 export const EMPTY_CHARTER: ProjectCharter = {
   name: '',
+  owner: '',
   kind: '',
   brief: '',
   benchmark: '',
@@ -58,6 +60,7 @@ export function parseProjectToml(raw: string): ProjectCharter {
 export function renderProjectToml(file: ProjectCharter): string {
   return [
     `name = ${quote(file.name)}`,
+    `owner = ${quote(file.owner ?? '')}`,
     `kind = ${quote(file.kind)}`,
     `brief = ${quote(file.brief)}`,
     `benchmark = ${quote(file.benchmark)}`,
@@ -70,6 +73,7 @@ export function renderProjectToml(file: ProjectCharter): string {
 
 const CHARTER_FIELD_KEYS: readonly { field: keyof ProjectCharter; keys: readonly string[] }[] = [
   { field: 'name', keys: ['name'] },
+  { field: 'owner', keys: ['owner'] },
   { field: 'kind', keys: ['kind'] },
   { field: 'brief', keys: ['brief'] },
   { field: 'benchmark', keys: ['benchmark'] },
@@ -106,7 +110,7 @@ export function fillBlankCharterInToml(
   }
   const filled: string[] = []
   for (const { field, keys } of CHARTER_FIELD_KEYS) {
-    const wanted = intent[field].trim()
+    const wanted = (intent[field] ?? '').trim()
     if (!wanted) {
       continue
     }

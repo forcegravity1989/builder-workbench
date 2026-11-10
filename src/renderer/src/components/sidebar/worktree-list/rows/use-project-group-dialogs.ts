@@ -6,6 +6,7 @@ import { selectProjectGroupRemovalTargets } from '@/store/slices/project-group-r
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
 
 export type ProjectGroupNameDialogState =
   | { type: 'create-from-repo'; repo: Repo }
@@ -86,14 +87,14 @@ export function useProjectGroupDialogs(args: {
       if (repo.projectGroupId === groupId) {
         return
       }
-      void moveProjectToGroup(repo.id, groupId)
+      void moveProjectToGroup(repo.id, groupId, undefined, { hostId: getRepoExecutionHostId(repo) })
     },
     [moveProjectToGroup]
   )
 
   const handleRemoveProjectFromGroup = useCallback(
     (repo: Repo) => {
-      void moveProjectToGroup(repo.id, null)
+      void moveProjectToGroup(repo.id, null, undefined, { hostId: getRepoExecutionHostId(repo) })
     },
     [moveProjectToGroup]
   )
@@ -111,9 +112,10 @@ export function useProjectGroupDialogs(args: {
         return
       }
       if (nameDialog.type === 'create-from-repo') {
-        const group = await createProjectGroup(name)
+        const owner = { hostId: getRepoExecutionHostId(nameDialog.repo) }
+        const group = await createProjectGroup(name, owner)
         if (group) {
-          await moveProjectToGroup(nameDialog.repo.id, group.id)
+          await moveProjectToGroup(nameDialog.repo.id, group.id, undefined, owner)
         }
         return
       }
