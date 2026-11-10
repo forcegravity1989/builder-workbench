@@ -43,7 +43,8 @@
       ['name', '项目名称'],
       ['brief', '简介'],
       ['benchmark', '对标'],
-      ['opportunity', '目标方向']
+      ['opportunity', '目标方向'],
+      ['builder', '主要 Builder']
     ],
     state: {
       projects: [],
@@ -52,6 +53,13 @@
       config: null,
       draft: null,
       filter: 'all',
+      category: 'all',
+      view: 'projects',
+      viewer: 'self',
+      remembered: {},
+      workspaceSessions: {},
+      workspace: 'main',
+      sort: 'native',
       query: '',
       scenario: 'mixed',
       updated: '刚刚更新',
@@ -178,6 +186,13 @@
   const baseFixtures = W.fixtures
   W.fixtures = () => {
     const projects = baseFixtures()
+    // Explicit sample choices, never an inference from an existing charter.
+    projects[0].sharing = { local: 'team', dev: 'team' }
+    projects[0].builder = '张悦'
+    projects[2].sharing = { dev: 'team' }
+    projects[2].builder = '李青'
+    projects[4].sharing = { lab: 'team' }
+    projects[5].builder = '陈知'
     projects[0].delivery = {
       promise: '统一项目入口，让个人项目可以直接进入工作',
       date: '2026-11-12',
@@ -237,5 +252,27 @@
           }</span>`
       )
       .join('')
+  const s = W.state
+  W.visibility = (p, host) => p.sharing?.[host] || 'personal'
+  W.visibleProjects = () =>
+    s.projects.flatMap((p) => {
+      const hosts = p.hosts
+        .filter((h) =>
+          s.viewer === 'peer'
+            ? h === 'local' && W.visibility(p, h) === 'team'
+            : h === 'local' || W.visibility(p, h) === 'team'
+        )
+        .filter((h) => s.category === 'all' || W.visibility(p, h) === s.category)
+        .filter((h) => s.filter === 'all' || (s.filter === 'local' ? h === 'local' : h !== 'local'))
+      return hosts.length &&
+        (!s.query ||
+          `${p.name} ${p.brief} ${p.builder || ''} ${p.path}`
+            .toLowerCase()
+            .includes(s.query.toLowerCase()))
+        ? [{ ...p, hosts }]
+        : []
+    })
+  W.categoryOf = (p) => W.visibility(p, p.hosts.includes('local') ? 'local' : p.hosts[0])
+  W.motto = '<p class="four-principles">聚焦目标 · 关注引领指标 · 建立记分表 · 保持问责节奏</p>'
   window.WallProto = W
 })()

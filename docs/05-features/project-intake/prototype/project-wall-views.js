@@ -46,11 +46,11 @@
         'external',
         '打开 ' + p.name,
         p.id
-      )}${button('config', 'settings', '设置 ' + p.name, p.id)}</div></div>${
+      )}${button('overview', 'book', '项目总览 ' + p.name, p.id)}${button('config', 'settings', '设置 ' + p.name, p.id)}</div></div><div class="identity-row"><span class="type-chip ${W.categoryOf(p)}">${W.categoryOf(p) === 'team' ? '团队项目' : '个人项目'}</span>${p.delivery ? `<span class="builder-label">Builder · ${esc(p.builder || '未填写')}</span>` : ''}</div>${
         p.brief && !p.delivery ? '<p class="card-description">' + esc(p.brief) + '</p>' : ''
       }<div class="source-row">${W.sourceTags(p)}${
         p.kind === 'folder' ? '<span class="source-chip">文件夹</span>' : ''
-      }</div>` +
+      }${!W.project(p.id).hosts.includes('local') && p.remote ? `<button class="inline-link" data-action="clone-local" data-id="${p.id}">克隆到本机</button>` : ''}</div>` +
       `<div class="card-facts">${
         p.delivery
           ? '<button class="delivery-open" data-action="delivery" data-id="' +
@@ -110,20 +110,55 @@
     )
   }
   W.renderGrid = () => {
-    const projects = s.projects.filter(
-      (p) =>
-        (!s.query ||
-          `${p.name} ${p.brief} ${p.path}`.toLowerCase().includes(s.query.toLowerCase())) &&
-        (s.filter === 'all' ||
-          (s.filter === 'local' ? p.hosts.includes('local') : p.hosts.some((h) => h !== 'local')))
-    )
-    W.$('project-grid').innerHTML = projects.length
-      ? projects.map(W.renderCard).join('')
-      : '<div class="empty-state"><h2>没有匹配的项目</h2><button class="btn btn-secondary" data-action="clear-filter">清除筛选</button></div>'
-    W.$('visible-count').textContent =
-      projects.length === s.projects.length
-        ? `${s.projects.length} 个项目`
-        : `${projects.length} / ${s.projects.length} 个项目`
+    const projects = W.visibleProjects()
+    const root = W.$('project-grid')
+    root.className = s.view === 'projects' ? 'project-grid' : 'comparison-view'
+    const empty =
+      '<div class="empty-state"><h2>没有匹配的项目</h2><button class="btn btn-secondary" data-action="clear-filter">清除筛选</button></div>'
+    if (s.view === 'projects') {
+      root.innerHTML = projects.length
+        ? ['team', 'personal']
+            .map((type) => {
+              const group = projects.filter((p) => W.categoryOf(p) === type)
+              return group.length
+                ? `<h2 class="project-group-title">${type === 'team' ? '团队项目' : '个人项目'} <span>${group.length}</span></h2>${group.map(W.renderCard).join('')}`
+                : ''
+            })
+            .join('')
+        : empty
+    } else if (s.view === 'rhythm') {
+      const dated = projects
+        .filter((p) => p.delivery)
+        .sort((a, b) => a.delivery.date.localeCompare(b.delivery.date))
+      root.innerHTML = `<p class="view-caption">按约定验收日期查看版本安排 · 示例观察日 2026/11/10 · 日期不按自然周自动改动</p>${dated.map((p) => `<article class="rhythm-row"><div class="rhythm-date">${esc(p.delivery.date)}<span>${esc(p.version)}</span></div><div><button class="project-name" data-action="open" data-id="${p.id}">${esc(p.name)}</button><p>${esc(p.delivery.promise)}</p><span class="muted">Builder · ${esc(p.builder || '未填写')}</span></div><button class="btn btn-secondary" data-action="delivery" data-id="${p.id}">${esc(p.delivery.acceptance)} · 查看依据</button>${button('config', 'settings', `设置 ${p.name}`, p.id)}</article>`).join('') || '<p class="muted">当前范围没有可展示的版本安排。</p>'}${
+        projects.some((p) => !p.delivery)
+          ? `<div class="comparison-note">无版本或依据不可用：${projects
+              .filter((p) => !p.delivery)
+              .map(
+                (p) =>
+                  `<button class="inline-link" data-action="open" data-id="${p.id}">${esc(p.name)}</button>`
+              )
+              .join('、')}。仍可直接工作。</div>`
+          : ''
+      }`
+    } else {
+      const people = [...new Set(projects.map((p) => p.builder || '未填写负责人'))]
+      root.innerHTML = `<p class="view-caption">按项目主要负责人分组 · 不是主机持有人或个人排名 · 同项目只统计一份</p>${
+        people
+          .map(
+            (person) =>
+              `<section class="builder-section"><h2>${esc(person)}</h2>${projects
+                .filter((p) => (p.builder || '未填写负责人') === person)
+                .map(
+                  (p) =>
+                    `<div class="builder-project"><button class="project-name" data-action="open" data-id="${p.id}">${esc(p.name)}</button><span>${esc(p.version || '无可读版本')}</span><span>${esc(p.delivery?.promise || p.brief || '可直接开始工作')}</span>${p.delivery ? `<button class="inline-link" data-action="delivery" data-id="${p.id}">${esc(p.delivery.acceptance)} · 依据</button>` : '<span class="muted">未使用版本交付</span>'}${button('config', 'settings', `设置 ${p.name}`, p.id)}</div>`
+                )
+                .join('')}</section>`
+          )
+          .join('') || empty
+      }`
+    }
+    W.$('visible-count').textContent = `${projects.length} 个项目`
   }
   W.renderWall = () => {
     W.$('project-sidebar').hidden = true
@@ -144,7 +179,16 @@
         s.scenario === 'error'
           ? '<div class="inline-notice">研发主机的项目列表读取失败，当前列表可能不完整。<button class="btn btn-secondary" data-action="retry-host">重试</button></div>'
           : ''
-      }${
+      }${W.motto}<nav class="view-switch" aria-label="项目墙视图">${[
+        ['projects', '项目墙'],
+        ['rhythm', '版本节奏'],
+        ['builders', 'Builder 交付']
+      ]
+        .map(
+          ([id, label]) =>
+            `<button class="filter" data-action="view" data-id="${id}" aria-pressed="${s.view === id}">${label}</button>`
+        )
+        .join('')}</nav>${
         s.projects.length
           ? `<div class="wall-toolbar"><label class="search-wrap">${icon(
               'search'
@@ -161,6 +205,15 @@
                     s.filter === id
                   }">${name}</button>`
               )
+              .join('')}</div><div class="filter-group" aria-label="项目类型">${[
+              ['all', '全部类型'],
+              ['team', '团队'],
+              ['personal', '个人']
+            ]
+              .map(
+                ([id, label]) =>
+                  `<button class="filter" data-action="category" data-id="${id}" aria-pressed="${s.category === id}">${label}</button>`
+              )
               .join('')}</div><span class="wall-updated">${
               s.updated
             }</span></div><div id="project-grid" class="project-grid"></div>`
@@ -176,13 +229,13 @@
     const p = W.project(s.active)
     W.$('project-sidebar').hidden = false
     W.$('project-sidebar').innerHTML =
-      `<div class="sidebar-project">${icon('folder')}${esc(p.name)}</div>` +
+      `<div class="sidebar-project">${icon('folder')}<span>${esc(p.name)}</span>${button('add', 'plus', '添加项目')}${button('workspace-options', 'settings', 'Workspace options')}</div>` +
       `<button class="tree-row" data-action="wall">${icon('back')}项目墙</button>` +
       `<div class="sidebar-section">${icon('pin')}已固定</div>${s.projects
         .filter((q) => q.id === 'bw' || q.id === 'shun')
         .map(
           (q) =>
-            '<button class="tree-row" data-action="open" data-id="' +
+            '<button class="tree-row" data-action="open-pinned" data-id="' +
             q.id +
             '">' +
             icon('git') +
@@ -195,28 +248,29 @@
             icon('clock') +
             '版本</div>' +
             (p.version
-              ? '<button class="tree-row" data-action="handoff" data-id="版本 ' +
-                esc(p.version) +
-                '">' +
-                icon('folder') +
-                esc(p.version) +
-                '</button>'
+              ? `<details class="version-trees" open><summary>${esc(p.version)}</summary><button class="tree-row" data-action="handoff" data-id="版本计划">${icon('book')}计划</button><button class="tree-row" data-action="choose-workspace" data-id="版本开发">${icon('git')}开发工作区</button><button class="tree-row" data-action="handoff" data-id="版本验收">${icon('check')}验收</button></details>`
               : '<div class="sidebar-note">暂无版本</div>') +
             '<button class="tree-row" data-action="handoff" data-id="新建版本">' +
             icon('plus') +
             '新建版本</button>'
           : ''
-      }<div class="sidebar-section">${icon(
-        'folder'
-      )}当前项目工作区</div><button class="tree-row selected" data-action="workspace">${icon(
-        'git'
-      )}${p.kind === 'folder' ? '工作笔记' : 'main'}</button>${
-        s.newSession
-          ? '<button class="tree-row" data-action="workspace">' +
-            icon('session') +
-            '新会话</button>'
-          : ''
-      }<button class="tree-row" data-action="handoff" data-id="新建工作区">${icon(
+      }<div class="sidebar-section">${icon('folder')}${p.version ? '其他工作区' : '工作区'}</div>${[
+        ...new Set([
+          ...(p.id === 'bw' || p.id === 'shun'
+            ? ['临时排查']
+            : [
+                p.kind === 'folder' ? p.name : 'main',
+                ...(p.kind === 'git' && !p.id.startsWith('added-') ? ['临时排查'] : [])
+              ]),
+          ...(p.extraWorkspace ? [p.extraWorkspace] : [])
+        ])
+      ]
+        .sort((a, b) => (s.sort === 'name' ? a.localeCompare(b) : 0))
+        .map(
+          (name) =>
+            `<button class="tree-row ${s.workspace === name ? 'selected' : ''}" data-action="choose-workspace" data-id="${esc(name)}">${icon(p.kind === 'folder' ? 'folder' : 'git')}${esc(name)}</button>${s.workspace === name && s.newSession ? `<button class="tree-row session-child" data-action="workspace">${icon('session')}继续会话</button>` : ''}`
+        )
+        .join('')}<button class="tree-row" data-action="new-workspace">${icon(
         'plus'
       )}新建工作区</button>`
     W.$('main').innerHTML =
@@ -238,12 +292,12 @@
         )
         .join('')}</select>${button('config', 'settings', '项目设置', p.id)}</header>` +
       `<div class="workspace-empty"><div class="muted">${
-        p.kind === 'folder' ? '文件夹工作区' : 'main'
+        p.kind === 'folder' ? '文件夹工作区' : esc(s.workspace)
       } · ${W.hosts[s.host].name}</div><h2>${
-        s.newSession ? '会话已打开' : '今天想做些什么？'
+        s.newSession ? '继续当前工作' : '今天想做些什么？'
       }</h2>` +
       `<div class="composer"><textarea id="prompt" aria-label="会话输入" placeholder="描述要做的事情…"></textarea><div class="composer-footer"><span>Codex · 默认配置</span><button class="btn btn-primary" data-action="start-session">开始会话</button></div></div>` +
-      `<div class="workspace-links"><button class="btn btn-ghost" data-action="handoff" data-id="项目总览">项目总览</button><button class="btn btn-ghost" data-action="config" data-id="${
+      `<div class="workspace-links"><button class="btn btn-ghost" data-action="overview" data-id="${p.id}">项目总览</button><button class="btn btn-ghost" data-action="config" data-id="${
         p.id
       }">编辑项目信息</button></div></div>`
   }
@@ -268,7 +322,7 @@
             (p.merged ? '已合入，等待更新' : '项目信息待合入') +
             '</div>'
           : ''
-      }<section class="config-section"><h3>项目信息</h3>${W.fields
+      }<section class="config-section"><h3>${p.hosts.includes('local') ? '本机展示' : '所属主机展示'}</h3><div class="field"><label for="project-visibility">项目类型</label><select id="project-visibility" class="input" ${!p.hosts.includes('local') ? 'disabled' : ''}><option value="personal" ${W.categoryOf(p) === 'personal' ? 'selected' : ''}>个人项目</option><option value="team" ${W.categoryOf(p) === 'team' ? 'selected' : ''}>团队项目</option></select></div><p class="form-hint">${p.hosts.includes('local') ? '个人项目不出现在其他客户端的共享项目墙。切换立即保存到本机，不提交 PR；已打开的工作区不受影响。' : '此项目仅在远端主机上；展示类型由所属主机设置。克隆到本机后可设置本机副本。'}</p></section><section class="config-section"><h3>共享项目信息</h3><p class="form-hint">名称、介绍与主要 Builder 在同一处维护。</p>${W.fields
         .map(
           ([key, label]) =>
             '<div class="field"><label for="field-' +
@@ -296,7 +350,7 @@
         p.remote ? '<span class="mono">' + esc(p.remote) + '</span>' : ''
       }<span class="mono muted">${esc(
         p.path
-      )}</span></div><button class="btn btn-ghost" data-action="handoff" data-id="仓库设置">打开仓库设置</button></section>` +
+      )}</span></div>${(p.extraRepos || []).map((r, i) => `<div class="repo-detail"><span>${esc(r.name)}</span><span class="mono muted">${esc(r.path)}</span><button class="inline-link" data-action="remove-extra-repo" data-id="${i}">移除登记</button></div>`).join('')}<button class="btn btn-ghost" data-action="handoff" data-id="仓库设置">打开仓库设置</button><button class="btn btn-ghost" data-action="add-repo">添加代码仓</button><button class="btn btn-ghost" data-action="remove-repo">移除本机登记</button></section>` +
       `<section class="config-section"><h3>所在主机</h3><div class="source-row">${W.sourceTags(
         p
       )}</div><button class="btn btn-ghost" data-action="hosts">管理主机</button></section></div>` +
@@ -309,7 +363,7 @@
             '">' +
             (p.merged ? '更新项目信息' : '查看待合入变更') +
             '</button>'
-          : '<button id="review-info" class="btn btn-primary" data-action="review-info" disabled>查看变更</button>'
+          : `<button id="review-info" class="btn btn-primary" data-action="review-info" ${!W.dirty() || !s.draft.name.trim() ? 'disabled' : ''}>查看变更</button>`
       }</footer>`
   }
   W.render = () => {

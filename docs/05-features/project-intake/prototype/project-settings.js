@@ -4,6 +4,28 @@
   let toastTimer
   let addTimer
   let focusReturn
+  const attachRepos = (target, entries) => {
+    const key = (value) => value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+    const existing = new Set(
+      [target.path, ...(target.extraRepos || []).map((r) => r.path)].map(key)
+    )
+    const added = entries.filter((entry) => {
+      const entryKey = key(entry.path)
+      if (existing.has(entryKey)) {
+        return false
+      }
+      existing.add(entryKey)
+      return true
+    })
+    target.extraRepos = [...(target.extraRepos || []), ...added]
+    return added.length
+  }
+  const remember = () => {
+    if (s.active) {
+      s.remembered[s.active] = { workspace: s.workspace, newSession: s.newSession, host: s.host }
+      s.workspaceSessions[`${s.active}:${s.workspace}`] = s.newSession
+    }
+  }
   W.cancelAdd = () => clearTimeout(addTimer)
   W.toast = (text) => {
     clearTimeout(toastTimer)
@@ -36,7 +58,7 @@
       'leave'
     )
   }
-  const openProject = (id) =>
+  const openProject = (id, pinnedWorkspace) =>
     guarded(() => {
       const p = W.project(id)
       if (!p) {
@@ -46,11 +68,17 @@
         W.offlineDialog(p)
         return
       }
+      remember()
       s.active = id
       s.config = null
       s.draft = null
       s.host = p.hosts.includes('local') ? 'local' : p.hosts.find((h) => W.hosts[h].online)
-      s.newSession = false
+      const saved = s.remembered[id]
+      s.workspace = pinnedWorkspace || saved?.workspace || (p.kind === 'folder' ? p.name : 'main')
+      s.newSession = s.workspaceSessions[`${id}:${s.workspace}`] || false
+      if (saved?.host && p.hosts.includes(saved.host) && W.hosts[saved.host].online) {
+        s.host = saved.host
+      }
       W.closeModal()
       W.render()
       W.$('main').focus()
@@ -58,6 +86,7 @@
   const openConfig = (id, trigger) =>
     guarded(() => {
       const p = W.project(id)
+      W.closeModal()
       s.config = id
       s.draft = Object.fromEntries(W.fields.map(([key]) => [key, p[key] || '']))
       focusReturn = trigger
@@ -76,8 +105,15 @@
       draft: null,
       query: '',
       filter: 'all',
+      category: 'all',
+      view: 'projects',
+      viewer: 'self',
+      remembered: {},
+      workspaceSessions: {},
+      workspace: 'main',
       scenario,
       addHost: 'local',
+      addToProject: null,
       updated: '刚刚更新',
       newSession: false
     })
@@ -94,6 +130,7 @@
       )
     }
     W.$('scenario').value = scenario
+    W.$('viewer').value = 'self'
     W.render()
     if (scenario === 'stale' || scenario === 'cross-version') {
       const d = s.projects[0].delivery
@@ -115,6 +152,16 @@
           note: '跨版或不同承诺的验收不能确认当前版本。保留原始记录，当前结果为未知。'
         })
       }
+    }
+    if (scenario === 'future' || scenario === 'cross-promise') {
+      Object.assign(s.projects[0].delivery, {
+        acceptance: '未知',
+        verdict:
+          scenario === 'future'
+            ? '记录标注 2026-11-18，晚于示例观察日，暂不作为已发生事实'
+            : '读到同版本的另一承诺验收，不能证明当前承诺达成',
+        note: '保留原始依据；当前结果显示未知，不用无效记录置绿。'
+      })
     }
     if (scenario === 'add-failure') {
       W.addChoice()
@@ -193,7 +240,7 @@
     if (existing) {
       if (!existing.hosts.includes(s.addHost)) {
         existing.hosts.push(s.addHost)
-        W.toast('已添加本机副本，归入已有项目')
+        W.toast('已添加副本，沿默认个人展示；共享属性请在所属主机自行设置')
         openProject(existing.id)
       } else {
         addError(
@@ -219,6 +266,17 @@
       charter: false
     }
     const commit = () => {
+      if (s.addToProject) {
+        const target = W.project(s.addToProject)
+        const added = attachRepos(target, [{ name: p.name, path: p.path }])
+        s.addToProject = null
+        W.closeModal()
+        openConfig(target.id)
+        W.toast(
+          added ? '已将代码仓加入当前项目；沿原生分组登记' : '代码仓已在当前项目中，无需重复添加'
+        )
+        return
+      }
       s.projects.unshift(p)
       openProject(p.id)
       W.toast(`已添加 ${p.name}`)
@@ -254,6 +312,7 @@
   const actions = {
     wall: () =>
       guarded(() => {
+        remember()
         s.active = null
         s.config = null
         s.draft = null
@@ -262,6 +321,7 @@
       }),
     workspace: () => (s.active ? W.renderWorkspace() : W.toast('从项目墙选择一个项目')),
     open: (id) => openProject(id),
+    'open-pinned': (id) => openProject(id, 'main'),
     config: (id, target) => openConfig(id || s.active, target),
     'close-config': () => guarded(closeConfig),
     'close-dialog': () => {
@@ -278,16 +338,142 @@
       next?.()
     },
     journey: W.journey,
-    delivery: W.deliveryDetail,
-    'propose-date': () => {
-      const date = W.$('proposed-date').value
-      if (!date) {
+    overview: (id) => guarded(() => W.overview(id || s.active)),
+    view: (id) => {
+      s.view = id
+      W.renderWall()
+    },
+    category: (id) => {
+      s.category = id
+      W.renderWall()
+    },
+    'workspace-options': W.workspaceOptions,
+    'apply-workspace-options': () => {
+      s.sort = W.$('workspace-sort').value
+      W.closeModal()
+      W.renderWorkspace()
+      W.toast('示例已保留原生排序选择；项目范围固定为当前项目')
+    },
+    'choose-workspace': (id) => {
+      remember()
+      s.workspace = id
+      s.newSession = s.workspaceSessions[`${s.active}:${id}`] || false
+      remember()
+      W.renderWorkspace()
+    },
+    'new-workspace': () =>
+      W.modal(
+        '新建工作区',
+        '<div class="field"><label for="workspace-name">名称</label><input id="workspace-name" class="input" value="临时排查" /></div><p class="form-hint">沿用原生创建器；无需先关联版本。</p><div class="modal-foot"><button class="btn btn-primary" data-action="confirm-workspace">创建并打开</button></div>',
+        'new-workspace'
+      ),
+    'confirm-workspace': () => {
+      s.workspace = W.$('workspace-name').value.trim() || '临时排查'
+      W.project(s.active).extraWorkspace = s.workspace
+      s.newSession = false
+      remember()
+      W.closeModal()
+      W.renderWorkspace()
+    },
+    'clone-local': (id) =>
+      guarded(() => {
+        s.addHost = 'local'
+        W.addForm('clone')
+        W.$('add-url').value = `https://${W.project(id).remote}.git`
+      }),
+    'account-repos': W.accountRepos,
+    'select-account-repo': (id) => {
+      W.addForm('clone')
+      W.$('add-url').value = id
+    },
+    'scan-repos': W.scanRepos,
+    'confirm-scan': () => {
+      const chosen = [...document.querySelectorAll('[name="scan-repo"]:checked')].map(
+        (e) => e.value
+      )
+      if (!chosen.length) {
+        W.toast('至少选择一个代码仓')
         return
       }
-      W.project(s.deliveryId).delivery.proposal = date
-      W.deliveryDetail(s.deliveryId)
-      W.toast('已保存讨论草稿，原承诺与验收结果未改变')
+      if (s.addToProject) {
+        const target = W.project(s.addToProject)
+        const added = attachRepos(
+          target,
+          chosen.map((name) => ({ name, path: `E:/projects/${name}` }))
+        )
+        s.addToProject = null
+        W.closeModal()
+        openConfig(target.id)
+        W.toast(
+          added ? `已将 ${added} 个代码仓加入当前项目` : '所选代码仓已在当前项目中，无需重复添加'
+        )
+        return
+      }
+      let last
+      for (const name of chosen) {
+        last = `scan-${name}`
+        if (!W.project(last)) {
+          s.projects.push({
+            id: last,
+            name,
+            hosts: [s.addHost],
+            path: `${s.addHost === 'local' ? 'E:/projects' : '/home/projects'}/${name}`,
+            remote: '',
+            kind: 'git',
+            brief: '',
+            version: null,
+            sessions: 0,
+            prs: 0
+          })
+        }
+      }
+      openProject(last)
+      W.toast('已添加所选代码仓；无需名片，可在项目墙逐项设置')
     },
+    'add-repo': () => {
+      const targetId = s.config
+      guarded(() => {
+        s.addToProject = targetId
+        s.addHost = 'local'
+        W.addForm('folder')
+      })
+    },
+    'remove-extra-repo': (id) => {
+      const p = W.project(s.config)
+      p.extraRepos.splice(Number(id), 1)
+      W.renderConfig()
+      W.toast('已移除登记，磁盘文件保留')
+    },
+    'remove-repo': () => {
+      const p = W.project(s.config)
+      if (!p.hosts.includes('local')) {
+        W.toast('此处没有本机登记可移除')
+        return
+      }
+      W.modal(
+        '移除本机登记',
+        `<p>从本机列表移除 ${esc(p.name)}。磁盘文件、工作树和其他主机副本保留。</p><div class="modal-foot"><button class="btn btn-secondary" data-action="close-dialog">取消</button><button class="btn btn-primary" data-action="confirm-remove">移除登记</button></div>`,
+        'remove'
+      )
+    },
+    'confirm-remove': () => {
+      const p = W.project(s.config)
+      p.hosts = p.hosts.filter((h) => h !== 'local')
+      if (!p.hosts.length) {
+        s.projects = s.projects.filter((q) => q.id !== p.id)
+      }
+      s.active = null
+      s.config = null
+      s.draft = null
+      W.closeModal()
+      W.render()
+      W.toast('已移除本机登记，文件未删除')
+    },
+    'refresh-hosts': () => {
+      W.hostDialog()
+      W.toast('已重读共享清单；示例地址已更新，离线项目仍保留')
+    },
+    delivery: W.deliveryDetail,
     theme: (_, target) => {
       const dark = document.documentElement.dataset.theme !== 'dark'
       document.documentElement.dataset.theme = dark ? 'dark' : 'light'
@@ -301,6 +487,7 @@
     'clear-filter': () => {
       s.query = ''
       s.filter = 'all'
+      s.category = 'all'
       W.renderWall()
     },
     refresh: () =>
@@ -315,7 +502,11 @@
       W.renderWall()
       W.toast('主机项目列表已更新')
     },
-    add: () => guarded(W.addChoice),
+    add: () =>
+      guarded(() => {
+        s.addToProject = null
+        W.addChoice()
+      }),
     'add-mode': W.addForm,
     browse: W.browse,
     'choose-path': (path) => {
@@ -363,7 +554,8 @@
           name: '共享示例项目',
           path: '/home/project/shared',
           remote: 'github.com/example/shared',
-          hosts: ['extra']
+          hosts: ['extra'],
+          sharing: { extra: 'team' }
         })
       }
       W.closeModal()
@@ -419,16 +611,22 @@
     },
     'start-session': () => {
       s.newSession = true
+      remember()
       W.renderWorkspace()
       W.toast('示例会话已打开；原型不会运行模型')
     },
     handoff: (name) => {
       const p = W.project(s.dialog === 'delivery' ? s.deliveryId : s.active)
+      const ref = name.includes('计划')
+        ? '../version-planning/planning-journey-prototype.html'
+        : name.includes('验收')
+          ? '../version-acceptance/acceptance-journey-prototype.html'
+          : null
       W.modal(
         name,
         `<p class="muted">沿用现有「${esc(name)}」界面${
           p ? `，带入 ${esc(p.name)}${p.version ? ` / ${esc(p.version)}` : ''} 上下文` : ''
-        }。本原型聚焦添加项目与项目墙，不重画这一页面。</p><div class="modal-foot"><button class="btn btn-secondary" data-action="close-dialog">返回</button></div>`,
+        }。此处是复用交接点，不是该页面的运行验证。</p>${name.includes('验收') ? W.motto : ''}${ref ? `<a class="btn btn-secondary" href="${ref}" target="_blank" rel="noopener">查看已有旅程原型</a><p class="form-hint">打开的是已有设计资产，示例数据独立，不携带当前项目状态。</p>` : ''}<div class="modal-foot"><button class="btn btn-secondary" data-action="close-dialog">返回</button></div>`,
         'handoff'
       )
     }
@@ -450,6 +648,25 @@
     }
   })
   document.addEventListener('change', (event) => {
+    if (event.target.id === 'viewer') {
+      const viewer = event.target.value
+      event.target.value = s.viewer
+      guarded(() => {
+        remember()
+        s.viewer = viewer
+        s.active = null
+        s.config = null
+        s.draft = null
+        W.$('viewer').value = viewer
+        W.render()
+      })
+    }
+    if (event.target.id === 'project-visibility') {
+      const p = W.project(s.config)
+      p.sharing = { ...p.sharing, local: event.target.value }
+      W.render()
+      W.toast('本机展示属性已保存；无 PR，既有工作区不受影响')
+    }
     if (event.target.id === 'scenario') {
       const requested = event.target.value
       event.target.value = s.scenario
