@@ -115,6 +115,21 @@ describe('codehub mr reads', () => {
   })
 
   it('reads paginated same-repository branch reviews and proves merged commit membership', async () => {
+    let candidates = [mr(137, 'opened')]
+    runCodeHubCliMock.mockImplementation(async (args: string[]) =>
+      JSON.stringify(
+        args[1] === 'list' ? candidates : candidates.find((item) => item.iid === Number(args[2]))
+      )
+    )
+    const notificationArgs = { ...branchArgs, targetBranch: undefined, states: ['opened'] as const }
+    expect(await readCodeHubBranchReview(notificationArgs)).toMatchObject({
+      number: 137,
+      state: 'open'
+    })
+    expect(runCodeHubCliMock.mock.calls[0]![0]).not.toContain('--target-branch')
+    candidates = [mr(137, 'opened'), { ...mr(138, 'opened'), target_branch: 'release' }]
+    await expect(readCodeHubBranchReview(notificationArgs)).rejects.toThrow('多个开放 MR')
+    runCodeHubCliMock.mockReset()
     const excluded = Array.from({ length: 100 }, (_, index) => ({
       ...mr(index + 1),
       source_branch: 'other'

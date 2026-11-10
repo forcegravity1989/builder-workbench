@@ -7,6 +7,7 @@ import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
 import { applyCodeHubIssueState } from './issue-state'
 import { readCodeHubMrChanges, readCodeHubMrChecks } from './mr-reads'
+import { readCodeHubBranchReview } from './mr-branch-review'
 import { listCodeHubProjectLabels, listCodeHubProjectMembers } from './repo-reads'
 import { listCodeHubTasks } from './work-items'
 import { getCodeHubViewer } from './viewer'
@@ -48,6 +49,9 @@ export function createCodeHubService(deps: {
   }
 
   return {
+    async mrForBranch(args) {
+      return readCodeHubBranchReview({ ...args, ...(await context(args)), states: ['opened'] })
+    },
     async viewer(args) {
       return getCodeHubViewer(await context(args))
     },

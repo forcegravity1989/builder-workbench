@@ -13,7 +13,6 @@ import {
 } from '@/lib/pr-comment-resolution-classes'
 import type { PRCommentAudienceFilter } from '../../../../../shared/pr-comment-audience'
 import { cn } from '@/lib/utils'
-import { codehubApi } from '@/lib/codehub-api'
 import { formatRelativeTime } from '../../task-page-source-context'
 import type { CodeHubComment } from '../../../../../shared/codehub-tasks'
 import type { CodeHubDetailState } from './use-codehub-detail'
@@ -203,7 +202,7 @@ function CodeHubCommentCard({
                   if (!item.repoPath) {
                     return
                   }
-                  void codehubApi
+                  void state.api
                     .deleteComment({
                       repoPath: item.repoPath,
                       repoId: item.repoId,
@@ -217,7 +216,7 @@ function CodeHubCommentCard({
                     // Re-list instead of filtering locally: deleting a thread
                     // starter must also drop its now-orphaned replies.
                     .then(() =>
-                      codehubApi.listComments({
+                      state.api.listComments({
                         repoPath: item.repoPath!,
                         repoId: item.repoId,
                         kind: item.type,

@@ -16,6 +16,7 @@
 | 路径 | 职责 | 什么时候读 |
 |---|---|---|
 | [01-principles/](01-principles/README.md) | 01 文档分层、02 逆向工作法、03 产品主张/FAQ/飞轮 | 调整知识归属、开特性、改产品主张 |
+| [development.md](development.md) | BW 自身测试、独立检视、验证证据与 PR 的规范正本，独立于具体 Skill | 本仓开发、测试、检视与交付；AGENTS 和各 Skill 共同引用 |
 | [architecture.md](architecture.md) | 整体旅程、逻辑模块、Electron 叠层与数据流 | 找现行设计、实现边界和工程落点 |
 | `02-adr/`（预留，当前无文件） | 难回头的架构决策及取舍 | 后续迁移产生新决策时记录；历史查 Git |
 | [03-guide/](03-guide/codehub-cli.md) | 给用户的操作、结果、下一步；当前含 codehub-cli 用法短文 | 使用 CodeHub 任务来源时读；其余指南按已验证的 Orca 旅程补齐 |
