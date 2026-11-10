@@ -1,3 +1,4 @@
+import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
 import { WORKBENCH_SKILL_METHODS } from './workbench-skills'
@@ -64,6 +65,7 @@ import { AGENT_HOOK_METHODS } from './agent-hooks'
 // grep-point for "what methods does the RPC server expose?" — useful when
 // auditing the security boundary or wiring new CLI commands.
 export const ALL_RPC_METHODS = [
+  ...WORKBENCH_REVIEW_NOTIFICATION_METHODS,
   ...WORKBENCH_MATERIAL_METHODS,
   ...WORKBENCH_SKILL_METHODS,
   ...WORKBENCH_HISTORY_METHODS,

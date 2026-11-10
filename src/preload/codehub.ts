@@ -8,6 +8,7 @@ export type {
 } from '../shared/codehub-api'
 
 export const codehubApi: CodeHubApi = {
+  mrForBranch: (args) => ipcRenderer.invoke('codehub:mrForBranch', args),
   viewer: (args) => ipcRenderer.invoke('codehub:viewer', args),
   listTasks: (args) => ipcRenderer.invoke('codehub:listTasks', args),
   createIssue: (args) => ipcRenderer.invoke('codehub:createIssue', args),
