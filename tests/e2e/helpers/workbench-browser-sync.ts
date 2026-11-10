@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs'
+import path from 'node:path'
 import type { ElectronApplication, Page, TestInfo } from '@stablyai/playwright-test'
 import { expect, test } from './workbench-app'
 import { startLocalHttpsServer } from './local-https-test-server'
@@ -12,7 +13,10 @@ const PROCEED = /Proceed Anyway|仍然继续/
 
 export const browserSyncTest = test.extend({
   minimumSeededWorktreeCount: 1,
-  workbenchAppExtraArgs: process.platform === 'linux' ? ['--password-store=gnome-libsecret'] : [],
+  workbenchAppExtraArgs: [
+    '-r',
+    path.join(process.cwd(), 'tests/e2e/helpers/real-password-storage.cjs')
+  ],
   workbenchAppExtraEnv: {
     WORKBENCH_SHELL: '1',
     VITE_WORKBENCH_SHELL: '1',
