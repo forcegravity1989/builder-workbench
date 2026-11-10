@@ -8,13 +8,8 @@ const { appGetPathMock } = vi.hoisted(() => ({ appGetPathMock: vi.fn() }))
 
 vi.mock('electron', () => ({ app: { getPath: appGetPathMock } }))
 
-import { importedDomainScope } from '../policy/cookie-import-scope'
 import { createChromiumCookieTestDatabase } from '../browser-cookie-import-test-database'
-import { prepareStagedCookiesForImport } from './browser-cookie-staged-import'
-import {
-  applyPendingBrowserCookieImports,
-  setPendingBrowserCookieImport
-} from './browser-session-cookie-staging'
+import { applyPendingBrowserCookieImports } from './browser-session-cookie-staging'
 import {
   loadBrowserSessionMeta,
   persistBrowserSessionMeta
@@ -67,11 +62,8 @@ describe('scoped pending browser cookie imports', () => {
   })
 
   function markPending(): void {
-    setPendingBrowserCookieImport({
-      resolveMetadataPath: () => metaPath,
-      defaultPartition: PARTITION,
-      partition: PARTITION,
-      stagingDbPath: stagedPath
+    persistBrowserSessionMeta(() => metaPath, PARTITION, {
+      pendingCookieImports: { [PARTITION]: { format: 'scoped-v1', path: stagedPath } }
     })
   }
 
@@ -87,7 +79,11 @@ describe('scoped pending browser cookie imports', () => {
     copyFileSync(livePath, stagedPath)
     const staged = new DatabaseSync(stagedPath)
     try {
-      prepareStagedCookiesForImport(staged, importedDomainScope(['a.example.com']))
+      staged.exec(`
+        CREATE TABLE orca_cookie_import_scope (domain TEXT PRIMARY KEY, format_version INTEGER NOT NULL);
+        INSERT INTO orca_cookie_import_scope VALUES ('a.example.com', 1);
+        DELETE FROM cookies WHERE host_key IN ('.example.com', '.a.example.com', 'child.a.example.com');
+      `)
       insertCookie(staged, '.a.example.com', 'new-a', 'imported')
     } finally {
       staged.close()

@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from './remote-runtime/pairing/paired-runtime-connection'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { WebSocketServer, type WebSocket } from 'ws'
@@ -233,7 +234,7 @@ async function subscribe(
   } = {}
 ): Promise<RemoteRuntimeSubscription> {
   return subscribeRemoteRuntimeRequest(
-    pairing,
+    pairedRuntimeConnectionFromOffer(pairing),
     'browser.clientHost.attach',
     {},
     1000,

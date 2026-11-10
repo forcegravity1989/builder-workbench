@@ -92,7 +92,7 @@ export async function prepareHostAgentStartupInputs(args: {
       )
     )
   }
-  const platform = hostSettings ? status?.hostPlatform ?? 'linux' : args.platform
+  const platform = hostSettings ? (status?.hostPlatform ?? 'linux') : args.platform
   return {
     owner,
     hostOwned: hostSettings !== null,
@@ -102,9 +102,9 @@ export async function prepareHostAgentStartupInputs(args: {
         args.agentArgs !== undefined
           ? args.agentArgs
           : agent
-            ? resolveTuiAgentLaunchArgs(agent, settings?.agentDefaultArgs)
+            ? resolveTuiAgentLaunchArgs(agent, settings)
             : undefined,
-      agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings?.agentDefaultEnv) : undefined,
+      agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings) : undefined,
       platform,
       shell: hostSettings
         ? resolveHostAgentStartupShell({
@@ -112,7 +112,7 @@ export async function prepareHostAgentStartupInputs(args: {
             isRemote: true,
             hostTerminalWindowsShell: status?.terminalWindowsShell
           })
-        : args.shell ?? undefined,
+        : (args.shell ?? undefined),
       isRemote: hostSettings ? true : args.isRemote
     }
   }

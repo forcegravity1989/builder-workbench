@@ -11,7 +11,6 @@ import {
   isNonTransplantableCookieDomain
 } from './policy/cookie-import-exclusions'
 import { normalizeCookieDomain } from './policy/cookie-domain'
-import { replaceCookiesForImportedDomains } from '../browser-cookie-import-policy'
 
 function cookie(domain: string, name: string, path = '/', secure = true): Cookie {
   return {
@@ -72,26 +71,30 @@ function replaceStore(
   return { get, remove, snapshotClearIdentities, restoreClearIdentities }
 }
 
-describe('replaceCookiesForImportedDomains', () => {
+describe('scoped cookie replacement', () => {
   it('removes parent, exact, and child-domain cookies while preserving unrelated sites', async () => {
     const existing = [
-      cookie('.google.com', 'parent'),
-      { ...cookie('google.com', 'host-only-parent'), hostOnly: true },
-      cookie('.accounts.google.com', 'exact', '/signin'),
-      cookie('.child.accounts.google.com', 'child', '/nested', false),
-      cookie('.google.com.evil.example', 'suffix-confusion'),
+      cookie('.example.com', 'parent'),
+      { ...cookie('example.com', 'host-only-parent'), hostOnly: true },
+      cookie('.accounts.example.com', 'exact', '/signin'),
+      cookie('.child.accounts.example.com', 'child', '/nested', false),
+      cookie('.example.com.evil.example', 'suffix-confusion'),
       cookie('.example.com', 'unrelated')
     ]
     const store = replaceStore(existing)
 
-    const { removed } = await replaceCookiesForImportedDomains(store, ['accounts.google.com'])
+    await removeTransplantableCookies(
+      { cookies: store, ...store },
+      new Set(),
+      importedDomainScope(['accounts.example.com'])
+    )
 
-    expect(removed).toHaveLength(3)
+    expect(store.remove).toHaveBeenCalledTimes(3)
     expect(store.get).toHaveBeenCalledWith({})
     expect(store.remove.mock.calls).toEqual([
-      ['https://google.com/', 'parent'],
-      ['https://accounts.google.com/signin', 'exact'],
-      ['http://child.accounts.google.com/nested', 'child']
+      ['https://example.com/', 'parent'],
+      ['https://accounts.example.com/signin', 'exact'],
+      ['http://child.accounts.example.com/nested', 'child']
     ])
     // Why: the snapshot must cover the whole removal plan before the first removal runs.
     expect(store.snapshotClearIdentities).toHaveBeenCalledOnce()
@@ -109,9 +112,13 @@ describe('replaceCookiesForImportedDomains', () => {
       cookie('.user.github.io', 'tenant')
     ])
 
-    const { removed } = await replaceCookiesForImportedDomains(store, ['user.github.io'])
+    await removeTransplantableCookies(
+      { cookies: store, ...store },
+      new Set(),
+      importedDomainScope(['user.github.io'])
+    )
 
-    expect(removed.map(({ name }) => name)).toEqual(['tenant'])
+    expect(store.remove.mock.calls.map(([, name]) => name)).toEqual(['tenant'])
     expect(store.remove).toHaveBeenCalledWith('https://user.github.io/', 'tenant')
   })
 
@@ -119,8 +126,12 @@ describe('replaceCookiesForImportedDomains', () => {
     const store = replaceStore([])
 
     await expect(
-      replaceCookiesForImportedDomains(store, ['', '...', 'com', 'co.uk', 'github.io'])
-    ).resolves.toEqual({ removed: [], identities: [] })
+      removeTransplantableCookies(
+        { cookies: store, ...store },
+        new Set(),
+        importedDomainScope(['', '...', 'com', 'co.uk', 'github.io'])
+      )
+    ).resolves.toBeUndefined()
     expect(store.get).not.toHaveBeenCalled()
     expect(store.remove).not.toHaveBeenCalled()
     expect(store.snapshotClearIdentities).not.toHaveBeenCalled()
@@ -130,9 +141,13 @@ describe('replaceCookiesForImportedDomains', () => {
   it('keeps single-label intranet scopes from selecting descendant hosts', async () => {
     const store = replaceStore([cookie('local', 'exact'), cookie('.service.local', 'descendant')])
 
-    const { removed } = await replaceCookiesForImportedDomains(store, ['local'])
+    await removeTransplantableCookies(
+      { cookies: store, ...store },
+      new Set(),
+      importedDomainScope(['local'])
+    )
 
-    expect(removed.map(({ name }) => name)).toEqual(['exact'])
+    expect(store.remove.mock.calls.map(([, name]) => name)).toEqual(['exact'])
     expect(store.remove).toHaveBeenCalledOnce()
     expect(store.remove).toHaveBeenCalledWith('https://local/', 'exact')
   })
@@ -159,9 +174,13 @@ describe('replaceCookiesForImportedDomains', () => {
       .mockRejectedValueOnce(new Error('cookie store unavailable'))
     const store = replaceStore(existing, { remove, snapshot })
 
-    await expect(replaceCookiesForImportedDomains(store, ['example.com'])).rejects.toThrow(
-      'cookie store unavailable'
-    )
+    await expect(
+      removeTransplantableCookies(
+        { cookies: store, ...store },
+        new Set(),
+        importedDomainScope(['example.com'])
+      )
+    ).rejects.toThrow('existing cookies were restored')
 
     expect(store.restoreClearIdentities).toHaveBeenCalledOnce()
     const restored = store.restoreClearIdentities.mock.calls[0]?.[0] as CookieClearIdentity[]
@@ -183,9 +202,13 @@ describe('replaceCookiesForImportedDomains', () => {
       )
     const store = replaceStore(existing, { snapshot })
 
-    await expect(replaceCookiesForImportedDomains(store, ['example.com'])).rejects.toThrow(
-      'the session was left unchanged'
-    )
+    await expect(
+      removeTransplantableCookies(
+        { cookies: store, ...store },
+        new Set(),
+        importedDomainScope(['example.com'])
+      )
+    ).rejects.toThrow('the session was left unchanged')
     expect(store.remove).not.toHaveBeenCalled()
     expect(store.restoreClearIdentities).not.toHaveBeenCalled()
   })
@@ -201,9 +224,13 @@ describe('replaceCookiesForImportedDomains', () => {
       { remove, restore }
     )
 
-    await expect(replaceCookiesForImportedDomains(store, ['example.com'])).rejects.toThrow(
-      'Cookie replacement and rollback failed'
-    )
+    await expect(
+      removeTransplantableCookies(
+        { cookies: store, ...store },
+        new Set(),
+        importedDomainScope(['example.com'])
+      )
+    ).rejects.toThrow('left partially cleared')
     expect(restore).toHaveBeenCalledOnce()
   })
 })

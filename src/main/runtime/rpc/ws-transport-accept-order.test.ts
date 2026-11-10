@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
@@ -46,17 +47,22 @@ describe('WebSocketTransport accepted socket ordering', () => {
     const events: string[] = []
     let firstProbeListeners: Record<string, number> | undefined
     let socket: WebSocket
-    socket = createSocket({
-      ping: () => {
-        events.push('ping')
-        firstProbeListeners ??= Object.fromEntries(
-          ['pong', 'message', 'close', 'error'].map((event) => [event, socket.listenerCount(event)])
-        )
-        socket.emit('message', Buffer.from('ready'), false)
-        events.push('pong')
-        socket.emit('pong')
-      }
-    })
+    socket = createSocket(
+      pairedRuntimeConnectionFromOffer({
+        ping: () => {
+          events.push('ping')
+          firstProbeListeners ??= Object.fromEntries(
+            ['pong', 'message', 'close', 'error'].map((event) => [
+              event,
+              socket.listenerCount(event)
+            ])
+          )
+          socket.emit('message', Buffer.from('ready'), false)
+          events.push('pong')
+          socket.emit('pong')
+        }
+      })
+    )
     const { lifecycle, transport } = createHarness(socket)
     transport.onMessage((message) => events.push(String(message)))
 
@@ -88,13 +94,15 @@ describe('WebSocketTransport accepted socket ordering', () => {
     vi.useFakeTimers()
     const events: string[] = []
     let socket: WebSocket
-    socket = createSocket({
-      ping: () => events.push('ping'),
-      terminate: () => {
-        events.push('close')
-        socket.emit('close')
-      }
-    })
+    socket = createSocket(
+      pairedRuntimeConnectionFromOffer({
+        ping: () => events.push('ping'),
+        terminate: () => {
+          events.push('close')
+          socket.emit('close')
+        }
+      })
+    )
     const { lifecycle, transport } = createHarness(socket)
 
     socket.once('open', () => events.push('open'))
@@ -122,12 +130,14 @@ describe('WebSocketTransport accepted socket ordering', () => {
     vi.setSystemTime(0)
     const firstPingTimes: number[] = []
     let firstSocket: WebSocket
-    firstSocket = createSocket({
-      ping: () => {
-        firstPingTimes.push(Date.now())
-        firstSocket.emit('pong')
-      }
-    })
+    firstSocket = createSocket(
+      pairedRuntimeConnectionFromOffer({
+        ping: () => {
+          firstPingTimes.push(Date.now())
+          firstSocket.emit('pong')
+        }
+      })
+    )
     const { lifecycle, transport } = createHarness(firstSocket)
 
     lifecycle.handleConnection(firstSocket)
@@ -139,13 +149,15 @@ describe('WebSocketTransport accepted socket ordering', () => {
     const laterPingTimes: number[] = []
     const laterReapTimes: number[] = []
     let laterSocket: WebSocket
-    laterSocket = createSocket({
-      ping: () => laterPingTimes.push(Date.now()),
-      terminate: () => {
-        laterReapTimes.push(Date.now())
-        laterSocket.emit('close')
-      }
-    })
+    laterSocket = createSocket(
+      pairedRuntimeConnectionFromOffer({
+        ping: () => laterPingTimes.push(Date.now()),
+        terminate: () => {
+          laterReapTimes.push(Date.now())
+          laterSocket.emit('close')
+        }
+      })
+    )
     lifecycle.wss.clients.add(laterSocket)
     lifecycle.handleConnection(laterSocket)
 
@@ -184,12 +196,14 @@ describe('WebSocketTransport accepted socket ordering', () => {
     vi.useFakeTimers()
     const events: string[] = []
     let socket: WebSocket
-    socket = createSocket({
-      ping: () => {
-        events.push('ping', 'error')
-        socket.emit('error', new Error('probe failed'))
-      }
-    })
+    socket = createSocket(
+      pairedRuntimeConnectionFromOffer({
+        ping: () => {
+          events.push('ping', 'error')
+          socket.emit('error', new Error('probe failed'))
+        }
+      })
+    )
     const { lifecycle, transport } = createHarness(socket)
 
     socket.once('open', () => events.push('open'))

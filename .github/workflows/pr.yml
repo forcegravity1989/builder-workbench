@@ -187,9 +187,11 @@ jobs:
           src/main/agent-hooks/server-retired-pane-new-turn.test.ts
 
       - name: Lint
+        if: ${{ !cancelled() }}
         run: pnpm run lint
 
       - name: Typecheck
+        if: ${{ !cancelled() }}
         run: pnpm run typecheck
 
       # Why these paths: the BW overlay unit-test scope is the four workbench

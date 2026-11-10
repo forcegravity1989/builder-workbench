@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BROWSER_HISTORY_MATCH_BUDGET } from '../../browser-history-match-budget'
+const BROWSER_HISTORY_MATCH_BUDGET = { candidateCount: 200, prepareP95Ms: 2, matchP95Ms: 2 }
 import { matchBrowserHistory, prepareBrowserHistoryEntries } from './browser-history-match'
 import { MAX_BROWSER_HISTORY_ENTRIES } from '../../../../../shared/workspace-session-browser-history'
 import type { BrowserHistoryEntry } from '../../../../../shared/browser-workspace-types'

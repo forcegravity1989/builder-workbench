@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -146,9 +147,15 @@ describe('remote agent-session host authority integration', () => {
       await server.start()
       cleanups.push(() => server.stop())
 
-      const firstClient = new RemoteRuntimeRequestConnection(requirePairing(server, 'client-one'))
-      const secondClient = new RemoteRuntimeRequestConnection(requirePairing(server, 'client-two'))
-      const retryClient = new RemoteRuntimeRequestConnection(requirePairing(server, 'retry-client'))
+      const firstClient = new RemoteRuntimeRequestConnection(
+        pairedRuntimeConnectionFromOffer(requirePairing(server, 'client-one'))
+      )
+      const secondClient = new RemoteRuntimeRequestConnection(
+        pairedRuntimeConnectionFromOffer(requirePairing(server, 'client-two'))
+      )
+      const retryClient = new RemoteRuntimeRequestConnection(
+        pairedRuntimeConnectionFromOffer(requirePairing(server, 'retry-client'))
+      )
       cleanups.push(() => firstClient.close())
       cleanups.push(() => secondClient.close())
       cleanups.push(() => retryClient.close())

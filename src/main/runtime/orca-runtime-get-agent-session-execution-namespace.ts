@@ -145,11 +145,11 @@ export class OrcaRuntimeWithGetAgentSessionExecutionNamespace extends OrcaRuntim
       agentArgs: resolveAgentSessionResumeArgs({
         requestArgs: request.agentArgs,
         persistedArgs: handoffAuthority?.launchArgs,
-        defaultArgs: resolveTuiAgentLaunchArgs(request.agent, settings.agentDefaultArgs),
+        defaultArgs: resolveTuiAgentLaunchArgs(request.agent, settings),
         shell: resolveStartupShell(platform, shell)
       }),
       agentEnv: {
-        ...resolveTuiAgentLaunchEnv(request.agent, settings.agentDefaultEnv),
+        ...resolveTuiAgentLaunchEnv(request.agent, settings),
         ...(handoffAuthority && request.agent === 'codex'
           ? { CODEX_HOME: handoffAuthority.providerRoot }
           : handoffAuthority && request.agent === 'claude'

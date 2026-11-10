@@ -155,9 +155,9 @@ export class OrcaRuntimeWithGetWorktreePs extends OrcaRuntimeWithStructuredAgent
         (await this.resolveRuntimeFileTarget(`id:${workspaceId}`)).worktree.path,
       resolveLaunchArgs: (provider) => this.resolveConfiguredStructuredLaunchArgs(provider),
       resolveLaunchEnvOverlay: () =>
-        resolveTuiAgentLaunchEnv('codex', this.requireStore().getSettings().agentDefaultEnv),
+        resolveTuiAgentLaunchEnv('codex', this.requireStore().getSettings()),
       resolveClaudeLaunchEnv: () =>
-        resolveTuiAgentLaunchEnv('claude', this.requireStore().getSettings().agentDefaultEnv),
+        resolveTuiAgentLaunchEnv('claude', this.requireStore().getSettings()),
       resolveClaudeAuthPolicy: () =>
         claudeStructuredAuthPolicyForSettings(this.requireStore().getSettings()),
       // Same gate and same settings as agentSession.createSupport, re-read on every acquisition.
@@ -197,10 +197,7 @@ export class OrcaRuntimeWithGetWorktreePs extends OrcaRuntimeWithStructuredAgent
         terminalWindowsShell: settings.terminalWindowsShell
       })
     )
-    const tokenized = tokenizeStartupCommand(
-      resolveTuiAgentLaunchArgs('claude', settings.agentDefaultArgs),
-      shell
-    )
+    const tokenized = tokenizeStartupCommand(resolveTuiAgentLaunchArgs('claude', settings), shell)
     return tokenized.ok ? tokenized.tokens : []
   }
 
@@ -212,7 +209,7 @@ export class OrcaRuntimeWithGetWorktreePs extends OrcaRuntimeWithStructuredAgent
       terminalWindowsShell: settings.terminalWindowsShell
     })
     return resolveCodexStructuredAppServerArgs(
-      resolveTuiAgentLaunchArgs('codex', settings.agentDefaultArgs),
+      resolveTuiAgentLaunchArgs('codex', settings),
       shell ?? 'posix'
     )
   }

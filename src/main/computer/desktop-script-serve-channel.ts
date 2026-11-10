@@ -1,12 +1,14 @@
 import { StringDecoder } from 'node:string_decoder'
-import type { ProcessSpec } from '../../shared/child-process/process-spec'
-import type { spawnProcess } from '../../shared/child-process/run-process'
+import type {
+  PipedChildProcess,
+  PipedProcessSpec,
+  PipedProcessSpawner
+} from '../../shared/child-process/process-spec'
 import { ownRetainedString } from '../../shared/own-retained-string'
 
-/** The all-pipes child `spawnProcess` returns; avoids a node:child_process import. */
-export type RuntimeChildProcess = ReturnType<typeof spawnProcess>
+export type RuntimeChildProcess = PipedChildProcess
 
-export type RuntimeProcessSpawn = (spec: ProcessSpec) => RuntimeChildProcess
+export type RuntimeProcessSpawn = PipedProcessSpawner
 
 /** UTF-16 units, not bytes — this bounds the buffer, it is not a payload contract. */
 const MAX_RESPONSE_CHARS = 20 * 1024 * 1024
@@ -147,7 +149,7 @@ export class DesktopScriptServeChannel {
 }
 
 export function startServeChannel(
-  spec: ProcessSpec,
+  spec: PipedProcessSpec,
   spawn: RuntimeProcessSpawn,
   handlers: ServeChannelHandlers
 ): DesktopScriptServeChannel {

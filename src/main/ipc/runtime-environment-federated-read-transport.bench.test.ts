@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { readFileSync } from 'node:fs'
 import { performance } from 'node:perf_hooks'
 import { join } from 'node:path'
@@ -83,13 +84,22 @@ describe.runIf(runLiveBenchmark)('federated read RPC transport benchmark', () =>
       limit: 50
     }
     const oneShot = await measureRequests(() =>
-      sendRemoteRuntimeRequest(pairing, 'orchestration.federationPull', params, 15_000, {
-        orchestrationContractVersion: 1
-      })
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(pairing),
+        'orchestration.federationPull',
+        params,
+        15_000,
+        {
+          orchestrationContractVersion: 1
+        }
+      )
     )
-    const shared = new RemoteRuntimeSharedControlConnection(pairing, {
-      environmentId: environment.id
-    })
+    const shared = new RemoteRuntimeSharedControlConnection(
+      pairedRuntimeConnectionFromOffer(pairing),
+      {
+        environmentId: environment.id
+      }
+    )
     const { sharedControl, diagnostics } = await measureSharedControlRequests(shared, params)
 
     expect(diagnostics).toMatchObject({ state: 'ready', pendingRequestCount: 0 })
@@ -185,12 +195,14 @@ function createSharedControlFixture(
   socketClose: ReturnType<typeof vi.fn>
   retainedHandleCount: () => number
 } {
-  const connection = new RemoteRuntimeSharedControlConnection({
-    v: 2,
-    endpoint: 'ws://127.0.0.1:1',
-    deviceToken: 'token',
-    publicKeyB64: Buffer.from(new Uint8Array(32).fill(1)).toString('base64')
-  })
+  const connection = new RemoteRuntimeSharedControlConnection(
+    pairedRuntimeConnectionFromOffer({
+      v: 2,
+      endpoint: 'ws://127.0.0.1:1',
+      deviceToken: 'token',
+      publicKeyB64: Buffer.from(new Uint8Array(32).fill(1)).toString('base64')
+    })
+  )
   const socketClose = vi.fn()
   const unsafe = connection as unknown as {
     state: string

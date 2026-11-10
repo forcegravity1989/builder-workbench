@@ -83,8 +83,8 @@ export async function buildWorktreeStartupForDraft(
   const launchArgs = {
     agent,
     cmdOverrides: settings.agentCmdOverrides ?? {},
-    agentArgs: resolveTuiAgentLaunchArgs(agent, settings.agentDefaultArgs),
-    agentEnv: resolveTuiAgentLaunchEnv(agent, settings.agentDefaultEnv),
+    agentArgs: resolveTuiAgentLaunchArgs(agent, settings),
+    agentEnv: resolveTuiAgentLaunchEnv(agent, settings),
     platform,
     shell,
     isRemote
@@ -146,8 +146,8 @@ export function buildWorktreeStartupForAgent(
     agent,
     prompt: environment.prompt ?? '',
     cmdOverrides: settings.agentCmdOverrides ?? {},
-    agentArgs: resolveTuiAgentLaunchArgs(agent, settings.agentDefaultArgs),
-    agentEnv: resolveTuiAgentLaunchEnv(agent, settings.agentDefaultEnv),
+    agentArgs: resolveTuiAgentLaunchArgs(agent, settings),
+    agentEnv: resolveTuiAgentLaunchEnv(agent, settings),
     sessionOptions,
     sessionOptionsOverrideAgentArgs: Boolean(sessionOptions),
     platform,

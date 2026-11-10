@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from './remote-runtime/pairing/paired-runtime-connection'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { WebSocketServer, type WebSocket } from 'ws'
@@ -40,7 +41,9 @@ afterEach(async () => {
 describe('RemoteRuntimeRequestConnection', () => {
   it('reuses one encrypted WebSocket for multiple one-shot RPCs', async () => {
     const server = await createServer()
-    const connection = new RemoteRuntimeRequestConnection(server.pairing)
+    const connection = new RemoteRuntimeRequestConnection(
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
 
     const first = await connection.request('status.get', undefined, 1000)
     const second = await connection.request('terminal.send', { terminal: 't1', text: 'ab' }, 1000)
@@ -71,7 +74,9 @@ describe('RemoteRuntimeRequestConnection', () => {
 
   it('aborts one request without closing the cached connection', async () => {
     const server = await createServer()
-    const connection = new RemoteRuntimeRequestConnection(server.pairing)
+    const connection = new RemoteRuntimeRequestConnection(
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     const controller = new AbortController()
     const pending = connection.request('test.hang', undefined, 60_000, controller.signal)
     await vi.waitFor(() =>

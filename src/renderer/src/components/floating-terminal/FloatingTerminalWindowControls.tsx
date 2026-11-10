@@ -76,8 +76,8 @@ export function FloatingTerminalWindowControls({
       agent: defaultAgent,
       prompt: '',
       cmdOverrides: state.settings?.agentCmdOverrides ?? {},
-      agentArgs: resolveTuiAgentLaunchArgs(defaultAgent, state.settings?.agentDefaultArgs),
-      agentEnv: resolveTuiAgentLaunchEnv(defaultAgent, state.settings?.agentDefaultEnv),
+      agentArgs: resolveTuiAgentLaunchArgs(defaultAgent, state.settings),
+      agentEnv: resolveTuiAgentLaunchEnv(defaultAgent, state.settings),
       platform: CLIENT_PLATFORM,
       allowEmptyPromptLaunch: true
     })

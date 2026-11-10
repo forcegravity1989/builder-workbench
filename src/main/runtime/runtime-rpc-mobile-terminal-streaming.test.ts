@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { mkdtempSync } from 'node:fs'
 import { rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -530,7 +531,7 @@ describe('OrcaRuntimeRpcServer', () => {
     const binaryFrames: Uint8Array<ArrayBufferLike>[] = []
     const onError = vi.fn()
     const subscription = await subscribeRemoteRuntimeRequest(
-      pairing,
+      pairedRuntimeConnectionFromOffer(pairing),
       'terminal.multiplex',
       {},
       15_000,

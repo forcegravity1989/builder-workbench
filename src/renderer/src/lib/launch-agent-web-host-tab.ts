@@ -138,10 +138,8 @@ export async function launchAgentInWebHostTab(args: {
             agent,
             cmdOverrides: hostSettings.agentCmdOverrides ?? {},
             agentArgs:
-              agentArgs !== undefined
-                ? agentArgs
-                : resolveTuiAgentLaunchArgs(agent, hostSettings.agentDefaultArgs),
-            agentEnv: resolveTuiAgentLaunchEnv(agent, hostSettings.agentDefaultEnv),
+              agentArgs !== undefined ? agentArgs : resolveTuiAgentLaunchArgs(agent, hostSettings),
+            agentEnv: resolveTuiAgentLaunchEnv(agent, hostSettings),
             platform,
             shell: resolveHostAgentStartupShell({
               platform,

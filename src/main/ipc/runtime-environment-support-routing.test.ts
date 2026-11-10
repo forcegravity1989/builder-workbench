@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KnownRuntimeEnvironment } from '../../shared/runtime-environments'
 import {
@@ -138,7 +139,10 @@ function acceptedOutcome(verdict: 'capable' | 'absent') {
     deviceToken: 'token',
     publicKeyB64: 'key'
   }
-  const evidence = captureRuntimeEnvironmentCapabilityEvidence(environmentId, pairing)
+  const evidence = captureRuntimeEnvironmentCapabilityEvidence(
+    environmentId,
+    pairedRuntimeConnectionFromOffer(pairing)
+  )
   applyRuntimeEnvironmentCapabilityVerdict({ evidence, verdict, runtimeId: 'runtime' })
   return runtimeEnvironmentCapabilityOutcome(evidence, verdict, 'runtime')
 }

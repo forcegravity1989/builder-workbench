@@ -180,7 +180,7 @@ export class OrcaRuntimeWithResolveRecoveredStructuredTuiTranscript extends Orca
       throw new Error('structured_agent_session_unsupported')
     }
     const settings = this.requireStore().getSettings()
-    const launchEnv = resolveTuiAgentLaunchEnv(input.agent, settings.agentDefaultEnv)
+    const launchEnv = resolveTuiAgentLaunchEnv(input.agent, settings)
     const options = resolveStructuredLaunchSeedOptions(
       settings.nativeChatSessionOptions,
       input.agent

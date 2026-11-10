@@ -81,7 +81,7 @@ export async function openCodexAppServerConnection(
   let exitReported = false
   let outputDrain: Promise<void> | null = null
   let finishOutputDrain: (() => void) | undefined
-  const exitProof = new RetryableProcessExitProof()
+  const exitProof = new RetryableProcessExitProof<boolean>((proven) => proven)
   /** First terminal cause, or null while the transport is still usable. Set once:
    *  a child that dies reaches us through several listeners, and the specific
    *  first cause is the one worth reporting. */

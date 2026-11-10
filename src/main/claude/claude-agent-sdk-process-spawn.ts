@@ -1,8 +1,8 @@
 import type { SpawnOptions as ClaudeAgentSdkSpawnOptions } from '@anthropic-ai/claude-agent-sdk'
+import type { PipedChildProcess } from '../../shared/child-process/process-spec'
 import { spawnProcess } from '../../shared/child-process/run-process'
 
-/** Derived rather than imported: only src/shared/child-process may name node:child_process. */
-type ClaudeCodeChild = ReturnType<typeof spawnProcess>
+type ClaudeCodeChild = PipedChildProcess
 
 const STDERR_TAIL_MAX_BYTES = 8192
 

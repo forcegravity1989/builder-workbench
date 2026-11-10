@@ -32,7 +32,9 @@ export async function prepareAgentBackgroundStartup({
   if (!worktree) {
     throw new Error('The target workspace is no longer available.')
   }
-  const runtimeTarget = getActiveRuntimeTarget(getSettingsForWorktreeRuntimeOwner(store, worktreeId))
+  const runtimeTarget = getActiveRuntimeTarget(
+    getSettingsForWorktreeRuntimeOwner(store, worktreeId)
+  )
   const environmentId = runtimeTarget.kind === 'environment' ? runtimeTarget.environmentId : null
   const pairingRevision = environmentId ? getRuntimeEnvironmentRevision(environmentId) : undefined
   const hostStatus = environmentId
@@ -55,8 +57,8 @@ export async function prepareAgentBackgroundStartup({
   }
   const launchSettings = hostSettings ?? store.settings
   const cmdOverrides = launchSettings?.agentCmdOverrides ?? {}
-  const agentArgs = resolveTuiAgentLaunchArgs(agent, launchSettings?.agentDefaultArgs)
-  const agentEnv = resolveTuiAgentLaunchEnv(agent, launchSettings?.agentDefaultEnv)
+  const agentArgs = resolveTuiAgentLaunchArgs(agent, launchSettings)
+  const agentEnv = resolveTuiAgentLaunchEnv(agent, launchSettings)
   // Folder launch ownership cannot be derived from a repo row (#2989).
   const launchHost = resolveAgentBackgroundLaunchHost({
     store,
@@ -77,7 +79,7 @@ export async function prepareAgentBackgroundStartup({
     }
   }
   const { isRemote } = launchHost
-  const launchPlatform = hostSettings ? hostStatus?.hostPlatform ?? 'linux' : launchHost.platform
+  const launchPlatform = hostSettings ? (hostStatus?.hostPlatform ?? 'linux') : launchHost.platform
   const startupShell = hostSettings
     ? resolveHostAgentStartupShell({
         platform: launchPlatform,

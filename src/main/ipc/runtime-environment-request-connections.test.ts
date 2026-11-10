@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   closeSharedControlTestServers,
@@ -34,8 +35,14 @@ afterEach(async () => {
 describe('runtime environment shared-control connection cache', () => {
   it('ensures once and resumes a paused standing connection from capable evidence', async () => {
     const server = await createSharedControlTestServer()
-    ensureRemoteRuntimeSharedControlConnection(ENVIRONMENT_ID, server.pairing)
-    ensureRemoteRuntimeSharedControlConnection(ENVIRONMENT_ID, server.pairing)
+    ensureRemoteRuntimeSharedControlConnection(
+      ENVIRONMENT_ID,
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
+    ensureRemoteRuntimeSharedControlConnection(
+      ENVIRONMENT_ID,
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     reconnectRemoteRuntimeSharedControlConnection(ENVIRONMENT_ID)
     await waitFor(() => server.connectionCount() === 1)
 
@@ -43,7 +50,10 @@ describe('runtime environment shared-control connection cache', () => {
     await waitFor(
       () => getRemoteRuntimeSharedControlDiagnostics(ENVIRONMENT_ID)?.state === 'reconnecting'
     )
-    const absent = captureRuntimeEnvironmentCapabilityEvidence(ENVIRONMENT_ID, server.pairing)
+    const absent = captureRuntimeEnvironmentCapabilityEvidence(
+      ENVIRONMENT_ID,
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     applyRuntimeEnvironmentCapabilityVerdict({
       evidence: absent,
       verdict: 'absent',
@@ -54,13 +64,19 @@ describe('runtime environment shared-control connection cache', () => {
     await delay(400)
     expect(server.connectionCount()).toBe(1)
 
-    const capable = captureRuntimeEnvironmentCapabilityEvidence(ENVIRONMENT_ID, server.pairing)
+    const capable = captureRuntimeEnvironmentCapabilityEvidence(
+      ENVIRONMENT_ID,
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     applyRuntimeEnvironmentCapabilityVerdict({
       evidence: capable,
       verdict: 'capable',
       runtimeId: 'runtime-test'
     })
-    ensureRemoteRuntimeSharedControlConnection(ENVIRONMENT_ID, server.pairing)
+    ensureRemoteRuntimeSharedControlConnection(
+      ENVIRONMENT_ID,
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     reconnectRemoteRuntimeSharedControlConnection(ENVIRONMENT_ID)
     await waitFor(() => server.connectionCount() === 2)
   })
@@ -69,7 +85,10 @@ describe('runtime environment shared-control connection cache', () => {
     const server = await createSharedControlTestServer()
     markRuntimeEnvironmentManuallyDisconnected(ENVIRONMENT_ID)
 
-    ensureRemoteRuntimeSharedControlConnection(ENVIRONMENT_ID, server.pairing)
+    ensureRemoteRuntimeSharedControlConnection(
+      ENVIRONMENT_ID,
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     reconnectRemoteRuntimeSharedControlConnection(ENVIRONMENT_ID)
     await delay(50)
 
@@ -82,7 +101,7 @@ describe('runtime environment shared-control connection cache', () => {
     markRuntimeEnvironmentManuallyDisconnected(ENVIRONMENT_ID)
     await sendRemoteRuntimeSharedControlRequest(
       ENVIRONMENT_ID,
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'repo.list',
       undefined,
       1_000
@@ -102,7 +121,7 @@ describe('runtime environment shared-control connection cache', () => {
     const server = await createSharedControlTestServer()
     const subscription = await subscribeRemoteRuntimeSharedControlRequest(
       ENVIRONMENT_ID,
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'session.tabs.subscribeAll',
       undefined,
       1_000,
@@ -112,7 +131,10 @@ describe('runtime environment shared-control connection cache', () => {
     await waitFor(
       () => getRemoteRuntimeSharedControlDiagnostics(ENVIRONMENT_ID)?.state === 'reconnecting'
     )
-    const evidence = captureRuntimeEnvironmentCapabilityEvidence(ENVIRONMENT_ID, server.pairing)
+    const evidence = captureRuntimeEnvironmentCapabilityEvidence(
+      ENVIRONMENT_ID,
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
 
     applyRuntimeEnvironmentCapabilityVerdict({
       evidence,

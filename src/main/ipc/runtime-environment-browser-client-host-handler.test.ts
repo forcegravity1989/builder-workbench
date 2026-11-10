@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  BROWSER_SCREENCAST_RUNTIME_CAPABILITY,
   BROWSER_CLIENT_AUTOMATION_RUNTIME_CAPABILITY,
   BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY,
   BROWSER_CLIENT_PAGE_METADATA_RUNTIME_CAPABILITY,
@@ -61,6 +62,7 @@ describe('runtime environment browser client host handler', () => {
         liveTabCount: 0,
         liveLeafCount: 0,
         capabilities: [
+          BROWSER_SCREENCAST_RUNTIME_CAPABILITY,
           BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY,
           BROWSER_CLIENT_PAGE_METADATA_RUNTIME_CAPABILITY,
           BROWSER_CLIENT_AUTOMATION_RUNTIME_CAPABILITY,
@@ -106,7 +108,7 @@ describe('runtime environment browser client host handler', () => {
     })
   })
 
-  it('honors the default-on main-side kill switch only for new preparation', async () => {
+  it('honors server rendering when the host supports streaming', async () => {
     register(false)
 
     const prepare = handler<{ selector: string }, { kind: 'server' }>(

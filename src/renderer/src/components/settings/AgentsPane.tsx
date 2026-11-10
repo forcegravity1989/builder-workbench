@@ -221,8 +221,8 @@ export function AgentsPane({
     isEnabled: isTuiAgentEnabled(agent.id, disabledAgents),
     isDefault: isDetected && defaultAgent === agent.id,
     cmdOverride: isDetected ? cmdOverrides[agent.id] : undefined,
-    argsOverride: resolveTuiAgentLaunchArgs(agent.id, agentDefaultArgs),
-    envOverride: resolveTuiAgentLaunchEnv(agent.id, agentDefaultEnv),
+    argsOverride: resolveTuiAgentLaunchArgs(agent.id, settings),
+    envOverride: resolveTuiAgentLaunchEnv(agent.id, settings),
     onSetDefault: isDetected ? () => updateSettings({ defaultTuiAgent: agent.id }) : () => {},
     onSetEnabled: (enabled) => setAgentEnabled(agent.id, enabled),
     onSaveOverride: isDetected

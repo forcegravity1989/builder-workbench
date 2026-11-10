@@ -40,7 +40,9 @@ export type AgentLaunchSettingsMutation =
   | { type: 'environment-set'; agent: TuiAgent; name: string; value: string }
   | { type: 'environment-remove'; agent: TuiAgent; name: string }
 
-export function projectAgentLaunchSettings(settings: AgentLaunchSettingsSource): AgentLaunchSettings {
+export function projectAgentLaunchSettings(
+  settings: AgentLaunchSettingsSource
+): AgentLaunchSettings {
   return {
     defaultTuiAgent: settings.defaultTuiAgent ?? null,
     disabledTuiAgents: normalizeDisabledTuiAgents(settings.disabledTuiAgents),
@@ -49,7 +51,7 @@ export function projectAgentLaunchSettings(settings: AgentLaunchSettingsSource):
     environmentNames: Object.fromEntries(
       (Object.keys(TUI_AGENT_CONFIG) as TuiAgent[]).map((agent) => [
         agent,
-        Object.keys(resolveTuiAgentLaunchEnv(agent, settings.agentDefaultEnv)).sort()
+        Object.keys(resolveTuiAgentLaunchEnv(agent, settings)).sort()
       ])
     ),
     permissionMode: resolveAgentPermissionModeSummary(settings)
@@ -97,7 +99,7 @@ export function agentLaunchSettingsMutationUpdates(
       }
     case 'environment-set':
     case 'environment-remove': {
-      const env = { ...resolveTuiAgentLaunchEnv(mutation.agent, settings.agentDefaultEnv) }
+      const env = { ...resolveTuiAgentLaunchEnv(mutation.agent, settings) }
       for (const name of Object.keys(env)) {
         if (
           name === mutation.name ||

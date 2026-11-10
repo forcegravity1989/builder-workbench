@@ -142,7 +142,8 @@ export function HostAgentLaunchSettings({
         defaultAgent={settings.defaultTuiAgent}
         detectedIds={detected}
         enabledDetectedAgents={catalog.filter(
-          (agent) => detected?.has(agent.id) && isTuiAgentEnabled(agent.id, settings.disabledTuiAgents)
+          (agent) =>
+            detected?.has(agent.id) && isTuiAgentEnabled(agent.id, settings.disabledTuiAgents)
         )}
         catalog={catalog}
         description={translate(
@@ -182,7 +183,7 @@ export function HostAgentLaunchSettings({
           isEnabled={isTuiAgentEnabled(agent.id, settings.disabledTuiAgents)}
           isDefault={settings.defaultTuiAgent === agent.id}
           cmdOverride={settings.agentCmdOverrides[agent.id]}
-          argsOverride={resolveTuiAgentLaunchArgs(agent.id, settings.agentDefaultArgs)}
+          argsOverride={resolveTuiAgentLaunchArgs(agent.id, settings)}
           envOverride={{}}
           onSetDefault={() => save({ type: 'default', agent: agent.id })}
           onSetEnabled={(enabled) => save({ type: 'availability', agent: agent.id, enabled })}
