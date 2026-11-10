@@ -10,7 +10,7 @@ description: >-
   Also use for reviewing real Issue sessions to improve this development workflow.
   Load historical week-screen context only when tracing its earlier decisions.
 metadata:
-  version: 0.4.9-pilot
+  version: 0.4.10-pilot
 ---
 
 # workbench-start — Workbench 开发与交付
@@ -61,7 +61,7 @@ metadata:
 
 ## 5. 验证与交付
 
-执行已经完整读取的 [交付细则](references/delivery-contract.md)：登记执行清单 → 运行适用验收与门禁 → 提供版本与判据给独立 subagent → 修正并复核发现 → 提交、push、开 PR 及更新主验证评论。检视维度、测试取舍、独立测试 agent、截图和 SHA 回执只在细则维护，不在此另立清单。
+执行已经完整读取的 [交付细则](references/delivery-contract.md)：登记执行清单 → 运行适用验收与门禁 → 提供版本与判据给独立 subagent → 修正并复核发现 → 提交、push、开 PR 及更新主验证评论。检视维度、测试取舍、独立测试 agent 和验证证据只在细则维护，不在此另立清单。
 
 需要在 Windows 操作真壳的 Codex 按细则读取 [执行参考](references/codex.md)；纯文档报告相应检查，不强启真壳。沿当前授权完成交付，用户明确只本地时才停在本地；完成、合入与发布仍由人决定。
 

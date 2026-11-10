@@ -50,10 +50,12 @@ $taskCodexHome = $env:CODEX_HOME
 if (-not $taskCodexHome) { $taskCodexHome = Join-Path $env:USERPROFILE '.codex' }
 rg --files (Join-Path $taskCodexHome 'sessions') (Join-Path $taskCodexHome 'archived_sessions') -g '*会话ID*.jsonl'
 node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs extract --input 原始.jsonl --out 提取.json
+# 同一会话续接到多个文件时，显式传入全部片段。
+node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs extract --input 首段.jsonl --input 续段.jsonl --out 提取.json
 node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs schema
 ```
 
-提取优先用 `event_msg/item_completed` 的 UserMessage/AgentMessage，旧记录回退到有用户来源的 response_item 或旧事件。存储镜像只取一次，真实重复发送留给模型判断；AGENTS、环境注入、工具回显和子 agent 不算人的输入。正文不可读、损坏或截断保留缺口，不能生成零值。
+提取优先用 `event_msg/item_completed` 的 UserMessage/AgentMessage，保留 AskUser 的提问身份；旧记录回退到有用户来源的 response_item 或旧事件。同一会话的多个片段合并提取，存储镜像只取一次，真实重复发送留给模型判断；AGENTS、环境注入、工具回显和子 agent 不算人的输入。正文不可读、损坏或截断保留缺口，不能生成零值。
 
 按 `schema` 逐条标注原始消息，引用首次完成交付、人审和重新交付的证据。完整覆盖须有本次开工消息，并核对提取出的全部用户输入。结合上下文判断语义，由脚本生成指标评论。原始记录有缺口，或现有脚本无法划清本次交付范围时，相应指标保留未知。人工权限确认按实际询问批次另计，沙箱自动审核无需人工回答时不计。
 
@@ -76,4 +78,4 @@ gh pr view PR编号 --json title
 gh pr list --state all --limit 100 --json number,title,url --jq '.[] | select(.title | startswith("[AI] "))'
 ```
 
-`report` 会重读原始来源核对用户输入。新增输入后重跑 `extract`、标注和 `report`，按当前授权发布或更新原评论。补历史时若标记缺失或有歧义，先读正文核对具体指标评论，避免覆盖验证 Review。脚本通过只证明本次计数与协议。
+`report` 会重读全部原始来源，核对用户输入、提问及引用的交付证据。新增输入后重跑 `extract`、标注和 `report`，按当前授权发布或更新原评论。过程尚未完整时展示已观察次数，完整过程发生率保持未知。补历史时若标记缺失或有歧义，先读正文核对具体指标评论，避免覆盖验证 Review。脚本通过只证明本次计数与协议。

@@ -94,6 +94,16 @@ export function summarizeFeedback(transcript, annotations) {
     )
   }
   requireThat(!coverage.preDelivery || delivery, '交付前完整口径需要首次交付证据')
+  requireThat(
+    !coverage.preDelivery ||
+      messages
+        .slice(0, delivery.index)
+        .filter((message) => message.role === 'question')
+        .every((message) =>
+          models.some((event) => event.messageId === message.id && event.tags.length > 0)
+        ),
+    '交付前完整口径需逐条标注结构化提问，不能遗漏或空标后计为零'
+  )
   const firstUser = messages.find((message) => message.role === 'user')
   const deduplicated = users.filter((event) => {
     if (!event.duplicateOf) {
@@ -131,6 +141,9 @@ export function summarizeFeedback(transcript, annotations) {
   const before = (event) => delivery && byId.get(event.messageId).index < delivery.index
   const count = (events, tag) =>
     events.filter((event) => before(event) && event.tags.includes(tag)).length
+  const observed = (event) => !delivery || before(event)
+  const observedCount = (events, tag) =>
+    events.filter((event) => observed(event) && event.tags.includes(tag)).length
   const review = annotations.review ?? { verdict: 'pending', evidenceIds: [] }
   requireThat(['pending', 'accepted', 'changes_requested'].includes(review.verdict), '未知评审结论')
   if (review.verdict !== 'pending') {
@@ -184,6 +197,19 @@ export function summarizeFeedback(transcript, annotations) {
       users.length === messages.filter((message) => message.role === 'user').length
         ? deduplicated.length
         : null,
+    observed: {
+      scope: delivery ? '首次交付前的已记录片段' : '当前已记录过程，尚未完成交付',
+      askUserRounds: observedCount(models, 'ask_user'),
+      hifiReviewRounds: observedCount(models, 'hifi_review'),
+      validationGuidanceBatches: observedCount(deduplicated, 'validation_guidance'),
+      correctionBatches: observedCount(deduplicated, 'correction'),
+      permissionRounds: observedCount(models, 'permission'),
+      preDeliveryInterventions: deduplicated.filter(
+        (event) =>
+          observed(event) &&
+          event.tags.some((tag) => ['validation_guidance', 'correction'].includes(tag))
+      ).length
+    },
     metrics: {
       initialExtraInput:
         coverage.initialInput === true
@@ -231,6 +257,10 @@ function escape(value) {
 export function renderComment(report) {
   const m = report.metrics
   const value = (number) => (number === null ? '未知' : String(number))
+  const processValue = (key, unit) =>
+    m[key] === null
+      ? `已观察 ${report.observed[key]} ${unit}；完整口径未知`
+      : `${value(m[key])} ${unit}`
   const rounds = `退回 ${m.rejectionBatches} 批；完成返工 ${m.completedReworkRounds} 轮${m.completedReworkRounds < m.rejectionBatches ? '，尚未全部重交' : ''}`
   const rework =
     m.reworkOccurred === null
@@ -246,13 +276,13 @@ export function renderComment(report) {
 | 指标 | 本次记录 |
 |---|---|
 | 开工额外输入 | ${m.initialExtraInput === null ? '未知' : m.initialExtraInput ? '有，本任务记 1' : '无，记 0'} |
-| AskUser | ${value(m.askUserRounds)} 轮 |
-| 高保真前审 | ${value(m.hifiReviewRounds)} 轮 |
-| 人工验证指导 | ${value(m.validationGuidanceBatches)} 批 |
-| 人工中途纠偏 | ${value(m.correctionBatches)} 批 |
+| AskUser | ${processValue('askUserRounds', '轮')} |
+| 高保真前审 | ${processValue('hifiReviewRounds', '轮')} |
+| 人工验证指导 | ${processValue('validationGuidanceBatches', '批')} |
+| 人工中途纠偏 | ${processValue('correctionBatches', '批')} |
 | PR 交付返工 | ${rework} |
 
-权限请求另记 ${value(m.permissionRounds)} 轮。交付前验证指导与纠偏按消息去重后 ${value(m.preDeliveryInterventions)} 批，不相加。前五项仅统计首次交付前；未审和缺记录不算零返工。
+权限请求另记 ${processValue('permissionRounds', '轮')}。验证指导与纠偏按消息去重后 ${processValue('preDeliveryInterventions', '批')}，不相加。完整过程指标仅统计首次交付前；已观察次数只计已标注事件，范围为${escape(report.observed.scope)}，不代表完整过程或发生率。未审和缺记录不算零返工。
 
 **用户输入简述**（${report.rawHumanMessages} 条原始消息，已标注 ${report.annotatedHumanMessages} 条 → ${value(report.normalizedHumanEvents)} 个事件）：
 ${report.userInputs.length ? report.userInputs.map((event) => `- ${escape(event.stage)}：${escape(event.summary)}`).join('\n') : '- 尚无已核对的输入摘要。'}
