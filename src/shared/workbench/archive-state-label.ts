@@ -8,7 +8,8 @@ export function archiveStateLabel(status: ArchivePrStatusResult | null): string 
       return '待合入'
     case 'closed':
       return '已关闭'
-    default:
+    case 'unknown':
+    case undefined:
       return '状态未知'
   }
 }
