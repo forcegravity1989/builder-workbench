@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, getWorktreeExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type { Worktree } from '../../../shared/worktree/types'
 import { worktreeFingerprintTuple } from './worktree-fingerprint'
@@ -27,7 +28,7 @@ export function useWallReadings(
             ...(visible[repo.id] ?? []),
             ...(detected[repo.id]?.worktrees ?? [])
           ]) {
-            if (getWorktreeExecutionHostId(tree, repo) === getRepoExecutionHostId(repo)) {
+            if (worktreeMatchesHost(tree, getRepoExecutionHostId(repo))) {
               trees.set(getWorktreeHostIdentity(tree), tree)
             }
           }

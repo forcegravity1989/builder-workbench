@@ -2,7 +2,8 @@ import { useAppStore } from '@/store'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { getWorktreeVisitTimestamp } from '@/lib/worktree-visit-recency'
 import type { Repo } from '../../../shared/repo-types'
-import { getRepoExecutionHostId, getWorktreeExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { closeProjectPage } from './project-page-state'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 
@@ -16,7 +17,7 @@ export async function continueProjectWork(repo: Repo): Promise<void> {
   }
   const state = useAppStore.getState()
   const trees = (state.worktreesByRepo[repo.id] ?? []).filter(
-    (tree) => !tree.isArchived && getWorktreeExecutionHostId(tree, repo) === hostId
+    (tree) => !tree.isArchived && worktreeMatchesHost(tree, hostId)
   )
   const latest = [...trees].sort(
     (a, b) =>

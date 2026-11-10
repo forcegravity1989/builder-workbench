@@ -73,7 +73,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await expect(card.locator('[data-repo-header-action]')).toBeVisible()
   await card.locator('[data-repo-header-action]').click()
   await expect(page.getByRole('menu')).toBeVisible()
-  await page.screenshot({ path: info.outputPath('bw-wall-native-menu.jpg') })
+  await page.screenshot({
+    animations: 'disabled',
+    path: info.outputPath('bw-wall-native-menu.jpg')
+  })
   await page.keyboard.press('Escape')
   const previousWorkspace = await page.evaluate((id) => {
     const state = window.__store!.getState()
@@ -83,7 +86,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
       tabIds: (state.tabsByWorktree[tree.id] ?? []).map((tab) => tab.id)
     }
   }, repoId)
-  await page.screenshot({ path: info.outputPath('bw-wall-without-charter.jpg') })
+  await page.screenshot({
+    animations: 'disabled',
+    path: info.outputPath('bw-wall-without-charter.jpg')
+  })
   await card.locator('.pcard-name').click()
   await expect(page.locator('[data-screen="wall"]')).toHaveCount(0)
   await page.waitForFunction(() => window.__store?.getState().activeView === 'terminal')
@@ -133,7 +139,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   expect(execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoPath, encoding: 'utf8' })).toBe(
     headBeforeType
   )
-  await page.screenshot({ path: info.outputPath('bw-config-sidebar.jpg') })
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-config-sidebar.jpg') })
   await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
   await page.getByRole('textbox', { name: '对标', exact: true }).fill('新对标')
   await page.getByRole('textbox', { name: '愿景', exact: true }).fill('新愿景')
@@ -141,7 +147,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   const guard = page.getByRole('dialog', { name: '还有未提交的修改' })
   await expect(guard).toBeVisible()
-  await page.screenshot({ path: info.outputPath('bw-config-dirty-guard.jpg') })
+  await page.screenshot({
+    animations: 'disabled',
+    path: info.outputPath('bw-config-dirty-guard.jpg')
+  })
   await guard.getByRole('button', { name: '继续编辑', exact: true }).click()
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('新愿景')
   await page.getByRole('button', { name: '保存', exact: true }).click()
@@ -151,7 +160,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   }
   await expect(review.getByRole('button', { name: '确认保存', exact: true })).toBeEnabled()
   expect(readFileSync(file, 'utf8')).toBe(original)
-  await page.screenshot({ path: info.outputPath('bw-config-review.jpg') })
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-config-review.jpg') })
 
   // Another writer changes the read revision before submit; the host must reject it.
   const concurrent = `${original}# 外部写入后保留\n`
@@ -162,10 +171,13 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   ).toContainText('项目信息已变化')
   await expect(page.getByRole('button', { name: '开会话处理', exact: true })).toBeVisible()
   expect(readFileSync(file, 'utf8')).toBe(concurrent)
-  await page.screenshot({ path: info.outputPath('bw-config-conflict.jpg') })
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-config-conflict.jpg') })
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('新愿景')
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   await guard.getByRole('button', { name: '丢弃并离开', exact: true }).click()
+  await expect(
+    page.locator('[data-sonner-toast]').filter({ hasText: '项目信息操作失败' })
+  ).toHaveCount(0)
   await openConfig()
   await expect(page.locator('#project-visibility')).toHaveText('团队项目')
   await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
@@ -189,7 +201,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     expect(saved).toContain(preserved)
   }
   expect(saved).not.toContain('opportunity =')
-  await page.screenshot({ path: info.outputPath('bw-config-saved.jpg') })
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-config-saved.jpg') })
   await page.reload()
   await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
   await openWall()
@@ -198,7 +210,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await expect(page.locator('.wb-config-footer')).toHaveCount(0)
   await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
   expect(readFileSync(file, 'utf8')).toBe(saved)
-  await page.screenshot({ path: info.outputPath('bw-config-reloaded.jpg') })
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-config-reloaded.jpg') })
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   await card.locator('[data-workbench-open-overview]').click()
   await page
@@ -207,7 +219,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     .click()
   await expect(page.locator('.wb-project-settings')).toBeVisible()
   await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
-  await page.screenshot({ path: info.outputPath('bw-overview-shared-editor.jpg') })
+  await page.screenshot({
+    animations: 'disabled',
+    path: info.outputPath('bw-overview-shared-editor.jpg')
+  })
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   const folderPath = path.join(path.dirname(repoPath), 'notes')
   const folderId = await page.evaluate(async (folderPath) => {
@@ -242,7 +257,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     )
     .toBe('team')
   expect(existsSync(path.join(folderPath, '.bw', 'project.toml'))).toBe(false)
-  await page.screenshot({ path: info.outputPath('bw-folder-native-settings.jpg') })
+  await page.screenshot({
+    animations: 'disabled',
+    path: info.outputPath('bw-folder-native-settings.jpg')
+  })
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   await folderCard.locator('.pcard-name').click()
   await expect(page.locator('[data-screen="wall"]')).toHaveCount(0)
@@ -254,7 +272,13 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
       state.worktreesByRepo[id]?.some((tree) => tree.id === state.activeWorktreeId)
     )
   }, folderId)
+  const folderSidebar = page.locator('[data-workbench-version-section]')
+  await expect(folderSidebar).toHaveText('工作区')
+  await expect(folderSidebar.getByRole('button', { name: '新建版本', exact: true })).toHaveCount(0)
   expect(existsSync(path.join(folderPath, '.git'))).toBe(false)
   expect(existsSync(path.join(folderPath, '.bw', 'project.toml'))).toBe(false)
-  await page.screenshot({ path: info.outputPath('bw-folder-continued.jpg') })
+  await page.screenshot({
+    animations: 'disabled',
+    path: info.outputPath('bw-folder-continued.jpg')
+  })
 }

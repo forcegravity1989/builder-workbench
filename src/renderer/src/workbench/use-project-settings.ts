@@ -273,6 +273,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
       id: `project-info:${key}`,
       description: `${error}。可重试，或开会话让模型处理。`,
       duration: 60_000,
+      closeButton: true,
       action: {
         label: '开会话处理',
         onClick: () => {
@@ -309,6 +310,9 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
         }
       }
     })
+    return () => {
+      toast.dismiss(`project-info:${key}`)
+    }
     // The toast captures this failure and its draft; retry resolves the latest operation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, key, agent])

@@ -7,16 +7,15 @@ import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getPinnedSectionWorktrees } from '../../pinned-section-worktrees'
 import { buildWallProjects } from '@/workbench/workbench-wall-projects'
-import {
-  getRepoExecutionHostId,
-  getWorktreeExecutionHostId
-} from '../../../../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
 import type { Repo } from '../../../../../../shared/repo-types'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { getProjectGroupSubtreeIds } from '../../../../../../shared/project-groups'
 import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
 import { findFolderWorkspaceOwner } from '@/lib/folder-workspace-runtime-owner'
 import { getFolderWorkspaceExecutionHostIdForRows } from './host-filtering'
+import { selectRepoByIdForActiveWorkspace } from '@/store/selectors'
+import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 
 type VersionSidebarScope = {
   worktreeIdentities: ReadonlySet<string>
@@ -66,11 +65,16 @@ export function useWorkbenchSidebarScope() {
       ? getProjectGroupSubtreeIds(folderGroups, folder.projectGroupId)
       : new Set<string>()
     const repoId = activeRepoId ?? (folder ? null : (repos[0]?.id ?? null))
+    const activeRepo = selectRepoByIdForActiveWorkspace(
+      { repos, activeRepoId, activeWorkspaceExecutionHostId: activeHostId },
+      repoId
+    )
+    const projectHost = activeRepo ? getRepoExecutionHostId(activeRepo) : activeHostId
     const project = repoId
       ? buildWallProjects(repos, groups).find((item) =>
           item.rows.some(
             (row) =>
-              row.id === repoId && (!activeHostId || getRepoExecutionHostId(row) === activeHostId)
+              row.id === repoId && (!projectHost || getRepoExecutionHostId(row) === projectHost)
           )
         )
       : undefined
@@ -84,7 +88,7 @@ export function useWorkbenchSidebarScope() {
       : (project?.rows ??
         repos.filter(
           (row) =>
-            row.id === repoId && (!activeHostId || getRepoExecutionHostId(row) === activeHostId)
+            row.id === repoId && (!projectHost || getRepoExecutionHostId(row) === projectHost)
         ))
     const projectGroups = groups.filter(
       (group) =>
@@ -186,9 +190,7 @@ function inProject(tree: Worktree, scope: VersionSidebarScope): boolean {
   return (
     !scope.rows ||
     scope.rows.some(
-      (row) =>
-        row.id === tree.repoId &&
-        getRepoExecutionHostId(row) === getWorktreeExecutionHostId(tree, row)
+      (row) => row.id === tree.repoId && worktreeMatchesHost(tree, getRepoExecutionHostId(row))
     )
   )
 }
