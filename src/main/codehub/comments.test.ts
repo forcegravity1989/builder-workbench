@@ -391,7 +391,7 @@ describe('codehub comments', () => {
         authorAvatarUrl: null,
         isBot: false,
         isResolved: undefined,
-        isSystem: undefined,
+        isSystem: false,
         path: null,
         line: null,
         isOutdated: false
