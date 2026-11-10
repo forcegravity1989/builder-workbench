@@ -55,13 +55,16 @@ export function buildUpdateCardErrorModel({
       summary: checkpointFailed
         ? translate(
             'auto.components.UpdateCard.sessionSaveFailedNextStep',
-            'This installation attempt has not started. Save any editor changes, then try again.'
+            'The update is downloaded, but session state could not be saved before quitting. Retrying will run the save checks again, then restart to install the update if they pass.'
           )
-        : 'Could not restart to install the update.',
+        : translate(
+            'auto.components.UpdateCard.installFailedNextStep',
+            'Could not restart to install the downloaded update. Try again to restart and install it.'
+          ),
       detail: installError,
       releaseUrl: checkpointFailed ? undefined : getReleaseNotesUrlForVersion(cachedVersion),
       primaryAction: {
-        label: translate('auto.components.UpdateCard.2c2d3e03ca', 'Try Again'),
+        label: translate('auto.components.UpdateCard.2c2d3e03ca', 'Retry and Restart to Update'),
         onClick: onInstallRetry
       }
     }
