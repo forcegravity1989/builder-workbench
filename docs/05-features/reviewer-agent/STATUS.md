@@ -4,4 +4,4 @@
 
 工作台内「请评审」入口未接入。本目录 intent、spec 和原型属于旧平台产品方案，不是现行开发指令，也不代表当前 Electron 壳已有此能力。
 
-BW 自身开发执行 [AGENTS](../../../AGENTS.md) 直接引用的[独立 subagent 检视规范](../../../.claude/skills/workbench-start/references/delivery-contract.md#独立检视)。
+BW 自身开发执行 [AGENTS](../../../AGENTS.md) 直接引用的[独立 subagent 检视规范](../../development.md#独立检视)。

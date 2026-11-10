@@ -1,7 +1,7 @@
 关联 #
 
 <!--
-面向交付者与评审者的短正文骨架；先完整读取[交付细则](../.claude/skills/workbench-start/references/delivery-contract.md)。
+面向交付者与评审者的短正文骨架；先完整读取[交付细则](../docs/development.md)。
 格式变化时同步该正本与验证模板。正文只写最终结果，验证对照和检视处置放一条主验证评论；补验原位更新。
 先按 standard/references/issue-state.md 查同类 Issue，无则新建；不用 Fixes / Closes，Issue 完成由人决定。
 -->

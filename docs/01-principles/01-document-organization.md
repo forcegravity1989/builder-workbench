@@ -19,9 +19,10 @@
 ├── CLAUDE.md          一行 @AGENTS.md 导入（入口件）
 └── CONTEXT.md         领域词表唯一正本（入口件）
 
-docs/（BW 产品知识；编号定序，architecture 是整体设计正本）
+docs/（BW 产品知识与本仓开发规范；编号定序，architecture 是整体设计正本）
 ├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文
 ├── architecture.md    设计正本（Electron 叠层 + 模块设计；docs 内不编号）
+├── development.md     BW 自身测试、检视、验证证据与 PR 规范；独立于具体 Skill
 ├── 02-adr/            架构决策的预留位置；存量已清空，后续按实际决策新增
 ├── 03-guide/          产品指南的预留位置；存量已清空，真实旅程验证后补
 ├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
@@ -40,7 +41,7 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 
 口诀：
 
-**`docs/01-principles/` 是原则，`docs/05-features/` 是这次变更，`docs/` 其余是产品怎么说清楚（设计 / 指南）。仓根只留约定的入口文档。**
+**`docs/01-principles/` 是原则，`docs/05-features/` 是特性定义，设计与指南解释产品；`docs/development.md` 单独承载本仓开发规范。仓根只留约定的入口文档。**
 
 ## 2. 各层职责
 
@@ -52,6 +53,7 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 | **docs/03-guide** | 人怎么用 / 怎么讲（只写已实践） | 站验证后补 | 未上线功能、实现黑话堆砌 |
 | **docs/10-reference/** | 业界在什么条件下观察到什么，或提出了什么方法。注明一手来源、日期、证据类型和适用局限 | 来源修订或新证据改变结论时 | BW 的采用取舍归对应特性或模块。旧设计快照和施工记录查 Git 或原 PR |
 | **docs/\*-prototype/design** | 当前迭代设计实况（一篇正本） | 站走完改实况 | 单次 MR 的 intent；修订流水账当正文 |
+| **docs/development.md** | BW 自身的测试、独立检视、证据与 PR 规则；供 AGENTS、Skills 和模板共同引用 | 规则或消费者变化时更新，沿用一个正本 | 具体工具操作、Skill 编排、任务流水；不向被管项目分发 |
 | **AGENTS / CLAUDE** | 本仓开发总入口与硬约束；专题细则由 AGENTS 直接指向唯一正文，CLAUDE 只导入 AGENTS | 开发规矩或入口变化时，先修已有规则与引用 | 重复专题细则、单次变更正文、产品主张 |
 | **.teamai/** | 可共享的 skills/hooks/规则如何同步到多工具 | 随团队政策 | 业务仓设计正本、docs/05-features 正文 |
 

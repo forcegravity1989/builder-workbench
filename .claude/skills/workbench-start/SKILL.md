@@ -10,14 +10,14 @@ description: >-
   Also use for reviewing real Issue sessions to improve this development workflow.
   Load historical week-screen context only when tracing its earlier decisions.
 metadata:
-  version: 0.4.10-pilot
+  version: 0.4.11-pilot
 ---
 
 # workbench-start — Workbench 开发与交付
 
 > **读者与时机**：在仓外 IDE 开始或继续 BW 开发的模型与开发者。先确认目标仓与依据，再按任务分流，连续实施、检视和交付。
 >
-> **职责与维护**：本篇只编排读取与动作；项目约束归 AGENTS，特性决定和六环归原则 02，测试/检视/PR 细则归 delivery-contract。按起手 → 分流 → 实施 → 交付 → 反哺组织；读取路径或工作步骤变化时更新。仓内试用不等于向 standard 分发，正文不保存任务流水。
+> **职责与维护**：本篇只编排读取与动作；项目约束归 AGENTS，特性决定和六环归原则 02，测试/检视/PR 规则归[开发规范](../../../docs/development.md)。按起手 → 分流 → 实施 → 交付 → 反哺组织；读取路径或工作步骤变化时更新。仓内试用不等于向 standard 分发，正文不保存任务流水。
 
 ## 1. 适用范围与入口
 
@@ -29,7 +29,7 @@ metadata:
 ## 2. 起手：读依据，再给短判断
 
 1. 核对目标仓根、分支/worktree、HEAD、未提交改动、远端 URL、PR base、任务与授权。按 AGENTS 先查可复用 Issue，无则创建；使用当前任务的隔离工作树，不移动或删除他人的常驻树。更新用户指定目标分支，不默认只拉 main。
-2. 完整读取目标 AGENTS 与 [BW 开发交付细则](references/delivery-contract.md)，再按任务读取原则、architecture、CONTEXT、特性和实现入口。修改文档先读原文头部与原则 01。当前技术路线用目标树源码和构建入口核对，Orca 来源/边界读 ref/upstream.md，旧 Rust 只作按需历史依据。
+2. 完整读取目标 AGENTS 与 [BW 开发规范](../../../docs/development.md)，再按任务读取原则、architecture、CONTEXT、特性和实现入口。修改文档先读原文头部与原则 01。当前技术路线用目标树源码和构建入口核对，Orca 来源/边界读 ref/upstream.md，旧 Rust 只作按需历史依据。
 3. 合并读取 Issue、当次补充、已认可制品及受影响调用链。区分认可的目标、当前实现、已验证结果与历史证据；源码说明现在怎样，不能独自决定应当怎样。追溯周一屏早期决定时才读 [历史参考](references/week-screen-v04.md)。
 4. 简述**本次范围与依据、是否需要原型对齐、怎样验证、真正缺哪个决定**。信息充分就继续，用户只需补任务独有信息；能独立调查的先查，不要求人重述仓规或选择常规工程实现。
 
@@ -61,9 +61,9 @@ metadata:
 
 ## 5. 验证与交付
 
-执行已经完整读取的 [交付细则](references/delivery-contract.md)：登记执行清单 → 运行适用验收与门禁 → 提供版本与判据给独立 subagent → 修正并复核发现 → 提交、push、开 PR 及更新主验证评论。检视维度、测试取舍、独立测试 agent 和验证证据只在细则维护，不在此另立清单。
+执行已经完整读取的 [交付细则](../../../docs/development.md)：登记执行清单 → 运行适用验收与门禁 → 提供版本与判据给独立 subagent → 修正并复核发现 → 提交、push、开 PR 及更新主验证评论。检视维度、测试取舍、独立测试 agent 和验证证据只在细则维护，不在此另立清单。
 
-需要在 Windows 操作真壳的 Codex 按细则读取 [执行参考](references/codex.md)；纯文档报告相应检查，不强启真壳。沿当前授权完成交付，用户明确只本地时才停在本地；完成、合入与发布仍由人决定。
+需要准备验证环境或发布截图时完整读取[验证执行参考](references/verification.md)，Windows Codex 再按其中入口读取宿主操作；纯文档报告相应检查，不强启真壳。沿当前授权完成交付，用户明确只本地时才停在本地；完成、合入与发布仍由人决定。
 
 交付说明简述最终变化、产物入口、实际验证与证据、未验范围和必要剩余决定；不要将历史或模拟证据说成当前验收。依赖其他 PR 时核对真实基线，未合入不能称共享基线就绪。
 
