@@ -77,6 +77,7 @@ export function UpdateCard(): React.JSX.Element | null {
   }, [shouldAutoDismissLatest])
   useEffect(() => {
     if (status.state === 'downloaded' && hasStartedDownload.current) {
+      setInstallError(null)
       void window.api.updater.quitAndInstall().catch((error) => {
         setInstallError(String((error as Error)?.message ?? error))
       })
@@ -127,6 +128,7 @@ export function UpdateCard(): React.JSX.Element | null {
     dismissUpdate()
   }
   const handleInstallRetry = (): void => {
+    setInstallError(null)
     void window.api.updater.quitAndInstall().catch((error) => {
       setInstallError(String((error as Error)?.message ?? error))
     })

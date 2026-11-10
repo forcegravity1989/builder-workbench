@@ -37,18 +37,34 @@ export function buildUpdateCardErrorModel({
   onInstallRetry: () => void
 }): UpdateErrorCardModel | null {
   if (status.state !== 'error') {
-    return installError
-      ? {
-          title: translate('auto.components.UpdateCard.4cf109845a', 'Update Error'),
-          summary: 'Could not restart to install the update.',
-          detail: installError,
-          releaseUrl: getReleaseNotesUrlForVersion(cachedVersion),
-          primaryAction: {
-            label: translate('auto.components.UpdateCard.2c2d3e03ca', 'Try Again'),
-            onClick: onInstallRetry
-          }
-        }
-      : null
+    if (!installError) {
+      return null
+    }
+    // ContextBridge preserves the native error message, not custom Error fields.
+    const checkpointFailed =
+      installError === 'Renderer shutdown checkpoint was not completed.' ||
+      installError.startsWith('Renderer shutdown checkpoint was not completed: ') ||
+      installError === 'Failed to persist renderer state before unload.'
+    return {
+      title: checkpointFailed
+        ? translate(
+            'auto.components.UpdateCard.sessionSaveFailed',
+            'Session State Could Not Be Saved'
+          )
+        : translate('auto.components.UpdateCard.4cf109845a', 'Update Error'),
+      summary: checkpointFailed
+        ? translate(
+            'auto.components.UpdateCard.sessionSaveFailedNextStep',
+            'This installation attempt has not started. Save any editor changes, then try again.'
+          )
+        : 'Could not restart to install the update.',
+      detail: installError,
+      releaseUrl: checkpointFailed ? undefined : getReleaseNotesUrlForVersion(cachedVersion),
+      primaryAction: {
+        label: translate('auto.components.UpdateCard.2c2d3e03ca', 'Try Again'),
+        onClick: onInstallRetry
+      }
+    }
   }
   if (isLocalBuild) {
     return {

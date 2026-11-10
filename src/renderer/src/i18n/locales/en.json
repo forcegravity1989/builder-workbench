@@ -2397,6 +2397,8 @@
         "ba5ffc949c": "Checking for updates...",
         "2c2d3e03ca": "Try Again",
         "4cf109845a": "Update Error",
+        "sessionSaveFailed": "Session State Could Not Be Saved",
+        "sessionSaveFailedNextStep": "This installation attempt has not started. Save any editor changes, then try again.",
         "6b0085010d": "Re-check",
         "48565a32bc": "Retry Download",
         "933c6fdf5b": "Enable & Restart",
