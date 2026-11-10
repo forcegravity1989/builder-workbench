@@ -865,6 +865,12 @@ html.native-shell .app-layout {
   flex-shrink: 0;
 }
 
+/* Divide window-DIP viewport presets by live renderer zoom to match the CDP-emulated page width (STA-7568). */
+.browser-page-preset-viewport {
+  width: calc(var(--browser-page-viewport-width) / var(--ui-zoom-factor, 1));
+  height: calc(var(--browser-page-viewport-height) / var(--ui-zoom-factor, 1));
+}
+
 /* Keep the product mark's original colors in both themes. */
 .titlebar-logo {
   width: 20px;
