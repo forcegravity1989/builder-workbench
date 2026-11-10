@@ -4,9 +4,13 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspace-prepare'
 import { Button } from '@/components/ui/button'
+import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
-import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
+import {
+  compareMaterialVersions,
+  type VersionCatalogEntry
+} from '../../../shared/workbench/version-catalog'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
 import {
@@ -17,6 +21,7 @@ import {
 } from './version-nav-actions'
 import { VersionCleanupDialog } from './version-cleanup-dialog'
 import { VersionNavGroup } from './version-nav-group'
+import { VersionSidebarPreview } from './VersionSidebarPreview'
 import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { openVersionOverview, useProjectPage } from './project-page-state'
@@ -62,16 +67,21 @@ export function WorkbenchVersionNav({
   })
   const activeView = useAppStore((s) => s.activeView)
   const activeWorktree = useAppStore((s) =>
-    s.activeWorktreeId ? s.getKnownWorktreeById(s.activeWorktreeId) : null
+    s.activeWorktreeId
+      ? s.getKnownWorktreeById(s.activeWorktreeId, s.activeWorkspaceExecutionHostId ?? undefined)
+      : null
   )
   const taskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
+  const taskRepoId = useAppStore((s) => s.taskPageData.preselectedRepoId)
   const cycleView = useCycleView()
   const projectPage = useProjectPage()
+  const catalog = useVersionCatalogForRepo(repoId)
   const overviewVersion =
-    activeView === 'activity' && projectPage?.kind === 'version-overview'
+    activeView === 'activity' &&
+    projectPage?.kind === 'version-overview' &&
+    catalog.repoIds.includes(projectPage.options.repoId)
       ? projectPage.options.version
       : null
-  const catalog = useVersionCatalogForRepo(repoId)
   const browsedVersion = useBrowsedVersion(repoId)
   const [dialog, setDialog] = useState<DialogState>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
@@ -195,6 +205,29 @@ export function WorkbenchVersionNav({
     [activeWorktree]
   )
 
+  const activeTaskVersion =
+    activeView === 'tasks' && (!taskRepoId || catalog.repoIds.includes(taskRepoId))
+      ? taskScope?.version
+      : null
+  const activeTreeVersion =
+    activeView === 'terminal' &&
+    activeWorktree &&
+    !activeWorktree.isArchived &&
+    catalog.repoIds.includes(activeWorktree.repoId)
+      ? activeBinding?.version
+      : null
+  const activeVersion =
+    overviewVersion ??
+    activeTaskVersion ??
+    activeTreeVersion ??
+    (activeView === 'artifacts' ? browsedVersion : null)
+  const activeObjectKey =
+    activeTreeVersion && activeWorktree
+      ? getWorktreeHostIdentity(activeWorktree)
+      : activeTaskVersion
+        ? (taskScope?.goalId ?? '')
+        : ''
+
   const busy = useCallback(
     async (key: string, run: () => Promise<void>) => {
       if (busyKey) {
@@ -218,8 +251,96 @@ export function WorkbenchVersionNav({
 
   const problems = loaded?.problems ?? []
 
+  function renderVersionRow(entry: VersionCatalogEntry): React.JSX.Element {
+    const activeWorkflow: VersionWorkflow | null =
+      activeBinding && activeBinding.version === entry.version
+        ? isVersionFlowWorkflow(activeBinding.workflow)
+          ? activeBinding.workflow
+          : null
+        : activeView === 'artifacts' && browsedVersion === entry.version
+          ? cycleView
+          : null
+    return (
+      <div
+        key={entry.version}
+        ref={(node) => {
+          if (node) {
+            versionElements.current.set(entry.version, node)
+          } else {
+            versionElements.current.delete(entry.version)
+          }
+        }}
+      >
+        <VersionNavGroup
+          entry={entry}
+          expanded={expandedVersions.has(entry.version)}
+          browsed={browsedVersion === entry.version}
+          busy={busyKey !== null}
+          initializing={busyKey === `${entry.version}:init`}
+          worktrees={catalog.worktrees}
+          activeWorkflow={
+            activeView === 'terminal' || activeView === 'artifacts' ? activeWorkflow : null
+          }
+          activeTasks={activeTaskVersion === entry.version && !taskScope?.goalId}
+          activeOverview={overviewVersion === entry.version}
+          onOverview={() => openVersionOverview({ repoId, version: entry.version })}
+          activeGoalId={activeTaskVersion === entry.version ? (taskScope?.goalId ?? null) : null}
+          onToggle={() => toggleVersion(entry.version)}
+          onCleanup={() => setDialog({ mode: 'cleanup', version: entry.version })}
+          onNavigateWorkflow={(workflow) =>
+            navigateVersionWorkflow({
+              catalog,
+              version: entry.version,
+              workflow,
+              projectKey: repoId
+            })
+          }
+          onInitialize={() =>
+            void busy(`${entry.version}:init`, async () => {
+              await initializeVersionWorkspace({ catalog, version: entry.version })
+            })
+          }
+          onOpenTasks={(goal) =>
+            void busy(`${entry.version}:${goal?.goalId ?? 'all'}:tasks`, async () => {
+              await openVersionTasks({
+                catalog,
+                version: entry.version,
+                goal: goal ?? null,
+                entry
+              })
+            })
+          }
+          onStartGoal={(goal) =>
+            void busy(`${entry.version}:${goal.goalId}:start`, async () => {
+              await startVersionGoal({
+                catalog,
+                version: entry.version,
+                goal
+              })
+            })
+          }
+          onOpenGoalWorkspace={(goal) => {
+            const opened = openGoalWorkspace({
+              version: entry.version,
+              goalId: goal.goalId,
+              label: `${goal.label} · ${goal.title}`,
+              worktrees: catalog.worktrees
+            })
+            if (!opened) {
+              toast.info('此目标尚无工作区；可用「目标开工」按需创建。')
+            }
+          }}
+        />
+      </div>
+    )
+  }
+
   const content = (
-    <div className="wb-versions flex min-h-0 min-w-0 flex-col" data-workbench-versions>
+    <div
+      className="wb-versions flex min-h-0 min-w-0 flex-col"
+      style={{ rowGap: WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP }}
+      data-workbench-versions
+    >
       <WorkbenchSidebarSectionHeader
         icon={Layers}
         action={
@@ -230,7 +351,6 @@ export function WorkbenchVersionNav({
             aria-label="新建版本"
             title="新建版本"
             onClick={() => setDialog({ mode: 'create' })}
-            className="size-6"
           >
             <Plus className="size-3.5" />
           </Button>
@@ -264,100 +384,14 @@ export function WorkbenchVersionNav({
         </p>
       ) : null}
 
-      <div className="flex min-w-0 flex-col gap-0.5">
-        {entries.map((entry) => {
-          const activeWorkflow: VersionWorkflow | null =
-            activeBinding && activeBinding.version === entry.version
-              ? isVersionFlowWorkflow(activeBinding.workflow)
-                ? activeBinding.workflow
-                : null
-              : activeView === 'artifacts' && browsedVersion === entry.version
-                ? cycleView
-                : null
-          return (
-            <div
-              key={entry.version}
-              ref={(node) => {
-                if (node) {
-                  versionElements.current.set(entry.version, node)
-                } else {
-                  versionElements.current.delete(entry.version)
-                }
-              }}
-            >
-              <VersionNavGroup
-                key={entry.version}
-                entry={entry}
-                expanded={expandedVersions.has(entry.version)}
-                browsed={browsedVersion === entry.version}
-                busy={busyKey !== null}
-                initializing={busyKey === `${entry.version}:init`}
-                worktrees={catalog.worktrees}
-                activeWorkflow={
-                  activeView === 'terminal' || activeView === 'artifacts' ? activeWorkflow : null
-                }
-                activeTasks={
-                  activeView === 'tasks' &&
-                  taskScope?.version === entry.version &&
-                  !taskScope?.goalId
-                }
-                activeOverview={overviewVersion === entry.version}
-                onOverview={() => openVersionOverview({ repoId, version: entry.version })}
-                activeGoalId={
-                  activeView === 'tasks' && taskScope?.version === entry.version
-                    ? (taskScope?.goalId ?? null)
-                    : null
-                }
-                onToggle={() => toggleVersion(entry.version)}
-                onCleanup={() => setDialog({ mode: 'cleanup', version: entry.version })}
-                onNavigateWorkflow={(workflow) =>
-                  navigateVersionWorkflow({
-                    catalog,
-                    version: entry.version,
-                    workflow,
-                    projectKey: repoId
-                  })
-                }
-                onInitialize={() =>
-                  void busy(`${entry.version}:init`, async () => {
-                    await initializeVersionWorkspace({ catalog, version: entry.version })
-                  })
-                }
-                onOpenTasks={(goal) =>
-                  void busy(`${entry.version}:${goal?.goalId ?? 'all'}:tasks`, async () => {
-                    await openVersionTasks({
-                      catalog,
-                      version: entry.version,
-                      goal: goal ?? null,
-                      entry
-                    })
-                  })
-                }
-                onStartGoal={(goal) =>
-                  void busy(`${entry.version}:${goal.goalId}:start`, async () => {
-                    await startVersionGoal({
-                      catalog,
-                      version: entry.version,
-                      goal
-                    })
-                  })
-                }
-                onOpenGoalWorkspace={(goal) => {
-                  const opened = openGoalWorkspace({
-                    version: entry.version,
-                    goalId: goal.goalId,
-                    label: `${goal.label} · ${goal.title}`,
-                    worktrees: catalog.worktrees
-                  })
-                  if (!opened) {
-                    toast.info('此目标尚无工作区；可用「目标开工」按需创建。')
-                  }
-                }}
-              />
-            </div>
-          )
-        })}
-      </div>
+      <VersionSidebarPreview
+        repoId={repoId}
+        entries={entries}
+        activeVersion={activeVersion}
+        activeContextKey={`${activeView}:${activeObjectKey}`}
+        versionElements={versionElements}
+        renderRow={renderVersionRow}
+      />
 
       {dialog?.mode === 'cleanup' ? (
         <VersionCleanupDialog
