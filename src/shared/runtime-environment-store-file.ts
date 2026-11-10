@@ -4,13 +4,17 @@ import {
   RuntimeEnvironmentSidecarInvalidError,
   type RuntimeEnvironmentSidecar
 } from './remote-runtime/host-store/runtime-environment-sidecar'
-import type { KnownRuntimeEnvironment } from './runtime-environments'
+
 import {
   JsonStringifyByteLimitError,
   stringifyJsonWithinByteLimit
 } from './node-bounded-json-stringify'
 import { writeSecureFile } from './secure-file'
-import { RuntimeEnvironmentStoreSchema, type RuntimeEnvironmentStore } from './runtime-environments'
+import {
+  type KnownRuntimeEnvironment,
+  RuntimeEnvironmentStoreSchema,
+  type RuntimeEnvironmentStore
+} from './runtime-environments'
 import {
   getEnvironmentStorePath,
   MAX_RUNTIME_ENVIRONMENT_STORE_FILE_BYTES,

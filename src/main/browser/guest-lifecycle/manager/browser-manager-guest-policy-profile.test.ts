@@ -117,7 +117,11 @@ function navigateTo(guest: GuestFake, url: string): boolean {
   return prevented
 }
 
-const host = { id: 5001, send: vi.fn() } as unknown as Electron.WebContents
+const host = {
+  id: 5001,
+  isDestroyed: () => false,
+  send: vi.fn()
+} as unknown as Electron.WebContents
 
 beforeEach(() => {
   resetBrowserManagerMocks(browserMocks)

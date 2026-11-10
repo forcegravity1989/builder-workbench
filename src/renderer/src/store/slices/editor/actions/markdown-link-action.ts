@@ -1,4 +1,8 @@
-import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
+import {
+  getLocalPathOpenOwnerForRoute,
+  isLocalPathOpenBlocked,
+  showLocalPathOpenBlockedToast
+} from '@/lib/local-path-open-guard'
 import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import { toast } from 'sonner'
@@ -6,7 +10,7 @@ import { translate } from '@/i18n/i18n'
 import { detectLanguage } from '@/lib/language-detect'
 import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 import { getConnectionIdForFileFromState } from '@/lib/connection-owner-resolution'
-import { isLocalPathOpenBlocked, showLocalPathOpenBlockedToast } from '@/lib/local-path-open-guard'
+
 import { resolveMarkdownLinkTarget } from '@/components/editor/markdown-internal-links'
 import { settingsForRuntimeOwner } from '@/runtime/runtime-rpc-client'
 import { statRuntimePath } from '@/runtime/runtime-file-client'

@@ -2,7 +2,10 @@ import {
   setSharedControlAnswerSource,
   clearSharedControlAnswerSource
 } from './runtime-environments/runtime-environment-shared-control-answers'
-import { runtimeEnvironmentConnectionPairingKey } from './runtime-environment-capability-evidence'
+import {
+  runtimeEnvironmentConnectionPairingKey,
+  isRuntimeEnvironmentCapabilityPaused
+} from './runtime-environment-capability-evidence'
 import { probeAllRemoteRuntimeSocketsNow } from '../../shared/remote-runtime-socket-liveness'
 import type { PairedRuntimeConnection } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { resolveEnvironment } from '../../shared/runtime-environment-store'
@@ -21,7 +24,7 @@ import type {
   RemoteRuntimeSharedConnectionDiagnostics,
   RemoteRuntimeSharedSubscription
 } from '../../shared/remote-runtime-shared-control-types'
-import { isRuntimeEnvironmentCapabilityPaused } from './runtime-environment-capability-evidence'
+
 import { isRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-manual-disconnect'
 import { publishRuntimeEnvironmentDiagnostics } from './runtime-environment-diagnostics-broadcast'
 import {

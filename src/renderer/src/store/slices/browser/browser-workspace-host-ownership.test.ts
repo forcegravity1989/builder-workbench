@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isLocalBrowserPageOwner } from './hosts/browser-host-state'
 import type { AppState } from '../../types'
+import { createGlobalSettingsFixture } from '../../../../../shared/global-settings-test-fixture'
 import {
   createBrowserMockApi,
   createTestStore,
@@ -36,13 +37,13 @@ describe('createBrowserSlice runtime guard', () => {
   it('uses the target worktree host default profile when creating a browser tab', () => {
     const store = createTestStore()
     store.setState({
-      settings: {
+      settings: createGlobalSettingsFixture({
         activeRuntimeEnvironmentId: null,
         browserDefaultProfileIdByHostId: {
           local: 'local-default',
           'runtime:env-1': 'remote-default'
         }
-      } as AppState['settings'],
+      }),
       repos: [
         {
           id: 'repo-1',

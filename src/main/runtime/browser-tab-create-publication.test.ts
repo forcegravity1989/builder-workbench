@@ -29,7 +29,7 @@ const { ipcMainOnMock, waitForTabRegistrationMock } = vi.hoisted(() => ({
 
 vi.mock('electron', () => ({
   ipcMain: { on: ipcMainOnMock, removeListener: vi.fn() },
-  webContents: { fromId: vi.fn() }
+  webContents: { fromId: vi.fn(() => ({ isDestroyed: () => false })) }
 }))
 
 vi.mock('../ipc/browser/browser-tab-registration-wait', () => ({
@@ -50,7 +50,7 @@ function createCommandHost(
 ): RuntimeBrowserCommandHost {
   const runtimeBrowserPages = new RuntimeBrowserPageRegistry()
   return {
-    resolveWorktreeSelector: async (selector: string) => ({ id: selector.replace(/^id:/, '') }),
+    resolveWorkspaceSelector: async (selector: string) => ({ id: selector.replace(/^id:/, '') }),
     resolveBrowserWorkspace: async (selector: string) => ({ id: selector.replace(/^id:/, '') }),
     getRuntimeBrowserPageRegistry: () => runtimeBrowserPages,
     getAgentBrowserBridge: () =>
@@ -90,11 +90,18 @@ function createPublicationHost(registeredTabs: readonly [string, number][] = [['
   }
 }
 
-function browserCommandsSource(): string {
-  return readdirSync(__dirname)
-    .filter((name) => /^runtime-browser-commands-.*\.ts$/.test(name))
-    .sort()
-    .map((name) => readFileSync(join(__dirname, name), 'utf8'))
+function browserCommandsSource(directory = join(__dirname, 'browser')): string {
+  return readdirSync(directory, { withFileTypes: true })
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .flatMap((entry) => {
+      const entryPath = join(directory, entry.name)
+      if (entry.isDirectory()) {
+        return browserCommandsSource(entryPath)
+      }
+      return entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')
+        ? readFileSync(entryPath, 'utf8')
+        : []
+    })
     .join('\n')
 }
 
@@ -380,7 +387,7 @@ describe('browser tab-create placement census', () => {
     for (const placementKind of BROWSER_TAB_CREATE_PLACEMENT_KINDS) {
       const routed = source.match(
         new RegExp(
-          `publishCreatedBrowserSessionTab\\(this\\.host, \\{\\s*placementKind: '${placementKind}'`,
+          `publishCreatedBrowserSessionTab\\((?:this\\.)?host, \\{\\s*placementKind: '${placementKind}'`,
           'g'
         )
       )
@@ -554,7 +561,7 @@ describe('browser tab-create placement census', () => {
     const source = browserCommandsSource()
     const selected = new Set<BrowserTabCreatePlacementKind>()
     for (const [, placementKind] of source.matchAll(
-      /publishCreatedBrowserSessionTab\(this\.host, \{\s*placementKind: '([a-z]+)'/g
+      /publishCreatedBrowserSessionTab\((?:this\.)?host, \{\s*placementKind: '([a-z]+)'/g
     )) {
       selected.add(placementKind as BrowserTabCreatePlacementKind)
     }
@@ -672,7 +679,7 @@ describe('browser tab-switch placement census', () => {
     for (const placementKind of BROWSER_TAB_SWITCH_PLACEMENT_KINDS) {
       const routed = source.match(
         new RegExp(
-          `publishSwitchedBrowserSessionTab\\(this\\.host, \\{\\s*placementKind: '${placementKind}'`,
+          `publishSwitchedBrowserSessionTab\\((?:this\\.)?host, \\{\\s*placementKind: '${placementKind}'`,
           'g'
         )
       )
@@ -687,7 +694,7 @@ describe('browser tab-switch placement census', () => {
     const source = browserCommandsSource()
     const selected = new Set<BrowserTabSwitchPlacementKind>()
     for (const [, placementKind] of source.matchAll(
-      /publishSwitchedBrowserSessionTab\(this\.host, \{\s*placementKind: '([a-z]+)'/g
+      /publishSwitchedBrowserSessionTab\((?:this\.)?host, \{\s*placementKind: '([a-z]+)'/g
     )) {
       selected.add(placementKind as BrowserTabSwitchPlacementKind)
     }

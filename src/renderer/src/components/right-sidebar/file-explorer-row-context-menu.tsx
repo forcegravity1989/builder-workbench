@@ -1,4 +1,8 @@
-import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
+import {
+  getLocalPathOpenOwnerForRoute,
+  isLocalPathOpenBlocked,
+  showLocalPathOpenBlockedToast
+} from '@/lib/local-path-open-guard'
 import React, { useCallback } from 'react'
 import {
   Copy,
@@ -27,7 +31,7 @@ import { useAppStore } from '@/store'
 import { useShortcutLabel } from '@/hooks/useShortcutLabel'
 import { detectLanguage } from '@/lib/language-detect'
 import { openFileInBrowserTab } from '@/lib/file-preview'
-import { isLocalPathOpenBlocked, showLocalPathOpenBlockedToast } from '@/lib/local-path-open-guard'
+
 import { translate } from '@/i18n/i18n'
 import type { FileExplorerRowProps } from './FileExplorerRow'
 import {

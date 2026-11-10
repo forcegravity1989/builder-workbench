@@ -35,6 +35,10 @@ describe('ExternalChromiumBrowserProcess integration', () => {
           throw new Error('External Chromium provider did not resolve.')
         }
         const commands = provider.factory({
+          getRuntimeId: () => 'test-runtime',
+          getBrowserHostRequestRegistry: () => {
+            throw new Error('No browser host request registry')
+          },
           getAgentBrowserBridge: () => null,
           resolveWorkspaceSelector: async (selector) => ({ id: selector }),
           resolveBrowserWorkspace: async (selector) => ({ id: selector }),

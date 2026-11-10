@@ -1,5 +1,9 @@
 import type { AppState } from '@/store/types'
-import { parseExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
+import {
+  parseExecutionHostId,
+  type ExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
 import { getRepoIdFromWorktreeId } from '@/store/slices/worktree-helpers'
 import { resolveExactWorktreeRoute } from './worktree-owner-route'
@@ -260,8 +264,6 @@ export function settingsForWorktreeOperationRoute(
     ? { ...settings, activeRuntimeEnvironmentId: route.runtimeEnvironmentId }
     : ({ activeRuntimeEnvironmentId: route.runtimeEnvironmentId } as AppState['settings'])
 }
-
-import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 

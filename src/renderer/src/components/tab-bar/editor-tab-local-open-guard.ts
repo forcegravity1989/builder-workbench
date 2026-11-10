@@ -1,6 +1,6 @@
-import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
+import { getLocalPathOpenOwnerForRoute, isLocalPathOpenBlocked } from '@/lib/local-path-open-guard'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
-import { isLocalPathOpenBlocked } from '@/lib/local-path-open-guard'
+
 import { settingsForRuntimeOwner } from '@/runtime/runtime-rpc-client'
 
 export function shouldBlockEditorTabLocalOpen(

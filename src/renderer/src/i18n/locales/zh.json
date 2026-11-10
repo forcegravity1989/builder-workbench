@@ -5985,7 +5985,7 @@
         },
         "BrowserUseComputerUseNotice": {
           "15b5e680ba": "开放计算机使用",
-          "79209b37b9": "如果 cookie 导入不合适，“计算机使用”可以控制本地应用程序，并可以在适用的情况下使用现有的登录浏览器会话。安装计算机使用技能； macOS 还需要隐私权限。",
+          "79209b37b9": "如果 cookie 导入不合适，“计算机使用”可以控制本地应用程序，并可以在适用的情况下使用现有的登录浏览器会话。安装 Orca Computer Use 技能； macOS 还需要隐私权限。",
           "333984cf90": "使用现有的浏览器会话"
         },
         "BrowserUseEnableSwitch": {
@@ -10042,8 +10042,8 @@
           "legacyHelp": "手动更新此服务器一次以启用远程更新。"
         },
         "BrowserLinkRoutingSetting": {
-          "description": "在 Orca 内置浏览器中打开来自终端、Markdown 和编辑器的 http(s) 链接。{{shortcut}} 始终使用系统浏览器。",
-          "descriptionBase": "在 Orca 内置浏览器中打开来自终端、Markdown 和编辑器的 http(s) 链接。"
+          "description": "在 Orca 内置浏览器中打开 Orca 各处的 http(s) 链接。登录页面和 {{shortcut}} 始终使用系统浏览器。",
+          "descriptionBase": "在 Orca 内置浏览器中打开 Orca 各处的 http(s) 链接。登录页面仍会在系统浏览器中打开。"
         },
         "BrowserLinkRoutingModifierSetting": {
           "titleSystem": "按住 Shift 在系统浏览器中打开",
@@ -10469,7 +10469,8 @@
           "openUrlLabel": "打开网址",
           "plainClickAriaLabel": "普通点击 URL 行为",
           "plainClickDescription": "选择左键单击是显示操作、打开 URL 还是将其留给终端。 Cmd/Ctrl-单击始终直接打开。",
-          "plainClickLabel": "简单的点击"
+          "plainClickLabel": "简单的点击",
+          "title": "终端 URL 点击操作"
         }
       },
       "right": {
@@ -15115,7 +15116,8 @@
     },
     "clientHosted": {
       "unavailableHostOfflineDescription": "{{host}} 已离线。重新连接后，此页面将在此处重新加载。",
-      "unavailableOtherDesktopDescription": "此页面已在另一台桌面上打开。"
+      "unavailableOtherDesktopDescription": "此页面已在另一台桌面上打开。",
+      "unavailableDescription": "此页面目前在此桌面上不可用。"
     },
     "cookieImport": {
       "errors": {
@@ -15262,6 +15264,9 @@
       "mobile-m": "中屏手机 — 375 × 667",
       "mobile-s": "小屏手机 — 320 × 568",
       "tablet": "平板电脑 — 768 × 1024"
+    },
+    "sshRoute": {
+      "errorDescription": "此工作区中的页面通过其 SSH 主机浏览，但无法设置路由。"
     }
   },
   "runtimeRpc": {

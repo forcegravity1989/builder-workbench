@@ -316,6 +316,7 @@ describe('registerBrowserHandlers', () => {
     const result = activeTabChangedHandler(
       {
         sender: {
+          id: 91,
           isDestroyed: () => false,
           getType: () => 'window',
           getURL: () => 'file:///renderer/index.html'

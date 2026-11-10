@@ -1,7 +1,7 @@
-import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
+import { getLocalPathOpenOwnerForRoute, isLocalPathOpenBlocked } from '@/lib/local-path-open-guard'
 import { getEditorFileOperationContext } from '@/lib/editor-file-operation-owner'
 import { getFolderWorkspaceConnectionId } from '@/lib/folder-workspace-connection'
-import { isLocalPathOpenBlocked } from '@/lib/local-path-open-guard'
+
 import { getResolvedExecutionHostIdForWorktree } from '@/lib/resolved-worktree-execution-host'
 import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client'
 import type { useAppStore } from '@/store'

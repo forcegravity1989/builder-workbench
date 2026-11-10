@@ -9,7 +9,10 @@ import {
   consumeHangDetectionMarker,
   hangDetectionMarkerPath
 } from '../hang-watchdog/hang-detection-marker'
-import { browserCertificateTrustController } from '../browser/guest-lifecycle/manager/browser-manager'
+import {
+  browserCertificateTrustController,
+  browserManager
+} from '../browser/guest-lifecycle/manager/browser-manager'
 import { ensureActiveOrcaProfile } from '../orca-profiles/profile-index-store'
 import { Store, getCanonicalUserDataPath } from '../persistence'
 import { initializeBrowserClientHostId } from '../browser/client-hosts/lifecycle/browser-client-host-id'
@@ -306,8 +309,6 @@ export async function initializeReadyFoundation(): Promise<void> {
 }
 
 import { handleBrowserGuestLogin } from '../browser/guest-lifecycle/prompts/browser-http-auth-prompt'
-
-import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
 
 import { browserSiteDisplayController } from '../browser/site-settings/display/browser-site-display-controller'
 

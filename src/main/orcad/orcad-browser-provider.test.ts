@@ -106,6 +106,10 @@ describe('ExternalChromiumBrowserProcess', () => {
     )
     await processHandle.start()
     const commands = processHandle.createCommands({
+      getRuntimeId: () => 'test-runtime',
+      getBrowserHostRequestRegistry: () => {
+        throw new Error('No browser host request registry')
+      },
       getAgentBrowserBridge: () => null,
       resolveWorkspaceSelector: async (selector) => ({ id: selector }),
       resolveBrowserWorkspace: async (selector) => ({ id: selector }),

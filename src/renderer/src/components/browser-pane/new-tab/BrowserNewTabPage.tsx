@@ -3,8 +3,8 @@ import { Globe } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
-import { useRepoById } from '@/store/selectors'
-import { useWorktreeById } from '@/store/selectors'
+import { useRepoById, useWorktreeById } from '@/store/selectors'
+
 import {
   prepareBrowserHistoryEntries,
   rankBrowserTopSites

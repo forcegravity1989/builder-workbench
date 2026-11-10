@@ -1,5 +1,5 @@
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { runtimeEnvironmentSupportsCapability } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc, runtimeEnvironmentSupportsCapability } from '@/runtime/runtime-rpc-client'
+
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
 import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
 import { callHostRoute } from '@/runtime/rpc/calls/host-route-call'

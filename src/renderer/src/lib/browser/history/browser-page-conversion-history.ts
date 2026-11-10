@@ -1,7 +1,7 @@
 import type { BrowserPageConversionOrigin } from '../../../../../shared/browser-workspace-types'
 import type { BrowserPageConversionLeg } from '@/store/slices/browser/pages/browser-page-conversion'
-import '@/lib/file-preview'
 import { convertBrowserPageToWorkspaceDoc } from '@/lib/file-preview'
+
 import { useAppStore } from '@/store/index'
 
 function crossBrowserPageConversion(

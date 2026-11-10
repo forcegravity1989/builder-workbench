@@ -103,6 +103,8 @@ function createPairedRuntime() {
   // lives there — the browser command only needs the worktree id it hands the snapshot.
   internals.resolveWorktreeSelector = async () => ({ id: WT })
   internals.offscreenBrowserBackend = {
+    ownsTab: (browserPageId: string) =>
+      ['page-old', 'page-alt', 'page-new'].includes(browserPageId),
     closeTab: vi.fn(),
     createTab: vi.fn(async (options: { browserPageId?: string }) => ({
       browserPageId: options.browserPageId ?? 'page-new'

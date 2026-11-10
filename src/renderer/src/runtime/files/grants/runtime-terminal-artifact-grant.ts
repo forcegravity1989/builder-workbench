@@ -7,8 +7,8 @@ import {
   TERMINAL_PATH_IN_PLACE_FILES_RUNTIME_CAPABILITY,
   type RuntimeTerminalPathResolution
 } from '../../../../../shared/terminal/runtime-terminal-file-path'
-import { callRuntimeRpc } from '../../runtime-rpc-client'
-import { runtimeEnvironmentSupportsCapability } from '../../runtime-rpc-client'
+import { callRuntimeRpc, runtimeEnvironmentSupportsCapability } from '../../runtime-rpc-client'
+
 import { RuntimeRpcCallError } from '../../runtime-rpc-result'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
 import { toRuntimeWorktreeSelector } from '../../runtime-worktree-selector'

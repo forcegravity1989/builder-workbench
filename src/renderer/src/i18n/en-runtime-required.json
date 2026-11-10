@@ -1130,10 +1130,6 @@
           "2622126877": "Zoom level applied to newly opened browser tabs.",
           "bbeec087d3": "Applied to newly opened browser tabs."
         },
-        "BrowserLinkRoutingSetting": {
-          "description": "Open http(s) links in Orca's built-in browser — from the terminal, markdown, and the editor. {{shortcut}} always uses your system browser.",
-          "descriptionBase": "Open http(s) links in Orca's built-in browser — from the terminal, markdown, and the editor."
-        },
         "BrowserPane": {
           "4af9a17947": "kagi"
         },
@@ -1143,11 +1139,7 @@
           "d420c43729": "Imported {{value0}} cookies from {{value1}}{{value2}} into {{value3}}."
         },
         "BrowserTerminalLinkActionsSetting": {
-          "description": "Show available actions when you click a link in the terminal or a chat transcript. Turn this off to require {{modifier}}-click in the terminal.",
-          "title": "Show link actions"
-        },
-        "BrowserUseComputerUseNotice": {
-          "79209b37b9": "If cookie import is not the right fit, Computer Use can control local apps and may use existing logged-in browser sessions where applicable. Install the Computer Use skill; macOS also requires privacy permissions."
+          "description": "Show available actions when you click a link in the terminal or a chat transcript. Turn this off to require {{modifier}}-click in the terminal."
         },
         "BrowserUsePane": {
           "0289434ed6": "Enabled",
@@ -2662,8 +2654,7 @@
   },
   "browser": {
     "clientHosted": {
-      "popupBlocked": "Popup blocked: {{origin}}",
-      "unavailableDescription": "This page is attached to a different desktop or is no longer available."
+      "popupBlocked": "Popup blocked: {{origin}}"
     },
     "cookieImport": {
       "errors": {
@@ -2728,9 +2719,6 @@
     },
     "sshEgress": {
       "localChip": "This device"
-    },
-    "sshRoute": {
-      "errorDescription": "Pages in this workspace browse through its SSH host, and that connection is not available right now."
     }
   },
   "browserExtensions": {

@@ -253,7 +253,8 @@ jobs:
     name: Workbench Electron smoke
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: verify
+    # This job builds its own Workbench artifact. Run it independently so UI
+    # failures are reported alongside protocol/type failures; all gates remain required.
     # The Workbench build-time flags (WORKBENCH_SHELL / VITE_WORKBENCH_SHELL /
     # ORCA_PRODUCT_NAME) are baked by tests/e2e/global-setup.ts into the
     # electron-vite build it runs — one source for CI, macOS and Windows.

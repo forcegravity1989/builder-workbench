@@ -43,7 +43,7 @@ function createCommandsHost(): RuntimeBrowserCommandHost {
     }))
   } as unknown as AgentBrowserBridge
   return {
-    resolveWorktreeSelector: async () => ({ id: 'wt-1' }),
+    resolveWorkspaceSelector: async () => ({ id: 'wt-1' }),
     getAgentBrowserBridge: () => bridge,
     getRuntimeBrowserPageRegistry: () => runtimeBrowserPages,
     getAvailableAuthoritativeWindow: vi.fn(() => null),
@@ -54,7 +54,12 @@ function createCommandsHost(): RuntimeBrowserCommandHost {
 describe('RuntimeBrowserCommands screencast fanout', () => {
   beforeEach(() => {
     webContentsFromId.mockReset()
-    webContentsFromId.mockReturnValue({ isDestroyed: () => false })
+    webContentsFromId.mockReturnValue({
+      id: 100,
+      isDestroyed: () => false,
+      setBackgroundThrottling: vi.fn(),
+      capturePage: vi.fn(async () => undefined)
+    })
     startBrowserScreencast.mockReset()
   })
 
@@ -91,8 +96,8 @@ describe('RuntimeBrowserCommands screencast fanout', () => {
     const frame = new Uint8Array([1, 2, 3])
     expect(startBrowserScreencast).toHaveBeenCalledOnce()
     expect(startBrowserScreencast.mock.calls[0][1].onFrame(frame)).toBe(true)
-    expect(firstSend).toHaveBeenCalledWith(frame)
-    expect(secondSend).toHaveBeenCalledWith(frame)
+    expect(firstSend).toHaveBeenCalledWith(frame, { dropWhenBacklogged: true })
+    expect(secondSend).toHaveBeenCalledWith(frame, { dropWhenBacklogged: true })
     expect(updateViewport).toHaveBeenLastCalledWith(
       expect.objectContaining({ viewportWidth: 800, viewportHeight: 600 })
     )
@@ -186,12 +191,12 @@ describe('RuntimeBrowserCommands screencast fanout', () => {
       { sendBinary: joinerSend }
     )
 
-    expect(creatorSend).toHaveBeenCalledWith(snapshot)
-    expect(joinerSend).toHaveBeenCalledWith(snapshot)
+    expect(creatorSend).toHaveBeenCalledWith(snapshot, { dropWhenBacklogged: true })
+    expect(joinerSend).toHaveBeenCalledWith(snapshot, { dropWhenBacklogged: true })
     joinerSend.mockClear()
     gateOpen = true
     joiner.flushPendingFrame()
-    expect(joinerSend).toHaveBeenCalledExactlyOnceWith(snapshot)
+    expect(joinerSend).toHaveBeenCalledExactlyOnceWith(snapshot, { dropWhenBacklogged: true })
 
     // The accepted replay is not retained, so a second flush cannot duplicate it.
     joinerSend.mockClear()
@@ -291,7 +296,12 @@ describe('RuntimeBrowserCommands screencast fanout', () => {
 describe('RuntimeBrowserCommands screencast ghost eviction', () => {
   beforeEach(() => {
     webContentsFromId.mockReset()
-    webContentsFromId.mockReturnValue({ isDestroyed: () => false })
+    webContentsFromId.mockReturnValue({
+      id: 100,
+      isDestroyed: () => false,
+      setBackgroundThrottling: vi.fn(),
+      capturePage: vi.fn(async () => undefined)
+    })
     startBrowserScreencast.mockReset()
   })
 
