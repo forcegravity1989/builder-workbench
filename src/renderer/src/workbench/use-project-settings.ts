@@ -270,7 +270,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
       return
     }
     toast.error('项目信息操作失败', {
-      id: `project-info:${key}`,
+      id: `project-info-error:${key}`,
       description: `${error}。可重试，或开会话让模型处理。`,
       duration: 60_000,
       closeButton: true,
@@ -311,14 +311,14 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
       }
     })
     return () => {
-      toast.dismiss(`project-info:${key}`)
+      toast.dismiss(`project-info-error:${key}`)
     }
     // The toast captures this failure and its draft; retry resolves the latest operation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, key, agent])
   useEffect(() => {
     if (notice) {
-      toast.success(notice, { id: `project-info:${key}` })
+      toast.success(notice, { id: `project-info-notice:${key}` })
     }
   }, [notice, key])
   retry.current = async () => {

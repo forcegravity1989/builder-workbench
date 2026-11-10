@@ -189,6 +189,12 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await review.getByRole('button', { name: '确认保存', exact: true }).click()
   await expect(review).not.toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('已保存到本机，尚未共享', { exact: true })).toBeVisible()
+  const savedNotice = page
+    .locator('[data-sonner-toast]')
+    .filter({ hasText: '已保存到本机，尚未共享' })
+  await expect(savedNotice).not.toContainText('项目信息已变化')
+  await expect(savedNotice.getByRole('button', { name: '重试', exact: true })).toHaveCount(0)
+  await expect(savedNotice.getByRole('button', { name: '开会话处理', exact: true })).toHaveCount(0)
   const saved = readFileSync(file, 'utf8')
   for (const preserved of [
     'owner = "负责人甲"',
