@@ -46,7 +46,17 @@ async function capture(page: Page, info: TestInfo, name: string): Promise<void> 
   await page.screenshot({ path: info.outputPath(`${name}.png`) })
 }
 
-async function requireRealPasswordStorage(app: ElectronApplication, info: TestInfo): Promise<void> {
+async function recordEvidence(info: TestInfo, name: string, value: unknown): Promise<void> {
+  const evidencePath = info.outputPath(`${name}.json`)
+  writeFileSync(evidencePath, `${JSON.stringify(value, null, 2)}\n`)
+  await info.attach(name, { path: evidencePath, contentType: 'application/json' })
+}
+
+async function requireRealPasswordStorage(
+  app: ElectronApplication,
+  info: TestInfo,
+  phase: 'before-restart' | 'after-restart'
+): Promise<void> {
   const storage = await app.evaluate(({ app, safeStorage }) => ({
     available: safeStorage.isEncryptionAvailable(),
     useMockKeychain: app.commandLine.hasSwitch('use-mock-keychain'),
@@ -56,10 +66,7 @@ async function requireRealPasswordStorage(app: ElectronApplication, info: TestIn
     electronVersion: process.versions.electron,
     chromiumVersion: process.versions.chrome
   }))
-  await info.attach('browser-password-storage', {
-    body: JSON.stringify(storage),
-    contentType: 'application/json'
-  })
+  await recordEvidence(info, `browser-password-storage-${phase}`, storage)
   expect(
     storage.useMockKeychain,
     'Mock keychains cannot establish OS-backed password storage'
@@ -103,6 +110,9 @@ async function importSyntheticPassword(page: Page, app: ElectronApplication, inf
   await page.getByRole('menuitem', { name: /CSV/ }).click()
   await expect(passwords.getByText(ACCOUNT, { exact: true })).toBeVisible()
   await expect(passwords.getByText(SITE, { exact: true })).toBeVisible()
+  await expect(page.getByRole('menu')).toHaveCount(0)
+  await passwords.scrollIntoViewIfNeeded()
+  await expect(passwords.getByText(ACCOUNT, { exact: true })).toBeInViewport({ ratio: 1 })
   await capture(page, info, 'browser-password-csv-imported')
 
   const defaultLabel = await page.evaluate(() => {
@@ -171,7 +181,13 @@ async function guestHeading(page: Page, id: string): Promise<string | null> {
   }, id)
 }
 
-async function expectBrowserInPane(page: Page, id: string, groupId: string): Promise<void> {
+async function expectBrowserInPane(
+  page: Page,
+  id: string,
+  groupId: string,
+  info: TestInfo,
+  side: 'left' | 'right'
+): Promise<void> {
   const pane = page.locator(`[data-tab-group-body-id="${groupId}"]`)
   const overlay = slot(page, id)
   const viewport = overlay.locator('[data-browser-page-viewport-id]')
@@ -204,6 +220,35 @@ async function expectBrowserInPane(page: Page, id: string, groupId: string): Pro
     expect(content.x + content.width).toBeLessThanOrEqual(body.x + body.width + 2)
     expect(content.y + content.height).toBeLessThanOrEqual(body.y + body.height + 2)
   }).toPass({ timeout: 10_000 })
+  await expect(async () => {
+    const viewportSize = await guest.evaluate(async (element) => {
+      const webview = element as Electron.WebviewTag
+      const rendered = (await webview.executeJavaScript(`new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Guest did not paint')), 2000)
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          clearTimeout(timeout)
+          resolve({ width: innerWidth, height: innerHeight, dpr: devicePixelRatio })
+        }))
+      })`)) as { width: number; height: number; dpr: number }
+      const bounds = webview.getBoundingClientRect()
+      return {
+        rendered,
+        width: bounds.width,
+        height: bounds.height,
+        hostDpr: window.devicePixelRatio,
+        zoomLevel: webview.getZoomLevel(),
+        zoomFactor: webview.getZoomFactor()
+      }
+    })
+    await recordEvidence(info, `browser-split-viewport-${side}`, viewportSize)
+    const ratio = viewportSize.rendered.dpr / viewportSize.hostDpr
+    expect(Math.abs(viewportSize.rendered.width * ratio - viewportSize.width)).toBeLessThanOrEqual(
+      2
+    )
+    expect(
+      Math.abs(viewportSize.rendered.height * ratio - viewportSize.height)
+    ).toBeLessThanOrEqual(2)
+  }).toPass({ timeout: 10_000 })
 }
 
 export async function verifyBrowserSync(
@@ -212,7 +257,7 @@ export async function verifyBrowserSync(
   restart: Restart,
   info: TestInfo
 ): Promise<void> {
-  await requireRealPasswordStorage(app, info)
+  await requireRealPasswordStorage(app, info, 'before-restart')
   await importSyntheticPassword(page, app, info)
   // Setup a native browser pane; assertions below read the actual rendered guest and split panes.
   await page.evaluate(() => window.__store!.getState().closeSettingsPage())
@@ -241,8 +286,8 @@ export async function verifyBrowserSync(
       expect(right).not.toBeNull()
       expect(right!.x).toBeGreaterThan(left!.x + left!.width - 2)
     }).toPass()
-    await expectBrowserInPane(page, first.id, first.groupId)
-    await expectBrowserInPane(page, second.id, second.groupId)
+    await expectBrowserInPane(page, first.id, first.groupId, info, 'left')
+    await expectBrowserInPane(page, second.id, second.groupId, info, 'right')
     await capture(page, info, 'browser-approved-session-split')
 
     const beforePid = app.process().pid
@@ -257,7 +302,7 @@ export async function verifyBrowserSync(
     ).toBeVisible({ timeout: 30_000 })
     await expect(slot(after.page, second.id).getByRole('button', { name: PROCEED })).toBeVisible()
     await capture(after.page, info, 'browser-certificate-restart-prompts-again')
-    await requireRealPasswordStorage(after.electronApp, info)
+    await requireRealPasswordStorage(after.electronApp, info, 'after-restart')
     await openBrowserSettings(after.page)
     await expect(profileRow(after.page, PROFILE)).toContainText(/Active|使用中|已启用|当前|活动/)
     const passwords = after.page.locator('#browser-passwords')
@@ -267,18 +312,18 @@ export async function verifyBrowserSync(
       .click()
     await expect(after.page.locator('#browser-password-password')).toHaveValue(PASSWORD)
     await after.page.keyboard.press('Escape')
+    await expect(after.page.locator('[data-slot="dialog-overlay"]')).toHaveCount(0)
+    await passwords.scrollIntoViewIfNeeded()
+    await expect(passwords.getByText(ACCOUNT, { exact: true })).toBeInViewport({ ratio: 1 })
     await capture(after.page, info, 'browser-profile-password-after-process-restart')
-    await info.attach('browser-process-restart', {
-      body: JSON.stringify({
-        beforePid,
-        afterPid,
-        sameUserData: true,
-        certificateApprovalReset: true,
-        passwordSource: 'synthetic CSV only',
-        platform: process.platform,
-        sourceHead: process.env.GITHUB_SHA
-      }),
-      contentType: 'application/json'
+    await recordEvidence(info, 'browser-process-restart', {
+      beforePid,
+      afterPid,
+      sameUserData: true,
+      certificateApprovalReset: true,
+      passwordSource: 'synthetic CSV only',
+      platform: process.platform,
+      sourceHead: process.env.GITHUB_SHA
     })
   } finally {
     await server.close()
