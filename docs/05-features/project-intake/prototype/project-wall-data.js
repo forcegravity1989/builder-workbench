@@ -154,6 +154,7 @@
     },
     {
       id: 'shun',
+      group: true,
       name: 'shunfenger',
       builder: '',
       brief: '日常工具与小实验。',

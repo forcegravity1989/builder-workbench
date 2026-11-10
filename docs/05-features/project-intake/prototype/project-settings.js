@@ -10,11 +10,24 @@
   }
   W.toast = (message) => {
     clearTimeout(toastTimer)
+    W.$('toast').classList.remove('failure-toast')
+    W.$('toast').setAttribute('role', 'status')
     W.$('toast').textContent = message
     W.$('toast').hidden = false
     toastTimer = setTimeout(() => {
       W.$('toast').hidden = true
     }, 3000)
+  }
+  const submissionFailed = (message) => {
+    clearTimeout(toastTimer)
+    W.closeModal()
+    s.savedDrafts[s.config] = { ...s.draft }
+    s.failure = { id: s.config, message }
+    const toast = W.$('toast')
+    toast.classList.add('failure-toast')
+    toast.setAttribute('role', 'alert')
+    toast.innerHTML = `<div class="notice-heading"><strong>项目信息未提交</strong>${W.button('dismiss-notice', 'x', '关闭通知')}</div><p>${W.esc(message)} 输入已保留，可开会话让模型协助处理。</p><div class="notice-actions"><button class="btn btn-secondary" data-action="retry-info">重试</button><button class="btn btn-primary" data-action="repair-help">开会话处理</button></div>`
+    toast.hidden = false
   }
   const clearConfig = () => {
     s.config = null
@@ -29,7 +42,7 @@
     s.pendingLeave = action
     W.modal(
       '还有未保存的变更',
-      '<p>离开会丢弃本次共享信息修改。</p><footer class="modal-foot"><button class="btn btn-secondary" data-action="close-dialog">继续编辑</button><button class="btn btn-ghost" data-action="discard">丢弃并离开</button></footer>'
+      '<p>离开会丢弃本次项目信息修改。</p><footer class="modal-foot"><button class="btn btn-secondary" data-action="close-dialog">继续编辑</button><button class="btn btn-ghost" data-action="discard">丢弃并离开</button></footer>'
     )
   }
   const goWall = () =>
@@ -72,11 +85,7 @@
   const openRepo = (target, id, trigger) => {
     closeRepoMenu()
     const p = W.project(id)
-    const repos = W.repoSlots(p).filter(
-      (repo) =>
-        target !== 'remove-repo' ||
-        (repo.host || (p.hosts.includes('local') ? 'local' : p.hosts[0])) === 'local'
-    )
+    const repos = W.repoSlots(p)
     if (repos.length === 1) {
       selectRepo(target, id, repos[0])
       return
@@ -108,19 +117,29 @@
     }
     goReuse('workspace', id)
   }
-  const openConfig = (id, trigger) =>
+  const memberAction = (target, key) => {
+    const [id, repoId] = key.split('::')
+    const repo = W.repoSlots(W.project(id)).find((item) => item.id === repoId)
+    if (repo) {
+      selectRepo(target, id, repo)
+    }
+  }
+  const openConfig = (id, trigger, afterOpen) =>
     guarded(() => {
       const p = W.project(id)
       if (!p) {
         return
       }
       s.config = id
-      s.editing = false
-      s.draft = Object.fromEntries(W.fields.map(([key]) => [key, p[key] || '']))
+      s.editing = Boolean(s.savedDrafts[id])
+      s.draft = s.savedDrafts[id]
+        ? { ...s.savedDrafts[id] }
+        : Object.fromEntries(W.fields.map(([key]) => [key, p[key] || '']))
       configTrigger = trigger
       W.closeModal()
       W.render()
       W.$('project-visibility').focus()
+      afterOpen?.()
     })
   const closeConfig = () =>
     guarded(() => {
@@ -150,6 +169,11 @@
       mode: 'wall',
       reuse: null,
       pendingLeave: null,
+      savedDrafts: {},
+      failure: null,
+      failureSimulated: false,
+      groupExample: null,
+      sidebarCollapsed: false,
       updated: W.updateTime(),
       hostReadFailed: scenario === 'error'
     })
@@ -163,6 +187,7 @@
       })
     }
     if (scenario === 'merged') {
+      W.project('bw').reviewState = 'merged'
       W.project('bw').pending = {
         ...Object.fromEntries(W.fields.map(([key]) => [key, W.project('bw')[key] || ''])),
         builder: '新的项目负责人'
@@ -181,10 +206,19 @@
     stage: (id, el) => goReuse(el.dataset.target, id),
     reuse: goReuse,
     'workspace-row': () => goReuse('workspace'),
+    'native-menu': (id) =>
+      goReuse(W.project(id).group ? 'native-group-menu' : 'native-project-menu', id),
+    'native-create': (id) => goReuse('native-create', id),
+    'repo-workspace': (id) => memberAction('workspace', id),
+    'repo-create': (id) => memberAction('native-create', id),
+    'repo-menu': (id) => memberAction('native-project-menu', id),
+    'sidebar-collapse': () => {
+      s.sidebarCollapsed = !s.sidebarCollapsed
+      W.renderSidebar()
+    },
     config: openConfig,
     'open-repo': (id, el) => openRepo('open-repo', id, el),
     'repo-settings': (id, el) => openRepo('repo-settings', id, el),
-    'remove-repo': (id, el) => openRepo('remove-repo', id, el),
     'choose-repo': (index) => {
       if (repoMenu) {
         const { target, id, repos } = repoMenu
@@ -222,6 +256,8 @@
     discard: () => {
       const action = s.pendingLeave
       s.pendingLeave = null
+      delete s.savedDrafts[s.config]
+      W.$('toast').hidden = true
       clearConfig()
       W.closeModal()
       action?.()
@@ -241,46 +277,133 @@
         W.$('field-name').focus()
       }
     },
-    'reset-draft': () => {
+    'cancel-edit': () => {
       s.draft = Object.fromEntries(W.fields.map(([key]) => [key, W.project(s.config)[key] || '']))
+      delete s.savedDrafts[s.config]
+      s.editing = false
+      W.$('toast').hidden = true
+      W.closeModal()
       W.renderConfig()
     },
     'review-info': () => {
-      if (W.available(W.project(s.config)) && W.dirty() && s.draft.name.trim()) {
+      if (W.dirty() && s.draft.name.trim()) {
         W.reviewInfo()
       }
     },
     'save-info': () => {
-      const p = W.project(s.config)
-      if (!W.available(p)) {
-        W.$('info-error').hidden = false
-        W.$('info-error').textContent = '主机已离线，修改已保留。恢复连接后再提交。'
+      if (!W.dirty() || !s.draft.name.trim()) {
+        W.closeModal()
+        W.$('field-name')?.focus()
         return
       }
-      if (s.scenario === 'info-failure') {
-        W.$('info-error').hidden = false
-        W.$('info-error').textContent = '提交失败，修改已保留。检查连接后重试。'
+      const p = W.project(s.config)
+      if (!W.available(p)) {
+        submissionFailed('项目所在主机已离线。')
+        return
+      }
+      if (s.scenario === 'info-failure' && !s.failureSimulated) {
+        s.failureSimulated = true
+        submissionFailed('未能连接代码托管服务。')
         return
       }
       const values = Object.fromEntries(W.fields.map(([key]) => [key, s.draft[key].trim()]))
       if (p.remote) {
         p.pending = values
+        p.reviewState = 'open'
       } else {
         Object.assign(p, values)
       }
       s.editing = false
+      delete s.savedDrafts[p.id]
       s.draft = Object.fromEntries(W.fields.map(([key]) => [key, p[key] || '']))
       W.closeModal()
       W.render()
-      W.toast(p.remote ? '项目信息已提交，等待合入' : '已保存到本机')
+      W.toast(p.remote ? '项目信息已提交评审' : '已保存到本机')
+    },
+    'dismiss-notice': () => {
+      W.$('toast').hidden = true
+    },
+    'retry-info': () => {
+      if (!s.failure) {
+        return
+      }
+      if (s.config === s.failure.id) {
+        if (W.reviewInfo()) {
+          W.$('toast').hidden = true
+        }
+      } else {
+        openConfig(s.failure.id, undefined, () => {
+          if (W.reviewInfo()) {
+            W.$('toast').hidden = true
+          }
+        })
+      }
+    },
+    'repair-help': () => {
+      if (!s.failure) {
+        return
+      }
+      const id = s.failure.id
+      const launch = () => {
+        s.active = id
+        clearConfig()
+        s.mode = 'reuse'
+        s.reuse = 'repair-session'
+        s.repoContext = ''
+        W.$('toast').hidden = true
+        W.closeModal()
+        W.render()
+      }
+      if (s.config === id) {
+        s.savedDrafts[id] = { ...s.draft }
+        launch()
+      } else {
+        guarded(launch)
+      }
+    },
+    'return-draft': () => {
+      s.mode = 'wall'
+      s.reuse = null
+      openConfig(s.failure.id)
+    },
+    'view-review': () => goReuse('charter-pr'),
+    'simulate-reviewed': () => {
+      W.project(s.config).reviewState = 'merged'
+      W.renderConfig()
     },
     'apply-merged': () => {
       const p = W.project(s.config)
       Object.assign(p, p.pending)
       delete p.pending
+      delete p.reviewState
       s.draft = Object.fromEntries(W.fields.map(([key]) => [key, p[key] || '']))
       W.render()
       W.toast('原型演示：已更新到合入后的信息')
+    },
+    'simulate-ungroup': () => {
+      const p = W.project('shun')
+      s.groupExample = structuredClone(p)
+      const members = W.repoSlots(p).map((repo) => ({
+        ...p,
+        ...repo,
+        group: false,
+        repos: undefined,
+        hosts: [repo.host || 'local']
+      }))
+      s.projects.splice(s.projects.indexOf(p), 1, ...members)
+      s.active = null
+      s.mode = 'wall'
+      W.render()
+    },
+    'simulate-group': () => {
+      const p = s.groupExample
+      const ids = W.repoSlots(p).map((repo) => repo.id)
+      s.projects = s.projects.filter((project) => !ids.includes(project.id))
+      s.projects.push(p)
+      s.groupExample = null
+      s.active = null
+      s.mode = 'wall'
+      W.render()
     },
     'simulate-add': () => {
       const count = s.projects.filter((p) => p.id.startsWith('new-')).length + 1
@@ -323,11 +446,6 @@
     ) {
       closeRepoMenu()
     }
-    document.querySelectorAll('.project-menu[open]').forEach((menu) => {
-      if (!menu.contains(event.target)) {
-        menu.open = false
-      }
-    })
     const el = event.target.closest('[data-action]')
     if (!el || el.disabled) {
       return
@@ -346,6 +464,9 @@
       W.renderGrid()
     } else if (el.id.startsWith('field-') && s.draft) {
       s.draft[el.id.slice(6)] = el.value
+      if (s.savedDrafts[s.config]) {
+        s.savedDrafts[s.config] = { ...s.draft }
+      }
       W.renderConfigFooter()
     }
   })
@@ -389,10 +510,9 @@
       trigger.focus()
       return
     }
-    if (event.key === 'Escape' && document.querySelector('.project-menu[open]')) {
-      const menu = document.querySelector('.project-menu[open]')
-      menu.open = false
-      menu.querySelector('summary').focus()
+    if (event.key === 'Escape' && W.$('info-confirm').matches(':popover-open')) {
+      W.closeInfoReview()
+      event.preventDefault()
       return
     }
     if (event.key === 'Escape' && !W.$('dialog').open && s.config) {
