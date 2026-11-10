@@ -23,6 +23,7 @@ import {
 } from './github-package-ops'
 import { PackagePipelineError } from './package-pipeline-error'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
+import { withPhaseSpan } from './workbench-phase-observability'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost,
@@ -135,69 +136,100 @@ export function packagePipelineService(runtime: PackageRuntimeHost): PackagePipe
 
   return {
     async list({ scope }): Promise<PackagePipelineCatalog> {
-      assertLocalHost(scope)
-      const target = await resolveTarget(scope)
-      if (isCodeHubGitRemote(target.identity)) {
-        return { scope, pipelines: await listCloudDragonPipelines() }
-      }
-      const repo = resolveGitHubRepo(target.identity)
-      if (!repo) {
-        throw new PackagePipelineError('no-remote', '认不出远端的仓库身份，无法列出出包流水线')
-      }
-      return { scope, pipelines: await listGitHubPipelines(githubContext(target, repo)) }
+      return withPhaseSpan('workbench.package.list', async (span, mark) => {
+        mark('resolve')
+        assertLocalHost(scope)
+        const target = await resolveTarget(scope)
+        mark('provider')
+        if (isCodeHubGitRemote(target.identity)) {
+          span.setAttribute('package.provider', 'codehub')
+          return { scope, pipelines: await listCloudDragonPipelines() }
+        }
+        span.setAttribute('package.provider', 'github')
+        const repo = resolveGitHubRepo(target.identity)
+        if (!repo) {
+          throw new PackagePipelineError('no-remote', '认不出远端的仓库身份，无法列出出包流水线')
+        }
+        return { scope, pipelines: await listGitHubPipelines(githubContext(target, repo)) }
+      })
     },
 
     async latest({ scope, pipeline }): Promise<PackageLatest | null> {
-      assertLocalHost(scope)
-      const target = await resolveTarget(scope)
-      if (isCodeHubGitRemote(target.identity)) {
-        return readCloudDragonLatest(pipeline)
-      }
-      const repo = resolveGitHubRepo(target.identity)
-      if (!repo) {
-        return null
-      }
-      return readGitHubLatest(githubContext(target, repo))
+      return withPhaseSpan('workbench.package.latest', async (span, mark) => {
+        mark('resolve')
+        assertLocalHost(scope)
+        const target = await resolveTarget(scope)
+        mark('provider')
+        if (isCodeHubGitRemote(target.identity)) {
+          span.setAttribute('package.provider', 'codehub')
+          return readCloudDragonLatest(pipeline)
+        }
+        span.setAttribute('package.provider', 'github')
+        const repo = resolveGitHubRepo(target.identity)
+        if (!repo) {
+          return null
+        }
+        return readGitHubLatest(githubContext(target, repo))
+      })
     },
 
     async launch({ scope, pipeline }): Promise<PackageLaunchReceipt> {
-      assertLocalHost(scope)
-      if (launchInFlight) {
-        throw new PackagePipelineError('launch-busy', '已有一次流水线启动正在进行，请稍候')
-      }
-      const run = (async () => {
-        const target = await resolveTarget(scope)
-        if (isCodeHubGitRemote(target.identity)) {
-          await launchCloudDragonPipeline(pipeline)
-        } else {
-          const repo = resolveGitHubRepo(target.identity)
-          if (!repo) {
-            throw new PackagePipelineError('no-remote', '认不出远端的仓库身份，无法启动出包流水线')
-          }
-          const ref = await currentBranch(target)
-          await launchGitHubPipeline(githubContext(target, repo), pipeline, ref)
+      // Why span (Issue #553 C 档): launch = scope/remote resolve → branch read
+      // → provider pipeline start; the phases show where a stuck 出包 hangs.
+      return withPhaseSpan('workbench.package.launch', async (span, mark) => {
+        mark('resolve')
+        assertLocalHost(scope)
+        if (launchInFlight) {
+          throw new PackagePipelineError('launch-busy', '已有一次流水线启动正在进行，请稍候')
         }
-        return { pipeline, launchedAt: new Date().toISOString() }
-      })()
-      launchInFlight = run
-      try {
-        return await run
-      } finally {
-        launchInFlight = null
-      }
+        const run = (async () => {
+          const target = await resolveTarget(scope)
+          mark('provider')
+          if (isCodeHubGitRemote(target.identity)) {
+            span.setAttribute('package.provider', 'codehub')
+            await launchCloudDragonPipeline(pipeline)
+          } else {
+            span.setAttribute('package.provider', 'github')
+            const repo = resolveGitHubRepo(target.identity)
+            if (!repo) {
+              throw new PackagePipelineError(
+                'no-remote',
+                '认不出远端的仓库身份，无法启动出包流水线'
+              )
+            }
+            mark('branch')
+            const ref = await currentBranch(target)
+            mark('launch')
+            await launchGitHubPipeline(githubContext(target, repo), pipeline, ref)
+          }
+          return { pipeline, launchedAt: new Date().toISOString() }
+        })()
+        launchInFlight = run
+        try {
+          return await run
+        } finally {
+          launchInFlight = null
+        }
+      })
     },
 
     async download({ scope, pipeline, directory }): Promise<PackageDownloadReceipt> {
-      assertLocalHost(scope)
-      const target = await resolveTarget(scope)
-      if (isCodeHubGitRemote(target.identity)) {
-        return downloadCloudDragonPackage(pipeline, directory)
-      }
-      const repo = resolveGitHubRepo(target.identity)
-      if (!repo) {
-        throw new PackagePipelineError('no-remote', '认不出远端的仓库身份，无法下载制品包')
-      }
-      return downloadGitHubPackage(githubContext(target, repo), directory)
+      return withPhaseSpan('workbench.package.download', async (span, mark) => {
+        mark('resolve')
+        assertLocalHost(scope)
+        const target = await resolveTarget(scope)
+        mark('provider')
+        if (isCodeHubGitRemote(target.identity)) {
+          span.setAttribute('package.provider', 'codehub')
+          return downloadCloudDragonPackage(pipeline, directory)
+        }
+        span.setAttribute('package.provider', 'github')
+        const repo = resolveGitHubRepo(target.identity)
+        if (!repo) {
+          throw new PackagePipelineError('no-remote', '认不出远端的仓库身份，无法下载制品包')
+        }
+        return downloadGitHubPackage(githubContext(target, repo), directory)
+      })
     }
   }
 }

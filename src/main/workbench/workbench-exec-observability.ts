@@ -19,10 +19,11 @@ import { ghExecFileAsync, type GhExecOptions } from '../git/command-runner/gh-ex
 export type BwExecResult = { stdout: string; stderr: string }
 
 // Same shape as the skill-observability precedent: exec labels are stable
-// machine tokens (subcommands, binary basenames), not paths or arguments.
+// machine tokens (subcommands, binary basenames, phase names), not paths or
+// arguments. Exported so the C 档 phase helper shares one regex.
 const SAFE_LABEL = /^[a-z0-9][a-z0-9._-]{0,63}$/i
 
-function safeLabel(value: string | undefined, fallback: string): string {
+export function safeLabel(value: string | undefined, fallback: string): string {
   return value && SAFE_LABEL.test(value) ? value : fallback
 }
 

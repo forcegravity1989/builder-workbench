@@ -1,6 +1,7 @@
 import { parseWslPath } from '../wsl'
 import { getOwnerRepo, ghRepoExecOptions, githubRepoContext } from '../github/gh-utils'
 import { bwGhExecFileAsync } from './workbench-exec-observability'
+import { withPhaseSpan } from './workbench-phase-observability'
 import { githubHostExecOptions } from '../github/github-api-repository'
 import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
 import { isCodeHubGitRemote } from '../../shared/codehub'
@@ -39,85 +40,95 @@ export async function readReleaseStatus(
   runtime: Parameters<typeof nativeWorkbenchWorkspaceHost>[0],
   params: ReleaseStatusRequest
 ): Promise<ReleaseStatusResult> {
-  const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))
-  const { repo } = await resolver.resolve({
-    repoId: params.repoId,
-    worktreeId: params.worktreeId,
-    hostId: params.hostId
-  })
-  // CodeHub has no verified Release read-back path; an unverified ability is
-  // surfaced as unreadable rather than approximated with task reads.
-  if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
-    return { state: 'unknown', reason: '此来源的发布状态暂无法读回' }
-  }
-  const wslDistro = repo.connectionId ? undefined : parseWslPath(repo.path)?.distro
-  const localGitOptions = wslDistro ? { wslDistro } : {}
-  const ownerRepo = await getOwnerRepo(repo.path, repo.connectionId, localGitOptions)
-  if (!ownerRepo) {
-    return { state: 'unknown', reason: '未解析项目的 GitHub 来源，无法读取发布状态' }
-  }
-  const ghOptions = {
-    ...ghRepoExecOptions(githubRepoContext(repo.path, repo.connectionId, localGitOptions)),
-    ...githubHostExecOptions(ownerRepo)
-  }
-  if (repositoryRateLimitGuard(ownerRepo, 'core', ghOptions).blocked) {
-    return { state: 'unknown', reason: 'GitHub 速率限制中，发布状态暂不可读' }
-  }
-  try {
-    noteRepositoryRateLimitSpend(ownerRepo, 'core', 1, ghOptions)
-    const { stdout } = await bwGhExecFileAsync(
-      [
-        'api',
-        `repos/${ownerRepo.owner}/${ownerRepo.repo}/releases/tags/${encodeURIComponent(
-          params.release.tag
-        )}`
-      ],
-      ghOptions
-    )
-    const parsed = JSON.parse(stdout) as RestRelease
-    if (typeof parsed !== 'object' || parsed === null) {
-      return { state: 'unknown', reason: 'provider 返回了意外的 Release 形状' }
+  // Why span (Issue #553 C 档): release read-back chains scope resolve →
+  // owner resolve → provider read(s); the phases separate "which hop was
+  // slow/unreadable" without touching the honest unknown-state contract.
+  return withPhaseSpan('workbench.release.status', async (span, mark) => {
+    mark('scope')
+    const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))
+    const { repo } = await resolver.resolve({
+      repoId: params.repoId,
+      worktreeId: params.worktreeId,
+      hostId: params.hostId
+    })
+    mark('owner')
+    // CodeHub has no verified Release read-back path; an unverified ability is
+    // surfaced as unreadable rather than approximated with task reads.
+    if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
+      span.setAttribute('release.provider', 'codehub')
+      return { state: 'unknown', reason: '此来源的发布状态暂无法读回' }
     }
-    const url = typeof parsed.html_url === 'string' && parsed.html_url ? parsed.html_url : null
-    const publishedAt =
-      typeof parsed.published_at === 'string' && parsed.published_at ? parsed.published_at : null
-    const assets = Array.isArray(parsed.assets)
-      ? parsed.assets
-          .map((asset) => (typeof asset?.name === 'string' ? asset.name : ''))
-          .filter(Boolean)
-      : []
-    if (!url || !publishedAt) {
-      return { state: 'unknown', reason: 'provider 返回的 Release 缺少地址或发布时间' }
+    span.setAttribute('release.provider', 'github')
+    const wslDistro = repo.connectionId ? undefined : parseWslPath(repo.path)?.distro
+    const localGitOptions = wslDistro ? { wslDistro } : {}
+    const ownerRepo = await getOwnerRepo(repo.path, repo.connectionId, localGitOptions)
+    if (!ownerRepo) {
+      return { state: 'unknown', reason: '未解析项目的 GitHub 来源，无法读取发布状态' }
     }
-    return {
-      state: 'published',
-      publishedAt,
-      url,
-      assets,
-      checkedAt: new Date().toISOString()
+    mark('read')
+    const ghOptions = {
+      ...ghRepoExecOptions(githubRepoContext(repo.path, repo.connectionId, localGitOptions)),
+      ...githubHostExecOptions(ownerRepo)
     }
-  } catch (reason) {
-    if (isNotFound(reason)) {
-      // A 404 here is ambiguous: the Release may be missing, or the repo may
-      // be unreachable (renamed/deleted, lost private scope — GitHub answers
-      // 404 for both). Probe the repo once so "missing" is only claimed when
-      // the repo itself answers; otherwise this is no data, not a reading.
-      try {
-        noteRepositoryRateLimitSpend(ownerRepo, 'core', 1, ghOptions)
-        await bwGhExecFileAsync(['api', `repos/${ownerRepo.owner}/${ownerRepo.repo}`], ghOptions)
-        return { state: 'missing', checkedAt: new Date().toISOString() }
-      } catch (repoReason) {
-        return {
-          state: 'unknown',
-          reason: `发布状态读取失败：仓库不可达（${
-            repoReason instanceof Error ? repoReason.message : String(repoReason)
-          }）`
+    if (repositoryRateLimitGuard(ownerRepo, 'core', ghOptions).blocked) {
+      return { state: 'unknown', reason: 'GitHub 速率限制中，发布状态暂不可读' }
+    }
+    try {
+      noteRepositoryRateLimitSpend(ownerRepo, 'core', 1, ghOptions)
+      const { stdout } = await bwGhExecFileAsync(
+        [
+          'api',
+          `repos/${ownerRepo.owner}/${ownerRepo.repo}/releases/tags/${encodeURIComponent(
+            params.release.tag
+          )}`
+        ],
+        ghOptions
+      )
+      const parsed = JSON.parse(stdout) as RestRelease
+      if (typeof parsed !== 'object' || parsed === null) {
+        return { state: 'unknown', reason: 'provider 返回了意外的 Release 形状' }
+      }
+      const url = typeof parsed.html_url === 'string' && parsed.html_url ? parsed.html_url : null
+      const publishedAt =
+        typeof parsed.published_at === 'string' && parsed.published_at ? parsed.published_at : null
+      const assets = Array.isArray(parsed.assets)
+        ? parsed.assets
+            .map((asset) => (typeof asset?.name === 'string' ? asset.name : ''))
+            .filter(Boolean)
+        : []
+      if (!url || !publishedAt) {
+        return { state: 'unknown', reason: 'provider 返回的 Release 缺少地址或发布时间' }
+      }
+      return {
+        state: 'published',
+        publishedAt,
+        url,
+        assets,
+        checkedAt: new Date().toISOString()
+      }
+    } catch (reason) {
+      if (isNotFound(reason)) {
+        // A 404 here is ambiguous: the Release may be missing, or the repo may
+        // be unreachable (renamed/deleted, lost private scope — GitHub answers
+        // 404 for both). Probe the repo once so "missing" is only claimed when
+        // the repo itself answers; otherwise this is no data, not a reading.
+        try {
+          noteRepositoryRateLimitSpend(ownerRepo, 'core', 1, ghOptions)
+          await bwGhExecFileAsync(['api', `repos/${ownerRepo.owner}/${ownerRepo.repo}`], ghOptions)
+          return { state: 'missing', checkedAt: new Date().toISOString() }
+        } catch (repoReason) {
+          return {
+            state: 'unknown',
+            reason: `发布状态读取失败：仓库不可达（${
+              repoReason instanceof Error ? repoReason.message : String(repoReason)
+            }）`
+          }
         }
       }
+      return {
+        state: 'unknown',
+        reason: `发布状态读取失败：${reason instanceof Error ? reason.message : String(reason)}`
+      }
     }
-    return {
-      state: 'unknown',
-      reason: `发布状态读取失败：${reason instanceof Error ? reason.message : String(reason)}`
-    }
-  }
+  })
 }
