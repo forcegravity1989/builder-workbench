@@ -253,6 +253,11 @@ jobs:
     name: Workbench Electron smoke
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Use the existing SwiftShader fixture path with guest compositing enabled.
+      ORCA_E2E_FORCE_HEADFUL: '1'
+      # This job owns an isolated Xvfb display; never capture a developer's desktop.
+      ORCA_E2E_CAPTURE_VIRTUAL_DISPLAY: '1'
     # This job builds its own Workbench artifact. Run it independently so UI
     # failures are reported alongside protocol/type failures; all gates remain required.
     # The Workbench build-time flags (WORKBENCH_SHELL / VITE_WORKBENCH_SHELL /

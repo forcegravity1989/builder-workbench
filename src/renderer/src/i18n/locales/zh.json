@@ -889,6 +889,16 @@
             "additionalErrors": "还有 {{count}} 张图片无法附加。"
           }
         }
+      },
+      "reveal": {
+        "in": {
+          "file": {
+            "manager": {
+              "launchFailed": "无法显示该文件。",
+              "notFound": "未找到文件。它可能已被移动或删除。"
+            }
+          }
+        }
       }
     },
     "hooks": {
@@ -2823,7 +2833,8 @@
           }
         },
         "dialog": {
-          "f26c4baeda": "关闭"
+          "f26c4baeda": "关闭",
+          "minimize": "最小化"
         },
         "repo": {
           "multi": {
@@ -3102,7 +3113,8 @@
             "openInNewTab": "在新标签页中打开",
             "openLink": "打开链接",
             "orcaBrowser": "Orca 浏览器",
-            "systemBrowser": "系统浏览器"
+            "systemBrowser": "系统浏览器",
+            "openInThisGroupRefused": "无法在此分组中打开 {{value0}}"
           }
         }
       },
@@ -13386,6 +13398,9 @@
               }
             }
           }
+        },
+        "PanZoomImageDialog": {
+          "copyPngFailed": "无法复制图片"
         }
       },
       "diff": {
@@ -14727,7 +14742,32 @@
           "insertColumnLeft": "在左侧插入列",
           "insertColumnRight": "在右侧插入列",
           "deleteColumn": "删除列",
-          "deleteTable": "删除表格"
+          "deleteTable": "删除表格",
+          "addLink": "添加链接",
+          "format": "格式",
+          "bold": "粗体",
+          "italic": "斜体",
+          "strike": "删除线",
+          "inlineCode": "内联代码",
+          "codeBlock": "代码块",
+          "quote": "引用",
+          "paragraph": "段落",
+          "bodyText": "正文",
+          "heading1": "标题 1",
+          "heading2": "标题 2",
+          "heading3": "标题 3",
+          "heading4": "标题 4",
+          "heading5": "标题 5",
+          "bulletList": "项目符号列表",
+          "numberedList": "编号列表",
+          "checklist": "清单",
+          "insert": "插入",
+          "link": "链接",
+          "image": "图像",
+          "divider": "分隔线",
+          "paste": "粘贴",
+          "pasteAsPlainText": "粘贴为纯文本",
+          "addToDictionary": "添加到词典"
         }
       }
     }
@@ -14790,7 +14830,8 @@
         "skillScopeBuiltIn": "内置",
         "skillScopePlugin": "插件",
         "skillsLoaded": "技能已加载",
-        "noCommands": "没有匹配的命令"
+        "noCommands": "没有匹配的命令",
+        "copyImageTooLarge": "图片太大，无法复制。"
       },
       "tool": {
         "running": "正在运行…",
@@ -15389,5 +15430,23 @@
     "stop": "停止",
     "stopped": "在 Orca 重启之前，{{host}} 将不再控制浏览器标签页。",
     "title": "{{host}} 正在控制一个浏览器标签页"
+  },
+  "workspace": {
+    "links": {
+      "kind": {
+        "github_pr": "GitHub PR",
+        "github_issue": "GitHub 议题",
+        "linear_task": "Linear 任务",
+        "gitlab_mr": "GitLab MR",
+        "gitlab_issue": "GitLab 议题",
+        "jira_task_url": "Jira 任务（URL）",
+        "bitbucket_pr": "Bitbucket PR",
+        "azure_devops_pr": "Azure DevOps PR",
+        "gitea_pr": "Gitea PR"
+      },
+      "mrReference": "MR !{{number}}",
+      "prReference": "PR #{{number}}",
+      "issueReference": "议题 #{{number}}"
+    }
   }
 }

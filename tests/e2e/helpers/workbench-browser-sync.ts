@@ -3,6 +3,7 @@ import path from 'node:path'
 import type { ElectronApplication, Page, TestInfo } from '@stablyai/playwright-test'
 import { expect, test } from './workbench-app'
 import { startLocalHttpsServer } from './local-https-test-server'
+import { captureBrowserCompositionEvidence } from './browser-composition-evidence'
 
 const PROFILE = 'BW browser acceptance'
 const ACCOUNT = 'bw-browser-fixture@example.invalid'
@@ -372,6 +373,7 @@ export async function verifyBrowserSync(
     await expectBrowserInPane(page, app, first.id, first.groupId, info, 'left')
     await expectBrowserInPane(page, app, second.id, second.groupId, info, 'right')
     await capture(page, info, 'browser-approved-session-split')
+    await captureBrowserCompositionEvidence(app, page, info)
 
     const beforePid = app.process().pid
     const profile = await app.evaluate(({ app }) => app.getPath('userData'))
