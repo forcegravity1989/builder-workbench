@@ -52,7 +52,8 @@ it('preserves an unavailable source and previous evidence without turning it int
   ).rejects.toMatchObject({ code: 'host-unavailable', message: 'Disconnected' })
 })
 
-it('normalizes a paired draft source for the owner and returns its caller-visible identity', async () => {
+// 环 4 ratchet 对冲（#553）：同一「配对宿主 owner 路由」守卫的两条用例合并,断言原样保留。
+it('routes paired draft and catalog reads through the environment owner, preserving identities', async () => {
   const planRef = {
     kind: 'draft' as const,
     version: 'v0.5',
@@ -84,9 +85,8 @@ it('normalizes a paired draft source for the owner and returns its caller-visibl
   )
   expect(result.planRef).toEqual(planRef)
   expect(result.source).toMatchObject({ sourceHostId: 'runtime:paired' })
-})
 
-it('returns valid history alongside unreadable records through the native owner', async () => {
+  call.mockReset()
   const value: VersionHistoryCatalog = {
     records: [
       {
@@ -110,7 +110,7 @@ it('returns valid history alongside unreadable records through the native owner'
     ]
   }
   call.mockResolvedValue({ ok: true, value })
-  const result = await nativeVersionHistoryPort().list({
+  const catalog = await nativeVersionHistoryPort().list({
     scope: { ...scope, hostId: 'runtime:paired' }
   })
   expect(call).toHaveBeenCalledWith(
@@ -119,5 +119,5 @@ it('returns valid history alongside unreadable records through the native owner'
     { scope },
     undefined
   )
-  expect(result).toEqual(value)
+  expect(catalog).toEqual(value)
 })
