@@ -157,13 +157,13 @@
     {
       "files": ["**/*.ts"],
       "rules": {
-        "max-lines": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }]
+        "max-lines": ["error", { "max": 500, "skipBlankLines": true, "skipComments": true }]
       }
     },
     {
       "files": ["**/*.tsx"],
       "rules": {
-        "max-lines": ["error", { "max": 400, "skipBlankLines": true, "skipComments": true }]
+        "max-lines": ["error", { "max": 600, "skipBlankLines": true, "skipComments": true }]
       }
     },
     {

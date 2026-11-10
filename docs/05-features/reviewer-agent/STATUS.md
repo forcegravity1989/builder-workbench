@@ -10,4 +10,4 @@
 - gate 说明：做不做已由发起人口头拍板；**规格 gate 与合入仍待人**——本分支把 spec、原型、实现一并送评审，认可即合，不认可按意见改或退回。
 - 2026-08-27 · 谈定补入：自动触发走 CI 层（发起人两项拍板：workflow 落进本分支；认证走订阅 OAuth token）。结论已改写进 spec 拍板 7；待人做的两步=装 Claude GitHub App、配 `CLAUDE_CODE_OAUTH_TOKEN` secret。
 - 2026-08-28 · App 与 token 已由人配齐（安装分支首场 run 成功）；分支已推、开 [PR #132](https://github.com/forcegravity1989/builder-workbench/pull/132)，检查全绿。与 main 上安装器生成的同路径 workflow 冲突已解（保留核实版）；本 PR 因改了 workflow 文件本身被 action 防篡改校验有意跳过评审（见 plan 风险 6），首场真实评审=合入后的下一条 PR。
-  本特性保留旧平台评审旅程的历史资料；不代表当前 Electron 壳已有评审按钮或派发能力。旧 standard 评审执行资产已退役，BW 日常开发的独立评审按 [AGENTS](../../../AGENTS.md) 的四维检视执行，不向被管项目分发一套 BW 开发规则。
+  本特性保留旧平台评审旅程的历史资料；不代表当前 Electron 壳已有评审按钮或派发能力。旧 standard 评审执行资产已退役，BW 日常开发的独立评审按 [AGENTS](../../../AGENTS.md) 直接引用的[开发交付细则](../../../.claude/skills/workbench-start/references/delivery-contract.md#独立检视)执行，不向被管项目分发一套 BW 开发规则。

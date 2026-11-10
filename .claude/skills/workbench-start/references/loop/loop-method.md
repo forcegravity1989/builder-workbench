@@ -1,8 +1,8 @@
 # Workbench 交付 Loop 方法：从"入口"到"loop"的转型动作与底座谱系
 
-> **30 秒导读**：本文件只写两件**判据原文没覆盖、且不随项目变**的事：① 把"人读入口"变成"自转 loop"要做哪几件事；② loop 的运行时骨架有哪几种形态。**判断框架（六要素/四大器/builder/双指标/反哺）的权威原文在同目录 [`workflow-audit/`](workflow-audit/SKILL.md)，本文件不重抄**；一个真实 loop 实例见同目录 [`fixer-record.md`](fixer-record.md)；BW 的应用见 [`bw-loop-report.md`](bw-loop-report.md)。
-> **读者与时机**：BW 侧负责落地的人与专家 agent；开工前读一次。
-> **职责与边界**：只承载"通用套路"；**不写 BW 落地步骤、不给选型结论**。BW 的具体做法由落地任务产出。
+> **30 秒导读**：本文件只写两件**判据原文没覆盖、且不随项目变**的事：① 把"人读入口"变成"自转 loop"要做哪几件事；② loop 的运行时骨架有哪几种形态。**判断框架（六要素/四大器/builder/双指标/反哺）的权威原文在同目录 [`workflow-audit/`](workflow-audit/SKILL.md)，本文件不重抄**；一个真实 loop 实例见同目录 [`fixer-record.md`](fixer-record.md)。
+> **读者与时机**：研究自主交付编排方法时按需读取；不属于 BW 日常开发必读路径。
+> **职责与边界**：只承载外部方法的转型动作与底座比较，不规定 BW 的选型、阶段计划或交付门槛。BW 现行规则见 [AGENTS](../../../../../AGENTS.md) 和[开发交付细则](../delivery-contract.md)。
 > **来源与自包含**：综合 `workflow-audit/` 判据与 `fixer-record.md` 实例得到；不依赖任何外部路径、无需联网。
 
 ---
