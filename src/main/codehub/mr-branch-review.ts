@@ -45,7 +45,7 @@ type BranchReviewArgs = {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions
   sourceBranch: string
-  targetBranch: string
+  targetBranch?: string
   currentHeadOid?: string | null
   states?: readonly ('opened' | 'merged' | 'closed')[]
 }
@@ -127,10 +127,11 @@ async function mrContainsCommit(args: BranchReviewArgs, iid: number): Promise<bo
 export async function readCodeHubBranchReview(
   args: BranchReviewArgs
 ): Promise<CodeHubBranchReview | null> {
-  if (!args.sourceBranch || !args.targetBranch) {
+  if (!args.sourceBranch || args.targetBranch === '') {
     throw new Error('CodeHub MR 来源和目标分支不能为空')
   }
   let remote = args.remote
+  let uniqueReview: CodeHubBranchReview | null = null
   for (const state of args.states ?? ['opened', 'merged', 'closed']) {
     if (state === 'merged' && !args.currentHeadOid) {
       continue
@@ -147,8 +148,7 @@ export async function readCodeHubBranchReview(
             'json',
             '--source-branch',
             args.sourceBranch,
-            '--target-branch',
-            args.targetBranch,
+            ...(args.targetBranch ? ['--target-branch', args.targetBranch] : []),
             '--state',
             state,
             '--limit',
@@ -172,7 +172,13 @@ export async function readCodeHubBranchReview(
         }
         remote = await resolveCodeHubWebIdentity(remote, row.web_url, args.execOptions)
         assertCodeHubDetailIdentity({ remote, kind: 'mr', iid }, row.iid, row.web_url)
-        if (row.source_branch !== args.sourceBranch || row.target_branch !== args.targetBranch) {
+        if (typeof row.target_branch !== 'string' || !row.target_branch.trim()) {
+          throw new Error('CodeHub MR 列表缺少目标分支')
+        }
+        if (
+          row.source_branch !== args.sourceBranch ||
+          (args.targetBranch && row.target_branch !== args.targetBranch)
+        ) {
           continue
         }
         const sourceUrl = objectRecord(row.source_project).web_url
@@ -199,19 +205,26 @@ export async function readCodeHubBranchReview(
           !reviewState ||
           reviewState !== (state === 'opened' ? 'open' : state) ||
           detail.sourceBranch !== args.sourceBranch ||
-          detail.targetBranch !== args.targetBranch
+          detail.targetBranch !== row.target_branch
         ) {
           throw new Error('CodeHub MR 状态或分支与列表不一致')
         }
         if (reviewState === 'merged' && !(await mrContainsCommit(args, iid))) {
           continue
         }
-        return {
+        const review: CodeHubBranchReview = {
           number: iid,
           url: codeHubMergeRequestUrl(args.remote, iid, detail.url ?? undefined),
           state: reviewState,
           ...(reviewState === 'merged' ? { confirmedContainedHeadOid: args.currentHeadOid! } : {})
         }
+        if (args.targetBranch) {
+          return review
+        }
+        if (uniqueReview) {
+          throw new Error('该分支关联多个开放 MR，无法唯一定位评审对象')
+        }
+        uniqueReview = review
       }
       if (parsed.length < PAGE_SIZE) {
         break
@@ -221,5 +234,5 @@ export async function readCodeHubBranchReview(
       }
     }
   }
-  return null
+  return uniqueReview
 }

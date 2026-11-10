@@ -1,3 +1,4 @@
+import { countUnresolvedCodeHubThreadsSince } from '../../shared/workbench/review-thread-counts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { runCodeHubCliMock } = vi.hoisted(() => ({
@@ -168,6 +169,7 @@ describe('codehub comments', () => {
         authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/m30077918.png',
         isBot: false,
         isResolved: false,
+        isSystem: false,
         path: null,
         line: null,
         isOutdated: false
@@ -185,7 +187,8 @@ describe('codehub comments', () => {
         isReply: true,
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: true,
         path: null,
         line: null,
         isOutdated: false
@@ -201,6 +204,7 @@ describe('codehub comments', () => {
         authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/bot.png',
         isBot: true,
         isResolved: true,
+        isSystem: false,
         path: 'src/main/bridge.py',
         line: 42,
         isOutdated: false
@@ -218,7 +222,8 @@ describe('codehub comments', () => {
         isReply: false,
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: false,
         path: null,
         line: null,
         isOutdated: false
@@ -234,6 +239,7 @@ describe('codehub comments', () => {
         authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/m30077918.png',
         isBot: false,
         isResolved: false,
+        isSystem: false,
         // szv-open hosts null the top-level anchor; the position fallback
         // recovers path/line so the files tab can still place the card.
         path: 'src/main/bridge.py',
@@ -250,13 +256,46 @@ describe('codehub comments', () => {
         isReply: false,
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: false,
         path: 'src/main/bridge.py',
         line: 12,
         // Stale anchors pass through so the files tab can skip them inline.
         isOutdated: true
       }
     ])
+
+    const payload = JSON.parse(await runCodeHubCliMock.mock.results[0]!.value)
+    const completeThreads = await listCodeHubComments({
+      remote,
+      kind: 'mr',
+      iid: 4092,
+      requireCompleteThreads: true
+    })
+    expect(countUnresolvedCodeHubThreadsSince(completeThreads, '2026-03-12T10:00:00Z')).toBe(2)
+    const resolvedRoot = { ...payload[1].notes[0] }
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify([
+        { ...payload[1], notes: [resolvedRoot, { ...payload[0].notes[1], id: 999, system: false }] }
+      ])
+    )
+    expect(
+      countUnresolvedCodeHubThreadsSince(
+        await listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireCompleteThreads: true }),
+        '2026-03-12T10:00:00Z'
+      )
+    ).toBe(0)
+    for (const root of [
+      { ...resolvedRoot, resolved: undefined },
+      { ...resolvedRoot, is_reply: true },
+      { ...resolvedRoot, is_reply: true, system: true },
+      { ...resolvedRoot, created_at: 'bad' }
+    ]) {
+      runCodeHubCliMock.mockResolvedValue(JSON.stringify([{ ...payload[1], notes: [root] }]))
+      await expect(
+        listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireCompleteThreads: true })
+      ).rejects.toThrow('CodeHub 检视线程')
+    }
 
     const page = Array.from({ length: 50 }, (_, id) => ({
       id: `discussion-${id}`,
@@ -351,7 +390,8 @@ describe('codehub comments', () => {
         // fields; the mapping must default them rather than drop the note.
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: false,
         path: null,
         line: null,
         isOutdated: false
