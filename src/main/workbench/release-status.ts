@@ -1,10 +1,6 @@
 import { parseWslPath } from '../wsl'
-import {
-  getOwnerRepo,
-  ghExecFileAsync,
-  ghRepoExecOptions,
-  githubRepoContext
-} from '../github/gh-utils'
+import { getOwnerRepo, ghRepoExecOptions, githubRepoContext } from '../github/gh-utils'
+import { bwGhExecFileAsync } from './workbench-exec-observability'
 import { githubHostExecOptions } from '../github/github-api-repository'
 import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
 import { isCodeHubGitRemote } from '../../shared/codehub'
@@ -69,7 +65,7 @@ export async function readReleaseStatus(
   }
   try {
     noteRepositoryRateLimitSpend(ownerRepo, 'core', 1, ghOptions)
-    const { stdout } = await ghExecFileAsync(
+    const { stdout } = await bwGhExecFileAsync(
       [
         'api',
         `repos/${ownerRepo.owner}/${ownerRepo.repo}/releases/tags/${encodeURIComponent(
@@ -108,7 +104,7 @@ export async function readReleaseStatus(
       // the repo itself answers; otherwise this is no data, not a reading.
       try {
         noteRepositoryRateLimitSpend(ownerRepo, 'core', 1, ghOptions)
-        await ghExecFileAsync(['api', `repos/${ownerRepo.owner}/${ownerRepo.repo}`], ghOptions)
+        await bwGhExecFileAsync(['api', `repos/${ownerRepo.owner}/${ownerRepo.repo}`], ghOptions)
         return { state: 'missing', checkedAt: new Date().toISOString() }
       } catch (repoReason) {
         return {

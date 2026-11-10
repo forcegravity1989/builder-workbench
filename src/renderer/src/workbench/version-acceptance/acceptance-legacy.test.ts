@@ -77,7 +77,8 @@ const legacyDocument = {
 }
 
 describe('legacy acceptance material', () => {
-  it('parses a pre-v10 document as-is instead of failing the strict schema', () => {
+  // 环 4 ratchet 对冲（#553）：同一 legacy 投影守卫的两条用例合并,断言原样保留。
+  it('parses a pre-v10 document as-is and projects every legacy category; v10 documents project nothing', () => {
     // The material schema is strict, so dropping the retired keys outright would
     // turn every stored pre-v10 file into "corrupt material" and lose real human
     // input. They stay optional and read-only.
@@ -95,10 +96,7 @@ describe('legacy acceptance material', () => {
     // Current fields on the same document still parse normally.
     expect(parsed.results[0].decision?.outcome).toBe('met')
     expect(parsed.results[0].issueNotes).toEqual({ 'github:github.com/acme/app:1': '需要补证据' })
-  })
 
-  it('projects every legacy category for the read-only block, and nothing for a v10 document', () => {
-    const parsed = AcceptanceMaterialSchema.parse(legacyDocument)
     const legacy = projectLegacyAcceptance(parsed)
     expect(legacy).not.toBeNull()
     expect(legacy?.roundCount).toBe(1)

@@ -9,6 +9,8 @@ import {
 } from '../../git/worktree-create-preparation'
 import { runWslProcess } from '../../wsl/wsl-runner'
 import { runProcess } from '../../../shared/child-process/run-process'
+import { withSpan } from '../../observability/tracer'
+import { collectorInterpreterLabel } from '../workbench-exec-observability'
 import { isWindowsAbsolutePathLike } from '../../../shared/cross-platform-path'
 import { toLinuxPath } from '../../../shared/wsl-paths'
 import {
@@ -311,37 +313,61 @@ export async function executeMetricCollection(input: {
       throw new MetricCollectorError('execution-root-invalid', '执行根与指定配置修订不一致')
     }
     const args = [...input.run.slice(1), ...input.args]
-    outcome = wsl
-      ? await runWslProcess({
-          program: input.run[0],
-          args,
-          distro: wsl.distro,
-          cwd: wsl.guestCwd,
-          env: input.env,
-          loginPath: 'preferred',
-          timeoutMs: input.timeoutMs
-        }).then((result) => ({
-          stdout: result.stdout,
-          stderr: result.stderr,
-          code: result.code,
-          signal: null,
-          timedOut: result.timedOut,
-          outputTruncated: result.outputTruncated
-        }))
-      : await runProcess({
-          program: input.run[0],
-          args,
-          cwd: checkoutPath,
-          env: { ...process.env, ...input.env },
-          timeoutMs: input.timeoutMs
-        }).then((result) => ({
-          stdout: result.stdout,
-          stderr: result.stderr,
-          code: result.code,
-          signal: result.signal,
-          timedOut: result.timedOut,
-          outputTruncated: result.outputTruncated === true
-        }))
+    // Why span (Issue #553 B 档): the collector body (the 900s-timeout chain)
+    // was invisible in the trace; host/interpreter/exit attributes show which
+    // segment ate the time. stderr travels in the redacted cause of the
+    // MetricCollectorError thrown by interpretOutcome just outside this span.
+    outcome = await withSpan(
+      'workbench.collector.exec',
+      async (span) => {
+        span.setAttribute('collector.host', wsl ? 'wsl' : 'local')
+        span.setAttribute('collector.interpreter', collectorInterpreterLabel(input.run[0]))
+        span.setAttribute('collector.arg_count', args.length)
+        span.setAttribute('cwd', wsl ? wsl.guestCwd : checkoutPath)
+        const result = wsl
+          ? await runWslProcess({
+              program: input.run[0],
+              args,
+              distro: wsl.distro,
+              cwd: wsl.guestCwd,
+              env: input.env,
+              loginPath: 'preferred',
+              timeoutMs: input.timeoutMs
+            }).then((mapped) => ({
+              stdout: mapped.stdout,
+              stderr: mapped.stderr,
+              code: mapped.code,
+              signal: null,
+              timedOut: mapped.timedOut,
+              outputTruncated: mapped.outputTruncated
+            }))
+          : await runProcess({
+              program: input.run[0],
+              args,
+              cwd: checkoutPath,
+              env: { ...process.env, ...input.env },
+              timeoutMs: input.timeoutMs
+            }).then((mapped) => ({
+              stdout: mapped.stdout,
+              stderr: mapped.stderr,
+              code: mapped.code,
+              signal: mapped.signal,
+              timedOut: mapped.timedOut,
+              outputTruncated: mapped.outputTruncated === true
+            }))
+        if (typeof result.code === 'number') {
+          span.setAttribute('exitCode', result.code)
+        }
+        if (result.timedOut) {
+          span.setAttribute('timedOut', true)
+        }
+        if (result.outputTruncated) {
+          span.setAttribute('outputTruncated', true)
+        }
+        return result
+      },
+      { kind: 'client' }
+    )
   } finally {
     await discardPreparedWorktree(repoPath, checkoutPath, execOptions).catch(() => {
       // The preparation lock reason keeps the stranded tree recognizable to the

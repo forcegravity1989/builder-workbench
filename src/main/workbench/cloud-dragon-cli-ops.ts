@@ -1,4 +1,4 @@
-import { commandExecFileAsync } from '../git/command-runner/command-exec-file'
+import { bwCommandExecFileAsync } from './workbench-exec-observability'
 import { extractExecError, isMissingCommandBinaryError } from '../git/exec-error'
 import { CLOUDDRAGON_PROJECT_ID } from './cloud-dragon-package-ops'
 import { PackagePipelineError, failureText } from './package-pipeline-error'
@@ -21,7 +21,7 @@ async function runCb(args: string[]): Promise<string> {
     // 统一限定本项目（CLI 语义的 group_id）；不带时 scheme 调用报
     // "no group_id set"。
     const argv = [...args, '--group', CLOUDDRAGON_PROJECT_ID]
-    const { stdout } = await commandExecFileAsync('cb', argv, {
+    const { stdout } = await bwCommandExecFileAsync('cb', argv, {
       encoding: 'utf8',
       timeout: CB_TIMEOUT_MS,
       maxBuffer: 10 * 1024 * 1024
