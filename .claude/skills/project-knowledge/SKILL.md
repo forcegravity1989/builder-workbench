@@ -10,7 +10,7 @@ description: >-
   to feature-metrics-inventory. Ordinary coding only needs the
   relevant project knowledge; it does not trigger a full knowledge audit.
 metadata:
-  version: 0.4.5-pilot
+  version: 0.4.6-pilot
 ---
 
 # 项目知识库治理
