@@ -80,7 +80,7 @@ export function ProjectSettingsRail({
         const updated = await useAppStore
           .getState()
           .updateRepo(row.id, { projectVisibility: value }, { hostId: getRepoExecutionHostId(row) })
-        if (updated?.projectVisibility !== value) {
+        if (!updated) {
           throw new Error('未能保存项目类型，请刷新项目墙后重试')
         }
       }

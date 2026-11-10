@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type { Page, TestInfo } from '@playwright/test'
@@ -40,10 +40,6 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     'channel = "keep-me"',
     ''
   ].join('\n')
-  mkdirSync(path.dirname(file), { recursive: true })
-  writeFileSync(file, original)
-  execFileSync('git', ['add', '.bw/project.toml'], { cwd: repoPath })
-  execFileSync('git', ['commit', '-m', 'seed project settings verification'], { cwd: repoPath })
   const openWall = async () => {
     await page.getByRole('button', { name: '项目墙', exact: true }).click()
     await expect(page.getByRole('heading', { name: /^项目墙/ })).toBeVisible()
@@ -62,7 +58,62 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   for (const label of ['刷新项目目录和墙卡信息', '批量导入主机', '添加项目', '关闭项目墙']) {
     await expect(toolbar.getByRole('button', { name: label, exact: true })).toHaveText('')
   }
+  const registered = (await page.evaluate(() => window.api.repos.list())).find(
+    (repo) => path.resolve(repo.path) === path.resolve(repoPath)
+  )
+  expect(registered).toBeDefined()
+  const repoId = registered!.id
+  const card = page.locator(`[data-workbench-project-id="${repoId}"]`)
+  expect(existsSync(file)).toBe(false)
+  await expect(card.locator('.pcard-name')).toHaveText(registered!.displayName)
+  await expect(card.locator('.pcard-owner')).toContainText('—')
+  const previousWorkspace = await page.evaluate((id) => {
+    const state = window.__store!.getState()
+    const tree = state.worktreesByRepo[id].find((item) => item.isMainWorktree)!
+    return {
+      worktreeId: tree.id,
+      tabIds: (state.tabsByWorktree[tree.id] ?? []).map((tab) => tab.id)
+    }
+  }, repoId)
+  await page.screenshot({ path: info.outputPath('bw-wall-without-charter.jpg') })
+  await card.locator('.pcard-name').click()
+  await expect(page.locator('[data-screen="wall"]')).toHaveCount(0)
+  await page.waitForFunction(() => window.__store?.getState().activeView === 'terminal')
+  expect(
+    await page.evaluate(() => {
+      const state = window.__store!.getState()
+      return {
+        repoId: state.activeRepoId,
+        worktreeId: state.activeWorktreeId,
+        hostId: state.activeWorkspaceExecutionHostId,
+        tabIds: (state.tabsByWorktree[state.activeWorktreeId!] ?? []).map((tab) => tab.id)
+      }
+    })
+  ).toEqual({ repoId, hostId: 'local', ...previousWorkspace })
+  expect(existsSync(file)).toBe(false)
+  await openWall()
+  mkdirSync(path.dirname(file), { recursive: true })
+  writeFileSync(file, original)
+  execFileSync('git', ['add', '.bw/project.toml'], { cwd: repoPath })
+  execFileSync('git', ['commit', '-m', 'seed project settings verification'], { cwd: repoPath })
+  await toolbar.getByRole('button', { name: '刷新项目目录和墙卡信息', exact: true }).click()
   await openConfig()
+  await expect(page.locator('#project-visibility')).toHaveText('个人项目')
+  await page.locator('#project-visibility').click()
+  await page.getByRole('option', { name: '团队项目', exact: true }).click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async (id) =>
+          (await window.api.repos.list()).find((repo) => repo.id === id)?.projectVisibility,
+        repoId
+      )
+    )
+    .toBe('team')
+  expect(readFileSync(file, 'utf8')).toBe(original)
+  expect(execFileSync('git', ['status', '--porcelain'], { cwd: repoPath, encoding: 'utf8' })).toBe(
+    ''
+  )
   await page.screenshot({ path: info.outputPath('bw-config-sidebar.jpg') })
   await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
   await page.getByRole('textbox', { name: '对标', exact: true }).fill('新对标')
@@ -97,6 +148,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   await guard.getByRole('button', { name: '丢弃并离开', exact: true }).click()
   await openConfig()
+  await expect(page.locator('#project-visibility')).toHaveText('团队项目')
   await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('原愿景')
   await page.getByRole('textbox', { name: '项目负责人', exact: true }).fill('负责人甲')
@@ -128,4 +180,13 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
   expect(readFileSync(file, 'utf8')).toBe(saved)
   await page.screenshot({ path: info.outputPath('bw-config-reloaded.jpg') })
+  await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
+  await card.locator('[data-workbench-open-overview]').click()
+  await page
+    .locator('#project-card')
+    .getByRole('button', { name: '编辑项目信息', exact: true })
+    .click()
+  await expect(page.locator('.wb-project-settings')).toBeVisible()
+  await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
+  await page.screenshot({ path: info.outputPath('bw-overview-shared-editor.jpg') })
 }

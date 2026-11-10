@@ -9,7 +9,7 @@ import {
   type PlanningMaterial,
   type AcceptanceMaterial
 } from '../../../shared/workbench/version-material'
-import { getWorktreeExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId, getWorktreeExecutionHostId } from '../../../shared/execution-host'
 import { loadVersionCatalog } from './version-catalog-load'
 import { versionCatalogPlanTrees } from './version-catalog-plan-trees'
 import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
@@ -163,7 +163,12 @@ export async function readWallReadings(
         (tree) =>
           tree.isMainWorktree &&
           tree.repoId === readingScope.repoId &&
-          getWorktreeExecutionHostId(tree) === readingScope.hostId
+          getWorktreeExecutionHostId(
+            tree,
+            project.rows.find(
+              (row) => row.id === tree.repoId && getRepoExecutionHostId(row) === readingScope.hostId
+            )
+          ) === readingScope.hostId
       ) ?? home
     return {
       kind: 'version',
