@@ -11,7 +11,6 @@
 // calls so they filter apart from A 档's server-side RPC spans, and ALS
 // context nests them under the enclosing workbench.* operation span.
 
-import { basename } from 'node:path'
 import { withSpan, type ActiveSpan } from '../observability/tracer'
 import { commandExecFileAsync } from '../git/command-runner/command-exec-file'
 import type { CommandExecOptions } from '../git/command-runner/spawn-command-capture'
@@ -29,7 +28,19 @@ function safeLabel(value: string | undefined, fallback: string): string {
 
 /** Interpreter basename only — collector programs are user-configured paths. */
 export function collectorInterpreterLabel(program: string): string {
-  return safeLabel(basename(program).toLowerCase(), 'other')
+  // Why split on both separators instead of node:path basename: program
+  // strings are host-native (win32 backslash or posix slash), but this label
+  // must not depend on the platform running the suite — CI executes the tests
+  // on linux, where basename() treats a Windows path as one opaque segment.
+  const segments = program.split(/[/\\]/)
+  let last = program
+  for (let index = segments.length - 1; index >= 0; index -= 1) {
+    if (segments[index].length > 0) {
+      last = segments[index]
+      break
+    }
+  }
+  return safeLabel(last.toLowerCase(), 'other')
 }
 
 function recordExecFailure(span: ActiveSpan, error: unknown): void {
@@ -38,6 +49,8 @@ function recordExecFailure(span: ActiveSpan, error: unknown): void {
   if (typeof code === 'number') {
     span.setAttribute('exitCode', code)
   }
+  // Why timedOut is defensive: collector results carry it (metrics span), but
+  // exec-file-capture timeout errors surface as killed on the gh/cb paths.
   if ((error as { timedOut?: unknown }).timedOut === true) {
     span.setAttribute('timedOut', true)
   }
