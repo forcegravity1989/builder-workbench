@@ -22,10 +22,14 @@
     workspace: '<path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5V13m9-5v5m-7 5 3 3 5-6"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4m0 3h.01"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v6"/>',
+    card: '<rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 16a3 3 0 0 1 6 0m4-8h3m-3 4h3m-3 4h3"/>',
     edit: '<path d="m16 3 5 5-12 12-5 1 1-5L16 3Z"/>',
     unlink:
       '<path d="m10 13 4-4m-6 7-2 2a4 4 0 0 1-6-6l4-4m12 2 2-2a4 4 0 0 0-6-6l-2 2M3 3l18 18"/>',
-    upload: '<path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5"/>'
+    'file-input':
+      '<path d="M4 11V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1M14 2v5a1 1 0 0 0 1 1h5M2 15h10m-3 3 3-3-3-3"/>',
+    download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>',
+    more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
   }
   const W = {
     $: (id) => document.getElementById(id),
@@ -37,11 +41,11 @@
     icon: (name) =>
       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.folder}</svg>`,
     fields: [
-      ['name', '共享项目名称'],
+      ['name', '项目名称'],
+      ['builder', '项目负责人'],
       ['brief', '简介'],
       ['benchmark', '对标'],
-      ['opportunity', '目标方向'],
-      ['builder', '项目负责人']
+      ['opportunity', '目标方向']
     ],
     state: {
       projects: [],
@@ -57,7 +61,7 @@
       mode: 'wall',
       reuse: null,
       pendingLeave: null,
-      updated: '刚刚更新',
+      updated: '',
       hostReadFailed: false
     }
   }
@@ -160,7 +164,23 @@
       goals: [],
       kind: 'git',
       remote: 'github.com/example/shunfenger',
-      path: 'E:/projects/shunfenger'
+      path: 'E:/projects/shunfenger',
+      repos: [
+        {
+          id: 'shun-api',
+          name: 'shunfenger-api',
+          remote: 'github.com/example/shunfenger-api',
+          path: 'E:/projects/shunfenger/api',
+          host: 'local'
+        },
+        {
+          id: 'shun-web',
+          name: 'shunfenger-web',
+          remote: 'github.com/example/shunfenger-web',
+          path: 'E:/projects/shunfenger/web',
+          host: 'local'
+        }
+      ]
     },
     {
       id: 'notes',
@@ -179,6 +199,8 @@
   ]
   const s = W.state
   W.project = (id) => s.projects.find((p) => p.id === id)
+  W.repoSlots = (p) => p.repos || [{ id: p.id, name: p.name, remote: p.remote, path: p.path }]
+  W.updateTime = () => `更新于 ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}`
   W.available = (p) => p.hosts.some((h) => W.hosts[h].online)
   W.visibility = (p, host) => p.sharing?.[host] || 'personal'
   W.categoryOf = (p) => W.visibility(p, p.hosts.includes('local') ? 'local' : p.hosts[0])

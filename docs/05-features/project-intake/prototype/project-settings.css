@@ -355,7 +355,7 @@ svg {
   gap: 0;
 }
 .card-tools .icon-btn {
-  width: 29px;
+  width: 26px;
 }
 .card-tools svg {
   width: 16px;
@@ -364,17 +364,15 @@ svg {
 .identity-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 11px;
+  gap: 8px;
+  margin: 8px 0 14px;
+  min-width: 0;
 }
-.type-chip {
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 2px 5px;
-  font-size: 10px;
-  line-height: 1.5;
-  white-space: nowrap;
+.host-sources {
+  display: flex;
+  min-width: 0;
+  gap: 2px;
+  flex: 1;
 }
 .source-chip {
   min-width: 0;
@@ -402,18 +400,21 @@ svg {
   background: var(--muted);
 }
 .owner-row {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 14px;
-  font-size: 11px;
-  line-height: 1.7;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 55%;
+  min-width: 0;
+  font-size: 10px;
+  line-height: 1.5;
 }
 .owner-row > span:first-child {
   color: var(--muted-foreground);
+  white-space: nowrap;
 }
 .owner-value {
+  min-width: 0;
+  max-width: 88px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -523,12 +524,6 @@ svg {
   min-height: 20px;
 }
 .version-muted {
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-.card-extra {
-  border-top: 1px solid var(--border);
-  padding: 10px 0;
   color: var(--muted-foreground);
   font-size: 11px;
 }
@@ -700,6 +695,86 @@ svg {
 }
 .wb-config-header h2 {
   font-size: 16px;
+}
+.config-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.config-info-wrap {
+  position: relative;
+}
+.config-info-wrap .wb-config-toggle {
+  padding-right: 44px;
+}
+.info-edit {
+  position: absolute;
+  top: 7px;
+  right: 6px;
+}
+.project-menu {
+  position: relative;
+}
+.project-menu > summary {
+  list-style: none;
+}
+.project-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.project-menu-items,
+.repo-picker {
+  z-index: 120;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 4px 18px #0002;
+}
+.project-menu-items {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  width: 180px;
+}
+.project-menu-items button,
+.repo-picker button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  font-size: 12px;
+}
+.project-menu-items button:hover,
+.repo-picker button:hover {
+  background: var(--accent);
+}
+.project-menu-items svg {
+  width: 15px;
+  height: 15px;
+}
+.repo-picker {
+  position: fixed;
+  width: min(240px, calc(100vw - 24px));
+}
+.repo-picker p {
+  margin: 4px 8px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.repo-picker button {
+  overflow-wrap: anywhere;
+}
+.setting-location {
+  margin: -5px 0 14px;
+  font-size: 11px;
+  color: var(--muted-foreground);
 }
 .wb-config-scroll {
   padding: 0 16px 16px;

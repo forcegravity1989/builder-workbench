@@ -3,6 +3,11 @@
   const { state: s } = W
   let toastTimer
   let configTrigger
+  let repoMenu
+  const closeRepoMenu = () => {
+    document.getElementById('repo-picker')?.remove()
+    repoMenu = null
+  }
   W.toast = (message) => {
     clearTimeout(toastTimer)
     W.$('toast').textContent = message
@@ -29,13 +34,14 @@
   }
   const goWall = () =>
     guarded(() => {
+      closeRepoMenu()
       clearConfig()
       s.mode = 'wall'
       s.reuse = null
       W.closeModal()
       W.render()
     })
-  const goReuse = (target, id) => {
+  const goReuse = (target, id, repoContext = '') => {
     const contextId = id || s.config
     guarded(() => {
       if (contextId) {
@@ -44,9 +50,52 @@
       clearConfig()
       s.mode = 'reuse'
       s.reuse = target
+      s.repoContext = repoContext
+      closeRepoMenu()
       W.closeModal()
       W.render()
     })
+  }
+  const selectRepo = (target, id, repo) => {
+    const p = W.project(id)
+    const host = repo.host || (p.hosts.includes('local') ? 'local' : p.hosts[0])
+    if (target !== 'open-repo' && !W.hosts[host].online) {
+      W.toast('主机离线，恢复连接后操作')
+      return
+    }
+    if (target === 'open-repo' && !repo.remote && host !== 'local') {
+      W.toast('远端文件夹请从所属主机的工作区打开')
+      return
+    }
+    goReuse(target, id, `${repo.name} · ${W.hosts[host].name}`)
+  }
+  const openRepo = (target, id, trigger) => {
+    closeRepoMenu()
+    const p = W.project(id)
+    const repos = W.repoSlots(p).filter(
+      (repo) =>
+        target !== 'remove-repo' ||
+        (repo.host || (p.hosts.includes('local') ? 'local' : p.hosts[0])) === 'local'
+    )
+    if (repos.length === 1) {
+      selectRepo(target, id, repos[0])
+      return
+    }
+    if (!repos.length) {
+      W.toast('没有可操作的本机仓库')
+      return
+    }
+    repoMenu = { target, id, repos, trigger }
+    const menu = document.createElement('div')
+    menu.id = 'repo-picker'
+    menu.className = 'repo-picker'
+    menu.setAttribute('aria-label', '选择代码仓')
+    menu.innerHTML = `<p>选择代码仓</p>${repos.map((repo, index) => `<button data-action="choose-repo" data-id="${index}">${W.esc(repo.name)}</button>`).join('')}`
+    document.body.append(menu)
+    const rect = trigger.getBoundingClientRect()
+    menu.style.left = `${Math.max(12, Math.min(rect.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 12))}px`
+    menu.style.top = `${Math.max(12, Math.min(rect.bottom + 5, innerHeight - menu.offsetHeight - 12))}px`
+    menu.querySelector('button').focus()
   }
   const openProject = (id) => {
     const p = W.project(id)
@@ -85,6 +134,7 @@
       }
     })
   const reset = (scenario = s.scenario) => {
+    closeRepoMenu()
     W.closeModal()
     clearConfig()
     clearTimeout(toastTimer)
@@ -100,7 +150,7 @@
       mode: 'wall',
       reuse: null,
       pendingLeave: null,
-      updated: '刚刚更新',
+      updated: W.updateTime(),
       hostReadFailed: scenario === 'error'
     })
     if (scenario === 'unknown') {
@@ -132,13 +182,22 @@
     reuse: goReuse,
     'workspace-row': () => goReuse('workspace'),
     config: openConfig,
+    'open-repo': (id, el) => openRepo('open-repo', id, el),
+    'repo-settings': (id, el) => openRepo('repo-settings', id, el),
+    'remove-repo': (id, el) => openRepo('remove-repo', id, el),
+    'choose-repo': (index) => {
+      if (repoMenu) {
+        const { target, id, repos } = repoMenu
+        selectRepo(target, id, repos[Number(index)])
+      }
+    },
     'close-config': closeConfig,
     add: () => goReuse('add'),
     'clone-local': (id) => goReuse('clone', id),
     scope: () => goReuse('scope'),
     refresh: () => {
       s.hostReadFailed = false
-      s.updated = '刚刚更新'
+      s.updated = W.updateTime()
       W.renderWall()
       W.toast('项目墙已刷新')
     },
@@ -181,13 +240,6 @@
       if (s.editing) {
         W.$('field-name').focus()
       }
-    },
-    'reload-info': () => {
-      const id = s.config
-      guarded(() => {
-        clearConfig()
-        openConfig(id)
-      })
     },
     'reset-draft': () => {
       s.draft = Object.fromEntries(W.fields.map(([key]) => [key, W.project(s.config)[key] || '']))
@@ -264,6 +316,18 @@
     reset: () => guarded(() => reset())
   }
   document.addEventListener('click', (event) => {
+    if (
+      repoMenu &&
+      !event.target.closest('#repo-picker') &&
+      !repoMenu.trigger.contains(event.target)
+    ) {
+      closeRepoMenu()
+    }
+    document.querySelectorAll('.project-menu[open]').forEach((menu) => {
+      if (!menu.contains(event.target)) {
+        menu.open = false
+      }
+    })
     const el = event.target.closest('[data-action]')
     if (!el || el.disabled) {
       return
@@ -303,7 +367,7 @@
       })
     } else if (el.id === 'project-visibility') {
       const p = W.project(s.config)
-      if (!p.hosts.includes('local')) {
+      if (!p.hosts.includes('local') || s.viewer !== 'self') {
         return
       }
       p.sharing = { ...p.sharing, local: el.value }
@@ -319,6 +383,18 @@
     W.closeModal()
   })
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && repoMenu) {
+      const trigger = repoMenu.trigger
+      closeRepoMenu()
+      trigger.focus()
+      return
+    }
+    if (event.key === 'Escape' && document.querySelector('.project-menu[open]')) {
+      const menu = document.querySelector('.project-menu[open]')
+      menu.open = false
+      menu.querySelector('summary').focus()
+      return
+    }
     if (event.key === 'Escape' && !W.$('dialog').open && s.config) {
       closeConfig()
     }

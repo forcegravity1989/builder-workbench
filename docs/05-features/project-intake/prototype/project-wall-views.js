@@ -10,9 +10,8 @@
     const version = unknown ? '版本未知' : p.version || '未使用版本'
     const taskCount = p.tasks ? `${p.tasks.completed} / ${p.tasks.total}` : '—'
     return `<article class="project-card${s.config === p.id ? ' selected' : ''}" data-project="${esc(p.id)}">
-      <div class="card-top"><button class="project-name" data-action="open" data-id="${esc(p.id)}">${esc(p.name)}</button><div class="card-tools">${button('overview', 'overview', `项目总览 ${p.name}`, p.id)}${button('config', 'settings', `设置 ${p.name}`, p.id)}</div></div>
-      <div class="identity-row"><span class="type-chip">${W.categoryOf(p) === 'team' ? '团队项目' : '个人项目'}</span>${W.sourceTags(p)}</div>
-      <div class="owner-row"><span>项目负责人</span><span class="owner-value" title="${esc(p.builder || '—')}">${esc(p.builder?.trim() || '—')}</span></div>
+      <div class="card-top"><button class="project-name" data-action="open" data-id="${esc(p.id)}">${esc(p.name)}</button><div class="card-tools">${button('open-repo', 'external', p.remote ? '打开代码仓' : '打开本机文件夹', p.id)}${button('repo-settings', 'settings', '仓库设置', p.id)}${!W.project(p.id).hosts.includes('local') && p.remote ? button('clone-local', 'download', '克隆到本机', p.id) : ''}${button('overview', 'overview', `项目总览 ${p.name}`, p.id)}${button('config', 'edit', `项目设置 ${p.name}`, p.id)}</div></div>
+      <div class="identity-row"><span class="owner-row"><span>项目负责人</span><span class="owner-value" title="${esc(p.builder?.trim() || '—')}">${esc(p.builder?.trim() || '—')}</span></span><span class="host-sources">${W.sourceTags(p)}</span></div>
       ${
         p.version && !unknown
           ? `<div class="version-goals"><div class="version-heading"><span>版本目标</span><button class="inline-link" data-action="version" data-id="${p.id}">${esc(version)}</button></div><ul class="goal-list">${p.goals
@@ -33,7 +32,6 @@
         .join('')}</div>`
           : `<div class="unversioned"><p class="card-description">${esc(p.brief || '')}</p><span class="version-muted">${version}</span></div>`
       }
-      ${!W.project(p.id).hosts.includes('local') && p.remote ? `<div class="card-extra"><button class="inline-link" data-action="clone-local" data-id="${p.id}">克隆到本机</button></div>` : ''}
       ${p.pending ? '<span class="pending-mark">项目信息待合入</span>' : ''}
     </article>`
   }
@@ -56,7 +54,7 @@
     const filterGroup = (action, choices, current) =>
       `<div class="filter-group">${choices.map(([id, label]) => `<button class="filter" data-action="${action}" data-id="${id}" aria-pressed="${current === id}">${label}</button>`).join('')}</div>`
     W.$('main').innerHTML =
-      `<header class="wall-header"><h1>项目墙</h1><span id="visible-count" class="wall-count"></span><div class="wall-actions">${button('refresh', 'refresh', '刷新项目墙：重新读取已连接主机的项目目录与墙卡信息')}${button('reuse', 'upload', '批量导入主机', 'import-hosts')}${button('add', 'plus', '添加项目', '', 'add-button')}</div></header>${W.motto}${
+      `<header class="wall-header"><h1>项目墙</h1><span id="visible-count" class="wall-count"></span><div class="wall-actions">${button('refresh', 'refresh', '刷新项目墙：重新读取已连接主机的项目目录与墙卡信息')}${button('reuse', 'file-input', '批量导入主机', 'import-hosts')}${button('add', 'plus', '添加项目', '', 'add-button')}</div></header>${W.motto}${
         s.projects.length
           ? `<div class="wall-toolbar"><label class="search-wrap">${icon('search')}<input id="project-search" aria-label="搜索项目" placeholder="搜索项目" value="${esc(s.query)}" /></label>${filterGroup(
               'filter',
@@ -142,13 +140,19 @@
         '复用 Orca 帮助菜单',
         '保留原生问号菜单的帮助、快捷键和反馈等能力，调整侧栏按钮尺寸，不改菜单内容。'
       ],
-      'repo-settings': ['复用 Orca 仓库设置 UI', '保留项目主机与仓库身份，打开原生仓库设置。'],
+      'repo-settings': [
+        '复用 Orca 仓库设置 UI',
+        '直接打开原生仓库设置，沿用所选仓库的 repoId 和所属主机 hostId；本机有副本时优先本机，不落入其他主机。这里修改原生本地配置，不提交项目名片 PR。'
+      ],
       'add-repo': [
-        '复用 Orca 添加仓库与分组 UI',
-        '沿已有项目组事务添加代码仓，不另做扫描或分组弹窗。'
+        '复用 Orca 添加仓库 UI 与已有项目组能力',
+        '现有 Orca 已支持多仓项目组；BW 添加代码仓目前仍接旧纳入页。本轮需将原生添加成功结果接到既有分组事务，并沿用目标主机；这段薄接线尚待实现，不能当作已完成。已有多仓关系继续保留，不新增另一套多仓模型。'
       ],
       'remove-repo': ['复用 BW 解除本机登记确认', '沿现有确认和登记事务，不删除磁盘文件。'],
-      'open-repo': ['复用现有仓库打开动作', '打开仓库链接或本机目录，保持既有行为。'],
+      'open-repo': [
+        '复用现有仓库打开动作',
+        '有仓库网页地址时打开链接；只有本机目录时沿原生打开路径能力。远端无网页地址的目录不当作本机路径打开。'
+      ],
       'workspace-options': [
         '复用 Orca Workspace Options',
         '本次只去掉跨项目 Projects 筛选；保留适用的主机、排序、状态等原生选项。不另画一套菜单。'
@@ -167,10 +171,10 @@
       W.$('project-sidebar').hidden = true
     }
     W.$('main').innerHTML =
-      `<section class="reuse-surface" aria-label="原型复用说明"><span class="prototype-label">原型注释 · 此区域直接复用</span><h1>${title}</h1><p>${description}</p>${p ? `<div class="reuse-context">项目：${esc(p.name)}${p.version ? ` · ${esc(p.version)}` : ''}</div>` : ''}${target === 'acceptance' ? W.motto : ''}${target === 'add' ? '<div class="simulation-tools"><span>原型演示控制</span><button class="btn btn-secondary" data-action="simulate-add">模拟原生添加成功</button></div>' : ''}${target === 'clone' ? '<div class="simulation-tools"><span>原型演示控制</span><button class="btn btn-secondary" data-action="simulate-clone">模拟原生克隆成功</button></div>' : ''}</section>`
+      `<section class="reuse-surface" aria-label="原型复用说明"><span class="prototype-label">原型注释 · ${target === 'add-repo' ? '复用已有能力，接线待实现' : '此区域直接复用'}</span><h1>${title}</h1><p>${description}</p>${p ? `<div class="reuse-context">项目：${esc(p.name)}${s.repoContext ? ` · 代码仓：${esc(s.repoContext)}` : ''}${p.version ? ` · ${esc(p.version)}` : ''}</div>` : ''}${target === 'acceptance' ? W.motto : ''}${target === 'add' ? '<div class="simulation-tools"><span>原型演示控制</span><button class="btn btn-secondary" data-action="simulate-add">模拟原生添加成功</button></div>' : ''}${target === 'clone' ? '<div class="simulation-tools"><span>原型演示控制</span><button class="btn btn-secondary" data-action="simulate-clone">模拟原生克隆成功</button></div>' : ''}</section>`
   }
   const section = (id, title, summary, body, open = false) =>
-    `<details class="wb-config-section" data-section="${id}"${open ? ' open' : ''}><summary class="wb-config-toggle">${icon(id === 'hosts' ? 'monitor' : id === 'repos' ? 'folder' : 'info')}<span>${title}</span><span class="wb-config-summary">${esc(summary)}</span>${icon('chevron')}</summary><div class="wb-config-body">${body}</div></details>`
+    `<details class="wb-config-section" data-section="${id}"${open ? ' open' : ''}><summary class="wb-config-toggle">${icon('card')}<span>${title}</span><span class="wb-config-summary">${esc(summary)}</span>${icon('chevron')}</summary><div class="wb-config-body">${body}</div></details>`
   W.renderConfig = () => {
     const rail = W.$('config-rail')
     rail.hidden = !s.config
@@ -181,16 +185,56 @@
       return
     }
     const p = W.project(s.config)
-    const local = p.hosts.includes('local')
+    const local = p.hosts.includes('local') && s.viewer === 'self'
     const fields = s.editing
       ? `<div class="wb-config-fields">${W.fields.map(([key, label]) => `<label for="field-${key}"><span>${label}${key === 'name' ? ' *' : ''}</span>${key === 'brief' || key === 'opportunity' ? `<textarea id="field-${key}"${p.pending ? ' disabled' : ''}>${esc(s.draft[key])}</textarea>` : `<input id="field-${key}" value="${esc(s.draft[key])}"${p.pending ? ' disabled' : ''}${key === 'name' ? ' required' : ''} />`}</label>`).join('')}</div>`
       : `<dl class="wb-config-facts">${W.fields.map(([key, label]) => `<div><dt>${label}</dt><dd>${esc(p[key]?.trim() || '—')}</dd></div>`).join('')}</dl>`
-    const info = `${
-      fields
-    }<div class="wb-config-actions">${button('edit-info', 'edit', s.editing ? '收起编辑' : '编辑项目信息', '', 'wb-icon-button', !W.available(p) || Boolean(p.pending))}${button('reload-info', 'refresh', '重新读取项目信息', '', 'wb-icon-button', !W.available(p))}${W.help('共享项目名称来自 BW 项目信息；不会自动覆盖 Orca 本机显示名称。项目负责人是项目主责，可与主机持有人不同。')}</div>`
-    const repos = `<ul class="wb-config-repos"><li><div class="wb-config-repo-heading"><strong>${esc(p.name)}</strong><span class="wb-config-actions">${button('reuse', 'external', '打开仓库', 'open-repo', 'wb-icon-button')}${button('reuse', 'settings', '仓库设置', 'repo-settings', 'wb-icon-button')}${local ? button('reuse', 'unlink', '解除本机登记', 'remove-repo', 'wb-icon-button') : ''}</span></div><div class="wb-config-path">${esc(p.remote || p.path)}</div>${p.remote ? `<div class="wb-config-path">${esc(p.path)}</div>` : ''}<div class="wb-config-sources">${W.sourceTags(p)}</div></li></ul>${button('reuse', 'plus', '添加代码仓', 'add-repo', 'wb-icon-button')}`
-    const hosts = `<ul class="wb-config-hosts">${p.hosts.map((h) => `<li><span>${esc(W.hosts[h].name)}</span><span>${h === 'local' ? '本机' : W.hosts[h].online ? '在线' : '离线'}</span></li>`).join('')}</ul>${button('reuse', 'monitor', '管理远程主机', 'hosts', 'wb-icon-button')}`
-    rail.innerHTML = `<header class="wb-config-header"><div><span class="wb-config-eyebrow">项目配置</span><h2>${esc(p.name)}</h2></div>${button('close-config', 'x', '关闭项目设置', '', 'wb-icon-button')}</header><div class="wb-config-scroll">${W.annotation('沿用现有项目设置分区与样式；本次新增本机项目类型和共享“项目负责人”。')}<section class="local-setting"><div class="local-setting-label"><label for="project-visibility">项目类型</label>${W.help('个人项目只在自己的项目墙显示；团队项目可在其他客户端的共享墙显示。该属性在所属主机保存，切换立即生效。')}</div><select id="project-visibility" class="input"${local ? '' : ' disabled'}><option value="personal"${(local ? W.visibility(p, 'local') : W.categoryOf(p)) === 'personal' ? ' selected' : ''}>个人项目</option><option value="team"${(local ? W.visibility(p, 'local') : W.categoryOf(p)) === 'team' ? ' selected' : ''}>团队项目</option></select></section>${p.pending ? `<div class="wb-config-pr"><span>项目信息${s.scenario === 'merged' ? '已合入，待更新' : '待合入'}</span>${button('reuse', 'external', '查看项目信息 PR', 'charter-pr', 'wb-icon-button')}</div>${W.annotation(s.scenario === 'merged' ? '<button class="btn btn-secondary" data-action="apply-merged">模拟更新到已合入信息</button>' : '<button class="btn btn-secondary" data-action="apply-merged">模拟合入并更新</button>')}` : ''}${section('info', '项目信息', p.builder?.trim() || '—', info, true)}${section('repos', '代码仓', '1 个仓库', repos)}${section('hosts', '所在主机', p.hosts.map((h) => W.hosts[h].name).join('、'), hosts)}</div><footer class="wb-config-footer" id="config-footer"></footer>`
+    const info = `<div class="config-info-wrap">${section(
+      'info',
+      '项目信息',
+      '',
+      fields,
+      true
+    )}${button(
+      'edit-info',
+      s.editing ? 'x' : 'edit',
+      s.editing ? '收起编辑' : '编辑项目信息',
+      '',
+      'wb-icon-button info-edit',
+      !W.available(p) || Boolean(p.pending)
+    )}</div>`
+    const more = `<details class="project-menu"><summary class="icon-btn" aria-label="更多项目操作">${icon('more')}<span class="tip" role="tooltip">更多项目操作</span></summary><div class="project-menu-items"><button data-action="reuse" data-id="add-repo">${icon('plus')}添加代码仓</button>${local ? `<button data-action="remove-repo" data-id="${esc(p.id)}">${icon('unlink')}解除本机登记</button>` : ''}</div></details>`
+    rail.innerHTML = `<header class="wb-config-header"><div><span class="wb-config-eyebrow">项目设置</span><h2>${esc(
+      p.name
+    )}</h2></div><div class="config-header-actions">${more}${button(
+      'close-config',
+      'x',
+      '关闭项目设置',
+      '',
+      'wb-icon-button'
+    )}</div></header><div class="wb-config-scroll">${W.annotation(
+      '个人与团队共用同一设置。项目类型在此修改，只保存在所属主机；负责人字段与原生添加后挂组仍需实现。'
+    )}<section class="local-setting"><div class="local-setting-label"><label for="project-visibility">项目类型</label>${W.help(
+      '个人项目不显示在其他人的共享项目墙。只改变界面入口，不影响已打开的工作区。'
+    )}</div><select id="project-visibility" class="input"${
+      local ? '' : ' disabled'
+    }><option value="personal"${
+      (local ? W.visibility(p, 'local') : W.categoryOf(p)) === 'personal' ? ' selected' : ''
+    }>个人项目</option><option value="team"${
+      (local ? W.visibility(p, 'local') : W.categoryOf(p)) === 'team' ? ' selected' : ''
+    }>团队项目</option></select></section>${
+      local
+        ? ''
+        : `<p class="setting-location">在 ${esc(p.hosts[0] === 'local' ? '项目所属主机' : W.hosts[p.hosts[0]].name)} 上修改项目类型</p>`
+    }${
+      p.pending
+        ? `<div class="wb-config-pr"><span>项目信息${s.scenario === 'merged' ? '已合入，待更新' : '待合入'}</span>${button('reuse', 'external', '查看项目信息 PR', 'charter-pr', 'wb-icon-button')}</div>${W.annotation(
+            s.scenario === 'merged'
+              ? '<button class="btn btn-secondary" data-action="apply-merged">模拟更新到已合入信息</button>'
+              : '<button class="btn btn-secondary" data-action="apply-merged">模拟合入并更新</button>'
+          )}`
+        : ''
+    }${info}</div><footer class="wb-config-footer" id="config-footer"></footer>`
     W.renderConfigFooter()
   }
   W.renderConfigFooter = () => {
