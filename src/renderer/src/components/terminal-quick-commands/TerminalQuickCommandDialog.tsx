@@ -11,7 +11,7 @@ import {
   isTerminalAgentQuickCommand,
   supportsTerminalAgentQuickCommand
 } from '../../../../shared/terminal-quick-commands'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import {
   Dialog,
   DialogContent,
@@ -54,7 +54,7 @@ export function createTerminalQuickCommandDraft(
   scope: TerminalQuickCommandScope = { type: 'global' }
 ): TerminalQuickCommand {
   return {
-    id: `quick-command-${createBrowserUuid()}`,
+    id: `quick-command-${createNonSecureContextUuid()}`,
     label: '',
     command: '',
     appendEnter: true,

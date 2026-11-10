@@ -26,7 +26,7 @@ import {
   createCodexUsageSlice,
   createOpenCodeUsageSlice
 } from './usage-provider-slices'
-import { createBrowserSlice } from './browser'
+import { createBrowserSlice } from './browser/create-browser-slice'
 import { createRateLimitSlice } from './rate-limits'
 import { createSshSlice } from './ssh'
 import { createRuntimeEnvironmentSshSlice } from './runtime-environment-ssh'

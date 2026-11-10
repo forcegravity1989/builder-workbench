@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import type { RuntimeCapability } from './protocol-version'
 import * as RemoteClient from './remote-runtime-client'
 import type { RuntimeOrchestrationEnvelope, RuntimeRpcResponse } from './runtime-rpc-envelope'
@@ -189,7 +189,7 @@ describe('runtime client public export parity', () => {
     expectTypeOf<RemoteClient.RemoteRuntimeSubscriptionCallbacks>().toEqualTypeOf<RemoteClient.RemoteRuntimeSubscriptionCallbacks>()
     expectTypeOf(RemoteClient.sendRemoteRuntimeRequest).toEqualTypeOf<
       <TResult>(
-        pairing: PairingOffer,
+        connection: PairedRuntimeConnection,
         method: string,
         params: unknown,
         timeoutMs: number,
@@ -200,7 +200,7 @@ describe('runtime client public export parity', () => {
     >()
     expectTypeOf(RemoteClient.sendRemoteRuntimeRequestWithStatusPreflight).toEqualTypeOf<
       <TResult>(
-        pairing: PairingOffer,
+        connection: PairedRuntimeConnection,
         method: string,
         params: unknown,
         timeoutMs: number,
@@ -212,7 +212,7 @@ describe('runtime client public export parity', () => {
     >()
     expectTypeOf(RemoteClient.subscribeRemoteRuntimeRequest).toEqualTypeOf<
       <TResult>(
-        pairing: PairingOffer,
+        connection: PairedRuntimeConnection,
         method: string,
         params: unknown,
         timeoutMs: number,

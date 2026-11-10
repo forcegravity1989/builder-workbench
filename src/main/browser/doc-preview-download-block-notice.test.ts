@@ -6,14 +6,14 @@ const mocks = vi.hoisted(() => ({
   revocationListener: null as null | ((grant: { id: string }) => void)
 }))
 
-vi.mock('./doc-preview-failure-notice', () => ({
+vi.mock('./document-preview/doc-preview-failure-notice', () => ({
   publishDocPreviewFailure: mocks.publishDocPreviewFailure
 }))
-vi.mock('./doc-preview-guest-policy', () => ({
+vi.mock('./document-preview/doc-preview-guest-policy', () => ({
   readDocPreviewGuestBoundGrantId: (guest: Electron.WebContents) =>
     mocks.boundGrantIdByGuest.get(guest) ?? null
 }))
-vi.mock('./doc-preview-grant-registry', () => ({
+vi.mock('./document-preview/doc-preview-grant-registry', () => ({
   onDocPreviewGrantRevoked: (listener: (grant: { id: string }) => void) => {
     mocks.revocationListener = listener
     return vi.fn()
@@ -33,7 +33,7 @@ function guestBoundTo(grantId: string | null): Electron.WebContents {
 }
 
 async function loadNotifier(): Promise<(guest: Electron.WebContents) => void> {
-  const module = await import('./doc-preview-download-block-notice')
+  const module = await import('./document-preview/doc-preview-download-block-notice')
   return module.noticeDocPreviewDownloadBlocked
 }
 

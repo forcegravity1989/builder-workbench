@@ -1,31 +1,35 @@
+import type {
+  BrowserExtensionListParams,
+  BrowserExtensionReloadParams,
+  BrowserExtensionReloadResult,
+  BrowserExtensionSummaryListResult
+} from '../../shared/browser/extensions/browser-extension-types'
 import { BrowserError } from '../browser/browser-error'
-import {
-  BROWSER_UNAVAILABLE_ERROR_CODE,
-  type RuntimeBrowserUnavailableReason
-} from '../../shared/runtime-types'
-import type { RuntimeBrowserCommandHost, RuntimeBrowserCommands } from './orca-runtime-browser'
+import '../../shared/runtime-types'
+import { BROWSER_UNAVAILABLE_ERROR_CODE } from '../../shared/runtime-session-contracts'
+import type { RuntimeBrowserUnavailableReason } from '../../shared/runtime-capability-degradation'
+import type { RuntimeBrowserCommandHost } from './browser/commands/browser-command-contracts'
+import type { RuntimeBrowserCommands } from './orca-runtime-browser'
+import { closeBrowserPageWithoutEngine } from './browser/client-pages/browser-client-page-close'
 
-/**
- * How `OrcaRuntimeService` obtains its browser-automation commands.
- *
- * Why a factory rather than a direct import: `orca-runtime-browser.ts` reaches the
- * whole Chromium cluster — `BrowserWindow`, `session`, `webContents`, cookie jars —
- * 15 modules that a Node host cannot load at all. Importing the class for its *type*
- * is free; constructing it is what drags the cluster in.
- *
- * The desktop installs the Electron factory. A Node host installs an external provider
- * when one resolves; otherwise every browser RPC rejects with the closed
- * `browser_unavailable` code and capability filtering hides the affordance.
- *
- * Deliberately NOT a stub object with silently-succeeding methods: that is the
- * "looks fine, returns a lie" shape this codebase rejects. Absent means rejected.
- */
+/** Inject Electron browser construction to keep Chromium imports out of Node hosts; type imports remain safe.
+ * Node hosts use external providers or reject browser_unavailable and hide capability; never silently succeed with a stub. */
 
 export type RuntimeBrowserCommandsFactory = (
   host: RuntimeBrowserCommandHost
 ) => RuntimeBrowserCommands
 
 export type RuntimeBrowserCommandsFactoryOptions = {
+  /** The provider creates pages against this runtime's client-host lease registry. */
+  clientHosting?: boolean
+  /** Only the desktop installs access to its local extension manager. */
+  extensions?: {
+    list(params: BrowserExtensionListParams): Promise<BrowserExtensionSummaryListResult>
+    reload(params: BrowserExtensionReloadParams): Promise<BrowserExtensionReloadResult>
+  }
+  supportsGoogleCookieClear?: () => boolean
+  /** Client pages live in this runtime's own registries, so they need no healthy engine. */
+  clientHostingWithoutEngine?: boolean
   /** The provider owns browser pages without a renderer window. */
   headless?: boolean
   /** Live health probe; failure must remove advertised capability. */
@@ -57,6 +61,20 @@ export function runtimeBrowserCommandsFactoryIsHeadless(): boolean {
   return runtimeBrowserCommandsFactoryIsAvailable() && currentOptions.headless === true
 }
 
+export function runtimeBrowserCommandsFactorySupportsClientHosting(): boolean {
+  if (currentFactory && currentOptions.clientHostingWithoutEngine === true) {
+    return true
+  }
+  return runtimeBrowserCommandsFactoryIsAvailable() && currentOptions.clientHosting === true
+}
+
+export function runtimeBrowserCommandsFactorySupportsGoogleCookieClear(): boolean {
+  return (
+    runtimeBrowserCommandsFactoryIsAvailable() &&
+    currentOptions.supportsGoogleCookieClear?.() === true
+  )
+}
+
 export type RuntimeBrowserUnavailableCause = {
   reason: RuntimeBrowserUnavailableReason
   detail?: string
@@ -64,35 +82,22 @@ export type RuntimeBrowserUnavailableCause = {
 
 let unavailableCause: RuntimeBrowserUnavailableCause | null = null
 
-/**
- * Recorded by whoever tried to resolve a provider, because only that code can tell a
- * missing driver from an unset env var from a launch that threw. Null once one resolves.
- */
+/** Only provider resolution can distinguish missing driver/config/launch failure; clear the note once a provider resolves. */
 export function setRuntimeBrowserUnavailableCause(
   cause: RuntimeBrowserUnavailableCause | null
 ): void {
   unavailableCause = cause
 }
 
-/**
- * The cause this process can prove. An installed factory outranks any recorded note: it
- * means resolution succeeded, so the failure is later and elsewhere — a dead provider, or
- * a renderer-backed factory with no window. Unknown beats guessing.
- */
+/** Healthy factory wins; otherwise retain resolver evidence, or report engine death if none. Infer no unproven cause. */
 export function runtimeBrowserUnavailableCause(): RuntimeBrowserUnavailableCause {
-  if (currentFactory) {
-    return runtimeBrowserCommandsFactoryIsAvailable()
-      ? { reason: 'desktop_window_unavailable' }
-      : { reason: 'provider_unhealthy' }
+  if (currentFactory && runtimeBrowserCommandsFactoryIsAvailable()) {
+    return { reason: 'desktop_window_unavailable' }
   }
-  return unavailableCause ?? { reason: 'unknown' }
+  return unavailableCause ?? { reason: currentFactory ? 'provider_unhealthy' : 'unknown' }
 }
 
-/**
- * Build the commands, or a rejecting proxy when this host has no browser. The proxy
- * throws per call rather than at construction so the runtime still starts — the
- * capability is simply not advertised.
- */
+/** Reject per call when unavailable so runtime startup still succeeds and capability is hidden. */
 export function createRuntimeBrowserCommands(
   host: RuntimeBrowserCommandHost
 ): RuntimeBrowserCommands {
@@ -102,15 +107,41 @@ export function createRuntimeBrowserCommands(
   return new Proxy({} as RuntimeBrowserCommands, {
     get: (_target, property) => {
       if (property === 'then') {
-        // Why: an awaited undefined must not look like a thenable.
+        // Avoid treating the proxy as a thenable when awaited.
         return undefined
       }
+      if (property === 'browserTabClose') {
+        // Stale client-hosted tabs remain closeable even without an engine.
+        return (params: Parameters<RuntimeBrowserCommands['browserTabClose']>[0]) =>
+          closeBrowserPageWithoutEngine(host, params ?? {}, browserUnavailableError)
+      }
       return () => {
-        throw new BrowserError(
-          BROWSER_UNAVAILABLE_ERROR_CODE,
-          'Browser automation is unavailable on this host.'
-        )
+        throw browserUnavailableError()
       }
     }
   })
+}
+
+export function browserUnavailableError(): BrowserError {
+  return new BrowserError(
+    BROWSER_UNAVAILABLE_ERROR_CODE,
+    'Browser automation is unavailable on this host.'
+  )
+}
+
+/** Requires an available desktop extension provider; headless and remote browser providers are unsupported. */
+export function getRuntimeBrowserExtensions(): NonNullable<
+  RuntimeBrowserCommandsFactoryOptions['extensions']
+> {
+  if (
+    !runtimeBrowserCommandsFactoryIsAvailable() ||
+    currentOptions.headless ||
+    !currentOptions.extensions
+  ) {
+    throw new BrowserError(
+      'browser_unavailable',
+      'Browser extension management requires the Orca desktop on this host; it is unavailable in headless or remote browser providers.'
+    )
+  }
+  return currentOptions.extensions
 }

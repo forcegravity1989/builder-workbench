@@ -140,7 +140,7 @@ import {
   isDashboardPopoutRenderer,
   zoomDashboardPopoutIfFocused
 } from './dashboard-popout-window'
-import { readBrowserClientHostIdArgument } from '../../shared/browser-client-host-id-argument'
+import { readBrowserClientHostIdArgument } from '../../shared/browser/client-hosting/browser-client-host-id-argument'
 
 type FakeWindow = InstanceType<typeof BrowserWindowMock>
 

@@ -1,3 +1,4 @@
+import { replayAppKeyDown } from '@/lib/app-keyboard-router'
 import { focusTerminalTabSurface } from '@/lib/focus-terminal-tab-surface'
 import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
 import {
@@ -21,6 +22,27 @@ function getWorktreeRuntimeEnvironmentId(worktreeId: string | null | undefined):
 }
 
 export function registerTabLifecycleIpcBridge(unsubs: (() => void)[]): void {
+  unsubs.push(
+    // Why: a focused page is its own process, so main hands its tab chords back to run through
+    // the same app shortcut owners a key pressed in Orca's own UI reaches.
+    window.api.ui.onBrowserPageTabShortcut((input) =>
+      replayAppKeyDown(
+        Object.assign(
+          new KeyboardEvent('keydown', {
+            key: input.key,
+            code: input.code,
+            altKey: input.alt,
+            metaKey: input.meta,
+            ctrlKey: input.control,
+            shiftKey: input.shift,
+            cancelable: true
+          }),
+          // Why: keybinding matching reads this field, so a double-tap binding matches the replay too.
+          { doubleTapModifier: input.doubleTapModifier }
+        )
+      )
+    )
+  )
   unsubs.push(
     window.api.ui.onNewTerminalTab(() => {
       const store = useAppStore.getState()

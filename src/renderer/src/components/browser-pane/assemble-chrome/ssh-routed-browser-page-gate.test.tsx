@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
+import { createGlobalSettingsFixture } from '../../../../../shared/global-settings-test-fixture'
+import type * as WorktreeRuntimeOwner from '@/lib/worktree-runtime-owner'
 
 const mocks = vi.hoisted(() => ({
   executionHostId: 'local' as string,
@@ -9,17 +11,22 @@ const mocks = vi.hoisted(() => ({
   destroyPersistentWebview: vi.fn()
 }))
 
-vi.mock('@/lib/worktree-runtime-owner', () => ({
+vi.mock('@/lib/worktree-runtime-owner', async (importOriginal) => ({
+  ...(await importOriginal<typeof WorktreeRuntimeOwner>()),
   getExecutionHostIdForWorktree: () => mocks.executionHostId
 }))
 
 vi.mock('../host-guest/webview-registry', () => ({
-  destroyPersistentWebview: mocks.destroyPersistentWebview
+  destroyPersistentWebview: mocks.destroyPersistentWebview,
+  webviewRegistry: new Map()
 }))
 
 import { SshRoutedBrowserPageGate } from './ssh-routed-browser-page-gate'
 
 const PAGE_IDS = ['page-1', 'page-2'] as const
+let routeSequence = 0
+let targetId: string
+let restoreStore: () => void
 
 const settle = () =>
   act(async () => {
@@ -28,6 +35,40 @@ const settle = () =>
 
 describe('SshRoutedBrowserPageGate', () => {
   beforeEach(() => {
+    targetId = `target-${++routeSequence}`
+    const prior = useAppStore.getState()
+    const settings = createGlobalSettingsFixture(prior.settings ?? {})
+    useAppStore.setState({
+      settings: {
+        ...settings,
+        browserSshWorkspaceRoutingEnabled: true,
+        browserSshWorkspaceRoutingDisabledTargetIds: [],
+        browserSshWorkspaceRoutingProbeSkippedTargetIds: []
+      },
+      sshConnectionStates: new Map([
+        [
+          targetId,
+          {
+            targetId,
+            status: 'connected',
+            error: null,
+            reconnectAttempt: 0,
+            connectionGeneration: 1
+          }
+        ]
+      ]),
+      updateSettings: async (patch) => {
+        useAppStore.setState((state) => ({
+          settings: { ...(state.settings ?? settings), ...patch }
+        }))
+      }
+    })
+    restoreStore = () =>
+      useAppStore.setState({
+        settings: prior.settings,
+        sshConnectionStates: prior.sshConnectionStates,
+        updateSettings: prior.updateSettings
+      })
     mocks.prepare.mockReset()
     mocks.destroyPersistentWebview.mockReset()
     Object.defineProperty(window, 'api', {
@@ -35,7 +76,10 @@ describe('SshRoutedBrowserPageGate', () => {
       value: { browser: { prepareSshWorkspacePartition: mocks.prepare } }
     })
   })
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    restoreStore()
+  })
 
   it('renders children with no override for non-SSH workspaces without any prepare call', async () => {
     mocks.executionHostId = 'local'
@@ -50,7 +94,7 @@ describe('SshRoutedBrowserPageGate', () => {
   })
 
   it('mounts the page only on the prepared partition for SSH workspaces', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = `ssh:${targetId}`
     mocks.prepare.mockResolvedValue({ partition: 'persist:orca-browser-v1-routed' })
     render(
       <SshRoutedBrowserPageGate worktreeId="wt-1" sessionProfileId="session-x" pageIds={PAGE_IDS}>
@@ -62,13 +106,13 @@ describe('SshRoutedBrowserPageGate', () => {
     await settle()
     expect(screen.getByTestId('page').textContent).toBe('persist:orca-browser-v1-routed')
     expect(mocks.prepare).toHaveBeenCalledWith({
-      targetId: 'target-a',
+      targetId,
       browserProfileId: 'session-x'
     })
   })
 
   it('never renders the page on failure and retries on demand', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = `ssh:${targetId}`
     mocks.prepare.mockRejectedValueOnce(new Error('browser_tunnel_execution_host_unavailable'))
     mocks.prepare.mockResolvedValueOnce({ partition: 'persist:orca-browser-v1-routed' })
     render(
@@ -84,7 +128,7 @@ describe('SshRoutedBrowserPageGate', () => {
   })
 
   it('stays unrouted when the setting is off', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = `ssh:${targetId}`
     const priorSettings = useAppStore.getState().settings
     useAppStore.setState({
       settings: { ...priorSettings, browserSshWorkspaceRoutingEnabled: false }
@@ -106,7 +150,7 @@ describe('SshRoutedBrowserPageGate', () => {
   })
 
   it('offers Try anyway for a blocked-forwarding verdict and skips the probe on it', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = `ssh:${targetId}`
     mocks.prepare.mockRejectedValueOnce(new Error('browser_local_route_forwarding_blocked'))
     mocks.prepare.mockResolvedValueOnce({ partition: 'persist:orca-browser-v1-routed' })
     render(
@@ -119,7 +163,7 @@ describe('SshRoutedBrowserPageGate', () => {
     screen.getByRole('button', { name: 'Try anyway' }).click()
     await settle()
     expect(mocks.prepare).toHaveBeenLastCalledWith({
-      targetId: 'target-a',
+      targetId,
       browserProfileId: 'default',
       skipProbe: true
     })
@@ -127,7 +171,7 @@ describe('SshRoutedBrowserPageGate', () => {
   })
 
   it('records the per-target opt-out from Browse from this device instead', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = `ssh:${targetId}`
     mocks.prepare.mockRejectedValue(new Error('browser_local_route_ssh_unavailable'))
     const updateSettings = vi.fn()
     const prior = useAppStore.getState().updateSettings
@@ -143,7 +187,7 @@ describe('SshRoutedBrowserPageGate', () => {
       await settle()
       screen.getByRole('button', { name: 'Browse from this device instead' }).click()
       expect(updateSettings).toHaveBeenCalledWith({
-        browserSshWorkspaceRoutingDisabledTargetIds: ['target-a']
+        browserSshWorkspaceRoutingDisabledTargetIds: [targetId]
       })
     } finally {
       useAppStore.setState({ updateSettings: prior } as unknown as Parameters<
@@ -153,10 +197,10 @@ describe('SshRoutedBrowserPageGate', () => {
   })
 
   it('mounts unrouted for a target the user opted out of', async () => {
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = `ssh:${targetId}`
     const priorSettings = useAppStore.getState().settings
     useAppStore.setState({
-      settings: { ...priorSettings, browserSshWorkspaceRoutingDisabledTargetIds: ['target-a'] }
+      settings: { ...priorSettings, browserSshWorkspaceRoutingDisabledTargetIds: [targetId] }
     } as Parameters<typeof useAppStore.setState>[0])
     try {
       render(
@@ -188,7 +232,7 @@ describe('SshRoutedBrowserPageGate', () => {
     await settle()
     expect(screen.getByTestId('page').textContent).toBe('null')
 
-    mocks.executionHostId = 'ssh:target-a'
+    mocks.executionHostId = `ssh:${targetId}`
     act(() => {
       view.rerender(
         <SshRoutedBrowserPageGate worktreeId="wt-1" sessionProfileId={null} pageIds={PAGE_IDS}>

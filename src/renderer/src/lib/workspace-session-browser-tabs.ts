@@ -1,6 +1,6 @@
 import type { BrowserPage, BrowserWorkspace } from '../../../shared/browser-workspace-types'
 import type { WorkspaceSessionState } from '../../../shared/workspace-session-state-types'
-import type { RemoteBrowserPageHandle } from '../store/slices/browser'
+import type { RemoteBrowserPageHandle } from '../store/slices/browser/browser-slice-contract'
 
 export function buildBrowserSessionData(
   browserTabsByWorktree: Record<string, BrowserWorkspace[]>,

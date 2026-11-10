@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render as renderWithProviders, screen } from '@testing-library/react'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserPage } from '../../../../shared/browser-workspace-types'
 
@@ -16,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/runtime/web-runtime-session', () => ({
+vi.mock('@/runtime/web-runtime-browser-creation', () => ({
   createWebRuntimeSessionBrowserTab: mocks.createBrowserTab
 }))
 
@@ -48,11 +49,19 @@ vi.mock('./assemble-chrome/BrowserAddressBar', () => ({
   }
 }))
 
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { normalizeBrowserNavigationUrl } from '../../../../shared/browser-url'
 import { requestBrowserFocus } from './host-guest/browser-focus'
 import { installClientHostedPaneApi } from './client-hosted-browser-pane-test-rig'
 import { ClientHostedBrowserPagePane } from './ClientHostedBrowserPagePane'
+
+function render(ui: React.ReactNode): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(ui, { wrapper: TooltipProvider })
+}
+
+function removeRetainedGuests(): void {
+  document.querySelectorAll('webview').forEach((guest) => guest.remove())
+}
 
 describe('ClientHostedBrowserPagePane', () => {
   beforeEach(() => {
@@ -61,7 +70,10 @@ describe('ClientHostedBrowserPagePane', () => {
     // Download, popup and permission notices subscribe on mount; each has its own suite.
     installClientHostedPaneApi({ browser: { publishClientPageMetadata: mocks.publishMetadata } })
   })
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    removeRetainedGuests()
+  })
 
   it('attaches the exact retained guest once and keeps focus changes local', () => {
     const { webview, focus } = createWebview()
@@ -311,7 +323,7 @@ describe('ClientHostedBrowserPagePane', () => {
   })
 
   it('requests the one-time intro tour on the first active client-hosted page', async () => {
-    const { useAppStore } = await import('@/store')
+    const { useAppStore } = await import('@/store/index')
     const prior = {
       persistedUIReady: useAppStore.getState().persistedUIReady,
       contextualToursSeenIds: useAppStore.getState().contextualToursSeenIds,
@@ -354,7 +366,7 @@ describe('ClientHostedBrowserPagePane', () => {
   })
 
   it('never re-requests the intro tour once it has been seen', async () => {
-    const { useAppStore } = await import('@/store')
+    const { useAppStore } = await import('@/store/index')
     const prior = {
       persistedUIReady: useAppStore.getState().persistedUIReady,
       contextualToursSeenIds: useAppStore.getState().contextualToursSeenIds,
@@ -456,6 +468,7 @@ describe('ClientHostedBrowserPagePane address bar parity', () => {
 
   afterEach(() => {
     cleanup()
+    removeRetainedGuests()
     vi.unstubAllGlobals()
   })
 
@@ -647,11 +660,14 @@ function createWebview(): {
   setTitle(title: string): void
 } {
   const webview = document.createElement('webview') as Electron.WebviewTag
+  webview.tabIndex = -1
+  document.body.appendChild(webview)
   let url = 'about:blank'
   let title = 'New Tab'
-  const focus = vi.fn()
-  const blur = vi.fn()
+  const focus = vi.fn(() => HTMLElement.prototype.focus.call(webview))
+  const blur = vi.fn(() => HTMLElement.prototype.blur.call(webview))
   Object.assign(webview, {
+    getWebContentsId: vi.fn(() => 42),
     getURL: vi.fn(() => url),
     getTitle: vi.fn(() => title),
     isLoading: vi.fn(() => false),

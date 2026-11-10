@@ -40,3 +40,12 @@ export function orcadArtifactFilenames(): string[] {
     (artifact) => artifact.filename
   )
 }
+
+/** Native addon filenames also used by desktop loading. */
+export const ORCAD_WINDOWS_PROCESS_TREE_FILENAME = 'windows-process-tree.node'
+export const ORCAD_WINDOWS_SECURITY_FILENAME = 'windows-security.node'
+
+/** WSL browser relay may reuse a pinned Node runtime installed by Orca. */
+export const ORCAD_RUNTIMES_DIRNAME = 'runtimes'
+export const ORCAD_NODE_RUNTIME_DIR_PREFIX = 'node-'
+export const ORCAD_NODE_RUNTIME_POSIX_EXECUTABLE = 'bin/node'

@@ -8,7 +8,7 @@ import {
   publicKeyFromBase64,
   publicKeyToBase64
 } from './e2ee-crypto'
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import type { RuntimeCapability } from './protocol-version'
 import { remoteRuntimeClientCapabilities } from './remote-runtime-client-capabilities'
 import {
@@ -32,7 +32,7 @@ import type { RuntimeStatus } from './runtime-types'
 import { isSafeTimerDelayMs, MAX_TIMER_DELAY_MS } from './timer-delay'
 
 export async function sendRemoteRuntimeRequestOnSocket<TResult>(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,
@@ -53,20 +53,20 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
   const serializedStatusRequest = statusRequestId
     ? serializeRemoteRuntimePayload({
         id: statusRequestId,
-        deviceToken: pairing.deviceToken,
+        deviceToken: pairing.credential.deviceToken,
         method: 'status.get'
       })
     : null
   const serializedAuth = serializeRemoteRuntimePayload({
     type: 'e2ee_auth',
-    deviceToken: pairing.deviceToken,
+    deviceToken: pairing.credential.deviceToken,
     clientCapabilities: remoteRuntimeClientCapabilities(clientCapabilities)
   })
   const pendingRequest = {
     preparedRequest: prepareRemoteRuntimeRequest(new Map(), () =>
       serializeRemoteRuntimeRpcRequest({
         requestId,
-        deviceToken: pairing.deviceToken,
+        deviceToken: pairing.credential.deviceToken,
         method,
         params,
         envelope
@@ -76,7 +76,10 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
   let serializedRequest = takeRemoteRuntimePreparedRequest(pendingRequest)
   return await new Promise<RuntimeRpcResponse<TResult>>((resolve, reject) => {
     const keyPair = generateKeyPair()
-    const sharedKey = deriveSharedKey(keyPair.secretKey, publicKeyFromBase64(pairing.publicKeyB64))
+    const sharedKey = deriveSharedKey(
+      keyPair.secretKey,
+      publicKeyFromBase64(pairing.hostPublicKeyB64)
+    )
     let settled = false
     let ws: WebSocket | null = null
     let router: RemoteRuntimeRequestResponseRouter<TResult>

@@ -22,6 +22,7 @@ export default defineConfig({
     setupFiles: [
       resolve('config/scripts/happy-dom-offscreen-canvas.ts'),
       resolve('config/scripts/happy-dom-mutation-observer-retention.ts'),
+      resolve('config/scripts/happy-dom-animation-cancel.ts'),
       resolve('config/scripts/vitest-host-ports-setup.ts')
     ],
     // CI/E2E contract tests from the historical Orca harness are retained as

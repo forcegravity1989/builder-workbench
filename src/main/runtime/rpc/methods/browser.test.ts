@@ -68,11 +68,11 @@ describe('browser RPC methods', () => {
     })
   })
 
-  it('validates profile user-agent modes', () => {
+  it('rejects retired per-profile user-agent modes', () => {
     expect(
       ProfileCreate.safeParse({ label: 'Google', scope: 'isolated', userAgentMode: 'native' })
         .success
-    ).toBe(true)
+    ).toBe(false)
     expect(ProfileCreate.safeParse({ label: 'Work', scope: 'isolated' }).success).toBe(true)
     expect(
       ProfileCreate.safeParse({ label: 'Bad', scope: 'isolated', userAgentMode: 'rotating' })

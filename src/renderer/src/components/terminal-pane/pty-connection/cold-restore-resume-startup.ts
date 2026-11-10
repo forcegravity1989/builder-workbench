@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
 import { buildAgentResumeStartupPlan } from '@/lib/tui-agent-startup'
 import { resolveAgentResumeLaunchTarget } from '@/lib/agent-resume-launch-target'
 import {
@@ -79,7 +79,7 @@ export function bindBuildColdRestoreAgentResumeStartup(session: ConnectPanePtySe
     if (!startupPlan) {
       return null
     }
-    const coldRestoreLaunchToken = createBrowserUuid()
+    const coldRestoreLaunchToken = createNonSecureContextUuid()
     // Why: cold restore means the PTY process is gone but the agent provider
     // session is still resumable, so the replacement spawn must launch it.
     return {

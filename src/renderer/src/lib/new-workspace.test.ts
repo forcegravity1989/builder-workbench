@@ -82,8 +82,8 @@ vi.mock('@/lib/agent-paste-draft', () => ({
   pasteDraftToAgentPtyWhenReady: mockPasteDraftToAgentPtyWhenReady
 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => 'launch-token-1'
+vi.mock('../../../shared/non-secure-context-uuid', () => ({
+  createNonSecureContextUuid: () => 'launch-token-1'
 }))
 
 vi.mock('@/lib/telemetry', () => ({

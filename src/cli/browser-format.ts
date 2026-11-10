@@ -11,8 +11,38 @@ import type {
 } from '../shared/runtime-types'
 
 export function formatSnapshot(result: BrowserSnapshotResult): string {
-  const header = `page: ${result.browserPageId}\n${result.title} — ${result.url}\n`
-  return header + result.snapshot
+  // Older runtimes leave url and title unset.
+  const location = [result.title, result.url].filter(Boolean).join(' — ')
+  const header = [`page: ${result.browserPageId}`, ...(location ? [location] : [])].join('\n')
+  return `${header}\n${formatSnapshotBody(result.snapshot)}`
+}
+
+function formatSnapshotBody(snapshot: BrowserSnapshotResult['snapshot']): string {
+  if (typeof snapshot === 'string') {
+    return snapshot
+  }
+  if (snapshot.kind === 'full') {
+    return `revision ${snapshot.revision} (whole tree)\n${snapshot.tree}`
+  }
+  if (snapshot.kind === 'unchanged') {
+    return `revision ${snapshot.revision}: no change since revision ${snapshot.baseRevision}`
+  }
+  const change = snapshot.treeChange
+  const summary = `revision ${snapshot.revision}: changes to revision ${snapshot.baseRevision}`
+  if (!change) {
+    return `${summary}; the tree lines are the same`
+  }
+  // 1-based so agents can count lines in the tree they already have.
+  const first = change.startLine + 1
+  const range =
+    change.deleteCount === 1 ? `line ${first}` : `lines ${first}-${first + change.deleteCount - 1}`
+  if (change.deleteCount === 0) {
+    return [`${summary}; insert before line ${first}:`, ...change.lines].join('\n')
+  }
+  if (change.lines.length === 0) {
+    return `${summary}; delete ${range}`
+  }
+  return [`${summary}; replace ${range} with:`, ...change.lines].join('\n')
 }
 
 export function formatScreenshot(result: BrowserScreenshotResult): string {
@@ -47,8 +77,7 @@ export function formatBrowserProfileList(result: BrowserProfileListResult): stri
     .map((profile) => {
       const marker = profile.scope === 'default' ? '* ' : '  '
       const source = profile.source?.browserFamily ?? 'none'
-      const userAgent = profile.userAgentMode === 'native' ? '  ua:native' : ''
-      return `${marker}${profile.id}  ${profile.label}  ${profile.scope}  source:${source}${userAgent}`
+      return `${marker}${profile.id}  ${profile.label}  ${profile.scope}  source:${source}`
     })
     .join('\n')
 }

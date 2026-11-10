@@ -1,3 +1,8 @@
+import {
+  requestDesktopBrowserBridgeReconcile,
+  setDesktopBrowserBridgeHostStopped
+} from './browser/desktop-browser-bridge-reconcile'
+import { isRemoteCliControlAllowed } from '../../shared/ssh-remote-cli-control'
 import { ipcMain } from 'electron'
 import type {
   SshConfigHostListArgs,
@@ -34,8 +39,42 @@ function takeRepoReadoptions(): SshRepoReadoption[] {
   return repoReadoptions
 }
 
-function omitRendererSshTargetGeneration<T extends object>(value: T): Omit<T, 'generation'> {
-  const { generation: _generation, ...rest } = value as T & { generation?: unknown }
+function omitRendererSshTargetGeneration<T extends object>(
+  value: T
+): Omit<
+  T,
+  | 'generation'
+  | 'orcadProvisioning'
+  | 'orcadFence'
+  | 'managedServerUnavailable'
+  | 'managedServerMoveOffered'
+  | 'managedServerLeaveBehind'
+  | 'managedServerUpdateFailure'
+  | 'managedServerRemoved'
+  | 'remoteRuntimeResolution'
+> {
+  const {
+    generation: _generation,
+    orcadProvisioning: _orcadProvisioning,
+    orcadFence: _orcadFence,
+    managedServerUnavailable: _managedServerUnavailable,
+    managedServerMoveOffered: _managedServerMoveOffered,
+    managedServerLeaveBehind: _managedServerLeaveBehind,
+    managedServerUpdateFailure: _managedServerUpdateFailure,
+    managedServerRemoved: _managedServerRemoved,
+    remoteRuntimeResolution: _remoteRuntimeResolution,
+    ...rest
+  } = value as T & {
+    generation?: unknown
+    orcadProvisioning?: unknown
+    orcadFence?: unknown
+    managedServerUnavailable?: unknown
+    managedServerMoveOffered?: unknown
+    managedServerLeaveBehind?: unknown
+    managedServerUpdateFailure?: unknown
+    managedServerRemoved?: unknown
+    remoteRuntimeResolution?: unknown
+  }
   return rest
 }
 
@@ -60,15 +99,21 @@ export function registerSshTargetCrudHandlers(): void {
   ipcMain.handle(
     'ssh:updateTarget',
     (_event, args: { id: string; updates: SshTargetUpdateInput }) => {
-      return getSshTargetRegistryStore()!.updateTarget(
+      const target = getSshTargetRegistryStore()!.updateTarget(
         args.id,
         omitRendererSshTargetGeneration(args.updates)
       )
+      if (target && isRemoteCliControlAllowed(target)) {
+        setDesktopBrowserBridgeHostStopped(args.id, false)
+      }
+      requestDesktopBrowserBridgeReconcile()
+      return target
     }
   )
 
   ipcMain.handle('ssh:removeTarget', async (_event, args: { id: string }) => {
     await removeRegisteredSshTarget(args.id)
+    requestDesktopBrowserBridgeReconcile()
   })
 
   ipcMain.handle('ssh:importConfig', (_event, args?: { reAdopt?: boolean }) => {

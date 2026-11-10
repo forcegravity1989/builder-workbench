@@ -18,7 +18,8 @@ import type {
   AgentJournalItemBody,
   AgentJournalMessageItem,
   AgentJournalRenderItem,
-  AgentJournalSubmission
+  AgentJournalSubmission,
+  AgentJournalResolution
 } from './agent-session-journal-types'
 
 const BoundedPayload = z.object({
@@ -250,3 +251,7 @@ export type CanonicalJournalTypesAreAdmissible = [
   >,
   Admits<AgentJournalSubmission extends z.input<typeof AgentJournalSubmissionSchema> ? true : false>
 ]
+
+export function isAgentJournalResolution(value: unknown): value is AgentJournalResolution {
+  return Resolution.safeParse(value).success
+}

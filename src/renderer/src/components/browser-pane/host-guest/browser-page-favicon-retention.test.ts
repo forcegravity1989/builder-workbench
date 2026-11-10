@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createBrowserPageWebviewNavigationHandlers } from './browser-page-webview-navigation-handlers'
-import { createBrowserPageWebviewLoadingHandlers } from './browser-page-webview-loading-handlers'
 import type { BrowserTabPageState } from '../describe-page/browser-page-types'
 
 const TAB_ID = 'tab-1'
@@ -43,26 +42,8 @@ function createHarness(startUrl: string) {
     invalidateBrowserAnnotationDocumentRef: ref(invalidateBrowserAnnotationDocument),
     setBrowserOverlayViewport: vi.fn()
   })
-  const loading = createBrowserPageWebviewLoadingHandlers({
-    webview,
-    browserTabId: TAB_ID,
-    faviconUrlRef,
-    browserTabUrlRef: ref(startUrl),
-    addressBarValueRef: ref(startUrl),
-    addressBarInputRef: ref(null),
-    activeLoadFailureRef: ref(null),
-    lastKnownWebviewUrlRef: ref<string | null>(startUrl),
-    trackNextLoadingEventRef: ref(true),
-    keepAddressBarFocusRef: ref(false),
-    recoveryNavigationValidationRef: ref(null),
-    onUpdatePageStateRef,
-    onSetUrlRef: ref(vi.fn()),
-    setAddressBarValue: vi.fn(),
-    focusAddressBarNow: () => false
-  })
 
   const navigateTo = (url: string): void => {
-    loading.handleDidStartLoading()
     navigation.handleDidStartNavigation({
       isMainFrame: true,
       isInPlace: false,
@@ -135,7 +116,7 @@ describe('favicon retention across navigations', () => {
     expect(harness.invalidateBrowserAnnotationDocument).not.toHaveBeenCalled()
   })
 
-  it('reports loading without touching the icon on did-start-loading', () => {
+  it('reports loading without touching the icon on main-document navigation', () => {
     const harness = createHarness('https://github.com/nodejs/node')
     harness.navigation.handleFaviconUpdate({ favicons: [GITHUB_ICON] })
     harness.updates.length = 0

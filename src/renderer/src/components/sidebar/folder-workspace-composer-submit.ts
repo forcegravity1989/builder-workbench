@@ -1,7 +1,7 @@
 import { ensureAgentStartupInTerminal, type LinkedWorkItemSummary } from '@/lib/new-workspace'
 import { seedNativeChatLaunchDraftForAgentTab } from '@/lib/agent-launch-prompt-delivery'
 import { preflightAgentTrust } from '@/lib/agent-trust-preflight'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import { buildAgentStartupPlan } from '@/lib/tui-agent-startup'
 import { tuiAgentToAgentKind } from '@/lib/telemetry'
 import { activateAndRevealFolderWorkspace } from '@/lib/worktree-activation'
@@ -181,7 +181,7 @@ export async function submitFolderWorkspaceCreate({
   if (startupPlan && !startupPlan.launchToken) {
     // Why: delayed delivery must target the exact pane spawned from this queued
     // startup, so both halves share one renderer-session token.
-    startupPlan.launchToken = createBrowserUuid()
+    startupPlan.launchToken = createNonSecureContextUuid()
   }
 
   const startup =

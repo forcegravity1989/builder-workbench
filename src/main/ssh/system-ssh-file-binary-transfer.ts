@@ -257,3 +257,5 @@ function makeWindowsReadFileCommand(remotePath: string): string {
     ].join('; ')
   )
 }
+
+export { makePosixWriteFileCommand }

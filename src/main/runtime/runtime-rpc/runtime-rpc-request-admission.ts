@@ -1,3 +1,4 @@
+import { LOCAL_CLI_RPC_CALLER } from '../rpc/rpc-caller-identity'
 import type { RuntimeMetadata } from '../../../shared/runtime-bootstrap'
 import { writeRuntimeMetadata } from '../runtime-metadata'
 import type { RpcMessageContext } from '../rpc/transport'
@@ -36,6 +37,8 @@ export class RuntimeRpcRequestAdmission extends RuntimeRpcBinaryRouting {
 
     try {
       return await this.dispatcher.dispatch(request, {
+        caller: LOCAL_CLI_RPC_CALLER,
+        callerScope: { kind: 'owner' },
         signal: longPoll ? context?.signal : undefined
       })
     } finally {

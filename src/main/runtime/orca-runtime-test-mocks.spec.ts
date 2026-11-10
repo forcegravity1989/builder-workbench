@@ -264,7 +264,7 @@ export type {
   AgentSessionExecutionClaim,
   AgentSessionSurfaceBinding
 } from '../../shared/agent-session-host-authority'
-export type { BrowserClientHostCommandEvent } from '../../shared/browser-client-host-protocol'
+export type { BrowserClientHostCommandEvent } from '../../shared/browser/client-hosting/browser-client-host-protocol'
 export type { FolderWorkspace } from '../../shared/folder-workspace-types'
 export type { GitUsernameModule }
 export type { IPtyProvider } from '../providers/types'

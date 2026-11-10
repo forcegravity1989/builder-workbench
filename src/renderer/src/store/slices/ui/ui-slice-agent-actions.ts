@@ -145,7 +145,7 @@ export function createUiAgentActions(
       const label = formatAgentTypeLabel(target.entry.agentType)
       const { activeAgentNotesSendFailureMessage, sendNotesToActiveAgentSession } =
         await import('@/lib/active-agent-note-send')
-      const result = await sendNotesToActiveAgentSession({
+      const sending = sendNotesToActiveAgentSession({
         worktreeId: mode.worktreeId,
         prompt: mode.prompt,
         noteTarget: { tabId: target.tabId, leafId: target.leafId }
@@ -155,6 +155,9 @@ export function createUiAgentActions(
         })
         return { status: 'status-unavailable' as const, code: 'runtime-unverifiable' as const }
       })
+
+      mode.onPromptHandedOff?.(sending)
+      const result = await sending
 
       const stillCurrent = (): boolean => {
         const current = get().agentSendPopoverTargetMode

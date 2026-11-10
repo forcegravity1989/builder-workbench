@@ -1,3 +1,4 @@
+import { hostsBrowserPagesFor } from '@/runtime/browser/client-hosting/browser-client-host-request-answer'
 import { applyHostWorktreeTerminalSleepState } from '@/components/terminal-pane/pty-shutdown-exit-deferral'
 import { dispatchTerminalSideEffectBatch } from '@/components/terminal-pane/terminal-side-effect-facts-handler'
 import { emitAutomationsChangedWindowEvent } from '@/lib/automations-changed-window-event'
@@ -93,6 +94,12 @@ export function registerRuntimeClientIpcBridge(
       applyNativeChatLaunchDraftResolved(useAppStore.getState(), event)
       return
     }
+    if (event.type === 'browserProfilesChanged') {
+      void useAppStore
+        .getState()
+        .fetchBrowserSessionProfiles(toRuntimeExecutionHostId(environmentId))
+      return
+    }
     if (event.type === 'reposChanged') {
       runtimeProjectRefreshScheduler.request(environmentId)
       return
@@ -175,7 +182,8 @@ export function registerRuntimeClientIpcBridge(
               hydrateRuntimeEnvironmentSshState(environmentId, { force: true }),
             sync: runtimeClientEventsSync.sync
           })
-        }
+        },
+        { hostsBrowserPages: hostsBrowserPagesFor(environmentId) }
       )
       return subscription
     },

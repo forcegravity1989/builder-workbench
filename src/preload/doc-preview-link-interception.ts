@@ -6,7 +6,12 @@
  * Runs in the guest's isolated world and exposes nothing to page script — the document cannot see
  * these listeners, remove them, or call what they call.
  */
-export type DocPreviewExternalLinkReporter = (url: string) => void
+import type { DocPreviewLinkModifiers } from '../shared/doc-preview-scheme'
+
+export type DocPreviewExternalLinkReporter = (
+  url: string,
+  modifiers: DocPreviewLinkModifiers
+) => void
 
 /**
  * Why the channel name is written out rather than imported: this module is bundled into a
@@ -126,7 +131,11 @@ export function handleDocPreviewLinkClick(
     return
   }
   event.preventDefault()
-  report(anchor.href)
+  report(anchor.href, {
+    metaKey: 'metaKey' in event && event.metaKey === true,
+    ctrlKey: 'ctrlKey' in event && event.ctrlKey === true,
+    shiftKey: 'shiftKey' in event && event.shiftKey === true
+  })
 }
 
 export function handleDocPreviewLinkAuxClick(event: MouseEvent): void {

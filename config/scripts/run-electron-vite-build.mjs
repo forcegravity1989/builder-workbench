@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { verifySandboxPreloadImports } from './desktop-build/output-contracts/sandbox-preload-imports.mjs'
 import { appendBuildOldSpaceOption } from './node-old-space-limit.mjs'
 import { RENDERER_BUILD_DIR, verifyRendererBootGraph } from './renderer-boot-graph.mjs'
 
@@ -21,7 +22,7 @@ const child = spawn(process.execPath, [electronViteCli, 'build', ...process.argv
   }
 })
 
-child.on('exit', (code, signal) => {
+child.on('exit', async (code, signal) => {
   if (signal) {
     process.kill(process.pid, signal)
     return
@@ -36,6 +37,14 @@ child.on('exit', (code, signal) => {
   // target gate keeps the parallel runner's concurrent main/preload builds from
   // reading out/renderer while the renderer target is still writing it.
   const target = process.env.ORCA_ELECTRON_VITE_TARGET
+  if (!target || target === 'preload') {
+    try {
+      await verifySandboxPreloadImports(fs.readFileSync('out/preload/index.js', 'utf8'))
+    } catch (error) {
+      console.error('[preload] Sandbox artifact verification failed:', error)
+      process.exit(1)
+    }
+  }
   const builtRenderer =
     (!target || target === 'renderer') && fs.existsSync(path.join(RENDERER_BUILD_DIR, 'index.html'))
   process.exit(builtRenderer ? verifyRendererBootGraph() : 0)

@@ -1,6 +1,6 @@
 import type { PublicKnownRuntimeEnvironment } from '../../../shared/runtime-environments'
 import type { WebPairingOffer } from './web-pairing'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
 
 export type StoredWebRuntimeEnvironment = Omit<PublicKnownRuntimeEnvironment, 'endpoints'> & {
@@ -70,7 +70,7 @@ export function createStoredWebRuntimeEnvironment(args: {
   previousEnvironment?: StoredWebRuntimeEnvironment | null
   connectionDependency?: 'ssh-tunnel'
 }): StoredWebRuntimeEnvironment {
-  const id = `web-${createBrowserUuid()}`
+  const id = `web-${createNonSecureContextUuid()}`
   const now = Date.now()
   const compatibleEnvironmentIds = getCompatibleEnvironmentIds(args.previousEnvironment, args.offer)
   return {

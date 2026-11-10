@@ -1,3 +1,5 @@
+import { useBrowserClientHostedDownloadNotices } from '../components/browser-pane/browser-client-hosted-download-notices'
+import { useBrowserIdentityMigrationNotice } from '../components/browser-pane/browser-user-agent-migration-notice'
 import { useAppStore } from '../store'
 import { useIpcEvents } from '../hooks/useIpcEvents'
 import { useAutomationDispatchEvents } from '../hooks/useAutomationDispatchEvents'
@@ -30,6 +32,8 @@ export function useAppShellServices(options: { floatingPanelVisible: boolean }):
     resolvePrimarySelectionMiddleClickPaste(s.settings?.primarySelectionMiddleClickPaste)
   )
 
+  useBrowserClientHostedDownloadNotices()
+  useBrowserIdentityMigrationNotice()
   useRadixBodyPointerEventsRecovery()
   useWebSessionTabsSync()
   useLocalStructuredSessionTabsSync()

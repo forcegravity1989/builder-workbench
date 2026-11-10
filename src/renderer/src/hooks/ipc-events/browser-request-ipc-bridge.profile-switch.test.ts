@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/components/browser-pane/host-guest/webview-registry', () => ({
   destroyPersistentWebview: mocks.destroyPersistentWebview
 }))
-vi.mock('../../store', () => ({
+vi.mock('../../store/index', () => ({
   useAppStore: { getState: mocks.getState }
 }))
 vi.mock('./browser-automation-bootstrap-lease', () => ({
@@ -75,7 +75,7 @@ describe('browser profile request teardown', () => {
   })
 
   it('keeps document-preview guests while rebuilding URL siblings for a profile change', () => {
-    registerBrowserRequestIpcBridge([], () => false)
+    registerBrowserRequestIpcBridge([])
 
     mocks.profileListener?.({
       requestId: 'request-1',

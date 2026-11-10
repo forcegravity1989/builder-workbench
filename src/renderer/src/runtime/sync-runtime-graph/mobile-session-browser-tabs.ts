@@ -1,3 +1,4 @@
+import { editorRowHost } from '../../../../shared/workspace-session/session-tab-file-host'
 import type { AppState } from '@/store/types'
 import type { RuntimeMobileSessionBrowserTab } from '../../../../shared/runtime-types'
 import type { Tab } from '../../../../shared/tab-types'
@@ -16,6 +17,7 @@ export function buildMobileBrowserTab(
   const unifiedTabId = unifiedTab?.id
   return {
     type: 'browser',
+    ...editorRowHost({ runtimeEnvironmentId: activePage?.browserRuntimeEnvironmentId }),
     id: unifiedTabId ?? workspace.id,
     title,
     browserWorkspaceId: workspace.id,

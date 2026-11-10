@@ -8,8 +8,8 @@ export type WorkspaceSessionTerminalTabCloseResult = {
   pinned: boolean
 }
 
-function pickNextActiveTab(
-  group: TabGroup,
+export function pickNextActiveTabAfterClose(
+  group: Pick<TabGroup, 'tabOrder' | 'recentTabIds'>,
   closingIds: ReadonlySet<string>,
   remaining: readonly string[],
   remainingIds: ReadonlySet<string>
@@ -33,7 +33,7 @@ function pickNextActiveTab(
   )
 }
 
-function pruneGroupLayout(
+export function pruneGroupLayout(
   node: TabGroupLayoutNode | undefined,
   validGroupIds: ReadonlySet<string>
 ): TabGroupLayoutNode | undefined {
@@ -83,7 +83,7 @@ function findUnifiedTerminalTabs(
   )
 }
 
-function deriveActiveSurface(
+export function deriveActiveSurface(
   session: WorkspaceSessionState,
   worktreeId: string,
   tabs: Tab[],
@@ -199,7 +199,7 @@ export function closeTerminalTabInWorkspaceSession(
       const tabOrder = group.tabOrder.filter((id) => !closedVisibleIds.has(id))
       const remainingIds = new Set(tabOrder)
       const activeTabId = closedVisibleIds.has(group.activeTabId ?? '')
-        ? pickNextActiveTab(group, closedVisibleIds, tabOrder, remainingIds)
+        ? pickNextActiveTabAfterClose(group, closedVisibleIds, tabOrder, remainingIds)
         : group.activeTabId && remainingIds.has(group.activeTabId)
           ? group.activeTabId
           : (tabOrder[0] ?? null)

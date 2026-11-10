@@ -1,3 +1,4 @@
+import { requestDesktopBrowserBridgeReconcile } from './browser/desktop-browser-bridge-reconcile'
 import type { BrowserWindow } from 'electron'
 import type { SshPortForwardManager } from '../ssh/ssh-port-forward'
 import type {
@@ -29,6 +30,7 @@ export function broadcastSshState(
   targetId: string,
   state: SshConnectionState
 ): void {
+  requestDesktopBrowserBridgeReconcile()
   // Why: runtime-owned (ephemeral-VM) targets are hidden from the renderer, so broadcasting their state only triggers wasted listTargets() lookups.
   if (isRuntimeOwnedSshTargetId(targetId)) {
     currentRuntime?.invalidateSshWorktreeScanCache?.(targetId)

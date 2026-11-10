@@ -142,7 +142,8 @@ export function HostAgentLaunchSettings({
         defaultAgent={settings.defaultTuiAgent}
         detectedIds={detected}
         enabledDetectedAgents={catalog.filter(
-          (agent) => detected?.has(agent.id) && isTuiAgentEnabled(agent.id, settings.disabledTuiAgents)
+          (agent) =>
+            detected?.has(agent.id) && isTuiAgentEnabled(agent.id, settings.disabledTuiAgents)
         )}
         catalog={catalog}
         description={translate(

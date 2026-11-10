@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   focusGroup: vi.fn()
 }))
 
-vi.mock('../../../store', () => ({
+vi.mock('../../../store/index', () => ({
   useAppStore: (selector: (state: MockAppState) => unknown) => {
     if (!mocks.state) {
       throw new Error('mock app state not initialized')
@@ -89,10 +89,12 @@ describe('BrowserPaneOverlayLayer', () => {
     mocks.remotelyViewedPageIds.clear()
     mocks.focusGroup.mockClear()
     mocks.state = createState()
+    vi.stubGlobal('api', { ui: { onBrowserPagePointerDown: () => () => {} } })
   })
 
   afterEach(() => {
     cleanup()
+    vi.unstubAllGlobals()
     // The row store is module-level, so a leftover row would render an extra pane in every
     // sibling test.
     clearClientHostedBrowserRowSelection()

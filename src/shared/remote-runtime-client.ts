@@ -1,4 +1,4 @@
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import type { RuntimeCapability } from './protocol-version'
 import type { RemoteRuntimeClientError } from './remote-runtime-client-error'
 import { sendRemoteRuntimeRequestOnSocket } from './remote-runtime-request-socket'
@@ -36,7 +36,7 @@ export type RemoteRuntimeSubscriptionCallbacks<TResult = unknown> = {
 }
 
 export function sendRemoteRuntimeRequest<TResult>(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,
@@ -57,7 +57,7 @@ export function sendRemoteRuntimeRequest<TResult>(
 }
 
 export function sendRemoteRuntimeRequestWithStatusPreflight<TResult>(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,
@@ -79,7 +79,7 @@ export function sendRemoteRuntimeRequestWithStatusPreflight<TResult>(
 }
 
 export function subscribeRemoteRuntimeRequest<TResult>(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,

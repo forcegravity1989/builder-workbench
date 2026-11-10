@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 import { openFileInBrowserTab } from '@/lib/file-preview'
 import { resolveMarkdownLinkTarget } from '@/components/editor/markdown-internal-links'
 import { parseExecutionHostId } from '../../../../shared/execution-host'

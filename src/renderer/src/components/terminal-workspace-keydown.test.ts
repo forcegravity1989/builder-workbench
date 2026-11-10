@@ -65,7 +65,9 @@ vi.mock('@/runtime/runtime-worktree-selector', () => ({
 vi.mock('@/runtime/browser-workspace-tab-close', () => ({
   closeBrowserWorkspaceTabOnHosts: () => ({ closesLocally: true, removesVisibleTab: true })
 }))
-vi.mock('../store/slices/browser-webview-cleanup', () => ({ destroyWorkspaceWebviews: vi.fn() }))
+vi.mock('../store/slices/browser/cleanup/browser-webview-cleanup', () => ({
+  destroyWorkspaceWebviews: vi.fn()
+}))
 
 const controller = {
   activeWorktreeId: 'repo-1::/repo/worktree',

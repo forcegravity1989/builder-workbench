@@ -1,4 +1,4 @@
-import type { RuntimeBrowserDriverState } from '../../shared/runtime-types'
+import type { RuntimeBrowserDriverState } from '../../shared/runtime-session-contracts'
 
 type RuntimeBrowserDriverControllerDeps = {
   notifyChanged: (browserPageId: string, next: RuntimeBrowserDriverState) => void

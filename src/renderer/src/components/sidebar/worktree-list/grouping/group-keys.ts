@@ -77,6 +77,15 @@ export function getProjectGroupHeaderKey(groupId: string | null): string {
 
 export const PINNED_GROUP_KEY = 'pinned'
 
+/** Repo, project, and project-group headers; never status, PR, pinned, lineage, or host sections. */
+export function isProjectSectionGroupKey(key: string): boolean {
+  return key.startsWith('repo:') || key.startsWith('project:') || key.startsWith('project-group:')
+}
+
+export function isProjectOrPinnedSectionGroupKey(key: string): boolean {
+  return key === PINNED_GROUP_KEY || isProjectSectionGroupKey(key)
+}
+
 export const PINNED_GROUP_META = {
   get label() {
     return translate('auto.components.sidebar.worktree.list.groups.4aeefc5996', 'Pinned')

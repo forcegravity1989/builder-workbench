@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AgentBrowserBridge } from '../browser/agent-browser-bridge'
-import type { RuntimeBrowserCommandHost } from './orca-runtime-browser'
+import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
+import type { RuntimeBrowserCommandHost } from './browser/commands/browser-command-contracts'
 import { RuntimeBrowserPageRegistry } from './runtime-browser-page-registry'
 
 const {
@@ -49,12 +49,16 @@ vi.mock('electron', () => ({
   webContents: { fromId: webContentsFromIdMock }
 }))
 
-vi.mock('../ipc/browser-tab-registration-wait', () => ({
+vi.mock('../browser/guest-lifecycle/browser-main-window-readiness', () => ({
+  whenBrowserMainWindowReady: vi.fn(async () => null)
+}))
+
+vi.mock('../ipc/browser/browser-tab-registration-wait', () => ({
   waitForTabRegistration: waitForTabRegistrationMock,
   waitForWorktreeTabRegistration: waitForWorktreeTabRegistrationMock
 }))
 
-vi.mock('../browser/browser-session-registry', () => ({
+vi.mock('../browser/sessions/profiles/browser-session-registry', () => ({
   browserSessionRegistry: browserSessionRegistryMock
 }))
 
@@ -68,7 +72,7 @@ function createHost(overrides: Partial<RuntimeBrowserCommandHost> = {}): Runtime
         tabList: vi.fn(() => ({ tabs: [] }))
       } as unknown as AgentBrowserBridge)
   return {
-    resolveWorktreeSelector: async (selector) => ({ id: selector.replace(/^id:/, '') }),
+    resolveWorkspaceSelector: async (selector) => ({ id: selector.replace(/^id:/, '') }),
     resolveBrowserWorkspace: async (selector) => ({ id: selector.replace(/^id:/, '') }),
     getRuntimeBrowserPageRegistry: () => runtimeBrowserPages,
     getAuthoritativeWindow: vi.fn(),
@@ -118,7 +122,11 @@ describe('RuntimeBrowserCommands headless close and forwarding', () => {
       createHost({
         getAgentBrowserBridge: () => bridge,
         getAvailableAuthoritativeWindow: vi.fn(() => null),
-        getOffscreenBrowserBackend: vi.fn(() => ({ createTab: vi.fn(), closeTab })),
+        getOffscreenBrowserBackend: vi.fn(() => ({
+          createTab: vi.fn(),
+          closeTab,
+          ownsTab: (pageId: string) => pageId === 'page-offscreen'
+        })),
         retireRuntimeOwnedBrowserSessionTab
       })
     )
@@ -154,7 +162,11 @@ describe('RuntimeBrowserCommands headless close and forwarding', () => {
       createHost({
         getAgentBrowserBridge: () => bridge,
         getAvailableAuthoritativeWindow: vi.fn(() => null),
-        getOffscreenBrowserBackend: vi.fn(() => ({ createTab: vi.fn(), closeTab }))
+        getOffscreenBrowserBackend: vi.fn(() => ({
+          createTab: vi.fn(),
+          closeTab,
+          ownsTab: (pageId: string) => pageId === 'page-active'
+        }))
       })
     )
 
@@ -176,7 +188,11 @@ describe('RuntimeBrowserCommands headless close and forwarding', () => {
       createHost({
         getAgentBrowserBridge: () => bridge,
         getAvailableAuthoritativeWindow: vi.fn(() => null),
-        getOffscreenBrowserBackend: vi.fn(() => ({ createTab: vi.fn(), closeTab }))
+        getOffscreenBrowserBackend: vi.fn(() => ({
+          createTab: vi.fn(),
+          closeTab,
+          ownsTab: () => false
+        }))
       })
     )
 

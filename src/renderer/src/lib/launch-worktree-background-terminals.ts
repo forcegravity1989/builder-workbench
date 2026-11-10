@@ -2,7 +2,7 @@ import {
   registerEagerPtyBuffer,
   type EagerPtyHandle
 } from '@/components/terminal-pane/pty-dispatcher'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { getSettingsForWorktreeRuntimeOwner } from '@/lib/worktree-runtime-owner'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { singlePaneLayoutSnapshot } from '@/store/slices/terminal-helpers'
@@ -178,7 +178,7 @@ async function createBackgroundTab(args: {
     store.setTabColor(tab.id, args.launch.color)
   }
 
-  const leafId = createBrowserUuid()
+  const leafId = createNonSecureContextUuid()
   store.setTabLayout(tab.id, singlePaneLayoutSnapshot(leafId))
   let pane: SpawnedPane
   try {
@@ -217,7 +217,7 @@ async function addSetupSplit(args: {
   direction: 'horizontal' | 'vertical'
 }): Promise<void> {
   const store = useAppStore.getState()
-  const setupLeafId = createBrowserUuid()
+  const setupLeafId = createNonSecureContextUuid()
   const setupPane = await spawnPane({
     worktree: args.worktree,
     connectionId: args.connectionId,

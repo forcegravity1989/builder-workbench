@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_CLIENT_PAGE_CREATION_TIMEOUT_MS } from '../../../../shared/browser-client-page-creation-timeouts'
+import { DEFAULT_CLIENT_PAGE_CREATION_TIMEOUT_MS } from '../../../../shared/browser/client-hosting/browser-client-page-creation-timeouts'
 import type { BrowserPage } from '../../../../shared/browser-workspace-types'
 import type { RuntimeStatus } from '../../../../shared/runtime-types'
 
@@ -10,14 +10,14 @@ const mocks = vi.hoisted(() => ({ attach: vi.fn(), createBrowserTab: vi.fn(async
 vi.mock('./browser-client-page-renderer-installation', () => ({
   attachBrowserClientPageToViewport: mocks.attach
 }))
-vi.mock('@/runtime/web-runtime-session', () => ({
+vi.mock('@/runtime/web-runtime-browser-creation', () => ({
   createWebRuntimeSessionBrowserTab: mocks.createBrowserTab
 }))
 vi.mock('sonner', () => ({
   toast: { error: vi.fn(), success: vi.fn(), loading: vi.fn(), message: vi.fn() }
 }))
 
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { installClientHostedPaneApi } from './client-hosted-browser-pane-test-rig'
 import { ClientHostedBrowserPagePane } from './ClientHostedBrowserPagePane'
@@ -108,12 +108,11 @@ function renderPane(): ReturnType<typeof render> {
   return render(paneElement())
 }
 
-// Scoped to the navigation row: the unavailable notice's reopen button keeps its own pending
-// spinner in the DOM at all times, hidden by class, so an unscoped query is always true.
-function spinnerShown(): boolean {
+// The progress line is the native loading signal; the unavailable notice has its own pending indicator.
+function loadingShown(): boolean {
   return (
     document.querySelector(
-      '[data-contextual-tour-target="client-hosted-browser-controls"] .animate-spin'
+      '[data-contextual-tour-target="client-hosted-browser-controls"] [data-browser-load-progress="loading"]'
     ) !== null
   )
 }
@@ -126,7 +125,14 @@ describe('restored client-hosted recovery window', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     mocks.attach.mockReset()
-    installClientHostedPaneApi()
+    installClientHostedPaneApi({
+      runtimeEnvironments: {
+        prepareBrowserClientHostPlacement: vi.fn(async () => ({
+          kind: 'client',
+          browserHostClientId: 'host-a'
+        }))
+      }
+    })
   })
   afterEach(() => {
     cleanup()
@@ -143,7 +149,7 @@ describe('restored client-hosted recovery window', () => {
 
     act(() => vi.advanceTimersByTime(RESTORED_CLIENT_HOSTED_RECOVERY_WINDOW_MS - 1))
 
-    expect(spinnerShown()).toBe(true)
+    expect(loadingShown()).toBe(true)
     expect(noticeShown()).toBe(false)
   })
 
@@ -154,7 +160,7 @@ describe('restored client-hosted recovery window', () => {
     act(() => vi.advanceTimersByTime(RESTORED_CLIENT_HOSTED_RECOVERY_WINDOW_MS))
 
     expect(noticeShown()).toBe(true)
-    expect(spinnerShown()).toBe(false)
+    expect(loadingShown()).toBe(false)
     expect(screen.getByRole('button', { name: 'Reopen on server' })).not.toBeNull()
   })
 
@@ -175,7 +181,7 @@ describe('restored client-hosted recovery window', () => {
 
     act(() => vi.advanceTimersByTime(RESTORED_CLIENT_HOSTED_RECOVERY_WINDOW_MS * 10))
 
-    expect(spinnerShown()).toBe(true)
+    expect(loadingShown()).toBe(true)
     expect(noticeShown()).toBe(false)
   })
 
@@ -208,7 +214,7 @@ describe('restored client-hosted recovery window', () => {
 
     act(() => vi.advanceTimersByTime(RESTORED_CLIENT_HOSTED_RECOVERY_WINDOW_MS * 10))
 
-    expect(spinnerShown()).toBe(true)
+    expect(loadingShown()).toBe(true)
     expect(noticeShown()).toBe(false)
   })
 

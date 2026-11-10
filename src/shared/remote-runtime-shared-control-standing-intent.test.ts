@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from './remote-runtime/pairing/paired-runtime-connection'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RemoteRuntimeClientError } from './remote-runtime-client-error'
 import { RemoteRuntimeSharedControlConnection } from './remote-runtime-shared-control-connection'
@@ -17,7 +18,9 @@ afterEach(async () => {
 describe('shared-control standing intent', () => {
   it('reconnects an idle established connection after the socket drops', async () => {
     const server = await createSharedControlTestServer()
-    const connection = new RemoteRuntimeSharedControlConnection(server.pairing)
+    const connection = new RemoteRuntimeSharedControlConnection(
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     await connection.request('worktree.ps', undefined, 1_000)
 
     server.closeClients()
@@ -32,7 +35,9 @@ describe('shared-control standing intent', () => {
 
   it('keeps recovery armed when the last subscription closes', async () => {
     const server = await createSharedControlTestServer()
-    const connection = new RemoteRuntimeSharedControlConnection(server.pairing)
+    const connection = new RemoteRuntimeSharedControlConnection(
+      pairedRuntimeConnectionFromOffer(server.pairing)
+    )
     const subscription = await connection.subscribe(
       'session.tabs.subscribeAll',
       {},
@@ -149,12 +154,12 @@ function testConnection(options?: {
   paused?: boolean
 }): RemoteRuntimeSharedControlConnection {
   return new RemoteRuntimeSharedControlConnection(
-    {
+    pairedRuntimeConnectionFromOffer({
       v: 2,
       endpoint: 'ws://127.0.0.1:1',
       deviceToken: 'token',
       publicKeyB64: Buffer.from(new Uint8Array(32).fill(1)).toString('base64')
-    },
+    }),
     {
       isManuallyDisconnected: () => options?.manual ?? false,
       isCapabilityPaused: () => options?.paused ?? false

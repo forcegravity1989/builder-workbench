@@ -13,17 +13,15 @@ const DISCLOSURE_TITLE = "Google logins aren't imported"
 const DISCLOSURE_DESCRIPTION = 'Sign in to Google directly in Orca.'
 
 vi.mock('@/components/ui/dropdown-menu', () => dropdownMenuStubs())
-vi.mock('../ui/dropdown-menu', () => dropdownMenuStubs())
 vi.mock('@/components/ui/popover', () => popoverStubs())
 vi.mock('@/store', () => ({ useAppStore: appStoreStub() }))
-vi.mock('../../store', () => ({ useAppStore: appStoreStub() }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
 import { BrowserCookieImportDisclosure } from './BrowserCookieImportDisclosure'
 import { BrowserImportHintButton } from './browser-pane/assemble-chrome/BrowserImportHintButton'
 import { BrowserToolbarMenuDropdown } from './browser-pane/assemble-chrome/browser-toolbar-menu-dropdown'
-import { BrowserProfileRow } from './settings/BrowserProfileRow'
-import { BrowserUseCookieImportStep } from './settings/BrowserUseCookieImportStep'
+import { BrowserProfileRow } from './settings/browser/profiles/BrowserProfileRow'
+import { BrowserUseCookieImportStep } from './settings/browser/use/BrowserUseCookieImportStep'
 
 const DETECTED_BROWSERS = [
   {
@@ -55,6 +53,16 @@ describe('cookie-import Google disclosure footer', () => {
       () => (
         <BrowserToolbarMenuDropdown
           menuOpen
+          browserPageId="page-1"
+          siteDisplay={null}
+          onZoomPage={vi.fn()}
+          onSetSiteColorScheme={vi.fn()}
+          overflow={{
+            triggerRef: { current: null },
+            tools: [],
+            deferUntilClose: (action) => action(),
+            onMenuCloseAutoFocus: vi.fn()
+          }}
           onMenuOpenChange={vi.fn()}
           allProfiles={[]}
           effectiveProfileId="default"
@@ -77,7 +85,6 @@ describe('cookie-import Google disclosure footer', () => {
         <BrowserUseCookieImportStep
           cookiesImported={false}
           isImportingDefault={false}
-          step3Blocked={false}
           sourceLabel={null}
         />
       )
@@ -143,6 +150,7 @@ function dropdownMenuStubs(): Record<string, unknown> {
     ),
     DropdownMenuPortal: passthrough,
     DropdownMenuRadioGroup: passthrough,
+    DropdownMenuShortcut: passthrough,
     DropdownMenuRadioItem: block,
     DropdownMenuSeparator: () => <hr />,
     DropdownMenuSub: passthrough,
@@ -160,6 +168,7 @@ function popoverStubs(): Record<string, unknown> {
 
 function appStoreStub(): unknown {
   const state = {
+    keybindings: {},
     browserImportHintHidden: false,
     browserSessionImportState: null,
     detectedBrowsers: [

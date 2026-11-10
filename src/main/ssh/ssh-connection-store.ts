@@ -11,6 +11,11 @@ import {
 export class SshConnectionStore {
   constructor(private store: Store) {}
 
+  /** Read-only native claim view; includes runtime-owned targets without exposing claim mutations. */
+  getOrcadRuntimeClaims(): { listTargets(): SshTarget[] } {
+    return { listTargets: () => this.store.getSshTargets() }
+  }
+
   listTargets(): SshTarget[] {
     return this.store.getSshTargets().filter((target) => !isRuntimeOwnedSshTarget(target))
   }

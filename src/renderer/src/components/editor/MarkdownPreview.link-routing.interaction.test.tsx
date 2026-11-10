@@ -82,7 +82,7 @@ vi.mock('./NotesSendMenu', () => ({ NotesSendMenu: () => null }))
 vi.mock('./MarkdownTableOfContentsPanel', () => ({ MarkdownTableOfContentsPanel: () => null }))
 
 import MarkdownPreview from './MarkdownPreview'
-import { registerHttpLinkStoreAccessor } from '../../lib/http-link-routing'
+import { registerHttpLinkStoreAccessor } from '../../lib/browser/navigation/http-link-routing'
 
 describe('MarkdownPreview http link routing (Cmd vs Cmd+Shift click)', () => {
   let container: HTMLDivElement

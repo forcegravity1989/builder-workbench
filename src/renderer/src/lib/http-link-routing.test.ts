@@ -6,7 +6,7 @@ import {
   registerHttpLinkStoreAccessor,
   registerWorkspaceHttpLinkBrowserOpener,
   resolveLocalhostHttpLinkDisplayUrl
-} from './http-link-routing'
+} from './browser/navigation/http-link-routing'
 
 const toastErrorMock = vi.hoisted(() => vi.fn())
 

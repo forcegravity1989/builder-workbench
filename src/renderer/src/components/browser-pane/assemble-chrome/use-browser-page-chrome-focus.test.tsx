@@ -2,7 +2,8 @@
 import { act, cleanup, render } from '@testing-library/react'
 import { useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
+import type { BrowserPageCommandTarget } from '../../../../../shared/browser-page-command-target'
 import { requestBrowserFocus } from '../host-guest/browser-focus'
 import type { BrowserChromeShortcutScope } from '../describe-page/browser-page-types'
 import { useElementGuestFocus } from './browser-page-guest-focus'
@@ -13,7 +14,7 @@ const WORKSPACE_ID = 'workspace-a'
 const ADDRESS_VALUE = 'about:blank'
 
 let frameCallbacks: FrameRequestCallback[] = []
-let focusAddressBarFromIpc: (() => void) | null = null
+let focusAddressBarFromIpc: ((target: BrowserPageCommandTarget) => void) | null = null
 
 function flushFrames(cycles = 8): void {
   for (let index = 0; index < cycles; index += 1) {
@@ -126,7 +127,8 @@ describe('useBrowserPageChromeFocus', () => {
       configurable: true,
       value: {
         ui: {
-          onFocusBrowserAddressBar: (callback: () => void) => {
+          onShowBrowserHistory: () => () => {},
+          onFocusBrowserAddressBar: (callback: (target: BrowserPageCommandTarget) => void) => {
             focusAddressBarFromIpc = callback
             return () => {
               focusAddressBarFromIpc = null
@@ -330,7 +332,7 @@ describe('useBrowserPageChromeFocus', () => {
     renderChrome()
     act(() => guest().focus())
 
-    act(() => focusAddressBarFromIpc?.())
+    act(() => focusAddressBarFromIpc?.({ browserPageId: PAGE_ID }))
 
     expectAddressBarFocusedAndSelected()
   })

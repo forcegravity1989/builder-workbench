@@ -1,5 +1,9 @@
 import type { AppState } from '@/store/types'
-import { parseExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
+import {
+  parseExecutionHostId,
+  type ExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
 import { getRepoIdFromWorktreeId } from '@/store/slices/worktree-helpers'
 import { resolveExactWorktreeRoute } from './worktree-owner-route'
@@ -35,7 +39,7 @@ export type WorktreeOperationOwnerRecord = {
 }
 
 // settings/runtimeEnvironments come from FolderWorkspaceRuntimeOwnerState's legacy-owner base.
-export type WorktreeOperationRouteState = FolderWorkspaceRuntimeOwnerState & {
+export type WorktreeOperationRouteState = Omit<FolderWorkspaceRuntimeOwnerState, 'repos'> & {
   repos?: readonly Pick<AppState['repos'][number], 'id' | 'connectionId' | 'executionHostId'>[]
   worktreesByRepo?: Record<string, readonly WorktreeOperationOwnerRecord[]>
   detectedWorktreesByRepo?: Record<string, { worktrees: readonly WorktreeOperationOwnerRecord[] }>
@@ -259,4 +263,15 @@ export function settingsForWorktreeOperationRoute(
   return settings
     ? { ...settings, activeRuntimeEnvironmentId: route.runtimeEnvironmentId }
     : ({ activeRuntimeEnvironmentId: route.runtimeEnvironmentId } as AppState['settings'])
+}
+
+import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+
+/** The floating workspace has no host record; its files always live on this machine. */
+export function getFloatingWorkspaceOperationRoute(
+  worktreeId: string
+): WorktreeOperationRoute | null {
+  return worktreeId === FLOATING_TERMINAL_WORKTREE_ID
+    ? { executionHostId: LOCAL_EXECUTION_HOST_ID, runtimeEnvironmentId: null }
+    : null
 }

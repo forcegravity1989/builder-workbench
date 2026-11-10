@@ -10,7 +10,7 @@ import {
   ORCHESTRATION_SKILL_NAME,
   buildAgentFeatureSkillInstallCommand
 } from '@/lib/agent-feature-install-commands'
-import { BROWSER_USE_ENABLED_STORAGE_KEY } from '@/lib/browser-use-setup-state'
+import { BROWSER_USE_ENABLED_STORAGE_KEY } from '@/lib/browser/browser-use-setup-state'
 import { e2eConfig } from '@/lib/e2e-config'
 import { showOrcaCliRegistrationPromptToast } from '@/lib/agent-skill-cli-prerequisite'
 import type { ProjectAgentSkillRuntime } from '@/lib/project-skill-runtime'

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createTestStore } from './store-test-helpers'
 import { createTabsSliceMockApi } from './tabs-slice-test-harness'
-import { browserImportStateForHostUpdate } from './browser/browser-host-state'
+import { browserImportStateForHostUpdate } from './browser/hosts/browser-host-state'
 import { mutateDiffComments } from './diff-comment-persistence'
 
 vi.mock('sonner', () => ({ toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() } }))

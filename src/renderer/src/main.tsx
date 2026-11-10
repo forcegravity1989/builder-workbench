@@ -25,6 +25,8 @@ import { translate } from './i18n/i18n'
 import { getOrCreateRendererRoot } from './lib/react-renderer-root'
 import { primeTerminalWebglAddon } from './lib/pane-manager/pane-webgl-renderer'
 import { SkillWarningPreviewLauncher } from './components/skills/SkillWarningPreviewLauncher'
+import { registerBrowserClientPageGuestMessageHandler } from './components/browser-pane/browser-client-page-retained-elements'
+import { handleGuestWindowCloseMessage } from './components/browser-pane/host-guest/browser-page-window-close'
 import { installBrowserClientPageRenderer } from './components/browser-pane/browser-client-page-renderer-installation'
 
 recordRendererCrashBreadcrumb('renderer_bootstrap_started', { dev: import.meta.env.DEV })
@@ -44,6 +46,7 @@ if (
 }
 
 applyDocumentTheme('system', { disableTransitions: false })
+registerBrowserClientPageGuestMessageHandler(handleGuestWindowCloseMessage)
 const browserClientPageRenderer = installBrowserClientPageRenderer()
 import.meta.hot?.dispose(() => browserClientPageRenderer?.dispose())
 

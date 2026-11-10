@@ -1,7 +1,7 @@
+import type { BrowserClientHostedPageInventory } from '../../shared/browser/client-hosting/browser-client-host-protocol'
 import { describe, expect, it } from 'vitest'
 import {
   planBrowserHostPageReconciliation,
-  type BrowserClientHostedPageInventory,
   type BrowserHostRuntimePageIntent
 } from './browser-host-page-reconciliation-plan'
 

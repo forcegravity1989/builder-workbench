@@ -75,6 +75,7 @@ export function BrowserPageChromeHeader({
         convertedFrom={browserTab.convertedFrom ?? null}
         convertedTo={browserTab.convertedTo ?? null}
         loading={browserTab.loading}
+        loadFailed={browserTab.loadError !== null}
         webviewRef={webviewRef}
         reloadMenuOpen={reload.reloadMenuOpen}
         setReloadMenuOpen={reload.setReloadMenuOpen}
@@ -123,6 +124,7 @@ export function BrowserPageChromeHeader({
         includePageDetails={annotationSend.includePageDetails}
         handleIncludePageDetailsChange={annotationSend.handleIncludePageDetailsChange}
         handleBrowserAnnotationsSentToAgent={annotationSend.handleBrowserAnnotationsSentToAgent}
+        handleBrowserAnnotationsHandedOff={annotationSend.handleBrowserAnnotationsHandedOff}
         handleCopyBrowserAnnotations={annotationSend.handleCopyBrowserAnnotations}
         browserAnnotationsCopied={annotationSend.browserAnnotationsCopied}
         handleClearBrowserAnnotations={annotationSend.handleClearBrowserAnnotations}

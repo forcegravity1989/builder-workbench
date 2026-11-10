@@ -15,7 +15,7 @@ import {
   sanitizeRecentTabIds,
   updateGroup
 } from '../slices/tab-group-state'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import { getLocalProjectExecutionRuntimeContext } from '@/lib/local-preflight-context'
 import type { TerminalSlice, TerminalStoreGet, TerminalStoreSet } from './terminal-state'
 import {
@@ -44,7 +44,7 @@ type TabStartupCommand = TerminalSlice['pendingStartupByTabId'][string]
 function normalizeTabStartupCommand(startup: TabStartupCommand): TabStartupCommand {
   // Why: launchToken is only meaningful for tracked launch-config reuse; plain startup commands must not mint a synthetic token.
   const launchToken = startup.launchConfig
-    ? (startup.launchToken ?? createBrowserUuid())
+    ? (startup.launchToken ?? createNonSecureContextUuid())
     : undefined
   return {
     ...startup,
@@ -80,7 +80,7 @@ export function createTerminalTabCreationActions(
             `[createTab] tabId hint ${hintedId} already exists; minting a fresh id (hook attribution will degrade for this terminal)`
           )
         }
-        const id = hintedId !== undefined && !idCollides ? hintedId : createBrowserUuid()
+        const id = hintedId !== undefined && !idCollides ? hintedId : createNonSecureContextUuid()
         const requestedInitialLeafId =
           options?.initialLeafId && isTerminalLeafId(options.initialLeafId)
             ? options.initialLeafId
@@ -88,7 +88,7 @@ export function createTerminalTabCreationActions(
         // Why: startup delivery is pane-owned; pin its first leaf so an aborted/remounted renderer retries against the same spawn reservation.
         const initialLeafId =
           options?.initialPtyId || options?.pendingStartup
-            ? (requestedInitialLeafId ?? createBrowserUuid())
+            ? (requestedInitialLeafId ?? createNonSecureContextUuid())
             : undefined
         const shouldActivate = options?.activate !== false
         const nextOrdinal = getNextTerminalOrdinal(existing)

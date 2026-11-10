@@ -5,7 +5,7 @@ const storeState = vi.hoisted(() => ({
   browserKagiSessionLink: null as string | null
 }))
 
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: { getState: () => storeState }
 }))
 

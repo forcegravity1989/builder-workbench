@@ -257,37 +257,5 @@ export const KEYBINDING_DEFINITION_CORE_2: readonly KeybindingDefinition[] = [
     conflictGroup: 'global',
     searchKeywords: ['shortcut', 'quick', 'command', 'menu', 'tab', 'group', 'toggle'],
     defaultBindings: platformBindings([])
-  },
-  {
-    id: 'browser.find',
-    title: 'Find in Browser',
-    group: 'Browser',
-    scope: 'browser',
-    searchKeywords: ['shortcut', 'browser', 'find', 'search'],
-    defaultBindings: platformBindings(['Mod+F'])
-  },
-  {
-    id: 'browser.back',
-    title: 'Go Back in Browser',
-    group: 'Browser',
-    scope: 'browser',
-    searchKeywords: ['shortcut', 'browser', 'history', 'back', 'previous'],
-    defaultBindings: {
-      darwin: ['Mod+BracketLeft'],
-      linux: ['Alt+ArrowLeft'],
-      win32: ['Alt+ArrowLeft']
-    }
-  },
-  {
-    id: 'browser.forward',
-    title: 'Go Forward in Browser',
-    group: 'Browser',
-    scope: 'browser',
-    searchKeywords: ['shortcut', 'browser', 'history', 'forward', 'next'],
-    defaultBindings: {
-      darwin: ['Mod+BracketRight'],
-      linux: ['Alt+ArrowRight'],
-      win32: ['Alt+ArrowRight']
-    }
   }
 ]

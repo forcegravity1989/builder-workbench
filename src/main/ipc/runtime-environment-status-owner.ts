@@ -7,7 +7,7 @@ import {
   REMOTE_RUNTIME_SHARED_CONTROL_CAPABILITY
 } from '../../shared/protocol-version'
 import {
-  getPreferredPairingOffer,
+  getPreferredPairedRuntimeConnection,
   type KnownRuntimeEnvironment
 } from '../../shared/runtime-environments'
 import { recordRuntimeEnvironmentUsage } from './runtime-environment-usage-record'
@@ -34,7 +34,7 @@ export function createRuntimeEnvironmentStatusOwner(
     pause: () => void
   }
 ): RuntimeHostStatusOwner {
-  const pairing = getPreferredPairingOffer(environment)
+  const pairing = getPreferredPairedRuntimeConnection(environment)
   let evidence = captureRuntimeEnvironmentCapabilityEvidence(environment.id, pairing)
   return new RuntimeHostStatusOwner({
     environmentId: environment.id,
@@ -71,7 +71,7 @@ export function createRuntimeEnvironmentStatusOwner(
         recordRuntimeEnvironmentUsage(userDataPath, environment.id, {
           runtimeId: response._meta.runtimeId,
           pairedDeviceId: response.result.pairedDeviceId,
-          pairingDeviceToken: pairing.deviceToken
+          pairingDeviceToken: pairing.credential.deviceToken
         })
         if (capable) {
           transport.establish()

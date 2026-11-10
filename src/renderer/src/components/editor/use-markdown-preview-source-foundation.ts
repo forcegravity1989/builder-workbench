@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createConnectionIdForFileSelector } from '@/lib/connection-owner-resolution'
 import { computeEditorFontSize } from '@/lib/editor-font-zoom'
-import type { HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import type { HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 import { isMarkdownComment } from '@/lib/diff-comment-compat'
 import { settingsForRuntimeOwner } from '@/runtime/runtime-rpc-client'
 import { useAppStore } from '@/store'

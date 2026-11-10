@@ -1,5 +1,5 @@
 import type WebSocket from 'ws'
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import type { RemoteRuntimeClientError } from './remote-runtime-client-error'
 import { remoteRuntimeClientCapabilities } from './remote-runtime-client-capabilities'
 import { remoteRuntimeUnavailableError } from './remote-runtime-request-frames'
@@ -44,8 +44,12 @@ export class RemoteRuntimeSharedControlConnection {
   private everReady = false
   readonly socketGeneration = new SharedControlSocketGeneration()
 
+  isReady(): boolean {
+    return this.state === 'ready'
+  }
+
   constructor(
-    private readonly pairing: PairingOffer,
+    private readonly pairing: PairedRuntimeConnection,
     private readonly options: SharedControlTypes.RemoteRuntimeSharedControlConnectionOptions = {}
   ) {
     this.diagnostics = new SharedControlDiagnosticsTracker(options, () => ({
@@ -73,7 +77,7 @@ export class RemoteRuntimeSharedControlConnection {
     return requestSharedControl<TResult>({
       beforeSend,
       pendingRequests: this.pendingRequests,
-      deviceToken: this.pairing.deviceToken,
+      deviceToken: this.pairing.credential.deviceToken,
       method,
       params,
       timeoutMs,
@@ -100,7 +104,7 @@ export class RemoteRuntimeSharedControlConnection {
   ): Promise<SharedControlTypes.RemoteRuntimeSharedSubscription> {
     return startSharedControlSubscription({
       subscriptions: this.subscriptions,
-      deviceToken: this.pairing.deviceToken,
+      deviceToken: this.pairing.credential.deviceToken,
       method,
       params,
       callbacks,
@@ -110,7 +114,7 @@ export class RemoteRuntimeSharedControlConnection {
         sendSharedControlSubscription({
           subscriptions: this.subscriptions,
           subscription,
-          deviceToken: this.pairing.deviceToken,
+          deviceToken: this.pairing.credential.deviceToken,
           send: (payload) => this.sendEncrypted(payload)
         }),
       closeSubscription: (requestId) => this.closeSubscription(requestId)
@@ -215,7 +219,7 @@ export class RemoteRuntimeSharedControlConnection {
       getState: () => this.state,
       getSharedKey: () => this.sharedKey,
       environmentId: this.options.environmentId,
-      deviceToken: this.pairing.deviceToken,
+      deviceToken: this.pairing.credential.deviceToken,
       clientCapabilities: remoteRuntimeClientCapabilities(this.options.clientCapabilities),
       pendingRequests: this.pendingRequests,
       subscriptions: this.subscriptions,
@@ -242,7 +246,7 @@ export class RemoteRuntimeSharedControlConnection {
   private replaySubscriptions(): void {
     this.everReady = replayRuntimeControlSubscriptions({
       subscriptions: this.subscriptions,
-      deviceToken: this.pairing.deviceToken,
+      deviceToken: this.pairing.credential.deviceToken,
       send: (payload) => this.sendEncrypted(payload),
       tagReplayedResponses: this.everReady
     })
@@ -253,7 +257,7 @@ export class RemoteRuntimeSharedControlConnection {
       subscriptions: this.subscriptions,
       retiredRequestIds: this.retiredRequestIds,
       requestId,
-      deviceToken: this.pairing.deviceToken,
+      deviceToken: this.pairing.credential.deviceToken,
       send: (payload) => this.sendEncrypted(payload)
     })
   }

@@ -1,7 +1,10 @@
-import { remoteRuntimeConnectOptions, remoteRuntimeConnectFailureMessage } from './remote-runtime-connect-bound'
+import {
+  remoteRuntimeConnectOptions,
+  remoteRuntimeConnectFailureMessage
+} from './remote-runtime-connect-bound'
 import { REMOTE_RUNTIME_MAX_WEBSOCKET_FRAME_BYTES } from './remote-runtime-memory-limits'
 import WebSocket from 'ws'
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import {
   deriveSharedKey,
   generateKeyPair,
@@ -32,7 +35,7 @@ export type RemoteRuntimeWebSocketCallbacks = {
 }
 
 export function openRemoteRuntimeWebSocket(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   callbacks: RemoteRuntimeWebSocketCallbacks
 ): { ok: true; socket: RemoteRuntimeWebSocket } | { ok: false; error: RemoteRuntimeClientError } {
   const opened = createSocket(pairing)
@@ -40,7 +43,7 @@ export function openRemoteRuntimeWebSocket(
     return opened
   }
   const { ws, keyPair } = opened
-  const serverPublicKey = publicKeyFromBase64(pairing.publicKeyB64)
+  const serverPublicKey = publicKeyFromBase64(pairing.hostPublicKeyB64)
   const sharedKey = deriveSharedKey(keyPair.secretKey, serverPublicKey)
 
   let cleanedUp = false
@@ -104,14 +107,14 @@ export function openRemoteRuntimeWebSocket(
 function ignoreLateSocketError(): void {}
 
 function createSocket(
-  pairing: PairingOffer
+  pairing: PairedRuntimeConnection
 ):
   | { ok: true; ws: WebSocket; keyPair: ReturnType<typeof generateKeyPair> }
   | { ok: false; error: RemoteRuntimeClientError } {
   let keyPair: ReturnType<typeof generateKeyPair>
   try {
     keyPair = generateKeyPair()
-    publicKeyFromBase64(pairing.publicKeyB64)
+    publicKeyFromBase64(pairing.hostPublicKeyB64)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return {

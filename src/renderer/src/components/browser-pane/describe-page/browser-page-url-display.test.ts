@@ -12,8 +12,9 @@ import {
 import type { BrowserPage as BrowserPageState } from '../../../../../shared/browser-workspace-types'
 
 describe('browser page URL display', () => {
-  it('maps the blank-tab sentinel to about:blank and redacts Kagi session tokens', () => {
-    expect(toDisplayUrl(ORCA_BROWSER_BLANK_URL)).toBe('about:blank')
+  it('leaves the blank-tab address bar empty and redacts Kagi session tokens', () => {
+    expect(toDisplayUrl(ORCA_BROWSER_BLANK_URL)).toBe('')
+    expect(toDisplayUrl('about:blank')).toBe('')
     expect(toDisplayUrl('https://kagi.com/search?q=a&token=secret')).not.toContain('secret')
   })
 

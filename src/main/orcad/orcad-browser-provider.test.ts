@@ -106,8 +106,12 @@ describe('ExternalChromiumBrowserProcess', () => {
     )
     await processHandle.start()
     const commands = processHandle.createCommands({
+      getRuntimeId: () => 'test-runtime',
+      getBrowserHostRequestRegistry: () => {
+        throw new Error('No browser host request registry')
+      },
       getAgentBrowserBridge: () => null,
-      resolveWorktreeSelector: async (selector) => ({ id: selector }),
+      resolveWorkspaceSelector: async (selector) => ({ id: selector }),
       resolveBrowserWorkspace: async (selector) => ({ id: selector }),
       // Unused by the sidecar command paths under test; the daemon's real host is
       // OrcaRuntimeService, which owns the client-hosted registries.

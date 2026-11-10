@@ -37,7 +37,25 @@
       "certificateChallengeUnavailable": "This certificate request is no longer available. Retry the page to request a new one.",
       "certificateProceedFailed": "Orca could not approve this certificate request. Retry the page and try again.",
       "sshRoutedHint": "This page browses through the workspace's SSH host — the host may be disconnected or unable to reach this site.",
-      "recheckSshRoute": "Run connection check"
+      "recheckSshRoute": "Run connection check",
+      "blockedDescription": "An extension blocked this page. To open it, allow this site in the extension, then retry.",
+      "blockedTitle": "{{host}} is blocked",
+      "dnsDescription": "Check the address for typos.",
+      "dnsTitle": "Couldn't find {{host}}",
+      "notRunningDescription": "Start the dev server for this address.",
+      "notRunningSshDescription": "Start the dev server on the workspace's SSH host.",
+      "notRunningTitle": "Nothing is running on {{host}} yet",
+      "offlineTitle": "You're offline",
+      "refusedDescription": "The site may be down, or the address may be wrong.",
+      "refusedTitle": "{{host}} refused to connect",
+      "resetTitle": "The connection to {{host}} was interrupted",
+      "routeDownDescription": "This page loads through the workspace's SSH host, which isn't connected right now.",
+      "routeDownTitle": "Can't reach the SSH host",
+      "timeoutTitle": "{{host}} took too long to respond",
+      "waiting": "Reloads when the server responds",
+      "waitingForHost": "Reloads when the SSH host reconnects",
+      "waitingForNetwork": "Reloads when you're back online",
+      "waitingForServer": "Reloads when the server starts"
     },
     "guestRecovery": {
       "title": "Browser page stopped",
@@ -46,7 +64,7 @@
     "clientHosted": {
       "preparationFailed": "Couldn't start the remote browser on this desktop. Check the paired connection and try again.",
       "unavailableTitle": "Client-hosted browser unavailable",
-      "unavailableDescription": "This page is attached to a different desktop or is no longer available.",
+      "unavailableDescription": "This page isn't available on this desktop right now.",
       "download": {
         "started": "Downloading {{filename}}…",
         "completed": "Downloaded {{filename}}",
@@ -64,7 +82,9 @@
       "hostRowOfflineNamed": "Offline — was hosted on {{device}}",
       "hostRowOffline": "Offline — the device hosting it quit",
       "hostRowNamed": "Hosted on {{device}}",
-      "hostRow": "Hosted on another device"
+      "hostRow": "Hosted on another device",
+      "unavailableHostOfflineDescription": "{{host}} is offline. This page will reload here once it reconnects.",
+      "unavailableOtherDesktopDescription": "This page is open on another desktop."
     },
     "navigation": {
       "back": "Back",
@@ -80,7 +100,7 @@
     "sshRoute": {
       "preparingTitle": "Connecting through the SSH host",
       "errorTitle": "SSH browser routing unavailable",
-      "errorDescription": "Pages in this workspace browse through its SSH host, and that connection is not available right now.",
+      "errorDescription": "Pages in this workspace browse through its SSH host, and routing could not be set up.",
       "retry": "Retry",
       "tryAnyway": "Try anyway",
       "browseLocally": "Browse from this device instead",
@@ -105,7 +125,154 @@
       "streamedDetail": "The page runs on the remote host and streams to this device."
     },
     "remote": {
-      "findUnavailable": "Find in page is not available while this page streams from the remote host."
+      "findUnavailable": "Find in page is not available while this page streams from the remote host.",
+      "selectionTooLargeToCopy": "The selection is too large to copy from a page streamed from the remote host."
+    },
+    "cookieImport": {
+      "errors": {
+        "allCookiesExpired": "All {{browser}} cookies are expired.",
+        "browserNotFound": "Browser not found on this system.",
+        "browserProfileDatabaseMissing": "No cookies database found for profile \"{{profile}}\".",
+        "connectionEnded": "The connection to this server ended during the import. Reconnect and try again.",
+        "databaseCopyFailed": "Could not copy {{browser}} cookies database. Try closing {{browser}} first.",
+        "databaseNotFound": "{{browser}} cookies database not found.",
+        "encryptionKeyDenied": "Could not access {{browser}} encryption key. The OS may have denied access.",
+        "fileEmpty": "Cookie file is empty.",
+        "fileInvalidJson": "File is not valid JSON.",
+        "fileNotArray": "Expected a JSON array of cookie objects.",
+        "fileNoValidCookies": "No valid cookies found. {{count}} entries were skipped due to missing or invalid fields.",
+        "fileNoValidCookies_one": "No valid cookies found. {{count}} entry was skipped due to missing or invalid fields.",
+        "fileNoValidCookies_other": "No valid cookies found. {{count}} entries were skipped due to missing or invalid fields.",
+        "fileUnreadable": "Could not read the selected file.",
+        "importFailed": "Could not import cookies from {{browser}}.",
+        "importFailedTryClosing": "Could not import cookies from {{browser}}. Try closing {{browser}} first.",
+        "importFailedWithLog": "Could not import cookies from {{browser}}: {{detail}}. Details were written to {{logPath}}.",
+        "invalidBrowserProfile": "Invalid browser profile name.",
+        "macFullDiskAccess": "macOS denied access to {{browser}} cookies. Grant Full Disk Access to Orca in System Settings → Privacy & Security → Full Disk Access, then restart Orca.",
+        "noCookies": "No cookies found in {{browser}}.",
+        "notAuthorized": "Not authorized",
+        "noValidCookies": "No valid cookies found in {{browser}}.",
+        "profileNotFound": "Session profile not found.",
+        "readFailed": "Could not read {{browser}} cookies.",
+        "safariFullDiskAccess": "macOS denied access to Safari cookies. Grant Full Disk Access to Orca in System Settings → Privacy & Security → Full Disk Access.",
+        "serverRepaired": "This server was re-paired during the import. Try again."
+      },
+      "notice": {
+        "failed": "Cookie import failed: {{reason}}",
+        "imported": "Imported {{count}} cookies for {{domains}}. Reload the page to use them.",
+        "imported_one": "Imported {{count}} cookie for {{domains}}. Reload the page to use them.",
+        "imported_other": "Imported {{count}} cookies for {{domains}}. Reload the page to use them.",
+        "importedMore": "Imported {{count}} cookies for {{domains}} +{{more}} more. Reload the page to use them.",
+        "importedMore_one": "Imported {{count}} cookie for {{domains}} +{{more}} more. Reload the page to use them.",
+        "importedMore_other": "Imported {{count}} cookies for {{domains}} +{{more}} more. Reload the page to use them."
+      }
+    },
+    "extensions": {
+      "empty": "No extensions are on for this profile",
+      "manage": "Manage extensions",
+      "menu": "Extensions",
+      "open": "Open",
+      "pin": "Pin to toolbar",
+      "remove": "Remove…",
+      "unpin": "Unpin from toolbar",
+      "visitWebStore": "Visit Chrome Web Store"
+    },
+    "googleCookieClear": {
+      "action": "Clear Google cookies…",
+      "cancel": "Cancel",
+      "clear": "Clear",
+      "cleared": "Google cookies cleared from {{profile}}.",
+      "confirmDescription": "You'll be signed out of Google in Orca's browser for this profile. Other sites stay signed in.",
+      "confirmTitle": "Clear Google cookies from {{profile}}?",
+      "empty": "No Google cookies to clear in {{profile}}.",
+      "explanation": "Google ties its sign-ins to the browser they were made in, so Orca doesn't import Google cookies from other browsers. If Google is stuck on the wrong account or keeps signing you out, clear Google cookies from the active profile, then sign in to Google again in Orca. Other sites stay signed in.",
+      "heading": "Google Cookies",
+      "remaining": "Some Google cookies couldn't be removed from {{profile}}. Try again.",
+      "signInKeyword": "sign-in",
+      "unavailable": "Unavailable for this profile on the selected host.",
+      "unverified": "Couldn't check {{profile}}'s Google cookies. Try again."
+    },
+    "history": {
+      "clear": "Clear browsing history",
+      "clearAllTime": "All time",
+      "cleared": "Cleared browsing history",
+      "clearLastHour": "Last hour",
+      "clearRange": "Clear history from",
+      "clearToday": "Today",
+      "close": "Close",
+      "description": "Search and manage browsing history",
+      "empty": "Pages you visit will show up here",
+      "enterKey": "Enter",
+      "escKey": "Esc",
+      "menuItem": "History",
+      "noMatches": "No pages match your search",
+      "open": "Open",
+      "remove": "Remove from history",
+      "removeShort": "Remove",
+      "search": "Search history",
+      "title": "History",
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "managedProfile": {
+      "createFailed": "Couldn't create this workspace's browser profile. Close this tab and open a new one to try again."
+    },
+    "newTab": {
+      "checks": {
+        "failing": "Checks failing",
+        "passing": "Checks passing",
+        "pending": "Checks pending"
+      },
+      "emptyHint": "Search or enter an address above. Sites you visit, dev servers running in this workspace, and its PR and issue will show up here.",
+      "openServerFailed": "Couldn’t open {{address}}",
+      "removedFromHistory": "Removed “{{title}}” from history",
+      "removeSuggestion": "Remove from history",
+      "runningElsewhere": "{{count}} running in other workspaces",
+      "state": {
+        "closed": "Closed",
+        "draft": "Draft",
+        "merged": "Merged",
+        "open": "Open"
+      },
+      "suggested": "Suggested",
+      "thisWorkspace": "This workspace",
+      "undo": "Undo"
+    },
+    "passwords": {
+      "fill": {
+        "noUsername": "(no username)",
+        "otherLogins": "Other logins on this site",
+        "title": "Saved logins"
+      },
+      "savePrompt": {
+        "never": "Never for this site",
+        "notNow": "Not now",
+        "open": "Saved password offer",
+        "password": "Password",
+        "save": "Save",
+        "saveTitle": "Save password?",
+        "update": "Update",
+        "updateTitle": "Update password?",
+        "username": "Username"
+      }
+    },
+    "request": {
+      "pairedServerWorkspace": "This workspace runs on a paired server. Use that server's browser tabs."
+    },
+    "userAgentMigration": {
+      "degradedDescription": "An old browser identity choice could not be inspected. Choose Cleaned or Native in Browser settings; changes take effect after a restart.",
+      "description": "Per-profile user-agent settings were removed. Choose Cleaned or Native in Browser settings; changes take effect after a restart.",
+      "openSettings": "Open Settings",
+      "title": "Browser identity is now app-wide"
+    },
+    "viewport": {
+      "desktop": "Desktop — 1920 × 1080",
+      "laptop": "Laptop — 1024 × 768",
+      "laptop-l": "Laptop L — 1440 × 900",
+      "mobile-l": "Mobile L — 425 × 812",
+      "mobile-m": "Mobile M — 375 × 667",
+      "mobile-s": "Mobile S — 320 × 568",
+      "tablet": "Tablet — 768 × 1024"
     }
   },
   "editor": {
@@ -183,6 +350,165 @@
       "remoteBrowsing": {
         "heading": "Remote browsing",
         "headingDescription": "Where remote workspace pages render, and where their network traffic leaves from."
+      },
+      "extensions": {
+        "description": "Chrome extensions for the selected local browser profile.",
+        "empty": "No extensions installed. Add one from the Chrome Web Store above.",
+        "heldUpdate": "Version {{version}} is waiting for more access.",
+        "keywordChrome": "chrome",
+        "keywordExtension": "extension",
+        "keywordPassword": "password manager",
+        "keywordUnpacked": "unpacked",
+        "loadError": "Could not start: {{error}}",
+        "loadUnpacked": "Load unpacked…",
+        "options": "Options",
+        "profileDescription": "Extensions turned on here run in tabs that use the {{profile}} profile.",
+        "reload": "Reload from folder",
+        "remove": "Remove",
+        "removeDescription": "It is removed from every Orca browser profile, with its saved data.",
+        "removeTitle": "Remove {{name}}?",
+        "removeUnpackedDescription": "It is removed from every Orca browser profile, with its saved data. The folder on disk stays where it is.",
+        "reviewAccess": "Review access",
+        "sourceUnpacked": "Unpacked",
+        "sourceWebStore": "Chrome Web Store",
+        "title": "Extensions",
+        "toggleLabel": "Turn {{name}} on or off",
+        "webStore": {
+          "add": "Add",
+          "added": "Added {{name}}",
+          "adding": "Adding…",
+          "browse": "Browse the Chrome Web Store",
+          "inputLabel": "Add from Chrome Web Store",
+          "openFailed": "Open a workspace to browse the Chrome Web Store.",
+          "placeholder": "Chrome Web Store link or extension ID"
+        }
+      },
+      "passwords": {
+        "account": "{{username}} on {{site}}",
+        "accountCount": "{{count}} accounts",
+        "add": "Add",
+        "authFailed": "Could not confirm it was you",
+        "copied": "Password copied. Orca clears it from the clipboard in 2 minutes.",
+        "copy": "Copy password",
+        "copyFor": "Copy password for {{account}}",
+        "delete": "Delete…",
+        "deleteAll": "Delete data",
+        "deleteAllAction": "Delete…",
+        "deleteAllConfirmDescription": "Every saved password in the {{profile}} profile is permanently deleted. This can’t be undone.",
+        "deleteAllConfirmTitle": "Delete all password data?",
+        "deleteAllDescription": "Every saved password, note and never-save site in the {{profile}} profile.",
+        "deleteAllTitle": "Delete all password data",
+        "deleteConfirm": "Delete",
+        "deleteConfirmDescription": "Orca won’t fill it anymore. This can’t be undone.",
+        "deleteConfirmTitle": "Delete the {{site}} password for {{username}}?",
+        "deletedAll": "Password data deleted",
+        "description": "Saved logins for Orca’s browser: add, import, edit and delete them.",
+        "edit": "Edit",
+        "editFor": "Edit {{account}}",
+        "empty": "Orca offers to save a login after you sign in. You can also bring them from another browser or a CSV file.",
+        "emptyTitle": "No saved passwords yet",
+        "fillReauth": "Ask for Touch ID before filling",
+        "fillReauthDescription": "For a shared computer. Showing or copying a password already asks.",
+        "form": {
+          "addNote": "Add a note",
+          "addTitle": "Add password",
+          "cancel": "Cancel",
+          "currentHint": "Save the password you use on this site today.",
+          "description": "Orca fills it when you pick it under a sign-in field on this site.",
+          "duplicate": "A password for this username is already saved for this site.",
+          "editTitle": "Edit password",
+          "invalidPassword": "Enter a password.",
+          "invalidSite": "Enter a website address, like example.com.",
+          "note": "Note",
+          "password": "Password",
+          "save": "Save",
+          "site": "Site",
+          "sitePlaceholder": "example.com",
+          "unavailable": "Could not save this password.",
+          "username": "Username",
+          "usernamePlaceholder": "Email or username"
+        },
+        "hide": "Hide password",
+        "httpSuffix": " · http",
+        "import": "Import",
+        "importConflicts": "{{count}} kept because a different password is saved",
+        "importCsv": "From a CSV file…",
+        "importDuplicates": "{{count}} already saved",
+        "imported": "Imported {{count}} passwords",
+        "importFailed": "Could not import passwords",
+        "importInvalid": "{{count}} unreadable rows",
+        "importUndecryptable": "{{count}} protected by the browser; export a CSV from it instead",
+        "lastUsed": "Used {{when}}",
+        "moreActions": "More actions for {{account}}",
+        "neverHeading": "Never saved for {{count}} sites",
+        "noMatches": "No saved passwords match.",
+        "noReauth": "This computer can’t confirm it’s you with Touch ID, so passwords show and fill without a check.",
+        "noUsername": "(no username)",
+        "offerToSave": "Offer to save passwords",
+        "offerToSaveDescription": "After you sign in to a site in Orca’s browser, offer to save the login.",
+        "profileDescription": "Saved logins for the {{profile}} profile. Orca fills one only when you pick it under a sign-in field.",
+        "reauthUnavailable": "Touch ID can’t be used right now, so Orca won’t show, copy or fill a password that needs it.",
+        "removeNever": "Remove",
+        "search": "Search {{count}} passwords",
+        "searchKeywords": {
+          "autofill": "autofill",
+          "csv": "csv",
+          "import": "import",
+          "logins": "logins",
+          "passwords": "passwords",
+          "touchId": "touch id",
+          "vault": "vault"
+        },
+        "searchLabel": "Search passwords",
+        "show": "Show password",
+        "title": "Passwords",
+        "unavailableTitle": "Saved passwords are off on this computer"
+      },
+      "profileScope": {
+        "description": "Share one Default profile everywhere, or give each repo or workspace its own cookies and storage, so local dev servers stop sharing logins.",
+        "keywordIsolate": "isolate",
+        "keywordRepo": "repo",
+        "optionRepo": "Per repo",
+        "optionRepoTooltip": "Each repo's workspaces share one profile, created on first use.",
+        "optionShared": "Shared",
+        "optionSharedTooltip": "New tabs use the Default profile (or the one picked under Session & Cookies).",
+        "optionWorktree": "Per workspace",
+        "optionWorktreeTooltip": "Each workspace gets its own profile, deleted with the workspace.",
+        "repoProfileLabel": "Repo: {{name}}",
+        "title": "Profile for new tabs",
+        "worktreeProfileLabel": "Workspace: {{name}}"
+      },
+      "sitePermissions": {
+        "allow": "Allow",
+        "ask": "Ask again",
+        "block": "Block",
+        "description": "Sites ask before using your camera, microphone, location and more. Change what you allowed or blocked for each site.",
+        "empty": "No sites have been allowed or blocked yet.",
+        "profile": "Browser profile",
+        "search": {
+          "camera": "camera",
+          "clipboard": "clipboard",
+          "localNetwork": "local network",
+          "location": "location",
+          "microphone": "microphone",
+          "notifications": "notifications",
+          "permissions": "permissions"
+        },
+        "title": "Site permissions"
+      },
+      "userAgent": {
+        "description": "Choose the user agent for every browser profile and page. Changes take effect after a restart.",
+        "loading": "Loading…",
+        "optionClean": "Cleaned",
+        "optionCleanTooltip": "Removes Orca and Electron tokens to match imported Chrome sessions.",
+        "optionNative": "Native",
+        "optionNativeTooltip": "Keeps Electron's built-in identity for sites that reject the cleaned identity.",
+        "remoteUnsupported": "Manage browser identity on the remote host with the Orca CLI.",
+        "resetRequired": "Identity data must be reset explicitly before it can be changed.",
+        "resetRequiredCommand": "Reset it from the command line: orca browser identity set --mode <mode> --reset",
+        "restartRequired": "Restart required",
+        "title": "Browser identity",
+        "unavailable": "Browser identity is unavailable."
       }
     },
     "agents": {
@@ -964,7 +1290,13 @@
               "locationRemoteHost": "Read from browsers on {{value0}} and stored there.",
               "googleCookiesSkippedLocal": "Google cookies were not imported. Open a browser in Orca with this profile, then sign into Google.",
               "googleCookiesSkippedClientHosted": "Google cookies were not imported. Open a browser tab in the {{value0}} workspace with this profile — it opens on this device — then sign into Google.",
-              "googleCookiesSkippedRemoteWorkspace": "Google cookies were not imported. Open a browser tab in the {{value0}} workspace with this profile, then sign into Google."
+              "googleCookiesSkippedRemoteWorkspace": "Google cookies were not imported. Open a browser tab in the {{value0}} workspace with this profile, then sign into Google.",
+              "cookieKeyLocked": "Orca couldn't read {{count}} of {{browser}}'s encrypted cookies because access to the system keyring was locked or denied. Unlock your login keyring, allow access if prompted, and import again.",
+              "cookieKeyUnavailable": "Orca couldn't read {{count}} of {{browser}}'s encrypted cookies because the cookie encryption key couldn't be read. Try importing again, import cookies using “From File…”, or sign in directly in Orca.",
+              "cookiesSkipped": "{{value0}} cookies skipped.",
+              "otherUndecryptableCookies": "{{count}} more cookies could not be decrypted for another reason.",
+              "partitionSkippedCounts": "Cookies with unreadable site partitions: {{value0}}. Related cookies also skipped: {{value1}}. Check these sites in this profile before signing in again.",
+              "secretToolMissing": "Orca couldn't read {{count}} of {{browser}}'s encrypted cookies because secret-tool isn't installed. Install libsecret-tools (or your distribution's equivalent) and import again."
             }
           }
         }
@@ -1004,6 +1336,16 @@
       },
       "clipboardWriteFailure": {
         "tooLarge": "The text is too large to copy."
+      },
+      "reveal": {
+        "in": {
+          "file": {
+            "manager": {
+              "launchFailed": "Could not reveal the file.",
+              "notFound": "File not found. It may have been moved or deleted."
+            }
+          }
+        }
       }
     },
     "hooks": {
@@ -3083,7 +3425,8 @@
           }
         },
         "dialog": {
-          "f26c4baeda": "Close"
+          "f26c4baeda": "Close",
+          "minimize": "Minimize"
         },
         "repo": {
           "multi": {
@@ -3264,7 +3607,9 @@
             "copiedLink": "Copied link",
             "copyLinkFailed": "Failed to copy link",
             "downloadOpenWithDefaultApp": "Download & open with default app",
-            "downloadOpenFailed": "Failed to download '{{value0}}'."
+            "downloadOpenFailed": "Failed to download '{{value0}}'.",
+            "openInNewTab": "Open in new tab",
+            "openInThisGroupRefused": "Couldn't open {{value0}} in this group"
           },
           "TerminalSessionStateSaveFailureDialog": {
             "6bee0c8f17": "Open Disk Space Analyzer",
@@ -6804,7 +7149,8 @@
         "BrowserDefaultZoomSetting": {
           "2622126877": "Zoom level applied to newly opened browser tabs.",
           "bbeec087d3": "Applied to newly opened browser tabs.",
-          "265597101f": "Default Zoom"
+          "265597101f": "Default Zoom",
+          "siteDefault": "Zoom for sites you haven't zoomed."
         },
         "BrowserHomePageSetting": {
           "d4ddcd0056": "Save",
@@ -6855,7 +7201,7 @@
         },
         "BrowserUseComputerUseNotice": {
           "15b5e680ba": "Open Computer Use",
-          "79209b37b9": "If cookie import is not the right fit, Computer Use can control local apps and may use existing logged-in browser sessions where applicable. Install the Computer Use skill; macOS also requires privacy permissions.",
+          "79209b37b9": "If cookie import is not the right fit, Computer Use can control local apps and may use existing logged-in browser sessions where applicable. Install the Orca Computer Use skill; macOS also requires privacy permissions.",
           "333984cf90": "Use an existing browser session"
         },
         "BrowserUseEnableSwitch": {
@@ -6898,7 +7244,8 @@
           "0289434ed6": "Enabled",
           "8b3054dac7": "Registering...",
           "8f2675c2f3": "Imported {{value0}} cookies from file.",
-          "5301857d88": "From {{value0}}"
+          "5301857d88": "From {{value0}}",
+          "finishSteps": "Let coding agents drive this browser with your logins. Finish the steps below."
         },
         "BrowserUseSkillStep": {
           "0871b6998d": "Enables agents to navigate and verify pages in Orca's browser.",
@@ -7139,6 +7486,10 @@
             "modeAriaLabel": "Agent Dashboard open mode",
             "modeInWindow": "In-window",
             "modePopout": "Pop-out"
+          },
+          "browserExtensions": {
+            "copy": "Adds Settings › Browser › Extensions for local browser profiles.",
+            "toggleLabel": "Toggle browser extensions"
           }
         },
         "FloatingWorkspacePane": {
@@ -9287,6 +9638,18 @@
               "tunnel": "tunnel",
               "routing": "routing",
               "network": "network"
+            },
+            "linkRoutingBackground": {
+              "background": "background",
+              "focus": "focus",
+              "tab": "tab"
+            },
+            "userAgent": {
+              "cleaned": "cleaned",
+              "identity": "identity",
+              "native": "native",
+              "restart": "restart",
+              "userAgent": "user agent"
             }
           },
           "use": {
@@ -9514,6 +9877,13 @@
               "board": "board",
               "inWindow": "in-window",
               "worktrees": "worktrees"
+            },
+            "browserExtensions": {
+              "chrome": "chrome",
+              "description": "Run Chrome extensions, such as password managers, in Orca browser tabs.",
+              "extension": "extension",
+              "password": "password manager",
+              "title": "Browser extensions"
             }
           }
         },
@@ -11189,8 +11559,8 @@
           "legacyHelp": "Update this server manually once to enable remote updates."
         },
         "BrowserLinkRoutingSetting": {
-          "description": "Open http(s) links in Orca's built-in browser — from the terminal, markdown, and the editor. {{shortcut}} always uses your system browser.",
-          "descriptionBase": "Open http(s) links in Orca's built-in browser — from the terminal, markdown, and the editor."
+          "description": "Open http(s) links from anywhere in Orca in its built-in browser. Sign-in pages and {{shortcut}} always use your system browser.",
+          "descriptionBase": "Open http(s) links from anywhere in Orca in its built-in browser. Sign-in pages still open in your system browser."
         },
         "BrowserLinkRoutingModifierSetting": {
           "titleSystem": "Hold Shift to open in your web browser",
@@ -11199,8 +11569,18 @@
           "descriptionOrca": "Links open in your system browser. When enabled, {{chord}}+click opens one in Orca's built-in browser instead."
         },
         "BrowserTerminalLinkActionsSetting": {
-          "title": "Show link actions",
-          "description": "Show available actions when you click a link in the terminal or a chat transcript. Turn this off to require {{modifier}}-click in the terminal."
+          "title": "Terminal URL clicks",
+          "description": "Show available actions when you click a link in the terminal or a chat transcript. Turn this off to require {{modifier}}-click in the terminal.",
+          "actionsLabel": "Actions",
+          "descriptionV2": "Control clicks on detected URLs printed in terminal panes and chat transcripts.",
+          "leaveToTerminalLabel": "Leave to terminal",
+          "middleClickAriaLabel": "Middle click",
+          "middleClickDescription": "Choose what a mouse-wheel click does on a detected terminal URL.",
+          "middleClickLabel": "Middle click",
+          "openUrlLabel": "Open URL",
+          "plainClickAriaLabel": "Plain click URL behavior",
+          "plainClickDescription": "Choose whether a left-click shows actions, opens the URL, or leaves it to the terminal. Cmd/Ctrl-click always opens directly.",
+          "plainClickLabel": "Plain click"
         },
         "PluginConsentDialog": {
           "workerTrust": "Background worker — runs its own process",
@@ -11858,6 +12238,10 @@
           "staleUsage": "Last known usage — the latest refresh failed: {{reason}}",
           "usageLabel": "Usage",
           "unknownUsage": "Current usage is unavailable. Refresh usage to try again."
+        },
+        "BrowserLinkRoutingBackgroundSetting": {
+          "description": "Links from the terminal, chat, and markdown join the browser without taking focus from where you clicked.",
+          "title": "Open links in the background"
         }
       },
       "right": {
@@ -15045,6 +15429,9 @@
           "a0af0198aa": "Large diffs are not rendered by default.",
           "c3d9f4a712": "This diff's size isn't known yet, so it loads on request.",
           "f7fa7a40d0": "Load diff"
+        },
+        "PanZoomImageDialog": {
+          "copyPngFailed": "Could not copy image"
         }
       },
       "diff": {
@@ -15375,7 +15762,27 @@
             "756bfc25c9": "Open",
             "09a9489aa5": "Show",
             "2a4c4b8e1f": "Copy",
-            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Open Preview to the Side\" on the file instead."
+            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Open Preview to the Side\" on the file instead.",
+            "addToDictionary": "Add to Dictionary",
+            "cc4a071d3a": "Annotate page element ({{value0}})",
+            "copyImage": "Copy Image",
+            "copyImageAddress": "Copy Image Address",
+            "cut": "Cut",
+            "devToolsClose": "Close DevTools",
+            "devToolsDockBottom": "Dock to bottom",
+            "devToolsDockRight": "Dock to right",
+            "devToolsTitle": "DevTools",
+            "devToolsUndock": "Open in separate window",
+            "inspect": "Inspect",
+            "openImageInNewTab": "Open Image in New Tab",
+            "paste": "Paste",
+            "pasteAndMatchStyle": "Paste and Match Style",
+            "pasteAsPlainText": "Paste as Plain Text",
+            "redo": "Redo",
+            "saveImage": "Save Image",
+            "searchSelection": "Search {{value0}} for “{{value1}}”",
+            "selectAll": "Select All",
+            "undo": "Undo"
           },
           "BrowserToolbarMenu": {
             "429ef481f9": "Cancel",
@@ -15400,7 +15807,16 @@
             "bf648471c5": "Creating…",
             "53bbe3dab4": "Imported {{value0}} cookies from file.",
             "c5f0e4d3b2a1": "Imported {{value0}} cookies from {{value1}} ({{value2}}).",
-            "d6a1f5e4c3b2": "Imported {{value0}} cookies from {{value1}}."
+            "d6a1f5e4c3b2": "Imported {{value0}} cookies from {{value1}}.",
+            "appearance": "Appearance",
+            "appearanceDark": "Dark",
+            "appearanceLight": "Light",
+            "appearanceMatchOrca": "Match Orca",
+            "resetZoom": "Reset zoom",
+            "zoom": "Zoom",
+            "zoomIn": "Zoom in",
+            "zoomOut": "Zoom out",
+            "zoomPercent": "Zoom {{value0}}%"
           },
           "GrabConfirmationSheet": {
             "314a0aaa5b": "Attach to AI",
@@ -15416,14 +15832,16 @@
             "9c6ce0632a": "Selected element screenshot",
             "50f7114f99": "Review before attaching. Captured page context may include visible site content.",
             "f3575229df": "Grab",
-            "405bb315da": "Untitled"
+            "405bb315da": "Untitled",
+            "accessibleNameOpenQuote": "\""
           },
           "browser": {
             "address": {
               "bar": {
                 "suggestions": {
                   "87fcdd0da9": "{{value0}} Search"
-                }
+                },
+                "placeholder": "Search or enter URL"
               }
             }
           },
@@ -15438,7 +15856,8 @@
                     "annotations": {
                       "0c7b9b2b7a": "Copied",
                       "c937229f19": "Screenshotted",
-                      "1f5cb19034": "Annotation added"
+                      "1f5cb19034": "Annotation added",
+                      "limitReached": "Limit of {{limit}} annotations reached. Send, delete or clear some to add more."
                     }
                   }
                 }
@@ -15454,7 +15873,9 @@
                     "449d2c2629": "Annotation intent",
                     "38d320108c": "Collapse annotations",
                     "9f209891a7": "Expand annotations",
-                    "includePageDetails": "Include page details"
+                    "includePageDetails": "Include page details",
+                    "copyFeedback": "Copy feedback",
+                    "copyFeedbackWithPageDetails": "Copy feedback with page details"
                   }
                 }
               }
@@ -16516,7 +16937,8 @@
             "highlight": "Highlighter",
             "pen": "Pen",
             "rect": "Rectangle",
-            "text": "Text"
+            "text": "Text",
+            "eraser": "Eraser"
           },
           "undo": "Undo",
           "widthOption": "{{value0}} px"
@@ -16570,7 +16992,8 @@
         "streamConnectionLost": "Lost connection to the remote server.",
         "streamConnectionUnreachable": "Cannot reach the remote server.",
         "streamRestartFailed": "Failed to restart remote browser stream.",
-        "streamCapabilityUnsupported": "The selected runtime does not support remote browser streaming."
+        "streamCapabilityUnsupported": "The selected runtime does not support remote browser streaming.",
+        "streamBrowserUnavailable": "The remote browser is unavailable. Check its setup on the server."
       },
       "artifacts": {
         "ArtifactsPage": {
@@ -16715,6 +17138,62 @@
           "externalLinkTitle": "Open link to {{host}}?",
           "externalLinkConfirm": "Open link",
           "externalLinkCancel": "Cancel"
+        },
+        "externalApp": {
+          "anonymousDescription": "A page in the browser wants to open another application.",
+          "cancel": "Cancel",
+          "confirm": "Open {{app}}",
+          "confirmLink": "Open link",
+          "description": "{{origin}} wants to open another application.",
+          "launchFailed": "Couldn't open an app for this {{scheme}} link. It may not be installed.",
+          "schemeTitle": "Open this {{scheme}} link?",
+          "title": "Open {{app}}?"
+        },
+        "httpAuth": {
+          "cancel": "Cancel",
+          "confirm": "Sign in",
+          "description": "{{origin}} is asking for a username and password.",
+          "insecure": "Your connection to this site isn't private.",
+          "password": "Password",
+          "retry": "That username or password didn't work.",
+          "title": "Sign in",
+          "username": "Username"
+        },
+        "javaScriptDialog": {
+          "anonymousTitle": "This page says",
+          "answer": "Answer",
+          "cancel": "Cancel",
+          "confirm": "OK",
+          "title": "{{origin}} says"
+        },
+        "sitePermission": {
+          "allow": "Allow",
+          "ask": {
+            "camera": "Use your camera",
+            "clipboard": "See text and images copied to the clipboard",
+            "idleDetection": "Know when you are actively using this device",
+            "localNetwork": "Access apps on this device and devices on your local network",
+            "location": "Know your location",
+            "microphone": "Use your microphone",
+            "midi": "Use your MIDI devices",
+            "notifications": "Show notifications",
+            "windowManagement": "Manage windows on all your displays"
+          },
+          "block": "Block",
+          "fileTitle": "This file wants to",
+          "label": {
+            "camera": "Camera",
+            "clipboard": "Clipboard",
+            "idleDetection": "Device use",
+            "localNetwork": "Local network",
+            "location": "Location",
+            "microphone": "Microphone",
+            "midi": "MIDI devices",
+            "notifications": "Notifications",
+            "windowManagement": "Window management"
+          },
+          "localFiles": "Local files",
+          "title": "{{site}} wants to"
         }
       },
       "HostedReviewUnlinkMenuItem": {
@@ -16803,7 +17282,32 @@
           "insertColumnLeft": "Insert column left",
           "insertColumnRight": "Insert column right",
           "deleteColumn": "Delete column",
-          "deleteTable": "Delete table"
+          "deleteTable": "Delete table",
+          "addLink": "Add link",
+          "format": "Format",
+          "bold": "Bold",
+          "italic": "Italic",
+          "strike": "Strike",
+          "inlineCode": "Inline code",
+          "codeBlock": "Code block",
+          "quote": "Quote",
+          "paragraph": "Paragraph",
+          "bodyText": "Body text",
+          "heading1": "Heading 1",
+          "heading2": "Heading 2",
+          "heading3": "Heading 3",
+          "heading4": "Heading 4",
+          "heading5": "Heading 5",
+          "bulletList": "Bullet list",
+          "numberedList": "Numbered list",
+          "checklist": "Checklist",
+          "insert": "Insert",
+          "link": "Link",
+          "image": "Image",
+          "divider": "Divider",
+          "paste": "Paste",
+          "pasteAsPlainText": "Paste as plain text",
+          "addToDictionary": "Add to dictionary"
         }
       }
     },
@@ -16959,7 +17463,8 @@
         "imagePreviewUnavailable": "Preview unavailable",
         "workspaceAttachmentMismatch": "Files can only be attached to their source workspace.",
         "attachmentOwnerChanged": "This workspace changed hosts while attaching — drop the files again.",
-        "attachmentUnreadable": "Couldn't read the dropped files."
+        "attachmentUnreadable": "Couldn't read the dropped files.",
+        "copyImageTooLarge": "The image is too large to copy."
       },
       "tool": {
         "exitCode": "exit {{value0}}",
@@ -17746,6 +18251,90 @@
       "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
       "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
       "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
+    }
+  },
+  "browserExtensions": {
+    "install": {
+      "cancel": "Cancel",
+      "canHeading": "It can:",
+      "confirm": "Add extension",
+      "description": "It runs in Orca browser tabs.",
+      "noAccess": "It does not ask to read or change data on websites.",
+      "profileDescription": "It runs in tabs that use the {{profile}} profile.",
+      "title": "Add {{name}}?"
+    },
+    "permission": {
+      "allSites": "Read and change all your data on all websites",
+      "blockContent": "Block content on any page",
+      "bookmarks": "Read and change your bookmarks",
+      "clipboardRead": "Read data you copy and paste",
+      "clipboardWrite": "Modify data you copy and paste",
+      "contentSettings": "Change which sites can use cookies, JavaScript, your camera, microphone and location",
+      "debugger": "Access the page debugger backend",
+      "downloads": "Manage your downloads",
+      "email": "Know your email address",
+      "geolocation": "Detect your physical location",
+      "history": "Read your browsing history",
+      "historyWrite": "Read and change your browsing history",
+      "management": "Manage your other extensions",
+      "manyOtherSites": "Read and change your data on {{hosts}} and {{count}} other sites",
+      "manyOtherSites_one": "Read and change your data on {{hosts}} and {{count}} other site",
+      "manyOtherSites_other": "Read and change your data on {{hosts}} and {{count}} other sites",
+      "nativeMessaging": "Communicate with cooperating native applications",
+      "notifications": "Display notifications",
+      "privacy": "Change your privacy-related settings",
+      "proxy": "Change your proxy settings",
+      "screenCapture": "Capture content of your screen",
+      "someSites": "Read and change your data on {{hosts}}",
+      "topSites": "Read a list of your most frequently visited websites"
+    },
+    "permissions": {
+      "confirm": "Allow",
+      "deny": "Deny",
+      "description": "It is asking for access it did not have when you added it.",
+      "title": "Allow {{name}} more access?"
+    },
+    "uninstall": {
+      "confirm": "Remove",
+      "title": "Remove {{name}}?"
+    },
+    "unsupported": {
+      "identity": "extension sign-in",
+      "line": "Not available in Orca yet: {{features}}."
+    }
+  },
+  "native": {
+    "dialog": {
+      "allFiles": "All Files",
+      "cookieFiles": "Cookie Files",
+      "importCookies": "Import Cookies"
+    }
+  },
+  "remoteHostBrowserControl": {
+    "description": "Agents on this SSH host can open and use Orca browser tabs in its workspaces. Tabs it controls show its name. You can change this in Settings > SSH.",
+    "disallow": "Don’t allow",
+    "disallowed": "{{host}} can no longer control browser tabs. Turn it back on in Settings > SSH.",
+    "failed": "Couldn’t stop {{host}}. Turn off its browser control in Settings > SSH.",
+    "stop": "Stop",
+    "stopped": "{{host}} stopped controlling browser tabs until Orca restarts.",
+    "title": "{{host}} is controlling a browser tab"
+  },
+  "workspace": {
+    "links": {
+      "kind": {
+        "github_pr": "GitHub PR",
+        "github_issue": "GitHub issue",
+        "linear_task": "Linear task",
+        "gitlab_mr": "GitLab MR",
+        "gitlab_issue": "GitLab issue",
+        "jira_task_url": "Jira task (URL)",
+        "bitbucket_pr": "Bitbucket PR",
+        "azure_devops_pr": "Azure DevOps PR",
+        "gitea_pr": "Gitea PR"
+      },
+      "mrReference": "MR !{{number}}",
+      "prReference": "PR #{{number}}",
+      "issueReference": "Issue #{{number}}"
     }
   }
 }

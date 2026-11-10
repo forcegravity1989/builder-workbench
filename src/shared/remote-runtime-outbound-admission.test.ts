@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from './remote-runtime/pairing/paired-runtime-connection'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { WebSocketServer } from 'ws'
@@ -58,11 +59,18 @@ describe('remote runtime outbound admission', () => {
   it('rejects oversized requests before opening any desktop transport socket', async () => {
     const { pairing, server } = await createServer()
     const oversizedParams = { value: 'x'.repeat(REMOTE_RUNTIME_MAX_OUTBOUND_JSON_BYTES) }
-    const cached = new RemoteRuntimeRequestConnection(pairing)
-    const shared = new RemoteRuntimeSharedControlConnection(pairing)
+    const cached = new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing))
+    const shared = new RemoteRuntimeSharedControlConnection(
+      pairedRuntimeConnectionFromOffer(pairing)
+    )
 
     await expect(
-      sendRemoteRuntimeRequest(pairing, 'status.get', oversizedParams, 1000)
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(pairing),
+        'status.get',
+        oversizedParams,
+        1000
+      )
     ).rejects.toThrow('JSON payload exceeds')
     await expect(cached.request('status.get', oversizedParams, 1000)).rejects.toThrow(
       'JSON payload exceeds'
@@ -71,10 +79,16 @@ describe('remote runtime outbound admission', () => {
       'JSON payload exceeds'
     )
     await expect(
-      subscribeRemoteRuntimeRequest(pairing, 'terminal.subscribe', oversizedParams, 1000, {
-        onResponse: vi.fn(),
-        onError: vi.fn()
-      })
+      subscribeRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(pairing),
+        'terminal.subscribe',
+        oversizedParams,
+        1000,
+        {
+          onResponse: vi.fn(),
+          onError: vi.fn()
+        }
+      )
     ).rejects.toThrow('JSON payload exceeds')
 
     await new Promise((resolve) => setTimeout(resolve, 10))
@@ -85,7 +99,9 @@ describe('remote runtime outbound admission', () => {
 
   it('rejects shared-control subscription count and byte overload before connecting', async () => {
     const { pairing, server } = await createServer()
-    const connection = new RemoteRuntimeSharedControlConnection(pairing)
+    const connection = new RemoteRuntimeSharedControlConnection(
+      pairedRuntimeConnectionFromOffer(pairing)
+    )
     const subscriptions = (
       connection as unknown as {
         subscriptions: Map<string, { retainedParamsBytes: number }>
@@ -131,11 +147,21 @@ describe('remote runtime outbound admission', () => {
     )
     const admittedCount = Math.floor(REMOTE_RUNTIME_MAX_PROCESS_PENDING_RPC_BYTES / retainedBytes)
     const requests = Array.from({ length: admittedCount }, () =>
-      sendRemoteRuntimeRequest(pairing, 'status.large', params, 60_000).catch(() => undefined)
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(pairing),
+        'status.large',
+        params,
+        60_000
+      ).catch(() => undefined)
     )
 
     await expect(
-      sendRemoteRuntimeRequest(pairing, 'status.overflow', params, 60_000)
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(pairing),
+        'status.overflow',
+        params,
+        60_000
+      )
     ).rejects.toMatchObject({ code: 'remote_runtime_busy' })
     expect(getRemoteRuntimeRequestAdmissionEvidence().pendingRequestCount).toBe(admittedCount)
 
@@ -153,8 +179,8 @@ describe('remote runtime outbound admission', () => {
   it('bounds pending requests and ready waiters while both handshakes stall', async () => {
     const { pairing } = await createServer()
     const connections: InspectableRequestConnection[] = [
-      new RemoteRuntimeRequestConnection(pairing),
-      new RemoteRuntimeSharedControlConnection(pairing)
+      new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing)),
+      new RemoteRuntimeSharedControlConnection(pairedRuntimeConnectionFromOffer(pairing))
     ]
 
     for (const connection of connections) {
@@ -190,8 +216,8 @@ describe('remote runtime outbound admission', () => {
     expect(admittedCount).toBeGreaterThan(0)
 
     for (const connection of [
-      new RemoteRuntimeRequestConnection(pairing),
-      new RemoteRuntimeSharedControlConnection(pairing)
+      new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing)),
+      new RemoteRuntimeSharedControlConnection(pairedRuntimeConnectionFromOffer(pairing))
     ] satisfies InspectableRequestConnection[]) {
       const requests = Array.from({ length: admittedCount }, () =>
         connection.request('status.large', params, 60_000).catch(() => undefined)
@@ -216,8 +242,8 @@ describe('remote runtime outbound admission', () => {
   it('bounds pending request count across stalled environment connections', async () => {
     const { pairing } = await createServer()
     const connections: InspectableRequestConnection[] = [
-      new RemoteRuntimeRequestConnection(pairing),
-      new RemoteRuntimeSharedControlConnection(pairing)
+      new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing)),
+      new RemoteRuntimeSharedControlConnection(pairedRuntimeConnectionFromOffer(pairing))
     ]
     const requests = Array.from(
       { length: REMOTE_RUNTIME_MAX_PROCESS_PENDING_REQUESTS },
@@ -228,13 +254,18 @@ describe('remote runtime outbound admission', () => {
           60_000
         ).catch(() => undefined)
     )
-    const overflow = new RemoteRuntimeRequestConnection(pairing)
+    const overflow = new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing))
 
     await expect(overflow.request('status.overflow', undefined, 60_000)).rejects.toMatchObject({
       code: 'remote_runtime_busy'
     })
     await expect(
-      sendRemoteRuntimeRequest(pairing, 'status.one-shot-overflow', undefined, 60_000)
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(pairing),
+        'status.one-shot-overflow',
+        undefined,
+        60_000
+      )
     ).rejects.toMatchObject({ code: 'remote_runtime_busy' })
     expect(getRemoteRuntimeRequestAdmissionEvidence().pendingRequestCount).toBe(
       REMOTE_RUNTIME_MAX_PROCESS_PENDING_REQUESTS
@@ -251,7 +282,12 @@ describe('remote runtime outbound admission', () => {
 
   it('releases one-shot process admission after a stalled handshake times out', async () => {
     const { pairing } = await createServer()
-    const request = sendRemoteRuntimeRequest(pairing, 'status.timeout', undefined, 25)
+    const request = sendRemoteRuntimeRequest(
+      pairedRuntimeConnectionFromOffer(pairing),
+      'status.timeout',
+      undefined,
+      25
+    )
 
     expect(getRemoteRuntimeRequestAdmissionEvidence().pendingRequestCount).toBe(1)
     await expect(request).rejects.toMatchObject({ code: 'runtime_timeout' })
@@ -274,9 +310,9 @@ describe('remote runtime outbound admission', () => {
     )
     const admittedCount = Math.floor(REMOTE_RUNTIME_MAX_PROCESS_PENDING_RPC_BYTES / retainedBytes)
     const connections: InspectableRequestConnection[] = [
-      new RemoteRuntimeRequestConnection(pairing),
-      new RemoteRuntimeSharedControlConnection(pairing),
-      new RemoteRuntimeRequestConnection(pairing)
+      new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing)),
+      new RemoteRuntimeSharedControlConnection(pairedRuntimeConnectionFromOffer(pairing)),
+      new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing))
     ]
     expect(Math.ceil(admittedCount / connections.length) * retainedBytes).toBeLessThan(
       REMOTE_RUNTIME_MAX_PENDING_RPC_BYTES
@@ -306,8 +342,8 @@ describe('remote runtime outbound admission', () => {
     const { pairing } = await createServer()
 
     for (const connection of [
-      new RemoteRuntimeRequestConnection(pairing),
-      new RemoteRuntimeSharedControlConnection(pairing)
+      new RemoteRuntimeRequestConnection(pairedRuntimeConnectionFromOffer(pairing)),
+      new RemoteRuntimeSharedControlConnection(pairedRuntimeConnectionFromOffer(pairing))
     ] satisfies InspectableRequestConnection[]) {
       const request = connection.request('status.timeout', { value: 'x'.repeat(1024) }, 100)
       const state = connection as unknown as RequestAdmissionState

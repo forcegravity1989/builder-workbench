@@ -4,7 +4,7 @@ import type { AppState } from '../../../types'
 import type { WorktreeMeta } from '../../../../../../shared/worktree/meta-types'
 import { applyWorktreeUpdates } from '../../worktree-helpers'
 import { projectWorktreeTabModelReconciliation } from '../../tabs'
-import { moveFocusToRendererBeforeFocusedWebviewHidden } from '../../browser-webview-cleanup'
+import { moveFocusToRendererBeforeFocusedWebviewHidden } from '../../../../components/browser-pane/host-guest/webview-registry'
 import { tabHasLivePty } from '@/lib/tab-has-live-pty'
 import { markInputQuietSchedulerInput, scheduleAfterInputQuiet } from '@/lib/input-quiet-scheduler'
 import {

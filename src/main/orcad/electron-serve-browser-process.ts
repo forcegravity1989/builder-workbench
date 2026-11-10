@@ -5,10 +5,8 @@ import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { z } from 'zod'
 import { BrowserError } from '../browser/browser-error'
-import type {
-  RuntimeBrowserCommandHost,
-  RuntimeBrowserCommands
-} from '../runtime/orca-runtime-browser'
+import type { RuntimeBrowserCommands } from '../runtime/orca-runtime-browser'
+import type { RuntimeBrowserCommandHost } from '../runtime/browser/commands/browser-command-contracts'
 import type { RuntimeMetadata } from '../../shared/runtime-bootstrap'
 import { BROWSER_UNAVAILABLE_ERROR_CODE } from '../../shared/runtime-types'
 import { readRuntimeMetadata } from '../runtime/runtime-metadata'
@@ -210,7 +208,7 @@ export class ElectronServeBrowserProcess {
     const original = (args[0] ?? {}) as Record<string, unknown>
     const worktreeId =
       typeof original.worktree === 'string'
-        ? (await host.resolveWorktreeSelector(original.worktree)).id
+        ? (await host.resolveWorkspaceSelector(original.worktree)).id
         : undefined
     const params: Record<string, unknown> = { ...original, worktree: undefined }
     const requestedPageId = typeof original.page === 'string' ? original.page : undefined

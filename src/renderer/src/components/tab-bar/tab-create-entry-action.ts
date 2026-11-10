@@ -18,7 +18,7 @@ import type { RuntimeFileListState } from '../quick-open-file-list'
 import {
   openWorkspaceBrowserTab,
   type OpenWorkspaceBrowserTabRequest
-} from '@/lib/workspace-browser-tab-open'
+} from '@/lib/browser/workspace/workspace-browser-tab-open'
 import {
   classifyTabEntryQuery,
   TAB_ENTRY_ABSOLUTE_PATH_REMOTE_BLOCKED_MESSAGE,

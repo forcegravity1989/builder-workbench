@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
   }[]
 }))
 
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: (selector: (state: MockAppState) => unknown) => {
     if (!mocks.state) {
       throw new Error('mock app state not initialized')
@@ -33,7 +33,7 @@ vi.mock('@/store', () => ({
 }))
 
 vi.mock('@/lib/worktree-runtime-owner', () => ({
-  getRuntimeEnvironmentIdForWorktree: () => null
+  runtimeEnvironmentIdOrLocalUnlessTwin: () => null
 }))
 
 vi.mock('@/components/contextual-tours/use-contextual-tour', () => ({

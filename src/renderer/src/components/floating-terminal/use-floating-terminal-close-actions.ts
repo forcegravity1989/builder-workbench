@@ -8,7 +8,7 @@ import {
 } from '@/lib/floating-workspace-terminal-actions'
 import { armFloatingPanelReclaimIntent } from '@/lib/floating-workspace-focus-reclaim'
 import { useAppStore } from '@/store'
-import { destroyWorkspaceWebviews } from '@/store/slices/browser-webview-cleanup'
+import { destroyWorkspaceWebviews } from '@/store/slices/browser/cleanup/browser-webview-cleanup'
 import { guardPinnedTabClose, resolvePinnedTabLabel } from '@/store/pinned-tab-close-guard'
 import type { Tab } from '../../../../shared/tab-types'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
@@ -92,7 +92,10 @@ export function useFloatingTerminalCloseActions({
         }
       }
       if (item.contentType === 'terminal') {
-        closeTerminalTab(item.entityId, { reason: options?.reason ?? 'user', onClosed: armIfEmptying })
+        closeTerminalTab(item.entityId, {
+          reason: options?.reason ?? 'user',
+          onClosed: armIfEmptying
+        })
         return
       }
       const state = useAppStore.getState()

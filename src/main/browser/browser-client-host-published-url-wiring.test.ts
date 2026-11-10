@@ -20,17 +20,17 @@ type CompositionOptions = {
 const compositionOptions: CompositionOptions[] = []
 const recordedUrlParams: unknown[] = []
 
-vi.mock('./paired-runtime-browser-client-host', () => ({
+vi.mock('./client-hosts/lifecycle/paired-runtime-browser-client-host', () => ({
   PairedRuntimeBrowserClientHost: class {}
 }))
 
-vi.mock('./browser-client-file-channel-transport', () => ({
+vi.mock('./client-hosts/file-transfers/browser-client-file-channel-transport', () => ({
   BrowserClientFileChannelTransport: class {
     bind(): void {}
   }
 }))
 
-vi.mock('./browser-client-page-command-executor', () => ({
+vi.mock('./client-pages/execution/browser-client-page-command-executor', () => ({
   BrowserClientPageCommandExecutor: class {
     readonly recordPublishedPageUrl = (params: unknown): void => {
       recordedUrlParams.push(params)
@@ -42,7 +42,7 @@ vi.mock('./browser-client-page-command-executor', () => ({
   }
 }))
 
-vi.mock('./paired-runtime-browser-client-host-composition', () => ({
+vi.mock('./client-hosts/lifecycle/paired-runtime-browser-client-host-composition', () => ({
   PairedRuntimeBrowserClientHostComposition: class {
     constructor(options: CompositionOptions) {
       compositionOptions.push(options)
@@ -102,7 +102,8 @@ async function startHost() {
   vi.resetModules()
   compositionOptions.length = 0
   recordedUrlParams.length = 0
-  const runtime = await import('./paired-runtime-browser-client-host-runtime')
+  const runtime =
+    await import('./client-hosts/lifecycle/paired-runtime-browser-client-host-runtime')
   runtime.configurePairedRuntimeBrowserClientHostsForOrcaProfile({ orcaProfileId: 'profile-a' })
   await runtime.startPairedRuntimeBrowserClientHost({
     environment: pairedEnvironment(),
@@ -113,7 +114,7 @@ async function startHost() {
     throw new Error('client host composition was never constructed')
   }
   const { publishBrowserClientPageMetadata } =
-    await import('./browser-client-page-metadata-transport')
+    await import('./client-pages/renderer/browser-client-page-metadata-transport')
   return { options, publishBrowserClientPageMetadata }
 }
 

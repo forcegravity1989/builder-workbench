@@ -55,11 +55,17 @@ describe('ensureBrowserPageViewport', () => {
     expect(viewport.scroller.style.overflow).toBe('')
 
     setBrowserPageViewportPresetSize('page-1', { width: 1440, height: 900 })
-    expect(viewport.content.style.width).toBe('1440px')
-    expect(viewport.content.style.height).toBe('900px')
+    expect(viewport.content.style.getPropertyValue('--browser-page-viewport-width')).toBe('1440px')
+    expect(viewport.content.style.getPropertyValue('--browser-page-viewport-height')).toBe('900px')
+    expect(viewport.content.classList.contains('browser-page-preset-viewport')).toBe(true)
+    expect(viewport.content.style.width).toBe('')
+    expect(viewport.content.style.height).toBe('')
     expect(viewport.scroller.style.overflow).toBe('auto')
 
     setBrowserPageViewportPresetSize('page-1', null)
+    expect(viewport.content.classList.contains('browser-page-preset-viewport')).toBe(false)
+    expect(viewport.content.style.getPropertyValue('--browser-page-viewport-width')).toBe('')
+    expect(viewport.content.style.getPropertyValue('--browser-page-viewport-height')).toBe('')
     expect(viewport.content.style.width).toBe('100%')
     expect(viewport.content.style.height).toBe('100%')
     expect(viewport.scroller.style.overflow).toBe('')
@@ -71,8 +77,8 @@ describe('ensureBrowserPageViewport', () => {
     removeBrowserPageViewport('page-1')
 
     const rebuilt = ensureBrowserPageViewport('page-1', 'workspace-1')!
-    expect(rebuilt.content.style.width).toBe('1024px')
-    expect(rebuilt.content.style.height).toBe('768px')
+    expect(rebuilt.content.style.getPropertyValue('--browser-page-viewport-width')).toBe('1024px')
+    expect(rebuilt.content.style.getPropertyValue('--browser-page-viewport-height')).toBe('768px')
     expect(rebuilt.scroller.style.overflow).toBe('auto')
   })
 

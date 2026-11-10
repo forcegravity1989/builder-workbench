@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { StrictMode } from 'react'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserPage, BrowserWorkspace } from '../../../../../shared/browser-workspace-types'
 import { REMOTE_BROWSER_STREAM_LIVE } from '../stream-remote/remote-browser-stream-status'
@@ -23,7 +23,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   runtimeEnvironmentSupportsCapability: vi.fn(async () => false)
 }))
 
-vi.mock('@/lib/workspace-browser-tab-open', () => ({
+vi.mock('@/lib/browser/workspace/workspace-browser-tab-open', () => ({
   openWorkspaceBrowserTab: vi.fn(async () => {})
 }))
 
@@ -121,7 +121,7 @@ vi.mock('../browser-client-page-renderer-installation', () => ({
   attachBrowserClientPageToViewport: mocks.attach
 }))
 
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { installClientHostedPaneApi } from '../client-hosted-browser-pane-test-rig'
 import { clearBrowserAddressBarEditSession } from './browser-address-bar-edit-session'
@@ -396,7 +396,7 @@ describe.each([
     expect(document.activeElement).toBe(adopted)
     expect([adopted.selectionStart, adopted.selectionEnd]).toEqual([3, 7])
     expect(adopted.getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByText('Example docs')).not.toBeNull()
+    expect(within(screen.getByRole('listbox')).getByText('Example docs')).not.toBeNull()
   })
 
   // Why the draft alone is not enough here: while a suggestion is previewed the input holds that
@@ -486,7 +486,7 @@ describe.each([
     expect(adopted.value).toBe('example.int')
     expect(document.activeElement).toBe(adopted)
     expect(adopted.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByText('Example docs')).toBeNull()
+    expect(screen.queryByRole('listbox')).toBeNull()
   })
 
   // Why: the swap tears the bar down and puts it back inside one React commit. A pane that goes
@@ -501,7 +501,7 @@ describe.each([
     renderWorkspacePane()
 
     const remounted = addressBar()
-    expect(remounted.value).toBe('about:blank')
+    expect(remounted.value).toBe('')
     expect(document.activeElement).not.toBe(remounted)
   })
 
@@ -514,12 +514,12 @@ describe.each([
     act(() => flushFrames())
 
     const adopted = addressBar()
-    expect(adopted.value).toBe('about:blank')
+    expect(adopted.value).toBe('')
     // Why: a user reading the page must not have focus yanked into chrome, nor a dropdown opened
     // over the page, by a handover they never asked for.
     expect(document.activeElement).not.toBe(adopted)
     expect(adopted.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByText('Example docs')).toBeNull()
+    expect(screen.queryByRole('listbox')).toBeNull()
   })
 
   // The pane is no longer keyed on the generation, so a bump re-runs the attach rather than

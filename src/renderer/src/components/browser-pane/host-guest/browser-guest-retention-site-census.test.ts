@@ -18,10 +18,12 @@ const RETENTION_TERM_STORES = [
   'lib/pane-manager/browser-remote-viewer-state.ts'
 ]
 
-// ...plus the single module allowed to OR their terms together.
+// Workspace guests OR all terms in one helper. Native client-hosted pages have a separate
+// remote-viewer paint owner because their lifetime is not the workspace LRU.
 const RETENTION_TERM_OWNERS = [
   ...RETENTION_TERM_STORES,
-  'components/browser-pane/host-guest/browser-guest-paint-retention.ts'
+  'components/browser-pane/host-guest/browser-guest-paint-retention.ts',
+  'components/browser-pane/browser-client-page-paint-retention.ts'
 ]
 
 // Every way a term store lets a caller read one term. A site that hand-rolls the OR-list from
@@ -66,7 +68,7 @@ const RETENTION_SITES = new Map<string, readonly string[]>([
     ['useBrowserGuestPaintRetention']
   ],
   [
-    'components/browser-pane/host-guest/browser-guest-worktree-retention.ts',
+    'components/browser-pane/host-guest/browser-guest-eviction-veto.ts',
     ['browserPageNeedsPaintRetention']
   ],
   [
@@ -132,7 +134,15 @@ function namedSymbols(source: string, symbols: readonly string[]): string[] {
 describe('browser guest retention site census', () => {
   const sources = productionSources()
 
-  it('keeps every individual retention term behind the shared helper', () => {
+  it('keeps every individual retention term behind its registered policy owner', () => {
+    const clientOwner = sources.get(
+      'components/browser-pane/browser-client-page-paint-retention.ts'
+    )
+    expect(clientOwner).toBeDefined()
+    expect(namedSymbols(clientOwner ?? '', RETENTION_TERM_SYMBOLS)).toEqual([
+      'isBrowserPageRemotelyViewed',
+      'onBrowserRemoteViewerChange'
+    ])
     const offenders = [...sources]
       .filter(([file]) => !RETENTION_TERM_OWNERS.includes(file))
       .map(([file, source]) => ({

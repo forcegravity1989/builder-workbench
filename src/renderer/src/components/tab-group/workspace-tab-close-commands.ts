@@ -4,7 +4,7 @@ import { useAppStore } from '../../store'
 import { requestEditorFileClose } from '../editor/editor-autosave'
 import { closeTerminalTab } from '../terminal/terminal-tab-actions'
 import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
-import { closeWorkspaceBrowserTab } from '@/lib/workspace-browser-tab-close'
+import { closeWorkspaceBrowserTab } from '@/lib/browser/workspace/workspace-browser-tab-close'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { withLocalSessionTabCloseOwner } from '@/runtime/local-session-tab-close-owner'
 import { closeStructuredAgentSession } from '@/runtime/structured-agent-session-close'
@@ -111,7 +111,8 @@ export function createWorkspaceTabCloseCommands({
     if (item.contentType === 'terminal') {
       // Why: closeTerminalTab can defer behind a pin / running-process dialog, so the
       // empty check has to run on the actual close — never on cancel.
-      closeTerminalTab(item.entityId, { reason: 'user',
+      closeTerminalTab(item.entityId, {
+        reason: 'user',
         ...(opts?.skipRunningProcessConfirm ? { skipRunningProcessConfirm: true } : {}),
         ...(!opts?.skipEmptyCheck ? { onClosed: leaveWorktreeIfEmpty } : {})
       })

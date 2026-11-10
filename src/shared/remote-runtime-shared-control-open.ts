@@ -1,5 +1,5 @@
 import type WebSocket from 'ws'
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import type { RemoteRuntimeClientError } from './remote-runtime-client-error'
 import { remoteRuntimeUnavailableError } from './remote-runtime-request-frames'
 import {
@@ -13,7 +13,7 @@ import {
 } from './remote-runtime-socket-liveness'
 
 export function openSharedControlSocket(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   callbacks: {
     getCurrentSocket: () => WebSocket | null
     onClose: (close: { code: number; reason: string }, error: RemoteRuntimeClientError) => void

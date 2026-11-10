@@ -10,11 +10,15 @@ import {
   type SetStateAction
 } from 'react'
 import { translate } from '@/i18n/i18n'
-import { getWorkspaceFileBrowserOpenTarget } from '@/lib/file-preview'
+import {
+  getWorkspaceFileBrowserOpenTarget,
+  REMOTE_FILE_BROWSER_UNSUPPORTED_MESSAGE
+} from '@/lib/file-preview'
 import { routeWorkspaceDocAddressSubmission } from './workspace-doc-address-submission'
 import {
   getWorkspaceFileDragRejectionMessage,
   readWorkspaceFileDragPaths,
+  readWorkspaceFileDragSource,
   WORKSPACE_FILE_PATH_MIME
 } from '@/lib/workspace-file-drag'
 import type { BrowserLoadError } from '../../../../../shared/browser-workspace-types'
@@ -35,7 +39,6 @@ export function useBrowserPageNavigationDownloads({
   webviewRef,
   activeLoadFailureRef,
   lastKnownWebviewUrlRef,
-  trackNextLoadingEventRef,
   recoveryNavigationValidationRef,
   onSetUrlRef,
   onUpdatePageStateRef,
@@ -51,7 +54,6 @@ export function useBrowserPageNavigationDownloads({
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   activeLoadFailureRef: MutableRefObject<BrowserLoadError | null>
   lastKnownWebviewUrlRef: MutableRefObject<string | null>
-  trackNextLoadingEventRef: MutableRefObject<boolean>
   recoveryNavigationValidationRef: MutableRefObject<BrowserPageRecoveryNavigationValidation | null>
   onSetUrlRef: MutableRefObject<BrowserPageUrlSetter>
   onUpdatePageStateRef: MutableRefObject<(tabId: string, updates: BrowserTabPageState) => void>
@@ -101,7 +103,6 @@ export function useBrowserPageNavigationDownloads({
         worktreeId,
         activeLoadFailureRef,
         lastKnownWebviewUrlRef,
-        trackNextLoadingEventRef,
         recoveryNavigationValidationRef,
         webviewRef,
         onSetUrlRef,
@@ -120,7 +121,6 @@ export function useBrowserPageNavigationDownloads({
       onUpdatePageStateRef,
       recoveryNavigationValidationRef,
       setResourceNotice,
-      trackNextLoadingEventRef,
       webviewRef,
       worktreeId
     ]
@@ -137,7 +137,9 @@ export function useBrowserPageNavigationDownloads({
     if (consumedAsWorkspaceDoc) {
       return
     }
-    const submission = resolveBrowserAddressBarSubmission(addressBarValue)
+    const submission = resolveBrowserAddressBarSubmission(addressBarValue, {
+      allowExtensionPages: true
+    })
     if (submission.status === 'invalid') {
       onUpdatePageStateRef.current(browserTabId, { loadError: submission.loadError })
       return
@@ -170,6 +172,13 @@ export function useBrowserPageNavigationDownloads({
       }
       const filePath = dragPaths.paths[0]
       if (!filePath) {
+        return
+      }
+
+      // A file URL reads this machine, regardless of which workspace owns the browser.
+      const source = readWorkspaceFileDragSource(event.dataTransfer)
+      if (source?.executionHostId !== 'local') {
+        setResourceNotice(REMOTE_FILE_BROWSER_UNSUPPORTED_MESSAGE)
         return
       }
 

@@ -39,10 +39,14 @@ const AGENT_BROWSER_ENVIRONMENT_KEYS = [
 type SidecarRequest = { method: string; params: Record<string, unknown>; authToken: string | null }
 
 const host: RuntimeBrowserCommandHost = {
+  getRuntimeId: () => 'test-runtime',
+  getBrowserHostRequestRegistry: () => {
+    throw new Error('No browser host request registry')
+  },
   getAgentBrowserBridge: () => null,
   // Why an id distinct from the selector: it proves the registry fences on the
   // resolved worktree id, not on whatever string the caller passed.
-  resolveWorktreeSelector: async (selector) => ({ id: `id-${selector}` }),
+  resolveWorkspaceSelector: async (selector) => ({ id: `id-${selector}` }),
   resolveBrowserWorkspace: async (selector) => ({ id: `id-${selector}` }),
   // Unused by the sidecar command paths under test; the daemon's real host is
   // OrcaRuntimeService, which owns the client-hosted registries.

@@ -27,7 +27,11 @@ import {
 describe('OrcaRuntimeService', () => {
   it('advertises headless browser capability when an offscreen backend backs a windowless host', () => {
     const runtime = createRuntime()
-    runtime.setOffscreenBrowserBackend({ createTab: vi.fn(), closeTab: vi.fn() })
+    runtime.setOffscreenBrowserBackend({
+      createTab: vi.fn(),
+      closeTab: vi.fn(),
+      ownsTab: () => false
+    })
 
     const capabilities = runtime.getStatus().capabilities
     // Headless serve can still create/stream pages, so screencast is supported...
@@ -65,7 +69,11 @@ describe('OrcaRuntimeService', () => {
   })
   it('surfaces live offscreen load failures in headless browser snapshots', () => {
     const runtime = createRuntime()
-    runtime.setOffscreenBrowserBackend({ createTab: vi.fn(), closeTab: vi.fn() })
+    runtime.setOffscreenBrowserBackend({
+      createTab: vi.fn(),
+      closeTab: vi.fn(),
+      ownsTab: (pageId) => pageId === 'page-certificate-error'
+    })
     runtime.setAgentBrowserBridge({
       tabList: vi.fn(() => ({
         tabs: [
@@ -342,7 +350,11 @@ describe('OrcaRuntimeService', () => {
     const runtime = createRuntime()
     electronMocks.BrowserWindow.fromId.mockReturnValue({ isDestroyed: () => false } as never)
     runtime.attachWindow(TEST_WINDOW_ID)
-    runtime.setOffscreenBrowserBackend({ createTab: vi.fn(), closeTab: vi.fn() })
+    runtime.setOffscreenBrowserBackend({
+      createTab: vi.fn(),
+      closeTab: vi.fn(),
+      ownsTab: () => false
+    })
 
     expect(runtime.getStatus().capabilities).not.toContain('browser.headless.v1')
     // Desktop webviews still host certificate trust, so the proceed capability stays advertised for remote clients controlling those pages.
@@ -485,7 +497,11 @@ describe('OrcaRuntimeService', () => {
   it('closes a worktree’s offscreen browser pages when its metadata is removed (leak fix)', () => {
     const runtime = createRuntime()
     const closeTab = vi.fn().mockResolvedValue(undefined)
-    runtime.setOffscreenBrowserBackend({ createTab: vi.fn(), closeTab })
+    runtime.setOffscreenBrowserBackend({
+      createTab: vi.fn(),
+      closeTab,
+      ownsTab: (pageId) => pageId === 'page-a' || pageId === 'page-b'
+    })
     runtime.setAgentBrowserBridge({
       tabList: vi.fn((worktreeId: string) =>
         worktreeId === TEST_WORKTREE_ID

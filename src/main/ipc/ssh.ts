@@ -1,8 +1,12 @@
 import {
+  installDesktopBrowserBridge,
+  disposeDesktopBrowserBridge
+} from './browser/desktop-browser-bridge-wiring'
+import {
   AiVaultSearchRequestSchema,
   AiVaultSearchStatusRequestSchema
 } from '../../shared/ai-vault-search-contract'
-import { ipcMain, type BrowserWindow } from 'electron'
+import { app, ipcMain, type BrowserWindow } from 'electron'
 import type { Store } from '../persistence'
 import { SshConnectionStore } from '../ssh/ssh-connection-store'
 import { SshConnectionManager } from '../ssh/ssh-connection-manager'
@@ -216,6 +220,14 @@ export function registerSshHandlers(
   registerSshTargetCrudHandlers()
   registerSshConnectionHandlers()
   registerSshPortForwardHandlers()
+  if (runtime) {
+    installDesktopBrowserBridge({
+      userDataPath: app.getPath('userData'),
+      runtime,
+      getMainWindow: getCurrentMainWindow,
+      getConnectionManager: () => connectionManager
+    })
+  }
 
   return {
     connectionManager: connectionManager!,
@@ -252,6 +264,7 @@ export async function resetSshHandlerStateForTests(): Promise<void> {
   quitTeardownStartGate.resetForTests()
   resetSshShutdownDrain()
 
+  disposeDesktopBrowserBridge()
   await connectionManager?.disconnectAll()
   portForwardManager?.dispose()
   setConnectionManager(null)

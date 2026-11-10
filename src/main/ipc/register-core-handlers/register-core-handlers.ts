@@ -37,8 +37,8 @@ import { registerDashboardPopoutHandlers } from '../dashboard-popout'
 import { registerTerminalPreviewHandlers } from '../terminal-preview'
 import { registerDeveloperPermissionHandlers } from '../developer-permissions'
 import { registerComputerUsePermissionHandlers } from '../computer-use-permissions'
-import { setAgentBrowserBridgeRef, registerBrowserHandlers } from '../browser'
-import { setTrustedBrowserRendererWebContentsId } from '../browser-renderer-trust'
+import { setAgentBrowserBridgeRef, registerBrowserHandlers } from '../browser/browser'
+import { setTrustedBrowserRendererWebContentsId } from '../browser/browser-renderer-trust'
 import { registerSessionHandlers } from '../session'
 import { registerSettingsHandlers } from '../settings'
 import { registerDiagnosticsHandlers } from '../diagnostics'
@@ -204,7 +204,7 @@ export function registerCoreHandlers(
     onAuthMutation: lifecycleOptions.onOrcaProfileAuthMutation,
     onBeforeSignOut: lifecycleOptions.onBeforeOrcaProfileSignOut
   })
-  registerBrowserHandlers()
+  registerBrowserHandlers(store)
   registerShellHandlers(store)
   registerPetHandlers()
   registerSessionHandlers(store)

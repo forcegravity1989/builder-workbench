@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { Worktree } from '../../../shared/worktree/types'
 import { isWindowsAbsolutePathLike } from '../../../shared/cross-platform-path'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { isQuickOpenRemoteQueryTooLarge } from '@/components/quick-open-search'
 import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../shared/quick-open-listing-limits'
 import {
@@ -238,7 +238,7 @@ export function useRuntimeFileListForWorktree({
     setLoading(true)
 
     const excludePaths = excludeRequest.paths.length > 0 ? excludeRequest.paths : undefined
-    const requestToken = createBrowserUuid()
+    const requestToken = createNonSecureContextUuid()
     const requestAbortController = new AbortController()
     const requestOperationOwner = operationOwnerRef.current
     const requestContext = {

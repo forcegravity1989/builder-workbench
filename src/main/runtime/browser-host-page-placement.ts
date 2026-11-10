@@ -11,12 +11,6 @@ import {
   type BrowserHostPlacementIdentity
 } from './browser-host-page-placement-validation'
 
-export type {
-  RuntimeBrowserClientPlacement,
-  RuntimeBrowserPlacement,
-  RuntimeBrowserServerPlacement
-} from '../../shared/runtime-browser-placement'
-
 const DEFAULT_MAX_PAGE_PLACEMENTS = 256
 
 export type BrowserPageRetirement = Readonly<{
@@ -144,6 +138,24 @@ export class BrowserHostPagePlacementRegistry {
     return reservation.placement
   }
 
+  commitClientPageReplacement(
+    reservation: BrowserClientPagePlacementReservation,
+    expected: RuntimeBrowserClientPlacement
+  ): RuntimeBrowserClientPlacement {
+    const state = this.placementsByPageId.get(reservation.browserPageId)
+    if (
+      this.reservationsByPageId.get(reservation.browserPageId) !== reservation ||
+      state?.placement !== expected ||
+      state.retirement
+    ) {
+      throw new Error('browser_page_placement_stale')
+    }
+    this.reservationsByPageId.delete(reservation.browserPageId)
+    this.releaseReservationSlot(reservation)
+    this.placementsByPageId.set(reservation.browserPageId, { placement: reservation.placement })
+    return reservation.placement
+  }
+
   cancelClientPageReservation(reservation: BrowserClientPagePlacementReservation): boolean {
     if (this.reservationsByPageId.get(reservation.browserPageId) !== reservation) {
       return false
@@ -194,7 +206,7 @@ export class BrowserHostPagePlacementRegistry {
     return retirement
   }
 
-  /** Returns each fenced page's retirement, so the caller can complete what the client never will. */
+  /** Return retirements the fenced client can no longer complete. */
   fenceClientHostPlacements(host: BrowserHostPlacementIdentity): BrowserPageRetirement[] {
     assertBrowserHostPlacementIdentity(host)
     const fenced: BrowserPageRetirement[] = []
@@ -209,7 +221,7 @@ export class BrowserHostPagePlacementRegistry {
       }
       state.retirement ??= Object.freeze({ browserPageId, placement })
       state.retirementTerminal = true
-      // A completion already running owns the delete; completing again would throw.
+      // An in-flight completion owns deletion; a duplicate would throw.
       if (!state.retirementCompletionInProgress) {
         fenced.push(state.retirement)
       }

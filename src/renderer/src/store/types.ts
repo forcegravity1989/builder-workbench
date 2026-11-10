@@ -20,7 +20,7 @@ import type {
   CodexUsageSlice,
   OpenCodeUsageSlice
 } from './slices/usage-provider-slices'
-import type { BrowserSlice } from './slices/browser'
+import type { BrowserSlice } from './slices/browser/browser-slice-contract'
 import type { RateLimitSlice } from './slices/rate-limits'
 import type { SshSlice } from './slices/ssh'
 import type { RuntimeEnvironmentSshSlice } from './slices/runtime-environment-ssh'

@@ -1,3 +1,4 @@
+import type { LocalFileAccess } from '../../shared/file-access/local-file-access'
 import type { PathExistenceResult } from '../../shared/path-existence-batch'
 import { ipcRenderer } from 'electron'
 import type { SshMutationExpectation } from '../../shared/ssh-types'
@@ -25,6 +26,7 @@ export const fsApi = {
     ipcRenderer.invoke('fs:readDir', args),
   readFile: (args: {
     filePath: string
+    access?: LocalFileAccess
     connectionId?: string
     includeLocalLogMetadata?: boolean
   }): Promise<{
@@ -120,6 +122,7 @@ export const fsApi = {
     ipcRenderer.invoke('fs:authorizeExternalPath', args),
   stat: (args: {
     filePath: string
+    access?: LocalFileAccess
     connectionId?: string
   }): Promise<{ size: number; isDirectory: boolean; mtime: number }> =>
     ipcRenderer.invoke('fs:stat', args),

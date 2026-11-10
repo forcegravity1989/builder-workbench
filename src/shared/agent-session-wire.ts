@@ -359,3 +359,55 @@ export type AgentSessionOptionsResult = {
     confirmed?: readonly string[]
   }
 }
+
+import type { AgentSessionUnavailable } from './agent-session/agent-session-availability'
+
+/** `failedAt` dates the run, so a repeat failure with the same message still republishes. */
+export type AgentSessionNamingError = {
+  message: string
+  failedAt: number
+  /** Names Orca-authored copy; `message` stays English for older clients. */
+  messageCode?: string
+}
+
+export type AgentSessionConversationName = {
+  sessionId: string
+  conversationName: string | null
+  namingError?: AgentSessionNamingError
+}
+
+/** Read the host catalog store outside session queues. unknown keeps the static seed; older hosts lack this additive read method. */
+export type AgentSessionModelCatalogResult = {
+  /** The host is running the listing this answer is waiting on (its first for the account, or
+   *  the probe re-checking `unavailable`); a `waitForListing` read answers when it lands. Absent
+   *  from a host that predates it; such a host sends it only with `unknown`. */
+  listingInProgress?: true
+  /** Why no chat can start under the account, as the host's probe last found it. Absent is
+   *  unknown, which shows nothing; an older host never sends it. */
+  unavailable?: AgentSessionUnavailable
+} & (
+  | { origin: 'unknown' }
+  | {
+      /** What produced the listing; any age is served, `fetchedAt` carries it. */
+      origin: 'live-session' | 'probe'
+      models: AgentSessionModelOption[]
+      fastModeSupport?: AgentSessionFastModeSupport
+      fetchedAt: number
+      /** The listed default is the model a new chat here launches with: the agent's listing names
+       *  its configured model and no workspace config can replace it. Absent from an older host. */
+      listingNamesConfiguredModel?: boolean
+      /** The named default holds in every workspace: the agent reads no project config for its
+       *  model, so an answer naming no workspace serves any new chat. Absent from an older host. */
+      defaultHoldsInEveryWorkspace?: true
+      /** The models are this workspace's: its own config adds or removes some, so the answer serves
+       *  no other workspace. Absent from an older host. */
+      modelsDifferByWorkspace?: true
+    }
+)
+
+/** Waiting input answers with its row; non-waiting states can occur on same-id replays. */
+export type AgentSessionQueuedSendReceipt = {
+  messageId: string
+  position: number
+  state: 'waiting' | 'dispatched' | 'returned' | 'withdrawn'
+}

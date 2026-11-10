@@ -1,3 +1,4 @@
+import { BROWSER_EXTENSION_API_CUSTOM_SCHEME } from '../browser/extensions/api-runtime/browser-extension-api-scheme'
 import { app, ipcMain, powerMonitor, session } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import os from 'node:os'
@@ -54,8 +55,7 @@ import { ElectronSecretStore } from '../host/electron-secret-store'
 import { setPtyHostBindings } from '../ipc/pty-host-bindings'
 import { electronRuntimeDesktopSurface } from '../host/electron-runtime-desktop-surface'
 import { setRuntimeDesktopSurface } from '../runtime/runtime-desktop-surface'
-import { electronRuntimeBrowserCommandsFactory } from '../host/electron-browser-commands'
-import { setRuntimeBrowserCommandsFactory } from '../runtime/runtime-browser-commands-factory'
+import { installElectronBrowserCommands } from '../host/electron-browser-commands'
 import { electronHttpClient } from '../host/electron-http-client'
 import { setMainHttpClient } from '../network/http-client'
 import { electronSpeechServiceFactories } from '../host/electron-speech-services'
@@ -71,7 +71,7 @@ import { initStatsPath } from '../stats/collector'
 import { initClaudeUsagePath } from '../claude-usage/store'
 import { initCodexUsagePath } from '../codex-usage/store'
 import { initOpenCodeUsagePath } from '../opencode-usage/store'
-import { registerDocPreviewSchemePrivileges } from '../browser/doc-preview-protocol'
+import { registerDocPreviewSchemePrivileges } from '../browser/document-preview/doc-preview-protocol'
 import { startCrashpadCapture } from '../crash-reporting/crashpad-capture'
 import { CrashReportStore } from '../crash-reporting/crash-report-store'
 import { recordCrashBreadcrumb } from '../crash-reporting/crash-breadcrumb-store'
@@ -85,6 +85,8 @@ import {
 } from './ensure-virtual-display'
 import { maybeApplyGpuFallbackForThisLaunch, registerGpuLifecycleHandlers } from './gpu-lifecycle'
 import { mainProcessState as state } from './main-process-state'
+import { initializeBrowserIdentityModeStore } from '../browser/identity/mode/browser-identity-mode-store'
+import { initializeBrowserProcessUserAgent } from '../browser/identity/browser-process-user-agent'
 import { initializeSyntheticTitleRuntime } from './synthetic-title-runtime'
 
 export type MainProcessPreflightOptions = {
@@ -222,6 +224,9 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   // installing here changes no timing, in particular not the pre-ready Keychain service-name
   // resolution. The app-environment port and the userData capture install earlier still, next to
   // the path decision they depend on.
+  initializeBrowserProcessUserAgent(
+    initializeBrowserIdentityModeStore(getCanonicalUserDataPath()).appliedMode
+  )
   setSecretStore(new ElectronSecretStore())
   // Why at process level, not per-window: pty.ts registers against injected surfaces so
   // it can load without electron, and an Electron main process always has ipcMain —
@@ -236,7 +241,7 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   // Why here: constructing RuntimeBrowserCommands is what pulls the Chromium browser
   // cluster into the graph. The desktop installs it; a Node host installs none and every
   // browser RPC rejects, which capability filtering already tells clients about.
-  setRuntimeBrowserCommandsFactory(electronRuntimeBrowserCommandsFactory)
+  installElectronBrowserCommands()
   // Why here: proxy-settings only needed electron for `session.defaultSession`. The
   // desktop supplies it; a Node host has no Chromium proxy config to consult, so the
   // environment variables are the whole answer there.
@@ -286,7 +291,7 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   }
   // Why: Electron freezes the privileged scheme table at ready, so the doc-preview
   // scheme must be declared here or its webview loses fetch/secure-origin privileges.
-  registerDocPreviewSchemePrivileges()
+  registerDocPreviewSchemePrivileges([BROWSER_EXTENSION_API_CUSTOM_SCHEME])
   // Why: must precede app.whenReady() so Crashpad is installed before the
   // first renderer spawns; a CHECK before this point is still exit-code-only.
   startCrashpadCapture()

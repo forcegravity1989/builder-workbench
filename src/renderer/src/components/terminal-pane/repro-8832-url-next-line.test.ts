@@ -12,7 +12,7 @@
  */
 import type { IBufferLine } from '@xterm/xterm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { registerHttpLinkStoreAccessor } from '@/lib/http-link-routing'
+import { registerHttpLinkStoreAccessor } from '@/lib/browser/navigation/http-link-routing'
 import { buildCandidateLogicalLinesForBufferPosition } from './terminal-file-link-hit-testing'
 import {
   extractTerminalHttpLinks,

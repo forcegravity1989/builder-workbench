@@ -245,9 +245,6 @@ export function RepositoryHostSetupsSection({
               ? selectRuntimeAwareSshStatus(
                   {
                     sshConnectionStates,
-                    sshTargetLabels,
-                    removedSshTargetLabels,
-                    sshTargetsHydrated,
                     sshStateByEnvironment,
                     runtimeStatusByEnvironmentId
                   },

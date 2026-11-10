@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { registrableFamily } from './browser-cookie-import-policy'
+import { registrableFamily } from './cookies/policy/cookie-domain'
 
 // Why (STA-4300): registrableFamily decides which coordinates a skip-bearing import must leave
 // alone. A family computed too narrowly fails to preserve a sibling and the user loses a session,

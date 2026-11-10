@@ -1,69 +1,49 @@
 import {
   spawn as nodeSpawn,
   spawnSync as nodeSpawnSync,
-  type ChildProcess,
-  type ChildProcessWithoutNullStreams
+  type ChildProcess
 } from 'node:child_process'
-import { resolveSpawn } from './spawn-resolution'
+import { resolveSpawn, type ResolvedSpawn } from './spawn-resolution'
 import { forceTerminateProcessTree, signalProcessTree } from './process-tree-termination'
+import { inFlightWindowsTreeKill } from './windows-tree-kill'
 
+import { hasSpawnObserver, notifySpawnObserver } from './spawn-observer'
 import { createOutputSink } from './bounded-output-sink'
 import { createChildTerminationReporter } from './child-termination-reporter'
 
-export type {
-  ChildProcessHandle,
-  SpawnedProcess,
+export { WindowsCmdLineBreakError } from './windows-command-line'
+
+import type {
+  PipedChildProcess,
+  PipedProcessSpec,
   ProcessSpec,
-  ProcessTerminationBarrier,
   ProcessResult
 } from './process-spec'
-export { DEFAULT_PROCESS_TIMEOUT_MS, DEFAULT_MAX_OUTPUT_BYTES } from './process-spec'
-export { resolveSpawn, type ResolvedSpawn } from './spawn-resolution'
-import type { ProcessSpec, ProcessResult } from './process-spec'
 import { DEFAULT_PROCESS_TIMEOUT_MS, DEFAULT_MAX_OUTPUT_BYTES } from './process-spec'
-/**
- * Grace between the timeout kill and giving up on the child's exit.
- *
- * Why give up at all: `close` only fires once the child is actually gone, and a
- * child that ignores the kill never emits it -- so the promise would outlive
- * its own deadline forever. Callers that cache an in-flight probe (the pwsh
- * availability cache, the process-table reader) would then hand every later
- * caller the same dead promise.
- */
+// Bound waits for children that ignore termination and never emit close.
 const PROCESS_EXIT_GRACE_MS = 2_000
-/**
- * Last resort for a barrier caller once tree termination could not be verified.
- *
- * Why bounded: waiting for the root's exit is what stops an unverified caller
- * mutating shared state under a live child, but a tree that neither dies nor
- * reports would otherwise leave the promise pending for the app's lifetime.
- */
+// An unverifiable, silent tree must not leave barrier callers pending forever.
 const BARRIER_UNVERIFIED_EXIT_GRACE_MS = 10_000
 
-/**
- * Start a child process. Use for long-lived or streaming children.
- *
- * The caller owns the returned streams, including their `error` events — an
- * unhandled one is an uncaught exception that takes the main process down.
- * `runProcess` handles that for you; here it cannot, because a blanket handler
- * would also defeat callers that track and remove their own listeners.
- */
-export function spawnProcess(spec: ProcessSpec): ChildProcessWithoutNullStreams {
+/** Callers own stream error handling; unhandled stream errors can crash the host process. */
+export function spawnProcess(spec: PipedProcessSpec): PipedChildProcess
+export function spawnProcess(spec: ProcessSpec): ChildProcess
+export function spawnProcess(spec: ProcessSpec): ChildProcess {
   const resolved = resolveSpawn(spec, process.platform)
-  return nodeSpawn(
-    resolved.file,
-    [...resolved.args],
-    resolved.options
-  ) as ChildProcessWithoutNullStreams
+  // uv_spawn blocks the calling thread; measure that block for diagnostics.
+  const spawnStartedAt = hasSpawnObserver() ? performance.now() : null
+  const child = nodeSpawn(resolved.file, [...resolved.args], resolved.options)
+  if (spawnStartedAt !== null) {
+    notifySpawnObserver(resolved.file, resolved.args, performance.now() - spawnStartedAt)
+  }
+  return child
 }
 
-/**
- * Run a child process to completion and capture its output.
- *
- * Never rejects on a non-zero exit — the exit code is data. Rejects only when
- * the process could not be started at all.
- */
-export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
+/** Nonzero exits resolve; spawn errors reject. Tail capture preserves final diagnostics. */
+export function runProcess(
+  spec: ProcessSpec,
+  outputCapture: 'head' | 'tail' = 'head'
+): Promise<ProcessResult> {
   if (spec.signal?.aborted) {
     spec.onChildTerminated?.()
     return Promise.resolve({ code: null, signal: null, stdout: '', stderr: '', timedOut: false })
@@ -81,8 +61,8 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
       return
     }
 
-    const stdout = createOutputSink(maxOutputBytes)
-    const stderr = createOutputSink(maxOutputBytes)
+    const stdout = createOutputSink(maxOutputBytes, outputCapture)
+    const stderr = createOutputSink(maxOutputBytes, outputCapture)
     let timedOut = false
     let settled = false
     let barrierStopping = false
@@ -106,19 +86,23 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
       act()
     }
 
-    child.stdout?.on('data', (chunk: Buffer | string) => stdout.write(chunk))
+    child.stdout?.on('data', (chunk: Buffer | string) => {
+      stdout.write(chunk)
+      if (spec.killOnOutputLimit && stdout.truncated()) {
+        stopAndSettle()
+      }
+    })
     child.stderr?.on('data', (chunk: Buffer | string) => {
       stderr.write(chunk)
+      spec.onStderr?.(chunk)
+      if (spec.killOnOutputLimit && stderr.truncated()) {
+        stopAndSettle()
+      }
       if (typeof spec.terminationBarrier === 'object') {
         spec.terminationBarrier.observeStderr?.(chunk)
       }
     })
-    // Why listeners that do nothing: an unhandled `error` on a stream is an
-    // uncaught exception, and that takes the whole main process down. A child
-    // that exits without reading makes the queued stdin write fail with EPIPE,
-    // and a broken pipe can surface on the read side too. The child's own
-    // `error` listener does not cover its streams. Losing output is not worth a
-    // crash, and the exit code still reaches the caller.
+    // Stream errors (including stdin EPIPE) are otherwise uncaught; the exit still reaches callers.
     for (const stream of [child.stdin, child.stdout, child.stderr]) {
       stream?.on('error', () => {})
     }
@@ -141,8 +125,10 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
         resolve({
           code,
           signal,
-          stdout: stdout.text(),
-          stderr: stderr.text(),
+          stdout: spec.captureStdoutAsBytes ? '' : stdout.text(),
+          ...(spec.captureStdoutAsBytes ? { stdoutBytes: stdout.buffer() } : {}),
+          stderr: spec.captureStderrAsBytes ? '' : stderr.text(),
+          ...(spec.captureStderrAsBytes ? { stderrBytes: stderr.buffer() } : {}),
           timedOut,
           outputTruncated: stdout.truncated() || stderr.truncated()
         })
@@ -157,6 +143,19 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
       resolveFromClose(rootExit?.code ?? null, rootExit?.signal ?? null)
     }
 
+    const markBarrierTerminationVerified = (): void => {
+      barrierAttemptComplete = true
+      barrierTerminationVerified = true
+      terminationReporter.report()
+      resolveBarrierIfSafe()
+    }
+    // Let taskkill finish reading the tree before killing the root, or descendants may be orphaned.
+    const killRootUnlessTreeKillInFlight = (): void => {
+      if (!inFlightWindowsTreeKill(child)) {
+        terminate(child, 'SIGKILL')
+      }
+    }
+
     const resolveBarrierIfSafe = (): void => {
       const rootExit = deferredClose ?? deferredExit
       if (barrierTerminationVerified || (rootExitedBeforeBarrier && rootExit)) {
@@ -166,34 +165,24 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
       if (!barrierAttemptComplete) {
         return
       }
-      // Why a second deadline: the tree survived every attempt and the root has
-      // gone silent, so nothing else will ever settle this promise.
+      // Nothing else can settle a silent tree after all termination attempts fail.
       barrierDeadlineTimer ??= setTimeout(settleBarrierOutcome, BARRIER_UNVERIFIED_EXIT_GRACE_MS)
       barrierDeadlineTimer.unref?.()
     }
 
-    /**
-     * Stop the child, then settle.
-     *
-     * Without a barrier, settle whether or not the child complies. With one, wait
-     * for verified tree termination or a root exit first — a descendant can keep
-     * `close` pending after the root exits, but failed verification must not let
-     * callers mutate shared state — then settle on the deadline regardless.
-     */
+    // Barrier callers wait for termination evidence, bounded by a final deadline.
     const stopAndSettle = (): void => {
       if (spec.terminationBarrier) {
         barrierStopping = true
         initialBarrierTermination ??= signalBarrierTree()
         if (process.platform === 'win32') {
-          void initialBarrierTermination.then((terminated) => {
-            if (!terminated) {
-              return
-            }
-            barrierAttemptComplete = true
-            barrierTerminationVerified = true
-            terminationReporter.report()
-            resolveBarrierIfSafe()
-          })
+          // The tracked taskkill outlives the caller's wait; a late success still verifies.
+          void inFlightWindowsTreeKill(child)?.then(
+            (verdict) => verdict === 'exited' && markBarrierTerminationVerified()
+          )
+          void initialBarrierTermination.then(
+            (terminated) => terminated && markBarrierTerminationVerified()
+          )
         }
       } else {
         terminate(child)
@@ -209,9 +198,8 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
                   barrierTerminationVerified = initialTerminated || forceTerminated
                   terminationReporter.reportIf(barrierTerminationVerified)
                   if (!barrierTerminationVerified) {
-                    // The barrier never confirmed the tree died, so the root
-                    // would otherwise outlive the abort or timeout.
-                    terminate(child, 'SIGKILL')
+                    // Unverified termination must not leave the root running beyond abort/timeout.
+                    killRootUnlessTreeKillInFlight()
                   }
                   resolveBarrierIfSafe()
                 }
@@ -220,7 +208,7 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
             }
             void initialTermination.then((terminated) => {
               if (!terminated) {
-                terminate(child, 'SIGKILL')
+                killRootUnlessTreeKillInFlight()
               }
               barrierAttemptComplete = true
               barrierTerminationVerified = terminated
@@ -257,13 +245,9 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
           }, spec.timeoutMs ?? DEFAULT_PROCESS_TIMEOUT_MS)
     timer?.unref?.()
 
-    // Why the same escalation: an aborted caller has stopped waiting, so an
-    // unkillable child must not keep the promise alive on their behalf either.
     const onAbort = (): void => stopAndSettle()
     spec.signal?.addEventListener('abort', onAbort, { once: true })
-    // Why check after subscribing: a signal that was already aborted never
-    // fires the event, so the child would otherwise run to its full timeout on
-    // behalf of a caller who had already given up.
+    // Already-aborted signals emit no event; recheck after subscribing to close the race.
     if (spec.signal?.aborted) {
       onAbort()
     }
@@ -299,14 +283,12 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
       resolveFromClose(code, signal)
     })
 
-    // Why close rather than leave open: a child that reads stdin (a hook
-    // draining its payload, a CLI probing for a TTY) otherwise blocks until the
-    // timeout instead of seeing EOF immediately.
+    // Send EOF so stdin readers do not wait until timeout.
     child.stdin?.end(spec.input)
   })
 }
 
-/** Best-effort root termination, or whole-tree termination for barrier callers. */
+// Best-effort root termination; tree termination is handled separately.
 function terminate(child: ChildProcess, signal?: NodeJS.Signals): void {
   try {
     child.kill(signal)
@@ -315,38 +297,55 @@ function terminate(child: ChildProcess, signal?: NodeJS.Signals): void {
   }
 }
 
-/**
- * Synchronous variant, for the call sites that genuinely cannot await — CLI
- * entry points and teardown paths that run while the event loop is stopping.
- *
- * Prefer `runProcess`. This exists so those callers still get the Windows
- * invariants (hidden console, correct `.cmd` argv) instead of reaching for
- * `execFileSync` and re-deciding them.
- */
+/** Prefer runProcess; reserve blocking execution for synchronous entry points and teardown. */
 export function runProcessSync(spec: ProcessSpec): ProcessResult {
   const resolved = resolveSpawn(spec, process.platform)
+  // spawnSync blocks until exit; report that duration even if it throws.
+  const spawnStartedAt = hasSpawnObserver() ? performance.now() : null
+  try {
+    return runResolvedProcessSync(spec, resolved)
+  } finally {
+    if (spawnStartedAt !== null) {
+      notifySpawnObserver(resolved.file, resolved.args, performance.now() - spawnStartedAt)
+    }
+  }
+}
+
+function runResolvedProcessSync(spec: ProcessSpec, resolved: ResolvedSpawn): ProcessResult {
   const result = nodeSpawnSync(resolved.file, [...resolved.args], {
     ...resolved.options,
     input: spec.input,
     timeout: spec.timeoutMs === null ? undefined : (spec.timeoutMs ?? DEFAULT_PROCESS_TIMEOUT_MS),
     maxBuffer: spec.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
-    encoding: 'buffer'
+    // Keep raw output without applying the nonexistent 'buffer' encoding to string stdin.
+    encoding: null
   })
-  if (result.error && (result.error as NodeJS.ErrnoException).code !== 'ETIMEDOUT') {
+  const timedOut = result.error
+    ? 'code' in result.error && result.error.code === 'ETIMEDOUT'
+    : false
+  if (result.error && !timedOut) {
     throw result.error
   }
   return {
     code: result.status,
     signal: result.signal,
-    stdout: result.stdout?.toString('utf8') ?? '',
-    stderr: result.stderr?.toString('utf8') ?? '',
-    // Why always false: spawnSync reports an overrun as an ENOBUFS error, and
-    // the guard above rethrows it, so no truncated result reaches this point.
+    stdout: spec.captureStdoutAsBytes ? '' : (result.stdout?.toString('utf8') ?? ''),
+    ...(spec.captureStdoutAsBytes ? { stdoutBytes: result.stdout ?? Buffer.alloc(0) } : {}),
+    stderr: spec.captureStderrAsBytes ? '' : (result.stderr?.toString('utf8') ?? ''),
+    ...(spec.captureStderrAsBytes ? { stderrBytes: result.stderr ?? Buffer.alloc(0) } : {}),
+    // ENOBUFS is rethrown above, so truncated output never reaches this result.
     outputTruncated: false,
-    // Why ETIMEDOUT and not the signal: a timeout kills with SIGTERM, but so
-    // does anything else that terminates the child, and only a timeout also
-    // sets this error. Reading the signal alone reports a deliberately
-    // stopped process as having timed out, which callers retry.
-    timedOut: (result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT'
+    // SIGTERM can be deliberate; only ETIMEDOUT proves a timeout.
+    timedOut
   }
 }
+
+export type {
+  ProcessSpec,
+  ProcessResult,
+  ProcessTerminationBarrier,
+  SpawnedProcess,
+  ChildProcessHandle
+} from './process-spec'
+export { DEFAULT_PROCESS_TIMEOUT_MS, DEFAULT_MAX_OUTPUT_BYTES } from './process-spec'
+export { resolveSpawn, type ResolvedSpawn } from './spawn-resolution'

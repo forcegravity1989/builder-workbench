@@ -21,8 +21,11 @@ import {
 import { registerDaemonManagementHandlers } from '../ipc/pty-management'
 import { registerSshHandlers } from '../ipc/ssh'
 import { registerRemoteWorkspaceHandlers } from '../ipc/remote-workspace'
-import { browserManager } from '../browser/browser-manager'
-import { hasSystemMediaAccess, requestSystemMediaAccess } from '../browser/browser-media-access'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
+import {
+  hasSystemMediaAccess,
+  requestSystemMediaAccess
+} from '../browser/site-settings/permissions/browser-media-access'
 import type { OrcaRuntimeService, RuntimeWorktreeLifecycleEvent } from '../runtime/orca-runtime'
 import type { UpdateInstallMode } from '../updater'
 import { scheduleHistoryGc } from '../terminal-history-gc'

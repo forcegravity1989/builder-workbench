@@ -1,4 +1,4 @@
-import { runBrowserRouteEgressElectron } from './browser-route-egress-electron-launch'
+import { runBrowserRouteEgressElectron } from './network/egress/browser-route-egress-electron-launch'
 
 export async function runBrowserRouteTcpEgressElectron(
   root: string,

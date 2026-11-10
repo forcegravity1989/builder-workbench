@@ -32,7 +32,9 @@ export async function prepareAgentBackgroundStartup({
   if (!worktree) {
     throw new Error('The target workspace is no longer available.')
   }
-  const runtimeTarget = getActiveRuntimeTarget(getSettingsForWorktreeRuntimeOwner(store, worktreeId))
+  const runtimeTarget = getActiveRuntimeTarget(
+    getSettingsForWorktreeRuntimeOwner(store, worktreeId)
+  )
   const environmentId = runtimeTarget.kind === 'environment' ? runtimeTarget.environmentId : null
   const pairingRevision = environmentId ? getRuntimeEnvironmentRevision(environmentId) : undefined
   const hostStatus = environmentId
@@ -77,7 +79,7 @@ export async function prepareAgentBackgroundStartup({
     }
   }
   const { isRemote } = launchHost
-  const launchPlatform = hostSettings ? hostStatus?.hostPlatform ?? 'linux' : launchHost.platform
+  const launchPlatform = hostSettings ? (hostStatus?.hostPlatform ?? 'linux') : launchHost.platform
   const startupShell = hostSettings
     ? resolveHostAgentStartupShell({
         platform: launchPlatform,

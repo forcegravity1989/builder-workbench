@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AgentBrowserBridge } from '../browser/agent-browser-bridge'
-import type { RuntimeBrowserCommandHost } from './orca-runtime-browser'
+import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
+import type { RuntimeBrowserCommandHost } from './browser/commands/browser-command-contracts'
 import { RESTORED_CLIENT_HOSTED_BROWSER_PLACEMENT } from './client-hosted-browser-page-persistence'
 import { RuntimeBrowserPageRegistry } from './runtime-browser-page-registry'
 
@@ -93,7 +93,11 @@ describe('browserTabClose on a session row with no runtime page', () => {
     const closeTab = vi.fn(async () => {})
     const commands = new RuntimeBrowserCommands(
       createHost({
-        getOffscreenBrowserBackend: vi.fn(() => ({ createTab: vi.fn(), closeTab })),
+        getOffscreenBrowserBackend: vi.fn(() => ({
+          createTab: vi.fn(),
+          closeTab,
+          ownsTab: (pageId: string) => pageId === 'page-live'
+        })),
         retireRuntimeOwnedBrowserSessionTab
       })
     )
@@ -118,7 +122,7 @@ function createHost(overrides: Partial<RuntimeBrowserCommandHost> = {}): Runtime
           tabList: vi.fn(() => ({ tabs: [] }))
         } as unknown as AgentBrowserBridge)
   return {
-    resolveWorktreeSelector: async (selector: string) => ({ id: selector.replace(/^id:/, '') }),
+    resolveWorkspaceSelector: async (selector: string) => ({ id: selector.replace(/^id:/, '') }),
     resolveBrowserWorkspace: async (selector: string) => ({ id: selector.replace(/^id:/, '') }),
     getRuntimeBrowserPageRegistry: () => runtimeBrowserPages,
     getBrowserHostLeaseRegistry: () => ({ getPlacement: () => undefined }),

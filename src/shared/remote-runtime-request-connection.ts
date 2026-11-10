@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import WebSocket from 'ws'
 import { abortSignalReason } from './abort-signal-reason'
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import { scheduleOrphanedRemoteRuntimeSocketClose } from './remote-runtime-abort-orphaned-socket'
 import { decrypt, encrypt } from './e2ee-crypto'
 import {
@@ -47,7 +47,7 @@ export class RemoteRuntimeRequestConnection {
   private idleCloseTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
-    private readonly pairing: PairingOffer,
+    private readonly pairing: PairedRuntimeConnection,
     private readonly additionalClientCapabilities: readonly RuntimeCapability[] = []
   ) {}
 
@@ -66,7 +66,7 @@ export class RemoteRuntimeRequestConnection {
       preparedRequest = prepareRemoteRuntimeRequest(this.pendingRequests, () =>
         serializeRemoteRuntimeRpcRequest({
           requestId,
-          deviceToken: this.pairing.deviceToken,
+          deviceToken: this.pairing.credential.deviceToken,
           method,
           params
         })
@@ -236,7 +236,7 @@ export class RemoteRuntimeRequestConnection {
       encrypt(
         serializeRemoteRuntimePayload({
           type: 'e2ee_auth',
-          deviceToken: this.pairing.deviceToken,
+          deviceToken: this.pairing.credential.deviceToken,
           clientCapabilities: remoteRuntimeClientCapabilities(this.additionalClientCapabilities)
         }),
         sharedKey

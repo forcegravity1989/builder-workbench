@@ -29,6 +29,13 @@ export function projectSessionTabBrowserPlacements(
   if (removedIds.size === 0) {
     return payload
   }
+  return withoutSessionTabs(payload, removedIds)
+}
+
+export function withoutSessionTabs(
+  payload: RuntimeMobileSessionTabsResult,
+  removedIds: ReadonlySet<string>
+): RuntimeMobileSessionTabsResult {
   const retainedTabs = payload.tabs.filter((tab) => !removedIds.has(tab.id))
   const active = selectProjectedActiveTab(payload.activeTabId, retainedTabs)
   const tabs = retainedTabs.map((tab) => ({ ...tab, isActive: tab.id === active?.id }))

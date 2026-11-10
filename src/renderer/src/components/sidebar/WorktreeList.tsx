@@ -1,5 +1,11 @@
 import React, { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
+import { useProjectsCollapseShortcut } from './worktree-list/controls/use-projects-collapse-shortcut'
+import {
+  areAllProjectsCollapsed,
+  getRenderedProjectCollapseKeys,
+  setAllProjectsCollapsed
+} from './worktree-list/listing/project-collapse-all'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { WorkbenchSidebarVersions } from '@/workbench/WorkbenchSidebarNav'
 import { useShallow } from 'zustand/react/shallow'
@@ -93,6 +99,7 @@ const WorktreeList = React.memo(function WorktreeList({
   const clearPendingRevealSidebarRow = useAppStore((s) => s.clearPendingRevealSidebarRow)
   const collapsedGroups = useAppStore((s) => s.collapsedGroups)
   const toggleGroup = useAppStore((s) => s.toggleCollapsedGroup)
+  const setCollapsedGroups = useAppStore((s) => s.setCollapsedGroups)
   const projectGroups = useAppStore((s) => s.projectGroups ?? EMPTY_PROJECT_GROUPS)
   const folderWorkspaces = useAppStore((s) => s.folderWorkspaces)
   const settings = useAppStore((s) => s.settings)
@@ -286,6 +293,27 @@ const WorktreeList = React.memo(function WorktreeList({
     placeholderRepoCount: rowModel.placeholderRepoIds.size,
     importedWorktreeCardCount: externalWorktreeCards.importedWorktreesByRepo.size
   })
+  const projectCollapseKeys = useMemo(
+    () => getRenderedProjectCollapseKeys(rowModel.sectionRows),
+    [rowModel.sectionRows]
+  )
+  const allProjectsCollapsed = areAllProjectsCollapsed(
+    projectCollapseKeys,
+    effectiveCollapsedGroups
+  )
+  const handleToggleAllProjects = useCallback(() => {
+    setCollapsedGroups(
+      setAllProjectsCollapsed(
+        useAppStore.getState().collapsedGroups,
+        projectCollapseKeys,
+        !allProjectsCollapsed
+      )
+    )
+  }, [allProjectsCollapsed, projectCollapseKeys, setCollapsedGroups])
+  useProjectsCollapseShortcut(
+    projectCollapseKeys.length > 0 && !filtersHideAllRows,
+    handleToggleAllProjects
+  )
   const versionContent = isWorkbenchShell() ? (
     <WorkbenchSidebarVersions
       visibleWorktrees={filteredWorktrees}

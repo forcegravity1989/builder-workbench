@@ -174,8 +174,8 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => 'create-request-id'
+vi.mock('../../../shared/non-secure-context-uuid', () => ({
+  createNonSecureContextUuid: () => 'create-request-id'
 }))
 
 vi.mock('@/store', () => ({

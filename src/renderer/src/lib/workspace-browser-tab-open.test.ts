@@ -9,9 +9,9 @@ import { BROWSER_SCREENCAST_RUNTIME_CAPABILITY } from '../../../shared/protocol-
 import * as clientCreationActionPolicy from './client-creation-action-policy'
 import {
   canOpenWorkspaceBrowserTabOnRuntime,
-  canOpenWorkspaceBrowserTabOnSsh,
-  openWorkspaceBrowserTab
-} from './workspace-browser-tab-open'
+  canOpenWorkspaceBrowserTabOnSsh
+} from './browser/workspace/workspace-browser-route-eligibility'
+import { openWorkspaceBrowserTab } from './browser/workspace/workspace-browser-tab-open'
 
 const mocks = vi.hoisted(() => ({
   createRemote: vi.fn(),

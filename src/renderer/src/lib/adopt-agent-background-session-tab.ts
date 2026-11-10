@@ -2,7 +2,7 @@ import { useAppStore } from '@/store'
 import { makePaneKey, type PaneKey } from '../../../shared/stable-pane-id'
 import type { AgentType } from '../../../shared/agent-status-types'
 import { bindAutomationTerminal } from '@/lib/automation-terminal-ownership'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { retireProvider, retireUnownedTerminal } from '@/lib/retire-unowned-background-terminal'
 import { isTerminalTabPresent } from '@/store/slices/terminal-tab-retirement'
 import type { RuntimeClientTarget } from '@/runtime/runtime-rpc-client'
@@ -25,10 +25,10 @@ export function reserveAgentBackgroundSessionIdentity(args: {
   launchRegistration: NonNullable<RegisterArgs[2]>
   paneEnv: Record<string, string>
 } {
-  const reservedTabId = createBrowserUuid()
-  const leafId = createBrowserUuid()
+  const reservedTabId = createNonSecureContextUuid()
+  const leafId = createNonSecureContextUuid()
   const paneKey = makePaneKey(reservedTabId, leafId)
-  const launchToken = createBrowserUuid()
+  const launchToken = createNonSecureContextUuid()
   const launchRegistration = {
     agentType: args.agentType,
     launchToken,

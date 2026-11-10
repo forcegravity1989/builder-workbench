@@ -280,3 +280,30 @@ export const AGENT_JOURNAL_RESET_REASONS = [
   'schema_unreadable'
 ] as const
 export type AgentJournalResetReason = (typeof AGENT_JOURNAL_RESET_REASONS)[number]
+
+export type AgentJournalSkillRef = { name: string; path: string }
+
+/** Provider thread-goal lifecycle. Open like other persisted vocabularies: a
+ *  status a newer provider reports must not turn a row malformed. */
+export const AGENT_JOURNAL_THREAD_GOAL_STATUSES = [
+  'active',
+  'paused',
+  'blocked',
+  'usageLimited',
+  'budgetLimited',
+  'complete'
+] as const
+
+export type AgentJournalThreadGoalStatus = (typeof AGENT_JOURNAL_THREAD_GOAL_STATUSES)[number]
+
+/** The provider's goal as last journaled. Timestamps are epoch ms on the
+ *  provider's clock; counters are as of `updatedAt`. */
+export type AgentJournalThreadGoal = {
+  objective: string
+  status: AgentJournalThreadGoalStatus
+  tokenBudget: number | null
+  tokensUsed: number
+  timeUsedSeconds: number
+  createdAt: number
+  updatedAt: number
+}

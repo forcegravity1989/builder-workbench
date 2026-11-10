@@ -100,7 +100,7 @@ export class OrcaRuntimeWithPersistHeadlessTerminalTitle extends OrcaRuntimeWith
     if (!snapshot) {
       return ids
     }
-    const liveBrowserTabsByPageId = this.getLiveBrowserTabsByPageId(snapshot.worktree)
+    const liveBrowserTabsByPageId = this.getListedBrowserTabsByPageId(snapshot.worktree)
     for (const tab of snapshot.tabs) {
       if (tab.type === 'browser') {
         const liveTab = tab.browserPageId
@@ -193,7 +193,7 @@ export class OrcaRuntimeWithPersistHeadlessTerminalTitle extends OrcaRuntimeWith
   // Why: same defect as `resolveRuntimeGitTarget` above, in ~30 filesystem dispatches. `getRepo(id)`
   // is host-blind and never read `worktree.hostId`, and the `connectionId` it returned spelled
   // "runtime host", "unresolved" and "genuinely local" all as `undefined` (#11163).
-  protected async resolveRuntimeFileTarget(worktreeSelector: string): Promise<{
+  async resolveRuntimeFileTarget(worktreeSelector: string): Promise<{
     worktree: ResolvedWorktree
     executionHostId: ExecutionHostId
   }> {

@@ -25,7 +25,8 @@ vi.mock('@/lib/connection-owner-resolution', () => ({
   getConnectionIdForFileFromState: () => mocks.connectionIdForFile
 }))
 vi.mock('@/lib/worktree-runtime-owner', () => ({
-  getRuntimeEnvironmentIdForWorktree: () => mocks.worktreeRuntimeOwnerId
+  getRuntimeEnvironmentIdForWorktree: () => mocks.worktreeRuntimeOwnerId,
+  runtimeEnvironmentIdOrLocalUnlessTwin: () => mocks.worktreeRuntimeOwnerId
 }))
 vi.mock('@/lib/connection-context', () => ({
   getConnectionId: () => mocks.connectionIdForWorkspace,
@@ -34,7 +35,7 @@ vi.mock('@/lib/connection-context', () => ({
 vi.mock('@/components/terminal-pane/terminal-remote-file-download-open', () => ({
   downloadAndOpenRemoteTerminalFile: mocks.downloadAndOpen
 }))
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: {
     getState: () => ({
       settings: {

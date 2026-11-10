@@ -40,7 +40,9 @@ export type AgentLaunchSettingsMutation =
   | { type: 'environment-set'; agent: TuiAgent; name: string; value: string }
   | { type: 'environment-remove'; agent: TuiAgent; name: string }
 
-export function projectAgentLaunchSettings(settings: AgentLaunchSettingsSource): AgentLaunchSettings {
+export function projectAgentLaunchSettings(
+  settings: AgentLaunchSettingsSource
+): AgentLaunchSettings {
   return {
     defaultTuiAgent: settings.defaultTuiAgent ?? null,
     disabledTuiAgents: normalizeDisabledTuiAgents(settings.disabledTuiAgents),

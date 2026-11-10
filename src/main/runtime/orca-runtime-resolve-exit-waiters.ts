@@ -1,5 +1,5 @@
-/* eslint-disable unicorn/no-useless-spread */
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
+/* eslint-disable unicorn/no-useless-spread */
 import { OrcaRuntimeWithBindPtyIncarnationHandle } from './orca-runtime-bind-pty-incarnation-handle'
 import type { RuntimeLeafRecord, RuntimePtyWorktreeRecord } from './runtime-terminal-state-records'
 import { buildPtyTerminalWaitResult, buildTerminalWaitResult } from './terminal-wait-results'

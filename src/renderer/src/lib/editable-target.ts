@@ -1,5 +1,9 @@
 import { getShortcutPlatform } from './shortcut-platform'
 
+export function isNativeChatPromptTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('[data-native-chat-prompt-editor]') !== null
+}
+
 // Why: shared across global keyboard listeners (App-level shortcuts and the
 // onboarding flow) so an in-progress text edit never gets hijacked by a
 // capture-phase keydown handler.

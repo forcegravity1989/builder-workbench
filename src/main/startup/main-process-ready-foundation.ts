@@ -9,10 +9,13 @@ import {
   consumeHangDetectionMarker,
   hangDetectionMarkerPath
 } from '../hang-watchdog/hang-detection-marker'
-import { browserCertificateTrustController } from '../browser/browser-manager'
+import {
+  browserCertificateTrustController,
+  browserManager
+} from '../browser/guest-lifecycle/manager/browser-manager'
 import { ensureActiveOrcaProfile } from '../orca-profiles/profile-index-store'
 import { Store, getCanonicalUserDataPath } from '../persistence'
-import { initializeBrowserClientHostId } from '../browser/browser-client-host-id'
+import { initializeBrowserClientHostId } from '../browser/client-hosts/lifecycle/browser-client-host-id'
 import { scheduleSecretProtectionGapReport } from '../host/deferred-secret-protection-report'
 import { initSshHostKeyStoreFile } from '../ssh/ssh-host-key-store'
 import { neutralizeLegacyTerminalShimDir } from '../pty/legacy-terminal-shim-dir'
@@ -35,11 +38,15 @@ import {
 import {
   applyBrowserSessionProxies,
   setBrowserNetworkProxySettingsResolver
-} from '../browser/browser-session-proxy'
-import { installDocPreviewProtocolHandler } from '../browser/doc-preview-protocol'
+} from '../browser/sessions/proxy/browser-session-proxy'
+import { installDocPreviewProtocolHandler } from '../browser/document-preview/doc-preview-protocol'
 import { registerDocPreviewGrantHandlers } from '../ipc/doc-preview-grant-ipc'
-import { initializeBrowserSessionsForApp } from '../browser/browser-session-startup'
-import { browserSessionRegistry } from '../browser/browser-session-registry'
+import { initializeBrowserSessionsForApp } from '../browser/sessions/browser-session-startup'
+import {
+  initializeBrowserExtensionSupport,
+  switchBrowserExtensionSupport
+} from '../browser/extensions/browser-extension-startup'
+import { browserSessionRegistry } from '../browser/sessions/profiles/browser-session-registry'
 import { logStartupMilestone } from './startup-diagnostics'
 import { writeHttp1CompatibilityMarker } from './http1-compatibility-marker'
 import { mainProcessState as state } from './main-process-state'
@@ -64,6 +71,7 @@ export async function initializeReadyFoundation(): Promise<void> {
       callback,
       session.defaultSession
     )
+    handleBrowserGuestLogin(event, webContents, details, authInfo, callback)
   })
   const canonicalUserDataPath = getCanonicalUserDataPath()
   installMainThreadHangWatchdog({ userDataPath: canonicalUserDataPath })
@@ -202,6 +210,9 @@ export async function initializeReadyFoundation(): Promise<void> {
   // Why: apply initial fallback WSL distro from store settings for global git/CLI calls.
   setDefaultWslDistroOverride(store.getSettings().terminalWindowsWslDistro ?? null)
   store.onSettingsChanged((updates, settings) => {
+    if ('experimentalBrowserExtensions' in updates) {
+      void switchBrowserExtensionSupport(settings.experimentalBrowserExtensions === true)
+    }
     if ('electronHttp1CompatibilityMode' in updates) {
       writeHttp1CompatibilityMarker(
         canonicalUserDataPath,
@@ -268,6 +279,10 @@ export async function initializeReadyFoundation(): Promise<void> {
   installDocPreviewProtocolHandler()
   registerDocPreviewGrantHandlers()
   // Why: browser sessions serve desktop webviews and runtime profile commands, so init at app startup rather than via a renderer IPC path.
+  initializeBrowserExtensionSupport({
+    enabled: store.getSettings().experimentalBrowserExtensions === true,
+    savedBrowserTabs: store
+  })
   initializeBrowserSessionsForApp({
     orcaProfileId: profile.profile.id,
     profileDirectory: profile.profileDirectory,
@@ -282,10 +297,19 @@ export async function initializeReadyFoundation(): Promise<void> {
       return currentStore.getSshTargets().map((target) => target.id)
     }
   })
+  browserSiteDisplayController.followZoomSettings(store)
+  browserManager.setSiteDisplayController(browserSiteDisplayController)
   try {
     // Why: awaited here so the first guest navigation cannot race the installer's fire-and-forget write.
     await applyBrowserSessionProxies(browserSessionRegistry.listProfiles(), store.getSettings())
   } catch {
     console.warn('[proxy] Failed to apply network proxy settings to browser sessions')
   }
+  await whenBrowserExtensionSessionsLoaded(3_000)
 }
+
+import { handleBrowserGuestLogin } from '../browser/guest-lifecycle/prompts/browser-http-auth-prompt'
+
+import { browserSiteDisplayController } from '../browser/site-settings/display/browser-site-display-controller'
+
+import { whenBrowserExtensionSessionsLoaded } from '../browser/extensions/profile-sessions/browser-extension-session-loader'

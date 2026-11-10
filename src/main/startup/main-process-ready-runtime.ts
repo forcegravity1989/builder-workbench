@@ -3,12 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { is } from '@electron-toolkit/utils'
 import { StarNagService } from '../star-nag/service'
-import { AgentBrowserBridge } from '../browser/agent-browser-bridge'
+import { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
 import { EmulatorBridge } from '../emulator/emulator-bridge'
 import { RpcDispatcher } from '../runtime/rpc/dispatcher'
-import { browserManager } from '../browser/browser-manager'
-import { configureBrowserClientPageAutomationRuntime } from '../browser/browser-client-page-automation-runtime'
-import { BrowserClientPageCommandError } from '../browser/browser-client-page-command-failure'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
+import { configureBrowserClientPageAutomationRuntime } from '../browser/client-pages/execution/browser-client-page-automation-runtime'
+import { BrowserClientPageCommandError } from '../browser/client-pages/execution/browser-client-page-command-failure'
 import { startPreGoneCrashSampling } from '../crash-reporting/process-gone-diagnostics'
 import { recordProcessGoneCrash } from './main-window-lifecycle-flags'
 import { handleGpuChildCrash } from './gpu-lifecycle'
@@ -62,13 +62,16 @@ export async function initializeReadyRuntimeServices(): Promise<void> {
   configureBrowserClientPageAutomationRuntime({
     browserManager,
     getAgentBrowserBridge: () => state.agentBrowserBridge,
-    executeRpc: async (method, params, signal) => {
+    executeRpc: async (method, params, agent, signal) => {
       const response = await browserClientAutomationDispatcher.dispatch(
         { id: randomUUID(), authToken: 'local-browser-client-automation', method, params },
-        { signal }
+        { signal, caller: agent ? LOCAL_CLI_RPC_CALLER : DESKTOP_RPC_CALLER }
       )
       if (!response.ok) {
-        throw new BrowserClientPageCommandError(response.error.code)
+        const mismatch = BrowserExpectedUrlMismatch.safeParse(response.error.data)
+        throw new BrowserClientPageCommandError(response.error.code, {
+          expectedUrlMismatch: mismatch.success ? mismatch.data : undefined
+        })
       }
       return response.result
     }
@@ -154,3 +157,7 @@ export async function initializeReadyRuntimeServices(): Promise<void> {
   })
   logStartupMilestone('services-initialized')
 }
+
+import { DESKTOP_RPC_CALLER, LOCAL_CLI_RPC_CALLER } from '../runtime/rpc/rpc-caller-identity'
+
+import { BrowserExpectedUrlMismatch } from '../../shared/browser/client-hosting/browser-expected-url'

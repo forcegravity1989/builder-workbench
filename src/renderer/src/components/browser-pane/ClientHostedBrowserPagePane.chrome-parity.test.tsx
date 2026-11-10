@@ -7,6 +7,11 @@ import type {
   BrowserPage
 } from '../../../../shared/browser-workspace-types'
 import type {
+  BrowserHistoryNavigateCommand,
+  BrowserPageCommandTarget
+} from '../../../../shared/browser-page-command-target'
+import type { BrowserPageZoomCommand } from '../../../../shared/browser-page-zoom'
+import type {
   BrowserContextMenuRequestedEvent,
   BrowserPermissionDeniedEvent
 } from '../../../../shared/browser-guest-events'
@@ -24,7 +29,7 @@ vi.mock('./browser-client-page-renderer-installation', () => ({
   attachBrowserClientPageToViewport: mocks.attach
 }))
 
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { installClientHostedPaneApi, paneChannel } from './client-hosted-browser-pane-test-rig'
 import { ClientHostedBrowserPagePane } from './ClientHostedBrowserPagePane'
@@ -44,10 +49,11 @@ let contextMenu = paneChannel<BrowserContextMenuRequestedEvent>()
 let contextMenuDismissed = paneChannel<{ browserPageId: string }>()
 let permissionDenied = paneChannel<BrowserPermissionDeniedEvent>()
 let findRequests = paneChannel<void>()
-let historyNavigate = paneChannel<'back' | 'forward'>()
-let reloadRequests = paneChannel<void>()
-let hardReloadRequests = paneChannel<void>()
-let zoomRequests = paneChannel<'in' | 'out' | 'reset'>()
+let historyNavigate = paneChannel<BrowserHistoryNavigateCommand>()
+let reloadRequests = paneChannel<BrowserPageCommandTarget>()
+let hardReloadRequests = paneChannel<BrowserPageCommandTarget>()
+let zoomRequests = paneChannel<BrowserPageZoomCommand>()
+let zoomPage = vi.fn(async () => ({ site: 'https://example.internal', zoomLevel: 1 }))
 let openDevTools = vi.fn(async () => true)
 let proceedCertificate = vi.fn(async () => ({ ok: true as const }))
 let openUrl = vi.fn(async () => {})
@@ -63,6 +69,7 @@ beforeEach(() => {
   reloadRequests = paneChannel()
   hardReloadRequests = paneChannel()
   zoomRequests = paneChannel()
+  zoomPage = vi.fn(async () => ({ site: 'https://example.internal', zoomLevel: 1 }))
   openDevTools = vi.fn(async () => true)
   proceedCertificate = vi.fn(async () => ({ ok: true as const }))
   openUrl = vi.fn(async () => {})
@@ -73,14 +80,15 @@ beforeEach(() => {
       onContextMenuDismissed: contextMenuDismissed.subscribe,
       onPermissionDenied: permissionDenied.subscribe,
       openDevTools,
+      zoomPage,
       proceedCertificate
     },
     ui: {
       onFindInBrowserPage: (_source: unknown, callback: () => void) =>
         findRequests.subscribe(callback),
       onBrowserHistoryNavigate: historyNavigate.subscribe,
-      onReloadBrowserPage: (callback: () => void) => reloadRequests.subscribe(callback),
-      onHardReloadBrowserPage: (callback: () => void) => hardReloadRequests.subscribe(callback),
+      onReloadBrowserPage: reloadRequests.subscribe,
+      onHardReloadBrowserPage: hardReloadRequests.subscribe,
       onZoomBrowserPage: zoomRequests.subscribe,
       writeClipboardText
     },
@@ -108,8 +116,11 @@ describe('ClientHostedBrowserPagePane chrome parity', () => {
     expect(webview.goBack).toHaveBeenCalledTimes(1)
 
     act(() => contextMenu.emit(contextMenuEvent()))
-    act(() => screen.getByRole('menuitem', { name: 'Inspect Page' }).click())
-    expect(openDevTools).toHaveBeenCalledWith({ browserPageId: 'page-a' })
+    act(() => screen.getByRole('menuitem', { name: 'Inspect' }).click())
+    expect(openDevTools).toHaveBeenCalledWith({
+      browserPageId: 'page-a',
+      inspectAt: { x: 10, y: 10 }
+    })
 
     act(() => contextMenu.emit(contextMenuEvent()))
     act(() => screen.getByRole('menuitem', { name: 'Copy Page URL' }).click())
@@ -137,34 +148,33 @@ describe('ClientHostedBrowserPagePane chrome parity', () => {
   it('reloads and hard-reloads the retained guest from the forwarded chords', () => {
     const { webview } = renderPane()
 
-    act(() => reloadRequests.emit(undefined))
+    act(() => reloadRequests.emit({ browserPageId: 'page-a' }))
     expect(webview.reload).toHaveBeenCalledTimes(1)
     expect(webview.reloadIgnoringCache).not.toHaveBeenCalled()
 
-    act(() => hardReloadRequests.emit(undefined))
+    act(() => hardReloadRequests.emit({ browserPageId: 'page-a' }))
     expect(webview.reloadIgnoringCache).toHaveBeenCalledTimes(1)
   })
 
   it('walks history from the forwarded chords', () => {
     const { webview } = renderPane()
 
-    act(() => historyNavigate.emit('back'))
-    act(() => historyNavigate.emit('forward'))
+    act(() => historyNavigate.emit({ browserPageId: 'page-a', direction: 'back' }))
+    act(() => historyNavigate.emit({ browserPageId: 'page-a', direction: 'forward' }))
 
     expect(webview.goBack).toHaveBeenCalledTimes(1)
     expect(webview.goForward).toHaveBeenCalledTimes(1)
   })
 
-  it('zooms the retained guest and shows the level while the chord lands', () => {
-    const { webview } = renderPane()
+  it('routes site zoom to main and shows its returned level', async () => {
+    renderPane()
     // The HUD is aria-hidden until a zoom lands, so it has to be queried past that gate.
     const indicator = screen.getByRole('status', { hidden: true })
     expect(indicator.getAttribute('aria-hidden')).toBe('true')
 
-    act(() => zoomRequests.emit('in'))
+    await act(async () => zoomRequests.emit({ browserPageId: 'page-a', direction: 'in' }))
 
-    expect(webview.setZoomLevel).toHaveBeenCalledTimes(1)
-    expect(webview.setZoomLevel.mock.calls[0]![0]).toBeGreaterThan(0)
+    expect(zoomPage).toHaveBeenCalledExactlyOnceWith({ browserPageId: 'page-a', direction: 'in' })
     expect(indicator.getAttribute('aria-hidden')).toBe('false')
     expect(indicator.textContent).not.toBe('100%')
   })
@@ -199,9 +209,8 @@ describe('ClientHostedBrowserPagePane chrome parity', () => {
     expect(failed.webview.style.display).toBe('none')
   })
 
-  // Why: the overlay is about the navigation that failed. Naming browserTab.url instead pointed
-  // every action at the page still loaded and offered it an HTTPS retry it never needed.
-  it('names the URL that failed, not the page that is still loaded', () => {
+  // Recovery must target the failed navigation and never offer unsafe schemes to the system browser.
+  it('targets the failed URL for recovery and refuses unsafe external addresses', () => {
     const loaded = 'http://localhost:3000/app'
     const { onUpdatePageState } = renderPane({ url: loaded })
 
@@ -221,10 +230,17 @@ describe('ClientHostedBrowserPagePane chrome parity', () => {
     cleanup()
     renderPane({ loadError, url: loaded })
 
-    act(() => screen.getByRole('button', { name: 'Copy Address' }).click())
-    expect(writeClipboardText).toHaveBeenCalledWith('javascript:alert(1)')
-    // The loaded page is a localhost http URL, so keying off it would offer an HTTPS retry here.
-    expect(screen.queryByRole('button', { name: 'Try HTTPS' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Open Externally' })).toBeNull()
+    expect(openUrl).not.toHaveBeenCalled()
+
+    cleanup()
+    const failedUrl = 'https://selfsigned.internal/failed'
+    renderPane({
+      url: loaded,
+      loadError: { code: -202, description: 'ERR_CERT_AUTHORITY_INVALID', validatedUrl: failedUrl }
+    })
+    act(() => screen.getByRole('button', { name: 'Open Externally' }).click())
+    expect(openUrl).toHaveBeenCalledExactlyOnceWith(failedUrl)
   })
 
   it('drives the guest from the find bar rather than only rendering it', () => {
@@ -309,9 +325,8 @@ describe('ClientHostedBrowserPagePane chrome parity', () => {
     )
 
     expect(screen.getByText('Client-hosted browser unavailable')).not.toBeNull()
-    // 'Copy Address' belongs to the load-failure overlay alone; the toolbar's own button reads
-    // 'Retry' whenever a loadError stands, attached or not.
-    expect(screen.queryByRole('button', { name: 'Copy Address' })).toBeNull()
+    // Only the failure overlay has a heading; unavailable chrome must not stack it behind its notice.
+    expect(screen.queryByRole('heading')).toBeNull()
   })
 
   it('says so when the page asks for a permission Orca denied', () => {

@@ -209,15 +209,17 @@ function CommandGroup({
 
 function CommandItem({
   className,
+  selection,
   ref,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Item>) {
+}: React.ComponentProps<typeof CommandPrimitive.Item> & { selection?: 'default' | 'palette' }) {
   return (
     <CommandPrimitive.Item
       ref={ref}
       data-slot="command-item"
       className={cn(
         'relative flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+        selection === 'palette' && 'jump-palette-item',
         className
       )}
       {...props}

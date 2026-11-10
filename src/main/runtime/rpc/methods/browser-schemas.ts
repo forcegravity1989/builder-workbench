@@ -26,11 +26,9 @@ export {
   MouseButton,
   MouseWheel,
   MouseXY,
-  ProfileCreate,
   ProfileDelete,
   ProfileImportFromBrowser,
   Screencast,
-  Screenshot,
   Scroll,
   Select,
   SelectorPath,
@@ -53,3 +51,6 @@ export {
   Viewport,
   Wait
 } from '../../../../shared/rpc-contract/browser-params'
+
+export { ProfileCreate } from '../../../../shared/rpc-contract/browser-identity-params'
+export { Screenshot } from '../../../../shared/rpc-contract/browser-observation-params'

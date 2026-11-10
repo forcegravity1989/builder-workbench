@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({ attach: vi.fn(), createBrowserTab: vi.fn(async
 vi.mock('./browser-client-page-renderer-installation', () => ({
   attachBrowserClientPageToViewport: mocks.attach
 }))
-vi.mock('@/runtime/web-runtime-session', () => ({
+vi.mock('@/runtime/web-runtime-browser-creation', () => ({
   createWebRuntimeSessionBrowserTab: mocks.createBrowserTab
 }))
 vi.mock('sonner', () => ({
@@ -46,8 +46,11 @@ function page(): BrowserPage {
 
 function createGuest(): { webview: Electron.WebviewTag; focus: ReturnType<typeof vi.fn> } {
   const webview = document.createElement('webview') as Electron.WebviewTag
-  const focus = vi.fn()
+  webview.tabIndex = -1
+  document.body.appendChild(webview)
+  const focus = vi.fn(() => HTMLElement.prototype.focus.call(webview))
   Object.assign(webview, {
+    getWebContentsId: vi.fn(() => 42),
     getURL: vi.fn(() => 'about:blank'),
     getTitle: vi.fn(() => 'New Tab'),
     isLoading: vi.fn(() => false),
@@ -118,6 +121,7 @@ describe.each([
       release()
     }
     cleanup()
+    document.querySelectorAll('webview').forEach((guest) => guest.remove())
   })
 
   it('focuses the guest when the tab activates outside a drag', () => {

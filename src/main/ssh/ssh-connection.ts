@@ -101,7 +101,7 @@ type HostKeyTrustSources = {
   trustedHostKeys: Awaited<ReturnType<typeof loadTrustedHostKeys>>
 }
 
-type SshRemoteFileOptions = {
+export type SshRemoteFileOptions = {
   hostPlatform?: RemoteHostPlatform
   // Only uploadDirectory and writeFile honor this, and only on the non-Windows ssh2 branch.
   sftpNamespace?: SftpNamespacePathMapping

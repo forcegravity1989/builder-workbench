@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{13ED4249-1F9C-5F0F-2651-29A73F3A7059}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\src">
+      <UniqueIdentifier>{F1003AD6-4B6D-45DF-3F56-5CAC869BF55E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..">
+      <UniqueIdentifier>{13ED4249-1F9C-5F0F-2651-29A73F3A7059}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\src">
+      <UniqueIdentifier>{F1003AD6-4B6D-45DF-3F56-5CAC869BF55E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:">
+      <UniqueIdentifier>{F87FD356-0FEB-9BC5-D1FA-368C81420008}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users">
+      <UniqueIdentifier>{707347A1-1ABA-A9B2-9AF4-DE122F5D7F08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo">
+      <UniqueIdentifier>{B0AC2A92-5919-CD0E-580D-36392C0E5A49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData">
+      <UniqueIdentifier>{DABCEBCE-33D1-4D68-EC67-0BC19A2A0901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local">
+      <UniqueIdentifier>{ABB0DBB9-8BB5-B9E0-AC72-1BB2674DB872}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node">
+      <UniqueIdentifier>{CC1ED9C8-5892-2D93-F312-E484ABBA8F9B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack">
+      <UniqueIdentifier>{0A99967A-E4AC-73B9-0E53-402078C4B777}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1">
+      <UniqueIdentifier>{F031F604-4B12-00FF-EC7E-A05C7F29D01C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm">
+      <UniqueIdentifier>{6495C183-2C26-C6EA-AEC3-F82F56EC60EA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm\12.0.0">
+      <UniqueIdentifier>{8D3CE793-0247-E886-61F2-933E523C0B7F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm\12.0.0\dist">
+      <UniqueIdentifier>{E63026B0-612C-CDD4-0119-D8A7D5C7EB09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm\12.0.0\dist\node_modules">
+      <UniqueIdentifier>{126A39EA-1D28-5689-C126-0DA0AB5837A0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm\12.0.0\dist\node_modules\node-gyp">
+      <UniqueIdentifier>{49558BB4-6D34-CA91-A65D-85A65792DC11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm\12.0.0\dist\node_modules\node-gyp\src">
+      <UniqueIdentifier>{F1003AD6-4B6D-45DF-3F56-5CAC869BF55E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..">
+      <UniqueIdentifier>{13ED4249-1F9C-5F0F-2651-29A73F3A7059}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\addon.cc">
+      <Filter>..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\isolated-spawn.cc">
+      <Filter>..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm\12.0.0\dist\node_modules\node-gyp\src\win_delay_load_hook.cc">
+      <Filter>C:\Users\xiaoduo\AppData\Local\node\corepack\v1\pnpm\12.0.0\dist\node_modules\node-gyp\src</Filter>
+    </ClCompile>
+    <None Include="..\binding.gyp">
+      <Filter>..</Filter>
+    </None>
+  </ItemGroup>
+</Project>

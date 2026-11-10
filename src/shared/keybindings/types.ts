@@ -84,6 +84,9 @@ export type KeybindingActionId =
   | 'browser.reload'
   | 'browser.hardReload'
   | 'browser.focusAddressBar'
+  | 'browser.showHistory'
+  | 'browser.annotateElement'
+  | 'sidebar.projects.toggleCollapse'
   | 'browser.grabElement'
   | 'editor.find'
   | 'editor.replace'
@@ -151,6 +154,7 @@ export type KeybindingDefinition = {
   searchKeywords: readonly string[]
   defaultBindings: PlatformBindings
   allowInTerminal?: boolean
+  allowInTextField?: 'non-default-chords'
   allowBareKeybindings?: boolean
   allowShiftOnlyKeybindings?: boolean
   conflictGroup?: string
@@ -197,6 +201,7 @@ export type KeybindingConflict = {
 }
 
 export type FindKeybindingConflictOptions = {
+  includeMainProcessInterception?: boolean
   ignoredActionIds?: Iterable<KeybindingActionId>
   relevantActionIds?: Iterable<KeybindingActionId>
 }

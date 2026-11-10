@@ -332,3 +332,20 @@ export async function killWorkspacePortForTarget(
     throw error
   }
 }
+
+/** The URL a port opens at: its labelled localhost name when one is set up locally, else its raw URL. */
+export async function resolveWorkspacePortBrowserUrl(args: {
+  port: WorkspacePort
+  runtimeTarget: RuntimeClientTarget
+  localhostLabelRoute?: LocalhostWorktreeLabelRoute | null
+}): Promise<string> {
+  const rawUrl = browserUrlForPort(args.port)
+  if (args.runtimeTarget.kind !== 'local' || !args.localhostLabelRoute) {
+    return rawUrl
+  }
+  try {
+    return (await window.api.localhostWorktreeLabels.register(args.localhostLabelRoute)).url
+  } catch {
+    return rawUrl
+  }
+}

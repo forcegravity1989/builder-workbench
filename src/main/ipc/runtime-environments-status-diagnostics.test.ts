@@ -153,7 +153,10 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       result: { runtimeId: 'runtime-remote' }
     })
     expect(sendRemoteRuntimeRequestMock).toHaveBeenCalledWith(
-      expect.objectContaining({ endpoint: 'ws://127.0.0.1:6768', deviceToken: 'device-token' }),
+      expect.objectContaining({
+        endpoint: 'ws://127.0.0.1:6768',
+        credential: { kind: 'token', deviceToken: 'device-token' }
+      }),
       'status.get',
       undefined,
       15_000,

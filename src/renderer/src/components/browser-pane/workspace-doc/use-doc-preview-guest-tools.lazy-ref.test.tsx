@@ -11,8 +11,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const browserUuidCalls = vi.hoisted(() => ({ count: 0 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => {
+vi.mock('../../../../../shared/non-secure-context-uuid', () => ({
+  createNonSecureContextUuid: () => {
     browserUuidCalls.count += 1
     return `00000000-0000-4000-8000-${String(browserUuidCalls.count).padStart(12, '0')}`
   }
@@ -31,10 +31,10 @@ vi.mock('@/components/browser-pane/annotate/use-browser-page-grab-annotations', 
   useBrowserPageGrabAnnotations: () => ({})
 }))
 vi.mock('@/components/browser-pane/annotate/use-browser-page-markup-capture', () => ({
-  useBrowserPageMarkupCapture: () => ({})
+  useBrowserPageMarkupCapture: () => ({ isActive: false })
 }))
 vi.mock('@/components/browser-pane/annotate/useGrabMode', () => ({
-  useGrabMode: () => ({ active: false })
+  useGrabMode: () => ({ state: 'idle' })
 }))
 
 const { useDocPreviewGuestTools } = await import('./use-doc-preview-guest-tools')

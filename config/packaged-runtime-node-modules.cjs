@@ -39,7 +39,8 @@ const PACKAGED_RUNTIME_PACKAGE_ROOTS = [
 ]
 const WINDOWS_PACKAGED_RUNTIME_PACKAGE_ROOTS = [
   '@vscode/windows-process-tree',
-  '@orca/windows-registry'
+  '@orca/windows-registry',
+  '@orca/windows-security'
 ]
 
 const NODE_PTY_PREBUILD_PREFIX_BY_PLATFORM = {

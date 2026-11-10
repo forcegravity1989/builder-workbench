@@ -39,3 +39,25 @@ export function canReplacePreviewContentType(
   }
   return existingContentType === incomingContentType
 }
+
+/** Insert beside a live anchor while preserving pinned and unpinned order. */
+export function insertTabIdIntoOrder(
+  tabOrder: readonly string[],
+  tabs: readonly Pick<Tab, 'id' | 'isPinned'>[],
+  tabId: string,
+  isPinned: boolean,
+  anchorTabId?: string
+): string[] {
+  const tabById = new Map(tabs.map((tab) => [tab.id, tab]))
+  const order = dedupeTabOrder([...tabOrder]).filter((id) => id !== tabId)
+  const firstUnpinnedIndex = order.findIndex((id) => !tabById.get(id)?.isPinned)
+  const pinnedPrefixEnd = firstUnpinnedIndex === -1 ? order.length : firstUnpinnedIndex
+  const anchorIndex = anchorTabId ? order.indexOf(anchorTabId) : -1
+  const anchorIsPinned = anchorIndex !== -1 && tabById.get(order[anchorIndex])?.isPinned === true
+  let index = isPinned ? pinnedPrefixEnd : order.length
+  if (anchorIndex !== -1) {
+    index = anchorIsPinned === isPinned ? anchorIndex + 1 : pinnedPrefixEnd
+  }
+  order.splice(index, 0, tabId)
+  return order
+}

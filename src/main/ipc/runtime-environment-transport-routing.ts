@@ -1,6 +1,6 @@
 import { getRuntimeEnvironmentCapabilityIncarnation } from './runtime-environment-capability-evidence'
 import { recordRuntimeEnvironmentUsage } from './runtime-environment-usage-record'
-import { getPreferredPairingOffer } from '../../shared/runtime-environments'
+import { getPreferredPairedRuntimeConnection } from '../../shared/runtime-environments'
 import { ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES } from '../../shared/protocol-version'
 import { resolveEnvironment } from '../../shared/runtime-environment-store'
 import { isOrchestrationMutation } from '../../shared/orchestration-rpc-contract'
@@ -23,7 +23,10 @@ import {
 import { attachRemoteControlDiagnostics } from './runtime-environment-status-diagnostics'
 
 import { isRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-manual-disconnect'
-import { runtimeEnvironmentRevisionFailure, runtimeEnvironmentChangedFailure } from './runtime-environment-revision-guard'
+import {
+  runtimeEnvironmentRevisionFailure,
+  runtimeEnvironmentChangedFailure
+} from './runtime-environment-revision-guard'
 import { withTailscaleHintForResponse } from './runtime-environment-tailscale-response'
 import { resetSharedControlSupport } from './runtime-environment-shared-control-support'
 import {
@@ -63,7 +66,10 @@ export async function getRuntimeEnvironmentStatus(
     return runtimeEnvironmentChangedFailure(environment, 'status.get', true)
   }
   return attachRemoteControlDiagnostics(
-    withTailscaleHintForResponse(response, getPreferredPairingOffer(environment).endpoint),
+    withTailscaleHintForResponse(
+      response,
+      getPreferredPairedRuntimeConnection(environment).endpoint
+    ),
     environment.id
   )
 }
@@ -93,7 +99,7 @@ export async function callRuntimeEnvironment(
   // value would miss the in-use connect/timeout case the toast surfaces.
   // Track the endpoint the queued closure actually used: it re-resolves the
   // environment, so a re-pair between enqueue and dispatch can change it.
-  let endpoint = getPreferredPairingOffer(environment).endpoint
+  let endpoint = getPreferredPairedRuntimeConnection(environment).endpoint
   try {
     return await enqueueRuntimeCall(
       environment.id,
@@ -109,7 +115,7 @@ export async function callRuntimeEnvironment(
         if (revisionFailure) {
           return revisionFailure
         }
-        const pairing = getPreferredPairingOffer(currentEnvironment)
+        const pairing = getPreferredPairedRuntimeConnection(currentEnvironment)
         endpoint = pairing.endpoint
         const effectiveTimeoutMs = timeoutMs ?? DEFAULT_REMOTE_RUNTIME_TIMEOUT_MS
         const sharedControlEnvelope = shouldUseSharedControlEnvelope(method, params, envelope)
@@ -123,7 +129,12 @@ export async function callRuntimeEnvironment(
             options?.signal,
             ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
           )
-          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.deviceToken)
+          markEnvironmentUsedFromResponse(
+            userDataPath,
+            currentEnvironment.id,
+            response,
+            pairing.credential.deviceToken
+          )
           return response
         }
         if (shouldUseCachedRequestConnection(method)) {
@@ -135,7 +146,12 @@ export async function callRuntimeEnvironment(
             effectiveTimeoutMs,
             options?.signal
           )
-          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.deviceToken)
+          markEnvironmentUsedFromResponse(
+            userDataPath,
+            currentEnvironment.id,
+            response,
+            pairing.credential.deviceToken
+          )
           return response
         }
         if (shouldRouteCallBySupport(method)) {
@@ -162,7 +178,12 @@ export async function callRuntimeEnvironment(
           options?.signal,
           ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
         )
-        markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.deviceToken)
+        markEnvironmentUsedFromResponse(
+          userDataPath,
+          currentEnvironment.id,
+          response,
+          pairing.credential.deviceToken
+        )
         return response
       },
       options?.signal
@@ -195,7 +216,7 @@ export async function subscribeRuntimeEnvironment(
   signal?: AbortSignal
 ): Promise<RemoteRuntimeSubscription> {
   const environment = resolveEnvironment(userDataPath, selector)
-  const pairing = getPreferredPairingOffer(environment)
+  const pairing = getPreferredPairedRuntimeConnection(environment)
   const effectiveTimeoutMs = timeoutMs ?? DEFAULT_REMOTE_RUNTIME_TIMEOUT_MS
   let markedUsed = false
   const markUsedOnce = (runtimeId: string): void => {
@@ -205,7 +226,7 @@ export async function subscribeRuntimeEnvironment(
     markedUsed = true
     recordRuntimeEnvironmentUsage(userDataPath, environment.id, {
       runtimeId,
-      pairingDeviceToken: pairing.deviceToken
+      pairingDeviceToken: pairing.credential.deviceToken
     })
   }
   const callbacksWithMarkUsed = {

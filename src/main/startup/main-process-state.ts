@@ -24,7 +24,7 @@ import type { PluginMarketplaceService } from '../plugins/plugin-marketplace-ser
 import type { PluginMarketplaceInstaller } from '../plugins/plugin-marketplace-installer'
 import type { KeybindingService } from '../keybindings/keybinding-service'
 import type { RelayBrokerStatus } from '../runtime/relay/relay-session-broker'
-import type { AgentBrowserBridge } from '../browser/agent-browser-bridge'
+import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
 import type { EmulatorBridge } from '../emulator/emulator-bridge'
 import type { GpuFallbackMarker, GpuFallbackEnvironment } from './gpu-fallback-marker'
 import type { createCodexSessionMigrationScheduler } from '../codex/codex-session-migration-scheduler'

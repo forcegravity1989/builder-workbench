@@ -1,11 +1,16 @@
+import {
+  getLocalPathOpenOwnerForRoute,
+  isLocalPathOpenBlocked,
+  showLocalPathOpenBlockedToast
+} from '@/lib/local-path-open-guard'
 import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { detectLanguage } from '@/lib/language-detect'
-import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 import { getConnectionIdForFileFromState } from '@/lib/connection-owner-resolution'
-import { isLocalPathOpenBlocked, showLocalPathOpenBlockedToast } from '@/lib/local-path-open-guard'
+
 import { resolveMarkdownLinkTarget } from '@/components/editor/markdown-internal-links'
 import { settingsForRuntimeOwner } from '@/runtime/runtime-rpc-client'
 import { statRuntimePath } from '@/runtime/runtime-file-client'
@@ -81,7 +86,14 @@ export function createMarkdownLinkAction(
       if (target.kind === 'file') {
         const { line, column } = target
         if (target.relativePath === undefined) {
-          if (isLocalPathOpenBlocked(sourceSettings, { connectionId: sourceConnectionId })) {
+          if (
+            isLocalPathOpenBlocked(
+              getLocalPathOpenOwnerForRoute({
+                runtimeEnvironmentId: sourceSettings?.activeRuntimeEnvironmentId,
+                connectionId: sourceConnectionId
+              })
+            )
+          ) {
             // Why: a file:// link outside the worktree is client-local; remote runtime/SSH editors must not treat server paths as client paths.
             showLocalPathOpenBlockedToast()
             return

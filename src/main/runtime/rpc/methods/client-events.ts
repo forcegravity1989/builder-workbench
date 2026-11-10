@@ -1,15 +1,25 @@
+import { BROWSER_CLIENT_HOST_REQUEST_CAPABILITY } from '../../../../shared/browser/client-hosting/browser-client-host-request-protocol'
+import { getBrowserHostRequestRegistry } from '../../browser-host/leases/browser-host-request-registry'
 import { getRegisteredSshState, listRegisteredSshTargets } from '../../../ssh/ssh-target-registry'
 import { getPublicSshState } from '../../public-ssh-state'
 import { defineMethod, defineStreamingMethod } from '../core'
-import { ClientEventsUnsubscribeParams } from '../../../../shared/rpc-contract/client-events-params'
+import {
+  ClientEventsSubscribeParams,
+  ClientEventsUnsubscribeParams
+} from '../../../../shared/rpc-contract/client-events-params'
 
 let clientEventSubscriptionSeq = 0
 
 export const CLIENT_EVENT_METHODS = [
   defineStreamingMethod({
     name: 'runtime.clientEvents.subscribe',
-    params: null,
-    handler: async (_params, { runtime, connectionId, clientKind }, emit) => {
+    permission: 'workspace',
+    params: ClientEventsSubscribeParams,
+    handler: async (
+      params,
+      { runtime, connectionId, clientKind, pairedDeviceId, clientCapabilities },
+      emit
+    ) => {
       await new Promise<void>((resolve) => {
         // Why: mobile discards terminalSideEffects; excluding it stops the
         // per-OSC batch frames from crossing the relay.
@@ -20,12 +30,21 @@ export const CLIENT_EVENT_METHODS = [
           { consumesTerminalSideEffects: clientKind !== 'mobile' }
         )
 
+        const unregisterHostVolunteer =
+          params.browserHostRequests === true &&
+          clientKind === 'runtime' &&
+          pairedDeviceId &&
+          clientCapabilities?.includes(BROWSER_CLIENT_HOST_REQUEST_CAPABILITY)
+            ? getBrowserHostRequestRegistry(runtime).register({ pairedDeviceId, emit })
+            : undefined
+
         const seq = ++clientEventSubscriptionSeq
         const subscriptionId = `runtime-client-events-${connectionId ?? 'inproc'}-${seq}`
         runtime.registerSubscriptionCleanup(
           subscriptionId,
           () => {
             unsubscribe()
+            unregisterHostVolunteer?.()
             emit({ type: 'end' })
             resolve()
           },
@@ -51,6 +70,7 @@ export const CLIENT_EVENT_METHODS = [
   }),
   defineMethod({
     name: 'runtime.clientEvents.unsubscribe',
+    permission: 'workspace',
     params: ClientEventsUnsubscribeParams,
     handler: async (params, { runtime, connectionId }) => {
       const expectedPrefix = `runtime-client-events-${connectionId ?? 'inproc'}-`

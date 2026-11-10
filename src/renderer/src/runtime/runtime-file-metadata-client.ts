@@ -1,3 +1,4 @@
+import type { LocalFileAccess } from '../../../shared/file-access/local-file-access'
 import type { MarkdownDocument } from '../../../shared/filesystem-entry-types'
 import type { RuntimeFileOperationArgs } from './runtime-file-client-types'
 import { assertLocalFilesystemFallbackAllowed, getRemoteFileArgs } from './runtime-file-routing'
@@ -25,14 +26,16 @@ export async function listRuntimeMarkdownDocuments(
 
 export async function statRuntimePath(
   context: RuntimeFileOperationArgs,
-  absolutePath: string
+  absolutePath: string,
+  access?: LocalFileAccess
 ): Promise<{ size: number; isDirectory: boolean; mtime: number }> {
   const remoteArgs = getRemoteFileArgs(context, absolutePath)
   if (!remoteArgs) {
     assertLocalFilesystemFallbackAllowed(context)
     return window.api.fs.stat({
       filePath: absolutePath,
-      connectionId: context.connectionId
+      connectionId: context.connectionId,
+      ...(!context.connectionId && access ? { access } : {})
     })
   }
   return callRuntimeRpc<{ size: number; isDirectory: boolean; mtime: number }>(

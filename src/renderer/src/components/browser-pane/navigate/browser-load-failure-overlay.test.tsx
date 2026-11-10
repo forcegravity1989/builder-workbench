@@ -8,8 +8,6 @@ import { BROWSER_GUEST_RECOVERY_ERROR_CODE } from '../host-guest/browser-page-gu
 
 const callbacks = {
   onRetry: vi.fn(),
-  onTryHttps: vi.fn(),
-  onCopy: vi.fn(),
   onOpenExternal: vi.fn(),
   onProceedCertificate: vi.fn()
 }
@@ -43,8 +41,6 @@ describe('BrowserLoadFailureOverlay', () => {
     const { rerender } = render(
       <BrowserLoadFailureOverlay
         loadError={loadError}
-        currentUrl="https://example.com/"
-        httpsRecoveryUrl={null}
         sshRoutedHint
         onRecheckSshRoute={onRecheckSshRoute}
         {...callbacks}
@@ -57,8 +53,6 @@ describe('BrowserLoadFailureOverlay', () => {
     rerender(
       <BrowserLoadFailureOverlay
         loadError={loadError}
-        currentUrl="https://example.com/"
-        httpsRecoveryUrl={null}
         sshRoutedHint
         onRecheckSshRoute={null}
         {...callbacks}
@@ -76,8 +70,6 @@ describe('BrowserLoadFailureOverlay', () => {
           validatedUrl: 'https://localhost:3443/app'
         }}
         externalUrl="https://localhost:3443/app"
-        currentUrl="https://localhost:3443/app"
-        httpsRecoveryUrl={null}
         {...callbacks}
       />
     )
@@ -101,8 +93,6 @@ describe('BrowserLoadFailureOverlay', () => {
           validatedUrl: 'https://localhost:3443/'
         }}
         externalUrl={null}
-        currentUrl="https://localhost:3443/"
-        httpsRecoveryUrl={null}
         {...callbacks}
       />
     )
@@ -110,41 +100,6 @@ describe('BrowserLoadFailureOverlay', () => {
     expect(screen.getByText("The certificate doesn't match localhost:3443.")).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Proceed Anyway (Unsafe)' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Copy Address' })).toBeEnabled()
-  })
-
-  it('offers HTTPS recovery only for an eligible failed HTTP address', () => {
-    const { rerender } = render(
-      <BrowserLoadFailureOverlay
-        loadError={{
-          code: -102,
-          description: 'ERR_CONNECTION_REFUSED',
-          validatedUrl: 'http://localhost:3000/app'
-        }}
-        externalUrl="http://localhost:3000/app"
-        currentUrl="http://localhost:3000/app"
-        httpsRecoveryUrl="https://localhost:3000/app"
-        {...callbacks}
-      />
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: 'Try HTTPS' }))
-    expect(callbacks.onTryHttps).toHaveBeenCalledWith('https://localhost:3000/app')
-
-    rerender(
-      <BrowserLoadFailureOverlay
-        loadError={{
-          code: -102,
-          description: 'ERR_CONNECTION_REFUSED',
-          validatedUrl: 'https://localhost:3000/app'
-        }}
-        externalUrl="https://localhost:3000/app"
-        currentUrl="https://localhost:3000/app"
-        httpsRecoveryUrl={null}
-        {...callbacks}
-      />
-    )
-    expect(screen.queryByRole('button', { name: 'Try HTTPS' })).toBeNull()
   })
 
   it('presents guest recovery failures without network troubleshooting', () => {
@@ -156,8 +111,6 @@ describe('BrowserLoadFailureOverlay', () => {
           validatedUrl: 'http://localhost:3000/app'
         }}
         externalUrl="http://localhost:3000/app"
-        currentUrl="http://localhost:3000/app"
-        httpsRecoveryUrl="https://localhost:3000/app"
         {...callbacks}
       />
     )
@@ -167,7 +120,6 @@ describe('BrowserLoadFailureOverlay', () => {
       screen.getByText('The browser page stopped unexpectedly. Retry to restore it.')
     ).toBeInTheDocument()
     expect(screen.queryByText(/make sure the server is running/i)).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Try HTTPS' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled()
   })
 
@@ -179,11 +131,7 @@ describe('BrowserLoadFailureOverlay', () => {
           description: 'ERR_CERT_AUTHORITY_INVALID',
           validatedUrl: 'https://localhost:3443/'
         }}
-        currentUrl="https://localhost:3443/"
-        httpsRecoveryUrl={null}
         onRetry={callbacks.onRetry}
-        onTryHttps={callbacks.onTryHttps}
-        onCopy={callbacks.onCopy}
       />
     )
 
@@ -191,7 +139,6 @@ describe('BrowserLoadFailureOverlay', () => {
     // the action is absent and the overlay still renders its other recovery UI.
     expect(screen.queryByRole('button', { name: 'Open Externally' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Copy Address' })).toBeEnabled()
   })
 
   it('does not show local-certificate guidance for a public-host failure', () => {
@@ -203,8 +150,6 @@ describe('BrowserLoadFailureOverlay', () => {
           validatedUrl: 'https://example.com/'
         }}
         externalUrl="https://example.com/"
-        currentUrl="https://example.com/"
-        httpsRecoveryUrl={null}
         {...callbacks}
       />
     )
@@ -212,18 +157,21 @@ describe('BrowserLoadFailureOverlay', () => {
     expect(screen.queryByText(/use a trusted local certificate/i)).not.toBeInTheDocument()
   })
 
-  it('offers approval only for a matching live challenge', () => {
+  it('offers ordinary HTTPS approval only for a matching live challenge', () => {
+    const liveChallenge = {
+      ...certificateFailure,
+      origin: 'https://selfsigned.internal:3443',
+      displayHost: 'selfsigned.internal:3443'
+    }
     const { rerender } = render(
       <BrowserLoadFailureOverlay
         loadError={{
           code: -202,
           description: 'ERR_CERT_AUTHORITY_INVALID',
-          validatedUrl: 'https://localhost:3443/app'
+          validatedUrl: 'https://selfsigned.internal:3443/app'
         }}
         externalUrl={null}
-        currentUrl="https://localhost:3443/app"
-        httpsRecoveryUrl={null}
-        certificateFailure={certificateFailure}
+        certificateFailure={liveChallenge}
         expectedBrowserPageId="page-1"
         {...callbacks}
       />
@@ -236,12 +184,10 @@ describe('BrowserLoadFailureOverlay', () => {
         loadError={{
           code: -1,
           description: 'ERR_FAILED',
-          validatedUrl: 'https://localhost:3443/app'
+          validatedUrl: 'https://selfsigned.internal:3443/app'
         }}
         externalUrl={null}
-        currentUrl="https://localhost:3443/app"
-        httpsRecoveryUrl={null}
-        certificateFailure={certificateFailure}
+        certificateFailure={liveChallenge}
         expectedBrowserPageId="page-1"
         {...callbacks}
       />
@@ -254,12 +200,10 @@ describe('BrowserLoadFailureOverlay', () => {
         loadError={{
           code: -202,
           description: 'ERR_CERT_AUTHORITY_INVALID',
-          validatedUrl: 'https://localhost:3444/app'
+          validatedUrl: 'https://selfsigned.internal:3444/app'
         }}
         externalUrl={null}
-        currentUrl="https://localhost:3444/app"
-        httpsRecoveryUrl={null}
-        certificateFailure={certificateFailure}
+        certificateFailure={liveChallenge}
         expectedBrowserPageId="page-1"
         {...callbacks}
       />
@@ -271,12 +215,10 @@ describe('BrowserLoadFailureOverlay', () => {
         loadError={{
           code: -202,
           description: 'ERR_CERT_AUTHORITY_INVALID',
-          validatedUrl: 'https://localhost:3443/app'
+          validatedUrl: 'https://selfsigned.internal:3443/app'
         }}
         externalUrl={null}
-        currentUrl="https://localhost:3443/app"
-        httpsRecoveryUrl={null}
-        certificateFailure={certificateFailure}
+        certificateFailure={liveChallenge}
         expectedBrowserPageId="other-page"
         {...callbacks}
       />
@@ -300,8 +242,6 @@ describe('BrowserLoadFailureOverlay', () => {
           validatedUrl: 'https://localhost:3443/app'
         }}
         externalUrl="https://localhost:3443/app"
-        currentUrl="https://localhost:3443/app"
-        httpsRecoveryUrl={null}
         certificateFailure={certificateFailure}
         expectedBrowserPageId="page-1"
         {...callbacks}
@@ -310,7 +250,7 @@ describe('BrowserLoadFailureOverlay', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Proceed Anyway (Unsafe)' }))
     expect(callbacks.onProceedCertificate).toHaveBeenCalledWith('challenge-1')
-    for (const name of ['Proceed Anyway (Unsafe)', 'Open Externally', 'Retry', 'Copy Address']) {
+    for (const name of ['Proceed Anyway (Unsafe)', 'Open Externally', 'Retry']) {
       expect(screen.getByRole('button', { name })).toBeDisabled()
     }
     expect(screen.queryByText('Connecting…')).toBeNull()
@@ -329,8 +269,6 @@ describe('BrowserLoadFailureOverlay', () => {
           validatedUrl: 'https://localhost:3443/app'
         }}
         externalUrl="https://localhost:3443/app"
-        currentUrl="https://localhost:3443/app"
-        httpsRecoveryUrl={null}
         certificateFailure={null}
         expectedBrowserPageId="page-1"
         {...callbacks}
@@ -349,8 +287,6 @@ describe('BrowserLoadFailureOverlay', () => {
         validatedUrl: 'https://localhost:3443/app'
       },
       externalUrl: null,
-      currentUrl: 'https://localhost:3443/app',
-      httpsRecoveryUrl: null,
       expectedBrowserPageId: 'page-1',
       ...callbacks
     }

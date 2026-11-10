@@ -229,3 +229,29 @@ export type DetectedWorktreeListResult = {
   /** Why a non-authoritative listing could not be scanned; additive, older hosts omit it. */
   unavailableReason?: string
 }
+
+export type WorkspaceAttachmentOrigin = {
+  kind: 'observed'
+  tabId: string
+  paneKey?: string
+  hostId?: ExecutionHostId
+  label?: string
+  agent?: string
+  sessionId?: string
+}
+
+export type WorkspaceAttachment = {
+  provider: 'github' | 'gitlab' | 'linear' | 'jira' | 'bitbucket' | 'azure-devops' | 'gitea'
+  type: 'issue' | 'pr' | 'mr'
+  number: number
+  identifier?: string
+  title?: string
+  url?: string
+  repoId?: string
+  linearIdentifier?: string
+  jiraIdentifier?: string
+  linearWorkspaceId?: string
+  linearOrganizationUrlKey?: string
+  taskSourceContext?: TaskSourceContext
+  origins?: WorkspaceAttachmentOrigin[]
+}

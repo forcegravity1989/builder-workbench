@@ -7,7 +7,7 @@ import { PALETTE_QUERY_MAX_TOKENS } from '@/lib/palette-match/palette-query'
 import {
   buildSearchableBrowserPageDocument,
   type SearchableBrowserPage
-} from '@/lib/browser-palette-search'
+} from '@/lib/browser/palette/browser-palette-search'
 import {
   SIMULATOR_TYPE_SEARCH_ALIASES,
   simulatorPaletteTabTitle,

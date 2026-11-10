@@ -1,3 +1,4 @@
+import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { StoreRuntimeState } from './store-runtime-state'
 import type { PrimaryStateWriteOperations } from './primary-state-writes'
 import { enqueueWrite } from './primary-state-writes'
@@ -14,6 +15,7 @@ type WriteSchedulingOperationsRuntime = Pick<
   | 'quitFlushStarted'
   | 'writeGeneration'
   | 'writeTimer'
+  | 'workspaceSessionWriteListeners'
 >
 
 const writeSchedulingOperationsContext = Symbol('WriteSchedulingOperations')
@@ -29,6 +31,14 @@ export class WriteSchedulingOperations {
     this[writeSchedulingOperationsContext] = { runtime, writes }
   }
 
+  onWorkspaceSessionWritten(listener: (hostId: ExecutionHostId | null) => void): () => void {
+    const listeners = this[writeSchedulingOperationsContext].runtime.workspaceSessionWriteListeners
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
+    }
+  }
+
   async waitForPendingWrite(): Promise<void> {
     await Promise.all([
       this[writeSchedulingOperationsContext].runtime.pendingWrite,
@@ -39,6 +49,11 @@ export class WriteSchedulingOperations {
 
 export function scheduleSave(owner: WriteSchedulingOperations): void {
   owner[writeSchedulingOperationsContext].runtime.automationListProjectionCache = null
+  // This store schedules whole-state writes; observers re-read every host partition.
+  for (const listener of owner[writeSchedulingOperationsContext].runtime
+    .workspaceSessionWriteListeners) {
+    listener(null)
+  }
   // Why: once the quit flush has snapshotted, a newly debounced write would fire during
   // teardown with nothing awaiting it, and the process can exit mid-rename. The quit
   // flush is the last write by construction.

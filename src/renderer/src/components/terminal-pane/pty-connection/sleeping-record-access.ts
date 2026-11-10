@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import type { PtyConnectResult } from '../pty-transport'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
 import { parseLegacyNumericPaneKey } from '../../../../../shared/stable-pane-id'
 import { getProviderSessionClaimKey } from '@/lib/sleeping-agent-pane-ownership'
 import {
@@ -85,7 +85,7 @@ export function installSleepingRecordAccess(session: ConnectPanePtySession): voi
     }
   }
   session.launchToken = session.paneStartup?.launchConfig
-    ? (session.paneStartup.launchToken ?? createBrowserUuid())
+    ? (session.paneStartup.launchToken ?? createNonSecureContextUuid())
     : undefined
   session.startupDraftAgent =
     session.paneStartup?.launchAgent ?? session.paneStartup?.initialAgentStatus?.agent

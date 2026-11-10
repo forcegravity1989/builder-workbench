@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { useMountedRef } from '@/hooks/useMountedRef'
 import { linearGetIssue, linearIssueComments } from '@/runtime/runtime-linear-issue-mutations'
 import type { RuntimeLinearSettings } from '@/runtime/runtime-linear-client'
@@ -104,7 +104,7 @@ export function useLinearIssueWorkspaceDetail({
 
   const handleCommentAdded = useCallback((comment: LinearLocalComment) => {
     const added: LinearComment = {
-      id: comment.id || createBrowserUuid(),
+      id: comment.id || createNonSecureContextUuid(),
       body: comment.body,
       createdAt: comment.createdAt,
       user: { displayName: 'You' }

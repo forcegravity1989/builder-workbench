@@ -20,6 +20,19 @@ function groupExists(pid) {
   try { process.kill(-pid, 0); return true; }
   catch (error) { return error.code !== 'ESRCH'; }
 }
+// lsof cannot distinguish other-UID holders from stale sockets; corroborate with /proc/net/unix.
+function pathStillBound(target) {
+  var text;
+  try { text = require('fs').readFileSync('/proc/net/unix', 'utf8'); }
+  catch (error) { return false; }
+  var lines = text.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    // The path is the line remainder and may contain spaces.
+    var match = lines[i].match(/^\S+:(?:\s+\S+){5}\s+\d+ (.*)$/);
+    if (match && match[1] === target) return true;
+  }
+  return false;
+}
 function finish(unconfirmed) {
   if (finished) return;
   finished = true;
@@ -36,6 +49,9 @@ function finish(unconfirmed) {
     unavailable = true;
     return false;
   });
+  if (!unconfirmed && !unavailable && !stderrSeen && !pids.length && pathStillBound(process.argv[1])) {
+    unavailable = true;
+  }
   var marker = unconfirmed ? 'cleanup-unconfirmed' : (unavailable || stderrSeen ? 'unavailable' : 'lsof');
   process.stdout.write(marker + '\n' + pids.join('\n') + '\n', function() { process.exit(0); });
 }

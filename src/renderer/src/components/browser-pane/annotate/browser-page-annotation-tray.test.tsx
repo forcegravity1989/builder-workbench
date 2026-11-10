@@ -88,6 +88,7 @@ function renderTray(): {
         includePageDetails={false}
         handleIncludePageDetailsChange={vi.fn()}
         handleBrowserAnnotationsSentToAgent={vi.fn()}
+        handleBrowserAnnotationsHandedOff={vi.fn()}
         handleCopyBrowserAnnotations={vi.fn()}
         browserAnnotationsCopied={false}
         handleClearBrowserAnnotations={vi.fn()}

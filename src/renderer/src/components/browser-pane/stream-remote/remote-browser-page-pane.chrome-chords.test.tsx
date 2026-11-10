@@ -23,7 +23,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   runtimeEnvironmentSupportsCapability: vi.fn(async () => false),
   callRuntimeRpc: vi.fn(async () => ({}))
 }))
-vi.mock('@/lib/workspace-browser-tab-open', () => ({
+vi.mock('@/lib/browser/workspace/workspace-browser-tab-open', () => ({
   openWorkspaceBrowserTab: vi.fn(async () => {})
 }))
 vi.mock('../annotate/markup-clipboard-delivery', () => ({
@@ -147,7 +147,12 @@ beforeEach(() => {
   mocks.viewportRenders.current = 0
   Object.defineProperty(window, 'api', {
     configurable: true,
-    value: { ui: { onFocusBrowserAddressBar: () => () => {} } }
+    value: {
+      ui: {
+        onFocusBrowserAddressBar: () => () => {},
+        onShowBrowserHistory: () => () => {}
+      }
+    }
   })
 })
 

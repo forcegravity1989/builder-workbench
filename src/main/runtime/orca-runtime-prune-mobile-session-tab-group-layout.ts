@@ -91,7 +91,7 @@ export class OrcaRuntimeWithPruneMobileSessionTabGroupLayout extends OrcaRuntime
       tabs: this.tabs,
       leaves: this.leaves,
       ptysById: this.ptysById,
-      getLiveBrowserTabs: (worktreeId) => this.getLiveBrowserTabsByPageId(worktreeId),
+      getLiveBrowserTabs: (worktreeId) => this.getListedBrowserTabsByPageId(worktreeId),
       getProviderSessionRows: (paneKey) => this.getAgentProviderSessionRowsForPaneFn?.(paneKey),
       getProviderSessionSnapshot: () => this.getAgentProviderSessionSnapshotFn?.() ?? [],
       getStatusSnapshot: () => this.getAgentStatusSnapshotFn?.() ?? [],

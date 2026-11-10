@@ -37,8 +37,8 @@ export async function removeRegisteredSshTarget(targetId: string): Promise<void>
     // must not outlive the record that scoped them.
     try {
       const [partitions, storage] = await Promise.all([
-        import('../browser/local-ssh-browser-partitions'),
-        import('../browser/browser-route-partition-storage-runtime')
+        import('../browser/routing/local-host-partitions/local-ssh-browser-partitions'),
+        import('../browser/routing/partitions/browser-route-partition-storage-runtime')
       ])
       await partitions.releaseLocalSshBrowserPartitionsForTarget(targetId)
       await storage.clearBrowserRoutePartitionStorageForLocalSshTarget(targetId)

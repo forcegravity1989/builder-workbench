@@ -2,14 +2,14 @@ import { ipcMain } from 'electron'
 import {
   BrowserClientHostPlacementPreparationRequest,
   type BrowserPageCreationPlacement
-} from '../../shared/browser-client-host-placement'
+} from '../../shared/browser/client-hosting/browser-client-host-placement'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import { resolveEnvironment } from '../../shared/runtime-environment-store'
 import {
   closePairedRuntimeBrowserClientHostEnvironment,
   startPairedRuntimeBrowserClientHost
-} from '../browser/paired-runtime-browser-client-host-runtime'
-import { prepareBrowserClientHostPlacement } from '../browser/browser-client-host-placement-preparation'
+} from '../browser/client-hosts/lifecycle/paired-runtime-browser-client-host-runtime'
+import { prepareBrowserClientHostPlacement } from '../browser/client-hosts/lifecycle/browser-client-host-placement-preparation'
 import { isRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-connectivity-handlers'
 import { getRuntimeEnvironmentStatus } from './runtime-environment-transport-routing'
 

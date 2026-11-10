@@ -5,7 +5,7 @@ import type { Worktree } from '../../../../shared/worktree/types'
 import {
   buildSearchableBrowserPageDocument,
   type SearchableBrowserPage
-} from '@/lib/browser-palette-search'
+} from '@/lib/browser/palette/browser-palette-search'
 import { buildPaletteTabDocument } from '@/lib/palette-match/tab-document'
 import type { SearchableWorkspaceTab } from '@/lib/workspace-tab-palette-search'
 import { TERMINAL_TYPE_SEARCH_ALIASES } from '@/lib/workspace-tab-palette-search'

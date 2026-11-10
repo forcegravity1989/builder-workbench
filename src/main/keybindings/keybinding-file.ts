@@ -225,9 +225,9 @@ export function writeKeybindingOverride(
   } else {
     candidateOverrides[actionId] = normalizedBindings
   }
-  const blockingConflict = findKeybindingConflicts(keybindingPlatform, candidateOverrides).find(
-    (conflict) => conflict.actionIds.includes(actionId)
-  )
+  const blockingConflict = findKeybindingConflicts(keybindingPlatform, candidateOverrides, {
+    includeMainProcessInterception: true
+  }).find((conflict) => conflict.actionIds.includes(actionId))
   if (blockingConflict) {
     throw new Error(
       `${formatKeybindingList([blockingConflict.binding], keybindingPlatform)} conflicts with another shortcut.`

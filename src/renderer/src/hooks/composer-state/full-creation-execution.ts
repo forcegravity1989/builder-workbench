@@ -33,7 +33,7 @@ import { translate } from '@/i18n/i18n'
 import { settleComposerSubmit } from '@/lib/composer-submit-cancellation'
 import { toFolderWorkspaceLinkedTask } from '@/components/sidebar/folder-workspace-composer-helpers'
 import { ensureAgentStartupInTerminal } from '@/lib/new-workspace'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { seedNativeChatAppliedSessionOptions } from '@/components/native-chat/native-chat-session-option-cache'
 import { queueWorkspaceActivationTerminalFocus } from '@/lib/workspace-activation-terminal-focus'
@@ -231,7 +231,7 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
 
       if (startupPlan && !backendSpawnedStartup && !startupPlan.launchToken) {
         // Why: delayed delivery must target the exact pane from this queued startup, so both halves share one renderer-session token.
-        startupPlan.launchToken = createBrowserUuid()
+        startupPlan.launchToken = createNonSecureContextUuid()
       }
 
       const startup = buildFullCreationStartup({

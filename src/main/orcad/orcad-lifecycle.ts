@@ -1,3 +1,5 @@
+import { setDesktopBrowserBridgeHostEnabled } from '../runtime/desktop-browser-bridge/desktop-browser-bridge-registry'
+import { ORCAD_MANAGED_ACTIVATION_ROOT_ENV } from '../../shared/orcad-managed-launch-env'
 function createIdempotentOrcadCleanup(cleanup: () => Promise<void>): () => Promise<void> {
   let completion: Promise<void> | null = null
   return () => {
@@ -10,11 +12,13 @@ export async function startOrcadWithLifecycle<T extends object>(
   start: (registerRuntimeCleanup: (cleanup: () => Promise<void>) => void) => Promise<T>,
   cleanupHost: () => Promise<void>
 ): Promise<T & { stop(): Promise<void> }> {
+  setDesktopBrowserBridgeHostEnabled(Boolean(process.env[ORCAD_MANAGED_ACTIVATION_ROOT_ENV]))
   let cleanupRuntime = async (): Promise<void> => {}
   const cleanup = createIdempotentOrcadCleanup(async () => {
     try {
       await cleanupRuntime()
     } finally {
+      setDesktopBrowserBridgeHostEnabled(false)
       await cleanupHost()
     }
   })

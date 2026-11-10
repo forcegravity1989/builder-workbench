@@ -145,33 +145,34 @@ export const uiStateAndMenuCommandsApi = {
     ipcRenderer.on('ui:newSimulatorTab', listener)
     return () => ipcRenderer.removeListener('ui:newSimulatorTab', listener)
   },
-  onRequestTabCreate: (
-    callback: (data: {
-      requestId: string
-      url: string
-      worktreeId?: string
-      browserPageId?: string
-      sessionProfileId?: string | null
-      sessionPartition?: string
-      activate?: boolean
-    }) => void
-  ): (() => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      data: {
-        requestId: string
-        url: string
-        worktreeId?: string
-        browserPageId?: string
-        sessionProfileId?: string | null
-        sessionPartition?: string
-        activate?: boolean
-      }
-    ) => callback(data)
+  onRequestTabCreate: (callback: (data: BrowserTabCreateRequest) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: BrowserTabCreateRequest) =>
+      callback(data)
     ipcRenderer.on('browser:requestTabCreate', listener)
     return () => ipcRenderer.removeListener('browser:requestTabCreate', listener)
   },
   replyTabCreate: (reply: { requestId: string; browserPageId?: string; error?: string }): void => {
     ipcRenderer.send('browser:tabCreateReply', reply)
+  },
+  replyRemoteCliBrowserScope: (reply: RemoteCliBrowserScopeReply): void => {
+    ipcRenderer.send('browser:remoteCliScopeReply', reply)
+  },
+  onRequestRemoteCliBrowserScope: (
+    callback: (data: RemoteCliBrowserScopeQuery) => void
+  ): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: RemoteCliBrowserScopeQuery) =>
+      callback(data)
+    ipcRenderer.on('browser:requestRemoteCliScope', listener)
+    return () => ipcRenderer.removeListener('browser:requestRemoteCliScope', listener)
+  },
+  browserTabRequestsReady: (): void => {
+    ipcRenderer.send('browser:tabRequestsReady')
   }
 } satisfies Partial<PreloadApi['ui']>
+
+import type { BrowserTabCreateRequest } from '../../shared/browser-tab-create-request'
+
+import type {
+  RemoteCliBrowserScopeQuery,
+  RemoteCliBrowserScopeReply
+} from '../../shared/desktop-browser-bridge-protocol'

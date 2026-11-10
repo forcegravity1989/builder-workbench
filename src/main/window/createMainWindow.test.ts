@@ -10,10 +10,10 @@ vi.mock('./macos-tahoe-release', async () =>
   (await import('./createMainWindow-test-harness')).macosTahoeReleaseMock()
 )
 vi.mock('../app-icon', async () => (await import('./createMainWindow-test-harness')).appIconMock())
-vi.mock('../browser/browser-manager', async () =>
+vi.mock('../browser/guest-lifecycle/manager/browser-manager', async () =>
   (await import('./createMainWindow-test-harness')).browserManagerMock()
 )
-vi.mock('../browser/browser-route-session-runtime', async () => ({
+vi.mock('../browser/routing/sessions/browser-route-session-runtime', async () => ({
   browserRouteSessionRegistry: {
     isAllowedPartition: (await import('./createMainWindow-test-harness')).routePartitionAllowedMock
   },
@@ -21,7 +21,7 @@ vi.mock('../browser/browser-route-session-runtime', async () => ({
     attachGuest: (await import('./createMainWindow-test-harness')).attachRouteGuestMock
   }
 }))
-vi.mock('../browser/browser-client-page-renderer-runtime', async () => {
+vi.mock('../browser/client-pages/renderer/browser-client-page-renderer-runtime', async () => {
   const harness = await import('./createMainWindow-test-harness')
   return {
     attachBrowserClientPageRenderer: harness.attachClientPageRendererMock,
@@ -31,11 +31,11 @@ vi.mock('../browser/browser-client-page-renderer-runtime', async () => {
 
 import { createMainWindow, loadMainWindow } from './createMainWindow'
 import { ipcMain } from 'electron'
-import { getBrowserClientHostId } from '../browser/browser-client-host-id'
+import { getBrowserClientHostId } from '../browser/client-hosts/lifecycle/browser-client-host-id'
 import {
   formatBrowserClientHostIdArgument,
   readBrowserClientHostIdArgument
-} from '../../shared/browser-client-host-id-argument'
+} from '../../shared/browser/client-hosting/browser-client-host-id-argument'
 import { resetExpectedTeardownStateForTest } from '../crash-reporting/expected-teardown-state'
 import {
   attachGuestPoliciesMock,

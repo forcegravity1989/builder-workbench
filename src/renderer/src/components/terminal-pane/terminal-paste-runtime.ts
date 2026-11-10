@@ -133,3 +133,24 @@ function getShellOverridePathSegmentStart(token: string): number {
 function isShellOverrideWhitespace(code: number): boolean {
   return code === 32 || (code >= 9 && code <= 13)
 }
+
+import { parseRemoteRuntimePtyId } from '../../../../shared/remote-runtime-pty-id'
+
+import { runtimeEnvironmentIdOrLocalUnlessTwin } from '@/lib/worktree-runtime-owner'
+
+import type { WorktreeRuntimeOwnerState } from '@/lib/worktree-runtime-owner-state'
+
+import type { PtyTransport } from './pty-transport-types'
+
+/** The server a paste uploads images to: the one its PTY id names, else the workspace owner's. */
+export function resolveTerminalPasteRuntimeEnvironmentId(
+  state: WorktreeRuntimeOwnerState,
+  worktreeId: string,
+  transport: Pick<PtyTransport, 'getPtyId'> | null | undefined
+): string | null {
+  const ptyId = transport?.getPtyId() ?? null
+  return (
+    (ptyId ? parseRemoteRuntimePtyId(ptyId)?.environmentId : null) ??
+    runtimeEnvironmentIdOrLocalUnlessTwin(state, worktreeId)
+  )
+}

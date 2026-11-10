@@ -1,3 +1,4 @@
+import type { BrowserClientHostedPageInventory } from '../../shared/browser/client-hosting/browser-client-host-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   executeBrowserHostPageReconciliation,
@@ -5,7 +6,6 @@ import {
 } from './browser-host-page-reconciliation-executor'
 import {
   planBrowserHostPageReconciliation,
-  type BrowserClientHostedPageInventory,
   type BrowserHostRuntimePageIntent
 } from './browser-host-page-reconciliation-plan'
 

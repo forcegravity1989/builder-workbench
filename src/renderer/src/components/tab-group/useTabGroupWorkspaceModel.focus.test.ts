@@ -92,7 +92,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   runtimeEnvironmentSupportsCapability: mocks.runtimeEnvironmentSupportsCapability
 }))
 
-vi.mock('../../store/slices/browser-webview-cleanup', () => ({
+vi.mock('../../store/slices/browser/cleanup/browser-webview-cleanup', () => ({
   destroyWorkspaceWebviews: mocks.destroyWorkspaceWebviews
 }))
 

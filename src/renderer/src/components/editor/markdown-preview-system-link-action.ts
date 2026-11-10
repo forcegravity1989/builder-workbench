@@ -1,7 +1,12 @@
+import {
+  getLocalPathOpenOwnerForRoute,
+  isLocalPathOpenBlocked,
+  showLocalPathOpenBlockedToast
+} from '@/lib/local-path-open-guard'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { isLocalPathOpenBlocked, showLocalPathOpenBlockedToast } from '@/lib/local-path-open-guard'
-import { openHttpLink } from '@/lib/http-link-routing'
+
+import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
 import { settingsForRuntimeOwner } from '@/runtime/runtime-rpc-client'
 import { useAppStore } from '@/store'
 import { absolutePathToFileUri, resolveMarkdownLinkTarget } from './markdown-internal-links'
@@ -59,8 +64,13 @@ export function handleMarkdownPreviewSystemLinkClick({
   }
   if (
     isLocalPathOpenBlocked(
-      settingsForRuntimeOwner(useAppStore.getState().settings, resolvedSourceRuntimeEnvironmentId),
-      { connectionId: sourceConnectionId }
+      getLocalPathOpenOwnerForRoute({
+        runtimeEnvironmentId: settingsForRuntimeOwner(
+          useAppStore.getState().settings,
+          resolvedSourceRuntimeEnvironmentId
+        )?.activeRuntimeEnvironmentId,
+        connectionId: sourceConnectionId
+      })
     )
   ) {
     // Why: the client OS cannot open server-local runtime or SSH paths.

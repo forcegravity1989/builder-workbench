@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveElectronProbeLaunch } from './electron-probe-display-launch'
+import { resolveElectronProbeLaunch } from './electron-fixtures/electron-probe-display-launch'
 
 const electronBinary = '/tmp/electron'
 const electronArgs = ['/tmp/main.cjs', '--user-data-dir=/tmp/profile']

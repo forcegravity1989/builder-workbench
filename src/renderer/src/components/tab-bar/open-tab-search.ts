@@ -16,7 +16,7 @@ import {
   searchBrowserPages,
   type BrowserPaletteSearchResult,
   type SearchableBrowserPage
-} from '@/lib/browser-palette-search'
+} from '@/lib/browser/palette/browser-palette-search'
 import {
   searchSimulatorTabs,
   type SearchableSimulatorTab,

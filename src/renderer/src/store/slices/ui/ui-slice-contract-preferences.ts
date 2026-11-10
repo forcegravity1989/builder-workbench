@@ -1,3 +1,4 @@
+import type { BrowserDevToolsDockLayout } from '../../../../../shared/browser-devtools-dock'
 import type { PersistedUIState } from '../../../../../shared/persisted-ui-state-types'
 import type {
   ActivityGroupBy,
@@ -81,6 +82,7 @@ export type UISlicePreferences = {
   setAgentsGroupBy: (v: ActivityGroupBy) => void
   collapsedGroups: Set<string>
   toggleCollapsedGroup: (key: string) => void
+  setCollapsedGroups: (keys: Set<string>) => void
   worktreeCardProperties: WorktreeCardProperty[]
   _worktreeCardModeDefaulted: boolean
   setWorktreeCardMode: (mode: WorktreeCardMode) => void
@@ -199,6 +201,8 @@ export type UISlicePersistence = {
   setBrowserDefaultSearchEngine: (engine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null) => void
   browserDefaultZoomLevel: number
   setBrowserDefaultZoomLevel: (level: number) => void
+  browserDevToolsDock: BrowserDevToolsDockLayout
+  setBrowserDevToolsDock: (layout: BrowserDevToolsDockLayout) => void
   browserKagiSessionLink: string | null
   setBrowserKagiSessionLink: (link: string | null) => void
 }

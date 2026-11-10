@@ -8,61 +8,6 @@ export const LEGACY_DEFAULT_SSH_RELAY_GRACE_PERIOD_SECONDS = 3 * 60 * 60
 export const DEFAULT_BOUNDED_SSH_RELAY_GRACE_PERIOD_SECONDS = 24 * 60 * 60
 export const DEFAULT_SSH_RELAY_GRACE_PERIOD_SECONDS = 0
 export const SSH_RELAY_CONFIGURE_GRACE_TIME_METHOD = 'relay.configureGraceTime'
-
-export type SshTarget = {
-  id: string
-  label: string
-  /** Internal owner for targets that Orca creates as implementation details.
-   *  Owned targets are hidden from normal SSH-host management surfaces. */
-  owner?: { type: 'on-demand-runtime'; runtimeId: string }
-  /** Host alias to resolve through OpenSSH config (ssh -G). */
-  configHost?: string
-  host: string
-  port: number
-  username: string
-  /** Path to private key file, if using key-based auth. */
-  identityFile?: string
-  /** SSH agent socket path from IdentityAgent, if configured. */
-  identityAgent?: string
-  /** Whether OpenSSH IdentitiesOnly should limit public-key auth attempts. */
-  identitiesOnly?: boolean
-  /** Whether the host's SSH config explicitly requests GSSAPIAuthentication
-   *  (Kerberos). ssh2 has no gssapi-with-mic support, so these targets try the
-   *  system OpenSSH transport first. */
-  gssapiAuthentication?: boolean
-  /** ProxyCommand from SSH config, if any. */
-  proxyCommand?: string
-  /** Jump host (ProxyJump), if any. */
-  jumpHost?: string
-  /** Where this target came from. `ssh-config` targets are kept in sync with
-   *  `~/.ssh/config` on import — their config-derived fields (host, port,
-   *  username, jump host, identity, proxy) are refreshed on each import.
-   *  `manual` targets are never overwritten by import. Legacy persisted targets
-   *  predate this field (undefined) and are adopted into config-sync on next
-   *  import. */
-  source?: 'ssh-config' | 'manual'
-  /** Grace period in seconds before relay shuts down after disconnect.
-   *  0 disables expiry. Default: 0 (until reset). Max: 604800 (7 days). */
-  relayGracePeriodSeconds?: number
-  /** Set to true after a successful connection that triggered a credential
-   *  prompt (passphrase or password). Persisted so startup reconnect can
-   *  partition targets into eager (no passphrase) vs deferred (passphrase)
-   *  without attempting a connection first. */
-  lastRequiredPassphrase?: boolean
-  /** Port forwards to auto-restore on connect/reconnect. Persisted so
-   *  forwards survive app restarts. */
-  portForwards?: SavedPortForward[]
-  /** Reuse a system OpenSSH connection across setup commands. Undefined means
-   *  enabled; false is an explicit per-target compatibility opt-out. */
-  systemSshConnectionReuse?: boolean
-  /** Durable registration incarnation. Advances on create / re-create / explicit
-   *  re-adopt only, so automations fenced on an old registration cannot run on a
-   *  later target that happens to reuse the id. Never advanced by connect state. */
-  generation?: number
-}
-
-/** Renderer-authored target fields; registration generations are allocated and owned by main. */
-export type SshTargetCreateInput = Omit<SshTarget, 'id' | 'generation'>
 export type SshTargetUpdateInput = Partial<SshTargetCreateInput>
 
 /** Public target identity and observed host metadata safe to mirror to a paired client. */
@@ -310,3 +255,127 @@ export type SshTerminateSessionsResult = {
   /** Leases whose remote shells were never reached because the relay was offline. */
   unverifiable: number
 }
+
+/** Who created a hidden target as an implementation detail, and so owns its lifecycle. */
+export type SshTargetOwner = { type: 'on-demand-runtime'; runtimeId: string }
+
+/** A saved forward that isn't open on this connection; `error` is why its last start failed. */
+export type UnrestoredPortForward = SavedPortForward & {
+  error?: string
+  /** It ran, then its process died, rather than never starting. */
+  stopped?: true
+}
+
+/** A project the server already held at the same host path: this desktop uses the server's now. */
+export type SshManagedServerLinkedProject = {
+  path: string
+  /** This desktop's automations on it, which stay behind with its tabs. */
+  automations: number
+}
+
+import type { OrcadSshProvisioningIntent } from './orcad-ssh-provisioning'
+
+/** pinned-node uses uploaded Node/prebuilt addons (D6 ladder/D5 design); opt-in legacy uses host Node/npm native deps. */
+export const SSH_REMOTE_RUNTIMES = ['legacy', 'pinned-node'] as const
+
+export type SshRemoteRuntime = (typeof SSH_REMOTE_RUNTIMES)[number]
+
+/** Where the design D6 fallback ladder landed; `legacy` is the opt-in host-npm path outside it. */
+export const SSH_REMOTE_RUNTIME_RUNGS = ['A', 'B', 'C', 'D', 'legacy'] as const
+
+export type SshRemoteRuntimeRung = (typeof SSH_REMOTE_RUNTIME_RUNGS)[number]
+
+/** Main-owned ladder cache; changes to glibc, pinned-runtime hash or Orca major invalidate it. */
+export type SshRemoteRuntimeResolution = {
+  rung: SshRemoteRuntimeRung
+  /** The classified refusal that stepped off Orca's pinned Node, when one did. */
+  pinnedRefusal?: string
+  /** Epoch ms the refusal was proved; a refusal the host can lose expires from it. */
+  refusedAt?: number
+  glibc: string | null
+  runtimeSha256: string
+  orcaMajor: number
+}
+
+export type SshTarget = {
+  id: string
+  label: string
+  /** Internal targets are hidden from normal host management. */
+  owner?: SshTargetOwner
+  /** Host alias to resolve through OpenSSH config (ssh -G). */
+  configHost?: string
+  host: string
+  port: number
+  username: string
+  /** Path to private key file, if using key-based auth. */
+  identityFile?: string
+  /** SSH agent socket path from IdentityAgent, if configured. */
+  identityAgent?: string
+  /** Whether OpenSSH IdentitiesOnly should limit public-key auth attempts. */
+  identitiesOnly?: boolean
+  /** ssh2 lacks gssapi-with-mic; configured Kerberos targets try system OpenSSH first. */
+  gssapiAuthentication?: boolean
+  /** ProxyCommand from SSH config, if any. */
+  proxyCommand?: string
+  /** Jump host (ProxyJump), if any. */
+  jumpHost?: string
+  /** ssh-config refreshes config-derived fields on import; manual is never overwritten.
+   * Legacy absent source is adopted only when the old import shape matches (ssh-target-source.ts). */
+  source?: 'ssh-config' | 'manual'
+  /** Grace period in seconds before relay shuts down after disconnect.
+   *  0 disables expiry. Default: 0 (until reset). Max: 604800 (7 days). */
+  relayGracePeriodSeconds?: number
+  /** Allow this host’s CLI to drive desktop browser tabs in its workspaces and relay-era terminal orchestration.
+   * Enabled unless false; use isRemoteCliControlAllowed. */
+  allowRemoteCliControl?: boolean
+  /** Retired: written by earlier builds and ignored now. Kept so a downgrade still finds its stamp. */
+  allowRemoteCliControlConsent?: 'desktop-browser-bridge'
+  /** Undefined means on; false leaves this host disconnected at launch until the user connects it. */
+  reconnectOnLaunch?: boolean
+  /** Persist prompted-auth history so startup defers credential-requiring hosts without attempting a connection. */
+  lastRequiredPassphrase?: boolean
+  portForwards?: SavedPortForward[]
+  /** Reuse a system OpenSSH connection across setup commands. Undefined means
+   *  enabled; false is an explicit per-target compatibility opt-out. */
+  systemSshConnectionReuse?: boolean
+  /** Windows only: hold one loopback tunnel through a ProxyCommand/ProxyJump and run later
+   *  commands over it. Opt-in; undefined means off. */
+  systemSshProxyConnectionReuse?: boolean
+  /** Relay runtime for this host; undefined means pinned-node. */
+  remoteRuntime?: SshRemoteRuntime
+  /** Main-owned ladder cache; renderer updates never set it. */
+  remoteRuntimeResolution?: SshRemoteRuntimeResolution
+  /** Main-owned registration incarnation fences automation reuse after create/re-create/re-adopt; connect state never advances it. */
+  generation?: number
+  /** Main-owned provisioning intent; never fall back to a relay while it exists. */
+  orcadProvisioning?: OrcadSshProvisioningIntent
+  /** Main-owned: managed orcad can't run on this host; retried once this app version changes. */
+  managedServerUnavailable?: { reason: string; appVersion: string }
+  /** Retired with the move offer (hosts convert on connect); kept so a downgraded build doesn't re-offer. */
+  managedServerMoveOffered?: { appVersion: string }
+  /** Confirmed “Move anyway” leaves uncarried state in the desktop profile; clear after the move. */
+  managedServerLeaveBehind?: { confirmedAt: string }
+  /** Main-owned: updating the managed server to this app version failed; retried once it changes. */
+  managedServerUpdateFailure?: { reason: string; appVersion: string }
+  /** Main-owned: the user stopped and removed this host's server; only an explicit Connect deploys again. */
+  managedServerRemoved?: { removedAt: string }
+  orcadFence?: {
+    environmentId: string
+    /** The retained source holds projects no move took: the host is unserved until moved again. */
+    sourceChangedAt?: string
+  }
+}
+
+/** Renderer-authored target fields; registration generations are allocated and owned by main. */
+export type SshTargetCreateInput = Omit<
+  SshTarget,
+  | 'id'
+  | 'generation'
+  | 'orcadProvisioning'
+  | 'orcadFence'
+  | 'managedServerUnavailable'
+  | 'managedServerMoveOffered'
+  | 'managedServerLeaveBehind'
+  | 'managedServerUpdateFailure'
+  | 'managedServerRemoved'
+>

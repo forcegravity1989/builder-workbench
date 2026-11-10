@@ -1,7 +1,8 @@
 import type { GlobalSettings } from '../../../shared/global-settings-types'
 import { parseExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 
-export type RuntimeClientTarget = { kind: 'local' } | { kind: 'environment'; environmentId: string }
+import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
+export type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
 
 export function getActiveRuntimeTarget(
   settings: Pick<GlobalSettings, 'activeRuntimeEnvironmentId'> | null | undefined

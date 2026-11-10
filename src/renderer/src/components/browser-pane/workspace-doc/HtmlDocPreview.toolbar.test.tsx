@@ -10,6 +10,7 @@ import type * as WebviewRegistryModule from '../host-guest/webview-registry'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import { acquireWebviewsDragPassthrough } from '@/components/browser-pane/host-guest/webview-drag-passthrough'
 
 const GRANT_ID = 'a'.repeat(32)
@@ -36,7 +37,18 @@ vi.mock('@/lib/doc-preview-grants', () => ({
   ensureDocPreviewGrant: () =>
     Promise.resolve({
       grantId: GRANT_ID,
-      url: `orca-preview://${GRANT_ID}/${ENTRY_RELATIVE_PATH}`
+      url: `orca-preview://${GRANT_ID}/${ENTRY_RELATIVE_PATH}`,
+      location: {
+        owner: {
+          kind: 'runtime',
+          environmentId: 'env-1',
+          worktreeSelector: 'id:wt-1',
+          worktreeRoot: '/repo'
+        },
+        requestBase: '/repo',
+        root: '/repo',
+        entryRelativePath: ENTRY_RELATIVE_PATH
+      }
     }),
   releaseDocPreviewGrant: () => undefined
 }))
@@ -68,7 +80,8 @@ vi.mock('@/lib/connection-context', () => ({
 }))
 
 vi.mock('@/lib/connection-owner-resolution', () => ({
-  getConnectionIdForFileFromState: () => 'ssh-1'
+  getConnectionIdForFileFromState: () => 'ssh-1',
+  getConnectionIdFromState: () => 'ssh-1'
 }))
 
 vi.mock('@/components/terminal-pane/terminal-remote-file-download-open', () => ({
@@ -81,8 +94,11 @@ vi.mock('@/components/terminal-pane/terminal-remote-file-download-open', () => (
 const storeState = {
   getKnownWorktreeById: () => ({ path: '/repo' }),
   persistedUIReady: true,
+  setContextualToursBlockingSurfaceVisible: vi.fn(),
   settings: { activeRuntimeEnvironmentId: 'env-1' },
   keybindings: {},
+  browserPagesByWorkspace: {},
+  unifiedTabsByWorktree: {},
   browserAnnotationsByPageId: {} as Record<string, unknown[]>,
   activeGroupIdByWorktree: {} as Record<string, string>,
   agentSendPopoverTargetMode: null,
@@ -90,6 +106,8 @@ const storeState = {
   closeAgentSendPopoverTargetMode: () => undefined,
   addBrowserPageAnnotation: () => undefined,
   deleteBrowserPageAnnotation: () => undefined,
+  updateBrowserPageAnnotation: () => undefined,
+  removeDeliveredBrowserPageAnnotations: () => undefined,
   clearBrowserPageAnnotations: () => undefined,
   recordFeatureInteraction: () => undefined,
   openFile: (file: unknown) => {
@@ -110,7 +128,7 @@ const storeState = {
   }
 }
 
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: Object.assign(
     (selector?: (state: typeof storeState) => unknown) =>
       selector ? selector(storeState) : storeState,
@@ -135,14 +153,17 @@ async function renderPreview(
   await act(async () => {
     root.render(
       <TooltipProvider>
-        <HtmlDocPreview
-          isActive={options.isActive ?? true}
-          previewId="preview-1"
-          filePath={ABSOLUTE_PATH}
-          relativePath={ENTRY_RELATIVE_PATH}
-          worktreeId="wt-1"
-          holdsGuestFocus={options.holdsGuestFocus ?? false}
-        />
+        <ConfirmationDialogProvider>
+          <HtmlDocPreview
+            browserWorkspaceId="browser-workspace-1"
+            isActive={options.isActive ?? true}
+            previewId="preview-1"
+            filePath={ABSOLUTE_PATH}
+            relativePath={ENTRY_RELATIVE_PATH}
+            worktreeId="wt-1"
+            holdsGuestFocus={options.holdsGuestFocus ?? false}
+          />
+        </ConfirmationDialogProvider>
       </TooltipProvider>
     )
   })
@@ -203,6 +224,7 @@ describe('HtmlDocPreview browser chrome', () => {
         }
       },
       browser: {
+        onGuestEscape: () => () => undefined,
         unregisterGuest: () => Promise.resolve(),
         setGrabMode: (args: { browserPageId: string; enabled: boolean }) => {
           grabCalls.push(args)
@@ -231,7 +253,8 @@ describe('HtmlDocPreview browser chrome', () => {
     const { hasLiveBrowserGuest, webviewRegistry } = await import('../host-guest/webview-registry')
     const { worktreeHoldsLiveBrowserGuests, selectBrowserGuestEvictionWorktreeIds } =
       await import('../host-guest/browser-guest-worktree-retention')
-    const { destroyWorktreeBrowserGuests } = await import('@/store/slices/browser-webview-cleanup')
+    const { destroyWorktreeBrowserGuests } =
+      await import('@/store/slices/browser/cleanup/browser-webview-cleanup')
     const guest = await renderPreview(container, root)
     expect(hasLiveBrowserGuest('preview-1')).toBe(true)
     expect(await renderPreview(container, root, { isActive: false })).toBe(guest)

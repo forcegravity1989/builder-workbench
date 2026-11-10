@@ -8,7 +8,7 @@ import {
   hasBoundedCommentBodyText
 } from '@/lib/comment-body-submit-state'
 
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { useAppStore } from '@/store'
 import {
   jiraAddIssueComment,
@@ -261,7 +261,7 @@ export default function JiraIssueWorkspace({
         throw new Error(result.error)
       }
       const comment: JiraComment = {
-        id: result.id || createBrowserUuid(),
+        id: result.id || createNonSecureContextUuid(),
         body: bodyState.body,
         createdAt: new Date().toISOString(),
         user: { accountId: 'local', displayName: 'You' }

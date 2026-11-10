@@ -1,7 +1,7 @@
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
 import { OrcaRuntimeWithTransitionGraphReloadToTerminalState } from './orca-runtime-transition-graph-reload-to-terminal-state'
 import type { ExecutionHostId } from '../../shared/execution-host'
-import type { BrowserNetworkExecutionHost } from '../../shared/browser-client-host-protocol'
+import type { BrowserNetworkExecutionHost } from '../../shared/browser/client-hosting/browser-network-execution-host'
 import {
   LOCAL_EXECUTION_HOST_ID,
   getWorktreeExecutionHostId,

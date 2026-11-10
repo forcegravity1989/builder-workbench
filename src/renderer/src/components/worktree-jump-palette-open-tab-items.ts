@@ -1,5 +1,5 @@
 import { comparePaletteRankedItems } from '@/lib/cmd-j-section-leadership'
-import type { BrowserPaletteSearchResult } from '@/lib/browser-palette-search'
+import type { BrowserPaletteSearchResult } from '@/lib/browser/palette/browser-palette-search'
 import type { SimulatorPaletteSearchResult } from '@/lib/simulator-palette-search'
 import type { WorkspaceTabPaletteSearchResult } from '@/lib/workspace-tab-palette-search'
 import type {

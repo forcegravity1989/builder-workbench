@@ -66,7 +66,9 @@ export function createTabsSecondaryActions(
         // Why: an unchanged ratio must not mint fresh root state — every store
         // subscriber wakes on the new reference (STA-3328).
         let targetNode: TabGroupLayoutNode | undefined = currentLayout
-        for (const segment of nodePath.length > 0 ? nodePath.split('.') : []) {
+        for (const segment of nodePath.length > 0
+          ? nodePath.split('../../../../../main/browser/extensions/api/tabs')
+          : []) {
           targetNode =
             targetNode &&
             targetNode.type === 'split' &&
@@ -83,7 +85,9 @@ export function createTabsSecondaryActions(
             // Why: split ratios belong to the tab-group model (not transient UI), so persist them for restores and multi-step group ops.
             [worktreeId]: updateSplitRatio(
               currentLayout,
-              nodePath.length > 0 ? nodePath.split('.') : [],
+              nodePath.length > 0
+                ? nodePath.split('../../../../../main/browser/extensions/api/tabs')
+                : [],
               ratio
             )
           }

@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import {
   addOrUpdateEnvironmentFromPairingCode,
   resolveEnvironment,
@@ -5,10 +6,7 @@ import {
 } from '../../shared/runtime-environment-store'
 import { RuntimeEnvironmentStoreError } from '../../shared/runtime-environment-store-records'
 import { findEnvironmentWithHostKey } from '../../shared/runtime-environment-host-key-match'
-import {
-  parseHostAccessLink,
-  type ParsedHostAccessLink
-} from '../../shared/remote-pairing-address'
+import { parseHostAccessLink, type ParsedHostAccessLink } from '../../shared/remote-pairing-address'
 import {
   verifyRemotePairingRuntimeStatus,
   type RemotePairingFailure,
@@ -57,7 +55,7 @@ async function verifyPairingCode(
   }
   try {
     const response = await sendRemoteRuntimeRequest<RuntimeStatus>(
-      parsed.value.pairing,
+      pairedRuntimeConnectionFromOffer(parsed.value.pairing),
       'status.get',
       undefined,
       15_000,

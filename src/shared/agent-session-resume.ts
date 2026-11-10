@@ -308,3 +308,8 @@ export function getAgentResumeArgv(
       return providerSession.key === 'session_id' ? ['kimi', '--session', id] : null
   }
 }
+
+/** A record of a slept pane (worktree sleep, or a legacy record); 'quit'/'live' resume a running agent. */
+export function isPaneSleepRecord(record: Pick<SleepingAgentSessionRecord, 'origin'>): boolean {
+  return record.origin === undefined || record.origin === 'worktree-sleep'
+}

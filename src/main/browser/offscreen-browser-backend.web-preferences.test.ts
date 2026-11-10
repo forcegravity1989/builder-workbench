@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const OFFSCREEN_BACKEND_SOURCE = resolve(__dirname, 'offscreen-browser-backend.ts')
+const OFFSCREEN_BACKEND_SOURCE = resolve(__dirname, 'backends/offscreen-browser-backend.ts')
 
 function sourceBetween(source: string, start: string, end: string): string {
   const startIndex = source.indexOf(start)
@@ -20,7 +20,7 @@ describe('OffscreenBrowserBackend web preferences', () => {
     const webPreferencesBlock = sourceBetween(source, 'webPreferences: {', 'partition,')
 
     expect(source).toContain(
-      "import { ORCA_BROWSER_GUEST_WEB_PREFERENCES } from '../../shared/browser-guest-web-preferences'"
+      "import { ORCA_BROWSER_GUEST_WEB_PREFERENCES } from '../../../shared/browser-guest-web-preferences'"
     )
     expect(webPreferencesBlock).toContain('...ORCA_BROWSER_GUEST_WEB_PREFERENCES')
   })

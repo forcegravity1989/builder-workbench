@@ -5,10 +5,13 @@ import {
 } from '../../../../../shared/browser-url'
 import type { BrowserLoadError } from '../../../../../shared/browser-workspace-types'
 import { ORCA_BROWSER_BLANK_URL } from '../../../../../shared/constants'
+import { isBrowserLoadBlockedByExtension } from '../../../../../shared/browser-load-failure'
 import { translate } from '@/i18n/i18n'
 import { BROWSER_GUEST_RECOVERY_ERROR_CODE } from './browser-page-guest-recovery'
+import { releaseBrowserPageMount } from './browser-page-mount-admission'
 import { rememberLiveBrowserUrl } from '../describe-page/live-browser-url-registry'
 import { resolveBrowserWebviewLoadFailure } from '../navigate/browser-webview-load-failure'
+import { resolveActiveBrowserLoadFailure } from '../navigate/browser-load-failure-for-url'
 import {
   getBrowserDisplayTitle,
   isChromiumErrorPage,
@@ -30,7 +33,6 @@ export type BrowserPageWebviewLoadingHandlersArgs = {
   addressBarInputRef: RefObject<HTMLInputElement | null>
   activeLoadFailureRef: MutableRefObject<BrowserLoadError | null>
   lastKnownWebviewUrlRef: MutableRefObject<string | null>
-  trackNextLoadingEventRef: MutableRefObject<boolean>
   keepAddressBarFocusRef: MutableRefObject<boolean>
   recoveryNavigationValidationRef: MutableRefObject<BrowserPageRecoveryNavigationValidation | null>
   onUpdatePageStateRef: MutableRefObject<(tabId: string, updates: BrowserTabPageState) => void>
@@ -40,7 +42,6 @@ export type BrowserPageWebviewLoadingHandlersArgs = {
 }
 
 export type BrowserPageWebviewLoadingHandlers = {
-  handleDidStartLoading: () => void
   handleDidStopLoading: () => void
   handleFailLoad: (event: BrowserPageFailLoadEvent) => void
 }
@@ -54,7 +55,6 @@ export function createBrowserPageWebviewLoadingHandlers({
   addressBarInputRef,
   activeLoadFailureRef,
   lastKnownWebviewUrlRef,
-  trackNextLoadingEventRef,
   keepAddressBarFocusRef,
   recoveryNavigationValidationRef,
   onUpdatePageStateRef,
@@ -62,42 +62,32 @@ export function createBrowserPageWebviewLoadingHandlers({
   setAddressBarValue,
   focusAddressBarNow
 }: BrowserPageWebviewLoadingHandlersArgs): BrowserPageWebviewLoadingHandlers {
-  const handleDidStartLoading = (): void => {
-    if (!trackNextLoadingEventRef.current) {
-      return
-    }
-    // Why the favicon isn't cleared here: it is dropped on the cross-origin did-start-navigation
-    // instead, because Chromium won't re-announce an unchanged icon for a same-origin load.
-    onUpdatePageStateRef.current(browserTabId, {
-      loading: true
-    })
-  }
-
   const handleDidStopLoading = (): void => {
+    // Admission starts background guests only; after any first load settlement, normal paint-retention rules decide layout.
+    releaseBrowserPageMount(browserTabId)
     const currentUrl = webview.getURL() || webview.src || 'about:blank'
     const browserModelUrl = redactKagiSessionToken(currentUrl)
     const activeLoadFailure = activeLoadFailureRef.current
     if (isChromiumErrorPage(currentUrl)) {
-      trackNextLoadingEventRef.current = false
-      const synthesizedFailure = {
-        code: -1,
-        description: translate(
-          'auto.components.browser.pane.BrowserPane.e48569ac6d',
-          'This site could not be reached.'
-        ),
-        validatedUrl: redactKagiSessionToken(
-          browserTabUrlRef.current || addressBarValueRef.current || 'about:blank'
-        )
-      }
-      activeLoadFailureRef.current = synthesizedFailure
-      onUpdatePageStateRef.current(browserTabId, {
-        loading: false,
-        loadError: synthesizedFailure
-      })
+      const attemptedUrl = redactKagiSessionToken(
+        browserTabUrlRef.current || addressBarValueRef.current || 'about:blank'
+      )
+      // Retain reported failure codes and retry semantics; use a generic message only when none arrived.
+      const failure =
+        resolveActiveBrowserLoadFailure(activeLoadFailure, attemptedUrl) ??
+        ({
+          code: -1,
+          description: translate(
+            'auto.components.browser.pane.BrowserPane.e48569ac6d',
+            'This site could not be reached.'
+          ),
+          validatedUrl: attemptedUrl
+        } satisfies BrowserLoadError)
+      activeLoadFailureRef.current = failure
+      onUpdatePageStateRef.current(browserTabId, { loading: false, loadError: failure })
       return
     }
     if (activeLoadFailure?.code === BROWSER_GUEST_RECOVERY_ERROR_CODE) {
-      trackNextLoadingEventRef.current = false
       onUpdatePageStateRef.current(browserTabId, {
         loading: false,
         title: getBrowserDisplayTitle(webview.getTitle(), browserModelUrl),
@@ -112,16 +102,12 @@ export function createBrowserPageWebviewLoadingHandlers({
         normalizeBrowserNavigationUrl(activeLoadFailure.validatedUrl) ??
         activeLoadFailure.validatedUrl
       const normalizedCurrentUrl = normalizeBrowserNavigationUrl(browserModelUrl) ?? browserModelUrl
+      // Why: a load an extension blocked never commits, so the guest still shows the old URL.
       if (
         normalizedAttemptedUrl === normalizedCurrentUrl ||
-        normalizedCurrentUrl === ORCA_BROWSER_BLANK_URL
+        isBrowserLoadBlockedByExtension(activeLoadFailure)
       ) {
-        trackNextLoadingEventRef.current = false
         // Why: some failures still emit did-stop-loading on the original URL; keep loadError so the known-failed load isn't cleared to a blank surface.
-        // Why blank also keeps: a failed navigation never commits, so the guest is often still
-        // sitting on its initial blank document (address-bar loads don't touch webview.src).
-        // Adopting that URL here would wipe the attempted URL and the certificate-challenge
-        // overlay from the store — the failure must survive until the next real navigation.
         onUpdatePageStateRef.current(browserTabId, {
           loading: false,
           title: getBrowserDisplayTitle(webview.getTitle(), browserModelUrl),
@@ -133,7 +119,6 @@ export function createBrowserPageWebviewLoadingHandlers({
         return
       }
     }
-    trackNextLoadingEventRef.current = false
     activeLoadFailureRef.current = null
     lastKnownWebviewUrlRef.current =
       normalizeBrowserNavigationUrl(browserModelUrl) ?? browserModelUrl
@@ -163,7 +148,6 @@ export function createBrowserPageWebviewLoadingHandlers({
     if (!loadError) {
       return
     }
-    trackNextLoadingEventRef.current = false
     const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     if (pendingRecoveryNavigation?.started) {
       recoveryNavigationValidationRef.current = null
@@ -176,7 +160,6 @@ export function createBrowserPageWebviewLoadingHandlers({
   }
 
   return {
-    handleDidStartLoading,
     handleDidStopLoading,
     handleFailLoad
   }

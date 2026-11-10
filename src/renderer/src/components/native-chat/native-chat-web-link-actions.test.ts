@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LinkActionRequest } from '@/components/link-actions/link-action-request'
-import type * as HttpLinkDestinations from '@/lib/http-link-destinations'
-import type { HttpLinkActionDestinations } from '@/lib/http-link-destinations'
+import type * as HttpLinkDestinations from '@/lib/browser/navigation/http-link-destinations'
+import type { HttpLinkActionDestinations } from '@/lib/browser/navigation/http-link-destinations'
 import { handleNativeChatWebLink } from './native-chat-web-link-actions'
 
 const mocks = vi.hoisted(() => ({ openRoutedHttpLink: vi.fn() }))
 
-vi.mock('@/lib/http-link-destinations', async (importOriginal) => ({
+vi.mock('@/lib/browser/navigation/http-link-destinations', async (importOriginal) => ({
   ...(await importOriginal<typeof HttpLinkDestinations>()),
   openRoutedHttpLink: mocks.openRoutedHttpLink
 }))

@@ -1,5 +1,5 @@
-import { canSourceOwnerOpenInOrca } from '@/lib/http-link-destinations'
-import type { HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import { canSourceOwnerOpenInOrca } from '@/lib/browser/navigation/http-link-destinations'
+import type { HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 
 export function isMacPlatform(): boolean {
   return navigator.userAgent.includes('Mac')

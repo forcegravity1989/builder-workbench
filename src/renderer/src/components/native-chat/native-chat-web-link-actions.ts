@@ -9,8 +9,8 @@ import {
   openRoutedHttpLink,
   type HttpLinkActionDestinations,
   type HttpLinkDestination
-} from '@/lib/http-link-destinations'
-import type { HttpLinkSourceOwner } from '@/lib/http-link-routing'
+} from '@/lib/browser/navigation/http-link-destinations'
+import type { HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 
 export type NativeChatWebLinkDeps = {
   worktreeId: string

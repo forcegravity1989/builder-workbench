@@ -9,7 +9,7 @@ import { WebSocketServer } from 'ws'
 import {
   LOCAL_HTTPS_TEST_CERTIFICATE,
   LOCAL_HTTPS_TEST_PRIVATE_KEY
-} from './browser-local-https-test-certificate'
+} from './electron-fixtures/browser-local-https-test-certificate'
 import { runBrowserRouteTcpEgressElectron } from './browser-route-tcp-egress-electron-process'
 import { cleanupBrowserRouteTcpEgressFixture } from './browser-route-tcp-egress-fixture-cleanup'
 import { createBrowserRouteTcpEgressSocksRecorder } from './browser-route-tcp-egress-socks-recorder'

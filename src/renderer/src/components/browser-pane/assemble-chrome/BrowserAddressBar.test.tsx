@@ -5,14 +5,17 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserHistoryEntry } from '../../../../../shared/browser-workspace-types'
 import BrowserAddressBar from './BrowserAddressBar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 const mocks = vi.hoisted(() => ({
   browserUrlHistory: [] as BrowserHistoryEntry[],
+  workspaceDocHistory: [],
+  browserPagesByWorkspace: {},
   browserDefaultSearchEngine: null as string | null,
   browserKagiSessionLink: null as string | null
 }))
 
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: (selector: (state: typeof mocks) => unknown) => selector(mocks)
 }))
 
@@ -65,8 +68,9 @@ function AddressBarHarness({
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   return (
-    <>
+    <TooltipProvider>
       <BrowserAddressBar
+        pageId="page-1"
         value={value}
         onChange={setValue}
         onSubmit={onSubmit}
@@ -74,7 +78,7 @@ function AddressBarHarness({
         inputRef={inputRef}
       />
       <span data-current-address-value="true">{value}</span>
-    </>
+    </TooltipProvider>
   )
 }
 
@@ -177,7 +181,7 @@ describe('BrowserAddressBar autocomplete preview', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('dismisses suggestions when Escape is pressed outside React input handling', async () => {
+  it('restores the typed query when Escape is pressed in the address bar', async () => {
     const onNavigate = vi.fn()
     const onSubmit = vi.fn()
 
@@ -202,7 +206,7 @@ describe('BrowserAddressBar autocomplete preview', () => {
     )
 
     await act(async () => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     })
 
     expect(container.querySelector('[data-current-address-value="true"]')?.textContent).toBe(

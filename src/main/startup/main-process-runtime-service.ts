@@ -1,10 +1,11 @@
+import { browserSessionRegistry } from '../browser/sessions/profiles/browser-session-registry'
 import { installChildSessionSearchService } from '../ai-vault-search/session-search-enablement'
 import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data-path'
 import { app } from 'electron'
 import { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { getLocalPtyProvider, getSshPtyProvider, clearProviderPtyState } from '../ipc/pty'
 import { agentHookServer } from '../agent-hooks/server'
-import { browserManager } from '../browser/browser-manager'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
 import { loadAgentSessionClaimSigner } from '../runtime/agent-session-claim-identity'
 import { getProfileUserDataPath } from '../orca-profiles/profile-storage-paths'
 import { prepareCodexAiVaultSessionResume } from '../codex/codex-ai-vault-session-resume'
@@ -149,6 +150,7 @@ export function initializeMainProcessRuntime(): OrcaRuntimeService {
   browserManager.setBrowserGuestStateChangedListener((worktreeId) => {
     runtime.notifyMobileSessionTabsChanged(worktreeId)
   })
+  browserSessionRegistry.onProfilesChanged = () => runtime.notifyBrowserProfilesChanged()
   return runtime
 }
 

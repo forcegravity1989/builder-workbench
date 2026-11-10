@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from './remote-runtime/pairing/paired-runtime-connection'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocketClient, { WebSocketServer, type WebSocket } from 'ws'
@@ -42,10 +43,16 @@ describe('subscribeRemoteRuntimeRequest', () => {
     const server = await createClosingServer(1013, 'Maximum connections reached')
 
     await expect(
-      subscribeRemoteRuntimeRequest(server.pairing, 'terminal.subscribe', {}, 1000, {
-        onResponse: vi.fn(),
-        onError: vi.fn()
-      })
+      subscribeRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(server.pairing),
+        'terminal.subscribe',
+        {},
+        1000,
+        {
+          onResponse: vi.fn(),
+          onError: vi.fn()
+        }
+      )
     ).rejects.toThrow(
       'Remote Orca runtime closed the connection (1013: Maximum connections reached).'
     )
@@ -57,7 +64,7 @@ describe('subscribeRemoteRuntimeRequest', () => {
     const onError = vi.fn()
 
     const subscription = await subscribeRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'terminal.subscribe',
       { terminal: 't1' },
       1000,
@@ -89,7 +96,7 @@ describe('subscribeRemoteRuntimeRequest', () => {
     const onResponse = vi.fn()
     const onError = vi.fn()
     const subscription = await subscribeRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'network.browserTunnel',
       {},
       1000,
@@ -130,7 +137,7 @@ describe('subscribeRemoteRuntimeRequest', () => {
     const onResponse = vi.fn()
     const onClose = vi.fn()
     const subscription = await subscribeRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'network.browserTunnel',
       {},
       1000,
@@ -161,7 +168,7 @@ describe('subscribeRemoteRuntimeRequest', () => {
     const releaseSocket = vi.fn()
     const onError = vi.fn()
     const subscription = await subscribeRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'network.browserTunnel',
       {},
       1000,
@@ -194,7 +201,7 @@ describe('subscribeRemoteRuntimeRequest', () => {
       const onClose = vi.fn()
 
       const subscription = await subscribeRemoteRuntimeRequest(
-        server.pairing,
+        pairedRuntimeConnectionFromOffer(server.pairing),
         'terminal.subscribe',
         { terminal: 't1' },
         1000,
@@ -229,7 +236,7 @@ describe('subscribeRemoteRuntimeRequest', () => {
     const onClose = vi.fn()
 
     const subscription = await subscribeRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'terminal.multiplex',
       {},
       1000,
@@ -258,7 +265,7 @@ describe('subscribeRemoteRuntimeRequest', () => {
       const onClose = vi.fn()
 
       const subscription = await subscribeRemoteRuntimeRequest(
-        server.pairing,
+        pairedRuntimeConnectionFromOffer(server.pairing),
         'terminal.subscribe',
         { terminal: 't1' },
         1000,
@@ -296,7 +303,7 @@ describe('sendRemoteRuntimeRequest', () => {
     })
 
     await sendRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'session.tabs.list',
       { worktree: 'id:worktree-a' },
       1000
@@ -316,7 +323,7 @@ describe('sendRemoteRuntimeRequest', () => {
     })
 
     await sendRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'session.tabs.list',
       { worktree: 'id:worktree-a' },
       1000,
@@ -337,7 +344,12 @@ describe('sendRemoteRuntimeRequest', () => {
     'rejects invalid timer delay %s before reading pairing data',
     async (timeoutMs) => {
       await expect(
-        sendRemoteRuntimeRequest({} as PairingOffer, 'status.get', {}, timeoutMs)
+        sendRemoteRuntimeRequest(
+          pairedRuntimeConnectionFromOffer({} as PairingOffer),
+          'status.get',
+          {},
+          timeoutMs
+        )
       ).rejects.toMatchObject({ code: 'invalid_argument' })
     }
   )
@@ -345,7 +357,14 @@ describe('sendRemoteRuntimeRequest', () => {
   it('includes WebSocket close details when one-shot admission is rejected', async () => {
     const server = await createClosingServer(1013, 'Maximum connections reached')
 
-    await expect(sendRemoteRuntimeRequest(server.pairing, 'status.get', {}, 1000)).rejects.toThrow(
+    await expect(
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(server.pairing),
+        'status.get',
+        {},
+        1000
+      )
+    ).rejects.toThrow(
       'Remote Orca runtime closed the connection (1013: Maximum connections reached).'
     )
   })
@@ -354,7 +373,12 @@ describe('sendRemoteRuntimeRequest', () => {
     const server = await createInvalidHandshakeServer()
 
     await expect(
-      sendRemoteRuntimeRequest(server.pairing, 'status.get', {}, 1000)
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(server.pairing),
+        'status.get',
+        {},
+        1000
+      )
     ).rejects.toMatchObject({
       code: 'invalid_runtime_response',
       pairingStage: 'host-identity'
@@ -365,7 +389,12 @@ describe('sendRemoteRuntimeRequest', () => {
     const server = await createOneShotServer({ sendUndecryptableResponse: true })
 
     await expect(
-      sendRemoteRuntimeRequest(server.pairing, 'status.get', {}, 1000)
+      sendRemoteRuntimeRequest(
+        pairedRuntimeConnectionFromOffer(server.pairing),
+        'status.get',
+        {},
+        1000
+      )
     ).rejects.toMatchObject({
       code: 'invalid_runtime_response',
       pairingStage: 'runtime'
@@ -376,7 +405,7 @@ describe('sendRemoteRuntimeRequest', () => {
     const server = await createOneShotServer()
 
     const response = await sendRemoteRuntimeRequest<{ satisfied: boolean }>(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'terminal.wait',
       { terminal: 't1', for: 'tui-idle', timeoutMs: 550 },
       300
@@ -398,7 +427,7 @@ describe('sendRemoteRuntimeRequest', () => {
     const controller = new AbortController()
     try {
       const request = sendRemoteRuntimeRequest(
-        server.pairing,
+        pairedRuntimeConnectionFromOffer(server.pairing),
         'skills.install',
         {},
         60_000,
@@ -432,7 +461,7 @@ describe('sendRemoteRuntimeRequest', () => {
     })
 
     const response = await sendRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'computer.getAppState',
       { app: 'Gmail' },
       1000
@@ -458,7 +487,7 @@ describe('sendRemoteRuntimeRequest', () => {
     })
 
     await sendRemoteRuntimeRequest(
-      server.pairing,
+      pairedRuntimeConnectionFromOffer(server.pairing),
       'orchestration.federationControl',
       { dispatch: 'ctx_1' },
       1000,
@@ -486,7 +515,12 @@ describe('sendRemoteRuntimeRequest', () => {
       }
     })
 
-    await sendRemoteRuntimeRequest(server.pairing, 'status.get', undefined, 1000)
+    await sendRemoteRuntimeRequest(
+      pairedRuntimeConnectionFromOffer(server.pairing),
+      'status.get',
+      undefined,
+      1000
+    )
 
     expect(receivedRequest).toMatchObject({
       deviceToken: 'device-token',
@@ -504,7 +538,7 @@ describe('sendRemoteRuntimeRequest', () => {
       const server = await createOneShotServer()
 
       await sendRemoteRuntimeRequest<{ satisfied: boolean }>(
-        server.pairing,
+        pairedRuntimeConnectionFromOffer(server.pairing),
         'terminal.wait',
         { terminal: 't1', for: 'tui-idle', timeoutMs: 550 },
         300

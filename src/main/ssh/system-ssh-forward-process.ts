@@ -262,3 +262,32 @@ function probeLocalForward(localPort: number): Promise<void> {
     socket.once('timeout', onTimeout)
   })
 }
+
+import { buildForwardProcessSshArgs } from './system-ssh-args'
+
+export function buildSystemSshPortForwardArgs(
+  target: SshTarget,
+  localPort: number,
+  remoteHost: string,
+  remotePort: number,
+  options?: SystemSshBuildArgsOptions
+): string[] {
+  const args = buildForwardProcessSshArgs(target, options)
+  const destinationIndex = args.lastIndexOf('--')
+  // Ignore collisions with configured forwards already held by the main login; ClearAllForwardings would drop our -L too. Probe ours instead.
+  const forwardArgs = [
+    '-N',
+    '-o',
+    'ExitOnForwardFailure=no',
+    '-L',
+    `127.0.0.1:${localPort}:${remoteHost}:${remotePort}`
+  ]
+  if (destinationIndex === -1) {
+    args.unshift(...forwardArgs)
+  } else {
+    // Why: OpenSSH parses options only before `--`; after it, args are the
+    // destination and optional remote command.
+    args.splice(destinationIndex, 0, ...forwardArgs)
+  }
+  return args
+}

@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import { isRecord, type IpynbCellKind } from './ipynb-parse'
 
 export type IpynbRunResult = {
@@ -103,7 +103,7 @@ export function insertIpynbCell(
   const cells = root.cells as unknown[]
   const nextCell: Record<string, unknown> = {
     cell_type: kind,
-    id: createBrowserUuid(),
+    id: createNonSecureContextUuid(),
     metadata: {},
     source: []
   }
@@ -122,7 +122,7 @@ export function deleteIpynbCell(content: string, index: number): string {
   if (cells.length <= 1) {
     cells.splice(0, cells.length, {
       cell_type: 'code',
-      id: createBrowserUuid(),
+      id: createNonSecureContextUuid(),
       metadata: {},
       execution_count: null,
       outputs: [],

@@ -5,10 +5,12 @@ import { createBrowserPageWebviewGuestSession } from './browser-page-webview-gue
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(async () => {}),
   registeredIds: new Map<string, number>(),
+  webviews: new Map<string, Electron.WebviewTag>(),
   isRegistered: vi.fn(async () => true)
 }))
 vi.mock('./webview-registry', () => ({
   registeredWebContentsIds: mocks.registeredIds,
+  webviewRegistry: mocks.webviews,
   replacePersistentWebview: mocks.replace
 }))
 vi.mock('../describe-page/browser-page-load-error', () => ({ browserPageExists: () => true }))
@@ -22,6 +24,7 @@ function createPage(id: string) {
     return 1
   })
   document.body.appendChild(webview)
+  mocks.webviews.set(id, webview)
   const paintable = { current: false }
   const setGeneration = vi.fn()
   const ref = <T>(current: T) => ({ current })
@@ -39,11 +42,9 @@ function createPage(id: string) {
     activeLoadFailureRef: ref(null),
     recoveryNavigationValidationRef: ref(null),
     keepAddressBarFocusRef: ref(false),
-    paneZoomLevelRef: ref(0),
     viewportPresetIdRef: ref(null),
     onUpdatePageStateRef: ref(vi.fn()),
     setGuestRecoveryGeneration: setGeneration,
-    setBrowserZoomPercent: vi.fn(),
     focusAddressBarNow: () => false,
     syncNavigationState: vi.fn(),
     syncBrowserAnnotationViewportBridge: vi.fn()
@@ -57,6 +58,7 @@ describe('retained browser panes after guest eviction', () => {
     mocks.replace.mockClear()
     mocks.isRegistered.mockClear()
     mocks.registeredIds.clear()
+    mocks.webviews.clear()
     Object.defineProperty(window, 'api', {
       configurable: true,
       value: { browser: { isGuestRegistered: mocks.isRegistered } }

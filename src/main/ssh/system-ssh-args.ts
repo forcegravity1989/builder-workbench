@@ -233,3 +233,15 @@ export function isOpenSshConfigBackedTarget(
   // historically stored configHost=host and still need explicit -p/-i args.
   return Boolean(target.configHost && target.configHost !== target.host)
 }
+
+/** Forwards must own their listener and refusal stderr: a mux client exits while its master retains both. If standalone auth cannot repeat, managed tunnels use the master's exec bridge. */
+export function buildForwardProcessSshArgs(
+  target: SshTarget,
+  options?: SystemSshBuildArgsOptions
+): string[] {
+  return buildSshArgs(target, {
+    ...options,
+    suppressOrcaControlMaster: true,
+    disableControlMaster: true
+  })
+}

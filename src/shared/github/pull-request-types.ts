@@ -117,6 +117,8 @@ export type ProviderCheckSummary = {
   failed: number
   pending: number
   neutral: number
+  cancelled?: number
+  scope?: 'pipeline'
 }
 
 export type GitHubPRReviewSummary = {
