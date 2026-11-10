@@ -59,7 +59,11 @@ const SIDEBAR_TABS: readonly {
 function SidebarTabs(props: { active: SidebarTabId; interactiveChecks?: boolean }): JSX.Element {
   const checksShortcutLabel = useShortcutLabel('sidebar.checks.toggle')
   const checksTooltip =
-    checksShortcutLabel === 'Unassigned' ? 'Checks' : `Checks (${checksShortcutLabel})`
+    checksShortcutLabel === 'Unassigned'
+      ? translate('guidance.demo.checks', 'Checks')
+      : translate('guidance.demo.checksShortcut', 'Checks ({{shortcut}})', {
+          shortcut: checksShortcutLabel
+        })
 
   return (
     <div className="ravpr-tabs">

@@ -16,6 +16,7 @@ import type { FeatureWallSetupProgress } from '../feature-wall/feature-wall-setu
 import { SetupGuideProgressRing } from '../setup-guide/SetupGuideProgressRing'
 import { useSetupGuideProgress } from '../setup-guide/use-setup-guide-progress'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export type SetupGuideEntryVisibilityInput = {
   ready: boolean
@@ -102,10 +103,12 @@ export function SetupGuideSidebarEntry(): React.JSX.Element | null {
           />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate">
-              {translate(
-                'auto.components.sidebar.SetupGuideSidebarEntry.88d402b71d',
-                'Onboarding checklist'
-              )}
+              {isWorkbenchShell()
+                ? translate('guidance.gettingStarted', 'Getting Started with BW')
+                : translate(
+                    'auto.components.sidebar.SetupGuideSidebarEntry.88d402b71d',
+                    'Onboarding checklist'
+                  )}
             </span>
           </span>
         </button>
