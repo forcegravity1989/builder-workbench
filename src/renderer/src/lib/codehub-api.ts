@@ -2,46 +2,66 @@ import type { CodeHubApi } from '../../../shared/codehub-api'
 import { useAppStore } from '@/store'
 import { getExplicitRuntimeOwnerEnvironmentId } from './repo-runtime-owner'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
+import {
+  getTaskSourceRuntimeSettings,
+  type TaskSourceContext
+} from '../../../shared/task-source-context'
 
 // Repo ownership selects the runtime for both reads and writes; UI focus may
 // have moved to a different host while a task detail remains open.
 function route<K extends keyof CodeHubApi>(
   method: K,
-  args: Parameters<CodeHubApi[K]>[0]
+  args: Parameters<CodeHubApi[K]>[0],
+  sourceContext?: TaskSourceContext | null
 ): Promise<Awaited<ReturnType<CodeHubApi[K]>>> {
-  const target = getActiveRuntimeTarget({
-    activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
-      useAppStore.getState(),
-      args.repoId
-    )
-  })
+  const target = getActiveRuntimeTarget(
+    sourceContext
+      ? getTaskSourceRuntimeSettings(sourceContext)
+      : {
+          activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
+            useAppStore.getState(),
+            args.repoId
+          )
+        }
+  )
+  const routedArgs = sourceContext?.repoId ? { ...args, repoId: sourceContext.repoId } : args
   if (target.kind === 'environment') {
-    return callRuntimeRpc(target, `codehub.${method}`, args, { timeoutMs: 60_000 })
+    return callRuntimeRpc(target, `codehub.${method}`, routedArgs, { timeoutMs: 60_000 })
   }
   const call = window.api.codehub[method] as (
     input: typeof args
   ) => Promise<Awaited<ReturnType<CodeHubApi[K]>>>
-  return call(args)
+  return call(routedArgs)
 }
 
-export const codehubApi: CodeHubApi = {
-  viewer: (args) => route('viewer', args),
-  listTasks: (args) => route('listTasks', args),
-  createIssue: (args) => route('createIssue', args),
-  updateIssueTitle: (args) => route('updateIssueTitle', args),
-  updateIssueLabels: (args) => route('updateIssueLabels', args),
-  listLabels: (args) => route('listLabels', args),
-  listMembers: (args) => route('listMembers', args),
-  setIssueState: (args) => route('setIssueState', args),
-  closeMr: (args) => route('closeMr', args),
-  assignIssue: (args) => route('assignIssue', args),
-  mergeMr: (args) => route('mergeMr', args),
-  setReviewers: (args) => route('setReviewers', args),
-  listPipelines: (args) => route('listPipelines', args),
-  mrChecks: (args) => route('mrChecks', args),
-  mrChanges: (args) => route('mrChanges', args),
-  viewTask: (args) => route('viewTask', args),
-  listComments: (args) => route('listComments', args),
-  createComment: (args) => route('createComment', args),
-  deleteComment: (args) => route('deleteComment', args)
+export function createCodeHubApi(sourceContext?: TaskSourceContext | null): CodeHubApi {
+  if (sourceContext && sourceContext.provider !== 'codehub') {
+    throw new Error('CodeHub source context required')
+  }
+  const call = <K extends keyof CodeHubApi>(method: K, args: Parameters<CodeHubApi[K]>[0]) =>
+    route(method, args, sourceContext)
+  return {
+    mrForBranch: (args) => call('mrForBranch', args),
+    viewer: (args) => call('viewer', args),
+    listTasks: (args) => call('listTasks', args),
+    createIssue: (args) => call('createIssue', args),
+    updateIssueTitle: (args) => call('updateIssueTitle', args),
+    updateIssueLabels: (args) => call('updateIssueLabels', args),
+    listLabels: (args) => call('listLabels', args),
+    listMembers: (args) => call('listMembers', args),
+    setIssueState: (args) => call('setIssueState', args),
+    closeMr: (args) => call('closeMr', args),
+    assignIssue: (args) => call('assignIssue', args),
+    mergeMr: (args) => call('mergeMr', args),
+    setReviewers: (args) => call('setReviewers', args),
+    listPipelines: (args) => call('listPipelines', args),
+    mrChecks: (args) => call('mrChecks', args),
+    mrChanges: (args) => call('mrChanges', args),
+    viewTask: (args) => call('viewTask', args),
+    listComments: (args) => call('listComments', args),
+    createComment: (args) => call('createComment', args),
+    deleteComment: (args) => call('deleteComment', args)
+  }
 }
+
+export const codehubApi = createCodeHubApi()

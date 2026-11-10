@@ -54,7 +54,8 @@ function mapComment(
     isReply: record.is_reply === true,
     authorAvatarUrl: avatarUrlOf(author),
     isBot: record.from_robot === true,
-    isResolved: record.resolved === true,
+    isResolved: typeof record.resolved === 'boolean' ? record.resolved : undefined,
+    isSystem: typeof record.system === 'boolean' ? record.system : undefined,
     path: typeof path === 'string' && path.trim() ? path.trim() : null,
     line: noteLineOf(record.line ?? position?.new_line),
     isOutdated: record.is_outdated === true
@@ -67,7 +68,12 @@ export async function listCodeHubComments(args: {
   kind: 'issue' | 'mr'
   iid: number
   requireComplete?: boolean
+  requireCompleteThreads?: boolean
 }): Promise<CodeHubComment[]> {
+  const requireComplete = args.requireComplete || args.requireCompleteThreads
+  if (args.requireCompleteThreads && args.kind !== 'mr') {
+    throw new Error('检视线程只适用于 MR')
+  }
   const command =
     args.kind === 'issue'
       ? [
@@ -100,7 +106,7 @@ export async function listCodeHubComments(args: {
       throw new Error('CodeHub指标评论分页超出读取上限，无法确认完整结果')
     }
     const stdout = await runCodeHubCli(
-      args.requireComplete
+      requireComplete
         ? [
             ...command,
             '--offset',
@@ -117,16 +123,42 @@ export async function listCodeHubComments(args: {
     const parsed = parseJson(stdout)
     // v1.3.4 returns JSON null for an empty page; empty stdout is not that contract.
     const pageRows = parsed === null && stdout.trim() === 'null' ? [] : parsed
-    if (args.requireComplete && (!Array.isArray(pageRows) || pageRows.length > 50)) {
+    if (requireComplete && (!Array.isArray(pageRows) || pageRows.length > 50)) {
       throw new Error('CodeHub指标评论分页格式无效，无法确认完整结果')
     }
     const current = Array.isArray(pageRows) ? pageRows : []
-    if (args.requireComplete) {
+    if (requireComplete) {
       for (const row of current) {
         if (!row || typeof row !== 'object') {
           throw new Error('CodeHub指标评论记录无效')
         }
         const record = row as Record<string, unknown>
+        if (args.requireCompleteThreads) {
+          const notes = record.notes
+          if (
+            !Array.isArray(notes) ||
+            !notes.length ||
+            typeof record.individual_note !== 'boolean'
+          ) {
+            throw new Error('CodeHub 检视讨论结构不完整')
+          }
+          const root = notes[0]
+          if (!root || typeof root !== 'object' || typeof root.system !== 'boolean') {
+            throw new Error('CodeHub 检视线程缺少根记录')
+          }
+          if (!record.individual_note && root.is_reply !== false) {
+            throw new Error('CodeHub 检视线程缺少根记录')
+          }
+          if (
+            !record.individual_note &&
+            !root.system &&
+            (typeof root.resolved !== 'boolean' ||
+              typeof root.created_at !== 'string' ||
+              !Number.isFinite(Date.parse(root.created_at)))
+          ) {
+            throw new Error('CodeHub 检视线程状态或时间不完整')
+          }
+        }
         const id = record.id ?? record.note_id ?? record.noteId
         if ((typeof id !== 'string' && typeof id !== 'number') || String(id).trim() === '') {
           throw new Error('CodeHub指标评论缺少分页标识')
@@ -155,7 +187,7 @@ export async function listCodeHubComments(args: {
       }
     }
     rows.push(...current)
-    if (!args.requireComplete || current.length < 50) {
+    if (!requireComplete || current.length < 50) {
       break
     }
   }
