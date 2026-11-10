@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MutableRefObject } from 'react'
 import type { EditorView } from '@tiptap/pm/view'
 import { handleRichMarkdownEditorClick } from './rich-markdown-editor-click-routing'
-import type { HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import type { HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 
 const openHttpLinkMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/lib/http-link-routing', () => ({
+vi.mock('@/lib/browser/navigation/http-link-routing', () => ({
   openHttpLink: openHttpLinkMock
 }))
 

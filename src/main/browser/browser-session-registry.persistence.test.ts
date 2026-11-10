@@ -112,7 +112,7 @@ function installModuleMocks(
     })
   }))
 
-  vi.doMock('./browser-manager', () => ({
+  vi.doMock('./guest-lifecycle/manager/browser-manager', () => ({
     browserManager: {
       notifyPermissionDenied: browserManagerNotifyPermissionDeniedMock,
       handleGuestWillDownload: browserManagerHandleGuestWillDownloadMock,
@@ -120,17 +120,17 @@ function installModuleMocks(
       removeCertificateRequestGuard: vi.fn()
     }
   }))
-  vi.doMock('./browser-media-access', () => ({
+  vi.doMock('./site-settings/permissions/browser-media-access', () => ({
     hasSystemMediaAccess: vi.fn(() => true),
     requestSystemMediaAccess: requestSystemMediaAccessMock
   }))
-  vi.doMock('./browser-session-ua', () => ({
+  vi.doMock('./identity/requests/browser-session-ua', () => ({
     cleanElectronUserAgent: cleanElectronUserAgentMock,
     setupGoogleAuthUserAgentOverride: setupGoogleAuthUserAgentOverrideMock
   }))
   // This suite models replay with an in-memory filesystem. The real file-backed SQLite merge has
   // dedicated coverage; these fixtures are legacy unmarked images and keep the copy path.
-  vi.doMock('./browser-cookie-staged-import', () => ({
+  vi.doMock('./cookies/staging/browser-cookie-staged-import', () => ({
     SCOPED_COOKIE_IMPORT_FORMAT: 'scoped-v1',
     applyScopedStagedCookieImport: vi.fn(() => false),
     isScopedStagedCookieImport: vi.fn(() => false),
@@ -180,7 +180,7 @@ describe('BrowserSessionRegistry persistence', () => {
     fsState.present.add('/staged/legacy')
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.applyPendingCookieImport()
 
@@ -207,7 +207,7 @@ describe('BrowserSessionRegistry persistence', () => {
     fsState.present.add(networkPath)
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.applyPendingCookieImport()
 
@@ -220,7 +220,7 @@ describe('BrowserSessionRegistry persistence', () => {
     const profileMetaPath = '/user-data/profiles/local-work/browser-session-meta.json'
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.configureForOrcaProfile({
       orcaProfileId: 'local-work',
@@ -248,7 +248,7 @@ describe('BrowserSessionRegistry persistence', () => {
       cleanElectronUserAgentMock,
       setupGoogleAuthUserAgentOverrideMock
     } = installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     await browserSessionRegistry.createProfile('isolated', 'Default identity')
 
@@ -265,7 +265,7 @@ describe('BrowserSessionRegistry persistence', () => {
       cleanElectronUserAgentMock,
       setupGoogleAuthUserAgentOverrideMock
     } = installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     await browserSessionRegistry.createProfile('isolated', 'Google', { userAgentMode: 'native' })
 
@@ -289,7 +289,7 @@ describe('BrowserSessionRegistry persistence', () => {
     })
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.setPendingCookieImport('persist:orca-browser', '/staged/default')
     browserSessionRegistry.setPendingCookieImport(
@@ -330,7 +330,7 @@ describe('BrowserSessionRegistry persistence', () => {
     }
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.clearPendingCookieImport(otherPartition)
 
@@ -360,7 +360,7 @@ describe('BrowserSessionRegistry persistence', () => {
     })
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.clearPendingCookieImport('persist:orca-browser')
 
@@ -383,7 +383,7 @@ describe('BrowserSessionRegistry persistence', () => {
     fsState.present.add('/staged/default')
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
     const metaBefore = fsState.files.get(META_PATH)
 
     browserSessionRegistry.clearPendingCookieImport('persist:orca-browser-session-unknown')
@@ -427,7 +427,7 @@ describe('BrowserSessionRegistry persistence', () => {
       cleanElectronUserAgentMock,
       setupGoogleAuthUserAgentOverrideMock
     } = installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.initializeBrowserSessionsFromPersistedState()
 
@@ -469,7 +469,7 @@ describe('BrowserSessionRegistry persistence', () => {
     })
 
     const { sessionFromPartitionMock } = installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.initializeBrowserSessionsFromPersistedState()
 
@@ -510,7 +510,7 @@ describe('BrowserSessionRegistry persistence', () => {
 
     const { sessionFromPartitionMock, setupGoogleAuthUserAgentOverrideMock } =
       installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.initializeBrowserSessionsFromPersistedState()
 
@@ -548,7 +548,7 @@ describe('BrowserSessionRegistry persistence', () => {
       browserManagerHandleGuestWillDownloadMock,
       browserManagerNotifyPermissionDeniedMock
     } = installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.initializeBrowserSessionsFromPersistedState()
 
@@ -751,7 +751,7 @@ describe('BrowserSessionRegistry persistence', () => {
     })
 
     const { sessionFromPartitionMock } = installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.initializeBrowserSessionsFromPersistedState()
     browserSessionRegistry.initializeBrowserSessionsFromPersistedState()
@@ -797,7 +797,7 @@ describe('BrowserSessionRegistry persistence', () => {
       requestSystemMediaAccessMock
     } = installModuleMocks(fsState)
     requestSystemMediaAccessMock.mockResolvedValue(false)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.initializeBrowserSessionsFromPersistedState()
 
@@ -844,7 +844,7 @@ describe('BrowserSessionRegistry persistence', () => {
     fsState.present.add('/staged/imported')
 
     installModuleMocks(fsState, new Set(['/staged/imported']))
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.applyPendingCookieImport()
 
@@ -877,7 +877,7 @@ describe('BrowserSessionRegistry persistence', () => {
     fsState.present.add('/staged/evil')
 
     installModuleMocks(fsState)
-    const { browserSessionRegistry } = await import('./browser-session-registry')
+    const { browserSessionRegistry } = await import('./sessions/profiles/browser-session-registry')
 
     browserSessionRegistry.applyPendingCookieImport()
 

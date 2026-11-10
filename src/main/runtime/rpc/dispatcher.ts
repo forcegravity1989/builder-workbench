@@ -1,3 +1,6 @@
+import { denyRpcMethodForCaller, OWNER_RPC_CALLER_SCOPE, type RpcCallerScope } from './rpc-caller-scope'
+import { runWithActiveRpcCaller } from './rpc-active-caller'
+import { resolveRpcCallerIdentity } from './rpc-caller-identity'
 import {
   buildRegistry,
   isStreamingMethod,
@@ -27,24 +30,28 @@ import { invokeDispatcherUnaryMethod } from './dispatcher-unary-method-invocatio
 export type DispatcherOptions = {
   runtime: OrcaRuntimeService
   methods?: readonly RpcAnyMethodDeclaration[]
+  callerScope?: RpcCallerScope
 }
 
 type DispatchCallOptions = RpcDispatchStreamingOptions
 
 export class RpcDispatcher {
+  private readonly pinnedCallerScope: RpcCallerScope | undefined
   private readonly runtime: OrcaRuntimeService
   private readonly registry: RpcRegistry
   private readonly orchestrationMutations: OrchestrationMutationExecutor
   private readonly legacyOrchestration: OrchestrationLegacyCompatibility
   private readonly streamingDispatcher: RpcStreamingDispatcher
 
-  constructor({ runtime, methods = ALL_RPC_METHODS }: DispatcherOptions) {
+  constructor({ runtime, methods = ALL_RPC_METHODS, callerScope }: DispatcherOptions) {
     this.runtime = runtime
+    this.pinnedCallerScope = callerScope
     this.registry = buildRegistry(methods)
     this.orchestrationMutations = getOrchestrationMutationExecutor(runtime)
     this.legacyOrchestration = new OrchestrationLegacyCompatibility(runtime)
     this.streamingDispatcher = new RpcStreamingDispatcher({
       runtime,
+      callerScope,
       registry: this.registry,
       orchestrationMutations: this.orchestrationMutations,
       legacyOrchestration: this.legacyOrchestration,
@@ -53,8 +60,14 @@ export class RpcDispatcher {
   }
 
   async dispatch(request: RpcRequest, options?: DispatchCallOptions): Promise<RpcResponse> {
+    return runWithActiveRpcCaller(resolveRpcCallerIdentity(options), () => this.dispatchWithCaller(request, options))
+  }
+
+  private async dispatchWithCaller(request: RpcRequest, options?: DispatchCallOptions): Promise<RpcResponse> {
     const meta = this.meta()
     const method = this.registry.get(request.method)
+    const denial = denyRpcMethodForCaller(this.pinnedCallerScope ?? options?.callerScope ?? OWNER_RPC_CALLER_SCOPE, request.method, method?.permission)
+    if (denial) return errorResponse(request.id, meta, 'forbidden', denial)
     if (!method) {
       return errorResponse(
         request.id,
@@ -94,10 +107,12 @@ export class RpcDispatcher {
         params: parsedParams.value,
         context: {
           runtime: this.runtime,
+          caller: resolveRpcCallerIdentity(options),
           signal: options?.signal,
           connectionId: options?.connectionId,
           requestId: request.id,
           clientId: options?.clientId,
+          pairedDeviceId: options?.pairedDeviceId,
           clientKind: options?.clientKind,
           clientCapabilities: options?.clientCapabilities,
           updateClientCapabilities: options?.updateClientCapabilities,

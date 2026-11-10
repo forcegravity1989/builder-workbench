@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { FolderWorkspace } from '../../shared/folder-workspace-types'
-import { parseBrowserNetworkExecutionHostKey } from '../browser/browser-network-execution-route'
+import { parseBrowserNetworkExecutionHostKey } from '../browser/network/execution-routes/browser-network-execution-route'
 import { OrcaRuntimeService } from './orca-runtime'
 
 // Why the real service: every other suite stubs this resolver, and its two failure branches are

@@ -24,7 +24,7 @@ vi.mock('../store', () => {
   return { useAppStore }
 })
 
-vi.mock('../store/slices/browser-webview-cleanup', () => ({
+vi.mock('../store/slices/browser/cleanup/browser-webview-cleanup', () => ({
   collectBrowserWebviewIds: (...args: unknown[]) => {
     collectBrowserWebviewIdsCalls.count += 1
     void args

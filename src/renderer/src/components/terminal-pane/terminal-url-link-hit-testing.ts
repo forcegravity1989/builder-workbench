@@ -1,5 +1,5 @@
 import type { IBufferLine, IBufferRange, IDisposable, Terminal } from '@xterm/xterm'
-import type { HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import type { HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
 import { buildEdgeWrappedHttpLogicalLineCandidates } from './edge-wrapped-terminal-http-links'
 import { buildHardWrappedHttpLogicalLineCandidates } from './hard-wrapped-terminal-http-links'
 import { dedupeLogicalLines } from './terminal-file-link-hit-testing'
@@ -18,7 +18,7 @@ import {
   type HttpLinkActionDestinations,
   type HttpLinkDestination,
   type HttpLinkRoutingPreferenceRequester
-} from '@/lib/http-link-destinations'
+} from '@/lib/browser/navigation/http-link-destinations'
 import { isTerminalOwnedLinkGesture } from './terminal-link-activation'
 import {
   requestTerminalLinkAction,

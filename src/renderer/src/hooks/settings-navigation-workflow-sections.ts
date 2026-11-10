@@ -1,6 +1,6 @@
 import { getArtifactsSettingsSearchEntries } from '@/components/settings/artifacts-settings-search'
 import { getAutomationsSettingsSearchEntries } from '@/components/settings/automations-settings-search'
-import { getBrowserPaneCombinedSearchEntries } from '@/components/settings/browser-pane-search'
+import { getBrowserPaneCombinedSearchEntries } from '@/components/settings/browser/browser-pane-search'
 import { getCommitMessageAiPaneSearchEntries } from '@/components/settings/commit-message-ai-search'
 import { getFloatingWorkspaceSearchEntries } from '@/components/settings/floating-workspace-search'
 import { getGitProviderApiBudgetSearchEntries } from '@/components/settings/git-provider-api-budget-search'

@@ -322,3 +322,5 @@ function makeLock(lockPath: string, record: OrcadLockRecord): OrcadInstanceLock 
     }
   }
 }
+
+export { parseOrcadInstanceLockRecord } from './orcad-instance-lock-record'

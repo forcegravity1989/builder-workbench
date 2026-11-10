@@ -6,15 +6,15 @@ import {
   DOC_PREVIEW_MINT_GRANT_CHANNEL,
   DOC_PREVIEW_REVOKE_GRANT_CHANNEL
 } from '../../shared/doc-preview-scheme'
-import { browserManager } from '../browser/browser-manager'
-import { reportDocPreviewLinkClick } from '../browser/doc-preview-guest-policy'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
+import { reportDocPreviewLinkClick } from '../browser/document-preview/doc-preview-guest-policy'
 import {
   authorizeDocPreviewDirectory,
   mintDocPreviewGrant,
   revokeDocPreviewGrant,
   type DocPreviewOwner
-} from '../browser/doc-preview-grant-registry'
-import { isTrustedBrowserRenderer } from './browser-renderer-trust'
+} from '../browser/document-preview/doc-preview-grant-registry'
+import { isTrustedBrowserRenderer } from './browser/browser-renderer-trust'
 
 export type DocPreviewGrantRequest = {
   owner: DocPreviewOwner

@@ -1,3 +1,4 @@
+import { createSandboxedScriptBundlesPlugin } from './config/build-plugins/sandboxed-script-bundles'
 import { isBuiltin } from 'node:module'
 import { resolve } from 'node:path'
 import { defineConfig, type UserConfig } from 'electron-vite'
@@ -222,9 +223,8 @@ export const electronViteConfig: UserConfig = {
         external: isExternalMainModule,
         input: {
           index: resolve('src/main/index.ts'),
-          // Why: sandboxed webview preloads cannot load Rollup helper chunks.
-          'browser-window-close-preload': resolve('src/preload/browser-window-close.ts'),
-          'doc-preview-link-preload': resolve('src/preload/doc-preview-link.ts'),
+          'browser-extension-preload': resolve('src/preload/browser-extension-preload.ts'),
+          'browser-extension-native-host-supervisor-entry': resolve('src/main/browser/extensions/native-messaging/browser-extension-native-host-supervisor-entry.ts'),
           'daemon-entry': resolve('src/main/daemon/daemon-entry.ts'),
           'plugin-host-entry': resolve('src/main/plugins/plugin-host-entry.ts'),
           'computer-sidecar': resolve('src/main/computer/sidecar-entry.ts'),
@@ -273,7 +273,7 @@ export const electronViteConfig: UserConfig = {
           entryFileNames: '[name].js',
           chunkFileNames: 'chunks/[name]-[hash].js'
         },
-        plugins: [createMainBootstrapPlugin(), createPlainNodeEntryGuardPlugin()]
+        plugins: [createMainBootstrapPlugin(), createPlainNodeEntryGuardPlugin(), createSandboxedScriptBundlesPlugin()]
       }
     },
     // Why: compile-time substitution for the telemetry gate. See the block
@@ -298,9 +298,7 @@ export const electronViteConfig: UserConfig = {
   },
   preload: {
     build: {
-      externalizeDeps: {
-        exclude: ['zod']
-      }
+      externalizeDeps: false
     }
   },
   renderer: {

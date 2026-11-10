@@ -253,3 +253,69 @@ export const AutomationUpdate = z.object({
   expectedOwner: ExpectedOwner,
   destination: Destination
 })
+
+import { ChoicePatch, OptionKey } from './agent-launch-settings-params'
+
+import { AGENT_PERMISSION_CHOICES } from '../agent-launch/permissions/tui-agent-permission-choice'
+
+export const AutomationCanonicalLaunchSetup = z.strictObject({
+  surface: z.enum(['chat', 'terminal']).optional(),
+  extraAgentArgs: z.string().optional(),
+  launchPreferences: ChoicePatch.extend({
+    permissionMode: z.enum(AGENT_PERMISSION_CHOICES).optional()
+  }).optional(),
+  agentArgs: z
+    .string()
+    .refine((value) => !value.includes('\0'))
+    .nullable()
+    .optional()
+})
+
+export const AutomationLaunchSetupPatch = z
+  .strictObject({
+    surface: z.enum(['chat', 'terminal']).optional(),
+    choices: ChoicePatch.optional(),
+    arguments: z
+      .discriminatedUnion('kind', [
+        z.strictObject({ kind: z.literal('legacy-extras'), value: z.string() }),
+        z.strictObject({
+          kind: z.literal('value'),
+          value: z.string().refine((value) => !value.includes('\0'))
+        }),
+        z.strictObject({ kind: z.literal('empty') }),
+        z.strictObject({ kind: z.literal('inherit') })
+      ])
+      .optional(),
+    sources: z
+      .strictObject({
+        arguments: z
+          .discriminatedUnion('kind', [
+            z.strictObject({
+              kind: z.literal('value'),
+              value: z.string().refine((value) => !value.includes('\0'))
+            }),
+            z.strictObject({ kind: z.literal('empty') }),
+            z.strictObject({ kind: z.literal('inherit') })
+          ])
+          .optional(),
+        legacyArguments: z.string().optional(),
+        extraAgentArgs: z.string().optional(),
+        retiredChoices: z
+          .array(
+            z
+              .string()
+              .refine(
+                (key) =>
+                  key === 'model' ||
+                  key === 'permissionMode' ||
+                  (key.startsWith('options.') && OptionKey.safeParse(key.slice(8)).success)
+              )
+          )
+          .optional()
+      })
+      .optional(),
+    copy: AutomationCanonicalLaunchSetup.optional()
+  })
+  .refine((patch) => Object.values(patch).some((value) => value !== undefined), {
+    message: 'Choose an automation launch change.'
+  })

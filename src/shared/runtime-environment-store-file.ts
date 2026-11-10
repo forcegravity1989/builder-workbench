@@ -1,3 +1,5 @@
+import { overlayRuntimeEnvironmentSidecar, readRuntimeEnvironmentSidecar, RuntimeEnvironmentSidecarInvalidError, type RuntimeEnvironmentSidecar } from './remote-runtime/host-store/runtime-environment-sidecar'
+import type { KnownRuntimeEnvironment } from './runtime-environments'
 import {
   JsonStringifyByteLimitError,
   stringifyJsonWithinByteLimit
@@ -35,7 +37,30 @@ export function readPersistedEnvironmentStore(
   }
 }
 
-export const readEnvironmentStore = readPersistedEnvironmentStore
+export function readEnvironmentStore(
+  userDataPath: string,
+  options: EnvironmentStoreRecordsReadOptions = {}
+): { version: 1; environments: KnownRuntimeEnvironment[] } {
+  const store = readPersistedEnvironmentStore(userDataPath, options)
+  let sidecar: RuntimeEnvironmentSidecar
+  try {
+    sidecar = readRuntimeEnvironmentSidecar(userDataPath)
+  } catch (error) {
+    if (error instanceof RuntimeEnvironmentSidecarInvalidError) {
+      throw new RuntimeEnvironmentStoreError('runtime_error', error.message)
+    }
+    throw error
+  }
+  const hidden = store.environments.filter((environment) => Object.hasOwn(sidecar.unreadable, environment.id))
+  if (hidden.length > 0) {
+    warnUnreadableEnvironmentState(`Hiding ${hidden.length} server(s) whose links cannot be read (ids: ${hidden.map((environment) => environment.id).join(', ')}); they may need a newer version of Orca.`)
+  }
+  return {
+    version: 1,
+    environments: store.environments.filter((environment) => !Object.hasOwn(sidecar.unreadable, environment.id))
+      .map((environment) => overlayRuntimeEnvironmentSidecar(environment, sidecar.entries[environment.id]))
+  }
+}
 
 /** Write persisted fields only; preserve unreadable on-disk records verbatim/in order. */
 export function writeEnvironmentStore(userDataPath: string, store: RuntimeEnvironmentStore): void {

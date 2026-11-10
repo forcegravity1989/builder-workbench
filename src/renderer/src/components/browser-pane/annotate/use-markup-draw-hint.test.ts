@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const HINT_KEY = 'orca.browser.markup-draw-hint-seen'
 
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: (selector: (state: { persistedUIReady: boolean }) => unknown) =>
     selector({ persistedUIReady: true })
 }))

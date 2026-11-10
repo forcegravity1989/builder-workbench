@@ -10,7 +10,7 @@ vi.mock('./macos-tahoe-release', async () =>
   (await import('./createMainWindow-test-harness')).macosTahoeReleaseMock()
 )
 vi.mock('../app-icon', async () => (await import('./createMainWindow-test-harness')).appIconMock())
-vi.mock('../browser/browser-manager', async () =>
+vi.mock('../browser/guest-lifecycle/manager/browser-manager', async () =>
   (await import('./createMainWindow-test-harness')).browserManagerMock()
 )
 

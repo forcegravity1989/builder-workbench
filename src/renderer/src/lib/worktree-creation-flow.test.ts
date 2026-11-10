@@ -55,7 +55,7 @@ vi.mock('@/store', () => ({
 }))
 
 vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => 'creation-1'
+  createNonSecureContextUuid: () => 'creation-1'
 }))
 
 vi.mock('@/lib/worktree-activation', () => ({

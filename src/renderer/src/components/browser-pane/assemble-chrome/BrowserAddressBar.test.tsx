@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   browserKagiSessionLink: null as string | null
 }))
 
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: (selector: (state: typeof mocks) => unknown) => selector(mocks)
 }))
 

@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import type { BrowserPage } from '../../../../../shared/browser-workspace-types'
 import { requestBrowserFocus } from '../host-guest/browser-focus'
 import { REMOTE_BROWSER_STREAM_LIVE } from './remote-browser-stream-status'
@@ -19,7 +19,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   callRuntimeRpc: vi.fn(async () => ({}))
 }))
 
-vi.mock('@/lib/workspace-browser-tab-open', () => ({
+vi.mock('@/lib/browser/workspace/workspace-browser-tab-open', () => ({
   openWorkspaceBrowserTab: vi.fn(async () => {})
 }))
 

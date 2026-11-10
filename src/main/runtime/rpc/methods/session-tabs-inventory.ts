@@ -1,3 +1,4 @@
+import { projectSessionTabFileHosts } from './session-tab-file-host-projection'
 import { isDeepStrictEqual } from 'node:util'
 import { SESSION_TABS_AUTHORITATIVE_INVENTORY_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
 import type { RuntimeMobileSessionTabsResult } from '../../../../shared/runtime-types'
@@ -32,12 +33,12 @@ export function projectSessionTabsForClient(
   structuredNativeChatEnabled: boolean
 ): RuntimeMobileSessionTabsResult {
   return projectSessionTabBrowserPlacements(
-    projectSessionTabAgentStatus(
+    projectSessionTabFileHosts(projectSessionTabAgentStatus(
       snapshot,
       clientKind,
       clientCapabilities,
       structuredNativeChatEnabled
-    ),
+    ), clientKind),
     clientCapabilities
   )
 }

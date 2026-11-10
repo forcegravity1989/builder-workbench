@@ -1,15 +1,11 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../store'
 import { onBrowserGuestPaintRetentionChange } from './browser-pane/host-guest/browser-guest-paint-retention'
-import {
-  browserTabsVetoGuestEviction,
-  selectBrowserGuestEvictionWorktreeIds,
-  touchBrowserGuestWorktreeRecency,
-  worktreeHoldsLiveBrowserGuests
-} from './browser-pane/host-guest/browser-guest-worktree-retention'
+import { browserTabsVetoGuestEviction } from "./browser-pane/host-guest/browser-guest-eviction-veto"
+import { selectBrowserGuestEvictionWorktreeIds, touchBrowserGuestWorktreeRecency, worktreeHoldsLiveBrowserGuests } from "./browser-pane/host-guest/browser-guest-worktree-retention"
 import { installBrowserPageDownloadActivityTracking } from './browser-pane/navigate/browser-page-download-activity'
 import { hasLiveBrowserGuest } from './browser-pane/host-guest/webview-registry'
-import { destroyWorktreeBrowserGuests } from '../store/slices/browser-webview-cleanup'
+import { destroyWorktreeBrowserGuests } from '../store/slices/browser/cleanup/browser-webview-cleanup'
 import type { TerminalParkingFoundation } from './use-terminal-parking-foundation'
 
 export function useTerminalBrowserRetention(controller: TerminalParkingFoundation): void {

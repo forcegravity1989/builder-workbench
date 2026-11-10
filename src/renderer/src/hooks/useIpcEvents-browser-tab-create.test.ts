@@ -103,7 +103,7 @@ describe('useIpcEvents browser tab create routing', () => {
         }
       }
     })
-    vi.doMock('../store', () => ({
+    vi.doMock('../store/index', () => ({
       useAppStore: {
         subscribe: vi.fn(() => () => {}),
         getState: () => state

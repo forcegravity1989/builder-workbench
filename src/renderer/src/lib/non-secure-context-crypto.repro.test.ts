@@ -50,9 +50,9 @@ describe('non-secure context (plain HTTP LAN web client)', () => {
     expect(await hashOrcaHookScript('echo hi')).toBe(secureHash)
   })
 
-  it('createBrowserUuid does not throw when randomUUID is missing', async () => {
-    const { createBrowserUuid } = await import('./browser-uuid')
-    expect(createBrowserUuid()).toMatch(
+  it('createNonSecureContextUuid does not throw when randomUUID is missing', async () => {
+    const { createNonSecureContextUuid } = await import('./browser-uuid')
+    expect(createNonSecureContextUuid()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/
     )
   })

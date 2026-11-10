@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
 import type { TerminalSlice, TerminalStoreGet, TerminalStoreSet } from './terminal-state'
 
 export function createTerminalStartupQueueActions(
@@ -21,7 +21,7 @@ export function createTerminalStartupQueueActions(
     queueTabStartupCommand: (tabId, startup) => {
       // Why: launchToken is only meaningful for tracked launch-config reuse; plain startup commands must not mint a synthetic token.
       const launchToken = startup.launchConfig
-        ? (startup.launchToken ?? createBrowserUuid())
+        ? (startup.launchToken ?? createNonSecureContextUuid())
         : undefined
       set((s) => ({
         pendingStartupByTabId: {

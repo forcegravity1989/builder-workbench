@@ -17,7 +17,7 @@ import type { FolderWorkspaceLinkedTask } from '../../../shared/folder-workspace
 import type { OrcaHooks } from '../../../shared/orca-yaml-hook-types'
 import { resolveHookCommandSourcePolicy } from '../../../shared/hook-command-source-policy'
 import { slugifyForWorkspaceName } from '../../../shared/workspace-name'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 export { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
 export { getLinkedWorkItemWorkspaceName } from '../../../shared/workspace-name'
 export { getWorkspaceIntentName } from '../../../shared/workspace-name'
@@ -322,7 +322,7 @@ function ensureStartupLaunchToken(startup: AgentStartupPlan): string {
   if (!startup.launchToken) {
     // Why: delayed delivery retries must reuse the startup plan's launch token
     // so they match the pane launch registration for this agent.
-    startup.launchToken = createBrowserUuid()
+    startup.launchToken = createNonSecureContextUuid()
   }
   return startup.launchToken
 }

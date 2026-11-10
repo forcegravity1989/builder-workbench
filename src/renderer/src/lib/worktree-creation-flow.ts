@@ -5,7 +5,7 @@ import {
   type WorktreeCreationPhase,
   type WorktreeCreationRequest
 } from '@/lib/pending-worktree-creation'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 import { executeWorktreeCreation } from '@/lib/worktree-creation-flow-execute'
 import {
   getInitialWorktreeCreationPhase,
@@ -83,8 +83,8 @@ export function runBackgroundWorktreeCreation(request: WorktreeCreationRequest):
     return existingCreationId
   }
   // Why: crypto.randomUUID is undefined in non-secure browser contexts (LAN web
-  // client over plain HTTP). createBrowserUuid falls back to getRandomValues.
-  const creationId = createBrowserUuid()
+  // client over plain HTTP). createNonSecureContextUuid falls back to getRandomValues.
+  const creationId = createNonSecureContextUuid()
   revealPendingCreation(creationId, request, getInitialWorktreeCreationPhase(request))
   startWorktreeCreation(creationId, request)
   return creationId
@@ -92,7 +92,7 @@ export function runBackgroundWorktreeCreation(request: WorktreeCreationRequest):
 
 /** Stage a pending entry before async preflight so the UI shows immediate progress. */
 export function beginBackgroundWorktreePreparation(request: WorktreeCreationRequest): string {
-  const creationId = createBrowserUuid()
+  const creationId = createNonSecureContextUuid()
   revealPendingCreation(creationId, request, 'preparing')
   return creationId
 }

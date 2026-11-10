@@ -13,7 +13,7 @@ vi.mock('@/i18n/i18n', () => ({
     values ? fallback.replace('{{value0}}', String(values.value0)) : fallback
 }))
 
-vi.mock('@/lib/http-link-routing', () => ({
+vi.mock('@/lib/browser/navigation/http-link-routing', () => ({
   openHttpLink: vi.fn()
 }))
 

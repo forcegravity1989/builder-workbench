@@ -1,4 +1,11 @@
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
+import { ServeBrowserTabs } from './browser/headless/serve-browser-tabs'
+import type { ServeBrowserPageState } from './browser/headless/serve-browser-tab-layout'
+import { readBrowserTabBar } from './browser/tabs/browser-tab-listing'
+import { remoteCliBrowserScopeWorkspaceId, resolveRemoteCliBrowserScopeSelector } from './desktop-browser-bridge/remote-cli-browser-scope'
+import { parseWorkspaceKey } from '../../shared/workspace-scope'
+import { getRepoIdFromWorktreeId } from '../../shared/worktree/id'
+import { getBrowserHostRequestRegistry } from './browser-host/leases/browser-host-request-registry'
 import { OrcaRuntimeWithFitOverrideListeners } from './orca-runtime-fit-override-listeners'
 import { RuntimeTerminalDriverController } from './runtime-terminal-driver-controller'
 import { RuntimeEdgeCommandController } from './runtime-edge-command-controller'
@@ -35,11 +42,33 @@ export class OrcaRuntimeWithTerminalDrivers extends OrcaRuntimeWithFitOverrideLi
       this.mobileTookFloor(ptyId, clientId, previousFloor, isCurrent)
   })
 
+  protected readonly serveBrowserTabs = new ServeBrowserTabs({
+    backend: () => (this.getAvailableAuthoritativeWindow() ? null : this.offscreenBrowserBackend),
+    livePageIds: (worktreeId) =>
+      new Set(
+        (this.agentBrowserBridge?.tabList?.(worktreeId).tabs ?? []).map((tab) => tab.browserPageId)
+      ),
+    savedWorktreeIds: () =>
+      (this.store?.getWorkspaceSessionHostIds?.() ?? []).flatMap((hostId) =>
+        Object.keys(this.store?.getWorkspaceSession?.(hostId)?.browserTabsByWorktree ?? {})
+      ),
+    session: (worktreeId) => this.getWorkspaceSessionForWorktree(worktreeId),
+    hostId: (worktreeId) => this.getWorkspaceSessionHostIdForWorktree(worktreeId),
+    save: (worktreeId, session) => this.setWorkspaceSessionForWorktree(worktreeId, session)
+  })
+
+  serveBrowserPageNavigated(page: ServeBrowserPageState): void {
+    this.serveBrowserTabs.navigated(page)
+  }
+
   protected readonly edgeCommands = new RuntimeEdgeCommandController({
     browserHost: {
       getAgentBrowserBridge: () => this.agentBrowserBridge,
-      resolveWorktreeSelector: (selector) => this.resolveWorktreeSelector(selector),
-      resolveBrowserWorkspace: (selector) => this.resolveBrowserWorkspace(selector),
+      getRuntimeId: () => this.getRuntimeId(),
+      resolveWorkspaceSelector: (selector) => resolveRemoteCliBrowserScopeSelector(selector) ?? this.resolveBrowserWorkspace(selector),
+      getBrowserHostRequestRegistry: () => getBrowserHostRequestRegistry(this),
+      getPairedDeviceName: (id) => this.getPairedDeviceNameFn(id),
+      resolveBrowserWorkspace: (selector) => resolveRemoteCliBrowserScopeSelector(selector) ?? this.resolveBrowserWorkspace(selector),
       getBrowserHostLeaseRegistry: () => getBrowserHostLeaseRegistry(this),
       getRuntimeBrowserPageRegistry: () => getRuntimeBrowserPageRegistry(this),
       resolveBrowserNetworkExecutionHost: (worktree) =>
@@ -50,6 +79,20 @@ export class OrcaRuntimeWithTerminalDrivers extends OrcaRuntimeWithFitOverrideLi
       markHeadlessBrowserSessionTabActive: this.markHeadlessBrowserSessionTabActive.bind(this),
       notifyHeadlessBrowserSessionTabsChanged: (worktreeId) =>
         this.notifyMobileSessionTabsChanged(worktreeId),
+      readBrowserTabBar: (worktreeId) =>
+        readBrowserTabBar(this.mobileSessionTabsByWorktree, worktreeId, (id) => {
+          // Why: an SSH host's bridged workspace may have no row here, yet its pages render in this window.
+          if (id === remoteCliBrowserScopeWorkspaceId()) {
+            return true
+          }
+          const scope = parseWorkspaceKey(id)
+          return scope?.type === 'folder'
+            ? (this.store?.getFolderWorkspaces?.() ?? []).some(
+                (workspace) => workspace.id === scope.folderWorkspaceId
+              )
+            : (this.store?.getRepos() ?? []).some((repo) => repo.id === getRepoIdFromWorktreeId(id))
+        }),
+      serveBrowserTabs: this.serveBrowserTabs,
       retireRuntimeOwnedBrowserSessionTab: (worktreeId, browserPageId) =>
         this.retireRuntimeOwnedBrowserSessionTab(worktreeId, browserPageId)
     },

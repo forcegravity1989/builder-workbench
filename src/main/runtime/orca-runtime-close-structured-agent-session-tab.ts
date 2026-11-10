@@ -137,7 +137,7 @@ export class OrcaRuntimeWithCloseStructuredAgentSessionTab extends OrcaRuntimeWi
       !getMobileSessionSnapshotTabIdentityKeys(tab).some((id) =>
         accepted.rendererTabIdentityKeys.has(id)
       ) &&
-      this.getLiveBrowserTabsByPageId(snapshot.worktree).has(tab.browserPageId)
+      this.getListedBrowserTabsByPageId(snapshot.worktree).has(tab.browserPageId)
     )
   }
 
@@ -147,16 +147,17 @@ export class OrcaRuntimeWithCloseStructuredAgentSessionTab extends OrcaRuntimeWi
     // rows for its client pages would otherwise be stranded on screen with nothing to retract them.
     this.clientHostedBrowserRows.publish(worktreeId)
     this.persistClientHostedBrowserPagesForWorktree(worktreeId)
+    const savedTabClosed = this.serveBrowserTabs.closed(worktreeId, browserPageId)
     const snapshot = this.mobileSessionTabsByWorktree.get(worktreeId)
     if (!snapshot) {
-      return false
+      return savedTabClosed
     }
     const retiredTab = snapshot.tabs.find(
       (candidate): candidate is RuntimeMobileSessionBrowserTab =>
         candidate.type === 'browser' && candidate.browserPageId === browserPageId
     )
     if (!retiredTab) {
-      return false
+      return savedTabClosed
     }
     const nextTabs = snapshot.tabs.filter((candidate) => candidate.id !== retiredTab.id)
     const active = nextTabs.find((candidate) => candidate.isActive) ?? nextTabs[0] ?? null

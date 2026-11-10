@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../../shared/non-secure-context-uuid"
 import type { TabGroup } from '../../../../../shared/tab-types'
 import type { TabsSlice, TabsSliceGet, TabsSliceSet } from './tabs-slice-contract'
 import { activeSurfacePatchMatchesState, buildActiveSurfacePatch } from './tabs-surface'
@@ -18,7 +18,7 @@ export function createTabsGroupActions(
         return get().activeGroupIdByWorktree[worktreeId] ?? existingGroups[0].id
       }
 
-      const groupId = createBrowserUuid()
+      const groupId = createNonSecureContextUuid()
       set((state) => ({
         // Why: a zero-tab worktree still needs a canonical root group so new tabs and splits land in a deterministic place.
         groupsByWorktree: {
@@ -154,7 +154,7 @@ export function createTabsGroupActions(
     },
 
     createEmptySplitGroup: (worktreeId, sourceGroupId, direction, opts) => {
-      const newGroupId = createBrowserUuid()
+      const newGroupId = createNonSecureContextUuid()
       const newGroup: TabGroup = {
         id: newGroupId,
         worktreeId,

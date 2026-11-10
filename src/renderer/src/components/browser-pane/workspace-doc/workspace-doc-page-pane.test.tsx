@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   handedFocus: [] as (boolean | undefined)[]
 }))
 
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: (selector: (state: unknown) => unknown) => selector(mocks.storeState)
 }))
 vi.mock('@/lib/worktree-runtime-owner', () => ({

@@ -175,3 +175,31 @@ function toServeReadiness(payload: Record<string, unknown>): ServeReadiness {
     ...(payload.health ? { health: payload.health as ServeReadiness['health'] } : {})
   }
 }
+
+import { ORCAD_E2E_IDLE_TIMEOUT_ENV, readOrcadE2EIdleTimeoutMs } from '../../shared/orcad-idle-exit'
+
+import { ORCAD_MANAGED_ACTIVATION_ROOT_ENV } from '../../shared/orcad-managed-launch-env'
+
+/** Older orcad versions ignore these launch variables. */
+export function orcadManagedLaunchEnv(
+  spec: OrcadLaunchSpec,
+  env: NodeJS.ProcessEnv = process.env
+): [string, string][] {
+  const e2eTimeout = readOrcadE2EIdleTimeoutMs(env)
+  return [
+    [ORCAD_MANAGED_ACTIVATION_ROOT_ENV, spec.activationRoot],
+    ...(e2eTimeout === null
+      ? []
+      : [[ORCAD_E2E_IDLE_TIMEOUT_ENV, String(e2eTimeout)] satisfies [string, string]])
+  ]
+}
+
+/** WSL without systemd kills nohup children with wsl.exe --exec; use a separate session. */
+export type OrcadLaunchDetach = 'nohup' | 'setsid'
+
+export const ORCAD_NEVER_LAUNCHED = 'NEVER_LAUNCHED'
+
+/** Only DEAD/NEVER_LAUNCHED permit lifecycle changes; UNKNOWN proves nothing. */
+export function orcadLivenessProvenExited(liveness: OrcadLiveness): boolean {
+  return liveness === 'DEAD' || liveness === ORCAD_NEVER_LAUNCHED
+}

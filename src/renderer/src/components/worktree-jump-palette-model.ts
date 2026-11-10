@@ -1,4 +1,4 @@
-import type { BrowserPaletteSearchResult } from '@/lib/browser-palette-search'
+import type { BrowserPaletteSearchResult } from '@/lib/browser/palette/browser-palette-search'
 import type { PaletteSearchResult } from '@/lib/worktree-palette-search'
 import type { SimulatorPaletteSearchResult } from '@/lib/simulator-palette-search'
 import type { WorkspaceTabPaletteSearchResult } from '@/lib/workspace-tab-palette-search'

@@ -1,3 +1,4 @@
+import { disposeDesktopBrowserBridge } from '../ipc/browser/desktop-browser-bridge-wiring'
 import { app, type Event } from 'electron'
 import { closeAllWatchers } from '../ipc/filesystem-watcher'
 import { disposeWorktreeBaseDirectoryWatchers } from '../ipc/worktree-base-directory-watcher'
@@ -11,8 +12,8 @@ import { removeManagedAgentHooksAsync } from '../agent-hooks/managed-agent-hook-
 import { stopStructuredAgentSessionRuntime } from '../runtime/structured-agent-session-runtime'
 import { awaitRuntimeFileWatcherUnsubscribes } from '../runtime/orca-runtime-files'
 import { clearRuntimeMetadataIfOwned } from '../runtime/runtime-metadata'
-import { shutdownPairedRuntimeBrowserClientHosts } from '../browser/paired-runtime-browser-client-host-runtime'
-import { browserManager } from '../browser/browser-manager'
+import { shutdownPairedRuntimeBrowserClientHosts } from '../browser/client-hosts/lifecycle/paired-runtime-browser-client-host-runtime'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
 import { stopCodexStateDbBackfillRecoveries } from '../codex/codex-state-db-backfill-recovery'
 import { awaitPackedRefsLockRelease } from '../git/local-repo-ref-maintenance'
 import { settleTeardownWithinDeadline, settleWithinMs } from '../quit-teardown-deadline'
@@ -106,6 +107,7 @@ function installWillQuitHandler(): void {
       return
     }
     // A renderer can veto before-quit; push must survive until quit is committed.
+    disposeDesktopBrowserBridge()
     state.desktopPushService?.stop()
     state.unsubscribeSystemResumeBroadcast?.()
     state.unsubscribeSystemResumeBroadcast = null
@@ -185,7 +187,7 @@ function installWillQuitHandler(): void {
     })()
     // Why (review P2-4): local SSH browser routes own loopback listeners and, on the
     // system-ssh path, `ssh -N -D` children that would otherwise outlive the app.
-    const localSshRouteShutdown = import('../browser/local-ssh-browser-route')
+    const localSshRouteShutdown = import('../browser/routing/local-host-partitions/local-ssh-browser-route')
       .then((routes) => routes.closeAllLocalSshBrowserRoutes())
       .catch(() => {})
     browserManager.setBrowserGuestStateChangedListener(null)

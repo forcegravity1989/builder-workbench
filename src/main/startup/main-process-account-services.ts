@@ -23,7 +23,7 @@ import { agentHookServer } from '../agent-hooks/server'
 import { setSystemCodexHomeHookSweepSuppressed } from '../codex/hook-service'
 import { isRealHomeCodexHookLaneUsable } from '../codex/codex-real-home-hook-install'
 import { resolveHostCodexSessionSourceHome } from '../codex/codex-session-source-home'
-import { browserManager } from '../browser/browser-manager'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
 import { mainProcessState as state } from './main-process-state'
 
 export function initializeMainProcessAccountServices(): void {

@@ -24,7 +24,7 @@ vi.mock('./browser-client-page-renderer-installation', () => ({
   attachBrowserClientPageToViewport: mocks.attach
 }))
 
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { installClientHostedPaneApi, paneChannel } from './client-hosted-browser-pane-test-rig'
 import { ClientHostedBrowserPagePane } from './ClientHostedBrowserPagePane'

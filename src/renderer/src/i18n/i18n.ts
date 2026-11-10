@@ -139,3 +139,20 @@ export function setRendererPluginLanguagePacks(
     registeredPluginLanguages.add(pack.resourceLanguage)
   }
 }
+
+// translate() reads only the active language and its fallbacks, so bundles added for other
+// languages (catalog prefetch, plugin packs) must not re-render every useTranslate() consumer.
+let activeResourceVersion = 0
+
+/** Changes exactly when translate() results can change: init, active language or its resources. */
+export function getTranslationScope(): string {
+  return `${i18n.isInitialized}\0${i18n.language}\0${activeResourceVersion}`
+}
+
+const onTranslationBundleChange = (language: string): void => {
+  if (language === i18n.language || i18n.languages?.includes(language)) {
+    activeResourceVersion += 1
+  }
+}
+i18n.store.on('added', onTranslationBundleChange)
+i18n.store.on('removed', onTranslationBundleChange)

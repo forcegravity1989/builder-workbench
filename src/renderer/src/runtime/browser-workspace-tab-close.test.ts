@@ -24,7 +24,7 @@ const {
 }))
 
 vi.mock('./web-runtime-session', () => ({ closeWebRuntimeSessionTab, isWebRuntimeSessionActive }))
-vi.mock('@/store/slices/browser-webview-cleanup', () => ({ destroyWorkspaceWebviews }))
+vi.mock('@/store/slices/browser/cleanup/browser-webview-cleanup', () => ({ destroyWorkspaceWebviews }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => storeState.current } }))
 
 import { closeBrowserWorkspaceTabOnHosts } from './browser-workspace-tab-close'

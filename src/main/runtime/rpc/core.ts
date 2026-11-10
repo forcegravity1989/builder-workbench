@@ -1,3 +1,5 @@
+import type { RpcCallerIdentity } from './rpc-caller-identity'
+import type { RpcMethodPermission } from './rpc-method-permission'
 // Why: single boundary between raw RPC frames and OrcaRuntimeService; keeps schema, handler, and result type on one object.
 import { ZodError, type ZodType } from 'zod'
 import type { TerminalStreamFrame } from '../../../shared/terminal-stream-protocol'
@@ -62,6 +64,7 @@ export type LegacyCoordinatorAuthorityProof = Readonly<{
 }>
 
 export type RpcContext = {
+  caller?: RpcCallerIdentity
   runtime: OrcaRuntimeService
   // Why: lets long-poll handlers release immediately on client disconnect instead of running down timeoutMs. See design doc §3.1.
   signal?: AbortSignal
@@ -128,6 +131,7 @@ type RpcParsedParams<TSchema extends ZodType | null> = TSchema extends ZodType
 
 // Why: the authored shape — literal name, params schema, and producer result all survive for compile-time contracts.
 export type RpcTypedMethod<TName extends string, TSchema extends ZodType | null, TResult> = {
+  readonly permission?: RpcMethodPermission
   readonly name: TName
   readonly params: TSchema
   readonly handler: RpcHandler<RpcParsedParams<TSchema>, TResult>
@@ -138,6 +142,7 @@ export function defineMethod<TName extends string, TSchema extends ZodType | nul
 ): RpcTypedMethod<TName, TSchema, TResult> {
   return {
     name: spec.name,
+    permission: spec.permission,
     params: spec.params,
     handler: spec.handler
   }
@@ -151,6 +156,7 @@ export type RpcStreamingHandler<TParams> = (
 
 // Why: emitted values stay `unknown` — the emit callback is an input, so there is no return position to infer them from.
 export type RpcTypedStreamingMethod<TName extends string, TSchema extends ZodType | null> = {
+  readonly permission?: RpcMethodPermission
   readonly name: TName
   readonly params: TSchema
   readonly stream: true
@@ -162,6 +168,7 @@ export function defineStreamingMethod<TName extends string, TSchema extends ZodT
 ): RpcTypedStreamingMethod<TName, TSchema> {
   return {
     name: spec.name,
+    permission: spec.permission,
     params: spec.params,
     stream: true,
     handler: spec.handler
@@ -171,12 +178,14 @@ export function defineStreamingMethod<TName extends string, TSchema extends ZodT
 // Why `never` params: it makes the declaration a supertype of every parsed-params handler, so typed methods
 // travel to the registry boundary — and only there get erased — without a cast in each methods module.
 export type RpcMethodDeclaration = {
+  readonly permission?: RpcMethodPermission
   readonly name: string
   readonly params: ZodType | null
   readonly handler: (params: never, ctx: RpcContext) => unknown
 }
 
 export type RpcStreamingMethodDeclaration = {
+  readonly permission?: RpcMethodPermission
   readonly name: string
   readonly params: ZodType | null
   readonly stream: true
@@ -191,6 +200,7 @@ export type RpcAnyMethodDeclaration = RpcMethodDeclaration | RpcStreamingMethodD
 
 // Why: RpcMethod is the registry's erased view; the dispatcher parses params itself and hands handlers `unknown`.
 export type RpcMethod = {
+  readonly permission?: RpcMethodPermission
   readonly name: string
   readonly params: ZodType | null
   readonly handler: (params: unknown, ctx: RpcContext) => unknown
@@ -198,6 +208,7 @@ export type RpcMethod = {
 
 // Why: the `stream` flag lets the dispatcher route these to the emit-based path instead of the one-shot Promise path.
 export type RpcStreamingMethod = {
+  readonly permission?: RpcMethodPermission
   readonly name: string
   readonly params: ZodType | null
   readonly stream: true

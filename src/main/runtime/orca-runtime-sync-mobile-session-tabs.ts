@@ -1,5 +1,5 @@
-/* eslint-disable unicorn/no-useless-spread */
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
+/* eslint-disable unicorn/no-useless-spread */
 import { OrcaRuntimeWithWriteOrchestrationPointerPty } from './orca-runtime-write-orchestration-pointer-pty'
 import type { RuntimeMobileSessionTabsSnapshot } from '../../shared/runtime-types'
 import type { WorkspaceSessionState } from '../../shared/workspace-session-state-types'

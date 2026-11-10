@@ -1,4 +1,4 @@
-import type { PairingOffer } from '../../shared/pairing'
+import type { PairedRuntimeConnection } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 
 export type RuntimeEnvironmentCapabilityVerdict = 'capable' | 'absent'
 
@@ -47,12 +47,12 @@ function stateFor(environmentId: string): EvidenceState {
 
 export function captureRuntimeEnvironmentCapabilityEvidence(
   environmentId: string,
-  pairing: PairingOffer
+  pairing: PairedRuntimeConnection
 ): RuntimeEnvironmentCapabilityEvidence {
   const state = stateFor(environmentId)
   return {
     environmentId,
-    pairingKey: pairingKey(pairing),
+    pairingKey: runtimeEnvironmentConnectionPairingKey(pairing),
     epoch: state.epoch,
     sequence: ++state.nextSequence
   }
@@ -102,13 +102,13 @@ export function runtimeEnvironmentCapabilityOutcome(
 
 export function getAcceptedRuntimeEnvironmentCapabilityOutcome(
   environmentId: string,
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   runtimeId: string | null
 ): RuntimeEnvironmentCapabilityOutcome | null {
   const accepted = stateFor(environmentId).accepted
   if (
     !accepted ||
-    accepted.evidence.pairingKey !== pairingKey(pairing) ||
+    accepted.evidence.pairingKey !== runtimeEnvironmentConnectionPairingKey(pairing) ||
     (runtimeId !== null && accepted.runtimeId !== runtimeId)
   ) {
     return null
@@ -145,6 +145,6 @@ export function isRuntimeEnvironmentCapabilityPaused(environmentId: string): boo
   return stateFor(environmentId).accepted?.verdict === 'absent'
 }
 
-function pairingKey(pairing: PairingOffer): string {
-  return [pairing.endpoint, pairing.deviceToken, pairing.publicKeyB64].join('\0')
+export function runtimeEnvironmentConnectionPairingKey(pairing: PairedRuntimeConnection): string {
+  return [pairing.endpoint, pairing.credential.deviceToken, pairing.hostPublicKeyB64].join('\0')
 }

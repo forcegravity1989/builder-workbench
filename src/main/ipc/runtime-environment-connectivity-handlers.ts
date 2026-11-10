@@ -17,8 +17,8 @@ import { RuntimeRpcCallQueueOverloadError } from '../../shared/runtime-rpc-call-
 import type { RuntimeRpcFailure, RuntimeRpcResponse } from '../../shared/runtime-rpc-envelope'
 import type { RuntimeStatus } from '../../shared/runtime-types'
 import type { Store } from '../persistence'
-import { clearBrowserRoutePartitionStorageForEnvironment } from '../browser/browser-route-partition-storage-runtime'
-import { retireBrowserRoutePartitionStorageForEnvironment } from '../browser/browser-route-partition-storage-retirement'
+import { clearBrowserRoutePartitionStorageForEnvironment } from '../browser/routing/partitions/browser-route-partition-storage-runtime'
+import { retireBrowserRoutePartitionStorageForEnvironment } from '../browser/routing/partitions/browser-route-partition-storage-retirement'
 import { verifyAndAddRuntimeEnvironmentFromPairingCode } from './runtime-environment-pairing-verification'
 import { clearRuntimeEnvironmentCapabilityEvidence } from './runtime-environment-capability-evidence'
 import {

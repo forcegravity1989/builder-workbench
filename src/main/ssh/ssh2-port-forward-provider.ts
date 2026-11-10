@@ -21,40 +21,49 @@ export class Ssh2PortForwardProvider implements SshPortForwardProvider {
     const activeSockets = new Set<Socket>()
     let closed = false
 
-    const server = createServer((socket) => {
+    // Why noDelay: forwarded orcad RPC carries keystroke echo; Nagle would hold small writes behind an unacked segment.
+    const server = createServer({ noDelay: true }, (socket) => {
       activeSockets.add(socket)
       socket.on('close', () => activeSockets.delete(socket))
       socket.on('error', () => socket.destroy())
 
-      client.forwardOut(
-        options.localHost,
-        options.localPort,
-        options.remoteHost,
-        options.remotePort,
-        (err, channel) => {
-          if (err) {
-            socket.destroy()
-            return
+      // Dropped SSH transports can throw synchronously; contain failure before it kills main.
+      try {
+        client.forwardOut(
+          options.localHost,
+          options.localPort,
+          options.remoteHost,
+          options.remotePort,
+          (err, channel) => {
+            if (err) {
+              socket.destroy()
+              return
+            }
+            if (closed || socket.destroyed) {
+              closeChannel(channel)
+              socket.destroy()
+              return
+            }
+            socket.pipe(channel).pipe(socket)
+            channel.on('close', () => socket.destroy())
+            channel.on('error', () => socket.destroy())
+            socket.on('close', () => channel.close())
           }
-          if (closed || socket.destroyed) {
-            closeChannel(channel)
-            socket.destroy()
-            return
-          }
-          socket.pipe(channel).pipe(socket)
-          channel.on('close', () => socket.destroy())
-          channel.on('error', () => socket.destroy())
-          socket.on('close', () => channel.close())
-        }
-      )
+        )
+      } catch {
+        socket.destroy()
+      }
     })
 
-    await listen(server, options.localHost, options.localPort)
+    await listenForPortForward(server, options.localHost, options.localPort)
+    // Port 0 asks the OS to choose; callers must dial the actual bound port.
+    const address = server.address()
+    const localPort = typeof address === 'object' && address ? address.port : options.localPort
 
     const entry = {
       id: options.id,
       connectionId: options.connectionId,
-      localPort: options.localPort,
+      localPort,
       remoteHost: options.remoteHost,
       remotePort: options.remotePort,
       label: options.label
@@ -78,12 +87,14 @@ export class Ssh2PortForwardProvider implements SshPortForwardProvider {
       close,
       dispose: () => {
         void close()
-      }
+      },
+      // Reconnect replaces client identity; this forward belongs to its original client.
+      isLive: (current) => !closed && current.getClient() === client
     }
   }
 }
 
-function listen(server: Server, host: string, port: number): Promise<void> {
+export function listenForPortForward(server: Server, host: string, port: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const onError = (err: Error): void => {
       server.removeListener('listening', onListening)
@@ -91,6 +102,10 @@ function listen(server: Server, host: string, port: number): Promise<void> {
     }
     const onListening = (): void => {
       server.removeListener('error', onError)
+      // An accept-time error (EMFILE) on a server with no listener would crash the main process.
+      server.on('error', (error) => {
+        console.warn(`[ssh] Port forward listener on ${host}:${port} failed: ${error.message}`)
+      })
       resolve()
     }
     server.once('error', onError)

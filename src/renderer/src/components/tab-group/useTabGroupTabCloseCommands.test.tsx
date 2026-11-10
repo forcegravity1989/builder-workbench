@@ -17,7 +17,7 @@ vi.mock('../../runtime/web-runtime-session', () => ({
   isWebRuntimeSessionActive: mocks.isWebRuntimeSessionActive
 }))
 vi.mock('../terminal/terminal-tab-actions', () => ({ closeTerminalTab: mocks.closeTerminalTab }))
-vi.mock('../../store/slices/browser-webview-cleanup', () => ({
+vi.mock('../../store/slices/browser/cleanup/browser-webview-cleanup', () => ({
   destroyWorkspaceWebviews: mocks.destroyWorkspaceWebviews
 }))
 vi.mock('../editor/editor-autosave', () => ({

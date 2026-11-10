@@ -13,7 +13,7 @@ import type { VerifyAndAddRuntimeEnvironmentResult } from '../../shared/remote-p
 import type {
   BrowserClientHostPlacementPreparationRequest,
   BrowserPageCreationPlacement
-} from '../../shared/browser-client-host-placement'
+} from '../../shared/browser/client-hosting/browser-client-host-placement'
 import type { RemoteRuntimeSharedConnectionDiagnostics } from '../../shared/remote-runtime-shared-control-types'
 
 export type RuntimeEnvironmentSubscriptionHandle = {

@@ -41,7 +41,7 @@ describe('useIpcEvents browser tab close routing', () => {
       }
     })
 
-    vi.doMock('../store', () => ({
+    vi.doMock('../store/index', () => ({
       useAppStore: {
         subscribe: vi.fn(() => () => {}),
         getState: () => ({
@@ -266,7 +266,7 @@ describe('useIpcEvents browser tab close routing', () => {
       }
     })
 
-    vi.doMock('../store', () => ({
+    vi.doMock('../store/index', () => ({
       useAppStore: {
         subscribe: vi.fn(() => () => {}),
         getState: () => ({
@@ -490,7 +490,7 @@ describe('useIpcEvents browser tab close routing', () => {
       }
     })
 
-    vi.doMock('../store', () => ({
+    vi.doMock('../store/index', () => ({
       useAppStore: {
         subscribe: vi.fn(() => () => {}),
         getState: () => ({

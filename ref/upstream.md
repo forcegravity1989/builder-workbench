@@ -19,9 +19,10 @@
 | 智能体 / 共享主机对照版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
 | 发布时间         | 2026-11-06 06:31:44 UTC                                           |
 | 发布锚点         | `a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7`                         |
-| 本次核对日期     | 2026-11-09                                                        |
+| 本次核对日期     | 2026-11-10                                                        |
 | BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
-| 本次核对范围     | DSH、Cursor、Codex 六维同步索引及共享主机；网页批注采用 v250 并补 v251 导航截图取消；非整仓升级 |
+| 浏览器对照版本 | [v1.4.255](https://github.com/stablyai/orca/releases/tag/v1.4.255)，`084ce0eebbdda3f665251984804f2238be666296`，2026-11-09 12:24:14 UTC |
+| 本次核对范围 | 浏览器模块及必要公共接口采用 v255；智能体与共享主机的专项对照仍为 v251；非整仓升级 |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
@@ -33,7 +34,7 @@ BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY�
 
 远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。现有快捷键、标签菜单、Dashboard、工作区创建与 BW 草稿入口共用宿主偏好和身份约束；新工作区准备宿主命令时读取失败则停止，已准备的命令随原配对版本和宿主实例约束发送。已有标签启动的旧宿主 legacy 分支保留原兼容启动，读取不到宿主 recipe 的降级仍不能保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。
 
-managed server 自动部署、SSH → managed server、WSL 生命周期、process-host 重构、Mobile 产品及无关 UI 不随本轮迁入。现有 SSH/CLI/结构化会话路由和 BW 材料执行器保持其已有边界；原生来源、必要接口适配与 BW 自有修正分别在 PR 中说明。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
+浏览器同步采用所需的原生 RPC、宿主路由、managed tunnel、连接合同、公共进程 runner 与 Windows 文件保护接口；这些依赖接回 BW 既有 owner。共享主机专项同步未包含的 managed server 自动部署/迁移 UI、完整 WSL 生命周期、Mobile 产品及无关 UI 仍不因此启用。BW 材料执行器与智能体产品行为沿既有定义。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
 
 ### 0.3 上游目录定位
 
@@ -55,7 +56,7 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 | --- | --- | --- | --- | --- | --- | --- |
 | **DSH** · [#581](https://github.com/forcegravity1989/builder-workbench/pull/581) | 采用发现、工作区启动、首条输入及 hooks；启动/续接固定 DSH backend；新版启动页重试未迁 | 使用执行宿主的 DSH/profile/CLI 配置；未新增 BW 独立账号管理和模型目录 | 采用 hook session ID、休眠续接及宿主能力门控；无 ID 不承诺恢复；未接入压缩历史扫描 | **上游无 DSH 原生额度 provider**；BW 未接入 | **上游无 DSH 历史用量 provider**；BW 未接入 | 采用身份别名、WSL 透传和现有远端接线；CLI、账号及匹配 hooks 由实际宿主提供 |
 | **Cursor** · [#578](https://github.com/forcegravity1989/builder-workbench/pull/578) | 保留 TUI/输入；采用显式模型去重、hook 编码与防重复上报；通用输入框架未整体迁移 | 采用本机账号状态与凭据只读；登录/切号仍归 Cursor；保留模型选择，公共参数解析剩余差异未迁 | 采用 conversation ID 续接、能力门控及拒读元数据保持未知；通用历史框架未整体迁移 | 采用套餐/模型池/重置周期/团队个人额度；外部 SQLite worker 隔离未迁；其他宿主账号未接入 | **上游无 Cursor 每日 token provider**；套餐数字不等于每日 token/费用统计 | 保留既有宿主路由，改善 Windows/POSIX hooks；实际启动 HOME/信任上下文链未迁 |
-| **Codex** · [#577](https://github.com/forcegravity1989/builder-workbench/pull/577) | 保留 TUI/结构化会话；采用退出末尾回复排空、短时额度/索引探测禁插件；完整新启动/停止协议未迁 | 采用 180 秒登录等待及凭据暂缺跟踪容量；保留账号/模型配置；设备码/可取消登录、共享模型目录未迁 | 保留历史、恢复、审批及停止，采用索引探测与退出修复；新 reopen/catch-up/共享恢复协议未迁 | 采用 HTTP 替代隐藏交互终端、索引重建期额度读取、WSL 请求去重；会话固定账号用量/额外余额显示未迁 | 保留既有日志、每日聚合及成本估算；**上游有但未迁** v7 去重、长上下文计数、追加扫描/轮换识别和主会话上下文用量 | 保留既有账号/目录/宿主路由；Windows 异步命令解析、guest-only WSL CLI、process-host/sealed env 未迁 |
+| **Codex** · [#577](https://github.com/forcegravity1989/builder-workbench/pull/577) | 保留 TUI/结构化会话；采用退出末尾回复排空、短时额度/索引探测禁插件；完整新启动/停止协议未迁 | 采用 180 秒登录等待及凭据暂缺跟踪容量；保留账号/模型配置；设备码/可取消登录、共享模型目录未迁 | 保留历史、恢复、审批及停止，采用索引探测与退出修复；新 reopen/catch-up/共享恢复协议未迁 | 采用 HTTP 替代隐藏交互终端、索引重建期额度读取、WSL 请求去重；会话固定账号用量/额外余额显示未迁 | 保留既有日志、每日聚合及成本估算；**上游有但未迁** v7 去重、长上下文计数、追加扫描/轮换识别和主会话上下文用量 | 保留既有账号/目录/宿主路由；Windows 异步命令解析、guest-only WSL CLI、完整进程生命周期/sealed env 未迁；公共 runner 见 §0.6 |
 | **Claude** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
 | **GitHub Copilot** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
 | **OpenCode** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
@@ -68,10 +69,21 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 
 | 模块 / 已合入依据 | 原生采用 | BW 改造取舍 | 未带入的边界 |
 | --- | --- | --- | --- |
-| 共享主机 · [#592](https://github.com/forcegravity1989/builder-workbench/pull/592) · v251 | 网络配对/重配、连接和订阅恢复、目录清理、关闭意图、宿主 Agent 配置及实际启动消费者 | 保留批量导入壳、材料草稿/回执、结构化会话关闭和浏览器防回显适配；必要接口适配单列于 PR | 不迁 managed server、WSL 生命周期、process-host 或 Mobile 产品；上游该功能仍为 Beta |
-| 网页批注 · [#579](https://github.com/forcegravity1989/builder-workbench/pull/579) · v250，#592 补 v251 导航截图取消 | 原生收起/展开、贴图/截图传递、精简/详情反馈、同文档 fragment 判据 | 删除 BW #470/#511 独立折叠状态、外部 tray flag、自写图片预览与重复读取；保留必要基线适配、内层滚动定位和跨文档清理规则 | 不代表整个浏览器同步；双人实时互见和共同批注另由 [#576](https://github.com/forcegravity1989/builder-workbench/issues/576) 跟踪 |
+| 共享主机 · [#592](https://github.com/forcegravity1989/builder-workbench/pull/592) · v251 | 网络配对/重配、连接和订阅恢复、目录清理、关闭意图、宿主 Agent 配置及实际启动消费者 | 保留批量导入壳、材料草稿/回执及结构化会话关闭；浏览器防回显现沿 v255 接收端投影，见下节 | 该批次未迁 managed server、WSL 生命周期、process-host 或 Mobile 产品；浏览器必要依赖见下节 |
+| 网页批注 · [#579](https://github.com/forcegravity1989/builder-workbench/pull/579) · v250，#592 补 v251 导航截图取消 | 原生收起/展开、贴图/截图传递、精简/详情反馈、同文档 fragment 判据 | 独立折叠状态、外部 tray flag、自写图片预览与重复读取已删；当前批注实现随浏览器采用 v255，含原生定位和跨文档清理 | 早期批次只迁批注，当前浏览器基线见下节；双人实时互见和共同批注另由 [#576](https://github.com/forcegravity1989/builder-workbench/issues/576) 跟踪 |
 
 后续同步从此索引定位当前实现及其固定来源，再核对真实调用链。
+
+### 0.6 内置浏览器采用边界
+
+[BW #582](https://github.com/forcegravity1989/builder-workbench/issues/582) 采用固定 v255 浏览器主进程、preload、IPC、renderer、store、公共合同及必要调用链。浏览器内的功能行为沿原生，包括密码管理、导入、配置隔离、扩展、页面操作与批注；唯一保留的 BW 浏览器行为改动是 §2.3 的不受信任证书继续访问。
+
+- 密码管理沿原生按浏览器配置保存、选择填充、添加/更新/删除和 CSV 导入，使用 Electron safeStorage 保护落盘内容。候选区分 exact-origin 与同 scheme/port、同可注册域的 same-site 匹配；填充前再次核对当前 frame。不会另建 BW 密码库。
+- Windows Chromium 导入包含 [Orca #28225](https://github.com/stablyai/orca/pull/28225) 的同步进程原始输出编码修复。Chrome v20 应用绑定加密仍不能由该导入器直接解密，Cookie/密码导入必须准确报告限制；密码可沿原生 CSV 导入，不能把 CSV 支持描述为 Cookie 解密支持。原生密码能力来源见 [#33994](https://github.com/stablyai/orca/pull/33994)。
+- 新模块按上游归属组织；必要公共接口复用 BW 已有 RPC manifest、Store、配对入口和连接缓存。公共进程实现位于既有 shared/child-process owner；浏览器所需 Windows 原生文件保护随 native/windows-security 打包。依赖适配不代表其他智能体、编辑器或整套远端产品同步至 v255。
+- 共享页面由发送端携带所属 runtime，接收端按 runtime/mobile 身份投影，替代 BW 的发送端一概过滤。批注恢复为原生行为，删除 BW selector/IntersectionObserver 内层滚动标记方案；原生实时 selection 跟踪不等于旧方案的持久标记语义。
+
+内部 Windows 的 Chrome 导入、真实网站保存/填充、重启、企业 SSO 和双机浏览器仍须实际验收；静态同步及协议检查不能替代这些结果。
 
 ## 1. 上游身份与 fork 基线
 
@@ -139,7 +151,7 @@ git rev-parse 'v1.4.251^{commit}'
 - BW Skill 分发登记保持一致：`resources/skills/current-manifest.json` 与 `snapshot-registry.json` 必须继续登记 `bw-knowledge-docs`、`metrics-refresh`、`version-acceptance`、`week-planning`。manifest/registry 由 `config/scripts/generate-skill-bundle-manifest.mjs` 从根级 `skills/` 生成；三个产品流程的正文正源仍是 `standard/skills/`，运行时指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，不手改生成物。
 - 跨主机项目墙（G3）依赖原生 runtime 配对链：BW「导入 Builder 主机」批量壳只调用 `runtimeEnvironments.verifyAndAddFromPairingCode`（与原生 AddRemoteHostDialog 同一 IPC）与环境列表/状态快照，不建平行配对存储。同主机公钥经验证后原位更新凭据并保留 id、名称与历史；名称按原生去空白、外层引号及大小写归一后检测冲突，不按名称跳过重新配对。上游合并需保留该链的 renderer API。
 - 共享链接回显沿原生 `DeviceRegistry` 和 E2EE 身份：renderer 仅持久化公开引用，`mobile:restoreRuntimePairingUrl` 只读恢复同一链接，不创建/轮换授权，不改变监听范围；撤销或身份不匹配不恢复。同步时保留这条回显链，不能用生成接口替代读取。
-- 共享会话快照保留 BW 浏览器防回显适配：文档浏览器页及活动页（缺失时取首页）已指向其他 runtime 的浏览器工作区，不回发成宿主自己的页面；客户端托管页仍由所属 runtime 的页面注册表发布。这是 BW 自有适配，不计为 Orca v1.4.251 原生同步。
+- 共享会话浏览器防回显沿 v255 原生合同：发送端标记 `hostRuntimeEnvironmentId`，runtime 接收端去除属于其他 runtime 的页面并整理活动项/布局；mobile 接收端保留可访问页面并移除路由字段。文档浏览器仍不作为普通网页发布，不保留旧发送端过滤双路径。
 - runtime 新主机配对生成随机 env id；已验证同公钥重配保留原 id，删除后再次添加仍生成新 id。runtime 主机仓不落本地盘，注册行身份为 (repoId, executionHostId)。原生 catalog 按请求快照清理被移除仓库的工作树行，保留其他宿主及并发新增行；BW 项目墙仍只认当前配对目录内的行并按稳定身份归并，不能把删除后的旧 env id 当作持久主机身份。
 - 设置→集成页按 BW #323 收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 为 #366 增补，2026-10-19）：六张隐藏卡的组件、状态推导与词条保留在仓（人拍板 2026-10-16），但 `IntegrationsPane` 渲染名单与 `integrations-search` 目录是 BW 口径；preflight 增加 `welink-cli` / `cb` 探测与 codehub / welink / cb 的 `auth status` 读回（`PreflightStatus.welink` / `cloudbuild`、`codehub.authenticated`），welink 读回把 EXPIRED 判未登录（人拍板 2026-10-16，BW 口径），cb 存活探测用 `version` 子命令（`--version` 是未知旗标）、登录判定按输出标记（`Token Expires` 行且不带 `(expired)` 后缀，退出码恒 0 不可信，BW 口径照 welink EXPIRED 拍板），探测经 `command-path-resolver.ts` 的 `resolveCommandOnLocalPath` 解析真实文件、`.cmd` / `.bat` 经 `cmd.exe` 执行（`preflight-command-exec.ts`，修 npm 全局 CLI 装完仍报未安装的 Windows 盲区，BW 口径）。各卡登录按钮在卡内展开上游 `OnboardingInlineCommandTerminal` 内嵌终端（粘贴命令不回车、人按回车，OSC 133;D 感知命令结束自动复查；2026-10-19 人拍板，远端范围不给按钮）；该上游组件内 `TerminalPane` 改传 `isVisible={entered}`（BW 口径，2026-10-19 真壳白屏修复：组件在 0fr 展开动画容器内挂载终端，恒真 isVisible 使 WebGL 渲染器在无盒状态下解析 PTY 输出、展开时模型 diff 跳过预展开单元格导致画布空白；改随 `entered` 挂起渲染、动画完成翻可见走 TerminalPane 既有的 reveal-repaint 链从缓冲重绘，上游合并保留该传参）；codehub / welink 安装由应用后台执行各自自包含 npm 命令（含内网 registry 与 `--strict-ssl=false`，人确认 2026-10-16，不动机器 npm 配置，不占会话栏），cloudbuild 为**两步**（`npm config set @hw-cloudbuild:registry <内网源>` → `npm install -g @hw-cloudbuild/cloudbuild-cli`，人指定 2026-10-19，会写机器 npm 配置、不带 `--strict-ssl=false`，runner 按序执行、任一步失败即中止）；gh 安装保持外链。CodeHub / WeLink / CloudBuild 卡片共用一个 `BwCliIntegrationCard` 骨架（每卡为文案 / 探测字段 / 登录命令的薄配置），与本机范围判定因上游文件 max-lines 预算拆入 BW 自有新文件（`bw-cli-integration-cards.tsx`、`use-local-cli-scope.ts`，经 barrel 导出），codehub / welink / cloudbuild auth 读回与 BW 三 CLI 探测编排（`probeBwClis` / `readBwCliAuths`，回调注入探测函数避免循环依赖）在 `bw-cli-auth-status.ts`、安装链路（`bw-cli-install-commands.ts`、`bw-cli-install.ts`、preload `bw-cli-install-api.ts` / `cli-install-bridge.ts`、渲染端 `cli-install-action.ts`）同为 BW 自有文件（主进程模块由 agent-detection / register-core-handlers 直接引入，不经 renderer barrel）。上游合并保留该渲染名单、探测字段与 shim 路由、登录内嵌终端分支与 welink EXPIRED / cb 过期标记语义，不恢复六卡渲染，也不把 BW 卡合回上游卡模块。
 - BW 板面批注快捷键 `workbench.toggleAnnotationMode`（#444，2026-10-29）：注册表 seam 是 `shared/keybindings/types.ts` 的 `KeybindingScope` 新值 `'workbench'` 与 `KeybindingActionId` 新成员，加 `definitions-core-2.ts` 一条定义（默认 Alt+A、`conflictGroup: 'global'`）；渲染层零 native 改动——监听器为板面本地安装（仿 `editor.addReviewNote` 先例，入口不可用即不挂载），不进 `createAppCommandHandlers` Map、不进 `use-global-keybindings`、不进主进程 webview 白名单。上游合并保留这两个 union 扩点与定义条目即可，BW 计划/验收两板的快捷键随定义存在而存在。
@@ -176,8 +188,7 @@ CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也
 | Cursor 切号或登出后不显示上一个账号的额度 | BW 保留的账号归属保护，和原生额度映射一起维护 | [账号策略](../src/main/rate-limits/cursor-usage-account-policy.ts) | [切号/登出用例](../src/main/rate-limits/service-cursor-usage.test.ts) |
 | Codex 进程退出时不丢最后一段回复，也不无限等待 | 原生排空 helper 加 BW 当前生命周期适配；不导入整个新进程框架 | [排空](../src/main/provider-process/provider-exit-output-drain.ts)、[连接 owner](../src/main/codex/codex-app-server-connection.ts) | [退出协议](../src/main/codex/codex-app-server-connection.test.ts) |
 | 共享目录刷新过程中新增项目，不被旧响应抹掉 | 原生目录清理及必要并发适配；旧注册仍清理、请求后新增项保留 | [目录合并](../src/renderer/src/store/repos/repo-catalog-merge.ts) | [仓库/工作树保留用例](../src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts) |
-| 看同事的托管网页，镜像页不再回发成自己的页面 | BW 浏览器防回显适配保留；不能因采用上游恢复链而删除 | [发布过滤](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-surfaces.ts)、[两处快照投影](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-snapshots.ts) | [普通/fallback 投影用例](../src/renderer/src/runtime/sync-runtime-graph-browser.test.ts) |
-| 网页内层容器滚动后，批注跟随原元素 | 基线上的定位修正保留；裁剪/卸载元素不显示错误标记 | [坐标桥](../src/shared/browser-annotation-viewport-bridge.ts) | [滚动和可见性协议](../src/shared/browser-annotation-viewport-bridge.test.ts) |
+| 看同事的托管网页，镜像页不再回发成自己的页面 | 原生发送端宿主标记与接收端投影替代 BW 过滤 | [发送元数据](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-browser-tabs.ts)、[接收端投影](../src/main/runtime/rpc/methods/session-tab-file-host-projection.ts) | [发送端用例](../src/renderer/src/runtime/sync-runtime-graph-browser.test.ts)；双机行为须实测 |
 | 批注收起后再展开，草稿和贴图仍在 | **已由原生替代**：BW 独立折叠状态已删，只保留原生 tray | [批注 tray](../src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.tsx) | [现有 tray 用例](../src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx)只覆盖编辑/保存/取消；收起展开、中文草稿及贴图保留按 #579 人工判据验证 |
 
 ## 3. 同步取舍

@@ -12,9 +12,9 @@ import { describe, expect, it } from 'vitest'
  * Nothing in the rendered result changes, so only the route itself can be asserted.
  */
 const ROUTE_PATH = fileURLToPath(
-  new URL('./browser-client-page-metadata-reporting.ts', import.meta.url)
+  new URL('./browser-client-page-metadata-reporting', import.meta.url)
 )
-const PANE_PATH = fileURLToPath(new URL('./ClientHostedBrowserPagePane.tsx', import.meta.url))
+const PANE_PATH = fileURLToPath(new URL('./ClientHostedBrowserPagePane', import.meta.url))
 
 describe('client-hosted page metadata route', () => {
   const route = readFileSync(ROUTE_PATH, 'utf8')

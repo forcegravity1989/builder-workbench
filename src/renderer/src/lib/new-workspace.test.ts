@@ -83,7 +83,7 @@ vi.mock('@/lib/agent-paste-draft', () => ({
 }))
 
 vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => 'launch-token-1'
+  createNonSecureContextUuid: () => 'launch-token-1'
 }))
 
 vi.mock('@/lib/telemetry', () => ({

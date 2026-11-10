@@ -1,7 +1,7 @@
 import { launchWorktreeBackgroundTerminals } from '@/lib/launch-worktree-background-terminals'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 import { getResolvedExecutionHostIdForWorktree } from '@/lib/resolved-worktree-execution-host'
 import type {
   Automation,
@@ -182,7 +182,7 @@ export async function prepareAutomationDispatchWorkspace(args: {
     }
   }
 
-  const automationWorkspaceCreateRequestId = createBrowserUuid()
+  const automationWorkspaceCreateRequestId = createNonSecureContextUuid()
   const createResult =
     automation.workspaceMode === 'new_per_run'
       ? await useAppStore.getState().createWorktree(

@@ -1,25 +1,29 @@
+import { parseChromeExtensionUrl } from '../../shared/browser/extensions/browser-extension-url'
+import { getBrowserExtensionSessionForProfile } from '../browser/extensions/profile-sessions/browser-extension-session-loader'
+import { installBrowserJavaScriptDialogs } from '../browser/guest-lifecycle/prompts/browser-javascript-dialogs'
 import type { BrowserWindow } from 'electron'
+import { attachBrowserPasswordGuest } from '../browser-passwords/browser-password-guest-service'
 import { join } from 'node:path'
 import { ORCA_BROWSER_GUEST_WEB_PREFERENCES } from '../../shared/browser-guest-web-preferences'
 import { normalizeBrowserNavigationUrl } from '../../shared/browser-url'
-import { browserManager } from '../browser/browser-manager'
-import { browserSessionRegistry } from '../browser/browser-session-registry'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
+import { browserSessionRegistry } from '../browser/sessions/profiles/browser-session-registry'
 import {
   enforceLocalSshWebRtcPolicyForGuest,
   isLocalSshBrowserPartition
-} from '../browser/local-ssh-browser-partitions'
+} from '../browser/routing/local-host-partitions/local-ssh-browser-partitions'
 import {
   browserRouteSessionRegistry,
   browserRouteWebContentsRegistry
-} from '../browser/browser-route-session-runtime'
+} from '../browser/routing/sessions/browser-route-session-runtime'
 import { ORCA_BROWSER_BLANK_URL } from '../../shared/constants'
 import { DOC_PREVIEW_PARTITION, parseDocPreviewUrl } from '../../shared/doc-preview-scheme'
-import { setDocPreviewFailureSink } from '../browser/doc-preview-failure-notice'
+import { setDocPreviewFailureSink } from '../browser/document-preview/doc-preview-failure-notice'
 import {
   getDocPreviewGrant,
   revokeAllDocPreviewGrants
-} from '../browser/doc-preview-grant-registry'
-import { isDocPreviewSession } from '../browser/doc-preview-protocol'
+} from '../browser/document-preview/doc-preview-grant-registry'
+import { isDocPreviewSession } from '../browser/document-preview/doc-preview-protocol'
 import { registerPluginPanelNavigationGuard } from '../plugins/plugin-panel-navigation-guard'
 import { installPrivilegedWindowNavigationPolicy } from './privileged-window-navigation'
 
@@ -35,6 +39,16 @@ function isAdmissibleDocPreviewAttach(partition: string, src: string): boolean {
   }
   const target = parseDocPreviewUrl(src)
   return target !== null && getDocPreviewGrant(target.grantId) !== null
+}
+
+function isAdmissibleExtensionPageAttach(partition: string, src: string): boolean {
+  const extensionUrl = parseChromeExtensionUrl(src)
+  if (!extensionUrl || !browserSessionRegistry.isAllowedPartition(partition)) {
+    return false
+  }
+  const profile = browserSessionRegistry.listProfiles().find((p) => p.partition === partition)
+  const sess = profile ? getBrowserExtensionSessionForProfile(profile.id) : null
+  return Boolean(sess?.extensions.getExtension(extensionUrl.extensionId))
 }
 
 export function installMainWindowWebviewSecurity(mainWindow: BrowserWindow): void {
@@ -58,7 +72,7 @@ export function installMainWindowWebviewSecurity(mainWindow: BrowserWindow): voi
   // so register it with the window's other navigation policy.
   registerPluginPanelNavigationGuard(mainWindow.webContents)
 
-  const browserWindowClosePreload = join(__dirname, 'browser-window-close-preload.js')
+  const browserGuestPreload = join(__dirname, 'browser-guest-preload.js')
   // Why a preview gets a preload at all: it is our own editor surface, not a browsing guest. This
   // one only decides what a click on a link means, and it is pinned here so no renderer-supplied
   // value can reach a preview guest and no other attach path can acquire it.
@@ -74,10 +88,12 @@ export function installMainWindowWebviewSecurity(mainWindow: BrowserWindow): voi
     // profile partitions — the renderer owns their URLs, no main-side grants.
     const isLocalSshPartition = isLocalSshBrowserPartition(partition)
     const isDocPreviewAttach = isAdmissibleDocPreviewAttach(partition, src)
+    const isExtensionPageAttach = isAdmissibleExtensionPageAttach(partition, src)
 
     // Why: fail closed — deny any src or partition not in the registry allowlist so a renderer bug can't smuggle preload/Node into an unprivileged guest.
     if (
       !isDocPreviewAttach &&
+      !isExtensionPageAttach &&
       (!normalizedSrc ||
         (!isProfilePartition && !isRoutePartition && !isLocalSshPartition) ||
         (isRoutePartition && normalizedSrc !== ORCA_BROWSER_BLANK_URL))
@@ -88,7 +104,7 @@ export function installMainWindowWebviewSecurity(mainWindow: BrowserWindow): voi
 
     delete params.preload
     // Why: preload runs in the page's main world before inline scripts can call window.close().
-    webPreferences.preload = isDocPreviewAttach ? docPreviewLinkPreload : browserWindowClosePreload
+    webPreferences.preload = isDocPreviewAttach ? docPreviewLinkPreload : browserGuestPreload
     // Why: older Electron builds expose preloadURL alongside preload; delete both so the guest can't inherit the main preload bridge.
     delete (webPreferences as Record<string, unknown>).preloadURL
     // Why delete something Electron does not set: 43 does not pass the embedder's
@@ -96,7 +112,8 @@ export function installMainWindowWebviewSecurity(mainWindow: BrowserWindow): voi
     // insurance — if that ever changes, the guest would read this app's browser-host id.
     delete webPreferences.additionalArguments
     webPreferences.nodeIntegration = false
-    webPreferences.nodeIntegrationInSubFrames = false
+    // Sandboxed extension frames need the same isolated preloads, never Node APIs.
+    webPreferences.nodeIntegrationInSubFrames = isProfilePartition
     webPreferences.enableBlinkFeatures = ''
     webPreferences.disableBlinkFeatures = ''
     webPreferences.webSecurity = true
@@ -123,6 +140,8 @@ export function installMainWindowWebviewSecurity(mainWindow: BrowserWindow): voi
     }
     // Why: attach guest popup/nav policy at creation; waiting for renderer registration races target=_blank/early redirects past it.
     browserManager.attachGuestPolicies(guest)
+    attachBrowserPasswordGuest(guest)
+    installBrowserJavaScriptDialogs(guest, () => browserManager.resolvePagePromptTarget(guest))
     // Why: route guests override the generic popup fallback and stay blank until exact main-owned registration.
     browserRouteWebContentsRegistry.attachGuest(guest)
     // Why: the session proxy cannot stop WebRTC UDP; only the per-contents policy does.

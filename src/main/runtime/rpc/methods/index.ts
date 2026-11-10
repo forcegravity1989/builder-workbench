@@ -1,3 +1,5 @@
+import { BROWSER_IDENTITY_METHODS } from './browser/browser-identity-rpc'
+import { DESKTOP_BROWSER_BRIDGE_RPC_METHODS } from './browser/desktop-browser-bridge'
 import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
@@ -91,6 +93,8 @@ export const ALL_RPC_METHODS = [
   ...TERMINAL_METHODS,
   ...TERMINAL_ORPHAN_METHODS,
   ...BROWSER_CORE_METHODS,
+  ...BROWSER_IDENTITY_METHODS,
+  ...DESKTOP_BROWSER_BRIDGE_RPC_METHODS,
   ...BROWSER_SCREENCAST_METHODS,
   ...BROWSER_EXTRA_METHODS,
   ...BROWSER_CLIENT_HOST_METHODS,

@@ -8,7 +8,7 @@ import { createRepoSlice } from './repos'
 import { createSparsePresetsSlice } from './sparse-presets'
 import { createWorktreeSlice } from './worktrees'
 import { createTerminalSlice } from './terminals'
-import { createTabsSlice } from './tabs'
+import { createTabsSlice } from "./tabs"
 import { createUISlice } from './ui'
 import { createSettingsSlice } from './settings'
 import { createKeybindingsSlice } from './keybindings'
@@ -26,7 +26,7 @@ import {
   createCodexUsageSlice,
   createOpenCodeUsageSlice
 } from './usage-provider-slices'
-import { createBrowserSlice } from './browser'
+import { createBrowserSlice } from "./browser/create-browser-slice"
 import { createRateLimitSlice } from './rate-limits'
 import { createSshSlice } from './ssh'
 import { createRuntimeEnvironmentSshSlice } from './runtime-environment-ssh'

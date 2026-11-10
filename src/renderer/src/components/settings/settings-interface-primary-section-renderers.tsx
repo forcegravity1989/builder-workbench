@@ -1,4 +1,4 @@
-import { BrowserPane } from './BrowserPane'
+import { BrowserPane } from './browser/BrowserPane'
 import { FloatingWorkspacePane } from './FloatingWorkspacePane'
 import { MobileEmulatorSettingsPane } from './MobileEmulatorSettingsPane'
 import { QuickCommandsPane } from './QuickCommandsPane'

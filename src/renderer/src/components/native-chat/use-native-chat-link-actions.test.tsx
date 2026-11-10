@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/lib/http-link-routing', () => ({ openHttpLink: mocks.openHttpLink }))
+vi.mock('@/lib/browser/navigation/http-link-routing', () => ({ openHttpLink: mocks.openHttpLink }))
 
 vi.mock('./native-chat-http-link-source-owner', () => ({
   resolveNativeChatHttpLinkSourceOwner: () => ({ kind: 'local' }),

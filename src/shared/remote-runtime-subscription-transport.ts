@@ -2,7 +2,7 @@ import { remoteRuntimeConnectOptions, remoteRuntimeConnectFailureMessage } from 
 import { randomUUID } from 'node:crypto'
 import { throwIfSignalAborted, abortSignalReason } from './abort-signal-reason'
 import WebSocket from 'ws'
-import type { PairingOffer } from './pairing'
+import type { PairedRuntimeConnection } from './remote-runtime/pairing/paired-runtime-connection'
 import {
   deriveSharedKey,
   encryptBytes,
@@ -37,7 +37,7 @@ import type {
 } from './remote-runtime-subscription-contract'
 
 export async function subscribeRemoteRuntimeTransport<TResult>(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,
@@ -48,18 +48,18 @@ export async function subscribeRemoteRuntimeTransport<TResult>(
   const requestId = randomUUID()
   const serializedRequest = serializeRemoteRuntimeRpcRequest({
     requestId,
-    deviceToken: pairing.deviceToken,
+    deviceToken: pairing.credential.deviceToken,
     method,
     params
   })
   const serializedAuth = serializeRemoteRuntimePayload({
     type: 'e2ee_auth',
-    deviceToken: pairing.deviceToken,
+    deviceToken: pairing.credential.deviceToken,
     clientCapabilities: remoteRuntimeClientCapabilities(options?.clientCapabilities)
   })
   return await new Promise((resolve, reject) => {
     const keyPair = generateKeyPair()
-    const serverPublicKey = publicKeyFromBase64(pairing.publicKeyB64)
+    const serverPublicKey = publicKeyFromBase64(pairing.hostPublicKeyB64)
     const sharedKey = deriveSharedKey(keyPair.secretKey, serverPublicKey)
     let settled = false
     let closing = false

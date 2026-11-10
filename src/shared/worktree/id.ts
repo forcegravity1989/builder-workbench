@@ -89,3 +89,8 @@ export function getWorktreePathBasenameFromId(worktreeId: string): string | null
   const basename = normalizedPath.split(/[\\/]/).findLast(Boolean)?.trim()
   return basename || null
 }
+
+/** Worktree id for a checkout, spelled exactly as given: ids are never reassigned by a fold. */
+export function composeWorktreeId(repoId: string, worktreePath: string): string {
+  return `${repoId}${WORKTREE_ID_SEPARATOR}${worktreePath}`
+}

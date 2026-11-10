@@ -13,7 +13,7 @@ import {
 import { getSshFilesystemProvider } from '../providers/ssh-filesystem-dispatch'
 import { FileRangeReadUnsupportedError } from '../providers/types'
 import { MAX_FILE_RANGE_READ_BYTES } from '../../shared/file-range-read'
-import { BROWSER_CLIENT_FILE_CHANNEL_CHUNK_MAX_BYTES } from '../../shared/browser-client-file-channel-protocol'
+import { BROWSER_CLIENT_FILE_CHANNEL_CHUNK_MAX_BYTES } from '../../shared/browser/client-hosting/browser-client-file-channel-protocol'
 import type { RuntimeFileCommands } from './orca-runtime-files'
 
 vi.mock('fs', async () => (await import('./orca-runtime-files-mock-registry')).fsModuleMock())

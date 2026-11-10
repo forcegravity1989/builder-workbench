@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import {
   addOrUpdateEnvironmentFromPairingCode,
   resolveEnvironment,
@@ -57,7 +58,7 @@ async function verifyPairingCode(
   }
   try {
     const response = await sendRemoteRuntimeRequest<RuntimeStatus>(
-      parsed.value.pairing,
+      pairedRuntimeConnectionFromOffer(parsed.value.pairing),
       'status.get',
       undefined,
       15_000,

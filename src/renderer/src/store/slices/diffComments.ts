@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand'
 import type { AppState } from '../types'
 import type { DiffComment } from '../../../../shared/diff-comment-types'
 import { findWorktreeById } from './worktree-helpers'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
 import { findFolderWorkspaceOwner } from '@/lib/folder-workspace-runtime-owner'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import {
@@ -35,7 +35,7 @@ export type DiffCommentDeliverySnapshot = Pick<
 >
 
 function generateId(): string {
-  return createBrowserUuid()
+  return createNonSecureContextUuid()
 }
 
 function deliverySnapshotMatches(

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   BROWSER_CLIENT_HOSTED_REMOTE_SETTINGS_TARGET_ID,

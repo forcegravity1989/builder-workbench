@@ -3,12 +3,12 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { getConnectionId } from '@/lib/connection-context'
 import { useMountedRef } from '@/hooks/useMountedRef'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
 import { formatClipboardImagePasteError } from '@/components/terminal-pane/terminal-pane-paste-execution'
-import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
-import { clipboardEventImageFile } from '@/components/native-chat/native-chat-clipboard-image'
+import { resolveTerminalPasteRuntimeEnvironmentId } from '@/components/terminal-pane/terminal-paste-runtime'
+import { clipboardEventImageFile } from '../../../../../shared/native-chat/input/native-chat-clipboard-event'
 import { useNativeChatComposerAttachmentPreviews } from '@/components/native-chat/use-native-chat-composer-attachment-previews'
-import type { NativeChatComposerImageAttachment } from '@/components/native-chat/NativeChatComposerField'
+import type { NativeChatComposerImageAttachment } from '@/components/native-chat/attachments/chips/native-chat-image-attachment'
 
 const NO_PENDING: readonly NativeChatComposerImageAttachment[] = []
 
@@ -16,7 +16,11 @@ const NO_PENDING: readonly NativeChatComposerImageAttachment[] = []
 function saveAnnotationClipboardImage(worktreeId: string): Promise<string | null> {
   return window.api.ui.saveClipboardImageAsTempFile({
     connectionId: getConnectionId(worktreeId) ?? null,
-    runtimeEnvironmentId: getRuntimeEnvironmentIdForWorktree(useAppStore.getState(), worktreeId)
+    runtimeEnvironmentId: resolveTerminalPasteRuntimeEnvironmentId(
+      useAppStore.getState(),
+      worktreeId,
+      null
+    )
   })
 }
 
@@ -45,7 +49,7 @@ export function useBrowserAnnotationImages(worktreeId: string): {
         return
       }
       event.preventDefault()
-      const id = createBrowserUuid()
+      const id = createNonSecureContextUuid()
       setImages((current) => [...current, { id, path: '', pending: true }])
       setPreview(id, URL.createObjectURL(file))
       const settle = (path: string | null): void => {

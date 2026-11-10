@@ -1,5 +1,5 @@
-/* eslint-disable unicorn/no-useless-spread */
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
+/* eslint-disable unicorn/no-useless-spread */
 import { OrcaRuntimeWithCreateRuntimeOwnedMobileSessionTerminal } from './orca-runtime-create-runtime-owned-mobile-session-terminal'
 import type {
   RuntimeMobileSessionCreateTerminalResult,

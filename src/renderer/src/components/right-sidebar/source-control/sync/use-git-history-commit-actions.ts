@@ -21,7 +21,7 @@ import {
   type SourceControlRowOpenEvent
 } from '../listing/split-open'
 import type { GitHistoryCommitAction } from './git-history-commit-context-menu'
-import { openWorkspaceBrowserTab } from '@/lib/workspace-browser-tab-open'
+import { openWorkspaceBrowserTab } from '@/lib/browser/workspace/workspace-browser-tab-open'
 
 const EMPTY_BRANCH_CHANGE_ENTRIES: GitBranchChangeEntry[] = []
 

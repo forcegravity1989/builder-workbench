@@ -16,7 +16,7 @@ vi.mock('@/components/browser-pane/host-guest/browser-automation-visibility', ()
 vi.mock('@/components/terminal/background-terminal-worktree-mount', () => ({
   requestBackgroundTerminalWorktreeMount: mocks.requestBackgroundMount
 }))
-vi.mock('../../store', () => ({
+vi.mock('../../store/index', () => ({
   useAppStore: {
     getState: () => ({
       activeWorktreeId: 'wt-active',

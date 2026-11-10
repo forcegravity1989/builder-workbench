@@ -10,13 +10,14 @@ import {
   BrowserClientFileChannelAbortParams,
   BrowserClientFileChannelReadParams,
   BrowserClientFileChannelWriteParams
-} from '../browser-client-file-channel-protocol'
+} from '../browser/client-hosting/browser-client-file-channel-protocol'
 import {
   BrowserClientHostAttachParams,
   BrowserClientHostCommandResultParams,
   BrowserNetworkTunnelAttachParams
-} from '../browser-client-host-protocol'
-import { BrowserClientPageMetadataParams } from '../browser-client-page-metadata-protocol'
+} from '../browser/client-hosting/browser-client-host-protocol'
+import { BrowserClientHostRequestResultParams } from '../browser/client-hosting/browser-client-host-request-protocol'
+import { BrowserClientPageMetadataParams } from '../browser/client-hosting/browser-client-page-metadata-protocol'
 import {
   CodeHubAssignIssue,
   CodeHubCloseMr,
@@ -38,6 +39,10 @@ import {
   CodeHubUpdateIssueTitle,
   CodeHubViewTask
 } from '../codehub-api'
+import {
+  DesktopBrowserBridgeAttachParams,
+  DesktopBrowserBridgeResultParams
+} from '../desktop-browser-bridge-protocol'
 import {
   PairingGetEndpointsParamsSchema,
   PairingProvisionRelayParamsSchema
@@ -71,7 +76,10 @@ import {
   AutomationUpdate
 } from './automation-params'
 import { CertificateProceed } from './browser-core-params'
+import { ExtensionList, ExtensionReload } from './browser-extension-params'
 import { MouseClick } from './browser-extras-params'
+import { BrowserIdentitySet, ProfileCreate } from './browser-identity-params'
+import { Screenshot, Snapshot } from './browser-observation-params'
 import {
   Check,
   ClipboardWrite,
@@ -98,11 +106,10 @@ import {
   MouseButton,
   MouseWheel,
   MouseXY,
-  ProfileCreate,
+  ProfileClearGoogleCookies,
   ProfileDelete,
   ProfileImportFromBrowser,
   Screencast,
-  Screenshot,
   Scroll,
   Select,
   SelectorPath,
@@ -125,7 +132,7 @@ import {
   Viewport,
   Wait
 } from './browser-params'
-import { ScreencastUnsubscribe } from './browser-screencast-params'
+import { ScreencastAck, ScreencastUnsubscribe } from './browser-screencast-params'
 import { BrowserOpenUrlParams, BrowserTabCreateParams } from './browser-tab-create-params'
 import { ClientEventsUnsubscribeParams } from './client-events-params'
 import {
@@ -453,7 +460,7 @@ import {
   RepoSparsePresetSave,
   RepoUpdate
 } from './repo-params'
-import { BrowserTarget } from './rpc-param-primitives'
+import { BrowserTarget, ExpectUrlBrowserTarget } from './rpc-param-primitives'
 import { ClientCapabilitiesUpdate } from './runtime-client-capabilities-params'
 import { SessionTabsUnsubscribeAllParams } from './session-tabs-params'
 import {
@@ -664,7 +671,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'automation.runs': AutomationRuns,
   'automation.show': AutomationId,
   'automation.update': AutomationUpdate,
-  'browser.back': BrowserTarget,
+  'browser.back': ExpectUrlBrowserTarget,
   'browser.capture.start': BrowserTarget,
   'browser.capture.stop': BrowserTarget,
   'browser.certificate.proceed': CertificateProceed,
@@ -677,6 +684,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'browser.clientHost.fileChannel.read': BrowserClientFileChannelReadParams,
   'browser.clientHost.fileChannel.write': BrowserClientFileChannelWriteParams,
   'browser.clientHost.pageMetadata': BrowserClientPageMetadataParams,
+  'browser.clientHost.requestResult': BrowserClientHostRequestResultParams,
   'browser.clipboardRead': BrowserTarget,
   'browser.clipboardWrite': ClipboardWrite,
   'browser.console': LimitParam,
@@ -685,21 +693,25 @@ export const RPC_PARAMS_BY_METHOD = {
   'browser.cookie.set': CookieSet,
   'browser.dblclick': Element,
   'browser.dialogAccept': DialogAccept,
-  'browser.dialogDismiss': BrowserTarget,
+  'browser.dialogDismiss': ExpectUrlBrowserTarget,
   'browser.download': SelectorPath,
   'browser.drag': Drag,
   'browser.eval': Eval,
   'browser.exec': Exec,
+  'browser.extensionList': ExtensionList,
+  'browser.extensionReload': ExtensionReload,
   'browser.fill': Fill,
   'browser.find': Find,
   'browser.focus': Element,
-  'browser.forward': BrowserTarget,
+  'browser.forward': ExpectUrlBrowserTarget,
   'browser.fullScreenshot': FullScreenshot,
   'browser.geolocation': Geolocation,
   'browser.get': Get,
   'browser.goto': Goto,
   'browser.highlight': Highlight,
   'browser.hover': Element,
+  'browser.identity.get': null,
+  'browser.identity.set': BrowserIdentitySet,
   'browser.intercept.disable': BrowserTarget,
   'browser.intercept.enable': InterceptEnable,
   'browser.intercept.list': BrowserTarget,
@@ -715,13 +727,15 @@ export const RPC_PARAMS_BY_METHOD = {
   'browser.openUrl': BrowserOpenUrlParams,
   'browser.pdf': BrowserTarget,
   'browser.profileClearDefaultCookies': null,
+  'browser.profileClearGoogleCookies': ProfileClearGoogleCookies,
   'browser.profileCreate': ProfileCreate,
   'browser.profileDelete': ProfileDelete,
   'browser.profileDetectBrowsers': null,
   'browser.profileImportFromBrowser': ProfileImportFromBrowser,
   'browser.profileList': null,
-  'browser.reload': BrowserTarget,
+  'browser.reload': ExpectUrlBrowserTarget,
   'browser.screencast': Screencast,
+  'browser.screencast.ack': ScreencastAck,
   'browser.screencast.unsubscribe': ScreencastUnsubscribe,
   'browser.screenshot': Screenshot,
   'browser.scroll': Scroll,
@@ -733,11 +747,11 @@ export const RPC_PARAMS_BY_METHOD = {
   'browser.setHeaders': SetHeaders,
   'browser.setMedia': SetMedia,
   'browser.setOffline': SetOffline,
-  'browser.snapshot': BrowserTarget,
-  'browser.storage.local.clear': BrowserTarget,
+  'browser.snapshot': Snapshot,
+  'browser.storage.local.clear': ExpectUrlBrowserTarget,
   'browser.storage.local.get': StorageKey,
   'browser.storage.local.set': StorageKeyValue,
-  'browser.storage.session.clear': BrowserTarget,
+  'browser.storage.session.clear': ExpectUrlBrowserTarget,
   'browser.storage.session.get': StorageKey,
   'browser.storage.session.set': StorageKeyValue,
   'browser.tabClose': TabClose,
@@ -793,6 +807,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'computer.scroll': ScrollOfComputerSchemasParams,
   'computer.setValue': SetValue,
   'computer.typeText': TypeText,
+  'desktopBrowserBridge.attach': DesktopBrowserBridgeAttachParams,
+  'desktopBrowserBridge.result': DesktopBrowserBridgeResultParams,
   'diagnostics.memory': null,
   'emulator.attach': AttachParamsOfEmulatorParams,
   'emulator.availability': EmulatorAvailabilityParams,

@@ -260,3 +260,16 @@ export function settingsForWorktreeOperationRoute(
     ? { ...settings, activeRuntimeEnvironmentId: route.runtimeEnvironmentId }
     : ({ activeRuntimeEnvironmentId: route.runtimeEnvironmentId } as AppState['settings'])
 }
+
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+
+import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+
+/** The floating workspace has no host record; its files always live on this machine. */
+export function getFloatingWorkspaceOperationRoute(
+  worktreeId: string
+): WorktreeOperationRoute | null {
+  return worktreeId === FLOATING_TERMINAL_WORKTREE_ID
+    ? { executionHostId: LOCAL_EXECUTION_HOST_ID, runtimeEnvironmentId: null }
+    : null
+}

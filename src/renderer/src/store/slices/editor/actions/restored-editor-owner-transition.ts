@@ -1,7 +1,7 @@
 import type { ActiveWorktreeStateTransition } from '../../worktree-helpers'
 import type { TabGroup } from '../../../../../../shared/tab-types'
 import { parseExecutionHostId } from '../../../../../../shared/execution-host'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../../../shared/non-secure-context-uuid"
 import { sanitizeRecentTabIds } from '../../tab-group-state'
 import {
   nextActiveIdAfterRemoval,
@@ -51,7 +51,7 @@ export function buildRestoredEditorOwnerTransition(
     )
     const targetGroups = s.groupsByWorktree[targetWorktreeId] ?? []
     const targetGroupId =
-      s.activeGroupIdByWorktree[targetWorktreeId] ?? targetGroups[0]?.id ?? createBrowserUuid()
+      s.activeGroupIdByWorktree[targetWorktreeId] ?? targetGroups[0]?.id ?? createNonSecureContextUuid()
     const targetGroup = targetGroups.find((group) => group.id === targetGroupId) ?? {
       id: targetGroupId,
       worktreeId: targetWorktreeId,

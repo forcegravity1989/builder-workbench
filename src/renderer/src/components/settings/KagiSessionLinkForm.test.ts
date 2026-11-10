@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createKagiSessionLinkDraftState,
   resolveKagiSessionLinkDraftState
-} from './KagiSessionLinkForm'
+} from './browser/KagiSessionLinkForm'
 
 describe('KagiSessionLinkForm draft state', () => {
   it('keeps an unsaved draft while the persisted session link is unchanged', () => {

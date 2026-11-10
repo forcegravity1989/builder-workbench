@@ -1,3 +1,4 @@
+import type { ExecutionHostId } from '../../../shared/execution-host'
 import { removeStaleDurableWriteTempFiles } from '../../durable-file-write'
 import type { GlobalSettings } from '../../../shared/global-settings-types'
 import type { PersistedState } from '../../../shared/persisted-state-types'
@@ -27,6 +28,7 @@ export type StoreRuntimeOptions = {
 
 /** Mutable coordination state shared only with this Store's private collaborators. */
 export class StoreRuntimeState {
+  readonly workspaceSessionWriteListeners = new Set<(hostId: ExecutionHostId | null) => void>()
   state!: PersistedState
   readonly dataFile: string
   readonly storageAuthority: AutomationStorageAuthority

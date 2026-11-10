@@ -11,7 +11,7 @@ import type {
   AgentProviderSessionMetadata,
   SleepingAgentLaunchConfig
 } from '../../../shared/agent-session-resume'
-import type { TabSplitDirection } from '@/store/slices/tabs'
+import type { TabSplitDirection } from "../store/slices/tabs"
 import type { WebRuntimeTerminalCreateOutcome } from '@/runtime/web-runtime-session'
 
 export type LaunchAiVaultSessionInNewTabResult =

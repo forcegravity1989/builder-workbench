@@ -2,32 +2,29 @@ import {
   BROWSER_CLIENT_FILE_CHANNEL_MAX_ACTIVE_DOWNLOADS,
   BROWSER_CLIENT_FILE_CHANNEL_TRANSFER_MAX_BYTES,
   decodeBrowserClientFileChannelChunk
-} from '../../shared/browser-client-file-channel-protocol'
+} from '../../shared/browser/client-hosting/browser-client-file-channel-protocol'
 import {
   buildBrowserDownloadCollisionCandidate,
   MAX_BROWSER_DOWNLOAD_COLLISION_ATTEMPTS,
   normalizeBrowserDownloadFilename
 } from '../../shared/browser-download-filename'
+import type { RuntimeFileMutationExpectation } from './files/file-mutation-expectation'
 
-// Why: client-hosted downloads land in the remote workspace, not the desktop, so they need a
-// stable in-workspace home that the containment-checked file transfer path can reach.
+// Remote downloads need an in-workspace home reachable through containment-checked transfers.
 export const BROWSER_CLIENT_DOWNLOAD_WORKSPACE_DIRECTORY = '.orca/browser-downloads'
 
+type TransferMutation = { workspaceId: string; expectation: RuntimeFileMutationExpectation }
 export type BrowserClientDownloadTransferDependencies = {
-  writeChunk(input: {
-    workspaceId: string
-    relativePath: string
-    contentBase64: string
-    append: boolean
-  }): Promise<void>
-  commit(input: {
-    workspaceId: string
-    tempRelativePath: string
-    finalRelativePath: string
-  }): Promise<void>
-  remove(input: { workspaceId: string; relativePath: string }): Promise<void>
+  /** Pins the workspace's current host and creates the directory there. */
+  prepareDirectory(workspaceId: string, directory: string): Promise<RuntimeFileMutationExpectation>
+  writeChunk(
+    input: TransferMutation & { relativePath: string; contentBase64: string; append: boolean }
+  ): Promise<void>
+  commit(
+    input: TransferMutation & { tempRelativePath: string; finalRelativePath: string }
+  ): Promise<void>
+  remove(input: TransferMutation & { relativePath: string }): Promise<void>
   exists(input: { workspaceId: string; relativePath: string }): Promise<boolean>
-  ensureDirectory(input: { workspaceId: string; relativePath: string }): Promise<void>
 }
 
 type TransferSession = {
@@ -36,12 +33,12 @@ type TransferSession = {
   pageHostGeneration: number
   workspaceId: string
   tempRelativePath: string
+  pinnedExpectation: RuntimeFileMutationExpectation | null
   bytesWritten: number
-  /** Set the moment an abort or page release is requested, before its cleanup is queued. */
+  /** Set synchronously before queued cleanup. */
   canceled: boolean
-  /** Serializes this transfer's writes, commits, and cleanup against each other. */
   operations: Promise<void>
-  /** Armed only while the transfer is idle, so a slow chunk is never mistaken for a stranded one. */
+  /** Armed only while idle so slow chunks never look stranded. */
   idleTimer: ReturnType<typeof setTimeout> | null
 }
 
@@ -61,12 +58,10 @@ export type BrowserClientDownloadChunk = {
   platform: NodeJS.Platform
 }
 
-// Why: transfer ids are per-download UUIDs, so a settled id is never legitimately reused; keeping a
-// bounded trail of them stops a late chunk from resurrecting a transfer the runtime already cleaned.
+// UUIDs are never reused; retain a bounded settled trail to reject late resurrection.
 const MIN_SETTLED_TRANSFER_TRAIL = 64
 
-// Why: the client's abort is lost exactly when it matters -- a transport blip rejects it silently --
-// so a transfer nobody is feeding has to retire itself or stranded ones exhaust the shared slots.
+// Lost aborts must not strand transfers and exhaust shared slots.
 export const BROWSER_CLIENT_DOWNLOAD_TRANSFER_IDLE_TIMEOUT_MS = 3 * 60_000
 
 export class BrowserClientDownloadTransferStore {
@@ -102,10 +97,13 @@ export class BrowserClientDownloadTransferStore {
     return this.serialize(session, () => this.release(session)).then(() => true)
   }
 
-  // Why: page close and lease fencing must not leave half-written files in the remote workspace.
-  async releasePage(browserPageId: string): Promise<void> {
+  // Page close/fencing must remove partial remote files.
+  /** Omitting the generation releases every generation of the page. */
+  async releasePage(browserPageId: string, pageHostGeneration?: number): Promise<void> {
     const owned = [...this.sessions.values()].filter(
-      (session) => session.browserPageId === browserPageId
+      (session) =>
+        session.browserPageId === browserPageId &&
+        (pageHostGeneration === undefined || session.pageHostGeneration === pageHostGeneration)
     )
     for (const session of owned) {
       session.canceled = true
@@ -144,7 +142,6 @@ export class BrowserClientDownloadTransferStore {
     await this.serialize(session, () => this.release(session)).catch(() => undefined)
   }
 
-  /** Runs `operation` after every earlier operation on the same transfer has settled. */
   private serialize<T>(session: TransferSession, operation: () => Promise<T>): Promise<T> {
     const running = session.operations.then(operation, operation)
     session.operations = running.then(
@@ -168,16 +165,19 @@ export class BrowserClientDownloadTransferStore {
       await this.release(session)
       throw new Error('browser_client_download_transfer_too_large')
     }
+    let expectation = session.pinnedExpectation
     try {
-      if (session.bytesWritten === 0) {
-        await this.dependencies.ensureDirectory({
-          workspaceId: session.workspaceId,
-          relativePath: BROWSER_CLIENT_DOWNLOAD_WORKSPACE_DIRECTORY
-        })
+      if (!expectation) {
+        expectation = await this.dependencies.prepareDirectory(
+          session.workspaceId,
+          BROWSER_CLIENT_DOWNLOAD_WORKSPACE_DIRECTORY
+        )
+        session.pinnedExpectation = expectation
         this.assertLive(session)
       }
       await this.dependencies.writeChunk({
         workspaceId: session.workspaceId,
+        expectation,
         relativePath: session.tempRelativePath,
         contentBase64: input.contentBase64,
         append: session.bytesWritten > 0
@@ -186,15 +186,14 @@ export class BrowserClientDownloadTransferStore {
       await this.release(session)
       throw error
     }
-    // Why: cancellation during the write leaves the temp file for the queued release to remove; the
-    // transfer must not keep accounting bytes or continue to a commit after that.
+    // Cancellation during write leaves cleanup queued; stop accounting/commit now.
     this.assertLive(session)
     session.bytesWritten += byteLength
     if (!input.final) {
       return null
     }
     try {
-      return await this.commit(session, input.filename, input.platform)
+      return await this.commit(session, expectation, input.filename, input.platform)
     } catch (error) {
       await this.release(session)
       throw error
@@ -238,6 +237,7 @@ export class BrowserClientDownloadTransferStore {
       pageHostGeneration: input.pageHostGeneration,
       workspaceId: input.workspaceId,
       tempRelativePath: `${BROWSER_CLIENT_DOWNLOAD_WORKSPACE_DIRECTORY}/.incoming-${input.transferId}`,
+      pinnedExpectation: null,
       bytesWritten: 0,
       canceled: false,
       operations: Promise.resolve(),
@@ -249,6 +249,7 @@ export class BrowserClientDownloadTransferStore {
 
   private async commit(
     session: TransferSession,
+    expectation: RuntimeFileMutationExpectation,
     filename: string,
     platform: NodeJS.Platform
   ): Promise<BrowserClientDownloadCommit> {
@@ -268,12 +269,12 @@ export class BrowserClientDownloadTransferStore {
       try {
         await this.dependencies.commit({
           workspaceId: session.workspaceId,
+          expectation,
           tempRelativePath: session.tempRelativePath,
           finalRelativePath
         })
       } catch (error) {
-        // Why: both commit backends are exclusive, so a transfer that lost the name race between
-        // `exists` and here must take the next candidate instead of losing its transferred bytes.
+        // Both backends commit exclusively; retry name races without losing transferred bytes.
         if (!isDestinationExistsError(error)) {
           throw error
         }
@@ -288,16 +289,18 @@ export class BrowserClientDownloadTransferStore {
   private async release(session: TransferSession): Promise<void> {
     const owned = this.sessions.get(session.key) === session
     this.settle(session)
-    if (!owned) {
+    // Nothing reached the workspace before an expectation was pinned.
+    if (!owned || !session.pinnedExpectation) {
       return
     }
     try {
       await this.dependencies.remove({
         workspaceId: session.workspaceId,
+        expectation: session.pinnedExpectation,
         relativePath: session.tempRelativePath
       })
     } catch {
-      // Why: a partial file that cannot be removed must not turn cleanup into a failed command.
+      // Failed partial-file removal must not fail the cleanup command.
     }
   }
 
@@ -317,8 +320,7 @@ export class BrowserClientDownloadTransferStore {
   }
 }
 
-// Why: the local backend rejects with an errno EEXIST, the SSH backend with the relay's re-thrown
-// message, which crosses the RPC boundary as text only.
+// Local EEXIST becomes message-only text across the SSH RPC boundary.
 function isDestinationExistsError(error: unknown): boolean {
   if (!(error instanceof Error)) {
     return false
@@ -330,5 +332,5 @@ function isDestinationExistsError(error: unknown): boolean {
 }
 
 function sessionKey(browserPageId: string, transferId: string): string {
-  return `${browserPageId} ${transferId}`
+  return `${browserPageId}\u0000${transferId}`
 }

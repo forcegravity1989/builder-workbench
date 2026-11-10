@@ -1,13 +1,21 @@
 import type { SshConnection } from './ssh-connection'
+import type { SystemSshBuildArgsOptions } from './system-ssh-args'
 import {
   startSystemSshPortForwardProcess,
   systemSshForwardError
 } from './system-ssh-forward-process'
 import type {
+  ForwardChannelOpenFailure,
   PortForwardStartOptions,
   SshPortForwardProvider,
   StartedPortForward
 } from './ssh-port-forward-provider'
+
+/** Keep spawn options aligned with orphan-recovery argv matching. */
+export function systemSshForwardBuildArgsOptions(conn: SshConnection): SystemSshBuildArgsOptions {
+  // The managed tunnel reads the channel answer from stderr (lastChannelOpenFailure).
+  return { ...conn.getSystemSshBuildArgsOptions(), logChannelFailures: true }
+}
 
 export class SystemSshPortForwardProvider implements SshPortForwardProvider {
   canHandle(conn: SshConnection): boolean {
@@ -21,14 +29,11 @@ export class SystemSshPortForwardProvider implements SshPortForwardProvider {
       options.localPort,
       options.remoteHost,
       options.remotePort,
-      conn.getSystemSshBuildArgsOptions()
+      systemSshForwardBuildArgsOptions(conn)
     )
 
     await forward.waitForStartup()
-    // Why: this stderr stays attached for the forward's whole lifetime but is
-    // only used to build the exit-error detail, so keep a bounded tail — a chatty
-    // remote sshd could otherwise grow it unbounded on a long-lived forward
-    // (mirrors MAX_RELAY_STARTUP_BUFFER_BYTES in ssh-relay-deploy-helpers).
+    // Bound lifetime stderr while retaining its newest failure detail; chatty sshd must not grow memory indefinitely.
     const MAX_STDERR_TAIL_BYTES = 64 * 1024
     let stderr = ''
     const onStderr = (chunk: Buffer): void => {
@@ -42,7 +47,7 @@ export class SystemSshPortForwardProvider implements SshPortForwardProvider {
     const entry = {
       id: options.id,
       connectionId: options.connectionId,
-      localPort: options.localPort,
+      localPort: forward.localPort,
       remoteHost: options.remoteHost,
       remotePort: options.remotePort,
       label: options.label
@@ -52,12 +57,13 @@ export class SystemSshPortForwardProvider implements SshPortForwardProvider {
       forward.process.stderr?.off('data', onStderr)
       options.onUnexpectedClose?.(entry, {
         kind: 'unexpected-exit',
-        detail: systemSshForwardError(code, stderr).message
+        detail: systemSshForwardError(code, stderr, forward.localPort).message
       })
     })
 
     return {
       entry,
+      lastChannelOpenFailure: () => lastChannelOpenFailure(stderr),
       close: async () => {
         try {
           await forward.close()
@@ -71,4 +77,16 @@ export class SystemSshPortForwardProvider implements SshPortForwardProvider {
       }
     }
   }
+}
+
+// OpenSSH logs each refused direct-tcpip open as `channel N: open failed: <reason>: <message>`.
+const CHANNEL_OPEN_FAILED = /open failed: (administratively prohibited|connect failed)/g
+
+export function lastChannelOpenFailure(stderr: string): ForwardChannelOpenFailure | null {
+  const reason = [...stderr.matchAll(CHANNEL_OPEN_FAILED)].at(-1)?.[1]
+  return reason === undefined
+    ? null
+    : reason === 'connect failed'
+      ? 'connect-failed'
+      : 'administratively-prohibited'
 }

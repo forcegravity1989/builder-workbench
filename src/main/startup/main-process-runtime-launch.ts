@@ -11,8 +11,8 @@ import { registerMobileHandlers } from '../ipc/mobile'
 import { getLocalPtyProvider, registerHeadlessPtyRuntime } from '../ipc/pty'
 import { LocalPtyProvider } from '../providers/local-pty-provider'
 import { HEADLESS_RUNTIME_WINDOW_ID } from '../../shared/runtime-types'
-import { OffscreenBrowserBackend } from '../browser/offscreen-browser-backend'
-import { browserManager } from '../browser/browser-manager'
+import { OffscreenBrowserBackend } from '../browser/backends/offscreen-browser-backend'
+import { browserManager } from '../browser/guest-lifecycle/manager/browser-manager'
 import { getDesktopRelayStatus, publishDesktopRelayStatus } from './main-process-relay-status'
 import { DesktopRelayService } from '../runtime/relay/desktop-relay-service'
 import { getServeOptions, getBundledWebClientRoot, printServeReady } from './main-process-serve'
@@ -150,7 +150,8 @@ async function launchServeMode(
   if (state.headlessBrowserDisplayAvailable) {
     runtime.setOffscreenBrowserBackend(
       new OffscreenBrowserBackend(browserManager, {
-        getAgentBrowserBridge: () => state.agentBrowserBridge
+        getAgentBrowserBridge: () => state.agentBrowserBridge,
+        onPageNavigated: (page) => runtime.serveBrowserPageNavigated(page)
       })
     )
   }

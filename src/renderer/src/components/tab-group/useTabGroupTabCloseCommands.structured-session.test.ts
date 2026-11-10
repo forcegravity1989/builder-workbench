@@ -44,7 +44,7 @@ vi.mock('../../store', () => ({
   })
 }))
 
-vi.mock('../../store/slices/browser-webview-cleanup', () => ({
+vi.mock('../../store/slices/browser/cleanup/browser-webview-cleanup', () => ({
   destroyWorkspaceWebviews: vi.fn()
 }))
 

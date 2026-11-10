@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { toast } from 'sonner'
 import { refreshHostedReviewCard } from '@/store/slices/hosted-review-card-refresh'
-import { openHttpLink } from '@/lib/http-link-routing'
+import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
 import { resolveCreatedHostedReviewLink } from '../source-control-created-review-link'
 import { formatCreateError } from '../create-pull-request-review-copy'
 import { stripBaseRef } from '../create-pull-request-base-ref-normalization'

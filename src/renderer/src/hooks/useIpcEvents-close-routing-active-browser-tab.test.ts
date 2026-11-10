@@ -16,7 +16,7 @@ vi.mock('@/runtime/web-runtime-session', () => ({
   createWebRuntimeSessionTerminal: vi.fn(),
   isWebRuntimeSessionActive
 }))
-vi.mock('@/store/slices/browser-webview-cleanup', () => ({ destroyWorkspaceWebviews }))
+vi.mock('@/store/slices/browser/cleanup/browser-webview-cleanup', () => ({ destroyWorkspaceWebviews }))
 
 const closeBrowserTab = vi.fn()
 const closeUnifiedTab = vi.fn()

@@ -1,3 +1,4 @@
+import { confirmBrowserPasswordOwner } from '../browser-passwords/browser-password-reauth'
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
 import type { Store } from '../persistence'
 import type { GlobalSettings } from '../../shared/global-settings-types'
@@ -14,8 +15,8 @@ import { sanitizeFloatingWorkspaceDirectorySetting } from './floating-workspace-
 import { applyAgentStatusHooksEnabled } from '../agent-hooks/managed-agent-hook-controls'
 import { recordManagedHookInstallFailure } from '../agent-hooks/install-telemetry'
 import { applyElectronProxySettings } from '../network/proxy-settings'
-import { applyBrowserSessionProxies } from '../browser/browser-session-proxy'
-import { browserSessionRegistry } from '../browser/browser-session-registry'
+import { applyBrowserSessionProxies } from '../browser/sessions/proxy/browser-session-proxy'
+import { browserSessionRegistry } from '../browser/sessions/profiles/browser-session-registry'
 import { normalizeProxyBypassRules, normalizeProxyUrl } from '../../shared/network-proxy'
 import { normalizeAppIconId } from '../../shared/app-icon'
 import { normalizeUiLanguage } from '../../shared/ui-language'
@@ -195,6 +196,15 @@ export function registerSettingsHandlers(
     // actually changes. The settings UI sometimes re-saves the same value
     // (e.g. blur after a no-op edit), and a `settings_changed` event for a
     // no-op flip would inflate the experimental-feature-adoption signal.
+    if (
+      sanitizedArgs.browserPasswordsFillRequiresReauth === false &&
+      (store.getSettings().browserPasswordsFillRequiresReauth !== true ||
+        !(await confirmBrowserPasswordOwner('turn off saved password fill authentication', {
+          always: true
+        })))
+    ) {
+      delete sanitizedArgs.browserPasswordsFillRequiresReauth
+    }
     const before = store.getSettings()
     const result = store.updateSettings(sanitizedArgs, {
       notifyListeners: true,

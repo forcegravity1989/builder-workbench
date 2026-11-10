@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => ({
   destroy: vi.fn()
 }))
 
-vi.mock('@/store', async () => {
+vi.mock('@/store/index', async () => {
   const { useStore } = await import('zustand')
   return {
     useAppStore: (selector: (state: MockState) => unknown) => useStore(mocks.store!, selector)

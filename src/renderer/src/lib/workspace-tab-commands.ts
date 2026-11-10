@@ -15,8 +15,8 @@ import {
   switchFloatingWorkspaceTab
 } from './floating-workspace-terminal-actions'
 import { TOGGLE_FLOATING_TERMINAL_EVENT } from './floating-terminal'
-import { closeWorkspaceBrowserTab } from './workspace-browser-tab-close'
-import { resolveBrowserWorkspaceOwner } from './browser-workspace-source-resolution'
+import { closeWorkspaceBrowserTab } from './browser/workspace/workspace-browser-tab-close'
+import { resolveBrowserWorkspaceOwner } from './browser/workspace/browser-workspace-source-resolution'
 
 export type WorkspaceTabTarget =
   | { kind: 'tab'; worktreeId: string; tabId: string }

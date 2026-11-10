@@ -1,4 +1,4 @@
-import type { PairingOffer } from '../../shared/pairing'
+import type { PairedRuntimeConnection } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import type { RuntimeCapability } from '../../shared/protocol-version'
 import { sendRemoteRuntimeRequest } from '../../shared/remote-runtime-client'
 import type {
@@ -11,7 +11,7 @@ import {
 } from './runtime-environment-request-connections'
 
 export function sendRemoteRuntimeRequestAbortable(
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,
@@ -37,7 +37,7 @@ export function sendRemoteRuntimeRequestAbortable(
 
 export function sendRemoteRuntimeConnectionRequestAbortable(
   environmentId: string,
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,
@@ -50,7 +50,7 @@ export function sendRemoteRuntimeConnectionRequestAbortable(
 
 export function sendRemoteRuntimeSharedControlRequestAbortable(
   environmentId: string,
-  pairing: PairingOffer,
+  pairing: PairedRuntimeConnection,
   method: string,
   params: unknown,
   timeoutMs: number,

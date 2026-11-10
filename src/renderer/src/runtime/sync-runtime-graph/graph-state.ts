@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
 import type { AppState } from '@/store/types'
 import type {
   RuntimeMobileSessionSnapshotTab,
@@ -33,7 +33,7 @@ export const EMPTY_WORKTREE_UNIFIED_TABS: AppState['unifiedTabsByWorktree'][stri
 export const EMPTY_WORKTREE_TAB_GROUPS: AppState['groupsByWorktree'][string] = []
 export const EMPTY_WORKTREE_OPEN_FILE_IDS: readonly string[] = []
 
-export const mobilePublicationEpoch = `renderer:${createBrowserUuid()}`
+export const mobilePublicationEpoch = `renderer:${createNonSecureContextUuid()}`
 
 export type RegisteredTerminalTabKey = string
 

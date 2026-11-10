@@ -213,3 +213,52 @@ export function getSettingsForWorktreeRuntimeOwner(
     activeRuntimeEnvironmentId: getRuntimeEnvironmentIdForWorktree(state, worktreeId)
   }
 }
+
+import { namedHostForOwnerRef, resolveOwner, type WorkspaceOwnerRef } from './resolve-owner'
+
+import { SELF_LOCAL_AUTHORITY, type HostAuthority } from '../../../shared/host-authority'
+
+import type { ExecutionHostOwnerMatch } from '../../../shared/worktree-execution-host-resolution'
+
+/**
+ * {@link resolveOwner}, except an id no row places and no caller names a host resolves to this app
+ * instead of `missing` — or, for a folder, to its saved session's server or a web client's only one.
+ */
+export function resolveOwnerOrLocal(
+  state: WorktreeRuntimeOwnerState,
+  ref: WorkspaceOwnerRef
+): ExecutionHostOwnerMatch<HostAuthority> {
+  const match = resolveOwner(state, ref)
+  if (match.kind !== 'missing' || namedHostForOwnerRef(state, ref)) {
+    return match
+  }
+  const scope = parseWorkspaceKey(ref.workspaceId)
+  const environmentId =
+    scope?.type === 'folder'
+      ? getRuntimeEnvironmentIdForFolderWorkspace(state, scope.folderWorkspaceId)
+      : null
+  return {
+    kind: 'resolved',
+    owner: environmentId
+      ? { endpoint: { kind: 'environment', environmentId }, at: 'local' }
+      : SELF_LOCAL_AUTHORITY
+  }
+}
+
+/**
+ * The paired server {@link resolveOwnerOrLocal} names, or `null` for this app, a directly dialed
+ * SSH target or a twin. Unlike `runtimeEnvironmentIdUnlessTwin`, an unplaced folder on a web
+ * client names that client's server.
+ */
+export function runtimeEnvironmentIdOrLocalUnlessTwin(
+  state: WorktreeRuntimeOwnerState,
+  workspaceId: string | null | undefined
+): string | null {
+  if (!workspaceId) {
+    return null
+  }
+  const match = resolveOwnerOrLocal(state, { workspaceId })
+  return match.kind === 'resolved' && match.owner.endpoint.kind === 'environment'
+    ? match.owner.endpoint.environmentId
+    : null
+}

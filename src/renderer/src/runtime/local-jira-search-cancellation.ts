@@ -1,5 +1,5 @@
 import type { JiraIssue, JiraSiteSelection } from '../../../shared/jira-types'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 
 type LocalJiraSearchArgs = { jql: string; limit?: number; siteId?: JiraSiteSelection }
 
@@ -22,7 +22,7 @@ export async function searchLocalJiraIssues(
   if (signal.aborted) {
     throw createJiraSearchAbortError()
   }
-  const requestId = createBrowserUuid()
+  const requestId = createNonSecureContextUuid()
   const handleAbort = (): void => {
     void window.api.jira.cancelSearchIssues({ requestId }).catch(() => {})
   }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { BrowserClientHostPlacementPreference } from '../../../shared/browser-client-host-placement'
+import type { BrowserClientHostPlacementPreference } from '../../../shared/browser/client-hosting/browser-client-host-placement'
 import {
   BROWSER_CLIENT_AUTOMATION_RUNTIME_CAPABILITY,
   BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY,

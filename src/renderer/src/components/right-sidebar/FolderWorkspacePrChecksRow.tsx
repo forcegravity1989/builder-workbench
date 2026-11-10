@@ -1,7 +1,7 @@
 import { ChevronRight, ExternalLink, GitMerge } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { openHttpLink } from '@/lib/http-link-routing'
+import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
 import { translate } from '@/i18n/i18n'
 import type { PRCheckDetail, PRCheckRunDetails } from '../../../../shared/github/check-types'
 import {

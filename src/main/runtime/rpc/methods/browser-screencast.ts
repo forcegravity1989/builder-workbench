@@ -1,13 +1,19 @@
 import { defineMethod, defineStreamingMethod } from '../core'
-import { Screencast } from './browser-schemas'
+import { Screencast } from '../../../../shared/rpc-contract/browser-params'
 import { BrowserError } from '../../../browser/browser-error'
-import { BROWSER_UNAVAILABLE_ERROR_CODE } from '../../../../shared/runtime-types'
+import '../../../../shared/runtime-types'
+import { BROWSER_UNAVAILABLE_ERROR_CODE } from '../../../../shared/runtime-session-contracts'
 import { runtimeBrowserCommandsFactoryIsAvailable } from '../../runtime-browser-commands-factory'
-import { ScreencastUnsubscribe } from '../../../../shared/rpc-contract/browser-screencast-params'
+import {
+  ScreencastAck,
+  ScreencastUnsubscribe
+} from '../../../../shared/rpc-contract/browser-screencast-params'
+import { acknowledgeBrowserScreencastFrame } from '../../browser/screencast/browser-screencast-frame-credit'
 
 export const BROWSER_SCREENCAST_METHODS = [
   defineStreamingMethod({
     name: 'browser.screencast',
+    permission: 'workspace',
     params: Screencast,
     handler: async (
       params,
@@ -17,7 +23,7 @@ export const BROWSER_SCREENCAST_METHODS = [
       runtime.browserScreencast(params, {
         connectionId,
         pairedDeviceId,
-        // Why: the pairing scope is what tells a phone driver apart from a desktop/web viewer of the same stream.
+        // Pairing scope distinguishes phone drivers from desktop/web viewers of the same stream.
         clientKind,
         sendBinary,
         signal,
@@ -26,6 +32,7 @@ export const BROWSER_SCREENCAST_METHODS = [
   }),
   defineMethod({
     name: 'browser.screencast.unsubscribe',
+    permission: 'workspace',
     params: ScreencastUnsubscribe,
     handler: async (params, { runtime }) => {
       if (!runtimeBrowserCommandsFactoryIsAvailable()) {
@@ -37,5 +44,14 @@ export const BROWSER_SCREENCAST_METHODS = [
       runtime.cleanupSubscription(params.subscriptionId)
       return { unsubscribed: true }
     }
+  }),
+  defineMethod({
+    name: 'browser.screencast.ack',
+    permission: 'workspace',
+    params: ScreencastAck,
+    // Late acks for an ended stream are normal; report them instead of failing the request.
+    handler: async (params, { pairedDeviceId }) => ({
+      credited: acknowledgeBrowserScreencastFrame(params.subscriptionId, pairedDeviceId, params.seq)
+    })
   })
 ]

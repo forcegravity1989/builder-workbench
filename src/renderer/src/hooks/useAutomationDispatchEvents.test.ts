@@ -175,7 +175,7 @@ vi.mock('@/i18n/i18n', () => ({
 }))
 
 vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => 'create-request-id'
+  createNonSecureContextUuid: () => 'create-request-id'
 }))
 
 vi.mock('@/store', () => ({

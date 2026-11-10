@@ -1,5 +1,5 @@
 import type { JiraConnectionStatus, JiraIssue } from '../../../shared/jira-types'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 import { callRuntimeRpc } from './runtime-rpc-client'
 import { getJiraRuntimeTarget, type RuntimeJiraSettings } from './runtime-jira-target'
 
@@ -29,7 +29,7 @@ export async function jiraLookupIssueSummary(
   if (signal?.aborted) {
     throw createSummaryAbortError()
   }
-  const requestId = createBrowserUuid()
+  const requestId = createNonSecureContextUuid()
   const handleAbort = (): void => {
     void window.api.jira.cancelIssueSummary({ requestId }).catch(() => {})
   }

@@ -1,8 +1,12 @@
+import {
+  BROWSER_COMMAND_CACHE_MAX_BYTES,
+  BROWSER_COMMAND_CACHE_MAX_BYTES_PER_PAGE
+} from '../browser/client-hosts/commands/browser-command-cache-bytes'
 import type {
   BrowserClientHostCommandEvent,
-  BrowserClientHostCommandResult,
   BrowserClientHostLeaseAuthority
-} from '../../shared/browser-client-host-protocol'
+} from '../../shared/browser/client-hosting/browser-client-host-protocol'
+import type { BrowserClientAutomationResult as BrowserClientHostCommandResult } from '../../shared/browser/client-hosting/browser-client-automation-protocol'
 
 export const DEFAULT_MAX_OUTSTANDING_COMMANDS = 256
 export const DEFAULT_MAX_OUTSTANDING_COMMANDS_PER_PAGE = 32
@@ -42,6 +46,7 @@ export type BrowserHostCommandPageState = {
   records: Map<number, BrowserHostCommandRecord>
   outstanding: number
   settledSequences: number[]
+  profileSwitchPending?: boolean
   terminalCommandIssued: boolean
   activeCapacityReleased: boolean
 }
@@ -92,6 +97,18 @@ export function recordBrowserHostCommandOrder(
 export function snapshotBrowserHostPageCommand(
   command: BrowserClientHostCommandEvent['command']
 ): BrowserClientHostCommandEvent['command'] {
+  if (command.type === 'switchProfile') {
+    return Object.freeze({
+      ...command,
+      profile: Object.freeze({ ...command.profile })
+    })
+  }
+  if ((command.type === 'createPage' || command.type === 'restorePage') && command.profile) {
+    return Object.freeze({
+      ...command,
+      profile: Object.freeze({ ...command.profile })
+    })
+  }
   if (command.type === 'reclaimPage') {
     return Object.freeze({
       ...command,
@@ -114,6 +131,8 @@ export type BrowserHostCommandLedgerOptions = {
   maxOutstandingCommandsPerPage?: number
   maxCachedResults?: number
   maxCachedResultsPerPage?: number
+  maxCachedResultBytes?: number
+  maxCachedResultBytesPerPage?: number
   maxPages?: number
 }
 
@@ -167,4 +186,25 @@ export function positiveBrowserHostCommandLimit(
     throw new Error('browser_host_command_limit_invalid')
   }
   return resolved
+}
+
+export function resolveBrowserHostCommandCacheLimits(options: BrowserHostCommandLedgerOptions) {
+  return {
+    maxResults: positiveBrowserHostCommandLimit(
+      options.maxCachedResults,
+      DEFAULT_MAX_CACHED_RESULTS
+    ),
+    maxResultsPerPage: positiveBrowserHostCommandLimit(
+      options.maxCachedResultsPerPage,
+      DEFAULT_MAX_CACHED_RESULTS_PER_PAGE
+    ),
+    maxBytes: positiveBrowserHostCommandLimit(
+      options.maxCachedResultBytes,
+      BROWSER_COMMAND_CACHE_MAX_BYTES
+    ),
+    maxBytesPerPage: positiveBrowserHostCommandLimit(
+      options.maxCachedResultBytesPerPage,
+      BROWSER_COMMAND_CACHE_MAX_BYTES_PER_PAGE
+    )
+  }
 }

@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const browserUuidCalls = vi.hoisted(() => ({ count: 0 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
+vi.mock('../../../../../shared/non-secure-context-uuid', () => ({
   createBrowserUuid: () => {
     browserUuidCalls.count += 1
     return `00000000-0000-4000-8000-${String(browserUuidCalls.count).padStart(12, '0')}`

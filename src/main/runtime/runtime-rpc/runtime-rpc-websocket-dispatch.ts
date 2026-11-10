@@ -133,6 +133,9 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         : undefined
     try {
       await this.dispatcher.dispatchStreaming(request, replyForRequest, {
+        caller: { kind: 'paired-device', deviceId: device.deviceId },
+        callerScope:
+          device.scope === 'mobile' ? { kind: 'mobile' } : { kind: 'runtime-paired', grants: [] },
         // Why: the validated credential preserves existing federation ownership without trusting request fields.
         authenticatedCallerFingerprint: fingerprintAuthenticatedPairingCredential(token),
         connectionId,

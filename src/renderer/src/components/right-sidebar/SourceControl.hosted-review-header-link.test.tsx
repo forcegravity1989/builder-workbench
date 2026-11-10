@@ -6,7 +6,7 @@ import { HostedReviewHeaderLink } from './source-control/review/hosted-review-he
 
 const { openHttpLinkMock } = vi.hoisted(() => ({ openHttpLinkMock: vi.fn() }))
 
-vi.mock('@/lib/http-link-routing', () => ({
+vi.mock('@/lib/browser/navigation/http-link-routing', () => ({
   openHttpLink: openHttpLinkMock,
   registerHttpLinkStoreAccessor: vi.fn(),
   registerWorkspaceHttpLinkBrowserOpener: vi.fn()

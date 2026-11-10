@@ -3,7 +3,7 @@ import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import type { WorktreeStartupPayload } from '@/lib/worktree-startup-payload'
 import type { CreateWorktreeResult } from '../../../shared/worktree/create-types'
 import { preflightAgentTrust } from '@/lib/agent-trust-preflight'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 import { stopWorktreeCreationForChangedHost } from './worktree-creation-completion'
 import type {
   WorktreeCreationPhase,
@@ -58,7 +58,7 @@ export async function prepareWorktreeCreationStartup(
   const backendSpawned = result.startupTerminal?.spawned === true
   if (request.startupPlan && !backendSpawned && !request.startupPlan.launchToken) {
     // Delayed delivery and the queued startup must identify the same newly spawned pane.
-    request.startupPlan.launchToken = createBrowserUuid()
+    request.startupPlan.launchToken = createNonSecureContextUuid()
   }
   const fallbackStartupOpt = buildWorktreeCreationStartupOpt(request, backendSpawned)
   const structuredLaunch = request.agentLaunchRoute === 'structured-native-chat'

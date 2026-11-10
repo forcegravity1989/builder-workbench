@@ -85,7 +85,7 @@ jobs:
           src/renderer/src/store/slices/repos-project-groups.test.ts
 
   browser-annotations:
-    name: Browser annotation contracts
+    name: Browser protocols and annotation contracts
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -93,21 +93,33 @@ jobs:
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: node
+      - name: Check browser, password, process and host protocols
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/browser/
+          src/main/browser-passwords/
+          src/shared/child-process/
+          src/shared/browser
+          src/main/runtime/browser/
+          src/main/runtime/browser-host/
+          src/main/runtime/runtime-browser-
+          src/main/runtime/rpc/methods/session-tab-file-host-projection.test.ts
+          src/main/runtime/rpc/methods/session-tab-browser-placement-projection.test.ts
+          src/main/runtime/rpc/dispatcher-client-browser-routing.test.ts
       - name: Check annotation, clipboard and navigation contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/shared/browser-annotation-viewport-bridge.test.ts
           src/renderer/src/components/browser-pane/annotate/browser-annotation-output.test.ts
           src/renderer/src/components/browser-pane/annotate/useGrabMode.test.ts
           src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx
           src/renderer/src/components/browser-pane/annotate/BrowserAnnotationSendMenuContent.test.tsx
           src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts
           src/renderer/src/components/browser-pane/describe-page/browser-annotation-geometry.test.ts
-          src/renderer/src/store/slices/browser.test.ts
+          src/renderer/src/store/slices/browser/browser.test.ts
           src/renderer/src/lib/app-menu-paste.test.ts
           src/renderer/src/components/native-chat/use-native-chat-composer-paste.test.tsx
           src/renderer/src/components/native-chat/use-native-chat-composer-attachments.test.tsx
-          src/main/browser/browser-manager-annotation-bridge.test.ts
+          src/main/browser/guest-lifecycle/manager/viewport/browser-manager-annotation-bridge.test.ts
 
   codex-windows:
     name: Windows Codex protocol and lifecycle

@@ -15,20 +15,20 @@ function installRegistryMock(): {
   const applyPendingCookieImportMock = vi.fn()
   const initializeBrowserSessionsFromPersistedStateMock = vi.fn()
 
-  vi.doMock('./browser-session-registry', () => ({
+  vi.doMock('./sessions/profiles/browser-session-registry', () => ({
     browserSessionRegistry: {
       configureForOrcaProfile: configureForOrcaProfileMock,
       applyPendingCookieImport: applyPendingCookieImportMock,
       initializeBrowserSessionsFromPersistedState: initializeBrowserSessionsFromPersistedStateMock
     }
   }))
-  vi.doMock('./browser-route-session-runtime', () => ({
+  vi.doMock('./routing/sessions/browser-route-session-runtime', () => ({
     configureRouteSessionsForOrcaProfile: configureRouteSessionsForOrcaProfileMock
   }))
-  vi.doMock('./browser-route-partition-storage-runtime', () => ({
+  vi.doMock('./routing/partitions/browser-route-partition-storage-runtime', () => ({
     collectOrphanedBrowserRoutePartitionStorage: collectOrphanedBrowserRoutePartitionStorageMock
   }))
-  vi.doMock('./paired-runtime-browser-client-host-runtime', () => ({
+  vi.doMock('./client-hosts/lifecycle/paired-runtime-browser-client-host-runtime', () => ({
     configurePairedRuntimeBrowserClientHostsForOrcaProfile:
       configurePairedRuntimeBrowserClientHostsForOrcaProfileMock
   }))
@@ -52,7 +52,7 @@ describe('initializeBrowserSessionsForApp', () => {
   it('replays pending cookie imports before initializing browser sessions', async () => {
     const { applyPendingCookieImportMock, initializeBrowserSessionsFromPersistedStateMock } =
       installRegistryMock()
-    const { initializeBrowserSessionsForApp } = await import('./browser-session-startup')
+    const { initializeBrowserSessionsForApp } = await import('./sessions/browser-session-startup')
 
     initializeBrowserSessionsForApp()
 
@@ -71,7 +71,7 @@ describe('initializeBrowserSessionsForApp', () => {
       applyPendingCookieImportMock,
       initializeBrowserSessionsFromPersistedStateMock
     } = installRegistryMock()
-    const { initializeBrowserSessionsForApp } = await import('./browser-session-startup')
+    const { initializeBrowserSessionsForApp } = await import('./sessions/browser-session-startup')
 
     initializeBrowserSessionsForApp({
       orcaProfileId: 'local-work',
@@ -108,7 +108,7 @@ describe('initializeBrowserSessionsForApp', () => {
       configureRouteSessionsForOrcaProfileMock,
       collectOrphanedBrowserRoutePartitionStorageMock
     } = installRegistryMock()
-    const { initializeBrowserSessionsForApp } = await import('./browser-session-startup')
+    const { initializeBrowserSessionsForApp } = await import('./sessions/browser-session-startup')
 
     initializeBrowserSessionsForApp({
       orcaProfileId: 'local-work',
@@ -124,7 +124,7 @@ describe('initializeBrowserSessionsForApp', () => {
 
   it('does not sweep route partitions when no profile is active', async () => {
     const { collectOrphanedBrowserRoutePartitionStorageMock } = installRegistryMock()
-    const { initializeBrowserSessionsForApp } = await import('./browser-session-startup')
+    const { initializeBrowserSessionsForApp } = await import('./sessions/browser-session-startup')
 
     initializeBrowserSessionsForApp()
 
@@ -134,7 +134,7 @@ describe('initializeBrowserSessionsForApp', () => {
   it('initializes browser sessions once per app process', async () => {
     const { applyPendingCookieImportMock, initializeBrowserSessionsFromPersistedStateMock } =
       installRegistryMock()
-    const { initializeBrowserSessionsForApp } = await import('./browser-session-startup')
+    const { initializeBrowserSessionsForApp } = await import('./sessions/browser-session-startup')
 
     initializeBrowserSessionsForApp()
     initializeBrowserSessionsForApp()
@@ -149,7 +149,7 @@ describe('initializeBrowserSessionsForApp', () => {
     initializeBrowserSessionsFromPersistedStateMock.mockImplementationOnce(() => {
       throw new Error('session init failed')
     })
-    const { initializeBrowserSessionsForApp } = await import('./browser-session-startup')
+    const { initializeBrowserSessionsForApp } = await import('./sessions/browser-session-startup')
 
     expect(() => initializeBrowserSessionsForApp()).toThrow('session init failed')
     initializeBrowserSessionsForApp()

@@ -1,20 +1,25 @@
 import type { RemoteRuntimeSharedConnectionDiagnostics } from './remote-runtime-shared-control-types'
 import type { RuntimeRpcFailure, RuntimeRpcResponse } from './runtime-rpc-envelope'
-import type { RuntimeStatus } from './runtime-types'
+import type { RuntimeStatus } from './runtime-session-contracts'
 
 export const RUNTIME_HOST_STATUS_CHANNEL = 'runtimeEnvironments:statusChanged'
 
-/** Local client state; never exchanged with the paired host. */
-export type RuntimeHostBlockedReason = 'access-revoked' | 'incompatible'
+/** Why a host refused this client: its pairing was revoked, its host now runs another server, or the versions cannot talk. */
+export type RuntimeHostBlockedReason = 'access-revoked' | 'server-replaced' | 'incompatible'
 
+/** Status code for a managed host whose own Orca server is no longer the paired one. */
+export const RUNTIME_SERVER_REPLACED_STATUS_CODE = 'orcad_server_replaced'
+
+/** Local client state; never exchanged with the paired host. */
 export type RuntimeHostStatusSnapshot = {
-  blockedReason?: RuntimeHostBlockedReason
   environmentId: string
   pairingRevision: number
   sequence: number
   checkedAt: number
   status: RuntimeStatus | null
   verification: 'checking' | 'verified' | 'unavailable' | 'blocked'
+  /** Set only while a refused status probe holds `verification` at blocked. */
+  blockedReason?: RuntimeHostBlockedReason
   transport: 'unknown' | 'connecting' | 'ready' | 'disconnected'
   remoteControl?: RemoteRuntimeSharedConnectionDiagnostics | null
   retired?: true
@@ -56,6 +61,18 @@ export function lastVerifiedRuntimeStatus<Status = RuntimeStatus>(
   return entry?.snapshot?.status ?? entry?.status ?? null
 }
 
+/** Only explicit retirement or auth/protocol refusal withdraws prior host facts; transport loss cannot prove them gone
+ * (docs/reference/ssh-execution-boundary.md). */
+export function isRuntimeHostContactRevoked(
+  entry:
+    | { snapshot?: Pick<RuntimeHostStatusSnapshot, 'verification' | 'retired'> | null }
+    | null
+    | undefined
+): boolean {
+  const snapshot = entry?.snapshot
+  return Boolean(snapshot && (snapshot.retired || snapshot.verification === 'blocked'))
+}
+
 export type RuntimeHostStatusResponse = RuntimeRpcResponse<RuntimeStatus>
 
 export function runtimeHostStatusFailure(code: string, message: string): RuntimeRpcFailure {
@@ -70,9 +87,17 @@ export function runtimeHostStatusError(error: unknown): RuntimeRpcFailure {
   return runtimeHostStatusFailure(code, error instanceof Error ? error.message : String(error))
 }
 
-export function runtimeHostStatusBlockedReason(response: RuntimeRpcFailure): RuntimeHostBlockedReason | null {
-  if (['unauthorized', 'forbidden'].includes(response.error.code)) {
+const ACCESS_REVOKED_CODES = ['unauthorized', 'forbidden']
+
+/** Null when the failure is transient and verification should keep retrying. */
+export function runtimeHostStatusBlockedReason(
+  response: RuntimeRpcFailure
+): RuntimeHostBlockedReason | null {
+  if (ACCESS_REVOKED_CODES.includes(response.error.code)) {
     return 'access-revoked'
+  }
+  if (response.error.code === RUNTIME_SERVER_REPLACED_STATUS_CODE) {
+    return 'server-replaced'
   }
   return [
     'invalid_argument',
@@ -80,5 +105,7 @@ export function runtimeHostStatusBlockedReason(response: RuntimeRpcFailure): Run
     'protocol_version_mismatch',
     'method_not_found',
     'unsupported_method'
-  ].includes(response.error.code) ? 'incompatible' : null
+  ].includes(response.error.code)
+    ? 'incompatible'
+    : null
 }

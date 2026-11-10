@@ -48,7 +48,7 @@ vi.mock('./assemble-chrome/BrowserAddressBar', () => ({
   }
 }))
 
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { normalizeBrowserNavigationUrl } from '../../../../shared/browser-url'
 import { requestBrowserFocus } from './host-guest/browser-focus'
 import { installClientHostedPaneApi } from './client-hosted-browser-pane-test-rig'
@@ -311,7 +311,7 @@ describe('ClientHostedBrowserPagePane', () => {
   })
 
   it('requests the one-time intro tour on the first active client-hosted page', async () => {
-    const { useAppStore } = await import('@/store')
+    const { useAppStore } = await import('@/store/index')
     const prior = {
       persistedUIReady: useAppStore.getState().persistedUIReady,
       contextualToursSeenIds: useAppStore.getState().contextualToursSeenIds,
@@ -354,7 +354,7 @@ describe('ClientHostedBrowserPagePane', () => {
   })
 
   it('never re-requests the intro tour once it has been seen', async () => {
-    const { useAppStore } = await import('@/store')
+    const { useAppStore } = await import('@/store/index')
     const prior = {
       persistedUIReady: useAppStore.getState().persistedUIReady,
       contextualToursSeenIds: useAppStore.getState().contextualToursSeenIds,

@@ -1,4 +1,4 @@
-import type { PairingOffer } from '../../shared/pairing'
+import type { PairedRuntimeConnection } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { sendRemoteRuntimeRequestWithStatusPreflight } from '../../shared/remote-runtime-client'
 import type {
   RuntimeOrchestrationEnvelope,
@@ -19,7 +19,7 @@ type PinnedCall = {
 
 /** A one-shot socket that sends only after its own `status.get` names `expectedRuntimeId`; null otherwise. */
 async function sendOneShotRequestOnRuntime(
-  connection: PairingOffer,
+  connection: PairedRuntimeConnection,
   call: PinnedCall,
   expectedRuntimeId: string
 ): Promise<RuntimeRpcResponse<unknown> | null> {
@@ -50,7 +50,7 @@ async function sendOneShotRequestOnRuntime(
 
 /** Cached support identity can survive server restart; verify identity on the sending socket. */
 export async function sendSupportRoutedCallOnRuntime(
-  route: { environment: KnownRuntimeEnvironment; pairing: PairingOffer },
+  route: { environment: KnownRuntimeEnvironment; pairing: PairedRuntimeConnection },
   call: PinnedCall,
   expectedRuntimeId: string,
   transport: 'shared' | 'one-shot'

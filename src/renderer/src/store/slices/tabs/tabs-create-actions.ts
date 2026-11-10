@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../../shared/non-secure-context-uuid"
 import { getActiveExecutionHostIdForWorktree } from '@/lib/unified-tab-host-ownership'
 import type { Tab, TabGroup } from '../../../../../shared/tab-types'
 import type { TabsSlice, TabsSliceGet, TabsSliceSet } from './tabs-slice-contract'
@@ -20,7 +20,7 @@ export function createTabsCreateActions(
 ): Pick<TabsSlice, 'createUnifiedTab' | 'createUnifiedTabInSplit'> {
   return {
     createUnifiedTab: (worktreeId, contentType, init) => {
-      const id = init?.id ?? createBrowserUuid()
+      const id = init?.id ?? createNonSecureContextUuid()
       let created!: Tab
       set((state) => {
         const { group, groupsByWorktree, activeGroupIdByWorktree } = ensureGroup(
@@ -109,8 +109,8 @@ export function createTabsCreateActions(
     },
 
     createUnifiedTabInSplit: (worktreeId, contentType, target, init) => {
-      const id = init?.id ?? createBrowserUuid()
-      const newGroupId = createBrowserUuid()
+      const id = init?.id ?? createNonSecureContextUuid()
+      const newGroupId = createNonSecureContextUuid()
       let created: Tab | null = null
       let moved = false
       set((state) => {

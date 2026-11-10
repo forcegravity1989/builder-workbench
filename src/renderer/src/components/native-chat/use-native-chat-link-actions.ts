@@ -3,7 +3,7 @@ import {
   closeLinkActionRequest,
   type LinkActionRequest
 } from '@/components/link-actions/link-action-request'
-import { httpLinkActionDestinationsFor } from '@/lib/http-link-destinations'
+import { httpLinkActionDestinationsFor } from '@/lib/browser/navigation/http-link-destinations'
 import type { CommentMarkdownLinkClickHandler } from '@/components/sidebar/CommentMarkdown'
 import { routeNativeChatHref } from '../../../../shared/native-chat-href-routing'
 import { useAppStore } from '../../store'

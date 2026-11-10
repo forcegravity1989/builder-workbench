@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 describe('remote browser link routing', () => {
   it('pins context-menu opens to the runtime that owns the pane', () => {
     const source = readFileSync(
-      fileURLToPath(new URL('../stream-remote/remote-browser-page-pane.tsx', import.meta.url)),
+      fileURLToPath(new URL('../stream-remote/remote-browser-page-pane', import.meta.url)),
       'utf8'
     )
     const paneStart = source.indexOf('function RemoteBrowserPagePane')

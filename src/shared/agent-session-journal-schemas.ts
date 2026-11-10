@@ -250,3 +250,9 @@ export type CanonicalJournalTypesAreAdmissible = [
   >,
   Admits<AgentJournalSubmission extends z.input<typeof AgentJournalSubmissionSchema> ? true : false>
 ]
+
+import type { AgentJournalResolution } from './agent-session-journal-types'
+
+export function isAgentJournalResolution(value: unknown): value is AgentJournalResolution {
+  return Resolution.safeParse(value).success
+}

@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/i18n'
-import { createBrowserUuid } from './browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 import {
   INVALID_RASTER_IMAGE_PREVIEW_ERROR,
   RASTER_IMAGE_PREVIEW_TOO_LARGE_ERROR,
@@ -157,8 +157,8 @@ export async function readFeedbackImageFiles(
       remaining -= 1
       images.push({
         // Why: crypto.randomUUID is undefined in non-secure browser contexts (LAN
-        // web client over plain HTTP); createBrowserUuid falls back safely.
-        id: `${file.name}-${file.size}-${createBrowserUuid()}`,
+        // web client over plain HTTP); createNonSecureContextUuid falls back safely.
+        id: `${file.name}-${file.size}-${createNonSecureContextUuid()}`,
         name: fileName,
         contentType: file.type,
         bytes: file.size,

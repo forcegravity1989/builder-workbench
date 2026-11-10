@@ -214,3 +214,9 @@ export function appendAgentSessionProviderHandleLink(
   }
   return [...chain, link]
 }
+
+/** Which provider a handle belongs to. Records and leases compare this, never the handle's data. */
+export type AgentSessionProviderHandleNamespace = Pick<
+  AgentSessionProviderHandle,
+  'transport' | 'agent'
+>

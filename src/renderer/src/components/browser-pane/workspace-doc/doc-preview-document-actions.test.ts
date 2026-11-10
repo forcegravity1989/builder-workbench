@@ -34,7 +34,7 @@ vi.mock('@/lib/connection-context', () => ({
 vi.mock('@/components/terminal-pane/terminal-remote-file-download-open', () => ({
   downloadAndOpenRemoteTerminalFile: mocks.downloadAndOpen
 }))
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: {
     getState: () => ({
       settings: {

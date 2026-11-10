@@ -116,7 +116,7 @@ const activationMocks = vi.hoisted(() => ({
 vi.mock('@/lib/workspace-tab-palette-activation', () => ({
   activateWorkspaceTabPaletteResult: activationMocks.workspace
 }))
-vi.mock('@/lib/browser-page-palette-activation', () => ({
+vi.mock('@/lib/browser/palette/browser-page-palette-activation', () => ({
   activateBrowserPagePaletteResult: activationMocks.browser
 }))
 vi.mock('@/lib/simulator-tab-palette-activation', () => ({

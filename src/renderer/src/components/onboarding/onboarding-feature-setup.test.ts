@@ -11,7 +11,7 @@ import {
   ORCA_LINEAR_SKILL_NAME,
   ORCHESTRATION_SKILL_NAME
 } from '@/lib/agent-feature-install-commands'
-import { BROWSER_USE_ENABLED_STORAGE_KEY } from '@/lib/browser-use-setup-state'
+import { BROWSER_USE_ENABLED_STORAGE_KEY } from '@/lib/browser/browser-use-setup-state'
 import {
   ORCHESTRATION_ENABLED_STORAGE_KEY,
   ORCHESTRATION_SETUP_DISMISSED_STORAGE_KEY

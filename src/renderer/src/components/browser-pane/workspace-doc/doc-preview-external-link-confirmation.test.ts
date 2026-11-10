@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
-vi.mock('@/store', () => ({
+vi.mock('@/store/index', () => ({
   useAppStore: {
     getState: () => ({
       openBrowserProfileTabInActiveWorkspace: mocks.openBrowserProfileTabInActiveWorkspace

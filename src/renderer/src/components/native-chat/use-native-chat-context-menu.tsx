@@ -31,7 +31,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { isMacPlatform, nativeChatToggleShortcutLabel } from './native-chat-shortcut'
 import { TabWorkspaceLayoutMenuSection } from '@/components/tab-bar/TabWorkspaceLayoutMenuSection'
-import type { TabSplitDirection } from '@/store/slices/tabs'
+import type { TabSplitDirection } from "../../store/slices/tabs"
 
 type NativeChatContextMenuState = {
   open: boolean

@@ -1,5 +1,5 @@
 import type { Tab, TabGroup, TabGroupLayoutNode } from '../../../../shared/tab-types'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
 
 function collectLayoutGroupIds(node: TabGroupLayoutNode, groupIds: Set<string>): void {
   if (node.type === 'leaf') {
@@ -97,7 +97,7 @@ export function adoptGrouplessTabs(
     }
     const orphanIds = tabs.filter((tab) => !owningGroupIdByTabId.has(tab.id)).map((tab) => tab.id)
     const host: TabGroup = groups[0] ?? {
-      id: createBrowserUuid(),
+      id: createNonSecureContextUuid(),
       worktreeId,
       activeTabId: null,
       tabOrder: [],

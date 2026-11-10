@@ -3,8 +3,8 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AgentBrowserBridge } from '../browser/agent-browser-bridge'
-import type { RuntimeBrowserCommandHost } from './orca-runtime-browser'
+import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
+import type { RuntimeBrowserCommandHost } from "./browser/commands/browser-command-contracts"
 import { RuntimeBrowserPageRegistry } from './runtime-browser-page-registry'
 import {
   BROWSER_TAB_CREATE_PLACEMENT_KINDS,
@@ -32,12 +32,12 @@ vi.mock('electron', () => ({
   webContents: { fromId: vi.fn() }
 }))
 
-vi.mock('../ipc/browser-tab-registration-wait', () => ({
+vi.mock('../ipc/browser/browser-tab-registration-wait', () => ({
   waitForTabRegistration: waitForTabRegistrationMock,
   waitForWorktreeTabRegistration: vi.fn()
 }))
 
-vi.mock('../browser/browser-session-registry', () => ({
+vi.mock('../browser/sessions/profiles/browser-session-registry', () => ({
   browserSessionRegistry: {
     getDefaultProfile: () => ({ id: 'default', partition: 'persist:orca-browser' }),
     getProfile: () => null,

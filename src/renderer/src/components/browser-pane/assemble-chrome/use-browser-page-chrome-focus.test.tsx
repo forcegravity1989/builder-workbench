@@ -2,7 +2,7 @@
 import { act, cleanup, render } from '@testing-library/react'
 import { useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { requestBrowserFocus } from '../host-guest/browser-focus'
 import type { BrowserChromeShortcutScope } from '../describe-page/browser-page-types'
 import { useElementGuestFocus } from './browser-page-guest-focus'

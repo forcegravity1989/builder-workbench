@@ -4,7 +4,7 @@ import {
   createTestStore,
   resetBrowserRuntimeMocks,
   settingsWithRuntime
-} from './browser-slice-test-harness'
+} from './browser/browser-slice-test-harness'
 
 const createWebRuntimeSessionBrowserTabMock = vi.hoisted(() => vi.fn())
 const runtimeEnvironmentCall = vi.fn()

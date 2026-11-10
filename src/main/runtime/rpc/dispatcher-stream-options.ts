@@ -1,8 +1,12 @@
+import type { RpcCallerScope } from './rpc-caller-scope'
+import type { RpcCallerIdentity } from './rpc-caller-identity'
 import type { RuntimeCapability } from '../../../shared/protocol-version'
 import type { TerminalStreamFrame } from '../../../shared/terminal-stream-protocol'
 import type { PairingRpcContext } from './core'
 
 export type RpcDispatchStreamingOptions = {
+  caller?: RpcCallerIdentity
+  callerScope?: RpcCallerScope
   authenticatedCallerFingerprint?: string
   connectionId?: string
   signal?: AbortSignal

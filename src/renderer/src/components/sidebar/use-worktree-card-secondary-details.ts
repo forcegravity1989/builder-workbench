@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import { translate } from '@/i18n/i18n'
-import { openWorkspaceBrowserTab } from '@/lib/workspace-browser-tab-open'
+import { openWorkspaceBrowserTab } from '@/lib/browser/workspace/workspace-browser-tab-open'
 import { hasWorktreeCardDetails } from './WorktreeCardMeta'
 import { usePromptCacheCountdownStartedAt } from './CacheTimer'
 import { useWorktreeAgentRows } from './useWorktreeAgentRows'

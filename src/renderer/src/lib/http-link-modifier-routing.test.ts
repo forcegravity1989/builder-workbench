@@ -4,7 +4,7 @@ import {
   registerHttpLinkStoreAccessor,
   registerWorkspaceHttpLinkBrowserOpener,
   resolveModifierRouting
-} from './http-link-routing'
+} from './browser/navigation/http-link-routing'
 
 describe('resolveModifierRouting', () => {
   it('is inert without the modifier regardless of settings', () => {

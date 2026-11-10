@@ -1,7 +1,7 @@
 import type { Tab, TabGroup, TabGroupLayoutNode } from '../../../../shared/tab-types'
 import type { WorkspaceSessionState } from '../../../../shared/workspace-session-state-types'
 import { isValidTerminalTabId } from '../../../../shared/terminal-tab-id'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
 import {
   adoptGrouplessTabs,
   appendOwnedTabIdsToGroups,
@@ -251,7 +251,7 @@ function hydrateLegacyFormat(
       continue
     }
 
-    const groupId = createBrowserUuid()
+    const groupId = createNonSecureContextUuid()
     const tabs: Tab[] = []
     const tabOrder: string[] = []
 

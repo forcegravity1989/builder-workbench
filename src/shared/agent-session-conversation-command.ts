@@ -1,17 +1,55 @@
+import type { AgentSessionFailureFact } from './agent-session/failures/agent-session-failure'
+import type { AgentSessionFailureSentence } from './agent-session/failures/agent-session-failure-words'
+import type { AgentSessionQueuedSendReceipt } from './agent-session-wire'
+
 export type AgentSessionConversationCommand = 'clear' | 'compact'
+
+/** What the user typed and what a text-driven agent receives. */
+export function agentSessionCompactCommandText(instructions?: string): string {
+  return instructions ? `/compact ${instructions}` : '/compact'
+}
+
+/** The fields a command's mutation is fingerprinted over: host and clients must build the same ones. */
+export function agentSessionConversationCommandFields(
+  command: AgentSessionConversationCommand,
+  options: { instructions?: string; delivery?: 'queue-if-active' } = {}
+): Record<string, string> {
+  return {
+    command,
+    ...(options.instructions ? { instructions: options.instructions } : {}),
+    ...(options.delivery ? { delivery: options.delivery } : {})
+  }
+}
+
+/** How long a client waits for a conversation command: the host may first start an agent at rest. */
+export const AGENT_SESSION_CONVERSATION_COMMAND_TIMEOUT_MS = 195_000
 
 export type AgentSessionConversationCommandResult = {
   command: AgentSessionConversationCommand
   state: 'completed' | 'unknown'
   replacementSessionId?: string
-  error?: string
-}
+  /** A completed /compact card queued behind current work; only clients that sent delivery receive it. */
+  queued?: AgentSessionQueuedSendReceipt
+} &
+  /** `error`: a sentence for a person; released clients print it as it is. */
+  (
+    | { error?: string; failure?: undefined }
+    /** Written with its sentence by agentSessionFailureWords; absent on older hosts. */
+    | { error: AgentSessionFailureSentence; failure: AgentSessionFailureFact }
+  )
 
 export type AgentSessionConversationCommandRecord = AgentSessionConversationCommandResult & {
   runtimeFence?: number
   operationId: string
   callerKey: string
   phase: 'prepared' | 'committed'
+}
+
+/** A newer host may answer with a command this build doesn't know. */
+export function isAgentSessionConversationCommand(
+  value: unknown
+): value is AgentSessionConversationCommand {
+  return value === 'clear' || value === 'compact'
 }
 
 export function isAgentSessionConversationCommandResult(
@@ -22,7 +60,7 @@ export function isAgentSessionConversationCommandResult(
   }
   const row = value as AgentSessionConversationCommandResult
   return (
-    (row.command === 'clear' || row.command === 'compact') &&
+    isAgentSessionConversationCommand(row.command) &&
     (row.state === 'completed' || row.state === 'unknown') &&
     (row.replacementSessionId === undefined ||
       (typeof row.replacementSessionId === 'string' &&
@@ -41,7 +79,7 @@ export function isAgentSessionConversationCommandRecord(
   return (
     (row.phase === 'prepared' || row.phase === 'committed') &&
     (row.runtimeFence === undefined ||
-      (Number.isSafeInteger(row.runtimeFence) && row.runtimeFence > 0)) &&
+      (Number.isSafeInteger(row.runtimeFence) && row.runtimeFence >= 0)) &&
     typeof row.operationId === 'string' &&
     row.operationId.length > 0 &&
     row.operationId.length <= 512 &&

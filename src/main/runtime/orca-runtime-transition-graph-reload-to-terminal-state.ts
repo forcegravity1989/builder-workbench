@@ -1,4 +1,10 @@
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
+import { routeDesktopBrowserBridgeRpc, type DesktopBrowserBridgeRoute } from './desktop-browser-bridge/desktop-browser-bridge-route'
+import { getDesktopBrowserBridgeRegistry, isDesktopBrowserBridgeHostEnabled } from './desktop-browser-bridge/desktop-browser-bridge-registry'
+import { runtimeBrowserCommandsFactoryIsAvailable } from './runtime-browser-commands-factory'
+import { hasPairedPageHost } from './browser/client-pages/browser-client-page-opening'
+import { resolveRemoteCliBrowserScopeSelector } from './desktop-browser-bridge/remote-cli-browser-scope'
+import type { RpcContext } from './rpc/core'
 import { OrcaRuntimeWithHasTerminalsForWorktree } from './orca-runtime-has-terminals-for-worktree'
 import { HEADLESS_RUNTIME_WINDOW_ID } from '../../shared/runtime-types'
 import type { FolderWorkspace } from '../../shared/folder-workspace-types'
@@ -12,7 +18,7 @@ import { getSshFilesystemProvider } from '../providers/ssh-filesystem-dispatch'
 import { folderWorkspaceKey, parseWorkspaceKey } from '../../shared/workspace-scope'
 import type { ResolvedWorktree } from './runtime-worktree-path-identity'
 import type { BrowserExecutionHostKeyResolution } from './runtime-browser-client-page-adoption'
-import { browserNetworkExecutionHostKey } from '../browser/browser-network-execution-route'
+import { browserNetworkExecutionHostKey } from '../browser/network/execution-routes/browser-network-execution-route'
 import type { ClientHostedBrowserRpcRoute } from './runtime-browser-client-automation'
 import { routeRuntimeBrowserClientAutomation } from './runtime-browser-client-automation'
 import { getRuntimeBrowserPageRegistry } from './runtime-browser-page-registry'
@@ -189,13 +195,37 @@ export class OrcaRuntimeWithTransitionGraphReloadToTerminalState extends OrcaRun
 
   routeClientHostedBrowserRpc(
     method: string,
-    params: unknown
+    params: unknown,
+    caller: RpcContext['caller']
   ): Promise<ClientHostedBrowserRpcRoute> {
     return routeRuntimeBrowserClientAutomation({
       method,
       params,
+      caller,
       pages: getRuntimeBrowserPageRegistry(this),
       leases: getBrowserHostLeaseRegistry(this),
+      resolveWorkspace: (selector) =>
+        resolveRemoteCliBrowserScopeSelector(selector) ?? this.resolveBrowserWorkspace(selector)
+    })
+  }
+
+  routeDesktopBrowserBridgeRpc(
+    method: string,
+    params: unknown,
+    context: Pick<RpcContext, 'caller' | 'signal'>
+  ): Promise<DesktopBrowserBridgeRoute> {
+    return routeDesktopBrowserBridgeRpc({
+      method,
+      params,
+      caller: context.caller,
+      signal: context.signal,
+      hostEnabled: isDesktopBrowserBridgeHostEnabled(),
+      registry: getDesktopBrowserBridgeRegistry(this),
+      // This runtime lists/retires desktop-hosted pages even while their desktop is gone, so those commands need no bridge.
+      localBrowserAvailable:
+        runtimeBrowserCommandsFactoryIsAvailable() ||
+        getRuntimeBrowserPageRegistry(this).listPages().length > 0 ||
+        hasPairedPageHost({ getBrowserHostLeaseRegistry: () => getBrowserHostLeaseRegistry(this) }),
       resolveWorkspace: (selector) => this.resolveBrowserWorkspace(selector)
     })
   }

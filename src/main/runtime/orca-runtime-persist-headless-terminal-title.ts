@@ -100,7 +100,7 @@ export class OrcaRuntimeWithPersistHeadlessTerminalTitle extends OrcaRuntimeWith
     if (!snapshot) {
       return ids
     }
-    const liveBrowserTabsByPageId = this.getLiveBrowserTabsByPageId(snapshot.worktree)
+    const liveBrowserTabsByPageId = this.getListedBrowserTabsByPageId(snapshot.worktree)
     for (const tab of snapshot.tabs) {
       if (tab.type === 'browser') {
         const liveTab = tab.browserPageId

@@ -23,7 +23,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   runtimeEnvironmentSupportsCapability: vi.fn(async () => false)
 }))
 
-vi.mock('@/lib/workspace-browser-tab-open', () => ({
+vi.mock('@/lib/browser/workspace/workspace-browser-tab-open', () => ({
   openWorkspaceBrowserTab: vi.fn(async () => {})
 }))
 
@@ -121,7 +121,7 @@ vi.mock('../browser-client-page-renderer-installation', () => ({
   attachBrowserClientPageToViewport: mocks.attach
 }))
 
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { installClientHostedPaneApi } from '../client-hosted-browser-pane-test-rig'
 import { clearBrowserAddressBarEditSession } from './browser-address-bar-edit-session'

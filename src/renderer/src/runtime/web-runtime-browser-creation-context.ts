@@ -1,7 +1,7 @@
-import type { BrowserClientHostPlacementPreference } from '../../../shared/browser-client-host-placement'
+import type { BrowserClientHostPlacementPreference } from '../../../shared/browser/client-hosting/browser-client-host-placement'
 import { BROWSER_TAB_CREATE_KNOWN_ID_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import { assertRuntimeManagedBrowserCreationAvailable } from '../lib/client-creation-action-policy'
-import { createBrowserUuid } from '../lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
 import { useAppStore } from '../store'
 import {
   clearWebSessionFocusIntentIfMatches,
@@ -22,7 +22,7 @@ import {
   type StagedWebRuntimeBrowserTab
 } from './web-runtime-browser-tab-staging'
 import { throwIfE2eWebRuntimeBrowserCapabilityUnavailable } from './web-runtime-browser-creation-e2e-fault'
-import { expectsBrowserClientHosting } from '../../../shared/browser-client-hosting-eligibility'
+import { expectsBrowserClientHosting } from '../../../shared/browser/client-hosting/browser-client-hosting-eligibility'
 import {
   captureRuntimeEnvironmentCall,
   captureWebSessionIntentOwner,
@@ -73,7 +73,7 @@ export function createWebRuntimeBrowserCreationContext(
   const intentOwner = captureWebSessionIntentOwner(environmentId)
   const callEnvironment = captureRuntimeEnvironmentCall(environmentId, intentOwner.pairingRevision)
   const shouldFocusOnCreate = args.focusOnCreate !== false
-  const provisionalPageId = createBrowserUuid()
+  const provisionalPageId = createNonSecureContextUuid()
   const advertisedCapabilities =
     useAppStore.getState().runtimeStatusByEnvironmentId?.get(environmentId)?.status?.capabilities ??
     []

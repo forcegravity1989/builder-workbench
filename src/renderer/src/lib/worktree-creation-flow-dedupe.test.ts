@@ -23,7 +23,7 @@ vi.mock('@/store', () => ({
 }))
 
 vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => 'creation-new'
+  createNonSecureContextUuid: () => 'creation-new'
 }))
 
 vi.mock('@/lib/worktree-activation', () => ({

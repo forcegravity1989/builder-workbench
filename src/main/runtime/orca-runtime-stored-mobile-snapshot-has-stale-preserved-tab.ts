@@ -73,7 +73,7 @@ export class OrcaRuntimeWithStoredMobileSnapshotHasStalePreservedTab extends Orc
         this.isHeadlessBuiltMobileSessionPublicationBase(snapshot.publicationEpoch) ||
         (snapshot.publicationEpoch.includes(':headless-merge:') &&
           typeof tab.browserPageId === 'string' &&
-          this.getLiveBrowserTabsByPageId(snapshot.worktree).has(tab.browserPageId))
+          this.getListedBrowserTabsByPageId(snapshot.worktree).has(tab.browserPageId))
       )
     }
     if (tab.type !== 'terminal') {

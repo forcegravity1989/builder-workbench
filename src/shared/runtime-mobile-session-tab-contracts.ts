@@ -58,6 +58,7 @@ export type RuntimeMobileSessionMarkdownTab = {
 
 export type RuntimeMobileSessionFileTab = {
   type: 'file'
+  hostRuntimeEnvironmentId?: string
   id: string
   title: string
   filePath: string
@@ -73,6 +74,7 @@ export type RuntimeMobileSessionFileTab = {
 
 export type RuntimeMobileSessionBrowserTab = {
   type: 'browser'
+  hostRuntimeEnvironmentId?: string
   id: string
   title: string
   browserWorkspaceId: string

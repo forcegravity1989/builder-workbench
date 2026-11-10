@@ -63,7 +63,7 @@ import {
   refreshRuntimeEnvironmentsAfterPairingChange
 } from '@/runtime/runtime-environment-pairing-refresh'
 import { registerRemoteRuntimePtyControlReadyReviver } from './remote-runtime-pty-control-ready-revivers'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
 import {
   createAgentSessionCreateOperation,
   withAgentSessionCreateOperationId
@@ -444,8 +444,8 @@ export function createRemoteRuntimePtyTransport(
     viewportClaimReadyWaiters.clear()
   }
   // Why: tab/leaf ids are shared by paired viewers; the instance suffix keeps one viewer's refresh off peer records.
-  const clientId = `desktop:${tabId ?? 'tab'}:${leafId ?? 'leaf'}:${createBrowserUuid()}`
-  const terminalCreateMutationId = createBrowserUuid()
+  const clientId = `desktop:${tabId ?? 'tab'}:${leafId ?? 'leaf'}:${createNonSecureContextUuid()}`
+  const terminalCreateMutationId = createNonSecureContextUuid()
   // Why: reconnect retries must replay one host operation instead of creating
   // another fresh agent when the first response was lost.
   const agentCreateOperation = createAgentSessionCreateOperation()
