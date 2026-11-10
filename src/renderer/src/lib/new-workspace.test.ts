@@ -82,7 +82,7 @@ vi.mock('@/lib/agent-paste-draft', () => ({
   pasteDraftToAgentPtyWhenReady: mockPasteDraftToAgentPtyWhenReady
 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
+vi.mock('../../../shared/non-secure-context-uuid', () => ({
   createNonSecureContextUuid: () => 'launch-token-1'
 }))
 

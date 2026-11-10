@@ -1,4 +1,8 @@
-import { denyRpcMethodForCaller, OWNER_RPC_CALLER_SCOPE, type RpcCallerScope } from './rpc-caller-scope'
+import {
+  denyRpcMethodForCaller,
+  OWNER_RPC_CALLER_SCOPE,
+  type RpcCallerScope
+} from './rpc-caller-scope'
 import { runWithActiveRpcCaller } from './rpc-active-caller'
 import { resolveRpcCallerIdentity } from './rpc-caller-identity'
 import {
@@ -60,14 +64,25 @@ export class RpcDispatcher {
   }
 
   async dispatch(request: RpcRequest, options?: DispatchCallOptions): Promise<RpcResponse> {
-    return runWithActiveRpcCaller(resolveRpcCallerIdentity(options), () => this.dispatchWithCaller(request, options))
+    return runWithActiveRpcCaller(resolveRpcCallerIdentity(options), () =>
+      this.dispatchWithCaller(request, options)
+    )
   }
 
-  private async dispatchWithCaller(request: RpcRequest, options?: DispatchCallOptions): Promise<RpcResponse> {
+  private async dispatchWithCaller(
+    request: RpcRequest,
+    options?: DispatchCallOptions
+  ): Promise<RpcResponse> {
     const meta = this.meta()
     const method = this.registry.get(request.method)
-    const denial = denyRpcMethodForCaller(this.pinnedCallerScope ?? options?.callerScope ?? OWNER_RPC_CALLER_SCOPE, request.method, method?.permission)
-    if (denial) return errorResponse(request.id, meta, 'forbidden', denial)
+    const denial = denyRpcMethodForCaller(
+      this.pinnedCallerScope ?? options?.callerScope ?? OWNER_RPC_CALLER_SCOPE,
+      request.method,
+      method?.permission
+    )
+    if (denial) {
+      return errorResponse(request.id, meta, 'forbidden', denial)
+    }
     if (!method) {
       return errorResponse(
         request.id,

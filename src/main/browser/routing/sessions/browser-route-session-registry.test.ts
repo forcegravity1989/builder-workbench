@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { BrowserRouteSessionRegistry } from "./browser-route-session-registry"
-import { type BrowserRouteElectronSession } from "./browser-route-session-policy"
-import { type BrowserRouteSessionRegistryDependencies } from "./browser-route-session-registry-contract"
+import { BrowserRouteSessionRegistry } from './browser-route-session-registry'
+import type { BrowserRouteElectronSession } from './browser-route-session-policy'
+import type { BrowserRouteSessionRegistryDependencies } from './browser-route-session-registry-contract'
 
 const identity = {
   orcaProfileId: 'orca-profile-a',

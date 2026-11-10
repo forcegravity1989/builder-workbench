@@ -1,5 +1,4 @@
 import { ResizeHandle } from './TabGroupResizeHandle'
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import type { TabGroupLayoutNode } from '../../../../shared/tab-types'
 import { useAppStore } from '../../store'
@@ -8,7 +7,6 @@ import TabDragPreview from '../tab-bar/TabDragPreview'
 import { TabDragProvider } from './tab-drag-context'
 import TabPaneColumnSplitDragOverlay from './TabPaneColumnSplitDragOverlay'
 import { type HoveredTabInsertion, useTabDragSplit } from './useTabDragSplit'
-
 
 function SplitNode({
   node,

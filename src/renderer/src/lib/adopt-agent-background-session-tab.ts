@@ -2,7 +2,7 @@ import { useAppStore } from '@/store'
 import { makePaneKey, type PaneKey } from '../../../shared/stable-pane-id'
 import type { AgentType } from '../../../shared/agent-status-types'
 import { bindAutomationTerminal } from '@/lib/automation-terminal-ownership'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { retireProvider, retireUnownedTerminal } from '@/lib/retire-unowned-background-terminal'
 import { isTerminalTabPresent } from '@/store/slices/terminal-tab-retirement'
 import type { RuntimeClientTarget } from '@/runtime/runtime-rpc-client'

@@ -33,12 +33,15 @@ export function projectSessionTabsForClient(
   structuredNativeChatEnabled: boolean
 ): RuntimeMobileSessionTabsResult {
   return projectSessionTabBrowserPlacements(
-    projectSessionTabFileHosts(projectSessionTabAgentStatus(
-      snapshot,
-      clientKind,
-      clientCapabilities,
-      structuredNativeChatEnabled
-    ), clientKind),
+    projectSessionTabFileHosts(
+      projectSessionTabAgentStatus(
+        snapshot,
+        clientKind,
+        clientCapabilities,
+        structuredNativeChatEnabled
+      ),
+      clientKind
+    ),
     clientCapabilities
   )
 }

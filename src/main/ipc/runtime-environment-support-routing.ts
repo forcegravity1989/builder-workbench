@@ -19,7 +19,10 @@ import {
   isRuntimeEnvironmentCapabilityOutcomeCurrent,
   type RuntimeEnvironmentCapabilityOutcome
 } from './runtime-environment-capability-evidence'
-import { runtimeEnvironmentRevisionFailure, runtimeEnvironmentChangedFailure } from './runtime-environment-revision-guard'
+import {
+  runtimeEnvironmentRevisionFailure,
+  runtimeEnvironmentChangedFailure
+} from './runtime-environment-revision-guard'
 import { supportsSharedControl } from './runtime-environment-shared-control-support'
 import {
   sendRemoteRuntimeRequestAbortable,
@@ -88,26 +91,26 @@ export function executeSupportRoutedCall(args: {
       args.expectedRuntimeId !== undefined
         ? sendSupportRoutedCallOnRuntime(route, args, args.expectedRuntimeId, 'shared')
         : sendRemoteRuntimeSharedControlRequestAbortable(
-        route.environment.id,
-        route.pairing,
-        args.method,
-        args.params,
-        args.timeoutMs,
-        args.envelope,
-        args.signal
-      ),
+            route.environment.id,
+            route.pairing,
+            args.method,
+            args.params,
+            args.timeoutMs,
+            args.envelope,
+            args.signal
+          ),
     unsupported: (route) =>
       args.expectedRuntimeId !== undefined
         ? sendSupportRoutedCallOnRuntime(route, args, args.expectedRuntimeId, 'one-shot')
         : sendRemoteRuntimeRequestAbortable(
-        route.pairing,
-        args.method,
-        args.params,
-        args.timeoutMs,
-        args.envelope,
-        args.signal,
-        ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
-      ),
+            route.pairing,
+            args.method,
+            args.params,
+            args.timeoutMs,
+            args.envelope,
+            args.signal,
+            ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
+          ),
     markUsed: (environmentId, response) => {
       if (response.ok) {
         recordRuntimeEnvironmentUsage(args.userDataPath, environmentId, {

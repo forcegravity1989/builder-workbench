@@ -8,7 +8,7 @@ import { ORCA_BROWSER_BLANK_URL } from '../../../../../../shared/constants'
 import { redactKagiSessionToken } from '../../../../../../shared/browser-url'
 import { isDocPreviewUrl } from '../../../../../../shared/doc-preview-scheme'
 import { basename } from '@/lib/path'
-import { createNonSecureContextUuid as createNonSecureContextUuid } from '../../../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid } from '../../../../../../shared/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
 
 export function normalizeUrl(url: string): string {

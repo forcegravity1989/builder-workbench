@@ -12,7 +12,10 @@ import {
 } from './source-control-action-model-selection'
 import { isTuiAgent } from '../../../tui-agent-config'
 import type { TuiAgent } from '../../../tui-agent'
-import type { ActionModelSelection, SourceControlActionRecipe } from '../../../source-control-ai-actions'
+import type {
+  ActionModelSelection,
+  SourceControlActionRecipe
+} from '../../../source-control-ai-actions'
 
 import {
   actionArgumentChoicesValue,

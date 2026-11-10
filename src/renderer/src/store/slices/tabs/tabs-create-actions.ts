@@ -1,4 +1,4 @@
-import { createNonSecureContextUuid } from "../../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
 import { getActiveExecutionHostIdForWorktree } from '@/lib/unified-tab-host-ownership'
 import type { Tab, TabGroup } from '../../../../../shared/tab-types'
 import type { TabsSlice, TabsSliceGet, TabsSliceSet } from './tabs-slice-contract'

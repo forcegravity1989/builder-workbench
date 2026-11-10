@@ -6,8 +6,8 @@ import {
   createLifecycleClaim
 } from '../execution/browser-client-page-command-executor-test-harness'
 import { createBrowserRoutePartitionBindingStoreFake } from '../../routing/partitions/browser-route-partition-binding-store-fake'
-import { BrowserRouteSessionRegistry } from "../../routing/sessions/browser-route-session-registry"
-import { type BrowserRouteElectronSession } from "../../routing/sessions/browser-route-session-policy"
+import { BrowserRouteSessionRegistry } from '../../routing/sessions/browser-route-session-registry'
+import type { BrowserRouteElectronSession } from '../../routing/sessions/browser-route-session-policy'
 import type { BrowserRoutePageGuestIdentity } from '../../routing/guest-authority/browser-route-page-authority'
 
 const SSH_HOST_STORAGE = 'storage-ssh-target-a'

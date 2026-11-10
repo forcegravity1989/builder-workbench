@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
 import { REMOTE_RUNTIME_MAX_OUTBOUND_BINARY_FRAME_BYTES } from '../../shared/remote-runtime-memory-limits'
 import { BROWSER_SCREENCAST_GHOST_SUBSCRIBER_REFUSAL_LIMIT } from './browser-screencast-ghost-subscriber-eviction'
-import type { RuntimeBrowserCommandHost } from "./browser/commands/browser-command-contracts"
-import type { RuntimeBrowserCommands } from "./orca-runtime-browser"
+import type { RuntimeBrowserCommandHost } from './browser/commands/browser-command-contracts'
+import type { RuntimeBrowserCommands } from './orca-runtime-browser'
 import { RuntimeBrowserPageRegistry } from './runtime-browser-page-registry'
 
 const { webContentsFromId, startBrowserScreencast } = vi.hoisted(() => ({

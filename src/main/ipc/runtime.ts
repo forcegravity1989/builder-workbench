@@ -135,7 +135,7 @@ export function registerRuntimeHandlers(runtime: OrcaRuntimeService): void {
           {
             signal: controller.signal,
             clientId: 'desktop-renderer',
-          caller: DESKTOP_RPC_CALLER,
+            caller: DESKTOP_RPC_CALLER,
             clientKind: 'runtime',
             connectionId,
             clientCapabilities: [

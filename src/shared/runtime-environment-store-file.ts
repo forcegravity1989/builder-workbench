@@ -1,14 +1,16 @@
-import { overlayRuntimeEnvironmentSidecar, readRuntimeEnvironmentSidecar, RuntimeEnvironmentSidecarInvalidError, type RuntimeEnvironmentSidecar } from './remote-runtime/host-store/runtime-environment-sidecar'
+import {
+  overlayRuntimeEnvironmentSidecar,
+  readRuntimeEnvironmentSidecar,
+  RuntimeEnvironmentSidecarInvalidError,
+  type RuntimeEnvironmentSidecar
+} from './remote-runtime/host-store/runtime-environment-sidecar'
 import type { KnownRuntimeEnvironment } from './runtime-environments'
 import {
   JsonStringifyByteLimitError,
   stringifyJsonWithinByteLimit
 } from './node-bounded-json-stringify'
 import { writeSecureFile } from './secure-file'
-import {
-  RuntimeEnvironmentStoreSchema,
-  type RuntimeEnvironmentStore
-} from './runtime-environments'
+import { RuntimeEnvironmentStoreSchema, type RuntimeEnvironmentStore } from './runtime-environments'
 import {
   getEnvironmentStorePath,
   MAX_RUNTIME_ENVIRONMENT_STORE_FILE_BYTES,
@@ -51,14 +53,21 @@ export function readEnvironmentStore(
     }
     throw error
   }
-  const hidden = store.environments.filter((environment) => Object.hasOwn(sidecar.unreadable, environment.id))
+  const hidden = store.environments.filter((environment) =>
+    Object.hasOwn(sidecar.unreadable, environment.id)
+  )
   if (hidden.length > 0) {
-    warnUnreadableEnvironmentState(`Hiding ${hidden.length} server(s) whose links cannot be read (ids: ${hidden.map((environment) => environment.id).join(', ')}); they may need a newer version of Orca.`)
+    warnUnreadableEnvironmentState(
+      `Hiding ${hidden.length} server(s) whose links cannot be read (ids: ${hidden.map((environment) => environment.id).join(', ')}); they may need a newer version of Orca.`
+    )
   }
   return {
     version: 1,
-    environments: store.environments.filter((environment) => !Object.hasOwn(sidecar.unreadable, environment.id))
-      .map((environment) => overlayRuntimeEnvironmentSidecar(environment, sidecar.entries[environment.id]))
+    environments: store.environments
+      .filter((environment) => !Object.hasOwn(sidecar.unreadable, environment.id))
+      .map((environment) =>
+        overlayRuntimeEnvironmentSidecar(environment, sidecar.entries[environment.id])
+      )
   }
 }
 

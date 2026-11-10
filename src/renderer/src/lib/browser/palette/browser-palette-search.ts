@@ -16,10 +16,7 @@ import {
 } from '../../worktree-default-display-name'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
 import type { MatchRange } from '../../palette-match/normalized-text'
-import type {
-  PaletteDocument,
-  PaletteDocumentRank
-} from '../../palette-match/palette-document'
+import type { PaletteDocument, PaletteDocumentRank } from '../../palette-match/palette-document'
 import type { PaletteResultQualityClass } from '../../palette-match/match-quality'
 import {
   createPaletteSearchContext,

@@ -76,13 +76,15 @@ async function launch(profileDirectory: string): Promise<void> {
   vi.resetModules()
   createHostCallbacks.length = 0
   hostOptions.length = 0
-  const { initializeBrowserClientHostId } = await import('./client-hosts/lifecycle/browser-client-host-id')
+  const { initializeBrowserClientHostId } =
+    await import('./client-hosts/lifecycle/browser-client-host-id')
   initializeBrowserClientHostId(profileDirectory)
 }
 
 /** Reports the identity a client host of the current launch attaches under. */
 async function hostingIdentity(): Promise<string> {
-  const runtime = await import('./client-hosts/lifecycle/paired-runtime-browser-client-host-runtime')
+  const runtime =
+    await import('./client-hosts/lifecycle/paired-runtime-browser-client-host-runtime')
   runtime.configurePairedRuntimeBrowserClientHostsForOrcaProfile({ orcaProfileId: 'profile-a' })
   await runtime.startPairedRuntimeBrowserClientHost({
     environment: pairedEnvironment('environment-a'),
@@ -131,7 +133,8 @@ describe('client host hosting identity wiring', () => {
     // Why the stamp is read first: window creation puts the id in the renderer's argv long before
     // any environment pairs, and a renderer holding a different id than the lease stops
     // recognizing the pages it is itself hosting.
-    const { getBrowserClientHostId } = await import('./client-hosts/lifecycle/browser-client-host-id')
+    const { getBrowserClientHostId } =
+      await import('./client-hosts/lifecycle/browser-client-host-id')
     const stamped = getBrowserClientHostId()
 
     expect(await hostingIdentity()).toBe(stamped)
@@ -143,7 +146,8 @@ describe('client host hosting identity wiring', () => {
     hostOptions.length = 0
 
     // Why not a throw: an unresolvable profile costs survival across a relaunch, not this session.
-    const { getBrowserClientHostId } = await import('./client-hosts/lifecycle/browser-client-host-id')
+    const { getBrowserClientHostId } =
+      await import('./client-hosts/lifecycle/browser-client-host-id')
     expect(await hostingIdentity()).toBe(getBrowserClientHostId())
   })
 })

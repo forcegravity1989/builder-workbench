@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import en from '@/i18n/locales/en.json'
 import ko from '@/i18n/locales/ko.json'
 import { i18n } from '@/i18n/i18n'
-import { getBrowserPaneSearchEntries } from "./browser-search"
-import { getTerminalLinkActionSearchKeywords } from "./routing/browser-terminal-link-action-search"
+import { getBrowserPaneSearchEntries } from './browser-search'
+import { getTerminalLinkActionSearchKeywords } from './routing/browser-terminal-link-action-search'
 import {
   getBrowserLinkRoutingDescription,
   getBrowserLinkRoutingShortcutLabel,

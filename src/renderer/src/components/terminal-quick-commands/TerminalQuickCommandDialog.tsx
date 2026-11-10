@@ -11,7 +11,7 @@ import {
   isTerminalAgentQuickCommand,
   supportsTerminalAgentQuickCommand
 } from '../../../../shared/terminal-quick-commands'
-import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import {
   Dialog,
   DialogContent,

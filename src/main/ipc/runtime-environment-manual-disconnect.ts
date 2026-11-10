@@ -1,4 +1,7 @@
-import { resetDesktopBrowserBridgeEnvironment, requestDesktopBrowserBridgeReconcile } from './browser/desktop-browser-bridge-reconcile'
+import {
+  resetDesktopBrowserBridgeEnvironment,
+  requestDesktopBrowserBridgeReconcile
+} from './browser/desktop-browser-bridge-reconcile'
 const manuallyDisconnectedEnvironmentIds = new Set<string>()
 
 export const RUNTIME_MANUALLY_DISCONNECTED_MESSAGE = 'Runtime environment is manually disconnected.'

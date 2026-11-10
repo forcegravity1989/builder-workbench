@@ -11,7 +11,10 @@ import {
   applyPendingBrowserCookieImports,
   supportsPendingBrowserCookieImportReplay
 } from './browser-session-cookie-staging'
-import { loadBrowserSessionMeta, persistBrowserSessionMeta } from '../../sessions/profiles/browser-session-meta-store'
+import {
+  loadBrowserSessionMeta,
+  persistBrowserSessionMeta
+} from '../../sessions/profiles/browser-session-meta-store'
 
 const defaultPartition = 'persist:orca-browser-default'
 const routePartition = `persist:orca-browser-v1-${'c'.repeat(64)}`

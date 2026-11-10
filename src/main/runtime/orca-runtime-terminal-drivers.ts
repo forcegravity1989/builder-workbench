@@ -2,7 +2,10 @@
 import { ServeBrowserTabs } from './browser/headless/serve-browser-tabs'
 import type { ServeBrowserPageState } from './browser/headless/serve-browser-tab-layout'
 import { readBrowserTabBar } from './browser/tabs/browser-tab-listing'
-import { remoteCliBrowserScopeWorkspaceId, resolveRemoteCliBrowserScopeSelector } from './desktop-browser-bridge/remote-cli-browser-scope'
+import {
+  remoteCliBrowserScopeWorkspaceId,
+  resolveRemoteCliBrowserScopeSelector
+} from './desktop-browser-bridge/remote-cli-browser-scope'
 import { parseWorkspaceKey } from '../../shared/workspace-scope'
 import { getRepoIdFromWorktreeId } from '../../shared/worktree/id'
 import { getBrowserHostRequestRegistry } from './browser-host/leases/browser-host-request-registry'
@@ -65,10 +68,12 @@ export class OrcaRuntimeWithTerminalDrivers extends OrcaRuntimeWithFitOverrideLi
     browserHost: {
       getAgentBrowserBridge: () => this.agentBrowserBridge,
       getRuntimeId: () => this.getRuntimeId(),
-      resolveWorkspaceSelector: (selector) => resolveRemoteCliBrowserScopeSelector(selector) ?? this.resolveBrowserWorkspace(selector),
+      resolveWorkspaceSelector: (selector) =>
+        resolveRemoteCliBrowserScopeSelector(selector) ?? this.resolveBrowserWorkspace(selector),
       getBrowserHostRequestRegistry: () => getBrowserHostRequestRegistry(this),
       getPairedDeviceName: (id) => this.getPairedDeviceNameFn(id),
-      resolveBrowserWorkspace: (selector) => resolveRemoteCliBrowserScopeSelector(selector) ?? this.resolveBrowserWorkspace(selector),
+      resolveBrowserWorkspace: (selector) =>
+        resolveRemoteCliBrowserScopeSelector(selector) ?? this.resolveBrowserWorkspace(selector),
       getBrowserHostLeaseRegistry: () => getBrowserHostLeaseRegistry(this),
       getRuntimeBrowserPageRegistry: () => getRuntimeBrowserPageRegistry(this),
       resolveBrowserNetworkExecutionHost: (worktree) =>

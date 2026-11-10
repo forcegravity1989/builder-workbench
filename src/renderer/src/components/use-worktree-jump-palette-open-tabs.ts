@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import { buildSearchableBrowserPages } from '@/lib/browser/palette/browser-palette-page-entries'
-import { searchBrowserPages, type SearchableBrowserPage } from '@/lib/browser/palette/browser-palette-search'
+import {
+  searchBrowserPages,
+  type SearchableBrowserPage
+} from '@/lib/browser/palette/browser-palette-search'
 import {
   buildSearchableSimulatorTabs,
   searchSimulatorTabs,

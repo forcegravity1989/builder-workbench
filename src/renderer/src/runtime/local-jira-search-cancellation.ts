@@ -1,5 +1,5 @@
 import type { JiraIssue, JiraSiteSelection } from '../../../shared/jira-types'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 
 type LocalJiraSearchArgs = { jql: string; limit?: number; siteId?: JiraSiteSelection }
 

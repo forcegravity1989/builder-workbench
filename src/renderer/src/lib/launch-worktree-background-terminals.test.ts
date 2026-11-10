@@ -49,8 +49,9 @@ vi.mock('@/store', () => ({
   }
 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
-  createNonSecureContextUuid: () => `00000000-0000-4000-8000-${String(++uuidIndex).padStart(12, '0')}`
+vi.mock('../../../shared/non-secure-context-uuid', () => ({
+  createNonSecureContextUuid: () =>
+    `00000000-0000-4000-8000-${String(++uuidIndex).padStart(12, '0')}`
 }))
 
 vi.mock('@/components/terminal-pane/pty-dispatcher', () => ({

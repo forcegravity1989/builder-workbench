@@ -45,7 +45,11 @@ export type AgentSessionWireRefusal = {
   currentRevision?: number
 }
 
-import { readAgentSessionRefusalDetails, type AgentSessionAnyRefusalDetails, type AgentSessionRefusalDetails } from './agent-session/failures/agent-session-refusal-details'
+import {
+  readAgentSessionRefusalDetails,
+  type AgentSessionAnyRefusalDetails,
+  type AgentSessionRefusalDetails
+} from './agent-session/failures/agent-session-refusal-details'
 
 /** A refusal named without its prose: what a durable record or an error's data keeps. */
 export type AgentSessionRefusalReference = {

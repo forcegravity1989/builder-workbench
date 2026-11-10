@@ -187,9 +187,10 @@ function installWillQuitHandler(): void {
     })()
     // Why (review P2-4): local SSH browser routes own loopback listeners and, on the
     // system-ssh path, `ssh -N -D` children that would otherwise outlive the app.
-    const localSshRouteShutdown = import('../browser/routing/local-host-partitions/local-ssh-browser-route')
-      .then((routes) => routes.closeAllLocalSshBrowserRoutes())
-      .catch(() => {})
+    const localSshRouteShutdown =
+      import('../browser/routing/local-host-partitions/local-ssh-browser-route')
+        .then((routes) => routes.closeAllLocalSshBrowserRoutes())
+        .catch(() => {})
     browserManager.setBrowserGuestStateChangedListener(null)
     const emulatorShutdown =
       state.runtime?.getEmulatorBridge()?.destroyAllSessions() ?? Promise.resolve()

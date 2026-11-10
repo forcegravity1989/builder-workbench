@@ -117,7 +117,6 @@ export class BrowserCertificateTrustController {
     this.clearPending(webContentsId, true)
   }
 
-
   getFailure(browserPageId: string): BrowserCertificateFailure | null {
     this.pruneExpired()
     for (const pending of this.pendingByGuestId.values()) {

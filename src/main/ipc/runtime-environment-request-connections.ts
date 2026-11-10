@@ -1,4 +1,7 @@
-import { setSharedControlAnswerSource, clearSharedControlAnswerSource } from './runtime-environments/runtime-environment-shared-control-answers'
+import {
+  setSharedControlAnswerSource,
+  clearSharedControlAnswerSource
+} from './runtime-environments/runtime-environment-shared-control-answers'
 import { runtimeEnvironmentConnectionPairingKey } from './runtime-environment-capability-evidence'
 import { probeAllRemoteRuntimeSocketsNow } from '../../shared/remote-runtime-socket-liveness'
 import type { PairedRuntimeConnection } from '../../shared/remote-runtime/pairing/paired-runtime-connection'
@@ -265,7 +268,9 @@ function getSharedControlConnection(
         clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES,
         isManuallyDisconnected: () => isRuntimeEnvironmentManuallyDisconnected(environmentId),
         isCapabilityPaused: () => isRuntimeEnvironmentCapabilityPaused(environmentId),
-        onAnswered: () => { answeredAt = Date.now() },
+        onAnswered: () => {
+          answeredAt = Date.now()
+        },
         onDiagnosticsChanged: (diagnostics) => {
           if (getRuntimeEnvironmentTransportGeneration(environmentId) !== transportGeneration) {
             return
@@ -289,9 +294,10 @@ function getSharedControlConnection(
       })
     }
     const connection = cached.connection
-    setSharedControlAnswerSource(environmentId, connection, () => connection.isReady() ? answeredAt : null)
+    setSharedControlAnswerSource(environmentId, connection, () =>
+      connection.isReady() ? answeredAt : null
+    )
     sharedControlConnections.set(environmentId, cached)
   }
   return cached.connection
 }
-

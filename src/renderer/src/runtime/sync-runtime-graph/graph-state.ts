@@ -1,4 +1,4 @@
-import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import type { AppState } from '@/store/types'
 import type {
   RuntimeMobileSessionSnapshotTab,

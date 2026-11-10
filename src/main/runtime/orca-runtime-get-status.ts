@@ -1,4 +1,9 @@
-import { BROWSER_GOOGLE_COOKIE_CLEAR_CAPABILITY, BROWSER_IDENTITY_RUNTIME_CAPABILITY, BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY, BROWSER_TAB_CREATE_KNOWN_ID_RUNTIME_CAPABILITY } from '../../shared/browser-runtime-capabilities'
+import {
+  BROWSER_GOOGLE_COOKIE_CLEAR_CAPABILITY,
+  BROWSER_IDENTITY_RUNTIME_CAPABILITY,
+  BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY,
+  BROWSER_TAB_CREATE_KNOWN_ID_RUNTIME_CAPABILITY
+} from '../../shared/browser-runtime-capabilities'
 import { isBrowserIdentityModeStoreInitialized } from '../browser/identity/mode/browser-identity-mode-store'
 import { isDesktopBrowserBridgeHostEnabled } from './desktop-browser-bridge/desktop-browser-bridge-registry'
 import { DESKTOP_BROWSER_BRIDGE_RUNTIME_CAPABILITY } from '../../shared/desktop-browser-bridge-protocol'
@@ -70,9 +75,13 @@ export class OrcaRuntimeWithGetStatus extends OrcaRuntimeWithGetRuntimeId {
       process.platform === 'win32' && isWindowsProcessStartTimeAvailable()
     const capabilities: RuntimeCapability[] = RUNTIME_CAPABILITIES.filter(
       (capability) =>
-        (capability !== BROWSER_GOOGLE_COOKIE_CLEAR_CAPABILITY || runtimeBrowserCommandsFactorySupportsGoogleCookieClear()) &&
+        (capability !== BROWSER_GOOGLE_COOKIE_CLEAR_CAPABILITY ||
+          runtimeBrowserCommandsFactorySupportsGoogleCookieClear()) &&
         (capability !== BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY || canHostClientPages) &&
-        (capability !== BROWSER_TAB_CREATE_KNOWN_ID_RUNTIME_CAPABILITY || canBrowse || hasHeadlessCommands || canHostClientPages) &&
+        (capability !== BROWSER_TAB_CREATE_KNOWN_ID_RUNTIME_CAPABILITY ||
+          canBrowse ||
+          hasHeadlessCommands ||
+          canHostClientPages) &&
         (capability !== 'browser.screencast.v1' || canBrowse) &&
         // Why: the nested-runtime E2E needs a real legacy transport without maintaining an old binary fixture.
         (process.env.ORCA_E2E_DISABLE_RUNTIME_SHARED_CONTROL !== '1' ||
@@ -82,8 +91,12 @@ export class OrcaRuntimeWithGetStatus extends OrcaRuntimeWithGetRuntimeId {
         (process.env.ORCA_E2E_DISABLE_AUTHORITATIVE_SESSION_TABS_INVENTORY !== '1' ||
           capability !== SESSION_TABS_AUTHORITATIVE_INVENTORY_RUNTIME_CAPABILITY)
     )
-    if (isBrowserIdentityModeStoreInitialized()) capabilities.push(BROWSER_IDENTITY_RUNTIME_CAPABILITY)
-    if (isDesktopBrowserBridgeHostEnabled()) capabilities.push(DESKTOP_BROWSER_BRIDGE_RUNTIME_CAPABILITY)
+    if (isBrowserIdentityModeStoreInitialized()) {
+      capabilities.push(BROWSER_IDENTITY_RUNTIME_CAPABILITY)
+    }
+    if (isDesktopBrowserBridgeHostEnabled()) {
+      capabilities.push(DESKTOP_BROWSER_BRIDGE_RUNTIME_CAPABILITY)
+    }
     if (hasOffscreen || hasHeadlessCommands) {
       capabilities.push(BROWSER_HEADLESS_RUNTIME_CAPABILITY)
     }

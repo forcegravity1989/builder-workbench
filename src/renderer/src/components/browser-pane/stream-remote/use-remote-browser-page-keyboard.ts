@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { getShortcutPlatform } from '@/hooks/useShortcutLabel'
 import { useTranslate } from '@/i18n/use-translate'
-import { createNonSecureContextUuid as createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
 import {
   getClipboardEventText,
   getNativeClipboardChordCommand

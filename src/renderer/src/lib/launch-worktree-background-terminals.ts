@@ -2,7 +2,7 @@ import {
   registerEagerPtyBuffer,
   type EagerPtyHandle
 } from '@/components/terminal-pane/pty-dispatcher'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { getSettingsForWorktreeRuntimeOwner } from '@/lib/worktree-runtime-owner'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { singlePaneLayoutSnapshot } from '@/store/slices/terminal-helpers'

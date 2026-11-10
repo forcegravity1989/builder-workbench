@@ -50,8 +50,11 @@ vi.mock('../cdp/commands/cdp-bridge', () => ({
   }
 }))
 
-import { AGENT_BROWSER_CLIPBOARD_WRITE_MAX_BYTES, AGENT_BROWSER_TEXT_ARGUMENT_MAX_BYTES } from "./protocol/agent-browser-text-argument-budget"
-import { AgentBrowserBridge } from "./agent-browser-bridge"
+import {
+  AGENT_BROWSER_CLIPBOARD_WRITE_MAX_BYTES,
+  AGENT_BROWSER_TEXT_ARGUMENT_MAX_BYTES
+} from './protocol/agent-browser-text-argument-budget'
+import { AgentBrowserBridge } from './agent-browser-bridge'
 import {
   CLIPBOARD_TEXT_MEASURE_YIELD_CODE_UNITS,
   CLIPBOARD_TEXT_WRITE_MAX_BYTES,

@@ -105,7 +105,6 @@ jobs:
           src/main/runtime/runtime-browser-
           src/main/runtime/rpc/methods/session-tab-file-host-projection.test.ts
           src/main/runtime/rpc/methods/session-tab-browser-placement-projection.test.ts
-          src/main/runtime/rpc/dispatcher-client-browser-routing.test.ts
       - name: Check annotation, clipboard and navigation contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts

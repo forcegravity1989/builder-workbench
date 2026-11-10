@@ -1,6 +1,9 @@
 import type { OrcaRuntimeService } from '../orca-runtime'
 import type { RpcContext, RpcMethod, RpcRequest } from './core'
-import { routeDispatcherClientHostedBrowserRpc, routeDispatcherDesktopBrowserBridgeRpc } from './dispatcher-client-browser-routing'
+import {
+  routeDispatcherClientHostedBrowserRpc,
+  routeDispatcherDesktopBrowserBridgeRpc
+} from './dispatcher-client-browser-routing'
 import { needsLocalCallerFingerprint } from './dispatcher-caller-fingerprint'
 import type { OrchestrationLegacyCompatibility } from './orchestration-legacy-compatibility'
 import type {
@@ -44,9 +47,20 @@ export async function invokeDispatcherUnaryMethod({
     return clientHostedBrowser.result
   }
 
-  const desktopBrowser = await routeDispatcherDesktopBrowserBridgeRpc(runtime, request.method, params, context)
+  const desktopBrowser = await routeDispatcherDesktopBrowserBridgeRpc(
+    runtime,
+    request.method,
+    params,
+    context
+  )
   if (desktopBrowser.handled) {
-    recordRuntimeFeatureInteraction(runtime, request.method, desktopBrowser.result, undefined, request.params)
+    recordRuntimeFeatureInteraction(
+      runtime,
+      request.method,
+      desktopBrowser.result,
+      undefined,
+      request.params
+    )
     return desktopBrowser.result
   }
   const compatibility = await legacyOrchestration.tryHandle(request, params, context.signal)

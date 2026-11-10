@@ -1,4 +1,4 @@
-import { createNonSecureContextUuid } from "../../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
 import type { TabGroup } from '../../../../../shared/tab-types'
 import type { TabsSlice, TabsSliceGet, TabsSliceSet } from './tabs-slice-contract'
 import { isPaneColumnSplitDropNoOp } from '../pane-column-split-drop-no-op'

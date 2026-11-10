@@ -2,7 +2,7 @@ import type { WorktreeSlice } from '../../worktree-helpers'
 import type { WorktreeSliceGet, WorktreeSliceSet } from '../listing/worktree-slice-types'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { markInputQuietSchedulerInput } from '@/lib/input-quiet-scheduler'
-import { moveFocusToRendererBeforeFocusedWebviewHidden } from "../../../../components/browser-pane/host-guest/webview-registry"
+import { moveFocusToRendererBeforeFocusedWebviewHidden } from '../../../../components/browser-pane/host-guest/webview-registry'
 import {
   findKnownWorktreeById,
   folderWorkspaceMatchesHost

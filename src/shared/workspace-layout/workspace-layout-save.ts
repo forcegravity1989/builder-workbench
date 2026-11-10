@@ -5,10 +5,7 @@ import type { BrowserWorkspace } from '../browser-workspace-types'
 import type { ClosedTerminalTabTombstonesByTabId } from '../closed-terminal-tab-tombstones'
 import type { Tab, TabGroup, TabGroupLayoutNode } from '../tab-types'
 import type { TerminalTab } from '../terminal-tab-types'
-import type {
-  PersistedOpenFile,
-  WorkspaceSessionState
-} from '../workspace-session-state-types'
+import type { PersistedOpenFile, WorkspaceSessionState } from '../workspace-session-state-types'
 import { pickStoredFields } from './stored-record-fields'
 import { pruneGroupLayout } from '../workspace-session-terminal-tab-close'
 import {

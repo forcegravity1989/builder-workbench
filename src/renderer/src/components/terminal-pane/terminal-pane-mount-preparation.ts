@@ -2,7 +2,10 @@ import type { PaneManager } from '@/lib/pane-manager/pane-manager'
 import { useAppStore } from '@/store'
 import { getConnectionId } from '@/lib/connection-context'
 import { httpLinkActionDestinationsFor } from '@/lib/browser/navigation/http-link-destinations'
-import { canOpenWorkspaceBrowserTabOnRuntime, canOpenWorkspaceBrowserTabOnSsh } from "@/lib/browser/workspace/workspace-browser-route-eligibility"
+import {
+  canOpenWorkspaceBrowserTabOnRuntime,
+  canOpenWorkspaceBrowserTabOnSsh
+} from '@/lib/browser/workspace/workspace-browser-route-eligibility'
 import { resolvePaneWslDistro } from './terminal-pane-wsl-distro'
 import { resolveTerminalHttpLinkSourceOwner } from './terminal-http-link-source-owner'
 import {

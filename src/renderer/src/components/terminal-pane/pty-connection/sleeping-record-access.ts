@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import type { PtyConnectResult } from '../pty-transport'
-import { createNonSecureContextUuid } from "../../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
 import { parseLegacyNumericPaneKey } from '../../../../../shared/stable-pane-id'
 import { getProviderSessionClaimKey } from '@/lib/sleeping-agent-pane-ownership'
 import {

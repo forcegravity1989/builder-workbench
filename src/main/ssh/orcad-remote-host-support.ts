@@ -1,8 +1,5 @@
 // Windows operations use the host script; only POSIX command builders use this guard.
-import {
-  isWindowsRemoteHost,
-  type RemoteHostPlatform
-} from './ssh-remote-platform'
+import { isWindowsRemoteHost, type RemoteHostPlatform } from './ssh-remote-platform'
 
 export class OrcadRemoteLaunchUnsupportedError extends Error {
   readonly code = 'orcad_remote_launch_unsupported_host'

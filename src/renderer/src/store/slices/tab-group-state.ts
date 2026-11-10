@@ -1,6 +1,6 @@
 import type { Tab, TabContentType, TabGroup } from '../../../../shared/tab-types'
 import type { WorkspaceSessionState } from '../../../../shared/workspace-session-state-types'
-import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 
 export function findTabAndWorktree(
   tabsByWorktree: Record<string, Tab[]>,

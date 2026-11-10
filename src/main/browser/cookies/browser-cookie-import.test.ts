@@ -71,11 +71,15 @@ vi.mock('./browser-cookie-clear-store', () => ({
   })
 }))
 
-import { buildChromiumCookieInsertParams, importCookiesFromBrowser, type ChromiumCookieColumnInfo } from "./browser-cookie-import"
-import { importCookiesFromFile } from "./imports/import-cookie-file"
-import { detectInstalledBrowsers } from "./sources/browser-cookie-detection"
-import { summarizeCookieImportError } from "./browser-cookie-import-diagnostics"
-import { type DetectedBrowser } from "./sources/browser-cookie-source-profiles"
+import {
+  buildChromiumCookieInsertParams,
+  importCookiesFromBrowser,
+  type ChromiumCookieColumnInfo
+} from './browser-cookie-import'
+import { importCookiesFromFile } from './imports/import-cookie-file'
+import { detectInstalledBrowsers } from './sources/browser-cookie-detection'
+import { summarizeCookieImportError } from './browser-cookie-import-diagnostics'
+import type { DetectedBrowser } from './sources/browser-cookie-source-profiles'
 import {
   createChromiumCookieTestDatabase,
   encryptMacChromiumCookie

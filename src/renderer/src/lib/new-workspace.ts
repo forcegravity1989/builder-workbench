@@ -17,7 +17,7 @@ import type { FolderWorkspaceLinkedTask } from '../../../shared/folder-workspace
 import type { OrcaHooks } from '../../../shared/orca-yaml-hook-types'
 import { resolveHookCommandSourcePolicy } from '../../../shared/hook-command-source-policy'
 import { slugifyForWorkspaceName } from '../../../shared/workspace-name'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 export { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
 export { getLinkedWorkItemWorkspaceName } from '../../../shared/workspace-name'
 export { getWorkspaceIntentName } from '../../../shared/workspace-name'

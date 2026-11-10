@@ -17,7 +17,13 @@ export async function sendWebSocketRequest<TResult>(
   envelope?: RuntimeOrchestrationEnvelope
 ): Promise<RuntimeRpcResponse<TResult>> {
   try {
-    return await sendRemoteRuntimeRequest<TResult>(pairedRuntimeConnectionFromOffer(pairing), method, params, timeoutMs, envelope)
+    return await sendRemoteRuntimeRequest<TResult>(
+      pairedRuntimeConnectionFromOffer(pairing),
+      method,
+      params,
+      timeoutMs,
+      envelope
+    )
   } catch (error) {
     if (error instanceof RemoteRuntimeClientError) {
       throw new RuntimeClientError(error.code, error.message, error.data)

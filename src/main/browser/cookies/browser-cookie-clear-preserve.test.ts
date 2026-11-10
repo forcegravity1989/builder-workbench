@@ -1,8 +1,8 @@
 import type { Cookie } from 'electron'
 import { describe, expect, it, vi } from 'vitest'
-import { removeTransplantableCookies } from "./browser-cookie-import-clear"
-import { type CookieClearIdentity, type CookieClearSession } from "./storage/cookie-store-contracts"
-import { importedDomainScope } from "./policy/cookie-import-scope"
+import { removeTransplantableCookies } from './browser-cookie-import-clear'
+import type { CookieClearIdentity, CookieClearSession } from './storage/cookie-store-contracts'
+import { importedDomainScope } from './policy/cookie-import-scope'
 
 /**
  * A jar that actually holds cookies.

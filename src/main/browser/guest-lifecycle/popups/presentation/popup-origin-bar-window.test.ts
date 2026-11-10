@@ -107,8 +107,8 @@ vi.mock('electron', () => ({
   WebContentsView: fakeElectron.FakeWebContentsView
 }))
 
-import { describePopupOrigin } from "./popup-origin-description"
-import { openPopupWithOriginBar, POPUP_ORIGIN_BAR_HEIGHT } from "./popup-origin-bar-window"
+import { describePopupOrigin } from './popup-origin-description'
+import { openPopupWithOriginBar, POPUP_ORIGIN_BAR_HEIGHT } from './popup-origin-bar-window'
 
 const { createFakeWebContents, FakeWebContentsView, FakeBaseWindow } = fakeElectron
 

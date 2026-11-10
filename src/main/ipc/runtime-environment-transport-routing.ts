@@ -23,7 +23,10 @@ import {
 import { attachRemoteControlDiagnostics } from './runtime-environment-status-diagnostics'
 
 import { isRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-manual-disconnect'
-import { runtimeEnvironmentRevisionFailure, runtimeEnvironmentChangedFailure } from './runtime-environment-revision-guard'
+import {
+  runtimeEnvironmentRevisionFailure,
+  runtimeEnvironmentChangedFailure
+} from './runtime-environment-revision-guard'
 import { withTailscaleHintForResponse } from './runtime-environment-tailscale-response'
 import { resetSharedControlSupport } from './runtime-environment-shared-control-support'
 import {
@@ -63,7 +66,10 @@ export async function getRuntimeEnvironmentStatus(
     return runtimeEnvironmentChangedFailure(environment, 'status.get', true)
   }
   return attachRemoteControlDiagnostics(
-    withTailscaleHintForResponse(response, getPreferredPairedRuntimeConnection(environment).endpoint),
+    withTailscaleHintForResponse(
+      response,
+      getPreferredPairedRuntimeConnection(environment).endpoint
+    ),
     environment.id
   )
 }
@@ -123,7 +129,12 @@ export async function callRuntimeEnvironment(
             options?.signal,
             ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
           )
-          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.credential.deviceToken)
+          markEnvironmentUsedFromResponse(
+            userDataPath,
+            currentEnvironment.id,
+            response,
+            pairing.credential.deviceToken
+          )
           return response
         }
         if (shouldUseCachedRequestConnection(method)) {
@@ -135,7 +146,12 @@ export async function callRuntimeEnvironment(
             effectiveTimeoutMs,
             options?.signal
           )
-          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.credential.deviceToken)
+          markEnvironmentUsedFromResponse(
+            userDataPath,
+            currentEnvironment.id,
+            response,
+            pairing.credential.deviceToken
+          )
           return response
         }
         if (shouldRouteCallBySupport(method)) {
@@ -162,7 +178,12 @@ export async function callRuntimeEnvironment(
           options?.signal,
           ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
         )
-        markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.credential.deviceToken)
+        markEnvironmentUsedFromResponse(
+          userDataPath,
+          currentEnvironment.id,
+          response,
+          pairing.credential.deviceToken
+        )
         return response
       },
       options?.signal

@@ -5,7 +5,7 @@ import type {
   RemoteRuntimeSubscriptionCallbacks
 } from '../../../../shared/remote-runtime-client'
 import { RemoteRuntimeClientError } from '../../../../shared/remote-runtime-client-error'
-import type { BrowserClientAutomationResult as BrowserClientHostCommandResult } from "../../../../shared/browser/client-hosting/browser-client-automation-protocol"
+import type { BrowserClientAutomationResult as BrowserClientHostCommandResult } from '../../../../shared/browser/client-hosting/browser-client-automation-protocol'
 
 const { subscribeRemoteRuntimeRequestMock } = vi.hoisted(() => ({
   subscribeRemoteRuntimeRequestMock: vi.fn()

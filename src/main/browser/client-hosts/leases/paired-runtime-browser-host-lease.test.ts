@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PairingOffer } from '../../../../shared/pairing'
-import type { BrowserClientHostedPageInventory, BrowserClientHostCommandEvent } from "../../../../shared/browser/client-hosting/browser-client-host-protocol"
-import type { BrowserClientAutomationResult as BrowserClientHostCommandResult } from "../../../../shared/browser/client-hosting/browser-client-automation-protocol"
+import type {
+  BrowserClientHostedPageInventory,
+  BrowserClientHostCommandEvent
+} from '../../../../shared/browser/client-hosting/browser-client-host-protocol'
+import type { BrowserClientAutomationResult as BrowserClientHostCommandResult } from '../../../../shared/browser/client-hosting/browser-client-automation-protocol'
 import {
   BROWSER_CLIENT_HOST_PAGE_INVENTORY_MAX_BYTES,
   browserClientHostedPageInventoryByteLength

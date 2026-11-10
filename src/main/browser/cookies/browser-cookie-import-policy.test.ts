@@ -1,11 +1,17 @@
 import { describe, expect, it, vi, type Mock } from 'vitest'
 import type { Cookie } from 'electron'
-import { identitiesFromClearCookies, removeTransplantableCookies } from "./browser-cookie-import-clear"
-import { type CookieClearIdentity } from "./storage/cookie-store-contracts"
-import { importedDomainScope } from "./policy/cookie-import-scope"
-import { isGoogleSourceBoundCookie, isNonTransplantableCookieDomain } from "./policy/cookie-import-exclusions"
-import { normalizeCookieDomain } from "./policy/cookie-domain"
-import { replaceCookiesForImportedDomains } from "../browser-cookie-import-policy"
+import {
+  identitiesFromClearCookies,
+  removeTransplantableCookies
+} from './browser-cookie-import-clear'
+import type { CookieClearIdentity } from './storage/cookie-store-contracts'
+import { importedDomainScope } from './policy/cookie-import-scope'
+import {
+  isGoogleSourceBoundCookie,
+  isNonTransplantableCookieDomain
+} from './policy/cookie-import-exclusions'
+import { normalizeCookieDomain } from './policy/cookie-domain'
+import { replaceCookiesForImportedDomains } from '../browser-cookie-import-policy'
 
 function cookie(domain: string, name: string, path = '/', secure = true): Cookie {
   return {

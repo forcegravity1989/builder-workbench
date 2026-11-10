@@ -34,7 +34,9 @@ export class WriteSchedulingOperations {
   onWorkspaceSessionWritten(listener: (hostId: ExecutionHostId | null) => void): () => void {
     const listeners = this[writeSchedulingOperationsContext].runtime.workspaceSessionWriteListeners
     listeners.add(listener)
-    return () => { listeners.delete(listener) }
+    return () => {
+      listeners.delete(listener)
+    }
   }
 
   async waitForPendingWrite(): Promise<void> {
@@ -48,7 +50,8 @@ export class WriteSchedulingOperations {
 export function scheduleSave(owner: WriteSchedulingOperations): void {
   owner[writeSchedulingOperationsContext].runtime.automationListProjectionCache = null
   // This store schedules whole-state writes; observers re-read every host partition.
-  for (const listener of owner[writeSchedulingOperationsContext].runtime.workspaceSessionWriteListeners) {
+  for (const listener of owner[writeSchedulingOperationsContext].runtime
+    .workspaceSessionWriteListeners) {
     listener(null)
   }
   // Why: once the quit flush has snapshotted, a newly debounced write would fire during

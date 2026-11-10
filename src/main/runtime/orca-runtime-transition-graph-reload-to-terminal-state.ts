@@ -1,6 +1,12 @@
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
-import { routeDesktopBrowserBridgeRpc, type DesktopBrowserBridgeRoute } from './desktop-browser-bridge/desktop-browser-bridge-route'
-import { getDesktopBrowserBridgeRegistry, isDesktopBrowserBridgeHostEnabled } from './desktop-browser-bridge/desktop-browser-bridge-registry'
+import {
+  routeDesktopBrowserBridgeRpc,
+  type DesktopBrowserBridgeRoute
+} from './desktop-browser-bridge/desktop-browser-bridge-route'
+import {
+  getDesktopBrowserBridgeRegistry,
+  isDesktopBrowserBridgeHostEnabled
+} from './desktop-browser-bridge/desktop-browser-bridge-registry'
 import { runtimeBrowserCommandsFactoryIsAvailable } from './runtime-browser-commands-factory'
 import { hasPairedPageHost } from './browser/client-pages/browser-client-page-opening'
 import { resolveRemoteCliBrowserScopeSelector } from './desktop-browser-bridge/remote-cli-browser-scope'

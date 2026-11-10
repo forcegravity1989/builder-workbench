@@ -7,14 +7,20 @@ const Value = z
   .string()
   .max(8 * 1024)
   .refine((value) => !value.includes('\0'), 'Invalid value')
-const Name = z.string().min(1).max(256).regex(/^[A-Za-z_][A-Za-z0-9_]*$/, 'Invalid variable name')
+const Name = z
+  .string()
+  .min(1)
+  .max(256)
+  .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, 'Invalid variable name')
 
 export const AgentLaunchSettingsMutation = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('default'),
-    agent: z.union([Agent, z.literal('blank'), z.null()]),
-    setupOnly: z.boolean().optional()
-  }).strict(),
+  z
+    .object({
+      type: z.literal('default'),
+      agent: z.union([Agent, z.literal('blank'), z.null()]),
+      setupOnly: z.boolean().optional()
+    })
+    .strict(),
   z.object({ type: z.literal('availability'), agent: Agent, enabled: z.boolean() }).strict(),
   z.object({ type: z.literal('permissions'), mode: z.enum(['manual', 'yolo']) }).strict(),
   z.object({ type: z.literal('command'), agent: Agent, value: Value }).strict(),

@@ -7,7 +7,10 @@ import {
   readActionModelSelection
 } from './source-control-action-model-selection'
 import type { TuiAgent } from '../../../tui-agent'
-import type { ActionModelSelection, SourceControlActionRecipe } from '../../../source-control-ai-actions'
+import type {
+  ActionModelSelection,
+  SourceControlActionRecipe
+} from '../../../source-control-ai-actions'
 
 /** Fold accepted choice effects into this recipe owner without rewriting another source. */
 export function editActionArgumentChoicePreferences(

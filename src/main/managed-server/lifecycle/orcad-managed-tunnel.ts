@@ -11,10 +11,7 @@ import { getManagedOrcadCrashLoopBrake } from './orcad-managed-crash-loop'
 import { OrcadManagedTunnelManager } from './orcad-managed-tunnel-manager'
 import { buildOnBindableLocalPort } from './orcad-managed-tunnel-local-port'
 import { getRemoteRuntimeSharedControlAnsweredAt } from '../../ipc/runtime-environments/runtime-environment-shared-control-answers'
-import {
-  getSshConnectionManager,
-  getSshTargetRegistryStore
-} from '../../ssh/ssh-target-registry'
+import { getSshConnectionManager, getSshTargetRegistryStore } from '../../ssh/ssh-target-registry'
 import {
   MANAGED_ORCAD_TUNNEL_TARGETING,
   type OrcadTunnelStartChecks

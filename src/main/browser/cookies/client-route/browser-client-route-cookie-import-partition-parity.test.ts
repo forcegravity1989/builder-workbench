@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { BrowserHostLeaseAuthority } from "../../../../shared/browser/client-hosting/browser-client-host-protocol"
-import type { BrowserNetworkExecutionHost } from "../../../../shared/browser/client-hosting/browser-network-execution-host"
+import type { BrowserHostLeaseAuthority } from '../../../../shared/browser/client-hosting/browser-client-host-protocol'
+import type { BrowserNetworkExecutionHost } from '../../../../shared/browser/client-hosting/browser-network-execution-host'
 
 const {
   bindingStore,
@@ -53,8 +53,8 @@ import {
 } from '../../routing/identity/browser-execution-host-storage-identity'
 import { createBrowserRoutePartitionBindingStoreFake } from '../../routing/partitions/browser-route-partition-binding-store-fake'
 import { browserNetworkExecutionHostKey } from '../../network/execution-routes/browser-network-execution-route'
-import { BrowserRouteSessionRegistry } from "../../routing/sessions/browser-route-session-registry"
-import { type BrowserRouteElectronSession } from "../../routing/sessions/browser-route-session-policy"
+import { BrowserRouteSessionRegistry } from '../../routing/sessions/browser-route-session-registry'
+import type { BrowserRouteElectronSession } from '../../routing/sessions/browser-route-session-policy'
 
 const orcaProfileId = 'orca-profile-a'
 const browserProfileId = 'default'

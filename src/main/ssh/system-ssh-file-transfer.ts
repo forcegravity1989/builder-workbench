@@ -13,11 +13,7 @@ import {
   type SystemSshBuildArgsOptions
 } from './system-ssh-args'
 import { spawnSystemSshCommand } from './system-ssh-command'
-import {
-  isWindowsRemoteHost,
-  joinRemotePath,
-  type RemoteHostPlatform
-} from './ssh-remote-platform'
+import { isWindowsRemoteHost, joinRemotePath, type RemoteHostPlatform } from './ssh-remote-platform'
 import { powerShellCommand } from './ssh-remote-powershell'
 import {
   awaitWithSystemSshAbort,

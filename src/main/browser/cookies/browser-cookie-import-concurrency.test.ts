@@ -56,10 +56,10 @@ vi.mock('../../codex-accounts/fs-utils', () => ({
   copyFileWithWindowsRetry: copyFileWithWindowsRetryMock
 }))
 
-import { importCookiesFromBrowser } from "./browser-cookie-import"
-import { importCookiesFromFile } from "./imports/import-cookie-file"
+import { importCookiesFromBrowser } from './browser-cookie-import'
+import { importCookiesFromFile } from './imports/import-cookie-file'
 import { createChromiumCookieTestDatabase } from './browser-cookie-import-test-database'
-import { acquireCookieMutationLock, withCookieMutationLock } from "./mutation/cookie-mutation-lock"
+import { acquireCookieMutationLock, withCookieMutationLock } from './mutation/cookie-mutation-lock'
 
 /**
  * STA-4601: two imports on one partition must not interleave on the live jar.

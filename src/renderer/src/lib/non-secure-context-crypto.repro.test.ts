@@ -51,7 +51,7 @@ describe('non-secure context (plain HTTP LAN web client)', () => {
   })
 
   it('createNonSecureContextUuid does not throw when randomUUID is missing', async () => {
-    const { createNonSecureContextUuid } = await import('./browser-uuid')
+    const { createNonSecureContextUuid } = await import('../../../shared/non-secure-context-uuid')
     expect(createNonSecureContextUuid()).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/
     )

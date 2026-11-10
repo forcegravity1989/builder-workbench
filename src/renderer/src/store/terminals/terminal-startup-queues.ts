@@ -1,4 +1,4 @@
-import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import type { TerminalSlice, TerminalStoreGet, TerminalStoreSet } from './terminal-state'
 
 export function createTerminalStartupQueueActions(

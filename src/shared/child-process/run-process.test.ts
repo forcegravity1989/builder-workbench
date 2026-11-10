@@ -242,7 +242,10 @@ it('accepts string stdin with text output capture', () => {
   const input = 'nonsecret-probe-λ'
   const result = runProcessSync({
     program: process.execPath,
-    args: ['-e', "process.stdin.pipe(process.stdout, { end: false }); process.stdin.on('end', () => { process.stdout.write(Buffer.from([0,255])); process.stderr.write('diagnostic λ') })"],
+    args: [
+      '-e',
+      "process.stdin.pipe(process.stdout, { end: false }); process.stdin.on('end', () => { process.stdout.write(Buffer.from([0,255])); process.stderr.write('diagnostic λ') })"
+    ],
     input,
     timeoutMs: 5_000
   })

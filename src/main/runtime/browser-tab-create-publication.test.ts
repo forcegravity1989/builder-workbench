@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
-import type { RuntimeBrowserCommandHost } from "./browser/commands/browser-command-contracts"
+import type { RuntimeBrowserCommandHost } from './browser/commands/browser-command-contracts'
 import { RuntimeBrowserPageRegistry } from './runtime-browser-page-registry'
 import {
   BROWSER_TAB_CREATE_PLACEMENT_KINDS,

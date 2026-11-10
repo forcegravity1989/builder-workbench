@@ -1,4 +1,7 @@
-import { installDesktopBrowserBridge, disposeDesktopBrowserBridge } from './browser/desktop-browser-bridge-wiring'
+import {
+  installDesktopBrowserBridge,
+  disposeDesktopBrowserBridge
+} from './browser/desktop-browser-bridge-wiring'
 import {
   AiVaultSearchRequestSchema,
   AiVaultSearchStatusRequestSchema
@@ -218,7 +221,12 @@ export function registerSshHandlers(
   registerSshConnectionHandlers()
   registerSshPortForwardHandlers()
   if (runtime) {
-    installDesktopBrowserBridge({ userDataPath: app.getPath('userData'), runtime, getMainWindow: getCurrentMainWindow, getConnectionManager: () => connectionManager })
+    installDesktopBrowserBridge({
+      userDataPath: app.getPath('userData'),
+      runtime,
+      getMainWindow: getCurrentMainWindow,
+      getConnectionManager: () => connectionManager
+    })
   }
 
   return {

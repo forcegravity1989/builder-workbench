@@ -1,4 +1,4 @@
-import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import { isRecord, type IpynbCellKind } from './ipynb-parse'
 
 export type IpynbRunResult = {

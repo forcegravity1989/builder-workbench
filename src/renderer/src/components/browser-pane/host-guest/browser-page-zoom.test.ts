@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
-import { applyBrowserPageZoom, forgetExplicitBrowserPageZoomLevel, getBrowserPageZoomIndicatorState, getExplicitBrowserPageZoomLevel, rememberExplicitBrowserPageZoomLevel, setBrowserPageZoomLevel } from "./browser-page-zoom"
-import { browserPageZoomLevelToPercent, nextBrowserPageZoomLevel, normalizeBrowserPageZoomLevel } from "../../../../../shared/browser-page-zoom"
+import {
+  applyBrowserPageZoom,
+  forgetExplicitBrowserPageZoomLevel,
+  getBrowserPageZoomIndicatorState,
+  getExplicitBrowserPageZoomLevel,
+  rememberExplicitBrowserPageZoomLevel,
+  setBrowserPageZoomLevel
+} from './browser-page-zoom'
+import {
+  browserPageZoomLevelToPercent,
+  nextBrowserPageZoomLevel,
+  normalizeBrowserPageZoomLevel
+} from '../../../../../shared/browser-page-zoom'
 
 describe('browserPageZoomLevelToPercent', () => {
   it('maps Electron zoom levels to Chromium-style percentages', () => {

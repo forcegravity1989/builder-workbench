@@ -8,7 +8,7 @@ import {
   hasBoundedCommentBodyText
 } from '@/lib/comment-body-submit-state'
 
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { useAppStore } from '@/store'
 import {
   jiraAddIssueComment,

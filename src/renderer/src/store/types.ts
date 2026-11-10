@@ -2,7 +2,7 @@ import type { RepoSlice } from './repos/repo-state'
 import type { SparsePresetsSlice } from './slices/sparse-presets'
 import type { WorktreeSlice } from './slices/worktrees'
 import type { TerminalSlice } from './terminals/terminal-state'
-import type { TabsSlice } from "./slices/tabs"
+import type { TabsSlice } from './slices/tabs'
 import type { UISlice } from './slices/ui'
 import type { SettingsSlice } from './slices/settings'
 import type { KeybindingsSlice } from './slices/keybindings'
@@ -20,7 +20,7 @@ import type {
   CodexUsageSlice,
   OpenCodeUsageSlice
 } from './slices/usage-provider-slices'
-import type { BrowserSlice } from "./slices/browser/browser-slice-contract"
+import type { BrowserSlice } from './slices/browser/browser-slice-contract'
 import type { RateLimitSlice } from './slices/rate-limits'
 import type { SshSlice } from './slices/ssh'
 import type { RuntimeEnvironmentSshSlice } from './slices/runtime-environment-ssh'

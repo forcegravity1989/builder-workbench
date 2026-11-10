@@ -63,7 +63,7 @@ import {
   refreshRuntimeEnvironmentsAfterPairingChange
 } from '@/runtime/runtime-environment-pairing-refresh'
 import { registerRemoteRuntimePtyControlReadyReviver } from './remote-runtime-pty-control-ready-revivers'
-import { createNonSecureContextUuid } from "../../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../../shared/non-secure-context-uuid'
 import {
   createAgentSessionCreateOperation,
   withAgentSessionCreateOperationId
@@ -785,10 +785,7 @@ export function createRemoteRuntimePtyTransport(
         }
         return hostHandle
       } catch (error) {
-        if (
-          !isRecoverablePaneBindingError(error) ||
-          !isCurrent()
-        ) {
+        if (!isRecoverablePaneBindingError(error) || !isCurrent()) {
           throw error
         }
         if (recoveryEpoch !== undefined && !recovery.isCurrent(recoveryEpoch)) {

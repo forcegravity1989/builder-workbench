@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentBrowserBridge } from '../browser/agent-browser/agent-browser-bridge'
-import type { RuntimeBrowserCommandHost } from "./browser/commands/browser-command-contracts"
+import type { RuntimeBrowserCommandHost } from './browser/commands/browser-command-contracts'
 import { RESTORED_CLIENT_HOSTED_BROWSER_PLACEMENT } from './client-hosted-browser-page-persistence'
 import { RuntimeBrowserPageRegistry } from './runtime-browser-page-registry'
 

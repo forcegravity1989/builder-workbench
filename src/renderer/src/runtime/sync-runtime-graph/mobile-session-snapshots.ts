@@ -106,9 +106,7 @@ export function buildMobileSessionTabSnapshots(
       terminalIds,
       editorIds,
       browserIds: [...browserWorkspaceById.values()]
-        .filter((workspace) =>
-          isMobilePublishableBrowserWorkspace(workspace)
-        )
+        .filter((workspace) => isMobilePublishableBrowserWorkspace(workspace))
         .map((workspace) => workspace.id)
     })
     const tabs: RuntimeMobileSessionSnapshotTab[] = []
@@ -139,10 +137,7 @@ export function buildMobileSessionTabSnapshots(
         emittedEditorTabIds.add(item.tabId ?? item.id)
       } else if (item.type === 'browser') {
         const workspace = browserWorkspaceById.get(item.id)
-        if (
-          !workspace ||
-          !isMobilePublishableBrowserWorkspace(workspace)
-        ) {
+        if (!workspace || !isMobilePublishableBrowserWorkspace(workspace)) {
           continue
         }
         tabs.push(

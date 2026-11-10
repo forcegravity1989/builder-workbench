@@ -1,6 +1,6 @@
 import type { PublicKnownRuntimeEnvironment } from '../../../shared/runtime-environments'
 import type { WebPairingOffer } from './web-pairing'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
 
 export type StoredWebRuntimeEnvironment = Omit<PublicKnownRuntimeEnvironment, 'endpoints'> & {

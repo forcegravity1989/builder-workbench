@@ -92,7 +92,10 @@ export function useFloatingTerminalCloseActions({
         }
       }
       if (item.contentType === 'terminal') {
-        closeTerminalTab(item.entityId, { reason: options?.reason ?? 'user', onClosed: armIfEmptying })
+        closeTerminalTab(item.entityId, {
+          reason: options?.reason ?? 'user',
+          onClosed: armIfEmptying
+        })
         return
       }
       const state = useAppStore.getState()

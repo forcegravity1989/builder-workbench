@@ -50,7 +50,10 @@ vi.mock('../sessions/profiles/browser-session-registry', () => ({
 }))
 
 import { OffscreenBrowserBackend } from './offscreen-browser-backend'
-import { installDocPreviewGuestPolicy, isWorkspaceDocPageId } from '../document-preview/doc-preview-guest-policy'
+import {
+  installDocPreviewGuestPolicy,
+  isWorkspaceDocPageId
+} from '../document-preview/doc-preview-guest-policy'
 import { mintDocPreviewGrant } from '../document-preview/doc-preview-grant-registry'
 import { buildDocPreviewUrl } from '../../../shared/doc-preview-scheme'
 

@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { deriveBrowserRoutePartition } from './browser-route-identity'
 import { BrowserRoutePartitionBindingStore } from './browser-route-partition-binding-store'
 import { resolveBrowserRoutePartitionBinding } from './browser-route-partition-migration'
-import { BrowserRouteSessionRegistry } from "../sessions/browser-route-session-registry"
-import { type BrowserRouteElectronSession } from "../sessions/browser-route-session-policy"
+import { BrowserRouteSessionRegistry } from '../sessions/browser-route-session-registry'
+import type { BrowserRouteElectronSession } from '../sessions/browser-route-session-policy'
 
 const orcaProfileId = 'orca/profile:alpha'
 const browserProfileId = 'default'

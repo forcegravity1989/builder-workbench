@@ -22,7 +22,7 @@ vi.mock('@/store', () => ({
   }
 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
+vi.mock('../../../shared/non-secure-context-uuid', () => ({
   createNonSecureContextUuid: () => 'creation-new'
 }))
 

@@ -13,10 +13,7 @@ import {
 import type { ServeReadiness } from '../../server/serve-readiness'
 import type { OrcadHostTarget, OrcadHostTransport } from '../install/orcad-host-transport'
 import { tunneledOrcadPairingCode } from './orcad-tunneled-pairing'
-import {
-  getSshConnectionManager,
-  getSshTargetRegistryStore
-} from '../../ssh/ssh-target-registry'
+import { getSshConnectionManager, getSshTargetRegistryStore } from '../../ssh/ssh-target-registry'
 import { readActiveManagedOrcadReadiness } from './orcad-managed-bound-port'
 import { OrcadManagedIdentityError } from './orcad-managed-tunnel-identity'
 import { OrcadManagedPairingRepairFailedError } from './orcad-managed-pairing-repair-failure'

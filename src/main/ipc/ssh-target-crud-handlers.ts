@@ -1,4 +1,7 @@
-import { requestDesktopBrowserBridgeReconcile, setDesktopBrowserBridgeHostStopped } from './browser/desktop-browser-bridge-reconcile'
+import {
+  requestDesktopBrowserBridgeReconcile,
+  setDesktopBrowserBridgeHostStopped
+} from './browser/desktop-browser-bridge-reconcile'
 import { isRemoteCliControlAllowed } from '../../shared/ssh-remote-cli-control'
 import { ipcMain } from 'electron'
 import type {
@@ -36,8 +39,42 @@ function takeRepoReadoptions(): SshRepoReadoption[] {
   return repoReadoptions
 }
 
-function omitRendererSshTargetGeneration<T extends object>(value: T): Omit<T, 'generation' | 'orcadProvisioning' | 'orcadFence' | 'managedServerUnavailable' | 'managedServerMoveOffered' | 'managedServerLeaveBehind' | 'managedServerUpdateFailure' | 'managedServerRemoved' | 'remoteRuntimeResolution'> {
-  const { generation: _generation, orcadProvisioning: _orcadProvisioning, orcadFence: _orcadFence, managedServerUnavailable: _managedServerUnavailable, managedServerMoveOffered: _managedServerMoveOffered, managedServerLeaveBehind: _managedServerLeaveBehind, managedServerUpdateFailure: _managedServerUpdateFailure, managedServerRemoved: _managedServerRemoved, remoteRuntimeResolution: _remoteRuntimeResolution, ...rest } = value as T & { generation?: unknown; orcadProvisioning?: unknown; orcadFence?: unknown; managedServerUnavailable?: unknown; managedServerMoveOffered?: unknown; managedServerLeaveBehind?: unknown; managedServerUpdateFailure?: unknown; managedServerRemoved?: unknown; remoteRuntimeResolution?: unknown }
+function omitRendererSshTargetGeneration<T extends object>(
+  value: T
+): Omit<
+  T,
+  | 'generation'
+  | 'orcadProvisioning'
+  | 'orcadFence'
+  | 'managedServerUnavailable'
+  | 'managedServerMoveOffered'
+  | 'managedServerLeaveBehind'
+  | 'managedServerUpdateFailure'
+  | 'managedServerRemoved'
+  | 'remoteRuntimeResolution'
+> {
+  const {
+    generation: _generation,
+    orcadProvisioning: _orcadProvisioning,
+    orcadFence: _orcadFence,
+    managedServerUnavailable: _managedServerUnavailable,
+    managedServerMoveOffered: _managedServerMoveOffered,
+    managedServerLeaveBehind: _managedServerLeaveBehind,
+    managedServerUpdateFailure: _managedServerUpdateFailure,
+    managedServerRemoved: _managedServerRemoved,
+    remoteRuntimeResolution: _remoteRuntimeResolution,
+    ...rest
+  } = value as T & {
+    generation?: unknown
+    orcadProvisioning?: unknown
+    orcadFence?: unknown
+    managedServerUnavailable?: unknown
+    managedServerMoveOffered?: unknown
+    managedServerLeaveBehind?: unknown
+    managedServerUpdateFailure?: unknown
+    managedServerRemoved?: unknown
+    remoteRuntimeResolution?: unknown
+  }
   return rest
 }
 
@@ -66,7 +103,9 @@ export function registerSshTargetCrudHandlers(): void {
         args.id,
         omitRendererSshTargetGeneration(args.updates)
       )
-      if (target && isRemoteCliControlAllowed(target)) setDesktopBrowserBridgeHostStopped(args.id, false)
+      if (target && isRemoteCliControlAllowed(target)) {
+        setDesktopBrowserBridgeHostStopped(args.id, false)
+      }
       requestDesktopBrowserBridgeReconcile()
       return target
     }

@@ -340,6 +340,12 @@ function runResolvedProcessSync(spec: ProcessSpec, resolved: ResolvedSpawn): Pro
   }
 }
 
-export type { ProcessSpec, ProcessResult, ProcessTerminationBarrier, SpawnedProcess, ChildProcessHandle } from './process-spec'
+export type {
+  ProcessSpec,
+  ProcessResult,
+  ProcessTerminationBarrier,
+  SpawnedProcess,
+  ChildProcessHandle
+} from './process-spec'
 export { DEFAULT_PROCESS_TIMEOUT_MS, DEFAULT_MAX_OUTPUT_BYTES } from './process-spec'
 export { resolveSpawn, type ResolvedSpawn } from './spawn-resolution'

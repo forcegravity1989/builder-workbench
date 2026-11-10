@@ -102,7 +102,8 @@ async function startHost() {
   vi.resetModules()
   compositionOptions.length = 0
   recordedUrlParams.length = 0
-  const runtime = await import('./client-hosts/lifecycle/paired-runtime-browser-client-host-runtime')
+  const runtime =
+    await import('./client-hosts/lifecycle/paired-runtime-browser-client-host-runtime')
   runtime.configurePairedRuntimeBrowserClientHostsForOrcaProfile({ orcaProfileId: 'profile-a' })
   await runtime.startPairedRuntimeBrowserClientHost({
     environment: pairedEnvironment(),

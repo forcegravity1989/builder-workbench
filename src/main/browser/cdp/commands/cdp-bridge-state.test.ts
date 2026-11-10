@@ -8,7 +8,7 @@ vi.mock('electron', () => ({
   webContents: { fromId: webContentsFromIdMock }
 }))
 
-import type { CdpTabState } from "./cdp-tab-state"
+import type { CdpTabState } from './cdp-tab-state'
 import { CdpBridgeState } from './cdp-bridge-state'
 import { CdpTabCommands } from './cdp-tab-commands'
 

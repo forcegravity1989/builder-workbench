@@ -1,6 +1,6 @@
 import { vi, type Mock } from 'vitest'
 import { create } from 'zustand'
-import { createBrowserSlice } from "./create-browser-slice"
+import { createBrowserSlice } from './create-browser-slice'
 import type { AppState } from '../../types'
 import {
   createCompatibleRuntimeStatusResponseIfNeeded,

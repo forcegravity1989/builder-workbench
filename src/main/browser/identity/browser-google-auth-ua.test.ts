@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { googleAuthUserAgent, isGoogleAuthUrl } from "./browser-google-auth-ua"
-import { setUserAgentHeader, stripClientHints } from "./requests/browser-user-agent-request-headers"
+import { googleAuthUserAgent, isGoogleAuthUrl } from './browser-google-auth-ua'
+import { setUserAgentHeader, stripClientHints } from './requests/browser-user-agent-request-headers'
 
 describe('isGoogleAuthUrl', () => {
   it('matches the Google/YouTube sign-in hosts exactly', () => {

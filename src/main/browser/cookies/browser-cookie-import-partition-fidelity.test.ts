@@ -63,14 +63,14 @@ vi.mock('./browser-cookie-clear-store', () => ({
   })
 }))
 
-import { importCookiesFromBrowser } from "./browser-cookie-import"
-import { importCookiesFromFile } from "./imports/import-cookie-file"
+import { importCookiesFromBrowser } from './browser-cookie-import'
+import { importCookiesFromFile } from './imports/import-cookie-file'
 import { createChromiumCookieTestDatabase } from './browser-cookie-import-test-database'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { DatabaseSync } from 'node:sqlite'
-import type { DetectedBrowser } from "./sources/browser-cookie-source-profiles"
+import type { DetectedBrowser } from './sources/browser-cookie-source-profiles'
 
 function chromeBrowser(cookiesPath: string): DetectedBrowser {
   return {

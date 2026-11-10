@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import { createEditorSlice } from './editor'
-import { createTabsSlice } from "./tabs"
+import { createTabsSlice } from './tabs'
 import type { AppState } from '../types'
 
 export function createEditorStore(): StoreApi<AppState> {

@@ -16,10 +16,7 @@ import {
   uploadFileViaSystemSsh,
   writeBufferViaSystemSsh
 } from '../system-ssh-file-binary-transfer'
-import {
-  uploadDirectoryViaSystemSsh,
-  writeFileViaSystemSsh
-} from '../system-ssh-file-transfer'
+import { uploadDirectoryViaSystemSsh, writeFileViaSystemSsh } from '../system-ssh-file-transfer'
 import type { SystemSshBuildArgsOptions } from '../system-ssh-args'
 
 export type SshRemoteFileOptions = {

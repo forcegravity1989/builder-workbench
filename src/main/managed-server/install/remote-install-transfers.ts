@@ -1,9 +1,6 @@
 import type { RemoteInstallTransport } from './remote-install-transport'
 import type { SftpNamespacePathMapping } from '../../ssh/sftp-namespace-resolution'
-import {
-  isWindowsRemoteHost,
-  type RemoteHostPlatform
-} from '../../ssh/ssh-remote-platform'
+import { isWindowsRemoteHost, type RemoteHostPlatform } from '../../ssh/ssh-remote-platform'
 import {
   uploadDirectoryViaExecStdin,
   writeStringViaExecStdin

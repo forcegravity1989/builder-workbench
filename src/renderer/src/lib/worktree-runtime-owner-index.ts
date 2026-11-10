@@ -289,4 +289,9 @@ function addMatchingWorktree(
 }
 
 export { getCatalogOwnerHostId } from './workspace/ownership/workspace-catalog-owner-index'
-export { findIndexedRepoOwner, findIndexedRepoOwnerForHost, resolveIndexedRepoOwner, type IndexedRepoOwnerResolution } from './workspace/ownership/repo-owner-index'
+export {
+  findIndexedRepoOwner,
+  findIndexedRepoOwnerForHost,
+  resolveIndexedRepoOwner,
+  type IndexedRepoOwnerResolution
+} from './workspace/ownership/repo-owner-index'

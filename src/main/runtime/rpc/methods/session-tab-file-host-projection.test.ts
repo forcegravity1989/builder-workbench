@@ -6,11 +6,13 @@ describe('projectSessionTabFileHosts', () => {
   it('removes hosted browser rows from runtime peers and repairs active group and layout', () => {
     const source = makeSnapshot()
     const projected = projectSessionTabFileHosts(source, 'runtime')
-    expect(projected.tabs).toEqual([expect.objectContaining({ id: 'terminal-leaf', isActive: true })])
+    expect(projected.tabs).toEqual([
+      expect.objectContaining({ id: 'terminal-leaf', isActive: true })
+    ])
     expect(projected.activeTabId).toBe('terminal-leaf')
     expect(projected.activeTabType).toBe('terminal')
     expect(projected.activeGroupId).toBe('group-terminal')
-    expect(projected.tabGroups?.map(group => group.id)).toEqual(['group-terminal'])
+    expect(projected.tabGroups?.map((group) => group.id)).toEqual(['group-terminal'])
     expect(projected.tabGroupLayout).toEqual({ type: 'leaf', groupId: 'group-terminal' })
     expect(source).toEqual(makeSnapshot())
   })
@@ -18,9 +20,9 @@ describe('projectSessionTabFileHosts', () => {
   it('retains hosted browser rows for mobile while stripping private routing metadata', () => {
     const source = makeSnapshot()
     const projected = projectSessionTabFileHosts(source, 'mobile')
-    expect(projected.tabs.map(tab => tab.id)).toEqual(['terminal-leaf', 'page-client'])
+    expect(projected.tabs.map((tab) => tab.id)).toEqual(['terminal-leaf', 'page-client'])
     expect(projected.activeTabId).toBe('page-client')
-    expect(projected.tabs.every(tab => !('hostRuntimeEnvironmentId' in tab))).toBe(true)
+    expect(projected.tabs.every((tab) => !('hostRuntimeEnvironmentId' in tab))).toBe(true)
     expect(projected.tabGroups).toEqual(source.tabGroups)
     expect(projected.tabGroupLayout).toEqual(source.tabGroupLayout)
     expect(source).toEqual(makeSnapshot())

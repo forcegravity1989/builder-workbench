@@ -54,8 +54,8 @@ vi.mock('./browser-cookie-clear-store', () => ({
   })
 }))
 
-import { importCookiesFromBrowser } from "./browser-cookie-import"
-import { importCookiesFromFile } from "./imports/import-cookie-file"
+import { importCookiesFromBrowser } from './browser-cookie-import'
+import { importCookiesFromFile } from './imports/import-cookie-file'
 import { createChromiumCookieTestDatabase } from './browser-cookie-import-test-database'
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

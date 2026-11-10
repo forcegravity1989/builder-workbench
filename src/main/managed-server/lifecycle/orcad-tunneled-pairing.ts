@@ -1,7 +1,4 @@
-import {
-  encodePairingOffer,
-  parsePairingCode
-} from '../../../shared/pairing'
+import { encodePairingOffer, parsePairingCode } from '../../../shared/pairing'
 import type { PairingOffer } from '../../../shared/mobile-relay-pairing-offer'
 import { classifyRemotePairingHostname } from '../../../shared/remote-pairing-address'
 import type { ServeReadiness } from '../../server/serve-readiness'

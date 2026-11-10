@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AXNode } from './snapshot-ax-tree-walk'
-import { buildSnapshot } from "./snapshot-engine"
-import { type CdpCommandSender } from "../debugger/cdp-command-sender"
+import { buildSnapshot } from './snapshot-engine'
+import type { CdpCommandSender } from '../debugger/cdp-command-sender'
 
 function buttonTree(count: number, name = 'Submit'): AXNode[] {
   const buttons = Array.from({ length: count }, (_, i) => ({

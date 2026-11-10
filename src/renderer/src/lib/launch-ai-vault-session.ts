@@ -11,7 +11,7 @@ import type {
   AgentProviderSessionMetadata,
   SleepingAgentLaunchConfig
 } from '../../../shared/agent-session-resume'
-import type { TabSplitDirection } from "../store/slices/tabs"
+import type { TabSplitDirection } from '../store/slices/tabs'
 import type { WebRuntimeTerminalCreateOutcome } from '@/runtime/web-runtime-session'
 
 export type LaunchAiVaultSessionInNewTabResult =
@@ -86,7 +86,9 @@ export function launchAiVaultSessionInNewTab(args: {
       request_kind: 'resume'
     }
   })
-  if (args.activate !== false) {store.setActiveTabType('terminal')}
+  if (args.activate !== false) {
+    store.setActiveTabType('terminal')
+  }
 
   const fresh = useAppStore.getState()
   const termIds = (fresh.tabsByWorktree[args.worktreeId] ?? []).map((t) => t.id)

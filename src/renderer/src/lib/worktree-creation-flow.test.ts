@@ -54,7 +54,7 @@ vi.mock('@/store', () => ({
   }
 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
+vi.mock('../../../shared/non-secure-context-uuid', () => ({
   createNonSecureContextUuid: () => 'creation-1'
 }))
 
@@ -529,7 +529,9 @@ describe('staged background worktree creation', () => {
 
     expect(started).toBe(true)
     await vi.waitFor(() => {
-      expect(store.removePendingWorktreeCreation).toHaveBeenCalledWith('creation-1', { cleanupVm: false })
+      expect(store.removePendingWorktreeCreation).toHaveBeenCalledWith('creation-1', {
+        cleanupVm: false
+      })
     })
     expect(activateAndRevealWorktree).not.toHaveBeenCalled()
     expect(ensureWorktreeHasInitialTerminal).toHaveBeenCalledWith(
@@ -888,9 +890,7 @@ describe('staged background worktree creation', () => {
     await flushAsyncWorktreeCreation()
     expect(store.updatePendingWorktreeCreation).toHaveBeenCalledWith(
       'creation-1',
-      expect.objectContaining({
-        status: 'error'
-      })
+      expect.objectContaining({ status: 'error' })
     )
     expect(toast.error).toHaveBeenCalledTimes(1)
   })

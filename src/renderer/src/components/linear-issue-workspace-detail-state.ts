@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { useMountedRef } from '@/hooks/useMountedRef'
 import { linearGetIssue, linearIssueComments } from '@/runtime/runtime-linear-issue-mutations'
 import type { RuntimeLinearSettings } from '@/runtime/runtime-linear-client'

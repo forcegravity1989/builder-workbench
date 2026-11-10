@@ -53,8 +53,8 @@ import { DatabaseSync } from 'node:sqlite'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { importCookiesFromBrowser } from "./browser-cookie-import"
-import { type DetectedBrowser } from "./sources/browser-cookie-source-profiles"
+import { importCookiesFromBrowser } from './browser-cookie-import'
+import type { DetectedBrowser } from './sources/browser-cookie-source-profiles'
 import { createChromiumCookieTestDatabase } from './browser-cookie-import-test-database'
 
 // Why (STA-4797): every other end-to-end fixture in this module starts with an empty target jar,

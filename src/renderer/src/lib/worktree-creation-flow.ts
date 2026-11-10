@@ -5,7 +5,7 @@ import {
   type WorktreeCreationPhase,
   type WorktreeCreationRequest
 } from '@/lib/pending-worktree-creation'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { executeWorktreeCreation } from '@/lib/worktree-creation-flow-execute'
 import {
   getInitialWorktreeCreationPhase,

@@ -1,4 +1,7 @@
-import { evaluateOrcadActivation, type OrcadActivationExpectation } from '../../ssh/orcad-activation-gate'
+import {
+  evaluateOrcadActivation,
+  type OrcadActivationExpectation
+} from '../../ssh/orcad-activation-gate'
 import {
   orcadLivenessProbeCommand,
   parseOrcadLiveness,

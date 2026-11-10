@@ -6,10 +6,7 @@ import {
 } from '../../shared/runtime-environment-store'
 import { RuntimeEnvironmentStoreError } from '../../shared/runtime-environment-store-records'
 import { findEnvironmentWithHostKey } from '../../shared/runtime-environment-host-key-match'
-import {
-  parseHostAccessLink,
-  type ParsedHostAccessLink
-} from '../../shared/remote-pairing-address'
+import { parseHostAccessLink, type ParsedHostAccessLink } from '../../shared/remote-pairing-address'
 import {
   verifyRemotePairingRuntimeStatus,
   type RemotePairingFailure,

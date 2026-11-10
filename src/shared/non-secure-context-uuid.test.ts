@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createBrowserUuid } from "./createNonSecureContextUuid"
+import { createNonSecureContextUuid } from './non-secure-context-uuid'
 
-describe('createBrowserUuid', () => {
+describe('createNonSecureContextUuid', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
@@ -11,7 +11,7 @@ describe('createBrowserUuid', () => {
       randomUUID: () => 'native-id'
     })
 
-    expect(createBrowserUuid()).toBe('native-id')
+    expect(createNonSecureContextUuid()).toBe('native-id')
   })
 
   it('falls back to getRandomValues when randomUUID is unavailable', () => {
@@ -24,6 +24,6 @@ describe('createBrowserUuid', () => {
       }
     })
 
-    expect(createBrowserUuid()).toBe('00010203-0405-4607-8809-0a0b0c0d0e0f')
+    expect(createNonSecureContextUuid()).toBe('00010203-0405-4607-8809-0a0b0c0d0e0f')
   })
 })

@@ -4,7 +4,7 @@ import { createRepoSlice } from './slices/repos'
 import { createSparsePresetsSlice } from './slices/sparse-presets'
 import { createWorktreeSlice } from './slices/worktrees'
 import { createTerminalSlice } from './slices/terminals'
-import { createTabsSlice } from "./slices/tabs"
+import { createTabsSlice } from './slices/tabs'
 import { createUISlice } from './slices/ui'
 import { createSettingsSlice } from './slices/settings'
 import { createKeybindingsSlice } from './slices/keybindings'
@@ -22,7 +22,7 @@ import {
   createCodexUsageSlice,
   createOpenCodeUsageSlice
 } from './slices/usage-provider-slices'
-import { createBrowserSlice } from "./slices/browser/create-browser-slice"
+import { createBrowserSlice } from './slices/browser/create-browser-slice'
 import { createRateLimitSlice } from './slices/rate-limits'
 import { createSshSlice } from './slices/ssh'
 import { createRuntimeEnvironmentSshSlice } from './slices/runtime-environment-ssh'
@@ -124,7 +124,8 @@ export const useAppStore = create<AppState>()(
 
 registerHttpLinkStoreAccessor(() => useAppStore.getState())
 registerWorkspaceHttpLinkBrowserOpener(async (request) => {
-  const { openWorkspaceBrowserTab } = await import('@/lib/browser/workspace/workspace-browser-tab-open')
+  const { openWorkspaceBrowserTab } =
+    await import('@/lib/browser/workspace/workspace-browser-tab-open')
   await openWorkspaceBrowserTab(request)
 })
 

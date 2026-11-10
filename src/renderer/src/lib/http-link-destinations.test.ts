@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { buildHttpLinkActions, httpLinkActionDestinationsFor } from './browser/navigation/http-link-destinations'
+import {
+  buildHttpLinkActions,
+  httpLinkActionDestinationsFor
+} from './browser/navigation/http-link-destinations'
 
 describe('httpLinkActionDestinationsFor', () => {
   it.each([

@@ -64,10 +64,7 @@ import type { WorktreeRefreshResult } from './listing/worktree-refresh-result'
 
 import type { WorktreePurgeTargets } from '../worktree-purge-target'
 
-import type {
-  WorktreeDeleteState,
-  WorktreeDeleteStateTarget
-} from '../worktree-delete-state-types'
+import type { WorktreeDeleteState, WorktreeDeleteStateTarget } from '../worktree-delete-state-types'
 
 import type { RendererRemoveWorktreeResult } from '../renderer-remove-worktree-result'
 

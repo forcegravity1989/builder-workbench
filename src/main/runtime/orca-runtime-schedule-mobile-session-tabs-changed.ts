@@ -127,7 +127,10 @@ export class OrcaRuntimeWithScheduleMobileSessionTabsChanged extends OrcaRuntime
   }
 
   protected getListedBrowserTabsByPageId(worktreeId: string): Map<string, BrowserTabInfo> {
-    const liveTabs = [...(this.agentBrowserBridge?.tabList?.(worktreeId).tabs ?? []), ...this.serveBrowserTabs.listUnstarted(worktreeId)]
+    const liveTabs = [
+      ...(this.agentBrowserBridge?.tabList?.(worktreeId).tabs ?? []),
+      ...this.serveBrowserTabs.listUnstarted(worktreeId)
+    ]
     const byPageId = new Map(liveTabs.map((tab) => [tab.browserPageId, tab]))
     for (const [index, page] of getRuntimeBrowserPageRegistry(this)
       .listPages(worktreeId)

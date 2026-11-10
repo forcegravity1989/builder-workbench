@@ -25,10 +25,7 @@ import {
   agentPermissionHasTerminalChoice
 } from './agent-launch/permissions/tui-agent-permission-choice'
 import { isTuiAgent } from './tui-agent-config'
-import {
-  quoteStartupArg,
-  tokenizeStartupCommand
-} from './tui-agent-startup-shell'
+import { quoteStartupArg, tokenizeStartupCommand } from './tui-agent-startup-shell'
 import { decodeCatalogOptionValue } from './structured-agent-session-option-codec'
 
 export type ResolvedSessionOptionLaunch = {

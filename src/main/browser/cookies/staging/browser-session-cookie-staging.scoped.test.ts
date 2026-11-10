@@ -8,14 +8,17 @@ const { appGetPathMock } = vi.hoisted(() => ({ appGetPathMock: vi.fn() }))
 
 vi.mock('electron', () => ({ app: { getPath: appGetPathMock } }))
 
-import { importedDomainScope } from "../policy/cookie-import-scope"
+import { importedDomainScope } from '../policy/cookie-import-scope'
 import { createChromiumCookieTestDatabase } from '../browser-cookie-import-test-database'
 import { prepareStagedCookiesForImport } from './browser-cookie-staged-import'
 import {
   applyPendingBrowserCookieImports,
   setPendingBrowserCookieImport
 } from './browser-session-cookie-staging'
-import { loadBrowserSessionMeta, persistBrowserSessionMeta } from '../../sessions/profiles/browser-session-meta-store'
+import {
+  loadBrowserSessionMeta,
+  persistBrowserSessionMeta
+} from '../../sessions/profiles/browser-session-meta-store'
 
 const PARTITION = 'persist:test'
 

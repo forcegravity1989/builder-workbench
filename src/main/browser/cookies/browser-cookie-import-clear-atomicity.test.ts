@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Cookie } from 'electron'
-import { identitiesFromClearCookies, removeTransplantableCookies } from "./browser-cookie-import-clear"
-import { type CookieClearIdentity, type CookieClearSession } from "./storage/cookie-store-contracts"
-import { importedDomainScope } from "./policy/cookie-import-scope"
+import {
+  identitiesFromClearCookies,
+  removeTransplantableCookies
+} from './browser-cookie-import-clear'
+import type { CookieClearIdentity, CookieClearSession } from './storage/cookie-store-contracts'
+import { importedDomainScope } from './policy/cookie-import-scope'
 
 function cookie(domain: string, name: string, path = '/', secure = true): Cookie {
   return {

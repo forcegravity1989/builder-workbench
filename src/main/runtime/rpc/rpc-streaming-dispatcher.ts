@@ -1,4 +1,8 @@
-import { denyRpcMethodForCaller, OWNER_RPC_CALLER_SCOPE, type RpcCallerScope } from './rpc-caller-scope'
+import {
+  denyRpcMethodForCaller,
+  OWNER_RPC_CALLER_SCOPE,
+  type RpcCallerScope
+} from './rpc-caller-scope'
 import { runWithActiveRpcCaller } from './rpc-active-caller'
 import { resolveRpcCallerIdentity } from './rpc-caller-identity'
 import { isStreamingMethod, type RpcEnvelopeMeta, type RpcRegistry, type RpcRequest } from './core'
@@ -15,7 +19,10 @@ import type { OrchestrationLegacyCompatibility } from './orchestration-legacy-co
 import type { RpcDispatchStreamingOptions } from './dispatcher-stream-options'
 import { mapDispatcherError } from './dispatcher-error-response'
 import { parseRpcRequestParams } from './dispatcher-request-parsing'
-import { routeDispatcherClientHostedBrowserRpc, routeDispatcherDesktopBrowserBridgeRpc } from './dispatcher-client-browser-routing'
+import {
+  routeDispatcherClientHostedBrowserRpc,
+  routeDispatcherDesktopBrowserBridgeRpc
+} from './dispatcher-client-browser-routing'
 import { needsLocalCallerFingerprint } from './dispatcher-caller-fingerprint'
 import { createDispatcherStreamingFeatureEmitter } from './dispatcher-streaming-feature-emitter'
 
@@ -37,15 +44,25 @@ export class RpcStreamingDispatcher {
     reply: (response: string) => void,
     options?: RpcDispatchStreamingOptions
   ): Promise<void> {
-    return runWithActiveRpcCaller(resolveRpcCallerIdentity(options), () => this.dispatchWithCaller(request, reply, options))
+    return runWithActiveRpcCaller(resolveRpcCallerIdentity(options), () =>
+      this.dispatchWithCaller(request, reply, options)
+    )
   }
 
-  private async dispatchWithCaller(request: RpcRequest, reply: (response: string) => void, options?: RpcDispatchStreamingOptions): Promise<void> {
+  private async dispatchWithCaller(
+    request: RpcRequest,
+    reply: (response: string) => void,
+    options?: RpcDispatchStreamingOptions
+  ): Promise<void> {
     const { runtime, registry, orchestrationMutations, legacyOrchestration, meta } =
       this.dependencies
     const envelopeMeta = meta()
     const method = registry.get(request.method)
-    const denial = denyRpcMethodForCaller(this.dependencies.callerScope ?? options?.callerScope ?? OWNER_RPC_CALLER_SCOPE, request.method, method?.permission)
+    const denial = denyRpcMethodForCaller(
+      this.dependencies.callerScope ?? options?.callerScope ?? OWNER_RPC_CALLER_SCOPE,
+      request.method,
+      method?.permission
+    )
     if (denial) {
       reply(JSON.stringify(errorResponse(request.id, envelopeMeta, 'forbidden', denial)))
       return
@@ -96,11 +113,23 @@ export class RpcStreamingDispatcher {
           )
           return
         }
-        const desktopBrowser = await routeDispatcherDesktopBrowserBridgeRpc(runtime, request.method, parsedParams.value, {
-          caller: resolveRpcCallerIdentity(options), signal: options?.signal
-        })
+        const desktopBrowser = await routeDispatcherDesktopBrowserBridgeRpc(
+          runtime,
+          request.method,
+          parsedParams.value,
+          {
+            caller: resolveRpcCallerIdentity(options),
+            signal: options?.signal
+          }
+        )
         if (desktopBrowser.handled) {
-          recordRuntimeFeatureInteraction(runtime, request.method, desktopBrowser.result, undefined, request.params)
+          recordRuntimeFeatureInteraction(
+            runtime,
+            request.method,
+            desktopBrowser.result,
+            undefined,
+            request.params
+          )
           reply(JSON.stringify(successResponse(request.id, envelopeMeta, desktopBrowser.result)))
           return
         }

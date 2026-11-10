@@ -7,7 +7,7 @@ import {
   DropdownMenuShortcut
 } from '@/components/ui/dropdown-menu'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Columns2 } from 'lucide-react'
-import type { TabSplitDirection } from "../../store/slices/tabs"
+import type { TabSplitDirection } from '../../store/slices/tabs'
 import { translate } from '@/i18n/i18n'
 import { canMoveTabToNewPaneColumn, moveTabToNewPaneColumn } from './tab-move-to-pane-column'
 import { TAB_CONTEXT_SUBMENU_CONTENT_CLASS } from './tab-context-menu-sizing'

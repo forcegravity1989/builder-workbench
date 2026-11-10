@@ -46,7 +46,10 @@ import {
   resetBrowserManagerState
 } from './browser-manager-test-harness'
 import { installDocPreviewGuestPolicy } from '../../document-preview/doc-preview-guest-policy'
-import { mintDocPreviewGrant, revokeAllDocPreviewGrants } from '../../document-preview/doc-preview-grant-registry'
+import {
+  mintDocPreviewGrant,
+  revokeAllDocPreviewGrants
+} from '../../document-preview/doc-preview-grant-registry'
 import { buildDocPreviewUrl } from '../../../../shared/doc-preview-scheme'
 
 /**

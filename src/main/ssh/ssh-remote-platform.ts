@@ -184,6 +184,4 @@ export function remoteDirname(path: string, host: RemoteHostPlatform): string {
   return joined || '/'
 }
 
-
-
 export type { RelayPlatform }

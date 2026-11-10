@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { isLocalBrowserPageOwner } from "./hosts/browser-host-state"
+import { isLocalBrowserPageOwner } from './hosts/browser-host-state'
 import type { AppState } from '../../types'
 import {
   createBrowserMockApi,

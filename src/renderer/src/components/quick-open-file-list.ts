@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { Worktree } from '../../../shared/worktree/types'
 import { isWindowsAbsolutePathLike } from '../../../shared/cross-platform-path'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { isQuickOpenRemoteQueryTooLarge } from '@/components/quick-open-search'
 import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../shared/quick-open-listing-limits'
 import {

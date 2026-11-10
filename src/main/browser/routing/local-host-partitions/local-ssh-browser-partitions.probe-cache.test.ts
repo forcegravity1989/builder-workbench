@@ -46,7 +46,9 @@ vi.mock('../partitions/browser-route-partition-storage-dependencies', () => ({
 vi.mock('../sessions/browser-route-session-policy', () => ({
   prepareBrowserRouteSessionPolicy: vi.fn(async () => {})
 }))
-vi.mock('../../network/egress/browser-route-webrtc-policy', () => ({ enforceBrowserRouteWebRtcPolicy: vi.fn() }))
+vi.mock('../../network/egress/browser-route-webrtc-policy', () => ({
+  enforceBrowserRouteWebRtcPolicy: vi.fn()
+}))
 vi.mock('../../sessions/profiles/browser-session-registry', () => ({
   browserSessionRegistry: {
     requireRouteBrowserProfile: vi.fn(),

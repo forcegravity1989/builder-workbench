@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { domainIsInImportedScope, importedDomainScope } from "./cookies/policy/cookie-import-scope"
-import { normalizeCookieImportDomain, registrableFamily } from "./cookies/policy/cookie-domain"
+import { domainIsInImportedScope, importedDomainScope } from './cookies/policy/cookie-import-scope'
+import { normalizeCookieImportDomain, registrableFamily } from './cookies/policy/cookie-domain'
 
 // Why this file exists: the public-suffix engine decides which cookies share a removal scope, so a
 // library swap silently re-partitions the jar. These cases pin the boundaries that moved (or had to

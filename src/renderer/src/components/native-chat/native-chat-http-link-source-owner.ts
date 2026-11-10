@@ -1,6 +1,9 @@
 import { getConnectionIdFromState } from '@/lib/connection-owner-resolution'
 import type { HttpLinkSourceOwner } from '@/lib/browser/navigation/http-link-routing'
-import { canOpenWorkspaceBrowserTabOnRuntime, canOpenWorkspaceBrowserTabOnSsh } from "@/lib/browser/workspace/workspace-browser-route-eligibility"
+import {
+  canOpenWorkspaceBrowserTabOnRuntime,
+  canOpenWorkspaceBrowserTabOnSsh
+} from '@/lib/browser/workspace/workspace-browser-route-eligibility'
 import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
 import type { AppState } from '@/store/types'
 

@@ -172,7 +172,14 @@ export function parseNewestStateMtimeSeconds(output: string): number | null {
   return Number.parseInt(value, 10)
 }
 
-import { currentOrcadFence, ORCAD_FENCE_LOST_EXIT, ORCAD_FENCE_LOST_MARKER, posixOrcadFenceGuard, posixOrcadFenceOwnedTest, type OrcadFence } from '../managed-server/activation/orcad-activation-fence-scope'
+import {
+  currentOrcadFence,
+  ORCAD_FENCE_LOST_EXIT,
+  ORCAD_FENCE_LOST_MARKER,
+  posixOrcadFenceGuard,
+  posixOrcadFenceOwnedTest,
+  type OrcadFence
+} from '../managed-server/activation/orcad-activation-fence-scope'
 
 import { quotePosixShell } from '../../shared/shell/launch/shell-argument-quoting'
 
@@ -180,11 +187,19 @@ import { isWindowsRemoteHost } from './ssh-remote-platform'
 
 import type { OrcadWindowsHostStateOp } from '../managed-server/host-state/orcad-windows-host-state-ops'
 
-import { ORCAD_STATE_MUTATION_BUSY, ORCAD_STATE_MUTATION_DEADLINE, ORCAD_STATE_MUTATION_FENCE_HEARTBEAT_SECONDS, ORCAD_STATE_MUTATION_LOCK_DIRNAME } from '../managed-server/host-state/orcad-state-snapshot-members'
+import {
+  ORCAD_STATE_MUTATION_BUSY,
+  ORCAD_STATE_MUTATION_DEADLINE,
+  ORCAD_STATE_MUTATION_FENCE_HEARTBEAT_SECONDS,
+  ORCAD_STATE_MUTATION_LOCK_DIRNAME
+} from '../managed-server/host-state/orcad-state-snapshot-members'
 
 import { orcadWindowsHostOpCommand } from '../managed-server/install/orcad-remote-windows-node'
 
-import { posixStateMutationGroupRecord, posixStateMutationPidRecord } from '../managed-server/host-state/orcad-state-mutation-owner-record'
+import {
+  posixStateMutationGroupRecord,
+  posixStateMutationPidRecord
+} from '../managed-server/host-state/orcad-state-mutation-owner-record'
 
 /** Validate bare shell member words and send each path once to stay under gateway command limits (#30491). */
 function plainMemberWords(): string {

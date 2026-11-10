@@ -1,7 +1,7 @@
 import type { BrowserClientHostPlacementPreference } from '../../../shared/browser/client-hosting/browser-client-host-placement'
 import { BROWSER_TAB_CREATE_KNOWN_ID_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import { assertRuntimeManagedBrowserCreationAvailable } from '../lib/client-creation-action-policy'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { useAppStore } from '../store'
 import {
   clearWebSessionFocusIntentIfMatches,

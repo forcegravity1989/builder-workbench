@@ -162,7 +162,13 @@ export function resolveFolderWorkspaceHost(
   return { kind: 'ssh', targetId: [...connectionIds][0] }
 }
 
-import { LOCAL_EXECUTION_HOST_ID, normalizeHostPart, toSshExecutionHostId, toRuntimeExecutionHostId, type ExecutionHostId } from './execution-host'
+import {
+  LOCAL_EXECUTION_HOST_ID,
+  normalizeHostPart,
+  toSshExecutionHostId,
+  toRuntimeExecutionHostId,
+  type ExecutionHostId
+} from './execution-host'
 
 /** The fields host resolution reads, so a catalog read over the wire resolves the same way. */
 export type FolderHostRepo = {

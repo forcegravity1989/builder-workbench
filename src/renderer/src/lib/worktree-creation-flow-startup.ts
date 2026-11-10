@@ -3,7 +3,7 @@ import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import type { WorktreeStartupPayload } from '@/lib/worktree-startup-payload'
 import type { CreateWorktreeResult } from '../../../shared/worktree/create-types'
 import { preflightAgentTrust } from '@/lib/agent-trust-preflight'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { stopWorktreeCreationForChangedHost } from './worktree-creation-completion'
 import type {
   WorktreeCreationPhase,

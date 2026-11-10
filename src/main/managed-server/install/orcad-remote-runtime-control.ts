@@ -34,10 +34,7 @@ import {
 } from '../activation/orcad-activation-fence-scope'
 import { orcadWindowsHomeOpCommand } from './orcad-remote-windows-node'
 import { ORCAD_WINDOWS_FENCE_ARG } from '../host-state/orcad-windows-host-fence-ops'
-import {
-  isWindowsRemoteHost,
-  type RemoteHostPlatform
-} from '../../ssh/ssh-remote-platform'
+import { isWindowsRemoteHost, type RemoteHostPlatform } from '../../ssh/ssh-remote-platform'
 
 // Pause even after early host answers to avoid a tight retry loop.
 const READINESS_RETRY_PAUSE_MS = 1_000

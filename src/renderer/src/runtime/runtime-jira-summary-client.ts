@@ -1,5 +1,5 @@
 import type { JiraConnectionStatus, JiraIssue } from '../../../shared/jira-types'
-import { createNonSecureContextUuid } from "../../../shared/non-secure-context-uuid"
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { callRuntimeRpc } from './runtime-rpc-client'
 import { getJiraRuntimeTarget, type RuntimeJiraSettings } from './runtime-jira-target'
 

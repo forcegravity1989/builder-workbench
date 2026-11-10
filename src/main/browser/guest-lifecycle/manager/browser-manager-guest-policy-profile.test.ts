@@ -31,7 +31,10 @@ vi.mock('../popups/presentation/popup-origin-bar-window', () => ({
 import { browserManager } from './browser-manager'
 import { resetBrowserManagerMocks, resetBrowserManagerState } from './browser-manager-test-harness'
 import { getWorkspaceDocPageGuest } from '../../document-preview/doc-preview-guest-policy'
-import { mintDocPreviewGrant, revokeAllDocPreviewGrants } from '../../document-preview/doc-preview-grant-registry'
+import {
+  mintDocPreviewGrant,
+  revokeAllDocPreviewGrants
+} from '../../document-preview/doc-preview-grant-registry'
 import { buildDocPreviewUrl } from '../../../../shared/doc-preview-scheme'
 
 type GuestFake = {

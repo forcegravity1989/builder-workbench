@@ -7,8 +7,11 @@ import {
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import { BROWSER_SCREENCAST_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import * as clientCreationActionPolicy from './client-creation-action-policy'
-import { canOpenWorkspaceBrowserTabOnRuntime, canOpenWorkspaceBrowserTabOnSsh } from "./browser/workspace/workspace-browser-route-eligibility"
-import { openWorkspaceBrowserTab } from "./browser/workspace/workspace-browser-tab-open"
+import {
+  canOpenWorkspaceBrowserTabOnRuntime,
+  canOpenWorkspaceBrowserTabOnSsh
+} from './browser/workspace/workspace-browser-route-eligibility'
+import { openWorkspaceBrowserTab } from './browser/workspace/workspace-browser-tab-open'
 
 const mocks = vi.hoisted(() => ({
   createRemote: vi.fn(),

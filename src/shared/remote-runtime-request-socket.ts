@@ -76,7 +76,10 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
   let serializedRequest = takeRemoteRuntimePreparedRequest(pendingRequest)
   return await new Promise<RuntimeRpcResponse<TResult>>((resolve, reject) => {
     const keyPair = generateKeyPair()
-    const sharedKey = deriveSharedKey(keyPair.secretKey, publicKeyFromBase64(pairing.hostPublicKeyB64))
+    const sharedKey = deriveSharedKey(
+      keyPair.secretKey,
+      publicKeyFromBase64(pairing.hostPublicKeyB64)
+    )
     let settled = false
     let ws: WebSocket | null = null
     let router: RemoteRuntimeRequestResponseRouter<TResult>

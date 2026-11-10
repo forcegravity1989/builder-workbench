@@ -1,5 +1,5 @@
-import { openHttpLink } from "@/lib/browser/navigation/http-link-routing"
-import { type OpenHttpLinkOptions } from "@/lib/browser/navigation/http-link-destinations"
+import { openHttpLink } from '@/lib/browser/navigation/http-link-routing'
+import type { OpenHttpLinkOptions } from '@/lib/browser/navigation/http-link-destinations'
 
 type ChecksPanelHostedReviewClickEvent = Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>
 

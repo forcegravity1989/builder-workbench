@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { BROWSER_TEXT_INSERT_CHUNK_BYTES, splitBrowserTextInsertionChunks } from "../../../../shared/browser-text-insertion-chunks"
-import { insertTextThroughCdp, iterateBrowserTextInsertionChunks } from "./browser-text-insertion"
+import {
+  BROWSER_TEXT_INSERT_CHUNK_BYTES,
+  splitBrowserTextInsertionChunks,
+  iterateBrowserTextInsertionChunks
+} from '../../../../shared/browser-text-insertion-chunks'
+import { insertTextThroughCdp } from './browser-text-insertion'
 
 describe('browser text insertion chunking', () => {
   it('keeps small text as a single CDP insertion chunk', () => {

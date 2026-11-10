@@ -9,10 +9,7 @@ import { RELAY_INSTALL_LOCK_NAME } from '../../../shared/relay-install-lock-name
 import { RELAY_REMOTE_DIR } from './remote-install-root'
 import { remoteInstallDirName, type RemoteInstallModel } from '../../ssh/remote-install-model'
 import { probeRemoteInstallCompleteCommand } from './remote-install-completeness-command'
-import {
-  removeRemoteTreeCommand,
-  writeRemoteEmptyFileCommand
-} from '../../ssh/ssh-remote-commands'
+import { removeRemoteTreeCommand, writeRemoteEmptyFileCommand } from '../../ssh/ssh-remote-commands'
 import {
   assertSafeRemotePathSegment,
   getRemoteHostPlatform,

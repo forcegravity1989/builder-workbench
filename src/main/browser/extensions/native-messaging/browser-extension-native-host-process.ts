@@ -1,6 +1,9 @@
 import { dirname } from 'node:path'
 import { spawnProcess } from '../../../../shared/child-process/run-process'
-import type { PipedChildProcess, PipedProcessSpec } from '../../../../shared/child-process/process-spec'
+import type {
+  PipedChildProcess,
+  PipedProcessSpec
+} from '../../../../shared/child-process/process-spec'
 import {
   childProcessHasExited,
   forceTerminateProcessTree,
