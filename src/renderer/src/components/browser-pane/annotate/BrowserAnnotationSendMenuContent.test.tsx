@@ -102,11 +102,11 @@ describe('BrowserAnnotationSendMenuContent', () => {
 
   it('is wired into both browser annotation send surfaces', () => {
     const bannerSource = readFileSync(
-      fileURLToPath(new URL('../assemble-chrome/browser-page-chrome-banners', import.meta.url)),
+      fileURLToPath(new URL('../assemble-chrome/browser-page-chrome-banners.tsx', import.meta.url)),
       'utf8'
     )
     const traySource = readFileSync(
-      fileURLToPath(new URL('./browser-page-annotation-tray', import.meta.url)),
+      fileURLToPath(new URL('./browser-page-annotation-tray.tsx', import.meta.url)),
       'utf8'
     )
     const sendSurfaces = `${bannerSource}\n${traySource}`

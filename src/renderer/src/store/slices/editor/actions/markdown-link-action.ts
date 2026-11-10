@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import type { EditorGet, EditorSet } from '../types/editor-set-get'
 import type { EditorSlice } from '../types/editor-slice'
 import { toast } from 'sonner'
@@ -81,7 +82,14 @@ export function createMarkdownLinkAction(
       if (target.kind === 'file') {
         const { line, column } = target
         if (target.relativePath === undefined) {
-          if (isLocalPathOpenBlocked(sourceSettings, { connectionId: sourceConnectionId })) {
+          if (
+            isLocalPathOpenBlocked(
+              getLocalPathOpenOwnerForRoute({
+                runtimeEnvironmentId: sourceSettings?.activeRuntimeEnvironmentId,
+                connectionId: sourceConnectionId
+              })
+            )
+          ) {
             // Why: a file:// link outside the worktree is client-local; remote runtime/SSH editors must not treat server paths as client paths.
             showLocalPathOpenBlockedToast()
             return

@@ -1,4 +1,4 @@
-import type { DocPreviewFailure } from '../../shared/doc-preview-scheme'
+import type { DocPreviewExternalLink, DocPreviewFailure } from '../../shared/doc-preview-scheme'
 
 export type DocPreviewGrantOwner =
   | { kind: 'ssh'; connectionId: string }
@@ -7,6 +7,7 @@ export type DocPreviewGrantOwner =
       environmentId: string
       worktreeSelector: string
       worktreeRoot: string
+      fileAccess?: 'terminal-artifact'
     }
 
 export type DocPreviewGrantRequest = {
@@ -26,7 +27,7 @@ export type DocPreviewApi = {
     revokeGrant: (grantId: string) => Promise<boolean>
     authorizeDirectory: (grantId: string, relativePath: string) => Promise<boolean>
     /** External link the preview guest tried to open; the renderer turns it into a browser tab. */
-    onExternalLink: (callback: (payload: { url: string }) => void) => () => void
+    onExternalLink: (callback: (payload: DocPreviewExternalLink) => void) => () => void
     /** Why the guest is showing an error body instead of the document. */
     onLoadFailure: (callback: (payload: DocPreviewFailure) => void) => () => void
   }

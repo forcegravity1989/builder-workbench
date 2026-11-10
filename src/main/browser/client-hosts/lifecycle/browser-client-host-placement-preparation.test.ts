@@ -4,7 +4,8 @@ import {
   BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY,
   BROWSER_CLIENT_PAGE_METADATA_RUNTIME_CAPABILITY,
   BROWSER_NETWORK_EXECUTION_HOSTS_RUNTIME_CAPABILITY,
-  BROWSER_NETWORK_TUNNEL_RUNTIME_CAPABILITY
+  BROWSER_NETWORK_TUNNEL_RUNTIME_CAPABILITY,
+  BROWSER_SCREENCAST_RUNTIME_CAPABILITY
 } from '../../../../shared/protocol-version'
 import type { KnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
 import type { RuntimeRpcResponse } from '../../../../shared/runtime-rpc-envelope'
@@ -38,11 +39,19 @@ describe('browser client host placement preparation', () => {
   it.each([
     ['explicit server placement', { preference: 'server' as const, enabled: true }],
     ['disabled new-page switch', { preference: 'auto' as const, enabled: false }]
-  ])('keeps %s on the server without probing or starting a client host', async (_label, input) => {
-    const harness = createHarness()
+  ])('keeps %s on a server that can stream pages', async (_label, input) => {
+    const harness = createHarness({
+      status: runtimeStatus({
+        capabilities: [...REQUIRED_CAPABILITIES, BROWSER_SCREENCAST_RUNTIME_CAPABILITY]
+      })
+    })
 
     await expect(harness.prepare(input)).resolves.toEqual({ kind: 'server' })
-    expect(harness.getStatus).not.toHaveBeenCalled()
+    if (input.preference === 'server') {
+      expect(harness.getStatus).not.toHaveBeenCalled()
+    } else {
+      expect(harness.getStatus).toHaveBeenCalledWith('environment-a')
+    }
     expect(harness.startHost).not.toHaveBeenCalled()
   })
 

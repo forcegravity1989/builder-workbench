@@ -1,3 +1,4 @@
+import { assertSplitGroupSource } from '../../tabs/tabs-group-actions'
 import { createNonSecureContextUuid } from '../../../../../../shared/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
 import type { BrowserSlice, BrowserSliceGet, BrowserSliceSet } from '../browser-slice-contract'
@@ -35,6 +36,9 @@ export function createBrowserTabActions(
   return {
     createBrowserTab: (worktreeId, url, options) => {
       options?.validateLinkPlacement?.(get())
+      if (options?.split) {
+        assertSplitGroupSource(get(), worktreeId, options.split.sourceGroupId)
+      }
       assertManagedBrowserMaterializationAllowed(get(), options?.browserRuntimeEnvironmentId)
       const workspaceId = createNonSecureContextUuid()
       const browserPageId = options?.browserPageId
@@ -96,6 +100,9 @@ export function createBrowserTabActions(
       const drawHere = (): void => {
         set((s) => {
           options?.validateLinkPlacement?.(s)
+          if (options?.split) {
+            assertSplitGroupSource(s, worktreeId, options.split.sourceGroupId)
+          }
           return {
             browserTabsByWorktree: {
               ...s.browserTabsByWorktree,
@@ -132,9 +139,7 @@ export function createBrowserTabActions(
               activate: shouldActivate
             })
           } catch (error) {
-            if (options?.validateLinkPlacement) {
-              get().closeBrowserTab(workspaceId, { reason: 'cleanup' })
-            }
+            get().closeBrowserTab(workspaceId, { reason: 'cleanup' })
             throw error
           }
           // Why: unified creation already selected the tab and recorded the visit; only the group moves.

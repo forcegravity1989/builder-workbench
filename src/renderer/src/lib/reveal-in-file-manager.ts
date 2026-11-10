@@ -1,3 +1,4 @@
+import { getWindowsPathAccess } from './windows-path-access'
 import { toast } from 'sonner'
 import { LOCAL_EXECUTION_HOST_ID, type ExecutionHostId } from '../../../shared/execution-host'
 import { translate } from '@/i18n/i18n'
@@ -68,7 +69,15 @@ export async function revealInFileManager(path: string, owner: LocalPathOpenOwne
     showLocalPathOpenBlockedToast()
     return
   }
-  const result = await window.api.shell.openInFileManager(path, ownerHostId)
+  const localPath =
+    ownerHostId === LOCAL_EXECUTION_HOST_ID
+      ? path
+      : getWindowsPathAccess(ownerHostId)?.toWindows(path)
+  if (!localPath) {
+    showLocalPathOpenBlockedToast()
+    return
+  }
+  const result = await window.api.shell.openInFileManager(localPath)
   if (result.ok) {
     return
   }

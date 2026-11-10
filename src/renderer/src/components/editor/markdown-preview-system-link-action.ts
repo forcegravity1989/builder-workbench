@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { isLocalPathOpenBlocked, showLocalPathOpenBlockedToast } from '@/lib/local-path-open-guard'
@@ -59,8 +60,13 @@ export function handleMarkdownPreviewSystemLinkClick({
   }
   if (
     isLocalPathOpenBlocked(
-      settingsForRuntimeOwner(useAppStore.getState().settings, resolvedSourceRuntimeEnvironmentId),
-      { connectionId: sourceConnectionId }
+      getLocalPathOpenOwnerForRoute({
+        runtimeEnvironmentId: settingsForRuntimeOwner(
+          useAppStore.getState().settings,
+          resolvedSourceRuntimeEnvironmentId
+        )?.activeRuntimeEnvironmentId,
+        connectionId: sourceConnectionId
+      })
     )
   ) {
     // Why: the client OS cannot open server-local runtime or SSH paths.

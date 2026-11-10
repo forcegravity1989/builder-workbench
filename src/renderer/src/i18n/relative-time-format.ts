@@ -7,8 +7,10 @@ import { getIntlLocale } from './i18n'
 // and cache per resolved locale rather than freezing one formatter at module scope.
 let cached: { locale: string; formatter: Intl.RelativeTimeFormat } | null = null
 
-export function getUiRelativeTimeFormatter(): Intl.RelativeTimeFormat {
-  const locale = getIntlLocale()
+export function getUiRelativeTimeFormatter(
+  intlLocale: string = getIntlLocale()
+): Intl.RelativeTimeFormat {
+  const locale = intlLocale
   if (!cached || cached.locale !== locale) {
     cached = { locale, formatter: new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }) }
   }
@@ -16,8 +18,8 @@ export function getUiRelativeTimeFormatter(): Intl.RelativeTimeFormat {
 }
 
 /** Format a signed millisecond delta (future positive, past negative) at minute/hour/day granularity. */
-export function formatUiRelativeTime(diffMs: number): string {
-  const formatter = getUiRelativeTimeFormatter()
+export function formatUiRelativeTime(diffMs: number, intlLocale?: string): string {
+  const formatter = getUiRelativeTimeFormatter(intlLocale)
   const diffMinutes = Math.round(diffMs / 60_000)
   if (Math.abs(diffMinutes) < 60) {
     return formatter.format(diffMinutes, 'minute')

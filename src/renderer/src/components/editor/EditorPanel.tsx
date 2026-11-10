@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { getConnectionId } from '@/lib/connection-context'
@@ -284,9 +285,13 @@ function EditorPanelInner({
       return
     }
     if (
-      isLocalPathOpenBlocked(settingsForRuntimeOwner(settings, activeFile.runtimeEnvironmentId), {
-        connectionId: getConnectionId(activeFile.worktreeId)
-      })
+      isLocalPathOpenBlocked(
+        getLocalPathOpenOwnerForRoute({
+          runtimeEnvironmentId: settingsForRuntimeOwner(settings, activeFile.runtimeEnvironmentId)
+            ?.activeRuntimeEnvironmentId,
+          connectionId: getConnectionId(activeFile.worktreeId)
+        })
+      )
     ) {
       showLocalPathOpenBlockedToast()
       return

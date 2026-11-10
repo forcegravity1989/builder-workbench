@@ -57,6 +57,7 @@ import {
   CLIPBOARD_TEXT_WRITE_TOO_LARGE_ERROR
 } from '../../../shared/clipboard-text'
 import {
+  agentBrowserCommandsIn,
   createSucceedWith,
   mockBrowserManager,
   mockWebContents,
@@ -100,14 +101,9 @@ describe('AgentBrowserBridge', () => {
 
     await bridge.keyboardInsertText(text)
 
-    const insertTextCalls = execFileMock.mock.calls.filter((call: unknown[]) => {
-      const args = call[1] as string[]
-      return args.includes('keyboard') && args.includes('inserttext')
-    })
-    const chunks = insertTextCalls.map((call: unknown[]) => {
-      const args = call[1] as string[]
-      return args[args.indexOf('inserttext') + 1]
-    })
+    const chunks = agentBrowserCommandsIn(stdinWrites)
+      .filter((command) => command[0] === 'keyboard' && command[1] === 'inserttext')
+      .map((command) => command[2])
 
     expect(chunks).toEqual(['z'.repeat(AGENT_BROWSER_TEXT_ARGUMENT_MAX_BYTES), 'qq'])
   })

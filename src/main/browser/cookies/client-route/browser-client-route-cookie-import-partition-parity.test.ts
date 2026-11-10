@@ -26,10 +26,15 @@ const {
   updateProfileSourceMock: vi.fn()
 }))
 
-vi.mock('../browser-cookie-import', () => ({
+vi.mock('../sources/browser-cookie-detection', () => ({
   detectInstalledBrowsers: detectInstalledBrowsersMock,
-  importCookiesFromBrowser: importCookiesFromBrowserMock,
   selectBrowserProfile: vi.fn()
+}))
+vi.mock('../browser-cookie-import', () => ({
+  importCookiesFromBrowser: importCookiesFromBrowserMock
+}))
+vi.mock('./client-route-cookie-import-source-store', () => ({
+  recordClientRouteCookieImportSource: vi.fn()
 }))
 vi.mock('../../routing/partitions/browser-route-partition-binding-runtime', () => ({
   currentBrowserRoutePartitionBindingStore: () => bindingStore
@@ -135,6 +140,7 @@ async function importPartition(): Promise<string> {
     // Why: mirrors startPairedRuntimeBrowserClientHost — settings-level operations target the
     // server's own machine, so the identity comes from the same helper the host uses.
     executionHostIdentity: browserAuthorityExecutionHostStorageIdentity(storageScope),
+    pairingAuthorityConnectionIdentity: 'paired-runtime:pairing-authority-a',
     legacyAuthorityConnectionIdentity: 'paired-runtime:legacy-authority-a',
     legacyExecutionHostIdentity:
       legacyBrowserNativeExecutionHostStorageIdentity(authorityRuntimeId),

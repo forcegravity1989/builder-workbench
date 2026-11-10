@@ -1,10 +1,18 @@
 import { defineMethod } from '../core'
 import {
   WorkspacePortKillParams,
+  WorkspacePortProbePageParams,
   WorkspacePortScanParams
 } from '../../../../shared/rpc-contract/workspace-ports-params'
+import { probeWorkspacePortPage } from '../../../ports/workspace-port-page-probe'
 
 export const WORKSPACE_PORT_METHODS = [
+  defineMethod({
+    name: 'workspacePorts.probePage',
+    permission: 'workspace',
+    params: WorkspacePortProbePageParams,
+    handler: async (params) => probeWorkspacePortPage(params)
+  }),
   defineMethod({
     name: 'workspacePorts.scan',
     params: WorkspacePortScanParams,

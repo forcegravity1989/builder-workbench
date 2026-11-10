@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import { toast } from 'sonner'
 import { getConnectionIdForFile } from '@/lib/connection-context'
 import { detectLanguage } from '@/lib/language-detect'
@@ -148,11 +149,13 @@ export async function handleMarkdownPreviewLinkClick({
     }
     if (
       isLocalPathOpenBlocked(
-        settingsForRuntimeOwner(
-          useAppStore.getState().settings,
-          resolvedSourceRuntimeEnvironmentId
-        ),
-        { connectionId: sourceConnectionId }
+        getLocalPathOpenOwnerForRoute({
+          runtimeEnvironmentId: settingsForRuntimeOwner(
+            useAppStore.getState().settings,
+            resolvedSourceRuntimeEnvironmentId
+          )?.activeRuntimeEnvironmentId,
+          connectionId: sourceConnectionId
+        })
       )
     ) {
       // Why: an unmatched remote path cannot fall back to the client OS.

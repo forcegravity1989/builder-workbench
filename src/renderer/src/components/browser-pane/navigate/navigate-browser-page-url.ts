@@ -23,6 +23,7 @@ import type {
 import type { MutableRefObject } from 'react'
 import { statUserOpenedPath } from '@/lib/user-opened-local-path'
 import { requireRuntimeTargetForFileOwner } from '@/lib/file-owner-runtime-target'
+import { settingsForRuntimeOwner } from '@/runtime/runtime-client-target'
 
 export type NavigateBrowserPageToUrlArgs = {
   url: string
@@ -97,8 +98,12 @@ export function navigateBrowserPageToUrl({
       try {
         // Why getKnownWorktreeById: folder and floating workspaces are absent from allWorktrees().
         const activeWorktree = store.getKnownWorktreeById(worktreeId)
+        const target = requireRuntimeTargetForFileOwner(store, worktreeId, undefined)
         const fileContext: RuntimeFileOperationArgs = {
-          target: requireRuntimeTargetForFileOwner(store, worktreeId, undefined),
+          settings: settingsForRuntimeOwner(
+            store.settings,
+            target.kind === 'environment' ? target.environmentId : null
+          ),
           worktreeId,
           worktreePath: activeWorktree?.path,
           connectionId: undefined

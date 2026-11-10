@@ -1,11 +1,16 @@
 import type { DocPreviewGrantRequest } from '../../../preload/api/doc-preview-api'
 import { basename, dirname, getRelativePathInsideRoot } from '@/lib/path'
 import { getConnectionIdForFileFromState } from '@/lib/connection-owner-resolution'
-import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
+import { runtimeEnvironmentIdOrLocalUnlessTwin } from '@/lib/worktree-runtime-owner'
 import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
 import type { AppState } from '@/store/types'
 
-export type DocPreviewGrantHandle = { grantId: string; url: string }
+/** Keeps readers and sharing on the host for which this grant was minted. */
+export type DocPreviewGrantHandle = {
+  grantId: string
+  url: string
+  location: DocPreviewGrantLocation
+}
 
 /**
  * Grants are keyed by preview tab id, never by effect mount: React StrictMode
@@ -37,9 +42,23 @@ export function buildDocPreviewGrantRequest(
     // directory is often a home directory, which is where secrets live.
     return { owner: { kind: 'ssh', connectionId }, requestBase, root, entryRelativePath }
   }
-  const environmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
-  if (!environmentId || !worktreeRoot || !worktreeRelativePath) {
+  const environmentId = runtimeEnvironmentIdOrLocalUnlessTwin(state, worktreeId)
+  if (!environmentId || !worktreeRoot) {
     return null
+  }
+  if (!worktreeRelativePath) {
+    return {
+      owner: {
+        kind: 'runtime',
+        environmentId,
+        worktreeSelector: toRuntimeWorktreeSelector(worktreeId),
+        worktreeRoot,
+        fileAccess: 'terminal-artifact'
+      },
+      requestBase: root,
+      root,
+      entryRelativePath: basename(filePath)
+    }
   }
   return {
     owner: {
@@ -64,6 +83,7 @@ export function ensureDocPreviewGrant(
   }
   const pending: Promise<DocPreviewGrantHandle> = window.api.docPreview
     .mintGrant({ ...location, browserPageId: previewId })
+    .then((minted) => ({ ...minted, location }))
     .catch((error: unknown) => {
       // Why the identity check: a release and a fresh ensure can both land before this rejects, and
       // an unconditional delete would evict the newer entry, leaving its grant unrevokable.

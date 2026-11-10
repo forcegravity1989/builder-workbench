@@ -130,7 +130,7 @@ export function installModuleMocks(
     })
   }))
 
-  vi.doMock('../../guest-lifecycle/manager/browser-manager', () => ({
+  vi.doMock('../../../guest-lifecycle/manager/browser-manager', () => ({
     browserManager: {
       notifyPermissionDenied: browserManagerNotifyPermissionDeniedMock,
       handleGuestWillDownload: browserManagerHandleGuestWillDownloadMock,
@@ -139,24 +139,24 @@ export function installModuleMocks(
       resolvePagePromptTarget: vi.fn(() => null)
     }
   }))
-  vi.doMock('../../site-settings/permissions/browser-media-access', () => ({
+  vi.doMock('../../../site-settings/permissions/browser-media-access', () => ({
     hasSystemMediaAccess: vi.fn(() => true),
     requestSystemMediaAccess: requestSystemMediaAccessMock
   }))
-  vi.doMock('../../identity/requests/browser-session-ua', () => ({
+  vi.doMock('../../../identity/requests/browser-session-ua', () => ({
     installBrowserSessionUserAgentPolicy: installBrowserSessionUserAgentPolicyMock
   }))
-  vi.doMock('../../identity/browser-process-user-agent', () => ({
+  vi.doMock('../../../identity/browser-process-user-agent', () => ({
     getBrowserProcessUserAgentIdentity: () => ({
       mode: 'clean',
       userAgent: CLEAN_USER_AGENT
     })
   }))
-  vi.doMock('../../../persistence/loading-store/user-data-path', () => ({
+  vi.doMock('../../../../persistence/loading-store/user-data-path', () => ({
     getCanonicalUserDataPath: () => USER_DATA
   }))
   // Model legacy unmarked stages; real SQLite merges have separate file-backed coverage.
-  vi.doMock('../../cookies/staging/browser-cookie-staged-import', () => ({
+  vi.doMock('../../../cookies/staging/browser-cookie-staged-import', () => ({
     SCOPED_COOKIE_IMPORT_FORMAT: 'scoped-v1',
     InvalidStagedCookieImportError: class extends Error {},
     isPermanentStagedCookieImportFailure: vi.fn(() => false),
@@ -178,11 +178,11 @@ export function installModuleMocks(
       fsState.files.set(targetKey, value)
     }
   })
-  vi.doMock('../../../../shared/windows-retry-file-operations', async (importOriginal) => ({
+  vi.doMock('../../../../../shared/windows-retry-file-operations', async (importOriginal) => ({
     ...(await importOriginal<Record<string, unknown>>()),
     renameFileWithWindowsRetry: renameFileWithWindowsRetryMock
   }))
-  vi.doMock('../../../codex-accounts/fs-utils', () => ({
+  vi.doMock('../../../../codex-accounts/fs-utils', () => ({
     renameFileWithWindowsRetry: renameFileWithWindowsRetryMock,
     writeFileAtomically: vi.fn((pathValue: string, data: string) => {
       const key = fsKey(pathValue)

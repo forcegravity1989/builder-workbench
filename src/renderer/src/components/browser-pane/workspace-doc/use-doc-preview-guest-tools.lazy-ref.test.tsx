@@ -31,10 +31,10 @@ vi.mock('@/components/browser-pane/annotate/use-browser-page-grab-annotations', 
   useBrowserPageGrabAnnotations: () => ({})
 }))
 vi.mock('@/components/browser-pane/annotate/use-browser-page-markup-capture', () => ({
-  useBrowserPageMarkupCapture: () => ({})
+  useBrowserPageMarkupCapture: () => ({ isActive: false })
 }))
 vi.mock('@/components/browser-pane/annotate/useGrabMode', () => ({
-  useGrabMode: () => ({ active: false })
+  useGrabMode: () => ({ state: 'idle' })
 }))
 
 const { useDocPreviewGuestTools } = await import('./use-doc-preview-guest-tools')

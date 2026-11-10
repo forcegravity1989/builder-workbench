@@ -1,3 +1,4 @@
+import { findSiblingGroupId } from '../../../../shared/workspace-layout/tab-group-layout-tree'
 import type { Tab } from '../../../../shared/tab-types'
 import {
   deriveActiveSurface,
@@ -59,14 +60,12 @@ export function withOpenedServeBrowserTab(
     label: page.title,
     customLabel: null,
     color: null,
-    sortOrder: tabs.length,
+    sortOrder: group?.tabOrder.length ?? 0,
     createdAt: now
   }
   const nextGroup = {
-    ...(group ?? { id: groupId, worktreeId }),
-    activeTabId: tab.id,
-    tabOrder: [...(group?.tabOrder ?? []), tab.id],
-    recentTabIds: [...(group?.recentTabIds ?? []), tab.id]
+    ...(group ?? { id: groupId, worktreeId, activeTabId: null }),
+    tabOrder: [...(group?.tabOrder ?? []), tab.id]
   }
   return {
     ...session,
@@ -93,13 +92,7 @@ export function withOpenedServeBrowserTab(
     tabGroupLayouts: {
       ...session.tabGroupLayouts,
       [worktreeId]: session.tabGroupLayouts?.[worktreeId] ?? { type: 'leaf', groupId }
-    },
-    activeGroupIdByWorktree: { ...session.activeGroupIdByWorktree, [worktreeId]: groupId },
-    activeBrowserTabIdByWorktree: {
-      ...session.activeBrowserTabIdByWorktree,
-      [worktreeId]: page.pageId
-    },
-    activeTabTypeByWorktree: { ...session.activeTabTypeByWorktree, [worktreeId]: 'browser' }
+    }
   }
 }
 
@@ -229,7 +222,14 @@ export function withClosedServeBrowserTab(
     .filter((group) => group.tabOrder.length > 0)
   const groupIds = new Set(groups.map((group) => group.id))
   const previousGroupId = session.activeGroupIdByWorktree?.[worktreeId]
-  const groupId = groupIds.has(previousGroupId ?? '') ? previousGroupId : groups[0]?.id
+  const previousLayout = session.tabGroupLayouts?.[worktreeId]
+  const siblingId =
+    previousLayout && previousGroupId ? findSiblingGroupId(previousLayout, previousGroupId) : null
+  const groupId = groupIds.has(previousGroupId ?? '')
+    ? previousGroupId
+    : siblingId && groupIds.has(siblingId)
+      ? siblingId
+      : groups[0]?.id
   const layout = pruneGroupLayout(session.tabGroupLayouts?.[worktreeId], groupIds)
   const { [saved.tabId]: _closed, ...pages } = session.browserPagesByWorkspace ?? {}
   const next: WorkspaceSessionState = {
@@ -269,6 +269,16 @@ export function withClosedServeBrowserTab(
   next.activeFileIdByWorktree = { ...session.activeFileIdByWorktree, [worktreeId]: surface.fileId }
   if (session.activeWorktreeId === worktreeId) {
     next.activeTabId = surface.terminalTabId
+    const hasSurface =
+      tabs.length > 0 ||
+      (next.tabsByWorktree[worktreeId]?.length ?? 0) > 0 ||
+      (next.browserTabsByWorktree?.[worktreeId]?.length ?? 0) > 0 ||
+      (next.openFilesByWorktree?.[worktreeId]?.length ?? 0) > 0
+    if (!hasSurface) {
+      next.activeWorktreeId = null
+      next.activeWorkspaceKey = null
+      next.activeWorkspaceExecutionHostId = null
+    }
   }
   return next
 }

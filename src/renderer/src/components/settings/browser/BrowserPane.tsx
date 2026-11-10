@@ -138,18 +138,15 @@ export function BrowserPane({
   const hostLabelOverrides = useMemo(() => getHostDisplayLabelOverrides(settings), [settings])
   const browserSessionHostOptions = useMemo(
     () =>
-      buildSidebarHostOptions(
-        {
-          repos,
-          sshTargetLabels,
-          sshConnectionStates,
-          settings,
-          runtimeEnvironments,
-          runtimeStatusByEnvironmentId,
-          hostLabelOverrides
-        },
-        t
-      )
+      buildSidebarHostOptions({
+        repos,
+        sshTargetLabels,
+        sshConnectionStates,
+        settings,
+        runtimeEnvironments,
+        runtimeStatusByEnvironmentId,
+        hostLabelOverrides
+      })
         .filter((host) => host.kind === 'local' || host.kind === 'runtime')
         .map((host) => ({
           id: host.id,

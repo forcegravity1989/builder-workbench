@@ -82,7 +82,6 @@ export function getWorkspaceReferenceRequest(
         : [workspace.hostId, workspace.projectId],
       sourceContext ? getTaskSourceCacheScope(sourceContext) : null,
       sourceContext?.accountLabel ?? null,
-      repo?.ghAccount ?? null,
       runtimeVersion
     ])
   }

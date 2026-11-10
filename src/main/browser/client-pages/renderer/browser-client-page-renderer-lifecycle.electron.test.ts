@@ -37,6 +37,7 @@ async function buildFixtureBundle(options: {
   await buildVite({
     configFile: false,
     logLevel: 'silent',
+    resolve: { alias: { '@': join(process.cwd(), 'src/renderer/src') } },
     build: {
       emptyOutDir: false,
       lib: {

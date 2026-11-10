@@ -6,6 +6,7 @@ import type { TaskSourceContext } from '../task-source-context'
 import type { WorkspaceKey } from '../workspace-scope'
 import type { TuiAgent } from '../tui-agent'
 import type {
+  AutomationWorkspaceProvenanceRequest,
   GitPushTarget,
   GitWorktreeInfo,
   WorkspaceLinkedItem,
@@ -64,15 +65,9 @@ export type WorktreeCreateTimingPhase = {
   durationMs: number
 }
 
-/** Prepared-checkout claim/reset evidence; hits also retain origin, build duration and idle age. */
+/** The existing preparation owner reports whether a hit required retargeting. */
 export type PreparedCheckoutOutcome =
-  | {
-      status: 'hit'
-      reset: PreparedCheckoutReset
-      origin: PreparedCheckoutOrigin
-      buildMs: number
-      idleMs: number
-    }
+  | { status: 'hit'; retargeted: boolean }
   | { status: 'miss'; reason: PreparedCheckoutMissReason }
 
 export type WorktreeCreateTiming = {
@@ -157,6 +152,8 @@ export type CreateWorktreeArgs = {
   startup?: WorktreeStartupLaunch
   /** Correlate concurrent background creates with renderer progress; synchronous callers may omit it. */
   creationId?: string
+  /** Authorizes the host to mint system-owned automation provenance. */
+  automationProvenanceRequest?: AutomationWorkspaceProvenanceRequest
 }
 
 export type WorktreeCheckoutProgress = {

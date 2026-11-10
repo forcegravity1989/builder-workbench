@@ -44,7 +44,11 @@ async function readDocPreviewGrantFile(
 ): Promise<RuntimeFilePreviewResult> {
   if (owner.kind === 'ssh') {
     // Why the connection id is kept: dropping it would read this path on this machine.
-    const context = { target: { kind: 'local' as const }, worktreeId: null, worktreePath: null }
+    const context = {
+      settings: { activeRuntimeEnvironmentId: null },
+      worktreeId: null,
+      worktreePath: null
+    }
     return readRuntimeFilePreview({ ...context, connectionId: owner.connectionId }, filePath)
   }
   if (owner.fileAccess === 'terminal-artifact') {

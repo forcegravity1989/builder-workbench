@@ -31,7 +31,9 @@ describe('BrowserNetworkTunnelClient aggregate memory', () => {
   it('shares application-write admission across routes on one browser host', async () => {
     const registry = new BrowserNetworkTunnelOutboundMemoryBudgetRegistry({
       hostMaxBytes: 10,
-      processMaxBytes: 100
+      processMaxBytes: 100,
+      controlFrameReserveBytes: 0,
+      controlFrameReserveClaims: 0
     })
     const first = createClient(registry.acquire('host-a')!)
     const second = createClient(registry.acquire('host-a')!)
@@ -60,7 +62,9 @@ describe('BrowserNetworkTunnelClient aggregate memory', () => {
   it('retains destination bytes until the browser-facing socket write settles', async () => {
     const registry = new BrowserNetworkTunnelOutboundMemoryBudgetRegistry({
       hostMaxBytes: 10,
-      processMaxBytes: 100
+      processMaxBytes: 100,
+      controlFrameReserveBytes: 0,
+      controlFrameReserveClaims: 0
     })
     const route = createClient(registry.acquire('host-a')!)
     const socket = await open(route.client)
@@ -80,7 +84,9 @@ describe('BrowserNetworkTunnelClient aggregate memory', () => {
   it('releases a source-write claim only after credited transport handoff', async () => {
     const registry = new BrowserNetworkTunnelOutboundMemoryBudgetRegistry({
       hostMaxBytes: 10,
-      processMaxBytes: 100
+      processMaxBytes: 100,
+      controlFrameReserveBytes: 0,
+      controlFrameReserveClaims: 0
     })
     const route = createClient(registry.acquire('host-a')!)
     const socket = await open(route.client)

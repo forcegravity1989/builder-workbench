@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import type { MutableRefObject } from 'react'
 import type { Editor } from '@tiptap/react'
 import type { EditorView } from '@tiptap/pm/view'
@@ -213,9 +214,13 @@ function openMarkdownLinkInClientOs({
     return
   }
   if (
-    isLocalPathOpenBlocked(settingsForRuntimeOwner(settings, runtimeEnvironmentId), {
-      connectionId: sourceOwner.kind === 'ssh' ? sourceOwner.connectionId : undefined
-    })
+    isLocalPathOpenBlocked(
+      getLocalPathOpenOwnerForRoute({
+        runtimeEnvironmentId: settingsForRuntimeOwner(settings, runtimeEnvironmentId)
+          ?.activeRuntimeEnvironmentId,
+        connectionId: sourceOwner.kind === 'ssh' ? sourceOwner.connectionId : undefined
+      })
+    )
   ) {
     // Why: Shift-click opens through the client OS, which cannot safely resolve
     // server-local paths from SSH or remote runtime worktrees.

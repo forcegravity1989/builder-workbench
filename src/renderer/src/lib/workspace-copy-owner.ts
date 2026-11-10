@@ -24,7 +24,7 @@ import {
 } from '@/store/workspaces/catalog/workspace-record-fields'
 import { selectFolderWorkspaceCopies } from '@/store/folder-workspaces/folder-workspace-record-index'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
-import { focusFreeRouteStateOf } from './editor-file-operation-provenance'
+import { focusFreeRouteStateOf } from './focus-free-worktree-route-state'
 import { namedHostForOwnerRef, resolveOwner, resolveOwnerOfRoute } from './resolve-owner'
 import { resolveUnstampedRecordHost } from './worktree-operation-catalog-route'
 import { resolveExactWorktreeRoute, routeForOwner } from './worktree-owner-route'
@@ -197,12 +197,8 @@ function resourceEvidence(
   resource: WorkspaceResource
 ): SourceEvidence {
   const provenance = resource.operationProvenance
-  // A child repository's provenance names that repository's host, not this workspace's copy.
-  if (provenance && !provenance.childRepo) {
-    const { route, authority } = provenance.generation
-    if (authority) {
-      return { kind: 'authority', authority }
-    }
+  if (provenance) {
+    const { route } = provenance.generation
     const fromRoute = hostAuthorityFromOperationRoute(route)
     const onHost = route.executionHostId
       ? resolveOwnerOnHost(state, workspaceId, route.executionHostId)

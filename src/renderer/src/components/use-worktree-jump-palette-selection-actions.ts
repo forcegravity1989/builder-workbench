@@ -97,6 +97,9 @@ export function useWorktreeJumpPaletteSelectionActions({
         )
         return
       }
+      if (activation.status === 'blocked') {
+        return
+      }
       recordFeatureInteraction('cmd-j-browser-page-open')
       skipRestoreFocusRef.current = true
       closeModal()

@@ -7,6 +7,7 @@ import type {
   CliWorkspaceProvenance,
   GitPushTarget,
   WorkspaceCreatorProvenance,
+  WorkspaceAttachment,
   WorkspaceLinkedItem,
   WorkspaceStatus
 } from './types'
@@ -56,6 +57,7 @@ export type WorktreeMeta = {
   /** Optional for backward compatibility — see Worktree.linkedGiteaPR. */
   linkedGiteaPR?: number | null
   linkedWorkItem?: WorkspaceLinkedItem | null
+  linkedItems?: WorkspaceAttachment[]
   linkedTaskSourceContext?: TaskSourceContext | null
   isArchived: boolean
   isUnread: boolean

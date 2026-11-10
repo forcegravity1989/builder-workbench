@@ -34,7 +34,7 @@ BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY�
 
 远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。现有快捷键、标签菜单、Dashboard、工作区创建与 BW 草稿入口共用宿主偏好和身份约束；新工作区准备宿主命令时读取失败则停止，已准备的命令随原配对版本和宿主实例约束发送。已有标签启动的旧宿主 legacy 分支保留原兼容启动，读取不到宿主 recipe 的降级仍不能保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。
 
-浏览器同步采用所需的原生 RPC、宿主路由、managed tunnel、连接合同、公共进程 runner 与 Windows 文件保护接口；这些依赖接回 BW 既有 owner。共享主机专项同步未包含的 managed server 自动部署/迁移 UI、完整 WSL 生命周期、Mobile 产品及无关 UI 仍不因此启用。BW 材料执行器与智能体产品行为沿既有定义。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
+浏览器同步采用所需的原生 RPC、宿主路由、连接合同、公共进程 runner 与 Windows 文件保护接口；这些依赖接回 BW 既有 owner。浏览器桥接复用既有在线配对和重连入口，不引入离线服务自动启动。共享主机专项同步未包含的 managed server 自动部署/迁移 UI、完整 WSL 生命周期、Mobile 产品及无关 UI 仍不因此启用。BW 材料执行器与智能体产品行为沿既有定义。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
 
 ### 0.3 上游目录定位
 
@@ -70,7 +70,7 @@ BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY�
 | 模块 / 已合入依据 | 原生采用 | BW 改造取舍 | 未带入的边界 |
 | --- | --- | --- | --- |
 | 共享主机 · [#592](https://github.com/forcegravity1989/builder-workbench/pull/592) · v251 | 网络配对/重配、连接和订阅恢复、目录清理、关闭意图、宿主 Agent 配置及实际启动消费者 | 保留批量导入壳、材料草稿/回执及结构化会话关闭；浏览器防回显现沿 v255 接收端投影，见下节 | 该批次未迁 managed server、WSL 生命周期、process-host 或 Mobile 产品；浏览器必要依赖见下节 |
-| 网页批注 · [#579](https://github.com/forcegravity1989/builder-workbench/pull/579) · v250，#592 补 v251 导航截图取消 | 原生收起/展开、贴图/截图传递、精简/详情反馈、同文档 fragment 判据 | 独立折叠状态、外部 tray flag、自写图片预览与重复读取已删；当前批注实现随浏览器采用 v255，含原生定位和跨文档清理 | 早期批次只迁批注，当前浏览器基线见下节；双人实时互见和共同批注另由 [#576](https://github.com/forcegravity1989/builder-workbench/issues/576) 跟踪 |
+| 网页批注 · [#579](https://github.com/forcegravity1989/builder-workbench/pull/579) · v250，#592 补 v251 导航截图取消 | 原生收起/展开、贴图/截图传递、精简/详情反馈、同文档 fragment 判据 | 独立折叠状态、外部 tray flag、自写图片预览与重复读取已删；当前批注实现随浏览器采用 v255，含原生定位与导航后的批注几何失效处理 | 早期批次只迁批注，当前浏览器基线见下节；双人实时互见和共同批注另由 [#576](https://github.com/forcegravity1989/builder-workbench/issues/576) 跟踪 |
 
 后续同步从此索引定位当前实现及其固定来源，再核对真实调用链。
 
@@ -81,6 +81,7 @@ BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY�
 - 密码管理沿原生按浏览器配置保存、选择填充、添加/更新/删除和 CSV 导入，使用 Electron safeStorage 保护落盘内容。候选区分 exact-origin 与同 scheme/port、同可注册域的 same-site 匹配；填充前再次核对当前 frame。不会另建 BW 密码库。
 - Windows Chromium 导入包含 [Orca #28225](https://github.com/stablyai/orca/pull/28225) 的同步进程原始输出编码修复。Chrome v20 应用绑定加密仍不能由该导入器直接解密，Cookie/密码导入必须准确报告限制；密码可沿原生 CSV 导入，不能把 CSV 支持描述为 Cookie 解密支持。原生密码能力来源见 [#33994](https://github.com/stablyai/orca/pull/33994)。
 - 新模块按上游归属组织；必要公共接口复用 BW 已有 RPC manifest、Store、配对入口和连接缓存。公共进程实现位于既有 shared/child-process owner；浏览器所需 Windows 原生文件保护随 native/windows-security 打包。依赖适配不代表其他智能体、编辑器或整套远端产品同步至 v255。
+- 浏览器标签沿 BW 现有窗口标签与会话持久化 owner 接入；无窗口宿主保存标签和配置，首次访问才恢复页面。未启用上游新的 main-layout 状态模型，也不同步无关编辑器缓存、服务部署或智能体启动框架。跨模块挂载在既有 owner 适配，浏览器核心按固定上游版本维护。
 - 共享页面由发送端携带所属 runtime，接收端按 runtime/mobile 身份投影，替代 BW 的发送端一概过滤。批注恢复为原生行为，删除 BW selector/IntersectionObserver 内层滚动标记方案；原生实时 selection 跟踪不等于旧方案的持久标记语义。
 
 内部 Windows 的 Chrome 导入、真实网站保存/填充、重启、企业 SSO 和双机浏览器仍须实际验收；静态同步及协议检查不能替代这些结果。

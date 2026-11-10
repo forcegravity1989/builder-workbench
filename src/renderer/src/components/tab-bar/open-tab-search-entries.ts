@@ -6,9 +6,8 @@ import {
   buildSearchableSimulatorTabs,
   type SearchableSimulatorTab
 } from '@/lib/simulator-palette-search'
-import '@/lib/workspace/search/tabs/workspace-tab-search-types'
 import { buildSearchableWorkspaceTabEntries as buildSearchableWorkspaceTabs } from '@/lib/workspace-tab-palette-entry-builder'
-import type { SearchableWorkspaceTab } from '@/lib/workspace/search/tabs/workspace-tab-search-types'
+import type { SearchableWorkspaceTab } from '@/lib/workspace-tab-palette-search'
 import type { AppState } from '@/store/types'
 import {
   selectFolderWorkspaces,
@@ -20,8 +19,6 @@ import {
   type ExecutionHostId
 } from '../../../../shared/execution-host'
 import { getPaletteOwnershipWorktreeIds } from '@/lib/unified-tab-host-ownership'
-import type { StructuredChatTabNames } from '@/runtime/native-chat/naming/structured-chat-tab-name'
-import type { Translate } from '@/i18n/use-translate'
 
 export type OpenTabSearchEntries = {
   workspaceTabs: readonly SearchableWorkspaceTab[]
@@ -206,9 +203,7 @@ export function buildOpenTabSearchBrowserPages(
 
 export function buildOpenTabSearchEntries(
   state: OpenTabSearchEntryState,
-  agentState: OpenTabSearchAgentState,
-  chatNames: StructuredChatTabNames,
-  t?: Translate
+  agentState: OpenTabSearchAgentState
 ): OpenTabSearchEntries {
   const scope = openTabSearchScope(state)
 
@@ -232,20 +227,16 @@ export function buildOpenTabSearchEntries(
       activeFileId: state.activeFileId,
       activeFileIdByWorktree: state.activeFileIdByWorktree,
       activeTabTypeByWorktree: state.activeTabTypeByWorktree,
-      generatedTitlesEnabled: state.generatedTitlesEnabled,
-      chatNames
+      generatedTitlesEnabled: state.generatedTitlesEnabled
     }),
     browserPages: buildOpenTabSearchBrowserPages(state, scope),
-    simulatorTabs: buildSearchableSimulatorTabs(
-      {
-        ...scope,
-        unifiedTabsByWorktree: state.unifiedTabsByWorktree,
-        activeGroupIdByWorktree: state.activeGroupIdByWorktree,
-        groupsByWorktree: state.groupsByWorktree,
-        activeWorktreeId: state.activeWorktreeId,
-        activeTabType: state.activeTabType
-      },
-      t
-    )
+    simulatorTabs: buildSearchableSimulatorTabs({
+      ...scope,
+      unifiedTabsByWorktree: state.unifiedTabsByWorktree,
+      activeGroupIdByWorktree: state.activeGroupIdByWorktree,
+      groupsByWorktree: state.groupsByWorktree,
+      activeWorktreeId: state.activeWorktreeId,
+      activeTabType: state.activeTabType
+    })
   }
 }

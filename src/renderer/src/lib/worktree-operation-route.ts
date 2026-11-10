@@ -35,7 +35,7 @@ export type WorktreeOperationOwnerRecord = {
 }
 
 // settings/runtimeEnvironments come from FolderWorkspaceRuntimeOwnerState's legacy-owner base.
-export type WorktreeOperationRouteState = FolderWorkspaceRuntimeOwnerState & {
+export type WorktreeOperationRouteState = Omit<FolderWorkspaceRuntimeOwnerState, 'repos'> & {
   repos?: readonly Pick<AppState['repos'][number], 'id' | 'connectionId' | 'executionHostId'>[]
   worktreesByRepo?: Record<string, readonly WorktreeOperationOwnerRecord[]>
   detectedWorktreesByRepo?: Record<string, { worktrees: readonly WorktreeOperationOwnerRecord[] }>

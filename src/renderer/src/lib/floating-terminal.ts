@@ -1,3 +1,4 @@
+export const OPEN_FLOATING_TERMINAL_EVENT = 'orca-open-floating-terminal'
 export const TOGGLE_FLOATING_TERMINAL_EVENT = 'orca-toggle-floating-terminal'
 
 // Why: maximize/restore lives in the panel's own keydown handler, but that

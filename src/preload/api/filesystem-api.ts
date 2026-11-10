@@ -1,3 +1,4 @@
+import type { LocalFileAccess } from '../../shared/file-access/local-file-access'
 import type { PathExistenceResult } from '../../shared/path-existence-batch'
 import type { SearchOptions, SearchResult } from '../../shared/code-search-types'
 import type {
@@ -33,6 +34,7 @@ export type FilesystemApi = {
     readDir: (args: { dirPath: string; connectionId?: string }) => Promise<DirEntry[]>
     readFile: (args: {
       filePath: string
+      access?: LocalFileAccess
       connectionId?: string
       includeLocalLogMetadata?: boolean
     }) => Promise<{
@@ -116,6 +118,7 @@ export type FilesystemApi = {
     authorizeExternalPath: (args: { targetPath: string }) => Promise<void>
     stat: (args: {
       filePath: string
+      access?: LocalFileAccess
       connectionId?: string
     }) => Promise<{ size: number; isDirectory: boolean; mtime: number }>
     pathsExist?: (args: {

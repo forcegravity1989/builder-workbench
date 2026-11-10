@@ -10,7 +10,7 @@ vi.mock('electron', () => ({
 }))
 
 type CreateHost = (
-  next: { pairing: unknown; authorityRuntimeId: string },
+  next: { connection: unknown; authorityRuntimeId: string },
   callbacks: Record<string, unknown>
 ) => unknown
 
@@ -94,7 +94,17 @@ async function hostingIdentity(): Promise<string> {
   if (!createHost) {
     throw new Error('client host composition never asked for a host')
   }
-  createHost({ pairing: {}, authorityRuntimeId: 'runtime-a' }, {})
+  createHost(
+    {
+      connection: {
+        endpoint: 'ws://127.0.0.1:9999',
+        hostPublicKeyB64: 'key-a',
+        credential: { kind: 'token', deviceToken: 'token-a' }
+      },
+      authorityRuntimeId: 'runtime-a'
+    },
+    {}
+  )
   const options = hostOptions[0]
   if (!options) {
     throw new Error('client host was never constructed')

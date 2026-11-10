@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import { getEditorFileOperationContext } from '@/lib/editor-file-operation-owner'
 import { getFolderWorkspaceConnectionId } from '@/lib/folder-workspace-connection'
 import { isLocalPathOpenBlocked } from '@/lib/local-path-open-guard'
@@ -25,7 +26,12 @@ type TabEntryAbsolutePathOwnerState = Pick<
 export function isTabEntryAbsolutePathAllowed(
   context: Pick<RuntimeFileOperationArgs, 'connectionId' | 'settings'>
 ): boolean {
-  return !isLocalPathOpenBlocked(context.settings, { connectionId: context.connectionId })
+  return !isLocalPathOpenBlocked(
+    getLocalPathOpenOwnerForRoute({
+      runtimeEnvironmentId: context.settings?.activeRuntimeEnvironmentId,
+      connectionId: context.connectionId
+    })
+  )
 }
 
 export function getTabEntryAllowAbsolutePaths(

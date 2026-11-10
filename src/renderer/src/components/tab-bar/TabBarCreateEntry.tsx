@@ -227,6 +227,9 @@ function TabBarCreateEntrySession({
         setSwitchError(outcome.message)
         return
       }
+      if (outcome.status === 'blocked') {
+        return
+      }
       if (outcome.focus) {
         onQueueSwitchFocus?.(outcome.focus)
       }

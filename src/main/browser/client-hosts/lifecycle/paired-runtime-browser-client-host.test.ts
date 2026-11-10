@@ -1,3 +1,4 @@
+import { pairedRuntimeConnectionFromOffer } from '../../../../shared/remote-runtime/pairing/paired-runtime-connection'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PairingOffer } from '../../../../shared/pairing'
 import type {
@@ -46,7 +47,7 @@ describe('PairedRuntimeBrowserClientHost', () => {
 
     expect(getPageInventory).toHaveBeenCalledOnce()
     expect(subscribeRemoteRuntimeRequestMock).toHaveBeenCalledWith(
-      pairing,
+      pairedRuntimeConnectionFromOffer(pairing),
       'browser.clientHost.attach',
       expect.objectContaining({
         pageInventoryProtocolVersion: 1,
@@ -340,7 +341,7 @@ function createHost(
   pageReconciliationProtocolVersion?: 1
 ): PairedRuntimeBrowserClientHost {
   return new PairedRuntimeBrowserClientHost({
-    pairing,
+    connection: pairedRuntimeConnectionFromOffer(pairing),
     authorityRuntimeId: 'runtime-a',
     browserHostClientId: 'host-a',
     hostCapabilities: ['webview'],

@@ -11,7 +11,7 @@ import {
 const createWebRuntimeSessionBrowserTabMock = vi.hoisted(() => vi.fn())
 const runtimeEnvironmentTransportCall = vi.fn()
 
-vi.mock('@/runtime/web-runtime-session', () => ({
+vi.mock('@/runtime/web-runtime-browser-creation', () => ({
   createWebRuntimeSessionBrowserTab: createWebRuntimeSessionBrowserTabMock
 }))
 
@@ -164,7 +164,7 @@ describe('createBrowserSlice annotations', () => {
     })
   })
 
-  it('keeps annotations for fragment updates and clears them for a route change', () => {
+  it('keeps saved annotations across fragment and route changes', () => {
     const store = createTestStore()
     const tab = store.getState().createBrowserTab('wt-1', 'https://example.com')
     const pageId = tab.activePageId
@@ -180,7 +180,7 @@ describe('createBrowserSlice annotations', () => {
 
     store.getState().setBrowserPageUrl(pageId, 'https://example.com/next')
 
-    expect(store.getState().browserAnnotationsByPageId[pageId]).toBeUndefined()
+    expect(store.getState().browserAnnotationsByPageId[pageId]).toEqual([makeAnnotation(pageId)])
   })
 
   it('can commit a navigation URL without hiding an active recovery error', () => {
@@ -488,7 +488,7 @@ describe('createBrowserSlice annotations', () => {
     expect(store.getState().setTabLabel).not.toHaveBeenCalled()
   })
 
-  it('caps stored browser annotations per page', () => {
+  it('refuses overflow annotations without evicting saved notes', () => {
     const store = createTestStore()
     const tab = store.getState().createBrowserTab('wt-1', 'https://example.com')
     const pageId = tab.activePageId
@@ -502,7 +502,8 @@ describe('createBrowserSlice annotations', () => {
 
     const annotations = store.getState().browserAnnotationsByPageId[pageId] ?? []
     expect(annotations).toHaveLength(GRAB_BUDGET.annotationsMaxPerPage)
-    expect(annotations[0]?.id).toBe('annotation-3')
+    expect(annotations[0]?.id).toBe('annotation-0')
+    expect(annotations.at(-1)?.id).toBe(`annotation-${GRAB_BUDGET.annotationsMaxPerPage - 1}`)
   })
 
   it('sanitizes persistent annotation payloads at the store boundary', () => {

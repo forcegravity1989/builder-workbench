@@ -1,3 +1,4 @@
+import { browserCookieImportFailure } from '../../../shared/browser-cookie-import-failure-copy'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CookiesGetFilter } from 'electron'
 
@@ -57,7 +58,7 @@ vi.mock('./browser-cookie-clear-store', () => ({
 import { importCookiesFromBrowser } from './browser-cookie-import'
 import { importCookiesFromFile } from './imports/import-cookie-file'
 import { createChromiumCookieTestDatabase } from './browser-cookie-import-test-database'
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -104,10 +105,7 @@ describe('validated cookie replacement', () => {
 
     const result = await importCookiesFromFile(filePath, 'persist:test')
 
-    expect(result).toEqual({
-      ok: false,
-      reason: 'No valid cookies found. 1 entries were skipped due to missing or invalid fields.'
-    })
+    expect(result).toEqual(browserCookieImportFailure('fileNoValidCookies', { count: 1 }))
     expect(cookiesGetMock).not.toHaveBeenCalled()
     expect(cookiesRemoveMock).not.toHaveBeenCalled()
     expect(cookiesSetMock).not.toHaveBeenCalled()
@@ -204,7 +202,8 @@ describe('native Chromium integrity-cookie accounting', () => {
       expect(cookiesSetMock).not.toHaveBeenCalled()
       expect(setPendingCookieImportMock).not.toHaveBeenCalled()
       expect(clearPendingCookieImportMock).not.toHaveBeenCalled()
-      expect(readdirSync(join(tmpDir, 'userData', 'cookie-import-staging'))).toEqual([])
+      const stagingPath = join(tmpDir, 'userData', 'cookie-import-staging')
+      expect(existsSync(stagingPath) ? readdirSync(stagingPath) : []).toEqual([])
     } finally {
       platformSpy.mockRestore()
     }

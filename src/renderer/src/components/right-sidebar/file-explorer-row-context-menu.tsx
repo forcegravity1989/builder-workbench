@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import React, { useCallback } from 'react'
 import {
   Copy,
@@ -287,9 +288,12 @@ export function FileExplorerRowContextMenu({
             ? state.repos.find((repo) => repo.id === activeWorktree.repoId)
             : null
           if (
-            isLocalPathOpenBlocked(state.settings, {
-              connectionId: activeRepo?.connectionId ?? null
-            })
+            isLocalPathOpenBlocked(
+              getLocalPathOpenOwnerForRoute({
+                runtimeEnvironmentId: state.settings?.activeRuntimeEnvironmentId,
+                connectionId: activeRepo?.connectionId ?? null
+              })
+            )
           ) {
             showLocalPathOpenBlockedToast()
             return

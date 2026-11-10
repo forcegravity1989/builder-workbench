@@ -140,6 +140,37 @@ describe('BrowserSiteDisplayController zoom', () => {
   })
 })
 
+describe('BrowserSiteDisplayController guest recreation', () => {
+  it('restores saved site zoom after eviction without letting a changed default or another profile hijack it', () => {
+    const ui = uiStore()
+    const first = new BrowserSiteDisplayController()
+    first.followZoomSettings(ui)
+    const original = fakeGuest('https://github.com/a')
+    first.onGuestRegistered(original, 'work')
+    first.zoomPage(original.id, 'in')
+    expect(percent(original)).toBe(110)
+    first.onGuestRetired(original.id)
+    expect(first.zoomPage(original.id, 'in')).toBeNull()
+
+    ui.update({ browserDefaultZoomLevel: normalizeBrowserPageZoomLevel(1.25) })
+    const restored = new BrowserSiteDisplayController()
+    restored.followZoomSettings(ui)
+    const replacement = fakeGuest('https://github.com/a')
+    const otherProfile = fakeGuest('https://github.com/a')
+    restored.onGuestRegistered(replacement, 'work')
+    restored.onGuestRegistered(otherProfile, 'personal')
+    expect(percent(replacement)).toBe(110)
+    expect(percent(otherProfile)).toBe(125)
+
+    commit(restored, replacement, 'https://docs.example.com/')
+    expect(percent(replacement)).toBe(125)
+    commit(restored, replacement, 'https://github.com/b')
+    expect(percent(replacement)).toBe(110)
+    expect(restored.zoomPage(replacement.id, 'reset')).toMatchObject({ siteHasZoom: false })
+    expect(percent(replacement)).toBe(125)
+  })
+})
+
 describe('BrowserSiteDisplayController color scheme', () => {
   it('uses chat media for document guests without changing zoom, and upgrades browser registration', () => {
     const controller = new BrowserSiteDisplayController()

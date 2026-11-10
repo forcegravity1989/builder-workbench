@@ -1,6 +1,6 @@
 import type { Duplex, Readable, Writable } from 'node:stream'
-import type { SshRemoteFileOptions } from '../../ssh/file-transfer/ssh-connection-file-transfers'
-import type { SshExecOptions } from '../../ssh/connection/ssh-exec-options'
+import type { SshRemoteFileOptions } from '../../ssh/ssh-connection'
+import type { SshExecOptions } from '../../ssh/ssh-connection-utils'
 
 type RemoteFileWriteOptions = SshRemoteFileOptions & { signal?: AbortSignal }
 

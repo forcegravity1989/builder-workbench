@@ -14,7 +14,7 @@ import {
   readCopyNotes,
   type DiffCommentSelectorState
 } from '../../worktree-diff-comments-selector'
-import { focusFreeRouteStateOf } from '@/lib/editor-file-operation-provenance'
+import { focusFreeRouteStateOf } from '@/lib/focus-free-worktree-route-state'
 import {
   resolveSourceCopy,
   resolveSourceFolderHost,

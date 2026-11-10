@@ -1,11 +1,9 @@
-import { DirectoryTransferBudget } from './file-transfer/ssh-directory-transfer-budget'
 import { spawn } from 'node:child_process'
-import { lstat, opendir } from 'node:fs/promises'
+import { lstat, readdir } from 'node:fs/promises'
 import { join as pathJoin } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import type { SshTarget } from '../../shared/ssh-types'
-import { quotePosixShell } from '../../shared/shell/launch/shell-argument-quoting'
-import { wrapRemoteCommandForPosixShell } from './remote-exec/ssh-posix-command-wrapper'
+import { shellEscape, wrapRemoteCommandForPosixShell } from './ssh-connection-utils'
 import { findSystemSsh } from './system-ssh-binary'
 import {
   buildSshArgs,
@@ -23,11 +21,12 @@ import {
   waitForProcess,
   type ProcessResult
 } from './system-ssh-operation-lifecycle'
-import { uploadFileViaSystemSsh, writeBufferViaSystemSsh } from './system-ssh-file-binary-transfer'
 import {
+  uploadFileViaSystemSsh,
   WINDOWS_STDIN_WRITE_CHUNK_BYTES,
-  WINDOWS_STDIN_WRITE_TIMEOUT_MS
-} from './system-ssh-windows-write-strategy'
+  WINDOWS_STDIN_WRITE_TIMEOUT_MS,
+  writeBufferViaSystemSsh
+} from './system-ssh-file-binary-transfer'
 import {
   isSftpPathUnsupportedError,
   isSftpUnavailableError,
@@ -61,7 +60,7 @@ export async function uploadDirectoryViaSystemSsh(
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
   })
-  const remoteCommand = `mkdir -p ${quotePosixShell(remoteDir)} && tar -xzf - -C ${quotePosixShell(remoteDir)}`
+  const remoteCommand = `mkdir -p ${shellEscape(remoteDir)} && tar -xzf - -C ${shellEscape(remoteDir)}`
   const sshExtract = spawn(
     sshPath,
     [...buildSshArgs(target, options), wrapRemoteCommandForPosixShell(remoteCommand)],
@@ -80,11 +79,11 @@ export async function uploadDirectoryViaSystemSsh(
         killProcess(tarCreate)
         killProcess(sshExtract)
       },
-      settleUploadPipeline(
+      Promise.all([
         waitForProcess(tarCreate, 'local tar relay upload'),
-        waitForProcess(sshExtract, 'system ssh relay upload', 'remote'),
+        waitForProcess(sshExtract, 'system ssh relay upload'),
         pipeline(tarCreate.stdout!, sshExtract.stdin!)
-      )
+      ]).then(([tar, ssh]) => [tar, ssh] as const)
     )
   } catch (err) {
     killProcess(tarCreate)
@@ -98,25 +97,6 @@ export async function uploadDirectoryViaSystemSsh(
   if (sshResult?.stderr.trim()) {
     console.warn(`[ssh-system] ${sshResult.label} stderr: ${sshResult.stderr.trim()}`)
   }
-}
-
-/** Local tar can fail downstream only after the far end stops reading, which rejects the pipe first; any other tar failure caused the remote EOF. */
-async function settleUploadPipeline(
-  local: Promise<ProcessResult>,
-  remote: Promise<ProcessResult>,
-  pipe: Promise<void>
-): Promise<readonly [ProcessResult, ProcessResult]> {
-  const [tar, ssh, piped] = await Promise.allSettled([local, remote, pipe])
-  if (tar.status === 'rejected') {
-    throw ssh.status === 'rejected' && piped.status === 'rejected' ? ssh.reason : tar.reason
-  }
-  if (ssh.status === 'rejected') {
-    throw ssh.reason
-  }
-  if (piped.status === 'rejected') {
-    throw piped.reason
-  }
-  return [tar.value, ssh.value]
 }
 
 export async function writeFileViaSystemSsh(
@@ -139,34 +119,38 @@ async function uploadDirectoryViaSystemSshWindows(
   if (!hostPlatform) {
     throw new Error('Windows system SSH upload requires a remote host platform')
   }
-  const plan = await collectLocalUploadPlan(localDir, remoteDir, hostPlatform, options.signal)
+  const plan = await collectWindowsUploadPlan(localDir, remoteDir, hostPlatform, options.signal)
   await createWindowsUploadDirectories(target, plan.directories, options)
   for (const file of plan.files) {
     throwIfAborted(options.signal)
-    // Reuse source verification (O_NOFOLLOW and stability checks), transport fallback and unique staging from single-file uploads.
+    // Reuses the single-file upload: it already opens O_NOFOLLOW, verifies the source did not
+    // change under it, and splits the bytes into stdin-sized writes staged under a partial name.
     await uploadFileViaSystemSsh(target, file.localPath, file.remotePath, options)
   }
 }
 
-export type LocalUploadPlan = {
+type WindowsUploadPlan = {
   directories: string[]
   files: { localPath: string; remotePath: string }[]
 }
 
-/** Plan paths separately from payloads so per-file transport selection avoids PowerShell 5.1 redirected-stdin hangs (#16432). */
-export async function collectLocalUploadPlan(
+/**
+ * #16432: this used to base64 every artifact into one JSON array and push the whole ~1.9MB string
+ * into one PowerShell stdin. Base64 inflates the payload 1.33x, and Windows PowerShell 5.1 cannot
+ * read a stdin that large over a non-pty ssh exec — it blocks forever instead of failing. Nothing
+ * about a directory upload requires one frame: the plan carries paths only, and the bytes go per
+ * file, in writes bounded by WINDOWS_STDIN_WRITE_CHUNK_BYTES.
+ */
+async function collectWindowsUploadPlan(
   localDir: string,
   remoteDir: string,
   hostPlatform: RemoteHostPlatform,
   signal: AbortSignal | undefined,
-  plan: LocalUploadPlan = { directories: [], files: [] },
-  budget = new DirectoryTransferBudget(),
-  depth = 0
-): Promise<LocalUploadPlan> {
-  throwIfAborted(signal)
-  budget.record([localDir, remoteDir], depth)
+  plan: WindowsUploadPlan = { directories: [], files: [] }
+): Promise<WindowsUploadPlan> {
   plan.directories.push(remoteDir)
-  for await (const entry of await opendir(localDir)) {
+  const dirEntries = await readdir(localDir, { withFileTypes: true })
+  for (const entry of dirEntries) {
     throwIfAborted(signal)
     const localPath = pathJoin(localDir, entry.name)
     const remotePath = joinRemotePath(hostPlatform, remoteDir, entry.name)
@@ -175,24 +159,22 @@ export async function collectLocalUploadPlan(
       continue
     }
     if (statResult.isDirectory()) {
-      await collectLocalUploadPlan(
-        localPath,
-        remotePath,
-        hostPlatform,
-        signal,
-        plan,
-        budget,
-        depth + 1
-      )
+      await collectWindowsUploadPlan(localPath, remotePath, hostPlatform, signal, plan)
       continue
     }
-    budget.record([localPath, remotePath], depth + 1)
     plan.files.push({ localPath, remotePath })
   }
   return plan
 }
 
-/** Prefer SFTP even for directory metadata: bounded PowerShell stdin batches still risk the per-read 5.1 hang (#16432). */
+/**
+ * Creates the upload's directories, preferring sftp's own `mkdir`.
+ *
+ * The PowerShell fallback keeps the JSON envelope, batched under one stdin's worth: a path list is
+ * metadata, so it stays in the hundreds of bytes even for a deep tree. It is still a redirected
+ * stdin read though, so on Windows PowerShell 5.1 it carries the same defect as any other — which
+ * is why sftp is tried first even for a payload this small.
+ */
 async function createWindowsUploadDirectories(
   target: SshTarget,
   directories: readonly string[],
@@ -261,11 +243,18 @@ function makeWindowsCreateDirectoriesCommand(): string {
   return powerShellCommand(
     [
       '$ErrorActionPreference = "Stop"',
-      // SFTP refusal/path fallback still risks the 5.1 empty-pipe hang, even for small metadata (#16432).
+      // Reached only where the host has no sftp subsystem. Windows PowerShell 5.1 can lose a
+      // redirected stdin for good when a read finds it empty (#16432); a batch this small usually
+      // arrives in one piece, and "usually" is exactly why sftp is preferred.
       '$reader = New-Object System.IO.StreamReader([Console]::OpenStandardInput())',
       'try { $json = $reader.ReadToEnd() } finally { $reader.Dispose() }',
       'if ([string]::IsNullOrWhiteSpace($json)) { return }',
-      // ConvertFrom-Json emits one array object; @() nests it and stringifies all paths together. Cast to string[] to iterate paths.
+      // `[string[]]`, not `@(...)`: ConvertFrom-Json emits the parsed array as a single pipeline
+      // object, so `@(...)` wraps it in *another* array and the loop variable binds to the whole
+      // thing. `[string]` of that is the paths joined by spaces, which CreateDirectory rejects with
+      // "The given path's format is not supported". It only ever worked for a one-element batch,
+      // where stringifying a single-element array happens to yield the element. Measured on
+      // WindowsPowerShell 5.1.26100 against a three-directory tree.
       'foreach ($path in [string[]]($json | ConvertFrom-Json)) {',
       '  $null = [System.IO.Directory]::CreateDirectory($path)',
       '}'

@@ -540,7 +540,11 @@ import {
   TerminalUpdateViewport
 } from './terminal-viewport-schemas-params'
 import { UpdaterCheckParams } from './updater-params'
-import { WorkspacePortKillParams, WorkspacePortScanParams } from './workspace-ports-params'
+import {
+  WorkspacePortKillParams,
+  WorkspacePortProbePageParams,
+  WorkspacePortScanParams
+} from './workspace-ports-params'
 import { WorktreeCreate, WorktreePrefetchCreateBase } from './worktree-create-params'
 import {
   WorktreeActivate,
@@ -1281,6 +1285,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.versionWorkspace.prepare': VersionWorkspacePrepareSchema,
   'workbench.workflow.comments': WorkflowCommentsRequestSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
+  'workspacePorts.probePage': WorkspacePortProbePageParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,
   'worktree.create': WorktreeCreate,

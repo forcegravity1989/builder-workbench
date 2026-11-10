@@ -82,6 +82,56 @@ describe('registerFilesystemHandlers', () => {
     invalidateAuthorizedRootsCache()
   })
 
+  it('reads a user-named file without granting its path or sibling to later requests', async () => {
+    registerFilesystemHandlers(store as never)
+    const filePath = path.resolve('/outside-workspace/browser-artifact.html')
+    statMock.mockResolvedValue({
+      size: 12,
+      isDirectory: () => false,
+      isFile: () => true,
+      mtimeMs: 1
+    })
+    readFileMock.mockResolvedValue(Buffer.from('<p>page</p>'))
+    await expect(
+      handlers.get('fs:readFile')!(null, { filePath, access: { kind: 'user-file' } })
+    ).resolves.toMatchObject({ content: '<p>page</p>', isBinary: false })
+    await expect(handlers.get('fs:readFile')!(null, { filePath })).rejects.toThrow('Access denied')
+    await expect(
+      handlers.get('fs:stat')!(null, { filePath: path.join(path.dirname(filePath), 'other.txt') })
+    ).rejects.toThrow('Access denied')
+  })
+
+  it('refuses relative names and nonregular user files without changing SSH ownership', async () => {
+    registerFilesystemHandlers(store as never)
+    const access = { kind: 'user-file' }
+    await expect(
+      handlers.get('fs:readFile')!(null, { filePath: 'relative.html', access })
+    ).rejects.toThrow('absolute path')
+    statMock.mockResolvedValue({
+      size: 0,
+      isFile: () => false,
+      isDirectory: () => true,
+      mtimeMs: 1
+    })
+    await expect(
+      handlers.get('fs:readFile')!(null, {
+        filePath: path.resolve('/outside-workspace/folder'),
+        access
+      })
+    ).rejects.toThrow('Not a regular file')
+    getSshFilesystemProviderMock.mockReturnValueOnce({
+      readFile: vi.fn().mockRejectedValue(new Error('remote denied'))
+    })
+    await expect(
+      handlers.get('fs:readFile')!(null, {
+        filePath: path.resolve('/outside-workspace/file'),
+        access,
+        connectionId: 'ssh-1'
+      })
+    ).rejects.toThrow('remote denied')
+    expect(readFileMock).not.toHaveBeenCalled()
+  })
+
   it('re-sorts SSH provider listings directories-first in natural order', async () => {
     // Why: the remote relay may be an older build that still sorts lexicographically.
     getSshFilesystemProviderMock.mockReturnValueOnce({

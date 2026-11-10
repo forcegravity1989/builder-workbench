@@ -169,7 +169,7 @@ describe('file import excludes the Google cookie family', () => {
       googleCookiesSkipped: 2,
       domains: ['linear.app', 'youtube.com']
     })
-    expect(cookiesRemoveMock.mock.calls).toEqual([['https://linear.app/', 'old-linear']])
+    expect(cookiesRemoveMock).not.toHaveBeenCalled()
     expect(cookiesSetMock.mock.calls.map(([details]) => details.domain)).toEqual([
       '.youtube.com',
       '.linear.app'

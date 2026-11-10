@@ -1,4 +1,3 @@
-import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { getConnectionIdForFileFromState } from '@/lib/connection-owner-resolution'
@@ -62,8 +61,8 @@ export function openDocPreviewExternally(document: DocPreviewDocument): void {
     worktreeRoot !== null &&
     // Why: a twin reads as "no server", which is not proof this machine holds the file.
     !isTwinWorkspace(state, document.worktreeId)
-  if (ownedByThisMachine && canClientOsOpenWorkspaceFile(fileContext)) {
-    void window.api.shell.openFilePath(document.filePath, LOCAL_EXECUTION_HOST_ID)
+  if (ownedByThisMachine && canClientOsOpenWorkspaceFile(fileContext, document.filePath)) {
+    void window.api.shell.openFilePath(document.filePath)
     return
   }
   // Refuse unresolved ownership: the download fallback could otherwise read this machine’s unrelated same-named file after its remote owner disappears.

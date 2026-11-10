@@ -1,3 +1,5 @@
+import type { LocalFileAccess } from '../../../shared/file-access/local-file-access'
+import { resolveLocalFileRequestPath } from './local-user-file-access'
 import {
   capturePathExistence,
   validatePathExistenceBatch,
@@ -70,7 +72,12 @@ export function registerFilesystemReadHandlers(context: FilesystemHandlerContext
     'fs:readFile',
     async (
       _event,
-      args: { filePath: string; connectionId?: string; includeLocalLogMetadata?: boolean }
+      args: {
+        filePath: string
+        connectionId?: string
+        includeLocalLogMetadata?: boolean
+        access?: LocalFileAccess
+      }
     ): Promise<{
       content: string
       isBinary: boolean
@@ -82,11 +89,14 @@ export function registerFilesystemReadHandlers(context: FilesystemHandlerContext
         const provider = requireSshFilesystemProvider(args.connectionId)
         return provider.readFile(args.filePath)
       }
-      const filePath = await resolveAuthorizedPath(args.filePath, store)
+      const filePath = await resolveLocalFileRequestPath(args.filePath, args.access, store)
+      const stats = await stat(filePath)
+      if (args.access?.kind === 'user-file' && !stats.isFile()) {
+        throw new Error('Not a regular file')
+      }
       if (args.includeLocalLogMetadata === true) {
         return readLocalLogSnapshot(filePath)
       }
-      const stats = await stat(filePath)
       const mimeType = PREVIEWABLE_BINARY_MIME_TYPES[extname(filePath).toLowerCase()]
       const sizeLimit = mimeType ? MAX_PREVIEWABLE_BINARY_SIZE : MAX_TEXT_FILE_SIZE
       if (stats.size > sizeLimit) {
@@ -139,14 +149,14 @@ export function registerFilesystemReadHandlers(context: FilesystemHandlerContext
     'fs:stat',
     async (
       _event,
-      args: { filePath: string; connectionId?: string }
+      args: { filePath: string; connectionId?: string; access?: LocalFileAccess }
     ): Promise<{ size: number; isDirectory: boolean; mtime: number }> => {
       if (args.connectionId) {
         const provider = requireSshFilesystemProvider(args.connectionId)
         const result = await provider.stat(args.filePath)
         return { size: result.size, isDirectory: result.type === 'directory', mtime: result.mtime }
       }
-      const filePath = await resolveAuthorizedPath(args.filePath, store)
+      const filePath = await resolveLocalFileRequestPath(args.filePath, args.access, store)
       const stats = await stat(filePath)
       return { size: stats.size, isDirectory: stats.isDirectory(), mtime: stats.mtimeMs }
     }

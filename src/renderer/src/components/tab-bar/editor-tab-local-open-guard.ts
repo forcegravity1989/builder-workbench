@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import { isLocalPathOpenBlocked } from '@/lib/local-path-open-guard'
 import { settingsForRuntimeOwner } from '@/runtime/runtime-rpc-client'
@@ -7,7 +8,11 @@ export function shouldBlockEditorTabLocalOpen(
   fileRuntimeEnvironmentId: string | null | undefined,
   connectionId: string | null | undefined
 ): boolean {
-  return isLocalPathOpenBlocked(settingsForRuntimeOwner(settings, fileRuntimeEnvironmentId), {
-    connectionId
-  })
+  return isLocalPathOpenBlocked(
+    getLocalPathOpenOwnerForRoute({
+      runtimeEnvironmentId: settingsForRuntimeOwner(settings, fileRuntimeEnvironmentId)
+        ?.activeRuntimeEnvironmentId,
+      connectionId
+    })
+  )
 }

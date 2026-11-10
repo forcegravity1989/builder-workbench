@@ -123,7 +123,7 @@ export function resolveMarkdownPreviewHttpOpenOptions(
   isMac: boolean,
   worktreeId: string | null,
   sourceOwner: HttpLinkSourceOwner
-): OpenHttpLinkOptions {
+): OpenHttpLinkOptions & { sourceOwner: HttpLinkSourceOwner } {
   if (isMarkdownPreviewSystemBrowserModifier(event, isMac)) {
     return { worktreeId, modifierHeld: true, sourceOwner }
   }

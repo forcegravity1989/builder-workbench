@@ -4,7 +4,7 @@ import { createServer, type Server, type Socket } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DISABLED_CHROMIUM_FEATURES } from '../startup/disabled-chromium-features'
-import { runBrowserRouteEgressElectron } from './browser-route-egress-electron-launch'
+import { runBrowserRouteEgressElectron } from './network/egress/browser-route-egress-electron-launch'
 import { browserRouteH3EgressElectronMain } from './browser-route-h3-egress-electron-main'
 
 const PROBE_HOST = '127.0.0.1'

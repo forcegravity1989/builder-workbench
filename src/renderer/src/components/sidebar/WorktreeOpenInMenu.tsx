@@ -1,3 +1,4 @@
+import { getLocalPathOpenOwnerForRoute } from '@/lib/local-path-open-guard'
 import React, { useCallback } from 'react'
 import { ExternalLink, FolderOpen } from 'lucide-react'
 import { toast } from 'sonner'
@@ -56,7 +57,12 @@ export function getOpenInEntryAvailability(
   connectionId?: string | null
 ): { disabled: boolean; metadata?: string } {
   if (entry.target === 'file-manager') {
-    const disabled = isLocalPathOpenBlocked(settings, { connectionId })
+    const disabled = isLocalPathOpenBlocked(
+      getLocalPathOpenOwnerForRoute({
+        runtimeEnvironmentId: settings?.activeRuntimeEnvironmentId,
+        connectionId
+      })
+    )
     return disabled
       ? {
           disabled: true,
@@ -250,7 +256,14 @@ export async function openWorktreePath(args: {
 }): Promise<void> {
   const settings = useAppStore.getState().settings
   if (args.target === 'file-manager') {
-    if (isLocalPathOpenBlocked(settings, { connectionId: args.connectionId ?? null })) {
+    if (
+      isLocalPathOpenBlocked(
+        getLocalPathOpenOwnerForRoute({
+          runtimeEnvironmentId: settings?.activeRuntimeEnvironmentId,
+          connectionId: args.connectionId ?? null
+        })
+      )
+    ) {
       showLocalPathOpenBlockedToast()
       return
     }

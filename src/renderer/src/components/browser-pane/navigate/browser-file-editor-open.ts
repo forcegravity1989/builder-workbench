@@ -23,7 +23,7 @@ export async function openBrowserFileSource(worktreeId: string, filePath: string
   const worktreeRoot = state.getKnownWorktreeById(worktreeId)?.path ?? null
   try {
     const stat = await statUserOpenedPath(
-      { target: { kind: 'local' }, worktreeId, worktreePath: worktreeRoot },
+      { settings: { activeRuntimeEnvironmentId: null }, worktreeId, worktreePath: worktreeRoot },
       filePath
     )
     if (

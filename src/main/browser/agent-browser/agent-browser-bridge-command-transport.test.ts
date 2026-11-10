@@ -53,11 +53,12 @@ vi.mock('../cdp/commands/cdp-bridge', () => ({
 import { AgentBrowserBridge } from './agent-browser-bridge'
 import { AGENT_BROWSER_IDLE_TIMEOUT_MS } from './helper-process/agent-browser-process-environment'
 import {
+  agentBrowserCommandsIn,
+  answerAgentBrowserCommands,
   createSucceedWith,
   mockBrowserManager,
   overrideBridgeWebContentsLookup,
-  resetAgentBrowserBridgeMocks,
-  type ExecFileCallback
+  resetAgentBrowserBridgeMocks
 } from './testing/agent-browser-bridge-test-harness'
 
 overrideBridgeWebContentsLookup(AgentBrowserBridge.prototype, webContentsFromIdMock)
@@ -65,11 +66,15 @@ overrideBridgeWebContentsLookup(AgentBrowserBridge.prototype, webContentsFromIdM
 const succeedWith = createSucceedWith(execFileMock, stdinWrites)
 
 function failWith(error: string): void {
-  execFileMock.mockImplementation(
-    (_bin: string, _args: string[], _opts: unknown, cb: ExecFileCallback) => {
-      cb(null, JSON.stringify({ success: false, error }), '')
-    }
-  )
+  answerAgentBrowserCommands(execFileMock, stdinWrites, (command, cb) => {
+    cb(
+      null,
+      JSON.stringify(
+        command.includes('close') ? { success: true, data: null } : { success: false, error }
+      ),
+      ''
+    )
+  })
 }
 
 describe('AgentBrowserBridge', () => {
@@ -93,33 +98,48 @@ describe('AgentBrowserBridge', () => {
   })
 
   it('handles malformed JSON from agent-browser', async () => {
-    execFileMock.mockImplementation(
-      (_bin: string, _args: string[], _opts: unknown, cb: ExecFileCallback) => {
-        cb(null, 'not json at all', '')
-      }
-    )
-    await expect(bridge.snapshot()).rejects.toThrow()
+    answerAgentBrowserCommands(execFileMock, stdinWrites, (command, cb) => {
+      cb(
+        null,
+        command.includes('close')
+          ? JSON.stringify({ success: true, data: null })
+          : 'not json at all',
+        ''
+      )
+    })
+    await expect(bridge.snapshot()).rejects.toMatchObject({
+      code: 'browser_error',
+      message: 'Unexpected output from agent-browser: not json at all'
+    })
   })
-
-  // ── Command queue serialization ──
 
   it('serializes concurrent commands per session', async () => {
     const commandCalls: string[][] = []
-
-    execFileMock.mockImplementation(
-      (_bin: string, args: string[], _opts: unknown, cb: ExecFileCallback) => {
-        commandCalls.push(args)
-        cb(null, JSON.stringify({ success: true, data: { ok: true } }), '')
+    let releaseSnapshot: (() => void) | null = null
+    answerAgentBrowserCommands(execFileMock, stdinWrites, (command, cb) => {
+      commandCalls.push(command)
+      if (command[0] === 'snapshot') {
+        releaseSnapshot = () => cb(null, JSON.stringify({ success: true, data: { ok: true } }), '')
+        return
       }
-    )
+      cb(null, JSON.stringify({ success: true, data: { ok: true } }), '')
+    })
 
-    const [r1, r2] = await Promise.all([bridge.snapshot(), bridge.click('@e1')])
-    expect(r1).toEqual({ browserPageId: 'tab-1', ok: true })
+    const pending = Promise.all([bridge.snapshot(), bridge.click('@e1')])
+    await vi.waitFor(() => expect(releaseSnapshot).not.toBeNull())
+    expect(commandCalls.some((command) => command[0] === 'click')).toBe(false)
+    releaseSnapshot!()
+    const [r1, r2] = await pending
+    expect(r1).toEqual({
+      browserPageId: 'tab-1',
+      url: 'https://example.com',
+      title: 'Example',
+      ok: true
+    })
     expect(r2).toEqual({ ok: true })
-    // Why: close runs first (stale session cleanup), then commands execute sequentially
-    const snapshotIdx = commandCalls.findIndex((a) => a.includes('snapshot'))
-    const clickIdx = commandCalls.findIndex((a) => a.includes('click'))
-    expect(snapshotIdx).toBeLessThan(clickIdx)
+    expect(commandCalls.findIndex((command) => command[0] === 'snapshot')).toBeLessThan(
+      commandCalls.findIndex((command) => command[0] === 'click')
+    )
   })
 
   it('enforces conditional wait timeouts at the bridge layer', async () => {
@@ -127,7 +147,7 @@ describe('AgentBrowserBridge', () => {
 
     await bridge.wait({ selector: '#ready', timeout: 1200 })
 
-    const args = execFileMock.mock.calls.at(-1)![1] as string[]
+    const args = agentBrowserCommandsIn(stdinWrites).at(-1)!
     const options = execFileMock.mock.calls.at(-1)![2] as { timeout?: number; env?: unknown }
     expect(args).toContain('wait')
     expect(args).toContain('#ready')

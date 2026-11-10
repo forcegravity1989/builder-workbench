@@ -7,7 +7,11 @@ import { BrowserClientFileChannelTransport } from './browser-client-file-channel
 import { PairedRuntimeBrowserClientHost } from '../lifecycle/paired-runtime-browser-client-host'
 
 const leaseOptions = {
-  pairing: {} as never,
+  connection: {
+    endpoint: 'ws://127.0.0.1:6768',
+    hostPublicKeyB64: 'test-key',
+    credential: { kind: 'token' as const, deviceToken: 'test-token' }
+  },
   authorityRuntimeId: 'runtime-1',
   browserHostClientId: 'host-1',
   hostCapabilities: ['webview'],
@@ -113,7 +117,11 @@ describe('browser file channel negotiation', () => {
 
   it('separates a host that never offered the channel from one whose lease is gone', () => {
     const host = new PairedRuntimeBrowserClientHost({
-      pairing: {} as never,
+      connection: {
+        endpoint: 'ws://127.0.0.1:6768',
+        hostPublicKeyB64: 'test-key',
+        credential: { kind: 'token' as const, deviceToken: 'test-token' }
+      },
       authorityRuntimeId: 'runtime-1',
       browserHostClientId: 'host-1',
       hostCapabilities: ['webview'],

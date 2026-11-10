@@ -1,8 +1,69 @@
 import { createNonSecureContextUuid } from '../../../../../shared/non-secure-context-uuid'
-import type { TabGroup } from '../../../../../shared/tab-types'
-import type { TabsSlice, TabsSliceGet, TabsSliceSet } from './tabs-slice-contract'
+import type { TabGroup, TabGroupLayoutNode } from '../../../../../shared/tab-types'
+import type { TabSplitTarget, TabsSlice, TabsSliceGet, TabsSliceSet } from './tabs-slice-contract'
 import { activeSurfacePatchMatchesState, buildActiveSurfacePatch } from './tabs-surface'
 import { buildSplitNode, collapseGroupLayout, replaceLeaf } from './tabs-layout'
+
+type SplitGroupState = Pick<
+  TabsSlice,
+  'groupsByWorktree' | 'layoutByWorktree' | 'activeGroupIdByWorktree'
+>
+
+/** A captured split source must still exist in both records and the drawn layout. */
+export function assertSplitGroupSource(
+  state: SplitGroupState,
+  worktreeId: string,
+  sourceGroupId: string
+): void {
+  const layout = state.layoutByWorktree[worktreeId]
+  const containsSource = (node: TabGroupLayoutNode): boolean =>
+    node.type === 'leaf'
+      ? node.groupId === sourceGroupId
+      : containsSource(node.first) || containsSource(node.second)
+  if (
+    !(state.groupsByWorktree[worktreeId] ?? []).some((group) => group.id === sourceGroupId) ||
+    (layout && !containsSource(layout))
+  ) {
+    throw new Error('The split source group is no longer available.')
+  }
+}
+
+/** Places `newGroup` beside the target's source group; callers that fill it do so in the same update. */
+export function insertSplitGroup(
+  state: SplitGroupState,
+  worktreeId: string,
+  target: TabSplitTarget,
+  newGroup: TabGroup
+): SplitGroupState {
+  const { sourceGroupId, splitDirection } = target
+  assertSplitGroupSource(state, worktreeId, sourceGroupId)
+  const currentLayout =
+    state.layoutByWorktree[worktreeId] ?? ({ type: 'leaf', groupId: sourceGroupId } as const)
+  const replacement = buildSplitNode(
+    sourceGroupId,
+    newGroup.id,
+    splitDirection === 'left' || splitDirection === 'right' ? 'horizontal' : 'vertical',
+    splitDirection === 'left' || splitDirection === 'up' ? 'first' : 'second'
+  )
+  return {
+    groupsByWorktree: {
+      ...state.groupsByWorktree,
+      [worktreeId]: [...(state.groupsByWorktree[worktreeId] ?? []), newGroup]
+    },
+    layoutByWorktree: {
+      ...state.layoutByWorktree,
+      [worktreeId]: replaceLeaf(currentLayout, sourceGroupId, replacement)
+    },
+    activeGroupIdByWorktree:
+      target.activate === false
+        ? state.activeGroupIdByWorktree
+        : { ...state.activeGroupIdByWorktree, [worktreeId]: newGroup.id }
+  }
+}
+
+export function emptySplitGroup(worktreeId: string, groupId: string): TabGroup {
+  return { id: groupId, worktreeId, activeTabId: null, tabOrder: [] }
+}
 
 export function createTabsGroupActions(
   set: TabsSliceSet,

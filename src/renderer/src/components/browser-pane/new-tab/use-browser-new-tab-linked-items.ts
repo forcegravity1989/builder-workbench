@@ -52,9 +52,7 @@ export function useBrowserNewTabLinkedItems(
     issueCacheKey: review.issueCacheKey,
     fetchIssue: foundation.fetchIssue,
     showLinearIssue: true,
-    fetchLinearIssue: foundation.fetchLinearIssue,
-    linearSourceContext: review.linearSourceContext,
-    linearWorkspaceId: review.linearWorkspaceId
+    fetchLinearIssue: foundation.fetchLinearIssue
   })
   const rows = getWorkspaceLinkedItemRows(
     worktree,

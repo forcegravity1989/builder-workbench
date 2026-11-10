@@ -75,7 +75,7 @@ async function settleAcknowledgements(): Promise<void> {
 describe('live screencast image allocation', () => {
   it('owns pooled and offset images through refused sends and keeps encoded bytes independent', async () => {
     vi.useFakeTimers()
-    const bytes = readFileSync(resolve('resources/tray/orca-menu-barTemplate.png'))
+    const bytes = readFileSync(resolve('resources/tray/workbench.png'))
     const data = bytes.toString('base64')
     const expectedDigest = digest(bytes)
     const pooled = Buffer.from(data, 'base64')
@@ -110,8 +110,8 @@ describe('live screencast image allocation', () => {
           if (!frame) {
             throw new Error('Pooled frame was not encoded')
           }
-          expect(frame.metadata.imageWidth).toBe(22)
-          expect(frame.metadata.imageHeight).toBe(14)
+          expect(frame.metadata.imageWidth).toBe(18)
+          expect(frame.metadata.imageHeight).toBe(18)
           expect(digest(frame.image)).toBe(expectedDigest)
           expect(wire.buffer).not.toBe(decoded.buffer)
         }

@@ -12,6 +12,7 @@ import type { OpenTabSearchResult } from './open-tab-search'
 export type OpenTabSelectionOutcome =
   | { status: 'activated'; focus: (() => void) | null }
   | { status: 'failed'; message: string }
+  | { status: 'blocked' }
 
 // Every source distinguishes a dead workspace from a target that went stale
 // inside a live one; only the stale wording differs.
@@ -44,6 +45,9 @@ export function activateOpenTabSearchResult(result: OpenTabSearchResult): OpenTa
           'Browser page no longer exists'
         )
       )
+    }
+    if (activation.status === 'blocked') {
+      return { status: 'blocked' }
     }
     return {
       status: 'activated',

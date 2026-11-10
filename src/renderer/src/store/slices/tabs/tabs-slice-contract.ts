@@ -28,8 +28,6 @@ export type TabsSlice = {
   unifiedTabsByWorktree: Record<string, Tab[]>
   groupsByWorktree: Record<string, TabGroup[]>
   activeGroupIdByWorktree: Record<string, string>
-  /** Window-only: group id to worktree id for groups a chat split opened as a chooser. Never saved or sent. */
-  splitLandingGroupIds: Record<string, string>
   layoutByWorktree: Record<string, TabGroupLayoutNode>
   createUnifiedTab: (
     worktreeId: string,
@@ -101,7 +99,6 @@ export type TabsSlice = {
     /** recordFocus false skips the focus-time stamp (not a user visit); the group history still updates. */
     opts?: { preservePreview?: boolean; worktreeId?: string; recordFocus?: boolean }
   ) => void
-  closeUnifiedTabs: (tabIds: readonly string[]) => void
   closeUnifiedTab: (
     tabId: string,
     opts?: {
@@ -171,21 +168,25 @@ export type TabsSlice = {
       splitDirection?: TabSplitDirection
     }
   ) => boolean
+  copyUnifiedTabToGroup: (
+    tabId: string,
+    targetGroupId: string,
+    init?: Partial<
+      Pick<
+        Tab,
+        | 'id'
+        | 'entityId'
+        | 'label'
+        | 'generatedLabel'
+        | 'quickCommandLabel'
+        | 'customLabel'
+        | 'color'
+        | 'isPinned'
+      >
+    >
+  ) => Tab | null
+  mergeGroupIntoSibling: (worktreeId: string, groupId: string) => string | null
   setTabGroupSplitRatio: (worktreeId: string, nodePath: string, ratio: number) => void
-  /** Selects the hovered tab while a drag is in flight; restored from the drag-start snapshot. */
-  previewDragActiveTab: (args: {
-    worktreeId: string
-    groupId: string
-    tabId: string | null
-    activeGroupId: string
-  }) => void
-  restoreDragActivationSnapshot: (worktreeId: string, snapshot: TabDragActivationSnapshot) => void
-  restoreSourceGroupActiveTabAfterDrop: (args: {
-    worktreeId: string
-    snapshot: TabDragActivationSnapshot
-    sourceGroupId: string
-    movedTabId: string
-  }) => void
   reconcileWorktreeTabModel: (worktreeId: string) => {
     renderableTabCount: number
     activeRenderableTabId: string | null

@@ -1,8 +1,6 @@
 import { z } from 'zod'
-import type {
-  RuntimeBrowserCommandHost,
-  RuntimeBrowserCommands
-} from '../runtime/orca-runtime-browser'
+import type { RuntimeBrowserCommands } from '../runtime/orca-runtime-browser'
+import type { RuntimeBrowserCommandHost } from '../runtime/browser/commands/browser-command-contracts'
 import { BrowserError } from '../browser/browser-error'
 import {
   ExternalChromiumBrowserSession,

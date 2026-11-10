@@ -1,4 +1,3 @@
-import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 import {
   useCallback,
   useEffect,
@@ -242,7 +241,7 @@ export function useBrowserPageNavigationDownloads({
         )
         return
       }
-      const opened = await window.api.shell.openFilePath(download.savePath, LOCAL_EXECUTION_HOST_ID)
+      const opened = await window.api.shell.openFilePath(download.savePath)
       if (!opened) {
         setResourceNotice(
           translate(
@@ -266,10 +265,7 @@ export function useBrowserPageNavigationDownloads({
         )
         return
       }
-      const result = await window.api.shell.openInFileManager(
-        download.savePath,
-        LOCAL_EXECUTION_HOST_ID
-      )
+      const result = await window.api.shell.openInFileManager(download.savePath)
       if (!result.ok) {
         setResourceNotice(
           translate(

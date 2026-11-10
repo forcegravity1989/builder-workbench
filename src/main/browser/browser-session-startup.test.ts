@@ -33,6 +33,19 @@ function installRegistryMock(): {
       configurePairedRuntimeBrowserClientHostsForOrcaProfileMock
   }))
 
+  vi.doMock('./site-settings/permissions/browser-site-permission-store', () => ({
+    configureBrowserSitePermissionStore: vi.fn()
+  }))
+  vi.doMock('./site-settings/display/browser-site-display-store', () => ({
+    configureBrowserSiteDisplayStore: vi.fn()
+  }))
+  vi.doMock('./extensions/profile-storage/browser-extension-profile-data-directory', () => ({
+    configureBrowserExtensionProfileDataDirectory: vi.fn()
+  }))
+  vi.doMock('../browser-passwords/browser-password-vaults', () => ({
+    configureBrowserPasswordVaults: vi.fn()
+  }))
+
   return {
     configureForOrcaProfileMock,
     configureRouteSessionsForOrcaProfileMock,

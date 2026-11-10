@@ -15,6 +15,7 @@ import {
 } from './terminal-link-open-hints'
 import type { LinkHandlerDeps } from './terminal-link-handlers'
 import type { TerminalLinkActionContext } from './terminal-link-action-request'
+import { terminalLinkClickBehaviorFor } from './links/gestures/terminal-link-click-behavior'
 import type { TerminalHttpLinkActionDestinations } from './terminal-url-link-hit-testing'
 import type { PtyConnectionDeps } from './pty-connection-types'
 import type { UseTerminalPaneLifecycleDeps } from './terminal-pane-lifecycle-types'
@@ -130,7 +131,9 @@ export function prepareTerminalPaneMount(
       canOpenOwnedBrowserForPane(paneId)
     )
   const getLinkActionContext = (paneId: number): TerminalLinkActionContext | null => {
-    if (deps.settingsRef.current?.terminalLinkActionPopoverEnabled === false) {
+    const plainClickBehavior = terminalLinkClickBehaviorFor(deps.settingsRef.current)
+    const middleClickBehavior = deps.settingsRef.current?.terminalUrlMiddleClickBehavior ?? 'open'
+    if (plainClickBehavior === 'none' && middleClickBehavior === 'none') {
       return null
     }
     const pane = deps.managerRef.current?.getPanes().find((candidate) => candidate.id === paneId)
@@ -145,7 +148,10 @@ export function prepareTerminalPaneMount(
       pointerGesture,
       claimPtyMouse: suppression.claimAction,
       request: deps.requestTerminalLinkAction,
-      focusTerminal: () => pane.terminal.focus()
+      focusTerminal: () => pane.terminal.focus(),
+      plainClickBehavior,
+      middleClickBehavior,
+      sourceOwner: getHttpLinkSourceOwnerForPane(paneId)
     }
   }
   const pathExistsCache = new Map<string, boolean>()
@@ -243,7 +249,7 @@ export function prepareTerminalPaneMount(
         getHttpLinkSourceOwnerForPane(paneId),
         canOpenOwnedBrowserForPane(paneId)
       ),
-      showActions: deps.settingsRef.current?.terminalLinkActionPopoverEnabled !== false
+      showActions: terminalLinkClickBehaviorFor(deps.settingsRef.current) === 'actions'
     })
   return {
     container,

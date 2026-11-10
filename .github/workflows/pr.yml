@@ -87,6 +87,8 @@ jobs:
   browser-annotations:
     name: Browser protocols and annotation contracts
     runs-on: ubuntu-latest
+    env:
+      ORCA_BACKGROUND_LAUNCH: '1'
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
@@ -108,6 +110,7 @@ jobs:
           src/main/runtime/runtime-browser-
           src/main/runtime/rpc/methods/session-tab-file-host-projection.test.ts
           src/main/runtime/rpc/methods/session-tab-browser-placement-projection.test.ts
+          src/main/ipc/filesystem.test.ts
       - name: Check annotation, clipboard and navigation contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
@@ -118,6 +121,7 @@ jobs:
           src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts
           src/renderer/src/components/browser-pane/describe-page/browser-annotation-geometry.test.ts
           src/renderer/src/store/slices/browser/browser.test.ts
+          src/renderer/src/store/slices/tabs-browser-placement.test.ts
           src/renderer/src/lib/app-menu-paste.test.ts
           src/renderer/src/components/native-chat/use-native-chat-composer-paste.test.tsx
           src/renderer/src/components/native-chat/use-native-chat-composer-attachments.test.tsx
