@@ -183,6 +183,7 @@ async function guestHeading(page: Page, id: string): Promise<string | null> {
 
 async function expectBrowserInPane(
   page: Page,
+  app: ElectronApplication,
   id: string,
   groupId: string,
   info: TestInfo,
@@ -227,7 +228,49 @@ async function expectBrowserInPane(
         const timeout = setTimeout(() => reject(new Error('Guest did not paint')), 2000)
         requestAnimationFrame(() => requestAnimationFrame(() => {
           clearTimeout(timeout)
-          resolve({ width: innerWidth, height: innerHeight, dpr: devicePixelRatio })
+          const serializeRect = (rect) => ({
+            x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+            top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left
+          })
+          const heading = document.querySelector('h1')
+          const headingStyle = heading ? getComputedStyle(heading) : null
+          const headingRange = document.createRange()
+          if (heading) headingRange.selectNodeContents(heading)
+          const viewport = window.visualViewport
+          resolve({
+            width: innerWidth,
+            height: innerHeight,
+            dpr: devicePixelRatio,
+            documentElement: {
+              clientWidth: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth
+            },
+            body: document.body ? {
+              rect: serializeRect(document.body.getBoundingClientRect()),
+              scrollWidth: document.body.scrollWidth
+            } : null,
+            h1: heading && headingStyle ? {
+              text: heading.textContent,
+              rect: serializeRect(heading.getBoundingClientRect()),
+              computed: {
+                whiteSpace: headingStyle.whiteSpace,
+                width: headingStyle.width,
+                minWidth: headingStyle.minWidth,
+                overflow: headingStyle.overflow,
+                fontSize: headingStyle.fontSize
+              },
+              rangeClientRects: Array.from(headingRange.getClientRects(), serializeRect)
+            } : null,
+            visualViewport: viewport ? {
+              width: viewport.width,
+              height: viewport.height,
+              scale: viewport.scale,
+              offsetLeft: viewport.offsetLeft,
+              offsetTop: viewport.offsetTop,
+              pageLeft: viewport.pageLeft,
+              pageTop: viewport.pageTop
+            } : null
+          })
         }))
       })`)) as { width: number; height: number; dpr: number }
       const bounds = webview.getBoundingClientRect()
@@ -236,6 +279,7 @@ async function expectBrowserInPane(
         width: bounds.width,
         height: bounds.height,
         hostDpr: window.devicePixelRatio,
+        webContentsId: webview.getWebContentsId(),
         zoomLevel: webview.getZoomLevel(),
         zoomFactor: webview.getZoomFactor()
       }
@@ -249,6 +293,38 @@ async function expectBrowserInPane(
       Math.abs(viewportSize.rendered.height * ratio - viewportSize.height)
     ).toBeLessThanOrEqual(2)
   }).toPass({ timeout: 10_000 })
+  const captureName = `browser-split-guest-${side}`
+  try {
+    const webContentsId = await guest.evaluate((element) =>
+      (element as Electron.WebviewTag).getWebContentsId()
+    )
+    const image = await app.evaluate(async ({ webContents }, targetId) => {
+      const contents = webContents.fromId(targetId)
+      if (!contents || contents.isDestroyed()) {
+        throw new Error(`Missing guest webContents ${targetId}`)
+      }
+      const screenshot = await contents.capturePage()
+      return {
+        pngBase64: screenshot.toPNG().toString('base64'),
+        webContentsId: contents.id,
+        url: contents.getURL(),
+        size: screenshot.getSize(),
+        scaleFactors: screenshot.getScaleFactors(),
+        empty: screenshot.isEmpty()
+      }
+    }, webContentsId)
+    const { pngBase64, ...metadata } = image
+    const screenshotPath = info.outputPath(`${captureName}.png`)
+    writeFileSync(screenshotPath, Buffer.from(pngBase64, 'base64'))
+    await info.attach(captureName, { path: screenshotPath, contentType: 'image/png' })
+    await recordEvidence(info, captureName, { status: 'captured', ...metadata })
+  } catch (error) {
+    // Capture is diagnostic; report its failure without changing the acceptance assertions.
+    await recordEvidence(info, captureName, {
+      status: 'capture-failed',
+      error: error instanceof Error ? error.message : String(error)
+    })
+  }
 }
 
 export async function verifyBrowserSync(
@@ -286,8 +362,8 @@ export async function verifyBrowserSync(
       expect(right).not.toBeNull()
       expect(right!.x).toBeGreaterThan(left!.x + left!.width - 2)
     }).toPass()
-    await expectBrowserInPane(page, first.id, first.groupId, info, 'left')
-    await expectBrowserInPane(page, second.id, second.groupId, info, 'right')
+    await expectBrowserInPane(page, app, first.id, first.groupId, info, 'left')
+    await expectBrowserInPane(page, app, second.id, second.groupId, info, 'right')
     await capture(page, info, 'browser-approved-session-split')
 
     const beforePid = app.process().pid
