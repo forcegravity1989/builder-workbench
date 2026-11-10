@@ -10,7 +10,7 @@ description: >-
   Also use for reviewing real Issue sessions to improve this development workflow.
   Load historical week-screen context only when tracing its earlier decisions.
 metadata:
-  version: 0.4.11-pilot
+  version: 0.4.12-pilot
 ---
 
 # workbench-start — Workbench 开发与交付
@@ -36,6 +36,8 @@ metadata:
 涉及 standard 的既有读写协议时读取其入口，避免破坏契约；不因资料已存在就忽略冲突或重问已确认决定。
 
 ## 3. 分流：按意图与影响
+
+开始特性设计或制作原型前，读取并执行 [原则 02 §3.2](../../../docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收) 的设计依据与确认要求。
 
 | 这次工作 | 执行路径 | 需要用户的时机 |
 |---|---|---|

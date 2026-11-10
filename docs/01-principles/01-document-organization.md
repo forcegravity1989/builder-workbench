@@ -24,7 +24,7 @@ docs/（BW 产品知识与本仓开发规范；编号定序，architecture 是�
 ├── architecture.md    设计正本（Electron 叠层 + 模块设计；docs 内不编号）
 ├── development.md     BW 自身测试、检视、验证证据与 PR 规范；独立于具体 Skill
 ├── 02-adr/            架构决策的预留位置；存量已清空，后续按实际决策新增
-├── 03-guide/          产品指南的预留位置；存量已清空，真实旅程验证后补
+├── 03-guide/          产品指南，按已验证的使用场景维护
 ├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
 ├── 05-features/       特性制品——intent + 带原型的 spec 为人 gate；实现 plan 留仓外；小修不另立特性
 ├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
@@ -157,7 +157,7 @@ docs/05-features/<change-id>/
 
 ## 6. 与现有文档边界的关系
 
-[`docs/README.md`](../README.md) 管 docs 树地图；设计正本是 [`docs/architecture.md`](../architecture.md)；产品指南预留 `docs/03-guide/`，当前无存量正文；随真实旅程验证补回，不恢复旧 Rust 操作步骤。
+[`docs/README.md`](../README.md) 管 docs 树地图与产品指南入口；设计正本是 [`docs/architecture.md`](../architecture.md)。`docs/03-guide/` 按已验证的使用场景维护，不恢复旧 Rust 操作步骤。
 本文管**整仓知识分层**（原则 / 变更 / docs / agent 入口）。与 docs 落盘细则冲突时：**docs 目录内听 docs/README + architecture**；跨目录归属听本文。
 
 ### 6.1 仓根只留四份入口文档
