@@ -37,18 +37,17 @@ beforeEach(() => {
     terminalLayoutsByTabId: { 'terminal-a': { activeLeafId: leaf } }
   } as unknown as AppState
 })
-it('uses the focused native session, not the first tab or a saved BW binding', () => {
+// 环 4 ratchet 对冲（#553）：同一「聚焦 tab 解析」守卫的三条用例合并,断言原样保留。
+it('resolves the focused native tab: agent session, terminal leaf, or null for non-terminal tabs', () => {
   expect(getActiveCycleSession(mocks.state, scope, 'wt')).toMatchObject({
     tabId: 'b',
     sessionId: 'session-b',
     paneKey: structuredAgentSessionPaneKey('b', 'session-b')
   })
-})
-it('does not target an old terminal when the focused native tab is a file', () => {
+
   mocks.state.getActiveTab = () => ({ contentType: 'editor' }) as never
   expect(getActiveCycleSession(mocks.state, scope, 'wt')).toBeNull()
-})
-it('uses the native focused terminal leaf without creating a layout', () => {
+
   mocks.state.getActiveTab = () => ({ contentType: 'terminal', entityId: 'terminal-a' }) as never
   expect(getActiveCycleSession(mocks.state, scope, 'wt')).toMatchObject({
     tabId: 'terminal-a',

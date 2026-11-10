@@ -334,22 +334,23 @@ export function AppRootSurfaces(props: {
       <ModalBoundary boundaryId="modal.markdown-template-picker" resetKey={activeModal}>
         <MarkdownTemplatePicker />
       </ModalBoundary>
-      {isWorkbenchShell() ? null : (
-        <RecoverableRenderErrorBoundary
-          boundaryId="modal.crash-report"
-          surface="modal"
-          reportAsCrash={false}
-          resetKey={activeModal}
-          compact
-          title={translate('auto.App.722d03aa62', 'The crash report dialog hit an error.')}
-          description={translate(
-            'auto.App.acd66311dc',
-            'Use the Help menu after retrying if you still need diagnostics.'
-          )}
-        >
-          <CrashReportDialog />
-        </RecoverableRenderErrorBoundary>
-      )}
+      {/* Why (BW #553): the crash dialog is mounted in the Workbench shell too —
+          reports now deliver to the WeLink group space instead of Orca, so the
+          old "don't send BW crashes to Orca" short-circuit lost its reason. */}
+      <RecoverableRenderErrorBoundary
+        boundaryId="modal.crash-report"
+        surface="modal"
+        reportAsCrash={false}
+        resetKey={activeModal}
+        compact
+        title={translate('auto.App.722d03aa62', 'The crash report dialog hit an error.')}
+        description={translate(
+          'auto.App.acd66311dc',
+          'Use the Help menu after retrying if you still need diagnostics.'
+        )}
+      >
+        <CrashReportDialog />
+      </RecoverableRenderErrorBoundary>
       {onboardingGate.onboarding && onboardingGate.shouldRender ? (
         <Suspense fallback={null}>
           <RecoverableRenderErrorBoundary

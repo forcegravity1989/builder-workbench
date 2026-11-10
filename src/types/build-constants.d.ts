@@ -12,11 +12,14 @@
 declare const ORCA_BUILD_IDENTITY: 'stable' | 'rc' | null
 declare const ORCA_POSTHOG_WRITE_KEY: string | null
 
-// Diagnostic-bundle upload endpoint for Mode 3 (telemetry-error-tracking.md
-// §Endpoint contract). Substituted by CI; `null` in contributor builds, at
-// which point the upload IPC handler returns "endpoint not configured"
-// rather than POSTing to a placeholder. The dev escape hatch is the
-// `ORCA_DIAGNOSTICS_TOKEN_URL` env var, which env wins so a developer can
-// point a packaged build at a staging server without re-running the
-// release pipeline.
-declare const ORCA_DIAGNOSTICS_TOKEN_URL: string | null
+// BW #553: the diagnostic-bundle token endpoint constant
+// (ORCA_DIAGNOSTICS_TOKEN_URL) was removed together with the native HTTP
+// upload path — the WeLink group-space sink in
+// src/main/workbench/reporting/ is the single delivery path.
+
+// WeLink group-space id for the BW reporting sink (Issue #553). Substituted
+// from WORKBENCH_WELINK_SPACE_ID at build time; `null` when unset, at which
+// point reporting entries fail with setup guidance instead of uploading.
+// Unlike the native pin, the runtime env var intentionally wins over the
+// build literal (see welink-report-config.ts for the rationale).
+declare const WORKBENCH_WELINK_SPACE_ID: string | null

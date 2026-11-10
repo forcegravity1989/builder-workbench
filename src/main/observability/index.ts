@@ -41,13 +41,6 @@ import {
   type CollectBundleOptions,
   type CollectedBundle
 } from './bundle'
-import {
-  deleteBundle as _deleteBundle,
-  uploadBundle as _uploadBundle,
-  type DeleteBundleOptions,
-  type UploadBundleOptions,
-  type UploadBundleResult
-} from './diagnostic-bundle-upload'
 import { setActiveSink, startSpan } from './tracer'
 import { setSecurePathHardeningReporter } from '../../shared/secure-path-hardening-report'
 
@@ -248,14 +241,8 @@ export function collectDiagnosticBundle(
   })
 }
 
-/** Upload a collected bundle payload. Returns the ticket ID on success;
- *  throws on any of the failure modes documented in `bundle.ts`. */
-export async function uploadDiagnosticBundle(
-  opts: UploadBundleOptions
-): Promise<UploadBundleResult> {
-  return _uploadBundle(opts)
-}
-
-export async function deleteDiagnosticBundle(opts: DeleteBundleOptions): Promise<void> {
-  return _deleteBundle(opts)
-}
+// Why (BW #553): the native token-endpoint HTTP upload/delete pair
+// (diagnostic-bundle-upload.ts / diagnostic-upload-http.ts) was removed with
+// the reporting redirect — the WeLink group-space sink in
+// src/main/workbench/reporting/ is the single delivery path. Deletion is
+// recorded in ref/upstream.md.

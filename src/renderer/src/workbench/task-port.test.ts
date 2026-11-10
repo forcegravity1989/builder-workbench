@@ -307,7 +307,8 @@ describe('createTaskPort reads', () => {
     expect(mocks.viewTask).toHaveBeenNthCalledWith(2, expect.objectContaining({ kind: 'mr' }))
   })
 
-  it('reports both codehub read failures when issue and mr both fail', async () => {
+  // 环 4 ratchet 对冲（#553）：同一「诚实上报不可用」守卫的两条用例合并,断言原样保留。
+  it('reports both codehub read failures and unwired providers honestly instead of guessing', async () => {
     mocks.viewTask
       .mockRejectedValueOnce(new Error('issue boom'))
       .mockRejectedValueOnce(new Error('mr boom'))
@@ -317,13 +318,11 @@ describe('createTaskPort reads', () => {
       expect(read.error).toContain('issue boom')
       expect(read.error).toContain('mr boom')
     }
-  })
 
-  it('reports an unwired provider honestly instead of guessing', async () => {
-    const [read] = await createTaskPort(makeDeps()).listVersion(scope, [
+    const [unwired] = await createTaskPort(makeDeps()).listVersion(scope, [
       { provider: 'gitlab', repository: 'github.com/acme/repo', number: 1 }
     ])
-    expect(read).toEqual({
+    expect(unwired).toEqual({
       kind: 'unavailable',
       reference: { provider: 'gitlab', repository: 'github.com/acme/repo', number: 1 },
       error: 'provider gitlab 尚未接入 Workbench 任务读取',

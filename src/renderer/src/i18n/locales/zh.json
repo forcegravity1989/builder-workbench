@@ -4447,7 +4447,8 @@
           "69969ba364": "正在发送...",
           "imageReadFailed": "无法读取附加的图片。请重新附加。",
           "attachWhileSending": "请等待当前反馈发送完成，再附加更多图片。",
-          "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。"
+          "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。",
+          "workbenchDescription": "分享什么是有效的、什么是有问题的，或者 Workbench 接下来应该做什么。反馈会发送到项目 WeLink 群空间。"
         },
         "SidebarFilter": {
           "e3b3898218": "添加项目",
@@ -13240,6 +13241,10 @@
             "50b00dc327": "复制详情",
             "6d3ebe216a": "诊断文本",
             "835037edc9": "·Orca",
+            "workbenchBrand": "·Workbench",
+            "workbenchUiErrorTitle": "Workbench 出现了可恢复的界面错误",
+            "workbenchClosedTitle": "Workbench 意外关闭",
+            "workbenchNotesPlaceholder": "可选：Workbench 关闭前你在做什么？",
             "56a3dfa283": "无法发送错误报告。",
             "8e24fe4f75": "已发送错误报告。",
             "8b8473c544": "已复制错误报告。",

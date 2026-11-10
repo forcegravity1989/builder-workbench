@@ -17,7 +17,11 @@ export function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`
 }
 
-async function withPreflightTimeout<T>(command: string, commandPromise: Promise<T>): Promise<T> {
+async function withPreflightTimeout<T>(
+  command: string,
+  commandPromise: Promise<T>,
+  timeoutMs: number = PREFLIGHT_COMMAND_TIMEOUT_MS
+): Promise<T> {
   let timeout: ReturnType<typeof setTimeout> | null = null
   try {
     return await Promise.race([
@@ -28,7 +32,7 @@ async function withPreflightTimeout<T>(command: string, commandPromise: Promise<
             code: 'ETIMEDOUT'
           })
           reject(error)
-        }, PREFLIGHT_COMMAND_TIMEOUT_MS)
+        }, timeoutMs)
         if (typeof timeout.unref === 'function') {
           timeout.unref()
         }
@@ -44,10 +48,13 @@ async function withPreflightTimeout<T>(command: string, commandPromise: Promise<
 /** Rejects on non-zero exit, spawn failure, or timeout — it never reports
  *  "absent" as a value. A caller that collapses that rejection into `false`
  *  makes "not installed" and "could not run it" the same answer; see
- *  docs/reference/wsl-probe-failure-semantics.md before doing so. */
+ *  docs/reference/wsl-probe-failure-semantics.md before doing so.
+ *  `timeoutMs` (BW #553): probes keep the 5s default; long-running data
+ *  commands (welink onebox uploads) pass their own deadline. */
 export async function execLocalPreflightCommandOrThrow(
   command: string,
-  args: string[]
+  args: string[],
+  timeoutMs: number = PREFLIGHT_COMMAND_TIMEOUT_MS
 ): Promise<PreflightCommandResult> {
   const env = buildLocalPreflightEnv()
   // Why (BW #323): Windows CreateProcess only launches real executables, so a
@@ -65,13 +72,13 @@ export async function execLocalPreflightCommandOrThrow(
     shimPath && /\.(cmd|bat)$/i.test(shimPath)
       ? execFileAsync('cmd.exe', ['/d', '/c', shimPath, ...args], {
           encoding: 'utf-8',
-          timeout: PREFLIGHT_COMMAND_TIMEOUT_MS,
+          timeout: timeoutMs,
           windowsHide: true,
           ...(env ? { env } : {})
         })
       : execFileAsync(command, args, {
           encoding: 'utf-8',
-          timeout: PREFLIGHT_COMMAND_TIMEOUT_MS,
+          timeout: timeoutMs,
           // Preflight probes console-subsystem binaries (git, gh, node); without this
           // each one flashes a console and steals foreground on Windows (#10488).
           windowsHide: true,
@@ -79,7 +86,7 @@ export async function execLocalPreflightCommandOrThrow(
         })
   ) as Promise<PreflightCommandResult>
 
-  return withPreflightTimeout(command, commandPromise)
+  return withPreflightTimeout(command, commandPromise, timeoutMs)
 }
 
 // Throws on any failure — a distro that is booting/unreachable throws the
@@ -87,13 +94,14 @@ export async function execLocalPreflightCommandOrThrow(
 // collapse both into "absent"; see docs/reference/wsl-probe-failure-semantics.md.
 export async function execCommandInWslOrThrow(
   target: WslPreflightTarget,
-  command: string
+  command: string,
+  timeoutMs: number = PREFLIGHT_COMMAND_TIMEOUT_MS
 ): Promise<PreflightCommandResult> {
-  const commandPromise = runPreflightCommandInWsl(target, command, PREFLIGHT_COMMAND_TIMEOUT_MS)
+  const commandPromise = runPreflightCommandInWsl(target, command, timeoutMs)
   // Label only (runPreflightCommandInWsl owns the actual wsl.exe invocation) —
   // not the literal 'wsl.exe' so the wsl-invocation-boundary guard doesn't
   // mistake this string for a spawn site.
-  return withPreflightTimeout('wsl command', commandPromise)
+  return withPreflightTimeout('wsl command', commandPromise, timeoutMs)
 }
 
 export async function isCommandAvailable(

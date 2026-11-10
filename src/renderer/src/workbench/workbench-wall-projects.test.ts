@@ -130,7 +130,8 @@ describe('buildWallProjects', () => {
     expect(projects[0].repoIds).toEqual(['a'])
   })
 
-  it('counts one registration per host+path when the same host re-registers a repo', () => {
+  // 环 4 ratchet 对冲（#553）：同一「去重计数」守卫的两条用例合并,断言原样保留。
+  it('counts duplicate registrations and worktrees once per identity', () => {
     const projects = buildWallProjects(
       [
         repo({ id: 'a', path: '/a', displayName: 'app', gitRemoteIdentity: appIdentity() }),
@@ -142,9 +143,7 @@ describe('buildWallProjects', () => {
     expect(projects).toHaveLength(1)
     expect(projects[0].repoIds).toEqual(['a'])
     expect(projects[0].slots).toHaveLength(1)
-  })
 
-  it('counts worktrees once per host-qualified identity across the project rows', () => {
     const local = repo({ id: 'a', path: '/a', displayName: 'app' })
     const remote = repo({
       id: 'r1',

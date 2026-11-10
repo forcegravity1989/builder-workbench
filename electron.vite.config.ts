@@ -53,10 +53,15 @@ const ORCA_POSTHOG_WRITE_KEY_LITERAL =
   typeof orcaPostHogWriteKey === 'string' && orcaPostHogWriteKey.length > 0
     ? JSON.stringify(orcaPostHogWriteKey)
     : 'null'
-const orcaDiagnosticsTokenUrl = process.env.ORCA_DIAGNOSTICS_TOKEN_URL
-const ORCA_DIAGNOSTICS_TOKEN_URL_LITERAL =
-  typeof orcaDiagnosticsTokenUrl === 'string' && orcaDiagnosticsTokenUrl.length > 0
-    ? JSON.stringify(orcaDiagnosticsTokenUrl)
+// Why (BW #553): reporting sink target — the WeLink group space id that
+// feedback/crash/diagnostics uploads land in. Replaces the native
+// ORCA_DIAGNOSTICS_TOKEN_URL (removed with the HTTP upload path). Runtime
+// env wins over the build literal so dev/acceptance runs can point at a
+// real group space without a rebuild (see welink-report-config.ts).
+const workbenchWelinkSpaceId = process.env.WORKBENCH_WELINK_SPACE_ID
+const WORKBENCH_WELINK_SPACE_ID_LITERAL =
+  typeof workbenchWelinkSpaceId === 'string' && workbenchWelinkSpaceId.length > 0
+    ? JSON.stringify(workbenchWelinkSpaceId)
     : 'null'
 
 const workbenchShellEnabled =
@@ -281,7 +286,7 @@ export const electronViteConfig: UserConfig = {
     define: {
       ORCA_BUILD_IDENTITY: ORCA_BUILD_IDENTITY_LITERAL,
       ORCA_POSTHOG_WRITE_KEY: ORCA_POSTHOG_WRITE_KEY_LITERAL,
-      ORCA_DIAGNOSTICS_TOKEN_URL: ORCA_DIAGNOSTICS_TOKEN_URL_LITERAL,
+      WORKBENCH_WELINK_SPACE_ID: WORKBENCH_WELINK_SPACE_ID_LITERAL,
       WORKBENCH_SHELL: VITE_WORKBENCH_SHELL_LITERAL
     },
     // Why: @xterm/headless declares "exports": null in package.json, which

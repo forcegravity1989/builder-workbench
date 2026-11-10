@@ -74,11 +74,10 @@ describe('zonePointState', () => {
   const range = zoneChartRange('week', TZ, NOW)
   const labels = zoneBucketLabels(range)
 
-  it('未读取保持 unread，不补零', () => {
+  // 环 4 ratchet 对冲（#553）：同一 Unknown 信号守卫的两条用例合并，断言原样保留。
+  it('未读取与失败都保持 Unknown 信号，不补零，陈旧证据保留原时间', () => {
     expect(zonePointState(null, labels, range, TZ)).toEqual({ kind: 'unread' })
-  })
 
-  it('失败保持 Unknown 文案，陈旧证据保留原时间', () => {
     const reading: MetricReading = {
       status: 'error',
       reason: { code: 'collector-failed', message: '脚本以 1 结束' },
@@ -96,8 +95,9 @@ describe('zonePointState', () => {
     expect(state.stale).toEqual({ value: 7, collectedAt: '2026-09-21T12:00:00.000Z' })
   })
 
-  it('历史点按真实窗口落桶；缺失桶留空不补零', () => {
-    const state = zonePointState(
+  // 环 4 ratchet 对冲（#553）：同一 ready 形态守卫的两条用例合并，断言原样保留。
+  it('历史点按真实窗口落桶、缺失留空；字符串读数只作当前值文本', () => {
+    const numeric = zonePointState(
       windowReading([
         { day: '2026-08-31', value: 2 },
         { day: '2026-09-21', value: 5 }
@@ -106,25 +106,22 @@ describe('zonePointState', () => {
       range,
       TZ
     )
-    expect(state.kind).toBe('ready')
-    if (state.kind !== 'ready') {
-      return
+    expect(numeric.kind).toBe('ready')
+    if (numeric.kind === 'ready') {
+      expect(numeric.values).toEqual([null, 2, null, null, 5])
+      expect(numeric.latest).toMatchObject({ value: 5 })
     }
-    expect(state.values).toEqual([null, 2, null, null, 5])
-    expect(state.latest).toMatchObject({ value: 5 })
-  })
 
-  it('字符串读数不做数值曲线，只作为当前值文本', () => {
-    const state = zonePointState(
+    const text = zonePointState(
       windowReading([{ day: '2026-09-21', value: '达标' }]),
       labels,
       range,
       TZ
     )
-    if (state.kind !== 'ready') {
+    if (text.kind !== 'ready') {
       throw new Error('expected ready')
     }
-    expect(state.values).toEqual([null, null, null, null, null])
-    expect(state.latest?.value).toBe('达标')
+    expect(text.values).toEqual([null, null, null, null, null])
+    expect(text.latest?.value).toBe('达标')
   })
 })
