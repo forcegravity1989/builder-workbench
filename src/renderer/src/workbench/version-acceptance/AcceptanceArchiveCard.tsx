@@ -1,3 +1,4 @@
+import { archiveStateLabel } from '../../../../shared/workbench/archive-state-label'
 import { Archive, ArrowUpRight, GitPullRequest, Rocket } from 'lucide-react'
 import type { Ref } from 'react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
@@ -56,16 +57,7 @@ export function AcceptanceArchiveCard({
   version: string
   sectionRef: Ref<HTMLElement>
 }) {
-  const statusLabel =
-    loading || !status
-      ? '正在读取归档 PR 状态…'
-      : status.state === 'merged'
-        ? '已合入'
-        : status.state === 'open'
-          ? '待合入'
-          : status.state === 'closed'
-            ? '已关闭'
-            : '状态未知'
+  const statusLabel = loading || !status ? '正在读取归档 PR 状态…' : archiveStateLabel(status)
   // 未发布不配说明文字:chip 已表达状态,授权口径归按钮提示与会话,板面不重复。
   const releaseLabel = !release
     ? '未发布'

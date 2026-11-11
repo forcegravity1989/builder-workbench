@@ -64,6 +64,7 @@ export class RepoUpdatePersistenceOperations {
         | 'worktreeVisibilitySourcePreferences'
         | 'projectGroupId'
         | 'projectGroupOrder'
+        | 'projectVisibility'
         | 'projectHostSetupMethod'
       >
     > & {

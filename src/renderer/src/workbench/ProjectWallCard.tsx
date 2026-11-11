@@ -1,130 +1,80 @@
-import React from 'react'
+import type { ReactNode } from 'react'
+import {
+  Download,
+  ExternalLink,
+  FilePenLine,
+  LayoutDashboard,
+  LoaderCircle,
+  SlidersHorizontal,
+  type LucideIcon
+} from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import type { Repo } from '../../../shared/repo-types'
-import type { CharterStatus } from '../../../shared/workbench/charter'
-import { ExternalLink, LoaderCircle, SlidersHorizontal } from 'lucide-react'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { archiveStateLabel } from '../../../shared/workbench/archive-state-label'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSourceTag } from './ProjectSourceTag'
 import type { ProjectCharter } from './project-charter'
-import type { WallCardReadings } from './wall-card-readings'
-import type { WallProject } from './workbench-wall-projects'
+import type { WallCardReadings, WallArchiveReading } from './wall-card-readings'
+import type { WallProject, WallRepoSlot } from './workbench-wall-projects'
 
-/** 卡内来源主机标签的呈现事实(连接态由 Orca runtime 推导,只作事实,不冒充健康)。 */
 export type CardHostTag = {
   hostId: string
   label: string
   online: boolean | null
-  worktreeCount: number
   isLocal: boolean
 }
-
 export type WallCardView = {
   project: WallProject
   displayName: string
-  brief: string
-  readings: WallCardReadings
-  isActive: boolean
   charter: ProjectCharter | null
-  status: CharterStatus | null
-  worktreeCount: number
+  readings: WallCardReadings
   hostTags: CardHostTag[]
-  /** Builder 主机上的额外工作树数(非本机 host 之和),用于代码仓注脚。 */
-  remoteWorktreeCount: number
-  primaryRepo: Repo | undefined
+  primaryRepo: Repo
+}
+function archiveLabel(reading: WallArchiveReading): string {
+  return reading.kind === 'missing' ? '未创建' : archiveStateLabel(reading.status)
 }
 
-/**
- * 读数格：只显数字不跳转；Unknown 是事实不是错误——灰字「—」，
- * 不装绿、不装零、不推导健康结论（铁律二，判断归人）。
- */
-function ReadingCell({
+function RepositoryAction({
+  slots,
   label,
-  value,
-  unknown,
-  title
+  icon,
+  onSelect
 }: {
+  slots: readonly WallRepoSlot[]
   label: string
-  value: string
-  unknown?: boolean
-  title?: string
-}): React.JSX.Element {
+  icon: LucideIcon
+  onSelect(slot: WallRepoSlot): void
+}) {
+  if (!slots.length) {
+    return null
+  }
+  if (slots.length === 1) {
+    return <WorkbenchIconButton label={label} icon={icon} onClick={() => onSelect(slots[0])} />
+  }
   return (
-    <div className="pcard-reading">
-      <span className="pcard-reading-label">{label}</span>
-      <span
-        className={`pcard-reading-value${unknown ? ' is-unknown' : ''}`}
-        {...(title ? { title } : {})}
-      >
-        {value}
-      </span>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <WorkbenchIconButton label={label} icon={icon} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {slots.map((slot) => (
+          <DropdownMenuItem
+            key={`${getRepoExecutionHostId(slot.repo)}:${slot.repoId}`}
+            onSelect={() => onSelect(slot)}
+          >
+            {slot.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
-}
-
-function versionCell(reading: WallCardReadings['version']): {
-  value: string
-  unknown?: boolean
-  title?: string
-} {
-  if (reading.kind === 'loading') {
-    return { value: '读取中…', unknown: true }
-  }
-  if (reading.kind === 'undecided') {
-    return {
-      value: '版本未定',
-      unknown: true,
-      title: '没人在计划屏为它选过版（不推断、不猜）；读不到计划材料时同样如实显示版本未定'
-    }
-  }
-  return { value: reading.version }
-}
-
-function progressCell(reading: Exclude<WallCardReadings['progress'], { kind: 'hidden' }>): {
-  value: string
-  unknown?: boolean
-  title?: string
-} {
-  if (reading.kind === 'loading') {
-    return { value: '读取中…', unknown: true }
-  }
-  if (reading.kind === 'unknown') {
-    return { value: '—', unknown: true, title: reading.reason }
-  }
-  return {
-    value: `完成 ${reading.completed} · 开放 ${reading.open}`,
-    title: '该版本 data.json 登记的承诺任务 × Issue 原生状态现算；关闭即计完成，关闭原因不参与计数'
-  }
-}
-
-function sessionsCell(reading: WallCardReadings['sessions']): {
-  value: string
-  unknown?: boolean
-  title?: string
-} {
-  if (reading.kind === 'unknown') {
-    return {
-      value: '—',
-      unknown: true,
-      title: '来源主机离线或连接未知：离线 ≠ 0，不装计数；恢复在线并刷新后给真实数'
-    }
-  }
-  return {
-    value: String(reading.count),
-    title: 'Orca live 会话口径（与侧栏同源）：fresh 且未结束的会话数'
-  }
-}
-
-function prsCell(reading: WallCardReadings['prs']): {
-  value: string
-  unknown?: boolean
-  title?: string
-} {
-  if (reading.kind === 'loading') {
-    return { value: '读取中…', unknown: true }
-  }
-  if (reading.kind === 'unknown') {
-    return { value: '—', unknown: true, title: reading.reason }
-  }
-  return { value: String(reading.count), title: '该项目全部代码仓的开放 PR/MR 总数' }
 }
 
 export function ProjectWallCard({
@@ -132,62 +82,168 @@ export function ProjectWallCard({
   switching,
   configured,
   onOpen,
-  onConfigure
+  onOverview,
+  onConfigure,
+  onStage,
+  onClone,
+  nativeMenu,
+  repoMenu,
+  onRepoSettings
 }: {
   card: WallCardView
   switching: boolean
   configured: boolean
-  onOpen: () => void
-  onConfigure: (trigger: HTMLButtonElement) => void
-}): React.JSX.Element {
-  const opportunity = card.charter?.opportunity?.trim() || ''
+  onOpen(repo?: Repo): void
+  onOverview(): void
+  onClone(slot: WallRepoSlot): void
+  onConfigure(trigger: HTMLButtonElement): void
+  onStage(stage: 'plan' | 'tasks' | 'acceptance'): void
+  nativeMenu: ReactNode
+  repoMenu(repo: Repo): ReactNode
+  onRepoSettings(repo: Repo): void
+}) {
+  const { readings, project, primaryRepo } = card
+  const openRepository = (slot: WallRepoSlot) => {
+    if (slot?.href) {
+      void window.api.shell.openUrl(slot.href)
+    } else if (getRepoExecutionHostId(slot.repo) === 'local') {
+      void window.api.shell.openPath(slot.repo.path)
+    }
+  }
   return (
     <article
       className={`pcard${configured ? ' is-configured' : ''}`}
-      data-workbench-project-id={card.project.primaryRepoId}
-      data-workbench-project-key={card.project.key}
+      data-workbench-project-id={primaryRepo.id}
+      data-workbench-project-key={project.key}
     >
       <div className="pcard-top">
-        <div className="pcard-sources">
-          {card.hostTags.map((tag) => (
-            <ProjectSourceTag key={tag.hostId} tag={tag} />
-          ))}
-        </div>
+        <button type="button" className="pcard-name" disabled={switching} onClick={() => onOpen()}>
+          {card.displayName}
+        </button>
         <div className="pcard-actions">
-          <WorkbenchIconButton
-            label={`打开 ${card.displayName} 项目总览`}
-            icon={switching ? LoaderCircle : ExternalLink}
-            disabled={switching}
-            onClick={onOpen}
-            data-workbench-open-overview
+          <RepositoryAction
+            label={primaryRepo.kind === 'folder' ? '打开文件夹' : '打开代码仓'}
+            icon={ExternalLink}
+            slots={project.slots.filter(
+              (slot) => slot.href || getRepoExecutionHostId(slot.repo) === 'local'
+            )}
+            onSelect={openRepository}
           />
-          <WorkbenchIconButton
-            label={`配置 ${card.displayName}`}
+          <RepositoryAction
+            label="仓库设置"
             icon={SlidersHorizontal}
+            slots={project.slots}
+            onSelect={(slot) => onRepoSettings(slot.repo)}
+          />
+          <RepositoryAction
+            label="克隆到本机"
+            icon={Download}
+            slots={project.slots.filter(
+              (slot) => slot.remoteUrl && !slot.hostIds.includes('local')
+            )}
+            onSelect={onClone}
+          />
+          {primaryRepo.kind !== 'folder' && (
+            <WorkbenchIconButton
+              label="项目总览"
+              icon={LayoutDashboard}
+              onClick={onOverview}
+              data-workbench-open-overview
+            />
+          )}
+          <WorkbenchIconButton
+            label="项目设置与项目信息"
+            icon={switching ? LoaderCircle : FilePenLine}
             aria-pressed={configured}
             onClick={(event) => onConfigure(event.currentTarget)}
             data-workbench-edit-charter
           />
+          {nativeMenu}
         </div>
       </div>
-      <button
-        type="button"
-        className="pcard-main"
-        disabled={switching}
-        onClick={onOpen}
-        aria-label={`打开 ${card.displayName} 项目总览`}
-      >
-        <div className="pcard-name">{card.displayName}</div>
-        {opportunity ? <div className="pcard-oneliner">{opportunity}</div> : null}
-        <div className="pcard-readings" aria-label="读数">
-          <ReadingCell label="版本" {...versionCell(card.readings.version)} />
-          {card.readings.progress.kind !== 'hidden' ? (
-            <ReadingCell label="承诺进展" {...progressCell(card.readings.progress)} />
-          ) : null}
-          <ReadingCell label="在跑会话" {...sessionsCell(card.readings.sessions)} />
-          <ReadingCell label="PR 待审" {...prsCell(card.readings.prs)} />
+      <div className="pcard-identity">
+        <span className="pcard-owner">
+          项目负责人{' '}
+          <strong title={card.charter?.owner?.trim()}>{card.charter?.owner?.trim() || '—'}</strong>
+        </span>
+        {card.hostTags.map((tag) => (
+          <button
+            type="button"
+            key={tag.hostId}
+            className="pcard-host"
+            onClick={() =>
+              onOpen(project.rows.find((row) => getRepoExecutionHostId(row) === tag.hostId))
+            }
+            disabled={tag.online === false}
+            aria-label={`在 ${tag.label} 继续工作`}
+          >
+            <ProjectSourceTag tag={tag} interactive />
+          </button>
+        ))}
+      </div>
+      {project.group && (
+        <details className="pcard-members">
+          <summary>{project.slots.length} 个代码仓</summary>
+          {project.slots.map((member) => (
+            <div key={`${getRepoExecutionHostId(member.repo)}:${member.repoId}`}>
+              <button type="button" onClick={() => onOpen(member.repo)}>
+                {member.name}
+              </button>
+              {repoMenu(member.repo)}
+            </div>
+          ))}
+        </details>
+      )}
+      <div className={`pcard-delivery${readings.kind === 'version' ? '' : ' is-compact'}`}>
+        {readings.kind === 'version' ? (
+          <>
+            <div className="pcard-version">
+              <span>版本目标</span>
+              <span>{readings.version}</span>
+            </div>
+            <ul>
+              {readings.goals.slice(0, 2).map((title, index) => (
+                <li key={index} title={title}>
+                  {title}
+                </li>
+              ))}
+            </ul>
+            {readings.goals.length > 2 && (
+              <span className="pcard-muted">另 {readings.goals.length - 2} 项目标</span>
+            )}
+            {!readings.goals.length && <span className="pcard-muted">暂无可读目标</span>}
+          </>
+        ) : (
+          <div
+            className="pcard-muted"
+            title={readings.kind === 'unknown' ? readings.reason : undefined}
+          >
+            {readings.kind === 'loading'
+              ? '正在读取版本…'
+              : readings.kind === 'unknown'
+                ? '版本信息暂不可用'
+                : card.charter?.brief?.trim() || '未建立版本'}
+          </div>
+        )}
+      </div>
+      {readings.kind === 'version' && (
+        <div className="pcard-stages">
+          <button type="button" onClick={() => onStage('plan')}>
+            <span>计划</span>
+            <strong>{archiveLabel(readings.plan)}</strong>
+          </button>
+          <button type="button" onClick={() => onStage('tasks')}>
+            <span>任务</span>
+            <strong>
+              {readings.tasks ? `${readings.tasks.closed} / ${readings.tasks.total}` : '—'}
+            </strong>
+          </button>
+          <button type="button" onClick={() => onStage('acceptance')}>
+            <span>验收</span>
+            <strong>{archiveLabel(readings.acceptance)}</strong>
+          </button>
         </div>
-      </button>
+      )}
     </article>
   )
 }
