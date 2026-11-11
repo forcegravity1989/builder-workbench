@@ -69,7 +69,6 @@ let lastUploadDir = ''
 let testUserData = ''
 
 beforeEach(() => {
-  vi.stubGlobal('WORKBENCH_WELINK_SPACE_ID', '12345')
   testUserData = mkdtempSync(join(tmpdir(), 'bw-report-receipt-'))
   getCanonicalUserDataPathMock.mockReturnValue(testUserData)
   uploadedReportContent = ''
@@ -176,7 +175,7 @@ describe('submitWelinkReport orchestration', () => {
     ).resolves.toEqual({ ticketId: 'diagsubmissionid000001' })
     expect(uploadReportFileMock).toHaveBeenLastCalledWith(
       expect.anything(),
-      '12345',
+      '24160277',
       '555',
       expect.stringContaining(diagnosticsBundleFileName('diagsubmissionid000001')),
       diagnosticsBundleFileName('diagsubmissionid000001')
@@ -187,12 +186,12 @@ describe('submitWelinkReport orchestration', () => {
       'diagsubmissionid000001.json'
     )
     expect(JSON.parse(readFileSync(receiptPath, 'utf8'))).toEqual({
-      spaceId: '12345',
+      spaceId: '24160277',
       fileId: '777',
       route: { wslDistro: 'Ubuntu' }
     })
-    // A new module instance must recover the original target independently of current configuration.
-    vi.stubGlobal('WORKBENCH_WELINK_SPACE_ID', '67890')
+    // A new module instance must recover the deletion target from the on-disk
+    // receipt alone (space is code-pinned): no preflight probe, no folder lookup.
     runPreflightCheckMock.mockClear()
     ensureReportFolderMock.mockClear()
     vi.resetModules()
@@ -200,7 +199,7 @@ describe('submitWelinkReport orchestration', () => {
     await expect(
       reloaded.deleteWelinkDiagnosticsBundle('diagsubmissionid000001')
     ).resolves.toBeUndefined()
-    expect(removeReportFileMock).toHaveBeenCalledWith({ wslDistro: 'Ubuntu' }, '12345', '777')
+    expect(removeReportFileMock).toHaveBeenCalledWith({ wslDistro: 'Ubuntu' }, '24160277', '777')
     expect(runPreflightCheckMock).not.toHaveBeenCalled()
     expect(ensureReportFolderMock).not.toHaveBeenCalled()
     expect(existsSync(receiptPath)).toBe(false)

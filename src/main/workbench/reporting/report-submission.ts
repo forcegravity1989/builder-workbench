@@ -14,10 +14,7 @@ import type {
   FeedbackSubmitBody,
   FeedbackSubmitResult
 } from '../../ipc/feedback'
-import {
-  resolveWelinkReportConfig,
-  WELINK_REPORT_CONFIG_MISSING_MESSAGE
-} from './welink-report-config'
+import { resolveWelinkReportConfig } from './welink-report-config'
 import {
   ensureReportFolder,
   removeReportFile,
@@ -142,12 +139,6 @@ export async function submitWelinkReport(
   return withSpan('workbench.reporting.submit', async (span) => {
     span.setAttribute('channel', body.submissionType)
     const config = resolveWelinkReportConfig()
-    if (!config) {
-      span.setAttribute('status', 'failed')
-      span.setAttribute('errorCode', 'config-missing')
-      span.fail('WORKBENCH_WELINK_SPACE_ID not configured')
-      return { ok: false, status: null, error: WELINK_REPORT_CONFIG_MISSING_MESSAGE }
-    }
     try {
       const route = await resolveWelinkRoute()
       const folderId = await ensureReportFolder(route, config.spaceId)
@@ -241,12 +232,6 @@ export async function submitWelinkDiagnosticsBundle(
     span.setAttribute('op', 'upload')
     span.setAttribute('bytes', boundedBytes(Buffer.byteLength(payload)))
     const config = resolveWelinkReportConfig()
-    if (!config) {
-      span.setAttribute('status', 'failed')
-      span.setAttribute('errorCode', 'config-missing')
-      span.fail('WORKBENCH_WELINK_SPACE_ID not configured')
-      throw new Error(WELINK_REPORT_CONFIG_MISSING_MESSAGE)
-    }
     const fileName = diagnosticsBundleFileName(bundleSubmissionId)
     try {
       const route = await resolveWelinkRoute()

@@ -53,12 +53,6 @@ const ORCA_POSTHOG_WRITE_KEY_LITERAL =
   typeof orcaPostHogWriteKey === 'string' && orcaPostHogWriteKey.length > 0
     ? JSON.stringify(orcaPostHogWriteKey)
     : 'null'
-// Reports use the fixed BW support-group destination embedded in this build.
-const workbenchWelinkSpaceId = process.env.WORKBENCH_WELINK_SPACE_ID
-const WORKBENCH_WELINK_SPACE_ID_LITERAL =
-  typeof workbenchWelinkSpaceId === 'string' && workbenchWelinkSpaceId.length > 0
-    ? JSON.stringify(workbenchWelinkSpaceId)
-    : 'null'
 
 const workbenchShellEnabled =
   process.env.VITE_WORKBENCH_SHELL === '1' ||
@@ -282,7 +276,6 @@ export const electronViteConfig: UserConfig = {
     define: {
       ORCA_BUILD_IDENTITY: ORCA_BUILD_IDENTITY_LITERAL,
       ORCA_POSTHOG_WRITE_KEY: ORCA_POSTHOG_WRITE_KEY_LITERAL,
-      WORKBENCH_WELINK_SPACE_ID: WORKBENCH_WELINK_SPACE_ID_LITERAL,
       WORKBENCH_SHELL: VITE_WORKBENCH_SHELL_LITERAL
     },
     // Why: @xterm/headless declares "exports": null in package.json, which

@@ -11,6 +11,3 @@
 //
 declare const ORCA_BUILD_IDENTITY: 'stable' | 'rc' | null
 declare const ORCA_POSTHOG_WRITE_KEY: string | null
-
-// Fixed BW support-group destination, substituted at build time.
-declare const WORKBENCH_WELINK_SPACE_ID: string | null
