@@ -1,6 +1,7 @@
 // Batch, retry, shutdown and persisted-consent contracts for the WeLink transport.
 
 import { gzipSync } from 'node:zlib'
+import type * as FileSystem from 'node:fs'
 import { dirname } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as oneboxClientModule from './welink-onebox-client'
@@ -14,7 +15,7 @@ const { ensureReportFolderMock, uploadReportFileMock, runPreflightCheckMock, cle
   }))
 
 vi.mock('node:fs', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs')>()
+  const actual = await importOriginal<typeof FileSystem>()
   return {
     ...actual,
     rmSync: (...args: Parameters<typeof actual.rmSync>) => {
@@ -213,7 +214,7 @@ describe('welink telemetry sink protocol', () => {
       await flushTelemetryBuffer()
       expect(uploadReportFileMock).toHaveBeenCalledTimes(uploadsBeforeCleanupFailure + 1)
     } finally {
-      const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+      const actual = await vi.importActual<typeof FileSystem>('node:fs')
       const attemptedFile = uploadReportFileMock.mock.calls[uploadsBeforeCleanupFailure]?.[3]
       if (typeof attemptedFile === 'string') {
         actual.rmSync(dirname(attemptedFile), { recursive: true, force: true })
