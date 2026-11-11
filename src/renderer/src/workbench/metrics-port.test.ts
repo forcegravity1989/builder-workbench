@@ -52,7 +52,6 @@ it('preserves an unavailable source and previous evidence without turning it int
   ).rejects.toMatchObject({ code: 'host-unavailable', message: 'Disconnected' })
 })
 
-// 环 4 ratchet 对冲（#553）：同一「配对宿主 owner 路由」守卫的两条用例合并,断言原样保留。
 it('routes paired draft and catalog reads through the environment owner, preserving identities', async () => {
   const planRef = {
     kind: 'draft' as const,

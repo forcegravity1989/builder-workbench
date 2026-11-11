@@ -2,6 +2,7 @@ import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observab
 import { MetricScopeSchema, MetricReadRequestSchema } from '../../../../shared/workbench/metrics'
 import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-result'
 import { nativeMetricsService } from '../../../workbench/metrics-runtime'
+import { metricReadingFailureCode } from '../../../workbench/metrics/collector-service'
 
 export const WORKBENCH_METRICS_METHODS = [
   defineWorkbenchMethod({
@@ -16,10 +17,13 @@ export const WORKBENCH_METRICS_METHODS = [
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMetricsService(runtime).read(params))
   }),
-  defineWorkbenchMethod({
-    name: 'workbench.metrics.refresh',
-    params: MetricReadRequestSchema,
-    handler: (params, { runtime }) =>
-      workbenchRuntimeResult(() => nativeMetricsService(runtime).refresh(params))
-  })
+  defineWorkbenchMethod(
+    {
+      name: 'workbench.metrics.refresh',
+      params: MetricReadRequestSchema,
+      handler: (params, { runtime }) =>
+        workbenchRuntimeResult(() => nativeMetricsService(runtime).refresh(params))
+    },
+    (result) => (result.ok ? metricReadingFailureCode(result.value) : undefined)
+  )
 ]

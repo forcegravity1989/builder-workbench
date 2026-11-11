@@ -40,9 +40,6 @@ export async function readReleaseStatus(
   runtime: Parameters<typeof nativeWorkbenchWorkspaceHost>[0],
   params: ReleaseStatusRequest
 ): Promise<ReleaseStatusResult> {
-  // Why span (Issue #553 C 档): release read-back chains scope resolve →
-  // owner resolve → provider read(s); the phases separate "which hop was
-  // slow/unreadable" without touching the honest unknown-state contract.
   return withPhaseSpan('workbench.release.status', async (span, mark) => {
     mark('scope')
     const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))

@@ -21,8 +21,6 @@ export function registerMilestoneRecoveryHandlers(): void {
       throw new Error('本机草案恢复只允许当前应用窗口访问')
     }
   }
-  // Why spans here: these two are BW backend operations outside the RPC
-  // dispatcher, so defineWorkbenchMethod doesn't reach them (Issue #553 A 档).
   ipcMain.handle('workbench:milestone-recovery-read', (event, key: unknown) => {
     authorize(event)
     return withSpan(

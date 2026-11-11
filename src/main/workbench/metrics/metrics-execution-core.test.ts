@@ -56,9 +56,6 @@ type SpanRecord = {
   exit: { _tag: string; cause?: string }
 }
 
-// Span protocol (合并检视 B1): a non-clean collector exit must fail the
-// collector.exec span itself — the reading envelope returns ok, so no outer
-// span ever sees the failure or its stderr tail.
 function captureSpans(): SpanRecord[] {
   const records: SpanRecord[] = []
   const sink: TracerSink = {
@@ -229,7 +226,11 @@ it('runs the collector in the fixed checkout with protocol env and discards it',
 }, 60_000)
 
 it('reports a failing collector exit without inventing a reading', async () => {
-  write('.bw/scripts/fail.js', 'console.error("collector exploded"); process.exit(3)')
+  const secret = 'fixture-credential'
+  const lastLine = 'collector exploded'
+  const padding = '.'.repeat(400 - secret.length - lastLine.length - 2)
+  const stderr = `token=${secret}\n${padding}\n${lastLine}`
+  write('.bw/scripts/fail.js', `console.error(${JSON.stringify(stderr)}); process.exit(3)`)
   const failCommit = commit('failing collector')
   const records = captureSpans()
   const outcome = await executeMetricCollection({
@@ -244,9 +245,11 @@ it('reports a failing collector exit without inventing a reading', async () => {
   _resetTracerForTests()
   expect(outcome.code).toBe(3)
   expect(outcome.stderr).toContain('collector exploded')
+  expect(outcome.stderr).toContain(secret)
   const collector = collectorSpan(records)
   expect(collector?.exit._tag).toBe('Failure')
   expect(collector?.exit.cause).toContain('collector exploded')
+  expect(collector?.exit.cause).not.toContain(secret)
   expect(collector?.exit.cause).toContain('exited 3')
   expect(collector?.attributes).toMatchObject({ exitCode: 3 })
   expect(collector?.attributes).not.toHaveProperty('stderr')

@@ -1,6 +1,11 @@
 import { expect, it, vi } from 'vitest'
 import type { MetricDefinition, MetricReadRequest } from '../../../shared/workbench/metrics'
+import { _resetTracerForTests, setActiveSink } from '../../observability/tracer'
+import { WORKBENCH_METRICS_METHODS } from '../../runtime/rpc/methods/workbench-metrics'
+import { nativeMetricsService } from '../metrics-runtime'
 import { createMetricsService, type MetricCollectorContext } from './collector-service'
+
+vi.mock('../metrics-runtime', () => ({ nativeMetricsService: vi.fn() }))
 
 const definition: MetricDefinition = {
   ref: { name: 'count', definitionHash: 'hash', configurationCommit: 'a'.repeat(40) },
@@ -65,7 +70,8 @@ it('preserves the original evidence time on execution and preparation failures',
   const run = vi
     .fn()
     .mockResolvedValueOnce({ stdout: '{"points":[{"day":"2026-09-01","value":0}]}' })
-    .mockRejectedValue(new Error('timed out'))
+    .mockRejectedValueOnce(new Error('timed out'))
+    .mockResolvedValue({ stdout: 'not JSON' })
   const service = createMetricsService(
     {
       catalog: unusedCatalog,
@@ -78,18 +84,71 @@ it('preserves the original evidence time on execution and preparation failures',
     },
     () => now
   )
-  await service.refresh(request)
-  now = '2026-09-20T11:00:00Z'
-  expect(await service.refresh(request)).toMatchObject({
-    status: 'error',
-    previous: { readings: [{ value: 0, collectedAt: '2026-09-20T10:00:00Z' }] }
+  vi.mocked(nativeMetricsService).mockReturnValue(service)
+  const method = WORKBENCH_METRICS_METHODS.find(
+    (entry) => entry.name === 'workbench.metrics.refresh'
+  )
+  if (!method) {
+    throw new Error('workbench.metrics.refresh is not registered')
+  }
+  const refresh = () => method.handler(request, {} as never)
+  const records: unknown[] = []
+  setActiveSink({
+    push(record) {
+      records.push(record)
+    },
+    flush() {
+      /* no-op */
+    },
+    close() {
+      /* no-op */
+    }
   })
-  unavailable = true
-  expect(await service.refresh(request)).toMatchObject({
-    status: 'error',
-    reason: { message: 'host disconnected' },
-    previous: { readings: [{ collectedAt: '2026-09-20T10:00:00Z' }] }
-  })
+  try {
+    await refresh()
+    now = '2026-09-20T11:00:00Z'
+    expect(await refresh()).toMatchObject({
+      ok: true,
+      value: {
+        status: 'error',
+        previous: { readings: [{ value: 0, collectedAt: '2026-09-20T10:00:00Z' }] }
+      }
+    })
+    expect(await refresh()).toMatchObject({
+      ok: true,
+      value: { status: 'error', reason: { code: 'invalid-output' } }
+    })
+    unavailable = true
+    expect(await refresh()).toMatchObject({
+      ok: true,
+      value: {
+        status: 'error',
+        reason: { message: 'host disconnected' },
+        previous: { readings: [{ collectedAt: '2026-09-20T10:00:00Z' }] }
+      }
+    })
+    expect(records).toHaveLength(8)
+    expect(records[0]).toMatchObject({ kind: 'internal', exit: { _tag: 'Success' } })
+    expect(records[1]).toMatchObject({ kind: 'server', exit: { _tag: 'Success' } })
+    for (const [index, phase, code] of [
+      [2, 'collect', 'collection-failed'],
+      [4, 'decode', 'invalid-output'],
+      [6, 'prepare', 'collection-failed']
+    ] as const) {
+      expect(records[index]).toMatchObject({
+        kind: 'internal',
+        attributes: { [`${phase}Ms`]: expect.any(Number), errorCode: code },
+        exit: { _tag: 'Failure', cause: code }
+      })
+      expect(records[index + 1]).toMatchObject({
+        kind: 'server',
+        attributes: { errorCode: code },
+        exit: { _tag: 'Failure', cause: code }
+      })
+    }
+  } finally {
+    _resetTracerForTests()
+  }
 })
 
 it('does not reuse a result when script revision or data target changes', async () => {

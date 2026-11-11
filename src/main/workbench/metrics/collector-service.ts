@@ -29,6 +29,10 @@ export type MetricsHost = {
   prepare(scope: MetricScope, ref: MetricRef): Promise<MetricCollectorContext>
 }
 
+export function metricReadingFailureCode(reading: MetricReading): string | undefined {
+  return reading.status === 'error' ? reading.reason.code : undefined
+}
+
 export function createMetricsService(
   host: MetricsHost,
   clock = () => new Date().toISOString()
@@ -89,96 +93,96 @@ export function createMetricsService(
       }
     },
     async refresh(input) {
-      // Why span (Issue #553 C 档): the refresh chain (prepare → 900s collect →
-      // decode) was one opaque blob; phase attributes decompose it. Child
-      // spans under it: sampled git.exec (worktree checkout) and
-      // workbench.collector.exec (B 档). mark() opens a phase (start
-      // convention) — marks sit BEFORE the work they name.
-      return withPhaseSpan('workbench.metrics.refresh', async (span, mark) => {
-        mark('parse')
-        const request = MetricReadRequestSchema.parse(input)
-        span.setAttribute('metrics.granularity', request.window.granularity)
-        mark('prepare')
-        const lookup = requestKey(request)
-        const sequence = (generation.get(lookup) ?? 0) + 1
-        generation.set(lookup, sequence)
-        const remember = (value: MetricReading) => {
-          if (generation.get(lookup) === sequence) {
-            lastAttempt.set(lookup, value)
+      return withPhaseSpan<MetricReading>(
+        'workbench.metrics.refresh',
+        async (span, mark) => {
+          mark('parse')
+          const request = MetricReadRequestSchema.parse(input)
+          span.setAttribute('metrics.granularity', request.window.granularity)
+          mark('prepare')
+          const lookup = requestKey(request)
+          const sequence = (generation.get(lookup) ?? 0) + 1
+          generation.set(lookup, sequence)
+          const remember = (value: MetricReading) => {
+            if (generation.get(lookup) === sequence) {
+              lastAttempt.set(lookup, value)
+            }
+            return value
           }
-          return value
-        }
-        let resolved: Awaited<ReturnType<typeof resolve>>
-        try {
-          resolved = await resolve(request)
-        } catch (error) {
-          return remember(failed(error, lastAttempt.get(lookup)))
-        }
-        const { context, key } = resolved
-        const pending = running.get(key)
-        if (pending) {
-          mark('dedupe-wait')
-          return remember(await pending)
-        }
-        const previous = completed.get(key)
-        const oldEvidence = previous?.status === 'ready' ? previous : previous?.previous
-        const promise = (async (): Promise<MetricReading> => {
-          const startedAt = clock()
-          const run: MetricRun = {
-            runId: randomUUID(),
-            startedAt,
-            finishedAt: startedAt,
-            collectorRevision: context.collectorRevision,
-            dataTarget: context.dataTarget
-          }
+          let resolved: Awaited<ReturnType<typeof resolve>>
           try {
-            const { since, until, granularity } = request.window
-            mark('collect')
-            const output = await context.run(
-              ['--since', since, '--until', until, '--granularity', granularity],
-              request.window.timezone
-            )
-            run.finishedAt = clock()
-            const readings = decodeMetricOutput({
-              stdout: output.stdout,
-              definition: context.definition,
-              window: request.window,
-              collectedAt: run.finishedAt,
-              collectorRevision: context.collectorRevision,
-              source: context.source
-            })
-            return readings.length
-              ? { status: 'ready', readings, run }
-              : {
-                  status: 'unknown',
-                  reason: { code: 'no-data', message: '来源没有返回本窗口的适用数据' },
-                  previous: oldEvidence,
-                  run
-                }
+            resolved = await resolve(request)
           } catch (error) {
-            run.finishedAt = clock()
-            return {
-              status: 'error',
-              reason: {
-                code: error instanceof MetricCollectorError ? error.code : 'collection-failed',
-                message: error instanceof Error ? error.message : '采集失败'
-              },
-              previous: oldEvidence,
-              run
+            return remember(failed(error, lastAttempt.get(lookup)))
+          }
+          const { context, key } = resolved
+          const pending = running.get(key)
+          if (pending) {
+            mark('dedupe-wait')
+            return remember(await pending)
+          }
+          const previous = completed.get(key)
+          const oldEvidence = previous?.status === 'ready' ? previous : previous?.previous
+          const promise = (async (): Promise<MetricReading> => {
+            const startedAt = clock()
+            const run: MetricRun = {
+              runId: randomUUID(),
+              startedAt,
+              finishedAt: startedAt,
+              collectorRevision: context.collectorRevision,
+              dataTarget: context.dataTarget
+            }
+            try {
+              const { since, until, granularity } = request.window
+              mark('collect')
+              const output = await context.run(
+                ['--since', since, '--until', until, '--granularity', granularity],
+                request.window.timezone
+              )
+              run.finishedAt = clock()
+              mark('decode')
+              const readings = decodeMetricOutput({
+                stdout: output.stdout,
+                definition: context.definition,
+                window: request.window,
+                collectedAt: run.finishedAt,
+                collectorRevision: context.collectorRevision,
+                source: context.source
+              })
+              return readings.length
+                ? { status: 'ready', readings, run }
+                : {
+                    status: 'unknown',
+                    reason: { code: 'no-data', message: '来源没有返回本窗口的适用数据' },
+                    previous: oldEvidence,
+                    run
+                  }
+            } catch (error) {
+              run.finishedAt = clock()
+              return {
+                status: 'error',
+                reason: {
+                  code: error instanceof MetricCollectorError ? error.code : 'collection-failed',
+                  message: error instanceof Error ? error.message : '采集失败'
+                },
+                previous: oldEvidence,
+                run
+              }
+            }
+          })()
+          running.set(key, promise)
+          try {
+            const result = await promise
+            completed.set(key, result)
+            return remember(result)
+          } finally {
+            if (running.get(key) === promise) {
+              running.delete(key)
             }
           }
-        })()
-        running.set(key, promise)
-        try {
-          const result = await promise
-          completed.set(key, result)
-          return remember(result)
-        } finally {
-          if (running.get(key) === promise) {
-            running.delete(key)
-          }
-        }
-      })
+        },
+        metricReadingFailureCode
+      )
     }
   }
 }

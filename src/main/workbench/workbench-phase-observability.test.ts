@@ -1,9 +1,3 @@
-// Phase-attribute protocol guard (Issue #553 C 档): mark() OPENS a phase
-// (start convention), so each `${phase}Ms` must measure the work that follows
-// its own mark — the controlled delays below lock label↔work correspondence
-// (the off-by-one attribution defect independent review caught in the first
-// cut). Unsafe phase labels must not become attribute keys.
-
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
 import { withPhaseSpan } from './workbench-phase-observability'
@@ -42,18 +36,15 @@ afterEach(() => {
 
 describe('withPhaseSpan', () => {
   it('attributes each phase duration to its own label, sanitizes keys, and closes on failure', async () => {
-    const result = await withPhaseSpan(
-      'workbench.test.flow',
-      async (_span, mark) => {
-        mark('resolve')
-        await sleep(40)
-        mark('provider')
-        await sleep(10)
-        mark('not a safe phase!')
-        return 42
-      },
-      { 'flow.kind': 'test' }
-    )
+    const result = await withPhaseSpan('workbench.test.flow', async (span, mark) => {
+      span.setAttribute('flow.kind', 'test')
+      mark('resolve')
+      await sleep(40)
+      mark('provider')
+      await sleep(10)
+      mark('not a safe phase!')
+      return 42
+    })
 
     expect(result).toBe(42)
     expect(records).toHaveLength(1)

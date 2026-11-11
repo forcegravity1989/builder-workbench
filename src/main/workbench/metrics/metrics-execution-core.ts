@@ -11,6 +11,7 @@ import { runWslProcess } from '../../wsl/wsl-runner'
 import { runProcess } from '../../../shared/child-process/run-process'
 import { withSpan } from '../../observability/tracer'
 import { collectorInterpreterLabel } from '../workbench-exec-observability'
+import { traceStderrTail } from '../workbench-trace-details'
 import { isWindowsAbsolutePathLike } from '../../../shared/cross-platform-path'
 import { toLinuxPath } from '../../../shared/wsl-paths'
 import {
@@ -313,12 +314,6 @@ export async function executeMetricCollection(input: {
       throw new MetricCollectorError('execution-root-invalid', '执行根与指定配置修订不一致')
     }
     const args = [...input.run.slice(1), ...input.args]
-    // Why span (Issue #553 B 档): the collector body (the 900s-timeout chain)
-    // was invisible in the trace; host/interpreter/exit attributes show which
-    // segment ate the time. A non-clean exit fails THIS span with the redacted
-    // stderr tail as cause (合并检视 B1): interpretOutcome's MetricCollectorError
-    // is caught upstream and returned as an ok-envelope reading, so no outer
-    // span ever sees the failure.
     outcome = await withSpan(
       'workbench.collector.exec',
       async (span) => {
@@ -366,12 +361,9 @@ export async function executeMetricCollection(input: {
         if (result.outputTruncated) {
           span.setAttribute('outputTruncated', true)
         }
-        // Same three non-clean conditions as interpretOutcome; fail() is
-        // terminal and idempotent, so the surrounding withSpan's end() after
-        // this normal return is a no-op — control flow and the returned
-        // outcome are unchanged (the reading channel keeps its own error).
         if (result.timedOut || result.outputTruncated || result.code !== 0) {
-          const detail = result.stderr.trim().slice(-400)
+          // Capture limits can cut a credential before the redactor sees it.
+          const detail = result.outputTruncated ? '' : traceStderrTail(result.stderr)
           const how = result.timedOut
             ? 'timed out'
             : result.outputTruncated

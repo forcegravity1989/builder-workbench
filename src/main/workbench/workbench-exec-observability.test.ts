@@ -1,12 +1,8 @@
-// Span-attribute protocol guards for the BW exec wrappers (Issue #553 B 档):
-// the closed-vocabulary attribute set (subcommand/arg_count/cwd/exit code) is
-// the source-avoidance contract — argument values and stderr must never
-// become attributes, only the redacted failure cause.
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
+import { listCloudDragonPipelines } from './cloud-dragon-cli-ops'
 import {
-  bwCommandExecFileAsync,
+  bwCbExecFileAsync,
   bwGhExecFileAsync,
   collectorInterpreterLabel
 } from './workbench-exec-observability'
@@ -22,6 +18,7 @@ vi.mock('../git/command-runner/gh-exec-file', () => ({
 vi.mock('../git/command-runner/command-exec-file', () => ({
   commandExecFileAsync: commandExecMock
 }))
+vi.mock('./cloud-dragon-package-ops', () => ({ CLOUDDRAGON_PROJECT_ID: 'fixture-group' }))
 
 type SpanRecord = {
   name: string
@@ -73,7 +70,7 @@ describe('BW exec wrappers', () => {
     })
 
     commandExecMock.mockResolvedValue({ stdout: 'ok', stderr: '' })
-    await bwCommandExecFileAsync('cb', ['pipeline', 'list'])
+    await bwCbExecFileAsync(['pipeline', 'list'])
     expect(records[1].name).toBe('workbench.cli.exec')
     expect(records[1].attributes).toEqual({ 'cli.name': 'cb', 'cli.arg_count': 2 })
     // Interpreter labels stay basename-safe: user-configured collector paths
@@ -98,33 +95,51 @@ describe('BW exec wrappers', () => {
       status: 'failed',
       exitCode: 2
     })
-    // Free text (stderr tail) lives only in the redactor-scrubbed cause.
     expect(records[0].exit.cause).toContain('rate limited')
+    expect(records[0].exit.cause).not.toContain('Command failed:')
     expect(records[0].attributes).not.toHaveProperty('stderr')
 
-    // Real timeout shape from exec-file-capture: a killed flag and no numeric
-    // exit code. (timedOut stays a defensive attribute for result-shaped
-    // collector errors; exec error objects carry killed instead.)
-    const killed = Object.assign(new Error('Command killed: cb run'), {
+    const killed = Object.assign(new Error('gh timed out.'), {
       code: null,
       killed: true
     })
-    commandExecMock.mockRejectedValue(killed)
-    await expect(bwCommandExecFileAsync('cb', ['run'], {})).rejects.toThrow('killed')
-    expect(records[1].attributes).toMatchObject({ status: 'failed', killed: true })
+    ghExecMock.mockRejectedValue(killed)
+    await expect(bwGhExecFileAsync(['run'], {})).rejects.toBe(killed)
+    expect(records[1].attributes).toMatchObject({ status: 'failed', timedOut: true, killed: true })
     expect(records[1].attributes).not.toHaveProperty('exitCode')
 
-    // Cancellation maps to Interrupted, not Failure (合并检视 S2) — same
-    // convention as the A 档 RPC wrapper; abort errors carry killed:true, so
-    // without the branch they would pollute Failure triage.
+    const shimFailure = Object.assign(new Error('C:\\bin\\cb.cmd exited with 7.'), {
+      stderr: 'pipeline denied, token=fixture-credential',
+      stdout: 'private result'
+    })
+    commandExecMock.mockRejectedValue(shimFailure)
+    await expect(bwCbExecFileAsync(['pipeline', 'list'])).rejects.toBe(shimFailure)
+    expect(records[2]).toMatchObject({
+      attributes: { status: 'failed', exitCode: 7 },
+      exit: { _tag: 'Failure', cause: 'cb exited 7: pipeline denied, [redacted:labeled-kv]' }
+    })
+
+    const truncated = Object.assign(new Error('cb.cmd stderr exceeded maxBuffer.'), {
+      stderr: '-----BEGIN PRIVATE KEY-----\npartial-key'
+    })
+    commandExecMock.mockRejectedValue(truncated)
+    await expect(listCloudDragonPipelines()).rejects.toMatchObject({
+      code: 'cb-failed',
+      message: 'cb 命令输出超出上限，无法读取流水线结果'
+    })
+    expect(records[3]).toMatchObject({
+      attributes: { outputTruncated: true },
+      exit: { _tag: 'Failure', cause: 'cb output truncated' }
+    })
+
     const aborted = Object.assign(new Error('The operation was aborted'), {
       name: 'AbortError',
       killed: true
     })
     ghExecMock.mockRejectedValue(aborted)
     await expect(bwGhExecFileAsync(['api', 'y'], {})).rejects.toThrow('aborted')
-    expect(records[2].exit._tag).toBe('Interrupted')
-    expect(records[2].attributes).not.toHaveProperty('status')
-    expect(records[2].attributes).not.toHaveProperty('killed')
+    expect(records[4].exit._tag).toBe('Interrupted')
+    expect(records[4].attributes).not.toHaveProperty('status')
+    expect(records[4].attributes).not.toHaveProperty('killed')
   })
 })

@@ -97,7 +97,6 @@ describe('material draft concurrency', () => {
     await first
     expect(saves).toBe(1)
   })
-  // 环 4 ratchet 对冲（#553）：同一「陈旧异步操作不得覆盖新状态」守卫的两条用例合并,断言原样保留。
   it('stale async reads restore neither a cleared selection nor a newer saved edit', async () => {
     let finish!: (value: { document: typeof base; revision: string }) => void
     const cleared = new MaterialDraftController<typeof base>(

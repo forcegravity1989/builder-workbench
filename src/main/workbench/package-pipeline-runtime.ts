@@ -174,8 +174,6 @@ export function packagePipelineService(runtime: PackageRuntimeHost): PackagePipe
     },
 
     async launch({ scope, pipeline }): Promise<PackageLaunchReceipt> {
-      // Why span (Issue #553 C 档): launch = scope/remote resolve → branch read
-      // → provider pipeline start; the phases show where a stuck 出包 hangs.
       return withPhaseSpan('workbench.package.launch', async (span, mark) => {
         mark('resolve')
         assertLocalHost(scope)

@@ -1,4 +1,4 @@
-import { bwCommandExecFileAsync } from './workbench-exec-observability'
+import { bwCbExecFileAsync, hasTruncatedExecOutput } from './workbench-exec-observability'
 import { extractExecError, isMissingCommandBinaryError } from '../git/exec-error'
 import { CLOUDDRAGON_PROJECT_ID } from './cloud-dragon-package-ops'
 import { PackagePipelineError, failureText } from './package-pipeline-error'
@@ -21,13 +21,16 @@ async function runCb(args: string[]): Promise<string> {
     // 统一限定本项目（CLI 语义的 group_id）；不带时 scheme 调用报
     // "no group_id set"。
     const argv = [...args, '--group', CLOUDDRAGON_PROJECT_ID]
-    const { stdout } = await bwCommandExecFileAsync('cb', argv, {
+    const { stdout } = await bwCbExecFileAsync(argv, {
       encoding: 'utf8',
       timeout: CB_TIMEOUT_MS,
       maxBuffer: 10 * 1024 * 1024
     })
     return stdout
   } catch (error) {
+    if (hasTruncatedExecOutput(error)) {
+      throw new PackagePipelineError('cb-failed', 'cb 命令输出超出上限，无法读取流水线结果')
+    }
     if (isMissingCommandBinaryError(error)) {
       throw new PackagePipelineError(
         'cb-missing',

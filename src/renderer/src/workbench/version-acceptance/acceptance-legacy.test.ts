@@ -77,7 +77,6 @@ const legacyDocument = {
 }
 
 describe('legacy acceptance material', () => {
-  // 环 4 ratchet 对冲（#553）：同一 legacy 投影守卫的两条用例合并,断言原样保留。
   it('parses a pre-v10 document as-is and projects every legacy category; v10 documents project nothing', () => {
     // The material schema is strict, so dropping the retired keys outright would
     // turn every stored pre-v10 file into "corrupt material" and lose real human

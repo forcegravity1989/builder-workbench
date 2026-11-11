@@ -1,7 +1,3 @@
-// Unit guard for the BW RPC span wrapper (Issue #553 A 档): the envelope →
-// span-outcome mapping is a data protocol — {ok:false} payloads never throw,
-// so without this mapping every BW domain failure would trace as Success.
-
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -56,7 +52,6 @@ describe('defineWorkbenchMethod', () => {
     expect(records[0].exit._tag).toBe('Success')
     expect(records[0].attributes.status).toBeUndefined()
 
-    // Sync handlers returning non-envelope payloads (review/skills style) work unchanged.
     const raw = defineWorkbenchMethod({
       name: 'workbench.test.raw',
       params,
@@ -76,7 +71,6 @@ describe('defineWorkbenchMethod', () => {
         error: { code: 'revision-conflict', message: 'stale revision' }
       })
     })
-    // The envelope must reach the renderer unchanged — the span is a witness, not a transformer.
     expect(await failing.handler(input, ctx)).toEqual({
       ok: false,
       error: { code: 'revision-conflict', message: 'stale revision' }
@@ -88,8 +82,6 @@ describe('defineWorkbenchMethod', () => {
     })
     expect(records[0].exit.cause).toBe('revision-conflict: stale revision')
 
-    // Codes outside the stable-identifier vocabulary fall back to a safe label,
-    // and free text never becomes an attribute (source-side avoidance).
     const badCode = defineWorkbenchMethod({
       name: 'workbench.test.badcode',
       params,
@@ -126,9 +118,6 @@ describe('defineWorkbenchMethod', () => {
     expect(records[1].exit._tag).toBe('Interrupted')
   })
 
-  // Architecture-style guard (precedent: observability/architecture.test.ts):
-  // a new workbench-*.ts method file registered with the bare defineMethod
-  // would silently drop out of the trace.
   it('every workbench RPC method file registers through defineWorkbenchMethod', () => {
     const dir = join(__dirname, '..', 'runtime', 'rpc', 'methods')
     const files = readdirSync(dir).filter((f) => /^workbench-.*\.ts$/.test(f))
