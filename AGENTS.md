@@ -17,7 +17,7 @@
 |---|---|
 | 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
 | 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
-| 本仓开发、测试、检视与 PR 交付 | 设计或调整测试、开展独立检视、编写 PR 正文与验证评论前，完整读取 [开发规范](docs/development.md)。本仓会话均适用，不以是否调用起手 Skill 为条件。大特性确认与自主交付边界直接读 [02 §3.2](docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)。 |
+| 本仓开发、测试、检视与 PR 交付 | 设计或调整测试、开展独立检视、编写 PR 正文与验证评论前，完整读取 [开发规范](docs/development.md)。本仓会话均适用，不以是否调用起手 Skill 为条件。特性确认、历史兼容取舍与自主交付边界直接读 [02 §3.2](docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)。 |
 | 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
 | 提单或维护 BW 自身 Issue | 创建、改写或关联前，完整读取[通用 Issue 规范](standard/references/issue-state.md)和[BW 特性矩阵](docs/05-features/README.md)，按主要用户结果选主归属。纳入版本计划时再执行[计划 Skill](standard/skills/week-planning/SKILL.md)的纳入要求。 |
 | 特性级变更 | 从[特性矩阵](docs/05-features/README.md)定位所属旅程，对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，原型后的最终对齐按 §3.2，之后生成仓外实现 plan 并自主交付。大风险仍按原则处理。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
