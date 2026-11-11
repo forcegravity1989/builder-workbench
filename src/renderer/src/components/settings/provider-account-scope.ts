@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getLocalExecutionHostLabel } from '../../../../shared/execution-host'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 
@@ -47,18 +48,28 @@ export function getProviderAccountScope(
         'Remote server: {{value0}}',
         { value0: runtimeId }
       ),
-      description: translate(
-        'auto.components.settings.providerAccountScope.remoteServerCredentials',
-        'Credentials and account checks for this provider are owned by this remote server. Use Settings > Remote Orca Servers > Advanced to edit another default runtime scope.'
-      )
+      description: isWorkbenchShell()
+        ? translate(
+            'guidance.providerRemoteCredentials',
+            'This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.'
+          )
+        : translate(
+            'auto.components.settings.providerAccountScope.remoteServerCredentials',
+            'Credentials and account checks for this provider are owned by this remote server. Use Settings > Remote Orca Servers > Advanced to edit another default runtime scope.'
+          )
     }
   }
   return {
     label: getLocalExecutionHostLabel(),
-    description: translate(
-      'auto.components.settings.providerAccountScope.localCredentials',
-      'Credentials and account checks for this provider are owned by this desktop client. Use Settings > Remote Orca Servers > Advanced to edit server-owned credentials.'
-    )
+    description: isWorkbenchShell()
+      ? translate(
+          'guidance.providerLocalCredentials',
+          'This desktop client owns the provider credentials and account checks. Edit server-owned credentials in the advanced settings for that server.'
+        )
+      : translate(
+          'auto.components.settings.providerAccountScope.localCredentials',
+          'Credentials and account checks for this provider are owned by this desktop client. Use Settings > Remote Orca Servers > Advanced to edit server-owned credentials.'
+        )
   }
 }
 

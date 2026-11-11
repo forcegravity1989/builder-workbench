@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore, type AppState } from '@/store'
 import { revealDashboardAgent } from './reveal-dashboard-agent'
 import { runSleepWorktree } from '../sidebar/sleep-worktree-flow'
@@ -6,6 +6,7 @@ import type { RepoIcon } from '../../../../shared/repo-icon'
 import { buildDashboardSnapshot, type DashboardSnapshotState } from './build-dashboard-snapshot'
 import { createWorktreeAgentRowsCache } from './worktree-agent-rows-cache'
 import { launchDashboardAgent } from './launch-dashboard-agent'
+import { useDashboardHostAgentPreferences } from './use-dashboard-host-agent-preferences'
 
 // Why: cap snapshot rebuilds during bursts of agent-status pings. The board is a
 // glanceable surface, so ~4 updates/sec is plenty and keeps the cross-worktree
@@ -110,6 +111,8 @@ function watchSnapshotInputs(onChanged: () => void): () => void {
  *     the agent's worktree and focus its pane in this (main) window.
  */
 export function useDashboardPopoutBridge(enabled: boolean): void {
+  const [popoutOpen, setPopoutOpen] = useState(false)
+  const hostAgentPreferences = useDashboardHostAgentPreferences(enabled && popoutOpen)
   useEffect(() => {
     if (!enabled) {
       return
@@ -172,7 +175,8 @@ export function useDashboardPopoutBridge(enabled: boolean): void {
       const state = useAppStore.getState()
       const snapshot = buildDashboardSnapshot(state, lastPublishAt, {
         rowsCache,
-        rowsGeneration: state.agentStatusEpoch
+        rowsGeneration: state.agentStatusEpoch,
+        hostAgentPreferences
       })
       const icons = snapshot.repoIconsByRepoId ?? {}
       if (!withIcons && repoIconsUnchanged(icons, lastPublishedRepoIcons)) {
@@ -214,6 +218,7 @@ export function useDashboardPopoutBridge(enabled: boolean): void {
         return
       }
       open = next
+      setPopoutOpen(next)
       if (open) {
         if (!unsubscribeStore) {
           unsubscribeStore = watchSnapshotInputs(publishThrottled)
@@ -253,5 +258,5 @@ export function useDashboardPopoutBridge(enabled: boolean): void {
         clearTimeout(trailingTimer)
       }
     }
-  }, [enabled])
+  }, [enabled, hostAgentPreferences])
 }

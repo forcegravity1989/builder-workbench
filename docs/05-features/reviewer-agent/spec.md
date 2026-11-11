@@ -1,8 +1,8 @@
 # Spec · 独立评审（reviewer agent）
 
-> **方案边界（2026-09-11）**：下文保留 2026-08 的设计与讨论；按 [STATUS.md](STATUS.md) 记录，GitHub CI 路径已交付，工作台内「请评审」路径仍未接入。旧 gate 主张与能力描述不作为现行产品操作；当前主张见 [原则 03](../../01-principles/03-press-release-faq-flywheel.md)，术语见 [CONTEXT.md](../../../CONTEXT.md)。
+> **历史方案边界**：下文保留 2026-08 的设计与讨论，不是现行开发指令。工作台内「请评审」未接入；当前采用状态与开发检视入口以 [STATUS.md](STATUS.md) 为准。当前主张见 [原则 03](../../01-principles/03-press-release-faq-flywheel.md)，术语见 [CONTEXT.md](../../../CONTEXT.md)。
 
-> **30 秒导读**：这是什么——本次变更的**规格件**：独立评审长什么样、怎么操作、怎么防作弊。给谁看——过规格 gate 的人、审这批 PR 的人。现在作数吗——**in_review**（2026-08-27；见 `STATUS.md`）；上游意图见同目录 `intent.md`，可点原型见同目录 `prototype.html`。
+> **历史方案导读**：这是什么——本次变更的**规格件**：独立评审长什么样、怎么操作、怎么防作弊。给谁看——过规格 gate 的人、审这批 PR 的人。当时状态——**in_review**（2026-08-27；见 `STATUS.md`）；上游意图见同目录 `intent.md`，可点原型见同目录 `prototype.html`。
 
 ## 设计拍板
 
@@ -15,7 +15,6 @@
    - 历史规范（文件已退役，不再作为读取入口）：`standard/system-prompt/references/review.md`（评审阶段规范）+ **评审主提示词外置** `standard/system-prompt/REVIEW.md.tmpl`（与 SYSTEM.md.tmpl 同机制：`{{...}}` 占位、编进二进制、改身份=改 md + 抬 `standard/VERSION`）。
    - 承载：新命令「请评审」；评审事件即 MR 评论（只追加，事后抹不掉）——不落本地库、不建评审台账。
 6. **MVP 不派生「已评审」信号**：界面不解析 MR 评论、不点评审灯——没读回的数据不装绿。人去 MR 上看意见（原型步 3 是评论在远端的样子）。
-7. **CI 层自动评审（2026-08-27 谈定补入）**：GitHub 仓的自动触发放在 CI 层——官方 `claude-code-action` 在 PR 打开/更新时自动 review（本仓落一份 workflow，认证走订阅 OAuth token，secret 由人配；配好前 workflow 如实不生效）。边界三条：只覆盖 GitHub 仓（codehub 仍靠内建「请评审」）；review 口径不另立第二份正本——action 每次自动读仓根 `CLAUDE.md`→`AGENTS.md`，与 `mr-review` 剧本同源于仓内规矩；CI 评论与评审会话评论共存，靠评审会话首行的机器可辨标记区分。
 
 ## 操作逻辑
 
@@ -49,7 +48,7 @@
 
 - **会话身份 1:1 绑定 Issue，第二场会话怎么存？** 会话记录按 Issue 存成 `<slug>/<iid>.jsonl`；评审会话另存 `<slug>/<iid>-review.jsonl`，读写走同一套 SessionStore，只是键上多一个评审轴。worktree 不另开（评审只读不写，共用这个 Issue 的树；diff 从远端拉，不依赖树的干净度）。
 - **`--resume` 接回怎么办？** MVP **不接**评审会话的续聊接回（SessionStart hook 的 run-dir 按 Issue 编号键控，挂上去会覆盖写码会话的 session id）。评审会话进程死了就再点一次「请评审」，重新评一轮、追加一条评论——幂等且无害。如实标「没建」。
-- **成本？** 一次评审 = 一场会话的预算（读 diff + 写意见，通常远小于写码会话）。内建入口不自动触发（GitHub 仓的 CI 层自动评审见拍板 7），花不花人说了算。
+- **成本？** 一次评审 = 一场会话的预算（读 diff + 写意见，通常远小于写码会话）。内建入口不自动触发，花不花人说了算。
 - **评审质量不齐怎么办？** 人仍是 gate：意见只是证据，烂意见的代价是被人忽略,不会污染状态或数据。剧本强制文件:行证据与「没跑的写没跑」，压低空对空点评的概率。
 - **为什么不在 Rust 里加 `mr_diff` / `comment_mr` 远端方法？** 评审的读与写都发生在会话里,agent 直接用成熟 CLI；Rust 加一层只会造第二条平行通道。Workbench 侧唯一需要的远端读是「MR 开着没、几号」——`open_mr_for_branch` 已有。
 
@@ -64,5 +63,5 @@
 ## 标注的冲突
 
 1. **高保真正本（`docs/hifi/index.html`）未同步**：原型先落在本目录，hifi 大文件的整合等规格 gate 过了再做，避免未认的样子进视觉正本。
-2. **`[review]` 段的关系**：`.bw/issue-policy.toml` 已有 `[review] who_can_merge` 人类治理配置；本变更不动它、也不往里加评审开关（GitHub 仓自动评审的边界见拍板 7；内建入口要不要自动触发，用出真需求再谈）。
+2. **`[review]` 段的关系**：`.bw/issue-policy.toml` 已有 `[review] who_can_merge` 人类治理配置；本变更不动它、也不往里加评审开关。
 3. **评审会话无接回**：与「会话身份进 jsonl、进程死了靠 --resume 接回」的既有设计（architecture 模块 7）相比是一处如实的降级，原因见内部 FAQ；不做兼容层，后续要接就把 run-dir 键控加上评审轴。

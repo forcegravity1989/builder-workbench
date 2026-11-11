@@ -10,6 +10,7 @@ import {
 import { useAppStore } from '@/store'
 import { FeatureWallTourSurface } from './FeatureWallTourSurface'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export default function FeatureWallModal(): JSX.Element | null {
   const activeModal = useAppStore((s) => s.activeModal)
@@ -36,18 +37,25 @@ export default function FeatureWallModal(): JSX.Element | null {
       >
         <DialogHeader className="gap-1 border-b border-border px-7 py-4">
           <DialogTitle className="text-lg">
-            {translate(
-              'auto.components.feature.wall.FeatureWallModal.3567e147c8',
-              'Get to know Orca'
-            )}
+            {isWorkbenchShell()
+              ? translate('guidance.explore', 'Explore BW')
+              : translate(
+                  'auto.components.feature.wall.FeatureWallModal.3567e147c8',
+                  'Get to know Orca'
+                )}
           </DialogTitle>
           {/* Why: Radix requires a description for the dialog to be a11y-compliant,
               but we don't want it visible - the rail and step copy already orient users. */}
           <DialogDescription className="sr-only">
-            {translate(
-              'auto.components.feature.wall.FeatureWallModal.33dca8bbbe',
-              'A short, workflow-by-workflow tour of Orca.'
-            )}
+            {isWorkbenchShell()
+              ? translate(
+                  'guidance.exploreDescription',
+                  'Explore BW capabilities through the existing demonstrations.'
+                )
+              : translate(
+                  'auto.components.feature.wall.FeatureWallModal.33dca8bbbe',
+                  'A short, workflow-by-workflow tour of Orca.'
+                )}
           </DialogDescription>
         </DialogHeader>
 

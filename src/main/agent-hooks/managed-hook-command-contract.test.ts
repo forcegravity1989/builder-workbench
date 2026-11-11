@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { getDshManagedCommand, getDshRemoteManagedCommand } from '../dsh/hook-settings'
 import {
   CLAUDE_HOOK_SETTINGS,
   OPENCLAUDE_HOOK_SETTINGS,
@@ -87,6 +88,10 @@ const buildersByAgent = new Map<string, CommandBuilders>([
     }
   ],
   ['gemini', standardCommands],
+  ['dsh', {
+    local: (path) => [getDshManagedCommand(path)],
+    remote: (path) => [getDshRemoteManagedCommand(path)]
+  }],
   [
     'antigravity',
     {

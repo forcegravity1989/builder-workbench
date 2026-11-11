@@ -1,17 +1,25 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import {
-  createWebRuntimeAgentSessionTerminal,
-  createWebRuntimeAgentSessionTerminalWithLaunchDraft,
-  createWebRuntimeSessionTerminal,
+  deliverCreatedWebRuntimeAgentSessionPrompt,
+  type createWebRuntimeSessionTerminal,
   isWebTerminalSurfaceTabId
 } from '@/runtime/web-runtime-session'
-import type { AgentStartupPlan } from '@/lib/tui-agent-startup'
 import type { Tab } from '../../../shared/tab-types'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import type { AgentPromptDelivery } from '../../../shared/agent-session-host-authority'
 import { translate } from '@/i18n/i18n'
-import { toAgentLaunchPreferences } from '@/runtime/agent-session-create-operation'
+import { readHostAgentStartupSettings } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
+import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
+import { createWebRuntimeSessionTerminalResult } from '@/runtime/web-runtime-terminal-create-operation'
+import { planLaunchAgentStartupPrompt } from './launch-agent-startup-prompt-plan'
+import type { LaunchAgentStartupPromptPlan } from './launch-agent-startup-prompt-plan'
+import { TUI_AGENT_CONFIG } from '../../../shared/tui-agent-config'
+import {
+  resolveTuiAgentLaunchArgs,
+  resolveTuiAgentLaunchEnv
+} from '../../../shared/tui-agent-launch-defaults'
+import { resolveHostAgentStartupShell } from '../../../shared/windows-terminal-shell'
 
 function removeStaleLocalAgentTabsForWebHostLaunch(worktreeId: string): void {
   const state = useAppStore.getState()
@@ -32,18 +40,17 @@ function removeStaleLocalAgentTabsForWebHostLaunch(worktreeId: string): void {
  * close routes through session.tabs.close on the host, so prune them before
  * the host snapshot.
  */
-export function launchAgentInWebHostTab(args: {
+export async function launchAgentInWebHostTab(args: {
   agent: TuiAgent
   worktreeId: string
   environmentId: string | null
   groupId?: string
   cwd?: string | null
-  startupPlan: AgentStartupPlan
+  buildLegacyStartup: () => LaunchAgentStartupPromptPlan
   prompt: string
   promptDelivery: 'auto-submit' | 'draft' | 'submit-after-ready'
-  pastePromptAfterReady: string | null
-  submitPastedPrompt: boolean
   agentArgs?: string | null
+  launchPlatform?: NodeJS.Platform
   viewMode?: Tab['viewMode']
   activate?: boolean
   onPromptDelivered?: () => void
@@ -54,46 +61,114 @@ export function launchAgentInWebHostTab(args: {
     environmentId,
     groupId,
     cwd,
-    startupPlan,
+    buildLegacyStartup,
     prompt,
     promptDelivery,
-    pastePromptAfterReady,
-    submitPastedPrompt,
     agentArgs,
     viewMode,
     onPromptDelivered
   } = args
   const hasPrompt = prompt.length > 0
-  const launchPreferences = toAgentLaunchPreferences(startupPlan.sessionOptions)
+  const pairingRevision = environmentId ? getRuntimeEnvironmentRevision(environmentId) : undefined
+  const readHostStatus = () => {
+    const entry = environmentId
+      ? useAppStore.getState().runtimeStatusByEnvironmentId.get(environmentId)
+      : undefined
+    return entry?.snapshot?.status ?? entry?.status
+  }
+  const runtimeId = readHostStatus()?.runtimeId
+  let startup: LaunchAgentStartupPromptPlan = planLaunchAgentStartupPrompt({
+    base: {
+      agent,
+      cmdOverrides: {},
+      agentArgs: null,
+      platform: args.launchPlatform ?? 'linux',
+      isRemote: true
+    },
+    prompt,
+    promptDelivery,
+    isFollowupPath: TUI_AGENT_CONFIG[agent].promptInjectionMode === 'stdin-after-start'
+  })
   const structuredPromptDelivery: AgentPromptDelivery =
     promptDelivery === 'draft' ? 'draft' : 'auto-submit'
   removeStaleLocalAgentTabsForWebHostLaunch(worktreeId)
   const launch = {
     worktreeId,
     environmentId,
+    expectedEnvironmentRuntimeId: runtimeId,
     targetGroupId: groupId,
     activate: args.activate !== false,
     selectWorktree: args.activate !== false,
     ...(cwd?.trim() ? { cwd } : {}),
     ...(viewMode ? { viewMode } : {}),
     agentSessionKind: 'fresh',
-    ...(hasPrompt
-      ? {
-          launchAgent: agent,
-          command: startupPlan.launchCommand,
-          ...(startupPlan.env ? { env: startupPlan.env } : {}),
-          launchConfig: startupPlan.launchConfig,
-          ...(startupPlan.startupCommandDelivery
-            ? { startupCommandDelivery: startupPlan.startupCommandDelivery }
-            : {})
-        }
-      : { agent }),
-    ...(hasPrompt && pastePromptAfterReady === null ? { prompt } : {}),
-    ...(hasPrompt && pastePromptAfterReady === null
+    launchAgent: agent,
+    agent,
+    ...(hasPrompt && startup.pasteDraftAfterLaunch === null ? { prompt } : {}),
+    ...(hasPrompt && startup.pasteDraftAfterLaunch === null
       ? { promptDelivery: structuredPromptDelivery }
       : {}),
     ...(agentArgs !== undefined ? { agentArgs } : {}),
-    ...(launchPreferences ? { launchPreferences } : {})
+    legacyAgentLaunch: async () => {
+      if (agentArgs === undefined && (!hasPrompt || promptDelivery === 'auto-submit')) {
+        return hasPrompt && startup.pasteDraftAfterLaunch === null ? { agentPrompt: prompt } : {}
+      }
+      const hostSettings = environmentId
+        ? await readHostAgentStartupSettings({ environmentId, pairingRevision, runtimeId }).catch(
+            (error: unknown) => {
+              if (error instanceof Error && error.name === 'AbortError') {
+                throw error
+              }
+              return null
+            }
+          )
+        : null
+      const status = readHostStatus()
+      if (
+        environmentId &&
+        (getRuntimeEnvironmentRevision(environmentId) !== pairingRevision ||
+          (runtimeId && status?.runtimeId !== runtimeId))
+      ) {
+        throw new DOMException('Agent launch cancelled', 'AbortError')
+      }
+      if (hostSettings) {
+        const platform = args.launchPlatform ?? status?.hostPlatform ?? 'linux'
+        startup = planLaunchAgentStartupPrompt({
+          base: {
+            agent,
+            cmdOverrides: hostSettings.agentCmdOverrides ?? {},
+            agentArgs:
+              agentArgs !== undefined
+                ? agentArgs
+                : resolveTuiAgentLaunchArgs(agent, hostSettings.agentDefaultArgs),
+            agentEnv: resolveTuiAgentLaunchEnv(agent, hostSettings.agentDefaultEnv),
+            platform,
+            shell: resolveHostAgentStartupShell({
+              platform,
+              isRemote: true,
+              hostTerminalWindowsShell: status?.terminalWindowsShell
+            }),
+            isRemote: true
+          },
+          prompt,
+          promptDelivery,
+          isFollowupPath: TUI_AGENT_CONFIG[agent].promptInjectionMode === 'stdin-after-start'
+        })
+      } else {
+        // Older hosts may not expose settings; preserve their existing launch recipe.
+        startup = buildLegacyStartup()
+      }
+      const plan = startup.startupPlan
+      if (!plan) {
+        throw new Error('Could not prepare the remote agent command.')
+      }
+      return {
+        command: plan.launchCommand,
+        env: plan.env,
+        launchConfig: plan.launchConfig,
+        startupCommandDelivery: plan.startupCommandDelivery
+      }
+    }
   } as const
 
   const handleCreation = ({
@@ -126,25 +201,20 @@ export function launchAgentInWebHostTab(args: {
     return { delivered: promptDelivered, failureNotified: false, hostTabId: outcome.hostTabId }
   }
 
-  if (pastePromptAfterReady !== null) {
-    return createWebRuntimeAgentSessionTerminal({
-      ...launch,
+  const created = await createWebRuntimeSessionTerminalResult(launch)
+  const promptDelivered =
+    hasPrompt &&
+    (await deliverCreatedWebRuntimeAgentSessionPrompt(created, {
       agent,
-      promptAfterReady: pastePromptAfterReady,
-      submitPrompt: submitPastedPrompt,
-      forcePromptPaste: promptDelivery === 'submit-after-ready'
-    }).then(handleCreation)
-  }
-  if (hasPrompt && promptDelivery === 'draft') {
-    // Why: the draft rode in on the launch command, so no paste runs and
-    // nothing else seeds the chat-composer copy for this host class.
-    return createWebRuntimeAgentSessionTerminalWithLaunchDraft({
-      ...launch,
-      agent,
-      launchDraft: prompt
-    }).then((outcome) => handleCreation({ outcome, promptDelivered: outcome.status === 'created' }))
-  }
-  return createWebRuntimeSessionTerminal(launch).then((outcome) =>
-    handleCreation({ outcome, promptDelivered: outcome.status === 'created' && hasPrompt })
-  )
+      ...(startup.pasteDraftAfterLaunch !== null
+        ? {
+            promptAfterReady: startup.pasteDraftAfterLaunch,
+            submitPrompt: startup.submitPastedPrompt,
+            forcePromptPaste: true
+          }
+        : promptDelivery === 'draft'
+          ? { launchDraft: prompt }
+          : {})
+    }))
+  return handleCreation({ ...created, promptDelivered })
 }

@@ -15,7 +15,8 @@ import {
 import {
   enableProjectStats,
   verifyGoalTaskEntry,
-  verifyOverviewRestart
+  verifyOverviewRestart,
+  openVersionOverview
 } from './workbench-overview-restart'
 
 export async function verifyVersionOverview(
@@ -25,26 +26,9 @@ export async function verifyVersionOverview(
   info: TestInfo
 ) {
   const materialsBefore = snapshotOverviewMaterials(root)
-  const open = async (version: string, afterBackgroundReload = false) => {
-    const group = page.locator('.wb-version-group', {
-      has: page.getByRole('button', { name: `${version} 展开或收起`, exact: true })
-    })
-    const overview = group.getByRole('button', { name: '总览', exact: true })
-    const toggle = group.getByRole('button', { name: `${version} 展开或收起`, exact: true })
-    await expect(toggle).toBeVisible()
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-      await toggle.click({ force: afterBackgroundReload })
-    }
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    await expect(overview).toBeVisible()
-    await expect(overview).toBeEnabled()
-    // A background reload has no animation frames for Playwright's stability check.
-    await overview.click({ force: afterBackgroundReload })
-    await expect(
-      page.getByRole('heading', { name: `${version} 版本总览`, exact: true })
-    ).toBeVisible()
-  }
-  await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  const open = (version: string, afterBackgroundReload = false) =>
+    openVersionOverview(page, version, afterBackgroundReload)
+  await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
   await verifyDraftAcceptanceSource(page, root, info, open)
   const provider = JSON.parse(
     execFileSync(
@@ -187,7 +171,7 @@ export async function verifyVersionOverview(
   console.info('[overview] version header navigation and milestone source return verified')
   await open(overviewVersions.current)
   await page.reload()
-  await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })
+  await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 120_000 })
   await open(overviewVersions.current, true)
   await expect(
     page.getByRole('heading', { name: '当前目标 · 版本总览开发', exact: true })
@@ -232,6 +216,8 @@ async function verifyDraftAcceptanceSource(
   expect(`sha256:${createHash('sha256').update(latestBytes).digest('hex')}`).not.toBe(
     acceptance.planRef.revision
   )
+  // Fixture property, not a system gate: the fixed plan commit is reachable only from the
+  // acceptance tree. Merge-proof gates are gone (#450) — display is "file exists and parses".
   const reachability = [root, flows.plan, flows.acceptance].map((directory) => ({
     directory,
     reachable:
@@ -243,10 +229,14 @@ async function verifyDraftAcceptanceSource(
   const before = snapshotOverviewMaterials(root)
   try {
     const nativeReads = await bindOverviewFlowsAndRead(page, root, acceptance.planRef)
-    expect(nativeReads.acceptance.ok).toBe(true)
-    expect(nativeReads.acceptance.value?.document.goals[0]?.title).toBe(overviewPinnedTitle)
-    expect(nativeReads.home.error?.code).toBe('unverified-source')
-    expect(nativeReads.plan.error?.code).toBe('unverified-source')
+    // The same pinned plan now reads successfully from every scope sharing the object
+    // store — home and plan included — with no "unverified-source" rejection.
+    for (const [name, read] of Object.entries(nativeReads)) {
+      expect(read.ok, `${name} scope reads the fixed plan without a merge proof`).toBe(true)
+      expect(read.value?.document.goals[0]?.title, `${name} sees pinned title`).toBe(
+        overviewPinnedTitle
+      )
+    }
     await info.attach('draft-acceptance-fixture-proof', {
       body: JSON.stringify({
         provider: 'not used in this scenario (no mock)',

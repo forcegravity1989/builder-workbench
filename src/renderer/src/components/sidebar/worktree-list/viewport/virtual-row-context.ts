@@ -39,6 +39,7 @@ type BuildArgs = {
   getCachedFolderWorkspacePathStatus: ReturnType<typeof useFolderWorkspacePathStatusRows>
   getLineageToggleHandler: (groupKey: string) => LineageToggleHandler
   toggleGroupWithScrollAnchor: (groupKey: string) => void
+
   onRowClickCapture: (event: React.MouseEvent<HTMLDivElement>) => void
   onRowPointerDown: (
     event: React.PointerEvent<HTMLDivElement>,
@@ -54,6 +55,7 @@ export function buildWorktreeVirtualRowContext(args: BuildArgs): WorktreeVirtual
   return {
     renderRows: args.renderRows,
     firstHeaderIndex: args.firstHeaderIndex,
+
     activeStickyHeaderIndexRef: args.virtualization.activeStickyHeaderIndexRef,
     activeStickyHostIndexRef: args.virtualization.activeStickyHostIndexRef,
     measureVirtualRowElement: args.measureVirtualRowElement,

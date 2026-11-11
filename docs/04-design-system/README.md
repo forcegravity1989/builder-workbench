@@ -1,6 +1,6 @@
 # Workbench 设计系统
 
-> **本篇维护约定**：给要写界面、做原型、改样式的人和任何 code agent（Claude Code、Codex、Cursor……）读取，动手前先读。只写入口：怎么用、文件各是什么、值从哪来、怎么同步；规则正文在 [guidelines.md](guidelines.md)，不在这里重复。文件增删、正本或同步方式变化时更新。
+> **本篇维护约定**：给写界面、做原型、改样式或引导的人与模型读取，动手前先读。只写入口：怎么用、文件各是什么、值从哪来、怎么同步；视觉与组件规则在 [guidelines.md](guidelines.md)，引导内容与旅程覆盖在 [guidance.md](guidance.md)，不在这里重复。文件增删、正本或同步方式变化时更新。
 
 > **30 秒导读**：Workbench 的界面语言与 Orca 对齐——单色、安静，颜色只留给状态。**值的正本是 [`src/renderer/src/assets/main.css`](../../src/renderer/src/assets/main.css)**，本目录是它的可读镜像加上 Workbench 的增补，全部是普通 Markdown / JSON / CSS / HTML，任何 agent 不需要专门工具就能读。写产品代码看 [guidelines.md](guidelines.md) + [primitives/](primitives/)；做不跑 React 的原型页只链 [styles.css](styles.css)。
 
@@ -9,6 +9,7 @@
 | 要做什么 | 读 | 用 |
 |---|---|---|
 | 改产品界面（React） | [guidelines.md](guidelines.md) → 对应的 `primitives/<名>.md` | `src/renderer/src/components/ui/` 的原语 + Tailwind token 类（`bg-card`、`text-muted-foreground`） |
+| 走查旅程、设计引导或制作指南/传播素材 | 完整读取 [guidance.md](guidance.md) | 在入门或探索矩阵定位内容行，复用现有机制，逐格维护覆盖与产出 |
 | 改叠层 CSS（`src/renderer/src/workbench/*.css`） | [guidelines.md](guidelines.md)「Workbench 叠层怎么对齐」 | `var(--foreground)` 这类 Orca 名；存量的 `--color-*` 角色名见 tokens.json |
 | 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」 | `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名，照示例页抄标记 |
 | 查某个颜色/间距/圆角的值 | [tokens.json](tokens.json) | 每个 token 带 `usage`，说明用在哪、配在什么底上 |
@@ -21,6 +22,7 @@
 | 路径 | 是什么 |
 |---|---|
 | [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、图标、交互反馈、叠层对齐、中文排版、HTML 原型类 |
+| [guidance.md](guidance.md) | 引导分工、展示/回看与新功能提示规则；BW 入门、探索 BW（工作/功能）两张矩阵及产出归属 |
 | [tokens.json](tokens.json) | 机读 token：颜色（light / dark 两主题，135 个）、字体与 10 个字号样式、间距、圆角、阴影；每个带 `usage` |
 | [tokens.css](tokens.css) | **生成文件，不要手改**——由 tokens.json 生成的 CSS 变量与 Geist `@font-face` |
 | [styles.css](styles.css) | HTML 类词汇（`.btn`、`.card`、`.set-row`…）+ `:lang(zh)` 中文层；引入 tokens.css |

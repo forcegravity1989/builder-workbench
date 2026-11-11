@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { launchAgentInWebHostTab } from './launch-agent-web-host-tab'
 
 const mockQueueTabInitialCwd = vi.fn()
-const mockLaunchAgentInWebHostTab = vi.fn()
+const mockLaunchAgentInWebHostTab = vi.fn<typeof launchAgentInWebHostTab>()
 const mockIsWebRuntimeSessionActive = vi.fn()
 
 const store = {
@@ -125,10 +126,13 @@ describe('launchAgentInNewTab initial cwd', () => {
         environmentId: 'web-runtime',
         prompt: 'continue the unfinished task',
         promptDelivery: 'submit-after-ready',
-        pastePromptAfterReady: 'continue the unfinished task',
-        submitPastedPrompt: true
+        buildLegacyStartup: expect.any(Function)
       })
     )
+    expect(mockLaunchAgentInWebHostTab.mock.calls[0]![0].buildLegacyStartup()).toMatchObject({
+      pasteDraftAfterLaunch: 'continue the unfinished task',
+      submitPastedPrompt: true
+    })
     expect(store.createTab).not.toHaveBeenCalled()
     await expect(result?.promptDeliveryResult).resolves.toEqual({
       delivered: true,

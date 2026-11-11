@@ -1,16 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-
-export type ProjectOnboardOptions = {
-  attachToGroupId?: string
-  seedName?: string
-  attachLabel?: string
-}
-
-export type CharterEditOptions = {
-  repoId: string
-  seedName?: string
-}
+import type { ExecutionHostId } from '../../../shared/execution-host'
+import type { WallProjectFilters } from './use-wall-projects'
 
 /** G2（P6）：版本总览页选项——按项目注册行与版本打开，只读派生，无第二份存储。 */
 export type VersionOverviewOptions = {
@@ -20,8 +11,11 @@ export type VersionOverviewOptions = {
 }
 
 type ProjectPage =
-  | { kind: 'wall'; configureRepoId?: string }
-  | { kind: 'onboard'; options: ProjectOnboardOptions }
+  | { kind: 'wall' }
+  | {
+      kind: 'project-overview'
+      options: { repoId: string; hostId: ExecutionHostId; filters: WallProjectFilters }
+    }
   | { kind: 'version-overview'; options: VersionOverviewOptions }
   | null
 
@@ -40,15 +34,17 @@ export function openProjectWall(): void {
   setProjectPage({ kind: 'wall' })
 }
 
-export function openProjectOnboard(options: ProjectOnboardOptions = {}): void {
-  useAppStore.getState().openActivityPage()
-  setProjectPage({ kind: 'onboard', options: { ...options } })
+export function openAddProject(): void {
+  useAppStore.getState().openModal('add-repo')
 }
 
-/** 名片补录/编辑入口(spec 规则 2):复用 bw/project 固定树与 PR 流。 */
-export function openCharterEdit(options: CharterEditOptions): void {
+export function openFilteredProjectOverview(
+  repoId: string,
+  hostId: ExecutionHostId,
+  filters: WallProjectFilters
+): void {
   useAppStore.getState().openActivityPage()
-  setProjectPage({ kind: 'wall', configureRepoId: options.repoId })
+  setProjectPage({ kind: 'project-overview', options: { repoId, hostId, filters } })
 }
 
 /** G2（P6）：版本总览（表格周报风格，只读派生自 Git 材料与登记）。 */

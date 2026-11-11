@@ -136,6 +136,8 @@ export function runtimeHostConnectionStateForEntry(
   return runtimeHostConnectionState({
     hasStatusEntry: Boolean(entry),
     status: entry?.status ?? null,
+    // Connecting is negotiation; unknown still means no transport attempt.
+    ...(entry?.snapshot?.transport === 'connecting' ? { transportStatus: 'checking' as const } : {}),
     remoteControl: entry?.remoteControl ?? entry?.status?.remoteControl ?? null
   })
 }

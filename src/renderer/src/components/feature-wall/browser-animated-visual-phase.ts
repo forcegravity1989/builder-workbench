@@ -1,6 +1,9 @@
+import { translate } from '@/i18n/i18n'
 import type { RefObject } from 'react'
 
-export const BROWSER_PROMPT_TEXT = 'Make Starter card stand out'
+export function getBrowserPromptText(): string {
+  return translate('guidance.demo.browserPrompt', 'Make Starter card stand out')
+}
 
 export type BrowserVisualPhase =
   | 'idle'
@@ -94,7 +97,9 @@ const SPLIT_PHASES: readonly BrowserVisualPhase[] = [
 
 export const BROWSER_REDUCED_MOTION_STATE: BrowserVisualState = {
   phase: 'verified',
-  typedChars: BROWSER_PROMPT_TEXT.length,
+  get typedChars() {
+    return getBrowserPromptText().length
+  },
   flashKey: 0,
   clickRingKey: 0,
   clickRingVisible: false,

@@ -20,7 +20,11 @@ import {
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import { translate } from '@/i18n/i18n'
 import { getKeybindingContext } from './terminal-workspace-model'
-import { resolveTerminalAgentTabShortcut } from './terminal-agent-tab-shortcut'
+import {
+  resolveTerminalAgentTabShortcut,
+  resolveTerminalAgentForShortcut,
+  getTerminalAgentShortcutOwnerKey
+} from './terminal-agent-tab-shortcut'
 import { handleTerminalWorkspaceEditorShortcut } from './terminal-workspace-editor-shortcuts'
 import type { TerminalActivationController } from './use-terminal-activation-actions'
 
@@ -74,23 +78,34 @@ export function handleTerminalWorkspaceKeyDown(
 
   if (!event.repeat) {
     const agentShortcut = resolveTerminalAgentTabShortcut({
-      activeWorktreeId,
       keybindings,
       matchShortcut
     })
     if (agentShortcut.actionId) {
       event.preventDefault()
       notifyTerminalCapture(agentShortcut.actionId)
-      if (agentShortcut.agent) {
-        handleNewAgentTab(agentShortcut.agent)
-      } else {
-        toast.message(
-          translate(
-            'auto.components.Terminal.5b2c1a9e44',
-            'No agent CLI detected — install one or pick a default agent in Settings.'
-          )
-        )
-      }
+      const ownerKey = getTerminalAgentShortcutOwnerKey(activeWorktreeId)
+      void resolveTerminalAgentForShortcut(activeWorktreeId, agentShortcut, ownerKey)
+        .then((agent) => {
+          const current = useAppStore.getState()
+          if (
+            current.activeWorktreeId !== activeWorktreeId ||
+            getTerminalAgentShortcutOwnerKey(activeWorktreeId) !== ownerKey
+          ) {
+            return
+          }
+          if (agent) {
+            handleNewAgentTab(agent)
+          } else {
+            toast.message(
+              translate(
+                'auto.components.Terminal.5b2c1a9e44',
+                'No agent CLI detected — install one or pick a default agent in Settings.'
+              )
+            )
+          }
+        })
+        .catch(showClientCreationActionError)
       return
     }
   }

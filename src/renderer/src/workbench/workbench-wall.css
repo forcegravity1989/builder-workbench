@@ -3,92 +3,169 @@
   min-width: 0;
   min-height: 0;
   display: flex;
-  flex-direction: row;
   position: relative;
-  background: var(--color-bg, #faf9f5);
-  color: var(--color-text, #1f1e1d);
+  background: var(--background);
+  color: var(--foreground);
 }
 .wb-wall {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
-  padding: 16px 24px 32px;
-  width: 100%;
-  box-sizing: border-box;
+  padding: 24px;
+  container-type: inline-size;
 }
 .wb-wall .page-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
 }
-.wb-wall .page-head h1 {
+.wb-wall h1 {
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
+}
+.wb-wall small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin-left: 6px;
 }
 .wb-wall .page-actions {
   display: flex;
-  gap: 4px;
-  flex: none;
   align-items: center;
+  gap: 2px;
+}
+.wall-principles {
+  margin: 12px 0 24px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.wb-wall .wallbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 26px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.wb-wall .wallbar input {
+  width: 190px;
+  height: 30px;
+}
+.wallbar > div {
+  display: flex;
+}
+.wall-group {
+  margin-bottom: 26px;
+}
+.wall-group h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
 }
 .wb-wall .wall-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
 }
 .wb-wall .pcard {
-  gap: 8px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 12px;
-  border-radius: var(--radius-md);
-  background: var(--color-card);
-  border: 1px solid var(--color-divider);
-}
-.wb-wall .pcard:hover {
-  border-color: color-mix(in srgb, var(--color-text) 28%, transparent);
-}
-.wb-wall .pcard.is-active {
-  border-color: var(--color-accent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent);
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
 }
 .wb-wall .pcard.is-configured {
   border-color: var(--foreground);
-  box-shadow: none;
 }
-.wb-wall .pcard-top {
+.pcard-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
+  gap: 6px;
+  padding: 16px 16px 8px;
 }
-.wb-wall .pcard-sources {
+.pcard-name {
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  min-width: 100px;
+  flex: 1;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.pcard-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  min-width: 0;
+  gap: 1px;
 }
-.wb-wall .pcard-actions {
+.pcard-actions .wb-icon-button {
+  width: 27px;
+  height: 28px;
+  min-height: 28px;
+}
+.pcard [data-repo-header-action] {
+  width: 27px;
+  min-width: 27px;
+  max-width: 27px;
+  height: 28px;
+  margin-left: 0;
+  opacity: 1;
+}
+.pcard-identity {
   display: flex;
-  flex: none;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 0 16px 14px;
+  min-height: 36px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.pcard-owner {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  max-width: 100%;
+}
+.pcard-owner strong {
+  color: var(--foreground);
+  font-weight: 400;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pcard-host {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
 }
 .pcard-source {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: var(--muted-foreground);
   font-size: 11px;
-  overflow-wrap: anywhere;
+  color: var(--muted-foreground);
 }
 .pcard-source-dot {
-  width: 6px;
-  height: 6px;
-  flex: none;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--muted-foreground);
+  flex: none;
 }
 .pcard-source-dot.is-online {
   background: var(--status-success);
@@ -97,96 +174,107 @@
   background: transparent;
   border: 1px solid var(--muted-foreground);
 }
-.wb-wall .pcard-main {
-  cursor: pointer;
-  gap: 8px;
+.pcard-delivery {
+  margin: 0 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  min-height: 132px;
+}
+.pcard-delivery.is-compact {
+  min-height: 0;
+}
+.pcard-version {
   display: flex;
-  flex-direction: column;
-  padding: 4px;
-  margin: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  font: inherit;
-  width: 100%;
-}
-.wb-wall .pcard-main:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-.wb-wall .pcard-top {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.wb-wall .pcard-name {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.wb-wall .pcard-oneliner {
-  font-size: 12.5px;
-  line-height: 1.5;
-  min-height: 19px;
-  color: color-mix(in srgb, var(--color-text) 70%, transparent);
-}
-.wb-wall .pcard-meta {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-}
-.wb-wall .pcard-readings {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-.wb-wall .pcard-reading {
-  display: flex;
-  align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
-  padding: 7px 10px;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
-}
-.wb-wall .pcard-reading-label {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-  white-space: nowrap;
+  color: var(--muted-foreground);
 }
-.wb-wall .pcard-reading-value {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--color-text);
-  text-align: right;
-}
-/* Unknown 是事实不是错误：灰字、无色、不装绿不装零（铁律二）。 */
-.wb-wall .pcard-reading-value.is-unknown {
-  color: color-mix(in srgb, var(--color-text) 45%, transparent);
-}
-.wb-wall .empty-center {
-  text-align: center;
-  padding: 48px 24px;
+.pcard-delivery ul {
+  padding: 0 0 0 16px;
+  margin: 10px 0 6px;
+  font-size: 12px;
   line-height: 1.7;
 }
-@media (max-width: 860px) {
-  .wb-wall .wall-grid {
-    grid-template-columns: 1fr;
+.pcard-delivery li {
+  margin-bottom: 5px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+.pcard-muted {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.pcard-stages {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  gap: 12px;
+}
+.pcard-stages button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pcard-stages span {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.pcard-stages strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.pcard-members {
+  margin: 0 16px 12px;
+  font-size: 11px;
+}
+.pcard-members summary {
+  cursor: pointer;
+  color: var(--muted-foreground);
+}
+.pcard-members > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+}
+.pcard-members button {
+  text-align: left;
+}
+.wb-wall .empty-center {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted-foreground);
+  line-height: 1.8;
+}
+.wb-wall .empty-center h2 {
+  font-size: 20px;
+  color: var(--foreground);
+}
+.wb-wall .empty-center p {
+  margin: 8px 0 20px;
+}
+@media (max-width: 680px) {
+  .wb-wall {
+    padding: 16px;
+  }
+  .wb-wall-page:has(.wb-project-settings) > .wb-wall {
+    visibility: hidden;
   }
 }
 
-.wb-wall .wallbar {
-  color: var(--muted-foreground);
-  font-size: 12px;
-  margin: 16px 0;
-}
 /* ─── G3：导入 Builder 主机对话框 ─── */
 .wb-dialog-backdrop {
   position: fixed;

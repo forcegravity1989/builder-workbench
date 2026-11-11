@@ -5,7 +5,7 @@ import {
   ORCA_CLI_SKILL_UPDATE_COMMAND
 } from '@/lib/agent-feature-install-commands'
 import {
-  AGENT_SKILL_CLI_PREREQUISITE_NOTICE,
+  getAgentSkillCliPrerequisiteNotice,
   ensureOrcaCliAvailableForAgentSkillTerminal
 } from '@/lib/agent-skill-cli-prerequisite'
 import { cn } from '@/lib/utils'
@@ -168,7 +168,7 @@ export function MobileEmulatorAgentControlRow(): React.JSX.Element {
             error={setup.cliSkillError}
             installDisabled={setup.step2Blocked}
             leading={<StepBadge index={2} state={setup.cliSkillInstalled ? 'done' : 'pending'} />}
-            preInstallNotice={AGENT_SKILL_CLI_PREREQUISITE_NOTICE}
+            preInstallNotice={getAgentSkillCliPrerequisiteNotice()}
             openingHint={translate(
               'auto.components.settings.MobileEmulatorAgentControlRow.3941719a56',
               'Checking Orca CLI before opening skill setup.'

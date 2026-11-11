@@ -13,6 +13,7 @@ import {
 import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
+import { historyErrorCode } from '../version-history-port'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
 /**
@@ -135,7 +136,9 @@ export function useAcceptanceBoard({
         }
       })
       .catch((reason) => {
-        if (current) {
+        // No plan file yet (e.g. the version's plan is not merged): stay on the
+        // empty board until the user refreshes; format problems still surface.
+        if (current && historyErrorCode(reason) !== 'history-unavailable') {
           setError(String(reason))
         }
       })

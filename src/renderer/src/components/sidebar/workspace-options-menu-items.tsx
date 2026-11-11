@@ -21,6 +21,7 @@ import { PROJECT_ORDER_OPTIONS, SORT_OPTIONS } from './sidebar-workspace-option-
 import { WorktreeCardDisplayMenuSection } from './WorktreeCardDisplayMenuSection'
 import { translate } from '@/i18n/i18n'
 import { SidebarGroupByToggle } from './SidebarGroupByToggle'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function useWorkspaceOptionsFilterBadge(): {
   hasAnyFilter: boolean
@@ -39,6 +40,9 @@ export function useWorkspaceOptionsFilterBadge(): {
   const visibleWorkspaceHostIds = useAppStore((s) => s.visibleWorkspaceHostIds)
 
   const selectedCount = useMemo(() => {
+    if (isWorkbenchShell()) {
+      return 0
+    }
     let count = 0
     for (const repo of repos) {
       if (filterRepoIds.includes(repo.id)) {
@@ -116,7 +120,7 @@ export function WorkspaceOptionsMenuItems({
       </DropdownMenuLabel>
       {/* Why: host + project filters share one section and the same single-row
           shell as Sort by (label left, value right) so the menu stays flat. */}
-      {(showHostScopeControls || repos.length > 1) && (
+      {(showHostScopeControls || (!isWorkbenchShell() && repos.length > 1)) && (
         <>
           <DropdownMenuLabel>
             {translate('auto.components.sidebar.SidebarWorkspaceOptionsMenu.showSection', 'Show')}
@@ -131,7 +135,11 @@ export function WorkspaceOptionsMenuItems({
               setVisibleWorkspaceHostIds={setVisibleWorkspaceHostIds}
             />
           )}
-          <SidebarRepositoryFilterSection preserveWorkspaceBoardOpen={preserveWorkspaceBoardOpen} />
+          {!isWorkbenchShell() && (
+            <SidebarRepositoryFilterSection
+              preserveWorkspaceBoardOpen={preserveWorkspaceBoardOpen}
+            />
+          )}
           <DropdownMenuSeparator />
         </>
       )}

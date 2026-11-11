@@ -11,6 +11,7 @@ import { getGroupKeysForWorktree } from '../grouping/worktree-group-keys'
 import { getFolderWorkspaceRevealGroupKeys } from '../navigation/folder-reveal'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
+import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { isPinnedSectionWorktree } from '../../pinned-section-worktrees'
 import { getWorktreeLineageAncestors } from '../../worktree-lineage-projection'
 
@@ -31,6 +32,12 @@ export function useEffectiveCollapsedGroups(args: {
   projectGrouping: ProjectGroupingModel
   folderWorkspaces: readonly FolderWorkspace[]
   defaultHostId: ExecutionHostId
+  /**
+   * Pinned trees that render only in the Pinned section (#500). Under the
+   * duplicate policy their natural group does not exist, so the pinned section
+   * itself has to open to reveal them.
+   */
+  pinnedOnlyIdentities?: ReadonlySet<string>
 }): Set<string> {
   const {
     collapsedGroups,
@@ -47,7 +54,8 @@ export function useEffectiveCollapsedGroups(args: {
     projectGroups,
     projectGrouping,
     folderWorkspaces,
-    defaultHostId
+    defaultHostId,
+    pinnedOnlyIdentities
   } = args
   return useMemo(() => {
     if (!agentSendTargetWorktreeId) {
@@ -74,8 +82,9 @@ export function useEffectiveCollapsedGroups(args: {
     }
     const next = new Set(collapsedGroups)
     if (
-      pinnedDisplayPolicy === 'single-location' &&
-      isPinnedSectionWorktree(targetWorktree, visibleWorktrees, worktreeLineageById, worktreeMap)
+      isPinnedSectionWorktree(targetWorktree, visibleWorktrees, worktreeLineageById, worktreeMap) &&
+      (pinnedDisplayPolicy === 'single-location' ||
+        pinnedOnlyIdentities?.has(getWorktreeHostIdentity(targetWorktree)))
     ) {
       next.delete(PINNED_GROUP_KEY)
     } else {
@@ -116,6 +125,7 @@ export function useEffectiveCollapsedGroups(args: {
     worktreeLineageById,
     worktreeMap,
     folderWorkspaces,
-    defaultHostId
+    defaultHostId,
+    pinnedOnlyIdentities
   ])
 }

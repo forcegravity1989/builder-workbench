@@ -6,7 +6,6 @@ import {
   repoHostId,
   withRepoHostOwnership
 } from '@/store/slices/worktrees/listing/worktree-host-ownership'
-import { preflightAgentTrust } from '@/lib/agent-trust-preflight'
 import { activateAndRevealWorktree, type ActivateAndRevealResult } from '@/lib/worktree-activation'
 import { ensureWorktreeHasInitialTerminal } from '@/lib/worktree-initial-terminal-seeding'
 import {
@@ -22,16 +21,19 @@ import {
 import { isAgentSessionHandleProvider } from '../../../shared/agent-session-provider-handle'
 import type { CreateWorktreeResult } from '../../../shared/worktree/create-types'
 import type { WorktreeCreationRequest } from '@/lib/pending-worktree-creation'
-import { createBrowserUuid } from '@/lib/browser-uuid'
 import { resolveBackendDraftStartup } from '@/lib/worktree-draft-startup-view-mode'
-import { buildWorktreeCreationStartupOpt } from '@/lib/worktree-creation-flow-startup'
+import { prepareWorktreeCreationStartup } from '@/lib/worktree-creation-flow-startup'
 import {
   launchStructuredWorktreeSession,
   type WorktreeCreationStructuredSessionResult
 } from '@/lib/worktree-creation-structured-session'
-import { completeWorktreeCreation } from '@/lib/worktree-creation-completion'
+import {
+  completeWorktreeCreation,
+  stopWorktreeCreationForChangedHost
+} from '@/lib/worktree-creation-completion'
 import { markStructuredWorktreeLaunchUnconfirmed } from '@/lib/worktree-creation-structured-recovery'
 import { ensureWebRuntimeWorktreeTerminalAfterWake } from '@/lib/web-runtime-worktree-terminal-after-wake'
+import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
 
 // Why: activePendingCreationId can outlive the terminal route when the user
 // switches app views; only the terminal route renders the creation panel.
@@ -51,6 +53,7 @@ export async function executeWorktreeCreation(
 
   let result: CreateWorktreeResult
   try {
+    assertHostAgentStartupOwner(preparedRequest.agentLaunchOwner)
     const provisionedRoot = getProvisionedRootCreateOptions(preparedRequest)
     const structuredLaunch = preparedRequest.agentLaunchRoute === 'structured-native-chat'
     const backendStartup =
@@ -84,6 +87,9 @@ export async function executeWorktreeCreation(
         preparedRequest.linkedGiteaPR,
         preparedRequest.compareBaseRef,
         {
+          ...(preparedRequest.agentLaunchOwner
+            ? { agentLaunchOwner: preparedRequest.agentLaunchOwner }
+            : {}),
           ...(preparedRequest.nameWasGenerated ? { nameWasGenerated: true } : {}),
           ...(preparedRequest.displayNameKind
             ? { displayNameKind: preparedRequest.displayNameKind }
@@ -132,6 +138,9 @@ export async function executeWorktreeCreation(
     return
   }
 
+  if (stopWorktreeCreationForChangedHost(creationId, preparedRequest)) {
+    return
+  }
   const worktree = result.worktree
   // G2 (BW): version attribution is recorded at the true creation result —
   // before any cancellation/activation branch, so a created tree keeps its
@@ -157,25 +166,11 @@ export async function executeWorktreeCreation(
     return
   }
   await attachEphemeralVmRuntimeToWorkspace(preparedRequest, worktree.id)
-
-  const backendSpawned = result.startupTerminal?.spawned === true
-  if (preparedRequest.startupPlan && !backendSpawned && !preparedRequest.startupPlan.launchToken) {
-    // Why: delayed delivery must target the exact pane spawned from this queued
-    // startup, so both halves of the handoff share one renderer-session token.
-    preparedRequest.startupPlan.launchToken = createBrowserUuid()
+  const startup = await prepareWorktreeCreationStartup(creationId, preparedRequest, result)
+  if (!startup || stopWorktreeCreationForChangedHost(creationId, preparedRequest)) {
+    return
   }
-  const fallbackStartupOpt = buildWorktreeCreationStartupOpt(preparedRequest, backendSpawned)
-  const startupOpt = structuredLaunch ? undefined : fallbackStartupOpt
-
-  if (worktree.path && !structuredLaunch) {
-    const repoConnectionId =
-      useAppStore.getState().repos.find((repo) => repo.id === worktree.repoId)?.connectionId ?? null
-    await preflightAgentTrust({
-      agent: preparedRequest.agent,
-      workspacePath: worktree.path,
-      connectionId: repoConnectionId
-    })
-  }
+  const { backendSpawned, fallbackStartupOpt, startupOpt } = startup
 
   // `createWorktree` already inserted the real worktree row. Leaving for an app
   // view keeps the create in the background, while selecting another workspace

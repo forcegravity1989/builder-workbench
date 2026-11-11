@@ -1,21 +1,14 @@
-<!-- 验收证据报告模板（HTML 正本）
-     生成前完整读取本 Skill 的 references/evidence-aggregation.md。
-     本文只提供产出槽位；来源、提取、无截图逐单判断、待核对、缺口与登记规则以该 reference 为准。
-
-     用法：整份替换占位（{{...}} 与 <...>）后落盘为 .bw/planning/<版本>/acceptance-evidence.html；
-     报告只有 HTML 一种形态，板面经内置浏览器打开（Markdown 源码在编辑器里只是裸文本）。
-     按 evidence-aggregation.md「生成与登记」逐条核对待核对项、回填处置，再登记 verification 制品。
-
-     精简口径：只列基本用例；组合、异常、负例与门禁细节点名原验证报告链接，不搬入正文。
-     截图内嵌 <img> 并同时给链接，钉开发侧已推的 commit SHA：
-     https://github.com/{{owner}}/{{repo}}/raw/{{commit SHA}}/{{文件名}}（不用 raw.githubusercontent，不用分支名）；
-     只有本地截图时放同目录 shots/ 并用相对路径。 -->
+<!-- 验收证据报告模板：生成前完整读取 references/evidence-aggregation.md。
+     本文只承载呈现槽位；生成、登记和核对顺序由该 reference 维护。
+     替换全部占位并正确转义文本/属性，保存为 .bw/planning/{{版本}}/acceptance-evidence.html。
+     URL 使用实际平台读回值；没有 URL 时移除链接/图片标签，保留事实及待核对说明。
+     按目标与基本用例复制相应区块，无适用内容的槽位写「无」。 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><版本> 验收证据报告</title>
+<title>{{版本}} 验收证据报告</title>
 <style>
   body { font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; max-width: 1180px; margin: 20px auto; padding: 0 18px; color: #1f2328; background: #fff; font-size: 14px; line-height: 1.6; }
   h1 { font-size: 21px; margin: 0 0 10px; }
@@ -35,7 +28,6 @@
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
   th, td { border: 1px solid #d0d7de; padding: 4px 6px; vertical-align: top; }
   th { background: #f6f8fa; text-align: left; }
-  td.na { color: #cf222e; }
   img { max-width: 100%; border: 1px solid #d0d7de; border-radius: 6px; }
   .manual { font-size: 13px; color: #1a7f37; background: #dafbe1; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
   .pending { font-size: 13px; color: #9a6700; background: #fff8c5; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
@@ -47,105 +39,67 @@
 </style>
 </head>
 <body>
-
-<h1><版本> 验收证据报告</h1>
+<h1>{{版本}} 验收证据报告</h1>
 <div class="strip">
-  <span>候选 <a href="https://github.com/{{owner}}/{{repo}}/commit/{{完整 SHA}}"><code>{{短 SHA}}</code></a></span>
-  <span>包 <a href="{{发布页 URL，没有就省略整个链接}}"><包名与版本></a> · <文件名与校验值，或「无包要求」></span>
-  <span>演示环境 <链接 URL，或「桌面应用已启动」，或「未部署」></span>
-  <span>生成 <时间></span>
-  <span>来源 聚合各 Issue/PR 合入时留下的验收件（开发侧现成产物）</span>
+  <span>候选 <a href="{{候选提交 URL}}"><code>{{短 SHA}}</code></a></span>
+  <span>包 {{包版本与校验值，或「无包要求」}}</span>
+  <span>演示环境 {{演示入口或「未部署」}}</span>
+  <span>生成 {{时间}}</span>
 </div>
-
 <div class="howto">
-  <b>怎么读这份报告</b><br>
-  ① <b>归并层（验收侧写）</b>：每个目标先列固定计划里的<b>验收判据原文</b>，再给「判据 → 计划内 Issue → 证据落点 → 缺口」。<b>达成/不达成不在本报告下结论</b>，由人在验收屏逐目标标记。<br>
-  ② <b>判据层（开发侧验收件的子集提取）</b>：每个 Issue 先给<b>一句人话</b>，再用<b>基本用例</b>表列证据：用例名 · 期望结果 · 实际结果 · 证据（形态 · 钉住的 commit SHA ＋ 文件名，截图直接内嵌）· 执行路径；另有门禁、未验留白、人工核对、待核对与缺口各一行。<b>组合、异常、负例与门禁细节不搬入正文</b>，点名原验证报告链接。<br>
-  ③ 证据一律是各 Issue/PR <b>合入时留下的现成产物</b>，验收只提取聚合、不重新采集、不反推补写。开发侧没留的字段写「开发侧未留」，<b>不代采、不凑数</b>。缺口与待核对项由人确认，<b>模型不定论</b>。
+  按目标核对每条任务的已有证据。待核对项不阻塞查看；本报告不替代人在验收屏作出的目标结论。
 </div>
 
-<h2>目标 <目标编号 G1/G2…>：<目标句><span class="owner">负责人 <负责人> · 计划内 Issue：<编号> <编号></span></h2>
-
+<h2>目标 {{目标编号}}：{{目标句}}<span class="owner">负责人 {{负责人}}</span></h2>
 <div class="crit">
   <b>计划验收判据（原文）</b>
-  <ol>
-    <li><判据原文></li>
-  </ol>
-  <b>指标目标值（原文）</b>：<目标与完成线；计划没配指标写「无」>
+  <ol><li>{{判据原文}}</li></ol>
+  <b>指标目标值（原文）</b>：{{目标与完成线；计划没配指标写「无」}}
 </div>
-
-<table class="map">
-  <tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>缺口</th></tr>
-  <tr><td>判据 1 · <判据摘要></td><td><#编号></td><td><哪个 Issue/PR 的哪条证据，或「无对应验证件」></td><td><缺口或「无」></td></tr>
+<table>
+  <tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对 / 已确认缺口</th></tr>
+  <tr><td>{{判据摘要}}</td><td>{{Issue 编号}}</td><td>{{证据或「无对应验证件」}}</td><td>{{待核对编号、已确认缺口或「无」}}</td></tr>
 </table>
 
-<article class="card" id="issue-<编号>">
-  <h3><a href="https://github.com/{{owner}}/{{repo}}/issues/<编号>">#<编号></a> <标题> <span class="pill"><开放 / 已关闭 / 状态未知></span></h3>
-  <p class="desc"><b>一句话</b>：<这条 Issue 兑现哪条目标承诺、怎么验、看哪里——一句话说清，人能直接读懂，不复述用例表></p>
-  <p class="meta"><b>合入件</b>：<合入 PR 直链、提交、时间与合入人；没有合入件写「无合入件，先列待核对」></p>
-  <p class="meta"><b>验证报告出处</b>：<验证评论或 Issue 评论直链；没有写「无」></p>
-
-  <table class="cases">
-    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据（形态 · 钉住 SHA / 链接）</th><th>执行路径</th></tr>
+<article class="card" id="issue-{{Issue 编号}}">
+  <h3><a href="{{Issue URL}}">#{{Issue 编号}}</a> {{标题}} <span class="pill">{{原生状态}}</span></h3>
+  <p class="desc">{{兑现哪条承诺、怎么验、看哪里，一句话说明}}</p>
+  <p class="meta"><b>交付依据</b>：{{合入 PR/MR 的实际平台直链及提交；无开发项写 Issue 处理依据；需要实现却无合入件时列待核对}}</p>
+  <p class="meta"><b>验证报告出处</b>：{{PR/MR 或 Issue 评论直链；没有写「无」}}</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
     <tr>
-      <td><用例名></td>
-      <td><期望结果，开发侧原文或如实转述></td>
-      <td><实际结果；开发侧没留写「开发侧未留」></td>
-      <td><a href="https://github.com/{{owner}}/{{repo}}/raw/{{commit SHA}}/{{文件名}}"><img src="https://github.com/{{owner}}/{{repo}}/raw/{{commit SHA}}/{{文件名}}" alt="<用例名>截图" width="360"></a><br><code>{{短 SHA}}</code> {{文件名}}</td>
-      <td><执行路径一行></td>
+      <td>{{用例名}}</td><td>{{期望结果}}</td><td>{{实际结果；开发侧没留写「开发侧未留」}}</td>
+      <td><a href="{{已固定版本的原图 URL 或 shots/相对路径}}"><img src="{{已固定版本的原图 URL 或 shots/相对路径}}" alt="{{用例名}}截图" width="360"></a><br><code>{{证据提交 SHA}}</code> {{文件名}}</td>
+      <td>{{执行路径}}</td>
     </tr>
-    <!-- 每个基本用例一行；只有本地图片时用相对路径，如 src="shots/{{文件名}}"。 -->
     <tr>
-      <td><用例名></td>
-      <td><期望结果></td>
-      <td><实际结果></td>
-      <td>形态：读数 · <实数与采集口径、来源链接></td>
-      <td><执行路径或采集入口></td>
+      <td>{{用例名}}</td><td>{{期望结果}}</td><td>{{实际结果}}</td>
+      <td>{{证据形态：日志、读数、单测、流水线或平台读回}} · {{实数、口径与来源链接}}</td>
+      <td>{{执行路径或采集入口}}</td>
     </tr>
   </table>
-
-  <p class="meta"><b>其余用例与门禁细节</b>：组合、异常、负例与完整门禁见 <验证报告直链>，不搬入正文</p>
-  <p class="meta"><b>门禁</b>：<流水线链接与测试/lint/typecheck 实数；没跑的写未跑></p>
-  <p class="meta"><b>未验留白</b>：<未验项，直接映射下面的待核对或缺口；没有写「无」></p>
-  <p class="manual"><b>人工核对</b>：<谁、何时、核对什么；人工已核对通过但未留实物的如实记；没有写「无」></p>
-
+  <p class="meta"><b>其余用例与门禁细节</b>：{{原验证报告直链}}</p>
+  <p class="meta"><b>门禁</b>：{{流水线链接与实数；没跑写未跑}}</p>
+  <p class="meta"><b>未验范围</b>：{{未验项；没有写「无」}}</p>
+  <p class="manual"><b>人工核对</b>：{{谁、何时、核对什么及来源；未留实物如实说明；没有写「无」}}</p>
   <div class="pending">
-    <b>待核对</b>（生成后逐条与人确认处置，处置决定保留在报告里）：
-    <ul>
-      <li>证据现状：<缺什么、自述缺失或漏截图> · PR 上现有其他形式证据：<日志/实数/单测/读回；没有写「无」> · <b>处置</b>：<人定后回填「PR 补充后重新聚合 / 本次会话补充后加入报告 / 会上实机演示」，并保留该决定></li>
-    </ul>
-    没有待核对项写「无」。
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-{{待核对编号}}">待核对 {{待核对编号}} · 证据现状：{{缺什么}} · 已有其他证据：{{证据或「无」}} · <b>处置</b>：{{待核对，或人的决定与来源}}</li></ul>
   </div>
-
-  <div class="gap">
-    <b>缺口</b>（只记人确认后的结论；未确认的留在待核对）：
-    <ul>
-      <li>[结论级·已关闭无合入件] <需要实现交付却已关闭、找不到合入基线分支实现 PR 的说明；核对时先列「待核对」向人呈现，人确认后才落本槽></li>
-      <li>[未合入] <开发 PR 仍 OPEN 或本版无合入件的安排></li>
-      <li>[无读数/不可核对] <指标无读数、证据来源或语义不明的条目与回退></li>
-    </ul>
-    没有写「无」。
-  </div>
+  <div class="gap"><b>已确认缺口</b>：{{人确认后的缺口与来源；没有写「无」}}</div>
 </article>
 
-<!-- 按「目标 → Issue」继续复制上面的 h2 目标段与 Issue 卡；同一 Issue 只出现一次，跨目标关联在卡内注明 -->
-
-<h2>缺口汇总（三类，只记人确认后的结论）</h2>
+<!-- 按「目标 → Issue」复制区块；同一 Issue 只出现一次，跨目标关联使用锚点。 -->
+<h2>已确认缺口汇总</h2>
 <ol>
-  <li><b>结论级 · 已关闭无合入件</b>：<人确认后的条目；没有写「无」></li>
-  <li><b>未合入</b>：<人确认后的条目；没有写「无」></li>
-  <li><b>无读数 · 不可核对</b>：<人确认后的条目；没有写「无」></li>
+  <li><b>已关闭无合入件</b>：{{人确认后的条目；没有写「无」}}</li>
+  <li><b>未合入</b>：{{人确认后的条目；没有写「无」}}</li>
+  <li><b>无读数 / 不可核对</b>：{{人确认后的条目；没有写「无」}}</li>
 </ol>
-
-<h2>会上需要人定的事</h2>
-<p class="mut">汇总各 Issue「待核对」中尚未由人处置的条目：每条写证据现状、已有的其他形式证据、可选处置与建议依据；这是提给人拍的板，不是模型结论。</p>
-<ol>
-  <li><待决疑问与处置建议；没有写「无」></li>
-</ol>
-
-<p class="mut">
-  证据即链接：PR／Issue／CI run 直达平台读回，截图钉开发侧已推的 commit SHA。平台读回时间 <时间>；报告生成 <时间>。
-</p>
-
+<h2>待核对事项汇总</h2>
+<p class="mut">以下事项尚待人决定处置，可在会前或会上继续核对。</p>
+<ol><li><a href="#pending-{{待核对编号}}">待核对 {{待核对编号}}</a>：{{待决事项与处置建议；没有写「无」}}</li></ol>
+<p class="mut">来源：各 Issue/PR/MR 已留下的验收件。平台读回时间 {{时间}}；报告生成 {{时间}}。</p>
 </body>
 </html>

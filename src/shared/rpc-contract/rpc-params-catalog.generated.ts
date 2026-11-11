@@ -31,6 +31,7 @@ import {
   CodeHubMergeMr,
   CodeHubMrChanges,
   CodeHubMrChecks,
+  CodeHubMrForBranch,
   CodeHubSetIssueState,
   CodeHubSetReviewers,
   CodeHubUpdateIssueLabels,
@@ -53,6 +54,7 @@ import {
   SelectCodexAccountForTargetParams
 } from './accounts-params'
 import { PrepareCodexForWslPaneParams } from './agent-hooks-params'
+import { AgentLaunchSettingsMutation } from './agent-launch-settings-params'
 import { CreateAgentSessionParams, EnsureAgentSessionParams } from './agent-session-params'
 import {
   AiVaultListSessionsParams,
@@ -575,6 +577,7 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
+import { ReviewRequestSchema } from '../workbench/pr-review-request'
 import {
   MilestoneReadRequestSchema,
   MilestoneSubmitRequestSchema
@@ -768,6 +771,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.mergeMr': CodeHubMergeMr,
   'codehub.mrChanges': CodeHubMrChanges,
   'codehub.mrChecks': CodeHubMrChecks,
+  'codehub.mrForBranch': CodeHubMrForBranch,
   'codehub.setIssueState': CodeHubSetIssueState,
   'codehub.setReviewers': CodeHubSetReviewers,
   'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
@@ -1141,7 +1145,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'session.tabs.unsubscribeAll': SessionTabsUnsubscribeAllParams,
   'session.tabs.updatePaneLayout': UpdatePaneLayout,
   'settings.get': null,
+  'settings.getAgentLaunch': null,
   'settings.getTerminalQuickCommands': null,
+  'settings.mutateAgentLaunch': AgentLaunchSettingsMutation,
   'settings.mutateNativeChatSessionOptions': NativeChatSessionOptionsMutation,
   'settings.update': SettingsUpdate,
   'settings.updatePRBotAuthorOverride': PRBotAuthorOverrideUpdate,
@@ -1248,6 +1254,10 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
+  'workbench.review.comments': PullRequest,
+  'workbench.review.identity': null,
+  'workbench.review.inbox': null,
+  'workbench.review.receive': ReviewRequestSchema,
   'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,

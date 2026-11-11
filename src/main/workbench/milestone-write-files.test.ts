@@ -191,6 +191,11 @@ it('preserves conflicting or unsafe milestone materials and client recovery snap
     expect(planned.plans.get('current')?.timeWindow).toEqual(actualWindow)
     expect(planned.snapshot.material.features[0].deliveries[0]).not.toHaveProperty('goalId')
     expect(planned.snapshot.material.features[0].deliveries[0]).not.toHaveProperty('goalSlot')
+    expect(planned.snapshot.material.features[0].deliveries[0]).toEqual({
+      id: 'delivery',
+      phase: 'Build'
+    })
+    expect(planned.snapshot.material.schema_version).toBe(4)
     expect(milestoneDraft(planned.snapshot).material).not.toHaveProperty('versionPlans')
   } finally {
     await rm(root, { recursive: true, force: true })

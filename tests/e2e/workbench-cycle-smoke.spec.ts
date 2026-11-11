@@ -15,7 +15,7 @@ import { configureGoldenStubAgent, getGoldenStubAgentLaunchEnv } from './helpers
 import { verifyWorkflowDraft } from './helpers/workbench-workflow-draft'
 
 /**
- * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
+ * BW main-chain smoke (G2 journey): creating a version must prepare the
  * bound plan/acceptance flow trees through workbench.versionWorkspace.prepare,
  * mount the plan board beside the native terminal, keep material edits on the
  * bound tree's own disk path (binding-fenced authorization), survive a renderer
@@ -124,13 +124,38 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
   await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'initial')
 
+  await workbenchPage.evaluate(() => {
+    const state = window.__store?.getState()
+    const repoId = state?.activeRepoId ?? state?.repos[0]?.id
+    if (!repoId) {
+      throw new Error('active project unavailable')
+    }
+    localStorage.setItem(`workbench.version-expanded:${repoId}`, '[]')
+  })
+  await workbenchPage.reload()
+  await expect(workbenchPage.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
+  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await workbenchPage.getByRole('button', { name: /^(查看活动|View activity)$/ }).click()
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toHaveCount(0)
+  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toBeVisible()
+
   // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
-  await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).click()
+  await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).press('Enter')
   await workbenchPage.getByLabel('版本名').fill('v9.9')
   await workbenchPage.getByRole('button', { name: '创建版本', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 180_000
   })
+  const createdVersionToggle = workbenchPage.getByRole('button', {
+    name: 'v9.9 展开或收起',
+    exact: true
+  })
+  await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'true')
+  await createdVersionToggle.press('Enter')
+  await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'false')
+  await createdVersionToggle.press('Enter')
+  await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'true')
   const planTreePath = await waitForFixedWorktree(workbenchPage, 'bw/v9.9/plan')
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
@@ -302,12 +327,16 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await verifyWorkflowDraft(workbenchPage, 'version-acceptance', testInfo)
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
-  // ---- 总览：项目名片可见，未配置保持 Unknown；北极星卡片已移除 ----
-  await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()
+  // ---- 墙卡和总览名片使用同一个在制版本，包含只有草稿的版本。----
+  await workbenchPage.getByRole('button', { name: '项目墙', exact: true }).click()
+  const versionCard = workbenchPage.locator('[data-workbench-project-key]').filter({
+    has: workbenchPage.locator('.pcard-version').getByText('v9.9', { exact: true })
+  })
+  await versionCard.locator('[data-workbench-open-overview]').click({ timeout: 60_000 })
   await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.locator('#project-card')).toContainText('未知', {
+  await expect(workbenchPage.locator('#project-card')).toContainText('v9.9', {
     timeout: 60_000
   })
   await expect(workbenchPage.getByText('未配置北极星指标')).toHaveCount(0)
@@ -315,6 +344,9 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
 
   // ---- 版本级清理确认单：本机实例默认勾选；删除执行沿 Orca 原生确认单，
   // 破坏性步骤不进 CI（J9 归人验证），此处只核对清单结构与取消路径。----
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toHaveCount(0)
+  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toBeVisible()
   await workbenchPage.getByRole('button', { name: '清理 v9.9 工作树' }).click()
   const cleanup = workbenchPage.getByRole('dialog').filter({ hasText: '清理 v9.9 工作树' })
   await expect(cleanup.getByRole('checkbox')).toHaveCount(2, { timeout: 60_000 })

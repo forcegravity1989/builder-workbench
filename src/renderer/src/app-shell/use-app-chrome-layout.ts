@@ -13,6 +13,7 @@ import {
   subscribeBackgroundTerminalWorktreeMountRequests
 } from '../components/terminal/background-terminal-worktree-mount'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { WORKBENCH_RAIL_WIDTH } from '../workbench/WorkbenchRail'
 
 export type AppChromeLayout = ReturnType<typeof useAppChromeLayout>
 
@@ -103,7 +104,11 @@ export function useAppChromeLayout() {
     }
 
     const updateWidth = (): void => {
-      setCollapsedSidebarHeaderWidth(controls.getBoundingClientRect().width)
+      // The Rail already reserves its own width; tabs only need room for the overhang.
+      const railWidth = isWorkbenchShell() ? WORKBENCH_RAIL_WIDTH : 0
+      setCollapsedSidebarHeaderWidth(
+        Math.max(0, controls.getBoundingClientRect().width - railWidth)
+      )
     }
 
     updateWidth()

@@ -46,6 +46,8 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run dev:workbench
 ```
 
+开发实例和其中的终端只继承启动进程的环境变量：从 IDE、agent 等环境被收敛的进程起 dev 时，启动前要先补上本机需要的用户级变量（如内网 CA 的 `NODE_EXTRA_CA_CERTS`）；Windows 上 `dev:workbench` 会自动从用户环境补回该变量（清单见 `config/scripts/dev-workbench-env.mjs`）。
+
 打试用包仍用：`pnpm run build:mac:workbench`（签名 / 分发 / CDP smoke 前再打）。
 
 ## 品牌与开关
@@ -57,6 +59,7 @@ $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run
 | `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |
 | `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
 | `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
+| WeLink 群空间(上报落点) | 代码写死 `WELINK_REPORT_SPACE_ID = 24160277`(`src/main/workbench/reporting/welink-report-config.ts`,2026-11-11 人工决定「写死」);设置与 env 均不能改道。变更群空间走代码 PR;反馈/崩溃/诊断包上传到该空间「Workbench 上报」目录 |
 
 打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
 

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AppState } from '@/store/types'
+import type * as StoreTestHelpers from '@/store/slices/store-test-helpers'
+
+const storeHolder = vi.hoisted(() => ({
+  current: undefined as ReturnType<typeof StoreTestHelpers.createTestStore> | undefined
+}))
 
 // Why: drives the real closeTerminalTab orchestrator against the real store so the
 // unified close contract (MRU/neighbor successor, renderable-count deactivation gate)
@@ -32,8 +37,13 @@ createTabsSliceMockApi()
 const { createTestStore, makeTab, makeTabGroup, makeUnifiedTab, makeWorktree, seedStore } =
   await import('@/store/slices/store-test-helpers')
 const store = createTestStore()
+storeHolder.current = store
 
-vi.mock('@/store', () => ({ useAppStore: store }))
+vi.mock('@/store', () => ({
+  get useAppStore() {
+    return storeHolder.current
+  }
+}))
 
 const { closeTerminalTab } = await import('./terminal-tab-actions')
 
@@ -144,7 +154,7 @@ describe('closeTerminalTab unified close contract', () => {
       activeTerminalId: 'term-1'
     })
 
-    closeTerminalTab('term-1')
+    closeTerminalTab('term-1', { reason: 'user' })
 
     const state = store.getState()
     expect(state.activeWorktreeId).toBe(GIT_WT)
@@ -162,7 +172,7 @@ describe('closeTerminalTab unified close contract', () => {
       activeTerminalId: 'term-1'
     })
 
-    closeTerminalTab('term-1')
+    closeTerminalTab('term-1', { reason: 'user' })
 
     const state = store.getState()
     expect(state.activeWorktreeId).toBe(FOLDER_WT)
@@ -179,7 +189,7 @@ describe('closeTerminalTab unified close contract', () => {
       activeTerminalId: 'term-1'
     })
 
-    closeTerminalTab('term-1')
+    closeTerminalTab('term-1', { reason: 'user' })
 
     const state = store.getState()
     expect(state.activeWorktreeId).toBe(GIT_WT)
@@ -203,7 +213,7 @@ describe('closeTerminalTab unified close contract', () => {
       includeChatTab: false
     })
 
-    closeTerminalTab('term-1')
+    closeTerminalTab('term-1', { reason: 'user' })
 
     expect(store.getState().activeWorktreeId).toBeNull()
   })
@@ -244,7 +254,7 @@ describe('closeTerminalTab unified close contract', () => {
       }
     }))
 
-    closeTerminalTab('term-1')
+    closeTerminalTab('term-1', { reason: 'user' })
 
     const state = store.getState()
     expect(state.activeWorktreeId).toBe(GIT_WT)

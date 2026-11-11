@@ -21,6 +21,9 @@ import { SetupGuideProgressRing } from './SetupGuideProgressRing'
 import { useSetupGuideProgress } from './use-setup-guide-progress'
 import { useSetupGuideOpenCloseTelemetry } from './use-setup-guide-telemetry'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { showOnboardingFromRenderer } from '../onboarding/show-onboarding-event'
+import { toast } from 'sonner'
 
 const SETUP_GUIDE_CLOSE_LINGER_MS = 300
 
@@ -50,6 +53,8 @@ function SetupGuideModalContent({
   lingering: boolean
 }): JSX.Element {
   const modalData = useAppStore((s) => s.modalData)
+  const isBW = isWorkbenchShell()
+  const [openingInitialSetup, setOpeningInitialSetup] = useState(false)
   const closeModal = useAppStore((s) => s.closeModal)
   const setSetupGuideSidebarDismissed = useAppStore((s) => s.setSetupGuideSidebarDismissed)
   const setupSteps = useMemo(() => getFeatureWallSetupSteps(), [])
@@ -167,10 +172,12 @@ function SetupGuideModalContent({
         <DialogHeader className="gap-1 border-b border-border px-7 py-4">
           <div className="flex items-center gap-2">
             <DialogTitle className="text-lg">
-              {translate(
-                'auto.components.setup.guide.SetupGuideModal.48a9e5ef2d',
-                'Getting started'
-              )}
+              {isBW
+                ? translate('guidance.gettingStarted', 'Getting Started with BW')
+                : translate(
+                    'auto.components.setup.guide.SetupGuideModal.48a9e5ef2d',
+                    'Getting started'
+                  )}
             </DialogTitle>
             <SetupGuideProgressRing
               done={progress.coreDoneCount}
@@ -178,12 +185,43 @@ function SetupGuideModalContent({
               className="text-green-600 dark:text-green-300"
               sizeClassName="size-5"
             />
+            {isBW ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={openingInitialSetup}
+                onClick={async () => {
+                  setOpeningInitialSetup(true)
+                  try {
+                    await showOnboardingFromRenderer()
+                    closeModal()
+                  } catch {
+                    toast.error(
+                      translate(
+                        'guidance.initialSetupFailed',
+                        'Could not open initial setup. Please try again.'
+                      )
+                    )
+                  } finally {
+                    setOpeningInitialSetup(false)
+                  }
+                }}
+              >
+                {translate('guidance.initialSetup', 'Initial Setup')}
+              </Button>
+            ) : null}
           </div>
           <DialogDescription className="text-sm text-muted-foreground">
-            {translate(
-              'auto.components.setup.guide.SetupGuideModal.3598a3ca0c',
-              'Finish the core workflows that make Orca useful for parallel agent work.'
-            )}
+            {isBW
+              ? translate(
+                  'guidance.setupDescription',
+                  'Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.'
+                )
+              : translate(
+                  'auto.components.setup.guide.SetupGuideModal.3598a3ca0c',
+                  'Finish the core workflows that make Orca useful for parallel agent work.'
+                )}
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 overflow-hidden px-7 py-6">

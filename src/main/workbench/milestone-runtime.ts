@@ -1,4 +1,3 @@
-import { settleMilestoneWindows } from '../../shared/workbench/milestone-window-order'
 import type { Repo } from '../../shared/repo-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../shared/execution-host'
 import { CHARTER_BRANCH } from '../../shared/workbench/project-charter'
@@ -83,8 +82,8 @@ export function nativeMilestoneService(runtime: Runtime) {
         ) {
           throw new Error('请在原生登记的项目材料工作树提交')
         }
-        if (await git(['status', '--porcelain'])) {
-          throw new Error('项目材料工作树有未提交修改，请先核对；本次草案保留')
+        if (await git(['status', '--porcelain', '--', MILESTONES_PATH, '.bw/planning'])) {
+          throw new Error('里程碑或版本材料有未提交修改，请先核对；本次草案保留')
         }
         if (c.branchHead !== input.expectedProposal && input.expectedProposal !== null) {
           throw new Error('项目材料已被另一处更新，请刷新后核对；草案保留')
@@ -118,11 +117,7 @@ export function nativeMilestoneService(runtime: Runtime) {
         ) {
           throw new Error('发现已有项目材料草案，请刷新后核对；本次输入保留')
         }
-        const settled = settleMilestoneWindows(milestoneDraft(source.snapshot), input)
-        if (settled.conflict) {
-          throw new Error(settled.conflict)
-        }
-        const problems = milestoneProblems(input)
+        const problems = milestoneProblems(input, milestoneDraft(source.snapshot))
         if (problems.length) {
           throw new Error(problems.join('；'))
         }
@@ -231,8 +226,17 @@ export function nativeMilestoneService(runtime: Runtime) {
             ) {
               throw new Error('规划修订已变化，草案保留，请重新核对')
             }
-            if (await git(['status', '--porcelain', '--untracked-files=no'])) {
-              throw new Error('工作副本已变化，请核对后重试')
+            if (
+              await git([
+                'status',
+                '--porcelain',
+                '--untracked-files=no',
+                '--',
+                MILESTONES_PATH,
+                '.bw/planning'
+              ])
+            ) {
+              throw new Error('里程碑或版本材料已变化，请核对后重试')
             }
           },
           commit: async () => {

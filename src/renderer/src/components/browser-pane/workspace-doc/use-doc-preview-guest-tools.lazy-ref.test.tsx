@@ -24,8 +24,7 @@ vi.mock('@/components/browser-pane/annotate/guest-annotation-viewport-bridge', (
 }))
 vi.mock('@/components/browser-pane/annotate/use-browser-page-annotation-send', () => ({
   useBrowserPageAnnotationSend: () => ({
-    browserAnnotations: [],
-    setBrowserAnnotationTrayOpen: vi.fn()
+    browserAnnotations: []
   })
 }))
 vi.mock('@/components/browser-pane/annotate/use-browser-page-grab-annotations', () => ({

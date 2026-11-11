@@ -3,6 +3,7 @@
  * 结构 =「主机名: 该主机 Orca 分享的 runtime 配对地址」清单(高保真模板同款);
  * 配对本身只走 Orca 原生 verifyAndAddFromPairingCode,BW 不建平行主机台账。
  */
+import { normalizeTypedName } from '../../../shared/typed-name-normalization'
 import { parseHostAccessLink } from '../../../shared/remote-pairing-address'
 
 export const BUILDER_HOSTS_TEMPLATE_FILENAME = 'builder-hosts-template.json'
@@ -68,10 +69,10 @@ export function parseBuilderHostsFile(text: string): BuilderHostsFileParse {
         issue: '缺主机名（name）——名字自己取，导入后用于墙上来源标签'
       }
     }
-    if (seenNames.has(name)) {
+    if (seenNames.has(normalizeTypedName(name))) {
       return { name, address, displayEndpoint: null, issue: '清单里主机名重复——改名后再导入' }
     }
-    seenNames.add(name)
+    seenNames.add(normalizeTypedName(name))
     if (!address) {
       return { name, address, displayEndpoint: null, issue: '缺配对地址（address）' }
     }
@@ -97,27 +98,19 @@ export function parseBuilderHostsFile(text: string): BuilderHostsFileParse {
   return { ok: true, hosts: parsed }
 }
 
-export type BuilderHostImportAction = 'import' | 'skip-paired' | 'invalid'
+export type BuilderHostImportAction = 'import' | 'invalid'
 
 export type BuilderHostImportPlanEntry = ParsedBuilderHost & {
   action: BuilderHostImportAction
 }
 
-/**
- * 导入计划:同名已配对的主机跳过(重复导入同一配置幂等的判据与 Orca 主机名唯一约束一致,
- * 大小写敏感);地址无效的不发起配对。
- */
+/** 有效条目交给原生验证按主机公钥判断新增或更新；不能按名称跳过修复配对。 */
 export function planBuilderHostImports(
-  hosts: readonly ParsedBuilderHost[],
-  pairedNames: readonly string[]
+  hosts: readonly ParsedBuilderHost[]
 ): BuilderHostImportPlanEntry[] {
-  const paired = new Set(pairedNames.map((name) => name.trim()))
   return hosts.map((host) => {
     if (host.issue) {
       return { ...host, action: 'invalid' as const }
-    }
-    if (paired.has(host.name)) {
-      return { ...host, action: 'skip-paired' as const }
     }
     return { ...host, action: 'import' as const }
   })

@@ -6,7 +6,7 @@
 - 位置：`docs/01-principles/` 第一篇——本仓「知识与文档怎么分层」的正本
 - 相关：[`../README.md`](../README.md)（docs 地图）、[`../architecture.md`](../architecture.md)（设计正本）、[`../../CONTEXT.md`](../../CONTEXT.md)（词表）、[`../../AGENTS.md`](../../AGENTS.md)（开发规矩）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（少 gate / 飞轮检验）
 
-> **30 秒导读**：原则慢变；**特性级**变更走 `docs/05-features/` 制品链——**人 gate 是 intent + 带原型的 spec**；`plan.md` 默认不审，仅大风险升 gate；**依据齐备的小 bug 直接修**，不新立特性；所属特性缺必要文档时按 [02 §6.3](02-working-backwards.md) 补齐并确认。读回进 `docs/05-features/` 或 commit，遗留事项只进原生 Issue、文档不养债台账；**不再设仓根 `iterations/` 层**。Superpowers / grill-me 可当过程工具，产出必须落进 `docs/05-features/`。产品主张听 03。Markdown 是唯一真相；gate 决策页只是投影。
+> **30 秒导读**：原则慢变；**特性级**变更走 `docs/05-features/` 制品链——**人 gate 是 intent + 带原型的 spec**；最终对齐后生成仓外实现 plan，自主执行至 PR ready，大风险仍按原则处理。**依据齐备的小 bug 直接修**，不新立特性；所属特性缺必要文档时按 [02 §6.3](02-working-backwards.md) 补齐并确认。读回进特性正文或 commit，遗留事项只进原生 Issue。过程工具形成的正式意图与规格写回所属特性；产品主张听 03，决策页只是正本的投影。
 
 > **用词**：**gate** = 必须由人拍板才能往下走的关卡（见 03 / `CONTEXT.md`）。本文一律用 gate，不再写「人闸」。与工程侧**门禁**（提交前检查组）不是一回事。
 
@@ -15,17 +15,18 @@
 ```text
 仓根（四份入口文档，见 §6.1）
 ├── README.md          产品介绍 + 快速开始（入口件）
-├── AGENTS.md          开发规矩唯一正本（入口件）
+├── AGENTS.md          开发约定总入口与硬约束（入口件；细则直接引用专题正文）
 ├── CLAUDE.md          一行 @AGENTS.md 导入（入口件）
 └── CONTEXT.md         领域词表唯一正本（入口件）
 
-docs/（BW 产品知识；编号定序，architecture 是整体设计正本）
+docs/（BW 产品知识与本仓开发规范；编号定序，architecture 是整体设计正本）
 ├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文
 ├── architecture.md    设计正本（Electron 叠层 + 模块设计；docs 内不编号）
+├── development.md     BW 自身测试、检视、验证证据与 PR 规范；独立于具体 Skill
 ├── 02-adr/            架构决策的预留位置；存量已清空，后续按实际决策新增
-├── 03-guide/          产品指南的预留位置；存量已清空，真实旅程验证后补
-├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
-├── 05-features/       特性级变更制品链——intent + 带原型的 spec 为人 gate；plan 仅大风险；小修不另立特性
+├── 03-guide/          产品指南，按已验证的使用场景维护
+├── 04-design-system/  视觉与交互规范：样式、token，以及引导与旅程覆盖规则
+├── 05-features/       特性制品——intent + 带原型的 spec 为人 gate；实现 plan 留仓外；小修不另立特性
 ├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
 ├── 10-reference/      外部参考的提炼版
 ├── hifi/              八屏版式与旅程原型
@@ -40,19 +41,20 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 
 口诀：
 
-**`docs/01-principles/` 是原则，`docs/05-features/` 是这次变更，`docs/` 其余是产品怎么说清楚（设计 / 指南）。仓根只留约定的入口文档。**
+**`docs/01-principles/` 是原则，`docs/05-features/` 是特性定义，设计与指南解释产品；`docs/development.md` 单独承载本仓开发规范。仓根只留约定的入口文档。**
 
 ## 2. 各层职责
 
 | 层 | 回答什么 | 变多快 | 不写什么 |
 |---|---|---|---|
 | **docs/01-principles/** | 我们永远怎么组织知识、信什么铁律（拍板才改） | 慢 | 单次需求、当周实验、某站施工日记 |
-| **docs/05-features/\<id\>/** | **特性级**要什么、规格（含原型）；大风险才有必批 plan；读回可写在 STATUS / PRACTICE 段或 commit | 每个大特性/大改动一条；小修沿用所属特性 | 为小 bug、文案错、一次性琐修另立特性；产品总设计、词表；欠账/遗留台账（遗留事项只进原生 Issue） |
+| **docs/05-features/\<id\>/** | **特性级**要什么、规格（含原型）；STATUS 记录认可来源与当前验证边界 | 每个大特性/大改动一条；小修沿用所属特性 | 为小 bug 另立特性；产品总设计、词表、实现 plan、流水与遗留台账（遗留只进原生 Issue） |
 | **docs/06-module/** | 单个模块怎么实现的心智模型——设计面对的主要矛盾 / 取舍 | 模块新增或大改时补一篇 | 整体旅程与逻辑模块（在 architecture）；用户价值特性（在 05-features）；代码路径 / 数据字段 / 没建清单等实现细节 |
 | **docs/03-guide** | 人怎么用 / 怎么讲（只写已实践） | 站验证后补 | 未上线功能、实现黑话堆砌 |
 | **docs/10-reference/** | 业界在什么条件下观察到什么，或提出了什么方法。注明一手来源、日期、证据类型和适用局限 | 来源修订或新证据改变结论时 | BW 的采用取舍归对应特性或模块。旧设计快照和施工记录查 Git 或原 PR |
 | **docs/\*-prototype/design** | 当前迭代设计实况（一篇正本） | 站走完改实况 | 单次 MR 的 intent；修订流水账当正文 |
-| **AGENTS / CLAUDE** | agent 每会话必读的地板（AGENTS 是开发规矩正本） | 开发规矩或入口变化时，先修已有规则与引用 | 单次变更正本（进 docs/05-features/）；产品主张（进 docs/01-principles/03） |
+| **docs/development.md** | BW 自身的测试、独立检视、证据与 PR 规则；供 AGENTS、Skills 和模板共同引用 | 规则或消费者变化时更新，沿用一个正本 | 具体工具操作、Skill 编排、任务流水；不向被管项目分发 |
+| **AGENTS / CLAUDE** | 本仓开发总入口与硬约束；专题细则由 AGENTS 直接指向唯一正文，CLAUDE 只导入 AGENTS | 开发规矩或入口变化时，先修已有规则与引用 | 重复专题细则、单次变更正文、产品主张 |
 | **.teamai/** | 可共享的 skills/hooks/规则如何同步到多工具 | 随团队政策 | 业务仓设计正本、docs/05-features 正文 |
 
 ### 文档变更时同步什么
@@ -61,14 +63,14 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 
 移动文档、调整职责或改变契约时，同步检查入口索引、链接和章节引用、相关示例，以及实际读取这些内容的代码与调用方。引用的路径和示例应能核查；存在文件、分发文件、给模型指针与实际读取正文分别说明。读取方尚未支持的部分如实记录，不能靠改文档宣称实现已跟上。
 
-日常新增与小修只检查本次改动及必要引用，不默认全仓审计或重复模型评测。改变执行行为时按受影响路径验证；没有验证的数据不写成收益。变更原因、验证证据和未完成项留在对应 commit/PR 或已有特性记录；当前知识同步到正本，不另建提交流水或平行规范。
+日常新增与小修只检查本次改动及必要引用，不默认全仓审计或重复模型评测。改变执行行为时按受影响路径验证；没有验证的数据不写成收益。变更原因与验证证据留在对应 commit/PR，未完成工作进入原生 Issue；当前知识同步到正本，不另建提交流水或平行规范。
 
 Workbench 研发知识库的目录约定适用于本仓。`standard/` 给被管项目提供执行规范；项目文档归属与落点遵循该项目自己的 `AGENTS.md` 及引用，不照搬 BW 的目录树。术语边界见 [`CONTEXT.md`](../../CONTEXT.md)「知识与规范资产」。
 
 ## 3. 二者关系：01-principles · 05-features
 
 ```text
-docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | spec.md [| plan.md 仅大风险]
+docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | spec.md
      ▲                         │
      │                         │ 做中踩坑、读回 → 写进该 change / commit
      │                         ▼
@@ -87,7 +89,7 @@ docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | sp
 | 写法 | 是什么 |
 |---|---|
 | **`docs/01-principles/`** | 本目录：仓库级慢变原则 |
-| **`docs/05-features/<id>/plan.md`** | 单次变更的**实现计划**；**默认不进 gate**，仅命中大风险清单才升 gate |
+| **仓外实现 plan** | 最终规格确认后的执行计划与检视依据；可被本次工作会话和检视者定位，不作为仓内知识正本 |
 | 已删的仓根 **`plan/`** | 旧产品规范集已随 lean 整改退场；工程设计听 `docs/architecture.md`，主张听 03 |
 | **`docs/superpowers/specs/`** | Superpowers 流程可能写出的设计稿落点；**可作过程草稿**，特性 gate 正本仍是 `docs/05-features/<id>/` |
 | **`v3` 分支** | 已删的 V3 代码与历史交接/实践档案；**不是**现役层 |
@@ -118,9 +120,10 @@ docs/05-features/<change-id>/
   intent.md    # 要什么 / 为何 / 约束（意图 gate；gate 前未决问题清零——决策进正文与取舍，遗留进原生 Issue，不留开放问题节）
   spec.md      # 需求+设计；必须含可点原型的链接与操作逻辑（规格 gate）
   prototype.html # 本特性可点入口；可编辑源码和本地资源位于同目录 prototype/
-  plan.md      # 改哪些文件、顺序、风险、如何证明——默认自动跑用；仅大风险升 gate
   STATUS.md    # draft | accepted | building | in_review | shipped | rejected
 ```
+
+实现 plan 在最终对齐后生成，放在仓外任务产物中，写明实施项、顺序和验证方式；交付时据此核查是否漏项。稳定设计和业务决定写回所属正本，执行流水不迁入特性目录。
 
 **人 gate（必须过）：**
 
@@ -129,8 +132,8 @@ docs/05-features/<change-id>/
 
 **默认不进 gate：**
 
-- **`plan.md`**：规格认过之后，实现计划默认由 agent 自拟并自动跑；工程师**不**默认必批。  
-- **仅当命中大风险清单**（破坏性迁移、权限/密钥面扩大、对外契约变更、不可逆发布、跨边界数据流出等——清单正本听 03 内部 FAQ）时，`plan.md` / 技术方案才升 gate。
+- **仓外实现 plan**：最终对齐后的执行安排由 agent 自拟，并连续推进至 PR ready；不再逐步要求工程师审批。最后对齐的内容与自主执行边界见 [02 §3.2](02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)。
+- **命中大风险清单**（破坏性迁移、权限/密钥面扩大、对外契约变更、不可逆发布、跨边界数据流出等——清单正本听 03 内部 FAQ）的方案须经人确认。已知风险在最终对齐时解决；执行中新出现且未获授权的风险暂停依赖动作，交人判断。
 
 接受某一制品 = 允许进入下一阶段；**聊过 / 口头批准 ≠ 过 gate**；git 历史即审计轨迹。小修不新开本链；所属特性缺必要依据时按 [02 §6.3](02-working-backwards.md) 补原链。
 
@@ -142,9 +145,9 @@ docs/05-features/<change-id>/
 
 1. **正本唯一**：特性级 gate 批的是 `docs/05-features/<id>/intent.md` 与带原型的 `spec.md`，不是 `docs/superpowers/specs/` 里另起一套。  
 2. **产出要落仓**：brainstorming / grill-me 的结论必须写回（或迁入）对应 `docs/05-features/<id>/`；只留在聊天或 superpowers 草稿、正文不动 = 没过 gate。  
-3. **plan 仍听少 gate**：writing-plans 产出可进 `plan.md`；默认不另开工程师必批 gate，除非命中大风险清单。
+3. **plan 仍听少 gate**：writing-plans 产出留仓外，最终对齐后由 agent 自主执行；大风险按上节处理。
 
-历史仍作数的 `docs/superpowers/specs/` 篇章（被 plan/13 等引用的）保持原状；**新特性不要默认只写到那里就开干**。
+仍有效且被引用的过程稿，随本次改动迁回对应正本并同步引用；无独立价值的旧稿直接清除，不为保留而归档。**新特性不要只写过程稿就开干**。
 
 ## 5. 源与投影
 
@@ -154,7 +157,7 @@ docs/05-features/<change-id>/
 
 ## 6. 与现有文档边界的关系
 
-[`docs/README.md`](../README.md) 管 docs 树地图；设计正本是 [`docs/architecture.md`](../architecture.md)；产品指南预留 `docs/03-guide/`，当前无存量正文；随真实旅程验证补回，不恢复旧 Rust 操作步骤。
+[`docs/README.md`](../README.md) 管 docs 树地图与产品指南入口；设计正本是 [`docs/architecture.md`](../architecture.md)。`docs/03-guide/` 按已验证的使用场景维护，不恢复旧 Rust 操作步骤。
 本文管**整仓知识分层**（原则 / 变更 / docs / agent 入口）。与 docs 落盘细则冲突时：**docs 目录内听 docs/README + architecture**；跨目录归属听本文。
 
 ### 6.1 仓根只留四份入口文档
@@ -168,12 +171,13 @@ docs/05-features/<change-id>/
 
 整体设计直接指向 `docs/architecture.md`，不再维护仓根设计指针。变更原因与验证证据进 commit/PR，当前知识各归正本，历史用 Git 查询，不另维护仓根变更流水，也不复制为新归档。
 
-其余知识文档进入 `docs/` 的已有职责层，目录编号定序，`architecture.md` 是不编号的整体设计正本。临时报告与原型作为仓外 artifact 或按既有约定留链接，不为了报告新建常驻知识层。工具配置、源码及结构化项目资产不属于本条的 Markdown 入口清单。
+其余知识文档进入 `docs/` 的已有职责层，目录编号定序，`architecture.md` 是不编号的整体设计正本。临时报告与实现 plan 作为仓外 artifact，不为了报告新建常驻知识层；特性原型按 §4.2 归入所属特性目录。工具配置、源码及结构化项目资产不属于本条的 Markdown 入口清单。
 
 ### 6.2 共用原则与每篇头部各管什么
 
-- **本文**规定分层、共用要素与例外；**AGENTS**规定模型如何读、维护、验证以及何时征得人确认；**每篇头部**是该篇职责与格式的正本。索引只导航，不复制全套规范。
+- **本文**规定分层、共用要素与例外；**AGENTS**规定本仓任务如何读、维护、验证以及交付权限，直接指向必守专题正文；**每篇头部**是该篇职责与格式的正本。规范效力不依赖是否调用某个 Skill，索引不复制全套细则。
 - 头部应让模型知道：**读者与读取时机、可以写什么/不写什么、正文结构、何时更新，以及依赖的正本**。用简短导读或维护块表达，不要求每篇套同样的章节数量。
+- 文档同时给人和模型读。按读者要解决的问题组织正文，先讲对象、约束和结果；示例帮助判断，依据按需展开。目录、格式和引用关系要能支持后续维护，不能只靠栏目齐全或字数少判断可读性。
 - 头部放在标题附近、正文之前。`README.md` 可用顶部 HTML 注释兼顾仓库门面，模型必须读取 Markdown 原文；`CLAUDE.md` 只作导入，不加头部。
 - Skill 保持 YAML frontmatter 和自身结构；上游镜像、生成文件遵循来源格式，由其入口说明维护方式，不给每个镜像文件强加头部。既有文档按实际改动补齐，不启动无差别全库格式改造。
 - 新增或恢复内容必须先检查目标范围；范围外优先找正确正本，确需扩责须**先提出头部边界变更并经人确认，再改头部与正文**。具体维护顺序只在 [AGENTS](../../AGENTS.md) 维护，头部不得覆盖上层原则。
