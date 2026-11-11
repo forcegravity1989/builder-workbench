@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
+import { branchName } from '@/lib/git-utils'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -9,6 +10,7 @@ import { readWallReadings } from './wall-readings-load'
 import type { WallProject } from './workbench-wall-projects'
 import { wallProjectVersionRows } from './workbench-wall-projects'
 import type { WallCardReadings } from './wall-card-readings'
+import { CHARTER_BRANCH } from './project-charter'
 import { createWallCardCache, useWallCardReads } from './use-wall-card-reads'
 import { type useWallRefresh, wallReadRevision } from './wall-refresh'
 
@@ -39,7 +41,12 @@ export function useWallReadings(
             }
           }
         }
-        const worktrees = [...trees.values()]
+        const worktrees = [...trees.values()].filter(
+          (tree) =>
+            tree.isMainWorktree ||
+            tree.workbenchVersionBinding ||
+            branchName(tree.branch) !== CHARTER_BRANCH
+        )
         return {
           projectKey: project.key,
           sourceKey: JSON.stringify([

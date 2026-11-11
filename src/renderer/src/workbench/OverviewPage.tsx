@@ -353,8 +353,10 @@ export function OverviewPage(): React.JSX.Element {
             onDirtyChange={setSettingsDirty}
             onBusyChange={setSettingsBusy}
             discardRef={discardSettings}
-            onChanged={() => {
-              setCharterRefresh((value) => value + 1)
+            onChanged={(charterUpdated) => {
+              if (charterUpdated) {
+                setCharterRefresh((value) => value + 1)
+              }
               refreshCharterStatus()
             }}
           />

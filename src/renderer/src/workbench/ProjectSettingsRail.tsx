@@ -35,12 +35,14 @@ export function ProjectSettingsRail({
   onClose(): void
   onDirtyChange(dirty: boolean): void
   onBusyChange(busy: boolean): void
-  onChanged?(): void
+  onChanged?(charterUpdated: boolean): void
   discardRef: RefObject<(() => void) | null>
 }) {
-  const model = useProjectSettings(repo, () => {
-    invalidateWallRepo(repo)
-    onChanged?.()
+  const model = useProjectSettings(repo, (charterUpdated) => {
+    if (charterUpdated) {
+      invalidateWallRepo(repo)
+    }
+    onChanged?.(charterUpdated)
   })
   const [editing, setEditing] = useState(false)
   const [savingType, setSavingType] = useState(false)

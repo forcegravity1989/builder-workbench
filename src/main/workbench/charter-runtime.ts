@@ -168,11 +168,28 @@ function createCharterService(runtime: CharterRuntimeHost) {
       content = reviewed.content
       filled = reviewed.changed
       const working = await readTextFileGuarded(tomlPath)
-      if (working.error || (working.raw !== baseRaw && working.raw !== content)) {
+      let matchesHead = working.raw === baseRaw
+      let readError = working.error
+      if (
+        !matchesHead &&
+        working.raw !== content &&
+        working.raw !== null &&
+        baseRaw !== null &&
+        working.raw.replace(/\r\n/g, '\n') === baseRaw.replace(/\r\n/g, '\n')
+      ) {
+        // Windows checkout conversion can change the bytes while Git considers the file clean.
+        try {
+          const { stdout } = await git(['status', '--porcelain', '--', PROJECT_TOML_REL])
+          matchesHead = !stdout.trim()
+        } catch {
+          readError = '未能核对配置工作树，请重试；草稿已保留'
+        }
+      }
+      if (readError || (!matchesHead && working.raw !== content)) {
         return {
           mode: 'failed',
           stage: 'read',
-          error: '配置工作树有未提交的名片修改，请先核对；草稿已保留',
+          error: readError ?? '配置工作树有未提交的名片修改，请先核对；草稿已保留',
           filled: []
         }
       }

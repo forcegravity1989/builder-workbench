@@ -31,7 +31,7 @@ type Draft = {
 // Transient form state survives native navigation; it is never written to project business storage.
 const drafts = new Map<string, Draft>()
 
-export function useProjectSettings(repo: Repo, onChanged: () => void) {
+export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boolean) => void) {
   const key = `${getRepoExecutionHostId(repo)}::${repo.id}`
   const [form, setForm] = useState<Draft | null>(null)
   const [status, setStatus] = useState<CharterStatus | null>(null)
@@ -221,7 +221,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
           outcome.mode === 'local-only' ? outcome.reason : (outcome.note ?? '没有需要提交的变更')
         )
       }
-      onChanged()
+      onChanged(outcome.mode !== 'pr')
       return true
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
@@ -252,7 +252,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
         throw new Error(trunkUpdateNotice(result))
       }
       await reload()
-      onChanged()
+      onChanged(true)
       setNotice(trunkUpdateNotice(result))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause))
