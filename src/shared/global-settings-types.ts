@@ -485,6 +485,9 @@ export type GlobalSettings = {
     installId: string
     /** Cohort marker: true for pre-existing profiles (gates the opt-in banner), false for fresh installs. */
     existedBeforeTelemetryRelease: boolean
+    /** BW #553(决策⑧ 修订)one-shot marker: default-off normalization applied. Absent on Orca
+     *  profiles and on BW profiles that predate the opt-in telemetry sink. */
+    workbenchDefaultOffApplied?: boolean
   }
   /** One-shot cohort marker for the tab-switch keybinding swap. 'pending' =
    *  pre-existing install (seed pins old chords, then flips to 'done'); 'done' = fresh install. */

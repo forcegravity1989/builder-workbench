@@ -237,26 +237,31 @@ async function createFolder(
   return id
 }
 
-// One ensured folder per space per process; concurrent submissions share the
+// One ensured folder per (space, name) per process; concurrent submissions share the
 // in-flight promise so a burst of reports cannot double-create the folder.
 const reportFolderCache = new Map<string, Promise<string>>()
 
-export function ensureReportFolder(route: WelinkRoute, spaceId: string): Promise<string> {
-  const cached = reportFolderCache.get(spaceId)
+export function ensureReportFolder(
+  route: WelinkRoute,
+  spaceId: string,
+  folderName: string = WORKBENCH_REPORT_FOLDER_NAME
+): Promise<string> {
+  const cacheKey = `${spaceId}::${folderName}`
+  const cached = reportFolderCache.get(cacheKey)
   if (cached) {
     return cached
   }
   const pending = (async () => {
     const listing = await listFolder(route, spaceId, '0')
-    const existing = listing.folders.find((folder) => folder.name === WORKBENCH_REPORT_FOLDER_NAME)
+    const existing = listing.folders.find((folder) => folder.name === folderName)
     if (existing) {
       return existing.id
     }
-    return createFolder(route, spaceId, '0', WORKBENCH_REPORT_FOLDER_NAME)
+    return createFolder(route, spaceId, '0', folderName)
   })()
-  reportFolderCache.set(spaceId, pending)
+  reportFolderCache.set(cacheKey, pending)
   void pending.catch(() => {
-    reportFolderCache.delete(spaceId)
+    reportFolderCache.delete(cacheKey)
   })
   return pending
 }

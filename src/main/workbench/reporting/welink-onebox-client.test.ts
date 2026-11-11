@@ -60,7 +60,11 @@ describe('welink onebox output protocol', () => {
     expect(parseFirstJsonObject('no json here')).toBeNull()
   })
 
-  it('classifies CLI failures into the four actionable categories', () => {
+  // Merged (BW #553 遥测交付对冲): classification and its consequences (user
+  // copy + deletion-retry handling) guard one error-handling pipeline — the
+  // category classifyWelinkErrorText produces is what WelinkReportError and
+  // removeReportFile consume. All assertions preserved verbatim.
+  it('classifies CLI failures and maps them to safe copy and deletion-retry handling', async () => {
     // All shapes below are verbatim from the field research (调研 §4).
     expect(
       classifyWelinkErrorText(
@@ -84,9 +88,7 @@ describe('welink onebox output protocol', () => {
     ).toBe('network')
     expect(classifyWelinkErrorText('Timed out running welink-cli')).toBe('network')
     expect(classifyWelinkErrorText('something else entirely')).toBe('unknown')
-  })
 
-  it('maps failures to safe copy and accepts only missing-file deletion retries', async () => {
     const rateLimited = new WelinkReportError('rate-limit', 'Error: status 429 requestId=abc-123')
     expect(rateLimited.name).toBe('WelinkReportError')
     expect(rateLimited.message).toBe('WeLink 接口限流,请稍后重试。')

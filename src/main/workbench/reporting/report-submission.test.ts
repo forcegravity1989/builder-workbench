@@ -88,7 +88,10 @@ afterEach(() => {
 })
 
 describe('submitWelinkReport orchestration', () => {
-  it('degrades bundle and image failures without failing the report, swapping in the report-only text', async () => {
+  // Merged (BW #553 遥测交付对冲): both cases guard the same sink failure
+  // contract (partial degradation, categorized copy, temp-dir cleanup,
+  // diagnostics ticket semantics); all assertions preserved verbatim.
+  it('degrades upload failures to partial-delivery results with categorized copy and keeps the diagnostics ticket contract', async () => {
     uploadReportFileMock.mockImplementation(
       async (
         _route: unknown,
@@ -139,9 +142,7 @@ describe('submitWelinkReport orchestration', () => {
     expect(uploadedReportContent).toContain('bundleabcdefghijklmnop')
     // Temp staging is cleaned even on partial failure.
     expect(existsSync(lastUploadDir)).toBe(false)
-  })
 
-  it('maps a failed report upload to the categorized copy and keeps the diagnostics ticket contract', async () => {
     uploadReportFileMock.mockImplementation(
       async (
         _route: unknown,

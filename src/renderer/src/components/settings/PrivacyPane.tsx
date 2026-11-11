@@ -6,6 +6,7 @@ import type { TelemetryConsentState } from '../../../../shared/telemetry-consent
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { PRIVACY_URL, getConsentState, setOptIn as telemetrySetOptIn } from '../../lib/telemetry'
+import { isWorkbenchShell } from '../../workbench/is-workbench-shell'
 import { useAppStore } from '../../store'
 import { PrivacyDiagnosticsSection } from './PrivacyDiagnosticsSection'
 import { translate } from '@/i18n/i18n'
@@ -98,18 +99,30 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
             </Label>
           </div>
           <p className="text-xs text-muted-foreground">
-            {translate(
-              'auto.components.settings.PrivacyPane.8bfdd23a88',
-              'Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.'
-            )}{' '}
-            <button
-              type="button"
-              className="underline underline-offset-2 hover:text-foreground"
-              onClick={() => void window.api.shell.openUrl(PRIVACY_URL)}
-            >
-              {translate('auto.components.settings.PrivacyPane.77410e0566', 'Privacy policy')}
-            </button>
-            .
+            {/* Why (BW #553 决策⑧ 修订): Workbench telemetry is opt-in and lands in the
+                WeLink group space, not PostHog — the Orca description and privacy-policy
+                link would misdescribe where data goes (品牌/落点文案同 #614 治理口径). */}
+            {isWorkbenchShell() ? (
+              translate(
+                'auto.components.settings.PrivacyPane.workbenchDescription',
+                'Off by default. When enabled, Workbench sends anonymous counts of which features you use and where things break to the project WeLink group space.'
+              )
+            ) : (
+              <>
+                {translate(
+                  'auto.components.settings.PrivacyPane.8bfdd23a88',
+                  'Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.'
+                )}{' '}
+                <button
+                  type="button"
+                  className="underline underline-offset-2 hover:text-foreground"
+                  onClick={() => void window.api.shell.openUrl(PRIVACY_URL)}
+                >
+                  {translate('auto.components.settings.PrivacyPane.77410e0566', 'Privacy policy')}
+                </button>
+                .
+              </>
+            )}
           </p>
         </div>
         <Switch

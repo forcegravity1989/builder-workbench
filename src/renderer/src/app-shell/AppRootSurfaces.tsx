@@ -306,9 +306,14 @@ export function AppRootSurfaces(props: {
       )}
       {isWorkbenchShell() ? null : <StarNagAgentValueMomentObserver />}
       {/* Why: mount at App root to render once per session; internal cohort gate limits it to pre-telemetry users — see telemetry-plan.md §First-launch experience. */}
-      <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
-        <TelemetryFirstLaunchSurface />
-      </OverlayBoundary>
+      {/* Why (BW #553 决策⑧ 修订,人工确认): Workbench telemetry is opt-in —
+          default off, toggled only in Settings → Privacy. The first-launch
+          banner stays suppressed so BW users are never prompted at startup. */}
+      {isWorkbenchShell() ? null : (
+        <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
+          <TelemetryFirstLaunchSurface />
+        </OverlayBoundary>
+      )}
       <OverlayBoundary boundaryId="overlay.zoom" resetKey={activeView}>
         <ZoomOverlay />
       </OverlayBoundary>

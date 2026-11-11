@@ -8,9 +8,10 @@
 import { randomUUID } from 'node:crypto'
 import { arch as osArch, platform as osPlatform, release as osRelease } from 'node:os'
 import { getAppEnvironment } from '../../shared/app-environment'
-import { PostHog } from 'posthog-node'
+import { PostHog, type PostHogOptions } from 'posthog-node'
 import type { CommonProps, EventName, EventProps, OptInVia } from '../../shared/telemetry-events'
 import type { Store } from '../persistence'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { consumeBurstToken, resetBurstCapsForSession } from './burst-cap'
 import { getCohortAtEmit } from './cohort-classifier'
 import { resolveConsent, type ConsentState } from './consent'
@@ -50,6 +51,46 @@ let testTransportEnabled = false
 // First-launch `app_opened` gate: no events transmit until the banner resolves; keep mark+emit atomic.
 let appOpenedTrackedThisSession = false
 
+// BW #553(决策⑧ 修订):the Workbench product ships no PostHog identity/key, but
+// telemetry is opt-in there too — events go to the WeLink group space instead.
+// The BW bootstrap injects a transport (posthog-node custom `fetch`) before
+// `initTelemetry` runs; without it the BW product stays a deterministic no-op
+// (fail-closed, same as a contributor build). Injection keeps this module free
+// of workbench imports (telemetry lane isolation — observability/architecture.test.ts).
+export type TelemetryTransportFetchResponse = {
+  status: number
+  text: () => Promise<string>
+  json: () => Promise<unknown>
+}
+
+export type TelemetryTransport = {
+  /** posthog-node `fetch` override (structurally compatible with PostHogFetchOptions/Response).
+   *  MUST NOT reject and MUST resolve 2xx: the SDK turns fetch errors into retry cycles whose
+   *  rejections escape `shutdownTelemetry`'s catch as unhandled rejections, and non-2xx triggers
+   *  a retry after shutdown (both verified against posthog-node 5.33.3). */
+  fetch: (
+    url: string,
+    options: { method: string; headers: Record<string, string>; body?: string | Blob }
+  ) => Promise<TelemetryTransportFetchResponse>
+  /** Final flush on quit; must self-bound its deadline. */
+  shutdown?: () => Promise<void>
+}
+
+let workbenchTransport: TelemetryTransport | null = null
+
+/** BW bootstrap hook — call before `initTelemetry` (see `TelemetryTransport`). */
+export function setWorkbenchTelemetryTransport(transport: TelemetryTransport): void {
+  workbenchTransport = transport
+}
+
+export function _resetWorkbenchTelemetryTransportForTests(): void {
+  workbenchTransport = null
+}
+
+// Placeholder only: the BW transport never touches the network, but the SDK
+// constructor requires a non-empty key.
+const WORKBENCH_TRANSPORT_WRITE_KEY = 'workbench-welink-transport'
+
 function buildCommonProps(installId: string, sid: string, channel: 'stable' | 'rc'): CommonProps {
   // Don't truncate here; the validator's `.max(64)` is authoritative, so an over-long string drops rather than being silently masked.
   return {
@@ -71,10 +112,43 @@ export function initTelemetry(store: Store): void {
   // Reset per session: the "no app_opened until banner resolution" invariant is per-launch, not per-install.
   appOpenedTrackedThisSession = false
 
-  if (!TELEMETRY_ENABLED || !IS_OFFICIAL_BUILD) {
+  // BW #553(决策⑧ 修订):Workbench telemetry is opt-in (default off) and the
+  // injected transport — not PostHog — decides where events land. The native
+  // pipeline below (consent, burst cap, validator, SDK queue) is unchanged.
+  // The product judgement stays deterministic (前作原则): BW never builds a
+  // PostHog client from CI-injected identity/key — it either transmits through
+  // the injected WeLink transport or stays closed.
+  if (isWorkbenchProduct()) {
+    const bwTransport = workbenchTransport
+    if (!bwTransport) {
+      return
+    }
+    initTelemetryTransport(store, {
+      channel: 'stable', // BW builds inject no ORCA_BUILD_IDENTITY; the sink is not channel-routed.
+      writeKey: WORKBENCH_TRANSPORT_WRITE_KEY,
+      fetch: bwTransport.fetch
+    })
     return
   }
 
+  if (!TELEMETRY_ENABLED || !IS_OFFICIAL_BUILD) {
+    return
+  }
+  initTelemetryTransport(store, {
+    // Non-null here: `IS_OFFICIAL_BUILD` gated this branch to the `'stable' | 'rc'` arm.
+    channel: BUILD_IDENTITY as 'stable' | 'rc',
+    writeKey: WRITE_KEY as string
+  })
+}
+
+function initTelemetryTransport(
+  store: Store,
+  opts: {
+    channel: 'stable' | 'rc'
+    writeKey: string
+    fetch?: PostHogOptions['fetch']
+  }
+): void {
   const settings = store.getSettings()
   const installId = settings.telemetry?.installId
   if (!installId) {
@@ -84,12 +158,7 @@ export function initTelemetry(store: Store): void {
   }
 
   sessionId = randomUUID()
-  commonProps = buildCommonProps(
-    installId,
-    sessionId,
-    // Non-null here: `IS_OFFICIAL_BUILD` gated this branch to the `'stable' | 'rc'` arm.
-    BUILD_IDENTITY as 'stable' | 'rc'
-  )
+  commonProps = buildCommonProps(installId, sessionId, opts.channel)
 
   // Fail-closed: a bad `install_id` (e.g. empty from a migration bug) would collapse all events into one distinct_id.
   // Validated once here (not per `track()`): `commonProps` is a session-lifetime singleton that can't drift.
@@ -100,14 +169,15 @@ export function initTelemetry(store: Store): void {
     return
   }
 
-  posthog = new PostHog(WRITE_KEY as string, {
+  posthog = new PostHog(opts.writeKey, {
     host: 'https://us.i.posthog.com',
     flushAt: 20,
     flushInterval: 10_000,
     // Strip SDK-auto GeoIP / client-IP enrichment; our wire is exactly CommonProps ∪ EventProps ∪ a small allow-list.
     disableGeoip: true,
     // Bumped from the default 1000 (drops oldest-first past cap) to 5000 to tolerate long-offline sessions.
-    maxQueueSize: 5000
+    maxQueueSize: 5000,
+    ...(opts.fetch ? { fetch: opts.fetch } : {})
   })
 
   if (shouldOptOutSdkAtInit(resolveConsent(settings))) {
@@ -161,8 +231,15 @@ function waitForCaptureEnqueue(client: PostHog, event: EventName, uuid: string):
 }
 
 // No-op in contributor / non-official builds; only official stable/rc builds (CI-injected `ORCA_BUILD_IDENTITY` + `ORCA_POSTHOG_WRITE_KEY`) transmit.
+// BW #553(决策⑧ 修订):the Workbench product transmits only through the injected WeLink transport (default off; consent gates below) — never via CI-injected PostHog identity.
 export function track<N extends EventName>(name: N, props: EventProps<N>): void {
-  if (!testTransportEnabled && (!IS_OFFICIAL_BUILD || !TELEMETRY_ENABLED)) {
+  // Symmetric with the init gate: BW builds inject no official constants, so
+  // the injected transport — not IS_OFFICIAL_BUILD — is the BW transmit
+  // eligibility; without it the product fails closed whatever constants say.
+  const transportAllowed = isWorkbenchProduct()
+    ? workbenchTransport !== null
+    : IS_OFFICIAL_BUILD && TELEMETRY_ENABLED
+  if (!testTransportEnabled && !transportAllowed) {
     return
   }
 
@@ -299,15 +376,23 @@ export async function shutdownTelemetry(): Promise<void> {
   // Set the gate before flush so late IPC-arrived tracks drop instead of enqueuing mid-flush.
   shuttingDown = true
   const instance = posthog
-  if (!instance) {
-    return
+  if (instance) {
+    try {
+      // Bounded flush caps at 2s, so quit delay rises by at most that.
+      await instance.shutdown(2_000)
+    } catch (err) {
+      // Telemetry must never crash the app on quit. Swallow.
+      console.warn('[telemetry] shutdown error (ignored):', err)
+    }
   }
-  try {
-    // Bounded flush caps at 2s, so quit delay rises by at most that.
-    await instance.shutdown(2_000)
-  } catch (err) {
-    // Telemetry must never crash the app on quit. Swallow.
-    console.warn('[telemetry] shutdown error (ignored):', err)
+  // BW: the SDK flush above hands the final batch to the transport; give it a
+  // bounded window to land the upload before quit proceeds (self-bounded inside).
+  if (workbenchTransport?.shutdown) {
+    try {
+      await workbenchTransport.shutdown()
+    } catch (err) {
+      console.warn('[telemetry] workbench transport shutdown error (ignored):', err)
+    }
   }
 }
 

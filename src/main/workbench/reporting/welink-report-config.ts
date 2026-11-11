@@ -17,6 +17,13 @@ export const WELINK_REPORT_SPACE_ID = '24160277'
  */
 export const WORKBENCH_REPORT_FOLDER_NAME = 'Workbench 上报'
 
+/**
+ * Telemetry batches land in their own folder (BW #553 决策⑧ 修订,人工确认):
+ * opt-in usage events accumulate steadily and must not bury the human-facing
+ * feedback/crash/diagnostics reports in one listing.
+ */
+export const WORKBENCH_TELEMETRY_FOLDER_NAME = 'Workbench 遥测'
+
 export type WelinkReportConfig = {
   readonly spaceId: string
 }

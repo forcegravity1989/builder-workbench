@@ -6,6 +6,8 @@ import { registerSystemResumeBroadcast } from '../system-resume-broadcast'
 import { agentHookServer } from '../agent-hooks/server'
 import { installHookStatusSessionTabsRepublish } from '../agent-hooks/hook-status-session-tabs-republish'
 import { initTelemetry, track } from '../telemetry/client'
+import { isWorkbenchProduct } from './workbench-product'
+import { installWorkbenchTelemetryTransport } from '../workbench/reporting/telemetry-bootstrap'
 import { setCodexTrustGrantTelemetry } from '../codex/codex-trust-grant-telemetry'
 import { initObservability } from '../observability'
 import { recordDurableCrashBreadcrumb } from '../crash-reporting/durable-crash-breadcrumb'
@@ -53,6 +55,13 @@ export function initializeMainProcessObservers(): void {
     unsubscribeStatusChanges()
     unsubscribeStatusFreshness()
     uninstallHookStatusRepublish()
+  }
+  // Why (BW #553 决策⑧ 修订): the WeLink telemetry transport must be injected
+  // before initTelemetry — BW telemetry is opt-in (default off; the bootstrap
+  // persists the one-shot default) and events flow through the injected
+  // transport instead of PostHog.
+  if (isWorkbenchProduct()) {
+    installWorkbenchTelemetryTransport(store)
   }
   // Why: telemetry must init before any IPC handler/renderer can call track(); it's a no-op in dev and while TELEMETRY_ENABLED is false, so it's safe early.
   initTelemetry(store)
