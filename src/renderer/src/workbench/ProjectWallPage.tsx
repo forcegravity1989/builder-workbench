@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { closeProjectPage, openAddProject } from './project-page-state'
 import { switchActiveProject } from './switch-active-project'
 import { continueProjectWork } from './continue-project-work'
@@ -271,8 +271,13 @@ export function ProjectWallPage() {
                               const repoId = catalog.scope?.repoId ?? card.primaryRepo.id
                               useAppStore.getState().setActiveRepo(repoId)
                               useAppStore.setState({
-                                activeWorkspaceExecutionHostId:
-                                  catalog.scope?.hostId ?? getRepoExecutionHostId(card.primaryRepo)
+                                activeWorkspaceExecutionHostId: catalog.scope
+                                  ?.runtimeOwnerEnvironmentId
+                                  ? toRuntimeExecutionHostId(
+                                      catalog.scope.runtimeOwnerEnvironmentId
+                                    )
+                                  : (catalog.scope?.hostId ??
+                                    getRepoExecutionHostId(card.primaryRepo))
                               })
                               if (stage === 'tasks') {
                                 void openVersionTasks({

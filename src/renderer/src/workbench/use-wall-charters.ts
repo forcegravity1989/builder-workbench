@@ -11,7 +11,7 @@ import { type useWallRefresh, wallReadRevision } from './wall-refresh'
 const cache = createWallCardCache<ProjectCharter | null>()
 
 async function readWallCharter(rows: readonly Repo[]): Promise<ProjectCharter | null> {
-  let readError: string | undefined
+  let readError: string | null = null
   for (const row of rows) {
     if (row.kind === 'folder') {
       continue

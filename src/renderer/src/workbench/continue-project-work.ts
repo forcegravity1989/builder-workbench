@@ -5,7 +5,6 @@ import type { Repo } from '../../../shared/repo-types'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { closeProjectPage } from './project-page-state'
-import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 
 export async function continueProjectWork(repo: Repo): Promise<void> {
   const hostId = getRepoExecutionHostId(repo)
@@ -31,7 +30,7 @@ export async function continueProjectWork(repo: Repo): Promise<void> {
   if (!tree) {
     throw new Error('未找到工作区，请从原生项目菜单新建工作区')
   }
-  const result = activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))
+  const result = activateAndRevealWorktree(tree.id, { executionHostId: hostId })
   if (!result) {
     throw new Error('工作区未能打开，请核对原生工作区列表')
   }

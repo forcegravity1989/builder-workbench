@@ -31,7 +31,11 @@ export function useWallReadings(
             ...(detected[repo.id]?.worktrees ?? [])
           ]) {
             if (worktreeMatchesHost(tree, getRepoExecutionHostId(repo))) {
-              trees.set(getWorktreeHostIdentity(tree), tree)
+              const key = JSON.stringify([
+                getWorktreeHostIdentity(tree),
+                tree.runtimeOwnerEnvironmentId
+              ])
+              trees.set(key, tree)
             }
           }
         }

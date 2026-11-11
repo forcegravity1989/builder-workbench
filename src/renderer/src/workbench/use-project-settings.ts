@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
+import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import type { Repo } from '../../../shared/repo-types'
 import type { CharterStatus } from '../../../shared/workbench/charter'
-import {
-  getRepoExecutionHostId,
-  getWorktreeExecutionHostId,
-  parseExecutionHostId
-} from '../../../shared/execution-host'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import { CHARTER_BRANCH, EMPTY_CHARTER, type ProjectCharter } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
 import { readCharterPrStatus, readRepoCharter, submitProjectCharter } from './charter-port'
@@ -180,9 +177,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
       .allWorktrees()
       .find(
         (tree) =>
-          tree.repoId === repo.id &&
-          tree.isMainWorktree &&
-          getWorktreeExecutionHostId(tree, repo) === hostId
+          tree.repoId === repo.id && tree.isMainWorktree && worktreeMatchesHost(tree, hostId)
       )
     if (!main) {
       throw new Error('未找到此来源的主检出，请核对原生项目登记')
@@ -282,7 +277,9 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
               throw new Error('请先在原生设置中配置可用会话工具')
             }
             const { main, scope } = await mainScope()
-            useAppStore.getState().setActiveWorktree(main.id, scope.hostId)
+            const state = useAppStore.getState()
+            state.setActiveRepo(repo.id)
+            state.setActiveWorktree(main.id, hostId)
             if (scope.runtimeOwnerEnvironmentId) {
               await activateWebRuntimeSessionWorktree({
                 worktreeId: main.id,

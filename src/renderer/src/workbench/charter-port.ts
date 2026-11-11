@@ -46,9 +46,13 @@ export async function readRepoCharter(
 ): Promise<CharterReadResult> {
   const hostId = getRepoExecutionHostId(repo)
   const parsedHost = parseExecutionHostId(hostId)
+  const connectionId = getRepoSshConnectionId(repo)
   if (parsedHost?.kind !== 'runtime') {
-    const local = await readProjectCharter(repo.path, getRepoSshConnectionId(repo))
+    const local = await readProjectCharter(repo.path, connectionId)
     return { charter: local.charter, raw: local.raw, existed: local.existed, error: local.error }
+  }
+  if (connectionId) {
+    return { charter: null, existed: false, error: '暂不支持通过配对主机读取 SSH 项目名片' }
   }
   const route = routeForOwner({ hostId, runtimeOwnerEnvironmentId })
   if (!route?.runtimeEnvironmentId) {
@@ -79,6 +83,9 @@ export async function readCharterPrStatus(
   repo: Pick<Repo, 'id' | 'connectionId' | 'executionHostId'>,
   runtimeOwnerEnvironmentId?: string
 ): Promise<CharterStatus> {
+  if (getRepoSshConnectionId(repo)) {
+    return { pr: null, headHasCharter: false, queryFailed: true }
+  }
   const hostId = getRepoExecutionHostId(repo)
   const route = routeForOwner({ hostId, runtimeOwnerEnvironmentId })
   if (!route) {
