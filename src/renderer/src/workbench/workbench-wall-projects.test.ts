@@ -130,7 +130,7 @@ describe('buildWallProjects', () => {
     expect(projects[0].repoIds).toEqual(['a'])
   })
 
-  it('counts one registration per host+path when the same host re-registers a repo', () => {
+  it('counts duplicate registrations and worktrees once per identity', () => {
     const projects = buildWallProjects(
       [
         repo({ id: 'a', path: '/a', displayName: 'app', gitRemoteIdentity: appIdentity() }),
@@ -142,9 +142,7 @@ describe('buildWallProjects', () => {
     expect(projects).toHaveLength(1)
     expect(projects[0].repoIds).toEqual(['a'])
     expect(projects[0].slots).toHaveLength(1)
-  })
 
-  it('counts worktrees once per host-qualified identity across the project rows', () => {
     const local = repo({ id: 'a', path: '/a', displayName: 'app' })
     const remote = repo({
       id: 'r1',

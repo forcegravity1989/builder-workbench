@@ -5366,7 +5366,10 @@
           "69969ba364": "Sending…",
           "imageReadFailed": "Could not read the attached images. Try attaching them again.",
           "attachWhileSending": "Wait for the current feedback to finish sending before attaching more images.",
-          "imagesNotDelivered": "Feedback sent, but image delivery could not be confirmed."
+          "imagesNotDelivered": "Feedback sent, but image delivery could not be confirmed.",
+          "workbenchDescription": "Share what's working, what's broken, or what Workbench should do next. Reports are uploaded to the BW user group's WeLink space using your current WeLink account.",
+          "omitGitHubIdentity": "Do not include GitHub account information",
+          "withoutGitHubIdentity": "Your feedback will not include GitHub account information."
         },
         "SidebarFilter": {
           "e3b3898218": "Add project",
@@ -15123,7 +15126,11 @@
             "b2e36f53a1": "Failed to send crash report. Diagnostic ticket {{value0}} was uploaded but not linked.",
             "ead6fc0510": "No automatic crash report was captured. You can still send details and include recent diagnostic logs when available.",
             "b082f27490": "Attach recent diagnostic logs",
-            "e59f0b9427": "Sends a capped redacted log bundle with the report."
+            "e59f0b9427": "Sends a capped redacted log bundle with the report.",
+            "workbenchUiErrorTitle": "Workbench hit a recoverable UI error",
+            "workbenchClosedTitle": "Workbench closed unexpectedly",
+            "workbenchNotesPlaceholder": "Optional: what were you doing before Workbench closed?",
+            "workbenchBrand": "Workbench"
           },
           "submit": {
             "notice": {

@@ -5,39 +5,33 @@
 //   diagnostics:collectBundle        — assemble and retain a redacted payload.
 //   diagnostics:openBundlePreview    — open the retained payload in the OS.
 //   diagnostics:discardBundlePreview — delete a retained, unuploaded payload.
-//   diagnostics:uploadBundle         — POST the main-retained payload.
-//   diagnostics:deleteBundle         — delete an uploaded bundle by ticket ID.
+//   diagnostics:uploadBundle         — upload the main-retained payload to the
+//                                      WeLink group space (BW #553 sink).
+//   diagnostics:deleteBundle         — recycle an uploaded bundle by ticket ID.
 //
 // Same threat model as the product-telemetry IPC (`ipc/telemetry.ts`):
 // renderer can pass anything over the wire, type-narrow here. Everything
 // that touches the network or filesystem stays in main — the renderer
 // only sees the resulting status / preview / ticket-id.
 //
-// Hardening item §Endpoint contract #10 ("No renderer access to any of
-// these endpoints"): the upload endpoint URL never crosses IPC. The
-// renderer triggers the flow; main reads the URL from a build-time
-// constant or env var and does the POST itself.
-
 import { app, dialog, ipcMain, shell } from 'electron'
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { arch as osArch, platform as osPlatform, release as osRelease, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   collectDiagnosticBundle,
-  deleteDiagnosticBundle,
   getDiagnosticsStatus,
-  uploadDiagnosticBundle,
   type DiagnosticsStatus
 } from '../observability'
 import type { CollectedBundle } from '../observability/bundle'
-import type { UploadBundleResult } from '../observability/diagnostic-bundle-upload'
+import { resolveDiagnosticOrcaChannel } from '../observability/diagnostic-upload-endpoint'
 import {
-  resolveDiagnosticOrcaChannel,
-  resolveDiagnosticTokenEndpoint
-} from '../observability/diagnostic-upload-endpoint'
+  deleteWelinkDiagnosticsBundle,
+  submitWelinkDiagnosticsBundle
+} from '../workbench/reporting/report-submission'
 
 export type DiagnosticsBundlePreview = Omit<CollectedBundle, 'payload'>
-type UploadBundleIpcResult = UploadBundleResult | { canceled: true }
+type UploadBundleIpcResult = { ticketId: string } | { canceled: true }
 
 const PENDING_BUNDLE_TTL_MS = 15 * 60 * 1000
 const MAX_PENDING_BUNDLES = 8
@@ -262,15 +256,7 @@ export function registerDiagnosticsHandlers(): void {
       if (!getDiagnosticsStatus().bundleEnabled) {
         throw new Error('sending diagnostics is disabled')
       }
-      const tokenEndpoint = resolveDiagnosticTokenEndpoint()
-      if (!tokenEndpoint) {
-        throw new Error('sending diagnostics is not configured for this build')
-      }
-      const result = await uploadDiagnosticBundle({
-        tokenEndpoint,
-        payload,
-        bundleSubmissionId: bundle.bundleSubmissionId
-      })
+      const result = await submitWelinkDiagnosticsBundle(payload, bundle.bundleSubmissionId)
       const uploadedPending = pendingBundles.get(bundle.bundleSubmissionId)
       if (uploadedPending) {
         deletePendingBundle(bundle.bundleSubmissionId)
@@ -299,10 +285,6 @@ export function registerDiagnosticsHandlers(): void {
     if (!isTicketId(ticketId)) {
       throw new Error('ticketId has invalid format')
     }
-    const tokenEndpoint = resolveDiagnosticTokenEndpoint()
-    if (!tokenEndpoint) {
-      throw new Error('diagnostic upload endpoint is not configured for this build')
-    }
-    await deleteDiagnosticBundle({ tokenEndpoint, ticketId })
+    await deleteWelinkDiagnosticsBundle(ticketId)
   })
 }

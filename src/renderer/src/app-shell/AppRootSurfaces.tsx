@@ -346,7 +346,7 @@ export function AppRootSurfaces(props: {
           'Use the Help menu after retrying if you still need diagnostics.'
         )}
       >
-        <CrashReportDialog manualOnly={isWorkbenchShell()} />
+        <CrashReportDialog />
       </RecoverableRenderErrorBoundary>
       {onboardingGate.onboarding && onboardingGate.shouldRender ? (
         <Suspense fallback={null}>
