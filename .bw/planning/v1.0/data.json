@@ -81,6 +81,18 @@
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 568,
       "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 606,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 607,
+      "goalId": "G3"
     }
   ],
   "minutes": {
@@ -107,7 +119,7 @@
     "archivePr": {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 598
+      "number": 609
     }
   }
 }
