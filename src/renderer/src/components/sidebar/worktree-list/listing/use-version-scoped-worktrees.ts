@@ -127,6 +127,11 @@ export function useWorkbenchSidebarScope() {
  * pinned one must still reach the Pinned section. `pinnedOnlyIdentities` is the
  * intersection of bound and pinned, so `buildRows` skips exactly those trees in
  * the natural groups while the pinned section keeps rendering them.
+ *
+ * Why (#603): the Pinned section follows the current project, like the list
+ * below it. Other projects' pinned trees leave the sidebar until their project
+ * is active; within the current project, every visible host still shows, so a
+ * multi-host project keeps its remote pinned rows.
  */
 export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs): {
   visibleWorktrees: Worktree[]
@@ -137,17 +142,18 @@ export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs
     return { visibleWorktrees: [...filteredWorktrees] }
   }
   const pinnedIdentities = new Set(
-    getPinnedSectionWorktrees(filteredWorktrees, worktreeLineageById, worktreeMap).map(
-      getWorktreeHostIdentity
-    )
+    getPinnedSectionWorktrees(
+      filteredWorktrees.filter((tree) => inProject(tree, workbenchProject)),
+      worktreeLineageById,
+      worktreeMap
+    ).map(getWorktreeHostIdentity)
   )
   const pinnedOnlyIdentities = new Set(
     filteredWorktrees
       .filter(
         (tree) =>
           pinnedIdentities.has(getWorktreeHostIdentity(tree)) &&
-          (workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree)) ||
-            !inProject(tree, workbenchProject))
+          workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
       )
       .map(getWorktreeHostIdentity)
   )
