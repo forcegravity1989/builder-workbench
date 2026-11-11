@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { FileInput, LoaderCircle, Plus, RefreshCw, X } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -22,6 +22,7 @@ import { useWallCharters } from './use-wall-charters'
 import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
 import { ProjectWallCard, type WallCardView } from './ProjectWallCard'
 import { useWallReadings } from './use-wall-readings'
+import { refreshProjectWall, useWallRefresh } from './wall-refresh'
 import { useWallNativeProjectActions } from './wall-native-project-actions'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import './workbench-wall.css'
@@ -33,10 +34,8 @@ export function ProjectWallPage() {
   const environments = useAppStore((s) => s.runtimeEnvironments)
   const statuses = useAppStore((s) => s.runtimeStatusByEnvironmentId)
   const sshLabels = useAppStore((s) => s.sshTargetLabels)
-  const [token, setToken] = useState(0)
-  const [refreshing, setRefreshing] = useState(false)
-  const [partialRefresh, setPartialRefresh] = useState(false)
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null)
+  const refresh = useWallRefresh()
+  const { refreshing, partialRefresh, updatedAt } = refresh
   const [importOpen, setImportOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
@@ -67,20 +66,24 @@ export function ProjectWallPage() {
       ),
     [repos, groups, environments, type, location]
   )
-  const charters = useWallCharters(projects, token)
-  const readings = useWallReadings(projects, token)
-  const cards: WallCardView[] = projects.map((project) => ({
-    project,
-    primaryRepo: project.rows[0],
-    charter: charters[project.key] ?? null,
-    displayName: project.group?.name || charters[project.key]?.name?.trim() || project.name,
-    readings: readings[project.key] ?? { kind: 'loading' },
-    hostTags: project.hostIds.map((hostId) => ({
-      ...buildWallHostFact(hostId, environments, statuses, sshLabels),
-      hostId,
-      isLocal: hostId === 'local'
-    }))
-  }))
+  const charters = useWallCharters(projects, refresh)
+  const readings = useWallReadings(projects, refresh)
+  const cardReadFailed = charters.failed || readings.failed
+  const cards: WallCardView[] = projects.map((project) => {
+    const charter = charters.values[project.key] ?? null
+    return {
+      project,
+      primaryRepo: project.rows[0],
+      charter,
+      displayName: project.group?.name || charter?.name?.trim() || project.name,
+      readings: readings.values[project.key] ?? { kind: 'loading' },
+      hostTags: project.hostIds.map((hostId) => ({
+        ...buildWallHostFact(hostId, environments, statuses, sshLabels),
+        hostId,
+        isLocal: hostId === 'local'
+      }))
+    }
+  })
   const selectedCard = cards.find((card) => card.project.key === selected)
   const leave = (action: () => void) => {
     if (busy) {
@@ -93,29 +96,6 @@ export function ProjectWallPage() {
     }
   }
   const native = useWallNativeProjectActions(leave)
-  const refresh = useCallback(async () => {
-    setRefreshing(true)
-    setPartialRefresh(false)
-    try {
-      await Promise.all([
-        useAppStore
-          .getState()
-          .fetchReposForAllHosts({ onRepoCatalogError: () => setPartialRefresh(true) }),
-        useAppStore.getState().fetchProjectGroupsForAllHosts()
-      ])
-      await useAppStore.getState().fetchAllWorktrees()
-      setToken((value) => value + 1)
-      setUpdatedAt(new Date().toLocaleTimeString())
-    } catch (error) {
-      setPartialRefresh(true)
-      toast.error(String(error))
-    } finally {
-      setRefreshing(false)
-    }
-  }, [])
-  useEffect(() => {
-    void refresh()
-  }, [refresh])
   const filtered = cards.filter((card) =>
     card.displayName.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   )
@@ -135,7 +115,7 @@ export function ProjectWallPage() {
                 icon={refreshing ? LoaderCircle : RefreshCw}
                 className={refreshing ? 'wb-icon-spin' : ''}
                 disabled={refreshing}
-                onClick={() => void refresh()}
+                onClick={() => void refreshProjectWall()}
                 data-workbench-refresh
               />
               <WorkbenchIconButton
@@ -204,16 +184,22 @@ export function ProjectWallPage() {
                 title={
                   partialRefresh
                     ? '部分主机未连接，保留上次读取结果；恢复连接后可刷新'
-                    : '刷新会重读已登记主机的项目、工作区及墙卡信息，不会更新代码仓'
+                    : cardReadFailed
+                      ? '部分名片读取失败，保留已读结果，可点刷新重试'
+                      : '刷新会重读已登记主机的项目、工作区及墙卡信息，不会更新代码仓'
                 }
               >
                 {refreshing
                   ? '刷新中…'
                   : partialRefresh
                     ? '部分主机未更新'
-                    : updatedAt
-                      ? `刷新于 ${updatedAt}`
-                      : ''}
+                    : cardReadFailed
+                      ? '部分墙卡信息未更新'
+                      : updatedAt && (charters.loading || readings.loading)
+                        ? '读取墙卡信息…'
+                        : updatedAt
+                          ? `目录刷新于 ${updatedAt}`
+                          : ''}
               </span>
             </div>
           )}
@@ -332,14 +318,13 @@ export function ProjectWallPage() {
             discardRef={discard}
             onDirtyChange={setDirty}
             onBusyChange={setBusy}
-            onChanged={() => setToken((value) => value + 1)}
           />
         )}
         {native.dialogs}
         <ImportBuilderHostsDialog
           open={importOpen}
           onClose={() => setImportOpen(false)}
-          onImported={refresh}
+          onImported={refreshProjectWall}
         />
         <Dialog
           open={leaveAction !== null}

@@ -16,6 +16,7 @@ import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSettingsReview } from './ProjectSettingsReview'
 import { CHARTER_LABELS, useProjectSettings } from './use-project-settings'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
+import { invalidateWallRepo } from './wall-refresh'
 import './project-settings.css'
 
 export function ProjectSettingsRail({
@@ -34,10 +35,13 @@ export function ProjectSettingsRail({
   onClose(): void
   onDirtyChange(dirty: boolean): void
   onBusyChange(busy: boolean): void
-  onChanged(): void
+  onChanged?(): void
   discardRef: RefObject<(() => void) | null>
 }) {
-  const model = useProjectSettings(repo, onChanged)
+  const model = useProjectSettings(repo, () => {
+    invalidateWallRepo(repo)
+    onChanged?.()
+  })
   const [editing, setEditing] = useState(false)
   const [savingType, setSavingType] = useState(false)
   const panel = useRef<HTMLElement>(null)

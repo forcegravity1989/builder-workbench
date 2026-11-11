@@ -11,6 +11,7 @@ import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
 import type { ProjectCharter } from './project-charter'
 import { readRepoCharter } from './charter-port'
+import { invalidateWallRepo } from './wall-refresh'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -158,9 +159,12 @@ export function OverviewPage(): React.JSX.Element {
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
   const { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus } =
-    useCharterPrStatus(activeRepo, Boolean(charter), charterKey, (value) =>
+    useCharterPrStatus(activeRepo, Boolean(charter), charterKey, (value) => {
       setCharter({ key: charterKey, value })
-    )
+      if (activeRepo) {
+        invalidateWallRepo(activeRepo)
+      }
+    })
 
   // 「更新代码」点击处理；updatingTrunk 状态声明在 dataIdentity 之前。
   const updateTrunk = async () => {
@@ -194,6 +198,7 @@ export function OverviewPage(): React.JSX.Element {
       historyState.reload()
       reloadCatalog()
       refreshCharterStatus()
+      invalidateWallRepo(activeRepo)
       if (activeRepo.path) {
         void readRepoCharter(activeRepo).then((r) =>
           setCharter({ key: charterKey, value: r.charter })

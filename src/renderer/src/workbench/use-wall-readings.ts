@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
@@ -9,21 +9,23 @@ import { readWallReadings } from './wall-readings-load'
 import type { WallProject } from './workbench-wall-projects'
 import { wallProjectVersionRows } from './workbench-wall-projects'
 import type { WallCardReadings } from './wall-card-readings'
+import { createWallCardCache, useWallCardReads } from './use-wall-card-reads'
+import { type useWallRefresh, wallReadRevision } from './wall-refresh'
+
+const cache = createWallCardCache<WallCardReadings>()
 
 export function useWallReadings(
   projects: readonly WallProject[],
-  token: number
-): Record<string, WallCardReadings> {
+  refresh: ReturnType<typeof useWallRefresh>
+) {
   const visible = useAppStore((s) => s.worktreesByRepo)
   const detected = useAppStore((s) => s.detectedWorktreesByRepo)
-  const [results, setResults] = useState<Record<string, { key: string; value: WallCardReadings }>>(
-    {}
-  )
-  const inputs = useMemo(
+  const reads = useMemo(
     () =>
       projects.map((project) => {
+        const rows = wallProjectVersionRows(project)
         const trees = new Map<string, Worktree>()
-        for (const repo of wallProjectVersionRows(project)) {
+        for (const repo of rows) {
           for (const tree of [
             ...(visible[repo.id] ?? []),
             ...(detected[repo.id]?.worktrees ?? [])
@@ -35,58 +37,33 @@ export function useWallReadings(
         }
         const worktrees = [...trees.values()]
         return {
-          project,
-          worktrees,
-          key: JSON.stringify([
-            token,
-            wallProjectVersionRows(project).map((r) => [
-              r.id,
+          projectKey: project.key,
+          sourceKey: JSON.stringify([
+            rows.map((r) => [
               getRepoExecutionHostId(r),
+              r.id,
               r.path,
-              r.gitRemoteIdentity
+              r.kind,
+              r.worktreeBaseRef,
+              r.gitRemoteIdentity,
+              r.issueSourcePreference,
+              r.upstream
             ]),
-            worktrees.map(worktreeFingerprintTuple)
-          ])
+            worktrees.map((tree) => [
+              getWorktreeHostIdentity(tree),
+              tree.runtimeOwnerEnvironmentId,
+              tree.projectId,
+              tree.head,
+              tree.branch,
+              tree.isMainWorktree,
+              worktreeFingerprintTuple(tree)
+            ])
+          ]),
+          revision: wallReadRevision(refresh, rows),
+          load: (force: boolean) => readWallReadings(project, worktrees, force)
         }
       }),
-    [projects, visible, detected, token]
+    [projects, visible, detected, refresh]
   )
-  const changed = inputs.filter((input) => results[input.project.key]?.key !== input.key)
-  const changedKey = JSON.stringify(changed.map((input) => [input.project.key, input.key]))
-  useEffect(() => {
-    if (!changed.length) {
-      return
-    }
-    let cancelled = false
-    // Bound concurrent project reads; the native ports retain their own request caches.
-    void (async () => {
-      const queue = [...changed]
-      const updates: typeof results = {}
-      await Promise.all(
-        Array.from({ length: Math.min(3, queue.length) }, async () => {
-          while (queue.length && !cancelled) {
-            const input = queue.shift()!
-            updates[input.project.key] = {
-              key: input.key,
-              value: await readWallReadings(input.project, input.worktrees, token > 0)
-            }
-          }
-        })
-      )
-      if (!cancelled) {
-        setResults((previous) => ({ ...previous, ...updates }))
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-    // Inputs are owner-qualified and revision-keyed; unrelated store changes do not restart reads.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [changedKey])
-  return Object.fromEntries(
-    inputs.map(({ project, key }) => [
-      project.key,
-      results[project.key]?.key === key ? results[project.key].value : { kind: 'loading' }
-    ])
-  )
+  return useWallCardReads(reads, cache)
 }
