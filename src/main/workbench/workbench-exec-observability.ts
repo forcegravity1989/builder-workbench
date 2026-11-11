@@ -44,6 +44,11 @@ export function collectorInterpreterLabel(program: string): string {
   return safeLabel(last.toLowerCase(), 'other')
 }
 
+/** Cancellation convention shared with the A 档 RPC wrapper (合并检视 S2). */
+export function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError'
+}
+
 function recordExecFailure(span: ActiveSpan, error: unknown): void {
   span.setAttribute('status', 'failed')
   const code = (error as { code?: unknown }).code
@@ -76,7 +81,13 @@ export function bwGhExecFileAsync(
       try {
         return await ghExecFileAsync(args, options)
       } catch (error) {
-        recordExecFailure(span, error)
+        // Cancellation is an Interrupted exit, not a Failure — same convention
+        // as the A 档 RPC wrapper so triage can filter real errors.
+        if (isAbortError(error)) {
+          span.interrupt('workbench-exec-cancelled')
+        } else {
+          recordExecFailure(span, error)
+        }
         throw error
       }
     },
@@ -101,7 +112,11 @@ export function bwCommandExecFileAsync(
       try {
         return await commandExecFileAsync(command, args, options)
       } catch (error) {
-        recordExecFailure(span, error)
+        if (isAbortError(error)) {
+          span.interrupt('workbench-exec-cancelled')
+        } else {
+          recordExecFailure(span, error)
+        }
         throw error
       }
     },

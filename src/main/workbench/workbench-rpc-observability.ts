@@ -18,10 +18,11 @@
 import type { ZodType } from 'zod'
 import { defineMethod, type RpcTypedMethod } from '../runtime/rpc/core'
 import { withSpan, type ActiveSpan } from '../observability/tracer'
+import { isAbortError, safeLabel } from './workbench-exec-observability'
 
 // Same shape as the skill-observability precedent: error codes are stable
 // machine labels; anything else is a bug in the error class, not a span value.
-const SAFE_ERROR_CODE = /^[a-z0-9][a-z0-9._-]{0,63}$/i
+// safeLabel (single regex source, shared with the B/C 档 modules) sanitizes.
 const FALLBACK_ERROR_CODE = 'workbench-error'
 
 type EnvelopeFailure = { error: { code?: unknown; message?: unknown } }
@@ -37,14 +38,9 @@ function asEnvelopeFailure(result: unknown): EnvelopeFailure | null {
   return candidate as EnvelopeFailure
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError'
-}
-
 function recordEnvelopeFailure(span: ActiveSpan, failure: EnvelopeFailure): void {
   const rawCode = failure.error.code
-  const code =
-    typeof rawCode === 'string' && SAFE_ERROR_CODE.test(rawCode) ? rawCode : FALLBACK_ERROR_CODE
+  const code = safeLabel(typeof rawCode === 'string' ? rawCode : undefined, FALLBACK_ERROR_CODE)
   span.setAttribute('status', 'failed')
   span.setAttribute('errorCode', code)
   const message = typeof failure.error.message === 'string' ? failure.error.message : ''

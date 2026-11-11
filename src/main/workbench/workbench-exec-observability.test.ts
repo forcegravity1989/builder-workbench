@@ -113,5 +113,18 @@ describe('BW exec wrappers', () => {
     await expect(bwCommandExecFileAsync('cb', ['run'], {})).rejects.toThrow('killed')
     expect(records[1].attributes).toMatchObject({ status: 'failed', killed: true })
     expect(records[1].attributes).not.toHaveProperty('exitCode')
+
+    // Cancellation maps to Interrupted, not Failure (合并检视 S2) — same
+    // convention as the A 档 RPC wrapper; abort errors carry killed:true, so
+    // without the branch they would pollute Failure triage.
+    const aborted = Object.assign(new Error('The operation was aborted'), {
+      name: 'AbortError',
+      killed: true
+    })
+    ghExecMock.mockRejectedValue(aborted)
+    await expect(bwGhExecFileAsync(['api', 'y'], {})).rejects.toThrow('aborted')
+    expect(records[2].exit._tag).toBe('Interrupted')
+    expect(records[2].attributes).not.toHaveProperty('status')
+    expect(records[2].attributes).not.toHaveProperty('killed')
   })
 })

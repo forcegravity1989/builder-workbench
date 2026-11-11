@@ -315,8 +315,10 @@ export async function executeMetricCollection(input: {
     const args = [...input.run.slice(1), ...input.args]
     // Why span (Issue #553 B 档): the collector body (the 900s-timeout chain)
     // was invisible in the trace; host/interpreter/exit attributes show which
-    // segment ate the time. stderr travels in the redacted cause of the
-    // MetricCollectorError thrown by interpretOutcome just outside this span.
+    // segment ate the time. A non-clean exit fails THIS span with the redacted
+    // stderr tail as cause (合并检视 B1): interpretOutcome's MetricCollectorError
+    // is caught upstream and returned as an ok-envelope reading, so no outer
+    // span ever sees the failure.
     outcome = await withSpan(
       'workbench.collector.exec',
       async (span) => {
@@ -363,6 +365,19 @@ export async function executeMetricCollection(input: {
         }
         if (result.outputTruncated) {
           span.setAttribute('outputTruncated', true)
+        }
+        // Same three non-clean conditions as interpretOutcome; fail() is
+        // terminal and idempotent, so the surrounding withSpan's end() after
+        // this normal return is a no-op — control flow and the returned
+        // outcome are unchanged (the reading channel keeps its own error).
+        if (result.timedOut || result.outputTruncated || result.code !== 0) {
+          const detail = result.stderr.trim().slice(-400)
+          const how = result.timedOut
+            ? 'timed out'
+            : result.outputTruncated
+              ? 'output truncated'
+              : `exited ${result.code ?? result.signal ?? 'unknown'}`
+          span.fail(detail ? `collector ${how}: ${detail}` : `collector ${how}`)
         }
         return result
       },
