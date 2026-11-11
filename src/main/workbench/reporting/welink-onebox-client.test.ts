@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type * as PreflightCommandExec from '../../ipc/preflight-command-exec'
 import {
   classifyWelinkErrorText,
   parseFirstJsonObject,
@@ -11,7 +12,7 @@ import {
 const { execLocalMock } = vi.hoisted(() => ({ execLocalMock: vi.fn() }))
 
 vi.mock('../../ipc/preflight-command-exec', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../ipc/preflight-command-exec')>()
+  const actual = await importOriginal<typeof PreflightCommandExec>()
   return { ...actual, execLocalPreflightCommandOrThrow: execLocalMock }
 })
 
