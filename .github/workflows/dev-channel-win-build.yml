@@ -201,7 +201,6 @@ jobs:
           # Why unset ORCA_BUILD_IDENTITY: telemetry's transport gate accepts only
           # 'stable' or 'rc', so leaving it unset keeps dev builds silent — which
           # is correct for unvetted artifacts. Same as the mac dev channels.
-          ORCA_DIAGNOSTICS_TOKEN_URL: https://www.onorca.dev/diagnostics/token
 
       # Why the token is minted here and not at the top: installation tokens live
       # one hour and nothing before this point writes anything.

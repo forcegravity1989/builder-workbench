@@ -4,7 +4,7 @@ import { useAppStore } from '@/store'
 import { ORCA_CLI_SKILL_INSTALL_COMMAND } from '@/lib/agent-feature-install-commands'
 import { useActiveProjectSkillRuntime } from '@/hooks/useActiveProjectSkillRuntime'
 import {
-  AGENT_SKILL_CLI_PREREQUISITE_NOTICE,
+  getAgentSkillCliPrerequisiteNotice,
   ensureOrcaCliAvailableForAgentSkillTerminal
 } from '@/lib/agent-skill-cli-prerequisite'
 import { AgentSkillSetupPanel } from '../settings/AgentSkillSetupPanel'
@@ -173,7 +173,7 @@ export function MobileEmulatorAgentSetupGuideSteps({
             showInstallWhenInstalled={!setup.cliSkillInstalled}
             terminalHeightPx={112}
             preInstallNotice={
-              showSkillPreInstallNotice ? AGENT_SKILL_CLI_PREREQUISITE_NOTICE : undefined
+              showSkillPreInstallNotice ? getAgentSkillCliPrerequisiteNotice() : undefined
             }
             openingHint={translate(
               'auto.components.emulator.pane.MobileEmulatorAgentSetupGuideSteps.3941719a56',

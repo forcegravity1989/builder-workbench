@@ -26,6 +26,7 @@ import { useAppStore } from '@/store'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { getProviderRuntimeContextKey } from '@/lib/provider-runtime-context'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 import { getLocalizedFeatureWallSetupChecklistCopy } from './feature-wall-setup-checklist-localized-copy'
 
@@ -302,10 +303,14 @@ export function FeatureWallSetupChecklist(
           layout={layout}
         />
         <SetupSection
-          title={translate(
-            'auto.components.feature.wall.FeatureWallSetupChecklist.713cc529a5',
-            'Milestones'
-          )}
+          title={
+            isWorkbenchShell()
+              ? translate('guidance.experiences', 'Try the capabilities')
+              : translate(
+                  'auto.components.feature.wall.FeatureWallSetupChecklist.713cc529a5',
+                  'Milestones'
+                )
+          }
           steps={parallelWorkSteps}
           startOrdinal={setupSteps.length + 1}
           activeStepId={activeStep?.id ?? null}

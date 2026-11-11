@@ -1,10 +1,16 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { FolderGit2 } from 'lucide-react'
 import type { VersionTreeDisplayInput } from './VersionNativeTrees'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
+import {
+  publishVersionSidebarProjection,
+  useVersionSidebarProjection
+} from './version-sidebar-state'
+import { selectRepoByIdForActiveWorkspace } from '@/store/selectors'
+import { parseWorkspaceKey } from '../../../shared/workspace-scope'
 
 /**
  * Project identity stays beside the native toolbar, outside the tree scroller.
@@ -48,6 +54,19 @@ export function WorkbenchSidebarVersions({
   sortedIds,
   sortNow
 }: VersionTreeDisplayInput): React.JSX.Element {
+  const versionRepoId = useAppStore((s) => {
+    if (s.activeWorkspaceKey && parseWorkspaceKey(s.activeWorkspaceKey)?.type === 'folder') {
+      return null
+    }
+    const repo = selectRepoByIdForActiveWorkspace(s, s.activeRepoId ?? s.repos[0]?.id ?? null)
+    return repo && repo.kind !== 'folder' ? repo.id : null
+  })
+  const projection = useVersionSidebarProjection()
+  useEffect(() => {
+    if (!versionRepoId) {
+      publishVersionSidebarProjection({ repoId: null, repoIds: [], worktreeIdentities: new Set() })
+    }
+  }, [versionRepoId])
   const display = useMemo(
     () => ({ visibleWorktrees, filterOptions, sortedIds, sortNow }),
     [visibleWorktrees, filterOptions, sortedIds, sortNow]
@@ -58,9 +77,11 @@ export function WorkbenchSidebarVersions({
       style={{ rowGap: WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP }}
       data-workbench-version-section
     >
-      <WorkbenchVersionNav nativeDisplay={display} />
+      {versionRepoId && <WorkbenchVersionNav nativeDisplay={display} />}
       <WorkbenchSidebarSectionHeader icon={FolderGit2}>
-        全部项目工作区
+        {versionRepoId && projection.repoId === versionRepoId && projection.worktreeIdentities.size
+          ? '其他工作区'
+          : '工作区'}
       </WorkbenchSidebarSectionHeader>
     </div>
   )

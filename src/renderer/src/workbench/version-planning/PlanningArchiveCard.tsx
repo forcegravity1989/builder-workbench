@@ -1,3 +1,4 @@
+import { archiveStateLabel } from '../../../../shared/workbench/archive-state-label'
 import { ArrowUpRight, GitPullRequest } from 'lucide-react'
 import type { Ref } from 'react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
@@ -27,16 +28,7 @@ export function PlanningArchiveCard({
   onOpenPr(): void
   sectionRef: Ref<HTMLElement>
 }) {
-  const statusLabel =
-    loading || !status
-      ? '正在读取归档 PR 状态…'
-      : status.state === 'merged'
-        ? '已合入'
-        : status.state === 'open'
-          ? '待合入'
-          : status.state === 'closed'
-            ? '已关闭'
-            : '状态未知'
+  const statusLabel = loading || !status ? '正在读取归档 PR 状态…' : archiveStateLabel(status)
   return (
     <section id="archive" className="g3-archive" ref={sectionRef} aria-label="归档 PR">
       <GitPullRequest size={20} aria-hidden="true" />

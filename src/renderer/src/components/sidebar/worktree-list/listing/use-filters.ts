@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { DEFAULT_SHOW_SLEEPING_WORKSPACES } from '../../../../../../shared/constants'
 import { computeClearFilterActions, sidebarHasActiveFilters } from '../../visible-worktrees'
 
@@ -8,7 +9,8 @@ export type SidebarWorktreeFilters = ReturnType<typeof useSidebarWorktreeFilters
 // Every sidebar filter, plus the single escape hatch that resets all of them.
 export function useSidebarWorktreeFilters() {
   const showSleepingWorkspaces = useAppStore((s) => s.showSleepingWorkspaces)
-  const filterRepoIds = useAppStore((s) => s.filterRepoIds)
+  const storedRepoIds = useAppStore((s) => s.filterRepoIds)
+  const filterRepoIds = useMemo(() => (isWorkbenchShell() ? [] : storedRepoIds), [storedRepoIds])
   const hideDefaultBranchWorkspace = useAppStore((s) => s.hideDefaultBranchWorkspace)
   const hideAutomationGeneratedWorkspaces = useAppStore((s) => s.hideAutomationGeneratedWorkspaces)
   const hideCliCreatedWorkspaces = useAppStore((s) => s.hideCliCreatedWorkspaces)

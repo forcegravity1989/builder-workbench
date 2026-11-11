@@ -59,7 +59,10 @@ export function WorkbenchWorkspaceChoiceDialog(): React.JSX.Element | null {
         <div className="flex flex-col gap-1">
           {choice.candidates.map((worktree) => (
             <Button
-              key={getWorktreeHostIdentity(worktree)}
+              key={JSON.stringify([
+                getWorktreeHostIdentity(worktree),
+                worktree.runtimeOwnerEnvironmentId
+              ])}
               type="button"
               variant="outline"
               className="h-auto justify-start whitespace-normal px-3 py-2"

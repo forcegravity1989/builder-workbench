@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { Fragment, useState } from 'react'
 import {
   AzureDevOpsIntegrationCard,
@@ -107,7 +108,8 @@ export function ConnectIntegrationsList(): React.JSX.Element {
           )}
           description={translate(
             'auto.components.feature.wall.ConnectIntegrationsList.review_step_description',
-            'Connect a review provider so Orca can show PR or MR status, checks, and reviews.'
+            'Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.',
+            { product: isWorkbenchShell() ? 'BW' : 'Orca' }
           )}
           summary={
             <>
@@ -136,11 +138,13 @@ export function ConnectIntegrationsList(): React.JSX.Element {
           expanded={taskExpanded}
           title={translate(
             'auto.components.feature.wall.ConnectIntegrationsList.task_step_title',
-            'Start agents on your tasks without leaving Orca'
+            'Start agents on your tasks without leaving {{product}}',
+            { product: isWorkbenchShell() ? 'BW' : 'Orca' }
           )}
           description={translate(
             'auto.components.feature.wall.ConnectIntegrationsList.33b650af52',
-            'Connect where your team tracks work. Orca starts workspaces with the issue title, link, and context already attached.'
+            'Connect where your team tracks work. {{product}} starts workspaces with the issue title, link, and context already attached.',
+            { product: isWorkbenchShell() ? 'BW' : 'Orca' }
           )}
           summary={
             status.trackerProviderName ? (

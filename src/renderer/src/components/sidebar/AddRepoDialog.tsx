@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useRemoteRepo } from './AddRepoSteps'
 import { useCreateRepo } from './useCreateRepo'
@@ -26,6 +26,9 @@ export default React.memo(function AddRepoDialog({
   hosted?: AddRepoDialogHostedController
 }) {
   const isOpen = useAppStore((s) => (hosted ? hosted.open : s.activeModal === 'add-repo'))
+  const initialCloneUrl = useAppStore((s) =>
+    !hosted && typeof s.modalData.initialCloneUrl === 'string' ? s.modalData.initialCloneUrl : ''
+  )
   // Why: hosted mode never receives dropped paths through modalData — that
   // channel belongs to the store-modal instance.
   const droppedLocalPath = useAppStore((s) =>
@@ -49,7 +52,11 @@ export default React.memo(function AddRepoDialog({
     setHideDefaultBranchWorkspace,
     finishProjectAdd
   })
-  const hostSelection = useAddRepoHostSelection({ isOpen, setStep })
+  const hostSelection = useAddRepoHostSelection({
+    isOpen,
+    setStep,
+    initialHostId: initialCloneUrl ? 'local' : undefined
+  })
   const selectedRuntimeEnvironmentId =
     hostSelection.selectedParsedHost?.kind === 'runtime'
       ? hostSelection.selectedParsedHost.environmentId
@@ -257,6 +264,18 @@ export default React.memo(function AddRepoDialog({
     onResetClosed: resetState,
     onResetHostScopedState: resetHostScopedState
   })
+  const cloneSeeded = useRef(false)
+  useEffect(() => {
+    if (!isOpen) {
+      cloneSeeded.current = false
+      return
+    }
+    if (initialCloneUrl && hostSelection.selectedHostId === 'local' && !cloneSeeded.current) {
+      cloneSeeded.current = true
+      setCloneUrl(initialCloneUrl)
+      setStep('clone')
+    }
+  }, [isOpen, initialCloneUrl, hostSelection.selectedHostId, setCloneUrl])
 
   const handleBack = useCallback(() => {
     if (step === 'nested') {
