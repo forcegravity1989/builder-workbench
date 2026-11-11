@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { WallProjectFilters } from './use-wall-projects'
+import { beginProjectWallVisit } from './wall-refresh'
 
 /** G2（P6）：版本总览页选项——按项目注册行与版本打开，只读派生，无第二份存储。 */
 export type VersionOverviewOptions = {
@@ -31,6 +32,9 @@ function setProjectPage(page: ProjectPage): void {
 
 export function openProjectWall(): void {
   useAppStore.getState().openActivityPage()
+  if (projectPage?.kind !== 'wall') {
+    beginProjectWallVisit()
+  }
   setProjectPage({ kind: 'wall' })
 }
 
