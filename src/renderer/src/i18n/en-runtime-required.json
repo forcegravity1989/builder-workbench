@@ -181,7 +181,6 @@
         "closeAsDuplicateSubmit": "Close duplicate",
         "closeAsNotPlannedDescription": "Won't fix, can't repro, stale",
         "codehubAssign": "Assign",
-        "codehubAssigned": "Assignee updated",
         "codehubAutoMerge": "Merge when the pipeline succeeds",
         "codehubAutoMergeButton": "Auto-merge",
         "codehubChecks": "Pipelines",
@@ -1377,6 +1376,7 @@
           "1826bd0608": "Saved Servers",
           "54ebacc600": "Server name",
           "55fcc964cd": "on the server and paste the printed pairing URL.",
+          "5ef712f407": "A server named \"{{value0}}\" already exists.",
           "7b5986c8df": "Saved {{value0}}. Use Active Server to switch when ready.",
           "8cf8790697": "Saved servers route this browser through a paired Orca runtime.",
           "960e901ae4": "orca serve --pairing-address <host>",
@@ -1388,8 +1388,7 @@
           "f3a3d6d834": "{{value0}} capabilities",
           "f75ce1c7a5": "Local keeps today's desktop behavior. Saved servers route supported client calls through the remote runtime.",
           "updateAvailableOne": "1 update available",
-          "updatesAvailable": "{{value0}} updates available",
-          "5ef712f407": "A server named \"{{value0}}\" already exists."
+          "updatesAvailable": "{{value0}} updates available"
         },
         "RuntimePairingUrlGenerator": {
           "279e0dcb57": "127.0.0.1 only works on this computer. Use a LAN, Tailscale, or custom address for another device.",
@@ -1488,7 +1487,7 @@
           "95d3031db2": "Keeps this computer and display awake while agents are working. Lid-close behavior follows this device's power settings.",
           "a42f6fbdd8": "Keeps this computer and display awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "e5995ce268": "Keep computer awake while agents are working",
-          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
+          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. The app also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "modeDescriptionWindows": "Choose On, Agent, or Off. Agent mode stays awake while agents are working; lid-close behavior follows this device's power settings.",
           "modeTitle": "Keep computer awake"
         },
@@ -2741,6 +2740,24 @@
       "map": "Agent Map"
     }
   },
+  "guidance": {
+    "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command.",
+    "cliRegistrationTitle": "Register the Orca CLI on PATH to continue."
+  },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
+      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
+      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
+      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
+      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
+      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
+      "nameTaken": "A server named \"{{name}}\" already exists.",
+      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
+      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
+      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
+    }
+  },
   "runtimeRpc": {
     "startupFailure": {
       "guidance": {
@@ -2776,20 +2793,6 @@
     },
     "matchLabel": {
       "automation": "Run"
-    }
-  },
-  "runtime": {
-    "remoteServerPairingErrors": {
-      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
-      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
-      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
-      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
-      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
-      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
-      "nameTaken": "A server named \"{{name}}\" already exists.",
-      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
-      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
-      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
     }
   }
 }

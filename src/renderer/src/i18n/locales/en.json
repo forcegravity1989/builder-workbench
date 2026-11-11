@@ -618,7 +618,7 @@
               "8d6eedf97e": "Failed to register the Orca CLI in PATH.",
               "0f116999f1": "Restart your shell or add the Orca CLI directory to PATH before setup.",
               "15cbedc3e3": "Install the Orca CLI before running agent skill setup.",
-              "windowsPathUnknown": "Orca could not check your Windows user PATH",
+              "windowsPathUnknown": "Could not check your Windows user PATH",
               "refreshCliRegistration": "Refresh CLI registration status and try again."
             }
           }
@@ -7672,7 +7672,6 @@
           "nestedWorkerDepthDescription": "How many generations of dispatched workers may spawn their own workers. 1 keeps the agent tree flat: a coordinator dispatches workers, and those workers do not dispatch."
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "Enables agents to hand off context and coordinate work through Orca.",
           "2777ff0fdc": "Orchestration skill"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -10607,7 +10606,7 @@
           "a42f6fbdd8": "Keeps this computer and display awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "modeTitle": "Keep computer awake",
           "modeDescriptionWindows": "Choose On, Agent, or Off. Agent mode stays awake while agents are working; lid-close behavior follows this device's power settings.",
-          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy."
+          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. The app also asks this device to stay awake when the lid is closed, subject to its power policy."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
@@ -10725,8 +10724,8 @@
                 "cards": {
                   "793a06e899": "Re-check",
                   "1a9475dace": "Learn more",
-                  "19fb419c12": "Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.",
-                  "60708f23da": "only when Orca cannot derive the API URL from the remote.",
+                  "19fb419c12": "Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.",
+                  "60708f23da": "only when {{product}} cannot derive the API URL from the remote.",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "for private repositories, and set",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -10735,8 +10734,8 @@
                   "05863d2599": "Pull requests and commit statuses via the Gitea REST API.",
                   "52f75876be": "Pull requests and commit statuses for detected repositories",
                   "0b5242f8a2": "{{value0}} · Pull requests and commit statuses",
-                  "40f678df73": "Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.",
-                  "7bd345e3f6": "only when Orca cannot derive the API base URL from the git remote.",
+                  "40f678df73": "Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.",
+                  "7bd345e3f6": "only when {{product}} cannot derive the API base URL from the git remote.",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": ". Set",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -10747,7 +10746,7 @@
                   "0eb50d5593": "Pull requests and build statuses via Azure DevOps REST API tokens.",
                   "54636c65d4": "Pull requests and build statuses for detected Azure Repos",
                   "ea204f5e03": "{{value0}} · Pull requests and build statuses",
-                  "6154b02093": "Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart Orca if environment variables changed.",
+                  "6154b02093": "Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart {{product}} if environment variables changed.",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "and",
@@ -11788,9 +11787,9 @@
               "authModeToken": "Access token",
               "authModeBasic": "Email & API token",
               "disconnect": "Disconnect Bitbucket",
-              "envManaged": "Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in Orca.",
+              "envManaged": "Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in {{product}}.",
               "storedAuthFailed": "The saved Bitbucket credential could not authenticate. Edit it, or check that the token still has pull request access.",
-              "storedCredential": "Saved in Orca on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.",
+              "storedCredential": "Saved in {{product}} on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.",
               "notConfigured": "Connect a Bitbucket Cloud account with an Atlassian API token or an access token. ORCA_BITBUCKET_* environment variables work too and take precedence.",
               "disconnectFailed": "Could not remove the saved Bitbucket credential.",
               "statusLoadFailed": "Could not check for a saved Bitbucket credential.",
@@ -13787,9 +13786,9 @@
             "b8dc9dd8a2": "Installed",
             "1b51644c2d": "Let agents control the desktop, moving the cursor, clicking, and typing in any app.",
             "362a07517d": "Computer Use",
-            "5e8fe5a72d": "Give agents direct access to Orca's browser so they can test pages, capture screenshots, and act on what they see.",
+            "5e8fe5a72d": "Give agents direct access to {{product}}'s browser so they can test pages, capture screenshots, and act on what they see.",
             "e638da007a": "Agent Browser Use",
-            "c61c91e642": "Let agents coordinate through Orca to keep large, multi-step tasks moving to completion.",
+            "c61c91e642": "Let agents coordinate through {{product}} to keep large, multi-step tasks moving to completion.",
             "ac07f8887f": "Agent Orchestration",
             "e9eb197e12": "Opened Computer Use permissions",
             "3a59452a67": "Skill command copied and inserted below for review.",
@@ -13832,7 +13831,7 @@
             "f39be6ca14": "/signup"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "Enables agents to navigate and verify pages in Orca's browser.",
+            "cbc45022d4": "Enables agents to navigate and verify pages in {{product}}'s browser.",
             "d5bb1cd4ba": "Browser Use skill"
           },
           "ComputerUseAnimatedVisual": {
@@ -14018,8 +14017,8 @@
                     "copy": {
                       "ec0a363633": "Multi-task",
                       "62bac8f43c": "Work in 2 different worktrees at once. Each one is isolated (even in the same project). Perfect for working on 2 features at once.",
-                      "908898c3ee": "Use Orca's browser",
-                      "43781563c3": "Browse your web app without leaving Orca. Grab any element and send its exact source and styles to an agent with one click.",
+                      "908898c3ee": "Use {{product}}'s browser",
+                      "43781563c3": "Browse your web app without leaving {{product}}. Grab any element and send its exact source and styles to an agent with one click.",
                       "29aa2c2077": "Turn on notifications",
                       "71bd9a8c95": "Know the moment an agent finishes, needs attention, or gets blocked.",
                       "46db810da8": "Choose your default agent",
@@ -14031,7 +14030,7 @@
                       "eddc532e58": "Automate workspace setup",
                       "56049b74c2": "Run install and setup commands automatically so every new worktree is ready for agents.",
                       "2cf795433b": "Start work in multiple repos",
-                      "42525ba8a4": "Bring your key repos into Orca so you can start agent work without hunting for folders."
+                      "42525ba8a4": "Bring your key repos into {{product}} so you can start agent work without hunting for folders."
                     }
                   }
                 }
@@ -14156,7 +14155,7 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "connected for tasks",
-            "33b650af52": "Connect where your team tracks work. Orca starts workspaces with the issue title, link, and context already attached.",
+            "33b650af52": "Connect where your team tracks work. {{product}} starts workspaces with the issue title, link, and context already attached.",
             "5b3577a492": "connected for review status",
             "list_end": ", and ",
             "list_pair": " and ",
@@ -14164,8 +14163,8 @@
             "code_host_tasks_summary": "issues available as tasks · add Linear or Jira if your team plans work there",
             "code_host_tasks_caption": "Your code host's issues also work as tasks.",
             "review_step_title": "See PR status while agents work",
-            "review_step_description": "Connect a review provider so Orca can show PR or MR status, checks, and reviews.",
-            "task_step_title": "Start agents on your tasks without leaving Orca"
+            "review_step_description": "Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.",
+            "task_step_title": "Start agents on your tasks without leaving {{product}}"
           },
           "connect": {
             "integration": {
@@ -17754,5 +17753,133 @@
       "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
       "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
     }
+  },
+  "guidance": {
+    "tour": {
+      "workspaces": {
+        "title": "Workspaces",
+        "description": "{{product}} splits each task into an isolated workspace so agents can run in parallel."
+      },
+      "tasks": {
+        "title": "Tasks",
+        "description": "Start work directly from GitHub or Linear."
+      },
+      "agents": {
+        "title": "Agents",
+        "description": "Run several agents at once, track their progress, and let automation drive {{product}} when it helps."
+      },
+      "workbench": {
+        "title": "Workbench",
+        "description": "Bring your terminal setup into {{product}}, then split panes to keep servers, tests, logs, and agents running side by side."
+      },
+      "review": {
+        "title": "Code Review",
+        "description": "Review what changed, leave focused feedback, and send it back to the agent."
+      },
+      "statuses": {
+        "name": "Visibility",
+        "title": "Agent Visibility",
+        "description": "Know which agents are working, waiting, live, or blocked."
+      },
+      "orchestration": {
+        "title": "Orchestration",
+        "description": "Enable agents to manage and coordinate {{product}} workspaces to execute larger tasks."
+      },
+      "usage": {
+        "title": "Usage",
+        "description": "Watch your usage and rate limits across every connected account, so you know when to switch."
+      },
+      "terminal": {
+        "title": "Terminal",
+        "description": "Keep your agents, tests, and dev logs visible at once."
+      },
+      "editor": {
+        "title": "Editor",
+        "description": "Use our Notion-style markdown editor to write notes without leaving {{product}}."
+      },
+      "browser": {
+        "title": "Browser",
+        "description": "Run your app in the integrated browser, send selected UI elements to agents, and let your agents interact with your webpage."
+      },
+      "notes": {
+        "name": "Notes",
+        "title": "Notes & diffs",
+        "description": "Send focused review notes to an agent."
+      },
+      "pr": {
+        "title": "PR checks",
+        "subtitle": "PR checks & comments",
+        "description": "See PR status in the Checks tab."
+      },
+      "ship": {
+        "title": "Ship with AI",
+        "description": "Let AI prepare commit and PR drafts for you."
+      }
+    },
+    "explore": "Explore BW",
+    "exploreDescription": "Explore BW capabilities through the existing demonstrations.",
+    "experiences": "Try the capabilities",
+    "addProjectFirst": "First add a project you'd like to work on.",
+    "done": "Done",
+    "exploreFooter": "Reopen any time from the bottom question mark > Explore BW.",
+    "tourFooter": "Reopen any time from Help > Explore Orca.",
+    "continue": "Continue",
+    "demo": {
+      "sessionStarted": "● Claude Code session started",
+      "notesLoaded": "Loaded {{total}} review notes from {{product}}",
+      "fixing": "Fixing both issues...",
+      "addingColumn": "Adding the email_verified column…",
+      "wiringMiddleware": "Wiring withSession middleware…",
+      "firstPrReady": "PR 1/2 ready",
+      "secondPrReady": "PR 2/2 ready",
+      "splitAuth": "Splitting auth rewrite into 2 PRs…",
+      "tableMigration": "Writing the users table migration…",
+      "sketchMiddleware": "Sketching withSession middleware…",
+      "percentUsed": "{{percent}}% used",
+      "resetsHours": "Resets in {{hours}}h",
+      "resetsMinutes": "Resets in {{minutes}}m",
+      "switchedUsage": "0% used 5h · 4% used wk",
+      "currentUsage": "96% used 47m",
+      "browserPrompt": "Make Starter card stand out",
+      "verifyBrowser": "Let me click Try free to verify it still works.",
+      "capturingPage": "(capturing page)",
+      "checks": "Checks",
+      "checksShortcut": "Checks ({{shortcut}})",
+      "rendersMetrics": "› renders metrics",
+      "updatesAvatar": "› updates avatar",
+      "exportsCsv": "› exports CSV",
+      "togglesDark": "› toggles dark mode",
+      "reviewPrompt": "review src/auth for missing error handling",
+      "checkoutPrompt": "fix failing checkout test",
+      "workspaceSetup": "set up orca.yaml",
+      "workspaceLogin": "fix login race condition",
+      "workspaceCi": "speed up CI pipeline"
+    },
+    "setupProgress": "Getting Started with BW, {{done}} of {{total}} complete.",
+    "progress": "{{done}} of {{total}} complete",
+    "gettingStarted": "Getting Started with BW",
+    "initialSetupFailed": "Could not open initial setup. Please try again.",
+    "initialSetup": "Initial Setup",
+    "setupDescription": "Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.",
+    "restarting": "Restarting BW…",
+    "restartFailed": "Couldn't restart BW.",
+    "reportCrash": "Report Crash",
+    "about": "About BW",
+    "restart": "Restart BW",
+    "orchestrationSetupDescription": "Enables agents to hand off context and coordinate work through {{product}}.",
+    "thinking": {
+      "none": "None",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Max"
+    },
+    "cliPrerequisite": "Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.",
+    "providerRemoteCredentials": "This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.",
+    "providerLocalCredentials": "This desktop client owns the provider credentials and account checks. Edit server-owned credentials in the advanced settings for that server.",
+    "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
+    "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."
   }
 }

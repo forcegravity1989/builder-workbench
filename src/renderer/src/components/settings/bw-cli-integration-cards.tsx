@@ -72,7 +72,8 @@ function BwCliIntegrationCard(config: BwCliCardConfig): React.JSX.Element {
       name={config.name}
       description={
         <>
-          {config.descriptionLead()} <span className="font-mono text-[11px]">{config.cliName}</span>{' '}
+          {config.descriptionLead()}{' '}
+          <span className="font-mono text-[11px]">{config.cliName}</span>{' '}
           {translate(
             'auto.components.settings.cli.source.control.integration.cards.a47f71e357',
             'CLI.'
