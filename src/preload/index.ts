@@ -29,6 +29,7 @@ import { hostedReviewApi } from './api/hosted-review-bridge'
 import { glApiBridge } from './api/gl-bridge'
 import { codehubApi } from './codehub'
 import { milestoneRecoveryApi } from './milestone-recovery'
+import { welinkReportConfigApi } from './welink-report-config'
 import { bitbucketApi } from './api/bitbucket-bridge'
 import { linearApi } from './api/linear-bridge'
 import { jiraApi } from './api/jira-bridge'
@@ -127,6 +128,7 @@ const api = {
   gl: glApiBridge,
   codehub: codehubApi,
   milestoneRecovery: milestoneRecoveryApi,
+  welinkReportConfig: welinkReportConfigApi,
   bitbucket: bitbucketApi,
   linear: linearApi,
   jira: jiraApi,

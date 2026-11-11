@@ -14,6 +14,10 @@ import { registerGitHubHandlers } from '../github'
 import { registerGitLabHandlers } from '../gitlab'
 import { registerCodeHubHandlers } from '../codehub'
 import { registerMilestoneRecoveryHandlers } from '../../workbench/milestone-recovery-ipc'
+import {
+  registerWelinkReportConfigHandlers,
+  setWelinkReportSettingsReader
+} from '../../workbench/reporting/welink-report-config'
 import { registerHostedReviewHandlers } from '../hosted-review'
 import { registerLinearHandlers } from '../linear'
 import { registerJiraHandlers } from '../jira'
@@ -165,6 +169,14 @@ export function registerCoreHandlers(
   registerJiraHandlers()
   registerBitbucketHandlers()
   registerFeedbackHandlers()
+  // Why (BW #553): the reporting sink reads the group-space id from settings at
+  // submission time; the reader is injected here (telemetry-storeRef pattern)
+  // so feedback/diagnostics handlers keep their signatures.
+  setWelinkReportSettingsReader(() => {
+    const value = store.getSettings().workbenchWelinkSpaceId
+    return typeof value === 'string' ? value : null
+  })
+  registerWelinkReportConfigHandlers()
   if (crashReports) {
     registerCrashReportingHandlers(crashReports)
   }

@@ -1,13 +1,23 @@
 // WeLink group-space reporting configuration (Issue #553 第一件事).
-// Build-time define + env fallback follows the ORCA_DIAGNOSTICS_TOKEN_URL
-// precedent (electron.vite.config.ts define block; the ambient declaration
-// lives in src/types/build-constants.d.ts). Difference: env WINS here.
-// The native pin exists so a user env cannot redirect uploads that carry a
-// server-issued bearer token; the WeLink sink authenticates with the
-// operator's own welink-cli login, so an env override only redirects that
-// user's own reports to another space they can already access — and the env
-// path is how dev/acceptance runs point at a real group space without a
-// rebuild.
+//
+// Configuration surface (human decision 2026-11-11, superseding the
+// build-env-only design): the group space id is a **Settings → Integrations
+// input** persisted in GlobalSettings (`workbenchWelinkSpaceId`). A build-time
+// define (`WORKBENCH_WELINK_SPACE_ID`) acts as the deployment lock: when a
+// package ships with it, the value wins and the settings input renders
+// read-only — the "fixed default, not modifiable" mode the product plans for
+// once the group space settles. No runtime env override: a hidden env that
+// beats the visible settings value would make the UI lie about where reports
+// go.
+//
+// The id travels through CLI args (and a WSL shell string), so every source
+// passes the numeric allow-list before use.
+
+import { ipcMain } from 'electron'
+import type { WelinkReportConfigState } from '../../../shared/workbench/welink-report-config'
+
+// WORKBENCH_WELINK_SPACE_ID is ambient-declared in src/types/build-constants.d.ts
+// (file-local `declare const` would trip unicorn/no-typeof-undefined, review F1).
 
 /**
  * Fixed folder inside the group space, ensured via folder-list/folder-new on
@@ -27,20 +37,51 @@ export type WelinkReportConfig = {
 // without relying on quoting alone.
 const SPACE_ID_PATTERN = /^\d{1,20}$/
 
-export function resolveWelinkReportConfig(): WelinkReportConfig | null {
-  const fromEnv = process.env.WORKBENCH_WELINK_SPACE_ID?.trim()
+/** Injected by the IPC composition root (register-core-handlers), telemetry-storeRef style. */
+let settingsSpaceIdReader: (() => string | null) | null = null
+
+export function setWelinkReportSettingsReader(reader: (() => string | null) | null): void {
+  settingsSpaceIdReader = reader
+}
+
+function resolveBuildLockedSpaceId(): string | null {
   const fromBuild =
     typeof WORKBENCH_WELINK_SPACE_ID !== 'undefined'
       ? WORKBENCH_WELINK_SPACE_ID
       : ((globalThis as { WORKBENCH_WELINK_SPACE_ID?: string | null }).WORKBENCH_WELINK_SPACE_ID ??
         null)
-  const spaceId = fromEnv || (typeof fromBuild === 'string' ? fromBuild.trim() : '')
-  if (!spaceId || !SPACE_ID_PATTERN.test(spaceId)) {
-    return null
-  }
-  return { spaceId }
+  const trimmed = typeof fromBuild === 'string' ? fromBuild.trim() : ''
+  return trimmed && SPACE_ID_PATTERN.test(trimmed) ? trimmed : null
 }
 
-/** User-facing guidance when the space id is absent/invalid (前提 2:明确可操作文案,不是失败 toast). */
+/** Settings value as persisted (already sanitized by settings-update); null when absent/invalid. */
+function readSettingsSpaceId(): string | null {
+  const value = settingsSpaceIdReader?.() ?? null
+  return value && SPACE_ID_PATTERN.test(value) ? value : null
+}
+
+export function getWelinkReportConfigState(): WelinkReportConfigState {
+  const lockedSpaceId = resolveBuildLockedSpaceId()
+  return {
+    locked: lockedSpaceId !== null,
+    lockedSpaceId,
+    settingsSpaceId: readSettingsSpaceId()
+  }
+}
+
+export function resolveWelinkReportConfig(): WelinkReportConfig | null {
+  const state = getWelinkReportConfigState()
+  const spaceId = state.locked ? state.lockedSpaceId : state.settingsSpaceId
+  return spaceId ? { spaceId } : null
+}
+
+/** User-facing guidance when no space id is configured (前提 2:明确可操作文案,不是失败 toast). */
 export const WELINK_REPORT_CONFIG_MISSING_MESSAGE =
-  '尚未配置 WeLink 群空间(WORKBENCH_WELINK_SPACE_ID),无法发送;请联系 BW 管理员完成配置。'
+  '尚未配置 WeLink 群空间(设置 → 集成 → WeLink 群空间 ID),无法发送;请填写或联系 BW 管理员。'
+
+export function registerWelinkReportConfigHandlers(): void {
+  ipcMain.removeHandler('workbench:welink-report-config')
+  ipcMain.handle('workbench:welink-report-config', (): WelinkReportConfigState => {
+    return getWelinkReportConfigState()
+  })
+}

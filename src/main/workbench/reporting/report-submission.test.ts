@@ -51,6 +51,7 @@ import {
   submitWelinkReport
 } from './report-submission'
 import { WelinkReportError } from './welink-onebox-client'
+import { setWelinkReportSettingsReader } from './welink-report-config'
 
 function body(overrides: Partial<FeedbackSubmitBody> = {}): FeedbackSubmitBody {
   return {
@@ -70,7 +71,7 @@ let uploadedReportContent = ''
 let lastUploadDir = ''
 
 beforeEach(() => {
-  process.env.WORKBENCH_WELINK_SPACE_ID = '12345'
+  setWelinkReportSettingsReader(() => '12345')
   uploadedReportContent = ''
   lastUploadDir = ''
   ensureReportFolderMock.mockReset()
@@ -84,7 +85,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  delete process.env.WORKBENCH_WELINK_SPACE_ID
+  setWelinkReportSettingsReader(null)
 })
 
 describe('submitWelinkReport orchestration', () => {

@@ -1,6 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, MessageSquare, Terminal, Workflow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useMountedRef } from '@/hooks/useMountedRef'
+import { useAppStore } from '../../store'
+import type { WelinkReportConfigState } from '../../../../shared/workbench/welink-report-config'
 import { IntegrationCardShell } from './integration-card-shell'
 import { useIntegrationCommandRowClass } from './integration-card-presentation'
 import { usePreflightCardStatuses } from './source-control-preflight-card-status'
@@ -72,8 +77,7 @@ function BwCliIntegrationCard(config: BwCliCardConfig): React.JSX.Element {
       name={config.name}
       description={
         <>
-          {config.descriptionLead()}{' '}
-          <span className="font-mono text-[11px]">{config.cliName}</span>{' '}
+          {config.descriptionLead()} <span className="font-mono text-[11px]">{config.cliName}</span>{' '}
           {translate(
             'auto.components.settings.cli.source.control.integration.cards.a47f71e357',
             'CLI.'
@@ -387,5 +391,114 @@ export function CloudBuildIntegrationCard(): React.JSX.Element {
       }
       worktreeId="connectors-cloudbuild-login"
     />
+  )
+}
+
+// BW #553: the group-space id moved from build-time-only config to a settings
+// input (human decision 2026-11-11). A build define pins the value and turns
+// the input read-only — the planned "fixed default, not modifiable" mode.
+export function WeLinkReportSpaceIdSettings(): React.JSX.Element | null {
+  const [state, setState] = useState<WelinkReportConfigState | null>(null)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const mountedRef = useMountedRef()
+
+  useEffect(() => {
+    let stale = false
+    void window.api.welinkReportConfig.getState().then((next) => {
+      if (!stale) {
+        setState(next)
+        setDraft(next.settingsSpaceId ?? '')
+      }
+    })
+    return () => {
+      stale = true
+    }
+  }, [])
+
+  if (!state) {
+    return null
+  }
+  const locked = state.locked
+  const dirty = draft.trim() !== (state.settingsSpaceId ?? '')
+
+  const save = async (): Promise<void> => {
+    const value = draft.trim()
+    if (value && !/^\d{1,20}$/.test(value)) {
+      setError(
+        translate(
+          'auto.components.settings.cli.source.control.integration.cards.welinkSpaceIdInvalid',
+          'The group space ID must be digits only.'
+        )
+      )
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      await useAppStore.getState().updateSettingsOrThrow({
+        workbenchWelinkSpaceId: value.length > 0 ? value : null
+      })
+      if (mountedRef.current) {
+        setState({ ...state, settingsSpaceId: value.length > 0 ? value : null })
+      }
+    } catch (reason) {
+      if (mountedRef.current) {
+        setError(reason instanceof Error ? reason.message : String(reason))
+      }
+    } finally {
+      if (mountedRef.current) {
+        setSaving(false)
+      }
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border/70 bg-card/40 p-3">
+      <Label className="text-xs">
+        {translate(
+          'auto.components.settings.cli.source.control.integration.cards.welinkSpaceIdLabel',
+          'WeLink group space ID (report destination)'
+        )}
+      </Label>
+      <div className="flex items-center gap-2">
+        <Input
+          value={locked ? (state.lockedSpaceId ?? '') : draft}
+          disabled={locked || saving}
+          inputMode="numeric"
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="e.g. 109379610574"
+          className="h-8 max-w-56 text-xs"
+        />
+        {locked ? null : (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            disabled={!dirty || saving}
+            onClick={() => void save()}
+          >
+            {translate(
+              'auto.components.settings.cli.source.control.integration.cards.welinkSpaceIdSave',
+              'Save'
+            )}
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {locked
+          ? translate(
+              'auto.components.settings.cli.source.control.integration.cards.welinkSpaceIdLocked',
+              'This build pins the report group space; the value is read-only.'
+            )
+          : translate(
+              'auto.components.settings.cli.source.control.integration.cards.welinkSpaceIdHint',
+              'Feedback, crash reports and diagnostic bundles upload to the「Workbench 上报」folder of this group space. Empty means not configured — sends then stop with setup guidance.'
+            )}
+      </p>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
   )
 }

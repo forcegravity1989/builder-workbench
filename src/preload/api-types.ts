@@ -33,6 +33,7 @@ import type { GithubWorkItemApi } from './api/github-work-item-api'
 import type { GitLabApi } from './api/gitlab-api'
 import type { CodeHubApi } from '../shared/codehub-api'
 import type { MilestoneRecoveryApi } from '../shared/workbench/milestone-recovery'
+import type { WelinkReportConfigApi } from '../shared/workbench/welink-report-config'
 import type { BitbucketApi, HostedReviewApi } from './api/hosted-review-api'
 import type { JiraApi } from './api/jira-api'
 import type { LinearApi } from './api/linear-api'
@@ -92,6 +93,7 @@ export type PreloadApi = {
   gl: GitLabApi
   codehub: CodeHubApi
   milestoneRecovery: MilestoneRecoveryApi
+  welinkReportConfig: WelinkReportConfigApi
   bitbucket: BitbucketApi
   linear: LinearApi
   jira: JiraApi
