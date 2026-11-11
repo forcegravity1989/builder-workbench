@@ -67,16 +67,6 @@ export function updateSettings(
       }
     }
   }
-  // Why (BW #553): the group-space id ends up in CLI args and the WSL shell
-  // string, so the store enforces the numeric contract on every write path;
-  // the renderer validates for UX, and anything invalid degrades to null
-  // (unconfigured) instead of persisting.
-  if ('workbenchWelinkSpaceId' in updates) {
-    const raw = updates.workbenchWelinkSpaceId
-    const trimmed = typeof raw === 'string' ? raw.trim() : ''
-    sanitizedUpdates.workbenchWelinkSpaceId =
-      trimmed.length > 0 && /^\d{1,20}$/.test(trimmed) ? trimmed : null
-  }
   if ('opencodeSessionCookie' in updates && !updates.opencodeSessionCookie) {
     operations.removeRetainedBlob(PROTECTED_SECRET_SLOT.opencodeSessionCookie)
   }

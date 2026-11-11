@@ -139,11 +139,6 @@ export function SidebarFeedbackDialog({
     setIsSubmitting(true)
     try {
       const identity = getSubmitIdentity(viewer, submitAnonymously)
-      // Why: submission is proxied through the main process via IPC because
-      // the packaged Mac build loads the renderer from file://, which makes
-      // cross-origin fetch() fail CORS preflight. Electron's net module in
-      // the main process has no CORS restrictions and works uniformly in dev
-      // and prod.
       const result = await window.api.feedback.submit({
         feedback: trimmed,
         submitAnonymously,
@@ -156,9 +151,6 @@ export function SidebarFeedbackDialog({
       })
 
       if (!result.ok) {
-        // Why (BW #553): the WeLink sink returns actionable, user-facing
-        // failure copy (network/login/config/rate-limit) — surface it instead
-        // of swallowing the reason behind a generic retry message.
         throw new Error(result.error)
       }
 
@@ -241,7 +233,7 @@ export function SidebarFeedbackDialog({
             {isWorkbenchShell()
               ? translate(
                   'auto.components.sidebar.SidebarFeedbackDialog.workbenchDescription',
-                  "Share what's working, what's broken, or what Workbench should do next. Reports are delivered to the project WeLink group space."
+                  "Share what's working, what's broken, or what Workbench should do next. Reports are uploaded to the BW user group's WeLink space using your current WeLink account."
                 )
               : translate(
                   'auto.components.sidebar.SidebarFeedbackDialog.a828fa4aee',
@@ -250,9 +242,6 @@ export function SidebarFeedbackDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Why (BW #553): the GitHub/Discord/X links are Orca contact channels —
-            hidden in the Workbench shell so feedback does not get routed to Orca
-            (same direction as #317's removal of Orca feedback entry remnants). */}
         {isWorkbenchShell() ? null : (
           <div className="space-y-2 rounded-md border border-border/70 bg-muted/30 p-3">
             <div className="text-xs font-medium text-foreground">
@@ -352,10 +341,15 @@ export function SidebarFeedbackDialog({
                     'accent-foreground'
                   )}
                 />
-                {translate(
-                  'auto.components.sidebar.SidebarFeedbackDialog.5b120b9634',
-                  'Submit anonymously'
-                )}
+                {isWorkbenchShell()
+                  ? translate(
+                      'auto.components.sidebar.SidebarFeedbackDialog.omitGitHubIdentity',
+                      'Do not include GitHub account information'
+                    )
+                  : translate(
+                      'auto.components.sidebar.SidebarFeedbackDialog.5b120b9634',
+                      'Submit anonymously'
+                    )}
               </label>
             </div>
           ) : isViewerLoading ? (
@@ -367,10 +361,15 @@ export function SidebarFeedbackDialog({
             </div>
           ) : (
             <div className="text-xs text-muted-foreground">
-              {translate(
-                'auto.components.sidebar.SidebarFeedbackDialog.8de03e23c5',
-                'Submit with your typed feedback only, or connect `gh` to include GitHub identity.'
-              )}
+              {isWorkbenchShell()
+                ? translate(
+                    'auto.components.sidebar.SidebarFeedbackDialog.withoutGitHubIdentity',
+                    'Your feedback will not include GitHub account information.'
+                  )
+                : translate(
+                    'auto.components.sidebar.SidebarFeedbackDialog.8de03e23c5',
+                    'Submit with your typed feedback only, or connect `gh` to include GitHub identity.'
+                  )}
             </div>
           )}
         </div>

@@ -14,10 +14,6 @@
 // that touches the network or filesystem stays in main — the renderer
 // only sees the resulting status / preview / ticket-id.
 //
-// Hardening (BW #553): the WeLink group-space id never crosses IPC. The
-// renderer triggers the flow; main resolves the space id from build-time
-// constant or env and runs the welink-cli upload itself.
-
 import { app, dialog, ipcMain, shell } from 'electron'
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
 import { arch as osArch, platform as osPlatform, release as osRelease, tmpdir } from 'node:os'
@@ -260,8 +256,6 @@ export function registerDiagnosticsHandlers(): void {
       if (!getDiagnosticsStatus().bundleEnabled) {
         throw new Error('sending diagnostics is disabled')
       }
-      // BW #553: upload to the WeLink group space; the ticket stays the
-      // bundleSubmissionId so copy-reference and delete-by-id keep working.
       const result = await submitWelinkDiagnosticsBundle(payload, bundle.bundleSubmissionId)
       const uploadedPending = pendingBundles.get(bundle.bundleSubmissionId)
       if (uploadedPending) {
@@ -291,8 +285,6 @@ export function registerDiagnosticsHandlers(): void {
     if (!isTicketId(ticketId)) {
       throw new Error('ticketId has invalid format')
     }
-    // BW #553: relocate the deterministic file name in the group space and
-    // move it to the onebox recycle bin (not a physical delete).
     await deleteWelinkDiagnosticsBundle(ticketId)
   })
 }

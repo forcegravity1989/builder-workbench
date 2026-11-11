@@ -59,7 +59,7 @@ $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run
 | `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |
 | `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
 | `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
-| `WORKBENCH_WELINK_SPACE_ID` | 构建期注入可**锁定**上报落点群空间(设置→集成的输入框变只读,即「固定默认值不可修改」形态);未注入时由用户在 设置 → 集成 → WeLink 群空间 ID 填写并存入 settings(`workbenchWelinkSpaceId`,数字白名单 sanitize)。未配置时上报入口给明确指引,不静默失败。见 `src/main/workbench/reporting/welink-report-config.ts` |
+| `WORKBENCH_WELINK_SPACE_ID` | 构建时固定的 BW 用户群空间 ID。用户设置和运行期环境变量不能修改上报落点；未配置时停止上报并提示联系 BW 管理员。见 `src/main/workbench/reporting/welink-report-config.ts` |
 
 打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
 

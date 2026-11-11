@@ -102,7 +102,7 @@ git rev-parse 'v1.4.251^{commit}'
 - **配对协议能力仍保留**：`src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator、relay/pairing 等活体协议不等同于 Mobile 产品，不因删除产品页一起删除。
 - **产品文档正本已替换**：仓根 `AGENTS.md`、`README.md`、`CONTEXT.md`、`CLAUDE.md` 与 `docs/` 是 BW 正本；上游工程参考进入 `ref/`，不覆盖 BW 产品文档。
 - **上游对外文档站不作为 BW 产品站**：`docs/site/`、README 多语言/营销素材和专项工程笔记不自动恢复；需要时从 Git 历史追溯来源。
-- **Orca 上报 HTTP 出口已删除（#553，2026-11）**：反馈/崩溃报告/诊断包的 onorca.dev 传输链不再存在——`ipc/feedback.ts` 的 net.fetch/multipart/端点重试机制、`observability/diagnostic-bundle-upload.ts`、`observability/diagnostic-upload-http.ts`、`diagnostic-upload-endpoint.ts` 的 token 解析与 `ORCA_DIAGNOSTICS_TOKEN_URL` 构建常量均已移除；唯一出口是 `src/main/workbench/reporting/` 的 WeLink 群空间 sink（welink-cli onebox）。同步时不得恢复上述 HTTP 出口或引入第二上报路径；上游对这些文件的改动只需对照 BW sink 是否要吸收语义（如附件降级、确认对话框），不整段合回。`.github/workflows/` 六个官方构建流程仍设置的 `ORCA_DIAGNOSTICS_TOKEN_URL` env 属惰性残留（常量已不存在、无消费方），随下次同步上游 workflow 时顺带清理，不单独改。产品遥测按人的决定在 BW 做成不采集（另行 PR 落地传输层关闭），同步时同样不恢复 PostHog 发送。
+- **Orca 上报 HTTP 出口已删除（#553，2026-11）**：反馈/崩溃报告/诊断包的 onorca.dev 传输链不再存在——`ipc/feedback.ts` 的 net.fetch/multipart/端点重试机制、`observability/diagnostic-bundle-upload.ts`、`observability/diagnostic-upload-http.ts`、`diagnostic-upload-endpoint.ts` 的 token 解析与 `ORCA_DIAGNOSTICS_TOKEN_URL` 构建常量均已移除；唯一出口是 `src/main/workbench/reporting/` 的 WeLink 群空间 sink（welink-cli onebox）。同步时不得恢复上述 HTTP 出口或引入第二上报路径；上游对这些文件的改动只需对照 BW sink 是否要吸收语义（如附件降级、确认对话框），不整段合回。对应构建流程中的失效 `ORCA_DIAGNOSTICS_TOKEN_URL` 配置已同步删除。产品遥测按人的决定在 BW 做成不采集（另行 PR 落地传输层关闭），同步时同样不恢复 PostHog 发送。
 
 ### 2.2 目录和挂载边界
 

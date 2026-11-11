@@ -37,7 +37,6 @@ beforeEach(() => {
     terminalLayoutsByTabId: { 'terminal-a': { activeLeafId: leaf } }
   } as unknown as AppState
 })
-// 环 4 ratchet 对冲（#553）：同一「聚焦 tab 解析」守卫的三条用例合并,断言原样保留。
 it('resolves the focused native tab: agent session, terminal leaf, or null for non-terminal tabs', () => {
   expect(getActiveCycleSession(mocks.state, scope, 'wt')).toMatchObject({
     tabId: 'b',

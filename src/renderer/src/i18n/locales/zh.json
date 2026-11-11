@@ -4447,7 +4447,10 @@
           "69969ba364": "正在发送...",
           "imageReadFailed": "无法读取附加的图片。请重新附加。",
           "attachWhileSending": "请等待当前反馈发送完成，再附加更多图片。",
-          "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。"
+          "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。",
+          "workbenchDescription": "分享使用体验、遇到的问题或对 Workbench 的建议。反馈会使用你当前的 WeLink 账号上传到 BW 用户群的群空间。",
+          "omitGitHubIdentity": "不附带 GitHub 账号信息",
+          "withoutGitHubIdentity": "反馈中不会附带 GitHub 账号信息。"
         },
         "SidebarFilter": {
           "e3b3898218": "添加项目",
@@ -9333,11 +9336,6 @@
             "control": {
               "integration": {
                 "cards": {
-                  "welinkSpaceIdLabel": "WeLink 群空间 ID(上报落点)",
-                  "welinkSpaceIdHint": "反馈、崩溃报告与诊断包将上传到该群空间的「Workbench 上报」目录;留空表示未配置,发送时会给出配置指引。",
-                  "welinkSpaceIdLocked": "此构建已固定上报群空间,该值只读。",
-                  "welinkSpaceIdSave": "保存",
-                  "welinkSpaceIdInvalid": "群空间 ID 须为纯数字。",
                   "d5b3be8ecd": "重新检查",
                   "8cbc39f862": "了解更多",
                   "707180d09c": "glab auth login",
@@ -13253,7 +13251,11 @@
             "b2e36f53a1": "发送崩溃报告失败。诊断票据 {{value0}} 已上传，但未关联。",
             "ead6fc0510": "没有捕获到自动崩溃报告。你仍然可以发送详情，并在可用时包含最近的诊断日志。",
             "b082f27490": "附加最近的诊断日志",
-            "e59f0b9427": "随报告发送经过删减且有大小限制的日志包。"
+            "e59f0b9427": "随报告发送经过删减且有大小限制的日志包。",
+            "workbenchUiErrorTitle": "Workbench 出现了可恢复的界面错误",
+            "workbenchClosedTitle": "Workbench 意外关闭",
+            "workbenchNotesPlaceholder": "可选：Workbench 关闭前，你正在做什么？",
+            "workbenchBrand": "Workbench"
           },
           "submit": {
             "notice": {

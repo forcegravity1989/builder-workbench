@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import { buildWindowsCmdShimCommandLine } from '../../shared/child-process/windows-command-line'
 import { buildPosixCommandPathLookupScript } from '../../shared/posix-command-path-lookup'
 import { isCommandOnLocalPath, resolveCommandOnLocalPath } from './command-path-resolver'
 import { buildLocalPreflightEnv } from './preflight-local-env'
@@ -57,23 +58,18 @@ export async function execLocalPreflightCommandOrThrow(
   timeoutMs: number = PREFLIGHT_COMMAND_TIMEOUT_MS
 ): Promise<PreflightCommandResult> {
   const env = buildLocalPreflightEnv()
-  // Why (BW #323): Windows CreateProcess only launches real executables, so a
-  // bare execFile cannot see npm-installed CLIs whose global shims are .cmd
-  // scripts — a freshly installed welink-cli / codehub-cli would keep reading
-  // "not installed". Resolve against the same registry-merged PATH and route
-  // .cmd/.bat shims through cmd.exe; every other resolution (real .exe, or
-  // nothing found) keeps the bare spawn so existing probe semantics stay
-  // byte-identical. normalize() turns the resolver's forward-slash joins into
-  // the backslash form cmd.exe expects.
+  // npm shims require cmd.exe. Use the shared command-line encoder so paths
+  // containing shell operators or percent signs reach the CLI unchanged.
   const resolved =
     process.platform === 'win32' ? await resolveCommandOnLocalPath(command, { env }) : null
   const shimPath = resolved ? path.normalize(resolved) : null
   const commandPromise = (
     shimPath && /\.(cmd|bat)$/i.test(shimPath)
-      ? execFileAsync('cmd.exe', ['/d', '/c', shimPath, ...args], {
+      ? execFileAsync('cmd.exe', [buildWindowsCmdShimCommandLine(shimPath, args)], {
           encoding: 'utf-8',
           timeout: timeoutMs,
           windowsHide: true,
+          windowsVerbatimArguments: true,
           ...(env ? { env } : {})
         })
       : execFileAsync(command, args, {

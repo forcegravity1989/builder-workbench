@@ -1,16 +1,19 @@
-// Protocol guards for the welink-cli onebox transport (Issue #553): output
-// parsing, failure classification and the user-copy mapping are data
-// contracts — the CLI prints text (no --json), and a wrong category sends
-// users down the wrong recovery path.
-
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   classifyWelinkErrorText,
   parseFirstJsonObject,
   parseFolderListing,
   parseUploadedFileId,
+  removeReportFile,
   WelinkReportError
 } from './welink-onebox-client'
+
+const { execLocalMock } = vi.hoisted(() => ({ execLocalMock: vi.fn() }))
+
+vi.mock('../../ipc/preflight-command-exec', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../ipc/preflight-command-exec')>()
+  return { ...actual, execLocalPreflightCommandOrThrow: execLocalMock }
+})
 
 describe('welink onebox output protocol', () => {
   it('parses file-upload text output and folder JSON listings', () => {
@@ -34,17 +37,25 @@ describe('welink onebox output protocol', () => {
       'Loading...\n{"files":[{"id":7,"name":"a.md"}],"folders":[{"id":3,"name":"Workbench 上报"}],"totalCount":1}\n'
     )
     expect(parseFolderListing(listing)).toEqual({
-      files: [{ id: '7', name: 'a.md' }],
       folders: [{ id: '3', name: 'Workbench 上报' }]
     })
     // Fallback field names survive; malformed entries drop without failing the list.
     expect(
       parseFolderListing(
         parseFirstJsonObject(
-          '{"files":[{"fileId":9,"fileName":"b.ndjson"},{"nope":true}],"folders":[]}'
+          '{"folders":[{"folderId":9,"folderName":"Workbench 上报"},{"nope":true}]}'
         )
       )
-    ).toEqual({ files: [{ id: '9', name: 'b.ndjson' }], folders: [] })
+    ).toEqual({ folders: [{ id: '9', name: 'Workbench 上报' }] })
+    expect(
+      parseFolderListing({
+        folders: [
+          { id: 9_007_199_254_740_992, name: 'rounded numeric ID' },
+          { id: '9007199254740993', name: 'exact string ID' },
+          { id: 1.5, name: 'fractional ID' }
+        ]
+      })
+    ).toEqual({ folders: [{ id: '9007199254740993', name: 'exact string ID' }] })
     expect(parseFirstJsonObject('no json here')).toBeNull()
   })
 
@@ -74,7 +85,7 @@ describe('welink onebox output protocol', () => {
     expect(classifyWelinkErrorText('something else entirely')).toBe('unknown')
   })
 
-  it('maps categories to user copy and keeps raw CLI text out of the message', () => {
+  it('maps failures to safe copy and accepts only missing-file deletion retries', async () => {
     const rateLimited = new WelinkReportError('rate-limit', 'Error: status 429 requestId=abc-123')
     expect(rateLimited.name).toBe('WelinkReportError')
     expect(rateLimited.message).toBe('WeLink 接口限流,请稍后重试。')
@@ -94,5 +105,25 @@ describe('welink onebox output protocol', () => {
     ] as const) {
       expect(new WelinkReportError(category, 'd').message.length).toBeGreaterThan(5)
     }
+    execLocalMock.mockReset()
+    execLocalMock.mockRejectedValueOnce(
+      Object.assign(new Error('Command failed'), {
+        stderr: 'Error: Get file info failed: This file does not exist.'
+      })
+    )
+    await expect(removeReportFile({}, '12345', '777')).resolves.toBeUndefined()
+    expect(execLocalMock).toHaveBeenLastCalledWith(
+      'welink-cli',
+      ['onebox', 'file-remove', '--space-id', '12345', '--file-id', '777'],
+      30_000
+    )
+    execLocalMock.mockRejectedValueOnce(new Error('unexpected server failure'))
+    await expect(removeReportFile({}, '12345', '777')).rejects.toMatchObject({
+      category: 'unknown'
+    })
+    execLocalMock.mockRejectedValueOnce(new Error('This user does not exist.'))
+    await expect(removeReportFile({}, '12345', '777')).rejects.toMatchObject({
+      category: 'config'
+    })
   })
 })

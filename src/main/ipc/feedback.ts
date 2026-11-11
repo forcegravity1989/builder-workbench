@@ -5,12 +5,6 @@ import { submitWelinkReport } from '../workbench/reporting/report-submission'
 
 export type { FeedbackImageAttachment }
 
-// Why (BW #553): feedback and crash reports deliver to the WeLink group
-// space through welink-cli onebox — the native onorca.dev HTTP transport
-// (net.fetch + multipart + endpoint retries) is removed, not branched:
-// single sink, no dual path (AGENTS 硬约束). Transport, failure
-// classification and file packaging live in src/main/workbench/reporting/.
-
 export type FeedbackSubmissionType = 'feedback' | 'crash'
 
 export type FeedbackSubmitArgs = {

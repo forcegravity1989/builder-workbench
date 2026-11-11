@@ -1,20 +1,3 @@
-// welink-cli onebox client for the BW reporting sink (Issue #553 第一件事).
-// Transport facts are from the field research in the issue (2026-11-10 更正
-// 版): uploads are non-interactive, exit 0/1 with `Error: ...` on stderr,
-// `file-upload` prints a trailing `File ID: <n>` line (no --json), folder
-// ops return JSON, the API rate-limits with 429 `Frequency Control`
-// (~45s recovery), same-name files overwrite versions (max 3) so callers
-// must use unique names, and same-content uploads dedupe by MD5 (idempotent
-// retries).
-//
-// Routing reuses the preflight exec base (BW #323 shim/cmd.exe resolution +
-// WSL), with its own deadlines: the 5s preflight probe budget is far below
-// the measured ~3.1s for a 4 MiB upload on a good link (调研 §6).
-//
-// Failure text is classified into actionable Chinese messages; raw CLI
-// output (which can contain requestId) never reaches users, only span
-// causes via `detail`.
-
 import {
   execCommandInWslOrThrow,
   execLocalPreflightCommandOrThrow,
@@ -40,8 +23,7 @@ export type WelinkFailureCategory =
 const CATEGORY_MESSAGES: Record<WelinkFailureCategory, string> = {
   'not-installed': '未检测到 welink-cli,无法发送;请在 设置 → 集成 安装后重试。',
   auth: 'welink-cli 未登录或登录已过期;请运行 welink-cli auth login 后重试。',
-  config:
-    'WeLink 群空间 ID 配置无效(空间不存在或无权限);请联系 BW 管理员核对 WORKBENCH_WELINK_SPACE_ID。',
+  config: 'WeLink 群空间 ID 配置无效(空间不存在或无权限);请联系 BW 管理员核对上报群空间。',
   'rate-limit': 'WeLink 接口限流,请稍后重试。',
   network: '无法访问 WeLink 内网接口(上报仅内网可达);请检查网络后重试。',
   file: '读取待上传文件失败,请重试。',
@@ -60,13 +42,9 @@ export class WelinkReportError extends Error {
   }
 }
 
-// Upload measured at ~3.1s for 4 MiB / ~8s for 50 MiB (调研 §5); 90s leaves
-// headroom for slow links without wedging the IPC lane forever. Metadata ops
-// (folder list/new, file remove) are small JSON calls.
+// Uploads need a longer deadline than command discovery.
 const WELINK_UPLOAD_TIMEOUT_MS = 90_000
 const WELINK_METADATA_TIMEOUT_MS = 30_000
-// 429 recovers after ~45s of silence (调研 §4); three backoff steps cover a
-// single burst without making the user wait minutes on a dialog.
 const RATE_LIMIT_RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
 function sleep(ms: number): Promise<void> {
@@ -174,20 +152,21 @@ export function parseFirstJsonObject(stdout: string): Record<string, unknown> | 
 
 export type OneboxNode = { id: string; name: string }
 
-// Server-supplied ids travel back into CLI args (and into the WSL shell
-// string), so they must match the same conservative shape the CLI prints —
-// digits in practice, bounded alnum/_/- for tolerance. Anything else is
-// dropped or rejected before it can reach a command line.
+// Validate server-supplied IDs before reusing them as CLI arguments.
 const SAFE_ONEBOX_ID = /^[A-Za-z0-9_-]{1,64}$/
 
-/**
- * Normalize `folder-list` output. Field names are assumed `{id,name}` per the
- * issue research (exact entry keys were not quoted); the fallbacks keep the
- * parse honest when the CLI names them fileId/fileName. Real acceptance must
- * confirm (Issue #553 调研 §8).
- */
+function normalizeOneboxId(value: unknown): string | null {
+  if (
+    typeof value !== 'string' &&
+    (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+  ) {
+    return null
+  }
+  const id = String(value)
+  return SAFE_ONEBOX_ID.test(id) ? id : null
+}
+
 export function parseFolderListing(json: Record<string, unknown> | null): {
-  files: OneboxNode[]
   folders: OneboxNode[]
 } {
   const normalize = (value: unknown): OneboxNode[] => {
@@ -205,8 +184,8 @@ export function parseFolderListing(json: Record<string, unknown> | null): {
       if (id === undefined || id === null || typeof name !== 'string') {
         continue
       }
-      const idText = String(id)
-      if (!SAFE_ONEBOX_ID.test(idText)) {
+      const idText = normalizeOneboxId(id)
+      if (!idText) {
         continue
       }
       nodes.push({ id: idText, name })
@@ -214,7 +193,6 @@ export function parseFolderListing(json: Record<string, unknown> | null): {
     return nodes
   }
   return {
-    files: normalize(json?.files),
     folders: normalize(json?.folders ?? json?.children)
   }
 }
@@ -223,7 +201,7 @@ async function listFolder(
   route: WelinkRoute,
   spaceId: string,
   parentId: string
-): Promise<{ files: OneboxNode[]; folders: OneboxNode[] }> {
+): Promise<{ folders: OneboxNode[] }> {
   const { stdout } = await withRateLimitRetry(() =>
     runWelinkCli(
       route,
@@ -252,11 +230,11 @@ async function createFolder(
     )
   )
   const parsed = parseFirstJsonObject(stdout)
-  const id = parsed ? (parsed.id ?? parsed.folderId) : undefined
-  if (id === undefined || id === null || !SAFE_ONEBOX_ID.test(String(id))) {
+  const id = normalizeOneboxId(parsed ? (parsed.id ?? parsed.folderId) : undefined)
+  if (!id) {
     throw new WelinkReportError('unknown', `folder-new returned no usable id: ${stdout}`)
   }
-  return String(id)
+  return id
 }
 
 // One ensured folder per space per process; concurrent submissions share the
@@ -269,8 +247,6 @@ export function ensureReportFolder(route: WelinkRoute, spaceId: string): Promise
     return cached
   }
   const pending = (async () => {
-    // List-first: folder-new's same-name behavior is unverified (调研 §8), and
-    // folder-list is the documented idempotent read.
     const listing = await listFolder(route, spaceId, '0')
     const existing = listing.folders.find((folder) => folder.name === WORKBENCH_REPORT_FOLDER_NAME)
     if (existing) {
@@ -310,33 +286,25 @@ export async function uploadReportFile(
   return fileId
 }
 
-/** Locate a file by exact name inside the report folder; null when absent. */
-export async function findReportFileIdByName(
-  route: WelinkRoute,
-  spaceId: string,
-  folderId: string,
-  fileName: string
-): Promise<string | null> {
-  const listing = await listFolder(route, spaceId, folderId)
-  return listing.files.find((file) => file.name === fileName)?.id ?? null
-}
-
 /** Move a file to the onebox recycle bin (file-remove is not a physical delete). */
 export async function removeReportFile(
   route: WelinkRoute,
   spaceId: string,
   fileId: string
 ): Promise<void> {
-  await withRateLimitRetry(() =>
-    runWelinkCli(
-      route,
-      ['onebox', 'file-remove', '--space-id', spaceId, '--file-id', fileId],
-      WELINK_METADATA_TIMEOUT_MS
+  try {
+    await withRateLimitRetry(() =>
+      runWelinkCli(
+        route,
+        ['onebox', 'file-remove', '--space-id', spaceId, '--file-id', fileId],
+        WELINK_METADATA_TIMEOUT_MS
+      )
     )
-  )
-}
-
-/** Test-only: drop the memoized folder id (each vitest file gets a fresh module anyway). */
-export function _resetReportFolderCacheForTests(): void {
-  reportFolderCache.clear()
+  } catch (error) {
+    // A retry after a lost acknowledgement must still finish local receipt cleanup.
+    if (error instanceof WelinkReportError && error.detail.includes('This file does not exist.')) {
+      return
+    }
+    throw error
+  }
 }

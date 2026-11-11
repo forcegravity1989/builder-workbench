@@ -130,7 +130,6 @@ describe('buildWallProjects', () => {
     expect(projects[0].repoIds).toEqual(['a'])
   })
 
-  // 环 4 ratchet 对冲（#553）：同一「去重计数」守卫的两条用例合并,断言原样保留。
   it('counts duplicate registrations and worktrees once per identity', () => {
     const projects = buildWallProjects(
       [

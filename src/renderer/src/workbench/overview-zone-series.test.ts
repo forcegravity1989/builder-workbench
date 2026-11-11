@@ -74,7 +74,6 @@ describe('zonePointState', () => {
   const range = zoneChartRange('week', TZ, NOW)
   const labels = zoneBucketLabels(range)
 
-  // 环 4 ratchet 对冲（#553）：同一 Unknown 信号守卫的两条用例合并，断言原样保留。
   it('未读取与失败都保持 Unknown 信号，不补零，陈旧证据保留原时间', () => {
     expect(zonePointState(null, labels, range, TZ)).toEqual({ kind: 'unread' })
 
@@ -95,7 +94,6 @@ describe('zonePointState', () => {
     expect(state.stale).toEqual({ value: 7, collectedAt: '2026-09-21T12:00:00.000Z' })
   })
 
-  // 环 4 ratchet 对冲（#553）：同一 ready 形态守卫的两条用例合并，断言原样保留。
   it('历史点按真实窗口落桶、缺失留空；字符串读数只作当前值文本', () => {
     const numeric = zonePointState(
       windowReading([

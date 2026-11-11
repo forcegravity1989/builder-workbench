@@ -1,29 +1,9 @@
-// WeLink group-space sink for the three BW reporting channels (Issue #553
-// 第一件事): user feedback, crash reports (both via submitWelinkReport) and
-// the diagnostics-pane bundle (submitWelinkDiagnosticsBundle /
-// deleteWelinkDiagnosticsBundle). Replaces the native onorca.dev HTTP POST —
-// single sink, no product branch (AGENTS 不留双路径).
-//
-// Delivery contract mirrors the native result shapes so preload/renderer
-// need zero changes: FeedbackSubmitResult for the feedback/crash lane,
-// {ticketId} for the diagnostics pane (ticketId = bundleSubmissionId, whose
-// [A-Za-z0-9_-]{16,64} shape the IPC layer already validates), thrown
-// Error messages surface verbatim in the pane's toasts.
-//
-// File layout in the group space (folder「Workbench 上报」):
-//   workbench-<channel>-<yyyyMMdd-HHmmss>-<id8>.md      report (metadata + text)
-//   workbench-<channel>-…-<id8>-image-<n>.<ext>         feedback screenshots
-//   workbench-diagnostics-<bundleSubmissionId>.ndjson   redacted trace bundle
-// Unique names avoid the same-name version-overwrite trap (max 3 versions,
-// 调研 §5); the diagnostics name is deterministic so retries dedupe by MD5
-// and deletion can relocate the file after an app restart.
-
 import { randomBytes } from 'node:crypto'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { app } from 'electron'
-import { withSpan } from '../../observability/tracer'
+import { withSpan, type ActiveSpan } from '../../observability/tracer'
 import { runPreflightCheck } from '../../preflight/agent-detection'
 import {
   FEEDBACK_IMAGE_EXTENSIONS,
@@ -40,19 +20,33 @@ import {
 } from './welink-report-config'
 import {
   ensureReportFolder,
-  findReportFileIdByName,
   removeReportFile,
   uploadReportFile,
   WelinkReportError,
   type WelinkRoute
 } from './welink-onebox-client'
+import {
+  forgetDiagnosticUploadReceipt,
+  readDiagnosticUploadReceipt,
+  saveDiagnosticUploadReceipt
+} from './diagnostic-upload-receipt'
 
 const GENERIC_FAILURE_MESSAGE = '发送失败,请稍后重试。'
-const DIAGNOSTICS_NOT_FOUND_MESSAGE = '群空间中未找到该诊断文件,可能已被删除。'
+const DIAGNOSTICS_NOT_FOUND_MESSAGE = '未找到本机发送记录,请到 WeLink 群空间管理已发送的诊断文件。'
 
-// Bounded like the skill-observability precedent: counts/bytes are closed
-// vocabulary, everything free-form stays in the redacted exit cause.
 const MAX_OBSERVED_BYTES = 64 * 1024 * 1024
+
+class ReceiptPersistenceError extends Error {}
+
+function cleanupReportingTemp(directory: string, span: ActiveSpan): void {
+  try {
+    rmSync(directory, { recursive: true, force: true })
+  } catch (error) {
+    // Cleanup cannot turn an acknowledged upload into a retryable send failure.
+    span.addEvent('temp-cleanup-failed')
+    span.fail(error instanceof Error ? error : String(error))
+  }
+}
 
 function boundedBytes(value: number): number {
   return Number.isFinite(value) ? Math.min(Math.max(Math.trunc(value), 0), MAX_OBSERVED_BYTES) : 0
@@ -63,9 +57,7 @@ export function diagnosticsBundleFileName(bundleSubmissionId: string): string {
 }
 
 async function resolveWelinkRoute(): Promise<WelinkRoute> {
-  // Cached per app session by preflight; the first caller pays the probe.
-  // Presence is a routing fact (where is the CLI), not an auth gate — auth
-  // failures surface from the actual attempt (更正后调研 §7:先尝试、失败再给指引).
+  // Expired authentication can refresh during upload; only CLI presence gates the attempt.
   const status = await runPreflightCheck()
   if (!status.welink?.installed) {
     throw new WelinkReportError('not-installed', 'preflight reports welink-cli absent')
@@ -97,7 +89,9 @@ export function buildReportMarkdown(
   bundleAttached: boolean
 ): string {
   const channel = body.submissionType === 'crash' ? '崩溃报告' : '用户反馈'
-  const identity = body.githubLogin ? `${body.githubLogin} <${body.githubEmail ?? ''}>` : '匿名'
+  const identity = body.githubLogin
+    ? `${body.githubLogin} <${body.githubEmail ?? ''}>`
+    : '未附带 GitHub 账号信息'
   const lines = [
     `# Workbench ${channel}`,
     '',
@@ -220,7 +214,7 @@ export async function submitWelinkReport(
         }
         return { ok: true, ...(imagesDelivered !== undefined ? { imagesDelivered } : {}) }
       } finally {
-        rmSync(directory, { recursive: true, force: true })
+        cleanupReportingTemp(directory, span)
       }
     } catch (error) {
       span.setAttribute('status', 'failed')
@@ -257,20 +251,38 @@ export async function submitWelinkDiagnosticsBundle(
     try {
       const route = await resolveWelinkRoute()
       const folderId = await ensureReportFolder(route, config.spaceId)
-      const directory = join(getReportingTempRoot(), `diagnostics-${bundleSubmissionId}`)
+      const directory = join(
+        getReportingTempRoot(),
+        `diagnostics-${bundleSubmissionId}-${randomBytes(4).toString('hex')}`
+      )
       mkdirSync(directory, { mode: 0o700, recursive: true })
       try {
         const filePath = writeTextFile(directory, fileName, payload)
-        await uploadReportFile(route, config.spaceId, folderId, filePath, fileName)
+        const fileId = await uploadReportFile(route, config.spaceId, folderId, filePath, fileName)
+        try {
+          await saveDiagnosticUploadReceipt(bundleSubmissionId, {
+            spaceId: config.spaceId,
+            fileId,
+            route
+          })
+        } catch (error) {
+          // The CLI may deduplicate to an existing file; failed local persistence must not delete it.
+          throw new ReceiptPersistenceError(
+            '诊断文件已发送,但本机记录保存失败;请到 WeLink 群空间管理,并检查本地存储。',
+            { cause: error }
+          )
+        }
       } finally {
-        rmSync(directory, { recursive: true, force: true })
+        cleanupReportingTemp(directory, span)
       }
-      // ticketId stays the bundleSubmissionId: renderer contract (copy
-      // reference / delete by id) is unchanged, and the deterministic file
-      // name lets deletion relocate the file even after a restart.
       return { ticketId: bundleSubmissionId }
     } catch (error) {
       span.setAttribute('status', 'failed')
+      if (error instanceof ReceiptPersistenceError) {
+        span.setAttribute('errorCode', 'receipt-write-failed')
+        span.fail(error)
+        throw error
+      }
       if (error instanceof WelinkReportError) {
         span.setAttribute('errorCode', error.category)
         span.fail(error.detail)
@@ -283,29 +295,20 @@ export async function submitWelinkDiagnosticsBundle(
   })
 }
 
-/** Diagnostics pane「删除已发送诊断」: relocate by deterministic name, then recycle. */
+/** Delete only the upload selected by main's durable receipt, never a renderer-provided file ID. */
 export async function deleteWelinkDiagnosticsBundle(ticketId: string): Promise<void> {
   return withSpan('workbench.reporting.diagnostics', async (span) => {
     span.setAttribute('op', 'delete')
-    const config = resolveWelinkReportConfig()
-    if (!config) {
-      span.setAttribute('status', 'failed')
-      span.setAttribute('errorCode', 'config-missing')
-      span.fail('WORKBENCH_WELINK_SPACE_ID not configured')
-      throw new Error(WELINK_REPORT_CONFIG_MISSING_MESSAGE)
-    }
     try {
-      const route = await resolveWelinkRoute()
-      const folderId = await ensureReportFolder(route, config.spaceId)
-      const fileName = diagnosticsBundleFileName(ticketId)
-      const fileId = await findReportFileIdByName(route, config.spaceId, folderId, fileName)
-      if (!fileId) {
+      const receipt = await readDiagnosticUploadReceipt(ticketId)
+      if (!receipt) {
         span.setAttribute('status', 'failed')
         span.setAttribute('errorCode', 'not-found')
-        span.fail(`diagnostics file not found in group space: ${fileName}`)
+        span.fail('diagnostic upload receipt not found')
         throw new Error(DIAGNOSTICS_NOT_FOUND_MESSAGE)
       }
-      await removeReportFile(route, config.spaceId, fileId)
+      await removeReportFile(receipt.route, receipt.spaceId, receipt.fileId)
+      await forgetDiagnosticUploadReceipt(ticketId)
     } catch (error) {
       if (error instanceof WelinkReportError) {
         span.setAttribute('status', 'failed')

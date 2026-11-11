@@ -4,7 +4,6 @@ import {
   GitHubIntegrationCard,
   WeLinkIntegrationCard
 } from './source-control-integration-cards'
-import { WeLinkReportSpaceIdSettings } from './bw-cli-integration-cards'
 import { useIntegrationProviderStatusRefresh } from './use-integration-provider-status-refresh'
 import { translate } from '@/i18n/i18n'
 export { getIntegrationsPaneSearchEntries } from './integrations-search'
@@ -54,7 +53,6 @@ export function IntegrationsPane(): React.JSX.Element {
         </div>
         <div className="space-y-3">
           <WeLinkIntegrationCard />
-          <WeLinkReportSpaceIdSettings />
         </div>
       </section>
 

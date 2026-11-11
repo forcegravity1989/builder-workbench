@@ -334,9 +334,6 @@ export function AppRootSurfaces(props: {
       <ModalBoundary boundaryId="modal.markdown-template-picker" resetKey={activeModal}>
         <MarkdownTemplatePicker />
       </ModalBoundary>
-      {/* Why (BW #553): the crash dialog is mounted in the Workbench shell too —
-          reports now deliver to the WeLink group space instead of Orca, so the
-          old "don't send BW crashes to Orca" short-circuit lost its reason. */}
       <RecoverableRenderErrorBoundary
         boundaryId="modal.crash-report"
         surface="modal"

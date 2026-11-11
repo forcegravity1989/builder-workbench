@@ -1,11 +1,6 @@
-// Orchestration protocol guards for the WeLink sink (Issue #553): the
-// partial-failure semantics (bundle-first ordering, report-only text swap,
-// imagesDelivered degradation) mirror the retired native multipart contract
-// that renderer UI depends on, and the temp-directory lifecycle is a
-// privacy guarantee — both are data-protocol level, not UI assembly.
-
-import { readFileSync, existsSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FeedbackSubmitBody } from '../../ipc/feedback'
 import type * as oneboxClientModule from './welink-onebox-client'
@@ -13,15 +8,15 @@ import type * as oneboxClientModule from './welink-onebox-client'
 const {
   ensureReportFolderMock,
   uploadReportFileMock,
-  findReportFileIdByNameMock,
   removeReportFileMock,
-  runPreflightCheckMock
+  runPreflightCheckMock,
+  getCanonicalUserDataPathMock
 } = vi.hoisted(() => ({
   ensureReportFolderMock: vi.fn(),
   uploadReportFileMock: vi.fn(),
-  findReportFileIdByNameMock: vi.fn(),
   removeReportFileMock: vi.fn(),
-  runPreflightCheckMock: vi.fn()
+  runPreflightCheckMock: vi.fn(),
+  getCanonicalUserDataPathMock: vi.fn()
 }))
 
 vi.mock('electron', async () => {
@@ -33,13 +28,16 @@ vi.mock('../../preflight/agent-detection', () => ({
   runPreflightCheck: runPreflightCheckMock
 }))
 
+vi.mock('../../persistence/loading-store/user-data-path', () => ({
+  getCanonicalUserDataPath: getCanonicalUserDataPathMock
+}))
+
 vi.mock('./welink-onebox-client', async (importOriginal) => {
   const actual = await importOriginal<typeof oneboxClientModule>()
   return {
     ...actual,
     ensureReportFolder: ensureReportFolderMock,
     uploadReportFile: uploadReportFileMock,
-    findReportFileIdByName: findReportFileIdByNameMock,
     removeReportFile: removeReportFileMock
   }
 })
@@ -51,7 +49,6 @@ import {
   submitWelinkReport
 } from './report-submission'
 import { WelinkReportError } from './welink-onebox-client'
-import { setWelinkReportSettingsReader } from './welink-report-config'
 
 function body(overrides: Partial<FeedbackSubmitBody> = {}): FeedbackSubmitBody {
   return {
@@ -69,14 +66,16 @@ function body(overrides: Partial<FeedbackSubmitBody> = {}): FeedbackSubmitBody {
 
 let uploadedReportContent = ''
 let lastUploadDir = ''
+let testUserData = ''
 
 beforeEach(() => {
-  setWelinkReportSettingsReader(() => '12345')
+  vi.stubGlobal('WORKBENCH_WELINK_SPACE_ID', '12345')
+  testUserData = mkdtempSync(join(tmpdir(), 'bw-report-receipt-'))
+  getCanonicalUserDataPathMock.mockReturnValue(testUserData)
   uploadedReportContent = ''
   lastUploadDir = ''
   ensureReportFolderMock.mockReset()
   uploadReportFileMock.mockReset()
-  findReportFileIdByNameMock.mockReset()
   removeReportFileMock.mockReset()
   runPreflightCheckMock.mockReset()
   runPreflightCheckMock.mockResolvedValue({ welink: { installed: true, authenticated: true } })
@@ -85,7 +84,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  setWelinkReportSettingsReader(null)
+  vi.unstubAllGlobals()
+  rmSync(testUserData, { recursive: true, force: true })
 })
 
 describe('submitWelinkReport orchestration', () => {
@@ -166,9 +166,11 @@ describe('submitWelinkReport orchestration', () => {
     })
     expect(existsSync(lastUploadDir)).toBe(false)
 
-    // Diagnostics pane: ticketId is the bundleSubmissionId (renderer contract),
-    // and a missing file surfaces actionable copy instead of a silent success.
+    await expect(deleteWelinkDiagnosticsBundle('diagsubmissionid000001')).rejects.toThrow(
+      '未找到本机发送记录'
+    )
     uploadReportFileMock.mockResolvedValue('777')
+    runPreflightCheckMock.mockResolvedValue({ welink: { installed: true, wslDistro: 'Ubuntu' } })
     await expect(
       submitWelinkDiagnosticsBundle('{"type":"bundle-header"}\n', 'diagsubmissionid000001')
     ).resolves.toEqual({ ticketId: 'diagsubmissionid000001' })
@@ -179,14 +181,28 @@ describe('submitWelinkReport orchestration', () => {
       expect.stringContaining(diagnosticsBundleFileName('diagsubmissionid000001')),
       diagnosticsBundleFileName('diagsubmissionid000001')
     )
-    findReportFileIdByNameMock.mockResolvedValue(null)
-    await expect(deleteWelinkDiagnosticsBundle('diagsubmissionid000001')).rejects.toThrow(
-      '群空间中未找到该诊断文件,可能已被删除。'
+    const receiptPath = join(
+      testUserData,
+      'workbench-diagnostic-receipts',
+      'diagsubmissionid000001.json'
     )
-    findReportFileIdByNameMock.mockResolvedValue('777')
-    await expect(deleteWelinkDiagnosticsBundle('diagsubmissionid000001')).resolves.toBeUndefined()
-    expect(removeReportFileMock).toHaveBeenCalledWith(expect.anything(), '12345', '777')
-    // Route comes from the preflight probe (local when no WSL distro).
-    expect(runPreflightCheckMock).toHaveBeenCalled()
+    expect(JSON.parse(readFileSync(receiptPath, 'utf8'))).toEqual({
+      spaceId: '12345',
+      fileId: '777',
+      route: { wslDistro: 'Ubuntu' }
+    })
+    // A new module instance must recover the original target independently of current configuration.
+    vi.stubGlobal('WORKBENCH_WELINK_SPACE_ID', '67890')
+    runPreflightCheckMock.mockClear()
+    ensureReportFolderMock.mockClear()
+    vi.resetModules()
+    const reloaded = await import('./report-submission')
+    await expect(
+      reloaded.deleteWelinkDiagnosticsBundle('diagsubmissionid000001')
+    ).resolves.toBeUndefined()
+    expect(removeReportFileMock).toHaveBeenCalledWith({ wslDistro: 'Ubuntu' }, '12345', '777')
+    expect(runPreflightCheckMock).not.toHaveBeenCalled()
+    expect(ensureReportFolderMock).not.toHaveBeenCalled()
+    expect(existsSync(receiptPath)).toBe(false)
   })
 })

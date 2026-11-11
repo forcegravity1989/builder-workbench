@@ -459,10 +459,6 @@ export type GlobalSettings = {
   experimentalNewWorktreeCardStyle?: boolean
   /** Local desktop preferences keyed by Orca project identity; absent flags are off. */
   workbenchOverviewByProject?: Record<string, { sdlc?: boolean; ai?: boolean }>
-  /** BW #553: WeLink group-space id (numeric onebox space id) that feedback/crash/diagnostics
-   *  reports upload to. Null/absent = not configured; reporting entries then fail with setup
-   *  guidance. A build-time WORKBENCH_WELINK_SPACE_ID define overrides and locks this value. */
-  workbenchWelinkSpaceId?: string | null
   /** Experimental: per-workspace on-demand environment recipes and setup surface. */
   experimentalEphemeralVms?: boolean
   /** Compact worktree cards: hide the metadata row when title and branch say the same thing. */

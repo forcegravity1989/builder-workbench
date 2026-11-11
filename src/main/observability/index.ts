@@ -240,9 +240,3 @@ export function collectDiagnosticBundle(
     ...meta
   })
 }
-
-// Why (BW #553): the native token-endpoint HTTP upload/delete pair
-// (diagnostic-bundle-upload.ts / diagnostic-upload-http.ts) was removed with
-// the reporting redirect — the WeLink group-space sink in
-// src/main/workbench/reporting/ is the single delivery path. Deletion is
-// recorded in ref/upstream.md.

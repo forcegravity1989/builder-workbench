@@ -46,8 +46,6 @@ export class RecoverableRenderErrorBoundary extends React.Component<Props, State
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error(`[${this.props.boundaryId}] render crash contained by boundary`, error, errorInfo)
-    // Why (BW #553): the Workbench short-circuit was removed — render crashes
-    // are recorded again because reports deliver to the WeLink group space.
     if (this.props.reportAsCrash === false) {
       return
     }

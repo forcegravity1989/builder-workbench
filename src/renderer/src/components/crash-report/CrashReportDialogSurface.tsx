@@ -45,8 +45,6 @@ function getDialogTitle(report: CrashReportRecord | null): string {
   if (!report) {
     return 'Report a crash'
   }
-  // Why (BW #553): the dialog is activated in the Workbench shell, so its
-  // brand strings follow the shell — BW users must not read "Orca crashed".
   if (isReactErrorBoundaryReport(report)) {
     return isWorkbenchShell()
       ? translate(

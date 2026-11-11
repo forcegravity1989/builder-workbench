@@ -307,7 +307,6 @@ describe('createTaskPort reads', () => {
     expect(mocks.viewTask).toHaveBeenNthCalledWith(2, expect.objectContaining({ kind: 'mr' }))
   })
 
-  // 环 4 ratchet 对冲（#553）：同一「诚实上报不可用」守卫的两条用例合并,断言原样保留。
   it('reports both codehub read failures and unwired providers honestly instead of guessing', async () => {
     mocks.viewTask
       .mockRejectedValueOnce(new Error('issue boom'))
