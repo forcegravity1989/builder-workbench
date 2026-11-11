@@ -1,8 +1,8 @@
-import { readFetchResponseJsonWithinLimit } from '../../shared/fetch-response-body'
-
-// Why: mirrors the server allow-list. Slack picks a renderer from the filename
-// extension, so every accepted type needs one.
-const FEEDBACK_IMAGE_EXTENSIONS: Record<string, string> = {
+// Why: mirrors the supported-image allow-list. Every accepted type needs a
+// filename extension — the reporting sink (BW #553) writes attachments to
+// disk for the WeLink group-space upload, where the extension is the only
+// content-type signal.
+export const FEEDBACK_IMAGE_EXTENSIONS: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
@@ -11,8 +11,6 @@ const FEEDBACK_IMAGE_EXTENSIONS: Record<string, string> = {
 
 export const MAX_FEEDBACK_IMAGE_COUNT = 4
 export const MAX_FEEDBACK_IMAGE_BYTES = 8 * 1024 * 1024
-export const MAX_FEEDBACK_IMAGE_RESPONSE_BYTES = 64 * 1024
-export const FEEDBACK_IMAGE_FORM_FIELD = 'feedbackImage'
 
 export type FeedbackImageAttachment = {
   contentType: string
@@ -20,13 +18,9 @@ export type FeedbackImageAttachment = {
 }
 
 export function isSupportedFeedbackImageContentType(contentType: string): boolean {
-  // Why: `in` walks the prototype chain, so "constructor" and "__proto__" would
-  // clear the allow-list and name the upload after an inherited member.
+  // Why: `in` walks the prototype chain, so "constructor" or "__proto__" would
+  // pass the allow-list and name the upload after an inherited member.
   return Object.hasOwn(FEEDBACK_IMAGE_EXTENSIONS, contentType)
-}
-
-export function feedbackImageFilename(index: number, contentType: string): string {
-  return `feedback-image-${index + 1}.${FEEDBACK_IMAGE_EXTENSIONS[contentType]}`
 }
 
 /** Defence in depth: the renderer validates first, but this channel is reachable directly. */
@@ -58,35 +52,4 @@ export function validateFeedbackImages(images: unknown): string | null {
     }
   }
   return null
-}
-
-export function appendFeedbackImagesToFormData(
-  formData: FormData,
-  images: FeedbackImageAttachment[]
-): void {
-  for (const [index, image] of images.entries()) {
-    formData.append(
-      FEEDBACK_IMAGE_FORM_FIELD,
-      new Blob([image.data as BlobPart], { type: image.contentType }),
-      feedbackImageFilename(index, image.contentType)
-    )
-  }
-}
-
-/** Atomic servers omit the image field after both the text and images land. */
-export async function readFeedbackImagesDelivered(response: Response): Promise<boolean> {
-  try {
-    const parsed: unknown = await readFetchResponseJsonWithinLimit(
-      response,
-      MAX_FEEDBACK_IMAGE_RESPONSE_BYTES
-    )
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return false
-    }
-    if ('imagesDelivered' in parsed) {
-      return (parsed as { imagesDelivered?: unknown }).imagesDelivered === true
-    }
-    return (parsed as { ok?: unknown }).ok === true
-  } catch {}
-  return false
 }

@@ -224,10 +224,11 @@ describe('AgentsPane', () => {
   })
 
   it('keeps Windows runtime changes scoped to the local agent refresh', () => {
-    renderPane(
-      getDefaultSettings('/tmp'),
-      { wslSupportedPlatform: true, wslAvailable: true, wslDistros: ['Ubuntu'] }
-    )
+    renderPane(getDefaultSettings('/tmp'), {
+      wslSupportedPlatform: true,
+      wslAvailable: true,
+      wslDistros: ['Ubuntu']
+    })
 
     expect(agentRuntimeSettingMock.lastRefresh).toBe(
       useAppStore.getInitialState().refreshDetectedAgents
@@ -243,7 +244,7 @@ describe('AgentsPane', () => {
     expect(markup).not.toContain('aria-label="Agent runtime"')
     expect(markup).toContain('Keep computer awake')
     expect(markup).toContain(
-      'Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.'
+      'Choose On, Agent, or Off. Agent mode stays awake while agents are working. The app also asks this device to stay awake when the lid is closed, subject to its power policy.'
     )
     expect(markup).toContain('role="radiogroup"')
     expect(markup).toContain('>Agent<')

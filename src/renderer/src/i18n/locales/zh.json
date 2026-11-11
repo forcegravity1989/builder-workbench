@@ -386,7 +386,7 @@
               "8d6eedf97e": "无法在 PATH 中注册 Orca CLI。",
               "0f116999f1": "在安装之前重新启动 shell 或将 Orca CLI 目录添加到 PATH。",
               "15cbedc3e3": "在运行智能体技能设置之前安装 Orca CLI。",
-              "windowsPathUnknown": "Orca 无法检查您的 Windows 用户 PATH",
+              "windowsPathUnknown": "无法检查你的 Windows 用户 PATH",
               "refreshCliRegistration": "请刷新 CLI 注册状态后重试。"
             }
           }
@@ -4447,7 +4447,10 @@
           "69969ba364": "正在发送...",
           "imageReadFailed": "无法读取附加的图片。请重新附加。",
           "attachWhileSending": "请等待当前反馈发送完成，再附加更多图片。",
-          "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。"
+          "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。",
+          "workbenchDescription": "分享使用体验、遇到的问题或对 Workbench 的建议。反馈会使用你当前的 WeLink 账号上传到 BW 用户群的群空间。",
+          "omitGitHubIdentity": "不附带 GitHub 账号信息",
+          "withoutGitHubIdentity": "反馈中不会附带 GitHub 账号信息。"
         },
         "SidebarFilter": {
           "e3b3898218": "添加项目",
@@ -6539,7 +6542,6 @@
           "191ac34567": "智能体编排"
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "使智能体能够通过 Orca 传递上下文并协调工作。",
           "2777ff0fdc": "编排技能"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -9261,7 +9263,9 @@
           "e5995ce268": "智能体工作时保持电脑唤醒",
           "95d3031db2": "在智能体工作时保持此电脑和显示器唤醒。合盖行为遵循此设备的电源设置。",
           "a42f6fbdd8": "在智能体工作时保持此电脑和显示器唤醒。Orca 还会根据电源策略，在合盖时请求此设备保持唤醒。",
-          "modeTitle": "防止电脑休眠"
+          "modeTitle": "保持电脑唤醒",
+          "modeDescriptionWindows": "选择开启、跟随智能体或关闭。跟随智能体时，仅在智能体工作期间保持唤醒；合盖行为遵循这台设备的电源设置。",
+          "modeDescriptionDefault": "选择开启、跟随智能体或关闭。跟随智能体时，仅在智能体工作期间保持唤醒。应用也会请求设备合盖时保持唤醒，实际行为取决于设备的电源策略。"
         },
         "AgentAwakeSetting": {
           "on": "开启",
@@ -9350,7 +9354,8 @@
                   "6f30fc4216": "此运行时暂不支持 GitHub CLI 状态。",
                   "6b2cfb52b4": "gh",
                   "b4d900e7f1": "通过",
-                  "account_scope_prefix": "账户范围"
+                  "account_scope_prefix": "账户范围",
+                  "statusNotInstalled": "未安装"
                 }
               }
             }
@@ -9394,8 +9399,8 @@
                 "cards": {
                   "793a06e899": "重新检查",
                   "1a9475dace": "了解更多",
-                  "19fb419c12": "Gitea 凭据已配置但无法通过身份验证。请检查 token、API 基础 URL 和仓库权限；如果环境变量已更改，请重启 Orca。",
-                  "60708f23da": "仅当 Orca 无法从 remote 推导出 API URL 时。",
+                  "19fb419c12": "Gitea 凭据已配置但无法通过身份验证。请检查 token、API 基础 URL 和仓库权限；如果环境变量已更改，请重启 {{product}}。",
+                  "60708f23da": "仅当 {{product}} 无法从 remote 推导出 API URL 时。",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "用于私有仓库，并设置",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -9404,8 +9409,8 @@
                   "05863d2599": "通过 Gitea REST API 获取 pull request 和 commit 状态。",
                   "52f75876be": "已检测仓库的 pull request 和 commit 状态",
                   "0b5242f8a2": "{{value0}} · 拉取请求和提交状态",
-                  "40f678df73": "Azure DevOps 凭据已配置但无法通过身份验证。请检查 token、API 基础 URL 和仓库权限；如果环境变量已更改，请重启 Orca。",
-                  "7bd345e3f6": "仅当 Orca 无法从 git remote 推导出 API 基础 URL 时。",
+                  "40f678df73": "Azure DevOps 凭据已配置但无法通过身份验证。请检查 token、API 基础 URL 和仓库权限；如果环境变量已更改，请重启 {{product}}。",
+                  "7bd345e3f6": "仅当 {{product}} 无法从 git remote 推导出 API 基础 URL 时。",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": "。设置",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -9416,14 +9421,16 @@
                   "0eb50d5593": "通过 Azure DevOps REST API token 获取 pull request 和构建状态。",
                   "54636c65d4": "已检测 Azure Repos 的 pull request 和构建状态",
                   "ea204f5e03": "{{value0}} · 拉取请求和构建状态",
-                  "6154b02093": "Bitbucket 凭据已配置但无法通过身份验证。请检查 token 和仓库权限；如果环境变量已更改，请重启 Orca。",
+                  "6154b02093": "Bitbucket 凭据已配置但无法通过身份验证。请检查 token 和仓库权限；如果环境变量已更改，请重启 {{product}}。",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "和",
                   "63a7f47392": "ORCA_BITBUCKET_EMAIL",
                   "24ac1c69dc": "此运行时暂不支持 Bitbucket 状态。",
                   "a924e8dcd1": "通过 Bitbucket Cloud API token 获取 pull request 和构建状态。",
-                  "0fa5629dad": "pull request 和构建状态"
+                  "0fa5629dad": "pull request 和构建状态",
+                  "statusNotConfigured": "未配置",
+                  "statusOptionalSetup": "按需配置"
                 }
               }
             }
@@ -10255,6 +10262,15 @@
             "keychain": "macOS 钥匙串（cursor-agent）",
             "cli": "Cursor CLI 登录文件",
             "desktop": "Cursor IDE"
+          }
+        },
+        "bitbucket": {
+          "integration": {
+            "card": {
+              "description": "查看 Bitbucket Cloud 的拉取请求和构建状态。",
+              "connect": "连接",
+              "notConfigured": "使用 Atlassian API 令牌或访问令牌连接 Bitbucket Cloud 账号。也可以设置 ORCA_BITBUCKET_* 环境变量，环境变量优先。"
+            }
           }
         }
       },
@@ -11984,9 +12000,9 @@
             "b8dc9dd8a2": "已安装",
             "1b51644c2d": "让智能体控制桌面、手机光标、单击并在任何应用程序中键入。",
             "362a07517d": "计算机控制",
-            "5e8fe5a72d": "让智能体直接访问 Orca 的浏览器，以便测试页面、捕获屏幕截图并根据所见内容执行操作。",
+            "5e8fe5a72d": "让智能体直接访问 {{product}} 的浏览器，以便测试页面、捕获屏幕截图并根据所见内容执行操作。",
             "e638da007a": "智能体浏览器使用",
-            "c61c91e642": "让智能体通过 Orca 进行协调，以确保大型、多步骤的任务顺利完成。",
+            "c61c91e642": "让智能体通过 {{product}} 进行协调，以确保大型、多步骤的任务顺利完成。",
             "ac07f8887f": "智能体编排",
             "e9eb197e12": "打开计算机使用权限",
             "3a59452a67": "技能命令已复制并插入到下方以供评审。",
@@ -12029,7 +12045,7 @@
             "f39be6ca14": "/报名"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "使智能体能够在 Orca 浏览器中导航和验证页面。",
+            "cbc45022d4": "使智能体能够在 {{product}} 浏览器中导航和验证页面。",
             "d5bb1cd4ba": "浏览器使用技能"
           },
           "ComputerUseAnimatedVisual": {
@@ -12215,6 +12231,30 @@
                   "cc39a87288": "已连接·系统默认",
                   "00087eecb2": "已连接 · {{value0}}"
                 }
+              },
+              "setup": {
+                "checklist": {
+                  "localized": {
+                    "copy": {
+                      "ec0a363633": "并行处理任务",
+                      "62bac8f43c": "同时在两个独立工作树中开展工作，即使属于同一项目也互不干扰，适合并行开发两个特性。",
+                      "908898c3ee": "使用 {{product}} 浏览器",
+                      "43781563c3": "无需离开 {{product}} 即可浏览网页，一键选取元素并把源代码和样式发送给智能体。",
+                      "29aa2c2077": "开启通知",
+                      "71bd9a8c95": "及时获知智能体已完成工作、需要你处理或遇到阻碍。",
+                      "46db810da8": "选择默认智能体",
+                      "b8e5bae17f": "预选常用智能体，更快开始新的工作。",
+                      "fee5557b02": "启用 Orca CLI",
+                      "7bcb4097fa": "注册 Orca 命令，并安装用于浏览器操作、电脑操作和智能体编排的技能。",
+                      "ad342dd4c6": "连接集成服务",
+                      "06fe30fdb0": "从任务一键启动智能体，并持续查看 PR 状态。",
+                      "eddc532e58": "自动准备工作区",
+                      "56049b74c2": "自动执行安装和初始化命令，让新工作树可以直接开始工作。",
+                      "2cf795433b": "在多个项目中工作",
+                      "42525ba8a4": "将常用项目纳入 {{product}}，无需到处寻找文件夹即可开始智能体工作。"
+                    }
+                  }
+                }
               }
             }
           },
@@ -12290,7 +12330,8 @@
                 "4e71d72912": "Claude 登录失败。",
                 "9ddeb558f9": "已添加 Claude 账户。",
                 "29d0653961": "登入",
-                "945865332e": "登录"
+                "945865332e": "登录",
+                "accountStatusUnknown": "账号状态未知"
               },
               "UsagePage": {
                 "64265cb295": "29% 已用 5小时",
@@ -12328,7 +12369,7 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "已连接，可用于任务",
-            "33b650af52": "连接团队用于跟踪工作的地方。Orca 会在启动工作区时自动附上议题标题、链接和上下文。",
+            "33b650af52": "连接团队用于跟踪工作的地方。{{product}} 会在启动工作区时自动附上议题标题、链接和上下文。",
             "5b3577a492": "已连接，可用于评审状态",
             "list_end": "，以及",
             "list_pair": " 和 ",
@@ -12336,8 +12377,8 @@
             "code_host_tasks_summary": "议题可作为任务使用 · 如果团队在 Linear 或 Jira 中规划工作，也可以添加它们",
             "code_host_tasks_caption": "代码托管平台的议题也可以作为任务使用。",
             "review_step_title": "在智能体工作时查看 PR 状态",
-            "review_step_description": "连接评审提供方，让 Orca 显示 PR 或 MR 状态、检查和评审。",
-            "task_step_title": "无需离开 Orca，即可让智能体处理任务"
+            "review_step_description": "连接评审提供方，让 {{product}} 显示 PR 或 MR 状态、检查和评审。",
+            "task_step_title": "无需离开 {{product}}，即可让智能体处理任务"
           },
           "connect": {
             "integration": {
@@ -13248,7 +13289,11 @@
             "b2e36f53a1": "发送崩溃报告失败。诊断票据 {{value0}} 已上传，但未关联。",
             "ead6fc0510": "没有捕获到自动崩溃报告。你仍然可以发送详情，并在可用时包含最近的诊断日志。",
             "b082f27490": "附加最近的诊断日志",
-            "e59f0b9427": "随报告发送经过删减且有大小限制的日志包。"
+            "e59f0b9427": "随报告发送经过删减且有大小限制的日志包。",
+            "workbenchUiErrorTitle": "Workbench 出现了可恢复的界面错误",
+            "workbenchClosedTitle": "Workbench 意外关闭",
+            "workbenchNotesPlaceholder": "可选：Workbench 关闭前，你正在做什么？",
+            "workbenchBrand": "Workbench"
           },
           "submit": {
             "notice": {
@@ -14645,6 +14690,17 @@
         "copySessionIdSuccess": "已复制会话 ID",
         "copySessionIdError": "复制会话 ID 失败"
       }
+    },
+    "onboarding": {
+      "flow": {
+        "actions": {
+          "continue": "继续"
+        }
+      },
+      "skipConfirmation": {
+        "skip": "跳过",
+        "keepGoing": "继续设置"
+      }
     }
   },
   "dashboardPopout": {
@@ -14828,5 +14884,133 @@
       "repairSaveFailed": "Orca 已验证服务器，但无法保存新的配对。请检查本地设置存储并重试。",
       "selfPairingCode": "这是当前 Orca 的配对码。请改在另一台计算机上生成配对码。"
     }
+  },
+  "guidance": {
+    "tour": {
+      "workspaces": {
+        "title": "工作区",
+        "description": "{{product}} 将每项任务放在独立工作区中，让多个智能体可以并行工作。"
+      },
+      "tasks": {
+        "title": "任务",
+        "description": "直接从 GitHub 或 Linear 任务开始工作。"
+      },
+      "agents": {
+        "title": "智能体",
+        "description": "同时运行多个智能体、查看工作进展，并按需让自动化操作 {{product}}。"
+      },
+      "workbench": {
+        "title": "工作台",
+        "description": "将终端环境带入 {{product}}，通过分屏并排查看服务、测试、日志和智能体。"
+      },
+      "review": {
+        "title": "代码评审",
+        "description": "查看代码变更，写下具体反馈，再交给智能体处理。"
+      },
+      "statuses": {
+        "name": "运行状态",
+        "title": "查看智能体状态",
+        "description": "了解哪些智能体正在工作、等待输入、保持运行或遇到阻碍。"
+      },
+      "orchestration": {
+        "title": "智能体编排",
+        "description": "让智能体管理和协调 {{product}} 工作区，完成更大的任务。"
+      },
+      "usage": {
+        "title": "账号用量",
+        "description": "查看已连接账号的用量和限额，判断何时需要切换账号。"
+      },
+      "terminal": {
+        "title": "终端",
+        "description": "同时查看智能体、测试和开发日志。"
+      },
+      "editor": {
+        "title": "编辑器",
+        "description": "使用类似 Notion 的 Markdown 编辑器，无需离开 {{product}} 即可写笔记。"
+      },
+      "browser": {
+        "title": "浏览器",
+        "description": "在内置浏览器运行应用，将选中的界面元素发给智能体，也可以让智能体操作网页。"
+      },
+      "notes": {
+        "name": "评审意见",
+        "title": "意见与差异",
+        "description": "将具体的评审意见发送给智能体。"
+      },
+      "pr": {
+        "title": "PR 检查",
+        "subtitle": "PR 检查与评论",
+        "description": "在检查标签页查看 PR 状态。"
+      },
+      "ship": {
+        "title": "AI 辅助提交",
+        "description": "让 AI 为你准备提交信息和 PR 草稿。"
+      }
+    },
+    "explore": "探索 BW",
+    "exploreDescription": "通过现有演示了解 BW 的常用能力。",
+    "experiences": "能力体验",
+    "addProjectFirst": "请先纳入一个要开展工作的项目。",
+    "done": "完成",
+    "exploreFooter": "可随时从底部问号 → 探索 BW 重看。",
+    "tourFooter": "可随时从帮助 → 探索 Orca 重看。",
+    "continue": "继续",
+    "demo": {
+      "sessionStarted": "● 已启动 Claude Code 会话",
+      "notesLoaded": "已从 {{product}} 读取 {{total}} 条评审意见",
+      "fixing": "正在修复这两个问题…",
+      "addingColumn": "正在添加 email_verified 字段…",
+      "wiringMiddleware": "正在接入 withSession 中间件…",
+      "firstPrReady": "第 1 个 PR 已就绪",
+      "secondPrReady": "第 2 个 PR 已就绪",
+      "splitAuth": "正在将认证重构拆成两个 PR…",
+      "tableMigration": "正在编写 users 表迁移…",
+      "sketchMiddleware": "正在编写 withSession 中间件…",
+      "percentUsed": "已用 {{percent}}%",
+      "resetsHours": "{{hours}} 小时后重置",
+      "resetsMinutes": "{{minutes}} 分钟后重置",
+      "switchedUsage": "已用 0%，5 小时后重置 · 本周已用 4%",
+      "currentUsage": "已用 96%，47 分钟后重置",
+      "browserPrompt": "让入门套餐卡片更醒目",
+      "verifyBrowser": "点击“免费试用”，确认它仍可正常使用。",
+      "capturingPage": "（正在截取页面）",
+      "checks": "检查",
+      "checksShortcut": "检查（{{shortcut}}）",
+      "rendersMetrics": "› 展示指标",
+      "updatesAvatar": "› 更新头像",
+      "exportsCsv": "› 导出 CSV",
+      "togglesDark": "› 切换深色模式",
+      "reviewPrompt": "检查 src/auth 中缺失的错误处理",
+      "checkoutPrompt": "修复失败的结账测试",
+      "workspaceSetup": "配置 orca.yaml",
+      "workspaceLogin": "修复登录竞态问题",
+      "workspaceCi": "加速 CI 流水线"
+    },
+    "setupProgress": "BW 入门，已完成 {{done}} / {{total}} 项。",
+    "progress": "已完成 {{done}} / {{total}} 项",
+    "gettingStarted": "BW 入门",
+    "initialSetupFailed": "无法打开初始设置，请重试。",
+    "initialSetup": "初始设置",
+    "setupDescription": "准备使用环境，并按需配置你要用的能力。未完成全部清单也可以开始工作。",
+    "restarting": "正在重启 BW…",
+    "restartFailed": "无法重启 BW。",
+    "reportCrash": "报告崩溃",
+    "about": "关于 BW",
+    "restart": "重启 BW",
+    "orchestrationSetupDescription": "让智能体通过 {{product}} 交接上下文并协调工作。",
+    "thinking": {
+      "none": "无",
+      "minimal": "最低",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "xhigh": "更高",
+      "max": "最高"
+    },
+    "cliPrerequisite": "打开配置前，{{product}} 可能会请求系统授权，将 Orca CLI 命令注册到 PATH。",
+    "providerRemoteCredentials": "此远程服务器负责该服务的凭据和账号检查。如需编辑凭据，请打开该服务器的高级设置。",
+    "providerLocalCredentials": "此桌面客户端负责该服务的凭据和账号检查。服务器端的凭据请在对应服务器的高级设置中编辑。",
+    "cliRegistrationTitle": "请将 Orca CLI 注册到 PATH 后继续。",
+    "cliRegistrationDescription": "请允许系统授权，让能力配置可以使用 Orca CLI 命令。"
   }
 }

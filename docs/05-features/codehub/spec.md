@@ -29,7 +29,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 列表种类是 Issue 和 MR。开放对应 `--state opened`。我的：Issue 用 `assigned_to_me`，MR 用 `created_by_me`。待评审只对 MR，用 `need_my_review`。MR 搜索走 `--search`。
 
-每仓先取 30 条，用 `--limit` 再取，并多取一条判断后面还有没有。还有未加载内容时，空的已加载范围要说成「当前加载范围里没有」，不能说成项目没有 Issue。
+普通任务列表每仓读取最近 250 条，不再逐次加载；超过范围时提示缩小筛选，不能把有界结果当全量。版本列表按版本标签读取，目标任务按引用集合物化；搜索与筛选范围见 [CodeHub 指南](../../03-guide/codehub-cli.md#workbench-任务列表)。当前接线依据为 [列表加载](../../../src/renderer/src/components/use-task-page-codehub-loading.ts)，不替代完整内机旅程验收。
 
 详情读取 view 和评论的列出、新建、删除；MR 的评论按 discussion 分组显示，卡片样式与 GitHub 弹窗一致：头像、作者、相对时间、文件行号锚点，正文按 Markdown 渲染。评论可按人／机器人筛选，机器人计数取 `from_robot` 真实值（issue 侧无此字段，照 GitHub 不给筛选栏）。每条评论可在卡片右上角回复（回复挂在所属线程下缩进显示，提交成功后收起输入框，失败保留草稿）与跳转 CodeHub 网页对应位置。系统流水笔记（如 changed this line）像普通回复一样在线程内展示。已解决线程不折叠、直接展开，带「已解决」徽标与置灰。Issue 可改标题，也可改标签：标签在详情属性区以弹层编辑，样式同 GitHub 的标签选择器——列出项目已有标签供勾选，也可键入名字（回车或逗号落格；新名字保存时 CodeHub 自动创建为项目标签，组级已有标签键入名字同样能打上），当前选择以标签片展示、可逐个移除，保存即整组替换，清空全部同样生效。关闭顺序是先写评论再 `issue close`；评论失败则不关闭。三条评论正文是 `关闭原因: completed`、`关闭原因: not planned`、`关闭原因: duplicate of #<iid>`。重新打开不写评论。MR 可关闭。不提供草稿、Mark ready、表情、已读、修改评论正文。
 

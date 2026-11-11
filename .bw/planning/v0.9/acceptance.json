@@ -37,7 +37,10 @@
       "title": "【v0.9|G1】【项目总览】项目总览里程碑：拖动 Maintain 会平移整个版本，且无法按特性改版本归属",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/551",
-      "labels": ["bug", "bw:plan:v0.9"],
+      "labels": [
+        "bug",
+        "bw:plan:v0.9"
+      ],
       "assignee": "yuzhup",
       "readAt": "2026-11-09T09:30:14.714Z"
     },
@@ -67,7 +70,10 @@
       "title": "【v0.9|G1】【项目总览】项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/535",
-      "labels": ["enhancement", "bw:plan:v0.9"],
+      "labels": [
+        "enhancement",
+        "bw:plan:v0.9"
+      ],
       "readAt": "2026-11-09T09:30:14.727Z"
     },
     {
@@ -96,7 +102,10 @@
       "title": "【v0.9|G1】【项目总览】项目总览与版本总览遗留收口：CodeHub、华为工作日历与两屏联动",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/530",
-      "labels": ["bw:plan:v0.8", "bw:plan:v0.9"],
+      "labels": [
+        "bw:plan:v0.8",
+        "bw:plan:v0.9"
+      ],
       "assignee": "yuzhup",
       "readAt": "2026-11-09T09:30:15.028Z"
     },
@@ -126,7 +135,10 @@
       "title": "【v0.9|G2】【版本总览】SDLC 实际过程统计默认关闭，支持按项目开启",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/558",
-      "labels": ["Feature", "bw:plan:v0.9"],
+      "labels": [
+        "Feature",
+        "bw:plan:v0.9"
+      ],
       "assignee": "yuzhup",
       "readAt": "2026-11-09T09:30:15.010Z"
     },
@@ -156,7 +168,11 @@
       "title": "【v1.0|G2】【消息通知】以 PR 评审旅程落地消息通知基础能力",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/568",
-      "labels": ["Feature", "bw:plan:v0.9", "bw:plan:v1.0"],
+      "labels": [
+        "Feature",
+        "bw:plan:v0.9",
+        "bw:plan:v1.0"
+      ],
       "assignee": "kanadead",
       "readAt": "2026-11-09T09:30:15.795Z"
     },
@@ -186,7 +202,9 @@
       "title": "【v0.9|G4】【版本计划】计划屏上版验收来源按固定四元组读取：本地主分支落后时报「读取失败，结果未知」且错误原因被吞，会话抄写四元组存在时序悖论",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/450",
-      "labels": ["bw:plan:v0.9"],
+      "labels": [
+        "bw:plan:v0.9"
+      ],
       "assignee": "kanadead",
       "readAt": "2026-11-09T09:30:15.839Z"
     },
@@ -216,7 +234,10 @@
       "title": "【v0.9|G4】【任务管理】每特性单量统计口径与读回",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/556",
-      "labels": ["Feature", "bw:plan:v0.9"],
+      "labels": [
+        "Feature",
+        "bw:plan:v0.9"
+      ],
       "assignee": "yuzhup",
       "readAt": "2026-11-09T09:30:16.044Z"
     },
@@ -246,7 +267,10 @@
       "title": "【v0.9|G4】【任务管理】任务屏负责人下拉框选完负责人后不自动关闭",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/540",
-      "labels": ["bug", "bw:plan:v0.9"],
+      "labels": [
+        "bug",
+        "bw:plan:v0.9"
+      ],
       "assignee": "kanadead",
       "readAt": "2026-11-09T09:30:16.102Z"
     },
@@ -276,7 +300,9 @@
       "title": "【v0.9|G4】【项目总览】总览项目名片默认折叠，移除北极星卡片",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/544",
-      "labels": ["bw:plan:v0.9"],
+      "labels": [
+        "bw:plan:v0.9"
+      ],
       "assignee": "cfdcfd",
       "readAt": "2026-11-09T09:30:16.901Z"
     },
@@ -306,7 +332,11 @@
       "title": "【v0.9|G4】【版本计划】计划屏/验收屏直接向用户展示助手注入提示词，应收敛为一句话 SOP 且两屏一致，支持开始即补充信息输入",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/443",
-      "labels": ["bug", "bw:plan:v0.8", "bw:plan:v0.9"],
+      "labels": [
+        "bug",
+        "bw:plan:v0.8",
+        "bw:plan:v0.9"
+      ],
       "assignee": "yuzhup",
       "readAt": "2026-11-09T09:30:16.869Z"
     },
@@ -336,7 +366,9 @@
       "title": "【v0.9|G4】【版本计划】点「开始计划」报『此自动化的工作区已改变』：creationKey 认领不校验工作区，失配死条目无修复路径",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/548",
-      "labels": ["bw:plan:v0.9"],
+      "labels": [
+        "bw:plan:v0.9"
+      ],
       "assignee": "kanadead",
       "readAt": "2026-11-09T09:30:17.111Z"
     },
@@ -366,7 +398,10 @@
       "title": "【v0.9|G4】【版本会话管理】统一固定工作区复用，修复远端分支未检出时误建后缀树",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/546",
-      "labels": ["bug", "bw:plan:v0.9"],
+      "labels": [
+        "bug",
+        "bw:plan:v0.9"
+      ],
       "assignee": "yuzhup",
       "readAt": "2026-11-09T09:30:17.166Z"
     },
@@ -396,7 +431,10 @@
       "title": "【v0.9|G4】【版本验收】验收屏使用bug",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/516",
-      "labels": ["bw:plan:v0.8", "bw:plan:v0.9"],
+      "labels": [
+        "bw:plan:v0.8",
+        "bw:plan:v0.9"
+      ],
       "assignee": "kanadead",
       "readAt": "2026-11-09T09:30:18.018Z"
     }
