@@ -19,7 +19,9 @@ export async function readWorkspaceScheduledVersion(root: string, version: strin
     }
     raw = await readFile(path, 'utf8')
   } catch (error) {
-    if (isMissingFile(error)) return undefined
+    if (isMissingFile(error)) {
+      return undefined
+    }
     throw error
   }
   let decoded: unknown

@@ -58,23 +58,32 @@ export async function readMilestoneSnapshot(
   }
   const hash = createHash('sha256')
   async function preparedVersion(version: string, cycleId: string): Promise<boolean> {
-    if (started.has(version)) return true
+    if (started.has(version)) {
+      return true
+    }
     const flow = versionFlowBranch(version, 'plan')
     for (const ref of flow ? [`refs/heads/${flow}`, `refs/remotes/origin/${flow}`] : []) {
       const oid = refs.get(ref)
-      if (!oid) continue
+      if (!oid) {
+        continue
+      }
       const prior = await readGitBlobAtOidPath(
         repoPath,
         oid,
         `.bw/planning/${version}/data.json`,
         options
       )
-      if (prior.failed) throw new Error('未能核对版本计划来源，不能判为尚未开始')
-      if (!prior.exists || prior.isBinary) continue
+      if (prior.failed) {
+        throw new Error('未能核对版本计划来源，不能判为尚未开始')
+      }
+      if (!prior.exists || prior.isBinary) {
+        continue
+      }
       const parsed = PlanningMaterialSchema.safeParse(JSON.parse(prior.content))
       // A retained native plan ref survives worktree removal; names alone never prove identity.
-      if (parsed.success && parsed.data.version === version && parsed.data.cycleId === cycleId)
+      if (parsed.success && parsed.data.version === version && parsed.data.cycleId === cycleId) {
         return true
+      }
     }
     return false
   }
@@ -149,7 +158,9 @@ export async function readMilestoneSnapshot(
           started: version?.started ?? (await preparedVersion(planned.version, planned.cycleId))
         }
         snapshot.versions.push(scheduled)
-        if (!version) registeredVersions.push(scheduled)
+        if (!version) {
+          registeredVersions.push(scheduled)
+        }
       } catch (error) {
         snapshot.problems.push(
           `${planned.version}：${error instanceof Error ? error.message : String(error)}`
