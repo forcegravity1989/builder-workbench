@@ -1094,7 +1094,9 @@ function App() {
                         title={report ? '打开验收证据报告' : '报告未生成；先点「聚合」注入请求'}
                         disabled={!report}
                         onClick={() => {
-                          if (!report) return
+                          if (!report) {
+                            return
+                          }
                           toggleSession(true)
                           setNotice(
                             `打开 ${report.file} · 衔接示意：待核对项保留在报告中，不阻塞查看`

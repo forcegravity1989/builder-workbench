@@ -80,7 +80,7 @@ export function PlanSendMenu({
   const [menuOpen, setMenuOpen] = useState(false)
   const [preparedPrompt, setPreparedPrompt] = useState<string | null>(null)
   const [prepareError, setPrepareError] = useState('')
-  const preparation = useRef(0)
+  const preparation = useRef({ generation: 0 })
   // Why: mirror NotesSendMenu — when the store's target mode leaves this id
   // (sent from the sidebar, or taken over by another source), the local menu
   // must collapse too instead of lingering.
@@ -91,8 +91,9 @@ export function PlanSendMenu({
     }
   }, [targetModeMine, menuOpen, preparedPrompt])
   useEffect(() => {
+    const pending = preparation.current
     return () => {
-      preparation.current++
+      pending.generation++
       close(id)
     }
   }, [id, close])
@@ -104,7 +105,7 @@ export function PlanSendMenu({
       modal={false}
       open={menuOpen}
       onOpenChange={(next) => {
-        const request = ++preparation.current
+        const request = ++preparation.current.generation
         setMenuOpen(next)
         setPreparedPrompt(null)
         setPrepareError('')
@@ -115,7 +116,9 @@ export function PlanSendMenu({
             try {
               const resolved = preparePrompt ? await preparePrompt() : prompt
               // Closing or replacing the menu must not activate a late send target.
-              if (request !== preparation.current) return
+              if (request !== preparation.current.generation) {
+                return
+              }
               setPreparedPrompt(resolved)
               open({
                 id,
@@ -127,7 +130,7 @@ export function PlanSendMenu({
                 onPromptDelivered: onSent
               })
             } catch (reason) {
-              if (request === preparation.current) {
+              if (request === preparation.current.generation) {
                 setPrepareError(reason instanceof Error ? reason.message : String(reason))
               }
             }
