@@ -187,6 +187,7 @@ jobs:
       - name: Test native reporting and repository integration code
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
+          src/main/persistence-workspace-default.test.ts
           src/main/ipc/repos
           src/main/ipc/feedback.test.ts
           src/main/ipc/feedback-image-attachments.test.ts

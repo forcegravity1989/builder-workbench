@@ -118,6 +118,8 @@ git rev-parse 'v1.4.251^{commit}'
 
 ### 2.3 需要在同步时保留的稳定扩点
 
+- Windows Workbench 的首次配置在 D 盘存在时预设原生 `workspaceDir`，仅挂在 `loaded-state-parsing.ts` 的无配置、无备份分支；路径正源为 `workbench-product.ts` 的 `WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR`，原生新建项目默认解析器识别该预设并使用兄弟 `projects`，避免工作树嵌入主仓。产品行为见[项目纳入规格](../docs/05-features/project-intake/spec.md#数据归属)。上游同步保留首次加载限定，不改成启动时覆盖已有设置。
+
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
 - 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。共享主机恢复复核另按上述 v1.4.251 补入导航取消未完成截图及旧快照回写的约束，仍沿用本仓文档失效时清除批注的行为；不因此迁入批注留存改造或远程实时批注。
