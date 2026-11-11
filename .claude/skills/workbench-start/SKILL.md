@@ -10,7 +10,7 @@ description: >-
   Also use for reviewing real Issue sessions to improve this development workflow.
   Load historical week-screen context only when tracing its earlier decisions.
 metadata:
-  version: 0.4.12-pilot
+  version: 0.4.13-pilot
 ---
 
 # workbench-start — Workbench 开发与交付
@@ -44,6 +44,7 @@ metadata:
 | 小 bug，恢复明确行为 | 核对设计 → 未修改基线复现 → 最小修复 → 测试 agent 按同一路径复验 | 调查后仍缺用户独有配置、环境或行为决定；未复现不假定有 bug |
 | 已有特性调整 | 核对定义与行为增量 → 实现、同步知识 → 验收 | 必要定义尚未认可，或新增产品取舍 |
 | 特性迁移 | 对照旧意图与当前实现 → 重审受影响旅程/边界/验收 → 从缺环接上 | 用户承诺、交互或边界改变且尚未决定 |
+| 历史兼容使改动范围明显扩大 | 先执行 [原则 02 §3.2 的兼容取舍要求](../../../docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)，再实施依赖改动 | 兼容范围与代价尚未获得认可；已明确的承诺和授权沿用 |
 | 大特性 / 大需求 | 原则 02 的意图、规格与原型对齐 → 最终 AskUser → 仓外 plan → 连续执行至 PR 就绪 | 最终对齐及执行中真正新增的决定或阻塞 |
 | 文档 / 模型指令治理 | 转 project-knowledge，先确认落点、职责、格式、引用关系，再改正文和存量 | 职责或格式仍有真实未决选择；已有授权直接复用 |
 | 依据冲突或不足 | 定向调查，给具体差异、推荐与影响 | 仍无法确定目标；只暂停依赖动作 |

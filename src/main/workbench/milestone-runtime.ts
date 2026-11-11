@@ -9,10 +9,6 @@ import {
   type MilestoneSubmit,
   type MilestoneSubmitResult
 } from '../../shared/workbench/project-milestones'
-import {
-  PlanningMaterialSchema,
-  type PlanningMaterial
-} from '../../shared/workbench/version-planning-material'
 import { gitExecFileAsync } from '../git/runner'
 import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
 import {
@@ -125,7 +121,6 @@ export function nativeMilestoneService(runtime: Runtime) {
           throw new Error('存在无法读取的版本材料，请先处理再提交')
         }
         const writes = new Map<string, string>()
-        const removals: string[] = []
         for (const old of source.snapshot.versions) {
           if (!input.versions.some((v) => v.cycleId === old.cycleId)) {
             throw new Error('此入口不能删除已有项目版本')
@@ -133,27 +128,19 @@ export function nativeMilestoneService(runtime: Runtime) {
         }
         for (const next of input.versions) {
           const old = source.plans.get(next.cycleId)
-          if (!old && c.started.has(next.version)) {
+          const prior = source.registeredVersions.find((v) => v.cycleId === next.cycleId)
+          if (!prior && c.started.has(next.version)) {
             throw new Error(
               `${next.version} 已在版本计划开工，请先核对并合入该版本材料，不能重复登记`
             )
           }
-          const prior = source.registeredVersions.find((v) => v.cycleId === next.cycleId)
-          if (old && old.version !== next.version) {
-            if (old.version.toLowerCase() === next.version.toLowerCase()) {
+          if (prior && prior.version !== next.version) {
+            if (prior.version.toLowerCase() === next.version.toLowerCase()) {
               throw new Error('版本改名不能仅改变大小写，请保留实际版本名称')
             }
-            const materialFiles = await git([
-              'ls-tree',
-              '-r',
-              '--name-only',
-              source.snapshot.head,
-              '--',
-              `.bw/planning/${old.version}/`
-            ])
-            if (prior?.started || materialFiles.split('\n').filter(Boolean).length !== 1) {
+            if (prior.started || old) {
               throw new Error(
-                `${old.version} 已开始制定计划或有其他材料，请按真实版本核对里程碑，不能在此改名`
+                `${prior.version} 已开始制定计划或有其他材料，请按真实版本核对里程碑，不能在此改名`
               )
             }
           }
@@ -163,29 +150,6 @@ export function nativeMilestoneService(runtime: Runtime) {
           )
           if (collision) {
             throw new Error(`版本 ${next.version} 已存在`)
-          }
-          const document: PlanningMaterial = old
-            ? { ...old, version: next.version }
-            : {
-                schema_version: 3,
-                version: next.version,
-                cycleId: next.cycleId,
-                summary: { progress: '', risks: '' },
-                goals: [],
-                tasks: []
-              }
-          // Existing plan windows belong to the version plan, not roadmap edits.
-          if (!old && next.timeWindow) {
-            document.timeWindow = next.timeWindow
-          }
-          PlanningMaterialSchema.parse(document)
-          if (old && json(old) === json(document)) {
-            continue
-          }
-          const path = `.bw/planning/${next.version}/data.json`
-          writes.set(path, json(document))
-          if (old && old.version !== next.version) {
-            removals.push(`.bw/planning/${old.version}/data.json`)
           }
         }
         const material = { ...input.material, versionPlans: input.versions }
@@ -199,11 +163,11 @@ export function nativeMilestoneService(runtime: Runtime) {
         if (identity.status !== 'resolved') {
           throw new Error('未确认远端身份，草案保留，恢复连接后重试')
         }
-        const paths = [...writes.keys(), ...removals]
+        const paths = [...writes.keys()]
         await writeMilestoneFiles({
           root: c.target.worktreePath,
           writes,
-          removals,
+          removals: [],
           contents: source.contents,
           recheck: async () => {
             await c.reauthorize()
