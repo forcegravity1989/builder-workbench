@@ -12,7 +12,7 @@ import {
 } from '../slices/project-group-owner-routing'
 import { findRepoForHost, repoMatchesHostIdentity } from '../slices/repo-host-identity'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../../../shared/execution-host'
 import type { ProjectRemovalFailure, RepoSlice } from '../repos/repo-state'
 import { mergeProjectCompatibilityForHostRepoChange } from '../repos/repo-catalog-identity'
 import { applyProjectGroupDeleteCascade } from './project-group-removal-state'
@@ -31,14 +31,23 @@ export function createProjectGroupMutationActions(
   | 'moveProjectToGroup'
 > {
   return {
-    createProjectGroup: async (name) => {
+    createProjectGroup: async (name, options) => {
       try {
-        const target = getActiveRuntimeTarget(get().settings)
+        const owner = parseExecutionHostId(options?.hostId)
+        const target = getActiveRuntimeTarget(
+          owner
+            ? {
+                ...get().settings,
+                activeRuntimeEnvironmentId: owner.kind === 'runtime' ? owner.environmentId : null
+              }
+            : get().settings
+        )
         const group =
           target.kind === 'local'
             ? await window.api.projectGroups.create({
                 name,
-                createdFrom: 'manual'
+                createdFrom: 'manual',
+                ...(owner?.kind === 'ssh' ? { connectionId: owner.targetId } : {})
               })
             : (
                 await callRuntimeRpc<{ group: ProjectGroup }>(
@@ -219,12 +228,25 @@ export function createProjectGroupMutationActions(
       }
     },
 
-    moveProjectToGroup: async (projectId, groupId, order) => {
+    moveProjectToGroup: async (projectId, groupId, order, options) => {
       try {
-        if (!findRepoForHost(get().repos, projectId, { settings: get().settings })) {
+        if (
+          !findRepoForHost(get().repos, projectId, {
+            settings: get().settings,
+            hostId: options?.hostId
+          })
+        ) {
           return false
         }
-        const target = getActiveRuntimeTarget(settingsForRepoOwner(get(), projectId))
+        const owner = parseExecutionHostId(options?.hostId)
+        const target = getActiveRuntimeTarget(
+          owner
+            ? {
+                ...get().settings,
+                activeRuntimeEnvironmentId: owner.kind === 'runtime' ? owner.environmentId : null
+              }
+            : settingsForRepoOwner(get(), projectId)
+        )
         const moved =
           target.kind === 'local'
             ? await window.api.projectGroups.moveProject({

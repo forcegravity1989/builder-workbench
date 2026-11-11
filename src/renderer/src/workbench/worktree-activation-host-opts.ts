@@ -1,5 +1,5 @@
 import type { Worktree } from '../../../shared/worktree/types'
-import type { ExecutionHostId } from '../../../shared/execution-host'
+import { toRuntimeExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 
 /**
  * 宿主限定激活选项（STA-4343：同 repoId::path 的 id 可跨宿主重复，激活须带
@@ -7,7 +7,10 @@ import type { ExecutionHostId } from '../../../shared/execution-host'
  * Start/Open 各直开点共用，不在调用端各写条件展开。
  */
 export function worktreeActivationHostOpts(
-  worktree: Pick<Worktree, 'hostId'>
+  worktree: Pick<Worktree, 'hostId' | 'runtimeOwnerEnvironmentId'>
 ): { executionHostId: ExecutionHostId } | undefined {
-  return worktree.hostId ? { executionHostId: worktree.hostId } : undefined
+  const executionHostId = worktree.runtimeOwnerEnvironmentId
+    ? toRuntimeExecutionHostId(worktree.runtimeOwnerEnvironmentId)
+    : worktree.hostId
+  return executionHostId ? { executionHostId } : undefined
 }

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
-import { useDetectedAgents } from '@/hooks/useDetectedAgents'
+import { useDetectedAgents, type AgentDetectionTarget } from '@/hooks/useDetectedAgents'
 import { useHostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
 import { filterEnabledTuiAgents, isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
 import { openWorkflowDraft } from '../open-workflow-draft'
@@ -56,6 +56,12 @@ export async function prepareMetricsSession(args: {
  */
 export function useMetricsSetupAgent(worktreeId: string | null): TuiAgent | null {
   const detectionTarget = useAgentDetectionTargetForWorktree(worktreeId)
+  return useDefaultAgentForTarget(detectionTarget)
+}
+
+export function useDefaultAgentForTarget(
+  detectionTarget: AgentDetectionTarget | undefined
+): TuiAgent | null {
   const { detectedIds } = useDetectedAgents(detectionTarget)
   const preferences = useHostAgentLaunchPreferences(detectionTarget)
   if (!preferences.isAvailable) {
@@ -69,7 +75,9 @@ export function useMetricsSetupAgent(worktreeId: string | null): TuiAgent | null
       ? defaultAgentSetting
       : null
   return (
-    defaultAgent ?? filterEnabledTuiAgents(detectedIds ?? [], preferences.disabledTuiAgents)[0] ?? null
+    defaultAgent ??
+    filterEnabledTuiAgents(detectedIds ?? [], preferences.disabledTuiAgents)[0] ??
+    null
   )
 }
 

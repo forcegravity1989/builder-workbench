@@ -165,59 +165,6 @@ html[data-skin='ds'] .wb-btn.wb-icon-button {
 .wb-config-fields + .wb-config-actions {
   margin-top: 12px;
 }
-.wb-config-repos,
-.wb-config-hosts {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.wb-config-repos li {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-.wb-config-repo-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-.wb-config-repo-heading strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.wb-config-path {
-  color: var(--muted-foreground);
-  font: 11px var(--font-mono);
-  overflow-wrap: anywhere;
-  line-height: 1.7;
-}
-.wb-config-sources {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 8px;
-}
-.wb-config-hosts li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-.wb-config-hosts li > span:last-child {
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-.wb-config-pr {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin-bottom: 10px;
-}
 .wb-config-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
@@ -242,52 +189,6 @@ html[data-skin='ds'] .wb-btn.wb-icon-button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-.wb-config-error {
-  color: var(--destructive);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.wb-config-review {
-  max-height: calc(100dvh - 48px);
-  overflow: auto;
-}
-.wb-config-review header,
-.wb-config-review footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-.wb-config-review footer {
-  justify-content: flex-end;
-}
-.wb-config-diff section {
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
-}
-.wb-config-diff h3 {
-  font-size: 12px;
-  margin: 0 0 10px;
-}
-.wb-config-diff dl {
-  margin: 0;
-  font-size: 13px;
-}
-.wb-config-diff dl > div {
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-}
-.wb-config-diff dt {
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-.wb-config-diff dd {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 .wb-icon-spin {
   animation: wb-icon-spin 1s linear infinite;
@@ -318,4 +219,54 @@ html[data-skin='ds'] .wb-btn.wb-icon-button {
   .wb-config-toggle > svg:last-child {
     transition: none;
   }
+}
+
+.wb-config-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 18px;
+  font-size: 12px;
+}
+.wb-config-type [data-slot='select-trigger'] {
+  margin-left: auto;
+  width: 150px;
+}
+.wb-config-info-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+}
+.wb-config-info-heading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+.wb-config-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.wb-overview-with-settings {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  position: relative;
+}
+.wb-overview-with-settings > .wb-ov {
+  min-width: 0;
+  flex: 1;
+}
+.wb-overview-charter-heading {
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+}
+.wb-overview-charter-heading .card-toggle {
+  flex: 1;
+  min-width: 0;
 }

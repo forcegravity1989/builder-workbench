@@ -7,7 +7,6 @@ import type { Repo } from '../../../shared/repo-types'
 import type {
   CharterIntent,
   CharterReadResult,
-  CharterRemoteProbe,
   CharterScope,
   CharterStatus,
   CharterSubmitOutcome
@@ -15,22 +14,8 @@ import type {
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
 import { routeForOwner } from '../lib/worktree-owner-route'
 import { callRuntimeRpc, type RuntimeClientTarget } from '../runtime/runtime-rpc-client'
-import { MetricRuntimeError, callMetricRuntime } from './metric-runtime-rpc'
+import { callMetricRuntime } from './metric-runtime-rpc'
 import { readProjectCharter } from './project-charter'
-
-/** 克隆前远端名片预读:gh / codehub-cli 在本机执行,固定走本地 runtime。 */
-export async function probeRemoteCharter(url: string): Promise<CharterRemoteProbe> {
-  const result = await callRuntimeRpc<VersionMaterialResult<CharterRemoteProbe>>(
-    { kind: 'local' },
-    'workbench.charter.probeRemote',
-    { url },
-    { timeoutMs: 90_000 }
-  )
-  if (!result.ok) {
-    throw new MetricRuntimeError(result.error.code, result.error.message)
-  }
-  return result.value
-}
 
 /** 名片经 bw/project 固定树提交并开 PR;失败是返回值不是异常(项目已接入)。 */
 export async function submitProjectCharter(
@@ -51,7 +36,7 @@ export async function submitProjectCharter(
 }
 
 /**
- * G3 墙判据:按仓库 owner/runtime 路由读注册仓主检出的 `.bw/project.toml`。
+ * 可选名片:按仓库 owner/runtime 路由读注册仓主检出的 `.bw/project.toml`。
  * 本机与 SSH 走 fs 桥;runtime 主机经 workbench.charter.read 在 owner 侧读。
  * 连接失败/IO 失败返回 error——「没读成」不冒充「不存在」(铁律二同源语义)。
  */
@@ -61,9 +46,13 @@ export async function readRepoCharter(
 ): Promise<CharterReadResult> {
   const hostId = getRepoExecutionHostId(repo)
   const parsedHost = parseExecutionHostId(hostId)
+  const connectionId = getRepoSshConnectionId(repo)
   if (parsedHost?.kind !== 'runtime') {
-    const local = await readProjectCharter(repo.path, getRepoSshConnectionId(repo))
+    const local = await readProjectCharter(repo.path, connectionId)
     return { charter: local.charter, raw: local.raw, existed: local.existed, error: local.error }
+  }
+  if (connectionId) {
+    return { charter: null, existed: false, error: '暂不支持通过配对主机读取 SSH 项目名片' }
   }
   const route = routeForOwner({ hostId, runtimeOwnerEnvironmentId })
   if (!route?.runtimeEnvironmentId) {
@@ -94,6 +83,9 @@ export async function readCharterPrStatus(
   repo: Pick<Repo, 'id' | 'connectionId' | 'executionHostId'>,
   runtimeOwnerEnvironmentId?: string
 ): Promise<CharterStatus> {
+  if (getRepoSshConnectionId(repo)) {
+    return { pr: null, headHasCharter: false, queryFailed: true }
+  }
   const hostId = getRepoExecutionHostId(repo)
   const route = routeForOwner({ hostId, runtimeOwnerEnvironmentId })
   if (!route) {

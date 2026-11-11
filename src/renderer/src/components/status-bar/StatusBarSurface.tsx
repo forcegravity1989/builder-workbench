@@ -30,6 +30,7 @@ import { ProviderLetterBadge, ProviderSegment } from './StatusBarProviderSegment
 import { useStatusBarController } from './use-status-bar-controller'
 import { StatusBarVisibilityMenu } from './StatusBarVisibilityMenu'
 import { isPairedWebClientWindow } from '@/lib/desktop-window-chrome'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const PetStatusSegment = lazyWithRetry(() =>
   import('./PetStatusSegment').then((module) => ({ default: module.PetStatusSegment }))
@@ -253,7 +254,9 @@ export function StatusBarSurface({
             <ResourceUsageStatusSegment compact={compact} iconOnly={iconOnly} />
           ) : null}
           {showPorts ? <PortsStatusSegment compact={compact} iconOnly={iconOnly} /> : null}
-          {showSsh ? <SshStatusSegment compact={compact} iconOnly={iconOnly} /> : null}
+          {showSsh && !isWorkbenchShell() ? (
+            <SshStatusSegment compact={compact} iconOnly={iconOnly} />
+          ) : null}
         </React.Suspense>
         {showFloatingTerminalToggle && (
           <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">

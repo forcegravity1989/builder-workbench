@@ -8,7 +8,7 @@ import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import {
-  compareMaterialVersions,
+  compareVersionDisplayOrder,
   type VersionCatalogEntry
 } from '../../../shared/workbench/version-catalog'
 import { useVersionCatalogForRepo } from './use-version-catalog'
@@ -114,12 +114,7 @@ export function WorkbenchVersionNav({
   // 目录契约保持升序；侧栏按在制优先、组内版本降序展示。
   const entries = useMemo(() => {
     const rows = loaded?.entries ?? []
-    return [...rows].sort((a, b) => {
-      if (a.state !== b.state) {
-        return a.state === 'working' ? -1 : 1
-      }
-      return compareMaterialVersions(b.version, a.version)
-    })
+    return [...rows].sort(compareVersionDisplayOrder)
   }, [loaded])
   const expandedVersions = useMemo(() => {
     if (expandedOverride) {

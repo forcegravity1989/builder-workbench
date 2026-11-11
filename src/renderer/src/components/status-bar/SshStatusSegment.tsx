@@ -64,10 +64,12 @@ export async function connectRuntimeHostForNavigation(args: {
 
 export function SshStatusSegment({
   compact,
-  iconOnly
+  iconOnly,
+  variant = 'status-bar'
 }: {
   compact: boolean
   iconOnly: boolean
+  variant?: 'status-bar' | 'rail'
 }): React.JSX.Element | null {
   const sshConnectionStates = useAppStore((s) => s.sshConnectionStates)
   const sshTargetLabels = useAppStore((s) => s.sshTargetLabels)
@@ -168,7 +170,7 @@ export function SshStatusSegment({
     [recordFeatureInteraction, readRuntimeHostStatusSnapshots]
   )
 
-  if (targets.length === 0 && runtimeHosts.length === 0) {
+  if (variant !== 'rail' && targets.length === 0 && runtimeHosts.length === 0) {
     return null
   }
 
@@ -197,13 +199,30 @@ export function SshStatusSegment({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 cursor-pointer rounded px-1 py-0.5 hover:bg-accent/70"
+          className={
+            variant === 'rail'
+              ? 'relative grid size-10 place-items-center rounded-lg text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-accent'
+              : 'inline-flex items-center gap-1.5 cursor-pointer rounded px-1 py-0.5 hover:bg-accent/70'
+          }
+          title={translate(
+            'auto.components.status.bar.SshStatusSegment.3ad70e0365',
+            'Manage Remote Hosts…'
+          )}
           aria-label={translate(
             'auto.components.status.bar.SshStatusSegment.fdc57e9970',
             'Remote host connection status'
           )}
         >
-          {iconOnly ? (
+          {variant === 'rail' ? (
+            <>
+              <MonitorSmartphone className="size-4.5" strokeWidth={1.75} />
+              {(syncProblem || anyConnecting) && (
+                <span
+                  className={`absolute right-1.5 top-1.5 size-1.5 rounded-full ${syncProblem ? 'bg-destructive' : 'bg-yellow-500'}`}
+                />
+              )}
+            </>
+          ) : iconOnly ? (
             <span className="inline-flex items-center gap-1">
               <span
                 className={`inline-block size-2 rounded-full ${
@@ -251,7 +270,7 @@ export function SshStatusSegment({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        side="top"
+        side={variant === 'rail' ? 'right' : 'top'}
         align="start"
         sideOffset={8}
         className="w-[min(20rem,calc(100vw-1rem))]"

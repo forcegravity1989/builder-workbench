@@ -25,7 +25,7 @@ docs/（BW 产品知识与本仓开发规范；编号定序，architecture 是�
 ├── development.md     BW 自身测试、检视、验证证据与 PR 规范；独立于具体 Skill
 ├── 02-adr/            架构决策的预留位置；存量已清空，后续按实际决策新增
 ├── 03-guide/          产品指南，按已验证的使用场景维护
-├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
+├── 04-design-system/  视觉与交互规范：样式、token，以及引导与旅程覆盖规则
 ├── 05-features/       特性制品——intent + 带原型的 spec 为人 gate；实现 plan 留仓外；小修不另立特性
 ├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
 ├── 10-reference/      外部参考的提炼版
