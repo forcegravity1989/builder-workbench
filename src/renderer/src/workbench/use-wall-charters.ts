@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
-import { readRepoCharter } from './charter-port'
+import { loadRepoCharter } from './charter-snapshot'
 import type { ProjectCharter } from './project-charter'
 import { wallProjectVersionRows, type WallProject } from './workbench-wall-projects'
 import { createWallCardCache, useWallCardReads } from './use-wall-card-reads'
@@ -10,7 +10,10 @@ import { type useWallRefresh, wallReadRevision } from './wall-refresh'
 
 const cache = createWallCardCache<ProjectCharter | null>()
 
-async function readWallCharter(rows: readonly Repo[]): Promise<ProjectCharter | null> {
+async function readWallCharter(
+  rows: readonly Repo[],
+  refresh: boolean
+): Promise<ProjectCharter | null> {
   let readError: string | null = null
   for (const row of rows) {
     if (row.kind === 'folder') {
@@ -24,7 +27,7 @@ async function readWallCharter(rows: readonly Repo[]): Promise<ProjectCharter | 
       readError ??= '项目主机未连接'
       continue
     }
-    const read = await readRepoCharter(row).catch((error: unknown) => ({
+    const read = await loadRepoCharter(row, refresh).catch((error: unknown) => ({
       charter: null,
       error: String(error)
     }))
@@ -54,7 +57,7 @@ export function useWallCharters(
             rows.map((row) => [getRepoExecutionHostId(row), row.id, row.path, row.kind])
           ),
           revision: wallReadRevision(refresh, rows),
-          load: () => readWallCharter(rows)
+          load: (force: boolean) => readWallCharter(rows, force)
         }
       }),
     [projects, refresh]

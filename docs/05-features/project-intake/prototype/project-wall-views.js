@@ -128,7 +128,7 @@
       ],
       overview: [
         '复用 BW 项目总览',
-        '使用现有总览页面。#586 在总览名片标题增加编辑图标，打开项目墙同一套项目信息设置；不新增表单或提交流程。'
+        '此处仅呈现项目名片的改动。版本与项目墙取同一版，点击编辑复用同一套项目设置，已有名片先回显。'
       ],
       version: [
         '复用 BW 版本总览',
@@ -269,12 +269,19 @@
       W.renderWall()
     } else {
       W.renderReuse()
-      if (s.reuse === 'overview' && W.project(s.active)?.kind === 'git') {
+      const p = W.project(s.active)
+      if (s.reuse === 'overview' && p?.kind === 'git') {
+        const facts = W.fields
+          .filter(([key]) => key !== 'name')
+          .map(
+            ([key, label]) => `<div><dt>${label}</dt><dd>${esc(p[key]?.trim() || '—')}</dd></div>`
+          )
+          .join('')
         W.$('main')
           .querySelector('.reuse-surface h1')
           .insertAdjacentHTML(
             'afterend',
-            button('config', 'edit', '编辑项目信息（与项目墙共用）', s.active)
+            `<div class="card-top"><details><summary>${esc(p.name)}${p.version ? ` · ${esc(p.version)}` : ''}</summary><dl class="wb-config-facts">${facts}</dl></details>${button('config', 'edit', '编辑项目信息', s.active)}</div>`
           )
       }
     }

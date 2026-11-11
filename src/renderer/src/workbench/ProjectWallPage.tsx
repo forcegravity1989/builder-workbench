@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { FileInput, LoaderCircle, Plus, RefreshCw, X } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -7,21 +7,19 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
+import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { closeProjectPage, openAddProject } from './project-page-state'
 import { switchActiveProject } from './switch-active-project'
 import { continueProjectWork } from './continue-project-work'
-import {
-  buildWallProjects,
-  isWallRowVisible,
-  wallProjectVisibility
-} from './workbench-wall-projects'
+import { isWallRowVisible, wallProjectVisibility } from './workbench-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
 import { useWallCharters } from './use-wall-charters'
 import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
 import { ProjectWallCard, type WallCardView } from './ProjectWallCard'
 import { useWallReadings } from './use-wall-readings'
+import { useWallProjects } from './use-wall-projects'
 import { refreshProjectWall, useWallRefresh } from './wall-refresh'
 import { useWallNativeProjectActions } from './wall-native-project-actions'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
@@ -30,7 +28,6 @@ import './project-settings.css'
 
 export function ProjectWallPage() {
   const repos = useAppStore((s) => s.repos)
-  const groups = useAppStore((s) => s.projectGroups)
   const environments = useAppStore((s) => s.runtimeEnvironments)
   const statuses = useAppStore((s) => s.runtimeStatusByEnvironmentId)
   const sshLabels = useAppStore((s) => s.sshTargetLabels)
@@ -48,24 +45,7 @@ export function ProjectWallPage() {
   const discard = useRef<(() => void) | null>(null)
   const trigger = useRef<HTMLButtonElement | null>(null)
   const hasProjects = repos.some(isWallRowVisible)
-  const projects = useMemo(
-    () =>
-      buildWallProjects(
-        repos
-          .filter(isWallRowVisible)
-          .filter(
-            (repo) =>
-              (type === 'all' || (repo.projectVisibility ?? 'personal') === type) &&
-              (location === 'all' ||
-                (getRepoExecutionHostId(repo) === 'local') === (location === 'local'))
-          ),
-        groups,
-        {
-          environmentIds: new Set(environments.map((environment) => environment.id))
-        }
-      ),
-    [repos, groups, environments, type, location]
-  )
+  const projects = useWallProjects({ location, type })
   const charters = useWallCharters(projects, refresh)
   const readings = useWallReadings(projects, refresh)
   const cardReadFailed = charters.failed || readings.failed
@@ -251,7 +231,8 @@ export function ProjectWallPage() {
                             leave(() => {
                               void switchActiveProject(
                                 card.primaryRepo.id,
-                                getRepoExecutionHostId(card.primaryRepo)
+                                getRepoExecutionHostId(card.primaryRepo),
+                                { location, type }
                               )
                             })
                           }
@@ -309,7 +290,7 @@ export function ProjectWallPage() {
         </main>
         {selectedCard && (
           <ProjectSettingsRail
-            key={selectedCard.project.key}
+            key={charterSourceKey(selectedCard.primaryRepo)}
             repo={selectedCard.primaryRepo}
             rows={selectedCard.project.rows}
             displayName={selectedCard.displayName}

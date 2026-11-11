@@ -16,6 +16,31 @@ export function createWallCardCache<T>(): WallCardCache<T> {
   return createSnapshotCache<WallCardSnapshot<T>>(() => ({ revision: -1 }), 256)
 }
 
+export async function loadWallCardRead<T>(
+  entry: SnapshotEntry<WallCardSnapshot<T>>,
+  revision: number,
+  load: () => Promise<T>,
+  cancelled = () => false
+) {
+  while (entry.pending && !cancelled()) {
+    await entry.pending
+  }
+  const previous = entry.read()
+  if (!cancelled() && previous.revision < revision) {
+    entry.pending = Promise.resolve()
+      .then(load)
+      .then(
+        (value) => entry.publish({ revision, value }),
+        () => entry.publish({ ...previous, revision, failed: true })
+      )
+      .finally(() => {
+        entry.pending = null
+      })
+    await entry.pending
+  }
+  return entry.read().value
+}
+
 export function useWallCardReads<T>(reads: readonly WallCardRead<T>[], cache: WallCardCache<T>) {
   const sources = useMemo(
     () => reads.map((read) => ({ ...read, entry: cache(read.sourceKey) })),
@@ -43,25 +68,12 @@ export function useWallCardReads<T>(reads: readonly WallCardRead<T>[], cache: Wa
     let cancelled = false
     const changed = sources.filter(({ entry, revision }) => entry.read().revision < revision)
     void forEachWithConcurrency(changed, 3, async ({ entry, revision, load }) => {
-      // A read already in flight may finish after navigation. Reuse it and let
-      // a newer explicit refresh run next for this same source.
-      while (entry.pending && !cancelled) {
-        await entry.pending
-      }
-      const previous = entry.read()
-      if (cancelled || previous.revision >= revision) {
-        return
-      }
-      entry.pending = Promise.resolve()
-        .then(() => load(revision > 0))
-        .then(
-          (value) => entry.publish({ revision, value }),
-          () => entry.publish({ ...previous, revision, failed: true })
-        )
-        .finally(() => {
-          entry.pending = null
-        })
-      await entry.pending
+      await loadWallCardRead(
+        entry,
+        revision,
+        () => load(revision > 0),
+        () => cancelled
+      )
     })
     return () => {
       cancelled = true

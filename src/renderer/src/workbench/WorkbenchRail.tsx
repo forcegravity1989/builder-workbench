@@ -92,7 +92,9 @@ export function WorkbenchRail(): React.JSX.Element | null {
       id: 'overview',
       label: '项目总览',
       icon: LayoutDashboard,
-      active: activeView === 'activity' && projectPage === null,
+      active:
+        activeView === 'activity' &&
+        (projectPage === null || projectPage.kind === 'project-overview'),
       onSelect: leaveProjectPage(openActivityPage)
     },
     {

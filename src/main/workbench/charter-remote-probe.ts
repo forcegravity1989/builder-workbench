@@ -135,7 +135,8 @@ export function trimmedIntent(intent: CharterIntent): ProjectCharter {
     kind: intent.kind.trim(),
     brief: intent.brief.trim(),
     benchmark: intent.benchmark.trim(),
-    opportunity: intent.opportunity.trim()
+    opportunity: intent.opportunity.trim(),
+    groupId: intent.groupId?.trim()
   }
 }
 

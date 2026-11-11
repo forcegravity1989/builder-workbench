@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+import React, { useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import {
@@ -6,12 +6,13 @@ import {
   getRepoExecutionHostId,
   getWorktreeExecutionHostId
 } from '../../../shared/execution-host'
-import { openAddProject } from './project-page-state'
+import { openAddProject, useProjectPage } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
-import type { ProjectCharter } from './project-charter'
-import { readRepoCharter } from './charter-port'
-import { invalidateWallRepo } from './wall-refresh'
+import { charterSourceKey, loadRepoCharter, useRepoCharterSnapshot } from './charter-snapshot'
+import { invalidateWallRepo, useWallRefresh } from './wall-refresh'
+import { findWallProjectForRepo, useWallProjects } from './use-wall-projects'
+import { useWallVersionLabel } from './use-wall-readings'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -59,7 +60,6 @@ export function OverviewPage(): React.JSX.Element {
   const [settingsDirty, setSettingsDirty] = useState(false)
   const [settingsBusy, setSettingsBusy] = useState(false)
   const [confirmClose, setConfirmClose] = useState(false)
-  const [charterRefresh, setCharterRefresh] = useState(0)
   const discardSettings = useRef<(() => void) | null>(null)
 
   /** Metrics/history read from the project's main worktree: the configuration baseline tree. */
@@ -86,17 +86,22 @@ export function OverviewPage(): React.JSX.Element {
     [baseScope, baseWorktreeId]
   )
 
-  const charterKey = JSON.stringify([
-    activeRepo?.id,
-    activeRepo?.path,
-    activeRepo && getRepoExecutionHostId(activeRepo),
-    charterRefresh
-  ])
-  const [charterState, setCharter] = useState<{
-    key: string
-    value: ProjectCharter | null
-  } | null>(null)
-  const charter = charterState?.key === charterKey ? charterState.value : null
+  const charterKey = activeRepo ? charterSourceKey(activeRepo) : 'none'
+  const charterRead = useRepoCharterSnapshot(activeRepo)
+  const charter = charterRead?.charter ?? null
+  const projectPage = useProjectPage()
+  const filters =
+    projectPage?.kind === 'project-overview' &&
+    activeRepo?.id === projectPage.options.repoId &&
+    getRepoExecutionHostId(activeRepo) === projectPage.options.hostId
+      ? projectPage.options.filters
+      : undefined
+  const wallProjects = useWallProjects(filters)
+  const wallRefresh = useWallRefresh()
+  const charterVersion = useWallVersionLabel(
+    activeRepo ? findWallProjectForRepo(wallProjects, activeRepo) : undefined,
+    wallRefresh
+  )
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
   const fixedTrees = useMemo(() => {
     if (!baseScope) {
@@ -141,30 +146,12 @@ export function OverviewPage(): React.JSX.Element {
   const { history, currentVersion } = historyState
   const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
 
-  useEffect(() => {
-    if (!activeRepo?.path) {
-      setCharter(null)
-      return
-    }
-    let cancelled = false
-    void readRepoCharter(activeRepo).then((r) => {
-      if (!cancelled) {
-        setCharter({ key: charterKey, value: r.charter })
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [activeRepo, charterKey])
-
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
-  const { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus } =
-    useCharterPrStatus(activeRepo, Boolean(charter), charterKey, (value) => {
-      setCharter({ key: charterKey, value })
-      if (activeRepo) {
-        invalidateWallRepo(activeRepo)
-      }
-    })
+  const { charterStatus, refreshCharterStatus } = useCharterPrStatus(
+    charterRead && !charterRead.error ? activeRepo : undefined,
+    Boolean(charter),
+    charterKey
+  )
 
   // 「更新代码」点击处理；updatingTrunk 状态声明在 dataIdentity 之前。
   const updateTrunk = async () => {
@@ -199,10 +186,8 @@ export function OverviewPage(): React.JSX.Element {
       reloadCatalog()
       refreshCharterStatus()
       invalidateWallRepo(activeRepo)
-      if (activeRepo.path) {
-        void readRepoCharter(activeRepo).then((r) =>
-          setCharter({ key: charterKey, value: r.charter })
-        )
+      if (activeRepo.kind !== 'folder') {
+        void loadRepoCharter(activeRepo, true)
       }
     }
   }
@@ -293,15 +278,16 @@ export function OverviewPage(): React.JSX.Element {
               onEdit={activeRepo.kind !== 'folder' ? () => setSettingsOpen(true) : undefined}
               projectName={projectName}
               charter={charter}
-              remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
-              version={version}
+              version={charterVersion}
               notice={
                 !charter ? (
                   <CharterPrNotice
                     status={charterStatus}
                     variant="overview"
-                    updating={updatingMain}
-                    onUpdateMain={() => void updateMainCheckout()}
+                    updating={updatingTrunk}
+                    onUpdateMain={
+                      baseScope && baseWorktreeId ? () => void updateTrunk() : undefined
+                    }
                   />
                 ) : undefined
               }
@@ -338,7 +324,7 @@ export function OverviewPage(): React.JSX.Element {
         </div>
         {settingsOpen && activeRepo.kind !== 'folder' && (
           <ProjectSettingsRail
-            key={`${getRepoExecutionHostId(activeRepo)}:${activeRepo.id}`}
+            key={charterKey}
             repo={activeRepo}
             displayName={projectName}
             onClose={() => {
@@ -353,12 +339,7 @@ export function OverviewPage(): React.JSX.Element {
             onDirtyChange={setSettingsDirty}
             onBusyChange={setSettingsBusy}
             discardRef={discardSettings}
-            onChanged={(charterUpdated) => {
-              if (charterUpdated) {
-                setCharterRefresh((value) => value + 1)
-              }
-              refreshCharterStatus()
-            }}
+            onChanged={refreshCharterStatus}
           />
         )}
         <Dialog open={confirmClose} onOpenChange={setConfirmClose}>

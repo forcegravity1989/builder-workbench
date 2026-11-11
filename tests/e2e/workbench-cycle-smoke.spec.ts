@@ -327,12 +327,16 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await verifyWorkflowDraft(workbenchPage, 'version-acceptance', testInfo)
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
-  // ---- 总览：项目名片可见，未配置保持 Unknown；北极星卡片已移除 ----
-  await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()
+  // ---- 墙卡和总览名片使用同一个在制版本，包含只有草稿的版本。----
+  await workbenchPage.getByRole('button', { name: '项目墙', exact: true }).click()
+  const versionCard = workbenchPage.locator('[data-workbench-project-key]').filter({
+    has: workbenchPage.locator('.pcard-version').getByText('v9.9', { exact: true })
+  })
+  await versionCard.locator('[data-workbench-open-overview]').click({ timeout: 60_000 })
   await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.locator('#project-card')).toContainText('未知', {
+  await expect(workbenchPage.locator('#project-card')).toContainText('v9.9', {
     timeout: 60_000
   })
   await expect(workbenchPage.getByText('未配置北极星指标')).toHaveCount(0)

@@ -3,11 +3,16 @@ import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import type { Repo } from '../../../shared/repo-types'
-import type { CharterStatus } from '../../../shared/workbench/charter'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
+import type { CharterReadResult, CharterStatus } from '../../../shared/workbench/charter'
+import {
+  getRepoExecutionHostId,
+  getRepoSshConnectionId,
+  parseExecutionHostId
+} from '../../../shared/execution-host'
 import { CHARTER_BRANCH, EMPTY_CHARTER, type ProjectCharter } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
-import { readCharterPrStatus, readRepoCharter, submitProjectCharter } from './charter-port'
+import { readCharterPrStatus, submitProjectCharter } from './charter-port'
+import { charterSourceKey, getRepoCharterSnapshot, loadRepoCharter } from './charter-snapshot'
 import { ensureNamedWorktree, nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
 import { useDefaultAgentForTarget } from './version-cycle/metrics-setup'
@@ -15,13 +20,6 @@ import type { AgentDetectionTarget } from '@/hooks/useDetectedAgents'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import { openWorkflowDraft } from './open-workflow-draft'
 
-export const CHARTER_LABELS = {
-  name: '项目名称',
-  owner: '项目负责人',
-  brief: '想做什么',
-  benchmark: '对标',
-  opportunity: '愿景'
-}
 type Draft = {
   raw: string | null
   baseline: ProjectCharter
@@ -31,9 +29,17 @@ type Draft = {
 // Transient form state survives native navigation; it is never written to project business storage.
 const drafts = new Map<string, Draft>()
 
+function formFromRead(repo: Repo, read: CharterReadResult): Draft {
+  const baseline = read.charter ?? { ...EMPTY_CHARTER, name: repo.displayName }
+  return { raw: read.raw ?? null, baseline, value: { ...baseline }, pending: false }
+}
+
 export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boolean) => void) {
-  const key = `${getRepoExecutionHostId(repo)}::${repo.id}`
-  const [form, setForm] = useState<Draft | null>(null)
+  const key = charterSourceKey(repo)
+  const [form, setForm] = useState<Draft | null>(() => {
+    const read = getRepoCharterSnapshot(repo)
+    return drafts.get(key) ?? (read && !read.error ? formFromRead(repo, read) : null)
+  })
   const [status, setStatus] = useState<CharterStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -68,48 +74,46 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
       return
     }
     try {
-      const [read, nextStatus] = await Promise.all([
-        readRepoCharter(repo),
-        readCharterPrStatus(repo)
-      ])
+      setStatus(null)
+      const statusRead = readCharterPrStatus(repo)
+      const read = await loadRepoCharter(repo, true)
       if (request !== generation.current) {
         return
       }
-      setStatus(nextStatus)
       if (read.error) {
         throw new Error(read.error)
       }
-      const baseline = read.charter ?? { ...EMPTY_CHARTER, name: repo.displayName }
+      const fresh = formFromRead(repo, read)
       const saved = drafts.get(key)
-      const proposalReadBack =
-        saved &&
-        EDITABLE_CHARTER_FIELDS.every(
-          (field) => (saved.value[field] ?? '').trim() === (baseline[field] ?? '').trim()
-        )
-      if (proposalReadBack && !nextStatus.queryFailed) {
-        drafts.delete(key)
-      }
-      if (saved?.pending && !proposalReadBack && nextStatus.pr?.state === 'closed') {
-        drafts.set(key, { ...saved, pending: false })
-        setNotice('名片 PR 已关闭，草稿已保留，可核对后重新提交')
-      }
-      setForm(
-        drafts.get(key) ?? {
-          raw: read.raw ?? null,
-          baseline,
-          value: { ...baseline },
-          pending: false
-        }
-      )
-      setCanEdit(
-        read.raw !== undefined && parseExecutionHostId(getRepoExecutionHostId(repo))?.kind !== 'ssh'
-      )
-      if (parseExecutionHostId(getRepoExecutionHostId(repo))?.kind === 'ssh') {
+      setForm(saved ?? fresh)
+      const ssh = Boolean(getRepoSshConnectionId(repo))
+      setCanEdit(read.raw !== undefined && !ssh)
+      if (ssh) {
         setError('SSH 来源暂不支持在此编辑')
-      }
-      if (read.raw === undefined) {
+      } else if (read.raw === undefined) {
         setError('更新该来源主机上的 Workbench 后再编辑项目信息')
       }
+      void statusRead.then((nextStatus) => {
+        if (request !== generation.current) {
+          return
+        }
+        setStatus(nextStatus)
+        if (!saved || drafts.get(key) !== saved) {
+          return
+        }
+        const proposalReadBack = EDITABLE_CHARTER_FIELDS.every(
+          (field) => (saved.value[field] ?? '').trim() === (fresh.baseline[field] ?? '').trim()
+        )
+        if (proposalReadBack && !nextStatus.queryFailed) {
+          drafts.delete(key)
+          setForm(fresh)
+        } else if (saved.pending && !proposalReadBack && nextStatus.pr?.state === 'closed') {
+          const reopened = { ...saved, pending: false }
+          drafts.set(key, reopened)
+          setForm(reopened)
+          setNotice('名片 PR 已关闭，草稿已保留，可核对后重新提交')
+        }
+      })
     } catch (cause) {
       if (request === generation.current) {
         setCanEdit(false)
@@ -134,7 +138,7 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
       )
     : []
   const dirty = changes.length > 0 && !form?.pending
-  const pending = status?.pr?.state === 'open' || (form?.pending && status?.queryFailed)
+  const pending = status?.pr?.state === 'open' || (form?.pending && (!status || status.queryFailed))
   const awaitingReadback = Boolean(form?.pending && status && !status.queryFailed && !status.pr)
   const merged =
     (status?.pr?.state === 'merged' && status.headMatchesProposal !== true) || awaitingReadback
@@ -185,7 +189,17 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
     return { main, scope: nativeWorkspaceScope(main) }
   }
   const submit = async (): Promise<boolean> => {
-    if (busy || !form || !dirty || !form.value.name.trim() || !canEdit || pending || merged) {
+    if (
+      busy ||
+      loading ||
+      !status ||
+      !form ||
+      !dirty ||
+      !form.value.name.trim() ||
+      !canEdit ||
+      pending ||
+      merged
+    ) {
       return false
     }
     setBusy(true)
@@ -195,10 +209,11 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
     try {
       const { scope } = await mainScope()
       const tree = await ensureNamedWorktree(scope, CHARTER_BRANCH, 'project')
+      const { groupId, ...charter } = form.value
       const outcome = await submitProjectCharter(
         { ...scope, worktreeId: tree.id },
         scope.runtimeOwnerEnvironmentId,
-        form.value,
+        { ...charter, ...(changes.includes('groupId') ? { groupId: groupId ?? '' } : {}) },
         false,
         { expectedRaw: form.raw }
       )

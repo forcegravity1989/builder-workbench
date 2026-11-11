@@ -29,38 +29,58 @@ import {
 import type { WallProject } from './workbench-wall-projects'
 import { wallProjectVersionRows } from './workbench-wall-projects'
 
-/** Read only the selected version, through the existing catalog/material/provider ports. */
-export async function readWallReadings(
-  project: WallProject,
-  worktrees: Worktree[],
-  force: boolean
-): Promise<WallCardReadings> {
+export async function selectWallVersion(project: WallProject, worktrees: Worktree[]) {
   if (project.rows[0].kind === 'folder') {
-    return { kind: 'empty' }
+    return { kind: 'empty' } as const
   }
   const home = worktrees.find((tree) => tree.isMainWorktree) ?? worktrees[0]
   if (!home) {
-    return { kind: 'unknown', reason: '工作区尚未就绪' }
+    return { kind: 'unknown', reason: '工作区尚未就绪' } as const
   }
   try {
     const scope = nativeWorkspaceScope(home)
     const planTrees = versionCatalogPlanTrees(worktrees)
+    const repoIds = wallProjectVersionRows(project).map((row) => row.id)
     const catalog = await loadVersionCatalog({
       scope,
       homeWorktreeId: home.id,
       homeInstanceId: home.instanceId,
       planTrees,
       worktrees,
-      repoIds: wallProjectVersionRows(project).map((row) => row.id),
+      repoIds,
       projectId: scope.projectId
     })
     const entry = [...catalog.entries].sort(compareVersionDisplayOrder)[0]
     if (!entry) {
       if (catalog.history?.error || catalog.problems.length) {
-        return { kind: 'unknown', reason: catalog.history?.error ?? catalog.problems[0].message }
+        return {
+          kind: 'unknown',
+          reason: catalog.history?.error ?? catalog.problems[0].message
+        } as const
       }
-      return { kind: 'empty' }
+      return { kind: 'empty' } as const
     }
+    return { kind: 'version', entry, catalog, scope, home, planTrees, repoIds, worktrees } as const
+  } catch (error) {
+    return {
+      kind: 'unknown',
+      reason: error instanceof Error ? error.message : String(error)
+    } as const
+  }
+}
+
+export type WallVersionSelection = Awaited<ReturnType<typeof selectWallVersion>>
+
+/** Read progress through the existing material/provider ports only on the wall. */
+export async function readWallReadings(
+  selection: WallVersionSelection,
+  force: boolean
+): Promise<WallCardReadings> {
+  if (selection.kind !== 'version') {
+    return selection
+  }
+  const { entry, catalog, scope, home, planTrees, repoIds, worktrees } = selection
+  try {
     const readFlow = async (
       workflow: 'plan' | 'acceptance'
     ): Promise<{
@@ -180,7 +200,7 @@ export async function readWallReadings(
         scope: readingScope,
         home: readingHome,
         worktrees,
-        repoIds: wallProjectVersionRows(project).map((row) => row.id),
+        repoIds,
         planTrees,
         catalog,
         loading: false,

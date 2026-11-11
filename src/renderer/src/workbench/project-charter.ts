@@ -23,6 +23,15 @@ export {
 } from '../../../shared/workbench/project-charter'
 export type { ProjectCharter } from '../../../shared/workbench/project-charter'
 
+export const CHARTER_LABELS = {
+  name: '项目名称',
+  owner: '项目负责人',
+  brief: '想做什么',
+  benchmark: '对标',
+  opportunity: '愿景',
+  groupId: '项目群'
+}
+
 export async function readProjectCharter(
   repoPath: string,
   connectionId?: string | null

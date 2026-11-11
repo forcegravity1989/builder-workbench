@@ -14,7 +14,8 @@ import type { Repo } from '../../../shared/repo-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSettingsReview } from './ProjectSettingsReview'
-import { CHARTER_LABELS, useProjectSettings } from './use-project-settings'
+import { useProjectSettings } from './use-project-settings'
+import { CHARTER_LABELS } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
 import { invalidateWallRepo } from './wall-refresh'
 import './project-settings.css'
@@ -160,7 +161,7 @@ export function ProjectSettingsRail({
               />
             </header>
             <div className="wb-config-body">
-              {model.loading ? (
+              {model.loading && !model.form ? (
                 <p role="status">正在读取项目信息…</p>
               ) : (
                 model.form &&
@@ -185,6 +186,7 @@ export function ProjectSettingsRail({
                             value={model.form!.value[field] ?? ''}
                             onChange={(event) => model.edit(field, event.target.value)}
                             required={field === 'name'}
+                            placeholder={field === 'groupId' ? '项目群号' : undefined}
                             aria-invalid={field === 'name' && !model.form!.value.name.trim()}
                             disabled={model.busy || blocked}
                           />

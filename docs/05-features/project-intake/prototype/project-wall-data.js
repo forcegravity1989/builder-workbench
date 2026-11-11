@@ -43,9 +43,10 @@
     fields: [
       ['name', '项目名称'],
       ['builder', '项目负责人'],
-      ['brief', '简介'],
+      ['brief', '想做什么'],
       ['benchmark', '对标'],
-      ['opportunity', '目标方向']
+      ['opportunity', '愿景'],
+      ['groupId', '项目群']
     ],
     state: {
       projects: [],
@@ -84,6 +85,7 @@
       brief: '把项目计划、开发与验收放在同一条旅程里。',
       benchmark: '团队现有研发工作台',
       opportunity: '减少重复操作，保持项目上下文',
+      groupId: '1000123456',
       hosts: ['local', 'dev'],
       sharing: { local: 'team', dev: 'team' },
       version: 'v1.0',

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CHARTER_LABELS, type useProjectSettings } from './use-project-settings'
+import type { useProjectSettings } from './use-project-settings'
+import { CHARTER_LABELS } from './project-charter'
 
 export function ProjectSettingsReview({
   model,
@@ -10,7 +11,13 @@ export function ProjectSettingsReview({
   onSubmitted(): void
 }) {
   const [open, setOpen] = useState(false)
-  const disabled = model.busy || !model.canEdit || !model.dirty || !model.form?.value.name.trim()
+  const disabled =
+    model.busy ||
+    model.loading ||
+    !model.status ||
+    !model.canEdit ||
+    !model.dirty ||
+    !model.form?.value.name.trim()
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

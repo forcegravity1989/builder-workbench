@@ -6,17 +6,22 @@ import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-h
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type { Worktree } from '../../../shared/worktree/types'
 import { worktreeFingerprintTuple } from './worktree-fingerprint'
-import { readWallReadings } from './wall-readings-load'
+import {
+  readWallReadings,
+  selectWallVersion,
+  type WallVersionSelection
+} from './wall-readings-load'
 import type { WallProject } from './workbench-wall-projects'
 import { wallProjectVersionRows } from './workbench-wall-projects'
 import type { WallCardReadings } from './wall-card-readings'
 import { CHARTER_BRANCH } from './project-charter'
-import { createWallCardCache, useWallCardReads } from './use-wall-card-reads'
+import { createWallCardCache, loadWallCardRead, useWallCardReads } from './use-wall-card-reads'
 import { type useWallRefresh, wallReadRevision } from './wall-refresh'
 
 const cache = createWallCardCache<WallCardReadings>()
+const versions = createWallCardCache<WallVersionSelection>()
 
-export function useWallReadings(
+function useWallVersionReads(
   projects: readonly WallProject[],
   refresh: ReturnType<typeof useWallRefresh>
 ) {
@@ -71,10 +76,47 @@ export function useWallReadings(
             ])
           ]),
           revision: wallReadRevision(refresh, rows),
-          load: (force: boolean) => readWallReadings(project, worktrees, force)
+          load: () => selectWallVersion(project, worktrees)
         }
       }),
     [projects, visible, detected, refresh]
   )
+  return reads
+}
+
+export function useWallReadings(
+  projects: readonly WallProject[],
+  refresh: ReturnType<typeof useWallRefresh>
+) {
+  const versionsToRead = useWallVersionReads(projects, refresh)
+  const reads = useMemo(
+    () =>
+      versionsToRead.map((source) => ({
+        ...source,
+        load: async (force: boolean) => {
+          const selection = await loadWallCardRead(
+            versions(source.sourceKey),
+            source.revision,
+            source.load
+          )
+          if (!selection) {
+            throw new Error('未读到项目版本目录')
+          }
+          return readWallReadings(selection, force)
+        }
+      })),
+    [versionsToRead]
+  )
   return useWallCardReads(reads, cache)
+}
+
+export function useWallVersionLabel(
+  project: WallProject | undefined,
+  refresh: ReturnType<typeof useWallRefresh>
+) {
+  const projects = useMemo(() => (project ? [project] : []), [project])
+  const reads = useWallVersionReads(projects, refresh)
+  const { values } = useWallCardReads(reads, versions)
+  const selection = project ? values[project.key] : undefined
+  return selection?.kind === 'version' ? selection.entry.version : null
 }

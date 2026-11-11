@@ -41,6 +41,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     '',
     '[chat]',
     'channel = "keep-me"',
+    'group_id = "1000123456" # 保留群号注释',
     ''
   ].join('\n')
   const openWall = async () => {
@@ -164,6 +165,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await page.getByRole('textbox', { name: '对标', exact: true }).fill('新对标')
   await page.getByRole('textbox', { name: '愿景', exact: true }).fill('新愿景')
   await page.getByRole('textbox', { name: '项目负责人', exact: true }).fill('负责人甲')
+  await page.getByRole('textbox', { name: '项目群', exact: true }).fill('1000123457')
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   const guard = page.getByRole('dialog', { name: '还有未提交的修改' })
   await expect(guard).toBeVisible()
@@ -175,7 +177,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('新愿景')
   await page.getByRole('button', { name: '保存', exact: true }).click()
   const review = page.getByRole('dialog', { name: '确认项目信息变更' })
-  for (const value of ['新对标', '新愿景', '负责人甲']) {
+  for (const value of ['新对标', '新愿景', '负责人甲', '1000123457']) {
     await expect(review).toContainText(value)
   }
   await expect(review.getByRole('button', { name: '确认保存', exact: true })).toBeEnabled()
@@ -203,6 +205,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
   await expect(page.getByRole('textbox', { name: '愿景', exact: true })).toHaveValue('原愿景')
   await page.getByRole('textbox', { name: '项目负责人', exact: true }).fill('负责人甲')
+  await page.getByRole('textbox', { name: '项目群', exact: true }).fill('1000123457')
   await page.getByRole('textbox', { name: '对标', exact: true }).fill('新对标')
   await page.getByRole('textbox', { name: '愿景', exact: true }).fill('新愿景')
   await page.getByRole('button', { name: '保存', exact: true }).click()
@@ -222,6 +225,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     'north_star = "新愿景"',
     'custom = "未知字段保留"',
     '[chat]\nchannel = "keep-me"',
+    'group_id = "1000123457" # 保留群号注释',
     '# 外部写入后保留'
   ]) {
     expect(saved).toContain(preserved)
@@ -239,12 +243,21 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-config-reloaded.jpg') })
   await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
   await card.locator('[data-workbench-open-overview]').click()
-  await page
-    .locator('#project-card')
-    .getByRole('button', { name: '编辑项目信息', exact: true })
-    .click()
+  const overviewCharter = page.locator('#project-card')
+  await overviewCharter.getByRole('button', { name }).click()
+  await expect(overviewCharter.locator('.status-dot')).toHaveCount(0)
+  await expect(overviewCharter.locator('.detail-k')).toHaveText([
+    '项目负责人',
+    '想做什么',
+    '对标',
+    '愿景',
+    '项目群'
+  ])
+  await expect(overviewCharter.locator('.detail-v').last()).toHaveText('1000123457')
+  await overviewCharter.getByRole('button', { name: '编辑项目信息', exact: true }).click()
   await expect(page.locator('.wb-project-settings')).toBeVisible()
   await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
+  await expect(page.locator('.wb-config-facts')).toContainText('1000123457')
   await page.screenshot({
     animations: 'disabled',
     path: info.outputPath('bw-overview-shared-editor.jpg')
