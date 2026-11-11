@@ -1,15 +1,5 @@
-// BW #553(决策⑧ 修订)transport tests with REAL official-build constants.
-// Why a separate file: IS_OFFICIAL_BUILD is a module-level const evaluated at
-// import time, so globalThis injection must happen before the client module
-// loads — vi.hoisted does that, but would flip every other case in
-// client-lifecycle.test.ts (several rely on the non-official drop).
-//
-// Contract under test: with an injected WeLink transport the whole native
-// pipeline (init → consent → burst cap → validator → SDK capture → flush)
-// stays live and events reach the transport's fetch; without injection the
-// Workbench product fails closed (no client, no capture); with consent off
-// (the BW default) nothing transmits. These run WITHOUT the harness's
-// `_enableTransportForTests` bypass so the gate itself is discriminating.
+// Official-build constants are evaluated at import time. This suite isolates
+// those constants while exercising the real SDK through an injected transport.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -36,30 +26,11 @@ import {
   makeFakeSettings,
   makeFakeStore,
   makeMockPostHog,
+  stashAndClearConsentEnv,
+  restoreConsentEnv,
   BASE_COMMON
 } from './client-test-harness'
 import type { GlobalSettings } from '../../shared/global-settings-types'
-
-const CONSENT_ENV_VARS = ['DO_NOT_TRACK', 'ORCA_TELEMETRY_DISABLED', 'CI'] as const
-
-function stashConsentEnv(): Record<string, string | undefined> {
-  const stash: Record<string, string | undefined> = {}
-  for (const name of CONSENT_ENV_VARS) {
-    stash[name] = process.env[name]
-    delete process.env[name]
-  }
-  return stash
-}
-
-function restoreConsentEnv(stash: Record<string, string | undefined>): void {
-  for (const name of CONSENT_ENV_VARS) {
-    if (stash[name] === undefined) {
-      delete process.env[name]
-    } else {
-      process.env[name] = stash[name]
-    }
-  }
-}
 
 type TransportSpy = {
   calls: { url: string; bodyBytes: number }[]
@@ -89,10 +60,14 @@ function makeTransportSpy(): TransportSpy {
 
 describe('Workbench WeLink telemetry transport under official-build identity', () => {
   let envStash: Record<string, string | undefined>
+  const networkFetch = vi.fn(async () => new Response('{"status":1}', { status: 200 }))
 
   beforeEach(() => {
-    envStash = stashConsentEnv()
-    process.env.ORCA_PRODUCT_NAME = 'Workbench'
+    envStash = stashAndClearConsentEnv()
+    vi.stubEnv('ORCA_PRODUCT_NAME', 'Workbench')
+    // A failed transport gate must fail the assertions without contacting PostHog.
+    networkFetch.mockClear()
+    vi.stubGlobal('fetch', networkFetch)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
@@ -102,8 +77,9 @@ describe('Workbench WeLink telemetry transport under official-build identity', (
     _setCommonPropsForTests(null)
     _setStoreForTests(null)
     _setShuttingDownForTests(false)
-    delete process.env.ORCA_PRODUCT_NAME
     restoreConsentEnv(envStash)
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
@@ -125,8 +101,6 @@ describe('Workbench WeLink telemetry transport under official-build identity', (
     trackAppOpenedOnce()
     await shutdownTelemetry()
 
-    // Discriminating: without the BW transport branch in initTelemetry, no
-    // PostHog client would exist and the SDK would never reach the spy fetch.
     expect(spy.shutdown).toHaveBeenCalledOnce()
     const batch = spy.calls.find((call) => call.url.includes('/batch'))
     expect(
@@ -134,15 +108,11 @@ describe('Workbench WeLink telemetry transport under official-build identity', (
       `expected a /batch/ flush, got ${JSON.stringify(spy.calls.map((c) => c.url))}`
     ).toBeDefined()
     expect(batch!.bodyBytes).toBeGreaterThan(0)
+    expect(networkFetch).not.toHaveBeenCalled()
   })
 
   it('fails closed without an injected transport: init builds no client even under official constants', async () => {
-    // Mock-survival pattern (前作 gate 测试的判别式设计): seed the module with
-    // the harness mock, then run init. If the BW init gate regressed, the
-    // native branch — live under this file's hoisted official constants — would
-    // instantiate a REAL PostHog client, replace the mock, and flush over the
-    // network on shutdown. Gate intact → the mock survives and shutdown stays
-    // sealed (no client built, no capture, no fetch).
+    // An incorrect native fallback replaces this mock under the official constants.
     const mock = makeMockPostHog()
     _setPostHogClientForTests(mock as unknown as PostHog)
     _setCommonPropsForTests(BASE_COMMON)
@@ -155,6 +125,7 @@ describe('Workbench WeLink telemetry transport under official-build identity', (
 
     expect(mock.shutdown).toHaveBeenCalledWith(2_000)
     expect(mock.capture).not.toHaveBeenCalled()
+    expect(networkFetch).not.toHaveBeenCalled()
   })
 
   it('transmits nothing while consent is off (the BW default)', async () => {
@@ -166,5 +137,6 @@ describe('Workbench WeLink telemetry transport under official-build identity', (
     await shutdownTelemetry()
 
     expect(spy.calls.find((call) => call.url.includes('/batch'))).toBeUndefined()
+    expect(networkFetch).not.toHaveBeenCalled()
   })
 })

@@ -11,7 +11,7 @@ export type WorkbenchPromptScope = Omit<CycleScope, 'workflow'> & {
   version?: string | null
 }
 
-export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) {
+export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope, request?: string) {
   const worktree = useAppStore
     .getState()
     .allWorktrees()
@@ -43,7 +43,7 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
         ? `和我制定${target}计划`
         : `和我开展${target}验收`
   const skillPath = await installWorkbenchSkill(scope, scope.worktreeId, scope.workflow)
-  return { prompt: `完整读取并使用「${skillPath}」中的 Skill，${task}。` }
+  return { prompt: `完整读取并使用「${skillPath}」中的 Skill，${request ?? task}。` }
 }
 
 export async function buildCyclePrompt(

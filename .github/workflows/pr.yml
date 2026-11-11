@@ -192,9 +192,12 @@ jobs:
           src/main/ipc/feedback.test.ts
           src/main/ipc/feedback-image-attachments.test.ts
           src/main/ipc/diagnostics.test.ts
+          src/main/ipc/telemetry.test.ts
           src/main/ipc/preflight-command-exec.test.ts
           src/main/ipc/preflight-host-cli-status.test.ts
           src/main/observability/bundle.test.ts
+          src/main/observability/architecture.test.ts
+          src/main/telemetry
           src/main/codehub
           src/preload/api/platform-bridge.test.ts
           src/renderer/src/lib/codehub-api.test.ts

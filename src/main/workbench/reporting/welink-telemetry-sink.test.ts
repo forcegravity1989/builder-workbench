@@ -1,27 +1,28 @@
-// Wire-contract guards for the WeLink telemetry lane (BW #553 决策⑧ 修订):
-//   1. posthog-node batch ingestion — gzip Blob body → buffered events, and
-//      the never-reject/always-2xx fetch contract the SDK depends on;
-//   2. group-space file protocol — ndjson serialization, unique names
-//      (same-name uploads overwrite versions, max 3 — 调研 §5), re-queue on
-//      failed upload;
-//   3. default-off normalization — the native cohort migration defaults NEW
-//      installs to opted-in, so the bootstrap flips untouched profiles once
-//      (marker) and never overrides an explicit choice afterwards.
-// A wrong parse silently drops every opted-in user's events; a wrong
-// normalization either transmits without consent or reverts an opt-in —
-// all three are data-protocol level, not UI assembly.
-// Case count is merged per the ratchet offset rule (docs/development.md);
-// all assertions from the pre-merge cases are preserved.
+// Batch, retry, shutdown and persisted-consent contracts for the WeLink transport.
 
 import { gzipSync } from 'node:zlib'
+import { dirname } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as oneboxClientModule from './welink-onebox-client'
 
-const { ensureReportFolderMock, uploadReportFileMock, runPreflightCheckMock } = vi.hoisted(() => ({
-  ensureReportFolderMock: vi.fn(),
-  uploadReportFileMock: vi.fn(),
-  runPreflightCheckMock: vi.fn()
-}))
+const { ensureReportFolderMock, uploadReportFileMock, runPreflightCheckMock, cleanupProbeMock } =
+  vi.hoisted(() => ({
+    ensureReportFolderMock: vi.fn(),
+    uploadReportFileMock: vi.fn(),
+    runPreflightCheckMock: vi.fn(),
+    cleanupProbeMock: vi.fn()
+  }))
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  return {
+    ...actual,
+    rmSync: (...args: Parameters<typeof actual.rmSync>) => {
+      cleanupProbeMock(...args)
+      actual.rmSync(...args)
+    }
+  }
+})
 
 vi.mock('electron', async () => {
   const os = await import('node:os')
@@ -47,6 +48,7 @@ import {
   flushTelemetryBuffer,
   parsePostHogBatchText,
   serializeTelemetryNdjson,
+  shutdownTelemetryTransport,
   telemetryFileName,
   transportFetch,
   type TelemetryBatchEvent
@@ -57,8 +59,6 @@ import { WELINK_REPORT_SPACE_ID, WORKBENCH_TELEMETRY_FOLDER_NAME } from './welin
 import { makeFakeSettings, makeFakeStore } from '../../telemetry/client-test-harness'
 
 function batchPayload(): string {
-  // Verbatim shape from the posthog-node 5.33.3 spike (no network): one gzip
-  // Blob POSTed to <host>/batch/ per flush.
   return JSON.stringify({
     api_key: 'workbench-welink-transport',
     batch: [
@@ -82,11 +82,30 @@ function gzipBlob(text: string): Blob {
   return new Blob([new Uint8Array(gzipSync(Buffer.from(text)))])
 }
 
+function deferred<T>(): {
+  promise: Promise<T>
+  resolve: (value: T) => void
+  reject: (error: Error) => void
+} {
+  let resolve!: (value: T) => void
+  let reject!: (error: Error) => void
+  const promise = new Promise<T>((onResolve, onReject) => {
+    resolve = onResolve
+    reject = onReject
+  })
+  return { promise, resolve, reject }
+}
+
+async function bufferBatch(body = batchPayload()): Promise<void> {
+  await transportFetch('https://us.i.posthog.com/batch/', { method: 'POST', headers: {}, body })
+}
+
 beforeEach(() => {
   _resetTelemetryTransportForTests()
   ensureReportFolderMock.mockReset()
   uploadReportFileMock.mockReset()
   runPreflightCheckMock.mockReset()
+  cleanupProbeMock.mockReset()
   runPreflightCheckMock.mockResolvedValue({ welink: { installed: true, authenticated: true } })
   ensureReportFolderMock.mockResolvedValue('555')
   uploadReportFileMock.mockResolvedValue('777')
@@ -94,10 +113,11 @@ beforeEach(() => {
 
 afterEach(() => {
   _resetTelemetryTransportForTests()
+  vi.useRealTimers()
 })
 
 describe('welink telemetry sink protocol', () => {
-  it('buffers a gzipped /batch/ body, acks every request 2xx, and drops malformed entries', async () => {
+  it('decodes batches and keeps the newest events when an in-flight upload fails', async () => {
     const response = await transportFetch('https://us.i.posthog.com/batch/', {
       method: 'POST',
       headers: { 'Content-Encoding': 'gzip' },
@@ -122,9 +142,29 @@ describe('welink telemetry sink protocol', () => {
     // Garbage batch bodies parse to [] instead of throwing into the SDK.
     expect(parsePostHogBatchText('{not json')).toEqual([])
     expect(parsePostHogBatchText('{"batch":"nope"}')).toEqual([])
+
+    const started = deferred<void>()
+    const upload = deferred<string>()
+    uploadReportFileMock.mockImplementationOnce(() => {
+      started.resolve()
+      return upload.promise
+    })
+    const flushing = flushTelemetryBuffer()
+    await started.promise
+    const newer = Array.from({ length: 5_000 }, (_, index) => ({
+      distinct_id: 'i1',
+      event: 'app_opened',
+      uuid: `new-${index}`
+    }))
+    await bufferBatch(JSON.stringify({ batch: newer }))
+    upload.reject(new WelinkReportError('network', 'offline'))
+    await flushing
+    expect(_getBufferedTelemetryEventsForTests()).toHaveLength(5_000)
+    expect(_getBufferedTelemetryEventsForTests()[0].uuid).toBe('new-0')
+    expect(_getBufferedTelemetryEventsForTests().at(-1)?.uuid).toBe('new-4999')
   })
 
-  it('flushes one uniquely-named ndjson file into the telemetry folder, re-queues on failure, and normalizes consent default-off once', async () => {
+  it('flushes the in-flight and final batches within the quit budget and preserves persisted choices', async () => {
     await transportFetch('https://us.i.posthog.com/batch/', {
       method: 'POST',
       headers: {},
@@ -159,6 +199,122 @@ describe('welink telemetry sink protocol', () => {
     expect(lines).toHaveLength(2)
     expect(JSON.parse(lines[0])).toMatchObject({ event: 'app_opened', uuid: 'u-1' })
 
+    // Exercise the real shared cleanup helper: a filesystem failure cannot resend an acked batch.
+    const uploadsBeforeCleanupFailure = uploadReportFileMock.mock.calls.length
+    cleanupProbeMock.mockClear()
+    cleanupProbeMock.mockImplementationOnce(() => {
+      throw new Error('temporary directory is busy')
+    })
+    try {
+      await bufferBatch()
+      await flushTelemetryBuffer()
+      expect(cleanupProbeMock).toHaveBeenCalledOnce()
+      expect(_getBufferedTelemetryEventsForTests()).toHaveLength(0)
+      await flushTelemetryBuffer()
+      expect(uploadReportFileMock).toHaveBeenCalledTimes(uploadsBeforeCleanupFailure + 1)
+    } finally {
+      const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+      const attemptedFile = uploadReportFileMock.mock.calls[uploadsBeforeCleanupFailure]?.[3]
+      if (typeof attemptedFile === 'string') {
+        actual.rmSync(dirname(attemptedFile), { recursive: true, force: true })
+      }
+    }
+
+    // Quit must wait even when the entire buffer is already in flight.
+    const started = deferred<void>()
+    const upload = deferred<string>()
+    uploadReportFileMock.mockImplementationOnce(() => {
+      started.resolve()
+      return upload.promise
+    })
+    await bufferBatch()
+    const flushing = flushTelemetryBuffer()
+    await started.promise
+    let quitFinished = false
+    const quitting = shutdownTelemetryTransport(2_000).then(() => {
+      quitFinished = true
+    })
+    await Promise.resolve()
+    expect(quitFinished).toBe(false)
+    upload.resolve('778')
+    await Promise.all([flushing, quitting])
+    expect(quitFinished).toBe(true)
+
+    // A batch queued by SDK shutdown behind an existing upload gets its own flush.
+    _resetTelemetryTransportForTests()
+    const tailStarted = deferred<void>()
+    const priorUpload = deferred<string>()
+    uploadReportFileMock.mockImplementationOnce(() => {
+      tailStarted.resolve()
+      return priorUpload.promise
+    })
+    await bufferBatch()
+    const priorFlushing = flushTelemetryBuffer()
+    await tailStarted.promise
+    await bufferBatch()
+    const uploadsBeforeQuit = uploadReportFileMock.mock.calls.length
+    const withTail = shutdownTelemetryTransport(2_000)
+    priorUpload.resolve('779')
+    await Promise.all([priorFlushing, withTail])
+    expect(uploadReportFileMock).toHaveBeenCalledTimes(uploadsBeforeQuit + 1)
+    expect(_getBufferedTelemetryEventsForTests()).toHaveLength(0)
+
+    // A timed-out upload must not resurrect the queue or start a tail upload later.
+    _resetTelemetryTransportForTests()
+    vi.useFakeTimers()
+    const slowStarted = deferred<void>()
+    const slowUpload = deferred<string>()
+    uploadReportFileMock.mockImplementationOnce(() => {
+      slowStarted.resolve()
+      return slowUpload.promise
+    })
+    await bufferBatch()
+    const slowFlushing = flushTelemetryBuffer()
+    await slowStarted.promise
+    await bufferBatch()
+    const uploadsBeforeTimeout = uploadReportFileMock.mock.calls.length
+    const timedQuit = shutdownTelemetryTransport(20)
+    await vi.advanceTimersByTimeAsync(20)
+    await timedQuit
+    slowUpload.reject(new WelinkReportError('network', 'offline'))
+    await slowFlushing
+    await bufferBatch()
+    expect(uploadReportFileMock).toHaveBeenCalledTimes(uploadsBeforeTimeout)
+    expect(_getBufferedTelemetryEventsForTests()).toHaveLength(0)
+
+    // Late discovery/metadata replies cannot start another stage after the quit deadline.
+    for (const phase of ['preflight', 'folder'] as const) {
+      _resetTelemetryTransportForTests()
+      const phaseStarted = deferred<void>()
+      const pendingPhase = deferred<unknown>()
+      const phaseMock = phase === 'preflight' ? runPreflightCheckMock : ensureReportFolderMock
+      phaseMock.mockImplementationOnce(() => {
+        phaseStarted.resolve()
+        return pendingPhase.promise
+      })
+      await bufferBatch()
+      const pendingFlush = flushTelemetryBuffer()
+      await phaseStarted.promise
+      const callsAtDeadline = {
+        preflight: runPreflightCheckMock.mock.calls.length,
+        folder: ensureReportFolderMock.mock.calls.length,
+        upload: uploadReportFileMock.mock.calls.length
+      }
+      const closing = shutdownTelemetryTransport(20)
+      await vi.advanceTimersByTimeAsync(20)
+      await closing
+      pendingPhase.resolve(
+        phase === 'preflight' ? { welink: { installed: true, authenticated: true } } : '555'
+      )
+      await pendingFlush
+      await flushTelemetryBuffer()
+      expect(runPreflightCheckMock).toHaveBeenCalledTimes(callsAtDeadline.preflight)
+      expect(ensureReportFolderMock).toHaveBeenCalledTimes(callsAtDeadline.folder)
+      expect(uploadReportFileMock).toHaveBeenCalledTimes(callsAtDeadline.upload)
+      expect(_getBufferedTelemetryEventsForTests()).toHaveLength(0)
+    }
+    vi.useRealTimers()
+
     // Default-off normalization (telemetry-bootstrap): new installs arrive
     // opted-in from the native cohort migration and must be flipped once.
     const freshSettings = makeFakeSettings({
@@ -186,17 +342,19 @@ describe('welink telemetry sink protocol', () => {
     expect(chosenStore.updateSettings).not.toHaveBeenCalled()
     expect(chosenSettings.telemetry?.optedIn).toBe(true)
 
-    // Existing-user cohort (pending banner, optedIn null) → off + marker.
-    const legacySettings = makeFakeSettings({
-      optedIn: null,
-      installId: 'id-2',
-      existedBeforeTelemetryRelease: true
-    })
-    applyWorkbenchTelemetryDefaultOff(makeFakeStore(legacySettings))
-    expect(legacySettings.telemetry).toMatchObject({
-      optedIn: false,
-      workbenchDefaultOffApplied: true
-    })
+    // Existing profiles start disabled once, including historical opted-in values.
+    for (const optedIn of [true, null]) {
+      const legacySettings = makeFakeSettings({
+        optedIn,
+        installId: 'id-2',
+        existedBeforeTelemetryRelease: true
+      })
+      applyWorkbenchTelemetryDefaultOff(makeFakeStore(legacySettings))
+      expect(legacySettings.telemetry).toMatchObject({
+        optedIn: false,
+        workbenchDefaultOffApplied: true
+      })
+    }
 
     // No telemetry block (migration invariant broken) → no write, no throw.
     const bareStore = makeFakeStore(makeFakeSettings(undefined))

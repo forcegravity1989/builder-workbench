@@ -7725,7 +7725,9 @@
           "fe904ac984": "Share anonymous usage data",
           "77410e0566": "Privacy policy",
           "8bfdd23a88": "Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.",
-          "workbenchDescription": "Off by default. When enabled, Workbench sends anonymous counts of which features you use and where things break to the project WeLink group space.",
+          "workbenchDescription": "Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.",
+          "workbenchLabel": "Share usage data",
+          "workbenchSectionDescription": "Usage data, diagnostics, and telemetry controls.",
           "afec8b03be": "ci"
         },
         "QuickCommandsList": {

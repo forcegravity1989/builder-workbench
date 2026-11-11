@@ -69,6 +69,9 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
 
   const blocked = computeBlockedReason(consent)
   const toggleChecked = settings.telemetry?.optedIn === true
+  const telemetryLabel = isWorkbenchShell()
+    ? translate('auto.components.settings.PrivacyPane.workbenchLabel', 'Share usage data')
+    : translate('auto.components.settings.PrivacyPane.fe904ac984', 'Share anonymous usage data')
 
   const handleToggle = async (): Promise<void> => {
     if (blocked || inFlight) {
@@ -91,21 +94,13 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <ShieldCheck className="size-4" />
-            <Label>
-              {translate(
-                'auto.components.settings.PrivacyPane.fe904ac984',
-                'Share anonymous usage data'
-              )}
-            </Label>
+            <Label>{telemetryLabel}</Label>
           </div>
           <p className="text-xs text-muted-foreground">
-            {/* Why (BW #553 决策⑧ 修订): Workbench telemetry is opt-in and lands in the
-                WeLink group space, not PostHog — the Orca description and privacy-policy
-                link would misdescribe where data goes (品牌/落点文案同 #614 治理口径). */}
             {isWorkbenchShell() ? (
               translate(
                 'auto.components.settings.PrivacyPane.workbenchDescription',
-                'Off by default. When enabled, Workbench sends anonymous counts of which features you use and where things break to the project WeLink group space.'
+                'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.'
               )
             ) : (
               <>
@@ -127,10 +122,7 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
         </div>
         <Switch
           checked={toggleChecked}
-          aria-label={translate(
-            'auto.components.settings.PrivacyPane.fe904ac984',
-            'Share anonymous usage data'
-          )}
+          aria-label={telemetryLabel}
           aria-describedby={blocked ? PRIVACY_PANE_BLOCKED_HELPER_ID : undefined}
           disabled={blocked !== null || inFlight}
           onCheckedChange={() => void handleToggle()}

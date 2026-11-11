@@ -102,7 +102,7 @@ git rev-parse 'v1.4.251^{commit}'
 - **配对协议能力仍保留**：`src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator、relay/pairing 等活体协议不等同于 Mobile 产品，不因删除产品页一起删除。
 - **产品文档正本已替换**：仓根 `AGENTS.md`、`README.md`、`CONTEXT.md`、`CLAUDE.md` 与 `docs/` 是 BW 正本；上游工程参考进入 `ref/`，不覆盖 BW 产品文档。
 - **上游对外文档站不作为 BW 产品站**：`docs/site/`、README 多语言/营销素材和专项工程笔记不自动恢复；需要时从 Git 历史追溯来源。
-- **Orca 上报 HTTP 出口已删除（#553，2026-11）**：反馈/崩溃报告/诊断包的 onorca.dev 传输链不再存在——`ipc/feedback.ts` 的 net.fetch/multipart/端点重试机制、`observability/diagnostic-bundle-upload.ts`、`observability/diagnostic-upload-http.ts`、`diagnostic-upload-endpoint.ts` 的 token 解析与 `ORCA_DIAGNOSTICS_TOKEN_URL` 构建常量均已移除；唯一出口是 `src/main/workbench/reporting/` 的 WeLink 群空间 sink（welink-cli onebox）。同步时不得恢复上述 HTTP 出口或引入第二上报路径；上游对这些文件的改动只需对照 BW sink 是否要吸收语义（如附件降级、确认对话框），不整段合回。对应构建流程中的失效 `ORCA_DIAGNOSTICS_TOKEN_URL` 配置已同步删除。产品遥测按人的修订决定（#553 决策⑧ 修订,取代「不采集」）在 BW 做成**默认关、开启后经 WeLink 群空间 sink 上报**：原生 consent/burst-cap/validator/SDK 队列管线保留，`telemetry/client.ts` 只加传输注入钩子（BW bootstrap 注入 posthog-node 自定义 fetch，落 `workbench/reporting/welink-telemetry-sink.ts`）；同步时不得恢复 PostHog 直发（不注入 `ORCA_POSTHOG_WRITE_KEY` 消费路径、不移除注入钩子），上游 telemetry 管线改动照常吸收，出口保持在 BW sink。
+- **上报出口统一为 WeLink 群空间**：反馈、崩溃报告、诊断包和用户开启后的产品遥测共用 `src/main/workbench/reporting/` 的 welink-cli onebox 客户端。反馈与诊断保留原生入口、附件降级和确认流程；原 onorca.dev HTTP 上传链及 `ORCA_DIAGNOSTICS_TOKEN_URL` 配置已删除。遥测默认关闭、仅在设置开启，原生 consent、burst cap、validator 与 SDK 队列保留，由 BW bootstrap 注入 posthog-node 自定义 fetch，汇入独立遥测目录。同步时吸收原生管线语义，保留传输注入和默认关闭边界，不恢复 onorca.dev 或 PostHog 网络发送，也不另建上报出口。
 
 ### 2.2 目录和挂载边界
 

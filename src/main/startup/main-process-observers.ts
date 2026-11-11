@@ -56,14 +56,11 @@ export function initializeMainProcessObservers(): void {
     unsubscribeStatusFreshness()
     uninstallHookStatusRepublish()
   }
-  // Why (BW #553 决策⑧ 修订): the WeLink telemetry transport must be injected
-  // before initTelemetry — BW telemetry is opt-in (default off; the bootstrap
-  // persists the one-shot default) and events flow through the injected
-  // transport instead of PostHog.
+  // Consent defaults and the BW destination must be set before native telemetry starts.
   if (isWorkbenchProduct()) {
     installWorkbenchTelemetryTransport(store)
   }
-  // Why: telemetry must init before any IPC handler/renderer can call track(); it's a no-op in dev and while TELEMETRY_ENABLED is false, so it's safe early.
+  // Initialize before IPC handlers and renderers can call track().
   initTelemetry(store)
   // Why: the breadcrumb alone never leaves the machine — it rides crash reports, and a hang is not
   // a crash (the app is force-quit, so no report is ever generated). Without this the incidence

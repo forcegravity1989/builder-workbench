@@ -5,6 +5,7 @@ import { SshPane } from './SshPane'
 import { SettingsSection } from './SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { SettingsRenderContext } from './settings-render-context'
+import { isWorkbenchShell } from '../../workbench/is-workbench-shell'
 
 export function renderServersSettingsSection(context: SettingsRenderContext): React.JSX.Element {
   const { model, navigation, view } = context
@@ -85,10 +86,17 @@ export function renderPrivacySettingsSection(context: SettingsRenderContext): Re
     <SettingsSection
       id="privacy"
       title={translate('auto.components.settings.Settings.d7e3f62d70', 'Privacy & Telemetry')}
-      description={translate(
-        'auto.components.settings.Settings.c1b43dc4e2',
-        'Anonymous usage data and telemetry controls.'
-      )}
+      description={
+        isWorkbenchShell()
+          ? translate(
+              'auto.components.settings.PrivacyPane.workbenchSectionDescription',
+              'Usage data, diagnostics, and telemetry controls.'
+            )
+          : translate(
+              'auto.components.settings.Settings.c1b43dc4e2',
+              'Anonymous usage data and telemetry controls.'
+            )
+      }
       searchEntries={navigation.getSectionSearchEntries('privacy')}
     >
       {view.isSectionMounted('privacy') ? <PrivacyPane settings={model.settings} /> : null}

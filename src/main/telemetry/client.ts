@@ -17,11 +17,11 @@ import { getCohortAtEmit } from './cohort-classifier'
 import { resolveConsent, type ConsentState } from './consent'
 import { commonPropsSchema, validate } from './validator'
 
-// Compile-time feature flag, independent of the build-identity gate — both must be satisfied to transmit.
+// Compile-time kill switch for both native and injected transports.
 // NOTE: config/scripts/verify-telemetry-constants.mjs greps `const TELEMETRY_ENABLED = true|false`; keep that shape or update its regex.
 const TELEMETRY_ENABLED = true
 
-// Eligible to transmit only if CI injected BOTH build-identity and write key; either alone fails closed, with no runtime env-var override (dev/contributor builds get `null`).
+// Native PostHog transmission requires both CI-injected identity and key, with no runtime override.
 // The `globalThis` reads are for vitest, which skips electron-vite's `define` pass — resolving to `IS_OFFICIAL_BUILD === false` there.
 const BUILD_IDENTITY: 'stable' | 'rc' | null =
   typeof ORCA_BUILD_IDENTITY !== 'undefined'
@@ -44,6 +44,7 @@ let shuttingDown = false
 let storeRef: Store | null = null
 
 const OPT_OUT_CAPTURE_ENQUEUE_TIMEOUT_MS = 1_000
+const SHUTDOWN_BUDGET_MS = 2_000
 
 // Test-only transport-gate override (`_enableTransportForTests`) so tests exercise the full pipeline without a real CI build.
 let testTransportEnabled = false
@@ -51,12 +52,7 @@ let testTransportEnabled = false
 // First-launch `app_opened` gate: no events transmit until the banner resolves; keep mark+emit atomic.
 let appOpenedTrackedThisSession = false
 
-// BW #553(决策⑧ 修订):the Workbench product ships no PostHog identity/key, but
-// telemetry is opt-in there too — events go to the WeLink group space instead.
-// The BW bootstrap injects a transport (posthog-node custom `fetch`) before
-// `initTelemetry` runs; without it the BW product stays a deterministic no-op
-// (fail-closed, same as a contributor build). Injection keeps this module free
-// of workbench imports (telemetry lane isolation — observability/architecture.test.ts).
+// The bootstrap injects BW's destination without importing the workbench layer here.
 export type TelemetryTransportFetchResponse = {
   status: number
   text: () => Promise<string>
@@ -64,16 +60,13 @@ export type TelemetryTransportFetchResponse = {
 }
 
 export type TelemetryTransport = {
-  /** posthog-node `fetch` override (structurally compatible with PostHogFetchOptions/Response).
-   *  MUST NOT reject and MUST resolve 2xx: the SDK turns fetch errors into retry cycles whose
-   *  rejections escape `shutdownTelemetry`'s catch as unhandled rejections, and non-2xx triggers
-   *  a retry after shutdown (both verified against posthog-node 5.33.3). */
+  /** Acknowledge buffered batches with 2xx; the transport owns upload retries. */
   fetch: (
     url: string,
     options: { method: string; headers: Record<string, string>; body?: string | Blob }
   ) => Promise<TelemetryTransportFetchResponse>
-  /** Final flush on quit; must self-bound its deadline. */
-  shutdown?: () => Promise<void>
+  /** Final flush within the native client's remaining quit budget. */
+  shutdown?: (remainingMs: number) => Promise<void>
 }
 
 let workbenchTransport: TelemetryTransport | null = null
@@ -112,12 +105,10 @@ export function initTelemetry(store: Store): void {
   // Reset per session: the "no app_opened until banner resolution" invariant is per-launch, not per-install.
   appOpenedTrackedThisSession = false
 
-  // BW #553(决策⑧ 修订):Workbench telemetry is opt-in (default off) and the
-  // injected transport — not PostHog — decides where events land. The native
-  // pipeline below (consent, burst cap, validator, SDK queue) is unchanged.
-  // The product judgement stays deterministic (前作原则): BW never builds a
-  // PostHog client from CI-injected identity/key — it either transmits through
-  // the injected WeLink transport or stays closed.
+  if (!TELEMETRY_ENABLED) {
+    return
+  }
+  // BW must never fall through to the official PostHog transport.
   if (isWorkbenchProduct()) {
     const bwTransport = workbenchTransport
     if (!bwTransport) {
@@ -131,7 +122,7 @@ export function initTelemetry(store: Store): void {
     return
   }
 
-  if (!TELEMETRY_ENABLED || !IS_OFFICIAL_BUILD) {
+  if (!IS_OFFICIAL_BUILD) {
     return
   }
   initTelemetryTransport(store, {
@@ -230,15 +221,10 @@ function waitForCaptureEnqueue(client: PostHog, event: EventName, uuid: string):
   })
 }
 
-// No-op in contributor / non-official builds; only official stable/rc builds (CI-injected `ORCA_BUILD_IDENTITY` + `ORCA_POSTHOG_WRITE_KEY`) transmit.
-// BW #553(决策⑧ 修订):the Workbench product transmits only through the injected WeLink transport (default off; consent gates below) — never via CI-injected PostHog identity.
+// Native builds require official credentials; BW requires its injected transport.
 export function track<N extends EventName>(name: N, props: EventProps<N>): void {
-  // Symmetric with the init gate: BW builds inject no official constants, so
-  // the injected transport — not IS_OFFICIAL_BUILD — is the BW transmit
-  // eligibility; without it the product fails closed whatever constants say.
-  const transportAllowed = isWorkbenchProduct()
-    ? workbenchTransport !== null
-    : IS_OFFICIAL_BUILD && TELEMETRY_ENABLED
+  const transportAllowed =
+    TELEMETRY_ENABLED && (isWorkbenchProduct() ? workbenchTransport !== null : IS_OFFICIAL_BUILD)
   if (!testTransportEnabled && !transportAllowed) {
     return
   }
@@ -375,21 +361,20 @@ export function trackAppOpenedOnce(): void {
 export async function shutdownTelemetry(): Promise<void> {
   // Set the gate before flush so late IPC-arrived tracks drop instead of enqueuing mid-flush.
   shuttingDown = true
+  const deadline = Date.now() + SHUTDOWN_BUDGET_MS
   const instance = posthog
   if (instance) {
     try {
-      // Bounded flush caps at 2s, so quit delay rises by at most that.
-      await instance.shutdown(2_000)
+      await instance.shutdown(SHUTDOWN_BUDGET_MS)
     } catch (err) {
       // Telemetry must never crash the app on quit. Swallow.
       console.warn('[telemetry] shutdown error (ignored):', err)
     }
   }
-  // BW: the SDK flush above hands the final batch to the transport; give it a
-  // bounded window to land the upload before quit proceeds (self-bounded inside).
+  // SDK buffering and the destination share one quit deadline.
   if (workbenchTransport?.shutdown) {
     try {
-      await workbenchTransport.shutdown()
+      await workbenchTransport.shutdown(Math.max(0, deadline - Date.now()))
     } catch (err) {
       console.warn('[telemetry] workbench transport shutdown error (ignored):', err)
     }

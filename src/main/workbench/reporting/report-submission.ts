@@ -35,7 +35,7 @@ const MAX_OBSERVED_BYTES = 64 * 1024 * 1024
 
 class ReceiptPersistenceError extends Error {}
 
-function cleanupReportingTemp(directory: string, span: ActiveSpan): void {
+export function cleanupReportingTemp(directory: string, span: ActiveSpan): void {
   try {
     rmSync(directory, { recursive: true, force: true })
   } catch (error) {

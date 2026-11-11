@@ -49,7 +49,7 @@ async function main() {
         }
         seen.add(item.destination)
         let content = await readFile(item.source)
-        if (/\.(md|mjs|py|toml|tmpl)$/.test(item.source)) {
+        if (/\.(md|html|mjs|py|toml|tmpl)$/.test(item.source)) {
           let text = content.toString('utf8').replace(/\r\n?/g, '\n')
           if (item.source.endsWith('.md')) {
             text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (link, label, target) => {

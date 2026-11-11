@@ -1,43 +1,25 @@
-// BW #553(决策⑧ 修订):opt-in product telemetry lands in the WeLink group
-// space instead of PostHog. This module is the `TelemetryTransport` the
-// native telemetry client injects into posthog-node's custom `fetch`.
-//
-// Wire facts (spike-verified against posthog-node 5.33.3, no network):
-//   - the SDK POSTs one gzip Blob body to `<host>/batch/` per flush
-//     (`{api_key, batch: [{distinct_id, event, properties, timestamp, uuid}], sent_at}`);
-//   - a custom fetch that THROWS becomes an unhandled rejection that escapes
-//     `shutdownTelemetry`'s catch and can take the main process down;
-//   - a non-2xx response schedules a retry that fires after shutdown.
-// So `transportFetch` buffers and always resolves 200 — the buffer (not the
-// SDK) owns retry semantics: failed uploads are re-queued and ride the next
-// scheduled flush.
-//
-// Cadence: the SDK's 10s flushInterval only moves events into the in-memory
-// buffer. Group-space uploads run on a much longer interval (default 10 min,
-// env-overridable for acceptance runs) because onebox rate-limits with 429
-// (~45s recovery, 调研 §4) and every upload creates a permanent file in the
-// group space — per-SDK-flush uploads would spam both.
+// The SDK's fetch acknowledges buffered batches; this sink owns upload retries.
+// Group-space uploads are less frequent than SDK flushes because each creates a file.
 
 import { gunzipSync } from 'node:zlib'
 import { randomBytes } from 'node:crypto'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TelemetryTransportFetchResponse } from '../../telemetry/client'
 import { withSpan } from '../../observability/tracer'
 import { resolveWelinkReportConfig, WORKBENCH_TELEMETRY_FOLDER_NAME } from './welink-report-config'
 import { ensureReportFolder, uploadReportFile, WelinkReportError } from './welink-onebox-client'
-import { getReportingTempRoot, resolveWelinkRoute, submissionStamp } from './report-submission'
+import {
+  cleanupReportingTemp,
+  getReportingTempRoot,
+  resolveWelinkRoute,
+  submissionStamp
+} from './report-submission'
 
-// Mirrors the native SDK maxQueueSize (client.ts): past the cap the oldest
-// events drop first. ~400B/event average → ~2 MiB worst-case buffer.
+// Match the native SDK queue limit, dropping the oldest events first.
 const MAX_BUFFERED_EVENTS = 5_000
 
 const DEFAULT_FLUSH_INTERVAL_MS = 600_000
-// Quit must not wedge on a slow upload: the welink client's own 90s deadline
-// is far beyond an acceptable exit delay. 8s covers the measured good-link
-// upload (~3.1s for 4 MiB; telemetry batches are far smaller) with margin —
-// missing this window drops at most one flush interval of opt-in events.
-const SHUTDOWN_FLUSH_BUDGET_MS = 8_000
 
 function resolveFlushIntervalMs(): number {
   const raw = Number(process.env.WORKBENCH_TELEMETRY_FLUSH_MS)
@@ -100,6 +82,7 @@ let buffer: TelemetryBatchEvent[] = []
 let flushTimer: ReturnType<typeof setInterval> | null = null
 let flushInFlight: Promise<void> | null = null
 let stopped = false
+let closed = false
 
 function bufferEvents(events: TelemetryBatchEvent[]): void {
   buffer.push(...events)
@@ -127,11 +110,16 @@ function takeBuffer(): TelemetryBatchEvent[] {
 }
 
 function requeue(events: TelemetryBatchEvent[]): void {
-  bufferEvents(events)
+  if (!closed) {
+    buffer = [...events, ...buffer].slice(-MAX_BUFFERED_EVENTS)
+  }
 }
 
 /** Upload one buffered batch as a single ndjson file; re-queues on any failure. */
 export function flushTelemetryBuffer(): Promise<void> {
+  if (closed) {
+    return Promise.resolve()
+  }
   if (flushInFlight) {
     return flushInFlight
   }
@@ -143,16 +131,17 @@ export function flushTelemetryBuffer(): Promise<void> {
     await withSpan('workbench.reporting.telemetry', async (span) => {
       span.setAttribute('events', events.length)
       try {
-        // Space id is code-pinned (WELINK_REPORT_SPACE_ID); resolveWelinkReportConfig
-        // never returns null, so there is no config-missing path here — a missing
-        // welink-cli surfaces from resolveWelinkRoute as a categorized failure below.
         const { spaceId } = resolveWelinkReportConfig()
         const route = await resolveWelinkRoute()
-        const folderId = await ensureReportFolder(
-          route,
-          spaceId,
-          WORKBENCH_TELEMETRY_FOLDER_NAME
-        )
+        if (closed) {
+          span.interrupt('telemetry shutdown')
+          return
+        }
+        const folderId = await ensureReportFolder(route, spaceId, WORKBENCH_TELEMETRY_FOLDER_NAME)
+        if (closed) {
+          span.interrupt('telemetry shutdown')
+          return
+        }
         const fileName = telemetryFileName(new Date())
         const directory = join(getReportingTempRoot(), `telemetry-${fileName}`)
         mkdirSync(directory, { mode: 0o700, recursive: true })
@@ -164,7 +153,7 @@ export function flushTelemetryBuffer(): Promise<void> {
           })
           await uploadReportFile(route, spaceId, folderId, filePath, fileName)
         } finally {
-          rmSync(directory, { recursive: true, force: true })
+          cleanupReportingTemp(directory, span)
         }
       } catch (error) {
         span.setAttribute('status', 'failed')
@@ -184,25 +173,39 @@ export function flushTelemetryBuffer(): Promise<void> {
   return flushInFlight
 }
 
-/** Quit path: one bounded final flush; whatever doesn't land in time is dropped. */
-export async function shutdownTelemetryTransport(): Promise<void> {
+/** Share the native client's remaining quit budget; unsent events are discarded. */
+export async function shutdownTelemetryTransport(remainingMs: number): Promise<void> {
   stopped = true
   if (flushTimer) {
     clearInterval(flushTimer)
     flushTimer = null
   }
-  if (buffer.length === 0) {
+  if (remainingMs <= 0 || (!flushInFlight && buffer.length === 0)) {
+    closed = true
+    buffer = []
     return
+  }
+  const expiresAt = Date.now() + remainingMs
+  const inFlight = flushInFlight
+  const flushFinalBatch = async (): Promise<void> => {
+    if (inFlight) {
+      await inFlight
+    }
+    if (!closed && Date.now() < expiresAt && buffer.length > 0) {
+      await flushTelemetryBuffer()
+    }
   }
   let deadline: ReturnType<typeof setTimeout> | undefined
   try {
     await Promise.race([
-      flushTelemetryBuffer(),
+      flushFinalBatch(),
       new Promise<void>((resolve) => {
-        deadline = setTimeout(resolve, SHUTDOWN_FLUSH_BUDGET_MS)
+        deadline = setTimeout(resolve, remainingMs)
       })
     ])
   } finally {
+    closed = true
+    buffer = []
     if (deadline) {
       clearTimeout(deadline)
     }
@@ -210,16 +213,14 @@ export async function shutdownTelemetryTransport(): Promise<void> {
 }
 
 async function readRequestBody(body: string | Blob | undefined): Promise<string> {
-  // Never reject (SDK contract — see header): every path, including a Blob
-  // read failure, degrades to '' (the batch is dropped, telemetry never
-  // crashes the process).
+  // A rejected fetch can leave the SDK retrying after shutdown; malformed bodies are dropped.
   try {
     if (typeof body === 'string') {
       return body
     }
     if (body && typeof body.text === 'function') {
       const raw = Buffer.from(await body.arrayBuffer())
-      // The SDK sets Content-Encoding: gzip on the batch body (spike-verified).
+      // posthog-node sends gzip Blob bodies; plain JSON remains valid.
       try {
         return gunzipSync(raw).toString('utf8')
       } catch {
@@ -241,7 +242,7 @@ function okResponse(): TelemetryTransportFetchResponse {
 }
 
 /**
- * posthog-node custom fetch. Contract: never reject, always 2xx (see header).
+ * posthog-node custom fetch acknowledges batches without starting SDK retries.
  * Only the capture batch endpoint is buffered; any other SDK request
  * (none expected — flags/personalApiKey are off) is acked and ignored.
  */
@@ -249,9 +250,9 @@ export async function transportFetch(
   url: string,
   options: { method: string; headers: Record<string, string>; body?: string | Blob }
 ): Promise<TelemetryTransportFetchResponse> {
-  if (options.method === 'POST' && url.includes('/batch')) {
+  if (!stopped && options.method === 'POST' && url.includes('/batch')) {
     const events = parsePostHogBatchText(await readRequestBody(options.body))
-    if (events.length > 0) {
+    if (!stopped && events.length > 0) {
       bufferEvents(events)
     }
   }
@@ -265,6 +266,7 @@ export function _getBufferedTelemetryEventsForTests(): readonly TelemetryBatchEv
 export function _resetTelemetryTransportForTests(): void {
   buffer = []
   stopped = false
+  closed = false
   if (flushTimer) {
     clearInterval(flushTimer)
     flushTimer = null
