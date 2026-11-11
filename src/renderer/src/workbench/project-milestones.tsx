@@ -185,10 +185,11 @@ export function ProjectMilestones({
         (entry) =>
           entry.version === version.version &&
           (entry.material.plan?.cycleId === version.cycleId ||
+            entry.draft?.cycleId === version.cycleId ||
             entry.material.acceptance?.cycleId === version.cycleId)
       )
     ) {
-      toast('该版本尚未进入正式材料，合入并更新后可进入')
+      toast('该版本只有里程碑排期，请从侧栏「新建版本」使用同一版本名开始计划')
       return
     }
     patch({ pageY: root.current?.closest('.content')?.scrollTop ?? 0 })

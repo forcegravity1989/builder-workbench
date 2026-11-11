@@ -57,6 +57,27 @@ export async function readMilestoneSnapshot(
     problems: []
   }
   const hash = createHash('sha256')
+  async function preparedVersion(version: string, cycleId: string): Promise<boolean> {
+    if (started.has(version)) return true
+    const flow = versionFlowBranch(version, 'plan')
+    for (const ref of flow ? [`refs/heads/${flow}`, `refs/remotes/origin/${flow}`] : []) {
+      const oid = refs.get(ref)
+      if (!oid) continue
+      const prior = await readGitBlobAtOidPath(
+        repoPath,
+        oid,
+        `.bw/planning/${version}/data.json`,
+        options
+      )
+      if (prior.failed) throw new Error('未能核对版本计划来源，不能判为尚未开始')
+      if (!prior.exists || prior.isBinary) continue
+      const parsed = PlanningMaterialSchema.safeParse(JSON.parse(prior.content))
+      // A retained native plan ref survives worktree removal; names alone never prove identity.
+      if (parsed.success && parsed.data.version === version && parsed.data.cycleId === cycleId)
+        return true
+    }
+    return false
+  }
   for (const path of files) {
     const blob = await readGitBlobAtOidPath(repoPath, head, path, options)
     if (blob.failed || blob.isBinary || !blob.exists) {
@@ -83,31 +104,7 @@ export async function readMilestoneSnapshot(
         throw new Error('版本目录、身份不一致或重复')
       }
       plans.set(plan.cycleId, plan)
-      let prepared = false
-      const flow = versionFlowBranch(version, 'plan')
-      for (const ref of flow ? [`refs/heads/${flow}`, `refs/remotes/origin/${flow}`] : []) {
-        const oid = refs.get(ref)
-        if (!oid) {
-          continue
-        }
-        const prior = await readGitBlobAtOidPath(repoPath, oid, path, options)
-        if (prior.failed) {
-          throw new Error('未能核对版本计划来源，不能判为尚未开始')
-        }
-        if (!prior.exists || prior.isBinary) {
-          continue
-        }
-        const parsed = PlanningMaterialSchema.safeParse(JSON.parse(prior.content))
-        // A retained native plan ref survives worktree removal; names alone never prove identity.
-        if (
-          parsed.success &&
-          parsed.data.version === version &&
-          parsed.data.cycleId === plan.cycleId
-        ) {
-          prepared = true
-          break
-        }
-      }
+      const prepared = await preparedVersion(version, plan.cycleId)
       snapshot.versions.push({
         version,
         cycleId: plan.cycleId,
@@ -133,16 +130,32 @@ export async function readMilestoneSnapshot(
   const registeredVersions = snapshot.versions
   snapshot.registeredVersions = registeredVersions
   if (snapshot.material.versionPlans) {
-    snapshot.versions = snapshot.material.versionPlans.flatMap((planned) => {
+    snapshot.versions = []
+    for (const planned of snapshot.material.versionPlans) {
       const version = registeredVersions.find((v) => v.cycleId === planned.cycleId)
-      if (!version || version.version !== planned.version) {
+      const named = registeredVersions.find(
+        (v) => v.version.toLowerCase() === planned.version.toLowerCase()
+      )
+      if (
+        (version && version.version !== planned.version) ||
+        (named && named.cycleId !== planned.cycleId)
+      ) {
         snapshot.problems.push(`${planned.version}：里程碑规划与版本计划身份不一致，请核对材料`)
-        return []
+        continue
       }
-      const scheduled = { ...version }
-      delete scheduled.timeWindow
-      return [{ ...scheduled, ...planned }]
-    })
+      try {
+        const scheduled = {
+          ...planned,
+          started: version?.started ?? (await preparedVersion(planned.version, planned.cycleId))
+        }
+        snapshot.versions.push(scheduled)
+        if (!version) registeredVersions.push(scheduled)
+      } catch (error) {
+        snapshot.problems.push(
+          `${planned.version}：${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+    }
   }
   snapshot.revision = hash.digest('hex')
   snapshot.versions.sort(

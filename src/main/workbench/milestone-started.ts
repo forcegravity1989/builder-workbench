@@ -31,11 +31,12 @@ export async function recheckMilestoneIdentities(
     throw new Error('版本开工材料未能完整核对；草案保留，没有写入文件')
   }
   for (const next of input.versions) {
-    const old = fresh.plans.get(next.cycleId)
     const registered = fresh.registeredVersions.find((v) => v.cycleId === next.cycleId)
     if (
-      (!old || old.version !== next.version) &&
-      (active.has(next.version) || registered?.started || (old && active.has(old.version)))
+      (!registered || registered.version !== next.version) &&
+      (active.has(next.version) ||
+        registered?.started ||
+        (registered && active.has(registered.version)))
     ) {
       throw new Error('版本刚开始计划，请重新核对身份；没有写入文件')
     }

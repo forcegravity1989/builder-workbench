@@ -35,6 +35,41 @@ const scope = { repoId: 'repo', worktreeId: 'plan', hostId: 'local', workflow: '
 const git = (cwd: string, ...args: string[]) =>
   execFileSync('git', args, { cwd, stdio: 'pipe' }).toString().trim()
 
+async function checkScheduledInitialization(
+  service: Pick<ReturnType<typeof createService>, 'initializeEmptyPlan' | 'read'>,
+  owner: typeof scope,
+  root: string
+) {
+  const timeWindow = { start: '2026-11-16', end: '2026-11-20' }
+  const milestonePath = join(root, '.bw/milestones.json')
+  await writeFile(
+    milestonePath,
+    JSON.stringify({
+      schema_version: 4,
+      milestones: [],
+      features: [],
+      versionPlans: [{ version: 'v2', cycleId: 'scheduled-identity', timeWindow }]
+    })
+  )
+  const request = { version: 'v2', cycleId: 'new-random-identity', expectedBranch: 'bw/week-plan' }
+  expect((await service.initializeEmptyPlan(owner, request)).created).toBe(true)
+  const existing = await service.read({ ...owner, version: 'v2' })
+  expect(existing?.document).toMatchObject({
+    version: 'v2',
+    cycleId: 'scheduled-identity',
+    timeWindow,
+    goals: [],
+    tasks: []
+  })
+  await writeFile(milestonePath, '{broken')
+  expect((await service.initializeEmptyPlan(owner, request)).created).toBe(false)
+  expect(await service.read({ ...owner, version: 'v2' })).toEqual(existing)
+  await expect(service.initializeEmptyPlan(owner, { ...request, version: 'v3' })).rejects.toThrow(
+    '里程碑材料无法读取'
+  )
+  expect(await service.read({ ...owner, version: 'v3' })).toBeNull()
+}
+
 describe('native version material service', () => {
   let directory: string
   let repo: string
@@ -148,6 +183,7 @@ describe('native version material service', () => {
     expect(await readFile(join(planning, '.bw/planning/v0.4/data.json'), 'utf8')).toBe(
       '{"schema_version":2}'
     )
+    await checkScheduledInitialization(service, scope, planning)
   })
 
   it('registers a prepared artifact in one command: real file only, candidate reused, rerun replaces', async () => {
@@ -475,6 +511,7 @@ describe('native version material service', () => {
     await expect(
       remote.save({ ...remoteScope, version: 'v0.5', expectedRevision: null, document: plan })
     ).rejects.toMatchObject({ code: 'revision-conflict', currentRevision: saved.revision })
+    await checkScheduledInitialization(remote, remoteScope, planning)
     git(planning, 'checkout', '--detach')
     await expect(
       remote.save({

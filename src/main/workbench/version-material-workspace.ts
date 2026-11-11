@@ -49,6 +49,7 @@ import {
   versionFlowBranch
 } from '../../shared/workbench/version-workspace-prepare'
 import { branchFullRef } from '../../shared/workbench/branch-ref'
+import { readWorkspaceScheduledVersion } from './milestone-version-source'
 
 /** Runs on the filesystem owner; paths come from the authenticated native inventory adapter. */
 export type VersionMaterialWorkspace = { repoPath: string; worktreePath: string }
@@ -190,10 +191,12 @@ export function createVersionMaterialWorkspace(
       if (existing) {
         return { created: false, revision: existing.revision }
       }
+      const scheduled = await readWorkspaceScheduledVersion(root, request.version)
       const document: PlanningMaterial = {
         schema_version: 3,
         version: request.version,
-        cycleId: request.cycleId,
+        cycleId: scheduled?.cycleId ?? request.cycleId,
+        ...(scheduled?.timeWindow ? { timeWindow: scheduled.timeWindow } : {}),
         summary: {
           progress: '',
           risks: '',
