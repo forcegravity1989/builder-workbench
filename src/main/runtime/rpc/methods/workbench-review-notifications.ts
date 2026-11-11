@@ -1,11 +1,11 @@
 import { hostname, userInfo } from 'node:os'
 import { PullRequest } from '../../../../shared/rpc-contract/github-pull-request-params'
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import { ReviewRequestSchema } from '../../../../shared/workbench/pr-review-request'
 import { readReviewInbox, receiveReviewRequest } from '../../../workbench/review-inbox'
 
 export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.review.comments',
     params: PullRequest,
     handler: async (params, { runtime }) => ({
@@ -18,12 +18,12 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
       )
     })
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.review.identity',
     params: null,
     handler: () => ({ sender: `${userInfo().username}@${hostname()}`.slice(0, 100) })
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.review.receive',
     params: ReviewRequestSchema,
     handler: async (request, { pairedDeviceId, authenticatedCallerFingerprint }) => {
@@ -35,7 +35,7 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
       return { accepted }
     }
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.review.inbox',
     params: null,
     handler: () => readReviewInbox()

@@ -8,21 +8,19 @@ import {
 const sha = 'a'.repeat(40)
 
 describe('trunk baseline resolution', () => {
-  it('pins the registered base ref and refuses to swap it when it dies', async () => {
-    const exec = vi.fn(async (argv: string[]) => {
+  it('pins the registered base ref: a dead pin refuses to swap, a live pin maps to its sync target without name probes', async () => {
+    const deadExec = vi.fn(async (argv: string[]) => {
       if (argv[0] === 'rev-parse' && argv[2] === 'release^{commit}') {
         throw new Error('unknown revision')
       }
       return { stdout: `${sha}\n` }
     })
-    await expect(resolveTrunkBaseline(exec, 'release')).rejects.toMatchObject({
+    await expect(resolveTrunkBaseline(deadExec, 'release')).rejects.toMatchObject({
       code: 'baseline-invalid'
     })
     // The failed pinned ref must not fall back to any branch-name guessing.
-    expect(exec).toHaveBeenCalledTimes(1)
-  })
+    expect(deadExec).toHaveBeenCalledTimes(1)
 
-  it('maps a pinned ref to its sync target without name probes', async () => {
     const exec = vi.fn(async (argv: string[]) => {
       if (argv.join(' ') === 'rev-parse --verify origin/main^{commit}') {
         return { stdout: `${sha}\n` }
