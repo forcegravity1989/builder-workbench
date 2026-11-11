@@ -7,6 +7,7 @@ import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 const refresh = createSnapshotCache(() => ({
   revision: 0,
   allRevision: 0,
+  visitRevision: 0,
   repoRevisions: {} as Record<string, number>,
   refreshing: false,
   partialRefresh: false,
@@ -19,6 +20,12 @@ function repoKey(repo: Repo): string {
 
 export function useWallRefresh() {
   return useSnapshotCache(refresh)
+}
+
+export function beginProjectWallVisit() {
+  const current = refresh.read()
+  const revision = current.revision + 1
+  refresh.publish({ ...current, revision, visitRevision: revision })
 }
 
 export function wallReadRevision(state: ReturnType<typeof useWallRefresh>, rows: readonly Repo[]) {
@@ -53,8 +60,10 @@ export function refreshProjectWall(): Promise<void> {
         store.fetchProjectGroupsForAllHosts()
       ])
       await store.fetchAllWorktrees()
-      const revision = refresh.read().revision + 1
+      const current = refresh.read()
+      const revision = current.revision + 1
       refresh.publish({
+        ...current,
         revision,
         allRevision: revision,
         repoRevisions: {},

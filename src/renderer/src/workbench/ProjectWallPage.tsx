@@ -175,7 +175,7 @@ export function ProjectWallPage() {
                     ? '部分主机未更新'
                     : cardReadFailed
                       ? '部分墙卡信息未更新'
-                      : updatedAt && (charters.loading || readings.loading)
+                      : updatedAt && (charters.refreshing || readings.refreshing)
                         ? '读取墙卡信息…'
                         : updatedAt
                           ? `目录刷新于 ${updatedAt}`
