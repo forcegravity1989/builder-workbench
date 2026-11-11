@@ -1,24 +1,11 @@
-// 验收旅程候选(v10)演示模型。计划材料复用 G3 的 v0.7 真实快照,验收侧状态为本稿演示数据¹。
-// #471 整改:举证前移到各 Issue/PR 合入时,验收证据报告改为按目标聚合各 Issue
-// 验收件;纪要按目标分组(条目前缀,呈现级实现)。
+// 验收侧状态为交互原型演示数据，计划复用既有快照。
 import snapshot from '../../version-planning/prototype/g3-snapshot.json'
 export { snapshot }
 export const g2Url = '../version-workspace/version-workspace-prototype.html'
-// 注入提示词设计正本(对齐计划屏第九轮瘦身):按钮 prompt 只承载触发意图;
-// 落点 minutes 节、人工确认、遗留无闭环位等 SOP 规则归 version-acceptance
-// Skill 与系统提示词,按钮 prompt 不复述。批注发送句与计划屏同源
-// (g3-model.js 的 annotationsSendPrompt),#431 规范轮定为中性抬头「会议反馈
-// 批注内容如下：」——不承载屏别意图,收到批注「按对象回应或修订材料 + 纪要整理
-// 输入之一」的双意图归 version-acceptance Skill。整理纪要「汇总」改「提炼」。
+// 按钮只展示请求意图；生产入口另附宿主实际安装的完整 Skill 路径。
 export const minutesRequestPrompt =
   '整理本次验收会的会议纪要：把会话中已发送的板面批注提炼为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
-// 「聚合」(#471):报告不再会前采集,改为聚合各 Issue / PR 合入时留下的验收证据;
-// prompt 同样只承载触发意图,聚合落点与缺口处置(人确认或自行补充)归 Skill。
-export const aggregateRequestPrompt =
-  '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份报告，缺证的地方如实标缺。'
-// 「预订会议」与「同步会议纪要」(#471 评审新增,会议生命周期首片):预订周五
-// 验收会并把会议信息写回材料;同步把本页共识/遗留按固定样式写进该会议的纪要。
-// prompt 同样只承载触发意图;固定样式与会议工具归 Skill。
+export const aggregateRequestPrompt = '聚合本次验收的证据报告。'
 export const bookMeetingRequestPrompt = '预订本周五的版本验收会议，完成后把会议信息写回材料。'
 export const syncMinutesRequestPrompt =
   '把本页会议纪要的共识与遗留按固定样式同步到已预订的验收会议纪要中。'
@@ -56,8 +43,7 @@ export const LATEST_PACKAGE = {
 export const CANDIDATE = {
   short: 'f5ac309b'
 }
-// 验收证据报告(#471 整改):一份/版本,按目标聚合各 Issue / PR 合入时留下的
-// 验收件(目标 → Issue),会话注入「聚合」生成;缺证如实呈现,人确认或自行补充。
+// 已登记的报告可打开，待核对项及人的处置保留在报告中。
 export const REPORT = {
   file: '.bw/planning/v0.7/acceptance-evidence.html',
   generatedAt: '2026-10-21 16:05'
@@ -117,10 +103,6 @@ export const sceneMeeting = {
 export const nextSteps = {
   G3: '进展可读与旅程可见两项演示通过;任务顺手一项随转写链路(#374)带入下版,不自动承诺。'
 }
-// 纪要示例(#471 批注5):条目带「G<n> ·」目标前缀,读视图按前缀分组到各目标
-// 小标题下;协议仍是共识/遗留两条平铺清单。共识记各目标会上产生的结论性决定,
-// 不复述板面已呈现的达成情况(共享纪要规范:达成情况一律不进纪要);遗留与计划屏
-// 同样写清落实结果或 Issue 去向；下版回顾不自动承诺跟进工作。
 const initialMinutes = {
   confirmed: false,
   sources: '会议转写稿(周五验收会)· 人工编辑 3 处',

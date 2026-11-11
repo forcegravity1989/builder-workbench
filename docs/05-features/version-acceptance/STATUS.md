@@ -1,153 +1,39 @@
-# 版本验收 — 六环状态
+# 版本验收 — 当前状态
 
-**#439 非性能项已作生产接线，完成静态检视并补验 CI。** 短卡启动成功后展示四区，未合入不拦原生会话，材料初始化仍需可读且身份一致的 committed 固定计划；缺来源不造数据。目标采用单个中性/警示结论状态，Issue 未关闭/未知/已关闭分组，遗留是未关闭子集，Feature/Bug 沿既有规则。纪要归档前逐项已落实或真实 Issue 跟进，由助手核对、PR 人审，无界面硬门禁。行为见 [spec](spec.md)。本地与远端检查的实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；手工真机与模型旅程仍未验证；已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。下面既有 PR 结果均为历史证据，不覆盖此次增量。
+> 给开发、评审和验收者读取。只记录认可来源、当前实现与验证边界；运行结果变化时更新。行为见 [spec](spec.md)，价值见 [intent](intent.md)，实现边界见 [design](design.md)。变更过程与详细验证留在对应 PR，问题跟进沿原生 Issue。
 
-固定验收依据已接 `open-acceptance-source` → BW 只读浏览上下文 → `VersionReadonlyMaterialView` / `ReadonlyMaterialSections`：预读并核验固定验收及其采用计划，在原生 artifacts 槽只读呈现准备资料、目标与冻结 Issue、纪要及归档；返回原计划，普通导航清理浏览上下文，不选择当前材料、不建树。该路径仅源码及独立静态复核，未作本轮真壳验证。
+## 认可与交付依据
 
-> 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
+- 四步会议屏「验收准备 → Showcase → 会议纪要 → 归档 PR 及发版本」于 2026-10-22 经负责人确认；举证前移、报告聚合及会议协作按 [#471](https://github.com/forcegravity1989/builder-workbench/issues/471) 的确认维护。
+- 当前交互原型为 [acceptance-journey-prototype.html](acceptance-journey-prototype.html)，报告版式由 [HTML 模板](../../../standard/skills/version-acceptance/assets/evidence-report-template.html)承载；两者均不是运行证据。
+- [#422](https://github.com/forcegravity1989/builder-workbench/issues/422) / [PR #584](https://github.com/forcegravity1989/builder-workbench/pull/584) 的报告修订在评审中。负责人于 2026-11-11 确认：先登记并可打开，待核对项保留给人处置，登记不代表验收通过。具体检视、远端检查和内部验证结果留在该 PR。
+- 里程碑结果沿人工目标结论、固定计划及正式合入归档读取，见[共同方案](../overview-metrics/spec.md#里程碑与版本联动)；源码接入不等于真实跨版旅程已验。
 
-目标平台是主干 main 的 Electron/Orca 叠层。**v10（周五验收会议四步屏）的规格与意图已由负责人于 2026-10-22 逐项确认**，形态正本为 [acceptance-journey-prototype.html](acceptance-journey-prototype.html)。**v10 基线生产实现曾随 [#394](https://github.com/forcegravity1989/builder-workbench/pull/394) 合入 main**（`5f7816a5f`）：四步屏、协议宽容读回与发布注入形成基线；当时的空板硬门禁已在 #439 移除。2026-10-23 追加**验收对齐轮**（见下节），把计划屏第八/九轮反馈在两屏对齐。
+## 当前证据边界
 
-v9.5（#369/#377）的六环证据与 A01–A14 矩阵随 v10 规格生效而**整体失效**，历史证据从 [PR #369](https://github.com/forcegravity1989/builder-workbench/pull/369)、[PR #377](https://github.com/forcegravity1989/builder-workbench/pull/377) 与 Git 追溯。v9.5 旧稿 [prototype.html](prototype.html) 保留基线身份，不代表现行规格。
+○ 未实现或未执行；◐ 已有实现但完整用户旅程未验。既有静态检查、原型或协议测试不提升为真壳通过。
 
-[#445](https://github.com/forcegravity1989/builder-workbench/issues/445) 会话收起已改为材料零占位，页头功能键保留原位置并归组。独立测试 agent 在未修改基线 `f01665382` 的真实 Electron 中确认两屏、1600/1100 窗口均残留 36px；修复后同一用例（SHA256 `0484e8607bfb33a87338bbb4f08ba1cc3c570f5b4a3f43741d6a77a6986a9f99`）由独立测试 agent 复验通过：两屏、两种窗口均零占位且材料占满，原生 PTY、拖动后栏宽、计划编辑输入与文件读回保持，对象动作自动展开仍可用；批注按钮普通、激活与悬停边框已在真壳补验。两态均真实关闭设置脚本提示、核对纯终端身份，并确认发送菜单完全关闭且无新增会话。命令、门禁与前后截图随本单 PR 验证报告交付。浏览器捕获 lease、真实模型、SSH/WSL 与远端 PR 旅程未验。保留原生会话与必要浏览器绘制，本轮不新增 UI 单测；完整验收与模型旅程状态不提升。
-
-## 里程碑结果来源的认可与证据
-
-已确认沿用人工目标结论、固定计划及正式合入归档作为里程碑实际来源；不新增特性结果表单，现有验收界面和结果 schema 保持。见[共同方案](../overview-metrics/spec.md#里程碑与版本联动)与本特性 spec 的“特性结果与跨版遗留”。
-
-当前交付的消费方固定来源及合入检查随 PR 检视；本次按用户要求不运行本地 CI、真实 Electron 或模型旅程，以下历史证据不覆盖新的里程碑投影。
-
-## 历史实现证据与边界
-
-v10 生产实现（#394 分支交付、已合入 main），按提交顺序：
-
-| 提交 | 内容 |
-|---|---|
-| `e26b693be` | v10 生产实现——四步会议屏、协议退役与剥离读回、发布改纯注入 |
-| `45518c200` | 负责人真壳验证发现的三处修正——页头对齐计划屏、旧格式宽容读回、门禁状态透明 |
-| `c13617011` | 检视修正——门禁与快照两处死循环、模型侧材料契约重写、页头三行 |
-| `88234e36c` | 合入 main（含 #407），解原型与 CSS 冲突，把角标配色修复迁到共用层 |
-| `2fa0a8b3b` | 注入通道接通——改用共用发送弹窗，剪贴板走 Orca IPC |
-| `cfdb12f97` | 验收屏烟测断言跟上 v10（「新建验收」已随草案预验收通道退役） |
-
-**证据边界要说清楚**：负责人在 `45518c200` 之前的一轮真壳里发现并推动修正了四个问题（页头排版、旧版本读不出、空板无解释、两处死循环），**那四个修正本身以及此后所有提交都没有再过真壳**。`2fa0a8b3b` 修的注入通道恰恰是只在真机上才暴露的一类缺陷，其依据是「同一份代码路径在计划屏已由真机验证（#407）」加上独立查透的调用链，不是本屏真机已验。因此下方矩阵没有任何一列记 ●。
-
-已跑的门禁：`pnpm run typecheck` 绿；`pnpm run lint` 退出码 0；CI 正本范围 vitest 412/412 全绿（62 文件）；`check:vitest-count-ratchet` 226 例，持平基线；两个高保真原型 bundle 重建后 `--check` 双双通过。`build:desktop` 与 e2e 本机未跑（worktree 路径超 Windows 248 字符限制，`pnpm install` 的 postinstall 在 `@vscode/windows-process-tree` 上失败），交 CI 判定。
-
-v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity1989/builder-workbench/pull/399)）与真机四修（[#407](https://github.com/forcegravity1989/builder-workbench/pull/407)）落地，验收屏已接入：板面批注组件族（内存态）、会议纪要机制、对象级动作经 `plan-send-menu.tsx` 包装 Orca 原生发送弹窗递交、上版回顾按固定来源寻址。
-
-技能正本 `standard/skills/version-acceptance/SKILL.md` 与 `standard/references/version-records.md` **已按 v10 最终裁定同步**：四步 SOP、发布环节「板面注入 + tag 读回键 + 现算读回、读数不落材料、总览不显示已发布」（#462 修订）、纪要编辑态与撤销语义、演示环境两形态、跨周与轮次表述已清除。当前完整包经 `generate:workbench-skills` 生成并由 `verify:workbench-skills` 核对；历史验证记录不代表新入口已验证。
-
-| 环 | 状态 | 证据或缺口 |
+| 验收点 | 状态 | 已有依据与仍需验证的边界 |
 |---|---|---|
-| intent | 已确认 | v10 四步会议屏、个人自验移出本屏、界面不用灯、不承载跨周按轮次刷新，2026-10-22 负责人确认 |
-| spec | 已确认 | v10 规格与 A01–A14 验收点、AJ01 旅程已定稿；#471 整改（举证前移、聚合报告、预订会议与同步纪要、纪要按目标、判定钮对齐生产）已于 2026-10-29 拍板并入现行条款；仍待决项见 spec「取舍与待决问题」（发布 e2e gate、两份报告产出顺序）；固定来源只读整页已由 #439 明确，仍无本轮真壳证据 |
-| 实现设计 | 已确认 | design.md 已按 v10 重写：演示环境两形态、纪要字段与撤销/冻结规则、退役字段宽容读回、批注共用件接入点、计划屏与总览的连带改动 |
-| 核心算法/数据协议 | 已接入 | 协议已改（minutes、demoEnv、stage 三值、#462 增 `workflow.release` tag 读回键仅验收侧、退役字段留作只读可选）；人工字段守卫三件（material / plan / acceptance）覆盖纪要与结论改写；协议测试随改维护，ratchet 持平基线 |
-| 验收点 E2E | 部分 | `workbench-cycle-smoke` 的验收段已跟上 v10（断言空板挂载与入口存在，不锁具体门禁结论）；A01–A14 其余各点未注册专项用例，按 02 环 4 控量，稳定后专项回补 |
-| 用户旅程 E2E | 缺口 | AJ01 未运行。需真实服务、真实报告、真实发布读回与杀进程重启核对；模拟不计通过 |
+| A01 原生会话与四区 | ◐ | 启动与切屏已接线。会话收起的零占位、1600/1100 窗口、PTY 与栏宽保留曾由独立测试 agent 按同一路径复验，来源 [#445](https://github.com/forcegravity1989/builder-workbench/issues/445)；不覆盖完整验收旅程 |
+| A02 固定计划与安全初始化 | ◐ | committed 固定来源、身份与并发保护已接入；真实缺来源、初始化与恢复仍待核对 |
+| A03 出包、部署与演示环境 | ◐ | 包真实读回、URL/桌面已启动两形态已接；真实项目部署与两形态读回未完整验证 |
+| A04 报告生成、登记与打开 | ◐ | 复用 add-artifact 与内置浏览器；[#516](https://github.com/forcegravity1989/builder-workbench/issues/516) 有历史登记/打开证据。本次 HTML 产出、待核对不阻塞、完整 Skill 读取及 CodeHub 来源链接待内部真实会话验证 |
+| A05 人工目标结论 | ◐ | 原生材料守卫及单个状态选择已接入；重启后一致性待真壳核对 |
+| A06 纪要与确认 | ◐ | 按目标分组、整份确认/撤销和冻结已接入；真实模型整理、确认及跟进旅程未完整验证 |
+| A07 归档 PR | ◐ | 原生 PR 状态、入口及会话归档已接入；真实 provider 归档全链未验 |
+| A08 发布读回 | ◐ | tag 引用与真实状态读取见 [#462](https://github.com/forcegravity1989/builder-workbench/issues/462)；原型与历史测试不覆盖真实发布、重启读回 |
+| A09 Issue 状态与遗留 | ◐ | 分组、计数、标签与原生详情已接入；真实 provider 交互待验 |
+| A10 同步、恢复与冲突 | ◐ | 字段归属合并和草稿恢复已接入；重启、切树、脏树与冲突处理未完整真壳验证 |
+| A11 验收范围 | ◐ | 屏上保留报告入口，不设个人自验或逐条验收件工作面 |
+| A12 原生自动化 | ◐ | 已复用调度和短入口；真实到点触发未以本轮证据验证 |
+| A13 旧材料与固定历史 | ◐ | 宽容读回、只读记录及固定来源页面已接入；真实历史/恢复旅程待验，不能用当前草稿代替固定来源 |
+| A14 会议准备与纪要同步 | ◐ | Skill 自带会议步骤与浏览器驱动；历史 Edge 脚本操作及 CLI 命令面证据不覆盖真实建会、通知与纪要全流程 |
+| A15 批注快捷键 | ◐ | 空板负例有既有烟测；有材料状态、改绑和 macOS 物理键回退待人工真壳验证 |
+| AJ01 完整会议与归档旅程 | ○ | 尚无真实服务、真实报告、真实发布和重启读回组成的完整运行证据 |
 
-## 2026-10-23 验收对齐轮（两屏一致性）
+## 证据来源与限制
 
-计划屏第九轮反馈（[#410](https://github.com/forcegravity1989/builder-workbench/pull/410)）合入后，负责人要求排查验收屏是否存在同类问题并核对两屏匹配性，经 AskUser 拍板四项：
+基线生产实现从 [PR #394](https://github.com/forcegravity1989/builder-workbench/pull/394) 及后续交付追溯；固定来源、启动与 Issue 读取的既有检视见 [PR #441](https://github.com/forcegravity1989/builder-workbench/pull/441)。这些历史证据只支持当时的用例与版本，不覆盖新报告流程或跨宿主模型行为。
 
-1. **批注 store 按板面身份键控**。#410 的模块级全局会话被验收屏挂载即清空——两屏 scopeKey 必不同，切到验收屏的瞬间计划屏未发送批注被 `clearAll` 清掉（反向击穿第九轮「切屏保留」），且两屏 goalId 相同会串角标与发送清单。`use-board-annotations.ts` 改为 `Map<boardId, session>`（boardId = scope+版本），两屏的命令式 identity-clearAll effect 同批删除；切版=换 key 天然空会话，切屏各读各的，重启仍按正本丢弃。
-2. **批注发送成功即清空**。验收 spec 原「发送后不清空」与计划屏 A 案相反，统一为清空（负责人补充理由：发送后记录已在会话侧，板面无需保留）。spec「在线批注」条款已改。
-3. **批注入口挪进 Showcase 区块标题行**。对齐计划屏第八轮就近入口形态（文字标签 + 未发送条数角标 `acc-annotate-count`）；页头 `extraActions` 槽位与空板态常禁用占位钮删除，spec 页头同构句已改。
-4. **version-acceptance SKILL 四件套完整同步**。VA SKILL 补回指 week-planning 的路由句、整理纪要 SOP 对齐计划屏第九轮（问一次会议 ID、转写显式范围、全量清单语义、无批注兜底、保留人工编辑/重写前 diff）、「需要时读取」补会议转写条目；`meeting-transcript.md` 写入落点从已退役的「验收指导」（meetingDirectives）改为纪要节；week-planning SKILL 会议遗留来源补 v10 主源（已人工确认纪要 `minutes.followups`，legacy directives 降为回退）并把执行流程段落物理顺序摆正（1,2,3,4,5）；投影、bundled 指南与 skill-bundle manifest 全部再生——**顺带修复 #410 漏跑的 manifest 陈旧**（week-planning 条目停在 0.6.0 旧 hash，`verify:skill-bundle-manifest` 在 main 上必红）。
-
-同批修复（subagent 盘点实证）：发布/归档/部署三个注入 prompt 瘦身（预检清单、固定树路径、写回协议等 SOP 细节归 Skill，按钮只留触发意图）；三处「原型注释升格成生产 UI」的解释脚注删除（勾勾表、准备区、发布卡），纪要卡小注减密度并去掉被否决的「常驻可编辑」旧稿措辞；出包/下载禁用按钮补原因 title；「发起归档」改 Archive 图标（与发布 Rocket 同卡撞车解除）、打开报告统一 FileText；纪要区死分支删除（`document` 收必填——空板在 AcceptanceBoard 早退，无材料分支不可达）；空态指引提到页头批注的过期文案随分支删除。计划屏侧连带微修：闭环句两处 title 标点归 spec 正源（分号→逗号）、`version-workflow.ts` 注释改准（stage 的唯一 UI 消费是归档卡「已进入归档阶段」状态行）、planning design.md 三处陈旧句修正（stage 消费表述、上版回顾会议遗留来源、CycleArchive 已删）。
-
-高保真：`acceptance-app.jsx` 同步（Showcase 入口 + 角标、页头入口移除、四个注入 prompt 瘦身、批注发送全量清单句 + 成功清空回执、报告目标级锚点退役改整份打开、「原因写进展」→「原因写纪要」、遗留待评审清单去轮次、设计说明三段更新），`minutesRequestPrompt` 正源落 `acceptance-model.js`；bundle 重建且 `--check` 通过——**该 bundle 自 #394 后即 stale**（#410 重排源文件未重建），本轮修复。原型既有欠账（本轮未动，留高保真专项）：生产已有而原型缺的 Bug/Feature 徽标、「进行中」状态映射、出包区「下载」按钮、Unknown「状态未知」行、旧格式记录只读折叠区、门禁「重新核对」重试与页头版本选择器（原型按 G2 侧栏选版假设绘制），以及部署按钮位置差异（生产在「演示环境」行、原型在出包工具栏）。
-
-**验证边界（负责人明确授权）**：本轮不跑本地 CI 门禁、不新增单测、不做真机验证，真壳验证留人。已跑检查：验收原型 bundle `--check`、`verify:bundled-skill-guides`、`verify:skill-bundle-manifest` 通过；其余为静态审查与 subagent 双检视（四维 + 静态 BUG）。真壳欠账沿用下表并新增：两屏互切批注保留/互不清空、Showcase 批注入口与角标、发送成功清空回执、纪要/发布/归档/部署四个瘦身后 prompt 的弹窗预览文案。
-
-## 2026-10-23 UI 对齐轮（真机 v0.7.0 反馈后，#417）
-
-负责人真机装 v0.7.0 复核后反馈验收屏与计划屏的质量差距；AskUser 三项拍板：收折单一入口+收折栏可点展开、生产全量对齐计划屏/高保真、确认所装为 v0.7.0（五条抱怨均为最新代码真实欠账）。高保真审阅与真机反馈再拍板：目标行删报告入口（报告一份/版本，入口只留「验收准备」）、Issue 行补原生任务详情按钮（生产本有、高保真补齐）、Showcase 区块头补「刷新 Issue」（计划屏漏抄）、演示环境行显示系统名绑定链接（`demoEnv.kind='url'` 增可选 `label`）、CAS 冲突改按字段归属静默合并只留一行提示。
-
-**壳层与验收屏对齐**：`.vc-split` 改 6px 实体全高热区（负责人真机证实旧版只有顶部 titlebar 一段可拖）、titlebar 删验收专用老「收折会话」开关（收折/展开统一板面页头 chip 唯一入口）、收折态 36px 栏加整栏点击展开覆盖层；页头同行，Showcase 卡 / Issue 行 / 纪要卡 / 归档发布卡 / 旅程导航抄计划屏度量，动作按钮统一 `BoardActionButton`，长 title 与说明文字清到计划屏密度；SKILL/version-records 同步 demoEnv label 写回规则（四件套再生）。实现明细见 [design.md](design.md)「UI 对齐轮」两段，本节不留重复副本。证据报告 HTML 改经 Orca 原生浏览器预览打开（spec A04「内置浏览器可打开」此前实为编辑器打开，真机反馈修正）。检视轮同批修正：两屏 `refreshIssues` 的 finally 守卫死锁同源缺陷（刷新在途切版本转圈永久卡死）、合并基线不推进（连环冲突钉死已采纳值）、宿主已删分支复制守卫缺失、1px 分隔线半像素定位发虚、base 缺失行默认空串盖远端人写值、远端已删空 result 行被复活。
-
-**冲突静默合并**：CAS 冲突按字段归属自动合并（`acceptance-merge.ts` 纯函数 + `MaterialDraftController` 可选策略与干净基线追踪；计划屏不传、行为不变），人字段保本地改动、模型字段取远端、本地新建或人改过的 result 行保留，界面只留一行提示，`AcceptanceNotices` 退役裸 JSON 对照；仅基线缺失（脏草稿恢复后再冲突）退回两按钮人工处置。机制明细见 [design.md](design.md)。**欠账：merge 纯函数无单测看护（新增用例受 ratchet 约束需对冲，留专项回补）；冲突合并、分隔条全高拖拽与收折栏点击展开未在真壳验证。**
-
-**验证**：typecheck、check:dead-classes、受影响 vitest（验收套件 + material-draft + shared 材料链）、verify:bundled-skill-guides / verify:skill-bundle-manifest、build-acc --check 绿；app-startup-routing.test.ts 一例在 Windows worktree 因 CRLF 多行断言失败（期望 needle 以 CRLF 形态存在，非本轮引入，Linux CI 不受影响）。真壳留人：分隔条全高拖拽、收折栏点击展开、页头同行与新卡/按钮形态、演示环境系统名、冲突静默合并一行提示。
-
-## 2026-10-23 易用性收口轮（v0.7 验收会后，#426）
-
-v0.7 验收完毕，验收会三条易用性决议：**①批注入口移回页头右上角**（两屏同轮。页头不随内容滚动，会中随时进出批注模式、未发送条数角标常驻可见；`AcceptanceHeader` 增可选 `annotateEntry`，`AcceptanceBoard` 仅在计划已读时传入，空板态维持无入口；Showcase 区块头槽位删除）；**②验收标准可批注**（`.acc-acceptance` 挂 `kind='acceptance'` 捕获属性 + h3 合并角标，与计划屏同款对象语义；spec「验收标准区块不参与批注」条款经会决议改写，「下一步」输入件维持排除；批注横幅与入口 title 文案随对象清单更新）；**③计划屏进度条第一步改名「计划准备」**（计划侧落地，与「验收准备」口径一致，见计划 STATUS 同轮节）。spec :15/:58、design 批注捕获层段与 kind 取舍句、高保真（入口位置、验收标准批注、横幅文案、设计说明）同步，bundle `--check` 绿。**真壳未验**：页头入口新位置、验收标准批注全流程（悬停描边、小窗、角标、发送清单含「验收标准」对象）。
-
-## 2026-10-24 提示词资产质量轮（#431/#428，验收侧）
-
-与计划侧同轮（规范 SKILL-MD-SPEC v2、SYSTEM 模板修正、meeting-minutes 纪要质量规范、legacy-materials 查找型 reference、注入句洗人话等共用件明细见计划 STATUS 同轮节与 #431）。验收侧落地：**version-acceptance SKILL 0.8.0** 执行流程 7 步重编为「开场 + 四区」（验收准备/Showcase/会议纪要/归档 PR 及发版本，与板面进度条同名），开场镜像计划侧硬规则（入口已给版本直接恢复不选第二次、计划未合入硬门禁如实告知、每步一行回执直接继续不中断、不发散）；「会话驱动板面」三列表、报告模板节、stage 校准表保留（检视公认好模式，stage 明确不作面向用户步骤名）；批注对象清单补验收标准（#426）；纪要区挂 meeting-minutes 质量规范、整理语义改提炼。**发现存根**补中文四步旅程句与恢复/门禁/回执/不代勾规则（原零中文产品内容，skills 服务不可用时助手对旅程一无所知，检视发现⑥）；CLI 样板经真机实测保留。批注发送双意图（负责人明确）随两屏 spec 同步。**version-records** 拆双受众、**meeting-transcript** 实现细节压缩（保留模型实际消费字段名与全部行为规则）。四件套再生 verify 双绿、原型 bundle --check 绿。**真壳未验**：开场行为与纪要提炼质量真实会话抽样（含「不复述板面达成/状态」）；升级装机版后转写链复验。
-
-## 2026-10-27 发布状态读回轮（#462）
-
-Issue [#462](https://github.com/forcegravity1989/builder-workbench/issues/462) 修订 v10「板面不呈现发布状态」决策：验收屏发布模块展示发布后状态。负责人经高保真两轮反馈（未发布态不显示授权提示文本、删「候选」读数）后认可方向并令开发。落地口径沿 `archivePr` 薄读回模式：**材料只存 tag 读回键**（`workflow.release?: { tag }`，计划侧 schema 拒绝），读数全部现算——是否已发布、发布时间、Release 页地址与资产由 `workbench.release.status` RPC 经 `gh api repos/<owner>/<repo>/releases/tags/<tag>` 现算，四态如实呈现（未发布=无引用的材料事实；已发布；未找到 Release=404 真实读数；状态未知=读回失败注明原因），Release 页点击经 `openAcceptanceMaterial` HTTP 链路走内置 Orca 浏览器（Release 页无原生任务页对应物）。总览仍不显示已发布。
-
-实现链：`shared/workbench/release-status.ts` 协议 → `main/workbench/release-status.ts`（CodeHub 守卫、限流、404/未知分派）→ `workbench.release.status` RPC 方法（params catalog 已再生）→ `release-port.ts` + `use-release-status.ts`（与 `use-archive-pr-status` 同款：身份键防串版、聚焦 60s 节流、在途序号防旧覆盖）→ `AcceptanceArchiveCard` 发布卡状态 chip 与读回行。正本四件同步：intent「发布执行在会话，状态回显在板面」、spec 发版本节与 A08、design 协议与发布节、SKILL/version-records（`bundled-skill-guides` 随正本再生；`skills/` 为存根投影无发布文案、manifest 输入未变故产物未动）。
-
-**验证状态**：高保真原型 23/23 DOM 断言绿（六态切换、未发布无授权文本、暗色、console 零错误；Playwright DOM 断言，截图仅落临时目录供人查看）；typecheck、oxlint、rpc-params-catalog `--check`、受影响 vitest（14 文件 53 例）、vitest 数量 ratchet（225 基线）、`verify:bundled-skill-guides` / `verify:skill-bundle-manifest` 绿。**真壳未验**：发布读回行各态真实读回、发布后 tag 写入与板面刷新、重启读回一致（真壳可达材料需真实会话执行，本轮以原型与单测覆盖、欠账留人）。
-
-## 2026-10-29 #471 整改轮（举证前移、聚合报告与会议动作）
-
-Issue [#471](https://github.com/forcegravity1989/builder-workbench/issues/471) 负责人逐项拍板七条（明细见 spec「已决（#471）」）：**举证前移**——验收件随各 Issue/PR 合入时留下（有开发=PR 验证评论、无开发直接关闭=Issue 评论，实物非大段文本），会前采集、演示分诊、现场演示标注、「目标值 vs 读数」对比与缺口清单随之退役；**报告改聚合**——一个版本一份、按「目标 → Issue」聚合各 Issue 验收件，缺证如实标注、不代采；**纪要按目标组织**——「G<n> ·」前缀分组为呈现级实现，协议仍是平铺清单；**预订会议与同步会议纪要纳入**——会议逻辑内置于验收技能（`welink-cli meeting create`、默认开启 AI 听、不依赖额外安装），先预览后执行、只写纪要草稿、最终发送由人手动完成；判定钮以生产实现为准（计数后行内）；包重出后是否重新部署/重新聚合由人决定；不做多人协作验收。
-
-本轮落地：SKILL 0.9.0（会话驱动板面能力单一表、聚合节、会议动作内置节）、报告模板重写为「目标 → Issue」骨架（证据类型补 [指标]）、version-records 增 `meeting` 字段与聚合/包重出口径、spec/intent/design 全量对齐（design 协议段补 `meeting` 与纪要前缀约定）、高保真 #471 候选（聚合/预订会议/同步纪要/纪要分组骨架/判定钮生产样式），并补齐**出包折叠卡对齐生产结构**（独立边框卡、摘要行完整版本号、折叠只隐藏不卸载、空态与四字段文案对齐 AcceptancePackage）。推前 subagent 检视后修正：design 报告顺序旧句、三处「按项目会议入口」旧口径、待评审清单去已决项、助手入口清单补全、纪要兜底表述、spec 同步入口位置、intent 同步前提、模板术语与指标槽位。镜像链（bundled guides / manifest）随正本再生、原型 bundle `--check` 绿。**生产接线同 PR 补齐**——协议 `meeting` 字段（模型写、不入人守卫、CAS merge 取远端）、准备区验收会议行（「预订会议」注入、已预订置灰）与「聚合」按钮、纪要卡「同步会议纪要」按钮（未预订禁用）与按目标分组读视图（`G<n> ·` 前缀呈现级、遗留保全局 M 编号），A14 转 ◐；真壳与模型旅程未验。
-
-## 2026-10-29 批注模式快捷键（#444）
-
-与计划屏共用同一动作 `workbench.toggleAnnotationMode`（Orca 设置 → Shortcuts 原生键位体系，默认 Alt+A、可改绑）：同键进出批注模式，是退出模式的唯一键盘路径——小窗开着时按它直接退模式（与点按钮一致）；Esc 退出路径同轮经人真壳验证拍板移除（与计划屏同口径）：Esc 只关小窗、不退模式。终端聚焦、行内编辑与浏览器 webview 不触发；空板或无可读固定计划时入口不渲染、按键无反应（E2E 负例已覆盖空板态）。横幅、按钮 title 与面板提示行随设置改绑实时回显键位。验收板有材料态的 `aria-pressed` 翻转与横幅进出（V8）及 macOS Option+A（å）组合字符物理码回退（V9）归人工真壳验证。
-
-## 2026-10-31 #516 验收屏使用轮（证据登记命令化、纪要同步自带）
-
-Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)（v0.8 验收实测暴露的使用断点）两件：
-
-**证据报告登记命令化**：报告落盘后模型漏登记、板面「验收证据报告」行永远不亮——登记收拢成一条 `ORCA bw materials add-artifact` 命令（--repo-id/--worktree-id/--workflow/--version/--kind/--location，可选 --artifact-id/--command/--checksum），拥有工作树一侧一次完成读改存：文件必须真实存在（不存在如实报错、不登记幽灵制品）、mtime 作 generatedAt、candidateRef 复用材料现有值（候选未固定报错）、同 artifactId 覆盖、revision 冲突自动重读重试一次；板面不 stat 文件系统。聚合注入句由「提醒登记」改为给出可直接执行的命令；SKILL 0.9.5 登记三步改写、version-records 补命令参数。一次性真壳 E2E（临时 spec，未提交）全链验证：注入句含命令 → 真 CLI 经运行中 runtime 登记 → 行 5s 轮询内点亮 → 报告经内置浏览器打开 → 反例缺文件非零退出且不登记幽灵制品。
-
-**纪要同步自带（解耦外部技能）**：「同步会议纪要」原复用宿主 meeting-minutes 技能（依赖同目录 web-access 技能），未安装即断、且驱动的是 Orca 内置浏览器（in-app 分区 + cookie 导入）。改为流程自带：新增 `references/minutes-sync.md`（SKILL 0.9.6），内嵌自包含极简 CDP 驱动脚本（Node ≥22；version/new/list/navigate/eval/close，已在本机 Edge 156 实测全命令面），驱动**用户自己的浏览器**——本机 Chrome/Edge 独立临时实例 + 调试端口、可见窗口，不用 Orca 内置浏览器；Chrome 136+ 默认 profile 禁调试端口以独立 user-data-dir 规避，内网 w3 SSO 全新 profile 透明自动登录（实测零手工输入），非内网请人在窗口登录后继续。定位会议优先材料 link、打不开重取 `meeting info`、仍缺请人给链接；先预览后写入、只写草稿不代发、幂等跳过、中断先核对；窗口留人完成最终发送。version-records 与 design 同步；注入句不动（prompt 只承载触发意图，机制归 Skill）。
-
-**证据报告字段化子集口径**（v0.8 实测后续）：实测聚合报告把开发侧逐条判据压缩成一段转述——每句都真、没有一条能独立核对（正确的废话）。SKILL 聚合节与报告模板改为字段化子集口径：判据逐条一行（用例名、期望结果、实际结果或通过与否、截图钉 SHA、执行路径），每条 Issue 一行门禁实数与未验留白；命令与深链全文、四维检视过程、排查叙事只留链接；「验收说明」写归并（兑现哪条目标承诺）、与判据行分开不揉成一段；点名反面模式（禁止压缩转述、禁止大段文本凑数、子集不够先扩开发侧规范）。聚合注入句在 #516 命令句前补一句口径（SKILL 0.9.8）。
-
-**预订会议补「发会议通知」步**（v0.8 实测后续）：实测模型照预订八步走完不发通知（`[chat].notify` 只含 merged/release，会议不在其中），人得自己提醒。预订步在 `meeting info` 读回后、写回材料前插入「向项目群发会议通知」：`welink-cli im send-to-group`（命令面本机 welink-cli 1.0.18 已核实，`--group-id`/`--text` 支持 `\n` 分行）；正文=标题、时间、会议号（`meetingId` 稳定标识）、入会链接、议题按四分区；独立外部写入、正文全文+收件群单独预览确认，不因建会已确认而免确认；`msgId`/`resultCode` 如实回执，发不出去就说没发出去；**发送事实不进验收材料**（人拍板，schema 不动，只在会话回执）。改期/取消后同样通知：改期补原时间与说明（从材料 `meeting.time` 读）、重取新链接再发，取消用材料已存信息。已知事实入规范：入会链接里的 `enMeetingId` 每次 `meeting info` 查询轮换、会议号才是稳定标识；WeLink 建会/改期时会议系统是否已自动通知与会人未核实，按仍需发一条处理。预订注入句补「向项目群发一条会议通知」半句（SKILL 0.9.9）。
-
-**验证状态**：门禁与 ratchet 见 PR 验证报告；CDP 驱动脚本本机 Edge 156 实测通过；`welink-cli im send-to-group` 命令面本机 1.0.18 已核实。**真壳未验**：纪要同步全流程（需真实 eMeeting 环境）、预订会议链（含向项目群发通知步）。原型欠账：acceptance-model.js 的聚合/预订 prompt 与注释仍为纯意图句，未跟生产注入句的 #516 后续形态（内嵌命令、子集口径句、通知半句），随高保真专项同步。
-
-## 当前验收点与旅程矩阵
-
-> 口径：○ = 未实现；◐ = 代码已接入但真实用户旅程未完整；● = 齐。协议测试、静态检查与原型结果不等同真壳 E2E。本轮全部为 ◐ 的原因见上「证据边界」——不是代码没写，是真壳证据没取。
-
-| 验收点 | 状态 | 实现与证据 / 缺口 |
-|---|---|---|
-| A01 独立树、原生会话、单页四区 | ◐ | #439 短卡只在未开始时出现，实际会话打开后四区与空目标可见，视图内存支持切屏；已静态接线，启动链未真壳复验；会话收起与页头操作组按 #445 复验，已在真实 Electron 证明两屏、1600/1100 窗口零占位，PTY、栏宽与对象动作展开均保留 |
-| A02 固定计划身份与安全初始化 | ◐ | 启动硬门禁与 GateDialog 已删除；会话开场提示未合入/未知，不自动合入。use-acceptance-board 保留 readPlan/assertFixedPlan 与并发护栏，无 committed 来源不建材料；未真壳复验 |
-| A03 出包真实读数、部署注入、演示环境两形态读回 | ◐ | `AcceptancePackage.tsx` 出包读数沿用既有链（按钮本轮统一 `BoardActionButton`）；部署改经共用发送弹窗注入；`demoEnv` 两形态已接（web 显示系统名 `label`、缺省回退 URL 可点打开，桌面应用显示「已启动 · detail」不伪造链接）。**两形态都未在真壳用真实项目验过**，注入通道修复后也未验 |
-| A04 验收证据报告一份/版本、登记、可打开 | ◐ | 模板正本在技能资产；报告经 `latestVerificationArtifact` 读回、登记复用 `verification` 制品类型；未生成时入口禁用；入口只在「验收准备」行（目标行报告入口 2026-10-23 UI 对齐轮删除）。#516 起登记经 `add-artifact` 一条命令，一次性真壳 E2E 已验命令登记、行轮询点亮与内置浏览器打开（证据见 PR 验证报告） |
-| A05 单个人工结论状态 | ◐ | AcceptanceGoalRow 使用未判定/达成/不达成选择，沿中性/警示色、清除仍受人工守卫；本轮只有静态证据，重启一致性待验 |
-| A06 纪要文本、整份确认与落实去向 | ◐ | 无材料时只读空态、整理请求可用；有材料时沿整份确认/撤销与已确认冻结。#471 起读视图按目标分组（`G<n> ·` 前缀呈现级、编辑态保持平铺、遗留保全局 M 编号）。归档前已落实或真实 Issue 跟进由助手核对、PR 人审；本轮模型和真壳未验 |
-| A07 归档引用+状态+原生 PR 页+注入式发起归档 | ◐ | `AcceptanceArchiveCard.tsx` 引用 + provider 真实状态（读不到显示「状态未知」）+ 原生 PR 页入口 + 注入式「发起归档」；无直接执行归档按钮。真壳未验 |
-| A08 发布只有一个注入按钮、无预检弹窗、读回行现算 | ◐ | 发布区仅一个「发布」执行按钮注入请求；板面无预检弹窗；#462 起按 `workflow.release` tag 读回键现算读回行（四态+Release 页+资产），读数不落材料，总览不显示已发布。读回链静态接线，真壳未验 |
-| A09 Issue 计数、分组与标签 | ◐ | 未关闭→未知→已关闭、组内原顺序，遗留仅计未关闭人工标记；已关闭历史备注保留，成功读回才显示 Feature/Bug；静态接线，真实 provider 与交互未验 |
-| A10 「更新代码」唯一同步入口、恢复不丢人工输入 | ◐ | 同步入口在页头；`use-acceptance-draft.ts` 草稿恢复；CAS 冲突本轮改字段归属静默合并（`acceptance-merge.ts`，人字段保本地/模型字段取远端，一行提示），裸 JSON 对照退役，仅基线缺失（脏草稿恢复后再冲突）退回两按钮人工处置。**重启/切树/脏树三种恢复与冲突合并未在真壳验；merge 纯函数欠单测看护** |
-| A11 无个人自验工作面、无验收件清单 UI | ◐ | 屏上无逐条验收件核对工作面，准备产物只以报告与登记形态存在 |
-| A12 自动化真实到点、不自动确认完成 | ◐ | 复用已登记自动化（`version-cycle/cycle-prompt.ts`）；**真实到点触发未在本轮运行** |
-| A13 旧格式材料宽容读回、固定提交历史链路仍可用 | ◐ | `acceptance-legacy.ts` + `AcceptanceLegacyRecords.tsx` 末尾只读折叠区；退役字段留作 schema 只读可选字段；模型通道改写被拒；按固定提交的历史链路保留（计划屏上版回顾依赖）。负责人上一轮报的「旧版本数据显示不出来」已修两处根因，**修复后未复验**；注意 sessionStorage 里可能还留着旧的失败草稿，复验时用冲突提示切回宿主材料 |
-| A14 预订会议先预览后执行、同步纪要只写草稿 | ◐ | 生产接线已入：协议 `meeting` 字段（模型写、不入人守卫、merge 取远端）、准备区「预订会议」行（已预订置灰、改期取消在会话说明）与「同步会议纪要」（未预订禁用）两个注入按钮；先预览后执行/只写草稿的会话侧行为归验收 Skill（#516 后续起预订含向项目群发会议通知步，独立预览确认，发送事实不进材料）。#516 起纪要同步流程自带（minutes-sync.md，CDP 驱动用户自己的浏览器），驱动脚本本机 Edge 156 实测；全流程真壳与模型旅程未验 |
-| A15 批注模式快捷键（#444） | ◐ | 与计划屏共用 `workbench.toggleAnnotationMode`（默认 Alt+A，设置可改绑）：空板不触发经 workbench-cycle-smoke E2E；有材料板的 `aria-pressed` 翻转与横幅进出（V8）、macOS å 物理码回退（V9）归人工真壳 |
-
-| 旅程 | 状态 | 覆盖与留白 |
-|---|---|---|
-| AJ01 准备→Showcase→纪要→归档与发布 | ○ | 未注册、未运行。需真实服务、真实报告、真实发布读回与杀进程重启核对；模拟不计通过 |
-| 跨周旅程（原 AJ02） | — | 不适用：跨周按轮次刷新场景已于 2026-10-22 退役，同次恢复与脏树恢复并入 AJ01 与 A10 |
-
-## 连带义务处置
-
-spec「退役清单」与 design 列出的连带改动，本分支已同批处理，未留缺口：
-
-- **计划屏上版回顾**：`use-prior-carryovers.ts:110-129` 的「会议遗留」已改读验收纪要 `followups`；读不到纪要节（v10 前的材料）时回退到已确认且标为「纳入下周计划」的旧指导条目，旧版本两行回显不因退役变空。#407 另给它加了延期遗留三态与实时读回，与本改动不冲突。
-- **总览版本纪要派生**：`overview-version-minutes.tsx` 已停止读目标级交付件，改读版本级演示环境与报告登记。
-- **顶层正本**：`docs/architecture.md`、`docs/05-features/README.md`、`docs/06-module/` 两篇中把验收屏旅程灯与首行协作卡片写成现行能力的表述，随本轮文档同步改正（见对应文件）。
-
-## 验证纪律
-
-界面与行为改动的交付须附验证报告，本次改动新增或修改的判据内嵌真壳截图四件套（用例名、执行路径、期望结果、截图），截图推永不合入的 `shots/<分支名>` 并钉 SHA。v10 不沿用 v9.5 那轮「不运行 CI 和真壳」的豁免口径——计划屏 G3 生产实现（#399）已按真壳 + 钉 SHA 截图交付，验收屏按同口径执行。**本分支目前欠这份真壳证据**，合入前后需补 A03 演示环境两形态、A05/A10 重启读回、A06 纪要冻结与注入通道四组。叠层单测受执行例数 ratchet 约束，新增须同一交付内对冲删除退役用例。2026-10-23 对齐轮为 bug 修复轮，负责人另行明确授权免本地门禁与真机验证（见「验收对齐轮」节），真壳欠账不因此销账。
+PR #584 本轮按用户要求不运行本地 CI、不启动服务或真壳。报告生成与人工核对的实际模型行为、GitHub/CodeHub 图片可读性、安装失败与取消重试、跨宿主路径及重启读回由内部环境验证；结果回填原 PR，不在本文保存执行流水。
