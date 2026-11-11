@@ -32,34 +32,35 @@ export function defineWorkbenchMethod<
     handler: (params, ctx) =>
       withSpan<Awaited<TResult>>(
         method.name,
-        (span) =>
-          Promise.resolve()
-            .then<Awaited<TResult>>(() => Promise.resolve(method.handler(params, ctx)))
-            .then<Awaited<TResult>>(
-              (result) => {
-                const failure = asEnvelopeFailure(result)
-                if (failure) {
-                  const { code, message } = failure.error
-                  recordWorkbenchFailure(
-                    span,
-                    typeof code === 'string' ? code : 'workbench-error',
-                    typeof message === 'string' ? message : undefined
-                  )
-                } else {
-                  const code = failureCode?.(result)
-                  if (code !== undefined) {
-                    recordWorkbenchFailure(span, code)
-                  }
+        (span) => {
+          const onError = (error: unknown): never => {
+            if (isAbortError(error)) {
+              span.interrupt('workbench-rpc-cancelled')
+            }
+            throw error
+          }
+          try {
+            return Promise.resolve(method.handler(params, ctx)).then<Awaited<TResult>>((result) => {
+              const failure = asEnvelopeFailure(result)
+              if (failure) {
+                const { code, message } = failure.error
+                recordWorkbenchFailure(
+                  span,
+                  typeof code === 'string' ? code : 'workbench-error',
+                  typeof message === 'string' ? message : undefined
+                )
+              } else {
+                const code = failureCode?.(result)
+                if (code !== undefined) {
+                  recordWorkbenchFailure(span, code)
                 }
-                return result
-              },
-              (error: unknown) => {
-                if (isAbortError(error)) {
-                  span.interrupt('workbench-rpc-cancelled')
-                }
-                throw error
               }
-            ),
+              return result
+            }, onError)
+          } catch (error) {
+            return onError(error)
+          }
+        },
         { kind: 'server' }
       )
   }
