@@ -19,8 +19,8 @@
 | [development.md](development.md) | BW 自身测试、独立检视、验证证据与 PR 的规范正本，独立于具体 Skill | 本仓开发、测试、检视与交付；AGENTS 和各 Skill 共同引用 |
 | [architecture.md](architecture.md) | 整体旅程、逻辑模块、Electron 叠层与数据流 | 找现行设计、实现边界和工程落点 |
 | `02-adr/`（预留，当前无文件） | 难回头的架构决策及取舍 | 后续迁移产生新决策时记录；历史查 Git |
-| [03-guide/](03-guide/codehub-cli.md) | 给用户的操作、结果、下一步；当前含 codehub-cli 用法短文 | 使用 CodeHub 任务来源时读；其余指南按已验证的 Orca 旅程补齐 |
-| [04-design-system/](04-design-system/README.md) | 视觉规范、样式与 token；来源和镜像方式见该入口 | 设计或修改界面视觉 |
+| [03-guide/](03-guide/codehub-cli.md) | 已实践的用户操作与参考；当前只有 CodeHub CLI 指南，后续旅程指南与正式素材放同一旅程目录 | 使用 CodeHub 时读现有指南；其他旅程验证后按[引导规范](04-design-system/guidance.md#产出与维护)补齐 |
+| [04-design-system/](04-design-system/README.md) | 视觉与交互规范、样式、token；[引导与旅程规范](04-design-system/guidance.md)统一内容分工、展示和覆盖矩阵 | 设计或修改界面、引导、旅程内容与传播素材 |
 | [05-features/](05-features/README.md) | BW 特性矩阵、Issue 归属与文档入口，各特性的定义和证据由其规格与 STATUS 承载 | 提单时核对主归属，开发或盘点时按用户旅程查看定义及链状态 |
 | [06-module/](06-module/README.md) | 模块实现心智、主要矛盾与取舍 | 修改某一模块前 |
 | [10-reference/](10-reference/) | 业界研究与公开方法的一手资料提炼 | 比较 AI 辅助开发的实测结果，读[交付研究](10-reference/ai-native-delivery-value.md)。了解 Anthropic 的六阶段实践，读 [SDLC Playbook](10-reference/ai-native-sdlc-playbook.md) |
@@ -33,6 +33,7 @@
 | 路径 | 定位 |
 |---|---|
 | [workbench-start](../.claude/skills/workbench-start/SKILL.md) | BW 自己的开发与交付方法；按任务分流，知识定义与治理 Skill 共用 |
+| [journey-review](../.claude/skills/journey-review/SKILL.md) | 按用户指定的单条 BW 旅程走查、修复和瘦身，补引导/指南/按需传播素材并更新矩阵 |
 | [project-knowledge](../.claude/skills/project-knowledge/SKILL.md) | 项目知识整改、只读全景与反哺方法；当地已认可规范优先，逐块清理存量 |
 | [orca-boundary-review](../.claude/skills/orca-boundary-review/SKILL.md) | 周期复核与 Orca/BW 边界候选；先读当前 BW，公开上游变化只由人采纳后写回正本 |
 | [workbench-release](../.claude/skills/workbench-release/SKILL.md) | Windows Workbench 出包与 GitHub Release 发布；正式发布须用户明确授权 |
