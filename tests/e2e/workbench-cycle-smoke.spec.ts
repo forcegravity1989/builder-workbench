@@ -332,6 +332,37 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   const versionCard = workbenchPage.locator('[data-workbench-project-key]').filter({
     has: workbenchPage.locator('.pcard-version').getByText('v9.9', { exact: true })
   })
+  const savedGoal = '验证计划材料保存·烟测'
+  const updatedGoal = '回到项目墙后静默更新的目标'
+  const planFile = path.join(materialDirectory, 'data.json')
+  const savedPlan = readFileSync(planFile, 'utf8')
+  await expect(versionCard.locator('.pcard-delivery li')).toHaveText(savedGoal)
+  const wallRepoId = await versionCard.getAttribute('data-workbench-project-id')
+  await workbenchPage.getByRole('button', { name: '关闭项目墙', exact: true }).click()
+  await expect(workbenchPage.locator('[data-screen="wall"]')).toHaveCount(0)
+  await workbenchPage.evaluate((id) => {
+    const observer = new MutationObserver(() => {
+      const delivery = document.querySelector(
+        `[data-workbench-project-id="${CSS.escape(id ?? '')}"] .pcard-delivery`
+      )
+      if (delivery) {
+        document.documentElement.dataset.firstWallDelivery = delivery.textContent ?? ''
+        observer.disconnect()
+      }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+  }, wallRepoId)
+  try {
+    writeFileSync(planFile, savedPlan.replace(savedGoal, updatedGoal))
+    await workbenchPage.getByRole('button', { name: '项目墙', exact: true }).click()
+    await expect(workbenchPage.locator('html')).toHaveAttribute(
+      'data-first-wall-delivery',
+      new RegExp(savedGoal)
+    )
+    await expect(versionCard.locator('.pcard-delivery li')).toHaveText(updatedGoal)
+  } finally {
+    writeFileSync(planFile, savedPlan)
+  }
   await versionCard.locator('[data-workbench-open-overview]').click({ timeout: 60_000 })
   await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000

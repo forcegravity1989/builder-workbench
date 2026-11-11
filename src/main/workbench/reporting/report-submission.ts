@@ -35,7 +35,7 @@ const MAX_OBSERVED_BYTES = 64 * 1024 * 1024
 
 class ReceiptPersistenceError extends Error {}
 
-function cleanupReportingTemp(directory: string, span: ActiveSpan): void {
+export function cleanupReportingTemp(directory: string, span: ActiveSpan): void {
   try {
     rmSync(directory, { recursive: true, force: true })
   } catch (error) {
@@ -53,7 +53,7 @@ export function diagnosticsBundleFileName(bundleSubmissionId: string): string {
   return `workbench-diagnostics-${bundleSubmissionId}.ndjson`
 }
 
-async function resolveWelinkRoute(): Promise<WelinkRoute> {
+export async function resolveWelinkRoute(): Promise<WelinkRoute> {
   // Expired authentication can refresh during upload; only CLI presence gates the attempt.
   const status = await runPreflightCheck()
   if (!status.welink?.installed) {
@@ -62,7 +62,8 @@ async function resolveWelinkRoute(): Promise<WelinkRoute> {
   return status.welink.wslDistro ? { wslDistro: status.welink.wslDistro } : {}
 }
 
-function getReportingTempRoot(): string {
+/** Shared staging root for every WeLink upload lane (reports, bundles, telemetry batches). */
+export function getReportingTempRoot(): string {
   let base: string
   try {
     base = app.getPath('temp')
@@ -72,12 +73,17 @@ function getReportingTempRoot(): string {
   return join(base, 'workbench-reporting')
 }
 
-function submissionBase(channel: 'feedback' | 'crash', now: Date): string {
+/** `YYYYMMDD-HHMMSS` local-time stamp; shared by all uniquely-named upload files. */
+export function submissionStamp(now: Date): string {
   const pad = (n: number): string => String(n).padStart(2, '0')
-  const stamp =
+  return (
     `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
     `-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
-  return `workbench-${channel}-${stamp}-${randomBytes(4).toString('hex')}`
+  )
+}
+
+function submissionBase(channel: 'feedback' | 'crash', now: Date): string {
+  return `workbench-${channel}-${submissionStamp(now)}-${randomBytes(4).toString('hex')}`
 }
 
 export function buildReportMarkdown(

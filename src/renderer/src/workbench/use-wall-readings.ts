@@ -5,7 +5,6 @@ import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type { Worktree } from '../../../shared/worktree/types'
-import { worktreeFingerprintTuple } from './worktree-fingerprint'
 import {
   readWallReadings,
   selectWallVersion,
@@ -54,28 +53,21 @@ function useWallVersionReads(
         )
         return {
           projectKey: project.key,
-          sourceKey: JSON.stringify([
-            rows.map((r) => [
-              getRepoExecutionHostId(r),
-              r.id,
-              r.path,
-              r.kind,
-              r.worktreeBaseRef,
-              r.gitRemoteIdentity,
-              r.issueSourcePreference,
-              r.upstream
-            ]),
-            worktrees.map((tree) => [
-              getWorktreeHostIdentity(tree),
-              tree.runtimeOwnerEnvironmentId,
-              tree.projectId,
-              tree.head,
-              tree.branch,
-              tree.isMainWorktree,
-              worktreeFingerprintTuple(tree)
+          sourceKey: JSON.stringify(
+            rows.map((row) => [
+              getRepoExecutionHostId(row),
+              row.id,
+              row.path,
+              row.kind,
+              row.connectionId,
+              row.worktreeBaseRef,
+              row.gitRemoteIdentity,
+              row.issueSourcePreference,
+              row.upstream
             ])
-          ]),
-          revision: wallReadRevision(refresh, rows),
+          ),
+          ready: project.rows[0].kind === 'folder' || worktrees.length > 0,
+          revision: Math.max(refresh.visitRevision, wallReadRevision(refresh, rows)),
           load: () => selectWallVersion(project, worktrees)
         }
       }),
@@ -93,21 +85,24 @@ export function useWallReadings(
     () =>
       versionsToRead.map((source) => ({
         ...source,
+        forceAtRevision: refresh.allRevision,
         load: async (force: boolean) => {
-          const selection = await loadWallCardRead(
-            versions(source.sourceKey),
-            source.revision,
-            source.load
-          )
+          const selection = await loadWallCardRead(versions(source.sourceKey), source)
           if (!selection) {
             throw new Error('未读到项目版本目录')
           }
           return readWallReadings(selection, force)
         }
       })),
-    [versionsToRead]
+    [versionsToRead, refresh.allRevision]
   )
-  return useWallCardReads(reads, cache)
+  const result = useWallCardReads(reads, cache)
+  for (const source of reads) {
+    if (!source.ready && !result.values[source.projectKey]) {
+      result.values[source.projectKey] = { kind: 'unknown', reason: '工作区尚未就绪' }
+    }
+  }
+  return result
 }
 
 export function useWallVersionLabel(

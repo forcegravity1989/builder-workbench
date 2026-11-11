@@ -1,4 +1,4 @@
-// Builds only the acceptance v10 candidate; the approved v9.5 prototype stays unchanged.
+// Builds the current acceptance journey from its editable prototype sources.
 const fs = require('node:fs')
 const path = require('node:path')
 const esbuild = require('esbuild')
@@ -22,12 +22,12 @@ esbuild
     const content = outputFiles[0].text
     if (process.argv.includes('--check')) {
       if (fs.readFileSync(out, 'utf8').replace(/\r\n/g, '\n') !== content) {
-        throw new Error('Acceptance v10 prototype bundle is stale')
+        throw new Error('Acceptance journey prototype bundle is stale')
       }
-      console.log('Acceptance v10 prototype bundle matches sources')
+      console.log('Acceptance journey prototype bundle matches sources')
     } else {
       fs.writeFileSync(out, content)
-      console.log('Built acceptance v10 candidate')
+      console.log('Built acceptance journey prototype')
     }
   })
   .catch((error) => {

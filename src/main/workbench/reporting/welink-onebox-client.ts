@@ -13,6 +13,7 @@ export type WelinkRoute = {
 
 export type WelinkFailureCategory =
   | 'not-installed'
+  | 'cli-incompatible'
   | 'auth'
   | 'config'
   | 'rate-limit'
@@ -22,6 +23,8 @@ export type WelinkFailureCategory =
 
 const CATEGORY_MESSAGES: Record<WelinkFailureCategory, string> = {
   'not-installed': '未检测到 welink-cli,无法发送;请在 设置 → 集成 安装后重试。',
+  'cli-incompatible':
+    'BW 与当前 welink-cli 的命令参数不兼容,请更新 BW 和 welink-cli;仍失败请联系 BW 管理员。',
   auth: 'welink-cli 未登录或登录已过期;请运行 welink-cli auth login 后重试。',
   config: 'WeLink 群空间 ID 配置无效(空间不存在或无权限);请联系 BW 管理员核对上报群空间。',
   'rate-limit': 'WeLink 接口限流,请稍后重试。',
@@ -52,6 +55,13 @@ function sleep(ms: number): Promise<void> {
 }
 
 export function classifyWelinkErrorText(text: string): WelinkFailureCategory {
+  if (
+    /arguments? (?:were|was) not expected|Run with --help|unknown (?:option|argument|flag)/i.test(
+      text
+    )
+  ) {
+    return 'cli-incompatible'
+  }
   // Order matters: 429 bodies can embed endpoint URLs; NoSuchUser must stay a
   // config verdict even though it arrives as an auth-shaped 404 body.
   if (/status 429|Frequency Control/i.test(text)) {
@@ -90,6 +100,9 @@ function toWelinkReportError(error: unknown): WelinkReportError {
   // spawn ENOENT = the CLI itself is missing (shim resolution found nothing).
   if ((error as { code?: string }).code === 'ENOENT') {
     return new WelinkReportError('not-installed', errorOutput(error))
+  }
+  if (String((error as { code?: unknown }).code) === '109') {
+    return new WelinkReportError('cli-incompatible', errorOutput(error))
   }
   return new WelinkReportError(classifyWelinkErrorText(errorOutput(error)), errorOutput(error))
 }
@@ -169,32 +182,27 @@ function normalizeOneboxId(value: unknown): string | null {
 export function parseFolderListing(json: Record<string, unknown> | null): {
   folders: OneboxNode[]
 } {
-  const normalize = (value: unknown): OneboxNode[] => {
-    if (!Array.isArray(value)) {
-      return []
-    }
-    const nodes: OneboxNode[] = []
-    for (const entry of value) {
-      if (typeof entry !== 'object' || entry === null) {
-        continue
-      }
-      const record = entry as Record<string, unknown>
-      const id = record.id ?? record.fileId ?? record.folderId ?? record.nodeId
-      const name = record.name ?? record.fileName ?? record.folderName
-      if (id === undefined || id === null || typeof name !== 'string') {
-        continue
-      }
-      const idText = normalizeOneboxId(id)
-      if (!idText) {
-        continue
-      }
-      nodes.push({ id: idText, name })
-    }
-    return nodes
+  if (!Array.isArray(json?.folders)) {
+    throw new WelinkReportError('cli-incompatible', 'folder-list returned no folders array')
   }
-  return {
-    folders: normalize(json?.folders ?? json?.children)
+  const folders: OneboxNode[] = []
+  for (const entry of json.folders) {
+    if (typeof entry !== 'object' || entry === null) {
+      throw new WelinkReportError('cli-incompatible', 'folder-list returned an invalid folder')
+    }
+    const record = entry as Record<string, unknown>
+    const id = normalizeOneboxId(record.id ?? record.fileId ?? record.folderId ?? record.nodeId)
+    const name = record.name ?? record.fileName ?? record.folderName
+    // An unreadable existing folder must not be mistaken for an absent destination.
+    if (!id || typeof name !== 'string') {
+      throw new WelinkReportError(
+        'cli-incompatible',
+        'folder-list returned an invalid folder identity'
+      )
+    }
+    folders.push({ id, name })
   }
+  return { folders }
 }
 
 async function listFolder(
@@ -202,18 +210,56 @@ async function listFolder(
   spaceId: string,
   parentId: string
 ): Promise<{ folders: OneboxNode[] }> {
-  const { stdout } = await withRateLimitRetry(() =>
-    runWelinkCli(
-      route,
-      ['onebox', 'folder-list', '--space-id', spaceId, '--parent', parentId],
-      WELINK_METADATA_TIMEOUT_MS
+  const folders: OneboxNode[] = []
+  let offset = 0
+  for (;;) {
+    const { stdout } = await withRateLimitRetry(() =>
+      runWelinkCli(
+        route,
+        [
+          'onebox',
+          'folder-list',
+          '--space-id',
+          spaceId,
+          '--folder-id',
+          parentId,
+          '--limit',
+          '20',
+          '--offset',
+          String(offset)
+        ],
+        WELINK_METADATA_TIMEOUT_MS
+      )
     )
-  )
-  const parsed = parseFirstJsonObject(stdout)
-  if (!parsed) {
-    throw new WelinkReportError('unknown', `folder-list returned no JSON: ${stdout}`)
+    const parsed = parseFirstJsonObject(stdout)
+    const limit = parsed?.limit
+    const totalCount = parsed?.totalCount
+    if (
+      parsed?.offset !== offset ||
+      typeof limit !== 'number' ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 20 ||
+      typeof totalCount !== 'number' ||
+      !Number.isSafeInteger(totalCount) ||
+      totalCount < 0 ||
+      !Array.isArray(parsed.folders) ||
+      !Array.isArray(parsed.files)
+    ) {
+      throw new WelinkReportError('cli-incompatible', 'folder-list returned invalid pagination')
+    }
+    folders.push(...parseFolderListing(parsed).folders)
+    offset += limit
+    if (offset >= totalCount) {
+      return { folders }
+    }
+    if (parsed.folders.length + parsed.files.length === 0) {
+      throw new WelinkReportError(
+        'cli-incompatible',
+        'folder-list returned an empty intermediate page'
+      )
+    }
   }
-  return parseFolderListing(parsed)
 }
 
 async function createFolder(
@@ -237,26 +283,31 @@ async function createFolder(
   return id
 }
 
-// One ensured folder per space per process; concurrent submissions share the
+// One ensured folder per (route, space, name) per process; concurrent submissions share the
 // in-flight promise so a burst of reports cannot double-create the folder.
 const reportFolderCache = new Map<string, Promise<string>>()
 
-export function ensureReportFolder(route: WelinkRoute, spaceId: string): Promise<string> {
-  const cached = reportFolderCache.get(spaceId)
+export function ensureReportFolder(
+  route: WelinkRoute,
+  spaceId: string,
+  folderName: string = WORKBENCH_REPORT_FOLDER_NAME
+): Promise<string> {
+  const cacheKey = `${route.wslDistro ?? ''}::${spaceId}::${folderName}`
+  const cached = reportFolderCache.get(cacheKey)
   if (cached) {
     return cached
   }
   const pending = (async () => {
     const listing = await listFolder(route, spaceId, '0')
-    const existing = listing.folders.find((folder) => folder.name === WORKBENCH_REPORT_FOLDER_NAME)
+    const existing = listing.folders.find((folder) => folder.name === folderName)
     if (existing) {
       return existing.id
     }
-    return createFolder(route, spaceId, '0', WORKBENCH_REPORT_FOLDER_NAME)
+    return createFolder(route, spaceId, '0', folderName)
   })()
-  reportFolderCache.set(spaceId, pending)
+  reportFolderCache.set(cacheKey, pending)
   void pending.catch(() => {
-    reportFolderCache.delete(spaceId)
+    reportFolderCache.delete(cacheKey)
   })
   return pending
 }
