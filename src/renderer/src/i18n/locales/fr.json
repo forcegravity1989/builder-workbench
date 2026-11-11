@@ -7253,7 +7253,6 @@
           "191ac34567": "Orchestration d'agents"
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "Permet aux agents de transmettre le contexte et de coordonner le travail via Orca.",
           "2777ff0fdc": "Skill d'orchestration"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -10092,8 +10091,8 @@
                 "cards": {
                   "793a06e899": "Revérifier",
                   "1a9475dace": "En savoir plus",
-                  "19fb419c12": "Les identifiants Gitea sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
-                  "60708f23da": "uniquement quand Orca ne peut pas déduire l'URL de l'API depuis le remote.",
+                  "19fb419c12": "Les identifiants Gitea sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
+                  "60708f23da": "uniquement quand {{product}} ne peut pas déduire l'URL de l'API depuis le remote.",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "pour les dépôts privés, et définissez",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -10102,8 +10101,8 @@
                   "05863d2599": "Pull requests et statuts de commits via l'API REST Gitea.",
                   "52f75876be": "Pull requests et statuts de commits pour les dépôts détectés",
                   "0b5242f8a2": "{{value0}} · Pull requests et statuts de commits",
-                  "40f678df73": "Les identifiants Azure DevOps sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
-                  "7bd345e3f6": "uniquement quand Orca ne peut pas déduire l'URL de base de l'API depuis le remote git.",
+                  "40f678df73": "Les identifiants Azure DevOps sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
+                  "7bd345e3f6": "uniquement quand {{product}} ne peut pas déduire l'URL de base de l'API depuis le remote git.",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": ". Définissez",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -10114,7 +10113,7 @@
                   "0eb50d5593": "Pull requests et statuts de builds via des tokens de l'API REST Azure DevOps.",
                   "54636c65d4": "Pull requests et statuts de builds pour les Azure Repos détectés",
                   "ea204f5e03": "{{value0}} · Pull requests et statuts de builds",
-                  "6154b02093": "Les identifiants Bitbucket sont configurés mais l'authentification a échoué. Vérifiez le token et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
+                  "6154b02093": "Les identifiants Bitbucket sont configurés mais l'authentification a échoué. Vérifiez le token et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "et",
@@ -11110,9 +11109,9 @@
               "authModeToken": "Token d'accès",
               "authModeBasic": "E-mail & token API",
               "disconnect": "Déconnecter Bitbucket",
-              "envManaged": "Configuré via des variables d'environnement. Désactivez les variables ORCA_BITBUCKET_* pour gérer cet identifiant dans Orca.",
+              "envManaged": "Configuré via des variables d'environnement. Désactivez les variables ORCA_BITBUCKET_* pour gérer cet identifiant dans {{product}}.",
               "storedAuthFailed": "L'identifiant Bitbucket enregistré n'a pas réussi à s'authentifier. Modifiez-le ou vérifiez que le token garde l'accès aux pull requests.",
-              "storedCredential": "Enregistré dans Orca sur cette machine. Les variables d'environnement ORCA_BITBUCKET_* ont priorité quand elles sont définies.",
+              "storedCredential": "Enregistré dans {{product}} sur cette machine. Les variables d'environnement ORCA_BITBUCKET_* ont priorité quand elles sont définies.",
               "notConfigured": "Connectez un compte Bitbucket Cloud avec un token API Atlassian ou un token d'accès. Les variables d'environnement ORCA_BITBUCKET_* marchent aussi et ont priorité.",
               "disconnectFailed": "Impossible de supprimer l'identifiant Bitbucket enregistré."
             }
@@ -13031,9 +13030,9 @@
             "b8dc9dd8a2": "Installés",
             "1b51644c2d": "Laissez les agents contrôler le bureau : déplacer le curseur, cliquer et taper dans n'importe quelle application.",
             "362a07517d": "Computer Use",
-            "5e8fe5a72d": "Donnez aux agents un accès direct au navigateur d'Orca pour tester des pages, capturer des captures d'écran et agir sur ce qu'ils voient.",
+            "5e8fe5a72d": "Donnez aux agents un accès direct au navigateur d'{{product}} pour tester des pages, capturer des captures d'écran et agir sur ce qu'ils voient.",
             "e638da007a": "Agent Browser Use",
-            "c61c91e642": "Laissez les agents se coordonner via Orca pour faire avancer jusqu'au bout les grandes tâches en plusieurs étapes.",
+            "c61c91e642": "Laissez les agents se coordonner via {{product}} pour faire avancer jusqu'au bout les grandes tâches en plusieurs étapes.",
             "ac07f8887f": "Orchestration d'agents",
             "e9eb197e12": "Autorisations Computer Use ouvertes",
             "3a59452a67": "Commande de skill copiée et insérée ci-dessous pour vérification.",
@@ -13076,7 +13075,7 @@
             "f39be6ca14": "/signup"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'Orca.",
+            "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'{{product}}.",
             "d5bb1cd4ba": "Skill Browser Use"
           },
           "ComputerUseAnimatedVisual": {
@@ -13375,7 +13374,7 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "connecté pour les tâches",
-            "33b650af52": "Connectez l'outil où votre équipe suit son travail. Orca démarre les espaces de travail avec le titre de l'issue, le lien et le contexte déjà rattachés.",
+            "33b650af52": "Connectez l'outil où votre équipe suit son travail. {{product}} démarre les espaces de travail avec le titre de l'issue, le lien et le contexte déjà rattachés.",
             "5b3577a492": "connecté pour le statut de revue",
             "list_end": ", et ",
             "list_pair": " et ",
@@ -13383,8 +13382,8 @@
             "code_host_tasks_summary": "issues disponibles comme tâches · ajoutez Linear ou Jira si votre équipe y planifie son travail",
             "code_host_tasks_caption": "Les issues de votre hébergeur de code servent aussi de tâches.",
             "review_step_title": "Voyez le statut des PR pendant que les agents travaillent",
-            "review_step_description": "Connectez un fournisseur de revue pour qu'Orca affiche le statut des PR ou MR, les vérifications et les revues.",
-            "task_step_title": "Lancez des agents sur vos tâches sans quitter Orca"
+            "review_step_description": "Connectez un fournisseur de revue pour qu'{{product}} affiche le statut des PR ou MR, les vérifications et les revues.",
+            "task_step_title": "Lancez des agents sur vos tâches sans quitter {{product}}"
           },
           "connect": {
             "integration": {

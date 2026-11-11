@@ -16,6 +16,8 @@ import {
   getSettingsFocusedExecutionHostId
 } from '../../../../shared/execution-host'
 import { getActiveSidebarWorkspaceId } from '../../../../shared/workspace-scope'
+import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
+import { getFolderWorkspaceExecutionHostIdForRows } from './worktree-list/listing/host-filtering'
 import { getPinnedWorktreeDisplayPolicy } from './worktree-list/grouping/row-types'
 import { selectWorktreeListReviewCacheInputs } from './worktree-list/listing/review-cache-inputs'
 import type { VirtualizedScrollAnchor } from '@/hooks/useVirtualizedScrollAnchor'
@@ -172,8 +174,48 @@ const WorktreeList = React.memo(function WorktreeList({
     folderWorkspaces,
     pairedDeviceIdsByEnvironment
   })
-  const visibleReposForRows = visibleScope.visibleReposForRows
-  const visibleProjectGroupsForRows = visibleScope.visibleProjectGroupsForRows
+  const visibleReposForRows = useMemo(
+    () =>
+      workbenchProject
+        ? visibleScope.visibleReposForRows.filter((repo) =>
+            workbenchProject.rows.some(
+              (row) =>
+                row.id === repo.id && getRepoExecutionHostId(row) === getRepoExecutionHostId(repo)
+            )
+          )
+        : visibleScope.visibleReposForRows,
+    [visibleScope.visibleReposForRows, workbenchProject]
+  )
+  const visibleProjectGroupsForRows = useMemo(
+    () =>
+      workbenchProject
+        ? visibleScope.visibleProjectGroupsForRows.filter((group) =>
+            workbenchProject.groups.some(
+              (item) =>
+                item.id === group.id && getProjectGroupHostId(item) === getProjectGroupHostId(group)
+            )
+          )
+        : visibleScope.visibleProjectGroupsForRows,
+    [visibleScope.visibleProjectGroupsForRows, workbenchProject]
+  )
+  const visibleFolderWorkspacesForRows = useMemo(
+    () =>
+      workbenchProject
+        ? visibleScope.visibleFolderWorkspacesForRows.filter((folder) =>
+            workbenchProject.groups.some(
+              (group) =>
+                group.id === folder.projectGroupId &&
+                getProjectGroupHostId(group) ===
+                  getFolderWorkspaceExecutionHostIdForRows({
+                    folderWorkspace: folder,
+                    projectGroup: group,
+                    defaultHostId: 'local'
+                  })
+            )
+          )
+        : visibleScope.visibleFolderWorkspacesForRows,
+    [visibleScope.visibleFolderWorkspacesForRows, workbenchProject]
+  )
   const externalWorktreeCards = useSidebarExternalWorktreeCards({
     repos,
     visibleReposForRows,
@@ -198,7 +240,7 @@ const WorktreeList = React.memo(function WorktreeList({
     projectGrouping,
     visibleReposForRows,
     visibleProjectGroupsForRows,
-    visibleFolderWorkspacesForRows: visibleScope.visibleFolderWorkspacesForRows,
+    visibleFolderWorkspacesForRows,
     importedWorktreesByRepo: externalWorktreeCards.importedWorktreesByRepo,
     newExternalWorktreesInboxByRepo: externalWorktreeCards.newExternalWorktreesInboxByRepo,
     filterRepoIds: filterState.filterRepoIds,

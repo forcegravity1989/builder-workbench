@@ -69,6 +69,7 @@ export function sanitizeRepoUpdatesForPersistence<
   T extends Partial<
     Pick<
       Repo,
+      | 'projectVisibility'
       | 'badgeColor'
       | 'repoIcon'
       | 'upstream'
@@ -82,6 +83,13 @@ export function sanitizeRepoUpdatesForPersistence<
   >
 >(updates: T): T {
   const sanitized = { ...updates }
+  if (
+    'projectVisibility' in sanitized &&
+    sanitized.projectVisibility !== 'personal' &&
+    sanitized.projectVisibility !== 'team'
+  ) {
+    delete sanitized.projectVisibility
+  }
   if ('badgeColor' in sanitized) {
     const badgeColor = normalizeRepoBadgeColor(sanitized.badgeColor)
     if (!badgeColor) {

@@ -184,6 +184,7 @@ export class RepoLifecycleOperations {
         | 'worktreeVisibilitySourcePreferences'
         | 'projectGroupId'
         | 'projectGroupOrder'
+        | 'projectVisibility'
         | 'projectHostSetupMethod'
       >
     > & {

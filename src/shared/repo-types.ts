@@ -43,6 +43,8 @@ export type Repo = {
   id: string
   path: string
   displayName: string
+  /** BW wall visibility, stored on this host's registration; absent means personal. */
+  projectVisibility?: 'personal' | 'team'
   badgeColor: string
   repoIcon?: RepoIcon | null
   /** Set when the repo is a fork: the upstream/parent owner/repo. Drives the

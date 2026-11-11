@@ -3,6 +3,7 @@ import { BookOpen, CalendarClock, LayoutDashboard, LayoutGrid, PackageCheck } fr
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { SidebarSettingsHelpMenu } from '@/components/sidebar/SidebarSettingsHelpMenu'
+import { SshStatusSegment } from '@/components/status-bar/SshStatusSegment'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { isWorkbenchShell } from './is-workbench-shell'
@@ -91,7 +92,9 @@ export function WorkbenchRail(): React.JSX.Element | null {
       id: 'overview',
       label: '项目总览',
       icon: LayoutDashboard,
-      active: activeView === 'activity' && projectPage === null,
+      active:
+        activeView === 'activity' &&
+        (projectPage === null || projectPage.kind === 'project-overview'),
       onSelect: leaveProjectPage(openActivityPage)
     },
     {
@@ -145,7 +148,8 @@ export function WorkbenchRail(): React.JSX.Element | null {
       </nav>
       <div className="flex-1" />
       <TooltipProvider delayDuration={400}>
-        <div className="flex flex-col items-center gap-0.5 [&>div]:flex-col">
+        <div className="flex flex-col items-center gap-0.5 [&>div]:flex-col [&>div>button]:size-10 [&>div>button>svg]:size-4.5">
+          <SshStatusSegment compact iconOnly variant="rail" />
           <SidebarSettingsHelpMenu />
         </div>
       </TooltipProvider>

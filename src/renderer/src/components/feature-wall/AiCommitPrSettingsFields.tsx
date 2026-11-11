@@ -31,6 +31,19 @@ type AiCommitPrSettingsFieldsProps = {
   writeConfig: (patch: Partial<CommitMessageAiSettings>) => void
 }
 
+function thinkingLevelLabel(level: { id: string; label: string }): string {
+  const labels: Record<string, string> = {
+    none: translate('guidance.thinking.none', 'None'),
+    minimal: translate('guidance.thinking.minimal', 'Minimal'),
+    low: translate('guidance.thinking.low', 'Low'),
+    medium: translate('guidance.thinking.medium', 'Medium'),
+    high: translate('guidance.thinking.high', 'High'),
+    xhigh: translate('guidance.thinking.xhigh', 'Extra high'),
+    max: translate('guidance.thinking.max', 'Max')
+  }
+  return labels[level.id] ?? level.label
+}
+
 export function AiCommitPrSettingsFields({
   config,
   selectPortalRoot,
@@ -160,7 +173,7 @@ export function AiCommitPrSettingsFields({
             <SelectContent portalContainer={selectPortalRoot} position="popper" align="start">
               {activeModel.thinkingLevels.map((level) => (
                 <SelectItem key={level.id} value={level.id} className="cursor-pointer">
-                  {level.label}
+                  {thinkingLevelLabel(level)}
                 </SelectItem>
               ))}
             </SelectContent>
