@@ -30,7 +30,7 @@ vi.mock('@/hooks/useInstalledAgentSkills', async (importOriginal) => ({
 }))
 
 vi.mock('@/lib/agent-skill-cli-prerequisite', () => ({
-  AGENT_SKILL_CLI_PREREQUISITE_NOTICE: 'CLI registration notice',
+  getAgentSkillCliPrerequisiteNotice: () => 'CLI registration notice',
   ensureOrcaCliAvailableForAgentSkillTerminal: vi.fn(async () => null),
   isOrcaCliAvailableOnPath: (status: CliInstallStatus | null | undefined) =>
     status?.state === 'installed' && status.pathConfigured

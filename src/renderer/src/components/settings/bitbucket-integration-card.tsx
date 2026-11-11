@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ExternalLink, GitPullRequestArrow, LoaderCircle, Unlink } from 'lucide-react'
 import type { BitbucketConnectionStatus } from '../../../../shared/bitbucket-credentials'
@@ -261,7 +262,8 @@ function BitbucketCardNote(props: {
       <p className="text-xs text-muted-foreground">
         {translate(
           'auto.components.settings.bitbucket.integration.card.envManaged',
-          'Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in Orca.'
+          'Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in {{product}}.',
+          { product: isWorkbenchShell() ? 'BW' : 'Orca' }
         )}
       </p>
     )
@@ -276,7 +278,8 @@ function BitbucketCardNote(props: {
             )
           : translate(
               'auto.components.settings.token.source.control.integration.cards.6154b02093',
-              'Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart Orca if environment variables changed.'
+              'Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart {{product}} if environment variables changed.',
+              { product: isWorkbenchShell() ? 'BW' : 'Orca' }
             )}
       </p>
     )
@@ -286,7 +289,8 @@ function BitbucketCardNote(props: {
       <p className="text-xs text-muted-foreground">
         {translate(
           'auto.components.settings.bitbucket.integration.card.storedCredential',
-          'Saved in Orca on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.'
+          'Saved in {{product}} on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.',
+          { product: isWorkbenchShell() ? 'BW' : 'Orca' }
         )}
       </p>
     )

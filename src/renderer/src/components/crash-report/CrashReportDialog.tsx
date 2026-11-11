@@ -13,7 +13,11 @@ const CrashReportDialogSurface = lazy(() =>
   }))
 )
 
-export function CrashReportDialog(): React.JSX.Element | null {
+export function CrashReportDialog({
+  manualOnly = false
+}: {
+  manualOnly?: boolean
+}): React.JSX.Element | null {
   const promptedThisLaunch = useRef(false)
   const mountedRef = useMountedRef()
   const [open, setOpen] = useState(false)
@@ -63,12 +67,12 @@ export function CrashReportDialog(): React.JSX.Element | null {
   )
 
   useEffect(() => {
-    if (promptedThisLaunch.current) {
+    if (manualOnly || promptedThisLaunch.current) {
       return
     }
     promptedThisLaunch.current = true
     void loadCrashReport(true)
-  }, [loadCrashReport])
+  }, [loadCrashReport, manualOnly])
 
   useEffect(() => {
     return window.api.ui.onOpenCrashReport(() => {
@@ -79,6 +83,9 @@ export function CrashReportDialog(): React.JSX.Element | null {
   }, [loadCrashReport])
 
   useEffect(() => {
+    if (manualOnly) {
+      return
+    }
     const pendingReport = takePendingReactErrorBoundaryReport()
     if (pendingReport) {
       openCrashReport(pendingReport)
@@ -98,7 +105,7 @@ export function CrashReportDialog(): React.JSX.Element | null {
         onReactErrorBoundaryReport
       )
     }
-  }, [openCrashReport])
+  }, [manualOnly, openCrashReport])
 
   if (!open) {
     return null

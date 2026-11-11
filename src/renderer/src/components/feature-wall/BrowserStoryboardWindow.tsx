@@ -6,7 +6,7 @@ import { FeatureWallClickRing } from './FeatureWallClickRing'
 import { BrowserPricingStoryboard } from './BrowserPricingStoryboard'
 import { BrowserSignupStoryboard } from './BrowserSignupStoryboard'
 import {
-  BROWSER_PROMPT_TEXT,
+  getBrowserPromptText,
   browserPhaseAtLeast,
   isBrowserSplitPhase,
   type BrowserVisualState,
@@ -203,7 +203,7 @@ export function BrowserStoryboardWindow(props: {
             <div className="min-h-[28px] flex-1 break-words font-sans text-[10px] leading-[1.35] text-popover-foreground">
               {state.typedChars > 0 ? (
                 <>
-                  {BROWSER_PROMPT_TEXT.slice(0, state.typedChars)}
+                  {getBrowserPromptText().slice(0, state.typedChars)}
                   <span className="ml-px inline-block h-2 w-px translate-y-[1px] bg-popover-foreground align-baseline" />
                 </>
               ) : (

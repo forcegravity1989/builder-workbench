@@ -19,6 +19,7 @@ import { translate } from '@/i18n/i18n'
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '../terminal-pane/use-system-prefers-dark'
 import { useAppStore } from '@/store'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type NavSection = {
   id: string
@@ -120,11 +121,19 @@ function SettingsSetupGuideNavRow({
     <button
       type="button"
       aria-current={setupActive ? 'page' : undefined}
-      aria-label={translate(
-        'auto.components.settings.SettingsSidebar.82db1b7de4',
-        'Onboarding checklist, {{value0}} of {{value1}} done. Show setup guide.',
-        { value0: progress.doneCount, value1: progress.total }
-      )}
+      aria-label={
+        isWorkbenchShell()
+          ? translate(
+              'guidance.setupProgress',
+              'Getting Started with BW, {{done}} of {{total}} complete.',
+              { done: progress.doneCount, total: progress.total }
+            )
+          : translate(
+              'auto.components.settings.SettingsSidebar.82db1b7de4',
+              'Onboarding checklist, {{value0}} of {{value1}} done. Show setup guide.',
+              { value0: progress.doneCount, value1: progress.total }
+            )
+      }
       onClick={() => onSelect()}
       className={cn(
         'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-worktree-sidebar-ring/50',
@@ -137,11 +146,19 @@ function SettingsSetupGuideNavRow({
         done={progress.doneCount}
         total={progress.total}
         sizeClassName="size-4"
-        tooltipLabel={`${progress.doneCount}/${progress.total} complete`}
+        tooltipLabel={translate('guidance.progress', '{{done}} of {{total}} complete', {
+          done: progress.doneCount,
+          total: progress.total
+        })}
       />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[13px] font-medium leading-4">
-          {translate('auto.components.settings.SettingsSidebar.6503182299', 'Onboarding checklist')}
+          {isWorkbenchShell()
+            ? translate('guidance.gettingStarted', 'Getting Started with BW')
+            : translate(
+                'auto.components.settings.SettingsSidebar.6503182299',
+                'Onboarding checklist'
+              )}
         </span>
       </span>
     </button>
