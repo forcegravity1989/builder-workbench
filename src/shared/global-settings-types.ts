@@ -485,6 +485,8 @@ export type GlobalSettings = {
     installId: string
     /** Cohort marker: true for pre-existing profiles (gates the opt-in banner), false for fresh installs. */
     existedBeforeTelemetryRelease: boolean
+    /** Preserves explicit choices after BW's one-time default-off migration. */
+    workbenchDefaultOffApplied?: boolean
   }
   /** One-shot cohort marker for the tab-switch keybinding swap. 'pending' =
    *  pre-existing install (seed pins old chords, then flips to 'done'); 'done' = fresh install. */
