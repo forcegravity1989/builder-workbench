@@ -30,8 +30,8 @@ export type VersionCycleContext = {
   materialRefresh?: number
   selectVersion(version: string): Promise<void>
   /**
-   * The「更新代码」button action: fast-forward this screen's fixed tree when Git
-   * allows it, then re-read materials either way. Never called on screen entry.
+   * The「更新代码」button syncs this screen's fixed tree, then re-reads materials
+   * either way. Never called on screen entry.
    */
   updateCode(): Promise<TrunkUpdateResult>
 }

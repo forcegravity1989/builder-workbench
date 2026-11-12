@@ -1,179 +1,110 @@
-import { gitExecFileAsync } from '../git/runner'
-import {
-  gitOptionsForWorktree,
-  gitReadOptionsForWorktree,
-  type GitRuntimeOptions
-} from '../git/git-runtime-options'
+import { parseGitRevListAheadBehindCounts } from '../../shared/git-rev-list-output'
+import { branchFullRef } from '../../shared/workbench/branch-ref'
+import { SourceCommit } from '../../shared/workbench/version-material'
+import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/git-runtime-options'
 import {
   postponeRepoRefMaintenance,
   withRepoRefMaintenancePaused
 } from '../git/local-repo-ref-maintenance'
-import type { TrunkSyncTarget } from './trunk-baseline'
-import { branchFullRef } from '../../shared/workbench/branch-ref'
+import { gitExecFileAsync } from '../git/runner'
+import type { TrunkGitExec, TrunkSyncTarget } from './trunk-baseline'
 
-/** A user-clicked sync must fail honestly rather than hang the screen. */
 export const TRUNK_SYNC_TIMEOUT_MS = 60_000
+export const TRUNK_UPDATE_BUDGET_MS = 240_000
 
-const READ_TIMEOUT_MS = 30_000
+export type TrunkSyncSource = TrunkSyncTarget & { trackingRef: string }
+export type FetchedTrunkSource = { ref: string; commit: string }
+export type TrunkCheckoutState = { branch: string; head: string }
 
-export function trunkRemoteRef(target: TrunkSyncTarget): string {
-  return `${target.remoteName}/${target.branchName}`
+export function trunkSyncSource(target: TrunkSyncTarget): TrunkSyncSource {
+  return {
+    ...target,
+    trackingRef: target.trackingRef ?? `refs/remotes/${target.remoteName}/${target.branchName}`
+  }
 }
 
-/**
- * Fetches only the trunk bookmark: updates `refs/remotes/<r>/<b>` and downloads
- * its objects, never touches any working file. Runs at the main checkout — the
- * fixed trees share the same object store and refs.
- */
-export async function fetchTrunkBookmark(
+/** Refresh one configured branch and pin the complete tracking ref to a commit. */
+export async function fetchTrunkSource(
   repoPath: string,
-  target: TrunkSyncTarget,
-  options: GitRuntimeOptions = {}
-): Promise<void> {
-  const bookmark = `refs/remotes/${trunkRemoteRef(target)}`
-  // Same ref-maintenance window as the native fetch: an idle pack rewriting
-  // packed-refs (~1.4s) must not make the bookmark update fail on the lock.
+  source: TrunkSyncSource,
+  options: GitRuntimeOptions
+): Promise<FetchedTrunkSource> {
+  const ref = `${source.remoteName}/${source.branchName}`
+  const execOptions = {
+    ...gitOptionsForWorktree(repoPath, options),
+    timeout: TRUNK_SYNC_TIMEOUT_MS
+  }
   postponeRepoRefMaintenance()
-  await withRepoRefMaintenancePaused('git-fetch', async () => {
+  return withRepoRefMaintenancePaused('git-fetch', async () => {
     await gitExecFileAsync(
       [
         'fetch',
         '--no-tags',
         '--',
-        target.remoteName,
-        `+${branchFullRef(target.branchName)}:${bookmark}`
+        source.remoteName,
+        `+${branchFullRef(source.branchName)}:${source.trackingRef}`
       ],
-      { ...gitOptionsForWorktree(repoPath, options), timeout: TRUNK_SYNC_TIMEOUT_MS }
+      { ...execOptions, terminationBarrier: true }
     )
+    const { stdout } = await gitExecFileAsync(
+      ['rev-parse', '--verify', `${source.trackingRef}^{commit}`],
+      execOptions
+    )
+    return { ref, commit: SourceCommit.parse(stdout.trim()) }
   })
 }
 
-export type TrunkComparison = { behind: number; ahead: number }
+export async function readTrunkCheckout(exec: TrunkGitExec): Promise<TrunkCheckoutState> {
+  const ref = (await exec(['rev-parse', '--symbolic-full-name', 'HEAD'])).stdout.trim()
+  if (!ref.startsWith('refs/heads/')) {
+    throw new Error('工作树未检出本地分支')
+  }
+  const head = (await exec(['rev-parse', '--verify', 'HEAD^{commit}'])).stdout.trim()
+  return { branch: ref.slice('refs/heads/'.length), head: SourceCommit.parse(head) }
+}
 
-/** Two read-only counts: how far a tree lags behind / leads the fetched bookmark. */
 export async function compareTrunk(
-  treePath: string,
-  target: TrunkSyncTarget,
-  options: GitRuntimeOptions = {}
-): Promise<TrunkComparison> {
-  const remoteRef = trunkRemoteRef(target)
-  const count = async (range: string) => {
-    const { stdout } = await gitExecFileAsync(['rev-list', '--count', range], {
-      ...gitReadOptionsForWorktree(treePath, options),
-      timeout: READ_TIMEOUT_MS
-    })
-    return Number.parseInt(stdout.trim(), 10) || 0
+  exec: TrunkGitExec,
+  head: string,
+  trunk: string
+): Promise<{ behind: number; ahead: number }> {
+  const { stdout } = await exec(['rev-list', '--left-right', '--count', `${head}...${trunk}`])
+  const counts = parseGitRevListAheadBehindCounts(stdout)
+  if (counts.status !== 'ok') {
+    throw new Error('无法读取本地分支与主干的提交差异')
   }
-  return {
-    behind: await count(`HEAD..${remoteRef}`),
-    ahead: await count(`${remoteRef}..HEAD`)
-  }
-}
-
-/** Whether the fetched remote-tracking ref for a target branch exists locally. */
-export async function remoteBranchExists(
-  treePath: string,
-  target: TrunkSyncTarget,
-  options: GitRuntimeOptions = {}
-): Promise<boolean> {
-  try {
-    await gitExecFileAsync(['rev-parse', '--verify', '--quiet', `refs/remotes/${trunkRemoteRef(target)}`], {
-      ...gitReadOptionsForWorktree(treePath, options),
-      timeout: READ_TIMEOUT_MS
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-export type TrunkCheckoutState = { branch: string; dirty: boolean }
-
-/**
- * Guard inputs of the main checkout: its current branch and whether tracked
- * files carry uncommitted modifications. Untracked files never block a
- * fast-forward and are none of the sync's business.
- */
-export async function readTrunkCheckoutState(
-  repoPath: string,
-  options: GitRuntimeOptions = {}
-): Promise<TrunkCheckoutState> {
-  const read = async (argv: string[]) =>
-    (
-      await gitExecFileAsync(argv, {
-        ...gitReadOptionsForWorktree(repoPath, options),
-        timeout: READ_TIMEOUT_MS
-      })
-    ).stdout
-  const branch = (await read(['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
-  const status = (await read(['status', '--porcelain', '--untracked-files=no'])).trim()
-  return { branch, dirty: status.length > 0 }
-}
-
-/** Full SHA a tree currently points at. */
-export async function readTreeHead(
-  treePath: string,
-  options: GitRuntimeOptions = {}
-): Promise<string> {
-  const { stdout } = await gitExecFileAsync(['rev-parse', 'HEAD'], {
-    ...gitReadOptionsForWorktree(treePath, options),
-    timeout: READ_TIMEOUT_MS
-  })
-  return stdout.trim()
+  return { ahead: counts.ahead, behind: counts.behind }
 }
 
 export type TrunkRefusalReason = 'branch-mismatch' | 'dirty-trunk' | 'ahead-trunk'
 
 export type TrunkUpdateDecision =
   | { action: 'fast-forward'; behind: number }
-  | { action: 'merge'; behind: number }
   | { action: 'current' }
   | { action: 'refuse'; reason: TrunkRefusalReason }
 
-/**
- * The one decision table behind every「更新代码」button. The main checkout must
- * be a clean mirror sitting on the baseline branch — local commits or edits are
- * the user's, so the button refuses instead of fast-forwarding them away. A
- * cycle tree may carry draft commits (that is its job) and only ever merges the
- * trunk into itself, so new trunk commits become a `merge` regardless of how
- * many local commits the branch already has — a real Git conflict is the only
- * stop, surfaced by the merge step itself. A pure draft state stays silent.
- */
 export function decideTrunkUpdate(input: {
-  isTrunkCheckout: boolean
-  /** Current branch of the target tree (cycle trees sit on bw/* by design). */
   branch: string
   baselineBranch: string
-  /** Tracked-file modifications; only consulted for the main checkout. */
   dirty: boolean
   behind: number
   ahead: number
 }): TrunkUpdateDecision {
-  if (input.isTrunkCheckout) {
-    if (input.branch !== input.baselineBranch) {
-      return { action: 'refuse', reason: 'branch-mismatch' }
-    }
-    if (input.dirty) {
-      return { action: 'refuse', reason: 'dirty-trunk' }
-    }
-    if (input.ahead > 0) {
-      return { action: 'refuse', reason: 'ahead-trunk' }
-    }
-    return input.behind > 0
-      ? { action: 'fast-forward', behind: input.behind }
-      : { action: 'current' }
+  if (input.branch !== input.baselineBranch) {
+    return { action: 'refuse', reason: 'branch-mismatch' }
   }
-  return input.behind > 0 ? { action: 'merge', behind: input.behind } : { action: 'current' }
+  if (input.dirty) {
+    return { action: 'refuse', reason: 'dirty-trunk' }
+  }
+  if (input.ahead > 0) {
+    return { action: 'refuse', reason: 'ahead-trunk' }
+  }
+  return input.behind > 0 ? { action: 'fast-forward', behind: input.behind } : { action: 'current' }
 }
 
-/**
- * The unified refusal sentence (user-settled wording): one line of cause plus
- * the one next step — hand the branch that actually needs work (the target
- * tree's own branch) to the session model. Never a stack of git output.
- */
 export function trunkRefusalSentence(
   reason: TrunkRefusalReason,
-  context: { branch: string; baselineBranch: string; behind: number; ahead: number }
+  context: { branch: string; baselineBranch: string; ahead: number }
 ): string {
   const { branch, baselineBranch, ahead } = context
   const cause =

@@ -126,7 +126,7 @@ Issue 读数经 `version-cycle/use-cycle-task-reads` 与计划屏共享快照缓
 
 材料打开沿 `openAcceptanceMaterial` 校验原生工作树身份：HTTP(S) 经 `openHttpLink` 进入对应工作区浏览器；HTML 文件复用 `openFileInBrowserTab`（本地浏览器页签，SSH/配对 doc-preview），原生预览不支持时沿 `activateMarkdownLink` 打开编辑器。其他工作树文件也走原生编辑器。拒绝含凭据 URL、不支持协议和远端树外路径；打开后展开会话栏。未登记报告时打开按钮禁用。
 
-保存与冲突沿用材料事务核心：`expectedRevision`、原子替换、跨进程互斥、工作树身份校验；保存冲突保留用户输入。「更新代码」是唯一同步入口，执行期间材料只读；合并主干遇真冲突时中止并保持原样、统一提示交会话处理。
+保存与冲突沿用材料事务核心：`expectedRevision`、原子替换、跨进程互斥、工作树身份校验；保存冲突保留用户输入。「更新代码」是唯一同步入口，执行期间材料只读，快进、双来源同步和冲突处理沿用[计划与验收共用规格](../version-planning/spec.md)。
 
 ## 发布
 
