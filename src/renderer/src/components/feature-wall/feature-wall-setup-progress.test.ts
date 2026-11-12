@@ -50,6 +50,12 @@ describe('getFeatureWallSetupProgress', () => {
 
     expect(progress.stepDone['add-two-repos']).toBe(true)
     expect(progress.coreTotal).toBe(8)
+    const workbenchProgress = getFeatureWallSetupProgress(
+      makeInput({ workbenchShell: true, gitRepoCount: 2 })
+    )
+    expect(workbenchProgress.coreTotal).toBe(7)
+    expect(workbenchProgress.coreDoneCount).toBe(1)
+    expect(workbenchProgress.stepDone['agent-capabilities']).toBe(false)
   })
 
   it('preserves the durable setup step definition order', () => {
@@ -63,6 +69,11 @@ describe('getFeatureWallSetupProgress', () => {
       'setup-script',
       'add-two-repos'
     ])
+    expect(getFeatureWallSetupSteps(true).map((step) => step.id)).toEqual(
+      getFeatureWallSetupSteps()
+        .filter((step) => step.id !== 'agent-capabilities')
+        .map((step) => step.id)
+    )
   })
 
   it('groups setup guide steps into Parallel work and Setup sections', () => {
@@ -78,6 +89,10 @@ describe('getFeatureWallSetupProgress', () => {
       'setup-script',
       'add-two-repos'
     ])
+    expect(getFeatureWallSetupStepsForSection('setup', true)).toHaveLength(5)
+    expect(getFeatureWallSetupStepsForSection('parallel-work', true)).toEqual(
+      getFeatureWallSetupStepsForSection('parallel-work')
+    )
   })
 
   it('renders Setup before Milestones and numbers Milestones after Setup', () => {

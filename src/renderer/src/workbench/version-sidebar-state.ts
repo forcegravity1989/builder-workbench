@@ -2,14 +2,12 @@ import { useSyncExternalStore } from 'react'
 
 export type VersionSidebarProjection = {
   repoId: string | null
-  repoIds: readonly string[]
   worktreeIdentities: ReadonlySet<string>
 }
 
 const listeners = new Set<() => void>()
 let projection: VersionSidebarProjection = {
   repoId: null,
-  repoIds: [],
   worktreeIdentities: new Set()
 }
 let projectionKey = ''
@@ -28,11 +26,7 @@ function emit(): void {
 }
 
 export function publishVersionSidebarProjection(next: VersionSidebarProjection): void {
-  const key = JSON.stringify([
-    next.repoId,
-    [...next.repoIds].sort(),
-    [...next.worktreeIdentities].sort()
-  ])
+  const key = JSON.stringify([next.repoId, [...next.worktreeIdentities].sort()])
   if (key === projectionKey) {
     return
   }

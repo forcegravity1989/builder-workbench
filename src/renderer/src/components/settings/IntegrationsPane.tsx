@@ -12,7 +12,7 @@ export { getIntegrationsPaneSearchEntries } from './integrations-search'
 // The six hidden cards' components stay in the codebase per intent 待决 1
 // (kept — human decision 2026-10-16); only this render list changes.
 // CloudBuild (BW #366) joins as its own build group — it is neither source
-// control nor project-group messaging.
+// control nor reporting.
 export function IntegrationsPane(): React.JSX.Element {
   useIntegrationProviderStatusRefresh()
 
@@ -42,12 +42,15 @@ export function IntegrationsPane(): React.JSX.Element {
       <section className="space-y-3">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-foreground">
-            {translate('auto.components.settings.IntegrationsPane.imGroupTitle', 'Project group')}
+            {translate(
+              'auto.components.settings.IntegrationsPane.imGroupTitle',
+              'Reports and diagnostics'
+            )}
           </h3>
           <p className="text-xs text-muted-foreground">
             {translate(
               'auto.components.settings.IntegrationsPane.imGroupDescription',
-              'CLIs for posting version and acceptance updates to the project group.'
+              'Send reports and diagnostic files to the BW user-group space.'
             )}
           </p>
         </div>

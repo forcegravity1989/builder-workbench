@@ -39,7 +39,12 @@ export function openProjectWall(): void {
 }
 
 export function openAddProject(): void {
-  useAppStore.getState().openModal('add-repo')
+  const state = useAppStore.getState()
+  if (projectPage?.kind === 'wall' && state.repos.length === 0) {
+    state.openModal('add-repo', { stayOnProjectWall: true })
+    return
+  }
+  state.openModal('add-repo')
 }
 
 export function openFilteredProjectOverview(
