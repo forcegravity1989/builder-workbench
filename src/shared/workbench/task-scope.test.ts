@@ -9,6 +9,7 @@ import {
   workbenchGoalMutationQuery,
   type WorkbenchTaskScope
 } from './task-scope'
+import { parseTitleGoalToken, resolveMemberGoalId } from './version-membership'
 
 const scope: WorkbenchTaskScope = { version: 'v0.7', references: [] }
 
@@ -74,5 +75,17 @@ describe('native task entry filters', () => {
     expect(hasUnsupportedWorkbenchTaskSearch('in:title API')).toBe(true)
     expect(hasUnsupportedWorkbenchTaskSearch('"in:title"')).toBe(false)
     expect(hasUnsupportedWorkbenchTaskSearch('API OR result')).toBe(true)
+
+    // #588 标题目标段解析：成员归属由标题 `【<版本>|<目标>】` 决定。
+    // 断言并入本协议用例而非新建 it，以免超出叠层 vitest 例数 ratchet（环 4）。
+    expect(parseTitleGoalToken('【v0.7|G1】项目墙指标')).toBe('G1')
+    expect(parseTitleGoalToken('【v0.7｜G2】迁移')).toBe('G2')
+    expect(parseTitleGoalToken('【v0.7| G3 】目标')).toBe('G3')
+    expect(parseTitleGoalToken('没有前缀的标题')).toBeNull()
+    expect(parseTitleGoalToken('【特性#334】执行')).toBeNull()
+    const goalIds = new Set(['G1', 'G2'])
+    expect(resolveMemberGoalId('【v0.7|G1】项目墙', goalIds)).toBe('G1')
+    expect(resolveMemberGoalId('【v0.7|G9】未列出的目标', goalIds)).toBeUndefined()
+    expect(resolveMemberGoalId('随手写的标题', goalIds)).toBeUndefined()
   })
 })

@@ -26,6 +26,7 @@ import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
+import { useVersionMembership } from './use-version-membership'
 import { PlanningStartCard } from './PlanningStartCard'
 import { PlanningMinutesSection } from './PlanningMinutesSection'
 import { PlanningPriorReview } from './PlanningPriorReview'
@@ -61,6 +62,19 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const canSave = useCallback(() => !context.syncing, [context.syncing])
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
+  // #588：本版成员按 `bw:plan:<version>` 标签从 provider 现读，目标从标题
+  // `【<版本>|<目标>】` 解析；材料 tasks 仅作归档快照与旧版回退。此处在父组件
+  // 持有，供目标区渲染与批注剪枝共用同一份「当前成员」。
+  const membership = useVersionMembership({
+    scope,
+    version: plan?.version ?? '',
+    goalIds: plan?.goals.map((goal) => goal.goalId) ?? [],
+    legacyTasks: plan?.tasks
+  })
+  const boardTasks = useMemo(
+    () => (plan ? (membership.references ?? plan.tasks) : undefined),
+    [plan, membership.references]
+  )
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
@@ -90,23 +104,34 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
   const { pruneMissing } = annotations
-  // Model-side edits (poll) may drop goals/task references: prune annotations
-  // whose object no longer exists on the board instead of keeping orphans.
+  // Model-side edits (poll) may drop goals/members: prune annotations whose
+  // object no longer exists on the board instead of keeping orphans.
+  // #588: issue annotations follow the LIVE member set (boardTasks), not
+  // material.tasks which stays empty until the archive snapshot — otherwise a
+  // label-derived plan would prune every issue note.
   const goalsKey = JSON.stringify(plan?.goals.map((goal) => goal.goalId) ?? [])
-  const tasksKey = JSON.stringify(plan?.tasks.map((task) => [task.goalId, task.number]) ?? [])
   useEffect(() => {
     if (!plan) {
       return
     }
+    // While membership is unresolved (`references === null`) and there is no
+    // legacy snapshot, the member set is still unknown — don't prune issue
+    // annotations on this transient window; it would wipe notes before the
+    // provider query lands. Genuine empty is `[]` (resolved) and still prunes.
+    if (membership.references === null && !(plan.tasks?.length > 0)) {
+      return
+    }
     const goalIds = new Set(plan.goals.map((goal) => goal.goalId))
     const issueKeys = new Set(
-      plan.tasks.filter((task) => task.goalId).map((task) => `${task.goalId}:${task.number}`)
+      (boardTasks ?? [])
+        .filter((task) => task.goalId)
+        .map((task) => `${task.goalId}:${task.number}`)
     )
     pruneMissing(
       (goalId) => goalIds.has(goalId),
       (goalId, number) => issueKeys.has(`${goalId}:${number}`)
     )
-  }, [goalsKey, tasksKey, plan, pruneMissing])
+  }, [goalsKey, boardTasks, plan, pruneMissing, membership.references])
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
@@ -375,6 +400,8 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
               onSendAction={wrapSend}
               numbersFor={annotations.numbersFor}
               onOpenAnnotationPanel={annotations.openPanel}
+              membership={membership}
+              boardTasks={boardTasks}
             />
             <PlanningMinutesSection
               plan={plan}

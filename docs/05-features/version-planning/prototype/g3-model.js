@@ -103,3 +103,27 @@ export function taskKind(labels) {
     ? 'Bug'
     : 'Feature'
 }
+
+// #588 原型示意：本版成员以 `bw:plan:<版本>` 标签为准，目标从标题 `【<版本>|<目标>】`
+// 解析；解析不到合法目标的 Issue 落「未归类」收件箱（数量为 0 时整块隐藏）。这里只是
+// 演示读取逻辑，生产实现由 material/task 读取链路承担，原型不新增第二套协议。
+const GOAL_PREFIX = /^【([^|｜]+)[|｜]([^】]+)】/
+export function goalToken(title) {
+  const match = GOAL_PREFIX.exec(String(title || '').trim())
+  return match ? match[2].trim() : null
+}
+export function unclassifiedRows(scene) {
+  if (scene !== 'full') {
+    return []
+  }
+  const version = snapshot.plan.version
+  const versionLabel = `bw:plan:${version}`
+  const goalIds = new Set(snapshot.plan.goals.map((goal) => goal.goalId))
+  return snapshot.issues
+    .filter((item) => (item.labels || []).some((label) => String(label) === versionLabel))
+    .filter((item) => {
+      const token = goalToken(item.title)
+      return !token || !goalIds.has(token)
+    })
+    .map((item) => ({ ...item, version }))
+}

@@ -9,6 +9,7 @@ import {
   meetingDirectives,
   priorLiveOpen,
   taskRows,
+  unclassifiedRows,
   minutesRequestPrompt,
   annotationsSendPrompt,
   g2Url
@@ -18,6 +19,7 @@ import {
   IconButton,
   ActionButton,
   GoalRow,
+  UnclassifiedLane,
   MinutesCard,
   MinutesSkeleton,
   SendPopover,
@@ -56,6 +58,8 @@ function App() {
   const scroll = useRef(null)
   const navigation = useRef(null)
   const tasks = taskRows(scene)
+  // #588 原型示意：本版标签成员里、标题解析不出目标的 Issue，进折叠的未归类收件箱。
+  const unclassified = unclassifiedRows(scene)
   // 删除目标后其 Issue 引用一并移出计划，侧栏计数现算，不留旧数。
   const visibleTaskCount = tasks.filter((t) => goals.some((g) => g.goalId === t.goalId)).length
   // 批注编号对齐 Orca：按记录顺序全局编号，板面角标与面板卡片同号。
@@ -764,6 +768,7 @@ function App() {
                       />
                     ))}
                   </div>
+                  <UnclassifiedLane rows={unclassified} version={snapshot.plan.version} />
                   <div className="g3-goals-bottom">
                     <IconButton
                       name="plus"

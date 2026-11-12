@@ -54,7 +54,10 @@ export const PlanningMaterialSchema = z
       progressSource: PlanningProgressSourceSchema.optional()
     }),
     goals: z.array(VersionGoalSchema),
-    tasks: z.array(VersionTaskReferenceSchema),
+    // Membership is derived from Issue labels + titles on the live board; tasks
+    // here are an archive-time snapshot written back so acceptance/overview keep
+    // a frozen reference. Absent means "not snapshotted yet", not "no tasks".
+    tasks: z.array(VersionTaskReferenceSchema).default([]),
     minutes: PlanMeetingMinutesSchema.optional(),
     // Session-model-written SOP progress; absent means not started. Lamps only
     // compare positions against it — never a completion authority by itself.

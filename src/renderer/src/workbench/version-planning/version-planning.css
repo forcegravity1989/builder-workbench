@@ -1165,3 +1165,48 @@ html[data-skin='ds'].dark .g3-annotate-entry.g3-mode-on .g3-annotate-count {
     scroll-behavior: auto !important;
   }
 }
+
+/* #588 未归类 Issue 区：挂了本版标签但标题解析不到目标时落在这里；为空时整块隐藏。 */
+.vp-board .g3-unclassified {
+  margin-top: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg, 10px);
+  background: var(--card);
+  padding: 14px 20px 8px;
+}
+.vp-board .g3-unclassified-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vp-board .g3-unclassified-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.vp-board .g3-unclassified-toggle strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.vp-board .g3-unclassified-count {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 7px;
+}
+.vp-board .g3-unclassified-help {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted-foreground);
+  cursor: help;
+}
+.vp-board .g3-unclassified.open .g3-unclassified-head {
+  padding-bottom: 8px;
+}
