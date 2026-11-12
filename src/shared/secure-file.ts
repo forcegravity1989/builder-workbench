@@ -52,7 +52,8 @@ let hardenedDirectoryPathsThisProcess = new SecurePathHardeningCache<true>(
   DEFAULT_HARDENING_CACHE_BOUNDS
 )
 
-function hardenSecureDirectoryOnce(dirPath: string): void {
+/** Schedules Windows parent hardening once per path, shared by both secure writers. */
+export function hardenSecureDirectoryOnce(dirPath: string): void {
   // Why: dir hardening stays async — re-applying it stormed the main thread (#4901); files inside are hardened synchronously anyway.
   if (hardenedDirectoryPathsThisProcess.get(dirPath)) {
     return

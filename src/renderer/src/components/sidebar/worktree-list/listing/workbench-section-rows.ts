@@ -79,6 +79,6 @@ export function buildWorkbenchSectionRows({
       )
     natural = [...prefix, ...blocks.filter(isCurrent).flat()]
   }
-  // Keep Pinned global even when the user explicitly groups the remaining list by host.
+  // Keep Pinned above host sections even when the user explicitly groups the remaining list by host.
   return [...pinned, ...withHostSections(natural)]
 }

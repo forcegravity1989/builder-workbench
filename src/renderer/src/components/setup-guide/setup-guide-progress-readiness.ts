@@ -12,6 +12,7 @@ export type SetupScriptProbeState = {
 export type SetupGuideProgressReadinessInput = {
   refreshEnabled: boolean
   settingsLoaded: boolean
+  agentCapabilitiesIncluded?: boolean
   preflightStatusChecked: boolean
   linearStatusChecked: boolean
   jiraStatusChecked: boolean
@@ -85,11 +86,12 @@ export function getSetupGuideProgressReady(input: SetupGuideProgressReadinessInp
     input.preflightStatusChecked &&
     input.linearStatusChecked &&
     input.jiraStatusChecked &&
-    !input.browserUseSkillDiscoveryLoading &&
-    !input.computerUseSkillDiscoveryLoading &&
-    !input.orchestrationSkillDiscoveryLoading &&
     input.setupScriptProbeReady &&
-    (!input.computerUseSkillInstalled || input.computerUsePermissionStatusChecked)
+    (input.agentCapabilitiesIncluded === false ||
+      (!input.browserUseSkillDiscoveryLoading &&
+        !input.computerUseSkillDiscoveryLoading &&
+        !input.orchestrationSkillDiscoveryLoading &&
+        (!input.computerUseSkillInstalled || input.computerUsePermissionStatusChecked)))
   )
 }
 

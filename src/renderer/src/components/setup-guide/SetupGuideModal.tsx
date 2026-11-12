@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
 import { EyeOff } from 'lucide-react'
 import {
-  FEATURE_WALL_SETUP_STEP_IDS,
+  getFeatureWallSetupStepIds,
   getFirstIncompleteFeatureWallSetupStepId,
   getFeatureWallSetupSteps
 } from '../../../../shared/feature-wall-setup-steps'
@@ -57,7 +57,7 @@ function SetupGuideModalContent({
   const [openingInitialSetup, setOpeningInitialSetup] = useState(false)
   const closeModal = useAppStore((s) => s.closeModal)
   const setSetupGuideSidebarDismissed = useAppStore((s) => s.setSetupGuideSidebarDismissed)
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(), [])
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(isBW), [isBW])
   const [userSelectedStep, setUserSelectedStep] = useState(false)
   const [orchestrationSkillInstalled, setOrchestrationSkillInstalled] = useState(false)
   const [browserUseSkillInstalled, setBrowserUseSkillInstalled] = useState(false)
@@ -70,9 +70,9 @@ function SetupGuideModalContent({
     browserUseSkillInstalled
   )
   const [activeStepId, setActiveStepId] = useState<FeatureWallSetupStepId>(() =>
-    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, isBW)
   )
-  const requestedStepId = isFeatureWallSetupStepId(modalData.setupStepId)
+  const requestedStepId = isFeatureWallSetupStepId(modalData.setupStepId, isBW)
     ? modalData.setupStepId
     : null
   const telemetrySource =
@@ -106,8 +106,8 @@ function SetupGuideModalContent({
     if (!open || userSelectedStep || requestedStepId !== null) {
       return
     }
-    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone))
-  }, [open, progress.stepDone, requestedStepId, userSelectedStep])
+    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, isBW))
+  }, [isBW, open, progress.stepDone, requestedStepId, userSelectedStep])
 
   useEffect(() => {
     if (
@@ -119,11 +119,14 @@ function SetupGuideModalContent({
     ) {
       return
     }
-    const nextUnfinishedCoreStepId = getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    const nextUnfinishedCoreStepId = getFirstIncompleteFeatureWallSetupStepId(
+      progress.stepDone,
+      isBW
+    )
     if (nextUnfinishedCoreStepId !== activeStep.id) {
       setActiveStepId(nextUnfinishedCoreStepId)
     }
-  }, [activeStep, open, progress.stepDone, requestedStepId, userSelectedStep])
+  }, [activeStep, isBW, open, progress.stepDone, requestedStepId, userSelectedStep])
 
   const handleSelectStep = (id: FeatureWallSetupStepId): void => {
     setUserSelectedStep(true)
@@ -238,9 +241,12 @@ function SetupGuideModalContent({
   )
 }
 
-function isFeatureWallSetupStepId(value: unknown): value is FeatureWallSetupStepId {
+function isFeatureWallSetupStepId(
+  value: unknown,
+  workbenchShell: boolean
+): value is FeatureWallSetupStepId {
   return (
     typeof value === 'string' &&
-    FEATURE_WALL_SETUP_STEP_IDS.includes(value as FeatureWallSetupStepId)
+    getFeatureWallSetupStepIds(workbenchShell).includes(value as FeatureWallSetupStepId)
   )
 }

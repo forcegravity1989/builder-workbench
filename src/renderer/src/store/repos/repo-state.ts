@@ -137,6 +137,8 @@ export type AddRepoPathOptions = {
   runtimeEnvironmentId?: string | null
   /** Overrides the host's basename naming for the new project. */
   displayName?: string
+  /** Originating modal for the first project added from the Workbench wall. */
+  projectWallModal?: Record<string, unknown>
 }
 
 export type RuntimeCatalogFetchOptions = { runtimeEnvironmentId?: string | null }

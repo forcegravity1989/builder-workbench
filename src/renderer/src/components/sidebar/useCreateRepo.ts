@@ -26,6 +26,7 @@ export function useCreateRepo(
     hostId?: string | null
     runtimeEnvironmentId?: string | null
     sshTargetId?: string | null
+    stayOnProjectWall?: boolean
   } = {}
 ) {
   const [createName, setCreateName] = useState('')
@@ -211,7 +212,7 @@ export function useCreateRepo(
               ownerOptions.executionHostId === undefined ||
               worktree.hostId === ownerOptions.executionHostId
           )
-        if (folderWorktree) {
+        if (folderWorktree && !options.stayOnProjectWall) {
           activateAndRevealWorktree(folderWorktree.id, {
             sidebarRevealBehavior: 'auto',
             ...(ownerOptions.executionHostId
@@ -250,7 +251,8 @@ export function useCreateRepo(
     closeModal,
     onGitRepoReady,
     options.runtimeEnvironmentId,
-    options.sshTargetId
+    options.sshTargetId,
+    options.stayOnProjectWall
   ])
 
   return {

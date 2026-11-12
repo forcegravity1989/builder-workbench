@@ -14,6 +14,8 @@ import { resolveOnboardingSettingsHydration } from './onboarding-settings-hydrat
 import { translate } from '@/i18n/i18n'
 import { resolveAgentPermissionModeSummary } from '../../../../shared/tui-agent-permissions'
 import { isWindowsUserAgent } from '@/components/terminal-pane/pane-helpers'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { openAddProject, openProjectWall } from '@/workbench/project-page-state'
 import {
   isSkippedStepIndex,
   remapOpenOnboardingLastCompletedStep,
@@ -39,6 +41,14 @@ export function useOnboardingFlow(
   const pathSource = useAppStore((s) => s.pathSource)
   const pathFailureReason = useAppStore((s) => s.pathFailureReason)
   const openModal = useAppStore((s) => s.openModal)
+  const openFirstProjectSetup = useCallback(() => {
+    if (isWorkbenchShell() && useAppStore.getState().repos.length === 0) {
+      openProjectWall()
+      openAddProject()
+      return
+    }
+    openModal('add-repo')
+  }, [openModal])
   const preflightStatus = useAppStore((s) => s.preflightStatus)
   const preflightStatusChecked = useAppStore((s) => s.preflightStatusChecked)
   const preflightStatusLoading = useAppStore((s) => s.preflightStatusLoading)
@@ -297,7 +307,7 @@ export function useOnboardingFlow(
     settings,
     persistCurrentStep,
     closeWith,
-    openModal,
+    openFirstProjectSetup,
     getNextStepIndex,
     onOnboardingChange,
     stepIndex,

@@ -74,8 +74,8 @@ export function trackSetupGuideOpened(args: {
   const source = normalizeSetupGuideSource(args.source)
   emitFeatureEducationTelemetry('setup_guide_opened', {
     source,
-    initial_completed_count: clampSetupGuideStepCount(args.initialCompletedCount),
-    total_steps: 8,
+    initial_completed_count: clampSetupGuideStepCount(args.initialCompletedCount, args.totalSteps),
+    total_steps: args.totalSteps,
     first_incomplete_step_id: args.firstIncompleteStepId
   })
   return source
@@ -89,17 +89,20 @@ export function trackSetupGuideClosed(args: {
   totalSteps: number
   activeStepId: FeatureWallSetupStepId | 'none'
 }): void {
-  const initialCompletedCount = clampSetupGuideStepCount(args.initialCompletedCount)
+  const initialCompletedCount = clampSetupGuideStepCount(
+    args.initialCompletedCount,
+    args.totalSteps
+  )
   const finalCompletedCount = Math.max(
     initialCompletedCount,
-    clampSetupGuideStepCount(args.finalCompletedCount)
+    clampSetupGuideStepCount(args.finalCompletedCount, args.totalSteps)
   )
   emitFeatureEducationTelemetry('setup_guide_closed', {
     source: args.source,
     outcome: args.outcome,
     initial_completed_count: initialCompletedCount,
     final_completed_count: finalCompletedCount,
-    total_steps: 8,
+    total_steps: args.totalSteps,
     active_step_id: args.activeStepId
   })
 }
@@ -113,8 +116,8 @@ export function trackSetupGuideStepCompleted(args: {
   emitFeatureEducationTelemetry('setup_guide_step_completed', {
     step_id: args.stepId,
     section_id: getSetupGuideStepSection(args.stepId),
-    completed_count: clampSetupGuideStepCount(args.completedCount, 1),
-    total_steps: 8,
+    completed_count: clampSetupGuideStepCount(args.completedCount, args.totalSteps, 1),
+    total_steps: args.totalSteps,
     setup_guide_visible: args.setupGuideVisible
   })
 }
@@ -209,11 +212,11 @@ function clampTourStepCount(value: number, min = 0): number {
   return Math.min(8, Math.max(min, Math.round(value)))
 }
 
-function clampSetupGuideStepCount(value: number, min = 0): number {
+function clampSetupGuideStepCount(value: number, totalSteps: number, min = 0): number {
   if (!Number.isFinite(value)) {
     return min
   }
-  return Math.min(8, Math.max(min, Math.round(value)))
+  return Math.min(totalSteps, Math.max(min, Math.round(value)))
 }
 
 function readTerminalPaneSplitTelemetryKeys(): Set<string> {

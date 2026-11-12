@@ -6346,8 +6346,8 @@
           "f7eb5f0b24": "未安装",
           "codeHostGroupTitle": "代码托管",
           "codeHostGroupDescription": "用于任务、拉取请求、合并请求与评审状态的命令行工具。",
-          "imGroupTitle": "项目群",
-          "imGroupDescription": "用于向项目群发送版本与验收动态的命令行工具。",
+          "imGroupTitle": "报告与诊断",
+          "imGroupDescription": "用于向 BW 用户群空间发送报告和诊断文件。",
           "buildGroupTitle": "构建",
           "buildGroupDescription": "用于流水线执行与出包的命令行工具。"
         },
@@ -8556,7 +8556,8 @@
             "41ccade05c": "gh",
             "b79c21bd42": "GitHub",
             "7166b9090c": "通过 gh CLI 进行 GitHub 身份验证。",
-            "f16e41cc72": "GitHub 集成"
+            "f16e41cc72": "GitHub 集成",
+            "welinkDescription": "安装并登录 welink-cli，用于向 BW 用户群空间发送报告和诊断文件。"
           }
         },
         "jira": {
@@ -9360,7 +9361,10 @@
                   "6b2cfb52b4": "gh",
                   "b4d900e7f1": "通过",
                   "account_scope_prefix": "账户范围",
-                  "statusNotInstalled": "未安装"
+                  "statusNotInstalled": "未安装",
+                  "codehubMissing": "未检测到 codehub-cli。安装需要 npm，并能访问内网软件源；暂时不可用时可稍后配置。",
+                  "welinkDescription": "发送报告和诊断文件，使用",
+                  "welinkMissing": "安装 welink-cli 可向 BW 用户群空间发送报告和诊断文件。安装需要 npm，并能访问内网软件源；暂时不可用时可稍后配置。"
                 }
               }
             }
@@ -11678,6 +11682,8 @@
         "IntegrationsStep": {
           "277f30eb34": "Linear、GitLab、Bitbucket、Azure DevOps、Gitea 和 Jira 位于“设置”>“集成”中。",
           "3a3e360289": "更多任务来源",
+          "bw_setup_later": "稍后设置",
+          "bw_setup_later_description": "可在「设置 → 集成」中连接 GitHub 或 CodeHub，也可在那里重试。",
           "80e3ce0bc9": "重新检查",
           "04ef416712": "添加 Linear 访问",
           "dd9c186a8b": "添加工作区访问权限",
@@ -12110,13 +12116,14 @@
             "13294d3405": "完成"
           },
           "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "首先添加 git 项目，然后配置该存储库的安装脚本。",
+            "486c2f4d8d": "请先选择一个 Git 项目，再到这里配置它的准备脚本。",
+            "target_project": "目标项目：{{project}}",
             "00078a6134": "在设置中查看",
             "14327073cc": "保存",
             "88469e926b": "设置脚本",
-            "5c5b65044e": "pnpm install",
+            "5c5b65044e": "示例：pnpm install",
             "a7463915b6": "无法保存设置脚本",
-            "6299297dac": "设置脚本已保存",
+            "6299297dac": "已为 {{project}} 保存准备脚本",
             "f0bbf7da77": "尝试一下",
             "522cce9e33": "添加项目"
           },
@@ -12380,10 +12387,13 @@
             "list_pair": " 和 ",
             "list_mid": ", ",
             "code_host_tasks_summary": "议题可作为任务使用 · 如果团队在 Linear 或 Jira 中规划工作，也可以添加它们",
+            "bw_code_host_description": "连接其中一项，即可使用任务并查看代码评审状态。",
             "code_host_tasks_caption": "代码托管平台的议题也可以作为任务使用。",
             "review_step_title": "在智能体工作时查看 PR 状态",
             "review_step_description": "连接评审提供方，让 {{product}} 显示 PR 或 MR 状态、检查和评审。",
-            "task_step_title": "无需离开 {{product}}，即可让智能体处理任务"
+            "task_step_title": "无需离开 {{product}}，即可让智能体处理任务",
+            "reports_title": "报告与诊断（可选）",
+            "reports_description": "用于向 BW 用户群空间发送报告和诊断文件。无法访问内网时可跳过，之后仍可在设置 → 集成中配置。"
           },
           "connect": {
             "integration": {

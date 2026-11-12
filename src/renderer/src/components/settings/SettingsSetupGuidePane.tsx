@@ -6,9 +6,11 @@ import {
 import type { FeatureWallSetupStepId } from '../../../../shared/feature-wall-setup-steps'
 import { FeatureWallSetupChecklist } from '../feature-wall/FeatureWallSetupChecklist'
 import { useSettingsSetupGuideFullProgress } from './settings-setup-guide-progress'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function SettingsSetupGuidePane(): React.JSX.Element {
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(), [])
+  const workbenchShell = isWorkbenchShell()
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(workbenchShell), [workbenchShell])
   const [userSelectedStep, setUserSelectedStep] = useState(false)
   const [orchestrationSkillInstalled, setOrchestrationSkillInstalled] = useState(false)
   const [browserUseSkillInstalled, setBrowserUseSkillInstalled] = useState(false)
@@ -18,7 +20,7 @@ export function SettingsSetupGuidePane(): React.JSX.Element {
     browserUseSkillInstalled
   )
   const [activeStepId, setActiveStepId] = useState<FeatureWallSetupStepId>(() =>
-    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, workbenchShell)
   )
   const activeStep = setupSteps.find((step) => step.id === activeStepId) ?? setupSteps[0] ?? null
 
@@ -26,18 +28,21 @@ export function SettingsSetupGuidePane(): React.JSX.Element {
     if (userSelectedStep) {
       return
     }
-    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone))
-  }, [progress.stepDone, userSelectedStep])
+    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, workbenchShell))
+  }, [progress.stepDone, userSelectedStep, workbenchShell])
 
   useEffect(() => {
     if (!activeStep || userSelectedStep || !progress.stepDone[activeStep.id]) {
       return
     }
-    const nextUnfinishedStepId = getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    const nextUnfinishedStepId = getFirstIncompleteFeatureWallSetupStepId(
+      progress.stepDone,
+      workbenchShell
+    )
     if (nextUnfinishedStepId !== activeStep.id) {
       setActiveStepId(nextUnfinishedStepId)
     }
-  }, [activeStep, progress.stepDone, userSelectedStep])
+  }, [activeStep, progress.stepDone, userSelectedStep, workbenchShell])
 
   const handleSelectStep = (id: FeatureWallSetupStepId): void => {
     setUserSelectedStep(true)
