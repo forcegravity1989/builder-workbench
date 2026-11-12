@@ -31,11 +31,16 @@ export function hostSnapshotAffirmsWorktreeContents(snapshot: SnapshotPublicatio
   )
 }
 
-// A headless BW runtime publishes terminals and browsers, but has no editor inventory.
 export function hostSnapshotAffirmsEditorContents(snapshot: SnapshotPublication): boolean {
+  const { publicationEpoch } = snapshot
+  // The main process can reconstruct terminals, browsers, or agent sessions without an editor inventory.
   return (
     hostSnapshotAffirmsWorktreeContents(snapshot) &&
-    !isHeadlessBuiltSessionTabsPublication(snapshot.publicationEpoch)
+    // Pairing appends its navigation epoch and may advance the version of the unpublished frame.
+    publicationEpoch !== `${UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH}:client-navigation` &&
+    !isHeadlessBuiltSessionTabsPublication(publicationEpoch) &&
+    !publicationEpoch.startsWith('renderer-rescue:') &&
+    !publicationEpoch.startsWith('structured:')
   )
 }
 

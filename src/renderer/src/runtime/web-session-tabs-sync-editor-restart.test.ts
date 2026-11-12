@@ -19,6 +19,7 @@ vi.mock('sonner', () => ({ toast: { info: vi.fn(), success: vi.fn(), error: vi.f
 createStoreSessionMockApi()
 
 const mirroredPath = '/worktree/mirror-test.txt'
+const cleanMirroredPath = '/worktree/clean-mirror.txt'
 const ownPath = '/worktree/opened-by-client.txt'
 
 function createClient() {
@@ -31,7 +32,7 @@ function createClient() {
   return store
 }
 
-it('does not echo a restored mirror and retires it only when the host confirms it closed', () => {
+it('does not echo restored mirrors, and host closure retires only the mirror without a local draft', () => {
   const beforeQuit = createClient()
   beforeQuit.setState({
     openFiles: [
@@ -57,7 +58,20 @@ it('does not echo a restored mirror and retires it only when the host confirms i
     isDirty: false,
     isActive: true
   }
-  const hostOpen = makeSnapshot([hostTab], { activeTabId: hostTab.id, activeTabType: 'file' })
+  const cleanHostTab = {
+    ...hostTab,
+    id: 'host-clean-editor',
+    title: 'clean-mirror.txt',
+    filePath: cleanMirroredPath,
+    relativePath: 'clean-mirror.txt',
+    isActive: false
+  }
+  const rendererEpoch = 'renderer:1:client-navigation'
+  const hostOpen = makeSnapshot([hostTab, cleanHostTab], {
+    publicationEpoch: rendererEpoch,
+    activeTabId: hostTab.id,
+    activeTabType: 'file'
+  })
   beforeQuit.setState(applyWebSessionTabsSnapshot(beforeQuit.getState(), hostOpen, ENV, NOW) ?? {})
   beforeQuit.setState((state) => ({
     openFiles: state.openFiles.map((file) =>
@@ -89,42 +103,60 @@ it('does not echo a restored mirror and retires it only when the host confirms i
     buildWorkspaceSessionPayload(afterRestart.getState()).openFilesByWorktree?.[WT]?.find(
       (file) => file.filePath === mirroredPath
     )?.dirtyDraftContent
+  const openPaths = () => afterRestart.getState().openFiles.map((file) => file.filePath)
 
-  apply(
+  const terminal = {
+    type: 'terminal' as const,
+    id: HOST_SURFACE_ID,
+    title: 'Terminal',
+    parentTabId: 'host-tab-1',
+    leafId: LEAF_ID,
+    status: 'pending-handle' as const,
+    terminal: null,
+    isActive: true
+  }
+  const partialSnapshots = [
     makeSnapshot([], {
       publicationEpoch: UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH,
       snapshotVersion: 0
-    })
-  )
-  expect(restoredDraft()).toBe('unsaved edit from the client')
-
-  apply(
+    }),
+    makeSnapshot([], {
+      publicationEpoch: `${UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH}:client-navigation`,
+      snapshotVersion: 3
+    }),
+    makeSnapshot([terminal], { publicationEpoch: 'headless-hydrated:1' }),
+    makeSnapshot([terminal], { publicationEpoch: 'renderer-rescue:1' }),
     makeSnapshot(
       [
         {
-          type: 'terminal',
-          id: HOST_SURFACE_ID,
-          title: 'Terminal',
-          parentTabId: 'host-tab-1',
-          leafId: LEAF_ID,
-          status: 'pending-handle',
-          terminal: null,
+          type: 'agent-session',
+          id: 'agent-session:codex-1',
+          sessionId: 'codex-1',
+          agent: 'codex',
+          title: 'Codex Chat',
           isActive: true
         }
       ],
-      { publicationEpoch: 'headless-hydrated:1' }
+      { publicationEpoch: 'structured:1', activeTabType: 'agent-session' }
     )
-  )
-  expect(restoredDraft()).toBe('unsaved edit from the client')
+  ]
+  for (const partial of partialSnapshots) {
+    apply(partial)
+    expect(openPaths()).toContain(cleanMirroredPath)
+    expect(restoredDraft()).toBe('unsaved edit from the client')
+  }
 
   apply(hostOpen)
   expect(restoredDraft()).toBe('unsaved edit from the client')
   expect(publish()).toEqual([ownPath])
 
-  apply(makeSnapshot([], { snapshotVersion: 2 }))
-  expect(afterRestart.getState().openFiles.map((file) => file.filePath)).toEqual([ownPath])
-  expect(afterRestart.getState().unifiedTabsByWorktree[WT] ?? []).not.toEqual(
-    expect.arrayContaining([expect.objectContaining({ id: hostTab.id })])
+  apply(makeSnapshot([], { publicationEpoch: rendererEpoch, snapshotVersion: 2 }))
+  expect(openPaths()).toEqual([ownPath, mirroredPath])
+  const visibleTabIds = (afterRestart.getState().unifiedTabsByWorktree[WT] ?? []).map(
+    (tab) => tab.id
   )
+  expect(visibleTabIds).not.toContain(cleanHostTab.id)
+  expect(visibleTabIds).toContain(hostTab.id)
+  expect(restoredDraft()).toBe('unsaved edit from the client')
   expect(publish()).toEqual([ownPath])
 })

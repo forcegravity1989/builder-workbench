@@ -108,6 +108,7 @@ export function prepareWebSessionTabsSnapshotBrowser(
       : null
   const readyEditorTabs = reconcilesNonAgentTabs ? snapshot.tabs.filter(isReadyEditorTab) : []
   const worktreeOpenFiles = webSessionOpenFilesForWorktree(state, worktreeId, batchContext)
+  const hasLocalDraft = (fileId: string): boolean => state.editorDrafts?.[fileId] !== undefined
   const mirroredEditorTabs = buildMirroredEditorTabs(
     snapshot,
     environmentId,
@@ -117,7 +118,7 @@ export function prepareWebSessionTabsSnapshotBrowser(
     targetGroupId,
     mirroredTerminalTabEntries.length + mirroredBrowserTabs.length,
     now,
-    (fileId) => state.editorDrafts?.[fileId] !== undefined
+    hasLocalDraft
   )
   const mirroredAgentTabs = buildMirroredAgentTabs(
     snapshot,
@@ -137,8 +138,9 @@ export function prepareWebSessionTabsSnapshotBrowser(
         (file) =>
           file.runtimeEnvironmentId === environmentId &&
           (file.mode === 'edit' || file.mode === 'markdown-preview') &&
-          // Why: only cull host-mirrored tabs; locally opened files have no host counterpart, so their omission isn't a close signal.
           file.mirroredFromRuntimeSession === true &&
+          // A host close cannot discard an unsaved buffer on this client.
+          !(file.isDirty && hasLocalDraft(file.id)) &&
           !mirroredEditorFileIds.has(file.id)
       )
       .map((file) => file.id)
