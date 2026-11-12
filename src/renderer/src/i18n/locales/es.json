@@ -4197,6 +4197,8 @@
           "3e64e8a70d": "La conexión falló",
           "32a7256d85": "Clonar",
           "69f5b5380d": "Clonando...",
+          "finishingClone": "Finalizando la clonación…",
+          "importingProject": "Importando el proyecto…",
           "cloneOnHostDescription": "Introduce la URL de Git y elige dónde clonarlo en {{value0}}.",
           "cloneParentFolder": "Carpeta padre"
         },
