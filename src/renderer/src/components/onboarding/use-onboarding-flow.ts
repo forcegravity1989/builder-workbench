@@ -15,7 +15,7 @@ import { translate } from '@/i18n/i18n'
 import { resolveAgentPermissionModeSummary } from '../../../../shared/tui-agent-permissions'
 import { isWindowsUserAgent } from '@/components/terminal-pane/pane-helpers'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { openProjectWall } from '@/workbench/project-page-state'
+import { openAddProject, openProjectWall } from '@/workbench/project-page-state'
 import {
   isSkippedStepIndex,
   remapOpenOnboardingLastCompletedStep,
@@ -44,6 +44,8 @@ export function useOnboardingFlow(
   const openFirstProjectSetup = useCallback(() => {
     if (isWorkbenchShell() && useAppStore.getState().repos.length === 0) {
       openProjectWall()
+      openAddProject()
+      return
     }
     openModal('add-repo')
   }, [openModal])

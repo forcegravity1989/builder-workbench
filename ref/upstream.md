@@ -122,6 +122,7 @@ git rev-parse 'v1.4.251^{commit}'
 
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
+- BW 引导沿用原生首次设置和入门清单；底部帮助菜单提供「BW 入门」「探索 BW」，在入门里可重开初始设置（[PR #610](https://github.com/forcegravity1989/builder-workbench/pull/610)）。同步 `SetupGuideModal` 和 feature-wall 时保留 BW 的 CodeHub／可选 WeLink 卡、当前项目的准备脚本目标和 Orca CLI 实时状态判据。首次设置完成或跳至项目设置时，无项目的 BW 从项目墙打开原生 `AddRepoDialog`；首次添加弹窗及从空墙重开的弹窗保留注册与刷新，取消或添加成功都留墙，由用户点项目卡进入工作区。常规添加保持原生工作区交接。同步 onboarding 与原生添加链时保留这一分流，见[引导矩阵](../docs/04-design-system/guidance.md)、[项目纳入规格](../docs/05-features/project-intake/spec.md)与 [PR #628](https://github.com/forcegravity1989/builder-workbench/pull/628)。
 - 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。共享主机恢复复核另按上述 v1.4.251 补入导航取消未完成截图及旧快照回写的约束，仍沿用本仓文档失效时清除批注的行为；不因此迁入批注留存改造或远程实时批注。
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。

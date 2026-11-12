@@ -39,7 +39,9 @@ test.use({
 test.describe('BW first-run project handoff', () => {
   test.use({ dismissOnboarding: false, seedTestRepo: false })
 
-  test('opens Add Project over the empty project wall and stays there after cancel', async ({
+  test('stays on the project wall after cancel and first add until the user opens the project', async ({
+    electronApp,
+    seededRepoPath,
     workbenchPage
   }, testInfo) => {
     const onboarding = workbenchPage.locator('[data-onboarding-modal]')
@@ -66,6 +68,63 @@ test.describe('BW first-run project handoff', () => {
     await expect(dialog).toBeHidden()
     await expect(wall.getByRole('heading', { name: '从一个项目开始' })).toBeVisible()
     await workbenchPage.screenshot({ path: testInfo.outputPath('bw-first-run-cancel-add.png') })
+
+    await electronApp.evaluate(({ dialog: nativeDialog, ipcMain }, folderPath) => {
+      nativeDialog.showOpenDialog = async () => ({
+        canceled: false,
+        filePaths: [folderPath],
+        bookmarks: []
+      })
+      const probe = globalThis as typeof globalThis & { firstProjectCheckoutHandoffDone?: boolean }
+      probe.firstProjectCheckoutHandoffDone = false
+      ipcMain.removeHandler('telemetry:track')
+      ipcMain.handle('telemetry:track', (_event, name) => {
+        if (name === 'add_repo_default_checkout_handoff') {
+          probe.firstProjectCheckoutHandoffDone = true
+        }
+      })
+    }, seededRepoPath)
+    await wall.locator('.empty-center').getByRole('button', { name: '添加项目' }).click()
+    await dialog.getByRole('button', { name: /Browse folder|浏览文件夹/ }).click()
+    await expect(dialog).toBeHidden()
+
+    // Why: the dialog closes before checkout preparation finishes. Wait for that
+    // handoff before clicking the card, so a late auto-activation cannot pass.
+    await expect
+      .poll(
+        () =>
+          electronApp.evaluate(
+            () =>
+              (globalThis as typeof globalThis & { firstProjectCheckoutHandoffDone?: boolean })
+                .firstProjectCheckoutHandoffDone
+          ),
+        { message: 'Wait for the first project checkout handoff', timeout: 30_000 }
+      )
+      .toBe(true)
+    const card = wall.locator('[data-workbench-project-id]')
+    const project = card.getByRole('button', { name: path.basename(seededRepoPath), exact: true })
+    await expect(project).toBeVisible()
+    await expect
+      .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeWorktreeId))
+      .toBeNull()
+    const addedRepoId = await card.getAttribute('data-workbench-project-id')
+    await workbenchPage.screenshot({
+      path: testInfo.outputPath('bw-first-run-project-on-wall.png')
+    })
+    await project.click()
+    await expect(wall).toBeHidden()
+    await expect
+      .poll(() =>
+        workbenchPage.evaluate((repoId) => {
+          const state = window.__store?.getState()
+          return Boolean(
+            state &&
+            repoId &&
+            state.worktreesByRepo[repoId]?.some((tree) => tree.id === state.activeWorktreeId)
+          )
+        }, addedRepoId)
+      )
+      .toBe(true)
   })
 })
 

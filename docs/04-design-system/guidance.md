@@ -90,8 +90,8 @@ G08/G09 当前确实在入门的“能力体验”里，先如实登记，与探
 | 功能 | F16 快捷跳转 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
 | 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | ☐ | [待验：里程碑操作引导][milestone-guide] | [待验：workbench-milestones][milestone-guide] | — | ☐ | — |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | ☐ | ☐ | 待验：初始设置交接到空项目墙，取消添加留在墙上 | — | ☐ | — |
-| 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗；复用 F19 | — | ☐ | — |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | ☐ | ☐ | 待验：初始设置交接到空项目墙，取消可重试，首个项目上墙后点项目名开工 | — | ☐ | — |
+| 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
 | 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | ☐ | ☐；里程碑见 F18 | ☐ | — | ☐ | — |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | ☐ | ☐ | ☐ | — | ☐ | — |

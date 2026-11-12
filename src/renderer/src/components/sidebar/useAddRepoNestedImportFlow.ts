@@ -36,6 +36,7 @@ export function useAddRepoNestedImportFlow({
   importNestedRepos,
   getNestedRepoRuntimeKind,
   onGitRepoReady,
+  projectWallModal,
   setIsAdding
 }: {
   nestedAttemptId: string | null
@@ -64,6 +65,7 @@ export function useAddRepoNestedImportFlow({
     source: AddRepoExistingWorkspaceSource,
     executionHostId?: ExecutionHostId
   ) => Promise<void>
+  projectWallModal?: Record<string, unknown>
   setIsAdding: (isAdding: boolean) => void
 }): {
   handleImportNestedRepos: (mode: 'group' | 'separate') => Promise<void>
@@ -274,6 +276,7 @@ export function useAddRepoNestedImportFlow({
       getRuntimeKind: getNestedRepoRuntimeKind,
       owner: nestedRuntimeEnvironmentId,
       ...(displayName ? { displayName } : {}),
+      projectWallModal,
       closeModal,
       setIsAdding
     })
@@ -287,6 +290,7 @@ export function useAddRepoNestedImportFlow({
     nestedRuntimeEnvironmentId,
     nestedScan,
     nestedSelectedPaths.size,
+    projectWallModal,
     setIsAdding
   ])
   return {
