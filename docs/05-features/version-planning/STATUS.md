@@ -46,7 +46,7 @@
 
 ### 2026-10-23 验收对齐轮：两屏一致性（计划屏连带改动）
 
-#410 合入后负责人要求排查验收屏同类问题并对齐两屏，四项决策与验收侧全量记录见[验收 STATUS「验收对齐轮」](../version-acceptance/STATUS.md)。计划屏侧连带：
+#410 合入后负责人要求排查验收屏同类问题并对齐两屏，四项决策与验收侧全量记录见[验收对齐历史记录](https://github.com/forcegravity1989/builder-workbench/blob/e7d79e16a62f762ece1b2b9ea3078012e5f5c068/docs/05-features/version-acceptance/STATUS.md)。计划屏侧连带：
 
 - **批注 store 键控（取代第九轮「identity 变化仍 clearAll」）**：验收屏挂载同一模块级全局会话且带 #394 遗留的挂载期 `clearAll`，切屏瞬间清空计划屏未发送批注（第九轮「切屏保留」被反向击穿），同 goalId 还会串角标。`use-board-annotations` 改 `Map<boardId, session>`（boardId=scope+版本），PlanningBoard 删除 identity-clearAll effect、改传 boardIdentity；发送成功清空与重启丢弃语义不变。spec 第 4 条与 design 在线批注行同步改键控表述。
 - **文案与注释微修**：闭环句两处按钮 title 标点归 spec 生产文案正源（分号→逗号）；`version-workflow.ts` 头注释改准——stage 的唯一 UI 消费是两屏归档卡「已进入归档阶段」状态行（原文「Neither board renders it」过强）；design.md 三处陈旧句修正（stage 消费表述、上版回顾会议遗留来源补 v10 纪要主源与 legacy 回退、CycleArchive 已删）。
@@ -56,7 +56,7 @@
 
 ### 2026-10-23 易用性收口轮（v0.7 验收会后，#426）
 
-v0.7 验收完毕，会上三条易用性决议（#426）计划屏侧落地两条：**批注模式入口移回页头右上角**（`PlanningHeader` 可选 `annotateEntry`，`PlanningBoard` 计划已建才传入；`PlanningGoals` 区块头槽位与 prop 删除。依据：页头不随内容滚动，会中随时进出、未发送角标常驻可见；第八轮「入口贴对象」取舍经会决议废止，验收屏同位同轮落地）；**旅程导航第一步「上版回顾」改名「计划准备」**（与验收屏「验收准备」口径一致，区块内容与「验收回顾」标题不变）。spec 条款 1/4 与页头句、intent 目标体验、design 落点表两行、高保真（`g3-model.js` stages、入口位置、设计说明）同步。验证：typecheck 绿、g3 bundle `--check` 绿；真壳未验（页头入口新位置与改名回显）。验收屏侧见[验收 STATUS 同轮节](../version-acceptance/STATUS.md)；week-planning SKILL 的旅程口播句（「准备 → 目标 → 拆解 → 评审 → 归档」）与新导航名的对齐留提示词专项轮（#428 伴生审核发现）。
+v0.7 验收完毕，会上三条易用性决议（#426）计划屏侧落地两条：**批注模式入口移回页头右上角**（`PlanningHeader` 可选 `annotateEntry`，`PlanningBoard` 计划已建才传入；`PlanningGoals` 区块头槽位与 prop 删除。依据：页头不随内容滚动，会中随时进出、未发送角标常驻可见；第八轮「入口贴对象」取舍经会决议废止，验收屏同位同轮落地）；**旅程导航第一步「上版回顾」改名「计划准备」**（与验收屏「验收准备」口径一致，区块内容与「验收回顾」标题不变）。spec 条款 1/4 与页头句、intent 目标体验、design 落点表两行、高保真（`g3-model.js` stages、入口位置、设计说明）同步。验证：typecheck 绿、g3 bundle `--check` 绿；真壳未验（页头入口新位置与改名回显）。验收屏侧见[验收易用性历史记录](https://github.com/forcegravity1989/builder-workbench/blob/e7d79e16a62f762ece1b2b9ea3078012e5f5c068/docs/05-features/version-acceptance/STATUS.md)；week-planning SKILL 的旅程口播句（「准备 → 目标 → 拆解 → 评审 → 归档」）与新导航名的对齐留提示词专项轮（#428 伴生审核发现）。
 
 ### 2026-10-24 提示词资产质量轮（#431/#428，计划侧）
 

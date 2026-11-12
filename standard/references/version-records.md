@@ -13,7 +13,7 @@
 | 指标          | 项目基线或包含该基线的维护提交中的 .bw/metrics.toml 及真实历史采集源                                         | 新采集固定本次采用的定义/脚本修订；旧 baseline 和归档证据保留，不以常驻树旧文件或旧引用锁住目录                                                                                                                         |
 | Issue/会话/PR | 原生 provider / Orca                                                                                         | 材料只存引用，不另建正文、聊天或状态正本                                                                                                                                                                                |
 | 纪要          | 计划与验收材料各自的 minutes 节                                                                              | 纪要正文由模型在未确认时撰写，人工确认只能由人标记，不另建第二份会议正文文件                                                                                                                                            |
-| 验收证据报告  | .bw/planning/<version>/ 下的报告文件，登记为 preparedArtifacts 的 verification 制品                          | 一个版本一份，按「目标 → Issue」聚合各 Issue/PR 合入时留下的验收件（有开发取 PR 验证评论，无开发直接关闭取 Issue 评论），由模型按 version-acceptance 技能模板生成，缺证如实标注；不是界面派生文本，也不代替项目发布总结 |
+| 验收证据报告 | `.bw/planning/<version>/acceptance-evidence.html`，登记为 `preparedArtifacts` 的 verification 制品 | 一个版本一份 HTML 报告，登记后经内置浏览器打开；待核对项不阻塞登记，登记不代表验收通过。生成流程与模板由 version-acceptance Skill 维护 |
 
 计划/验收固定分支（绑定版本树为 bw/<版本>/plan、bw/<版本>/acceptance；旧无绑定固定树为 bw/week-plan、bw/week-acceptance）分别由原生项目/宿主/worktree 身份定位；物理目录由 Orca 原生创建和登记，不硬编码 .bw/worktrees 下的路径。冲突目录不得自动搬移/删除。同步基线前检查未归档修改，不 reset 脏树；跨树读取用固定提交，不把另一树的工作中草稿当正式材料。
 
@@ -30,7 +30,9 @@ cycleId 标识同一版本同一流程的材料身份，不是自然周、原生
 - `.bw/milestones.json` 使用 schema_version=4，可选 `versionPlans` 数组中每项为 `{version, cycleId, timeWindow: {start, end}}`，表示里程碑预期的版本窗口。
 - `.bw/planning/<version>/data.json` 使用计划 schema 3，可选 `timeWindow: {start, end}`，表示本版计划实际采用的周期。两端均为包含当日的 ISO 日期，开始不得晚于结束。编辑其他字段原样保留日期；没有日期就是未登记，不从 Releases、验收或提交时间猜。
 
-首日 Plan 可以校准日期、目标和范围，与里程碑预期不同并不使计划失效。里程碑重新编排只更新预期，不覆盖已有版本计划的 timeWindow 或其他字段；计划改期也不自动重写里程碑。新版本可由里程碑登记身份及最小空计划，真正开工再创建对应工作树与会话。已有材料沿用 cycleId，不能重新初始化覆盖。
+首日 Plan 可以校准日期、目标和范围，与里程碑预期不同并不使计划失效。里程碑重新编排只更新预期，不覆盖已有版本计划的 timeWindow 或其他字段；计划改期也不自动重写里程碑。预排新版本只在 milestones.json 登记身份与日期，不预建空计划或执行工作树。用户主动准备版本计划工作区时，材料服务沿用同名排期的 cycleId 与初始日期；没有排期才新建身份。已有材料始终原样复用，不能重新初始化覆盖；里程碑损坏或身份冲突时提示核对，不回退为随机新身份。
+
+旧版遗留的空占位按项目一次性核对来源、实际内容、工作区和验收材料，经 PR 清理，保留里程碑排期与 Git 历史；升级和日常里程碑提交不自动删除。版本目录与各页面继续沿原有材料读取规则，不引入占位过滤或来源标记。主动新建的空计划、已有计划内容、验收及固定提交引用仍保留。相关成员升级后再提交只有排期的新版本，旧客户端不支持该目录语义。
 
 里程碑还保存 milestones（id、outcome、date；仅有月份精度的成果保留 month 直至人工指定日期）与 features（id/title/owner/deliveries）。特性名称必填、负责人可空；每个 delivery 为稳定 id、phase（Build 或 Maintain）与可选 timeWindow（start/end）。日期使用北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含；未记录日期时省略 timeWindow。日期段独立于版本，可跨任意版本、多轮维护；日期相交只提供计划候选，不表示正式纳入。版本预期窗口不新增或扩大重叠，存量交集可保留或缩小；调整版本不带动特性。条长是自然日期跨度，不是工时。
 
@@ -60,7 +62,7 @@ taskSnapshot 保存验收当时逐项读取的 Issue 状态：每项含任务身
 
 计划材料可选 `minutes` 节承载会议纪要：`consensus` 为共识若干点（字符串数组），`followups` 为遗留若干点（条目含稳定 id、text、closed），`confirmed`/`confirmedAt` 记录人工确认，`sources`/`updatedAt` 为可选的输入来源描述与正文更新时间。正文由计划助手基于在线批注与可选会议转写稿提炼撰写，仅在未确认（confirmed=false 或整节缺省）时可由模型通道写入或改写；人在计划屏确认后整节对模型冻结，要改正文须先由人在屏上撤销确认。`followups[].closed` 是历史人工字段，现行界面不再提供逐条闭环开关；读写继续保留旧值，模型对既有条目按 id 原样往返，新增条目必须 closed=false，不得删除历史已闭环条目。现行正文与验收侧一致，记录落实结果或真实跟进 Issue，归档前由助手核对、人在 PR 中确认。纪要确认不是目标达成或 Issue 完成；生成或填写纪要不自动等于确认。总览直接读取本节呈现，无存储纪要的历史版本如实显示纪要未记录。
 
-candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。preparedArtifacts 含 artifactId/kind/location/candidateRef/generatedAt，可选 command/executionRoot/checksum；kind 为 package（制品包）或 verification（验收证据报告）等。验收证据报告必须在候选固定之后生成登记，location 存 .bw 相对路径，截图落同目录 shots/。执行根记录在该材料上，不加到 candidateRef。验收树只承载材料，出包从指定源码候选的执行工作区进行。包重出不自动刷新板面已填内容；是否重新部署演示环境、是否重新聚合报告由模型在会话中提醒、人决定，界面不做主动失效或「待重核」呈现；验收件在各 Issue/PR 合入时已留下，包重出不改变它们。
+candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。preparedArtifacts 含 artifactId/kind/location/candidateRef/generatedAt，可选 command/executionRoot/checksum；kind 为 package（制品包）或 verification（验收证据报告）等。验收证据报告必须在候选固定之后生成登记，location 存 `.bw/planning/<version>/acceptance-evidence.html` 相对路径，随带图片在同目录 shots/。执行根记录在该材料上，不加到 candidateRef。验收树只承载材料，出包从指定源码候选的执行工作区进行。包重出不自动刷新板面已填内容；是否重新部署演示环境、是否重新聚合报告由模型在会话中提醒、人决定，界面不做主动失效或「待重核」呈现；验收件在各 Issue/PR 合入时已留下，包重出不改变它们。
 
 总览与版本索引按 version/workflow/cycleId 各取最新一条当前材料，不扫描旧提交铺旧记录；读取固定来源时核对版本、cycleId 与修订；未合入草稿在其工作区读取；损坏的当前文件如实提示。开始验收会话成功后，页面在固定计划可读且身份核对通过时初始化并保存缺失的空白验收；没有可读固定计划时四区仍可展示，目标留空并由会话处理来源问题。已有材料直接继续；新材料与归档后补证均自动保存。总览不显示发布状态。
 

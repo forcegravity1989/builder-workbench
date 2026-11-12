@@ -1,10 +1,7 @@
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
-import { ghExecFileAsync } from '../git/runner'
-import type {
-  PackageDownloadReceipt,
-  PackageLatest
-} from '../../shared/workbench/package-pipeline'
+import { bwGhExecFileAsync } from './workbench-exec-observability'
+import type { PackageDownloadReceipt, PackageLatest } from '../../shared/workbench/package-pipeline'
 import { PackagePipelineError, failureText } from './package-pipeline-error'
 
 /**
@@ -37,13 +34,9 @@ function slug(repo: GitHubRepo): string {
   return `${repo.owner}/${repo.repo}`
 }
 
-async function runGh(
-  context: GhContext,
-  args: string[],
-  timeout = GH_TIMEOUT_MS
-): Promise<string> {
+async function runGh(context: GhContext, args: string[], timeout = GH_TIMEOUT_MS): Promise<string> {
   try {
-    const { stdout } = await ghExecFileAsync(args, {
+    const { stdout } = await bwGhExecFileAsync(args, {
       cwd: context.cwd,
       host: context.host,
       wslDistro: context.wslDistro,

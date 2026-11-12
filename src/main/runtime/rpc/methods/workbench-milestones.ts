@@ -1,4 +1,4 @@
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
   MilestoneReadRequestSchema,
   MilestoneSubmitRequestSchema
@@ -7,13 +7,13 @@ import { nativeMilestoneService } from '../../../workbench/milestone-runtime'
 import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-result'
 
 export const WORKBENCH_MILESTONE_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.milestones.read',
     params: MilestoneReadRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMilestoneService(runtime).read(params.scope))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.milestones.submit',
     params: MilestoneSubmitRequestSchema,
     handler: (params, { runtime }) =>
