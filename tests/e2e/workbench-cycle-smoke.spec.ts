@@ -85,25 +85,37 @@ test.describe('BW first-run project handoff', () => {
     await expect(
       gettingStarted.getByLabel(/of 7 setup steps complete|7 设置步骤中的/)
     ).toBeVisible()
-    await gettingStarted.getByRole('button', { name: /Connect integrations|连接集成服务/ }).click()
+    const integrationStep = gettingStarted.getByRole('button', {
+      name: /Connect integrations|连接集成服务/
+    })
+    await integrationStep.click()
     await expect(
       gettingStarted.getByRole('heading', { name: /^(Code hosting|代码托管)$/ })
     ).toBeVisible()
     await expect(gettingStarted.getByText('GitHub', { exact: true })).toHaveCount(1)
     await expect(gettingStarted.getByText('CodeHub', { exact: true })).toHaveCount(1)
-    await expect(
-      gettingStarted.getByRole('heading', {
-        name: /^(Reports and diagnostics \(optional\)|报告与诊断（可选）)$/
-      })
-    ).toBeVisible()
-    await expect(gettingStarted.getByText('WeLink', { exact: true })).toHaveCount(1)
+    const optionalReports = gettingStarted.getByRole('heading', {
+      name: /^(Reports and diagnostics \(optional\)|报告与诊断（可选）)$/
+    })
+    const weLink = gettingStarted.getByText('WeLink', { exact: true })
+    await expect(optionalReports).toBeVisible()
+    await expect(weLink).toHaveCount(1)
     await expect(
       gettingStarted.getByText(/^(GitLab|Bitbucket|Azure DevOps|Gitea|Linear|Jira|CloudBuild)$/)
     ).toHaveCount(0)
+    await integrationStep.focus()
+    await expect(workbenchPage.getByRole('tooltip')).toBeHidden()
     await workbenchPage.screenshot({
       path: testInfo.outputPath('bw-getting-started-integrations.png')
     })
-    await workbenchPage.keyboard.press('Escape')
+    await optionalReports.scrollIntoViewIfNeeded()
+    await weLink.scrollIntoViewIfNeeded()
+    await expect(optionalReports).toBeInViewport()
+    await expect(weLink).toBeInViewport()
+    await workbenchPage.screenshot({
+      path: testInfo.outputPath('bw-getting-started-optional-reports.png')
+    })
+    await gettingStarted.getByRole('button', { name: /^(Close|关闭)$/ }).click()
     await expect(gettingStarted).toBeHidden()
 
     await workbenchPage
@@ -122,7 +134,12 @@ test.describe('BW first-run project handoff', () => {
     )
     await expect(embeddedGuide.locator('[data-setup-guide-step="two-worktrees"]')).toBeVisible()
     await expect(embeddedGuide.locator('[data-setup-guide-step="browser"]')).toBeVisible()
+    await workbenchPage.screenshot({ path: testInfo.outputPath('bw-settings-getting-started.png') })
     await workbenchPage.getByRole('button', { name: /^(Back to app|返回应用)$/ }).click()
+    await workbenchPage
+      .locator('[data-workbench-rail]')
+      .getByRole('button', { name: '项目墙', exact: true })
+      .click()
     await expect(wall.getByRole('heading', { name: '从一个项目开始' })).toBeVisible()
 
     await electronApp.evaluate(({ dialog: nativeDialog, ipcMain }, folderPath) => {
