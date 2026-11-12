@@ -1,0 +1,87 @@
+src/main/codehub/service.ts
+  s_f95b73dae8ff98::t_10f18b12525be9 4,43-49
+src/renderer/src/components/task-page/codehub/AssigneesCell.tsx
+  s_f95b73dae8ff98::t_5436b30c8aca4e 6,37,73
+src/renderer/src/components/task-page/codehub/LabelsCell.tsx
+  s_f95b73dae8ff98::t_26e980855f741b 6,36,70
+src/renderer/src/components/task-page/codehub/codehub-detail-cache.test.ts
+  s_f95b73dae8ff98::t_3d523026dc44fb 66,85-92,96-99,104
+src/renderer/src/components/task-page/codehub/codehub-detail-cache.ts
+  s_f95b73dae8ff98::t_f00d7e7bf4ae14 108,156
+src/renderer/src/components/task-page/codehub/controls.test.tsx
+  s_f95b73dae8ff98::t_d9e5df95942c5a 26-30
+src/renderer/src/components/task-page/codehub/use-codehub-detail.ts
+  s_f95b73dae8ff98::t_d45bb8fb4612e1 27-31
+src/renderer/src/components/use-task-page-codehub-loading.test.tsx
+  s_f95b73dae8ff98::t_50411a2ef252cb 5
+src/renderer/src/components/use-task-page-codehub-loading.ts
+  s_f95b73dae8ff98::t_6aa8fb43a43105 1,65-66
+src/renderer/src/lib/codehub-api.test.ts
+  s_f95b73dae8ff98::t_e5967ceef47728 16,25,57-59,61,67-79
+src/renderer/src/lib/codehub-api.ts
+  s_f95b73dae8ff98::t_507ffc4af7e847 15-16,18-30,41-44,48,50,76-80
+src/renderer/src/workbench/KnowledgePage.tsx
+  s_f95b73dae8ff98::t_79784cb226eb24 29-40,135-139
+src/renderer/src/workbench/OverviewPage.tsx
+  s_f95b73dae8ff98::t_4c5e0d055ea2eb 42,47-48,50-53,94,155,236-238,240-242
+src/renderer/src/workbench/ProjectWallPage.tsx
+  s_f95b73dae8ff98::t_29858f727310b8 15,233-234,236-237,239-245
+src/renderer/src/workbench/WorkbenchRail.tsx
+  s_f95b73dae8ff98::t_c8cf2588acec6d 12-13,85-98,114,128-129
+src/renderer/src/workbench/WorkbenchVersionNav.tsx
+  s_f95b73dae8ff98::t_ee5657244860c0 28-29,250-263,296
+src/renderer/src/workbench/native-task-port.ts
+  s_f95b73dae8ff98::t_f0191bb674b6d7 1-2,4-9,15-75,80-81,83
+src/renderer/src/workbench/project-milestones.tsx
+  s_f95b73dae8ff98::t_72a7aa7844c77e 204
+src/renderer/src/workbench/project-page-state.ts
+  s_f95b73dae8ff98::t_920f6f34a84d4b 11-12
+src/renderer/src/workbench/switch-active-project.ts
+  s_f95b73dae8ff98::t_297117b9b68ea7 7-16
+src/renderer/src/workbench/task-port.test.ts
+  s_f95b73dae8ff98::t_8f095201ad69f9 202,204,206,209-221,247
+src/renderer/src/workbench/task-reference-reader.ts
+  s_f95b73dae8ff98::t_0ff085e4f20e02 4,6,86-87,91-93,185
+src/renderer/src/workbench/use-task-scope-viewers.ts
+  s_f95b73dae8ff98::t_1b8fb3ffcb892f 6,96
+src/renderer/src/workbench/use-version-catalog.ts
+  s_f95b73dae8ff98::t_bade9d7ffe1bce 3,41-44,52,62-65,67
+src/renderer/src/workbench/version-cycle/version-membership.ts
+  s_f95b73dae8ff98::t_3521f97c90b0d6 2,63-64
+src/renderer/src/workbench/version-overview-page.tsx
+  s_f95b73dae8ff98::t_50d5e48deb9781 10,66-68,110-116,235-243,322
+src/renderer/src/workbench/version-overview/read-feature-evidence.ts
+  s_f95b73dae8ff98::t_f841517aaec7a3 2,117,195
+src/renderer/src/workbench/workbench-wall-projects.test.ts
+  s_f95b73dae8ff98::t_67ab4525e20cdb 76-81
+src/renderer/src/workbench/project-source-resolution.test.ts
+  s_f95b73dae8ff98::t_c1ee6aad13cb87 1-98
+src/renderer/src/workbench/project-source-resolution.ts
+  s_f95b73dae8ff98::t_53a67bcfca0539 1-109
+src/renderer/src/workbench/use-knowledge-repo.ts
+  s_b202bdd4540575::t_2f97bce850a7d4 9,19,24-36,114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "6aa0865ba7f9b12ef616c92190b7763809f3f9eb",
+  "prompts": {},
+  "sessions": {
+    "s_b202bdd4540575": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-aa4bc000b1fdc449c",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_f95b73dae8ff98": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d079b567-648f-4df2-a115-e4f1281230ba",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
