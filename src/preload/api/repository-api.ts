@@ -22,7 +22,12 @@ import type {
   ProjectHostSetupUpdateResult,
   ProjectUpdateArgs
 } from '../../shared/project-types'
-import type { BaseRefDefaultResult, BaseRefSearchResult, Repo } from '../../shared/repo-types'
+import type {
+  BaseRefDefaultResult,
+  BaseRefSearchResult,
+  Repo,
+  RepoCloneProgress
+} from '../../shared/repo-types'
 
 export type RepositoryApi = {
   list: () => Promise<Repo[]>
@@ -76,7 +81,7 @@ export type RepositoryApi = {
   pickFolder: () => Promise<string | null>
   pickFolders: () => Promise<string[]>
   pickDirectory: () => Promise<string | null>
-  clone: (args: { url: string; destination: string }) => Promise<Repo>
+  clone: (args: { url: string; destination: string; progressId?: string }) => Promise<Repo>
   cloneRemote: (args: { connectionId: string; url: string; destination: string }) => Promise<Repo>
   createRemote: (args: {
     connectionId: string
@@ -100,7 +105,7 @@ export type RepositoryApi = {
   }) => Promise<{ repo: Repo } | { error: string }>
   isGitAvailable: () => Promise<boolean>
   getDefaultCreateProjectParent: () => Promise<string>
-  onCloneProgress: (callback: (data: { phase: string; percent: number }) => void) => () => void
+  onCloneProgress: (callback: (data: RepoCloneProgress) => void) => () => void
   getGitUsername: (args: { repoId: string }) => Promise<string>
   getBaseRefDefault: (args: {
     repoId: string

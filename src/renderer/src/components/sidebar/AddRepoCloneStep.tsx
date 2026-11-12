@@ -4,13 +4,14 @@ import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/di
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
+import type { RepoCloneProgress } from '../../../../shared/repo-types'
 import { RemoteFileBrowser } from './RemoteFileBrowser'
 
 type CloneStepProps = {
   cloneUrl: string
   cloneDestination: string
   cloneError: string | null
-  cloneProgress: { phase: string; percent: number } | null
+  cloneProgress: RepoCloneProgress | null
   isCloning: boolean
   disableDestinationPicker?: boolean
   runtimeEnvironmentId?: string | null
@@ -41,6 +42,12 @@ export function CloneStep({
   const isRemoteClone = Boolean(runtimeEnvironmentId || sshTargetId)
   const canBrowseRemoteDestination = isRemoteClone
   const canClone = !!cloneUrl.trim() && !!cloneDestination.trim() && !isCloning
+  const progressStatus =
+    cloneProgress?.percent === null
+      ? translate('auto.components.sidebar.AddRepoSteps.importingProject', 'Importing project…')
+      : cloneProgress?.percent === 100
+        ? translate('auto.components.sidebar.AddRepoSteps.finishingClone', 'Finishing clone…')
+        : null
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
       e.preventDefault()
@@ -199,7 +206,12 @@ export function CloneStep({
 
         {/* Why: progress bar lives below the button so it doesn't push the
            button down when it appears mid-clone. */}
-        {isCloning && cloneProgress && (
+        {isCloning && progressStatus && (
+          <p role="status" className="text-[11px] text-muted-foreground">
+            {progressStatus}
+          </p>
+        )}
+        {isCloning && cloneProgress && cloneProgress.percent !== null && !progressStatus && (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span>{cloneProgress.phase}</span>

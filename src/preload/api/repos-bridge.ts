@@ -3,7 +3,11 @@ import type {
   HostRepoCatalogSnapshot,
   ListReposForExecutionHostArgs
 } from '../../shared/host-repo-catalog-contract'
-import type { BaseRefDefaultResult, BaseRefSearchResult } from '../../shared/repo-types'
+import type {
+  BaseRefDefaultResult,
+  BaseRefSearchResult,
+  RepoCloneProgress
+} from '../../shared/repo-types'
 import type { ExecutionHostId } from '../../shared/execution-host'
 import type { PreloadApi } from '../api-types'
 
@@ -48,11 +52,8 @@ export const reposApi = {
 
   cloneAbort: () => ipcRenderer.invoke('repos:cloneAbort'),
 
-  onCloneProgress: (callback: (data: { phase: string; percent: number }) => void): (() => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      data: { phase: string; percent: number }
-    ) => callback(data)
+  onCloneProgress: (callback: (data: RepoCloneProgress) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, data: RepoCloneProgress) => callback(data)
     ipcRenderer.on('repos:clone-progress', listener)
     return () => ipcRenderer.removeListener('repos:clone-progress', listener)
   },
