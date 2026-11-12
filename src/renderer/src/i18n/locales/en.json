@@ -17766,6 +17766,159 @@
     }
   },
   "guidance": {
+    "catalog": {
+      "feature": {
+        "workspace": {
+          "title": "Workspace",
+          "summary": "Keep each task in an isolated workspace."
+        },
+        "tasks": {
+          "title": "Task management",
+          "summary": "Find a task, start work, and return to its results."
+        },
+        "agent-status": {
+          "title": "Agent status",
+          "summary": "See which agents are running, waiting, or blocked."
+        },
+        "orchestration": {
+          "title": "Agent orchestration",
+          "summary": "Coordinate agents across workspaces."
+        },
+        "usage": {
+          "title": "Account usage",
+          "summary": "Check usage and limits for your account."
+        },
+        "terminal": {
+          "title": "Terminal and sessions",
+          "summary": "Work in terminal splits and return to an existing session."
+        },
+        "editor": {
+          "title": "Editor",
+          "summary": "Open and edit files while you work."
+        },
+        "browser": {
+          "title": "Browser and annotations",
+          "summary": "Open a page or prototype and bring focused feedback back to the work."
+        },
+        "review": {
+          "title": "Diffs and review",
+          "summary": "Inspect changes, leave feedback, and continue the work."
+        },
+        "pr-checks": {
+          "title": "PR checks",
+          "summary": "Check the status and comments on a pull request."
+        },
+        "ship": {
+          "title": "Commits and delivery",
+          "summary": "Have AI prepare a commit and pull request for your review."
+        },
+        "workspace-board": {
+          "title": "Workspace board",
+          "summary": "Check workspace status and switch back to active work."
+        },
+        "automation": {
+          "title": "Automation",
+          "summary": "Create, enable, and run an automation."
+        },
+        "quick-jump": {
+          "title": "Quick jump",
+          "summary": "Find and open a workspace or session."
+        },
+        "milestones": {
+          "title": "Project milestones",
+          "summary": "Plan milestone outcomes and compare them with actual delivery."
+        },
+        "project-wall": {
+          "title": "Project wall",
+          "summary": "Find the project that needs your attention."
+        },
+        "project-intake": {
+          "title": "Add a project",
+          "summary": "Add a project and continue working, then provide background as needed."
+        },
+        "project-overview": {
+          "title": "Project overview",
+          "summary": "Review project direction, milestones, and actual results."
+        },
+        "version-planning": {
+          "title": "Version planning",
+          "summary": "Decide what to deliver, how to accept it, and which tasks to start."
+        },
+        "version-navigation": {
+          "title": "Version and session navigation",
+          "summary": "Find the workspace and session associated with a version or goal."
+        },
+        "review-notifications": {
+          "title": "Review notifications and shared hosts",
+          "summary": "Connect to a shared host when needed, request review, and open the PR from the notification."
+        },
+        "version-acceptance": {
+          "title": "Version acceptance",
+          "summary": "Check evidence against goals, confirm the result, and archive it."
+        },
+        "version-overview": {
+          "title": "Version overview",
+          "summary": "See this version’s goals, tasks, and acceptance results."
+        },
+        "metrics": {
+          "title": "Metrics setup and collection",
+          "summary": "Define how to measure results and find readings or reasons they are missing."
+        },
+        "internal-integrations": {
+          "title": "CodeHub / WeLink",
+          "summary": "Set up connections in Getting Started and use them for tasks and collaboration."
+        }
+      },
+      "labels": {
+        "journeys": "Work journeys",
+        "features": "Features",
+        "types": "Explore categories",
+        "preparing": "Content in preparation",
+        "building": "In development",
+        "related": "Related features and actions"
+      },
+      "group": {
+        "projects": "Project wall and intake",
+        "overview": "Project overview",
+        "planning": "Version planning and navigation",
+        "execution": "Tasks and execution",
+        "browser": "Integrated browser",
+        "review": "Review and collaboration",
+        "acceptance": "Acceptance and version facts",
+        "automation": "Automation",
+        "agents": "Agent orchestration"
+      },
+      "journey": {
+        "direction": {
+          "title": "Establish project direction and milestones",
+          "summary": "Agree on what the project should accomplish and plan its milestones."
+        },
+        "commitments": {
+          "title": "Set version commitments and start work",
+          "summary": "Use past results and new requirements to agree on goals, tasks, and acceptance criteria."
+        },
+        "delivery": {
+          "title": "Take a task through review and delivery",
+          "summary": "Start from an issue, validate the change, review it with a teammate, and merge the PR."
+        },
+        "acceptance": {
+          "title": "Verify what this version delivered",
+          "summary": "Check evidence against the goals and record the outcome and next actions."
+        },
+        "outcomes": {
+          "title": "Use actual results to guide the next step",
+          "summary": "Review progress and outcomes, identify gaps, and decide what to change."
+        },
+        "maintenance": {
+          "title": "Keep the project maintainable",
+          "summary": "Review architecture and technical debt, then decide what to address or defer."
+        },
+        "reuse": {
+          "title": "Reuse a proven way of working",
+          "summary": "Capture a method that worked and verify it on the next similar task."
+        }
+      }
+    },
     "tour": {
       "workspaces": {
         "title": "Workspaces",
@@ -17828,7 +17981,7 @@
       }
     },
     "explore": "Explore BW",
-    "exploreDescription": "Explore BW capabilities through the existing demonstrations.",
+    "exploreDescription": "Browse work journeys and feature demonstrations in BW.",
     "experiences": "Try the capabilities",
     "addProjectFirst": "First add a project you'd like to work on.",
     "done": "Done",
