@@ -1,3 +1,4 @@
+import { readVersionMembership } from './version-cycle/version-membership'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import type { CycleTaskReference } from './version-cycle/ports'
@@ -113,7 +114,9 @@ export async function openVersionTasks(args: {
       version,
       goal,
       references: goal?.references ?? [],
-      homeRepoId: catalog.home.repoId
+      homeRepoId: catalog.scope.repoId,
+      homeHostId: catalog.scope.hostId,
+      runtimeOwnerEnvironmentId: catalog.scope.runtimeOwnerEnvironmentId
     })
     closeProjectPage()
     return
@@ -133,12 +136,21 @@ export async function openVersionTasks(args: {
     // 草稿来源失败、已回落已提交材料：如实标注，不把旧真相冒充当前稿。
     toast.info(read.problem)
   }
-  const references = read.document.tasks.filter((task) => task.goalId === goal.goalId)
+  let references: CycleTaskReference[]
+  try {
+    const members = await readVersionMembership(catalog.scope, read.document)
+    references = members.filter((task) => task.goalId === goal.goalId)
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : String(error))
+    return
+  }
   openVersionTasksPage({
     version,
     goal,
     references,
-    homeRepoId: catalog.home.repoId
+    homeRepoId: catalog.scope.repoId,
+    homeHostId: catalog.scope.hostId,
+    runtimeOwnerEnvironmentId: catalog.scope.runtimeOwnerEnvironmentId
   })
   closeProjectPage()
 }

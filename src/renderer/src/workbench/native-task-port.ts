@@ -1,5 +1,8 @@
-import { codehubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
+import { createCodeHubApi } from '@/lib/codehub-api'
+import {
+  lookupGitHubWorkItemByOwnerRepoForSource,
+  lookupGitHubWorkItemForSource
+} from '@/lib/github-work-item-source-lookup'
 import { useAppStore } from '@/store'
 import type { TaskPort } from './version-cycle/ports'
 import { createTaskPort, type TaskPortDeps } from './task-port'
@@ -9,9 +12,12 @@ import { createTaskReferenceReader } from './task-reference-reader'
 export function nativeTaskPortDeps(): TaskPortDeps {
   return {
     repos: () => useAppStore.getState().repos,
-    lookupGitHubWorkItem: (args) => lookupGitHubWorkItemForSource(args),
+    lookupGitHubWorkItem: ({ issueSource, ...args }) =>
+      issueSource
+        ? lookupGitHubWorkItemByOwnerRepoForSource({ ...args, ...issueSource, type: 'issue' })
+        : lookupGitHubWorkItemForSource(args),
     lookupGitHubWorkItems: (args) => window.api.gh.workItemsBatch(args),
-    viewCodeHubTask: (args) => codehubApi.viewTask(args),
+    viewCodeHubTask: ({ sourceContext, ...args }) => createCodeHubApi(sourceContext).viewTask(args),
     openTaskPage: (data, options) => useAppStore.getState().openTaskPage(data, options),
     now: () => new Date().toISOString()
   }

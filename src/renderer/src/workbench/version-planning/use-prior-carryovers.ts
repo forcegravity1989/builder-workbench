@@ -4,16 +4,11 @@ import { collectVersionCatalogWorkspaces } from '../../../../shared/workbench/ve
 import { selectPriorVersionSource } from '../../../../shared/workbench/prior-version-source'
 import type {
   AcceptanceMaterial,
-  PlanningMaterial,
   PlanningProgressSource as ProgressSource,
   VersionTaskSnapshot
 } from '../../../../shared/workbench/version-material'
 import type { CycleScope, CycleTaskReference, CycleTaskSnapshot } from '../version-cycle/ports'
-import {
-  isClosedIssueState,
-  issueKey,
-  issueMarkFor
-} from '../version-acceptance/acceptance-issue-annotations'
+import { isClosedIssueState, issueKey } from '../version-acceptance/acceptance-issue-annotations'
 import { historyErrorCode, nativeVersionHistoryPort } from '../version-history-port'
 import { readPlanningProgressSource } from './planning-progress-source'
 import { createSnapshotCache, useSnapshotCache } from '../snapshot-cache'
@@ -73,15 +68,10 @@ function readySnapshotToTask(entry: ReadySnapshot): CycleTaskSnapshot {
  * minutes, in material order. Absent fields read as empty — no free-text
  * parsing, no inference from open state.
  */
-export function derivePriorCarryovers(
-  acceptance: AcceptanceMaterial,
-  plan: PlanningMaterial
-): PriorCarryovers {
-  const readyByKey = new Map<string, ReadySnapshot>()
+export function derivePriorCarryovers(acceptance: AcceptanceMaterial): PriorCarryovers {
   const openReadbackReferences: CycleTaskReference[] = []
   for (const entry of acceptance.taskSnapshot ?? []) {
     if (entry.kind === 'ready') {
-      readyByKey.set(issueKey(entry.reference), entry)
       openReadbackReferences.push(entry.reference)
     }
   }
@@ -92,31 +82,34 @@ export function derivePriorCarryovers(
     if (result.issueMarks && Object.keys(result.issueMarks).length > 0) {
       issueMarksRecorded = true
     }
-    const related = plan.tasks.filter((task) => task.goalId === result.goalId)
-    for (const reference of related) {
-      if (!issueMarkFor(result, reference, related)?.carry) {
+    const snapshots =
+      acceptance.taskSnapshot?.filter((entry) => entry.reference.goalId === result.goalId) ?? []
+    const seen = new Set<string>()
+    for (const [key, mark] of Object.entries(result.issueMarks ?? {})) {
+      if (!mark.carry) {
         continue
       }
-      const ready = readyByKey.get(issueKey(reference))
-      // Keep the human mark in history, but a closed frozen Issue is no longer deferred work.
+      const bare = /^[1-9]\d*$/.test(key)
+      const matches = snapshots.filter((entry) =>
+        bare ? String(entry.reference.number) === key : issueKey(entry.reference) === key
+      )
+      const snapshot = matches.length === 1 ? matches[0] : undefined
+      const number = snapshot?.reference.number ?? Number(key.split(':').at(-1))
+      const identity = snapshot ? issueKey(snapshot.reference) : key
+      if (!Number.isSafeInteger(number) || number <= 0 || seen.has(identity)) {
+        continue
+      }
+      seen.add(identity)
+      const ready = snapshot?.kind === 'ready' ? snapshot : undefined
       if (ready && isClosedIssueState(ready.state)) {
         continue
       }
-      issues.push(
-        ready
-          ? {
-              key: issueKey(reference),
-              number: ready.iid,
-              title: ready.title,
-              task: readySnapshotToTask(ready)
-            }
-          : {
-              key: issueKey(reference),
-              number: reference.number,
-              title: null,
-              task: null
-            }
-      )
+      issues.push({
+        key: identity,
+        number,
+        title: ready?.title ?? null,
+        task: ready ? readySnapshotToTask(ready) : null
+      })
     }
   }
   // Meeting carryovers come from the acceptance meeting minutes, which replaced
@@ -140,6 +133,7 @@ export function derivePriorCarryovers(
       }
     }
   }
+  issues.sort((a, b) => a.number - b.number)
   return { issues, directives, issueMarksRecorded, openReadbackReferences }
 }
 
@@ -243,7 +237,7 @@ export function usePriorCarryovers(
       const value: PriorReviewState = {
         kind: 'ready',
         source: fixed,
-        carryovers: derivePriorCarryovers(documents.acceptance, documents.plan)
+        carryovers: derivePriorCarryovers(documents.acceptance)
       }
       // Automatic adoption adds progressSource to the plan; it is the same
       // verified source, so the new explicit-reference key can reuse the result.

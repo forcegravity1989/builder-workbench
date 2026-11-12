@@ -54,7 +54,8 @@ export const PlanningMaterialSchema = z
       progressSource: PlanningProgressSourceSchema.optional()
     }),
     goals: z.array(VersionGoalSchema),
-    tasks: z.array(VersionTaskReferenceSchema),
+    // Retain the legacy field for existing material revisions.
+    tasks: z.array(VersionTaskReferenceSchema).default([]),
     minutes: PlanMeetingMinutesSchema.optional(),
     // Session-model-written SOP progress; absent means not started. Lamps only
     // compare positions against it — never a completion authority by itself.
@@ -65,15 +66,6 @@ export const PlanningMaterialSchema = z
     if (ids.size !== document.goals.length) {
       context.addIssue({ code: 'custom', message: 'Goal ids must be unique', path: ['goals'] })
     }
-    document.tasks.forEach((task, index) => {
-      if (task.goalId && !ids.has(task.goalId)) {
-        context.addIssue({
-          code: 'custom',
-          message: 'Task refers to an unknown goal',
-          path: ['tasks', index, 'goalId']
-        })
-      }
-    })
   })
 
 export type PlanningMaterial = z.infer<typeof PlanningMaterialSchema>

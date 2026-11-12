@@ -123,7 +123,6 @@ export async function readMilestoneSnapshot(
           started.has(version) ||
           Boolean(
             plan.goals.length ||
-            plan.tasks.length ||
             plan.minutes ||
             plan.workflow ||
             plan.summary.progress ||

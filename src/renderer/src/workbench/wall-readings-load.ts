@@ -1,3 +1,4 @@
+import { readVersionMembership } from './version-cycle/version-membership'
 import type { Worktree } from '../../../shared/worktree/types'
 import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
@@ -175,11 +176,13 @@ export async function readWallReadings(
     const taskScope = { ...readingScope, workflow: 'plan' as const }
     const tasks =
       plan && planning.owner
-        ? await (
-            force
-              ? nativeTaskPort().refresh(taskScope, plan.tasks)
-              : nativeTaskPort().listVersion(taskScope, plan.tasks)
-          ).catch(() => null)
+        ? await readVersionMembership(taskScope, plan, force)
+            .then((references) =>
+              force
+                ? nativeTaskPort().refresh(taskScope, references)
+                : nativeTaskPort().listVersion(taskScope, references)
+            )
+            .catch(() => null)
         : null
     const readingHome =
       worktrees.find(

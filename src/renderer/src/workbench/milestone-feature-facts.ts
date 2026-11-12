@@ -1,3 +1,4 @@
+import { acceptedIssueEvidence } from './version-acceptance/acceptance-task-evidence'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
@@ -38,7 +39,6 @@ export function milestoneMaterialFacts(materials: VersionOverviewMaterials) {
   const hasContent =
     document &&
     (document.goals.length ||
-      document.tasks.length ||
       document.minutes ||
       document.workflow ||
       document.summary.progress.trim() ||
@@ -76,7 +76,7 @@ export function milestoneIssueSnapshot(
   return snapshot?.kind === 'ready' ? snapshot : undefined
 }
 
-/** Verified archive identities survive live renames, label removal and provider outages. */
+/** Recorded acceptance identities remain usable when live provider metadata changes. */
 export function milestoneIssueFacts(
   plan: MilestoneVersionFacts['plan'],
   acceptance: MilestoneVersionFacts['acceptance'],
@@ -84,7 +84,15 @@ export function milestoneIssueFacts(
 ) {
   const features: MilestoneFeatureIdentity[] = []
   const identityFailures: CycleTaskReference[] = []
-  for (const reference of plan?.tasks ?? []) {
+  const references = [
+    ...new Map(
+      [
+        ...(plan?.tasks ?? []),
+        ...(acceptance?.taskSnapshot?.map((item) => item.reference) ?? [])
+      ].map((reference) => [taskKey(reference), reference])
+    ).values()
+  ]
+  for (const reference of references) {
     const snapshot = milestoneIssueSnapshot(reference, acceptance)
     const live = reads.find((read) => taskKey(read.reference) === taskKey(reference))
     const root = snapshot
@@ -110,7 +118,7 @@ const featureNames = (feature: MilestoneFeatureIdentity) =>
 const isMainFeature = (feature: MilestoneFeatureIdentity) =>
   feature.root.labels?.includes('特性') === true
 
-/** Membership comes from this fixed plan, never the Issue's current goal or its child tasks. */
+/** The main Issue must have a current association to a known goal in this version. */
 export function milestoneFeatureGoal(facts: MilestoneVersionFacts, featureKey: string) {
   const plan = facts.plan
   if (!plan || (facts.failed && !facts.stale && !facts.identityFailures)) {
@@ -138,6 +146,21 @@ export function milestoneFeatureGoal(facts: MilestoneVersionFacts, featureKey: s
   return roots.length === 1 && taskKey(roots[0]!.root.reference) === featureKey ? goalId : undefined
 }
 
+export function milestoneAcceptedFeatureGoal(facts: MilestoneVersionFacts, featureKey: string) {
+  if (
+    !facts.plan ||
+    !facts.formalPlan ||
+    !facts.acceptance?.taskSnapshot ||
+    (facts.failed && !facts.stale && !facts.identityFailures)
+  ) {
+    return undefined
+  }
+  const acceptance = { ...facts.acceptance, taskSnapshot: acceptedIssueEvidence(facts.acceptance) }
+  const plan = { ...facts.plan, tasks: acceptance.taskSnapshot.map((item) => item.reference) }
+  const recorded = milestoneIssueFacts(plan, acceptance, [])
+  return milestoneFeatureGoal({ ...facts, plan, ...recorded }, featureKey)
+}
+
 /** Full trimmed names associate a roadmap row; provider/repository/number carries its history. */
 export function resolveMilestoneFeature(
   row: MilestoneFeature,
@@ -155,7 +178,8 @@ export function resolveMilestoneFeature(
         name &&
         isMainFeature(feature) &&
         featureNames(feature).some((title) => title.includes(name)) &&
-        read.plan!.tasks.some((task) => taskKey(task) === taskKey(feature.root.reference))
+        (read.plan!.tasks.some((task) => taskKey(task) === taskKey(feature.root.reference)) ||
+          Boolean(milestoneIssueSnapshot(feature.root.reference, read.acceptance)))
       ) {
         candidates.set(taskKey(feature.root.reference), feature)
       }

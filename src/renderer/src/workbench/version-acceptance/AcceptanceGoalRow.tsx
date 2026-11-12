@@ -33,6 +33,7 @@ export function AcceptanceGoalRow({
   document,
   disabled,
   relatedTasks,
+  issueMembershipKnown,
   reads,
   onTask,
   onGoalChange,
@@ -48,9 +49,10 @@ export function AcceptanceGoalRow({
   document: AcceptanceMaterial
   disabled: boolean
   relatedTasks: VersionTaskReference[]
+  issueMembershipKnown: boolean
   reads: Map<string, CycleTaskRead> | null
   onTask(task: CycleTaskSnapshot): Promise<void>
-  onGoalChange(next: AcceptanceMaterial, goalId: string): void
+  onGoalChange(next: AcceptanceMaterial, goalId: string, recordEvidence?: boolean): void
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
   expanded: boolean
@@ -67,8 +69,9 @@ export function AcceptanceGoalRow({
   const previousExpandedSignal = useRef(expandedSignal)
   // The document the async decision was computed against; a poll or another
   // window editing mid-flight must not let a stale verdict overwrite it.
-  const latest = useRef(document)
-  latest.current = document
+  const membershipKey = issueMembershipKnown ? JSON.stringify(relatedTasks) : null
+  const latest = useRef({ document, membershipKey })
+  latest.current = { document, membershipKey }
 
   useEffect(() => {
     const signalChanged = expandedSignal !== previousExpandedSignal.current
@@ -90,14 +93,16 @@ export function AcceptanceGoalRow({
   const counts = { open: 0, closed: 0, unknown: 0, carry: 0 }
   for (const reference of relatedTasks) {
     const read = reads?.get(issueKey(reference))
-    const carry = Boolean(result && issueMarkFor(result, reference, relatedTasks)?.carry)
+    const carry = Boolean(
+      result && issueMarkFor(result, reference, relatedTasks, document.taskSnapshot)?.carry
+    )
     const state = issueReadState(read)
     counts[state]++
     if (state === 'open' && carry) {
       counts.carry++
     }
     rows.set(issueKey(reference), {
-      note: (result && issueNoteFor(result, reference, relatedTasks)) || '',
+      note: (result && issueNoteFor(result, reference, relatedTasks, document.taskSnapshot)) || '',
       carry
     })
   }
@@ -124,15 +129,20 @@ export function AcceptanceGoalRow({
         document: source,
         plan,
         goalId,
+        references: issueMembershipKnown ? relatedTasks : null,
+        reads: relatedTasks.flatMap((reference) => {
+          const read = reads?.get(issueKey(reference))
+          return read ? [read] : []
+        }),
         outcome: next,
         source: DECISION_SOURCE,
         reason: source.results.find((item) => item.goalId === goalId)?.note ?? '',
         recordedAt: new Date().toISOString()
       })
-      if (latest.current !== source) {
+      if (latest.current.document !== source || latest.current.membershipKey !== membershipKey) {
         throw new Error('记录结论期间材料已变化，请核对后重新确认。')
       }
-      onGoalChange(updated, goalId)
+      onGoalChange(updated, goalId, true)
       setError(null)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason))
@@ -176,8 +186,14 @@ export function AcceptanceGoalRow({
           onOpenPanel={onOpenAnnotationPanel}
         />
         <span className="acc-goal-count" title="遗留是未关闭 Issue 中人工标记的部分">
-          未关闭 {counts.open} · 遗留 {counts.carry} · 已关闭 {counts.closed}
-          {counts.unknown > 0 && <> · 未知 {counts.unknown}</>}
+          {issueMembershipKnown ? (
+            <>
+              未关闭 {counts.open} · 遗留 {counts.carry} · 已关闭 {counts.closed}
+              {counts.unknown > 0 && <> · 未知 {counts.unknown}</>}
+            </>
+          ) : (
+            'Issue 数未知'
+          )}
         </span>
         <span className="acc-verdict">
           <select
@@ -231,34 +247,48 @@ export function AcceptanceGoalRow({
               重复设入口——2026-10-23 高保真反馈。 */}
           <div className="acc-task-head">
             <h3>
-              关联 Issue <span>{relatedTasks.length}</span>
+              关联 Issue <span>{issueMembershipKnown ? relatedTasks.length : '未知'}</span>
             </h3>
           </div>
-          <AcceptanceGoalTasks
-            goal={goal}
-            goalNumber={goalNumber}
-            relatedTasks={relatedTasks}
-            reads={reads}
-            rows={rows}
-            disabled={disabled}
-            onTask={onTask}
-            onNote={(reference, note) => {
-              const base = result ?? emptyGoalResult(goalId)
-              patchResult({
-                ...base,
-                issueNotes: updateIssueNote(base, reference, relatedTasks, note)
-              })
-            }}
-            onCarry={(reference, carry) => {
-              const base = result ?? emptyGoalResult(goalId)
-              patchResult({
-                ...base,
-                issueMarks: updateIssueCarry(base, reference, relatedTasks, carry)
-              })
-            }}
-            numbersFor={numbersFor}
-            onOpenAnnotationPanel={onOpenAnnotationPanel}
-          />
+          {issueMembershipKnown && (
+            <AcceptanceGoalTasks
+              goal={goal}
+              goalNumber={goalNumber}
+              relatedTasks={relatedTasks}
+              reads={reads}
+              rows={rows}
+              disabled={disabled}
+              onTask={onTask}
+              onNote={(reference, note) => {
+                const base = result ?? emptyGoalResult(goalId)
+                patchResult({
+                  ...base,
+                  issueNotes: updateIssueNote(
+                    base,
+                    reference,
+                    relatedTasks,
+                    note,
+                    document.taskSnapshot
+                  )
+                })
+              }}
+              onCarry={(reference, carry) => {
+                const base = result ?? emptyGoalResult(goalId)
+                patchResult({
+                  ...base,
+                  issueMarks: updateIssueCarry(
+                    base,
+                    reference,
+                    relatedTasks,
+                    carry,
+                    document.taskSnapshot
+                  )
+                })
+              }}
+              numbersFor={numbersFor}
+              onOpenAnnotationPanel={onOpenAnnotationPanel}
+            />
+          )}
           {outcome === 'not-met' && (
             <label className="acc-field">
               <span>{goalNumber} 下一步</span>

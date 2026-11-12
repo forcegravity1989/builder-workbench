@@ -10,10 +10,14 @@ import {
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import { createSnapshotCache } from './snapshot-cache'
 import type { TaskPortDeps } from './task-port'
-import { resolveReferenceRepo, viewCodeHubTaskByIid } from './task-reference-repo'
-import type { CycleScope, CycleTaskRead, CycleTaskReference } from './version-cycle/ports'
+import {
+  knownGitHubIssueSource,
+  resolveReferenceRepo,
+  viewCodeHubTaskByIid,
+  type TaskReadHome
+} from './task-reference-repo'
+import type { CycleTaskRead, CycleTaskReference } from './version-cycle/ports'
 
-type ReadHome = Pick<CycleScope, 'repoId' | 'hostId'>
 type ReadyValue = { source: TaskSourceContext; readAt: string } & (
   | { kind: 'github'; item: GitHubWorkItem }
   | { kind: 'codehub'; item: CodeHubTaskItem; state: string }
@@ -76,7 +80,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       }
     }
   }
-  function locate(home: ReadHome, reference: CycleTaskReference) {
+  function locate(home: TaskReadHome, reference: CycleTaskReference) {
     const repo = resolveReferenceRepo(deps, home, reference)
     const source =
       repo && (reference.provider === 'github' || reference.provider === 'codehub')
@@ -85,10 +89,15 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     const key = JSON.stringify([
       source ? getTaskSourceCacheScope(source) : [home.repoId, home.hostId, reference.repository],
       repo?.path,
+      repo?.connectionId,
+      home.runtimeOwnerEnvironmentId,
       repo?.issueSourcePreference ?? 'auto',
       repo?.upstream,
       repo?.gitRemoteIdentity,
       reference.provider,
+      reference.kind,
+      reference.repository,
+      knownGitHubIssueSource(repo ?? undefined, reference.repository),
       reference.number
     ])
     return { repo, source, key, entry: cache(key) }
@@ -130,14 +139,15 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
             repoPath: repo.path,
             repoId: repo.id,
             sourceContext: source,
-            number: reference.number
+            number: reference.number,
+            issueSource: knownGitHubIssueSource(repo, reference.repository)
           })
           if (!item) {
             throw new Error(`GitHub 未返回编号 ${reference.number} 的工作项`)
           }
           return { kind: 'github', item: { ...item, repoId: repo.id }, source, readAt: deps.now() }
         }
-        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference.number, () =>
+        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference, () =>
           requireJob(job)
         )
         if (!/^(open|opened|closed|merged)$/i.test(detail.state)) {
@@ -171,6 +181,9 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         !deps.lookupGitHubWorkItems ||
         job.reference.provider !== 'github' ||
         !job.source ||
+        (job.repo &&
+          knownGitHubIssueSource(job.repo, job.reference.repository) &&
+          job.reference.repository !== job.repo.gitRemoteIdentity?.canonicalKey) ||
         !parsed ||
         job.repo?.upstream ||
         (job.repo?.gitRemoteIdentity?.remoteName &&
@@ -236,7 +249,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     await Promise.all(reads)
   }
   async function read(
-    home: ReadHome,
+    home: TaskReadHome,
     references: readonly CycleTaskReference[],
     force = false,
     signal?: AbortSignal
@@ -296,13 +309,13 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     return values
   }
   function cached(
-    home: ReadHome,
+    home: TaskReadHome,
     references: readonly CycleTaskReference[]
   ): TaskReferenceValue[] | null {
     const values = references.map((reference) => locate(home, reference).entry.read())
     return values.some(Boolean) ? values.map((value) => value ?? unavailable('尚未读取')) : null
   }
-  const key = (home: ReadHome, references: readonly CycleTaskReference[]) =>
+  const key = (home: TaskReadHome, references: readonly CycleTaskReference[]) =>
     JSON.stringify(references.map((reference) => locate(home, reference).key))
   return { read, cached, key }
 }

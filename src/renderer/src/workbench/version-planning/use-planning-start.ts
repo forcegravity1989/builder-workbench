@@ -21,7 +21,6 @@ export function usePlanningStart({
   const hasContent = Boolean(
     plan &&
     (plan.goals.length ||
-      plan.tasks.length ||
       plan.minutes ||
       plan.workflow ||
       plan.summary.progress.trim() ||

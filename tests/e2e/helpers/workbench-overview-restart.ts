@@ -7,6 +7,7 @@ import {
 } from './electron-home-isolation'
 import { closeElectronAppForE2E, forceQuitElectronAppForE2E } from './electron-process-shutdown'
 import { getWorkbenchElectronLaunchArgs } from './workbench-launch-args'
+import { installOverviewMembershipFixture } from './workbench-version-overview-fixture'
 
 export async function openVersionOverview(
   page: Page,
@@ -143,6 +144,7 @@ export async function verifyOverviewRestart(previous: ElectronApplication, info:
       isolation
     )
     expect(restarted.process().pid).not.toBe(previousPid)
+    await installOverviewMembershipFixture(restarted)
     const page = await restarted.firstWindow({ timeout: 120_000 })
     await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 120_000 })
     await openVersionOverview(page, 'v0.334', true)

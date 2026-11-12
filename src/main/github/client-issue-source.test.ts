@@ -107,7 +107,7 @@ function issueSearchArgs(
     ...(options.noCache ? [] : ['--cache', '120s']),
     `search/issues?q=${encodeURIComponent(`repo:${ownerRepo} ${query}`)}&sort=created&order=desc&per_page=10&page=1`,
     '--jq',
-    '.items'
+    'if .incomplete_results then error("GitHub search results incomplete") else .items end'
   ]
 }
 

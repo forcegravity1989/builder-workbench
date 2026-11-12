@@ -5,7 +5,7 @@ import { HistorySourceError } from './version-history-snapshot'
 
 export type TrunkGitExec = (argv: string[]) => Promise<{ stdout: string }>
 
-export type TrunkSyncTarget = { remoteName: string; branchName: string }
+export type TrunkSyncTarget = { remoteName: string; branchName: string; trackingRef?: string }
 
 export type TrunkBaseline = {
   /** Display ref: the pinned short form, or the main checkout's branch name. */
@@ -16,24 +16,65 @@ export type TrunkBaseline = {
   sync: TrunkSyncTarget | null
 }
 
-/**
- * Maps `rev-parse --symbolic-full-name` output to a sync target. Only real
- * branches can be fetched and fast-forwarded: a remote-tracking ref keeps its
- * own remote; a local branch assumes origin carries the same branch name (a
- * missing one makes the fetch fail honestly); anything else — a commit id, a
- * tag — stays readable but not syncable.
- */
-export function trunkSyncTargetFromSymbolic(symbolic: string): TrunkSyncTarget | null {
+function matchRefPattern(pattern: string, ref: string): string | null {
+  const wildcard = pattern.indexOf('*')
+  if (wildcard === -1) {
+    return pattern === ref ? '' : null
+  }
+  const prefix = pattern.slice(0, wildcard)
+  const suffix = pattern.slice(wildcard + 1)
+  return ref.startsWith(prefix) &&
+    ref.endsWith(suffix) &&
+    ref.length >= prefix.length + suffix.length
+    ? ref.slice(prefix.length, ref.length - suffix.length)
+    : null
+}
+
+/** Follow the configured fetch mapping for an exact remote-tracking ref. */
+export function trunkSyncTargetFromSymbolic(
+  symbolic: string,
+  fetchConfig = ''
+): TrunkSyncTarget | null {
   const ref = symbolic.trim()
-  const remote = /^refs\/remotes\/([^/]+)\/(.+)$/.exec(ref)
-  if (remote) {
-    return { remoteName: remote[1], branchName: remote[2] }
+  if (ref.startsWith('refs/heads/')) {
+    return { remoteName: 'origin', branchName: ref.slice('refs/heads/'.length) }
   }
-  const head = /^refs\/heads\/(.+)$/.exec(ref)
-  if (head) {
-    return { remoteName: 'origin', branchName: head[1] }
+  if (!ref.startsWith('refs/remotes/')) {
+    return null
   }
-  return null
+
+  const mappings = fetchConfig.split('\0').flatMap((entry) => {
+    const match = /^remote\.(.+)\.fetch\n(.+)$/s.exec(entry)
+    return match ? [{ remote: match[1], spec: match[2].trim() }] : []
+  })
+  const matches = new Map<string, TrunkSyncTarget>()
+  for (const { remote, spec } of mappings) {
+    const [source, destination] = spec.replace(/^\+/, '').split(':')
+    if (!source.startsWith('refs/heads/') || !destination) {
+      continue
+    }
+    const capture = matchRefPattern(destination, ref)
+    if (capture === null) {
+      continue
+    }
+    const sourceRef = source.replace('*', () => capture)
+    if (
+      mappings.some(
+        (mapping) =>
+          mapping.remote === remote &&
+          mapping.spec.startsWith('^') &&
+          matchRefPattern(mapping.spec.slice(1), sourceRef) !== null
+      )
+    ) {
+      continue
+    }
+    matches.set(`${remote}\0${sourceRef}`, {
+      remoteName: remote,
+      branchName: sourceRef.slice('refs/heads/'.length),
+      trackingRef: ref
+    })
+  }
+  return matches.size === 1 ? ([...matches.values()][0] ?? null) : null
 }
 
 /** The short display form of a resolved symbolic ref; the pin itself when it is not a branch. */
@@ -77,10 +118,16 @@ export async function resolveTrunkBaseline(
       symbolic = ''
     }
     SourceCommit.parse(commit)
+    const fetchConfig = symbolic.startsWith('refs/remotes/')
+      ? await exec(['config', '--null', '--get-regexp', '^remote\\..*\\.fetch$']).then(
+          ({ stdout }) => stdout,
+          () => ''
+        )
+      : ''
     return {
       ref: trunkDisplayRef(symbolic, pin),
       commit,
-      sync: trunkSyncTargetFromSymbolic(symbolic)
+      sync: trunkSyncTargetFromSymbolic(symbolic, fetchConfig)
     }
   }
   let branch = ''

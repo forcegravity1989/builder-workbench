@@ -10,7 +10,8 @@ import {
   overviewPinnedTitle,
   overviewLatestTitle,
   snapshotOverviewMaterials,
-  bindOverviewFlowsAndRead
+  bindOverviewFlowsAndRead,
+  installOverviewMembershipFixture
 } from './workbench-version-overview-fixture'
 import {
   enableProjectStats,
@@ -25,6 +26,7 @@ export async function verifyVersionOverview(
   root: string,
   info: TestInfo
 ) {
+  await installOverviewMembershipFixture(app)
   const materialsBefore = snapshotOverviewMaterials(root)
   const open = (version: string, afterBackgroundReload = false) =>
     openVersionOverview(page, version, afterBackgroundReload)
