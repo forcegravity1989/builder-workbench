@@ -70,6 +70,7 @@ jobs:
           src/renderer/src/hooks/useComposerState
           src/renderer/src/components/NewWorkspaceComposerCard
           src/renderer/src/components/sidebar/folder-workspace-composer-submit.test.ts
+          src/renderer/src/components/sidebar/rendered-sidebar-worktree-order.test.ts
           src/renderer/src/lib/fix-checks-agent-launch.test.ts
           src/renderer/src/lib/worktree-creation-flow
           src/renderer/src/lib/worktree-activation

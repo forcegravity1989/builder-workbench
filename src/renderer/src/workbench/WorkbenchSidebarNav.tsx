@@ -64,7 +64,7 @@ export function WorkbenchSidebarVersions({
   const projection = useVersionSidebarProjection()
   useEffect(() => {
     if (!versionRepoId) {
-      publishVersionSidebarProjection({ repoId: null, repoIds: [], worktreeIdentities: new Set() })
+      publishVersionSidebarProjection({ repoId: null, worktreeIdentities: new Set() })
     }
   }, [versionRepoId])
   const display = useMemo(

@@ -134,7 +134,6 @@ export function WorkbenchVersionNav({
     const versions = new Set(entries.map((entry) => entry.version))
     publishVersionSidebarProjection({
       repoId,
-      repoIds: catalog.repoIds,
       worktreeIdentities: new Set(
         catalog.worktrees
           .filter((tree) => {
@@ -144,7 +143,7 @@ export function WorkbenchVersionNav({
           .map(getWorktreeHostIdentity)
       )
     })
-  }, [repoId, catalog.repoIds, catalog.worktrees, entries])
+  }, [repoId, catalog.worktrees, entries])
 
   useEffect(() => {
     if (
