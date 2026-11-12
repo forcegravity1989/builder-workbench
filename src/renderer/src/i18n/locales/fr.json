@@ -13135,13 +13135,13 @@
             "13294d3405": "Terminé"
           },
           "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "Ajoutez d'abord un projet git, puis configurez le script de setup de ce dépôt.",
+            "486c2f4d8d": "Sélectionnez d'abord un projet Git, puis configurez ici son script de préparation.",
             "00078a6134": "Voir dans les réglages",
             "14327073cc": "Enregistrer",
             "88469e926b": "Script de setup",
-            "5c5b65044e": "pnpm install",
+            "5c5b65044e": "Exemple : pnpm install",
             "a7463915b6": "Échec de l'enregistrement du script de setup",
-            "6299297dac": "Script de setup enregistré",
+            "6299297dac": "Script de préparation enregistré pour {{project}}",
             "f0bbf7da77": "Essayez",
             "522cce9e33": "Ajouter un projet"
           },
