@@ -26,6 +26,7 @@ import { buildWorktreeComparator, sortWorktreesSmart } from './smart-sort'
 import { getWorktreeIdsWithLiveAgent, isInactiveWorkspace } from '@/lib/worktree-activity-state'
 import { useAppStore } from '@/store'
 import { getAllWorktreesFromState, getRepoMapFromState } from '@/store/selectors'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   ALL_EXECUTION_HOSTS_SCOPE,
   getSettingsFocusedExecutionHostId,
@@ -335,11 +336,12 @@ export function getVisibleWorktreeIds(): string[] {
     sortedIds = sorted.map((w) => w.id)
   }
 
-  const visibleIds = computeVisibleWorktreeIds(
-    state.worktreesByRepo,
-    sortedIds,
-    buildVisibleWorktreeOptionsFromState(state, repoMap)
-  )
+  const filterOptions = buildVisibleWorktreeOptionsFromState(state, repoMap)
+  const visibleIds = computeVisibleWorktreeIds(state.worktreesByRepo, sortedIds, {
+    ...filterOptions,
+    // The BW sidebar follows the active project; the workspace board owns this saved selection.
+    filterRepoIds: isWorkbenchShell() ? [] : filterOptions.filterRepoIds
+  })
 
   const visibleIdRank = new Map(visibleIds.map((id, index) => [id, index]))
   const visibleHostIds = getVisibleWorkspaceHostIdSet(state)
