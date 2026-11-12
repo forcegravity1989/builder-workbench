@@ -107,6 +107,8 @@ it('does not echo a restored mirror and retires it only when the host confirms i
           title: 'Terminal',
           parentTabId: 'host-tab-1',
           leafId: LEAF_ID,
+          status: 'pending-handle',
+          terminal: null,
           isActive: true
         }
       ],
