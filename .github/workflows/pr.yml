@@ -147,6 +147,22 @@ jobs:
           src/main/rate-limits/codex-
           src/main/rate-limits/service-inactive-account-previews.test.ts
 
+      - name: Test runtime bootstrap, credential permissions and WSL fallback
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/shared/secure-file.test.ts
+          src/shared/secure-file-async.test.ts
+          src/shared/secure-path-windows-acl.win32.test.ts
+          src/main/runtime/mobile-pairing-userdata-path.test.ts
+          src/main/runtime/rpc/mobile-auth-acl-critical-path.test.ts
+          src/main/runtime/runtime-metadata.test.ts
+          src/main/runtime/runtime-metadata-ownership-watch.test.ts
+          src/main/runtime/runtime-rpc-metadata-lifecycle.test.ts
+          src/main/runtime/runtime-rpc-websocket-bind-host.test.ts
+          src/main/runtime/unreadable-secret-store-preservation.win32.test.ts
+          src/main/git/runner-wsl-gh-fallback.test.ts
+          src/main/gitlab/gitlab-known-host-probe-wsl-fallback.test.ts
+
   verify:
     name: lint, typecheck, tests, build
     runs-on: ubuntu-latest

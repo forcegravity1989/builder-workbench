@@ -27,11 +27,11 @@ describe('runtime metadata', () => {
     }
   })
 
-  it('writes and reads runtime metadata atomically', () => {
+  it('writes and reads runtime metadata atomically', async () => {
     const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-metadata-'))
     tempDirs.push(userDataPath)
 
-    writeRuntimeMetadata(userDataPath, {
+    await writeRuntimeMetadata(userDataPath, {
       runtimeId: 'rt_123',
       pid: 42,
       transports: [
@@ -58,11 +58,11 @@ describe('runtime metadata', () => {
     })
   })
 
-  it('clears the runtime metadata file', () => {
+  it('clears the runtime metadata file', async () => {
     const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-metadata-'))
     tempDirs.push(userDataPath)
 
-    writeRuntimeMetadata(userDataPath, {
+    await writeRuntimeMetadata(userDataPath, {
       runtimeId: 'rt_123',
       pid: 42,
       transports: [],
@@ -77,10 +77,10 @@ describe('runtime metadata', () => {
   })
 
   describe('clearRuntimeMetadataIfOwned', () => {
-    it('clears metadata when pid and runtimeId both match', () => {
+    it('clears metadata when pid and runtimeId both match', async () => {
       const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-metadata-'))
       tempDirs.push(userDataPath)
-      writeRuntimeMetadata(userDataPath, {
+      await writeRuntimeMetadata(userDataPath, {
         runtimeId: 'rt_owner',
         pid: 42,
         transports: [],
@@ -93,10 +93,10 @@ describe('runtime metadata', () => {
       expect(readRuntimeMetadata(userDataPath)).toBeNull()
     })
 
-    it('retains metadata when the pid does not match (simulates auto-update handoff)', () => {
+    it('retains metadata when the pid does not match (simulates auto-update handoff)', async () => {
       const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-metadata-'))
       tempDirs.push(userDataPath)
-      writeRuntimeMetadata(userDataPath, {
+      await writeRuntimeMetadata(userDataPath, {
         runtimeId: 'rt_replacement',
         pid: 999,
         transports: [],
@@ -112,13 +112,13 @@ describe('runtime metadata', () => {
       })
     })
 
-    it('retains metadata when only the runtimeId differs', () => {
+    it('retains metadata when only the runtimeId differs', async () => {
       // Why: pid reuse is possible across an auto-update (fork+exec keeps the
       // old pid if the OS reassigns it quickly). The runtimeId check is the
       // second-level guard that catches this even when pid collides.
       const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-metadata-'))
       tempDirs.push(userDataPath)
-      writeRuntimeMetadata(userDataPath, {
+      await writeRuntimeMetadata(userDataPath, {
         runtimeId: 'rt_replacement',
         pid: 42,
         transports: [],
@@ -145,11 +145,11 @@ describe('runtime metadata', () => {
 
   it.runIf(process.platform !== 'win32')(
     'restricts runtime metadata permissions to the current user on Unix',
-    () => {
+    async () => {
       const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-metadata-'))
       tempDirs.push(userDataPath)
 
-      writeRuntimeMetadata(userDataPath, {
+      await writeRuntimeMetadata(userDataPath, {
         runtimeId: 'rt_123',
         pid: 42,
         transports: [

@@ -1,19 +1,17 @@
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { getRuntimeMetadataPath, type RuntimeMetadata } from '../../shared/runtime-bootstrap'
-import { writeSecureJsonFile } from '../../shared/secure-file'
 import { writeSecureJsonFileAsync } from '../../shared/secure-file-async'
 
-export async function writeRuntimeMetadataAsync(
+export async function writeRuntimeMetadata(
   userDataPath: string,
-  metadata: RuntimeMetadata
-): Promise<void> {
-  await writeSecureJsonFileAsync(getRuntimeMetadataPath(userDataPath), metadata)
-}
-
-export function writeRuntimeMetadata(userDataPath: string, metadata: RuntimeMetadata): void {
-  const metadataPath = getRuntimeMetadataPath(userDataPath)
-  writeMetadataFile(metadataPath, metadata)
+  metadata: RuntimeMetadata,
+  canPublish?: () => Promise<boolean>
+): Promise<boolean> {
+  return (
+    (await writeSecureJsonFileAsync(getRuntimeMetadataPath(userDataPath), metadata, canPublish)) !==
+    undefined
+  )
 }
 
 export function readRuntimeMetadata(userDataPath: string): RuntimeMetadata | null {
@@ -74,8 +72,4 @@ export function clearRuntimeMetadataIfOwned(
     return
   }
   clearRuntimeMetadata(userDataPath)
-}
-
-function writeMetadataFile(path: string, metadata: RuntimeMetadata): void {
-  writeSecureJsonFile(path, metadata)
 }

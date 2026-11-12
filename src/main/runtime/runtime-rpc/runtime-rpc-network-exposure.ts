@@ -10,6 +10,8 @@ export class RuntimeRpcNetworkExposure extends RuntimeRpcLifecycle {
   // connected when a later LAN/QR offer opts in. Rebinding terminates them (ws cannot move a listener),
   // so the resolved port is reused — already-issued endpoints stay valid and clients reconnect in place.
   async ensureNetworkExposure(): Promise<void> {
+    // A failed initial metadata write rolls back the listeners rather than exposing them.
+    await this.startupPromise
     if (this.pinnedBindHost && this.pinnedBindHost !== WS_BIND_HOST_ALL_INTERFACES) {
       // Why throw and not return: callers widen so they can ADVERTISE a LAN endpoint. Returning
       // quietly would let them publish one that nothing can reach; the throw lands in their

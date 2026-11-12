@@ -408,6 +408,28 @@ describe('ghExecFileAsync WSL fallback', () => {
     expect(wslChild.kill).not.toHaveBeenCalled()
   })
 
+  it('cancels a caller waiting for the default WSL distro', async () => {
+    let finishProbe!: (distros: string[]) => void
+    listWslDistrosAsyncMock.mockReturnValue(
+      new Promise<string[]>((resolve) => {
+        finishProbe = resolve
+      })
+    )
+    spawnMock.mockImplementation(fakeSpawnDispatch((program) => spawnEnoent(program)))
+    const controller = new AbortController()
+    const result = expect(
+      glabExecFileAsync(['auth', 'status'], { signal: controller.signal })
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    try {
+      await vi.waitFor(() => expect(listWslDistrosAsyncMock).toHaveBeenCalledTimes(1))
+      controller.abort()
+      await result
+      expect(spawnMock).toHaveBeenCalledTimes(1)
+    } finally {
+      finishProbe(['Ubuntu'])
+    }
+  })
+
   it('aborts the default-WSL glab fallback with full process-tree cleanup', async () => {
     listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     const wslChild = createFakeSpawnedChild(2400)

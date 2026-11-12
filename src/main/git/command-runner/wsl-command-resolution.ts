@@ -1,4 +1,6 @@
 import { listWslDistrosAsync, parseWslPath, type WslPathInfo } from '../../wsl'
+import { PromiseSettlementWaiters } from '../../../shared/promise-settlement-waiters'
+import { createAbortError } from './abort-error'
 import {
   buildWslCapturedLoginShellCommand,
   buildWslExecArgs,
@@ -44,9 +46,20 @@ export function setDefaultWslDistroOverride(distro: string | null): void {
 
 export async function resolveDefaultWslCli(
   command: 'gh' | 'glab',
-  args: string[]
+  args: string[],
+  signal?: AbortSignal
 ): Promise<ResolvedCommand | null> {
-  const distro = defaultWslDistroOverride ?? (await listWslDistrosAsync())[0]
+  if (signal?.aborted) {
+    throw createAbortError()
+  }
+  const distro =
+    defaultWslDistroOverride ??
+    (
+      await new PromiseSettlementWaiters(listWslDistrosAsync()).wait({ signal, createAbortError })
+    )[0]
+  if (signal?.aborted) {
+    throw createAbortError()
+  }
   return distro ? resolveCommand(command, args, undefined, distro) : null
 }
 

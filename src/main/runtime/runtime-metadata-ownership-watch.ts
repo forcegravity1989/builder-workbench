@@ -26,7 +26,7 @@ export type RuntimeMetadataOwnershipWatchOptions = {
   userDataPath: string
   ownedPid: number
   ownedRuntimeId: string
-  republish: () => void | Promise<void>
+  republish: (canPublish: () => Promise<boolean>) => void | Promise<boolean>
   pollIntervalMs?: number
   isProcessRunning?: (pid: number) => boolean
   onReclaim?: (previous: RuntimeMetadata | null) => void
@@ -58,21 +58,28 @@ export function watchRuntimeMetadataOwnership(
   const isProcessRunning = options.isProcessRunning ?? isPidRunning
   let inFlight: Promise<void> | null = null
   let stopped = false
+  const shouldReclaim = (current: RuntimeMetadata | null): boolean =>
+    !stopped &&
+    shouldReclaimRuntimeMetadata(
+      current,
+      options.ownedPid,
+      options.ownedRuntimeId,
+      isProcessRunning
+    )
+
   const runCheck = async (): Promise<void> => {
     const current = await tryReadRuntimeMetadata(options.userDataPath)
-    if (
-      stopped ||
-      !shouldReclaimRuntimeMetadata(
-        current,
-        options.ownedPid,
-        options.ownedRuntimeId,
-        isProcessRunning
-      )
-    ) {
+    if (!shouldReclaim(current)) {
       return
     }
     try {
-      await options.republish()
+      // Another instance can publish while the temporary file's ACL is being applied.
+      const published = await options.republish(async () =>
+        shouldReclaim(await tryReadRuntimeMetadata(options.userDataPath))
+      )
+      if (published === false) {
+        return
+      }
     } catch (error) {
       // Why: a transient write failure must not kill the watch; the next tick retries.
       console.error('[runtime] Failed to reclaim runtime metadata ownership:', error)

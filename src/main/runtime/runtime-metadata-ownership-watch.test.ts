@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getRuntimeMetadataPath, type RuntimeMetadata } from '../../shared/runtime-bootstrap'
-import { clearRuntimeMetadata, readRuntimeMetadata, writeRuntimeMetadata } from './runtime-metadata'
+import { clearRuntimeMetadata, readRuntimeMetadata } from './runtime-metadata'
+import { plantRuntimeMetadata } from './__fixtures__/runtime-metadata'
 import {
   shouldReclaimRuntimeMetadata,
   watchRuntimeMetadataOwnership,
@@ -183,7 +184,7 @@ describe('watchRuntimeMetadataOwnership', () => {
       ownedRuntimeId: OWNED_RUNTIME_ID,
       pollIntervalMs,
       isProcessRunning,
-      republish: () => writeRuntimeMetadata(userDataPath, record())
+      republish: () => plantRuntimeMetadata(userDataPath, record())
     })
     watches.push(watch)
     return watch
@@ -216,10 +217,10 @@ describe('watchRuntimeMetadataOwnership', () => {
 
   it('republishes after a second instance clobbers the record and exits', async () => {
     const userDataPath = makeUserDataPath()
-    writeRuntimeMetadata(userDataPath, record())
+    plantRuntimeMetadata(userDataPath, record())
     const watch = armWatch(userDataPath)
 
-    writeRuntimeMetadata(
+    plantRuntimeMetadata(
       userDataPath,
       record({ pid: FOREIGN_DEAD_PID, runtimeId: 'rt_second_instance' })
     )
@@ -233,7 +234,7 @@ describe('watchRuntimeMetadataOwnership', () => {
 
   it('republishes a record that was deleted underneath the runtime', async () => {
     const userDataPath = makeUserDataPath()
-    writeRuntimeMetadata(userDataPath, record())
+    plantRuntimeMetadata(userDataPath, record())
     const watch = armWatch(userDataPath)
 
     clearRuntimeMetadata(userDataPath)
@@ -255,7 +256,7 @@ describe('watchRuntimeMetadataOwnership', () => {
   it('leaves a live sibling runtime in place', async () => {
     const userDataPath = makeUserDataPath()
     const watch = armWatch(userDataPath)
-    writeRuntimeMetadata(
+    plantRuntimeMetadata(
       userDataPath,
       record({ pid: FOREIGN_LIVE_PID, runtimeId: 'rt_second_instance' })
     )
@@ -269,7 +270,7 @@ describe('watchRuntimeMetadataOwnership', () => {
     usePolledTimers()
     const userDataPath = makeUserDataPath()
     armWatch(userDataPath, 1_000)
-    writeRuntimeMetadata(
+    plantRuntimeMetadata(
       userDataPath,
       record({ pid: FOREIGN_DEAD_PID, runtimeId: 'rt_second_instance' })
     )
@@ -285,7 +286,7 @@ describe('watchRuntimeMetadataOwnership', () => {
     const watch = armWatch(userDataPath, 1_000)
 
     await watch.stop()
-    writeRuntimeMetadata(
+    plantRuntimeMetadata(
       userDataPath,
       record({ pid: FOREIGN_DEAD_PID, runtimeId: 'rt_second_instance' })
     )
@@ -296,7 +297,7 @@ describe('watchRuntimeMetadataOwnership', () => {
 
   it('reads the record off-thread, so the poll tick never blocks the main thread', async () => {
     const userDataPath = makeUserDataPath()
-    writeRuntimeMetadata(userDataPath, record())
+    plantRuntimeMetadata(userDataPath, record())
     const watch = armWatch(userDataPath)
 
     metadataSyncCalls.state.recording = true
@@ -322,7 +323,7 @@ describe('watchRuntimeMetadataOwnership', () => {
   it('never runs two overlapping ownership checks', async () => {
     usePolledTimers()
     const userDataPath = makeUserDataPath()
-    writeRuntimeMetadata(userDataPath, record())
+    plantRuntimeMetadata(userDataPath, record())
     armWatch(userDataPath, 1_000)
 
     metadataReadGate.hold = true
@@ -348,7 +349,7 @@ describe('watchRuntimeMetadataOwnership', () => {
       .mockImplementationOnce(() => {
         throw new Error('disk full')
       })
-      .mockImplementation(() => writeRuntimeMetadata(userDataPath, record()))
+      .mockImplementation(() => plantRuntimeMetadata(userDataPath, record()))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const watch = watchRuntimeMetadataOwnership({
       userDataPath,

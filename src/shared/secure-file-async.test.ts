@@ -5,7 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { restrictWindowsPath } from './secure-path-windows-acl'
 import { writeSecureJsonFileAsync } from './secure-file-async'
 
-vi.mock('./secure-path-windows-acl', () => ({ restrictWindowsPath: vi.fn() }))
+vi.mock('./secure-path-windows-acl', () => ({
+  restrictWindowsPath: vi.fn(),
+  bestEffortRestrictWindowsPath: vi.fn()
+}))
 
 describe('asynchronous secure publication', () => {
   const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
@@ -37,6 +40,8 @@ describe('asynchronous secure publication', () => {
     await vi.waitFor(() =>
       expect(readdirSync(directory).some((path) => path.endsWith('.tmp'))).toBe(true)
     )
+    const staged = readdirSync(directory).find((path) => path.endsWith('.tmp'))!
+    expect(readFileSync(join(directory, staged), 'utf8')).toBe('')
     expect(readFileSync(target, 'utf8')).toBe('original')
     release()
     await expect(writing).resolves.toBe(true)

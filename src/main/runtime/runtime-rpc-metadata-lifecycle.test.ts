@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { OrcaRuntimeService } from './orca-runtime'
 import * as runtimeMetadataModule from './runtime-metadata'
-import { readRuntimeMetadata, writeRuntimeMetadata } from './runtime-metadata'
+import { readRuntimeMetadata } from './runtime-metadata'
+import { plantRuntimeMetadata } from './__fixtures__/runtime-metadata'
 import { createRuntimeTransportMetadata, OrcaRuntimeRpcServer } from './runtime-rpc'
 import type { DeviceRegistry } from './device-registry'
 import type { RuntimeMetadata } from '../../shared/runtime-bootstrap'
@@ -55,7 +56,7 @@ describe('OrcaRuntimeRpcServer', () => {
     await server.start()
     const published = readRuntimeMetadata(userDataPath)
 
-    writeRuntimeMetadata(userDataPath, {
+    plantRuntimeMetadata(userDataPath, {
       runtimeId: 'rt_second_instance',
       pid: 99999999,
       transports: [{ kind: 'unix', endpoint: join(userDataPath, 'o-99999999-rt2.sock') }],
@@ -80,7 +81,7 @@ describe('OrcaRuntimeRpcServer', () => {
     })
     await server.start()
 
-    writeRuntimeMetadata(userDataPath, {
+    plantRuntimeMetadata(userDataPath, {
       runtimeId: 'rt_live_sibling',
       pid: process.pid,
       transports: [{ kind: 'unix', endpoint: join(userDataPath, `o-${process.pid}-rt2.sock`) }],
@@ -106,7 +107,7 @@ describe('OrcaRuntimeRpcServer', () => {
     const watchStop = vi.spyOn(watch, 'stop')
     await server.stop()
 
-    writeRuntimeMetadata(userDataPath, {
+    plantRuntimeMetadata(userDataPath, {
       runtimeId: 'rt_second_instance',
       pid: 99999999,
       transports: [],
@@ -138,7 +139,7 @@ describe('OrcaRuntimeRpcServer', () => {
     const heldCheck = server.checkRuntimeMetadataOwnership()
 
     const stopping = server.stop()
-    writeRuntimeMetadata(userDataPath, {
+    plantRuntimeMetadata(userDataPath, {
       runtimeId: 'rt_second_instance',
       pid: 99999999,
       transports: [],
@@ -228,12 +229,19 @@ describe('OrcaRuntimeRpcServer', () => {
   it('closes the socket if metadata publication fails during startup', async () => {
     const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-rpc-'))
     const runtime = new OrcaRuntimeService()
-    const server = new OrcaRuntimeRpcServer({ runtime, userDataPath })
+    const server = new OrcaRuntimeRpcServer({
+      runtime,
+      userDataPath,
+      enableWebSocket: true,
+      wsPort: 0
+    })
+    let failPublication!: (error: Error) => void
+    const initialPublication = new Promise<boolean>((_resolve, reject) => {
+      failPublication = reject
+    })
     const writeMetadataSpy = vi
-      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadataAsync')
-      .mockImplementationOnce(() => {
-        throw new Error('write failed')
-      })
+      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadata')
+      .mockReturnValueOnce(initialPublication)
     const endpoint = createRuntimeTransportMetadata(
       userDataPath,
       process.pid,
@@ -241,13 +249,58 @@ describe('OrcaRuntimeRpcServer', () => {
       runtime.getRuntimeId()
     ).endpoint
 
-    await expect(server.start()).rejects.toThrow('write failed')
+    const starting = expect(server.start()).rejects.toThrow('write failed')
+    await vi.waitFor(() => expect(writeMetadataSpy).toHaveBeenCalled())
+    const widen = vi.spyOn(
+      server as unknown as { widenWebSocketBind: () => Promise<void> },
+      'widenWebSocketBind'
+    )
+    const exposing = expect(server.ensureNetworkExposure()).rejects.toThrow('write failed')
+    failPublication(new Error('write failed'))
+    await Promise.all([starting, exposing])
+    expect(widen).not.toHaveBeenCalled()
     expect(readRuntimeMetadata(userDataPath)).toBeNull()
     expect(existsSync(endpoint)).toBe(false)
     expect(server['transports']).toEqual([])
     expect(server['activeTransports']).toEqual([])
 
     writeMetadataSpy.mockRestore()
+  })
+
+  it('keeps a live sibling record published while reclaiming an older record', async () => {
+    const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-rpc-'))
+    const server = new OrcaRuntimeRpcServer({
+      runtime: new OrcaRuntimeService(),
+      userDataPath,
+      pid: 4242,
+      enableWebSocket: false
+    })
+    await server.start()
+    const original = runtimeMetadataModule.writeRuntimeMetadata
+    const sibling: RuntimeMetadata = {
+      runtimeId: 'rt_live_sibling',
+      pid: process.pid,
+      transports: [],
+      authToken: 'sibling-token',
+      startedAt: 1
+    }
+    const writing = vi
+      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadata')
+      .mockImplementationOnce((path, metadata, canPublish) =>
+        original(path, metadata, async () => {
+          plantRuntimeMetadata(userDataPath, sibling)
+          return canPublish?.() ?? true
+        })
+      )
+    try {
+      rmSync(join(userDataPath, 'orca-runtime.json'))
+      await server.checkRuntimeMetadataOwnership()
+      expect(readRuntimeMetadata(userDataPath)).toEqual(sibling)
+    } finally {
+      writing.mockRestore()
+      await server.stop()
+      rmSync(userDataPath, { recursive: true, force: true })
+    }
   })
 
   it('drains an in-flight metadata publication before shutdown completes', async () => {
@@ -258,12 +311,12 @@ describe('OrcaRuntimeRpcServer', () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve
     })
-    const original = runtimeMetadataModule.writeRuntimeMetadataAsync
+    const original = runtimeMetadataModule.writeRuntimeMetadata
     const writing = vi
-      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadataAsync')
+      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadata')
       .mockImplementationOnce(async (...args) => {
         await gate
-        await original(...args)
+        return original(...args)
       })
     rmSync(join(userDataPath, 'orca-runtime.json'))
     const checking = server.checkRuntimeMetadataOwnership()
@@ -277,6 +330,8 @@ describe('OrcaRuntimeRpcServer', () => {
     release()
     await Promise.all([checking, stopping])
     expect(stopped).toBe(true)
+    await server.start()
+    expect(readRuntimeMetadata(userDataPath)).toBeNull()
     writing.mockRestore()
   })
 })
