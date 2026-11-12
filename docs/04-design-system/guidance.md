@@ -51,7 +51,7 @@
 | G03 开启通知 | [✅ 通知设置][setup-copy] | 待验 | [待验：notifications][onboarding] | — | ☐ |
 | G04 CLI 与 Skills | [✅ 启用 Orca CLI][setup-copy] | 待验 | — | [待验：orca-cli][tips] | ☐ |
 | G05 连接集成服务 | [✅ 既有入口说明][setup-copy]；[待验：CodeHub、可选 WeLink 报告入口][integration-setup] | [待验：安装/登录与状态、跳过 WeLink][integration-setup]；内部集成见 F29 | [待验：integrations][onboarding] | — | ☐ |
-| G06 自动准备工作区 | [✅ 设置脚本][setup-copy] | [待验：保存/执行][setup-actions] | — | — | ☐ |
+| G06 自动准备工作区 | [✅ 设置脚本][setup-copy] | [待验：当前项目、空输入与保存/执行][setup-actions] | — | — | ☐ |
 | G07 纳入多个项目 | [✅ 多项目说明][setup-copy] | [待验：添加项目][setup-actions] | — | — | ☐ |
 | G08 并行处理任务（能力体验） | [✅ 两个工作区][setup-copy]；复用 F01 | [待验：开始体验][setup-actions] | — | — | 复用 F01 |
 | G09 使用内置浏览器（能力体验） | [✅ BW 浏览器][setup-copy]；复用 F08 | [待验：开始体验][setup-actions] | — | — | 复用 F08 |

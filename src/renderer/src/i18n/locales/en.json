@@ -13894,13 +13894,14 @@
             "13294d3405": "Done"
           },
           "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "Add a git project first, then configure the setup script for that repository.",
+            "486c2f4d8d": "Select a Git project first, then configure its setup script here.",
+            "target_project": "Target project: {{project}}",
             "00078a6134": "View in settings",
             "14327073cc": "Save",
             "88469e926b": "Setup script",
-            "5c5b65044e": "pnpm install",
+            "5c5b65044e": "Example: pnpm install",
             "a7463915b6": "Failed to save setup script",
-            "6299297dac": "Setup script saved",
+            "6299297dac": "Setup script saved for {{project}}",
             "f0bbf7da77": "Try it out",
             "522cce9e33": "Add project"
           },
