@@ -25,6 +25,8 @@ import { VersionSidebarPreview } from './VersionSidebarPreview'
 import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { openVersionOverview, useProjectPage } from './project-page-state'
+import { applyProjectSourcePair } from './switch-active-project'
+import { resolveProjectSourcePair } from './project-source-resolution'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -245,6 +247,20 @@ export function WorkbenchVersionNav({
 
   const problems = loaded?.problems ?? []
 
+  // Why: 总览按本次点击现算来源；默认本机，本机没有该项目才用其他主机，
+  // 并把结果写回当前项目，避免总览与侧栏各自指向不同来源。
+  const openOverviewForVersion = (version: string): void => {
+    const state = useAppStore.getState()
+    const pair = resolveProjectSourcePair(state.repos, repoId, 'local-first', {
+      runtimeEnvironments: state.runtimeEnvironments
+    })
+    if (!pair) {
+      return
+    }
+    applyProjectSourcePair(pair)
+    openVersionOverview({ repoId: pair.repoId, hostId: pair.hostId, version })
+  }
+
   function renderVersionRow(entry: VersionCatalogEntry): React.JSX.Element {
     const activeWorkflow: VersionWorkflow | null =
       activeBinding && activeBinding.version === entry.version
@@ -277,7 +293,7 @@ export function WorkbenchVersionNav({
           }
           activeTasks={activeTaskVersion === entry.version && !taskScope?.goalId}
           activeOverview={overviewVersion === entry.version}
-          onOverview={() => openVersionOverview({ repoId, version: entry.version })}
+          onOverview={() => openOverviewForVersion(entry.version)}
           activeGoalId={activeTaskVersion === entry.version ? (taskScope?.goalId ?? null) : null}
           onToggle={() => toggleVersion(entry.version)}
           onCleanup={() => setDialog({ mode: 'cleanup', version: entry.version })}

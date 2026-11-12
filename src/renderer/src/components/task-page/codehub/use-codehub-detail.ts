@@ -24,7 +24,11 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     model
   const item = codehubDetailItem
   const sourceContext = model.pageData?.openCodeHubSourceContext
-  const api = useMemo(() => createCodeHubApi(sourceContext), [sourceContext])
+  // 详情与写操作同样固定本机：来源行只提供项目身份。
+  const api = useMemo(
+    () => createCodeHubApi(sourceContext, { execution: 'local' }),
+    [sourceContext]
+  )
   const key = item
     ? getCodehubDetailCacheKey({
         sourceContext,

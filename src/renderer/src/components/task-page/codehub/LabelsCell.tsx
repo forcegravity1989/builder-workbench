@@ -3,7 +3,7 @@ import { Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import { codehubApi } from '@/lib/codehub-api'
+import { localCodehubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 
@@ -33,7 +33,7 @@ export function CodeHubLabelsCell({
     let stale = false
     setLoading(true)
     setError(null)
-    codehubApi
+    localCodehubApi
       .listLabels({ repoPath: item.repoPath, repoId: item.repoId })
       .then((names) => {
         if (!stale) {
@@ -67,7 +67,7 @@ export function CodeHubLabelsCell({
         : [...labels, label]
       setPendingLabel(label)
       try {
-        await codehubApi.updateIssueLabels({
+        await localCodehubApi.updateIssueLabels({
           repoPath: item.repoPath,
           repoId: item.repoId,
           iid: item.iid,

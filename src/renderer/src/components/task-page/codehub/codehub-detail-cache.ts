@@ -105,7 +105,7 @@ function errorText(reason: unknown): string {
  * triggers the full read while its detail lane keeps painting.
  */
 export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<void> {
-  const api = createCodeHubApi(args.sourceContext)
+  const api = createCodeHubApi(args.sourceContext, { execution: 'local' })
   const key = getCodehubDetailCacheKey(args)
   const cached = codehubDetailCache.get(key)
   if (cached?.fetchedAt && Date.now() - cached.fetchedAt <= CODEHUB_DETAIL_FRESH_MS) {
@@ -153,7 +153,7 @@ export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<v
  * the detail/comments lanes and freshness stay untouched.
  */
 export function refreshCodehubMrExtras(args: CodeHubDetailReadArgs): Promise<void> {
-  const api = createCodeHubApi(args.sourceContext)
+  const api = createCodeHubApi(args.sourceContext, { execution: 'local' })
   const key = getCodehubDetailCacheKey(args)
   const read: Promise<void> = Promise.allSettled([api.mrChecks(args), api.mrChanges(args)]).then(
     ([checksRes, filesRes]) => {

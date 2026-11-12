@@ -1,7 +1,7 @@
 import { createCodeHubComment, deleteCodeHubComment, listCodeHubComments } from './comments'
 import { resolve } from 'node:path'
 import { parseCodeHubRemote } from '../../shared/codehub'
-import { getRepoSshConnectionId } from '../../shared/execution-host'
+import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host'
 import type { CodeHubApi, CodeHubRepoArgs } from '../../shared/codehub-api'
 import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
@@ -40,11 +40,13 @@ export function createCodeHubService(deps: {
     if (!remote) {
       throw new Error('Repository remote is not CodeHub')
     }
-    // Like gh/glab, hosted API calls run on the owning runtime. An SSH repo's
-    // filesystem path is not a local cwd; WSL projects use the native runner.
-    const execOptions: CodeHubExecOptions = getRepoSshConnectionId(repo)
-      ? {}
-      : { cwd: repo.path, ...deps.localGitOptions(repo) }
+    // The CLI addresses the project with -p/-H, so only a local checkout can use
+    // its path as cwd. SSH and paired-runtime rows carry a remote path; treating
+    // it as cwd would run the user's local CLI against the wrong directory.
+    const execOptions: CodeHubExecOptions =
+      getRepoExecutionHostId(repo) === LOCAL_EXECUTION_HOST_ID
+        ? { cwd: repo.path, ...deps.localGitOptions(repo) }
+        : {}
     return { remote, execOptions }
   }
 

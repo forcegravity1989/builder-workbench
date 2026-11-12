@@ -6,6 +6,7 @@ import {
   writeKnowledgeDocToRepo,
   type WriteKnowledgeDocResult
 } from './knowledge-repo-loader'
+import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 
 export function useKnowledgeRepo(): {
   activeRepo: ReturnType<typeof useAppStore.getState>['repos'][number] | undefined
@@ -15,12 +16,24 @@ export function useKnowledgeRepo(): {
   savedBodies: Record<string, string>
   loading: boolean
   error: string | null
+  unavailable: string | null
   reload: () => void
   saveDoc: (docId: string, content?: string) => Promise<WriteKnowledgeDocResult>
 } {
   const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
+  const activeRepoId = useAppStore((s) => s.activeRepoId)
+  // 没有显式选择时优先本机项目，避免默认落到远端路径。
+  const selectedRepo =
+    repos.find((r) => r.id === activeRepoId) ??
+    repos.find((r) => getRepoExecutionHostId(r) === LOCAL_EXECUTION_HOST_ID) ??
+    repos[0]
+  // 知识库只使用本机文件能力；远端登记行的路径在本机不可读，不能静默当成本机项目。
+  const activeRepo =
+    selectedRepo && getRepoExecutionHostId(selectedRepo) === LOCAL_EXECUTION_HOST_ID
+      ? selectedRepo
+      : undefined
+  const unavailable =
+    selectedRepo && !activeRepo ? '知识库只读取本机项目；当前项目在本机没有登记。' : null
   const [docs, setDocs] = useState<KbDoc[]>([])
   const [bodies, setBodies] = useState<Record<string, string>>({})
   const [savedBodies, setSavedBodies] = useState<Record<string, string>>({})
@@ -98,6 +111,7 @@ export function useKnowledgeRepo(): {
     savedBodies,
     loading,
     error,
+    unavailable,
     reload: () => setReloadToken((n) => n + 1),
     saveDoc
   }

@@ -8,6 +8,8 @@ import { beginProjectWallVisit } from './wall-refresh'
 export type VersionOverviewOptions = {
   milestoneOrigin?: { feature: string }
   repoId: string
+  /** 点击时解析出的来源主机：版本总览只读这台主机上的登记与材料。 */
+  hostId: ExecutionHostId
   version: string
 }
 

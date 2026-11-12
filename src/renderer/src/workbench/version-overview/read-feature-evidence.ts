@@ -1,5 +1,5 @@
 import { createOverviewProviderReader } from './overview-provider-port'
-import { codehubApi } from '@/lib/codehub-api'
+import { localCodehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemDetailsForSource } from '@/lib/github-work-item-source-lookup'
 import { nativeTaskPortDeps } from '../native-task-port'
 import { resolveReferenceRepo } from '../task-reference-repo'
@@ -114,7 +114,7 @@ export async function readFeatureEvidence(
                 : undefined
           }
         } else if (ref.provider === 'codehub') {
-          const detail = await codehubApi.viewTask({
+          const detail = await localCodehubApi.viewTask({
             repoPath: repo.path,
             repoId: repo.id,
             kind: 'issue',
@@ -192,7 +192,7 @@ export async function readFeatureEvidence(
           }
           return item
         }
-        const detail = await codehubApi.viewTask({
+        const detail = await localCodehubApi.viewTask({
           repoPath: repo.path,
           repoId: repo.id,
           kind: 'mr',

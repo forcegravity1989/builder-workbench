@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
+import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 import { versionCatalogPlanTrees } from './version-catalog-plan-trees'
 import { versionRepoIdentity as identityKeyOf } from '../../../shared/workbench/version-repo-identity'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -37,7 +38,10 @@ export type VersionCatalogState = {
   reload: () => void
 }
 
-export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogState {
+export function useVersionCatalogForRepo(
+  repoId: string | null,
+  sourceHostId?: ExecutionHostId | null
+): VersionCatalogState {
   const repos = useAppStore((s) => s.repos)
   const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
   const detectedWorktreesByRepo = useAppStore((s) => s.detectedWorktreesByRepo)
@@ -45,6 +49,7 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
   const reload = useCallback(() => setNonce((value) => value + 1), [])
 
   // 同项目跨宿主注册行（配对机同仓）一并纳入绑定汇总，沿远端身份归并。
+  // 版本总览传入来源主机时只看这台主机：本机有项目但没该版本，不去远端补。
   const repoIds = useMemo(() => {
     if (!repoId) {
       return []
@@ -54,9 +59,12 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
     if (!key) {
       return [repoId]
     }
-    const ids = repos.filter((repo) => identityKeyOf(repo) === key).map((repo) => repo.id)
+    const ids = repos
+      .filter((repo) => identityKeyOf(repo) === key)
+      .filter((repo) => !sourceHostId || getRepoExecutionHostId(repo) === sourceHostId)
+      .map((repo) => repo.id)
     return ids.includes(repoId) ? ids : [repoId, ...ids]
-  }, [repoId, repos])
+  }, [repoId, repos, sourceHostId])
   const repoIdsKey = repoIds.join(',')
 
   const worktrees = useMemo(() => {

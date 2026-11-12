@@ -39,14 +39,18 @@ import './workbench-overview.css'
 
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const activeRepoId = useAppStore((s) => s.activeRepoId)
   const activeHostId = useAppStore((s) => s.activeWorkspaceExecutionHostId)
   const registeredWorktrees = useAppStore((s) =>
     activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
   )
+  // Why: 项目总览按点击时写入的来源对读取；找不到同一来源就如实空态，
+  // 不再退回 repos[0] 把另一个项目的读数当成当前项目。
   const activeRepo = activeRepoId
-    ? (findRepoForHost(repos, activeRepoId, { hostId: activeHostId ?? undefined }) ?? repos[0])
-    : repos[0]
+    ? (findRepoForHost(repos, activeRepoId, { hostId: activeHostId ?? undefined }) ??
+      repos.find((repo) => repo.id === activeRepoId) ??
+      null)
+    : null
   const repoWorktrees = useMemo(
     () =>
       registeredWorktrees?.filter(
@@ -87,7 +91,7 @@ export function OverviewPage(): React.JSX.Element {
   )
 
   const charterKey = activeRepo ? charterSourceKey(activeRepo) : 'none'
-  const charterRead = useRepoCharterSnapshot(activeRepo)
+  const charterRead = useRepoCharterSnapshot(activeRepo ?? undefined)
   const charter = charterRead?.charter ?? null
   const projectPage = useProjectPage()
   const filters =
@@ -148,7 +152,7 @@ export function OverviewPage(): React.JSX.Element {
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
   const { charterStatus, refreshCharterStatus } = useCharterPrStatus(
-    charterRead && !charterRead.error ? activeRepo : undefined,
+    charterRead && !charterRead.error ? (activeRepo ?? undefined) : undefined,
     Boolean(charter),
     charterKey
   )
@@ -229,9 +233,13 @@ export function OverviewPage(): React.JSX.Element {
         </header>
         <div className="content">
           <section className="card" style={{ padding: 24, textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
+            <p style={{ margin: '0 0 12px', fontSize: 14 }}>
+              {repos.length ? '尚未选择项目。' : '还没有添加项目。'}
+            </p>
             <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
-              添加项目后，可在这里查看项目总览。
+              {repos.length
+                ? '从项目墙或侧栏选择项目后，可在这里查看项目总览。'
+                : '添加项目后，可在这里查看项目总览。'}
             </p>
             <button
               type="button"

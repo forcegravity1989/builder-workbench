@@ -13,7 +13,7 @@ vi.mock('@/runtime/runtime-rpc-client', async () => ({
   ...(await vi.importActual<typeof RuntimeClientTarget>('@/runtime/runtime-client-target')),
   callRuntimeRpc: rpc
 }))
-import { codehubApi, createCodeHubApi } from './codehub-api'
+import { codehubApi, createCodeHubApi, localCodehubApi } from './codehub-api'
 beforeEach(() => {
   vi.stubGlobal('window', {
     api: { codehub: { setIssueState: local, listTasks: local, viewer: local } }
@@ -22,7 +22,7 @@ beforeEach(() => {
   local.mockReset()
   state.repos[0].executionHostId = 'runtime:owner'
 })
-it('uses the repo owner instead of the newly focused runtime for reads and writes', async () => {
+it('routes to the repo owner by default and stays local for task reads or local repos', async () => {
   const args = { repoId: 'repo-1', repoPath: '/repo', iid: 12, state: 'closed' as const }
   await codehubApi.setIssueState(args)
   expect(rpc).toHaveBeenCalledWith(
@@ -54,18 +54,28 @@ it('uses the repo owner instead of the newly focused runtime for reads and write
     { ...args, repoId: 'native-repo' },
     { timeoutMs: 60_000 }
   )
-})
-it('retains the local preload path for a local repo while another runtime has focus', async () => {
+
+  // 本机仓库不因另一个 runtime 获得焦点而改走远端。
+  rpc.mockClear()
   state.repos[0].executionHostId = 'local'
-  const args = {
+  const listArgs = {
     repoId: 'repo-1',
     repoPath: '/repo',
     kind: 'issue' as const,
     state: 'opened' as const
   }
-  await codehubApi.listTasks(args)
-  expect(local).toHaveBeenCalledWith(args)
+  await codehubApi.listTasks(listArgs)
+  expect(local).toHaveBeenCalledWith(listArgs)
   expect(rpc).not.toHaveBeenCalled()
-  await codehubApi.viewer({ repoId: args.repoId, repoPath: args.repoPath })
-  expect(local).toHaveBeenLastCalledWith({ repoId: args.repoId, repoPath: args.repoPath })
+  await codehubApi.viewer({ repoId: listArgs.repoId, repoPath: listArgs.repoPath })
+  expect(local).toHaveBeenLastCalledWith({
+    repoId: listArgs.repoId,
+    repoPath: listArgs.repoPath
+  })
+
+  // 任务读取固定本机：即使项目登记行属于 runtime，也走本机 preload。
+  state.repos[0].executionHostId = 'runtime:owner'
+  await localCodehubApi.viewer({ repoId: 'repo-1', repoPath: '/repo' })
+  expect(local).toHaveBeenLastCalledWith({ repoId: 'repo-1', repoPath: '/repo' })
+  expect(rpc).not.toHaveBeenCalled()
 })

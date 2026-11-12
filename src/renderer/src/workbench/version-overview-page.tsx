@@ -7,6 +7,7 @@ import { useVersionCatalogForRepo } from './use-version-catalog'
 import type { VersionOverviewMaterials } from './version-overview-materials'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import { openVersionOverview, type VersionOverviewOptions } from './project-page-state'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { PlanningMaterial } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard } from './version-overview/feature-card'
@@ -62,8 +63,9 @@ function ArchiveTime({
 }
 
 export function VersionOverviewPage({ options }: { options: VersionOverviewOptions }) {
-  const { repoId, version } = options
-  const catalog = useVersionCatalogForRepo(repoId)
+  const { repoId, hostId, version } = options
+  // 只读这次点击解析出的来源主机；本机有项目但没这版，就如实显示未同步。
+  const catalog = useVersionCatalogForRepo(repoId, hostId)
   const [refreshToken, setRefreshToken] = useState(0)
   const [focus, setFocus] = useState<string | null>(null)
   const projectId = useAppStore((state) => overviewProjectId(state, repoId))
@@ -105,6 +107,13 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       !planDocument.summary.risks.trim()
     )
   const entry = catalog.catalog?.entries.find((e) => e.version === version) ?? null
+  const sourceLabel = hostId === LOCAL_EXECUTION_HOST_ID ? '本机' : '当前主机'
+  const versionMissing =
+    !catalog.loading &&
+    !catalog.error &&
+    !entry &&
+    plan.kind === 'missing' &&
+    acceptance.kind === 'missing'
   const projectName = useAppStore(
     (state) => state.repos.find((repo) => repo.id === repoId)?.displayName ?? '项目'
   )
@@ -223,7 +232,15 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           正在读取版本材料…
         </p>
       )}
-      {planUnstarted && (
+      {versionMissing && (
+        <div className="bwo-empty">
+          <h2>{sourceLabel}未同步该版本</h2>
+          <p className="bwo-muted">
+            {sourceLabel}已登记该项目，但没有这个版本的工作区或材料；不会改用其他主机的结果。
+          </p>
+        </div>
+      )}
+      {planUnstarted && !versionMissing && (
         <div className="bwo-empty">
           <h2>先明确这一版要交付什么</h2>
           <Button onClick={() => workflow('plan')}>开始制定版本计划</Button>
@@ -302,7 +319,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                     historical={acceptance.kind === 'ready' && acceptance.source === 'committed'}
                     onVersion={(next, id) => {
                       setFocus(id)
-                      openVersionOverview({ repoId, version: next })
+                      openVersionOverview({ repoId, hostId, version: next })
                     }}
                   />
                 </div>

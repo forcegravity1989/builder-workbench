@@ -12,6 +12,7 @@ import { useAppStore } from '@/store'
 import { getRepoExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { closeProjectPage, openAddProject } from './project-page-state'
 import { switchActiveProject } from './switch-active-project'
+import { resolveProjectSourcePair } from './project-source-resolution'
 import { continueProjectWork } from './continue-project-work'
 import { isWallRowVisible, wallProjectVisibility } from './workbench-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
@@ -229,11 +230,19 @@ export function ProjectWallPage() {
                           }
                           onOverview={() =>
                             leave(() => {
-                              void switchActiveProject(
+                              const pair = resolveProjectSourcePair(
+                                card.project.rows,
                                 card.primaryRepo.id,
-                                getRepoExecutionHostId(card.primaryRepo),
-                                { location, type }
+                                'local-first',
+                                { runtimeEnvironments: environments }
                               )
+                              if (!pair) {
+                                return
+                              }
+                              void switchActiveProject(pair.repoId, pair.hostId, {
+                                location,
+                                type
+                              })
                             })
                           }
                           onConfigure={(button) =>

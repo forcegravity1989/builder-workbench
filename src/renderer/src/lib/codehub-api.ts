@@ -12,18 +12,22 @@ import {
 function route<K extends keyof CodeHubApi>(
   method: K,
   args: Parameters<CodeHubApi[K]>[0],
-  sourceContext?: TaskSourceContext | null
+  sourceContext?: TaskSourceContext | null,
+  execution: 'owner' | 'local' = 'owner'
 ): Promise<Awaited<ReturnType<CodeHubApi[K]>>> {
-  const target = getActiveRuntimeTarget(
-    sourceContext
-      ? getTaskSourceRuntimeSettings(sourceContext)
-      : {
-          activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
-            useAppStore.getState(),
-            args.repoId
-          )
-        }
-  )
+  const target =
+    execution === 'local'
+      ? ({ kind: 'local' } as const)
+      : getActiveRuntimeTarget(
+          sourceContext
+            ? getTaskSourceRuntimeSettings(sourceContext)
+            : {
+                activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
+                  useAppStore.getState(),
+                  args.repoId
+                )
+              }
+        )
   const routedArgs = sourceContext?.repoId ? { ...args, repoId: sourceContext.repoId } : args
   if (target.kind === 'environment') {
     return callRuntimeRpc(target, `codehub.${method}`, routedArgs, { timeoutMs: 60_000 })
@@ -34,12 +38,16 @@ function route<K extends keyof CodeHubApi>(
   return call(routedArgs)
 }
 
-export function createCodeHubApi(sourceContext?: TaskSourceContext | null): CodeHubApi {
+export function createCodeHubApi(
+  sourceContext?: TaskSourceContext | null,
+  options?: { execution?: 'owner' | 'local' }
+): CodeHubApi {
   if (sourceContext && sourceContext.provider !== 'codehub') {
     throw new Error('CodeHub source context required')
   }
+  const execution = options?.execution ?? 'owner'
   const call = <K extends keyof CodeHubApi>(method: K, args: Parameters<CodeHubApi[K]>[0]) =>
-    route(method, args, sourceContext)
+    route(method, args, sourceContext, execution)
   return {
     mrForBranch: (args) => call('mrForBranch', args),
     viewer: (args) => call('viewer', args),
@@ -65,3 +73,8 @@ export function createCodeHubApi(sourceContext?: TaskSourceContext | null): Code
 }
 
 export const codehubApi = createCodeHubApi()
+/**
+ * 任务页读任务数据固定走本机 CLI：项目身份来自远端登记行，执行与权限用本机。
+ * 详情、列表与写操作都用它，避免同一屏一半本机一半远端。
+ */
+export const localCodehubApi = createCodeHubApi(null, { execution: 'local' })

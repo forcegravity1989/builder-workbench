@@ -1,12 +1,9 @@
-import { getGitHubSourceRuntimeTarget } from '@/lib/github-source-runtime-context'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
-import {
-  getTaskSourceCacheScope,
-  type TaskSourceContext
-} from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/task-source-context'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import { createSnapshotCache } from './snapshot-cache'
 import type { TaskPortDeps } from './task-port'
@@ -86,18 +83,14 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       repo && (reference.provider === 'github' || reference.provider === 'codehub')
         ? getTaskPageRepoSourceContext(repo, reference.provider)
         : null
+    // 任务数据固定本机，缓存按远端项目身份归并；同一项目跨主机多行登记共用一份。
+    const repository = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
     const key = JSON.stringify([
-      source ? getTaskSourceCacheScope(source) : [home.repoId, home.hostId, reference.repository],
-      repo?.path,
-      repo?.connectionId,
-      home.runtimeOwnerEnvironmentId,
-      repo?.issueSourcePreference ?? 'auto',
-      repo?.upstream,
-      repo?.gitRemoteIdentity,
       reference.provider,
       reference.kind,
-      reference.repository,
-      knownGitHubIssueSource(repo ?? undefined, reference.repository),
+      repository,
+      knownGitHubIssueSource(repo ?? undefined, repository),
+      repo?.issueSourcePreference ?? 'auto',
       reference.number
     ])
     return { repo, source, key, entry: cache(key) }
@@ -189,8 +182,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         (job.repo?.gitRemoteIdentity?.remoteName &&
           job.repo.gitRemoteIdentity.remoteName !== 'origin') ||
         job.repo?.issueSourcePreference === 'upstream' ||
-        parsed.host?.includes(':') ||
-        getGitHubSourceRuntimeTarget(job.source).kind === 'environment'
+        parsed.host?.includes(':')
       ) {
         singles.push(job)
         continue

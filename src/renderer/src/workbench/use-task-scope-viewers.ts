@@ -3,7 +3,7 @@ import type { Repo } from '../../../shared/repo-types'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
 import { parseTaskQuery } from '../../../shared/task-query'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { codehubApi } from '@/lib/codehub-api'
+import { localCodehubApi } from '@/lib/codehub-api'
 import { lookupGitHubViewerForSource } from '@/lib/github-work-item-source-lookup'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import type { TaskScopeLoadResult } from './task-scope-load'
@@ -93,7 +93,7 @@ export function useTaskScopeViewers(
         const args = { repoId: repo.id, repoPath: repo.path }
         const login =
           model.taskSource === 'codehub'
-            ? (await codehubApi.viewer(args)).username
+            ? (await localCodehubApi.viewer(args)).username
             : (
                 await lookupGitHubViewerForSource({
                   ...args,

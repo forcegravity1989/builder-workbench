@@ -201,6 +201,7 @@ export function ProjectMilestones({
     patch({ pageY: root.current?.closest('.content')?.scrollTop ?? 0 })
     openVersionOverview({
       repoId: scope!.repoId,
+      hostId: scope!.hostId,
       version: version.version,
       milestoneOrigin: { feature: '' }
     })
