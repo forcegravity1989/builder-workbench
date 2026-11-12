@@ -12,6 +12,7 @@ export type FeatureWallSetupProgressInput = {
   settings: GlobalSettings | null
   featureInteractions: FeatureInteractionState
   hasConnectedTaskSource: boolean
+  orcaCliAvailable: boolean
   browserUseSkillInstalled: boolean
   computerUseSkillInstalled: boolean
   computerUsePermissionsReady: boolean
@@ -42,14 +43,19 @@ function countAvailableNonMainWorktrees(worktreesByRepo: Record<string, Worktree
   )
 }
 
-export function getFeatureWallSetupProgress(
-  input: FeatureWallSetupProgressInput
-): FeatureWallSetupProgress {
-  const agentCapabilitiesDone =
+export function areAgentSkillsAndPermissionsReady(input: FeatureWallSetupProgressInput): boolean {
+  return (
     input.browserUseSkillInstalled &&
     input.computerUseSkillInstalled &&
     (input.computerUsePermissionsReady || input.computerUseUnavailable === true) &&
     input.orchestrationSkillInstalled
+  )
+}
+
+export function getFeatureWallSetupProgress(
+  input: FeatureWallSetupProgressInput
+): FeatureWallSetupProgress {
+  const agentCapabilitiesDone = input.orcaCliAvailable && areAgentSkillsAndPermissionsReady(input)
   const stepDone: Record<FeatureWallSetupStepId, boolean> = {
     'default-agent':
       Boolean(input.settings?.defaultTuiAgent) && input.settings?.defaultTuiAgent !== 'blank',

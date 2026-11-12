@@ -19,10 +19,12 @@ import {
 import { useActiveProjectSkillRuntime } from '@/hooks/useActiveProjectSkillRuntime'
 import {
   getFeatureWallSetupProgress,
+  areAgentSkillsAndPermissionsReady,
   type FeatureWallSetupProgress
 } from '../feature-wall/feature-wall-setup-progress'
 import { deriveIntegrationConnectionStatus } from '../feature-wall/use-integration-connection-status'
 import { useSetupGuideBrowserMilestoneProgress } from './setup-guide-browser-milestone-progress'
+import { useSetupGuideCliStatus } from './use-setup-guide-cli-status'
 import {
   getComputerUsePermissionSetupState,
   getCurrentSetupScriptProbeState,
@@ -52,6 +54,8 @@ export function useSetupGuideProgress(
   const preflightStatusLoading = useAppStore((s) => s.preflightStatusLoading)
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
   const activeSkillRuntime = useActiveProjectSkillRuntime()
+  const { available: orcaCliAvailable, checked: orcaCliChecked } =
+    useSetupGuideCliStatus(shouldRefreshCoreState)
   const linearStatus = useAppStore((s) => s.linearStatus)
   const linearStatusChecked = useAppStore((s) => s.linearStatusChecked)
   const linearStatusContextKey = useAppStore((s) => s.linearStatusContextKey)
@@ -264,7 +268,7 @@ export function useSetupGuideProgress(
     shouldRefreshCoreState && computerUseSkillInstalled ? computerUseUnavailable : false
   const ready = getSetupGuideProgressReady({
     refreshEnabled: shouldRefreshCoreState,
-    settingsLoaded: settings !== null,
+    settingsLoaded: settings !== null && orcaCliChecked,
     // Why: task-source readiness is a capability group. Once any provider is
     // usable, unrelated stale provider checks should not hide setup progress.
     preflightStatusChecked: !taskSourceStatus.checking,
@@ -278,43 +282,52 @@ export function useSetupGuideProgress(
     computerUsePermissionStatusChecked: currentComputerUsePermissionStatusChecked
   })
 
-  const rawProgress = useMemo(
-    () =>
-      getFeatureWallSetupProgress({
-        ready,
-        settings,
-        featureInteractions,
-        hasConnectedTaskSource,
-        browserUseSkillInstalled: browserUseSkillInstalled || detectedBrowserUseSkillInstalled,
-        computerUseSkillInstalled,
-        computerUsePermissionsReady: currentComputerUsePermissionsReady,
-        computerUseUnavailable: currentComputerUseUnavailable,
-        orchestrationSkillInstalled:
-          orchestrationSkillInstalled || detectedOrchestrationSkillInstalled,
-        gitRepoCount,
-        worktreesByRepo,
-        hasSetupScript: currentSetupScriptProbe.hasSetupScript
-      }),
-    [
-      browserUseSkillInstalled,
+  const { rawProgress, preCliAgentCapabilitiesDone } = useMemo(() => {
+    const input = {
       ready,
-      currentComputerUseUnavailable,
-      currentComputerUsePermissionsReady,
-      computerUseSkillInstalled,
-      detectedBrowserUseSkillInstalled,
-      detectedOrchestrationSkillInstalled,
-      featureInteractions,
-      gitRepoCount,
-      hasConnectedTaskSource,
-      currentSetupScriptProbe.hasSetupScript,
-      orchestrationSkillInstalled,
       settings,
-      worktreesByRepo
-    ]
-  )
+      featureInteractions,
+      hasConnectedTaskSource,
+      orcaCliAvailable,
+      browserUseSkillInstalled: browserUseSkillInstalled || detectedBrowserUseSkillInstalled,
+      computerUseSkillInstalled,
+      computerUsePermissionsReady: currentComputerUsePermissionsReady,
+      computerUseUnavailable: currentComputerUseUnavailable,
+      orchestrationSkillInstalled:
+        orchestrationSkillInstalled || detectedOrchestrationSkillInstalled,
+      gitRepoCount,
+      worktreesByRepo,
+      hasSetupScript: currentSetupScriptProbe.hasSetupScript
+    }
+    return {
+      rawProgress: getFeatureWallSetupProgress(input),
+      preCliAgentCapabilitiesDone: areAgentSkillsAndPermissionsReady(input)
+    }
+  }, [
+    browserUseSkillInstalled,
+    ready,
+    currentComputerUseUnavailable,
+    currentComputerUsePermissionsReady,
+    computerUseSkillInstalled,
+    detectedBrowserUseSkillInstalled,
+    detectedOrchestrationSkillInstalled,
+    featureInteractions,
+    gitRepoCount,
+    hasConnectedTaskSource,
+    orcaCliAvailable,
+    currentSetupScriptProbe.hasSetupScript,
+    orchestrationSkillInstalled,
+    settings,
+    worktreesByRepo
+  ])
   const historicalSplitTerminalDone = hasFeatureInteraction(
     featureInteractions,
     'terminal-pane-split'
   )
-  return useSetupGuideBrowserMilestoneProgress(rawProgress, historicalSplitTerminalDone)
+  return useSetupGuideBrowserMilestoneProgress(
+    rawProgress,
+    historicalSplitTerminalDone,
+    orcaCliAvailable,
+    preCliAgentCapabilitiesDone
+  )
 }

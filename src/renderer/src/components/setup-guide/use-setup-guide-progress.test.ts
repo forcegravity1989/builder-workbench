@@ -51,6 +51,15 @@ describe('browser milestone legacy setup guide progress', () => {
         setupGuideSidebarDismissed: false
       })
     ).toBe(true)
+    // CLI availability was not part of the pre-browser completion contract.
+    expect(
+      shouldMarkBrowserMilestoneLegacyComplete({
+        stepDone: { ...makePreBrowserDoneStepState(), 'agent-capabilities': false },
+        preCliAgentCapabilitiesDone: true,
+        historicalSplitTerminalDone: true,
+        setupGuideSidebarDismissed: false
+      })
+    ).toBe(true)
   })
 
   it('does not waive browser for old profiles missing historical split completion', () => {
@@ -85,18 +94,24 @@ describe('browser milestone legacy setup guide progress', () => {
     ).toBe(false)
   })
 
-  it('keeps legacy-complete setup guide progress complete across all surfaces', () => {
+  it('preserves legacy milestones but requires current CLI availability', () => {
     const progress = getSetupGuideBrowserMilestoneAwareProgress(
       makeProgress({
         stepDone: makePreBrowserDoneStepState() as Record<FeatureWallSetupStepId, boolean>,
         coreDoneCount: FEATURE_WALL_SETUP_STEPS.length - 1
       }),
+      true,
       true
     )
 
     expect(progress.coreDoneCount).toBe(FEATURE_WALL_SETUP_STEPS.length)
     expect(progress.stepDone.browser).toBe(true)
     expect(Object.values(progress.stepDone).every(Boolean)).toBe(true)
+
+    const unavailable = getSetupGuideBrowserMilestoneAwareProgress(progress, true, false)
+    expect(unavailable.stepDone['agent-capabilities']).toBe(false)
+    expect(unavailable.stepDone.browser).toBe(true)
+    expect(unavailable.coreDoneCount).toBe(FEATURE_WALL_SETUP_STEPS.length - 1)
   })
 
   it('leaves fresh setup guide progress unchanged when browser is incomplete', () => {
@@ -105,7 +120,7 @@ describe('browser milestone legacy setup guide progress', () => {
       coreDoneCount: FEATURE_WALL_SETUP_STEPS.length - 1
     })
 
-    expect(getSetupGuideBrowserMilestoneAwareProgress(original, false)).toBe(original)
+    expect(getSetupGuideBrowserMilestoneAwareProgress(original, false, false)).toBe(original)
   })
 })
 

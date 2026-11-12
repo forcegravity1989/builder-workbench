@@ -49,7 +49,7 @@
 | G01 安装 BW、确认启动条件 | ☐ | 待验：安装包 | — | — | ☐ |
 | G02 选择默认智能体 | [✅ 选择与说明][setup-copy] | 待验 | [待验：agent][onboarding] | — | ☐ |
 | G03 开启通知 | [✅ 通知设置][setup-copy] | 待验 | [待验：notifications][onboarding] | — | ☐ |
-| G04 CLI 与 Skills | [✅ 启用 Orca CLI][setup-copy] | 待验 | — | [待验：orca-cli][tips] | ☐ |
+| G04 CLI 与 Skills | [✅ 启用 Orca CLI][setup-copy] | 待验：当前环境 CLI/PATH 检测、注册与可跳过 | — | [待验：orca-cli][tips] | ☐ |
 | G05 连接集成服务 | [✅ 既有入口说明][setup-copy]；[待验：CodeHub、可选 WeLink 报告入口][integration-setup] | [待验：安装/登录与状态、跳过 WeLink][integration-setup]；内部集成见 F29 | [待验：integrations][onboarding] | — | ☐ |
 | G06 自动准备工作区 | [✅ 设置脚本][setup-copy] | [待验：当前项目、空输入与保存/执行][setup-actions] | — | — | ☐ |
 | G07 纳入多个项目 | [✅ 多项目说明][setup-copy] | [待验：添加项目][setup-actions] | — | — | ☐ |

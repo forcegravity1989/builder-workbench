@@ -39,6 +39,11 @@ describe('isOrcaCliAvailableOnPath', () => {
     expect(isOrcaCliAvailableOnPath(cliStatus())).toBe(true)
     expect(isOrcaCliAvailableOnPath(cliStatus({ pathConfigured: false }))).toBe(false)
     expect(isOrcaCliAvailableOnPath(cliStatus({ state: 'not_installed' }))).toBe(false)
+    expect(isOrcaCliAvailableOnPath(cliStatus({ state: 'stale' }))).toBe(false)
+    expect(isOrcaCliAvailableOnPath(cliStatus({ state: 'conflict' }))).toBe(false)
+    expect(isOrcaCliAvailableOnPath(cliStatus({ state: 'unsupported' }))).toBe(false)
+    expect(isOrcaCliAvailableOnPath(cliStatus({ pathConfigured: null }))).toBe(false)
+    expect(isOrcaCliAvailableOnPath(null)).toBe(false)
   })
 })
 

@@ -17,6 +17,7 @@ function makeInput(
     settings: null,
     featureInteractions: {},
     hasConnectedTaskSource: false,
+    orcaCliAvailable: false,
     browserUseSkillInstalled: false,
     computerUseSkillInstalled: false,
     computerUsePermissionsReady: false,
@@ -103,6 +104,7 @@ describe('getFeatureWallSetupProgress', () => {
         hasConnectedTaskSource: true,
         hasSetupScript: true,
         gitRepoCount: 2,
+        orcaCliAvailable: true,
         browserUseSkillInstalled: true,
         computerUseSkillInstalled: true,
         computerUsePermissionsReady: true,
@@ -142,6 +144,7 @@ describe('getFeatureWallSetupProgress', () => {
         hasConnectedTaskSource: true,
         hasSetupScript: true,
         gitRepoCount: 2,
+        orcaCliAvailable: true,
         browserUseSkillInstalled: true,
         computerUseSkillInstalled: true,
         computerUsePermissionsReady: true,
@@ -248,10 +251,11 @@ describe('getFeatureWallSetupProgress', () => {
     expect(progress.stepDone['agent-capabilities']).toBe(false)
   })
 
-  it('marks agent capabilities complete only when required skills and permissions are ready', () => {
+  it('marks agent capabilities complete only when CLI, skills and permissions are ready', () => {
     expect(
       getFeatureWallSetupProgress(
         makeInput({
+          orcaCliAvailable: true,
           browserUseSkillInstalled: true,
           computerUseSkillInstalled: true,
           computerUsePermissionsReady: false,
@@ -262,6 +266,7 @@ describe('getFeatureWallSetupProgress', () => {
 
     const progress = getFeatureWallSetupProgress(
       makeInput({
+        orcaCliAvailable: true,
         browserUseSkillInstalled: true,
         computerUseSkillInstalled: true,
         computerUsePermissionsReady: true,
@@ -275,6 +280,7 @@ describe('getFeatureWallSetupProgress', () => {
   it('does not block agent capabilities on unavailable Computer Use access', () => {
     const progress = getFeatureWallSetupProgress(
       makeInput({
+        orcaCliAvailable: true,
         browserUseSkillInstalled: true,
         computerUseSkillInstalled: true,
         computerUsePermissionsReady: false,
@@ -286,7 +292,7 @@ describe('getFeatureWallSetupProgress', () => {
     expect(progress.stepDone['agent-capabilities']).toBe(true)
   })
 
-  it('marks the Orca CLI setup row complete when installed skills are ready and Computer Use is unavailable', () => {
+  it('does not waive unavailable CLI when skills are ready and Computer Use is unavailable', () => {
     const progress = getFeatureWallSetupProgress(
       makeInput({
         browserUseSkillInstalled: true,
@@ -298,10 +304,7 @@ describe('getFeatureWallSetupProgress', () => {
     )
 
     expect(progress.stepDone).toMatchObject({
-      'agent-capabilities': true
+      'agent-capabilities': false
     })
-    expect(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)).not.toBe(
-      'agent-capabilities'
-    )
   })
 })

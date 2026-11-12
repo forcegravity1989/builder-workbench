@@ -24,6 +24,8 @@ import {
 } from './agent-capability-setup-status'
 import { FullDiskAccessSetupPrompt } from './FullDiskAccessSetupPrompt'
 import { translate } from '@/i18n/i18n'
+import { useSetupGuideCliStatus } from '../setup-guide/use-setup-guide-cli-status'
+import { SetupGuideCliRegistration } from '../setup-guide/SetupGuideCliRegistration'
 
 export function AgentCapabilitiesSetupAction(props: {
   onOrchestrationSkillInstalledChange: (installed: boolean) => void
@@ -31,6 +33,8 @@ export function AgentCapabilitiesSetupAction(props: {
 }): React.JSX.Element {
   const { onBrowserUseSkillInstalledChange, onOrchestrationSkillInstalledChange } = props
   const capabilitySetupStatus = useAgentCapabilitySetupStatus()
+  const cli = useSetupGuideCliStatus()
+  const { refresh: refreshCliStatus } = cli
   const { readiness } = capabilitySetupStatus
   const featureSetupDefaultsAppliedRef = useRef(false)
   const featureSetupChangedByUserRef = useRef(false)
@@ -122,9 +126,11 @@ export function AgentCapabilitiesSetupAction(props: {
       }
     } finally {
       setSetupBusyLabel(null)
+      void refreshCliStatus()
     }
   }, [
     activeSkillRuntime,
+    refreshCliStatus,
     featureSetup,
     featureSetupCommand,
     recordFeatureInteraction,
@@ -133,6 +139,7 @@ export function AgentCapabilitiesSetupAction(props: {
 
   return (
     <div className="space-y-5">
+      <SetupGuideCliRegistration cli={cli} />
       <AgentCapabilitySetupControls
         featureSetup={featureSetup}
         onFeatureSetupChange={handleFeatureSetupChange}
