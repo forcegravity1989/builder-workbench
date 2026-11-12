@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@stablyai/playwright-test'
+import { verifyFlowTrunkSync } from './workbench-flow-trunk-sync'
 import {
   fixedWorkspaceBranches,
   fixedWorkspaceVersion,
@@ -270,6 +271,11 @@ export async function verifyFixedWorkspaceRemoteReuse(
   if (await dismissSetup.isVisible().catch(() => false)) {
     await dismissSetup.click()
   }
+  const plan = trees.find((tree) => tree.branch === `bw/${fixedWorkspaceVersion}/plan`)
+  if (!plan) {
+    throw new Error('Plan worktree missing after preparation')
+  }
+  await verifyFlowTrunkSync(page, fixture, info, plan)
   await page.getByRole('button', { name: '验收', exact: true }).click()
   await expect(page.getByRole('heading', { name: '版本验收', exact: true })).toBeVisible({
     timeout: 60_000

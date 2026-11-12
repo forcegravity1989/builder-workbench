@@ -68,7 +68,6 @@ export function retainUnavailableCatalogSources({
         material: {},
         problems: [],
         goals: [],
-        tasks: [],
         workspaces: [],
         state: 'retired'
       }
@@ -91,7 +90,6 @@ export function retainUnavailableCatalogSources({
       previousSource.key === committedCatalogGoalKey(historyKey, entry.version, entry.material.plan)
     if (!availableDraftVersions.has(entry.version) && (keepDraft || keepCommittedGoals)) {
       entry.goals = [...previous.goals]
-      entry.tasks = [...previous.tasks]
       goalSources[entry.version] = previousSource!
     }
   }

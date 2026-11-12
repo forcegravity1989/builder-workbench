@@ -39,7 +39,7 @@ export type TaskOrigin = CycleScope & {
   draftKey: string
 }
 
-export type CycleTaskReference = PlanningMaterial['tasks'][number]
+export type CycleTaskReference = PlanningMaterial['tasks'][number] & { kind?: 'issue' }
 export type CycleTaskSnapshot = {
   reference: CycleTaskReference
   source: TaskSourceContext

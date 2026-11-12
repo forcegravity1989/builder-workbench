@@ -1,3 +1,7 @@
+import { useVersionMembership } from './use-version-membership'
+import { useCycleTaskReads } from './use-cycle-task-reads'
+import { nativeTaskPort } from '../native-task-port'
+import type { CycleScope, CycleTaskReference, CycleTaskRead } from './ports'
 import React from 'react'
 import type {
   AcceptanceMaterial,
@@ -22,7 +26,21 @@ export type ViewState =
       committedAt?: string
     }
 
-export function ReadonlyMaterialSections({ state }: { state: ViewState }): React.JSX.Element {
+export function ReadonlyMaterialSections({
+  state,
+  scope
+}: {
+  state: ViewState
+  scope: CycleScope | null
+}): React.JSX.Element {
+  const plan =
+    state.kind === 'plan' ? state.document : state.kind === 'acceptance' ? state.plan : null
+  const membership = useVersionMembership(scope, plan)
+  const { reads } = useCycleTaskReads({
+    scope,
+    tasks: state.kind === 'acceptance' ? (membership.references ?? undefined) : undefined,
+    taskPort: nativeTaskPort()
+  })
   const goalRows: {
     goalId: string
     goal?: PlanningMaterial['goals'][number]
@@ -44,6 +62,20 @@ export function ReadonlyMaterialSections({ state }: { state: ViewState }): React
   }
   return (
     <>
+      {membership.error && (
+        <p className="vc-notice" role="status">
+          Issue 读取失败：{membership.error}
+        </p>
+      )}
+      {membership.references?.some((task) => !task.goalId) && (
+        <p className="vc-notice">
+          未归类 Issue ·{' '}
+          {membership.references
+            .filter((task) => !task.goalId)
+            .map((task) => `#${task.number}`)
+            .join('、')}
+        </p>
+      )}
       {state.kind === 'loading' ? <p className="vc-notice">材料读取中…</p> : null}
       {state.kind === 'missing' ? <p className="vc-notice">{state.message}</p> : null}
       {state.kind === 'plan' ? (
@@ -63,7 +95,7 @@ export function ReadonlyMaterialSections({ state }: { state: ViewState }): React
                 <p className="vc-readonly-meta">
                   {goal.owner || '负责人待明确'}
                   {goal.deadline ? ` · 计划完成 ${goal.deadline}` : ''}
-                  {` · 关联 Issue ${state.document.tasks.filter((task) => task.goalId === goal.goalId).length}`}
+                  {` · 关联 Issue ${membership.references?.filter((task) => task.goalId === goal.goalId).length ?? '未知'}`}
                 </p>
                 <h5>验收标准</h5>
                 <BoardLines text={goal.acceptance} />
@@ -211,10 +243,11 @@ export function ReadonlyMaterialSections({ state }: { state: ViewState }): React
                 <BoardLines text={result?.note} empty="未记录" />
                 <h5>下一步</h5>
                 <BoardLines text={result?.nextStep} empty="未记录" />
-                <h5>Issue（当时快照）</h5>
+                <h5>Issue（实时读回）</h5>
                 <ReadonlyAcceptanceIssues
                   document={state.document}
-                  plan={state.plan}
+                  references={membership.references}
+                  reads={reads}
                   goalId={goalId}
                 />
                 <p className="vc-readonly-meta">
@@ -278,26 +311,31 @@ export function ReadonlyMaterialSections({ state }: { state: ViewState }): React
 
 function ReadonlyAcceptanceIssues({
   document,
-  plan,
+  references,
+  reads,
   goalId
 }: {
   document: AcceptanceMaterial
-  plan: PlanningMaterial
+  references: CycleTaskReference[] | null
+  reads: CycleTaskRead[] | null
   goalId: string
 }): React.JSX.Element {
-  const related = plan.tasks.filter((task) => task.goalId === goalId)
+  if (!references) {
+    return <p className="vc-readonly-meta">Issue 数未知</p>
+  }
+  const related = references.filter((task) => task.goalId === goalId)
   const result = document.results.find((item) => item.goalId === goalId)
   return related.length ? (
     <ul>
       {related.map((reference) => {
         const key = issueKey(reference)
-        const snapshot = document.taskSnapshot?.find((item) => issueKey(item.reference) === key)
-        const mark = result && issueMarkFor(result, reference, related)
-        const note = result && issueNoteFor(result, reference, related)
+        const read = reads?.find((item) => issueKey(item.reference) === key)
+        const mark = result && issueMarkFor(result, reference, related, document.taskSnapshot)
+        const note = result && issueNoteFor(result, reference, related, document.taskSnapshot)
         return (
           <li key={key}>
             #{reference.number}{' '}
-            {snapshot?.kind === 'ready' ? `${snapshot.title} · ${snapshot.state}` : '状态未知'}
+            {read?.kind === 'ready' ? `${read.task.title} · ${read.task.state}` : '状态未知'}
             {mark?.carry ? ' · 历史遗留标记' : ''}
             {note ? <BoardLines text={note} /> : null}
           </li>

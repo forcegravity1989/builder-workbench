@@ -294,8 +294,7 @@ export function useCycleWorkspaceTarget(
         reason: reason instanceof Error ? reason.message : String(reason)
       }
     }
-    // Materials re-read whether the fast-forward happened, was refused or
-    // failed: session-side edits must stay visible through this button.
+    // Re-read materials after any sync result so session-side edits stay visible.
     setSyncStates((previous) =>
       previous[stateKey]?.sequence === sequence
         ? {

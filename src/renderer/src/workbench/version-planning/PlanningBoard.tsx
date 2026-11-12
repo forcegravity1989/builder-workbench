@@ -26,6 +26,7 @@ import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
+import { useVersionMembership } from '../version-cycle/use-version-membership'
 import { PlanningStartCard } from './PlanningStartCard'
 import { PlanningMinutesSection } from './PlanningMinutesSection'
 import { PlanningPriorReview } from './PlanningPriorReview'
@@ -61,6 +62,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const canSave = useCallback(() => !context.syncing, [context.syncing])
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
+  const membership = useVersionMembership(scope, plan)
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
@@ -90,23 +92,17 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
   const { pruneMissing } = annotations
-  // Model-side edits (poll) may drop goals/task references: prune annotations
-  // whose object no longer exists on the board instead of keeping orphans.
-  const goalsKey = JSON.stringify(plan?.goals.map((goal) => goal.goalId) ?? [])
-  const tasksKey = JSON.stringify(plan?.tasks.map((task) => [task.goalId, task.number]) ?? [])
   useEffect(() => {
     if (!plan) {
       return
     }
     const goalIds = new Set(plan.goals.map((goal) => goal.goalId))
-    const issueKeys = new Set(
-      plan.tasks.filter((task) => task.goalId).map((task) => `${task.goalId}:${task.number}`)
-    )
+    const issueKeys = new Set(membership.references?.map((task) => `${task.goalId}:${task.number}`))
     pruneMissing(
       (goalId) => goalIds.has(goalId),
-      (goalId, number) => issueKeys.has(`${goalId}:${number}`)
+      (goalId, number) => !membership.references || issueKeys.has(`${goalId}:${number}`)
     )
-  }, [goalsKey, tasksKey, plan, pruneMissing])
+  }, [plan, pruneMissing, membership.references])
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
@@ -198,15 +194,13 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       draftKey: planningDraftKey(scopeKey, plan.version)
     })
   }
-  /** Whole-card delete: goal, its task references and its annotations all leave the plan. */
   const removeGoal = (goalId: string) => {
     if (!plan) {
       return
     }
     edit({
       ...plan,
-      goals: plan.goals.filter((goal) => goal.goalId !== goalId),
-      tasks: plan.tasks.filter((task) => task.goalId !== goalId)
+      goals: plan.goals.filter((goal) => goal.goalId !== goalId)
     })
     annotations.removeForGoal(goalId)
   }
@@ -375,6 +369,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
               onSendAction={wrapSend}
               numbersFor={annotations.numbersFor}
               onOpenAnnotationPanel={annotations.openPanel}
+              membership={membership}
             />
             <PlanningMinutesSection
               plan={plan}

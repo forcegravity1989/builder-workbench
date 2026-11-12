@@ -65,6 +65,7 @@ function FixedAcceptanceMaterialView({ view }: { view: FixedAcceptanceBrowse }):
         </p>
       ) : null}
       <ReadonlyMaterialSections
+        scope={view.scope}
         state={{
           kind: 'acceptance',
           document: view.acceptance,
@@ -193,7 +194,10 @@ function CatalogReadonlyMaterialView({
           : ''}
         。编辑或发起会话请先在版本行「初始化工作区」。
       </p>
-      <ReadonlyMaterialSections state={state} />
+      <ReadonlyMaterialSections
+        state={state}
+        scope={catalog.scope ? { ...catalog.scope, workflow } : null}
+      />
     </div>
   )
 }

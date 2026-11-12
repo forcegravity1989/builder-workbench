@@ -34,7 +34,7 @@ import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
 import { ProjectMilestones } from './project-milestones'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
-import { RefreshCw } from 'lucide-react'
+import { ArrowDownToLine, RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
 
 export function OverviewPage(): React.JSX.Element {
@@ -260,7 +260,13 @@ export function OverviewPage(): React.JSX.Element {
               title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
               onClick={() => void updateTrunk()}
             >
-              {updatingTrunk ? '正在更新…' : '更新代码'}
+              {updatingTrunk ? (
+                '正在更新…'
+              ) : (
+                <>
+                  <ArrowDownToLine size={14} aria-hidden="true" /> 更新代码
+                </>
+              )}
             </button>
           </header>
 

@@ -163,7 +163,7 @@ export function parseTaskQuery(rawQuery: string): ParsedTaskQuery {
 }
 
 function quoteIfNeeded(value: string): string {
-  return /\s/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value
+  return /[\s']/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value
 }
 
 /**

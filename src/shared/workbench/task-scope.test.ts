@@ -9,6 +9,7 @@ import {
   workbenchGoalMutationQuery,
   type WorkbenchTaskScope
 } from './task-scope'
+import { resolveMemberGoalId } from './version-membership'
 
 const scope: WorkbenchTaskScope = { version: 'v0.7', references: [] }
 
@@ -74,5 +75,12 @@ describe('native task entry filters', () => {
     expect(hasUnsupportedWorkbenchTaskSearch('in:title API')).toBe(true)
     expect(hasUnsupportedWorkbenchTaskSearch('"in:title"')).toBe(false)
     expect(hasUnsupportedWorkbenchTaskSearch('API OR result')).toBe(true)
+
+    const goalIds = new Set(['G1', 'G2'])
+    expect(resolveMemberGoalId('【v0.7|G1】项目墙', 'v0.7', goalIds)).toBe('G1')
+    expect(resolveMemberGoalId(' 【v0.7｜ G2 】迁移', 'v0.7', goalIds)).toBe('G2')
+    expect(resolveMemberGoalId('【v0.8|G1】其他版本', 'v0.7', goalIds)).toBeUndefined()
+    expect(resolveMemberGoalId('【v0.7|G9】未列出的目标', 'v0.7', goalIds)).toBeUndefined()
+    expect(resolveMemberGoalId('【特性#334】执行', 'v0.7', goalIds)).toBeUndefined()
   })
 })
