@@ -28,8 +28,8 @@ export function updateTrunkCode(
     'workbench.trunk.update',
     (ownerScope) => ({ scope: ownerScope }),
     // The main-side chain bounds each step (fetch 60s, guard reads 30s each,
-    // native fast-forward 60s); the RPC budget must outlast the worst case so
-    // the renderer never reports failure while main is still working.
+    // native fast-forward 60s, each flow-branch merge 60s); the RPC budget must
+    // outlast the worst case so the renderer never reports a false failure.
     300_000
   )
   pending.set(key, request)
@@ -47,7 +47,10 @@ export function trunkUpdateNotice(result: TrunkUpdateResult): string {
   if (result.updated) {
     if (result.pulled > 0) {
       const head = result.commit ? ` @ ${result.commit.slice(0, 12)}` : ''
-      return `已更新到 ${result.ref ?? '主干'}${head}（拉入 ${result.pulled} 个提交）`
+      const target = result.ref ?? '主干'
+      return result.merged
+        ? `已把最新主干合入 ${target}${head}（拉入 ${result.pulled} 个提交）`
+        : `已更新到 ${target}${head}（拉入 ${result.pulled} 个提交）`
     }
     return '已是最新'
   }

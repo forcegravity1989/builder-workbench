@@ -70,6 +70,23 @@ export async function compareTrunk(
   }
 }
 
+/** Whether the fetched remote-tracking ref for a target branch exists locally. */
+export async function remoteBranchExists(
+  treePath: string,
+  target: TrunkSyncTarget,
+  options: GitRuntimeOptions = {}
+): Promise<boolean> {
+  try {
+    await gitExecFileAsync(['rev-parse', '--verify', '--quiet', `refs/remotes/${trunkRemoteRef(target)}`], {
+      ...gitReadOptionsForWorktree(treePath, options),
+      timeout: READ_TIMEOUT_MS
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export type TrunkCheckoutState = { branch: string; dirty: boolean }
 
 /**
@@ -105,10 +122,11 @@ export async function readTreeHead(
   return stdout.trim()
 }
 
-export type TrunkRefusalReason = 'branch-mismatch' | 'dirty-trunk' | 'ahead-trunk' | 'diverged'
+export type TrunkRefusalReason = 'branch-mismatch' | 'dirty-trunk' | 'ahead-trunk'
 
 export type TrunkUpdateDecision =
   | { action: 'fast-forward'; behind: number }
+  | { action: 'merge'; behind: number }
   | { action: 'current' }
   | { action: 'refuse'; reason: TrunkRefusalReason }
 
@@ -116,9 +134,10 @@ export type TrunkUpdateDecision =
  * The one decision table behind every「更新代码」button. The main checkout must
  * be a clean mirror sitting on the baseline branch — local commits or edits are
  * the user's, so the button refuses instead of fast-forwarding them away. A
- * cycle tree may carry draft commits (that is its job); only divergence —
- * unmerged work while the trunk moved on — blocks its fast-forward. A pure
- * draft state is normal and stays silent.
+ * cycle tree may carry draft commits (that is its job) and only ever merges the
+ * trunk into itself, so new trunk commits become a `merge` regardless of how
+ * many local commits the branch already has — a real Git conflict is the only
+ * stop, surfaced by the merge step itself. A pure draft state stays silent.
  */
 export function decideTrunkUpdate(input: {
   isTrunkCheckout: boolean
@@ -144,10 +163,7 @@ export function decideTrunkUpdate(input: {
       ? { action: 'fast-forward', behind: input.behind }
       : { action: 'current' }
   }
-  if (input.behind > 0 && input.ahead > 0) {
-    return { action: 'refuse', reason: 'diverged' }
-  }
-  return input.behind > 0 ? { action: 'fast-forward', behind: input.behind } : { action: 'current' }
+  return input.behind > 0 ? { action: 'merge', behind: input.behind } : { action: 'current' }
 }
 
 /**
@@ -159,14 +175,12 @@ export function trunkRefusalSentence(
   reason: TrunkRefusalReason,
   context: { branch: string; baselineBranch: string; behind: number; ahead: number }
 ): string {
-  const { branch, baselineBranch, behind, ahead } = context
+  const { branch, baselineBranch, ahead } = context
   const cause =
     reason === 'branch-mismatch'
       ? `主检出当前在 ${branch} 分支，与基线 ${baselineBranch} 不一致`
       : reason === 'dirty-trunk'
         ? '主检出有未提交修改'
-        : reason === 'ahead-trunk'
-          ? `主检出有 ${ahead} 个未合入基线的本地提交`
-          : `工作树有 ${ahead} 个未合入提交、主干新增 ${behind} 个，已分叉`
+        : `主检出有 ${ahead} 个未合入基线的本地提交`
   return `代码未更新（${cause}）。请让会话模型处理 ${branch} 分支的代码更新。`
 }

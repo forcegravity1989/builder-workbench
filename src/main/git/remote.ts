@@ -129,6 +129,53 @@ export async function gitFastForward(
   )
 }
 
+export async function gitMergeNoFf(
+  worktreePath: string,
+  ref: string,
+  options: GitRuntimeOptions = {}
+): Promise<void> {
+  // Why: merge the given ref directly instead of `git pull`, so a user's global
+  // pull.rebase setting can never turn the trunk sync into a rebase. `--no-ff`
+  // records the integration as one explicit merge commit even when the branch
+  // was strictly behind (a fast-forward was technically possible), keeping the
+  // "trunk was merged in" fact visible in the history.
+  postponeRepoRefMaintenance()
+  try {
+    await withRepoRefMaintenancePaused('git-merge', () =>
+      runWithGitWorktreeOperationLock(worktreePath, options.signal, () =>
+        runWithGitReadCacheInvalidation(() =>
+          gitExecFileAsync(
+            ['merge', '--no-ff', '--no-edit', ref],
+            gitOptionsForWorktree(worktreePath, options)
+          )
+        )
+      )
+    )
+  } catch (error) {
+    throw new Error(normalizeGitErrorMessage(error, 'merge'))
+  }
+}
+
+export async function gitFetchAll(
+  worktreePath: string,
+  options: GitRuntimeOptions = {}
+): Promise<void> {
+  // Why: refresh every configured remote so remote-tracking refs for both the
+  // trunk (e.g. upstream/main) and the branch's own remote are current before a
+  // merge decision — a plain `git fetch` only touches the default remote.
+  postponeRepoRefMaintenance()
+  try {
+    await withRepoRefMaintenancePaused('git-fetch', async () => {
+      await gitExecFileAsync(
+        ['fetch', '--all', '--prune'],
+        gitOptionsForWorktree(worktreePath, options)
+      )
+    })
+  } catch (error) {
+    throw new Error(normalizeGitErrorMessage(error, 'fetch'))
+  }
+}
+
 export async function gitFetch(
   worktreePath: string,
   pushTarget?: GitPushTarget,

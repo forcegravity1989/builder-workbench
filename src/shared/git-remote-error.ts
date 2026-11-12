@@ -114,7 +114,7 @@ export function isExecKilledError(error: unknown): boolean {
   return killed === true || (typeof signal === 'string' && signal.length > 0)
 }
 
-export type GitRemoteOperation = 'push' | 'pull' | 'fetch' | 'upstream'
+export type GitRemoteOperation = 'push' | 'pull' | 'fetch' | 'upstream' | 'merge'
 
 export function normalizeGitErrorMessage(error: unknown, operation?: GitRemoteOperation): string {
   if (!(error instanceof Error)) {
@@ -162,14 +162,21 @@ export function normalizeGitErrorMessage(error: unknown, operation?: GitRemoteOp
     )
   }
 
+  // Why: gated to pull (and the operation-less legacy path) so a merge conflict
+  // that trips the same "would be overwritten" text does not surface as
+  // "Pull would overwrite…" on the flow-branch merge path.
   if (
-    raw.includes('Your local changes to the following files would be overwritten') ||
-    raw.includes('Your local changes would be overwritten')
+    (operation === 'pull' || operation === undefined) &&
+    (raw.includes('Your local changes to the following files would be overwritten') ||
+      raw.includes('Your local changes would be overwritten'))
   ) {
     return 'Pull would overwrite local changes. Commit, stash, or discard them before pulling.'
   }
 
-  if (raw.includes('untracked working tree files would be overwritten')) {
+  if (
+    (operation === 'pull' || operation === undefined) &&
+    raw.includes('untracked working tree files would be overwritten')
+  ) {
     return 'Pull would overwrite untracked files. Move, remove, or add them before pulling.'
   }
 
