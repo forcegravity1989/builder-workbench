@@ -32,7 +32,11 @@ import {
 } from '../updater'
 import { getDevInstanceIdentity, shouldApplyPreReadyAppName } from './dev-instance-identity'
 import { enableRendererHeapHeadroom } from './renderer-heap-headroom'
-import { isStartupDiagnosticsEnabled, logStartupDiagnostic } from './startup-diagnostics'
+import {
+  isStartupDiagnosticsEnabled,
+  logStartupDiagnostic,
+  logStartupMilestone
+} from './startup-diagnostics'
 import { startEventLoopStallProbe } from './event-loop-stall-probe'
 import { startMainThreadChurnProbe } from '../diagnostics/main-thread-churn-probe'
 import { settledDiffCache } from '../git/source-control/git-read-cache-invalidation'
@@ -94,6 +98,7 @@ export type MainProcessPreflightOptions = {
 
 /** Performs all module-scope work that must happen before Electron's ready event. */
 export function runMainProcessPreflight(options: MainProcessPreflightOptions): boolean {
+  logStartupMilestone('preflight-start')
   // Why: on Windows a CLI launch that lost ELECTRON_RUN_AS_NODE would boot the GUI and exit silently; redirect to node mode before the lock gate below.
   // The redirect runs before the serve-argv rewrite so it still matches on the launch argv verbatim.
   // Direct serve stays in-process so its signal handlers own all children.
@@ -178,6 +183,7 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   // Why captured now: after the dev/E2E override above, and before app.setName('Orca') (whenReady)
   // changes how userData resolves on a case-sensitive filesystem. See persistence.ts:20-28.
   initDataPath()
+  logStartupMilestone('preflight-persistence-ready')
   state.startupDiagnosticsEnabled = isStartupDiagnosticsEnabled()
   if (state.startupDiagnosticsEnabled) {
     logStartupDiagnostic('before-single-instance-lock', {
@@ -229,6 +235,7 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   // meant `orca serve` registered its PTY handlers against no-ops before any window
   // attached, so a paired desktop owner never received them.
   setPtyHostBindings({ ipc: ipcMain, power: powerMonitor })
+  logStartupMilestone('preflight-host-bindings-ready')
   // Why also at process level: the runtime's notification, window-lookup and
   // tab-create-reply channel are desktop-only. A Node host installs none and the
   // runtime routes notifications to paired clients instead.
@@ -275,6 +282,7 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   initClaudeUsagePath()
   initCodexUsagePath()
   initOpenCodeUsagePath()
+  logStartupMilestone('preflight-data-paths-ready')
   // Why: Electron resolves the macOS safeStorage Keychain service name
   // ("<app name> Safe Storage") before `ready`, so the setName in whenReady is
   // too late to move it — dev otherwise lands on the package.json name. Dev-only
@@ -289,7 +297,9 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   registerDocPreviewSchemePrivileges()
   // Why: must precede app.whenReady() so Crashpad is installed before the
   // first renderer spawns; a CHECK before this point is still exit-code-only.
+  logStartupMilestone('crashpad-start')
   startCrashpadCapture()
+  logStartupMilestone('crashpad-ready')
   state.crashReports = CrashReportStore.fromUserData()
   state.gpuCrashDiagnostics =
     process.platform === 'win32'
@@ -326,5 +336,6 @@ export function runMainProcessPreflight(options: MainProcessPreflightOptions): b
   }
   initializeSyntheticTitleRuntime()
   registerGpuLifecycleHandlers()
+  logStartupMilestone('preflight-complete')
   return true
 }
