@@ -1,3 +1,4 @@
+import { AGENT_LAUNCH_SETTINGS_CAPABILITY } from './agent-launch-settings'
 import { REMOTE_SERVER_UPDATE_CAPABILITY } from './remote-server-update'
 import {
   SKILL_BUNDLE_INSTALL_CAPABILITY,
@@ -136,6 +137,7 @@ export const WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY = 'workbench.version-b
 // 让「能写绑定」与「能备两树」分别可探测（P3a 新建版本入口在归属宿主断言）。
 export const WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY =
   'workbench.version-workspace.v1' as const
+export const WORKBENCH_FIXED_WORKSPACE_RUNTIME_CAPABILITY = 'workbench.fixed-workspace.v1' as const
 export const CODEX_RESET_CREDIT_RUNTIME_CAPABILITY = 'accounts.codex-reset-credit.v1' as const
 export const ACCOUNT_IMPORT_RUNTIME_CAPABILITY = 'accounts.import-host-credentials.v1' as const
 // Why: older hosts cannot reconcile terminal.create's mutation after losing the reply, so clients may only retry unknown outcomes when advertised.
@@ -208,9 +210,11 @@ export const AGENT_SESSION_PROMPT_CANCEL_RUNTIME_CAPABILITY =
 // stop capability above, which a client can advertise while predating this.
 export const AGENT_SESSION_BACKGROUND_TASK_ROW_STOP_CAPABILITY =
   'agent-session.background-task-row-stop.v1' as const
-// Why: adding kimi to RESUMABLE_TUI_AGENTS grows terminal.ensureAgentSession's enum, and an
+// Why: adding agents to RESUMABLE_TUI_AGENTS grows terminal.ensureAgentSession's enum, and an
 // older host answers the unknown member with invalid_argument — a code the launch fallback does
 // not retry on — so clients must probe before taking the host-authority path.
+export const AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY = 'agent-session.cursor-resume.v1' as const
+export const AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY = 'agent-session.dsh-resume.v1' as const
 export const AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY = 'agent-session.kimi-resume.v1' as const
 // Why: older runtimes strip mutation owner fields, so clients must fence writes before RPC.
 export const FILE_MUTATION_OWNERSHIP_RUNTIME_CAPABILITY = 'files.mutation-ownership.v1' as const
@@ -270,6 +274,7 @@ export const ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES = [
 ] as const
 
 export const RUNTIME_CAPABILITIES = [
+  AGENT_LAUNCH_SETTINGS_CAPABILITY,
   'files.pathsExist',
   'runtime.status.compat.v1',
   'runtime.environments.v1',
@@ -313,6 +318,7 @@ export const RUNTIME_CAPABILITIES = [
   WORKTREE_ARCHIVE_FAILURE_BLOCKING_RUNTIME_CAPABILITY,
   WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY,
   WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY,
+  WORKBENCH_FIXED_WORKSPACE_RUNTIME_CAPABILITY,
   TERMINAL_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   SESSION_TAB_CLOSE_INTENT_RUNTIME_CAPABILITY,
   SESSION_TABS_AUTHORITATIVE_INVENTORY_RUNTIME_CAPABILITY,
@@ -332,6 +338,8 @@ export const RUNTIME_CAPABILITIES = [
   AGENT_SESSION_TURN_ITEM_CAPABILITY,
   AGENT_SESSION_BACKGROUND_TASK_ROW_STOP_CAPABILITY,
   AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY,
+  AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY,
+  AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY,
   FILE_MUTATION_OWNERSHIP_RUNTIME_CAPABILITY,
   GITHUB_MARK_PR_READY_RUNTIME_CAPABILITY,
   GITLAB_READY_FOR_REVIEW_RUNTIME_CAPABILITY,

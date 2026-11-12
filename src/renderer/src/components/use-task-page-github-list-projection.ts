@@ -32,6 +32,7 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     workbenchScopeActive,
     workbenchScopeItemKeys
   } = model
+  const goalDisplayQuery = model.appliedTaskSearch
   // Why: defense-in-depth — keep stale cache rows from leaking across the issue/PR split tabs.
   const applyTypeFilter = useCallback(
     (items: GitHubWorkItem[]) => {
@@ -69,7 +70,7 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
           (!workbenchScopeActive ||
             matchesWorkbenchTaskQuery(
               { ...workItem, assignees: (workItem.assignees ?? []).map((user) => user.login) },
-              model.appliedTaskSearch,
+              goalDisplayQuery,
               model.workbenchScopeViewerLogins.get(workItem.repoId) ?? null
             )) &&
           !githubWorkItemMutation.softHiddenItemKeys.has(
@@ -80,7 +81,7 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
       githubWorkItemMutation.softHiddenItemKeys,
       typeFilteredCurrentPageItems,
       workbenchScopeActive,
-      model.appliedTaskSearch,
+      goalDisplayQuery,
       model.workbenchScopeViewerLogins
     ]
   )

@@ -1,3 +1,4 @@
+import { countUnresolvedCodeHubThreadsSince } from '../../shared/workbench/review-thread-counts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { runCodeHubCliMock } = vi.hoisted(() => ({
@@ -168,6 +169,7 @@ describe('codehub comments', () => {
         authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/m30077918.png',
         isBot: false,
         isResolved: false,
+        isSystem: false,
         path: null,
         line: null,
         isOutdated: false
@@ -185,7 +187,8 @@ describe('codehub comments', () => {
         isReply: true,
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: true,
         path: null,
         line: null,
         isOutdated: false
@@ -201,6 +204,7 @@ describe('codehub comments', () => {
         authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/bot.png',
         isBot: true,
         isResolved: true,
+        isSystem: false,
         path: 'src/main/bridge.py',
         line: 42,
         isOutdated: false
@@ -218,7 +222,8 @@ describe('codehub comments', () => {
         isReply: false,
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: false,
         path: null,
         line: null,
         isOutdated: false
@@ -234,6 +239,7 @@ describe('codehub comments', () => {
         authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/m30077918.png',
         isBot: false,
         isResolved: false,
+        isSystem: false,
         // szv-open hosts null the top-level anchor; the position fallback
         // recovers path/line so the files tab can still place the card.
         path: 'src/main/bridge.py',
@@ -250,13 +256,95 @@ describe('codehub comments', () => {
         isReply: false,
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: false,
         path: 'src/main/bridge.py',
         line: 12,
         // Stale anchors pass through so the files tab can skip them inline.
         isOutdated: true
       }
     ])
+
+    const payload = JSON.parse(await runCodeHubCliMock.mock.results[0]!.value)
+    const completeThreads = await listCodeHubComments({
+      remote,
+      kind: 'mr',
+      iid: 4092,
+      requireCompleteThreads: true
+    })
+    expect(countUnresolvedCodeHubThreadsSince(completeThreads, '2026-03-12T10:00:00Z')).toBe(2)
+    const resolvedRoot = { ...payload[1].notes[0] }
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify([
+        { ...payload[1], notes: [resolvedRoot, { ...payload[0].notes[1], id: 999, system: false }] }
+      ])
+    )
+    expect(
+      countUnresolvedCodeHubThreadsSince(
+        await listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireCompleteThreads: true }),
+        '2026-03-12T10:00:00Z'
+      )
+    ).toBe(0)
+    for (const root of [
+      { ...resolvedRoot, resolved: undefined },
+      { ...resolvedRoot, is_reply: true },
+      { ...resolvedRoot, is_reply: true, system: true },
+      { ...resolvedRoot, created_at: 'bad' }
+    ]) {
+      runCodeHubCliMock.mockResolvedValue(JSON.stringify([{ ...payload[1], notes: [root] }]))
+      await expect(
+        listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireCompleteThreads: true })
+      ).rejects.toThrow('CodeHub 检视线程')
+    }
+
+    const page = Array.from({ length: 50 }, (_, id) => ({
+      id: `discussion-${id}`,
+      notes: [{ id, body: `snapshot-${id}` }]
+    }))
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock
+      .mockResolvedValueOnce(JSON.stringify(page))
+      .mockResolvedValueOnce(JSON.stringify([{ id: 'last', notes: [{ id: 50, body: 'latest' }] }]))
+    const complete = await listCodeHubComments({
+      remote,
+      kind: 'mr',
+      iid: 4092,
+      requireComplete: true
+    })
+    expect(complete).toHaveLength(51)
+    expect(complete.at(-1)).toMatchObject({ id: '50', body: 'latest', discussionId: 'last' })
+    expect(
+      runCodeHubCliMock.mock.calls.map(([args]) => args[args.indexOf('--offset') + 1])
+    ).toEqual(['0', '50'])
+
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock.mockResolvedValue(JSON.stringify(page))
+    await expect(
+      listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireComplete: true })
+    ).rejects.toThrow('分页重复')
+    expect(runCodeHubCliMock).toHaveBeenCalledTimes(2)
+
+    for (const invalid of [
+      '',
+      '{}',
+      '[null]',
+      '[{"id":"thread","notes":[{"id":1}]}]',
+      '[{"id":"thread","notes":[{"id":"","body":"note"}]}]',
+      '[{"id":"a","notes":[{"id":1,"body":"note"}]},{"id":"b","notes":[{"id":1,"body":"note"}]}]'
+    ]) {
+      runCodeHubCliMock.mockReset()
+      runCodeHubCliMock.mockResolvedValue(invalid)
+      await expect(
+        listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireComplete: true })
+      ).rejects.toThrow('CodeHub指标评论')
+    }
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock
+      .mockResolvedValueOnce(JSON.stringify(page))
+      .mockRejectedValueOnce(new Error('read failed'))
+    await expect(
+      listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireComplete: true })
+    ).rejects.toThrow('read failed')
   })
 
   it('maps flat issue comments as-is', async () => {
@@ -302,12 +390,27 @@ describe('codehub comments', () => {
         // fields; the mapping must default them rather than drop the note.
         authorAvatarUrl: null,
         isBot: false,
-        isResolved: false,
+        isResolved: undefined,
+        isSystem: false,
         path: null,
         line: null,
         isOutdated: false
       }
     ])
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock
+      .mockResolvedValueOnce(
+        JSON.stringify(Array.from({ length: 50 }, (_, id) => ({ id, body: `note-${id}` })))
+      )
+      .mockResolvedValueOnce('null')
+    expect(
+      await listCodeHubComments({ remote, kind: 'issue', iid: 70, requireComplete: true })
+    ).toHaveLength(50)
+    expect(runCodeHubCliMock).toHaveBeenCalledTimes(2)
+    runCodeHubCliMock.mockResolvedValue('null')
+    expect(
+      await listCodeHubComments({ remote, kind: 'issue', iid: 70, requireComplete: true })
+    ).toEqual([])
   })
 
   it('replies within an mr discussion via mr review reply', async () => {

@@ -22,6 +22,7 @@ import {
   Wrench
 } from 'lucide-react'
 import type { SettingsNavigationBuildOptions } from './settings-navigation-build-options'
+import { isWorkbenchShell } from '../workbench/is-workbench-shell'
 
 export function buildRemoteSettingsSections(
   { isMac, isWindowsTerminalHost, isWebClient, isDev, repos }: SettingsNavigationBuildOptions,
@@ -83,10 +84,15 @@ export function buildRemoteSettingsSections(
         'auto.hooks.useSettingsNavigationMetadata.3618579df6',
         'Privacy & Telemetry'
       ),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.8400cfe1c1',
-        'Anonymous usage data and telemetry controls.'
-      ),
+      description: isWorkbenchShell()
+        ? translate(
+            'auto.components.settings.PrivacyPane.workbenchSectionDescription',
+            'Usage data, diagnostics, and telemetry controls.'
+          )
+        : translate(
+            'auto.hooks.useSettingsNavigationMetadata.8400cfe1c1',
+            'Anonymous usage data and telemetry controls.'
+          ),
       icon: Lock,
       searchEntries: getPrivacyPaneSearchEntries(),
       group: 'security'

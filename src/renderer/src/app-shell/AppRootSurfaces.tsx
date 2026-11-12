@@ -305,10 +305,12 @@ export function AppRootSurfaces(props: {
         </OverlayBoundary>
       )}
       {isWorkbenchShell() ? null : <StarNagAgentValueMomentObserver />}
-      {/* Why: mount at App root to render once per session; internal cohort gate limits it to pre-telemetry users — see telemetry-plan.md §First-launch experience. */}
-      <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
-        <TelemetryFirstLaunchSurface />
-      </OverlayBoundary>
+      {/* BW consent is managed in Settings; native builds retain their first-launch notice. */}
+      {isWorkbenchShell() ? null : (
+        <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
+          <TelemetryFirstLaunchSurface />
+        </OverlayBoundary>
+      )}
       <OverlayBoundary boundaryId="overlay.zoom" resetKey={activeView}>
         <ZoomOverlay />
       </OverlayBoundary>
@@ -334,22 +336,20 @@ export function AppRootSurfaces(props: {
       <ModalBoundary boundaryId="modal.markdown-template-picker" resetKey={activeModal}>
         <MarkdownTemplatePicker />
       </ModalBoundary>
-      {isWorkbenchShell() ? null : (
-        <RecoverableRenderErrorBoundary
-          boundaryId="modal.crash-report"
-          surface="modal"
-          reportAsCrash={false}
-          resetKey={activeModal}
-          compact
-          title={translate('auto.App.722d03aa62', 'The crash report dialog hit an error.')}
-          description={translate(
-            'auto.App.acd66311dc',
-            'Use the Help menu after retrying if you still need diagnostics.'
-          )}
-        >
-          <CrashReportDialog />
-        </RecoverableRenderErrorBoundary>
-      )}
+      <RecoverableRenderErrorBoundary
+        boundaryId="modal.crash-report"
+        surface="modal"
+        reportAsCrash={false}
+        resetKey={activeModal}
+        compact
+        title={translate('auto.App.722d03aa62', 'The crash report dialog hit an error.')}
+        description={translate(
+          'auto.App.acd66311dc',
+          'Use the Help menu after retrying if you still need diagnostics.'
+        )}
+      >
+        <CrashReportDialog />
+      </RecoverableRenderErrorBoundary>
       {onboardingGate.onboarding && onboardingGate.shouldRender ? (
         <Suspense fallback={null}>
           <RecoverableRenderErrorBoundary

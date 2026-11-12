@@ -1,5 +1,6 @@
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
@@ -14,42 +15,42 @@ import { nativeVersionMaterialService } from '../../../workbench/version-materia
 import { versionSelection } from '../../../workbench/version-selection'
 
 export const WORKBENCH_MATERIAL_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.materials.context',
     params: VersionMaterialScopeSchema,
     handler: (params, { runtime }) => materialResult(() => versionSelection(runtime, params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.materials.select',
     params: VersionMaterialReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => versionSelection(runtime, params, params.version))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.materials.previewMigration',
     params: VersionMigrationReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).previewMigration(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.materials.migrate',
     params: VersionMigrationApplySchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).migrate(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.materials.list',
     params: VersionMaterialScopeSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).list(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.materials.read',
     params: VersionMaterialReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).read(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.materials.save',
     params: VersionMaterialSaveSchema,
     handler: (params, ctx) =>
@@ -61,5 +62,14 @@ export const WORKBENCH_MATERIAL_METHODS = [
         await assertHumanFieldsUntouched((input) => service.read(input), params, ctx)
         return service.save(params)
       })
+  }),
+  // #516 制品登记：操作面只收制品字段，文档在拥有工作树的一侧从新鲜读取
+  // 重建、只改 preparedArtifacts——人工字段按构造原样往返，无需 save 的通道
+  // 守卫（见 version-material-artifact.ts）。
+  defineWorkbenchMethod({
+    name: 'workbench.materials.addArtifact',
+    params: VersionMaterialAddArtifactSchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => nativeVersionMaterialService(runtime).addArtifact(params))
   })
 ]

@@ -6,6 +6,7 @@ import type { BrowserWorkspace } from '../../../../shared/browser-workspace-type
 import type { Tab } from '../../../../shared/tab-types'
 import type { TerminalTab } from '../../../../shared/terminal-tab-types'
 import type { OpenFile } from '../../store/slices/editor'
+import { buildOwnedEditorFileId } from '../../store/slices/editor/file-ids/editor-file-ids'
 import { toRuntimeExecutionHostId } from '../../../../shared/execution-host'
 import type { ReadyEditorSurface, MirroredEditorTab } from './state'
 import type { WebSessionExistingTabIndex } from '../web-session-existing-tab-index'
@@ -103,13 +104,28 @@ export function buildMirroredEditorTabs(
   hostGroupIdByTabId: ReadonlyMap<string, string>,
   fallbackGroupId: string,
   sortOffset: number,
-  now: number
+  now: number,
+  hasLocalDraft: (fileId: string) => boolean
 ): MirroredEditorTab[] {
+  // Hydration assigns the host-qualified ID. Reuse it so reconnect keeps its draft and tab state.
+  const restoredMirrorId = (path: string): string | undefined => {
+    const id = buildOwnedEditorFileId(path, snapshot.worktree, environmentId)
+    const file = worktreeOpenFileById.get(id)
+    return file?.mirroredFromRuntimeSession === true && file.runtimeEnvironmentId === environmentId
+      ? id
+      : undefined
+  }
   return snapshot.tabs.filter(isReadyEditorTab).map((tab, index) => {
-    const fileId = localEditorFileId(tab)
+    const localFileId = localEditorFileId(tab)
+    const sourcePath = editorSourceFileId(tab)
+    const fileId = sourcePath ? localFileId : (restoredMirrorId(tab.filePath) ?? localFileId)
     const existingFile = worktreeOpenFileById.get(fileId)
     const existingUnifiedTab = existingTabIndex.getEditorUnifiedTab(fileId, tab.id)
-    const sourceFileId = editorSourceFileId(tab)
+    const sourceFileId = sourcePath ? (restoredMirrorId(sourcePath) ?? sourcePath) : undefined
+    const keepsLocalDraft =
+      existingFile?.isDirty === true &&
+      existingFile.runtimeEnvironmentId === environmentId &&
+      hasLocalDraft(fileId)
     const groupId = hostGroupIdByTabId.get(tab.id) ?? fallbackGroupId
     const file: OpenFile = {
       ...existingFile,
@@ -118,7 +134,7 @@ export function buildMirroredEditorTabs(
       relativePath: tab.relativePath,
       worktreeId: snapshot.worktree,
       language: tab.language,
-      isDirty: tab.isDirty,
+      isDirty: tab.isDirty || keepsLocalDraft,
       runtimeEnvironmentId: environmentId,
       mode: tab.type === 'markdown' ? tab.mode : 'edit',
       markdownPreviewSourceFileId: sourceFileId,

@@ -46,6 +46,18 @@ export const CodeHubUpdateIssueLabels = Repo.extend({
 })
 // Project label names for the issue-detail picker (`project label list`).
 export const CodeHubListLabels = Repo
+// Project members for the assignee picker (`project member list`); the picker
+// filters client-side, so no server query passthrough. extend({}) keeps a
+// distinct schema identity so the RPC catalog maps it by its own name.
+export const CodeHubListMembers = Repo.extend({})
+export type CodeHubProjectMember = {
+  id: number
+  username: string
+  name: string | null
+  nameCn: string | null
+  avatarUrl: string | null
+  state: string
+}
 export const CodeHubViewer = Repo
 export type CodeHubViewerIdentity = { id: number; username: string; name: string; state: string }
 export const CodeHubSetIssueState = Repo.extend({
@@ -60,9 +72,15 @@ export const CodeHubMergeMr = Repo.extend({ iid: Iid, auto: z.boolean().optional
 export const CodeHubSetReviewers = Repo.extend({ iid: Iid, reviewers: z.array(z.string()) })
 export const CodeHubListPipelines = Repo.extend({ iid: Iid })
 export const CodeHubMrChecks = Repo.extend({ iid: Iid })
+export const CodeHubMrForBranch = Repo.extend({ sourceBranch: z.string().trim().min(1) })
 export const CodeHubMrChanges = Repo.extend({ iid: Iid })
 export const CodeHubViewTask = Repo.extend({ kind: Kind, iid: Iid })
-export const CodeHubListComments = Repo.extend({ kind: Kind, iid: Iid })
+export const CodeHubListComments = Repo.extend({
+  kind: Kind,
+  iid: Iid,
+  requireComplete: z.boolean().optional(),
+  requireCompleteThreads: z.boolean().optional()
+})
 export const CodeHubCreateComment = Repo.extend({
   kind: Kind,
   iid: Iid,
@@ -87,6 +105,7 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   updateIssueTitle: CodeHubUpdateIssueTitle,
   updateIssueLabels: CodeHubUpdateIssueLabels,
   listLabels: CodeHubListLabels,
+  listMembers: CodeHubListMembers,
   viewer: CodeHubViewer,
   setIssueState: CodeHubSetIssueState,
   closeMr: CodeHubCloseMr,
@@ -95,6 +114,7 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   setReviewers: CodeHubSetReviewers,
   listPipelines: CodeHubListPipelines,
   mrChecks: CodeHubMrChecks,
+  mrForBranch: CodeHubMrForBranch,
   mrChanges: CodeHubMrChanges,
   viewTask: CodeHubViewTask,
   listComments: CodeHubListComments,
@@ -103,6 +123,11 @@ export const CODEHUB_REQUEST_SCHEMAS = {
 }
 
 export type CodeHubApi = {
+  mrForBranch: (args: z.infer<typeof CodeHubMrForBranch>) => Promise<{
+    number: number
+    url: string
+    state: 'open' | 'merged' | 'closed'
+  } | null>
   listTasks: (
     args: z.infer<typeof CodeHubListTasks>
   ) => Promise<{ remote: CodeHubRemote; items: CodeHubTaskItem[]; hasMore: boolean }>
@@ -112,6 +137,7 @@ export type CodeHubApi = {
   updateIssueTitle: (args: z.infer<typeof CodeHubUpdateIssueTitle>) => Promise<void>
   updateIssueLabels: (args: z.infer<typeof CodeHubUpdateIssueLabels>) => Promise<void>
   listLabels: (args: z.infer<typeof CodeHubListLabels>) => Promise<string[]>
+  listMembers: (args: z.infer<typeof CodeHubListMembers>) => Promise<CodeHubProjectMember[]>
   viewer: (args: z.infer<typeof CodeHubViewer>) => Promise<CodeHubViewerIdentity>
   setIssueState: (args: z.infer<typeof CodeHubSetIssueState>) => Promise<void>
   closeMr: (args: z.infer<typeof CodeHubCloseMr>) => Promise<void>

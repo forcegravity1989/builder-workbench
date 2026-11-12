@@ -1,11 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { parseExecutionHostId } from '../../../shared/execution-host'
-import { openProjectOnboard } from './project-page-state'
+import {
+  parseExecutionHostId,
+  getRepoExecutionHostId,
+  getWorktreeExecutionHostId
+} from '../../../shared/execution-host'
+import { openAddProject, useProjectPage } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
-import { readProjectCharter, type ProjectCharter } from './project-charter'
+import { charterSourceKey, loadRepoCharter, useRepoCharterSnapshot } from './charter-snapshot'
+import { invalidateWallRepo, useWallRefresh } from './wall-refresh'
+import { findWallProjectForRepo, useWallProjects } from './use-wall-projects'
+import { useWallVersionLabel } from './use-wall-readings'
+import { ProjectSettingsRail } from './ProjectSettingsRail'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,
@@ -14,15 +26,13 @@ import {
 } from './version-cycle/native-workspace'
 import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
-import { NorthStarCard } from './overview-north-star-card'
 import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
-import { OverviewVersionMinutes } from './overview-version-minutes'
-import { useOverviewViewState } from './overview-view-state'
+import { ProjectMilestones } from './project-milestones'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
@@ -30,10 +40,27 @@ import './workbench-overview.css'
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const repoWorktrees = useAppStore((s) =>
+  const activeHostId = useAppStore((s) => s.activeWorkspaceExecutionHostId)
+  const registeredWorktrees = useAppStore((s) =>
     activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
   )
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
+  const activeRepo = activeRepoId
+    ? (findRepoForHost(repos, activeRepoId, { hostId: activeHostId ?? undefined }) ?? repos[0])
+    : repos[0]
+  const repoWorktrees = useMemo(
+    () =>
+      registeredWorktrees?.filter(
+        (tree) =>
+          activeRepo &&
+          getWorktreeExecutionHostId(tree, activeRepo) === getRepoExecutionHostId(activeRepo)
+      ),
+    [registeredWorktrees, activeRepo]
+  )
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsDirty, setSettingsDirty] = useState(false)
+  const [settingsBusy, setSettingsBusy] = useState(false)
+  const [confirmClose, setConfirmClose] = useState(false)
+  const discardSettings = useRef<(() => void) | null>(null)
 
   /** Metrics/history read from the project's main worktree: the configuration baseline tree. */
   const baseScope = useMemo<NativeWorkspaceScope | null>(() => {
@@ -54,15 +81,28 @@ export function OverviewPage(): React.JSX.Element {
     return repoWorktrees.find((item) => item.isMainWorktree) ?? repoWorktrees[0] ?? null
   }, [baseScope, repoWorktrees])
   const baseWorktreeId = baseWorktree?.id ?? null
+  const milestoneScope = useMemo(
+    () => (baseScope && baseWorktreeId ? { ...baseScope, worktreeId: baseWorktreeId } : null),
+    [baseScope, baseWorktreeId]
+  )
 
-  const charterKey = JSON.stringify([activeRepo?.id, activeRepo?.path])
-  const [charterState, setCharter] = useState<{
-    key: string
-    value: ProjectCharter | null
-  } | null>(null)
-  const charter = charterState?.key === charterKey ? charterState.value : null
+  const charterKey = activeRepo ? charterSourceKey(activeRepo) : 'none'
+  const charterRead = useRepoCharterSnapshot(activeRepo)
+  const charter = charterRead?.charter ?? null
+  const projectPage = useProjectPage()
+  const filters =
+    projectPage?.kind === 'project-overview' &&
+    activeRepo?.id === projectPage.options.repoId &&
+    getRepoExecutionHostId(activeRepo) === projectPage.options.hostId
+      ? projectPage.options.filters
+      : undefined
+  const wallProjects = useWallProjects(filters)
+  const wallRefresh = useWallRefresh()
+  const charterVersion = useWallVersionLabel(
+    activeRepo ? findWallProjectForRepo(wallProjects, activeRepo) : undefined,
+    wallRefresh
+  )
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
-  const [view, setView] = useOverviewViewState(identity)
   const fixedTrees = useMemo(() => {
     if (!baseScope) {
       return { plan: null, acceptance: null, error: null }
@@ -95,8 +135,7 @@ export function OverviewPage(): React.JSX.Element {
     identity: dataIdentity,
     granularity: SCOREBOARD_GRANULARITY
   })
-  const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } =
-    metrics
+  const { catalog, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } = metrics
   const historyState = useOverviewHistory({
     baseScope,
     baseWorktreeId,
@@ -106,32 +145,13 @@ export function OverviewPage(): React.JSX.Element {
   })
   const { history, currentVersion } = historyState
   const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
-  // 版本区来源标注：目录读的是主检出基线的哪个分支、哪个提交。
-  const historySource = history?.baselineCommit
-    ? `${history.baselineRef ?? '主检出'} @ ${history.baselineCommit.slice(0, 12)}`
-    : null
-
-  useEffect(() => {
-    if (!activeRepo?.path) {
-      setCharter(null)
-      return
-    }
-    let cancelled = false
-    void readProjectCharter(activeRepo.path).then((r) => {
-      if (!cancelled) {
-        setCharter({ key: charterKey, value: r.charter })
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [activeRepo?.path, charterKey])
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
-  const { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus } =
-    useCharterPrStatus(activeRepo, Boolean(charter), charterKey, (value) =>
-      setCharter({ key: charterKey, value })
-    )
+  const { charterStatus, refreshCharterStatus } = useCharterPrStatus(
+    charterRead && !charterRead.error ? activeRepo : undefined,
+    Boolean(charter),
+    charterKey
+  )
 
   // 「更新代码」点击处理；updatingTrunk 状态声明在 dataIdentity 之前。
   const updateTrunk = async () => {
@@ -165,10 +185,9 @@ export function OverviewPage(): React.JSX.Element {
       historyState.reload()
       reloadCatalog()
       refreshCharterStatus()
-      if (activeRepo.path) {
-        void readProjectCharter(activeRepo.path).then((r) =>
-          setCharter({ key: charterKey, value: r.charter })
-        )
+      invalidateWallRepo(activeRepo)
+      if (activeRepo.kind !== 'folder') {
+        void loadRepoCharter(activeRepo, true)
       }
     }
   }
@@ -186,10 +205,7 @@ export function OverviewPage(): React.JSX.Element {
     }
     return [...found].sort((a, b) => compareMaterialVersions(b, a))
   }, [history, currentVersion])
-  const version =
-    view.version && versions.includes(view.version)
-      ? view.version
-      : (currentVersion ?? versions[0] ?? null)
+  const version = currentVersion ?? versions[0] ?? null
   const minutes = useVersionMinutes(
     {
       baseScope,
@@ -213,16 +229,16 @@ export function OverviewPage(): React.JSX.Element {
         </header>
         <div className="content">
           <section className="card" style={{ padding: 24, textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有接入项目。</p>
+            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
             <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
-              点左上角项目名打开项目墙，再「+ 接入项目」。
+              添加项目后，可在这里查看项目总览。
             </p>
             <button
               type="button"
               className="wb-btn wb-btn-primary"
-              onClick={() => openProjectOnboard()}
+              onClick={() => openAddProject()}
             >
-              + 接入项目
+              + 添加项目
             </button>
           </section>
         </div>
@@ -230,98 +246,121 @@ export function OverviewPage(): React.JSX.Element {
     )
   }
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
-  const north = catalog?.definitions.find((item) => item.role === 'north_star')
 
   return (
-    <div className="wb-ov">
-      <header className="page-head">
-        <h1>总览</h1>
-        <button
-          type="button"
-          className="wb-btn wb-btn-secondary wb-btn-sm"
-          disabled={updatingTrunk || !baseScope || !baseWorktreeId}
-          title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
-          onClick={() => void updateTrunk()}
-        >
-          {updatingTrunk ? '正在更新…' : '更新代码'}
-        </button>
-      </header>
+    <TooltipProvider>
+      <div className="wb-overview-with-settings">
+        <div className="wb-ov">
+          <header className="page-head">
+            <h1>总览</h1>
+            <button
+              type="button"
+              className="wb-btn wb-btn-secondary wb-btn-sm"
+              disabled={updatingTrunk || !baseScope || !baseWorktreeId}
+              title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
+              onClick={() => void updateTrunk()}
+            >
+              {updatingTrunk ? '正在更新…' : '更新代码'}
+            </button>
+          </header>
 
-      <div className="content">
-        <header className="wb-ov-motto" aria-label="高效执行四原则">
-          <p>高效执行四原则 · FranklinCovey 4DX</p>
-          <h2>聚焦至关重要目标 · 贯彻引领指标 · 设立振奋人心的记分牌 · 保持相互担责的节奏</h2>
-        </header>
-        <MetricProblemsPanel
-          className="wb-muted"
-          problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
-        />
-        {metricsSetup.notice && (
-          <p role="alert" className="wb-ov-alert">
-            {metricsSetup.notice}
-          </p>
-        )}
-        <div className="row-2">
-          <ProjectCard
-            projectName={projectName}
-            charter={charter}
-            remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
-            version={version}
-            notice={
-              !charter ? (
-                <CharterPrNotice
-                  status={charterStatus}
-                  variant="overview"
-                  updating={updatingMain}
-                  onUpdateMain={() => void updateMainCheckout()}
-                />
-              ) : undefined
-            }
-          />
+          <div className="content">
+            <MetricProblemsPanel
+              className="wb-muted"
+              problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
+            />
+            {metricsSetup.notice && (
+              <p role="alert" className="wb-ov-alert">
+                {metricsSetup.notice}
+              </p>
+            )}
+            <ProjectCard
+              onEdit={activeRepo.kind !== 'folder' ? () => setSettingsOpen(true) : undefined}
+              projectName={projectName}
+              charter={charter}
+              version={charterVersion}
+              notice={
+                !charter ? (
+                  <CharterPrNotice
+                    status={charterStatus}
+                    variant="overview"
+                    updating={updatingTrunk}
+                    onUpdateMain={
+                      baseScope && baseWorktreeId ? () => void updateTrunk() : undefined
+                    }
+                  />
+                ) : undefined
+              }
+            />
 
-          <NorthStarCard
-            north={north}
-            northReading={northReading}
-            busy={busy}
-            hasCatalog={catalog !== null}
-            workspaceReady={baseScope !== null}
-            fallbackTitle={charter?.opportunity?.trim() || '（未配置）'}
-          />
-        </div>
+            <ProjectMilestones
+              scope={milestoneScope}
+              refreshToken={history?.baselineCommit}
+              updateFormal={updateTrunk}
+            />
 
-        <OverviewScoreboard
-          catalog={catalog}
-          readings={zoneReadings}
-          busy={busy}
-          onRefresh={() => void refreshReadings()}
-          anchor={metrics.anchor}
-          identity={identity}
-          plan={minutes?.planDocument ?? null}
-          version={version}
-          setupBusy={metricsSetup.busy || !baseScope}
-          onSetup={() => void metricsSetup.prepareMetrics()}
-          worktreeId={baseWorktreeId}
-        />
-
-        <OverviewVersionMinutes
-          versions={versions}
-          version={version}
-          onVersion={(value) => setView({ version: value })}
-          minutes={minutes}
-          historyProblems={history?.problems ?? []}
-          busy={historyState.busy}
-          onRetry={historyState.reload}
-          source={historySource}
-        />
-      </div>
-      {refreshing && (
-        <div className="wb-ov-refresh-block" role="status" aria-live="polite">
-          <div className="wb-ov-refresh-card">
-            <RefreshCw size={16} className="wb-ov-refresh-spin" />
-            <span>正在重新采集指标读数…</span>
+            <OverviewScoreboard
+              catalog={catalog}
+              readings={zoneReadings}
+              busy={busy}
+              onRefresh={() => void refreshReadings()}
+              anchor={metrics.anchor}
+              identity={identity}
+              plan={minutes?.planDocument ?? null}
+              version={version}
+              setupBusy={metricsSetup.busy || !baseScope}
+              onSetup={() => void metricsSetup.prepareMetrics()}
+              worktreeId={baseWorktreeId}
+            />
           </div>
+          {refreshing && (
+            <div className="wb-ov-refresh-block" role="status" aria-live="polite">
+              <div className="wb-ov-refresh-card">
+                <RefreshCw size={16} className="wb-ov-refresh-spin" />
+                <span>正在重新采集指标读数…</span>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+        {settingsOpen && activeRepo.kind !== 'folder' && (
+          <ProjectSettingsRail
+            key={charterKey}
+            repo={activeRepo}
+            displayName={projectName}
+            onClose={() => {
+              if (!settingsBusy) {
+                if (settingsDirty) {
+                  setConfirmClose(true)
+                } else {
+                  setSettingsOpen(false)
+                }
+              }
+            }}
+            onDirtyChange={setSettingsDirty}
+            onBusyChange={setSettingsBusy}
+            discardRef={discardSettings}
+            onChanged={refreshCharterStatus}
+          />
+        )}
+        <Dialog open={confirmClose} onOpenChange={setConfirmClose}>
+          <DialogContent>
+            <DialogTitle>还有未提交的修改</DialogTitle>
+            <DialogDescription>关闭设置会丢弃这些修改。</DialogDescription>
+            <Button variant="ghost" onClick={() => setConfirmClose(false)}>
+              继续编辑
+            </Button>
+            <Button
+              onClick={() => {
+                discardSettings.current?.()
+                setConfirmClose(false)
+                setSettingsOpen(false)
+              }}
+            >
+              丢弃并关闭
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   )
 }

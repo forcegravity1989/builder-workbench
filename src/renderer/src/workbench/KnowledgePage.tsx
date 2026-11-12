@@ -26,17 +26,8 @@ import './workbench-kb.css'
 /** V7 保真：文档 / 代码 / 对账 — 文档正文从 activeRepo 仓库读取。 */
 export function KnowledgePage(): React.JSX.Element {
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
-  const {
-    activeRepo,
-    docs,
-    bodies,
-    setBodies,
-    savedBodies,
-    loading,
-    error,
-    reload,
-    saveDoc
-  } = useKnowledgeRepo()
+  const { activeRepo, docs, bodies, setBodies, savedBodies, loading, error, reload, saveDoc } =
+    useKnowledgeRepo()
   const [tab, setTab] = useState<KbTab>('docs')
   const [audience, setAudience] = useState<KbAudience>('eng')
   const [groupKey, setGroupKey] = useState('eng-contract')
@@ -133,7 +124,7 @@ export function KnowledgePage(): React.JSX.Element {
       ? `加载失败：${error}`
       : activeRepo
         ? `${docs.length} 份仓库文档 · ${repoLabel}`
-        : '请先接入项目'
+        : '请先添加项目'
 
   return (
     <div className={`wb-kb${editorOpen && tab === 'docs' ? ' is-ed' : ''}`} data-screen="kb">
@@ -186,7 +177,7 @@ export function KnowledgePage(): React.JSX.Element {
               type="button"
               className="wb-btn wb-btn-primary wb-btn-sm"
               data-workbench-kb-rescan
-              onClick={() => toast.message('原型演示：会开 asset-audit 会话，只写评论不替改')}
+              onClick={() => toast.message('原型演示：知识盘点会话入口尚未接入')}
             >
               现在盘一遍
             </button>
@@ -309,9 +300,7 @@ export function KnowledgePage(): React.JSX.Element {
                 )
               })}
             </div>
-            <div className="hint">
-              没有升级按钮。重盘是开一场 asset-audit 会话，不是在这屏改文件。
-            </div>
+            <div className="hint">知识盘点会话入口尚未接入；本页只展示已有资产。</div>
           </div>
         ) : null}
       </div>

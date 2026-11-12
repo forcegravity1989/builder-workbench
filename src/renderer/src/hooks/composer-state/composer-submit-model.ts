@@ -33,6 +33,7 @@ export type FullSubmitSource = {
 }
 
 export type PreparedFullSubmit = FullSubmitSource & {
+  agentLaunchOwner?: WorktreeCreationRequest['agentLaunchOwner']
   effectiveSetupDecision: SetupDecision
   issueCommandTrustDecision: 'run' | 'skip'
   confirmedIssueCommandTemplate: string

@@ -25,11 +25,13 @@ import {
   CodeHubDeleteComment,
   CodeHubListComments,
   CodeHubListLabels,
+  CodeHubListMembers,
   CodeHubListPipelines,
   CodeHubListTasks,
   CodeHubMergeMr,
   CodeHubMrChanges,
   CodeHubMrChecks,
+  CodeHubMrForBranch,
   CodeHubSetIssueState,
   CodeHubSetReviewers,
   CodeHubUpdateIssueLabels,
@@ -52,6 +54,7 @@ import {
   SelectCodexAccountForTargetParams
 } from './accounts-params'
 import { PrepareCodexForWslPaneParams } from './agent-hooks-params'
+import { AgentLaunchSettingsMutation } from './agent-launch-settings-params'
 import { CreateAgentSessionParams, EnsureAgentSessionParams } from './agent-session-params'
 import {
   AiVaultListSessionsParams,
@@ -566,6 +569,7 @@ import {
   CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../workbench/charter'
+import { FixedWorkspaceEnsureSchema } from '../workbench/fixed-workspace'
 import { MetricReadRequestSchema } from '../workbench/metrics'
 import {
   PackageDownloadSchema,
@@ -573,7 +577,13 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
+import { ReviewRequestSchema } from '../workbench/pr-review-request'
+import {
+  MilestoneReadRequestSchema,
+  MilestoneSubmitRequestSchema
+} from '../workbench/project-milestones'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
+import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
 import {
@@ -587,11 +597,13 @@ import {
   VersionMigrationReadSchema
 } from '../workbench/version-material-migration'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
 } from '../workbench/version-material-request'
 import { VersionWorkspacePrepareSchema } from '../workbench/version-workspace-prepare'
+import { WorkflowCommentsRequestSchema } from '../workbench/workflow-comments'
 
 // Why: the host parses params with these schemas, so a client that matches this map
 // matches the dispatcher. Clients must import it for types only — parsing a params
@@ -753,11 +765,13 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.deleteComment': CodeHubDeleteComment,
   'codehub.listComments': CodeHubListComments,
   'codehub.listLabels': CodeHubListLabels,
+  'codehub.listMembers': CodeHubListMembers,
   'codehub.listPipelines': CodeHubListPipelines,
   'codehub.listTasks': CodeHubListTasks,
   'codehub.mergeMr': CodeHubMergeMr,
   'codehub.mrChanges': CodeHubMrChanges,
   'codehub.mrChecks': CodeHubMrChecks,
+  'codehub.mrForBranch': CodeHubMrForBranch,
   'codehub.setIssueState': CodeHubSetIssueState,
   'codehub.setReviewers': CodeHubSetReviewers,
   'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
@@ -1131,7 +1145,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'session.tabs.unsubscribeAll': SessionTabsUnsubscribeAllParams,
   'session.tabs.updatePaneLayout': UpdatePaneLayout,
   'settings.get': null,
+  'settings.getAgentLaunch': null,
   'settings.getTerminalQuickCommands': null,
+  'settings.mutateAgentLaunch': AgentLaunchSettingsMutation,
   'settings.mutateNativeChatSessionOptions': NativeChatSessionOptionsMutation,
   'settings.update': SettingsUpdate,
   'settings.updatePRBotAuthorOverride': PRBotAuthorOverrideUpdate,
@@ -1214,10 +1230,12 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.read': CharterReadRequestSchema,
   'workbench.charter.status': CharterStatusRequestSchema,
   'workbench.charter.submit': CharterSubmitRequestSchema,
+  'workbench.fixedWorkspace.ensure': FixedWorkspaceEnsureSchema,
   'workbench.history.list': VersionHistoryListSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
+  'workbench.materials.addArtifact': VersionMaterialAddArtifactSchema,
   'workbench.materials.context': VersionMaterialScopeSchema,
   'workbench.materials.list': VersionMaterialScopeSchema,
   'workbench.materials.migrate': VersionMigrationApplySchema,
@@ -1228,15 +1246,24 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.milestones.read': MilestoneReadRequestSchema,
+  'workbench.milestones.submit': MilestoneSubmitRequestSchema,
+  'workbench.overview.pull': WorkflowCommentsRequestSchema,
   'workbench.package.download': PackageDownloadSchema,
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
+  'workbench.review.comments': PullRequest,
+  'workbench.review.identity': null,
+  'workbench.review.inbox': null,
+  'workbench.review.receive': ReviewRequestSchema,
+  'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,
   'workbench.versionWorkspace.prepare': VersionWorkspacePrepareSchema,
+  'workbench.workflow.comments': WorkflowCommentsRequestSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

@@ -14,7 +14,7 @@
     "audit:perf": "oxlint --config config/oxlint-performance-audit.json --format json src",
     "test:perf:contracts": "vitest run --config config/vitest.performance.config.ts",
     "format": "oxfmt --write .",
-    "lint": "oxlint && pnpm run audit:anti-slop && pnpm run audit:code-quality:native && pnpm run audit:code-quality:type-aware && pnpm run check:reliability-gates && pnpm run check:dead-classes && pnpm run check:design-system-tokens && pnpm run check:max-lines-ratchet && pnpm run check:ts-nocheck-ratchet && pnpm run check:runtime-electron-ratchet && pnpm run check:readme-local-links && pnpm run verify:rpc-params-catalog && pnpm run verify:bundled-skill-guides && pnpm run verify:skill-bundle-manifest && pnpm run verify:localization-catalog && pnpm run verify:localization-runtime-catalog && pnpm run verify:localization-extraction && pnpm run verify:localization-coverage",
+    "lint": "oxlint && pnpm run audit:anti-slop && pnpm run audit:code-quality:native && pnpm run audit:code-quality:type-aware && pnpm run check:reliability-gates && pnpm run check:dead-classes && pnpm run check:design-system-tokens && pnpm run check:max-lines-ratchet && pnpm run check:ts-nocheck-ratchet && pnpm run check:runtime-electron-ratchet && pnpm run check:readme-local-links && pnpm run verify:rpc-params-catalog && pnpm run verify:bundled-skill-guides && pnpm run verify:skill-bundle-manifest && pnpm run verify:localization-catalog && pnpm run verify:localization-runtime-catalog && pnpm run verify:localization-extraction && pnpm run verify:localization-coverage && pnpm run verify:workbench-skills",
     "audit:code-quality": "pnpm run audit:code-quality:native && pnpm run audit:code-quality:type-aware && pnpm run audit:react-doctor",
     "audit:code-quality:native": "oxlint --config config/oxlint-code-quality-native-plugins.json src config tests --deny-warnings",
     "audit:code-quality:type-aware": "oxlint --type-aware --config config/oxlint-code-quality-type-aware.json src config tests --deny-warnings",
@@ -69,7 +69,7 @@
     "ensure:electron-runtime": "node config/scripts/ensure-native-runtime.mjs --runtime=electron",
     "start": "pnpm run ensure:electron-runtime && electron-vite preview",
     "dev": "pnpm run ensure:electron-runtime && node config/scripts/run-electron-vite-dev.mjs",
-    "dev:workbench": "WORKBENCH_SHELL=1 VITE_WORKBENCH_SHELL=1 ORCA_PRODUCT_NAME=Workbench sh -c 'pnpm run ensure:electron-runtime && node config/scripts/run-electron-vite-dev.mjs'",
+    "dev:workbench": "pnpm run ensure:electron-runtime && node config/scripts/run-electron-vite-dev.mjs --workbench",
     "dev-stable-name": "pnpm run ensure:electron-runtime && node config/scripts/run-electron-vite-dev.mjs --stable-name",
     "dev:web": "vite --config vite.web.config.ts --host 127.0.0.1",
     "build:relay": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON config/scripts/build-relay.mjs",
@@ -109,7 +109,7 @@
     "build:win": "pnpm run build:desktop && pnpm run ensure:electron-runtime && electron-builder --config config/electron-builder.config.cjs --win",
     "build:win:workbench": "node config/scripts/build-win-workbench.mjs",
     "release:win:workbench": "node config/scripts/release-win-workbench.mjs",
-    "build:icons": "bash resources/icon-source/generate.sh",
+    "build:icons": "node config/scripts/generate-workbench-icons.mjs",
     "build:mac": "pnpm run build:desktop && pnpm run build:computer-macos && pnpm run build:keyboard-layout-macos && pnpm run build:notification-status-macos && pnpm run ensure:electron-runtime && node config/scripts/build-mac-local.mjs",
     "build:mac:workbench": "WORKBENCH_SHELL=1 VITE_WORKBENCH_SHELL=1 ORCA_PRODUCT_NAME=Workbench ORCA_APP_ID=com.stablyai.workbench.dev pnpm run build:desktop && pnpm run build:computer-macos && pnpm run build:keyboard-layout-macos && pnpm run build:notification-status-macos && pnpm run ensure:electron-runtime && node config/scripts/build-mac-workbench.mjs",
     "build:mac:release": "node config/scripts/verify-macos-release-env.mjs && ORCA_MAC_RELEASE=1 pnpm run build:desktop && ORCA_MAC_RELEASE=1 pnpm run build:computer-macos && ORCA_MAC_RELEASE=1 pnpm run build:keyboard-layout-macos && ORCA_MAC_RELEASE=1 pnpm run build:notification-status-macos && pnpm run ensure:electron-runtime && ORCA_MAC_RELEASE=1 electron-builder --config config/electron-builder.config.cjs --mac",
@@ -142,7 +142,9 @@
     "repro:live-remote-bulk-open-freeze": "node config/scripts/live-remote-bulk-open-freeze-repro.mjs",
     "repro:live-remote-realistic-freeze": "node config/scripts/live-remote-realistic-freeze-repro.mjs",
     "audit:anti-slop": "node config/scripts/sync-anti-slop-plugin.mjs && oxlint --config config/oxlint-anti-slop.json src config tests --deny-warnings",
-    "sync:anti-slop-plugin": "node config/scripts/sync-anti-slop-plugin.mjs"
+    "sync:anti-slop-plugin": "node config/scripts/sync-anti-slop-plugin.mjs",
+    "generate:workbench-skills": "node config/scripts/generate-workbench-skill-package.mjs --write",
+    "verify:workbench-skills": "node config/scripts/generate-workbench-skill-package.mjs --check"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.3.251",

@@ -20,6 +20,7 @@ import type {
   RuntimeEnvironmentSubscriptionHandle
 } from './remote-runtime-terminal-multiplexer-types'
 import { getRuntimeEnvironmentRevision } from './runtime-environment-revision'
+import { refreshRuntimeEnvironmentsAfterPairingChange } from './runtime-environment-pairing-refresh'
 
 export abstract class RemoteRuntimeTerminalMultiplexerBase {
   protected readonly streams = new Map<number, RemoteRuntimeMultiplexedTerminalState>()
@@ -114,12 +115,14 @@ export abstract class RemoteRuntimeTerminalMultiplexerBase {
           this.subscription = subscription
           this.resolveReadyIfConnected()
         })
-        .catch((error) => {
+        .catch(async (error) => {
           if (this.connectPromise === connectPromise) {
             this.connectPromise = null
             this.readyResolver = null
             this.readyRejecter = null
           }
+          // A pane retries on this rejection; it must find the refreshed pairing first.
+          await refreshRuntimeEnvironmentsAfterPairingChange(error)
           reject(error instanceof Error ? error : new Error(String(error)))
         })
     })

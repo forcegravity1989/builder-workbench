@@ -25,6 +25,7 @@ import type {
   FolderWorkspacePathStatusRequest
 } from '../../../../shared/folder-workspace-path-status'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { AgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
 
 export const ERROR_TOAST_DURATION = 60_000
 
@@ -49,6 +50,7 @@ export type RepoUpdate = Partial<
     | 'worktreeVisibilitySourcePreferences'
     | 'projectGroupId'
     | 'projectGroupOrder'
+    | 'projectVisibility'
   >
 > & {
   externalWorktreeVisibility?: Repo['externalWorktreeVisibility'] | null
@@ -105,6 +107,7 @@ export type DeleteProjectGroupWithContainedProjectsOptions = {
 
 export type AllHostCatalogFetchOptions = {
   remoteHosts?: 'include' | 'skip'
+  onRepoCatalogError?: (hostId: ExecutionHostId) => void
 }
 
 export type ProjectRemovalFailure = {
@@ -193,7 +196,10 @@ export type RepoSlice = {
     runtimeEnvironmentId?: string | null
     mode: 'group' | 'separate'
   }) => Promise<ProjectGroupImportResult | null>
-  createProjectGroup: (name: string) => Promise<ProjectGroup | null>
+  createProjectGroup: (
+    name: string,
+    options?: { hostId?: ExecutionHostId }
+  ) => Promise<ProjectGroup | null>
   createFolderWorkspace: (
     args: {
       projectGroupId: string
@@ -205,7 +211,9 @@ export type RepoSlice = {
       createdWithAgent?: FolderWorkspace['createdWithAgent']
       pendingFirstAgentMessageRename?: boolean
     },
-    options?: FolderWorkspacePathStatusRouteOptions
+    options?: FolderWorkspacePathStatusRouteOptions & {
+      agentLaunchOwner?: AgentLaunchSettingsOwner
+    }
   ) => Promise<FolderWorkspace | null>
   getFolderWorkspacePathStatusCacheKey: (
     request: FolderWorkspacePathStatusRequest,
@@ -242,7 +250,8 @@ export type RepoSlice = {
   moveProjectToGroup: (
     projectId: string,
     groupId: string | null,
-    order?: number
+    order?: number,
+    options?: { hostId?: ExecutionHostId }
   ) => Promise<boolean>
   // options.hostId disambiguates which host's row to remove when the id exists on multiple hosts; else the focused host is assumed.
   // options.errorFeedback defaults to 'silent' so bulk/background callers keep their own aggregate reporting.

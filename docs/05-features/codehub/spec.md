@@ -6,6 +6,8 @@
 
 ## 范围与入口
 
+本篇定义任务管理在 CodeHub 来源下的行为，以及计划、验收复用的来源适配。跨来源任务交互的归属见[特性矩阵](../README.md#特性矩阵)。
+
 任务页在选中仓库的远程全部是 CodeHub、且 `codehub-cli` 在 PATH 上时，自动使用来源 `codehub`。这一步发生在 GitHub 列表之前。旧配置的可见来源里没有 `codehub` 时补一次；用户关掉之后不再加回。用户手动改过的来源不再被盖掉。
 
 CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置里的集成卡片区分检查中、已连接、未安装、未登录四态，登录态读 `codehub-cli auth status`（BW #323 起与 `gh` 同口径）。
@@ -27,7 +29,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 列表种类是 Issue 和 MR。开放对应 `--state opened`。我的：Issue 用 `assigned_to_me`，MR 用 `created_by_me`。待评审只对 MR，用 `need_my_review`。MR 搜索走 `--search`。
 
-每仓先取 30 条，用 `--limit` 再取，并多取一条判断后面还有没有。还有未加载内容时，空的已加载范围要说成「当前加载范围里没有」，不能说成项目没有 Issue。
+普通任务列表每仓读取最近 250 条，不再逐次加载；超过范围时提示缩小筛选，不能把有界结果当全量。版本列表按版本标签读取，目标任务按引用集合物化；搜索与筛选范围见 [CodeHub 指南](../../03-guide/codehub-cli.md#workbench-任务列表)。当前接线依据为 [列表加载](../../../src/renderer/src/components/use-task-page-codehub-loading.ts)，不替代完整内机旅程验收。
 
 详情读取 view 和评论的列出、新建、删除；MR 的评论按 discussion 分组显示，卡片样式与 GitHub 弹窗一致：头像、作者、相对时间、文件行号锚点，正文按 Markdown 渲染。评论可按人／机器人筛选，机器人计数取 `from_robot` 真实值（issue 侧无此字段，照 GitHub 不给筛选栏）。每条评论可在卡片右上角回复（回复挂在所属线程下缩进显示，提交成功后收起输入框，失败保留草稿）与跳转 CodeHub 网页对应位置。系统流水笔记（如 changed this line）像普通回复一样在线程内展示。已解决线程不折叠、直接展开，带「已解决」徽标与置灰。Issue 可改标题，也可改标签：标签在详情属性区以弹层编辑，样式同 GitHub 的标签选择器——列出项目已有标签供勾选，也可键入名字（回车或逗号落格；新名字保存时 CodeHub 自动创建为项目标签，组级已有标签键入名字同样能打上），当前选择以标签片展示、可逐个移除，保存即整组替换，清空全部同样生效。关闭顺序是先写评论再 `issue close`；评论失败则不关闭。三条评论正文是 `关闭原因: completed`、`关闭原因: not planned`、`关闭原因: duplicate of #<iid>`。重新打开不写评论。MR 可关闭。不提供草稿、Mark ready、表情、已读、修改评论正文。
 
@@ -76,8 +78,6 @@ MR 详情有三个页签：对话、检查项、文件变更。检查项来自 `
 
 旅程 CJ01：从 CodeHub 仓库打开任务，关闭一条 Issue，重启后再次列出该 Issue 仍为关闭。需要内部 CodeHub 与已登录的 CLI，本次未跑。
 
-## 取舍与待决问题
+## 设计取舍
 
 任务列表不挂在 GitHub 的 `listWorkItems` 后面，避免远程解析失败时静默降级。归档不用「提交已经在分支上」代替平台合入证据，以免没数据时显示成已完成。
-
-待决项见 [intent](intent.md)：边界是否含计划 / 验收、合入证据何时才允许离开未知。可点原型仍缺。

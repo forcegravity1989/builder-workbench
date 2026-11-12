@@ -102,6 +102,12 @@ function devWrapperTestEnv(extra: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     }
   }
   delete env.ELECTRON_EXEC_PATH
+  // Why: the Workbench switches decide the Dock title now that `--workbench` sets
+  // them, so an ambient value would let the flag cases below pass without the flag
+  // ever being consumed.
+  delete env.WORKBENCH_SHELL
+  delete env.VITE_WORKBENCH_SHELL
+  delete env.ORCA_PRODUCT_NAME
   return { ...env, ...extra }
 }
 
@@ -380,6 +386,61 @@ describe('run-electron-vite-dev', () => {
     expect(envSnapshot.args).toContain('--remote-debugging-port=9445')
     expect(envSnapshot.stableName).toBe('1')
     expect(envSnapshot.electronExecPath).toBeNull()
+
+    await stopWrapperAndTrackedPids(wrapper, trackedPids)
+  })
+
+  it('consumes the workbench flag before forwarding args to electron-vite', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'orca-dev-wrapper-'))
+    const pidFile = join(tempDir, 'grandchild.pid')
+    const envFile = join(tempDir, 'env.json')
+    const wrapperPath = resolve('config/scripts/run-electron-vite-dev.mjs')
+    const fakeCliPath = resolve('src/main/startup/__fixtures__/fake-electron-vite-dev-cli.mjs')
+
+    const wrapper = spawn(
+      process.execPath,
+      [wrapperPath, '--workbench', '--remote-debugging-port=9446'],
+      {
+        cwd: resolve('.'),
+        env: devWrapperTestEnv({
+          ORCA_ELECTRON_VITE_CLI: fakeCliPath,
+          ORCA_SKIP_DEV_CLI_PREPARE: '1',
+          ORCA_SKIP_DEV_ELECTRON_APP_PREPARE: '1',
+          ORCA_SKIP_DEV_WEB_PREPARE: '1',
+          ORCA_DEV_WRAPPER_TEST_PID_FILE: pidFile,
+          ORCA_DEV_WRAPPER_TEST_ENV_FILE: envFile,
+          ORCA_DEV_BRANCH: 'feature/workbench-shell',
+          ORCA_DEV_WORKTREE_NAME: 'workbench-ui'
+        }),
+        stdio: 'ignore'
+      }
+    )
+
+    expect(wrapper.pid).toBeTypeOf('number')
+    processesToCleanUp.add(wrapper.pid!)
+
+    await waitFor(() => {
+      try {
+        return readFileSync(envFile, 'utf8').trim().length > 0
+      } catch {
+        return false
+      }
+    })
+
+    const trackedPids = trackPidFile(pidFile)
+
+    const envSnapshot = JSON.parse(readFileSync(envFile, 'utf8')) as {
+      args: string[]
+      label: string
+      dockTitle: string
+    }
+    expect(envSnapshot.args).not.toContain('--workbench')
+    expect(envSnapshot.args).toContain('--remote-debugging-port=9446')
+    expect(envSnapshot.label).toBe('workbench-ui @ feature/workbench-shell')
+    // Why dockTitle: it is derived from isWorkbenchDevEnv(), so the Workbench prefix
+    // is the observable that the runner actually set WORKBENCH_SHELL rather than
+    // merely accepting the flag.
+    expect(envSnapshot.dockTitle).toBe('Workbench: feature/workbench-shell')
 
     await stopWrapperAndTrackedPids(wrapper, trackedPids)
   })

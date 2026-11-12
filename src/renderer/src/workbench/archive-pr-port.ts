@@ -11,13 +11,17 @@ import { callMetricRuntime } from './metric-runtime-rpc'
  */
 export function nativeArchivePrPort(runtimeOwnerEnvironmentId?: string): ArchivePrPort {
   return {
-    async readStatus(scope: ArchivePrScope, pr: WorkflowArchivePr): Promise<ArchivePrStatusResult> {
+    async readStatus(
+      scope: ArchivePrScope,
+      pr: WorkflowArchivePr,
+      force?: boolean
+    ): Promise<ArchivePrStatusResult> {
       const owner = scope.runtimeOwnerEnvironmentId ?? runtimeOwnerEnvironmentId
       return callMetricRuntime<ArchivePrStatusResult>(
         { repoId: scope.repoId, worktreeId: scope.worktreeId, hostId: scope.hostId },
         owner,
         'workbench.archive.prStatus',
-        (ownerScope) => ({ ...ownerScope, pr }),
+        (ownerScope) => ({ ...ownerScope, pr, ...(force ? { force } : {}) }),
         30_000
       )
     }

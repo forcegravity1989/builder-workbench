@@ -1,5 +1,6 @@
 import { dirname, join } from 'node:path'
 import { resolveCodexCommand } from '../codex-cli/command'
+import { CODEX_SHORT_LIVED_PROBE_APP_SERVER_ARGS } from '../codex-cli/codex-read-only-app-server-args'
 import { isTransientSqliteContention } from '../sqlite/sqlite-read-failure'
 import { getSpawnArgsForWindows } from '../win32-utils'
 import { getCodexSessionBackfillStateDirPath } from './codex-home-paths'
@@ -264,7 +265,9 @@ function buildNativeHealInvocation(
   timeoutMs: number
 ): CodexAppServerInvocation {
   const command = resolveCodexCommand()
-  const { spawnCmd, spawnArgs } = getSpawnArgsForWindows(command, ['app-server'])
+  const { spawnCmd, spawnArgs } = getSpawnArgsForWindows(command, [
+    ...CODEX_SHORT_LIVED_PROBE_APP_SERVER_ARGS
+  ])
   return {
     command: spawnCmd,
     args: spawnArgs,

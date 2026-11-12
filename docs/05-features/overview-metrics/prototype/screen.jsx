@@ -93,23 +93,19 @@ function OverviewV8({
           <section className="card ov-project" aria-label="项目信息">
             <div className="ov-heading">
               <h2>Builders’ Workbench</h2>
-              <span className="status status-todo">
-                <span className="status-dot" />
-                未知
-              </span>
-              <span className="tag tag-outline">bw-orca</span>
+              <span className="tag tag-outline">{selection.version}</span>
             </div>
             <dl className="ov-project-details">
+              <dt>项目负责人</dt>
+              <dd>—</dd>
               <dt>想做什么</dt>
               <dd>一张工作台打通所有系统，加速并规范项目运作。</dd>
               <dt>对标</dt>
               <dd>Workbench</dd>
-              <dt>目标方向</dt>
+              <dt>愿景</dt>
               <dd>更多项目纳入 Workbench 管理</dd>
               <dt>项目群</dt>
-              <dd>未读取</dd>
-              <dt>远端</dt>
-              <dd>{facts.repo}</dd>
+              <dd>—</dd>
             </dl>
           </section>
           <section className="card ov-north" aria-label="北极星指标">

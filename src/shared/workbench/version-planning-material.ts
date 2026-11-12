@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { PlanWorkflowStateSchema } from './version-workflow'
+import { VersionTimeWindowSchema } from './version-time-window'
 import {
   Id,
   Identity,
@@ -46,6 +47,7 @@ export type PlanMeetingMinutes = z.infer<typeof PlanMeetingMinutesSchema>
 export const PlanningMaterialSchema = z
   .strictObject({
     ...Identity,
+    timeWindow: VersionTimeWindowSchema.optional(),
     summary: z.strictObject({
       progress: z.string(),
       risks: z.string(),

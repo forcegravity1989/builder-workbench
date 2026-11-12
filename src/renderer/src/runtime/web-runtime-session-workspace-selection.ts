@@ -14,6 +14,18 @@ export type WebRuntimeSessionWorkspaceSelectionRollback = {
   applied: WebRuntimeSessionWorkspaceSelection
 }
 
+export function selectWebRuntimeSessionWorktreeWithRollback(
+  worktreeId: string,
+  environmentId: string
+): WebRuntimeSessionWorkspaceSelectionRollback {
+  const previous = readActiveWorkspaceSelection()
+  selectWebRuntimeSessionWorktree(worktreeId, environmentId)
+  return {
+    previous,
+    applied: { worktreeId, executionHostId: toRuntimeExecutionHostId(environmentId) }
+  }
+}
+
 export function readActiveWorkspaceSelection(): WebRuntimeSessionWorkspaceSelection {
   const state = useAppStore.getState()
   return {

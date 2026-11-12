@@ -45,23 +45,21 @@ function windowReading(
 }
 
 describe('zoneChartRange', () => {
-  it('周粒度返回周一到周一的完整周边界，覆盖五个周桶', () => {
-    const range = zoneChartRange('week', TZ, NOW)
-    expect(range.granularity).toBe('week')
+  // 环 4 ratchet 对冲（#516）：同一纯函数的周/日两条用例合并为一条，断言原样保留。
+  it('周粒度返回周一到周一的完整周边界；日粒度返回含今日的十四个日桶，左闭右开', () => {
+    const week = zoneChartRange('week', TZ, NOW)
+    expect(week.granularity).toBe('week')
     // 2026-09-24 is Thursday; its Monday is 2026-09-21 (2026-W39).
-    expect(range.since).toBe('2026-08-24')
-    expect(range.until).toBe('2026-09-28')
-    expect(new Date(`${range.since}T00:00:00Z`).getUTCDay()).toBe(1)
-    expect(new Date(`${range.until}T00:00:00Z`).getUTCDay()).toBe(1)
-    expect(zoneBucketLabels(range)).toHaveLength(ZONE_WEEK_BUCKETS)
-  })
-
-  it('日粒度返回含今日的十四个日桶，左闭右开', () => {
-    const range = zoneChartRange('day', TZ, NOW)
-    expect(range.since).toBe('2026-09-11')
-    expect(range.until).toBe('2026-09-25')
-    expect(zoneBucketLabels(range)).toHaveLength(ZONE_DAY_BUCKETS)
-    expect(zoneBucketLabels(range).at(-1)).toBe('09-24')
+    expect(week.since).toBe('2026-08-24')
+    expect(week.until).toBe('2026-09-28')
+    expect(new Date(`${week.since}T00:00:00Z`).getUTCDay()).toBe(1)
+    expect(new Date(`${week.until}T00:00:00Z`).getUTCDay()).toBe(1)
+    expect(zoneBucketLabels(week)).toHaveLength(ZONE_WEEK_BUCKETS)
+    const day = zoneChartRange('day', TZ, NOW)
+    expect(day.since).toBe('2026-09-11')
+    expect(day.until).toBe('2026-09-25')
+    expect(zoneBucketLabels(day)).toHaveLength(ZONE_DAY_BUCKETS)
+    expect(zoneBucketLabels(day).at(-1)).toBe('09-24')
   })
 })
 
@@ -76,11 +74,9 @@ describe('zonePointState', () => {
   const range = zoneChartRange('week', TZ, NOW)
   const labels = zoneBucketLabels(range)
 
-  it('未读取保持 unread，不补零', () => {
+  it('未读取与失败都保持 Unknown 信号，不补零，陈旧证据保留原时间', () => {
     expect(zonePointState(null, labels, range, TZ)).toEqual({ kind: 'unread' })
-  })
 
-  it('失败保持 Unknown 文案，陈旧证据保留原时间', () => {
     const reading: MetricReading = {
       status: 'error',
       reason: { code: 'collector-failed', message: '脚本以 1 结束' },
@@ -98,8 +94,8 @@ describe('zonePointState', () => {
     expect(state.stale).toEqual({ value: 7, collectedAt: '2026-09-21T12:00:00.000Z' })
   })
 
-  it('历史点按真实窗口落桶；缺失桶留空不补零', () => {
-    const state = zonePointState(
+  it('历史点按真实窗口落桶、缺失留空；字符串读数只作当前值文本', () => {
+    const numeric = zonePointState(
       windowReading([
         { day: '2026-08-31', value: 2 },
         { day: '2026-09-21', value: 5 }
@@ -108,25 +104,22 @@ describe('zonePointState', () => {
       range,
       TZ
     )
-    expect(state.kind).toBe('ready')
-    if (state.kind !== 'ready') {
-      return
+    expect(numeric.kind).toBe('ready')
+    if (numeric.kind === 'ready') {
+      expect(numeric.values).toEqual([null, 2, null, null, 5])
+      expect(numeric.latest).toMatchObject({ value: 5 })
     }
-    expect(state.values).toEqual([null, 2, null, null, 5])
-    expect(state.latest).toMatchObject({ value: 5 })
-  })
 
-  it('字符串读数不做数值曲线，只作为当前值文本', () => {
-    const state = zonePointState(
+    const text = zonePointState(
       windowReading([{ day: '2026-09-21', value: '达标' }]),
       labels,
       range,
       TZ
     )
-    if (state.kind !== 'ready') {
+    if (text.kind !== 'ready') {
       throw new Error('expected ready')
     }
-    expect(state.values).toEqual([null, null, null, null, null])
-    expect(state.latest?.value).toBe('达标')
+    expect(text.values).toEqual([null, null, null, null, null])
+    expect(text.latest?.value).toBe('达标')
   })
 })

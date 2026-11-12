@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../shared/execution-host'
+import { getRepoExecutionHostId, getRepoSshConnectionId } from '../../shared/execution-host'
 import type { Repo } from '../../shared/repo-types'
 import {
   execMessage,
@@ -50,12 +50,16 @@ export type CharterRuntimeHost = {
 function createCharterService(runtime: CharterRuntimeHost) {
   const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))
 
-  function repoById(repoId: string): WorkbenchWorkspaceRepo {
+  function localRepoById(repoId: string): WorkbenchWorkspaceRepo {
     const matches = runtime.listRepos().filter((repo) => repo.id === repoId)
     if (matches.length !== 1) {
       throw new WorkspaceScopeError('invalid-scope', '项目不存在或身份不唯一')
     }
-    return matches[0]
+    const repo = matches[0]
+    if (getRepoSshConnectionId(repo)) {
+      throw new WorkspaceScopeError('invalid-scope', '暂不支持通过配对主机读取 SSH 项目名片')
+    }
+    return repo
   }
 
   async function submit(params: CharterSubmitRequest): Promise<CharterSubmitOutcome> {
@@ -65,7 +69,7 @@ function createCharterService(runtime: CharterRuntimeHost) {
     const git = (args: string[], timeout = 60_000) =>
       gitExecFileAsync(args, { ...execOptions, cwd: treePath, timeout })
     const executionHostId = getRepoExecutionHostId(repo as Repo)
-    if (params.edit && parseExecutionHostId(executionHostId)?.kind === 'ssh') {
+    if (params.edit && getRepoSshConnectionId(repo)) {
       return {
         mode: 'failed',
         stage: 'validate',
@@ -164,11 +168,28 @@ function createCharterService(runtime: CharterRuntimeHost) {
       content = reviewed.content
       filled = reviewed.changed
       const working = await readTextFileGuarded(tomlPath)
-      if (working.error || (working.raw !== baseRaw && working.raw !== content)) {
+      let matchesHead = working.raw === baseRaw
+      let readError = working.error
+      if (
+        !matchesHead &&
+        working.raw !== content &&
+        working.raw !== null &&
+        baseRaw !== null &&
+        working.raw.replace(/\r\n/g, '\n') === baseRaw.replace(/\r\n/g, '\n')
+      ) {
+        // Windows checkout conversion can change the bytes while Git considers the file clean.
+        try {
+          const { stdout } = await git(['status', '--porcelain', '--', PROJECT_TOML_REL])
+          matchesHead = !stdout.trim()
+        } catch {
+          readError = '未能核对配置工作树，请重试；草稿已保留'
+        }
+      }
+      if (readError || (!matchesHead && working.raw !== content)) {
         return {
           mode: 'failed',
           stage: 'read',
-          error: '配置工作树有未提交的名片修改，请先核对；草稿已保留',
+          error: readError ?? '配置工作树有未提交的名片修改，请先核对；草稿已保留',
           filled: []
         }
       }
@@ -241,7 +262,7 @@ function createCharterService(runtime: CharterRuntimeHost) {
       }
     } else if (!reviewed) {
       // 无新内容且远端已同步:有开放 PR 就复用,没有才 noop;文案按真实态区分。
-      const openPr = await lookupOpenCharterPr(repo.path, executionHostId, identity, execOptions)
+      const openPr = await lookupOpenCharterPr(repo, executionHostId, identity, execOptions)
       if (openPr) {
         return { mode: 'pr', pr: { ...openPr, adopted: true }, filled }
       }
@@ -278,7 +299,7 @@ function createCharterService(runtime: CharterRuntimeHost) {
   }
 
   async function status(params: CharterStatusRequest): Promise<CharterStatus> {
-    const repo = repoById(params.repoId)
+    const repo = localRepoById(params.repoId)
     const execOptions = resolveWorkbenchGitExecOptions(runtime, repo)
     return readCharterStatus(repo, execOptions)
   }
@@ -289,7 +310,7 @@ function createCharterService(runtime: CharterRuntimeHost) {
    * 「没读成」分开回答,不互相冒充。
    */
   async function read(params: CharterReadRequest): Promise<CharterReadResult> {
-    const repo = repoById(params.repoId)
+    const repo = localRepoById(params.repoId)
     const { raw, error } = await readTextFileGuarded(join(repo.path, PROJECT_TOML_REL))
     if (error) {
       return { charter: null, raw: null, existed: true, error }

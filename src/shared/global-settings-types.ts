@@ -457,6 +457,8 @@ export type GlobalSettings = {
   agentHibernationIdleMs?: number
   /** Experimental: opt-in preview of the updated worktree-card layout and metadata behavior. */
   experimentalNewWorktreeCardStyle?: boolean
+  /** Local desktop preferences keyed by Orca project identity; absent flags are off. */
+  workbenchOverviewByProject?: Record<string, { sdlc?: boolean; ai?: boolean }>
   /** Experimental: per-workspace on-demand environment recipes and setup surface. */
   experimentalEphemeralVms?: boolean
   /** Compact worktree cards: hide the metadata row when title and branch say the same thing. */
@@ -483,6 +485,8 @@ export type GlobalSettings = {
     installId: string
     /** Cohort marker: true for pre-existing profiles (gates the opt-in banner), false for fresh installs. */
     existedBeforeTelemetryRelease: boolean
+    /** Preserves explicit choices after BW's one-time default-off migration. */
+    workbenchDefaultOffApplied?: boolean
   }
   /** One-shot cohort marker for the tab-switch keybinding swap. 'pending' =
    *  pre-existing install (seed pins old chords, then flips to 'done'); 'done' = fresh install. */

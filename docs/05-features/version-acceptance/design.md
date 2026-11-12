@@ -2,15 +2,15 @@
 
 > 给实现与技术评审者动代码前读；本文管对象、数据边界、模块归属和异常语义。用户行为以 [spec](spec.md) 为准，价值见 [intent](intent.md)，证据与缺口见 [STATUS](STATUS.md)。落地后同步 06-module。本文只描述当前有效方案，不保留被替代的形态或过程记录。
 >
-> 状态：v10（周五验收会议四步屏）实现设计，规格与意图已于 2026-10-22 经负责人确认；发布状态读回经 [#462](https://github.com/forcegravity1989/builder-workbench/issues/462) 修订（2026-10-27）。基线为 main（含计划屏 G3 生产实现 #399）。
+> 当前行为与人工确认依据见 spec，实施及真实验证状态见 STATUS；本篇不维护历史交付流水。
 
 ## 设计边界
 
-AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开和 Automations。BW 只保存版本材料与人工输入，不复制 Issue、PR 或会议转写正本。绑定树沿 `bw/<版本>/acceptance` 与 `bw/<版本>/plan`，绑定决定版本；旧无绑定固定树沿 `bw/week-acceptance`、`bw/week-plan` 与明确选版偏好。运行与材料身份继续按项目、仓库、宿主、runtime owner、工作树和 workflow 隔离，不由会话标题或日期推断。#439 已完成独立静态检视，CI 补验结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；真实用户与模型旅程仍待验证，已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。
+AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开和 Automations。BW 只保存版本材料与人工输入，不复制 Issue、PR 或会议转写正本。绑定树沿 `bw/<版本>/acceptance` 与 `bw/<版本>/plan`，绑定决定版本；旧无绑定固定树沿 `bw/week-acceptance`、`bw/week-plan` 与明确选版偏好。运行与材料身份按项目、仓库、宿主、runtime owner、工作树和 workflow 隔离，不由会话标题或日期推断。
 
 不修改 Orca 核心：对象级动作经共用包装件 `workbench/plan-send-menu.tsx` 递交——它把动作按钮包进 Radix DropdownMenu，内容是**原生** `ReviewNotesSendMenuContent`（「发送至」运行中会话列表 +「新建智能体」快捷启动），同时开 `useAppStore.openAgentSendPopoverTargetMode` 让侧边栏 agent 行成为第二个发送面。`source` 沿用 `'browser-annotations'`、`launchSource` 沿用 `'notes_send'`，不扩 Orca 的 source union（扩它属于改原生协议，登记为上游接缝候选，不在本特性内做）。
 
-**只开 target mode 不渲染弹窗本体等于点击无后续**：store 里没有任何组件会因 target mode 自己挂浮层，它只把侧边栏已在渲染的 agent 行改造成点击目标；该工作树无可发会话时连高亮都不触发，是纯静默 no-op。验收屏早期那份 `use-acceptance-action-send.ts` 就栽在这里（与计划屏被 #407 删掉的 `use-object-action-send.ts` 逐字同构），已删除并改接共用包装件。
+原生发送菜单与侧边栏发送目标使用同一份已准备请求；仅开启侧边栏目标状态不能替代菜单本体。
 
 ## 模块归属：验收屏自带一套，不与计划屏共用文件
 
@@ -25,7 +25,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 | `version-planning/PlanningMinutesSection.tsx`（含内部 MinutesCard）      | `version-acceptance/AcceptanceMinutesSection.tsx`  | 两屏共识/遗留文本与整份人工确认独立实现，无逐项闭环控件。验收 `document` 可选：原生会话实际打开后即展示四区，无材料时本节是只读空纪要并保留原生发送入口，不可编辑或确认。归档前每项已落实或关联真实跟进 Issue，由助手核对、PR 人审；整理 prompt 只承载触发意图，规则归 Skill，不新增材料协议。 |
 | `version-planning/PlanningArchiveCard.tsx`                               | `version-acceptance/AcceptanceArchiveCard.tsx`     | 文案改验收归档；发布按钮并入本区（见「发布」节）。打开原生 PR 页不拷贝——两屏都 import 共用 `version-cycle/open-archive-pr.ts`（已从计划屏目录移到共用层）                                                                                                                                      |
 | `version-planning/version-planning.css` 中验收需要的板面壳/分区/纪要样式 | `version-acceptance/acceptance.css`                | 只拷验收实际用到的选择器，类名前缀改 `acc-`，不整表复制；计划屏特有样式（上版回顾、目标卡编辑态、指标承诺）不拷。**批注与板面基础件的样式不在这里**——它们随共用组件走 `annotations/annotations.css` 与 `board-ui.css`，由组件自己 import，两屏自动同源                                         |
-| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；行尾单个未判定/达成/不达成状态，沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                                                |
+| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；计数后行内单个未判定/达成/不达成状态（#471 批注6 以真机为准），沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                                                |
 
 **直接 import，不拷贝**（这些不在计划屏目录下，是 #399 建在共用层、注释明写供两屏使用的模块，或 v9.5 起就是两屏共用的壳层）：
 
@@ -45,14 +45,17 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **新增**：
 
-- `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。
+- `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。条目按目标组织（#471）：带「G<n> ·」目标前缀，读视图按前缀分组到各目标小标题下，协议仍是平铺清单（呈现级实现，协议级目标绑定留给后续会议相关 Issue）。
 - `demoEnv?: { kind: 'url'; label?: string; url: string } | { kind: 'launched'; detail: string }` —— 演示环境两形态。web 服务类写 `kind:'url'`，可附一句系统名 `label`：板面「演示环境」行显示系统名、缺省回退 URL，点击经内置 Orca 浏览器打开；桌面应用类写 `kind:'launched'`，板面渲染状态文字，不伪造链接。缺失即未部署，如实显示未部署与下一步。
+- `meeting?: { title: string; time: string; id?: string; enMeetingId?: string; link?: string; attendees?: string[] }` —— 版本级预订会议（#471，字段扩于 #516）。`time` 存人读的起止时间；`id` 存 `meetingId`（数字主键，不是 `meetingNo`）；`enMeetingId` 存建会/读回响应里的 eMeeting 侧 32 位主键（写入纪要草稿靠它定位会议，板面不显示）；`link` 存 `meeting info` 的 `jumpUrls` 会议页地址；`attendees` 存实际邀约的工号。模型生成完整预览、**经人确认后**用 `welink-cli meeting create` 创建（默认开启 AI 听），`meeting info` 读回后向项目群发会议通知（`welink-cli im send-to-group`，独立外部写入、正文全文+收件群单独预览确认，`msgId`/`resultCode` 如实回执；发送事实不进材料、只在会话回执；入会链接里的 `enMeetingId` 每次 `meeting info` 查询轮换，通知发当时读回的那条，会议号才是稳定标识）再写回；与会人默认取项目根 `.bw/project.toml` 的 `[chat].group_id` 项目群全部成员（排除机器人/助手），没有绑定项目群时请人提供群号。缺省即未预订，已预订不重复订，改期或取消同样先预览后执行、并同样向项目群发通知。板面「验收会议」行读回标题、时间、会议 ID、与会人数与会页面入口。同步会议纪要把材料纪要按固定样式（按目标分节）写入该会议的纪要草稿——流程自带（`standard/skills/version-acceptance/references/minutes-sync.md`）：驱动用户本机的 Chrome/Edge（CDP 临时实例，不用 Orca 内置浏览器），最终发送由人在会议系统手动完成。
 - 版本级交付件不再按目标记录：`results[].deliveries` 退役，版本级交付件与演示环境由 `demoEnv` 与制品登记承载。
 - `workflow.release?: { tag: string }`（#462 修订 v10「板面不呈现发布状态」决策）——发布执行后由模型把 tag 引用写入材料作**读回键**，同 `archivePr` 的「引用落材料、读数现算」模式：读数（是否已发布、发布时间、Release 地址、资产）不落材料，正本在 Git 标签与 provider Release 页；板面按该键现算读回（见「发布」节），总览仍不显示「已发布」。计划侧 schema 不加 `release`，发布只属验收流程。
 
 `AcceptanceWorkflowStateSchema` 其余维持 `stage/updatedAt/archivePr`，`stage` 枚举维持 `preparation/showcase/archive` 三值（界面四步与材料三阶段不同名、不映射，界面不渲染灯）。
 
-**验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 采集证据生成报告）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。
+**验收证据报告登记**：报告固定保存为 `.bw/planning/<版本>/acceptance-evidence.html`，复用 `preparedArtifacts` 与 `kind='verification'`。候选固定后先生成、登记，再核对待核对项；人的目标结论仍受原有字段守卫保护。`ORCA bw materials add-artifact` 在所属宿主核对文件存在，取 `mtime` 与材料现有 `candidateRef`，同 artifactId 更新并处理修订冲突。板面只读登记，不扫描文件猜测报告状态；路径围栏拒绝绝对路径及穿越，兼顾 Windows 与 POSIX 语义。
+
+聚合动作在共用发送包装中调用现有 `resolveWorkbenchPromptAssets`：核对原生工作树、宿主与版本，发送正文保留点击时的版本以便核对后续选版变化，复用 `installWorkbenchSkill` 取得正文路径，再交给原生会话选择器和快捷启动。准备中不开放发送，失败保留原因并可重试，菜单关闭或卸载后忽略迟到结果；报告生成规则仅由 Skill 的证据聚合 reference 维护。HTML 模板使用真实平台 URL，生成器按文本统一 LF 后调用原生 Skill bundle 创建器。
 
 **沿用**：`candidateRef`、`preparedArtifacts`（`kind=package`，含 checksum/location/实际命令）、`taskSnapshot`、`results[].decision`、`results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks.carry`、`planRef`、`workflow`。
 
@@ -79,7 +82,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **退役编辑字段**：`results[].rounds`、`meetingDirectives`、`issueMarks.risk`、`deliveries`、`materials`、`progress`。`issueMarks` 保留 `carry`（延期遗留仍是人工字段）；`meetingDirectives` 仅在旧材料没有纪要节时由下版回顾兼容读取，不恢复编辑入口。
 
-**随退役删除的生产代码**：`AcceptanceRoundPicker.tsx`、`AcceptanceDirectives.tsx`、`AcceptanceMetrics.tsx`、`HistoricalRoundCards.tsx`、`AcceptanceGoalCards.tsx`、`AcceptanceGoalResult.tsx`、`AcceptanceDeliveryDetails.tsx`、`AcceptanceJourney.tsx`（灯）、`AcceptanceReportDialog.tsx`、`AcceptanceSources.tsx`、`acceptance-report.ts`（派生预览纪要）、`use-acceptance-history.ts`（按轮次呈现的历史 hook）、`shared/workbench/acceptance-rounds.ts`、`main/workbench/material-round-guard.ts`、`acceptance-decision.ts` 的 `decisionFreshness`（自动重核无消费方）。同一交付内删净，不留兼容层、回退或双路径。
+
 
 **保留的能力**：`version-history-port` 按固定提交 read/readPlan。计划屏「查看验收依据」沿 `open-acceptance-source` 复用既有 `VersionReadonlyMaterialView` / readonlyBrowse，按 version/cycleId/sourceCommit/revision 进入同份验收与计划的只读整页，身份不符拒绝，不读当前稿、不建树或初始化材料；返回原计划。轮次 UI 退役不等于固定 Git 历史读取退役。
 
@@ -111,17 +114,17 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 开始成功后显示验收准备、Showcase、会议纪要、归档 PR 及发版本四区，缺固定计划时目标为空，纪要/归档组件接受缺材料并保留相应只读空态。顶部导航只定位，不作步骤门禁；原滚动侦测、导航抑制与会话收折重定位机制保留，未开始短卡不渲染导航。
 
-批注捕获层：板面元素挂 `data-annotate-kind/goal/issue/label`，`onClickCapture` 在批注模式下拦截整板点击，最内层命中者弹出对象小窗；`#minutes` 区内点击直接放行（人工确认是会中必须能做的铁律动作）；已存在的角标保留自己的点击（重开面板）。Esc 分层由 `useBoardAnnotations` 内部处理：先关小窗、再退模式与面板。批注为内存态：会话 store 按板面身份（scope + 工作树/实例 + 版本）键控（`useBoardAnnotations(boardId)`，`Map<boardId, session>`，2026-10-23 对齐轮），切版=换 key 天然空会话，两屏不再有命令式 identity-`clearAll` effect（旧实现是单一全局会话+挂载即清，切屏瞬间互删未发送批注、同 goalId 串角标）；发送成功门控内 `clearAll` 清已递交批注（与计划屏同一 A 案），模型侧删对象经 `pruneMissing` 清孤儿。批注模式入口在页头右上角（#426 v0.7 验收会决议自 Showcase 区块标题行移回，与计划屏同位：页头不随内容滚动，会中随时进出、未发送角标常驻可见）——`AcceptanceHeader` 的可选 `annotateEntry` prop，`AcceptanceBoard` 仅在计划已读时传入 `BoardActionButton`（文字标签 + `.acc-annotate-count` 未发送角标），未读到计划时不渲染；区块头槽位与旧页头 `extraActions` 槽位均已删除。验收标准块（`.acc-acceptance`）挂 `kind='acceptance'` 捕获属性、h3 挂合并角标（与计划屏同款对象语义）；行尾「下一步」textarea 维持排除（人工输入件，非评审对象）。
+批注捕获层按 `data-annotate-kind/goal/issue/label` 命中最内层对象，纪要区和「下一步」人工输入不拦截。Esc 只关闭小窗，退出模式沿快捷键或页头入口。`useBoardAnnotations(boardId)` 以 scope、工作树/实例、版本键控内存会话，切屏保留、换版隔离；发送成功后清空已递交批注，模型删对象后由 `pruneMissing` 清孤儿。`AcceptanceHeader.annotateEntry` 在计划可读时提供入口和未发送角标；验收标准使用 `kind=acceptance`，目标、Issue 与板面使用各自对象身份。
 
-2026-10-23 UI 对齐轮（#417，高保真反馈轮 2 后全量对齐）：页头 `.acc-header` 从列布局改为与计划屏同行（标题左、动作右、`flex-wrap` 兜底，度量抄 `vp-header`/`g3-header-actions`）；Showcase 目标卡抄计划屏 `g3-goal` 度量——卡片底色 `var(--card)`、head 顶对齐、标题 600+悬停下划线、meta 独立行 78px 缩进、body 78px 缩进、`acc-task-head` 带 border-top 分隔；Issue 行对齐 `g3-task`（baseline、gap 12、8px 上下节奏、标题悬停才下划线），行尾「打开原生任务详情」按钮保留（高保真同轮补齐）；板面动作按钮统一 `BoardActionButton` 图标+短动词（部署 BrainCircuit、发布 Rocket、出包 Plus、下载 Download），`acc-text-button` 只剩页头文字按钮，`wb-btn` 退出板面动作按钮（冲突/恢复提示区仍沿用，与计划屏提示区同款）；报告入口只在「验收准备」证据报告行，目标行 `hasReport`/`onOpenReport` 链路删除；`demoEnv.kind='url'` 增可选 `label`（系统名），「演示环境」行显示系统名、缺省回退 URL；长 title 与说明文字清到计划屏密度。纪要卡抄 `g3-minutes` 度量（方片状态章、列表无默认符号、foot 按钮输入件皮肤），归档/发布卡抄 `g3-archive`（卡片底色、20px 内距、gap 16），旅程导航抄 `g3-journey`（等分满宽、当前项加粗）。壳层共用改动（两屏同受益）：`.vc-split` 从 1px+外扩热区改为 6px 实体全高热区+居中 1px 线（上游 `tab-group-split-resize-handle` 同款）——旧热区被两侧定位内容（xterm 视口、板面定位容器）盖住，只有顶部 titlebar 一段可拖；titlebar 的验收专用老「收折会话」开关删除，收折/展开统一板面页头 chip 唯一入口；收折态 36px 栏加整栏点击展开覆盖层（带 title 提示），分隔条收折不渲染维持第九轮拍板。
+板面使用 `BoardActionButton`、`BoardIconButton` 与设计系统颜色、间距，页头动作归组且窄板可换行；Showcase 保留只读目标和原生任务详情入口。报告入口只在验收准备区。会话收折沿共用壳层，收起保留会话和栏宽；终端/浏览器是否绘制交 `TerminalWorkbenchContainer` 的原生规则，不能在祖先直接 `display:none` 阻断浏览器工具。
 
-同轮补齐：Showcase 区块头「刷新 Issue」图标按钮（`taskPort.refresh`，在途切版旧读回不覆盖新列表，计划屏同款漏抄；#432 起两屏 Issue 读数经 `version-cycle/use-cycle-task-reads` 渲染进程快照缓存共享——进屏立即回显上次读数并后台静默重读、按钮为强制重读，`taskSnapshot` 仍只随读取落地更新，缓存回显不喂快照）；CAS 冲突处置从「人工核对裸 JSON」改为字段归属静默合并——`acceptance-merge.ts` 纯函数（模型字段取远端；人字段 decision/note/nextStep/issueNotes/issueMarks/minutes 保留本地相对基线的改动；本地独有 result 整条保留），`MaterialDraftController` 增可选 merge 策略与干净基线 base 追踪（计划屏不传策略、行为不变），合并成功只留一行 `notice`（随下次编辑或保存消失），`AcceptanceNotices` 退役裸 JSON 对照区、仅基线缺失（脏草稿恢复后再冲突）时留两按钮人工处置；合并基线随每次合并推进到远端文档，防止连环冲突把已采纳的远端值钉死成「本地人改」（检视轮 B1 修正）。证据报告等 HTML 材料经 `openAcceptanceMaterial` 改走 Orca 原生工作区文件浏览器预览（`openFileInBrowserTab`：本地=内置浏览器页签、SSH/配对=doc-preview、不支持回落编辑器）——报告是渲染件，此前走编辑器只见源码，spec A04「内置浏览器可打开」由真机反馈补正兑现。
+Issue 读数经 `version-cycle/use-cycle-task-reads` 与计划屏共享快照缓存，进屏回显后后台重读，刷新按钮强制重读；缓存回显不写 `taskSnapshot`。CAS 冲突使用 `acceptance-merge.ts`：模型字段取远端，人工字段保留相对干净基线的本地改动，本地独有 result 保留。每次合并后推进基线；缺基线时保留人工处置入口，不能静默覆盖输入。
 
-2026-10-23 易用性收口轮（#426，v0.7 验收会后决议）：批注入口移回页头右上角（两屏同轮；`AcceptanceHeader`/`PlanningHeader` 增可选 `annotateEntry`，`AcceptanceGoalRows`/`PlanningGoals` 的区块头槽位与 prop 删除，详见「批注捕获层」段）；验收屏验收标准块参与批注（`AcceptanceGoalRow` 的 `.acc-acceptance` 挂 `annotationAttributes({kind:'acceptance'})`、h3 挂 `AcceptanceAnnotationBadge` 合并角标，批注横幅与入口 title 文案随对象清单更新）；计划屏旅程第一步改名「计划准备」为计划侧落地（见计划 design）。spec「入口不在页头」「验收标准区块不参与批注」两条款经会决议改写。
+
 
 出包区块沿用既有 `AcceptancePackage` 与 `workbench.package.*` 协议（按远端身份分派 CodeHub cloudbuild CLI / CloudDragon 会话 / gh CLI，SSH 宿主拒绝出包），可收缩、默认收起为一行最新包摘要；受理后每分钟静默刷新、`launchInFlight` 互斥不重复启动；无流水线/无权限/远端认不出/非本机宿主如实报错。包重出不自动刷新板面已填内容，是否重核由模型在会话中提醒、人决定；板面不做主动失效或待重核呈现。
 
-材料打开沿用 `openAcceptanceMaterial`：HTTP(S) 经 `openHttpLink` 打开选定工作区原生浏览器，`.bw` 相对路径以该工作树为根经 `activateMarkdownLink` 在所属宿主原生编辑器打开；先校验工作树身份，拒绝含凭据 URL、不支持协议与远端树外路径；发起后展开 BW 会话栏。报告未生成时对应入口 `disabled` 并如实说明，不静默失败。
+材料打开沿 `openAcceptanceMaterial` 校验原生工作树身份：HTTP(S) 经 `openHttpLink` 进入对应工作区浏览器；HTML 文件复用 `openFileInBrowserTab`（本地浏览器页签，SSH/配对 doc-preview），原生预览不支持时沿 `activateMarkdownLink` 打开编辑器。其他工作树文件也走原生编辑器。拒绝含凭据 URL、不支持协议和远端树外路径；打开后展开会话栏。未登记报告时打开按钮禁用。
 
 保存与冲突沿用材料事务核心：`expectedRevision`、原子替换、跨进程互斥、工作树身份校验；保存冲突保留用户输入。「更新代码」是唯一同步入口，执行期间材料只读，快进不了保持原样并统一提示交会话处理。
 
@@ -135,8 +138,8 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 ## 验证边界与测试取舍
 
-协议纯函数与数据契约用 Vitest 覆盖，只立两类看护：新增的纪要守卫（模型通道拒写已确认节、撤销走人工通道）、演示环境两形态与报告登记的解析、`workflow.release` 读回键解析（验收侧可带、计划侧拒绝，随既有解析用例扩展）、退役字段原样保留读回、`derivePriorCarryovers` 改读纪要后的推导。界面渲染、布局、文案、交互序列与 hook 装配不立单测，交真壳与验收点 E2E。叠层单测受执行例数 ratchet 约束（基线见 `config/vitest-count-baseline.txt`），退役的 `acceptance-model.test.ts`/`acceptance-task-evidence.test.ts`/`acceptance-version-choices.test.ts` 中失效用例同批删除以对冲新增。
+协议纯函数与数据契约沿已有 Vitest 看护，重点是人工字段守卫、材料解析、制品登记围栏与修订冲突；界面、文案及 hook 装配交真实旅程。测试准入、数量和失败分诊统一按[开发规范](../../development.md)，不另立本特性的门禁副本。
 
-行为正确性靠真壳：`pnpm run dev:workbench` 起独立 profile，验四区导航与滚动高亮、批注模式全流程（含纪要区排除与 Esc 分层）、行尾单个人工结论选择、清除与中性/警示色、纪要编辑态与确认/撤销、部署两形态读回、报告打开、归档原生 PR 页、发布注入、杀进程重启读回一致。交付附验证报告，本次新增或修改的判据内嵌真壳截图四件套，截图推永不合入的 `shots/<分支名>` 并钉 SHA。上述为真实旅程待验要求。#439 已追加授权补验本地与远端 CI，实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；隔离自动冒烟与静态接线均不替代上述真实旅程验收。
+真实旅程按 spec 验收点核对四区导航、批注、人判、纪要确认/撤销、部署与报告打开、归档原生 PR 页、发布与重启读回。Skill 聚合另核对新建/已有会话完整读取、待核对报告先登记可打开、补充后保留已定项；原型与静态接线不能替代模型会话及真壳证据。实际结果和未验范围留 PR，状态索引见 STATUS。
 
-技能资产（`standard/skills/version-acceptance/`）改动须连同 `skills/` 镜像、`resources/skills/` manifest 与 registry、`src/cli/bundled-skill-guides.ts` 一并再生，并过 `verify:skill-bundle-manifest` 与 `verify:bundled-skill-guides` 字节门禁。
+Skill 正源为 `standard/skills/version-acceptance/`，分发复用完整原生 Skill 包；生成与安装路径统一见 [系统提示词与渐进加载](../../06-module/系统提示词与渐进加载.md)。改动后同步生成 `src/shared/workbench/skill-package.json`，不维护旧镜像或第二套正文。

@@ -23,7 +23,7 @@ const { api } = vi.hoisted(() => {
     }
   }
 })
-vi.mock('@/lib/codehub-api', () => ({ codehubApi: api }))
+vi.mock('@/lib/codehub-api', () => ({ codehubApi: api, createCodeHubApi: () => api }))
 // i18n 实例被详情页签的深层依赖(localized-catalog)读取,补最小 stub。
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback,
@@ -63,12 +63,14 @@ it('keeps filter transitions and issue creation connected after extracting the c
     codehubQuery: '',
     codehubAuthor: '',
     codehubAssignee: '',
+    codehubLabels: [],
     codehubLoading: false,
     setCodehubView: vi.fn(),
     setCodehubState: setState,
     setCodehubPreset: setPreset,
     setCodehubAuthor: vi.fn(),
     setCodehubAssignee: vi.fn(),
+    setCodehubLabels: vi.fn(),
     setCodehubRefreshNonce: refresh,
     selectedRepos: [repo],
     taskPickerRepos: [repo],

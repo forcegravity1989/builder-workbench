@@ -19,6 +19,8 @@ import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
 import { BoardActionButton } from '../board-ui'
 import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
+import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
+import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { annotationRefFromElement } from '../annotations/types'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { usePlanMetrics } from './use-plan-metrics'
@@ -169,10 +171,12 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const { startVersion, started, start } = usePlanningStart({
     context,
     entry,
-    material,
-    priorState: prior.state,
-    priorError
+    material
   })
+  const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
+  // Why: same gate as the header entry button below — the chord must not exist
+  // on surfaces where the button does not render.
+  useAnnotationModeShortcut(started && Boolean(plan), annotations.toggleMode)
   const edit = (next: PlanningMaterial) => {
     if (!disabled) {
       material.edit(next)
@@ -214,7 +218,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       }
       setOpeningPr(true)
       try {
-        await openArchivePrPage(scope, archivePr)
+        await openArchivePrPage(context, archivePr)
       } finally {
         setOpeningPr(false)
       }
@@ -290,8 +294,8 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
               aria-pressed={annotations.annotating}
               title={
                 annotations.annotating
-                  ? '退出批注模式（Esc 同样退出）'
-                  : '批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见'
+                  ? `退出批注模式${annotateShortcut ? `（${annotateShortcut}）` : ''}`
+                  : `批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见${annotateShortcut ? `（${annotateShortcut} 进入）` : ''}`
               }
               onClick={annotations.toggleMode}
             >
@@ -332,7 +336,8 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           <PlanningJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
           {annotations.annotating && (
             <div className="g3-annotate-banner" role="status">
-              批注模式中，点击板面元素即可添加批注 · Esc 退出
+              批注模式中，点击板面元素即可添加批注
+              {annotateShortcut ? ` · ${annotateShortcut} 退出` : ''}
             </div>
           )}
           <div

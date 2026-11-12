@@ -1,3 +1,4 @@
+import { MilestoneReviewNav } from '../../overview-metrics/prototype/milestone-review-nav.jsx'
 const { React, createRoot, useState, useRef, useEffect, Download } = window.BWPrototypeDependencies
 import {
   snapshot,
@@ -19,6 +20,10 @@ import {
   taskRows,
   sortIssueRows,
   minutesRequestPrompt,
+  aggregateRequestPrompt,
+  bookMeetingRequestPrompt,
+  syncMinutesRequestPrompt,
+  sceneMeeting,
   g2Url
 } from './acceptance-model.js'
 import { annotationsSendPrompt, taskKind } from '../../version-planning/prototype/g3-model.js'
@@ -27,7 +32,6 @@ import {
   IconButton,
   ActionButton,
   Field,
-  MinutesCard,
   AnnotationPanel,
   AnnotationPopover
 } from '../../version-planning/prototype/g3-components.jsx'
@@ -61,6 +65,199 @@ function Verdict({ goalId, value, onSet }) {
         <option value="不达成">不达成</option>
       </select>
     </span>
+  )
+}
+
+// 遗留条目里的 #编号 渲染为 Issue 链接:与计划屏 MinutesCard 同规则;该组件不
+// 导出,验收侧本地实现——共用卡不改,按目标分组的读视图是验收屏自己的呈现。
+function issueLinks(text) {
+  return (text || '待填写').split(/(#\d+)/g).map((part, index) =>
+    /^#\d+$/.test(part) ? (
+      <a
+        key={index}
+        href={`https://github.com/forcegravity1989/builder-workbench/issues/${part.slice(1)}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  )
+}
+
+// 读视图按目标前缀分组，材料和编辑态仍保留平铺清单。
+const GOAL_PREFIX = /^(G\d+)\s*·\s*(.+)$/
+
+function AcceptanceMinutesCard({ minutes, update, goals, meeting, onSyncMeeting }) {
+  const [editing, setEditing] = useState(false)
+  const setPoint = (key, index, text) =>
+    update({
+      [key]: minutes[key].map((point, i) =>
+        i === index ? (key === 'consensus' ? text : { ...point, text }) : point
+      )
+    })
+  const removePoint = (key, index) => update({ [key]: minutes[key].filter((_, i) => i !== index) })
+  const addPoint = (key) =>
+    update({ [key]: [...minutes[key], key === 'consensus' ? '' : { text: '' }] })
+  // 目标节按固定计划顺序先建骨架;条目按前缀归入,读视图剥掉前缀(小标题已示
+  // 归属),编辑态仍见原文。前缀指向未知目标时追加一节,不丢条目。
+  const sections = goals.map((goal) => ({
+    goalId: goal.goalId,
+    title: goal.title,
+    consensus: [],
+    followups: []
+  }))
+  const loose = { consensus: [], followups: [] }
+  const sectionFor = (goalId) => {
+    let section = sections.find((item) => item.goalId === goalId)
+    if (!section) {
+      section = { goalId, title: null, consensus: [], followups: [] }
+      sections.push(section)
+    }
+    return section
+  }
+  minutes.consensus.forEach((text) => {
+    const match = GOAL_PREFIX.exec(text || '')
+    if (match) {
+      sectionFor(match[1]).consensus.push(match[2])
+    } else {
+      loose.consensus.push(text)
+    }
+  })
+  minutes.followups.forEach((point) => {
+    const match = GOAL_PREFIX.exec(point.text || '')
+    if (match) {
+      sectionFor(match[1]).followups.push(match[2])
+    } else {
+      loose.followups.push(point.text)
+    }
+  })
+  // 无前缀条目并入无小标题的平铺节;无目标可读且两块全空(尚未整理)也保留一节显示「无」。
+  if (loose.consensus.length || loose.followups.length || sections.length === 0) {
+    sections.push({ goalId: null, title: null, ...loose })
+  }
+  return (
+    <article className="g3-minutes">
+      <div className="g3-minutes-head">
+        <span className={`g3-status ${minutes.confirmed ? 'confirmed' : ''}`}>
+          {minutes.confirmed ? '已人工确认' : '待人工确认'}
+        </span>
+        <span className="g3-muted">{minutes.sources}</span>
+        <span className="g3-minutes-actions">
+          <IconButton
+            name={editing ? 'check' : 'edit'}
+            label={editing ? '结束编辑纪要' : '编辑纪要'}
+            onClick={() => setEditing(!editing)}
+          />
+        </span>
+      </div>
+      {editing ? (
+        <>
+          <div className="g3-minutes-section">
+            <strong>共识</strong>
+            <div className="g3-point-editor">
+              {minutes.consensus.map((point, i) => (
+                <div className="g3-point-edit-row" key={i}>
+                  <textarea
+                    rows={2}
+                    aria-label={`共识第 ${i + 1} 点`}
+                    value={point}
+                    onChange={(e) => setPoint('consensus', i, e.target.value)}
+                  />
+                  <IconButton
+                    name="close"
+                    label={`删除共识第 ${i + 1} 点`}
+                    onClick={() => removePoint('consensus', i)}
+                  />
+                </div>
+              ))}
+              <button className="g3-add-point" onClick={() => addPoint('consensus')}>
+                <Icon name="plus" size={13} /> 添加一点
+              </button>
+            </div>
+          </div>
+          <div className="g3-minutes-section">
+            <strong>遗留</strong>
+            <div className="g3-point-editor">
+              {minutes.followups.map((point, i) => (
+                <div className="g3-point-edit-row" key={i}>
+                  <textarea
+                    rows={2}
+                    aria-label={`遗留第 ${i + 1} 点`}
+                    value={point.text}
+                    onChange={(e) => setPoint('followups', i, e.target.value)}
+                  />
+                  <IconButton
+                    name="close"
+                    label={`删除遗留第 ${i + 1} 点`}
+                    onClick={() => removePoint('followups', i)}
+                  />
+                </div>
+              ))}
+              <button className="g3-add-point" onClick={() => addPoint('followups')}>
+                <Icon name="plus" size={13} /> 添加一点
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        sections.map((section) => (
+          <section className="acc-minutes-goal" key={section.goalId || 'plain'}>
+            {section.goalId ? (
+              <h4>
+                <span className="acc-minutes-goal-id">{section.goalId}</span>
+                {section.title || '目标句待明确'}
+              </h4>
+            ) : null}
+            <div className="acc-minutes-sub">
+              <strong>共识</strong>
+              <ul className="g3-points">
+                {section.consensus.length ? (
+                  section.consensus.map((text, i) => <li key={i}>{text || '待填写'}</li>)
+                ) : (
+                  <li className="g3-muted">无</li>
+                )}
+              </ul>
+            </div>
+            <div className="acc-minutes-sub">
+              <strong>遗留</strong>
+              <ul className="g3-points">
+                {section.followups.length ? (
+                  section.followups.map((text, i) => (
+                    <li key={i}>
+                      <span>{issueLinks(text)}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="g3-muted">无</li>
+                )}
+              </ul>
+            </div>
+          </section>
+        ))
+      )}
+      <div className="g3-minutes-foot">
+        <button onClick={() => update({ confirmed: !minutes.confirmed })}>
+          {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
+        </button>
+        <ActionButton
+          disabled={!meeting}
+          title={
+            meeting
+              ? `把本页纪要按固定样式同步到「${meeting.title}」的会议纪要`
+              : '先在验收准备区预订会议'
+          }
+          onClick={onSyncMeeting}
+        >
+          同步会议纪要
+        </ActionButton>
+        <span className="g3-muted">
+          归档前逐条写明落实结果或跟进 Issue，由助手核对、人在 PR 中确认。
+        </span>
+      </div>
+    </article>
   )
 }
 
@@ -298,6 +495,8 @@ function App() {
   const [compact, setCompact] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [deployed, setDeployed] = useState(true)
+  // 预订会议是演示数据，真实信息由会话写回。
+  const [meeting, setMeeting] = useState(sceneMeeting.wrap)
   // 出包区块可收缩,默认收起为一行最新包摘要(会中不占视野)。
   const [pkgOpen, setPkgOpen] = useState(false)
   // 批注机制与计划屏同源(同一组件族与交互):模式开关、对象小窗、板面批注窗。
@@ -423,6 +622,7 @@ function App() {
     setArchive(sceneArchive[value])
     setReleaseHandoff(false)
     setDeployed(value === 'meeting' || value === 'wrap')
+    setMeeting(sceneMeeting[value])
     setPrHandoff(false)
     setSentRequest(null)
     setPopover(null)
@@ -453,8 +653,7 @@ function App() {
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
       <div className="g3-demo-bar">
-        <strong>#462 局部候选 · 发布状态读回</strong>
-        <span>在 #439 四步屏候选上修订发布区 · 演示仅在本页</span>
+        <MilestoneReviewNav screen="acceptance" />
         <label className="g3-scene">
           时期
           <select
@@ -500,78 +699,43 @@ function App() {
       {showNotes && (
         <div className="g3-design-notes">
           <p>
-            <strong>定位与边界</strong>:验收屏为周五验收会议服务,四步——验收准备 → Showcase →
-            会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
-            不进本屏。尚未开始时与计划屏同为短启动卡；“开始验收”先打开原生会话并显示既有四区。
-            计划未合入或归档状态未知时由验收助手核对、提醒和协助处理，不自动合入。
-            未取得可读固定计划时目标区留空，不借用其他版本的目标。选版与项目上下文归左侧栏(G2
-            外框);页头与计划屏同构:会话收折、批注模式、更新代码(唯一同步入口)、配置自动化——
-            批注模式入口在页头右上角(#426 验收会决议,两屏同:页头不随内容滚动,会中随时进出、
-            未发送条数角标常驻可见,取代第九轮「入口贴对象」形态);
-            <strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
-            (纪要区「整理纪要」、归档区「发起归档」);部署/发布兼任请求注入,出包为直接动作
-            ——板面按钮一律图标+短动词统一格式;Showcase 无模型填写事务,不设助手入口。会话栏为 Orca
-            原生会话占位,「验收助手」 是该产品称呼。界面无灯:状态一律文字与真实读回。
+            <strong>定位与边界</strong>：验收屏聚合已有证据，服务验收准备 → Showcase → 会议纪要 →
+            归档 PR 及发版本四步旅程。未开始时显示启动卡；缺少可读固定计划时目标留空，
+            助手核对并提醒计划归档状态，不自动合入。项目与版本选择沿原生工作区。
           </p>
           <p>
-            <strong>验收准备</strong>:「出包」是板面固定逻辑(按项目远端直连流水线,主分支
-            构建)，与“下载”同在出包展开区；“部署”常驻演示环境行，向验收助手会话注入请求——模型下载最新包、按项目自有部署入口部署
-            启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前 端,演示为 web
-            服务型),完成后把演示环境写回材料(web 服务:系统名+URL;桌面应用:启动状态),
-            「演示环境」行显示系统名(无系统名回退 URL),点击经内置 Orca
-            浏览器打开=真机演示环境。模型写 candidateRef、登记包
-            (kind=package+checksum),对着运行环境按目标验收标准采集证据并演示分诊——易
-            现场演示的标「现场演示+操作路径」,不易演示/需等待的落进
-            <strong>一份</strong>验收证据报告(全目标合并:目标→验收点→说明+证据罗列+目标值 vs
-            读数),登记进材料。包重出不刷新板面已填内容,模型在会话提醒是否重核。缺工具
-            请人安装,不降级。
+            <strong>验收准备</strong>：出包沿项目流水线；部署与预订会议交会话执行并读回材料。
+            聚合先准备完整 Skill，再通过原生发送菜单选择已有会话或新建智能体。 报告按目标归并
+            Issue/PR/MR 的既有证据，生成后立即登记、可打开；
+            待核对项继续保留，由人决定补充或会上演示，不代表验收通过。
+            包重出后是否重新部署、聚合由人决定。
           </p>
           <p>
-            <strong>Showcase</strong>
-            :目标行复用计划屏形态(只读);行尾单个选择器显示未判定、达成或不达成，
-            选择未判定可清除人判结论。颜色沿用现有实现的中性色与警示色；结论不是演示进度。会中逐条现场实操或打开报告
-            对应验收点。指标证据只在报告,板面不回显指标区。Issue 只有「遗留」标记(风险已
-            去掉)+备注；可读 Issue 依标签显示
-            Feature/Bug，按未关闭、未知、已关闭分组，组内沿用计划顺序。 已关闭 Issue
-            不计遗留、已存备注只读。不达成目标出现「下一步」。
+            <strong>Showcase</strong>：目标来自固定计划，只读回显；未判定、达成、不达成由人选择。
+            现场演示或打开报告核对证据，验收件不在目标卡重复铺开。 Issue
+            按未关闭、未知、已关闭分组；遗留只计未关闭的人工标记，已关闭项备注只读。
           </p>
           <p>
-            <strong>批注与助手</strong>:批注模式、对象小窗与板面批注窗与计划屏同一组件族和
-            交互(入口在页头右上角,带未发送条数角标;点击目标行、验收标准或 Issue 行记录意见, Esc
-            先关小窗再退模式);发送走 Orca 原生发送弹窗递交验收助手,共享发送句为中性抬头
-            「会议反馈批注内容如下：」,屏别意图(按对象回应或修订材料、会议纪要输入之一)归
-            version-acceptance Skill,
-            <strong>发送成功即清空已递交批注</strong>(每次发送都是全量清单、以最新一次为准,
-            与计划屏同一决定);批注会话按板面身份分开存,切屏保留、切版清空。页头不设全局
-            助手按钮;助手入口按对象就近放置(纪要区「整理纪要」、归档区「发起归档」),
-            都只把请求递交左侧持久验收会话,不新建、不注入。纪要区不参与批注。
+            <strong>批注与会话</strong>：页头批注入口及对象小窗沿共用组件； Esc
+            只关小窗，退出模式使用页头或快捷键。发送沿 Orca 原生选择器，
+            成功后清空已递交批注；切屏保留，切版隔离。纪要区不参与批注。
+            对象级请求预览只呈现意图，执行规则归 Skill。
           </p>
           <p>
-            <strong>会议纪要</strong>
-            :纪要卡常驻各时期、点「编辑纪要」进入编辑态后增删改或粘贴,不依赖会话唤起;与
-            计划屏同款两块结构(共识/遗留、人工确认生效)。归档前每条遗留写明落实结果或关联跟进
-            Issue， 由助手核对、人在 PR 中确认，不增加界面门禁。关联 Issue 不代表事情已完成；
-            下版会议回顾只提供来源参考，不自动生成任务或承诺。Issue「遗留」标记仍对应「延期遗留」。
+            <strong>会议纪要</strong>：常驻共识与遗留两块，按目标展示。
+            人可编辑、粘贴与确认，模型不代签；已确认内容冻结，撤销后再改。
+            同步会议纪要依赖已预订会议。归档前说明遗留的落实结果或关联 Issue，
+            关联不代表完成，下版是否纳入仍由人决定。
           </p>
           <p>
-            <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生 PR
-            页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区保留唯一
-            「发布」注入入口——预检、发布提交与验收包一致性核对、知情授权、按项目自有发布入口
-            执行仍在会话中完成,板面不设预检弹窗。
-            <strong>#462 修订(取代 v10「板面不呈现发布状态」决策)</strong>:发布区新增发布
-            状态读回——是否已发布、标签、发布时间、Release 页地址与资产每次经 provider 现算 (参照归档
-            PR 薄读回:gh 现算、聚焦节流重读、读不到=未知);材料只存发布引用
-            (tag,助手经人授权执行后写回,同 workflow.archivePr 的「引用落材料、读数现算」),
-            读数不落材料、正本仍在 Git 标签与 Release 页;引用在而 Release 查无如实呈现,
-            均不猜。发布按钮不因已发布而禁用,板面不替人决定能否再发;总览仍不显示「已发布」。
-            不达成与未标不阻断发布,由人知情决定;未经明确授权不建 Release、不打标签。
+            <strong>归档与发布</strong>：会话提交材料并创建 PR/MR，板面打开原生评审页。
+            发布经人明确授权，由会话执行并独立读回；板面只保存 tag 引用， 状态和资产沿 provider
+            现算，失败显示未知。不达成不自动阻断发布。
           </p>
           <p>
-            <strong>依赖与遗留</strong>:组件与设计语言复用已合入 main 的 G3 计划屏
-            (#391);导航与工作区归 G2。遗留待评审:自动重核机制去留、验收件富
-            格式编辑、验收证据报告格式规范(轮次协议已随 v10
-            跨周场景退役删除)。演示数据¹:出包/部署/报告/人判/纪要/PR/发布状态
-            均为预置,生产不预置人的结论。
+            <strong>演示边界</strong>：出包、部署、会议、报告、人判、纪要与发布均为预置演示数据，
+            原型不执行 Skill 安装或真实会话。生产不预置人的结论；当前规则以
+            <a href="spec.md">规格</a>为准，实际运行证据另行验证。
           </p>
         </div>
       )}
@@ -769,82 +933,86 @@ function App() {
                       <small>
                         {scene === 'started' || scene === 'unmerged'
                           ? '候选未固定 · 尚未出包'
-                          : `候选 ${CANDIDATE.short} · 已登记`}
+                          : `候选 ${CANDIDATE.short} · 已登记包`}
                       </small>
                     </h2>
                   </div>
-                  <div className="acc-prep-card">
+                  {/* 出包折叠卡:结构对齐生产 acc-package-block / acc-package-summary
+                      (独立边框卡、摘要行内距 10px 14px、折叠只隐藏不卸载——生产收起
+                      时每分钟刷新继续喂摘要行);摘要显示完整版本号,与生产一致不截断;
+                      空态与四字段读数文案对齐生产 AcceptancePackage。 */}
+                  <div className="acc-package-block">
                     <button
-                      className="acc-pkg-toggle"
+                      type="button"
+                      className="acc-package-summary"
                       aria-expanded={pkgOpen}
                       onClick={() => setPkgOpen(!pkgOpen)}
                     >
                       <Icon name={pkgOpen ? 'down' : 'right'} size={14} />
-                      <strong>出包</strong>
-                      {latest ? (
-                        <span className="g3-muted">
-                          最新包 {latest.version.slice(0, 28)}… · {latest.created}
-                        </span>
-                      ) : (
-                        <span className="g3-muted">暂无制品包</span>
-                      )}
+                      <span>出包</span>
+                      <span className="g3-muted">
+                        {latest ? `最新包 ${latest.version} · ${latest.created}` : '暂无制品包'}
+                      </span>
                     </button>
-                    {pkgOpen && (
-                      <>
-                        <div className="acc-pkg-toolbar">
-                          <label className="acc-pkg-label" htmlFor="acc-pipeline">
-                            流水线
-                          </label>
-                          <select id="acc-pipeline" className="acc-select" aria-label="流水线名称">
-                            {PIPELINES.map((name) => (
-                              <option key={name}>{name}</option>
-                            ))}
-                          </select>
-                          <ActionButton
-                            icon="plus"
-                            title="直连项目远端流水线,启动主分支构建"
-                            onClick={() =>
-                              setNotice('流水线已启动,运行约需几分钟;最新包信息每分钟自动刷新。')
-                            }
-                          >
-                            出包
-                          </ActionButton>
-                          <button
-                            className="g3-action-button"
-                            disabled={!latest}
-                            title={latest ? '选择本地目录，下载最新制品包' : '尚无制品包；先出包'}
-                            onClick={() =>
-                              setNotice('演示：打开原生目录选择器后下载制品包，本页不实际下载。')
-                            }
-                          >
-                            <Download size={14} aria-hidden="true" /> 下载
-                          </button>
-                        </div>
-                        {latest ? (
-                          <dl className="acc-pkg-grid">
-                            <dt>项目名称</dt>
-                            <dt>版本号</dt>
-                            <dt>创建时间</dt>
-                            <dt>包文件</dt>
-                            <dd>{latest.project}</dd>
-                            <dd className="acc-mono" title={latest.version}>
-                              {latest.version}
-                            </dd>
-                            <dd>{latest.created}</dd>
-                            <dd className="acc-mono">{latest.files.join('、')}</dd>
-                          </dl>
-                        ) : (
-                          <p className="g3-empty">
-                            暂无制品包 · 点「出包」启动流水线,最新包信息每分钟自动刷新。
-                          </p>
-                        )}
-                      </>
-                    )}
-                    <div className="acc-row-line">
-                      <span className="acc-line-label">演示环境</span>
+                    <div
+                      className={pkgOpen ? 'acc-package-body' : 'acc-collapsed'}
+                      aria-hidden={!pkgOpen}
+                    >
+                      <div className="acc-pkg-toolbar">
+                        <label className="acc-pkg-label" htmlFor="acc-pipeline">
+                          流水线
+                        </label>
+                        <select id="acc-pipeline" className="acc-select" aria-label="流水线名称">
+                          {PIPELINES.map((name) => (
+                            <option key={name}>{name}</option>
+                          ))}
+                        </select>
+                        <ActionButton
+                          icon="plus"
+                          onClick={() =>
+                            setNotice('流水线已启动,运行约需几分钟;最新包信息每分钟自动刷新。')
+                          }
+                        >
+                          出包
+                        </ActionButton>
+                        <button
+                          className="g3-action-button"
+                          disabled={!latest}
+                          title={latest ? undefined : '尚无制品包；先出包'}
+                          onClick={() =>
+                            setNotice('演示：打开原生目录选择器后下载制品包，本页不实际下载。')
+                          }
+                        >
+                          <Download size={14} aria-hidden="true" /> 下载
+                        </button>
+                      </div>
+                      {latest ? (
+                        <dl className="acc-pkg-grid">
+                          <dt>项目名称</dt>
+                          <dt>版本号</dt>
+                          <dt>创建时间</dt>
+                          <dt>包文件</dt>
+                          <dd title={latest.project}>{latest.project}</dd>
+                          <dd className="acc-mono" title={latest.version}>
+                            {latest.version}
+                          </dd>
+                          <dd title={latest.created}>{latest.created}</dd>
+                          <dd className="acc-mono" title={latest.files.join('、')}>
+                            {latest.files.join('、')}
+                          </dd>
+                        </dl>
+                      ) : (
+                        <p className="acc-pkg-empty">该服务暂无制品包。</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="acc-prepare-rows">
+                    <div className="acc-prepare-row">
+                      <span className="acc-prepare-label">演示环境</span>
                       {deployed ? (
                         <button
-                          className="acc-report-link"
+                          type="button"
+                          className="acc-link"
                           title="经内置 Orca 浏览器打开 http://127.0.0.1:4173"
                           onClick={openService}
                         >
@@ -867,23 +1035,90 @@ function App() {
                         部署
                       </ActionButton>
                     </div>
-                    <div className="acc-row-line">
-                      <span className="acc-line-label">验收证据报告</span>
-                      {report ? (
-                        <>
-                          <span className="acc-line-value">已生成 {report.generatedAt}</span>
-                          <IconButton
-                            name="arrow"
-                            label="打开验收证据报告(Orca 内置浏览器)"
-                            onClick={() => {
-                              toggleSession(true)
-                              setNotice(`已在内置 Orca 浏览器打开 ${report.file} · 衔接示意`)
-                            }}
-                          />
-                        </>
+                    <div className="acc-prepare-row">
+                      <span className="acc-prepare-label">验收会议</span>
+                      {meeting ? (
+                        <span
+                          className="acc-prepare-value"
+                          title={`会议 ID ${meeting.id} · 经会话预订,信息已写回材料`}
+                        >
+                          {meeting.title} · {meeting.time}
+                        </span>
                       ) : (
-                        <span className="g3-muted">未生成 · 在会话中让验收助手采集并生成</span>
+                        <span className="g3-muted">未预订 · 点「预订会议」注入请求</span>
                       )}
+                      <ActionButton
+                        disabled={!!meeting}
+                        title={
+                          meeting
+                            ? '已预订；改期或取消在会话中说明'
+                            : '向验收助手会话注入预订会议请求'
+                        }
+                        onClick={() => sendRequest(bookMeetingRequestPrompt, '预订会议请求')}
+                      >
+                        预订会议
+                      </ActionButton>
+                    </div>
+                    <div className="acc-prepare-row">
+                      <span className="acc-prepare-label">验收证据报告</span>
+                      {report ? (
+                        <button
+                          type="button"
+                          className="acc-link"
+                          title="一个版本一份，全目标合并"
+                          onClick={() => {
+                            toggleSession(true)
+                            setNotice(
+                              `打开 ${report.file} · 衔接示意：待核对项保留在报告中，不阻塞查看`
+                            )
+                          }}
+                        >
+                          已生成 {report.generatedAt}
+                          <Icon name="arrow" size={12} />
+                        </button>
+                      ) : (
+                        <span className="g3-muted">未生成 · 点「聚合」注入请求</span>
+                      )}
+                      <ActionButton
+                        title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件"
+                        onClick={() => sendRequest(aggregateRequestPrompt, '聚合请求')}
+                      >
+                        聚合
+                      </ActionButton>
+                      <button
+                        type="button"
+                        className="g3-icon-button"
+                        aria-label={
+                          report ? '打开验收证据报告' : '报告未生成；先点「聚合」注入请求'
+                        }
+                        title={report ? '打开验收证据报告' : '报告未生成；先点「聚合」注入请求'}
+                        disabled={!report}
+                        onClick={() => {
+                          if (!report) {
+                            return
+                          }
+                          toggleSession(true)
+                          setNotice(
+                            `打开 ${report.file} · 衔接示意：待核对项保留在报告中，不阻塞查看`
+                          )
+                        }}
+                      >
+                        {/* Lucide FileText；冻结的原型 vendor 未包含此图标。 */}
+                        <svg
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+                          <path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8M16 13H8M16 17H8" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </section>
@@ -964,7 +1199,7 @@ function App() {
                     ))}
                   </div>
                   <p className="g3-demo-footnote g3-annotation">
-                    结论由人选择，可改回未判定；指标证据在验收证据报告里；目标只读自计划。
+                    结论由人选择，可改回未判定；验收件聚合在验收证据报告里；目标只读自计划。
                   </p>
                 </section>
                 <section id="minutes">
@@ -984,8 +1219,11 @@ function App() {
                       </ActionButton>
                     </span>
                   </div>
-                  <MinutesCard
+                  <AcceptanceMinutesCard
                     minutes={minutes || EMPTY_MINUTES}
+                    goals={goals}
+                    meeting={meeting}
+                    onSyncMeeting={() => sendRequest(syncMinutesRequestPrompt, '同步纪要请求')}
                     update={(patch) => {
                       setMinutes({ ...(minutes || EMPTY_MINUTES), ...patch })
                       setNotice('本页演示修改 · 刷新后恢复原始材料')

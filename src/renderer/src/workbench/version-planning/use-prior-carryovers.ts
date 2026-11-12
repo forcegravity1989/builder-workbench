@@ -14,7 +14,7 @@ import {
   issueKey,
   issueMarkFor
 } from '../version-acceptance/acceptance-issue-annotations'
-import { nativeVersionHistoryPort } from '../version-history-port'
+import { historyErrorCode, nativeVersionHistoryPort } from '../version-history-port'
 import { readPlanningProgressSource } from './planning-progress-source'
 import { createSnapshotCache, useSnapshotCache } from '../snapshot-cache'
 
@@ -229,7 +229,17 @@ export function usePriorCarryovers(
         }
         fixed = prior.source
       }
-      const documents = await readPlanningProgressSource(history, readScope, fixed)
+      let documents: Awaited<ReturnType<typeof readPlanningProgressSource>>
+      try {
+        documents = await readPlanningProgressSource(history, readScope, fixed)
+      } catch (reason) {
+        // The material file is not there yet (e.g. its version is not merged):
+        // the row stays empty until the user refreshes after merging.
+        if (historyErrorCode(reason) === 'history-unavailable') {
+          return { kind: 'missing', version: fixed.version }
+        }
+        throw reason
+      }
       const value: PriorReviewState = {
         kind: 'ready',
         source: fixed,

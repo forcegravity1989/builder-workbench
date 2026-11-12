@@ -1,0 +1,73 @@
+# Codex 执行与会话反哺
+
+> Codex 在 Windows 验证 BW、发布截图或提取会话时按需读取。本文维护工具入口、命令与失败处理；验证规则和六项口径分别归[开发规范](../../../../docs/development.md)与[真实任务反馈](workflow-feedback.md)。启动入口、记录格式或脚本变化时更新，不要求 Claude 加载本工具细节。
+
+## 真壳验证
+
+先核对任务 worktree、分支、HEAD 与未提交改动，按需同步目标分支。首次、换机器或环境记录失效时先按[通用验证执行参考](verification.md#环境准备)运行 `prepare`，它从公共 Git 目录定位主 checkout，检查本机工具、原生 profile 与项目登记并保存忽略的记录；同机事实保留，异机信息不套用。记录是观察结果，不覆盖启动配置；`prepare` 和 `dev` 都沿用原生 `ORCA_DEV_USER_DATA_PATH` 或默认 profile。查明现有真壳、开发服务及重检查进程归属，保留他人的实例；低内存宿主真壳与本地 CI 串行，其他宿主按已确认资源安排。
+
+按开发规范先复用稳定 dev 环境；已有匹配实例直接操作，不重复启动。需要启动时使用下列 dev 入口：它沿用原 runner 与持久 `workbench-dev` profile（Windows 默认 `%APPDATA%/workbench-dev`），保留已纳入的 BW 项目、版本和会话。自定义 profile 沿用已确认的 `ORCA_DEV_USER_DATA_PATH`，不每条 Issue 换空目录；后台启动 helper 使用 `Start-Process -WindowStyle Hidden`。开启 CDP 前先查端口归属，启动后核对实际 Vite/CDP 地址、窗口与源码；通过 computer-use 时先读对应工具技能。
+
+```powershell
+$taskRoot = (git rev-parse --show-toplevel).Trim()
+node .claude/skills/workbench-start/scripts/run-bw-verification.mjs dev --root $taskRoot
+```
+
+需要一次性隔离或自动回归时，用 `tests/e2e/helpers/workbench-app.ts` 管理真实 Electron、HOME/profile、测试仓及清理。沿用已有用例；临时场景放 `.bw/runtime/verification/<issue>/`，引用该 fixture 与现有 global-setup/global-teardown，不复制启动实现：
+
+```powershell
+# 已有冒烟只证明其原判据；Issue 用本次标准路径和断言替换 grep/config。
+node .claude/skills/workbench-start/scripts/run-bw-verification.mjs --root $taskRoot --grep 'BW project settings:'
+node .claude/skills/workbench-start/scripts/run-bw-verification.mjs --root $taskRoot --config .bw/runtime/verification/issue-编号/playwright.config.ts --grep '本次用例'
+```
+
+隔离包装只串起现有构建与已安装 Playwright，单 worker、可见但不抢焦点；源码或产物指纹变化就重建 E2E，匹配才复用，阶段耗时记 `.bw/runtime/verification/last-run.json`。缺依赖时按项目 setup 处理一次，不用 `pnpm exec` 重复安装；锁冲突先核对 PID。
+
+由测试 agent 从基线到修复复用同一场景文件、数据前提和截图位置；工作 agent 提供设计与判据，不另写一套临时用例重复探路。场景失败先检查当前页面、真实控件名称和遮挡，再修正标准路径；修改路径后补跑基线，不能跳过独立复验。源码修改后重新运行包装脚本，不手设 `SKIP_BUILD=1` 沿用不明产物。
+
+dev renderer 热更新须确认加载；main/preload、依赖或持久化验证重启已获授权的本次实例，保留同一 profile 与项目数据。不能关闭仍由其他任务使用的实例。产物与截图留 `.bw/runtime/`。
+
+运行入口正源为 `package.json` 与 `config/scripts/run-electron-vite-{dev,build}.mjs`。完整门禁串行执行；低内存时已有 `typecheck:node`、`typecheck:cli`、`typecheck:web` 分项运行，完整 CI 放远端时说明本地范围。
+
+## 截图发布与读回
+
+完整读取[通用验证执行参考](verification.md#截图发布与读回)，使用同一发布脚本与读回步骤。
+
+## 会话反哺
+
+原始记录从 `$CODEX_HOME/sessions` 找；未设置时用用户目录 `.codex/sessions`，已归档则查同一根的 `archived_sessions`。按会话 ID 定位文件，不扫描所有正文；会话名用桌面 `list_threads` 找 ID。不要读凭据或用 BW PTY 捕获脚本冒充会话导出。
+
+```powershell
+$taskCodexHome = $env:CODEX_HOME
+if (-not $taskCodexHome) { $taskCodexHome = Join-Path $env:USERPROFILE '.codex' }
+rg --files (Join-Path $taskCodexHome 'sessions') (Join-Path $taskCodexHome 'archived_sessions') -g '*会话ID*.jsonl'
+node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs extract --input 原始.jsonl --out 提取.json
+# 同一会话续接到多个文件时，显式传入全部片段。
+node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs extract --input 首段.jsonl --input 续段.jsonl --out 提取.json
+node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs schema
+```
+
+提取优先用 `event_msg/item_completed` 的 UserMessage/AgentMessage，保留 AskUser 的提问身份；旧记录回退到有用户来源的 response_item 或旧事件。同一会话的多个片段合并提取，存储镜像只取一次，真实重复发送留给模型判断；AGENTS、环境注入、工具回显和子 agent 不算人的输入。正文不可读、损坏或截断保留缺口，不能生成零值。
+
+按 `schema` 逐条标注原始消息，引用首次完成交付、人审和重新交付的证据。完整覆盖须有本次开工消息，并核对提取出的全部用户输入。结合上下文判断语义，由脚本生成指标评论。原始记录有缺口，或现有脚本无法划清本次交付范围时，相应指标保留未知。人工权限确认按实际询问批次另计，沙箱自动审核无需人工回答时不计。
+
+```powershell
+node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs report --input 提取.json --annotations 标注.json --out 评论.md --json 指标.json
+# 已有指标评论时按 bw-workflow-feedback 标记核对作者和 ID，再 PATCH 同一评论。
+@{body=(Get-Content 评论.md -Raw)} | ConvertTo-Json | Set-Content 更新.json -Encoding utf8
+gh api --method PATCH repos/OWNER/REPO/issues/comments/评论ID --input 更新.json
+# 首次交付还没有指标评论时，使用下面的发布命令。
+gh pr comment PR编号 --body-file 评论.md
+```
+
+读回脚本评论，核对 `bw-workflow-feedback` 标记和指标覆盖。符合筛选条件时读取当前标题，若已有 `[AI] ` 前缀则跳过标题更新。
+
+```powershell
+gh pr view PR编号 --json title,comments
+gh pr edit PR编号 --title "[AI] 原 PR 标题"
+gh pr view PR编号 --json title
+# 快速浏览最近 100 条。正式统计须取齐窗口内的交付，再精确匹配前缀。
+gh pr list --state all --limit 100 --json number,title,url --jq '.[] | select(.title | startswith("[AI] "))'
+```
+
+`report` 会重读全部原始来源，核对用户输入、提问及引用的交付证据。新增输入后重跑 `extract`、标注和 `report`，按当前授权发布或更新原评论。过程尚未完整时展示已观察次数，完整过程发生率保持未知。补历史时若标记缺失或有歧义，先读正文核对具体指标评论，避免覆盖验证 Review。脚本通过只证明本次计数与协议。

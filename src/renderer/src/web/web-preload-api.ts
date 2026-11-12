@@ -3,6 +3,7 @@ import type { StatsSummary } from '../../../shared/process-stats-types'
 import { createWebE2EApi } from './preload-api/web-e2e-api'
 import {
   createAccountsApi,
+  createCursorAccountsApi,
   createGrokAccountsApi,
   createMiniMaxCredentialsApi
 } from './preload-api/web-agent-accounts-api'
@@ -86,6 +87,12 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     gh: createGitHubApi(),
     gl: createGitLabApi(),
     codehub: createRuntimeNamespaceApi('codehub'),
+    milestoneRecovery: {
+      read: async () => ({ revision: null, payload: null }),
+      write: async () => {
+        throw new Error('浏览器端尚不支持本机草案恢复，请提交成功后再退出')
+      }
+    },
     hostedReview: createRuntimeNamespaceApi('hostedReview'),
     linear: createRuntimeNamespaceApi('linear'),
     hooks: createHooksApi(),
@@ -107,6 +114,7 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     rateLimits: createRateLimitsApi(),
     minimaxCredentials: createMiniMaxCredentialsApi(),
     grokAccounts: createGrokAccountsApi(),
+    cursorAccounts: createCursorAccountsApi(),
     codexAccounts: createAccountsApi(),
     claudeAccounts: createAccountsApi(),
     cli: createCliApi(),

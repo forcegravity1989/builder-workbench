@@ -1,7 +1,9 @@
+import { MilestoneVersionOrigin } from '../workbench/milestone-version-origin'
 import { Suspense, useRef } from 'react'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
-import Sidebar from '../components/Sidebar'
+import { cn } from '@/lib/utils'
+import { WorktreeSidebar } from './WorktreeSidebar'
 import RightSidebar from '../components/right-sidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/FloatingTerminalToggleButton'
@@ -12,12 +14,17 @@ import { RightSidebarToggle, TitlebarMainStrip } from './TitlebarMainStrip'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { PrReviewNotifications } from '../workbench/pr-review-notifications/PrReviewNotifications'
 import { useProjectPage } from '../workbench/project-page-state'
 import { CycleWorkspaceProvider } from '../workbench/version-cycle/CycleWorkspaceProvider'
 import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-context'
 import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
 import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
+import { WorkbenchRail } from '../workbench/WorkbenchRail'
+import { WorkbenchWorkspaceChoiceDialog } from '../workbench/WorkbenchWorkspaceChoiceDialog'
+import { WorkbenchVersionBindingDialog } from '../workbench/version-tree-bind-dialog'
+import { useWorkbenchObjectContext } from '../workbench/workbench-object-context'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -51,60 +58,20 @@ const MetricsWorkspaceBoard = lazy(() =>
 const ProjectWallPage = lazy(() =>
   import('../workbench/ProjectWallPage').then((m) => ({ default: m.ProjectWallPage }))
 )
-const OnboardProjectPage = lazy(() =>
-  import('../workbench/OnboardProjectPage').then((m) => ({ default: m.OnboardProjectPage }))
-)
-
-type WorktreeSidebarScrollRefs = {
-  scrollOffsetRef: React.MutableRefObject<number>
-  scrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
-}
-
-function WorktreeSidebar({
-  layout,
-  scrollRefs
-}: {
-  layout: AppChromeLayout
-  scrollRefs: WorktreeSidebarScrollRefs
-}): React.JSX.Element {
-  return (
-    <RecoverableRenderErrorBoundary
-      boundaryId="sidebar.worktrees"
-      surface="sidebar"
-      resetKey={layout.activeView}
-      title={translate('auto.App.1468601e7b', 'The workspace list hit an error.')}
-      description={
-        layout.leftTitlebarChromeLayout.shouldMount
-          ? translate(
-              'auto.App.bdc71dddc9',
-              'The active workspace remains open. Retry the list or switch views.'
-            )
-          : translate(
-              'auto.App.cba0fafda5',
-              'The active page remains open. Retry the list or switch views.'
-            )
-      }
-    >
-      <Sidebar
-        worktreeScrollOffsetRef={scrollRefs.scrollOffsetRef}
-        worktreeScrollAnchorRef={scrollRefs.scrollAnchorRef}
-      />
-    </RecoverableRenderErrorBoundary>
-  )
-}
 
 function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element {
   const { activeView, activeWorktreeId, activePendingCreationId, creationLayoutActive } = layout
   const projectPage = useProjectPage()
   if (isWorkbenchShell() && activeView === 'activity') {
     if (projectPage?.kind === 'wall') {
-      return <ProjectWallPage configureRepoId={projectPage.configureRepoId} />
+      return <ProjectWallPage />
     }
     if (projectPage?.kind === 'version-overview') {
-      return <VersionOverviewPage options={projectPage.options} />
-    }
-    if (projectPage?.kind === 'onboard') {
-      return <OnboardProjectPage options={projectPage.options} />
+      return (
+        <MilestoneVersionOrigin feature={projectPage.options.milestoneOrigin?.feature}>
+          <VersionOverviewPage options={projectPage.options} />
+        </MilestoneVersionOrigin>
+      )
     }
   }
   return (
@@ -150,6 +117,9 @@ export function AppWorkspaceShell(props: {
   return (
     <CycleWorkspaceProvider>
       <AppWorkspaceContent {...props} />
+      <WorkbenchWorkspaceChoiceDialog />
+      <WorkbenchVersionBindingDialog />
+      <PrReviewNotifications />
     </CycleWorkspaceProvider>
   )
 }
@@ -164,6 +134,8 @@ function AppWorkspaceContent(props: {
   const metricsOnly = metricsBoard && !cycle
   const band = useMetricsBandResize()
   const resize = usePlanColumnResize(Boolean(cycle?.context.worktreeId))
+  const workbenchShell = isWorkbenchShell()
+  const showObjectPanel = useWorkbenchObjectContext()
   const titlebarLeftControls = <TitlebarLeftControls layout={layout} />
   const titlebarMainStrip = <TitlebarMainStrip layout={layout} />
   // Why: keep virtualized scroll memory above the sidebar's workspace/landing remount so the left list doesn't restart at scrollTop 0.
@@ -196,9 +168,12 @@ function AppWorkspaceContent(props: {
           <div className="flex flex-row flex-1 min-h-0 overflow-hidden">
             {layout.showSidebar ? (
               layout.leftTitlebarChromeLayout.shouldMount ? (
-                /* Why: when the sidebar is collapsed, take this titlebar-height header out of flex layout so the terminal/editor reclaim the left edge. */
                 <div
-                  className={`flex min-h-0 flex-col shrink-0${layout.sidebarOpen ? '' : ' relative w-0 overflow-visible'}`}
+                  className={cn(
+                    'flex min-h-0 shrink-0 flex-col',
+                    !layout.sidebarOpen && 'relative overflow-visible',
+                    !layout.sidebarOpen && !workbenchShell && 'w-0'
+                  )}
                 >
                   <div
                     // Why: floating titlebar-left occludes the center column's border-l seam; border-r restores that line, w-max sizes it to its own controls.
@@ -216,9 +191,29 @@ function AppWorkspaceContent(props: {
                     {titlebarLeftControls}
                   </div>
                   {/* Why: flex-1/min-h-0 slot needed under the fixed 36px header, else the sidebar collapses to content height and loses its scroll viewport. */}
-                  <div className="flex min-h-0 flex-1">
-                    <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
+                  <div
+                    className={cn(
+                      'flex min-h-0 flex-1',
+                      // The Rail stays below the 36px titlebar when the titlebar floats.
+                      workbenchShell && layout.leftTitlebarChromeLayout.isFloating && 'pt-9'
+                    )}
+                  >
+                    {workbenchShell ? <WorkbenchRail /> : null}
+                    <WorktreeSidebar
+                      layout={layout}
+                      scrollRefs={sidebarScrollRefs}
+                      panelVisible={showObjectPanel}
+                    />
                   </div>
+                </div>
+              ) : workbenchShell ? (
+                <div className="flex min-h-0 min-w-0">
+                  <WorkbenchRail />
+                  <WorktreeSidebar
+                    layout={layout}
+                    scrollRefs={sidebarScrollRefs}
+                    panelVisible={showObjectPanel}
+                  />
                 </div>
               ) : (
                 <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
@@ -226,7 +221,7 @@ function AppWorkspaceContent(props: {
             ) : null}
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
               {layout.stackedSidebarOpen &&
-              (isWorkbenchShell() ||
+              (workbenchShell ||
                 (layout.activeView !== 'automations' && layout.activeView !== 'artifacts')) ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}
@@ -247,11 +242,18 @@ function AppWorkspaceContent(props: {
                   </div>
                 )}
                 <div
-                  className={`flex flex-1 min-w-0 min-h-0${metricsOnly ? ' flex-col' : ''}`}
+                  className={`relative flex flex-1 min-w-0 min-h-0${metricsOnly ? ' flex-col' : ''}`}
                   ref={resize.bodyRef}
                 >
                   <div
-                    className="relative flex min-w-0 min-h-0 flex-col"
+                    // Browser tools can still need frames while the session is collapsed.
+                    className={`flex min-w-0 min-h-0 flex-col${
+                      cycle && resize.chatCollapsed
+                        ? ' absolute inset-y-0 left-0 opacity-0 pointer-events-none'
+                        : ' relative'
+                    }`}
+                    inert={!!cycle && resize.chatCollapsed}
+                    aria-hidden={!!cycle && resize.chatCollapsed}
                     ref={metricsOnly ? undefined : resize.chatColRef}
                     style={
                       cycle
@@ -261,26 +263,12 @@ function AppWorkspaceContent(props: {
                         : { flex: 1, width: metricsOnly ? 'auto' : '100%', minWidth: 0 }
                     }
                   >
-                    {/* Why: the collapsed 36px rail's own content is unusable, so the whole
-                        rail doubles as the expand affordance (click anywhere); the board
-                        page-header chip stays the other entry. */}
-                    {cycle && resize.chatCollapsed && (
-                      <button
-                        type="button"
-                        className="absolute inset-0 z-10 p-0 border-0 bg-transparent cursor-pointer"
-                        aria-label={translate(
-                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
-                          '展开会话栏'
-                        )}
-                        title={translate(
-                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
-                          '展开会话栏'
-                        )}
-                        onClick={resize.toggleChatCollapsed}
-                      />
-                    )}
                     {layout.shouldMountTerminalWorkbench ? (
-                      <TerminalWorkbenchContainer isVisible={layout.terminalWorkbenchVisible}>
+                      <TerminalWorkbenchContainer
+                        isVisible={
+                          layout.terminalWorkbenchVisible && !(cycle && resize.chatCollapsed)
+                        }
+                      >
                         <Suspense fallback={null}>
                           <RecoverableRenderErrorBoundary
                             boundaryId="terminal.workbench"
@@ -317,9 +305,6 @@ function AppWorkspaceContent(props: {
                   </div>
                   {(cycle || metricsBoard) && (
                     <>
-                      {/* Why: the divider only resizes an expanded session column. While the column is collapsed
-                          there is nothing to resize, and a dead col-resize strip reads as broken drag affordance
-                          (round-9 decision 2026-10-22: hide it; expanding stays on the board header chip). */}
                       {cycle && !resize.chatCollapsed && (
                         <div
                           className="vc-split"

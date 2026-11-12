@@ -29,7 +29,7 @@ pnpm run dev:workbench
 
 - Renderer（叠层 UI / CSS）保存即 HMR，所见即所得
 - Main / preload 变更会整窗重启（electron-vite 默认）
-- 独立 profile：`~/Library/Application Support/workbench-dev`（不碰 `orca-dev`）
+- 独立 profile：macOS `~/Library/Application Support/workbench-dev`、Windows `%APPDATA%\workbench-dev`（不碰 `orca-dev`）
 - Dock 标题：`Workbench: <branch>`
 
 **自己看 UI**：不要设 `ORCA_BACKGROUND_LAUNCH=1`（该变量会隐藏窗口、藏 Dock，仅供 agent/CDP 自动化）。
@@ -40,19 +40,33 @@ pnpm run dev:workbench
 ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 ```
 
+`dev:workbench` 本身已跨平台可直接跑；上面的 env 前缀是 POSIX 写法，在 Windows cmd/PowerShell 下不成立，改用该 shell 自己的赋值：
+
+```powershell
+$env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run dev:workbench
+```
+
+开发实例和其中的终端只继承启动进程的环境变量：从 IDE、agent 等环境被收敛的进程起 dev 时，启动前要先补上本机需要的用户级变量（如内网 CA 的 `NODE_EXTRA_CA_CERTS`）；Windows 上 `dev:workbench` 会自动从用户环境补回该变量（清单见 `config/scripts/dev-workbench-env.mjs`）。
+
 打试用包仍用：`pnpm run build:mac:workbench`（签名 / 分发 / CDP smoke 前再打）。
 
 ## 品牌与开关
+
+正式标志源为 `resources/icon-source/workbench.png`。运行 `pnpm run build:icons` 从同一原图生成界面/运行时 PNG、Windows 多尺寸 ICO 和 macOS ICNS（只需 Node 与仓内依赖，不依赖 Xcode）。`node config/scripts/generate-workbench-icons.mjs --check` 校验生成物。开发与生产使用同一标志；旧的水彩/蓝色 Orca 偏好归一为默认标志，macOS 启动时清除旧 Finder 自定义图标以使用包内标志。macOS 菜单栏使用同源 18px / 36px 原色图（不作模板着色），注意提示叠加在原图上，开发实例以 `DEV` 文字区分。
 
 | Env | 作用 |
 |-----|------|
 | `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |
 | `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
 | `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
+| WeLink 群空间(上报落点) | `src/main/workbench/reporting/welink-report-config.ts` 固定 `WELINK_REPORT_SPACE_ID = 24160277`；设置与 env 不能改道，变更须走代码 PR。反馈/崩溃/诊断包使用「Workbench 上报」目录，用户开启后的遥测使用「Workbench 遥测」目录；均使用当前 WeLink 账号上传 |
+| `WORKBENCH_TELEMETRY_FLUSH_MS` | 遥测批次上传的定时间隔，默认 600000 毫秒（10 分钟），减少群空间文件和限流；开发/验收可缩短等待 |
 
 打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
 
 Windows Workbench：`pnpm run build:win:workbench`（脚本 `config/scripts/build-win-workbench.mjs`，沿用 `electron-builder` 的 Windows/NSIS 配置）。 Workbench 使用带目录选择的安装向导，手动运行安装包时可选择安装位置；已有安装默认沿用原目录，应用内自动更新沿用原目录并跳过选择页。产品名与 appId 保持独立于官方 Orca。包内 `resources/bin/orca.exe` 仍使用原生命令名，按产品编译并调用同包的 `Workbench.exe`；Workbench 与 Orca 启动器分别缓存，不能混用。打包后须通过该启动器读取 Skill 与材料 schema，不能只用 Node 直接调用 CLI JS 代替验证。
+
+Windows Workbench 的 Electron 语言资源只保留简体中文（`zh-CN`）和英语（`en-US`），其他系统语言回落英语；这不裁剪应用自身的翻译目录。打包清除运行依赖里的 MSVC 调试符号与编译中间文件，保留 `.node`、`.dll`、`.exe`。SSH relay 的全部目标平台文件只随 `extraResources` 放在 `resources/relay`，不重复进入 `app.asar`。
 
 产物示例：
 

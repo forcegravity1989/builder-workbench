@@ -1,4 +1,7 @@
-import { UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH } from '../../../shared/runtime-types'
+import {
+  isHeadlessBuiltSessionTabsPublication,
+  UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH
+} from '../../../shared/runtime-session-contracts'
 
 type SnapshotPublication = {
   publicationEpoch: string
@@ -25,6 +28,19 @@ export function hostSnapshotAffirmsWorktreeContents(snapshot: SnapshotPublicatio
   return !(
     snapshot.publicationEpoch === UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH &&
     snapshot.snapshotVersion === 0
+  )
+}
+
+export function hostSnapshotAffirmsEditorContents(snapshot: SnapshotPublication): boolean {
+  const { publicationEpoch } = snapshot
+  // The main process can reconstruct terminals, browsers, or agent sessions without an editor inventory.
+  return (
+    hostSnapshotAffirmsWorktreeContents(snapshot) &&
+    // Pairing appends its navigation epoch and may advance the version of the unpublished frame.
+    publicationEpoch !== `${UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH}:client-navigation` &&
+    !isHeadlessBuiltSessionTabsPublication(publicationEpoch) &&
+    !publicationEpoch.startsWith('renderer-rescue:') &&
+    !publicationEpoch.startsWith('structured:')
   )
 }
 

@@ -28,6 +28,7 @@ import { ghApi } from './api/gh-bridge'
 import { hostedReviewApi } from './api/hosted-review-bridge'
 import { glApiBridge } from './api/gl-bridge'
 import { codehubApi } from './codehub'
+import { milestoneRecoveryApi } from './milestone-recovery'
 import { bitbucketApi } from './api/bitbucket-bridge'
 import { linearApi } from './api/linear-bridge'
 import { jiraApi } from './api/jira-bridge'
@@ -79,6 +80,7 @@ import { runtimeEnvironmentsApi } from './api/runtime-environments-bridge'
 import { rateLimitsApi } from './api/rate-limits-bridge'
 import { minimaxCredentialsApi } from './api/minimax-credentials-bridge'
 import { grokAccountsApi } from './api/grok-accounts-bridge'
+import { cursorAccountsApi } from './api/cursor-accounts-bridge'
 import { sshApi } from './api/ssh-bridge'
 import { automationsApi } from './api/automations-bridge'
 import { e2eApi } from './api/e2e-bridge'
@@ -124,6 +126,7 @@ const api = {
   hostedReview: hostedReviewApi,
   gl: glApiBridge,
   codehub: codehubApi,
+  milestoneRecovery: milestoneRecoveryApi,
   bitbucket: bitbucketApi,
   linear: linearApi,
   jira: jiraApi,
@@ -179,6 +182,7 @@ const api = {
   rateLimits: rateLimitsApi,
   minimaxCredentials: minimaxCredentialsApi,
   grokAccounts: grokAccountsApi,
+  cursorAccounts: cursorAccountsApi,
   ssh: sshApi,
   automations: automationsApi,
   e2e: e2eApi,

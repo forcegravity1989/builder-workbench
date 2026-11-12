@@ -54,7 +54,8 @@ function mapComment(
     isReply: record.is_reply === true,
     authorAvatarUrl: avatarUrlOf(author),
     isBot: record.from_robot === true,
-    isResolved: record.resolved === true,
+    isResolved: typeof record.resolved === 'boolean' ? record.resolved : undefined,
+    isSystem: typeof record.system === 'boolean' ? record.system : undefined,
     path: typeof path === 'string' && path.trim() ? path.trim() : null,
     line: noteLineOf(record.line ?? position?.new_line),
     isOutdated: record.is_outdated === true
@@ -66,7 +67,13 @@ export async function listCodeHubComments(args: {
   execOptions?: CodeHubExecOptions
   kind: 'issue' | 'mr'
   iid: number
+  requireComplete?: boolean
+  requireCompleteThreads?: boolean
 }): Promise<CodeHubComment[]> {
+  const requireComplete = args.requireComplete || args.requireCompleteThreads
+  if (args.requireCompleteThreads && args.kind !== 'mr') {
+    throw new Error('检视线程只适用于 MR')
+  }
   const command =
     args.kind === 'issue'
       ? [
@@ -91,8 +98,99 @@ export async function listCodeHubComments(args: {
           '--limit',
           '50'
         ]
-  const parsed = parseJson(await runCodeHubCli(command, args.execOptions))
-  const rows = Array.isArray(parsed) ? parsed : []
+  const rows: unknown[] = []
+  const seen = new Set<string>()
+  const seenNotes = new Set<string>()
+  for (let page = 0; ; page++) {
+    if (page >= 100) {
+      throw new Error('CodeHub指标评论分页超出读取上限，无法确认完整结果')
+    }
+    const stdout = await runCodeHubCli(
+      requireComplete
+        ? [
+            ...command,
+            '--offset',
+            String(rows.length),
+            '--order-by',
+            'created_at',
+            '--sort',
+            'asc',
+            '--no-cache'
+          ]
+        : command,
+      args.execOptions
+    )
+    const parsed = parseJson(stdout)
+    // v1.3.4 returns JSON null for an empty page; empty stdout is not that contract.
+    const pageRows = parsed === null && stdout.trim() === 'null' ? [] : parsed
+    if (requireComplete && (!Array.isArray(pageRows) || pageRows.length > 50)) {
+      throw new Error('CodeHub指标评论分页格式无效，无法确认完整结果')
+    }
+    const current = Array.isArray(pageRows) ? pageRows : []
+    if (requireComplete) {
+      for (const row of current) {
+        if (!row || typeof row !== 'object') {
+          throw new Error('CodeHub指标评论记录无效')
+        }
+        const record = row as Record<string, unknown>
+        if (args.requireCompleteThreads) {
+          const notes = record.notes
+          if (
+            !Array.isArray(notes) ||
+            !notes.length ||
+            typeof record.individual_note !== 'boolean'
+          ) {
+            throw new Error('CodeHub 检视讨论结构不完整')
+          }
+          const root = notes[0]
+          if (!root || typeof root !== 'object' || typeof root.system !== 'boolean') {
+            throw new Error('CodeHub 检视线程缺少根记录')
+          }
+          if (!record.individual_note && root.is_reply !== false) {
+            throw new Error('CodeHub 检视线程缺少根记录')
+          }
+          if (
+            !record.individual_note &&
+            !root.system &&
+            (typeof root.resolved !== 'boolean' ||
+              typeof root.created_at !== 'string' ||
+              !Number.isFinite(Date.parse(root.created_at)))
+          ) {
+            throw new Error('CodeHub 检视线程状态或时间不完整')
+          }
+        }
+        const id = record.id ?? record.note_id ?? record.noteId
+        if ((typeof id !== 'string' && typeof id !== 'number') || String(id).trim() === '') {
+          throw new Error('CodeHub指标评论缺少分页标识')
+        }
+        if (seen.has(String(id))) {
+          throw new Error('CodeHub指标评论分页重复，无法确认完整结果')
+        }
+        seen.add(String(id))
+        const notes = Array.isArray(record.notes) ? record.notes : [record]
+        for (const note of notes) {
+          const noteId = note?.id ?? note?.note_id ?? note?.noteId
+          if (
+            !note ||
+            typeof note !== 'object' ||
+            (typeof noteId !== 'string' && typeof noteId !== 'number') ||
+            String(noteId).trim() === '' ||
+            typeof (note.body ?? note.note ?? note.description) !== 'string'
+          ) {
+            throw new Error('CodeHub指标评论字段不完整')
+          }
+          if (seenNotes.has(String(noteId))) {
+            throw new Error('CodeHub指标评论记录重复，无法确认完整结果')
+          }
+          seenNotes.add(String(noteId))
+        }
+      }
+    }
+    rows.push(...current)
+    if (!requireComplete || current.length < 50) {
+      break
+    }
+  }
   // `mr review list` returns discussions whose comments are nested in
   // `notes`; `issue comment list` returns flat comments. Every MR note keeps
   // its discussion id so `mr review reply` can address it — standalone notes

@@ -26,6 +26,7 @@ import { registerMacSymbolicHotkeysProbeHandler } from './macos-symbolic-hotkeys
 import { registerRendererShutdownCheckpointHandler } from './renderer-shutdown-checkpoint'
 import { readMacKeyboardLayoutSnapshot } from './macos-keyboard-layout-snapshot'
 import { registerMacKeyboardLayoutChangeNotifications } from './macos-keyboard-layout-change-notifications'
+import { recordCrashBreadcrumb } from '../crash-reporting/crash-breadcrumb-store'
 
 const KEYBOARD_INPUT_SOURCE_TIMEOUT_MS = 500
 const MAC_HITOOLBOX_DOMAIN = 'com.apple.HIToolbox'
@@ -249,6 +250,12 @@ export function registerAppHandlers(store: Store, options: RegisterAppHandlersOp
   registerMacKeyboardLayoutChangeNotifications()
 
   ipcMain.handle('app:getFeatureWallAssetBaseUrl', (): string => getFeatureWallAssetBaseUrl())
+
+  ipcMain.handle('app:showAbout', () => app.showAboutPanel())
+  ipcMain.handle('app:openCrashReport', (event) => {
+    recordCrashBreadcrumb('crash_report_opened')
+    event.sender.send('ui:openCrashReport')
+  })
 
   ipcMain.handle('app:getIdentity', (): AppIdentity => {
     const identity = getDevInstanceIdentity(is.dev)

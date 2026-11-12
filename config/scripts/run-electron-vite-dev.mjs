@@ -23,7 +23,12 @@ import {
   isDevBundleInUse,
   selectStaleDevBundleDirs
 } from './dev-electron-bundle-cache.mjs'
-import { createDevDockTitle, getDevUserDataPath, isWorkbenchDevEnv } from './dev-workbench-env.mjs'
+import {
+  createDevDockTitle,
+  getDevUserDataPath,
+  inheritWindowsUserEnv,
+  isWorkbenchDevEnv
+} from './dev-workbench-env.mjs'
 import { copyPrivateTree } from './space-sharing-copy.mjs'
 import {
   DEV_BUNDLE_ID,
@@ -37,17 +42,39 @@ import {
 // require('electron') returns the npm stub instead of the built-in API.
 delete process.env.ELECTRON_RUN_AS_NODE
 
+// Why: every PTY in the dev instance inherits this process's env. Launching from
+// an IDE/agent with a sanitized environment would otherwise hide user-level vars
+// (e.g. NODE_EXTRA_CA_CERTS for internal CAs) and terminals would fail on TLS.
+const restoredDevEnv = inheritWindowsUserEnv()
+if (restoredDevEnv.length > 0) {
+  console.log(`[orca-dev] Restored Windows user env: ${restoredDevEnv.join(', ')}`)
+}
+
 const require = createRequire(import.meta.url)
 const repoRoot = path.resolve(import.meta.dirname, '../..')
 const STABLE_NAME_FLAG = '--stable-name'
+// Why a runner flag rather than `VAR=value pnpm run ...` in package.json: pnpm executes
+// package scripts through cmd.exe on Windows, which cannot parse the POSIX env-prefix form,
+// so `dev:workbench` could not start there. Keeping the switch inside the runner is
+// cross-platform and still pins the vars before the code below reads them for the profile,
+// Dock/window title and the Workbench HMR banner.
+const WORKBENCH_FLAG = '--workbench'
 const rawForwardedArgs = process.argv.slice(2)
 // Why: keep an escape hatch for tools that key off Electron's stock app name.
 // The flag is runner-only and must not leak into Chromium/electron-vite.
 const useStableElectronName =
   process.env.ORCA_DEV_STABLE_NAME === '1' || rawForwardedArgs.includes(STABLE_NAME_FLAG)
-const forwardedRaw = rawForwardedArgs.filter((arg) => arg !== STABLE_NAME_FLAG)
+const useWorkbenchShell = rawForwardedArgs.includes(WORKBENCH_FLAG)
+const forwardedRaw = rawForwardedArgs.filter(
+  (arg) => arg !== STABLE_NAME_FLAG && arg !== WORKBENCH_FLAG
+)
 if (useStableElectronName) {
   process.env.ORCA_DEV_STABLE_NAME = '1'
+}
+if (useWorkbenchShell) {
+  process.env.WORKBENCH_SHELL = '1'
+  process.env.VITE_WORKBENCH_SHELL = '1'
+  process.env.ORCA_PRODUCT_NAME = 'Workbench'
 }
 
 function readGitValue(args) {

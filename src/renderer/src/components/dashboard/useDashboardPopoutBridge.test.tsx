@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  hostAgentPreferences: new Map(),
   acknowledgeAgents: vi.fn(),
   setActiveWorktree: vi.fn(),
   subscribeStore: vi.fn((_listener: (state: unknown, previousState: unknown) => void) => vi.fn()),
@@ -46,6 +47,9 @@ vi.mock('@/lib/worktree-activation', () => ({
 
 vi.mock('./build-dashboard-snapshot', () => ({
   buildDashboardSnapshot: mocks.buildDashboardSnapshot
+}))
+vi.mock('./use-dashboard-host-agent-preferences', () => ({
+  useDashboardHostAgentPreferences: () => mocks.hostAgentPreferences
 }))
 
 import type { DashboardSnapshot } from '../../../../shared/dashboard-snapshot'

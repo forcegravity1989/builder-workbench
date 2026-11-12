@@ -11,6 +11,7 @@ import {
   isClaudeIdentityFrameSegment,
   isClaudeManagementTitle,
   isCursorNativeAgentTitle,
+  isDshTerminalTitle,
   titleHasAgentName
 } from './agent-title-core'
 import { isOpenCodeNativeTitle } from './opencode-terminal-title'
@@ -233,6 +234,10 @@ function collectVendorMarkers(segments: readonly string[]): TuiAgent[] {
   for (const segment of segments) {
     // Why prefix-only: a sigil marks the pane's own status line only in the identity position.
     // The same character inside task text is decoration, not a vendor emission.
+    if (isDshTerminalTitle(segment)) {
+      markers.add('dsh')
+      continue
+    }
     if (GEMINI_GLYPHS.some((glyph) => segment.startsWith(glyph))) {
       markers.add('gemini')
     }

@@ -6,6 +6,7 @@ import {
   CodeHubUpdateIssueTitle,
   CodeHubUpdateIssueLabels,
   CodeHubListLabels,
+  CodeHubListMembers,
   CodeHubSetIssueState,
   CodeHubCloseMr,
   CodeHubAssignIssue,
@@ -13,6 +14,7 @@ import {
   CodeHubSetReviewers,
   CodeHubListPipelines,
   CodeHubMrChecks,
+  CodeHubMrForBranch,
   CodeHubMrChanges,
   CodeHubViewTask,
   CodeHubListComments,
@@ -21,6 +23,11 @@ import {
 } from '../../../../shared/codehub-api'
 
 export const CODEHUB_METHODS = [
+  defineMethod({
+    name: 'codehub.mrForBranch',
+    params: CodeHubMrForBranch,
+    handler: (params, { runtime }) => runtime.codehub.mrForBranch(params)
+  }),
   defineMethod({
     name: 'codehub.viewer',
     params: CodeHubViewer,
@@ -50,6 +57,11 @@ export const CODEHUB_METHODS = [
     name: 'codehub.listLabels',
     params: CodeHubListLabels,
     handler: (params, { runtime }) => runtime.codehub.listLabels(params)
+  }),
+  defineMethod({
+    name: 'codehub.listMembers',
+    params: CodeHubListMembers,
+    handler: (params, { runtime }) => runtime.codehub.listMembers(params)
   }),
   defineMethod({
     name: 'codehub.setIssueState',

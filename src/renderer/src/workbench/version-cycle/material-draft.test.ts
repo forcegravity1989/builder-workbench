@@ -97,9 +97,9 @@ describe('material draft concurrency', () => {
     await first
     expect(saves).toBe(1)
   })
-  it('clears selection without letting an in-flight read restore it', async () => {
+  it('stale async reads restore neither a cleared selection nor a newer saved edit', async () => {
     let finish!: (value: { document: typeof base; revision: string }) => void
-    const controller = new MaterialDraftController<typeof base>(
+    const cleared = new MaterialDraftController<typeof base>(
       {
         read: () =>
           new Promise((resolve) => {
@@ -109,16 +109,15 @@ describe('material draft concurrency', () => {
       },
       () => {}
     )
-    controller.restore({ document: base, expectedRevision: 'old', dirty: false })
-    const refresh = controller.refresh()
-    controller.clear()
+    cleared.restore({ document: base, expectedRevision: 'old', dirty: false })
+    const clearedRefresh = cleared.refresh()
+    cleared.clear()
     finish({ document: base, revision: 'old' })
-    await refresh
-    expect(controller.value).toBeNull()
-  })
-  it('ignores an old refresh after a newer edit has been saved', async () => {
+    await clearedRefresh
+    expect(cleared.value).toBeNull()
+
     let finishRead!: (value: { document: typeof base; revision: string }) => void
-    const controller = new MaterialDraftController<typeof base>(
+    const edited = new MaterialDraftController<typeof base>(
       {
         read: () =>
           new Promise((resolve) => {
@@ -128,13 +127,13 @@ describe('material draft concurrency', () => {
       },
       () => {}
     )
-    controller.restore({ document: base, expectedRevision: 'old', dirty: false })
-    const refresh = controller.refresh()
-    controller.edit({ ...base, title: 'new text' })
-    await controller.save()
+    edited.restore({ document: base, expectedRevision: 'old', dirty: false })
+    const editedRefresh = edited.refresh()
+    edited.edit({ ...base, title: 'new text' })
+    await edited.save()
     finishRead({ document: base, revision: 'old' })
-    await refresh
-    expect(controller.value).toMatchObject({
+    await editedRefresh
+    expect(edited.value).toMatchObject({
       document: { title: 'new text' },
       expectedRevision: 'saved',
       dirty: false

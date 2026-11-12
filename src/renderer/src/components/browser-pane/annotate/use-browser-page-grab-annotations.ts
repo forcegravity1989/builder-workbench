@@ -52,8 +52,7 @@ export function useBrowserPageGrabAnnotations({
   trackingScroller,
   webviewRef,
   setBrowserOverlayViewport,
-  browserAnnotationsLength,
-  setBrowserAnnotationTrayOpen
+  browserAnnotationsLength
 }: {
   /** Scopes the stored annotations. Stable for the life of the surface. */
   browserTabId: string
@@ -71,7 +70,6 @@ export function useBrowserPageGrabAnnotations({
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   setBrowserOverlayViewport: Dispatch<SetStateAction<BrowserOverlayViewport>>
   browserAnnotationsLength: number
-  setBrowserAnnotationTrayOpen: Dispatch<SetStateAction<boolean>>
 }): {
   grabIntent: GrabIntent
   startGrabIntent: (nextIntent: GrabIntent) => void
@@ -84,8 +82,13 @@ export function useBrowserPageGrabAnnotations({
   handleGrabCopy: () => void
   handleGrabCopyScreenshot: () => void
   grabMenuActionTakenRef: MutableRefObject<boolean>
-  handleAddBrowserAnnotation: (comment: string, intent: BrowserAnnotationIntent) => void
+  handleAddBrowserAnnotation: (
+    comment: string,
+    intent: BrowserAnnotationIntent,
+    imagePaths?: string[]
+  ) => void
   handleCancelPendingBrowserAnnotation: () => void
+  cancelPendingBrowserCapture: () => void
   handleGrabActionShortcut: (key: 'c' | 's') => void
 } {
   const toolTargetIdRef = useRef(toolTargetId)
@@ -166,7 +169,10 @@ export function useBrowserPageGrabAnnotations({
       return
     }
     if (grabIntent === 'annotate') {
-      setPendingAnnotationPayload(grab.payload)
+      // Loading may cancel the selection before React accepts this pending snapshot.
+      setPendingAnnotationPayload(() =>
+        grabPayloadRef.current === grab.payload ? grab.payload : null
+      )
       return
     }
     if (!grab.contextMenu) {
@@ -205,14 +211,12 @@ export function useBrowserPageGrabAnnotations({
       setGrabIntent(nextIntent)
       if (nextIntent === 'copy') {
         setPendingAnnotationPayload(null)
-      } else {
-        setBrowserAnnotationTrayOpen(true)
       }
       if (grab.state === 'idle' || grab.state === 'error' || grabIntent === nextIntent) {
         grab.toggle()
       }
     },
-    [grab, grabIntent, recordFeatureInteraction, setBrowserAnnotationTrayOpen]
+    [grab, grabIntent, recordFeatureInteraction]
   )
 
   // C / S copy the hovered element without clicking: extract via IPC while armed/awaiting, else use the captured payload.
@@ -261,8 +265,8 @@ export function useBrowserPageGrabAnnotations({
   }, [grab, recordFeatureInteraction, showGrabToast])
 
   const handleAddBrowserAnnotation = useCallback(
-    (comment: string, intent: BrowserAnnotationIntent): void => {
-      const payload = pendingAnnotationPayload
+    (comment: string, intent: BrowserAnnotationIntent, imagePaths: string[] = []): void => {
+      const payload = pendingAnnotationPayloadRef.current
       if (!payload) {
         return
       }
@@ -273,31 +277,34 @@ export function useBrowserPageGrabAnnotations({
         intent,
         priority: DEFAULT_BROWSER_ANNOTATION_PRIORITY,
         createdAt: new Date().toISOString(),
-        payload: createBrowserAnnotationPayload(payload)
+        payload: createBrowserAnnotationPayload(payload),
+        ...(imagePaths.length > 0 ? { imagePaths } : {})
       })
       recordFeatureInteraction('browser-annotations')
+      pendingAnnotationPayloadRef.current = null
       setPendingAnnotationPayload(null)
-      setBrowserAnnotationTrayOpen(true)
       showGrabToast(annotationAddedGrabToastMessage(), 'success', payload)
       grab.rearm()
     },
-    [
-      addBrowserPageAnnotation,
-      browserTabId,
-      grab,
-      pendingAnnotationPayload,
-      recordFeatureInteraction,
-      setBrowserAnnotationTrayOpen,
-      showGrabToast
-    ]
+    [addBrowserPageAnnotation, browserTabId, grab, recordFeatureInteraction, showGrabToast]
   )
 
   const handleCancelPendingBrowserAnnotation = useCallback((): void => {
+    pendingAnnotationPayloadRef.current = null
     setPendingAnnotationPayload(null)
     if (grabIntent === 'annotate' && grab.state === 'confirming') {
       grab.rearm()
     }
   }, [grab, grabIntent])
+
+  const cancelPendingBrowserCapture = useCallback((): void => {
+    grabRef.current.cancel()
+    pendingAnnotationPayloadRef.current = null
+    grabPayloadRef.current = null
+    setPendingAnnotationPayload(null)
+    clearTimeout(grabToastTimerRef.current)
+    setGrabToast(null)
+  }, [])
 
   return {
     grabIntent,
@@ -313,6 +320,7 @@ export function useBrowserPageGrabAnnotations({
     grabMenuActionTakenRef,
     handleAddBrowserAnnotation,
     handleCancelPendingBrowserAnnotation,
+    cancelPendingBrowserCapture,
     handleGrabActionShortcut
   }
 }

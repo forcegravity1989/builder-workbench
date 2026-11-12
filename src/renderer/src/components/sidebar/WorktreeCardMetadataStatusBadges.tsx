@@ -7,7 +7,7 @@ import type { WorktreeCardPrDisplay } from './worktree-card-pr-display'
 import type { IssueInfo } from '../../../../shared/github/pull-request-types'
 import { translate } from '@/i18n/i18n'
 
-function MetadataStatusBadge({
+export function MetadataStatusBadge({
   label,
   children,
   className

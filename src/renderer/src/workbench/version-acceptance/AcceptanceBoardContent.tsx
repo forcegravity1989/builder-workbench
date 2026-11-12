@@ -16,6 +16,8 @@ import { AnnotationPopover } from '../annotations/AnnotationPopover'
 import { formatBoardAnnotationsAsMarkdown } from '../annotations/annotation-markdown'
 import { annotationRefFromElement } from '../annotations/types'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
+import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
+import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import { AcceptanceArchiveCard } from './AcceptanceArchiveCard'
 import { AcceptanceEmptyBoard } from './AcceptanceEmptyBoard'
@@ -26,6 +28,7 @@ import { AcceptanceMinutesSection } from './AcceptanceMinutesSection'
 import { AcceptancePrepareSection } from './AcceptancePrepareSection'
 import { openAcceptanceMaterial } from './open-acceptance-material'
 import { usePlanSendAction } from '../plan-send-menu'
+import { resolveWorkbenchPromptAssets } from '../version-cycle/cycle-prompt'
 import { useAcceptanceBoard } from './use-acceptance-board'
 import { useAcceptanceJourneySpy } from './use-acceptance-journey-spy'
 import './acceptance.css'
@@ -61,11 +64,19 @@ export function AcceptanceBoardContent({
     context.version
   ])
   const annotations = useBoardAnnotations(boardIdentity)
+  const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
+  // Why: same gate as the header entry button below — the chord must not exist
+  // on surfaces where the button does not render (empty board, no fixed plan).
+  useAnnotationModeShortcut(Boolean(plan && document), annotations.toggleMode)
   const [notice, setNotice] = useState('')
-  // 注入动作走共用发送弹窗(与计划屏同一件);assistant 只改用户可见文案里的 AI 角色名。
-  // 取代原 use-acceptance-action-send:那个钩子只开侧边栏 target mode、从不渲染选择器,
-  // 点击处什么都不弹——该 worktree 无可发会话时连高亮都不触发,是纯静默 no-op。
   const sendAction = usePlanSendAction(worktreeId, setNotice, '验收助手')
+  const prepareReportPrompt = async () =>
+    (
+      await resolveWorkbenchPromptAssets(
+        { ...scope, worktreeId, version: board.version, workflow: 'version-acceptance' },
+        `聚合 ${board.version} 的验收证据报告`
+      )
+    ).prompt
   const chatCollapsed = usePlanChatCollapsed()
   const spy = useAcceptanceJourneySpy()
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
@@ -113,7 +124,7 @@ export function AcceptanceBoardContent({
       }
       setOpeningPr(true)
       try {
-        await openArchivePrPage(scope, archivePr)
+        await openArchivePrPage(context, archivePr)
       } finally {
         setOpeningPr(false)
       }
@@ -258,8 +269,8 @@ export function AcceptanceBoardContent({
               aria-pressed={annotations.annotating}
               title={
                 annotations.annotating
-                  ? '退出批注模式（Esc 同样退出）'
-                  : '批注模式：点击目标行、验收标准或 Issue 行记录验收意见'
+                  ? `退出批注模式${annotateShortcut ? `（${annotateShortcut}）` : ''}`
+                  : `批注模式：点击目标行、验收标准或 Issue 行记录验收意见${annotateShortcut ? `（${annotateShortcut} 进入）` : ''}`
               }
               onClick={annotations.toggleMode}
             >
@@ -291,8 +302,8 @@ export function AcceptanceBoardContent({
         <AcceptanceJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
         {annotations.annotating && (
           <div className="acc-annotate-banner" role="status">
-            批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见 · Esc
-            先关小窗，再按一次退出
+            批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见
+            {annotateShortcut ? ` · ${annotateShortcut} 退出` : ''}
           </div>
         )}
         <div
@@ -312,6 +323,7 @@ export function AcceptanceBoardContent({
             scope={board.metricScope}
             disabled={board.readOnly}
             onSendAction={sendAction}
+            prepareReportPrompt={prepareReportPrompt}
             onOpenMaterial={openMaterial}
             sectionRef={spy.sectionRefs.prepare}
           />
@@ -341,6 +353,7 @@ export function AcceptanceBoardContent({
           )}
           <AcceptanceMinutesSection
             document={document}
+            goals={plan?.document.goals ?? []}
             disabled={board.readOnly}
             edit={board.editDocument}
             onSendAction={sendAction}

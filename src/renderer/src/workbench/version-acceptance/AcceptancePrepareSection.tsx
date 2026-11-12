@@ -1,6 +1,7 @@
 import {
   ArrowUpRight,
   BrainCircuit,
+  CalendarClock,
   ChevronDown,
   ChevronRight,
   FileText,
@@ -18,24 +19,20 @@ import type { SendActionWrap } from '../plan-send-menu'
 import { latestVerificationArtifact } from './acceptance-model'
 import { AcceptancePackage } from './AcceptancePackage'
 
-/**
- * First zone: candidate + packaging + demo environment + the single evidence
- * report. Packaging is collapsible and starts collapsed to a one-line summary of
- * the latest package; the block stays mounted so its per-minute refresh keeps
- * reporting the latest package while collapsed.
- *
- * Deployment is session-driven: the button injects a request, the model deploys
- * through the project's own entry point and writes the environment back. The row
- * reads two honest shapes — a URL for a web service, opened in the built-in Orca
- * browser, or a launched state for a desktop application. Neither is faked: no
- * placeholder link stands in for a desktop app.
- */
+/** Keep the prepare row one line: first three accounts, then 等; full list in title. */
+function attendeePreview(attendees: string[]): string {
+  const shown = attendees.slice(0, 3)
+  return attendees.length > shown.length ? `${shown.join('、')} 等` : shown.join('、')
+}
+
+/** Packaging stays mounted when collapsed so its native refresh continues. */
 export function AcceptancePrepareSection({
   document,
   packages,
   scope,
   disabled,
   onSendAction,
+  prepareReportPrompt,
   onOpenMaterial,
   sectionRef
 }: {
@@ -44,6 +41,7 @@ export function AcceptancePrepareSection({
   scope: MetricScope
   disabled: boolean
   onSendAction: SendActionWrap
+  prepareReportPrompt(): Promise<string>
   onOpenMaterial(location: string): void
   sectionRef: Ref<HTMLElement>
 }) {
@@ -52,6 +50,8 @@ export function AcceptancePrepareSection({
   const candidate = document?.candidateRef
   const report = document ? latestVerificationArtifact(document) : undefined
   const demoEnv = document?.demoEnv
+  const meeting = document?.meeting
+  const meetingLink = meeting?.link
   return (
     <section id="prepare" ref={sectionRef} aria-label="验收准备">
       <div className="acc-section-title">
@@ -125,6 +125,58 @@ export function AcceptancePrepareSection({
         </div>
 
         <div className="acc-prepare-row">
+          <CalendarClock size={15} aria-hidden="true" />
+          <span className="acc-prepare-label">验收会议</span>
+          {meeting ? (
+            <div className="acc-meeting">
+              <span className="acc-prepare-value" title="经会话预订，信息已写回材料">
+                {meeting.title} · {meeting.time}
+              </span>
+              <span
+                className="acc-meeting-meta"
+                title={
+                  meeting.attendees?.length ? `与会人：${meeting.attendees.join('、')}` : undefined
+                }
+              >
+                {meeting.id ? <>会议 ID {meeting.id}</> : null}
+                {meeting.attendees?.length ? (
+                  <>
+                    {meeting.id ? ' · ' : ''}
+                    与会人 {meeting.attendees.length} 人（{attendeePreview(meeting.attendees)}）
+                  </>
+                ) : null}
+                {meetingLink ? (
+                  <>
+                    {meeting.id || meeting.attendees?.length ? ' · ' : ''}
+                    <button
+                      type="button"
+                      className="acc-link"
+                      title={`经内置 Orca 浏览器打开 ${meetingLink}`}
+                      onClick={() => onOpenMaterial(meetingLink)}
+                    >
+                      打开会议页面
+                      <ArrowUpRight size={12} aria-hidden="true" />
+                    </button>
+                  </>
+                ) : null}
+              </span>
+            </div>
+          ) : (
+            <span className="acc-muted">未预订 · 点「预订会议」注入请求</span>
+          )}
+          {onSendAction(
+            '预订本周五的版本验收会议。先给我完整预览：起止时间、与会人、议题；与会人默认取本项目绑定项目群的全部成员，没有绑定项目群就问我群号；时间或与会人缺失先问我，不要猜。确认后用 welink-cli meeting create 创建，再用 meeting info 读回会议 ID 与链接，向项目群发一条会议通知（标题、时间、会议号、入会链接、议题，单独预览确认），把会议信息写回验收材料的 meeting 字段。',
+            '预订会议请求',
+            <BoardActionButton
+              disabled={Boolean(meeting)}
+              title={meeting ? '已预订；改期或取消在会话中说明' : '向验收助手会话注入预订会议请求'}
+            >
+              <BrainCircuit size={14} aria-hidden="true" /> 预订会议
+            </BoardActionButton>
+          )}
+        </div>
+
+        <div className="acc-prepare-row">
           <FileText size={15} aria-hidden="true" />
           <span className="acc-prepare-label">验收证据报告</span>
           {report ? (
@@ -138,10 +190,18 @@ export function AcceptancePrepareSection({
               <ArrowUpRight size={13} aria-hidden="true" />
             </button>
           ) : (
-            <span className="acc-muted">未生成 · 在会话中让验收助手生成</span>
+            <span className="acc-muted">未生成 · 点「聚合」注入请求</span>
+          )}
+          {onSendAction(
+            '聚合本次验收的证据报告。',
+            '聚合请求',
+            <BoardActionButton title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件">
+              <BrainCircuit size={14} aria-hidden="true" /> 聚合
+            </BoardActionButton>,
+            prepareReportPrompt
           )}
           <BoardIconButton
-            label={report ? '打开验收证据报告' : '报告未生成；先在会话中让验收助手生成'}
+            label={report ? '打开验收证据报告' : '报告未生成；先点「聚合」注入请求'}
             disabled={!report}
             onClick={() => {
               if (report) {
@@ -149,8 +209,6 @@ export function AcceptancePrepareSection({
               }
             }}
           >
-            {/* 打开报告统一用 FileText（与目标卡「关联 Issue」头的报告入口同图标）；
-                ArrowUpRight 保留给环境/报告链接本体与原生 PR 页。 */}
             <FileText size={15} aria-hidden="true" />
           </BoardIconButton>
         </div>

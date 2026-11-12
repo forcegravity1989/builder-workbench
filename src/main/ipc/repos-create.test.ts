@@ -170,6 +170,25 @@ describe('repos:create', () => {
     await expect(callDefaultCreateProjectParent()).resolves.toBe('J:\\PROJECTS')
   })
 
+  it('keeps new Workbench projects beside its D drive worktrees and honors host overrides', async () => {
+    vi.stubEnv('WORKBENCH_SHELL', '1')
+    try {
+      mockStore.getSettings.mockReturnValue({
+        workspaceDir: 'd:\\builders-workbench\\workspaces\\'
+      })
+      await expect(callDefaultCreateProjectParent()).resolves.toBe(
+        'D:\\builders-workbench\\projects'
+      )
+      mockStore.getSettings.mockReturnValue({
+        workspaceDir: 'D:\\builders-workbench\\workspaces',
+        hostSettingOverrides: { local: { defaultWorktreeLocation: 'E:\\chosen-projects' } }
+      })
+      await expect(callDefaultCreateProjectParent()).resolves.toBe('E:\\chosen-projects')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('prefers the local host override over the client-default workspace directory', async () => {
     mockStore.getSettings.mockReturnValue({
       workspaceDir: 'J:\\PROJECTS',

@@ -2,6 +2,7 @@ import type * as React from 'react'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import type { GitPushTarget } from '../../../../shared/worktree/types'
 import type { SmartNameMode } from '@/components/new-workspace/smart-workspace-source-results'
+import type { HostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
 
 export type ComposerIdentityModel = {
   linkedIssue: string
@@ -36,6 +37,7 @@ export type ComposerIdentityModel = {
   forkPushWarning: string | null
   setForkPushWarning: React.Dispatch<React.SetStateAction<string | null>>
   disabledTuiAgentKey: string
+  agentLaunchPreferences: HostAgentLaunchPreferences
   disabledTuiAgents: TuiAgent[]
   enabledCatalogAgents: TuiAgent[]
   fallbackDefaultAgent: TuiAgent

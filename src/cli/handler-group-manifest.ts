@@ -26,6 +26,7 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
       'bw materials list',
       'bw materials read',
       'bw materials save',
+      'bw materials add-artifact',
       'bw materials migration-preview',
       'bw materials migrate'
     ],

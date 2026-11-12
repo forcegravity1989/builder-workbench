@@ -17,6 +17,7 @@ function createRepo(id: string): DraftTargetSyncInput['eligibleRepos'][number] {
 function createState(overrides: Partial<DraftTargetSyncInput> = {}): DraftTargetSyncInput {
   const defaults = {
     agentPrompt: 'Fix the issue',
+    agentLaunchPreferences: { isLoading: false, isAvailable: true, owner: null },
     attachmentPaths: ['/tmp/context.txt'],
     baseBranch: 'main',
     compareBaseRef: 'origin/main',
@@ -78,17 +79,42 @@ describe('useDraftTargetSync', () => {
     expect(setRepoId).toHaveBeenCalledWith('repo-1')
   })
 
-  it('does not persist or repair transient quick-composer state', () => {
-    const state = createState({
+  it('does not persist transient quick state or unresolved host defaults', () => {
+    let state = createState({
       persistDraft: false,
       isProjectGroupTarget: true,
       eligibleRepos: [createRepo('repo-1')]
     })
 
-    renderHook(() => useDraftTargetSync(state))
+    const hook = renderHook(() => useDraftTargetSync(state))
 
     expect(state.setNewWorkspaceDraft).not.toHaveBeenCalled()
     expect(state.setRepoId).not.toHaveBeenCalled()
+
+    state = {
+      ...state,
+      persistDraft: true,
+      agentLaunchPreferences: {
+        isLoading: false,
+        isAvailable: false,
+        owner: { environmentId: 'remote' }
+      }
+    }
+    hook.rerender()
+    expect(state.setNewWorkspaceDraft).not.toHaveBeenCalled()
+    state = {
+      ...state,
+      tuiAgent: 'codex',
+      agentLaunchPreferences: {
+        isLoading: false,
+        isAvailable: true,
+        owner: { environmentId: 'remote' }
+      }
+    }
+    hook.rerender()
+    expect(state.setNewWorkspaceDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ agent: 'codex' })
+    )
   })
 
   it('loads sparse presets only once for a local git repo', () => {

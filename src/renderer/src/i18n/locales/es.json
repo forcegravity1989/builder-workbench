@@ -77,7 +77,6 @@
     "minimizeNotice": {
       "body": "Orca sigue ejecutándose en la bandeja del sistema"
     },
-    "activityWaiting": "Orca: actividad en espera",
     "activityWaitingSuffix": "activity waiting"
   },
   "worktreeJumpPalette": {
@@ -1155,8 +1154,6 @@
         "76a95f7f47": "Crear",
         "f05d237049": "Añade un proyecto primero",
         "f9eaa9e12d": "Agregar proyecto",
-        "6ca6ff404e": "ORCA",
-        "520304a067": "logotipo de Orca",
         "ce44fad849": "Dependencias faltantes",
         "c1cf168479": "Ocultar",
         "00cee697c1": "Ejecuta \"gh auth login\" en una terminal para conectar tu cuenta de GitHub.",
@@ -3710,7 +3707,6 @@
           "2d9eb39264": "Tokens totales",
           "beb6f24f37": "Costo est.",
           "da62578d9d": "Uso",
-          "0eb31e79ee": "IDE de Orca",
           "960324e9b8": "eventos",
           "6adac63cfe": "turnos"
         },
@@ -3753,7 +3749,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "salida",
               "5d66fdd7c2": "entrada",
               "7080aeaebb": "Razonamiento",
@@ -3761,7 +3756,8 @@
               "33d38e2177": "Salida",
               "c2d7b23d57": "Entrada",
               "9d166247ee": "Escritura de caché",
-              "cc28cb965e": "Lectura de caché"
+              "cc28cb965e": "Lectura de caché",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -4201,6 +4197,8 @@
           "3e64e8a70d": "La conexión falló",
           "32a7256d85": "Clonar",
           "69f5b5380d": "Clonando...",
+          "finishingClone": "Finalizando la clonación…",
+          "importingProject": "Importando el proyecto…",
           "cloneOnHostDescription": "Introduce la URL de Git y elige dónde clonarlo en {{value0}}.",
           "cloneParentFolder": "Carpeta padre"
         },
@@ -5556,13 +5554,10 @@
           "retryDetection": "Retry"
         },
         "AppIconSelector": {
-          "d5a112dc9b": "Icono siguiente",
-          "415fa76f64": "Icono de aplicación seleccionada",
-          "5f5142a62a": "Icono anterior"
+          "415fa76f64": "Icono de aplicación seleccionada"
         },
         "AppearancePane": {
           "3057983501": "No asignado",
-          "0cd9b8228f": "Elige el icono de la app que se muestra en el Dock y en el selector de ventanas.",
           "ca1590d42f": "Icono de la app",
           "fa882a3e6b": "Muestra el botón de Automatizaciones en la parte superior de la barra lateral izquierda.",
           "511f270ebb": "Mostrar botón de Automatizaciones",
@@ -5920,6 +5915,8 @@
           "dac08ec03e": "Trabajando..."
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Configuración global",
+          "globalScopeDescription": "Estos ajustes se aplican a todos los proyectos de este dispositivo.",
           "9762364929": "Usa APFS clone-copy en macOS cuando sea posible; si no, crea symlinks de las carpetas o archivos configurados en los worktrees creados.",
           "24416f42cd": "Rutas compartidas en worktrees",
           "fb82ea1d7a": "Materializa automáticamente archivos o carpetas configurados en worktrees recién creados.",
@@ -6447,7 +6444,6 @@
           "191ac34567": "Orquestación de agentes"
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "Permite a los agentes transferir contexto y coordinar el trabajo a través de Orca.",
           "2777ff0fdc": "Skill de orquestación"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -7727,14 +7723,11 @@
         },
         "appearance": {
           "search": {
-            "468448bba4": "acuarela",
-            "f586abfa35": "azul",
             "651f35b2c6": "conmutador",
             "e5bc35d59e": "ventana",
             "d18b54ca90": "Dock",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "icono de la aplicación",
-            "e80c2af428": "Elija el ícono de la aplicación que se muestra en el Dock y en el selector de ventanas.",
             "2b313598c6": "Icono de aplicación",
             "ac79fe4a04": "mostrar",
             "648eeada79": "ocultar",
@@ -9276,8 +9269,8 @@
                 "cards": {
                   "793a06e899": "Volver a comprobar",
                   "1a9475dace": "Más información",
-                  "19fb419c12": "Las credenciales de Gitea están configuradas, pero no se pudo autenticar. Comprueba el token, la URL base de la API y los permisos del repositorio; después reinicia Orca si cambiaron las variables de entorno.",
-                  "60708f23da": "solo cuando Orca no pueda derivar la URL de la API desde el remote.",
+                  "19fb419c12": "Las credenciales de Gitea están configuradas, pero no se pudo autenticar. Comprueba el token, la URL base de la API y los permisos del repositorio; después reinicia {{product}} si cambiaron las variables de entorno.",
+                  "60708f23da": "solo cuando {{product}} no pueda derivar la URL de la API desde el remote.",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "para repositorios privados, y configura",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -9286,8 +9279,8 @@
                   "05863d2599": "Pull requests y estados de commit mediante la API REST de Gitea.",
                   "52f75876be": "Pull requests y estados de commit para los repositorios detectados",
                   "0b5242f8a2": "{{value0}} · Pull requests y estados de commit",
-                  "40f678df73": "Las credenciales de Azure DevOps están configuradas, pero no se pudo autenticar. Comprueba el token, la URL base de la API y los permisos del repositorio; después reinicia Orca si cambiaron las variables de entorno.",
-                  "7bd345e3f6": "solo cuando Orca no pueda derivar la URL base de la API desde el remote de git.",
+                  "40f678df73": "Las credenciales de Azure DevOps están configuradas, pero no se pudo autenticar. Comprueba el token, la URL base de la API y los permisos del repositorio; después reinicia {{product}} si cambiaron las variables de entorno.",
+                  "7bd345e3f6": "solo cuando {{product}} no pueda derivar la URL base de la API desde el remote de git.",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": ". Configura",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -9298,7 +9291,7 @@
                   "0eb50d5593": "Pull requests y estados de build mediante tokens de la API REST de Azure DevOps.",
                   "54636c65d4": "Pull requests y estados de build para Azure Repos detectados",
                   "ea204f5e03": "{{value0}} · Pull requests y estados de build",
-                  "6154b02093": "Las credenciales de Bitbucket están configuradas, pero no se pudo autenticar. Comprueba el token y los permisos del repositorio; después reinicia Orca si cambiaron las variables de entorno.",
+                  "6154b02093": "Las credenciales de Bitbucket están configuradas, pero no se pudo autenticar. Comprueba el token y los permisos del repositorio; después reinicia {{product}} si cambiaron las variables de entorno.",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "y",
@@ -11824,9 +11817,9 @@
             "b8dc9dd8a2": "Instalado",
             "1b51644c2d": "Permite que los agentes controlen el escritorio, muevan el cursor, hagan clic y escriban en cualquier app.",
             "362a07517d": "Uso de computadora",
-            "5e8fe5a72d": "Da a los agentes acceso directo al navegador de Orca para que puedan probar páginas, hacer capturas de pantalla y actuar según lo que ven.",
+            "5e8fe5a72d": "Da a los agentes acceso directo al navegador de {{product}} para que puedan probar páginas, hacer capturas de pantalla y actuar según lo que ven.",
             "e638da007a": "Uso del navegador por agentes",
-            "c61c91e642": "Permite que los agentes se coordinen a través de Orca para mantener en marcha tareas grandes de varios pasos hasta completarlas.",
+            "c61c91e642": "Permite que los agentes se coordinen a través de {{product}} para mantener en marcha tareas grandes de varios pasos hasta completarlas.",
             "ac07f8887f": "Orquestación de agentes",
             "e9eb197e12": "Permisos de uso de computadora abiertos",
             "3a59452a67": "Comando de skill copiado e insertado abajo para revisarlo.",
@@ -11869,7 +11862,7 @@
             "f39be6ca14": "/signup"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "Permite a los agentes navegar y verificar páginas en el navegador de Orca.",
+            "cbc45022d4": "Permite a los agentes navegar y verificar páginas en el navegador de {{product}}.",
             "d5bb1cd4ba": "Skill Browser Use"
           },
           "ComputerUseAnimatedVisual": {
@@ -12168,7 +12161,7 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "conectado para tareas",
-            "33b650af52": "Conecta donde tu equipo hace seguimiento del trabajo. Orca inicia workspaces con el título del issue, el enlace y el contexto ya adjuntos.",
+            "33b650af52": "Conecta donde tu equipo hace seguimiento del trabajo. {{product}} inicia workspaces con el título del issue, el enlace y el contexto ya adjuntos.",
             "5b3577a492": "conectado para estado de revisión",
             "list_end": " y ",
             "list_pair": " y ",
@@ -12176,8 +12169,8 @@
             "code_host_tasks_summary": "issues disponibles como tareas · agrega Linear o Jira si tu equipo planifica el trabajo allí",
             "code_host_tasks_caption": "Los issues de tu proveedor de código también funcionan como tareas.",
             "review_step_title": "Ver el estado de PR mientras trabajan los agentes",
-            "review_step_description": "Conecta un proveedor de revisión para que Orca pueda mostrar el estado de PR o MR, checks y revisiones.",
-            "task_step_title": "Iniciar agentes en tus tareas sin salir de Orca"
+            "review_step_description": "Conecta un proveedor de revisión para que {{product}} pueda mostrar el estado de PR o MR, checks y revisiones.",
+            "task_step_title": "Iniciar agentes en tus tareas sin salir de {{product}}"
           },
           "connect": {
             "integration": {
@@ -13353,6 +13346,19 @@
               "bar": {
                 "suggestions": {
                   "87fcdd0da9": "{{value0}} Buscar"
+                }
+              }
+            }
+          },
+          "annotate": {
+            "browser": {
+              "page": {
+                "annotation": {
+                  "tray": {
+                    "38d320108c": "Contraer anotaciones",
+                    "9f209891a7": "Expandir anotaciones",
+                    "includePageDetails": "Incluir detalles de la página"
+                  }
                 }
               }
             }
@@ -14570,5 +14576,8 @@
       "stopped": "detenido",
       "finished": "finalizado"
     }
+  },
+  "brand": {
+    "workbench": "Workbench"
   }
 }

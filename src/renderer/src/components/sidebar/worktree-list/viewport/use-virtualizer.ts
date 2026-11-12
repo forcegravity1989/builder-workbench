@@ -106,6 +106,7 @@ export function useWorktreeListVirtualizer(args: {
   const virtualizer = useVirtualizer({
     count: renderRows.length,
     getScrollElement: () => scrollRef.current,
+
     estimateSize: (index) =>
       estimateRenderRowSize(
         renderRows,
@@ -118,11 +119,18 @@ export function useWorktreeListVirtualizer(args: {
     rangeExtractor: useCallback(
       (range: Range) => {
         stickyRangeStartIndexRef.current = range.startIndex
-        return extractWorktreeVirtualRowIndexes({
+        const indexes = extractWorktreeVirtualRowIndexes({
           range,
           stickyHeaderIndexes,
           rows: renderRows
         })
+        // Keep business navigation mounted: its catalog projection owns which native rows are hidden.
+        return Array.from(
+          new Set([
+            ...indexes,
+            ...renderRows.flatMap((row, index) => (row.type === 'content' ? [index] : []))
+          ])
+        ).sort((a, b) => a - b)
       },
       [renderRows, stickyHeaderIndexes]
     ),

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { buildRows } from './build-rows'
 import { ALL_GROUP_META, getPRGroupKey, PINNED_GROUP_KEY } from './group-keys'
 import { getGroupKeyForWorktree } from './worktree-group-keys'
+import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import {
   REPO_HEADER_ACTION_BUTTON_CLASS,
   REPO_HEADER_ACTION_REVEAL_CLASS
@@ -206,6 +207,42 @@ describe('buildRows with pinned worktrees', () => {
       { type: 'header', key: 'all', count: 3 },
       { type: 'item', sectionKey: 'all', worktree: { id: 'wt-1' } },
       { type: 'item', sectionKey: 'all', worktree: { id: 'wt-pinned' } },
+      { type: 'item', sectionKey: 'all', worktree: { id: 'wt-2' } }
+    ])
+  })
+
+  it('keeps pinned-only worktrees in the Pinned section but out of natural groups', () => {
+    const rows = buildRows(
+      'none',
+      [unpinned1, pinned, unpinned2],
+      repoMap,
+      null,
+      new Set(),
+      undefined,
+      undefined,
+      undefined,
+      {},
+      undefined,
+      false,
+      { showPinnedWorktreesInGroups: true } as never,
+      [],
+      new Set(),
+      new Map(),
+      new Map(),
+      [],
+      undefined,
+      [],
+      undefined,
+      undefined,
+      undefined,
+      new Set([getWorktreeHostIdentity(pinned)])
+    )
+
+    expect(rows).toMatchObject([
+      { type: 'header', key: 'pinned' },
+      { type: 'item', sectionKey: PINNED_GROUP_KEY, worktree: { id: 'wt-pinned' } },
+      { type: 'header', key: 'all', count: 2 },
+      { type: 'item', sectionKey: 'all', worktree: { id: 'wt-1' } },
       { type: 'item', sectionKey: 'all', worktree: { id: 'wt-2' } }
     ])
   })

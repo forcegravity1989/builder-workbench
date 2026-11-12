@@ -137,6 +137,6 @@ codehub-cli issue view 12 -p Org/Group/repo -H green --json iid,title,state
 - list 的 HTTP 缓存默认10秒，保持原生行为。目标引用集合仍逐项完整读取，再做筛选与分页。
 - 原生 mine 预设由服务端 scope 解析“我”。目标精确集合的 @me 使用 user view -H <仓库站点> --json id,username,name,state，沿仓库所属 runtime/WSL 执行；身份查询跳过 CLI 缓存，不读取 token。按任务实际 repo 分别比较用户名，不能把本机或另一个站点用户填给它。
 
-## 这次对接里没有对应命令的能力
+## 不支持的操作
 
 这些能力不要对 CodeHub 发请求：文件已读、评论表情、修改已有评论正文、草稿 MR、Mark ready、GitHub Projects 看板、加星。

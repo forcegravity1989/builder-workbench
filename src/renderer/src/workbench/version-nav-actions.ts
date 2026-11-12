@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import type { CycleTaskReference } from './version-cycle/ports'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -89,7 +90,7 @@ export async function initializeVersionWorkspace(args: {
   if (prepareFailed(result)) {
     // 步骤链非原子：已成功步骤保留，重试即重入补齐（不重复建树）。
     toast.error(
-      `版本 ${version} 工作区未全就绪：${prepareProblemSummary(result)}。重试即补齐缺失步骤，不会重复建树。`
+      `版本 ${version} 工作区未全就绪：${prepareProblemSummary(result)}。处理提示的问题后重试，已就绪的工作区会复用。`
     )
     return
   }
@@ -99,7 +100,7 @@ export async function initializeVersionWorkspace(args: {
 export async function openVersionTasks(args: {
   catalog: VersionCatalogState
   version: string
-  goal?: { goalId: string; label: string } | null
+  goal?: { goalId: string; label: string; references?: readonly CycleTaskReference[] } | null
   entry: VersionCatalogEntry | null
 }): Promise<void> {
   const { catalog, version, goal, entry } = args
@@ -107,8 +108,13 @@ export async function openVersionTasks(args: {
     toast.error('项目工作区尚未就绪，请稍后再试')
     return
   }
-  if (!goal) {
-    openVersionTasksPage({ version, goal: null, references: [], homeRepoId: catalog.home.repoId })
+  if (!goal || goal.references) {
+    openVersionTasksPage({
+      version,
+      goal,
+      references: goal?.references ?? [],
+      homeRepoId: catalog.home.repoId
+    })
     closeProjectPage()
     return
   }

@@ -141,7 +141,8 @@
         "resourceUsageToggleDescription": "Show the Resource Manager. Click it for CPU, memory, sessions, daemon controls, and workspace disk scans.",
         "portsToggleDescription": "Show live workspace ports. Click it for workspace-scoped ports and external listeners.",
         "antigravityToggleDescription": "Show Antigravity subscription usage for the active workspace.",
-        "grokToggleDescription": "Show Grok subscription credit usage when signed in via Grok CLI."
+        "grokToggleDescription": "Show Grok subscription credit usage when signed in via Grok CLI.",
+        "cursorToggleDescription": "Show Cursor plan usage when signed in through cursor-agent or Cursor IDE."
       },
       "menuBarIcon": {
         "title": "Show Menu Bar Icon",
@@ -183,6 +184,24 @@
         "heading": "Remote browsing",
         "headingDescription": "Where remote workspace pages render, and where their network traffic leaves from."
       }
+    },
+    "agents": {
+      "detectionFailed": "Couldn’t detect agents on this host.",
+      "environmentName": "Environment variable name",
+      "environmentValue": "Value for {{name}}",
+      "hostDefaults": "Defaults for agents launched on this host.",
+      "loading": "Loading agent settings…",
+      "newEnvironment": "Value",
+      "readFailed": "Couldn’t read agent settings. Check the host connection and try again.",
+      "refresh": "Refresh",
+      "removeEnvironment": "Remove",
+      "save": "Save",
+      "savedEnvironment": "Saved value · enter to replace",
+      "saveFailed": "Couldn’t save agent settings. Check the host connection and try again.",
+      "updateHost": "Update this server to edit its agent launch settings."
+    },
+    "servers": {
+      "accessRevoked": "This client no longer has access. Use a new pairing link from this server to reconnect."
     }
   },
   "menu": {
@@ -220,7 +239,6 @@
     "minimizeNotice": {
       "body": "Orca is still running in the system tray"
     },
-    "activityWaiting": "Orca - activity waiting",
     "activityWaitingSuffix": "activity waiting"
   },
   "worktreeJumpPalette": {
@@ -341,7 +359,8 @@
         "loopbackPairingBlocked": "This access link points back to this device.",
         "remotePairingUnreachable": "Cannot reach Orca at {{endpoint}}.",
         "remotePairingInvalidDetails": "This access link contains invalid connection details.",
-        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again."
+        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again.",
+        "remotePairingRepairUnavailable": "Re-pairing is not available in the browser. Pair this browser with the server again."
       },
       "web": {
         "preload": {
@@ -583,6 +602,7 @@
           "a5fc0cb622": "OpenClaude",
           "bf53f09bf8": "Claude Agent Teams",
           "0708ed89f1": "Claude",
+          "dsh_label": "DeepSeek Harness",
           "fc80296033": "Devin",
           "da41abbdd4": "Ante",
           "060d152fb5": "Trae",
@@ -598,7 +618,7 @@
               "8d6eedf97e": "Failed to register the Orca CLI in PATH.",
               "0f116999f1": "Restart your shell or add the Orca CLI directory to PATH before setup.",
               "15cbedc3e3": "Install the Orca CLI before running agent skill setup.",
-              "windowsPathUnknown": "Orca could not check your Windows user PATH",
+              "windowsPathUnknown": "Could not check your Windows user PATH",
               "refreshCliRegistration": "Refresh CLI registration status and try again."
             }
           }
@@ -1503,8 +1523,6 @@
         "76a95f7f47": "Create",
         "f05d237049": "Add a project first",
         "f9eaa9e12d": "Add project",
-        "6ca6ff404e": "ORCA",
-        "520304a067": "Orca logo",
         "ce44fad849": "Missing dependencies",
         "c1cf168479": "Hide",
         "00cee697c1": "Run \"gh auth login\" in a terminal to connect your GitHub account.",
@@ -2321,7 +2339,9 @@
         "codehubAddLabel": "Add label…",
         "codehubCancelLabels": "Cancel",
         "codehubSaveLabels": "Save",
-        "codehubLabelsSaved": "Labels updated"
+        "codehubLabelsSaved": "Labels updated",
+        "codehubNoMembers": "No project members found.",
+        "ghLabelsUpdateFailed": "Failed to update labels."
       },
       "Terminal": {
         "73768427cf": "Close",
@@ -2375,8 +2395,11 @@
         "09a55c39b5": "Installing...",
         "ea2a41adbe": "You're on the latest version.",
         "ba5ffc949c": "Checking for updates...",
-        "2c2d3e03ca": "Try Again",
+        "2c2d3e03ca": "Retry and Restart to Update",
         "4cf109845a": "Update Error",
+        "sessionSaveFailed": "Session State Could Not Be Saved",
+        "sessionSaveFailedNextStep": "The update is downloaded, but session state could not be saved before quitting. Retrying will run the save checks again, then restart to install the update if they pass.",
+        "installFailedNextStep": "Could not restart to install the downloaded update. Try again to restart and install it.",
         "6b0085010d": "Re-check",
         "48565a32bc": "Retry Download",
         "933c6fdf5b": "Enable & Restart",
@@ -3792,7 +3815,8 @@
             "grokUsageMenu": "Grok Usage",
             "floatingTerminalNewActivity": "{{label}}, new activity",
             "codexSignInSuccess": "Signed in to Codex",
-            "codexSignInError": "Codex sign-in failed. Please try again."
+            "codexSignInError": "Codex sign-in failed. Please try again.",
+            "cursorUsageMenu": "Cursor Usage"
           },
           "StatusBarUsageEmptyCta": {
             "828c764a79": "Connect an account",
@@ -3977,6 +4001,13 @@
                 "label": "Sign-in expired",
                 "apiKey": "MiniMax API key expired. Replace it in Settings.",
                 "cookie": "MiniMax session cookie expired. Replace it in Settings."
+              }
+            },
+            "cursor": {
+              "plan": "Plan",
+              "expired": {
+                "label": "Sign-in expired",
+                "message": "Sign in with Cursor IDE or run cursor-agent login on the computer running Workbench, then retry usage."
               }
             }
           },
@@ -4230,7 +4261,6 @@
           "2d9eb39264": "Total tokens",
           "beb6f24f37": "Est. cost",
           "da62578d9d": "Usage",
-          "0eb31e79ee": "Orca IDE",
           "960324e9b8": "events",
           "6adac63cfe": "turns"
         },
@@ -4274,7 +4304,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "output",
               "5d66fdd7c2": "input",
               "7080aeaebb": "Reasoning",
@@ -4282,7 +4311,8 @@
               "33d38e2177": "Output",
               "c2d7b23d57": "Input",
               "9d166247ee": "Cache write",
-              "cc28cb965e": "Cache read"
+              "cc28cb965e": "Cache read",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -5153,6 +5183,8 @@
           "3e64e8a70d": "Connection failed",
           "32a7256d85": "Clone",
           "69f5b5380d": "Cloning...",
+          "finishingClone": "Finishing clone…",
+          "importingProject": "Importing project…",
           "cloneOnHostDescription": "Enter the Git URL and choose where to clone it on {{value0}}.",
           "cloneParentFolder": "Parent folder",
           "remoteCloneParentPlaceholder": "/home/user/projects"
@@ -5336,7 +5368,10 @@
           "69969ba364": "Sending…",
           "imageReadFailed": "Could not read the attached images. Try attaching them again.",
           "attachWhileSending": "Wait for the current feedback to finish sending before attaching more images.",
-          "imagesNotDelivered": "Feedback sent, but image delivery could not be confirmed."
+          "imagesNotDelivered": "Feedback sent, but image delivery could not be confirmed.",
+          "workbenchDescription": "Share what's working, what's broken, or what Workbench should do next. Reports are uploaded to the BW user group's WeLink space using your current WeLink account.",
+          "omitGitHubIdentity": "Do not include GitHub account information",
+          "withoutGitHubIdentity": "Your feedback will not include GitHub account information."
         },
         "SidebarFilter": {
           "e3b3898218": "Add project",
@@ -6656,16 +6691,13 @@
           "noAgentsDetected": "No agents detected. If one is installed, the probe may have timed out."
         },
         "AppIconSelector": {
-          "d5a112dc9b": "Next icon",
-          "415fa76f64": "Selected app icon",
-          "5f5142a62a": "Previous icon"
+          "415fa76f64": "Selected app icon"
         },
         "AppearancePane": {
           "3057983501": "Unassigned",
           "872af9556e": "System Tray",
           "2edf606c46": "Minimize to Tray on Close",
           "b707773a0d": "When enabled, closing the window keeps Orca running in the system tray instead of quitting.",
-          "0cd9b8228f": "Choose the app icon shown in the Dock and window switcher.",
           "ca1590d42f": "App Icon",
           "fa882a3e6b": "Show the Automations button at the top of the left sidebar.",
           "511f270ebb": "Show Automations Button",
@@ -7058,6 +7090,8 @@
           "connectionTestAction": "Test Connection"
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Global settings",
+          "globalScopeDescription": "These settings apply to all projects on this device.",
           "9762364929": "Uses APFS clone-copy on macOS when possible, otherwise symlinks configured folders or files into created worktrees.",
           "24416f42cd": "Shared paths on worktrees",
           "fb82ea1d7a": "Automatically materialize configured files or folders into newly created worktrees.",
@@ -7640,7 +7674,6 @@
           "nestedWorkerDepthDescription": "How many generations of dispatched workers may spawn their own workers. 1 keeps the agent tree flat: a coordinator dispatches workers, and those workers do not dispatch."
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "Enables agents to hand off context and coordinate work through Orca.",
           "2777ff0fdc": "Orchestration skill"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -7694,6 +7727,9 @@
           "fe904ac984": "Share anonymous usage data",
           "77410e0566": "Privacy policy",
           "8bfdd23a88": "Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.",
+          "workbenchDescription": "Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.",
+          "workbenchLabel": "Share usage data",
+          "workbenchSectionDescription": "Usage data, diagnostics, and telemetry controls.",
           "afec8b03be": "ci"
         },
         "QuickCommandsList": {
@@ -8091,7 +8127,8 @@
           "troubleshootStepRegenerate": "Generate a new access link and use only the newest link here.",
           "troubleshootTunnel": "Using an SSH local forward? Return to Connect to a host, paste the loopback link, then enable “I am using an SSH tunnel” under Advanced.",
           "cloudVmWorkflow": "Cloud VM",
-          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines"
+          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines",
+          "serverAlreadyPaired": "This server is already paired as {{value0}}; updated its connection."
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "Copy {{value0}}"
@@ -8877,7 +8914,18 @@
             "b2c4e7f1a8": "endpoint",
             "3a9b6d2c4e": "api key",
             "5d8f1a3b7c": "china",
-            "7e2a4b8c1d": "overseas"
+            "7e2a4b8c1d": "overseas",
+            "cursor": {
+              "title": "Cursor Usage",
+              "description": "Plan usage read from the Cursor sign-in already on this computer (cursor-agent login).",
+              "kw": {
+                "cursor": "cursor",
+                "usage": "usage",
+                "spend": "spend",
+                "rateLimit": "rate limit",
+                "statusBar": "status bar"
+              }
+            }
           }
         },
         "advanced": {
@@ -8972,14 +9020,11 @@
           "search": {
             "9a115966d3": "Minimize to Tray on Close",
             "4d5b9427b5": "When enabled, closing the window keeps Orca running in the system tray instead of quitting.",
-            "468448bba4": "watercolor",
-            "f586abfa35": "blue",
             "651f35b2c6": "switcher",
             "e5bc35d59e": "window",
             "d18b54ca90": "dock",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "app icon",
-            "e80c2af428": "Choose the app icon shown in the Dock and window switcher.",
             "2b313598c6": "App Icon",
             "ac79fe4a04": "show",
             "648eeada79": "hide",
@@ -9128,6 +9173,13 @@
               "close": "close",
               "notification": "notification area",
               "background": "background"
+            },
+            "cursor": {
+              "title": "Cursor Usage",
+              "description": "Show Cursor plan usage from the Cursor sign-in on this computer.",
+              "kw": {
+                "cursor": "cursor"
+              }
             }
           }
         },
@@ -10559,7 +10611,7 @@
           "a42f6fbdd8": "Keeps this computer and display awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "modeTitle": "Keep computer awake",
           "modeDescriptionWindows": "Choose On, Agent, or Off. Agent mode stays awake while agents are working; lid-close behavior follows this device's power settings.",
-          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy."
+          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. The app also asks this device to stay awake when the lid is closed, subject to its power policy."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
@@ -10677,8 +10729,8 @@
                 "cards": {
                   "793a06e899": "Re-check",
                   "1a9475dace": "Learn more",
-                  "19fb419c12": "Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.",
-                  "60708f23da": "only when Orca cannot derive the API URL from the remote.",
+                  "19fb419c12": "Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.",
+                  "60708f23da": "only when {{product}} cannot derive the API URL from the remote.",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "for private repositories, and set",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -10687,8 +10739,8 @@
                   "05863d2599": "Pull requests and commit statuses via the Gitea REST API.",
                   "52f75876be": "Pull requests and commit statuses for detected repositories",
                   "0b5242f8a2": "{{value0}} · Pull requests and commit statuses",
-                  "40f678df73": "Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.",
-                  "7bd345e3f6": "only when Orca cannot derive the API base URL from the git remote.",
+                  "40f678df73": "Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.",
+                  "7bd345e3f6": "only when {{product}} cannot derive the API base URL from the git remote.",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": ". Set",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -10699,7 +10751,7 @@
                   "0eb50d5593": "Pull requests and build statuses via Azure DevOps REST API tokens.",
                   "54636c65d4": "Pull requests and build statuses for detected Azure Repos",
                   "ea204f5e03": "{{value0}} · Pull requests and build statuses",
-                  "6154b02093": "Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart Orca if environment variables changed.",
+                  "6154b02093": "Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart {{product}} if environment variables changed.",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "and",
@@ -11507,7 +11559,9 @@
           "networkConnection": "Network connection",
           "notAttempted": "Not attempted",
           "saveFailed": "Could not save the host",
-          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again."
+          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again.",
+          "differentServer": "This link is for a different server",
+          "differentServerHelp": "This pairing link is for a different server. Create the link on the server you are re-pairing."
         },
         "CloudVmSetupGuide": {
           "title": "Create a Cloud VM",
@@ -11738,9 +11792,9 @@
               "authModeToken": "Access token",
               "authModeBasic": "Email & API token",
               "disconnect": "Disconnect Bitbucket",
-              "envManaged": "Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in Orca.",
+              "envManaged": "Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in {{product}}.",
               "storedAuthFailed": "The saved Bitbucket credential could not authenticate. Edit it, or check that the token still has pull request access.",
-              "storedCredential": "Saved in Orca on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.",
+              "storedCredential": "Saved in {{product}} on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.",
               "notConfigured": "Connect a Bitbucket Cloud account with an Atlassian API token or an access token. ORCA_BITBUCKET_* environment variables work too and take precedence.",
               "disconnectFailed": "Could not remove the saved Bitbucket credential.",
               "statusLoadFailed": "Could not check for a saved Bitbucket credential.",
@@ -11779,6 +11833,38 @@
           "targetDescription": "Higher values increase contrast where possible. Background colors stay unchanged.",
           "subtle": "Subtle",
           "strong": "Strong"
+        },
+        "RuntimeRepairDialog": {
+          "descriptionShareComputer": "{{name}} no longer accepts this computer. On {{name}}, open Settings → Remote Orca Servers → Share this computer, create a link for another Orca, then paste it here.",
+          "failed": "Re-pair failed",
+          "submit": "Re-pair",
+          "success": "Re-paired with {{name}}",
+          "title": "Re-pair {{name}}"
+        },
+        "CursorAccountsSection": {
+          "source": {
+            "keychain": "macOS Keychain (cursor-agent)",
+            "cli": "Cursor CLI auth file",
+            "desktop": "Cursor IDE"
+          },
+          "title": "Cursor",
+          "subtitle": "Shows your Cursor plan usage from the sign-in already on this computer. Workbench only reads it — it never changes your Cursor login.",
+          "dashboardLink": "Cursor dashboard",
+          "loading": "Loading…",
+          "signedIn": "Signed in",
+          "signedInFrom": "Signed in. Workbench reads the session stored in {{source}}.",
+          "signedInGeneric": "Signed in. Workbench reads the Cursor session stored on this computer.",
+          "expired": "Sign-in expired — run cursor-agent login on the computer running Workbench, then click Refresh usage.",
+          "signedOut": "No Cursor sign-in found on this computer",
+          "signedOutHelp": "Sign in with Cursor IDE, or run cursor-agent login in a terminal, then click Refresh usage here.",
+          "refreshUsage": "Refresh usage",
+          "usageTitle": "Plan usage",
+          "usageDescription": "Cursor bills two pools that reset with your billing cycle, plus on-demand spend once they run out.",
+          "planTotal": "Plan",
+          "resets": "Resets {{when}}",
+          "staleUsage": "Last known usage — the latest refresh failed: {{reason}}",
+          "usageLabel": "Usage",
+          "unknownUsage": "Current usage is unavailable. Refresh usage to try again."
         }
       },
       "right": {
@@ -13705,9 +13791,9 @@
             "b8dc9dd8a2": "Installed",
             "1b51644c2d": "Let agents control the desktop, moving the cursor, clicking, and typing in any app.",
             "362a07517d": "Computer Use",
-            "5e8fe5a72d": "Give agents direct access to Orca's browser so they can test pages, capture screenshots, and act on what they see.",
+            "5e8fe5a72d": "Give agents direct access to {{product}}'s browser so they can test pages, capture screenshots, and act on what they see.",
             "e638da007a": "Agent Browser Use",
-            "c61c91e642": "Let agents coordinate through Orca to keep large, multi-step tasks moving to completion.",
+            "c61c91e642": "Let agents coordinate through {{product}} to keep large, multi-step tasks moving to completion.",
             "ac07f8887f": "Agent Orchestration",
             "e9eb197e12": "Opened Computer Use permissions",
             "3a59452a67": "Skill command copied and inserted below for review.",
@@ -13750,7 +13836,7 @@
             "f39be6ca14": "/signup"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "Enables agents to navigate and verify pages in Orca's browser.",
+            "cbc45022d4": "Enables agents to navigate and verify pages in {{product}}'s browser.",
             "d5bb1cd4ba": "Browser Use skill"
           },
           "ComputerUseAnimatedVisual": {
@@ -13936,8 +14022,8 @@
                     "copy": {
                       "ec0a363633": "Multi-task",
                       "62bac8f43c": "Work in 2 different worktrees at once. Each one is isolated (even in the same project). Perfect for working on 2 features at once.",
-                      "908898c3ee": "Use Orca's browser",
-                      "43781563c3": "Browse your web app without leaving Orca. Grab any element and send its exact source and styles to an agent with one click.",
+                      "908898c3ee": "Use {{product}}'s browser",
+                      "43781563c3": "Browse your web app without leaving {{product}}. Grab any element and send its exact source and styles to an agent with one click.",
                       "29aa2c2077": "Turn on notifications",
                       "71bd9a8c95": "Know the moment an agent finishes, needs attention, or gets blocked.",
                       "46db810da8": "Choose your default agent",
@@ -13949,7 +14035,7 @@
                       "eddc532e58": "Automate workspace setup",
                       "56049b74c2": "Run install and setup commands automatically so every new worktree is ready for agents.",
                       "2cf795433b": "Start work in multiple repos",
-                      "42525ba8a4": "Bring your key repos into Orca so you can start agent work without hunting for folders."
+                      "42525ba8a4": "Bring your key repos into {{product}} so you can start agent work without hunting for folders."
                     }
                   }
                 }
@@ -14074,7 +14160,7 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "connected for tasks",
-            "33b650af52": "Connect where your team tracks work. Orca starts workspaces with the issue title, link, and context already attached.",
+            "33b650af52": "Connect where your team tracks work. {{product}} starts workspaces with the issue title, link, and context already attached.",
             "5b3577a492": "connected for review status",
             "list_end": ", and ",
             "list_pair": " and ",
@@ -14082,8 +14168,8 @@
             "code_host_tasks_summary": "issues available as tasks · add Linear or Jira if your team plans work there",
             "code_host_tasks_caption": "Your code host's issues also work as tasks.",
             "review_step_title": "See PR status while agents work",
-            "review_step_description": "Connect a review provider so Orca can show PR or MR status, checks, and reviews.",
-            "task_step_title": "Start agents on your tasks without leaving Orca"
+            "review_step_description": "Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.",
+            "task_step_title": "Start agents on your tasks without leaving {{product}}"
           },
           "connect": {
             "integration": {
@@ -15045,7 +15131,11 @@
             "b2e36f53a1": "Failed to send crash report. Diagnostic ticket {{value0}} was uploaded but not linked.",
             "ead6fc0510": "No automatic crash report was captured. You can still send details and include recent diagnostic logs when available.",
             "b082f27490": "Attach recent diagnostic logs",
-            "e59f0b9427": "Sends a capped redacted log bundle with the report."
+            "e59f0b9427": "Sends a capped redacted log bundle with the report.",
+            "workbenchUiErrorTitle": "Workbench hit a recoverable UI error",
+            "workbenchClosedTitle": "Workbench closed unexpectedly",
+            "workbenchNotesPlaceholder": "Optional: what were you doing before Workbench closed?",
+            "workbenchBrand": "Workbench"
           },
           "submit": {
             "notice": {
@@ -15372,7 +15462,10 @@
                     "09a7c1df70": "Edit annotation {{value0}}",
                     "c16f932cb3": "Save",
                     "024467ceac": "Cancel",
-                    "449d2c2629": "Annotation intent"
+                    "449d2c2629": "Annotation intent",
+                    "38d320108c": "Collapse annotations",
+                    "9f209891a7": "Expand annotations",
+                    "includePageDetails": "Include page details"
                   }
                 }
               }
@@ -16653,6 +16746,13 @@
         "3d8e5f1b9c": "Share skills behind an unlisted link and install them on any machine you use.",
         "7e1a9c4d2f": "Signing in…",
         "c5b3e8a17d": "Sign in to Orca"
+      },
+      "web": {
+        "preloadApi": {
+          "cursorAccounts": {
+            "hostOnly": "Cursor sign-in details are only readable on the computer running Workbench."
+          }
+        }
       }
     },
     "i18n": {
@@ -16723,7 +16823,6 @@
         "AppWorkspaceShell": {
           "5920545322": "调整上下栏高度",
           "e82b94df8a": "调整左右栏宽度",
-          "38f5d8318c": "展开会话栏",
           "4bf79d6d8c": "收折会话栏",
           "722fd4ab69": "展开会话",
           "5c18da0a65": "收折会话"
@@ -17642,5 +17741,150 @@
   },
   "common": {
     "retry": "Retry"
+  },
+  "brand": {
+    "workbench": "Workbench"
+  },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
+      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
+      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
+      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
+      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
+      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
+      "nameTaken": "A server named \"{{name}}\" already exists.",
+      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
+      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
+      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
+    }
+  },
+  "guidance": {
+    "tour": {
+      "workspaces": {
+        "title": "Workspaces",
+        "description": "{{product}} splits each task into an isolated workspace so agents can run in parallel."
+      },
+      "tasks": {
+        "title": "Tasks",
+        "description": "Start work directly from GitHub or Linear."
+      },
+      "agents": {
+        "title": "Agents",
+        "description": "Run several agents at once, track their progress, and let automation drive {{product}} when it helps."
+      },
+      "workbench": {
+        "title": "Workbench",
+        "description": "Bring your terminal setup into {{product}}, then split panes to keep servers, tests, logs, and agents running side by side."
+      },
+      "review": {
+        "title": "Code Review",
+        "description": "Review what changed, leave focused feedback, and send it back to the agent."
+      },
+      "statuses": {
+        "name": "Visibility",
+        "title": "Agent Visibility",
+        "description": "Know which agents are working, waiting, live, or blocked."
+      },
+      "orchestration": {
+        "title": "Orchestration",
+        "description": "Enable agents to manage and coordinate {{product}} workspaces to execute larger tasks."
+      },
+      "usage": {
+        "title": "Usage",
+        "description": "Watch your usage and rate limits across every connected account, so you know when to switch."
+      },
+      "terminal": {
+        "title": "Terminal",
+        "description": "Keep your agents, tests, and dev logs visible at once."
+      },
+      "editor": {
+        "title": "Editor",
+        "description": "Use our Notion-style markdown editor to write notes without leaving {{product}}."
+      },
+      "browser": {
+        "title": "Browser",
+        "description": "Run your app in the integrated browser, send selected UI elements to agents, and let your agents interact with your webpage."
+      },
+      "notes": {
+        "name": "Notes",
+        "title": "Notes & diffs",
+        "description": "Send focused review notes to an agent."
+      },
+      "pr": {
+        "title": "PR checks",
+        "subtitle": "PR checks & comments",
+        "description": "See PR status in the Checks tab."
+      },
+      "ship": {
+        "title": "Ship with AI",
+        "description": "Let AI prepare commit and PR drafts for you."
+      }
+    },
+    "explore": "Explore BW",
+    "exploreDescription": "Explore BW capabilities through the existing demonstrations.",
+    "experiences": "Try the capabilities",
+    "addProjectFirst": "First add a project you'd like to work on.",
+    "done": "Done",
+    "exploreFooter": "Reopen any time from the bottom question mark > Explore BW.",
+    "tourFooter": "Reopen any time from Help > Explore Orca.",
+    "continue": "Continue",
+    "demo": {
+      "sessionStarted": "● Claude Code session started",
+      "notesLoaded": "Loaded {{total}} review notes from {{product}}",
+      "fixing": "Fixing both issues...",
+      "addingColumn": "Adding the email_verified column…",
+      "wiringMiddleware": "Wiring withSession middleware…",
+      "firstPrReady": "PR 1/2 ready",
+      "secondPrReady": "PR 2/2 ready",
+      "splitAuth": "Splitting auth rewrite into 2 PRs…",
+      "tableMigration": "Writing the users table migration…",
+      "sketchMiddleware": "Sketching withSession middleware…",
+      "percentUsed": "{{percent}}% used",
+      "resetsHours": "Resets in {{hours}}h",
+      "resetsMinutes": "Resets in {{minutes}}m",
+      "switchedUsage": "0% used 5h · 4% used wk",
+      "currentUsage": "96% used 47m",
+      "browserPrompt": "Make Starter card stand out",
+      "verifyBrowser": "Let me click Try free to verify it still works.",
+      "capturingPage": "(capturing page)",
+      "checks": "Checks",
+      "checksShortcut": "Checks ({{shortcut}})",
+      "rendersMetrics": "› renders metrics",
+      "updatesAvatar": "› updates avatar",
+      "exportsCsv": "› exports CSV",
+      "togglesDark": "› toggles dark mode",
+      "reviewPrompt": "review src/auth for missing error handling",
+      "checkoutPrompt": "fix failing checkout test",
+      "workspaceSetup": "set up orca.yaml",
+      "workspaceLogin": "fix login race condition",
+      "workspaceCi": "speed up CI pipeline"
+    },
+    "setupProgress": "Getting Started with BW, {{done}} of {{total}} complete.",
+    "progress": "{{done}} of {{total}} complete",
+    "gettingStarted": "Getting Started with BW",
+    "initialSetupFailed": "Could not open initial setup. Please try again.",
+    "initialSetup": "Initial Setup",
+    "setupDescription": "Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.",
+    "restarting": "Restarting BW…",
+    "restartFailed": "Couldn't restart BW.",
+    "reportCrash": "Report Crash",
+    "about": "About BW",
+    "restart": "Restart BW",
+    "orchestrationSetupDescription": "Enables agents to hand off context and coordinate work through {{product}}.",
+    "thinking": {
+      "none": "None",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Max"
+    },
+    "cliPrerequisite": "Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.",
+    "providerRemoteCredentials": "This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.",
+    "providerLocalCredentials": "This desktop client owns the provider credentials and account checks. Edit server-owned credentials in the advanced settings for that server.",
+    "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
+    "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."
   }
 }

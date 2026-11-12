@@ -1,0 +1,224 @@
+{
+  "schema_version": 4,
+  "milestones": [
+    {
+      "id": "2f305cf2-87b0-4949-a1c3-d26ac1f90266",
+      "date": "2026-10-30",
+      "outcome": "贯通项目规划、版本推进与验收，让团队在 BW 内完成项目管理主流程。"
+    },
+    {
+      "id": "1b4c9cbf-104e-494f-87a7-39cfe26c9360",
+      "date": "2026-11-15",
+      "outcome": "围绕项目管理与多人协作发布V1.0版本"
+    }
+  ],
+  "features": [
+    {
+      "id": "d2202d36-55fc-4ff3-82c9-4b73b0cc4909",
+      "title": "项目墙",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "c88e2433-2ef8-4786-a15b-cc711442e553",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-11-09T00:00",
+            "end": "2026-11-16T00:00"
+          }
+        },
+        {
+          "id": "ab57f0de-416e-424b-8e8f-e47ad4bf4ae5",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-16T00:00",
+            "end": "2026-11-21T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "58eac73c-2132-4359-9a72-68bc94e54fcf",
+      "title": "消息通知",
+      "owner": "kanadead",
+      "deliveries": [
+        {
+          "id": "f796d362-6aaf-4216-9ceb-93fdddaa2689",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-11-02T00:00",
+            "end": "2026-11-16T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "october-version-overview",
+      "title": "版本总览",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-version-overview-v08",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-10-26T00:00",
+            "end": "2026-11-01T00:00"
+          }
+        },
+        {
+          "id": "efbc9ffb-553d-461c-b8e3-556580db6a1b",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-02T00:00",
+            "end": "2026-11-07T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "october-project-overview",
+      "title": "项目总览里程碑",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-project-overview-v08",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-10-26T00:00",
+            "end": "2026-11-01T00:00"
+          }
+        },
+        {
+          "id": "5762b3c7-fc0f-4002-b78d-70ec098fa460",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-02T00:00",
+            "end": "2026-11-07T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "october-version-navigation",
+      "title": "侧边栏版本管理",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-version-navigation-v07",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-10-19T00:00",
+            "end": "2026-10-24T00:00"
+          }
+        },
+        {
+          "id": "5ca4886b-62f0-46d3-8ae0-f507119004a9",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-10-26T00:00",
+            "end": "2026-11-07T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "october-version-planning",
+      "title": "计划屏",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-version-planning-v07",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-10-19T00:00",
+            "end": "2026-10-24T00:00"
+          }
+        },
+        {
+          "id": "99c4411b-64cb-4a5e-9fea-dc84be7790a5",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-10-26T00:00",
+            "end": "2026-11-01T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "october-version-acceptance",
+      "title": "验收屏",
+      "owner": "kanadead",
+      "deliveries": [
+        {
+          "id": "october-version-acceptance-v07",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-10-19T00:00",
+            "end": "2026-10-24T00:00"
+          }
+        },
+        {
+          "id": "0c24729b-572f-4c1d-a9fd-aeee53edd886",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-10-26T00:00",
+            "end": "2026-11-14T00:00"
+          }
+        }
+      ]
+    }
+  ],
+  "versionPlans": [
+    {
+      "version": "v0.7",
+      "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286",
+      "timeWindow": {
+        "start": "2026-10-19",
+        "end": "2026-10-23"
+      }
+    },
+    {
+      "version": "v0.8",
+      "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
+      "timeWindow": {
+        "start": "2026-10-26",
+        "end": "2026-10-31"
+      }
+    },
+    {
+      "version": "v1.0",
+      "cycleId": "a6dd7bdb-7e31-4eba-bd1c-0e5f75f6f000",
+      "timeWindow": {
+        "start": "2026-11-09",
+        "end": "2026-11-14"
+      }
+    },
+    {
+      "version": "v1.1",
+      "cycleId": "c8b79976-aa06-40fc-b70d-5dba4ef7369c",
+      "timeWindow": {
+        "start": "2026-11-16",
+        "end": "2026-11-20"
+      }
+    },
+    {
+      "version": "v0.4",
+      "cycleId": "682dd484-2fe5-4409-a814-43011b1c4a08"
+    },
+    {
+      "version": "v0.5",
+      "cycleId": "664aa8c6-d407-43e7-9d60-e99096f1f2db"
+    },
+    {
+      "version": "v0.6",
+      "cycleId": "d54e65f2-a5e9-45f5-8ffe-04de112ca9d8"
+    },
+    {
+      "version": "v0.9",
+      "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+      "timeWindow": {
+        "start": "2026-11-02",
+        "end": "2026-11-08"
+      }
+    }
+  ]
+}

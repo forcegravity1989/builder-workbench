@@ -1,13 +1,17 @@
+import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
+import { WORKBENCH_SKILL_METHODS } from './workbench-skills'
 import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
 import { WORKBENCH_VERSION_BINDING_METHODS } from './workbench-version-binding'
 import { WORKBENCH_VERSION_WORKSPACE_METHODS } from './workbench-version-workspace'
+import { WORKBENCH_FIXED_WORKSPACE_METHODS } from './workbench-fixed-workspace'
 import { WORKBENCH_METRICS_METHODS } from './workbench-metrics'
 import { WORKBENCH_PACKAGE_METHODS } from './workbench-package'
 import { WORKBENCH_ARCHIVE_METHODS } from './workbench-archive'
 import { WORKBENCH_RELEASE_METHODS } from './workbench-release'
 import { WORKBENCH_CHARTER_METHODS } from './workbench-charter'
+import { WORKBENCH_MILESTONE_METHODS } from './workbench-milestones'
 import { WORKBENCH_TRUNK_METHODS } from './workbench-trunk'
 import { AI_VAULT_METHODS } from './ai-vault'
 import { AUTOMATION_METHODS } from './automations'
@@ -61,15 +65,19 @@ import { AGENT_HOOK_METHODS } from './agent-hooks'
 // grep-point for "what methods does the RPC server expose?" — useful when
 // auditing the security boundary or wiring new CLI commands.
 export const ALL_RPC_METHODS = [
+  ...WORKBENCH_REVIEW_NOTIFICATION_METHODS,
   ...WORKBENCH_MATERIAL_METHODS,
+  ...WORKBENCH_SKILL_METHODS,
   ...WORKBENCH_HISTORY_METHODS,
   ...WORKBENCH_VERSION_BINDING_METHODS,
   ...WORKBENCH_VERSION_WORKSPACE_METHODS,
+  ...WORKBENCH_FIXED_WORKSPACE_METHODS,
   ...WORKBENCH_METRICS_METHODS,
   ...WORKBENCH_PACKAGE_METHODS,
   ...WORKBENCH_ARCHIVE_METHODS,
   ...WORKBENCH_RELEASE_METHODS,
   ...WORKBENCH_CHARTER_METHODS,
+  ...WORKBENCH_MILESTONE_METHODS,
   ...WORKBENCH_TRUNK_METHODS,
   ...STATUS_METHODS,
   ...AGENT_HOOK_METHODS,

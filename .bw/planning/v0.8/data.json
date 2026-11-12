@@ -2,6 +2,10 @@
   "schema_version": 3,
   "version": "v0.8",
   "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
+  "timeWindow": {
+    "start": "2026-10-26",
+    "end": "2026-10-31"
+  },
   "summary": {
     "progress": "",
     "risks": "",
@@ -48,9 +52,9 @@
     },
     {
       "goalId": "G2",
-      "title": "项目总览增加里程碑规划，版本总览 UI 重设计",
-      "deliverable": "1. 项目总览里程碑规划：版本规划之外补上更长时间的里程碑规划，设计并落地，设计按特性资料归档。\n2. 版本总览围绕大需求的 AI 时代 SDLC 过程与小需求、bug 的会话 workflow 处理结果重设计，高保真归档。",
-      "acceptance": "1. Builder/Leader 在项目总览不只看到单个版本的规划，还能看到更长时间的里程碑与交付承诺——支撑「不只更快、还能更好」地做项目。\n2. 项目总览的里程碑参考会议分享图，泳道方式。\n3. 版本总览呈现大需求从意图、设计/高保真/规格、Plan、Builder 开发落地、测试到上线的当前阶段与成果入口。\n4. 版本总览汇总小需求与 bug 的会话 workflow 执行及处理结果。",
+      "title": "项目总览增加里程碑规划",
+      "deliverable": "1. 项目总览里程碑规划：版本规划之外补上更长时间的里程碑规划，设计并落地，设计按特性资料归档。",
+      "acceptance": "1. Builder/Leader 在项目总览不只看到单个版本的规划，还能看到更长时间的里程碑与交付承诺——支撑「不只更快、还能更好」地做项目。\n2. 项目总览的里程碑参考会议分享图，泳道方式。",
       "owner": "yuzhup",
       "metricTargets": []
     },
@@ -68,6 +72,14 @@
       "deliverable": "1. 关联的小需求与 bug Issue 逐条处理到完成（修复或关闭）。",
       "acceptance": "Issue实际处理跟随PR关闭，关注Issue关闭即可。",
       "owner": "kanadead; yuzhup",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G5",
+      "title": "版本总览 UI 重设计",
+      "deliverable": "1. 版本总览围绕大需求的 AI 时代 SDLC 过程与小需求、bug 的会话 workflow 处理结果重设计，高保真归档。",
+      "acceptance": "1. 版本总览呈现大需求从意图、设计/高保真/规格、Plan、Builder 开发落地、测试到上线的当前阶段与成果入口。\n2. 版本总览汇总小需求与 bug 的会话 workflow 执行及处理结果。",
+      "owner": "yuzhup",
       "metricTargets": []
     }
   ],
@@ -88,12 +100,18 @@
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 334,
-      "goalId": "G2"
+      "goalId": "G5"
     },
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 158,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 530,
       "goalId": "G2"
     },
     {
@@ -178,6 +196,78 @@
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 425,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 439,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 451,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 456,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 462,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 466,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 471,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 457,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 463,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 469,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 516,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 492,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 483,
       "goalId": "G4"
     }
   ],

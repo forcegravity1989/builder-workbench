@@ -190,13 +190,14 @@ describe('AgentsPane', () => {
       })
 
       expect(detectedAgentsMock.lastTarget).toEqual({ kind: 'runtime', environmentId: 'env-1' })
-      expect(markup).toContain('on Coder')
+      expect(markup).toContain('Coder')
+      expect(markup).toContain('Loading agent settings…')
     } finally {
       initialState.runtimeEnvironments = priorRuntimeEnvironments
     }
   })
 
-  it('shows a retryable error when initial remote detection fails', () => {
+  it('waits for host settings without showing client defaults when remote detection fails', () => {
     detectedAgentsMock.detectedIds = null
     detectedAgentsMock.isLoading = false
     detectedAgentsMock.detectionFailed = true
@@ -206,9 +207,9 @@ describe('AgentsPane', () => {
       activeRuntimeEnvironmentId: 'env-1'
     })
 
-    expect(markup).toContain('Couldn’t detect installed agents')
-    expect(markup).toContain('Retry')
-    expect(markup).not.toContain('Detecting installed agents…')
+    expect(markup).toContain('Loading agent settings…')
+    expect(markup).not.toContain('Keep computer awake')
+    expect(markup).not.toContain('aria-label="Agent runtime"')
   })
 
   it('does not flash a failure before the initial detection effect starts', () => {
@@ -223,13 +224,11 @@ describe('AgentsPane', () => {
   })
 
   it('keeps Windows runtime changes scoped to the local agent refresh', () => {
-    renderPane(
-      {
-        ...getDefaultSettings('/tmp'),
-        activeRuntimeEnvironmentId: 'env-1'
-      },
-      { wslSupportedPlatform: true, wslAvailable: true, wslDistros: ['Ubuntu'] }
-    )
+    renderPane(getDefaultSettings('/tmp'), {
+      wslSupportedPlatform: true,
+      wslAvailable: true,
+      wslDistros: ['Ubuntu']
+    })
 
     expect(agentRuntimeSettingMock.lastRefresh).toBe(
       useAppStore.getInitialState().refreshDetectedAgents
@@ -245,7 +244,7 @@ describe('AgentsPane', () => {
     expect(markup).not.toContain('aria-label="Agent runtime"')
     expect(markup).toContain('Keep computer awake')
     expect(markup).toContain(
-      'Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.'
+      'Choose On, Agent, or Off. Agent mode stays awake while agents are working. The app also asks this device to stay awake when the lid is closed, subject to its power policy.'
     )
     expect(markup).toContain('role="radiogroup"')
     expect(markup).toContain('>Agent<')

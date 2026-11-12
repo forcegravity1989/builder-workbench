@@ -5,6 +5,7 @@ import {
   hasUnsupportedWorkbenchTaskSearch,
   removeWorkbenchVersionQuery,
   seedWorkbenchTaskQuery,
+  workbenchTaskEntryQuery,
   workbenchGoalMutationQuery,
   type WorkbenchTaskScope
 } from './task-scope'
@@ -26,6 +27,12 @@ describe('native task entry filters', () => {
     expect(parseTaskQuery(removeWorkbenchVersionQuery(seeded, scope))).toEqual(
       parseTaskQuery(original)
     )
+    const previous = { ...scope, version: 'v0.5' }
+    const goal = { ...scope, version: 'v0.8', goalId: 'G3' }
+    const saved = 'is:issue is:open label:bw:plan:v0.5'
+    expect(workbenchTaskEntryQuery(saved, goal)).toBe('')
+    expect(workbenchTaskEntryQuery(saved, goal, previous)).toBe('')
+    expect(seedWorkbenchTaskQuery('label:bw:plan:v0.8', goal)).toBe('label:bw:plan:v0.8')
     const mine = parseTaskQuery('assignee:@me author:alice state:open label:bug')
     expect(workbenchGoalMutationQuery(mine, true)).toEqual({ ...mine, assignee: null })
     expect(workbenchGoalMutationQuery(mine, false)).toBe(mine)
@@ -55,6 +62,14 @@ describe('native task entry filters', () => {
       items.filter((item) => matchesWorkbenchTaskQuery(item, 'is:pr state:all', 'alice'))
     ).toEqual([])
     expect(matchesWorkbenchTaskQuery({ ...items[65], labels: [] }, query, 'alice')).toBe(false)
+    const goal = { ...scope, goalId: 'goal' }
+    const goalQuery = workbenchTaskEntryQuery(query, goal)
+    expect(items.filter((item) => matchesWorkbenchTaskQuery(item, goalQuery, null))).toHaveLength(
+      68
+    )
+    expect(matchesWorkbenchTaskQuery({ ...items[65], labels: [] }, goalQuery, 'alice')).toBe(true)
+    const filtered = seedWorkbenchTaskQuery('label:bw:plan:v0.7', goal)
+    expect(matchesWorkbenchTaskQuery({ ...items[65], labels: [] }, filtered, 'alice')).toBe(false)
     expect(matchesWorkbenchTaskQuery(items[65], '#66', 'alice')).toBe(true)
     expect(hasUnsupportedWorkbenchTaskSearch('in:title API')).toBe(true)
     expect(hasUnsupportedWorkbenchTaskSearch('"in:title"')).toBe(false)

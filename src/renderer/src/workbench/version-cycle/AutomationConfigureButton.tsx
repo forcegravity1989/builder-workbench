@@ -3,8 +3,8 @@ import { CalendarClock } from 'lucide-react'
 /**
  * Page-header entry for the one-off automation configuration, shared by both
  * cycle boards. Deliberately not on the collaboration card: configuring the
- * weekly automation is not part of the weekly launch action. The plan board
- * passes its G3 text-button skin; acceptance keeps the default button look.
+ * weekly automation is not part of the weekly launch action. Both boards
+ * pass their board-action button style for the header tools.
  */
 export function AutomationConfigureButton({
   onConfigure,

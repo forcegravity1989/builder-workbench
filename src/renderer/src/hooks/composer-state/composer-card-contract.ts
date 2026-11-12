@@ -30,6 +30,7 @@ export type ComposerCardSourceProps = Pick<
   | 'linkDirectLoading'
   | 'normalizedLinkQuery'
   | 'tuiAgent'
+  | 'agentLaunchPreferences'
   | 'detectedAgentIds'
   | 'advancedOpen'
   | 'projectError'

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useRepoMap, useWorktreeMap } from '@/store/selectors'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -22,10 +22,56 @@ import {
 import { WORKTREE_ROW_DRAG_INITIAL_STATE } from '@/components/sidebar/worktree-list/drag/row-state'
 import { closeProjectPage } from './project-page-state'
 import { isVersionHostDisconnected } from './version-worktree-host'
+import { buildWorktreeComparator, sortWorktreesSmart } from '@/components/sidebar/smart-sort'
+import { getPinnedSectionWorktrees } from '@/components/sidebar/pinned-section-worktrees'
+import { getPinnedWorktreeDisplayPolicy } from '@/components/sidebar/worktree-list/grouping/row-types'
+import {
+  computeVisibleWorktrees,
+  type VisibleWorktreeOptions
+} from '@/components/sidebar/visible-worktrees'
 
 const EMPTY_SET = new Set<string>()
 const EMPTY_MAP = new Map<string, never>()
 const NOOP = () => {}
+export type VersionTreeDisplayInput = {
+  visibleWorktrees: readonly Worktree[]
+  filterOptions: VisibleWorktreeOptions
+  sortedIds: readonly string[]
+  sortNow: number
+}
+const VersionTreeDisplayContext = createContext<
+  (VersionTreeDisplayInput & { visibleIdentities: ReadonlySet<string> }) | null
+>(null)
+
+export function VersionTreeDisplayProvider({
+  value,
+  trees,
+  children
+}: {
+  value: VersionTreeDisplayInput
+  trees: readonly Worktree[]
+  children: React.ReactNode
+}): React.JSX.Element {
+  const display = useMemo(() => {
+    const worktreesByRepo: Record<string, Worktree[]> = {}
+    for (const tree of trees) {
+      const repoTrees = (worktreesByRepo[tree.repoId] ??= [])
+      repoTrees.push(tree)
+    }
+    // Filter the whole catalog so an active child can retain its ancestor across directories.
+    const visibleTrees = computeVisibleWorktrees(
+      worktreesByRepo,
+      value.sortedIds,
+      value.filterOptions
+    )
+    return { ...value, visibleIdentities: new Set(visibleTrees.map(getWorktreeHostIdentity)) }
+  }, [value, trees])
+  return (
+    <VersionTreeDisplayContext.Provider value={display}>
+      {children}
+    </VersionTreeDisplayContext.Provider>
+  )
+}
 
 /** Business directories only select members; native rows own cards, hosts and sessions. */
 export function VersionNativeTrees({
@@ -39,7 +85,44 @@ export function VersionNativeTrees({
   const worktreeMap = useWorktreeMap()
   const repos = useAppStore((state) => state.repos)
   const settings = useAppStore((state) => state.settings)
+  const nativeDisplay = useContext(VersionTreeDisplayContext)
+  if (!nativeDisplay) {
+    throw new Error('VersionNativeTrees requires the native sidebar display context')
+  }
+  const sortBy = useAppStore((state) => state.sortBy)
   const lineage = useAppStore((state) => state.worktreeLineageById)
+  const displayedTrees = useMemo(() => {
+    const filteredTrees = trees.filter((tree) =>
+      nativeDisplay.visibleIdentities.has(getWorktreeHostIdentity(tree))
+    )
+    const source = nativeDisplay.visibleWorktrees
+    const pinned =
+      getPinnedWorktreeDisplayPolicy(settings) === 'single-location'
+        ? new Set(
+            getPinnedSectionWorktrees(source, lineage, worktreeMap).map(getWorktreeHostIdentity)
+          )
+        : new Set<string>()
+    const rank = new Map(nativeDisplay.sortedIds.map((id, index) => [id, index]))
+    const state = useAppStore.getState()
+    const ordered =
+      sortBy === 'smart'
+        ? sortWorktreesSmart(
+            filteredTrees,
+            state.tabsByWorktree,
+            repoMap,
+            state.agentStatusByPaneKey,
+            state.runtimePaneTitlesByTabId,
+            state.ptyIdsByTabId,
+            state.migrationUnsupportedByPtyId,
+            state.terminalLayoutsByTabId
+          )
+        : filteredTrees.sort(
+            buildWorktreeComparator(sortBy, repoMap, nativeDisplay.sortNow, new Map())
+          )
+    return ordered
+      .filter((tree) => !pinned.has(getWorktreeHostIdentity(tree)))
+      .sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) || 0)
+  }, [nativeDisplay, trees, settings, lineage, worktreeMap, sortBy, repoMap])
   const collapsedGroups = useAppStore((state) => state.collapsedGroups)
   const toggleGroup = useAppStore((state) => state.toggleCollapsedGroup)
   const activeWorktreeId = useAppStore((state) => state.activeWorktreeId)
@@ -73,14 +156,14 @@ export function VersionNativeTrees({
   )
   const rows = useMemo(() => {
     const result: Row[] = []
-    appendWorktreeRows(result, [...trees], repoMap, lineage, worktreeMap, {
+    appendWorktreeRows(result, [...displayedTrees], repoMap, lineage, worktreeMap, {
       nestLineage: true,
       collapsedGroups,
       groupDepth: 0,
       sectionKey,
       cyclicLineageIds: getCyclicProjectedWorktreeLineageIds(lineage, worktreeMap),
       hostContextLabelByWorktreeIdentity: new Map(
-        trees.map((tree) => [
+        displayedTrees.map((tree) => [
           getWorktreeHostIdentity(tree),
           getHostContextLabel(
             getWorktreeExecutionHostId(tree, repoMap.get(tree.repoId), defaultHostId),
@@ -91,7 +174,7 @@ export function VersionNativeTrees({
     })
     return settings?.experimentalNewWorktreeCardStyle ? buildRenderableRows(result) : result
   }, [
-    trees,
+    displayedTrees,
     repoMap,
     lineage,
     worktreeMap,

@@ -69,7 +69,7 @@ export type VersionTreePlanCatalog = {
   /** The cycle branch HEAD the plans were listed from. */
   head: string
   plans: VersionTreePlan[]
-  /** Unreadable or malformed plan folders stay visible next to the valid ones. */
+  /** Format or identity problems stay visible next to the valid ones; a folder without data.json is skipped. */
   problems: { version: string; code: string; message: string }[]
 }
 export type VersionHistoryPlan = {

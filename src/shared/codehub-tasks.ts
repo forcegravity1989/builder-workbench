@@ -19,6 +19,10 @@ export type CodeHubTaskItem = {
 }
 
 export type CodeHubTaskDetail = {
+  createdAt?: string
+  mergedAt?: string
+  closedAt?: string
+  linkedMergeRequests?: { iid: number; url: string }[]
   iid: number
   title: string
   description: string
@@ -30,6 +34,8 @@ export type CodeHubTaskDetail = {
   labels: string[]
   sourceBranch: string | null
   targetBranch: string | null
+  sourceProjectUrl?: string | null
+  targetProjectUrl?: string | null
 }
 
 export type CodeHubComment = {
@@ -50,7 +56,8 @@ export type CodeHubComment = {
   // MR notes carry `from_robot`; issue comments do not (always false there).
   isBot: boolean
   // MR review threads can be resolved; issue comment data has no such field.
-  isResolved: boolean
+  isResolved?: boolean
+  isSystem?: boolean
   // Line-level review comments carry the file position; MR-level notes do
   // not (both null).
   path: string | null

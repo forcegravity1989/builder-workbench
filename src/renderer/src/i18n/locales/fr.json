@@ -104,7 +104,6 @@
     "minimizeNotice": {
       "body": "Orca continue de tourner dans la zone de notification"
     },
-    "activityWaiting": "Orca - activité en attente",
     "activityWaitingSuffix": "activité en attente"
   },
   "worktreeJumpPalette": {
@@ -1312,8 +1311,6 @@
         "76a95f7f47": "Créer",
         "f05d237049": "Ajoutez d'abord un projet",
         "f9eaa9e12d": "Ajouter un projet",
-        "6ca6ff404e": "ORCA",
-        "520304a067": "Logo Orca",
         "ce44fad849": "Dépendances manquantes",
         "c1cf168479": "Masquer",
         "00cee697c1": "Exécutez \"gh auth login\" dans un terminal pour connecter votre compte GitHub.",
@@ -3927,7 +3924,6 @@
           "2d9eb39264": "Total de tokens",
           "beb6f24f37": "Coût estimé",
           "da62578d9d": "Utilisation",
-          "0eb31e79ee": "IDE Orca",
           "960324e9b8": "événements",
           "6adac63cfe": "tours"
         },
@@ -3971,7 +3967,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "sortie",
               "5d66fdd7c2": "entrée",
               "7080aeaebb": "Raisonnement",
@@ -3979,7 +3974,8 @@
               "33d38e2177": "Sortie",
               "c2d7b23d57": "Entrée",
               "9d166247ee": "Écriture en cache",
-              "cc28cb965e": "Lecture du cache"
+              "cc28cb965e": "Lecture du cache",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -4832,6 +4828,8 @@
           "3e64e8a70d": "Échec de la connexion",
           "32a7256d85": "Cloner",
           "69f5b5380d": "Clonage...",
+          "finishingClone": "Finalisation du clonage…",
+          "importingProject": "Importation du projet…",
           "cloneOnHostDescription": "Saisissez l'URL Git et choisissez où le cloner sur {{value0}}.",
           "cloneParentFolder": "Dossier parent",
           "remoteCloneParentPlaceholder": "/home/user/projects"
@@ -6296,16 +6294,13 @@
           "noAgentsDetected": "Aucun agent détecté. Si un agent est installé, la détection a peut-être expiré."
         },
         "AppIconSelector": {
-          "d5a112dc9b": "Icône suivante",
-          "415fa76f64": "Icône d'app sélectionnée",
-          "5f5142a62a": "Icône précédente"
+          "415fa76f64": "Icône d'app sélectionnée"
         },
         "AppearancePane": {
           "3057983501": "Non assigné",
           "872af9556e": "Zone de notification",
           "2edf606c46": "Réduire dans la zone de notification à la fermeture",
           "b707773a0d": "Quand activé, fermer la fenêtre laisse Orca tourner dans la zone de notification au lieu de quitter.",
-          "0cd9b8228f": "Choisissez l'icône d'app affichée dans le Dock et le sélecteur de fenêtres.",
           "ca1590d42f": "Icône de l'app",
           "fa882a3e6b": "Afficher le bouton Automatisations en haut de la barre latérale gauche.",
           "511f270ebb": "Afficher le bouton Automatisations",
@@ -6696,6 +6691,8 @@
           "connectionTestAction": "Tester la connexion"
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Paramètres globaux",
+          "globalScopeDescription": "Ces paramètres s’appliquent à tous les projets sur cet appareil.",
           "9762364929": "Utilise le clonage APFS sur macOS quand c'est possible, sinon crée des liens symboliques vers les dossiers ou fichiers configurés dans les worktrees créés.",
           "24416f42cd": "Chemins partagés sur les worktrees",
           "fb82ea1d7a": "Matérialise automatiquement les fichiers ou dossiers configurés dans les worktrees nouvellement créés.",
@@ -7258,7 +7255,6 @@
           "191ac34567": "Orchestration d'agents"
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "Permet aux agents de transmettre le contexte et de coordonner le travail via Orca.",
           "2777ff0fdc": "Skill d'orchestration"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -8564,14 +8560,11 @@
           "search": {
             "9a115966d3": "Réduire dans la zone de notification à la fermeture",
             "4d5b9427b5": "Quand activé, fermer la fenêtre laisse Orca tourner dans la zone de notification au lieu de quitter.",
-            "468448bba4": "aquarelle",
-            "f586abfa35": "bleu",
             "651f35b2c6": "sélecteur",
             "e5bc35d59e": "fenêtre",
             "d18b54ca90": "dock",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "icône de l'app",
-            "e80c2af428": "Choisissez l'icône d'app affichée dans le Dock et le sélecteur de fenêtres.",
             "2b313598c6": "Icône de l'app",
             "ac79fe4a04": "afficher",
             "648eeada79": "masquer",
@@ -10100,8 +10093,8 @@
                 "cards": {
                   "793a06e899": "Revérifier",
                   "1a9475dace": "En savoir plus",
-                  "19fb419c12": "Les identifiants Gitea sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
-                  "60708f23da": "uniquement quand Orca ne peut pas déduire l'URL de l'API depuis le remote.",
+                  "19fb419c12": "Les identifiants Gitea sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
+                  "60708f23da": "uniquement quand {{product}} ne peut pas déduire l'URL de l'API depuis le remote.",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "pour les dépôts privés, et définissez",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -10110,8 +10103,8 @@
                   "05863d2599": "Pull requests et statuts de commits via l'API REST Gitea.",
                   "52f75876be": "Pull requests et statuts de commits pour les dépôts détectés",
                   "0b5242f8a2": "{{value0}} · Pull requests et statuts de commits",
-                  "40f678df73": "Les identifiants Azure DevOps sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
-                  "7bd345e3f6": "uniquement quand Orca ne peut pas déduire l'URL de base de l'API depuis le remote git.",
+                  "40f678df73": "Les identifiants Azure DevOps sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
+                  "7bd345e3f6": "uniquement quand {{product}} ne peut pas déduire l'URL de base de l'API depuis le remote git.",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": ". Définissez",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -10122,7 +10115,7 @@
                   "0eb50d5593": "Pull requests et statuts de builds via des tokens de l'API REST Azure DevOps.",
                   "54636c65d4": "Pull requests et statuts de builds pour les Azure Repos détectés",
                   "ea204f5e03": "{{value0}} · Pull requests et statuts de builds",
-                  "6154b02093": "Les identifiants Bitbucket sont configurés mais l'authentification a échoué. Vérifiez le token et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
+                  "6154b02093": "Les identifiants Bitbucket sont configurés mais l'authentification a échoué. Vérifiez le token et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "et",
@@ -11118,9 +11111,9 @@
               "authModeToken": "Token d'accès",
               "authModeBasic": "E-mail & token API",
               "disconnect": "Déconnecter Bitbucket",
-              "envManaged": "Configuré via des variables d'environnement. Désactivez les variables ORCA_BITBUCKET_* pour gérer cet identifiant dans Orca.",
+              "envManaged": "Configuré via des variables d'environnement. Désactivez les variables ORCA_BITBUCKET_* pour gérer cet identifiant dans {{product}}.",
               "storedAuthFailed": "L'identifiant Bitbucket enregistré n'a pas réussi à s'authentifier. Modifiez-le ou vérifiez que le token garde l'accès aux pull requests.",
-              "storedCredential": "Enregistré dans Orca sur cette machine. Les variables d'environnement ORCA_BITBUCKET_* ont priorité quand elles sont définies.",
+              "storedCredential": "Enregistré dans {{product}} sur cette machine. Les variables d'environnement ORCA_BITBUCKET_* ont priorité quand elles sont définies.",
               "notConfigured": "Connectez un compte Bitbucket Cloud avec un token API Atlassian ou un token d'accès. Les variables d'environnement ORCA_BITBUCKET_* marchent aussi et ont priorité.",
               "disconnectFailed": "Impossible de supprimer l'identifiant Bitbucket enregistré."
             }
@@ -13039,9 +13032,9 @@
             "b8dc9dd8a2": "Installés",
             "1b51644c2d": "Laissez les agents contrôler le bureau : déplacer le curseur, cliquer et taper dans n'importe quelle application.",
             "362a07517d": "Computer Use",
-            "5e8fe5a72d": "Donnez aux agents un accès direct au navigateur d'Orca pour tester des pages, capturer des captures d'écran et agir sur ce qu'ils voient.",
+            "5e8fe5a72d": "Donnez aux agents un accès direct au navigateur d'{{product}} pour tester des pages, capturer des captures d'écran et agir sur ce qu'ils voient.",
             "e638da007a": "Agent Browser Use",
-            "c61c91e642": "Laissez les agents se coordonner via Orca pour faire avancer jusqu'au bout les grandes tâches en plusieurs étapes.",
+            "c61c91e642": "Laissez les agents se coordonner via {{product}} pour faire avancer jusqu'au bout les grandes tâches en plusieurs étapes.",
             "ac07f8887f": "Orchestration d'agents",
             "e9eb197e12": "Autorisations Computer Use ouvertes",
             "3a59452a67": "Commande de skill copiée et insérée ci-dessous pour vérification.",
@@ -13084,7 +13077,7 @@
             "f39be6ca14": "/signup"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'Orca.",
+            "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'{{product}}.",
             "d5bb1cd4ba": "Skill Browser Use"
           },
           "ComputerUseAnimatedVisual": {
@@ -13383,7 +13376,7 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "connecté pour les tâches",
-            "33b650af52": "Connectez l'outil où votre équipe suit son travail. Orca démarre les espaces de travail avec le titre de l'issue, le lien et le contexte déjà rattachés.",
+            "33b650af52": "Connectez l'outil où votre équipe suit son travail. {{product}} démarre les espaces de travail avec le titre de l'issue, le lien et le contexte déjà rattachés.",
             "5b3577a492": "connecté pour le statut de revue",
             "list_end": ", et ",
             "list_pair": " et ",
@@ -13391,8 +13384,8 @@
             "code_host_tasks_summary": "issues disponibles comme tâches · ajoutez Linear ou Jira si votre équipe y planifie son travail",
             "code_host_tasks_caption": "Les issues de votre hébergeur de code servent aussi de tâches.",
             "review_step_title": "Voyez le statut des PR pendant que les agents travaillent",
-            "review_step_description": "Connectez un fournisseur de revue pour qu'Orca affiche le statut des PR ou MR, les vérifications et les revues.",
-            "task_step_title": "Lancez des agents sur vos tâches sans quitter Orca"
+            "review_step_description": "Connectez un fournisseur de revue pour qu'{{product}} affiche le statut des PR ou MR, les vérifications et les revues.",
+            "task_step_title": "Lancez des agents sur vos tâches sans quitter {{product}}"
           },
           "connect": {
             "integration": {
@@ -14594,6 +14587,17 @@
                       "c937229f19": "Capture effectuée",
                       "1f5cb19034": "Annotation ajoutée"
                     }
+                  }
+                }
+              }
+            },
+            "browser": {
+              "page": {
+                "annotation": {
+                  "tray": {
+                    "38d320108c": "Réduire les annotations",
+                    "9f209891a7": "Développer les annotations",
+                    "includePageDetails": "Inclure les détails de la page"
                   }
                 }
               }
@@ -16203,5 +16207,8 @@
       "stopped": "arrêté",
       "finished": "terminé"
     }
+  },
+  "brand": {
+    "workbench": "Workbench"
   }
 }

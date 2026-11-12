@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,6 +34,41 @@ const plan: PlanningMaterial = {
 const scope = { repoId: 'repo', worktreeId: 'plan', hostId: 'local', workflow: 'plan' as const }
 const git = (cwd: string, ...args: string[]) =>
   execFileSync('git', args, { cwd, stdio: 'pipe' }).toString().trim()
+
+async function checkScheduledInitialization(
+  service: Pick<ReturnType<typeof createService>, 'initializeEmptyPlan' | 'read'>,
+  owner: typeof scope,
+  root: string
+) {
+  const timeWindow = { start: '2026-11-16', end: '2026-11-20' }
+  const milestonePath = join(root, '.bw/milestones.json')
+  await writeFile(
+    milestonePath,
+    JSON.stringify({
+      schema_version: 4,
+      milestones: [],
+      features: [],
+      versionPlans: [{ version: 'v2', cycleId: 'scheduled-identity', timeWindow }]
+    })
+  )
+  const request = { version: 'v2', cycleId: 'new-random-identity', expectedBranch: 'bw/week-plan' }
+  expect((await service.initializeEmptyPlan(owner, request)).created).toBe(true)
+  const existing = await service.read({ ...owner, version: 'v2' })
+  expect(existing?.document).toMatchObject({
+    version: 'v2',
+    cycleId: 'scheduled-identity',
+    timeWindow,
+    goals: [],
+    tasks: []
+  })
+  await writeFile(milestonePath, '{broken')
+  expect((await service.initializeEmptyPlan(owner, request)).created).toBe(false)
+  expect(await service.read({ ...owner, version: 'v2' })).toEqual(existing)
+  await expect(service.initializeEmptyPlan(owner, { ...request, version: 'v3' })).rejects.toThrow(
+    '里程碑材料无法读取'
+  )
+  expect(await service.read({ ...owner, version: 'v3' })).toBeNull()
+}
 
 describe('native version material service', () => {
   let directory: string
@@ -148,6 +183,87 @@ describe('native version material service', () => {
     expect(await readFile(join(planning, '.bw/planning/v0.4/data.json'), 'utf8')).toBe(
       '{"schema_version":2}'
     )
+    await checkScheduledInitialization(service, scope, planning)
+  })
+
+  it('registers a prepared artifact in one command: real file only, candidate reused, rerun replaces', async () => {
+    const service = createVersionMaterialService(host)
+    const acceptanceScope = {
+      repoId: 'repo',
+      worktreeId: 'acceptance',
+      hostId: 'local',
+      workflow: 'acceptance' as const
+    }
+    const candidate = {
+      repository: 'github.com/acme/project',
+      version: 'v0.5',
+      commit: '2'.repeat(40)
+    }
+    const document: AcceptanceMaterial = {
+      schema_version: 3,
+      version: 'v0.5',
+      cycleId: 'acceptance-1',
+      planRef: {
+        kind: 'committed',
+        version: 'v0.5',
+        cycleId: 'cycle-1',
+        revision: `sha256:${'a'.repeat(64)}`,
+        sourceCommit: '1'.repeat(40)
+      },
+      candidateRef: candidate,
+      preparedArtifacts: [],
+      results: []
+    }
+    await service.save({
+      ...acceptanceScope,
+      version: 'v0.5',
+      expectedRevision: null,
+      document
+    })
+    const reportDir = join(acceptance, '.bw/planning/v0.5')
+    await mkdir(reportDir, { recursive: true })
+    await writeFile(join(reportDir, 'report.html'), '<html>证据报告</html>')
+    // 登记成功：缺省 artifactId、mtime 作 generatedAt、candidateRef 复用材料现有值。
+    const registered = await service.addArtifact({
+      ...acceptanceScope,
+      version: 'v0.5',
+      kind: 'verification',
+      location: '.bw/planning/v0.5/report.html'
+    })
+    expect(registered.artifact).toEqual({
+      artifactId: 'verification-v0.5-report.html',
+      kind: 'verification',
+      location: '.bw/planning/v0.5/report.html',
+      candidateRef: candidate,
+      generatedAt: new Date((await stat(join(reportDir, 'report.html'))).mtimeMs).toISOString()
+    })
+    const stored = await service.read({ ...acceptanceScope, version: 'v0.5' })
+    const storedArtifacts =
+      stored && 'preparedArtifacts' in stored.document ? stored.document.preparedArtifacts : null
+    expect(storedArtifacts).toEqual([registered.artifact])
+    // 重跑同 artifactId 覆盖而非追加，可选字段随命令带上。
+    const rerun = await service.addArtifact({
+      ...acceptanceScope,
+      version: 'v0.5',
+      kind: 'verification',
+      location: '.bw/planning/v0.5/report.html',
+      command: 'echo regenerate'
+    })
+    const after = await service.read({ ...acceptanceScope, version: 'v0.5' })
+    const afterArtifacts =
+      after && 'preparedArtifacts' in after.document ? after.document.preparedArtifacts : null
+    expect(afterArtifacts).toEqual([rerun.artifact])
+    expect(afterArtifacts?.[0].command).toBe('echo regenerate')
+    // 文件不存在如实报错退出，不登记幽灵制品，材料保持不变。
+    await expect(
+      service.addArtifact({
+        ...acceptanceScope,
+        version: 'v0.5',
+        kind: 'verification',
+        location: '.bw/planning/v0.5/missing.html'
+      })
+    ).rejects.toMatchObject({ code: 'artifact-missing' })
+    expect(await service.read({ ...acceptanceScope, version: 'v0.5' })).toEqual(after)
   })
 
   it('rejects unknown hosts, ambiguous, foreign and stale branch identities before writing', async () => {
@@ -395,6 +511,7 @@ describe('native version material service', () => {
     await expect(
       remote.save({ ...remoteScope, version: 'v0.5', expectedRevision: null, document: plan })
     ).rejects.toMatchObject({ code: 'revision-conflict', currentRevision: saved.revision })
+    await checkScheduledInitialization(remote, remoteScope, planning)
     git(planning, 'checkout', '--detach')
     await expect(
       remote.save({

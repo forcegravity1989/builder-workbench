@@ -25,7 +25,7 @@ import {
   filterTrustedOrcaHooksToValidRepos,
   mergeFetchedRepoCatalog,
   projectCompatibilityForReconciledRepos,
-  reconcileReadoptedSshWorktreeState,
+  reconcileFetchedCatalogWorktreeState,
   reconcileSupersededSshRepos
 } from './repo-catalog-merge'
 import { getRuntimeTargetHostId } from '../runtime-target-host'
@@ -88,7 +88,7 @@ export function createAllHostRepoCatalogActions(
           return {
             repos: finalizedRepos,
             pendingSshRepoReadoptions: reconciliation.pendingReadoptions,
-            ...reconcileReadoptedSshWorktreeState(s, s.pendingSshRepoReadoptions),
+            ...reconcileFetchedCatalogWorktreeState(s, catalog, finalizedRepos),
             ...mergedProjectCompatibility,
             ...(arrayElementsUnchanged(finalizedRepos, s.repos)
               ? {}
@@ -122,10 +122,11 @@ export function createAllHostRepoCatalogActions(
       let failed = false
       let localCatalogOutcome: LocalRepoCatalogFetchOutcome = { status: 'fulfilled' }
       try {
-        applyCatalog(await fetchRepoCatalogForTarget({ kind: 'local' }))
+        applyCatalog(await fetchRepoCatalogForTarget({ kind: 'local' }, get().repos))
       } catch (err) {
         failed = true
         localCatalogOutcome = { status: 'rejected', reason: err }
+        options?.onRepoCatalogError?.(LOCAL_EXECUTION_HOST_ID)
         console.error('Failed to fetch local repos for all-host load:', err)
       }
       // Why: startup hydration needs the newest local catalog, not unreachable remote hosts.
@@ -148,7 +149,7 @@ export function createAllHostRepoCatalogActions(
           }
           claimRepoCatalogGeneration(get, getRuntimeTargetHostId(target), generation)
           const [catalogResult, visibilitySnapshot] = await Promise.all([
-            fetchRepoCatalogForTarget(target).then(
+            fetchRepoCatalogForTarget(target, get().repos).then(
               (catalog) => ({ ok: true as const, catalog }),
               (error: unknown) => ({ ok: false as const, error })
             ),
@@ -183,6 +184,7 @@ export function createAllHostRepoCatalogActions(
             applyCatalog(catalogResult.catalog)
           } else {
             failed = true
+            options?.onRepoCatalogError?.(hostId)
             console.warn(
               `Skipped repos for runtime environment ${environment.id}:`,
               catalogResult.error

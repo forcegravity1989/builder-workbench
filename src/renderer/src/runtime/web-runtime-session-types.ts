@@ -17,6 +17,7 @@ export type WebRuntimeTerminalCreateOutcome =
 export type CreateWebRuntimeSessionTerminalArgs = {
   worktreeId: string
   environmentId?: string | null
+  expectedEnvironmentRuntimeId?: string
   afterTabId?: string
   targetGroupId?: string
   command?: string
@@ -36,6 +37,13 @@ export type CreateWebRuntimeSessionTerminalArgs = {
   /** Explicit CLI override; omission leaves the remote host's defaults authoritative. */
   agentArgs?: string | null
   launchPreferences?: AgentLaunchPreferences
+  legacyAgentLaunch?: () => Promise<{
+    command?: string
+    env?: Record<string, string>
+    launchConfig?: SleepingAgentLaunchConfig
+    startupCommandDelivery?: StartupCommandDelivery
+    agentPrompt?: string
+  }>
   providerSession?: AgentProviderSessionMetadata
   viewMode?: 'terminal' | 'chat'
   activate?: boolean

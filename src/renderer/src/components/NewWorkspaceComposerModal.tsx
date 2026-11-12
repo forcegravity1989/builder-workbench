@@ -123,7 +123,6 @@ function QuickTabBody({
   isSubmissionCancelled: () => boolean
   active: boolean
 }): React.JSX.Element {
-  const settings = useAppStore((s) => s.settings)
   const {
     cardProps,
     composerRef,
@@ -171,16 +170,20 @@ function QuickTabBody({
     undefined
   )
   const preferredQuickAgent = useMemo<TuiAgent | null>(() => {
-    const pref = settings?.defaultTuiAgent
+    const pref = cardProps.agentLaunchPreferences.defaultTuiAgent
     // Why: detection can still be pending when quick-create submits; keep the
     // prior catalog fallback while filtering disabled agents out of that choice.
-    return pickQuickWorkspaceAgent(pref, cardProps.detectedAgentIds, settings?.disabledTuiAgents)
-  }, [cardProps.detectedAgentIds, settings?.defaultTuiAgent, settings?.disabledTuiAgents])
+    return pickQuickWorkspaceAgent(
+      pref,
+      cardProps.detectedAgentIds,
+      cardProps.agentLaunchPreferences.disabledTuiAgents
+    )
+  }, [cardProps.detectedAgentIds, cardProps.agentLaunchPreferences])
   const resolvedQuickAgentSelection = resolveQuickWorkspaceAgentSelection({
     quickAgentOverride,
     preferredQuickAgent,
     detectedAgentIds: cardProps.detectedAgentIds,
-    disabledTuiAgents: settings?.disabledTuiAgents
+    disabledTuiAgents: cardProps.agentLaunchPreferences.disabledTuiAgents
   })
   if (resolvedQuickAgentSelection.quickAgentOverride !== quickAgentOverride) {
     // Why: detection/settings changes can invalidate a user-picked agent; repair
@@ -194,8 +197,11 @@ function QuickTabBody({
   }, [])
 
   const handleCreate = useCallback(async (): Promise<void> => {
+    if (createDisabled) {
+      return
+    }
     await submitQuick(quickAgent)
-  }, [quickAgent, submitQuick])
+  }, [createDisabled, quickAgent, submitQuick])
   // Why: Add Project layers over the composer as a nested dialog instead of
   // replacing it in the activeModal slot — closing the composer mid-flow (and
   // losing the typed name/prompt) was the old, abrupt behavior. Once opened it
@@ -318,7 +324,11 @@ function QuickTabBody({
         onAddProjectOverride={handleOpenAddProject}
         onNestedDialogOpenChange={setSetLocationOpen}
       />
-      <AgentSettingsDialog open={agentSettingsOpen} onOpenChange={setAgentSettingsOpen} />
+      <AgentSettingsDialog
+        open={agentSettingsOpen}
+        onOpenChange={setAgentSettingsOpen}
+        runtimeEnvironmentId={cardProps.agentLaunchPreferences.owner?.environmentId ?? null}
+      />
       {addProjectMounted ? (
         <Suspense fallback={null}>
           <HostedAddRepoDialog hosted={addProjectController} />
