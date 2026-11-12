@@ -17885,6 +17885,7 @@
     "cliPrerequisite": "Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.",
     "cliTargetUnavailable": "CLI status cannot be checked for this execution host here. Manage it on that host, or skip this step.",
     "cliThisDevice": "This device",
+    "cliRuntimeTitle": "Orca CLI · {{runtime}}",
     "cliCurrentHost": "Current execution host",
     "cliChecking": "Checking CLI status…",
     "cliAvailable": "Registered and available on PATH",

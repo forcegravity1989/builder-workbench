@@ -19,7 +19,11 @@ export function SetupGuideCliRegistration({
     <div className="space-y-2 rounded-lg border border-border p-3">
       <div className="flex items-center gap-2 text-sm font-medium">
         <Terminal className="size-4" />
-        <span>Orca CLI · {cli.runtimeLabel}</span>
+        <span>
+          {translate('guidance.cliRuntimeTitle', 'Orca CLI · {{runtime}}', {
+            runtime: cli.runtimeLabel
+          })}
+        </span>
       </div>
       <p className="text-xs text-muted-foreground" role="status">
         {statusLabel}

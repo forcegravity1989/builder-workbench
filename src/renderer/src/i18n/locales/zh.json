@@ -15020,6 +15020,7 @@
     "cliPrerequisite": "打开配置前，{{product}} 可能会请求系统授权，将 Orca CLI 命令注册到 PATH。",
     "cliTargetUnavailable": "暂不能在此检查当前执行主机的 CLI。请在该主机管理，或跳过此项。",
     "cliThisDevice": "本机",
+    "cliRuntimeTitle": "Orca CLI · {{runtime}}",
     "cliCurrentHost": "当前执行主机",
     "cliChecking": "正在检查 CLI 状态…",
     "cliAvailable": "已注册，PATH 可用",
