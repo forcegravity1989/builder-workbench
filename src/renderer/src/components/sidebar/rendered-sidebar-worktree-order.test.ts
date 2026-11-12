@@ -321,6 +321,7 @@ describe('closed-sidebar Cmd+1-9 ordering (#9497)', () => {
     const other = makeWorktree('wt-other', { repoId: 'repo-other', isPinned: true, sortOrder: 3 })
     seedStore([], {
       activeRepoId: 'repo1',
+      filterRepoIds: ['repo-other'],
       repos: [
         makeRepo('repo1', { gitRemoteIdentity }),
         makeRepo('repo-ssh', { gitRemoteIdentity, connectionId: 'box' }),
@@ -344,5 +345,6 @@ describe('closed-sidebar Cmd+1-9 ordering (#9497)', () => {
       collapsedGroups: new Set([PINNED_GROUP_KEY])
     })
     expect(getVisibleWorktreeIds()).toEqual([remote.id])
+    expect(useAppStore.getState().filterRepoIds).toEqual(['repo-other'])
   })
 })
