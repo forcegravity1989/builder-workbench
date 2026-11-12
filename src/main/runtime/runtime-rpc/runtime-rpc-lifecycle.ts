@@ -21,6 +21,16 @@ import {
 
 export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
   async start(): Promise<void> {
+    if (this.stopping) {
+      return
+    }
+    this.startupPromise ??= this.startOnce().finally(() => {
+      this.startupPromise = null
+    })
+    return this.startupPromise
+  }
+
+  private async startOnce(): Promise<void> {
     if (this.activeTransports.length > 0) {
       return
     }
@@ -74,7 +84,7 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
     if (this.enableWebSocket) {
       // Why: land any deferred lastSeen write before a replacement registry reads the same file.
       this.deviceRegistry?.flushPendingLastSeen()
-      const pairingIdentity = this.initializePairingIdentity()
+      const pairingIdentity = await this.initializePairingIdentity()
       if (!pairingIdentity.ok) {
         this.deviceRegistry = null
         this.e2eeKeypair = null
@@ -105,32 +115,22 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
       }
     }
 
-    // Why: set in-memory transport state before writing metadata so the bootstrap file has the real endpoint/token pair.
-    this.activeTransports = activeTransports
-    this.transports = transportsMeta
-
     try {
-      this.writeMetadata()
+      await this.writeMetadata(transportsMeta)
     } catch (error) {
       // Why: a runtime that can't publish metadata is invisible to the CLI — close transports rather than run undiscoverable.
-      this.activeTransports = []
-      this.transports = []
       await Promise.all(activeTransports.map((t) => t.stop().catch(() => {}))).catch(() => {})
       throw error
     }
 
+    this.activeTransports = activeTransports
+    this.transports = transportsMeta
     this.metadataOwnershipWatch = watchRuntimeMetadataOwnership({
       userDataPath: this.userDataPath,
       ownedPid: this.pid,
       ownedRuntimeId: this.runtime.getRuntimeId(),
       pollIntervalMs: this.metadataOwnershipPollMs,
-      republish: () => {
-        // Why: never advertise endpoints we already tore down.
-        if (this.activeTransports.length === 0) {
-          return
-        }
-        this.writeMetadata()
-      },
+      republish: (canPublish) => this.writeMetadata(this.transports, canPublish),
       onReclaim: (previous) => {
         console.warn(
           `[runtime] Reclaimed orca-runtime.json from a dead runtime (pid ${previous?.pid ?? 'none'}); republished pid ${this.pid}.`

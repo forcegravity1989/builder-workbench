@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeSpawnDispatch } from '../../shared/child-process/__fixtures__/fake-spawned-child'
 import type * as WslModule from '../wsl'
 
-const { execFileSyncMock, spawnMock, getDefaultWslDistroMock } = vi.hoisted(() => ({
+const { execFileSyncMock, spawnMock, listWslDistrosAsyncMock } = vi.hoisted(() => ({
   execFileSyncMock: vi.fn(),
   spawnMock: vi.fn(),
-  getDefaultWslDistroMock: vi.fn()
+  listWslDistrosAsyncMock: vi.fn()
 }))
 
 vi.mock('child_process', () => ({
@@ -16,7 +16,7 @@ vi.mock('child_process', () => ({
 
 vi.mock('../wsl', async (importOriginal) => ({
   ...(await importOriginal<typeof WslModule>()),
-  getDefaultWslDistro: getDefaultWslDistroMock
+  listWslDistrosAsync: listWslDistrosAsyncMock
 }))
 
 import { setDefaultWslDistroOverride } from '../git/runner'
@@ -37,8 +37,8 @@ describe('glab known-hosts probe on Windows', () => {
 
   beforeEach(() => {
     spawnMock.mockReset()
-    getDefaultWslDistroMock.mockReset()
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockReset()
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     setDefaultWslDistroOverride(null)
     _resetKnownHostsCache()
     Object.defineProperty(process, 'platform', { configurable: true, value: 'win32' })

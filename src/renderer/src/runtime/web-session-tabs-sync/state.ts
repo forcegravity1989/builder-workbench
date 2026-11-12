@@ -206,6 +206,7 @@ export type WebSessionTabsSyncState = Pick<
       | 'activityClearedAtByPaneKey'
       | 'agentLaunchConfigByPaneKey'
       | 'automaticAgentResumeClaimsByTabId'
+      | 'editorDrafts'
       | 'migrationUnsupportedByPtyId'
       | 'manuallyUnreadTurnsByPaneKey'
       | 'paneForegroundAgentByPaneKey'

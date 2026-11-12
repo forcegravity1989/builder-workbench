@@ -10,8 +10,11 @@ import { getProjectHostSetupProjectionFromState } from '@/store/project-host-set
 import { buildWorkbenchSectionRows } from './worktree-list/listing/workbench-section-rows'
 import { buildRows } from './worktree-list/grouping/build-rows'
 import { getPinnedWorktreeDisplayPolicy } from './worktree-list/grouping/row-types'
-import { scopeWorktreesForVersionSidebar } from './worktree-list/listing/use-version-scoped-worktrees'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import {
+  getWorkbenchSidebarProject,
+  scopeFolderWorkspacesForVersionSidebar,
+  scopeWorktreesForVersionSidebar
+} from './worktree-list/listing/use-version-scoped-worktrees'
 import { getVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import { addHostSectionRows } from './host-section-rows'
 import { orderHostSectionOptions } from './host-section-order'
@@ -57,20 +60,18 @@ export function computeRenderedSidebarWorktrees(
     state.worktreeCardProperties
   )
 
-  // Why (#500): this path replays the sidebar pipeline, so it must scope the
-  // same trees the sidebar does — otherwise a pinned bound tree is numbered in
-  // a natural group it never renders in.
-  const activeRepoId = state.activeRepoId ?? state.repos[0]?.id ?? null
-  const versionProjection = getVersionSidebarProjection()
+  const workbenchProject = getWorkbenchSidebarProject(state, getVersionSidebarProjection())
   const versionScoped = scopeWorktreesForVersionSidebar({
-    workbenchProject:
-      isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
-        ? versionProjection
-        : undefined,
+    workbenchProject,
     filteredWorktrees: visibleWorktrees,
     worktreeLineageById: state.worktreeLineageById,
     worktreeMap: getWorktreeMapFromState(state)
   })
+  const visibleProjectGroups = filterProjectGroupsForVisibleHosts(
+    workbenchProject?.groups ?? projectGroups,
+    visibleHostIdSet,
+    defaultHostId
+  )
 
   const rows = buildRows(
     state.groupBy,
@@ -85,18 +86,21 @@ export function computeRenderedSidebarWorktrees(
     getWorktreeMapFromState(state),
     true,
     state.settings,
-    filterProjectGroupsForVisibleHosts(projectGroups, visibleHostIdSet, defaultHostId),
+    visibleProjectGroups,
     // Why empty: placeholder/imported/inbox/pending inputs never emit item or folder-workspace rows, the only two the order reads.
     EMPTY_REPO_ID_SET,
     EMPTY_IMPORTED_BY_REPO,
     EMPTY_INBOX_BY_REPO,
     EMPTY_PENDING_CREATIONS,
     { projects: projection.projects, projectHostSetups: projection.setups },
-    filterFolderWorkspacesForVisibleHosts(
-      state.folderWorkspaces,
-      projectGroups,
-      visibleHostIdSet,
-      defaultHostId
+    scopeFolderWorkspacesForVersionSidebar(
+      filterFolderWorkspacesForVisibleHosts(
+        state.folderWorkspaces,
+        projectGroups,
+        visibleHostIdSet,
+        defaultHostId
+      ),
+      workbenchProject?.groups
     ),
     // Why no hostLabelById: it only feeds display-only host context labels, never row order.
     undefined,
@@ -111,17 +115,12 @@ export function computeRenderedSidebarWorktrees(
     state.workspaceHostScope !== ALL_EXECUTION_HOSTS_SCOPE || state.visibleWorkspaceHostIds != null
   const sectionRows = buildWorkbenchSectionRows({
     rows,
-    workbench: isWorkbenchShell(),
+    workbench: workbenchProject !== undefined,
     groupBy: state.groupBy,
-    repoIds:
-      versionProjection.repoId === activeRepoId
-        ? versionProjection.repoIds
-        : activeRepoId
-          ? [activeRepoId]
-          : [],
+    repoIds: workbenchProject?.repoIds ?? [],
     repoMap: getRepoMapFromState(state),
     projectGrouping: { projects: projection.projects, projectHostSetups: projection.setups },
-    projectGroups,
+    projectGroups: workbenchProject ? visibleProjectGroups : projectGroups,
     withHostSections: (naturalRows) =>
       needsHostSections
         ? addHostSectionRows({

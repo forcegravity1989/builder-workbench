@@ -3,6 +3,8 @@
 <!--
 面向交付者与评审者的短正文骨架；先完整读取[交付细则](../docs/development.md)。
 格式变化时同步该正本与验证模板。正文只写最终结果，验证对照和检视处置放一条主验证评论；补验原位更新。
+首个非空、非 HTML 注释行填写“关联 #编号”，多个可写“关联 #123、#456”；每个编号须为本仓真实 Issue（已有或已关闭均可），不能填 PR 编号。
+固定流程分支按 docs/development.md「首行 Issue 关联与门禁」豁免，可删除首行占位；其他 PR 必须补全，不能只在背景中提到 Issue。
 先按 standard/references/issue-state.md 查同类 Issue，无则新建；不用 Fixes / Closes，Issue 完成由人决定。
 -->
 
