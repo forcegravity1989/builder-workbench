@@ -12,18 +12,8 @@ const base = {
 }
 
 describe('interpretOutcome', () => {
-  it('passes clean stdout through', () => {
+  it('maps collector stdout: clean output passes through, truncation never yields partial JSON', () => {
     expect(interpretOutcome({ ...base }, 900_000)).toEqual({ stdout: '{"value":1}' })
-  })
-  it('maps timeout to a collector error instead of readings', () => {
-    expect(() => interpretOutcome({ ...base, timedOut: true }, 900_000)).toThrowError(
-      expect.objectContaining({
-        name: 'MetricCollectorError',
-        code: 'collector-timeout'
-      })
-    )
-  })
-  it('maps truncated output to an unusable reading, never partial JSON', () => {
     let error: unknown = null
     try {
       interpretOutcome({ ...base, outputTruncated: true, stdout: '{"value":1' }, 900_000)
@@ -33,7 +23,13 @@ describe('interpretOutcome', () => {
     expect(error).toBeInstanceOf(MetricCollectorError)
     expect((error as MetricCollectorError).code).toBe('output-truncated')
   })
-  it('maps non-zero exit with stderr tail to a collector failure', () => {
+  it('maps timeout and non-zero exit to typed collector errors instead of readings', () => {
+    expect(() => interpretOutcome({ ...base, timedOut: true }, 900_000)).toThrowError(
+      expect.objectContaining({
+        name: 'MetricCollectorError',
+        code: 'collector-timeout'
+      })
+    )
     expect(() => interpretOutcome({ ...base, code: 2, stderr: 'boom' }, 900_000)).toThrowError(
       expect.objectContaining({
         name: 'MetricCollectorError',

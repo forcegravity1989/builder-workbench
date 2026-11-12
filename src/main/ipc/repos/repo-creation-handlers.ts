@@ -3,7 +3,7 @@ import { ipcMain } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { access, mkdir, readdir, rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { isAbsolute, join } from 'node:path'
+import { isAbsolute, join, win32 } from 'node:path'
 import type { Store } from '../../persistence'
 import type { Repo } from '../../../shared/repo-types'
 import { DEFAULT_REPO_BADGE_COLOR, getDefaultWorkspaceDir } from '../../../shared/constants'
@@ -14,6 +14,10 @@ import { probeGitAvailability } from '../../git/git-availability'
 import { gitExecFileAsync } from '../../git/runner'
 import { detectRepoIconAndUpstream } from '../../repo-icon-autodetect'
 import { prepareLocalWorktreeRootForRepo } from '../../worktree-root-preparation'
+import {
+  isWorkbenchProduct,
+  WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
+} from '../../startup/workbench-product'
 import { invalidateAuthorizedRootsCache } from '../registered-worktree-roots-cache'
 import { emitRepoAdded } from './repo-added-telemetry'
 import { notifyReposChanged } from './repos-changed-notification'
@@ -37,7 +41,7 @@ export async function probeLocalGitAvailability(): Promise<boolean> {
  * override for the local host, which is the only scope this handler answers for.
  *
  * Why the untouched default does not count: `workspaceDir` is never blank -- new
- * installs seed it with `~/orca/workspaces`. Treating that seeded value as a choice
+ * installs seed a worktree root. Treating that seeded value as a choice
  * would silently relocate every existing user's projects into the worktree root,
  * where each project would then host its own worktrees inside its working tree.
  */
@@ -50,6 +54,13 @@ function getDefaultCreateProjectParent(store: Store): string {
     'defaultWorktreeLocation',
     settings.workspaceDir ?? ''
   ).trim()
+  if (
+    isWorkbenchProduct() &&
+    normalizeRuntimePathForComparison(configured) ===
+      normalizeRuntimePathForComparison(WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR)
+  ) {
+    return win32.join(WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR, '..', 'projects')
+  }
   const isUntouchedDefault =
     normalizeRuntimePathForComparison(configured) ===
     normalizeRuntimePathForComparison(getDefaultWorkspaceDir(home))

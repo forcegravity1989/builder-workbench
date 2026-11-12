@@ -1,4 +1,4 @@
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
   PackageDownloadSchema,
   PackageLatestSchema,
@@ -9,25 +9,25 @@ import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-res
 import { packagePipelineService } from '../../../workbench/package-pipeline-runtime'
 
 export const WORKBENCH_PACKAGE_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.package.list',
     params: PackagePipelineListSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => packagePipelineService(runtime).list(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.package.latest',
     params: PackageLatestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => packagePipelineService(runtime).latest(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.package.launch',
     params: PackageLaunchSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => packagePipelineService(runtime).launch(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.package.download',
     params: PackageDownloadSchema,
     handler: (params, { runtime }) =>

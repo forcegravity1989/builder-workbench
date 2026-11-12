@@ -1,4 +1,4 @@
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
   VersionBindingScopeSchema,
   VersionBindingSetSchema
@@ -7,13 +7,13 @@ import { materialResult } from '../../../workbench/version-material-error'
 import { nativeVersionBindingService } from '../../../workbench/version-binding-service'
 
 export const WORKBENCH_VERSION_BINDING_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.versionBinding.read',
     params: VersionBindingScopeSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionBindingService(runtime).read(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.versionBinding.set',
     params: VersionBindingSetSchema,
     handler: (params, { runtime }) =>

@@ -1,4 +1,4 @@
-import { ghExecFileAsync } from '../github/gh-utils'
+import { bwGhExecFileAsync } from './workbench-exec-observability'
 import { repositoryRateLimitGuard, noteRepositoryRateLimitSpend } from '../github/rate-limit'
 import { OverviewPullSchema } from '../../shared/workbench/overview-pull'
 import type { WorkflowCommentsRequest } from '../../shared/workbench/workflow-comments'
@@ -27,7 +27,7 @@ export async function readOverviewPull(
   }
   noteRepositoryRateLimitSpend(owner, 'core', 1, options)
   const { stdout } = await withOverviewReadPermit(() =>
-    ghExecFileAsync(['api', `repos/${owner.owner}/${owner.repo}/pulls/${params.pr.number}`], {
+    bwGhExecFileAsync(['api', `repos/${owner.owner}/${owner.repo}/pulls/${params.pr.number}`], {
       ...options,
       timeout: 30_000
     })

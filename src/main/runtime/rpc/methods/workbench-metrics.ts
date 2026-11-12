@@ -1,25 +1,29 @@
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import { MetricScopeSchema, MetricReadRequestSchema } from '../../../../shared/workbench/metrics'
 import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-result'
 import { nativeMetricsService } from '../../../workbench/metrics-runtime'
+import { metricReadingFailureCode } from '../../../workbench/metrics/collector-service'
 
 export const WORKBENCH_METRICS_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.metrics.list',
     params: MetricScopeSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMetricsService(runtime).list(params))
   }),
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.metrics.read',
     params: MetricReadRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMetricsService(runtime).read(params))
   }),
-  defineMethod({
-    name: 'workbench.metrics.refresh',
-    params: MetricReadRequestSchema,
-    handler: (params, { runtime }) =>
-      workbenchRuntimeResult(() => nativeMetricsService(runtime).refresh(params))
-  })
+  defineWorkbenchMethod(
+    {
+      name: 'workbench.metrics.refresh',
+      params: MetricReadRequestSchema,
+      handler: (params, { runtime }) =>
+        workbenchRuntimeResult(() => nativeMetricsService(runtime).refresh(params))
+    },
+    (result) => (result.ok ? metricReadingFailureCode(result.value) : undefined)
+  )
 ]

@@ -1,10 +1,6 @@
 import { parseWslPath } from '../wsl'
-import {
-  getOwnerRepo,
-  ghExecFileAsync,
-  ghRepoExecOptions,
-  githubRepoContext
-} from '../github/gh-utils'
+import { getOwnerRepo, ghRepoExecOptions, githubRepoContext } from '../github/gh-utils'
+import { bwGhExecFileAsync } from './workbench-exec-observability'
 import { githubHostExecOptions } from '../github/github-api-repository'
 import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
 import {
@@ -214,7 +210,7 @@ export async function readArchivePrStatus(
   }
   try {
     noteRepositoryRateLimitSpend(ownerRepo, 'core', 1, ghOptions)
-    const { stdout } = await ghExecFileAsync(
+    const { stdout } = await bwGhExecFileAsync(
       ['api', `repos/${ownerRepo.owner}/${ownerRepo.repo}/pulls/${params.pr.number}`],
       ghOptions
     )

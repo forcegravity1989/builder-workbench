@@ -197,6 +197,36 @@ it('preserves conflicting or unsafe milestone materials and client recovery snap
     })
     expect(planned.snapshot.material.schema_version).toBe(4)
     expect(milestoneDraft(planned.snapshot).material).not.toHaveProperty('versionPlans')
+    const roadmap = {
+      ...planned.snapshot.material,
+      versionPlans: [
+        { version: 'v1', cycleId: 'current', timeWindow: plannedWindow },
+        { version: 'v3', cycleId: 'schedule-only', timeWindow: plannedWindow }
+      ]
+    }
+    await writeFile(join(repo, project), JSON.stringify(roadmap))
+    const scheduledHead = commit()
+    const scheduled = await readMilestoneSnapshot(repo, scheduledHead, {}, new Set())
+    expect(scheduled.snapshot.problems).toEqual([])
+    expect(scheduled.snapshot.versions.find((v) => v.version === 'v3')).toEqual({
+      ...roadmap.versionPlans[1],
+      started: false
+    })
+    expect(scheduled.registeredVersions.map((v) => v.version)).toContain('v3')
+    expect(scheduled.plans.has('schedule-only')).toBe(false)
+    expect(await readdir(join(repo, '.bw/planning'))).not.toContain('v3')
+    const active = await readMilestoneSnapshot(repo, scheduledHead, {}, new Set(['v3']))
+    expect(active.snapshot.versions.find((v) => v.version === 'v3')?.started).toBe(true)
+    await writeFile(
+      join(repo, project),
+      JSON.stringify({
+        ...roadmap,
+        versionPlans: [{ version: 'v1', cycleId: 'different', timeWindow: plannedWindow }]
+      })
+    )
+    expect((await readMilestoneSnapshot(repo, commit(), {}, new Set())).snapshot.problems).toEqual([
+      'v1：里程碑规划与版本计划身份不一致，请核对材料'
+    ])
   } finally {
     await rm(root, { recursive: true, force: true })
   }

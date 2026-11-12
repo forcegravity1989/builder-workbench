@@ -11,7 +11,8 @@ import type {
   CharterRemoteProbe
 } from '../../shared/workbench/charter'
 import { parseCodeHubRemote } from '../../shared/codehub'
-import { acquire, extractExecError, ghExecFileAsync, release } from '../github/gh-utils'
+import { acquire, extractExecError, release } from '../github/gh-utils'
+import { bwGhExecFileAsync } from './workbench-exec-observability'
 import { parseGitHubRemoteIdentity } from '../github/github-remote-identity-parsing'
 import { githubHostExecOptions } from '../github/github-repository-host'
 import { fetchCodeHubRepoFileRaw, viewCodeHubProject } from '../codehub/repo-reads'
@@ -88,7 +89,7 @@ export async function probeRemoteCharter(params: CharterProbeRequest): Promise<C
     let repoReadable = false
     let repoError = ''
     try {
-      const { stdout } = await ghExecFileAsync(
+      const { stdout } = await bwGhExecFileAsync(
         ['repo', 'view', slug, '--json', 'defaultBranchRef,nameWithOwner'],
         { ...ghOptions, timeout: 30_000 }
       )
@@ -99,7 +100,7 @@ export async function probeRemoteCharter(params: CharterProbeRequest): Promise<C
       repoError = execMessage(e)
     }
     try {
-      const { stdout } = await ghExecFileAsync(
+      const { stdout } = await bwGhExecFileAsync(
         [
           'api',
           '-H',
