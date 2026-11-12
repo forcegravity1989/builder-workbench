@@ -7474,8 +7474,8 @@
           "f7eb5f0b24": "Not installed",
           "codeHostGroupTitle": "Code hosting",
           "codeHostGroupDescription": "CLIs for tasks, pull requests, merge requests, and review status.",
-          "imGroupTitle": "Project group",
-          "imGroupDescription": "CLIs for posting version and acceptance updates to the project group.",
+          "imGroupTitle": "Reports and diagnostics",
+          "imGroupDescription": "Send reports and diagnostic files to the BW user-group space.",
           "buildGroupTitle": "Build",
           "buildGroupDescription": "CLIs for pipeline execution and package builds."
         },
@@ -9829,7 +9829,7 @@
             "codehubKeyword": "codehub",
             "codehubCliKeyword": "codehub-cli",
             "welinkTitle": "WeLink Integration",
-            "welinkDescription": "welink-cli presence and login for project group notifications.",
+            "welinkDescription": "welink-cli installation and login for reports and diagnostics in the BW user-group space.",
             "welinkKeyword": "welink",
             "welinkCliKeyword": "welink-cli",
             "cloudbuildTitle": "CloudBuild Integration",
@@ -10650,13 +10650,13 @@
                   "statusNotAuthenticated": "Not authenticated",
                   "codehubDescription": "Issues and merge requests via the",
                   "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
-                  "codehubMissing": "codehub-cli is not on PATH.",
+                  "codehubMissing": "codehub-cli is not on PATH. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
                   "codehubInstallButton": "Install CodeHub CLI",
                   "codehubNotAuthenticated": "codehub-cli is installed but not authenticated.",
                   "codehubAuthLoginCommand": "codehub-cli auth login --all",
-                  "welinkDescription": "Project group notifications via the",
+                  "welinkDescription": "Reports and diagnostics via the",
                   "welinkUnavailable": "welink-cli status is not available in this runtime yet.",
-                  "welinkMissing": "Install welink-cli to enable project group notifications.",
+                  "welinkMissing": "Install welink-cli to send reports and diagnostic files to the BW user-group space. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
                   "welinkNotAuthenticated": "welink-cli is installed but not authenticated.",
                   "welinkInstallButton": "Install WeLink CLI",
                   "welinkAuthLoginCommand": "welink-cli auth login",
@@ -13454,6 +13454,8 @@
         "IntegrationsStep": {
           "277f30eb34": "Linear, GitLab, Bitbucket, Azure DevOps, Gitea, and Jira live in Settings > Integrations.",
           "3a3e360289": "More task sources",
+          "bw_setup_later": "Set up later",
+          "bw_setup_later_description": "You can connect or retry GitHub and CodeHub in Settings → Integrations.",
           "80e3ce0bc9": "Re-check",
           "04ef416712": "Add Linear access",
           "dd9c186a8b": "Add workspace access",
@@ -13896,13 +13898,14 @@
             "13294d3405": "Done"
           },
           "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "Add a git project first, then configure the setup script for that repository.",
+            "486c2f4d8d": "Select a Git project first, then configure its setup script here.",
+            "target_project": "Target project: {{project}}",
             "00078a6134": "View in settings",
             "14327073cc": "Save",
             "88469e926b": "Setup script",
-            "5c5b65044e": "pnpm install",
+            "5c5b65044e": "Example: pnpm install",
             "a7463915b6": "Failed to save setup script",
-            "6299297dac": "Setup script saved",
+            "6299297dac": "Setup script saved for {{project}}",
             "f0bbf7da77": "Try it out",
             "522cce9e33": "Add project"
           },
@@ -14166,10 +14169,13 @@
             "list_pair": " and ",
             "list_mid": ", ",
             "code_host_tasks_summary": "issues available as tasks · add Linear or Jira if your team plans work there",
+            "bw_code_host_description": "Connect either provider to use tasks and see code review status.",
             "code_host_tasks_caption": "Your code host's issues also work as tasks.",
             "review_step_title": "See PR status while agents work",
             "review_step_description": "Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.",
-            "task_step_title": "Start agents on your tasks without leaving {{product}}"
+            "task_step_title": "Start agents on your tasks without leaving {{product}}",
+            "reports_title": "Reports and diagnostics (optional)",
+            "reports_description": "Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations."
           },
           "connect": {
             "integration": {

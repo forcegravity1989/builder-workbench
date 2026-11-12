@@ -222,6 +222,13 @@ jobs:
           src/preload/api/platform-bridge.test.ts
           src/renderer/src/lib/codehub-api.test.ts
           src/renderer/src/components/task-page/codehub
+          src/renderer/src/components/feature-wall/use-integration-connection-status.test.ts
+          src/renderer/src/components/feature-wall/feature-wall-setup-progress.test.ts
+          src/renderer/src/components/setup-guide/use-setup-guide-progress.test.ts
+          src/renderer/src/components/setup-guide/use-setup-guide-telemetry.test.ts
+          src/renderer/src/lib/feature-education-telemetry.test.ts
+          src/shared/telemetry-events-feature-education.test.ts
+          src/renderer/src/components/settings/settings-setup-guide-progress.test.ts
 
       - name: Test native usage protocols and account integration
         run: >-

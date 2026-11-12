@@ -4,7 +4,10 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/store'
-import { useAllWorktrees } from '@/store/selectors'
+import { useActiveRepo, useAllWorktrees } from '@/store/selectors'
+import { getRepoHostIdentity } from '@/store/slices/repo-host-identity'
+import { selectExecutionHostDisplayLabel } from '@/lib/execution-host-display-label'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import { getDefaultRepoHookSettings } from '../../../../shared/constants'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import type { RepoHookSettings } from '../../../../shared/orca-yaml-hook-types'
@@ -92,33 +95,44 @@ export function WorkspacesAction(props: { done: boolean }): React.JSX.Element | 
 }
 
 export function SetupScriptAction(): React.JSX.Element {
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId)
+  const repo = useActiveRepo()
+  if (!repo || !isGitRepoKind(repo)) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        {translate(
+          'auto.components.feature.wall.FeatureWallSetupWorkflowActions.486c2f4d8d',
+          'Select a Git project first, then configure its setup script here.'
+        )}
+      </p>
+    )
+  }
+
+  // Remount the draft with its target so a project switch cannot reuse another project's command.
+  return <SetupScriptEditor key={getRepoHostIdentity(repo)} repo={repo} />
+}
+
+function SetupScriptEditor({ repo }: { repo: Repo }): React.JSX.Element {
+  const hostLabel = useAppStore((s) =>
+    selectExecutionHostDisplayLabel(s, getRepoExecutionHostId(repo))
+  )
   const closeModal = useAppStore((s) => s.closeModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const setSettingsSearchQuery = useAppStore((s) => s.setSettingsSearchQuery)
   const updateRepo = useAppStore((s) => s.updateRepo)
-  const repo = getSetupGuideGitRepo(repos, activeRepoId)
-  const canConfigure = repo !== null
-  const [setupScript, setSetupScript] = useState('pnpm install')
+  const savedSetupScript = repo.hookSettings?.scripts?.setup ?? ''
+  const [setupScript, setSetupScript] = useState(savedSetupScript)
 
   useEffect(() => {
-    if (!canConfigure) {
-      setSetupScript('pnpm install')
-      return
-    }
-    setSetupScript(repo.hookSettings?.scripts?.setup?.trim() || 'pnpm install')
-  }, [canConfigure, repo])
+    setSetupScript(savedSetupScript)
+  }, [savedSetupScript])
 
   const openLocalCommandSettings = useCallback(() => {
-    if (!repo || !isGitRepoKind(repo)) {
-      return
-    }
     setSettingsSearchQuery('')
     openSettingsTarget({
       pane: 'repo',
       repoId: repo.id,
+      hostId: getRepoExecutionHostId(repo),
       sectionId: getRepositoryLocalCommandsSectionId(repo.id)
     })
     closeModal()
@@ -126,7 +140,7 @@ export function SetupScriptAction(): React.JSX.Element {
   }, [closeModal, openSettingsPage, openSettingsTarget, repo, setSettingsSearchQuery])
 
   const handleSaveSetupScript = useCallback(async () => {
-    if (!repo || !isGitRepoKind(repo)) {
+    if (!setupScript.trim()) {
       return
     }
     const current = repo.hookSettings
@@ -143,12 +157,17 @@ export function SetupScriptAction(): React.JSX.Element {
         setup: setupScript.trim()
       }
     }
-    const updated = await updateRepo(repo.id, { hookSettings: nextHookSettings })
+    const updated = await updateRepo(
+      repo.id,
+      { hookSettings: nextHookSettings },
+      { hostId: getRepoExecutionHostId(repo) }
+    )
     if (updated) {
       toast.success(
         translate(
           'auto.components.feature.wall.FeatureWallSetupWorkflowActions.6299297dac',
-          'Setup script saved'
+          'Setup script saved for {{project}}',
+          { project: repo.displayName }
         )
       )
     } else {
@@ -163,14 +182,24 @@ export function SetupScriptAction(): React.JSX.Element {
 
   return (
     <div className="space-y-4">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">
+          {translate(
+            'auto.components.feature.wall.FeatureWallSetupWorkflowActions.target_project',
+            'Target project: {{project}}',
+            { project: repo.displayName }
+          )}
+        </p>
+        <p className="text-xs text-muted-foreground">{hostLabel}</p>
+        <p className="break-all font-mono text-xs text-muted-foreground">{repo.path}</p>
+      </div>
       <div className="grid max-w-2xl gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <Input
           value={setupScript}
-          disabled={!canConfigure}
           onChange={(event) => setSetupScript(event.target.value)}
           placeholder={translate(
             'auto.components.feature.wall.FeatureWallSetupWorkflowActions.5c5b65044e',
-            'pnpm install'
+            'Example: pnpm install'
           )}
           aria-label={translate(
             'auto.components.feature.wall.FeatureWallSetupWorkflowActions.88469e926b',
@@ -182,7 +211,7 @@ export function SetupScriptAction(): React.JSX.Element {
           type="button"
           size="sm"
           className="gap-2"
-          disabled={!canConfigure || setupScript.trim().length === 0}
+          disabled={setupScript.trim().length === 0}
           onClick={() => void handleSaveSetupScript()}
         >
           <Save className="size-3.5" />
@@ -197,7 +226,6 @@ export function SetupScriptAction(): React.JSX.Element {
         variant="ghost"
         size="sm"
         className="w-fit gap-2 px-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
-        disabled={!canConfigure}
         onClick={openLocalCommandSettings}
       >
         <Settings className="size-3.5" />
@@ -206,14 +234,6 @@ export function SetupScriptAction(): React.JSX.Element {
           'View in settings'
         )}
       </Button>
-      {!canConfigure ? (
-        <p className="text-xs text-muted-foreground">
-          {translate(
-            'auto.components.feature.wall.FeatureWallSetupWorkflowActions.486c2f4d8d',
-            'Add a git project first, then configure the setup script for that repository.'
-          )}
-        </p>
-      ) : null}
     </div>
   )
 }

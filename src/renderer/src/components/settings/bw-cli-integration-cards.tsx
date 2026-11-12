@@ -72,8 +72,7 @@ function BwCliIntegrationCard(config: BwCliCardConfig): React.JSX.Element {
       name={config.name}
       description={
         <>
-          {config.descriptionLead()}{' '}
-          <span className="font-mono text-[11px]">{config.cliName}</span>{' '}
+          {config.descriptionLead()} <span className="font-mono text-[11px]">{config.cliName}</span>{' '}
           {translate(
             'auto.components.settings.cli.source.control.integration.cards.a47f71e357',
             'CLI.'
@@ -222,7 +221,7 @@ export function CodeHubIntegrationCard(): React.JSX.Element {
       missingCopy={() =>
         translate(
           'auto.components.settings.cli.source.control.integration.cards.codehubMissing',
-          'codehub-cli is not on PATH.'
+          'codehub-cli is not on PATH. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.'
         )
       }
       installButtonCopy={() =>
@@ -273,7 +272,7 @@ export function WeLinkIntegrationCard(): React.JSX.Element {
       descriptionLead={() =>
         translate(
           'auto.components.settings.cli.source.control.integration.cards.welinkDescription',
-          'Project group notifications via the'
+          'Reports and diagnostics via the'
         )
       }
       unavailableCopy={() =>
@@ -285,7 +284,7 @@ export function WeLinkIntegrationCard(): React.JSX.Element {
       missingCopy={() =>
         translate(
           'auto.components.settings.cli.source.control.integration.cards.welinkMissing',
-          'Install welink-cli to enable project group notifications.'
+          'Install welink-cli to send reports and diagnostic files to the BW user-group space. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.'
         )
       }
       installButtonCopy={() =>
