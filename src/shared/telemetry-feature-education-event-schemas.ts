@@ -19,6 +19,8 @@ export const setupGuideStepIdOrNoneSchema = z.enum([
   'none'
 ] as const)
 export const terminalPaneSplitSourceSchema = z.enum(TERMINAL_PANE_SPLIT_SOURCES)
+// BW omits the CLI step; native Orca and older clients still report eight steps.
+const setupGuideTotalStepsSchema = z.number().int().min(7).max(8)
 
 export const contextualTourShownSchema = z
   .object({
@@ -66,8 +68,12 @@ export const setupGuideOpenedSchema = z
   .object({
     source: setupGuideSourceSchema,
     initial_completed_count: z.number().int().min(0).max(8),
-    total_steps: z.literal(8),
+    total_steps: setupGuideTotalStepsSchema,
     first_incomplete_step_id: setupGuideStepIdOrNoneSchema
+  })
+  .refine((payload) => payload.initial_completed_count <= payload.total_steps, {
+    message: 'initial_completed_count must be less than or equal to total_steps',
+    path: ['initial_completed_count']
   })
   .strict()
 
@@ -77,11 +83,15 @@ export const setupGuideClosedSchema = z
     outcome: setupGuideCloseOutcomeSchema,
     initial_completed_count: z.number().int().min(0).max(8),
     final_completed_count: z.number().int().min(0).max(8),
-    total_steps: z.literal(8),
+    total_steps: setupGuideTotalStepsSchema,
     active_step_id: setupGuideStepIdOrNoneSchema
   })
   .refine((payload) => payload.final_completed_count >= payload.initial_completed_count, {
     message: 'final_completed_count must be greater than or equal to initial_completed_count',
+    path: ['final_completed_count']
+  })
+  .refine((payload) => payload.final_completed_count <= payload.total_steps, {
+    message: 'final_completed_count must be less than or equal to total_steps',
     path: ['final_completed_count']
   })
   .strict()
@@ -91,8 +101,12 @@ export const setupGuideStepCompletedSchema = z
     step_id: setupGuideStepIdSchema,
     section_id: z.enum(['parallel-work', 'setup']),
     completed_count: z.number().int().min(1).max(8),
-    total_steps: z.literal(8),
+    total_steps: setupGuideTotalStepsSchema,
     setup_guide_visible: z.boolean()
+  })
+  .refine((payload) => payload.completed_count <= payload.total_steps, {
+    message: 'completed_count must be less than or equal to total_steps',
+    path: ['completed_count']
   })
   .strict()
 
