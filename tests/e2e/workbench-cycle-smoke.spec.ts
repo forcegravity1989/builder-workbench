@@ -36,6 +36,39 @@ test.use({
   }
 })
 
+test.describe('BW first-run project handoff', () => {
+  test.use({ dismissOnboarding: false, seedTestRepo: false })
+
+  test('opens Add Project over the empty project wall and stays there after cancel', async ({
+    workbenchPage
+  }, testInfo) => {
+    const onboarding = workbenchPage.locator('[data-onboarding-modal]')
+    const title = onboarding.getByRole('heading', { level: 1 })
+    const next = onboarding.locator('footer').getByRole('button', { name: /^(Continue|继续)/ })
+    const addFirstProject = onboarding.locator('footer').getByRole('button', {
+      name: /^(Add your first project|添加第一个项目)/
+    })
+    await expect(title).toHaveText(/Pick your default agent|选择默认智能体/)
+    for (let step = 0; step < 4 && !(await addFirstProject.isVisible()); step++) {
+      const previousTitle = await title.innerText()
+      await next.click()
+      await expect(title).not.toHaveText(previousTitle)
+    }
+    await addFirstProject.click()
+
+    const wall = workbenchPage.locator('[data-screen="wall"]')
+    const dialog = workbenchPage.getByRole('dialog', { name: /^(Add a project|添加项目)$/ })
+    await expect(dialog).toBeVisible()
+    await expect(wall.getByText('从一个项目开始', { exact: true })).toBeVisible()
+    await workbenchPage.screenshot({ path: testInfo.outputPath('bw-first-run-add-project.png') })
+
+    await workbenchPage.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(wall.getByRole('heading', { name: '从一个项目开始' })).toBeVisible()
+    await workbenchPage.screenshot({ path: testInfo.outputPath('bw-first-run-cancel-add.png') })
+  })
+})
+
 isolatedProjectTest(
   'BW project settings: reviewed edits, conflict protection and filesystem read-back',
   async ({ workbenchPage, seededRepoPath }, testInfo) => {
