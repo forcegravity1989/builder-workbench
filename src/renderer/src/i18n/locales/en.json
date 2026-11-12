@@ -5183,6 +5183,8 @@
           "3e64e8a70d": "Connection failed",
           "32a7256d85": "Clone",
           "69f5b5380d": "Cloning...",
+          "finishingClone": "Finishing clone…",
+          "importingProject": "Importing project…",
           "cloneOnHostDescription": "Enter the Git URL and choose where to clone it on {{value0}}.",
           "cloneParentFolder": "Parent folder",
           "remoteCloneParentPlaceholder": "/home/user/projects"
