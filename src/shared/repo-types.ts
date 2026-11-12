@@ -9,6 +9,11 @@ import type { RepoProjectHostSetupMethod } from './project-types'
 // ─── Repo ────────────────────────────────────────────────────────────
 export type RepoKind = 'git' | 'folder'
 
+export type RepoCloneProgress = { progressId?: string } & (
+  | { phase: string; percent: number }
+  | { phase: 'importing'; percent: null }
+)
+
 /**
  * Per-repo user choice for where issues are fetched and filed.
  *

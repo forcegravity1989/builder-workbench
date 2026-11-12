@@ -4828,6 +4828,8 @@
           "3e64e8a70d": "Échec de la connexion",
           "32a7256d85": "Cloner",
           "69f5b5380d": "Clonage...",
+          "finishingClone": "Finalisation du clonage…",
+          "importingProject": "Importation du projet…",
           "cloneOnHostDescription": "Saisissez l'URL Git et choisissez où le cloner sur {{value0}}.",
           "cloneParentFolder": "Dossier parent",
           "remoteCloneParentPlaceholder": "/home/user/projects"
