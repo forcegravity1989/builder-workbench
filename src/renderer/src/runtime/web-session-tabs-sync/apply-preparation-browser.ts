@@ -7,7 +7,10 @@ import {
 } from './mirrored-browser-tabs'
 import { buildMirroredEditorTabs } from './tab-builders'
 import { buildMirroredAgentTabs, isReadyBrowserTab, isReadyEditorTab } from './terminal-surfaces'
-import { hostSnapshotAffirmsClientHostedPages } from '../host-session-snapshot-authority'
+import {
+  hostSnapshotAffirmsClientHostedPages,
+  hostSnapshotAffirmsEditorContents
+} from '../host-session-snapshot-authority'
 import type { prepareWebSessionTabsSnapshotBase } from './apply-preparation-base'
 import type { OpenFile } from '../../store/slices/editor'
 import {
@@ -113,7 +116,8 @@ export function prepareWebSessionTabsSnapshotBrowser(
     hostGroupIdByTabId,
     targetGroupId,
     mirroredTerminalTabEntries.length + mirroredBrowserTabs.length,
-    now
+    now,
+    (fileId) => state.editorDrafts?.[fileId] !== undefined
   )
   const mirroredAgentTabs = buildMirroredAgentTabs(
     snapshot,
@@ -125,8 +129,10 @@ export function prepareWebSessionTabsSnapshotBrowser(
   )
   const mirroredEditorFileIds = new Set(mirroredEditorTabs.map((entry) => entry.file.id))
   const mirroredEditorHostTabIds = new Set(mirroredEditorTabs.map((entry) => entry.hostTabId))
+  const canRemoveMirroredFiles =
+    reconcilesNonAgentTabs && hostSnapshotAffirmsEditorContents(snapshot)
   const removedEditorFileIds = new Set(
-    (reconcilesNonAgentTabs ? worktreeOpenFiles : [])
+    (canRemoveMirroredFiles ? worktreeOpenFiles : [])
       .filter(
         (file) =>
           file.runtimeEnvironmentId === environmentId &&

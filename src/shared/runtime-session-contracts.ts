@@ -217,6 +217,12 @@ export type RuntimeSessionTabCloseReason = 'user' | 'pty-exit' | 'cleanup'
  */
 export const UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH = 'none'
 
+export function isHeadlessBuiltSessionTabsPublication(publicationEpoch: string): boolean {
+  return (
+    publicationEpoch.startsWith('headless:') || publicationEpoch.startsWith('headless-hydrated:')
+  )
+}
+
 export type RuntimeMobileSessionTabsSnapshot = {
   worktree: string
   /** Immutable catalog identity used to fence snapshots across path reuse. */

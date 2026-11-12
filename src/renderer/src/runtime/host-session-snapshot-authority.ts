@@ -1,4 +1,7 @@
-import { UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH } from '../../../shared/runtime-types'
+import {
+  isHeadlessBuiltSessionTabsPublication,
+  UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH
+} from '../../../shared/runtime-session-contracts'
 
 type SnapshotPublication = {
   publicationEpoch: string
@@ -25,6 +28,14 @@ export function hostSnapshotAffirmsWorktreeContents(snapshot: SnapshotPublicatio
   return !(
     snapshot.publicationEpoch === UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH &&
     snapshot.snapshotVersion === 0
+  )
+}
+
+// A headless BW runtime publishes terminals and browsers, but has no editor inventory.
+export function hostSnapshotAffirmsEditorContents(snapshot: SnapshotPublication): boolean {
+  return (
+    hostSnapshotAffirmsWorktreeContents(snapshot) &&
+    !isHeadlessBuiltSessionTabsPublication(snapshot.publicationEpoch)
   )
 }
 
