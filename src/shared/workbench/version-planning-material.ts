@@ -54,9 +54,7 @@ export const PlanningMaterialSchema = z
       progressSource: PlanningProgressSourceSchema.optional()
     }),
     goals: z.array(VersionGoalSchema),
-    // Membership is derived from Issue labels + titles on the live board; tasks
-    // here are an archive-time snapshot written back so acceptance/overview keep
-    // a frozen reference. Absent means "not snapshotted yet", not "no tasks".
+    // Retain the legacy field for existing material revisions.
     tasks: z.array(VersionTaskReferenceSchema).default([]),
     minutes: PlanMeetingMinutesSchema.optional(),
     // Session-model-written SOP progress; absent means not started. Lamps only
@@ -68,15 +66,6 @@ export const PlanningMaterialSchema = z
     if (ids.size !== document.goals.length) {
       context.addIssue({ code: 'custom', message: 'Goal ids must be unique', path: ['goals'] })
     }
-    document.tasks.forEach((task, index) => {
-      if (task.goalId && !ids.has(task.goalId)) {
-        context.addIssue({
-          code: 'custom',
-          message: 'Task refers to an unknown goal',
-          path: ['tasks', index, 'goalId']
-        })
-      }
-    })
   })
 
 export type PlanningMaterial = z.infer<typeof PlanningMaterialSchema>

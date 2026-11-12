@@ -1,10 +1,6 @@
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
-import type {
-  PlanningMaterial,
-  VersionGoal,
-  VersionTaskReference
-} from '../../../../shared/workbench/version-material'
+import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
@@ -12,8 +8,8 @@ import type { SendActionWrap } from '../plan-send-menu'
 import type { CycleScope, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
 import { PlanningGoalCard } from './PlanningGoalCard'
-import { PlanningUnclassifiedLane } from './PlanningUnclassifiedLane'
-import type { VersionMembership } from './use-version-membership'
+import { UnclassifiedIssues } from '../version-cycle/UnclassifiedIssues'
+import type { VersionMembership } from '../version-cycle/use-version-membership'
 import type { usePlanMetrics } from './use-plan-metrics'
 
 export function PlanningGoals({
@@ -30,8 +26,7 @@ export function PlanningGoals({
   onSendAction,
   numbersFor,
   onOpenAnnotationPanel,
-  membership,
-  boardTasks
+  membership
 }: {
   plan?: PlanningMaterial
   disabled: boolean
@@ -47,15 +42,13 @@ export function PlanningGoals({
   onSendAction: SendActionWrap
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
-  /** #588 live membership, owned by the parent so annotation pruning sees the
-   * same non-material member set; boardTasks = live refs ?? legacy material.tasks. */
   membership: VersionMembership
-  boardTasks: VersionTaskReference[] | undefined
 }) {
   const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
-  const unclassified = membership.references?.filter((ref) => !ref.goalId) ?? []
+  const boardTasks = membership.references ?? undefined
+  const unclassified = boardTasks?.filter((ref) => !ref.goalId) ?? []
   // Issue 读数走两屏共享的渲染进程快照缓存（use-cycle-task-reads，#432）：
   // 切屏/材料保存重挂载立即回显上次读数、后台静默重读，不再整列闪「状态未知」；
   // 「刷新 Issue」强制重读，转圈即缓存条目 busy。
@@ -174,6 +167,7 @@ export function PlanningGoals({
                 key={goal.goalId}
                 goal={goal}
                 index={index}
+                issueMembershipKnown={Boolean(boardTasks)}
                 relatedTasks={boardTasks?.filter((task) => task.goalId === goal.goalId) ?? []}
                 reads={readsByReference}
                 version={plan.version}
@@ -195,7 +189,7 @@ export function PlanningGoals({
               />
             ))}
           </div>
-          <PlanningUnclassifiedLane
+          <UnclassifiedIssues
             rows={unclassified}
             reads={readsByReference}
             version={plan.version}

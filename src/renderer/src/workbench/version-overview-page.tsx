@@ -73,14 +73,19 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const aiEnabled = useAppStore((state) =>
     overviewExperimentEnabled(state.settings, projectId, 'ai')
   )
-  const { materials, features } = useVersionFacts(catalog, version, refreshToken, sdlcEnabled)
+  const { materials, features, membership, projectedPlan } = useVersionFacts(
+    catalog,
+    version,
+    refreshToken,
+    sdlcEnabled
+  )
   const milestoneSource = useMilestoneSource(catalog, refreshToken, sdlcEnabled)
   const { plan, acceptance } = materials
   const planDocument = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
   const taskReads = useCycleTaskReads({
     scope: catalog.scope ? { ...catalog.scope, workflow: 'plan' } : null,
-    tasks: planDocument?.tasks,
+    tasks: membership.references ?? undefined,
     taskPort: nativeTaskPort()
   })
   const taskReadAt = taskReads.reads
@@ -94,7 +99,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       plan.source === 'draft' &&
       planDocument &&
       !planDocument.goals.length &&
-      !planDocument.tasks.length &&
       !planDocument.workflow &&
       !planDocument.minutes &&
       !planDocument.summary.progress.trim() &&
@@ -117,6 +121,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const planningFailed = Boolean(milestoneSource.error || milestoneSource.formal?.problems.length)
   const milestoneFacts: MilestoneVersionFacts = {
     ...milestoneMaterialFacts(materials),
+    plan: projectedPlan,
     features: features.features.map((feature) => {
       const current = catalog.scope
         ? nativeTaskReferenceReader.cached(catalog.scope, [feature.root.reference])?.[0]
@@ -148,7 +153,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               ? '计划草稿'
               : '版本中'
   const refresh = () => {
-    void taskReads.refresh()
+    void membership.refresh().then(() => taskReads.refresh())
     setRefreshToken((n) => n + 1)
     catalog.reload()
   }
@@ -169,7 +174,12 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               label: '刷新来源',
               Icon: RefreshCw,
               action: refresh,
-              busy: features.loading || taskReads.busy || catalog.loading || materials.refreshing
+              busy:
+                features.loading ||
+                membership.busy ||
+                taskReads.busy ||
+                catalog.loading ||
+                materials.refreshing
             }
           ].map(({ label, Icon, action, busy }) => (
             <Tooltip key={label}>
@@ -220,7 +230,8 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         </div>
       )}
       {planDocument?.goals.map((goal, index) => {
-        const references = planDocument.tasks.filter((task) => task.goalId === goal.goalId)
+        const references =
+          membership.references?.filter((task) => task.goalId === goal.goalId) ?? []
         const grouped = features.features.filter((feature) =>
           feature.members.some((member) => member.reference.goalId === goal.goalId)
         )
@@ -234,6 +245,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 <span>负责人 · {goal.owner || '未记录'}</span>
                 <button
                   className="bwo-link"
+                  disabled={!membership.references}
                   onClick={() =>
                     tasks({
                       goalId: goal.goalId,
@@ -242,8 +254,14 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                     })
                   }
                 >
-                  目标任务 · {references.length} 项 ·{' '}
-                  {unfinishedTaskLabel(references, taskReads.reads)} ↗
+                  {membership.references ? (
+                    <>
+                      目标任务 · {references.length} 项 ·{' '}
+                      {unfinishedTaskLabel(references, taskReads.reads)} ↗
+                    </>
+                  ) : (
+                    '目标任务 · 未知'
+                  )}
                 </button>
               </div>
               <button
@@ -295,9 +313,9 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           </section>
         )
       })}
-      {planDocument && planDocument.tasks.some((task) => !task.goalId) && (
+      {membership.references?.some((task) => !task.goalId) && (
         <p className="bwo-muted py-4">
-          未关联目标 · {planDocument.tasks.filter((task) => !task.goalId).length} 项{' '}
+          未关联目标 · {membership.references.filter((task) => !task.goalId).length} 项{' '}
           <button className="bwo-link" onClick={() => tasks()}>
             查看版本任务 ↗
           </button>
@@ -314,12 +332,12 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       {sdlcEnabled && features.stale && features.readAt && (
         <p className="bwo-muted">特性来源刷新失败，保留上次快照：{timeLabel(features.readAt)}</p>
       )}
-      {taskReads.error && (
+      {(membership.error || taskReads.error) && (
         <p className="bwo-muted" role="alert">
-          任务状态刷新失败：{taskReads.error}
+          任务读取失败：{membership.error ?? taskReads.error}
         </p>
       )}
-      {planDocument && planDocument.tasks.length > 0 && (
+      {Boolean(membership.references?.length) && (
         <p className="bwo-muted">
           未完成数按当前任务状态统计，目标是否达成以人工验收为准。
           {taskReads.busy
@@ -332,7 +350,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       {aiEnabled && (
         <WorkflowProductivity
           catalog={catalog}
-          plan={planDocument}
+          plan={projectedPlan}
           version={version}
           revision={plan.kind === 'ready' ? (plan.sourceCommit ?? plan.revision) : undefined}
           planState={plan.kind}

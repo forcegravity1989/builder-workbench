@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import path from 'node:path'
 import { test } from './workbench-app'
 import type { Page } from '@playwright/test'
+import type { ElectronApplication } from '@stablyai/playwright-test'
 import type { AcceptanceMaterial } from '../../../src/shared/workbench/version-material'
 
 export const overviewVersions = {
@@ -19,6 +20,38 @@ export const overviewFlowPaths = (root: string) => ({
   acceptance: path.join(root, '.bw', 'worktrees', 'overview-acceptance')
 })
 export const overviewRepository = 'https://github.com/forcegravity1989/builder-workbench'
+
+// Only the membership query for synthetic version labels is stubbed. Issue details,
+// PRs, and workflow evidence still use the real read-only provider.
+export async function installOverviewMembershipFixture(app: ElectronApplication) {
+  await app.evaluate(({ ipcMain }, versions) => {
+    const source = { host: 'github.com', owner: 'forcegravity1989', repo: 'builder-workbench' }
+    const members: Record<string, readonly (readonly [number, string | null])[]> = {
+      [versions.current]: [
+        [334, 'current-goal'],
+        [440, null],
+        [469, 'ordinary']
+      ] as const,
+      [versions.history]: [[334, 'old-goal']] as const
+    }
+    ipcMain.removeHandler('gh:listWorkItems')
+    ipcMain.handle('gh:listWorkItems', (_event, args: { query?: string; page?: number }) => {
+      const version = Object.keys(members).find((value) =>
+        args.query?.includes(`label:bw:plan:${value}`)
+      )
+      const rows = version && (args.page ?? 1) === 1 ? (members[version] ?? []) : []
+      return {
+        items: rows.map(([number, goal]) => ({
+          type: 'issue',
+          number,
+          title: goal ? `【${version}|${goal}】Issue ${number}` : `Issue ${number}`,
+          labels: [`bw:plan:${version}`]
+        })),
+        sources: { issues: source, prs: source, originCandidate: source, upstreamCandidate: null }
+      }
+    })
+  }, overviewVersions)
+}
 
 export const overviewTest = test.extend({
   minimumSeededWorktreeCount: 3,

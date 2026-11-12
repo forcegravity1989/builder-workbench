@@ -10,8 +10,7 @@ import {
   versionCatalogCacheKey,
   type VersionCatalogDraftSource,
   type VersionCatalogEntry,
-  type VersionCatalogGoalRef,
-  type VersionCatalogTaskRef
+  type VersionCatalogGoalRef
 } from '../../../shared/workbench/version-catalog'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
@@ -28,26 +27,15 @@ import {
 type DraftDerivation = {
   draft: VersionCatalogDraftSource
   goals: VersionCatalogGoalRef[]
-  tasks: VersionCatalogTaskRef[]
 }
 
-/** 已提交计划的目录投影：目标＋任务引用（补绑定 Issue 用途的人选引用来源）。 */
+/** 已提交计划的目标目录。 */
 type CommittedPlanProjection = {
   goals: VersionCatalogGoalRef[]
-  tasks: VersionCatalogTaskRef[]
 }
 
 function projectPlanGoals(goals: PlanningMaterial['goals']): VersionCatalogGoalRef[] {
   return goals.map((goal) => ({ goalId: goal.goalId, title: goal.title }))
-}
-
-function projectPlanTasks(tasks: PlanningMaterial['tasks']): VersionCatalogTaskRef[] {
-  return tasks.map((task) => ({
-    provider: task.provider,
-    repository: task.repository,
-    number: task.number,
-    ...(task.goalId ? { goalId: task.goalId } : {})
-  }))
 }
 
 /**
@@ -70,8 +58,7 @@ function deriveFromSavedPlan(
   }
   return {
     draft: { version, cycleId: parsed.data.cycleId, revision },
-    goals: projectPlanGoals(parsed.data.goals),
-    tasks: projectPlanTasks(parsed.data.tasks)
+    goals: projectPlanGoals(parsed.data.goals)
   }
 }
 
@@ -156,7 +143,6 @@ export async function loadVersionCatalog(args: {
 
   const drafts: VersionCatalogDraftSource[] = []
   const goalsByVersion = new Map<string, VersionCatalogGoalRef[]>()
-  const tasksByVersion = new Map<string, VersionCatalogTaskRef[]>()
   const goalSources: Record<string, CatalogGoalSource> = Object.create(null)
   const unavailableDraftTrees = new Set<string>()
   for (const planTree of args.planTrees ?? []) {
@@ -217,7 +203,6 @@ export async function loadVersionCatalog(args: {
         if (!existing) {
           drafts.push(derivation.draft)
           goalsByVersion.set(candidate.version, derivation.goals)
-          tasksByVersion.set(candidate.version, derivation.tasks)
           goalSources[candidate.version] = {
             kind: 'draft',
             treeKey: draftCatalogTreeKey(scope, planTree),
@@ -242,7 +227,6 @@ export async function loadVersionCatalog(args: {
     committed,
     drafts,
     goalsByVersion,
-    tasksByVersion,
     workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, args.projectId)
   })
 
@@ -275,7 +259,6 @@ export async function loadVersionCatalog(args: {
     const cached = committedPlansCache.get(key)
     if (cached) {
       entry.goals = [...cached.goals]
-      entry.tasks = [...cached.tasks]
       goalSources[entry.version] = {
         kind: 'committed',
         key: committedCatalogGoalKey(historyKey, entry.version, planRef)
@@ -294,13 +277,11 @@ export async function loadVersionCatalog(args: {
         }
       })
       const projection: CommittedPlanProjection = {
-        goals: projectPlanGoals(plan.document.goals),
-        tasks: projectPlanTasks(plan.document.tasks)
+        goals: projectPlanGoals(plan.document.goals)
       }
       committedPlansCache.set(key, projection)
       // 拷贝入 entry：缓存数组与目录条目不共享引用（防下游突变污染缓存）。
       entry.goals = [...projection.goals]
-      entry.tasks = [...projection.tasks]
       goalSources[entry.version] = {
         kind: 'committed',
         key: committedCatalogGoalKey(historyKey, entry.version, planRef)
@@ -314,7 +295,6 @@ export async function loadVersionCatalog(args: {
         previousSource.key === committedCatalogGoalKey(historyKey, entry.version, planRef)
       ) {
         entry.goals = [...previous.goals]
-        entry.tasks = [...previous.tasks]
         goalSources[entry.version] = previousSource
       }
       if (!isVersionHostDisconnected(scope)) {

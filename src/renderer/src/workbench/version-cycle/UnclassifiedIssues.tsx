@@ -1,7 +1,8 @@
 import { ChevronDown, ChevronRight, CircleHelp } from 'lucide-react'
 import { useState } from 'react'
 import type { VersionTaskReference } from '../../../../shared/workbench/version-material'
-import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
+import type { CycleTaskRead, CycleTaskSnapshot } from './ports'
+import './unclassified-issues.css'
 
 function readKey(reference: VersionTaskReference): string {
   return `${reference.provider}:${reference.repository}:${reference.number}`
@@ -13,7 +14,7 @@ function readKey(reference: VersionTaskReference): string {
  * hidden entirely when empty; no assignment action — fixing the title is the
  * only source-of-truth edit, and the tooltip says so.
  */
-export function PlanningUnclassifiedLane({
+export function UnclassifiedIssues({
   rows,
   reads,
   version,
@@ -53,12 +54,12 @@ export function PlanningUnclassifiedLane({
         </span>
       </div>
       {open && (
-        <div className="g3-tasks">
+        <div className="version-unclassified-rows">
           {rows.map((reference) => {
             const read = reads?.get(readKey(reference))
             const ready = read?.kind === 'ready' ? read.task : null
             return (
-              <div className="g3-task" key={readKey(reference)}>
+              <div className="version-unclassified-row" key={readKey(reference)}>
                 <a
                   href={ready?.url}
                   onClick={(event) => {
@@ -73,7 +74,7 @@ export function PlanningUnclassifiedLane({
                   <span className="g3-id">#{reference.number}</span>
                   {ready?.title ?? '标题未读到'}
                 </a>
-                <span className="g3-task-state">{ready?.state ?? '状态未知'}</span>
+                <span className="version-unclassified-state">{ready?.state ?? '状态未知'}</span>
               </div>
             )
           })}

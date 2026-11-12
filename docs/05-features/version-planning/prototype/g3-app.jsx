@@ -9,7 +9,6 @@ import {
   meetingDirectives,
   priorLiveOpen,
   taskRows,
-  unclassifiedRows,
   minutesRequestPrompt,
   annotationsSendPrompt,
   g2Url
@@ -57,11 +56,9 @@ function App() {
   const [carryDemo, setCarryDemo] = useState('unmarked')
   const scroll = useRef(null)
   const navigation = useRef(null)
-  const tasks = taskRows(scene)
-  // #588 原型示意：本版标签成员里、标题解析不出目标的 Issue，进折叠的未归类收件箱。
-  const unclassified = unclassifiedRows(scene)
-  // 删除目标后其 Issue 引用一并移出计划，侧栏计数现算，不留旧数。
-  const visibleTaskCount = tasks.filter((t) => goals.some((g) => g.goalId === t.goalId)).length
+  const tasks = taskRows(scene, goals)
+  const unclassified = tasks.filter((task) => !task.goalId)
+  const visibleTaskCount = tasks.length
   // 批注编号对齐 Orca：按记录顺序全局编号，板面角标与面板卡片同号。
   const numbered = annotations.map((item, i) => ({ ...item, number: i + 1 }))
   const annotationNumbers = numbered.reduce((map, item) => {
@@ -174,7 +171,7 @@ function App() {
       setPopover(null)
     }
     setNotice(
-      `已删除目标 ${goalId} · 其 ${removedTasks} 条关联 Issue 引用与相关批注一并移出本版计划（演示仅内存，「重置」可恢复）`
+      `已删除目标 ${goalId} · 其 ${removedTasks} 条关联 Issue 移到「未归类」（演示仅内存，「重置」可恢复）`
     )
   }
   const update = (id, field, value) => {
@@ -267,7 +264,7 @@ function App() {
             不恢复已退役的贴草稿通道。分支名弱化展示，
             「配置自动化」打开原生自动化编辑器，自动化绑定固定工作树，与版本选择解耦。
             目标卡展开后可整卡删除：卡片头 × 图标触发就近二次确认（确认删除 /
-            取消，不弹窗），删除即把该目标的 Issue 引用与相关批注一并移出板面；
+            取消，不弹窗），删除后原关联 Issue 进入「未归类」，相关批注移除；
             生产语义为计划文档编辑，经材料读写服务保存。
           </p>
           <p>
