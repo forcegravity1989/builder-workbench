@@ -11,7 +11,7 @@
 | 改产品界面（React） | [guidelines.md](guidelines.md) → 对应的 `primitives/<名>.md` | `src/renderer/src/components/ui/` 的原语 + Tailwind token 类（`bg-card`、`text-muted-foreground`） |
 | 走查旅程、设计引导或制作指南/传播素材 | 完整读取 [guidance.md](guidance.md) | 在入门或探索矩阵定位内容行，复用现有机制，逐格维护覆盖与产出 |
 | 改叠层 CSS（`src/renderer/src/workbench/*.css`） | [guidelines.md](guidelines.md)「Workbench 叠层怎么对齐」 | `var(--foreground)` 这类 Orca 名；存量的 `--color-*` 角色名见 tokens.json |
-| 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」 | `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名，照示例页抄标记 |
+| 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」（含原型注释、业界参考、阶段切换、复用标注、控件与文案约定）+ [高保真三条总原则](../hifi/README.md) | `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名，照示例页抄标记 |
 | 查某个颜色/间距/圆角的值 | [tokens.json](tokens.json) | 每个 token 带 `usage`，说明用在哪、配在什么底上 |
 | 加或改一个 token | 先改 `main.css`（`:root` 与 `.dark` 都给值，`@theme inline` 暴露），再同步 [tokens.json](tokens.json) | `node config/scripts/design-system-tokens.mjs --write` |
 
