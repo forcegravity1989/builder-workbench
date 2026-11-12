@@ -17,7 +17,6 @@ import {
 } from '../../../../shared/execution-host'
 import { getActiveSidebarWorkspaceId } from '../../../../shared/workspace-scope'
 import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
-import { getFolderWorkspaceExecutionHostIdForRows } from './worktree-list/listing/host-filtering'
 import { getPinnedWorktreeDisplayPolicy } from './worktree-list/grouping/row-types'
 import { selectWorktreeListReviewCacheInputs } from './worktree-list/listing/review-cache-inputs'
 import type { VirtualizedScrollAnchor } from '@/hooks/useVirtualizedScrollAnchor'
@@ -36,6 +35,7 @@ import { useSidebarRevealRequests } from './worktree-list/navigation/use-reveal-
 import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
 import {
   scopeDetectedWorktreesForVersionSidebar,
+  scopeFolderWorkspacesForVersionSidebar,
   useWorkbenchSidebarScope,
   useVersionScopedWorktrees
 } from './worktree-list/listing/use-version-scoped-worktrees'
@@ -200,21 +200,11 @@ const WorktreeList = React.memo(function WorktreeList({
   )
   const visibleFolderWorkspacesForRows = useMemo(
     () =>
-      workbenchProject
-        ? visibleScope.visibleFolderWorkspacesForRows.filter((folder) =>
-            workbenchProject.groups.some(
-              (group) =>
-                group.id === folder.projectGroupId &&
-                getProjectGroupHostId(group) ===
-                  getFolderWorkspaceExecutionHostIdForRows({
-                    folderWorkspace: folder,
-                    projectGroup: group,
-                    defaultHostId: 'local'
-                  })
-            )
-          )
-        : visibleScope.visibleFolderWorkspacesForRows,
-    [visibleScope.visibleFolderWorkspacesForRows, workbenchProject]
+      scopeFolderWorkspacesForVersionSidebar(
+        visibleScope.visibleFolderWorkspacesForRows,
+        workbenchProject?.groups
+      ),
+    [visibleScope.visibleFolderWorkspacesForRows, workbenchProject?.groups]
   )
   const externalWorktreeCards = useSidebarExternalWorktreeCards({
     repos,

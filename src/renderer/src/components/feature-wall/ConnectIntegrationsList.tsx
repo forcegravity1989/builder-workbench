@@ -3,9 +3,11 @@ import { Fragment, useState } from 'react'
 import {
   AzureDevOpsIntegrationCard,
   BitbucketIntegrationCard,
+  CodeHubIntegrationCard,
   GiteaIntegrationCard,
   GitHubIntegrationCard,
-  GitLabIntegrationCard
+  GitLabIntegrationCard,
+  WeLinkIntegrationCard
 } from '@/components/settings/source-control-integration-cards'
 import {
   JiraIntegrationCard,
@@ -22,6 +24,58 @@ import {
   useIntegrationConnectionStatus
 } from './use-integration-connection-status'
 import { translate } from '@/i18n/i18n'
+
+export function ConnectIntegrationsList(): React.JSX.Element {
+  return isWorkbenchShell() ? <BwConnectIntegrationsList /> : <OrcaConnectIntegrationsList />
+}
+
+function BwConnectIntegrationsList(): React.JSX.Element {
+  return (
+    <IntegrationCardPresentationProvider value="setup-guide">
+      <div className="space-y-5">
+        <section className="space-y-3">
+          <div className="space-y-1 px-1">
+            <h3 className="text-sm font-semibold text-foreground">
+              {translate(
+                'auto.components.settings.IntegrationsPane.codeHostGroupTitle',
+                'Code hosting'
+              )}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {translate(
+                'auto.components.feature.wall.ConnectIntegrationsList.bw_code_host_description',
+                'Connect either provider to use tasks and see code review status.'
+              )}
+            </p>
+          </div>
+          <IntegrationCardGroup>
+            <GitHubIntegrationCard />
+            <CodeHubIntegrationCard />
+          </IntegrationCardGroup>
+        </section>
+        <section className="space-y-3">
+          <div className="space-y-1 px-1">
+            <h3 className="text-sm font-semibold text-foreground">
+              {translate(
+                'auto.components.feature.wall.ConnectIntegrationsList.reports_title',
+                'Reports and diagnostics (optional)'
+              )}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {translate(
+                'auto.components.feature.wall.ConnectIntegrationsList.reports_description',
+                'Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations.'
+              )}
+            </p>
+          </div>
+          <IntegrationCardGroup>
+            <WeLinkIntegrationCard />
+          </IntegrationCardGroup>
+        </section>
+      </div>
+    </IntegrationCardPresentationProvider>
+  )
+}
 
 // Bold provider names joined into a natural-language list ("Linear and
 // GitHub", "Linear, Jira, and GitHub") for the task-step summary.
@@ -57,14 +111,14 @@ function TaskSourceNameList(props: { names: readonly string[] }): React.JSX.Elem
 // open until a dedicated tracker connects so Linear/Jira remain discoverable.
 // Done-state is driven by real provider connection status, never an
 // optimistic click.
-export function ConnectIntegrationsList(): React.JSX.Element {
+function OrcaConnectIntegrationsList(): React.JSX.Element {
   useIntegrationProviderStatusRefresh()
   const status = useIntegrationConnectionStatus()
   // Lets the done review step reopen inline via "Change" without losing its
   // connected state. Cleared once the user collapses it again.
   const [reviewReopened, setReviewReopened] = useState(false)
 
-  // A code host doubles as a task source, so a connected GitHub/GitLab
+  // A code host doubles as a task source, so a connected code host
   // resolves step 2 on its own. The collapsed summary still invites a
   // dedicated tracker, and "Change" reopens the step to connect one.
   const flow = deriveIntegrationFlowState({
@@ -109,7 +163,7 @@ export function ConnectIntegrationsList(): React.JSX.Element {
           description={translate(
             'auto.components.feature.wall.ConnectIntegrationsList.review_step_description',
             'Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.',
-            { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+            { product: 'Orca' }
           )}
           summary={
             <>
@@ -139,12 +193,12 @@ export function ConnectIntegrationsList(): React.JSX.Element {
           title={translate(
             'auto.components.feature.wall.ConnectIntegrationsList.task_step_title',
             'Start agents on your tasks without leaving {{product}}',
-            { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+            { product: 'Orca' }
           )}
           description={translate(
             'auto.components.feature.wall.ConnectIntegrationsList.33b650af52',
             'Connect where your team tracks work. {{product}} starts workspaces with the issue title, link, and context already attached.',
-            { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+            { product: 'Orca' }
           )}
           summary={
             status.trackerProviderName ? (

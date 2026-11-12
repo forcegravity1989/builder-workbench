@@ -11922,13 +11922,13 @@
             "13294d3405": "Hecho"
           },
           "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "Agrega primero un proyecto git y luego configura el script de configuración para ese repositorio.",
+            "486c2f4d8d": "Selecciona primero un proyecto Git y luego configura aquí su script de preparación.",
             "00078a6134": "Ver en configuración",
             "14327073cc": "Guardar",
             "88469e926b": "Script de configuración",
-            "5c5b65044e": "pnpm install",
+            "5c5b65044e": "Ejemplo: pnpm install",
             "a7463915b6": "No se pudo guardar el script de configuración",
-            "6299297dac": "Script de configuración guardado",
+            "6299297dac": "Script de configuración guardado para {{project}}",
             "f0bbf7da77": "Pruébalo",
             "522cce9e33": "Agregar proyecto"
           },

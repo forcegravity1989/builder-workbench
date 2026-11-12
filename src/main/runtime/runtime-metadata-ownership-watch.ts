@@ -19,14 +19,14 @@ export const RUNTIME_METADATA_OWNERSHIP_POLL_MS = 10_000
 export type RuntimeMetadataOwnershipWatch = {
   /** Runs one ownership check immediately; exposed for tests and eager repair. */
   check: () => Promise<void>
-  stop: () => void
+  stop: () => Promise<void>
 }
 
 export type RuntimeMetadataOwnershipWatchOptions = {
   userDataPath: string
   ownedPid: number
   ownedRuntimeId: string
-  republish: () => void
+  republish: (canPublish: () => Promise<boolean>) => void | Promise<boolean>
   pollIntervalMs?: number
   isProcessRunning?: (pid: number) => boolean
   onReclaim?: (previous: RuntimeMetadata | null) => void
@@ -57,20 +57,29 @@ export function watchRuntimeMetadataOwnership(
 ): RuntimeMetadataOwnershipWatch {
   const isProcessRunning = options.isProcessRunning ?? isPidRunning
   let inFlight: Promise<void> | null = null
+  let stopped = false
+  const shouldReclaim = (current: RuntimeMetadata | null): boolean =>
+    !stopped &&
+    shouldReclaimRuntimeMetadata(
+      current,
+      options.ownedPid,
+      options.ownedRuntimeId,
+      isProcessRunning
+    )
+
   const runCheck = async (): Promise<void> => {
     const current = await tryReadRuntimeMetadata(options.userDataPath)
-    if (
-      !shouldReclaimRuntimeMetadata(
-        current,
-        options.ownedPid,
-        options.ownedRuntimeId,
-        isProcessRunning
-      )
-    ) {
+    if (!shouldReclaim(current)) {
       return
     }
     try {
-      options.republish()
+      // Another instance can publish while the temporary file's ACL is being applied.
+      const published = await options.republish(async () =>
+        shouldReclaim(await tryReadRuntimeMetadata(options.userDataPath))
+      )
+      if (published === false) {
+        return
+      }
     } catch (error) {
       // Why: a transient write failure must not kill the watch; the next tick retries.
       console.error('[runtime] Failed to reclaim runtime metadata ownership:', error)
@@ -80,6 +89,9 @@ export function watchRuntimeMetadataOwnership(
   }
   // Why: the read is off-thread now, so a slow volume could otherwise stack ticks on one file.
   const check = (): Promise<void> => {
+    if (stopped) {
+      return Promise.resolve()
+    }
     inFlight ??= runCheck().finally(() => {
       inFlight = null
     })
@@ -94,7 +106,11 @@ export function watchRuntimeMetadataOwnership(
   timer.unref?.()
   return {
     check,
-    stop: () => clearInterval(timer)
+    stop: async () => {
+      stopped = true
+      clearInterval(timer)
+      await inFlight
+    }
   }
 }
 

@@ -38,27 +38,27 @@
 - **—**：不适用或当前未安排此种投放/产出，例如不为每个功能都弹新功能提示、单独做海报。决定采用时改为缺口。
 - **复用编号**：使用所指内容，不另造一份；它不是就绪标记，须看被引用格的状态。
 
-入门内容与探索演示中已勾的 **8 项和 11 页**，沿用 [#610 真壳验证](https://github.com/forcegravity1989/builder-workbench/pull/610#issuecomment-6768810094)，相关内容源码已核对一致；范围是中英文展示与关闭后回看，**不包含配置成功、新安装或完整工作旅程**。下表其他内容保留实际缺口或待验，后续按格更新证据，不整体翻绿。
+未改动的入门说明与 **11 页探索演示**沿用 [#610 真壳验证](https://github.com/forcegravity1989/builder-workbench/pull/610#issuecomment-6768810094)；范围是中英文展示与关闭后回看，**不包含配置成功、新安装或完整工作旅程**。当前入门清单的删项与计数、集成调整仍待对应版本验证，下表逐格保留实际边界，不整体翻绿。
 
 ## BW 入门矩阵
 
-“入门内容”包括入门页以及它可重开的初始设置；“配置/操作”只有实际动作与结果验证后才勾。“首次启动”指首次安装时的引导，不能用手动重开初始设置代替。现有八项内容来自[入门清单][setup]；[初始设置][onboarding]按平台和已有状态选取步骤。
+“入门内容”包括入门页以及它可重开的初始设置；“配置/操作”只有实际动作与结果验证后才勾。“首次启动”指首次安装时的引导，不能用手动重开初始设置代替。BW 当前七项内容来自[入门清单][setup]；弹窗与设置内嵌清单共用可见项、进度与默认选中规则。CLI、Skills 与桌面权限不计入 BW 入门进度，也不由清单主动探测；[初始设置][onboarding]按平台和已有状态选取步骤。
 
 | 编号与准备事项 | 入门内容 | 配置/操作 | 首次启动 | 新功能提示 | 使用说明 |
 |---|---|---|---|---|---|
 | G01 安装 BW、确认启动条件 | ☐ | 待验：安装包 | — | — | ☐ |
 | G02 选择默认智能体 | [✅ 选择与说明][setup-copy] | 待验 | [待验：agent][onboarding] | — | ☐ |
 | G03 开启通知 | [✅ 通知设置][setup-copy] | 待验 | [待验：notifications][onboarding] | — | ☐ |
-| G04 CLI 与 Skills | [✅ 启用 Orca CLI][setup-copy] | 待验 | — | [待验：orca-cli][tips] | ☐ |
-| G05 连接集成服务 | [✅ 原生服务入口][setup-copy] | 待验；内部集成见 F29 | [待验：integrations][onboarding] | — | ☐ |
-| G06 自动准备工作区 | [✅ 设置脚本][setup-copy] | [待验：保存/执行][setup-actions] | — | — | ☐ |
+| G04 CLI 与 Skills | —（不列入 BW 入门） | [待验：设置中的 CLI 管理][cli-settings]及各能力的按需配置 | — | [待验：orca-cli][tips] | ☐ |
+| G05 连接集成服务 | [✅ 既有入口说明][setup-copy]；[待验：GitHub 与 CodeHub 各一张，可选 WeLink 报告入口][integration-setup] | [待验：任一代码托管登录即满足任务和评审，WeLink 可跳过][integration-setup]；设置中的集成见 F29 | [待验：首次设置可稍后在集成页连接或重试][onboarding] | — | ☐ |
+| G06 自动准备工作区 | [✅ 设置脚本][setup-copy] | [待验：当前项目、空输入与保存/执行][setup-actions] | — | — | ☐ |
 | G07 纳入多个项目 | [✅ 多项目说明][setup-copy] | [待验：添加项目][setup-actions] | — | — | ☐ |
 | G08 并行处理任务（能力体验） | [✅ 两个工作区][setup-copy]；复用 F01 | [待验：开始体验][setup-actions] | — | — | 复用 F01 |
 | G09 使用内置浏览器（能力体验） | [✅ BW 浏览器][setup-copy]；复用 F08 | [待验：开始体验][setup-actions] | — | — | 复用 F08 |
 | G10 主题与外观 | [待验：初始设置内][onboarding] | 待验 | [待验：theme][onboarding] | — | ☐ |
 | G11 Windows 终端准备 | [待验：初始设置内][onboarding] | 待验 | [待验：windows_terminal][onboarding] | — | ☐ |
 
-G08/G09 当前确实在入门的“能力体验”里，先如实登记，与探索共用内容；本表不表示已调整其位置。G04 的 Orca CLI 是实际组件名，不把命令名机械替换为 BW。G07 的多项目介绍不等于完整项目纳入指南。
+G08/G09 保留在入门的“能力体验”里，与探索共用内容，位置与完成判据不随 G04 撤下改变。G04 仍由设置和按需能力入口提供，不把从清单撤下记成配置完成，也不由此推断浏览器体验已完成；原生 Orca 清单保持原有 Skills 与权限判据。G07 的多项目介绍不等于完整项目纳入指南。
 
 ## 探索 BW 矩阵
 
@@ -66,7 +66,7 @@ G08/G09 当前确实在入门的“能力体验”里，先如实登记，与探
 
 | 分类 | 编号与内容 | 探索 BW | 当前屏问号 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|
-| 工作 | W01 新安装 → 准备 → 纳入项目 → 第一件真实工作（准备按需复用 G01–G11） | ☐ | 复用 F01、F20 问号 | 复用 G02/G03/G05/G10/G11 首次启动；F01/F20 首次进入 | — | ☐ | ☐ |
+| 工作 | W01 新安装 → 准备 → 纳入项目 → 第一件真实工作（准备按需复用 G01–G11） | ☐ | 复用 F01、F20 问号 | 复用 G02/G03/G05/G10/G11 首次启动；首次添加交接复用 F19/F20；F01 首次进入 | — | ☐ | ☐ |
 | 工作 | W02 修改 → 同伴评审 → 合入 | ☐ | 复用 F02、F09–F11、F24 | 同左 | — | ☐ | ☐ |
 | 工作 | W03 多任务并行 → 中断 → 继续 | ☐ | 复用 F01、F03、F04、F06、F23 | 同左 | — | ☐ | ☐ |
 | 工作 | W04 多项目日常跟进 → 找到并进入要处理的工作 | ☐ | 复用 F02、F19、F21、F27 | 同左 | — | ☐ | ☐ |
@@ -90,8 +90,8 @@ G08/G09 当前确实在入门的“能力体验”里，先如实登记，与探
 | 功能 | F16 快捷跳转 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
 | 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | ☐ | [待验：里程碑操作引导][milestone-guide] | [待验：workbench-milestones][milestone-guide] | — | ☐ | — |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | ☐；入门片段见 G07 | ☐ | ☐ | — | ☐ | — |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | ☐ | ☐ | 待验：初始设置交接到空项目墙，取消可重试，首个项目上墙后点项目名开工 | — | ☐ | — |
+| 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
 | 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | ☐ | ☐；里程碑见 F18 | ☐ | — | ☐ | — |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | ☐ | ☐ | ☐ | — | ☐ | — |
@@ -112,7 +112,7 @@ G08/G09 当前确实在入门的“能力体验”里，先如实登记，与探
 
 - 状态加载完成、没有其他弹窗且条件允许时，从未看过、尚未配置/使用的提示中选择一项；当前 `new` 优先于 `unseen`。每次应用启动会话最多自动提示一项，显示过初始设置的会话不再自动叠加新功能提示。
 - 展示时即按稳定 ID 持久记录“看过”，不等关闭；同一 ID 修改文案或升级版本不会自动重播。CLI 已安装并配置 PATH（或平台不支持）时不提示；语音已启用或已使用时不提示；快捷跳转当前按已看状态去重。
-- 三项含产品内交互动画，不是真机录屏。当前未找到普通用户重开这三个提示弹窗的统一入口；CLI 可从入门继续配置，快捷跳转/语音的常驻探索介绍仍缺。能打开设置不等于能重看演示。
+- 三项含产品内交互动画，不是真机录屏。当前未找到普通用户重开这三个提示弹窗的统一入口；CLI 提示沿既有动作打开「设置 → 通用」中的 CLI 管理，快捷跳转/语音的常驻探索介绍仍缺。能打开设置不等于能重看演示。
 
 逐项采用或修改提示时，一并核对适用用户、触发前提、ID/去重、关闭、动作结果与常驻回看；新增确有不同内容的提示才用新 ID，不靠重置已看记录强制所有人重播。矩阵的提示格打勾前验证这些路径；单次投放结束不删除其常驻内容。
 
@@ -126,7 +126,9 @@ G08/G09 当前确实在入门的“能力体验”里，先如实登记，与探
 
 [setup]: ../../src/shared/feature-wall-setup-steps.ts
 [setup-copy]: ../../src/renderer/src/components/feature-wall/feature-wall-setup-checklist-localized-copy.ts
+[integration-setup]: ../../src/renderer/src/components/feature-wall/ConnectIntegrationsList.tsx
 [setup-actions]: ../../src/renderer/src/components/feature-wall/FeatureWallSetupWorkflowActions.tsx
+[cli-settings]: ../../src/renderer/src/components/settings/CliSection.tsx
 [onboarding]: ../../src/renderer/src/components/onboarding/use-onboarding-flow-types.ts
 [explore]: ../../src/shared/feature-wall-workflows.ts
 [explore-copy]: ../../src/renderer/src/components/feature-wall/feature-wall-tour-localized-copy.ts

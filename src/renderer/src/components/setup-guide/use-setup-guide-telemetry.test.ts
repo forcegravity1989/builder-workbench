@@ -28,6 +28,17 @@ describe('setup guide step completion telemetry', () => {
     expect(getSetupGuideTelemetryFirstIncompleteStepId(createProgress({}))).toBe('notifications')
     expect(
       getSetupGuideTelemetryFirstIncompleteStepId(
+        createProgress({ notifications: true, 'default-agent': true }),
+        true
+      )
+    ).toBe('task-sources')
+    expect(
+      getSetupGuideTelemetryFirstIncompleteStepId(
+        createProgress({ notifications: true, 'default-agent': true })
+      )
+    ).toBe('agent-capabilities')
+    expect(
+      getSetupGuideTelemetryFirstIncompleteStepId(
         createProgress({
           notifications: true,
           'default-agent': true,
@@ -100,6 +111,30 @@ describe('setup guide step completion telemetry', () => {
       total_steps: 8,
       setup_guide_visible: true
     })
+    vi.stubGlobal('localStorage', createMemoryStorage())
+    trackMock.mockClear()
+    const workbenchState = createSetupGuideStepCompletionTelemetryState()
+    recordSetupGuideStepCompletionTelemetry({
+      state: workbenchState,
+      progress: createProgress({}),
+      setupGuideVisible: true,
+      workbenchShell: true
+    })
+    recordSetupGuideStepCompletionTelemetry({
+      state: workbenchState,
+      progress: createProgress({ notifications: true, 'agent-capabilities': true }),
+      setupGuideVisible: true,
+      workbenchShell: true
+    })
+    expect(trackMock).toHaveBeenCalledTimes(1)
+    expect(trackMock).toHaveBeenCalledWith('setup_guide_step_completed', {
+      step_id: 'notifications',
+      section_id: 'setup',
+      completed_count: 1,
+      total_steps: 7,
+      setup_guide_visible: true
+    })
+    expect([...readEmittedSetupGuideStepIds()]).toEqual(['notifications'])
   })
 })
 

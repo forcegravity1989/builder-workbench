@@ -181,13 +181,15 @@ export async function openProjectDefaultCheckout({
   source,
   selectedPath,
   setHideDefaultBranchWorkspace,
-  executionHostId
+  executionHostId,
+  activateDefaultCheckout = true
 }: {
   repoId: string
   source: AddRepoDefaultCheckoutHandoffSource
   selectedPath?: string
   setHideDefaultBranchWorkspace: (value: boolean) => void
   executionHostId?: ExecutionHostId
+  activateDefaultCheckout?: boolean
 }): Promise<void> {
   let defaultCheckout = getProjectDefaultCheckout(
     getProjectWorktreesForHost(
@@ -213,7 +215,17 @@ export async function openProjectDefaultCheckout({
         result: 'revealed_project',
         reason: revealLinkedFailureReason
       })
-      finalizeImportedRepoAfterSkip(useAppStore.getState(), repoId)
+      if (activateDefaultCheckout) {
+        finalizeImportedRepoAfterSkip(useAppStore.getState(), repoId)
+      }
+      return
+    }
+    if (!activateDefaultCheckout) {
+      track('add_repo_default_checkout_handoff', {
+        source,
+        result: 'revealed_project',
+        reason
+      })
       return
     }
     // Why: the onboarding handoff should land on the default checkout even
@@ -244,7 +256,9 @@ export async function openProjectDefaultCheckout({
     result: 'revealed_project',
     reason
   })
-  finalizeImportedRepoAfterSkip(useAppStore.getState(), repoId)
+  if (activateDefaultCheckout) {
+    finalizeImportedRepoAfterSkip(useAppStore.getState(), repoId)
+  }
 }
 
 export async function finishProjectAddWithDefaultCheckout({
@@ -253,7 +267,8 @@ export async function finishProjectAddWithDefaultCheckout({
   selectedPath,
   closeModal,
   setHideDefaultBranchWorkspace,
-  executionHostId
+  executionHostId,
+  activateDefaultCheckout
 }: {
   repoId: string
   source: AddRepoDefaultCheckoutHandoffSource
@@ -261,6 +276,7 @@ export async function finishProjectAddWithDefaultCheckout({
   closeModal: () => void
   setHideDefaultBranchWorkspace: (value: boolean) => void
   executionHostId?: ExecutionHostId
+  activateDefaultCheckout?: boolean
 }): Promise<void> {
   await markOnboardingProjectAdded('addedRepo')
   closeModal()
@@ -269,6 +285,7 @@ export async function finishProjectAddWithDefaultCheckout({
     source,
     selectedPath,
     executionHostId,
-    setHideDefaultBranchWorkspace
+    setHideDefaultBranchWorkspace,
+    activateDefaultCheckout
   })
 }

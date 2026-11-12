@@ -19,6 +19,7 @@ import {
   type AddRepoDialogHostedController
 } from './use-add-repo-hosted-controller'
 import { routeAddRepoBrowse } from './add-repo-browse-authority'
+import type { RepoSlice } from '@/store/repos/repo-state'
 
 export default React.memo(function AddRepoDialog({
   hosted
@@ -34,7 +35,7 @@ export default React.memo(function AddRepoDialog({
   const droppedLocalPath = useAppStore((s) =>
     !hosted && typeof s.modalData.droppedLocalPath === 'string' ? s.modalData.droppedLocalPath : ''
   )
-  const addRepoPath = useAppStore((s) => s.addRepoPath)
+  const storeAddRepoPath = useAppStore((s) => s.addRepoPath)
   const scanNestedRepos = useAppStore((s) => s.scanNestedRepos)
   const cancelNestedRepoScan = useAppStore((s) => s.cancelNestedRepoScan)
   const importNestedRepos = useAppStore((s) => s.importNestedRepos)
@@ -42,15 +43,26 @@ export default React.memo(function AddRepoDialog({
   const fetchWorktrees = useAppStore((s) => s.fetchWorktrees)
   const setHideDefaultBranchWorkspace = useAppStore((s) => s.setHideDefaultBranchWorkspace)
   const settings = useAppStore((s) => s.settings)
-  const { closeModal, closeForFolderHandoff, finishProjectAdd, handleOpenSshSettings } =
-    useAddRepoHostedController(hosted)
+  const {
+    closeModal,
+    closeForFolderHandoff,
+    finishProjectAdd,
+    handleOpenSshSettings,
+    projectWallModal
+  } = useAddRepoHostedController(hosted)
+  const addRepoPath = useCallback<RepoSlice['addRepoPath']>(
+    (path, kind, options) =>
+      storeAddRepoPath(path, kind, projectWallModal ? { ...options, projectWallModal } : options),
+    [projectWallModal, storeAddRepoPath]
+  )
   const [step, setStep] = useState<AddRepoDialogStep>('add')
   const [isAdding, setIsAdding] = useState(false)
   const [addProjectBusyLabel, setAddProjectBusyLabel] = useState<string | null>(null)
   const completeGitRepoAdd = useCompleteGitRepoAdd({
     closeModal,
     setHideDefaultBranchWorkspace,
-    finishProjectAdd
+    finishProjectAdd,
+    stayOnProjectWall: projectWallModal !== undefined
   })
   const hostSelection = useAddRepoHostSelection({
     isOpen,
@@ -88,6 +100,7 @@ export default React.memo(function AddRepoDialog({
     fetchWorktrees,
     importNestedRepos,
     onGitRepoReady: completeGitRepoAdd,
+    projectWallModal,
     setIsAdding,
     activeRuntimeEnvironmentId: selectedRuntimeEnvironmentId,
     setStep
@@ -115,7 +128,8 @@ export default React.memo(function AddRepoDialog({
     (repoId, executionHostId) => completeGitRepoAdd(repoId, 'ssh_remote_path', executionHostId),
     scanNestedRepos,
     showRemoteNestedRepoReview,
-    trackRemoteNestedScanResult
+    trackRemoteNestedScanResult,
+    projectWallModal
   )
   const {
     createName,
@@ -135,7 +149,8 @@ export default React.memo(function AddRepoDialog({
     {
       hostId: hostSelection.selectedHostId,
       runtimeEnvironmentId: selectedRuntimeEnvironmentId,
-      sshTargetId: hostSelection.selectedSshTargetId
+      sshTargetId: hostSelection.selectedSshTargetId,
+      stayOnProjectWall: projectWallModal !== undefined
     }
   )
 

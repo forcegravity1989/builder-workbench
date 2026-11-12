@@ -6,7 +6,7 @@
 
 ## 用户与问题
 
-被管项目的 Builder 在内网环境工作，BW 真正依赖三个 CLI：`gh`（GitHub 任务与 PR）、`codehub-cli`（CodeHub 任务与 MR）、`welink-cli`（项目群通知）。他打开设置 → 集成想确认三者可用，看到的却是八张卡：六张（GitLab、Bitbucket、Azure DevOps、Gitea、Linear、Jira）与 BW 工作流无关，真正要用的 WeLink 反而没有卡。剩下两张也只报缺、不帮着办：
+被管项目的 Builder 在内网环境工作，BW 真正依赖三个 CLI：`gh`（GitHub 任务与 PR）、`codehub-cli`（CodeHub 任务与 MR）、`welink-cli`（向 BW 用户群空间发送报告与诊断）。他打开设置 → 集成想确认三者可用，看到的却是八张卡：六张（GitLab、Bitbucket、Azure DevOps、Gitea、Linear、Jira）与 BW 工作流无关，真正要用的 WeLink 反而没有卡。剩下两张也只报缺、不帮着办：
 
 - GitHub 没装时只有跳官网的按钮；没登录时只把 `gh auth login` 这行字摆出来，要自己开终端敲。
 - CodeHub 只区分「在 PATH 上」与「不在」，不探登录，也没有登录入口。
@@ -25,7 +25,7 @@
 
 ## 目标体验
 
-设置 → 集成只剩四张卡，按「代码托管」（GitHub、CodeHub）与「项目群」（WeLink）分组，2026-10-19 起另设「构建」分组放 CloudBuild（cb，#366 增补），沿用现有卡片模板与状态口径（检查中 / 未安装 / 未登录 / 已连接 / 不可用，即现有 `CliProviderCardState` 五态）：
+设置 → 集成只剩四张卡，按「代码托管」（GitHub、CodeHub）与「报告与诊断」（WeLink）分组，2026-10-19 起另设「构建」分组放 CloudBuild（cb，#366 增补），沿用现有卡片模板与状态口径（检查中 / 未安装 / 未登录 / 已连接 / 不可用，即现有 `CliProviderCardState` 五态）：
 
 - 没装：gh 点「安装」跳 cli.github.com（现有行为）；welink、codehub 点「安装」，应用后台执行各自的自包含 npm 安装命令（口径均已由人确认），卡上持续显示「安装中」，完成与失败都弹通知，成功后自动复查。
 - 没登录：点「登录」，卡内展开内嵌终端（临时终端域，不挂接入的项目工作树），`auth login` 已粘贴待回车，人按回车后按 CLI 提示完成登录；命令结束卡自动复查，也可手动点「重新检查」。
@@ -47,7 +47,7 @@
 1. **被收敛六卡的代码去留**——**已拍板：留在仓**。组件、探测与词条保留，只改渲染名单；删除会加大与 Orca 上游同步的冲突面，恢复某张卡也更容易。
 2. **codehub-cli 安装口径**——**已拍板：单条自包含命令**（人确认 2026-10-16）：`npm install -g @codehub/codehub-cli --registry=<内网源> --strict-ssl=false`，welink 同款、不动机器 npm 配置；安装按钮与命令文字行已接（见 spec 命令表）。
 3. **welink-cli 的 EXPIRED 中间态**——**已拍板：算未登录**（人拍板 2026-10-16，推翻草案倾向）。`auth status` 输出含 EXPIRED 即 not-authenticated，卡上给登录按钮让人重扫，不给过期 token 亮绿灯。
-4. **分组标题的 i18n 呈现**——**已拍板：只补中文**（人拍板 2026-10-16）。「代码托管」「项目群」标题与描述行进 zh.json，其余语言仍回退英文。
+4. **分组标题的 i18n 呈现**——**已拍板：只补中文**（人拍板 2026-10-16）。分组标题与描述行进 zh.json，其余语言仍回退英文。
 
 **真壳验证拍板（2026-10-16，第一轮人工验证反馈，推翻 spec 两处旧取舍）**：
 
