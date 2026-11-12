@@ -1,0 +1,27 @@
+docs/05-features/version-workspace/design.md
+  s_aa19e58c44c782::t_771a140a00fe60 15
+docs/05-features/version-workspace/spec.md
+  s_aa19e58c44c782::t_247dfa110065c7 29,42
+src/renderer/src/components/sidebar/worktree-list/listing/use-version-scoped-worktrees.test.ts
+  s_aa19e58c44c782::t_e488a160b7b74f 1-91
+src/renderer/src/components/sidebar/worktree-list/listing/use-version-scoped-worktrees.ts
+  s_aa19e58c44c782::t_dc43a74638eb28 130-134,145-149,156
+src/renderer/src/components/sidebar/worktree-list/listing/workbench-section-rows.ts
+  s_aa19e58c44c782::t_830dec66341bfd 82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "73eb1b8c423440d65ff64c40ea09a220d0f6edba",
+  "prompts": {},
+  "sessions": {
+    "s_aa19e58c44c782": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "50bf50b0-94ec-4dee-abeb-1c305d8358be",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
