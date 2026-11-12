@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { ChevronRight, FilePenLine } from 'lucide-react'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
+import { WorkbenchHelpPopover } from './WorkbenchHelpPopover'
+import { OVERVIEW_HELP, OverviewIntro } from './OverviewIntro'
 import { CHARTER_LABELS, type ProjectCharter } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
 
@@ -34,8 +36,14 @@ export function ProjectCard({
           <span className="card-title">{projectName}</span>
           {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
         </button>
-        {onEdit && <WorkbenchIconButton label="编辑项目信息" icon={FilePenLine} onClick={onEdit} />}
+        <div className="flex items-center">
+          <WorkbenchHelpPopover label="项目总览帮助">{OVERVIEW_HELP}</WorkbenchHelpPopover>
+          {onEdit && (
+            <WorkbenchIconButton label="编辑项目信息" icon={FilePenLine} onClick={onEdit} />
+          )}
+        </div>
       </div>
+      {onEdit && <OverviewIntro />}
       {notice}
       {open && (
         <div className="detail-grid">

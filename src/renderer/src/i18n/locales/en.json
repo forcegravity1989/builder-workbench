@@ -17766,6 +17766,24 @@
     }
   },
   "guidance": {
+    "direction": {
+      "wall": {
+        "title": "Find the project",
+        "body": "Find an added project on the Project wall. Select its name to continue working, or choose Project overview on its card to open the project’s direction and milestones."
+      },
+      "card": {
+        "title": "Record the shared direction",
+        "body": "Expand the project card to see the owner, what you want to do, and the vision. Use Edit project information to revise them. The scoreboard below shows actual metrics."
+      },
+      "draft": {
+        "title": "Plan outcomes and dates",
+        "body": "In Plan milestones, add an expected outcome and date. Add a feature and adjust its schedule. When the local draft is saved, you can leave and return via Continue planning."
+      },
+      "review": {
+        "title": "Review the changes and update",
+        "body": "With a connected repository, check the changes and submit them. While the review is open, use View review. The overview still shows the formal schedule. After a teammate merges, update the project information or formal schedule."
+      }
+    },
     "catalog": {
       "feature": {
         "workspace": {

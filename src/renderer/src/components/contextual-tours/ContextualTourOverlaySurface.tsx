@@ -29,7 +29,7 @@ import { translate } from '@/i18n/i18n'
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-const SKIP_BUTTON_SELECTOR = 'button[aria-label^="Skip"], button[aria-label="Dismiss tour"]'
+const SKIP_BUTTON_SELECTOR = 'button[data-contextual-tour-skip]'
 
 export type ActiveTourRenderState = {
   rect: DOMRect
@@ -185,6 +185,7 @@ export function ContextualTourOverlaySurface({
                   'Skip tour'
                 )
           }
+          data-contextual-tour-skip
           onClick={() => onSkip(activeTourId)}
           className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
         >

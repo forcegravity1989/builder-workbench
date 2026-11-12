@@ -61,6 +61,24 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   const journeyNav = dialog.getByRole('navigation', { name: /^(Work journeys|工作旅程)$/ })
   await expect(journeyNav.getByRole('button')).toHaveCount(7)
   await expect(journeyNav.getByText(/^(In development|建设中)$/)).toHaveCount(2)
+  const direction = /^(Establish project direction and milestones|建立项目方向与阶段安排)$/
+  const directionContent = dialog.getByRole('region', { name: direction })
+  const screenshots = directionContent.getByRole('img')
+  await expect(screenshots).toHaveCount(4)
+  await expect
+    .poll(() =>
+      screenshots.evaluateAll((images) =>
+        images.every((image) => image instanceof HTMLImageElement && image.naturalWidth > 0)
+      )
+    )
+    .toBe(true)
+  await directionContent.getByRole('button', { name: /^(Project overview|项目总览)$/ }).click()
+  await expect(features).toHaveAttribute('aria-selected', 'true')
+  await expect(
+    dialog.getByRole('region', { name: /^(Project overview|项目总览)$/ }).getByRole('img')
+  ).toBeVisible()
+  await journeys.click()
+  await expect(directionContent.getByRole('img')).toHaveCount(4)
   const maintenance = /^(Keep the project maintainable|让项目持续可维护)$/
   await journeyNav
     .getByRole('button', { name: /Keep the project maintainable|让项目持续可维护/ })

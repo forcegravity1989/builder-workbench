@@ -255,9 +255,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   ])
   await expect(overviewCharter.locator('.detail-v').last()).toHaveText('1000123457')
   await overviewCharter.getByRole('button', { name: '编辑项目信息', exact: true }).click()
-  await expect(page.locator('.wb-project-settings')).toBeVisible()
-  await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
-  await expect(page.locator('.wb-config-facts')).toContainText('1000123457')
+  const overviewSettings = page.locator('.wb-project-settings')
+  await expect(overviewSettings).toBeVisible()
+  await expect(overviewSettings.getByLabel('项目负责人', { exact: true })).toHaveValue('负责人甲')
+  await expect(overviewSettings.getByLabel('项目群', { exact: true })).toHaveValue('1000123457')
   await page.screenshot({
     animations: 'disabled',
     path: info.outputPath('bw-overview-shared-editor.jpg')

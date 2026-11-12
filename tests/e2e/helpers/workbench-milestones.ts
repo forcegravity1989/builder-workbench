@@ -132,7 +132,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await rows.first().getByLabel('负责人', { exact: true }).press('Tab')
   await board.getByRole('button', { name: '结束编辑，返回项目里程碑', exact: true }).click()
   await expect(board.getByLabel('负责人', { exact: true })).toHaveCount(0)
-  await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
+  await board.getByRole('button', { name: '继续规划', exact: true }).click()
   await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('评审 Builder')
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('Builder 1')

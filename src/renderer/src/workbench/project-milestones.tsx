@@ -245,6 +245,9 @@ export function ProjectMilestones({
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
+          {dirty && model.recoverySaved && (
+            <span className="text-xs text-muted-foreground">草稿已保存在本机</span>
+          )}
           <MilestoneGuide
             editing={editing}
             blocked={!!state.recoveryBlocked}
@@ -276,7 +279,7 @@ export function ProjectMilestones({
               }
               onClick={model.beginEditing}
             >
-              规划里程碑
+              {dirty ? '继续规划' : '规划里程碑'}
             </Button>
           )}
           {hasReviewAction && (

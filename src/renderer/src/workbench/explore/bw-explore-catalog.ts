@@ -4,6 +4,12 @@ import type { WorkbenchStepId } from '../../../../shared/workbench-steps'
 import type { ReviewStepId } from '../../../../shared/review-steps'
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
+import {
+  DirectionJourney,
+  DirectionMilestones,
+  DirectionOverview,
+  DirectionWall
+} from './DirectionWalkthrough'
 
 export type ExploreDemo =
   | { workflow: 'workspaces' | 'tasks' }
@@ -138,14 +144,16 @@ function getFeatures() {
       summary: translate(
         'guidance.catalog.feature.milestones.summary',
         'Plan milestone outcomes and compare them with actual delivery.'
-      )
+      ),
+      content: DirectionMilestones
     },
     'project-wall': {
       title: translate('guidance.catalog.feature.project-wall.title', 'Project wall'),
       summary: translate(
         'guidance.catalog.feature.project-wall.summary',
         'Find the project that needs your attention.'
-      )
+      ),
+      content: DirectionWall
     },
     'project-intake': {
       title: translate('guidance.catalog.feature.project-intake.title', 'Add a project'),
@@ -159,7 +167,8 @@ function getFeatures() {
       summary: translate(
         'guidance.catalog.feature.project-overview.summary',
         'Review project direction, milestones, and actual results.'
-      )
+      ),
+      content: DirectionOverview
     },
     'version-planning': {
       title: translate('guidance.catalog.feature.version-planning.title', 'Version planning'),
@@ -307,7 +316,8 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
         'guidance.catalog.journey.direction.summary',
         'Agree on what the project should accomplish and plan its milestones.'
       ),
-      related: ['project-overview', 'milestones']
+      content: DirectionJourney,
+      related: ['project-wall', 'project-overview', 'milestones']
     },
     {
       id: 'commitments',

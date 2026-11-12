@@ -24,6 +24,7 @@ export function ProjectSettingsRail({
   repo,
   rows,
   displayName,
+  startEditing = false,
   onClose,
   onDirtyChange,
   onBusyChange,
@@ -33,6 +34,7 @@ export function ProjectSettingsRail({
   repo: Repo
   rows?: readonly Repo[]
   displayName: string
+  startEditing?: boolean
   onClose(): void
   onDirtyChange(dirty: boolean): void
   onBusyChange(busy: boolean): void
@@ -45,7 +47,7 @@ export function ProjectSettingsRail({
     }
     onChanged?.(charterUpdated)
   })
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(startEditing)
   const [savingType, setSavingType] = useState(false)
   const panel = useRef<HTMLElement>(null)
   const projectRows = useMemo(() => rows ?? [repo], [rows, repo])
@@ -77,6 +79,7 @@ export function ProjectSettingsRail({
     panel.current?.querySelector<HTMLButtonElement>('[data-close-config]')?.focus()
   }, [])
   const blocked = model.loading || !model.canEdit || Boolean(model.pending || model.merged)
+  const showEditor = editing && !blocked
   const changeType = async (value: string) => {
     if (!ownRows.length || savingType || (value !== 'personal' && value !== 'team')) {
       return
@@ -154,7 +157,7 @@ export function ProjectSettingsRail({
             <header className="wb-config-info-heading">
               <h3>项目信息</h3>
               <WorkbenchIconButton
-                label={editing ? '收起编辑' : '编辑项目信息'}
+                label={showEditor ? '收起编辑' : '编辑项目信息'}
                 icon={FilePenLine}
                 disabled={blocked || model.busy}
                 onClick={() => setEditing(!editing)}
@@ -165,7 +168,7 @@ export function ProjectSettingsRail({
                 <p role="status">正在读取项目信息…</p>
               ) : (
                 model.form &&
-                (editing ? (
+                (showEditor ? (
                   <div className="wb-config-fields">
                     {EDITABLE_CHARTER_FIELDS.map((field) => (
                       <label key={field} htmlFor={`config-${field}`}>

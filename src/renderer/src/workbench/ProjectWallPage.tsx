@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
+import { WorkbenchHelpPopover } from './WorkbenchHelpPopover'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
@@ -76,6 +77,7 @@ export function ProjectWallPage() {
     }
   }
   const native = useWallNativeProjectActions(leave)
+  const hasFilters = Boolean(query.trim()) || location !== 'all' || type !== 'all'
   const filtered = cards.filter((card) =>
     card.displayName.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   )
@@ -90,6 +92,11 @@ export function ProjectWallPage() {
               </h1>
             </div>
             <div className="page-actions" role="group" aria-label="项目墙操作">
+              <WorkbenchHelpPopover label="项目墙帮助">
+                {hasProjects
+                  ? '搜索或筛选已添加的项目。点项目名称继续工作，点卡片上的「项目总览」查看方向和里程碑。'
+                  : '点「添加项目」打开已有项目。项目上墙后，点项目名称继续工作。'}
+              </WorkbenchHelpPopover>
               <WorkbenchIconButton
                 label="刷新项目目录和墙卡信息"
                 icon={refreshing ? LoaderCircle : RefreshCw}
@@ -117,7 +124,6 @@ export function ProjectWallPage() {
               />
             </div>
           </header>
-          <p className="wall-principles">聚焦目标 · 关注引领指标 · 建立记分表 · 保持问责节奏</p>
           {hasProjects && (
             <div className="wallbar">
               <Input
@@ -190,7 +196,24 @@ export function ProjectWallPage() {
               <Button onClick={openAddProject}>添加项目</Button>
             </div>
           ) : !filtered.length ? (
-            <p className="empty-center">没有匹配的项目</p>
+            <div className="empty-center">
+              <p>{hasFilters ? '没有匹配的项目' : '暂未读到项目，请刷新项目墙'}</p>
+              {hasFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    leave(() => {
+                      setQuery('')
+                      setLocation('all')
+                      setType('all')
+                    })
+                  }
+                >
+                  清除搜索和筛选
+                </Button>
+              )}
+            </div>
           ) : (
             (['team', 'personal'] as const).map((category) => {
               const items = filtered.filter(

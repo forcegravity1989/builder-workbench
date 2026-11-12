@@ -333,6 +333,7 @@ export function OverviewPage(): React.JSX.Element {
             key={charterKey}
             repo={activeRepo}
             displayName={projectName}
+            startEditing
             onClose={() => {
               if (!settingsBusy) {
                 if (settingsDirty) {
