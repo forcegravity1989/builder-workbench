@@ -271,7 +271,7 @@ describe('listWorkItems', () => {
         '120s',
         `search/issues?q=${encodeURIComponent('repo:acme/widgets is:issue assignee:@me')}&sort=created&order=desc&per_page=10&page=1`,
         '--jq',
-        '.items'
+        'if .incomplete_results then error("GitHub search results incomplete") else .items end'
       ],
       { cwd: '/repo-root' }
     )
@@ -738,7 +738,7 @@ describe('listWorkItems', () => {
         '120s',
         `search/issues?q=${encodeURIComponent('repo:acme/widgets is:issue is:open')}&sort=created&order=desc&per_page=10&page=1`,
         '--jq',
-        '.items'
+        'if .incomplete_results then error("GitHub search results incomplete") else .items end'
       ],
       { cwd: '/repo-root' }
     )

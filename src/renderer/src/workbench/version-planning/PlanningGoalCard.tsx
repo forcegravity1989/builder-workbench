@@ -45,6 +45,7 @@ export function PlanningGoalCard({
   goal,
   index,
   relatedTasks,
+  issueMembershipKnown,
   reads,
   version,
   onChange,
@@ -63,6 +64,7 @@ export function PlanningGoalCard({
   goal: VersionGoal
   index: number
   relatedTasks: VersionTaskReference[]
+  issueMembershipKnown: boolean
   /** null while the provider read is in flight. */
   reads: Map<string, CycleTaskRead> | null
   /** 本版版本（Issue 行开工箭头的解析前提）。 */
@@ -150,7 +152,9 @@ export function PlanningGoalCard({
           label={`${goalNumber} 目标`}
           onOpenPanel={onOpenAnnotationPanel}
         />
-        <span className="g3-goal-count">{relatedTasks.length} Issue</span>
+        <span className="g3-goal-count">
+          {issueMembershipKnown ? `${relatedTasks.length} Issue` : 'Issue 数未知'}
+        </span>
         {open &&
           !confirmingDelete &&
           (editing ? (
@@ -268,7 +272,7 @@ export function PlanningGoalCard({
           </div>
           <div className="g3-task-head">
             <h3>
-              关联 Issue <span>{relatedTasks.length}</span>
+              关联 Issue <span>{issueMembershipKnown ? relatedTasks.length : '未知'}</span>
             </h3>
             {onSendAction(
               `按 ${goalNumber} 验收标准核对已有 Issue，给出拆解与关联建议`,
@@ -278,16 +282,18 @@ export function PlanningGoalCard({
               </BoardActionButton>
             )}
           </div>
-          <PlanningGoalTasks
-            goal={goal}
-            goalNumber={goalNumber}
-            relatedTasks={relatedTasks}
-            reads={reads}
-            version={version}
-            onTask={onTask}
-            numbersFor={numbersFor}
-            onOpenAnnotationPanel={onOpenAnnotationPanel}
-          />
+          {issueMembershipKnown && (
+            <PlanningGoalTasks
+              goal={goal}
+              goalNumber={goalNumber}
+              relatedTasks={relatedTasks}
+              reads={reads}
+              version={version}
+              onTask={onTask}
+              numbersFor={numbersFor}
+              onOpenAnnotationPanel={onOpenAnnotationPanel}
+            />
+          )}
         </div>
       )}
     </article>

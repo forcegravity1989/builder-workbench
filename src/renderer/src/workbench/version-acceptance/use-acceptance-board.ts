@@ -14,6 +14,7 @@ import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
 import { historyErrorCode } from '../version-history-port'
+import { replaceGoalTaskEvidence } from './acceptance-task-evidence'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
 /**
@@ -240,7 +241,7 @@ export function useAcceptanceBoard({
     }
     controller.edit(next)
   }
-  function editGoal(next: AcceptanceMaterial, goalId: string) {
+  function editGoal(next: AcceptanceMaterial, goalId: string, recordEvidence = false) {
     const current = controller.value?.document
     const result = next.results.find((item) => item.goalId === goalId)
     if (!current || !result) {
@@ -255,7 +256,10 @@ export function useAcceptanceBoard({
     // 控制器值为准，否则会把并发写入盖掉。
     controller.edit({
       ...current,
-      results: upsertGoalResult(current.results, result)
+      results: upsertGoalResult(current.results, result),
+      ...(recordEvidence
+        ? { taskSnapshot: replaceGoalTaskEvidence(current.taskSnapshot, goalId, next.taskSnapshot) }
+        : {})
     })
   }
   return {

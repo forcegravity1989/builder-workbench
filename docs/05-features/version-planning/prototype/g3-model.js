@@ -1,3 +1,4 @@
+import { resolveMemberGoalId } from '../../../../src/shared/workbench/version-membership'
 import snapshot from './g3-snapshot.json'
 export { snapshot }
 export const g2Url = '../version-workspace/version-workspace-prototype.html'
@@ -86,14 +87,20 @@ export const scenes = [
   ['goals', '目标已定 · 未拆 Issue'],
   ['full', '已拆解 · 纪要与归档']
 ]
-export function taskRows(scene) {
+export function taskRows(scene, goals) {
   if (scene !== 'full') {
     return []
   }
-  return snapshot.plan.tasks.map((ref) => ({
-    ...ref,
-    ...snapshot.issues.find((item) => item.number === ref.number)
-  }))
+  const version = snapshot.plan.version
+  const label = `bw:plan:${version}`
+  const goalIds = new Set(goals.map((goal) => goal.goalId))
+  return snapshot.issues
+    .filter((issue) => issue.labels?.includes(label))
+    .map((issue) => ({
+      ...issue,
+      version,
+      goalId: resolveMemberGoalId(issue.title, version, goalIds)
+    }))
 }
 // Issue 行显示 Bug/Feature 分类：issue-state 规范要求的标签里含 bug/缺陷 → Bug；
 // 没有分类标签一律默认按 Feature 显示（2026-10-21 用户确认）。

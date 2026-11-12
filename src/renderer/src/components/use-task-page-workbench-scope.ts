@@ -56,7 +56,12 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
       return null
     }
     try {
-      return requireVersionTaskScopeHome(pageData.preselectedRepoId, { repos, activeRepoId })
+      return requireVersionTaskScopeHome(
+        pageData.preselectedRepoId,
+        { repos, activeRepoId },
+        goalScope.homeHostId,
+        goalScope.runtimeOwnerEnvironmentId
+      )
     } catch {
       return null
     }
@@ -114,7 +119,14 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setCodehubLoading(!result)
     void (async () => {
       try {
-        const target = home ?? requireVersionTaskScopeHome(pageData.preselectedRepoId)
+        const target =
+          home ??
+          requireVersionTaskScopeHome(
+            pageData.preselectedRepoId,
+            undefined,
+            goalScope.homeHostId,
+            goalScope.runtimeOwnerEnvironmentId
+          )
         const loaded = await loadWorkbenchTaskScope(goalScope, target, force)
         if (cancelled) {
           return

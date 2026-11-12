@@ -2,6 +2,7 @@ import { MessageSquarePlus } from 'lucide-react'
 import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { toast } from 'sonner'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
+import { useVersionMembership } from '../version-cycle/use-version-membership'
 import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { openArchivePrPage } from '../version-cycle/open-archive-pr'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
@@ -51,6 +52,7 @@ export function AcceptanceBoardContent({
   // Non-null: the outer component already refused to render without a workspace.
   const { scope, worktreeId } = board
   const { document, plan } = board
+  const membership = useVersionMembership(scope, plan?.document)
   const scopeKey = scope ? cycleScopeKey(scope) : ''
   // Stable board identity for annotation lifetime: context.version is the native
   // selection and does not flicker through re-select transients (draft null).
@@ -84,25 +86,17 @@ export function AcceptanceBoardContent({
   const [openingPr, setOpeningPr] = useState(false)
   const { pruneMissing } = annotations
 
-  const goalsKey = JSON.stringify(plan?.document.goals.map((goal) => goal.goalId) ?? [])
-  const tasksKey = JSON.stringify(
-    plan?.document.tasks.map((task) => [task.goalId, task.number]) ?? []
-  )
   useEffect(() => {
     if (!plan) {
       return
     }
     const goalIds = new Set(plan.document.goals.map((goal) => goal.goalId))
-    const issueKeys = new Set(
-      plan.document.tasks
-        .filter((task) => task.goalId)
-        .map((task) => `${task.goalId}:${task.number}`)
-    )
+    const issueKeys = new Set(membership.references?.map((task) => `${task.goalId}:${task.number}`))
     pruneMissing(
       (goalId) => goalIds.has(goalId),
-      (goalId, number) => issueKeys.has(`${goalId}:${number}`)
+      (goalId, number) => !membership.references || issueKeys.has(`${goalId}:${number}`)
     )
-  }, [goalsKey, tasksKey, plan, pruneMissing])
+  }, [plan, pruneMissing, membership.references])
 
   const act = async (operation: () => Promise<unknown>) => {
     setNotice('')
@@ -172,7 +166,7 @@ export function AcceptanceBoardContent({
   const { saveTaskSnapshot, setError } = board
   const handleSnapshot = useCallback(
     (reads: CycleTaskRead[]) => {
-      if (document) {
+      if (document && membership.references && !membership.busy && !board.readOnly) {
         try {
           saveTaskSnapshot(document, reads)
         } catch (reason) {
@@ -182,8 +176,13 @@ export function AcceptanceBoardContent({
     },
     // saveTaskSnapshot re-reads the live controller value; the document identity
     // is what makes a stale snapshot refuse to overwrite newer material.
-    [document, saveTaskSnapshot, setError]
+    [document, saveTaskSnapshot, setError, membership.references, membership.busy, board.readOnly]
   )
+  useEffect(() => {
+    if (membership.references?.length === 0) {
+      handleSnapshot([])
+    }
+  }, [membership.references, handleSnapshot])
   const openTask = (task: CycleTaskSnapshot) =>
     context.taskPort.openDetail(task, {
       ...scope,
@@ -335,7 +334,8 @@ export function AcceptanceBoardContent({
               scope={board.scope}
               taskPort={context.taskPort}
               onGoalChange={board.editGoal}
-              onTask={openTask}
+              onTask={(task) => act(() => openTask(task))}
+              membership={membership}
               onSnapshot={handleSnapshot}
               numbersFor={annotations.numbersFor}
               onOpenAnnotationPanel={annotations.openPanel}

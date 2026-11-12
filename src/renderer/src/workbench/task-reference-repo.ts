@@ -1,7 +1,13 @@
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  getRepoSshConnectionId,
+  parseExecutionHostId,
+  toRuntimeExecutionHostId
+} from '../../../shared/execution-host'
+import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
@@ -12,13 +18,50 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason)
 }
 
+export type TaskReadHome = Pick<CycleScope, 'repoId' | 'hostId' | 'runtimeOwnerEnvironmentId'>
+
+export function repoOnTaskHost(
+  repo: Repo,
+  home: Pick<TaskReadHome, 'hostId' | 'runtimeOwnerEnvironmentId'>
+): boolean {
+  const host = getRepoExecutionHostId(repo)
+  if (!home.runtimeOwnerEnvironmentId) {
+    return host === home.hostId
+  }
+  if (host !== toRuntimeExecutionHostId(home.runtimeOwnerEnvironmentId)) {
+    return false
+  }
+  const logicalHost = parseExecutionHostId(home.hostId)
+  return logicalHost?.kind !== 'ssh' || getRepoSshConnectionId(repo) === logicalHost.targetId
+}
+
+const githubIssueSources = new WeakMap<Repo, { repository: string; source: GitHubOwnerRepo }>()
+
+export function rememberGitHubIssueSource(
+  repo: Repo,
+  repository: string,
+  source: GitHubOwnerRepo
+): void {
+  githubIssueSources.set(repo, { repository, source })
+}
+
+export function knownGitHubIssueSource(
+  repo: Repo | undefined,
+  repository: string
+): GitHubOwnerRepo | undefined {
+  const known = repo && githubIssueSources.get(repo)
+  return known?.repository === repository ? known.source : undefined
+}
+
 function exactIdentityMatch(repo: Repo, repository: string): boolean {
   const identity = repo.gitRemoteIdentity
   const candidates = [
     identity?.canonicalKey,
     identity?.remoteUrl ? (normalizeGitRemoteUrl(identity.remoteUrl) ?? identity.remoteUrl) : null,
     repo.id,
-    repo.path
+    repo.path,
+    repo.upstream &&
+      `${repo.upstream.host ?? 'github.com'}/${repo.upstream.owner}/${repo.upstream.repo}`
   ]
   return candidates.some((candidate) => candidate === repository)
 }
@@ -52,7 +95,10 @@ function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolea
     ) {
       return false
     }
-    return exactIdentityMatch(repo, reference.repository)
+    return (
+      Boolean(knownGitHubIssueSource(repo, reference.repository)) ||
+      exactIdentityMatch(repo, reference.repository)
+    )
   }
   return exactIdentityMatch(repo, reference.repository)
 }
@@ -60,7 +106,7 @@ function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolea
 /** Resolve the registered repo a material reference points at; scope's own repo/host wins on ties. */
 export function resolveReferenceRepo(
   deps: Pick<TaskPortDeps, 'repos'>,
-  scope: Pick<CycleScope, 'repoId' | 'hostId'>,
+  scope: TaskReadHome,
   reference: CycleTaskReference
 ): Repo | null {
   const wanted = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
@@ -71,9 +117,9 @@ export function resolveReferenceRepo(
     return null
   }
   return (
-    matches.find((repo) => repo.id === scope.repoId) ??
-    matches.find((repo) => getRepoExecutionHostId(repo) === scope.hostId) ??
-    matches[0]!
+    matches.find((repo) => repo.id === scope.repoId && repoOnTaskHost(repo, scope)) ??
+    matches.find((repo) => repoOnTaskHost(repo, scope)) ??
+    (scope.runtimeOwnerEnvironmentId ? null : matches[0]!)
   )
 }
 
@@ -88,17 +134,25 @@ export function requireSourceContext(
   return sourceContext
 }
 
-/** CodeHub references carry no issue/MR kind; read as issue first, then MR. */
+/** Legacy references without a kind can point to either CodeHub object. */
 export async function viewCodeHubTaskByIid(
   deps: Pick<TaskPortDeps, 'viewCodeHubTask'>,
   repo: Repo,
-  iid: number,
+  reference: Pick<CycleTaskReference, 'number' | 'kind'>,
   beforeFallback?: () => void
 ): Promise<{ kind: 'issue' | 'mr'; detail: CodeHubTaskDetail }> {
-  const args = { repoPath: repo.path, repoId: repo.id, iid }
+  const args = {
+    repoPath: repo.path,
+    repoId: repo.id,
+    iid: reference.number,
+    sourceContext: requireSourceContext(repo, 'codehub')
+  }
   try {
     return { kind: 'issue', detail: await deps.viewCodeHubTask({ ...args, kind: 'issue' }) }
   } catch (issueError) {
+    if (reference.kind === 'issue') {
+      throw issueError
+    }
     beforeFallback?.()
     try {
       return { kind: 'mr', detail: await deps.viewCodeHubTask({ ...args, kind: 'mr' }) }
