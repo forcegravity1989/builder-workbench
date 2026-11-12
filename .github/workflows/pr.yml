@@ -176,6 +176,9 @@ jobs:
           src/main/agent-hooks/managed-hook-command-contract.test.ts
           src/main/agent-hooks/server-retired-pane-new-turn.test.ts
 
+      - name: Test Issue association calculation
+        run: node --test .github/scripts/pr-issue-audit.test.mjs
+
       - name: Lint
         run: pnpm run lint
 
