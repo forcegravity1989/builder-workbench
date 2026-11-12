@@ -1,7 +1,7 @@
 import type { FeatureInteractionState } from '../../../../shared/feature-interactions'
 import { hasFeatureInteraction } from '../../../../shared/feature-interactions'
 import {
-  FEATURE_WALL_SETUP_STEPS,
+  getFeatureWallSetupSteps,
   type FeatureWallSetupStepId
 } from '../../../../shared/feature-wall-setup-steps'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
@@ -9,10 +9,10 @@ import type { Worktree } from '../../../../shared/worktree/types'
 
 export type FeatureWallSetupProgressInput = {
   ready?: boolean
+  workbenchShell?: boolean
   settings: GlobalSettings | null
   featureInteractions: FeatureInteractionState
   hasConnectedTaskSource: boolean
-  orcaCliAvailable: boolean
   browserUseSkillInstalled: boolean
   computerUseSkillInstalled: boolean
   computerUsePermissionsReady: boolean
@@ -43,19 +43,16 @@ function countAvailableNonMainWorktrees(worktreesByRepo: Record<string, Worktree
   )
 }
 
-export function areAgentSkillsAndPermissionsReady(input: FeatureWallSetupProgressInput): boolean {
-  return (
+export function getFeatureWallSetupProgress(
+  input: FeatureWallSetupProgressInput
+): FeatureWallSetupProgress {
+  const setupSteps = getFeatureWallSetupSteps(input.workbenchShell)
+  const agentCapabilitiesDone =
+    !input.workbenchShell &&
     input.browserUseSkillInstalled &&
     input.computerUseSkillInstalled &&
     (input.computerUsePermissionsReady || input.computerUseUnavailable === true) &&
     input.orchestrationSkillInstalled
-  )
-}
-
-export function getFeatureWallSetupProgress(
-  input: FeatureWallSetupProgressInput
-): FeatureWallSetupProgress {
-  const agentCapabilitiesDone = input.orcaCliAvailable && areAgentSkillsAndPermissionsReady(input)
   const stepDone: Record<FeatureWallSetupStepId, boolean> = {
     'default-agent':
       Boolean(input.settings?.defaultTuiAgent) && input.settings?.defaultTuiAgent !== 'blank',
@@ -74,7 +71,7 @@ export function getFeatureWallSetupProgress(
   return {
     ready: input.ready ?? true,
     stepDone,
-    coreDoneCount: FEATURE_WALL_SETUP_STEPS.filter((step) => stepDone[step.id]).length,
-    coreTotal: FEATURE_WALL_SETUP_STEPS.length
+    coreDoneCount: setupSteps.filter((step) => stepDone[step.id]).length,
+    coreTotal: setupSteps.length
   }
 }

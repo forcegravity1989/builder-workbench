@@ -51,15 +51,6 @@ describe('browser milestone legacy setup guide progress', () => {
         setupGuideSidebarDismissed: false
       })
     ).toBe(true)
-    // CLI availability was not part of the pre-browser completion contract.
-    expect(
-      shouldMarkBrowserMilestoneLegacyComplete({
-        stepDone: { ...makePreBrowserDoneStepState(), 'agent-capabilities': false },
-        preCliAgentCapabilitiesDone: true,
-        historicalSplitTerminalDone: true,
-        setupGuideSidebarDismissed: false
-      })
-    ).toBe(true)
   })
 
   it('does not waive browser for old profiles missing historical split completion', () => {
@@ -94,24 +85,18 @@ describe('browser milestone legacy setup guide progress', () => {
     ).toBe(false)
   })
 
-  it('preserves legacy milestones but requires current CLI availability', () => {
+  it('keeps legacy-complete setup guide progress complete across all surfaces', () => {
     const progress = getSetupGuideBrowserMilestoneAwareProgress(
       makeProgress({
         stepDone: makePreBrowserDoneStepState() as Record<FeatureWallSetupStepId, boolean>,
         coreDoneCount: FEATURE_WALL_SETUP_STEPS.length - 1
       }),
-      true,
       true
     )
 
     expect(progress.coreDoneCount).toBe(FEATURE_WALL_SETUP_STEPS.length)
     expect(progress.stepDone.browser).toBe(true)
     expect(Object.values(progress.stepDone).every(Boolean)).toBe(true)
-
-    const unavailable = getSetupGuideBrowserMilestoneAwareProgress(progress, true, false)
-    expect(unavailable.stepDone['agent-capabilities']).toBe(false)
-    expect(unavailable.stepDone.browser).toBe(true)
-    expect(unavailable.coreDoneCount).toBe(FEATURE_WALL_SETUP_STEPS.length - 1)
   })
 
   it('leaves fresh setup guide progress unchanged when browser is incomplete', () => {
@@ -120,7 +105,38 @@ describe('browser milestone legacy setup guide progress', () => {
       coreDoneCount: FEATURE_WALL_SETUP_STEPS.length - 1
     })
 
-    expect(getSetupGuideBrowserMilestoneAwareProgress(original, false, false)).toBe(original)
+    expect(getSetupGuideBrowserMilestoneAwareProgress(original, false)).toBe(original)
+  })
+
+  it('keeps BW integration progress live for legacy-complete profiles', () => {
+    const original = makeProgress()
+    expect(getSetupGuideBrowserMilestoneAwareProgress(original, true, true)).toMatchObject({
+      stepDone: { browser: true, 'task-sources': false, 'agent-capabilities': false },
+      coreDoneCount: 6,
+      coreTotal: 7
+    })
+    expect(getSetupGuideBrowserMilestoneAwareProgress(original, true, false)).toMatchObject({
+      stepDone: { browser: true, 'task-sources': true },
+      coreDoneCount: FEATURE_WALL_SETUP_STEPS.length
+    })
+    expect(
+      getSetupGuideBrowserMilestoneAwareProgress(
+        { ...original, stepDone: { ...original.stepDone, 'task-sources': true } },
+        true,
+        true
+      )
+    ).toMatchObject({
+      stepDone: { 'task-sources': true, 'agent-capabilities': false },
+      coreDoneCount: 7,
+      coreTotal: 7
+    })
+    expect(
+      shouldMarkBrowserMilestoneLegacyComplete({
+        stepDone: { ...makePreBrowserDoneStepState(), 'agent-capabilities': false },
+        historicalSplitTerminalDone: true,
+        setupGuideSidebarDismissed: false
+      })
+    ).toBe(false)
   })
 })
 
@@ -174,6 +190,17 @@ describe('getSetupGuideProgressReady', () => {
   }
 
   it('waits for every setup-guide skill discovery scan to settle', () => {
+    expect(
+      getSetupGuideProgressReady({
+        ...readyInput,
+        agentCapabilitiesIncluded: false,
+        browserUseSkillDiscoveryLoading: true,
+        computerUseSkillDiscoveryLoading: true,
+        orchestrationSkillDiscoveryLoading: true,
+        computerUseSkillInstalled: true,
+        computerUsePermissionStatusChecked: false
+      })
+    ).toBe(true)
     expect(
       getSetupGuideProgressReady({
         ...readyInput,

@@ -72,7 +72,7 @@ type TokenReviewStatus = {
   tokenConfigured?: boolean
 }
 
-type ProviderStatusFacts = {
+type PreflightStatusFacts = {
   preflightStatus: {
     gh?: CliStatus
     glab?: CliStatus
@@ -86,6 +86,9 @@ type ProviderStatusFacts = {
   preflightStatusError: string | null
   preflightStatusLoading: boolean
   expectedPreflightContextKey: string
+}
+
+type ProviderStatusFacts = PreflightStatusFacts & {
   linearStatus: { connected?: boolean }
   linearStatusChecked: boolean
   linearStatusContextKey: string | null
@@ -145,25 +148,50 @@ function isGiteaReviewConfigured(status: TokenReviewStatus | undefined): boolean
   return true
 }
 
+function getPreflightConnectionFacts(facts: PreflightStatusFacts): {
+  checking: boolean
+  ready: boolean
+  githubConnected: boolean
+  codehubConnected: boolean
+} {
+  const preflightCurrent = facts.preflightStatusContextKey === facts.expectedPreflightContextKey
+  const checking =
+    facts.preflightStatusLoading || !facts.preflightStatusChecked || !preflightCurrent
+  const ready = !checking && facts.preflightStatusError === null
+  return {
+    checking,
+    ready,
+    githubConnected:
+      ready &&
+      facts.preflightStatus?.gh?.installed === true &&
+      facts.preflightStatus.gh.authenticated === true,
+    codehubConnected:
+      ready &&
+      facts.preflightStatus?.codehub?.installed === true &&
+      facts.preflightStatus.codehub.authenticated === true
+  }
+}
+
+export function deriveWorkbenchSetupIntegrationStatus(
+  facts: PreflightStatusFacts
+): Pick<IntegrationConnectionStatus, 'trackerConnected' | 'checking'> {
+  const { githubConnected, codehubConnected, checking } = getPreflightConnectionFacts(facts)
+  return { trackerConnected: githubConnected || codehubConnected, checking }
+}
+
 export function deriveIntegrationConnectionStatus(
   facts: ProviderStatusFacts
 ): IntegrationConnectionStatus {
-  const preflightCurrent = facts.preflightStatusContextKey === facts.expectedPreflightContextKey
-  const reviewChecking =
-    facts.preflightStatusLoading || !facts.preflightStatusChecked || !preflightCurrent
-  const reviewReadyForConnection = !reviewChecking && facts.preflightStatusError === null
-  const githubConnected =
-    reviewReadyForConnection &&
-    facts.preflightStatus?.gh?.installed === true &&
-    facts.preflightStatus.gh.authenticated === true
+  const {
+    checking: reviewChecking,
+    ready: reviewReadyForConnection,
+    githubConnected,
+    codehubConnected
+  } = getPreflightConnectionFacts(facts)
   const gitlabConnected =
     reviewReadyForConnection &&
     facts.preflightStatus?.glab?.installed === true &&
     facts.preflightStatus.glab.authenticated === true
-  const codehubConnected =
-    reviewReadyForConnection &&
-    facts.preflightStatus?.codehub?.installed === true &&
-    facts.preflightStatus.codehub.authenticated === true
   const bitbucketConnected =
     reviewReadyForConnection && isBitbucketReviewConnected(facts.preflightStatus?.bitbucket)
   const azureDevOpsConnected =

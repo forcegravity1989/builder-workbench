@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   deriveIntegrationConnectionStatus,
   deriveIntegrationFlowState,
-  deriveIntegrationStepStates
+  deriveIntegrationStepStates,
+  deriveWorkbenchSetupIntegrationStatus
 } from './use-integration-connection-status'
 import { deriveCliProviderCardState } from '@/components/settings/source-control-integration-cards'
 
@@ -380,6 +381,38 @@ describe('deriveIntegrationConnectionStatus', () => {
       reviewProviderName: null,
       codeHostTaskProviderName: null
     })
+  })
+})
+
+describe('deriveWorkbenchSetupIntegrationStatus', () => {
+  it('uses current GitHub or CodeHub auth for both capabilities', () => {
+    const authenticated = { installed: true, authenticated: true }
+    const otherProviders = {
+      preflightStatus: { glab: authenticated, welink: authenticated },
+      linearStatus: { connected: true },
+      jiraStatusChecked: false
+    }
+    expect(deriveWorkbenchSetupIntegrationStatus(statusFacts(otherProviders))).toEqual({
+      trackerConnected: false,
+      checking: false
+    })
+
+    for (const provider of ['gh', 'codehub']) {
+      const facts = statusFacts({
+        ...otherProviders,
+        preflightStatus: { [provider]: authenticated }
+      })
+      expect(deriveWorkbenchSetupIntegrationStatus(facts)).toEqual({
+        trackerConnected: true,
+        checking: false
+      })
+      expect(
+        deriveWorkbenchSetupIntegrationStatus({ ...facts, preflightStatusContextKey: 'wsl:Ubuntu' })
+      ).toEqual({ trackerConnected: false, checking: true })
+      expect(
+        deriveWorkbenchSetupIntegrationStatus({ ...facts, preflightStatusError: 'check failed' })
+      ).toEqual({ trackerConnected: false, checking: false })
+    }
   })
 })
 
