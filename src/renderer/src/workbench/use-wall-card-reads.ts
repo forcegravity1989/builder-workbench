@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { forEachWithConcurrency } from '../../../shared/map-with-concurrency'
 import { createSnapshotCache, useSnapshotCache, type SnapshotEntry } from './snapshot-cache'
 
@@ -6,6 +6,8 @@ export type WallCardRead<T> = {
   projectKey: string
   sourceKey: string
   revision: number
+  ready?: boolean
+  forceAtRevision?: number
   load(force: boolean): Promise<T>
 }
 
@@ -18,8 +20,11 @@ export function createWallCardCache<T>(): WallCardCache<T> {
 
 export async function loadWallCardRead<T>(
   entry: SnapshotEntry<WallCardSnapshot<T>>,
-  revision: number,
-  load: () => Promise<T>,
+  {
+    revision,
+    forceAtRevision = revision,
+    load
+  }: Pick<WallCardRead<T>, 'revision' | 'forceAtRevision' | 'load'>,
   cancelled = () => false
 ) {
   while (entry.pending && !cancelled()) {
@@ -27,8 +32,9 @@ export async function loadWallCardRead<T>(
   }
   const previous = entry.read()
   if (!cancelled() && previous.revision < revision) {
+    const force = forceAtRevision > 0 && previous.revision < forceAtRevision
     entry.pending = Promise.resolve()
-      .then(load)
+      .then(() => load(force))
       .then(
         (value) => entry.publish({ revision, value }),
         () => entry.publish({ ...previous, revision, failed: true })
@@ -63,28 +69,38 @@ export function useWallCardReads<T>(reads: readonly WallCardRead<T>[], cache: Wa
     }
   }, [sources])
   const snapshots = useSnapshotCache(group)
+  const latestSources = useRef(sources)
+  latestSources.current = sources
+  const requestKey = JSON.stringify(
+    sources.map(({ sourceKey, revision, ready, forceAtRevision }) => [
+      sourceKey,
+      revision,
+      ready,
+      forceAtRevision
+    ])
+  )
 
   useEffect(() => {
     let cancelled = false
-    const changed = sources.filter(({ entry, revision }) => entry.read().revision < revision)
-    void forEachWithConcurrency(changed, 3, async ({ entry, revision, load }) => {
-      await loadWallCardRead(
-        entry,
-        revision,
-        () => load(revision > 0),
-        () => cancelled
-      )
+    const changed = latestSources.current.filter(
+      ({ entry, revision, ready }) => ready !== false && entry.read().revision < revision
+    )
+    void forEachWithConcurrency(changed, 3, async (source) => {
+      await loadWallCardRead(source.entry, source, () => cancelled)
     })
     return () => {
       cancelled = true
     }
-  }, [sources])
+  }, [requestKey])
 
   return {
     values: Object.fromEntries(
       sources.map(({ projectKey }, index) => [projectKey, snapshots[index].value])
     ) as Record<string, T | undefined>,
-    loading: sources.some(({ revision }, index) => snapshots[index].revision < revision),
+    refreshing: sources.some(
+      ({ revision, ready, forceAtRevision = revision }, index) =>
+        ready !== false && forceAtRevision > 0 && snapshots[index].revision < forceAtRevision
+    ),
     failed: snapshots.some((snapshot) => snapshot.failed)
   }
 }

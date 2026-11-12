@@ -28,6 +28,7 @@ import { AcceptanceMinutesSection } from './AcceptanceMinutesSection'
 import { AcceptancePrepareSection } from './AcceptancePrepareSection'
 import { openAcceptanceMaterial } from './open-acceptance-material'
 import { usePlanSendAction } from '../plan-send-menu'
+import { resolveWorkbenchPromptAssets } from '../version-cycle/cycle-prompt'
 import { useAcceptanceBoard } from './use-acceptance-board'
 import { useAcceptanceJourneySpy } from './use-acceptance-journey-spy'
 import './acceptance.css'
@@ -68,10 +69,14 @@ export function AcceptanceBoardContent({
   // on surfaces where the button does not render (empty board, no fixed plan).
   useAnnotationModeShortcut(Boolean(plan && document), annotations.toggleMode)
   const [notice, setNotice] = useState('')
-  // 注入动作走共用发送弹窗(与计划屏同一件);assistant 只改用户可见文案里的 AI 角色名。
-  // 取代原 use-acceptance-action-send:那个钩子只开侧边栏 target mode、从不渲染选择器,
-  // 点击处什么都不弹——该 worktree 无可发会话时连高亮都不触发,是纯静默 no-op。
   const sendAction = usePlanSendAction(worktreeId, setNotice, '验收助手')
+  const prepareReportPrompt = async () =>
+    (
+      await resolveWorkbenchPromptAssets(
+        { ...scope, worktreeId, version: board.version, workflow: 'version-acceptance' },
+        `聚合 ${board.version} 的验收证据报告`
+      )
+    ).prompt
   const chatCollapsed = usePlanChatCollapsed()
   const spy = useAcceptanceJourneySpy()
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
@@ -318,6 +323,7 @@ export function AcceptanceBoardContent({
             scope={board.metricScope}
             disabled={board.readOnly}
             onSendAction={sendAction}
+            prepareReportPrompt={prepareReportPrompt}
             onOpenMaterial={openMaterial}
             sectionRef={spy.sectionRefs.prepare}
           />

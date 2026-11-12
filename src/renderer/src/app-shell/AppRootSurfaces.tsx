@@ -305,10 +305,12 @@ export function AppRootSurfaces(props: {
         </OverlayBoundary>
       )}
       {isWorkbenchShell() ? null : <StarNagAgentValueMomentObserver />}
-      {/* Why: mount at App root to render once per session; internal cohort gate limits it to pre-telemetry users — see telemetry-plan.md §First-launch experience. */}
-      <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
-        <TelemetryFirstLaunchSurface />
-      </OverlayBoundary>
+      {/* BW consent is managed in Settings; native builds retain their first-launch notice. */}
+      {isWorkbenchShell() ? null : (
+        <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
+          <TelemetryFirstLaunchSurface />
+        </OverlayBoundary>
+      )}
       <OverlayBoundary boundaryId="overlay.zoom" resetKey={activeView}>
         <ZoomOverlay />
       </OverlayBoundary>

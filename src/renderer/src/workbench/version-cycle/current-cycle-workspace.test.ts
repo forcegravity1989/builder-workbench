@@ -30,14 +30,13 @@ beforeEach(() => {
 it('accepts the fixed tree while it is the active terminal workspace', () => {
   expect(() => assertCurrentCycleWorkspace(scope, 'wt')).not.toThrow()
 })
-it('rejects after a switch to another view or worktree', () => {
+it('rejects after a switch to another view, worktree, or host', () => {
   mocks.state.activeView = 'activity'
   expect(() => assertCurrentCycleWorkspace(scope, 'wt')).toThrow('工作区已切换')
   mocks.state.activeView = 'terminal'
   mocks.state.activeWorktreeId = 'other'
   expect(() => assertCurrentCycleWorkspace(scope, 'wt')).toThrow('工作区已切换')
-})
-it('rejects a same-id workspace owned by a different host', () => {
+  mocks.state.activeWorktreeId = 'wt'
   mocks.state.getKnownWorktreeById = () => ({ hostId: 'ssh:other' })
   expect(() => assertCurrentCycleWorkspace(scope, 'wt')).toThrow('工作区已切换')
 })

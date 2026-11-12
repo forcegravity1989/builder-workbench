@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { afterAll, beforeAll, expect, it } from 'vitest'
+import { _resetTracerForTests, setActiveSink, type TracerSink } from '../../observability/tracer'
 import {
   METRICS_MAINTENANCE_BRANCH,
   catchUpMetricsMaintenance,
@@ -48,6 +49,32 @@ const commit = (message: string) => {
   git(['commit', '-m', message])
   return head()
 }
+
+type SpanRecord = {
+  name: string
+  attributes: Record<string, unknown>
+  exit: { _tag: string; cause?: string }
+}
+
+function captureSpans(): SpanRecord[] {
+  const records: SpanRecord[] = []
+  const sink: TracerSink = {
+    push(record) {
+      records.push(record as SpanRecord)
+    },
+    flush() {
+      /* no-op */
+    },
+    close() {
+      /* no-op */
+    }
+  }
+  setActiveSink(sink)
+  return records
+}
+
+const collectorSpan = (records: SpanRecord[]) =>
+  records.find((record) => record.name === 'workbench.collector.exec')
 
 beforeAll(() => {
   root = mkdtempSync(join(tmpdir(), 'bw-metrics-core-'))
@@ -199,8 +226,13 @@ it('runs the collector in the fixed checkout with protocol env and discards it',
 }, 60_000)
 
 it('reports a failing collector exit without inventing a reading', async () => {
-  write('.bw/scripts/fail.js', 'console.error("collector exploded"); process.exit(3)')
+  const secret = 'fixture-credential'
+  const lastLine = 'collector exploded'
+  const padding = '.'.repeat(400 - secret.length - lastLine.length - 2)
+  const stderr = `token=${secret}\n${padding}\n${lastLine}`
+  write('.bw/scripts/fail.js', `console.error(${JSON.stringify(stderr)}); process.exit(3)`)
   const failCommit = commit('failing collector')
+  const records = captureSpans()
   const outcome = await executeMetricCollection({
     repoPath: root,
     checkoutRoot: computeMetricsCheckoutRoot(root),
@@ -210,8 +242,17 @@ it('reports a failing collector exit without inventing a reading', async () => {
     env: {},
     timeoutMs: 60_000
   })
+  _resetTracerForTests()
   expect(outcome.code).toBe(3)
   expect(outcome.stderr).toContain('collector exploded')
+  expect(outcome.stderr).toContain(secret)
+  const collector = collectorSpan(records)
+  expect(collector?.exit._tag).toBe('Failure')
+  expect(collector?.exit.cause).toContain('collector exploded')
+  expect(collector?.exit.cause).not.toContain(secret)
+  expect(collector?.exit.cause).toContain('exited 3')
+  expect(collector?.attributes).toMatchObject({ exitCode: 3 })
+  expect(collector?.attributes).not.toHaveProperty('stderr')
   const worktrees = git(['worktree', 'list']).toString()
   expect(worktrees).not.toContain('.orca-preparing')
 }, 60_000)
@@ -219,6 +260,7 @@ it('reports a failing collector exit without inventing a reading', async () => {
 it('kills a hung collector at its timeout and still cleans the checkout up', async () => {
   write('.bw/scripts/hang.js', 'setTimeout(() => {}, 30000)')
   const hangCommit = commit('hanging collector')
+  const records = captureSpans()
   const outcome = await executeMetricCollection({
     repoPath: root,
     checkoutRoot: computeMetricsCheckoutRoot(root),
@@ -228,7 +270,12 @@ it('kills a hung collector at its timeout and still cleans the checkout up', asy
     env: {},
     timeoutMs: 1_500
   })
+  _resetTracerForTests()
   expect(outcome.timedOut).toBe(true)
+  const collector = collectorSpan(records)
+  expect(collector?.exit._tag).toBe('Failure')
+  expect(collector?.exit.cause).toContain('timed out')
+  expect(collector?.attributes).toMatchObject({ timedOut: true })
   const worktrees = git(['worktree', 'list']).toString()
   expect(worktrees).not.toContain('.orca-preparing')
 }, 60_000)

@@ -6589,6 +6589,9 @@
           "fe904ac984": "共享匿名使用数据",
           "77410e0566": "隐私政策",
           "8bfdd23a88": "帮助我们弄清楚下一步要构建什么。 Orca 会发送匿名计数，记录您使用的功能以及出现故障的位置。",
+          "workbenchDescription": "默认关闭。开启后，功能使用和错误计数会使用当前 WeLink 账号上传到固定的 BW 用户群空间，群空间可能显示上传者。",
+          "workbenchLabel": "共享使用数据",
+          "workbenchSectionDescription": "使用数据、诊断和遥测控制。",
           "afec8b03be": "CI"
         },
         "QuickCommandsPane": {
