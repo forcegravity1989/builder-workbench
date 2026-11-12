@@ -7,6 +7,7 @@ import { AddRepoServerPathStartStep } from './AddRepoServerStartStep'
 import { AddRepoNestedImportStep } from './AddRepoNestedImportStep'
 import type { AddRepoDialogStep } from './add-repo-dialog-types'
 import type { NestedRepoScanResult } from '../../../../shared/project-group-types'
+import type { RepoCloneProgress } from '../../../../shared/repo-types'
 import type { SshConnectionState, SshTarget } from '../../../../shared/ssh-types'
 import type { GitAvailability } from './create-project-defaults'
 
@@ -25,7 +26,7 @@ type AddRepoDialogStepContentProps = {
   cloneUrl: string
   cloneDestination: string
   cloneError: string | null
-  cloneProgress: { phase: string; percent: number } | null
+  cloneProgress: RepoCloneProgress | null
   isCloning: boolean
   sshTargets: (SshTarget & { state?: SshConnectionState })[]
   selectedTargetId: string | null

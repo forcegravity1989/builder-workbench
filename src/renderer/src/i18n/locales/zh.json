@@ -4266,6 +4266,8 @@
           "3e64e8a70d": "连接失败",
           "32a7256d85": "克隆",
           "69f5b5380d": "克隆...",
+          "finishingClone": "正在完成克隆…",
+          "importingProject": "正在导入项目…",
           "cloneOnHostDescription": "输入 Git URL，并选择要在 {{value0}} 上克隆到的位置。",
           "cloneParentFolder": "父文件夹"
         },

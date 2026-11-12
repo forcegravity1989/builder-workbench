@@ -4178,6 +4178,8 @@
           "3e64e8a70d": "接続に失敗しました",
           "32a7256d85": "クローン",
           "69f5b5380d": "クローン作成中…",
+          "finishingClone": "クローンの完了処理中…",
+          "importingProject": "プロジェクトをインポート中…",
           "cloneOnHostDescription": "Git URL を入力し、{{value0}} 上のクローン先を選択してください。",
           "cloneParentFolder": "親フォルダー"
         },
