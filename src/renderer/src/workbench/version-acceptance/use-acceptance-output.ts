@@ -14,10 +14,10 @@ import { captureTaskSnapshot } from './acceptance-task-evidence'
  */
 function snapshotFingerprint(snapshot: AcceptanceMaterial['taskSnapshot']): string {
   return JSON.stringify(
-    (snapshot ?? []).map((item) => {
+    snapshot?.map((item) => {
       const { readAt: _readAt, ...rest } = item
       return rest
-    })
+    }) ?? null
   )
 }
 
@@ -41,7 +41,18 @@ export function useAcceptanceOutput(
       ) {
         throw new Error('验收来源已变化，任务快照未覆盖新材料。')
       }
-      const next = captureTaskSnapshot(reads)
+      const decided = new Set(
+        current.results.filter((result) => result.decision).map((result) => result.goalId)
+      )
+      const frozen = (current.taskSnapshot ?? []).filter(
+        (item) => item.reference.goalId && decided.has(item.reference.goalId)
+      )
+      const next = [
+        ...frozen,
+        ...captureTaskSnapshot(reads).filter(
+          (item) => !item.reference.goalId || !decided.has(item.reference.goalId)
+        )
+      ]
       // Unchanged facts are not an edit: writing them would dirty the draft and
       // start an autosave round for nothing.
       if (snapshotFingerprint(current.taskSnapshot) === snapshotFingerprint(next)) {

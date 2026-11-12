@@ -1,3 +1,4 @@
+import { useVersionMembership } from './version-cycle/use-version-membership'
 import React, { useMemo, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -22,10 +23,8 @@ import {
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
-import type {
-  VersionCatalogEntry,
-  VersionCatalogTaskRef
-} from '../../../shared/workbench/version-catalog'
+import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
+import type { CycleTaskReference } from './version-cycle/ports'
 import {
   WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
   normalizeStoredWorkbenchVersionBinding,
@@ -67,7 +66,7 @@ const WORKFLOW_LABELS: Record<BindWorkflow, string> = {
 }
 
 /** 可纳入的 Issue 引用：仅读回链就绪的 provider（与开工链同口径）。 */
-type BindableTaskRef = Omit<VersionCatalogTaskRef, 'provider'> & {
+type BindableTaskRef = Omit<CycleTaskReference, 'provider'> & {
   provider: 'github' | 'codehub'
 }
 
@@ -75,7 +74,7 @@ function bindableProvider(provider: string): 'github' | 'codehub' | null {
   return provider === 'github' || provider === 'codehub' ? provider : null
 }
 
-function taskRefKey(task: VersionCatalogTaskRef): string {
+function taskRefKey(task: CycleTaskReference): string {
   return `${task.provider}:${task.repository}:${task.number}`
 }
 
@@ -113,6 +112,7 @@ export function VersionTreeBindDialog({
   const [version, setVersion] = useState(currentBinding?.version ?? '')
   const entry = entries.find((item) => item.version === version) ?? null
   const goals = entry?.goals ?? []
+  const membership = useVersionMembership(scope, entry)
   const [workflow, setWorkflow] = useState<BindWorkflow>(currentBinding?.workflow ?? 'goal')
   const [goalId, setGoalId] = useState(currentBinding?.goalId ?? '')
   const [issueKey, setIssueKey] = useState<string | null>(null)
@@ -122,7 +122,7 @@ export function VersionTreeBindDialog({
   const issueRefs = useMemo(() => {
     const seen = new Set<string>()
     const refs: BindableTaskRef[] = []
-    for (const task of entry?.tasks ?? []) {
+    for (const task of membership.references ?? []) {
       const provider = bindableProvider(task.provider)
       if (!provider || !task.goalId || task.goalId !== goalId) {
         continue
@@ -135,7 +135,7 @@ export function VersionTreeBindDialog({
       refs.push({ ...task, provider })
     }
     return refs
-  }, [entry, goalId])
+  }, [membership.references, goalId])
 
   const linked = tree.linkedWorkItem
   const existingIssue = issueRefs.find((reference) => {
@@ -198,8 +198,7 @@ export function VersionTreeBindDialog({
         if (!reference) {
           throw new Error('所选 Issue 引用已不在列表中，请重新选择')
         }
-        const owner = { repoId: ownerScope.repoId, hostId: ownerScope.hostId }
-        const repo = resolveReferenceRepo(taskDeps, owner, reference)
+        const repo = resolveReferenceRepo(taskDeps, ownerScope, reference)
         if (!repo) {
           throw new Error(`未在已登记项目中找到 ${reference.repository} 对应的项目`)
         }
@@ -207,7 +206,7 @@ export function VersionTreeBindDialog({
         if (!taskSource) {
           throw new Error(`项目 ${repo.displayName || repo.id} 解析不出任务来源`)
         }
-        const snapshot = await readReference(taskDeps, owner, reference)
+        const snapshot = await readReference(taskDeps, ownerScope, reference)
         linkedWorkItem = {
           provider: reference.provider,
           type: 'issue',
@@ -346,7 +345,8 @@ export function VersionTreeBindDialog({
               </Select>
               {goalId && issueRefs.length === 0 ? (
                 <span className="text-xs text-muted-foreground">
-                  本版计划材料没有可选的 Issue 引用。
+                  {membership.error ??
+                    (membership.references ? '该目标暂无关联 Issue。' : '正在读取版本 Issue…')}
                 </span>
               ) : null}
             </div>

@@ -8,6 +8,8 @@ import type { SendActionWrap } from '../plan-send-menu'
 import type { CycleScope, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
 import { PlanningGoalCard } from './PlanningGoalCard'
+import { UnclassifiedIssues } from '../version-cycle/UnclassifiedIssues'
+import type { VersionMembership } from '../version-cycle/use-version-membership'
 import type { usePlanMetrics } from './use-plan-metrics'
 
 export function PlanningGoals({
@@ -23,7 +25,8 @@ export function PlanningGoals({
   onRemoveGoal,
   onSendAction,
   numbersFor,
-  onOpenAnnotationPanel
+  onOpenAnnotationPanel,
+  membership
 }: {
   plan?: PlanningMaterial
   disabled: boolean
@@ -39,20 +42,23 @@ export function PlanningGoals({
   onSendAction: SendActionWrap
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
+  membership: VersionMembership
 }) {
   const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
+  const boardTasks = membership.references ?? undefined
+  const unclassified = boardTasks?.filter((ref) => !ref.goalId) ?? []
   // Issue 读数走两屏共享的渲染进程快照缓存（use-cycle-task-reads，#432）：
   // 切屏/材料保存重挂载立即回显上次读数、后台静默重读，不再整列闪「状态未知」；
-  // 「刷新 Issue」强制重读，转圈即缓存条目 busy（按键控条目走，在途切版本不会
-  // 卡死按钮——旧组件级 refreshing 状态的复位守卫问题随机制结构化消失）。
+  // 「刷新 Issue」强制重读，转圈即缓存条目 busy。
   const {
     reads,
     error: readError,
-    busy: refreshing,
+    busy: readsBusy,
     refresh: refreshIssues
-  } = useCycleTaskReads({ scope, tasks: plan?.tasks, taskPort })
+  } = useCycleTaskReads({ scope, tasks: boardTasks, taskPort })
+  const refreshing = readsBusy || membership.busy
 
   const changeGoal = (goal: VersionGoal) => {
     if (plan) {
@@ -98,9 +104,9 @@ export function PlanningGoals({
         </h2>
         {plan && (
           <span className="g3-title-actions">
-            {readError && (
+            {(readError || membership.error) && (
               <span className="g3-muted" role="status">
-                Issue 状态未知：{readError}
+                Issue 状态未知：{readError || membership.error}
               </span>
             )}
             <button
@@ -113,8 +119,11 @@ export function PlanningGoals({
             </button>
             <BoardIconButton
               label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
-              disabled={disabled || !scope || !plan.tasks.length || refreshing}
-              onClick={() => void refreshIssues()}
+              disabled={disabled || !scope || refreshing}
+              onClick={() => {
+                membership.refresh()
+                void refreshIssues()
+              }}
             >
               <RefreshCw
                 size={15}
@@ -158,7 +167,8 @@ export function PlanningGoals({
                 key={goal.goalId}
                 goal={goal}
                 index={index}
-                relatedTasks={plan.tasks.filter((task) => task.goalId === goal.goalId)}
+                issueMembershipKnown={Boolean(boardTasks)}
+                relatedTasks={boardTasks?.filter((task) => task.goalId === goal.goalId) ?? []}
                 reads={readsByReference}
                 version={plan.version}
                 onChange={changeGoal}
@@ -179,6 +189,12 @@ export function PlanningGoals({
               />
             ))}
           </div>
+          <UnclassifiedIssues
+            rows={unclassified}
+            reads={readsByReference}
+            version={plan.version}
+            onTask={onTask}
+          />
           <div className="g3-goals-bottom">
             <BoardIconButton label="添加目标" onClick={addGoal}>
               <Plus size={16} aria-hidden="true" />

@@ -28,7 +28,7 @@ import {
   milestoneVersionKey,
   type MilestoneVersionFacts
 } from '../milestone-feature-facts'
-import type { MilestoneMaterial } from '../../../../shared/workbench/project-milestones'
+import { milestoneMaterial as material, milestoneSibling } from './milestone-feature-fixture'
 import { milestoneActualLayout } from '../milestone-actual-layout'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
@@ -380,33 +380,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     failed: false,
     stale: false
   }
-  const delivery = {
-    id: 'delivery',
-    phase: 'Build' as const,
-    timeWindow: { start: '2026-09-29T00:00', end: '2026-10-06T00:00' }
-  }
-  const plannedMaintenance = {
-    ...delivery,
-    id: 'later',
-    phase: 'Maintain' as const,
-    timeWindow: { start: '2026-10-08T00:00', end: '2026-11-06T12:00' }
-  }
-  const material: MilestoneMaterial = {
-    schema_version: 4,
-    milestones: [],
-    features: [
-      {
-        id: 'planned',
-        title: ' 项目墙 ',
-        owner: 'builder',
-        deliveries: [delivery, plannedMaintenance]
-      }
-    ]
-  }
-  const otherFeature = {
-    ...goalFeature,
-    root: { ...goalFeature.root, reference: { ...reference, number: 440 }, iid: 440 }
-  }
+  const otherFeature = milestoneSibling(goalFeature)
   const duplicateFacts = {
     ...facts,
     plan: { ...facts.plan!, tasks: [reference, otherFeature.root.reference] },
@@ -437,7 +411,12 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     features: [...material.features, { ...material.features[0]!, id: 'another' }]
   }
   expect(milestoneStageHours(duplicateMaterial, facts, goalFeature)).toEqual({})
-  const accepted = (outcome: 'met' | 'not-met' | 'pending') => record('4', outcome).acceptance
+  const accepted = (
+    outcome: 'met' | 'not-met' | 'pending'
+  ): NonNullable<MilestoneVersionFacts['acceptance']> => ({
+    ...record('4', outcome).acceptance,
+    taskSnapshot: [{ ...goalFeature.root, kind: 'ready' }]
+  })
   const versionFacts = (
     version: string,
     cycleId: string,
@@ -462,6 +441,11 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(actual.results.map((result) => result.label)).toEqual(['未上线', '已上线', '维护未完成'])
   expect(actual).toMatchObject({ lanes: 2, results: [{ lane: 0 }, { lane: 1 }, { lane: 0 }] })
   expect(actual.results[0]?.version.timeWindow?.end).toBe('2026-10-10')
+  const moved = {
+    ...first,
+    plan: { ...first.plan!, tasks: [{ ...reference, goalId: 'different' }] }
+  }
+  expect(labels(moved, second, third)).toEqual(['未上线', '已上线', '维护未完成'])
   expect(
     labels(first, { ...second, plan: { ...second.plan!, timeWindow: undefined } }, third)
   ).toEqual(['未上线', '维护未完成'])
@@ -493,7 +477,12 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(labels(firstMet, failedSecond, third)).toEqual(['已上线', '维护未完成'])
   expect(
     labels(
-      { ...unresolvedFirst[0]!, plan: { ...facts.plan!, tasks: [{ ...reference, number: 999 }] } },
+      {
+        ...unresolvedFirst[0]!,
+        failed: false,
+        acceptance: null,
+        plan: { ...facts.plan!, tasks: [{ ...reference, number: 999 }] }
+      },
       secondNotMet
     )
   ).toEqual(['未上线'])
@@ -506,6 +495,18 @@ it('projects scoped feature evidence without turning missing, later or unrelated
         ...facts.plan!,
         goals: [...facts.plan!.goals, { ...facts.plan!.goals[0]!, goalId: 'unrelated' }],
         tasks: [reference, failedReference]
+      },
+      acceptance: {
+        ...firstMet.acceptance!,
+        taskSnapshot: [
+          ...firstMet.acceptance!.taskSnapshot!,
+          {
+            kind: 'unavailable' as const,
+            reference: failedReference,
+            error: 'unavailable',
+            readAt: '2026-10-12T00:00:00Z'
+          }
+        ]
       },
       failed: true,
       identityFailures: [failedReference]

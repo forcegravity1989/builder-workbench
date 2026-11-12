@@ -25,7 +25,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 | `version-planning/PlanningMinutesSection.tsx`（含内部 MinutesCard）      | `version-acceptance/AcceptanceMinutesSection.tsx`  | 两屏共识/遗留文本与整份人工确认独立实现，无逐项闭环控件。验收 `document` 可选：原生会话实际打开后即展示四区，无材料时本节是只读空纪要并保留原生发送入口，不可编辑或确认。归档前每项已落实或关联真实跟进 Issue，由助手核对、PR 人审；整理 prompt 只承载触发意图，规则归 Skill，不新增材料协议。 |
 | `version-planning/PlanningArchiveCard.tsx`                               | `version-acceptance/AcceptanceArchiveCard.tsx`     | 文案改验收归档；发布按钮并入本区（见「发布」节）。打开原生 PR 页不拷贝——两屏都 import 共用 `version-cycle/open-archive-pr.ts`（已从计划屏目录移到共用层）                                                                                                                                      |
 | `version-planning/version-planning.css` 中验收需要的板面壳/分区/纪要样式 | `version-acceptance/acceptance.css`                | 只拷验收实际用到的选择器，类名前缀改 `acc-`，不整表复制；计划屏特有样式（上版回顾、目标卡编辑态、指标承诺）不拷。**批注与板面基础件的样式不在这里**——它们随共用组件走 `annotations/annotations.css` 与 `board-ui.css`，由组件自己 import，两屏自动同源                                         |
-| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；计数后行内单个未判定/达成/不达成状态（#471 批注6 以真机为准），沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                                                |
+| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；计数后行内单个未判定/达成/不达成状态（#471 批注6 以真机为准），沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                 |
 
 **直接 import，不拷贝**（这些不在计划屏目录下，是 #399 建在共用层、注释明写供两屏使用的模块，或 v9.5 起就是两屏共用的壳层）：
 
@@ -82,8 +82,6 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **退役编辑字段**：`results[].rounds`、`meetingDirectives`、`issueMarks.risk`、`deliveries`、`materials`、`progress`。`issueMarks` 保留 `carry`（延期遗留仍是人工字段）；`meetingDirectives` 仅在旧材料没有纪要节时由下版回顾兼容读取，不恢复编辑入口。
 
-
-
 **保留的能力**：`version-history-port` 按固定提交 read/readPlan。计划屏「查看验收依据」沿 `open-acceptance-source` 复用既有 `VersionReadonlyMaterialView` / readonlyBrowse，按 version/cycleId/sourceCommit/revision 进入同份验收与计划的只读整页，身份不符拒绝，不读当前稿、不建树或初始化材料；返回原计划。轮次 UI 退役不等于固定 Git 历史读取退役。
 
 ## 人工字段守卫
@@ -118,15 +116,13 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 板面使用 `BoardActionButton`、`BoardIconButton` 与设计系统颜色、间距，页头动作归组且窄板可换行；Showcase 保留只读目标和原生任务详情入口。报告入口只在验收准备区。会话收折沿共用壳层，收起保留会话和栏宽；终端/浏览器是否绘制交 `TerminalWorkbenchContainer` 的原生规则，不能在祖先直接 `display:none` 阻断浏览器工具。
 
-Issue 读数经 `version-cycle/use-cycle-task-reads` 与计划屏共享快照缓存，进屏回显后后台重读，刷新按钮强制重读；缓存回显不写 `taskSnapshot`。CAS 冲突使用 `acceptance-merge.ts`：模型字段取远端，人工字段保留相对干净基线的本地改动，本地独有 result 保留。每次合并后推进基线；缺基线时保留人工处置入口，不能静默覆盖输入。
-
-
+Issue 成员与计划屏共用版本标签查询和本版标题段解析。已提交计划固定目标与验收标准。Issue 读数经 `version-cycle/use-cycle-task-reads` 与计划屏共享快照缓存，进屏回显后后台重读，刷新按钮强制重读；只有成功的成员读取及新鲜读数才更新未判定目标的证据，已判定目标保留已记录的证据。CAS 冲突使用 `acceptance-merge.ts`：模型字段取远端，人工字段保留相对干净基线的本地改动，本地独有 result 保留。每次合并后推进基线；缺基线时保留人工处置入口，不能静默覆盖输入。
 
 出包区块沿用既有 `AcceptancePackage` 与 `workbench.package.*` 协议（按远端身份分派 CodeHub cloudbuild CLI / CloudDragon 会话 / gh CLI，SSH 宿主拒绝出包），可收缩、默认收起为一行最新包摘要；受理后每分钟静默刷新、`launchInFlight` 互斥不重复启动；无流水线/无权限/远端认不出/非本机宿主如实报错。包重出不自动刷新板面已填内容，是否重核由模型在会话中提醒、人决定；板面不做主动失效或待重核呈现。
 
 材料打开沿 `openAcceptanceMaterial` 校验原生工作树身份：HTTP(S) 经 `openHttpLink` 进入对应工作区浏览器；HTML 文件复用 `openFileInBrowserTab`（本地浏览器页签，SSH/配对 doc-preview），原生预览不支持时沿 `activateMarkdownLink` 打开编辑器。其他工作树文件也走原生编辑器。拒绝含凭据 URL、不支持协议和远端树外路径；打开后展开会话栏。未登记报告时打开按钮禁用。
 
-保存与冲突沿用材料事务核心：`expectedRevision`、原子替换、跨进程互斥、工作树身份校验；保存冲突保留用户输入。「更新代码」是唯一同步入口，执行期间材料只读，快进不了保持原样并统一提示交会话处理。
+保存与冲突沿用材料事务核心：`expectedRevision`、原子替换、跨进程互斥、工作树身份校验；保存冲突保留用户输入。「更新代码」是唯一同步入口，执行期间材料只读，快进、双来源同步和冲突处理沿用[计划与验收共用规格](../version-planning/spec.md)。
 
 ## 发布
 

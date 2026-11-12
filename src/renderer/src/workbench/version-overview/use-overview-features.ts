@@ -6,7 +6,7 @@ import { readOverviewFeatures } from './read-overview-features'
 import { nativeTaskReferenceReader } from '../native-task-port'
 import { useAppStore } from '@/store'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
-import { taskKey, PARSER_REVISION } from './feature-model'
+import { PARSER_REVISION } from './feature-model'
 import { createOverviewReadCache, type ReadSnapshot } from './overview-read-cache'
 
 type FeatureRead = {
@@ -49,10 +49,7 @@ function featureSourceKeys({
   before,
   historical
 }: FeatureSource) {
-  const references = [
-    ...(plan?.tasks ?? []),
-    ...(catalog.catalog?.entries.flatMap((entry) => entry.tasks) ?? [])
-  ].sort((a, b) => taskKey(a).localeCompare(taskKey(b)))
+  const references = plan?.tasks ?? []
   const referenceSourceKey = catalog.scope
     ? nativeTaskReferenceReader.key(catalog.scope, references)
     : null
@@ -71,7 +68,7 @@ function featureSourceKeys({
     plan,
     planSource,
     catalog.catalog?.entries
-      .map((entry) => [entry.version, entry.tasks, entry.goals, entry.material, entry.draft])
+      .map((entry) => [entry.version, entry.goals, entry.material, entry.draft])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
     version,
     before,

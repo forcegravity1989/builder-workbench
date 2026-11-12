@@ -1,4 +1,4 @@
-import { MessageSquare, RefreshCw } from 'lucide-react'
+import { ArrowDownToLine, MessageSquare } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { BoardActionButton } from '../board-ui'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
@@ -98,7 +98,7 @@ export function AcceptanceHeader({
         </BoardActionButton>
         {annotateEntry}
         <BoardActionButton disabled={disabled} onClick={onRefresh}>
-          <RefreshCw size={13} aria-hidden="true" /> 更新代码
+          <ArrowDownToLine size={13} aria-hidden="true" /> 更新代码
         </BoardActionButton>
         <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
       </div>

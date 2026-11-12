@@ -8,7 +8,7 @@ import { milestoneDay } from '../../../shared/workbench/milestone-calendar'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { taskKey } from './version-overview/feature-model'
 import {
-  milestoneFeatureGoal,
+  milestoneAcceptedFeatureGoal,
   milestoneVersionKey,
   resolveMilestoneFeature,
   type MilestoneVersionFacts
@@ -48,7 +48,7 @@ function milestoneResultVersions(
   return milestoneActualVersions(facts).filter((version) => {
     const read = facts[milestoneVersionKey(version)]!
     return [...keys].some((key) => {
-      const goalId = milestoneFeatureGoal(read, key)
+      const goalId = milestoneAcceptedFeatureGoal(read, key)
       return (
         goalId &&
         hasOutcome(
@@ -124,11 +124,15 @@ export function milestoneActualLayout(
       failed ||= read.failed
       continue
     }
-    // A fixed plan that excludes this main Issue cannot affect its delivery history.
-    if (!read.plan.tasks.some((task) => taskKey(task) === featureKey)) {
+    const goalId = milestoneAcceptedFeatureGoal(read, featureKey)
+    if (
+      !goalId &&
+      !read.failed &&
+      !read.plan.tasks.some((task) => taskKey(task) === featureKey) &&
+      !read.acceptance?.taskSnapshot?.some((item) => taskKey(item.reference) === featureKey)
+    ) {
       continue
     }
-    const goalId = read.formalPlan ? milestoneFeatureGoal(read, featureKey) : undefined
     if (!goalId) {
       priorUnknown ||= !delivered
       incomplete = true
