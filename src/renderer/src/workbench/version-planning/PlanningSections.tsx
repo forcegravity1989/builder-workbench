@@ -1,4 +1,4 @@
-import { GitBranch, MessageSquare, RefreshCw } from 'lucide-react'
+import { ArrowDownToLine, GitBranch, MessageSquare } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { BoardActionButton } from '../board-ui'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
@@ -105,7 +105,7 @@ export function PlanningHeader({
           </BoardActionButton>
           {annotateEntry}
           <BoardActionButton disabled={disabled} onClick={onRefresh}>
-            <RefreshCw size={13} aria-hidden="true" /> 更新代码
+            <ArrowDownToLine size={13} aria-hidden="true" /> 更新代码
           </BoardActionButton>
           <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
         </div>
