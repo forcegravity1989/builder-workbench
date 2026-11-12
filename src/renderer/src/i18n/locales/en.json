@@ -7472,8 +7472,8 @@
           "f7eb5f0b24": "Not installed",
           "codeHostGroupTitle": "Code hosting",
           "codeHostGroupDescription": "CLIs for tasks, pull requests, merge requests, and review status.",
-          "imGroupTitle": "Project group",
-          "imGroupDescription": "CLIs for posting version and acceptance updates to the project group.",
+          "imGroupTitle": "Reports and diagnostics",
+          "imGroupDescription": "Send reports and diagnostic files to the BW user-group space.",
           "buildGroupTitle": "Build",
           "buildGroupDescription": "CLIs for pipeline execution and package builds."
         },
@@ -9827,7 +9827,7 @@
             "codehubKeyword": "codehub",
             "codehubCliKeyword": "codehub-cli",
             "welinkTitle": "WeLink Integration",
-            "welinkDescription": "welink-cli presence and login for project group notifications.",
+            "welinkDescription": "welink-cli installation and login for reports and diagnostics in the BW user-group space.",
             "welinkKeyword": "welink",
             "welinkCliKeyword": "welink-cli",
             "cloudbuildTitle": "CloudBuild Integration",
@@ -10648,13 +10648,13 @@
                   "statusNotAuthenticated": "Not authenticated",
                   "codehubDescription": "Issues and merge requests via the",
                   "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
-                  "codehubMissing": "codehub-cli is not on PATH.",
+                  "codehubMissing": "codehub-cli is not on PATH. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
                   "codehubInstallButton": "Install CodeHub CLI",
                   "codehubNotAuthenticated": "codehub-cli is installed but not authenticated.",
                   "codehubAuthLoginCommand": "codehub-cli auth login --all",
-                  "welinkDescription": "Project group notifications via the",
+                  "welinkDescription": "Reports and diagnostics via the",
                   "welinkUnavailable": "welink-cli status is not available in this runtime yet.",
-                  "welinkMissing": "Install welink-cli to enable project group notifications.",
+                  "welinkMissing": "Install welink-cli to send reports and diagnostic files to the BW user-group space. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
                   "welinkNotAuthenticated": "welink-cli is installed but not authenticated.",
                   "welinkInstallButton": "Install WeLink CLI",
                   "welinkAuthLoginCommand": "welink-cli auth login",
@@ -14167,7 +14167,9 @@
             "code_host_tasks_caption": "Your code host's issues also work as tasks.",
             "review_step_title": "See PR status while agents work",
             "review_step_description": "Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.",
-            "task_step_title": "Start agents on your tasks without leaving {{product}}"
+            "task_step_title": "Start agents on your tasks without leaving {{product}}",
+            "reports_title": "Reports and diagnostics (optional)",
+            "reports_description": "Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations."
           },
           "connect": {
             "integration": {

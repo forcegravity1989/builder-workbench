@@ -3,9 +3,11 @@ import { Fragment, useState } from 'react'
 import {
   AzureDevOpsIntegrationCard,
   BitbucketIntegrationCard,
+  CodeHubIntegrationCard,
   GiteaIntegrationCard,
   GitHubIntegrationCard,
-  GitLabIntegrationCard
+  GitLabIntegrationCard,
+  WeLinkIntegrationCard
 } from '@/components/settings/source-control-integration-cards'
 import {
   JiraIntegrationCard,
@@ -64,7 +66,7 @@ export function ConnectIntegrationsList(): React.JSX.Element {
   // connected state. Cleared once the user collapses it again.
   const [reviewReopened, setReviewReopened] = useState(false)
 
-  // A code host doubles as a task source, so a connected GitHub/GitLab
+  // A code host doubles as a task source, so a connected code host
   // resolves step 2 on its own. The collapsed summary still invites a
   // dedicated tracker, and "Change" reopens the step to connect one.
   const flow = deriveIntegrationFlowState({
@@ -125,6 +127,7 @@ export function ConnectIntegrationsList(): React.JSX.Element {
         >
           <IntegrationCardGroup>
             <GitHubIntegrationCard />
+            {isWorkbenchShell() ? <CodeHubIntegrationCard /> : null}
             <GitLabIntegrationCard />
             <BitbucketIntegrationCard />
             <AzureDevOpsIntegrationCard />
@@ -190,6 +193,27 @@ export function ConnectIntegrationsList(): React.JSX.Element {
             <GitLabIntegrationCard />
           </IntegrationCardGroup>
         </IntegrationStep>
+        {isWorkbenchShell() ? (
+          <section className="space-y-3 pt-3">
+            <div className="space-y-1 px-1">
+              <h3 className="text-sm font-semibold text-foreground">
+                {translate(
+                  'auto.components.feature.wall.ConnectIntegrationsList.reports_title',
+                  'Reports and diagnostics (optional)'
+                )}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {translate(
+                  'auto.components.feature.wall.ConnectIntegrationsList.reports_description',
+                  'Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations.'
+                )}
+              </p>
+            </div>
+            <IntegrationCardGroup>
+              <WeLinkIntegrationCard />
+            </IntegrationCardGroup>
+          </section>
+        ) : null}
       </div>
     </IntegrationCardPresentationProvider>
   )

@@ -4,10 +4,12 @@ import { getProviderRuntimeContextKey } from '@/lib/provider-runtime-context'
 
 export type IntegrationStepState = 'active' | 'done' | 'upcoming'
 
+type CodeHostTaskProviderName = 'GitHub' | 'GitLab' | 'CodeHub'
+
 // Pure derivation of the two-step flow's step states from connection facts,
 // extracted so the progressive logic is testable without the store or DOM.
 // `codeHostTaskConnected` means a connected code host whose issues double as
-// a task source (GitHub/GitLab), which resolves step 2 without a tracker.
+// a task source, which resolves step 2 without a tracker.
 export function deriveIntegrationStepStates(input: {
   reviewConnected: boolean
   trackerConnected: boolean
@@ -29,7 +31,7 @@ export function deriveIntegrationStepStates(input: {
 export function deriveIntegrationFlowState(input: {
   reviewConnected: boolean
   trackerProviderName: 'Linear' | 'Jira' | null
-  codeHostTaskProviderName: 'GitHub' | 'GitLab' | null
+  codeHostTaskProviderName: CodeHostTaskProviderName | null
   trackerChecking: boolean
 }): {
   review: IntegrationStepState
@@ -74,6 +76,7 @@ type ProviderStatusFacts = {
   preflightStatus: {
     gh?: CliStatus
     glab?: CliStatus
+    codehub?: CliStatus
     bitbucket?: BitbucketStatus
     azureDevOps?: TokenReviewStatus
     gitea?: TokenReviewStatus
@@ -96,9 +99,9 @@ export type IntegrationConnectionStatus = {
   // True once any review provider is connected/configured for this context.
   reviewConnected: boolean
   // Display name of the connected review provider, or null while none is.
-  reviewProviderName: 'GitHub' | 'GitLab' | 'Bitbucket' | 'Azure DevOps' | 'Gitea' | null
-  // GitHub/GitLab issues can double as tasks; token/env review providers do not.
-  codeHostTaskProviderName: 'GitHub' | 'GitLab' | null
+  reviewProviderName: CodeHostTaskProviderName | 'Bitbucket' | 'Azure DevOps' | 'Gitea' | null
+  // Code-host issues can double as tasks; token/env review providers do not.
+  codeHostTaskProviderName: CodeHostTaskProviderName | null
   // True once any task source is usable: a code host (its issues double as a
   // task source) or a dedicated tracker (Linear/Jira).
   trackerConnected: boolean
@@ -107,7 +110,7 @@ export type IntegrationConnectionStatus = {
   trackerProviderName: 'Linear' | 'Jira' | null
   // Every connected task source, trackers first, for "Linear and GitHub
   // connected for tasks" summaries that don't under-report what's usable.
-  taskSourceNames: ('Linear' | 'Jira' | 'GitHub' | 'GitLab')[]
+  taskSourceNames: ('Linear' | 'Jira' | CodeHostTaskProviderName)[]
   // True while the code-host check is unresolved, stale, loading, or errored.
   reviewChecking: boolean
   // True while either dedicated tracker check is unresolved or stale.
@@ -157,6 +160,10 @@ export function deriveIntegrationConnectionStatus(
     reviewReadyForConnection &&
     facts.preflightStatus?.glab?.installed === true &&
     facts.preflightStatus.glab.authenticated === true
+  const codehubConnected =
+    reviewReadyForConnection &&
+    facts.preflightStatus?.codehub?.installed === true &&
+    facts.preflightStatus.codehub.authenticated === true
   const bitbucketConnected =
     reviewReadyForConnection && isBitbucketReviewConnected(facts.preflightStatus?.bitbucket)
   const azureDevOpsConnected =
@@ -176,20 +183,29 @@ export function deriveIntegrationConnectionStatus(
     ? 'GitHub'
     : gitlabConnected
       ? 'GitLab'
-      : bitbucketConnected
-        ? 'Bitbucket'
-        : azureDevOpsConnected
-          ? 'Azure DevOps'
-          : giteaConnected
-            ? 'Gitea'
-            : null
-  const codeHostTaskProviderName = githubConnected ? 'GitHub' : gitlabConnected ? 'GitLab' : null
+      : codehubConnected
+        ? 'CodeHub'
+        : bitbucketConnected
+          ? 'Bitbucket'
+          : azureDevOpsConnected
+            ? 'Azure DevOps'
+            : giteaConnected
+              ? 'Gitea'
+              : null
+  const codeHostTaskProviderName = githubConnected
+    ? 'GitHub'
+    : gitlabConnected
+      ? 'GitLab'
+      : codehubConnected
+        ? 'CodeHub'
+        : null
   const trackerProviderName = linearConnected ? 'Linear' : jiraConnected ? 'Jira' : null
   const taskSourceNames: IntegrationConnectionStatus['taskSourceNames'] = [
     ...(linearConnected ? (['Linear'] as const) : []),
     ...(jiraConnected ? (['Jira'] as const) : []),
     ...(githubConnected ? (['GitHub'] as const) : []),
-    ...(gitlabConnected ? (['GitLab'] as const) : [])
+    ...(gitlabConnected ? (['GitLab'] as const) : []),
+    ...(codehubConnected ? (['CodeHub'] as const) : [])
   ]
   const hasUsableTaskSource = taskSourceNames.length > 0
   // Why: one resolved task source is enough for parent setup readiness, but the
@@ -201,6 +217,7 @@ export function deriveIntegrationConnectionStatus(
     reviewConnected:
       githubConnected ||
       gitlabConnected ||
+      codehubConnected ||
       bitbucketConnected ||
       azureDevOpsConnected ||
       giteaConnected,
