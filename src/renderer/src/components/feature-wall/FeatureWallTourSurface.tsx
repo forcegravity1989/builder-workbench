@@ -391,6 +391,9 @@ export function FeatureWallTourSurface({
       return
     }
     switch (demo.workflow) {
+      case 'workspaces':
+      case 'tasks':
+        return
       case 'agents-orchestration':
         handleSelectAgentsStep(demo.step)
         break
