@@ -148,6 +148,21 @@ jobs:
           src/main/codex/codex-structured-session-cancel.test.ts
           src/main/codex/codex-structured-launch-resolution.test.ts
           src/main/codex/codex-session-index-heal.test.ts
+          src/main/codex/codex-daemon-socket-path-guard.test.ts
+          src/main/codex/codex-config-mirror.test.ts
+          src/main/codex/config-settings-promotion.test.ts
+          src/main/codex/config-sync-stall.test.ts
+          src/main/codex-accounts/codex-config-mirror.test.ts
+          src/main/codex-accounts/legacy-shared-config-compatibility.test.ts
+          src/main/codex-accounts/runtime-home-managed-auth-recovery.test.ts
+          src/main/codex-accounts/runtime-home-real-home-lane-routing.test.ts
+          src/main/codex-accounts/runtime-home-retained-auth-provenance.test.ts
+          src/main/codex-accounts/runtime-home-system-resource-materialization.test.ts
+          src/main/codex-accounts/service-account-add-login.test.ts
+          src/main/codex-accounts/service-reset-credit-home-ownership.test.ts
+          src/main/codex-accounts/service-wsl-accounts.test.ts
+          src/main/codex-accounts/service.test.ts
+          src/main/ssh/relay-socket-path-limit.test.ts
           src/main/codex-accounts/codex-credential-absence-grace.test.ts
           src/main/codex-accounts/codex-windows-interactive-login.test.ts
           src/main/codex-accounts/service-login-process-teardown.test.ts

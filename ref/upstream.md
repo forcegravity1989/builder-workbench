@@ -49,18 +49,20 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 
 维护对象为 Claude、Cursor、DSH、GitHub Copilot、Codex、OpenCode。按智能体及实际依赖同步，不能按目录覆盖；共享主机的宿主设置链已由 #592 更新，但不代表所有智能体的进程、模型、账号与统计框架都已升级。
 
-本表记录**当前采用边界**。**采用**指已接入的指定行为；**保留**指沿用 BW 已有实现；**未迁**指固定上游有而未采用；**上游无**指固定版本没有相应原生 provider；**未专项核对**不代表无能力或已经对齐。DSH、Cursor、Codex 的核对日期均为 2026-11-09；源码对照与验证证据见各行 PR。
+本表记录**当前采用边界**。**采用**指已接入的指定行为；**保留**指沿用 BW 已有实现；**未迁**指固定上游有而未采用；**上游无**指固定版本没有相应原生 provider；**未专项核对**不代表无能力或已经对齐。DSH、Cursor、Codex 的六维核对日期为 2026-11-09；源码对照与验证证据见各行 PR。
 
 | 智能体 / 已合入依据 | 启动与交互 | 账号、服务商与模型 | 会话管理 | 套餐额度 | Token 与费用统计 | 执行环境 |
 | --- | --- | --- | --- | --- | --- | --- |
 | **DSH** · [#581](https://github.com/forcegravity1989/builder-workbench/pull/581) | 采用发现、工作区启动、首条输入及 hooks；启动/续接固定 DSH backend；新版启动页重试未迁 | 使用执行宿主的 DSH/profile/CLI 配置；未新增 BW 独立账号管理和模型目录 | 采用 hook session ID、休眠续接及宿主能力门控；无 ID 不承诺恢复；未接入压缩历史扫描 | **上游无 DSH 原生额度 provider**；BW 未接入 | **上游无 DSH 历史用量 provider**；BW 未接入 | 采用身份别名、WSL 透传和现有远端接线；CLI、账号及匹配 hooks 由实际宿主提供 |
 | **Cursor** · [#578](https://github.com/forcegravity1989/builder-workbench/pull/578) | 保留 TUI/输入；采用显式模型去重、hook 编码与防重复上报；通用输入框架未整体迁移 | 采用本机账号状态与凭据只读；登录/切号仍归 Cursor；保留模型选择，公共参数解析剩余差异未迁 | 采用 conversation ID 续接、能力门控及拒读元数据保持未知；通用历史框架未整体迁移 | 采用套餐/模型池/重置周期/团队个人额度；外部 SQLite worker 隔离未迁；其他宿主账号未接入 | **上游无 Cursor 每日 token provider**；套餐数字不等于每日 token/费用统计 | 保留既有宿主路由，改善 Windows/POSIX hooks；实际启动 HOME/信任上下文链未迁 |
-| **Codex** · [#577](https://github.com/forcegravity1989/builder-workbench/pull/577) | 保留 TUI/结构化会话；采用退出末尾回复排空、短时额度/索引探测禁插件；完整新启动/停止协议未迁 | 采用 180 秒登录等待及凭据暂缺跟踪容量；保留账号/模型配置；设备码/可取消登录、共享模型目录未迁 | 保留历史、恢复、审批及停止，采用索引探测与退出修复；新 reopen/catch-up/共享恢复协议未迁 | 采用 HTTP 替代隐藏交互终端、索引重建期额度读取、WSL 请求去重；会话固定账号用量/额外余额显示未迁 | 保留既有日志、每日聚合及成本估算；**上游有但未迁** v7 去重、长上下文计数、追加扫描/轮换识别和主会话上下文用量 | 保留既有账号/目录/宿主路由；Windows 异步命令解析、guest-only WSL CLI、process-host/sealed env 未迁 |
+| **Codex** · [#577](https://github.com/forcegravity1989/builder-workbench/pull/577) | 保留 TUI/结构化会话；采用退出末尾回复排空、短时额度/索引探测禁插件；按 [Orca #22878](https://github.com/stablyai/orca/pull/22878) 在套接字路径超限的托管目录关闭后台服务自动启动；完整新启动/停止协议未迁 | 采用 180 秒登录等待及凭据暂缺跟踪容量；保留账号/模型配置；设备码/可取消登录、共享模型目录未迁 | 保留历史、恢复、审批及停止，采用索引探测与退出修复；新 reopen/catch-up/共享恢复协议未迁 | 采用 HTTP 替代隐藏交互终端、索引重建期额度读取、WSL 请求去重；会话固定账号用量/额外余额显示未迁 | 保留既有日志、每日聚合及成本估算；**上游有但未迁** v7 去重、长上下文计数、追加扫描/轮换识别和主会话上下文用量 | 保留既有账号/目录/宿主路由；Windows 异步命令解析、guest-only WSL CLI、process-host/sealed env 未迁 |
 | **Claude** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
 | **GitHub Copilot** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
 | **OpenCode** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
 
 来源边界：Cursor/Codex 对照上述 v251 SHA；DSH 采用的独立提交及排除范围见 [DSH 接入来源](dsh-harness-integration.md#上游来源)，本轮再用 v251 核对 provider 缺口。[固定版额度类型](https://github.com/stablyai/orca/blob/a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7/src/shared/rate-limit-types.ts)没有 DSH；[历史用量 provider](https://github.com/stablyai/orca/blob/a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7/src/main/usage/usage-provider-contract.ts)没有 DSH/Cursor。这不判断 CLI 自身或第三方插件是否有统计能力。Cursor 的每日 token 需求仍见 [#498](https://github.com/forcegravity1989/builder-workbench/issues/498)，不能用账号额度代替它。
+
+Codex 托管目录的套接字修复单独核对于 2026-11-13，来源为 Orca 提交 `c220d92c03addc5b608b4074b5efc8d44c91d0d3`（BW [#643](https://github.com/forcegravity1989/builder-workbench/issues/643)）。覆盖系统默认镜像、单账号托管目录、旧共享目录及 WSL 托管启动；按执行宿主的套接字路径上限判定。配置镜像的本地覆盖项不会回写到用户源配置；写入采用 [Orca #31228](https://github.com/stablyai/orca/pull/31228) 的托管镜像文件权限（POSIX `0600`）。
 
 公共依赖适配不等于该智能体已专项同步；例如修正 Cursor 导入 Claude hook 时的重复上报，不构成 Claude 六维升级。
 
