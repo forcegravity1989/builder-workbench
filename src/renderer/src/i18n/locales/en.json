@@ -17766,6 +17766,36 @@
     }
   },
   "guidance": {
+    "direction": {
+      "wall": {
+        "title": "Find the project",
+        "body": "Open the project overview from the project wall."
+      },
+      "card": {
+        "title": "Agree on the direction",
+        "body": "Edit the vision and check the review summary."
+      },
+      "draft": {
+        "title": "Plan milestone outcomes",
+        "body": "Add an outcome and adjust its schedule."
+      },
+      "review": {
+        "title": "Review and update",
+        "body": "After review and merge, update the formal schedule."
+      },
+      "nextRound": "Adjust the next cycle",
+      "throughout": "Throughout each cycle",
+      "start": "Start",
+      "result": "Result",
+      "steps": "Journey steps",
+      "pause": "Pause",
+      "resume": "Resume",
+      "playSequence": "Play in order",
+      "playClip": "Play clip",
+      "followAlong": "Try it in BW",
+      "restart": "Replay",
+      "sample": "Sample project"
+    },
     "catalog": {
       "feature": {
         "workspace": {
@@ -17875,7 +17905,7 @@
         "types": "Explore categories",
         "preparing": "Content in preparation",
         "building": "In development",
-        "related": "Related features and actions"
+        "related": "Related features"
       },
       "group": {
         "projects": "Project wall and intake",
@@ -17890,32 +17920,46 @@
       },
       "journey": {
         "direction": {
-          "title": "Establish project direction and milestones",
-          "summary": "Agree on what the project should accomplish and plan its milestones."
+          "title": "Agree on direction",
+          "summary": "Agree on what the project should accomplish and plan its milestones.",
+          "start": "An added project and an idea",
+          "result": "Shared direction and a milestone schedule"
         },
         "commitments": {
-          "title": "Set version commitments and start work",
-          "summary": "Use past results and new requirements to agree on goals, tasks, and acceptance criteria."
+          "title": "Plan a version",
+          "summary": "Use past results and new requirements to agree on goals, tasks, and acceptance criteria.",
+          "start": "Project direction and new requirements",
+          "result": "A reviewed version plan"
         },
         "delivery": {
-          "title": "Take a task through review and delivery",
-          "summary": "Start from an issue, validate the change, review it with a teammate, and merge the PR."
+          "title": "Build and deliver",
+          "summary": "Start from an issue, validate the change, review it with a teammate, and merge the PR.",
+          "start": "An issue to work on",
+          "result": "A verified and merged change"
         },
         "acceptance": {
-          "title": "Verify what this version delivered",
-          "summary": "Check evidence against the goals and record the outcome and next actions."
+          "title": "Verify outcomes",
+          "summary": "Check evidence against the goals and record the outcome and next actions.",
+          "start": "Version commitments and delivery evidence",
+          "result": "An archived acceptance decision"
         },
         "outcomes": {
-          "title": "Use actual results to guide the next step",
-          "summary": "Review progress and outcomes, identify gaps, and decide what to change."
+          "title": "Review results",
+          "summary": "Review progress and outcomes, identify gaps, and decide what to change.",
+          "start": "Delivery results and actual readings",
+          "result": "A decision for the next cycle"
         },
         "maintenance": {
-          "title": "Keep the project maintainable",
-          "summary": "Review architecture and technical debt, then decide what to address or defer."
+          "title": "Maintain the project",
+          "summary": "Review architecture and technical debt, then decide what to address or defer.",
+          "start": "Knowledge or technical debt to address",
+          "result": "A verified maintenance outcome"
         },
         "reuse": {
-          "title": "Reuse a proven way of working",
-          "summary": "Capture a method that worked and verify it on the next similar task."
+          "title": "Reuse what works",
+          "summary": "Capture a method that worked and verify it on the next similar task.",
+          "start": "A proven way of working",
+          "result": "A method the team can reuse"
         }
       }
     },

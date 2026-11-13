@@ -27,6 +27,7 @@ import {
 import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { ProjectCard } from './overview-project-card'
+import { useWorkbenchScreenGuide, WorkbenchOverviewHelp } from './WorkbenchScreenGuide'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
@@ -221,28 +222,34 @@ export function OverviewPage(): React.JSX.Element {
 
   const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
 
+  useWorkbenchScreenGuide('workbench-overview', Boolean(activeRepo && !settingsOpen))
+
   if (!activeRepo) {
     return (
-      <div className="wb-ov">
-        <header className="page-head">
-          <h1>总览</h1>
-        </header>
-        <div className="content">
-          <section className="card" style={{ padding: 24, textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
-            <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
-              添加项目后，可在这里查看项目总览。
-            </p>
-            <button
-              type="button"
-              className="wb-btn wb-btn-primary"
-              onClick={() => openAddProject()}
-            >
-              + 添加项目
-            </button>
-          </section>
+      <TooltipProvider>
+        <div className="wb-ov">
+          <header className="page-head">
+            <h1>总览</h1>
+            <WorkbenchOverviewHelp milestones={false} />
+          </header>
+          <div className="content">
+            <section className="card" style={{ padding: 24, textAlign: 'center' }}>
+              <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
+              <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
+                添加项目后，可在这里查看项目总览。
+              </p>
+              <button
+                type="button"
+                className="wb-btn wb-btn-primary"
+                data-contextual-tour-target="workbench-overview-add"
+                onClick={() => openAddProject()}
+              >
+                + 添加项目
+              </button>
+            </section>
+          </div>
         </div>
-      </div>
+      </TooltipProvider>
     )
   }
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
@@ -253,21 +260,26 @@ export function OverviewPage(): React.JSX.Element {
         <div className="wb-ov">
           <header className="page-head">
             <h1>总览</h1>
-            <button
-              type="button"
-              className="wb-btn wb-btn-secondary wb-btn-sm"
-              disabled={updatingTrunk || !baseScope || !baseWorktreeId}
-              title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
-              onClick={() => void updateTrunk()}
-            >
-              {updatingTrunk ? (
-                '正在更新…'
-              ) : (
-                <>
-                  <ArrowDownToLine size={14} aria-hidden="true" /> 更新代码
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <WorkbenchOverviewHelp
+                milestones={!!milestoneScope && activeRepo.kind !== 'folder'}
+              />
+              <button
+                type="button"
+                className="wb-btn wb-btn-secondary wb-btn-sm"
+                disabled={updatingTrunk || !baseScope || !baseWorktreeId}
+                title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
+                onClick={() => void updateTrunk()}
+              >
+                {updatingTrunk ? (
+                  '正在更新…'
+                ) : (
+                  <>
+                    <ArrowDownToLine size={14} aria-hidden="true" /> 更新代码
+                  </>
+                )}
+              </button>
+            </div>
           </header>
 
           <div className="content">
@@ -333,6 +345,7 @@ export function OverviewPage(): React.JSX.Element {
             key={charterKey}
             repo={activeRepo}
             displayName={projectName}
+            startEditing
             onClose={() => {
               if (!settingsBusy) {
                 if (settingsDirty) {

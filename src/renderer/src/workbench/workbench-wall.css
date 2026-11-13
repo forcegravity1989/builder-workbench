@@ -37,17 +37,12 @@
   align-items: center;
   gap: 2px;
 }
-.wall-principles {
-  margin: 12px 0 24px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
 .wb-wall .wallbar {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
-  margin-bottom: 26px;
+  margin: 12px 0 26px;
   font-size: 11px;
   color: var(--muted-foreground);
 }

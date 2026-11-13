@@ -232,10 +232,13 @@ export function MilestoneNavigation({
           <DialogHeader>
             <DialogTitle>添加里程碑</DialogTitle>
           </DialogHeader>
-          <form
-            className="grid gap-4"
-            onSubmit={(e) => {
-              e.preventDefault()
+          <MilestoneNodeForm
+            date={newDate ?? ''}
+            outcome={outcome}
+            setDate={setNewDate}
+            setOutcome={setOutcome}
+            cancel={() => setNewDate(null)}
+            submit={() => {
               if (
                 !newDate ||
                 !civilDate.safeParse(newDate).success ||
@@ -247,38 +250,64 @@ export function MilestoneNavigation({
               add({ id: crypto.randomUUID(), date: newDate, outcome: outcome.trim() })
               setNewDate(null)
             }}
-          >
-            <label>
-              日期
-              <Input
-                type="date"
-                max="9999-12-31"
-                required
-                value={newDate ?? ''}
-                onChange={(e) => setNewDate(e.target.value)}
-              />
-            </label>
-            <label>
-              预期成果
-              <Textarea
-                required
-                maxLength={200}
-                value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
-              />
-            </label>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setNewDate(null)}>
-                取消
-              </Button>
-              <Button type="submit" disabled={!newDate || !outcome.trim()}>
-                添加
-              </Button>
-            </div>
-          </form>
+          />
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export function MilestoneNodeForm({
+  date,
+  outcome,
+  setDate,
+  setOutcome,
+  cancel,
+  submit
+}: {
+  date: string
+  outcome: string
+  setDate(value: string): void
+  setOutcome(value: string): void
+  cancel(): void
+  submit(): void
+}) {
+  return (
+    <form
+      className="grid gap-4"
+      onSubmit={(event) => {
+        event.preventDefault()
+        submit()
+      }}
+    >
+      <label>
+        日期
+        <Input
+          type="date"
+          max="9999-12-31"
+          required
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </label>
+      <label>
+        预期成果
+        <Textarea
+          required
+          maxLength={200}
+          value={outcome}
+          onChange={(e) => setOutcome(e.target.value)}
+        />
+      </label>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={cancel}>
+          取消
+        </Button>
+        <Button type="submit" disabled={!date || !outcome.trim()}>
+          添加
+        </Button>
+      </div>
+    </form>
   )
 }
 

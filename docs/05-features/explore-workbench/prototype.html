@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 布局草案：只演示探索目录与内容状态；灰框引用现有演示，不重画 BW 业务屏。 -->
+<!-- 布局评审原型。名片片段使用模拟项目数据。 -->
 <html lang="zh" data-theme="light">
   <head>
     <meta charset="utf-8" />
@@ -7,11 +7,13 @@
     <title>探索 BW · 布局原型</title>
     <link rel="stylesheet" href="../../04-design-system/styles.css" />
     <link rel="stylesheet" href="prototype/layout.css" />
+    <script src="../version-planning/prototype/vendor.js" defer></script>
+    <script src="prototype/charter-demo.js" defer></script>
     <script src="prototype/catalog.js" defer></script>
   </head>
   <body>
     <header class="review-bar">
-      <div><strong>探索 BW · 布局原型</strong><span>仅评审目录与内容位置；灰框内沿用现有演示。</span></div>
+      <div><strong>探索 BW · 布局原型</strong><span>评审工作旅程目录、四步布局和名片动画</span></div>
       <button class="btn btn-secondary" id="theme-toggle" type="button">切换深色</button>
     </header>
     <main class="preview-shell">
@@ -23,11 +25,11 @@
           </button>
         </header>
         <div class="tabs explore-tabs" role="tablist" aria-label="探索类型">
-          <button class="tab" id="tab-work" type="button" role="tab" aria-selected="false" aria-controls="explore-body" tabindex="-1" data-tab="work">工作旅程</button>
-          <button class="tab" id="tab-feature" type="button" role="tab" aria-selected="true" aria-controls="explore-body" data-tab="feature">功能</button>
+          <button class="tab" id="tab-work" type="button" role="tab" aria-selected="true" aria-controls="explore-body" data-tab="work">工作旅程</button>
+          <button class="tab" id="tab-feature" type="button" role="tab" aria-selected="false" aria-controls="explore-body" tabindex="-1" data-tab="feature">功能</button>
         </div>
-        <div class="explore-body" id="explore-body" role="tabpanel" aria-labelledby="tab-feature">
-          <nav id="catalog" class="catalog" aria-label="功能目录"></nav>
+        <div class="explore-body" id="explore-body" role="tabpanel" aria-labelledby="tab-work">
+          <nav id="catalog" class="catalog" aria-label="工作旅程目录"></nav>
           <section class="content" id="content" aria-label="当前内容"></section>
         </div>
         <footer class="explore-footer">
@@ -40,6 +42,6 @@
         <button class="btn btn-primary" id="reopen" type="button">重新打开探索 BW</button>
       </section>
     </main>
-    <footer class="review-note">原型说明：内容逐项补充；功能和完整旅程是否可用，以真实验证为准。本页不触发安装、配置或业务操作。</footer>
+    <footer class="review-note">功能分区沿用现有探索 BW。名片动画使用模拟数据，按当前总览的编辑与评审入口编排。</footer>
   </body>
 </html>
