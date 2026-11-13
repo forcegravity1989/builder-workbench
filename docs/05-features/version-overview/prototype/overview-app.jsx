@@ -2,8 +2,10 @@ import { OverviewSections } from './overview-sections.jsx'
 import { ExperimentalSettings, SettingsIcon } from './overview-settings.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { Dialog, SourcePanel } from './overview-components.jsx'
+import { versionWorkflowProgress } from '../../../../src/renderer/src/workbench/version-workflow-progress'
 import {
   snapshot,
+  acceptanceForVersion,
   archivePull,
   formatTime,
   repository,
@@ -42,25 +44,27 @@ function Link({ href, children }) {
     </a>
   )
 }
-function ArchiveStamp({ version, workflow, label }) {
+function WorkflowProgress({ version, workflow, label, document }) {
   const pull = archivePull(version, workflow)
   const merged = pull?.state === 'MERGED'
+  const progress = versionWorkflowProgress(
+    document ? { kind: 'ready', document, source: 'committed' } : { kind: 'missing' },
+    null
+  )
   return (
     <span>
-      {label} ·{' '}
-      {merged && pull.mergedAt ? (
-        <time dateTime={pull.mergedAt} title="北京时间 UTC+08:00">
-          {formatTime(pull.mergedAt)}
-        </time>
-      ) : pull && !merged ? (
-        '未合入'
-      ) : (
-        '未记录'
-      )}
+      {label} · {progress.label}
       {pull && (
         <>
-          {' '}
-          · <Link href={pull.url}>#{pull.number}</Link>
+          {' · PR '}
+          {merged ? '已合入' : pull.state === 'CLOSED' ? '已关闭' : '待合入'}
+          {merged && pull.mergedAt && (
+            <time dateTime={pull.mergedAt} title="北京时间 UTC+08:00">
+              {' '}
+              {formatTime(pull.mergedAt)}
+            </time>
+          )}{' '}
+          <Link href={pull.url}>#{pull.number}</Link>
         </>
       )}
     </span>
@@ -448,15 +452,17 @@ function App() {
                         )
                       ].join('、')}
                     </span>
-                    <ArchiveStamp
+                    <WorkflowProgress
                       version={selected.version}
                       workflow="planning"
-                      label="计划 PR 合入"
+                      label="计划"
+                      document={plan}
                     />
-                    <ArchiveStamp
+                    <WorkflowProgress
                       version={selected.version}
                       workflow="acceptance"
-                      label="验收 PR 合入"
+                      label="验收"
+                      document={acceptanceForVersion(selected.version)}
                     />
                   </div>
                 )}

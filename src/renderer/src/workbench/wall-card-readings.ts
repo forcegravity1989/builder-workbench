@@ -1,11 +1,7 @@
-import type { ArchivePrStatusResult } from '../../../shared/workbench/archive-pr-status'
 import type { CycleTaskRead } from './version-cycle/ports'
 import { issueReadState } from './version-acceptance/acceptance-issue-annotations'
 import type { VersionCatalogState } from './use-version-catalog'
-
-export type WallArchiveReading =
-  | { kind: 'missing' }
-  | { kind: 'status'; status: ArchivePrStatusResult | null }
+import type { VersionWorkflowProgress } from './version-workflow-progress'
 
 export type WallCardReadings =
   | { kind: 'loading' }
@@ -15,8 +11,8 @@ export type WallCardReadings =
       kind: 'version'
       version: string
       goals: string[]
-      plan: WallArchiveReading
-      acceptance: WallArchiveReading
+      plan: VersionWorkflowProgress
+      acceptance: VersionWorkflowProgress
       tasks: { closed: number; total: number } | null
       catalog: VersionCatalogState
     }

@@ -19,7 +19,7 @@ metadata:
 
 计划屏旅程四区：**计划准备 → 本版目标 → 会议纪要 → 归档 PR**。对用户讲话一律用这四个分区名——开场讲解与每步回执都按它说，用户能在板面上找到你说的每一步。
 
-材料的 `workflow.stage`（preparation/goals/breakdown/review/archive）记录最近完成的阶段，只供会话恢复校准与自动化读取：界面上没有阶段灯，也不把 stage 值当作面向用户的步骤名。每完成一个阶段用 `ORCA bw materials save` 更新：
+材料的 `workflow.stage`（preparation/goals/breakdown/review/archive）记录最近完成的阶段。面向用户的会话指引使用上面的板面分区名。每完成一个阶段用 `ORCA bw materials save` 更新：
 
 | stage         | 何时写入                                                                           |
 | ------------- | ---------------------------------------------------------------------------------- |
