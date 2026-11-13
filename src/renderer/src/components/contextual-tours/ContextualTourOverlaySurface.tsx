@@ -295,9 +295,26 @@ export function handleContextualTourGlobalKeyDown(event: globalThis.KeyboardEven
     return
   }
 
+  // Radix handles Escape on document capture, after this window-level guard.
+  if (
+    document.querySelector('[role="menu"][data-state="open"], [role="listbox"][data-state="open"]')
+  ) {
+    return
+  }
+
   const overlay = document.querySelector<HTMLElement>('[data-contextual-tour-overlay]')
   const focusRoot = document.querySelector<HTMLElement>('[data-contextual-tour-panel]') ?? overlay
   if (!overlay || !focusRoot) {
+    return
+  }
+  const target = event.target
+  const dialog =
+    target instanceof Element
+      ? target.closest(
+          '[data-slot="dialog-content"][data-state="open"], [data-slot="popover-content"][data-state="open"], [data-slot="alert-dialog-content"][data-state="open"]'
+        )
+      : null
+  if (dialog && !dialog.contains(focusRoot)) {
     return
   }
 

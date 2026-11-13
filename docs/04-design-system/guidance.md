@@ -74,7 +74,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 
 | 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 当前屏问号 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|---|
-| 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；Windows 本机演示仓实走至变更核对与失败恢复；共享仓的合入及多人读回待验 | [产品内四步串联动画][direction-content] · [已认可布局与名片顺序][direction-prototype] | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
+| 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；Windows 本机演示仓实走至变更核对与失败恢复；共享仓的合入及多人读回待验 | [✅ 四步播放、暂停、重播与关闭回看][direction-content] · [Windows 证据][direction-evidence] · [已认可布局与名片顺序][direction-prototype] | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
 | 工作 | W02 把方向变成本版可执行的承诺：结合上版结果与新要求 → 确定目标、验收条件和任务 → 评审归档并开工 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F02、F18、F22、F23 | 同左 | — | ☐ | ☐ |
 | 工作 | W03 把问题或需求推进到可信交付：任务开工 → 工作区执行与验证 → 按需原型批注及评审通知 → PR 检视、修改与合入 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F01–F03、F06–F11、F23、F24 | 同左 | — | ☐ | ☐ |
 | 工作 | W04 把本版承诺验收清楚：对照目标核验证据 → 人确认结果 → 归档并安排遗留和下一版 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F18、F22、F25、F27 | 同左 | — | ☐ | ☐ |
@@ -98,10 +98,10 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F15 浮动工作区 | 暂缓专项；保留既有浮动工作区能力 | ☐ | ☐ | [待验：floating-workspace][tours] | — | ☐ | — |
 | 功能 | F16 快捷跳转 | 随屏 → F01/F23：唤起、查找、跳转及常驻回看 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | 暂缓专项；保留既有语音入口与提示 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
-| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排 | [编排与评审局部动画][direction-content] | [里程碑问号与逐步引导][milestone-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及相关状态 | [找项目局部动画][direction-content] | [墙头问号与逐步引导][direction-wall] | [自动逐步引导及跳过记录待验][screen-guide]；首次添加交接见 F20 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
+| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排 | [✅ 编排与评审局部动画][direction-content] | [✅ 里程碑问号、退出与回看][milestone-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及相关状态 | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [自动逐步引导及跳过记录待验][screen-guide]；首次添加交接见 F20 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
-| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工；名片直接编辑及本地保存 | [与 W01 共用名片动画][direction-content] | [名片问号与逐步引导][direction-overview]；里程碑见 F18 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
+| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工；名片直接编辑及本地保存 | [✅ 与 W01 共用名片动画][direction-content] | [✅ 名片问号、推进与退出][direction-overview]；里程碑见 F18 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务及评审归档 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | ☐ | ☐ | ☐ | — | ☐ | — |
@@ -145,6 +145,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [milestone-guide]: ../../src/renderer/src/workbench/project-milestones.tsx
 [tips]: ../../src/shared/feature-tips.ts
 
+[direction-evidence]: https://github.com/forcegravity1989/builder-workbench/pull/640#issuecomment-6824962114
 [direction-content]: ../../src/renderer/src/workbench/explore/DirectionWalkthrough.tsx
 [direction-wall]: ../../src/renderer/src/workbench/ProjectWallPage.tsx
 [direction-overview]: ../../src/renderer/src/workbench/overview-project-card.tsx

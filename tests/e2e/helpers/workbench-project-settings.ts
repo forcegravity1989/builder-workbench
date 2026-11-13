@@ -79,6 +79,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     path: info.outputPath('bw-wall-native-menu.jpg')
   })
   await page.keyboard.press('Escape')
+  await expect(page.getByRole('menu')).toBeHidden()
   const previousWorkspace = await page.evaluate((id) => {
     const state = window.__store!.getState()
     const tree = state.worktreesByRepo[id].find((item) => item.isMainWorktree)!

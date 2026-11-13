@@ -158,6 +158,13 @@ test.describe('BW first-run project handoff', () => {
     await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
     await wallGuide.locator('[data-contextual-tour-skip]').click()
     await expect(wallGuide).toBeHidden()
+    await expect
+      .poll(() =>
+        workbenchPage.evaluate(async () =>
+          (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-wall')
+        )
+      )
+      .toBe(true)
     await wallHelp.click()
     await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
     await wallGuide.locator('[data-contextual-tour-skip]').click()
