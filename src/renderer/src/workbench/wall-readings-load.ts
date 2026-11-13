@@ -21,12 +21,10 @@ import { cycleBranch } from './version-cycle/native-cycle-workspace'
 import { nativeVersionMaterialPort } from './version-material-port'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeArchivePrPort } from './archive-pr-port'
+import type { ArchivePrStatusResult } from '../../../shared/workbench/archive-pr-status'
 import { nativeTaskPort } from './native-task-port'
-import {
-  wallTaskCounts,
-  type WallArchiveReading,
-  type WallCardReadings
-} from './wall-card-readings'
+import { wallTaskCounts, type WallCardReadings } from './wall-card-readings'
+import { versionWorkflowProgress, type VersionWorkflowProgress } from './version-workflow-progress'
 import type { WallProject } from './workbench-wall-projects'
 import { wallProjectVersionRows } from './workbench-wall-projects'
 
@@ -86,7 +84,7 @@ export async function readWallReadings(
       workflow: 'plan' | 'acceptance'
     ): Promise<{
       document: PlanningMaterial | AcceptanceMaterial | null
-      archive: WallArchiveReading
+      progress: VersionWorkflowProgress
       owner: NativeWorkspaceScope | null
     }> => {
       try {
@@ -103,70 +101,76 @@ export async function readWallReadings(
           throw new Error('有多个流程工作区，请进入项目核对来源')
         }
         const tree = trees[0]
-        if (!tree && (!catalog.history?.ready || catalog.history.error)) {
+        const homeScope = { repoId: scope.repoId, worktreeId: home.id, hostId: scope.hostId }
+        const treeOwner = tree ? nativeWorkspaceScope(tree) : scope
+        const treeScope = tree
+          ? { repoId: treeOwner.repoId, worktreeId: tree.id, hostId: treeOwner.hostId }
+          : homeScope
+        const reference = entry.material[workflow]
+        const draft = tree
+          ? await nativeVersionMaterialPort(
+              { ...treeScope, workflow },
+              treeOwner.runtimeOwnerEnvironmentId
+            ).read(entry.version)
+          : null
+        // An empty legacy shared tree does not own this version.
+        const readCommitted = !tree || (!draft && !bound.length)
+        if (readCommitted && (!catalog.history?.ready || catalog.history.error)) {
           throw new Error(catalog.history?.error ?? '尚未读到主干材料')
         }
-        const owner = tree ? nativeWorkspaceScope(tree) : scope
-        const readScope = {
-          repoId: owner.repoId,
-          worktreeId: tree?.id ?? home.id,
-          hostId: owner.hostId
+        const problem = entry.problems.find((item) => item.workflow === workflow)
+        if (readCommitted && !reference && problem) {
+          throw new Error(problem.message)
         }
-        const reference = entry.material[workflow]
-        // A live flow reads its current file, exactly like the plan/acceptance screen.
-        // Only a retired flow falls back to the committed record; acceptance never substitutes its pinned plan here.
-        const snapshot = tree
-          ? await nativeVersionMaterialPort(
-              { ...readScope, workflow },
-              owner.runtimeOwnerEnvironmentId
-            ).read(entry.version)
-          : reference
-            ? await nativeVersionHistoryPort(owner.runtimeOwnerEnvironmentId).read({
-                scope: readScope,
+        const snapshot =
+          readCommitted && reference
+            ? await nativeVersionHistoryPort(scope.runtimeOwnerEnvironmentId).read({
+                scope: homeScope,
                 source: 'trunk',
                 sourceCommit: reference.sourceCommit,
                 version: entry.version,
                 cycleId: reference.cycleId,
                 workflow
               })
-            : null
+            : draft
+        const owner = readCommitted ? scope : treeOwner
+        const readScope = readCommitted ? homeScope : treeScope
         const document = snapshot
           ? (workflow === 'plan' ? PlanningMaterialSchema : AcceptanceMaterialSchema).parse(
               snapshot.document
             )
           : null
         const pr = document?.workflow?.archivePr
-        let archive: WallArchiveReading = { kind: 'missing' }
+        let status: ArchivePrStatusResult | null = null
         if (pr) {
           try {
-            archive = {
-              kind: 'status',
-              status: await nativeArchivePrPort(owner.runtimeOwnerEnvironmentId).readStatus(
-                readScope,
-                pr,
-                force
-              )
-            }
+            status = await nativeArchivePrPort(owner.runtimeOwnerEnvironmentId).readStatus(
+              readScope,
+              pr,
+              force
+            )
           } catch (error) {
-            archive = { kind: 'status', status: { state: 'unknown', reason: String(error) } }
+            status = { state: 'unknown', reason: String(error) }
           }
         }
         return {
           document,
-          archive,
+          progress: versionWorkflowProgress(
+            document
+              ? { kind: 'ready', document, source: readCommitted ? 'committed' : 'draft' }
+              : { kind: 'missing' },
+            status
+          ),
           owner
         }
       } catch (error) {
         return {
           document: null,
           owner: null,
-          archive: {
-            kind: 'status',
-            status: {
-              state: 'unknown',
-              reason: error instanceof Error ? error.message : String(error)
-            }
-          }
+          progress: versionWorkflowProgress(
+            { kind: 'error', message: error instanceof Error ? error.message : String(error) },
+            null
+          )
         }
       }
     }
@@ -196,8 +200,8 @@ export async function readWallReadings(
       kind: 'version',
       version: entry.version,
       goals: plan?.goals.map((goal) => goal.title) ?? [],
-      plan: planning.archive,
-      acceptance: acceptance.archive,
+      plan: planning.progress,
+      acceptance: acceptance.progress,
       tasks: tasks ? wallTaskCounts(tasks) : null,
       catalog: {
         scope: readingScope,

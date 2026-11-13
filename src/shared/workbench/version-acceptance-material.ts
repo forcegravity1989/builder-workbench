@@ -143,8 +143,7 @@ export const AcceptanceMaterialSchema = z
     ),
     // Meeting conclusions; the durable record the board annotations feed into.
     minutes: AcceptanceMeetingMinutesSchema.optional(),
-    // Session-model-written SOP progress; absent means not started. The board
-    // renders no lamps: the four on-screen stages are locators, not this enum.
+    // Optional progress recorded by the acceptance assistant.
     workflow: AcceptanceWorkflowStateSchema.optional()
   })
   .superRefine((document, context) => {

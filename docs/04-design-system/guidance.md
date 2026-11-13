@@ -100,7 +100,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F16 快捷跳转 | 随屏 → F01/F23：唤起、查找、跳转及常驻回看 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | 暂缓专项；保留既有语音入口与提示 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
 | 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排；W02 复用排期参考 | [✅ 编排与评审局部动画][direction-content] | [总览页头帮助 → 里程碑引导][screen-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及相关状态 | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据) | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
 | 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工与[读取来源](../architecture.md#页面读取来源)；名片直接编辑及本地保存 | [✅ 与 W01 共用名片动画][direction-content] | [总览页头帮助 → 项目名片引导][screen-guide]；里程碑见 F18 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务、批注与归档 | [✅ 共用 W02 片段及跟做入口；评审片段含对象批注][planning-content] | [✅ 计划页头最右侧帮助；已有材料时指向目标、批注、归档][screen-guide] | [✅ 首步、跳过与主进程读回][tours]；新进程持久读回及其他弹窗协调待验 | — | 复用 W02，已验样例批注添加与编号回看 | — |
@@ -108,7 +108,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F25 [版本验收](../05-features/version-acceptance/spec.md) | 重点：核验证据、人的结论及归档 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F26 [工程部署](../05-features/version-acceptance/spec.md) | 暂缓：本期不新增工程部署引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：目标、任务、验收事实与[版本未同步提示](../05-features/version-overview/spec.md#来源历史与缓存)；SDLC 本期不新增引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
+| 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)、目标、任务、验收事实与[版本未同步提示](../05-features/version-overview/spec.md#来源历史与缓存)；SDLC 本期不新增引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F28 [指标配置与采集](../05-features/overview-metrics/spec.md) | 重点：指标口径、配置、采集及缺数据/失败后的继续路径 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F22/F24/F25：核对 CodeHub/WeLink 登录和使用；W02 核对任务与归档来源 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；复用 W02 登录恢复 | — |
 

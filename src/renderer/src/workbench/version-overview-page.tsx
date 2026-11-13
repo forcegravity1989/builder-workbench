@@ -29,35 +29,41 @@ import {
   overviewProjectId
 } from './version-overview/overview-experiments'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
+import { versionWorkflowProgress } from './version-workflow-progress'
 import './version-overview/overview.css'
 
-function ArchiveTime({
+function WorkflowProgress({
   kind,
   materials
 }: {
   kind: 'plan' | 'acceptance'
   materials: VersionOverviewMaterials
 }) {
-  const status = materials.prStatuses[kind]
-  const document = materials[kind]
-  const reference = document.kind === 'ready' ? document.document.workflow?.archivePr : null
-  const label = kind === 'plan' ? '计划 PR 合入' : '验收 PR 合入'
+  const { label, reason, archive } = versionWorkflowProgress(
+    materials[kind],
+    materials.prStatuses[kind]
+  )
+  const status = archive?.status
   const at = status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined
-  const missing =
-    document.kind === 'error' || status?.state === 'unknown'
-      ? '未知'
-      : document.kind === 'loading' || (reference && !status)
-        ? '读取中'
-        : status && status.state !== 'merged'
-          ? '未合入'
-          : '未记录'
+  const url = status?.url
   return (
-    <span title={status?.state === 'unknown' ? status.reason : '北京时间 UTC+08:00'}>
-      {label} · {at ? <time dateTime={at}>{timeLabel(at)}</time> : missing}
-      {status && 'url' in status && status.url && (
-        <button className="bwo-link ml-1" onClick={() => openEvidenceUrl(status.url!)}>
-          #{reference?.number} ↗
-        </button>
+    <span title={reason}>
+      {kind === 'plan' ? '计划' : '验收'} · {label}
+      {archive && (
+        <span title={status?.state === 'unknown' ? status.reason : undefined}>
+          {' · '}
+          {archive.label}
+          {at && (
+            <time className="ml-1" dateTime={at} title="北京时间 UTC+08:00">
+              {timeLabel(at)}
+            </time>
+          )}
+          {url && (
+            <button className="bwo-link ml-1" onClick={() => openEvidenceUrl(url)}>
+              #{archive.reference.number} ↗
+            </button>
+          )}
+        </span>
       )}
     </span>
   )
@@ -227,8 +233,8 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             )
           ].join('、') || '未记录'}
         </span>
-        <ArchiveTime kind="plan" materials={materials} />
-        <ArchiveTime kind="acceptance" materials={materials} />
+        <WorkflowProgress kind="plan" materials={materials} />
+        <WorkflowProgress kind="acceptance" materials={materials} />
       </div>
       {materialErrors.map((error) => (
         <p className="mb-4 text-sm text-destructive" role="alert" key={error}>
