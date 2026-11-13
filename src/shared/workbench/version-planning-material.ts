@@ -57,8 +57,7 @@ export const PlanningMaterialSchema = z
     // Retain the legacy field for existing material revisions.
     tasks: z.array(VersionTaskReferenceSchema).default([]),
     minutes: PlanMeetingMinutesSchema.optional(),
-    // Session-model-written SOP progress; absent means not started. Lamps only
-    // compare positions against it — never a completion authority by itself.
+    // Optional progress recorded by the planning assistant.
     workflow: PlanWorkflowStateSchema.optional()
   })
   .superRefine((document, context) => {

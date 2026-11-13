@@ -26,7 +26,7 @@
 
 ## 补写阶段状态（存量材料升级）
 
-旧材料可能缺 `workflow` 节，会话恢复校准与自动化因此读不到进度（界面不渲染阶段灯；stage 只供校准与自动化读取）。进入计划或验收会话、或恢复会话时，若发现材料缺 `workflow.stage`，按实际进度补写并经材料 save 保存：
+旧材料可能缺 `workflow` 节，会话恢复校准与自动化因此读不到进度，项目墙和版本总览也缺少阶段记录。进入计划或验收会话、或恢复会话时，若发现材料缺 `workflow.stage`，按实际进度补写并经材料 save 保存：
 
 - 已完成、能追溯归档 PR 的历史版本：写 `stage=archive`；能从 Git 或 provider 诚实定位到那一条归档 PR 时一并写 `archivePr`（provider/repository/number），定位不到就不写，宁缺毋造。
 - 进行中的版本：写到实际到达的阶段（计划 preparation/goals/review/breakdown；验收 preparation/showcase），不虚标。

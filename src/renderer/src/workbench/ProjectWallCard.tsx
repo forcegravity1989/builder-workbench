@@ -17,11 +17,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type { Repo } from '../../../shared/repo-types'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { archiveStateLabel } from '../../../shared/workbench/archive-state-label'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSourceTag } from './ProjectSourceTag'
 import type { ProjectCharter } from './project-charter'
-import type { WallCardReadings, WallArchiveReading } from './wall-card-readings'
+import type { WallCardReadings } from './wall-card-readings'
+import type { VersionWorkflowProgress } from './version-workflow-progress'
 import type { WallProject, WallRepoSlot } from './workbench-wall-projects'
 
 export type CardHostTag = {
@@ -38,8 +38,21 @@ export type WallCardView = {
   hostTags: CardHostTag[]
   primaryRepo: Repo
 }
-function archiveLabel(reading: WallArchiveReading): string {
-  return reading.kind === 'missing' ? '未创建' : archiveStateLabel(reading.status)
+function WorkflowProgress({ progress }: { progress: VersionWorkflowProgress }) {
+  const { archive, label } = progress
+  return (
+    <>
+      <strong>{label}</strong>
+      {archive && <span>{archive.label}</span>}
+    </>
+  )
+}
+
+function workflowProblem(progress: VersionWorkflowProgress): string | undefined {
+  return (
+    progress.reason ??
+    (progress.archive?.status?.state === 'unknown' ? progress.archive.status.reason : undefined)
+  )
 }
 
 function RepositoryAction({
@@ -236,22 +249,37 @@ export function ProjectWallCard({
         )}
       </div>
       {readings.kind === 'version' && (
-        <div className="pcard-stages">
-          <button type="button" onClick={() => onStage('plan')}>
-            <span>计划</span>
-            <strong>{archiveLabel(readings.plan)}</strong>
-          </button>
-          <button type="button" onClick={() => onStage('tasks')}>
-            <span>任务</span>
-            <strong>
-              {readings.tasks ? `${readings.tasks.closed} / ${readings.tasks.total}` : '—'}
-            </strong>
-          </button>
-          <button type="button" onClick={() => onStage('acceptance')}>
-            <span>验收</span>
-            <strong>{archiveLabel(readings.acceptance)}</strong>
-          </button>
-        </div>
+        <>
+          <div className="pcard-stages">
+            <button type="button" onClick={() => onStage('plan')}>
+              <span>计划</span>
+              <WorkflowProgress progress={readings.plan} />
+            </button>
+            <button type="button" onClick={() => onStage('tasks')}>
+              <span>任务</span>
+              <strong>
+                {readings.tasks ? `${readings.tasks.closed} / ${readings.tasks.total}` : '—'}
+              </strong>
+            </button>
+            <button type="button" onClick={() => onStage('acceptance')}>
+              <span>验收</span>
+              <WorkflowProgress progress={readings.acceptance} />
+            </button>
+          </div>
+          {(['plan', 'acceptance'] as const).map((workflow) => {
+            const detail = workflowProblem(readings[workflow])
+            return detail ? (
+              <ErrorDetails
+                key={workflow}
+                className="pcard-muted px-4 pb-2"
+                summary={
+                  workflow === 'plan' ? '计划读取问题 · 查看详情' : '验收读取问题 · 查看详情'
+                }
+                detail={detail}
+              />
+            ) : null
+          })}
+        </>
       )}
     </article>
   )

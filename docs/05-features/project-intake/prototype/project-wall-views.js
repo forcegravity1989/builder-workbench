@@ -22,13 +22,13 @@
                 ''
               )}</ul>${p.goals.length > 2 ? `<button class="more-goals inline-link" data-action="version" data-id="${p.id}">另 ${p.goals.length - 2} 项目标</button>` : ''}</div>
       <div class="stage-grid" aria-label="版本进展">${[
-        ['计划', p.plan || '—', 'plan'],
+        ['计划', p.plan || '—', 'plan', p.planArchive],
         ['任务', taskCount, 'tasks'],
-        ['验收', p.acceptance || '—', 'acceptance']
+        ['验收', p.acceptance || '—', 'acceptance', p.acceptanceArchive]
       ]
         .map(
-          ([label, value, target]) =>
-            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}" title="${target === 'tasks' ? '任务已关闭／总数' : '复用对应页面的归档状态'}"><span>${label}</span><b>${esc(value)}</b></button>`
+          ([label, value, target, archive]) =>
+            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}" title="${target === 'tasks' ? '任务已关闭／总数' : '查看流程材料'}"><span>${label}</span><b>${esc(value)}</b>${archive ? `<span>${esc(archive)}</span>` : ''}</button>`
         )
         .join('')}</div>`
           : `<div class="unversioned"><p class="card-description">${esc(p.brief || '')}</p><span class="version-muted">${version}</span></div>`
@@ -134,10 +134,7 @@
         '复用 BW 版本总览',
         '完整目标与详细进展进入已有版本页面；墙卡只显示两条目标，每条最多两行。'
       ],
-      plan: [
-        '复用 BW 版本计划',
-        '使用现有计划材料与归档状态，不新增“一句话承诺”或单独约定验收日期。'
-      ],
+      plan: ['复用 BW 版本计划', '查看当前计划材料和阶段进度。'],
       tasks: [
         '复用 BW 任务页面',
         '查看本版关联任务及原生 Issue 状态。任务全部关闭不自动意味着人工验收通过。'
