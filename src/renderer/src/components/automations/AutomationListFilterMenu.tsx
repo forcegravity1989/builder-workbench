@@ -21,6 +21,10 @@ import { searchAgentPickerEntries } from '@/lib/agent-picker-search'
 import { translate } from '@/i18n/i18n'
 import type { AutomationHostCatalogEntry } from './automation-host-catalog-types'
 import {
+  filterAutomationHostGroupsByQuery,
+  groupAutomationHostEntriesByAuthority
+} from './automation-host-picker-groups'
+import {
   countAutomationListFilters,
   EMPTY_AUTOMATION_LIST_FILTER,
   type AutomationListFilter,
@@ -151,6 +155,29 @@ export function AutomationListFilterMenu({
   const activeCount = countAutomationListFilters(filter)
   const selectedHostKeys = filter.hostStableKeys ?? []
 
+  // Why: a paired machine exposes its own Self plus every SSH target it can reach,
+  // so the host filter routinely spans many entries across several authorities. A
+  // flat list made the repeated orphan buckets ("Unassigned legacy automations")
+  // indistinguishable and finding one host a scroll hunt. Grouping by authority
+  // and searching both the authority and the host keep it navigable; the helpers
+  // are shared with the create destination and the All-hosts list so position and
+  // grouping never disagree.
+  const [hostQuery, setHostQuery] = React.useState('')
+  const hostGroups = React.useMemo(
+    () => groupAutomationHostEntriesByAuthority(hostEntries ?? []),
+    [hostEntries]
+  )
+  const visibleHostGroups = React.useMemo(
+    () => filterAutomationHostGroupsByQuery(hostGroups, hostQuery),
+    [hostGroups, hostQuery]
+  )
+  // Why only with several authorities: a lone machine needs no header, and the
+  // header is what disambiguates otherwise-identical labels across authorities.
+  const showHostGroupHeaders = visibleHostGroups.length > 1
+  // Why require a query: an empty host list (still loading, or no hosts at all)
+  // must not be reported as "no search match" — there is nothing to have missed.
+  const showNoHostMatch = visibleHostGroups.length === 0 && hostQuery.trim() !== ''
+
   const toggleHost = (stableKey: string): void => {
     const nextHostKeys = selectedHostKeys.includes(stableKey)
       ? selectedHostKeys.filter((selectedKey) => selectedKey !== stableKey)
@@ -204,6 +231,27 @@ export function AutomationListFilterMenu({
                 {translate('auto.components.automations.AutomationsPage.tableHost', 'Host')}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="max-h-80 overflow-y-auto scrollbar-sleek">
+                <div className="p-1">
+                  <Input
+                    value={hostQuery}
+                    onChange={(event) => setHostQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Escape' && event.key !== 'Tab') {
+                        event.stopPropagation()
+                      }
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    placeholder={translate(
+                      'auto.components.automations.hostPicker.searchHosts',
+                      'Search hosts...'
+                    )}
+                    aria-label={translate(
+                      'auto.components.automations.hostPicker.searchHosts',
+                      'Search hosts...'
+                    )}
+                    className="h-7 px-2 text-xs"
+                  />
+                </div>
                 <DropdownMenuCheckboxItem
                   checked={selectedHostKeys.length === 0}
                   onCheckedChange={() => onChange({ ...filter, hostStableKeys: [] })}
@@ -211,16 +259,34 @@ export function AutomationListFilterMenu({
                 >
                   {translate('auto.components.automations.hostPicker.allHosts', 'All hosts')}
                 </DropdownMenuCheckboxItem>
-                {hostEntries.map((entry) => (
-                  <DropdownMenuCheckboxItem
-                    key={entry.stableKey}
-                    checked={selectedHostKeys.includes(entry.stableKey)}
-                    onCheckedChange={() => toggleHost(entry.stableKey)}
-                    onSelect={(event) => event.preventDefault()}
-                  >
-                    {entry.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
+                {showNoHostMatch ? (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    {translate(
+                      'auto.components.automations.hostPicker.noHostsMatch',
+                      'No hosts match your search.'
+                    )}
+                  </div>
+                ) : (
+                  visibleHostGroups.map((group) => (
+                    <React.Fragment key={group.authorityKey}>
+                      {showHostGroupHeaders ? (
+                        <div className="px-2 pb-0.5 pt-1 text-[11px] font-medium uppercase text-muted-foreground">
+                          {group.authorityLabel}
+                        </div>
+                      ) : null}
+                      {group.entries.map((entry) => (
+                        <DropdownMenuCheckboxItem
+                          key={entry.stableKey}
+                          checked={selectedHostKeys.includes(entry.stableKey)}
+                          onCheckedChange={() => toggleHost(entry.stableKey)}
+                          onSelect={(event) => event.preventDefault()}
+                        >
+                          {entry.label}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </React.Fragment>
+                  ))
+                )}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
