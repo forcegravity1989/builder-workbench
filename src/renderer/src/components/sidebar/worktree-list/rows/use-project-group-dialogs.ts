@@ -227,6 +227,7 @@ export function useProjectGroupDialogs(args: {
     }
     reportProjectGroupDeleteFailures(result)
     setDeleteDialog(null)
+    return true
   }, [
     deleteProjectGroupWithContainedProjects,
     removeContainedProjects,
