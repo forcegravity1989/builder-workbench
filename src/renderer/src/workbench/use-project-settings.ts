@@ -1,6 +1,5 @@
-import { createElement } from 'react'
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
