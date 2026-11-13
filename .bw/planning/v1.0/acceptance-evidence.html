@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v1.0 验收证据报告</title>
+<style>
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;max-width:1180px;margin:20px auto;padding:0 18px;color:#1f2328;background:#fff;font-size:14px;line-height:1.6}
+h1{font-size:21px;margin:0 0 10px}h2{font-size:16px;margin:26px 0 6px;border-bottom:1px solid #d0d7de;padding-bottom:4px}h3{font-size:14.5px;margin:0 0 6px}
+.strip{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.strip span{background:#f6f8fa;border:1px solid #d0d7de;border-radius:14px;padding:2px 12px;font-size:12.5px;color:#424a53}
+.howto{background:#f6f8fa;border:1px solid #d0d7de;border-radius:8px;padding:8px 14px;margin:10px 0 4px;font-size:13px}
+.owner{color:#8b949e;font-size:12px;font-weight:400;margin-left:8px}
+.crit{background:#f6f8fa;border-left:3px solid #0969da;padding:6px 12px;margin:8px 0;font-size:13px}.crit ol{margin:4px 0 4px 20px;padding:0}
+.card{border:1px solid #d0d7de;border-radius:10px;padding:10px 14px 12px;margin:12px 0}
+.pill{font-size:12px;border-radius:12px;padding:1px 10px;background:#eaeef2;color:#424a53;font-weight:600}
+.desc{background:#ddf4ff;border-radius:6px;padding:4px 10px;margin:6px 0;font-size:13px}
+.meta{font-size:12.5px;color:#57606a;margin:4px 0}.meta b{color:#1f2328}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}th,td{border:1px solid #d0d7de;padding:4px 6px;vertical-align:top}th{background:#f6f8fa;text-align:left}
+.pending{font-size:13px;color:#9a6700;background:#fff8c5;border-radius:6px;padding:3px 10px;margin:5px 0}
+.gap{font-size:13px;color:#cf222e;background:#ffebe9;border-radius:6px;padding:3px 10px;margin:5px 0}
+.mut{color:#57606a;font-size:12.5px}a{color:#0969da;text-decoration:none}a:hover{text-decoration:underline}
+code{background:#f6f8fa;padding:0 4px;border-radius:4px;font-size:12px}
+</style></head><body>
+<h1>v1.0 验收证据报告</h1>
+<div class="strip">
+  <span>候选 未固定</span>
+  <span>包 未出包/无包要求</span>
+  <span>演示环境 未部署</span>
+  <span>生成 2026/11/13 15:35:02</span>
+</div>
+<div class="howto">按目标核对每条任务的已有证据。待核对项不阻塞查看；本报告不替代人在验收屏作出的目标结论。本报告为聚合呈现，未重新执行验证。</div>
+<h2>目标 G1：【项目墙特性】原型评审与开发落地<span class="owner">负责人 yuzhup</span></h2>
+<div class="crit"><b>计划验收判据（原文）</b><ol><li>项目墙呈现有价值信息 #345</li><li>项目墙支持个人项目 #497</li><li>纳入的存量单逐条有结论：修复、关闭或明确不做。</li><li>扫墙主旅程在真壳走通，杀进程重开后四项读数独立读回一致。</li></ol><b>指标目标值（原文）</b>：无</div>
+<table><tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对</th></tr><tr><td>G1 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/345">#345</a> 【v1.0|G1】【项目墙】以计划 PR 与人工验收管理项目墙的版本交付承诺</td><td>PR 未合入</td><td>待核对（见卡片）</td></tr><tr><td>G1 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/479">#479</a> 【v1.0|G1】【项目墙】项目墙组内共享：主机地址变化需手动重新批量导入，刷新同步不丝滑，是否引入项目组概念待定</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G1 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/489">#489</a> 【v1.0|G1】【项目墙】项目墙与验收屏呈现高效执行四原则的铭文与仪表</td><td>PR 未合入</td><td>待核对（见卡片）</td></tr><tr><td>G1 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/497">#497</a> 【v1.0|G1】【项目墙】本地个人项目应与主机项目一样进入项目墙跟踪</td><td>有合入 PR</td><td>待核对（见卡片）</td></tr><tr><td>G1 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/499">#499</a> 【v1.0|G1】【项目纳入】接入项目时筛选已登录账号可访问的远端仓库</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G1 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/563">#563</a> 【v1.0|G1】【项目纳入】支持项目一键clone 到本机（路径默认为orca workspace）</td><td>有合入 PR</td><td>无</td></tr></table>
+<article class="card" id="issue-345">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/345">#345</a> 【v1.0|G1】【项目墙】以计划 PR 与人工验收管理项目墙的版本交付承诺 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 目标 每个项目由一位主要 Builder 建设。项目墙需要比较并行项目的版本交付承诺，帮助负责人识别计划归档、开发与验收停在哪一站。 ## 拟议行为 - 以交付版本 B00X 组织周一计划、周中开发、周五验收；假期与协作缓冲由该版本的约定日期表达，同一版本不按自然周自动换号。 - 周一计划屏经 Builder /</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/349">PR #349</a>（CLOSED·未合入）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/349">PR #349</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li></ul></div>
+</article>
+<article class="card" id="issue-479">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/479">#479</a> 【v1.0|G1】【项目墙】项目墙组内共享：主机地址变化需手动重新批量导入，刷新同步不丝滑，是否引入项目组概念待定 <span class="pill">进行中</span></h3>
+  <p class="desc">## 问题描述 BW 用户通过批量导入组内 json 配置共享项目墙。当组内同事的主机地址变化时，其他成员需要手动重新批量导入配置才能继续共享；刷新同步的体验也不丝滑。另外需要决策是否把「项目组」作为特性概念引入。 与 #372（重装丢共享链接致组内重新导入）同域。来源：WeLink 群 2026-10-28 z300</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/479#issuecomment-6514297166">评论1</a>；<a href="https://github.com/forcegravity1989/builder-workbench/issues/479#issuecomment-6812983875">评论2</a>；<a href="https://github.com/forcegravity1989/builder-workbench/issues/479#issuecomment-6813121837">评论3</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>Issue 仍为 OPEN，未完成/进行中；不作达成证据。</li></ul></div>
+</article>
+<article class="card" id="issue-489">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/489">#489</a> 【v1.0|G1】【项目墙】项目墙与验收屏呈现高效执行四原则的铭文与仪表 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 现有 PR 提议在项目墙与验收屏增加高效执行四原则的铭文与派生仪表，需要独立评审范围、读数来源和 Unknown 语义。#158 当前已收敛为参考材料，不能将其重新挂作本项实现承诺。 ## 历史追溯补单 本单由 #486 开发流程巡查于 2026-10-29 补建，对应既有 PR #380（https:</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/380">PR #380</a>（CLOSED·未合入）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/380">PR #380</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>报告（真壳）
+
+命令：`ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench` + CDP 驱动（`.scratch/fourdx-slogan/shoot-final.mjs`，一次性验证脚本）。门禁：`pnpm run typecheck` / `oxlint` / `oxfmt --check` 全 0；改动为展示层装配，无既有单测触及，按 02 环 4 不新增看护用例（叠层 ratchet 不变）。
+
+**用例 W-01 项目墙铭文+仪表**｜路径：侧栏「项目墙」→ 等墙卡读数就绪 → 整屏截图｜期望：h1 下一行格言；仪表 ③ 记分灯亮（刷新 10 分钟内）、① 版本未定/② 未上墙/④ 计数不可得时灰 Unknown｜截图：
+
+![wall](https://github.com/f</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li></ul></div>
+</article>
+<article class="card" id="issue-497">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/497">#497</a> 【v1.0|G1】【项目墙】本地个人项目应与主机项目一样进入项目墙跟踪 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 用户在 Windows Workbench 已添加本地个人项目（如 shunfenger），侧栏可见，但项目墙显示 0 个项目，要求重新接入或导入 Builder 主机。用户明确要求所有项目都应得到跟踪，包括本地个人项目。 当前 ProjectWallPage 通过 useWallAdoptions 按</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/595">PR #595</a>（merged 2026-11-11）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/595">PR #595</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>PR 正文未见「验证」段，见 PR/主验证评论</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li></ul></div>
+</article>
+<article class="card" id="issue-499">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/499">#499</a> 【v1.0|G1】【项目纳入】接入项目时筛选已登录账号可访问的远端仓库 <span class="pill">进行中</span></h3>
+  <p class="desc">## 问题描述 接入项目时，即使已通过 gh 或 codehub-cli 登录，仍需手动粘贴远端 Git 地址。希望直接搜索并选择账号可访问的仓库，继续现有克隆和项目信息流程。读取失败应如实提示，并允许手动输入。历史背景见 #152（旧版本）。 ## 本版处理范围（v1.0 / G1） 处理范围：接入项目时支持搜索并选</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/499#issuecomment-6812074893">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>Issue 仍为 OPEN，未完成/进行中；不作达成证据。</li></ul></div>
+</article>
+<article class="card" id="issue-563">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/563">#563</a> 【v1.0|G1】【项目纳入】支持项目一键clone 到本机（路径默认为orca workspace） <span class="pill">已关闭</span></h3>
+  <p class="desc">![](file:///D:\DMate\Welink\ReceiveFiles\originalImgfiles\088E3B42-7A8F-452F-8096-546CB4C0E684.png) ## 本版处理范围（v1.0 / G1） 处理范围：完成项目一键 clone 到本机（落点默认取 Orca 工作区上一层</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/595">PR #595</a>（merged 2026-11-11）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/595">PR #595</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/567">PR #567</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>报告（真壳，本轮新增判据）
+
+验什么：两处入口、默认预选、落点推导、槽级只出该仓、未设工作区目录守卫，以及「对话框在 key 变化时不卸载」的回归断言。
+怎么跑：临时 Electron 脚本经 Playwright `--project=electron-headless` 驱动真壳；注入一台配对 Builder 主机与一个只在该主机注册、带远端地址的仓。
+命令：`SKIP_BUILD=1 npx playwright test --config tests/playwright.config.ts --project=electron-headless -g &quot;clone-to-local&quot;`
+结果：`1 passed (31.0s)`，用例名 `TEMP BW clone-to-local: entries, preselection and missing-workspace gua</td></tr></table>
+  
+</article>
+<h2>目标 G2：消息通知聚焦 PR 评审旅程落地<span class="owner">负责人 kanadead</span></h2>
+<div class="crit"><b>计划验收判据（原文）</b><ol><li>消息通知只围绕 PR 评审这一条旅程，不再铺开多群、多事件。</li><li>一名 Builder 在 BW 内发出或收到 PR 评审通知，整条旅程走通，包括回到 PR 完成评审并最终合入。</li></ol><b>指标目标值（原文）</b>：无</div>
+<table><tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对</th></tr><tr><td>G2 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/568">#568</a> 【v1.0|G2】【消息通知】以 PR 评审旅程落地消息通知基础能力</td><td>无合入件</td><td>待核对（见卡片）</td></tr></table>
+<article class="card" id="issue-568">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/568">#568</a> 【v1.0|G2】【消息通知】以 PR 评审旅程落地消息通知基础能力 <span class="pill">已关闭</span></h3>
+  <p class="desc"># 问题描述 多人协作时，评审人和发起人需要及时知道「轮到我处理」和「结果已出」。当前 PR 评审只能靠人自己盯页面或到群聊里提醒，离开 Workbench 后就漏事。 Orca 执行核已有通知投递能力（桌面通知、免打扰、冷却、点击回跳，来源仅限 agent 任务完成与终端 bell），但 Workbench 的业务事</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/568#issuecomment-6657396844">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<h2>目标 G3：用户旅程盘点与存量问题清理<span class="owner">负责人 all</span></h2>
+<div class="crit"><b>计划验收判据（原文）</b><ol><li>旅程清单经人确认：分基础使用（导入项目、协作开发）与版本管理（定版、计划、开发、验收），含小旅程（如发起 PR 评审）；每条写清角色、入口、操作路径、可观察结果。</li><li>v1.0 核心旅程在周二（11/10）前给出评审；旅程不求多，按优先级集中，不平均用力。</li><li>易用性改进聚焦引导窗口（类似里程碑引导）：文字精简，优先复用 Orca 原生能力。</li><li>沿旅程纳入处理的 BUG 与易用性问题逐条有结论：修复、关闭或明确转下版，修复以 PR 关联留痕。</li></ol><b>指标目标值（原文）</b>：无</div>
+<table><tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对</th></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/157">#157</a> 【v1.0|G3】【指标能力】项目资产加服务可用度指标(时延、P99可用度)</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/161">#161</a> 【v1.0|G3】【待定/预研】AI Assets 需要单独设计:知识分层缺口 + agent 资产类未实现</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/199">#199</a> 【v1.0|G3】【通知】通过已连接主机发送并跟踪 PR/MR 评审</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/284">#284</a> 【v1.0|G3】【v0.5】【指标能力】指标资产迁移到 bw-orca：.bw 正本搬运、采集脚本协议适配、周交付时长指标录入</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/422">#422</a> 【v1.0|G3】【版本验收】验收证据报告模板应为 HTML 正本——现 Markdown 骨架却要求存为 .html，模板/SKILL/spec 连带修正</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/452">#452</a> 【v1.0|G3】【产品基础】Windows 真壳验证并修复 Orca 内 Codex 结构化会话链路</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/470">#470</a> 【v1.0|G3】【产品基础】[原生Orca能力] 批注框不能缩小，遮盖界面</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/475">#475</a> 【v1.0|G3】【版本会话管理】侧边栏加入版本管理后拥挤：整体排版重设计，先出不入库原型供确认</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/476">#476</a> 【v1.0|G3】【版本会话管理】多主机项目侧栏：修复远端失效会话占位与其他项目计数歧义</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/486">#486</a> 【v1.0|G3】【研发保障】BW 开发流程巡查：补正 Issue/PR 关联并检查先提单、后开发的时序</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/494">#494</a> 【v1.0|G3】【产品基础】缩短 Windows 0.7.3 启动与加载等待</td><td>有合入 PR</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/496">#496</a> 【v1.0|G3】【版本会话管理】项目工作区侧栏缺少一键全部收起和展开入口</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/500">#500</a> 【v1.0|G3】【版本会话管理】侧边栏增加置顶栏目：右击工作区树可置顶，便于并行开发时快速切换</td><td>有合入 PR</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/509">#509</a> 【v1.0|G3】【产品基础】使用orca原生浏览器批注时，批注点不会随滚动条平移</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/514">#514</a> 【v1.0|G3】【版本会话管理】orca项目工作区中出现unknown工作区</td><td>PR 未合入</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/524">#524</a> 【v1.0|G3】【版本会话管理】goalDirectoryTrees 补核心算法单测:置顶排序/完工分组/状态集回退边缘</td><td>有合入 PR</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/534">#534</a> 【v1.0|G3】【产品基础】[原生Orca能力] Orca 不支持 dsh 智能体</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/553">#553</a> 【v1.0|G3】【产品基础】上报通道整改：反馈/崩溃报告/诊断包/遥测改发 WeLink 群空间，并补全 BW 自身日志</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/557">#557</a> 【v1.0|G3】【项目总览】benchmark、建木、运维看板接入并伴飞使用项目总览</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/559">#559</a> 【v1.0|G3】【内部集成】【特性#199】WeLink 多群聊天界面呈现</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/560">#560</a> 【v1.0|G3】【内部集成】【特性#199】WeLink 收发权限边界：放权自动发与人工确认</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/561">#561</a> 【v1.0|G3】【内部集成】【特性#199】WeLink 接入边界与 cowelink 参考：群消息/群助手与会议系统分工</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/562">#562</a> 【v1.0|G3】【内部集成】【特性#199】嵌入原生 WeLink 屏可行性调研</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/583">#583</a> 【v1.0|G3】【版本会话管理】工作区板支持只筛选自己的会话</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/585">#585</a> 【v1.0|G3】【产品基础】自动更新退出时报「更新失败」，把正常的关闭安装流程显示成错误</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/586">#586</a> 【v1.0|G3】【项目总览】项目名片没有编辑入口，编辑只能在项目墙</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/589">#589</a> 【v1.0|G3】【研发保障】盘点工作模型开发规范并独立维护，AGENTS.md 与起手 Skill 改为索引获取</td><td>有合入 PR</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/590">#590</a> 【v1.0|G3】【项目总览】里程碑支持特性跨版排期、再次维护与连续时间浏览</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/606">#606</a> 【v1.0|G3】【产品基础】统一帮助、探索与入门入口并完成 BW 引导适配</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/607">#607</a> 【v1.0|G3】【研发保障】建立引导与旅程矩阵、规范及逐条整改 Skill</td><td>有合入 PR</td><td>无</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/621">#621</a> 【v1.0|G3】【项目总览】里程碑预排期的空计划进入版本区并影响项目墙和总览选版</td><td>PR 未合入</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/622">#622</a> 【v1.0|G3】【项目纳入】Windows 新安装默认使用 D 盘工作区目录</td><td>无合入件</td><td>待核对（见卡片）</td></tr><tr><td>G3 验收判据</td><td><a href="https://github.com/forcegravity1989/builder-workbench/issues/647">#647</a> 【v1.0|G3】【版本计划】走通 W02 制定版本计划并接入探索和屏内引导</td><td>无合入件</td><td>待核对（见卡片）</td></tr></table>
+<article class="card" id="issue-157">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/157">#157</a> 【v1.0|G3】【指标能力】项目资产加服务可用度指标(时延、P99可用度) <span class="pill">已关闭</span></h3>
+  <p class="desc">## 要做什么 给被管项目的 `.bw/metrics.toml` 加一组服务可用度类指标,至少覆盖: - 服务时延(如 P50/P95,或至少一个代表性时延数) - P99 可用度(SLA 意义上的可用率,而非简单的进程存活) ## 为什么 现有 `.bw/metrics.toml` 里还没有可用度/时延这类运维信号</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/157#issuecomment-6823738124">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-161">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/161">#161</a> 【v1.0|G3】【待定/预研】AI Assets 需要单独设计:知识分层缺口 + agent 资产类未实现 <span class="pill">已关闭</span></h3>
+  <p class="desc">来自「全局设置面板」(`docs/05-features/capability-panel/`)这一轮的原型 gate。AI Assets 这一节这轮只做成了一张纯展示表(状态点/过滤/详情都被砍了,理由是「资产核心是展示,不是诊断」),但过程里查出的几个结构性缺口没有解,值得单独立项设计。 ## 已知缺口(查代码 /</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/161#issuecomment-6824047877">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-199">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/199">#199</a> 【v1.0|G3】【通知】通过已连接主机发送并跟踪 PR/MR 评审 <span class="pill">已关闭</span></h3>
+  <p class="desc">&gt; 当前范围按 owner 对 PR 478 的确认：做消息通知，先打通 GitHub PR / CodeHub MR 评审旅程；暂不接内部 WeLink。下方早期计划与设计输入保留为历史，不作为本次验收条件。 项目开发者需要把评审请求发送给自己选择的已连接主机，包括有本地项目的共同开发者，以及通过已有共享连接访问项目</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/478">PR #478</a>（merged 2026-11-10）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/446">PR #446</a>（merged 2026-10-27）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/478">PR #478</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/446">PR #446</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>- 三路独立 subagent 检视及修复后复核通过，覆盖传输/持久化、CodeHub/来源路由、原型/文档/废弃资产。main 单处特性矩阵冲突也经独立复核解决。
+- 当前工作树真实 Electron 经 CDP 验证无本地项目也保存、重载、幂等、冲突及旧轮次拒收；独立 agent 复跑相同场景。真实 GitHub PR478 的只读事实和原生详情渲染已核对。
+- 多主机选择、失败/ACK 丢失、名单恢复和重试使用明确模拟的传输数据；原型验证也使用模拟事实。这些证据不代表真实双机或内部 CodeHub 通过。
+- 遵照用户要求没有运行本地 tests/lint/typecheck/完整构建/CI，不使用 Computer Use；仅格式化、代码/原型产物生成、必要 dev 编译与简单 CDP。提交使用 HUSKY=0。最新评论指出的 CodeHub 过期断言已在 4fb6cafd1b 修
+- 原归档材料经 orca bw materials 保存后读回一致（归档前 revision 6bed2364）。本轮为仓外 PR 文件修订：PlanningMaterialSchema 校验通过，完整对象差异核对确认仅 G2 两处文本变化；该轮修订后 revision 为 sha256:6436f9fd3f2606771a359bcfbc42fd4950536857504378a5d2336</td></tr></table>
+  
+</article>
+<article class="card" id="issue-284">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/284">#284</a> 【v1.0|G3】【v0.5】【指标能力】指标资产迁移到 bw-orca：.bw 正本搬运、采集脚本协议适配、周交付时长指标录入 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题与范围 main 将被 bw-orca 覆盖（扶正既定方向），指标正本只在 main 上，bw-orca 的 .bw 近乎为空。本 Issue 把指标资产迁到 bw-orca 并适配现行采集协议。 已完成：.bw 指标与运作资产原样搬运，**经人授权豁免 PR 快进直合 bw-orca**（406b180bc</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/292">PR #292</a>（merged 2026-10-07）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/292">PR #292</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/630">PR #630</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>结果
+
+**脚本实跑 + 独立读回**（真数据，非模拟）：
+- 预采集回填 137 条真实合入事件 → 48 个 day 行；计划制定时长实跑 2026-09-01..09-29 出 W36–W40 五点（30.6/46.6/104.2/48.1/8.1 小时）；**W39 用 gh 真源独立核对：21 样本/中位 48.1，一致**；W36/W40 窗口截断 coverage 如实声明
+- 闭环 issue 数实跑出五点（W37/W38 各 9）；**W37 走 gh search API 独立路径核对：9 条、Issue 号逐个对上**（#120-124/#162/#163/#166/#167）
+- managed-projects 适配后实跑：adoption 每周 1、monday-screen W38/W39 各 1（与 v0.4 归档/v0.5 规划时间线一致）；**DATA_</td></tr></table>
+  
+</article>
+<article class="card" id="issue-422">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/422">#422</a> 【v1.0|G3】【版本验收】验收证据报告模板应为 HTML 正本——现 Markdown 骨架却要求存为 .html，模板/SKILL/spec 连带修正 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题 验收证据报告的正本格式自相矛盾（负责人 2026-10-23 真机反馈指出：模板应为 HTML）： - 模板资产 `standard/skills/version-acceptance/assets/evidence-report-template.md` 是 **Markdown 骨架**（`#` 标题、</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/584">PR #584</a>（merged 2026-11-11）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/454">PR #454</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/584">PR #584</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>- **Playwright DOM 冒烟**（真壳外自动化，按约定用 DOM 断言不回读截图）：主题钩子 `data-theme=claude`、7 条 mast 元信息、目录 2 锚点全部可跳（`getElementById` 核对）、`.goal`/`.gaps` scroll-margin 64px、四型卡各 1、判定签 1、演示旅程 1 步 1 可核对行、证据块 3、截图槽 1、指标条 1 组 3 格、缺口双条目 2、槽位 56 个、**注释零花括号**（TreeWalker 遍历注释核对）、禁词零命中（项目名/虚构示例/方法论文字均不在模板内）、console 零错误。
+- **husky lint-staged** 通过。
+- 纯文档/模板候选改动，不涉叠层代码，无真壳 E2E 项。
+与未验范围
+
+两位 subagent 独立静态检视及问题复核完成；必要派生资产已生成，当前 head 的 5 项远端 CI 全部通过（含 Electron 冒烟）。本机未跑 CI、未起服务；真实模型会话、平台链接与真壳由负责人内部验证。
+
+[主验证报告与内部复验清单](https://github.com/forcegravity1989/builder-workbench/pull/584#issuecomment-6789641764)。</td></tr></table>
+  
+</article>
+<article class="card" id="issue-452">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/452">#452</a> 【v1.0|G3】【产品基础】Windows 真壳验证并修复 Orca 内 Codex 结构化会话链路 <span class="pill">已关闭</span></h3>
+  <p class="desc">用户已迁移到 Codex，希望直接在 Orca／Workbench 内使用 Codex。当前 main 已有 Codex app-server 适配和实验性 Chat UI，本次在 Windows 真实 Electron 壳验证现有链路：复用登录、新建会话与流式消息、文件操作、工具审批、停止，以及杀进程重启后恢复。发现</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：无</p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-470">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/470">#470</a> 【v1.0|G3】【产品基础】[原生Orca能力] 批注框不能缩小，遮盖界面 <span class="pill">已关闭</span></h3>
+  <p class="desc">BW 用户使用 Orca 原生批注框时，批注框无法缩小，会遮盖界面内容，影响边批注边查看。期望：批注框可调整大小（至少可缩小）或可收起。属于原生 Orca 能力域（批注框为 Orca 原生 UI）。来源：WeLink 群 2026-10-28 z30026659 反馈。</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：无</p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-475">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/475">#475</a> 【v1.0|G3】【版本会话管理】侧边栏加入版本管理后拥挤：整体排版重设计，先出不入库原型供确认 <span class="pill">已关闭</span></h3>
+  <p class="desc">BW 左侧侧边栏增加版本管理侧边栏后空间比较挤，需要整体设计排版：默认显示的版本数量可以少一点并增加 show more 逻辑；版本侧边栏本身可以放得更大一点；Orca 侧边的空间布局也可以一并调整。按逆向工作法，本单先出一版不入库的原型给用户确认，确认后再动手实现。来源：WeLink 群 2026-10-28 z30</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/523">PR #523</a>（merged 2026-11-09）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/597">PR #597</a>（merged 2026-11-09）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/599">PR #599</a>（merged 2026-11-09）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/523">PR #523</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/597">PR #597</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/599">PR #599</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>- Windows Electron 同实例对照远端主干 `88425a4759` 与本分支。走落地页和已有终端工作区，核对两处恢复入口、终端标签、220px 窄栏、原生工作区选项与底部图标。
+- 本机执行受影响的 Vitest、修改文件 lint、Web 类型检查和原型生成物一致性检查。截图与具体判据见验证报告，完整平台构建与烟测由 PR CI 执行。
+- Windows Electron 使用同一隔离夹具对照主干 `de4d6ed1cb` 和修订版。验证三个分区、左右箭头位置、默认前三、手动展开与收起、从固定区进入第 4 条以及同版本切换另一棵工作树。
+- 定向测试、类型检查与检查命令见验证报告。macOS 和配对宿主真机未实测。</td></tr></table>
+  
+</article>
+<article class="card" id="issue-476">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/476">#476</a> 【v1.0|G3】【版本会话管理】多主机项目侧栏：修复远端失效会话占位与其他项目计数歧义 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题 远端仓库与工作树清单已成功更新，本机会话恢复仍生成旧 repo ID 占位；目录更新移除 repo 元数据却保留工作树，侧栏出现多个 Unknown，重启/重连仍复现。安装版 0.7.3 的「其他项目 9」按 repo ID 计数，同一项目跨主机重复登记也计入，和可见项目分组数量不一致。 ## 目标 在保留</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：无</p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-486">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/486">#486</a> 【v1.0|G3】【研发保障】BW 开发流程巡查：补正 Issue/PR 关联并检查先提单、后开发的时序 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 BW 已规定开工前先查或建 Issue、PR 首行写“关联 #编号”，但 2026-10-29 全量扫描 214 个 Issue / 269 个 PR 后发现：#448 先提交实现和开 PR、后建 #450；#409 合入时没有本项工作 Issue；#389 合入后 #383 的关闭事件指向合入提交，提</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/491">PR #491</a>（merged 2026-11-12）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/319">PR #319</a>（merged 2026-10-21）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/491">PR #491</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/319">PR #319</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>纯文档改动，只做文档检查：
+
+- 子代理四维检视（与顶层正本是否一致 / 有无悬空引用 / Skill 版本是否同步 / 措辞）。采纳两条：小 bug 行补 Issue；「首行」改为「开头」，因为上游 `pr-test-loc` workflow 会往 PR 正文顶部插一段 LoC 统计。核实：没有任何 workflow、脚本或测试按旧模板的段落标题解析 PR 正文；`src/main/**/pull-request-template.ts` 只把模板当纯文本读。检视另说 Issue 表单仍是 Orca 英文版，经核对不成立（#311 已改成中文），未采纳。
+- 全仓 grep 过：没有其他提示词或文档要求使用 `Fixes` / `Closes`。</td></tr></table>
+  
+</article>
+<article class="card" id="issue-494">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/494">#494</a> 【v1.0|G3】【产品基础】缩短 Windows 0.7.3 启动与加载等待 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 原始问题与期望 用户在 Windows 本机启动已安装的 Workbench 0.7.3 exe 时，启动和加载等待很长，影响使用体验。原始反馈怀疑与配置或内部逻辑有关，最初要求“先排查下原因”。 用户希望启动后尽快进入可用工作区。本次尚未约定固定秒数或稳定性能目标，不能用单次最快结果代替体验验收。 环境：Win</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/503">PR #503</a>（merged 2026-11-12）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/503">PR #503</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>PR 正文未见「验证」段，见 PR/主验证评论</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li></ul></div>
+</article>
+<article class="card" id="issue-496">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/496">#496</a> 【v1.0|G3】【版本会话管理】项目工作区侧栏缺少一键全部收起和展开入口 <span class="pill">已关闭</span></h3>
+  <p class="desc">问题描述：在 Workbench 左侧「Orca 项目工作区」中，多个项目和工作区展开后占用大量空间。目前只能逐个切换，用户希望能一键全部收起和一键全部展开，便于快速浏览和切换项目。范围限定项目工作区侧栏，沿用已有分组和工作区身份。</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/496#issuecomment-6816905521">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-500">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/500">#500</a> 【v1.0|G3】【版本会话管理】侧边栏增加置顶栏目：右击工作区树可置顶，便于并行开发时快速切换 <span class="pill">已关闭</span></h3>
+  <p class="desc">BW 用户并行开发多棵工作区树时，要在侧边栏里滚动查找正在并行的那两棵树，效率低。期望：侧边栏增加一个置顶栏目，用户右击工作区树即可将其置顶，置顶的树固定展示，便于并行切换。处理时需要先看原生的「工作区版」能力并与用户讨论，避免与原生机制冲突或重复建设。来源：WeLink 群 2026-10-28 z30026659 </p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/523">PR #523</a>（merged 2026-11-09）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/523">PR #523</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>PR 正文未见「验证」段，见 PR/主验证评论</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li></ul></div>
+</article>
+<article class="card" id="issue-509">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/509">#509</a> 【v1.0|G3】【产品基础】使用orca原生浏览器批注时，批注点不会随滚动条平移 <span class="pill">已关闭</span></h3>
+  <p class="desc">（见 Issue）</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/509#issuecomment-6812680097">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-514">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/514">#514</a> 【v1.0|G3】【版本会话管理】orca项目工作区中出现unknown工作区 <span class="pill">已关闭</span></h3>
+  <p class="desc">（见 Issue）</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/549">PR #549</a>（OPEN·未合入）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/549">PR #549</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li></ul></div>
+</article>
+<article class="card" id="issue-524">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/524">#524</a> 【v1.0|G3】【版本会话管理】goalDirectoryTrees 补核心算法单测:置顶排序/完工分组/状态集回退边缘 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 背景 #500(PR #523)引入 `goalDirectoryTrees`(src/renderer/src/workbench/version-nav-rows.tsx):目标目录树行的置顶排序(isPinned 优先、id 升序)、completed 完工分组、无状态树走原生默认状态的回退推导。当轮交付零</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/523">PR #523</a>（merged 2026-11-09）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/523">PR #523</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>PR 正文未见「验证」段，见 PR/主验证评论</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li></ul></div>
+</article>
+<article class="card" id="issue-534">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/534">#534</a> 【v1.0|G3】【产品基础】[原生Orca能力] Orca 不支持 dsh 智能体 <span class="pill">已关闭</span></h3>
+  <p class="desc">BW 用户在 Orca 中无法使用 dsh 智能体（Orca 不支持该智能体的接入）。期望：Orca 支持 dsh 智能体。属于原生 Orca 能力域。dsh 的具体接入方式与报错现象待补充。来源：WeLink 群 2026-10-30 y00520957 反馈、安迪转提。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/581">PR #581</a>（merged 2026-11-08）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/594">PR #594</a>（merged 2026-11-09）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/581">PR #581</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/594">PR #594</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>结果
+
+- **内部验证**：用户已确认完成，并报告只有上述一处修改。内部提交记录了变量缺失时补回，以及已有值、非 Windows、读取失败和 CA 路径不存在时跳过的验证；本次静态审查没有代替用户重跑或自行扩写所有平台的覆盖。
+- **当前 head 远端 CI**：[42217401872](https://github.com/forcegravity1989/builder-workbench/actions/runs/42217401872)，DSH/受影响协议测试、完整 lint/typecheck、BW 回归、桌面构建和标准 Electron 冒烟均通过。
+- **代码与 Markdown 检视**：既有两轮独立静态复核完成；当前内部修改另核对用户环境读取、覆盖优先级、子进程传递、平台分支及文档边界。`git diff --check` 通过，工作树干净；GitHub 显示可</td></tr></table>
+  
+</article>
+<article class="card" id="issue-553">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/553">#553</a> 【v1.0|G3】【产品基础】上报通道整改：反馈/崩溃报告/诊断包/遥测改发 WeLink 群空间，并补全 BW 自身日志 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 原问题描述（2026-11-02 提单原文，保留） BW 目前没有自己的问题反馈入口，也没有接好 Orca 原生的反馈能力，用户报问题时： 1. 反馈不会进到 BW 仓，而是流向 Orca（或无处可去）。 2. 反馈体验不好，截图不能直接截取，易用性差。 希望复用 Orca 原生的问题反馈能力并完成 BW 侧对接</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/613">PR #613</a>（merged 2026-11-11）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/612">PR #612</a>（merged 2026-11-11）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/615">PR #615</a>（merged 2026-11-11）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/613">PR #613</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/612">PR #612</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/615">PR #615</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/616">PR #616</a>；<a href="https://github.com/forcegravity1989/builder-workbench/pull/617">PR #617</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>与未验范围
+
+见[主验证评论](https://github.com/forcegravity1989/builder-workbench/pull/612#issuecomment-6773073233)。A 档已有早期真壳读回。本次诊断日志修订经用户确认免除真机验收，以独立检视和当前提交的远端 CI 为合入依据。
+与未验范围
+
+门禁全绿、独立检视通过(发现 A 已修、B 已注明、D 为交付切分),详见[主验证评论](https://github.com/forcegravity1989/builder-workbench/pull/616#issuecomment-6777633264)。**真壳:B 档 exec span 未验**——本机 dev profile 无登记仓,注册测试仓会污染用户 profile;trace sink 链路由 A 档 #612 真壳证据继承(sink/init 为未改动原生路径),B 档自身端到端待有登记仓的环境首演。C 档(阶段层)为栈叠后续 PR(base 为本 PR head)。
+与未验范围
+
+门禁全绿、独立检视两轮(首轮发现 1 阻塞级阶段错位 + 4 非阻塞,全部修正并复核确认),详见[主验证评论](https://github.com/forcegravity1989/builder-workbench/pull/617#issue</td></tr></table>
+  
+</article>
+<article class="card" id="issue-557">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/557">#557</a> 【v1.0|G3】【项目总览】benchmark、建木、运维看板接入并伴飞使用项目总览 <span class="pill">已关闭</span></h3>
+  <p class="desc"># 问题描述 benchmark、建木、运维看板三个真实项目需要各自的项目 Owner 推进项目总览接入、伴飞使用与摩擦点收集。已与 Leader 确认，此事由各项目 Owner 负责，不纳入 BW 的 v0.9 计划，也不作为本版 G1 的验收承诺。 ## 处理范围 1. 完成 benchmark、建木、运维看板接入</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/557#issuecomment-6822503915">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-559">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/559">#559</a> 【v1.0|G3】【内部集成】【特性#199】WeLink 多群聊天界面呈现 <span class="pill">已关闭</span></h3>
+  <p class="desc"># 问题描述 v0.8 验收遗留：WeLink 支持多个群后，多个群的聊天框在界面怎么体现尚不明确。承接 #199，拆分自 #555。 ## 处理范围 设计并优化多群聊天界面的呈现方式，明确群切换与消息归属。 ## 验收条件 1. 多群界面设计与高保真归档。 2. 真实 WeLink 环境下可区分并切换多个群。 </p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/559#issuecomment-6822982623">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-560">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/560">#560</a> 【v1.0|G3】【内部集成】【特性#199】WeLink 收发权限边界：放权自动发与人工确认 <span class="pill">已关闭</span></h3>
+  <p class="desc"># 问题描述 v0.8 验收遗留：WeLink 群消息的收和发需要分开，明确哪些消息放权自动发、哪些需要人工确认后再发送。承接 #199，拆分自 #555。 ## 处理范围 定义收发权限模型与交互：自动发送的边界、人工确认的触发条件。 ## 验收条件 1. 权限边界有明确结论并归档。 2. 真实环境可验证自动发与确认发</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/560#issuecomment-6822984028">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-561">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/561">#561</a> 【v1.0|G3】【内部集成】【特性#199】WeLink 接入边界与 cowelink 参考：群消息/群助手与会议系统分工 <span class="pill">已关闭</span></h3>
+  <p class="desc"># 问题描述 v0.8 验收遗留：WeLink 接入方式不清晰，需要明确群消息与群助手、会议系统各承担什么，以 cowelink 为参考，不做额外开发。承接 #199。 ## 处理范围 调研 cowelink 的接入方式，给出 BW 的接入边界结论。 ## 验收条件 1. 接入边界结论归档，明确复用与不自研的部分。 </p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/561#issuecomment-6822985566">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-562">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/562">#562</a> 【v1.0|G3】【内部集成】【特性#199】嵌入原生 WeLink 屏可行性调研 <span class="pill">已关闭</span></h3>
+  <p class="desc"># 问题描述 v0.8 验收遗留：探索能否嵌入使用原生 WeLink 屏，减少自研界面。承接 #199，拆分自 #555。 ## 处理范围 调研原生 WeLink 屏嵌入的可行性与限制。 ## 验收条件 1. 给出可行或不可行结论与依据，未验证项如实标注。 </p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/562#issuecomment-6822987322">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-583">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/583">#583</a> 【v1.0|G3】【版本会话管理】工作区板支持只筛选自己的会话 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 工作区板把各主机上的会话都列在一起，缺少「只看自己的会话」的筛选。多人共用主机或同时开了很多会话时，很难快速找到自己正在跑的那几个。 希望在工作区板的筛选里增加「只显示我的会话」（按当前用户过滤）的选项。 现状参考：工作区板已有按主机、按项目过滤的菜单项（`src/renderer/src/compon</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/583#issuecomment-6813062558">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-585">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/585">#585</a> 【v1.0|G3】【产品基础】自动更新退出时报「更新失败」，把正常的关闭安装流程显示成错误 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 更新包下载完成后，应用会自动退出安装，但用户看到的是「更新失败」加错误文案： ```text Renderer shutdown checkpoint was not completed: Failed to stage renderer state before unload. ``` 实际上应用已经</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：无</p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-586">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/586">#586</a> 【v1.0|G3】【项目总览】项目名片没有编辑入口，编辑只能在项目墙 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 项目总览顶部的项目名片没有编辑入口：想改「想做什么／对标／目标方向」等名片字段时，只能回到项目墙，点卡片上的配置图标打开项目设置栏。总览名片本身是只读的，也没有任何跳转到编辑的入口，用户容易卡住。 现状：项目墙卡片有配置入口（`src/renderer/src/workbench/ProjectWall</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/586#issuecomment-6788960073">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-589">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/589">#589</a> 【v1.0|G3】【研发保障】盘点工作模型开发规范并独立维护，AGENTS.md 与起手 Skill 改为索引获取 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 背景：v0.9 验收会议讨论了工作模型相关的开发规范。现在这类规范零散分布在多个入口：`AGENTS.md`（按任务读取、硬约束与交付规则）、`.claude/skills/workbench-start/SKILL.md`（起手与分流方法）、以及它索引到的 `docs/01-principles/` </p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/604">PR #604</a>（merged 2026-11-10）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/604">PR #604</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>PR 正文未见「验证」段，见 PR/主验证评论</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li></ul></div>
+</article>
+<article class="card" id="issue-590">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/590">#590</a> 【v1.0|G3】【项目总览】里程碑支持特性跨版排期、再次维护与连续时间浏览 <span class="pill">已关闭</span></h3>
+  <p class="desc">项目总览在 v0.9 验收与真实使用中收到反馈：特性的 Build／Maintain 排期应能跨任意版本，开发未完可延长 Build，老特性可再次安排 Maintain，并保留版本计划与人工验收关联。浏览应支持跨月连续时间范围，按最近安排排序及筛选；特性名称缺失需要定位与字段错误反馈，负责人选填，复用原生通知，不用移除</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：无</p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-606">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/606">#606</a> 【v1.0|G3】【产品基础】统一帮助、探索与入门入口并完成 BW 引导适配 <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 BW 顶部三点菜单的帮助、底部问号中的里程碑和入门引导职责重叠，进入后还有中英文混杂、Orca 产品名称和社区外链。用户希望先整理这套原生基础，再逐条走查 BW 旅程。 ## v1.0 / G3 已确认范围 - 通用帮助统一放到底部问号，移除 BW 顶部帮助分组。BW 入门负责准备环境和按需配置，探索 </p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：无</p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-607">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/607">#607</a> 【v1.0|G3】【研发保障】建立引导与旅程矩阵、规范及逐条整改 Skill <span class="pill">已关闭</span></h3>
+  <p class="desc">## 问题描述 用户已认可六条核心旅程，希望由本会话建立 BW 研发用流程 Skill。后续由用户指定旅程与子窗口，按相同方法逐条走查；每条旅程完成必要的 BUG 修复、易用性瘦身、产品内引导、用户指南与按需宣传素材。共用帮助/引导入口整改已随 PR #610 合入。本轮交付引导与旅程规范、覆盖矩阵和 Skill 第一</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/610">PR #610</a>（merged 2026-11-11）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/610">PR #610</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>与未验范围
+
+Windows 真实 Electron/CDP 已覆盖底部入口、入门 8 项、探索 11 页的中英文展示及重开；独立检视、补修复验及截图见[主验证评论](https://github.com/forcegravity1989/builder-workbench/pull/610#issuecomment-6768810094)。本机实际提交 hook 和 5 项远端 CI 均已通过；本机未运行 CI。
+
+未覆盖全新安装、macOS、真实反馈发送、CLI 安装/账号授权及所有完整业务旅程；这些页面演示不作为业务验收。</td></tr></table>
+  
+</article>
+<article class="card" id="issue-621">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/621">#621</a> 【v1.0|G3】【项目总览】里程碑预排期的空计划进入版本区并影响项目墙和总览选版 <span class="pill">已关闭</span></h3>
+  <p class="desc">用户在里程碑中安排未来版本后，规划产生的空计划会进入版本区域，并可能被项目墙和项目总览当成当前版本，导致当前工作的读数切到未来空版本。 调查基线：最新 origin/main，87ebcc4e10e0430799fa7b4a2cc2ea74ac4c7a6e。仓内 v1.0 已有目标/任务，v1.1 的 .bw/plan</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/630">PR #630</a>（OPEN·未合入）</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/630">PR #630</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li></ul></div>
+</article>
+<article class="card" id="issue-622">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/622">#622</a> 【v1.0|G3】【项目纳入】Windows 新安装默认使用 D 盘工作区目录 <span class="pill">已关闭</span></h3>
+  <p class="desc">Windows 新安装 BW 时，原生工作区目录默认位于用户目录下的 `orca/workspaces`，本机通常落在 C 盘；克隆和新建项目随默认配置继续占用系统盘。此前旧版提供过 D 盘默认值，现需在 Orca 版复用原生配置加载与设置界面补回。 已确认范围：仅 Windows 新安装、首次生成配置时，D 盘存在则</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/622#issuecomment-6818111344">评论1</a></p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li></ul></div>
+</article>
+<article class="card" id="issue-647">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/647">#647</a> 【v1.0|G3】【版本计划】走通 W02 制定版本计划并接入探索和屏内引导 <span class="pill">进行中</span></h3>
+  <p class="desc">## 问题描述 准备首版或下一版时，团队需要把项目方向、阶段安排、上版结果和新要求落成可评审的版本计划，并能从计划中的任务进入正确的执行工作区。探索 BW 目前只有旅程简介，计划屏也缺少就地指引。 ## 已确认范围 - 确定这次规划哪一版 → 定清目标和验收标准 → 把目标落成任务 → 评审并归档 → 从计划开工。 -</p>
+  <p class="meta"><b>交付依据</b>：无合入 PR/MR；见 Issue 处理依据</p>
+  <p class="meta"><b>验证报告出处</b>：无</p>
+  <table><tr><th>证据摘要（自 PR「验证」段）</th></tr><tr><td>无对应验证件</td></tr></table>
+  <div class="pending"><b>待核对</b>（报告已可查看，处置与结论由人决定）：<ul><li>Issue 仍为 OPEN，未完成/进行中；不作达成证据。</li></ul></div>
+</article>
+
+<h2>已确认缺口汇总</h2>
+<ol><li><b>已关闭无合入件</b>：无（尚未由人确认）</li><li><b>未合入</b>：无（尚未由人确认）</li><li><b>无读数 / 不可核对</b>：无（尚未由人确认）</li></ol>
+<h2>待核对事项汇总</h2>
+<p class="mut">以下事项尚待人决定处置，可在会前或会上继续核对（共 31 项）。</p>
+<ol><li><a href="#issue-345">#345</a>（待核对 P01）：已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li><li><a href="#issue-479">#479</a>（待核对 P02）：Issue 仍为 OPEN，未完成/进行中；不作达成证据。</li><li><a href="#issue-489">#489</a>（待核对 P03）：已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li><li><a href="#issue-497">#497</a>（待核对 P04）：有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li><li><a href="#issue-499">#499</a>（待核对 P05）：Issue 仍为 OPEN，未完成/进行中；不作达成证据。</li><li><a href="#issue-568">#568</a>（待核对 P06）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-157">#157</a>（待核对 P07）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-161">#161</a>（待核对 P08）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-452">#452</a>（待核对 P09）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-470">#470</a>（待核对 P10）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-476">#476</a>（待核对 P11）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-494">#494</a>（待核对 P12）：有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li><li><a href="#issue-496">#496</a>（待核对 P13）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-500">#500</a>（待核对 P14）：有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li><li><a href="#issue-509">#509</a>（待核对 P15）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-514">#514</a>（待核对 P16）：已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li><li><a href="#issue-524">#524</a>（待核对 P17）：有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li><li><a href="#issue-557">#557</a>（待核对 P18）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-559">#559</a>（待核对 P19）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-560">#560</a>（待核对 P20）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-561">#561</a>（待核对 P21）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-562">#562</a>（待核对 P22）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-583">#583</a>（待核对 P23）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-585">#585</a>（待核对 P24）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-586">#586</a>（待核对 P25）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-589">#589</a>（待核对 P26）：有合入 PR 但正文未见「验证」段；需核对 PR 评论/主验证报告。</li><li><a href="#issue-590">#590</a>（待核对 P27）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-606">#606</a>（待核对 P28）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-621">#621</a>（待核对 P29）：已关闭但关联 PR 未见合入；需核对是否另有合入件或按 Issue 处理依据。</li><li><a href="#issue-622">#622</a>（待核对 P30）：已关闭但未找到合入 PR/MR；需核对 Issue 评论中的处理依据（无开发关闭项）。</li><li><a href="#issue-647">#647</a>（待核对 P31）：Issue 仍为 OPEN，未完成/进行中；不作达成证据。</li></ol>
+<p class="mut">来源：各 Issue/PR/MR 已留下的验收件。报告生成 2026/11/13 15:35:02；任务成员按 <code>bw:plan:v1.0</code> 标签实时读取。</p>
+</body></html>
