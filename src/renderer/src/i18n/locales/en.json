@@ -5313,6 +5313,7 @@
           "removeDescriptionLocal": "This only removes {{name}} from Orca. It is still on your disk.",
           "removeDescriptionRuntime": "Remove the registration for {{name}} on this host. Its files stay on that host.",
           "registrationUnavailable": "This project registration is no longer available. Check the project list.",
+          "updatePairedHost": "Update Workbench on the paired host before removing a project registration.",
           "removeDescriptionVmRecipe": "This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted."
         },
         "ScrollToCurrentWorkspaceToolbarButton": {

@@ -113,6 +113,30 @@ describe('createGitHubSlice.patchWorkItem', () => {
   })
 })
 
+it('patches only the desktop task from the requested forge repository', () => {
+  const store = createTestStore()
+  const origin = {
+    ...githubSourceContext('local'),
+    localTaskAccount: true as const,
+    providerIdentity: { provider: 'github' as const, owner: 'alice', repo: 'app' }
+  }
+  const upstream = { ...origin, providerIdentity: { ...origin.providerIdentity, owner: 'acme' } }
+  const row = {
+    id: 'issue:42',
+    repoId: 'repo-1',
+    url: 'https://github.com/acme/app/issues/42'
+  } as GitHubWorkItem
+  const originRow = { ...row, url: 'https://github.com/alice/app/issues/42' }
+  const key = workItemsCacheKey('repo-1', 20, '', getTaskSourceCacheScope(upstream))
+  store.setState({ workItemsCache: { [key]: { data: [row, originRow], fetchedAt: 1 } } })
+
+  store.getState().patchWorkItem(row.id, { state: 'closed' }, row.repoId, { sourceContext: origin })
+
+  const [first, second] = store.getState().workItemsCache[key].data
+  expect(first).toBe(row)
+  expect(second).toEqual({ ...originRow, state: 'closed' })
+})
+
 describe('createGitHubSlice.fetchWorkItems cache identity', () => {
   const nestedSources = {
     issues: { owner: 'acme', repo: 'widgets' },

@@ -1,4 +1,5 @@
 import { taskScopeGitHubViewerKey } from '@/workbench/task-scope-projection'
+import { taskPageWorkItemKey } from './task-page-work-item-signatures'
 import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
@@ -53,7 +54,7 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
       return []
     }
     return applyTypeFilter(currentPageItems).filter((item) =>
-      workbenchScopeItemKeys.has(`${item.repoId}:${item.number}`)
+      workbenchScopeItemKeys.has(taskPageWorkItemKey(item))
     )
   }, [
     activeGithubTaskKind,
@@ -66,17 +67,16 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
   // removes them from the visible table (sticky ∪ pending membership).
   const filteredWorkItems = useMemo(
     () =>
-      typeFilteredCurrentPageItems.filter(
-        (workItem) =>
-          (!workbenchScopeActive ||
-            matchesWorkbenchTaskQuery(
+      typeFilteredCurrentPageItems.filter((workItem) =>
+        workbenchScopeActive
+          ? matchesWorkbenchTaskQuery(
               { ...workItem, assignees: (workItem.assignees ?? []).map((user) => user.login) },
               goalDisplayQuery,
               model.workbenchScopeViewerLogins.get(taskScopeGitHubViewerKey(workItem)) ?? null
-            )) &&
-          !githubWorkItemMutation.softHiddenItemKeys.has(
-            taskPageGitHubItemKey(workItem.repoId, workItem.id)
-          )
+            )
+          : !githubWorkItemMutation.softHiddenItemKeys.has(
+              taskPageGitHubItemKey(workItem.repoId, workItem.id)
+            )
       ),
     [
       githubWorkItemMutation.softHiddenItemKeys,

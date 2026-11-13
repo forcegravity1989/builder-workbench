@@ -1,4 +1,8 @@
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
+import { githubRepoIdentityKey } from '../../../../shared/github/repository-identity-key'
+import type { GitHubOwnerRepo } from '../../../../shared/github/pull-request-types'
+import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
@@ -7,7 +11,7 @@ import {
   getGitHubSourceRuntimeTarget
 } from '@/lib/github-source-runtime-context'
 import type { PRComment } from '../../../../shared/github/comment-types'
-import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
+import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/github-work-item-source-lookup'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import type { Repo } from '../../../../shared/repo-types'
 import { isCodeHubGitRemote } from '../../../../shared/codehub'
@@ -16,14 +20,27 @@ import {
   hasReviewProject,
   type ReviewRepoIdentity
 } from '../../../../shared/workbench/pr-review-request'
-import { requireSourceContext } from '../task-reference-repo'
+import { gitHubIdentityForTaskReference, requireSourceContext } from '../task-reference-repo'
 import { countUnresolvedReviewCommentsSince, type ReviewReadback } from './model'
 
 export function findRegisteredReviewRepo(
   identity: ReviewRepoIdentity,
   repos: readonly Repo[] = useAppStore.getState().repos
 ): Repo | null {
-  const matches = repos.filter((repo) => repo.path && hasReviewProject([repo], identity))
+  const key = `${identity.host}/${identity.path}`.toLowerCase()
+  const matches = repos.filter((repo) => {
+    if (!repo.path) {
+      return false
+    }
+    if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
+      return hasReviewProject([repo], identity)
+    }
+    const candidate = gitHubIdentityForTaskReference(repo, key)
+    return candidate
+      ? `${candidate.host ?? 'github.com'}/${candidate.owner}/${candidate.repo}`.toLowerCase() ===
+          key
+      : hasReviewProject([repo], identity)
+  })
   return (
     matches.find((repo) => getRepoExecutionHostId(repo) === LOCAL_EXECUTION_HOST_ID) ??
     matches[0] ??
@@ -34,6 +51,7 @@ export function findRegisteredReviewRepo(
 /** 只接受完整的检视线程读回；失败由通知显示为未知。 */
 export async function readReviewTracking(
   repo: Repo,
+  identity: ReviewRepoIdentity,
   prNumber: number,
   roundStartedAt: string
 ): Promise<ReviewReadback> {
@@ -41,21 +59,13 @@ export async function readReviewTracking(
     return readCodeHubReviewTracking(repo, prNumber, roundStartedAt)
   }
   const sourceContext = requireSourceContext(repo, 'github')
-  const item = await lookupGitHubWorkItemForSource({
-    repoPath: repo.path,
-    repoId: repo.id,
-    sourceContext,
-    number: prNumber,
-    type: 'pr'
-  })
-  if (!item) {
-    throw new Error(`GitHub 未返回 PR #${prNumber}`)
-  }
+  const prRepo = notificationGitHubRepo(identity)
+  const item = await lookupNotifiedGitHubPr(repo, prRepo, prNumber, sourceContext)
   const checkedAt = new Date().toISOString()
   const result = await callRuntimeRpc<{ complete: boolean; comments: PRComment[] }>(
     getGitHubSourceRuntimeTarget(sourceContext),
     'workbench.review.comments',
-    { repo: getGitHubRuntimeRepoId(sourceContext, repo.id), prNumber, noCache: true },
+    { repo: getGitHubRuntimeRepoId(sourceContext, repo.id), prNumber, prRepo, noCache: true },
     { timeoutMs: 30_000 }
   )
   if (!result.complete) {
@@ -78,6 +88,40 @@ export async function readReviewTracking(
   }
 }
 
+function notificationGitHubRepo(identity: ReviewRepoIdentity): GitHubOwnerRepo {
+  const [owner, repo, ...extra] = identity.path.split('/')
+  if (!owner || !repo || extra.length) {
+    throw new Error('无法识别评审请求中的 GitHub 仓库')
+  }
+  return { host: identity.host, owner, repo }
+}
+
+async function lookupNotifiedGitHubPr(
+  repo: Repo,
+  prRepo: GitHubOwnerRepo,
+  prNumber: number,
+  sourceContext: TaskSourceContext
+) {
+  const item = await lookupGitHubWorkItemByOwnerRepoForSource({
+    repoPath: repo.path,
+    repoId: repo.id,
+    sourceContext,
+    ...prRepo,
+    number: prNumber,
+    type: 'pr'
+  })
+  const actual = item && parseGitHubIssueOrPRLink(item.url)
+  if (
+    !item ||
+    actual?.type !== 'pr' ||
+    actual.number !== prNumber ||
+    githubRepoIdentityKey(actual.slug) !== githubRepoIdentityKey(prRepo)
+  ) {
+    throw new Error(`GitHub 未返回通知指定的 PR #${prNumber}`)
+  }
+  return item
+}
+
 export async function openReviewPr(identity: ReviewRepoIdentity, prNumber: number): Promise<void> {
   const repo = findRegisteredReviewRepo(identity)
   if (!repo) {
@@ -89,18 +133,17 @@ export async function openReviewPr(identity: ReviewRepoIdentity, prNumber: numbe
       await openCodeHubReview(repo, prNumber)
       return
     }
-    const sourceContext = getTaskPageRepoSourceContext(repo, 'github')
-    const item = await lookupGitHubWorkItemForSource({
-      repoPath: repo.path,
-      repoId: repo.id,
-      sourceContext,
-      number: prNumber,
-      type: 'pr'
-    })
-    if (!item) {
-      toast.error(`GitHub 未返回 PR #${prNumber}，无法打开详情`)
-      return
+    const source = getTaskPageRepoSourceContext(repo, 'github')
+    if (!source) {
+      throw new Error('无法解析 GitHub 任务来源上下文')
     }
+    const prRepo = notificationGitHubRepo(identity)
+    const sourceContext = {
+      ...source,
+      taskRemoteCandidates: undefined,
+      providerIdentity: { provider: 'github' as const, ...prRepo }
+    }
+    const item = await lookupNotifiedGitHubPr(repo, prRepo, prNumber, sourceContext)
     useAppStore.getState().openTaskPage(
       {
         taskSource: 'github',

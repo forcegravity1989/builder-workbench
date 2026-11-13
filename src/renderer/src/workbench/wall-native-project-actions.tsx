@@ -51,6 +51,7 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
             useAppStore.getState().openModal('confirm-remove-folder', {
               repoId: row.id,
               displayName: row.displayName,
+              projectRemovalRegistration: row,
               hostId: getRepoExecutionHostId(row)
             })
           ),

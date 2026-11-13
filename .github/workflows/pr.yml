@@ -41,6 +41,7 @@ jobs:
           src/shared/runtime-environment-store.test.ts
           src/shared/runtime-client-export-parity.test.ts
           src/main/ipc/runtime-environment
+          src/main/runtime/runtime-remove-project-host-scope.test.ts
           src/cli/runtime/environments.test.ts
       - name: Test shared host recovery, launch and close contracts
         run: >-
@@ -214,6 +215,8 @@ jobs:
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/persistence-workspace-default.test.ts
           src/main/ipc/repos
+          src/main/persistence-remote-session-startup.test.ts
+          src/main/persistence-repo-lifecycle.test.ts
           src/main/ipc/feedback.test.ts
           src/main/ipc/feedback-image-attachments.test.ts
           src/main/ipc/diagnostics.test.ts
@@ -226,6 +229,8 @@ jobs:
           src/main/codehub
           src/preload/api/platform-bridge.test.ts
           src/renderer/src/lib/codehub-api.test.ts
+          src/renderer/src/components/task-page-cache-selectors.test.ts
+          src/renderer/src/store/slices/github-work-item-cache-identity.test.ts
           src/renderer/src/components/task-page/codehub
           src/renderer/src/components/feature-wall/use-integration-connection-status.test.ts
           src/renderer/src/components/feature-wall/feature-wall-setup-progress.test.ts

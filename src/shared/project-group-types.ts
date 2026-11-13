@@ -8,6 +8,7 @@ export type ProjectGroup = {
   connectionId?: string | null
   /** Renderer-owned host stamp for groups fetched from a runtime environment. */
   executionHostId?: string | null
+  pairedCatalogRevision?: number
   parentGroupId: string | null
   createdFrom: ProjectGroupCreatedFrom
   tabOrder: number

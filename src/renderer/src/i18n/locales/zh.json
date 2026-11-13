@@ -4394,7 +4394,8 @@
           "removeDescriptionSsh": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在 {{host}} 上 — 重新添加该 SSH 主机即可恢复。",
           "removeDescriptionLocal": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在您的磁盘上。",
           "removeDescriptionRuntime": "将从该主机移除 {{name}} 的项目登记，仓库文件会保留。",
-          "registrationUnavailable": "项目登记已不可用，请返回项目列表确认。"
+          "registrationUnavailable": "项目登记已不可用，请返回项目列表确认。",
+          "updatePairedHost": "请先升级配对主机上的 Workbench，再移除项目登记。"
         },
         "ScrollToCurrentWorkspaceToolbarButton": {
           "23989bb663": "显示活动工作区"

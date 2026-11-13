@@ -93,3 +93,29 @@ it('routes to the repo owner by default and stays local for task reads or local 
   })
   expect(rpc).not.toHaveBeenCalled()
 })
+
+it('refuses task writes when the registration disagrees with the open detail or list row', async () => {
+  const args = { repoId: 'repo-1', repoPath: '/repo', iid: 12, state: 'closed' as const }
+  const sourceContext = {
+    kind: 'task-source' as const,
+    provider: 'codehub' as const,
+    projectId: 'project',
+    hostId: 'runtime:owner' as const,
+    repoId: 'repo-1',
+    providerIdentity: {
+      provider: 'codehub' as const,
+      host: 'codehub.example',
+      project: 'group/old'
+    }
+  }
+  const detail = createCodeHubApi(sourceContext, { execution: 'local' })
+  const row = createCodeHubApi(null, {
+    execution: 'local',
+    taskRepository: { host: 'codehub.example', project: 'group/old' }
+  })
+
+  await expect(detail.setIssueState(args)).rejects.toThrow('CodeHub 仓库来源已变更')
+  await expect(row.setIssueState(args)).rejects.toThrow('CodeHub 仓库来源已变更')
+  expect(local).not.toHaveBeenCalled()
+  expect(rpc).not.toHaveBeenCalled()
+})

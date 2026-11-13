@@ -14,9 +14,13 @@ import {
 } from '@/components/task-page-cache-selectors'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { taskPageWorkItemKey } from './task-page-work-item-signatures'
 export function useTaskPageGitHubCacheReconciliation(model: TaskPageGitHubDetailModel) {
   const {
     selectedRepos,
+    pageData,
+    dialogWorkItem,
+    dialogSourceContext,
     taskSource,
     githubMode,
     setTasksRefreshing,
@@ -47,11 +51,19 @@ export function useTaskPageGitHubCacheReconciliation(model: TaskPageGitHubDetail
       },
       reviewRequests: GitHubAssignableUser[]
     ): void => {
-      patchTaskPageWorkItemRows(itemKey, {
-        reviewRequests
-      })
+      const exactItem =
+        dialogSourceContext?.localTaskAccount &&
+        dialogWorkItem?.id === itemKey.id &&
+        dialogWorkItem.repoId === itemKey.repoId
+          ? taskPageWorkItemKey(dialogWorkItem)
+          : null
+      patchTaskPageWorkItemRows(
+        itemKey,
+        { reviewRequests },
+        exactItem ? (item) => taskPageWorkItemKey(item) === exactItem : undefined
+      )
     },
-    [patchTaskPageWorkItemRows]
+    [dialogSourceContext?.localTaskAccount, dialogWorkItem, patchTaskPageWorkItemRows]
   )
 
   // Why: the per-repo issue-source indicator and retry banner both derive from the same workItemsCache entry, so no extra IPC.
@@ -74,12 +86,23 @@ export function useTaskPageGitHubCacheReconciliation(model: TaskPageGitHubDetail
     // from a local snapshot so it needs the patched row objects copied across.
     // Hard guarantee (K4): always overlay pending after reconcile so list
     // fetch clobbers never paint unprotected coordinator fields.
-    setPages((current) =>
-      reconcileTaskPagePagesWithWorkItemsCache(current, selectedWorkItemsCacheEntries).map(
-        (page) => (page ? (overlayPendingOnTaskPagePages([page])[0] ?? []) : null)
+    setPages((current) => {
+      const reconciled = reconcileTaskPagePagesWithWorkItemsCache(
+        current,
+        selectedWorkItemsCacheEntries
       )
-    )
-  }, [githubMode, selectedWorkItemsCacheEntries, taskSource, setPages])
+      // Goal projection applies the exact source scope for each point-read row.
+      return pageData.workbenchTaskScope?.goalId
+        ? reconciled
+        : reconciled.map((page) => (page ? (overlayPendingOnTaskPagePages([page])[0] ?? []) : null))
+    })
+  }, [
+    githubMode,
+    pageData.workbenchTaskScope?.goalId,
+    selectedWorkItemsCacheEntries,
+    taskSource,
+    setPages
+  ])
 
   // Why: one-time toast per repo when the 'upstream' preference fell back to origin (ref-gated); deliberately don't auto-reset the preference so re-adding upstream later still applies.
   const fellBackToastedRef = useRef<Set<string>>(new Set())

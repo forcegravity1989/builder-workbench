@@ -53,6 +53,7 @@ export function renderProjectSettingsSections(context: SettingsRenderContext): R
                 useAppStore.getState().openModal('confirm-remove-folder', {
                   repoId: repo.id,
                   displayName: repo.displayName,
+                  projectRemovalRegistration: repo,
                   hostId: getRepoExecutionHostId(repo)
                 })
               } else {

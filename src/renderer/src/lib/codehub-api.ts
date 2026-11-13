@@ -10,13 +10,16 @@ import {
   type TaskSourceContext
 } from '../../../shared/task-source-context'
 
+type CodeHubTaskRepository = { host?: string | null; project?: string | null }
+
 // Repo ownership selects the runtime for both reads and writes; UI focus may
 // have moved to a different host while a task detail remains open.
 function route<K extends keyof CodeHubApi>(
   method: K,
   args: Parameters<CodeHubApi[K]>[0],
   sourceContext?: TaskSourceContext | null,
-  execution: 'owner' | 'local' = 'owner'
+  execution: 'owner' | 'local' = 'owner',
+  taskRepository?: CodeHubTaskRepository
 ): Promise<Awaited<ReturnType<CodeHubApi[K]>>> {
   const call = (input: typeof args) =>
     (
@@ -41,8 +44,19 @@ function route<K extends keyof CodeHubApi>(
     const remoteUrl = parseCodeHubRemote(identity?.remoteUrl)
       ? identity?.remoteUrl
       : identity?.canonicalKey
-    if (!remoteUrl) {
+    const remote = parseCodeHubRemote(remoteUrl)
+    if (!remoteUrl || !remote) {
       return Promise.reject(new Error('无法解析 CodeHub 仓库身份'))
+    }
+    const source = sourceContext?.providerIdentity
+    const matchesRemote = (expected: CodeHubTaskRepository): boolean =>
+      (!expected.host || expected.host === remote.host) &&
+      (!expected.project || expected.project.toLowerCase() === remote.project.toLowerCase())
+    if (
+      (source?.provider === 'codehub' && !matchesRemote(source)) ||
+      (taskRepository && !matchesRemote(taskRepository))
+    ) {
+      return Promise.reject(new Error('CodeHub 仓库来源已变更，请刷新任务后重试。'))
     }
     return call({ ...routedArgs, remoteUrl })
   }
@@ -64,14 +78,14 @@ function route<K extends keyof CodeHubApi>(
 
 export function createCodeHubApi(
   sourceContext?: TaskSourceContext | null,
-  options?: { execution?: 'owner' | 'local' }
+  options?: { execution?: 'owner' | 'local'; taskRepository?: CodeHubTaskRepository }
 ): CodeHubApi {
   if (sourceContext && sourceContext.provider !== 'codehub') {
     throw new Error('CodeHub source context required')
   }
   const execution = options?.execution ?? 'owner'
   const call = <K extends keyof CodeHubApi>(method: K, args: Parameters<CodeHubApi[K]>[0]) =>
-    route(method, args, sourceContext, execution)
+    route(method, args, sourceContext, execution, options?.taskRepository)
   return {
     mrForBranch: (args) => call('mrForBranch', args),
     viewer: (args) => call('viewer', args),
@@ -97,8 +111,14 @@ export function createCodeHubApi(
 }
 
 export const codehubApi = createCodeHubApi()
-export function createTaskPageCodeHubApi(sourceContext?: TaskSourceContext | null): CodeHubApi {
-  return createCodeHubApi(sourceContext, { execution: isWorkbenchShell() ? 'local' : 'owner' })
+export function createTaskPageCodeHubApi(
+  sourceContext?: TaskSourceContext | null,
+  taskRepository?: CodeHubTaskRepository
+): CodeHubApi {
+  return createCodeHubApi(sourceContext, {
+    execution: isWorkbenchShell() ? 'local' : 'owner',
+    taskRepository
+  })
 }
 
 export const localCodehubApi = createTaskPageCodeHubApi()

@@ -73,6 +73,8 @@ export type Repo = {
    * because they otherwise look identical to local repos (`connectionId: null`).
    */
   executionHostId?: 'local' | `ssh:${string}` | `runtime:${string}` | null
+  /** Renderer evidence from the paired catalog before it projects the transport host. */
+  pairedRegistration?: { hostId: NonNullable<Repo['executionHostId']>; pairingRevision?: number }
   /** Per-repo override for issue-source resolution. `undefined` is treated
    *  identically to `'auto'`; writers leave it undefined on creation so
    *  existing persisted records stay forward-compatible. */

@@ -89,3 +89,15 @@ describe('repo.rm with the same repo id on two execution hosts', () => {
     expect(repos).toHaveLength(2)
   })
 })
+
+it('checks host, path and registration time before removing a paired project', () => {
+  const { runtime, repos, removeProject, removeProjectForHost } = createRuntime()
+  const confirmed = { repoId: 'dup', hostId: 'local' as const, path: '/laptop/dup', addedAt: 1 }
+  expect(runtime.removeProjectRegistration({ ...confirmed, path: '/wrong' })).toBe(false)
+  expect(runtime.removeProjectRegistration({ ...confirmed, addedAt: 2 })).toBe(false)
+  expect(runtime.removeProjectRegistration(confirmed)).toBe(true)
+  expect(runtime.removeProjectRegistration(confirmed)).toBe(false)
+  expect(removeProjectForHost).toHaveBeenCalledExactlyOnceWith('dup', 'local')
+  expect(removeProject).not.toHaveBeenCalled()
+  expect(repos.map((repo) => repo.path)).toEqual(['/remote/dup'])
+})

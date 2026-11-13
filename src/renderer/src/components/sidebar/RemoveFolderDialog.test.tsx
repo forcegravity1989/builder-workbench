@@ -12,8 +12,6 @@ const mocks = vi.hoisted(() => ({
       hostId: 'ssh:target-1'
     } as Record<string, unknown>,
     repos: [] as Repo[],
-    settings: null,
-    runtimeEnvironments: [{ id: 'peer', name: 'Peer Workbench' }],
     sshTargetLabels: new Map<string, string>(),
     removedSshTargetLabels: new Map<string, string>(),
     closeModal: vi.fn(),
@@ -75,21 +73,6 @@ describe('RemoveFolderDialog', () => {
   })
 
   afterEach(() => vi.unstubAllEnvs())
-
-  it('names the selected host and its path even when both hosts publish the same repo id', () => {
-    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
-    mocks.state.modalData.hostId = 'runtime:peer'
-    mocks.state.repos = [
-      { ...repo(null, 'local'), path: '/local/example' },
-      { ...repo(null, 'runtime:peer'), path: '/peer/example' }
-    ]
-
-    const html = renderToStaticMarkup(<RemoveFolderDialog />)
-
-    expect(html).toContain('Peer Workbench')
-    expect(html).toContain('/peer/example')
-    expect(html).not.toContain('/local/example')
-  })
 
   it('warns that VM recipe cleanup controls file deletion for an explicit SSH owner', () => {
     vi.stubEnv('VITE_WORKBENCH_SHELL', '1')

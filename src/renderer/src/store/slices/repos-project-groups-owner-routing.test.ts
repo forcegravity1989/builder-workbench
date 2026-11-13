@@ -335,6 +335,31 @@ describe('project group state cascades stay scoped to the owner host', () => {
     expect(store.getState().repos.map((repo) => repo.path)).toEqual(['/local/repo', '/peer/repo'])
   })
 
+  it('keeps a paired group when its confirmed pairing has been replaced', async () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    const store = createTestStore()
+    store.setState({
+      projectGroups: [
+        { ...folderScanGroup, executionHostId: 'runtime:env-1', pairedCatalogRevision: 1 }
+      ]
+    })
+
+    try {
+      await expect(
+        store.getState().deleteProjectGroupWithContainedProjects(folderScanGroup.id, {
+          hostId: 'runtime:env-1',
+          removeContainedProjects: true,
+          expectedEnvironmentPairingRevision: 1
+        })
+      ).resolves.toMatchObject({ status: 'group-delete-failed' })
+      expect(projectGroupsDelete).not.toHaveBeenCalled()
+      expect(runtimeEnvironmentCall).not.toHaveBeenCalled()
+      expect(store.getState().projectGroups).toHaveLength(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('does not route an already removed group to its focused-host duplicate', async () => {
     const store = createTestStore()
     store.setState({

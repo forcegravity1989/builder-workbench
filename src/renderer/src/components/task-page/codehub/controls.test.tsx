@@ -4,12 +4,13 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 
-const { api } = vi.hoisted(() => {
+const { api, ownerApi } = vi.hoisted(() => {
   // 详情页删除评论后会重读列表（不再本地过滤），mock 按同样语义维护状态。
   let comments = [{ id: 'c1', author: 'Ada', body: 'Review comment' }]
   return {
     api: {
       createIssue: vi.fn().mockResolvedValue({ iid: 42 }),
+      listLabels: vi.fn().mockResolvedValue(['triage']),
       viewTask: vi
         .fn()
         .mockResolvedValue({ title: 'Issue 12', state: 'opened', description: 'Body' }),
@@ -20,11 +21,12 @@ const { api } = vi.hoisted(() => {
       }),
       mrChecks: vi.fn().mockResolvedValue([]),
       mrChanges: vi.fn().mockResolvedValue([])
-    }
+    },
+    ownerApi: { listLabels: vi.fn() }
   }
 })
 vi.mock('@/lib/codehub-api', () => ({
-  codehubApi: api,
+  codehubApi: ownerApi,
   localCodehubApi: api,
   createTaskPageCodeHubApi: () => api
 }))
@@ -107,6 +109,12 @@ it('keeps filter transitions and issue creation connected after extracting the c
     description: undefined,
     assignee: undefined
   })
+  fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Label' }))
+  await waitFor(() =>
+    expect(api.listLabels).toHaveBeenCalledWith({ repoId: 'r1', repoPath: '/repo' })
+  )
+  expect(ownerApi.listLabels).not.toHaveBeenCalled()
 })
 
 it('loads the detail and removes a deleted comment from the displayed conversation', async () => {
@@ -140,6 +148,12 @@ it('loads the detail and removes a deleted comment from the displayed conversati
     iid: 12,
     commentId: 'c1'
   })
+  api.listLabels.mockClear()
+  fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }))
+  await waitFor(() =>
+    expect(api.listLabels).toHaveBeenCalledWith({ repoId: 'r1', repoPath: '/repo' })
+  )
+  expect(ownerApi.listLabels).not.toHaveBeenCalled()
 })
 
 it('shows a merge request branch and copy control without the old action form', async () => {

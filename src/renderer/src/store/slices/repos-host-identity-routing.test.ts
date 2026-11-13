@@ -7,6 +7,7 @@ import {
   type RuntimeEnvironmentCallRequest
 } from '../../runtime/runtime-compatibility-test-fixture'
 import { clearRuntimeCompatibilityCacheForTests } from '../../runtime/runtime-rpc-client'
+import { replaceRuntimeEnvironmentRevisions } from '../../runtime/runtime-environment-revision'
 
 const localDuplicate: Repo = {
   id: 'same-repo',
@@ -72,6 +73,7 @@ function projectHostSetup(overrides: Pick<ProjectHostSetup, 'id' | 'hostId'>): P
 
 beforeEach(() => {
   clearRuntimeCompatibilityCacheForTests()
+  replaceRuntimeEnvironmentRevisions([])
   reposRemove.mockReset()
   reposRemoveForHost.mockReset()
   reposUpdate.mockReset()
@@ -421,10 +423,11 @@ describe('repo slice host identity routing', () => {
 
   it('preserves the surviving host session and recency when the worktree ids match', async () => {
     vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    replaceRuntimeEnvironmentRevisions([{ id: 'env-1', createdAt: 12 }])
     runtimeEnvironmentCall.mockResolvedValue({
       id: 'rpc-remote-remove',
       ok: true,
-      result: { status: 'removed' },
+      result: { removed: true },
       _meta: { runtimeId: 'runtime-remote' }
     })
     const worktreeId = 'same-repo::/shared/wt'
@@ -437,7 +440,13 @@ describe('repo slice host identity routing', () => {
     })
     const store = createTestStore()
     store.setState({
-      repos: [localDuplicate, remoteDuplicate],
+      repos: [
+        localDuplicate,
+        {
+          ...remoteDuplicate,
+          pairedRegistration: { hostId: 'ssh:nested-builder', pairingRevision: 12 }
+        }
+      ],
       worktreesByRepo: { 'same-repo': [localWorktree, remoteWorktree] },
       activeRepoId: 'same-repo',
       activeWorktreeId: worktreeId,
@@ -459,7 +468,14 @@ describe('repo slice host identity routing', () => {
       expect(store.getState().tabsByWorktree[worktreeId]).toEqual([{ id: 'local-tab', worktreeId }])
       expect(ptyKill).not.toHaveBeenCalledWith('local-pty')
       expect(runtimeEnvironmentCall).toHaveBeenCalledWith(
-        expect.objectContaining({ method: 'repo.rm', params: { repo: 'id:same-repo' } })
+        expect.objectContaining({
+          method: 'workbench.repo.removeRegistration',
+          expectedEnvironmentPairingRevision: 12,
+          params: { repoId: 'same-repo', hostId: 'ssh:nested-builder', path: '/remote', addedAt: 2 }
+        })
+      )
+      expect(runtimeEnvironmentCall).not.toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'terminal.stop' })
       )
       expect(store.getState().lastVisitedAtByWorktreeId).toEqual({
         [`local|${worktreeId}`]: 10

@@ -25,13 +25,21 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const item = codehubDetailItem
   const sourceContext = model.pageData?.openCodeHubSourceContext
   // 详情与写操作同样固定本机：来源行只提供项目身份。
-  const api = useMemo(() => createTaskPageCodeHubApi(sourceContext), [sourceContext])
+  const host = item?.host
+  const project = item?.project
+  const taskRepository = useMemo(() => ({ host, project }), [host, project])
+  const api = useMemo(
+    () => createTaskPageCodeHubApi(sourceContext, taskRepository),
+    [sourceContext, taskRepository]
+  )
   const key = item
     ? getCodehubDetailCacheKey({
         sourceContext,
+        repoPath: item.repoPath,
         repoId: item.repoId,
         kind: item.type,
-        iid: item.iid
+        iid: item.iid,
+        taskRepository
       })
     : ''
   // Why: cache writes replace entry identity (delete+set), so Map.get is a stable snapshot for useSyncExternalStore.
@@ -73,9 +81,10 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       repoPath: item.repoPath,
       repoId: item.repoId,
       kind: item.type,
-      iid: item.iid
+      iid: item.iid,
+      taskRepository
     })
-  }, [item, sourceContext])
+  }, [item, sourceContext, taskRepository])
 
   const reloadDetail = useCallback((): void => {
     if (!item?.repoPath) {
@@ -87,10 +96,11 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       repoPath: item.repoPath,
       repoId: item.repoId,
       kind: item.type,
-      iid: item.iid
+      iid: item.iid,
+      taskRepository
     })
     setCodehubRefreshNonce((nonce) => nonce + 1)
-  }, [item, key, setCodehubRefreshNonce, sourceContext])
+  }, [item, key, setCodehubRefreshNonce, sourceContext, taskRepository])
 
   // Comment threads and the files tab write fetched rows back through this
   // instead of local state (same callers as before the cache existed).

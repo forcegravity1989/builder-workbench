@@ -18,6 +18,7 @@ import {
 import { rebuildSoftHiddenKeysFromPendingAndSticky } from '@/components/task-page-github-work-item-mutations'
 import { buildGitHubRepoUrl } from '@/lib/github-links'
 import { getTaskPageRepoSourceContext } from './task-page-source-context'
+import { matchesTaskPageWorkItemRepository } from './task-page-work-item-signatures'
 export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStateModel) {
   const {
     selectedRepos,
@@ -83,12 +84,17 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
       const [id, patch, repoId, options] = args
       useAppStore.getState().patchWorkItem(id, patch, repoId, options)
       if (repoId) {
+        const context = options?.sourceContext
+        const repository = context?.localTaskAccount ? context.providerIdentity : null
         patchTaskPageWorkItemRows(
           {
             id,
             repoId
           },
-          patch
+          patch,
+          repository?.provider === 'github'
+            ? (item) => matchesTaskPageWorkItemRepository(item, repository)
+            : undefined
         )
       }
     },
@@ -101,6 +107,9 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
     patchWorkItem: patchCoordinatedGitHubWorkItem
   })
   useLayoutEffect(() => {
+    if (model.pageData.workbenchTaskScope?.goalId) {
+      return
+    }
     const items = pages.flatMap((page) => page ?? [])
     rebuildSoftHiddenKeysFromPendingAndSticky({
       query: mutationQuery,
@@ -119,7 +128,14 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
         )
       )
     })
-  }, [mutationQuery, githubViewerLogin, githubWorkItemMutationQueryKey, pages, model.repoMap])
+  }, [
+    mutationQuery,
+    githubViewerLogin,
+    githubWorkItemMutationQueryKey,
+    pages,
+    model.repoMap,
+    model.pageData.workbenchTaskScope?.goalId
+  ])
   const observedQuietScopeRef = useRef({
     queryKey: '',
     dirtyGeneration: -1

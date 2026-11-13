@@ -16,6 +16,7 @@ import {
   getTaskPageGitHubItemSource
 } from './task-page-source-context'
 import { startGitHubListScrollRestore } from './task-page-github-list-scroll-restore'
+import { taskPageWorkItemKey } from './task-page-work-item-signatures'
 
 function getTaskPageScrollTop(
   scrollRef: React.RefObject<HTMLElement | null>,
@@ -50,12 +51,6 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
   const githubTaskDrawerWorkItem = useAppStore((s) => s.githubTaskDrawerWorkItem)
   const setGithubTaskDrawerWorkItem = useAppStore((s) => s.setGithubTaskDrawerWorkItem)
   const [dialogInitialTab, setDialogInitialTab] = useState<ItemDialogTab>('conversation')
-  const dialogWorkItemKey = githubTaskDrawerWorkItem
-    ? {
-        id: githubTaskDrawerWorkItem.id,
-        repoId: githubTaskDrawerWorkItem.repoId
-      }
-    : null
   const appliedWorkItemsCacheQuery = useMemo(
     () => stripRepoQualifiers(appliedTaskSearch.trim()),
     [appliedTaskSearch]
@@ -71,13 +66,11 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
     )
   )
 
-  // Why: derive the dialog item from the cache for optimistic patches, falling back to the click-time snapshot for new stubs; key by repoId so same-number issues across repos resolve to the clicked row.
+  // Why: origin and upstream can share the same Orca repo id and item number.
   const cachedDialogWorkItem = useAppStore((s) =>
-    findTaskPageDialogWorkItem(s.workItemsCache, dialogWorkItemKey)
+    findTaskPageDialogWorkItem(s.workItemsCache, githubTaskDrawerWorkItem)
   )
-  const dialogWorkItem = dialogWorkItemKey
-    ? (cachedDialogWorkItem ?? githubTaskDrawerWorkItem)
-    : null
+  const dialogWorkItem = cachedDialogWorkItem ?? githubTaskDrawerWorkItem
   useLayoutEffect(() => {
     const target = pendingGithubScrollRestoreRef.current
     if (target === null || !githubListScrollRef.current || !pages[currentPage]) {
@@ -115,8 +108,8 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
     }
     if (
       pageData.openGitHubSourceContext?.provider === 'github' &&
-      pageData.openGitHubWorkItem?.id === dialogWorkItem.id &&
-      pageData.openGitHubWorkItem.repoId === dialogWorkItem.repoId
+      pageData.openGitHubWorkItem &&
+      taskPageWorkItemKey(pageData.openGitHubWorkItem) === taskPageWorkItemKey(dialogWorkItem)
     ) {
       return getTaskPageGitHubItemSource(
         repoMap.get(dialogWorkItem.repoId),
@@ -236,7 +229,6 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
     setGithubTaskDrawerWorkItem: typeof setGithubTaskDrawerWorkItem
     dialogInitialTab: typeof dialogInitialTab
     setDialogInitialTab: typeof setDialogInitialTab
-    dialogWorkItemKey: typeof dialogWorkItemKey
     appliedWorkItemsCacheQuery: typeof appliedWorkItemsCacheQuery
     selectedWorkItemsCacheEntries: typeof selectedWorkItemsCacheEntries
     cachedDialogWorkItem: typeof cachedDialogWorkItem
@@ -253,7 +245,6 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
   nextModel.setGithubTaskDrawerWorkItem = setGithubTaskDrawerWorkItem
   nextModel.dialogInitialTab = dialogInitialTab
   nextModel.setDialogInitialTab = setDialogInitialTab
-  nextModel.dialogWorkItemKey = dialogWorkItemKey
   nextModel.appliedWorkItemsCacheQuery = appliedWorkItemsCacheQuery
   nextModel.selectedWorkItemsCacheEntries = selectedWorkItemsCacheEntries
   nextModel.cachedDialogWorkItem = cachedDialogWorkItem

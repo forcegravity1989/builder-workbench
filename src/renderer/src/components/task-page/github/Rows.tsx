@@ -1,4 +1,5 @@
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import { taskPageWorkItemKey } from '../../task-page-work-item-signatures'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 import { formatPRDelta } from '@/components/task-page-pr-delta-summary'
@@ -109,8 +110,7 @@ export function TaskPageGitHubRows({
           return (
             // Why: clickable div not a <button> — it nests buttons, and button-in-button is invalid HTML that breaks hydration.
             <div
-              // Why: key on repoId+item.id — repos sharing an upstream reuse item.id, so a bare key collides and React silently drops rows.
-              key={`${item.repoId}:${item.id}`}
+              key={taskPageWorkItemKey(item)}
               role="button"
               tabIndex={0}
               onClick={() => openGitHubDetailPage(item)}

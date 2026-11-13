@@ -7,6 +7,8 @@ import {
   selectProjectGroupRemovalTargets
 } from '@/store/slices/project-group-removal-targets'
 import { selectExecutionHostDisplayLabel } from '@/lib/execution-host-display-label'
+import { selectRepoRemovalHostLabel } from '@/store/repos/repo-removal-registration'
+import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { Repo } from '../../../../../../shared/repo-types'
 import {
@@ -25,6 +27,7 @@ export type ProjectGroupDeleteDialogState = {
   groupId: string
   groupName: string
   confirmedProjectKeys?: readonly string[]
+  expectedEnvironmentPairingRevision?: number
   hostId: ExecutionHostId
 }
 
@@ -34,16 +37,19 @@ function reportProjectGroupDeleteFailures(result: {
   status: string
   failedProjectRemovals: readonly unknown[]
   requestedProjectIds: readonly unknown[]
+  error?: string
 }): void {
   // Why: a missing group is already the desired end state, so only a real delete failure warrants a toast.
   if (result.status === 'group-delete-failed') {
     toast.error(
       translate('auto.components.sidebar.WorktreeList.groupDeleteFailed', 'Failed to delete group'),
       {
-        description: translate(
-          'auto.components.sidebar.WorktreeList.groupDeleteFailedDesc',
-          'Something went wrong while deleting the group. No projects were removed.'
-        )
+        description:
+          result.error ??
+          translate(
+            'auto.components.sidebar.WorktreeList.groupDeleteFailedDesc',
+            'Something went wrong while deleting the group. No projects were removed.'
+          )
       }
     )
     return
@@ -171,7 +177,7 @@ export function useProjectGroupDialogs(args: {
     }
     const state = useAppStore.getState()
     return deleteTargets.projects.map((repo) => {
-      const host = selectExecutionHostDisplayLabel(state, getRepoExecutionHostId(repo))
+      const host = selectRepoRemovalHostLabel(state, repo)
       return `${repo.displayName} · ${host} · ${repo.path}`
     })
   }, [deleteTargets])
@@ -198,7 +204,15 @@ export function useProjectGroupDialogs(args: {
       const ownerHostId =
         hostId ?? selectProjectGroupRemovalTargets(projectGroups, [], groupId).ownerHostId
       if (ownerHostId) {
-        setDeleteDialog({ groupId, groupName, hostId: ownerHostId })
+        const revision = projectGroups.find(
+          (group) => group.id === groupId && getProjectGroupHostId(group) === ownerHostId
+        )?.pairedCatalogRevision
+        setDeleteDialog({
+          groupId,
+          groupName,
+          hostId: ownerHostId,
+          ...(revision !== undefined ? { expectedEnvironmentPairingRevision: revision } : {})
+        })
       }
     },
     [projectGroups]
@@ -211,7 +225,10 @@ export function useProjectGroupDialogs(args: {
     const result = await deleteProjectGroupWithContainedProjects(deleteDialog.groupId, {
       removeContainedProjects,
       hostId: deleteTargets.ownerHostId,
-      ...(confirmedKeys ? { confirmedProjectKeys: confirmedKeys } : {})
+      ...(confirmedKeys ? { confirmedProjectKeys: confirmedKeys } : {}),
+      ...(deleteDialog.expectedEnvironmentPairingRevision !== undefined
+        ? { expectedEnvironmentPairingRevision: deleteDialog.expectedEnvironmentPairingRevision }
+        : {})
     })
     if (result.status === 'group-members-changed') {
       setDeleteDialog((current) =>

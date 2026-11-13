@@ -583,6 +583,7 @@ import {
   MilestoneSubmitRequestSchema
 } from '../workbench/project-milestones'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
+import { WorkbenchRepoRemoval } from '../workbench/repo-removal'
 import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
@@ -1254,6 +1255,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
+  'workbench.repo.removeRegistration': WorkbenchRepoRemoval,
   'workbench.review.comments': PullRequest,
   'workbench.review.identity': null,
   'workbench.review.inbox': null,

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import { codehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 
@@ -33,7 +33,7 @@ export function CodeHubIssueListStatus({
           return
         }
         setBusy(true)
-        void codehubApi
+        void createTaskPageCodeHubApi(null, { host: item.host, project: item.project })
           .setIssueState({
             repoPath: item.repoPath,
             repoId: item.repoId,

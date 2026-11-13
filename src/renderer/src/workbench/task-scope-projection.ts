@@ -1,4 +1,5 @@
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { taskPageWorkItemKey } from '@/components/task-page-work-item-signatures'
 import { withQualifier } from '../../../shared/task-query'
 import {
   matchesWorkbenchTaskQuery,
@@ -32,7 +33,7 @@ export type WorkbenchTaskScopeModelFields = {
 
 export function workbenchTaskScopeItemKeys(result: TaskScopeLoadResult | null) {
   return {
-    github: new Set((result?.githubItems ?? []).map((item) => `${item.repoId}:${item.number}`)),
+    github: new Set((result?.githubItems ?? []).map(taskPageWorkItemKey)),
     codehub: new Set((result?.codehubItems ?? []).map((item) => `${item.repoId}:${item.iid}`))
   }
 }

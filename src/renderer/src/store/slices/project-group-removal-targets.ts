@@ -12,7 +12,11 @@ export type ProjectGroupRemovalTargets = {
 }
 
 export function projectGroupRemovalKeys(projects: readonly Repo[]): string[] {
-  return projects.map((repo) => JSON.stringify([getRepoHostIdentity(repo), repo.path])).sort()
+  return projects
+    .map((repo) =>
+      JSON.stringify([getRepoHostIdentity(repo), repo.path, repo.addedAt, repo.pairedRegistration])
+    )
+    .sort()
 }
 
 export function selectProjectGroupRemovalTargets(

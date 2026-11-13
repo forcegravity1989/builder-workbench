@@ -10,8 +10,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
-import { selectExecutionHostDisplayLabel } from '@/lib/execution-host-display-label'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import {
+  repoMatchesRemovalRegistration,
+  selectRepoRemovalHostLabel
+} from '@/store/repos/repo-removal-registration'
+import type { Repo } from '../../../../shared/repo-types'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   getRepoExecutionHostId,
@@ -41,10 +45,16 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   const selectedRepo = useAppStore((s) =>
     hostId ? findRepoForHost(s.repos, repoId, { hostId }) : null
   )
+  const confirmed = modalData.projectRemovalRegistration as Repo | null | undefined
+  const confirmedRepo = confirmed ?? selectedRepo
   const hostLabel = useAppStore((s) =>
-    workbench && hostId ? selectExecutionHostDisplayLabel(s, hostId) : null
+    workbench && confirmedRepo ? selectRepoRemovalHostLabel(s, confirmedRepo) : null
   )
-  const targetUnavailable = workbench && !selectedRepo
+  const targetUnavailable =
+    workbench &&
+    (!selectedRepo ||
+      confirmed === null ||
+      Boolean(confirmed && !repoMatchesRemovalRegistration(selectedRepo, confirmed)))
 
   // Why: for an SSH project the files live on the remote host's disk, not the
   // user's — "still on your disk" would be misleading. Name the host (using the
@@ -102,11 +112,12 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
     if (repoId && !targetUnavailable) {
       void removeProject(repoId, {
         ...(hostId ? { hostId } : {}),
+        ...(confirmed ? { expectedRegistration: confirmed } : {}),
         errorFeedback: 'toast'
       })
     }
     closeModal()
-  }, [closeModal, hostId, removeProject, repoId, targetUnavailable])
+  }, [closeModal, confirmed, hostId, removeProject, repoId, targetUnavailable])
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -139,7 +150,7 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
             )}
             {workbench && selectedRepo && hostLabel && (
               <span className="mt-2 block break-all font-medium text-foreground">
-                {hostLabel} · {selectedRepo.path}
+                {hostLabel} · {confirmed?.path ?? selectedRepo.path}
               </span>
             )}
           </DialogDescription>

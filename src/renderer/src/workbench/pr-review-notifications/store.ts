@@ -158,7 +158,7 @@ async function refreshNoteReadback(
     if (!repo) {
       throw new Error('暂时无法访问该项目')
     }
-    const readback = await readReviewTracking(repo, note.prNumber, note.sentAt)
+    const readback = await readReviewTracking(repo, note.repo, note.prNumber, note.sentAt)
     setState(applyReviewReadback(state, direction, key, readback, null))
   } catch (error) {
     setState(

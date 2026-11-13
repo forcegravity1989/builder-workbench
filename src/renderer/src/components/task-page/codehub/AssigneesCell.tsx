@@ -3,7 +3,7 @@ import { Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import { localCodehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubProjectMember } from '../../../../../shared/codehub-api'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
@@ -26,6 +26,7 @@ export function CodeHubAssigneesCell({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pendingUsername, setPendingUsername] = useState<string | null>(null)
+  const { host, project } = item
   // 候选名单在 popover 打开时拉取（重开重拉），与详情页标签选择器一致。
   useEffect(() => {
     if (!open || !item.repoPath) {
@@ -34,7 +35,7 @@ export function CodeHubAssigneesCell({
     let stale = false
     setLoading(true)
     setError(null)
-    localCodehubApi
+    createTaskPageCodeHubApi(null, { host, project })
       .listMembers({ repoPath: item.repoPath, repoId: item.repoId })
       .then((list) => {
         if (!stale) {
@@ -55,7 +56,7 @@ export function CodeHubAssigneesCell({
     return () => {
       stale = true
     }
-  }, [open, item.repoPath, item.repoId])
+  }, [open, item.repoPath, item.repoId, host, project])
 
   const assign = useCallback(
     async (member: CodeHubProjectMember): Promise<void> => {
@@ -70,7 +71,7 @@ export function CodeHubAssigneesCell({
       }
       setPendingUsername(member.username)
       try {
-        await localCodehubApi.assignIssue({
+        await createTaskPageCodeHubApi(null, { host, project }).assignIssue({
           repoPath: item.repoPath,
           repoId: item.repoId,
           iid: item.iid,
@@ -86,7 +87,16 @@ export function CodeHubAssigneesCell({
         setPendingUsername(null)
       }
     },
-    [item.assignees, item.iid, item.repoId, item.repoPath, onChanged, pendingUsername]
+    [
+      item.assignees,
+      item.iid,
+      item.repoId,
+      item.repoPath,
+      host,
+      project,
+      onChanged,
+      pendingUsername
+    ]
   )
 
   const assigneeNames = item.assignees.join(', ')

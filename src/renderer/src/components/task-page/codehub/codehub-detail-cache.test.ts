@@ -61,6 +61,17 @@ it('builds collision-free keys from repoId, kind and iid', () => {
   expect(getCodehubDetailCacheKey({ ...mrArgs, sourceContext: source })).not.toBe(
     getCodehubDetailCacheKey({ ...mrArgs, sourceContext: { ...source, hostId: 'runtime:peer' } })
   )
+  expect(
+    getCodehubDetailCacheKey({
+      ...mrArgs,
+      taskRepository: { host: 'codehub.example', project: 'a/b' }
+    })
+  ).not.toBe(
+    getCodehubDetailCacheKey({
+      ...mrArgs,
+      taskRepository: { host: 'codehub.example', project: 'c/d' }
+    })
+  )
 })
 
 it('dedupes full reads, skips fresh reads, and stays retryable on failure', async () => {

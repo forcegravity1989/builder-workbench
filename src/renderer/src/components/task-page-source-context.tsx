@@ -16,6 +16,7 @@ import {
   projectHostSetupProjectionFromRepos
 } from '../../../shared/project-host-setup-projection'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { taskPageWorkItemRepository } from './task-page-work-item-signatures'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { ExecutionHostRegistryEntry } from '../../../shared/execution-host-registry'
 import type { TaskSourceHostAvailability } from './task-source-context-summary'
@@ -152,18 +153,15 @@ export function getTaskPageGitHubItemSource(
   if (!source) {
     return null
   }
-  const match =
-    /^https?:[/][/][^/]+[/]([^/]+)[/]([^/]+)[/](?:issues|pull)[/][0-9]+(?:$|[/?#])/i.exec(
-      item.url ?? ''
-    )
-  const host = match ? URL.parse(item.url ?? '')?.host : null
-  const identity = item.prRepo ?? (match && host ? { owner: match[1], repo: match[2], host } : null)
+  const identity = taskPageWorkItemRepository(item)
   return {
     ...source,
     hostId: LOCAL_EXECUTION_HOST_ID,
     localTaskAccount: true,
     taskRemoteCandidates: undefined,
-    providerIdentity: identity ? { provider: 'github', ...identity } : source.providerIdentity
+    providerIdentity: identity
+      ? { provider: 'github', ...identity }
+      : (previous?.providerIdentity ?? source.providerIdentity)
   }
 }
 
