@@ -181,7 +181,7 @@ export function useOverviewMetricCollection(args: {
       ...(snapshot.catalog?.problems.map(metricProblemText) ?? []),
       ...(reading?.problems ?? []),
       ...Object.entries(reading?.map ?? {}).flatMap(([key, result]) => {
-        if (result?.status !== 'error' || result.reason.code === 'collection-failed') {
+        if (result?.status !== 'error') {
           return []
         }
         const definition = snapshot.catalog?.definitions.find(
