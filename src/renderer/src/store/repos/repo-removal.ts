@@ -11,9 +11,12 @@ import {
   hasRuntimeRpcErrorCode
 } from '../../runtime/runtime-rpc-client'
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
+import { runtimeTargetForExecutionHostId } from '../../runtime/runtime-client-target'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   getRepoExecutionHostId,
+  getSshTargetIdForExecutionHost,
   isRuntimeOwnedSshTargetId,
   LOCAL_EXECUTION_HOST_ID
 } from '../../../../shared/execution-host'
@@ -62,11 +65,14 @@ export function createRepoRemovalActions(
           return
         }
         const ownerHostId = getRepoExecutionHostId(ownerRepo)
-        const runtimeSshTargetId = ownerRepo.connectionId
+        const workbench = isWorkbenchShell()
+        const runtimeSshTargetId = getSshTargetIdForExecutionHost(ownerHostId)
         // Why: an SSH per-workspace-env's workspace is the repo's main worktree, so removal routes here; tear down its ephemeral runtime first so it doesn't leak.
         if (runtimeSshTargetId && isRuntimeOwnedSshTargetId(runtimeSshTargetId)) {
           const cleanup = await cleanupEphemeralVmRuntimesForDeleted({
-            workspaceIds: getKnownRepoWorktreeIds(get(), projectId, ownerHostId),
+            hostScopedWorkspaces: getKnownRepoWorktreeIds(get(), projectId, ownerHostId).map(
+              (workspaceId) => ({ workspaceId, executionHostId: ownerHostId })
+            ),
             runtimeOwnedSshTargetIds: [runtimeSshTargetId]
           })
           if (cleanup.retainedSshTargetIds.includes(runtimeSshTargetId)) {
@@ -75,20 +81,25 @@ export function createRepoRemovalActions(
             )
           }
         }
-        // Why: derive the target from the owner's settings (via options.hostId) so an SSH host removal never routes repo.rm to the focused runtime.
-        const target = getActiveRuntimeTarget(
-          settingsForRepoOwner(get(), projectId, options?.hostId)
-        )
+        // Direct SSH project registrations live in the desktop catalog.
+        const target = options?.hostId
+          ? (runtimeTargetForExecutionHostId(ownerHostId) ?? { kind: 'local' as const })
+          : getActiveRuntimeTarget(settingsForRepoOwner(get(), projectId))
         // Why: repos:remove is id-only and would delete every host's row; scope local removal to the owning host so cross-host duplicates keep other rows.
         const idExistsOnOtherHost = get().repos.some(
           (repo) => repo.id === projectId && getRepoExecutionHostId(repo) !== ownerHostId
         )
         try {
           await (target.kind === 'local'
-            ? idExistsOnOtherHost
+            ? options?.hostId || idExistsOnOtherHost
               ? window.api.repos.removeForHost({ repoId: projectId, hostId: ownerHostId })
               : window.api.repos.remove({ repoId: projectId })
-            : callRuntimeRpc(target, 'repo.rm', { repo: projectId }, { timeoutMs: 15_000 }))
+            : callRuntimeRpc(
+                target,
+                'repo.rm',
+                { repo: workbench ? `id:${projectId}` : projectId },
+                { timeoutMs: 15_000 }
+              ))
         } catch (err) {
           // Why: the owner already dropped this project, so purge the local ghost row instead of aborting (#11994).
           if (!hasRuntimeRpcErrorCode(err, 'repo_not_found')) {
@@ -117,7 +128,11 @@ export function createRepoRemovalActions(
             .filter((worktree) => !worktreeBelongsToHost(worktree, ownerHostId))
             .map((worktree) => worktree.id)
         )
-        const purgeTargets = worktreeIds.map((id) =>
+        // Shared tab and editor keys cannot distinguish the surviving copy.
+        const disposableWorktreeIds = workbench
+          ? worktreeIds.filter((id) => !exactSiblingIds.has(id))
+          : worktreeIds
+        const purgeTargets = disposableWorktreeIds.map((id) =>
           exactSiblingIds.has(id) ? { id, hostId: ownerHostId } : id
         )
         const localAgentContextProjectIds =
@@ -142,7 +157,7 @@ export function createRepoRemovalActions(
             )
           )
         }
-        for (const wId of worktreeIds) {
+        for (const wId of disposableWorktreeIds) {
           const tabs = get().tabsByWorktree[wId] ?? []
           for (const tab of tabs) {
             killedTabIds.add(tab.id)
@@ -155,7 +170,9 @@ export function createRepoRemovalActions(
         }
 
         // Why: use the canonical per-worktree purge to evict all worktree-scoped maps (hand-deletion leaked most); runs before the set() below so it still sees tabsByWorktree.
-        get().purgeWorktreeTerminalState(purgeTargets)
+        if (purgeTargets.length > 0) {
+          get().purgeWorktreeTerminalState(purgeTargets)
+        }
         get().clearLocalDetectedAgentContextsForProjects(localAgentContextProjectIds)
 
         set((s) => {
@@ -184,7 +201,7 @@ export function createRepoRemovalActions(
           const nextLayouts = { ...s.terminalLayoutsByTabId }
           const nextPtyIdsByTabId = { ...s.ptyIdsByTabId }
           const nextRuntimePaneTitlesByTabId = { ...s.runtimePaneTitlesByTabId }
-          for (const wId of worktreeIds) {
+          for (const wId of disposableWorktreeIds) {
             delete nextTabs[wId]
           }
           for (const tabId of killedTabIds) {
@@ -193,14 +210,14 @@ export function createRepoRemovalActions(
             delete nextRuntimePaneTitlesByTabId[tabId]
           }
           // Why: editor state is worktree-scoped; clear the repo's open files + active-file tracking so orphans don't linger in the session save.
-          const worktreeIdSet = new Set(worktreeIds)
+          const worktreeIdSet = new Set(disposableWorktreeIds)
           const removedVisitKeys = new Set(
             worktreeIds.map((worktreeId) => getWorktreeVisitKey(worktreeId, ownerHostId))
           )
           const nextOpenFiles = s.openFiles.filter((f) => !worktreeIdSet.has(f.worktreeId))
           const nextActiveFileIdByWorktree = { ...s.activeFileIdByWorktree }
           const nextActiveTabTypeByWorktree = { ...s.activeTabTypeByWorktree }
-          for (const wId of worktreeIds) {
+          for (const wId of disposableWorktreeIds) {
             delete nextActiveFileIdByWorktree[wId]
             delete nextActiveTabTypeByWorktree[wId]
           }
@@ -212,6 +229,16 @@ export function createRepoRemovalActions(
           )
           // Why: when no sibling host owns this id, drop every worktree timestamp (unhydrated SSH ones would otherwise never prune); else stay host-scoped.
           const repoIdFullyRemoved = !nextRepos.some((r) => r.id === projectId)
+          const activeHost = s.activeWorkspaceExecutionHostId ?? LOCAL_EXECUTION_HOST_ID
+          const activeProjectRemoved =
+            s.activeRepoId === projectId &&
+            (!workbench || repoIdFullyRemoved || activeHost === ownerHostId)
+          const activeSharedTreeRemoved =
+            workbench &&
+            activeProjectRemoved &&
+            s.activeWorktreeId !== null &&
+            exactSiblingIds.has(s.activeWorktreeId) &&
+            worktreeIds.includes(s.activeWorktreeId)
           let nextLastVisitedAtByWorktreeId = s.lastVisitedAtByWorktreeId
           for (const id of Object.keys(s.lastVisitedAtByWorktreeId)) {
             const rawId = getWorktreeIdFromVisitKey(id)
@@ -237,8 +264,18 @@ export function createRepoRemovalActions(
               nextRepos,
               hostId: ownerHostId
             }),
-            activeRepoId: s.activeRepoId === projectId ? null : s.activeRepoId,
-            filterRepoIds: s.filterRepoIds.filter((id) => id !== projectId),
+            activeRepoId: activeProjectRemoved ? null : s.activeRepoId,
+            filterRepoIds:
+              workbench && !repoIdFullyRemoved
+                ? s.filterRepoIds
+                : s.filterRepoIds.filter((id) => id !== projectId),
+            ...(activeSharedTreeRemoved
+              ? {
+                  activeWorktreeId: null,
+                  activeWorkspaceKey: null,
+                  activeWorkspaceExecutionHostId: null
+                }
+              : {}),
             worktreesByRepo: nextWorktrees,
             detectedWorktreesByRepo: nextDetectedWorktrees,
             tabsByWorktree: nextTabs,

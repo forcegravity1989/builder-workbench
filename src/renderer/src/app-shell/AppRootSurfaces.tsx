@@ -44,6 +44,7 @@ const AddProjectFromFolderDialog = lazy(
 )
 const ProjectAddedDialog = lazy(() => import('../components/sidebar/ProjectAddedDialog'))
 const DeleteWorktreeDialog = lazy(() => import('../components/sidebar/DeleteWorktreeDialog'))
+const RemoveFolderDialog = lazy(() => import('../components/sidebar/RemoveFolderDialog'))
 const PreservedBranchBatchReviewModal = lazy(
   () => import('../components/sidebar/PreservedBranchBatchReviewModal')
 )
@@ -315,6 +316,11 @@ export function AppRootSurfaces(props: {
         <ZoomOverlay />
       </OverlayBoundary>
       <Suspense fallback={null}>
+        {isWorkbenchShell() && activeModal === 'confirm-remove-folder' ? (
+          <ModalBoundary boundaryId="modal.remove-project" resetKey>
+            <RemoveFolderDialog />
+          </ModalBoundary>
+        ) : null}
         {activeModal === 'delete-worktree' ? (
           <ModalBoundary boundaryId="modal.delete-worktree" resetKey>
             <DeleteWorktreeDialog />

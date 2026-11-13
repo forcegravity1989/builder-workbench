@@ -229,6 +229,10 @@ jobs:
           src/renderer/src/lib/feature-education-telemetry.test.ts
           src/shared/telemetry-events-feature-education.test.ts
           src/renderer/src/components/settings/settings-setup-guide-progress.test.ts
+          src/renderer/src/components/sidebar/RemoveFolderDialog.test.tsx
+          src/renderer/src/store/slices/repos-cross-host-project-collisions.test.ts
+          src/renderer/src/store/slices/repos-host-identity-routing.test.ts
+          src/shared/git-remote-identity.test.ts
 
       - name: Test native usage protocols and account integration
         run: >-

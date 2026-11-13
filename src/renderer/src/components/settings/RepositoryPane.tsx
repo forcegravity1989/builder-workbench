@@ -25,6 +25,7 @@ import { RepositoryHostSetupsSection } from './RepositoryHostSetupsSection'
 import { RepoSettingsDraftInput } from './RepositorySettingsDraftInput'
 import { RepositoryForkSyncSection } from './RepositoryForkSyncSection'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { RepositoryWindowsRuntimeSection } from './RepositoryWindowsRuntimeSection'
 import { matchesRepositoryIdentitySearch } from './repository-identity-search'
 import { RepositoryWorktreeDefaultsSection } from './RepositoryWorktreeDefaultsSection'
@@ -84,6 +85,7 @@ export function RepositoryPane({
   updateProject
 }: RepositoryPaneProps): React.JSX.Element {
   const isFolder = isFolderRepo(repo)
+  const workbench = isWorkbenchShell()
   // Why: this pane renders the switcher-selected host's repo row. Bind every
   // edit to that host so identity/host-specific writes land on the selected
   // host, not findRepoForHost's focused-host fallback (the same-id/self-pair
@@ -141,7 +143,7 @@ export function RepositoryPane({
   )
 
   const handleRemoveProject = (repoId: string) => {
-    if (confirmingRemove === repoId) {
+    if (workbench || confirmingRemove === repoId) {
       removeProject(repoId)
       setConfirmingRemove(null)
       return
@@ -261,10 +263,14 @@ export function RepositoryPane({
               'auto.components.settings.RepositoryPane.0909e5d650',
               'Remove Project'
             )}
-            description={translate(
-              'auto.components.settings.RepositoryPane.removeProjectAllHosts',
-              'Remove this project from Orca on all configured hosts.'
-            )}
+            description={
+              workbench
+                ? '移除当前所选主机上的项目登记'
+                : translate(
+                    'auto.components.settings.RepositoryPane.removeProjectAllHosts',
+                    'Remove this project from Orca on all configured hosts.'
+                  )
+            }
             keywords={[repo.displayName, 'delete', 'project', 'repository']}
             className="absolute top-0 right-0 z-10 w-auto max-w-none"
             forceVisible={forceFullPaneForRepoMatch}

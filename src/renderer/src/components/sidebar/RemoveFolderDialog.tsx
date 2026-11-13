@@ -10,10 +10,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
+import { selectExecutionHostDisplayLabel } from '@/lib/execution-host-display-label'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   getRepoExecutionHostId,
   isRuntimeOwnedSshTargetId,
-  type ExecutionHostId
+  normalizeExecutionHostId,
+  parseExecutionHostId
 } from '../../../../shared/execution-host'
 
 // Why: interpolated into the sentence so locales control where the name sits;
@@ -29,7 +33,17 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   const isOpen = activeModal === 'confirm-remove-folder'
   const repoId = typeof modalData.repoId === 'string' ? modalData.repoId : ''
   const displayName = typeof modalData.displayName === 'string' ? modalData.displayName : ''
-  const hostId = typeof modalData.hostId === 'string' ? (modalData.hostId as ExecutionHostId) : null
+  const hostId = normalizeExecutionHostId(
+    typeof modalData.hostId === 'string' ? modalData.hostId : null
+  )
+  const workbench = isWorkbenchShell()
+  const selectedRepo = useAppStore((s) =>
+    hostId ? findRepoForHost(s.repos, repoId, { hostId }) : null
+  )
+  const hostLabel = useAppStore((s) =>
+    workbench && hostId ? selectExecutionHostDisplayLabel(s, hostId) : null
+  )
+  const targetUnavailable = workbench && !selectedRepo
 
   // Why: for an SSH project the files live on the remote host's disk, not the
   // user's — "still on your disk" would be misleading. Name the host (using the
@@ -75,14 +89,14 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   const [descriptionBeforeName, descriptionAfterName] = description.split(NAME_TOKEN)
 
   const handleConfirm = useCallback(() => {
-    if (repoId) {
+    if (repoId && !targetUnavailable) {
       void removeProject(repoId, {
         ...(hostId ? { hostId } : {}),
         errorFeedback: 'toast'
       })
     }
     closeModal()
-  }, [closeModal, hostId, removeProject, repoId])
+  }, [closeModal, hostId, removeProject, repoId, targetUnavailable])
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -101,16 +115,31 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
             {translate('auto.components.sidebar.RemoveFolderDialog.b79b39d865', 'Remove Project')}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {descriptionBeforeName}
-            <span className="break-all font-medium text-foreground">{displayName}</span>
-            {descriptionAfterName}
+            {targetUnavailable ? (
+              '项目登记已不可用，请返回项目列表确认。'
+            ) : workbench && parseExecutionHostId(hostId)?.kind === 'runtime' ? (
+              <>
+                将从该主机移除 <strong>{displayName}</strong> 的项目登记，仓库文件会保留。
+              </>
+            ) : (
+              <>
+                {descriptionBeforeName}
+                <span className="break-all font-medium text-foreground">{displayName}</span>
+                {descriptionAfterName}
+              </>
+            )}
+            {workbench && selectedRepo && hostLabel && (
+              <span className="mt-2 block break-all font-medium text-foreground">
+                {hostLabel} · {selectedRepo.path}
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {translate('auto.components.sidebar.RemoveFolderDialog.d36883e046', 'Cancel')}
           </Button>
-          <Button variant="destructive" onClick={handleConfirm}>
+          <Button variant="destructive" onClick={handleConfirm} disabled={targetUnavailable}>
             {translate('auto.components.sidebar.RemoveFolderDialog.4dc5b5065b', 'Remove')}
           </Button>
         </DialogFooter>

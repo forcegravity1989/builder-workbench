@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactNode } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../../../shared/repo-types'
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
       hostId: 'ssh:target-1'
     } as Record<string, unknown>,
     repos: [] as Repo[],
+    settings: null,
+    runtimeEnvironments: [{ id: 'peer', name: 'Peer Workbench' }],
     sshTargetLabels: new Map<string, string>(),
     removedSshTargetLabels: new Map<string, string>(),
     closeModal: vi.fn(),
@@ -70,6 +72,23 @@ describe('RemoveFolderDialog', () => {
     }
     mocks.state.sshTargetLabels = new Map([['target-1', 'Persistent host']])
     mocks.state.removedSshTargetLabels = new Map()
+  })
+
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('names the selected host and its path even when both hosts publish the same repo id', () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    mocks.state.modalData.hostId = 'runtime:peer'
+    mocks.state.repos = [
+      { ...repo(null, 'local'), path: '/local/example' },
+      { ...repo(null, 'runtime:peer'), path: '/peer/example' }
+    ]
+
+    const html = renderToStaticMarkup(<RemoveFolderDialog />)
+
+    expect(html).toContain('Peer Workbench')
+    expect(html).toContain('/peer/example')
+    expect(html).not.toContain('/local/example')
   })
 
   it('warns that VM recipe cleanup controls file deletion', () => {

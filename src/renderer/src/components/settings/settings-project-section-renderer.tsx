@@ -5,6 +5,8 @@ import { SettingsSection } from './SettingsSection'
 import { getSettingsProjectHostRepo } from './settings-project-list'
 import { translate } from '@/i18n/i18n'
 import type { SettingsRenderContext } from './settings-render-context'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { useAppStore } from '@/store'
 
 export function renderProjectSettingsSections(context: SettingsRenderContext): React.ReactNode {
   const { model, navigation, terminal, view } = context
@@ -46,7 +48,17 @@ export function renderProjectSettingsSections(context: SettingsRenderContext): R
             hooksInspectionReady={Boolean(repoHooksState)}
             mayNeedUpdate={repoHooksState?.mayNeedUpdate ?? false}
             updateRepo={model.updateRepo}
-            removeProject={() => void model.removeProjectAllHosts(settingsProject.setups)}
+            removeProject={() => {
+              if (isWorkbenchShell()) {
+                useAppStore.getState().openModal('confirm-remove-folder', {
+                  repoId: repo.id,
+                  displayName: repo.displayName,
+                  hostId: getRepoExecutionHostId(repo)
+                })
+              } else {
+                void model.removeProjectAllHosts(settingsProject.setups)
+              }
+            }}
             project={project}
             selectedProjectSetupId={model.settingsProjectSetupSelection[settingsProject.projectId]}
             isLocalWindowsProject={
