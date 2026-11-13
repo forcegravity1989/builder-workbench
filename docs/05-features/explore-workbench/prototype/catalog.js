@@ -37,6 +37,12 @@ const groups = [
   { id: 'automation', name: '自动化', items: ['F14'] },
   { id: 'agents', name: '智能体编排', items: ['F04'] }
 ]
+const featureScreens = {
+  F18: '03-milestone-draft.jpg',
+  F19: '01-project-wall.jpg',
+  F21: '02-project-card.jpg'
+}
+const guideScreens = '../../03-guide/project-direction/screens/'
 const related = {
   F01: ['F03', 'F12', 'F16'],
   F02: ['F29'],
@@ -51,42 +57,87 @@ const related = {
 }
 const journeys = [
   {
-    title: '建立项目方向与阶段安排',
-    summary: '说清想做成什么，把共同方向落到阶段成果。',
-    related: ['F21', 'F18']
+    title: '明确方向',
+    result: '让团队对齐项目方向和阶段安排。',
+    start: '已纳入 BW 的项目和一项产品想法',
+    end: '可回看的项目名片与阶段安排',
+    related: ['F19', 'F21', 'F18']
   },
   {
-    title: '确定本版承诺并开工',
-    summary: '结合上版结果与新要求，形成可以执行、可以验收的计划。',
+    title: '制定版本计划',
+    result: '把方向变成可执行、可验收的承诺。',
+    start: '项目方向、上版结果和新要求',
+    end: '团队评审后的版本目标、验收条件和任务',
     related: ['F22', 'F23', 'F02']
   },
   {
-    title: '把问题推进到可信交付',
-    summary: '从任务开始，完成必要的讨论、开发、验证和同伴检视。',
+    title: '构建交付',
+    result: '从一项任务做到可检视的交付。',
+    start: '一项待处理的问题或需求',
+    end: '经验证、检视并合入的改动',
     related: ['F02', 'F01', 'F08', 'F09', 'F24']
   },
   {
-    title: '把本版承诺验收清楚',
-    summary: '对照证据确认结果，留下结论与下一步安排。',
+    title: '验收成果',
+    result: '用证据核对本版承诺并留下结论。',
+    start: '本版承诺与实际交付证据',
+    end: '由人确认并归档的验收结论',
     related: ['F25', 'F27']
   },
   {
-    title: '用真实效果保持方向',
-    summary: '看进展与效果，发现偏差，决定后续投入。',
+    title: '查看效果',
+    result: '观察实际进展和效果，决定下一轮的调整。',
+    start: '交付结果、真实读数和当前目标',
+    end: '形成调整决定，为下一轮定方向或排计划',
     related: ['F21', 'F28', 'F22']
   },
   {
-    title: '让项目持续可维护',
-    summary: '审视项目知识、架构与技术债，决定处理或暂缓，并验证结果。',
+    title: '持续维护',
+    result: '贯穿每轮工作，及时处理知识、架构和技术债。',
+    start: '工作中发现需要维护的问题',
+    end: '有明确处理结论和验证结果的维护事项',
     building: true
   },
   {
-    title: '让下次工作少操心',
-    summary: '把真实工作中跑通的做法沉淀下来，在下次同类任务中复用并检验。',
+    title: '沉淀复用',
+    result: '贯穿每轮工作，把有效做法留给下次。',
+    start: '实际工作中验证过的做法',
+    end: '团队可在后续同类任务中复用的做法',
     building: true
   }
 ]
-let activeTab = 'feature'
+
+const steps = [
+  {
+    title: '找到项目',
+    action: '在项目墙找到已纳入的「周末书集」，打开卡片上的「项目总览」。',
+    result: '进入该项目的总览。',
+    feature: 'F19',
+    duration: 3300
+  },
+  {
+    title: '明确共同方向',
+    action: '展开项目名片，编辑愿景，查看提交评审的改动摘要。',
+    result: '在提交前核对这次拟修改的项目愿景。',
+    feature: 'F21',
+    duration: 9800
+  },
+  {
+    title: '安排阶段成果',
+    action: '在「规划里程碑」添加阶段成果和日期，调整特性排期。',
+    result: '草稿保存在本机，可继续规划。',
+    feature: 'F18',
+    duration: 3600
+  },
+  {
+    title: '评审并更新',
+    action: '核对变更并提交评审，由队友评审合入后更新。',
+    result: '从项目总览回看正式的名片和阶段安排。',
+    feature: 'F18',
+    duration: 3800
+  }
+]
+let activeTab = 'work'
 let groupId = 'execution'
 let featureId = 'F01'
 let journeyIndex = 0
@@ -105,7 +156,170 @@ function relatedMarkup(ids = []) {
   return `<section class="related"><h3>相关功能与操作</h3><div class="related-list">${ids.map((id) => `<button class="related-item" type="button" data-related="${id}">${html(features[id][0])}</button>`).join('')}</div></section>`
 }
 
+let activeStep = 0
+let time = 0
+let playback = null
+let pausedMode = null
+let frameId = 0
+let lastFrame
+let charter
+
+function directoryMarkup() {
+  const rows = (entries, offset = 0) =>
+    entries
+      .map(({ title, building }, index) => {
+        const id = offset + index
+        return `<li><button class="journey" type="button" data-journey="${id}" aria-current="${id === journeyIndex}"><span class="journey-title">${html(title)}</span>${building ? '<span class="building-label">建设中</span>' : ''}</button></li>`
+      })
+      .join('')
+  return `<ol class="journey-chain" aria-label="核心工作旅程">${rows(journeys.slice(0, 5))}</ol>
+    <button class="next-round" type="button" data-journey="0" aria-label="调整下一轮，回到明确方向">↺ <span>调整下一轮</span></button>
+    <h2 class="catalog-heading">贯穿每一轮</h2>
+    <ul class="journey-support">${rows(journeys.slice(5), 5)}</ul>`
+}
+
+function journeyHeading(journey) {
+  return `<header class="journey-heading">
+    <h2>${html(journey.title)}</h2>
+    <p>${html(journey.result)}</p>
+    <dl class="journey-outcomes">
+      <div><dt>起点</dt><dd>${html(journey.start)}</dd></div>
+      <div><dt>结果</dt><dd>${html(journey.end)}</dd></div>
+    </dl>
+  </header>`
+}
+
+function walkthroughMarkup() {
+  return `<div class="walkthrough">
+    <ol class="step-flow" aria-label="旅程步骤">
+      ${steps
+        .map(
+          (step, index) => `<li><button class="step-card" type="button" data-step="${index}">
+        <span class="step-index" aria-hidden="true">${index + 1}</span><span>${html(step.title)}</span>
+      </button></li>`
+        )
+        .join('')}
+    </ol>
+    <section class="current-demo" aria-labelledby="demo-title">
+      <header class="demo-heading">
+        <div><h3 id="demo-title" aria-live="polite"></h3><p id="demo-description"></p></div>
+        <div class="demo-controls">
+          <button class="btn btn-primary" type="button" id="play-sequence">顺序播放</button>
+          <button class="btn btn-secondary" type="button" id="replay-sequence">从头重播</button>
+          <button class="btn btn-ghost" type="button" id="replay-clip">播放片段</button>
+        </div>
+      </header>
+      <div id="demo-scene" class="demo-scene"></div>
+      <footer class="demo-caption">
+        <div id="demo-result"></div><span class="demo-source" id="demo-source" hidden>模拟演示 · 团队仓已连接代码托管</span>
+      </footer>
+    </section>
+  </div>`
+}
+
+function updatePlayControls() {
+  const play = document.querySelector('#play-sequence')
+  if (!play) {
+    return
+  }
+  play.textContent = playback
+    ? '暂停'
+    : time > 0 && time < steps[activeStep].duration
+      ? '继续播放'
+      : '顺序播放'
+  const clip = document.querySelector('#replay-clip')
+  clip.hidden = activeStep !== 1
+  clip.textContent = playback || time > 0 ? '重播片段' : '播放片段'
+}
+
+function showStep() {
+  const step = steps[activeStep]
+  content
+    .querySelectorAll('[data-step]')
+    .forEach((button) =>
+      button.setAttribute('aria-current', String(Number(button.dataset.step) === activeStep))
+    )
+  document.querySelector('#demo-title').textContent = step.title
+  document.querySelector('#demo-description').textContent = step.action
+  document.querySelector('#demo-result').textContent = step.result
+  document.querySelector('#demo-source').hidden = activeStep !== 1
+  charter?.unmount()
+  charter = null
+  const scene = document.querySelector('#demo-scene')
+  if (activeStep === 1) {
+    scene.innerHTML = '<div id="charter-scene"></div>'
+    charter = window.createCharterPreview(document.querySelector('#charter-scene'))
+    charter.render(time)
+  } else {
+    scene.innerHTML = `<div class="step-reference"><strong>演示待接入</strong>
+      <button class="related-item" type="button" data-related="${step.feature}">查看现有${html(features[step.feature][0])}介绍</button></div>`
+  }
+  updatePlayControls()
+}
+
+function pause() {
+  cancelAnimationFrame(frameId)
+  if (playback) {
+    pausedMode = playback
+  }
+  playback = null
+  lastFrame = undefined
+  updatePlayControls()
+}
+
+function advance(now) {
+  if (!playback) {
+    return
+  }
+  if (lastFrame !== undefined) {
+    time += now - lastFrame
+  }
+  lastFrame = now
+  const duration = steps[activeStep].duration
+  if (time >= duration) {
+    time = duration
+    charter?.render(time)
+    if (playback === 'clip' || activeStep === steps.length - 1) {
+      pause()
+      pausedMode = null
+      return
+    }
+    activeStep += 1
+    time = 0
+    showStep()
+  } else {
+    charter?.render(time)
+  }
+  frameId = requestAnimationFrame(advance)
+}
+
+function play(mode) {
+  pause()
+  playback = mode
+  pausedMode = null
+  updatePlayControls()
+  frameId = requestAnimationFrame(advance)
+}
+
+function selectStep(index) {
+  pause()
+  pausedMode = null
+  content.scrollTop = 0
+  activeStep = index
+  time = 0
+  showStep()
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    pause()
+  }
+})
+
 function render() {
+  pause()
+  charter?.unmount()
+  charter = null
   document.querySelectorAll('[data-tab]').forEach((button) => {
     const selected = button.dataset.tab === activeTab
     button.setAttribute('aria-selected', String(selected))
@@ -117,20 +331,29 @@ function render() {
     catalog.innerHTML = groups
       .map(
         (group) =>
-          `<div class="group"><button class="group-button" type="button" data-group="${group.id}" aria-expanded="${group.id === groupId}">${html(group.name)}<span class="chevron" aria-hidden="true">${group.id === groupId ? '⌄' : '›'}</span></button>${group.id === groupId ? `<div class="children">${group.items.map((id) => `<button type="button" class="item" data-feature="${id}" aria-current="${id === featureId}"><span class="item-name">${html(features[id][0])}</span>${features[id][2] ? '' : '<span class="mini-state">准备中</span>'}</button>`).join('')}</div>` : ''}</div>`
+          `<div class="group"><button class="group-button" type="button" data-group="${group.id}" aria-expanded="${group.id === groupId}">${html(group.name)}<span class="chevron" aria-hidden="true">${group.id === groupId ? '⌄' : '›'}</span></button>${group.id === groupId ? `<div class="children">${group.items.map((id) => `<button type="button" class="item" data-feature="${id}" aria-current="${id === featureId}"><span class="item-name">${html(features[id][0])}</span>${features[id][2] || featureScreens[id] ? '' : '<span class="mini-state">准备中</span>'}</button>`).join('')}</div>` : ''}</div>`
       )
       .join('')
     const [title, description, available] = features[featureId]
-    content.innerHTML = `<header class="content-heading"><span class="badge">${available ? '已有演示' : '内容准备中'}</span><h2>${html(title)}</h2><p>${html(description)}</p></header>${available ? `<div class="stage"><strong>现有${html(title)}演示</strong><p>原型仅标示内容所在位置。</p><p class="annotation">沿用现有正文与动画，本轮不重画。</p></div>` : ''}${relatedMarkup(related[featureId])}`
+    const screen = featureScreens[featureId]
+    const status = screen ? '现有截图介绍' : available ? '已有演示' : '内容准备中'
+    const preview = screen
+      ? `<figure class="feature-reference"><img src="${guideScreens}${screen}" alt="${html(title)}的现有截图"></figure>`
+      : available
+        ? `<div class="stage"><strong>现有${html(title)}演示</strong><p>沿用探索 BW 中的演示。</p></div>`
+        : ''
+    content.innerHTML = `<header class="content-heading"><span class="badge">${status}</span><h2>${html(title)}</h2><p>${html(description)}</p></header>${preview}${relatedMarkup(related[featureId])}`
   } else {
-    catalog.innerHTML = journeys
-      .map(
-        (journey, index) =>
-          `<button class="journey" type="button" data-journey="${index}" aria-current="${index === journeyIndex}"><span class="journey-number" aria-hidden="true">${index + 1}</span><span class="journey-copy">${html(journey.title)}${journey.building ? '<span class="mini-state">建设中</span>' : ''}</span></button>`
-      )
-      .join('')
+    catalog.innerHTML = directoryMarkup()
     const journey = journeys[journeyIndex]
-    content.innerHTML = `<header class="content-heading"><span class="badge">${journey.building ? '建设中' : '内容准备中'}</span><h2>${html(journey.title)}</h2><p>${html(journey.summary)}</p></header>${relatedMarkup(journey.related)}`
+    const status = journey.building ? '' : '<p class="journey-status">内容准备中</p>'
+    content.innerHTML =
+      journeyHeading(journey) +
+      (journeyIndex === 0 ? walkthroughMarkup() : status) +
+      relatedMarkup(journey.related)
+    if (journeyIndex === 0) {
+      showStep()
+    }
   }
   content.scrollTop = 0
 }
@@ -154,13 +377,34 @@ document.addEventListener('click', (event) => {
     catalog.querySelector(`[data-feature="${featureId}"]`).focus({ preventScroll: true })
   } else if (button.dataset.journey !== undefined) {
     journeyIndex = Number(button.dataset.journey)
+    activeStep = 0
+    time = 0
+    pausedMode = null
     render()
     catalog.querySelector(`[data-journey="${journeyIndex}"]`).focus({ preventScroll: true })
+  } else if (button.dataset.step !== undefined) {
+    selectStep(Number(button.dataset.step))
+  } else if (button.id === 'play-sequence') {
+    if (playback) {
+      pause()
+    } else {
+      if (time >= steps[activeStep].duration) {
+        selectStep(activeStep === steps.length - 1 ? 0 : activeStep)
+      }
+      play(pausedMode ?? 'sequence')
+    }
+  } else if (button.id === 'replay-sequence') {
+    selectStep(0)
+    play('sequence')
+  } else if (button.id === 'replay-clip') {
+    selectStep(1)
+    play('clip')
   } else if (button.dataset.related) {
     activeTab = 'feature'
     featureId = button.dataset.related
     groupId = groups.find((group) => group.items.includes(featureId))?.id ?? groupId
     render()
+    document.querySelector('#tab-feature').focus({ preventScroll: true })
   }
 })
 document.querySelectorAll('[data-tab]').forEach((button) =>
@@ -182,6 +426,7 @@ document.querySelectorAll('[data-tab]').forEach((button) =>
   })
 )
 function closeExplore() {
+  pause()
   document.querySelector('#explore').hidden = true
   document.querySelector('#closed').hidden = false
   document.querySelector('#reopen').focus()
@@ -196,6 +441,7 @@ document.addEventListener('keydown', (event) => {
 document.querySelector('#reopen').addEventListener('click', () => {
   document.querySelector('#closed').hidden = true
   document.querySelector('#explore').hidden = false
+  render()
   document.querySelector(`#tab-${activeTab}`).focus()
 })
 document.querySelector('#theme-toggle').addEventListener('click', (event) => {

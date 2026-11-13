@@ -4,15 +4,15 @@
 > **职责与结构**：记录意图/规格的认可边界和六环状态；实现进度与运行记录归 Issue/PR，不把原型当作产品验收。
 > **更新触发**：用户确认设计，或实现与适用验证证据变化时更新。
 
-状态：`building`。用户已认可七条旅程、功能筛选、布局及「内容准备中／建设中」的显示方式。工作见 [#634](https://github.com/forcegravity1989/builder-workbench/issues/634)。
+现有探索框架沿 [#634](https://github.com/forcegravity1989/builder-workbench/issues/634)。W01 调整处于 `in_review`，已对齐目录与动画方向，[可点原型](prototype.html)的布局、播放行为和名片片段待用户确认。
 
 | 环 | 状态 | 依据与边界 |
 |---|---|---|
 | 意图 | ● | [意图正文](intent.md)已确认，后续逐项填充内容 |
-| 规格 | ● | [规格](spec.md)与[原型](prototype.html)已确认，空内容保留标题和简介 |
+| 规格 | ◐ | [规格](spec.md)与[可点原型](prototype.html)待确认本轮交互；既有探索布局已有认可 |
 | 实现设计 | ● | BW 目录复用原生演示的选择、正文与配置卡 |
 | 单测 | — | 目录交互由真实 Electron 验收覆盖 |
 | 验收点 E2E | ◐ | Windows 真壳已核对入口、目录切换、内容状态、关联入口与回看 |
 | 用户旅程 E2E | ◐ | Windows 真壳走通帮助到工作区和浏览器演示，远端用例见交付记录 |
 
-W01「建立项目方向与阶段安排」在已认可的右侧内容区提供四步截图，并关联项目墙、项目总览和项目里程碑。各入口证据见[探索 BW 矩阵](../../04-design-system/guidance.md#探索-bw-矩阵)及[用户指南](../../03-guide/project-direction/README.md)。
+[PR #640](https://github.com/forcegravity1989/builder-workbench/pull/640)的既有四步截图、三项关联和 Windows 本机证据见[探索 BW 矩阵](../../04-design-system/guidance.md#探索-bw-矩阵)及[用户指南](../../03-guide/project-direction/README.md)。新目录、四步播放与局部动画当前覆盖原型，生产入口与真实业务按矩阵分别验收。
