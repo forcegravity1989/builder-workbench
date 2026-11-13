@@ -58,49 +58,42 @@ const related = {
 const journeys = [
   {
     title: '明确方向',
-    result: '让团队对齐项目方向和阶段安排。',
     start: '已纳入 BW 的项目和一项产品想法',
     end: '可回看的项目名片与阶段安排',
     related: ['F19', 'F21', 'F18']
   },
   {
     title: '制定版本计划',
-    result: '把方向变成可执行、可验收的承诺。',
     start: '项目方向、上版结果和新要求',
     end: '团队评审后的版本目标、验收条件和任务',
     related: ['F22', 'F23', 'F02']
   },
   {
     title: '构建交付',
-    result: '从一项任务做到可检视的交付。',
     start: '一项待处理的问题或需求',
     end: '经验证、检视并合入的改动',
     related: ['F02', 'F01', 'F08', 'F09', 'F24']
   },
   {
     title: '验收成果',
-    result: '用证据核对本版承诺并留下结论。',
     start: '本版承诺与实际交付证据',
     end: '由人确认并归档的验收结论',
     related: ['F25', 'F27']
   },
   {
     title: '查看效果',
-    result: '观察实际进展和效果，决定下一轮的调整。',
     start: '交付结果、真实读数和当前目标',
     end: '形成调整决定，为下一轮定方向或排计划',
     related: ['F21', 'F28', 'F22']
   },
   {
     title: '持续维护',
-    result: '贯穿每轮工作，及时处理知识、架构和技术债。',
     start: '工作中发现需要维护的问题',
     end: '有明确处理结论和验证结果的维护事项',
     building: true
   },
   {
     title: '沉淀复用',
-    result: '贯穿每轮工作，把有效做法留给下次。',
     start: '实际工作中验证过的做法',
     end: '团队可在后续同类任务中复用的做法',
     building: true
@@ -110,30 +103,22 @@ const journeys = [
 const steps = [
   {
     title: '找到项目',
-    action: '在项目墙找到已纳入的「周末书集」，打开卡片上的「项目总览」。',
-    result: '进入该项目的总览。',
-    feature: 'F19',
+    action: '在项目墙打开「周末书集」的项目总览。',
     duration: 3300
   },
   {
     title: '明确共同方向',
-    action: '展开项目名片，编辑愿景，查看提交评审的改动摘要。',
-    result: '在提交前核对这次拟修改的项目愿景。',
-    feature: 'F21',
+    action: '编辑愿景，核对提交摘要。',
     duration: 9800
   },
   {
     title: '安排阶段成果',
-    action: '在「规划里程碑」添加阶段成果和日期，调整特性排期。',
-    result: '草稿保存在本机，可继续规划。',
-    feature: 'F18',
+    action: '添加阶段成果与日期，调整特性排期。',
     duration: 3600
   },
   {
     title: '评审并更新',
-    action: '核对变更并提交评审，由队友评审合入后更新。',
-    result: '从项目总览回看正式的名片和阶段安排。',
-    feature: 'F18',
+    action: '核对改动，评审合入后更新正式安排。',
     duration: 3800
   }
 ]
@@ -149,11 +134,11 @@ const html = (value) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
   )
 
-function relatedMarkup(ids = []) {
+function relatedMarkup(ids = [], compact = false) {
   if (!ids.length) {
     return ''
   }
-  return `<section class="related"><h3>相关功能与操作</h3><div class="related-list">${ids.map((id) => `<button class="related-item" type="button" data-related="${id}">${html(features[id][0])}</button>`).join('')}</div></section>`
+  return `<section class="related" aria-label="相关功能">${compact ? '' : '<h3>相关功能</h3>'}<div class="related-list">${ids.map((id) => `<button class="related-item" type="button" data-related="${id}">${html(features[id][0])}</button>`).join('')}</div></section>`
 }
 
 let activeStep = 0
@@ -181,7 +166,6 @@ function directoryMarkup() {
 function journeyHeading(journey) {
   return `<header class="journey-heading">
     <h2>${html(journey.title)}</h2>
-    <p>${html(journey.result)}</p>
     <dl class="journey-outcomes">
       <div><dt>起点</dt><dd>${html(journey.start)}</dd></div>
       <div><dt>结果</dt><dd>${html(journey.end)}</dd></div>
@@ -202,7 +186,7 @@ function walkthroughMarkup() {
     </ol>
     <section class="current-demo" aria-labelledby="demo-title">
       <header class="demo-heading">
-        <div><h3 id="demo-title" aria-live="polite"></h3><p id="demo-description"></p></div>
+        <h3 class="visually-hidden" id="demo-title" aria-live="polite"></h3><p id="demo-description"></p>
         <div class="demo-controls">
           <button class="btn btn-primary" type="button" id="play-sequence">顺序播放</button>
           <button class="btn btn-secondary" type="button" id="replay-sequence">从头重播</button>
@@ -211,13 +195,23 @@ function walkthroughMarkup() {
       </header>
       <div id="demo-scene" class="demo-scene"></div>
       <footer class="demo-caption">
-        <div id="demo-result"></div><span class="demo-source" id="demo-source" hidden>模拟演示 · 团队仓已连接代码托管</span>
+        <span class="demo-source" id="demo-source">模拟演示 · 团队仓已连接代码托管</span>
       </footer>
     </section>
   </div>`
 }
 
 function updatePlayControls() {
+  const featurePlay = document.querySelector('#play-feature')
+  if (featurePlay) {
+    featurePlay.textContent = playback
+      ? '暂停'
+      : time >= steps[1].duration
+        ? '重播片段'
+        : time > 0
+          ? '继续播放'
+          : '播放片段'
+  }
   const play = document.querySelector('#play-sequence')
   if (!play) {
     return
@@ -241,20 +235,21 @@ function showStep() {
     )
   document.querySelector('#demo-title').textContent = step.title
   document.querySelector('#demo-description').textContent = step.action
-  document.querySelector('#demo-result').textContent = step.result
-  document.querySelector('#demo-source').hidden = activeStep !== 1
+  document.querySelector('#demo-source').parentElement.hidden = activeStep !== 1
   charter?.unmount()
   charter = null
   const scene = document.querySelector('#demo-scene')
   if (activeStep === 1) {
-    scene.innerHTML = '<div id="charter-scene"></div>'
-    charter = window.createCharterPreview(document.querySelector('#charter-scene'))
-    charter.render(time)
+    mountCharter(scene)
   } else {
-    scene.innerHTML = `<div class="step-reference"><strong>演示待接入</strong>
-      <button class="related-item" type="button" data-related="${step.feature}">查看现有${html(features[step.feature][0])}介绍</button></div>`
+    scene.innerHTML = '<div class="step-reference">演示待接入</div>'
   }
   updatePlayControls()
+}
+
+function mountCharter(scene) {
+  charter = window.createCharterPreview(scene)
+  charter.render(time)
 }
 
 function pause() {
@@ -275,7 +270,7 @@ function advance(now) {
     time += now - lastFrame
   }
   lastFrame = now
-  const duration = steps[activeStep].duration
+  const duration = steps[activeTab === 'feature' ? 1 : activeStep].duration
   if (time >= duration) {
     time = duration
     charter?.render(time)
@@ -316,6 +311,16 @@ document.addEventListener('visibilitychange', () => {
   }
 })
 
+function switchTab(tab) {
+  if (activeTab === tab) {
+    return
+  }
+  pause()
+  time = 0
+  pausedMode = null
+  activeTab = tab
+}
+
 function render() {
   pause()
   charter?.unmount()
@@ -328,6 +333,8 @@ function render() {
   document.querySelector('#explore-body').setAttribute('aria-labelledby', `tab-${activeTab}`)
   catalog.setAttribute('aria-label', activeTab === 'feature' ? '功能目录' : '工作旅程目录')
   if (activeTab === 'feature') {
+    time = 0
+    pausedMode = null
     catalog.innerHTML = groups
       .map(
         (group) =>
@@ -336,13 +343,25 @@ function render() {
       .join('')
     const [title, description, available] = features[featureId]
     const screen = featureScreens[featureId]
-    const status = screen ? '现有截图介绍' : available ? '已有演示' : '内容准备中'
+    const status = screen ? '动画待接入' : available ? '已有演示' : '内容准备中'
     const preview = screen
       ? `<figure class="feature-reference"><img src="${guideScreens}${screen}" alt="${html(title)}的现有截图"></figure>`
       : available
         ? `<div class="stage"><strong>现有${html(title)}演示</strong><p>沿用探索 BW 中的演示。</p></div>`
         : ''
-    content.innerHTML = `<header class="content-heading"><span class="badge">${status}</span><h2>${html(title)}</h2><p>${html(description)}</p></header>${preview}${relatedMarkup(related[featureId])}`
+    if (featureId === 'F21') {
+      content.innerHTML = `<header class="journey-heading"><h2>项目总览</h2></header>
+        <section class="current-demo feature-demo" aria-label="名片编辑演示">
+          <header class="demo-heading"><p>${html(steps[1].action)}</p>
+            <button class="btn btn-primary" type="button" id="play-feature">播放片段</button>
+          </header>
+          <div class="demo-scene" id="feature-charter"></div>
+          <footer class="demo-caption"><span class="demo-source">模拟演示 · 团队仓已连接代码托管</span></footer>
+        </section>`
+      mountCharter(document.querySelector('#feature-charter'))
+    } else {
+      content.innerHTML = `<header class="content-heading"><span class="badge">${status}</span><h2>${html(title)}</h2><p>${html(description)}</p></header>${preview}${relatedMarkup(related[featureId])}`
+    }
   } else {
     catalog.innerHTML = directoryMarkup()
     const journey = journeys[journeyIndex]
@@ -350,7 +369,7 @@ function render() {
     content.innerHTML =
       journeyHeading(journey) +
       (journeyIndex === 0 ? walkthroughMarkup() : status) +
-      relatedMarkup(journey.related)
+      relatedMarkup(journey.related, journeyIndex === 0)
     if (journeyIndex === 0) {
       showStep()
     }
@@ -364,7 +383,7 @@ document.addEventListener('click', (event) => {
     return
   }
   if (button.dataset.tab) {
-    activeTab = button.dataset.tab
+    switchTab(button.dataset.tab)
     render()
   } else if (button.dataset.group) {
     groupId = button.dataset.group
@@ -384,6 +403,17 @@ document.addEventListener('click', (event) => {
     catalog.querySelector(`[data-journey="${journeyIndex}"]`).focus({ preventScroll: true })
   } else if (button.dataset.step !== undefined) {
     selectStep(Number(button.dataset.step))
+  } else if (button.id === 'play-feature') {
+    if (playback) {
+      pause()
+    } else {
+      if (time >= steps[1].duration) {
+        time = 0
+        charter.unmount()
+        mountCharter(document.querySelector('#feature-charter'))
+      }
+      play('clip')
+    }
   } else if (button.id === 'play-sequence') {
     if (playback) {
       pause()
@@ -400,7 +430,7 @@ document.addEventListener('click', (event) => {
     selectStep(1)
     play('clip')
   } else if (button.dataset.related) {
-    activeTab = 'feature'
+    switchTab('feature')
     featureId = button.dataset.related
     groupId = groups.find((group) => group.items.includes(featureId))?.id ?? groupId
     render()
@@ -413,7 +443,7 @@ document.querySelectorAll('[data-tab]').forEach((button) =>
       return
     }
     event.preventDefault()
-    activeTab =
+    const tab =
       event.key === 'Home'
         ? 'work'
         : event.key === 'End'
@@ -421,6 +451,7 @@ document.querySelectorAll('[data-tab]').forEach((button) =>
           : activeTab === 'work'
             ? 'feature'
             : 'work'
+    switchTab(tab)
     render()
     document.querySelector(`#tab-${activeTab}`).focus()
   })

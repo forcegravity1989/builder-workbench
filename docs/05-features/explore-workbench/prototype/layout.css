@@ -376,11 +376,6 @@ button {
   font-weight: 650;
   line-height: 1.3;
 }
-.journey-heading p {
-  margin: 4px 0 8px;
-  color: var(--muted-foreground);
-  font-size: 13px;
-}
 .journey-outcomes {
   margin: 0;
   display: flex;
@@ -476,10 +471,6 @@ button {
   padding: 7px 12px;
   gap: 10px;
 }
-.demo-heading h3 {
-  font-size: 14px;
-  margin: 0 0 2px;
-}
 .demo-heading p {
   font-size: 12px;
   margin: 0;
@@ -506,9 +497,6 @@ button {
   border-top: 1px solid var(--border);
   font-size: 12px;
 }
-.demo-caption #demo-result {
-  color: var(--muted-foreground);
-}
 .demo-scene {
   position: relative;
   min-height: 258px;
@@ -527,23 +515,9 @@ button {
   gap: 9px;
   padding: 15px max(18px, 6%);
 }
-.step-reference strong {
-  font-size: 18px;
-  font-weight: 620;
-}
-.step-reference p {
-  margin: 0;
-  font-size: 13px;
-}
-.step-reference .related-item {
-  margin-top: 4px;
-}
 .walkthrough + .related {
   max-width: none;
   margin-top: 10px;
-}
-.walkthrough + .related h3 {
-  margin-bottom: 5px;
 }
 .walkthrough + .related .related-item {
   padding: 3px 8px;
@@ -766,4 +740,32 @@ button {
   height: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.journey-outcomes {
+  margin-top: 6px;
+}
+.demo-heading {
+  align-items: center;
+}
+.demo-heading #play-feature {
+  font-size: 11px;
+  min-height: 27px;
+  padding: 3px 8px;
+  flex: none;
+}
+.feature-demo {
+  margin-top: 10px;
+}
+.step-reference {
+  justify-items: center;
+  color: var(--muted-foreground);
+  font-size: 13px;
 }
