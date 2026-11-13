@@ -17774,6 +17774,7 @@
   },
   "guidance": {
     "planning": {
+      "taskHelp": "Task help",
       "version": {
         "title": "Choose the version",
         "body": "Start the plan and review any carryovers. The first version has no prior results."

@@ -51,6 +51,7 @@ export function TaskPageSourceBar({
     handleLinearTeamSelectionChange,
     handleLinearScopeOpen
   } = model
+  const taskHelp = translate('guidance.planning.taskHelp', 'Task help')
   return (
     <div className="flex items-center justify-between gap-2">
       <div
@@ -82,13 +83,13 @@ export function TaskPageSourceBar({
                 variant="ghost"
                 size="icon"
                 className="size-7"
-                aria-label="任务帮助"
+                aria-label={taskHelp}
                 onClick={() => replayWorkbenchGuide('tasks')}
               >
                 <CircleHelp className="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>任务帮助</TooltipContent>
+            <TooltipContent>{taskHelp}</TooltipContent>
           </Tooltip>
         )}
         {visibleSourceOptions.map((source) => {

@@ -14909,6 +14909,7 @@
   },
   "guidance": {
     "planning": {
+      "taskHelp": "任务帮助",
       "version": {
         "title": "确定规划哪一版",
         "body": "打开本版计划，核对上版遗留。首版直接开始。"
