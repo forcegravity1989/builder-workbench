@@ -13,7 +13,11 @@ export function PlanningStartCard({
     <div className="vc-start-card">
       <div className="vc-start-line">
         <p>{version ? `${version} ` : ''}计划尚未开始</p>
-        <BoardActionButton disabled={busy} onClick={onStart}>
+        <BoardActionButton
+          data-contextual-tour-target="workbench-plan-start"
+          disabled={busy}
+          onClick={onStart}
+        >
           {busy ? '正在打开会话…' : '开始计划'}
         </BoardActionButton>
       </div>

@@ -7,7 +7,7 @@ import {
   type MouseEvent as ReactMouseEvent
 } from 'react'
 import { toast } from 'sonner'
-import { MessageSquarePlus } from 'lucide-react'
+import { CircleHelp, MessageSquarePlus } from 'lucide-react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
@@ -16,7 +16,8 @@ import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
-import { BoardActionButton } from '../board-ui'
+import { BoardActionButton, BoardIconButton } from '../board-ui'
+import { replayWorkbenchGuide, useWorkbenchScreenGuide } from '../WorkbenchScreenGuide'
 import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
@@ -169,6 +170,15 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     entry,
     material
   })
+  const guideReady =
+    !selecting &&
+    !material.busy &&
+    (!context.version || plan?.version === context.version || Boolean(material.error)) &&
+    !context.syncing &&
+    !entry.busy &&
+    (!started || Boolean(plan)) &&
+    !annotations.annotating
+  useWorkbenchScreenGuide('workbench-plan', guideReady)
   const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
   // Why: same gate as the header entry button below — the chord must not exist
   // on surfaces where the button does not render.
@@ -279,6 +289,15 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             await material.refresh()
             await prStatus.refresh()
           })
+        }
+        helpEntry={
+          <BoardIconButton
+            label="版本计划帮助"
+            disabled={!guideReady}
+            onClick={() => replayWorkbenchGuide('workbench-plan')}
+          >
+            <CircleHelp size={15} aria-hidden="true" />
+          </BoardIconButton>
         }
         annotateEntry={
           // 计划未建时无目标可批注，不渲染入口（spec 会议纪要条款）。

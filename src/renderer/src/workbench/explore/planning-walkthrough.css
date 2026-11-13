@@ -1,0 +1,42 @@
+.planning-demo {
+  width: min(100%, 620px);
+  padding: 14px 16px;
+}
+
+.planning-demo-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.planning-demo-header h4,
+.planning-demo-composer h4 {
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.planning-demo .g3-goal,
+.planning-demo .g3-context,
+.planning-demo .g3-archive {
+  margin: 0;
+}
+
+.planning-demo-task-focus .g3-goal-body > :is(.g3-goal-meta, .g3-commitment) {
+  display: none;
+}
+
+.planning-demo-composer {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.planning-demo-composer label {
+  display: grid;
+  gap: 4px;
+}

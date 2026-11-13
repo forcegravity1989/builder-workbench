@@ -21,7 +21,10 @@ const rowClassName = 'h-auto min-h-9 w-full justify-start whitespace-normal text
 const featureGuides: Partial<Record<ExploreFeatureId, WorkbenchGuideId>> = {
   'project-wall': 'workbench-wall',
   'project-overview': 'workbench-overview',
-  milestones: 'workbench-milestones'
+  milestones: 'workbench-milestones',
+  'version-planning': 'workbench-plan',
+  'version-navigation': 'workbench-versions',
+  tasks: 'tasks'
 }
 
 export function BwExploreLayout({
@@ -168,7 +171,10 @@ export function BwExploreLayout({
             className="scrollbar-sleek min-h-0 min-w-0 overflow-auto outline-none"
             key={featureId}
           >
-            {feature.demo ? demo : <ExploreContent entry={feature} status={labels.preparing} />}
+            {(!feature.demo || feature.content) && (
+              <ExploreContent entry={feature} status={labels.preparing} />
+            )}
+            {feature.demo && demo}
             {guide && (
               <div className="mx-auto max-w-[940px] px-4 pt-3 sm:px-6">
                 <Button

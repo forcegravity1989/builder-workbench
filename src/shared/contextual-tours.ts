@@ -12,6 +12,8 @@ export type ContextualTourId =
   | 'workbench-wall'
   | 'workbench-overview'
   | 'workbench-milestones'
+  | 'workbench-plan'
+  | 'workbench-versions'
 
 export type ContextualTourStepControl = {
   kind: 'auto-rename-branch-from-work'
@@ -295,6 +297,53 @@ export const CONTEXTUAL_TOURS = [
         title: '提交评审',
         body: '草稿保存在本机。提交评审，合入后更新正式安排。',
         targetSelector: '[data-contextual-tour-target~="milestone-submit"]'
+      }
+    ]
+  },
+  {
+    id: 'workbench-plan',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-plan-start',
+        title: '继续这版计划',
+        body: '尚未开始时，打开计划会话并发送草稿。已有计划可从本版目标继续。',
+        targetSelector:
+          '[data-contextual-tour-target="workbench-plan-start"], [data-contextual-tour-target="workbench-plan-goals"]',
+        requiredForStart: true,
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-plan-issues',
+        title: '把目标落成任务',
+        body: '展开目标，点「拆解 Issue」，与计划助手核对要纳入的任务。',
+        targetSelector: '[data-contextual-tour-target="workbench-plan-issues"]'
+      },
+      {
+        id: 'workbench-plan-archive',
+        title: '评审后归档',
+        body: '在计划会话中发起归档。评审与合入进度可从「归档 PR」查看。',
+        targetSelector: '[data-contextual-tour-target="workbench-plan-archive"]'
+      }
+    ]
+  },
+  {
+    id: 'workbench-versions',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-versions-start',
+        title: '找到这版的工作区',
+        body: '展开已有版本，或用加号新建。只有里程碑排期时，用同一版本名新建。',
+        targetSelector: '[data-contextual-tour-target="workbench-versions-start"]',
+        requiredForStart: true,
+        preferredPlacement: 'right'
+      },
+      {
+        id: 'workbench-versions-plan',
+        title: '继续计划与会话',
+        body: '点「计划」回到本版材料，展开计划行可找回原生会话。',
+        targetSelector: '[data-contextual-tour-target="workbench-versions-plan"]'
       }
     ]
   }

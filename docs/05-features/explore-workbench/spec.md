@@ -45,6 +45,10 @@
 
 [动画源码](prototype/charter-demo.jsx)采用 Orca [局部界面演示](../../../src/renderer/src/components/feature-wall/BrowserStoryboardWindow.tsx)的 React 分阶段渲染、光标和点击波纹方式，复用仓内原型 React 运行时与设计 token。运行 `node docs/05-features/explore-workbench/prototype/build-charter-demo.mjs` 更新可离线打开的脚本。
 
+### W02 制定版本计划
+
+沿用 W01 的步骤卡、演示区和播放控制。五步是「确定规划哪一版 → 定目标与验收标准 → 把目标落成任务 → 评审并归档 → 从计划开工」。样例沿用「周末书集」，从已有版本的计划入口开始，说明首版可以直接规划，示意评审合入后从一条 Issue 进入执行工作区。计划、任务管理与版本会话各复用对应片段。里程碑继续沿用 W01。业务步骤和状态见[版本计划规格](../version-planning/spec.md)。
+
 ### 内容逐项接入
 
 目录、摘要、真实可用的内容、关联功能及指南按内容项接入；具体实现优先扩展当前目录与渲染组件。只有内容实际存在且完成适用验证，才展示相应查看、体验或指南动作，并更新矩阵对应格。

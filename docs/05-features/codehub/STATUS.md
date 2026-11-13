@@ -25,7 +25,7 @@
 | C04 无草稿 / 无 Mark ready | ◐ | HostedReview 创建与状态动作 | 组件测试使用模拟；未看真实 MR |
 | C05 未安装 CLI | ◐ | 预检报 `{ installed, authenticated }`（#323 起与 `gh` 同口径） | `preflight-host-cli-status.test.ts` 锁定探测顺序 |
 | C06 周期里按项目路径打开 | ◐ | `src/renderer/src/workbench/task-port.ts` | `task-port.test.ts`；未从计划屏点进真实详情 |
-| C07 归档保持未知 | ◐ | `src/main/workbench/archive-pr-status.ts`（CodeHub/非 GitHub 一律 unknown；2026-10-13 起原 archive-source-gap/archive-port 接缝已随合入证明链退役删除） | 未在 CodeHub 仓库上看见未知原因 |
+| C07 归档 MR 状态 | ◐ | 本机路径按项目身份核对并读取 MR 状态。读失败保持未知，SSH 当前未支持 | 真实 CodeHub 仓库的归档 MR 状态与回看待验 |
 | C08 基线版本目录可选 | ◐ | `version-history-service.ts` 的 `treePlans` | `version-history-service.test.ts` 有「无 provider 合入也列出 data.json」；真壳未选过版本 |
 | C09 MR 检查项显示 | ◑ | `src/main/codehub/mr-reads.ts`、`task-page/codehub/ChecksTab.tsx` | `codehub-mr-detail.test.ts` 锁定状态映射、`mr-reads.test.ts` 锁定命令形状；真壳人工核对通过（2026-10-22） |
 | C10 MR 文件变更显示 | ◑ | `task-page/codehub/FilesTab.tsx`（patch 重建两侧，复用 `PRFilesCombinedDiffBody`） | `codehub-mr-detail.test.ts` 锁定 patch 解析与重建行号→真实行号映射；真壳人工核对通过（2026-10-22） |

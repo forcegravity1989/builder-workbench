@@ -75,14 +75,14 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 屏内帮助 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|---|
 | 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；Windows 本机演示仓实走至变更核对与失败恢复；共享仓的合入及多人读回待验 | [✅ 四步播放、暂停、重播与关闭回看][direction-content] · [Windows 证据][direction-evidence] · [已认可布局与名片顺序][direction-prototype] | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
-| 工作 | W02 把方向变成本版可执行的承诺：结合上版结果与新要求 → 确定目标、验收条件和任务 → 评审归档并开工 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F02、F18、F22、F23 | 同左 | — | ☐ | ☐ |
+| 工作 | W02 制定版本计划：定版 → 定目标与验收标准 → 关联任务 → 评审归档 → 开工 | 核心旅程；本机首版建版、保存与读回已验，真实模型、归档评审和开工待验 | [✅ 五步切换、播放、暂停与重播][planning-content] | 复用 F02、F18、F22、F23 | 同左 | — | [✅ 本机建版与保存读回][planning-guide]；协作环节待验 | 待定传播样式，复用指南截图 |
 | 工作 | W03 把问题或需求推进到可信交付：任务开工 → 工作区执行与验证 → 按需原型批注及评审通知 → PR 检视、修改与合入 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F01–F03、F06–F11、F23、F24 | 同左 | — | ☐ | ☐ |
 | 工作 | W04 把本版承诺验收清楚：对照目标核验证据 → 人确认结果 → 归档并安排遗留和下一版 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F18、F22、F25、F27 | 同左 | — | ☐ | ☐ |
 | 工作 | W05 用真实效果保持方向：查看进展与指标 → 识别偏差 → 人决定调整 → 形成后续计划或任务 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F02、F19、F21、F22、F27、F28 | 同左 | — | ☐ | ☐ |
 | 工作 | W06 让项目持续可维护（建设中）：审视项目知识、架构与技术债 → 决定处理或暂缓 → 执行并验证 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 工作 | W07 把跑通的做法变成下次少操心（建设中）：总结真实工作 → 沉淀可复用做法 → 在下次同类任务复用并检验 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 功能 | F01 创建工作区、隔离并行任务 | 重点：创建、隔离、切换与继续工作 | [✅ 工作区演示][explore-copy] | ☐ | [待验：workspace-creation][tours] | — | ☐ | — |
-| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ GitHub/Linear 片段][explore-copy]；☐ BW/CodeHub 补充 | ☐ | [待验：tasks][tours] | — | ☐；CLI 参考见 F29 | — |
+| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ 既有 GitHub/Linear 片段][explore-copy]；[待验：W02 关联任务与开工片段][planning-content] | [待验：任务页帮助重播原生引导][screen-guide] | [待验：tasks][tours] | — | 复用 W02；CLI 参考见 F29 | — |
 | 功能 | F03 智能体运行状态 | 随屏 → F01/F06：运行、等待、受阻状态及继续操作 | [✅ 状态演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F04 智能体编排 | 暂缓专项；保留已有编排演示 | [✅ 编排演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F05 账号用量 | 随屏 → F06：账号身份、用量/额度、未知或受限时的下一步 | [✅ 用量演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
@@ -98,18 +98,18 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F15 浮动工作区 | 暂缓专项；保留既有浮动工作区能力 | ☐ | ☐ | [待验：floating-workspace][tours] | — | ☐ | — |
 | 功能 | F16 快捷跳转 | 随屏 → F01/F23：唤起、查找、跳转及常驻回看 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | 暂缓专项；保留既有语音入口与提示 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
-| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排 | [✅ 编排与评审局部动画][direction-content] | [总览页头帮助 → 里程碑引导][screen-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
+| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排；W02 复用排期参考 | [✅ 编排与评审局部动画][direction-content] | [总览页头帮助 → 里程碑引导][screen-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
 | 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及相关状态 | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
 | 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工与[读取来源](../architecture.md#页面读取来源)；名片直接编辑及本地保存 | [✅ 与 W01 共用名片动画][direction-content] | [总览页头帮助 → 项目名片引导][screen-guide]；里程碑见 F18 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
-| 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务及评审归档 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话 | ☐ | ☐ | ☐ | — | ☐ | — |
+| 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务及评审归档 | [待验：与 W02 共用目标、任务和归档片段][planning-content] | [✅ 计划页头帮助打开引导][screen-guide] | [待验：新进程持久读回及弹窗协调][tours] | — | 复用 W02 | — |
+| 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话 | [待验：与 W02 共用选版和开工片段][planning-content] | [待验：版本侧栏帮助][screen-guide] | [待验：侧栏首次出现及跳过读回][tours] | — | 复用 W02 | — |
 | 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F25 [版本验收](../05-features/version-acceptance/spec.md) | 重点：核验证据、人的结论及归档 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F26 [工程部署](../05-features/version-acceptance/spec.md) | 暂缓：本期不新增工程部署引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：目标、任务、验收事实与[版本未同步提示](../05-features/version-overview/spec.md#来源历史与缓存)；SDLC 本期不新增引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F28 [指标配置与采集](../05-features/overview-metrics/spec.md) | 重点：指标口径、配置、采集及缺数据/失败后的继续路径 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F24/F25：配置衔接入门，核对 CodeHub/WeLink 的登录、访问与实际使用 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；☐ BW 接入指南 | — |
+| 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F22/F24/F25：核对 CodeHub/WeLink 登录和使用；W02 核对任务与归档来源 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；复用 W02 登录恢复 | — |
 
 [操作引导][tours]归到功能行“首次进入”。现有原生自动引导受新用户资格、已看或已用记录和控件状态限制。F18、F19、F21 [复用原生操作引导][screen-guide]，里程碑在进入规划时自动出现，总览在项目名片可用时自动出现。首次自动触发、跳过保存、屏内重播及缺前提恢复均按实际入口分别取证。工作区看板 F12 与项目墙 F19 分别核对。
 
@@ -152,5 +152,8 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [direction-guide]: ../03-guide/project-direction/README.md
 [direction-poster]: ../03-guide/project-direction/journey.jpg
 [direction-poster-source]: ../03-guide/project-direction/journey.html
+
+[planning-content]: ../../src/renderer/src/workbench/explore/PlanningWalkthrough.tsx
+[planning-guide]: ../03-guide/version-planning/README.md
 
 [direction-prototype]: ../05-features/explore-workbench/prototype.html
