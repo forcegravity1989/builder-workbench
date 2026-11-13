@@ -1,3 +1,4 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { focusMissingMilestoneField } from './milestone-field'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
@@ -84,7 +85,11 @@ export function ProjectMilestones({
     return (
       <section className="card wb-ml">
         <strong>项目里程碑</strong>
-        <p role="status">{error ?? '正在读取项目规划…'}</p>
+        {error ? (
+          <ErrorDetails summary="项目规划读取失败 · 查看详情" detail={error} />
+        ) : (
+          <p role="status">正在读取项目规划…</p>
+        )}
         {error && (
           <Button variant="outline" size="xs" onClick={() => void model.reload()}>
             重试读取
@@ -303,7 +308,7 @@ export function ProjectMilestones({
                 void updateFormal()
                   .then(() => model.reload())
                   .catch((reason) =>
-                    toast.error(reason instanceof Error ? reason.message : String(reason))
+                    notifyWorkbenchError('无法更新正式里程碑', reason, '检查项目连接后重试。')
                   )
                   .finally(() => setUpdatingFormal(false))
               }}
@@ -328,9 +333,11 @@ export function ProjectMilestones({
         </p>
       )}
       {model.persistenceError && (
-        <p className="wb-ml-alert" role="alert">
-          {model.persistenceError}
-        </p>
+        <ErrorDetails
+          className="wb-ml-alert"
+          summary="里程碑草案未保存，当前输入已保留 · 查看详情"
+          detail={model.persistenceError}
+        />
       )}
       {state.submitError && (
         <details className="wb-ml-alert" role="status">
@@ -352,9 +359,7 @@ export function ProjectMilestones({
         </details>
       )}
       {error && (
-        <p className="wb-ml-alert" role="alert">
-          {error}
-        </p>
+        <ErrorDetails className="wb-ml-alert" summary="里程碑读取失败 · 查看详情" detail={error} />
       )}
       {state.data.formal.problems.length > 0 && (
         <details className="wb-ml-alert">

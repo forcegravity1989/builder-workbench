@@ -112,7 +112,7 @@ export function AnnotationPanel({
   /** Writes via the Orca IPC clipboard channel; resolves once written. */
   onCopy(): Promise<void>
   /** Surfaces a failed copy honestly instead of swallowing it. */
-  onCopyError?(message: string): void
+  onCopyError?(error: unknown): void
   onSent?(): void
   /** Sends straight to one session. When set, the button does not open a picker. */
   onSendDirect?(): Promise<boolean>
@@ -164,8 +164,7 @@ export function AnnotationPanel({
           onClick={() => {
             void onCopy().then(
               () => setCopied(true),
-              (reason: unknown) =>
-                onCopyError?.(reason instanceof Error ? reason.message : String(reason))
+              (reason: unknown) => onCopyError?.(reason)
             )
           }}
         >

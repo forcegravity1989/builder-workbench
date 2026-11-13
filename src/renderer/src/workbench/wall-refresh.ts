@@ -1,4 +1,4 @@
-import { toast } from 'sonner'
+import { notifyWorkbenchError } from './error-feedback'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
@@ -74,7 +74,7 @@ export function refreshProjectWall(): Promise<void> {
     })
     .catch((error: unknown) => {
       refresh.publish({ ...refresh.read(), refreshing: false, partialRefresh: true })
-      toast.error(String(error))
+      notifyWorkbenchError('项目墙刷新失败', error, '检查主机连接后重试。')
     })
     .finally(() => {
       refresh.pending = null

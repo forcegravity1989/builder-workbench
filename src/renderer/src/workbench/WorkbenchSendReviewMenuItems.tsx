@@ -1,3 +1,4 @@
+import { logWorkbenchError } from './error-feedback'
 import React, { useEffect, useMemo, useState } from 'react'
 import { ReviewSendMenuItem } from './pr-review-notifications/ReviewSendMenuItem'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
@@ -65,7 +66,8 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
         ? { status: 'ready', target }
         : { status: 'blocked', reason: '分支没有关联的开放 MR' }
     } catch (error) {
-      return { status: 'blocked', reason: error instanceof Error ? error.message : String(error) }
+      logWorkbenchError('无法确认关联 MR', error)
+      return { status: 'blocked', reason: '无法确认关联 MR，请检查代码托管连接' }
     }
   }
   try {
@@ -148,9 +150,10 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
       }
     }
   } catch (error) {
+    logWorkbenchError('无法确认关联 PR', error)
     return {
       status: 'blocked',
-      reason: error instanceof Error ? error.message : '暂时无法确认关联 PR'
+      reason: '无法确认关联 PR，请检查代码托管连接'
     }
   }
 }
@@ -197,9 +200,10 @@ export function WorkbenchSendReviewMenuItems({
       })
       .catch((error: unknown) => {
         if (!cancelled) {
+          logWorkbenchError('无法读取关联评审', error)
           setTargetState({
             status: 'blocked',
-            reason: error instanceof Error ? error.message : '暂时无法确认关联 PR'
+            reason: '无法读取关联评审，请检查代码托管连接'
           })
         }
       })

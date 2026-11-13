@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { useEffect, useRef, useState } from 'react'
 import { CalendarDays, ClipboardCheck, ListTodo, RefreshCw } from 'lucide-react'
@@ -39,20 +40,21 @@ function WorkflowProgress({
   kind: 'plan' | 'acceptance'
   materials: VersionOverviewMaterials
 }) {
-  const { label, reason, archive } = versionWorkflowProgress(
-    materials[kind],
-    materials.prStatuses[kind]
-  )
+  const { label, archive } = versionWorkflowProgress(materials[kind], materials.prStatuses[kind])
   const status = archive?.status
   const at = status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined
   const url = status?.url
   return (
-    <span title={reason}>
+    <div>
       {kind === 'plan' ? '计划' : '验收'} · {label}
       {archive && (
-        <span title={status?.state === 'unknown' ? status.reason : undefined}>
+        <>
           {' · '}
-          {archive.label}
+          {status?.state === 'unknown' && status.reason ? (
+            <ErrorDetails className="inline-block" summary={archive.label} detail={status.reason} />
+          ) : (
+            <span>{archive.label}</span>
+          )}
           {at && (
             <time className="ml-1" dateTime={at} title="北京时间 UTC+08:00">
               {timeLabel(at)}
@@ -63,9 +65,9 @@ function WorkflowProgress({
               #{archive.reference.number} ↗
             </button>
           )}
-        </span>
+        </>
       )}
-    </span>
+    </div>
   )
 }
 
@@ -236,14 +238,14 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         <WorkflowProgress kind="plan" materials={materials} />
         <WorkflowProgress kind="acceptance" materials={materials} />
       </div>
-      {materialErrors.map((error) => (
-        <p className="mb-4 text-sm text-destructive" role="alert" key={error}>
-          {error}{' '}
+      {materialErrors.length > 0 && (
+        <div className="mb-4 text-sm text-destructive" role="status">
+          <ErrorDetails summary="版本材料读取失败 · 查看详情" detail={materialErrors.join('\n')} />
           <button className="bwo-link" onClick={refresh}>
             重试
           </button>
-        </p>
-      ))}
+        </div>
+      )}
       {materialErrors.length > 0 && materials.readAt && (
         <p className="bwo-muted">可读内容保留至上次来源快照：{timeLabel(materials.readAt)}</p>
       )}
@@ -375,9 +377,11 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         <p className="bwo-muted">特性来源刷新失败，保留上次快照：{timeLabel(features.readAt)}</p>
       )}
       {(membership.error || taskReads.error) && (
-        <p className="bwo-muted" role="alert">
-          任务读取失败：{membership.error ?? taskReads.error}
-        </p>
+        <ErrorDetails
+          className="bwo-muted"
+          summary="版本任务读取失败 · 查看详情"
+          detail={membership.error ?? taskReads.error}
+        />
       )}
       {Boolean(membership.references?.length) && (
         <p className="bwo-muted">

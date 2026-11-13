@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { Info, MessageSquarePlus } from 'lucide-react'
 import type { Ref } from 'react'
 import type { CycleEntry } from './cycle-workspace-context'
@@ -37,21 +38,22 @@ export function CycleStartCard({
         </button>
       </div>
       {problems.length > 0 && (
-        <p
-          className="vc-start-problem"
-          role="alert"
-          title={problems
-            .map((item) => `${materialProblemFile(item, workflow)}：${item.error ?? item.state}`)
-            .join('\n')}
-        >
+        <div className="vc-start-problem" role="status">
           <Info size={14} aria-hidden="true" />
-          <span>
+          <div>
             {[...new Set(problems.map((item) => item.version))].join('、')} 的版本材料格式
             {problems.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
             ，暂无法读取；点「新建{label}
             」会打开草稿；发送后由助手读取实际问题、说明方案，经你确认后处理。
-          </span>
-        </p>
+            <ErrorDetails
+              detail={problems
+                .map(
+                  (item) => `${materialProblemFile(item, workflow)}：${item.error ?? item.state}`
+                )
+                .join('\n')}
+            />
+          </div>
+        </div>
       )}
     </section>
   )

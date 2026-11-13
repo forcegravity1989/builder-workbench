@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { MultiSelectList } from '@/components/github/PRFilterPickers'
 import { Button } from '@/components/ui/button'
 import {
@@ -84,7 +85,7 @@ export function ReviewSendDialog({
             }))}
             selected={selected.map(reviewPeerKey)}
             loading={loading}
-            error={error}
+            error={null}
             searchPlaceholder="搜索已连接主机…"
             emptyText="没有已连接主机"
             onChange={(keys) => {
@@ -124,9 +125,11 @@ export function ReviewSendDialog({
           </div>
         ) : null}
         {error ? (
-          <p role="alert" className="text-xs text-destructive">
-            {error}
-          </p>
+          <ErrorDetails
+            className="text-xs text-destructive"
+            summary="评审请求操作未完成 · 查看详情"
+            detail={error}
+          />
         ) : null}
         <DialogFooter>
           <Button variant="outline" disabled={sending} onClick={onClose}>

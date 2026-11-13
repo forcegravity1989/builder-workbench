@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from './error-feedback'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { FileInput, LoaderCircle, Plus, RefreshCw, X } from 'lucide-react'
@@ -253,7 +254,13 @@ export function ProjectWallPage() {
                             leave(() => {
                               setSwitching(card.project.key)
                               void continueProjectWork(repo)
-                                .catch((error) => toast.error(String(error)))
+                                .catch((error) =>
+                                  notifyWorkbenchError(
+                                    '无法打开项目',
+                                    error,
+                                    '检查项目来源和主机连接后重试。'
+                                  )
+                                )
                                 .finally(() => setSwitching(null))
                             })
                           }
@@ -279,7 +286,13 @@ export function ProjectWallPage() {
                                     catalog.catalog?.entries.find(
                                       (entry) => entry.version === version
                                     ) ?? null
-                                }).catch((error) => toast.error(String(error)))
+                                }).catch((error) =>
+                                  notifyWorkbenchError(
+                                    '无法打开版本任务',
+                                    error,
+                                    '检查项目连接后重试。'
+                                  )
+                                )
                               } else {
                                 const source = resolveProjectSource(
                                   useAppStore.getState(),

@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import type { ReactNode } from 'react'
 import {
   Download,
@@ -38,16 +39,19 @@ export type WallCardView = {
   primaryRepo: Repo
 }
 function WorkflowProgress({ progress }: { progress: VersionWorkflowProgress }) {
-  const { archive, label, reason } = progress
+  const { archive, label } = progress
   return (
     <>
-      <strong title={reason}>{label}</strong>
-      {archive && (
-        <span title={archive.status?.state === 'unknown' ? archive.status.reason : undefined}>
-          {archive.label}
-        </span>
-      )}
+      <strong>{label}</strong>
+      {archive && <span>{archive.label}</span>}
     </>
+  )
+}
+
+function workflowProblem(progress: VersionWorkflowProgress): string | undefined {
+  return (
+    progress.reason ??
+    (progress.archive?.status?.state === 'unknown' ? progress.archive.status.reason : undefined)
   )
 }
 
@@ -230,36 +234,52 @@ export function ProjectWallCard({
             )}
             {!readings.goals.length && <span className="pcard-muted">暂无可读目标</span>}
           </>
-        ) : (
-          <div
+        ) : readings.kind === 'unknown' ? (
+          <ErrorDetails
             className="pcard-muted"
-            title={readings.kind === 'unknown' ? readings.reason : undefined}
-          >
+            summary="版本信息暂不可用 · 查看详情"
+            detail={readings.reason}
+          />
+        ) : (
+          <div className="pcard-muted">
             {readings.kind === 'loading'
               ? '正在读取版本…'
-              : readings.kind === 'unknown'
-                ? '版本信息暂不可用'
-                : card.charter?.brief?.trim() || '未建立版本'}
+              : card.charter?.brief?.trim() || '未建立版本'}
           </div>
         )}
       </div>
       {readings.kind === 'version' && (
-        <div className="pcard-stages">
-          <button type="button" onClick={() => onStage('plan')}>
-            <span>计划</span>
-            <WorkflowProgress progress={readings.plan} />
-          </button>
-          <button type="button" onClick={() => onStage('tasks')}>
-            <span>任务</span>
-            <strong>
-              {readings.tasks ? `${readings.tasks.closed} / ${readings.tasks.total}` : '—'}
-            </strong>
-          </button>
-          <button type="button" onClick={() => onStage('acceptance')}>
-            <span>验收</span>
-            <WorkflowProgress progress={readings.acceptance} />
-          </button>
-        </div>
+        <>
+          <div className="pcard-stages">
+            <button type="button" onClick={() => onStage('plan')}>
+              <span>计划</span>
+              <WorkflowProgress progress={readings.plan} />
+            </button>
+            <button type="button" onClick={() => onStage('tasks')}>
+              <span>任务</span>
+              <strong>
+                {readings.tasks ? `${readings.tasks.closed} / ${readings.tasks.total}` : '—'}
+              </strong>
+            </button>
+            <button type="button" onClick={() => onStage('acceptance')}>
+              <span>验收</span>
+              <WorkflowProgress progress={readings.acceptance} />
+            </button>
+          </div>
+          {(['plan', 'acceptance'] as const).map((workflow) => {
+            const detail = workflowProblem(readings[workflow])
+            return detail ? (
+              <ErrorDetails
+                key={workflow}
+                className="pcard-muted px-4 pb-2"
+                summary={
+                  workflow === 'plan' ? '计划读取问题 · 查看详情' : '验收读取问题 · 查看详情'
+                }
+                detail={detail}
+              />
+            ) : null
+          })}
+        </>
       )}
     </article>
   )

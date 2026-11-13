@@ -1,3 +1,4 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CircleHelp, Layers, Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -251,7 +252,7 @@ export function WorkbenchVersionNav({
       try {
         await run()
       } catch (reason) {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
+        notifyWorkbenchError('无法切换版本', reason, '检查项目工作区后重试。')
       } finally {
         setBusyKey(null)
       }
@@ -383,7 +384,7 @@ export function WorkbenchVersionNav({
 
       {catalog.error ? (
         <div className="px-2 py-1 text-[11px] text-destructive">
-          <p>版本目录读取失败：{catalog.error}</p>
+          <ErrorDetails summary="版本目录读取失败 · 查看详情" detail={catalog.error} />
           <button type="button" className="underline" onClick={catalog.reload}>
             重试
           </button>
@@ -398,12 +399,11 @@ export function WorkbenchVersionNav({
         </p>
       ) : null}
       {problems.length > 0 ? (
-        <p
-          className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/45"
-          title={problems.map((problem) => problem.message).join('\n')}
-        >
-          {problems.length} 项材料读取问题（悬停查看）
-        </p>
+        <ErrorDetails
+          className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/70"
+          summary={`${problems.length} 项材料读取问题 · 查看详情`}
+          detail={problems.map((problem) => problem.message).join('\n')}
+        />
       ) : null}
 
       <VersionSidebarPreview

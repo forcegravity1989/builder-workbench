@@ -42,7 +42,7 @@ export function useCycleAutomationDraft({
   workflow: VersionWorkflow
   existingId: string | null
   creationKey: string | null
-  onError(message: string | null): void
+  onError(message: string): void
 }) {
   return useCallback(async () => {
     if (!cycleScope) {
@@ -55,7 +55,6 @@ export function useCycleAutomationDraft({
         host: cycleAutomationHost(cycleScope),
         automationId: existingId
       })
-      onError(null)
       return
     }
     if (!fixedId) {
@@ -77,7 +76,6 @@ export function useCycleAutomationDraft({
           ...(creationKey ? { creationKey } : {})
         }
       })
-      onError(null)
     } catch (reason) {
       onError(reason instanceof Error ? reason.message : String(reason))
     }

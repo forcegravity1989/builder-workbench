@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import type { MetricReading, MetricReadingEvidence } from '../../../../shared/workbench/metrics'
 import './metric-evidence.css'
 import {
@@ -43,9 +44,24 @@ export function MetricEvidenceView({
   return (
     <div className="wb-metric-evidence" aria-live="polite">
       {busy && <p className="wb-metric-message">正在读取…</p>}
-      {!busy && result && result.status !== 'ready' && (
-        <p className="wb-metric-message">{result.reason.message}</p>
-      )}
+      {!busy &&
+        result &&
+        result.status !== 'ready' &&
+        (result.status === 'error' ? (
+          <ErrorDetails
+            className="wb-metric-message"
+            summary="指标采集或读取失败 · 查看详情"
+            detail={result.reason.message}
+          />
+        ) : (
+          <p className="wb-metric-message">
+            {result.reason.code === 'reading'
+              ? '正在读取…'
+              : result.reason.code === 'not-collected'
+                ? '尚未采集'
+                : '本次无可用读数'}
+          </p>
+        ))}
       {!busy && !readings.length && <p className="wb-metric-message">暂无可核对的读数</p>}
       {historical && (
         <p className="wb-metric-message">已有证据保留原采集时间，不作为本次新读数。</p>
