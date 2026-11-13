@@ -4,6 +4,8 @@
 
 ## 特性矩阵
 
+设计提案入口：[项目组与权限 / 团队协作与项目共享](team-collaboration/spec.md)（[#342](https://github.com/forcegravity1989/builder-workbench/issues/342)，[完整旅程动画](team-collaboration/prototype.html)，[状态](team-collaboration/STATUS.md)）。成员与资源权限模型待确认，尚未改变现行产品主张或实现。
+
 BW Issue 按主要用户结果选一个主归属。每行名称可直接用于标题；版本、目标和主单身份按[通用 Issue 规范](../../standard/references/issue-state.md)填写。
 
 价值判断见 [03 产品主张](../01-principles/03-press-release-faq-flywheel.md)：版本计划承接定承诺，版本验收承接交结果，总览、项目墙与指标能力支持看实况。三个核心场景不穷尽全部改进；任务管理、日常执行体验等按高效与结果可核对的价值判断，主归属仍按下表的用户结果确定。
