@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
-import { WorkbenchScreenGuide } from './WorkbenchScreenGuide'
+import { WorkbenchWallGuide } from './WorkbenchScreenGuide'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
@@ -92,11 +92,7 @@ export function ProjectWallPage() {
               </h1>
             </div>
             <div className="page-actions" role="group" aria-label="项目墙操作">
-              <WorkbenchScreenGuide
-                id="workbench-wall"
-                label="项目墙帮助"
-                enabled={!selectedCard && !importOpen && !leaveAction}
-              />
+              <WorkbenchWallGuide enabled={!selectedCard && !importOpen && !leaveAction} />
               <WorkbenchIconButton
                 label="刷新项目目录和墙卡信息"
                 icon={refreshing ? LoaderCircle : RefreshCw}

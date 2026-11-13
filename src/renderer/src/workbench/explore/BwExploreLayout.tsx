@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
+import { openWorkbenchGuide, type WorkbenchGuideId } from '../WorkbenchScreenGuide'
 import {
   getBwExploreCatalog,
   type ExploreDemo,
@@ -17,6 +18,11 @@ const paneClassName =
 const railClassName =
   'scrollbar-sleek min-h-0 max-h-44 overflow-y-auto border-b border-border bg-card p-2 md:max-h-none md:border-b-0 md:border-r'
 const rowClassName = 'h-auto min-h-9 w-full justify-start whitespace-normal text-left'
+const featureGuides: Partial<Record<ExploreFeatureId, WorkbenchGuideId>> = {
+  'project-wall': 'workbench-wall',
+  'project-overview': 'workbench-overview',
+  milestones: 'workbench-milestones'
+}
 
 export function BwExploreLayout({
   demo,
@@ -37,6 +43,7 @@ export function BwExploreLayout({
   const [featureId, setFeatureId] = useState<ExploreFeatureId>('workspace')
   const [journeyIndex, setJourneyIndex] = useState(0)
   const feature = features[featureId]
+  const guide = featureGuides[featureId]
   const journey: ExploreJourney = journeys[journeyIndex] ?? journeys[0]
   const featureContentRef = useRef<HTMLElement>(null)
   const focusRelatedContent = useRef(false)
@@ -162,11 +169,25 @@ export function BwExploreLayout({
             key={featureId}
           >
             {feature.demo ? demo : <ExploreContent entry={feature} status={labels.preparing} />}
+            {guide && (
+              <div className="mx-auto max-w-[940px] px-4 pt-3 sm:px-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onClose()
+                    openWorkbenchGuide(guide)
+                  }}
+                >
+                  {translate('guidance.direction.followAlong', 'Try it in BW')}
+                </Button>
+              </div>
+            )}
             {relatedFeatures(feature.related)}
           </section>
         </TabsContent>
         <TabsContent value="journey" className={paneClassName}>
-          <nav aria-label={labels.journeys} className={railClassName}>
+          <nav aria-label={labels.journeys} className={cn(railClassName, 'px-2.5 py-3.5')}>
             <ol className="ml-2 border-l border-border pl-2">
               {journeys.map(
                 (item, index) =>
@@ -217,9 +238,9 @@ export function BwExploreLayout({
             aria-label={journey.title}
             className="scrollbar-sleek min-h-0 min-w-0 overflow-auto"
           >
-            <header className="mx-auto max-w-[940px] px-4 pt-3 sm:px-6">
-              <h3 className="text-xl font-semibold">{journey.title}</h3>
-              <dl className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+            <header className="mx-auto max-w-[940px] px-4 pt-3.5 sm:px-6">
+              <h3 className="text-[23px] font-semibold leading-[1.3]">{journey.title}</h3>
+              <dl className="mt-1 flex flex-wrap gap-x-[22px] gap-y-1 text-xs leading-relaxed">
                 <div className="flex gap-2">
                   <dt className="text-muted-foreground">{labels.start}</dt>
                   <dd>{journey.start}</dd>

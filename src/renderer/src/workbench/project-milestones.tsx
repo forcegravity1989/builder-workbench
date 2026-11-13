@@ -29,7 +29,7 @@ import {
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneIconButton } from './milestone-icon-button'
-import { WorkbenchScreenGuide } from './WorkbenchScreenGuide'
+import { useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import './project-milestones.css'
 
 export function ProjectMilestones({
@@ -53,6 +53,10 @@ export function ProjectMilestones({
   const restored = useRef<string | null>(null)
   const restoreScope = scope ? JSON.stringify(scope) : null
   const pageY = state?.pageY
+  useWorkbenchScreenGuide(
+    'workbench-milestones',
+    Boolean(state?.editing && !busy && !state.recoveryBlocked)
+  )
   useEffect(() => {
     if (restoreScope && pageY !== undefined && root.current && restored.current !== restoreScope) {
       const content = root.current.closest('.content')
@@ -245,11 +249,6 @@ export function ProjectMilestones({
           {dirty && model.recoverySaved && (
             <span className="text-xs text-muted-foreground">草稿已保存在本机</span>
           )}
-          <WorkbenchScreenGuide
-            id="workbench-milestones"
-            label="里程碑操作引导"
-            enabled={editing && !busy && !state.recoveryBlocked}
-          />
           {editing && (
             <MilestoneHistoryActions
               dirty={dirty}

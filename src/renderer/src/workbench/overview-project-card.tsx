@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { ChevronRight, FilePenLine } from 'lucide-react'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
-import { WorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import { CHARTER_LABELS, type ProjectCharter } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
 
@@ -11,8 +10,7 @@ export function ProjectCard({
   version,
   notice,
   onEdit,
-  previewExpanded,
-  guideEnabled = true
+  previewExpanded
 }: {
   projectName: string
   charter: ProjectCharter | null
@@ -21,7 +19,6 @@ export function ProjectCard({
   notice?: React.ReactNode
   onEdit?: () => void
   previewExpanded?: boolean
-  guideEnabled?: boolean
 }) {
   // 名片字段平时不看,默认收起为一行;展开状态不跨页保存。
   const [expanded, setExpanded] = useState(false)
@@ -42,13 +39,6 @@ export function ProjectCard({
           {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
         </button>
         <div className="flex items-center">
-          {previewExpanded === undefined && (
-            <WorkbenchScreenGuide
-              id="workbench-overview"
-              label="项目总览帮助"
-              enabled={guideEnabled}
-            />
-          )}
           {onEdit && (
             <WorkbenchIconButton
               label="编辑项目信息"

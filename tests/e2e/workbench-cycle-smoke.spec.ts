@@ -118,6 +118,20 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   await help.click()
   await workbenchPage.getByRole('menuitem', { name: exploreName }).click()
   await expect(workspaceDemo).toBeVisible()
+  await journeys.click()
+  await directionContent
+    .getByRole('navigation', { name: /^(Related features|相关功能)$/ })
+    .getByRole('button', { name: /^(Project overview|项目总览)$/ })
+    .click()
+  await dialog.getByRole('button', { name: /^(Try it in BW|在界面中跟做)$/ }).click()
+  await expect(dialog).toBeHidden()
+  const overviewHelp = workbenchPage.getByRole('button', { name: '项目总览帮助', exact: true })
+  const guide = workbenchPage.locator('[data-contextual-tour-panel]')
+  await expect(guide.getByText('查看项目名片', { exact: true })).toBeVisible()
+  await guide.locator('[data-contextual-tour-skip]').click()
+  await overviewHelp.click()
+  await workbenchPage.getByRole('menuitem', { name: '项目名片引导', exact: true }).click()
+  await expect(guide.getByText('查看项目名片', { exact: true })).toBeVisible()
 })
 
 test.describe('BW first-run project handoff', () => {

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { MousePointer2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
@@ -7,7 +8,7 @@ import { DirectionCharterDemo } from './DirectionCharterDemo'
 import { DirectionMilestoneDemo } from './DirectionMilestoneDemo'
 import './direction-walkthrough.css'
 
-const durations = [5700, 9800, 7200, 9550] as const
+const durations = [5700, 9800, 8300, 9550] as const
 const wholeJourney = [0, 1, 2, 3] as const
 type Step = (typeof wholeJourney)[number]
 
@@ -56,8 +57,10 @@ const pointerCues: readonly (readonly [at: number, target: string][])[] = [
   [
     [790, '[data-demo-action="plan"]'],
     [2040, '[data-contextual-tour-target~="milestone-start"]'],
-    [3980, '[aria-label="添加特性"]'],
-    [5170, '.wb-ml-resize.end']
+    [2500, '.direction-milestone-form textarea'],
+    [3950, '.direction-milestone-form button[type="submit"]'],
+    [4900, '[aria-label="添加特性"]'],
+    [6300, '.wb-ml-resize.end']
   ],
   [
     [1050, '[data-contextual-tour-target="milestone-submit"]'],
@@ -73,10 +76,11 @@ function DirectionPlayer({ steps }: { steps: readonly Step[] }) {
   const [playing, setPlaying] = useState(false)
   const sceneRef = useRef<HTMLDivElement>(null)
   const cursor = useRef<HTMLSpanElement>(null)
+  const spotlight = useRef<HTMLSpanElement>(null)
   const step = steps[index]
   const duration = durations[step]
   const copy = getSteps()
-  const Scene = step < 2 ? scenes[step as 0 | 1] : null
+  const Scene = step === 0 || step === 1 ? scenes[step] : null
   const cue = pointerCues[step].findLast(([at]) => time >= at - 440 && time < at + 500)
   const click = cue && time >= cue[0]
 
@@ -117,25 +121,38 @@ function DirectionPlayer({ steps }: { steps: readonly Step[] }) {
     return () => document.removeEventListener('visibilitychange', pause)
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const marker = cursor.current
+    const outline = spotlight.current
     const surface = sceneRef.current
     const target = cue && surface?.querySelector(cue[1])
-    if (!marker || !surface || !target) {
+    if (!marker || !outline || !surface || !cue) {
       return
     }
-    const rect = target.getBoundingClientRect()
+    const rect = target?.getBoundingClientRect()
     const bounds = surface.getBoundingClientRect()
-    if (rect.width === 0 || rect.height === 0 || rect.bottom > bounds.bottom) {
+    if (
+      !rect ||
+      rect.width === 0 ||
+      rect.height === 0 ||
+      rect.bottom > bounds.bottom ||
+      rect.top < bounds.top ||
+      rect.right > bounds.right ||
+      rect.left < bounds.left
+    ) {
+      marker.style.visibility = 'hidden'
+      outline.style.visibility = 'hidden'
       return
     }
-    marker.style.left = `${Math.min(bounds.width - 10, rect.left - bounds.left + Math.min(36, rect.width / 2))}px`
-    marker.style.top = `${rect.top - bounds.top + rect.height / 2}px`
+    const left = rect.left - bounds.left
+    const top = rect.top - bounds.top
+    const approach = Math.max(0, Math.min(1, (cue[0] - time) / 440))
+    marker.style.left = `${Math.min(bounds.width - 24, left + Math.min(40, rect.width / 2) + approach * 30)}px`
+    marker.style.top = `${Math.min(bounds.height - 24, top + rect.height / 2 + approach * 22)}px`
     marker.style.visibility = 'visible'
-    return () => {
-      marker.style.visibility = 'hidden'
-    }
-  }, [cue, index])
+    outline.style.inset = `${top - 2}px ${bounds.width - left - rect.width - 2}px ${bounds.height - top - rect.height - 2}px ${left - 2}px`
+    outline.style.visibility = 'visible'
+  }, [cue, time])
 
   function select(next: number, play: boolean) {
     setIndex(next)
@@ -156,29 +173,39 @@ function DirectionPlayer({ steps }: { steps: readonly Step[] }) {
       {steps.length > 1 && (
         <ol
           aria-label={translate('guidance.direction.steps', 'Journey steps')}
-          className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-4"
+          className="mb-2.5 grid grid-cols-2 gap-3.5 sm:grid-cols-4"
         >
           {steps.map((id, position) => (
             <li key={id} className="relative min-w-0">
               {position > 0 && (
                 <span
                   aria-hidden
-                  className="absolute -left-1.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  className="absolute -left-2.5 top-1/2 hidden -translate-y-1/2 text-muted-foreground sm:block"
                 >
                   ›
                 </span>
               )}
               <Button
                 className={cn(
-                  'h-full min-h-8 w-full justify-start whitespace-normal text-left text-xs',
-                  index === position && 'border-foreground bg-accent'
+                  'h-full min-h-[41px] w-full justify-start gap-[7px] whitespace-normal px-2 text-left text-xs',
+                  index === position
+                    ? 'border-foreground bg-accent font-semibold'
+                    : 'text-muted-foreground'
                 )}
                 variant="outline"
                 size="sm"
                 aria-current={index === position ? 'step' : undefined}
                 onClick={() => select(position, false)}
               >
-                {position + 1} <span>{copy[id].title}</span>
+                <span
+                  className={cn(
+                    'grid size-[19px] shrink-0 place-items-center rounded-full border border-border text-[10px]',
+                    index === position && 'border-primary bg-primary text-primary-foreground'
+                  )}
+                >
+                  {position + 1}
+                </span>
+                <span>{copy[id].title}</span>
               </Button>
             </li>
           ))}
@@ -188,7 +215,7 @@ function DirectionPlayer({ steps }: { steps: readonly Step[] }) {
         className="overflow-hidden rounded-lg border border-border"
         aria-label={copy[step].title}
       >
-        <header className="flex min-h-10 flex-wrap items-center justify-between gap-2 px-3 py-1">
+        <header className="flex min-h-10 flex-wrap items-center justify-between gap-2.5 px-3 py-[7px]">
           <p className="text-xs text-muted-foreground" aria-live="polite">
             {copy[step].action}
           </p>
@@ -216,13 +243,16 @@ function DirectionPlayer({ steps }: { steps: readonly Step[] }) {
             )}
           </div>
           {cue && (
-            <span
-              aria-hidden
-              ref={cursor}
-              className={cn('direction-demo-cursor', click && 'is-clicking')}
-            >
-              ➤
-            </span>
+            <>
+              <span aria-hidden ref={spotlight} className="direction-demo-spotlight" />
+              <span
+                aria-hidden
+                ref={cursor}
+                className={cn('direction-demo-cursor', click && 'is-clicking')}
+              >
+                <MousePointer2 size={20} fill="currentColor" />
+              </span>
+            </>
           )}
         </div>
         <div className="border-t border-border px-3 py-1 text-[11px] text-muted-foreground">

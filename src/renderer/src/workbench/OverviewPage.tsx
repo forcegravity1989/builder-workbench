@@ -27,7 +27,7 @@ import {
 import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { ProjectCard } from './overview-project-card'
-import { WorkbenchScreenGuide } from './WorkbenchScreenGuide'
+import { useWorkbenchScreenGuide, WorkbenchOverviewHelp } from './WorkbenchScreenGuide'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
@@ -222,13 +222,15 @@ export function OverviewPage(): React.JSX.Element {
 
   const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
 
+  useWorkbenchScreenGuide('workbench-overview', Boolean(activeRepo && !settingsOpen))
+
   if (!activeRepo) {
     return (
       <TooltipProvider>
         <div className="wb-ov">
           <header className="page-head">
             <h1>总览</h1>
-            <WorkbenchScreenGuide id="workbench-overview" label="项目总览帮助" enabled={false} />
+            <WorkbenchOverviewHelp milestones={false} />
           </header>
           <div className="content">
             <section className="card" style={{ padding: 24, textAlign: 'center' }}>
@@ -258,21 +260,26 @@ export function OverviewPage(): React.JSX.Element {
         <div className="wb-ov">
           <header className="page-head">
             <h1>总览</h1>
-            <button
-              type="button"
-              className="wb-btn wb-btn-secondary wb-btn-sm"
-              disabled={updatingTrunk || !baseScope || !baseWorktreeId}
-              title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
-              onClick={() => void updateTrunk()}
-            >
-              {updatingTrunk ? (
-                '正在更新…'
-              ) : (
-                <>
-                  <ArrowDownToLine size={14} aria-hidden="true" /> 更新代码
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <WorkbenchOverviewHelp
+                milestones={!!milestoneScope && activeRepo.kind !== 'folder'}
+              />
+              <button
+                type="button"
+                className="wb-btn wb-btn-secondary wb-btn-sm"
+                disabled={updatingTrunk || !baseScope || !baseWorktreeId}
+                title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
+                onClick={() => void updateTrunk()}
+              >
+                {updatingTrunk ? (
+                  '正在更新…'
+                ) : (
+                  <>
+                    <ArrowDownToLine size={14} aria-hidden="true" /> 更新代码
+                  </>
+                )}
+              </button>
+            </div>
           </header>
 
           <div className="content">
@@ -286,7 +293,6 @@ export function OverviewPage(): React.JSX.Element {
               </p>
             )}
             <ProjectCard
-              guideEnabled={!settingsOpen}
               onEdit={activeRepo.kind !== 'folder' ? () => setSettingsOpen(true) : undefined}
               projectName={projectName}
               charter={charter}
