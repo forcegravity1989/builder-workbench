@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- 布局草案：只演示探索目录与内容状态；灰框引用现有演示，不重画 BW 业务屏。 -->
+<html lang="zh" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>探索 BW · 布局原型</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype/layout.css" />
+    <script src="prototype/catalog.js" defer></script>
+  </head>
+  <body>
+    <header class="review-bar">
+      <div><strong>探索 BW · 布局原型</strong><span>仅评审目录与内容位置；灰框内沿用现有演示。</span></div>
+      <button class="btn btn-secondary" id="theme-toggle" type="button">切换深色</button>
+    </header>
+    <main class="preview-shell">
+      <section class="explore" id="explore" aria-label="探索 BW 布局预览">
+        <header class="explore-header">
+          <h1>探索 BW</h1>
+          <button class="btn btn-ghost btn-icon" id="close-top" type="button" aria-label="关闭探索">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12" /></svg>
+          </button>
+        </header>
+        <div class="tabs explore-tabs" role="tablist" aria-label="探索类型">
+          <button class="tab" id="tab-work" type="button" role="tab" aria-selected="false" aria-controls="explore-body" tabindex="-1" data-tab="work">工作旅程</button>
+          <button class="tab" id="tab-feature" type="button" role="tab" aria-selected="true" aria-controls="explore-body" data-tab="feature">功能</button>
+        </div>
+        <div class="explore-body" id="explore-body" role="tabpanel" aria-labelledby="tab-feature">
+          <nav id="catalog" class="catalog" aria-label="功能目录"></nav>
+          <section class="content" id="content" aria-label="当前内容"></section>
+        </div>
+        <footer class="explore-footer">
+          <span>可从左下角问号 → 探索 BW 随时回看</span>
+          <button class="btn btn-secondary" id="close-bottom" type="button">关闭</button>
+        </footer>
+      </section>
+      <section id="closed" class="closed" hidden>
+        <p>探索已关闭</p>
+        <button class="btn btn-primary" id="reopen" type="button">重新打开探索 BW</button>
+      </section>
+    </main>
+    <footer class="review-note">原型说明：内容逐项补充；功能和完整旅程是否可用，以真实验证为准。本页不触发安装、配置或业务操作。</footer>
+  </body>
+</html>
