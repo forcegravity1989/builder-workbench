@@ -14901,6 +14901,159 @@
     }
   },
   "guidance": {
+    "catalog": {
+      "feature": {
+        "workspace": {
+          "title": "工作区",
+          "summary": "把一件事放进独立工作区，保留它的文件与执行上下文。"
+        },
+        "tasks": {
+          "title": "任务管理",
+          "summary": "找到待处理的任务，从同一处进入工作并回看结果。"
+        },
+        "agent-status": {
+          "title": "智能体运行状态",
+          "summary": "辨认正在运行、等待回应和受阻的工作。"
+        },
+        "orchestration": {
+          "title": "智能体编排",
+          "summary": "了解怎样协调不同工作区中的智能体。"
+        },
+        "usage": {
+          "title": "账号用量",
+          "summary": "了解当前账号的用量与额度状态。"
+        },
+        "terminal": {
+          "title": "终端与会话",
+          "summary": "在终端和分屏中开展工作，之后回到原来的会话。"
+        },
+        "editor": {
+          "title": "编辑器",
+          "summary": "在工作过程中打开和编辑文件。"
+        },
+        "browser": {
+          "title": "内置浏览器与批注",
+          "summary": "查看页面或原型，把具体位置和意见带回工作。"
+        },
+        "review": {
+          "title": "差异与评审",
+          "summary": "检查文件改动，留下意见并继续处理。"
+        },
+        "pr-checks": {
+          "title": "PR 检查",
+          "summary": "查看 PR 的检查结果与评论。"
+        },
+        "ship": {
+          "title": "提交与交付",
+          "summary": "让 AI 准备提交和 PR，由人核对交付。"
+        },
+        "workspace-board": {
+          "title": "工作区看板",
+          "summary": "查看工作区状态，切回正在处理的工作。"
+        },
+        "automation": {
+          "title": "自动化",
+          "summary": "了解现有自动化的创建、启停和运行入口。"
+        },
+        "quick-jump": {
+          "title": "快捷跳转",
+          "summary": "快速找到并进入一个工作区或会话。"
+        },
+        "milestones": {
+          "title": "项目里程碑",
+          "summary": "安排阶段成果与时间，再对照实际交付。"
+        },
+        "project-wall": {
+          "title": "项目墙",
+          "summary": "查看多个项目，找到这次要进入的工作。"
+        },
+        "project-intake": {
+          "title": "纳入项目",
+          "summary": "添加项目并进入工作，项目背景可以按需补充。"
+        },
+        "project-overview": {
+          "title": "项目总览",
+          "summary": "查看项目方向、阶段安排和真实读数。"
+        },
+        "version-planning": {
+          "title": "版本计划",
+          "summary": "确定这一版做什么、怎样验收，并安排任务。"
+        },
+        "version-navigation": {
+          "title": "版本与会话导航",
+          "summary": "从版本和目标找到对应工作区与会话。"
+        },
+        "review-notifications": {
+          "title": "评审通知与共享主机",
+          "summary": "建立必要连接，请同伴检视改动，并从通知进入 PR。"
+        },
+        "version-acceptance": {
+          "title": "版本验收",
+          "summary": "对照目标核验证据，由人确认结果并归档。"
+        },
+        "version-overview": {
+          "title": "版本总览",
+          "summary": "查看本版目标、任务和验收事实。"
+        },
+        "metrics": {
+          "title": "指标配置与采集",
+          "summary": "明确度量口径，查看真实读数与缺失原因。"
+        },
+        "internal-integrations": {
+          "title": "CodeHub / WeLink",
+          "summary": "配置沿 BW 入门，具体使用结合任务和协作场景。"
+        }
+      },
+      "labels": {
+        "journeys": "工作旅程",
+        "features": "功能",
+        "types": "探索分类",
+        "preparing": "内容准备中",
+        "building": "建设中",
+        "related": "相关功能与操作"
+      },
+      "group": {
+        "projects": "项目墙与纳入",
+        "overview": "项目总览",
+        "planning": "版本计划与导航",
+        "execution": "任务与执行",
+        "browser": "内置浏览器",
+        "review": "检视与协作",
+        "acceptance": "验收与版本事实",
+        "automation": "自动化",
+        "agents": "智能体编排"
+      },
+      "journey": {
+        "direction": {
+          "title": "建立项目方向与阶段安排",
+          "summary": "说清想做成什么，把共同方向落到阶段成果。"
+        },
+        "commitments": {
+          "title": "确定本版承诺并开工",
+          "summary": "结合上版结果与新要求，形成可以执行、可以验收的计划。"
+        },
+        "delivery": {
+          "title": "把问题推进到可信交付",
+          "summary": "从任务开始，完成必要的讨论、开发、验证和同伴检视，再合入 PR。"
+        },
+        "acceptance": {
+          "title": "把本版承诺验收清楚",
+          "summary": "对照证据确认结果，留下结论与下一步安排。"
+        },
+        "outcomes": {
+          "title": "用真实效果保持方向",
+          "summary": "看进展与效果，发现偏差，决定后续投入。"
+        },
+        "maintenance": {
+          "title": "让项目持续可维护",
+          "summary": "审视项目知识、架构与技术债，决定处理或暂缓，并验证结果。"
+        },
+        "reuse": {
+          "title": "让下次工作少操心",
+          "summary": "把真实工作中跑通的做法沉淀下来，在下次同类任务中复用并检验。"
+        }
+      }
+    },
     "tour": {
       "workspaces": {
         "title": "工作区",
@@ -14963,7 +15116,7 @@
       }
     },
     "explore": "探索 BW",
-    "exploreDescription": "通过现有演示了解 BW 的常用能力。",
+    "exploreDescription": "浏览 BW 的工作旅程与功能演示。",
     "experiences": "能力体验",
     "addProjectFirst": "请先纳入一个要开展工作的项目。",
     "done": "完成",

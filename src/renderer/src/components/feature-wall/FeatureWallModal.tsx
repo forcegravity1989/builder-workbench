@@ -50,7 +50,7 @@ export default function FeatureWallModal(): JSX.Element | null {
             {isWorkbenchShell()
               ? translate(
                   'guidance.exploreDescription',
-                  'Explore BW capabilities through the existing demonstrations.'
+                  'Browse work journeys and feature demonstrations in BW.'
                 )
               : translate(
                   'auto.components.feature.wall.FeatureWallModal.33dca8bbbe',
@@ -59,7 +59,12 @@ export default function FeatureWallModal(): JSX.Element | null {
           </DialogDescription>
         </DialogHeader>
 
-        <FeatureWallTourSurface isOpen={isOpen} source={source} onDone={closeModal} />
+        <FeatureWallTourSurface
+          isOpen={isOpen}
+          source={source}
+          onDone={closeModal}
+          workbenchCatalog={isWorkbenchShell()}
+        />
       </DialogContent>
     </Dialog>
   )
