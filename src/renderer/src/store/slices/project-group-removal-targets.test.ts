@@ -69,9 +69,9 @@ describe('selectProjectGroupRemovalTargets', () => {
       remoteUrl: 'https://github.com/acme/app'
     }
     const local = { ...makeRepo('local', rootGroup.id), gitRemoteIdentity: remote }
-    const paired = {
+    const paired: Repo = {
       ...makeRepo('paired', null),
-      executionHostId: hostId as const,
+      executionHostId: hostId,
       gitRemoteIdentity: remote,
       projectGroupId: undefined
     }
