@@ -22,6 +22,7 @@ export const FEATURE_EDUCATION_SOURCES = [
   'browser_visible',
   'client_hosted_browser_visible',
   'tasks_open',
+  'workbench_tasks_visible',
   'automations_open',
   'floating_workspace_visible',
   'workspace_creation_visible',

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { CircleHelp } from 'lucide-react'
 import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { requestContextualTourWhenReady } from '@/components/contextual-tours/request-contextual-tour-when-ready'
 import {
@@ -31,7 +32,7 @@ const guideSources = {
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
   'workbench-versions': 'version_sidebar_visible',
-  tasks: 'tasks_open'
+  tasks: 'workbench_tasks_visible'
 } as const
 
 export type WorkbenchGuideId = keyof typeof guideSources
@@ -222,6 +223,17 @@ export function WorkbenchWallGuide({ enabled }: { enabled: boolean }) {
       label="项目墙帮助"
       icon={CircleHelp}
       onClick={() => replayWorkbenchGuide('workbench-wall')}
+    />
+  )
+}
+
+export function WorkbenchTaskHelp({ enabled }: { enabled: boolean }) {
+  useWorkbenchScreenGuide('tasks', enabled)
+  return (
+    <WorkbenchIconButton
+      label={translate('guidance.planning.taskHelp', 'Task help')}
+      icon={CircleHelp}
+      onClick={() => replayWorkbenchGuide('tasks')}
     />
   )
 }

@@ -150,7 +150,7 @@ export const CONTEXTUAL_TOURS = [
     steps: [
       {
         title: 'Choose the work source',
-        body: 'Switch between connected providers and project filters without changing pages.',
+        body: 'Choose the project or work source. If none is available, check your connections in Settings.',
         targetSelector: '[data-contextual-tour-target="tasks-source-filters"]',
         requiredForStart: true
       },

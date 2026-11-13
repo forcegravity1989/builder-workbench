@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TaskPageSourceBar } from './SourceBar'
 import { AlertCircle } from 'lucide-react'
+import { WorkbenchTaskHelp } from '@/workbench/WorkbenchScreenGuide'
 import { TaskPageGitHubModeControls } from './github/ModeControls'
 import { TaskPageProviderFilters } from './ProviderFilters'
 export function TaskPageListChrome({
@@ -47,7 +48,19 @@ export function TaskPageListChrome({
 
           {workbench ? null : <TaskPageGitHubModeControls model={model} />}
 
-          <TaskPageProviderFilters model={model} />
+          {workbench ? (
+            <div
+              className="flex min-w-0 items-start gap-2"
+              data-contextual-tour-target="tasks-source-filters"
+            >
+              <div className="min-w-0 flex-1">
+                <TaskPageProviderFilters model={model} />
+              </div>
+              <WorkbenchTaskHelp enabled={!taskPageListChromeHidden} />
+            </div>
+          ) : (
+            <TaskPageProviderFilters model={model} />
+          )}
           <TaskPageScopeHeader model={model} />
         </div>
       </section>

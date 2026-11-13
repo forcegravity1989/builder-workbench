@@ -2,7 +2,7 @@ import type { TaskPageComposerActionsModel } from '../use-task-page-composer-act
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { X, CircleHelp, ExternalLink } from 'lucide-react'
+import { X, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { LinearScopeSelector } from '@/components/linear-scope-selector'
@@ -13,9 +13,6 @@ import {
   SelectContent,
   SelectItem
 } from '@/components/ui/select'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { replayWorkbenchGuide } from '@/workbench/WorkbenchScreenGuide'
-
 export function TaskPageSourceBar({
   model
 }: {
@@ -51,7 +48,6 @@ export function TaskPageSourceBar({
     handleLinearTeamSelectionChange,
     handleLinearScopeOpen
   } = model
-  const taskHelp = translate('guidance.planning.taskHelp', 'Task help')
   return (
     <div className="flex items-center justify-between gap-2">
       <div
@@ -76,22 +72,6 @@ export function TaskPageSourceBar({
           </TooltipContent>
         </Tooltip>
         <div className="mx-1 h-5 w-px bg-border/50" aria-hidden />
-        {isWorkbenchShell() && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-7"
-                aria-label={taskHelp}
-                onClick={() => replayWorkbenchGuide('tasks')}
-              >
-                <CircleHelp className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{taskHelp}</TooltipContent>
-          </Tooltip>
-        )}
         {visibleSourceOptions.map((source) => {
           const active = taskSource === source.id
           const sourceAvailabilityNotice = taskSourceAvailabilityNoticeByProvider[source.id] ?? null
