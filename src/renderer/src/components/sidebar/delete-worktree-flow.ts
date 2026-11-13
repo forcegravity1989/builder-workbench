@@ -10,7 +10,12 @@ import { getWorkspaceDeleteLineage } from './workspace-delete-lineage'
 import { resolveSshWorkspaceForget } from './ssh-workspace-forget-resolution'
 import { isPairedWebClientWindow } from '@/lib/desktop-window-chrome'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  parseExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host'
+import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { worktreeActivationHostOpts } from '@/workbench/worktree-activation-host-opts'
 import {
@@ -61,12 +66,14 @@ export function runWorktreeDelete(worktreeId: string, options: WorktreeDeleteOpt
       settings: state.settings
     })
     const physicalHost = parseExecutionHostId(target.hostId)
+    const pairedOwner = parseExecutionHostId(targetHostId)?.kind === 'runtime'
+    const logicalHostId = physicalHost?.kind === 'ssh' ? physicalHost.id : LOCAL_EXECUTION_HOST_ID
     if (
       workbench &&
       (!repo ||
-        (target.runtimeOwnerEnvironmentId &&
-          physicalHost?.kind === 'ssh' &&
-          repo.pairedRegistration?.hostId !== physicalHost.id))
+        normalizeRuntimePathForComparison(repo.path) !==
+          normalizeRuntimePathForComparison(target.path) ||
+        (pairedOwner && repo.pairedRegistration?.hostId !== logicalHostId))
     ) {
       showWorkspaceListChangedToast()
       return

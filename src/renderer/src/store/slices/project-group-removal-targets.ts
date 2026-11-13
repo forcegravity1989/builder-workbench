@@ -38,6 +38,7 @@ export function selectProjectGroupRemovalTargets(
   const deletedGroupIds = getProjectGroupSubtreeIds(ownerGroups, groupId)
   const projects = repos.filter(
     (repo) =>
+      !repo.inheritedProjectGroup &&
       repo.projectGroupId &&
       deletedGroupIds.has(repo.projectGroupId) &&
       ownsRowHost(getRepoExecutionHostId(repo))

@@ -107,6 +107,8 @@ export type Repo = {
   symlinkPaths?: string[]
   /** Durable sidebar-only repo organization. Execution remains repo-scoped. */
   projectGroupId?: string | null
+  /** Renderer display inheritance, without an owning catalog's group membership. */
+  inheritedProjectGroup?: true
   /** User-authored ordering inside the project group or ungrouped bucket. */
   projectGroupOrder?: number
   /** Repo-specific source-control AI overrides. Missing fields inherit global settings. */

@@ -41,7 +41,7 @@ export function applyInheritedProjectGroups(
   for (const repo of previous) {
     const projectGroupId =
       repo.projectGroupId === undefined ? undefined : (repo.projectGroupId ?? null)
-    if (projectGroupId === undefined) {
+    if (repo.inheritedProjectGroup || projectGroupId === undefined) {
       continue
     }
     const projectId = getProjectIdentityKey(repo)
@@ -64,7 +64,7 @@ export function applyInheritedProjectGroups(
       return repo
     }
     // Why: project groups are a local affordance; runtime copies of the same canonical project should appear in the user's existing group.
-    return { ...repo, projectGroupId: inheritedProjectGroupId }
+    return { ...repo, projectGroupId: inheritedProjectGroupId, inheritedProjectGroup: true }
   })
 }
 
