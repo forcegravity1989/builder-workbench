@@ -1,6 +1,6 @@
 import { MessageSquarePlus, Plus, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { BoardIconButton } from '../board-ui'
 import type { AnnotationRef } from './types'
 import './annotations.css'
@@ -30,24 +30,50 @@ export function AnnotationPopover({
     below + POP_H > window.innerHeight - 16
       ? Math.max(16, Math.min(target.rect.top - POP_H - 8, window.innerHeight - POP_H - 16))
       : below
+  // Portaled to body: left/top are viewport coordinates from the clicked
+  // element's rect, so the popover must not inherit any board-local containing
+  // block (container-type/contain ancestry) — same approach as Radix overlays.
+  return createPortal(
+    <AnnotationPopoverForm
+      label={target.ref.label}
+      draft={draft}
+      style={{ left, top }}
+      autoFocus
+      onChange={setDraft}
+      onSave={onSave}
+      onCancel={onCancel}
+    />,
+    document.body
+  )
+}
+
+export function AnnotationPopoverForm({
+  label,
+  draft,
+  style,
+  autoFocus,
+  onChange,
+  onSave,
+  onCancel
+}: {
+  label: string
+  draft: string
+  style?: CSSProperties
+  autoFocus?: boolean
+  onChange(text: string): void
+  onSave(text: string): void
+  onCancel(): void
+}) {
   const save = () => {
     if (draft.trim()) {
       onSave(draft.trim())
     }
   }
-  // Portaled to body: left/top are viewport coordinates from the clicked
-  // element's rect, so the popover must not inherit any board-local containing
-  // block (container-type/contain ancestry) — same approach as Radix overlays.
-  return createPortal(
-    <div
-      className="g3-annot-pop"
-      role="dialog"
-      aria-label={`对象批注（${target.ref.label}）`}
-      style={{ left, top }}
-    >
+  return (
+    <div className="g3-annot-pop" role="dialog" aria-label={`对象批注（${label}）`} style={style}>
       <header>
         <MessageSquarePlus size={13} aria-hidden="true" />
-        <strong>{target.ref.label}</strong>
+        <strong>{label}</strong>
         <BoardIconButton label="关闭批注小窗" onClick={onCancel}>
           <X size={15} aria-hidden="true" />
         </BoardIconButton>
@@ -57,8 +83,8 @@ export function AnnotationPopover({
         aria-label="批注内容"
         placeholder="在此添加批注..."
         value={draft}
-        autoFocus
-        onChange={(event) => setDraft(event.target.value)}
+        autoFocus={autoFocus}
+        onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
             save()
@@ -73,7 +99,6 @@ export function AnnotationPopover({
           <Plus size={13} aria-hidden="true" /> 添加
         </button>
       </footer>
-    </div>,
-    document.body
+    </div>
   )
 }

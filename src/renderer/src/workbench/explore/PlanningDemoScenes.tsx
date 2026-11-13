@@ -5,6 +5,10 @@ import { PlanningGoalCard } from '../version-planning/PlanningGoalCard'
 import { PlanningMinutesSection } from '../version-planning/PlanningMinutesSection'
 import { PlanningPriorReview } from '../version-planning/PlanningPriorReview'
 import { PlanningStartCard } from '../version-planning/PlanningStartCard'
+import { PlanningAnnotationButton } from '../version-planning/PlanningSections'
+import { AnnotationPanel } from '../annotations/AnnotationPanel'
+import { AnnotationPopoverForm } from '../annotations/AnnotationPopover'
+import type { AnnotationMatch, AnnotationRef } from '../annotations/types'
 import { NewWorkspaceComposerFooter } from '@/components/new-workspace/NewWorkspaceComposerFooter'
 import { Input } from '@/components/ui/input'
 import { BoardActionButton } from '../board-ui'
@@ -144,12 +148,14 @@ function GoalFrame({
   value = goal,
   editing = false,
   showIssue = false,
-  taskOnly = false
+  taskOnly = false,
+  numbersFor = noNumbers
 }: {
   value?: VersionGoal
   editing?: boolean
   showIssue?: boolean
   taskOnly?: boolean
+  numbersFor?(match: AnnotationMatch): number[]
 }) {
   return (
     <div className={taskOnly ? 'planning-demo-task-focus' : undefined}>
@@ -177,7 +183,7 @@ function GoalFrame({
         viewStateKey={undefined}
         editing={editing}
         onEditingChange={ignore}
-        numbersFor={noNumbers}
+        numbersFor={numbersFor}
         onOpenAnnotationPanel={ignore}
       />
     </div>
@@ -212,10 +218,60 @@ export function PlanningTasksDemo({ time }: { time: number }) {
   )
 }
 
+const reviewNote = '补上重复提交时的提示。'
+const reviewTarget: AnnotationRef = {
+  kind: 'acceptance',
+  goalId: goal.goalId,
+  label: 'G1 · 验收标准'
+}
+
+function PlanningAnnotationDemo({ time }: { time: number }) {
+  const active = time >= 1150
+  const added = time >= 4250
+  const showPopover = time >= 2250 && !added
+  const showPanel = active && !showPopover
+  const draft = reviewNote.slice(0, Math.max(0, Math.floor((time - 2350) / 86)))
+  return (
+    <div className="direction-demo-window planning-demo planning-demo-annotations">
+      <SampleHeader>
+        <PlanningAnnotationButton active={active} count={added ? 1 : 0} onToggle={ignore} />
+      </SampleHeader>
+      <GoalFrame numbersFor={(match) => (added && match.kinds.includes('acceptance') ? [1] : [])} />
+      {showPopover && (
+        <AnnotationPopoverForm
+          label={reviewTarget.label}
+          draft={draft}
+          onChange={ignore}
+          onSave={ignore}
+          onCancel={ignore}
+        />
+      )}
+      {showPanel && (
+        <AnnotationPanel
+          annotations={
+            added ? [{ id: 'sample-note', number: 1, ref: reviewTarget, text: reviewNote }] : []
+          }
+          annotating
+          worktreeId={null}
+          onClose={ignore}
+          onUpdate={ignore}
+          onRemove={ignore}
+          onBoardLevel={ignore}
+          onCopy={noTaskAction}
+          onSendDirect={async () => false}
+        />
+      )}
+    </div>
+  )
+}
+
 export function PlanningReviewDemo({ time }: { time: number }) {
-  const confirmed = time >= 2500
-  const merged = time >= 6900
-  if (time < 4200) {
+  const confirmed = time >= 8350
+  const merged = time >= 12300
+  if (time < 6800) {
+    return <PlanningAnnotationDemo time={time} />
+  }
+  if (time < 9600) {
     return (
       <div className="direction-demo-window planning-demo">
         <SampleHeader />

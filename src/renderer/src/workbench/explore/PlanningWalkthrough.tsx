@@ -54,12 +54,15 @@ function steps(): JourneyStep[] {
       title: translate('guidance.planning.review.title', 'Review and archive'),
       action: translate(
         'guidance.planning.review.body',
-        'Confirm the meeting notes if used. Request a PR in the session and have a teammate review and merge it.'
+        'Annotate the plan, confirm the notes if used, then archive through a reviewed PR.'
       ),
-      duration: 8700,
+      duration: 13900,
       cues: [
-        [2100, '.g3-minutes-foot button'],
-        [5100, '.g3-archive-link']
+        [900, '.g3-annotate-entry'],
+        [2000, '.g3-acceptance'],
+        [4000, '.g3-annot-pop .primary'],
+        [8100, '.g3-minutes-foot button'],
+        [10700, '.g3-archive-link']
       ],
       Scene: PlanningReviewDemo
     },

@@ -17789,7 +17789,7 @@
       },
       "review": {
         "title": "Review and archive",
-        "body": "Confirm the meeting notes if used. Request a PR in the session and have a teammate review and merge it."
+        "body": "Annotate the plan, confirm the notes if used, then archive through a reviewed PR."
       },
       "start": {
         "title": "Start an issue",

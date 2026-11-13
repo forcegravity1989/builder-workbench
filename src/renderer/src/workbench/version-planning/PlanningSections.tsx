@@ -1,4 +1,4 @@
-import { ArrowDownToLine, GitBranch, MessageSquare } from 'lucide-react'
+import { ArrowDownToLine, GitBranch, MessageSquare, MessageSquarePlus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { BoardActionButton } from '../board-ui'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
@@ -106,14 +106,43 @@ export function PlanningHeader({
             {sessionCollapsed ? '展开会话' : '收起会话'}
           </BoardActionButton>
           {annotateEntry}
-          {helpEntry}
           <BoardActionButton disabled={disabled} onClick={onRefresh}>
             <ArrowDownToLine size={13} aria-hidden="true" /> 更新代码
           </BoardActionButton>
           <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
         </div>
+        {helpEntry}
       </div>
     </header>
+  )
+}
+
+export function PlanningAnnotationButton({
+  active,
+  count,
+  shortcut,
+  onToggle
+}: {
+  active: boolean
+  count: number
+  shortcut?: string | null
+  onToggle(): void
+}) {
+  return (
+    <BoardActionButton
+      className={`g3-annotate-entry${active ? ' g3-mode-on' : ''}`}
+      data-contextual-tour-target="workbench-plan-annotations"
+      aria-pressed={active}
+      title={
+        active
+          ? `退出批注模式${shortcut ? `（${shortcut}）` : ''}`
+          : `批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见${shortcut ? `（${shortcut} 进入）` : ''}`
+      }
+      onClick={onToggle}
+    >
+      <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
+      {count > 0 && <span className="g3-annotate-count">{count}</span>}
+    </BoardActionButton>
   )
 }
 

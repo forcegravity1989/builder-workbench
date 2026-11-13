@@ -306,24 +306,29 @@ export const CONTEXTUAL_TOURS = [
     steps: [
       {
         id: 'workbench-plan-start',
-        title: '继续这版计划',
-        body: '尚未开始时，打开计划会话并发送草稿。已有计划可从本版目标继续。',
+        title: '开始或继续计划',
+        body: '点「开始计划」打开会话。已有材料时，点「本版目标」查看验收标准和「拆解 Issue」。',
         targetSelector:
           '[data-contextual-tour-target="workbench-plan-start"], [data-contextual-tour-target="workbench-plan-goals"]',
         requiredForStart: true,
-        preferredPlacement: 'bottom'
+        preferredPlacement: 'bottom',
+        targetPulse: true
       },
       {
-        id: 'workbench-plan-issues',
-        title: '把目标落成任务',
-        body: '展开目标，点「拆解 Issue」，与计划助手核对要纳入的任务。',
-        targetSelector: '[data-contextual-tour-target="workbench-plan-issues"]'
+        id: 'workbench-plan-annotations',
+        title: '给计划留下评审意见',
+        body: '先展开要评审的目标，再打开「批注模式」。点验收标准等对象添加批注，可从批注窗发给计划助手。',
+        targetSelector: '[data-contextual-tour-target="workbench-plan-annotations"]',
+        preferredPlacement: 'bottom',
+        targetPulse: true
       },
       {
         id: 'workbench-plan-archive',
         title: '评审后归档',
         body: '在计划会话中发起归档。评审与合入进度可从「归档 PR」查看。',
-        targetSelector: '[data-contextual-tour-target="workbench-plan-archive"]'
+        targetSelector: '[data-contextual-tour-target="workbench-plan-archive"]',
+        preferredPlacement: 'bottom',
+        targetPulse: true
       }
     ]
   },

@@ -467,7 +467,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     timeout: 180_000
   })
   const planGuide = workbenchPage.locator('[data-contextual-tour-panel]')
-  await expect(planGuide.getByText('继续这版计划', { exact: true })).toBeVisible()
+  await expect(planGuide.getByText('开始或继续计划', { exact: true })).toBeVisible()
   await planGuide.locator('[data-contextual-tour-skip]').click()
   await expect(planGuide).toBeHidden()
   await expect
@@ -478,7 +478,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     )
     .toBe(true)
   await workbenchPage.getByRole('button', { name: '版本计划帮助', exact: true }).click()
-  await expect(planGuide.getByText('继续这版计划', { exact: true })).toBeVisible()
+  await expect(planGuide.getByText('开始或继续计划', { exact: true })).toBeVisible()
   await planGuide.locator('[data-contextual-tour-skip]').click()
   const createdVersionToggle = workbenchPage.getByRole('button', {
     name: 'v9.9 展开或收起',
@@ -561,6 +561,17 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   // ---- 批注模式同键进出（#444）：Alt+A ≡ 点页头按钮，再按退出 ----
   const annotateEntry = workbenchPage.locator('.g3-annotate-entry')
   await expect(annotateEntry).toBeVisible()
+  const planHelp = workbenchPage.getByRole('button', { name: '版本计划帮助', exact: true })
+  await expect(workbenchPage.locator('.g3-header-tools + button')).toHaveAttribute(
+    'aria-label',
+    '版本计划帮助'
+  )
+  await planHelp.click()
+  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).click()
+  await expect(planGuide.getByRole('heading', { name: '给计划留下评审意见' })).toBeVisible()
+  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).click()
+  await expect(planGuide.getByRole('heading', { name: '评审后归档' })).toBeVisible()
+  await planGuide.locator('[data-contextual-tour-skip]').click()
   await workbenchPage.keyboard.press('Alt+A')
   await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
   await expect(annotateEntry).toHaveAttribute('aria-pressed', 'true')
