@@ -15948,7 +15948,9 @@
         },
         "hostPicker": {
           "allHosts": "All hosts",
-          "loadingHost": "Loading host…"
+          "loadingHost": "Loading host…",
+          "searchHosts": "Search hosts...",
+          "noHostsMatch": "No hosts match your search."
         },
         "ownerConflict": {
           "dismiss": "Dismiss"
