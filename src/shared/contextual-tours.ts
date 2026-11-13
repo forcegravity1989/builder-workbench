@@ -235,10 +235,10 @@ export const CONTEXTUAL_TOURS = [
       {
         id: 'workbench-wall-start',
         title: '找到项目',
-        body: '用搜索或筛选找项目。找不到时可清除搜索和筛选，项目墙为空时点「添加项目」。',
+        body: '搜索项目。没有匹配时清除筛选，空墙可点「添加项目」。',
         targetSelector: '[data-contextual-tour-target="workbench-wall-start"]',
         requiredForStart: true,
-        preferredPlacement: 'bottom'
+        preferredPlacement: 'right'
       },
       {
         id: 'workbench-wall-open',
