@@ -55,17 +55,17 @@ describe('selectProjectGroupRemovalTargets', () => {
       rootGroup.id
     )
 
-    expect(result.groupExists).toBe(true)
+    expect(result.ownerHostId).toBe('local')
     expect([...result.deletedGroupIds].sort()).toEqual([childGroup.id, rootGroup.id])
-    expect(result.projectIds).toEqual(['direct', 'nested'])
+    expect(result.projects.map((repo) => repo.id)).toEqual(['direct', 'nested'])
   })
 
   it('returns an empty project list for empty groups', () => {
     const result = selectProjectGroupRemovalTargets([rootGroup], [], rootGroup.id)
 
-    expect(result.groupExists).toBe(true)
+    expect(result.ownerHostId).toBe('local')
     expect([...result.deletedGroupIds]).toEqual([rootGroup.id])
-    expect(result.projectIds).toEqual([])
+    expect(result.projects).toEqual([])
   })
 
   it('does not synthesize targets for a missing group', () => {
@@ -75,8 +75,8 @@ describe('selectProjectGroupRemovalTargets', () => {
       'missing'
     )
 
-    expect(result.groupExists).toBe(false)
+    expect(result.ownerHostId).toBeNull()
     expect([...result.deletedGroupIds]).toEqual([])
-    expect(result.projectIds).toEqual([])
+    expect(result.projects).toEqual([])
   })
 })

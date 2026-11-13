@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { getRepoOwnerWorktreeVisibilityDefaults } from '@/store/worktree-visibility-defaults-by-host'
 import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
@@ -15,8 +14,7 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
   const projectGroups = useAppStore((s) => s.projectGroups)
   const settings = useAppStore((s) => s.settings)
   const defaults = useAppStore((s) => s.worktreeVisibilityDefaultsByHost)
-  const repoMap = useMemo(() => new Map(repos.map((repo) => [repo.id, repo])), [repos])
-  const dialogs = useProjectGroupDialogs({ repos, repoMap, projectGroups })
+  const dialogs = useProjectGroupDialogs({ repos, projectGroups })
   const settingsFor = (repo: Repo, sectionId?: string) =>
     guard(() => {
       const store = useAppStore.getState()
@@ -50,22 +48,18 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
         onRemoveProjectFromGroup: (row) => guard(() => dialogs.handleRemoveProjectFromGroup(row)),
         onRemoveProject: (row) =>
           guard(() =>
-            useAppStore
-              .getState()
-              .openModal('confirm-remove-folder', {
-                repoId: row.id,
-                displayName: row.displayName,
-                hostId: getRepoExecutionHostId(row)
-              })
+            useAppStore.getState().openModal('confirm-remove-folder', {
+              repoId: row.id,
+              displayName: row.displayName,
+              hostId: getRepoExecutionHostId(row)
+            })
           ),
         onCreateForRepo: (repoId) =>
           guard(() =>
-            useAppStore
-              .getState()
-              .openModal('new-workspace-composer', {
-                initialRepoId: repoId,
-                telemetrySource: 'sidebar'
-              })
+            useAppStore.getState().openModal('new-workspace-composer', {
+              initialRepoId: repoId,
+              telemetrySource: 'sidebar'
+            })
           )
       }}
     />

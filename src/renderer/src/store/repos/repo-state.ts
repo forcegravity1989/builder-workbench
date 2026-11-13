@@ -101,6 +101,7 @@ export type FolderWorkspacePathStatusCacheEntry = {
 
 export type DeleteProjectGroupWithContainedProjectsOptions = {
   removeContainedProjects: boolean
+  confirmedProjectKeys?: readonly string[]
   // hostId disambiguates which host's group row to delete when the id exists on multiple hosts.
   hostId?: ExecutionHostId
 }
@@ -124,7 +125,7 @@ export type DeleteProjectGroupWithContainedProjectsResult =
       failedProjectRemovals: ProjectRemovalFailure[]
     }
   | {
-      status: 'missing-group' | 'group-delete-failed'
+      status: 'missing-group' | 'group-delete-failed' | 'group-members-changed'
       groupId: string
       requestedProjectIds: string[]
       removedProjectIds: []

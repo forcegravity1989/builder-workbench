@@ -84,6 +84,11 @@ jobs:
           src/renderer/src/components/dashboard/useDashboardPopoutBridge.test.tsx
           src/renderer/src/store/slices/worktrees-remote-runtime-create.test.ts
           src/renderer/src/store/slices/repos-project-groups.test.ts
+          src/renderer/src/store/slices/repos-project-groups-delete.test.ts
+          src/renderer/src/store/slices/repos-project-groups-owner-routing.test.ts
+          src/renderer/src/store/slices/project-group-removal-targets.test.ts
+          src/renderer/src/components/sidebar/ProjectGroupDeleteDialog.test.tsx
+          src/renderer/src/components/sidebar/worktree-list/rows/use-project-group-dialogs-owner-host.test.tsx
 
   browser-annotations:
     name: Browser annotation contracts

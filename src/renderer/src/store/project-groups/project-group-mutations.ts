@@ -2,9 +2,11 @@ import type { StateCreator } from 'zustand'
 import type { AppState } from '../types'
 import type { ProjectGroup } from '../../../../shared/project-group-types'
 import type { Repo } from '../../../../shared/repo-types'
-import { selectProjectGroupRemovalTargets } from '../slices/project-group-removal-targets'
 import {
-  catalogOwnsHost,
+  projectGroupRemovalKeys,
+  selectProjectGroupRemovalTargets
+} from '../slices/project-group-removal-targets'
+import {
   getProjectGroupHostId,
   projectGroupMatchesOwnerHost,
   resolveProjectGroupOwnerHostId,
@@ -120,6 +122,9 @@ export function createProjectGroupMutationActions(
       try {
         // Why: deletion targets the group's owner host (see updateProjectGroup); focus may be elsewhere.
         const ownerHostId = resolveProjectGroupOwnerHostId(get(), groupId, options?.hostId)
+        if (options?.hostId && !ownerHostId) {
+          return false
+        }
         const target = getActiveRuntimeTarget(
           settingsForProjectGroupOwner(get(), groupId, options?.hostId)
         )
@@ -146,15 +151,16 @@ export function createProjectGroupMutationActions(
     },
 
     deleteProjectGroupWithContainedProjects: async (groupId, options) => {
-      const ownerHostId = resolveProjectGroupOwnerHostId(get(), groupId, options.hostId)
-      const targets = selectProjectGroupRemovalTargets(
-        get().projectGroups,
-        get().repos,
+      const { repos, projectGroups } = get()
+      const { ownerHostId, projects } = selectProjectGroupRemovalTargets(
+        projectGroups,
+        repos,
         groupId,
-        ownerHostId
+        options.hostId
       )
-      const requestedProjectIds = options.removeContainedProjects ? targets.projectIds : []
-      if (!targets.groupExists) {
+      const selectedProjects = options.removeContainedProjects ? projects : []
+      const requestedProjectIds = selectedProjects.map((repo) => repo.id)
+      if (!ownerHostId) {
         return {
           status: 'missing-group',
           groupId,
@@ -164,9 +170,22 @@ export function createProjectGroupMutationActions(
         }
       }
 
-      const deleted = await get().deleteProjectGroup(groupId, {
-        hostId: ownerHostId ?? undefined
-      })
+      if (
+        options.removeContainedProjects &&
+        options.confirmedProjectKeys &&
+        JSON.stringify(options.confirmedProjectKeys) !==
+          JSON.stringify(projectGroupRemovalKeys(selectedProjects))
+      ) {
+        return {
+          status: 'group-members-changed',
+          groupId,
+          requestedProjectIds,
+          removedProjectIds: [],
+          failedProjectRemovals: []
+        }
+      }
+
+      const deleted = await get().deleteProjectGroup(groupId, { hostId: ownerHostId })
       if (!deleted) {
         return {
           status: 'group-delete-failed',
@@ -189,26 +208,19 @@ export function createProjectGroupMutationActions(
 
       const removedProjectIds: string[] = []
       const failedProjectRemovals: ProjectRemovalFailure[] = []
-      // Why: the group's catalog can hold rows from several hosts (a local catalog also owns SSH rows),
-      // so each project is removed on its own host rather than on the group's.
-      const findOwnedProjects = (projectId: string): Repo[] =>
-        get().repos.filter(
-          (repo) =>
-            repo.id === projectId &&
-            (!ownerHostId || catalogOwnsHost(ownerHostId, getRepoExecutionHostId(repo)))
-        )
-      for (const projectId of targets.projectIds) {
-        const ownedProjects = findOwnedProjects(projectId)
-        const projectHostId =
-          ownedProjects.length === 1 ? getRepoExecutionHostId(ownedProjects[0]) : undefined
+      // The group delete clears membership. Keep the exact registrations selected before it.
+      for (const project of selectedProjects) {
+        const projectId = project.id
+        const hostId = getRepoExecutionHostId(project)
+        const findProject = () => findRepoForHost(get().repos, projectId, { hostId })
         try {
-          if (ownedProjects.length > 0) {
-            await get().removeProject(projectId, { hostId: projectHostId })
+          if (findProject()?.path === project.path) {
+            await get().removeProject(projectId, { hostId })
           }
         } catch (err) {
           console.error('Failed to remove contained project:', err)
         }
-        const stillExists = findOwnedProjects(projectId).length > 0
+        const stillExists = findProject()?.path === project.path
         if (stillExists) {
           failedProjectRemovals.push({
             projectId,
