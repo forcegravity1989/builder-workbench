@@ -6,7 +6,7 @@ description: >-
   适用于 BW 入门项、完整工作旅程或功能屏的逐行整改；普通单点修复沿 workbench-start，
   不自动盘点全库或安排子窗口。
 metadata:
-  version: 0.2.0-pilot
+  version: 0.2.1-pilot
 ---
 
 # BW 旅程走查与整改
@@ -48,6 +48,8 @@ metadata:
 改文档前完整读取[文档组织原则](../../../docs/01-principles/01-document-organization.md)与目标头部；仅同步本次受影响的正本和入口。需要治理职责或旧资料时读取 [project-knowledge](../project-knowledge/SKILL.md)，不把普通同步升级为全库审计。
 
 ## 交付与下一条
+
+每次旅程整改收尾，读取 [ref/upstream.md](../../../ref/upstream.md) 的头部约定与相关记录。按最终改动检查影响 Orca 同步的 BW 稳定差异，有变化就同批更新对应记录，说明原生复用与 BW 适配边界、关键扩点或路径、保留理由及 PR/验证入口，并清理失效说明。交付说明写明检查结论及适用的更新位置，便于后续同步逐项保留和复验。
 
 沿 workbench-start 连续完成适用门禁、独立检视、修正复核与 PR ready；完成、合入和对外发布按实际授权执行。报告让人能判断：这条路现在能走到哪里、哪里更简单、引导从哪里进入/回看、矩阵与指南/素材在哪，以及真实未验部分和所需下一步。执行证据留 PR，矩阵只留当前覆盖与来源。
 

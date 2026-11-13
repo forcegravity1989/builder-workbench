@@ -10,7 +10,7 @@ description: >-
   Also use for reviewing real Issue sessions to improve this development workflow.
   Load historical week-screen context only when tracing its earlier decisions.
 metadata:
-  version: 0.4.13-pilot
+  version: 0.4.14-pilot
 ---
 
 # workbench-start — Workbench 开发与交付
@@ -39,6 +39,8 @@ metadata:
 
 开始特性设计或制作原型前，读取并执行 [原则 02 §3.2](../../../docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收) 的设计依据与确认要求。
 
+涉及用户可见入口、操作路径或结果变化时，设计前完整读取[引导与旅程规范及矩阵](../../../docs/04-design-system/guidance.md)，定位受影响行，按[开发规范的验收依据](../../../docs/development.md#验收依据)明确本次引导。
+
 | 这次工作 | 执行路径 | 需要用户的时机 |
 |---|---|---|
 | 小 bug，恢复明确行为 | 核对设计 → 未修改基线复现 → 最小修复 → 测试 agent 按同一路径复验 | 调查后仍缺用户独有配置、环境或行为决定；未复现不假定有 bug |
@@ -65,6 +67,8 @@ metadata:
 ## 5. 验证与交付
 
 执行已经完整读取的 [交付细则](../../../docs/development.md)：登记执行清单 → 运行适用验收与门禁 → 提供版本与判据给独立 subagent → 修正并复核发现 → 提交、push、开 PR 及更新主验证评论。检视维度、测试取舍、独立测试 agent 和验证证据只在细则维护，不在此另立清单。
+
+交付用户可见变更时，按开发规范回查受影响的引导与矩阵证据，把验证结果和未验范围写入主验证评论。
 
 需要准备验证环境或发布截图时完整读取[验证执行参考](references/verification.md)，Windows Codex 再按其中入口读取宿主操作；纯文档报告相应检查，不强启真壳。沿当前授权完成交付，用户明确只本地时才停在本地；完成、合入与发布仍由人决定。
 
