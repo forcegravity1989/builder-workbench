@@ -1,3 +1,4 @@
+import { taskScopeGitHubViewerKey } from '@/workbench/task-scope-projection'
 import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
@@ -71,7 +72,7 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
             matchesWorkbenchTaskQuery(
               { ...workItem, assignees: (workItem.assignees ?? []).map((user) => user.login) },
               goalDisplayQuery,
-              model.workbenchScopeViewerLogins.get(workItem.repoId) ?? null
+              model.workbenchScopeViewerLogins.get(taskScopeGitHubViewerKey(workItem)) ?? null
             )) &&
           !githubWorkItemMutation.softHiddenItemKeys.has(
             taskPageGitHubItemKey(workItem.repoId, workItem.id)

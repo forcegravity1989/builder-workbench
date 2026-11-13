@@ -1,6 +1,11 @@
 import type { GitHubApiRepository } from './github-api-repository'
+import { normalizeGitHubRemoteHost } from '../../shared/git-remote-host-alias'
+import { resolveSshConfigHostname } from './github-ssh-host-alias-resolution'
 import { isValidGitHubApiRepository } from './github-api-repository-validation'
-import { isDefaultGitHubHost } from '../../shared/github/repository-identity-key'
+import {
+  githubRepoIdentityKey,
+  isDefaultGitHubHost
+} from '../../shared/github/repository-identity-key'
 import {
   getOwnerRepoForRemote,
   type GitHubRemoteIdentityProbeOptions,
@@ -71,9 +76,16 @@ export async function getGitHubApiRepositoryForRemote(
     if (!candidate || !isValidGitHubApiRepository(candidate)) {
       return null
     }
-    const host = candidate.host ?? 'github.com'
+    let host = candidate.host ?? 'github.com'
+    if (/^[a-z0-9][a-z0-9_-]*$/i.test(host)) {
+      const { hostname } = await resolveSshConfigHostname(host)
+      host = normalizeGitHubRemoteHost(hostname ?? host)
+    }
     if (!isDefaultGitHubHost(host) && !(await isGitHubHostAuthenticatedForGlobalCli(host))) {
-      throw new Error('GitHub repository host is unavailable in the local gh account')
+      if (githubRepoIdentityKey(candidate) === githubRepoIdentityKey(taskRepository)) {
+        throw new Error('GitHub repository host is unavailable in the local gh account')
+      }
+      return null
     }
     return { ...candidate, host }
   }

@@ -7,6 +7,13 @@ import {
 } from '../../../shared/workbench/task-scope'
 import type { TaskScopeLoadResult, TaskScopeMissingRow } from './task-scope-load'
 
+export function taskScopeGitHubViewerKey(
+  item: Pick<GitHubWorkItem, 'repoId' | 'url' | 'prRepo'>
+): string {
+  const host = item.prRepo?.host ?? URL.parse(item.url ?? '')?.host ?? 'github.com'
+  return JSON.stringify([item.repoId, host.toLowerCase()])
+}
+
 export type WorkbenchTaskScopeModelFields = {
   workbenchScopeActive: boolean
   workbenchScope: WorkbenchTaskScope | null
@@ -99,7 +106,7 @@ export function projectWorkbenchTaskScope({
             matchesWorkbenchTaskQuery(
               { ...item, assignees: (item.assignees ?? []).map((user) => user.login) },
               githubQuery,
-              viewerLogins.get(item.repoId) ?? null
+              viewerLogins.get(taskScopeGitHubViewerKey(item)) ?? null
             )
         )
   const githubPages: GitHubWorkItem[][] = []

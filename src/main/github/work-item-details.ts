@@ -6,6 +6,7 @@ import { getPRChecks, getPRComments, getWorkItem } from './client'
 import { acquire, release, type LocalGitExecOptions } from './gh-utils'
 import {
   getIssueGitHubApiRepository,
+  resolveIssueGitHubApiRepositorySource,
   resolveGitHubRepoExecution,
   type GitHubApiRepository
 } from './github-api-repository'
@@ -85,8 +86,16 @@ export async function getWorkItemDetails(
 
   const resolvedRepository =
     item.type === 'issue'
-      ? (localGitOptions.taskRepository ??
-        (await getIssueGitHubApiRepository(repoPath, connectionId, localGitOptions)))
+      ? localGitOptions.taskRepository
+        ? (
+            await resolveIssueGitHubApiRepositorySource(
+              repoPath,
+              preference,
+              connectionId,
+              localGitOptions
+            )
+          ).source
+        : await getIssueGitHubApiRepository(repoPath, connectionId, localGitOptions)
       : (await resolveGitHubRepoExecution(repoPath, item.prRepo, connectionId, localGitOptions))
           .ownerRepo
 
