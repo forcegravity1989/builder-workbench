@@ -557,6 +557,8 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
   await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
+  // The plan guide yields while autosave is writing. Start replay after the edit settles.
+  await expect(workbenchPage.locator('.vp-title-row').getByRole('status')).toHaveText('已保存')
 
   // ---- 批注模式同键进出（#444）：Alt+A ≡ 点页头按钮，再按退出 ----
   const annotateEntry = workbenchPage.locator('.g3-annotate-entry')
@@ -567,9 +569,9 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     '版本计划帮助'
   )
   await planHelp.click()
-  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).click()
+  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).press('Enter')
   await expect(planGuide.getByRole('heading', { name: '给计划留下评审意见' })).toBeVisible()
-  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).click()
+  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).press('Enter')
   await expect(planGuide.getByRole('heading', { name: '评审后归档' })).toBeVisible()
   await planGuide.locator('[data-contextual-tour-skip]').click()
   await workbenchPage.keyboard.press('Alt+A')
