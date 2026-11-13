@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type JSX, type ReactNode } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { translate } from '@/i18n/i18n'
@@ -37,7 +37,7 @@ export function BwExploreLayout({
   const [featureId, setFeatureId] = useState<ExploreFeatureId>('workspace')
   const [journeyIndex, setJourneyIndex] = useState(0)
   const feature = features[featureId]
-  const journey = journeys[journeyIndex] ?? journeys[0]
+  const journey: ExploreJourney = journeys[journeyIndex] ?? journeys[0]
   const featureContentRef = useRef<HTMLElement>(null)
   const focusRelatedContent = useRef(false)
 
@@ -60,13 +60,24 @@ export function BwExploreLayout({
     }
   }
 
-  function relatedFeatures(ids: readonly ExploreFeatureId[] | undefined): ReactNode {
+  function relatedFeatures(
+    ids: readonly ExploreFeatureId[] | undefined,
+    compact = false
+  ): ReactNode {
     if (!ids?.length) {
       return null
     }
     return (
-      <div className="mx-auto w-full max-w-[940px] px-8 pb-6 pt-5">
-        <h4 className="mb-2 text-xs font-medium text-muted-foreground">{labels.related}</h4>
+      <nav
+        aria-label={labels.related}
+        className={cn(
+          'mx-auto w-full max-w-[940px]',
+          compact ? 'px-4 pb-2 sm:px-6' : 'px-8 pb-6 pt-5'
+        )}
+      >
+        {!compact && (
+          <h4 className="mb-2 text-xs font-medium text-muted-foreground">{labels.related}</h4>
+        )}
         <div className="flex flex-wrap gap-2">
           {ids.map((id) => (
             <Button
@@ -83,7 +94,7 @@ export function BwExploreLayout({
             </Button>
           ))}
         </div>
-      </div>
+      </nav>
     )
   }
 
@@ -156,35 +167,74 @@ export function BwExploreLayout({
         </TabsContent>
         <TabsContent value="journey" className={paneClassName}>
           <nav aria-label={labels.journeys} className={railClassName}>
-            {journeys.map((item, index) => (
-              <Button
-                key={item.id}
-                variant="ghost"
-                aria-current={index === journeyIndex ? 'true' : undefined}
-                className={cn(
-                  rowClassName,
-                  'mb-1 flex-col items-start gap-1 font-normal',
-                  index === journeyIndex && 'bg-accent'
-                )}
-                onClick={() => setJourneyIndex(index)}
-              >
-                {item.title}
-                {item.building && (
-                  <span className="text-xs text-muted-foreground">{labels.building}</span>
-                )}
-              </Button>
-            ))}
+            <ol className="ml-2 border-l border-border pl-2">
+              {journeys.map(
+                (item, index) =>
+                  !item.building && (
+                    <li key={item.id} className="relative">
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'absolute -left-[12px] top-1/2 z-10 size-1.5 -translate-y-1/2 rounded-full border border-muted-foreground bg-card',
+                          index === journeyIndex && 'border-foreground bg-foreground'
+                        )}
+                      />
+                      <JourneyButton
+                        item={item}
+                        selected={index === journeyIndex}
+                        onClick={() => setJourneyIndex(index)}
+                      />
+                    </li>
+                  )
+              )}
+            </ol>
+            <Button
+              variant="ghost"
+              size="xs"
+              className="ml-2 mt-1 text-muted-foreground"
+              onClick={() => setJourneyIndex(0)}
+            >
+              <RotateCcw aria-hidden /> {labels.nextRound}
+            </Button>
+            <div className="mx-2 mt-3 border-t border-border pt-2">
+              <p className="px-2 text-xs text-muted-foreground">{labels.throughout}</p>
+              {journeys.map(
+                (item, index) =>
+                  item.building && (
+                    <JourneyButton
+                      key={item.id}
+                      item={item}
+                      selected={index === journeyIndex}
+                      badge={labels.building}
+                      onClick={() => setJourneyIndex(index)}
+                    />
+                  )
+              )}
+            </div>
           </nav>
           <section
             key={journey.id}
             aria-label={journey.title}
             className="scrollbar-sleek min-h-0 min-w-0 overflow-auto"
           >
-            <ExploreContent
-              entry={journey}
-              status={journey.building ? labels.building : labels.preparing}
-            />
-            {relatedFeatures(journey.related)}
+            <header className="mx-auto max-w-[940px] px-4 pt-3 sm:px-6">
+              <h3 className="text-xl font-semibold">{journey.title}</h3>
+              <dl className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                <div className="flex gap-2">
+                  <dt className="text-muted-foreground">{labels.start}</dt>
+                  <dd>{journey.start}</dd>
+                </div>
+                <div className="flex gap-2">
+                  <dt className="text-muted-foreground">{labels.result}</dt>
+                  <dd>{journey.result}</dd>
+                </div>
+              </dl>
+              {!journey.content && !journey.building && (
+                <p className="mt-3 text-xs text-muted-foreground">{labels.preparing}</p>
+              )}
+            </header>
+            {journey.content && <journey.content />}
+            {relatedFeatures(journey.related, !!journey.content)}
           </section>
         </TabsContent>
       </Tabs>
@@ -221,5 +271,37 @@ function ExploreContent({
       </header>
       {Content && <Content />}
     </>
+  )
+}
+
+function JourneyButton({
+  item,
+  selected,
+  badge,
+  onClick
+}: {
+  item: ExploreJourney
+  selected: boolean
+  badge?: string
+  onClick(): void
+}) {
+  return (
+    <Button
+      variant="ghost"
+      aria-current={selected ? 'true' : undefined}
+      className={cn(
+        rowClassName,
+        'mb-1 min-h-8 justify-between gap-2 border-l-2 border-transparent font-normal',
+        selected && 'border-l-foreground bg-accent font-medium'
+      )}
+      onClick={onClick}
+    >
+      <span className="min-w-0">{item.title}</span>
+      {badge && (
+        <span className="shrink-0 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+          {badge}
+        </span>
+      )}
+    </Button>
   )
 }

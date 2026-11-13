@@ -28,7 +28,7 @@
 
 “看过介绍”“配置可用”“实际做成”分别记录：打开演示只能说明看过；配置状态来自真实检测；工作成果来自真实任务/交付事实及必要的人确认。跳过不算完成，重看不重置业务状态，重启后按实际来源读回。[现有探索进度](../../src/renderer/src/components/feature-wall/feature-wall-completion-progress.ts)结合访问与配置状态，不能当作整条工作旅程的完成记录。
 
-探索的局部动画用安全样例演示当前控件、操作和可见反馈。完整旅程按步骤串联各段动画，用户可选择步骤、顺序播放、暂停和重播。截图可用于指南、传播和真壳验证材料。矩阵分别记录截图介绍、原型动画、已接入的动画、屏内文字帮助和真实控件引导。模拟动画只提供演示证据，业务闭环与真实联动以对应版本的运行证据为准。
+探索的局部动画复用实际界面组件与样式，用安全样例演示控件、操作和可见反馈，无需用户添加项目。完整旅程按步骤串联各段动画，用户可选择步骤、顺序播放、暂停和重播。截图可用于指南、传播和真壳验证材料。矩阵分别记录截图介绍、原型动画、已接入的动画、屏内文字帮助和真实控件引导。模拟动画只提供演示证据，业务闭环与真实联动以对应版本的运行证据为准。
 
 ## 矩阵口径
 
@@ -64,7 +64,7 @@ G08/G09 保留在入门的“能力体验”里，与探索共用内容，位置
 
 ## 探索 BW 矩阵
 
-工作行围绕[产品主张与飞轮](../01-principles/03-press-release-faq-flywheel.md)组织完整用户结果：明确方向 → 定版本承诺 → 构建交付 → 人确认验收 → 看真实效果并调整下一轮；项目知识与已验证做法逐轮积累。W01–W05 是可独立进入的核心旅程，顺序表达工作联系，查看效果后可回到下一轮方向与计划。W06/W07 对应「持续维护」「沉淀复用」，是贯穿每轮的建设中能力。安装、准备和添加项目沿入门与功能行维护；并行、中断续作和多项目切换按需要融入工作过程。
+工作行围绕[产品主张与飞轮](../01-principles/03-press-release-faq-flywheel.md)组织完整用户结果：明确方向 → 制定版本计划 → 构建交付 → 验收成果 → 查看效果 → 调整下一轮；项目知识与已验证做法逐轮积累。W01–W05 是可独立进入的核心旅程，顺序表达工作联系，查看效果后可回到下一轮方向与计划。W06/W07 对应「持续维护」「沉淀复用」，是贯穿每轮的建设中能力。安装、准备和添加项目沿入门与功能行维护；并行、中断续作和多项目切换按需要融入工作过程。
 
 工作行管理完整旅程，屏内问号/首次进入由功能行承接。探索 BW 在同一弹窗中按工作旅程与功能分组，复用[原有十一页演示][explore]。未填内容展示标题、简介和「内容准备中」，W06/W07 展示「建设中」。内容承载先复用现有探索目录与展示机制；先筛选旅程依赖及用户可见的基础功能，打磨易用性、修复 BUG 并补本屏引导，再串联、实走完整旅程并制作所需演示、指南与传播素材。功能行的勾只覆盖格内所写片段，不要求每屏独立制作整套素材。
 
@@ -74,7 +74,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 
 | 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 当前屏问号 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|---|
-| 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；Windows 本机演示仓实走至变更核对与失败恢复；共享仓的合入及多人读回待验 | [✅ 既有四步截图与关联][direction-content] · [已认可：目录、四步布局及名片演示顺序][direction-prototype] · ☐ 产品内串联动画 | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
+| 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；Windows 本机演示仓实走至变更核对与失败恢复；共享仓的合入及多人读回待验 | [产品内四步串联动画][direction-content] · [已认可布局与名片顺序][direction-prototype] | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
 | 工作 | W02 把方向变成本版可执行的承诺：结合上版结果与新要求 → 确定目标、验收条件和任务 → 评审归档并开工 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F02、F18、F22、F23 | 同左 | — | ☐ | ☐ |
 | 工作 | W03 把问题或需求推进到可信交付：任务开工 → 工作区执行与验证 → 按需原型批注及评审通知 → PR 检视、修改与合入 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F01–F03、F06–F11、F23、F24 | 同左 | — | ☐ | ☐ |
 | 工作 | W04 把本版承诺验收清楚：对照目标核验证据 → 人确认结果 → 归档并安排遗留和下一版 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F18、F22、F25、F27 | 同左 | — | ☐ | ☐ |
@@ -98,10 +98,10 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F15 浮动工作区 | 暂缓专项；保留既有浮动工作区能力 | ☐ | ☐ | [待验：floating-workspace][tours] | — | ☐ | — |
 | 功能 | F16 快捷跳转 | 随屏 → F01/F23：唤起、查找、跳转及常驻回看 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | 暂缓专项；保留既有语音入口与提示 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
-| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排 | [✅ 既有草稿与评审摘要截图][direction-content] · ☐ 局部动画 | [✅ 逐步引导的问号、退出与重开][milestone-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及相关状态 | [✅ 既有找项目截图][direction-content] · ☐ 局部动画 | [✅ 墙头文字帮助][direction-wall] · ☐ 逐步引导 | ☐ 自动逐步引导；首次添加交接见 F20（待验） | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
+| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排 | [编排与评审局部动画][direction-content] | [里程碑问号与逐步引导][milestone-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及相关状态 | [找项目局部动画][direction-content] | [墙头问号与逐步引导][direction-wall] | [自动逐步引导及跳过记录待验][screen-guide]；首次添加交接见 F20 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
-| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工；名片直接编辑及本地保存 | [✅ 既有名片截图][direction-content] · [原型：项目总览与 W01 共用名片片段][direction-prototype] · ☐ 产品内局部动画 | [✅ 名片旁文字帮助][direction-overview] · ☐ 逐步引导；里程碑见 F18 | [✅ 现有首次文字提示可跳过][direction-intro] · ☐ 自动逐步引导 | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
+| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工；名片直接编辑及本地保存 | [与 W01 共用名片动画][direction-content] | [名片问号与逐步引导][direction-overview]；里程碑见 F18 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务及评审归档 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | ☐ | ☐ | ☐ | — | ☐ | — |
@@ -111,7 +111,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F28 [指标配置与采集](../05-features/overview-metrics/spec.md) | 重点：指标口径、配置、采集及缺数据/失败后的继续路径 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F24/F25：配置衔接入门，核对 CodeHub/WeLink 的登录、访问与实际使用 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；☐ BW 接入指南 | — |
 
-九项原生/BW [操作引导][tours]归到功能行“首次进入”。现有原生自动引导受新用户资格、已看或已用记录和控件状态限制。F18 有逐步引导和显式回看，F19/F21 现有问号打开文字帮助。首次自动触发、跳过保存、问号重播及缺前提恢复均按实际入口分别取证。工作区看板 F12 与项目墙 F19 分别核对。
+[操作引导][tours]归到功能行“首次进入”。现有原生自动引导受新用户资格、已看或已用记录和控件状态限制。F18、F19、F21 [复用原生操作引导][screen-guide]，里程碑在进入规划时自动出现，总览在项目名片可用时自动出现。首次自动触发、跳过保存、问号重播及缺前提恢复均按实际入口分别取证。工作区看板 F12 与项目墙 F19 分别核对。
 
 ## 新功能提示
 
@@ -142,13 +142,13 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [explore]: ../../src/shared/feature-wall-workflows.ts
 [explore-copy]: ../../src/renderer/src/components/feature-wall/feature-wall-tour-localized-copy.ts
 [tours]: ../../src/shared/contextual-tours.ts
-[milestone-guide]: ../../src/renderer/src/workbench/milestone-history-actions.tsx
+[milestone-guide]: ../../src/renderer/src/workbench/project-milestones.tsx
 [tips]: ../../src/shared/feature-tips.ts
 
 [direction-content]: ../../src/renderer/src/workbench/explore/DirectionWalkthrough.tsx
 [direction-wall]: ../../src/renderer/src/workbench/ProjectWallPage.tsx
 [direction-overview]: ../../src/renderer/src/workbench/overview-project-card.tsx
-[direction-intro]: ../../src/renderer/src/workbench/OverviewIntro.tsx
+[screen-guide]: ../../src/renderer/src/workbench/WorkbenchScreenGuide.tsx
 [direction-guide]: ../03-guide/project-direction/README.md
 [direction-poster]: ../03-guide/project-direction/journey.jpg
 [direction-poster-source]: ../03-guide/project-direction/journey.html

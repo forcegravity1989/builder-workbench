@@ -4,11 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  MilestoneGuide,
-  MilestoneHistoryActions,
-  MilestoneTitle
-} from './milestone-history-actions'
+import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
 import {
   ScheduledVersionSchema,
   milestoneDraft,
@@ -33,6 +29,7 @@ import {
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneIconButton } from './milestone-icon-button'
+import { WorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import './project-milestones.css'
 
 export function ProjectMilestones({
@@ -248,10 +245,10 @@ export function ProjectMilestones({
           {dirty && model.recoverySaved && (
             <span className="text-xs text-muted-foreground">草稿已保存在本机</span>
           )}
-          <MilestoneGuide
-            editing={editing}
-            blocked={!!state.recoveryBlocked}
-            scopeKey={restoreScope}
+          <WorkbenchScreenGuide
+            id="workbench-milestones"
+            label="里程碑操作引导"
+            enabled={editing && !busy && !state.recoveryBlocked}
           />
           {editing && (
             <MilestoneHistoryActions

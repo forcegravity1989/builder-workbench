@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
-import { WorkbenchHelpPopover } from './WorkbenchHelpPopover'
+import { WorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
@@ -92,11 +92,11 @@ export function ProjectWallPage() {
               </h1>
             </div>
             <div className="page-actions" role="group" aria-label="项目墙操作">
-              <WorkbenchHelpPopover label="项目墙帮助">
-                {hasProjects
-                  ? '搜索或筛选已添加的项目。点项目名称继续工作，点卡片上的「项目总览」查看方向和里程碑。'
-                  : '点「添加项目」打开已有项目。项目上墙后，点项目名称继续工作。'}
-              </WorkbenchHelpPopover>
+              <WorkbenchScreenGuide
+                id="workbench-wall"
+                label="项目墙帮助"
+                enabled={!selectedCard && !importOpen && !leaveAction}
+              />
               <WorkbenchIconButton
                 label="刷新项目目录和墙卡信息"
                 icon={refreshing ? LoaderCircle : RefreshCw}
@@ -129,6 +129,9 @@ export function ProjectWallPage() {
               <Input
                 aria-label="搜索项目"
                 placeholder="搜索项目"
+                data-contextual-tour-target={
+                  filtered.length || !hasFilters ? 'workbench-wall-start' : undefined
+                }
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
@@ -193,7 +196,9 @@ export function ProjectWallPage() {
             <div className="empty-center">
               <h2>从一个项目开始</h2>
               <p>打开已有文件夹、克隆代码仓，或新建项目。</p>
-              <Button onClick={openAddProject}>添加项目</Button>
+              <Button onClick={openAddProject} data-contextual-tour-target="workbench-wall-start">
+                添加项目
+              </Button>
             </div>
           ) : !filtered.length ? (
             <div className="empty-center">
@@ -202,6 +207,7 @@ export function ProjectWallPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  data-contextual-tour-target="workbench-wall-start"
                   onClick={() =>
                     leave(() => {
                       setQuery('')

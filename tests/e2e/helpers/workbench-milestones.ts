@@ -30,7 +30,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await page.screenshot({ path: info.outputPath('milestones-empty.png') })
   await board.getByRole('button', { name: '里程碑操作引导', exact: true }).click()
   const guide = page.locator('[data-contextual-tour-panel]')
-  await guide.getByRole('button', { name: /^(Skip tour|跳过导览)$/ }).click()
+  await guide.locator('[data-contextual-tour-skip]').click()
   await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
   await board.getByRole('button', { name: '添加特性', exact: true }).click()
   await board.getByRole('button', { name: '提交评审', exact: true }).click()

@@ -14,6 +14,7 @@ import type { Repo } from '../../../shared/repo-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSettingsReview } from './ProjectSettingsReview'
+import { ProjectCharterFields } from './ProjectCharterFields'
 import { useProjectSettings } from './use-project-settings'
 import { CHARTER_LABELS } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
@@ -169,34 +170,11 @@ export function ProjectSettingsRail({
               ) : (
                 model.form &&
                 (showEditor ? (
-                  <div className="wb-config-fields">
-                    {EDITABLE_CHARTER_FIELDS.map((field) => (
-                      <label key={field} htmlFor={`config-${field}`}>
-                        <span>
-                          {CHARTER_LABELS[field]}
-                          {field === 'name' ? ' *' : ''}
-                        </span>
-                        {field === 'brief' || field === 'opportunity' ? (
-                          <textarea
-                            id={`config-${field}`}
-                            value={model.form!.value[field] ?? ''}
-                            onChange={(event) => model.edit(field, event.target.value)}
-                            disabled={model.busy || blocked}
-                          />
-                        ) : (
-                          <input
-                            id={`config-${field}`}
-                            value={model.form!.value[field] ?? ''}
-                            onChange={(event) => model.edit(field, event.target.value)}
-                            required={field === 'name'}
-                            placeholder={field === 'groupId' ? '项目群号' : undefined}
-                            aria-invalid={field === 'name' && !model.form!.value.name.trim()}
-                            disabled={model.busy || blocked}
-                          />
-                        )}
-                      </label>
-                    ))}
-                  </div>
+                  <ProjectCharterFields
+                    value={model.form.value}
+                    onEdit={model.edit}
+                    disabled={model.busy || blocked}
+                  />
                 ) : (
                   <dl className="wb-config-facts">
                     {EDITABLE_CHARTER_FIELDS.map((field) => (
@@ -242,7 +220,27 @@ export function ProjectSettingsRail({
               >
                 撤销修改
               </button>
-              <ProjectSettingsReview model={model} onSubmitted={() => setEditing(false)} />
+              <ProjectSettingsReview
+                value={model.form?.value ?? null}
+                changes={model.changes}
+                localOnly={model.localOnly}
+                busy={model.busy}
+                disabled={
+                  model.busy ||
+                  model.loading ||
+                  !model.status ||
+                  !model.canEdit ||
+                  !model.dirty ||
+                  !model.form?.value.name.trim()
+                }
+                onConfirm={() => {
+                  void model.submit().then((ok) => {
+                    if (ok) {
+                      setEditing(false)
+                    }
+                  })
+                }}
+              />
             </>
           )}
         </footer>

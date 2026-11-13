@@ -244,6 +244,8 @@ export type ExploreFeature = ExploreContent & {
 
 export type ExploreJourney = ExploreContent & {
   id: string
+  start: string
+  result: string
   building?: boolean
   related?: readonly ExploreFeatureId[]
 }
@@ -255,7 +257,11 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     types: translate('guidance.catalog.labels.types', 'Explore categories'),
     preparing: translate('guidance.catalog.labels.preparing', 'Content in preparation'),
     building: translate('guidance.catalog.labels.building', 'In development'),
-    related: translate('guidance.catalog.labels.related', 'Related features and actions')
+    related: translate('guidance.catalog.labels.related', 'Related features'),
+    nextRound: translate('guidance.direction.nextRound', 'Adjust the next cycle'),
+    throughout: translate('guidance.direction.throughout', 'Throughout each cycle'),
+    start: translate('guidance.direction.start', 'Start'),
+    result: translate('guidance.direction.result', 'Result')
   },
   features: getFeatures() satisfies Record<ExploreFeatureId, ExploreFeature>,
   groups: [
@@ -308,9 +314,11 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
   journeys: [
     {
       id: 'direction',
-      title: translate(
-        'guidance.catalog.journey.direction.title',
-        'Establish project direction and milestones'
+      title: translate('guidance.catalog.journey.direction.title', 'Agree on direction'),
+      start: translate('guidance.catalog.journey.direction.start', 'An added project and an idea'),
+      result: translate(
+        'guidance.catalog.journey.direction.result',
+        'Shared direction and a milestone schedule'
       ),
       summary: translate(
         'guidance.catalog.journey.direction.summary',
@@ -321,10 +329,12 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     },
     {
       id: 'commitments',
-      title: translate(
-        'guidance.catalog.journey.commitments.title',
-        'Set version commitments and start work'
+      title: translate('guidance.catalog.journey.commitments.title', 'Plan a version'),
+      start: translate(
+        'guidance.catalog.journey.commitments.start',
+        'Project direction and new requirements'
       ),
+      result: translate('guidance.catalog.journey.commitments.result', 'A reviewed version plan'),
       summary: translate(
         'guidance.catalog.journey.commitments.summary',
         'Use past results and new requirements to agree on goals, tasks, and acceptance criteria.'
@@ -333,10 +343,9 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     },
     {
       id: 'delivery',
-      title: translate(
-        'guidance.catalog.journey.delivery.title',
-        'Take a task through review and delivery'
-      ),
+      title: translate('guidance.catalog.journey.delivery.title', 'Build and deliver'),
+      start: translate('guidance.catalog.journey.delivery.start', 'An issue to work on'),
+      result: translate('guidance.catalog.journey.delivery.result', 'A verified and merged change'),
       summary: translate(
         'guidance.catalog.journey.delivery.summary',
         'Start from an issue, validate the change, review it with a teammate, and merge the PR.'
@@ -345,9 +354,14 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     },
     {
       id: 'acceptance',
-      title: translate(
-        'guidance.catalog.journey.acceptance.title',
-        'Verify what this version delivered'
+      title: translate('guidance.catalog.journey.acceptance.title', 'Verify outcomes'),
+      start: translate(
+        'guidance.catalog.journey.acceptance.start',
+        'Version commitments and delivery evidence'
+      ),
+      result: translate(
+        'guidance.catalog.journey.acceptance.result',
+        'An archived acceptance decision'
       ),
       summary: translate(
         'guidance.catalog.journey.acceptance.summary',
@@ -357,9 +371,14 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     },
     {
       id: 'outcomes',
-      title: translate(
-        'guidance.catalog.journey.outcomes.title',
-        'Use actual results to guide the next step'
+      title: translate('guidance.catalog.journey.outcomes.title', 'Review results'),
+      start: translate(
+        'guidance.catalog.journey.outcomes.start',
+        'Delivery results and actual readings'
+      ),
+      result: translate(
+        'guidance.catalog.journey.outcomes.result',
+        'A decision for the next cycle'
       ),
       summary: translate(
         'guidance.catalog.journey.outcomes.summary',
@@ -369,9 +388,14 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     },
     {
       id: 'maintenance',
-      title: translate(
-        'guidance.catalog.journey.maintenance.title',
-        'Keep the project maintainable'
+      title: translate('guidance.catalog.journey.maintenance.title', 'Maintain the project'),
+      start: translate(
+        'guidance.catalog.journey.maintenance.start',
+        'Knowledge or technical debt to address'
+      ),
+      result: translate(
+        'guidance.catalog.journey.maintenance.result',
+        'A verified maintenance outcome'
       ),
       summary: translate(
         'guidance.catalog.journey.maintenance.summary',
@@ -381,7 +405,9 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     },
     {
       id: 'reuse',
-      title: translate('guidance.catalog.journey.reuse.title', 'Reuse a proven way of working'),
+      title: translate('guidance.catalog.journey.reuse.title', 'Reuse what works'),
+      start: translate('guidance.catalog.journey.reuse.start', 'A proven way of working'),
+      result: translate('guidance.catalog.journey.reuse.result', 'A method the team can reuse'),
       summary: translate(
         'guidance.catalog.journey.reuse.summary',
         'Capture a method that worked and verify it on the next similar task.'

@@ -1,0 +1,79 @@
+.direction-demo-scene {
+  position: relative;
+  overflow: hidden;
+  height: clamp(250px, 43vh, 370px);
+  background: var(--background);
+}
+.direction-demo-content,
+.direction-demo-content > * {
+  height: 100%;
+}
+.direction-demo-scene .wb-ov .content {
+  padding: 10px 12px;
+}
+.direction-demo-scene .wb-project-settings {
+  position: static;
+  width: min(390px, 58%);
+}
+.direction-demo-scene .wb-config-header {
+  padding: 8px 12px;
+}
+.direction-demo-scene .wb-config-header h2 {
+  margin: 0;
+  font-size: 14px;
+}
+.direction-demo-scene .wb-config-scroll {
+  padding: 0 10px 4px;
+}
+.direction-demo-scene .wb-config-fields {
+  gap: 5px;
+}
+.direction-demo-scene .wb-config-fields textarea {
+  min-height: 34px;
+}
+.direction-demo-scene .wb-config-fields label {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 5px;
+  align-items: center;
+}
+.direction-demo-scene .wb-config-footer {
+  padding: 5px 10px;
+}
+.direction-demo-scene .direction-wall-demo {
+  padding: 12px;
+}
+.direction-demo-scene .direction-milestone-demo {
+  overflow: hidden;
+  position: relative;
+  margin: 0;
+}
+.direction-demo-scene .direction-review-summary {
+  position: absolute;
+  right: 12px;
+  top: 42px;
+  z-index: 3;
+  max-width: min(370px, 90%);
+  padding: 10px 12px;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.direction-demo-cursor {
+  position: absolute;
+  visibility: hidden;
+  z-index: 4;
+  color: var(--foreground);
+  font-size: 19px;
+  transform: translate(-4px, -9px) rotate(-132deg);
+  pointer-events: none;
+  filter: drop-shadow(0 0 1px var(--background));
+}
+.direction-demo-cursor.is-clicking::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1px solid var(--foreground);
+  border-radius: 50%;
+}

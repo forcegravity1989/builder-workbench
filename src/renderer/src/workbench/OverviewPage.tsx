@@ -27,6 +27,7 @@ import {
 import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { ProjectCard } from './overview-project-card'
+import { WorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
@@ -223,26 +224,30 @@ export function OverviewPage(): React.JSX.Element {
 
   if (!activeRepo) {
     return (
-      <div className="wb-ov">
-        <header className="page-head">
-          <h1>总览</h1>
-        </header>
-        <div className="content">
-          <section className="card" style={{ padding: 24, textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
-            <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
-              添加项目后，可在这里查看项目总览。
-            </p>
-            <button
-              type="button"
-              className="wb-btn wb-btn-primary"
-              onClick={() => openAddProject()}
-            >
-              + 添加项目
-            </button>
-          </section>
+      <TooltipProvider>
+        <div className="wb-ov">
+          <header className="page-head">
+            <h1>总览</h1>
+            <WorkbenchScreenGuide id="workbench-overview" label="项目总览帮助" enabled={false} />
+          </header>
+          <div className="content">
+            <section className="card" style={{ padding: 24, textAlign: 'center' }}>
+              <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
+              <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
+                添加项目后，可在这里查看项目总览。
+              </p>
+              <button
+                type="button"
+                className="wb-btn wb-btn-primary"
+                data-contextual-tour-target="workbench-overview-add"
+                onClick={() => openAddProject()}
+              >
+                + 添加项目
+              </button>
+            </section>
+          </div>
         </div>
-      </div>
+      </TooltipProvider>
     )
   }
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
@@ -281,6 +286,7 @@ export function OverviewPage(): React.JSX.Element {
               </p>
             )}
             <ProjectCard
+              guideEnabled={!settingsOpen}
               onEdit={activeRepo.kind !== 'folder' ? () => setSettingsOpen(true) : undefined}
               projectName={projectName}
               charter={charter}
