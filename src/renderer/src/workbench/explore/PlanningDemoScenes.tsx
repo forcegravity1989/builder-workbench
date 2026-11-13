@@ -167,7 +167,7 @@ function GoalFrame({
         metrics={{
           catalog: null,
           values: {},
-          readings: {},
+          readings: [],
           error: null,
           reloadCatalog: noTaskAction,
           refresh: noTaskAction
