@@ -104,12 +104,12 @@ useAppStore.subscribe((state, previous) => {
   }
 })
 
+export function getProjectPage(): ProjectPage {
+  return projectPage
+}
+
 export function useProjectPage(): ProjectPage {
-  return useSyncExternalStore(
-    subscribeProjectPage,
-    () => projectPage,
-    () => null
-  )
+  return useSyncExternalStore(subscribeProjectPage, getProjectPage, () => null)
 }
 
 export function subscribeProjectPage(listener: () => void): () => void {

@@ -10,6 +10,12 @@ import {
   DirectionOverview,
   DirectionWall
 } from './DirectionWalkthrough'
+import {
+  PlanningFeature,
+  PlanningJourney,
+  PlanningTaskFeature,
+  PlanningWorkspaceFeature
+} from './PlanningWalkthrough'
 
 export type ExploreDemo =
   | { workflow: 'workspaces' | 'tasks' }
@@ -41,6 +47,7 @@ function getFeatures() {
         'Find a task, start work, and return to its results.'
       ),
       demo: { workflow: 'tasks' },
+      content: PlanningTaskFeature,
       related: ['internal-integrations']
     },
     'agent-status': {
@@ -176,7 +183,8 @@ function getFeatures() {
         'guidance.catalog.feature.version-planning.summary',
         'Decide what to deliver, how to accept it, and which tasks to start.'
       ),
-      related: ['version-navigation']
+      content: PlanningFeature,
+      related: ['version-navigation', 'tasks']
     },
     'version-navigation': {
       title: translate(
@@ -187,6 +195,7 @@ function getFeatures() {
         'guidance.catalog.feature.version-navigation.summary',
         'Find the workspace and session associated with a version or goal.'
       ),
+      content: PlanningWorkspaceFeature,
       related: ['quick-jump']
     },
     'review-notifications': {
@@ -339,7 +348,8 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
         'guidance.catalog.journey.commitments.summary',
         'Use past results and new requirements to agree on goals, tasks, and acceptance criteria.'
       ),
-      related: ['version-planning', 'version-navigation', 'tasks']
+      content: PlanningJourney,
+      related: ['version-planning', 'version-navigation', 'tasks', 'milestones']
     },
     {
       id: 'delivery',

@@ -7,7 +7,7 @@ import {
   type MouseEvent as ReactMouseEvent
 } from 'react'
 import { toast } from 'sonner'
-import { MessageSquarePlus } from 'lucide-react'
+import { CircleHelp } from 'lucide-react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
@@ -16,7 +16,8 @@ import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
-import { BoardActionButton } from '../board-ui'
+import { BoardIconButton } from '../board-ui'
+import { replayWorkbenchGuide, useWorkbenchScreenGuide } from '../WorkbenchScreenGuide'
 import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
@@ -33,7 +34,7 @@ import { PlanningPriorReview } from './PlanningPriorReview'
 import { PlanningArchiveCard } from './PlanningArchiveCard'
 import { openArchivePrPage } from '../version-cycle/open-archive-pr'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
-import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
+import { PlanningAnnotationButton, PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { useJourneySpy } from './use-journey-spy'
 import { usePlanningViewMemory } from './use-planning-view-memory'
 import { usePlanningPriorReview } from './use-planning-prior-review'
@@ -169,6 +170,15 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     entry,
     material
   })
+  const guideReady =
+    !selecting &&
+    !material.busy &&
+    (!context.version || plan?.version === context.version || Boolean(material.error)) &&
+    !context.syncing &&
+    !entry.busy &&
+    (!started || Boolean(plan)) &&
+    !annotations.annotating
+  useWorkbenchScreenGuide('workbench-plan', guideReady)
   const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
   // Why: same gate as the header entry button below — the chord must not exist
   // on surfaces where the button does not render.
@@ -280,24 +290,24 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             await prStatus.refresh()
           })
         }
+        helpEntry={
+          <BoardIconButton
+            label="版本计划帮助"
+            disabled={!guideReady}
+            onClick={() => replayWorkbenchGuide('workbench-plan')}
+          >
+            <CircleHelp size={15} aria-hidden="true" />
+          </BoardIconButton>
+        }
         annotateEntry={
           // 计划未建时无目标可批注，不渲染入口（spec 会议纪要条款）。
           started && plan ? (
-            <BoardActionButton
-              className={`g3-annotate-entry${annotations.annotating ? ' g3-mode-on' : ''}`}
-              aria-pressed={annotations.annotating}
-              title={
-                annotations.annotating
-                  ? `退出批注模式${annotateShortcut ? `（${annotateShortcut}）` : ''}`
-                  : `批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见${annotateShortcut ? `（${annotateShortcut} 进入）` : ''}`
-              }
-              onClick={annotations.toggleMode}
-            >
-              <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
-              {annotations.annotations.length > 0 && (
-                <span className="g3-annotate-count">{annotations.annotations.length}</span>
-              )}
-            </BoardActionButton>
+            <PlanningAnnotationButton
+              active={annotations.annotating}
+              count={annotations.annotations.length}
+              shortcut={annotateShortcut}
+              onToggle={annotations.toggleMode}
+            />
           ) : undefined
         }
       />

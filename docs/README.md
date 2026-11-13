@@ -19,7 +19,7 @@
 | [development.md](development.md) | BW 自身测试、独立检视、验证证据与 PR 的规范正本，独立于具体 Skill | 本仓开发、测试、检视与交付；AGENTS 和各 Skill 共同引用 |
 | [architecture.md](architecture.md) | 整体旅程、逻辑模块、Electron 叠层与数据流 | 找现行设计、实现边界和工程落点 |
 | `02-adr/`（预留，当前无文件） | 难回头的架构决策及取舍 | 后续迁移产生新决策时记录；历史查 Git |
-| 03-guide/ | 已实践的用户操作与参考；旅程指南与正式素材放同一旅程目录 | [建立项目方向与阶段安排](03-guide/project-direction/README.md) · [CodeHub CLI](03-guide/codehub-cli.md) |
+| 03-guide/ | 已实践的用户操作与参考；旅程指南与正式素材放同一旅程目录 | [建立项目方向与阶段安排](03-guide/project-direction/README.md) · [制定版本计划](03-guide/version-planning/README.md) · [CodeHub CLI](03-guide/codehub-cli.md) |
 | [04-design-system/](04-design-system/README.md) | 视觉与交互规范、样式、token；[引导与旅程规范](04-design-system/guidance.md)维护入门、探索两张矩阵及展示/回看规则 | 设计或修改界面、引导、旅程内容与传播素材 |
 | [05-features/](05-features/README.md) | BW 特性矩阵、Issue 归属与文档入口，各特性的定义和证据由其规格与 STATUS 承载 | 提单时核对主归属，开发或盘点时按用户旅程查看定义及链状态 |
 | [06-module/](06-module/README.md) | 模块实现心智、主要矛盾与取舍 | 修改某一模块前 |

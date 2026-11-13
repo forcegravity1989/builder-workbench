@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Layers, Plus } from 'lucide-react'
+import { CircleHelp, Layers, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspace-prepare'
@@ -29,6 +29,7 @@ import { openVersionOverview, useProjectPage } from './project-page-state'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
+import { replayWorkbenchGuide, useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -121,6 +122,15 @@ export function WorkbenchVersionNav({
       }
     },
     [expandedKey]
+  )
+
+  useWorkbenchScreenGuide(
+    'workbench-versions',
+    !dialog &&
+      catalog.materialReady &&
+      !catalog.loading &&
+      activeView === 'terminal' &&
+      !activeWorktree?.workbenchVersionBinding
   )
 
   const loaded = catalog.catalog
@@ -344,16 +354,28 @@ export function WorkbenchVersionNav({
       <WorkbenchSidebarSectionHeader
         icon={Layers}
         action={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label="新建版本"
-            title="新建版本"
-            onClick={() => setDialog({ mode: 'create' })}
-          >
-            <Plus className="size-3.5" />
-          </Button>
+          <>
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              aria-label="版本工作区帮助"
+              title="版本工作区帮助"
+              onClick={() => replayWorkbenchGuide('workbench-versions')}
+            >
+              <CircleHelp className="size-3.5" aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              data-contextual-tour-target="workbench-versions-start"
+              aria-label="新建版本"
+              title="新建版本"
+              onClick={() => setDialog({ mode: 'create' })}
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          </>
         }
       >
         版本

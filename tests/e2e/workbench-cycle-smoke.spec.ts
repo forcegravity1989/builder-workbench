@@ -198,6 +198,28 @@ test.describe('BW first-run project handoff', () => {
     await workbenchPage.keyboard.press('Escape')
     await expect(explore).toBeHidden()
 
+    await help.click()
+    await workbenchPage.getByRole('menuitem', { name: exploreName }).click()
+    await explore.getByRole('tab', { name: /^(Work journeys|工作旅程)$/ }).click()
+    const planName = /^(Plan a version|制定版本计划)$/
+    await explore
+      .getByRole('navigation', { name: /^(Work journeys|工作旅程)$/ })
+      .getByRole('button', { name: planName })
+      .click()
+    const planJourney = explore.getByRole('region', { name: planName })
+    const planSteps = planJourney.getByRole('list', { name: /^(Journey steps|旅程步骤)$/ })
+    await expect(planSteps.getByRole('button')).toHaveCount(5)
+    const startIssue = planSteps.getByRole('button', { name: /Start an issue|从计划开工/ })
+    await startIssue.click()
+    await expect(startIssue).toHaveAttribute('aria-current', 'step')
+    await expect(planJourney.locator('.g3-task-link')).toContainText('实现首场交换预约')
+    await planJourney.getByRole('button', { name: /^(Play in order|顺序播放)$/ }).click()
+    await planJourney.getByRole('button', { name: /^(Pause|暂停)$/ }).click()
+    await planJourney.getByRole('button', { name: /^(Replay|重播)$/ }).click()
+    await expect(planSteps.getByRole('button').first()).toHaveAttribute('aria-current', 'step')
+    await workbenchPage.keyboard.press('Escape')
+    await expect(explore).toBeHidden()
+
     const gettingStartedName = /^(Getting Started with BW|BW 入门)$/
     await help.click()
     await workbenchPage.getByRole('menuitem', { name: gettingStartedName }).click()
@@ -433,12 +455,31 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.locator('[data-workbench-versions]')).toBeVisible()
 
   // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
+  const versionGuide = workbenchPage.locator('[data-contextual-tour-panel]')
+  const dismissVersionGuide = versionGuide.locator('[data-contextual-tour-skip]')
+  if (await dismissVersionGuide.isVisible()) {
+    await dismissVersionGuide.click()
+  }
   await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).press('Enter')
   await workbenchPage.getByLabel('版本名').fill('v9.9')
   await workbenchPage.getByRole('button', { name: '创建版本', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 180_000
   })
+  const planGuide = workbenchPage.locator('[data-contextual-tour-panel]')
+  await expect(planGuide.getByText('开始或继续计划', { exact: true })).toBeVisible()
+  await planGuide.locator('[data-contextual-tour-skip]').click()
+  await expect(planGuide).toBeHidden()
+  await expect
+    .poll(() =>
+      workbenchPage.evaluate(async () =>
+        (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-plan')
+      )
+    )
+    .toBe(true)
+  await workbenchPage.getByRole('button', { name: '版本计划帮助', exact: true }).click()
+  await expect(planGuide.getByText('开始或继续计划', { exact: true })).toBeVisible()
+  await planGuide.locator('[data-contextual-tour-skip]').click()
   const createdVersionToggle = workbenchPage.getByRole('button', {
     name: 'v9.9 展开或收起',
     exact: true
@@ -516,10 +557,23 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
   await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
+  // The plan guide yields while autosave is writing. Start replay after the edit settles.
+  await expect(workbenchPage.locator('.vp-title-row').getByRole('status')).toHaveText('已保存')
 
   // ---- 批注模式同键进出（#444）：Alt+A ≡ 点页头按钮，再按退出 ----
   const annotateEntry = workbenchPage.locator('.g3-annotate-entry')
   await expect(annotateEntry).toBeVisible()
+  const planHelp = workbenchPage.getByRole('button', { name: '版本计划帮助', exact: true })
+  await expect(workbenchPage.locator('.g3-header-tools + button')).toHaveAttribute(
+    'aria-label',
+    '版本计划帮助'
+  )
+  await planHelp.click()
+  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).press('Enter')
+  await expect(planGuide.getByRole('heading', { name: '给计划留下评审意见' })).toBeVisible()
+  await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).press('Enter')
+  await expect(planGuide.getByRole('heading', { name: '评审后归档' })).toBeVisible()
+  await planGuide.locator('[data-contextual-tour-skip]').click()
   await workbenchPage.keyboard.press('Alt+A')
   await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
   await expect(annotateEntry).toHaveAttribute('aria-pressed', 'true')

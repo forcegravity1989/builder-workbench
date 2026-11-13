@@ -201,7 +201,7 @@ export function ProjectMilestones({
           ? '正在读取版本材料，请稍后再试'
           : (catalog.error ??
               catalog.catalog?.problems[0]?.message ??
-              '该版本只有里程碑排期，请从侧栏「新建版本」使用同一版本名开始计划')
+              '当前只有里程碑排期。到「版本工作区 → 新建版本」填写同一版本名，再开始计划。')
       )
       return
     }

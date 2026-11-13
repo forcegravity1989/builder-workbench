@@ -12,6 +12,8 @@ export type ContextualTourId =
   | 'workbench-wall'
   | 'workbench-overview'
   | 'workbench-milestones'
+  | 'workbench-plan'
+  | 'workbench-versions'
 
 export type ContextualTourStepControl = {
   kind: 'auto-rename-branch-from-work'
@@ -148,7 +150,7 @@ export const CONTEXTUAL_TOURS = [
     steps: [
       {
         title: 'Choose the work source',
-        body: 'Switch between connected providers and project filters without changing pages.',
+        body: 'Choose the project or work source. If none is available, check your connections in Settings.',
         targetSelector: '[data-contextual-tour-target="tasks-source-filters"]',
         requiredForStart: true
       },
@@ -295,6 +297,58 @@ export const CONTEXTUAL_TOURS = [
         title: '提交评审',
         body: '草稿保存在本机。提交评审，合入后更新正式安排。',
         targetSelector: '[data-contextual-tour-target~="milestone-submit"]'
+      }
+    ]
+  },
+  {
+    id: 'workbench-plan',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-plan-start',
+        title: '开始或继续计划',
+        body: '点「开始计划」打开会话。已有材料时，点「本版目标」查看验收标准和「拆解 Issue」。',
+        targetSelector:
+          '[data-contextual-tour-target="workbench-plan-start"], [data-contextual-tour-target="workbench-plan-goals"]',
+        requiredForStart: true,
+        preferredPlacement: 'bottom',
+        targetPulse: true
+      },
+      {
+        id: 'workbench-plan-annotations',
+        title: '给计划留下评审意见',
+        body: '先展开要评审的目标，再打开「批注模式」。点验收标准等对象添加批注，可从批注窗发给计划助手。',
+        targetSelector: '[data-contextual-tour-target="workbench-plan-annotations"]',
+        preferredPlacement: 'bottom',
+        targetPulse: true
+      },
+      {
+        id: 'workbench-plan-archive',
+        title: '评审后归档',
+        body: '在计划会话中发起归档。评审与合入进度可从「归档 PR」查看。',
+        targetSelector: '[data-contextual-tour-target="workbench-plan-archive"]',
+        preferredPlacement: 'bottom',
+        targetPulse: true
+      }
+    ]
+  },
+  {
+    id: 'workbench-versions',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-versions-start',
+        title: '找到这版的工作区',
+        body: '展开已有版本，或用加号新建。只有里程碑排期时，用同一版本名新建。',
+        targetSelector: '[data-contextual-tour-target="workbench-versions-start"]',
+        requiredForStart: true,
+        preferredPlacement: 'right'
+      },
+      {
+        id: 'workbench-versions-plan',
+        title: '继续计划与会话',
+        body: '点「计划」回到本版材料，展开计划行可找回原生会话。',
+        targetSelector: '[data-contextual-tour-target="workbench-versions-plan"]'
       }
     ]
   }

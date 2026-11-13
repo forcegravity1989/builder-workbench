@@ -17773,6 +17773,29 @@
     }
   },
   "guidance": {
+    "planning": {
+      "taskHelp": "Task help",
+      "version": {
+        "title": "Choose the version",
+        "body": "Start the plan and review any carryovers. The first version has no prior results."
+      },
+      "goals": {
+        "title": "Define goals and criteria",
+        "body": "Write the outcome and how the team will check it. Edits save as a draft."
+      },
+      "tasks": {
+        "title": "Link work to goals",
+        "body": "Check existing issues with the planning assistant and confirm the tasks to include."
+      },
+      "review": {
+        "title": "Review and archive",
+        "body": "Annotate the plan, confirm the notes if used, then archive through a reviewed PR."
+      },
+      "start": {
+        "title": "Start an issue",
+        "body": "Start an issue from the plan. Open its existing workspace or create one with the issue prefilled."
+      }
+    },
     "direction": {
       "wall": {
         "title": "Find the project",

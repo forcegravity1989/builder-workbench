@@ -11,7 +11,9 @@ export const FEATURE_EDUCATION_CONTEXTUAL_TOUR_IDS = [
   'workspace-creation',
   'workbench-wall',
   'workbench-overview',
-  'workbench-milestones'
+  'workbench-milestones',
+  'workbench-plan',
+  'workbench-versions'
 ] as const satisfies readonly ContextualTourId[]
 
 export const FEATURE_EDUCATION_SOURCES = [
@@ -20,12 +22,15 @@ export const FEATURE_EDUCATION_SOURCES = [
   'browser_visible',
   'client_hosted_browser_visible',
   'tasks_open',
+  'workbench_tasks_visible',
   'automations_open',
   'floating_workspace_visible',
   'workspace_creation_visible',
   'project_wall_visible',
   'project_overview_visible',
   'milestone_planning',
+  'version_plan_visible',
+  'version_sidebar_visible',
   'workspace_creation_modal',
   'setup_guide_parallel_work',
   'unknown'

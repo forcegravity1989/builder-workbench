@@ -106,7 +106,11 @@ export function PlanningGoals({
           <span className="g3-title-actions">
             {(readError || membership.error) && (
               <span className="g3-muted" role="status">
-                Issue 状态未知：{readError || membership.error}
+                Issue 状态未知
+                <details className="mt-1">
+                  <summary>检查项目远端与集成登录后，刷新 Issue</summary>
+                  <p>{readError || membership.error}</p>
+                </details>
               </span>
             )}
             <button

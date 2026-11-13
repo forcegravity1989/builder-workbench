@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import type { ContextualTourId } from '../../../../shared/contextual-tours'
 import {
   hasFeatureInteraction,
+  isFeatureInteractionId,
+  type FeatureInteractionId,
   type FeatureInteractionState
 } from '../../../../shared/feature-interactions'
 import { useAppStore } from '@/store'
@@ -17,6 +19,8 @@ const TOUR_SOURCES = {
   'workbench-wall': 'project_wall_visible',
   'workbench-overview': 'project_overview_visible',
   'workbench-milestones': 'milestone_planning',
+  'workbench-plan': 'version_plan_visible',
+  'workbench-versions': 'version_sidebar_visible',
   'workspace-creation': 'workspace_creation_visible'
 } satisfies Record<ContextualTourId, string>
 
@@ -29,18 +33,21 @@ export type UseContextualTourOptions = {
 export function createContextualTourInteractionSnapshot(args: {
   id: ContextualTourId
   featureInteractions: FeatureInteractionState
-  recordFeatureInteraction: (id: ContextualTourId) => Promise<void>
+  recordFeatureInteraction: (id: FeatureInteractionId) => Promise<void>
   recordFeatureInteractionForTour: boolean
   featureInteractionPersisted?: Promise<void> | undefined
   wasFeaturePreviouslyInteracted?: boolean | undefined
 }): { persisted: Promise<void>; wasPreviouslyInteracted: boolean } {
+  const interactionId = isFeatureInteractionId(args.id) ? args.id : null
   const wasPreviouslyInteracted =
-    args.wasFeaturePreviouslyInteracted ?? hasFeatureInteraction(args.featureInteractions, args.id)
+    args.wasFeaturePreviouslyInteracted ??
+    Boolean(interactionId && hasFeatureInteraction(args.featureInteractions, interactionId))
   return {
     wasPreviouslyInteracted,
-    persisted: args.recordFeatureInteractionForTour
-      ? args.recordFeatureInteraction(args.id)
-      : (args.featureInteractionPersisted ?? Promise.resolve())
+    persisted:
+      args.recordFeatureInteractionForTour && interactionId
+        ? args.recordFeatureInteraction(interactionId)
+        : (args.featureInteractionPersisted ?? Promise.resolve())
   }
 }
 
@@ -213,7 +220,8 @@ export function useContextualTour(
             source,
             latestSnapshot?.id === id && latestSnapshot.source === source
               ? latestSnapshot.wasPreviouslyInteracted
-              : hasFeatureInteraction(useAppStore.getState().featureInteractions, id)
+              : isFeatureInteractionId(id) &&
+                  hasFeatureInteraction(useAppStore.getState().featureInteractions, id)
           )
         })
       })

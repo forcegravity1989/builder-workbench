@@ -19,7 +19,9 @@ describe('contextual tour definitions', () => {
       'workspace-creation',
       'workbench-wall',
       'workbench-overview',
-      'workbench-milestones'
+      'workbench-milestones',
+      'workbench-plan',
+      'workbench-versions'
     ]
 
     expect(CONTEXTUAL_TOURS.map((tour) => tour.id)).toEqual(expectedIds)
