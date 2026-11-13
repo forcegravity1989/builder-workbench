@@ -16,6 +16,7 @@ export function TaskPageListChrome({
   const {
     taskSourceAvailabilityNotice,
     taskPageListChromeHidden,
+    newIssueOpen,
     githubMode,
     setGithubMode,
     setTaskResumeState
@@ -56,7 +57,7 @@ export function TaskPageListChrome({
               <div className="min-w-0 flex-1">
                 <TaskPageProviderFilters model={model} />
               </div>
-              <WorkbenchTaskHelp enabled={!taskPageListChromeHidden} />
+              <WorkbenchTaskHelp enabled={!taskPageListChromeHidden && !newIssueOpen} />
             </div>
           ) : (
             <TaskPageProviderFilters model={model} />
