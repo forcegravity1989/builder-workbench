@@ -91,9 +91,10 @@ describe('RemoveFolderDialog', () => {
     expect(html).not.toContain('/local/example')
   })
 
-  it('warns that VM recipe cleanup controls file deletion', () => {
+  it('warns that VM recipe cleanup controls file deletion for an explicit SSH owner', () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
     mocks.state.modalData.hostId = 'ssh:runtime-ssh-runtime-1'
-    mocks.state.repos = [repo('runtime-ssh-runtime-1', 'ssh:runtime-ssh-runtime-1')]
+    mocks.state.repos = [repo(null, 'ssh:runtime-ssh-runtime-1')]
 
     const html = renderToStaticMarkup(<RemoveFolderDialog />)
 

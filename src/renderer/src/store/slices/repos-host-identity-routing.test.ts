@@ -432,7 +432,8 @@ describe('repo slice host identity routing', () => {
     const remoteWorktree = makeWorktree({
       id: worktreeId,
       repoId: 'same-repo',
-      hostId: 'runtime:env-1'
+      hostId: 'ssh:nested-builder',
+      runtimeOwnerEnvironmentId: 'env-1'
     })
     const store = createTestStore()
     store.setState({
@@ -454,6 +455,7 @@ describe('repo slice host identity routing', () => {
 
       expect(store.getState().activeRepoId).toBe('same-repo')
       expect(store.getState().activeWorktreeId).toBe(worktreeId)
+      expect(store.getState().worktreesByRepo['same-repo']).toEqual([localWorktree])
       expect(store.getState().tabsByWorktree[worktreeId]).toEqual([{ id: 'local-tab', worktreeId }])
       expect(ptyKill).not.toHaveBeenCalledWith('local-pty')
       expect(runtimeEnvironmentCall).toHaveBeenCalledWith(

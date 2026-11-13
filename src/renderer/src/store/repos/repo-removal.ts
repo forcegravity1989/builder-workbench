@@ -25,28 +25,17 @@ import type { RepoSlice } from './repo-state'
 import { ERROR_TOAST_DURATION } from './repo-state'
 import { mergeProjectCompatibilityForHostRepoChange } from './repo-catalog-identity'
 import { settingsForRepoOwner } from './owner-routing'
+import {
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '../slices/worktrees/listing/worktree-host-ownership'
+import type { Worktree } from '../../../../shared/worktree/types'
 
-export function worktreeBelongsToHost(worktree: { hostId?: string }, hostId: string): boolean {
-  return (worktree.hostId ?? LOCAL_EXECUTION_HOST_ID) === hostId
-}
-
-export function getKnownRepoWorktreeIds(
-  state: AppState,
-  projectId: string,
-  hostId?: string
-): string[] {
-  const ids = new Set<string>()
-  for (const worktree of state.worktreesByRepo[projectId] ?? []) {
-    if (!hostId || worktreeBelongsToHost(worktree, hostId)) {
-      ids.add(worktree.id)
-    }
-  }
-  for (const worktree of state.detectedWorktreesByRepo[projectId]?.worktrees ?? []) {
-    if (!hostId || worktreeBelongsToHost(worktree, hostId)) {
-      ids.add(worktree.id)
-    }
-  }
-  return [...ids]
+function getKnownRepoWorktrees(state: AppState, projectId: string): Worktree[] {
+  return [
+    ...(state.worktreesByRepo[projectId] ?? []),
+    ...(state.detectedWorktreesByRepo[projectId]?.worktrees ?? [])
+  ]
 }
 
 export function createRepoRemovalActions(
@@ -66,13 +55,21 @@ export function createRepoRemovalActions(
         }
         const ownerHostId = getRepoExecutionHostId(ownerRepo)
         const workbench = isWorkbenchShell()
+        const hostMatch = worktreeHostMatchOptions(get(), projectId, ownerHostId)
+        const belongsToOwner = (tree: Worktree) =>
+          workbench
+            ? worktreeMatchesHost(tree, ownerHostId, hostMatch)
+            : (tree.hostId ?? LOCAL_EXECUTION_HOST_ID) === ownerHostId
+        const knownBefore = getKnownRepoWorktrees(get(), projectId)
+        const ownedIdsBefore = knownBefore.filter(belongsToOwner).map((tree) => tree.id)
         const runtimeSshTargetId = getSshTargetIdForExecutionHost(ownerHostId)
         // Why: an SSH per-workspace-env's workspace is the repo's main worktree, so removal routes here; tear down its ephemeral runtime first so it doesn't leak.
         if (runtimeSshTargetId && isRuntimeOwnedSshTargetId(runtimeSshTargetId)) {
           const cleanup = await cleanupEphemeralVmRuntimesForDeleted({
-            hostScopedWorkspaces: getKnownRepoWorktreeIds(get(), projectId, ownerHostId).map(
-              (workspaceId) => ({ workspaceId, executionHostId: ownerHostId })
-            ),
+            hostScopedWorkspaces: ownedIdsBefore.map((workspaceId) => ({
+              workspaceId,
+              executionHostId: ownerHostId
+            })),
             runtimeOwnedSshTargetIds: [runtimeSshTargetId]
           })
           if (cleanup.retainedSshTargetIds.includes(runtimeSshTargetId)) {
@@ -107,7 +104,9 @@ export function createRepoRemovalActions(
           }
         }
 
-        get().clearOrcaHookTrustForRepo(projectId)
+        if (!workbench || !idExistsOnOtherHost) {
+          get().clearOrcaHookTrustForRepo(projectId)
+        }
         const repoPath = get().repos.find((repo) =>
           repoMatchesHostIdentity(repo, projectId, ownerHostId)
         )?.path
@@ -116,16 +115,17 @@ export function createRepoRemovalActions(
         clearRepoSlugCacheEntry(projectId)
 
         // Kill PTYs for all worktrees belonging to this repo
-        const worktreeIds = getKnownRepoWorktreeIds(get(), projectId, ownerHostId)
-        // A raw id can be published by two hosts. Keep the purge host-scoped for
-        // those twins so the sibling's qualified visit recency survives.
-        const knownRepoWorktrees = [
-          ...(get().worktreesByRepo[projectId] ?? []),
-          ...(get().detectedWorktreesByRepo[projectId]?.worktrees ?? [])
+        const knownRepoWorktrees = getKnownRepoWorktrees(get(), projectId)
+        const worktreeIds = [
+          ...new Set([
+            ...ownedIdsBefore,
+            ...knownRepoWorktrees.filter(belongsToOwner).map((tree) => tree.id)
+          ])
         ]
+        // A raw id can be published by two hosts. Keep the sibling's session and recency.
         const exactSiblingIds = new Set(
           knownRepoWorktrees
-            .filter((worktree) => !worktreeBelongsToHost(worktree, ownerHostId))
+            .filter((worktree) => !belongsToOwner(worktree))
             .map((worktree) => worktree.id)
         )
         // Shared tab and editor keys cannot distinguish the surviving copy.
@@ -140,7 +140,7 @@ export function createRepoRemovalActions(
             ? [
                 projectId,
                 ...(get().worktreesByRepo[projectId] ?? [])
-                  .filter((worktree) => worktreeBelongsToHost(worktree, ownerHostId))
+                  .filter(belongsToOwner)
                   .flatMap((worktree) => (worktree.projectId ? [worktree.projectId] : []))
               ]
             : []
@@ -178,7 +178,7 @@ export function createRepoRemovalActions(
         set((s) => {
           const nextWorktrees = { ...s.worktreesByRepo }
           const remainingWorktrees = (nextWorktrees[projectId] ?? []).filter(
-            (worktree) => !worktreeBelongsToHost(worktree, ownerHostId)
+            (worktree) => !belongsToOwner(worktree)
           )
           if (remainingWorktrees.length > 0) {
             nextWorktrees[projectId] = remainingWorktrees
@@ -189,7 +189,7 @@ export function createRepoRemovalActions(
           const detected = nextDetectedWorktrees[projectId]
           if (detected) {
             const remainingDetected = detected.worktrees.filter(
-              (worktree) => !worktreeBelongsToHost(worktree, ownerHostId)
+              (worktree) => !belongsToOwner(worktree)
             )
             if (remainingDetected.length > 0) {
               nextDetectedWorktrees[projectId] = { ...detected, worktrees: remainingDetected }

@@ -15,6 +15,7 @@ import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   getRepoExecutionHostId,
+  getSshTargetIdForExecutionHost,
   isRuntimeOwnedSshTargetId,
   normalizeExecutionHostId,
   parseExecutionHostId
@@ -51,9 +52,11 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   // and that re-adding that host recovers it.
   const sshConnectionId = useAppStore(
     (s) =>
+      (workbench && hostId ? getSshTargetIdForExecutionHost(hostId) : null) ??
       s.repos
         .find((repo) => repo.id === repoId && (!hostId || getRepoExecutionHostId(repo) === hostId))
-        ?.connectionId?.trim() ?? null
+        ?.connectionId?.trim() ??
+      null
   )
   const sshHostLabel = useAppStore((s) => {
     if (!sshConnectionId) {
