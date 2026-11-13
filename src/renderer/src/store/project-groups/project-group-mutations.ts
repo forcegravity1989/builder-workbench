@@ -135,22 +135,23 @@ export function createProjectGroupMutationActions(
         )
         const members = options?.confirmedMembers
         const params = { groupId, ...(members ? { members } : {}) }
-        const deleted =
+        const result =
           target.kind === 'local'
-            ? await window.api.projectGroups.delete(params)
-            : (
-                await callRuntimeRpc<{ deleted: boolean }>(
-                  target,
-                  members ? 'workbench.repo.deleteGroup' : 'projectGroup.delete',
-                  params,
-                  {
-                    timeoutMs: 15_000,
-                    expectedEnvironmentPairingRevision: options?.expectedEnvironmentPairingRevision,
-                    expectedEnvironmentRuntimeId: options?.expectedEnvironmentRuntimeId
-                  }
-                )
-              ).deleted
-        if (!deleted) {
+            ? { deleted: await window.api.projectGroups.delete(params), membersChanged: false }
+            : await callRuntimeRpc<{ deleted: boolean; membersChanged?: boolean }>(
+                target,
+                members ? 'workbench.repo.deleteGroup' : 'projectGroup.delete',
+                params,
+                {
+                  timeoutMs: 15_000,
+                  expectedEnvironmentPairingRevision: options?.expectedEnvironmentPairingRevision,
+                  expectedEnvironmentRuntimeId: options?.expectedEnvironmentRuntimeId
+                }
+              )
+        if (result.membersChanged) {
+          options?.onMembersChanged?.()
+        }
+        if (!result.deleted) {
           return false
         }
         if (
@@ -164,7 +165,11 @@ export function createProjectGroupMutationActions(
         set((s) => applyProjectGroupDeleteCascade(s, groupId, ownerHostId))
         return true
       } catch (err) {
-        console.error('Failed to delete project group:', err)
+        if (err instanceof Error && err.message.includes('project_group_members_changed')) {
+          options?.onMembersChanged?.()
+        } else {
+          console.error('Failed to delete project group:', err)
+        }
         return false
       }
     },
@@ -283,15 +288,31 @@ export function createProjectGroupMutationActions(
               addedAt: repo.addedAt
             }))
           : undefined
+      let ownerMembersChanged = false
       const deleted = await get().deleteProjectGroup(groupId, {
         hostId: ownerHostId,
+        ...(confirmedMembers === undefined
+          ? {}
+          : {
+              onMembersChanged: () => {
+                ownerMembersChanged = true
+              }
+            }),
         ...(confirmedMembers === undefined ? {} : { confirmedMembers }),
         ...(revision === undefined ? {} : { expectedEnvironmentPairingRevision: revision }),
         ...(runtimeId === undefined ? {} : { expectedEnvironmentRuntimeId: runtimeId })
       })
       if (!deleted) {
+        if (ownerMembersChanged) {
+          const runtimeEnvironmentId =
+            groupHost?.kind === 'runtime' ? groupHost.environmentId : null
+          await Promise.allSettled([
+            get().fetchRepos({ runtimeEnvironmentId }),
+            get().fetchProjectGroups({ runtimeEnvironmentId })
+          ])
+        }
         return {
-          status: 'group-delete-failed',
+          status: ownerMembersChanged ? 'group-members-changed' : 'group-delete-failed',
           groupId,
           requestedProjectIds,
           removedProjectIds: [],

@@ -66,9 +66,7 @@ export function registerProjectGroupHandlers(mainWindow: BrowserWindow, store: S
         args.members
       )
     ) {
-      throw new Error(
-        'The project group membership changed. Review the project list and confirm again.'
-      )
+      throw new Error('project_group_members_changed')
     }
     const deleted = store.deleteProjectGroup(args.groupId)
     if (deleted) {

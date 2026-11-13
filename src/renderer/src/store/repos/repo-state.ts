@@ -255,6 +255,7 @@ export type RepoSlice = {
       expectedEnvironmentPairingRevision?: number
       expectedEnvironmentRuntimeId?: string
       confirmedMembers?: readonly ConfirmedRepoRegistration[]
+      onMembersChanged?: () => void
     }
   ) => Promise<boolean>
   deleteProjectGroupWithContainedProjects: (
