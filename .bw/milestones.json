@@ -48,6 +48,14 @@
             "start": "2026-11-02T00:00",
             "end": "2026-11-16T00:00"
           }
+        },
+        {
+          "id": "e3bc7084-3f77-486d-b656-e29da57152c5",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-23T00:00",
+            "end": "2026-11-29T00:00"
+          }
         }
       ]
     },
@@ -185,6 +193,14 @@
       }
     },
     {
+      "version": "v0.9",
+      "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+      "timeWindow": {
+        "start": "2026-11-02",
+        "end": "2026-11-08"
+      }
+    },
+    {
       "version": "v1.0",
       "cycleId": "a6dd7bdb-7e31-4eba-bd1c-0e5f75f6f000",
       "timeWindow": {
@@ -213,11 +229,11 @@
       "cycleId": "d54e65f2-a5e9-45f5-8ffe-04de112ca9d8"
     },
     {
-      "version": "v0.9",
-      "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+      "version": "v1.2",
+      "cycleId": "a9d0f078-d712-4ef0-b013-7c389570b2e3",
       "timeWindow": {
-        "start": "2026-11-02",
-        "end": "2026-11-08"
+        "start": "2026-11-23",
+        "end": "2026-11-27"
       }
     }
   ]
