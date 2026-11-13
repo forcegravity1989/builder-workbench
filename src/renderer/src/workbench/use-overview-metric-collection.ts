@@ -17,7 +17,7 @@ const cache = createSnapshotCache(() => ({
   loaded: false,
   busy: false,
   refreshing: false,
-  problems: [] as string[]
+  catalogError: null as string | null
 }))
 
 export function useOverviewMetricCollection(args: {
@@ -63,15 +63,15 @@ export function useOverviewMetricCollection(args: {
               handedOff = true
               entry.pending = null
               load('reload')
-            } else if ((catalog.draft ?? null) !== (current?.draft ?? null)) {
+            } else if (entry.read().catalogError || catalog.draft !== current?.draft) {
               entry.publish({
                 ...entry.read(),
                 catalog,
-                problems: catalog.problems.map(metricProblemText)
+                catalogError: null
               })
             }
           } catch (error) {
-            entry.publish({ ...entry.read(), problems: [`指标读取失败：${String(error)}`] })
+            entry.publish({ ...entry.read(), catalogError: `指标读取失败：${String(error)}` })
           } finally {
             if (!handedOff) {
               entry.pending = null
@@ -91,7 +91,6 @@ export function useOverviewMetricCollection(args: {
       entry.pending = (async () => {
         try {
           const catalog = await nativeMetricsPort(owner).list(scope)
-          const problems = catalog.problems.map(metricProblemText)
           const readings: Partial<Record<ZoneGranularity, OverviewReadResult>> = {}
           const oldReadings = entry.read().readings
           const order: ZoneGranularity[] = [granularity, granularity === 'day' ? 'week' : 'day']
@@ -106,7 +105,7 @@ export function useOverviewMetricCollection(args: {
                 catalog,
                 readings: { ...oldReadings, ...readings },
                 anchor: now,
-                problems
+                catalogError: null
               })
             }
             readings[grain] = await refreshMetricReadings({
@@ -120,11 +119,11 @@ export function useOverviewMetricCollection(args: {
               catalog,
               readings: { ...oldReadings, ...readings },
               anchor: now,
-              problems
+              catalogError: null
             })
           }
         } catch (error) {
-          entry.publish({ ...entry.read(), problems: [`指标读取失败：${String(error)}`] })
+          entry.publish({ ...entry.read(), catalogError: `指标读取失败：${String(error)}` })
         } finally {
           entry.pending = null
           entry.publish({ ...entry.read(), loaded: true, busy: false, refreshing: false })
@@ -158,11 +157,11 @@ export function useOverviewMetricCollection(args: {
             load('reload')
             return
           }
-          if ((catalog.draft ?? null) !== (current?.draft ?? null)) {
+          if (entry.read().catalogError || catalog.draft !== current?.draft) {
             entry.publish({
               ...entry.read(),
               catalog,
-              problems: catalog.problems.map(metricProblemText)
+              catalogError: null
             })
           }
         })
@@ -177,7 +176,20 @@ export function useOverviewMetricCollection(args: {
   return {
     ...snapshot,
     zoneReadings: reading?.map ?? {},
-    problems: [...snapshot.problems, ...(reading?.problems ?? [])],
+    problems: [
+      ...(snapshot.catalogError ? [snapshot.catalogError] : []),
+      ...(snapshot.catalog?.problems.map(metricProblemText) ?? []),
+      ...(reading?.problems ?? []),
+      ...Object.entries(reading?.map ?? {}).flatMap(([key, result]) => {
+        if (result?.status !== 'error' || result.reason.code === 'collection-failed') {
+          return []
+        }
+        const definition = snapshot.catalog?.definitions.find(
+          (item) => item.ref.definitionHash === key
+        )
+        return [metricProblemText({ ...result.reason, name: definition?.name })]
+      })
+    ],
     reloadCatalog: () => load('reload'),
     refreshReadings: () => load('recollect')
   }

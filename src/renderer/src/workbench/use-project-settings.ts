@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
@@ -281,7 +283,12 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
     }
     toast.error('项目信息操作失败', {
       id: `project-info-error:${key}`,
-      description: `${error}。可重试，或开会话让模型处理。`,
+      description: createElement(
+        'div',
+        null,
+        '可重试，或开会话处理。',
+        createElement(ErrorDetails, { detail: error })
+      ),
       duration: 60_000,
       closeButton: true,
       action: {
@@ -312,7 +319,9 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
               ].join('\n')
             )
             useAppStore.getState().setActiveView('terminal')
-          })().catch((cause) => toast.error(cause instanceof Error ? cause.message : String(cause)))
+          })().catch((cause) =>
+            notifyWorkbenchError('无法打开处理会话', cause, '检查会话工具设置后重试。')
+          )
         }
       },
       cancel: {

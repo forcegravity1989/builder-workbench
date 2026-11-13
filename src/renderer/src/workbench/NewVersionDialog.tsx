@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import React, { useState } from 'react'
 import { Plus, LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -164,9 +165,11 @@ export function NewVersionDialog({
             />
           </label>
           {formError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {formError}
-            </p>
+            <ErrorDetails
+              className="text-sm text-destructive"
+              summary="版本工作区未就绪 · 查看详情"
+              detail={formError}
+            />
           ) : null}
           {report ? (
             <div className="flex flex-col gap-1 rounded-md border border-border/50 p-3 text-[12px]">
@@ -182,9 +185,12 @@ export function NewVersionDialog({
                 </p>
               ))}
               {report.problems.map((problem) => (
-                <p key={`${problem.workflow}:${problem.code}`} className="text-destructive">
-                  {WORKFLOW_TREE_LABELS[problem.workflow]}：{problem.message}
-                </p>
+                <ErrorDetails
+                  key={`${problem.workflow}:${problem.code}`}
+                  className="text-destructive"
+                  summary={`${WORKFLOW_TREE_LABELS[problem.workflow]}未就绪 · 查看详情`}
+                  detail={problem.message}
+                />
               ))}
               {reportFailed ? (
                 <p className="text-muted-foreground">已创建的工作区会保留，可以重试完成创建。</p>

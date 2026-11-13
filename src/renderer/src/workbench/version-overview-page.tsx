@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { useEffect, useRef, useState } from 'react'
 import { CalendarDays, ClipboardCheck, ListTodo, RefreshCw } from 'lucide-react'
@@ -52,14 +53,20 @@ function ArchiveTime({
           ? '未合入'
           : '未记录'
   return (
-    <span title={status?.state === 'unknown' ? status.reason : '北京时间 UTC+08:00'}>
-      {label} · {at ? <time dateTime={at}>{timeLabel(at)}</time> : missing}
+    <div>
+      {status?.state === 'unknown' && status.reason ? (
+        <ErrorDetails summary={`${label} · ${missing}`} detail={status.reason} />
+      ) : (
+        <span title="北京时间 UTC+08:00">
+          {label} · {at ? <time dateTime={at}>{timeLabel(at)}</time> : missing}
+        </span>
+      )}
       {status && 'url' in status && status.url && (
         <button className="bwo-link ml-1" onClick={() => openEvidenceUrl(status.url!)}>
           #{reference?.number} ↗
         </button>
       )}
-    </span>
+    </div>
   )
 }
 
@@ -230,14 +237,14 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         <ArchiveTime kind="plan" materials={materials} />
         <ArchiveTime kind="acceptance" materials={materials} />
       </div>
-      {materialErrors.map((error) => (
-        <p className="mb-4 text-sm text-destructive" role="alert" key={error}>
-          {error}{' '}
+      {materialErrors.length > 0 && (
+        <div className="mb-4 text-sm text-destructive" role="status">
+          <ErrorDetails summary="版本材料读取失败 · 查看详情" detail={materialErrors.join('\n')} />
           <button className="bwo-link" onClick={refresh}>
             重试
           </button>
-        </p>
-      ))}
+        </div>
+      )}
       {materialErrors.length > 0 && materials.readAt && (
         <p className="bwo-muted">可读内容保留至上次来源快照：{timeLabel(materials.readAt)}</p>
       )}
@@ -369,9 +376,11 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         <p className="bwo-muted">特性来源刷新失败，保留上次快照：{timeLabel(features.readAt)}</p>
       )}
       {(membership.error || taskReads.error) && (
-        <p className="bwo-muted" role="alert">
-          任务读取失败：{membership.error ?? taskReads.error}
-        </p>
+        <ErrorDetails
+          className="bwo-muted"
+          summary="版本任务读取失败 · 查看详情"
+          detail={membership.error ?? taskReads.error}
+        />
       )}
       {Boolean(membership.references?.length) && (
         <p className="bwo-muted">

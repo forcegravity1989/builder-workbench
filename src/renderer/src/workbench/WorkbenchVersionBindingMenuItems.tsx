@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from './error-feedback'
 import React from 'react'
 import { Link2, Unlink } from 'lucide-react'
 import { toast } from 'sonner'
@@ -39,7 +40,7 @@ export function WorkbenchVersionBindingMenuItems({
       )
       toast.success('已解除版本绑定。')
     } catch (reason) {
-      toast.error(reason instanceof Error ? reason.message : String(reason))
+      notifyWorkbenchError('无法保存版本绑定', reason, '可重新选择版本后重试。')
     }
   }
 

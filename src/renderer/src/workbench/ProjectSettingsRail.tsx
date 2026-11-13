@@ -1,5 +1,5 @@
+import { notifyWorkbenchError } from './error-feedback'
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { toast } from 'sonner'
 import { FilePenLine, Info, X } from 'lucide-react'
 import {
   Select,
@@ -96,7 +96,7 @@ export function ProjectSettingsRail({
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
+      notifyWorkbenchError('项目类型未保存', error, '刷新项目墙后重试。')
     } finally {
       setSavingType(false)
     }

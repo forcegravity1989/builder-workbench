@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { archiveStateLabel } from '../../../../shared/workbench/archive-state-label'
 import { ArrowUpRight, GitPullRequest } from 'lucide-react'
 import type { Ref } from 'react'
@@ -59,14 +60,16 @@ export function PlanningArchiveCard({
           <ArrowUpRight size={16} aria-hidden="true" />
         </BoardIconButton>
       )}
-      {archivePr && (
-        <span
-          className="g3-archive-status"
-          title={status?.state === 'unknown' ? status.reason : undefined}
-        >
-          {statusLabel}
-        </span>
-      )}
+      {archivePr &&
+        (status?.state === 'unknown' && status.reason ? (
+          <ErrorDetails
+            className="g3-archive-status"
+            summary={statusLabel}
+            detail={status.reason}
+          />
+        ) : (
+          <span className="g3-archive-status">{statusLabel}</span>
+        ))}
     </section>
   )
 }

@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ChartNoAxesCombined, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { metricRefKey } from '../../../../shared/workbench/metrics'
@@ -178,7 +179,13 @@ export function PlanGoalMetrics({
           <RefreshCw size={14} aria-hidden="true" />
         </BoardIconButton>
       </div>
-      {metrics.error && <p className="g3-muted">指标未知：{metrics.error}</p>}
+      {metrics.error && (
+        <ErrorDetails
+          className="g3-muted"
+          summary="指标读取失败 · 查看详情"
+          detail={metrics.error}
+        />
+      )}
     </div>
   )
 }

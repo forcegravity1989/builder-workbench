@@ -1,3 +1,4 @@
+import { ErrorDetails, notifyWorkbenchError } from '../error-feedback'
 import {
   useCallback,
   useEffect,
@@ -6,13 +7,12 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent
 } from 'react'
-import { toast } from 'sonner'
 import { CircleHelp } from 'lucide-react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
-import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
+import { notifyTrunkUpdate } from '../version-cycle/trunk-update-port'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
@@ -151,7 +151,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       await operation()
     } catch (reason) {
       if (currentSelection.current === selectionKey) {
-        updateView({ notice: reason instanceof Error ? reason.message : String(reason) })
+        notifyWorkbenchError('无法完成计划操作', reason, '核对计划材料后重试。')
       }
     }
   }
@@ -285,7 +285,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
-            toast.message(trunkUpdateNotice(await context.updateCode()))
+            notifyTrunkUpdate(await context.updateCode())
             await material.refresh()
             await prStatus.refresh()
           })
@@ -317,14 +317,16 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         context.error ||
         entry.notice ||
         priorError) && (
-        <p className="vp-notice" role="status">
-          {material.error ||
-            selection.error ||
-            context.error ||
-            notice ||
-            entry.notice ||
-            priorError}
-        </p>
+        <div className="vp-notice" role="status">
+          {notice && <p>{notice}</p>}
+          {entry.notice && <p>{entry.notice}</p>}
+          {(material.error || selection.error || context.error || priorError) && (
+            <ErrorDetails
+              summary="计划材料或工作区未就绪 · 查看详情"
+              detail={material.error || selection.error || context.error || priorError}
+            />
+          )}
+        </div>
       )}
       <PlanningPersistenceNotice material={material} onAct={act} />
       {!started ? (

@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { AcceptanceHeader } from './AcceptanceSections'
@@ -57,9 +58,16 @@ export function AcceptanceEmptyBoard({
           {entry.busy ? '正在打开会话…' : '开始验收'}
         </button>
       </div>
-      {(entry.notice || context.error) && (
+      {context.error && (
+        <ErrorDetails
+          className="acc-notice"
+          summary="无法打开验收工作区 · 查看详情"
+          detail={context.error}
+        />
+      )}
+      {entry.notice && (
         <p className="acc-notice" role="status">
-          {context.error ?? entry.notice}
+          {entry.notice}
         </p>
       )}
       <AcceptanceNotices

@@ -9,6 +9,8 @@ import {
 import { annotationRefFromElement } from './annotations/types'
 import { useBoardAnnotations } from './annotations/use-board-annotations'
 import { BoardActionButton } from './board-ui'
+import { notifyWorkbenchError } from './error-feedback'
+import { MetricProblemsPanel } from './metric-problems-panel'
 import { OverviewRefresh } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
 import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
@@ -25,6 +27,7 @@ export const SCOREBOARD_GRANULARITY = 'week' as const
 export function OverviewScoreboard({
   catalog,
   readings,
+  problems,
   busy,
   onRefresh,
   anchor,
@@ -38,6 +41,7 @@ export function OverviewScoreboard({
 }: {
   catalog: MetricCatalog | null
   readings: Record<string, MetricReading | null>
+  problems: string[]
   busy: boolean
   onRefresh(): void
   anchor?: string
@@ -150,6 +154,15 @@ export function OverviewScoreboard({
           <OverviewRefresh label="刷新" busy={busy} onClick={onRefresh} />
         </div>
       </header>
+      <MetricProblemsPanel
+        className="wb-sb-annot-notice"
+        summary={
+          catalog?.problems.some((problem) => problem.code === 'history-required')
+            ? '采集脚本需要更新 · 查看详情'
+            : '部分指标读取或采集失败 · 查看详情'
+        }
+        problems={problems}
+      />
       {noteNotice && (
         <p className="wb-sb-annot-notice" role="status">
           {noteNotice}
@@ -222,7 +235,7 @@ export function OverviewScoreboard({
               formatBoardAnnotationsAsMarkdown(notes.annotations)
             )
           }}
-          onCopyError={(message) => setNoteNotice(`复制批注失败：${message}`)}
+          onCopyError={(error) => notifyWorkbenchError('复制批注失败', error, '可重新复制。')}
           onSendDirect={async () => {
             const result = await sendScoreboardNotes(
               baseScope,

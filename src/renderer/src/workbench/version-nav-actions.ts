@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from './error-feedback'
 import { readVersionMembership } from './version-cycle/version-membership'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -93,8 +94,10 @@ export async function initializeVersionWorkspace(args: {
   }
   if (prepareFailed(result)) {
     // 步骤链非原子：已成功步骤保留，重试即重入补齐（不重复建树）。
-    toast.error(
-      `版本 ${version} 工作区未全就绪：${prepareProblemSummary(result)}。处理提示的问题后重试，已就绪的工作区会复用。`
+    notifyWorkbenchError(
+      `版本 ${version} 工作区未全就绪`,
+      prepareProblemSummary(result),
+      '可重试，已就绪的工作区会复用。'
     )
     return
   }
@@ -132,19 +135,19 @@ export async function openVersionTasks(args: {
     planTrees: catalog.planTrees
   })
   if (!read.document) {
-    toast.error(read.problem ?? `版本 ${version} 没有可读的计划材料`)
+    notifyWorkbenchError(`版本 ${version} 没有可读的计划材料`, read.problem)
     return
   }
   if (read.problem) {
     // 草稿来源失败、已回落已提交材料：如实标注，不把旧真相冒充当前稿。
-    toast.info(read.problem)
+    notifyWorkbenchError('未读取计划草稿，正在使用已提交材料', read.problem)
   }
   let references: CycleTaskReference[]
   try {
     const members = await readVersionMembership(catalog.scope, read.document)
     references = members.filter((task) => task.goalId === goal.goalId)
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : String(error))
+    notifyWorkbenchError('无法打开版本任务', error, '检查项目连接后重试。')
     return
   }
   openVersionTasksPage({

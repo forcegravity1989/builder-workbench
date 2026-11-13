@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import { useCallback, useEffect, useId, useRef, useState, type ReactElement } from 'react'
 import { useAppStore } from '@/store'
 import {
@@ -153,7 +154,10 @@ export function PlanSendMenu({
         </div>
         {prepareError ? (
           <div className="max-w-sm px-2 py-1.5 text-sm" role="alert">
-            准备请求失败：{prepareError}。处理后重新打开菜单重试。
+            <ErrorDetails
+              summary="请求准备失败，可重新打开菜单重试 · 查看详情"
+              detail={prepareError}
+            />
           </div>
         ) : preparedPrompt === null ? (
           <DropdownMenuItem disabled>正在准备发送…</DropdownMenuItem>

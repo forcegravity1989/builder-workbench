@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
 
@@ -31,10 +32,17 @@ export function AcceptanceNotices({
 }) {
   return (
     <>
-      {(error || recoveryError || draft?.error) && (
-        <p role="alert" className="va-error">
-          {error ?? recoveryError ?? draft?.error}
+      {recoveryError && (
+        <p className="va-error" role="status">
+          {recoveryError}
         </p>
+      )}
+      {(error || draft?.error) && (
+        <ErrorDetails
+          className="va-error"
+          summary="验收操作未完成 · 查看详情"
+          detail={error ?? draft?.error}
+        />
       )}
       {draft?.notice && (
         <p role="status" className="acc-notice">

@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import type { ReactNode } from 'react'
 import {
   Download,
@@ -220,16 +221,17 @@ export function ProjectWallCard({
             )}
             {!readings.goals.length && <span className="pcard-muted">暂无可读目标</span>}
           </>
-        ) : (
-          <div
+        ) : readings.kind === 'unknown' ? (
+          <ErrorDetails
             className="pcard-muted"
-            title={readings.kind === 'unknown' ? readings.reason : undefined}
-          >
+            summary="版本信息暂不可用 · 查看详情"
+            detail={readings.reason}
+          />
+        ) : (
+          <div className="pcard-muted">
             {readings.kind === 'loading'
               ? '正在读取版本…'
-              : readings.kind === 'unknown'
-                ? '版本信息暂不可用'
-                : card.charter?.brief?.trim() || '未建立版本'}
+              : card.charter?.brief?.trim() || '未建立版本'}
           </div>
         )}
       </div>

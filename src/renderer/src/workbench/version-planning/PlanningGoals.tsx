@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
@@ -103,15 +104,13 @@ export function PlanningGoals({
           <small>{plan ? `${plan.goals.length} 个目标` : '未建'}</small>
         </h2>
         {plan && (
-          <span className="g3-title-actions">
+          <div className="g3-title-actions">
             {(readError || membership.error) && (
-              <span className="g3-muted" role="status">
-                Issue 状态未知
-                <details className="mt-1">
-                  <summary>检查项目远端与集成登录后，刷新 Issue</summary>
-                  <p>{readError || membership.error}</p>
-                </details>
-              </span>
+              <ErrorDetails
+                className="g3-muted"
+                summary="Issue 状态未知，检查项目远端与集成登录后刷新"
+                detail={readError || membership.error}
+              />
             )}
             <button
               type="button"
@@ -151,7 +150,7 @@ export function PlanningGoals({
                 )}
               </BoardIconButton>
             )}
-          </span>
+          </div>
         )}
       </div>
       {!plan ? (
