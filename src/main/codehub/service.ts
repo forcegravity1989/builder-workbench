@@ -1,7 +1,7 @@
 import { createCodeHubComment, deleteCodeHubComment, listCodeHubComments } from './comments'
 import { resolve } from 'node:path'
 import { parseCodeHubRemote } from '../../shared/codehub'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host'
+import { getRepoSshConnectionId } from '../../shared/execution-host'
 import type { CodeHubApi, CodeHubRepoArgs } from '../../shared/codehub-api'
 import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
@@ -26,27 +26,53 @@ import {
 export function createCodeHubService(deps: {
   resolveRepo: (args: CodeHubRepoArgs) => Repo | Promise<Repo>
   localGitOptions: (repo: Repo) => { wslDistro?: string }
+  allowRemoteIdentity?: boolean
 }): CodeHubApi {
+  function registeredRemote(repo: Repo) {
+    return (
+      parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
+      parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
+    )
+  }
   async function context(args: CodeHubRepoArgs) {
+    if (args.remoteUrl && deps.allowRemoteIdentity) {
+      const remote = parseCodeHubRemote(args.remoteUrl)
+      if (!remote) {
+        throw new Error('Unrecognized CodeHub service host')
+      }
+      if (!/^(?:[A-Za-z0-9-]+[.])*huawei[.]com(?::[0-9]+)?$/i.test(remote.host)) {
+        const repo = await deps.resolveRepo(args)
+        const known = registeredRemote(repo)
+        if (
+          resolve(repo.path) !== resolve(args.repoPath) ||
+          known?.host !== remote.host ||
+          known.project !== remote.project
+        ) {
+          throw new Error('CodeHub project identity does not match the registered repository')
+        }
+      }
+      if (
+        remote.project
+          .split('/')
+          .some((part) => !part || part === '.' || part === '..' || /[?#\\\s]/.test(part))
+      ) {
+        throw new Error('Invalid CodeHub project identity')
+      }
+      return { remote, execOptions: {} }
+    }
     const repo = await deps.resolveRepo(args)
     if (resolve(repo.path) !== resolve(args.repoPath)) {
       throw new Error('Repository path does not match the registered repository')
     }
     // The native registry owns the selected remote; another configured remote
     // must not silently replace the project the Tasks page displays.
-    const identity = repo.gitRemoteIdentity
-    const remote =
-      parseCodeHubRemote(identity?.remoteUrl) ?? parseCodeHubRemote(identity?.canonicalKey)
+    const remote = registeredRemote(repo)
     if (!remote) {
       throw new Error('Repository remote is not CodeHub')
     }
-    // The CLI addresses the project with -p/-H, so only a local checkout can use
-    // its path as cwd. SSH and paired-runtime rows carry a remote path; treating
-    // it as cwd would run the user's local CLI against the wrong directory.
-    const execOptions: CodeHubExecOptions =
-      getRepoExecutionHostId(repo) === LOCAL_EXECUTION_HOST_ID
-        ? { cwd: repo.path, ...deps.localGitOptions(repo) }
-        : {}
+    const execOptions: CodeHubExecOptions = getRepoSshConnectionId(repo)
+      ? {}
+      : { cwd: repo.path, ...deps.localGitOptions(repo) }
     return { remote, execOptions }
   }
 

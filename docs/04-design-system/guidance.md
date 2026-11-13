@@ -82,7 +82,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 工作 | W06 让项目持续可维护（建设中）：审视项目知识、架构与技术债 → 决定处理或暂缓 → 执行并验证 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 工作 | W07 把跑通的做法变成下次少操心（建设中）：总结真实工作 → 沉淀可复用做法 → 在下次同类任务复用并检验 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 功能 | F01 创建工作区、隔离并行任务 | 重点：创建、隔离、切换与继续工作 | [✅ 工作区演示][explore-copy] | ☐ | [待验：workspace-creation][tours] | — | ☐ | — |
-| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；来源按实际环境核对 | [✅ GitHub/Linear 片段][explore-copy]；☐ BW/CodeHub 补充 | ☐ | [待验：tasks][tours] | — | ☐；CLI 参考见 F29 | — |
+| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ GitHub/Linear 片段][explore-copy]；☐ BW/CodeHub 补充 | ☐ | [待验：tasks][tours] | — | ☐；CLI 参考见 F29 | — |
 | 功能 | F03 智能体运行状态 | 随屏 → F01/F06：运行、等待、受阻状态及继续操作 | [✅ 状态演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F04 智能体编排 | 暂缓专项；保留已有编排演示 | [✅ 编排演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F05 账号用量 | 随屏 → F06：账号身份、用量/额度、未知或受限时的下一步 | [✅ 用量演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
@@ -101,13 +101,13 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、编辑与提交；复用总览入口 | ☐ | [待验：里程碑操作引导][milestone-guide] | [待验：workbench-milestones][milestone-guide] | — | ☐ | — |
 | 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、切换与事实读数 | ☐ | ☐ | 待验：初始设置交接到空项目墙，取消可重试，首个项目上墙后点项目名开工 | — | ☐ | — |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
-| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、指标的分工与空态 | ☐ | ☐；里程碑见 F18 | ☐ | — | ☐ | — |
+| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、指标的分工、[读取来源](../architecture.md#页面读取来源)与空态 | ☐ | ☐；里程碑见 F18 | ☐ | — | ☐ | — |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务及评审归档 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F25 [版本验收](../05-features/version-acceptance/spec.md) | 重点：核验证据、人的结论及归档 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F26 [工程部署](../05-features/version-acceptance/spec.md) | 暂缓：本期不新增工程部署引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：目标、任务与验收事实；SDLC 本期不新增引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
+| 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：目标、任务、验收事实与[版本未同步提示](../05-features/version-overview/spec.md#来源历史与缓存)；SDLC 本期不新增引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F28 [指标配置与采集](../05-features/overview-metrics/spec.md) | 重点：指标口径、配置、采集及缺数据/失败后的继续路径 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F24/F25：配置衔接入门，核对 CodeHub/WeLink 的登录、访问与实际使用 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；☐ BW 接入指南 | — |
 

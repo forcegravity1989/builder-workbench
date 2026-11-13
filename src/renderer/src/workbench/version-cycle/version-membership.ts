@@ -1,3 +1,4 @@
+import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { useAppStore } from '@/store'
 import { localCodehubApi } from '@/lib/codehub-api'
 import {
@@ -15,7 +16,6 @@ import {
 import { resolveMemberGoalId } from '../../../../shared/workbench/version-membership'
 import {
   rememberGitHubIssueSource,
-  requireSourceContext,
   repoOnTaskHost,
   type TaskReadHome
 } from '../task-reference-repo'
@@ -86,7 +86,7 @@ async function queryVersionIssues(repo: Repo, version: string, force: boolean): 
   }
 
   const state = useAppStore.getState()
-  const source = requireSourceContext(repo, 'github')
+  const source = getTaskPageRepoSourceContext(repo, 'github')
   const settings = getGitHubRepoSourceSettings(state.settings, repo, source)
   const context = getGitHubWorkItemRequestContext(state, settings, repo.id, repo.path, source)
   const query = seedWorkbenchTaskQuery('is:issue', { version, references: [] })

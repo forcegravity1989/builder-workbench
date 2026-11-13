@@ -1,4 +1,4 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import {
@@ -7,6 +7,7 @@ import {
   parseExecutionHostId,
   toRuntimeExecutionHostId
 } from '../../../shared/execution-host'
+import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
 import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
@@ -123,11 +124,33 @@ export function resolveReferenceRepo(
   )
 }
 
+export function gitHubIdentityForTaskReference(
+  repo: Repo,
+  repository: string
+): GitHubOwnerRepo | undefined {
+  const known = knownGitHubIssueSource(repo, repository)
+  if (known) {
+    return known
+  }
+  const origin = getProjectProviderIdentity({
+    gitRemoteIdentity: repo.gitRemoteIdentity,
+    upstream: null,
+    repoIcon: null
+  })
+  if (origin && exactIdentityMatch({ ...repo, upstream: null }, repository)) {
+    return origin
+  }
+  if (repo.upstream && exactIdentityMatch(repo, repository)) {
+    return repo.upstream
+  }
+  return undefined
+}
+
 export function requireSourceContext(
   repo: Repo,
   provider: 'github' | 'codehub'
 ): TaskSourceContext {
-  const sourceContext = getTaskPageRepoSourceContext(repo, provider)
+  const sourceContext = getRepoTaskSourceContext(repo, provider)
   if (!sourceContext) {
     throw new Error(`无法解析 ${provider} 任务来源上下文`)
   }

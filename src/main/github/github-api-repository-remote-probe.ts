@@ -1,4 +1,7 @@
 import type { GitHubApiRepository } from './github-api-repository'
+import { isValidGitHubApiRepository } from './github-api-repository-validation'
+import { isDefaultGitHubHost } from '../../shared/github/repository-identity-key'
+import { isGitHubHostAuthenticatedForGlobalCli } from './github-enterprise-repository'
 import {
   getOwnerRepoForRemote,
   type GitHubRemoteIdentityProbeOptions,
@@ -54,6 +57,26 @@ export async function getGitHubApiRepositoryForRemote(
 ): Promise<GitHubApiRepository | null> {
   // Why: generic PR resolution prefers upstream, but this API represents the
   // caller-selected remote exactly (#7331).
+  const taskRepository = localGitOptions.taskRepository
+  if (taskRepository) {
+    const candidate = localGitOptions.taskRemoteCandidates
+      ? remoteName === 'origin'
+        ? localGitOptions.taskRemoteCandidates.origin
+        : remoteName === 'upstream'
+          ? localGitOptions.taskRemoteCandidates.upstream
+          : null
+      : remoteName === 'origin'
+        ? taskRepository
+        : null
+    if (!candidate || !isValidGitHubApiRepository(candidate)) {
+      return null
+    }
+    const host = candidate.host ?? 'github.com'
+    if (!isDefaultGitHubHost(host) && !(await isGitHubHostAuthenticatedForGlobalCli(host))) {
+      throw new Error('GitHub repository host is unavailable in the local gh account')
+    }
+    return { ...candidate, host }
+  }
   const requireVerifiedSshProbe = probeOptions.requireVerifiedSshProbe === true
   const verifiedIdentityArgs = requireVerifiedSshProbe ? ([probeOptions] as const) : []
   const ownerRepo = await getOwnerRepoForRemote(

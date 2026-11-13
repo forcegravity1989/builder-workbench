@@ -17,7 +17,7 @@ type ViewerModel = {
   codehubAuthor: string
   codehubAssignee: string
   repoMap: ReadonlyMap<string, Repo>
-  repoSelection: ReadonlySet<string>
+  selectedScopeRepoIds: ReadonlySet<string>
   taskRefreshNonce: number
   codehubRefreshNonce: number
   workItemsInvalidationNonce: number
@@ -46,7 +46,7 @@ export function useTaskScopeViewers(
     ...new Set(
       (items ?? [])
         .map((item) => item.repoId)
-        .filter((id): id is string => !!id && model.repoSelection.has(id))
+        .filter((id): id is string => !!id && model.selectedScopeRepoIds.has(id))
     )
   ].sort()
   const requestKey =
@@ -121,9 +121,7 @@ export function useTaskScopeViewers(
       setState({
         key: requestKey,
         logins,
-        error: failed
-          ? '无法核对部分项目所属宿主的当前用户，请登录后刷新、指定用户名或移除目标筛选。'
-          : null
+        error: failed ? '无法核对本机账号，请登录后刷新、指定用户名或移除目标筛选。' : null
       })
     })
     return () => {

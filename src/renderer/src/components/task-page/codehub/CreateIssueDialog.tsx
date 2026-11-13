@@ -1,4 +1,4 @@
-import { codehubApi } from '@/lib/codehub-api'
+import { localCodehubApi } from '@/lib/codehub-api'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
@@ -48,7 +48,7 @@ export function CodeHubCreateIssueDialog({
               return
             }
             setCreating(true)
-            void codehubApi
+            void localCodehubApi
               .createIssue({
                 repoPath: codehubRepo.path,
                 repoId: codehubRepo.id,

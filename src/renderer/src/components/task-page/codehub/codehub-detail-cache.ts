@@ -2,7 +2,7 @@ import {
   getTaskSourceCacheScope,
   type TaskSourceContext
 } from '../../../../../shared/task-source-context'
-import { createCodeHubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import type { CodeHubMrFileChange } from '../../../../../shared/codehub-mr-detail'
 import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
 import type { PRCheckDetail } from '../../../../../shared/github/check-types'
@@ -105,7 +105,7 @@ function errorText(reason: unknown): string {
  * triggers the full read while its detail lane keeps painting.
  */
 export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<void> {
-  const api = createCodeHubApi(args.sourceContext, { execution: 'local' })
+  const api = createTaskPageCodeHubApi(args.sourceContext)
   const key = getCodehubDetailCacheKey(args)
   const cached = codehubDetailCache.get(key)
   if (cached?.fetchedAt && Date.now() - cached.fetchedAt <= CODEHUB_DETAIL_FRESH_MS) {
@@ -153,7 +153,7 @@ export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<v
  * the detail/comments lanes and freshness stay untouched.
  */
 export function refreshCodehubMrExtras(args: CodeHubDetailReadArgs): Promise<void> {
-  const api = createCodeHubApi(args.sourceContext, { execution: 'local' })
+  const api = createTaskPageCodeHubApi(args.sourceContext)
   const key = getCodehubDetailCacheKey(args)
   const read: Promise<void> = Promise.allSettled([api.mrChecks(args), api.mrChanges(args)]).then(
     ([checksRes, filesRes]) => {

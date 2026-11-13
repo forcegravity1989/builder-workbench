@@ -66,6 +66,7 @@ export const ghPullRequestsAndWorkItemsApi = {
   workItemByOwnerRepo: (args: {
     repoPath: string
     repoId?: string | null
+    sourceContext?: TaskSourceContext | null
     owner: string
     repo: string
     host?: string
@@ -108,8 +109,12 @@ export const ghPullRequestsAndWorkItemsApi = {
     labels?: string[]
     assignees?: string[]
   }): Promise<GitHubCreateIssueResult> => ipcRenderer.invoke('gh:createIssue', args),
-  countWorkItems: (args: { repoPath: string; repoId?: string; query?: string }): Promise<number> =>
-    ipcRenderer.invoke('gh:countWorkItems', args),
+  countWorkItems: (args: {
+    repoPath: string
+    repoId?: string
+    query?: string
+    sourceContext?: TaskSourceContext | null
+  }): Promise<number> => ipcRenderer.invoke('gh:countWorkItems', args),
   issueStates: (args: {
     owner: string
     repo: string
@@ -125,6 +130,7 @@ export const ghPullRequestsAndWorkItemsApi = {
   listWorkItems: (args: {
     repoPath: string
     repoId?: string | null
+    sourceContext?: TaskSourceContext | null
     limit?: number
     query?: string
     page?: number

@@ -6,7 +6,10 @@ import {
   writeKnowledgeDocToRepo,
   type WriteKnowledgeDocResult
 } from './knowledge-repo-loader'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { useProjectPage } from './project-page-state'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
 
 export function useKnowledgeRepo(): {
   activeRepo: ReturnType<typeof useAppStore.getState>['repos'][number] | undefined
@@ -20,20 +23,20 @@ export function useKnowledgeRepo(): {
   reload: () => void
   saveDoc: (docId: string, content?: string) => Promise<WriteKnowledgeDocResult>
 } {
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId)
-  // 没有显式选择时优先本机项目，避免默认落到远端路径。
-  const selectedRepo =
-    repos.find((r) => r.id === activeRepoId) ??
-    repos.find((r) => getRepoExecutionHostId(r) === LOCAL_EXECUTION_HOST_ID) ??
-    repos[0]
-  // 知识库只使用本机文件能力；远端登记行的路径在本机不可读，不能静默当成本机项目。
-  const activeRepo =
-    selectedRepo && getRepoExecutionHostId(selectedRepo) === LOCAL_EXECUTION_HOST_ID
-      ? selectedRepo
-      : undefined
+  const page = useProjectPage()
+  const activeRepo = useAppStore((state) => {
+    if (page?.kind === 'knowledge') {
+      return page.options
+        ? (findRepoForHost(state.repos, page.options.repoId, { hostId: LOCAL_EXECUTION_HOST_ID }) ??
+            undefined)
+        : undefined
+    }
+    const current = currentProjectRepo(state)
+    return (current && resolveProjectSource(state, current, true)) ?? undefined
+  })
+  const hasProjects = useAppStore((state) => state.repos.length > 0)
   const unavailable =
-    selectedRepo && !activeRepo ? '知识库只读取本机项目；当前项目在本机没有登记。' : null
+    hasProjects && !activeRepo ? '知识库只读取本机项目。请先在本机添加当前项目。' : null
   const [docs, setDocs] = useState<KbDoc[]>([])
   const [bodies, setBodies] = useState<Record<string, string>>({})
   const [savedBodies, setSavedBodies] = useState<Record<string, string>>({})

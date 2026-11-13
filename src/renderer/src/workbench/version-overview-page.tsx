@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { useEffect, useRef, useState } from 'react'
 import { CalendarDays, ClipboardCheck, ListTodo, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -115,10 +116,23 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
     plan.kind === 'missing' &&
     acceptance.kind === 'missing'
   const projectName = useAppStore(
-    (state) => state.repos.find((repo) => repo.id === repoId)?.displayName ?? '项目'
+    (state) => findRepoForHost(state.repos, repoId, { hostId })?.displayName ?? '项目'
   )
   const workflow = (kind: 'plan' | 'acceptance') =>
     navigateVersionWorkflow({ catalog, version, workflow: kind, projectKey: repoId })
+  const handledWorkflow = useRef<VersionOverviewOptions | null>(null)
+  useEffect(() => {
+    if (
+      !options.workflow ||
+      handledWorkflow.current === options ||
+      (!catalog.materialReady && !entry?.workspaces.length) ||
+      !entry
+    ) {
+      return
+    }
+    handledWorkflow.current = options
+    navigateVersionWorkflow({ catalog, version, workflow: options.workflow, projectKey: repoId })
+  }, [catalog, entry, options, repoId, version])
   const tasks = (goal?: { goalId: string; label: string; references: PlanningMaterial['tasks'] }) =>
     void openVersionTasks({ catalog, version, entry, goal })
   const materialErrors = [
@@ -319,7 +333,12 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                     historical={acceptance.kind === 'ready' && acceptance.source === 'committed'}
                     onVersion={(next, id) => {
                       setFocus(id)
-                      openVersionOverview({ repoId, hostId, version: next })
+                      openVersionOverview({
+                        repoId,
+                        hostId,
+                        version: next,
+                        milestoneOrigin: options.milestoneOrigin
+                      })
                     }}
                   />
                 </div>

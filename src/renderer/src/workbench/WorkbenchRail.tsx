@@ -7,10 +7,14 @@ import { SshStatusSegment } from '@/components/status-bar/SshStatusSegment'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { closeProjectPage, openProjectWall, useProjectPage } from './project-page-state'
+import {
+  closeProjectPage,
+  openKnowledgePage,
+  openProjectOverview,
+  openProjectWall,
+  useProjectPage
+} from './project-page-state'
 import { useWorkbenchObjectContext } from './workbench-object-context'
-import { applyProjectSourcePair } from './switch-active-project'
-import { resolveProjectSourcePair, type ProjectSourcePolicy } from './project-source-resolution'
 
 export const WORKBENCH_RAIL_WIDTH = 64
 
@@ -52,9 +56,7 @@ function RailButton({ entry }: { entry: RailEntry }): React.JSX.Element {
 export function WorkbenchRail(): React.JSX.Element | null {
   const activeView = useAppStore((s) => s.activeView)
   const taskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
-  const openActivityPage = useAppStore((s) => s.openActivityPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
-  const openSpacePage = useAppStore((s) => s.openSpacePage)
   const setActiveView = useAppStore((s) => s.setActiveView)
   const setSidebarBody = useAppStore((s) => s.setSidebarBody)
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen)
@@ -82,20 +84,6 @@ export function WorkbenchRail(): React.JSX.Element | null {
     setActiveView('terminal')
   }
 
-  // Why: 项目级入口点击时现算来源，不沿用上一个工作树写下的主机；本机有该项目
-  // 就落本机，本机没有才降级到其他已登记主机。
-  const enterProjectLevelPage = (policy: ProjectSourcePolicy, navigate: () => void): void => {
-    const state = useAppStore.getState()
-    const pair = resolveProjectSourcePair(state.repos, state.activeRepoId, policy, {
-      runtimeEnvironments: state.runtimeEnvironments
-    })
-    if (pair) {
-      applyProjectSourcePair(pair)
-    }
-    closeProjectPage()
-    navigate()
-  }
-
   const entries: RailEntry[] = [
     {
       id: 'version-workspace',
@@ -111,7 +99,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
       active:
         activeView === 'activity' &&
         (projectPage === null || projectPage.kind === 'project-overview'),
-      onSelect: () => enterProjectLevelPage('local-first', openActivityPage)
+      onSelect: () => openProjectOverview()
     },
     {
       id: 'automations',
@@ -125,8 +113,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
       label: '知识库',
       icon: BookOpen,
       active: activeView === 'space',
-      // 知识库只读写本机文件；本机没有该项目时不降级到远端路径。
-      onSelect: () => enterProjectLevelPage('local-only', openSpacePage)
+      onSelect: openKnowledgePage
     }
   ]
 

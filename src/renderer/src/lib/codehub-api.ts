@@ -1,4 +1,7 @@
+import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubApi } from '../../../shared/codehub-api'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { useAppStore } from '@/store'
 import { getExplicitRuntimeOwnerEnvironmentId } from './repo-runtime-owner'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
@@ -15,26 +18,47 @@ function route<K extends keyof CodeHubApi>(
   sourceContext?: TaskSourceContext | null,
   execution: 'owner' | 'local' = 'owner'
 ): Promise<Awaited<ReturnType<CodeHubApi[K]>>> {
-  const target =
-    execution === 'local'
-      ? ({ kind: 'local' } as const)
-      : getActiveRuntimeTarget(
-          sourceContext
-            ? getTaskSourceRuntimeSettings(sourceContext)
-            : {
-                activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
-                  useAppStore.getState(),
-                  args.repoId
-                )
-              }
-        )
-  const routedArgs = sourceContext?.repoId ? { ...args, repoId: sourceContext.repoId } : args
+  const call = (input: typeof args) =>
+    (
+      window.api.codehub[method] as (
+        input: typeof args
+      ) => Promise<Awaited<ReturnType<CodeHubApi[K]>>>
+    )(input)
+  const repoId = sourceContext?.repoId ?? args.repoId
+  const routedArgs = repoId !== args.repoId ? { ...args, repoId } : args
+  if (execution === 'local') {
+    const repos = useAppStore.getState().repos
+    const matches = repos.filter(
+      (row) => (!repoId || row.id === repoId) && row.path === args.repoPath
+    )
+    const repo =
+      sourceContext?.hostId && repoId
+        ? findRepoForHost(matches, repoId, { hostId: sourceContext.hostId })
+        : matches.length === 1
+          ? matches[0]
+          : null
+    const identity = repo?.gitRemoteIdentity
+    const remoteUrl = parseCodeHubRemote(identity?.remoteUrl)
+      ? identity?.remoteUrl
+      : identity?.canonicalKey
+    if (!remoteUrl) {
+      return Promise.reject(new Error('无法解析 CodeHub 仓库身份'))
+    }
+    return call({ ...routedArgs, remoteUrl })
+  }
+  const target = getActiveRuntimeTarget(
+    sourceContext
+      ? getTaskSourceRuntimeSettings(sourceContext)
+      : {
+          activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
+            useAppStore.getState(),
+            args.repoId
+          )
+        }
+  )
   if (target.kind === 'environment') {
     return callRuntimeRpc(target, `codehub.${method}`, routedArgs, { timeoutMs: 60_000 })
   }
-  const call = window.api.codehub[method] as (
-    input: typeof args
-  ) => Promise<Awaited<ReturnType<CodeHubApi[K]>>>
   return call(routedArgs)
 }
 
@@ -73,8 +97,8 @@ export function createCodeHubApi(
 }
 
 export const codehubApi = createCodeHubApi()
-/**
- * 任务页读任务数据固定走本机 CLI：项目身份来自远端登记行，执行与权限用本机。
- * 详情、列表与写操作都用它，避免同一屏一半本机一半远端。
- */
-export const localCodehubApi = createCodeHubApi(null, { execution: 'local' })
+export function createTaskPageCodeHubApi(sourceContext?: TaskSourceContext | null): CodeHubApi {
+  return createCodeHubApi(sourceContext, { execution: isWorkbenchShell() ? 'local' : 'owner' })
+}
+
+export const localCodehubApi = createTaskPageCodeHubApi()

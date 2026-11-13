@@ -1,3 +1,4 @@
+import { getTaskPageGitHubItemSource } from '@/components/task-page-source-context'
 import { createOverviewProviderReader } from './overview-provider-port'
 import { localCodehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemDetailsForSource } from '@/lib/github-work-item-source-lookup'
@@ -84,7 +85,15 @@ export async function readFeatureEvidence(
           const detail = await lookupGitHubWorkItemDetailsForSource({
             repoPath: repo.path,
             repoId: repo.id,
-            sourceContext: task.source,
+            sourceContext: getTaskPageGitHubItemSource(
+              repo,
+              {
+                type: 'issue',
+                number: task.iid,
+                url: task.url
+              },
+              task.source
+            ),
             number: task.iid,
             type: 'issue'
           })

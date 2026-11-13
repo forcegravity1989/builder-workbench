@@ -1,3 +1,4 @@
+import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import type { AppState } from '@/store/types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import type { WorkItemsBatchResult } from '../../../shared/github/work-item-batch-types'
@@ -14,6 +15,7 @@ import {
 import {
   knownGitHubIssueSource,
   requireSourceContext,
+  gitHubIdentityForTaskReference,
   resolveReferenceRepo,
   viewCodeHubTaskByIid
 } from './task-reference-repo'
@@ -87,7 +89,16 @@ async function openDetail(
     returnToPreviousView: true
   }
   if (task.reference.provider === 'github') {
-    const sourceContext = requireSourceContext(repo, 'github')
+    const source = getTaskPageRepoSourceContext(repo, 'github')
+    const identity = gitHubIdentityForTaskReference(repo, task.reference.repository)
+    const sourceContext =
+      source?.localTaskAccount && identity
+        ? {
+            ...source,
+            taskRemoteCandidates: undefined,
+            providerIdentity: { provider: 'github' as const, ...identity }
+          }
+        : source
     const item = await deps.lookupGitHubWorkItem({
       repoPath: repo.path,
       repoId: repo.id,

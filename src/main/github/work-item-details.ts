@@ -85,7 +85,8 @@ export async function getWorkItemDetails(
 
   const resolvedRepository =
     item.type === 'issue'
-      ? await getIssueGitHubApiRepository(repoPath, connectionId, localGitOptions)
+      ? (localGitOptions.taskRepository ??
+        (await getIssueGitHubApiRepository(repoPath, connectionId, localGitOptions)))
       : (await resolveGitHubRepoExecution(repoPath, item.prRepo, connectionId, localGitOptions))
           .ownerRepo
 

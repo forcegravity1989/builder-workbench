@@ -11,7 +11,7 @@ import { translate } from '@/i18n/i18n'
 import {
   getGitHubWorkItemWorkspaceSeed,
   getGitLabWorkItemWorkspaceSeed,
-  getTaskPageRepoSourceContext
+  getRepoTaskSourceContext
 } from './task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
@@ -52,7 +52,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       openModal('new-workspace-composer', {
         linkedWorkItem,
         initialGitHubWorkItem: item,
-        taskSourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github'),
+        taskSourceContext: getRepoTaskSourceContext(repoMap.get(item.repoId), 'github'),
         prefilledName: getGitHubWorkItemWorkspaceSeed(item),
         initialRepoId: item.repoId,
         enableIssueAutomation: item.type === 'issue',
@@ -86,7 +86,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           worktrees,
           provider: 'github',
           number: item.number,
-          sourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github'),
+          sourceContext: getRepoTaskSourceContext(repoMap.get(item.repoId), 'github'),
           repoId: item.repoId
         })
         if (scoped) {
@@ -151,7 +151,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       }
       openModal('new-workspace-composer', {
         linkedWorkItem,
-        taskSourceContext: getTaskPageRepoSourceContext(
+        taskSourceContext: getRepoTaskSourceContext(
           repoMap.get(item.repoId),
           'gitlab',
           item.projectRef
@@ -172,10 +172,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   )
   const codeHubSourceContextFor = useCallback(
     (item: CodeHubTaskItem) =>
-      getTaskPageRepoSourceContext(
-        item.repoId ? (repoMap.get(item.repoId) ?? null) : null,
-        'codehub'
-      ),
+      getRepoTaskSourceContext(item.repoId ? (repoMap.get(item.repoId) ?? null) : null, 'codehub'),
     [repoMap]
   )
   const openComposerForCodeHubItem = useCallback(

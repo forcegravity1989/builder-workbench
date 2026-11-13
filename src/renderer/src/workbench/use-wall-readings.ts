@@ -104,14 +104,3 @@ export function useWallReadings(
   }
   return result
 }
-
-export function useWallVersionLabel(
-  project: WallProject | undefined,
-  refresh: ReturnType<typeof useWallRefresh>
-) {
-  const projects = useMemo(() => (project ? [project] : []), [project])
-  const reads = useWallVersionReads(projects, refresh)
-  const { values } = useWallCardReads(reads, versions)
-  const selection = project ? values[project.key] : undefined
-  return selection?.kind === 'version' ? selection.entry.version : null
-}

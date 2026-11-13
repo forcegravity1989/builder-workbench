@@ -1,3 +1,4 @@
+import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
@@ -88,7 +89,7 @@ export async function openReviewPr(identity: ReviewRepoIdentity, prNumber: numbe
       await openCodeHubReview(repo, prNumber)
       return
     }
-    const sourceContext = requireSourceContext(repo, 'github')
+    const sourceContext = getTaskPageRepoSourceContext(repo, 'github')
     const item = await lookupGitHubWorkItemForSource({
       repoPath: repo.path,
       repoId: repo.id,

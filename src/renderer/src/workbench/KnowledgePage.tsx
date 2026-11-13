@@ -1,3 +1,7 @@
+import {
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -120,11 +124,12 @@ export function KnowledgePage(): React.JSX.Element {
     if (!activeRepo) {
       return ''
     }
+    const options = worktreeHostMatchOptions(s, activeRepo.id, 'local')
     const list = s.worktreesByRepo[activeRepo.id] ?? []
-    if (s.activeWorktreeId && list.some((w) => w.id === s.activeWorktreeId)) {
-      return s.activeWorktreeId
-    }
-    return list[0]?.id ?? ''
+    return (
+      list.find((tree) => tree.isMainWorktree && worktreeMatchesHost(tree, 'local', options))?.id ??
+      ''
+    )
   })
 
   const repoLabel = activeRepo?.displayName?.trim() || activeRepo?.path || '未选项目'

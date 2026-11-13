@@ -4,6 +4,8 @@ export type GitRemoteIdentity = {
   canonicalKey: string
   remoteName: string
   remoteUrl: string
+  /** The checkout's origin when the preferred registration remote is upstream. */
+  originUrl?: string | null
 }
 
 export type GitRemoteKeyParts = {
@@ -137,7 +139,10 @@ export function deriveGitRemoteIdentity(stdout: string): GitRemoteIdentity | nul
     ? {
         canonicalKey: selected.canonicalKey,
         remoteName: selected.name,
-        remoteUrl: selected.url
+        remoteUrl: selected.url,
+        ...(selected.name === 'upstream'
+          ? { originUrl: entries.find((entry) => entry.name === 'origin')?.url ?? null }
+          : {})
       }
     : null
 }

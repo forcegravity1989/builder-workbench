@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import {
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 import { versionCatalogPlanTrees } from './version-catalog-plan-trees'
 import { versionRepoIdentity as identityKeyOf } from '../../../shared/workbench/version-repo-identity'
@@ -54,7 +59,10 @@ export function useVersionCatalogForRepo(
     if (!repoId) {
       return []
     }
-    const target = repos.find((repo) => repo.id === repoId)
+    const target = findRepoForHost(repos, repoId, { hostId: sourceHostId })
+    if (!target && sourceHostId) {
+      return []
+    }
     const key = target ? identityKeyOf(target) : null
     if (!key) {
       return [repoId]
@@ -70,16 +78,22 @@ export function useVersionCatalogForRepo(
   const worktrees = useMemo(() => {
     const rows = new Map<string, Worktree>()
     for (const id of repoIds) {
-      for (const tree of worktreesByRepo[id] ?? []) {
-        rows.set(getWorktreeHostIdentity(tree), tree)
-      }
-      // visible 只是原生侧栏的会话/显示投影，不能决定版本绑定是否存在。
-      for (const tree of detectedWorktreesByRepo[id]?.worktrees ?? []) {
-        rows.set(getWorktreeHostIdentity(tree), tree)
+      const options = sourceHostId
+        ? worktreeHostMatchOptions({ repos }, id, sourceHostId)
+        : undefined
+      // 检测到但未显示的树也可能持有有效绑定。
+      const candidates = [
+        ...(worktreesByRepo[id] ?? []),
+        ...(detectedWorktreesByRepo[id]?.worktrees ?? [])
+      ]
+      for (const tree of candidates) {
+        if (!sourceHostId || worktreeMatchesHost(tree, sourceHostId, options)) {
+          rows.set(getWorktreeHostIdentity(tree), tree)
+        }
       }
     }
     return [...rows.values()]
-  }, [repoIdsKey, worktreesByRepo, detectedWorktreesByRepo]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [repoIdsKey, worktreesByRepo, detectedWorktreesByRepo, repos, sourceHostId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const home = useMemo(() => {
     const primary = worktrees.filter((tree) => tree.repoId === repoId)
@@ -111,6 +125,7 @@ export function useVersionCatalogForRepo(
   const lastView = useRef<{
     repoId: string | null
     scopeKey: string
+    sourceHostId: ExecutionHostId | null | undefined
     catalog: VersionCatalogLoad
   } | null>(null)
 
@@ -140,7 +155,7 @@ export function useVersionCatalogForRepo(
     : null
   useEffect(() => {
     if (!scope || !homeId) {
-      if (lastView.current?.repoId !== repoId) {
+      if (lastView.current?.repoId !== repoId || lastView.current?.sourceHostId !== sourceHostId) {
         setCatalog(null)
       }
       // scope 失效也要复位上一轮的装载/错误态：在飞轮次被 cleanup 取消后其
@@ -165,7 +180,7 @@ export function useVersionCatalogForRepo(
           previous: lastView.current?.scopeKey === scopeKey ? lastView.current.catalog : null
         })
         if (!cancelled) {
-          lastView.current = { repoId, scopeKey: scopeKey ?? '', catalog: load }
+          lastView.current = { repoId, scopeKey: scopeKey ?? '', sourceHostId, catalog: load }
           setCatalog(load)
         }
       } catch (reason) {
@@ -185,10 +200,13 @@ export function useVersionCatalogForRepo(
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, homeId, fingerprint, repoIdsKey, repoId, nonce])
+  }, [scopeKey, homeId, fingerprint, repoIdsKey, repoId, nonce, sourceHostId])
 
   const currentLoad =
-    lastView.current?.scopeKey === scopeKey || (!scopeKey && lastView.current?.repoId === repoId)
+    lastView.current?.scopeKey === scopeKey ||
+    (!scopeKey &&
+      lastView.current?.repoId === repoId &&
+      lastView.current?.sourceHostId === sourceHostId)
       ? catalog
       : null
   const visibleCatalog = useMemo(() => {

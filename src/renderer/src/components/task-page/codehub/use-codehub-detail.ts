@@ -1,4 +1,4 @@
-import { createCodeHubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
@@ -25,10 +25,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const item = codehubDetailItem
   const sourceContext = model.pageData?.openCodeHubSourceContext
   // 详情与写操作同样固定本机：来源行只提供项目身份。
-  const api = useMemo(
-    () => createCodeHubApi(sourceContext, { execution: 'local' }),
-    [sourceContext]
-  )
+  const api = useMemo(() => createTaskPageCodeHubApi(sourceContext), [sourceContext])
   const key = item
     ? getCodehubDetailCacheKey({
         sourceContext,

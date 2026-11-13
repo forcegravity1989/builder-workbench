@@ -10,7 +10,11 @@ import {
 } from '@/components/task-page-cache-selectors'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { GitLabWorkItem } from '../../../shared/gitlab-types'
-import { getTaskPageRepoCacheInput, getTaskPageRepoSourceContext } from './task-page-source-context'
+import {
+  getTaskPageRepoCacheInput,
+  getTaskPageRepoSourceContext,
+  getTaskPageGitHubItemSource
+} from './task-page-source-context'
 import { startGitHubListScrollRestore } from './task-page-github-list-scroll-restore'
 
 function getTaskPageScrollTop(
@@ -114,9 +118,13 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
       pageData.openGitHubWorkItem?.id === dialogWorkItem.id &&
       pageData.openGitHubWorkItem.repoId === dialogWorkItem.repoId
     ) {
-      return pageData.openGitHubSourceContext
+      return getTaskPageGitHubItemSource(
+        repoMap.get(dialogWorkItem.repoId),
+        dialogWorkItem,
+        pageData.openGitHubSourceContext
+      )
     }
-    return getTaskPageRepoSourceContext(repoMap.get(dialogWorkItem.repoId), 'github')
+    return getTaskPageGitHubItemSource(repoMap.get(dialogWorkItem.repoId), dialogWorkItem)
   }, [dialogWorkItem, pageData.openGitHubSourceContext, pageData.openGitHubWorkItem, repoMap])
   const gitlabDialogRepo = useMemo(
     () =>
@@ -184,7 +192,7 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
           preselectedRepoId: item.repoId,
           ...(workbenchTaskScope ? { workbenchTaskScope } : {}),
           openGitHubWorkItem: item,
-          openGitHubSourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github'),
+          openGitHubSourceContext: getTaskPageGitHubItemSource(repoMap.get(item.repoId), item),
           openGitHubInitialTab: initialTab
         },
         {

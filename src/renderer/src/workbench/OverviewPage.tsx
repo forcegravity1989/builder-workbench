@@ -1,18 +1,16 @@
 import React, { useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import {
-  parseExecutionHostId,
-  getRepoExecutionHostId,
-  getWorktreeExecutionHostId
-} from '../../../shared/execution-host'
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { openAddProject, useProjectPage } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
 import { charterSourceKey, loadRepoCharter, useRepoCharterSnapshot } from './charter-snapshot'
-import { invalidateWallRepo, useWallRefresh } from './wall-refresh'
-import { findWallProjectForRepo, useWallProjects } from './use-wall-projects'
-import { useWallVersionLabel } from './use-wall-readings'
+import { invalidateWallRepo } from './wall-refresh'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -32,34 +30,39 @@ import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
+import { useVersionCatalogForRepo } from './use-version-catalog'
 import { ProjectMilestones } from './project-milestones'
-import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
+import {
+  compareMaterialVersions,
+  compareVersionDisplayOrder
+} from '../../../shared/workbench/version-catalog'
 import { ArrowDownToLine, RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
 
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId)
-  const activeHostId = useAppStore((s) => s.activeWorkspaceExecutionHostId)
+  const projectPage = useProjectPage()
+  const activeRepo = useAppStore((state) => {
+    if (projectPage?.kind === 'project-overview') {
+      const options = projectPage.options
+      return options ? findRepoForHost(state.repos, options.repoId, options) : null
+    }
+    const current = currentProjectRepo(state)
+    return current && resolveProjectSource(state, current)
+  })
+  const activeRepoId = activeRepo?.id ?? null
+  const hostId = activeRepo ? getRepoExecutionHostId(activeRepo) : null
   const registeredWorktrees = useAppStore((s) =>
     activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
   )
-  // Why: 项目总览按点击时写入的来源对读取；找不到同一来源就如实空态，
-  // 不再退回 repos[0] 把另一个项目的读数当成当前项目。
-  const activeRepo = activeRepoId
-    ? (findRepoForHost(repos, activeRepoId, { hostId: activeHostId ?? undefined }) ??
-      repos.find((repo) => repo.id === activeRepoId) ??
-      null)
-    : null
-  const repoWorktrees = useMemo(
-    () =>
-      registeredWorktrees?.filter(
-        (tree) =>
-          activeRepo &&
-          getWorktreeExecutionHostId(tree, activeRepo) === getRepoExecutionHostId(activeRepo)
-      ),
-    [registeredWorktrees, activeRepo]
-  )
+  const repoWorktrees = useMemo(() => {
+    if (!activeRepoId || !hostId) {
+      return []
+    }
+    const options = worktreeHostMatchOptions({ repos }, activeRepoId, hostId)
+    return registeredWorktrees?.filter((tree) => worktreeMatchesHost(tree, hostId, options)) ?? []
+  }, [activeRepoId, hostId, registeredWorktrees, repos])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsDirty, setSettingsDirty] = useState(false)
   const [settingsBusy, setSettingsBusy] = useState(false)
@@ -93,19 +96,9 @@ export function OverviewPage(): React.JSX.Element {
   const charterKey = activeRepo ? charterSourceKey(activeRepo) : 'none'
   const charterRead = useRepoCharterSnapshot(activeRepo ?? undefined)
   const charter = charterRead?.charter ?? null
-  const projectPage = useProjectPage()
-  const filters =
-    projectPage?.kind === 'project-overview' &&
-    activeRepo?.id === projectPage.options.repoId &&
-    getRepoExecutionHostId(activeRepo) === projectPage.options.hostId
-      ? projectPage.options.filters
-      : undefined
-  const wallProjects = useWallProjects(filters)
-  const wallRefresh = useWallRefresh()
-  const charterVersion = useWallVersionLabel(
-    activeRepo ? findWallProjectForRepo(wallProjects, activeRepo) : undefined,
-    wallRefresh
-  )
+  const versionCatalog = useVersionCatalogForRepo(activeRepoId, hostId)
+  const charterVersion =
+    versionCatalog.catalog?.entries.slice().sort(compareVersionDisplayOrder)[0]?.version ?? null
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
   const fixedTrees = useMemo(() => {
     if (!baseScope) {
@@ -325,6 +318,7 @@ export function OverviewPage(): React.JSX.Element {
               setupBusy={metricsSetup.busy || !baseScope}
               onSetup={() => void metricsSetup.prepareMetrics()}
               worktreeId={baseWorktreeId}
+              baseScope={baseScope}
             />
           </div>
           {refreshing && (

@@ -75,9 +75,17 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 计划/验收两屏经 `workbench.materials.*` RPC 与 `ORCA bw materials` CLI 读写固定工作树的 `.bw/planning/<版本>/` 材料，共用同一材料事务核心（version-document-store：expectedRevision、跨进程互斥、原子替换）；会话内的模型经 CLI 操作同一份材料，旧 planning.py 写入器已退役删除。流程选版是原生 worktree 偏好 `workbenchSelectedVersion`（main/workbench/version-selection.ts），context 只读、select 只写偏好，CLI 与 UI 共享；不按会话标题、日期或上次打开项推断版本。两屏界面都不渲染灯：`workflow.stage`（preparation/showcase/archive 三值，模型每完成一阶段写入）只作材料内部进度，供会话校准与自动化，界面以文字与 chip 如实读回状态；归档 PR 合入状态按材料记录的 `workflow.archivePr` 薄读取，发布状态按材料记录的 `workflow.release` tag 读回键经 `workbench.release.status` 现算（是否已发布、时间、Release 页与资产；读数不落材料，正本在 Git 标签与 Release 页）。两屏共用自动保存、TaskPort 单项 Issue 读回和归档状态读取链；目标行骨架按屏分叉（计划屏 G3 PlanningGoalCard；验收屏 v10 AcceptanceGoalRow 只读勾勾表行，取计划屏行形态裁剪——收起态目标句/负责人/关联 Issue 数/批注角标/行尾单个未判定/达成/不达成状态，不设指标区。原共用 VersionGoalCard 已随 v10 删除）；页面不再维护独立全量任务区，归档后可继续编辑原材料；验收 Issue 按未关闭、未知、已关闭排序与分别计数，遗留是未关闭的人工标记子集，成功读回才显示 Feature/Bug。这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。 新建版本先定位紧邻前版再找验收来源，缺少则留空不回退，已有固定来源不自动替换。两屏纪要采用共识/遗留文本与整份人工确认，归档前每条已落实或关联真实跟进 Issue，由助手核对、PR 人审；旧 closed 兼容保留，无逐项控件或前端硬门禁。
 
+### 页面读取来源
+
+| 入口                                        | 来源                                                                                                                                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 工作区及内部面板                            | 点击的工作树所属宿主，由 Orca 激活和恢复。                                                                                                                                  |
+| 全部任务、版本任务及任务详情                | GitHub 和 CodeHub 使用本机账号，按服务端仓库身份访问。同仓只出现一次，本机可以没有检出。版本材料仍从自己的工作树读取。                                                      |
+| BW 项目总览、版本总览、侧栏版本目录及知识库 | 同一 Git 仓库有本机副本时读本机，缺少本机副本时沿 Orca 项目宿主选择。知识库需要本机副本。版本目录只展示选定来源的版本，直接打开未同步版本时提示。项目墙筛选只限制墙上展示。 |
+
 ### 知识库材料
 
-`knowledge-repo-loader.ts` 与 `use-knowledge-repo.ts` 从 `activeRepo.path` 扫描、分类和读写文档；当前编辑保存直接写该路径下的文件，没有自动创建评审工作树或 PR。选中的执行 worktree 不会自动改变该来源。若注册的是其他分支的检出目录（如 `archive/main-pre-orca` 旧 main 归档），知识页仍读该目录下的文档，而非当前执行会话的工作树。
+`knowledge-repo-loader.ts` 与 `use-knowledge-repo.ts` 从选定的本机项目登记路径扫描、分类和读写文档；当前编辑保存直接写该路径下的文件，没有自动创建评审工作树或 PR。选中的执行 worktree 不会自动改变该来源。若注册的是其他分支的检出目录（如 `archive/main-pre-orca` 旧 main 归档），知识页仍读该目录下的文档，而非当前执行会话的工作树。
 
 分类走内置规则，规则并不覆盖全部 `ref/` 工程参考；单仓分类地图（`.bw/knowledge-map.toml`）能力已删除，归知识库独立特性重新决策。`skills/bw-knowledge-docs` 是被管项目侧剧本，不等同于仓内 project-knowledge 的治理方法。代码页、对账及建议中的演示项不是真实扫描结论。
 

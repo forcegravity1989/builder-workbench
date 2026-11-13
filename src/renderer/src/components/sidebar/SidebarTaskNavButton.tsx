@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/context-menu'
 import { PER_REPO_FETCH_LIMIT } from '@/lib/new-workspace'
 import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-preflight-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { getTaskEligibleRepos } from '@/components/task-page-default-repo-selection'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -142,7 +143,10 @@ export function SidebarTaskNavButton({
         firstGitRepo.id,
         firstGitRepo.path,
         PER_REPO_FETCH_LIMIT,
-        getTaskPresetQuery(defaultTaskViewPreset)
+        getTaskPresetQuery(defaultTaskViewPreset),
+        isWorkbenchShell()
+          ? { sourceContext: getTaskPageRepoSourceContext(firstGitRepo, 'github') }
+          : undefined
       )
     }
   }, [

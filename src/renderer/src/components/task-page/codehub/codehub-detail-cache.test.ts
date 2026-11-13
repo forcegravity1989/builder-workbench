@@ -9,7 +9,7 @@ const { api } = vi.hoisted(() => ({
     mrChanges: vi.fn()
   }
 }))
-vi.mock('@/lib/codehub-api', () => ({ createCodeHubApi: () => api }))
+vi.mock('@/lib/codehub-api', () => ({ createTaskPageCodeHubApi: () => api }))
 
 import {
   CODEHUB_DETAIL_CACHE_MAX,

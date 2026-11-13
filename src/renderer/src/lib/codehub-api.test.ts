@@ -2,7 +2,14 @@ import type * as RuntimeClientTarget from '@/runtime/runtime-client-target'
 import { beforeEach, expect, it, vi } from 'vitest'
 const { state, rpc, local } = vi.hoisted(() => ({
   state: {
-    repos: [{ id: 'repo-1', path: '/repo', executionHostId: 'runtime:owner' }],
+    repos: [
+      {
+        id: 'repo-1',
+        path: '/repo',
+        executionHostId: 'runtime:owner',
+        gitRemoteIdentity: { remoteUrl: 'https://codehub.example/group/repo.git' }
+      }
+    ],
     settings: { activeRuntimeEnvironmentId: 'other' }
   },
   rpc: vi.fn(),
@@ -13,7 +20,7 @@ vi.mock('@/runtime/runtime-rpc-client', async () => ({
   ...(await vi.importActual<typeof RuntimeClientTarget>('@/runtime/runtime-client-target')),
   callRuntimeRpc: rpc
 }))
-import { codehubApi, createCodeHubApi, localCodehubApi } from './codehub-api'
+import { codehubApi, createCodeHubApi } from './codehub-api'
 beforeEach(() => {
   vi.stubGlobal('window', {
     api: { codehub: { setIssueState: local, listTasks: local, viewer: local } }
@@ -75,7 +82,14 @@ it('routes to the repo owner by default and stays local for task reads or local 
 
   // 任务读取固定本机：即使项目登记行属于 runtime，也走本机 preload。
   state.repos[0].executionHostId = 'runtime:owner'
-  await localCodehubApi.viewer({ repoId: 'repo-1', repoPath: '/repo' })
-  expect(local).toHaveBeenLastCalledWith({ repoId: 'repo-1', repoPath: '/repo' })
+  await createCodeHubApi(null, { execution: 'local' }).viewer({
+    repoId: 'repo-1',
+    repoPath: '/repo'
+  })
+  expect(local).toHaveBeenLastCalledWith({
+    repoId: 'repo-1',
+    repoPath: '/repo',
+    remoteUrl: 'https://codehub.example/group/repo.git'
+  })
   expect(rpc).not.toHaveBeenCalled()
 })

@@ -64,7 +64,8 @@ describe('deriveGitRemoteIdentity', () => {
     ).toEqual({
       canonicalKey: 'git.company.test/team/sample-app',
       remoteName: 'upstream',
-      remoteUrl: 'https://git.company.test/team/sample-app.git'
+      remoteUrl: 'https://git.company.test/team/sample-app.git',
+      originUrl: 'git@git.company.test:forks/sample-app.git'
     })
 
     expect(
