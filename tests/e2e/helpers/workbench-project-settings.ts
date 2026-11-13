@@ -326,4 +326,21 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     animations: 'disabled',
     path: info.outputPath('bw-folder-continued.jpg')
   })
+  await openWall()
+  await folderCard.locator('[data-repo-header-action]').click()
+  await page.getByRole('menuitem', { name: /^(Remove Project|移除项目|删除项目)$/ }).click()
+  const removal = page.getByRole('dialog', { name: /^(Remove Project|移除项目|删除项目)$/ })
+  await expect(removal).toContainText(folderPath)
+  await expect(removal).toContainText(/(This Computer|This device|Local|本机)/i)
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-folder-removal.jpg') })
+  await removal.getByRole('button', { name: /^(Remove|移除|删除)$/ }).click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async (id) => (await window.api.repos.list()).some((repo) => repo.id === id),
+        folderId
+      )
+    )
+    .toBe(false)
+  expect(existsSync(folderPath)).toBe(true)
 }

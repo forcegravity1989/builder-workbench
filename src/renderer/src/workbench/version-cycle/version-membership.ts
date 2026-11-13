@@ -1,5 +1,6 @@
+import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { useAppStore } from '@/store'
-import { createCodeHubApi } from '@/lib/codehub-api'
+import { localCodehubApi } from '@/lib/codehub-api'
 import {
   getGitHubRepoSourceSettings,
   getGitHubWorkItemRequestContext,
@@ -15,7 +16,6 @@ import {
 import { resolveMemberGoalId } from '../../../../shared/workbench/version-membership'
 import {
   rememberGitHubIssueSource,
-  requireSourceContext,
   repoOnTaskHost,
   type TaskReadHome
 } from '../task-reference-repo'
@@ -60,7 +60,8 @@ async function queryVersionIssues(repo: Repo, version: string, force: boolean): 
     if (label.includes(',')) {
       throw new Error('CodeHub 无法精确查询含逗号的版本标签')
     }
-    const api = createCodeHubApi(requireSourceContext(repo, 'codehub'))
+    // 版本任务数据固定本机：仓库行只提供远端项目身份。
+    const api = localCodehubApi
     const listing = await api.listTasks({
       repoPath: repo.path,
       repoId: repo.id,
@@ -85,7 +86,7 @@ async function queryVersionIssues(repo: Repo, version: string, force: boolean): 
   }
 
   const state = useAppStore.getState()
-  const source = requireSourceContext(repo, 'github')
+  const source = getTaskPageRepoSourceContext(repo, 'github')
   const settings = getGitHubRepoSourceSettings(state.settings, repo, source)
   const context = getGitHubWorkItemRequestContext(state, settings, repo.id, repo.path, source)
   const query = seedWorkbenchTaskQuery('is:issue', { version, references: [] })

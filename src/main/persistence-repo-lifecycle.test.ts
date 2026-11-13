@@ -492,9 +492,10 @@ describe('Store', () => {
     )
     store.setWorktreeMeta('shared::/repo', { displayName: 'local', hostId: 'local' })
 
+    store.setWorktreeMeta('shared::/ssh-other', { displayName: 'SSH sibling', hostId: 'ssh:ssh-a' })
     store.setWorkspaceSession({
       ...getDefaultWorkspaceSession(),
-      lastVisitedAtByWorktreeId: { 'shared::/repo': 111 }
+      lastVisitedAtByWorktreeId: { 'shared::/repo': 111, 'shared::/ssh-other': 333 }
     })
     store.setWorkspaceSession(
       {
@@ -507,6 +508,7 @@ describe('Store', () => {
     store.removeProjectForHost('shared', 'local')
 
     expect(store.getWorkspaceSession().lastVisitedAtByWorktreeId?.['shared::/repo']).toBeUndefined()
+    expect(store.getWorkspaceSession().lastVisitedAtByWorktreeId?.['shared::/ssh-other']).toBe(333)
     expect(
       store.getWorkspaceSession('ssh:ssh-a').lastVisitedAtByWorktreeId?.['shared::/repo']
     ).toBe(222)

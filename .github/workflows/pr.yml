@@ -41,6 +41,7 @@ jobs:
           src/shared/runtime-environment-store.test.ts
           src/shared/runtime-client-export-parity.test.ts
           src/main/ipc/runtime-environment
+          src/main/runtime/runtime-remove-project-host-scope.test.ts
           src/cli/runtime/environments.test.ts
       - name: Test shared host recovery, launch and close contracts
         run: >-
@@ -84,6 +85,12 @@ jobs:
           src/renderer/src/components/dashboard/useDashboardPopoutBridge.test.tsx
           src/renderer/src/store/slices/worktrees-remote-runtime-create.test.ts
           src/renderer/src/store/slices/repos-project-groups.test.ts
+          src/renderer/src/store/slices/repos-project-groups-delete.test.ts
+          src/renderer/src/store/slices/repos-project-groups-owner-routing.test.ts
+          src/renderer/src/store/slices/project-group-removal-targets.test.ts
+          src/renderer/src/components/sidebar/ProjectGroupDeleteDialog.test.tsx
+          src/renderer/src/components/sidebar/delete-worktree-flow.test.ts
+          src/renderer/src/components/sidebar/worktree-list/rows/use-project-group-dialogs-owner-host.test.tsx
 
   browser-annotations:
     name: Browser annotation contracts
@@ -209,6 +216,8 @@ jobs:
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/persistence-workspace-default.test.ts
           src/main/ipc/repos
+          src/main/persistence-remote-session-startup.test.ts
+          src/main/persistence-repo-lifecycle.test.ts
           src/main/ipc/feedback.test.ts
           src/main/ipc/feedback-image-attachments.test.ts
           src/main/ipc/diagnostics.test.ts
@@ -221,6 +230,8 @@ jobs:
           src/main/codehub
           src/preload/api/platform-bridge.test.ts
           src/renderer/src/lib/codehub-api.test.ts
+          src/renderer/src/components/task-page-cache-selectors.test.ts
+          src/renderer/src/store/slices/github-work-item-cache-identity.test.ts
           src/renderer/src/components/task-page/codehub
           src/renderer/src/components/feature-wall/use-integration-connection-status.test.ts
           src/renderer/src/components/feature-wall/feature-wall-setup-progress.test.ts
@@ -229,6 +240,10 @@ jobs:
           src/renderer/src/lib/feature-education-telemetry.test.ts
           src/shared/telemetry-events-feature-education.test.ts
           src/renderer/src/components/settings/settings-setup-guide-progress.test.ts
+          src/renderer/src/components/sidebar/RemoveFolderDialog.test.tsx
+          src/renderer/src/store/slices/repos-cross-host-project-collisions.test.ts
+          src/renderer/src/store/slices/repos-host-identity-routing.test.ts
+          src/shared/git-remote-identity.test.ts
 
       - name: Test native usage protocols and account integration
         run: >-

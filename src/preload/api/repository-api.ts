@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../shared/workbench/repo-removal'
 import type { ExecutionHostId } from '../../shared/execution-host'
 import type {
   HostRepoCatalogSnapshot,
@@ -40,7 +41,11 @@ export type RepositoryApi = {
   }) => Promise<{ repo: Repo } | { error: string }>
   remove: (args: { repoId: string }) => Promise<void>
   // Forget a project on one execution host only, leaving the same repo id on other hosts intact.
-  removeForHost: (args: { repoId: string; hostId: string }) => Promise<void>
+  removeForHost: (args: {
+    repoId: string
+    hostId: string
+    expected?: { path: string; addedAt: number }
+  }) => Promise<void>
   reorder: (args: { orderedIds: string[] }) => Promise<{ status: 'applied' | 'rejected' }>
   reorderForHost: (args: {
     orderedIds: string[]
@@ -149,7 +154,10 @@ export type ProjectGroupsApi = {
     groupId: string
     updates: Partial<Pick<ProjectGroup, 'name' | 'isCollapsed' | 'tabOrder' | 'color'>>
   }) => Promise<ProjectGroup | null>
-  delete: (args: { groupId: string }) => Promise<boolean>
+  delete: (args: {
+    groupId: string
+    members?: readonly ConfirmedRepoRegistration[]
+  }) => Promise<boolean>
   moveProject: (args: {
     projectId: string
     groupId: string | null

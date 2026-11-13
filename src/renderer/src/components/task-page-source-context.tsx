@@ -10,8 +10,14 @@ import {
   normalizeTaskSourceContext,
   getTaskSourceCacheScope
 } from '../../../shared/task-source-context'
-import { projectHostSetupProjectionFromRepos } from '../../../shared/project-host-setup-projection'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import {
+  getProjectProviderIdentity,
+  parseGitHubRemoteUrl,
+  projectHostSetupProjectionFromRepos
+} from '../../../shared/project-host-setup-projection'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { taskPageWorkItemRepository } from './task-page-work-item-signatures'
+import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { ExecutionHostRegistryEntry } from '../../../shared/execution-host-registry'
 import type { TaskSourceHostAvailability } from './task-source-context-summary'
 import { TASK_SOURCE_CONTEXT_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
@@ -65,7 +71,7 @@ export function getJiraIssueWorkspaceSeed(issue: JiraIssue): string {
     })?.seedName ?? getLinkedWorkItemSuggestedName(issue)
   )
 }
-export function getTaskPageRepoSourceContext(
+export function getRepoTaskSourceContext(
   repo: Repo | null | undefined,
   provider: 'github' | 'gitlab' | 'codehub',
   gitlabProjectRef?: GitLabProjectRef | null
@@ -99,6 +105,66 @@ export function getTaskPageRepoSourceContext(
     providerIdentity
   })
 }
+export function getTaskPageRepoSourceContext(
+  repo: Repo | null | undefined,
+  provider: 'github' | 'gitlab' | 'codehub',
+  gitlabProjectRef?: GitLabProjectRef | null
+): TaskSourceContext | null {
+  const source = getRepoTaskSourceContext(repo, provider, gitlabProjectRef)
+  if (!source || !repo || provider !== 'github' || !isWorkbenchShell()) {
+    return source
+  }
+  const remote = repo.gitRemoteIdentity
+  const primary = getProjectProviderIdentity({
+    gitRemoteIdentity: remote,
+    upstream: null,
+    repoIcon: null
+  })
+  const upstream = remote?.remoteName === 'upstream' ? primary : null
+  const origin =
+    remote?.remoteName === 'upstream'
+      ? remote.originUrl
+        ? parseGitHubRemoteUrl(remote.originUrl, source.providerIdentity?.provider === 'github')
+        : null
+      : primary
+  const providerIdentity =
+    repo.issueSourcePreference === 'origin' && remote?.remoteName === 'upstream'
+      ? origin
+      : (upstream ?? origin ?? source.providerIdentity)
+  return {
+    ...source,
+    hostId: LOCAL_EXECUTION_HOST_ID,
+    localTaskAccount: true,
+    taskRemoteCandidates: upstream ? { ...(origin ? { origin } : {}), upstream } : undefined,
+    providerIdentity
+  }
+}
+
+export function getTaskPageGitHubItemSource(
+  repo: Repo | null | undefined,
+  item: Pick<GitHubWorkItem, 'type' | 'number' | 'url' | 'prRepo'>,
+  previous?: TaskSourceContext | null
+): TaskSourceContext | null {
+  const context = getTaskPageRepoSourceContext(repo, 'github')
+  if (!isWorkbenchShell()) {
+    return previous ?? context
+  }
+  const source = context ?? previous
+  if (!source) {
+    return null
+  }
+  const identity = taskPageWorkItemRepository(item)
+  return {
+    ...source,
+    hostId: LOCAL_EXECUTION_HOST_ID,
+    localTaskAccount: true,
+    taskRemoteCandidates: undefined,
+    providerIdentity: identity
+      ? { provider: 'github', ...identity }
+      : (previous?.providerIdentity ?? source.providerIdentity)
+  }
+}
+
 export function buildGitLabProviderIdentity(projectRef: GitLabProjectRef) {
   const pathParts = projectRef.path
     .split('/')

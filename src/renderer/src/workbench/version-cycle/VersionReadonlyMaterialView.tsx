@@ -3,6 +3,8 @@ import { useAppStore } from '@/store'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
+import { toRuntimeExecutionHostId } from '../../../../shared/execution-host'
+import type { NativeWorkspaceScope } from './native-workspace'
 import { nativeWorkspaceScope } from './native-workspace'
 import { BoardActionButton } from '../board-ui'
 import type { FixedAcceptanceBrowse } from '../cycle-view-state'
@@ -23,6 +25,7 @@ export function VersionReadonlyMaterialView({
   workflow: VersionWorkflow
   version: string
   fixedAcceptance?: FixedAcceptanceBrowse
+  source?: NativeWorkspaceScope
 }): React.JSX.Element {
   return fixedAcceptance ? (
     <FixedAcceptanceMaterialView
@@ -79,18 +82,19 @@ function FixedAcceptanceMaterialView({ view }: { view: FixedAcceptanceBrowse }):
 
 function CatalogReadonlyMaterialView({
   workflow,
-  version
+  version,
+  source
 }: {
   workflow: VersionWorkflow
   version: string
+  source?: NativeWorkspaceScope
 }): React.JSX.Element {
-  const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const trees = useAppStore((s) => (repoId ? s.worktreesByRepo[repoId] : undefined))
-  const home = useMemo(
-    () => trees?.find((tree) => tree.isMainWorktree) ?? trees?.[0] ?? null,
-    [trees]
-  )
-  const catalog = useVersionCatalogForRepo(repoId)
+  const repoId = useAppStore((s) => source?.repoId ?? s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const hostId = source?.runtimeOwnerEnvironmentId
+    ? toRuntimeExecutionHostId(source.runtimeOwnerEnvironmentId)
+    : source?.hostId
+  const catalog = useVersionCatalogForRepo(repoId, hostId)
+  const home = catalog.home
   const entry = useMemo(
     () => catalog.catalog?.entries.find((item) => item.version === version) ?? null,
     [catalog.catalog, version]

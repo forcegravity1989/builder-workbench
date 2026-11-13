@@ -16,6 +16,7 @@ import type { PlanningMaterial } from '../../../shared/workbench/version-plannin
 import { buildScoreboardScenes, type ScoreboardScene } from './overview-scoreboard-model'
 import { zoneBucketLabels, zoneChartRange } from './overview-zone-series'
 import { Measure, measureView, metricNote, scoreboardVerdict } from './scoreboard-measure'
+import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { sendScoreboardNotes } from './send-scoreboard-notes'
 
 /** 记分牌走势固定为周窗口。 */
@@ -32,7 +33,8 @@ export function OverviewScoreboard({
   version,
   setupBusy,
   onSetup,
-  worktreeId
+  worktreeId,
+  baseScope
 }: {
   catalog: MetricCatalog | null
   readings: Record<string, MetricReading | null>
@@ -45,6 +47,7 @@ export function OverviewScoreboard({
   setupBusy: boolean
   onSetup(): void
   worktreeId: string | null
+  baseScope: NativeWorkspaceScope | null
 }) {
   const notes = useBoardAnnotations(`scoreboard:${identity}:${version ?? ''}`)
   const [noteNotice, setNoteNotice] = useState<string | null>(null)
@@ -221,7 +224,10 @@ export function OverviewScoreboard({
           }}
           onCopyError={(message) => setNoteNotice(`复制批注失败：${message}`)}
           onSendDirect={async () => {
-            const result = await sendScoreboardNotes(boardAnnotationsSendPrompt(notes.annotations))
+            const result = await sendScoreboardNotes(
+              baseScope,
+              boardAnnotationsSendPrompt(notes.annotations)
+            )
             if (!result.ok) {
               setNoteNotice(result.message)
               return false

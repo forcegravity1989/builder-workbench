@@ -8,6 +8,7 @@ import {
   runtimeHostConnectionStateForEntry
 } from '@/runtime/runtime-host-connection-state'
 import { parseExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
+import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import { closeProjectPage } from './project-page-state'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
@@ -18,22 +19,25 @@ type VersionHostOwner = {
   runtimeOwnerEnvironmentId?: string | null
 }
 
-function runtimeOwnerId(owner: VersionHostOwner, repoHostId?: string | null): string | null {
+function runtimeOwnerId(
+  owner: VersionHostOwner,
+  repos: readonly Pick<Repo, 'id' | 'executionHostId'>[]
+): string | null {
+  if (owner.runtimeOwnerEnvironmentId) {
+    return owner.runtimeOwnerEnvironmentId
+  }
   const host = parseExecutionHostId(owner.hostId)
-  const repoHost = parseExecutionHostId(repoHostId)
-  return (
-    owner.runtimeOwnerEnvironmentId ??
-    (host?.kind === 'runtime' ? host.environmentId : null) ??
-    (repoHost?.kind === 'runtime' ? repoHost.environmentId : null)
-  )
+  if (host) {
+    return host.kind === 'runtime' ? host.environmentId : null
+  }
+  const matches = repos.filter((repo) => repo.id === owner.repoId)
+  const repoHost = matches.length === 1 ? parseExecutionHostId(matches[0].executionHostId) : null
+  return repoHost?.kind === 'runtime' ? repoHost.environmentId : null
 }
 
 export function isVersionHostDisconnected(owner: VersionHostOwner): boolean {
   const state = useAppStore.getState()
-  const environmentId = runtimeOwnerId(
-    owner,
-    state.repos.find((repo) => repo.id === owner.repoId)?.executionHostId
-  )
+  const environmentId = runtimeOwnerId(owner, state.repos)
   return (
     !!environmentId &&
     isDisconnectedRuntimeHostState(
@@ -55,9 +59,7 @@ export function activateVersionWorktree(tree: Worktree): boolean {
 }
 
 export function VersionWorktreeHostGlyph({ tree }: { tree: Worktree }): React.JSX.Element | null {
-  const owner = useAppStore((state) =>
-    runtimeOwnerId(tree, state.repos.find((repo) => repo.id === tree.repoId)?.executionHostId)
-  )
+  const owner = useAppStore((state) => runtimeOwnerId(tree, state.repos))
   const host = parseExecutionHostId(owner ? toRuntimeExecutionHostId(owner) : tree.hostId)
   const label = useAppStore((state) =>
     host?.kind === 'runtime'

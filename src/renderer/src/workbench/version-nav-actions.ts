@@ -17,7 +17,7 @@ import { prepareFailed } from '../../../shared/workbench/version-workspace-prepa
 import { prepareProblemSummary } from './version-workspace-prepare-report'
 import type { VersionCatalogState } from './use-version-catalog'
 import { activateVersionWorktree } from './version-worktree-host'
-import { closeProjectPage } from './project-page-state'
+import { closeProjectPage, openCycleProject } from './project-page-state'
 
 /**
  * G2 侧栏版本导航动作（P3a）：绑定树是唯一「本版流程树」的认定依据（不从
@@ -52,9 +52,12 @@ export function navigateVersionWorkflow(args: {
   // 无绑定树：无论旧固定树是否存在都进同一屏内入口——浏览目标 effect 按登记
   // 决定 ensure 旧固定树（旧上下文显式保留）还是只读回看；浏览不建树，初始化
   // 是版本行「初始化工作区」按钮的显式动作。
+  if (!catalog.scope) {
+    toast.error('项目工作区尚未就绪，请稍后再试')
+    return
+  }
   setCycleView(workflow)
-  closeProjectPage()
-  useAppStore.getState().openArtifactsPage()
+  openCycleProject(catalog.scope)
 }
 
 /**

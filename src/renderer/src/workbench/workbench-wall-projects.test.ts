@@ -40,15 +40,6 @@ function appIdentity(): Repo['gitRemoteIdentity'] {
 }
 
 describe('buildWallProjects', () => {
-  it('keeps ungrouped repos as solo cards', () => {
-    const projects = buildWallProjects([repo({ id: 'a', path: '/a', displayName: 'Alpha' })], [])
-    expect(projects).toHaveLength(1)
-    expect(projects[0].key).toBe('solo:row:local::a')
-    expect(projects[0].repoIds).toEqual(['a'])
-    expect(projects[0].hostIds).toEqual(['local'])
-    expect(projects[0].slots[0].localRepoId).toBe('a')
-  })
-
   it('aggregates group members into one wall project', () => {
     const g = group({ id: 'g1', name: 'Platform', tabOrder: 1 })
     const projects = buildWallProjects(
@@ -82,7 +73,12 @@ describe('buildWallProjects', () => {
     expect(platform?.name).toBe('Platform')
     expect(platform?.repoIds).toEqual(['a', 'b'])
     expect(platform?.slots).toHaveLength(2)
-    expect(projects.find((p) => p.key === 'solo:row:local::c')?.name).toBe('Solo')
+    // 未分组的仓保留为独立卡片。
+    const solo = projects.find((p) => p.key === 'solo:row:local::c')
+    expect(solo?.name).toBe('Solo')
+    expect(solo?.repoIds).toEqual(['c'])
+    expect(solo?.hostIds).toEqual(['local'])
+    expect(solo?.slots[0].localRepoId).toBe('c')
   })
 
   it('merges the same remote identity across paired hosts into one card', () => {

@@ -7,7 +7,13 @@ import { SshStatusSegment } from '@/components/status-bar/SshStatusSegment'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { closeProjectPage, openProjectWall, useProjectPage } from './project-page-state'
+import {
+  closeProjectPage,
+  openKnowledgePage,
+  openProjectOverview,
+  openProjectWall,
+  useProjectPage
+} from './project-page-state'
 import { useWorkbenchObjectContext } from './workbench-object-context'
 
 export const WORKBENCH_RAIL_WIDTH = 64
@@ -50,9 +56,7 @@ function RailButton({ entry }: { entry: RailEntry }): React.JSX.Element {
 export function WorkbenchRail(): React.JSX.Element | null {
   const activeView = useAppStore((s) => s.activeView)
   const taskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
-  const openActivityPage = useAppStore((s) => s.openActivityPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
-  const openSpacePage = useAppStore((s) => s.openSpacePage)
   const setActiveView = useAppStore((s) => s.setActiveView)
   const setSidebarBody = useAppStore((s) => s.setSidebarBody)
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen)
@@ -95,7 +99,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
       active:
         activeView === 'activity' &&
         (projectPage === null || projectPage.kind === 'project-overview'),
-      onSelect: leaveProjectPage(openActivityPage)
+      onSelect: () => openProjectOverview()
     },
     {
       id: 'automations',
@@ -109,7 +113,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
       label: '知识库',
       icon: BookOpen,
       active: activeView === 'space',
-      onSelect: leaveProjectPage(openSpacePage)
+      onSelect: openKnowledgePage
     }
   ]
 

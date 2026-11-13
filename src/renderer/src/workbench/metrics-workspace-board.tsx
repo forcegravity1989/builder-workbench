@@ -123,6 +123,7 @@ export function MetricsWorkspaceBoard(): JSX.Element {
           setupBusy={metricsSetup.busy || !baseScope}
           onSetup={() => void metricsSetup.prepareMetrics()}
           worktreeId={baseWorktreeId}
+          baseScope={baseScope}
         />
       </div>
     </section>

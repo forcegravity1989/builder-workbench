@@ -27,11 +27,6 @@ export type TaskPageRepoCacheInput = {
   sourceCacheScope?: string | null
 }
 
-export type TaskPageDialogWorkItemKey = {
-  id: string
-  repoId: string
-} | null
-
 export type TaskPageRepoSourceState = {
   repoId: string
   repoPath: string
@@ -136,10 +131,6 @@ export function selectTaskPageUnresolvedSourceRepos(
   return unresolved
 }
 
-function taskPageWorkItemCacheKey(item: GitHubWorkItem): string {
-  return `${item.repoId}\u0000${item.id}`
-}
-
 export function reconcileTaskPagePagesWithWorkItemsCache(
   pages: TaskPageWorkItemPages,
   entries: readonly (CacheEntry<readonly GitHubWorkItem[]> | undefined)[]
@@ -147,7 +138,7 @@ export function reconcileTaskPagePagesWithWorkItemsCache(
   const cachedItems = new Map<string, GitHubWorkItem>()
   for (const entry of entries) {
     for (const item of entry?.data ?? []) {
-      cachedItems.set(taskPageWorkItemCacheKey(item), item)
+      cachedItems.set(taskPageWorkItemKey(item), item)
     }
   }
 
@@ -158,7 +149,7 @@ export function reconcileTaskPagePagesWithWorkItemsCache(
     }
     let pageChanged = false
     const nextPage = page.map((item) => {
-      const cached = cachedItems.get(taskPageWorkItemCacheKey(item))
+      const cached = cachedItems.get(taskPageWorkItemKey(item))
       if (!cached || cached === item) {
         return item
       }
@@ -248,16 +239,15 @@ export function reconcileTaskPagePagesAfterLandingRefresh(
 
 export function findTaskPageDialogWorkItem(
   workItemsCache: WorkItemsCache,
-  dialogWorkItemKey: TaskPageDialogWorkItemKey
+  item: Pick<GitHubWorkItem, 'id' | 'repoId' | 'url' | 'prRepo'> | null
 ): GitHubWorkItem | null {
-  if (!dialogWorkItemKey) {
+  if (!item) {
     return null
   }
 
+  const key = taskPageWorkItemKey(item)
   for (const entry of Object.values(workItemsCache)) {
-    const found = entry?.data?.find(
-      (wi) => wi.id === dialogWorkItemKey.id && wi.repoId === dialogWorkItemKey.repoId
-    )
+    const found = entry?.data?.find((cached) => taskPageWorkItemKey(cached) === key)
     if (found) {
       return found
     }

@@ -24,6 +24,13 @@ import type { TrunkUpdateResult } from '../../../../shared/workbench/trunk-updat
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { CycleScope } from './ports'
 import { useFixedAcceptanceBrowseTarget } from './use-fixed-acceptance-browse-target'
+import { useProjectPage } from '../project-page-state'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import {
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
+import { toRuntimeExecutionHostId } from '../../../../shared/execution-host'
 import type { ReadonlyCycleBrowse } from './cycle-workspace-context'
 
 /** Native HEAD/unread updates must not reset the material ports or workflow selection. */
@@ -81,9 +88,26 @@ export function useCycleWorkspaceTarget(
   onNotice: (text: string) => void
 ) {
   const activeView = useAppStore((state) => state.activeView)
-  const repoId = useAppStore((state) => state.activeRepoId ?? state.repos[0]?.id ?? null)
-  const repo = useAppStore((state) => state.repos.find((item) => item.id === repoId))
-  const trees = useAppStore((state) => (repoId ? state.worktreesByRepo[repoId] : undefined))
+  const page = useProjectPage()
+  const requested = activeView === 'artifacts' && page?.kind === 'cycle' ? page.options : null
+  const hostId = requested?.runtimeOwnerEnvironmentId
+    ? toRuntimeExecutionHostId(requested.runtimeOwnerEnvironmentId)
+    : requested?.hostId
+  const repoId = useAppStore(
+    (state) => requested?.repoId ?? state.activeRepoId ?? state.repos[0]?.id ?? null
+  )
+  const repo = useAppStore((state) =>
+    repoId ? findRepoForHost(state.repos, repoId, { hostId }) : null
+  )
+  const repos = useAppStore((state) => state.repos)
+  const registered = useAppStore((state) => (repoId ? state.worktreesByRepo[repoId] : undefined))
+  const trees = useMemo(() => {
+    if (!repoId || !hostId) {
+      return registered
+    }
+    const options = worktreeHostMatchOptions({ repos }, repoId, hostId)
+    return registered?.filter((tree) => worktreeMatchesHost(tree, hostId, options))
+  }, [hostId, registered, repoId, repos])
   const selected = useAppStore((state) =>
     state.activeWorktreeId
       ? state.getKnownWorktreeById(
@@ -110,18 +134,19 @@ export function useCycleWorkspaceTarget(
   >({})
   const preparing = workflow !== null && activeView === 'artifacts' && !fixedBrowse
   const baseSettled = useAutoWorktreeBase(
-    preparing ? repoId : null,
+    preparing && !requested ? repoId : null,
     repo?.worktreeBasePath?.trim() || null,
     onNotice
   )
+  const needsWorktrees = requested ? !trees?.length : !trees
   useEffect(() => {
-    if (preparing && repoId && !trees) {
+    if (preparing && repoId && needsWorktrees) {
       void useAppStore
         .getState()
-        .fetchWorktrees(repoId)
+        .fetchWorktrees(repoId, hostId ? { executionHostId: hostId } : undefined)
         .catch((reason) => setError(String(reason)))
     }
-  }, [preparing, repoId, trees])
+  }, [hostId, needsWorktrees, preparing, repoId])
   const home = trees?.find((item) => item.isMainWorktree) ?? trees?.[0]
   const base = useMemo(() => {
     try {
@@ -154,17 +179,26 @@ export function useCycleWorkspaceTarget(
             version: browsedVersion,
             workflow
           })
-          chosen = resolveBoundFlowTree(bound, baseScope, browsedVersion)
+          chosen = resolveBoundFlowTree(
+            requested ? bound.filter((tree) => trees?.includes(tree)) : bound,
+            baseScope,
+            browsedVersion
+          )
           if (!chosen && !findCycleWorktree({ ...baseScope, workflow })) {
             // G2（P3b）：只读回看分支——已清理/未准备版本不报错、不建树，
             // 由壳挂载只读材料视图（来源=主干已提交材料，缺材料如实显示）。
             if (current) {
-              setReadonlyBrowse({ version: browsedVersion })
+              setReadonlyBrowse({ version: browsedVersion, source: requested ?? undefined })
             }
             return
           }
         }
-        const fixed = chosen ?? (await ensureCycleWorktree({ ...baseScope, workflow }))
+        const fixed =
+          chosen ??
+          (browsedVersion ? findCycleWorktree(baseScope) : await ensureCycleWorktree(baseScope))
+        if (!fixed) {
+          return
+        }
         if (!current) {
           return
         }
@@ -205,7 +239,7 @@ export function useCycleWorkspaceTarget(
     return () => {
       current = false
     }
-  }, [preparing, baseScope, baseSettled, workflow, browsedVersion])
+  }, [preparing, baseScope, baseSettled, workflow, browsedVersion, requested, trees])
   const worktree =
     !fixedBrowse && !preparing && workflow && cycleWorkflowForWorktree(selected) === workflow
       ? selected
@@ -233,7 +267,7 @@ export function useCycleWorkspaceTarget(
     if (normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)) {
       return
     }
-    const appliedKey = `${worktree.id}:${browsedVersion}`
+    const appliedKey = JSON.stringify([cycleScopeKey(scope), worktree.id, browsedVersion])
     if (selectAppliedRef.current === appliedKey) {
       return
     }

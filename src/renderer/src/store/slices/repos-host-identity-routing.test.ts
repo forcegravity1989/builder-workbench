@@ -7,6 +7,7 @@ import {
   type RuntimeEnvironmentCallRequest
 } from '../../runtime/runtime-compatibility-test-fixture'
 import { clearRuntimeCompatibilityCacheForTests } from '../../runtime/runtime-rpc-client'
+import { replaceRuntimeEnvironmentRevisions } from '../../runtime/runtime-environment-revision'
 
 const localDuplicate: Repo = {
   id: 'same-repo',
@@ -72,6 +73,7 @@ function projectHostSetup(overrides: Pick<ProjectHostSetup, 'id' | 'hostId'>): P
 
 beforeEach(() => {
   clearRuntimeCompatibilityCacheForTests()
+  replaceRuntimeEnvironmentRevisions([])
   reposRemove.mockReset()
   reposRemoveForHost.mockReset()
   reposUpdate.mockReset()
@@ -419,29 +421,68 @@ describe('repo slice host identity routing', () => {
     expect(store.getState().repos).toEqual([])
   })
 
-  it('preserves qualified recency for an exact-id sibling host', async () => {
+  it('preserves the surviving host session and recency when the worktree ids match', async () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    replaceRuntimeEnvironmentRevisions([{ id: 'env-1', createdAt: 12 }])
+    runtimeEnvironmentCall.mockResolvedValue({
+      id: 'rpc-remote-remove',
+      ok: true,
+      result: { removed: true },
+      _meta: { runtimeId: 'runtime-remote' }
+    })
     const worktreeId = 'same-repo::/shared/wt'
     const localWorktree = makeWorktree({ id: worktreeId, repoId: 'same-repo' })
     const remoteWorktree = makeWorktree({
       id: worktreeId,
       repoId: 'same-repo',
-      hostId: 'runtime:env-1'
+      hostId: 'ssh:nested-builder',
+      runtimeOwnerEnvironmentId: 'env-1'
     })
     const store = createTestStore()
     store.setState({
-      repos: [localDuplicate, remoteDuplicate],
+      repos: [
+        localDuplicate,
+        {
+          ...remoteDuplicate,
+          pairedRegistration: { hostId: 'ssh:nested-builder', pairingRevision: 12 }
+        }
+      ],
       worktreesByRepo: { 'same-repo': [localWorktree, remoteWorktree] },
+      activeRepoId: 'same-repo',
+      activeWorktreeId: worktreeId,
+      activeWorkspaceExecutionHostId: 'local',
+      tabsByWorktree: { [worktreeId]: [{ id: 'local-tab', worktreeId }] as never },
+      ptyIdsByTabId: { 'local-tab': ['local-pty'] },
       lastVisitedAtByWorktreeId: {
         [`local|${worktreeId}`]: 10,
         [`runtime:env-1|${worktreeId}`]: 20
       }
     })
 
-    await store.getState().removeProject('same-repo', { hostId: 'local' })
+    try {
+      await store.getState().removeProject('same-repo', { hostId: 'runtime:env-1' })
 
-    expect(store.getState().lastVisitedAtByWorktreeId).toEqual({
-      [`runtime:env-1|${worktreeId}`]: 20
-    })
+      expect(store.getState().activeRepoId).toBe('same-repo')
+      expect(store.getState().activeWorktreeId).toBe(worktreeId)
+      expect(store.getState().worktreesByRepo['same-repo']).toEqual([localWorktree])
+      expect(store.getState().tabsByWorktree[worktreeId]).toEqual([{ id: 'local-tab', worktreeId }])
+      expect(ptyKill).not.toHaveBeenCalledWith('local-pty')
+      expect(runtimeEnvironmentCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'workbench.repo.removeRegistration',
+          expectedEnvironmentPairingRevision: 12,
+          params: { repoId: 'same-repo', hostId: 'ssh:nested-builder', path: '/remote', addedAt: 2 }
+        })
+      )
+      expect(runtimeEnvironmentCall).not.toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'terminal.stop' })
+      )
+      expect(store.getState().lastVisitedAtByWorktreeId).toEqual({
+        [`local|${worktreeId}`]: 10
+      })
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('removeProject with an explicit hostId routes to that host, not the focused one', async () => {
@@ -484,8 +525,8 @@ describe('repo slice host identity routing', () => {
 
   it('removeProject of an SSH host row routes local even when a runtime is focused', async () => {
     // Regression: removing an SSH host's repo (explicit ssh hostId) must NOT route
-    // repo.rm to the focused runtime env. settingsForRepoOwner clears the focused
-    // runtime for SSH owners, so removal stays on the host-scoped local path.
+    // repo.rm to the focused runtime env. Direct SSH registrations belong to
+    // the desktop catalog, so removal stays on the host-scoped local path.
     const sshDuplicate: Repo = {
       id: 'same-repo',
       path: '/home/orca/project',

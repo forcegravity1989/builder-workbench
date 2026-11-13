@@ -1,6 +1,7 @@
 import type { RepoProjectHostSetupMethod } from '../../../shared/project-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { GitRemoteIdentity } from '../../../shared/git-remote-identity'
+import { stripCredentialsFromMessage } from '../../../shared/git-remote-error'
 import { normalizeRepoBadgeColor } from '../../../shared/repo-badge-color'
 import { sanitizeRepoIcon } from '../../../shared/repo-icon'
 import {
@@ -45,13 +46,24 @@ export function sanitizeGitRemoteIdentity(value: unknown): GitRemoteIdentity | n
     canonicalKey?: unknown
     remoteName?: unknown
     remoteUrl?: unknown
+    originUrl?: unknown
   }
   const canonicalKey =
     typeof candidate.canonicalKey === 'string' ? candidate.canonicalKey.trim() : ''
   const remoteName = typeof candidate.remoteName === 'string' ? candidate.remoteName.trim() : ''
   const remoteUrl = typeof candidate.remoteUrl === 'string' ? candidate.remoteUrl.trim() : ''
+  const originUrl =
+    typeof candidate.originUrl === 'string' ? candidate.originUrl.trim() : candidate.originUrl
   return canonicalKey && remoteName && remoteUrl
-    ? { canonicalKey, remoteName, remoteUrl }
+    ? {
+        canonicalKey,
+        remoteName,
+        remoteUrl,
+        ...(typeof originUrl === 'string' && originUrl
+          ? { originUrl: stripCredentialsFromMessage(originUrl) }
+          : {}),
+        ...(originUrl === null ? { originUrl } : {})
+      }
     : undefined
 }
 

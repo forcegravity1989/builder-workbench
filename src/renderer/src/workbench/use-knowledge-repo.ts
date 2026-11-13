@@ -6,6 +6,10 @@ import {
   writeKnowledgeDocToRepo,
   type WriteKnowledgeDocResult
 } from './knowledge-repo-loader'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { useProjectPage } from './project-page-state'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
 
 export function useKnowledgeRepo(): {
   activeRepo: ReturnType<typeof useAppStore.getState>['repos'][number] | undefined
@@ -15,12 +19,24 @@ export function useKnowledgeRepo(): {
   savedBodies: Record<string, string>
   loading: boolean
   error: string | null
+  unavailable: string | null
   reload: () => void
   saveDoc: (docId: string, content?: string) => Promise<WriteKnowledgeDocResult>
 } {
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
+  const page = useProjectPage()
+  const activeRepo = useAppStore((state) => {
+    if (page?.kind === 'knowledge') {
+      return page.options
+        ? (findRepoForHost(state.repos, page.options.repoId, { hostId: LOCAL_EXECUTION_HOST_ID }) ??
+            undefined)
+        : undefined
+    }
+    const current = currentProjectRepo(state)
+    return (current && resolveProjectSource(state, current, true)) ?? undefined
+  })
+  const hasProjects = useAppStore((state) => state.repos.length > 0)
+  const unavailable =
+    hasProjects && !activeRepo ? '知识库只读取本机项目。请先在本机添加当前项目。' : null
   const [docs, setDocs] = useState<KbDoc[]>([])
   const [bodies, setBodies] = useState<Record<string, string>>({})
   const [savedBodies, setSavedBodies] = useState<Record<string, string>>({})
@@ -98,6 +114,7 @@ export function useKnowledgeRepo(): {
     savedBodies,
     loading,
     error,
+    unavailable,
     reload: () => setReloadToken((n) => n + 1),
     saveDoc
   }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ReviewSendMenuItem } from './pr-review-notifications/ReviewSendMenuItem'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import {
@@ -8,8 +8,14 @@ import {
 import { normalizeGitHubPRForBranchOutcome } from '../../../shared/github/pull-request-for-branch-outcome'
 import type { PRRefreshOutcome } from '../../../shared/github/pull-request-refresh-types'
 import type { PRInfo } from '../../../shared/github/pull-request-types'
-import { useRepoById } from '@/store/selectors'
-import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
+import { useAppStore } from '@/store'
+import { parseGitHubIssueOrPRLink } from '../../../shared/github/links'
+import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/github-work-item-source-lookup'
+import {
+  createRepoRowExecutionHostLookup,
+  resolveWorktreeExecutionHost
+} from '../../../shared/worktree-execution-host-resolution'
+import { githubRepoIdentityKey } from '../../../shared/github/repository-identity-key'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import {
@@ -20,6 +26,7 @@ import { requireSourceContext } from './task-reference-repo'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { openReviewSendDialog } from './pr-review-notifications/send-dialog-store'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { resolveCodeHubReviewTarget } from './pr-review-notifications/codehub-review'
 
 type ReviewTarget = {
@@ -35,7 +42,15 @@ type TargetState =
   | { status: 'ready'; target: ReviewTarget }
   | { status: 'blocked'; reason: string }
 
-type ReviewWorktreeRef = Pick<Worktree, 'branch' | 'head' | 'linkedPR'>
+type ReviewWorktreeRef = Pick<Worktree, 'branch' | 'head' | 'linkedPR' | 'linkedWorkItem'>
+
+function reviewIdentityFromPrUrl(url: string): ReviewRepoIdentity {
+  const link = parseGitHubIssueOrPRLink(url)
+  if (!link || link.type !== 'pr' || !link.slug.host) {
+    throw new Error('无法从 PR 链接确认评审仓库')
+  }
+  return { host: link.slug.host, path: `${link.slug.owner}/${link.slug.repo}` }
+}
 
 async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Promise<TargetState> {
   const identity = reviewRepoIdentity(repo)
@@ -53,41 +68,45 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
       return { status: 'blocked', reason: error instanceof Error ? error.message : String(error) }
     }
   }
-  // Why: 持久关联的 PR 优先按编号读状态，能区分「已合入/已关闭」与本分支
-  // 没有开放 PR，菜单置灰原因才准确。
-  if (worktree.linkedPR) {
-    try {
-      const item = await lookupGitHubWorkItemForSource({
-        repoPath: repo.path,
-        repoId: repo.id,
-        sourceContext: requireSourceContext(repo, 'github'),
-        number: worktree.linkedPR,
-        type: 'pr'
-      })
-      if (item) {
-        if (item.state === 'merged') {
-          return { status: 'blocked', reason: 'PR 已合入' }
-        }
-        if (item.state === 'closed') {
-          return { status: 'blocked', reason: 'PR 已关闭' }
-        }
-        return {
-          status: 'ready',
-          target: {
-            repo: identity,
-            prNumber: item.number,
-            title: item.title,
-            sourceBranch: item.branchName ?? branch,
-            targetBranch: item.baseRefName ?? '未知'
-          }
-        }
-      }
-    } catch {
-      // 读不到就退回按分支补查，由下方统一给出原因。
-    }
-  }
   try {
     const sourceContext = requireSourceContext(repo, 'github')
+    const linked = worktree.linkedWorkItem
+    if (linked?.provider === 'github' && linked.type === 'pr' && linked.url) {
+      const link = parseGitHubIssueOrPRLink(linked.url)
+      if (!link || link.type !== 'pr' || link.number !== linked.number) {
+        return { status: 'blocked', reason: '无法确认关联 PR 的仓库和编号' }
+      }
+      const item = await lookupGitHubWorkItemByOwnerRepoForSource({
+        repoPath: repo.path,
+        repoId: repo.id,
+        sourceContext,
+        ...link.slug,
+        number: link.number,
+        type: 'pr'
+      })
+      const actual = item && parseGitHubIssueOrPRLink(item.url)
+      if (
+        !item ||
+        actual?.type !== 'pr' ||
+        actual.number !== link.number ||
+        githubRepoIdentityKey(actual.slug) !== githubRepoIdentityKey(link.slug)
+      ) {
+        return { status: 'blocked', reason: '无法读取已关联的 PR' }
+      }
+      if (item.state === 'merged' || item.state === 'closed') {
+        return { status: 'blocked', reason: item.state === 'merged' ? 'PR 已合入' : 'PR 已关闭' }
+      }
+      return {
+        status: 'ready',
+        target: {
+          repo: reviewIdentityFromPrUrl(item.url),
+          prNumber: item.number,
+          title: item.title,
+          sourceBranch: item.branchName ?? branch,
+          targetBranch: item.baseRefName ?? '未知'
+        }
+      }
+    }
     const outcome = normalizeGitHubPRForBranchOutcome(
       await callRuntimeRpc<PRRefreshOutcome | PRInfo | null>(
         getGitHubSourceRuntimeTarget(sourceContext),
@@ -95,7 +114,6 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
         {
           repo: getGitHubRuntimeRepoId(sourceContext, repo.id),
           branch,
-          linkedPRNumber: worktree.linkedPR ?? null,
           fallbackPRNumber: null,
           acceptMergedFallbackPR: false,
           currentHeadOid: worktree.head
@@ -110,35 +128,23 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
     if (!pr) {
       return { status: 'blocked', reason: '分支没有关联的开放 PR' }
     }
+    if (worktree.linkedPR && worktree.linkedPR !== pr.number) {
+      return { status: 'blocked', reason: '分支的 PR 与工作树记录的编号不一致' }
+    }
     if (pr.state === 'merged') {
       return { status: 'blocked', reason: 'PR 已合入' }
     }
     if (pr.state === 'closed') {
       return { status: 'blocked', reason: 'PR 已关闭' }
     }
-    let baseRefName = pr.baseRefName
-    if (!baseRefName) {
-      try {
-        const item = await lookupGitHubWorkItemForSource({
-          repoPath: repo.path,
-          repoId: repo.id,
-          sourceContext: requireSourceContext(repo, 'github'),
-          number: pr.number,
-          type: 'pr'
-        })
-        baseRefName = item?.baseRefName
-      } catch {
-        // 目标分支只作展示；读不到不否定 PR 存在。
-      }
-    }
     return {
       status: 'ready',
       target: {
-        repo: identity,
+        repo: reviewIdentityFromPrUrl(pr.url),
         prNumber: pr.number,
         title: pr.title,
         sourceBranch: pr.headRefName ?? branch,
-        targetBranch: baseRefName ?? '未知'
+        targetBranch: pr.baseRefName ?? '未知'
       }
     }
   } catch (error) {
@@ -156,11 +162,20 @@ export function WorkbenchSendReviewMenuItems({
   worktree: Worktree
   disabled: boolean
 }): React.JSX.Element | null {
-  const repo = useRepoById(worktree.repoId)
+  const executionHostId = worktreeActivationHostOpts(worktree)?.executionHostId
+  const repos = useAppStore((state) => state.repos)
+  const repo = useMemo(() => {
+    const owner = resolveWorktreeExecutionHost(createRepoRowExecutionHostLookup(repos), {
+      repoId: worktree.repoId,
+      hostId: executionHostId
+    })
+    return owner.kind === 'resolved' ? owner.owner : null
+  }, [repos, worktree.repoId, executionHostId])
   const [targetState, setTargetState] = useState<TargetState>({ status: 'checking' })
   const worktreeBranch = worktree.branch
   const worktreeHead = worktree.head
   const linkedPR = worktree.linkedPR
+  const linkedWorkItem = worktree.linkedWorkItem
 
   useEffect(() => {
     let cancelled = false
@@ -169,7 +184,12 @@ export function WorkbenchSendReviewMenuItems({
       return
     }
     setTargetState({ status: 'checking' })
-    resolveReviewTarget(repo, { branch: worktreeBranch, head: worktreeHead, linkedPR })
+    resolveReviewTarget(repo, {
+      branch: worktreeBranch,
+      head: worktreeHead,
+      linkedPR,
+      linkedWorkItem
+    })
       .then((result) => {
         if (!cancelled) {
           setTargetState(result)
@@ -186,7 +206,7 @@ export function WorkbenchSendReviewMenuItems({
     return () => {
       cancelled = true
     }
-  }, [repo, worktreeBranch, worktreeHead, linkedPR])
+  }, [repo, worktreeBranch, worktreeHead, linkedPR, linkedWorkItem])
 
   if (!isWorkbenchShell() || worktree.isMainWorktree || worktree.isArchived) {
     return null

@@ -2,7 +2,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 const { listTasks } = vi.hoisted(() => ({ listTasks: vi.fn() }))
-vi.mock('@/lib/codehub-api', () => ({ codehubApi: { listTasks } }))
+vi.mock('@/lib/codehub-api', () => ({ localCodehubApi: { listTasks } }))
 import { useTaskPageCodeHubLoading } from './use-task-page-codehub-loading'
 
 it('fetches one bounded list and keeps issue search on the client', async () => {

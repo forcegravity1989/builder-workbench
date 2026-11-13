@@ -97,6 +97,15 @@ export async function getWorkItemByOwnerRepo(
   connectionId?: string | null,
   localGitOptions: LocalGitExecOptions = {}
 ): Promise<MainWorkItem | null> {
+  if (localGitOptions.taskRepository) {
+    const requested = { ...ownerRepo, host: ownerRepo.host ?? localGitOptions.taskRepository.host }
+    if (
+      githubRepoIdentityKey(requested) !== githubRepoIdentityKey(localGitOptions.taskRepository)
+    ) {
+      return null
+    }
+    return getWorkItem(repoPath, number, type, connectionId, localGitOptions, 'origin')
+  }
   const requestedHost = ownerRepo.host?.trim().toLowerCase()
   const requestedRepository = requestedHost
     ? { ...ownerRepo, host: requestedHost }

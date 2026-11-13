@@ -1,5 +1,6 @@
+import { getTaskPageGitHubItemSource } from '@/components/task-page-source-context'
 import { createOverviewProviderReader } from './overview-provider-port'
-import { codehubApi } from '@/lib/codehub-api'
+import { localCodehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemDetailsForSource } from '@/lib/github-work-item-source-lookup'
 import { nativeTaskPortDeps } from '../native-task-port'
 import { resolveReferenceRepo } from '../task-reference-repo'
@@ -84,7 +85,15 @@ export async function readFeatureEvidence(
           const detail = await lookupGitHubWorkItemDetailsForSource({
             repoPath: repo.path,
             repoId: repo.id,
-            sourceContext: task.source,
+            sourceContext: getTaskPageGitHubItemSource(
+              repo,
+              {
+                type: 'issue',
+                number: task.iid,
+                url: task.url
+              },
+              task.source
+            ),
             number: task.iid,
             type: 'issue'
           })
@@ -114,7 +123,7 @@ export async function readFeatureEvidence(
                 : undefined
           }
         } else if (ref.provider === 'codehub') {
-          const detail = await codehubApi.viewTask({
+          const detail = await localCodehubApi.viewTask({
             repoPath: repo.path,
             repoId: repo.id,
             kind: 'issue',
@@ -192,7 +201,7 @@ export async function readFeatureEvidence(
           }
           return item
         }
-        const detail = await codehubApi.viewTask({
+        const detail = await localCodehubApi.viewTask({
           repoPath: repo.path,
           repoId: repo.id,
           kind: 'mr',

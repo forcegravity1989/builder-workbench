@@ -1,4 +1,5 @@
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import { taskPageWorkItemKey } from '../../task-page-work-item-signatures'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 import { formatPRDelta } from '@/components/task-page-pr-delta-summary'
@@ -22,7 +23,8 @@ import { cn } from '@/lib/utils'
 import {
   GITHUB_TASK_STICKY_ID_CELL_CLASS,
   GITHUB_TASK_STICKY_TITLE_CELL_CLASS,
-  getTaskPageRepoSourceContext,
+  getTaskPageGitHubItemSource,
+  getRepoTaskSourceContext,
   formatRelativeTime
 } from '../../task-page-source-context'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
@@ -74,7 +76,7 @@ export function TaskPageGitHubRows({
             worktrees: allWorktrees,
             provider: 'github',
             item,
-            sourceContext: getTaskPageRepoSourceContext(itemRepo, 'github')
+            sourceContext: getRepoTaskSourceContext(itemRepo, 'github')
           })
           const attachedWorkspaceLabel = attachedWorkspace
             ? getWorktreeAttachmentLabel(attachedWorkspace)
@@ -108,8 +110,7 @@ export function TaskPageGitHubRows({
           return (
             // Why: clickable div not a <button> — it nests buttons, and button-in-button is invalid HTML that breaks hydration.
             <div
-              // Why: key on repoId+item.id — repos sharing an upstream reuse item.id, so a bare key collides and React silently drops rows.
-              key={`${item.repoId}:${item.id}`}
+              key={taskPageWorkItemKey(item)}
               role="button"
               tabIndex={0}
               onClick={() => openGitHubDetailPage(item)}
@@ -206,7 +207,7 @@ export function TaskPageGitHubRows({
                     <GHAssigneesCell
                       item={item}
                       repo={itemRepo ?? null}
-                      sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
+                      sourceContext={getTaskPageGitHubItemSource(itemRepo, item)}
                       workItemMutation={githubWorkItemMutation}
                     />
                   </div>
@@ -214,7 +215,7 @@ export function TaskPageGitHubRows({
                     <GHLabelsCell
                       item={item}
                       repo={itemRepo ?? null}
-                      sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
+                      sourceContext={getTaskPageGitHubItemSource(itemRepo, item)}
                       workItemMutation={githubWorkItemMutation}
                     />
                   </div>
@@ -227,7 +228,7 @@ export function TaskPageGitHubRows({
                     <PRReviewCell
                       item={item}
                       repo={itemRepo ?? null}
-                      sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
+                      sourceContext={getTaskPageGitHubItemSource(itemRepo, item)}
                       workItemMutation={githubWorkItemMutation}
                     />
                   </div>
@@ -244,7 +245,7 @@ export function TaskPageGitHubRows({
                     <PRMergeCell
                       item={item}
                       repo={itemRepo ?? null}
-                      sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
+                      sourceContext={getTaskPageGitHubItemSource(itemRepo, item)}
                       workItemMutation={githubWorkItemMutation}
                     />
                   </div>
@@ -254,7 +255,7 @@ export function TaskPageGitHubRows({
                   <GHStatusCell
                     item={item}
                     repo={itemRepo ?? null}
-                    sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
+                    sourceContext={getTaskPageGitHubItemSource(itemRepo, item)}
                     workItemMutation={githubWorkItemMutation}
                   />
                 </div>

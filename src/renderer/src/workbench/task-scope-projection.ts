@@ -1,4 +1,5 @@
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { taskPageWorkItemKey } from '@/components/task-page-work-item-signatures'
 import { withQualifier } from '../../../shared/task-query'
 import {
   matchesWorkbenchTaskQuery,
@@ -6,6 +7,13 @@ import {
   type WorkbenchTaskScope
 } from '../../../shared/workbench/task-scope'
 import type { TaskScopeLoadResult, TaskScopeMissingRow } from './task-scope-load'
+
+export function taskScopeGitHubViewerKey(
+  item: Pick<GitHubWorkItem, 'repoId' | 'url' | 'prRepo'>
+): string {
+  const host = item.prRepo?.host ?? URL.parse(item.url ?? '')?.host ?? 'github.com'
+  return JSON.stringify([item.repoId, host.toLowerCase()])
+}
 
 export type WorkbenchTaskScopeModelFields = {
   workbenchScopeActive: boolean
@@ -25,7 +33,7 @@ export type WorkbenchTaskScopeModelFields = {
 
 export function workbenchTaskScopeItemKeys(result: TaskScopeLoadResult | null) {
   return {
-    github: new Set((result?.githubItems ?? []).map((item) => `${item.repoId}:${item.number}`)),
+    github: new Set((result?.githubItems ?? []).map(taskPageWorkItemKey)),
     codehub: new Set((result?.codehubItems ?? []).map((item) => `${item.repoId}:${item.iid}`))
   }
 }
@@ -99,7 +107,7 @@ export function projectWorkbenchTaskScope({
             matchesWorkbenchTaskQuery(
               { ...item, assignees: (item.assignees ?? []).map((user) => user.login) },
               githubQuery,
-              viewerLogins.get(item.repoId) ?? null
+              viewerLogins.get(taskScopeGitHubViewerKey(item)) ?? null
             )
         )
   const githubPages: GitHubWorkItem[][] = []

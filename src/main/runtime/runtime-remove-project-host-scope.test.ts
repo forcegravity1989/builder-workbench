@@ -7,6 +7,8 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../shared/repo-types'
+import { createProjectGroup } from '../../shared/project-groups'
+import { hasConfirmedGroupMembership } from '../../shared/workbench/repo-removal'
 import { OrcaRuntimeService } from './orca-runtime'
 
 function makeRepos(): Repo[] {
@@ -88,4 +90,36 @@ describe('repo.rm with the same repo id on two execution hosts', () => {
     expect(removeProjectForHost).not.toHaveBeenCalled()
     expect(repos).toHaveLength(2)
   })
+})
+
+it('checks host, path and registration time before removing a paired project', () => {
+  const { runtime, repos, removeProject, removeProjectForHost } = createRuntime()
+  const confirmed = { repoId: 'dup', hostId: 'local' as const, path: '/laptop/dup', addedAt: 1 }
+  expect(runtime.removeProjectRegistration({ ...confirmed, path: '/wrong' })).toBe(false)
+  expect(runtime.removeProjectRegistration({ ...confirmed, addedAt: 2 })).toBe(false)
+  expect(runtime.removeProjectRegistration(confirmed)).toBe(true)
+  expect(runtime.removeProjectRegistration(confirmed)).toBe(false)
+  expect(removeProjectForHost).toHaveBeenCalledExactlyOnceWith('dup', 'local')
+  expect(removeProject).not.toHaveBeenCalled()
+  expect(repos.map((repo) => repo.path)).toEqual(['/remote/dup'])
+})
+
+it('rejects a confirmed group member that moved before the owner processes deletion', () => {
+  const group = createProjectGroup({ name: 'Group', createdFrom: 'manual', tabOrder: 0 })
+  const [local, ssh] = makeRepos()
+  const registered = { ...local, projectGroupId: group.id }
+  const expected = [
+    { repoId: local.id, hostId: 'local' as const, path: local.path, addedAt: local.addedAt }
+  ]
+
+  expect(hasConfirmedGroupMembership([group], [registered, ssh], group.id, expected)).toBe(true)
+  expect(hasConfirmedGroupMembership([group], [local, ssh], group.id, expected)).toBe(false)
+  expect(
+    hasConfirmedGroupMembership(
+      [group],
+      [local, { ...ssh, projectGroupId: group.id }],
+      group.id,
+      expected
+    )
+  ).toBe(false)
 })

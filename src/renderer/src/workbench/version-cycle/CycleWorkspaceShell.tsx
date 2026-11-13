@@ -31,6 +31,7 @@ export function CycleWorkspaceShell() {
               workflow={workflow}
               version={readonlyBrowse.version}
               fixedAcceptance={readonlyBrowse.fixedAcceptance}
+              source={readonlyBrowse.source}
             />
           ) : (
             <>

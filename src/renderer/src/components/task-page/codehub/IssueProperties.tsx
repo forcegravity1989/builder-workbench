@@ -4,10 +4,11 @@ import { translate } from '@/i18n/i18n'
 import { Check, FolderKanban, LoaderCircle, Pencil, X } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
-import { codehubApi } from '@/lib/codehub-api'
+import type { CodeHubApi } from '../../../../../shared/codehub-api'
 import { cn } from '@/lib/utils'
 
 export function CodeHubIssueProperties({
+  api,
   closed,
   stateBusy,
   setIssueState,
@@ -23,6 +24,7 @@ export function CodeHubIssueProperties({
   saveLabels,
   workspaceLabel
 }: {
+  api: Pick<CodeHubApi, 'listLabels'>
   closed: boolean
   stateBusy: boolean
   setIssueState: (
@@ -55,7 +57,7 @@ export function CodeHubIssueProperties({
     let stale = false
     setLabelsLoading(true)
     setLabelsError(null)
-    codehubApi
+    api
       .listLabels({ repoPath, repoId })
       .then((names) => {
         if (!stale) {
@@ -76,7 +78,7 @@ export function CodeHubIssueProperties({
     return () => {
       stale = true
     }
-  }, [editingLabels, repoPath, repoId])
+  }, [api, editingLabels, repoPath, repoId])
   // New label names are typed free-text (CodeHub auto-creates them on
   // save); comma and Enter both finish an entry.
   const commitLabelInput = (): void => {

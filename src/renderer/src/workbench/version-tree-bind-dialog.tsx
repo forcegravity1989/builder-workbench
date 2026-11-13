@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -202,7 +202,7 @@ export function VersionTreeBindDialog({
         if (!repo) {
           throw new Error(`未在已登记项目中找到 ${reference.repository} 对应的项目`)
         }
-        const taskSource = getTaskPageRepoSourceContext(repo, reference.provider)
+        const taskSource = getRepoTaskSourceContext(repo, reference.provider)
         if (!taskSource) {
           throw new Error(`项目 ${repo.displayName || repo.id} 解析不出任务来源`)
         }

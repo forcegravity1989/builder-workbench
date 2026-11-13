@@ -1,8 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
-import { buildWallProjects, isWallRowVisible, type WallProject } from './workbench-wall-projects'
+import { buildWallProjects, isWallRowVisible } from './workbench-wall-projects'
 
 export type WallProjectFilters = { location: string; type: string }
 
@@ -29,12 +28,5 @@ export function useWallProjects(
         { environmentIds: new Set(environments.map((environment) => environment.id)) }
       ),
     [repos, groups, environments, location, type]
-  )
-}
-
-export function findWallProjectForRepo(projects: readonly WallProject[], repo: Repo) {
-  const host = getRepoExecutionHostId(repo)
-  return projects.find((project) =>
-    project.rows.some((row) => row.id === repo.id && getRepoExecutionHostId(row) === host)
   )
 }

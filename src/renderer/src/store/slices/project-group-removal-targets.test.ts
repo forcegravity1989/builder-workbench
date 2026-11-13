@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ProjectGroup } from '../../../../shared/project-group-types'
 import type { Repo } from '../../../../shared/repo-types'
 import { selectProjectGroupRemovalTargets } from './project-group-removal-targets'
+import { applyInheritedProjectGroups } from '../repos/repo-catalog-identity'
 
 const rootGroup: ProjectGroup = {
   id: 'root',
@@ -55,17 +56,43 @@ describe('selectProjectGroupRemovalTargets', () => {
       rootGroup.id
     )
 
-    expect(result.groupExists).toBe(true)
+    expect(result.ownerHostId).toBe('local')
     expect([...result.deletedGroupIds].sort()).toEqual([childGroup.id, rootGroup.id])
-    expect(result.projectIds).toEqual(['direct', 'nested'])
+    expect(result.projects.map((repo) => repo.id)).toEqual(['direct', 'nested'])
+  })
+
+  it('keeps projects grouped only for display out of the paired removal list', () => {
+    const hostId = 'runtime:peer'
+    const remote = {
+      canonicalKey: 'github.com/acme/app',
+      remoteName: 'origin',
+      remoteUrl: 'https://github.com/acme/app'
+    }
+    const local = { ...makeRepo('local', rootGroup.id), gitRemoteIdentity: remote }
+    const paired: Repo = {
+      ...makeRepo('paired', null),
+      executionHostId: hostId,
+      gitRemoteIdentity: remote,
+      projectGroupId: undefined
+    }
+    const fetched = applyInheritedProjectGroups([local], [paired])
+    expect(fetched[0].projectGroupId).toBe(rootGroup.id)
+    expect(
+      selectProjectGroupRemovalTargets(
+        [rootGroup, { ...rootGroup, executionHostId: hostId }],
+        [local, ...fetched],
+        rootGroup.id,
+        hostId
+      ).projects
+    ).toEqual([])
   })
 
   it('returns an empty project list for empty groups', () => {
     const result = selectProjectGroupRemovalTargets([rootGroup], [], rootGroup.id)
 
-    expect(result.groupExists).toBe(true)
+    expect(result.ownerHostId).toBe('local')
     expect([...result.deletedGroupIds]).toEqual([rootGroup.id])
-    expect(result.projectIds).toEqual([])
+    expect(result.projects).toEqual([])
   })
 
   it('does not synthesize targets for a missing group', () => {
@@ -75,8 +102,8 @@ describe('selectProjectGroupRemovalTargets', () => {
       'missing'
     )
 
-    expect(result.groupExists).toBe(false)
+    expect(result.ownerHostId).toBeNull()
     expect([...result.deletedGroupIds]).toEqual([])
-    expect(result.projectIds).toEqual([])
+    expect(result.projects).toEqual([])
   })
 })

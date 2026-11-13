@@ -27,6 +27,8 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 ### 任务列表与详情
 
+BW 任务列表、详情和 MR 检视沿[页面读取来源](../../architecture.md#页面读取来源)使用本机 CodeHub 账号，项目身份来自登记的 Git 远端。
+
 列表种类是 Issue 和 MR。开放对应 `--state opened`。我的：Issue 用 `assigned_to_me`，MR 用 `created_by_me`。待评审只对 MR，用 `need_my_review`。MR 搜索走 `--search`。
 
 普通任务列表每仓读取最近 250 条，不再逐次加载；超过范围时提示缩小筛选，不能把有界结果当全量。版本列表按版本标签读取，目标任务按引用集合物化；搜索与筛选范围见 [CodeHub 指南](../../03-guide/codehub-cli.md#workbench-任务列表)。当前接线依据为 [列表加载](../../../src/renderer/src/components/use-task-page-codehub-loading.ts)，不替代完整内机旅程验收。

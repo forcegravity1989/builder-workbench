@@ -71,6 +71,7 @@ export async function lookupGitHubWorkItemForSource(
       : await window.api.gh.workItem({
           repoPath: args.repoPath,
           repoId: args.repoId,
+          ...(args.sourceContext?.localTaskAccount ? { sourceContext: args.sourceContext } : {}),
           number: args.number,
           type: args.type
         })
@@ -99,6 +100,7 @@ export async function lookupGitHubWorkItemByOwnerRepoForSource(
       : await window.api.gh.workItemByOwnerRepo({
           repoPath: args.repoPath,
           repoId: args.repoId,
+          ...(args.sourceContext?.localTaskAccount ? { sourceContext: args.sourceContext } : {}),
           owner: args.owner,
           repo: args.repo,
           ...(args.host ? { host: args.host } : {}),

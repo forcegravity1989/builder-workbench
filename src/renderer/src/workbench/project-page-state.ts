@@ -1,23 +1,28 @@
 import { useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-import type { ExecutionHostId } from '../../../shared/execution-host'
-import type { WallProjectFilters } from './use-wall-projects'
+import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
+import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
+import type { Repo } from '../../../shared/repo-types'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
+import { requestVersionSidebarFocus } from './version-sidebar-state'
 import { beginProjectWallVisit } from './wall-refresh'
 
 /** G2（P6）：版本总览页选项——按项目注册行与版本打开，只读派生，无第二份存储。 */
 export type VersionOverviewOptions = {
   milestoneOrigin?: { feature: string }
   repoId: string
+  /** 点击时解析出的来源主机：版本总览只读这台主机上的登记与材料。 */
+  hostId: ExecutionHostId
   version: string
+  workflow?: 'plan' | 'acceptance'
 }
 
+type ProjectSource = Pick<VersionOverviewOptions, 'repoId' | 'hostId'>
 type ProjectPage =
   | { kind: 'wall' }
-  | {
-      kind: 'project-overview'
-      options: { repoId: string; hostId: ExecutionHostId; filters: WallProjectFilters }
-    }
+  | { kind: 'project-overview' | 'knowledge'; options: ProjectSource | null }
   | { kind: 'version-overview'; options: VersionOverviewOptions }
+  | { kind: 'cycle'; options: NativeWorkspaceScope }
   | null
 
 let projectPage: ProjectPage = null
@@ -47,19 +52,38 @@ export function openAddProject(): void {
   state.openModal('add-repo')
 }
 
-export function openFilteredProjectOverview(
-  repoId: string,
-  hostId: ExecutionHostId,
-  filters: WallProjectFilters
-): void {
-  useAppStore.getState().openActivityPage()
-  setProjectPage({ kind: 'project-overview', options: { repoId, hostId, filters } })
+function projectSource(repo: Repo | null): ProjectSource | null {
+  return repo ? { repoId: repo.id, hostId: getRepoExecutionHostId(repo) } : null
+}
+
+export function openProjectOverview(repo?: Repo): void {
+  const state = useAppStore.getState()
+  const current = repo ?? currentProjectRepo(state)
+  const source = current && resolveProjectSource(state, current)
+  state.openActivityPage()
+  setProjectPage({ kind: 'project-overview', options: projectSource(source) })
+  if (repo && source) {
+    requestVersionSidebarFocus(source.id)
+  }
+}
+
+export function openKnowledgePage(): void {
+  const state = useAppStore.getState()
+  const current = currentProjectRepo(state)
+  const source = current && resolveProjectSource(state, current, true)
+  state.openSpacePage()
+  setProjectPage({ kind: 'knowledge', options: projectSource(source) })
 }
 
 /** G2（P6）：版本总览（表格周报风格，只读派生自 Git 材料与登记）。 */
 export function openVersionOverview(options: VersionOverviewOptions): void {
   useAppStore.getState().openActivityPage()
   setProjectPage({ kind: 'version-overview', options: { ...options } })
+}
+
+export function openCycleProject(scope: NativeWorkspaceScope): void {
+  useAppStore.getState().openArtifactsPage()
+  setProjectPage({ kind: 'cycle', options: scope })
 }
 
 export function closeProjectPage(): void {

@@ -4363,7 +4363,9 @@
           "591f330288": "删除项目组",
           "2c14ce677a": "正在删除...",
           "0e0e6764af": "包含的项目",
-          "ad407c2d55": "更多",
+          "groupHost": "组所在主机：{{host}}",
+          "groupUnavailable": "所选项目组已不可用，请返回项目列表确认。",
+          "vmCleanup": "虚拟机项目的环境和文件是否永久删除，取决于其虚拟机配置。",
           "removeContainedProjectSingular": "移除 1 个包含的项目",
           "removeContainedProjectPlural": "移除 {{value0}} 个包含的项目",
           "eeabb8e8e4": "从 Orca 移除 {{value0}} 个包含的{{value1}}",
@@ -4390,7 +4392,10 @@
           "d36883e046": "取消",
           "b79b39d865": "删除项目",
           "removeDescriptionSsh": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在 {{host}} 上 — 重新添加该 SSH 主机即可恢复。",
-          "removeDescriptionLocal": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在您的磁盘上。"
+          "removeDescriptionLocal": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在您的磁盘上。",
+          "removeDescriptionRuntime": "将从该主机移除 {{name}} 的项目登记，仓库文件会保留。",
+          "registrationUnavailable": "项目登记已不可用，请返回项目列表确认。",
+          "updatePairedHost": "请先升级配对主机上的 Workbench，再移除项目登记。"
         },
         "ScrollToCurrentWorkspaceToolbarButton": {
           "23989bb663": "显示活动工作区"
@@ -4804,6 +4809,7 @@
           "bd37a57ac8": "为 {{value0}} 创建工作区",
           "b667b59632": "部分项目无法从 Orca 中移除",
           "f94466bc39": "删除分组后，{{value1}} 个包含项目{{value2}}中仍剩 {{value0}} 个。",
+          "groupDeleteMembersChanged": "组内项目已变化，请核对列表后重新确认。",
           "groupDeleteFailed": "删除分组失败",
           "groupDeleteFailedDesc": "删除分组时出现问题。没有项目被移除。",
           "7a8b9c0d1e": "需要更新",
@@ -6754,6 +6760,7 @@
           "c7ef4415de": "显示名称",
           "b0a0c14a1c": "侧边栏和选项卡的项目特定显示详细信息。",
           "removeProjectAllHosts": "从所有已配置主机的 Orca 中删除该项目。",
+          "removeProjectSelectedHost": "移除当前所选主机上的项目登记。",
           "0909e5d650": "删除项目",
           "ee5a290616": "作为文件夹打开。 Git 功能对此工作区不可用。",
           "323debba71": "类型：",

@@ -248,7 +248,7 @@ const WorktreeList = React.memo(function WorktreeList({
     workspaceStatuses,
     sortBy
   })
-  const projectGroupDialogs = useProjectGroupDialogs({ repos, repoMap, projectGroups })
+  const projectGroupDialogs = useProjectGroupDialogs({ repos, projectGroups })
 
   const handleImmediateWorktreeActivate = useCallback((worktreeId: string, rowKey?: string) => {
     // Why: re-rendering the virtualized sidebar on the pointer path adds visible latency; mutate the row directly and let store state reconcile after.
@@ -279,6 +279,7 @@ const WorktreeList = React.memo(function WorktreeList({
       openModal('confirm-remove-folder', {
         repoId: repo.id,
         displayName: repo.displayName,
+        ...(isWorkbenchShell() ? { projectRemovalRegistration: repo } : {}),
         hostId: getRepoExecutionHostId(repo)
       })
     },

@@ -9,8 +9,11 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   callRuntimeRpc: test.rpc,
   assertRuntimeEnvironmentCapability: vi.fn()
 }))
+vi.mock('@/lib/worktree-activation', () => ({ activateAndRevealWorktree: vi.fn() }))
+vi.mock('../project-page-state', () => ({ closeProjectPage: vi.fn() }))
 import { ensureNamedWorktree, findNamedWorktree, nativeWorkspaceScope } from './native-workspace'
 import { cycleRuntimeTarget, cycleScopeForWorktree } from './native-cycle-workspace'
+import { isVersionHostDisconnected } from '../version-worktree-host'
 
 const row = (hostId: Worktree['hostId'], runtimeOwnerEnvironmentId?: string) =>
   ({
@@ -148,4 +151,19 @@ it('keeps fixed-workspace owner identity regardless of active focus and refresh 
       }
     }
   }
+
+  const paired = { id: 'repo', executionHostId: 'runtime:peer' }
+  test.state = {
+    repos: [paired, { id: 'repo', executionHostId: 'local' }],
+    runtimeStatusByEnvironmentId: new Map([['peer', { status: null }]])
+  }
+
+  expect(isVersionHostDisconnected(row('local'))).toBe(false)
+  expect(isVersionHostDisconnected(row('ssh:direct'))).toBe(false)
+  expect(isVersionHostDisconnected(row('ssh:nested', 'peer'))).toBe(true)
+  expect(isVersionHostDisconnected(row('runtime:peer'))).toBe(true)
+  expect(isVersionHostDisconnected(row(undefined))).toBe(false)
+
+  test.state.repos = [paired]
+  expect(isVersionHostDisconnected(row(undefined))).toBe(true)
 })

@@ -10,9 +10,14 @@ import { WorkbenchWallGuide } from './WorkbenchScreenGuide'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
-import { closeProjectPage, openAddProject } from './project-page-state'
-import { switchActiveProject } from './switch-active-project'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import {
+  closeProjectPage,
+  openAddProject,
+  openProjectOverview,
+  openVersionOverview
+} from './project-page-state'
+import { resolveProjectSource } from './project-source-resolution'
 import { continueProjectWork } from './continue-project-work'
 import { isWallRowVisible, wallProjectVisibility } from './workbench-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
@@ -23,7 +28,7 @@ import { useWallReadings } from './use-wall-readings'
 import { useWallProjects } from './use-wall-projects'
 import { refreshProjectWall, useWallRefresh } from './wall-refresh'
 import { useWallNativeProjectActions } from './wall-native-project-actions'
-import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
+import { openVersionTasks } from './version-nav-actions'
 import './workbench-wall.css'
 import './project-settings.css'
 
@@ -252,15 +257,7 @@ export function ProjectWallPage() {
                                 .finally(() => setSwitching(null))
                             })
                           }
-                          onOverview={() =>
-                            leave(() => {
-                              void switchActiveProject(
-                                card.primaryRepo.id,
-                                getRepoExecutionHostId(card.primaryRepo),
-                                { location, type }
-                              )
-                            })
-                          }
+                          onOverview={() => leave(() => openProjectOverview(card.primaryRepo))}
                           onConfigure={(button) =>
                             leave(() => {
                               trigger.current = button
@@ -274,17 +271,6 @@ export function ProjectWallPage() {
                                 return
                               }
                               const { catalog, version } = card.readings
-                              const repoId = catalog.scope?.repoId ?? card.primaryRepo.id
-                              useAppStore.getState().setActiveRepo(repoId)
-                              useAppStore.setState({
-                                activeWorkspaceExecutionHostId: catalog.scope
-                                  ?.runtimeOwnerEnvironmentId
-                                  ? toRuntimeExecutionHostId(
-                                      catalog.scope.runtimeOwnerEnvironmentId
-                                    )
-                                  : (catalog.scope?.hostId ??
-                                    getRepoExecutionHostId(card.primaryRepo))
-                              })
                               if (stage === 'tasks') {
                                 void openVersionTasks({
                                   catalog,
@@ -295,11 +281,19 @@ export function ProjectWallPage() {
                                     ) ?? null
                                 }).catch((error) => toast.error(String(error)))
                               } else {
-                                navigateVersionWorkflow({
-                                  catalog,
+                                const source = resolveProjectSource(
+                                  useAppStore.getState(),
+                                  card.primaryRepo
+                                )
+                                if (!source) {
+                                  toast.error('项目来源尚未就绪')
+                                  return
+                                }
+                                openVersionOverview({
+                                  repoId: source.id,
+                                  hostId: getRepoExecutionHostId(source),
                                   version,
-                                  workflow: stage,
-                                  projectKey: repoId
+                                  workflow: stage
                                 })
                               }
                             })

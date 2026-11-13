@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../shared/workbench/repo-removal'
 import type { OrcaHooks } from '../../shared/orca-yaml-hook-types'
 import type { PublicKnownRuntimeEnvironment } from '../../shared/runtime-environments'
 import type { EphemeralVmRecipeDoctorResult } from '../../shared/ephemeral-vm-recipes'
@@ -62,7 +63,10 @@ export type EphemeralVmApi = {
   }) => Promise<EphemeralVmRuntimeRecord>
   suspendWorkspace: (args: { workspaceId: string }) => Promise<EphemeralVmRuntimeRecord | null>
   resumeWorkspace: (args: { workspaceId: string }) => Promise<EphemeralVmRuntimeRecord | null>
-  cleanup: (args: { runtimeId: string }) => Promise<EphemeralVmRuntimeRecord>
+  cleanup: (args: {
+    runtimeId: string
+    expectedRegistration?: ConfirmedRepoRegistration
+  }) => Promise<EphemeralVmRuntimeRecord>
   stopCleanup: (args: { runtimeId: string }) => Promise<EphemeralVmRuntimeRecord>
   getCleanupCommand: (args: { runtimeId: string }) => Promise<{
     runtimeId: string

@@ -26,22 +26,50 @@ import {
 export function createCodeHubService(deps: {
   resolveRepo: (args: CodeHubRepoArgs) => Repo | Promise<Repo>
   localGitOptions: (repo: Repo) => { wslDistro?: string }
+  allowRemoteIdentity?: boolean
 }): CodeHubApi {
+  function registeredRemote(repo: Repo) {
+    return (
+      parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
+      parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
+    )
+  }
   async function context(args: CodeHubRepoArgs) {
+    if (args.remoteUrl && deps.allowRemoteIdentity) {
+      const remote = parseCodeHubRemote(args.remoteUrl)
+      if (!remote) {
+        throw new Error('Unrecognized CodeHub service host')
+      }
+      if (!/^(?:[A-Za-z0-9-]+[.])*huawei[.]com(?::[0-9]+)?$/i.test(remote.host)) {
+        const repo = await deps.resolveRepo(args)
+        const known = registeredRemote(repo)
+        if (
+          resolve(repo.path) !== resolve(args.repoPath) ||
+          known?.host !== remote.host ||
+          known.project !== remote.project
+        ) {
+          throw new Error('CodeHub project identity does not match the registered repository')
+        }
+      }
+      if (
+        remote.project
+          .split('/')
+          .some((part) => !part || part === '.' || part === '..' || /[?#\\\s]/.test(part))
+      ) {
+        throw new Error('Invalid CodeHub project identity')
+      }
+      return { remote, execOptions: {} }
+    }
     const repo = await deps.resolveRepo(args)
     if (resolve(repo.path) !== resolve(args.repoPath)) {
       throw new Error('Repository path does not match the registered repository')
     }
     // The native registry owns the selected remote; another configured remote
     // must not silently replace the project the Tasks page displays.
-    const identity = repo.gitRemoteIdentity
-    const remote =
-      parseCodeHubRemote(identity?.remoteUrl) ?? parseCodeHubRemote(identity?.canonicalKey)
+    const remote = registeredRemote(repo)
     if (!remote) {
       throw new Error('Repository remote is not CodeHub')
     }
-    // Like gh/glab, hosted API calls run on the owning runtime. An SSH repo's
-    // filesystem path is not a local cwd; WSL projects use the native runner.
     const execOptions: CodeHubExecOptions = getRepoSshConnectionId(repo)
       ? {}
       : { cwd: repo.path, ...deps.localGitOptions(repo) }

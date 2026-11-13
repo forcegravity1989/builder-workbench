@@ -7,6 +7,10 @@ import type {
   ListReposForExecutionHostArgs
 } from '../../../shared/host-repo-catalog-contract'
 import { normalizeExecutionHostId } from '../../../shared/execution-host'
+import {
+  findConfirmedRepoRegistration,
+  WorkbenchRepoRemoval
+} from '../../../shared/workbench/repo-removal'
 import { enrichRepoGitUsernames } from '../../repo-git-username-enrichment'
 import { enrichMissingRepoGitRemoteIdentities } from '../../repo-git-remote-identity-enrichment'
 import { invalidateAuthorizedRootsCache } from '../registered-worktree-roots-cache'
@@ -94,10 +98,25 @@ export function registerRepoCatalogHandlers(mainWindow: BrowserWindow, store: St
   // Why: forget a project on one execution host without disturbing the same repo id on other hosts (SSH-workspace forget flow).
   ipcMain.handle(
     'repos:removeForHost',
-    async (_event, args: { repoId: string; hostId: string }) => {
+    async (
+      _event,
+      args: { repoId: string; hostId: string; expected?: { path: string; addedAt: number } }
+    ) => {
       const hostId = normalizeExecutionHostId(args.hostId)
       if (!hostId) {
         throw new Error(`Invalid host ID: ${args.hostId}`)
+      }
+      if (args.expected) {
+        const expected = WorkbenchRepoRemoval.parse({
+          ...args.expected,
+          repoId: args.repoId,
+          hostId
+        })
+        if (!findConfirmedRepoRegistration(store.getRepos(), expected)) {
+          throw new Error(
+            'The project registration changed. Refresh the project list and try again.'
+          )
+        }
       }
       store.removeProjectForHost(args.repoId, hostId)
       invalidateAuthorizedRootsCache()

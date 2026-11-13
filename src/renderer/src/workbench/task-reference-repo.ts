@@ -1,4 +1,4 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import {
@@ -7,6 +7,7 @@ import {
   parseExecutionHostId,
   toRuntimeExecutionHostId
 } from '../../../shared/execution-host'
+import { parseGitHubRemoteUrl } from '../../../shared/project-host-setup-projection'
 import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
@@ -57,6 +58,7 @@ function exactIdentityMatch(repo: Repo, repository: string): boolean {
   const identity = repo.gitRemoteIdentity
   const candidates = [
     identity?.canonicalKey,
+    identity?.originUrl ? normalizeGitRemoteUrl(identity.originUrl) : null,
     identity?.remoteUrl ? (normalizeGitRemoteUrl(identity.remoteUrl) ?? identity.remoteUrl) : null,
     repo.id,
     repo.path,
@@ -123,11 +125,34 @@ export function resolveReferenceRepo(
   )
 }
 
+export function gitHubIdentityForTaskReference(
+  repo: Repo,
+  repository: string
+): GitHubOwnerRepo | undefined {
+  const known = knownGitHubIssueSource(repo, repository)
+  if (known) {
+    return known
+  }
+  const remote = repo.gitRemoteIdentity
+  const key = normalizeGitRemoteUrl(repository) ?? repository
+  if (remote?.originUrl && normalizeGitRemoteUrl(remote.originUrl) === key) {
+    return parseGitHubRemoteUrl(remote.originUrl, true) ?? undefined
+  }
+  if (remote && (remote.canonicalKey === key || normalizeGitRemoteUrl(remote.remoteUrl) === key)) {
+    return parseGitHubRemoteUrl(remote.remoteUrl, true) ?? undefined
+  }
+  const upstream = repo.upstream
+  return upstream &&
+    key === [upstream.host ?? 'github.com', upstream.owner, upstream.repo].join('/')
+    ? upstream
+    : undefined
+}
+
 export function requireSourceContext(
   repo: Repo,
   provider: 'github' | 'codehub'
 ): TaskSourceContext {
-  const sourceContext = getTaskPageRepoSourceContext(repo, provider)
+  const sourceContext = getRepoTaskSourceContext(repo, provider)
   if (!sourceContext) {
     throw new Error(`无法解析 ${provider} 任务来源上下文`)
   }

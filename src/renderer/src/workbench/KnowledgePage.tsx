@@ -1,3 +1,7 @@
+import {
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -26,8 +30,18 @@ import './workbench-kb.css'
 /** V7 保真：文档 / 代码 / 对账 — 文档正文从 activeRepo 仓库读取。 */
 export function KnowledgePage(): React.JSX.Element {
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
-  const { activeRepo, docs, bodies, setBodies, savedBodies, loading, error, reload, saveDoc } =
-    useKnowledgeRepo()
+  const {
+    activeRepo,
+    docs,
+    bodies,
+    setBodies,
+    savedBodies,
+    loading,
+    error,
+    unavailable,
+    reload,
+    saveDoc
+  } = useKnowledgeRepo()
   const [tab, setTab] = useState<KbTab>('docs')
   const [audience, setAudience] = useState<KbAudience>('eng')
   const [groupKey, setGroupKey] = useState('eng-contract')
@@ -110,11 +124,12 @@ export function KnowledgePage(): React.JSX.Element {
     if (!activeRepo) {
       return ''
     }
+    const options = worktreeHostMatchOptions(s, activeRepo.id, 'local')
     const list = s.worktreesByRepo[activeRepo.id] ?? []
-    if (s.activeWorktreeId && list.some((w) => w.id === s.activeWorktreeId)) {
-      return s.activeWorktreeId
-    }
-    return list[0]?.id ?? ''
+    return (
+      list.find((tree) => tree.isMainWorktree && worktreeMatchesHost(tree, 'local', options))?.id ??
+      ''
+    )
   })
 
   const repoLabel = activeRepo?.displayName?.trim() || activeRepo?.path || '未选项目'
@@ -122,9 +137,11 @@ export function KnowledgePage(): React.JSX.Element {
     ? '正在从仓库加载文档…'
     : error
       ? `加载失败：${error}`
-      : activeRepo
-        ? `${docs.length} 份仓库文档 · ${repoLabel}`
-        : '请先添加项目'
+      : unavailable
+        ? unavailable
+        : activeRepo
+          ? `${docs.length} 份仓库文档 · ${repoLabel}`
+          : '请先添加项目'
 
   return (
     <div className={`wb-kb${editorOpen && tab === 'docs' ? ' is-ed' : ''}`} data-screen="kb">

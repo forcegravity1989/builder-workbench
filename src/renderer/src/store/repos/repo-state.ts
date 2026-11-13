@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../../../shared/workbench/repo-removal'
 import type { SshRepoReadoption } from '../../../../shared/ssh-types'
 import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
 import type {
@@ -101,6 +102,8 @@ export type FolderWorkspacePathStatusCacheEntry = {
 
 export type DeleteProjectGroupWithContainedProjectsOptions = {
   removeContainedProjects: boolean
+  confirmedProjectKeys?: readonly string[]
+  expectedEnvironmentPairingRevision?: number
   // hostId disambiguates which host's group row to delete when the id exists on multiple hosts.
   hostId?: ExecutionHostId
 }
@@ -124,11 +127,12 @@ export type DeleteProjectGroupWithContainedProjectsResult =
       failedProjectRemovals: ProjectRemovalFailure[]
     }
   | {
-      status: 'missing-group' | 'group-delete-failed'
+      status: 'missing-group' | 'group-delete-failed' | 'group-members-changed'
       groupId: string
       requestedProjectIds: string[]
       removedProjectIds: []
       failedProjectRemovals: []
+      error?: string
     }
 
 export type FolderWorkspacePathStatusRouteOptions = { runtimeEnvironmentId?: string | null }
@@ -244,7 +248,16 @@ export type RepoSlice = {
     updates: Partial<Pick<ProjectGroup, 'name' | 'isCollapsed' | 'tabOrder' | 'color'>>,
     options?: { hostId?: ExecutionHostId }
   ) => Promise<boolean>
-  deleteProjectGroup: (groupId: string, options?: { hostId?: ExecutionHostId }) => Promise<boolean>
+  deleteProjectGroup: (
+    groupId: string,
+    options?: {
+      hostId?: ExecutionHostId
+      expectedEnvironmentPairingRevision?: number
+      expectedEnvironmentRuntimeId?: string
+      confirmedMembers?: readonly ConfirmedRepoRegistration[]
+      onMembersChanged?: () => void
+    }
+  ) => Promise<boolean>
   deleteProjectGroupWithContainedProjects: (
     groupId: string,
     options: DeleteProjectGroupWithContainedProjectsOptions
@@ -259,7 +272,12 @@ export type RepoSlice = {
   // options.errorFeedback defaults to 'silent' so bulk/background callers keep their own aggregate reporting.
   removeProject: (
     projectId: string,
-    options?: { hostId?: ExecutionHostId; errorFeedback?: 'toast' | 'silent' }
+    options?: {
+      hostId?: ExecutionHostId
+      expectedRegistration?: Pick<Repo, 'path' | 'addedAt' | 'pairedRegistration'>
+      expectedEnvironmentRuntimeId?: string
+      errorFeedback?: 'toast' | 'silent'
+    }
   ) => Promise<void>
   updateProject: (projectId: string, updates: ProjectUpdate) => Promise<boolean>
   // options.hostId targets a specific host's row + RPC target when the id exists on multiple hosts; else the focused host is assumed.

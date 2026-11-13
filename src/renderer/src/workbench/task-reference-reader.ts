@@ -1,16 +1,17 @@
-import { getGitHubSourceRuntimeTarget } from '@/lib/github-source-runtime-context'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import {
+  getRepoTaskSourceContext,
+  getTaskPageRepoSourceContext
+} from '@/components/task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
-import {
-  getTaskSourceCacheScope,
-  type TaskSourceContext
-} from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/task-source-context'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import { createSnapshotCache } from './snapshot-cache'
 import type { TaskPortDeps } from './task-port'
 import {
+  gitHubIdentityForTaskReference,
   knownGitHubIssueSource,
   resolveReferenceRepo,
   viewCodeHubTaskByIid,
@@ -82,25 +83,46 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
   }
   function locate(home: TaskReadHome, reference: CycleTaskReference) {
     const repo = resolveReferenceRepo(deps, home, reference)
-    const source =
+    const context =
       repo && (reference.provider === 'github' || reference.provider === 'codehub')
         ? getTaskPageRepoSourceContext(repo, reference.provider)
         : null
+    const issueSource =
+      repo && reference.provider === 'github'
+        ? gitHubIdentityForTaskReference(repo, reference.repository)
+        : undefined
+    const source =
+      context?.localTaskAccount && issueSource
+        ? {
+            ...context,
+            taskRemoteCandidates: undefined,
+            providerIdentity: { provider: 'github' as const, ...issueSource }
+          }
+        : context
+    // 任务数据固定本机，缓存按远端项目身份归并；同一项目跨主机多行登记共用一份。
+    const repository = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
     const key = JSON.stringify([
-      source ? getTaskSourceCacheScope(source) : [home.repoId, home.hostId, reference.repository],
-      repo?.path,
-      repo?.connectionId,
-      home.runtimeOwnerEnvironmentId,
-      repo?.issueSourcePreference ?? 'auto',
-      repo?.upstream,
-      repo?.gitRemoteIdentity,
       reference.provider,
       reference.kind,
-      reference.repository,
-      knownGitHubIssueSource(repo ?? undefined, reference.repository),
+      repository,
+      knownGitHubIssueSource(repo ?? undefined, repository),
+      source?.providerIdentity,
+      repo?.issueSourcePreference ?? 'auto',
       reference.number
     ])
     return { repo, source, key, entry: cache(key) }
+  }
+  function forRepo(
+    value: TaskReferenceValue,
+    repo: ReturnType<typeof resolveReferenceRepo>
+  ): TaskReferenceValue {
+    if (value.kind === 'unavailable' || !repo) {
+      return value
+    }
+    const source = getRepoTaskSourceContext(repo, value.kind) ?? value.source
+    return value.kind === 'github'
+      ? { ...value, item: { ...value.item, repoId: repo.id }, source }
+      : { ...value, item: { ...value.item, repoId: repo.id, repoPath: repo.path }, source }
   }
   function unavailable(reason: unknown): TaskReferenceValue {
     return {
@@ -140,12 +162,19 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
             repoId: repo.id,
             sourceContext: source,
             number: reference.number,
-            issueSource: knownGitHubIssueSource(repo, reference.repository)
+            issueSource: source.localTaskAccount
+              ? gitHubIdentityForTaskReference(repo, reference.repository)
+              : knownGitHubIssueSource(repo, reference.repository)
           })
           if (!item) {
             throw new Error(`GitHub 未返回编号 ${reference.number} 的工作项`)
           }
-          return { kind: 'github', item: { ...item, repoId: repo.id }, source, readAt: deps.now() }
+          return {
+            kind: 'github',
+            item: { ...item, repoId: repo.id },
+            source: getRepoTaskSourceContext(repo, 'github') ?? source,
+            readAt: deps.now()
+          }
         }
         const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference, () =>
           requireJob(job)
@@ -189,8 +218,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         (job.repo?.gitRemoteIdentity?.remoteName &&
           job.repo.gitRemoteIdentity.remoteName !== 'origin') ||
         job.repo?.issueSourcePreference === 'upstream' ||
-        parsed.host?.includes(':') ||
-        getGitHubSourceRuntimeTarget(job.source).kind === 'environment'
+        parsed.host?.includes(':')
       ) {
         singles.push(job)
         continue
@@ -232,7 +260,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
                     job.finish({
                       kind: 'github',
                       item: { ...item, repoId: job.repo.id },
-                      source: job.source,
+                      source: getRepoTaskSourceContext(job.repo, 'github') ?? job.source,
                       readAt: deps.now()
                     })
                     return
@@ -295,7 +323,9 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       } else {
         pendingJobs.get(target.key)?.consumers.add(signal)
       }
-      return entry.pending.then(() => entry.read() ?? unavailable('未读取到任务'))
+      return entry.pending.then(() =>
+        forRepo(entry.read() ?? unavailable('未读取到任务'), target.repo)
+      )
     })
     void load(jobs).catch((reason) => {
       for (const job of jobs) {
@@ -312,7 +342,11 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     home: TaskReadHome,
     references: readonly CycleTaskReference[]
   ): TaskReferenceValue[] | null {
-    const values = references.map((reference) => locate(home, reference).entry.read())
+    const values = references.map((reference) => {
+      const { entry, repo } = locate(home, reference)
+      const value = entry.read()
+      return value && forRepo(value, repo)
+    })
     return values.some(Boolean) ? values.map((value) => value ?? unavailable('尚未读取')) : null
   }
   const key = (home: TaskReadHome, references: readonly CycleTaskReference[]) =>

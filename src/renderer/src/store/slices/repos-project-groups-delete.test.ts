@@ -191,8 +191,8 @@ describe('project group deletion store routing', () => {
       failedProjectRemovals: []
     })
 
-    expect(reposRemove).toHaveBeenCalledWith({ repoId: 'direct' })
-    expect(reposRemove).toHaveBeenCalledWith({ repoId: 'nested' })
+    expect(reposRemoveForHost).toHaveBeenCalledWith({ repoId: 'direct', hostId: 'local' })
+    expect(reposRemoveForHost).toHaveBeenCalledWith({ repoId: 'nested', hostId: 'local' })
     expect(store.getState().repos).toEqual([siblingRepo])
   })
 
@@ -226,21 +226,39 @@ describe('project group deletion store routing', () => {
       status: 'deleted-group',
       groupId: projectGroup.id,
       requestedProjectIds: ['shared', 'shared'],
-      removedProjectIds: ['shared'],
-      failedProjectRemovals: [
-        {
-          projectId: 'shared',
-          reason: 'Project remained in Orca after removeProject completed.'
-        }
-      ]
+      removedProjectIds: ['shared', 'shared'],
+      failedProjectRemovals: []
     })
 
     expect(reposRemoveForHost).toHaveBeenCalledWith({
       repoId: 'shared',
       hostId: 'local'
     })
-    expect(reposRemove).toHaveBeenCalledWith({ repoId: 'shared' })
+    expect(reposRemoveForHost).toHaveBeenCalledWith({
+      repoId: 'shared',
+      hostId: 'ssh:ssh-1'
+    })
+    expect(reposRemove).not.toHaveBeenCalled()
     expect(store.getState().repos).toEqual([])
+  })
+
+  it('aborts before changing the group when the confirmed project list is stale', async () => {
+    const store = createTestStore()
+    store.setState({
+      projectGroups: [projectGroup],
+      repos: [{ ...remoteRepo, projectGroupId: projectGroup.id }]
+    })
+
+    await expect(
+      store.getState().deleteProjectGroupWithContainedProjects(projectGroup.id, {
+        hostId: 'local',
+        removeContainedProjects: true,
+        confirmedProjectKeys: []
+      })
+    ).resolves.toMatchObject({ status: 'group-members-changed' })
+
+    expect(projectGroupsDelete).not.toHaveBeenCalled()
+    expect(reposRemoveForHost).not.toHaveBeenCalled()
   })
 
   it('does not remove contained projects when group deletion fails', async () => {
@@ -270,7 +288,7 @@ describe('project group deletion store routing', () => {
 
   it('reports project removal failures by comparing store state after removeProject', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    reposRemove.mockImplementation(async ({ repoId }: { repoId: string }) => {
+    reposRemoveForHost.mockImplementation(async ({ repoId }: { repoId: string }) => {
       if (repoId === 'nested') {
         throw new Error('remove failed')
       }

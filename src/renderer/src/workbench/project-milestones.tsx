@@ -1,3 +1,4 @@
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { focusMissingMilestoneField } from './milestone-field'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { Button } from '@/components/ui/button'
@@ -42,7 +43,12 @@ export function ProjectMilestones({
   updateFormal(): Promise<void>
 }) {
   const model = useMilestonePlanning(scope, refreshToken)
-  const catalog = useVersionCatalogForRepo(scope?.repoId ?? null)
+  const catalog = useVersionCatalogForRepo(
+    scope?.repoId ?? null,
+    scope?.runtimeOwnerEnvironmentId
+      ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+      : scope?.hostId
+  )
   const { state, busy, dirty, error, patch, edit } = model
   const root = useRef<HTMLElement>(null)
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
@@ -202,6 +208,9 @@ export function ProjectMilestones({
     patch({ pageY: root.current?.closest('.content')?.scrollTop ?? 0 })
     openVersionOverview({
       repoId: scope!.repoId,
+      hostId: scope!.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope!.runtimeOwnerEnvironmentId)
+        : scope!.hostId,
       version: version.version,
       milestoneOrigin: { feature: '' }
     })

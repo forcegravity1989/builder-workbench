@@ -8,6 +8,8 @@ import { gitExecFileAsync } from './runner'
 export type RemoteNameListingGitOptions = {
   wslDistro?: string
   admissionTier?: GitAdmissionTier
+  taskRepository?: object
+  taskRemoteCandidates?: { upstream?: object }
 }
 
 const SIGNED_REMOTE_NAME_LISTING_TTL_MS = 5 * 60_000
@@ -84,6 +86,9 @@ export async function listCachedRemoteNames(
   connectionId?: string | null,
   localGitOptions: RemoteNameListingGitOptions = {}
 ): Promise<string[] | null> {
+  if (localGitOptions.taskRepository) {
+    return localGitOptions.taskRemoteCandidates?.upstream ? ['origin', 'upstream'] : ['origin']
+  }
   const cacheKey = remoteNameListingCacheKey(repoPath, connectionId, localGitOptions)
   const now = Date.now()
   pruneRemoteNameListingCache(now)

@@ -9,7 +9,10 @@ import {
   publishVersionSidebarProjection,
   useVersionSidebarProjection
 } from './version-sidebar-state'
-import { selectRepoByIdForActiveWorkspace } from '@/store/selectors'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { useProjectPage } from './project-page-state'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
 
 /**
@@ -54,13 +57,35 @@ export function WorkbenchSidebarVersions({
   sortedIds,
   sortNow
 }: VersionTreeDisplayInput): React.JSX.Element {
-  const versionRepoId = useAppStore((s) => {
+  const page = useProjectPage()
+  const versionRepo = useAppStore((s) => {
+    if (page?.kind === 'version-overview' || page?.kind === 'project-overview') {
+      return page.options ? findRepoForHost(s.repos, page.options.repoId, page.options) : null
+    }
+    if (page?.kind === 'cycle') {
+      const scope = page.options
+      const hostId = scope.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+        : scope.hostId
+      return findRepoForHost(s.repos, scope.repoId, { hostId })
+    }
+    if (s.activeView === 'tasks' && s.taskPageData.preselectedRepoId) {
+      const scope = s.taskPageData.workbenchTaskScope
+      const hostId = scope?.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+        : scope?.homeHostId
+      const repo = findRepoForHost(s.repos, s.taskPageData.preselectedRepoId, { hostId })
+      if (repo) {
+        return resolveProjectSource(s, repo)
+      }
+    }
     if (s.activeWorkspaceKey && parseWorkspaceKey(s.activeWorkspaceKey)?.type === 'folder') {
       return null
     }
-    const repo = selectRepoByIdForActiveWorkspace(s, s.activeRepoId ?? s.repos[0]?.id ?? null)
-    return repo && repo.kind !== 'folder' ? repo.id : null
+    const repo = currentProjectRepo(s)
+    return repo && repo.kind !== 'folder' ? resolveProjectSource(s, repo) : null
   })
+  const versionRepoId = versionRepo?.id ?? null
   const projection = useVersionSidebarProjection()
   useEffect(() => {
     if (!versionRepoId) {
@@ -77,7 +102,7 @@ export function WorkbenchSidebarVersions({
       style={{ rowGap: WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP }}
       data-workbench-version-section
     >
-      {versionRepoId && <WorkbenchVersionNav nativeDisplay={display} />}
+      {versionRepo && <WorkbenchVersionNav nativeDisplay={display} repo={versionRepo} />}
       <WorkbenchSidebarSectionHeader icon={FolderGit2}>
         {versionRepoId && projection.repoId === versionRepoId && projection.worktreeIdentities.size
           ? '其他工作区'
