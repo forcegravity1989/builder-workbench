@@ -265,7 +265,10 @@ export function RepositoryPane({
             )}
             description={
               workbench
-                ? '移除当前所选主机上的项目登记'
+                ? translate(
+                    'auto.components.settings.RepositoryPane.removeProjectSelectedHost',
+                    'Remove this project registration from the selected host.'
+                  )
                 : translate(
                     'auto.components.settings.RepositoryPane.removeProjectAllHosts',
                     'Remove this project from Orca on all configured hosts.'

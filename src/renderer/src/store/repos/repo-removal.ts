@@ -282,12 +282,17 @@ export function createRepoRemovalActions(
             ptyIdsByTabId: nextPtyIdsByTabId,
             runtimePaneTitlesByTabId: nextRuntimePaneTitlesByTabId,
             terminalLayoutsByTabId: nextLayouts,
-            activeTabId: s.activeTabId && killedTabIds.has(s.activeTabId) ? null : s.activeTabId,
+            activeTabId:
+              activeSharedTreeRemoved || (s.activeTabId && killedTabIds.has(s.activeTabId))
+                ? null
+                : s.activeTabId,
+            activeBrowserTabId: activeSharedTreeRemoved ? null : s.activeBrowserTabId,
             openFiles: nextOpenFiles,
             activeFileIdByWorktree: nextActiveFileIdByWorktree,
             activeTabTypeByWorktree: nextActiveTabTypeByWorktree,
-            activeFileId: activeFileCleared ? null : s.activeFileId,
-            activeTabType: activeFileCleared ? 'terminal' : s.activeTabType,
+            activeFileId: activeSharedTreeRemoved || activeFileCleared ? null : s.activeFileId,
+            activeTabType:
+              activeSharedTreeRemoved || activeFileCleared ? 'terminal' : s.activeTabType,
             lastVisitedAtByWorktreeId: nextLastVisitedAtByWorktreeId,
             folderWorkspacePathStatuses: {},
             sortEpoch: s.sortEpoch + 1,

@@ -72,23 +72,30 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   // Why: fragment concatenation around the styled name cannot be reordered by
   // SOV locales (#9294). Translate one full sentence with the name as a
   // sentinel token, then split on it to re-apply the inline emphasis.
-  const description = isRuntimeOwnedSshTargetId(sshConnectionId)
-    ? translate(
-        'auto.components.sidebar.RemoveFolderDialog.removeDescriptionVmRecipe',
-        'This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted.',
-        { name: NAME_TOKEN }
-      )
-    : sshHostLabel
+  const description =
+    workbench && parseExecutionHostId(hostId)?.kind === 'runtime'
       ? translate(
-          'auto.components.sidebar.RemoveFolderDialog.removeDescriptionSsh',
-          'This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.',
-          { name: NAME_TOKEN, host: sshHostLabel }
-        )
-      : translate(
-          'auto.components.sidebar.RemoveFolderDialog.removeDescriptionLocal',
-          'This only removes {{name}} from Orca. It is still on your disk.',
+          'auto.components.sidebar.RemoveFolderDialog.removeDescriptionRuntime',
+          'Remove the registration for {{name}} on this host. Its files stay on that host.',
           { name: NAME_TOKEN }
         )
+      : isRuntimeOwnedSshTargetId(sshConnectionId)
+        ? translate(
+            'auto.components.sidebar.RemoveFolderDialog.removeDescriptionVmRecipe',
+            'This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted.',
+            { name: NAME_TOKEN }
+          )
+        : sshHostLabel
+          ? translate(
+              'auto.components.sidebar.RemoveFolderDialog.removeDescriptionSsh',
+              'This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.',
+              { name: NAME_TOKEN, host: sshHostLabel }
+            )
+          : translate(
+              'auto.components.sidebar.RemoveFolderDialog.removeDescriptionLocal',
+              'This only removes {{name}} from Orca. It is still on your disk.',
+              { name: NAME_TOKEN }
+            )
   const [descriptionBeforeName, descriptionAfterName] = description.split(NAME_TOKEN)
 
   const handleConfirm = useCallback(() => {
@@ -119,11 +126,10 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
           </DialogTitle>
           <DialogDescription className="text-xs">
             {targetUnavailable ? (
-              '项目登记已不可用，请返回项目列表确认。'
-            ) : workbench && parseExecutionHostId(hostId)?.kind === 'runtime' ? (
-              <>
-                将从该主机移除 <strong>{displayName}</strong> 的项目登记，仓库文件会保留。
-              </>
+              translate(
+                'auto.components.sidebar.RemoveFolderDialog.registrationUnavailable',
+                'This project registration is no longer available. Check the project list.'
+              )
             ) : (
               <>
                 {descriptionBeforeName}
