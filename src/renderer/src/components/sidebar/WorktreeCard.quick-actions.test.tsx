@@ -7,7 +7,6 @@ import type { Repo } from '../../../../shared/repo-types'
 import type { WorktreeCardProperty } from '../../../../shared/ui-chrome-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import type WorktreeCardComponent from './WorktreeCard'
-import type * as WorkspaceDeleteQuickAction from './workspace-delete-quick-action'
 
 const fetchHostedReviewForBranch = vi.fn()
 const fetchIssue = vi.fn()
@@ -20,7 +19,6 @@ let ptyIdsByTabId: Record<string, string[]> = {}
 let browserTabsByWorktree: Record<string, { id: string }[]> = {}
 let settings: Partial<GlobalSettings> | null = null
 let projectGroups: unknown[] = []
-let workspaceDeleteModifierPressed = false
 let gitConflictOperationByWorktree: Record<string, GitConflictOperation> = {}
 let WorktreeCard: typeof WorktreeCardComponent
 
@@ -77,14 +75,6 @@ vi.mock('./WorktreeContextMenu', () => ({
   WORKTREE_NATIVE_CONTEXT_MENU_ATTR: 'data-worktree-native-context-menu'
 }))
 
-vi.mock('./workspace-delete-quick-action', async (importOriginal) => {
-  const actual = await importOriginal<typeof WorkspaceDeleteQuickAction>()
-  return {
-    ...actual,
-    useWorkspaceDeleteModifierPressed: () => workspaceDeleteModifierPressed
-  }
-})
-
 function makeRepo(): Repo {
   return {
     id: 'repo-1',
@@ -140,7 +130,6 @@ describe('WorktreeCard quick actions', () => {
     browserTabsByWorktree = {}
     settings = null
     projectGroups = []
-    workspaceDeleteModifierPressed = false
     gitConflictOperationByWorktree = {}
   })
 
@@ -417,27 +406,28 @@ describe('WorktreeCard quick actions', () => {
     expect(markup).not.toContain('data-worktree-card-meta-row=""')
   })
 
-  it('hides delete by default for an inactive workspace', () => {
+  it('shows pin, sleep, and delete in the hover quick actions for an inactive workspace', () => {
     const markup = renderToStaticMarkup(
       <WorktreeCard worktree={makeWorktree()} repo={makeRepo()} isActive={false} />
     )
 
-    expect(markup).not.toContain('aria-label="Delete workspace"')
-  })
-
-  it('shows delete as the top-right quick action while Option/Alt is held', () => {
-    workspaceDeleteModifierPressed = true
-
-    const markup = renderToStaticMarkup(
-      <WorktreeCard worktree={makeWorktree()} repo={makeRepo()} isActive={false} />
-    )
-
+    expect(markup).toContain('data-worktree-card-quick-actions=""')
+    expect(markup).toContain('aria-label="Pin"')
+    expect(markup).toContain('lucide-moon')
     expect(markup).toContain('aria-label="Delete workspace"')
   })
 
-  it('shows delete as the quick action for folder workspace instances while Option/Alt is held', () => {
-    workspaceDeleteModifierPressed = true
+  it('shows unpin while keeping delete in the hover quick actions when the workspace is pinned', () => {
+    const markup = renderToStaticMarkup(
+      <WorktreeCard worktree={makeWorktree({ isPinned: true })} repo={makeRepo()} isActive={false} />
+    )
 
+    expect(markup).toContain('aria-label="Unpin"')
+    expect(markup).not.toContain('aria-label="Pin"')
+    expect(markup).toContain('aria-label="Delete workspace"')
+  })
+
+  it('shows the delete quick action for folder workspace instances', () => {
     const markup = renderToStaticMarkup(
       <WorktreeCard
         worktree={makeWorktree({
@@ -453,20 +443,7 @@ describe('WorktreeCard quick actions', () => {
     expect(markup).toContain('aria-label="Delete workspace"')
   })
 
-  it('shows delete for a current workspace while Option/Alt is held', () => {
-    workspaceDeleteModifierPressed = true
-    const worktree = makeWorktree()
-
-    const markup = renderToStaticMarkup(
-      <WorktreeCard worktree={worktree} repo={makeRepo()} isActive isCurrentWorktree />
-    )
-
-    expect(markup).toContain('aria-label="Delete workspace"')
-  })
-
-  it('does not show delete for the main worktree while Option/Alt is held', () => {
-    workspaceDeleteModifierPressed = true
-
+  it('hides delete but keeps pin and sleep for the main worktree', () => {
     const markup = renderToStaticMarkup(
       <WorktreeCard
         worktree={makeWorktree({ isMainWorktree: true })}
@@ -475,10 +452,12 @@ describe('WorktreeCard quick actions', () => {
       />
     )
 
+    expect(markup).toContain('aria-label="Pin"')
+    expect(markup).toContain('lucide-moon')
     expect(markup).not.toContain('aria-label="Delete workspace"')
   })
 
-  it('does not replace sleep with delete for a workspace with live activity', () => {
+  it('keeps the sleep and delete quick actions regardless of live activity', () => {
     const worktree = makeWorktree()
     tabsByWorktree = { [worktree.id]: [{ id: 'tab-1' }] }
     ptyIdsByTabId = { 'tab-1': ['pty-1'] }
@@ -487,31 +466,17 @@ describe('WorktreeCard quick actions', () => {
       <WorktreeCard worktree={worktree} repo={makeRepo()} isActive={false} />
     )
 
-    expect(markup).not.toContain('aria-label="Sleep workspace"')
-    expect(markup).not.toContain('aria-label="Delete workspace"')
+    expect(markup).toContain('lucide-moon')
+    expect(markup).toContain('aria-label="Delete workspace"')
   })
 
-  it('does not show sleep as the top-right quick action for an active workspace', () => {
-    const worktree = makeWorktree()
-    tabsByWorktree = { [worktree.id]: [{ id: 'tab-1' }] }
-    ptyIdsByTabId = { 'tab-1': ['pty-1'] }
-
+  it('shows the hover quick actions for the active workspace too', () => {
     const markup = renderToStaticMarkup(
-      <WorktreeCard worktree={worktree} repo={makeRepo()} isActive />
+      <WorktreeCard worktree={makeWorktree()} repo={makeRepo()} isActive />
     )
 
-    expect(markup).not.toContain('aria-label="Sleep workspace"')
-    expect(markup).not.toContain('aria-label="Delete workspace"')
-  })
-
-  it('does not show delete when the workspace is current but not selected in the sidebar', () => {
-    const worktree = makeWorktree()
-
-    const markup = renderToStaticMarkup(
-      <WorktreeCard worktree={worktree} repo={makeRepo()} isActive={false} isCurrentWorktree />
-    )
-
-    expect(markup).not.toContain('aria-label="Delete workspace"')
+    expect(markup).toContain('aria-label="Pin"')
+    expect(markup).toContain('aria-label="Delete workspace"')
   })
 
   it('does not show the rebase operation chip on the card', () => {
