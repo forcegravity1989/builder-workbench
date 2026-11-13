@@ -1,0 +1,174 @@
+.direction-demo-scene {
+  position: relative;
+  overflow: clip;
+  background: color-mix(in srgb, var(--muted) 55%, var(--card));
+}
+.direction-demo-content {
+  display: grid;
+  min-height: 355px;
+  place-items: center;
+  padding: 16px;
+}
+.direction-demo-window,
+.direction-demo-focus {
+  width: min(100%, 700px);
+  min-width: 0;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.direction-demo-scene .wb-ov {
+  height: auto;
+  overflow: clip;
+}
+.direction-demo-scene .wb-ov .content {
+  padding: 16px;
+  overflow: visible;
+}
+.direction-demo-scene .wb-ov .page-head {
+  padding: 0 16px;
+}
+.direction-demo-scene .direction-charter-editor {
+  position: static;
+  width: min(100%, 610px);
+  padding: 0;
+}
+.direction-charter-editor .wb-config-header {
+  padding: 12px 16px 6px;
+}
+.direction-charter-editor .wb-config-header h2 {
+  margin: 0;
+}
+.direction-charter-editor .wb-config-section {
+  margin: 4px 16px 0;
+}
+.direction-charter-editor .wb-config-info-heading {
+  padding: 4px 12px 0;
+}
+.direction-charter-editor .wb-config-body {
+  padding: 0 12px 12px;
+  font-size: 13px;
+}
+.direction-charter-editor .wb-config-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  padding-top: 0;
+}
+.direction-charter-editor .wb-config-fields label {
+  min-width: 0;
+  gap: 2px;
+}
+.direction-charter-editor .wb-config-fields :is(input, textarea) {
+  padding: 5px 8px;
+}
+.direction-charter-editor .wb-config-fields textarea {
+  min-height: 46px;
+  resize: none;
+}
+.direction-charter-editor label:has(#direction-demo-benchmark) {
+  grid-row: 3;
+}
+.direction-charter-editor[data-demo-typing] #direction-demo-opportunity {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 1px var(--ring);
+}
+.direction-charter-editor .wb-config-footer {
+  min-height: 46px;
+  margin-top: 8px;
+  padding: 5px 16px;
+}
+.direction-demo-scene .direction-wall-demo {
+  padding: 16px;
+  overflow: visible;
+}
+.direction-wall-demo .wallbar {
+  margin: 10px 0 16px;
+}
+.direction-wall-demo .wall-group {
+  margin-bottom: 0;
+}
+.direction-wall-demo .wall-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.direction-demo-scene .direction-milestone-demo {
+  margin: 0;
+}
+.direction-milestone-demo :is(.wb-ml-sdlc-toolbar, .wb-ml-range-toolbar, .wb-ml-today) {
+  display: none;
+}
+.direction-milestone-demo .wb-ml-day-cell.today {
+  box-shadow: none;
+  font-weight: inherit;
+}
+.direction-milestone-demo .wb-ml-scroll {
+  scrollbar-width: none;
+}
+.direction-demo-scene .direction-demo-focus {
+  width: min(100%, 420px);
+  max-width: 100%;
+  padding: 16px;
+  overflow: visible;
+}
+.direction-milestone-form h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.direction-milestone-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.direction-demo-spotlight {
+  position: absolute;
+  z-index: 8;
+  visibility: hidden;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+.direction-demo-cursor {
+  position: absolute;
+  z-index: 9;
+  visibility: hidden;
+  color: var(--foreground);
+  transform: translate(-2px, -2px);
+  pointer-events: none;
+  filter: drop-shadow(0 0 1px var(--background));
+}
+.direction-demo-cursor.is-clicking::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+}
+@media (max-height: 760px) {
+  .direction-demo-content {
+    min-height: 332px;
+    padding-block: 10px;
+  }
+  .direction-charter-editor .wb-config-header {
+    padding-block: 8px 4px;
+  }
+  .direction-charter-editor .wb-config-fields {
+    gap: 6px 14px;
+  }
+  .direction-charter-editor .wb-config-fields textarea {
+    min-height: 38px;
+  }
+  .direction-charter-editor .wb-config-footer {
+    min-height: 38px;
+    margin-top: 4px;
+  }
+}
+@container (max-width: 520px) {
+  .direction-wall-demo .wall-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -59,18 +59,43 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   await workbenchPage.keyboard.press('ArrowLeft')
   await expect(journeys).toHaveAttribute('aria-selected', 'true')
   const journeyNav = dialog.getByRole('navigation', { name: /^(Work journeys|工作旅程)$/ })
-  await expect(journeyNav.getByRole('button')).toHaveCount(7)
+  await expect(journeyNav.getByRole('button')).toHaveCount(8)
   await expect(journeyNav.getByText(/^(In development|建设中)$/)).toHaveCount(2)
-  const maintenance = /^(Keep the project maintainable|让项目持续可维护)$/
-  await journeyNav
-    .getByRole('button', { name: /Keep the project maintainable|让项目持续可维护/ })
+  const direction = /^(Agree on direction|明确方向)$/
+  const directionContent = dialog.getByRole('region', { name: direction })
+  const steps = directionContent.getByRole('list', { name: /^(Journey steps|旅程步骤)$/ })
+  await expect(steps.getByRole('button')).toHaveCount(4)
+  await steps.getByRole('button', { name: /Agree on the direction|明确共同方向/ }).click()
+  await expect(
+    steps.getByRole('button', { name: /Agree on the direction|明确共同方向/ })
+  ).toHaveAttribute('aria-current', 'step')
+  await expect(directionContent.locator('.direction-demo-scene .card-title')).toHaveText('周末书集')
+  await expect(directionContent.getByRole('img')).toHaveCount(0)
+  await directionContent
+    .getByRole('navigation', { name: /^(Related features|相关功能)$/ })
+    .getByRole('button', { name: /^(Project overview|项目总览)$/ })
     .click()
-  const maintenanceContent = dialog.getByRole('region', { name: maintenance })
-  await expect(maintenanceContent.getByRole('heading', { name: maintenance })).toBeVisible()
-  await expect(maintenanceContent.getByText(/^(In development|建设中)$/)).toBeVisible()
-  await journeyNav
-    .getByRole('button', { name: /Take a task through review|把问题推进到可信交付/ })
-    .click()
+  await expect(features).toHaveAttribute('aria-selected', 'true')
+  const overviewClip = dialog.getByRole('region', { name: /^(Project overview|项目总览)$/ })
+  await expect(overviewClip.locator('.direction-demo-scene .card-title')).toHaveText('周末书集')
+  await overviewClip.getByRole('button', { name: /^(Play clip|播放片段)$/ }).click()
+  await overviewClip.getByRole('button', { name: /^(Pause|暂停)$/ }).click()
+  await expect(
+    overviewClip.getByRole('button', { name: /^(Resume|继续播放|Play clip|播放片段)$/ })
+  ).toBeVisible()
+  await journeys.click()
+  await expect(steps.getByRole('button')).toHaveCount(4)
+  const maintenance = /^(Maintain the project|持续维护)$/
+  await journeyNav.getByRole('button', { name: /Maintain the project|持续维护/ }).click()
+  await expect(
+    dialog.getByRole('region', { name: maintenance }).getByRole('heading', { name: maintenance })
+  ).toBeVisible()
+  await expect(
+    journeyNav
+      .getByRole('button', { name: /Maintain the project|持续维护/ })
+      .getByText(/^(In development|建设中)$/)
+  ).toBeVisible()
+  await journeyNav.getByRole('button', { name: /Build and deliver|构建交付/ }).click()
   await expect(dialog.getByText(/^(Content in preparation|内容准备中)$/)).toBeVisible()
   await expect(workspaceDemo).toHaveCount(0)
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-explore-journey.png') })
@@ -93,6 +118,20 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   await help.click()
   await workbenchPage.getByRole('menuitem', { name: exploreName }).click()
   await expect(workspaceDemo).toBeVisible()
+  await journeys.click()
+  await directionContent
+    .getByRole('navigation', { name: /^(Related features|相关功能)$/ })
+    .getByRole('button', { name: /^(Project overview|项目总览)$/ })
+    .click()
+  await dialog.getByRole('button', { name: /^(Try it in BW|在界面中跟做)$/ }).click()
+  await expect(dialog).toBeHidden()
+  const overviewHelp = workbenchPage.getByRole('button', { name: '项目总览帮助', exact: true })
+  const guide = workbenchPage.locator('[data-contextual-tour-panel]')
+  await expect(guide.getByText('查看项目名片', { exact: true })).toBeVisible()
+  await guide.locator('[data-contextual-tour-skip]').click()
+  await overviewHelp.click()
+  await workbenchPage.getByRole('menuitem', { name: '项目名片引导', exact: true }).click()
+  await expect(guide.getByText('查看项目名片', { exact: true })).toBeVisible()
 })
 
 test.describe('BW first-run project handoff', () => {
@@ -128,9 +167,37 @@ test.describe('BW first-run project handoff', () => {
     await expect(wall.getByRole('heading', { name: '从一个项目开始' })).toBeVisible()
     await workbenchPage.screenshot({ path: testInfo.outputPath('bw-first-run-cancel-add.png') })
 
+    const wallGuide = workbenchPage.locator('[data-contextual-tour-panel]')
+    const wallHelp = wall.getByRole('button', { name: '项目墙帮助', exact: true })
+    await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
+    await wallGuide.locator('[data-contextual-tour-skip]').click()
+    await expect(wallGuide).toBeHidden()
+    await expect
+      .poll(() =>
+        workbenchPage.evaluate(async () =>
+          (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-wall')
+        )
+      )
+      .toBe(true)
+    await wallHelp.click()
+    await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
+    await wallGuide.locator('[data-contextual-tour-skip]').click()
+
     const help = workbenchPage.locator('[data-workbench-rail]').getByRole('button', {
       name: /^(Help|帮助)$/
     })
+    const exploreName = /^(Explore BW|探索 BW)$/
+    await help.click()
+    await workbenchPage.getByRole('menuitem', { name: exploreName }).click()
+    const explore = workbenchPage.getByRole('dialog', { name: exploreName })
+    await explore.getByRole('tab', { name: /^(Work journeys|工作旅程)$/ }).click()
+    const emptyProjectDemo = explore.locator('.direction-demo-scene')
+    await expect(emptyProjectDemo.getByText('周末书集', { exact: true })).toBeVisible()
+    await explore.getByRole('button', { name: /^(Play in order|顺序播放)$/ }).click()
+    await expect(emptyProjectDemo.locator('input')).not.toHaveValue('')
+    await workbenchPage.keyboard.press('Escape')
+    await expect(explore).toBeHidden()
+
     const gettingStartedName = /^(Getting Started with BW|BW 入门)$/
     await help.click()
     await workbenchPage.getByRole('menuitem', { name: gettingStartedName }).click()
@@ -200,6 +267,7 @@ test.describe('BW first-run project handoff', () => {
       .getByRole('button', { name: '项目墙', exact: true })
       .click()
     await expect(wall.getByRole('heading', { name: '从一个项目开始' })).toBeVisible()
+    await expect(wallGuide).toBeHidden()
 
     await electronApp.evaluate(({ dialog: nativeDialog, ipcMain }, folderPath) => {
       nativeDialog.showOpenDialog = async () => ({

@@ -117,7 +117,13 @@ export function ProjectWallCard({
       data-workbench-project-key={project.key}
     >
       <div className="pcard-top">
-        <button type="button" className="pcard-name" disabled={switching} onClick={() => onOpen()}>
+        <button
+          type="button"
+          className="pcard-name"
+          data-contextual-tour-target="workbench-wall-project"
+          disabled={switching}
+          onClick={() => onOpen()}
+        >
           {card.displayName}
         </button>
         <div className="pcard-actions">
@@ -149,6 +155,7 @@ export function ProjectWallCard({
               icon={LayoutDashboard}
               onClick={onOverview}
               data-workbench-open-overview
+              data-contextual-tour-target="workbench-wall-overview"
             />
           )}
           <WorkbenchIconButton

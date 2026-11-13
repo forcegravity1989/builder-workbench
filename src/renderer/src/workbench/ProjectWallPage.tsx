@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
+import { WorkbenchWallGuide } from './WorkbenchScreenGuide'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
@@ -81,6 +82,7 @@ export function ProjectWallPage() {
     }
   }
   const native = useWallNativeProjectActions(leave)
+  const hasFilters = Boolean(query.trim()) || location !== 'all' || type !== 'all'
   const filtered = cards.filter((card) =>
     card.displayName.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   )
@@ -95,6 +97,7 @@ export function ProjectWallPage() {
               </h1>
             </div>
             <div className="page-actions" role="group" aria-label="项目墙操作">
+              <WorkbenchWallGuide enabled={!selectedCard && !importOpen && !leaveAction} />
               <WorkbenchIconButton
                 label="刷新项目目录和墙卡信息"
                 icon={refreshing ? LoaderCircle : RefreshCw}
@@ -122,12 +125,14 @@ export function ProjectWallPage() {
               />
             </div>
           </header>
-          <p className="wall-principles">聚焦目标 · 关注引领指标 · 建立记分表 · 保持问责节奏</p>
           {hasProjects && (
             <div className="wallbar">
               <Input
                 aria-label="搜索项目"
                 placeholder="搜索项目"
+                data-contextual-tour-target={
+                  filtered.length || !hasFilters ? 'workbench-wall-start' : undefined
+                }
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
@@ -192,10 +197,30 @@ export function ProjectWallPage() {
             <div className="empty-center">
               <h2>从一个项目开始</h2>
               <p>打开已有文件夹、克隆代码仓，或新建项目。</p>
-              <Button onClick={openAddProject}>添加项目</Button>
+              <Button onClick={openAddProject} data-contextual-tour-target="workbench-wall-start">
+                添加项目
+              </Button>
             </div>
           ) : !filtered.length ? (
-            <p className="empty-center">没有匹配的项目</p>
+            <div className="empty-center">
+              <p>{hasFilters ? '没有匹配的项目' : '暂未读到项目，请刷新项目墙'}</p>
+              {hasFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-contextual-tour-target="workbench-wall-start"
+                  onClick={() =>
+                    leave(() => {
+                      setQuery('')
+                      setLocation('all')
+                      setType('all')
+                    })
+                  }
+                >
+                  清除搜索和筛选
+                </Button>
+              )}
+            </div>
           ) : (
             (['team', 'personal'] as const).map((category) => {
               const items = filtered.filter(

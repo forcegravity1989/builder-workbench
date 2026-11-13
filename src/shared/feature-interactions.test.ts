@@ -56,6 +56,8 @@ describe('feature interactions', () => {
       'browser-annotations-sent-to-agent',
       'browser-grab',
       'markdown-file-created',
+      'workbench-wall',
+      'workbench-overview',
       'workbench-milestones',
       'workspace-creation',
       'agent-browser-setup',

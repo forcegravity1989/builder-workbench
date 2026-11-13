@@ -14,6 +14,7 @@ import type { Repo } from '../../../shared/repo-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSettingsReview } from './ProjectSettingsReview'
+import { ProjectCharterFields } from './ProjectCharterFields'
 import { useProjectSettings } from './use-project-settings'
 import { CHARTER_LABELS } from './project-charter'
 import { EDITABLE_CHARTER_FIELDS } from '../../../shared/workbench/project-charter-edit'
@@ -24,6 +25,7 @@ export function ProjectSettingsRail({
   repo,
   rows,
   displayName,
+  startEditing = false,
   onClose,
   onDirtyChange,
   onBusyChange,
@@ -33,6 +35,7 @@ export function ProjectSettingsRail({
   repo: Repo
   rows?: readonly Repo[]
   displayName: string
+  startEditing?: boolean
   onClose(): void
   onDirtyChange(dirty: boolean): void
   onBusyChange(busy: boolean): void
@@ -45,7 +48,7 @@ export function ProjectSettingsRail({
     }
     onChanged?.(charterUpdated)
   })
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(startEditing)
   const [savingType, setSavingType] = useState(false)
   const panel = useRef<HTMLElement>(null)
   const projectRows = useMemo(() => rows ?? [repo], [rows, repo])
@@ -77,6 +80,7 @@ export function ProjectSettingsRail({
     panel.current?.querySelector<HTMLButtonElement>('[data-close-config]')?.focus()
   }, [])
   const blocked = model.loading || !model.canEdit || Boolean(model.pending || model.merged)
+  const showEditor = editing && !blocked
   const changeType = async (value: string) => {
     if (!ownRows.length || savingType || (value !== 'personal' && value !== 'team')) {
       return
@@ -154,7 +158,7 @@ export function ProjectSettingsRail({
             <header className="wb-config-info-heading">
               <h3>项目信息</h3>
               <WorkbenchIconButton
-                label={editing ? '收起编辑' : '编辑项目信息'}
+                label={showEditor ? '收起编辑' : '编辑项目信息'}
                 icon={FilePenLine}
                 disabled={blocked || model.busy}
                 onClick={() => setEditing(!editing)}
@@ -165,35 +169,12 @@ export function ProjectSettingsRail({
                 <p role="status">正在读取项目信息…</p>
               ) : (
                 model.form &&
-                (editing ? (
-                  <div className="wb-config-fields">
-                    {EDITABLE_CHARTER_FIELDS.map((field) => (
-                      <label key={field} htmlFor={`config-${field}`}>
-                        <span>
-                          {CHARTER_LABELS[field]}
-                          {field === 'name' ? ' *' : ''}
-                        </span>
-                        {field === 'brief' || field === 'opportunity' ? (
-                          <textarea
-                            id={`config-${field}`}
-                            value={model.form!.value[field] ?? ''}
-                            onChange={(event) => model.edit(field, event.target.value)}
-                            disabled={model.busy || blocked}
-                          />
-                        ) : (
-                          <input
-                            id={`config-${field}`}
-                            value={model.form!.value[field] ?? ''}
-                            onChange={(event) => model.edit(field, event.target.value)}
-                            required={field === 'name'}
-                            placeholder={field === 'groupId' ? '项目群号' : undefined}
-                            aria-invalid={field === 'name' && !model.form!.value.name.trim()}
-                            disabled={model.busy || blocked}
-                          />
-                        )}
-                      </label>
-                    ))}
-                  </div>
+                (showEditor ? (
+                  <ProjectCharterFields
+                    value={model.form.value}
+                    onEdit={model.edit}
+                    disabled={model.busy || blocked}
+                  />
                 ) : (
                   <dl className="wb-config-facts">
                     {EDITABLE_CHARTER_FIELDS.map((field) => (
@@ -239,7 +220,27 @@ export function ProjectSettingsRail({
               >
                 撤销修改
               </button>
-              <ProjectSettingsReview model={model} onSubmitted={() => setEditing(false)} />
+              <ProjectSettingsReview
+                value={model.form?.value ?? null}
+                changes={model.changes}
+                localOnly={model.localOnly}
+                busy={model.busy}
+                disabled={
+                  model.busy ||
+                  model.loading ||
+                  !model.status ||
+                  !model.canEdit ||
+                  !model.dirty ||
+                  !model.form?.value.name.trim()
+                }
+                onConfirm={() => {
+                  void model.submit().then((ok) => {
+                    if (ok) {
+                      setEditing(false)
+                    }
+                  })
+                }}
+              />
             </>
           )}
         </footer>

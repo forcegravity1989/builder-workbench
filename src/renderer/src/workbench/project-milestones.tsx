@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  MilestoneGuide,
-  MilestoneHistoryActions,
-  MilestoneTitle
-} from './milestone-history-actions'
+import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
 import {
   ScheduledVersionSchema,
   milestoneDraft,
@@ -34,6 +30,7 @@ import {
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneIconButton } from './milestone-icon-button'
+import { useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import './project-milestones.css'
 
 export function ProjectMilestones({
@@ -62,6 +59,10 @@ export function ProjectMilestones({
   const restored = useRef<string | null>(null)
   const restoreScope = scope ? JSON.stringify(scope) : null
   const pageY = state?.pageY
+  useWorkbenchScreenGuide(
+    'workbench-milestones',
+    Boolean(state?.editing && !busy && !state.recoveryBlocked)
+  )
   useEffect(() => {
     if (restoreScope && pageY !== undefined && root.current && restored.current !== restoreScope) {
       const content = root.current.closest('.content')
@@ -254,11 +255,9 @@ export function ProjectMilestones({
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
-          <MilestoneGuide
-            editing={editing}
-            blocked={!!state.recoveryBlocked}
-            scopeKey={restoreScope}
-          />
+          {dirty && model.recoverySaved && (
+            <span className="text-xs text-muted-foreground">草稿已保存在本机</span>
+          )}
           {editing && (
             <MilestoneHistoryActions
               dirty={dirty}
@@ -285,7 +284,7 @@ export function ProjectMilestones({
               }
               onClick={model.beginEditing}
             >
-              规划里程碑
+              {dirty ? '继续规划' : '规划里程碑'}
             </Button>
           )}
           {hasReviewAction && (

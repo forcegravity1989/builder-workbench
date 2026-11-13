@@ -17,6 +17,8 @@ describe('contextual tour definitions', () => {
       'automations',
       'floating-workspace',
       'workspace-creation',
+      'workbench-wall',
+      'workbench-overview',
       'workbench-milestones'
     ]
 

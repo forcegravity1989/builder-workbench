@@ -9,6 +9,8 @@ export type ContextualTourId =
   | 'automations'
   | 'floating-workspace'
   | 'workspace-creation'
+  | 'workbench-wall'
+  | 'workbench-overview'
   | 'workbench-milestones'
 
 export type ContextualTourStepControl = {
@@ -52,6 +54,7 @@ export type ContextualTourStep = {
 export type ContextualTour = {
   id: ContextualTourId
   allowedActiveModals?: readonly string[]
+  markSeenOn?: 'dismiss'
   steps: readonly ContextualTourStep[]
 }
 
@@ -226,23 +229,71 @@ export const CONTEXTUAL_TOURS = [
     ]
   },
   {
+    id: 'workbench-wall',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-wall-start',
+        title: '找到项目',
+        body: '搜索项目。没有匹配时清除筛选，空墙可点「添加项目」。',
+        targetSelector: '[data-contextual-tour-target="workbench-wall-start"]',
+        requiredForStart: true,
+        preferredPlacement: 'right'
+      },
+      {
+        id: 'workbench-wall-open',
+        title: '继续工作',
+        body: '点项目名称回到工作区。',
+        targetSelector: '[data-contextual-tour-target="workbench-wall-project"]'
+      },
+      {
+        id: 'workbench-wall-overview',
+        title: '查看方向和排期',
+        body: '点卡片上的「项目总览」，查看名片和里程碑。',
+        targetSelector: '[data-contextual-tour-target="workbench-wall-overview"]'
+      }
+    ]
+  },
+  {
+    id: 'workbench-overview',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-overview-card',
+        title: '查看项目名片',
+        body: '展开名片查看想做什么、愿景和负责人。还没有项目时，点「添加项目」。',
+        targetSelector:
+          '[data-contextual-tour-target="workbench-overview-card"], [data-contextual-tour-target="workbench-overview-add"]',
+        requiredForStart: true,
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-overview-edit',
+        title: '编辑项目信息',
+        body: '点编辑更新名片，核对后保存或提交评审。里程碑安排阶段成果，记分牌查看实际指标。',
+        targetSelector: '[data-contextual-tour-target="workbench-overview-edit"]'
+      }
+    ]
+  },
+  {
     id: 'workbench-milestones',
+    markSeenOn: 'dismiss',
     steps: [
       {
         title: '添加与编排',
-        body: '进入「规划里程碑」，点表头旗帜添加里程碑、列表加号添加特性；特性旁的扳手添加 Maintain。点成果文字编辑，点 × 删除，误删可撤销。查看实际时，先取消「显示实际」。',
+        body: '点「规划里程碑」开始。编辑时用旗帜添加成果，用加号添加特性。',
         targetSelector: '[data-contextual-tour-target~="milestone-start"]',
         requiredForStart: true,
         preferredPlacement: 'bottom'
       },
       {
         title: '调整时间',
-        body: '拖 Build / Maintain 条身移动日期，拉两端调时长，可跨任意版本。拖版本表头只调整版本日期；维护条上方的垃圾桶删除单段，误删可撤销。',
+        body: '拖动条身移动排期，拖两端调整日期。开始编辑后即可操作。',
         targetSelector: '[data-contextual-tour-target="milestone-schedule"]'
       },
       {
         title: '提交评审',
-        body: '修改先保存在本机。提交会生成或更新评审，合入后再更新正式安排。',
+        body: '草稿保存在本机。提交评审，合入后更新正式安排。',
         targetSelector: '[data-contextual-tour-target~="milestone-submit"]'
       }
     ]
