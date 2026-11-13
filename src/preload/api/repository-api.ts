@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../shared/workbench/repo-removal'
 import type { ExecutionHostId } from '../../shared/execution-host'
 import type {
   HostRepoCatalogSnapshot,
@@ -153,7 +154,10 @@ export type ProjectGroupsApi = {
     groupId: string
     updates: Partial<Pick<ProjectGroup, 'name' | 'isCollapsed' | 'tabOrder' | 'color'>>
   }) => Promise<ProjectGroup | null>
-  delete: (args: { groupId: string }) => Promise<boolean>
+  delete: (args: {
+    groupId: string
+    members?: readonly ConfirmedRepoRegistration[]
+  }) => Promise<boolean>
   moveProject: (args: {
     projectId: string
     groupId: string | null

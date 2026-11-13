@@ -5,11 +5,14 @@ import type { Repo } from '../../../shared/repo-types'
 import type { NestedRepoScanResult, ProjectGroup } from '../../../shared/project-group-types'
 import { notifyReposChanged } from './repos-changed-notification'
 import {
+  WorkbenchGroupRemoval,
+  hasConfirmedGroupMembership
+} from '../../../shared/workbench/repo-removal'
+import {
   ProjectGroupCancelNestedScanArgs,
   ProjectGroupCreateArgs,
   ProjectGroupMoveProjectArgs,
   ProjectGroupScanNestedArgs,
-  ProjectGroupSelectorArgs,
   ProjectGroupUpdateArgs,
   parseProjectGroupIpcArgs
 } from './repo-ipc-arg-schemas'
@@ -50,10 +53,23 @@ export function registerProjectGroupHandlers(mainWindow: BrowserWindow, store: S
 
   ipcMain.handle('projectGroups:delete', (_event, rawArgs: unknown): boolean => {
     const args = parseProjectGroupIpcArgs(
-      ProjectGroupSelectorArgs,
+      WorkbenchGroupRemoval.partial({ members: true }),
       rawArgs,
       'invalid_project_group_delete_args'
     )
+    if (
+      args.members &&
+      !hasConfirmedGroupMembership(
+        store.getProjectGroups(),
+        store.getRepos(),
+        args.groupId,
+        args.members
+      )
+    ) {
+      throw new Error(
+        'The project group membership changed. Review the project list and confirm again.'
+      )
+    }
     const deleted = store.deleteProjectGroup(args.groupId)
     if (deleted) {
       notifyReposChanged(mainWindow)

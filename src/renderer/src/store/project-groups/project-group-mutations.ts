@@ -133,14 +133,16 @@ export function createProjectGroupMutationActions(
         const target = getActiveRuntimeTarget(
           settingsForProjectGroupOwner(get(), groupId, options?.hostId)
         )
+        const members = options?.confirmedMembers
+        const params = { groupId, ...(members ? { members } : {}) }
         const deleted =
           target.kind === 'local'
-            ? await window.api.projectGroups.delete({ groupId })
+            ? await window.api.projectGroups.delete(params)
             : (
                 await callRuntimeRpc<{ deleted: boolean }>(
                   target,
-                  'projectGroup.delete',
-                  { groupId },
+                  members ? 'workbench.repo.deleteGroup' : 'projectGroup.delete',
+                  params,
                   {
                     timeoutMs: 15_000,
                     expectedEnvironmentPairingRevision: options?.expectedEnvironmentPairingRevision,
@@ -221,7 +223,7 @@ export function createProjectGroupMutationActions(
               )
             )
           }
-          if (selectedProjects.length) {
+          if (options.removeContainedProjects) {
             const status = await callRuntimeRpc<{ runtimeId: string; capabilities?: string[] }>(
               target,
               'status.get',
@@ -272,8 +274,18 @@ export function createProjectGroupMutationActions(
           }
         }
       }
+      const confirmedMembers =
+        workbench && options.removeContainedProjects
+          ? selectedProjects.map((repo) => ({
+              repoId: repo.id,
+              hostId: repo.pairedRegistration?.hostId ?? getRepoExecutionHostId(repo),
+              path: repo.path,
+              addedAt: repo.addedAt
+            }))
+          : undefined
       const deleted = await get().deleteProjectGroup(groupId, {
         hostId: ownerHostId,
+        ...(confirmedMembers === undefined ? {} : { confirmedMembers }),
         ...(revision === undefined ? {} : { expectedEnvironmentPairingRevision: revision }),
         ...(runtimeId === undefined ? {} : { expectedEnvironmentRuntimeId: runtimeId })
       })

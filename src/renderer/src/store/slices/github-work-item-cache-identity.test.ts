@@ -132,7 +132,7 @@ it('patches only the desktop task from the requested forge repository', () => {
 
   store.getState().patchWorkItem(row.id, { state: 'closed' }, row.repoId, { sourceContext: origin })
 
-  const [first, second] = store.getState().workItemsCache[key].data
+  const [first, second] = store.getState().workItemsCache[key].data ?? []
   expect(first).toBe(row)
   expect(second).toEqual({ ...originRow, state: 'closed' })
 })

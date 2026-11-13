@@ -7,6 +7,8 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../shared/repo-types'
+import { createProjectGroup } from '../../shared/project-groups'
+import { hasConfirmedGroupMembership } from '../../shared/workbench/repo-removal'
 import { OrcaRuntimeService } from './orca-runtime'
 
 function makeRepos(): Repo[] {
@@ -100,4 +102,24 @@ it('checks host, path and registration time before removing a paired project', (
   expect(removeProjectForHost).toHaveBeenCalledExactlyOnceWith('dup', 'local')
   expect(removeProject).not.toHaveBeenCalled()
   expect(repos.map((repo) => repo.path)).toEqual(['/remote/dup'])
+})
+
+it('rejects a confirmed group member that moved before the owner processes deletion', () => {
+  const group = createProjectGroup({ name: 'Group', createdFrom: 'manual', tabOrder: 0 })
+  const [local, ssh] = makeRepos()
+  const registered = { ...local, projectGroupId: group.id }
+  const expected = [
+    { repoId: local.id, hostId: 'local' as const, path: local.path, addedAt: local.addedAt }
+  ]
+
+  expect(hasConfirmedGroupMembership([group], [registered, ssh], group.id, expected)).toBe(true)
+  expect(hasConfirmedGroupMembership([group], [local, ssh], group.id, expected)).toBe(false)
+  expect(
+    hasConfirmedGroupMembership(
+      [group],
+      [local, { ...ssh, projectGroupId: group.id }],
+      group.id,
+      expected
+    )
+  ).toBe(false)
 })

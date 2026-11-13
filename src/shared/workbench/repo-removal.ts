@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { getRepoExecutionHostId, normalizeExecutionHostId } from '../execution-host'
 import type { Repo } from '../repo-types'
+import type { ProjectGroup } from '../project-group-types'
+import { getProjectGroupSubtreeIds } from '../project-groups'
 import { requiredString } from '../rpc-contract/rpc-param-primitives'
 
 export const WorkbenchRepoRemoval = z.object({
@@ -17,9 +19,37 @@ export const WorkbenchRepoRemoval = z.object({
   addedAt: z.number()
 })
 
+export type ConfirmedRepoRegistration = z.output<typeof WorkbenchRepoRemoval>
+
+export const WorkbenchGroupRemoval = z.object({
+  groupId: requiredString('Missing project group ID'),
+  members: z.array(WorkbenchRepoRemoval)
+})
+
+export function hasConfirmedGroupMembership(
+  groups: readonly ProjectGroup[],
+  repos: readonly Repo[],
+  groupId: string,
+  expected: readonly ConfirmedRepoRegistration[]
+): boolean {
+  const deletedGroupIds = getProjectGroupSubtreeIds(groups, groupId)
+  const members = repos.filter(
+    (repo) => repo.projectGroupId && deletedGroupIds.has(repo.projectGroupId)
+  )
+  const confirmed = new Set(
+    expected.map((member) => findConfirmedRepoRegistration(members, member))
+  )
+  return (
+    groups.some((group) => group.id === groupId) &&
+    members.length === expected.length &&
+    confirmed.size === members.length &&
+    !confirmed.has(null)
+  )
+}
+
 export function findConfirmedRepoRegistration(
   repos: readonly Repo[],
-  expected: z.output<typeof WorkbenchRepoRemoval>
+  expected: ConfirmedRepoRegistration
 ): Repo | null {
   const matches = repos.filter(
     (repo) => repo.id === expected.repoId && getRepoExecutionHostId(repo) === expected.hostId

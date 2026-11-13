@@ -101,7 +101,17 @@ export function createRepoRemovalActions(
               workspaceId,
               executionHostId: ownerHostId
             })),
-            runtimeOwnedSshTargetIds: [runtimeSshTargetId]
+            runtimeOwnedSshTargetIds: [runtimeSshTargetId],
+            ...(workbench
+              ? {
+                  expectedRegistration: {
+                    repoId: projectId,
+                    hostId: ownerHostId,
+                    path: expected.path,
+                    addedAt: expected.addedAt
+                  }
+                }
+              : {})
           })
           if (cleanup.retainedSshTargetIds.includes(runtimeSshTargetId)) {
             throw new Error(
