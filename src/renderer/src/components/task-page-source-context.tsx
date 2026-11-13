@@ -10,9 +10,12 @@ import {
   normalizeTaskSourceContext,
   getTaskSourceCacheScope
 } from '../../../shared/task-source-context'
-import { projectHostSetupProjectionFromRepos } from '../../../shared/project-host-setup-projection'
+import {
+  getProjectProviderIdentity,
+  parseGitHubRemoteUrl,
+  projectHostSetupProjectionFromRepos
+} from '../../../shared/project-host-setup-projection'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { ExecutionHostRegistryEntry } from '../../../shared/execution-host-registry'
 import type { TaskSourceHostAvailability } from './task-source-context-summary'
@@ -120,11 +123,7 @@ export function getTaskPageRepoSourceContext(
   const origin =
     remote?.remoteName === 'upstream'
       ? remote.originUrl
-        ? getProjectProviderIdentity({
-            gitRemoteIdentity: { ...remote, remoteUrl: remote.originUrl, canonicalKey: '' },
-            upstream: null,
-            repoIcon: null
-          })
+        ? parseGitHubRemoteUrl(remote.originUrl, source.providerIdentity?.provider === 'github')
         : null
       : primary
   const providerIdentity =

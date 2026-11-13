@@ -1,4 +1,5 @@
 import { isUnresolvedSshHostAlias } from './git-remote-host-alias'
+import { stripCredentialsFromMessage } from './git-remote-error'
 
 export type GitRemoteIdentity = {
   canonicalKey: string
@@ -124,7 +125,8 @@ function primaryRemoteSortKey(entry: GitRemoteEntry): number {
 }
 
 export function deriveGitRemoteIdentity(stdout: string): GitRemoteIdentity | null {
-  const entries = parseGitRemoteVerboseOutput(stdout)
+  const configured = parseGitRemoteVerboseOutput(stdout)
+  const entries = configured
     .map((entry) => ({
       ...entry,
       canonicalKey: normalizeGitRemoteUrl(entry.url)
@@ -135,13 +137,14 @@ export function deriveGitRemoteIdentity(stdout: string): GitRemoteIdentity | nul
       return priority === 0 ? left.name.localeCompare(right.name) : priority
     })
   const selected = entries[0]
+  const origin = configured.find((entry) => entry.name === 'origin')?.url
   return selected
     ? {
         canonicalKey: selected.canonicalKey,
         remoteName: selected.name,
         remoteUrl: selected.url,
         ...(selected.name === 'upstream'
-          ? { originUrl: entries.find((entry) => entry.name === 'origin')?.url ?? null }
+          ? { originUrl: origin ? stripCredentialsFromMessage(origin) : null }
           : {})
       }
     : null

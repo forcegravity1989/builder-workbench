@@ -160,6 +160,12 @@ function isIdentityRefreshDue(repo: Repo, now: number): boolean {
   const locationKey = getRepoLocationKey(repo)
   const dueAt = probeRetryAfterByLocation.get(locationKey)
   if (dueAt === undefined) {
+    if (
+      repo.gitRemoteIdentity?.remoteName === 'upstream' &&
+      repo.gitRemoteIdentity.originUrl === undefined
+    ) {
+      return true
+    }
     probeRetryAfterByLocation.set(locationKey, now + RESOLVED_IDENTITY_REFRESH_STARTUP_DELAY_MS)
     return false
   }

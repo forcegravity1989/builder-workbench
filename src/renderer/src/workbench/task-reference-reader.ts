@@ -162,7 +162,9 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
             repoId: repo.id,
             sourceContext: source,
             number: reference.number,
-            issueSource: knownGitHubIssueSource(repo, reference.repository)
+            issueSource: source.localTaskAccount
+              ? gitHubIdentityForTaskReference(repo, reference.repository)
+              : knownGitHubIssueSource(repo, reference.repository)
           })
           if (!item) {
             throw new Error(`GitHub 未返回编号 ${reference.number} 的工作项`)

@@ -7,7 +7,7 @@ import {
   parseExecutionHostId,
   toRuntimeExecutionHostId
 } from '../../../shared/execution-host'
-import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
+import { parseGitHubRemoteUrl } from '../../../shared/project-host-setup-projection'
 import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
@@ -58,6 +58,7 @@ function exactIdentityMatch(repo: Repo, repository: string): boolean {
   const identity = repo.gitRemoteIdentity
   const candidates = [
     identity?.canonicalKey,
+    identity?.originUrl ? normalizeGitRemoteUrl(identity.originUrl) : null,
     identity?.remoteUrl ? (normalizeGitRemoteUrl(identity.remoteUrl) ?? identity.remoteUrl) : null,
     repo.id,
     repo.path,
@@ -132,18 +133,19 @@ export function gitHubIdentityForTaskReference(
   if (known) {
     return known
   }
-  const origin = getProjectProviderIdentity({
-    gitRemoteIdentity: repo.gitRemoteIdentity,
-    upstream: null,
-    repoIcon: null
-  })
-  if (origin && exactIdentityMatch({ ...repo, upstream: null }, repository)) {
-    return origin
+  const remote = repo.gitRemoteIdentity
+  const key = normalizeGitRemoteUrl(repository) ?? repository
+  if (remote?.originUrl && normalizeGitRemoteUrl(remote.originUrl) === key) {
+    return parseGitHubRemoteUrl(remote.originUrl, true) ?? undefined
   }
-  if (repo.upstream && exactIdentityMatch(repo, repository)) {
-    return repo.upstream
+  if (remote && (remote.canonicalKey === key || normalizeGitRemoteUrl(remote.remoteUrl) === key)) {
+    return parseGitHubRemoteUrl(remote.remoteUrl, true) ?? undefined
   }
-  return undefined
+  const upstream = repo.upstream
+  return upstream &&
+    key === [upstream.host ?? 'github.com', upstream.owner, upstream.repo].join('/')
+    ? upstream
+    : undefined
 }
 
 export function requireSourceContext(

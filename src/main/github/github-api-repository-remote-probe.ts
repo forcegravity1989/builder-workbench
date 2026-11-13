@@ -1,7 +1,6 @@
 import type { GitHubApiRepository } from './github-api-repository'
 import { isValidGitHubApiRepository } from './github-api-repository-validation'
 import { isDefaultGitHubHost } from '../../shared/github/repository-identity-key'
-import { isGitHubHostAuthenticatedForGlobalCli } from './github-enterprise-repository'
 import {
   getOwnerRepoForRemote,
   type GitHubRemoteIdentityProbeOptions,
@@ -9,7 +8,8 @@ import {
 } from './gh-utils'
 import {
   getEnterpriseGitHubRepoSlug,
-  getEnterpriseGitHubRepoSlugForRemote
+  getEnterpriseGitHubRepoSlugForRemote,
+  isGitHubHostAuthenticatedForGlobalCli
 } from './github-enterprise-repository'
 import {
   githubApiRepositoryProbeCacheKey,

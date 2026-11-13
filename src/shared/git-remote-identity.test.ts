@@ -55,7 +55,7 @@ describe('deriveGitRemoteIdentity', () => {
     expect(
       deriveGitRemoteIdentity(
         [
-          'origin\tgit@git.company.test:forks/sample-app.git (fetch)',
+          'origin\thttps://test-user:test-secret@git.company.test/forks/sample-app.git (fetch)',
           'origin\tgit@git.company.test:forks/sample-app.git (push)',
           'upstream\thttps://git.company.test/team/sample-app.git (fetch)',
           'upstream\thttps://git.company.test/team/sample-app.git (push)'
@@ -65,7 +65,7 @@ describe('deriveGitRemoteIdentity', () => {
       canonicalKey: 'git.company.test/team/sample-app',
       remoteName: 'upstream',
       remoteUrl: 'https://git.company.test/team/sample-app.git',
-      originUrl: 'git@git.company.test:forks/sample-app.git'
+      originUrl: 'https://git.company.test/forks/sample-app.git'
     })
 
     expect(

@@ -13,7 +13,7 @@ import {
   taskProviderIdentityCachePart,
   type TaskProviderIdentity
 } from './task-provider-identity'
-import type { GitHubTaskProviderIdentity } from './task-provider-identity'
+import type { GitHubOwnerRepo } from './github/pull-request-types'
 import type { TaskProvider } from './task-providers'
 import type { GlobalSettings } from './global-settings-types'
 import type { Repo } from './repo-types'
@@ -39,8 +39,8 @@ export type TaskSourceContext = {
   /** Desktop account selected by the Workbench Tasks page. */
   localTaskAccount?: true
   taskRemoteCandidates?: {
-    origin?: GitHubTaskProviderIdentity
-    upstream?: GitHubTaskProviderIdentity
+    origin?: GitHubOwnerRepo
+    upstream?: GitHubOwnerRepo
   }
 }
 
