@@ -29,6 +29,7 @@ import { activateVersionWorktree } from './version-worktree-host'
 const guideSources = {
   'workbench-wall': 'project_wall_visible',
   'workbench-overview': 'project_overview_visible',
+  'workbench-scoreboard': 'project_scoreboard_visible',
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
   'workbench-acceptance': 'version_acceptance_visible',
@@ -43,7 +44,11 @@ export type WorkbenchGuideId = keyof typeof guideSources
 let pendingGuide: WorkbenchGuideId | null = null
 let cancelPendingGuide: (() => void) | undefined
 
-export function useWorkbenchScreenGuide(id: WorkbenchGuideId, enabled: boolean): void {
+export function useWorkbenchScreenGuide(
+  id: WorkbenchGuideId,
+  enabled: boolean,
+  autoStart = true
+): void {
   const ready = useAppStore((state) => state.persistedUIReady)
   const blocked = useAppStore(
     (state) =>
@@ -56,7 +61,7 @@ export function useWorkbenchScreenGuide(id: WorkbenchGuideId, enabled: boolean):
   const source = guideSources[id]
 
   useEffect(() => {
-    if (!enabled || !ready || blocked || seen || pendingGuide) {
+    if (!enabled || !autoStart || !ready || blocked || seen || pendingGuide) {
       return
     }
     return requestContextualTourWhenReady({
@@ -65,7 +70,7 @@ export function useWorkbenchScreenGuide(id: WorkbenchGuideId, enabled: boolean):
       shouldContinue: () =>
         !pendingGuide && !useAppStore.getState().contextualToursSeenIds.includes(id)
     })
-  }, [id, source, enabled, ready, blocked, seen])
+  }, [id, source, enabled, autoStart, ready, blocked, seen])
 
   useEffect(() => {
     if (!enabled) {
@@ -104,6 +109,11 @@ export function replayWorkbenchGuide(id: WorkbenchGuideId): void {
           .querySelector('.wb-ml [data-contextual-tour-target~="milestone-start"]')
           ?.scrollIntoView({ block: 'center' })
       }
+      if (id === 'workbench-scoreboard') {
+        document
+          .querySelector('[data-workbench-scoreboard-guide]')
+          ?.scrollIntoView({ block: 'center' })
+      }
       return true
     }
   })
@@ -117,6 +127,13 @@ export function replayWorkbenchGuide(id: WorkbenchGuideId): void {
     clearPending()
     if (id === 'workbench-milestones') {
       toast('里程碑暂未就绪。等项目规划读完，或从里程碑重试读取后再打开引导。')
+    } else if (id === 'workbench-scoreboard') {
+      toast(
+        translate(
+          'guidance.outcomes.scoreboardUnavailable',
+          'Open a Git project overview to use the scoreboard guide.'
+        )
+      )
     }
   }, 8000)
 }
@@ -209,6 +226,16 @@ export function openWorkbenchGuide(id: WorkbenchGuideId): void {
     replayWorkbenchGuide('workbench-wall')
     return
   }
+  if (id === 'workbench-scoreboard' && (!activeRepo || !isGitRepoKind(activeRepo))) {
+    openProjectWall()
+    toast(
+      translate(
+        'guidance.outcomes.scoreboardUnavailable',
+        'Open a Git project overview to use the scoreboard guide.'
+      )
+    )
+    return
+  }
   if (id === 'workbench-wall') {
     openProjectWall()
   } else {
@@ -217,7 +244,13 @@ export function openWorkbenchGuide(id: WorkbenchGuideId): void {
   replayWorkbenchGuide(id === 'workbench-milestones' && !activeRepo ? 'workbench-overview' : id)
 }
 
-export function WorkbenchOverviewHelp({ milestones }: { milestones: boolean }) {
+export function WorkbenchOverviewHelp({
+  milestones,
+  scoreboard = false
+}: {
+  milestones: boolean
+  scoreboard?: boolean
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -236,6 +269,11 @@ export function WorkbenchOverviewHelp({ milestones }: { milestones: boolean }) {
         {milestones && (
           <DropdownMenuItem onSelect={() => replayWorkbenchGuide('workbench-milestones')}>
             里程碑引导
+          </DropdownMenuItem>
+        )}
+        {scoreboard && (
+          <DropdownMenuItem onSelect={() => replayWorkbenchGuide('workbench-scoreboard')}>
+            {translate('guidance.outcomes.scoreboardHelp', 'Scoreboard guide')}
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

@@ -18,6 +18,7 @@ const TOUR_SOURCES = {
   'floating-workspace': 'floating_workspace_visible',
   'workbench-wall': 'project_wall_visible',
   'workbench-overview': 'project_overview_visible',
+  'workbench-scoreboard': 'project_scoreboard_visible',
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
   'workbench-acceptance': 'version_acceptance_visible',

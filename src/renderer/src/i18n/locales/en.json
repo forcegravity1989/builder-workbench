@@ -17829,6 +17829,26 @@
         "action": "With a PR open, choose connected hosts. A reviewer can also open the PR directly."
       }
     },
+    "outcomes": {
+      "facts": {
+        "title": "Check delivery",
+        "body": "Open the version overview. Check its goals and the recorded acceptance decision."
+      },
+      "read": {
+        "title": "Read the metrics",
+        "body": "In the project overview, select a scoreboard tab. Compare the recent reading with the plan’s target and check which week it covers."
+      },
+      "recovery": {
+        "title": "Handle missing readings",
+        "body": "Refresh to collect again. If the source needs work, use Configure metrics to open a draft session. You can keep working without readings."
+      },
+      "followup": {
+        "title": "Plan the follow-up",
+        "body": "Decide what to investigate or improve, then record it in the next plan or an existing task."
+      },
+      "scoreboardHelp": "Scoreboard guide",
+      "scoreboardUnavailable": "Open a Git project overview to use the scoreboard guide."
+    },
     "planning": {
       "taskHelp": "Task help",
       "version": {

@@ -11,6 +11,7 @@ export type ContextualTourId =
   | 'workspace-creation'
   | 'workbench-wall'
   | 'workbench-overview'
+  | 'workbench-scoreboard'
   | 'workbench-milestones'
   | 'workbench-plan'
   | 'workbench-acceptance'
@@ -277,6 +278,34 @@ export const CONTEXTUAL_TOURS = [
         title: '编辑项目信息',
         body: '点编辑更新名片，核对后保存或提交评审。里程碑安排阶段成果，记分牌查看实际指标。',
         targetSelector: '[data-contextual-tour-target="workbench-overview-edit"]'
+      }
+    ]
+  },
+  {
+    id: 'workbench-scoreboard',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-scoreboard-read',
+        title: '怎么看指标',
+        body: '有场景页签时，选一个场景看结果和引领指标。悬停走势柱看周编号和读数，完成线来自版本计划。',
+        targetSelector: '[data-contextual-tour-target="workbench-scoreboard-title"]',
+        requiredForStart: true,
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-scoreboard-refresh',
+        title: '什么时候刷新',
+        body: '需要重新采集时点「刷新」。失败时可查看详情。同步已合入的指标配置用页头「更新代码」。',
+        targetSelector: '[data-contextual-tour-target="workbench-scoreboard-refresh"]',
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-scoreboard-setup',
+        title: '从哪里配置指标',
+        body: '按需点「配置指标」，在新会话里核对口径和历史来源。没有读数时，可以先看版本、任务或计划。',
+        targetSelector: '[data-contextual-tour-target="workbench-scoreboard-setup"]',
+        preferredPlacement: 'bottom'
       }
     ]
   },

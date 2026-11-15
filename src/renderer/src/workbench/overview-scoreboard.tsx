@@ -1,5 +1,5 @@
 import { MessageSquarePlus } from 'lucide-react'
-import { useMemo, useState, type MouseEvent } from 'react'
+import { useMemo, useState, type MouseEvent, type Ref } from 'react'
 import { AnnotationPanel } from './annotations/AnnotationPanel'
 import { AnnotationPopover } from './annotations/AnnotationPopover'
 import {
@@ -37,7 +37,9 @@ export function OverviewScoreboard({
   setupBusy,
   onSetup,
   worktreeId,
-  baseScope
+  baseScope,
+  guideHeaderRef,
+  guideReady = false
 }: {
   catalog: MetricCatalog | null
   readings: Record<string, MetricReading | null>
@@ -52,6 +54,8 @@ export function OverviewScoreboard({
   onSetup(): void
   worktreeId: string | null
   baseScope: NativeWorkspaceScope | null
+  guideHeaderRef?: Ref<HTMLElement>
+  guideReady?: boolean
 }) {
   const notes = useBoardAnnotations(`scoreboard:${identity}:${version ?? ''}`)
   const [noteNotice, setNoteNotice] = useState<string | null>(null)
@@ -129,8 +133,14 @@ export function OverviewScoreboard({
       id="scoreboard"
       aria-label="记分牌"
     >
-      <header className="wb-ov-section-head">
-        <h2>记分牌</h2>
+      <header
+        className="wb-ov-section-head"
+        ref={guideHeaderRef}
+        data-workbench-scoreboard-guide={guideHeaderRef ? '' : undefined}
+      >
+        <h2 data-contextual-tour-target={guideReady ? 'workbench-scoreboard-title' : undefined}>
+          记分牌
+        </h2>
         {catalog?.draft && <span className="wb-sb-draft">草稿</span>}
         <div className="wb-ov-tools">
           <BoardActionButton
@@ -148,10 +158,16 @@ export function OverviewScoreboard({
             className="wb-btn wb-btn-secondary wb-btn-sm"
             disabled={setupBusy}
             onClick={onSetup}
+            data-contextual-tour-target={guideReady ? 'workbench-scoreboard-setup' : undefined}
           >
             <MessageSquarePlus size={14} aria-hidden="true" /> 配置指标
           </button>
-          <OverviewRefresh label="刷新" busy={busy} onClick={onRefresh} />
+          <OverviewRefresh
+            label="刷新"
+            busy={busy}
+            onClick={onRefresh}
+            tourTarget={guideReady ? 'workbench-scoreboard-refresh' : undefined}
+          />
         </div>
       </header>
       <MetricProblemsPanel

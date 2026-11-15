@@ -21,6 +21,7 @@ const rowClassName = 'h-auto min-h-9 w-full justify-start whitespace-normal text
 const featureGuides: Partial<Record<ExploreFeatureId, WorkbenchGuideId>> = {
   'project-wall': 'workbench-wall',
   'project-overview': 'workbench-overview',
+  metrics: 'workbench-scoreboard',
   milestones: 'workbench-milestones',
   'version-planning': 'workbench-plan',
   'version-navigation': 'workbench-versions',

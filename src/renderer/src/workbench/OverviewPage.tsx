@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
@@ -217,8 +217,35 @@ export function OverviewPage(): React.JSX.Element {
   )
 
   const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
+  const scoreboardHeader = useRef<HTMLElement>(null)
+  const [visibleScoreboard, setVisibleScoreboard] = useState<string | null>(null)
+  const scoreboardAvailable = Boolean(milestoneScope && activeRepo?.kind !== 'folder')
+  const scoreboardGuideReady = scoreboardAvailable && !busy && !refreshing && !settingsOpen
 
   useWorkbenchScreenGuide('workbench-overview', Boolean(activeRepo && !settingsOpen))
+  useWorkbenchScreenGuide(
+    'workbench-scoreboard',
+    scoreboardAvailable && !settingsOpen && !refreshing,
+    visibleScoreboard === dataIdentity && scoreboardGuideReady
+  )
+  useEffect(() => {
+    const header = scoreboardHeader.current
+    if (!scoreboardAvailable || !header) {
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.at(-1)?.intersectionRatio === 1
+        setVisibleScoreboard(visible ? dataIdentity : null)
+        if (!visible) {
+          useAppStore.getState().cancelContextualTour('workbench-scoreboard')
+        }
+      },
+      { threshold: 1 }
+    )
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [dataIdentity, scoreboardAvailable])
 
   if (!activeRepo) {
     return (
@@ -261,9 +288,6 @@ export function OverviewPage(): React.JSX.Element {
           <header className="page-head">
             <h1>总览</h1>
             <div className="flex items-center gap-2">
-              <WorkbenchOverviewHelp
-                milestones={!!milestoneScope && activeRepo.kind !== 'folder'}
-              />
               <button
                 type="button"
                 className="wb-btn wb-btn-secondary wb-btn-sm"
@@ -279,6 +303,10 @@ export function OverviewPage(): React.JSX.Element {
                   </>
                 )}
               </button>
+              <WorkbenchOverviewHelp
+                milestones={scoreboardAvailable}
+                scoreboard={scoreboardAvailable}
+              />
             </div>
           </header>
 
@@ -329,6 +357,8 @@ export function OverviewPage(): React.JSX.Element {
               onSetup={() => void metricsSetup.prepareMetrics()}
               worktreeId={baseWorktreeId}
               baseScope={baseScope}
+              guideHeaderRef={scoreboardAvailable ? scoreboardHeader : undefined}
+              guideReady={scoreboardGuideReady}
             />
           </div>
           {refreshing && (
