@@ -51,7 +51,7 @@ describe('contextual tour definitions', () => {
         expect(step.title.length).toBeGreaterThan(0)
         expect(step.body.length).toBeGreaterThan(0)
         expect(step.body.length).toBeLessThanOrEqual(140)
-        if (step.id === 'workbench-source-control-diff') {
+        if ('id' in step && step.id === 'workbench-source-control-diff') {
           expect(step.targetSelector).toBe('[data-testid="source-control-entry"]')
         } else {
           expect(step.targetSelector).toContain('data-contextual-tour-target')
