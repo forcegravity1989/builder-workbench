@@ -21,7 +21,8 @@ const TOUR_SOURCES = {
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
   'workbench-versions': 'version_sidebar_visible',
-  'workspace-creation': 'workspace_creation_visible'
+  'workspace-creation': 'workspace_creation_visible',
+  'workbench-source-control': 'workbench_source_control_visible'
 } satisfies Record<ContextualTourId, string>
 
 export type UseContextualTourOptions = {

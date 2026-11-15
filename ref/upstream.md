@@ -125,6 +125,7 @@ git rev-parse 'v1.4.251^{commit}'
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
 - BW 引导沿用原生首次设置和入门清单；底部帮助菜单提供「BW 入门」「探索 BW」，在入门里可重开初始设置（[PR #610](https://github.com/forcegravity1989/builder-workbench/pull/610)）。同步 `SetupGuideModal` 和 feature-wall 时保留 BW 的连接集成分流：各复用一张 GitHub 和 CodeHub 卡，当前环境任一登录即可完成任务与评审来源设置，WeLink 报告为可选，CloudBuild 在设置页；Orca 继续使用原生分步入口。保留 BW 当前项目的准备脚本目标；BW 入门撤下「启用 Orca CLI」，可见步骤、进度、默认选中与遥测共用七项定义，清单不主动探测 CLI、Skills 和桌面权限。原生 Orca 清单、设置中的 CLI 管理和按需能力配置保留。首次设置完成或跳至项目设置时，无项目的 BW 从项目墙打开原生 `AddRepoDialog`；首次添加弹窗及从空墙重开的弹窗保留注册与刷新，取消或添加成功都留墙，由用户点项目卡进入工作区。常规添加保持原生工作区交接。同步 onboarding 与原生添加链时保留这一分流，见[引导矩阵](../docs/04-design-system/guidance.md)、[项目纳入规格](../docs/05-features/project-intake/spec.md)与 [PR #628](https://github.com/forcegravity1989/builder-workbench/pull/628)。
+- W03 构建交付在 BW 探索目录复用 W01/W02 播放器。同步浏览器页工具栏、源代码管理页头、差异打开和 contextual tours 时保留 BW 帮助入口及「在界面中跟做」接线。源代码管理问号在筛选展开时也可回看，打开差异完成本次引导。引导指向现有控件，样例不改变工作树、GitHub、批注或评审通知协议。见 [探索规格](../docs/05-features/explore-workbench/spec.md#w03-构建交付)。
 - 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。共享主机恢复复核另按上述 v1.4.251 补入导航取消未完成截图及旧快照回写的约束，仍沿用本仓文档失效时清除批注的行为；不因此迁入批注留存改造或远程实时批注。
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。

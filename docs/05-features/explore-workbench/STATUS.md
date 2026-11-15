@@ -18,3 +18,5 @@
 [PR #640](https://github.com/forcegravity1989/builder-workbench/pull/640)的既有四步截图、三项关联和 Windows 本机证据见[探索 BW 矩阵](../../04-design-system/guidance.md#探索-bw-矩阵)及[用户指南](../../03-guide/project-direction/README.md)。产品内四步播放、三个功能片段和真实业务的验证范围按矩阵分别记录。
 
 W02 五步内容复用 W01 的播放器，Windows Electron 已核对选步、暂停、重播和归档到开工的模拟结果。业务验证边界见[引导矩阵](../../04-design-system/guidance.md#探索-bw-矩阵)。
+
+W03 已复用现有目录和播放器。Windows 前台 Electron 的隔离空项目覆盖六段样例，按实际入口查看、顺序播放、暂停续播和重播，观察了并行工作区、批注、PR 表单、评论以及合入后关单读数。隔离 Git 样例已走通源代码管理引导首现、跳过、重播和打开实际差异，以及内置浏览器帮助重播、添加和展开回看批注。新进程读回已看记录与项目登记，浏览器恢复页面地址，未发送批注随原生页面重建清空。实际模型、真实双账号 PR 和共享主机送达另行验收。见[构建交付指南](../../03-guide/issue-delivery/README.md)与[覆盖矩阵](../../04-design-system/guidance.md#探索-bw-矩阵)。

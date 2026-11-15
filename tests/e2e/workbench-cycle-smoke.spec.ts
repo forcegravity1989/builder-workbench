@@ -95,12 +95,20 @@ test('explores work journeys and reuses feature demonstrations from Help', async
       .getByRole('button', { name: /Maintain the project|持续维护/ })
       .getByText(/^(In development|建设中)$/)
   ).toBeVisible()
-  await journeyNav.getByRole('button', { name: /Build and deliver|构建交付/ }).click()
-  await expect(dialog.getByText(/^(Content in preparation|内容准备中)$/)).toBeVisible()
-  await expect(workspaceDemo).toHaveCount(0)
+  const delivery = /^(Build and deliver|构建交付)$/
+  await journeyNav.getByRole('button', { name: delivery }).click()
+  const deliveryContent = dialog.getByRole('region', { name: delivery })
+  const deliverySteps = deliveryContent.getByRole('list', { name: /^(Journey steps|旅程步骤)$/ })
+  await expect(deliverySteps.getByRole('button')).toHaveCount(6)
+  const readback = deliverySteps.getByRole('button', {
+    name: /Confirm and check progress|确认完成并读回/
+  })
+  await readback.click()
+  await expect(readback).toHaveAttribute('aria-current', 'step')
+  await expect(deliveryContent.locator('[data-delivery-action="merge-pr"]')).toBeVisible()
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-explore-journey.png') })
 
-  await dialog
+  await deliveryContent
     .getByRole('button', { name: /^(Review notifications and shared hosts|评审通知与共享主机)$/ })
     .click()
   await expect(features).toHaveAttribute('aria-selected', 'true')
