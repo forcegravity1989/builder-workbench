@@ -30,6 +30,7 @@ export function LiveProjectWallCard({
     <ProjectWallCard
       {...props}
       card={{ ...props.card, readings }}
+      onOpen={(repo) => props.onOpen(repo ?? source ?? props.card.primaryRepo)}
       onOverview={() =>
         leave(() => {
           if (!source) {
