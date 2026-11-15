@@ -48,7 +48,7 @@ export function versionCatalogSourceKey(sources: readonly Repo[]): string {
 }
 
 export function versionCatalogWorktrees(
-  repos: Repo[],
+  repos: readonly Repo[],
   sources: readonly Repo[],
   visible: Record<string, Worktree[]>,
   detected: Record<string, { worktrees: Worktree[] } | undefined>
