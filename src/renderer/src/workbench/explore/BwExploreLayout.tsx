@@ -24,6 +24,12 @@ const featureGuides: Partial<Record<ExploreFeatureId, WorkbenchGuideId>> = {
   milestones: 'workbench-milestones',
   'version-planning': 'workbench-plan',
   'version-navigation': 'workbench-versions',
+  browser: 'browser',
+  review: 'workbench-source-control',
+  'delivery-browser': 'browser',
+  'delivery-review': 'workbench-source-control',
+  'delivery-workspaces': 'workbench-versions',
+  'delivery-tasks': 'tasks',
   tasks: 'tasks'
 }
 

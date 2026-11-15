@@ -1,4 +1,12 @@
 import type { ComponentType } from 'react'
+import {
+  DeliveryBrowserFeature,
+  DeliveryJourney,
+  DeliveryNotificationFeature,
+  DeliveryReviewFeature,
+  DeliveryTasksFeature,
+  DeliveryWorkspaceFeature
+} from './DeliveryWalkthrough'
 import type { AgentsStepId } from '../../../../shared/agents-orchestration-steps'
 import type { WorkbenchStepId } from '../../../../shared/workbench-steps'
 import type { ReviewStepId } from '../../../../shared/review-steps'
@@ -43,7 +51,16 @@ function getFeatures() {
         'Keep each task in an isolated workspace.'
       ),
       demo: { workflow: 'workspaces' },
-      related: ['agent-status', 'workspace-board', 'quick-jump']
+      related: ['delivery-workspaces', 'agent-status', 'workspace-board', 'quick-jump']
+    },
+    'delivery-workspaces': {
+      title: translate('guidance.delivery.work.title', 'Work in parallel'),
+      summary: translate(
+        'guidance.delivery.work.action',
+        'Start each issue in its own workspace. Switch sessions and return to the same work.'
+      ),
+      content: DeliveryWorkspaceFeature,
+      related: ['workspace-board', 'version-navigation']
     },
     tasks: {
       title: translate('guidance.catalog.feature.tasks.title', 'Task management'),
@@ -54,6 +71,14 @@ function getFeatures() {
       demo: { workflow: 'tasks' },
       content: PlanningTaskFeature,
       related: ['internal-integrations']
+    },
+    'delivery-tasks': {
+      title: translate('guidance.delivery.find.title', 'Find the goal’s tasks'),
+      summary: translate(
+        'guidance.delivery.find.action',
+        'Check the version on the project wall and open the goal’s issues.'
+      ),
+      content: DeliveryTasksFeature
     },
     'agent-status': {
       title: translate('guidance.catalog.feature.agent-status.title', 'Agent status'),
@@ -103,7 +128,16 @@ function getFeatures() {
         'Open a page or prototype and bring focused feedback back to the work.'
       ),
       demo: { workflow: 'workbench', step: 'browser' },
-      related: ['review-notifications']
+      related: ['delivery-browser', 'review-notifications']
+    },
+    'delivery-browser': {
+      title: translate('guidance.delivery.browser.title', 'Review a prototype'),
+      summary: translate(
+        'guidance.delivery.browser.action',
+        'For new interactions, open the prototype, annotate an element, and choose the session that should receive the feedback.'
+      ),
+      content: DeliveryBrowserFeature,
+      related: ['browser', 'review-notifications']
     },
     review: {
       title: translate('guidance.catalog.feature.review.title', 'Diffs and review'),
@@ -112,7 +146,16 @@ function getFeatures() {
         'Inspect changes, leave feedback, and continue the work.'
       ),
       demo: { workflow: 'review', step: 'notes' },
-      related: ['editor', 'pr-checks', 'ship']
+      related: ['delivery-review', 'editor', 'pr-checks', 'ship']
+    },
+    'delivery-review': {
+      title: translate('guidance.delivery.review.title', 'Review and revise'),
+      summary: translate(
+        'guidance.delivery.review.action',
+        'Open the same PR, read checks, comment on a line, and verify the author’s new revision.'
+      ),
+      content: DeliveryReviewFeature,
+      related: ['pr-checks', 'ship', 'review-notifications']
     },
     'pr-checks': {
       title: translate('guidance.catalog.feature.pr-checks.title', 'PR checks'),
@@ -212,6 +255,7 @@ function getFeatures() {
         'guidance.catalog.feature.review-notifications.summary',
         'Connect to a shared host when needed, request review, and open the PR from the notification.'
       ),
+      content: DeliveryNotificationFeature,
       related: ['browser', 'internal-integrations']
     },
     'version-acceptance': {
@@ -299,17 +343,17 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
     {
       id: 'execution',
       title: translate('guidance.catalog.group.execution', 'Tasks and execution'),
-      items: ['tasks', 'workspace', 'terminal']
+      items: ['tasks', 'workspace', 'terminal', 'delivery-tasks', 'delivery-workspaces']
     },
     {
       id: 'browser',
       title: translate('guidance.catalog.group.browser', 'Integrated browser'),
-      items: ['browser']
+      items: ['browser', 'delivery-browser']
     },
     {
       id: 'review',
       title: translate('guidance.catalog.group.review', 'Review and collaboration'),
-      items: ['review', 'review-notifications']
+      items: ['review', 'delivery-review', 'review-notifications']
     },
     {
       id: 'acceptance',
@@ -367,7 +411,15 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
         'guidance.catalog.journey.delivery.summary',
         'Start from an issue, validate the change, review it with a teammate, and merge the PR.'
       ),
-      related: ['tasks', 'workspace', 'browser', 'review', 'review-notifications']
+      content: DeliveryJourney,
+      related: [
+        'delivery-tasks',
+        'delivery-workspaces',
+        'delivery-browser',
+        'delivery-review',
+        'review-notifications',
+        'version-overview'
+      ]
     },
     {
       id: 'acceptance',

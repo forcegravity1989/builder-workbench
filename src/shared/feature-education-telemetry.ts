@@ -15,7 +15,8 @@ export const FEATURE_EDUCATION_CONTEXTUAL_TOUR_IDS = [
   'workbench-plan',
   'workbench-acceptance',
   'workbench-version-overview',
-  'workbench-versions'
+  'workbench-versions',
+  'workbench-source-control'
 ] as const satisfies readonly ContextualTourId[]
 
 export const FEATURE_EDUCATION_SOURCES = [
@@ -35,6 +36,7 @@ export const FEATURE_EDUCATION_SOURCES = [
   'version_acceptance_visible',
   'version_overview_visible',
   'version_sidebar_visible',
+  'workbench_source_control_visible',
   'workspace_creation_modal',
   'setup_guide_parallel_work',
   'unknown'

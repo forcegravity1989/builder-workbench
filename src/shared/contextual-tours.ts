@@ -16,6 +16,7 @@ export type ContextualTourId =
   | 'workbench-acceptance'
   | 'workbench-version-overview'
   | 'workbench-versions'
+  | 'workbench-source-control'
 
 export type ContextualTourStepControl = {
   kind: 'auto-rename-branch-from-work'
@@ -395,6 +396,27 @@ export const CONTEXTUAL_TOURS = [
         body: '点「刷新来源」重新读取这个项目的材料与任务。若本机未同步该版本，先更新项目代码。',
         targetSelector: '[data-contextual-tour-target="workbench-version-overview-refresh"]',
         preferredPlacement: 'bottom'
+      }
+    ]
+  },
+  {
+    id: 'workbench-source-control',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-source-control-review',
+        title: '找要检视的文件',
+        body: '可以按文件名查找改动。列表为空时，先从编辑器保存文件，或清除当前筛选。',
+        targetSelector: '[data-contextual-tour-target="workbench-source-control-filter"]',
+        requiredForStart: true,
+        preferredPlacement: 'left'
+      },
+      {
+        id: 'workbench-source-control-diff',
+        title: '打开文件差异',
+        body: '点文件查看改动。按项目要求完成验证后，再暂存、提交和准备 PR。',
+        targetSelector: '[data-testid="source-control-entry"]',
+        preferredPlacement: 'left'
       }
     ]
   },

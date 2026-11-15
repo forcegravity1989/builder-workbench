@@ -23,7 +23,8 @@ const TOUR_SOURCES = {
   'workbench-acceptance': 'version_acceptance_visible',
   'workbench-version-overview': 'version_overview_visible',
   'workbench-versions': 'version_sidebar_visible',
-  'workspace-creation': 'workspace_creation_visible'
+  'workspace-creation': 'workspace_creation_visible',
+  'workbench-source-control': 'workbench_source_control_visible'
 } satisfies Record<ContextualTourId, string>
 
 export type UseContextualTourOptions = {
