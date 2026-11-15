@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
@@ -9,8 +9,13 @@ import type { WallCardReadings } from './wall-card-readings'
 import { versionCatalogSourceKey, versionCatalogFingerprint } from './version-catalog-source'
 import { type useWallRefresh, wallReadRevision } from './wall-refresh'
 import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
 const progressReads = new PrioritySemaphore(3)
+const displaySnapshots = createSnapshotCache<{
+  key: string
+  readings: WallCardReadings
+} | null>(() => null)
 
 export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRefresh>) {
   const source = useAppStore((state) => resolveProjectSource(state, repo))
@@ -24,11 +29,8 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
     source ? getRepoExecutionHostId(source) : null,
     revision
   )
-  const [result, setResult] = useState<{
-    key: string
-    sourceKey: string | null
-    readings: WallCardReadings
-  } | null>(null)
+  const snapshot = displaySnapshots(sourceKey ?? '')
+  const result = useSnapshotCache(snapshot)
   const forcedRevision = useRef(0)
   const key = JSON.stringify([
     sourceKey,
@@ -58,7 +60,7 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
     })().then((readings) => {
       if (!cancelled && readings) {
         forcedRevision.current = refresh.allRevision
-        setResult({ key, sourceKey, readings })
+        snapshot.publish({ key, readings })
       }
     })
     return () => {
@@ -72,9 +74,7 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
       ? { kind: 'empty' }
       : !source
         ? { kind: 'unknown', reason: '项目来源尚未就绪，请检查主机连接后刷新。' }
-        : result?.sourceKey === sourceKey
-          ? result.readings
-          : { kind: 'loading' }
+        : (result?.readings ?? { kind: 'loading' })
   return {
     source,
     readings,

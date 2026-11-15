@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -25,8 +25,10 @@ import {
 } from './version-catalog-source'
 import { useVersionCatalogDiscovery } from './use-version-catalog-discovery'
 import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
 const catalogReads = new PrioritySemaphore(3)
+const previousCatalogs = createSnapshotCache<VersionCatalogLoad | null>(() => null)
 
 export type VersionCatalogState = {
   scope: NativeWorkspaceScope | null
@@ -60,6 +62,8 @@ export function useVersionCatalogForRepo(
     [repos, repoId, sourceHostId]
   )
   const sourceKey = JSON.stringify([repoId, sourceHostId, versionCatalogSourceKey(sources)])
+  const snapshot = previousCatalogs(sourceKey)
+  const retainedCatalog = useSnapshotCache(snapshot)
   const repoIds = useMemo(() => [...new Set(sources.map((repo) => repo.id))], [sources])
   const discovery = useVersionCatalogDiscovery(sources, JSON.stringify([revision, nonce]))
   const worktrees = useMemo(
@@ -105,7 +109,6 @@ export function useVersionCatalogForRepo(
     catalog: VersionCatalogLoad | null
     error: string | null
   } | null>(null)
-  const previous = useRef<typeof result>(null)
 
   useEffect(() => {
     if (!scope || !home || discovery.loading) {
@@ -126,7 +129,7 @@ export function useVersionCatalogForRepo(
           worktrees,
           repoIds,
           projectId: scope.projectId,
-          previous: previous.current?.sourceKey === sourceKey ? previous.current.catalog : null
+          previous: snapshot.read()
         })
       } finally {
         release()
@@ -135,7 +138,7 @@ export function useVersionCatalogForRepo(
       (catalog) => {
         if (!cancelled && catalog) {
           const next = { key: readKey, sourceKey, catalog, error: null }
-          previous.current = next
+          snapshot.publish(catalog)
           setResult(next)
         }
       },
@@ -144,7 +147,7 @@ export function useVersionCatalogForRepo(
           setResult({
             key: readKey,
             sourceKey,
-            catalog: previous.current?.sourceKey === sourceKey ? previous.current.catalog : null,
+            catalog: snapshot.read(),
             error: reason instanceof Error ? reason.message : String(reason)
           })
         }
@@ -157,7 +160,7 @@ export function useVersionCatalogForRepo(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readKey, discovery.loading])
 
-  const currentLoad = result?.sourceKey === sourceKey ? result.catalog : null
+  const currentLoad = result?.sourceKey === sourceKey ? result.catalog : retainedCatalog
   const catalog = useMemo(() => {
     const registered = mergeVersionCatalog({
       committed: { records: [], problems: [] },
