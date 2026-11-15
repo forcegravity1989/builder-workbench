@@ -17773,6 +17773,28 @@
     }
   },
   "guidance": {
+    "acceptance": {
+      "evidence": {
+        "title": "Check the evidence",
+        "body": "Start this version’s acceptance and open the evidence report. Keep missing evidence visible for follow-up."
+      },
+      "decision": {
+        "title": "Decide each goal",
+        "body": "Open the goal and compare the fixed criteria with the evidence. Record your decision and any next step."
+      },
+      "minutes": {
+        "title": "Confirm the minutes",
+        "body": "Record the agreement and how to follow up. Read the minutes before confirming them."
+      },
+      "archive": {
+        "title": "Submit for archiving",
+        "body": "Ask the acceptance assistant to prepare an archive PR. Review its sources and decisions before merging."
+      },
+      "readback": {
+        "title": "Read the archived result",
+        "body": "Once the archive is merged and project code is up to date, refresh the version overview and check the decision and PR."
+      }
+    },
     "planning": {
       "taskHelp": "Task help",
       "version": {

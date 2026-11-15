@@ -20,6 +20,8 @@ const TOUR_SOURCES = {
   'workbench-overview': 'project_overview_visible',
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
+  'workbench-acceptance': 'version_acceptance_visible',
+  'workbench-version-overview': 'version_overview_visible',
   'workbench-versions': 'version_sidebar_visible',
   'workspace-creation': 'workspace_creation_visible'
 } satisfies Record<ContextualTourId, string>

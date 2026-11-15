@@ -21,8 +21,14 @@ describe('contextual tour definitions', () => {
       'workbench-overview',
       'workbench-milestones',
       'workbench-plan',
+      'workbench-acceptance',
+      'workbench-version-overview',
       'workbench-versions'
     ]
+    const stepLimits: Partial<Record<ContextualTourId, number>> = {
+      'workspace-agent-sessions': 5,
+      'workbench-acceptance': 4
+    }
 
     expect(CONTEXTUAL_TOURS.map((tour) => tour.id)).toEqual(expectedIds)
     for (const tour of CONTEXTUAL_TOURS) {
@@ -39,7 +45,7 @@ describe('contextual tour definitions', () => {
       } else {
         expect(stepCount).toBeGreaterThanOrEqual(2)
       }
-      expect(stepCount).toBeLessThanOrEqual(tour.id === 'workspace-agent-sessions' ? 5 : 3)
+      expect(stepCount).toBeLessThanOrEqual(stepLimits[tour.id] ?? 3)
       for (const step of tour.steps) {
         expect(step.title.length).toBeGreaterThan(0)
         expect(step.body.length).toBeGreaterThan(0)

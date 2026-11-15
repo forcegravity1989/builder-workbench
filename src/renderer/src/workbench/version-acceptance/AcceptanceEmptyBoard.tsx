@@ -47,6 +47,7 @@ export function AcceptanceEmptyBoard({
         <p>版本验收尚未开始</p>
         <button
           type="button"
+          data-contextual-tour-target="workbench-acceptance-start"
           disabled={entry.busy || board.busy || Boolean(context.syncing)}
           onClick={async () => {
             const opened = await entry.start(version)
