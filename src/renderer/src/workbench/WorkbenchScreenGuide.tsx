@@ -31,6 +31,8 @@ const guideSources = {
   'workbench-overview': 'project_overview_visible',
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
+  'workbench-acceptance': 'version_acceptance_visible',
+  'workbench-version-overview': 'version_overview_visible',
   'workbench-versions': 'version_sidebar_visible',
   browser: 'browser_visible',
   'workbench-source-control': 'workbench_source_control_visible',
@@ -259,6 +261,25 @@ export function WorkbenchTaskHelp({ enabled }: { enabled: boolean }) {
       label={translate('guidance.planning.taskHelp', 'Task help')}
       icon={CircleHelp}
       onClick={() => replayWorkbenchGuide('tasks')}
+    />
+  )
+}
+
+export function WorkbenchVersionResultHelp({
+  screen,
+  enabled
+}: {
+  screen: 'workbench-acceptance' | 'workbench-version-overview'
+  enabled: boolean
+}) {
+  useWorkbenchScreenGuide(screen, enabled)
+  return (
+    <WorkbenchIconButton
+      label={screen === 'workbench-acceptance' ? '版本验收帮助' : '版本总览帮助'}
+      icon={CircleHelp}
+      className="shrink-0"
+      disabled={!enabled}
+      onClick={() => replayWorkbenchGuide(screen)}
     />
   )
 }

@@ -13,6 +13,8 @@ export type ContextualTourId =
   | 'workbench-overview'
   | 'workbench-milestones'
   | 'workbench-plan'
+  | 'workbench-acceptance'
+  | 'workbench-version-overview'
   | 'workbench-versions'
   | 'workbench-source-control'
 
@@ -330,6 +332,70 @@ export const CONTEXTUAL_TOURS = [
         targetSelector: '[data-contextual-tour-target="workbench-plan-archive"]',
         preferredPlacement: 'bottom',
         targetPulse: true
+      }
+    ]
+  },
+  {
+    id: 'workbench-acceptance',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-acceptance-prepare',
+        title: '准备本版验收',
+        body: '点「开始验收」打开助手会话。没有可读的固定计划时，核对本版计划已提交，再点「更新代码」。材料就绪后，在「验收准备」聚合或打开证据报告。',
+        targetSelector:
+          '[data-contextual-tour-target="workbench-acceptance-start"], [data-contextual-tour-target="workbench-acceptance-prepare"]',
+        requiredForStart: true,
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-acceptance-showcase',
+        title: '对照验收标准给出结论',
+        body: '在 Showcase 展开目标，对照固定计划与交付证据。由你选择目标结论，证据不足可保留「未判定」。',
+        targetSelector: '[data-contextual-tour-target="workbench-acceptance-showcase"]',
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-acceptance-minutes',
+        title: '留下共识与遗留',
+        body: '在「会议纪要」记录决定、补验安排或跟进 Issue。核对全文后点「标记人工确认」。',
+        targetSelector: '[data-contextual-tour-target="workbench-acceptance-minutes"]',
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-acceptance-archive',
+        title: '提交并核对归档',
+        body: '点「发起归档」把请求交给验收助手。由人评审合入，再用「更新代码」读回材料。',
+        targetSelector: '[data-contextual-tour-target="workbench-acceptance-archive"]',
+        preferredPlacement: 'bottom'
+      }
+    ]
+  },
+  {
+    id: 'workbench-version-overview',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-version-overview-progress',
+        title: '核对本版的材料与归档',
+        body: '计划和验收分别显示材料阶段。已有归档记录时，可查 PR／MR 状态、来源链接和合入时间。',
+        targetSelector: '[data-contextual-tour-target="workbench-version-overview-progress"]',
+        requiredForStart: true,
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-version-overview-decision',
+        title: '查看目标的人工结论',
+        body: '目标旁显示人的验收结论。点击可返回本版验收核对详情。任务数量和归档状态各自读回。',
+        targetSelector: '[data-contextual-tour-target="workbench-version-overview-decision"]',
+        preferredPlacement: 'bottom'
+      },
+      {
+        id: 'workbench-version-overview-refresh',
+        title: '重读当前来源',
+        body: '点「刷新来源」重新读取这个项目的材料与任务。若本机未同步该版本，先更新项目代码。',
+        targetSelector: '[data-contextual-tour-target="workbench-version-overview-refresh"]',
+        preferredPlacement: 'bottom'
       }
     ]
   },

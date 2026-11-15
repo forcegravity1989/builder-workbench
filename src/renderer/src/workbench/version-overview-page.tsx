@@ -31,6 +31,7 @@ import {
 } from './version-overview/overview-experiments'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
 import { versionWorkflowProgress } from './version-workflow-progress'
+import { WorkbenchVersionResultHelp } from './WorkbenchScreenGuide'
 import './version-overview/overview.css'
 
 function WorkflowProgress({
@@ -45,7 +46,11 @@ function WorkflowProgress({
   const at = status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined
   const url = status?.url
   return (
-    <div>
+    <div
+      data-contextual-tour-target={
+        kind === 'acceptance' ? 'workbench-version-overview-progress' : undefined
+      }
+    >
       {kind === 'plan' ? '计划' : '验收'} · {label}
       {archive && (
         <>
@@ -205,6 +210,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               label: '刷新来源',
               Icon: RefreshCw,
               action: refresh,
+              target: 'workbench-version-overview-refresh',
               busy:
                 features.loading ||
                 membership.busy ||
@@ -212,10 +218,16 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 catalog.loading ||
                 materials.refreshing
             }
-          ].map(({ label, Icon, action, busy }) => (
+          ].map(({ label, Icon, action, busy, target }) => (
             <Tooltip key={label}>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" aria-label={label} onClick={action}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={label}
+                  data-contextual-tour-target={target}
+                  onClick={action}
+                >
                   <Icon className={busy ? 'animate-spin' : undefined} />
                 </Button>
               </TooltipTrigger>
@@ -223,6 +235,10 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             </Tooltip>
           ))}
         </div>
+        <WorkbenchVersionResultHelp
+          screen="workbench-version-overview"
+          enabled={plan.kind !== 'loading' && acceptance.kind !== 'loading'}
+        />
       </header>
       <div className="bwo-meta">
         <span>
@@ -305,6 +321,9 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               </div>
               <button
                 className="bwo-badge"
+                data-contextual-tour-target={
+                  index === 0 ? 'workbench-version-overview-decision' : undefined
+                }
                 onClick={() => workflow('acceptance')}
                 title={result?.decision?.reason ?? result?.note ?? '打开本版验收记录'}
               >

@@ -13,6 +13,11 @@ import type { ReviewStepId } from '../../../../shared/review-steps'
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import {
+  AcceptanceFeature,
+  AcceptanceJourney,
+  AcceptanceOverviewFeature
+} from './AcceptanceWalkthrough'
+import {
   DirectionJourney,
   DirectionMilestones,
   DirectionOverview,
@@ -259,6 +264,7 @@ function getFeatures() {
         'guidance.catalog.feature.version-acceptance.summary',
         'Check evidence against goals, confirm the result, and archive it.'
       ),
+      content: AcceptanceFeature,
       related: ['internal-integrations']
     },
     'version-overview': {
@@ -267,6 +273,7 @@ function getFeatures() {
         'guidance.catalog.feature.version-overview.summary',
         'See this version’s goals, tasks, and acceptance results.'
       ),
+      content: AcceptanceOverviewFeature,
       related: ['version-acceptance']
     },
     metrics: {
@@ -429,6 +436,7 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
         'guidance.catalog.journey.acceptance.summary',
         'Check evidence against the goals and record the outcome and next actions.'
       ),
+      content: AcceptanceJourney,
       related: ['version-acceptance', 'version-overview']
     },
     {
