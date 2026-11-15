@@ -29,6 +29,7 @@ import {
   PlanningTaskFeature,
   PlanningWorkspaceFeature
 } from './PlanningWalkthrough'
+import { OutcomesJourney, OutcomesMetricsFeature } from './OutcomesWalkthrough'
 
 export type ExploreDemo =
   | { workflow: 'workspaces' | 'tasks' }
@@ -281,7 +282,8 @@ function getFeatures() {
       summary: translate(
         'guidance.catalog.feature.metrics.summary',
         'Define how to measure results and find readings or reasons they are missing.'
-      )
+      ),
+      content: OutcomesMetricsFeature
     },
     'internal-integrations': {
       title: translate('guidance.catalog.feature.internal-integrations.title', 'CodeHub / WeLink'),
@@ -454,7 +456,8 @@ export const getBwExploreCatalog = createLocalizedCatalog(() => ({
         'guidance.catalog.journey.outcomes.summary',
         'Review progress and outcomes, identify gaps, and decide what to change.'
       ),
-      related: ['project-overview', 'metrics', 'version-planning']
+      content: OutcomesJourney,
+      related: ['version-overview', 'project-overview', 'metrics', 'version-planning', 'tasks']
     },
     {
       id: 'maintenance',

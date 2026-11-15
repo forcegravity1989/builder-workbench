@@ -19,6 +19,7 @@ describe('contextual tour definitions', () => {
       'workspace-creation',
       'workbench-wall',
       'workbench-overview',
+      'workbench-scoreboard',
       'workbench-milestones',
       'workbench-plan',
       'workbench-acceptance',

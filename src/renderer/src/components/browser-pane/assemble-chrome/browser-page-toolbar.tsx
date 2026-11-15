@@ -32,6 +32,7 @@ export function BrowserPageToolbar({
   sessionProfileId,
   viewportPresetId,
   isActive,
+  ownsBrowserTour,
   canGoBack,
   canGoForward,
   convertedFrom,
@@ -70,6 +71,7 @@ export function BrowserPageToolbar({
   sessionProfileId: string | null
   viewportPresetId: BrowserViewportPresetId | null
   isActive: boolean
+  ownsBrowserTour: boolean
   canGoBack: boolean
   canGoForward: boolean
   /** Set on a page the address bar converted; Back returns across it once guest history runs out. */
@@ -106,7 +108,7 @@ export function BrowserPageToolbar({
 }): React.JSX.Element {
   return (
     <BrowserChromeToolbar
-      showTourAnchors
+      showTourAnchors={ownsBrowserTour}
       controls={{
         canGoBack: canGoBack || Boolean(convertedFrom),
         canGoForward: canGoForward || Boolean(convertedTo),
@@ -163,7 +165,9 @@ export function BrowserPageToolbar({
           onHardReload={() => runReloadTrigger('hard-reload')}
         />
       }
-      importControl={<BrowserImportHintButton profileId={sessionProfileId} />}
+      importControl={
+        <BrowserImportHintButton profileId={sessionProfileId} showTourAnchor={ownsBrowserTour} />
+      }
       elementTools={{
         activeIntent: grab.state !== 'idle' ? grabIntent : null,
         onStartIntent: startGrabIntent,
@@ -214,7 +218,7 @@ export function BrowserPageToolbar({
             browserPageId={browserPageId}
             viewportPresetId={viewportPresetId}
             onDestroyWebview={() => destroyPersistentWebview(browserPageId)}
-            isActive={isActive}
+            ownsBrowserTour={ownsBrowserTour}
           />
           {isWorkbenchShell() && <WorkbenchBrowserHelp ready={!isBlankTab && !markupIsActive} />}
         </>
