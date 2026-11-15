@@ -89,7 +89,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F05 账号用量 | 随屏 → F06：账号身份、用量/额度、未知或受限时的下一步 | [✅ 用量演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F06 终端、分屏与智能体会话 | 重点：终端、分屏、智能体会话及上下文恢复 | [✅ 终端演示][explore-copy]；[✅ 样例切换并返回原会话][delivery-content] | ☐ | [待验：workspace-agent-sessions][tours] | — | ☐ | — |
 | 功能 | F07 编辑器 | 随屏 → F06/F09：打开、编辑与核对文件改动 | [✅ 编辑器演示][explore-copy]；[✅ 样例返修差异][delivery-content] | ☐ | ☐ | — | ☐ | — |
-| 功能 | F08 内置浏览器、抓取与批注 | 重点：页面、抓取与批注；协作时复用 F24 的共享主机连接核对 | [✅ 浏览器演示][explore-copy]；[✅ 样例原型批注和会话入口][delivery-content] | [✅ Windows 浏览器帮助重播、空白页提示、添加和展开回看批注][delivery-help] | [待验：browser][tours] | — | ☐ | — |
+| 功能 | F08 内置浏览器、抓取与批注 | 重点：页面、抓取与批注；协作时复用 F24 的共享主机连接核对 | [✅ 浏览器演示][explore-copy]；[✅ 样例原型批注和会话入口][delivery-content] | [✅ Windows 浏览器帮助重播、空白页提示、添加和展开回看批注][delivery-help]；[✅ Windows 双标签重播、切离取消与关闭后台页][delivery-browser-recheck] | [待验：browser][tours] | — | ☐ | — |
 | 功能 | F09 评审意见与代码差异 | 重点：检查改动、留意见与继续处理；承接 F10/F11 | [✅ 差异/意见演示][explore-copy]；[✅ 样例文件评论与返修][delivery-content] | [✅ Windows 筛选展开后重播与真实差异打开][delivery-help] | [✅ Windows 首次出现、跳过及重启读回][delivery-help] | — | ☐ | — |
 | 功能 | F10 PR 检查 | 随屏 → F09：PR 检查来源、结果及未完成/失败时的动作 | [✅ PR 演示][explore-copy]；[✅ 样例读回当前提交检查][delivery-content] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F11 AI 辅助提交与交付 | 随屏 → F09：AI 准备提交与 PR、由人核对交付 | [✅ 交付演示][explore-copy]；[✅ 样例提交及 PR 表单][delivery-content] | ☐ | ☐ | — | ☐ | — |
@@ -164,6 +164,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 
 [delivery-content]: ../../src/renderer/src/workbench/explore/DeliveryWalkthrough.tsx
 [delivery-help]: ../../src/renderer/src/workbench/WorkbenchDeliveryHelp.tsx
+[delivery-browser-recheck]: https://github.com/forcegravity1989/builder-workbench/pull/669#issuecomment-6895397151
 [delivery-guide]: ../03-guide/issue-delivery/README.md
 
 [outcomes-content]: ../../src/renderer/src/workbench/explore/OutcomesWalkthrough.tsx

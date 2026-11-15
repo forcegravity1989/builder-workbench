@@ -3,6 +3,7 @@ import { CircleHelp } from 'lucide-react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
+import { hasContextualTourTarget } from '@/components/contextual-tours/contextual-tour-gate'
 import { requestContextualTourWhenReady } from '@/components/contextual-tours/request-contextual-tour-when-ready'
 import {
   DropdownMenu,
@@ -148,14 +149,18 @@ export function openWorkbenchGuide(id: WorkbenchGuideId): void {
     ? findRepoForHost(state.repos, explicit.repoId, explicit)
     : currentRepo
   if (id === 'browser') {
-    const annotation = document.querySelector(
-      '[data-contextual-tour-target="browser-annotation-control"]:not(:disabled)'
-    )
-    if (annotation?.getClientRects().length && !annotation.closest('[inert]')) {
-      replayWorkbenchGuide(id)
-    } else {
-      toast('请在工作区打开浏览器选项卡并加载页面，再点浏览器工具栏右侧的帮助。')
-    }
+    // The Explore dialog makes its underlying surface aria-hidden until it unmounts.
+    window.setTimeout(() => {
+      if (
+        hasContextualTourTarget(
+          '[data-contextual-tour-target="browser-annotation-control"]:not(:disabled)'
+        )
+      ) {
+        replayWorkbenchGuide(id)
+      } else {
+        toast('请在工作区打开浏览器选项卡并加载页面，再点浏览器工具栏右侧的帮助。')
+      }
+    }, 0)
     return
   }
   if (id === 'workbench-source-control') {

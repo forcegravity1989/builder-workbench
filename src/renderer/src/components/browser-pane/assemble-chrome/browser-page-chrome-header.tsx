@@ -17,6 +17,7 @@ export function BrowserPageChromeHeader({
   worktreeId,
   sessionProfileId,
   isActive,
+  ownsBrowserTour,
   webviewRef,
   addressBarInputRef,
   dismissAddressBarSuggestionsRef,
@@ -42,6 +43,7 @@ export function BrowserPageChromeHeader({
   worktreeId: string
   sessionProfileId: string | null
   isActive: boolean
+  ownsBrowserTour: boolean
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   addressBarInputRef: MutableRefObject<HTMLInputElement | null>
   dismissAddressBarSuggestionsRef: MutableRefObject<(() => void) | null>
@@ -70,6 +72,7 @@ export function BrowserPageChromeHeader({
         sessionProfileId={sessionProfileId}
         viewportPresetId={browserTab.viewportPresetId ?? null}
         isActive={isActive}
+        ownsBrowserTour={ownsBrowserTour}
         canGoBack={browserTab.canGoBack}
         canGoForward={browserTab.canGoForward}
         convertedFrom={browserTab.convertedFrom ?? null}
