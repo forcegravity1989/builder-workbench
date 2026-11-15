@@ -28,7 +28,7 @@
       ]
         .map(
           ([label, value, target, archive]) =>
-            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}" title="${target === 'tasks' ? '任务已关闭／总数' : '查看流程材料'}"><span>${label}</span><b>${esc(value)}</b>${archive ? `<span>${esc(archive)}</span>` : ''}</button>`
+            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}" title="${target === 'tasks' ? '任务已关闭／总数' : '查看流程材料'}"><span>${label}</span><b${archive ? ` title="${esc(archive)}"` : ''}>${esc(value)}</b></button>`
         )
         .join('')}</div>`
           : `<div class="unversioned"><p class="card-description">${esc(p.brief || '')}</p><span class="version-muted">${version}</span></div>`

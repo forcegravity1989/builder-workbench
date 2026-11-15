@@ -40,12 +40,7 @@ export type WallCardView = {
 }
 function WorkflowProgress({ progress }: { progress: VersionWorkflowProgress }) {
   const { archive, label } = progress
-  return (
-    <>
-      <strong>{label}</strong>
-      {archive && <span>{archive.label}</span>}
-    </>
-  )
+  return <strong title={archive?.label}>{label}</strong>
 }
 
 function workflowProblem(progress: VersionWorkflowProgress): string | undefined {
