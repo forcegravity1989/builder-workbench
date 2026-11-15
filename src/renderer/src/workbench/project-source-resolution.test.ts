@@ -6,6 +6,7 @@ import type { Worktree } from '../../../shared/worktree/types'
 import {
   versionCatalogSources,
   versionCatalogSourceKey,
+  versionCatalogSshTargetId,
   versionCatalogWorktrees,
   versionCatalogFingerprint
 } from './version-catalog-source'
@@ -58,6 +59,29 @@ it('uses the same checkout identity, then Orca host preference when no local cop
   expect(resolveProjectSource(state, peer)).toBe(other)
   expect(resolveProjectSource(state, peer, true)).toBeNull()
   expect(resolveProjectSource({ ...state, repos: [...repos, local] }, peer)).toBe(local)
+
+  const pairedSsh: Repo = {
+    ...peer,
+    pairedRegistration: { hostId: 'ssh:nested%20builder' }
+  }
+  expect(versionCatalogSshTargetId(pairedSsh)).toBe('nested builder')
+  expect(versionCatalogSshTargetId({ ...pairedSsh, connectionId: 'stale-legacy' })).toBe(
+    'nested builder'
+  )
+  expect(versionCatalogSshTargetId({ ...peer, connectionId: ' legacy-builder ' })).toBe(
+    'legacy-builder'
+  )
+  expect(versionCatalogSshTargetId(peer)).toBeNull()
+  expect(
+    versionCatalogSshTargetId({
+      ...pairedSsh,
+      pairedRegistration: { hostId: 'local' },
+      connectionId: 'stale-legacy'
+    })
+  ).toBeNull()
+  expect(versionCatalogSshTargetId({ ...pairedSsh, executionHostId: 'ssh:direct%20builder' })).toBe(
+    'direct builder'
+  )
 
   const sources = versionCatalogSources(repos, other.id, 'runtime:other')
   expect(sources).toEqual([other])

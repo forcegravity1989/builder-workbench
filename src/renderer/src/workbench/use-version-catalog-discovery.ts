@@ -7,7 +7,7 @@ import {
 } from '@/store/slices/runtime-environment-ssh'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
-import { versionCatalogSourceKey } from './version-catalog-source'
+import { versionCatalogSourceKey, versionCatalogSshTargetId } from './version-catalog-source'
 import { PrioritySemaphore } from '../../../shared/priority-semaphore'
 
 const discoveryReads = new PrioritySemaphore(8)
@@ -20,16 +20,17 @@ export function useVersionCatalogDiscovery(sources: readonly Repo[], revision: s
         const host = parseExecutionHostId(getRepoExecutionHostId(repo))
         if (host?.kind === 'runtime') {
           const connection = state.runtimeStatusByEnvironmentId.get(host.environmentId)
+          const sshTargetId = versionCatalogSshTargetId(repo)
           return [
             runtimeHostConnectionStateForEntry(connection),
             connection?.connectionGeneration,
             connection?.hostContactEpoch,
             connection?.snapshot?.pairingRevision,
-            repo.connectionId
+            sshTargetId
               ? [
-                  repo.connectionId,
-                  selectRuntimeAwareSshStatus(state, host.environmentId, repo.connectionId),
-                  getEnvironmentSshTargetConnectionGeneration(host.environmentId, repo.connectionId)
+                  sshTargetId,
+                  selectRuntimeAwareSshStatus(state, host.environmentId, sshTargetId),
+                  getEnvironmentSshTargetConnectionGeneration(host.environmentId, sshTargetId)
                 ]
               : null
           ]

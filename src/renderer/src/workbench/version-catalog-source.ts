@@ -1,6 +1,11 @@
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  getRepoSshConnectionId,
+  parseExecutionHostId,
+  type ExecutionHostId
+} from '../../../shared/execution-host'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
@@ -9,6 +14,15 @@ import {
   worktreeMatchesHost
 } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { worktreeFingerprintTuple } from './worktree-fingerprint'
+
+export function versionCatalogSshTargetId(repo: Repo): string | null {
+  const host = parseExecutionHostId(getRepoExecutionHostId(repo))
+  return getRepoSshConnectionId(
+    host?.kind === 'runtime' && repo.pairedRegistration
+      ? { ...repo, executionHostId: repo.pairedRegistration.hostId }
+      : repo
+  )
+}
 
 export function versionCatalogSources(
   repos: readonly Repo[],
