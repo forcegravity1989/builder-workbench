@@ -1,9 +1,9 @@
 import { getTaskPageGitHubItemSource } from '@/components/task-page-source-context'
 import { createOverviewProviderReader } from './overview-provider-port'
-import { localCodehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemDetailsForSource } from '@/lib/github-work-item-source-lookup'
 import { nativeTaskPortDeps } from '../native-task-port'
-import { resolveReferenceRepo } from '../task-reference-repo'
+import { requireSourceContext, resolveReferenceRepo } from '../task-reference-repo'
 import { findVersionTaskWorktrees } from '../scoped-task-workspace'
 import { readCodeHubIssuePulls } from './codehub-issue-pulls'
 import type { VersionCatalogState } from '../use-version-catalog'
@@ -65,6 +65,13 @@ export async function readFeatureEvidence(
     feature.problems.push('未找到原生仓库来源')
     return feature
   }
+  const codehubApiForTask = (task: CycleTaskSnapshot) =>
+    createTaskPageCodeHubApi(
+      requireSourceContext(repo, 'codehub'),
+      task.source.providerIdentity?.provider === 'codehub'
+        ? task.source.providerIdentity
+        : undefined
+    )
   const pullTasks = new Map<number, Map<string, { task: CycleTaskSnapshot; explicit: boolean }>>()
   const addPull = (number: number, task: CycleTaskSnapshot, explicit = true) => {
     if (!pullTasks.has(number)) {
@@ -123,7 +130,7 @@ export async function readFeatureEvidence(
                 : undefined
           }
         } else if (ref.provider === 'codehub') {
-          const detail = await localCodehubApi.viewTask({
+          const detail = await codehubApiForTask(task).viewTask({
             repoPath: repo.path,
             repoId: repo.id,
             kind: 'issue',
@@ -201,7 +208,7 @@ export async function readFeatureEvidence(
           }
           return item
         }
-        const detail = await localCodehubApi.viewTask({
+        const detail = await codehubApiForTask(root).viewTask({
           repoPath: repo.path,
           repoId: repo.id,
           kind: 'mr',

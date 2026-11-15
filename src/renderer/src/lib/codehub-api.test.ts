@@ -1,4 +1,5 @@
 import type * as RuntimeClientTarget from '@/runtime/runtime-client-target'
+import type { TaskSourceContext } from '../../../shared/task-source-context'
 import { beforeEach, expect, it, vi } from 'vitest'
 const { state, rpc, local } = vi.hoisted(() => ({
   state: {
@@ -10,24 +11,43 @@ const { state, rpc, local } = vi.hoisted(() => ({
         gitRemoteIdentity: { remoteUrl: 'https://codehub.example/group/repo.git' }
       }
     ],
-    settings: { activeRuntimeEnvironmentId: 'other' }
+    settings: { activeRuntimeEnvironmentId: 'other' },
+    workbench: true
   },
   rpc: vi.fn(),
   local: vi.fn()
 }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => state } }))
+vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => state.workbench }))
 vi.mock('@/runtime/runtime-rpc-client', async () => ({
   ...(await vi.importActual<typeof RuntimeClientTarget>('@/runtime/runtime-client-target')),
   callRuntimeRpc: rpc
 }))
-import { codehubApi, createCodeHubApi } from './codehub-api'
+import { codehubApi, createCodeHubApi, createTaskPageCodeHubApi } from './codehub-api'
+const sourceContext: TaskSourceContext = {
+  kind: 'task-source',
+  provider: 'codehub',
+  projectId: 'project',
+  hostId: 'runtime:owner',
+  repoId: 'repo-1',
+  providerIdentity: { provider: 'codehub', host: 'codehub.example', project: 'group/repo' }
+}
 beforeEach(() => {
   vi.stubGlobal('window', {
-    api: { codehub: { setIssueState: local, listTasks: local, viewer: local } }
+    api: { codehub: { setIssueState: local, listTasks: local, viewer: local, viewTask: local } }
   })
   rpc.mockReset()
   local.mockReset()
-  state.repos[0].executionHostId = 'runtime:owner'
+  state.repos = [
+    {
+      id: 'repo-1',
+      path: '/repo',
+      executionHostId: 'runtime:owner',
+      gitRemoteIdentity: { remoteUrl: 'https://codehub.example/group/repo.git' }
+    }
+  ]
+  state.settings.activeRuntimeEnvironmentId = 'other'
+  state.workbench = true
 })
 it('routes to the repo owner by default and stays local for task reads or local repos', async () => {
   const args = { repoId: 'repo-1', repoPath: '/repo', iid: 12, state: 'closed' as const }
@@ -116,6 +136,103 @@ it('refuses task writes when the registration disagrees with the open detail or 
 
   await expect(detail.setIssueState(args)).rejects.toThrow('CodeHub 仓库来源已变更')
   await expect(row.setIssueState(args)).rejects.toThrow('CodeHub 仓库来源已变更')
+  expect(local).not.toHaveBeenCalled()
+  expect(rpc).not.toHaveBeenCalled()
+})
+
+it('keeps reads local while selecting the known host among identical repo ids and paths', async () => {
+  const repo = state.repos[0]
+  state.repos.unshift({
+    ...repo,
+    executionHostId: 'runtime:other',
+    gitRemoteIdentity: { remoteUrl: 'https://codehub.example/group/other.git' }
+  })
+  const api = createTaskPageCodeHubApi(sourceContext)
+  const args = { repoId: 'repo-1', repoPath: '/repo' }
+  await api.listTasks({ ...args, kind: 'issue', state: 'all', labels: ['bw:plan:v1.0'] })
+  await api.viewer(args)
+  await api.viewTask({ ...args, kind: 'issue', iid: 12 })
+  expect(local.mock.calls.map(([input]) => input.remoteUrl)).toEqual([
+    repo.gitRemoteIdentity.remoteUrl,
+    repo.gitRemoteIdentity.remoteUrl,
+    repo.gitRemoteIdentity.remoteUrl
+  ])
+  expect(rpc).not.toHaveBeenCalled()
+
+  state.workbench = false
+  await createTaskPageCodeHubApi(sourceContext).viewer(args)
+  expect(rpc).toHaveBeenCalledWith(
+    { kind: 'environment', environmentId: 'owner' },
+    'codehub.viewer',
+    args,
+    { timeoutMs: 60_000 }
+  )
+})
+
+it('accepts equivalent registrations and uses the list row identity for inline writes', async () => {
+  state.repos.push({
+    ...state.repos[0],
+    executionHostId: 'runtime:other',
+    gitRemoteIdentity: { remoteUrl: 'git@codehub.example:group/repo.git' }
+  })
+  const args = { repoId: 'repo-1', repoPath: '/repo', iid: 12, state: 'closed' as const }
+  const api = createTaskPageCodeHubApi(null, { host: 'codehub.example', project: 'group/repo' })
+  await api.setIssueState(args)
+  expect(local).toHaveBeenLastCalledWith({
+    ...args,
+    remoteUrl: 'https://codehub.example/group/repo.git'
+  })
+
+  state.repos[0].gitRemoteIdentity.remoteUrl = 'https://codehub.example/group/different.git'
+  await api.setIssueState(args)
+  expect(local).toHaveBeenLastCalledWith({
+    ...args,
+    remoteUrl: 'git@codehub.example:group/repo.git'
+  })
+  expect(rpc).not.toHaveBeenCalled()
+})
+
+it('rejects different remote projects when neither the host nor row identifies one', async () => {
+  state.repos.push({
+    ...state.repos[0],
+    gitRemoteIdentity: { remoteUrl: 'https://codehub.example/group/other.git' }
+  })
+  const args = { repoId: 'repo-1', repoPath: '/repo' }
+  for (const api of [
+    createTaskPageCodeHubApi(),
+    createTaskPageCodeHubApi(null, { host: 'codehub.example' }),
+    createTaskPageCodeHubApi({ ...sourceContext, providerIdentity: null })
+  ]) {
+    await expect(api.viewer(args)).rejects.toThrow('无法解析 CodeHub 仓库身份')
+  }
+  expect(local).not.toHaveBeenCalled()
+  expect(rpc).not.toHaveBeenCalled()
+})
+
+it('does not switch a stale detail to another host with its former remote', async () => {
+  state.repos.push({ ...state.repos[0], executionHostId: 'runtime:other' })
+  state.repos[0].gitRemoteIdentity = { remoteUrl: 'https://codehub.example/group/new.git' }
+  const api = createTaskPageCodeHubApi(sourceContext)
+  const args = { repoId: 'repo-1', repoPath: '/repo', iid: 12, state: 'closed' as const }
+  await expect(api.setIssueState(args)).rejects.toThrow('CodeHub 仓库来源已变更')
+  state.repos.shift()
+  await expect(api.setIssueState(args)).rejects.toThrow('无法解析 CodeHub 仓库身份')
+  expect(local).not.toHaveBeenCalled()
+  expect(rpc).not.toHaveBeenCalled()
+})
+
+it('fails closed when any candidate on the selected host has an unknown remote', async () => {
+  state.repos.push({ ...state.repos[0], gitRemoteIdentity: { remoteUrl: '' } })
+  const args = { repoId: 'repo-1', repoPath: '/repo' }
+  for (const api of [
+    createTaskPageCodeHubApi(),
+    createTaskPageCodeHubApi(null, {}),
+    createTaskPageCodeHubApi(null, { host: 'codehub.example' }),
+    createTaskPageCodeHubApi({ ...sourceContext, providerIdentity: { provider: 'codehub' } }),
+    createTaskPageCodeHubApi(sourceContext)
+  ]) {
+    await expect(api.viewer(args)).rejects.toThrow('无法解析 CodeHub 仓库身份')
+  }
   expect(local).not.toHaveBeenCalled()
   expect(rpc).not.toHaveBeenCalled()
 })

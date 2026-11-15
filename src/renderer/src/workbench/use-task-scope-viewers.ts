@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { Repo } from '../../../shared/repo-types'
+import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
 import { parseTaskQuery } from '../../../shared/task-query'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { localCodehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { lookupGitHubViewerForSource } from '@/lib/github-work-item-source-lookup'
 import { getTaskPageGitHubItemSource } from '@/components/task-page-source-context'
 import { taskScopeGitHubViewerKey } from './task-scope-projection'
@@ -44,7 +45,11 @@ export function useTaskScopeViewers(
         [query.author, query.assignee].some((value) => value?.toLowerCase() === '@me')
   const requests = new Map<
     string,
-    { repoId: string; source?: ReturnType<typeof getTaskPageGitHubItemSource> }
+    {
+      repoId: string
+      source?: ReturnType<typeof getTaskPageGitHubItemSource>
+      codehub?: Pick<CodeHubTaskItem, 'repoPath' | 'host' | 'project'>
+    }
   >()
   if (active && needsViewer) {
     for (const item of model.taskSource === 'codehub'
@@ -60,7 +65,10 @@ export function useTaskScopeViewers(
           source: getTaskPageGitHubItemSource(repo, item)
         })
       } else {
-        requests.set(item.repoId, { repoId: item.repoId })
+        requests.set(item.repoId, {
+          repoId: item.repoId,
+          codehub: { repoPath: item.repoPath, host: item.host, project: item.project }
+        })
       }
     }
   }
@@ -77,6 +85,7 @@ export function useTaskScopeViewers(
             return [
               key,
               request.source?.providerIdentity,
+              request.codehub,
               repo && getRepoExecutionHostId(repo),
               repo?.path,
               repo?.gitRemoteIdentity,
@@ -105,13 +114,14 @@ export function useTaskScopeViewers(
     void Promise.allSettled(
       [...requests].map(async ([key, request]) => {
         const repo = model.repoMap.get(request.repoId)
-        if (!repo) {
+        const repoPath = request.codehub ? request.codehub.repoPath : repo?.path
+        if (!repoPath) {
           throw new Error('Repository is unavailable')
         }
-        const args = { repoId: repo.id, repoPath: repo.path }
+        const args = { repoId: request.repoId, repoPath }
         const login =
           model.taskSource === 'codehub'
-            ? (await localCodehubApi.viewer(args)).username
+            ? (await createTaskPageCodeHubApi(null, request.codehub).viewer(args)).username
             : (
                 await lookupGitHubViewerForSource({
                   ...args,

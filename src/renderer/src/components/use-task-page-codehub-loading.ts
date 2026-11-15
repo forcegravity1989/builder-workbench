@@ -1,4 +1,5 @@
-import { localCodehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
+import { getTaskPageRepoSourceContext } from './task-page-source-context'
 import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
 import { useEffect, useState } from 'react'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
@@ -62,8 +63,9 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             : codehubPreset === 'review' && kind === 'mr'
               ? 'need_my_review'
               : undefined
-        // 任务数据固定本机执行：repo 行只提供远端项目身份，不把主机带进取数。
-        const listed = await localCodehubApi.listTasks({
+        // 宿主用于识别登记行，任务数据仍按任务页的本机账号策略读取。
+        const api = createTaskPageCodeHubApi(getTaskPageRepoSourceContext(repo, 'codehub'))
+        const listed = await api.listTasks({
           repoPath: repo.path,
           repoId: repo.id,
           kind,

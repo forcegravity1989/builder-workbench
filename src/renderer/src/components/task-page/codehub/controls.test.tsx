@@ -27,7 +27,6 @@ const { api, ownerApi } = vi.hoisted(() => {
 })
 vi.mock('@/lib/codehub-api', () => ({
   codehubApi: ownerApi,
-  localCodehubApi: api,
   createTaskPageCodeHubApi: () => api
 }))
 // i18n 实例被详情页签的深层依赖(localized-catalog)读取,补最小 stub。
