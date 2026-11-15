@@ -32,6 +32,8 @@ const guideSources = {
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
   'workbench-versions': 'version_sidebar_visible',
+  browser: 'browser_visible',
+  'workbench-source-control': 'workbench_source_control_visible',
   tasks: 'workbench_tasks_visible'
 } as const
 
@@ -126,6 +128,29 @@ export function openWorkbenchGuide(id: WorkbenchGuideId): void {
   const activeRepo = explicit
     ? findRepoForHost(state.repos, explicit.repoId, explicit)
     : currentRepo
+  if (id === 'browser') {
+    const annotation = document.querySelector(
+      '[data-contextual-tour-target="browser-annotation-control"]:not(:disabled)'
+    )
+    if (annotation?.getClientRects().length && !annotation.closest('[inert]')) {
+      replayWorkbenchGuide(id)
+    } else {
+      toast('请在工作区打开浏览器选项卡并加载页面，再点浏览器工具栏右侧的帮助。')
+    }
+    return
+  }
+  if (id === 'workbench-source-control') {
+    if (!state.activeWorktreeId) {
+      toast('请先打开一个 Git 工作区，再从源代码管理工具栏打开检视引导。')
+      return
+    }
+    closeProjectPage()
+    state.setActiveView('terminal')
+    state.setRightSidebarOpen(true)
+    state.setRightSidebarTab('source-control')
+    replayWorkbenchGuide(id)
+    return
+  }
   if (id === 'tasks') {
     const eligible = getTaskEligibleRepos(state.repos).find((repo) => repo.id === activeRepo?.id)
     closeProjectPage()

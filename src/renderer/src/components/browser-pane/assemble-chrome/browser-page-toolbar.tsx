@@ -1,3 +1,5 @@
+import { WorkbenchBrowserHelp } from '@/workbench/WorkbenchDeliveryHelp'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { translate } from '@/i18n/i18n'
@@ -205,14 +207,17 @@ export function BrowserPageToolbar({
         disabled: !externalUrl
       }}
       overflowMenu={
-        <BrowserToolbarMenu
-          currentProfileId={sessionProfileId}
-          workspaceId={workspaceId}
-          browserPageId={browserPageId}
-          viewportPresetId={viewportPresetId}
-          onDestroyWebview={() => destroyPersistentWebview(browserPageId)}
-          isActive={isActive}
-        />
+        <>
+          <BrowserToolbarMenu
+            currentProfileId={sessionProfileId}
+            workspaceId={workspaceId}
+            browserPageId={browserPageId}
+            viewportPresetId={viewportPresetId}
+            onDestroyWebview={() => destroyPersistentWebview(browserPageId)}
+            isActive={isActive}
+          />
+          {isWorkbenchShell() && <WorkbenchBrowserHelp ready={!isBlankTab && !markupIsActive} />}
+        </>
       }
     />
   )

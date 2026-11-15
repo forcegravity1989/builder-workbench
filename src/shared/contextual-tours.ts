@@ -14,6 +14,7 @@ export type ContextualTourId =
   | 'workbench-milestones'
   | 'workbench-plan'
   | 'workbench-versions'
+  | 'workbench-source-control'
 
 export type ContextualTourStepControl = {
   kind: 'auto-rename-branch-from-work'
@@ -329,6 +330,27 @@ export const CONTEXTUAL_TOURS = [
         targetSelector: '[data-contextual-tour-target="workbench-plan-archive"]',
         preferredPlacement: 'bottom',
         targetPulse: true
+      }
+    ]
+  },
+  {
+    id: 'workbench-source-control',
+    markSeenOn: 'dismiss',
+    steps: [
+      {
+        id: 'workbench-source-control-review',
+        title: '找要检视的文件',
+        body: '可以按文件名查找改动。列表为空时，先从编辑器保存文件，或清除当前筛选。',
+        targetSelector: '[data-contextual-tour-target="workbench-source-control-filter"]',
+        requiredForStart: true,
+        preferredPlacement: 'left'
+      },
+      {
+        id: 'workbench-source-control-diff',
+        title: '打开文件差异',
+        body: '点文件查看改动。按项目要求完成验证后，再暂存、提交和准备 PR。',
+        targetSelector: '[data-testid="source-control-entry"]',
+        preferredPlacement: 'left'
       }
     ]
   },
