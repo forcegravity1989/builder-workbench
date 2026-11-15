@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
@@ -15,6 +15,7 @@ const progressReads = new PrioritySemaphore(3)
 const displaySnapshots = createSnapshotCache<{
   key: string
   readings: WallCardReadings
+  forcedRevision: number
 } | null>(() => null)
 
 export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRefresh>) {
@@ -31,7 +32,6 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
   )
   const snapshot = displaySnapshots(sourceKey ?? '')
   const result = useSnapshotCache(snapshot)
-  const forcedRevision = useRef(0)
   const key = JSON.stringify([
     sourceKey,
     catalog.catalog,
@@ -53,14 +53,16 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
       try {
         return cancelled
           ? null
-          : await readWallReadings(catalog, refresh.allRevision > forcedRevision.current)
+          : await readWallReadings(
+              catalog,
+              refresh.allRevision > (snapshot.read()?.forcedRevision ?? 0)
+            )
       } finally {
         release()
       }
     })().then((readings) => {
       if (!cancelled && readings) {
-        forcedRevision.current = refresh.allRevision
-        snapshot.publish({ key, readings })
+        snapshot.publish({ key, readings, forcedRevision: refresh.allRevision })
       }
     })
     return () => {

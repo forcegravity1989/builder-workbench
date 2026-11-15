@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store'
 import { runtimeHostConnectionStateForEntry } from '@/runtime/runtime-host-connection-state'
+import {
+  getEnvironmentSshTargetConnectionGeneration,
+  selectRuntimeAwareSshStatus
+} from '@/store/slices/runtime-environment-ssh'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
 import { versionCatalogSourceKey } from './version-catalog-source'
@@ -20,7 +24,14 @@ export function useVersionCatalogDiscovery(sources: readonly Repo[], revision: s
             runtimeHostConnectionStateForEntry(connection),
             connection?.connectionGeneration,
             connection?.hostContactEpoch,
-            connection?.snapshot?.pairingRevision
+            connection?.snapshot?.pairingRevision,
+            repo.connectionId
+              ? [
+                  repo.connectionId,
+                  selectRuntimeAwareSshStatus(state, host.environmentId, repo.connectionId),
+                  getEnvironmentSshTargetConnectionGeneration(host.environmentId, repo.connectionId)
+                ]
+              : null
           ]
         }
         if (host?.kind === 'ssh') {
