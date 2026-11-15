@@ -59,7 +59,6 @@ export function refreshProjectWall(): Promise<void> {
         }),
         store.fetchProjectGroupsForAllHosts()
       ])
-      await store.fetchAllWorktrees()
       const current = refresh.read()
       const revision = current.revision + 1
       refresh.publish({

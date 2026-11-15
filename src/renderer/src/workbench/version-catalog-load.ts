@@ -86,8 +86,8 @@ export type VersionCatalogLoad = {
 }
 
 /**
- * 装载一个项目的版本目录（P1b，P3a 扩展）：主干已提交材料 ∪ 本机与共享可见
- * 宿主的存活绑定；草稿目录、目标与任务引用从已保存计划派生（旧固定树与各版
+ * 装载所选来源的版本目录：主干已提交材料 ∪ 存活绑定；草稿目录、目标与任务
+ * 引用从已保存计划派生（旧固定树与各版
  * 绑定计划树并列入口）；有已提交材料但没有草稿派生目标的版本，从已提交计划
  * 派生目标与任务引用（只读回看，不要求树存在）。已清理版本随材料仍入列
  * （retired 收起）。读取失败如实进 problems（调用方显示未知与原因），不装绿。
@@ -144,7 +144,8 @@ export async function loadVersionCatalog(args: {
   const drafts: VersionCatalogDraftSource[] = []
   const goalsByVersion = new Map<string, VersionCatalogGoalRef[]>()
   const goalSources: Record<string, CatalogGoalSource> = Object.create(null)
-  const unavailableDraftTrees = new Set<string>()
+  // null means the tree could not be listed; otherwise only these versions failed.
+  const unavailableDrafts = new Map<string, Set<string> | null>()
   for (const planTree of args.planTrees ?? []) {
     // 单个计划树读取失败不拖垮整个目录：其余来源照实返回，失败进 problem 通道。
     try {
@@ -164,54 +165,69 @@ export async function loadVersionCatalog(args: {
       )
       const candidates = await materialPort.list()
       for (const candidate of candidates) {
-        if (candidate.state !== 'ready') {
-          continue
-        }
         // 绑定树只派生自己绑定的版本（main 侧授权同样拒绝跨版；客户端先滤，
         // 避免无谓读取）。旧固定树（version null）保持全量列举的旧上下文。
         if (planTree.version !== null && candidate.version !== planTree.version) {
           continue
         }
-        const snapshot = await materialPort.read(candidate.version)
-        if (!snapshot) {
-          continue
-        }
-        const key = versionCatalogCacheKey({
-          hostId: planTree.hostId ?? scope.hostId,
-          runtimeOwnerEnvironmentId: planTree.hostId
-            ? planTree.runtimeOwnerEnvironmentId
-            : scope.runtimeOwnerEnvironmentId,
-          projectId: scope.projectId,
-          repoId: planTree.repoId ?? scope.repoId,
-          version: candidate.version,
-          revision: snapshot.revision
-        })
-        let derivation = draftDerivations.get(key)
-        if (!derivation) {
-          const derived = deriveFromSavedPlan(
-            snapshot.document,
-            candidate.version,
-            snapshot.revision
-          )
-          if (!derived) {
-            continue
+        try {
+          if (candidate.state !== 'ready') {
+            throw new Error(
+              candidate.error ?? `版本 ${candidate.version} 的计划材料不可读（${candidate.state}）`
+            )
           }
-          derivation = derived
-          draftDerivations.set(key, derivation)
-        }
-        const existing = goalsByVersion.get(candidate.version)
-        if (!existing) {
-          drafts.push(derivation.draft)
-          goalsByVersion.set(candidate.version, derivation.goals)
-          goalSources[candidate.version] = {
-            kind: 'draft',
-            treeKey: draftCatalogTreeKey(scope, planTree),
-            draft: derivation.draft
+          const snapshot = await materialPort.read(candidate.version)
+          if (!snapshot) {
+            throw new Error(`版本 ${candidate.version} 的计划材料已变化，请刷新重试。`)
+          }
+          const key = versionCatalogCacheKey({
+            hostId: planTree.hostId ?? scope.hostId,
+            runtimeOwnerEnvironmentId: planTree.hostId
+              ? planTree.runtimeOwnerEnvironmentId
+              : scope.runtimeOwnerEnvironmentId,
+            projectId: scope.projectId,
+            repoId: planTree.repoId ?? scope.repoId,
+            version: candidate.version,
+            revision: snapshot.revision
+          })
+          let derivation = draftDerivations.get(key)
+          if (!derivation) {
+            const derived = deriveFromSavedPlan(
+              snapshot.document,
+              candidate.version,
+              snapshot.revision
+            )
+            if (!derived) {
+              throw new Error(`版本 ${candidate.version} 的计划材料格式无效。`)
+            }
+            derivation = derived
+            draftDerivations.set(key, derivation)
+          }
+          const existing = goalsByVersion.get(candidate.version)
+          if (!existing) {
+            drafts.push(derivation.draft)
+            goalsByVersion.set(candidate.version, derivation.goals)
+            goalSources[candidate.version] = {
+              kind: 'draft',
+              treeKey: draftCatalogTreeKey(scope, planTree),
+              draft: derivation.draft
+            }
+          }
+        } catch (reason) {
+          const treeKey = draftCatalogTreeKey(scope, planTree)
+          const failedVersions = unavailableDrafts.get(treeKey) ?? new Set<string>()
+          failedVersions.add(candidate.version)
+          unavailableDrafts.set(treeKey, failedVersions)
+          if (!isVersionHostDisconnected(planTree)) {
+            problems.push({
+              code: 'draft-source-unavailable',
+              message: reason instanceof Error ? reason.message : String(reason)
+            })
           }
         }
       }
     } catch (reason) {
-      unavailableDraftTrees.add(draftCatalogTreeKey(scope, planTree))
+      unavailableDrafts.set(draftCatalogTreeKey(scope, planTree), null)
       if (!isVersionHostDisconnected(planTree)) {
         problems.push({
           code: 'draft-source-unavailable',
@@ -236,7 +252,7 @@ export async function loadVersionCatalog(args: {
     previousSources: previousLoad?.goalSources,
     goalSources,
     availableDraftVersions: new Set(goalsByVersion.keys()),
-    unavailableDraftTrees,
+    unavailableDrafts,
     historyKey,
     retainHistory: sameHistory && historyUnavailable
   })

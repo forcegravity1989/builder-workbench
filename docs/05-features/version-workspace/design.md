@@ -4,7 +4,7 @@
 >
 > 状态：设计于 2026-10-20 评审定稿；接线要求的生产验证缺口见 STATUS。架构定位：§2 ①事实、执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
 
-此节维护版本工作区业务机制，侧栏布局以 [当前高保真](version-workspace-prototype-475.html) 与下节为准，并按 #439 已确认的局部行为同步。初始复用调查基线为 2026-10-20 的 main，落地机制以下文为准；原型仅是设计资产，不是生产运行证据。#439 全树原生菜单、绑定树独立可见与断链保留已作生产接线并完成静态检视；CI 补验结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)，真实用户与双主机验收仍待验证，已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。行为判据见 [spec](spec.md)，证据见 [STATUS](STATUS.md)。
+本文维护有效的版本工作区机制；侧栏布局以[当前高保真](version-workspace-prototype-475.html)为准。行为判据见 [spec](spec.md)，实施与验证证据只在 [STATUS](STATUS.md)及关联 PR 维护。
 
 ## 侧栏布局与原生复用（#475 / #500）
 
@@ -60,13 +60,19 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 - 删除与跨版引用：版本级清理＝人确认的批量删除（默认本机 owned，他宿主实例列而不勾、显式勾选才经共享通道删），复用原生预检与权限链；绑定挂在登记上、随删树消失，任何删除路径不得残留悬空引用。不把删除工作树等同删除版本（材料与目录保留），不以 Git 材料可读承诺会话可恢复。一个 Issue 可被多版引用，一个原生子树只有一个父级；引用不复制完成记录，跨版工作区绑定由绑定契约明确。
 - 发布总结：版本总览按计划与验收派生，不新增手填报告正本；沿现有材料的固定提交/修订与发布证据回看，不新增冻结操作或报告副本，不能用当前 Issue 状态冒充当时验收。
 
-### P1 落地：绑定契约与版本目录（2026-10-21 实施定稿）
+### 绑定契约与版本目录
 
 - **绑定契约**：`src/shared/workbench/version-binding.ts`（schema 1，workflow 与 goalId/taskSource 一致性 refine）；读回规范化把脏数据一律收敛为未绑定，不猜归属。绑定是版本归属唯一正本——不从分支字符串、会话标题或日期反推。
 - **原生挂载**：`WorktreeMeta.workbenchVersionBinding`（undefined 保留 / null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）。BW 薄 helper `workbench.versionBinding.read/set`：原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径。
 - **版本目录**：`src/shared/workbench/version-catalog.ts` + 装载器——已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留（retired 收起回看）；绑定从登记现算，删树无悬空；草稿与目标从已保存计划派生，缓存按 owner/项目/仓库/版本/修订分隔。版本排序 `compareMaterialVersions`（点分段、纯数字段按数值）为单一实现：目录条目、项目总览、验收版本候选三处消费方已收敛，不再各持 Intl/裸 sort 口径。
 
-### P2 落地：新建版本与两棵流程树（2026-10-21 实施定稿）
+项目墙、侧栏和总览复用 `useVersionCatalogForRepo`。展示先用 `resolveProjectSource` 选择同一 Git 仓库的本机副本或 Orca 原生项目宿主；目录只接收该来源的登记。清理入口省略来源限制，汇总所有主机绑定。
+
+读取顺序为原生 `fetchWorktrees` 的宿主限定权威发现 → 可见与检测到的工作树合并 → `nativeWorkspaceScope` 解析归属 → `loadVersionCatalog` 读取主干材料与计划树。原生发现承担配对、去重与登记合并；BW 不另建跨机同步和持久化目录。工作树身份、绑定、分支和 HEAD 构成材料失效依据，刷新与连接恢复触发重新发现。来源或发现失败不转换为空目录；失败只保留同来源读数，成功空读会清除旧数据。
+
+墙卡从共用目录按显示排序取首版，额外读取进度与任务事实；不再保存独立的墙卡版本目录或跨主机拼接材料。打开总览与版本沿卡片所读来源。材料接口继续按实际工作树 owner 路由，旧无绑定固定计划树仍是有效材料入口。
+
+### 新建版本与两棵流程树
 
 - **分支与命名**：流程树分支 `bw/<version>/plan`、`bw/<version>/acceptance`（沿 bw/ 命名空间）；树名 `plan-<version>` / `acceptance-<version>`。版本名过 MaterialVersion 目录规则后还须能组成合法分支名（Git ref 规则），不合法拒绝创建并如实报因。分支名只是 Git 起点与入口提示；版本归属始终由登记上的绑定决定，不从分支字符串反推。
 - **编排在归属 runtime**：`workbench.versionWorkspace.prepare` 保留版本绑定和材料编排；同版同用途已有绑定活树优先复用，即使其分支已改名。无绑定树时调用与 project、指标、旧计划/验收共用的 `workbench.fixedWorkspace.ensure`。该服务以独立 Git 扫描和原生登记确认占用，本地分支优先；本地缺失时查真实远端 head，唯一来源定向 fetch，缺少跟踪映射时仅补该分支的原生同名前缀窄 fetch 映射并保留既有条目，再无覆盖恢复同名本地分支；显式排除/异目标映射拒绝覆盖。远端均不存在才从原生项目基线新建。远端失败或多来源明确报错，不依赖 PR/MR 或缓存 ref 断言不存在。创建和登记仍走原生能力；已有未绑定/异版树不自动认领，归档树不自动恢复。材料初始化仍为 create-only。
@@ -78,23 +84,22 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 - **禁止面**：不启动 agent、不激活视图（activate:false，导航由 P3 入口决定）、不启用自动化、不预建目标/Issue 树、不 commit/push 材料。
 - **J2 判据（创建失败恢复）**：中断第二棵流程树准备再重试 → 第一棵树、绑定与空计划全保留，最终恰两棵、无重复绑定、材料修订不变；双击/两窗口并发 → 宿主端去重使每用途恰一次创建；材料已存在 → 初始化跳过。真壳 J2 归人验证，协议单测先看护编排语义。
 
-### P4/P3a 落地：任务范围、开工链与版本化导航（2026-10-21 实施定稿）
+### 任务范围、开工链与版本化导航
 
 - **任务屏范围契约**：版本入口保留本次版本上下文，预选可取消的版本标签，沿原生查询与分页；只有目标条件使用完整材料引用点读后筛选分页。Issue/PR、预设、仓库、搜索与原生过滤均保留；现有材料只有 Issue，保留目标时 PR 为空，取消目标后沿原生 PR 查询。去版本同时清目标，移除后的条件不再参与 Start/Open 绑定。入口条件不写全局 resume 查询，不改任务正本。
 - **统一 Start/Open 解析**：归属只认绑定+原生 linked 字段（shared/version-workspace-match.ts 纯函数核，协议单测看护）：Issue 树=绑定 (version, issue, taskSource) ∧ linked (type=issue, number, provider)；唯一→直开、多候选→BW 选择器（模块 store+Radix Dialog，挂载于应用壳，任务屏、详情弹窗与侧栏入口共用，不依赖侧栏是否显示）、无→原生创建器；PR 行与无范围路径保持原生「首个未归档树」语义。三处分发壳（板面开工箭头 issue-start-action、任务屏行、详情弹窗）共用 `dispatchScopedWorktrees`（唯一直开/多候选选择器/无返 'none' 回落；埋点与回落文案留调用方）。目标树/流程树同一绑定口径；父级建议仅唯一同项目同宿主目标树时给出（不建议不预建，原生选择器与创建期校验仍是权威）。
 - **开工与创建结果绑定**：目标/Issue 开工复用同一原生创建器，BW 只带入 initialParentWorktreeId 建议与 workbenchCreation 归属；原生备注由用户填写，不自动生成目标长备注或仅为备注预读计划；绑定在提交时按创建器**最终**仓库+最终任务来源解析（改仓库即失效），写入发生在**真实创建结果处**（result.worktree，早于取消/激活分支——树既建成归属即应记录），instanceId 必填围栏、读回确认、失败保留树+「重试写绑定」不重复建树；取消（未创建）零绑定。quick/background 链经 `WorktreeCreationRequest.workbenchVersionBinding`（纯可序列化，Retry 原样重放）；full 链镜像。
 - **main 侧版本化**：绑定即版本正本——材料授权（期望分支由绑定派生、跨版读写拒绝 cross-version、用途不混、list 只呈现绑定版）与选版（context 恒回绑定版、select 他版拒绝、不写第二份选版偏好）都在服务层+执行器双围栏；SSH 窄执行器命令带可选 binding（无绑定树不带字段，旧对端不受扰）；无绑定树全部沿旧固定分支语义（旧上下文显式保留）。common-dir/写前再授权/CAS 事务核不变。
 - **侧栏与进屏**：版本行=目录现算（材料∪绑定∪已提交目标回看），流程行=业务入口+本树入口合一（原生 agent 行/原生菜单/原生激活链复用）；进屏定位绑定树优先且**不进 ensure 路径**（多实例交选择器、无树如实拒绝，浏览不建树）；旧固定树仅在已存在时作为旧路径；「＋新建版本」与版本行「初始化工作区」共用 prepare 重入补齐语义。当前浏览版本是 UI 偏好（按项目隔离持久化），不是归属/执行正本。目录装载：多计划树入口（各版绑定树按自身 owner 路由＋旧固定树 legacyTrees 后置，绑定树排前）、草稿读取失败进 problem 通道、retired 版本目标从已提交计划派生（readPlan 固定来源，只读回看不要求树）、collect 按 projectId 过滤前提。延后项收口：固定工作区 Git 准备统一由归属 runtime 服务执行，renderer 不再持另一套 ref 匹配和建树逻辑；本地 IPC updateMeta 仅绑定字段显式 undefined=保留剥除（其余键沿原生 present-but-undefined 清除线约，H-1 收窄）。
-- **历史 P5 前自动化护栏（已由下节取代）**：creationKey 尚无版本维度——绑定树跳过旧身份 ensure、start/configure 如实拒绝（防运行落错树、防条目错挂），legacy 树零变化；版本化自动化身份与提示词归 P5，屏内按钮改绑归 P3b。
 
-### P3b/P5/P6 落地：收尾定稿（2026-10-22，计划屏 #399 合入后）
+### 流程入口、绑定、清理与自动化
 
 - **屏内选版移除（P3b①）**：绑定树在计划面包屑与验收页头只读回显绑定版本（计划 `.g3-version-bound`；验收 v10 板面为 `AcceptanceHeader` 的 `boundVersion` 回显 `.acc-version-bound`，满板与空板共用），无屏内切换；旧无绑定固定树保留下拉与 `workbenchSelectedVersion` 偏好（J1 口径不变）。`VersionCycleContext.boundVersion` 由 Provider 从流程树绑定派生；main 侧跨版拒绝仍是唯一围栏权威，UI 移除只消灭死入口。验收屏 v10（#394）合入后回显已重接其页头（v10 原注释预留「until G2」接缝）。version-planning spec 选版条款已回写（其 design D1 标注落地）。
 - **Issue 开工箭头永久 hookup（P3b②）**：板面 Issue 行箭头接 `issue-start-action.ts`——与任务屏范围行同一解析核（绑定+linked 双重证明；唯一直开/多候选选择器/无则原生创建器预填＋创建结果绑定）。版本未知或 provider 不在开工面（读回仅 github/codehub 就绪）回落原生详情；标题链接进原生详情语义不变，不另造继续逻辑。
 - **单树绑定/改绑/解绑**：`WorkbenchVersionBindingMenuItems` 薄挂载到全树原生 `WorktreeContextMenu`，普通项目树、版本流程树、目标/Issue 树与多实例中的具体树入口一致；不保留版本级“绑定已有工作树”按钮或批量绑定。选择器沿 `version-tree-bind-dialog` 与宿主路由绑定服务，流程用途须符合 `bw/<版本>/<用途>` 分支围栏；Issue 用途先从真实计划目标选引用，再读回 Issue；原生 linkedWorkItem、任务来源与版本绑定通过同一次 identity metadata 更新保存并共同读回核验，保留 instanceId 和宿主围栏。旧宿主不支持新增请求字段时整笔拒绝，不先改原生关联。解绑只清该树版本绑定，稳定身份、父子关系、linked task、文件与原生会话均保留，不级联改绑或解绑子树。
 - **版本级清理（P3b④）**：确认单=版本语义清单层（本版全部存活绑定实例；本机 owned 默认勾选、他宿主列而不勾＋owner/预检/在跑会话标注；断链宿主不可勾选，执行也复核；显式勾选可达宿主才经共享通道在归属宿主删除）；预检状态与原生确认单同一 hydration 来源；执行交原生 `runWorktreeBatchDelete` 漏斗（Orca 确认单/预检/force/宿主路由全原生，批量必确认）。删除只改执行面，目录现算无悬空绑定；不改写自动化条目——本版已启用的版本化自动化按本机登记探测（creationKey 全键精确匹配）在确认单如实提示，他宿主 runtime 条目不跨机探测（留白）。P3a 占位对话框同交付删除。
 - **只读回看（P3b⑤）**：无绑定树且无旧固定树的版本，计划/验收屏挂 `VersionReadonlyMaterialView`——history RPC 按目录固定 sourceCommit/revision 读主干已提交材料，human-guard 字段只呈现状态不提供入口；工作树/会话不可用由登记缺失推导；缺材料/读取失败如实报，浏览不建树。
-- **P5 自动化身份版本化**：creationKey=`bw-cycle:<scope>:<workflow>[:<version>]`（绑定树加版本维度，每版独立登记）；条目名版本在前；提示词钉绑定树真实分支＋绑定版本（context.version=绑定版，「绑定即定、不切版不推断」文案）。计划、验收两侧 start/configure 护栏均已撤除（验收侧随 #394 合入、验收 Skill 正本 v0.7.1 绑定感知同步后放开；`useEnsureCycleAutomation` 的临时 skip 参数同轮删除，不留兼容层）。standard/ 两侧同步：week-planning SKILL 归档步绑定感知（0.6.1，随 #410 合并为 0.7.1）＋version-acceptance SKILL v0.7.1（恢复/归档步：绑定版本树 bw/<版本>/acceptance、旧无绑定树 bw/week-acceptance 逐字保留）＋version-records 命名与 v10 语义合并＋asset-audit 读取处；bundle/manifest/registry/stub 重生成 verify 双检通过。R9 墙读数：`resolvePlanContext`（拆出 `wall-plan-context.ts`）绑定优先——跨注册行恰一个绑定版本为正本；多在制版本如实「版本未定」，不猜不回落旧偏好。
+- **P5 自动化身份版本化**：creationKey=`bw-cycle:<scope>:<workflow>[:<version>]`（绑定树加版本维度，每版独立登记）；条目名版本在前；提示词钉绑定树真实分支＋绑定版本（context.version=绑定版，「绑定即定、不切版不推断」文案）。计划、验收两侧 start/configure 护栏均已撤除（验收侧随 #394 合入、验收 Skill 正本 v0.7.1 绑定感知同步后放开；`useEnsureCycleAutomation` 的临时 skip 参数同轮删除，不留兼容层）。standard/ 两侧同步：week-planning SKILL 归档步绑定感知（0.6.1，随 #410 合并为 0.7.1）＋version-acceptance SKILL v0.7.1（恢复/归档步：绑定版本树 bw/<版本>/acceptance、旧无绑定树 bw/week-acceptance 逐字保留）＋version-records 命名与 v10 语义合并＋asset-audit 读取处；bundle/manifest/registry/stub 重生成 verify 双检通过。
 - **版本总览接入**：侧栏每版「总览」行调用 `openVersionOverview`，在 activity 槽通过 `project-page-state` 挂载既有版本总览页面，从设置返回时保留原版本；内容、交互与样式归 [version-overview](../version-overview/spec.md)，本特性不复制其设计或原型。
 
 ### 伴飞裁定落地（2026-10-25 夜，#436 伴飞汇总 PR #437）
@@ -112,5 +117,3 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 - 同 PR 早轮已落：版本排序显示层在制优先＋降序（CF-2，目录契约仍升序）、清理确认单文案精简（CF-7）、补绑定改「把工作区纳入版本」四步选择＋Issue 用途双标记（CF-4）、全局任务入口恢复显示（CF-1 再裁定）＋两入口 tooltip 区分。
 
 原型构建：node docs/05-features/version-workspace/prototype/build-g2.cjs；加 --check 校验源码与生成物一致。独立 JSX/CSS 与真实计划快照在该特性的 prototype/ 下；复用现有 vendor.js 与设计系统资源，不修改已确认的旧原型。
-
-接线要求：材料读写层 version-material-workspace 和选版层 version-selection 都校验旧固定分支；必须一起适配，不能只改侧栏。原生 worktree.set RPC 当前不含 BW 版本绑定字段，且旧宿主可能丢弃未知字段，新增绑定字段必须经授权的宿主契约与能力检测读回验证；版本级清理复用既有删除 RPC，不新增契约。TaskPage 的范围要覆盖完整引用与分页，自动化 creationKey 也需含已明确版本，不能以最后浏览版本改变执行对象。历史只读入口必须避开现有进屏自动准备工作树的 hook；树已删除的旧版本回看同样走只读来源，不触发准备树。以上接线要求的生产验证缺口见 STATUS。
