@@ -31,7 +31,11 @@ const guideSources = {
   'workbench-overview': 'project_overview_visible',
   'workbench-milestones': 'milestone_planning',
   'workbench-plan': 'version_plan_visible',
+  'workbench-acceptance': 'version_acceptance_visible',
+  'workbench-version-overview': 'version_overview_visible',
   'workbench-versions': 'version_sidebar_visible',
+  browser: 'browser_visible',
+  'workbench-source-control': 'workbench_source_control_visible',
   tasks: 'workbench_tasks_visible'
 } as const
 
@@ -126,6 +130,29 @@ export function openWorkbenchGuide(id: WorkbenchGuideId): void {
   const activeRepo = explicit
     ? findRepoForHost(state.repos, explicit.repoId, explicit)
     : currentRepo
+  if (id === 'browser') {
+    const annotation = document.querySelector(
+      '[data-contextual-tour-target="browser-annotation-control"]:not(:disabled)'
+    )
+    if (annotation?.getClientRects().length && !annotation.closest('[inert]')) {
+      replayWorkbenchGuide(id)
+    } else {
+      toast('请在工作区打开浏览器选项卡并加载页面，再点浏览器工具栏右侧的帮助。')
+    }
+    return
+  }
+  if (id === 'workbench-source-control') {
+    if (!state.activeWorktreeId) {
+      toast('请先打开一个 Git 工作区，再从源代码管理工具栏打开检视引导。')
+      return
+    }
+    closeProjectPage()
+    state.setActiveView('terminal')
+    state.setRightSidebarOpen(true)
+    state.setRightSidebarTab('source-control')
+    replayWorkbenchGuide(id)
+    return
+  }
   if (id === 'tasks') {
     const eligible = getTaskEligibleRepos(state.repos).find((repo) => repo.id === activeRepo?.id)
     closeProjectPage()
@@ -234,6 +261,25 @@ export function WorkbenchTaskHelp({ enabled }: { enabled: boolean }) {
       label={translate('guidance.planning.taskHelp', 'Task help')}
       icon={CircleHelp}
       onClick={() => replayWorkbenchGuide('tasks')}
+    />
+  )
+}
+
+export function WorkbenchVersionResultHelp({
+  screen,
+  enabled
+}: {
+  screen: 'workbench-acceptance' | 'workbench-version-overview'
+  enabled: boolean
+}) {
+  useWorkbenchScreenGuide(screen, enabled)
+  return (
+    <WorkbenchIconButton
+      label={screen === 'workbench-acceptance' ? '版本验收帮助' : '版本总览帮助'}
+      icon={CircleHelp}
+      className="shrink-0"
+      disabled={!enabled}
+      onClick={() => replayWorkbenchGuide(screen)}
     />
   )
 }

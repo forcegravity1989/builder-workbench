@@ -17773,6 +17773,62 @@
     }
   },
   "guidance": {
+    "acceptance": {
+      "evidence": {
+        "title": "Check the evidence",
+        "body": "Start this version’s acceptance and open the evidence report. Keep missing evidence visible for follow-up."
+      },
+      "decision": {
+        "title": "Decide each goal",
+        "body": "Open the goal and compare the fixed criteria with the evidence. Record your decision and any next step."
+      },
+      "minutes": {
+        "title": "Confirm the minutes",
+        "body": "Record the agreement and how to follow up. Read the minutes before confirming them."
+      },
+      "archive": {
+        "title": "Submit for archiving",
+        "body": "Ask the acceptance assistant to prepare an archive PR. Review its sources and decisions before merging."
+      },
+      "readback": {
+        "title": "Read the archived result",
+        "body": "Once the archive is merged and project code is up to date, refresh the version overview and check the decision and PR."
+      }
+    },
+    "delivery": {
+      "find": {
+        "title": "Find the goal’s tasks",
+        "action": "Check the version on the project wall and open the goal’s issues."
+      },
+      "work": {
+        "title": "Work in parallel",
+        "action": "Start each issue in its own workspace. Switch sessions and return to the same work."
+      },
+      "browser": {
+        "title": "Review a prototype",
+        "action": "For new interactions, open the prototype, annotate an element, and choose the session that should receive the feedback."
+      },
+      "prepare": {
+        "title": "Verify and prepare a PR",
+        "action": "Inspect the diff, run the project’s checks, and review the pull request form."
+      },
+      "review": {
+        "title": "Review and revise",
+        "action": "Open the same PR, read checks, comment on a line, and verify the author’s new revision."
+      },
+      "readback": {
+        "title": "Confirm and check progress",
+        "action": "Confirm the merge, close the completed sample issue, and reread the goal and version counts."
+      },
+      "inbox": {
+        "title": "Open a review request",
+        "action": "Open the existing sample request. If the project is temporarily unavailable, reconnect to its host and open it again."
+      },
+      "notify": {
+        "title": "Request a review",
+        "action": "With a PR open, choose connected hosts. A reviewer can also open the PR directly."
+      }
+    },
     "planning": {
       "taskHelp": "Task help",
       "version": {

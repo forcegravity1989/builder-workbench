@@ -298,7 +298,11 @@ export function AcceptanceBoardContent({
         onRemoteDeleted={board.useRemoteDeletion}
       />
       <div className="acc-body">
-        <AcceptanceJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
+        <AcceptanceJourneyNav
+          active={spy.activeSection}
+          readyToReview={Boolean(plan && document) && !board.readOnly}
+          onNavigate={spy.navigate}
+        />
         {annotations.annotating && (
           <div className="acc-annotate-banner" role="status">
             批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见
