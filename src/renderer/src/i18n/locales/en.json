@@ -14509,7 +14509,7 @@
           "6c4f1a8d2e": "Check details are unavailable."
         },
         "EditorPanelHeader": {
-          "fb8331694e": "Open Preview to the Side",
+          "fb8331694e": "Preview",
           "4157f3cbf3": "Open Markdown Preview",
           "269ce4842b": "Copy Relative Path",
           "7c08a1f990": "Copy Path",
@@ -15399,7 +15399,7 @@
             "756bfc25c9": "Open",
             "09a9489aa5": "Show",
             "2a4c4b8e1f": "Copy",
-            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Open Preview to the Side\" on the file instead."
+            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead."
           },
           "BrowserToolbarMenu": {
             "429ef481f9": "Cancel",
