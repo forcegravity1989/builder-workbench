@@ -1,7 +1,11 @@
 import { getAllWorktreesFromState, getWorktreeOnHostFromState } from '@/store/selectors'
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { versionTreeKey } from './version-material-selection'
-import { parseExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
+import {
+  parseExecutionHostId,
+  toRuntimeExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host'
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -16,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type {
