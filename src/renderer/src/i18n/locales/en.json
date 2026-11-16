@@ -15182,7 +15182,6 @@
             "complete": "Done"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "of",
             "dcd6e6b03e": "Step {{value0}} of {{value1}}"
           },
           "contextual": {
@@ -15190,6 +15189,20 @@
               "overlay": {
                 "measurement": {
                   "38b3155418": "Next",
+                  "tasks": {
+                    "source": {
+                      "title": "Choose the work source",
+                      "body": "Choose the project or work source. If none is available, check your connections in Settings."
+                    },
+                    "filter": {
+                      "title": "Filter to the work you need",
+                      "body": "Use presets and search to narrow issues, reviews, merge requests, or tasks."
+                    },
+                    "start": {
+                      "title": "Start from work items",
+                      "body": "Use Start or Open on a task, issue, review, or merge request to bring its context into a workspace."
+                    }
+                  },
                   "automations": {
                     "intro": {
                       "title": "What is an automation?",
@@ -18192,7 +18205,10 @@
     },
     "cliPrerequisite": "Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.",
     "providerRemoteCredentials": "This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.",
-    "providerLocalCredentials": "This desktop client owns the provider credentials and account checks. Edit server-owned credentials in the advanced settings for that server.",
+    "providerLocalAccount": "Local desktop",
+    "closeSetupGuide": "Close setup guide",
+    "setupGuideClosed": "Setup guide closed",
+    "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
     "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
     "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."
   }

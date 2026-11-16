@@ -153,17 +153,20 @@ export const CONTEXTUAL_TOURS = [
     id: 'tasks',
     steps: [
       {
+        id: 'tasks-source',
         title: 'Choose the work source',
         body: 'Choose the project or work source. If none is available, check your connections in Settings.',
         targetSelector: '[data-contextual-tour-target="tasks-source-filters"]',
         requiredForStart: true
       },
       {
+        id: 'tasks-filter',
         title: 'Filter to the work you need',
         body: 'Use presets and search to narrow issues, reviews, merge requests, or tasks.',
         targetSelector: '[data-contextual-tour-target="tasks-search-presets"]'
       },
       {
+        id: 'tasks-start',
         title: 'Start from work items',
         body: 'Use Start or Open on a task, issue, review, or merge request to bring its context into a workspace.',
         targetSelector:
