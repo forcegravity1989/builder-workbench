@@ -1,0 +1,129 @@
+docs/05-features/quick-links/prototype.html
+  s_4132330d101c50::t_a04b153fe2b6a9 599-603
+  s_d45b1b4ae46c02::t_c230c7fd4fb607 1-5,7-36,38-45,47-51,53,111-113,116,190-221,223-229,232-240,242-244,279-281,295,302,304,341-348,351-352,354-359,361,365-396,400-406,413-420,424-440,454-455,458-460,465-468,470-472,474,476,480,497-498,515-518,524-571,573-579,581-582,604-608
+  s_4132330d101c50::t_686c7ebbff0c63 6,37,46,52,54-110,114-115,117-165,167-189,222,230,241,245-256,258-264,266-278,282-292,296-301,303,305-339,349-350,353,360,363-364,397-399,407-412,421-423,441-453,456-457,461-464,469,473,475,477-479,481-491,494-496,499-502,504-508,514,572,580,583-598
+  s_4132330d101c50::t_7113213034d4e5 492-493,503,509-513
+  s_4132330d101c50::t_1c43c7ffef3a7f 166
+  s_4132330d101c50::t_aa9eafc47a5fc8 257,265,293-294,340
+  s_4132330d101c50::t_9ffc68d17d5235 362
+  s_4132330d101c50::t_14be269e8f74b1 231
+  s_4132330d101c50::t_6228b0e6508798 519-523
+docs/05-features/quick-links/design.md
+  s_d45b1b4ae46c02::t_a5fdbdb2762824 2-8,11,13-14,16,21-24,26-29,31-33,37-46
+  s_4132330d101c50::t_da4b364866ca77 12
+  s_4132330d101c50::t_eb7eceadf92523 15,17-18,20
+  s_4132330d101c50::t_066d0b490d7140 9-10
+  s_4132330d101c50::t_5a478568dc1d45 19
+  s_4132330d101c50::t_28c45aece62843 25,30,34-36
+  s_4132330d101c50::t_2e5d34563abd9d 1
+src/shared/rpc-contract/client-ui-params.ts
+  s_4132330d101c50::t_14ad8f37bfea2f 75-76
+  h_d0d195a8c70989 187
+src/shared/status-bar-defaults.ts
+  s_4132330d101c50::t_36b0fc49c8ee54 15-16
+src/shared/ui-chrome-types.ts
+  s_4132330d101c50::t_2a6d2047ba0bab 69
+src/renderer/src/components/status-bar/StatusBarSurface.tsx
+  s_4132330d101c50::t_d3318e559c87f4 46-50
+  s_4132330d101c50::t_7991c7a43946f4 91
+  s_4132330d101c50::t_27ca74489504c6 265
+  s_4132330d101c50::t_bc669136d21926 263-264
+src/renderer/src/store/slices/ui-hydration-workspace-preferences.test.ts
+  s_4132330d101c50::t_828d8f85623362 155
+  s_4132330d101c50::t_8c9bfd78138971 144,156,164
+  s_4132330d101c50::t_4577191407203a 163
+  s_4132330d101c50::t_5df80353f1137d 181
+  s_4132330d101c50::t_83f8f1ad629d3f 143
+  s_4132330d101c50::t_8bb227b3b1f6d8 182
+docs/05-features/quick-links/spec.md
+  s_4132330d101c50::t_da04a6ab0d1f87 9,11-12,18-20,27-31
+  s_4132330d101c50::t_704e84c94f7882 98
+  s_4132330d101c50::t_0a17939919a30f 21
+  s_4132330d101c50::t_294babe70b2251 43,49-51
+  s_4132330d101c50::t_d2d26f7508c8aa 48
+  s_4132330d101c50::t_408bea0031b268 57
+  s_4132330d101c50::t_13e183ac28374f 94
+  s_d45b1b4ae46c02::t_3643d87103ad4a 2-8,10,13-17,22-26,32-42,44-46,52-56,58-65,69-71,74-75,77-78,80-88,91,93,95-97
+  s_4132330d101c50::t_f64fcd97bc8401 1
+  s_4132330d101c50::t_d02ee1b920bde2 47
+  s_4132330d101c50::t_6a985bf37d51cb 89-90
+  s_4132330d101c50::t_db45b0ef50e24f 92
+  s_4132330d101c50::t_77a4c64069c187 66-68,72-73,76,79
+docs/05-features/quick-links/STATUS.md
+  s_d45b1b4ae46c02::t_de580a183168bd 2-4,6-8,15-17
+  s_4132330d101c50::t_2c5c3329523682 5,9-14,18-20
+  s_4132330d101c50::t_4313bd91d37351 1
+docs/05-features/quick-links/intent.md
+  s_4132330d101c50::t_c6a3bb72cbb303 57
+  s_4132330d101c50::t_e84414159172ea 1
+  s_4132330d101c50::t_43b5c7f6bae444 27,29-31,35
+  s_d45b1b4ae46c02::t_432bc43bf9242f 2-20,23-26,28,33,36-40,42,44-56
+  s_4132330d101c50::t_7630f917699ef2 22
+  s_4132330d101c50::t_e8ac784f4bdcb5 41,43
+  s_4132330d101c50::t_dc2fdb31f9049a 32,34
+  s_4132330d101c50::t_6a7a425c7e7a8a 21
+src/shared/feature-interaction-catalog.ts
+  s_4132330d101c50::t_a85477da490648 47
+  s_4132330d101c50::t_22476d289b26e8 144
+ref/upstream.md
+  s_4132330d101c50::t_1c277efad53e68 155
+src/renderer/src/workbench/quick-links/quick-links-store.ts
+  s_4132330d101c50::t_b7d87f5e31f9aa 11
+  s_4132330d101c50::t_826ffe63ec10d3 1-10,12-71
+src/shared/feature-interaction-categories.ts
+  s_4132330d101c50::t_34af6e726d77f3 68
+src/renderer/src/workbench/quick-links/QuickLinksStatusSegment.tsx
+  s_4132330d101c50::t_b031b66b22adaf 310
+  s_4132330d101c50::t_5cbefb545c8c5a 221
+  s_4132330d101c50::t_63777b82ea23d0 159,163-164
+  s_4132330d101c50::t_046d9aa27f462e 1-158,160-162,165-220,222-309,311-397
+src/renderer/src/components/status-bar/StatusBarVisibilityMenu.tsx
+  s_4132330d101c50::t_c7b5c3fff6e5a6 176-184
+  s_4132330d101c50::t_7f9dd080d525fe 1
+  s_4132330d101c50::t_65070049201a4d 185
+src/renderer/src/store/slices/ui/ui-slice-hydration-status-bar-items.ts
+  s_4132330d101c50::t_927cc7952c4bd4 11
+  s_4132330d101c50::t_c53b542b960a62 21-22
+src/renderer/src/components/status-bar/use-status-bar-controller.ts
+  s_4132330d101c50::t_d22ef752fba116 272
+  s_4132330d101c50::t_63281998aee58e 162
+src/shared/persisted-ui-state-types.ts
+  s_4132330d101c50::t_e1d04bd2fd5966 123
+  s_4132330d101c50::t_2adf1c3ac9c053 124
+src/renderer/src/i18n/locales/en.json
+  s_4132330d101c50::t_49b26e3c0446f9 295-313
+  s_4132330d101c50::t_6139f97134a22c 3778
+src/shared/feature-interactions.test.ts
+  s_4132330d101c50::t_fed52655909560 80
+src/shared/workbench/quick-links.ts
+  s_4132330d101c50::t_8173806073b4e0 1-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "332561455492298e1681b18c883b5c9f4239d0f2",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_4132330d101c50": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cc3a1ee0-1c34-4c0e-a5fb-e2c5fd42d4f0",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_d45b1b4ae46c02": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c8317433-3d6f-4d15-a6f3-86d0048c511f",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
