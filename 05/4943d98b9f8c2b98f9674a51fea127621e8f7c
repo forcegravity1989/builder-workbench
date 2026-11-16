@@ -1,0 +1,14 @@
+.bw/planning/v1.1/data.json
+  h_1dcaf127381c33 23-24,30-31,37-38,48,50-52,54,57-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "054943d98b9f8c2b98f9674a51fea127621e8f7c",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
