@@ -292,6 +292,25 @@
     }
   },
   "auto": {
+    "workbench": {
+      "quickLinks": {
+        "add": "Add",
+        "cancel": "Cancel",
+        "copied": "Copied {{url}}",
+        "copy": "Copy",
+        "corrupt": "Quick links file could not be read; existing file was left untouched.",
+        "delete": "Delete",
+        "edit": "Edit",
+        "empty": "No quick links yet. Click Add to create one.",
+        "namePlaceholder": "Name",
+        "save": "Save",
+        "saveFailed": "Failed to save quick links",
+        "title": "Quick Links",
+        "tooltip": "Quick Links — {{count}}",
+        "trigger": "Quick Links, {{count}}",
+        "urlPlaceholder": "https://example.com"
+      }
+    },
     "App": {
       "221a95ba38": "Retry onboarding or close it and continue in the app.",
       "f02d37278a": "Onboarding hit an error.",
@@ -3756,6 +3775,7 @@
           },
           "StatusBar": {
             "9659e38343": "Ports",
+            "quickLinks": "Quick Links",
             "d1e1a7a6bf": "Resource Manager",
             "24ac89df1a": "Remote Hosts",
             "5e59007df4": "Kimi Usage",

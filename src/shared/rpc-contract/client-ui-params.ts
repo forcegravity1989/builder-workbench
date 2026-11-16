@@ -72,7 +72,8 @@ export const StatusBarItem = z.enum([
   'cursor',
   'ssh',
   'resource-usage',
-  'ports'
+  'ports',
+  'quick-links'
 ])
 
 export const WorkspaceStatusDefinition = z.object({
@@ -183,6 +184,7 @@ export const UiUpdateFields = z
     _antigravityStatusBarDefaultAdded: z.boolean().optional(),
     _grokStatusBarDefaultAdded: z.boolean().optional(),
     _cursorStatusBarDefaultAdded: z.boolean().optional(),
+    _quickLinksStatusBarDefaultAdded: z.boolean().optional(),
     statusBarVisible: z.boolean().optional(),
     usagePercentageDisplay: z.enum(['used', 'remaining']).optional(),
     statusBarUsageMode: z.enum(['verbose', 'compact']).optional(),
