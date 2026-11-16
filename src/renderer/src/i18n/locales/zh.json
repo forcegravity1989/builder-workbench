@@ -9375,6 +9375,8 @@
                   "codehubDescription": "通过以下工具查看议题和合并请求：",
                   "codehubUnavailable": "当前运行环境暂时无法检查 codehub-cli 的状态。",
                   "codehubInstallButton": "安装 CodeHub CLI",
+                  "codehubInstallSucceeded": "CodeHub CLI 已安装，正在重新检查状态…",
+                  "codehubInstallFailed": "CodeHub CLI 安装失败。",
                   "codehubNotAuthenticated": "已安装 codehub-cli，请先登录。",
                   "codehubLoginTitle": "登录 CodeHub",
                   "codehubLoginTerminalAriaLabel": "CodeHub 登录终端",
@@ -15355,7 +15357,8 @@
     "cliPrerequisite": "打开配置前，{{product}} 可能会请求系统授权，将 Orca CLI 命令注册到 PATH。",
     "providerRemoteCredentials": "此远程服务器负责该服务的凭据和账号检查。如需编辑凭据，请打开该服务器的高级设置。",
     "providerLocalAccount": "本机",
-    "setupGuideHidden": "已从侧边栏隐藏清单",
+    "closeSetupGuide": "关闭入门",
+    "setupGuideClosed": "已关闭入门",
     "setupGuideReopen": "可从「帮助 → BW 入门」重新打开。",
     "cliRegistrationTitle": "请将 Orca CLI 注册到 PATH 后继续。",
     "cliRegistrationDescription": "请允许系统授权，让能力配置可以使用 Orca CLI 命令。"

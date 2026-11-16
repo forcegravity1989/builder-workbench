@@ -18206,7 +18206,8 @@
     "cliPrerequisite": "Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.",
     "providerRemoteCredentials": "This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.",
     "providerLocalAccount": "Local desktop",
-    "setupGuideHidden": "Checklist hidden from the sidebar",
+    "closeSetupGuide": "Close setup guide",
+    "setupGuideClosed": "Setup guide closed",
     "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
     "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
     "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."

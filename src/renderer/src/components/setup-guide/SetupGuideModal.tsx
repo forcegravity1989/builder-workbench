@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
-import { EyeOff } from 'lucide-react'
+import { useEffect, useMemo, useState, type JSX } from 'react'
+import { EyeOff, X } from 'lucide-react'
 import {
   getFeatureWallSetupStepIds,
   getFirstIncompleteFeatureWallSetupStepId,
@@ -139,24 +139,34 @@ function SetupGuideModalContent({
     }
   }
 
-  const handleHideFromSidebar = useCallback((): void => {
-    setSetupGuideSidebarDismissed(true)
-    if (isBW) {
-      closeModal()
-      toast.success(translate('guidance.setupGuideHidden', 'Checklist hidden from the sidebar'), {
-        description: translate(
-          'guidance.setupGuideReopen',
-          'You can reopen it from Help → Getting Started with BW.'
-        )
-      })
+  const guideActionLabel = isBW
+    ? translate('guidance.closeSetupGuide', 'Close setup guide')
+    : translate(
+        'auto.components.setup.guide.SetupGuideModal.f3b5ffb2a6',
+        'Hide checklist from sidebar'
+      )
+  const GuideActionIcon = isBW ? X : EyeOff
+
+  const handleGuideAction = (): void => {
+    if (!isBW) {
+      setSetupGuideSidebarDismissed(true)
+      return
     }
-  }, [closeModal, isBW, setSetupGuideSidebarDismissed])
+    closeModal()
+    toast.success(translate('guidance.setupGuideClosed', 'Setup guide closed'), {
+      description: translate(
+        'guidance.setupGuideReopen',
+        'You can reopen it from Help → Getting Started with BW.'
+      )
+    })
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="grid h-[min(780px,calc(100vh-2rem))] w-[min(1080px,calc(100vw-2rem))] max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 p-0 sm:max-w-none"
         tabIndex={-1}
+        showCloseButton={!isBW}
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -164,21 +174,24 @@ function SetupGuideModalContent({
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-label={translate(
-                'auto.components.setup.guide.SetupGuideModal.f3b5ffb2a6',
-                'Hide checklist from sidebar'
-              )}
-              onClick={handleHideFromSidebar}
-              className="absolute right-10 top-3.5 text-muted-foreground"
+              aria-label={guideActionLabel}
+              onClick={handleGuideAction}
+              className={
+                isBW
+                  ? 'absolute right-3 top-3 text-muted-foreground'
+                  : 'absolute right-10 top-3.5 text-muted-foreground'
+              }
             >
-              <EyeOff className="size-4" />
+              <GuideActionIcon className="size-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top" sideOffset={4}>
-            {translate(
-              'auto.components.setup.guide.SetupGuideModal.28cf59fcb4',
-              'This will hide the checklist from the sidebar'
-            )}
+            {isBW
+              ? guideActionLabel
+              : translate(
+                  'auto.components.setup.guide.SetupGuideModal.28cf59fcb4',
+                  'This will hide the checklist from the sidebar'
+                )}
           </TooltipContent>
         </Tooltip>
         <DialogHeader className="gap-1 border-b border-border px-7 py-4">
