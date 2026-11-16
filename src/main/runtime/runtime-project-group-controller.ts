@@ -1,6 +1,10 @@
 import type { FolderWorkspace } from '../../shared/folder-workspace-types'
 import type { ProjectGroup } from '../../shared/project-group-types'
 import type { Repo } from '../../shared/repo-types'
+import {
+  hasConfirmedGroupMembership,
+  type ConfirmedRepoRegistration
+} from '../../shared/workbench/repo-removal'
 import type {
   FolderWorkspacePathStatus,
   FolderWorkspacePathStatusRequest
@@ -93,10 +97,19 @@ export class RuntimeProjectGroupController {
     return updated
   }
 
-  async deleteGroup(groupId: string): Promise<{ deleted: boolean }> {
+  async deleteGroup(
+    groupId: string,
+    members?: readonly ConfirmedRepoRegistration[]
+  ): Promise<{ deleted: boolean; membersChanged?: true }> {
     const store = this.deps.getStore()
     if (!store?.deleteProjectGroup) {
       throw new Error('runtime_unavailable')
+    }
+    if (
+      members &&
+      !hasConfirmedGroupMembership(this.listGroups(), store.getRepos(), groupId, members)
+    ) {
+      return { deleted: false, membersChanged: true }
     }
     const deleted = store.deleteProjectGroup(groupId)
     if (deleted) {

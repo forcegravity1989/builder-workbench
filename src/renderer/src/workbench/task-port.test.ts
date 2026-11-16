@@ -199,23 +199,26 @@ describe('createTaskPort reads', () => {
     expect(reads.every((read) => read.kind === 'ready')).toBe(true)
   })
 
-  it('isolates runtime sources and keeps environment reads off local GitHub batching', async () => {
+  it('reads version tasks locally by remote identity, including remote plan sources', async () => {
     const other = { ...githubRepo, id: 'repo-remote', executionHostId: 'runtime:builder' } as Repo
-    const batch = vi.fn()
-    mocks.lookupGitHub.mockResolvedValue(ghItem)
+    const remoteBatch = vi.fn().mockResolvedValue({ items: [ghItem] })
     const port = createTaskPort(
-      makeDeps({ repos: () => [githubRepo, other], lookupGitHubWorkItems: batch })
+      makeDeps({ repos: () => [githubRepo, other], lookupGitHubWorkItems: remoteBatch })
     )
     const remote = { ...scope, repoId: other.id, hostId: 'runtime:builder' as const }
-    await port.listVersion(remote, [ghReference])
-    expect(batch).not.toHaveBeenCalled()
-    expect(mocks.lookupGitHub).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: other.id,
-        sourceContext: expect.objectContaining({ hostId: 'runtime:builder' })
-      })
-    )
-    expect(port.cached?.(scope, [ghReference])).toBeNull()
+    const [read] = await port.listVersion(remote, [ghReference])
+    expect(read?.kind).toBe('ready')
+    expect(remoteBatch).toHaveBeenCalledWith({
+      host: null,
+      owner: 'acme',
+      repo: 'repo',
+      numbers: [95]
+    })
+    expect(mocks.lookupGitHub).not.toHaveBeenCalled()
+    // 同一远端项目的本机行与远端行共用一份任务缓存，不因来源拆分。
+    expect(port.cached?.(scope, [ghReference])?.[0]?.kind).toBe('ready')
+
+    const batch = vi.fn()
     const enterprise = {
       ...githubRepo,
       id: 'repo-ghes',
@@ -241,7 +244,7 @@ describe('createTaskPort reads', () => {
         })
       })
     )
-    let fork = {
+    const fork = {
       ...githubRepo,
       upstream: { owner: 'parent', repo: 'repo' },
       issueSourcePreference: 'origin' as const
@@ -265,10 +268,6 @@ describe('createTaskPort reads', () => {
         lookupGitHubWorkItems: batch
       })
     ).listVersion(scope, [ghReference])
-    expect(batch).not.toHaveBeenCalled()
-    fork = { ...fork, issueSourcePreference: 'upstream' }
-    expect(forkPort.cached?.(scope, [ghReference])).toBeNull()
-    await forkPort.listVersion(scope, [ghReference])
     expect(batch).not.toHaveBeenCalled()
   })
 

@@ -1,5 +1,6 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Layers, Plus } from 'lucide-react'
+import { CircleHelp, Layers, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspace-prepare'
@@ -24,7 +25,12 @@ import { VersionNavGroup } from './version-nav-group'
 import { VersionSidebarPreview } from './VersionSidebarPreview'
 import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
 import { openVersionOverview, useProjectPage } from './project-page-state'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import type { Repo } from '../../../shared/repo-types'
+import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
+import { replayWorkbenchGuide, useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -56,15 +62,15 @@ function readExpandedStore(key: string | null): Set<string> | null {
 }
 
 export function WorkbenchVersionNav({
-  nativeDisplay
+  nativeDisplay,
+  repo
 }: {
   nativeDisplay: VersionTreeDisplayInput
-}): React.JSX.Element | null {
-  const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const projectName = useAppStore((s) => {
-    const active = s.activeRepoId ?? s.repos[0]?.id ?? null
-    return s.repos.find((repo) => repo.id === active)?.displayName?.trim() || null
-  })
+  repo: Repo
+}): React.JSX.Element {
+  const repoId = repo.id
+  const hostId = getRepoExecutionHostId(repo)
+  const projectName = repo.displayName.trim()
   const activeView = useAppStore((s) => s.activeView)
   const activeWorktree = useAppStore((s) =>
     s.activeWorktreeId
@@ -73,9 +79,19 @@ export function WorkbenchVersionNav({
   )
   const taskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
   const taskRepoId = useAppStore((s) => s.taskPageData.preselectedRepoId)
+  const taskRepoMatches = useAppStore((s) => {
+    const identity = versionRepoIdentity(repo)
+    return s.repos.some(
+      (row) =>
+        row.id === s.taskPageData.preselectedRepoId &&
+        (row.id === repo.id || (identity !== null && versionRepoIdentity(row) === identity))
+    )
+  })
   const cycleView = useCycleView()
   const projectPage = useProjectPage()
-  const catalog = useVersionCatalogForRepo(repoId)
+  const [dialog, setDialog] = useState<DialogState>(null)
+  const catalog = useVersionCatalogForRepo(repoId, hostId)
+  const cleanupCatalog = useVersionCatalogForRepo(dialog?.mode === 'cleanup' ? repoId : null)
   const overviewVersion =
     activeView === 'activity' &&
     projectPage?.kind === 'version-overview' &&
@@ -83,7 +99,6 @@ export function WorkbenchVersionNav({
       ? projectPage.options.version
       : null
   const browsedVersion = useBrowsedVersion(repoId)
-  const [dialog, setDialog] = useState<DialogState>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const focusRequest = useVersionSidebarFocusRequest()
   const versionElements = useRef(new Map<string, HTMLDivElement>())
@@ -108,6 +123,15 @@ export function WorkbenchVersionNav({
       }
     },
     [expandedKey]
+  )
+
+  useWorkbenchScreenGuide(
+    'workbench-versions',
+    !dialog &&
+      catalog.materialReady &&
+      !catalog.loading &&
+      activeView === 'terminal' &&
+      !activeWorktree?.workbenchVersionBinding
   )
 
   const loaded = catalog.catalog
@@ -163,7 +187,9 @@ export function WorkbenchVersionNav({
     }
     setExpandedOverrideAndStore(new Set([...expandedVersions, latest.version]))
     requestAnimationFrame(() => {
-      if (useAppStore.getState().activeRepoId === repoId) {
+      const state = useAppStore.getState()
+      const current = currentProjectRepo(state)
+      if (current && resolveProjectSource(state, current)?.id === repoId) {
         versionElements.current
           .get(latest.version)
           ?.querySelector('button')
@@ -194,22 +220,17 @@ export function WorkbenchVersionNav({
     [expandedVersions, setExpandedOverrideAndStore]
   )
 
-  const activeBinding = useMemo(
-    () => normalizeStoredWorkbenchVersionBinding(activeWorktree?.workbenchVersionBinding),
-    [activeWorktree]
-  )
-
-  const activeTaskVersion =
-    activeView === 'tasks' && (!taskRepoId || catalog.repoIds.includes(taskRepoId))
-      ? taskScope?.version
-      : null
-  const activeTreeVersion =
-    activeView === 'terminal' &&
+  const activeBinding =
     activeWorktree &&
     !activeWorktree.isArchived &&
-    catalog.repoIds.includes(activeWorktree.repoId)
-      ? activeBinding?.version
+    catalog.worktrees.some(
+      (tree) => getWorktreeHostIdentity(tree) === getWorktreeHostIdentity(activeWorktree)
+    )
+      ? normalizeStoredWorkbenchVersionBinding(activeWorktree.workbenchVersionBinding)
       : null
+  const activeTaskVersion =
+    activeView === 'tasks' && (!taskRepoId || taskRepoMatches) ? taskScope?.version : null
+  const activeTreeVersion = activeView === 'terminal' ? activeBinding?.version : null
   const activeVersion =
     overviewVersion ??
     activeTaskVersion ??
@@ -231,17 +252,13 @@ export function WorkbenchVersionNav({
       try {
         await run()
       } catch (reason) {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
+        notifyWorkbenchError('无法切换版本', reason, '检查项目工作区后重试。')
       } finally {
         setBusyKey(null)
       }
     },
     [busyKey]
   )
-
-  if (!repoId) {
-    return null
-  }
 
   const problems = loaded?.problems ?? []
 
@@ -277,7 +294,7 @@ export function WorkbenchVersionNav({
           }
           activeTasks={activeTaskVersion === entry.version && !taskScope?.goalId}
           activeOverview={overviewVersion === entry.version}
-          onOverview={() => openVersionOverview({ repoId, version: entry.version })}
+          onOverview={() => openVersionOverview({ repoId, hostId, version: entry.version })}
           activeGoalId={activeTaskVersion === entry.version ? (taskScope?.goalId ?? null) : null}
           onToggle={() => toggleVersion(entry.version)}
           onCleanup={() => setDialog({ mode: 'cleanup', version: entry.version })}
@@ -338,16 +355,28 @@ export function WorkbenchVersionNav({
       <WorkbenchSidebarSectionHeader
         icon={Layers}
         action={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label="新建版本"
-            title="新建版本"
-            onClick={() => setDialog({ mode: 'create' })}
-          >
-            <Plus className="size-3.5" />
-          </Button>
+          <>
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              aria-label="版本工作区帮助"
+              title="版本工作区帮助"
+              onClick={() => replayWorkbenchGuide('workbench-versions')}
+            >
+              <CircleHelp className="size-3.5" aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              data-contextual-tour-target="workbench-versions-start"
+              aria-label="新建版本"
+              title="新建版本"
+              onClick={() => setDialog({ mode: 'create' })}
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          </>
         }
       >
         版本
@@ -355,7 +384,7 @@ export function WorkbenchVersionNav({
 
       {catalog.error ? (
         <div className="px-2 py-1 text-[11px] text-destructive">
-          <p>版本目录读取失败：{catalog.error}</p>
+          <ErrorDetails summary="版本目录读取失败 · 查看详情" detail={catalog.error} />
           <button type="button" className="underline" onClick={catalog.reload}>
             重试
           </button>
@@ -370,12 +399,11 @@ export function WorkbenchVersionNav({
         </p>
       ) : null}
       {problems.length > 0 ? (
-        <p
-          className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/45"
-          title={problems.map((problem) => problem.message).join('\n')}
-        >
-          {problems.length} 项材料读取问题（悬停查看）
-        </p>
+        <ErrorDetails
+          className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/70"
+          summary={`${problems.length} 项材料读取问题 · 查看详情`}
+          detail={problems.map((problem) => problem.message).join('\n')}
+        />
       ) : null}
 
       <VersionSidebarPreview
@@ -390,8 +418,10 @@ export function WorkbenchVersionNav({
       {dialog?.mode === 'cleanup' ? (
         <VersionCleanupDialog
           version={dialog.version}
-          entry={entries.find((item) => item.version === dialog.version) ?? null}
-          worktrees={catalog.worktrees}
+          entry={
+            cleanupCatalog.catalog?.entries.find((item) => item.version === dialog.version) ?? null
+          }
+          worktrees={cleanupCatalog.worktrees}
           onClose={() => setDialog(null)}
         />
       ) : null}

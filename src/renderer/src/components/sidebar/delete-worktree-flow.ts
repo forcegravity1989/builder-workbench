@@ -10,7 +10,14 @@ import { getWorkspaceDeleteLineage } from './workspace-delete-lineage'
 import { resolveSshWorkspaceForget } from './ssh-workspace-forget-resolution'
 import { isPairedWebClientWindow } from '@/lib/desktop-window-chrome'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  parseExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host'
+import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { worktreeActivationHostOpts } from '@/workbench/worktree-activation-host-opts'
 import {
   resolveWorktreeBatchDeleteTargets,
   toWorktreeDeleteIdentities,
@@ -50,15 +57,33 @@ export function runWorktreeDelete(worktreeId: string, options: WorktreeDeleteOpt
     return
   }
   if (target.isMainWorktree) {
+    const workbench = isWorkbenchShell()
+    const targetHostId = workbench
+      ? worktreeActivationHostOpts(target)?.executionHostId
+      : target.hostId
     const repo = findRepoForHost(state.repos, target.repoId, {
-      hostId: target.hostId,
+      hostId: targetHostId,
       settings: state.settings
     })
-    const hostId = repo ? getRepoExecutionHostId(repo) : target.hostId
+    const physicalHost = parseExecutionHostId(target.hostId)
+    const pairedOwner = parseExecutionHostId(targetHostId)?.kind === 'runtime'
+    const logicalHostId = physicalHost?.kind === 'ssh' ? physicalHost.id : LOCAL_EXECUTION_HOST_ID
+    if (
+      workbench &&
+      (!repo ||
+        normalizeRuntimePathForComparison(repo.path) !==
+          normalizeRuntimePathForComparison(target.path) ||
+        (pairedOwner && repo.pairedRegistration?.hostId !== logicalHostId))
+    ) {
+      showWorkspaceListChangedToast()
+      return
+    }
+    const hostId = repo ? getRepoExecutionHostId(repo) : targetHostId
     // Why: git refuses to delete the primary checkout; users can still remove the owning project from Orca (disk contents kept).
     state.openModal('confirm-remove-folder', {
       repoId: target.repoId,
       displayName: repo?.displayName ?? target.displayName,
+      ...(workbench ? { projectRemovalRegistration: repo } : {}),
       ...(hostId ? { hostId } : {})
     })
     return

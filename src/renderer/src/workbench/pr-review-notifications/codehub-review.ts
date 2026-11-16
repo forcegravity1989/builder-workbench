@@ -1,5 +1,5 @@
 import { countUnresolvedCodeHubThreadsSince } from '../../../../shared/workbench/review-thread-counts'
-import { createCodeHubApi } from '@/lib/codehub-api'
+import { createCodeHubApi, createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { useAppStore } from '@/store'
 import type { Repo } from '../../../../shared/repo-types'
@@ -85,7 +85,7 @@ export async function readCodeHubReviewTracking(
 
 export async function openCodeHubReview(repo: Repo, number: number): Promise<void> {
   const sourceContext = requireSourceContext(repo, 'codehub')
-  const detail = await createCodeHubApi(sourceContext).viewTask({
+  const detail = await createTaskPageCodeHubApi(sourceContext).viewTask({
     repoPath: repo.path,
     repoId: repo.id,
     kind: 'mr',

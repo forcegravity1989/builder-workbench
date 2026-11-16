@@ -9,8 +9,8 @@
 本轮旅程面向 2–3 人共同做项目、一个组有多个项目的 builder。每个人使用自己的 BW，共享项目目标、任务与交付事实。用户可以先开始一件工作，再按需要使用版本运作和高级能力。
 
 - **BW 入门**回答“怎样准备好、开始第一件事”：必要组件、智能体与按需配置，包含 BW 采用的 Orca 能力。不是必须全部打勾才能开工的清单。
-- **探索 BW**回答“怎样用 BW 工作、某个功能有什么用”：**工作**类是一件事从起点到结果的完整旅程，**功能**类是某个能力或屏幕的介绍。两类在同一张矩阵中，工作行复用功能行。
-- **操作中引导**回答“我在这个屏幕，下一步怎样做”：空态、简短提示和当前屏问号。它是同一内容的就地入口，记录在对应功能行，不另建内容目录。
+- **探索 BW**回答“怎样用 BW 工作、某个功能有什么用”：**工作旅程**用相连的步骤说明一件事的起点、动作和结果，依次串联局部动画。**功能**用局部动画介绍一个能力或屏幕。两类在同一张矩阵中，工作行复用功能行。
+- **操作中引导**回答“我在这个屏幕，下一步怎样做”：屏内帮助启动指向真实控件的逐步引导。空态和简短文字也可说明前提与恢复动作，各自的覆盖记录在对应功能行。
 
 通用帮助集中在左下角问号，入门和探索持续可回看。文档、变更日志、快捷键等仍沿[底部帮助](../../src/renderer/src/components/sidebar/SidebarSettingsHelpMenu.tsx)与 [BW 链接](../../src/renderer/src/workbench/help-links.ts)维护；反馈/报告通道独立维护。新功能提示是投放方式，海报/漫画是传播产物，都挂回内容行，不增加同级“旅程中心”。**旅程先成立，再按需配传播；没有海报不妨碍旅程使用。**
 
@@ -21,14 +21,15 @@
 以下是逐条整改的目标规则；矩阵中的缺口和待验项不因规范已写就算落地。
 
 - **首次安装**只引入开始工作所需的准备。按平台、已有安装和当前任务判断依赖；缺哪个组件就说明用途、安装入口及成功结果。可选集成、第二个项目、自动化和统计不成为所有人的开工门槛。
-- **首次进入复杂屏幕**先简短说明“能做什么、从哪里开始”，用户可选开始引导或直接操作。不自动播放长篇演示；简单屏幕或清楚的空态不强加一次弹窗。
-- **主动演示与回看**随时可退出。探索提供介绍；跳到实际屏幕后才能开始依赖真实控件的操作引导。屏内问号重播本屏相关片段。目标控件或前提不存在时说明缺什么、怎样继续，不展示悬空步骤。
-- **避免叠加**：首次设置、屏内介绍和新功能提示协调显示，一次只处理眼前一件事。关闭后应能在入门、探索或相关屏幕找到相应内容；有自动提示不等于已有手动回看。
+- **首次进入有操作引导的屏幕**时，必要控件就绪后自动出现第一步，用简短文字说明当前动作。走完或跳过后按稳定 ID 保存记录，再进入时可直接操作。首次进入只触发短引导，探索动画由用户主动播放。
+- **屏内帮助**：有页头的功能屏，将帮助问号独立放在页头操作组右侧。点问号从第一步重播本屏引导。同屏有多个引导时，从一个帮助菜单选择；探索功能项可以提供「在界面中跟做」，返回真实屏幕启动同一引导。复用[原生 contextual tour][tours]及[里程碑接法][milestone-guide]，用箭头或高亮指向真实控件。用户操作控件或点「下一步」推进，随时可跳过。缺少前提或控件时，说明缺项并提供可执行的继续路径。
+- **引导定位**：每步出现时，待操作目标须在当前视口内，箭头或高亮对准目标，浮层不遮挡目标及其操作。目标折叠、位于屏外或被其他界面占用时，先使其可见可用，或给出明确的继续路径。
+- **避免叠加**：首次设置、其他弹窗、屏内引导和新功能提示协调显示。已有界面占用时等前提恢复，再按当前屏与控件状态判断是否显示。退出后仍可从本屏帮助回看。
 - **先改易用性**：用户不看教程也应能找到主要动作。先消除多余步骤、含混名称与重复配置，再补解释；采集失败显示未知和恢复入口，只影响依赖该数据的动作。例如可选 SDLC 统计缺数据，不应挡住查看任务和继续工作。
 
 “看过介绍”“配置可用”“实际做成”分别记录：打开演示只能说明看过；配置状态来自真实检测；工作成果来自真实任务/交付事实及必要的人确认。跳过不算完成，重看不重置业务状态，重启后按实际来源读回。[现有探索进度](../../src/renderer/src/components/feature-wall/feature-wall-completion-progress.ts)结合访问与配置状态，不能当作整条工作旅程的完成记录。
 
-概念和布局可用静态示意，操作顺序优先复用交互动画，真实联动需要有版本依据的真机录屏，操作中引导使用真实控件。模拟动画与真机证据分开；动画中的成功不是能力已验证的证据。
+探索的局部动画复用实际界面组件与样式，用安全样例演示控件、操作和可见反馈，无需用户添加项目。完整旅程按步骤串联各段动画，用户可选择步骤、顺序播放、暂停和重播。截图可用于指南、传播和真壳验证材料。矩阵分别记录截图介绍、原型动画、已接入的动画、屏内文字帮助和真实控件引导。模拟动画只提供演示证据，业务闭环与真实联动以对应版本的运行证据为准。
 
 ## 矩阵口径
 
@@ -64,54 +65,54 @@ G08/G09 保留在入门的“能力体验”里，与探索共用内容，位置
 
 ## 探索 BW 矩阵
 
-工作行围绕[产品主张与飞轮](../01-principles/03-press-release-faq-flywheel.md)组织完整用户结果：明确方向 → 定版本承诺 → 构建交付 → 人确认验收 → 看真实效果并调整下一轮；项目知识与已验证做法逐轮积累。W01–W05 是核心旅程，W06/W07 为建设中的长期旅程；本表保留完整愿景，不表示所有旅程都要在同一版本补齐。安装、准备和添加项目沿入门与功能行维护；并行、中断续作和多项目切换按需要融入工作过程。
+工作行围绕[产品主张与飞轮](../01-principles/03-press-release-faq-flywheel.md)组织完整用户结果：明确方向 → 制定版本计划 → 构建交付 → 验收成果 → 查看效果 → 调整下一轮；项目知识与已验证做法逐轮积累。W01–W05 是可独立进入的核心旅程，顺序表达工作联系，查看效果后可回到下一轮方向与计划。W06/W07 对应「持续维护」「沉淀复用」，是贯穿每轮的建设中能力。安装、准备和添加项目沿入门与功能行维护；并行、中断续作和多项目切换按需要融入工作过程。
 
-工作行管理完整旅程，屏内问号/首次进入由功能行承接。探索 BW 在同一弹窗中按工作旅程与功能分组，复用[原有十一页演示][explore]。未填内容展示标题、简介和「内容准备中」，W06/W07 展示「建设中」。内容承载先复用现有探索目录与展示机制；先筛选旅程依赖及用户可见的基础功能，打磨易用性、修复 BUG 并补本屏引导，再串联、实走完整旅程并制作所需演示、指南与传播素材。功能行的勾只覆盖格内所写片段，不要求每屏独立制作整套素材。
+工作行管理完整旅程，屏内帮助/首次进入由功能行承接。探索 BW 在同一弹窗中按工作旅程与功能分组，复用[原有十一页演示][explore]。未填内容展示标题、简介和「内容准备中」，W06/W07 展示「建设中」。内容承载先复用现有探索目录与展示机制；先筛选旅程依赖及用户可见的基础功能，打磨易用性、修复 BUG 并补本屏引导，再串联、实走完整旅程并制作所需演示、指南与传播素材。功能行的勾只覆盖格内所写片段，不要求每屏独立制作整套素材。
 
 W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库，以及已有的 AI 工作流、开发规范、Skill 和定时能力，还需形成用户可实际使用的治理与复用闭环。已有资产、入口或本机做法不等于这两条产品旅程已可用；本期不安排它们的完整引导与传播。工程部署及 SDLC 统计也不纳入本期新增引导与素材；版本总览的基础事实、衡量产品效果的指标仍在核心旅程范围内。
 
 功能行的本期选择为 **16 项重点、8 项随屏处理、5 项暂缓**。“本期安排与核对点”记录采用范围，不是执行进度；重点项按实际界面分组走查，随屏项在所指入口核对并保留各格证据，不因合并讲解而丢失检查点。暂缓项保留已有内容，未选中路径不新增专项教程；F26 工程部署和 F27 中的 SDLC 按本期排除范围处理。共享主机的连接、配对、项目可访问性与断连恢复归 F24，浏览器协作 F08 复用；F13 暂缓不免除协作路径实际依赖的连接检查。
 
-| 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 当前屏问号 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
+| 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 屏内帮助 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|---|
-| 工作 | W01 把产品想法变成共同方向和阶段安排：明确愿景 → 维护项目名片 → 规划里程碑 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F18、F19、F21 | 同左 | — | ☐ | ☐ |
-| 工作 | W02 把方向变成本版可执行的承诺：结合上版结果与新要求 → 确定目标、验收条件和任务 → 评审归档并开工 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F02、F18、F22、F23 | 同左 | — | ☐ | ☐ |
-| 工作 | W03 把问题或需求推进到可信交付：任务开工 → 工作区执行与验证 → 按需原型批注及评审通知 → PR 检视、修改与合入 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F01–F03、F06–F11、F23、F24 | 同左 | — | ☐ | ☐ |
-| 工作 | W04 把本版承诺验收清楚：对照目标核验证据 → 人确认结果 → 归档并安排遗留和下一版 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F18、F22、F25、F27 | 同左 | — | ☐ | ☐ |
-| 工作 | W05 用真实效果保持方向：查看进展与指标 → 识别偏差 → 人决定调整 → 形成后续计划或任务 | 核心旅程；先打磨所依赖的功能 | ☐ | 复用 F02、F19、F21、F22、F27、F28 | 同左 | — | ☐ | ☐ |
+| 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；Windows 本机演示仓实走至变更核对与失败恢复；共享仓的合入及多人读回待验 | [✅ 四步播放、暂停、重播与关闭回看][direction-content] · [Windows 证据][direction-evidence] · [已认可布局与名片顺序][direction-prototype] | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
+| 工作 | W02 制定版本计划：定版 → 定目标与验收标准 → 关联任务 → 评审归档 → 开工 | 核心旅程；本机首版建版、保存与读回已验，真实模型、归档评审和开工待验 | [✅ 五步切换、播放、暂停与重播][planning-content] | 复用 F02、F18、F22、F23 | 同左 | — | [✅ 本机建版与保存读回][planning-guide]；协作环节待验 | 待定传播样式，复用指南截图 |
+| 工作 | W03 把问题或需求推进到可信交付：找目标任务 → 并行执行 → GitHub PR 验证与评审 → 人确认完成并读回 | 核心旅程；同一目标下并行开工、原型评审、GitHub PR 返修及人工关单读回 | [✅ Windows 空项目的六步样例播放、暂停续播和重播][delivery-content]；共享通知见 F24 | 复用 F01–F03、F06–F11、F23、F24；墙卡与目标任务见 F19/F27 | 同左 | — | [✅ 观看演示][delivery-guide]；真实业务指南待验 | ☐ |
+| 工作 | W04 把本版承诺验收清楚：对照目标核验证据 → 人确认结果 → 归档并安排遗留和下一版 | 核心旅程；沿现有四区核对，真实助手执行和远端归档待验 | [✅ 五步样例演示、选步、暂停和重播][acceptance-content] | 复用 F18、F22、F25、F27 | 同左 | — | [✅ 本机核对与保存][acceptance-guide]；真实协作待验 | — |
+| 工作 | W05 用真实效果保持方向：查看进展与指标 → 识别偏差 → 人决定调整 → 形成后续计划或任务 | 核心旅程；样例与真实读数分开 | [✅ Windows 四步样例播放和功能片段][outcomes-content] | 复用 F02、F19、F21、F22、F27、F28 | 同左 | — | ☐ | ☐ |
 | 工作 | W06 让项目持续可维护（建设中）：审视项目知识、架构与技术债 → 决定处理或暂缓 → 执行并验证 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 工作 | W07 把跑通的做法变成下次少操心（建设中）：总结真实工作 → 沉淀可复用做法 → 在下次同类任务复用并检验 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
-| 功能 | F01 创建工作区、隔离并行任务 | 重点：创建、隔离、切换与继续工作 | [✅ 工作区演示][explore-copy] | ☐ | [待验：workspace-creation][tours] | — | ☐ | — |
-| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；来源按实际环境核对 | [✅ GitHub/Linear 片段][explore-copy]；☐ BW/CodeHub 补充 | ☐ | [待验：tasks][tours] | — | ☐；CLI 参考见 F29 | — |
-| 功能 | F03 智能体运行状态 | 随屏 → F01/F06：运行、等待、受阻状态及继续操作 | [✅ 状态演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
+| 功能 | F01 创建工作区、隔离并行任务 | 重点：创建、隔离、切换与继续工作 | [✅ 工作区演示][explore-copy]；[✅ 样例独立开工和切换][delivery-content] | ☐ | [待验：workspace-creation][tours] | — | ☐ | — |
+| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ 既有 GitHub/Linear 片段][explore-copy]；[待验：W02 关联任务与开工片段][planning-content]；[✅ 样例目标任务与状态回看][delivery-content] | [✅ 任务页帮助重播至筛选区][screen-guide] | [待验：首次触发、完成与持久读回][tours] | — | 复用 W02；CLI 参考见 F29 | — |
+| 功能 | F03 智能体运行状态 | 随屏 → F01/F06：运行、等待、受阻状态及继续操作 | [✅ 状态演示][explore-copy]；[✅ 样例工作区状态][delivery-content] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F04 智能体编排 | 暂缓专项；保留已有编排演示 | [✅ 编排演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F05 账号用量 | 随屏 → F06：账号身份、用量/额度、未知或受限时的下一步 | [✅ 用量演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
-| 功能 | F06 终端、分屏与智能体会话 | 重点：终端、分屏、智能体会话及上下文恢复 | [✅ 终端演示][explore-copy] | ☐ | [待验：workspace-agent-sessions][tours] | — | ☐ | — |
-| 功能 | F07 编辑器 | 随屏 → F06/F09：打开、编辑与核对文件改动 | [✅ 编辑器演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
-| 功能 | F08 内置浏览器、抓取与批注 | 重点：页面、抓取与批注；协作时复用 F24 的共享主机连接核对 | [✅ 浏览器演示][explore-copy] | ☐ | [待验：browser][tours] | — | ☐ | — |
-| 功能 | F09 评审意见与代码差异 | 重点：检查改动、留意见与继续处理；承接 F10/F11 | [✅ 差异/意见演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
-| 功能 | F10 PR 检查 | 随屏 → F09：PR 检查来源、结果及未完成/失败时的动作 | [✅ PR 演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
-| 功能 | F11 AI 辅助提交与交付 | 随屏 → F09：AI 准备提交与 PR、由人核对交付 | [✅ 交付演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
+| 功能 | F06 终端、分屏与智能体会话 | 重点：终端、分屏、智能体会话及上下文恢复 | [✅ 终端演示][explore-copy]；[✅ 样例切换并返回原会话][delivery-content] | ☐ | [待验：workspace-agent-sessions][tours] | — | ☐ | — |
+| 功能 | F07 编辑器 | 随屏 → F06/F09：打开、编辑与核对文件改动 | [✅ 编辑器演示][explore-copy]；[✅ 样例返修差异][delivery-content] | ☐ | ☐ | — | ☐ | — |
+| 功能 | F08 内置浏览器、抓取与批注 | 重点：页面、抓取与批注；协作时复用 F24 的共享主机连接核对 | [✅ 浏览器演示][explore-copy]；[✅ 样例原型批注和会话入口][delivery-content] | [✅ Windows 浏览器帮助重播、空白页提示、添加和展开回看批注][delivery-help]；[✅ Windows 双标签重播、切离取消与关闭后台页][delivery-browser-recheck] | [待验：browser][tours] | — | ☐ | — |
+| 功能 | F09 评审意见与代码差异 | 重点：检查改动、留意见与继续处理；承接 F10/F11 | [✅ 差异/意见演示][explore-copy]；[✅ 样例文件评论与返修][delivery-content] | [✅ Windows 筛选展开后重播与真实差异打开][delivery-help] | [✅ Windows 首次出现、跳过及重启读回][delivery-help] | — | ☐ | — |
+| 功能 | F10 PR 检查 | 随屏 → F09：PR 检查来源、结果及未完成/失败时的动作 | [✅ PR 演示][explore-copy]；[✅ 样例读回当前提交检查][delivery-content] | ☐ | ☐ | — | ☐ | — |
+| 功能 | F11 AI 辅助提交与交付 | 随屏 → F09：AI 准备提交与 PR、由人核对交付 | [✅ 交付演示][explore-copy]；[✅ 样例提交及 PR 表单][delivery-content] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F12 工作区看板 | 随屏 → F01：工作区看板、切换及状态；与项目墙区分 | ☐ | ☐ | [待验：workspace-board][tours] | — | ☐ | — |
 | 功能 | F13 客户端承载远端浏览器 | 暂缓专项；选中协作路径确实依赖时补必要说明 | ☐ | ☐ | [待验：client-hosted-browser][tours] | — | ☐ | — |
 | 功能 | F14 自动化 | 重点（基础）：已有创建、启停与运行入口；默认工作流整合归 W07 | ☐ | ☐ | [待验：automations][tours] | — | ☐ | — |
 | 功能 | F15 浮动工作区 | 暂缓专项；保留既有浮动工作区能力 | ☐ | ☐ | [待验：floating-workspace][tours] | — | ☐ | — |
 | 功能 | F16 快捷跳转 | 随屏 → F01/F23：唤起、查找、跳转及常驻回看 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | 暂缓专项；保留既有语音入口与提示 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
-| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、编辑与提交；复用总览入口 | ☐ | [待验：里程碑操作引导][milestone-guide] | [待验：workbench-milestones][milestone-guide] | — | ☐ | — |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、切换与事实读数 | ☐ | ☐ | 待验：初始设置交接到空项目墙，取消可重试，首个项目上墙后点项目名开工 | — | ☐ | — |
+| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、草稿、提交评审和更新正式安排；W02 复用排期参考 | [✅ 编排与评审局部动画][direction-content] | [总览页头帮助 → 里程碑引导][screen-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ 排期、保存、读回与失败恢复][direction-guide]；远端提交及合入更新待验 | 复用 W01 |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)；墙卡仅显示材料阶段，归档状态在悬停提示及版本总览查看；未 clone 项目的版本与侧栏一致性待双机验证（#658） | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
-| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、指标的分工与空态 | ☐ | ☐；里程碑见 F18 | ☐ | — | ☐ | — |
-| 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务及评审归档 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F25 [版本验收](../05-features/version-acceptance/spec.md) | 重点：核验证据、人的结论及归档 | ☐ | ☐ | ☐ | — | ☐ | — |
+| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工与[读取来源](../architecture.md#页面读取来源)；名片直接编辑及本地保存 | [✅ 与 W01 共用名片动画][direction-content] | [总览页头帮助 → 项目名片引导][screen-guide]；里程碑见 F18；记分牌见 F28 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
+| 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：定目标、验收条件、任务、批注与归档 | [✅ 共用 W02 片段及跟做入口；评审片段含对象批注][planning-content] | [✅ 计划页头最右侧帮助；已有材料时指向目标、批注、归档][screen-guide] | [✅ 首步、跳过与主进程读回][tours]；新进程持久读回及其他弹窗协调待验 | — | 复用 W02，已验样例批注添加与编号回看 | — |
+| 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话；与项目墙同源的远端版本读取、失败重试待双机验证（#658） | [待验：与 W02 共用选版和开工片段][planning-content]；[✅ 样例目标目录和工作区][delivery-content] | [✅ 版本侧栏帮助打开引导][screen-guide] | [待验：侧栏首次出现及跳过读回][tours] | — | 复用 W02 | — |
+| 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | [✅ Windows 样例选主机、项目暂不可访问及打开已有通知][delivery-content]；真实送达待验 | ☐ | ☐ | — | ☐ | — |
+| 功能 | F25 [版本验收](../05-features/version-acceptance/spec.md) | 重点：核验证据、人的结论及归档 | [复用 W04 验收片段][acceptance-content] | [✅ 验收页头问号重播][screen-guide] | [✅ Windows 首次出现、跳过与新进程读回][tours] | — | 复用 W04 | — |
 | 功能 | F26 [工程部署](../05-features/version-acceptance/spec.md) | 暂缓：本期不新增工程部署引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：目标、任务与验收事实；SDLC 本期不新增引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F28 [指标配置与采集](../05-features/overview-metrics/spec.md) | 重点：指标口径、配置、采集及缺数据/失败后的继续路径 | ☐ | ☐ | ☐ | — | ☐ | — |
-| 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F24/F25：配置衔接入门，核对 CodeHub/WeLink 的登录、访问与实际使用 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；☐ BW 接入指南 | — |
+| 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)、目标、任务、验收事实与[版本未同步提示](../05-features/version-overview/spec.md#来源历史与缓存)；SDLC 本期不新增引导与素材 | [复用 W04 读回片段][acceptance-content] | [✅ 版本总览页头问号重播][screen-guide] | [✅ Windows 首次出现、跳过与新进程读回][tours] | — | 复用 W04 | — |
+| 功能 | F28 [指标配置与采集](../05-features/overview-metrics/spec.md) | 重点：指标口径、配置、采集及缺数据/失败后的继续路径。旧脚本提示从记分牌继续配置或刷新，详情按需展开 | [✅ 复用 W05 读数与恢复样例][outcomes-content] | [✅ 总览页头问号重播、探索跟做][screen-guide] | [✅ Windows 首次滚入、三步及跳过读回][tours] | — | ☐ | — |
+| 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F22/F24/F25：核对 CodeHub/WeLink 登录和使用；W02 核对任务与归档来源 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；复用 W02 登录恢复 | — |
 
-九项原生/BW [操作引导][tours]已归到功能行“首次进入”。原生自动引导受新用户资格、已看/已用和当前控件状态限制，不保证每个用户第一次进屏就弹；里程碑另有显式请求。**自动引导、入门“开始体验”都不等于屏内问号回看**，只有 F18 找到明确的问号入口，仍待实走确认。工作区看板 F12 与项目墙 F19 是不同内容，不能共用一个完成勾。
+[操作引导][tours]归到功能行“首次进入”。现有原生自动引导受新用户资格、已看或已用记录和控件状态限制。F18、F19、F21 [复用原生操作引导][screen-guide]，里程碑在进入规划时自动出现，总览在项目名片可用时自动出现。首次自动触发、跳过保存、屏内重播及缺前提恢复均按实际入口分别取证。工作区看板 F12 与项目墙 F19 分别核对。
 
 ## 新功能提示
 
@@ -142,5 +143,28 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [explore]: ../../src/shared/feature-wall-workflows.ts
 [explore-copy]: ../../src/renderer/src/components/feature-wall/feature-wall-tour-localized-copy.ts
 [tours]: ../../src/shared/contextual-tours.ts
-[milestone-guide]: ../../src/renderer/src/workbench/milestone-history-actions.tsx
+[milestone-guide]: ../../src/renderer/src/workbench/project-milestones.tsx
 [tips]: ../../src/shared/feature-tips.ts
+
+[direction-evidence]: https://github.com/forcegravity1989/builder-workbench/pull/640#issuecomment-6824962114
+[direction-content]: ../../src/renderer/src/workbench/explore/DirectionWalkthrough.tsx
+[direction-wall]: ../../src/renderer/src/workbench/ProjectWallPage.tsx
+[screen-guide]: ../../src/renderer/src/workbench/WorkbenchScreenGuide.tsx
+[direction-guide]: ../03-guide/project-direction/README.md
+[direction-poster]: ../03-guide/project-direction/journey.jpg
+[direction-poster-source]: ../03-guide/project-direction/journey.html
+
+[planning-content]: ../../src/renderer/src/workbench/explore/PlanningWalkthrough.tsx
+[planning-guide]: ../03-guide/version-planning/README.md
+
+[acceptance-content]: ../../src/renderer/src/workbench/explore/AcceptanceWalkthrough.tsx
+[acceptance-guide]: ../03-guide/version-acceptance/README.md
+
+[direction-prototype]: ../05-features/explore-workbench/prototype.html
+
+[delivery-content]: ../../src/renderer/src/workbench/explore/DeliveryWalkthrough.tsx
+[delivery-help]: ../../src/renderer/src/workbench/WorkbenchDeliveryHelp.tsx
+[delivery-browser-recheck]: https://github.com/forcegravity1989/builder-workbench/pull/669#issuecomment-6895397151
+[delivery-guide]: ../03-guide/issue-delivery/README.md
+
+[outcomes-content]: ../../src/renderer/src/workbench/explore/OutcomesWalkthrough.tsx

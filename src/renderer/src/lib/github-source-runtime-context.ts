@@ -39,6 +39,9 @@ export function getGitHubMutationRoutingSettings(
   repoId: string | null | undefined,
   sourceContext: TaskSourceContext | null | undefined
 ): Pick<GlobalSettings, 'activeRuntimeEnvironmentId'> {
+  if (sourceContext?.localTaskAccount) {
+    return { activeRuntimeEnvironmentId: null }
+  }
   const sourceHost = getGitHubSourceRuntimeHost(sourceContext)
   return {
     activeRuntimeEnvironmentId:

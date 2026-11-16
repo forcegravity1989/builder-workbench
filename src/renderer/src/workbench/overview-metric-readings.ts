@@ -73,7 +73,6 @@ export async function refreshMetricReadings(args: {
   const { scope, catalog } = args
   const granularity = args.granularity ?? 'week'
   const metrics = nativeMetricsPort(args.owner)
-  const problems: string[] = []
   const map: OverviewReadResult['map'] = {}
   // Each script owns an isolated checkout; serialize to bound disk and memory pressure.
   for (const def of catalog.definitions) {
@@ -104,8 +103,7 @@ export async function refreshMetricReadings(args: {
                 reading.previous ?? (previous?.status === 'ready' ? previous : previous?.previous)
             }
     } catch (reason) {
-      const message = `刷新 ${def.name}：${reason instanceof Error ? reason.message : String(reason)}`
-      problems.push(message)
+      const message = reason instanceof Error ? reason.message : String(reason)
       map[def.ref.definitionHash] = {
         status: 'error',
         reason: { code: 'collection-failed', message },
@@ -117,6 +115,6 @@ export async function refreshMetricReadings(args: {
   return {
     north: north ? (map[north.ref.definitionHash] ?? null) : null,
     map,
-    problems: [...(args.onlyMissing ? (args.previous?.problems ?? []) : []), ...problems]
+    problems: args.onlyMissing ? (args.previous?.problems ?? []) : []
   }
 }

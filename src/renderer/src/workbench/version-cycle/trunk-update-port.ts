@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+import { notifyWorkbenchError } from '../error-feedback'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { TrunkUpdateResult } from '../../../../shared/workbench/trunk-update'
 import { callMetricRuntime } from '../metric-runtime-rpc'
@@ -54,4 +56,12 @@ export function trunkUpdateNotice(result: TrunkUpdateResult): string {
     return '已是最新'
   }
   return result.reason ?? '代码未更新，原因未知'
+}
+
+export function notifyTrunkUpdate(result: TrunkUpdateResult): void {
+  if (result.updated) {
+    toast.message(trunkUpdateNotice(result))
+  } else {
+    notifyWorkbenchError('代码未更新', result.reason, '核对项目仓库后重试。')
+  }
 }

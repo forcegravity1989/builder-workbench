@@ -176,43 +176,58 @@ export function AcceptancePrepareSection({
           )}
         </div>
 
-        <div className="acc-prepare-row">
-          <FileText size={15} aria-hidden="true" />
-          <span className="acc-prepare-label">验收证据报告</span>
-          {report ? (
-            <button
-              type="button"
-              className="acc-link"
-              title="一个版本一份，全目标合并"
-              onClick={() => onOpenMaterial(report.location)}
-            >
-              已生成 {new Date(report.generatedAt).toLocaleString('zh-CN')}
-              <ArrowUpRight size={13} aria-hidden="true" />
-            </button>
-          ) : (
-            <span className="acc-muted">未生成 · 点「聚合」注入请求</span>
-          )}
-          {onSendAction(
-            '聚合本次验收的证据报告。',
-            '聚合请求',
-            <BoardActionButton title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件">
-              <BrainCircuit size={14} aria-hidden="true" /> 聚合
-            </BoardActionButton>,
-            prepareReportPrompt
-          )}
-          <BoardIconButton
-            label={report ? '打开验收证据报告' : '报告未生成；先点「聚合」注入请求'}
-            disabled={!report}
-            onClick={() => {
-              if (report) {
-                onOpenMaterial(report.location)
-              }
-            }}
-          >
-            <FileText size={15} aria-hidden="true" />
-          </BoardIconButton>
-        </div>
+        <AcceptanceEvidenceReportRow
+          report={report}
+          onSendAction={onSendAction}
+          prepareReportPrompt={prepareReportPrompt}
+          onOpenMaterial={onOpenMaterial}
+        />
       </div>
     </section>
+  )
+}
+
+export function AcceptanceEvidenceReportRow({
+  report,
+  onSendAction,
+  prepareReportPrompt,
+  onOpenMaterial
+}: {
+  report?: AcceptanceMaterial['preparedArtifacts'][number]
+  onSendAction: SendActionWrap
+  prepareReportPrompt?: () => Promise<string>
+  onOpenMaterial(location: string): void
+}) {
+  return (
+    <div className="acc-prepare-row">
+      <FileText size={15} aria-hidden="true" />
+      <span className="acc-prepare-label">验收证据报告</span>
+      {report ? (
+        <button
+          type="button"
+          className="acc-link"
+          title="打开本版验收证据报告"
+          onClick={() => onOpenMaterial(report.location)}
+        >
+          已生成 {new Date(report.generatedAt).toLocaleString('zh-CN')}
+          <ArrowUpRight size={13} aria-hidden="true" />
+        </button>
+      ) : (
+        <span className="acc-muted">未生成 · 点「聚合」交给验收助手</span>
+      )}
+      {onSendAction(
+        '聚合本次验收的证据报告。',
+        '聚合请求',
+        <BoardActionButton title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件">
+          <BrainCircuit size={14} aria-hidden="true" /> 聚合
+        </BoardActionButton>,
+        prepareReportPrompt
+      )}
+      {!report && (
+        <BoardIconButton label="报告未生成；先点「聚合」" disabled>
+          <FileText size={15} aria-hidden="true" />
+        </BoardIconButton>
+      )}
+    </div>
   )
 }

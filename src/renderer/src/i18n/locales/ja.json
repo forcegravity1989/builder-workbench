@@ -4275,7 +4275,6 @@
           "591f330288": "プロジェクトグループの削除",
           "2c14ce677a": "削除中…",
           "0e0e6764af": "含まれるプロジェクト",
-          "ad407c2d55": "件以上",
           "removeContainedProjectSingular": "含まれるプロジェクトを1件削除",
           "removeContainedProjectPlural": "含まれるプロジェクトを{{value0}}件削除",
           "eeabb8e8e4": "含まれている {{value1}} {{value0}} 件を Orca から削除",

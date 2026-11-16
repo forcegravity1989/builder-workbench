@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useProjectPage } from '../project-page-state'
@@ -139,9 +140,11 @@ export function OverviewExperimentSettings() {
             </p>
           )}
           {error && (
-            <p className="text-xs text-destructive" role="alert">
-              {error}
-            </p>
+            <ErrorDetails
+              className="text-xs text-destructive"
+              summary="版本总览设置未保存 · 查看详情"
+              detail={error}
+            />
           )}
         </CardContent>
       </Card>

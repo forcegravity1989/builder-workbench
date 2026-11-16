@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactNode } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../../../shared/repo-types'
 
 const mocks = vi.hoisted(() => ({
@@ -72,9 +72,12 @@ describe('RemoveFolderDialog', () => {
     mocks.state.removedSshTargetLabels = new Map()
   })
 
-  it('warns that VM recipe cleanup controls file deletion', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('warns that VM recipe cleanup controls file deletion for an explicit SSH owner', () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
     mocks.state.modalData.hostId = 'ssh:runtime-ssh-runtime-1'
-    mocks.state.repos = [repo('runtime-ssh-runtime-1', 'ssh:runtime-ssh-runtime-1')]
+    mocks.state.repos = [repo(null, 'ssh:runtime-ssh-runtime-1')]
 
     const html = renderToStaticMarkup(<RemoveFolderDialog />)
 

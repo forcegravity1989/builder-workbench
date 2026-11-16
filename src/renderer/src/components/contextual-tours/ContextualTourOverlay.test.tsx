@@ -293,9 +293,7 @@ describe('ContextualTourOverlaySurface', () => {
 
     expect(preventDefault).toHaveBeenCalledTimes(1)
     expect(stopImmediatePropagation).toHaveBeenCalledTimes(1)
-    expect(panel.querySelector).toHaveBeenCalledWith(
-      'button[aria-label^="Skip"], button[aria-label="Dismiss tour"]'
-    )
+    expect(panel.querySelector).toHaveBeenCalledWith('button[data-contextual-tour-skip]')
     expect(click).toHaveBeenCalledTimes(1)
     expect(dismissContextualTour).not.toHaveBeenCalled()
   })

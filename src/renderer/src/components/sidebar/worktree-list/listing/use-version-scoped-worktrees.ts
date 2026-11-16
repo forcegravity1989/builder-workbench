@@ -109,10 +109,7 @@ export function getWorkbenchSidebarProject(
     repoIds: rows.map((row) => row.id),
     rows,
     groups,
-    worktreeIdentities:
-      !folder && versionProjection.repoId === repoId
-        ? versionProjection.worktreeIdentities
-        : new Set<string>()
+    worktreeIdentities: !folder ? versionProjection.worktreeIdentities : new Set<string>()
   }
 }
 

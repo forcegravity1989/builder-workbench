@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from './error-feedback'
 import { useVersionMembership } from './version-cycle/use-version-membership'
 import React, { useMemo, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -202,7 +203,7 @@ export function VersionTreeBindDialog({
         if (!repo) {
           throw new Error(`未在已登记项目中找到 ${reference.repository} 对应的项目`)
         }
-        const taskSource = getTaskPageRepoSourceContext(repo, reference.provider)
+        const taskSource = getRepoTaskSourceContext(repo, reference.provider)
         if (!taskSource) {
           throw new Error(`项目 ${repo.displayName || repo.id} 解析不出任务来源`)
         }
@@ -231,10 +232,10 @@ export function VersionTreeBindDialog({
       toast.success(`已把工作区 ${label} 纳入 ${version}。`)
       onClose()
     } catch (reason) {
-      toast.error(
-        `把工作区 ${label} 纳入 ${version} 失败：${
-          reason instanceof Error ? reason.message : String(reason)
-        }`
+      notifyWorkbenchError(
+        `无法把工作区 ${label} 纳入 ${version}`,
+        reason,
+        '可重新选择版本后重试。'
       )
     } finally {
       setBusy(false)

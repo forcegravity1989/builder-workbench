@@ -4294,7 +4294,6 @@
           "591f330288": "Eliminar grupo de proyectos",
           "2c14ce677a": "Eliminando...",
           "0e0e6764af": "Proyectos contenidos",
-          "ad407c2d55": "más",
           "removeContainedProjectSingular": "Quitar 1 proyecto contenido",
           "removeContainedProjectPlural": "Quitar {{value0}} proyectos contenidos",
           "eeabb8e8e4": "Quitar {{value0}} {{value1}} contenidos de Orca",

@@ -1,5 +1,11 @@
 import { app, ipcMain } from 'electron'
 import type { Store } from '../persistence'
+import { getSshTargetIdForExecutionHost } from '../../shared/execution-host'
+import {
+  WorkbenchRepoRemoval,
+  findConfirmedRepoRegistration,
+  type ConfirmedRepoRegistration
+} from '../../shared/workbench/repo-removal'
 import {
   listEphemeralVmRuntimes,
   updateEphemeralVmRuntimeStatus
@@ -67,7 +73,10 @@ export function registerEphemeralVmRuntimeHandlers(store: Store): void {
 
   ipcMain.handle(
     'ephemeralVm:cleanup',
-    async (_event, args: { runtimeId: string }): Promise<EphemeralVmRuntimeRecord> => {
+    async (
+      _event,
+      args: { runtimeId: string; expectedRegistration?: ConfirmedRepoRegistration }
+    ): Promise<EphemeralVmRuntimeRecord> => {
       const userDataPath = app.getPath('userData')
       const runtime = listEphemeralVmRuntimes(userDataPath).find(
         (entry) => entry.id === args.runtimeId
@@ -77,6 +86,17 @@ export function registerEphemeralVmRuntimeHandlers(store: Store): void {
       }
       if (!runtime.repoId) {
         throw new Error(`Ephemeral VM runtime has no repo id: ${args.runtimeId}`)
+      }
+      if (args.expectedRegistration) {
+        const expected = WorkbenchRepoRemoval.parse(args.expectedRegistration)
+        if (
+          runtime.sshTargetId !== getSshTargetIdForExecutionHost(expected.hostId) ||
+          !findConfirmedRepoRegistration(store.getRepos(), expected)
+        ) {
+          throw new Error(
+            'The project registration changed. Refresh the project list and try again.'
+          )
+        }
       }
       let result
       if (runtime.cleanupStatus === 'succeeded') {
