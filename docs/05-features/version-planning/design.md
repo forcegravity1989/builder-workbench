@@ -88,7 +88,7 @@ usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远�
 
 保留 `.bw/planning/<version>/data.json`、schema_version=3 与现有目标/任务/workflow/minutes 契约。上版来源先以 `selectPriorVersionSource` 按目录既有排序定位紧邻前版，再查该版验收；已有 `summary.progressSource` 优先，缺验收不回退更早版本，不生成成绩。`planning-progress-source` 经 history.read/readPlan 按 version/cycleId/sourceCommit/revision 核验固定验收与计划，`use-prior-carryovers` 只投影延期/会议遗留；固定读取失败两行留空、不增独立错误或重试界面，实时 Issue 参考的错误/重试保留。「查看验收依据」复用既有只读材料页与 readonlyBrowse，进入同一固定修订整页，返回原计划，不建树、不读当前稿或初始化替代材料。加载失败不新建替代物；版本不由日期、标题或 mtime 推断。
 
-计划、验收、侧栏目标入口和总览用 `version-cycle/version-membership.ts` 通过原生 provider 查询 `bw:plan:<版本>`。仅标题中与本版匹配且存在于计划的目标 id 建立归属，其余成员进入「未归类」。旧计划的 `tasks` 仅保留在原材料格式。查询失败或不完整显示未知。
+计划、验收、侧栏目标入口和总览用 `version-cycle/version-membership.ts` 通过原生 provider 查询 `bw:plan:<版本>`。仅标题中与本版匹配且存在于计划的目标 id 建立归属，其余成员进入「未归类」。计划目标 id 按列表顺序为 `G1`…`Gn`：写入侧对新建计划、整组替换与已按序计划统一规整；增删/重排后按新顺序重编号，屏上提示需人工核对标题的 Issue。存量非规范 id 原样保留、读取兼容，不做自动迁移。旧计划的 `tasks` 仅保留在原材料格式。查询失败或不完整显示未知。
 
 界面从成员查询派生 provider/repository/number 与 goalId。三屏共用 task-reference-reader 的原生行结果及在途请求，按 provider、宿主、项目/登记仓、来源身份及编号隔离，复用 snapshot-cache 原语、限于渲染进程；各屏按当前引用投影，挂载先回显再后台更新，按钮强制重读。GitHub 支持域内沿原生 gh:workItemsBatch 每 20 号分片，保留成功片、只补失败或缺失项；environment runtime 保持原生单项路由，CodeHub 复用有界逐项 CLI。use-cycle-task-reads 保留整批发布和新鲜证据回调，缓存回显不写 taskSnapshot；固定回顾核验成功后沿完整来源身份复用，来源变化或手动刷新才重读，实时 Issue 独立更新。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/references/version-records.md)。
 

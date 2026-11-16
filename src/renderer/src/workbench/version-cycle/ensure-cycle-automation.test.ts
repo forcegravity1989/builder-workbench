@@ -185,21 +185,18 @@ it.each([
   expect(params).not.toHaveProperty('sourceContext')
 })
 
-it('does not create when the host setup is not ready', async () => {
+it('does not create when the host setup or session agent is missing', async () => {
   setState({ projectHostSetups: [] })
   rpcWith([])
-  const result = await ensureCycleAutomation(scope, FIXED_ID, 'claude')
-  expect(result.status).toBe('skipped')
-  expect(result).toHaveProperty('reason')
-  expect((result as { reason: string }).reason).toContain('宿主 setup 未就绪')
-  expect(createCalls()).toHaveLength(0)
-})
+  const noSetup = await ensureCycleAutomation(scope, FIXED_ID, 'claude')
+  expect(noSetup.status).toBe('skipped')
+  expect((noSetup as { reason: string }).reason).toContain('宿主 setup 未就绪')
 
-it('does not create without a detected session agent', async () => {
+  setState()
   rpcWith([])
-  const result = await ensureCycleAutomation(scope, FIXED_ID, null)
-  expect(result.status).toBe('skipped')
-  expect((result as { reason: string }).reason).toContain('会话工具')
+  const noAgent = await ensureCycleAutomation(scope, FIXED_ID, null)
+  expect(noAgent.status).toBe('skipped')
+  expect((noAgent as { reason: string }).reason).toContain('会话工具')
   expect(createCalls()).toHaveLength(0)
 })
 

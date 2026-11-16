@@ -8,7 +8,9 @@ import {
   type MouseEvent as ReactMouseEvent
 } from 'react'
 import { CircleHelp } from 'lucide-react'
+import { toast } from 'sonner'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
+import { goalsUseOrdinalIds, planningGoalId } from '../../../../shared/workbench/planning-goal-ids'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
@@ -98,10 +100,14 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       return
     }
     const goalIds = new Set(plan.goals.map((goal) => goal.goalId))
-    const issueKeys = new Set(membership.references?.map((task) => `${task.goalId}:${task.number}`))
+    const issueNumbers = new Set(membership.references?.map((task) => task.number))
+    // 目标重编号后 Issue 标题还没人工改，membership 会把它暂时归到新编号下的
+    // 另一个目标；按「目标段 + 编号」裁剪会误删这些未发送批注。只按编号判断
+    // 成员是否还在本版，保住人的输入，归属待标题同步后自然归位。
     pruneMissing(
       (goalId) => goalIds.has(goalId),
-      (goalId, number) => !membership.references || issueKeys.has(`${goalId}:${number}`)
+      (goalId, number) =>
+        !membership.references || (goalIds.has(goalId) && issueNumbers.has(number))
     )
   }, [plan, pruneMissing, membership.references])
   const notice = view.key === selectionKey ? view.notice : ''
@@ -208,11 +214,49 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     if (!plan) {
       return
     }
-    edit({
-      ...plan,
-      goals: plan.goals.filter((goal) => goal.goalId !== goalId)
-    })
+    // 先按旧编号清掉被删目标的批注，再做重映射：否则重映射后幸存目标会占用
+    // 被删目标的旧编号，末尾的 removeForGoal 会误删它们的批注。
     annotations.removeForGoal(goalId)
+    const remaining = plan.goals.filter((goal) => goal.goalId !== goalId)
+    const ordinal = goalsUseOrdinalIds(plan.goals)
+    const goals = ordinal
+      ? remaining.map((goal, index) => ({ ...goal, goalId: planningGoalId(index) }))
+      : remaining
+    if (ordinal) {
+      // 顺序编号即身份：删除后目标整体前移，未发送批注与计划内旧任务引用
+      // 跟随原目标；Issue 标题只由人/模型经 provider 修改，这里只提示核对。
+      const remap = new Map(remaining.map((goal, index) => [goal.goalId, planningGoalId(index)]))
+      annotations.remapGoals(remap)
+      const renamed = (membership.references ?? []).filter((reference) => {
+        const next = reference.goalId ? remap.get(reference.goalId) : undefined
+        return next !== undefined && next !== reference.goalId
+      })
+      if (renamed.length > 0) {
+        toast.info(
+          `目标编号已顺延，请核对 Issue 标题目标段：${renamed
+            .map((reference) => `#${reference.number}`)
+            .join('、')}`
+        )
+      }
+      edit({
+        ...plan,
+        goals,
+        tasks: plan.tasks.flatMap((task) => {
+          if (!task.goalId) {
+            return [task]
+          }
+          if (task.goalId === goalId) {
+            // 被删目标的遗留任务不能留下旧编号，否则会撞上前移目标的新编号。
+            const { goalId: _removed, ...rest } = task
+            return [rest]
+          }
+          const next = remap.get(task.goalId)
+          return next ? [{ ...task, goalId: next }] : [task]
+        })
+      })
+    } else {
+      edit({ ...plan, goals })
+    }
   }
   const openPr = () =>
     void act(async () => {

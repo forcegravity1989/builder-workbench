@@ -13,7 +13,7 @@ const base = { schema: 1 as const, version: 'v0.7' }
 
 describe('WorkbenchVersionBindingSchema workflow coherence', () => {
   it('accepts each coherent purpose and rejects cross-purpose payloads', () => {
-    // 四种合法形态：计划/验收属于版本本身；目标树带稳定 goalId；Issue 树带任务来源。
+    // 四种合法形态：计划/验收属于版本本身；目标树带 goalId；Issue 树带任务来源。
     expect(WorkbenchVersionBindingSchema.safeParse({ ...base, workflow: 'plan' }).success).toBe(
       true
     )
