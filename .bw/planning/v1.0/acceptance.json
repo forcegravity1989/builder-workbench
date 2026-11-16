@@ -1403,5 +1403,14 @@
     "confirmed": true,
     "confirmedAt": "2026-11-13T12:07:05.357Z",
     "updatedAt": "2026-11-13T12:06:59.837Z"
+  },
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-11-16T01:32:42.756Z",
+    "archivePr": {
+      "provider": "github",
+      "repository": "forcegravity1989/builder-workbench",
+      "number": 662
+    }
   }
 }
