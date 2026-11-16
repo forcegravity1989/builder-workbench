@@ -42,6 +42,11 @@
   "tasks": [],
   "workflow": {
     "stage": "archive",
-    "updatedAt": "2026-11-16T07:07:00.000Z"
+    "updatedAt": "2026-11-16T07:08:41.000Z",
+    "archivePr": {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 675
+    }
   }
 }
