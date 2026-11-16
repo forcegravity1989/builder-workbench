@@ -1,0 +1,14 @@
+.bw/planning/v1.0/acceptance.json
+  h_1dcaf127381c33 1406-1414
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "7b26d9010a19d6fe9b0f7134c96e395bc502bd5c",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
