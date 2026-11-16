@@ -1,0 +1,68 @@
+CONTEXT.md
+  s_8c81b81a979e3d::t_840e04bf279482 62
+docs/05-features/version-planning/design.md
+  s_8c81b81a979e3d::t_726ecdcde57a83 91
+docs/05-features/version-workspace/spec.md
+  s_8c81b81a979e3d::t_dac6bc0f946986 92,118
+src/main/workbench/version-material-service.test.ts
+  s_8c81b81a979e3d::t_5287eb1c17be93 31,126-127
+src/main/workbench/version-material-workspace.ts
+  s_8c81b81a979e3d::t_55006f56927244 8,287-302
+src/renderer/src/workbench/annotations/use-board-annotations.ts
+  s_8c81b81a979e3d::t_75e91efae770f9 141-156,277
+src/renderer/src/workbench/version-cycle/current-cycle-workspace.test.ts
+  s_8c81b81a979e3d::t_c19b4bfe2ee34b 30
+src/renderer/src/workbench/version-cycle/ensure-cycle-automation.test.ts
+  s_8c81b81a979e3d::t_e8ae9189109d67 188,191-193,195,197-199
+src/renderer/src/workbench/version-cycle/native-session.test.ts
+  s_8c81b81a979e3d::t_cf80fe0228784d 55
+src/renderer/src/workbench/version-planning/PlanningBoard.tsx
+  s_8c81b81a979e3d::t_203146344f6709 11,13,213-244
+src/renderer/src/workbench/version-planning/PlanningGoals.tsx
+  s_8c81b81a979e3d::t_7be00b2aefe2b3 5,78-83
+src/shared/workbench/planning-goal-ids.test.ts
+  s_8c81b81a979e3d::t_59090ab3523a83 2-56
+src/shared/workbench/planning-goal-ids.ts
+  s_8c81b81a979e3d::t_40b56c13642c65 1-60
+src/shared/workbench/version-binding.test.ts
+  s_8c81b81a979e3d::t_dc9b3445fb369e 16
+src/shared/workbench/version-binding.ts
+  s_8c81b81a979e3d::t_008dd4e41bf42a 26,35
+standard/references/issue-state.md
+  s_8c81b81a979e3d::t_57de743d470433 26
+standard/references/version-records.md
+  s_8c81b81a979e3d::t_1c64af12c5837d 11
+standard/skills/week-planning/SKILL.md
+  s_7d8603e8576baf::t_7621dca31d8f9c 55
+docs/05-features/version-planning/spec.md
+  h_a7e858313fdba5 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "cc4110652344d71ef61beb570b7d2eaa554bc7c7",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_7d8603e8576baf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a54b12fbede23160b",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_8c81b81a979e3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "172b7580-7578-4e89-b13d-d8824d1cf87b",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
