@@ -6,7 +6,8 @@ import type { Store } from '../persistence'
 import {
   assertRegisteredGitHubRepo,
   getGitHubLocalGitOptionArgs,
-  getGitHubRepoConnectionId
+  getGitHubRepoConnectionId,
+  type GitHubRepoScopedArgs
 } from './github-repo-routing'
 import { broadcastGitHubWorkItemMutation } from './github-work-item-mutation-events'
 
@@ -15,9 +16,7 @@ export function registerGitHubPRReviewHandlers(store: Store): void {
     'gh:setPRFileViewed',
     async (
       event,
-      args: {
-        repoPath: string
-        repoId?: string
+      args: GitHubRepoScopedArgs & {
         prNumber: number
         prRepo?: GitHubOwnerRepo | null
         pullRequestId: string
@@ -116,8 +115,7 @@ export function registerGitHubPRReviewHandlers(store: Store): void {
     'gh:addPRReviewComment',
     async (
       event,
-      args: {
-        repoPath: string
+      args: GitHubRepoScopedArgs & {
         prNumber: number
         prRepo?: GitHubOwnerRepo | null
         commitId: string

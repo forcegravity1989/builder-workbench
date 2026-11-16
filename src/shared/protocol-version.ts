@@ -138,6 +138,7 @@ export const WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY = 'workbench.version-b
 export const WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY =
   'workbench.version-workspace.v1' as const
 export const WORKBENCH_FIXED_WORKSPACE_RUNTIME_CAPABILITY = 'workbench.fixed-workspace.v1' as const
+export const WORKBENCH_REPO_REMOVAL_RUNTIME_CAPABILITY = 'workbench.repo-removal.v1' as const
 export const CODEX_RESET_CREDIT_RUNTIME_CAPABILITY = 'accounts.codex-reset-credit.v1' as const
 export const ACCOUNT_IMPORT_RUNTIME_CAPABILITY = 'accounts.import-host-credentials.v1' as const
 // Why: older hosts cannot reconcile terminal.create's mutation after losing the reply, so clients may only retry unknown outcomes when advertised.
@@ -213,7 +214,8 @@ export const AGENT_SESSION_BACKGROUND_TASK_ROW_STOP_CAPABILITY =
 // Why: adding agents to RESUMABLE_TUI_AGENTS grows terminal.ensureAgentSession's enum, and an
 // older host answers the unknown member with invalid_argument — a code the launch fallback does
 // not retry on — so clients must probe before taking the host-authority path.
-export const AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY = 'agent-session.cursor-resume.v1' as const
+export const AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY =
+  'agent-session.cursor-resume.v1' as const
 export const AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY = 'agent-session.dsh-resume.v1' as const
 export const AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY = 'agent-session.kimi-resume.v1' as const
 // Why: older runtimes strip mutation owner fields, so clients must fence writes before RPC.
@@ -319,6 +321,7 @@ export const RUNTIME_CAPABILITIES = [
   WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY,
   WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY,
   WORKBENCH_FIXED_WORKSPACE_RUNTIME_CAPABILITY,
+  WORKBENCH_REPO_REMOVAL_RUNTIME_CAPABILITY,
   TERMINAL_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   SESSION_TAB_CLOSE_INTENT_RUNTIME_CAPABILITY,
   SESSION_TABS_AUTHORITATIVE_INVENTORY_RUNTIME_CAPABILITY,

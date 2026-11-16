@@ -20,9 +20,11 @@ export function useCodeHubMrExtras(
     item && item.type === 'mr'
       ? getCodehubDetailCacheKey({
           sourceContext,
+          repoPath: item.repoPath,
           repoId: item.repoId,
           kind: item.type,
-          iid: item.iid
+          iid: item.iid,
+          taskRepository: { host: item.host, project: item.project }
         })
       : ''
   const entry = useSyncExternalStore(
@@ -40,7 +42,8 @@ export function useCodeHubMrExtras(
       repoPath: item.repoPath,
       repoId: item.repoId,
       kind: item.type,
-      iid: item.iid
+      iid: item.iid,
+      taskRepository: { host: item.host, project: item.project }
     })
   }, [item, sourceContext])
   const checks = key ? (entry?.checks ?? null) : null
@@ -55,7 +58,8 @@ export function useCodeHubMrExtras(
       repoPath: item.repoPath,
       repoId: item.repoId,
       kind: item.type,
-      iid: item.iid
+      iid: item.iid,
+      taskRepository: { host: item.host, project: item.project }
     })
   }, [item, sourceContext])
   return { checks, files, mrExtrasLoading, reloadMrExtras }

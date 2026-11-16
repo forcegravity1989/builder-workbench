@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import React from 'react'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
 import type { TaskScopeMissingRow } from './task-scope-load'
@@ -119,9 +120,11 @@ export function TaskPageScopeFooter({
   return (
     <>
       {model.workbenchScopeError ? (
-        <p role="status" className="px-3 py-2 text-xs text-destructive">
-          {model.workbenchScopeError}
-        </p>
+        <ErrorDetails
+          className="px-3 py-2 text-xs text-destructive"
+          summary="部分任务未读取 · 查看详情"
+          detail={model.workbenchScopeError}
+        />
       ) : null}
       {workbenchScopeMissing.length > 0 ? (
         <div className="border-t border-border/50 px-3 py-2">
@@ -138,7 +141,7 @@ export function TaskPageScopeFooter({
                   #{row.number} <span className="text-[10px]">({row.provider})</span>
                 </span>
                 <span className="truncate">{row.repository}</span>
-                <span>— {row.reason}</span>
+                <ErrorDetails summary="任务未读取 · 查看详情" detail={row.reason} />
               </li>
             ))}
           </ul>

@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from './error-feedback'
 import { readVersionMembership } from './version-cycle/version-membership'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -17,7 +18,7 @@ import { prepareFailed } from '../../../shared/workbench/version-workspace-prepa
 import { prepareProblemSummary } from './version-workspace-prepare-report'
 import type { VersionCatalogState } from './use-version-catalog'
 import { activateVersionWorktree } from './version-worktree-host'
-import { closeProjectPage } from './project-page-state'
+import { closeProjectPage, openCycleProject } from './project-page-state'
 
 /**
  * G2 侧栏版本导航动作（P3a）：绑定树是唯一「本版流程树」的认定依据（不从
@@ -52,9 +53,12 @@ export function navigateVersionWorkflow(args: {
   // 无绑定树：无论旧固定树是否存在都进同一屏内入口——浏览目标 effect 按登记
   // 决定 ensure 旧固定树（旧上下文显式保留）还是只读回看；浏览不建树，初始化
   // 是版本行「初始化工作区」按钮的显式动作。
+  if (!catalog.scope) {
+    toast.error('项目工作区尚未就绪，请稍后再试')
+    return
+  }
   setCycleView(workflow)
-  closeProjectPage()
-  useAppStore.getState().openArtifactsPage()
+  openCycleProject(catalog.scope)
 }
 
 /**
@@ -90,8 +94,10 @@ export async function initializeVersionWorkspace(args: {
   }
   if (prepareFailed(result)) {
     // 步骤链非原子：已成功步骤保留，重试即重入补齐（不重复建树）。
-    toast.error(
-      `版本 ${version} 工作区未全就绪：${prepareProblemSummary(result)}。处理提示的问题后重试，已就绪的工作区会复用。`
+    notifyWorkbenchError(
+      `版本 ${version} 工作区未全就绪`,
+      prepareProblemSummary(result),
+      '可重试，已就绪的工作区会复用。'
     )
     return
   }
@@ -129,19 +135,19 @@ export async function openVersionTasks(args: {
     planTrees: catalog.planTrees
   })
   if (!read.document) {
-    toast.error(read.problem ?? `版本 ${version} 没有可读的计划材料`)
+    notifyWorkbenchError(`版本 ${version} 没有可读的计划材料`, read.problem)
     return
   }
   if (read.problem) {
     // 草稿来源失败、已回落已提交材料：如实标注，不把旧真相冒充当前稿。
-    toast.info(read.problem)
+    notifyWorkbenchError('未读取计划草稿，正在使用已提交材料', read.problem)
   }
   let references: CycleTaskReference[]
   try {
     const members = await readVersionMembership(catalog.scope, read.document)
     references = members.filter((task) => task.goalId === goal.goalId)
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : String(error))
+    notifyWorkbenchError('无法打开版本任务', error, '检查项目连接后重试。')
     return
   }
   openVersionTasksPage({

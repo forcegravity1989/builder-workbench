@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ArrowUpRight } from 'lucide-react'
 import type {
   VersionGoal,
@@ -97,12 +98,11 @@ export function PlanningGoalTasks({
               <span className="g3-task-static">
                 <span className="g3-id">#{reference.number}</span>
               </span>
-              <span
-                className="g3-task-state"
-                title={read?.kind === 'unavailable' ? read.error : undefined}
-              >
-                状态未知
-              </span>
+              {read?.kind === 'unavailable' ? (
+                <ErrorDetails className="g3-task-state" summary="状态未知" detail={read.error} />
+              ) : (
+                <span className="g3-task-state">状态未知</span>
+              )}
               {markers}
             </div>
           )

@@ -1,4 +1,4 @@
-import { ArrowDownToLine, GitBranch, MessageSquare } from 'lucide-react'
+import { ArrowDownToLine, GitBranch, MessageSquare, MessageSquarePlus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { BoardActionButton } from '../board-ui'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
@@ -11,10 +11,10 @@ export type PlanningSectionId = 'context' | 'goals' | 'minutes' | 'archive'
  * 「计划准备」，与验收屏「验收准备」口径一致；区块内容仍是上版两行遗留的回显。
  */
 export const PLANNING_SECTIONS: [PlanningSectionId, string, string][] = [
-  ['context', '计划准备', '从延期与遗留开始'],
+  ['context', '计划准备', '核对上版遗留'],
   ['goals', '本版目标', '明确结果与验收标准'],
-  ['minutes', '会议纪要', '批注与转写稿生成'],
-  ['archive', '归档 PR', 'Leader 在原生 PR 页再审']
+  ['minutes', '会议纪要', '按需整理并人工确认'],
+  ['archive', '归档 PR', '查看评审与合入状态']
 ]
 
 export function PlanningHeader({
@@ -29,7 +29,8 @@ export function PlanningHeader({
   onSelect,
   onConfigure,
   onRefresh,
-  annotateEntry
+  annotateEntry,
+  helpEntry
 }: {
   currentVersion: string
   /** G2（#383）：绑定树的绑定版本；非 null 时面包屑只读回显，不提供屏内选版。 */
@@ -45,6 +46,7 @@ export function PlanningHeader({
   onRefresh(): void
   /** 批注模式入口（#426 验收会决议：页头右上角常驻，不随内容滚动）。计划未建时不传。 */
   annotateEntry?: ReactNode
+  helpEntry?: ReactNode
 }) {
   return (
     <header className="vp-header">
@@ -109,8 +111,38 @@ export function PlanningHeader({
           </BoardActionButton>
           <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
         </div>
+        {helpEntry}
       </div>
     </header>
+  )
+}
+
+export function PlanningAnnotationButton({
+  active,
+  count,
+  shortcut,
+  onToggle
+}: {
+  active: boolean
+  count: number
+  shortcut?: string | null
+  onToggle(): void
+}) {
+  return (
+    <BoardActionButton
+      className={`g3-annotate-entry${active ? ' g3-mode-on' : ''}`}
+      data-contextual-tour-target="workbench-plan-annotations"
+      aria-pressed={active}
+      title={
+        active
+          ? `退出批注模式${shortcut ? `（${shortcut}）` : ''}`
+          : `批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见${shortcut ? `（${shortcut} 进入）` : ''}`
+      }
+      onClick={onToggle}
+    >
+      <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
+      {count > 0 && <span className="g3-annotate-count">{count}</span>}
+    </BoardActionButton>
   )
 }
 
@@ -133,6 +165,13 @@ export function PlanningJourneyNav({
           key={id}
           type="button"
           onClick={() => onNavigate(id)}
+          data-contextual-tour-target={
+            id === 'goals'
+              ? 'workbench-plan-goals'
+              : id === 'archive'
+                ? 'workbench-plan-archive'
+                : undefined
+          }
           aria-current={active === id ? 'location' : undefined}
         >
           <span className="g3-stage-number">{index + 1}</span>

@@ -14,15 +14,20 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn()
 }))
 
-vi.mock('@/store', () => ({
-  useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({
-      moveProjectToGroup: mocks.moveProjectToGroup,
-      createProjectGroup: mocks.createProjectGroup,
-      updateProjectGroup: mocks.updateProjectGroup,
-      deleteProjectGroupWithContainedProjects: mocks.deleteProjectGroupWithContainedProjects
+vi.mock('@/store', () => {
+  const state = {
+    moveProjectToGroup: mocks.moveProjectToGroup,
+    createProjectGroup: mocks.createProjectGroup,
+    updateProjectGroup: mocks.updateProjectGroup,
+    deleteProjectGroupWithContainedProjects: mocks.deleteProjectGroupWithContainedProjects,
+    runtimeEnvironments: [{ id: 'env-1', name: 'Peer' }]
+  }
+  return {
+    useAppStore: Object.assign((selector: (value: typeof state) => unknown) => selector(state), {
+      getState: () => state
     })
-}))
+  }
+})
 
 vi.mock('sonner', () => ({
   toast: { error: mocks.toastError }
@@ -48,7 +53,6 @@ const roots: Root[] = []
 function HookProbe(): null {
   latest = useProjectGroupDialogs({
     repos: [],
-    repoMap: new Map(),
     projectGroups: [remoteGroup]
   })
   return null
@@ -124,10 +128,12 @@ describe('project group dialogs carry the owner host', () => {
     await act(async () => {
       latest!.handleDeleteProjectGroup(remoteGroup.id, remoteGroup.name, 'runtime:env-1')
     })
+    expect(latest!.deleteGroupHostLabel).toBe('Peer')
     await act(async () => {
       await latest!.handleConfirmDeleteProjectGroup()
     })
 
+    expect(latest!.deleteGroupHostLabel).toBeNull()
     expect(mocks.deleteProjectGroupWithContainedProjects).toHaveBeenCalledWith(remoteGroup.id, {
       removeContainedProjects: false,
       hostId: 'runtime:env-1'

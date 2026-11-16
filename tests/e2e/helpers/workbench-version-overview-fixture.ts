@@ -247,6 +247,7 @@ export const overviewTest = test.extend({
     })
     writeFlow(flows.plan, 'data.json', {
       ...fixedPlan,
+      workflow: { ...fixedPlan.workflow, stage: 'breakdown' },
       goals: [{ ...fixedPlan.goals[0], title: overviewLatestTitle }],
       tasks: [
         { provider: 'github', repository: overviewRepository, number: 334, goalId: 'pinned-goal' }

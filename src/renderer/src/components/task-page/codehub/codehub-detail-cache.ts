@@ -2,7 +2,7 @@ import {
   getTaskSourceCacheScope,
   type TaskSourceContext
 } from '../../../../../shared/task-source-context'
-import { createCodeHubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import type { CodeHubMrFileChange } from '../../../../../shared/codehub-mr-detail'
 import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
 import type { PRCheckDetail } from '../../../../../shared/github/check-types'
@@ -40,6 +40,8 @@ export type CodeHubDetailCacheEntry = {
 
 export type CodeHubDetailKeyArgs = {
   sourceContext?: TaskSourceContext | null
+  repoPath?: string
+  taskRepository?: Parameters<typeof createTaskPageCodeHubApi>[1]
   // Optional to match CodeHubTaskItem/API nullish; the key normalizes it to ''.
   repoId: string | undefined
   kind: 'issue' | 'mr'
@@ -66,10 +68,17 @@ function notifyCodehubDetailCache(): void {
 }
 
 export function getCodehubDetailCacheKey(args: CodeHubDetailKeyArgs): string {
+  const identity = args.sourceContext?.providerIdentity
+  const source = identity?.provider === 'codehub' ? identity : null
+  const host = args.taskRepository?.host ?? source?.host
+  const project = args.taskRepository?.project ?? source?.project
   // Why: `\0` separator avoids collisions between key fields that may contain `:` or `/`.
   return [
     args.sourceContext ? getTaskSourceCacheScope(args.sourceContext) : '',
     args.repoId ?? '',
+    host ?? '',
+    project?.toLowerCase() ?? '',
+    host && project ? '' : (args.repoPath ?? ''),
     args.kind,
     args.iid
   ].join('\0')
@@ -105,7 +114,8 @@ function errorText(reason: unknown): string {
  * triggers the full read while its detail lane keeps painting.
  */
 export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<void> {
-  const api = createCodeHubApi(args.sourceContext)
+  const { sourceContext, taskRepository, ...request } = args
+  const api = createTaskPageCodeHubApi(sourceContext, taskRepository)
   const key = getCodehubDetailCacheKey(args)
   const cached = codehubDetailCache.get(key)
   if (cached?.fetchedAt && Date.now() - cached.fetchedAt <= CODEHUB_DETAIL_FRESH_MS) {
@@ -117,10 +127,10 @@ export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<v
   // Why: `.then` closure (not an async IIFE) so the write-back guard can compare
   // against `read` itself — an immediately-invoked body trips TS2454.
   const read: Promise<void> = Promise.allSettled([
-    api.viewTask(args),
-    api.listComments(args),
-    args.kind === 'mr' ? api.mrChecks(args) : Promise.resolve(null),
-    args.kind === 'mr' ? api.mrChanges(args) : Promise.resolve(null)
+    api.viewTask(request),
+    api.listComments(request),
+    args.kind === 'mr' ? api.mrChecks(request) : Promise.resolve(null),
+    args.kind === 'mr' ? api.mrChanges(request) : Promise.resolve(null)
   ]).then(([detailRes, commentsRes, checksRes, filesRes]) => {
     const current = codehubDetailCache.get(key)
     // Why: an invalidation (post-mutation) dropped/replaced this entry mid-flight; don't resurrect stale data.
@@ -153,22 +163,24 @@ export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<v
  * the detail/comments lanes and freshness stay untouched.
  */
 export function refreshCodehubMrExtras(args: CodeHubDetailReadArgs): Promise<void> {
-  const api = createCodeHubApi(args.sourceContext)
+  const { sourceContext, taskRepository, ...request } = args
+  const api = createTaskPageCodeHubApi(sourceContext, taskRepository)
   const key = getCodehubDetailCacheKey(args)
-  const read: Promise<void> = Promise.allSettled([api.mrChecks(args), api.mrChanges(args)]).then(
-    ([checksRes, filesRes]) => {
-      const current = codehubDetailCache.get(key)
-      if (!current || current.pending !== read) {
-        return
-      }
-      touchCodehubDetailCache(key, {
-        ...current,
-        checks: checksRes.status === 'fulfilled' ? checksRes.value : [],
-        files: filesRes.status === 'fulfilled' ? filesRes.value : [],
-        pending: undefined
-      })
+  const read: Promise<void> = Promise.allSettled([
+    api.mrChecks(request),
+    api.mrChanges(request)
+  ]).then(([checksRes, filesRes]) => {
+    const current = codehubDetailCache.get(key)
+    if (!current || current.pending !== read) {
+      return
     }
-  )
+    touchCodehubDetailCache(key, {
+      ...current,
+      checks: checksRes.status === 'fulfilled' ? checksRes.value : [],
+      files: filesRes.status === 'fulfilled' ? filesRes.value : [],
+      pending: undefined
+    })
+  })
   const cached = codehubDetailCache.get(key)
   touchCodehubDetailCache(key, {
     ...(cached ?? { detail: null, comments: null, checks: null, files: null }),

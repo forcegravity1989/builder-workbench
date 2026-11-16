@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, Plus } from 'lucide-react'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
@@ -226,9 +227,7 @@ export function AcceptancePackage({
         </p>
       )}
       {error && (
-        <p className="va-error" role="alert">
-          {error}
-        </p>
+        <ErrorDetails className="va-error" summary="制品包操作未完成 · 查看详情" detail={error} />
       )}
       {notice && (
         <p className="va-notice" role="status">

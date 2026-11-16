@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { useVersionMembership } from './use-version-membership'
 import { useCycleTaskReads } from './use-cycle-task-reads'
 import { nativeTaskPort } from '../native-task-port'
@@ -17,6 +18,7 @@ import { DECISION_LABELS, goalOrdinal, shortCommit } from '../version-labels'
 export type ViewState =
   | { kind: 'loading' }
   | { kind: 'missing'; message: string }
+  | { kind: 'error'; summary: string; detail: unknown }
   | { kind: 'plan'; document: PlanningMaterial; sourceCommit: string; committedAt: string }
   | {
       kind: 'acceptance'
@@ -63,9 +65,11 @@ export function ReadonlyMaterialSections({
   return (
     <>
       {membership.error && (
-        <p className="vc-notice" role="status">
-          Issue 读取失败：{membership.error}
-        </p>
+        <ErrorDetails
+          className="vc-notice"
+          summary="Issue 状态未知 · 查看详情"
+          detail={membership.error}
+        />
       )}
       {membership.references?.some((task) => !task.goalId) && (
         <p className="vc-notice">
@@ -78,6 +82,9 @@ export function ReadonlyMaterialSections({
       )}
       {state.kind === 'loading' ? <p className="vc-notice">材料读取中…</p> : null}
       {state.kind === 'missing' ? <p className="vc-notice">{state.message}</p> : null}
+      {state.kind === 'error' && (
+        <ErrorDetails className="vc-notice" summary={state.summary} detail={state.detail} />
+      )}
       {state.kind === 'plan' ? (
         <>
           <section className="vc-readonly-section">

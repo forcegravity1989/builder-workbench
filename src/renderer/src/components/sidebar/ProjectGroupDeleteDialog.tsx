@@ -15,17 +15,21 @@ import { translate } from '@/i18n/i18n'
 type ProjectGroupDeleteDialogProps = {
   open: boolean
   groupName: string
+  hostLabel: string | null
+  removesVirtualMachine: boolean
   projectCount: number
   projectNames: string[]
   removeContainedProjects: boolean
   onRemoveContainedProjectsChange: (removeContainedProjects: boolean) => void
   onOpenChange: (open: boolean) => void
-  onConfirm: () => Promise<void> | void
+  onConfirm: () => Promise<boolean | void>
 }
 
 export function ProjectGroupDeleteDialog({
   open,
   groupName,
+  hostLabel,
+  removesVirtualMachine,
   projectCount,
   projectNames,
   removeContainedProjects,
@@ -66,15 +70,17 @@ export function ProjectGroupDeleteDialog({
   }
 
   const handleConfirm = useCallback(async () => {
-    if (deleting) {
+    if (deleting || !hostLabel) {
       return
     }
     setDeleting(true)
     try {
-      await onConfirm()
+      const confirmed = await onConfirm()
       if (mountedRef.current) {
         setDeleting(false)
-        onOpenChange(false)
+        if (confirmed !== false) {
+          onOpenChange(false)
+        }
       }
     } catch (error) {
       console.error('Failed to delete project group:', error)
@@ -82,7 +88,7 @@ export function ProjectGroupDeleteDialog({
         setDeleting(false)
       }
     }
-  }, [deleting, onConfirm, onOpenChange])
+  }, [deleting, hostLabel, onConfirm, onOpenChange])
 
   return (
     <Dialog
@@ -116,9 +122,21 @@ export function ProjectGroupDeleteDialog({
           <DialogDescription className="text-xs">
             {translate('auto.components.sidebar.ProjectGroupDeleteDialog.69f5cb97d0', 'Delete')}{' '}
             <span className="break-all font-medium text-foreground">{groupName}</span>.
+            <span className="mt-1 block break-all">
+              {hostLabel
+                ? translate(
+                    'auto.components.sidebar.ProjectGroupDeleteDialog.groupHost',
+                    'Group host: {{host}}',
+                    { host: hostLabel }
+                  )
+                : translate(
+                    'auto.components.sidebar.ProjectGroupDeleteDialog.groupUnavailable',
+                    'The selected group is no longer available. Check the project list.'
+                  )}
+            </span>
           </DialogDescription>
         </DialogHeader>
-        {projectCount > 0 && (
+        {(projectCount > 0 || removeContainedProjects) && (
           <div className="space-y-2 text-xs">
             {projectNames.length > 0 && (
               <div className="rounded-md border border-border/70 bg-muted/35 px-3 py-2">
@@ -129,26 +147,17 @@ export function ProjectGroupDeleteDialog({
                   )}
                 </div>
                 <ul
-                  className="min-w-0 space-y-0.5 text-foreground"
+                  className="scrollbar-sleek max-h-32 min-w-0 space-y-0.5 overflow-y-auto text-foreground"
                   aria-label={translate(
                     'auto.components.sidebar.ProjectGroupDeleteDialog.0e0e6764af',
                     'Contained projects'
                   )}
                 >
-                  {projectNames.slice(0, 4).map((projectName, index) => (
-                    <li key={`${projectName}:${index}`} className="truncate" title={projectName}>
+                  {projectNames.map((projectName, index) => (
+                    <li key={`${projectName}:${index}`} className="break-all">
                       {projectName}
                     </li>
                   ))}
-                  {projectNames.length > 4 ? (
-                    <li className="text-muted-foreground">
-                      +{projectNames.length - 4}{' '}
-                      {translate(
-                        'auto.components.sidebar.ProjectGroupDeleteDialog.ad407c2d55',
-                        'more'
-                      )}
-                    </li>
-                  ) : null}
                 </ul>
               </div>
             )}
@@ -172,10 +181,15 @@ export function ProjectGroupDeleteDialog({
                   id={`${removeProjectsId}-description`}
                   className="mt-0.5 block text-muted-foreground"
                 >
-                  {translate(
-                    'auto.components.sidebar.ProjectGroupDeleteDialog.55f75628c0',
-                    'Project folders on disk are not deleted.'
-                  )}
+                  {removesVirtualMachine
+                    ? translate(
+                        'auto.components.sidebar.ProjectGroupDeleteDialog.vmCleanup',
+                        'For a VM project, its recipe determines whether the environment and files are permanently deleted.'
+                      )
+                    : translate(
+                        'auto.components.sidebar.ProjectGroupDeleteDialog.55f75628c0',
+                        'Project folders on disk are not deleted.'
+                      )}
                 </span>
               </span>
             </div>
@@ -198,7 +212,7 @@ export function ProjectGroupDeleteDialog({
             variant="destructive"
             size="sm"
             className="text-xs"
-            disabled={deleting}
+            disabled={deleting || !hostLabel}
             onClick={handleConfirm}
           >
             {deleting

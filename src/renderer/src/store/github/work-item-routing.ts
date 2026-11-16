@@ -25,6 +25,7 @@ export type GitHubWorkItemRequestContext = {
   repoId: string
   repoPath: string
   target: GitHubWorkItemRequestTarget
+  sourceContext?: TaskSourceContext
 }
 
 export type GitHubWorkItemRequestTarget =
@@ -141,6 +142,9 @@ export function getGitHubWorkItemRequestContext(
   repoPath: string,
   sourceContext?: TaskSourceContext | null
 ): GitHubWorkItemRequestContext {
+  if (sourceContext?.localTaskAccount) {
+    return { repoId, repoPath, target: { kind: 'local' }, sourceContext }
+  }
   if (sourceContext?.provider === 'github') {
     const parsedHost = parseExecutionHostId(sourceContext.hostId)
     if (parsedHost?.kind === 'runtime') {
@@ -187,6 +191,7 @@ export function listGitHubWorkItemsForRepo(
   return window.api.gh.listWorkItems({
     repoPath: context.repoPath,
     repoId: context.repoId,
+    ...(context.sourceContext ? { sourceContext: context.sourceContext } : {}),
     ...args
   })
 }
@@ -209,6 +214,7 @@ export function countGitHubWorkItemsForRepo(
   return window.api.gh.countWorkItems({
     repoPath: context.repoPath,
     repoId: context.repoId,
+    ...(context.sourceContext ? { sourceContext: context.sourceContext } : {}),
     ...args
   })
 }

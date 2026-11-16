@@ -1,14 +1,12 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { focusMissingMilestoneField } from './milestone-field'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  MilestoneGuide,
-  MilestoneHistoryActions,
-  MilestoneTitle
-} from './milestone-history-actions'
+import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
 import {
   ScheduledVersionSchema,
   milestoneDraft,
@@ -33,6 +31,7 @@ import {
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneIconButton } from './milestone-icon-button'
+import { useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import './project-milestones.css'
 
 export function ProjectMilestones({
@@ -45,7 +44,12 @@ export function ProjectMilestones({
   updateFormal(): Promise<void>
 }) {
   const model = useMilestonePlanning(scope, refreshToken)
-  const catalog = useVersionCatalogForRepo(scope?.repoId ?? null)
+  const catalog = useVersionCatalogForRepo(
+    scope?.repoId ?? null,
+    scope?.runtimeOwnerEnvironmentId
+      ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+      : scope?.hostId
+  )
   const { state, busy, dirty, error, patch, edit } = model
   const root = useRef<HTMLElement>(null)
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
@@ -56,6 +60,10 @@ export function ProjectMilestones({
   const restored = useRef<string | null>(null)
   const restoreScope = scope ? JSON.stringify(scope) : null
   const pageY = state?.pageY
+  useWorkbenchScreenGuide(
+    'workbench-milestones',
+    Boolean(state?.editing && !busy && !state.recoveryBlocked)
+  )
   useEffect(() => {
     if (restoreScope && pageY !== undefined && root.current && restored.current !== restoreScope) {
       const content = root.current.closest('.content')
@@ -77,7 +85,11 @@ export function ProjectMilestones({
     return (
       <section className="card wb-ml">
         <strong>项目里程碑</strong>
-        <p role="status">{error ?? '正在读取项目规划…'}</p>
+        {error ? (
+          <ErrorDetails summary="项目规划读取失败 · 查看详情" detail={error} />
+        ) : (
+          <p role="status">正在读取项目规划…</p>
+        )}
         {error && (
           <Button variant="outline" size="xs" onClick={() => void model.reload()}>
             重试读取
@@ -194,13 +206,16 @@ export function ProjectMilestones({
           ? '正在读取版本材料，请稍后再试'
           : (catalog.error ??
               catalog.catalog?.problems[0]?.message ??
-              '该版本只有里程碑排期，请从侧栏「新建版本」使用同一版本名开始计划')
+              '当前只有里程碑排期。到「版本工作区 → 新建版本」填写同一版本名，再开始计划。')
       )
       return
     }
     patch({ pageY: root.current?.closest('.content')?.scrollTop ?? 0 })
     openVersionOverview({
       repoId: scope!.repoId,
+      hostId: scope!.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope!.runtimeOwnerEnvironmentId)
+        : scope!.hostId,
       version: version.version,
       milestoneOrigin: { feature: '' }
     })
@@ -245,11 +260,9 @@ export function ProjectMilestones({
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
-          <MilestoneGuide
-            editing={editing}
-            blocked={!!state.recoveryBlocked}
-            scopeKey={restoreScope}
-          />
+          {dirty && model.recoverySaved && (
+            <span className="text-xs text-muted-foreground">草稿已保存在本机</span>
+          )}
           {editing && (
             <MilestoneHistoryActions
               dirty={dirty}
@@ -276,7 +289,7 @@ export function ProjectMilestones({
               }
               onClick={model.beginEditing}
             >
-              规划里程碑
+              {dirty ? '继续规划' : '规划里程碑'}
             </Button>
           )}
           {hasReviewAction && (
@@ -295,7 +308,7 @@ export function ProjectMilestones({
                 void updateFormal()
                   .then(() => model.reload())
                   .catch((reason) =>
-                    toast.error(reason instanceof Error ? reason.message : String(reason))
+                    notifyWorkbenchError('无法更新正式里程碑', reason, '检查项目连接后重试。')
                   )
                   .finally(() => setUpdatingFormal(false))
               }}
@@ -320,9 +333,11 @@ export function ProjectMilestones({
         </p>
       )}
       {model.persistenceError && (
-        <p className="wb-ml-alert" role="alert">
-          {model.persistenceError}
-        </p>
+        <ErrorDetails
+          className="wb-ml-alert"
+          summary="里程碑草案未保存，当前输入已保留 · 查看详情"
+          detail={model.persistenceError}
+        />
       )}
       {state.submitError && (
         <details className="wb-ml-alert" role="status">
@@ -344,9 +359,7 @@ export function ProjectMilestones({
         </details>
       )}
       {error && (
-        <p className="wb-ml-alert" role="alert">
-          {error}
-        </p>
+        <ErrorDetails className="wb-ml-alert" summary="里程碑读取失败 · 查看详情" detail={error} />
       )}
       {state.data.formal.problems.length > 0 && (
         <details className="wb-ml-alert">

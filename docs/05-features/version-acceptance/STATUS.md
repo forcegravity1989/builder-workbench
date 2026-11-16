@@ -6,7 +6,7 @@
 
 - 四步会议屏「验收准备 → Showcase → 会议纪要 → 归档 PR 及发版本」于 2026-10-22 经负责人确认；举证前移、报告聚合及会议协作按 [#471](https://github.com/forcegravity1989/builder-workbench/issues/471) 的确认维护。
 - 当前交互原型为 [acceptance-journey-prototype.html](acceptance-journey-prototype.html)，报告版式由 [HTML 模板](../../../standard/skills/version-acceptance/assets/evidence-report-template.html)承载；两者均不是运行证据。
-- [#422](https://github.com/forcegravity1989/builder-workbench/issues/422) / [PR #584](https://github.com/forcegravity1989/builder-workbench/pull/584) 的报告修订在评审中。负责人于 2026-11-11 确认：先登记并可打开，待核对项保留给人处置，登记不代表验收通过。具体检视、远端检查和内部验证结果留在该 PR。
+- [#422](https://github.com/forcegravity1989/builder-workbench/issues/422) / [PR #584](https://github.com/forcegravity1989/builder-workbench/pull/584) 的报告修订已合入。负责人于 2026-11-11 确认：先登记并可打开，待核对项保留给人处置，登记不代表验收通过。具体检视、远端检查和内部验证结果留在该 PR。
 - 里程碑结果沿人工目标结论、固定计划及正式合入归档读取，见[共同方案](../overview-metrics/spec.md#里程碑与版本联动)；源码接入不等于真实跨版旅程已验。
 
 ## 当前证据边界
@@ -20,7 +20,7 @@
 | A03 出包、部署与演示环境 | ◐ | 包真实读回、URL/桌面已启动两形态已接；真实项目部署与两形态读回未完整验证 |
 | A04 报告生成、登记与打开 | ◐ | 复用 add-artifact 与内置浏览器；[#516](https://github.com/forcegravity1989/builder-workbench/issues/516) 有历史登记/打开证据。本次 HTML 产出、待核对不阻塞、完整 Skill 读取及 CodeHub 来源链接待内部真实会话验证 |
 | A05 人工目标结论 | ◐ | 原生材料守卫及单个状态选择已接入；重启后一致性待真壳核对 |
-| A06 纪要与确认 | ◐ | 按目标分组、整份确认/撤销和冻结已接入；真实模型整理、确认及跟进旅程未完整验证 |
+| A06 纪要与确认 | ◐ | Windows Electron 隔离项目已核对已确认正文只读、撤销后编辑并重新确认，以及文件和页面重载读回。真实模型整理和跟进旅程未完整验证 |
 | A07 归档 PR | ◐ | 原生 PR 状态、入口及会话归档已接入；真实 provider 归档全链未验 |
 | A08 发布读回 | ◐ | tag 引用与真实状态读取见 [#462](https://github.com/forcegravity1989/builder-workbench/issues/462)；原型与历史测试不覆盖真实发布、重启读回 |
 | A09 Issue 状态与遗留 | ◐ | 分组、计数、标签与原生详情已接入；真实 provider 交互待验 |

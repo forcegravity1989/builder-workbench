@@ -26,10 +26,12 @@ import { translate } from '@/i18n/i18n'
 
 type BrowserImportHintButtonProps = {
   profileId: string | null
+  showTourAnchor?: boolean
 }
 
 export function BrowserImportHintButton({
-  profileId
+  profileId,
+  showTourAnchor = true
 }: BrowserImportHintButtonProps): React.JSX.Element | null {
   const [open, setOpen] = useState(false)
   const [importMenuOpen, setImportMenuOpen] = useState(false)
@@ -175,7 +177,7 @@ export function BrowserImportHintButton({
             'auto.components.browser.pane.BrowserImportHintButton.4f5ffaa6a1',
             'Import browser data'
           )}
-          data-contextual-tour-target="browser-import-hint"
+          data-contextual-tour-target={showTourAnchor ? 'browser-import-hint' : undefined}
         >
           <Import className="size-3.5" />
           {translate('auto.components.browser.pane.BrowserImportHintButton.b24fef25be', 'Import')}

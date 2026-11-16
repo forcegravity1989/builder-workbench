@@ -10,6 +10,7 @@ export function MilestoneReviewButton({
   validate,
   hasReview,
   reviewUrl,
+  openReview,
   needsUpdate,
   changes,
   updateFormal,
@@ -23,17 +24,21 @@ export function MilestoneReviewButton({
   validate(): boolean
   hasReview: boolean
   reviewUrl?: string
+  openReview?(): void
   needsUpdate: boolean
   changes: string[]
   updateFormal(): void
   submit(): void
 }) {
   const [reviewOpen, setReviewOpen] = useState(false)
-  const viewReview = () => {
-    if (reviewUrl) {
-      void window.api.shell.openUrl(reviewUrl)
-    }
-  }
+  const viewReview =
+    openReview ??
+    (() => {
+      if (reviewUrl) {
+        void window.api.shell.openUrl(reviewUrl)
+      }
+    })
+  const canViewReview = Boolean(reviewUrl || openReview)
   if (writing) {
     return (
       <Button size="xs" disabled aria-busy data-contextual-tour-target="milestone-submit">
@@ -41,14 +46,14 @@ export function MilestoneReviewButton({
       </Button>
     )
   }
-  if (needsUpdate || (!dirty && !retry && (hasReview || reviewUrl))) {
+  if (needsUpdate || (!dirty && !retry && (hasReview || canViewReview))) {
     return (
       <Button
         size="xs"
         className="bg-foreground text-background hover:bg-foreground/90"
         data-contextual-tour-target="milestone-submit"
-        disabled={needsUpdate ? busy : !reviewUrl}
-        title={!needsUpdate && !reviewUrl ? '评审链接尚未读到，请刷新后重试' : undefined}
+        disabled={needsUpdate ? busy : !canViewReview}
+        title={!needsUpdate && !canViewReview ? '评审链接尚未读到，请刷新后重试' : undefined}
         onClick={needsUpdate ? updateFormal : viewReview}
       >
         {needsUpdate ? '更新正式安排' : '查看评审'}
@@ -69,7 +74,7 @@ export function MilestoneReviewButton({
           size="xs"
           className="bg-foreground text-background hover:bg-foreground/90"
           data-contextual-tour-target="milestone-submit"
-          disabled={!reviewUrl && (busy || conflict || (!dirty && !retry))}
+          disabled={!canViewReview && (busy || conflict || (!dirty && !retry))}
         >
           {retry ? '重试提交' : hasReview ? '更新评审' : '提交评审'}
         </Button>
@@ -82,7 +87,7 @@ export function MilestoneReviewButton({
           ))}
         </ul>
         {retry && <p>重试推送已提交内容并创建评审。</p>}
-        {reviewUrl && (
+        {canViewReview && (
           <Button variant="ghost" size="xs" onClick={viewReview}>
             查看评审
           </Button>

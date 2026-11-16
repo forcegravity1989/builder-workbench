@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import React, { useState } from 'react'
 import { Bell, GitPullRequest, Inbox, Loader2, RotateCw, Send, X } from 'lucide-react'
 
@@ -117,7 +118,7 @@ export function PrReviewNotificationsView({
         <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto p-3">
           {error ? (
             <div className="mb-2 border-b border-border/50 pb-2 text-[11px] text-destructive">
-              {error}
+              <ErrorDetails summary="评审通知读取失败 · 查看详情" detail={error} />
             </div>
           ) : null}
           <div className="flex flex-col gap-3">

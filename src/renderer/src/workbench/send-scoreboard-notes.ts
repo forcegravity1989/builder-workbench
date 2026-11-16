@@ -1,18 +1,11 @@
 import { useAppStore } from '@/store'
-import { branchName } from '@/lib/git-utils'
 import { sendNotesToActiveAgentSession } from '@/lib/active-agent-note-send'
 import { deriveNotesSendAgentTargets } from '@/lib/notes-send-agent-targets'
 import type { ActiveAgentNotesSendStatus } from '@/lib/active-agent-note-send-result'
+import { findNamedWorktree, type NativeWorkspaceScope } from './version-cycle/native-workspace'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
+import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { METRICS_BRANCH } from './version-cycle/metrics-setup'
-
-export function metricsMaintenanceWorktreeId(): string | null {
-  const state = useAppStore.getState()
-  const repoId = state.activeRepoId
-  const trees = repoId ? state.worktreesByRepo[repoId] : undefined
-  return (
-    trees?.find((tree) => tree.branch && branchName(tree.branch) === METRICS_BRANCH)?.id ?? null
-  )
-}
 
 /** The metrics workspace session: its active tab when that tab can take input, otherwise the only eligible one. */
 export function metricsSessionTarget(worktreeId: string): { tabId: string; leafId: string } | null {
@@ -49,16 +42,19 @@ export function scoreboardSendFailure(status: Exclude<ActiveAgentNotesSendStatus
 }
 
 export async function sendScoreboardNotes(
+  scope: NativeWorkspaceScope | null,
   prompt: string
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  const worktreeId = metricsMaintenanceWorktreeId()
+  const worktree = scope ? findNamedWorktree(scope, METRICS_BRANCH) : null
+  const worktreeId = worktree?.id
   const target = worktreeId ? metricsSessionTarget(worktreeId) : null
-  if (!worktreeId || !target) {
+  if (!worktree || !worktreeId || !target) {
     return { ok: false, message: scoreboardSendFailure('no-active-terminal') }
   }
   const state = useAppStore.getState()
-  state.setActiveWorktree(worktreeId)
-  state.setActiveView('terminal')
+  if (!activateAndRevealWorktree(worktreeId, worktreeActivationHostOpts(worktree))) {
+    return { ok: false, message: scoreboardSendFailure('no-active-terminal') }
+  }
   state.setActiveTab(target.tabId)
   const result = await sendNotesToActiveAgentSession({
     worktreeId,

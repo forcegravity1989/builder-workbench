@@ -1,24 +1,22 @@
-import React, { useMemo, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import {
-  parseExecutionHostId,
-  getRepoExecutionHostId,
-  getWorktreeExecutionHostId
-} from '../../../shared/execution-host'
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { openAddProject, useProjectPage } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
 import { charterSourceKey, loadRepoCharter, useRepoCharterSnapshot } from './charter-snapshot'
-import { invalidateWallRepo, useWallRefresh } from './wall-refresh'
-import { findWallProjectForRepo, useWallProjects } from './use-wall-projects'
-import { useWallVersionLabel } from './use-wall-readings'
+import { invalidateWallRepo } from './wall-refresh'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
-import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
+import { updateTrunkCode, notifyTrunkUpdate } from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,
   nativeWorkspaceScopeKey,
@@ -27,35 +25,45 @@ import {
 import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { ProjectCard } from './overview-project-card'
-import { MetricProblemsPanel } from './metric-problems-panel'
+import { useWorkbenchScreenGuide, WorkbenchOverviewHelp } from './WorkbenchScreenGuide'
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
+import { useVersionCatalogForRepo } from './use-version-catalog'
 import { ProjectMilestones } from './project-milestones'
-import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
+import {
+  compareMaterialVersions,
+  compareVersionDisplayOrder
+} from '../../../shared/workbench/version-catalog'
 import { ArrowDownToLine, RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
 
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const activeHostId = useAppStore((s) => s.activeWorkspaceExecutionHostId)
+  const projectPage = useProjectPage()
+  const activeRepo = useAppStore((state) => {
+    if (projectPage?.kind === 'project-overview') {
+      const options = projectPage.options
+      return options ? findRepoForHost(state.repos, options.repoId, options) : null
+    }
+    const current = currentProjectRepo(state)
+    return current && resolveProjectSource(state, current)
+  })
+  const activeRepoId = activeRepo?.id ?? null
+  const hostId = activeRepo ? getRepoExecutionHostId(activeRepo) : null
   const registeredWorktrees = useAppStore((s) =>
     activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
   )
-  const activeRepo = activeRepoId
-    ? (findRepoForHost(repos, activeRepoId, { hostId: activeHostId ?? undefined }) ?? repos[0])
-    : repos[0]
-  const repoWorktrees = useMemo(
-    () =>
-      registeredWorktrees?.filter(
-        (tree) =>
-          activeRepo &&
-          getWorktreeExecutionHostId(tree, activeRepo) === getRepoExecutionHostId(activeRepo)
-      ),
-    [registeredWorktrees, activeRepo]
-  )
+  const repoWorktrees = useMemo(() => {
+    if (!activeRepoId || !hostId) {
+      return []
+    }
+    const options = worktreeHostMatchOptions({ repos }, activeRepoId, hostId)
+    return registeredWorktrees?.filter((tree) => worktreeMatchesHost(tree, hostId, options)) ?? []
+  }, [activeRepoId, hostId, registeredWorktrees, repos])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsDirty, setSettingsDirty] = useState(false)
   const [settingsBusy, setSettingsBusy] = useState(false)
@@ -87,21 +95,11 @@ export function OverviewPage(): React.JSX.Element {
   )
 
   const charterKey = activeRepo ? charterSourceKey(activeRepo) : 'none'
-  const charterRead = useRepoCharterSnapshot(activeRepo)
+  const charterRead = useRepoCharterSnapshot(activeRepo ?? undefined)
   const charter = charterRead?.charter ?? null
-  const projectPage = useProjectPage()
-  const filters =
-    projectPage?.kind === 'project-overview' &&
-    activeRepo?.id === projectPage.options.repoId &&
-    getRepoExecutionHostId(activeRepo) === projectPage.options.hostId
-      ? projectPage.options.filters
-      : undefined
-  const wallProjects = useWallProjects(filters)
-  const wallRefresh = useWallRefresh()
-  const charterVersion = useWallVersionLabel(
-    activeRepo ? findWallProjectForRepo(wallProjects, activeRepo) : undefined,
-    wallRefresh
-  )
+  const versionCatalog = useVersionCatalogForRepo(activeRepoId, hostId)
+  const charterVersion =
+    versionCatalog.catalog?.entries.slice().sort(compareVersionDisplayOrder)[0]?.version ?? null
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
   const fixedTrees = useMemo(() => {
     if (!baseScope) {
@@ -144,11 +142,11 @@ export function OverviewPage(): React.JSX.Element {
     identity: dataIdentity
   })
   const { history, currentVersion } = historyState
-  const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
+  const versionProblem = [historyState.problem, fixedTrees.error].filter(Boolean).join('\n')
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
   const { charterStatus, refreshCharterStatus } = useCharterPrStatus(
-    charterRead && !charterRead.error ? activeRepo : undefined,
+    charterRead && !charterRead.error ? (activeRepo ?? undefined) : undefined,
     Boolean(charter),
     charterKey
   )
@@ -173,11 +171,10 @@ export function OverviewPage(): React.JSX.Element {
           { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
           baseScope.runtimeOwnerEnvironmentId
         )
-        toast.message(trunkUpdateNotice(result))
+        notifyTrunkUpdate(result)
       }
     } catch (reason) {
-      const detail = reason instanceof Error ? reason.message : String(reason)
-      toast.message(`代码未更新（${detail}）。请让会话模型处理主检出的代码更新。`)
+      notifyWorkbenchError('代码未更新', reason, '可在项目会话中处理后重试。')
     } finally {
       setUpdatingTrunk(false)
       // 无论快进成败都重读：快照就地强制重读（旧值保持显示、错误系列保留上次数据
@@ -220,29 +217,66 @@ export function OverviewPage(): React.JSX.Element {
   )
 
   const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
+  const scoreboardHeader = useRef<HTMLElement>(null)
+  const [visibleScoreboard, setVisibleScoreboard] = useState<string | null>(null)
+  const scoreboardAvailable = Boolean(milestoneScope && activeRepo?.kind !== 'folder')
+  const scoreboardGuideReady = scoreboardAvailable && !busy && !refreshing && !settingsOpen
+
+  useWorkbenchScreenGuide('workbench-overview', Boolean(activeRepo && !settingsOpen))
+  useWorkbenchScreenGuide(
+    'workbench-scoreboard',
+    scoreboardAvailable && !settingsOpen && !refreshing,
+    visibleScoreboard === dataIdentity && scoreboardGuideReady
+  )
+  useEffect(() => {
+    const header = scoreboardHeader.current
+    if (!scoreboardAvailable || !header) {
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.at(-1)?.intersectionRatio === 1
+        setVisibleScoreboard(visible ? dataIdentity : null)
+        if (!visible) {
+          useAppStore.getState().cancelContextualTour('workbench-scoreboard')
+        }
+      },
+      { threshold: 1 }
+    )
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [dataIdentity, scoreboardAvailable])
 
   if (!activeRepo) {
     return (
-      <div className="wb-ov">
-        <header className="page-head">
-          <h1>总览</h1>
-        </header>
-        <div className="content">
-          <section className="card" style={{ padding: 24, textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px', fontSize: 14 }}>还没有添加项目。</p>
-            <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
-              添加项目后，可在这里查看项目总览。
-            </p>
-            <button
-              type="button"
-              className="wb-btn wb-btn-primary"
-              onClick={() => openAddProject()}
-            >
-              + 添加项目
-            </button>
-          </section>
+      <TooltipProvider>
+        <div className="wb-ov">
+          <header className="page-head">
+            <h1>总览</h1>
+            <WorkbenchOverviewHelp milestones={false} />
+          </header>
+          <div className="content">
+            <section className="card" style={{ padding: 24, textAlign: 'center' }}>
+              <p style={{ margin: '0 0 12px', fontSize: 14 }}>
+                {repos.length ? '尚未选择项目。' : '还没有添加项目。'}
+              </p>
+              <p style={{ margin: '0 0 16px', fontSize: 12.5, opacity: 0.65 }}>
+                {repos.length
+                  ? '从项目墙或侧栏选择项目后，可在这里查看项目总览。'
+                  : '添加项目后，可在这里查看项目总览。'}
+              </p>
+              <button
+                type="button"
+                className="wb-btn wb-btn-primary"
+                data-contextual-tour-target="workbench-overview-add"
+                onClick={() => openAddProject()}
+              >
+                + 添加项目
+              </button>
+            </section>
+          </div>
         </div>
-      </div>
+      </TooltipProvider>
     )
   }
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
@@ -253,33 +287,30 @@ export function OverviewPage(): React.JSX.Element {
         <div className="wb-ov">
           <header className="page-head">
             <h1>总览</h1>
-            <button
-              type="button"
-              className="wb-btn wb-btn-secondary wb-btn-sm"
-              disabled={updatingTrunk || !baseScope || !baseWorktreeId}
-              title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
-              onClick={() => void updateTrunk()}
-            >
-              {updatingTrunk ? (
-                '正在更新…'
-              ) : (
-                <>
-                  <ArrowDownToLine size={14} aria-hidden="true" /> 更新代码
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="wb-btn wb-btn-secondary wb-btn-sm"
+                disabled={updatingTrunk || !baseScope || !baseWorktreeId}
+                title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
+                onClick={() => void updateTrunk()}
+              >
+                {updatingTrunk ? (
+                  '正在更新…'
+                ) : (
+                  <>
+                    <ArrowDownToLine size={14} aria-hidden="true" /> 更新代码
+                  </>
+                )}
+              </button>
+              <WorkbenchOverviewHelp
+                milestones={scoreboardAvailable}
+                scoreboard={scoreboardAvailable}
+              />
+            </div>
           </header>
 
           <div className="content">
-            <MetricProblemsPanel
-              className="wb-muted"
-              problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
-            />
-            {metricsSetup.notice && (
-              <p role="alert" className="wb-ov-alert">
-                {metricsSetup.notice}
-              </p>
-            )}
             <ProjectCard
               onEdit={activeRepo.kind !== 'folder' ? () => setSettingsOpen(true) : undefined}
               projectName={projectName}
@@ -299,6 +330,13 @@ export function OverviewPage(): React.JSX.Element {
               }
             />
 
+            {versionProblem && (
+              <ErrorDetails
+                className="wb-muted"
+                summary="版本材料读取失败，可更新代码后重试 · 查看详情"
+                detail={versionProblem}
+              />
+            )}
             <ProjectMilestones
               scope={milestoneScope}
               refreshToken={history?.baselineCommit}
@@ -308,6 +346,7 @@ export function OverviewPage(): React.JSX.Element {
             <OverviewScoreboard
               catalog={catalog}
               readings={zoneReadings}
+              problems={metrics.problems}
               busy={busy}
               onRefresh={() => void refreshReadings()}
               anchor={metrics.anchor}
@@ -317,6 +356,9 @@ export function OverviewPage(): React.JSX.Element {
               setupBusy={metricsSetup.busy || !baseScope}
               onSetup={() => void metricsSetup.prepareMetrics()}
               worktreeId={baseWorktreeId}
+              baseScope={baseScope}
+              guideHeaderRef={scoreboardAvailable ? scoreboardHeader : undefined}
+              guideReady={scoreboardGuideReady}
             />
           </div>
           {refreshing && (
@@ -333,6 +375,7 @@ export function OverviewPage(): React.JSX.Element {
             key={charterKey}
             repo={activeRepo}
             displayName={projectName}
+            startEditing
             onClose={() => {
               if (!settingsBusy) {
                 if (settingsDirty) {

@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type {
@@ -79,7 +80,7 @@ export function AcceptanceGoalRows({
     <section id="showcase" ref={sectionRef} aria-label="Showcase">
       <div className="acc-section-title">
         <h2>Showcase</h2>
-        <span className="acc-title-actions">
+        <div className="acc-title-actions">
           <BoardIconButton
             label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
             disabled={refreshing}
@@ -94,9 +95,11 @@ export function AcceptanceGoalRows({
             />
           </BoardIconButton>
           {error && (
-            <span className="acc-muted" role="status">
-              Issue 状态未知：{error}
-            </span>
+            <ErrorDetails
+              className="acc-muted"
+              summary="Issue 状态未知 · 查看详情"
+              detail={error}
+            />
           )}
           {plan.goals.length > 0 && (
             <BoardIconButton
@@ -113,7 +116,7 @@ export function AcceptanceGoalRows({
               )}
             </BoardIconButton>
           )}
-        </span>
+        </div>
       </div>
       <fieldset disabled={disabled} className="acc-goal-fieldset">
         <div className="acc-goal-list">

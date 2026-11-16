@@ -5281,7 +5281,9 @@
           "591f330288": "Delete Project Group",
           "2c14ce677a": "Deleting...",
           "0e0e6764af": "Contained projects",
-          "ad407c2d55": "more",
+          "groupHost": "Group host: {{host}}",
+          "groupUnavailable": "The selected group is no longer available. Check the project list.",
+          "vmCleanup": "For a VM project, its recipe determines whether the environment and files are permanently deleted.",
           "removeContainedProjectSingular": "Remove 1 contained project",
           "removeContainedProjectPlural": "Remove {{value0}} contained projects",
           "eeabb8e8e4": "Remove {{value0}} contained {{value1}} from Orca",
@@ -5309,6 +5311,9 @@
           "b79b39d865": "Remove Project",
           "removeDescriptionSsh": "This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.",
           "removeDescriptionLocal": "This only removes {{name}} from Orca. It is still on your disk.",
+          "removeDescriptionRuntime": "Remove the registration for {{name}} on this host. Its files stay on that host.",
+          "registrationUnavailable": "This project registration is no longer available. Check the project list.",
+          "updatePairedHost": "Update Workbench on the paired host before removing a project registration.",
           "removeDescriptionVmRecipe": "This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted."
         },
         "ScrollToCurrentWorkspaceToolbarButton": {
@@ -5743,6 +5748,7 @@
           "bd37a57ac8": "Create workspace for {{value0}}",
           "b667b59632": "Some projects could not be removed from Orca",
           "f94466bc39": "{{value0}} of {{value1}} contained project{{value2}} remained after deleting the group.",
+          "groupDeleteMembersChanged": "Group membership changed. Review the project list and confirm again.",
           "groupDeleteFailed": "Failed to delete group",
           "groupDeleteFailedDesc": "Something went wrong while deleting the group. No projects were removed.",
           "groupRenameFailed": "Failed to rename group",
@@ -7902,6 +7908,7 @@
           "c7ef4415de": "Display Name",
           "b0a0c14a1c": "Project-specific display details for the sidebar and tabs.",
           "removeProjectAllHosts": "Remove this project from Orca on all configured hosts.",
+          "removeProjectSelectedHost": "Remove this project registration from the selected host.",
           "0909e5d650": "Remove Project",
           "ee5a290616": "Opened as folder. Git features are unavailable for this workspace.",
           "323debba71": "Type:",
@@ -17766,6 +17773,135 @@
     }
   },
   "guidance": {
+    "acceptance": {
+      "evidence": {
+        "title": "Check the evidence",
+        "body": "Start this version’s acceptance and open the evidence report. Keep missing evidence visible for follow-up."
+      },
+      "decision": {
+        "title": "Decide each goal",
+        "body": "Open the goal and compare the fixed criteria with the evidence. Record your decision and any next step."
+      },
+      "minutes": {
+        "title": "Confirm the minutes",
+        "body": "Record the agreement and how to follow up. Read the minutes before confirming them."
+      },
+      "archive": {
+        "title": "Submit for archiving",
+        "body": "Ask the acceptance assistant to prepare an archive PR. Review its sources and decisions before merging."
+      },
+      "readback": {
+        "title": "Read the archived result",
+        "body": "Once the archive is merged and project code is up to date, refresh the version overview and check the decision and PR."
+      }
+    },
+    "delivery": {
+      "find": {
+        "title": "Find the goal’s tasks",
+        "action": "Check the version on the project wall and open the goal’s issues."
+      },
+      "work": {
+        "title": "Work in parallel",
+        "action": "Start each issue in its own workspace. Switch sessions and return to the same work."
+      },
+      "browser": {
+        "title": "Review a prototype",
+        "action": "For new interactions, open the prototype, annotate an element, and choose the session that should receive the feedback."
+      },
+      "prepare": {
+        "title": "Verify and prepare a PR",
+        "action": "Inspect the diff, run the project’s checks, and review the pull request form."
+      },
+      "review": {
+        "title": "Review and revise",
+        "action": "Open the same PR, read checks, comment on a line, and verify the author’s new revision."
+      },
+      "readback": {
+        "title": "Confirm and check progress",
+        "action": "Confirm the merge, close the completed sample issue, and reread the goal and version counts."
+      },
+      "inbox": {
+        "title": "Open a review request",
+        "action": "Open the existing sample request. If the project is temporarily unavailable, reconnect to its host and open it again."
+      },
+      "notify": {
+        "title": "Request a review",
+        "action": "With a PR open, choose connected hosts. A reviewer can also open the PR directly."
+      }
+    },
+    "outcomes": {
+      "facts": {
+        "title": "Check delivery",
+        "body": "Open the version overview. Check its goals and the recorded acceptance decision."
+      },
+      "read": {
+        "title": "Read the metrics",
+        "body": "In the project overview, select a scoreboard tab. Compare the recent reading with the plan’s target and check which week it covers."
+      },
+      "recovery": {
+        "title": "Handle missing readings",
+        "body": "Refresh to collect again. If the source needs work, use Configure metrics to open a draft session. You can keep working without readings."
+      },
+      "followup": {
+        "title": "Plan the follow-up",
+        "body": "Decide what to investigate or improve, then record it in the next plan or an existing task."
+      },
+      "scoreboardHelp": "Scoreboard guide",
+      "scoreboardUnavailable": "Open a Git project overview to use the scoreboard guide."
+    },
+    "planning": {
+      "taskHelp": "Task help",
+      "version": {
+        "title": "Choose the version",
+        "body": "Start the plan and review any carryovers. The first version has no prior results."
+      },
+      "goals": {
+        "title": "Define goals and criteria",
+        "body": "Write the outcome and how the team will check it. Edits save as a draft."
+      },
+      "tasks": {
+        "title": "Link work to goals",
+        "body": "Check existing issues with the planning assistant and confirm the tasks to include."
+      },
+      "review": {
+        "title": "Review and archive",
+        "body": "Annotate the plan, confirm the notes if used, then archive through a reviewed PR."
+      },
+      "start": {
+        "title": "Start an issue",
+        "body": "Start an issue from the plan. Open its existing workspace or create one with the issue prefilled."
+      }
+    },
+    "direction": {
+      "wall": {
+        "title": "Find the project",
+        "body": "Open the project overview from the project wall."
+      },
+      "card": {
+        "title": "Agree on the direction",
+        "body": "Edit the vision and check the review summary."
+      },
+      "draft": {
+        "title": "Plan milestone outcomes",
+        "body": "Add an outcome and adjust its schedule."
+      },
+      "review": {
+        "title": "Review and update",
+        "body": "After review and merge, update the formal schedule."
+      },
+      "nextRound": "Adjust the next cycle",
+      "throughout": "Throughout each cycle",
+      "start": "Start",
+      "result": "Result",
+      "steps": "Journey steps",
+      "pause": "Pause",
+      "resume": "Resume",
+      "playSequence": "Play in order",
+      "playClip": "Play clip",
+      "followAlong": "Try it in BW",
+      "restart": "Replay",
+      "sample": "Sample project"
+    },
     "catalog": {
       "feature": {
         "workspace": {
@@ -17875,7 +18011,7 @@
         "types": "Explore categories",
         "preparing": "Content in preparation",
         "building": "In development",
-        "related": "Related features and actions"
+        "related": "Related features"
       },
       "group": {
         "projects": "Project wall and intake",
@@ -17890,32 +18026,46 @@
       },
       "journey": {
         "direction": {
-          "title": "Establish project direction and milestones",
-          "summary": "Agree on what the project should accomplish and plan its milestones."
+          "title": "Agree on direction",
+          "summary": "Agree on what the project should accomplish and plan its milestones.",
+          "start": "An added project and an idea",
+          "result": "Shared direction and a milestone schedule"
         },
         "commitments": {
-          "title": "Set version commitments and start work",
-          "summary": "Use past results and new requirements to agree on goals, tasks, and acceptance criteria."
+          "title": "Plan a version",
+          "summary": "Use past results and new requirements to agree on goals, tasks, and acceptance criteria.",
+          "start": "Project direction and new requirements",
+          "result": "A reviewed version plan"
         },
         "delivery": {
-          "title": "Take a task through review and delivery",
-          "summary": "Start from an issue, validate the change, review it with a teammate, and merge the PR."
+          "title": "Build and deliver",
+          "summary": "Start from an issue, validate the change, review it with a teammate, and merge the PR.",
+          "start": "An issue to work on",
+          "result": "A verified and merged change"
         },
         "acceptance": {
-          "title": "Verify what this version delivered",
-          "summary": "Check evidence against the goals and record the outcome and next actions."
+          "title": "Verify outcomes",
+          "summary": "Check evidence against the goals and record the outcome and next actions.",
+          "start": "Version commitments and delivery evidence",
+          "result": "An archived acceptance decision"
         },
         "outcomes": {
-          "title": "Use actual results to guide the next step",
-          "summary": "Review progress and outcomes, identify gaps, and decide what to change."
+          "title": "Review results",
+          "summary": "Review progress and outcomes, identify gaps, and decide what to change.",
+          "start": "Delivery results and actual readings",
+          "result": "A decision for the next cycle"
         },
         "maintenance": {
-          "title": "Keep the project maintainable",
-          "summary": "Review architecture and technical debt, then decide what to address or defer."
+          "title": "Maintain the project",
+          "summary": "Review architecture and technical debt, then decide what to address or defer.",
+          "start": "Knowledge or technical debt to address",
+          "result": "A verified maintenance outcome"
         },
         "reuse": {
-          "title": "Reuse a proven way of working",
-          "summary": "Capture a method that worked and verify it on the next similar task."
+          "title": "Reuse what works",
+          "summary": "Capture a method that worked and verify it on the next similar task.",
+          "start": "A proven way of working",
+          "result": "A method the team can reuse"
         }
       }
     },

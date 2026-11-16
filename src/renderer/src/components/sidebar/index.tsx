@@ -18,6 +18,7 @@ import { useWorkspaceRevealBodyRedirect } from './use-workspace-reveal-body-redi
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
 // previews, thread derivation); users on the workspace view should not load or render any of it.
@@ -267,7 +268,9 @@ function Sidebar({
       {/* Global pages still use these native dialogs and drawers when the panel is absent. */}
       <React.Suspense fallback={null}>
         {activeModal === 'edit-meta' ? <WorktreeMetaDialog /> : null}
-        {activeModal === 'confirm-remove-folder' ? <RemoveFolderDialog /> : null}
+        {!isWorkbenchShell() && activeModal === 'confirm-remove-folder' ? (
+          <RemoveFolderDialog />
+        ) : null}
         {activeModal === 'worktree-visibility' ? <WorktreeVisibilityDialog /> : null}
         {activeModal === 'confirm-orca-yaml-hooks' ? <OrcaYamlTrustDialog /> : null}
         {activeModal === 'forget-ssh-workspace' ? <ForgetSshWorkspaceDialog /> : null}

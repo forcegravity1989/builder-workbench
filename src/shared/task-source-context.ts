@@ -13,6 +13,7 @@ import {
   taskProviderIdentityCachePart,
   type TaskProviderIdentity
 } from './task-provider-identity'
+import type { GitHubOwnerRepo } from './github/pull-request-types'
 import type { TaskProvider } from './task-providers'
 import type { GlobalSettings } from './global-settings-types'
 import type { Repo } from './repo-types'
@@ -35,6 +36,12 @@ export type TaskSourceContext = {
   repoId?: string | null
   providerIdentity?: TaskProviderIdentity | null
   accountLabel?: string | null
+  /** Desktop account selected by the Workbench Tasks page. */
+  localTaskAccount?: true
+  taskRemoteCandidates?: {
+    origin?: GitHubOwnerRepo
+    upstream?: GitHubOwnerRepo
+  }
 }
 
 export type WorkspaceRunContext = {
@@ -135,6 +142,7 @@ export function areTaskSourceContextsEqual(
     a.provider === b.provider &&
     a.projectId === b.projectId &&
     a.hostId === b.hostId &&
+    a.localTaskAccount === b.localTaskAccount &&
     (a.projectHostSetupId ?? null) === (b.projectHostSetupId ?? null) &&
     (a.repoId ?? null) === (b.repoId ?? null) &&
     (a.accountLabel ?? null) === (b.accountLabel ?? null) &&
@@ -163,7 +171,10 @@ export function getTaskSourceCacheScope(
     context.projectId,
     context.projectHostSetupId ?? '',
     context.repoId ?? '',
-    taskProviderIdentityCachePart(context.providerIdentity)
+    taskProviderIdentityCachePart(context.providerIdentity),
+    ...('localTaskAccount' in context && context.localTaskAccount === true
+      ? ['desktop-account']
+      : [])
   ]
     .map(encodeCachePart)
     .join(':')
