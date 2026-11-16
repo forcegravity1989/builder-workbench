@@ -165,8 +165,9 @@ async function readMaterials(
   if (selection && !selected) {
     throw new Error('所选工作区已变化，请从版本侧栏重新选择。')
   }
+  const selectedPlan = selection?.workflow === 'plan' ? selected : null
   const acceptanceRef = selection ? undefined : entry?.material.acceptance
-  const planRef = selection ? undefined : entry?.material.plan
+  const planRef = selectedPlan ? undefined : entry?.material.plan
   try {
     if (selection?.workflow === 'plan') {
       result.acceptance = { kind: 'missing' }
@@ -259,11 +260,9 @@ async function readMaterials(
         source: fixed.kind === 'committed' ? 'committed' : 'draft',
         ...(fixed.kind === 'committed' ? { sourceCommit: fixed.sourceCommit } : {})
       }
-    } else if (selection?.workflow === 'acceptance') {
-      result.plan = { kind: 'missing' }
     } else {
       if (
-        !selected &&
+        !selectedPlan &&
         findVersionFlowWorktrees(catalog.worktrees, { version, workflow: 'plan' }).length > 1
       ) {
         throw new Error('有多个计划工作区，请从计划入口核对来源')
@@ -272,15 +271,15 @@ async function readMaterials(
         scope: catalog.scope!,
         homeWorktreeId: catalog.home!.id,
         version,
-        entry: selected ? null : entry,
-        planTrees: selected
+        entry: selectedPlan ? null : entry,
+        planTrees: selectedPlan
           ? catalog.planTrees.filter(
               (tree) =>
-                tree.worktreeId === selected.id &&
-                tree.instanceId === selected.instanceId &&
-                tree.repoId === selected.repoId &&
+                tree.worktreeId === selectedPlan.id &&
+                tree.instanceId === selectedPlan.instanceId &&
+                tree.repoId === selectedPlan.repoId &&
                 tree.runtimeOwnerEnvironmentId ===
-                  nativeWorkspaceScope(selected).runtimeOwnerEnvironmentId
+                  nativeWorkspaceScope(selectedPlan).runtimeOwnerEnvironmentId
             )
           : catalog.planTrees
       })
@@ -291,7 +290,7 @@ async function readMaterials(
           source: read.source === 'draft' ? 'draft' : 'committed',
           revision: read.revision
         }
-      } else if ((!selected && (entry?.draft || entry?.problems.length)) || !read.missing) {
+      } else if ((!selectedPlan && (entry?.draft || entry?.problems.length)) || !read.missing) {
         result.plan = { kind: 'error', message: read.problem ?? '计划来源读取失败' }
       } else {
         result.plan = { kind: 'missing' }

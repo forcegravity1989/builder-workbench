@@ -2,6 +2,7 @@ import { ErrorDetails, notifyWorkbenchError } from '../error-feedback'
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -134,7 +135,19 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     } else {
       clearMaterial()
     }
-  }, [selectedVersion, selectedState, selectMaterial, clearMaterial, context.materialRefresh])
+  }, [selectedVersion, selectMaterial, clearMaterial, context.materialRefresh])
+  const readNewlyListedMaterial = useEffectEvent((version: string) => {
+    // Inventory can finish after the bound document. Do not clear a plan that
+    // has already loaded, since that also tears down its first-entry guide.
+    if (plan?.version !== version) {
+      void selectMaterial(version)
+    }
+  })
+  useEffect(() => {
+    if (selectedVersion && selectedState) {
+      readNewlyListedMaterial(selectedVersion)
+    }
+  }, [selectedVersion, selectedState])
   const listMaterials = material.list
   useEffect(() => {
     if (context.materialRefresh) {
