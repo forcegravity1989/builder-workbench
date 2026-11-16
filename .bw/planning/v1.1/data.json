@@ -1,0 +1,47 @@
+{
+  "schema_version": 3,
+  "version": "v1.1",
+  "cycleId": "c8b79976-aa06-40fc-b70d-5dba4ef7369c",
+  "timeWindow": {
+    "start": "2026-11-16",
+    "end": "2026-11-20"
+  },
+  "summary": {
+    "progress": "",
+    "risks": "",
+    "progressSource": {
+      "version": "v1.0",
+      "cycleId": "590a76c1-85ca-41d5-91c3-00a5d03f3e04",
+      "sourceCommit": "5faf200fbeea5108156be86c5995c82eb64ea57f",
+      "revision": "sha256:96028c0659a92362dc34e8ce7b0b8c5112cbedbaee88dae563dee9e66c9ef468"
+    }
+  },
+  "goals": [
+    {
+      "goalId": "G1",
+      "title": "【群组权限】项目组、成员与共享主机的可见范围与授权",
+      "acceptance": "1. #342 关系模型与权限矩阵经人确认（若触及一等群组概念先议原则 03）。\n2. #552 落地：共享主机只读访问 + 按项目/工作树限定共享范围，跨 builder 权限隔离生效。\n3. 关键旅程真壳走通：建组授权→成员仅见授权范围→撤销即失效，重启读数一致。",
+      "owner": "",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G2",
+      "title": "【会议体验】打通计划/原型/PR/验收评审会议全旅程",
+      "acceptance": "1. 至少一条评审会议旅程走通：定会→群通知→会中协作→会后纪要落材料。\n2. 计划/原型/PR/验收四类评审复用同一会议通道。\n3. 摆脱『一个组定一个』，与群组权限联动。\n4. 真壳走通，重启读数一致。",
+      "owner": "",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G3",
+      "title": "【运营运维】v1.0 稳定运营：问题处理、补丁版本、宣传与运营指标",
+      "acceptance": "1. 建立使用问题收集渠道，问题逐条有结论、PR 留痕。\n2. 至少发布一个 v1.0.x 补丁版本（含 Release 说明）。\n3. 宣传触达：写清对象、渠道、结果。\n4. 运营指标建立并采集（经『配置指标』入口）。\n5. 产出阶段性运营总结。",
+      "owner": "",
+      "metricTargets": []
+    }
+  ],
+  "tasks": [],
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-11-16T07:07:00.000Z"
+  }
+}
