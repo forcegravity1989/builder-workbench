@@ -72,6 +72,7 @@ export function useVersionOverviewMaterials({
     version,
     entry?.material,
     entry?.draft,
+    entry?.problems,
     inputs
   ])
   const key = JSON.stringify([
@@ -82,6 +83,7 @@ export function useVersionOverviewMaterials({
     version,
     entry?.material,
     entry?.draft,
+    entry?.problems,
     catalog.materialReady,
     catalog.materialError,
     catalog.error,
@@ -196,6 +198,10 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
           }
         }
       } else {
+        const problem = entry?.problems.find((item) => item.workflow === 'acceptance')
+        if (problem) {
+          throw new Error(problem.message)
+        }
         result.acceptance = { kind: 'missing' }
       }
     }

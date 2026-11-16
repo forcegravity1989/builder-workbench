@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from '../error-feedback'
 /**
  * BW 周期自动化注册：每个 workflow（绑定树再按版本）恰有一条 BW 标识的自动化，
  * 默认关闭。
@@ -245,7 +246,7 @@ async function runEnsure(
 /**
  * 壳层接线：固定树就绪后按身份注册，已有条目覆盖同步 BW 所有的提示词；
  * 返回已存在/新建条目的 id 与身份键，供「配置自动化」按钮决定编辑还是预填。
- * 跳过与失败都非致命，只经 onNotice 诚实提示。
+ * 跳过与失败都非致命，失败通过全局通知报告。
  */
 export function useEnsureCycleAutomation({
   cycleScope,
@@ -297,14 +298,12 @@ export function useEnsureCycleAutomation({
           )
         }
         if (result.status === 'exists' && result.syncError) {
-          onNotice(`同步周期自动化提示词失败：${result.syncError}`)
+          notifyWorkbenchError('周期自动化未更新', result.syncError, '可从配置自动化入口重试。')
         }
       } catch (reason) {
         // 注册失败不打断本页：会话与看板照常，「配置自动化」仍可手工预填创建。
         if (active) {
-          onNotice(
-            `注册周期自动化失败：${reason instanceof Error ? reason.message : String(reason)}`
-          )
+          notifyWorkbenchError('周期自动化未注册', reason, '可从配置自动化入口重试。')
         }
       }
     })()

@@ -1,4 +1,4 @@
-import { localCodehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import {
   lookupGitHubWorkItemByOwnerRepoForSource,
   lookupGitHubWorkItemForSource
@@ -31,7 +31,8 @@ export function nativeTaskPortDeps(): TaskPortDeps {
       })
     },
     lookupGitHubWorkItems: (args) => window.api.gh.workItemsBatch(args),
-    viewCodeHubTask: ({ ...args }) => localCodehubApi.viewTask(args),
+    viewCodeHubTask: ({ sourceContext, ...args }) =>
+      createTaskPageCodeHubApi(sourceContext).viewTask(args),
     openTaskPage: (data, options) => useAppStore.getState().openTaskPage(data, options),
     now: () => new Date().toISOString()
   }

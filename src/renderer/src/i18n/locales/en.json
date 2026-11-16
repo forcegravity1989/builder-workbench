@@ -17773,6 +17773,105 @@
     }
   },
   "guidance": {
+    "acceptance": {
+      "evidence": {
+        "title": "Check the evidence",
+        "body": "Start this version’s acceptance and open the evidence report. Keep missing evidence visible for follow-up."
+      },
+      "decision": {
+        "title": "Decide each goal",
+        "body": "Open the goal and compare the fixed criteria with the evidence. Record your decision and any next step."
+      },
+      "minutes": {
+        "title": "Confirm the minutes",
+        "body": "Record the agreement and how to follow up. Read the minutes before confirming them."
+      },
+      "archive": {
+        "title": "Submit for archiving",
+        "body": "Ask the acceptance assistant to prepare an archive PR. Review its sources and decisions before merging."
+      },
+      "readback": {
+        "title": "Read the archived result",
+        "body": "Once the archive is merged and project code is up to date, refresh the version overview and check the decision and PR."
+      }
+    },
+    "delivery": {
+      "find": {
+        "title": "Find the goal’s tasks",
+        "action": "Check the version on the project wall and open the goal’s issues."
+      },
+      "work": {
+        "title": "Work in parallel",
+        "action": "Start each issue in its own workspace. Switch sessions and return to the same work."
+      },
+      "browser": {
+        "title": "Review a prototype",
+        "action": "For new interactions, open the prototype, annotate an element, and choose the session that should receive the feedback."
+      },
+      "prepare": {
+        "title": "Verify and prepare a PR",
+        "action": "Inspect the diff, run the project’s checks, and review the pull request form."
+      },
+      "review": {
+        "title": "Review and revise",
+        "action": "Open the same PR, read checks, comment on a line, and verify the author’s new revision."
+      },
+      "readback": {
+        "title": "Confirm and check progress",
+        "action": "Confirm the merge, close the completed sample issue, and reread the goal and version counts."
+      },
+      "inbox": {
+        "title": "Open a review request",
+        "action": "Open the existing sample request. If the project is temporarily unavailable, reconnect to its host and open it again."
+      },
+      "notify": {
+        "title": "Request a review",
+        "action": "With a PR open, choose connected hosts. A reviewer can also open the PR directly."
+      }
+    },
+    "outcomes": {
+      "facts": {
+        "title": "Check delivery",
+        "body": "Open the version overview. Check its goals and the recorded acceptance decision."
+      },
+      "read": {
+        "title": "Read the metrics",
+        "body": "In the project overview, select a scoreboard tab. Compare the recent reading with the plan’s target and check which week it covers."
+      },
+      "recovery": {
+        "title": "Handle missing readings",
+        "body": "Refresh to collect again. If the source needs work, use Configure metrics to open a draft session. You can keep working without readings."
+      },
+      "followup": {
+        "title": "Plan the follow-up",
+        "body": "Decide what to investigate or improve, then record it in the next plan or an existing task."
+      },
+      "scoreboardHelp": "Scoreboard guide",
+      "scoreboardUnavailable": "Open a Git project overview to use the scoreboard guide."
+    },
+    "planning": {
+      "taskHelp": "Task help",
+      "version": {
+        "title": "Choose the version",
+        "body": "Start the plan and review any carryovers. The first version has no prior results."
+      },
+      "goals": {
+        "title": "Define goals and criteria",
+        "body": "Write the outcome and how the team will check it. Edits save as a draft."
+      },
+      "tasks": {
+        "title": "Link work to goals",
+        "body": "Check existing issues with the planning assistant and confirm the tasks to include."
+      },
+      "review": {
+        "title": "Review and archive",
+        "body": "Annotate the plan, confirm the notes if used, then archive through a reviewed PR."
+      },
+      "start": {
+        "title": "Start an issue",
+        "body": "Start an issue from the plan. Open its existing workspace or create one with the issue prefilled."
+      }
+    },
     "direction": {
       "wall": {
         "title": "Find the project",

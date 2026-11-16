@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
@@ -16,7 +16,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
-import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
+import { updateTrunkCode, notifyTrunkUpdate } from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,
   nativeWorkspaceScopeKey,
@@ -26,7 +26,7 @@ import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { ProjectCard } from './overview-project-card'
 import { useWorkbenchScreenGuide, WorkbenchOverviewHelp } from './WorkbenchScreenGuide'
-import { MetricProblemsPanel } from './metric-problems-panel'
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
@@ -142,7 +142,7 @@ export function OverviewPage(): React.JSX.Element {
     identity: dataIdentity
   })
   const { history, currentVersion } = historyState
-  const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
+  const versionProblem = [historyState.problem, fixedTrees.error].filter(Boolean).join('\n')
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
   const { charterStatus, refreshCharterStatus } = useCharterPrStatus(
@@ -171,11 +171,10 @@ export function OverviewPage(): React.JSX.Element {
           { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
           baseScope.runtimeOwnerEnvironmentId
         )
-        toast.message(trunkUpdateNotice(result))
+        notifyTrunkUpdate(result)
       }
     } catch (reason) {
-      const detail = reason instanceof Error ? reason.message : String(reason)
-      toast.message(`代码未更新（${detail}）。请让会话模型处理主检出的代码更新。`)
+      notifyWorkbenchError('代码未更新', reason, '可在项目会话中处理后重试。')
     } finally {
       setUpdatingTrunk(false)
       // 无论快进成败都重读：快照就地强制重读（旧值保持显示、错误系列保留上次数据
@@ -218,8 +217,35 @@ export function OverviewPage(): React.JSX.Element {
   )
 
   const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
+  const scoreboardHeader = useRef<HTMLElement>(null)
+  const [visibleScoreboard, setVisibleScoreboard] = useState<string | null>(null)
+  const scoreboardAvailable = Boolean(milestoneScope && activeRepo?.kind !== 'folder')
+  const scoreboardGuideReady = scoreboardAvailable && !busy && !refreshing && !settingsOpen
 
   useWorkbenchScreenGuide('workbench-overview', Boolean(activeRepo && !settingsOpen))
+  useWorkbenchScreenGuide(
+    'workbench-scoreboard',
+    scoreboardAvailable && !settingsOpen && !refreshing,
+    visibleScoreboard === dataIdentity && scoreboardGuideReady
+  )
+  useEffect(() => {
+    const header = scoreboardHeader.current
+    if (!scoreboardAvailable || !header) {
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.at(-1)?.intersectionRatio === 1
+        setVisibleScoreboard(visible ? dataIdentity : null)
+        if (!visible) {
+          useAppStore.getState().cancelContextualTour('workbench-scoreboard')
+        }
+      },
+      { threshold: 1 }
+    )
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [dataIdentity, scoreboardAvailable])
 
   if (!activeRepo) {
     return (
@@ -262,9 +288,6 @@ export function OverviewPage(): React.JSX.Element {
           <header className="page-head">
             <h1>总览</h1>
             <div className="flex items-center gap-2">
-              <WorkbenchOverviewHelp
-                milestones={!!milestoneScope && activeRepo.kind !== 'folder'}
-              />
               <button
                 type="button"
                 className="wb-btn wb-btn-secondary wb-btn-sm"
@@ -280,19 +303,14 @@ export function OverviewPage(): React.JSX.Element {
                   </>
                 )}
               </button>
+              <WorkbenchOverviewHelp
+                milestones={scoreboardAvailable}
+                scoreboard={scoreboardAvailable}
+              />
             </div>
           </header>
 
           <div className="content">
-            <MetricProblemsPanel
-              className="wb-muted"
-              problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
-            />
-            {metricsSetup.notice && (
-              <p role="alert" className="wb-ov-alert">
-                {metricsSetup.notice}
-              </p>
-            )}
             <ProjectCard
               onEdit={activeRepo.kind !== 'folder' ? () => setSettingsOpen(true) : undefined}
               projectName={projectName}
@@ -312,6 +330,13 @@ export function OverviewPage(): React.JSX.Element {
               }
             />
 
+            {versionProblem && (
+              <ErrorDetails
+                className="wb-muted"
+                summary="版本材料读取失败，可更新代码后重试 · 查看详情"
+                detail={versionProblem}
+              />
+            )}
             <ProjectMilestones
               scope={milestoneScope}
               refreshToken={history?.baselineCommit}
@@ -321,6 +346,7 @@ export function OverviewPage(): React.JSX.Element {
             <OverviewScoreboard
               catalog={catalog}
               readings={zoneReadings}
+              problems={metrics.problems}
               busy={busy}
               onRefresh={() => void refreshReadings()}
               anchor={metrics.anchor}
@@ -331,6 +357,8 @@ export function OverviewPage(): React.JSX.Element {
               onSetup={() => void metricsSetup.prepareMetrics()}
               worktreeId={baseWorktreeId}
               baseScope={baseScope}
+              guideHeaderRef={scoreboardAvailable ? scoreboardHeader : undefined}
+              guideReady={scoreboardGuideReady}
             />
           </div>
           {refreshing && (

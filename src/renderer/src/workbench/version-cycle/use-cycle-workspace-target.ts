@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
@@ -293,7 +294,7 @@ export function useCycleWorkspaceTarget(
         }
       } catch (reason) {
         if (!cancelled) {
-          onNotice(`同步侧栏选版失败：${reason instanceof Error ? reason.message : String(reason)}`)
+          notifyWorkbenchError('同步侧栏版本失败', reason, '可重新选择版本。')
         }
       }
     })()

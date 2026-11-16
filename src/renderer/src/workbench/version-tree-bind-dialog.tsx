@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from './error-feedback'
 import { useVersionMembership } from './version-cycle/use-version-membership'
 import React, { useMemo, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
@@ -231,10 +232,10 @@ export function VersionTreeBindDialog({
       toast.success(`已把工作区 ${label} 纳入 ${version}。`)
       onClose()
     } catch (reason) {
-      toast.error(
-        `把工作区 ${label} 纳入 ${version} 失败：${
-          reason instanceof Error ? reason.message : String(reason)
-        }`
+      notifyWorkbenchError(
+        `无法把工作区 ${label} 纳入 ${version}`,
+        reason,
+        '可重新选择版本后重试。'
       )
     } finally {
       setBusy(false)

@@ -11,6 +11,7 @@ import { joinFsPath, PROJECT_TOML_REL } from './project-charter'
 export type KnowledgeRepoSnapshot = {
   docs: KbDoc[]
   bodies: Record<string, string>
+  readErrors: Record<string, string>
 }
 
 export type WriteKnowledgeDocResult = {
@@ -58,16 +59,18 @@ export async function loadKnowledgeFromRepo(repoPath: string): Promise<Knowledge
   const docs: KbDoc[] = []
   const bodies: Record<string, string> = {}
   const seenPaths = new Set<string>()
+  const readErrors: Record<string, string> = {}
 
-  await appendProjectToml(repoPath, docs, bodies, seenPaths)
+  await appendProjectToml(repoPath, docs, bodies, seenPaths, readErrors)
 
   for (const md of markdowns) {
-    await appendMarkdownDoc(md, docs, bodies, seenPaths)
+    await appendMarkdownDoc(md, docs, bodies, seenPaths, readErrors)
   }
 
   return {
     docs: sortKbDocs(docs),
-    bodies
+    bodies,
+    readErrors
   }
 }
 
@@ -75,7 +78,8 @@ async function appendProjectToml(
   repoPath: string,
   docs: KbDoc[],
   bodies: Record<string, string>,
-  seenPaths: Set<string>
+  seenPaths: Set<string>,
+  readErrors: Record<string, string>
 ): Promise<void> {
   const filePath = joinFsPath(repoPath, PROJECT_TOML_REL)
   const exists = await window.api.fs.pathExists({ filePath })
@@ -98,19 +102,15 @@ async function appendProjectToml(
     body: ''
   })
   // 展示原文而非解析重渲染：[chat]、注释等字段外内容必须原样可见。
-  try {
-    const { content, isBinary } = await window.api.fs.readFile({ filePath })
-    bodies[id] = isBinary ? '（二进制文件，无法预览）' : content
-  } catch (e) {
-    bodies[id] = `（读取失败：${e instanceof Error ? e.message : String(e)}）`
-  }
+  await readKnowledgeBody(filePath, id, bodies, readErrors)
 }
 
 async function appendMarkdownDoc(
   md: MarkdownDocument,
   docs: KbDoc[],
   bodies: Record<string, string>,
-  seenPaths: Set<string>
+  seenPaths: Set<string>,
+  readErrors: Record<string, string>
 ): Promise<void> {
   const norm = md.relativePath.replace(/\\/g, '/')
   if (seenPaths.has(norm)) {
@@ -123,15 +123,31 @@ async function appendMarkdownDoc(
   seenPaths.add(norm)
   const meta = registryMetaForPath(norm)
   const id = meta?.id ?? kbDocIdFromPath(norm)
-  const { content, isBinary } = await window.api.fs.readFile({ filePath: md.filePath })
-  const body = isBinary ? '（二进制文件，无法预览）' : content
+  await readKnowledgeBody(md.filePath, id, bodies, readErrors)
   docs.push({
     id,
     group,
     name: meta?.name ?? md.basename,
     path: norm,
-    lede: meta?.lede ?? ledeFromMarkdownBody(body),
+    lede: meta?.lede ?? ledeFromMarkdownBody(bodies[id] ?? ''),
     body: ''
   })
-  bodies[id] = body
+}
+
+async function readKnowledgeBody(
+  filePath: string,
+  id: string,
+  bodies: Record<string, string>,
+  readErrors: Record<string, string>
+): Promise<void> {
+  try {
+    const { content, isBinary } = await window.api.fs.readFile({ filePath })
+    if (isBinary) {
+      readErrors[id] = '文件为二进制格式，无法作为文档打开。'
+    } else {
+      bodies[id] = content
+    }
+  } catch (error) {
+    readErrors[id] = error instanceof Error ? (error.stack ?? error.message) : String(error)
+  }
 }

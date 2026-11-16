@@ -1,3 +1,4 @@
+import { ErrorDetails } from './error-feedback'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { useEffect, useRef, useState } from 'react'
 import { CalendarDays, ClipboardCheck, ListTodo, RefreshCw } from 'lucide-react'
@@ -29,37 +30,49 @@ import {
   overviewProjectId
 } from './version-overview/overview-experiments'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
+import { versionWorkflowProgress } from './version-workflow-progress'
+import { WorkbenchVersionResultHelp } from './WorkbenchScreenGuide'
 import './version-overview/overview.css'
 
-function ArchiveTime({
+function WorkflowProgress({
   kind,
   materials
 }: {
   kind: 'plan' | 'acceptance'
   materials: VersionOverviewMaterials
 }) {
-  const status = materials.prStatuses[kind]
-  const document = materials[kind]
-  const reference = document.kind === 'ready' ? document.document.workflow?.archivePr : null
-  const label = kind === 'plan' ? '计划 PR 合入' : '验收 PR 合入'
+  const { label, archive } = versionWorkflowProgress(materials[kind], materials.prStatuses[kind])
+  const status = archive?.status
   const at = status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined
-  const missing =
-    document.kind === 'error' || status?.state === 'unknown'
-      ? '未知'
-      : document.kind === 'loading' || (reference && !status)
-        ? '读取中'
-        : status && status.state !== 'merged'
-          ? '未合入'
-          : '未记录'
+  const url = status?.url
   return (
-    <span title={status?.state === 'unknown' ? status.reason : '北京时间 UTC+08:00'}>
-      {label} · {at ? <time dateTime={at}>{timeLabel(at)}</time> : missing}
-      {status && 'url' in status && status.url && (
-        <button className="bwo-link ml-1" onClick={() => openEvidenceUrl(status.url!)}>
-          #{reference?.number} ↗
-        </button>
+    <div
+      data-contextual-tour-target={
+        kind === 'acceptance' ? 'workbench-version-overview-progress' : undefined
+      }
+    >
+      {kind === 'plan' ? '计划' : '验收'} · {label}
+      {archive && (
+        <>
+          {' · '}
+          {status?.state === 'unknown' && status.reason ? (
+            <ErrorDetails className="inline-block" summary={archive.label} detail={status.reason} />
+          ) : (
+            <span>{archive.label}</span>
+          )}
+          {at && (
+            <time className="ml-1" dateTime={at} title="北京时间 UTC+08:00">
+              {timeLabel(at)}
+            </time>
+          )}
+          {url && (
+            <button className="bwo-link ml-1" onClick={() => openEvidenceUrl(url)}>
+              #{archive.reference.number} ↗
+            </button>
+          )}
+        </>
       )}
-    </span>
+    </div>
   )
 }
 
@@ -197,6 +210,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               label: '刷新来源',
               Icon: RefreshCw,
               action: refresh,
+              target: 'workbench-version-overview-refresh',
               busy:
                 features.loading ||
                 membership.busy ||
@@ -204,10 +218,16 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 catalog.loading ||
                 materials.refreshing
             }
-          ].map(({ label, Icon, action, busy }) => (
+          ].map(({ label, Icon, action, busy, target }) => (
             <Tooltip key={label}>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" aria-label={label} onClick={action}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={label}
+                  data-contextual-tour-target={target}
+                  onClick={action}
+                >
                   <Icon className={busy ? 'animate-spin' : undefined} />
                 </Button>
               </TooltipTrigger>
@@ -215,6 +235,10 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             </Tooltip>
           ))}
         </div>
+        <WorkbenchVersionResultHelp
+          screen="workbench-version-overview"
+          enabled={plan.kind !== 'loading' && acceptance.kind !== 'loading'}
+        />
       </header>
       <div className="bwo-meta">
         <span>
@@ -227,17 +251,17 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             )
           ].join('、') || '未记录'}
         </span>
-        <ArchiveTime kind="plan" materials={materials} />
-        <ArchiveTime kind="acceptance" materials={materials} />
+        <WorkflowProgress kind="plan" materials={materials} />
+        <WorkflowProgress kind="acceptance" materials={materials} />
       </div>
-      {materialErrors.map((error) => (
-        <p className="mb-4 text-sm text-destructive" role="alert" key={error}>
-          {error}{' '}
+      {materialErrors.length > 0 && (
+        <div className="mb-4 text-sm text-destructive" role="status">
+          <ErrorDetails summary="版本材料读取失败 · 查看详情" detail={materialErrors.join('\n')} />
           <button className="bwo-link" onClick={refresh}>
             重试
           </button>
-        </p>
-      ))}
+        </div>
+      )}
       {materialErrors.length > 0 && materials.readAt && (
         <p className="bwo-muted">可读内容保留至上次来源快照：{timeLabel(materials.readAt)}</p>
       )}
@@ -297,6 +321,9 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               </div>
               <button
                 className="bwo-badge"
+                data-contextual-tour-target={
+                  index === 0 ? 'workbench-version-overview-decision' : undefined
+                }
                 onClick={() => workflow('acceptance')}
                 title={result?.decision?.reason ?? result?.note ?? '打开本版验收记录'}
               >
@@ -369,9 +396,11 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         <p className="bwo-muted">特性来源刷新失败，保留上次快照：{timeLabel(features.readAt)}</p>
       )}
       {(membership.error || taskReads.error) && (
-        <p className="bwo-muted" role="alert">
-          任务读取失败：{membership.error ?? taskReads.error}
-        </p>
+        <ErrorDetails
+          className="bwo-muted"
+          summary="版本任务读取失败 · 查看详情"
+          detail={membership.error ?? taskReads.error}
+        />
       )}
       {Boolean(membership.references?.length) && (
         <p className="bwo-muted">

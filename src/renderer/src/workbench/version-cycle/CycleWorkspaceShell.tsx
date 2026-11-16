@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { useCycleWorkspace } from './cycle-workspace-context'
 import { PlanningBoard } from '../version-planning/PlanningBoard'
 import { AcceptancePage } from '../version-acceptance/AcceptancePage'
@@ -35,13 +36,19 @@ export function CycleWorkspaceShell() {
             />
           ) : (
             <>
-              {(notice || context.error) && (
+              {context.error ? (
+                <ErrorDetails
+                  className="vc-notice"
+                  summary="项目工作区未就绪 · 查看详情"
+                  detail={context.error}
+                />
+              ) : notice ? (
                 <p role="status" className="vc-notice">
-                  {context.error ?? notice}
+                  {notice}
                 </p>
-              )}
+              ) : null}
               <p className="vc-notice">
-                {context.error ? '请核对上述问题后重新进入。' : '正在准备项目工作区…'}
+                {context.error ? '检查主机连接和项目工作区后重新进入。' : '正在准备项目工作区…'}
               </p>
             </>
           )

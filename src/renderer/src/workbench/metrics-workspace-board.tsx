@@ -114,6 +114,7 @@ export function MetricsWorkspaceBoard(): JSX.Element {
         <OverviewScoreboard
           catalog={metrics.catalog}
           readings={metrics.zoneReadings}
+          problems={metrics.problems}
           busy={metrics.busy}
           onRefresh={() => void metrics.refreshReadings()}
           anchor={metrics.anchor}

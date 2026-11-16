@@ -1,6 +1,7 @@
 import { ArrowDownToLine, MessageSquare } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { BoardActionButton } from '../board-ui'
+import { WorkbenchVersionResultHelp } from '../WorkbenchScreenGuide'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sections'
 
@@ -86,21 +87,24 @@ export function AcceptanceHeader({
           </span>
         </div>
       </div>
-      <div className="acc-header-actions" role="group" aria-label="验收操作">
-        <BoardActionButton
-          aria-expanded={!sessionCollapsed}
-          aria-label={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
-          title={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
-          onClick={onSessionToggle}
-        >
-          <MessageSquare size={13} aria-hidden="true" />
-          {sessionCollapsed ? '展开会话' : '收起会话'}
-        </BoardActionButton>
-        {annotateEntry}
-        <BoardActionButton disabled={disabled} onClick={onRefresh}>
-          <ArrowDownToLine size={13} aria-hidden="true" /> 更新代码
-        </BoardActionButton>
-        <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
+      <div className="flex min-w-0 max-w-full items-center gap-2">
+        <div className="acc-header-actions" role="group" aria-label="验收操作">
+          <BoardActionButton
+            aria-expanded={!sessionCollapsed}
+            aria-label={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
+            title={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
+            onClick={onSessionToggle}
+          >
+            <MessageSquare size={13} aria-hidden="true" />
+            {sessionCollapsed ? '展开会话' : '收起会话'}
+          </BoardActionButton>
+          {annotateEntry}
+          <BoardActionButton disabled={disabled} onClick={onRefresh}>
+            <ArrowDownToLine size={13} aria-hidden="true" /> 更新代码
+          </BoardActionButton>
+          <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
+        </div>
+        <WorkbenchVersionResultHelp screen="workbench-acceptance" enabled={!disabled} />
       </div>
     </header>
   )
@@ -113,9 +117,11 @@ export function AcceptanceHeader({
  */
 export function AcceptanceJourneyNav({
   active,
+  readyToReview,
   onNavigate
 }: {
   active: AcceptanceSectionId
+  readyToReview: boolean
   onNavigate(id: AcceptanceSectionId): void
 }) {
   return (
@@ -124,6 +130,9 @@ export function AcceptanceJourneyNav({
         <button
           key={id}
           type="button"
+          data-contextual-tour-target={
+            id === 'prepare' || readyToReview ? `workbench-acceptance-${id}` : undefined
+          }
           onClick={() => onNavigate(id)}
           aria-current={active === id ? 'location' : undefined}
         >

@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { detectLanguage } from '@/lib/language-detect'
 import { joinPath } from '@/lib/path'
 import { useAppStore } from '@/store'
+import { finishSourceControlGuide } from '@/workbench/WorkbenchDeliveryHelp'
 import type {
   GitBranchChangeEntry,
   GitBranchCompareSummary
@@ -97,6 +98,7 @@ export function useSourceControlRowOpening({
           targetGroupId,
           preview: openAsPreview
         })
+        finishSourceControlGuide()
         return
       }
       const language = detectLanguage(entry.path)
@@ -114,12 +116,14 @@ export function useSourceControlRowOpening({
           { targetGroupId, preview: openAsPreview }
         )
         setEditorViewMode(filePath, 'changes')
+        finishSourceControlGuide()
         return
       }
       openDiff(activeWorktreeId, filePath, entry.path, language, entry.area === 'staged', {
         targetGroupId,
         preview: openAsPreview
       })
+      finishSourceControlGuide()
     },
     [
       activeWorktreeId,
@@ -152,6 +156,7 @@ export function useSourceControlRowOpening({
         detectLanguage(entry.path),
         { targetGroupId, preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId) }
       )
+      finishSourceControlGuide()
     },
     [activeWorktreeId, branchSummary, openBranchDiff, resolveSplitTargetGroupId, worktreePath]
   )

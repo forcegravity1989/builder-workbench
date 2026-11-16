@@ -1,5 +1,6 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Layers, Plus } from 'lucide-react'
+import { CircleHelp, Layers, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspace-prepare'
@@ -29,6 +30,7 @@ import { openVersionOverview, useProjectPage } from './project-page-state'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
 import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
+import { replayWorkbenchGuide, useWorkbenchScreenGuide } from './WorkbenchScreenGuide'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -121,6 +123,15 @@ export function WorkbenchVersionNav({
       }
     },
     [expandedKey]
+  )
+
+  useWorkbenchScreenGuide(
+    'workbench-versions',
+    !dialog &&
+      catalog.materialReady &&
+      !catalog.loading &&
+      activeView === 'terminal' &&
+      !activeWorktree?.workbenchVersionBinding
   )
 
   const loaded = catalog.catalog
@@ -241,7 +252,7 @@ export function WorkbenchVersionNav({
       try {
         await run()
       } catch (reason) {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
+        notifyWorkbenchError('无法切换版本', reason, '检查项目工作区后重试。')
       } finally {
         setBusyKey(null)
       }
@@ -344,16 +355,28 @@ export function WorkbenchVersionNav({
       <WorkbenchSidebarSectionHeader
         icon={Layers}
         action={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label="新建版本"
-            title="新建版本"
-            onClick={() => setDialog({ mode: 'create' })}
-          >
-            <Plus className="size-3.5" />
-          </Button>
+          <>
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              aria-label="版本工作区帮助"
+              title="版本工作区帮助"
+              onClick={() => replayWorkbenchGuide('workbench-versions')}
+            >
+              <CircleHelp className="size-3.5" aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              data-contextual-tour-target="workbench-versions-start"
+              aria-label="新建版本"
+              title="新建版本"
+              onClick={() => setDialog({ mode: 'create' })}
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          </>
         }
       >
         版本
@@ -361,7 +384,7 @@ export function WorkbenchVersionNav({
 
       {catalog.error ? (
         <div className="px-2 py-1 text-[11px] text-destructive">
-          <p>版本目录读取失败：{catalog.error}</p>
+          <ErrorDetails summary="版本目录读取失败 · 查看详情" detail={catalog.error} />
           <button type="button" className="underline" onClick={catalog.reload}>
             重试
           </button>
@@ -376,12 +399,11 @@ export function WorkbenchVersionNav({
         </p>
       ) : null}
       {problems.length > 0 ? (
-        <p
-          className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/45"
-          title={problems.map((problem) => problem.message).join('\n')}
-        >
-          {problems.length} 项材料读取问题（悬停查看）
-        </p>
+        <ErrorDetails
+          className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/70"
+          summary={`${problems.length} 项材料读取问题 · 查看详情`}
+          detail={problems.map((problem) => problem.message).join('\n')}
+        />
       ) : null}
 
       <VersionSidebarPreview

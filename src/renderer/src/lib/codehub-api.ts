@@ -1,7 +1,7 @@
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubApi } from '../../../shared/codehub-api'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { useAppStore } from '@/store'
 import { getExplicitRuntimeOwnerEnvironmentId } from './repo-runtime-owner'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
@@ -12,8 +12,8 @@ import {
 
 type CodeHubTaskRepository = { host?: string | null; project?: string | null }
 
-// Repo ownership selects the runtime for both reads and writes; UI focus may
-// have moved to a different host while a task detail remains open.
+// Source ownership identifies the registration even when BW uses the local account;
+// later UI focus changes must not redirect an open task.
 function route<K extends keyof CodeHubApi>(
   method: K,
   args: Parameters<CodeHubApi[K]>[0],
@@ -32,31 +32,44 @@ function route<K extends keyof CodeHubApi>(
   if (execution === 'local') {
     const repos = useAppStore.getState().repos
     const matches = repos.filter(
-      (row) => (!repoId || row.id === repoId) && row.path === args.repoPath
+      (row) =>
+        (!repoId || row.id === repoId) &&
+        row.path === args.repoPath &&
+        (!sourceContext?.hostId || getRepoExecutionHostId(row) === sourceContext.hostId)
     )
-    const repo =
-      sourceContext?.hostId && repoId
-        ? findRepoForHost(matches, repoId, { hostId: sourceContext.hostId })
-        : matches.length === 1
-          ? matches[0]
-          : null
-    const identity = repo?.gitRemoteIdentity
-    const remoteUrl = parseCodeHubRemote(identity?.remoteUrl)
-      ? identity?.remoteUrl
-      : identity?.canonicalKey
-    const remote = parseCodeHubRemote(remoteUrl)
-    if (!remoteUrl || !remote) {
+    const remotes = matches.flatMap((repo) => {
+      const identity = repo.gitRemoteIdentity
+      const remoteUrl = parseCodeHubRemote(identity?.remoteUrl)
+        ? identity?.remoteUrl
+        : identity?.canonicalKey
+      const remote = parseCodeHubRemote(remoteUrl)
+      return remoteUrl && remote ? [{ remoteUrl, remote }] : []
+    })
+    if (remotes.length === 0) {
       return Promise.reject(new Error('无法解析 CodeHub 仓库身份'))
     }
     const source = sourceContext?.providerIdentity
-    const matchesRemote = (expected: CodeHubTaskRepository): boolean =>
+    const matchesRemote = (
+      remote: { host: string; project: string },
+      expected: CodeHubTaskRepository
+    ): boolean =>
       (!expected.host || expected.host === remote.host) &&
       (!expected.project || expected.project.toLowerCase() === remote.project.toLowerCase())
-    if (
-      (source?.provider === 'codehub' && !matchesRemote(source)) ||
-      (taskRepository && !matchesRemote(taskRepository))
-    ) {
+    const candidates = remotes.filter(
+      ({ remote }) =>
+        (source?.provider !== 'codehub' || matchesRemote(remote, source)) &&
+        (!taskRepository || matchesRemote(remote, taskRepository))
+    )
+    if (candidates.length === 0) {
       return Promise.reject(new Error('CodeHub 仓库来源已变更，请刷新任务后重试。'))
+    }
+    const { remoteUrl, remote } = candidates[0]!
+    // 本机账号只消费远端身份；无宿主上下文的行内操作也须证明候选属于同一项目。
+    if (
+      remotes.length !== matches.length ||
+      candidates.some((candidate) => !matchesRemote(candidate.remote, remote))
+    ) {
+      return Promise.reject(new Error('无法解析 CodeHub 仓库身份'))
     }
     return call({ ...routedArgs, remoteUrl })
   }
@@ -120,5 +133,3 @@ export function createTaskPageCodeHubApi(
     taskRepository
   })
 }
-
-export const localCodehubApi = createTaskPageCodeHubApi()

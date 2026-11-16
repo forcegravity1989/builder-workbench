@@ -1,3 +1,4 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import { remoteServerPairingFailureMessage } from '@/lib/remote-server-pairing-error-copy'
 import React, { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -16,7 +17,7 @@ type HostImportResult =
   | { kind: 'importing' }
   | { kind: 'added' }
   | { kind: 'updated' }
-  | { kind: 'failed'; reason: string }
+  | { kind: 'failed'; reason: string; detail?: string }
 
 /**
  * G3「导入 Builder 主机」:批量壳,只调用 Orca 原生主机配对
@@ -43,10 +44,7 @@ export function ImportBuilderHostsDialog({
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const plan = useMemo(
-    () => (entries ? planBuilderHostImports(entries) : null),
-    [entries]
-  )
+  const plan = useMemo(() => (entries ? planBuilderHostImports(entries) : null), [entries])
 
   if (!open) {
     return null
@@ -76,7 +74,7 @@ export function ImportBuilderHostsDialog({
       }
       toast.success(`模板已保存：${saved.destinationPath} —— 填好「主机名: 配对地址」后导入`)
     } catch (e) {
-      toast.error(`模板没保存成：${e instanceof Error ? e.message : String(e)}`)
+      notifyWorkbenchError('导入模板未保存', e, '重新选择保存位置后重试。')
     }
   }
 
@@ -103,7 +101,8 @@ export function ImportBuilderHostsDialog({
     } catch (e) {
       setEntries(null)
       setCheckedNames(new Set())
-      setFileError(`文件读不了：${e instanceof Error ? e.message : String(e)}`)
+      setFileError('文件读取失败，可重新选择文件。')
+      notifyWorkbenchError('导入文件读取失败', e, '重新选择文件后重试。')
     }
   }
 
@@ -157,7 +156,8 @@ export function ImportBuilderHostsDialog({
           failed += 1
           setResult(entry.name, {
             kind: 'failed',
-            reason: e instanceof Error ? e.message : String(e)
+            reason: '检查主机连接或重新获取配对地址后重试。',
+            detail: e instanceof Error ? (e.stack ?? e.message) : String(e)
           })
         }
       }
@@ -174,6 +174,8 @@ export function ImportBuilderHostsDialog({
       toast.error(
         `导入完成：新增 ${added} 台、更新配对 ${updated} 台，失败 ${failed} 台——失败原因逐台列在对话框里，可修正配置后重导`
       )
+    } catch (error) {
+      notifyWorkbenchError('导入结果未能刷新', error, '已尝试配对，可刷新项目墙核对主机。')
     } finally {
       setImporting(false)
     }
@@ -278,48 +280,52 @@ export function ImportBuilderHostsDialog({
                             ? '失败'
                             : '待导入'
                 return (
-                  <label
-                    key={entry.name}
-                    className={`wb-import-host${entry.action === 'invalid' ? ' is-invalid' : ''}`}
-                    data-workbench-import-host={entry.name}
-                  >
-                    <input
-                      type="checkbox"
-                      disabled={disabled}
-                      checked={entry.action === 'import' && checkedNames.has(entry.name)}
-                      onChange={(event) => {
-                        setCheckedNames((prev) => {
-                          const next = new Set(prev)
-                          if (event.target.checked) {
-                            next.add(entry.name)
-                          } else {
-                            next.delete(entry.name)
-                          }
-                          return next
-                        })
-                      }}
-                    />
-                    <span className="wb-import-copy">
-                      <strong>{entry.name}</strong>
-                      <span>{entry.issue || entry.displayEndpoint || entry.address}</span>
-                      {result?.kind === 'failed' ? (
-                        <span className="wb-import-failure" role="alert">
-                          配对没成：{result.reason}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span
-                      className={`wb-tag ${
-                        entry.action === 'invalid' || result?.kind === 'failed'
-                          ? 'wb-tag-danger'
-                          : result?.kind === 'updated' || result?.kind === 'added'
-                            ? 'wb-tag-success'
-                            : 'wb-tag-neutral'
-                      }`}
+                  <div key={entry.name}>
+                    <label
+                      className={`wb-import-host${entry.action === 'invalid' ? ' is-invalid' : ''}`}
+                      data-workbench-import-host={entry.name}
                     >
-                      {stateLabel}
-                    </span>
-                  </label>
+                      <input
+                        type="checkbox"
+                        disabled={disabled}
+                        checked={entry.action === 'import' && checkedNames.has(entry.name)}
+                        onChange={(event) => {
+                          setCheckedNames((prev) => {
+                            const next = new Set(prev)
+                            if (event.target.checked) {
+                              next.add(entry.name)
+                            } else {
+                              next.delete(entry.name)
+                            }
+                            return next
+                          })
+                        }}
+                      />
+                      <span className="wb-import-copy">
+                        <strong>{entry.name}</strong>
+                        <span>{entry.issue || entry.displayEndpoint || entry.address}</span>
+                        {result?.kind === 'failed' ? (
+                          <span className="wb-import-failure" role="alert">
+                            配对失败。{result.reason}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span
+                        className={`wb-tag ${
+                          entry.action === 'invalid' || result?.kind === 'failed'
+                            ? 'wb-tag-danger'
+                            : result?.kind === 'updated' || result?.kind === 'added'
+                              ? 'wb-tag-success'
+                              : 'wb-tag-neutral'
+                        }`}
+                      >
+                        {stateLabel}
+                      </span>
+                    </label>
+                    {result?.kind === 'failed' && result.detail && (
+                      <ErrorDetails className="wb-import-failure" detail={result.detail} />
+                    )}
+                  </div>
                 )
               })}
             </div>
