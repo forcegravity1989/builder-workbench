@@ -1,6 +1,6 @@
 # Workbench 设计规范
 
-> **本篇维护约定**：给写界面、做原型、改样式的人和任何 code agent（Claude Code、Codex 等）读取。只写视觉与交互规则、token 怎么用、组件怎么选；具体取值看 [tokens.json](tokens.json)，单个原语的细节看 [primitives/](primitives/)。结构：总则 → 文案 → 颜色 → 字体 → 间距/圆角/层级 → 组件选型 → 图标 → 交互 → 平台 → 叠层对齐 → 中文排版 → HTML 原型。Orca 规则原文在 [ref/STYLEGUIDE.md](../../ref/STYLEGUIDE.md)，两者冲突以 Orca 为准；规则或 STYLEGUIDE 变化时更新本篇。
+> **本篇维护约定**：给写界面、做原型、改样式的人和任何 code agent（Claude Code、Codex 等）读取。只写视觉与交互规则、token 怎么用、组件怎么选；具体取值看 [tokens.json](tokens.json)，单个原语的细节看 [primitives/](primitives/)。结构：总则 → 文案 → 颜色 → 字体 → 间距/圆角/层级 → 组件选型 → 按钮与新增入口 → 图标 → 交互 → 平台 → 叠层对齐 → 中文排版 → HTML 原型。Orca 规则原文在 [ref/STYLEGUIDE.md](../../ref/STYLEGUIDE.md)，两者冲突以 Orca 为准；规则或 STYLEGUIDE 变化时更新本篇。
 
 Workbench 跑在 Orca 执行核上，界面语言就是 Orca 的：**单色、安静，颜色只留给状态。** 产品大部分时间在托管别人的工具（终端、Monaco、Markdown 预览、浏览器），所以自己的 chrome 要退后、做框。Workbench 叠层页面（总览、计划、验收、知识库、项目墙）与 Orca 原生界面用同一套 token、同一批 shadcn 原语，不另起皮肤。
 
@@ -13,8 +13,7 @@ Workbench 跑在 Orca 执行核上，界面语言就是 Orca 的：**单色、�
 - **失败先给可理解、可处理的反馈。** 用户触发的短暂失败复用 Orca 的全局轻量通知（Sonner toast）。数据持续不可用、草稿未保存或用户需要在原位置重试时，在受影响的区域显示明确的错误状态和恢复动作。页面正文、工具提示与通知摘要不得直接拼接异常、命令输出或堆栈。技术原因放在可展开的详情及已有诊断日志中，沿用日志的凭据脱敏与输出限制。
 - **直接动词 + 具体名词。** 删「请」「只需」「您可以」「简单地」这类填充；英文同理删 please / simply / just / you can。
 - **没有解释性小字。** 标题不解释自己，同一状态不说两遍（色点 + 文字已够），空态给获取数据的动作而不是自述。
-- **全项目遵循极简操作表达。** 工具栏与卡片上的刷新、导入、添加、关闭、总览、配置采用纯图标；动作名称通过 Tooltip 与可访问名称提供，不常驻重复文字。同组操作保持同一行；卡片总览、配置固定在右上角。表单字段、业务内容与需要解释的结果保留必要文字。
-- 需要文字的按钮写动作：「删除工作树」「创建工作树」，不是「确定」。取消就是「取消」。
+- 按钮文字写「动作 + 对象」，如「删除工作树」「创建工作树」。上下文已明确时可简写「取消」「保存」。按钮用文字还是图标，见[按钮与新增入口](#按钮与新增入口)。
 - 数字、计数、快捷键右对齐；文字左对齐。
 
 ## 颜色
@@ -72,7 +71,7 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 
 | 想要 | 用 | 别用 |
 |---|---|---|
-| 图标按钮的悬停名称 | `Tooltip` | HoverCard、title 属性 |
+| 纯图标按钮的悬停与聚焦提示 | `Tooltip` | HoverCard、title 属性 |
 | 悬停预览富内容 | `HoverCard` | Tooltip |
 | 点击出动作列表 | `DropdownMenu` | 手搓 Popover 列表 |
 | 右键动作 | `ContextMenu` | DropdownMenu |
@@ -87,11 +86,36 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 
 原语保留根节点的 `data-slot`；类合并用 `cn()`，调用方 `className` 放最后；多变体用 CVA。不重写无头行为，扩展现有封装。
 
+## 按钮与新增入口
+
+**先保证动作能被找到，再决定用多轻的样式。** 本节适用于 BW 叠层及其原型；继续复用 Orca 的 Button、Tooltip、DropdownMenu 和现有 token。
+
+| 场景 | 用法 |
+|---|---|
+| 页面或区块的主要动作、用户要主动找的业务入口 | 默认可见，写清动作和对象。新增用统一的 `Plus` 加文字，如「+ 添加项目」。页级动作放页头工具栏，区块动作紧邻标题；同组动作相邻，位置稳定。 |
+| 在列表、看板或表格里追加一项 | 入口跟着所属集合，放列表末尾的「+ 添加目标」行，或放可持续找到的区块头。两个位置择一；列表很长或入口可能被滚出视口时，优先放区块头。 |
+| 空态或前提未满足 | 空态直接给出可执行的第一个动作。需要先进入规划、选项目或配置时，显示实际可执行的前置动作，并说明达成前提后能做什么。区分真正为空、筛选无结果和读取失败，按实际情况给添加、清筛选或重试。 |
+| 重复行、卡片和紧凑工具栏的次要动作 | 在对象明确、图标含义常见、动作无需首次发现时，可用纯图标，例如复制、刷新或关闭。卡片总览、配置仍放在卡片右上角，按本节判断是否带文字。文字重复且挤占内容的行级业务动作可收进对象自己的「更多操作」，菜单项写明动作。 |
+| 提交、取消或没有合适图标的动作 | 可用纯文字，如「保存草稿」「取消」。只有图标能帮助扫读、区分或理解动作时才配图标。仅打开菜单或表单时，标签应让人知道接下来能做什么。 |
+
+- **标签与强调分开。** 带文字的按钮也可以很轻。每个流程只有一个实底主要动作（`default`）；独立工具栏动作可用 `outline`，列表新增行可用轻量样式。需要紧凑时先把次要动作收进菜单，再调整布局；关键入口的文字不能在窄窗退成纯图标或被截到看不出对象。
+- **区分发现与编辑权限。** 首次新增或唯一的新增入口在动作可用时常驻，不能只在鼠标悬停、键盘聚焦或 Tooltip 中出现。编辑态专属动作可以继续留在编辑态，进入编辑的方式要明确，进入后主要新增动作直接可见。仅补充性的行内控件可随悬停出现，聚焦该控件或其所在行时也要显示，并有无需悬停的操作路径。
+- **让整个按钮可操作。** 按钮用原生语义，可用 Tab 或所在组件的键盘导航聚焦，焦点可见，Enter 和 Space 可触发。纯图标按钮用 `aria-label` 或 `aria-labelledby` 明确动作，在有多个相同动作时提供对象上下文，同时用 Tooltip 在悬停和聚焦时提示名称；可见文字按钮用文字命名，装饰图标对辅助技术隐藏。复用原语尺寸，密集处的指针命中区至少 24 × 24 CSS px，不把图标尺寸当成点击范围。
+
+**走查办法。** 从用户任务出发检查空态、有内容和窄窗；不移动鼠标先找入口，再用键盘走一遍。确认入口文字能说明新增到哪里，按钮可操作，触发后能定位到新对象或填写位置。存量入口按本节走查。实际改变入口时，同批更新所属特性规格，并核对[引导与旅程矩阵](guidance.md)中的相关说明、演示与定位。
+
+### 设计依据
+
+- [Wiedenbeck 的按钮实验](https://www.tandfonline.com/doi/abs/10.1080/014492999119129)比较了纯文字、纯图标和图标配文字；新手对组合方案的易用性评价更好。对 BW 的启发是：加号帮助扫读，名称说明添加的对象。
+- [IBM Carbon 按钮规范](https://www.carbondesignsystem.com/building-blocks/core/components/button/guidelines)以动作标签表达结果，把纯图标限定在易识别或紧凑的场景；[GOV.UK 按钮规范](https://design-system.service.gov.uk/components/button/)用明确的动作文字区分继续、保存与提交。这支持 BW 先写清动作，再选择要不要加图标。
+- [GitHub Projects](https://docs.github.com/en/issues/planning-and-tracking-with-projects/managing-items-in-your-project/adding-items-to-your-project)在列表中提供新增行，[Notion](https://www.notion.com/help/intro-to-databases)同时提供页头和集合内新增，[Jira](https://support.atlassian.com/jira-software-cloud/docs/create-a-work-item-and-a-subtask/)同时提供全局创建和上下文创建。固定入口便于首次寻找，集合内入口便于连续添加且归属清楚。[Linear](https://linear.app/changelog/2025-01-23-pull-request-reviews)也使用分组或看板列中的加号；BW 采用它就近操作的思路，主要新增仍显示对象名称。
+- 键盘操作与可访问名称依据 [WAI Button Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)；BW 按钮命中区以 [WCAG 2.2 目标尺寸](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)的 24 CSS px 为底线，沿用 Orca 已有尺寸。
+
 ## 图标
 
 只用 **lucide-react**（0.577），不引第二套。默认 16px（`Button` 自动套用）；元信息与密集行 12–14px；空态主图标 28px 起。线宽保持 2px。颜色继承文字色（`muted-foreground`、`destructive`…），不单独给 SVG 上色。加载图标统一 `loader-circle` 旋转；超过 3 秒的多步工作用阶段文字代替无标签转圈。示例见 `foundations/icons.html`。
 
-通用操作固定映射：刷新 `RefreshCw`、导入 `FileInput`（文件形状）、添加／接入项目 `Plus`、关闭 `X`、打开总览 `ExternalLink`、配置 `SlidersHorizontal`。图标按钮保留完整命中区域、键盘焦点、`aria-label` 和悬停／聚焦 Tooltip；不以缩小按钮表达极简。Builder 摘要采用「状态点 + Builder 名称」，设备详情放配置内；健康无数据时为未知，不装绿。
+通用操作图标固定映射：刷新 `RefreshCw`、导入 `FileInput`（文件形状）、新增 `Plus`、关闭 `X`、打开总览 `ExternalLink`、配置 `SlidersHorizontal`。是否同时显示动作文字见[按钮与新增入口](#按钮与新增入口)。Builder 摘要采用「状态点 + Builder 名称」，设备详情放配置内；健康无数据时为未知，不装绿。
 
 快捷键只用 `ShortcutKeyCombo`：Mac 显示 `⌘ ⇧` 字形相邻无分隔，Windows/Linux 显示 `Ctrl+Shift+`。标签必须与该平台的真实绑定一致；取消、关闭和 link 动作上不放快捷键。
 
@@ -143,7 +167,7 @@ macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按�
 
 | 类 | 用途 | 示例页 |
 |---|---|---|
-| `.btn` + `-primary` / `-secondary` / `-ghost` / `-danger` / `-icon` / `-block` | 操作；每视图一个实底主操作，danger 只给不可逆确认 | `components/buttons.html` |
+| `.btn` + `-primary` / `-secondary` / `-ghost` / `-danger` / `-icon` / `-block` | [按钮与新增入口](#按钮与新增入口)；danger 只给不可逆确认 | [按钮示例](components/buttons.html) |
 | `.tag` + 变体、`.kbd` | 胶囊标签、按键芯片 | `components/buttons.html` |
 | `.field` / `.input`（含 `select.input`、`textarea.input`）/ `.radio` / `.seg` | 表单、分段控件 | `components/forms.html` |
 | `.card` 系列、`.board` 系列 | 卡片、看板列 | `components/cards.html` |
