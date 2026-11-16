@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Loader2, Share2 } from 'lucide-react'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts'
+import type { ShareConfigView } from '../../../../shared/workbench/share'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -10,6 +11,7 @@ import { useAppStore } from '@/store'
 import { ArtifactPublishedLinkPanel } from './ArtifactPublishedLinkPanel'
 import { getPublishedArtifactLink } from './artifact-published-link-client'
 import { publishArtifactFromSurface } from './artifact-publish-flow'
+import { getShareConfig } from './share-server-client'
 
 type PublishedLinkLookup = {
   key: string
@@ -32,75 +34,80 @@ export function ArtifactPublishButton({
   const [publishing, setPublishing] = useState(false)
   const [lookupRevision, setLookupRevision] = useState(0)
   const [linkLookup, setLinkLookup] = useState<PublishedLinkLookup | null>(null)
+  const [config, setConfig] = useState<ShareConfigView | null>(null)
+  const [configError, setConfigError] = useState(false)
   const lookupSequence = useRef(0)
   const popoverContentRef = useRef<HTMLDivElement>(null)
-  const authStatus = useAppStore((state) => state.orcaProfileAuthStatus)
-  const connecting = useAppStore((state) => state.orcaProfileConnecting)
-  const connect = useAppStore((state) => state.connectCurrentOrcaProfile)
   const openSettingsPage = useAppStore((state) => state.openSettingsPage)
   const openSettingsTarget = useAppStore((state) => state.openSettingsTarget)
-  const settings = useAppStore((state) => state.settings)
-  const signedIn = authStatus?.state === 'connected'
-  const sharingEnabled = settings?.artifactSharingEnabled === true
-  const accountKey =
-    authStatus?.state === 'connected'
-      ? JSON.stringify([
-          authStatus.activeProfileId,
-          authStatus.cloud?.userId ?? null,
-          authStatus.cloud?.cloudProfileId ?? null,
-          authStatus.cloud?.activeOrgId ?? null
-        ])
-      : null
-  const lookupKey = accountKey ? JSON.stringify([accountKey, sourceKey]) : null
-  const currentLookup = linkLookup?.key === lookupKey ? linkLookup : null
-  const checkingLink =
-    signedIn && currentLookup?.status !== 'loaded' && currentLookup?.status !== 'error'
-  const publishedLink = currentLookup?.status === 'loaded' ? currentLookup.shareUrl : null
-  const busy = publishing || connecting
-  const blocked = disabled || busy
+  const configured = config?.configured === true
+
+  useEffect(() => {
+    // Why: the settings pane stays mounted while the popover closes, so the config must be
+    // re-read on every open or a freshly saved server would still read as "not configured".
+    if (!open) {
+      return
+    }
+    setConfigError(false)
+    let cancelled = false
+    void getShareConfig()
+      .then((value) => {
+        if (!cancelled) {
+          setConfig(value)
+          setConfigError(false)
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to read share service settings:', error)
+        if (!cancelled) {
+          setConfigError(true)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [lookupRevision, open])
 
   useEffect(() => {
     const sequence = ++lookupSequence.current
-    if (!open || !lookupKey) {
+    if (!open || !configured) {
       setLinkLookup(null)
       return
     }
-    setLinkLookup({ key: lookupKey, status: 'loading', shareUrl: null })
+    setLinkLookup({ key: sourceKey, status: 'loading', shareUrl: null })
     void getPublishedArtifactLink(sourceKey)
       .then((shareUrl) => {
         if (lookupSequence.current === sequence) {
-          setLinkLookup({ key: lookupKey, status: 'loaded', shareUrl })
+          setLinkLookup({ key: sourceKey, status: 'loaded', shareUrl })
         }
       })
       .catch((error: unknown) => {
         console.error('Failed to check published artifact link:', error)
         if (lookupSequence.current === sequence) {
-          setLinkLookup({ key: lookupKey, status: 'error', shareUrl: null })
+          setLinkLookup({ key: sourceKey, status: 'error', shareUrl: null })
         }
       })
     return () => {
       lookupSequence.current += 1
     }
-  }, [lookupKey, lookupRevision, open, sourceKey])
+  }, [configured, lookupRevision, open, sourceKey])
 
   const publish = async (): Promise<void> => {
-    if (blocked || !signedIn || !sharingEnabled) {
+    if (publishing || !configured) {
       return
     }
     setPublishing(true)
     try {
       const result = await publishArtifactFromSurface(createRequest)
       if (result) {
-        if (lookupKey) {
-          setLinkLookup({ key: lookupKey, status: 'loaded', shareUrl: result.item.shareUrl })
-        }
+        setLinkLookup({ key: sourceKey, status: 'loaded', shareUrl: result.url })
       }
     } finally {
       setPublishing(false)
     }
   }
 
-  const openArtifactsSettings = (): void => {
+  const openShareSettings = (): void => {
     setOpen(false)
     openSettingsTarget({ pane: 'artifacts', repoId: null })
     openSettingsPage()
@@ -110,6 +117,12 @@ export function ArtifactPublishButton({
     'auto.components.artifacts.ArtifactPublishButton.a4a49da6af',
     'Share as artifact'
   )
+  const currentLookup = linkLookup?.key === sourceKey ? linkLookup : null
+  const checkingLink =
+    configured && currentLookup?.status !== 'loaded' && currentLookup?.status !== 'error'
+  const publishedLink = currentLookup?.status === 'loaded' ? currentLookup.shareUrl : null
+  const busy = publishing
+
   return (
     <Popover open={open} onOpenChange={(nextOpen) => !busy && setOpen(nextOpen)}>
       <Tooltip>
@@ -120,7 +133,7 @@ export function ArtifactPublishButton({
               variant="ghost"
               size="icon-sm"
               className={cn('shrink-0', className)}
-              disabled={blocked}
+              disabled={disabled || busy}
               aria-label={label}
             >
               {publishing ? <Loader2 className="animate-spin" /> : <Share2 />}
@@ -164,60 +177,45 @@ export function ArtifactPublishButton({
         </div>
 
         <div className="space-y-3 p-4">
-          {!signedIn ? (
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-xs font-medium">
-                  {translate(
-                    'auto.components.artifacts.ArtifactPublishButton.accountTitle',
-                    'Orca account'
-                  )}
-                </p>
-                <p className="text-[11px] leading-4 text-muted-foreground">
-                  {translate(
-                    'auto.components.artifacts.ArtifactPublishButton.accountDescription',
-                    'Sign in to create and manage this link.'
-                  )}
-                </p>
-              </div>
+          {configError ? (
+            <div className="space-y-2">
+              <p className="text-xs leading-5 text-muted-foreground">
+                {translate(
+                  'auto.components.artifacts.ArtifactPublishButton.configReadFailed',
+                  'Could not read the share server settings.'
+                )}
+              </p>
               <Button
                 type="button"
                 variant="outline"
-                size="xs"
-                disabled={connecting || authStatus?.configured !== true}
-                onClick={() => void connect()}
+                size="sm"
+                className="w-full"
+                onClick={() => setLookupRevision((current) => current + 1)}
               >
-                {connecting
-                  ? translate(
-                      'auto.components.artifacts.ArtifactPublishButton.signingIn',
-                      'Signing in…'
-                    )
-                  : authStatus?.state === 'reconnect-required'
-                    ? translate(
-                        'auto.components.artifacts.ArtifactPublishButton.signInAgain',
-                        'Sign in again'
-                      )
-                    : translate(
-                        'auto.components.artifacts.ArtifactPublishButton.signIn',
-                        'Sign in'
-                      )}
+                {translate('auto.components.artifacts.ArtifactPublishButton.tryAgain', 'Try again')}
               </Button>
             </div>
-          ) : null}
-
-          {!sharingEnabled ? (
-            <div className={cn('space-y-2', !signedIn && 'border-t border-border/60 pt-3')}>
+          ) : !config ? (
+            <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              {translate(
+                'auto.components.artifacts.ArtifactPublishButton.loadingConfig',
+                'Loading…'
+              )}
+            </div>
+          ) : !configured ? (
+            <div className="space-y-2">
               <div className="space-y-0.5">
                 <p className="text-xs font-medium">
                   {translate(
-                    'auto.components.artifacts.ArtifactPublishButton.publishingOffTitle',
-                    'Artifact sharing is off'
+                    'auto.components.artifacts.ArtifactPublishButton.serverNotConfiguredTitle',
+                    'Share server is not configured'
                   )}
                 </p>
                 <p className="text-[11px] leading-4 text-muted-foreground">
                   {translate(
-                    'auto.components.artifacts.ArtifactPublishButton.publishingOffDescription',
-                    'Learn about public links and enable sharing in Settings.'
+                    'auto.components.artifacts.ArtifactPublishButton.serverNotConfiguredDescription',
+                    'Set the server address and upload token in Settings to create links.'
                   )}
                 </p>
               </div>
@@ -226,18 +224,25 @@ export function ArtifactPublishButton({
                 variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={openArtifactsSettings}
+                onClick={openShareSettings}
               >
                 {translate(
-                  'auto.components.artifacts.ArtifactPublishButton.openSettings',
-                  'Open Artifacts settings'
+                  'auto.components.artifacts.ArtifactPublishButton.openShareSettings',
+                  'Open share settings'
                 )}
                 <ArrowRight />
               </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={() => setLookupRevision((current) => current + 1)}
+              >
+                {translate('auto.components.artifacts.ArtifactPublishButton.tryAgain', 'Try again')}
+              </Button>
             </div>
-          ) : null}
-
-          {checkingLink ? (
+          ) : checkingLink ? (
             <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
               {translate(
@@ -268,7 +273,7 @@ export function ArtifactPublishButton({
               key={publishedLink}
               shareUrl={publishedLink}
               publishing={publishing}
-              sharingEnabled={sharingEnabled}
+              sharingEnabled
               onUpdate={() => void publish()}
             />
           ) : (
@@ -276,7 +281,7 @@ export function ArtifactPublishButton({
               type="button"
               size="sm"
               className="w-full"
-              disabled={!signedIn || !sharingEnabled || busy}
+              disabled={busy}
               onClick={() => void publish()}
             >
               {publishing ? <Loader2 className="animate-spin" /> : <Share2 />}

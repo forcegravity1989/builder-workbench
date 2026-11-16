@@ -1,6 +1,7 @@
 import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
+import { WORKBENCH_SHARE_METHODS } from './workbench-share'
 import { WORKBENCH_SKILL_METHODS } from './workbench-skills'
 import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
 import { WORKBENCH_VERSION_BINDING_METHODS } from './workbench-version-binding'
@@ -68,6 +69,7 @@ import { AGENT_HOOK_METHODS } from './agent-hooks'
 export const ALL_RPC_METHODS = [
   ...WORKBENCH_REVIEW_NOTIFICATION_METHODS,
   ...WORKBENCH_MATERIAL_METHODS,
+  ...WORKBENCH_SHARE_METHODS,
   ...WORKBENCH_SKILL_METHODS,
   ...WORKBENCH_HISTORY_METHODS,
   ...WORKBENCH_VERSION_BINDING_METHODS,
