@@ -37,6 +37,9 @@ type VersionNavGroupProps = {
   /** 本版「初始化工作区」正在执行（版本行图标转 spinner）。 */
   initializing: boolean
   worktrees: readonly Worktree[]
+  goalWorktrees: readonly Worktree[]
+  initializationTrees: readonly Worktree[]
+  canInitialize: boolean
   /** 当前点亮的流程（'plan'|'acceptance'），null=无。 */
   activeWorkflow: VersionWorkflow | null
   activeTasks: boolean
@@ -59,6 +62,9 @@ export function VersionNavGroup({
   busy,
   initializing,
   worktrees,
+  goalWorktrees,
+  initializationTrees,
+  canInitialize,
   activeWorkflow,
   activeTasks,
   activeOverview,
@@ -77,18 +83,22 @@ export function VersionNavGroup({
   // 两树齐→按钮消失，不出现「点不了」的怪状态。判定与 WorkflowRow 同源
   // （findVersionFlowWorktrees，只认绑定不认分支字符串）。
   const flowTreesComplete =
-    findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'plan' }).length > 0 &&
-    findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'acceptance' }).length >
-      0
+    findVersionFlowWorktrees(initializationTrees, { version: entry.version, workflow: 'plan' })
+      .length > 0 &&
+    findVersionFlowWorktrees(initializationTrees, {
+      version: entry.version,
+      workflow: 'acceptance'
+    }).length > 0
   const goalIds = new Set(entry.goals.map((goal) => goal.goalId))
   // 材料暂不可读或目标已移除时，登记中的绑定树仍有原生入口。
+  const eligibleGoalTrees = new Set(goalWorktrees)
   const ungroupedTrees = worktrees.filter((tree) => {
     const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
     return (
       !tree.isArchived &&
       binding?.version === entry.version &&
       (binding.workflow === 'goal' || binding.workflow === 'issue') &&
-      (!binding.goalId || !goalIds.has(binding.goalId))
+      (!eligibleGoalTrees.has(tree) || !binding.goalId || !goalIds.has(binding.goalId))
     )
   })
   return (
@@ -130,7 +140,7 @@ export function VersionNavGroup({
             <SidebarGroupChevron expanded={expanded} />
           </span>
         </button>
-        {flowTreesComplete ? null : (
+        {!canInitialize || flowTreesComplete ? null : (
           <Button
             type="button"
             variant="ghost"
@@ -183,7 +193,7 @@ export function VersionNavGroup({
                 version={entry.version}
                 label={label}
                 title={goal.title}
-                goalTrees={goalDirectoryTrees(worktrees, entry.version, goal.goalId)}
+                goalTrees={goalDirectoryTrees(goalWorktrees, entry.version, goal.goalId)}
                 busy={busy}
                 active={activeGoalId === goal.goalId}
                 onOpenTasks={() => onOpenTasks({ goalId: goal.goalId, label })}

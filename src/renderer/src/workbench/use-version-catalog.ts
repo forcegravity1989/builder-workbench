@@ -49,37 +49,40 @@ export type VersionCatalogState = {
 export function useVersionCatalogForRepo(
   repoId: string | null,
   sourceHostId?: ExecutionHostId | null,
-  revision = 0
+  revision = 0,
+  registrationOnly = false
 ): VersionCatalogState {
   const repos = useAppStore((s) => s.repos)
   const visible = useAppStore((s) => s.worktreesByRepo)
   const detected = useAppStore((s) => s.detectedWorktreesByRepo)
   const [nonce, setNonce] = useState(0)
   const reload = useCallback(() => setNonce((value) => value + 1), [])
-  // No host restriction is reserved for cross-host binding/cleanup consumers.
   const sources = useMemo(
-    () => versionCatalogSources(repos, repoId, sourceHostId),
-    [repos, repoId, sourceHostId]
+    () =>
+      versionCatalogSources(repos, repoId, sourceHostId).filter(
+        (repo) => !registrationOnly || repo.id === repoId
+      ),
+    [repos, repoId, sourceHostId, registrationOnly]
   )
   const sourceKey = JSON.stringify([repoId, sourceHostId, versionCatalogSourceKey(sources)])
   const snapshot = previousCatalogs(sourceKey)
   const retainedCatalog = useSnapshotCache(snapshot)
   const repoIds = useMemo(() => [...new Set(sources.map((repo) => repo.id))], [sources])
   const discovery = useVersionCatalogDiscovery(sources, JSON.stringify([revision, nonce]))
-  const worktrees = useMemo(
+  const registeredWorktrees = useMemo(
     () => versionCatalogWorktrees(repos, sources, visible, detected),
     [repos, sources, visible, detected]
   )
   const home = useMemo(() => {
-    const primary = worktrees.filter((tree) => tree.repoId === repoId)
+    const primary = registeredWorktrees.filter((tree) => tree.repoId === repoId)
     return (
       primary.find((tree) => tree.isMainWorktree) ??
-      worktrees.find((tree) => tree.isMainWorktree) ??
+      registeredWorktrees.find((tree) => tree.isMainWorktree) ??
       primary[0] ??
-      worktrees[0] ??
+      registeredWorktrees[0] ??
       null
     )
-  }, [worktrees, repoId])
+  }, [registeredWorktrees, repoId])
   const owner = useMemo(() => {
     if (!home) {
       return { scope: null, error: '未读到项目工作区，请刷新或检查主机连接。' }
@@ -93,6 +96,14 @@ export function useVersionCatalogForRepo(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [home, repos])
   const { scope } = owner
+  const worktrees = useMemo(
+    () =>
+      registeredWorktrees.filter(
+        (tree) =>
+          !registrationOnly || !scope || !tree.projectId || tree.projectId === scope.projectId
+      ),
+    [registeredWorktrees, registrationOnly, scope]
+  )
   // Each plan tree resolves its owner through the same native registration lookup.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const planTrees = useMemo(() => versionCatalogPlanTrees(worktrees), [worktrees, repos])
@@ -186,21 +197,37 @@ export function useVersionCatalogForRepo(
         (!discovery.loading ? owner.error : null) ??
         (result?.key === readKey ? result.error : null))
   const materialError = error ?? currentLoad?.history?.error ?? null
-  return {
-    scope,
-    home,
-    worktrees,
-    repoIds,
-    planTrees,
-    catalog,
-    loading,
-    error:
-      error ??
-      (!loading && !catalog.entries.length
-        ? (materialError ?? catalog.problems[0]?.message ?? null)
-        : null),
-    materialReady: !loading && !error && (currentLoad?.history?.ready ?? false),
-    materialError,
-    reload
-  }
+  const historyReady = currentLoad?.history?.ready ?? false
+  return useMemo(
+    () => ({
+      scope,
+      home,
+      worktrees,
+      repoIds,
+      planTrees,
+      catalog,
+      loading,
+      error:
+        error ??
+        (!loading && !catalog.entries.length
+          ? (materialError ?? catalog.problems[0]?.message ?? null)
+          : null),
+      materialReady: !loading && !error && historyReady,
+      materialError,
+      reload
+    }),
+    [
+      scope,
+      home,
+      worktrees,
+      repoIds,
+      planTrees,
+      catalog,
+      loading,
+      error,
+      historyReady,
+      materialError,
+      reload
+    ]
+  )
 }

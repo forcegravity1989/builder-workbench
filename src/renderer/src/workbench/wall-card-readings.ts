@@ -6,10 +6,11 @@ import type { VersionWorkflowProgress } from './version-workflow-progress'
 export type WallCardReadings =
   | { kind: 'loading' }
   | { kind: 'empty' }
-  | { kind: 'unknown'; reason: string }
+  | { kind: 'unknown'; reason: string; version?: string }
   | {
       kind: 'version'
       version: string
+      sourceLabel?: string
       goals: string[]
       plan: VersionWorkflowProgress
       acceptance: VersionWorkflowProgress

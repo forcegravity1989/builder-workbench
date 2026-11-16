@@ -2,7 +2,7 @@
 name: week-planning
 description: Use when 在 BW 计划屏协助用户制定、评审和归档版本计划，或对应 Orca 周期运行启动。验收已有版本使用 version-acceptance。
 metadata:
-  version: 0.8.3
+  version: 0.8.4
 ---
 
 # 版本计划
@@ -12,8 +12,8 @@ metadata:
 ## 开工与恢复
 
 1. 完整读取[公共执行规范](../../references/execution.md)与当前项目 AGENTS.md，按其中的方法核对 CLI 和当前原生工作树。
-2. 完整读取[版本材料规范](../../references/version-records.md)。从工作树读回的项目、工作树和宿主身份填写命令参数，再执行 `ORCA bw materials context --repo-id <id> --worktree-id <id> --host-id <host> --workflow plan --json` 核对当前选版；用 `list` 读取材料候选，异常时完整读取[旧格式材料](../../references/legacy-materials.md)。
-3. 已绑定版本沿用绑定，入口提到的版本须与绑定/选版一致；不按标题、日期或最近文件猜版本。归档前核对真实分支，固定流程树内交付，不另建同用途树。
+2. 完整读取[版本材料规范](../../references/version-records.md)。从工作树读回的项目、工作树和宿主身份填写命令参数，再执行 `ORCA bw materials context --repo-id <id> --worktree-id <id> --host-id <host> --workflow plan --json` 核对工作区绑定的版本；用 `list` 读取材料候选，异常时完整读取[旧格式材料](../../references/legacy-materials.md)。
+3. 入口提到的版本须与工作区绑定一致；查不到有效绑定或版本不符，停止业务操作（包括直接用 Git 归档），请用户从版本侧栏进入正确工作区。归档前核对真实分支，固定流程树内交付，不另建同用途树。
 
 ## 旅程与阶段校准
 
@@ -66,7 +66,7 @@ metadata:
    - 写入计划材料可选 `minutes` 节：`consensus` 若干点、`followups` 若干点（稳定 id 与 text），可在 `sources` 记录来源。仅在未确认时撰写或改写，保留人工已改的条目；确需整体重写先给人 diff。整份 `confirmed/confirmedAt` 由人确认，模型不得代填；已确认正文要改先由人在屏上撤销。材料中的 `closed` 原样保留，新增条目填 false，不用它表达本次处理结果；界面不做逐项闭环标记。
    - 随后与用户基于纪要逐条调整目标（落回第 3 区）；认可随归档 PR 评审表达，生成或填写纪要不等于确认，不另存第二份纪要正文。
 
-5. **归档 PR 区。**用户在会话中要求归档时，按会议纪要规范逐条核对遗留的落实结果或真实跟进 Issue，补齐去向后由人在 PR 审查；跟进 Issue 可以未完成，不要求先关闭。再核对当前材料和待确认项，写 `stage=archive`。在本版固定计划工作树（绑定版本树为 bw/<版本>/plan，无绑定树的旧上下文为 bw/week-plan）内提交并推送，创建到主分支的 PR/MR，按项目门禁与授权执行，不另建工作树或分支。PR 开出后写入 `workflow.archivePr` 并回显链接与实际状态；合入依人的授权，后续修改同步同一 PR。归档后继续同一份计划并保留 cycleId。自动化按用户保存的配置运行，会话恢复沿 Orca。上版验收尚未完成不阻止本版规划。
+5. **归档 PR 区。**用户在会话中要求归档时，按会议纪要规范逐条核对遗留的落实结果或真实跟进 Issue，补齐去向后由人在 PR 审查；跟进 Issue 可以未完成，不要求先关闭。再核对当前材料和待确认项，写 `stage=archive`。在本版固定计划工作树（bw/<版本>/plan）内提交并推送，创建到主分支的 PR/MR，按项目门禁与授权执行，不另建工作树或分支。PR 开出后写入 `workflow.archivePr` 并回显链接与实际状态；合入依人的授权，后续修改同步同一 PR。归档后继续同一份计划并保留 cycleId。自动化按用户保存的配置运行，会话恢复沿 Orca。上版验收尚未完成不阻止本版规划。
 
 ## 按动作完整读取
 

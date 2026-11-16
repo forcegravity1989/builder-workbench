@@ -147,19 +147,6 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 .g3-breadcrumb > span {
   margin: 0 8px;
 }
-.g3-version-select {
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font-size: 12px;
-  padding: 0 2px;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-}
-.g3-version-select:hover:not(:disabled) {
-  color: var(--color-text);
-  background: var(--accent);
-}
 /* G2（#383）：绑定计划树的只读回显——版本由绑定决定，屏内不切换。 */
 .g3-version-bound {
   color: var(--color-text);

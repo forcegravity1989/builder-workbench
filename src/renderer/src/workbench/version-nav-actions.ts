@@ -1,3 +1,4 @@
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { notifyWorkbenchError } from './error-feedback'
 import { readVersionMembership } from './version-cycle/version-membership'
 import { toast } from 'sonner'
@@ -20,21 +21,18 @@ import type { VersionCatalogState } from './use-version-catalog'
 import { activateVersionWorktree } from './version-worktree-host'
 import { closeProjectPage, openCycleProject } from './project-page-state'
 
-/**
- * G2 侧栏版本导航动作（P3a）：绑定树是唯一「本版流程树」的认定依据（不从
- * 分支名反推）；无绑定树而旧固定树已存在 → 旧 artifacts 路径（旧上下文显式
- * 保留，不强迫一次迁完）；两者皆无 → 如实提示，不悄悄准备树——历史回看不
- * 建目录，准备是显式动作（spec「进入需要编辑的旧版时，再核对或准备」）。
- */
-
 export function navigateVersionWorkflow(args: {
-  catalog: VersionCatalogState
+  catalog: VersionCatalogState | null
+  worktrees?: VersionCatalogState['worktrees']
   version: string
   workflow: VersionWorkflow
   projectKey: string | null
 }): void {
   const { catalog, version, workflow, projectKey } = args
-  const bound = findVersionFlowWorktrees(catalog.worktrees, { version, workflow })
+  const bound = findVersionFlowWorktrees(args.worktrees ?? catalog?.worktrees ?? [], {
+    version,
+    workflow
+  })
   if (bound.length === 1 && bound[0]) {
     const only = bound[0]
     if (activateVersionWorktree(only)) {
@@ -50,15 +48,12 @@ export function navigateVersionWorkflow(args: {
     })
     return
   }
-  // 无绑定树：无论旧固定树是否存在都进同一屏内入口——浏览目标 effect 按登记
-  // 决定 ensure 旧固定树（旧上下文显式保留）还是只读回看；浏览不建树，初始化
-  // 是版本行「初始化工作区」按钮的显式动作。
-  if (!catalog.scope) {
+  if (!catalog?.scope || catalog.error) {
     toast.error('项目工作区尚未就绪，请稍后再试')
     return
   }
   setCycleView(workflow)
-  openCycleProject(catalog.scope)
+  openCycleProject(catalog.scope, version)
 }
 
 /**
@@ -87,7 +82,11 @@ export async function initializeVersionWorkspace(args: {
   // 推送与目录下次装载自然补齐。
   try {
     const state = useAppStore.getState()
-    await Promise.all(catalog.repoIds.map((repoId) => state.fetchWorktrees(repoId)))
+    await state.fetchWorktrees(scope.repoId, {
+      executionHostId: scope.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+        : scope.hostId
+    })
     catalog.reload()
   } catch {
     // 静默：prepare 结果按下方如实回报。
