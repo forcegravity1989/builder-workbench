@@ -197,6 +197,7 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
               'ready',
               (value) =>
                 typeof value.title === 'string' &&
+                value.title.trim().length > 0 &&
                 recordingTitleMatches(value.title, recording.name),
               (value) => {
                 if (typeof value.title === 'string') {
