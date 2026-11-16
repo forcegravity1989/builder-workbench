@@ -4,7 +4,13 @@ import type { HandlerContext } from '../dispatch'
 import { RuntimeClient } from '../runtime-client'
 import { meetingPageExpression } from './page'
 import { meetingOutputTarget, writeMeetingOutput } from './output'
-import { selectMeetingRecordings, transcriptFingerprint, verifyTranscriptChunks } from './protocol'
+import {
+  findDuplicateTranscript,
+  recordingTitleMatches,
+  selectMeetingRecordings,
+  transcriptFingerprint,
+  verifyTranscriptChunks
+} from './protocol'
 
 describe('meeting transcript acquisition protocol', () => {
   it('requires an unambiguous recording selection and rejects empty, truncated, or changed text', () => {
@@ -33,6 +39,23 @@ describe('meeting transcript acquisition protocol', () => {
           `return ${meetingPageExpression('A'.repeat(32), 'pick', { label: "录制'; throw 1; //" })}`
         )
     ).not.toThrow()
+  })
+
+  it('accepts either recording-name or meeting-subject headers after a pick', () => {
+    expect(recordingTitleMatches('录制-1-12026/11/13 16:00', '录制-1-1')).toBe(true)
+    expect(recordingTitleMatches('v1.0.46 版本验收会议', '录制-1-1')).toBe(true)
+    expect(recordingTitleMatches('录制-2-12026/11/13 16:00', '录制-1-1')).toBe(false)
+    expect(recordingTitleMatches('v1.0.46 版本验收会议', '当前录制')).toBe(false)
+    expect(recordingTitleMatches('v1.0.46 录制-1-1', '录制-1-1')).toBe(true)
+    expect(recordingTitleMatches('录制-1-12026-11-13 16:00', '录制-1-1')).toBe(true)
+    expect(recordingTitleMatches('录制-1-11 上午', '录制-1-1')).toBe(false)
+  })
+
+  it('flags identical content across recordings as a failed switch', () => {
+    const previous = [{ length: 10, fingerprint: 'abcd' }]
+    expect(findDuplicateTranscript(previous, { length: 10, fingerprint: 'abcd' })).toBeDefined()
+    expect(findDuplicateTranscript(previous, { length: 10, fingerprint: 'abce' })).toBeUndefined()
+    expect(findDuplicateTranscript(previous, { length: 11, fingerprint: 'abcd' })).toBeUndefined()
   })
 
   it('writes and independently reads back on the selected SSH host before publishing the output', async () => {

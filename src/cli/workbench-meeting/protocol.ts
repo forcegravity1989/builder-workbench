@@ -37,6 +37,46 @@ export function selectMeetingRecordings(
   return matches
 }
 
+// Why: eMeeting layouts differ — some put the recording name in the left header,
+// others put the meeting subject there (2026-11-16, meeting B9FA20DB). Only
+// enforce the recording-name check when the header actually speaks that
+// namespace; otherwise the title can never match and every pick times out.
+export function recordingTitleMatches(title: string, name: string): boolean {
+  if (/^录制-\d+-\d+$/.test(name)) {
+    // Same no-separator quirk as the inventory labels: the date can follow the
+    // name directly (录制-1-12026/11/13), so a regex match would return
+    // 录制-1-12026 and never equal the name. Comparing the raw substring keeps
+    // the exact name and only rejects it when it is a prefix of a longer id.
+    if (!/录制-\d+-\d+/.test(title)) {
+      return true
+    }
+    return titleHasRecordingName(title, name)
+  }
+  return title.includes(name)
+}
+
+function titleHasRecordingName(title: string, name: string): boolean {
+  let index = title.indexOf(name)
+  while (index >= 0) {
+    const after = title.slice(index + name.length)
+    if (!/^\d/.test(after) || /^\d{4}[-/]/.test(after)) {
+      return true
+    }
+    index = title.indexOf(name, index + 1)
+  }
+  return false
+}
+
+/** Identical content across two recordings means the pick never switched. */
+export function findDuplicateTranscript<T extends { length: number; fingerprint: string }>(
+  previous: T[],
+  current: T
+): T | undefined {
+  return previous.find(
+    (item) => item.length === current.length && item.fingerprint === current.fingerprint
+  )
+}
+
 /** The browser and CLI compare UTF-16 units; byte counts would split Chinese text incorrectly. */
 export function transcriptFingerprint(text: string): string {
   let hash = 2166136261
