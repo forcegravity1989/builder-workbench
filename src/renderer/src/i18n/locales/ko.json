@@ -13181,7 +13181,6 @@
             "complete": "완료"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "중",
             "dcd6e6b03e": "{{value1}}단계 중 {{value0}}단계"
           },
           "contextual": {

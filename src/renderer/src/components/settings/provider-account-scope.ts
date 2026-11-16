@@ -5,7 +5,7 @@ import type { GlobalSettings } from '../../../../shared/global-settings-types'
 
 export type ProviderAccountScope = {
   label: string
-  description: string
+  description?: string
 }
 
 export type ProviderRateLimitScope = {
@@ -59,17 +59,15 @@ export function getProviderAccountScope(
           )
     }
   }
+  if (isWorkbenchShell()) {
+    return { label: translate('guidance.providerLocalAccount', 'Local desktop') }
+  }
   return {
     label: getLocalExecutionHostLabel(),
-    description: isWorkbenchShell()
-      ? translate(
-          'guidance.providerLocalCredentials',
-          'This desktop client owns the provider credentials and account checks. Edit server-owned credentials in the advanced settings for that server.'
-        )
-      : translate(
-          'auto.components.settings.providerAccountScope.localCredentials',
-          'Credentials and account checks for this provider are owned by this desktop client. Use Settings > Remote Orca Servers > Advanced to edit server-owned credentials.'
-        )
+    description: translate(
+      'auto.components.settings.providerAccountScope.localCredentials',
+      'Credentials and account checks for this provider are owned by this desktop client. Use Settings > Remote Orca Servers > Advanced to edit server-owned credentials.'
+    )
   }
 }
 

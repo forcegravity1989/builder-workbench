@@ -9368,7 +9368,20 @@
                   "6b2cfb52b4": "gh",
                   "b4d900e7f1": "通过",
                   "account_scope_prefix": "账户范围",
+                  "statusConnected": "已连接",
+                  "statusUnavailable": "不可用",
                   "statusNotInstalled": "未安装",
+                  "statusNotAuthenticated": "未登录",
+                  "codehubDescription": "通过以下工具查看议题和合并请求：",
+                  "codehubUnavailable": "当前运行环境暂时无法检查 codehub-cli 的状态。",
+                  "codehubInstallButton": "安装 CodeHub CLI",
+                  "codehubNotAuthenticated": "已安装 codehub-cli，请先登录。",
+                  "codehubLoginTitle": "登录 CodeHub",
+                  "codehubLoginTerminalAriaLabel": "CodeHub 登录终端",
+                  "loginButton": "登录",
+                  "pressEnterDescription": "按 Enter 运行命令。",
+                  "installInProgressNote": "正在后台安装，完成后会通知你。",
+                  "installingButton": "正在安装…",
                   "codehubMissing": "未检测到 codehub-cli。安装需要 npm，并能访问内网软件源；暂时不可用时可稍后配置。",
                   "welinkDescription": "发送报告和诊断文件，使用",
                   "welinkMissing": "安装 welink-cli 可向 BW 用户群空间发送报告和诊断文件。安装需要 npm，并能访问内网软件源；暂时不可用时可稍后配置。"
@@ -13345,17 +13358,31 @@
             "4a9568f773": "返回",
             "4f86e2a10b": "跳过导览",
             "d974f32a83": "关闭导览",
-            "ffa4412b66": "下一步"
+            "ffa4412b66": "下一步",
+            "complete": "完成"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "的",
-            "dcd6e6b03e": "{{value1}} 的步骤 {{value0}}"
+            "dcd6e6b03e": "第 {{value0}} 步，共 {{value1}} 步"
           },
           "contextual": {
             "tour": {
               "overlay": {
                 "measurement": {
-                  "38b3155418": "下一步"
+                  "38b3155418": "下一步",
+                  "tasks": {
+                    "source": {
+                      "title": "选择任务来源",
+                      "body": "选择要查看的项目或任务来源。如果没有可用来源，请到设置 → 集成检查连接。"
+                    },
+                    "filter": {
+                      "title": "筛选你要找的任务",
+                      "body": "使用预设和搜索缩小范围，找到需要的议题、拉取请求或合并请求。"
+                    },
+                    "start": {
+                      "title": "从任务开始工作",
+                      "body": "在任务上点击「开始」或「打开」，将任务及其上下文带入工作区。"
+                    }
+                  }
                 }
               }
             }
@@ -15327,7 +15354,9 @@
     },
     "cliPrerequisite": "打开配置前，{{product}} 可能会请求系统授权，将 Orca CLI 命令注册到 PATH。",
     "providerRemoteCredentials": "此远程服务器负责该服务的凭据和账号检查。如需编辑凭据，请打开该服务器的高级设置。",
-    "providerLocalCredentials": "此桌面客户端负责该服务的凭据和账号检查。服务器端的凭据请在对应服务器的高级设置中编辑。",
+    "providerLocalAccount": "本机",
+    "setupGuideHidden": "已从侧边栏隐藏清单",
+    "setupGuideReopen": "可从「帮助 → BW 入门」重新打开。",
     "cliRegistrationTitle": "请将 Orca CLI 注册到 PATH 后继续。",
     "cliRegistrationDescription": "请允许系统授权，让能力配置可以使用 Orca CLI 命令。"
   }

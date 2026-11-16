@@ -14328,7 +14328,6 @@
             "complete": "Terminé"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "sur",
             "dcd6e6b03e": "Étape {{value0}} sur {{value1}}"
           },
           "contextual": {

@@ -141,7 +141,16 @@ function SetupGuideModalContent({
 
   const handleHideFromSidebar = useCallback((): void => {
     setSetupGuideSidebarDismissed(true)
-  }, [setSetupGuideSidebarDismissed])
+    if (isBW) {
+      closeModal()
+      toast.success(translate('guidance.setupGuideHidden', 'Checklist hidden from the sidebar'), {
+        description: translate(
+          'guidance.setupGuideReopen',
+          'You can reopen it from Help → Getting Started with BW.'
+        )
+      })
+    }
+  }, [closeModal, isBW, setSetupGuideSidebarDismissed])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
