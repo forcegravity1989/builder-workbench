@@ -123,7 +123,7 @@ export function AcceptanceNotices({
         </details>
       )}
       {draft?.error && draft.remote === undefined && (
-        <button className="wb-btn wb-btn-sm" disabled={busy} onClick={onRetrySave}>
+        <button className="wb-btn wb-btn-sm" onClick={onRetrySave}>
           重试保存
         </button>
       )}
