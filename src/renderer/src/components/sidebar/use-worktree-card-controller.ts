@@ -81,11 +81,11 @@ export function useWorktreeCardController(props: ResolvedWorktreeCardProps) {
     openModal: foundation.openModal
   })
 
-  // Why: delete is destructive, so it only appears while holding Option/Alt, not in the ordinary hover chrome.
+  // Why: pin/sleep/delete now live in the always-on hover chrome; delete is still
+  // withheld for the main worktree (not deletable) and while a delete is in flight.
   const showDeleteQuickAction =
     !props.affiliateListMode &&
     canShowWorkspaceDeleteQuickAction({
-      deleteModifierPressed: linked.deleteModifierPressed,
       isDeleting: linked.isDeleting,
       isMainWorktree: worktree.isMainWorktree
     })
