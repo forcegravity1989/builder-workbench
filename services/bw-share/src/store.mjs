@@ -1,0 +1,351 @@
+import { randomBytes } from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { ShareError } from './errors.mjs'
+import { hashToken, tokenMatchesHash } from './tokens.mjs'
+
+const SHARE_ID_PATTERN = /^[A-Za-z0-9_-]{22}$/
+const STALE_TEMP_MS = 60 * 60 * 1000
+
+/**
+ * @typedef {object} ShareMeta
+ * @property {string} id
+ * @property {string} fileName
+ * @property {string} [title]
+ * @property {'text/html'} contentType
+ * @property {number} bytes
+ * @property {string} createdAt
+ * @property {string} updatedAt
+ * @property {string | null} expiresAt
+ * @property {string} editTokenHash
+ */
+
+/**
+ * IDs are 128 bits of randomness encoded as base64url. The link is the only capability a viewer
+ * needs, so guessing one must stay infeasible.
+ *
+ * @param {string} id
+ */
+export function isValidShareId(id) {
+  return SHARE_ID_PATTERN.test(id)
+}
+
+/**
+ * @param {{ dataDir: string, retentionDays: number }} options
+ */
+export function createShareStore({ dataDir, retentionDays }) {
+  /** @type {Map<string, Promise<void>>} */
+  const locks = new Map()
+
+  const contentPath = (id) => path.join(dataDir, `${id}.html`)
+  const metaPath = (id) => path.join(dataDir, `${id}.json`)
+
+  async function init() {
+    await fs.mkdir(dataDir, { recursive: true, mode: 0o700 })
+  }
+
+  /**
+   * @param {import('./payload.mjs').SharePayload} payload
+   * @returns {Promise<{ id: string, editToken: string, meta: ShareMeta }>}
+   */
+  async function create(payload) {
+    const id = randomBytes(16).toString('base64url')
+    const editToken = randomBytes(32).toString('base64url')
+    const now = new Date()
+    /** @type {ShareMeta} */
+    const meta = {
+      id,
+      fileName: payload.fileName,
+      ...(payload.title ? { title: payload.title } : {}),
+      contentType: 'text/html',
+      bytes: Buffer.byteLength(payload.content, 'utf8'),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      expiresAt: expiryFrom(now),
+      editTokenHash: hashToken(editToken).toString('hex')
+    }
+    // Meta first: a crash before the content lands leaves a share that reads as missing and is
+    // swept at expiry, instead of an unreferenced content file that nothing would ever clean up.
+    await writeFileAtomic(metaPath(id), JSON.stringify(meta, null, 2))
+    await writeFileAtomic(contentPath(id), payload.content)
+    return { id, editToken, meta }
+  }
+
+  /**
+   * @param {string} id
+   * @param {string} editToken
+   * @param {import('./payload.mjs').SharePayload} payload
+   * @returns {Promise<ShareMeta>}
+   */
+  function update(id, editToken, payload) {
+    return withLock(id, async () => {
+      const existing = await readMeta(id)
+      if (!existing || isExpired(existing)) {
+        throw new ShareError(404, 'not_found', 'Share not found.')
+      }
+      if (!tokenMatchesHash(editToken, existing.editTokenHash)) {
+        throw new ShareError(403, 'forbidden', 'Edit token does not match this share.')
+      }
+      const now = new Date()
+      /** @type {ShareMeta} */
+      const meta = {
+        ...existing,
+        fileName: payload.fileName,
+        bytes: Buffer.byteLength(payload.content, 'utf8'),
+        updatedAt: now.toISOString(),
+        expiresAt: expiryFrom(now)
+      }
+      // PUT replaces the share, so an omitted title clears the old one.
+      if (payload.title) {
+        meta.title = payload.title
+      } else {
+        delete meta.title
+      }
+      await writeFileAtomic(contentPath(id), payload.content)
+      await writeFileAtomic(metaPath(id), JSON.stringify(meta, null, 2))
+      return meta
+    })
+  }
+
+  /**
+   * @param {string} id
+   * @param {string} editToken
+   */
+  function remove(id, editToken) {
+    return withLock(id, async () => {
+      const existing = await readMeta(id)
+      if (!existing || isExpired(existing)) {
+        throw new ShareError(404, 'not_found', 'Share not found.')
+      }
+      if (!tokenMatchesHash(editToken, existing.editTokenHash)) {
+        throw new ShareError(403, 'forbidden', 'Edit token does not match this share.')
+      }
+      await removeFiles(id)
+    })
+  }
+
+  /**
+   * Same lookup as {@link read}, but hands the content out as a stream so serving a share never
+   * loads the whole report into memory.
+   *
+   * @param {string} id
+   * @returns {Promise<{ meta: ShareMeta, size: number, stream: import('node:fs').ReadStream } | null>}
+   */
+  async function open(id) {
+    const meta = await readMeta(id)
+    if (!meta || isExpired(meta)) {
+      return null
+    }
+    try {
+      const stats = await fs.stat(contentPath(id))
+      return { meta, size: stats.size, stream: createReadStream(contentPath(id)) }
+    } catch (error) {
+      if (isMissingFile(error)) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  /**
+   * @param {string} id
+   * @returns {Promise<{ meta: ShareMeta, content: Buffer } | null>}
+   */
+  async function read(id) {
+    const meta = await readMeta(id)
+    if (!meta || isExpired(meta)) {
+      return null
+    }
+    try {
+      return { meta, content: await fs.readFile(contentPath(id)) }
+    } catch (error) {
+      if (isMissingFile(error)) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Delete expired shares. Called on startup and hourly by the entry point; a share past its expiry
+   * is already unreadable, so the sweep only reclaims disk. Each share is swept under its lock so a
+   * concurrent update that renews the expiry cannot be deleted mid-write.
+   *
+   * @param {Date} [now]
+   * @returns {Promise<number>}
+   */
+  async function sweep(now = new Date()) {
+    let names
+    try {
+      names = await fs.readdir(dataDir)
+    } catch (error) {
+      if (isMissingFile(error)) {
+        return 0
+      }
+      throw error
+    }
+    const staleTempBefore = now.getTime() - STALE_TEMP_MS
+    let removed = 0
+    for (const name of names) {
+      if (name.includes('.tmp-')) {
+        await removeIfOlderThan(path.join(dataDir, name), staleTempBefore)
+        continue
+      }
+      if (!name.endsWith('.json')) {
+        continue
+      }
+      const id = name.slice(0, -'.json'.length)
+      if (!isValidShareId(id)) {
+        continue
+      }
+      const didRemove = await withLock(id, async () => {
+        const meta = await readMeta(id)
+        if (meta && !isExpired(meta, now)) {
+          return false
+        }
+        await removeFiles(id)
+        return true
+      })
+      if (didRemove) {
+        removed += 1
+      }
+    }
+    return removed
+  }
+
+  /**
+   * @param {string} id
+   * @returns {Promise<ShareMeta | null>}
+   */
+  async function readMeta(id) {
+    if (!isValidShareId(id)) {
+      return null
+    }
+    try {
+      const raw = await fs.readFile(metaPath(id), 'utf8')
+      const parsed = JSON.parse(raw)
+      if (typeof parsed !== 'object' || parsed === null || parsed.id !== id) {
+        return null
+      }
+      return /** @type {ShareMeta} */ (parsed)
+    } catch (error) {
+      if (isMissingFile(error) || error instanceof SyntaxError) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  /**
+   * @param {ShareMeta} meta
+   * @param {Date} [now]
+   */
+  function isExpired(meta, now = new Date()) {
+    return Boolean(meta.expiresAt) && new Date(meta.expiresAt).getTime() <= now.getTime()
+  }
+
+  /** @param {Date} now */
+  function expiryFrom(now) {
+    if (retentionDays <= 0) {
+      return null
+    }
+    return new Date(now.getTime() + retentionDays * 24 * 60 * 60 * 1000).toISOString()
+  }
+
+  /**
+   * @param {string} filePath
+   * @param {number} cutoff
+   */
+  async function removeIfOlderThan(filePath, cutoff) {
+    try {
+      const stats = await fs.stat(filePath)
+      if (stats.mtimeMs < cutoff) {
+        await fs.rm(filePath, { force: true })
+      }
+    } catch (error) {
+      if (!isMissingFile(error)) {
+        throw error
+      }
+    }
+  }
+
+  /** @param {string} id */
+  async function removeFiles(id) {
+    await fs.rm(contentPath(id), { force: true })
+    await fs.rm(metaPath(id), { force: true })
+  }
+
+  /**
+   * Serialize update/remove per id so a concurrent revoke cannot interleave with a content write.
+   *
+   * @template T
+   * @param {string} key
+   * @param {() => Promise<T>} operation
+   * @returns {Promise<T>}
+   */
+  async function withLock(key, operation) {
+    const previous = locks.get(key) ?? Promise.resolve()
+    /** @type {() => void} */
+    let release = () => {}
+    const gate = new Promise((resolve) => {
+      release = () => resolve(undefined)
+    })
+    const current = previous.then(() => gate)
+    locks.set(key, current)
+    await previous
+    try {
+      return await operation()
+    } finally {
+      release()
+      if (locks.get(key) === current) {
+        locks.delete(key)
+      }
+    }
+  }
+
+  return { init, create, update, remove, read, open, sweep }
+}
+
+/**
+ * The maxBytes limit is enforced on the decoded payload; this store trusts its caller for that
+ * check and only guards the filesystem mechanics.
+ *
+ * @param {string} filePath
+ * @param {string | Buffer} data
+ */
+async function writeFileAtomic(filePath, data) {
+  const tmp = `${filePath}.tmp-${randomBytes(8).toString('hex')}`
+  try {
+    const handle = await fs.open(tmp, 'w', 0o600)
+    try {
+      await handle.writeFile(data)
+      await handle.sync()
+    } finally {
+      await handle.close()
+    }
+    await fs.rename(tmp, filePath)
+  } catch (error) {
+    await fs.rm(tmp, { force: true })
+    throw error
+  }
+  await syncDirectory(path.dirname(filePath))
+}
+
+/** @param {string} dir */
+async function syncDirectory(dir) {
+  let handle
+  try {
+    handle = await fs.open(dir, 'r')
+    await handle.sync()
+  } catch {
+    // Directory fsync is not available on every platform (Windows); the rename is still atomic.
+  } finally {
+    await handle?.close()
+  }
+}
+
+/** @param {unknown} error */
+function isMissingFile(error) {
+  return Boolean(error) && /** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT'
+}

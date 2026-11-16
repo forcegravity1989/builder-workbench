@@ -1,0 +1,39 @@
+# Install to /etc/systemd/system/bw-share.service, then:
+#   systemctl daemon-reload && systemctl enable --now bw-share
+# Adjust User, WorkingDirectory and the node path to the machine.
+
+[Unit]
+Description=Workbench self-hosted HTML share service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bwshare
+Group=bwshare
+WorkingDirectory=/opt/bw-share
+# Default before EnvironmentFile so /etc/bw-share.env can still override it. Without this, an env
+# file copied from .env.example uses ./data, which is read-only under ProtectSystem=strict.
+Environment=BW_SHARE_DATA_DIR=/var/lib/bw-share
+EnvironmentFile=/etc/bw-share.env
+StateDirectory=bw-share
+StateDirectoryMode=0700
+ExecStart=/usr/bin/node src/main.mjs
+Restart=on-failure
+RestartSec=2
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+# The service only needs its own data directory.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
