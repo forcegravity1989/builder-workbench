@@ -271,7 +271,7 @@ test.describe('BW first-run project handoff', () => {
     await workbenchPage.screenshot({
       path: testInfo.outputPath('bw-getting-started-optional-reports.png')
     })
-    await gettingStarted.getByRole('button', { name: /^(Close|关闭)$/ }).click()
+    await gettingStarted.getByRole('button', { name: /^(Close setup guide|关闭入门)$/ }).click()
     await expect(gettingStarted).toBeHidden()
 
     await workbenchPage
