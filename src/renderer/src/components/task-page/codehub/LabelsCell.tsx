@@ -3,7 +3,7 @@ import { Check, ChevronDown, LoaderCircle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import { codehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 
@@ -25,6 +25,7 @@ export function CodeHubLabelsCell({
   const [error, setError] = useState<string | null>(null)
   const [pendingLabel, setPendingLabel] = useState<string | null>(null)
   const labels = useMemo(() => item.labels ?? [], [item.labels])
+  const { host, project } = item
   // 候选名单在 popover 打开时拉取（重开重拉），新建标签下次打开可见。
   useEffect(() => {
     if (!open || !item.repoPath) {
@@ -33,7 +34,7 @@ export function CodeHubLabelsCell({
     let stale = false
     setLoading(true)
     setError(null)
-    codehubApi
+    createTaskPageCodeHubApi(null, { host, project })
       .listLabels({ repoPath: item.repoPath, repoId: item.repoId })
       .then((names) => {
         if (!stale) {
@@ -54,7 +55,7 @@ export function CodeHubLabelsCell({
     return () => {
       stale = true
     }
-  }, [open, item.repoPath, item.repoId])
+  }, [open, item.repoPath, item.repoId, host, project])
 
   const toggleLabel = useCallback(
     async (label: string): Promise<void> => {
@@ -67,7 +68,7 @@ export function CodeHubLabelsCell({
         : [...labels, label]
       setPendingLabel(label)
       try {
-        await codehubApi.updateIssueLabels({
+        await createTaskPageCodeHubApi(null, { host, project }).updateIssueLabels({
           repoPath: item.repoPath,
           repoId: item.repoId,
           iid: item.iid,
@@ -81,7 +82,7 @@ export function CodeHubLabelsCell({
         setPendingLabel(null)
       }
     },
-    [item.iid, item.repoId, item.repoPath, labels, onChanged, pendingLabel]
+    [item.iid, item.repoId, item.repoPath, host, project, labels, onChanged, pendingLabel]
   )
 
   const triggerContent =

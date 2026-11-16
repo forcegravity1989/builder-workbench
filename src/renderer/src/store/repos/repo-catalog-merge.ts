@@ -13,6 +13,7 @@ import type { getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { RepoSlice } from './repo-state'
 import { repoWithFetchedOwner } from './owner-routing'
+import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
 import { getRuntimeTargetHostId } from '../runtime-target-host'
 import { fetchProjectHostSetupCompatibility } from '../projects/project-host-routing'
 import { mergeFetchedReposForHost } from './repo-catalog-identity'
@@ -33,16 +34,19 @@ export async function fetchRepoCatalogForTarget(
   target: ReturnType<typeof getActiveRuntimeTarget>,
   reposAtRequest: readonly Repo[]
 ): Promise<FetchedRepoCatalog> {
+  const pairingRevision =
+    target.kind === 'environment' ? getRuntimeEnvironmentRevision(target.environmentId) : undefined
   const fetchedRepos =
     target.kind === 'local'
       ? await window.api.repos.list()
       : (
           await callRuntimeRpc<{ repos: Repo[] }>(target, 'repo.list', undefined, {
             timeoutMs: 15_000,
-            reuseRecentCompatibilityFailure: true
+            reuseRecentCompatibilityFailure: true,
+            expectedEnvironmentPairingRevision: pairingRevision
           })
         ).repos
-  const repos = fetchedRepos.map((repo) => repoWithFetchedOwner(repo, target))
+  const repos = fetchedRepos.map((repo) => repoWithFetchedOwner(repo, target, pairingRevision))
   return {
     repos,
     projectHostSetupCompatibility: await fetchProjectHostSetupCompatibility(target, repos),

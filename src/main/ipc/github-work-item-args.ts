@@ -1,4 +1,5 @@
 import type { TaskSourceContext } from '../../shared/task-source-context'
+import type { GitHubOwnerRepo } from '../../shared/github/pull-request-types'
 import type { IssueSourcePreference } from '../../shared/repo-types'
 
 export type WorkItemArgs = {
@@ -17,6 +18,7 @@ type RegisteredRepoContext = {
 
 type LocalGitExecOptions = {
   wslDistro?: string
+  taskRepository?: GitHubOwnerRepo
 }
 
 // Why: renderer input crosses the IPC boundary and is untrusted. Reject

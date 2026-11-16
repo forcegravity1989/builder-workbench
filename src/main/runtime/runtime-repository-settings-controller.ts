@@ -1,5 +1,6 @@
-import { getRepoExecutionHostId } from '../../shared/execution-host'
+import { getRepoExecutionHostId, type ExecutionHostId } from '../../shared/execution-host'
 import { isFolderRepo } from '../../shared/repo-kind'
+import { findConfirmedRepoRegistration } from '../../shared/workbench/repo-removal'
 import type { Repo } from '../../shared/repo-types'
 import { invalidateAuthorizedRootsCache } from '../ipc/filesystem-auth'
 import { prepareLocalWorktreeRootForRepo } from '../worktree-root-preparation'
@@ -119,12 +120,37 @@ export class RuntimeRepositorySettingsController {
     } else {
       store.removeProject(repo.id)
     }
-    this.deps.forgetTerminalTopology(repo.id)
+    this.finishRemoval(repo.id)
+    return { removed: true }
+  }
+
+  removeRegistration(expected: {
+    repoId: string
+    hostId: ExecutionHostId
+    path: string
+    addedAt: number
+  }): boolean {
+    const store = this.deps.getStore()
+    if (!store?.removeProjectForHost) {
+      throw new Error('runtime_unavailable')
+    }
+    const repo = findConfirmedRepoRegistration(store.getRepos(), expected)
+    if (!repo) {
+      return false
+    }
+    store.removeProjectForHost(repo.id, expected.hostId)
+    this.finishRemoval(repo.id, !store.getRepos().some((row) => row.id === repo.id))
+    return true
+  }
+
+  private finishRemoval(repoId: string, forgetTopology = true): void {
+    if (forgetTopology) {
+      this.deps.forgetTerminalTopology(repoId)
+    }
     this.deps.invalidateResolvedWorktrees()
-    this.deps.invalidateWorktreeScan(repo.id)
+    this.deps.invalidateWorktreeScan(repoId)
     invalidateAuthorizedRootsCache()
     this.deps.notifyReposChanged()
-    return { removed: true }
   }
 
   reorder(orderedIds: string[]): { status: 'applied' | 'rejected' } {

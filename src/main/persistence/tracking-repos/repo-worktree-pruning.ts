@@ -54,7 +54,15 @@ export function pruneWorktreeStateForRepo(
         keyHost === null ||
         keyHost === hostId ||
         (keyHost === '' && hostId === LOCAL_EXECUTION_HOST_ID)
-      if (belongsToPrunedHost && rawKey.startsWith(prefix)) {
+      // Direct SSH sessions also use the legacy local partition. A known SSH owner
+      // cannot be pruned by a local registration removal, even with a bare key.
+      const metaHostId = state.worktreeMeta[rawKey]?.hostId
+      const belongsToSessionPartition =
+        hostId !== LOCAL_EXECUTION_HOST_ID ||
+        keyHost !== null ||
+        !metaHostId ||
+        metaHostId === hostId
+      if (belongsToPrunedHost && belongsToSessionPartition && rawKey.startsWith(prefix)) {
         ownerKeysToPrune.add(key)
       }
     }

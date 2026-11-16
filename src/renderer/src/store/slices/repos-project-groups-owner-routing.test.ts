@@ -291,16 +291,22 @@ describe('project group state cascades stay scoped to the owner host', () => {
     })
     const store = createTestStore()
     store.setState({
-      settings: { activeRuntimeEnvironmentId: null } as never,
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
       projectGroups: [
         { ...folderScanGroup, executionHostId: 'local' },
         { ...folderScanGroup, executionHostId: 'runtime:env-1' }
       ],
       repos: [
-        { ...baseRepo, id: 'local-repo', projectGroupId: folderScanGroup.id },
+        { ...baseRepo, path: '/local/repo' },
         {
           ...baseRepo,
-          id: 'remote-repo',
+          path: '/ssh/repo',
+          projectGroupId: folderScanGroup.id,
+          executionHostId: 'ssh:ssh-1'
+        },
+        {
+          ...baseRepo,
+          path: '/peer/repo',
           projectGroupId: folderScanGroup.id,
           executionHostId: 'runtime:env-1'
         }
@@ -316,9 +322,62 @@ describe('project group state cascades stay scoped to the owner host', () => {
 
     expect(result).toMatchObject({
       status: 'deleted-group',
-      requestedProjectIds: ['local-repo'],
-      removedProjectIds: ['local-repo']
+      requestedProjectIds: [baseRepo.id],
+      removedProjectIds: [baseRepo.id],
+      failedProjectRemovals: []
     })
-    expect(store.getState().repos.map((repo) => repo.id)).toEqual(['remote-repo'])
+    expect(reposRemoveForHost).toHaveBeenCalledExactlyOnceWith({
+      repoId: baseRepo.id,
+      hostId: 'ssh:ssh-1'
+    })
+    expect(reposRemove).not.toHaveBeenCalled()
+    expect(runtimeEnvironmentCall).not.toHaveBeenCalled()
+    expect(store.getState().repos.map((repo) => repo.path)).toEqual(['/local/repo', '/peer/repo'])
+  })
+
+  it('keeps a paired group when its confirmed pairing has been replaced', async () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    const store = createTestStore()
+    store.setState({
+      projectGroups: [
+        { ...folderScanGroup, executionHostId: 'runtime:env-1', pairedCatalogRevision: 1 }
+      ]
+    })
+
+    try {
+      await expect(
+        store.getState().deleteProjectGroupWithContainedProjects(folderScanGroup.id, {
+          hostId: 'runtime:env-1',
+          removeContainedProjects: true,
+          expectedEnvironmentPairingRevision: 1
+        })
+      ).resolves.toMatchObject({ status: 'group-delete-failed' })
+      expect(projectGroupsDelete).not.toHaveBeenCalled()
+      expect(runtimeEnvironmentCall).not.toHaveBeenCalled()
+      expect(store.getState().projectGroups).toHaveLength(1)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('does not route an already removed group to its focused-host duplicate', async () => {
+    const store = createTestStore()
+    store.setState({
+      settings: { activeRuntimeEnvironmentId: 'env-1' } as never,
+      projectGroups: [{ ...folderScanGroup, executionHostId: 'runtime:env-1' }]
+    })
+
+    await expect(
+      store.getState().deleteProjectGroupWithContainedProjects(folderScanGroup.id, {
+        hostId: 'local',
+        removeContainedProjects: true
+      })
+    ).resolves.toMatchObject({ status: 'missing-group' })
+    await expect(
+      store.getState().deleteProjectGroup(folderScanGroup.id, { hostId: 'local' })
+    ).resolves.toBe(false)
+
+    expect(projectGroupsDelete).not.toHaveBeenCalled()
+    expect(runtimeEnvironmentCall).not.toHaveBeenCalled()
   })
 })

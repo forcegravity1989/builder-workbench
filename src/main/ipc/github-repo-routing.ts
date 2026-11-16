@@ -10,6 +10,10 @@ import {
   notePRRefreshValidationDenial,
   type PRRefreshValidationDenialReason
 } from '../github/pr-refresh-validation-backoff'
+import { githubRepoIdentityKey } from '../../shared/github/repository-identity-key'
+import type { LocalGitExecOptions } from '../github/gh-utils'
+import { isValidGitHubApiRepository } from '../github/github-api-repository-validation'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import type { Store } from '../persistence'
 import { getLocalProjectWorktreeGitOptions } from '../project-runtime-git-options'
 
@@ -18,6 +22,8 @@ export type GitHubRepoScopedArgs = {
   repoId?: string | null
   sourceContext?: TaskSourceContext | null
 }
+
+type GitHubRequestRepo = Repo & Pick<LocalGitExecOptions, 'taskRepository' | 'taskRemoteCandidates'>
 
 type RegisteredRepoValidationResult =
   | { kind: 'ok'; repo: Repo }
@@ -65,7 +71,41 @@ function validateRegisteredRepo(
 export function assertRegisteredGitHubRepo(
   args: string | GitHubRepoScopedArgs,
   store: Store
-): Repo {
+): GitHubRequestRepo {
+  if (typeof args !== 'string' && args.sourceContext?.localTaskAccount && isWorkbenchProduct()) {
+    const identity = args.sourceContext.providerIdentity
+    if (identity?.provider !== 'github' || !isValidGitHubApiRepository(identity)) {
+      throw new Error('GitHub repository identity is unavailable')
+    }
+    const requested = args.sourceContext.taskRemoteCandidates
+    const candidates = requested && {
+      origin:
+        requested.origin && isValidGitHubApiRepository(requested.origin)
+          ? requested.origin
+          : undefined,
+      upstream:
+        requested.upstream && isValidGitHubApiRepository(requested.upstream)
+          ? requested.upstream
+          : undefined
+    }
+    const prefersUpstream =
+      candidates?.upstream &&
+      githubRepoIdentityKey(candidates.upstream) === githubRepoIdentityKey(identity)
+    return {
+      id: args.repoId ?? args.sourceContext.repoId ?? '',
+      path: '',
+      displayName: identity.repo,
+      addedAt: 0,
+      badgeColor: '',
+      issueSourcePreference: prefersUpstream ? 'upstream' : 'origin',
+      taskRemoteCandidates: candidates,
+      taskRepository: {
+        owner: identity.owner,
+        repo: identity.repo,
+        host: identity.host ?? 'github.com'
+      }
+    }
+  }
   const result = validateRegisteredRepo(args, store)
   if (result.kind === 'denied') {
     throw new Error(result.message)
@@ -79,8 +119,13 @@ export function getGitHubRepoConnectionId(repo: Repo): string | null {
 
 export function getGitHubLocalGitOptionArgs(
   store: Store,
-  repo: Repo
-): [] | [{ wslDistro?: string }] {
+  repo: GitHubRequestRepo
+): [] | [LocalGitExecOptions] {
+  if (repo.taskRepository) {
+    return [
+      { taskRepository: repo.taskRepository, taskRemoteCandidates: repo.taskRemoteCandidates }
+    ]
+  }
   const localGitOptions = getLocalProjectWorktreeGitOptions(store, repo)
   return Object.keys(localGitOptions).length > 0 ? [localGitOptions] : []
 }

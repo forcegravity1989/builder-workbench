@@ -6,7 +6,7 @@ import {
 } from '../../orca-profiles/profile-project-session-state'
 import {
   getRepoExecutionHostId,
-  parseExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID,
   type ExecutionHostId
 } from '../../../shared/execution-host'
 import { mergeProjectHostSetupCompatibilityState } from '../tracking-repos/project-host-compatibility'
@@ -107,28 +107,16 @@ export class RepoLifecycleOperations {
       delete this[repoLifecycleOperationsContext].runtime.state.retiredWorktreeNamesByRepo?.[id]
     }
     syncProjectHostSetupCompatibilityState(this)
-    // Why: prune only this host's worktree metas if the id survives elsewhere; otherwise prune everything (matches removeProject).
-    pruneWorktreeStateForRepo(this, id, idStillPresent ? hostId : null)
-    if (!idStillPresent) {
-      this[repoLifecycleOperationsContext].runtime.state.workspaceSession =
-        removeRepoFromWorkspaceSession(
-          this[repoLifecycleOperationsContext].runtime.state.workspaceSession,
-          id
-        )
-      this[repoLifecycleOperationsContext].runtime.state.workspaceSessionsByHostId =
-        removeRepoFromHostWorkspaceSessions(
-          this[repoLifecycleOperationsContext].runtime.state.workspaceSessionsByHostId,
-          id
-        )
-    } else if (parseExecutionHostId(hostId)?.kind === 'runtime') {
-      const session =
-        this[repoLifecycleOperationsContext].runtime.state.workspaceSessionsByHostId?.[hostId]
-      if (session) {
-        this[repoLifecycleOperationsContext].runtime.state.workspaceSessionsByHostId = {
-          ...this[repoLifecycleOperationsContext].runtime.state.workspaceSessionsByHostId,
-          [hostId]: removeRepoFromWorkspaceSession(session, id)
-        }
-      }
+    // Paired hosts can hold the same repo without publishing a row to this Store.
+    pruneWorktreeStateForRepo(this, id, hostId)
+    const { state } = this[repoLifecycleOperationsContext].runtime
+    if (hostId === LOCAL_EXECUTION_HOST_ID && !idStillPresent) {
+      state.workspaceSession = removeRepoFromWorkspaceSession(state.workspaceSession, id)
+    } else if (state.workspaceSessionsByHostId?.[hostId]) {
+      state.workspaceSessionsByHostId[hostId] = removeRepoFromWorkspaceSession(
+        state.workspaceSessionsByHostId[hostId],
+        id
+      )
     }
     scheduleSave(this[repoLifecycleOperationsContext].scheduling)
   }

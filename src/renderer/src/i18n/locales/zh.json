@@ -4363,7 +4363,9 @@
           "591f330288": "删除项目组",
           "2c14ce677a": "正在删除...",
           "0e0e6764af": "包含的项目",
-          "ad407c2d55": "更多",
+          "groupHost": "组所在主机：{{host}}",
+          "groupUnavailable": "所选项目组已不可用，请返回项目列表确认。",
+          "vmCleanup": "虚拟机项目的环境和文件是否永久删除，取决于其虚拟机配置。",
           "removeContainedProjectSingular": "移除 1 个包含的项目",
           "removeContainedProjectPlural": "移除 {{value0}} 个包含的项目",
           "eeabb8e8e4": "从 Orca 移除 {{value0}} 个包含的{{value1}}",
@@ -4390,7 +4392,10 @@
           "d36883e046": "取消",
           "b79b39d865": "删除项目",
           "removeDescriptionSsh": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在 {{host}} 上 — 重新添加该 SSH 主机即可恢复。",
-          "removeDescriptionLocal": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在您的磁盘上。"
+          "removeDescriptionLocal": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在您的磁盘上。",
+          "removeDescriptionRuntime": "将从该主机移除 {{name}} 的项目登记，仓库文件会保留。",
+          "registrationUnavailable": "项目登记已不可用，请返回项目列表确认。",
+          "updatePairedHost": "请先升级配对主机上的 Workbench，再移除项目登记。"
         },
         "ScrollToCurrentWorkspaceToolbarButton": {
           "23989bb663": "显示活动工作区"
@@ -4804,6 +4809,7 @@
           "bd37a57ac8": "为 {{value0}} 创建工作区",
           "b667b59632": "部分项目无法从 Orca 中移除",
           "f94466bc39": "删除分组后，{{value1}} 个包含项目{{value2}}中仍剩 {{value0}} 个。",
+          "groupDeleteMembersChanged": "组内项目已变化，请核对列表后重新确认。",
           "groupDeleteFailed": "删除分组失败",
           "groupDeleteFailedDesc": "删除分组时出现问题。没有项目被移除。",
           "7a8b9c0d1e": "需要更新",
@@ -6754,6 +6760,7 @@
           "c7ef4415de": "显示名称",
           "b0a0c14a1c": "侧边栏和选项卡的项目特定显示详细信息。",
           "removeProjectAllHosts": "从所有已配置主机的 Orca 中删除该项目。",
+          "removeProjectSelectedHost": "移除当前所选主机上的项目登记。",
           "0909e5d650": "删除项目",
           "ee5a290616": "作为文件夹打开。 Git 功能对此工作区不可用。",
           "323debba71": "类型：",
@@ -14901,6 +14908,135 @@
     }
   },
   "guidance": {
+    "acceptance": {
+      "evidence": {
+        "title": "开始验收，核对证据",
+        "body": "打开本版验收并查看证据报告，缺少的证据留待核对。"
+      },
+      "decision": {
+        "title": "逐目标给出结论",
+        "body": "展开目标，对照固定计划的验收标准和证据，记录结论与下一步。"
+      },
+      "minutes": {
+        "title": "确认共识与遗留",
+        "body": "写下会议决定和遗留的去向，核对纪要内容后由人确认。"
+      },
+      "archive": {
+        "title": "提交材料归档",
+        "body": "请验收助手准备归档 PR。核对材料来源、结论与遗留后，由人评审合入。"
+      },
+      "readback": {
+        "title": "读回本版验收结果",
+        "body": "归档合入且项目代码更新后，刷新版本总览，查看人工结论和归档 PR。"
+      }
+    },
+    "delivery": {
+      "find": {
+        "title": "找到目标任务",
+        "action": "在项目墙查看本版进度，再打开该目标下的议题。"
+      },
+      "work": {
+        "title": "并行开工与续作",
+        "action": "每条议题单独开工作区。切换会话后，可以回到原来的工作继续。"
+      },
+      "browser": {
+        "title": "批注新交互原型",
+        "action": "有新交互时打开原型，在具体元素添加批注，再选择接收反馈的会话。"
+      },
+      "prepare": {
+        "title": "验证并准备 PR",
+        "action": "查看改动，按项目要求验证，再核对 PR 表单。"
+      },
+      "review": {
+        "title": "检视并返修",
+        "action": "打开同一条 PR，查看检查项和行级意见，核对作者推送的新版本。"
+      },
+      "readback": {
+        "title": "确认完成并读回",
+        "action": "读回合入结果，由人关闭已完成的样例议题，再核对目标和版本任务。"
+      },
+      "inbox": {
+        "title": "打开已有评审通知",
+        "action": "从待我评审打开已有样例通知。项目暂不可访问时，连接项目所在的主机后再打开。"
+      },
+      "notify": {
+        "title": "发送评审",
+        "action": "有开放 PR 时可选择已连接的主机。评审者也可以直接打开 PR。"
+      }
+    },
+    "outcomes": {
+      "facts": {
+        "title": "核对交付",
+        "body": "打开版本总览，核对目标和人工验收结论。"
+      },
+      "read": {
+        "title": "看指标",
+        "body": "进入项目总览，在记分牌选场景。对照版本计划的完成线，并核对读数对应哪一周。"
+      },
+      "recovery": {
+        "title": "处理缺数",
+        "body": "点「刷新」重新采集。需要修复数据来源时，从「配置指标」打开会话草稿。没读数也可以继续工作。"
+      },
+      "followup": {
+        "title": "安排下一步",
+        "body": "由团队决定跟进或改进什么，再写入下一版计划或已有任务。"
+      },
+      "scoreboardHelp": "记分牌引导",
+      "scoreboardUnavailable": "请先打开 Git 项目的总览，再使用记分牌引导。"
+    },
+    "planning": {
+      "taskHelp": "任务帮助",
+      "version": {
+        "title": "确定规划哪一版",
+        "body": "打开本版计划，核对上版遗留。首版直接开始。"
+      },
+      "goals": {
+        "title": "定目标与验收标准",
+        "body": "写下要交付的结果和验收标准，修改自动保存为草稿。"
+      },
+      "tasks": {
+        "title": "把目标落成任务",
+        "body": "与计划助手核对已有 Issue，确认本版要做哪些任务。"
+      },
+      "review": {
+        "title": "评审并归档",
+        "body": "在计划上批注意见，按需确认纪要，再请队友评审并合入归档 PR。"
+      },
+      "start": {
+        "title": "从计划开工",
+        "body": "从目标下的一条 Issue 打开已有工作区，或使用预填信息创建。"
+      }
+    },
+    "direction": {
+      "wall": {
+        "title": "找到项目",
+        "body": "从项目墙进入项目总览。"
+      },
+      "card": {
+        "title": "明确共同方向",
+        "body": "编辑愿景，核对提交摘要。"
+      },
+      "draft": {
+        "title": "安排阶段成果",
+        "body": "添加阶段成果，调整特性排期。"
+      },
+      "review": {
+        "title": "评审并更新",
+        "body": "评审合入后，更新正式安排。"
+      },
+      "steps": "旅程步骤",
+      "pause": "暂停",
+      "resume": "继续播放",
+      "playSequence": "顺序播放",
+      "playClip": "播放片段",
+      "followAlong": "在界面中跟做",
+      "restart": "重播",
+      "sample": "样例项目",
+      "nextRound": "调整下一轮",
+      "throughout": "贯穿每一轮",
+      "start": "起点",
+      "result": "结果"
+    },
     "catalog": {
       "feature": {
         "workspace": {
@@ -15010,7 +15146,7 @@
         "types": "探索分类",
         "preparing": "内容准备中",
         "building": "建设中",
-        "related": "相关功能与操作"
+        "related": "相关功能"
       },
       "group": {
         "projects": "项目墙与纳入",
@@ -15025,32 +15161,46 @@
       },
       "journey": {
         "direction": {
-          "title": "建立项目方向与阶段安排",
-          "summary": "说清想做成什么，把共同方向落到阶段成果。"
+          "title": "明确方向",
+          "summary": "说清想做成什么，把共同方向落到阶段成果。",
+          "start": "已纳入的项目和一个想法",
+          "result": "可回看的项目名片和阶段安排"
         },
         "commitments": {
-          "title": "确定本版承诺并开工",
-          "summary": "结合上版结果与新要求，形成可以执行、可以验收的计划。"
+          "title": "制定版本计划",
+          "summary": "结合上版结果与新要求，形成可以执行、可以验收的计划。",
+          "start": "项目方向和新要求",
+          "result": "经过评审的版本计划"
         },
         "delivery": {
-          "title": "把问题推进到可信交付",
-          "summary": "从任务开始，完成必要的讨论、开发、验证和同伴检视，再合入 PR。"
+          "title": "构建交付",
+          "summary": "从任务开始，完成必要的讨论、开发、验证和同伴检视，再合入 PR。",
+          "start": "一项待处理的任务",
+          "result": "经验证并合入的改动"
         },
         "acceptance": {
-          "title": "把本版承诺验收清楚",
-          "summary": "对照证据确认结果，留下结论与下一步安排。"
+          "title": "验收成果",
+          "summary": "对照证据确认结果，留下结论与下一步安排。",
+          "start": "本版承诺和交付证据",
+          "result": "已归档的验收结论"
         },
         "outcomes": {
-          "title": "用真实效果保持方向",
-          "summary": "看进展与效果，发现偏差，决定后续投入。"
+          "title": "查看效果",
+          "summary": "看进展与效果，发现偏差，决定后续投入。",
+          "start": "交付结果和实际读数",
+          "result": "下一轮调整决定"
         },
         "maintenance": {
-          "title": "让项目持续可维护",
-          "summary": "审视项目知识、架构与技术债，决定处理或暂缓，并验证结果。"
+          "title": "持续维护",
+          "summary": "审视项目知识、架构与技术债，决定处理或暂缓，并验证结果。",
+          "start": "待处理的知识或技术债",
+          "result": "有验证依据的维护结论"
         },
         "reuse": {
-          "title": "让下次工作少操心",
-          "summary": "把真实工作中跑通的做法沉淀下来，在下次同类任务中复用并检验。"
+          "title": "沉淀复用",
+          "summary": "把真实工作中跑通的做法沉淀下来，在下次同类任务中复用并检验。",
+          "start": "已验证的工作做法",
+          "result": "团队可复用的做法"
         }
       }
     },

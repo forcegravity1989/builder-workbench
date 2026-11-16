@@ -29,6 +29,8 @@ function renderDialog(
       <ProjectGroupDeleteDialog
         open={true}
         groupName="Platform"
+        hostLabel="Build machine"
+        removesVirtualMachine={false}
         projectCount={2}
         projectNames={['API', 'Web app']}
         removeContainedProjects={false}
@@ -72,6 +74,7 @@ describe('ProjectGroupDeleteDialog', () => {
     renderDialog({ onRemoveContainedProjectsChange })
 
     expect(document.body.textContent).toContain('Delete Platform.')
+    expect(document.body.textContent).toContain('Group host: Build machine')
     expect(document.body.textContent).toContain('Contained projects')
     expect(document.body.textContent).not.toContain('unless selected below')
     expect(getCheckbox().getAttribute('aria-checked')).toBe('false')

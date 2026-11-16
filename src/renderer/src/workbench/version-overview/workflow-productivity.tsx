@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -92,10 +93,15 @@ export function WorkflowProductivity({
         })}
       </div>
       {evidence.error && (
-        <p role="alert" className="text-xs text-destructive">
-          {evidence.error}
-          {evidence.value ? '；保留上次读数。' : '；当前读数未知。'}
-        </p>
+        <ErrorDetails
+          className="text-xs text-destructive"
+          summary={
+            evidence.value
+              ? '工作流证据读取失败，保留上次读数 · 查看详情'
+              : '工作流证据读取失败，当前读数未知 · 查看详情'
+          }
+          detail={evidence.error}
+        />
       )}
       {evidence.value && (
         <details className="bwo-muted mt-3">

@@ -54,7 +54,8 @@ export async function verifyVersionOverview(
   })
   await open(overviewVersions.current)
   const board = page.locator('.bwo-page')
-  await expect(board.getByText(/计划 PR 合入/).first()).toBeVisible()
+  await expect(board.locator('.bwo-meta')).toContainText('计划 · 已进入归档')
+  await expect(board.locator('.bwo-meta')).toContainText('PR 已合入')
   await expect(board.getByRole('button', { name: '#446 ↗', exact: true }).first()).toBeVisible()
   await expect(
     board.getByRole('heading', { name: '当前目标 · 版本总览开发', exact: true })
@@ -255,6 +256,9 @@ async function verifyDraftAcceptanceSource(
       timeout: 90_000
     })
     await expect(board.getByText('正在读取版本材料…', { exact: true })).toHaveCount(0)
+    await expect(board.locator('.bwo-meta')).toContainText('计划 · 评审已确认')
+    await expect(board.locator('.bwo-meta')).toContainText('验收 · 演示已完成')
+    await expect(board.locator('.bwo-meta')).not.toContainText('PR')
     await page.screenshot({ path: info.outputPath('overview-draft-acceptance.png') })
     await info.attach('draft-acceptance-observation', {
       body: await board.innerText(),

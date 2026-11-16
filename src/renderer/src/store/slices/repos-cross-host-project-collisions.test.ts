@@ -173,11 +173,13 @@ describe('deleting one host copy of a same-named project', () => {
   })
 
   it('removes only the local row when the same name exists on a remote', async () => {
-    const store = seed([localTwin, remoteATwin], 'env-a')
+    const legacyLocal = { ...localTwin, executionHostId: undefined }
+    const store = seed([legacyLocal, remoteATwin], 'env-a')
 
     await store.getState().removeProject('local-uuid', { hostId: 'local' })
 
-    expect(reposRemove).toHaveBeenCalledWith({ repoId: 'local-uuid' })
+    expect(reposRemoveForHost).toHaveBeenCalledWith({ repoId: 'local-uuid', hostId: 'local' })
+    expect(reposRemove).not.toHaveBeenCalled()
     expect(repoRmCalls()).toEqual([])
     expect(remainingRepoIds(store)).toEqual(['env-a-uuid'])
   })

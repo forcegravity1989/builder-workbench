@@ -71,6 +71,8 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   expect(existsSync(file)).toBe(false)
   await expect(card.locator('.pcard-name')).toHaveText(registered!.displayName)
   await expect(card.locator('.pcard-owner')).toContainText('—')
+  const wallGuide = page.locator('[data-contextual-tour-panel]')
+  await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
   await expect(card.locator('[data-repo-header-action]')).toBeVisible()
   await card.locator('[data-repo-header-action]').click()
   await expect(page.getByRole('menu')).toBeVisible()
@@ -79,6 +81,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     path: info.outputPath('bw-wall-native-menu.jpg')
   })
   await page.keyboard.press('Escape')
+  await expect(page.getByRole('menu')).toBeHidden()
   const previousWorkspace = await page.evaluate((id) => {
     const state = window.__store!.getState()
     const tree = state.worktreesByRepo[id].find((item) => item.isMainWorktree)!
@@ -107,6 +110,8 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   ).toEqual({ repoId, hostId: 'local', ...previousWorkspace })
   expect(existsSync(file)).toBe(false)
   await openWall()
+  await wallGuide.locator('[data-contextual-tour-skip]').click()
+  await expect(wallGuide).toBeHidden()
   mkdirSync(path.dirname(file), { recursive: true })
   writeFileSync(file, original)
   execFileSync('git', ['add', '.bw/project.toml'], { cwd: repoPath })
@@ -255,9 +260,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   ])
   await expect(overviewCharter.locator('.detail-v').last()).toHaveText('1000123457')
   await overviewCharter.getByRole('button', { name: '编辑项目信息', exact: true }).click()
-  await expect(page.locator('.wb-project-settings')).toBeVisible()
-  await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
-  await expect(page.locator('.wb-config-facts')).toContainText('1000123457')
+  const overviewSettings = page.locator('.wb-project-settings')
+  await expect(overviewSettings).toBeVisible()
+  await expect(overviewSettings.getByLabel('项目负责人', { exact: true })).toHaveValue('负责人甲')
+  await expect(overviewSettings.getByLabel('项目群', { exact: true })).toHaveValue('1000123457')
   await page.screenshot({
     animations: 'disabled',
     path: info.outputPath('bw-overview-shared-editor.jpg')
@@ -320,4 +326,21 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     animations: 'disabled',
     path: info.outputPath('bw-folder-continued.jpg')
   })
+  await openWall()
+  await folderCard.locator('[data-repo-header-action]').click()
+  await page.getByRole('menuitem', { name: /^(Remove Project|移除项目|删除项目)$/ }).click()
+  const removal = page.getByRole('dialog', { name: /^(Remove Project|移除项目|删除项目)$/ })
+  await expect(removal).toContainText(folderPath)
+  await expect(removal).toContainText(/(This Computer|This device|Local|本机)/i)
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('bw-folder-removal.jpg') })
+  await removal.getByRole('button', { name: /^(Remove|移除|删除)$/ }).click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async (id) => (await window.api.repos.list()).some((repo) => repo.id === id),
+        folderId
+      )
+    )
+    .toBe(false)
+  expect(existsSync(folderPath)).toBe(true)
 }

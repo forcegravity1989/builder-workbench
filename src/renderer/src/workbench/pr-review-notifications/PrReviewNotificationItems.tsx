@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import React, { useState } from 'react'
 import { isCodeHubHost } from '../../../../shared/codehub'
 import {
@@ -146,24 +147,33 @@ export function OutgoingReviewItem({
         <span>自动同步</span>
       </div>
       {status.error ? (
-        <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        <div className="flex items-start gap-1 text-[11px] text-muted-foreground">
           <AlertCircle className="size-3 shrink-0" />
-          <span className="break-words">
-            {status.error}
-            {status.checkedAt ? ` · 上次 ${formatTime(status.checkedAt)}` : ''}
-          </span>
-        </span>
+          <div className="min-w-0 break-words">
+            <ErrorDetails summary="评审状态未知 · 查看详情" detail={status.error} />
+            {status.checkedAt ? `上次 ${formatTime(status.checkedAt)}` : ''}
+          </div>
+        </div>
       ) : note.readback === null ? (
         <span className="text-[11px] text-muted-foreground">状态读取中</span>
       ) : null}
       <div className="space-y-1 text-[11px] text-muted-foreground">
         {note.deliveries.map((delivery) => (
-          <p
+          <div
             key={`${delivery.environmentId}:${delivery.pairingRevision}`}
             className={delivery.ok ? '' : 'text-destructive'}
           >
-            {delivery.name} · {delivery.ok ? '已送达' : `未送达：${delivery.error ?? '未确认接收'}`}
-          </p>
+            {delivery.ok ? (
+              `${delivery.name} · 已送达`
+            ) : delivery.error ? (
+              <ErrorDetails
+                summary={`${delivery.name} · 未送达 · 查看详情`}
+                detail={delivery.error}
+              />
+            ) : (
+              `${delivery.name} · 未确认接收`
+            )}
+          </div>
         ))}
       </div>
       {status.canReRequest ? (
@@ -190,46 +200,48 @@ export function IncomingReviewItem({
   const readbackError = missingProject ? '暂时无法访问该项目' : note.readbackError
   const state = note.readback?.prState ?? (note.readback?.merged ? 'merged' : null)
   return (
-    <button
-      type="button"
-      className="group flex w-full flex-col gap-1.5 border-b border-border/50 pb-2.5 text-left last:border-b-0 last:pb-0"
-      onClick={onOpen}
-      title="打开评审详情"
-    >
-      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
-        <GitPullRequest className="size-3 shrink-0" />
-        {isCodeHubHost(note.repo.host) ? 'MR' : 'PR'} #{note.prNumber}
-      </span>
-      <span className="text-[13px] font-semibold leading-snug break-words text-foreground group-hover:text-primary">
-        {note.title}
-      </span>
-      <span className="flex flex-wrap gap-1">
-        <ReviewStateBadge
-          label={isCodeHubHost(note.repo.host) ? 'MR' : 'PR'}
-          state={readbackError ? undefined : (state ?? undefined)}
-        />
-        <ReviewChecksBadge
-          status={readbackError ? undefined : (note.readback?.checksState ?? undefined)}
-        />
-        {state === 'merged' || readbackError ? null : (
-          <CommentCountBadge count={note.readback?.openCommentCount ?? null} />
-        )}
-        <RoundBadge round={note.round} />
-      </span>
-      <span className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
-        <ProjectLabel path={note.repo.path} />
-        <span>·</span>
-        <span>{note.sender}</span>
-        <span>·</span>
-        <span>{formatTime(note.receivedAt)}</span>
-      </span>
-      {readbackError ? (
-        <span className="text-[11px] text-destructive">
-          {readbackError}
-          {note.readback?.checkedAt ? ` · 上次 ${formatTime(note.readback.checkedAt)}` : ''}
+    <div className="border-b border-border/50 pb-2.5 last:border-b-0 last:pb-0">
+      <button
+        type="button"
+        className="group flex w-full flex-col gap-1.5 text-left"
+        onClick={onOpen}
+        title="打开评审详情"
+      >
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+          <GitPullRequest className="size-3 shrink-0" />
+          {isCodeHubHost(note.repo.host) ? 'MR' : 'PR'} #{note.prNumber}
         </span>
+        <span className="text-[13px] font-semibold leading-snug break-words text-foreground group-hover:text-primary">
+          {note.title}
+        </span>
+        <span className="flex flex-wrap gap-1">
+          <ReviewStateBadge
+            label={isCodeHubHost(note.repo.host) ? 'MR' : 'PR'}
+            state={readbackError ? undefined : (state ?? undefined)}
+          />
+          <ReviewChecksBadge
+            status={readbackError ? undefined : (note.readback?.checksState ?? undefined)}
+          />
+          {state === 'merged' || readbackError ? null : (
+            <CommentCountBadge count={note.readback?.openCommentCount ?? null} />
+          )}
+          <RoundBadge round={note.round} />
+        </span>
+        <span className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
+          <ProjectLabel path={note.repo.path} />
+          <span>·</span>
+          <span>{note.sender}</span>
+          <span>·</span>
+          <span>{formatTime(note.receivedAt)}</span>
+        </span>
+      </button>
+      {readbackError ? (
+        <div className="text-[11px] text-destructive">
+          <ErrorDetails summary="无法读取评审结果 · 查看详情" detail={readbackError} />
+          {note.readback?.checkedAt ? `上次 ${formatTime(note.readback.checkedAt)}` : ''}
+        </div>
       ) : null}
-    </button>
+    </div>
   )
 }
 
