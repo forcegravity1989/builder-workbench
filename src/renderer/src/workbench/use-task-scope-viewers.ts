@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { Repo } from '../../../shared/repo-types'
+import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
 import { parseTaskQuery } from '../../../shared/task-query'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { codehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { lookupGitHubViewerForSource } from '@/lib/github-work-item-source-lookup'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageGitHubItemSource } from '@/components/task-page-source-context'
+import { taskScopeGitHubViewerKey } from './task-scope-projection'
 import type { TaskScopeLoadResult } from './task-scope-load'
 import { useAppStore } from '@/store'
 
@@ -17,7 +19,7 @@ type ViewerModel = {
   codehubAuthor: string
   codehubAssignee: string
   repoMap: ReadonlyMap<string, Repo>
-  repoSelection: ReadonlySet<string>
+  selectedScopeRepoIds: ReadonlySet<string>
   taskRefreshNonce: number
   codehubRefreshNonce: number
   workItemsInvalidationNonce: number
@@ -41,24 +43,49 @@ export function useTaskScopeViewers(
         )
       : model.taskSource === 'github' &&
         [query.author, query.assignee].some((value) => value?.toLowerCase() === '@me')
-  const items = model.taskSource === 'codehub' ? result?.codehubItems : result?.githubItems
-  const ids = [
-    ...new Set(
-      (items ?? [])
-        .map((item) => item.repoId)
-        .filter((id): id is string => !!id && model.repoSelection.has(id))
-    )
-  ].sort()
-  const requestKey =
-    active && needsViewer && ids.length
-      ? JSON.stringify([
-          model.taskSource,
-          model.pageData.workbenchTaskScope?.version,
-          model.pageData.workbenchTaskScope?.goalId,
-          ids.map((id) => {
+  const requests = new Map<
+    string,
+    {
+      repoId: string
+      source?: ReturnType<typeof getTaskPageGitHubItemSource>
+      codehub?: Pick<CodeHubTaskItem, 'repoPath' | 'host' | 'project'>
+    }
+  >()
+  if (active && needsViewer) {
+    for (const item of model.taskSource === 'codehub'
+      ? (result?.codehubItems ?? [])
+      : (result?.githubItems ?? [])) {
+      if (!item.repoId || !model.selectedScopeRepoIds.has(item.repoId)) {
+        continue
+      }
+      if (item.type === 'pr' || 'number' in item) {
+        const repo = model.repoMap.get(item.repoId)
+        requests.set(taskScopeGitHubViewerKey(item), {
+          repoId: item.repoId,
+          source: getTaskPageGitHubItemSource(repo, item)
+        })
+      } else {
+        requests.set(item.repoId, {
+          repoId: item.repoId,
+          codehub: { repoPath: item.repoPath, host: item.host, project: item.project }
+        })
+      }
+    }
+  }
+  const requestKey = requests.size
+    ? JSON.stringify([
+        model.taskSource,
+        model.pageData.workbenchTaskScope?.version,
+        model.pageData.workbenchTaskScope?.goalId,
+        [...requests]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, request]) => {
+            const id = request.repoId
             const repo = model.repoMap.get(id)
             return [
-              id,
+              key,
+              request.source?.providerIdentity,
+              request.codehub,
               repo && getRepoExecutionHostId(repo),
               repo?.path,
               repo?.gitRemoteIdentity,
@@ -67,12 +94,12 @@ export function useTaskScopeViewers(
                 ?.localWindowsRuntimePreference
             ]
           }),
-          runtimeDefault,
-          model.taskRefreshNonce,
-          model.codehubRefreshNonce,
-          model.workItemsInvalidationNonce
-        ])
-      : null
+        runtimeDefault,
+        model.taskRefreshNonce,
+        model.codehubRefreshNonce,
+        model.workItemsInvalidationNonce
+      ])
+    : null
   const [state, setState] = useState<{
     key: string
     logins: ReadonlyMap<string, string>
@@ -85,25 +112,26 @@ export function useTaskScopeViewers(
     }
     let stale = false
     void Promise.allSettled(
-      ids.map(async (id) => {
-        const repo = model.repoMap.get(id)
-        if (!repo) {
+      [...requests].map(async ([key, request]) => {
+        const repo = model.repoMap.get(request.repoId)
+        const repoPath = request.codehub ? request.codehub.repoPath : repo?.path
+        if (!repoPath) {
           throw new Error('Repository is unavailable')
         }
-        const args = { repoId: repo.id, repoPath: repo.path }
+        const args = { repoId: request.repoId, repoPath }
         const login =
           model.taskSource === 'codehub'
-            ? (await codehubApi.viewer(args)).username
+            ? (await createTaskPageCodeHubApi(null, request.codehub).viewer(args)).username
             : (
                 await lookupGitHubViewerForSource({
                   ...args,
-                  sourceContext: getTaskPageRepoSourceContext(repo, 'github')
+                  sourceContext: request.source
                 })
               )?.login
         if (!login) {
           throw new Error('Current user is unavailable')
         }
-        return [id, login] as const
+        return [key, login] as const
       })
     ).then((results) => {
       if (stale) {
@@ -121,9 +149,7 @@ export function useTaskScopeViewers(
       setState({
         key: requestKey,
         logins,
-        error: failed
-          ? '无法核对部分项目所属宿主的当前用户，请登录后刷新、指定用户名或移除目标筛选。'
-          : null
+        error: failed ? '无法核对本机账号，请登录后刷新、指定用户名或移除目标筛选。' : null
       })
     })
     return () => {

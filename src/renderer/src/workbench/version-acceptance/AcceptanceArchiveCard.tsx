@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { archiveStateLabel } from '../../../../shared/workbench/archive-state-label'
 import { Archive, ArrowUpRight, GitPullRequest, Rocket } from 'lucide-react'
 import type { Ref } from 'react'
@@ -147,27 +148,27 @@ export function AcceptanceArchiveCard({
             </BoardIconButton>
           )}
         </span>
-        {archivePr && (
-          <span
-            className="acc-archive-status"
-            title={status?.state === 'unknown' ? status.reason : undefined}
-          >
-            {statusLabel}
-          </span>
-        )}
+        {archivePr &&
+          (status?.state === 'unknown' && status.reason ? (
+            <ErrorDetails
+              className="acc-archive-status"
+              summary={statusLabel}
+              detail={status.reason}
+            />
+          ) : (
+            <span className="acc-archive-status">{statusLabel}</span>
+          ))}
       </div>
       <div className="acc-release">
         <div>
           <h3>
             发版本
-            <span
-              className="acc-release-status"
-              title={releaseStatus?.state === 'unknown' ? releaseStatus.reason : undefined}
-            >
-              {releaseLabel}
-            </span>
+            <span className="acc-release-status">{releaseLabel}</span>
           </h3>
           {releaseDetail}
+          {releaseStatus?.state === 'unknown' && releaseStatus.reason && (
+            <ErrorDetails detail={releaseStatus.reason} />
+          )}
         </div>
         {onSendAction(
           `发布 ${version || '本版'}：先在会话中完成预检并报告，经我明确授权后再执行`,

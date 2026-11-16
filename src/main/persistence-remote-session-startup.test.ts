@@ -95,6 +95,35 @@ describe('remote session startup ownership', () => {
     reloaded.flush()
   })
 
+  it('keeps the paired session and metadata when the only registered copy is removed locally', () => {
+    const seed = createStore()
+    seed.addRepo(makeRepo({ id: REPO, path: '/remote/project' }))
+    seed.setWorkspaceSession({
+      ...getDefaultWorkspaceSession(),
+      lastVisitedAtByWorktreeId: { [WORKTREE]: 10 }
+    })
+    seed.setWorkspaceSession(browserSession(), HOST)
+    seed.setWorktreeMetaForHost(WORKTREE, HOST, { displayName: 'Paired work' })
+    seed.flush()
+
+    const removing = createStore()
+    expect(removing.getWorkspaceSession().lastVisitedAtByWorktreeId?.[WORKTREE]).toBe(10)
+    removing.removeProjectForHost(REPO, 'local')
+    removing.flush()
+
+    const reloaded = createStore()
+    expect(reloaded.getRepo(REPO)).toBeUndefined()
+    expect(reloaded.getWorkspaceSession().lastVisitedAtByWorktreeId?.[WORKTREE]).toBeUndefined()
+    expect(reloaded.getWorkspaceSession(HOST).browserPagesByWorkspace).toEqual({
+      [BROWSER.id]: [PAGE]
+    })
+    expect(reloaded.getWorktreeMetaForHost(WORKTREE, HOST)).toMatchObject({
+      displayName: 'Paired work'
+    })
+    expect(reloaded.sweepDeregisteredRepoResidue()).toEqual([])
+    reloaded.flush()
+  })
+
   it('still applies an explicit remote project removal', () => {
     const seed = createStore()
     seed.setWorkspaceSession(browserSession(), HOST)

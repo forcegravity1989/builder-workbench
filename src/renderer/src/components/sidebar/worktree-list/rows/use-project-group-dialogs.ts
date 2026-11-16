@@ -2,11 +2,21 @@ import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
-import { selectProjectGroupRemovalTargets } from '@/store/slices/project-group-removal-targets'
+import {
+  projectGroupRemovalKeys,
+  selectProjectGroupRemovalTargets
+} from '@/store/slices/project-group-removal-targets'
+import { selectExecutionHostDisplayLabel } from '@/lib/execution-host-display-label'
+import { selectRepoRemovalHostLabel } from '@/store/repos/repo-removal-registration'
+import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { Repo } from '../../../../../../shared/repo-types'
-import type { ExecutionHostId } from '../../../../../../shared/execution-host'
-import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  getSshTargetIdForExecutionHost,
+  isRuntimeOwnedSshTargetId,
+  type ExecutionHostId
+} from '../../../../../../shared/execution-host'
 
 export type ProjectGroupNameDialogState =
   | { type: 'create-from-repo'; repo: Repo }
@@ -16,8 +26,9 @@ export type ProjectGroupNameDialogState =
 export type ProjectGroupDeleteDialogState = {
   groupId: string
   groupName: string
-  removeContainedProjects: boolean
-  hostId?: ExecutionHostId
+  confirmedProjectKeys?: readonly string[]
+  expectedEnvironmentPairingRevision?: number
+  hostId: ExecutionHostId
 }
 
 export type ProjectGroupDialogs = ReturnType<typeof useProjectGroupDialogs>
@@ -26,16 +37,19 @@ function reportProjectGroupDeleteFailures(result: {
   status: string
   failedProjectRemovals: readonly unknown[]
   requestedProjectIds: readonly unknown[]
+  error?: string
 }): void {
   // Why: a missing group is already the desired end state, so only a real delete failure warrants a toast.
   if (result.status === 'group-delete-failed') {
     toast.error(
       translate('auto.components.sidebar.WorktreeList.groupDeleteFailed', 'Failed to delete group'),
       {
-        description: translate(
-          'auto.components.sidebar.WorktreeList.groupDeleteFailedDesc',
-          'Something went wrong while deleting the group. No projects were removed.'
-        )
+        description:
+          result.error ??
+          translate(
+            'auto.components.sidebar.WorktreeList.groupDeleteFailedDesc',
+            'Something went wrong while deleting the group. No projects were removed.'
+          )
       }
     )
     return
@@ -65,10 +79,9 @@ function reportProjectGroupDeleteFailures(result: {
 // Create/rename/delete flows for project groups, including the contained-project fan-out.
 export function useProjectGroupDialogs(args: {
   repos: readonly Repo[]
-  repoMap: Map<string, Repo>
   projectGroups: readonly ProjectGroup[]
 }) {
-  const { repos, repoMap, projectGroups } = args
+  const { repos, projectGroups } = args
   const moveProjectToGroup = useAppStore((s) => s.moveProjectToGroup)
   const createProjectGroup = useAppStore((s) => s.createProjectGroup)
   const updateProjectGroup = useAppStore((s) => s.updateProjectGroup)
@@ -154,49 +167,103 @@ export function useProjectGroupDialogs(args: {
       deleteDialog.hostId
     )
   }, [deleteDialog, projectGroups, repos])
-  const deleteProjectCount = deleteTargets?.projectIds.length ?? 0
-  const deleteProjectNames = useMemo(
-    () =>
-      (deleteTargets?.projectIds ?? []).map(
-        (projectId) => repoMap.get(projectId)?.displayName ?? projectId
-      ),
-    [deleteTargets, repoMap]
+  const groupHostId = deleteTargets?.ownerHostId
+  const deleteGroupHostLabel = useAppStore((s) =>
+    groupHostId ? selectExecutionHostDisplayLabel(s, groupHostId) : null
   )
-  const removeContainedProjects =
-    deleteProjectCount > 0 && deleteDialog?.removeContainedProjects === true
+  const deleteProjectNames = useMemo(() => {
+    if (!deleteTargets) {
+      return []
+    }
+    const state = useAppStore.getState()
+    return deleteTargets.projects.map((repo) => {
+      const host = selectRepoRemovalHostLabel(state, repo)
+      return `${repo.displayName} · ${host} · ${repo.path}`
+    })
+  }, [deleteTargets])
+  const deleteProjectCount = deleteProjectNames.length
+  const removesVirtualMachine =
+    deleteTargets?.projects.some((repo) =>
+      isRuntimeOwnedSshTargetId(getSshTargetIdForExecutionHost(getRepoExecutionHostId(repo)))
+    ) ?? false
+  const projectKeys = useMemo(
+    () => projectGroupRemovalKeys(deleteTargets?.projects ?? []),
+    [deleteTargets]
+  )
+  const confirmedKeys = deleteDialog?.confirmedProjectKeys
+  const removeContainedProjects = confirmedKeys !== undefined
+
+  const setRemoveContainedProjects = (checked: boolean) => {
+    setDeleteDialog((current) =>
+      current ? { ...current, confirmedProjectKeys: checked ? projectKeys : undefined } : current
+    )
+  }
 
   const handleDeleteProjectGroup = useCallback(
     (groupId: string, groupName: string, hostId?: ExecutionHostId) => {
-      setDeleteDialog({ groupId, groupName, removeContainedProjects: false, hostId })
+      const ownerHostId =
+        hostId ?? selectProjectGroupRemovalTargets(projectGroups, [], groupId).ownerHostId
+      if (ownerHostId) {
+        const revision = projectGroups.find(
+          (group) => group.id === groupId && getProjectGroupHostId(group) === ownerHostId
+        )?.pairedCatalogRevision
+        setDeleteDialog({
+          groupId,
+          groupName,
+          hostId: ownerHostId,
+          ...(revision !== undefined ? { expectedEnvironmentPairingRevision: revision } : {})
+        })
+      }
     },
-    []
+    [projectGroups]
   )
 
   const handleConfirmDeleteProjectGroup = useCallback(async () => {
-    if (!deleteDialog) {
-      return
+    if (!deleteDialog || !deleteTargets?.ownerHostId) {
+      return false
     }
-    try {
-      reportProjectGroupDeleteFailures(
-        await deleteProjectGroupWithContainedProjects(deleteDialog.groupId, {
-          removeContainedProjects,
-          hostId: deleteDialog.hostId
-        })
+    const result = await deleteProjectGroupWithContainedProjects(deleteDialog.groupId, {
+      removeContainedProjects,
+      hostId: deleteTargets.ownerHostId,
+      ...(confirmedKeys ? { confirmedProjectKeys: confirmedKeys } : {}),
+      ...(deleteDialog.expectedEnvironmentPairingRevision !== undefined
+        ? { expectedEnvironmentPairingRevision: deleteDialog.expectedEnvironmentPairingRevision }
+        : {})
+    })
+    if (result.status === 'group-members-changed') {
+      setDeleteDialog((current) =>
+        current ? { ...current, confirmedProjectKeys: undefined } : current
       )
-    } finally {
-      // Why: deleting contained projects can unmount this dialog before its close handler runs, so the parent owns cleanup.
-      setDeleteDialog(null)
+      toast.error(
+        translate(
+          'auto.components.sidebar.WorktreeList.groupDeleteMembersChanged',
+          'Group membership changed. Review the project list and confirm again.'
+        )
+      )
+      return false
     }
-  }, [deleteProjectGroupWithContainedProjects, removeContainedProjects, deleteDialog])
+    reportProjectGroupDeleteFailures(result)
+    setDeleteDialog(null)
+    return true
+  }, [
+    deleteProjectGroupWithContainedProjects,
+    removeContainedProjects,
+    deleteDialog,
+    deleteTargets,
+    confirmedKeys
+  ])
 
   return {
     nameDialog,
     setNameDialog,
     deleteDialog,
     setDeleteDialog,
+    deleteGroupHostLabel,
     deleteProjectCount,
     deleteProjectNames,
+    removesVirtualMachine,
     removeContainedProjects,
+    setRemoveContainedProjects,
     handleCreateGroupFromRepo,
     handleMoveProjectToGroup,
     handleRemoveProjectFromGroup,

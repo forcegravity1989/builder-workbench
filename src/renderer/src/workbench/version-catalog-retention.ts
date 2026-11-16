@@ -39,7 +39,7 @@ export function retainUnavailableCatalogSources({
   previousSources,
   goalSources,
   availableDraftVersions,
-  unavailableDraftTrees,
+  unavailableDrafts,
   historyKey,
   retainHistory
 }: {
@@ -48,14 +48,17 @@ export function retainUnavailableCatalogSources({
   previousSources: Record<string, CatalogGoalSource> | undefined
   goalSources: Record<string, CatalogGoalSource>
   availableDraftVersions: ReadonlySet<string>
-  unavailableDraftTrees: ReadonlySet<string>
+  unavailableDrafts: ReadonlyMap<string, ReadonlySet<string> | null>
   historyKey: string
   retainHistory: boolean
 }): void {
   for (const previous of previousEntries) {
     const previousSource = previousSources?.[previous.version]
+    const unavailable =
+      previousSource?.kind === 'draft' ? unavailableDrafts.get(previousSource.treeKey) : undefined
     const keepDraft =
-      previousSource?.kind === 'draft' && unavailableDraftTrees.has(previousSource.treeKey)
+      previousSource?.kind === 'draft' &&
+      (unavailable === null || unavailable?.has(previous.version))
         ? previousSource.draft
         : null
     const keepMaterial =

@@ -24,10 +24,6 @@ export const ProjectGroupUpdateArgs = z.object({
   })
 })
 
-export const ProjectGroupSelectorArgs = z.object({
-  groupId: z.string().min(1)
-})
-
 export const ProjectGroupMoveProjectArgs = z.object({
   projectId: z.string().min(1),
   groupId: z.string().nullable(),

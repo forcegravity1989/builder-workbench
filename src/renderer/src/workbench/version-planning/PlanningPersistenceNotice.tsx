@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import type { usePlanningMaterial } from './use-planning-material'
 
 /** Normal saves stay quiet; conflicts require explicit comparison before any replacement. */
@@ -17,7 +18,7 @@ export function PlanningPersistenceNotice({
   }
   return (
     <div className="vp-notice vp-save-error" role="alert">
-      <span>{draft.error}</span>
+      <ErrorDetails summary="计划未保存，当前输入仍在 · 查看详情" detail={draft.error} />
       {draft.remote !== undefined ? (
         <details className="vp-conflict">
           <summary>核对当前输入与文件内容</summary>

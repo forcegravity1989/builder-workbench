@@ -1,5 +1,6 @@
 import type { TaskPageRuntimeHostsModel } from './use-task-page-runtime-hosts'
 import { useCallback, useMemo } from 'react'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { Repo } from '../../../shared/repo-types'
 import {
   getTaskPageRepoSourceContext,
@@ -37,6 +38,9 @@ export function useTaskPageSourceAvailabilityPrelude(model: TaskPageRuntimeHosts
   } = model
   const getTaskPickerRepoHostLabel = useCallback(
     (repo: Repo): string | null => {
+      if (isWorkbenchShell()) {
+        return null
+      }
       const provider = taskSource === 'gitlab' ? 'gitlab' : 'github'
       const context = getTaskPageRepoSourceContext(repo, provider)
       const hostId = context?.hostId ?? repo.executionHostId ?? 'local'

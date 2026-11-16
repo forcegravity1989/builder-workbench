@@ -183,8 +183,11 @@ function MinutesCard({
       edit({ ...document, minutes: next })
     }
   }
-  const patchBody = (patch: Partial<AcceptanceMeetingMinutes>) =>
-    patchMinutes({ ...minutes, ...patch, updatedAt: new Date().toISOString() })
+  const patchBody = (patch: Partial<AcceptanceMeetingMinutes>) => {
+    if (!minutes.confirmed) {
+      patchMinutes({ ...minutes, ...patch, updatedAt: new Date().toISOString() })
+    }
+  }
 
   // 编辑态按节分组（#516）：写回时按所在节重新拼「G<n> ·」前缀，textarea 只显示
   // 正文；未归类节（goalId=null）不拼前缀，原文往返——在未归类条目里打前缀仍是
@@ -242,6 +245,7 @@ function MinutesCard({
           <span className="acc-minutes-actions">
             <BoardIconButton
               label={editing ? '结束编辑纪要' : '编辑纪要'}
+              disabled={minutes.confirmed}
               onClick={() => setEditing(!editing)}
             >
               {editing ? (
@@ -252,7 +256,7 @@ function MinutesCard({
             </BoardIconButton>
           </span>
         </div>
-        {editing
+        {editing && !minutes.confirmed
           ? groupMinutesByGoal(minutes, goals).map((section) => (
               <div className="acc-minutes-goal" key={section.goalId || 'plain'}>
                 <h4>
@@ -369,13 +373,14 @@ function MinutesCard({
         <div className="acc-minutes-foot">
           <button
             type="button"
-            onClick={() =>
+            onClick={() => {
+              setEditing(false)
               patchMinutes(
                 minutes.confirmed
                   ? { ...minutes, confirmed: false, confirmedAt: undefined }
                   : { ...minutes, confirmed: true, confirmedAt: new Date().toISOString() }
               )
-            }
+            }}
           >
             {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
           </button>

@@ -1,28 +1,58 @@
 import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import type { useProjectSettings } from './use-project-settings'
-import { CHARTER_LABELS } from './project-charter'
+import { CHARTER_LABELS, type ProjectCharter } from './project-charter'
+
+type ReviewFields = {
+  changes: readonly (keyof typeof CHARTER_LABELS)[]
+  value: ProjectCharter
+  localOnly: boolean
+  disabled?: boolean
+  onConfirm(): void
+}
+
+export function ProjectSettingsReviewSummary({
+  changes,
+  value,
+  localOnly,
+  disabled,
+  onConfirm
+}: ReviewFields) {
+  return (
+    <>
+      <strong>本次修改</strong>
+      <ul>
+        {changes.map((field) => (
+          <li key={field}>
+            {CHARTER_LABELS[field]}：{(value[field] ?? '').trim() || '留空'}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        className="wb-btn wb-btn-primary"
+        disabled={disabled}
+        onClick={onConfirm}
+      >
+        {localOnly ? '确认保存' : '确认提交'}
+      </button>
+    </>
+  )
+}
 
 export function ProjectSettingsReview({
-  model,
-  onSubmitted
-}: {
-  model: ReturnType<typeof useProjectSettings>
-  onSubmitted(): void
-}) {
+  value,
+  changes,
+  localOnly,
+  busy,
+  disabled,
+  onConfirm
+}: Omit<ReviewFields, 'value'> & { value: ProjectCharter | null; busy: boolean }) {
   const [open, setOpen] = useState(false)
-  const disabled =
-    model.busy ||
-    model.loading ||
-    !model.status ||
-    !model.canEdit ||
-    !model.dirty ||
-    !model.form?.value.name.trim()
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button type="button" className="wb-btn wb-btn-primary" disabled={disabled}>
-          {model.busy ? '提交中…' : model.localOnly ? '保存' : '提交评审'}
+          {busy ? '提交中…' : localOnly ? '保存' : '提交评审'}
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -30,29 +60,18 @@ export function ProjectSettingsReview({
         className="wb-ml-review max-h-[min(28rem,70vh)] overflow-auto scrollbar-sleek break-words"
         align="end"
       >
-        <strong>本次修改</strong>
-        <ul>
-          {model.changes.map((field) => (
-            <li key={field}>
-              {CHARTER_LABELS[field]}：{(model.form!.value[field] ?? '').trim() || '留空'}
-            </li>
-          ))}
-        </ul>
-        <button
-          type="button"
-          className="wb-btn wb-btn-primary"
-          disabled={disabled}
-          onClick={() => {
-            setOpen(false)
-            void model.submit().then((ok) => {
-              if (ok) {
-                onSubmitted()
-              }
-            })
-          }}
-        >
-          {model.localOnly ? '确认保存' : '确认提交'}
-        </button>
+        {value && (
+          <ProjectSettingsReviewSummary
+            changes={changes}
+            value={value}
+            localOnly={localOnly}
+            disabled={disabled}
+            onConfirm={() => {
+              setOpen(false)
+              onConfirm()
+            }}
+          />
+        )}
       </PopoverContent>
     </Popover>
   )

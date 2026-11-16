@@ -116,7 +116,7 @@ it('preserves a locally edited Skill instead of replacing it during launch', asy
   await writeFile(skillPath, `${await readFile(skillPath, 'utf8')}\nUser change\n`)
   await expect(
     prepareWorkbenchSkill(runtime as unknown as OrcaRuntimeService, input)
-  ).rejects.toThrow('本地修改')
+  ).rejects.toThrow('已保留现有「week-planning」Skill')
   expect(await readFile(skillPath, 'utf8')).toContain('User change')
 })
 

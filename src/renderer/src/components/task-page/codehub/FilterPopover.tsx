@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input'
 import { ChevronRight, ListFilter } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { MultiSelectList } from '@/components/github/PRFilterPickers'
-import { codehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
+import { getTaskPageRepoSourceContext } from '../../task-page-source-context'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 
 export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActionsModel }) {
@@ -40,7 +41,7 @@ export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActions
     let stale = false
     setLabelsLoading(true)
     setLabelsError(null)
-    codehubApi
+    createTaskPageCodeHubApi(getTaskPageRepoSourceContext(codehubRepo, 'codehub'))
       .listLabels({ repoPath: codehubRepo.path, repoId: codehubRepo.id })
       .then((names) => {
         if (!stale) {

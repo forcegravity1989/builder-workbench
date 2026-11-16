@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type * as NodeChildProcess from 'node:child_process'
 import { EventEmitter } from 'node:events'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -14,6 +15,12 @@ import {
   registerCodexAccountsTestHomes,
   testState
 } from './service-test-harness'
+
+// Why: temp homes exceed sun_path on macOS but not on Linux; keep asserted config bytes host-independent.
+vi.mock('../codex/codex-daemon-socket-path-guard', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  applyCodexDaemonSocketGuard: (config: string) => config
+}))
 
 vi.mock('electron', () => ({
   app: {
@@ -78,6 +85,11 @@ describe('CodexAccountService config sync', () => {
       'utf-8'
     )
 
+    // On Windows, the ownership check resolves the managed home inside the distro.
+    vi.doMock('node:child_process', async (importOriginal) => ({
+      ...(await importOriginal<typeof NodeChildProcess>()),
+      execFileSync: vi.fn(() => `${wslLinuxHomePath}\n`)
+    }))
     vi.doMock('../../shared/wsl-paths', () => ({
       parseWslUncPath: (path: string) => {
         if (path === wslManagedHomePath) {

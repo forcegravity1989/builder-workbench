@@ -221,8 +221,38 @@ describe('task page cache selectors', () => {
     }
 
     expect(findTaskPageDialogWorkItem(cache, null)).toBeNull()
-    expect(findTaskPageDialogWorkItem(cache, { id: 'issue-1', repoId: 'repo-1' })).toBe(item)
-    expect(findTaskPageDialogWorkItem(cache, { id: 'issue-1', repoId: 'repo-2' })).toBeNull()
+    expect(findTaskPageDialogWorkItem(cache, item)).toBe(item)
+    expect(findTaskPageDialogWorkItem(cache, { ...item, repoId: 'repo-2' })).toBeNull()
+  })
+
+  it('keeps the selected forge repository when a fork has an issue with the same number', () => {
+    const upstream = {
+      ...workItem('issue:42', 'repo-1'),
+      url: 'https://github.com/acme/app/issues/42'
+    }
+    const origin = { ...upstream, url: 'https://github.com/alice/app/issues/42' }
+    const enterprise = { ...origin, url: 'https://github.example.com/alice/app/issues/42' }
+    const cache = {
+      upstream: entry([upstream]),
+      enterprise: entry([enterprise]),
+      origin: entry([origin])
+    }
+    const snapshot = { ...origin, title: 'Original row' }
+    const pages = [[snapshot]]
+
+    expect(findTaskPageDialogWorkItem(cache, snapshot)).toBe(origin)
+    expect(
+      findTaskPageDialogWorkItem(
+        { upstream: cache.upstream, enterprise: cache.enterprise },
+        snapshot
+      )
+    ).toBeNull()
+    expect(
+      reconcileTaskPagePagesWithWorkItemsCache(pages, [cache.upstream, cache.enterprise])
+    ).toBe(pages)
+    expect(reconcileTaskPagePagesWithWorkItemsCache(pages, [cache.origin, cache.upstream])).toEqual(
+      [[origin]]
+    )
   })
 
   it('reconciles paged table rows with patched work-item cache entries', () => {

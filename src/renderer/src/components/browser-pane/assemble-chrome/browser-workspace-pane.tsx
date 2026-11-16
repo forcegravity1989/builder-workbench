@@ -12,7 +12,6 @@ import {
   useBrowserMobileDrivenPageIds
 } from '@/lib/pane-manager/browser-mobile-driver-state'
 import { useBrowserRemotelyViewedPageIds } from '@/lib/pane-manager/browser-remote-viewer-state'
-import { useContextualTour } from '@/components/contextual-tours/use-contextual-tour'
 import { getBrowserPageRuntimeEnvironmentId } from '../describe-page/browser-page-url-display'
 import type { BrowserChromeShortcutScope } from '../describe-page/browser-page-types'
 import { RemoteBrowserPagePane } from '../stream-remote/remote-browser-page-pane'
@@ -90,12 +89,6 @@ export default function BrowserPane({
       }
     }
   }, [activeRuntimeEnvironmentId, browserPages, runtimeEnvironmentActive])
-
-  useContextualTour(
-    'browser',
-    isActive && activeBrowserPage !== null && !runtimeEnvironmentActive,
-    'browser_visible'
-  )
 
   const reclaimActiveBrowserForDesktop = useCallback(async (): Promise<void> => {
     if (!activeBrowserPageId) {

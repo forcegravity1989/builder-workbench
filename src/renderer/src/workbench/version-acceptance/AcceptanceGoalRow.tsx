@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type {
@@ -211,9 +212,11 @@ export function AcceptanceGoalRow({
         </span>
       </div>
       {error && (
-        <p className="acc-error" role="alert">
-          {error}
-        </p>
+        <ErrorDetails
+          className="acc-error"
+          summary="目标验收记录未更新 · 查看详情"
+          detail={error}
+        />
       )}
       {!open && (
         <div className="acc-goal-meta">

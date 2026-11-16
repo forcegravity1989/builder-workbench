@@ -135,7 +135,7 @@ codehub-cli issue view 12 -p Org/Group/repo -H green --json iid,title,state
 - issue/mr list 的 --labels 在服务端匹配，逗号分隔表示交集；含逗号的标签名无法表达。省略 --state 读取全部状态，不能传字面 all。
 - --limit 是条目数；CLI 内部按页自动读取。JSON 为纯数组，没有 total/游标；零匹配为 null、退出0，失败为非零并带错误，二者不能混同。
 - list 的 HTTP 缓存默认10秒，保持原生行为。目标引用集合仍逐项完整读取，再做筛选与分页。
-- 原生 mine 预设由服务端 scope 解析“我”。目标精确集合的 @me 使用 user view -H <仓库站点> --json id,username,name,state，沿仓库所属 runtime/WSL 执行；身份查询跳过 CLI 缓存，不读取 token。按任务实际 repo 分别比较用户名，不能把本机或另一个站点用户填给它。
+- 原生 mine 预设由服务端 scope 解析“我”。目标精确集合的 @me 使用 user view -H <仓库站点> --json id,username,name,state，使用本机 CodeHub 账号执行；身份查询跳过 CLI 缓存，不读取 token。按任务实际 repo 分别比较用户名，不同站点分别核对账号。
 
 ## 不支持的操作
 

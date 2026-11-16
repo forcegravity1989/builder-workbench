@@ -1,4 +1,5 @@
-import { codehubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
+import { getTaskPageRepoSourceContext } from './task-page-source-context'
 import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
 import { useEffect, useState } from 'react'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
@@ -62,7 +63,9 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             : codehubPreset === 'review' && kind === 'mr'
               ? 'need_my_review'
               : undefined
-        const listed = await codehubApi.listTasks({
+        // 宿主用于识别登记行，任务数据仍按任务页的本机账号策略读取。
+        const api = createTaskPageCodeHubApi(getTaskPageRepoSourceContext(repo, 'codehub'))
+        const listed = await api.listTasks({
           repoPath: repo.path,
           repoId: repo.id,
           kind,

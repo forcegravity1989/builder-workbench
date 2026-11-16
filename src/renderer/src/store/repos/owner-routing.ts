@@ -9,6 +9,8 @@ import {
   callRuntimeRpc
 } from '../../runtime/runtime-rpc-client'
 import type { getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
+import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { translate } from '@/i18n/i18n'
 import {
   getRepoExecutionHostId,
@@ -21,10 +23,19 @@ import { getRuntimeTargetHostId } from '../runtime-target-host'
 
 export function repoWithFetchedOwner(
   repo: Repo,
-  target: ReturnType<typeof getActiveRuntimeTarget>
+  target: ReturnType<typeof getActiveRuntimeTarget>,
+  pairingRevision = target.kind === 'environment'
+    ? getRuntimeEnvironmentRevision(target.environmentId)
+    : undefined
 ): Repo {
   if (target.kind === 'environment') {
-    return { ...repo, executionHostId: getRuntimeTargetHostId(target) }
+    return {
+      ...repo,
+      executionHostId: getRuntimeTargetHostId(target),
+      ...(isWorkbenchShell()
+        ? { pairedRegistration: { hostId: getRepoExecutionHostId(repo), pairingRevision } }
+        : {})
+    }
   }
   if (repo.connectionId) {
     return { ...repo, executionHostId: getRepoExecutionHostId(repo) }
