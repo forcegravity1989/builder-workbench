@@ -22,7 +22,7 @@ import {
 } from '../../../../shared/crash-reporting'
 import type { GitHubViewer } from '../../../../shared/github/pull-request-types'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import {
   CRASH_REPORT_SUBMIT_FAILURE_TOAST_ID,
   getCrashReportCopySubmissionFailure,
@@ -46,17 +46,17 @@ function getDialogTitle(report: CrashReportRecord | null): string {
     return 'Report a crash'
   }
   if (isReactErrorBoundaryReport(report)) {
-    return isWorkbenchShell()
+    return isMonicaShell()
       ? translate(
           'auto.components.crash.report.CrashReportDialog.workbenchUiErrorTitle',
-          'Workbench hit a recoverable UI error'
+          'Monica hit a recoverable UI error'
         )
       : 'Orca hit a recoverable UI error'
   }
-  return isWorkbenchShell()
+  return isMonicaShell()
     ? translate(
         'auto.components.crash.report.CrashReportDialog.workbenchClosedTitle',
-        'Workbench closed unexpectedly'
+        'Monica closed unexpectedly'
       )
     : 'Orca closed unexpectedly'
 }
@@ -77,10 +77,10 @@ function getNotesPlaceholder(report: CrashReportRecord | null): string {
   if (report && isReactErrorBoundaryReport(report)) {
     return 'Optional: what were you doing before this UI error?'
   }
-  return isWorkbenchShell()
+  return isMonicaShell()
     ? translate(
         'auto.components.crash.report.CrashReportDialog.workbenchNotesPlaceholder',
-        'Optional: what were you doing before Workbench closed?'
+        'Optional: what were you doing before Monica closed?'
       )
     : 'Optional: what were you doing before Orca closed?'
 }
@@ -267,10 +267,10 @@ export function CrashReportDialogSurface({
                 <div className="font-medium text-foreground">{formatSummary(report)}</div>
                 <div className="mt-1 text-muted-foreground">
                   {new Date(report.createdAt).toLocaleString()} · {report.platform} {report.arch} ·
-                  {isWorkbenchShell()
+                  {isMonicaShell()
                     ? translate(
                         'auto.components.crash.report.CrashReportDialog.workbenchBrand',
-                        'Workbench'
+                        'Monica'
                       )
                     : translate(
                         'auto.components.crash.report.CrashReportDialog.835037edc9',

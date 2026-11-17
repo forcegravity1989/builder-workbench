@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
-import { publishVersionSidebarProjection } from '@/workbench/version-sidebar-state'
+import { publishVersionSidebarProjection } from '@/monica/version-sidebar-state'
 import {
   getVisibleWorktreeIds,
   getVisibleWorktreeShortcutTargets,
@@ -303,8 +303,8 @@ describe('closed-sidebar Cmd+1-9 ordering (#9497)', () => {
     ])
   })
 
-  it('keeps shortcuts within the current BW project across hosts', () => {
-    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+  it('keeps shortcuts within the current Monica project across hosts', () => {
+    vi.stubEnv('VITE_MONICA_SHELL', '1')
     const gitRemoteIdentity = {
       canonicalKey: 'github.com/acme/app',
       remoteName: 'origin',

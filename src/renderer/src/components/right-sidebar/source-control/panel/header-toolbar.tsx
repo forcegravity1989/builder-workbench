@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import { WorkbenchSourceControlHelp } from '@/workbench/WorkbenchDeliveryHelp'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { MonicaSourceControlHelp } from '@/monica/MonicaDeliveryHelp'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { GitPullRequestArrow, Loader2, Search, X } from 'lucide-react'
 import type { GitBranchCompareSummary } from '../../../../../../shared/git-diff-compare-types'
 import type { GitBranchLineTotal } from '../../../../../../shared/git-status-types'
@@ -314,7 +314,7 @@ export function SourceControlHeaderToolbar({
             </Button>
           </>
         )}
-        {isWorkbenchShell() && <WorkbenchSourceControlHelp />}
+        {isMonicaShell() && <MonicaSourceControlHelp />}
       </div>
 
       {shouldShowSourceControlBranchContextChrome(branchSummary, compareBaseRef, headDisplay) ? (

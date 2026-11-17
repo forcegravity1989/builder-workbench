@@ -95,10 +95,8 @@ export async function initializeReadyFoundation(): Promise<void> {
     throw new Error('Development identity is unavailable')
   }
   electronApp.setAppUserModelId(identity.appUserModelId)
-  // Why: names the app menu/About panel. Dev already applied this pre-ready (see the
-  // safeStorage note above); this call stays unconditional so packaged builds keep their
-  // existing post-ready rename, which lands after the Keychain name is already resolved.
-  app.setName(identity.appName)
+  // ready 后更新展示名称；macOS 加密服务身份仍由打包的既有 CFBundleName 确定。
+  app.setName(identity.isDev ? identity.appName : identity.name)
   updateGpuAccelerationAboutPanel()
   // Why: managed WSL launchers live outside the Windows app bundle, so keep their launcher/bridge contract synced across app updates.
   state.managedWslCliReconciliationStatus = 'pending'

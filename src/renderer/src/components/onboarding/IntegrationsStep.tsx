@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { OnboardingInlineCommandTerminal } from './OnboardingInlineCommandTerminal'
 import { CodeHubRow } from './CodeHubRow'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 type GitHubSetupState = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
 
@@ -242,9 +242,9 @@ const CAPABILITIES = [
   }
 ] as const
 
-// Why (BW): the Workbench pitch leads with CodeHub and names both CLIs as
+// Why (Monica): the Monica pitch leads with CodeHub and names both CLIs as
 // optional — the rows below never block Continue.
-const WORKBENCH_CAPABILITIES = [
+const MONICA_CAPABILITIES = [
   {
     key: 'auto.components.onboarding.IntegrationsStep.c773943637',
     fallback:
@@ -252,7 +252,7 @@ const WORKBENCH_CAPABILITIES = [
   },
   {
     key: 'auto.components.onboarding.IntegrationsStep.6d4596cdf7',
-    fallback: 'Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench'
+    fallback: 'Browse CodeHub issues and merge requests in the Tasks view without leaving Monica'
   },
   {
     key: 'auto.components.onboarding.IntegrationsStep.c1ee44aa7a',
@@ -260,15 +260,14 @@ const WORKBENCH_CAPABILITIES = [
   },
   {
     key: 'auto.components.onboarding.IntegrationsStep.09df324e47',
-    fallback:
-      'Read, comment on, and merge pull requests or merge requests without leaving Workbench'
+    fallback: 'Read, comment on, and merge pull requests or merge requests without leaving Monica'
   }
 ] as const
 
 export function IntegrationsStep(): React.JSX.Element {
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
-  const isShell = isWorkbenchShell()
-  const capabilities = isShell ? WORKBENCH_CAPABILITIES : CAPABILITIES
+  const isShell = isMonicaShell()
+  const capabilities = isShell ? MONICA_CAPABILITIES : CAPABILITIES
 
   useEffect(() => {
     void refreshPreflightStatus()

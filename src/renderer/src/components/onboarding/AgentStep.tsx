@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 const AGENT_GRID_MAX_ROWS = 4
 
@@ -124,10 +124,10 @@ export function AgentStep({
         <div className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-xs text-amber-700 dark:text-amber-200/90">
           <span>
             <span className="font-medium">{selectedEntry.label}</span>{' '}
-            {isWorkbenchShell()
+            {isMonicaShell()
               ? translate(
                   'auto.components.onboarding.AgentStep.0e00a37e49',
-                  "isn't on your PATH yet. Workbench will set it as your default and you can install it any time."
+                  "isn't on your PATH yet. Monica will set it as your default and you can install it any time."
                 )
               : translate(
                   'auto.components.onboarding.AgentStep.69af7e9c1c',

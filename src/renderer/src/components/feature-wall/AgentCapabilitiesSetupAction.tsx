@@ -1,4 +1,4 @@
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Check, Globe2, Loader2, MonitorCog, Terminal, Workflow } from 'lucide-react'
 import { toast } from 'sonner'
@@ -167,7 +167,7 @@ const AGENT_CAPABILITY_SETUP_ROWS: readonly AgentCapabilitySetupRow[] = [
       return translate(
         'auto.components.feature.wall.AgentCapabilitiesSetupAction.c61c91e642',
         'Let agents coordinate through {{product}} to keep large, multi-step tasks moving to completion.',
-        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+        { product: isMonicaShell() ? 'Monica' : 'Orca' }
       )
     },
     icon: <Workflow className="size-4" />
@@ -184,7 +184,7 @@ const AGENT_CAPABILITY_SETUP_ROWS: readonly AgentCapabilitySetupRow[] = [
       return translate(
         'auto.components.feature.wall.AgentCapabilitiesSetupAction.5e8fe5a72d',
         "Give agents direct access to {{product}}'s browser so they can test pages, capture screenshots, and act on what they see.",
-        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+        { product: isMonicaShell() ? 'Monica' : 'Orca' }
       )
     },
     icon: <Globe2 className="size-4" />

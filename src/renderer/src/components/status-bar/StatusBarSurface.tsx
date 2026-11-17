@@ -30,7 +30,7 @@ import { ProviderLetterBadge, ProviderSegment } from './StatusBarProviderSegment
 import { useStatusBarController } from './use-status-bar-controller'
 import { StatusBarVisibilityMenu } from './StatusBarVisibilityMenu'
 import { isPairedWebClientWindow } from '@/lib/desktop-window-chrome'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 const PetStatusSegment = lazyWithRetry(() =>
   import('./PetStatusSegment').then((module) => ({ default: module.PetStatusSegment }))
@@ -44,7 +44,7 @@ const PortsStatusSegment = lazyWithRetry(() =>
   import('./PortsStatusSegment').then((module) => ({ default: module.PortsStatusSegment }))
 )
 const QuickLinksStatusSegment = lazyWithRetry(() =>
-  import('@/workbench/quick-links/QuickLinksStatusSegment').then((module) => ({
+  import('@/monica/quick-links/QuickLinksStatusSegment').then((module) => ({
     default: module.QuickLinksStatusSegment
   }))
 )
@@ -263,7 +263,7 @@ export function StatusBarSurface({
           {showQuickLinks ? (
             <QuickLinksStatusSegment compact={compact} iconOnly={iconOnly} />
           ) : null}
-          {showSsh && !isWorkbenchShell() ? (
+          {showSsh && !isMonicaShell() ? (
             <SshStatusSegment compact={compact} iconOnly={iconOnly} />
           ) : null}
         </React.Suspense>

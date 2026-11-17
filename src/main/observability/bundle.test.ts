@@ -1,6 +1,6 @@
-// Bundle collection tests. (BW #553: the upload/delete HTTP cases were
+// Bundle collection tests. (Monica #553: the upload/delete HTTP cases were
 // removed together with diagnostic-bundle-upload.ts — delivery is the WeLink
-// group-space sink in src/main/workbench/reporting/.)
+// group-space sink in src/main/monica/reporting/.)
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

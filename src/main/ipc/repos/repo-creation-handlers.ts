@@ -14,10 +14,7 @@ import { probeGitAvailability } from '../../git/git-availability'
 import { gitExecFileAsync } from '../../git/runner'
 import { detectRepoIconAndUpstream } from '../../repo-icon-autodetect'
 import { prepareLocalWorktreeRootForRepo } from '../../worktree-root-preparation'
-import {
-  isWorkbenchProduct,
-  WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
-} from '../../startup/workbench-product'
+import { isMonicaProduct, MONICA_DEFAULT_WINDOWS_WORKSPACE_DIR } from '../../startup/monica-product'
 import { invalidateAuthorizedRootsCache } from '../registered-worktree-roots-cache'
 import { emitRepoAdded } from './repo-added-telemetry'
 import { notifyReposChanged } from './repos-changed-notification'
@@ -55,11 +52,11 @@ function getDefaultCreateProjectParent(store: Store): string {
     settings.workspaceDir ?? ''
   ).trim()
   if (
-    isWorkbenchProduct() &&
+    isMonicaProduct() &&
     normalizeRuntimePathForComparison(configured) ===
-      normalizeRuntimePathForComparison(WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR)
+      normalizeRuntimePathForComparison(MONICA_DEFAULT_WINDOWS_WORKSPACE_DIR)
   ) {
-    return win32.join(WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR, '..', 'projects')
+    return win32.join(MONICA_DEFAULT_WINDOWS_WORKSPACE_DIR, '..', 'projects')
   }
   const isUntouchedDefault =
     normalizeRuntimePathForComparison(configured) ===
