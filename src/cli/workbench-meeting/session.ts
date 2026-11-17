@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { getDefaultUserDataPath } from '../runtime/metadata'
 import { RuntimeClientError } from '../runtime/types'
@@ -28,6 +29,7 @@ export type MeetingCookie = {
   value: string
   domain: string
   expires: number
+  path?: string
 }
 
 type MeetingBrowserPage = {
@@ -62,14 +64,20 @@ export function cookieMatchesHost(hostKey: string, host: string): boolean {
   return domain.length > 0 && (target === domain || target.endsWith(`.${domain}`))
 }
 
-/** Build the request Cookie header; expired rows and duplicates of the same name are dropped. */
+/**
+ * Build the request Cookie header; expired rows and duplicates of the same name
+ * are dropped. Duplicates keep the most path-specific value, as a browser would.
+ */
 export function cookieHeaderFromCookies(
   cookies: MeetingCookie[],
   host: string,
   nowUnix: number
 ): string {
   const values = new Map<string, string>()
-  for (const cookie of cookies) {
+  const byPathSpecificity = [...cookies].sort(
+    (left, right) => (left.path?.length ?? 0) - (right.path?.length ?? 0)
+  )
+  for (const cookie of byPathSpecificity) {
     if (!cookie.name || !cookieMatchesHost(cookie.domain, host)) {
       continue
     }
@@ -81,15 +89,42 @@ export function cookieHeaderFromCookies(
   return Array.from(values, ([name, value]) => `${name}=${value}`).join('; ')
 }
 
-function launchError(error: unknown): RuntimeClientError {
+/**
+ * Playwright reports a profile owned by another Chrome process as "Target page,
+ * context or browser has been closed" (the launch dies with the existing lock),
+ * so the message alone cannot tell busy apart from a crash. Chrome leaves a lock
+ * marker in the profile; its presence is the disambiguator.
+ */
+function profileLockPresent(): boolean {
+  const dir = meetingBrowserProfileDir()
+  return existsSync(join(dir, 'SingletonLock')) || existsSync(join(dir, 'lockfile'))
+}
+
+function isBrowserClosedError(error: unknown): boolean {
+  return error instanceof Error && /browser has been closed|browser closed/i.test(error.message)
+}
+
+export function launchError(
+  error: unknown,
+  lockPresent = profileLockPresent()
+): RuntimeClientError {
   const message = error instanceof Error ? error.message : String(error)
+  if (/Cannot find module 'playwright-core'|ERR_MODULE_NOT_FOUND.*playwright/i.test(message)) {
+    return new RuntimeClientError(
+      'meeting-browser-launch-failed',
+      '浏览组件不可用（未找到 playwright-core），请重新安装 Workbench 后重试。'
+    )
+  }
   if (/is not found|Executable doesn't exist|no such file/i.test(message)) {
     return new RuntimeClientError(
       'chrome-not-found',
       '未找到系统 Chrome，无法打开 eMeeting 登录窗口。请安装 Google Chrome 后重试。'
     )
   }
-  if (/ProcessSingleton|SingletonLock|profile.*(?:lock|in use)|already in use/i.test(message)) {
+  if (
+    /ProcessSingleton|SingletonLock|profile.*(?:lock|in use)|already in use/i.test(message) ||
+    (isBrowserClosedError(error) && lockPresent)
+  ) {
     return new RuntimeClientError(
       'meeting-browser-profile-busy',
       '会议专用 Chrome 配置正被占用（上次打开后未关闭），请关闭该 Chrome 窗口后重试。'
@@ -102,8 +137,8 @@ function launchError(error: unknown): RuntimeClientError {
 }
 
 const launchSystemChrome: LaunchMeetingBrowser = async (headless) => {
-  const { chromium } = await import('playwright-core')
   try {
+    const { chromium } = await import('playwright-core')
     return (await chromium.launchPersistentContext(meetingBrowserProfileDir(), {
       channel: 'chrome',
       headless,
@@ -164,18 +199,18 @@ async function attemptSession(
   verifySession: VerifyMeetingSession,
   attempt: LoginAttempt
 ): Promise<MeetingSession | null> {
+  const deadline = Date.now() + attempt.timeoutMs
   const page = context.pages()[0] ?? (await context.newPage())
   try {
     await page.goto(meetingSummaryUrl(meetingId), {
       waitUntil: 'domcontentloaded',
-      timeout: 60_000
+      timeout: Math.max(1_000, deadline - Date.now())
     })
   } catch {
     // Why: the poll below is the readiness signal; a navigation that dies with the
     // window is reported by stopWhen, and a dead network by the timeout.
   }
 
-  const deadline = Date.now() + attempt.timeoutMs
   while (Date.now() < deadline) {
     if (attempt.stopWhen()) {
       return null
@@ -196,10 +231,10 @@ async function interactiveLogin(
   loginTimeoutMs: number,
   pollIntervalMs: number
 ): Promise<MeetingSession> {
+  const context = await launch(false)
   console.error(
     '企业 SSO 自动登录未完成：已用本机 Chrome 打开登录窗口，请在窗口内完成登录，完成后会自动继续（不影响你正在使用的 Chrome）。'
   )
-  const context = await launch(false)
   let closing = false
   let closedByUser = false
   context.on('close', () => {
@@ -209,11 +244,22 @@ async function interactiveLogin(
   })
 
   try {
-    const session = await attemptSession(context, meetingId, verifySession, {
-      timeoutMs: loginTimeoutMs,
-      pollIntervalMs,
-      stopWhen: () => closedByUser
-    })
+    let session: MeetingSession | null
+    try {
+      session = await attemptSession(context, meetingId, verifySession, {
+        timeoutMs: loginTimeoutMs,
+        pollIntervalMs,
+        stopWhen: () => closedByUser
+      })
+    } catch (error) {
+      // Why: closing the window can surface as a Playwright error before the
+      // close listener flips, so both paths need the same actionable message.
+      if (!isBrowserClosedError(error)) {
+        throw error
+      }
+      session = null
+      closedByUser = true
+    }
     if (session) {
       return session
     }
@@ -251,11 +297,21 @@ export async function resolveMeetingSession(
 
   const silentContext = await launch(true)
   try {
-    const session = await attemptSession(silentContext, meetingId, verifySession, {
-      timeoutMs: options.silentLoginTimeoutMs ?? SILENT_LOGIN_TIMEOUT_MS,
-      pollIntervalMs,
-      stopWhen: () => false
-    })
+    let session: MeetingSession | null
+    try {
+      session = await attemptSession(silentContext, meetingId, verifySession, {
+        timeoutMs: options.silentLoginTimeoutMs ?? SILENT_LOGIN_TIMEOUT_MS,
+        pollIntervalMs,
+        stopWhen: () => false
+      })
+    } catch (error) {
+      // Why: a headless Chrome that died (crash, memory pressure) must not end
+      // the command; the visible window is the recovery path.
+      if (!isBrowserClosedError(error)) {
+        throw error
+      }
+      session = null
+    }
     if (session) {
       return session
     }

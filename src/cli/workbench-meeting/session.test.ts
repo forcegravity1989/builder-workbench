@@ -1,14 +1,19 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RuntimeClientError } from '../runtime/types'
 import type { MeetingDetail } from './api'
 import {
   cookieHeaderFromCookies,
   cookieMatchesHost,
+  launchError,
   resolveMeetingSession,
   type LaunchMeetingBrowser,
   type MeetingBrowserContext,
   type MeetingCookie
 } from './session'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 const NOW = 1_800_000_000
 const DETAIL: MeetingDetail = {
@@ -74,6 +79,19 @@ describe('meeting session cookies', () => {
     expect(cookieMatchesHost('.w3.huawei.com', 'huawei.com')).toBe(false)
   })
 
+  it('keeps the most path-specific cookie for a duplicated name', () => {
+    expect(
+      cookieHeaderFromCookies(
+        [
+          cookie({ name: 'sid', value: 'root', path: '/' }),
+          cookie({ name: 'sid', value: 'emeeting', path: '/emeeting' })
+        ],
+        'w3.huawei.com',
+        NOW
+      )
+    ).toBe('sid=emeeting')
+  })
+
   it('builds a header without expired, duplicate or foreign cookies', () => {
     expect(
       cookieHeaderFromCookies(
@@ -88,6 +106,25 @@ describe('meeting session cookies', () => {
         NOW
       )
     ).toBe('a=2; d=session')
+  })
+})
+
+describe('launchError', () => {
+  it('tells a locked profile apart from a launch crash', () => {
+    const playwrightError = new Error(
+      'browserType.launchPersistentContext: Target page, context or browser has been closed'
+    )
+    expect(launchError(playwrightError, true).code).toBe('meeting-browser-profile-busy')
+    expect(launchError(playwrightError, false).code).toBe('meeting-browser-launch-failed')
+  })
+
+  it('maps a missing browser runtime and missing Chrome separately', () => {
+    expect(launchError(new Error("Cannot find module 'playwright-core'"), false).code).toBe(
+      'meeting-browser-launch-failed'
+    )
+    expect(
+      launchError(new Error('browserType.launchPersistentContext: is not found'), false).code
+    ).toBe('chrome-not-found')
   })
 })
 
@@ -126,6 +163,52 @@ describe('resolveMeetingSession', () => {
     expect(headless).toEqual([true, false])
     expect(warn).toHaveBeenCalledOnce()
     warn.mockRestore()
+  })
+
+  it('falls back to the visible window when headless Chrome died', async () => {
+    const crashed: FakeContext = {
+      ...fakeContext([cookie()]),
+      cookies: async () => {
+        throw new Error('Target page, context or browser has been closed')
+      }
+    }
+    const visible = fakeContext([cookie({ value: 'fresh' })])
+    const { launch, headless } = recorder([crashed, visible])
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(
+      resolveMeetingSession('A'.repeat(32), {
+        launch,
+        verifySession: async () => DETAIL,
+        silentLoginTimeoutMs: 1,
+        pollIntervalMs: 1
+      })
+    ).resolves.toEqual({ cookie: 'sid=fresh', detail: DETAIL })
+    expect(headless).toEqual([true, false])
+  })
+
+  it('reports a window closed mid-poll as a login failure, not a crash', async () => {
+    const visible: FakeContext = {
+      ...fakeContext([cookie()]),
+      cookies: async () => {
+        throw new Error('Target page, context or browser has been closed')
+      }
+    }
+    const { launch } = recorder([fakeContext([]), visible])
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await expect(
+      resolveMeetingSession('A'.repeat(32), {
+        launch,
+        verifySession: async () => DETAIL,
+        silentLoginTimeoutMs: 1,
+        loginTimeoutMs: 10,
+        pollIntervalMs: 1
+      })
+    ).rejects.toMatchObject({
+      code: 'meeting-login-required',
+      message: expect.stringContaining('登录窗口已关闭')
+    })
   })
 
   it('fails with meeting-login-required when the login window is closed', async () => {
