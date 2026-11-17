@@ -12,7 +12,7 @@ ORCA bw meeting transcript --meeting-id <enMeetingId> --worktree <原生工作�
 
 `--meeting-id` 必须是宿主提供的 32 位十六进制 enMeetingId。`--output` 必须是所选工作树内的绝对 JSON 路径，由原生工作树与宿主解析；SSH/WSL 文件不写到桌面同名路径，不覆盖已有输出文件。输出先分片写入并逐片读回一致后才发布最终文件。
 
-命令读取用户机器上 Chrome 的登录态：定位 Chrome 配置、快照并解密 Cookie 数据库，取出 `w3.huawei.com` 的 Cookie，再以该 Cookie 调用会议详情和转写导出接口，不索要或导出凭据、不写入 Chromium 配置。当前系统 Chrome 运行时会独占锁定 Cookie 数据库，读取失败返回 `chrome-cookies-locked`；让 Builder 完全退出 Chrome（含后台进程）后重试。Chrome 用应用绑定加密（v20）保护 Cookie 时外部进程无法解密，返回 `chrome-cookies-undecryptable` 并如实说明。未登录或登录态失效时返回 `meeting-login-required`；让 Builder 在 Chrome 登录 eMeeting 后重试。命令不打开会议页面、不写 eMeeting 纪要。
+命令用用户机器上的系统 Chrome 打开一个 Workbench 专属配置（位于 Workbench 用户数据目录下的 `emeeting-chrome-profile`），以该配置里 `w3.huawei.com` 的登录态 Cookie 调用会议详情和转写导出接口，不索要或导出凭据。专属配置不读取用户日常 Chrome 的配置：运行中的 Chrome 会独占锁定自己的 Cookie 库，且 Chrome 136+ 的默认配置不开放调试端口，外部进程无法复用。命令先用无界面 Chrome 打开会议页面，企业 SSO 通常直接完成认证，取到 Cookie 后立即关闭窗口；20 秒内未完成时再打开可见的 Chrome 登录窗口，人工登录完成后自动继续，等待上限 5 分钟。未登录或等待登录超时返回 `meeting-login-required`，重新运行命令即可重试。未安装系统 Chrome 返回 `chrome-not-found`；上次登录窗口未关闭导致专属配置被占用返回 `meeting-browser-profile-busy`，关闭该窗口后重试。命令不写 eMeeting 纪要。
 
 获取失败时说明具体原因，让 Builder 直接在当前会话输入需要带回的关键信息，不要求导出或导入文字稿。把该消息作为人工提供的素材交给 subagent，返回来源和不确定清单；不能制造空稿、来源或会议结论。整理结果写入对应屏的纪要节（计划/验收材料 `minutes`，契约见 [版本材料](version-records.md)），转写来源在 `sources` 里写真实可追溯的会议/消息引用，不能编造；人工口述的素材注明 `source=manual` 语义的来源描述。旧格式材料的会议指导字段（meetingDirectives）是只读历史，不得新写或改写。Builder 在界面确认整理后的条目即可，不要求重复抄录，也不能由模型代签。
 

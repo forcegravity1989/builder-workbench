@@ -259,11 +259,7 @@ export const electronViteConfig: UserConfig = {
             'src/main/codex/managed-home-shell-preflight.ts'
           ),
           // Why: account import mutates the user's macOS Keychain from the CLI.
-          'claude-accounts/keychain': resolve('src/main/claude-accounts/keychain.ts'),
-          // Why: `bw meeting transcript` reads the user's Chrome cookies from the CLI.
-          'browser/browser-cookie-cli-reader': resolve(
-            'src/main/browser/browser-cookie-cli-reader.ts'
-          )
+          'claude-accounts/keychain': resolve('src/main/claude-accounts/keychain.ts')
         },
         // Why: Rolldown's SSR default is ESM, but Electron and sidecar launchers
         // consume these stable CommonJS paths.

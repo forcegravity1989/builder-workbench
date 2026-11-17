@@ -3,14 +3,13 @@ import { getRequiredStringFlag } from '../flags'
 import { getBrowserWorktreeSelector } from '../selectors'
 import { RuntimeClientError } from '../runtime/types'
 import {
-  W3_ORIGIN,
   downloadTranscriptText,
-  fetchMeetingDetail,
   meetingDetailUrl,
+  meetingSummaryUrl,
   transcriptExportUrl
 } from '../workbench-meeting/api'
-import { fetchChromeCookies } from '../workbench-meeting/chrome-cookies'
 import { meetingOutputTarget, writeMeetingOutput } from '../workbench-meeting/output'
+import { resolveMeetingSession } from '../workbench-meeting/session'
 
 const meetingIdPattern = /^[A-F0-9]{32}$/
 
@@ -28,10 +27,9 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
     throw new RuntimeClientError('invalid_argument', '请用 --worktree 指定当前项目的原生工作树。')
   }
   const outputTarget = await meetingOutputTarget(ctx, worktree, output)
-  const cookies = await fetchChromeCookies(`${W3_ORIGIN}/emeeting/`)
-  const detail = await fetchMeetingDetail(cookies.cookie, meetingId)
-  const transcript = await downloadTranscriptText(cookies.cookie, meetingId, detail)
-  const sourceUrl = `${W3_ORIGIN}/emeeting/#/aiSummary/${meetingId}/4`
+  const { cookie, detail } = await resolveMeetingSession(meetingId)
+  const transcript = await downloadTranscriptText(cookie, meetingId, detail)
+  const sourceUrl = meetingSummaryUrl(meetingId)
   const result = {
     schemaVersion: 2,
     provider: 'emeeting',

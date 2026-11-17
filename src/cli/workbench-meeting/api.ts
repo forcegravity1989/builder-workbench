@@ -37,6 +37,15 @@ export function meetingDetailUrl(meetingId: string): string {
   return `${W3_ORIGIN}/${MEETING_DETAIL_PATH}/${meetingId}/detail`
 }
 
+/** Page the login window opens; eMeeting redirects it to SSO when the profile has no session. */
+export function meetingSummaryUrl(meetingId: string): string {
+  return `${W3_ORIGIN}/emeeting/#/aiSummary/${meetingId}/4`
+}
+
+export function isMeetingLoginRequired(error: unknown): boolean {
+  return error instanceof RuntimeClientError && error.code === 'meeting-login-required'
+}
+
 export function transcriptExportUrl(): string {
   return `${W3_ORIGIN}/${TRANSCRIPT_EXPORT_PATH}`
 }
@@ -128,7 +137,7 @@ function loginRedirect(status: number, location: string): RuntimeClientError | u
   return status >= 300 && status < 400 && /login\.huawei\.com|\/login/i.test(location)
     ? new RuntimeClientError(
         'meeting-login-required',
-        '会议接口要求重新登录，请在内置浏览器登录 eMeeting 后重试。'
+        '会议接口要求重新登录，请重新运行命令并在打开的 Chrome 登录窗口完成 eMeeting 登录后重试。'
       )
     : undefined
 }
@@ -140,7 +149,7 @@ function apiError(body: Buffer, fallback: string): RuntimeClientError {
     if (asNumber(parsed?.code) === 401) {
       return new RuntimeClientError(
         'meeting-login-required',
-        '会议接口登录态已失效，请在内置浏览器登录 eMeeting 后重试。'
+        '会议接口登录态已失效，请重新运行命令并在打开的 Chrome 登录窗口完成 eMeeting 登录后重试。'
       )
     }
     const message = asString(parsed?.message) || asString(parsed?.msg)
