@@ -215,10 +215,9 @@ export function freshCases() {
     existing: {
       draft: clone(initial),
       submitted: clone(initial),
-      published: clone(initial),
       review: 'none'
     },
-    empty: { draft: clone(empty), submitted: clone(empty), published: null, review: 'none' }
+    empty: { draft: clone(empty), submitted: clone(empty), review: 'none' }
   }
 }
 export function validPlan(p) {
@@ -273,13 +272,13 @@ export function loadCases() {
           s &&
           validPlan(s.draft) &&
           validPlan(s.submitted) &&
-          (s.published === null || validPlan(s.published)) &&
           ['none', 'open', 'merged'].includes(s.review)
         )
       })
     ) {
       for (const state of Object.values(saved)) {
-        for (const key of ['draft', 'submitted', 'published']) {
+        delete state.published
+        for (const key of ['draft', 'submitted']) {
           const plan = state[key]
           if (plan && !plan.milestones) {
             plan.milestones = plan.months

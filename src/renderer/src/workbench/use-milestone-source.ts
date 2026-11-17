@@ -1,6 +1,6 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type { VersionCatalogState } from './use-version-catalog'
-import { milestoneSourceCache, milestoneSourceKey, readMilestones } from './milestone-port'
+import { milestoneSourceCache, milestoneSourceKey, readFormalMilestones } from './milestone-port'
 
 /** Read the shared formal source only; local editing and recovery state never supply widths. */
 export function useMilestoneSource(
@@ -29,7 +29,7 @@ export function useMilestoneSource(
         : Boolean(milestoneSourceCache.get(key).value)
     previous.current = { key, refreshToken }
     // Failure is published by the shared cache; the version screen retains its source context.
-    void readMilestones(scope, force).catch(() => {})
+    void readFormalMilestones(scope, force).catch(() => {})
     // The key includes repository, worktree and execution owner.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, refreshToken])

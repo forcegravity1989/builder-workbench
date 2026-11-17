@@ -11,6 +11,7 @@ import {
   MILESTONES_PATH,
   MilestoneMaterialSchema,
   emptyMilestones,
+  compareMilestoneWindows,
   upgradeMilestoneMaterial,
   type MilestoneSnapshot
 } from '../../shared/workbench/project-milestones'
@@ -168,10 +169,6 @@ export async function readMilestoneSnapshot(
     }
   }
   snapshot.revision = hash.digest('hex')
-  snapshot.versions.sort(
-    (a, b) =>
-      (a.timeWindow?.start ?? '9999').localeCompare(b.timeWindow?.start ?? '9999') ||
-      a.version.localeCompare(b.version)
-  )
+  snapshot.versions.sort(compareMilestoneWindows)
   return { snapshot, plans, contents, registeredVersions }
 }

@@ -4,7 +4,9 @@
 
 ## 里程碑认可与验证边界
 
-W01 在 Windows Electron 演示仓实走里程碑成果、Build 排期调整、本机草稿保存及 renderer 重载读回、提交摘要与无远端失败恢复。关闭编辑后正式视图保持原样。见[用户指南](../../03-guide/project-direction/README.md)。真实评审、合入更新和整个应用进程重启读回待验。
+[#684](https://github.com/forcegravity1989/builder-workbench/issues/684) 的[原位原型](prototype.html?review=684)已确认，工作树保存、提交评审与项目材料独立更新的行为见[规格](spec.md#编辑历史提交与正式来源)。真实 GitHub/CodeHub 评审和配对实机读回仍需核验。
+
+W01 的 Windows Electron 演示仓证据覆盖当时的本机草稿、排期、变更摘要和无远端失败恢复。[用户指南](../../03-guide/project-direction/README.md)中的旧版截图记录该历史路径。
 
 #621 已按人确认的最小范围实现排期独立保存、主动建版沿用身份，以及 BW v1.1 旧空占位的一次性清理。Windows Electron 隔离项目的同路径复验已确认版本区、项目墙和总览不再取未来空占位，主动新建版本保留原身份和初始日期；本地 Git 提交对照确认里程碑不生成计划文件。完整远端 PR/MR 旅程和多宿主端到端未在本次验证，最终门禁与证据见 [PR #624](https://github.com/forcegravity1989/builder-workbench/pull/624)。
 

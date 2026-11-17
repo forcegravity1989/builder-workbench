@@ -11,9 +11,9 @@ export function MilestoneReviewButton({
   hasReview,
   reviewUrl,
   openReview,
-  needsUpdate,
   changes,
-  updateFormal,
+  reviewInput,
+  secondary = false,
   submit
 }: {
   writing: boolean
@@ -25,12 +25,12 @@ export function MilestoneReviewButton({
   hasReview: boolean
   reviewUrl?: string
   openReview?(): void
-  needsUpdate: boolean
   changes: string[]
-  updateFormal(): void
+  reviewInput: object
+  secondary?: boolean
   submit(): void
 }) {
-  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewed, setReviewed] = useState<object | null>(null)
   const viewReview =
     openReview ??
     (() => {
@@ -46,33 +46,33 @@ export function MilestoneReviewButton({
       </Button>
     )
   }
-  if (needsUpdate || (!dirty && !retry && (hasReview || canViewReview))) {
+  if (!dirty && !retry && (hasReview || canViewReview)) {
     return (
       <Button
         size="xs"
-        className="bg-foreground text-background hover:bg-foreground/90"
+        variant={secondary ? 'outline' : 'default'}
         data-contextual-tour-target="milestone-submit"
-        disabled={needsUpdate ? busy : !canViewReview}
-        title={!needsUpdate && !canViewReview ? '评审链接尚未读到，请刷新后重试' : undefined}
-        onClick={needsUpdate ? updateFormal : viewReview}
+        disabled={busy || !canViewReview}
+        title={!canViewReview ? '评审链接尚未读到，请重试读取' : undefined}
+        onClick={viewReview}
       >
-        {needsUpdate ? '更新正式安排' : '查看评审'}
+        查看评审
       </Button>
     )
   }
   return (
     <Popover
-      open={reviewOpen}
+      open={reviewed === reviewInput}
       onOpenChange={(open) => {
         if (!open || validate()) {
-          setReviewOpen(open)
+          setReviewed(open ? reviewInput : null)
         }
       }}
     >
       <PopoverTrigger asChild>
         <Button
           size="xs"
-          className="bg-foreground text-background hover:bg-foreground/90"
+          variant={secondary ? 'outline' : 'default'}
           data-contextual-tour-target="milestone-submit"
           disabled={!canViewReview && (busy || conflict || (!dirty && !retry))}
         >
@@ -97,8 +97,8 @@ export function MilestoneReviewButton({
           className="bg-foreground text-background hover:bg-foreground/90"
           disabled={busy || conflict || (!dirty && !retry)}
           onClick={() => {
-            if (validate()) {
-              setReviewOpen(false)
+            if (reviewed === reviewInput && validate()) {
+              setReviewed(null)
               submit()
             }
           }}

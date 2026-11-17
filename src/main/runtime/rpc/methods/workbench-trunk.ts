@@ -8,6 +8,8 @@ export const WORKBENCH_TRUNK_METHODS = [
     name: 'workbench.trunk.update',
     params: TrunkUpdateSchema,
     handler: (params, { runtime }) =>
-      workbenchRuntimeResult(() => createTrunkUpdateService(runtime).updateCode(params.scope))
+      workbenchRuntimeResult(() =>
+        createTrunkUpdateService(runtime).updateCode(params.scope, params.expectedBranch)
+      )
   })
 ]

@@ -324,11 +324,7 @@ export function OverviewPage(): React.JSX.Element {
                 detail={versionProblem}
               />
             )}
-            <ProjectMilestones
-              scope={milestoneScope}
-              refreshToken={history?.baselineCommit}
-              updateFormal={updateTrunk}
-            />
+            <ProjectMilestones scope={milestoneScope} refreshToken={history?.baselineCommit} />
 
             <OverviewScoreboard
               catalog={catalog}
