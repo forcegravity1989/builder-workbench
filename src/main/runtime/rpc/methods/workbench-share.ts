@@ -22,7 +22,10 @@ export const WORKBENCH_SHARE_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.share.getLink',
     params: ShareSourceSchema,
-    handler: (params) => nativeShareService().getLink(params.sourceKey)
+    handler: (params, context) => {
+      requireHostDevice(context)
+      return nativeShareService().getLink(params.sourceKey)
+    }
   }),
   defineWorkbenchMethod({
     name: 'workbench.share.remove',

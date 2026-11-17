@@ -152,7 +152,7 @@ function shareErrorDescription(code: string, fallback: string): string {
     case 'too-large':
       return translate(
         'auto.components.artifacts.artifact-publish-flow.tooLargeDescription',
-        'This artifact is too large to share.'
+        'This artifact exceeds the 10 MiB share limit.'
       )
     case 'rate-limited':
       return translate(
@@ -226,5 +226,7 @@ function artifactPreparationErrorDescription(error: ArtifactPublishPreparationEr
 
 function formatShareSize(bytes: number): string {
   const mib = bytes / (1024 * 1024)
-  return `${mib >= 10 ? mib.toFixed(1) : mib.toFixed(2)} MiB`
+  // Round oversized values up so "10.0 MiB" never appears next to a 10 MiB limit.
+  const shown = bytes > SHARE_MAX_CONTENT_BYTES ? Math.ceil(mib * 10) / 10 : mib
+  return `${shown >= 10 ? shown.toFixed(1) : shown.toFixed(2)} MiB`
 }

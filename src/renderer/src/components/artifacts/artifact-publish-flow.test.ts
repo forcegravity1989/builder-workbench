@@ -130,7 +130,7 @@ describe('artifact publish flow', () => {
     ).resolves.toBeNull()
     expect(mocks.callRuntimeRpc).not.toHaveBeenCalled()
     expect(mocks.toastError).toHaveBeenCalledWith('File is too large to share', {
-      description: 'This file is 10.0 MiB; the share limit is 10 MiB.'
+      description: 'This file is 10.1 MiB; the share limit is 10 MiB.'
     })
   })
 
@@ -142,7 +142,7 @@ describe('artifact publish flow', () => {
 
     await expect(publishArtifactFromSurface(() => Promise.resolve(request))).resolves.toBeNull()
     expect(mocks.toastError).toHaveBeenCalledWith('File is too large to share', {
-      description: 'This artifact is too large to share.'
+      description: 'This artifact exceeds the 10 MiB share limit.'
     })
   })
 
