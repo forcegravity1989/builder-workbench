@@ -40,6 +40,8 @@ export type VersionCatalogDraftSource = {
 
 export type VersionCatalogEntry = {
   version: string
+  /** Timestamp of the current plan path entering trunk. Null means its time is unknown. */
+  planEnteredAt?: number | null
   /** 已合入主干的材料（业务正本来源）；草稿只附加、永不覆盖它。 */
   material: {
     plan?: VersionCatalogMaterialRef
@@ -55,16 +57,15 @@ export type VersionCatalogEntry = {
   state: 'working' | 'retired'
 }
 
-/** Sidebar and wall use the same default version ordering. */
 export function compareVersionDisplayOrder(
-  a: Pick<VersionCatalogEntry, 'state' | 'version'>,
-  b: Pick<VersionCatalogEntry, 'state' | 'version'>
+  a: Pick<VersionCatalogEntry, 'planEnteredAt'>,
+  b: Pick<VersionCatalogEntry, 'planEnteredAt'>
 ): number {
-  return a.state !== b.state
-    ? a.state === 'working'
-      ? -1
-      : 1
-    : compareMaterialVersions(b.version, a.version)
+  const aTime = a.planEnteredAt ?? -Infinity
+  const bTime = b.planEnteredAt ?? -Infinity
+  return aTime === bTime
+    ? Number(b.planEnteredAt !== undefined) - Number(a.planEnteredAt !== undefined)
+    : bTime - aTime
 }
 
 /**
@@ -169,6 +170,7 @@ export function mergeVersionCatalog(args: {
     // 同版同流程多条记录（历史多周）时保留目录读到的第一条，不互相覆盖。
     if (record.workflow === 'plan') {
       entry.material.plan ??= ref
+      entry.planEnteredAt = null
     } else {
       entry.material.acceptance ??= ref
     }
@@ -193,7 +195,7 @@ export function mergeVersionCatalog(args: {
   for (const entry of entries.values()) {
     entry.state = entry.workspaces.length > 0 ? 'working' : 'retired'
   }
-  return [...entries.values()].sort((a, b) => compareMaterialVersions(a.version, b.version))
+  return [...entries.values()]
 }
 
 /**

@@ -24,6 +24,7 @@ import {
   versionCatalogFingerprint
 } from './version-catalog-source'
 import { useVersionCatalogDiscovery } from './use-version-catalog-discovery'
+import { useVersionPlanEntryTimes } from './use-version-plan-entry-times'
 import { PrioritySemaphore } from '../../../shared/priority-semaphore'
 import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
@@ -42,6 +43,7 @@ export type VersionCatalogState = {
   /** Bound trees can be visible before the committed material catalog is known. */
   materialReady: boolean
   materialError: string | null
+  planOrderPending: boolean
   reload: () => void
 }
 
@@ -172,22 +174,47 @@ export function useVersionCatalogForRepo(
   }, [readKey, discovery.loading])
 
   const currentLoad = result?.sourceKey === sourceKey ? result.catalog : retainedCatalog
+  const committedVersions = useMemo(
+    () =>
+      currentLoad?.entries.flatMap((entry) => (entry.material.plan ? [entry.version] : [])) ?? [],
+    [currentLoad]
+  )
+  const planOrder = useVersionPlanEntryTimes(
+    scope,
+    home?.id,
+    currentLoad?.history?.key,
+    currentLoad?.history?.baselineCommit,
+    committedVersions,
+    readKey
+  )
   const catalog = useMemo(() => {
     const registered = mergeVersionCatalog({
       committed: { records: [], problems: [] },
       workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, scope?.projectId)
     })
-    const entries = new Map(registered.map((entry) => [entry.version, entry]))
+    const bindingsByVersion = new Map(registered.map((entry) => [entry.version, entry.workspaces]))
+    const entries = new Map<string, (typeof registered)[number]>()
     for (const entry of currentLoad?.entries ?? []) {
-      const bindings = entries.get(entry.version)?.workspaces ?? []
+      const bindings = bindingsByVersion.get(entry.version) ?? []
+      const enteredAt = planOrder.times?.[entry.version]
       entries.set(entry.version, {
         ...entry,
+        planEnteredAt: entry.material.plan
+          ? Number.isFinite(enteredAt)
+            ? enteredAt
+            : null
+          : undefined,
         workspaces: bindings,
         state: bindings.length > 0 ? 'working' : 'retired'
       })
     }
+    for (const entry of registered) {
+      if (!entries.has(entry.version)) {
+        entries.set(entry.version, entry)
+      }
+    }
     return { ...currentLoad, entries: [...entries.values()], problems: currentLoad?.problems ?? [] }
-  }, [currentLoad, worktrees, repoIds, scope])
+  }, [currentLoad, planOrder.times, worktrees, repoIds, scope])
   const loading = !!repoId && (discovery.loading || (!!scope && result?.key !== readKey))
   const error = !repoId
     ? null
@@ -214,6 +241,7 @@ export function useVersionCatalogForRepo(
           : null),
       materialReady: !loading && !error && historyReady,
       materialError,
+      planOrderPending: planOrder.pending,
       reload
     }),
     [
@@ -230,6 +258,7 @@ export function useVersionCatalogForRepo(
       error,
       historyReady,
       materialError,
+      planOrder.pending,
       reload
     ]
   )

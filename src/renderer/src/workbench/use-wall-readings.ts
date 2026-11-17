@@ -3,7 +3,6 @@ import { useAppStore } from '@/store'
 import type { Repo } from '../../../shared/repo-types'
 import { resolveProjectSource } from './project-source-resolution'
 import { useProjectVersionCatalog, versionCatalogErrors } from './project-version-catalog'
-import { compareVersionDisplayOrder } from '../../../shared/workbench/version-catalog'
 import { readWallReadings } from './wall-readings-load'
 import type { WallCardReadings } from './wall-card-readings'
 import { versionCatalogSourceKey, versionCatalogFingerprint } from './version-catalog-source'
@@ -21,9 +20,7 @@ const displaySnapshots = createSnapshotCache<{
 export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRefresh>) {
   const source = useAppStore((state) => resolveProjectSource(state, repo))
   const project = useProjectVersionCatalog(source, refresh)
-  const version = project.versions
-    .slice()
-    .sort((a, b) => compareVersionDisplayOrder(a.entry, b.entry))[0]
+  const version = project.planOrderPending ? undefined : project.versions[0]
   const selected = version?.source
   const catalog = selected?.state
   const refreshRevision = selected
@@ -84,7 +81,7 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
         ? { kind: 'unknown', reason: '项目来源尚未就绪，请检查主机连接后刷新。' }
         : catalog
           ? (result?.readings ?? { kind: 'loading' })
-          : project.loading
+          : project.loading || project.planOrderPending
             ? { kind: 'loading' }
             : reason || version || !project.primary?.materialReady
               ? {
@@ -101,7 +98,9 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
     refreshing:
       !!source &&
       source.kind !== 'folder' &&
-      (catalog ? catalog.loading || result?.key !== key : project.loading),
+      (catalog
+        ? catalog.loading || result?.key !== key
+        : project.loading || project.planOrderPending),
     failed: !!reason || readings.kind === 'unknown'
   }
 }

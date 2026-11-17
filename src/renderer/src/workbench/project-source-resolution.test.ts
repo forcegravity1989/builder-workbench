@@ -74,6 +74,7 @@ it('groups same-repo workspaces without replacing an unavailable material source
         error: null,
         materialReady: true,
         materialError: null,
+        planOrderPending: false,
         reload: () => {}
       }
     }

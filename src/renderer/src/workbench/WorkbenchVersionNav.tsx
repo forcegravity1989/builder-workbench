@@ -13,10 +13,7 @@ import { Button } from '@/components/ui/button'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
-import {
-  compareVersionDisplayOrder,
-  type VersionCatalogEntry
-} from '../../../shared/workbench/version-catalog'
+import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import { useProjectVersionCatalog } from './project-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
 import {
@@ -171,10 +168,7 @@ export function WorkbenchVersionNav({
       !activeWorktree?.workbenchVersionBinding
   )
 
-  const ordered = useMemo(
-    () => project.versions.slice().sort((a, b) => compareVersionDisplayOrder(a.entry, b.entry)),
-    [project.versions]
-  )
+  const ordered = project.versions
   const entries = useMemo(() => ordered.map(({ entry }) => entry), [ordered])
   const versionByName = useMemo(
     () => new Map(ordered.map((row) => [row.entry.version, row])),
@@ -213,12 +207,13 @@ export function WorkbenchVersionNav({
     if (
       !focusRequest ||
       focusRequest.repoId !== repoId ||
-      (!entries.some((entry) => entry.state === 'working') && !materialReady && !hasSourceProblems)
+      project.planOrderPending ||
+      (!materialReady && !hasSourceProblems)
     ) {
       return
     }
     consumeVersionSidebarFocus(focusRequest.sequence)
-    const latest = entries.find((entry) => entry.state === 'working') ?? entries[0]
+    const latest = entries[0]
     if (!latest) {
       return
     }
@@ -238,6 +233,7 @@ export function WorkbenchVersionNav({
     repoId,
     materialReady,
     hasSourceProblems,
+    project.planOrderPending,
     entries,
     expandedVersions,
     setExpandedOverrideAndStore
