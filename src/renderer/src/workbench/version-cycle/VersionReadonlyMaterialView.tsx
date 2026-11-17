@@ -96,7 +96,7 @@ function CatalogReadonlyMaterialView({
   const hostId = source?.runtimeOwnerEnvironmentId
     ? toRuntimeExecutionHostId(source.runtimeOwnerEnvironmentId)
     : source?.hostId
-  const catalog = useVersionCatalogForRepo(repoId, hostId)
+  const catalog = useVersionCatalogForRepo(repoId, hostId, 0, Boolean(source))
   const home = catalog.home
   const entry = useMemo(
     () => catalog.catalog?.entries.find((item) => item.version === version) ?? null,

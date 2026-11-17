@@ -2,6 +2,7 @@ import { ErrorDetails, notifyWorkbenchError } from '../error-feedback'
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -13,7 +14,7 @@ import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { notifyTrunkUpdate } from '../version-cycle/trunk-update-port'
-import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
+import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
 import { BoardIconButton } from '../board-ui'
@@ -25,7 +26,6 @@ import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { annotationRefFromElement } from '../annotations/types'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { usePlanMetrics } from './use-plan-metrics'
-import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
 import { useVersionMembership } from '../version-cycle/use-version-membership'
 import { PlanningStartCard } from './PlanningStartCard'
@@ -65,8 +65,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const plan = material.draft?.document
   const membership = useVersionMembership(scope, plan)
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
-  const selection = usePlanVersionSelection(material, context.selectVersion)
-  const selecting = selection.busy
   const [openingPr, setOpeningPr] = useState(false)
   const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
@@ -137,7 +135,19 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     } else {
       clearMaterial()
     }
-  }, [selectedVersion, selectedState, selectMaterial, clearMaterial, context.materialRefresh])
+  }, [selectedVersion, selectMaterial, clearMaterial, context.materialRefresh])
+  const readNewlyListedMaterial = useEffectEvent((version: string) => {
+    // Inventory can finish after the bound document. Do not clear a plan that
+    // has already loaded, since that also tears down its first-entry guide.
+    if (plan?.version !== version) {
+      void selectMaterial(version)
+    }
+  })
+  useEffect(() => {
+    if (selectedVersion && selectedState) {
+      readNewlyListedMaterial(selectedVersion)
+    }
+  }, [selectedVersion, selectedState])
   const listMaterials = material.list
   useEffect(() => {
     if (context.materialRefresh) {
@@ -155,7 +165,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       }
     }
   }
-  const disabled = !plan || Boolean(context.syncing) || selecting
+  const disabled = !plan || Boolean(context.syncing)
   const { prior, progressSource, priorError, priorLive, openingSource, openAcceptance } =
     usePlanningPriorReview({
       context,
@@ -171,7 +181,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     material
   })
   const guideReady =
-    !selecting &&
     !material.busy &&
     (!context.version || plan?.version === context.version || Boolean(material.error)) &&
     !context.syncing &&
@@ -273,15 +282,12 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   return (
     <div className={`vp-board${annotations.annotating ? ' annotating' : ''}`}>
       <PlanningHeader
-        currentVersion={plan?.version ?? ''}
-        boundVersion={context.boundVersion}
-        versions={material.versions}
-        disabled={!materialPort || selecting || Boolean(context.syncing)}
+        boundVersion={context.version}
+        disabled={!materialPort || Boolean(context.syncing)}
         state={state}
-        branch={context.branch ?? cycleBranch(entry)}
+        branch={context.branch ?? ''}
         sessionCollapsed={chatCollapsed}
         onSessionToggle={onSessionToggle}
-        onSelect={(version) => void selection.select(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
@@ -311,19 +317,14 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           ) : undefined
         }
       />
-      {(material.error ||
-        notice ||
-        selection.error ||
-        context.error ||
-        entry.notice ||
-        priorError) && (
+      {(material.error || notice || context.error || entry.notice || priorError) && (
         <div className="vp-notice" role="status">
           {notice && <p>{notice}</p>}
           {entry.notice && <p>{entry.notice}</p>}
-          {(material.error || selection.error || context.error || priorError) && (
+          {(material.error || context.error || priorError) && (
             <ErrorDetails
               summary="计划材料或工作区未就绪 · 查看详情"
-              detail={material.error || selection.error || context.error || priorError}
+              detail={material.error || context.error || priorError}
             />
           )}
         </div>
@@ -338,7 +339,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           />
         </div>
       ) : (
-        <div className="vp-body" inert={selecting} aria-busy={selecting}>
+        <div className="vp-body">
           <PlanningJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
           {annotations.annotating && (
             <div className="g3-annotate-banner" role="status">

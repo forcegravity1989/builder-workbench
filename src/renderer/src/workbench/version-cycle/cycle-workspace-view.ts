@@ -8,7 +8,12 @@ export function useCycleWorkspaceWorkflow() {
   const activeView = useAppStore((state) => state.activeView)
   const activeWorkflow = useAppStore((state) =>
     cycleWorkflowForWorktree(
-      state.activeWorktreeId ? state.getKnownWorktreeById(state.activeWorktreeId) : null
+      state.activeWorktreeId
+        ? state.getKnownWorktreeById(
+            state.activeWorktreeId,
+            state.activeWorkspaceExecutionHostId ?? undefined
+          )
+        : null
     )
   )
   if (!isWorkbenchShell()) {
