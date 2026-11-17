@@ -25,11 +25,18 @@ export const SHARE_PAGE_CSP =
 /**
  * @param {object} options
  * @param {ReturnType<import('./store.mjs').createShareStore>} options.store
+ * @param {ReturnType<import('./client-tokens.mjs').createClientTokenStore>} options.clientTokens
  * @param {import('./config.mjs').ShareConfig} options.config
  * @param {(line: string) => void} [options.log]
  * @param {() => number} [options.now]
  */
-export function createRequestHandler({ store, config, log = console.log, now = Date.now }) {
+export function createRequestHandler({
+  store,
+  clientTokens,
+  config,
+  log = console.log,
+  now = Date.now
+}) {
   const allowWrite = createRateLimiter({ limit: config.rateLimitPerMinute, now })
   const bodyBudget = createBodyBudget(MAX_IN_FLIGHT_BODY_BYTES)
 
@@ -69,6 +76,19 @@ export function createRequestHandler({ store, config, log = console.log, now = D
         return
       }
 
+      if (pathname === '/api/client-tokens') {
+        route = '/api/client-tokens'
+        if (method !== 'POST') {
+          throw methodNotAllowed('POST')
+        }
+        if (!allowWrite(clientIp(request, config))) {
+          throw new ShareError(429, 'rate_limited', 'Too many writes; retry in a minute.')
+        }
+        requireEnrollKey(request, config)
+        sendJson(response, 201, await clientTokens.issue())
+        return
+      }
+
       if (pathname === '/api/shares') {
         route = '/api/shares'
         if (method !== 'POST') {
@@ -77,7 +97,7 @@ export function createRequestHandler({ store, config, log = console.log, now = D
         if (!allowWrite(clientIp(request, config))) {
           throw new ShareError(429, 'rate_limited', 'Too many writes; retry in a minute.')
         }
-        requireUploadToken(request, config)
+        requireUploadToken(request, config, clientTokens)
         const payload = parseSharePayload(
           await readJsonBody(request, config.maxBytes, bodyBudget),
           config.maxBytes
@@ -175,16 +195,32 @@ function methodNotAllowed(allow) {
 }
 
 /**
+ * Writes are anonymous only on a fresh development instance: a configured static token or any
+ * issued per-device token turns the check on.
+ *
  * @param {import('node:http').IncomingMessage} req
  * @param {import('./config.mjs').ShareConfig} config
+ * @param {ReturnType<import('./client-tokens.mjs').createClientTokenStore>} clientTokens
  */
-function requireUploadToken(req, config) {
-  if (!config.uploadToken) {
+function requireUploadToken(req, config, clientTokens) {
+  if (!config.uploadToken && clientTokens.size() === 0) {
     return
   }
   const provided = headerValue(req.headers['x-upload-token'])
-  if (!tokenMatches(provided, config.uploadToken)) {
-    throw new ShareError(401, 'unauthorized', 'Missing or invalid x-upload-token header.')
+  if (tokenMatches(provided, config.uploadToken) || clientTokens.matches(provided)) {
+    return
+  }
+  throw new ShareError(401, 'unauthorized', 'Missing or invalid x-upload-token header.')
+}
+
+/**
+ * @param {import('node:http').IncomingMessage} req
+ * @param {import('./config.mjs').ShareConfig} config
+ */
+function requireEnrollKey(req, config) {
+  const provided = headerValue(req.headers['x-enroll-key'])
+  if (!tokenMatches(provided, config.enrollKey)) {
+    throw new ShareError(401, 'unauthorized', 'Missing or invalid x-enroll-key header.')
   }
 }
 

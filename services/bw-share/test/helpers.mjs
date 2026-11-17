@@ -2,6 +2,8 @@ import fs from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
+import { createClientTokenStore } from '../src/client-tokens.mjs'
+import { DEFAULT_ENROLL_KEY } from '../src/config.mjs'
 import { createRequestHandler } from '../src/http.mjs'
 import { createShareStore } from '../src/store.mjs'
 
@@ -12,6 +14,7 @@ export function testConfig(dataDir, overrides = {}) {
     port: 0,
     dataDir,
     uploadToken: '',
+    enrollKey: DEFAULT_ENROLL_KEY,
     publicBaseUrl: '',
     maxBytes: 1024 * 1024,
     retentionDays: 30,
@@ -43,8 +46,13 @@ export async function startTestServer(overrides = {}) {
   await store.init()
   /** @type {string[]} */
   const logs = []
+  const clientTokens = createClientTokenStore({
+    dataDir,
+    log: (line) => logs.push(line)
+  })
+  await clientTokens.init()
   const server = http.createServer(
-    createRequestHandler({ store, config, log: (line) => logs.push(line) })
+    createRequestHandler({ store, clientTokens, config, log: (line) => logs.push(line) })
   )
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = /** @type {import('node:net').AddressInfo} */ (server.address())
@@ -53,6 +61,7 @@ export async function startTestServer(overrides = {}) {
     dataDir,
     config,
     store,
+    clientTokens,
     logs,
     server,
     async close() {

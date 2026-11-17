@@ -1,6 +1,7 @@
 import http from 'node:http'
 import { pathToFileURL } from 'node:url'
 import { loadConfig } from './config.mjs'
+import { createClientTokenStore } from './client-tokens.mjs'
 import { createRequestHandler } from './http.mjs'
 import { createShareStore } from './store.mjs'
 
@@ -18,14 +19,18 @@ export async function startServer(options = {}) {
   const config = options.config ?? loadConfig()
   const store = createShareStore(config)
   await store.init()
+  const clientTokens = createClientTokenStore({ dataDir: config.dataDir, log })
+  await clientTokens.init()
   const removed = await store.sweep()
   if (removed > 0) {
     log(`removed ${removed} expired share(s) at startup`)
   }
-  if (!config.uploadToken) {
-    log('warning: BW_SHARE_UPLOAD_TOKEN is not set; anyone who can reach this port can upload.')
+  if (!config.uploadToken && clientTokens.size() === 0) {
+    log(
+      'warning: no upload token is configured and no device has enrolled yet; uploads are open until one does.'
+    )
   }
-  const server = http.createServer(createRequestHandler({ store, config, log }))
+  const server = http.createServer(createRequestHandler({ store, clientTokens, config, log }))
   server.requestTimeout = 30_000
   server.headersTimeout = 15_000
   await new Promise((resolve, reject) => {
@@ -47,7 +52,7 @@ export async function startServer(options = {}) {
   const address = server.address()
   const boundPort = typeof address === 'object' && address ? address.port : config.port
   log(`bw-share listening on http://${config.host}:${boundPort} (data: ${config.dataDir})`)
-  return { server, store, config, sweeper }
+  return { server, store, clientTokens, config, sweeper }
 }
 
 /**

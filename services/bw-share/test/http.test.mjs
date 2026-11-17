@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import http from 'node:http'
 import path from 'node:path'
 import test from 'node:test'
+import { createClientTokenStore } from '../src/client-tokens.mjs'
 import { SHARE_PAGE_CSP } from '../src/http.mjs'
 import { startTestServer, updateRequest, writeRequest } from './helpers.mjs'
 
@@ -270,4 +271,59 @@ test('an expired share is not readable', async (t) => {
   const view = await fetch(created.url)
   assert.equal(view.status, 404)
   assert.equal(view.headers.get('cache-control'), 'no-store')
+})
+
+test('enrollment issues a per-device token that gates uploads', async (t) => {
+  const server = await startTestServer({ uploadToken: 'static-secret' })
+  t.after(() => server.close())
+  const payload = { content: HTML, fileName: 'report.html' }
+
+  const denied = await fetch(`${server.base}/api/client-tokens`, { method: 'POST' })
+  assert.equal(denied.status, 401)
+
+  const wrongKey = await fetch(`${server.base}/api/client-tokens`, {
+    method: 'POST',
+    headers: { 'x-enroll-key': 'not-the-key' }
+  })
+  assert.equal(wrongKey.status, 401)
+
+  const enrolled = await fetch(`${server.base}/api/client-tokens`, {
+    method: 'POST',
+    headers: { 'x-enroll-key': server.config.enrollKey }
+  })
+  assert.equal(enrolled.status, 201)
+  const { token } = await json(enrolled)
+  assert.match(token, /^[a-f0-9]{64}$/)
+
+  assert.equal(
+    (await writeRequest(`${server.base}/api/shares`, payload, { 'x-upload-token': token })).status,
+    201
+  )
+  assert.equal(
+    (await writeRequest(`${server.base}/api/shares`, payload, { 'x-upload-token': 'nope' })).status,
+    401
+  )
+})
+
+test('issued client tokens are stored as hashes only', async (t) => {
+  const server = await startTestServer({ uploadToken: 'static-secret' })
+  t.after(() => server.close())
+  const { token } = await json(
+    await fetch(`${server.base}/api/client-tokens`, {
+      method: 'POST',
+      headers: { 'x-enroll-key': server.config.enrollKey }
+    })
+  )
+
+  const registry = JSON.parse(
+    await fs.readFile(path.join(server.dataDir, 'client-tokens.json'), 'utf8')
+  )
+  assert.equal(registry.version, 1)
+  assert.equal(registry.tokens.length, 1)
+  assert.notEqual(registry.tokens[0].hash, token)
+  assert.match(registry.tokens[0].hash, /^[a-f0-9]{64}$/)
+
+  const reloaded = createClientTokenStore({ dataDir: server.dataDir, log: () => {} })
+  await reloaded.init()
+  assert.equal(reloaded.matches(token), true)
 })

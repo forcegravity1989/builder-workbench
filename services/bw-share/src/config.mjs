@@ -5,13 +5,19 @@ export const DEFAULT_PORT = 8787
 export const DEFAULT_MAX_BYTES = 10 * 1024 * 1024
 export const DEFAULT_RETENTION_DAYS = 30
 export const DEFAULT_RATE_LIMIT_PER_MINUTE = 30
+/**
+ * Enrollment key compiled into the Workbench client. It only keeps unrelated network clients
+ * from minting tokens; it is not a secret against anyone who can read this repository.
+ */
+export const DEFAULT_ENROLL_KEY = 'bwshare-enroll-7d41c9ab6e2f5083'
 
 /**
  * @typedef {object} ShareConfig
  * @property {string} host
  * @property {number} port
  * @property {string} dataDir
- * @property {string} uploadToken  Empty string disables the check (development only).
+ * @property {string} uploadToken  Static upload/admin token; empty disables the check (development only).
+ * @property {string} enrollKey  Required by POST /api/client-tokens to mint per-device tokens.
  * @property {string} publicBaseUrl  Empty string derives links from the request Host header.
  * @property {number} maxBytes  Maximum decoded HTML payload size.
  * @property {number} retentionDays  0 keeps links until they are deleted explicitly.
@@ -31,6 +37,7 @@ export function loadConfig(env = process.env) {
   const port = readInteger(env.BW_SHARE_PORT, DEFAULT_PORT, 'BW_SHARE_PORT', 0, 65535)
   const dataDir = path.resolve(env.BW_SHARE_DATA_DIR?.trim() || 'data')
   const uploadToken = (env.BW_SHARE_UPLOAD_TOKEN ?? '').trim()
+  const enrollKey = (env.BW_SHARE_ENROLL_KEY ?? '').trim() || DEFAULT_ENROLL_KEY
   const publicBaseUrl = normalizeBaseUrl(env.BW_SHARE_PUBLIC_BASE_URL)
   const maxBytes = readInteger(
     env.BW_SHARE_MAX_BYTES,
@@ -58,6 +65,7 @@ export function loadConfig(env = process.env) {
     port,
     dataDir,
     uploadToken,
+    enrollKey,
     publicBaseUrl,
     maxBytes,
     retentionDays,

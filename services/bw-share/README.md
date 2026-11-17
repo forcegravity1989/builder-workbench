@@ -13,7 +13,8 @@
 - 上传一份 HTML（`text/html`），返回一条分享链接和一个编辑令牌。链接里的 ID 是 128 位随机值，不可枚举。
 - 任何人打开链接就能读到这份 HTML，不需要登录、不需要 Workbench 在线。
 - 持有编辑令牌的人可以覆盖内容或删除。令牌只在创建时返回一次，服务端只存它的 sha256。
-- 可选共享上传令牌：开启后新建分享要带 `x-upload-token`，避免陌生人往服务器塞文件。改和删只认各自分享的编辑令牌，不受上传令牌影响。
+- 新建分享要带 `x-upload-token`。Workbench 客户端首次分享时用内置的登记密钥换取本机专属令牌，之后一直复用；服务端只保存令牌的 sha256。改和删只认各自分享的编辑令牌，不受上传令牌影响。
+- 例外：全新实例既没配置静态上传令牌、也还没有任何设备登记时，写入暂时开放（启动日志会给出警告）；第一个设备登记或配置静态令牌后即要求令牌。
 - 到期自动清理，默认 30 天。
 
 单个 HTML 文件，不打包相对路径资源。与 Orca 现有 artifacts 的限制一致：带外链 `<img>`、`<link>` 的报告要么内联，要么改用绝对地址。
@@ -23,7 +24,8 @@
 | 方法与路径               | 用途     | 请求头                           | 成功响应                              |
 | ------------------------ | -------- | -------------------------------- | ------------------------------------- |
 | `GET /healthz`           | 存活检查 | —                                | `200 {"status":"ok","time":"..."}`    |
-| `POST /api/shares`       | 新建分享 | `x-upload-token`（配置了才需要） | `201 {id, url, editToken, expiresAt}` |
+| `POST /api/client-tokens` | 登记设备 | `x-enroll-key`                   | `201 {token, createdAt}`              |
+| `POST /api/shares`       | 新建分享 | `x-upload-token`                 | `201 {id, url, editToken, expiresAt}` |
 | `PUT /api/shares/:id`    | 覆盖内容 | `x-edit-token`                   | `200 {id, url, expiresAt, updatedAt}` |
 | `DELETE /api/shares/:id` | 删除     | `x-edit-token`                   | `204`                                 |
 | `GET /s/:id`             | 打开分享 | —                                | `200 text/html`                       |
@@ -38,6 +40,8 @@
 - 请求体上限按 6 倍 JSON 转义冗余放宽（10 MiB 内容最多可占 61 MiB 传输体）；判定仍以解码后的内容字节数为准，超过 `BW_SHARE_MAX_BYTES` 返回 `413`。
 - `title` 最长 200 字符，`fileName` 最长 255 字符且不能含控制字符。
 - 分享页带 `Content-Security-Policy: sandbox allow-scripts ...`，报告里的脚本能跑，但拿不到本服务的 origin、Cookie 或存储。可加载的内容一律 `nosniff`、`no-store`、`no-referrer`。
+
+`POST /api/client-tokens` 用登记密钥换一枚随机上传令牌（256 位），返回明文一次，服务端只落 sha256；同一设备不应重复登记。登记密钥编译在 Workbench 客户端里，只用于挡住无关网络客户端自行发令牌，不是抵御能读仓库的人的机密。换 `BW_SHARE_ENROLL_KEY` 只阻止新登记，已签发的设备令牌继续可用；要撤销全部已登记设备，停止服务、删除 `<dataDir>/client-tokens.json` 再启动（客户端下次分享会重新登记）。
 
 错误统一为 `{"error":{"code":"...","message":"..."}}`。常见码：`bad_request`、`unauthorized`、`forbidden`、`not_found`、`too_large`、`unsupported_media_type`、`rate_limited`、`busy`（同时在途的上传占满 64 MiB 内存预算）、`method_not_allowed`。
 
@@ -67,7 +71,8 @@ Windows 上不要用 `VAR=x cmd` 的 POSIX 前缀写法和 `pnpm exec`；前者�
 | `BW_SHARE_HOST`            | `0.0.0.0` | 监听地址                                                                                    |
 | `BW_SHARE_PORT`            | `8787`    | 监听端口                                                                                    |
 | `BW_SHARE_DATA_DIR`        | `./data`  | 数据目录，权限 0700；相对路径按工作目录解析                                                 |
-| `BW_SHARE_UPLOAD_TOKEN`    | 空        | 写操作共享密钥；为空时启动会打警告                                                          |
+| `BW_SHARE_ENROLL_KEY`      | 内置值    | 换发设备令牌的登记密钥；必须与客户端编译值一致，修改只影响后续登记，不撤销已签发令牌         |
+| `BW_SHARE_UPLOAD_TOKEN`    | 空        | 额外的共享上传令牌（手工运维/脚本用）；设备登记令牌独立生效                                 |
 | `BW_SHARE_PUBLIC_BASE_URL` | 空        | 生成链接用的外网地址，可带路径前缀（反代需去掉前缀，见 nginx 示例）；为空时按请求 Host 推导 |
 | `BW_SHARE_MAX_BYTES`       | 10 MiB    | 单份内容上限                                                                                |
 | `BW_SHARE_RETENTION_DAYS`  | 30        | 保留天数，`0` 表示不过期                                                                    |
@@ -79,7 +84,7 @@ Windows 上不要用 `VAR=x cmd` 的 POSIX 前缀写法和 `pnpm exec`；前者�
 Node 22.9+ 自带 `fetch`、`node:test` 和 `--env-file-if-exists`，服务无依赖，部署就是把 `services/bw-share` 拷过去。
 
 1. 建服务账号：`useradd --system --no-create-home bwshare`。
-2. 拷贝代码到 `/opt/bw-share`，把环境变量写到 `/etc/bw-share.env`（权限 0600），务必设 `BW_SHARE_UPLOAD_TOKEN` 和 `BW_SHARE_PUBLIC_BASE_URL`。不要设 `BW_SHARE_DATA_DIR`：unit 里默认 `/var/lib/bw-share`，由 systemd 的 `StateDirectory` 建好并授权。
+2. 拷贝代码到 `/opt/bw-share`，把环境变量写到 `/etc/bw-share.env`（权限 0600），务必设 `BW_SHARE_PUBLIC_BASE_URL`；`BW_SHARE_ENROLL_KEY` 留空即用客户端内置值。不要设 `BW_SHARE_DATA_DIR`：unit 里默认 `/var/lib/bw-share`，由 systemd 的 `StateDirectory` 建好并授权。
 3. 安装 [`deploy/bw-share.service`](deploy/bw-share.service) 到 `/etc/systemd/system/`，`systemctl enable --now bw-share`。
 4. 前面挂 Nginx：参考 [`deploy/nginx.conf.example`](deploy/nginx.conf.example)，`BW_SHARE_TRUST_PROXY=true`，请求体上限至少 16 MB。
 5. 验证：`curl -f localhost:8787/healthz`；再真实上传一份、在另一台机器打开链接。
@@ -88,7 +93,7 @@ Node 22.9+ 自带 `fetch`、`node:test` 和 `--env-file-if-exists`，服务无�
 
 ### 数据与备份
 
-`<dataDir>/<id>.html` 存内容，`<id>.json` 存元数据和令牌哈希。写入走临时文件 + fsync + rename，断电不会留半份文件。备份直接打包数据目录；恢复后链接和编辑令牌继续有效（令牌哈希随文件走）。到期文件由每小时一次的清理任务删除，服务重启时也清理一次。
+`<dataDir>/<id>.html` 存内容，`<id>.json` 存元数据和令牌哈希，`<dataDir>/client-tokens.json` 存已登记设备令牌的哈希（上限 5000 条，满后登记返回 503，需清理文件）。写入走临时文件 + fsync + rename，断电不会留半份文件。备份直接打包数据目录；恢复后链接和编辑令牌继续有效（令牌哈希随文件走）。到期文件由每小时一次的清理任务删除，服务重启时也清理一次。
 
 ## 资源预估
 
@@ -107,4 +112,4 @@ Node 22.9+ 自带 `fetch`、`node:test` 和 `--env-file-if-exists`，服务无�
 cd services/bw-share && node --test
 ```
 
-覆盖配置解析、载荷校验、存储（令牌哈希、过期清理、并发写、临时文件回收）、HTTP 全链路（鉴权、限流、413/415/405、CSP、HEAD、公网地址推导、trustProxy、过期 404）。CI 在 PR 上跑同一套（`node --test`）。接口改动先改测试。
+覆盖配置解析、载荷校验、存储（令牌哈希、过期清理、并发写、临时文件回收）、设备登记（拒错密钥、只落哈希、重载后仍生效）、HTTP 全链路（鉴权、限流、413/415/405、CSP、HEAD、公网地址推导、trustProxy、过期 404）。CI 在 PR 上跑同一套（`node --test`）。接口改动先改测试。
