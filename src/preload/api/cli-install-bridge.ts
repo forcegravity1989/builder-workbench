@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron'
-import type { BwCliInstallFinishedPayload } from '../../shared/bw-cli-install-commands'
+import type { MonicaCliInstallFinishedPayload } from '../../shared/monica-cli-install-commands'
 import type { PreloadApi } from '../api-types'
 
 export const cliInstallApi = {
@@ -7,12 +7,10 @@ export const cliInstallApi = {
     ipcRenderer.invoke('cliInstall:start', args),
   isRunning: (args: Parameters<PreloadApi['cliInstall']['isRunning']>[0]) =>
     ipcRenderer.invoke('cliInstall:isRunning', args),
-  onFinished: (
-    callback: (payload: BwCliInstallFinishedPayload) => void
-  ): (() => void) => {
+  onFinished: (callback: (payload: MonicaCliInstallFinishedPayload) => void): (() => void) => {
     const listener = (
       _event: Electron.IpcRendererEvent,
-      payload: BwCliInstallFinishedPayload
+      payload: MonicaCliInstallFinishedPayload
     ): void => callback(payload)
     ipcRenderer.on('cliInstall:finished', listener)
     return () => ipcRenderer.removeListener('cliInstall:finished', listener)
