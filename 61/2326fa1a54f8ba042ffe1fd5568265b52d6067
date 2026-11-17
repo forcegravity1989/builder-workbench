@@ -1,0 +1,46 @@
+src/renderer/src/workbench/WorkbenchVersionNav.tsx
+  s_3dd2c8979e37b8::t_97a96ced26c2ac 389-391
+  s_3dd2c8979e37b8::t_51b8a3ef04dd12 359-360
+  s_3dd2c8979e37b8::t_938f40f65c5c46 93-94,392-415,417-424
+  s_3dd2c8979e37b8::t_5088377e09a47d 425-426
+src/renderer/src/workbench/WorkbenchSidebarNav.tsx
+  s_3dd2c8979e37b8::t_8e39efc371aebc 6
+  s_3dd2c8979e37b8::t_54731efcad35ce 95,100-102
+src/renderer/src/workbench/WorkbenchSidebarSectionHeader.tsx
+  s_3dd2c8979e37b8::t_5b81cc7a856575 2-3,5-11,15-17,22-23,25,27-46,50-62
+src/renderer/src/components/sidebar/worktree-list/grouping/build-rows.ts
+  s_3dd2c8979e37b8::t_e6fed4d5a02120 175,178
+  s_3dd2c8979e37b8::t_a1b6ce679bb61c 14-15
+src/renderer/src/components/sidebar/sidebar-header-actions.tsx
+  s_3dd2c8979e37b8::t_a8ccf9dc2abebd 95-102,106
+  s_3dd2c8979e37b8::t_5565c64a58a5cc 42
+  s_3dd2c8979e37b8::t_4f9acdd7adc186 10
+src/renderer/src/components/sidebar/worktree-list/rows/SectionHeader.tsx
+  s_3dd2c8979e37b8::t_28d1f7a93d777a 373-377
+  s_3dd2c8979e37b8::t_5bdd628a2f1285 17
+  s_3dd2c8979e37b8::t_9785741b8de728 29-30
+  s_3dd2c8979e37b8::t_8bd364a62fc731 385-390
+  s_3dd2c8979e37b8::t_93b930788f86a0 391
+  h_d0d195a8c70989 153-156,189-193,196-213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "612326fa1a54f8ba042ffe1fd5568265b52d6067",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_3dd2c8979e37b8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1bbcf877-d0f5-4af9-a477-a892c0cfe1bf",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
