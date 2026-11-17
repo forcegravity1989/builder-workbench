@@ -134,6 +134,9 @@ export function PlanningGoals({
                 className={refreshing ? 'is-spinning' : undefined}
               />
             </BoardIconButton>
+            <BoardIconButton label="添加目标" disabled={disabled} onClick={addGoal}>
+              <Plus size={16} aria-hidden="true" />
+            </BoardIconButton>
             {plan.goals.length > 0 && (
               <BoardIconButton
                 label={expanded ? '全部收起' : '全部展开'}
@@ -150,9 +153,6 @@ export function PlanningGoals({
                 )}
               </BoardIconButton>
             )}
-            <BoardIconButton label="添加目标" disabled={disabled} onClick={addGoal}>
-              <Plus size={16} aria-hidden="true" />
-            </BoardIconButton>
           </div>
         )}
       </div>
