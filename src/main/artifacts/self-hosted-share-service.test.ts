@@ -224,6 +224,34 @@ describe('createShareService', () => {
     await expect(share.getLink('/repo/a.html')).resolves.toEqual({ ok: true, value: null })
   })
 
+  it('updates and removes with the edit token even when enrollment is unavailable', async () => {
+    const share = service()
+    await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
+    calls = []
+    fetchImpl.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input as string, init)
+      calls.push({ method: request.method, url: request.url, headers: request.headers, body: null })
+      if (request.url.endsWith('/api/client-tokens')) {
+        return jsonResponse(503, { error: { code: 'busy' } })
+      }
+      if (request.method === 'PUT') {
+        return jsonResponse(200, {
+          id: created.id,
+          url: created.url,
+          expiresAt: created.expiresAt,
+          updatedAt: '2026-11-16T12:00:00.000Z'
+        })
+      }
+      return new Response(null, { status: 204 })
+    })
+
+    await expect(
+      share.publish({ sourceKey: '/repo/a.html', content: '<h1>B</h1>', fileName: 'a.html' })
+    ).resolves.toMatchObject({ ok: true, value: { change: 'updated' } })
+    await expect(share.remove('/repo/a.html')).resolves.toEqual({ ok: true, value: null })
+    expect(calls.some((call) => call.url.endsWith('/api/client-tokens'))).toBe(false)
+  })
+
   it('does not contact the network when removing an unknown file', async () => {
     await expect(service().remove('/repo/none.html')).resolves.toEqual({ ok: true, value: null })
     expect(fetchImpl).not.toHaveBeenCalled()

@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   openLink: vi.fn(),
   publish: vi.fn(),
   remove: vi.fn(),
+  reportFailure: vi.fn(),
   openPopover: null as ((open: boolean) => void) | null
 }))
 
@@ -46,7 +47,8 @@ vi.mock('./share-server-client', () => ({
   removeShare: mocks.remove
 }))
 vi.mock('./artifact-publish-flow', () => ({
-  publishArtifactFromSurface: mocks.publish
+  publishArtifactFromSurface: mocks.publish,
+  reportShareFailure: mocks.reportFailure
 }))
 vi.mock('./artifact-published-link-client', () => ({
   getPublishedArtifactLink: mocks.getPublishedLink
@@ -130,6 +132,22 @@ describe('ArtifactPublishButton', () => {
     await user.click(screen.getByRole('button', { name: 'Remove link' }))
     await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith('/repo/report.md'))
     expect(await screen.findByRole('button', { name: 'Generate link' })).toBeInTheDocument()
+  })
+
+  it('reports a transport failure while removing instead of going silent', async () => {
+    const user = userEvent.setup()
+    mocks.getPublishedLink.mockResolvedValue('http://7.192.170.220:8787/s/share-a')
+    mocks.remove.mockRejectedValue(new Error('runtime bridge closed'))
+    render(<ArtifactPublishButton sourceKey="/repo/report.md" createRequest={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Share as artifact' }))
+    await user.click(await screen.findByRole('button', { name: 'Remove link' }))
+    await user.click(screen.getByRole('button', { name: 'Remove link' }))
+
+    await waitFor(() =>
+      expect(mocks.reportFailure).toHaveBeenCalledWith('unknown', 'runtime bridge closed')
+    )
+    expect(await screen.findByText('http://7.192.170.220:8787/s/share-a')).toBeInTheDocument()
   })
 
   it('looks up a persisted link only after the popover opens', async () => {

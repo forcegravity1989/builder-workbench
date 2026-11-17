@@ -82,10 +82,16 @@ export function createShareService(options: {
   }
 
   /**
+   * Only creating a share needs the per-device upload token. Updates and deletes authenticate
+   * with the link's own edit token, so they must keep working even if this device can no longer
+   * enroll.
+   *
    * A token revoked or wiped on the server should heal itself: drop the stored value, enroll
-   * again, and retry the operation once.
+   * again, and retry the create once.
    */
-  async function withToken<T>(operation: (config: ShareClientConfig) => Promise<T>): Promise<T> {
+  async function withUploadToken<T>(
+    operation: (config: ShareClientConfig) => Promise<T>
+  ): Promise<T> {
     const token = await uploadToken()
     try {
       return await operation(clientConfig(token))
@@ -113,8 +119,11 @@ export function createShareService(options: {
         const existing = await recordStore.get(request.sourceKey)
         if (existing) {
           try {
-            const updated = await withToken((config) =>
-              updateShare(config, existing.id, existing.editToken, payload)
+            const updated = await updateShare(
+              clientConfig(''),
+              existing.id,
+              existing.editToken,
+              payload
             )
             const record = {
               id: updated.id,
@@ -134,7 +143,7 @@ export function createShareService(options: {
             await recordStore.remove(request.sourceKey)
           }
         }
-        const created = await withToken((config) => createShare(config, payload))
+        const created = await withUploadToken((config) => createShare(config, payload))
         const record = {
           id: created.id,
           url: created.url,
@@ -162,7 +171,7 @@ export function createShareService(options: {
       try {
         const record = await recordStore.get(sourceKey)
         if (record) {
-          await withToken((config) => deleteShare(config, record.id, record.editToken))
+          await deleteShare(clientConfig(''), record.id, record.editToken)
           await recordStore.remove(sourceKey)
         }
         return { ok: true, value: null }

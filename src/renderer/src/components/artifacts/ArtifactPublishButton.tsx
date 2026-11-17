@@ -87,6 +87,11 @@ export function ArtifactPublishButton({
         return
       }
       setLinkLookup({ key: sourceKey, status: 'loaded', shareUrl: null })
+    } catch (error) {
+      // Why: the runtime bridge can fail before the host answers; without this the panel just
+      // stops spinning and the rejection goes unhandled.
+      console.error('Failed to remove shared artifact link:', error)
+      reportShareFailure('unknown', error instanceof Error ? error.message : String(error))
     } finally {
       setRemoving(false)
     }
