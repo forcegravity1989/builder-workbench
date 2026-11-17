@@ -24,7 +24,7 @@ import type { TuiAgent } from '../../../shared/tui-agent'
 import type { WorkspaceSource as WorkspaceCreateTelemetrySource } from '../../../shared/workspace-source'
 import type { WorkspaceStatus } from '../../../shared/worktree/types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
-import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
+import type { MonicaCreationContext } from '../../../shared/monica/creation-context'
 import { translate } from '@/i18n/i18n'
 import { getWorkspaceComposerInitialFocusTarget } from '@/lib/workspace-composer-initial-focus'
 import { getFolderWorkspacePrimaryActionLabel } from '@/components/sidebar/folder-workspace-composer-helpers'
@@ -46,12 +46,12 @@ type ComposerModalData = {
   initialBaseBranch?: string
   initialWorkspaceStatus?: WorkspaceStatus
   enableIssueAutomation?: boolean
-  /** G2 (BW): editable note seed (business context) for the workspace. */
+  /** G2 (Monica): editable note seed (business context) for the workspace. */
   initialNote?: string
-  /** G2 (BW): parent-worktree suggestion; picker stays authoritative. */
+  /** G2 (Monica): parent-worktree suggestion; picker stays authoritative. */
   initialParentWorktreeId?: string | null
-  /** G2 (BW): version/goal creation context, resolved to a binding at submit. */
-  workbenchCreation?: WorkbenchCreationContext | null
+  /** G2 (Monica): version/goal creation context, resolved to a binding at submit. */
+  monicaCreation?: MonicaCreationContext | null
   /** Telemetry surface that opened the composer. Set by each
    *  `openModal('new-workspace-composer', ...)` site so
    *  `workspace_created.source` carries the right value. Falls back to
@@ -145,7 +145,7 @@ function QuickTabBody({
     initialProjectGroupId: modalData.initialProjectGroupId,
     initialWorkspaceStatus: modalData.initialWorkspaceStatus,
     initialParentWorktreeId: modalData.initialParentWorktreeId ?? null,
-    workbenchCreation: modalData.workbenchCreation ?? null,
+    monicaCreation: modalData.monicaCreation ?? null,
     ...(modalData.initialBaseBranch ? { initialBaseBranch: modalData.initialBaseBranch } : {}),
     persistDraft: false,
     onCreated: onClose,

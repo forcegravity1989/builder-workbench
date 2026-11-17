@@ -1,5 +1,5 @@
 import { useCodeHubDetail } from './use-codehub-detail'
-import { attachedCodeHubDetailWorkspace } from '@/workbench/scoped-task-workspace'
+import { attachedCodeHubDetailWorkspace } from '@/monica/scoped-task-workspace'
 import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
 import { CodeHubFilesTab } from './FilesTab'
@@ -68,7 +68,7 @@ export function TaskPageCodeHubDetail({
     repoId ? (state.worktreesByRepo[repoId] ?? NO_WORKTREES) : NO_WORKTREES
   )
   // G2（P4 详情往返携带范围）：范围态归属呈现与任务屏行/板面箭头同一解析核。
-  const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
+  const monicaTaskScope = useAppStore((s) => s.taskPageData.monicaTaskScope ?? null)
   const repo = useAppStore((s) => (repoId ? (s.repos.find((r) => r.id === repoId) ?? null) : null))
   const detailState = useCodeHubDetail(model)
   if (!detailState) {
@@ -104,7 +104,7 @@ export function TaskPageCodeHubDetail({
     handleUseCodeHubItem
   } = detailState
   const attached = attachedCodeHubDetailWorkspace({
-    scope: workbenchTaskScope,
+    scope: monicaTaskScope,
     worktrees: repoWorktrees,
     repo,
     item

@@ -54,7 +54,7 @@ export function ProviderAccountScopeDetails({
 
   return (
     <IntegrationCardDetails>
-      {/* Why (BW #323): the Open Remote Servers shortcut is dropped from the
+      {/* Why (Monica #323): the Open Remote Servers shortcut is dropped from the
           source-control integration cards per the user decision (2026-10-16);
           the scope label stays to say whose status the card reports. */}
       <ProviderHostScopeControl
@@ -77,12 +77,12 @@ export function GitHubIntegrationCard(): React.JSX.Element {
   const connected = status === 'connected'
   const commandRowClass = useIntegrationCommandRowClass()
   const isLocalScope = useIsLocalCliScope()
-  // Why (BW #323): login runs in the card-embedded inline terminal (user
+  // Why (Monica #323): login runs in the card-embedded inline terminal (user
   // decision 2026-10-19 — reverses the floating-terminal injection; the
   // upstream OnboardingInlineCommandTerminal pastes the command and the
   // human presses Enter, per the issue's original form).
   const [loginTerminalOpen, setLoginTerminalOpen] = useState(false)
-  // Why (BW #323): remount key so clicking Log in again starts a fresh
+  // Why (Monica #323): remount key so clicking Log in again starts a fresh
   // session (new tab + fresh injection) instead of no-oping while the
   // terminal is already open.
   const [loginAttempt, setLoginAttempt] = useState(0)
@@ -212,7 +212,7 @@ export function GitHubIntegrationCard(): React.JSX.Element {
             </>
           )
         ) : connected ? (
-          // Why (BW #323): spec — connected cards keep only Re-check (I10
+          // Why (Monica #323): spec — connected cards keep only Re-check (I10
           // re-verification); the upstream pattern rendered no action at all.
           <Button variant="ghost" size="sm" onClick={refresh}>
             {translate(
@@ -221,7 +221,7 @@ export function GitHubIntegrationCard(): React.JSX.Element {
             )}
           </Button>
         ) : null}
-        {/* Why (BW #323): the login terminal lives outside the status ternary
+        {/* Why (Monica #323): the login terminal lives outside the status ternary
             so a re-check's brief `checking` flip cannot unmount it — a failed
             login must leave its error on screen (user decision 2026-10-19),
             and the auto re-check after the command ends would otherwise close

@@ -15,9 +15,9 @@ import {
 import { findRepoForHost, repoMatchesHostIdentity } from '../slices/repo-host-identity'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../../shared/execution-host'
-import { WORKBENCH_REPO_REMOVAL_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
+import { MONICA_REPO_REMOVAL_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
 import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { translate } from '@/i18n/i18n'
 import { repoMatchesRemovalRegistration } from '../repos/repo-removal-registration'
 import type { ProjectRemovalFailure, RepoSlice } from '../repos/repo-state'
@@ -209,7 +209,7 @@ export function createProjectGroupMutationActions(
         }
       }
 
-      const workbench = isWorkbenchShell()
+      const workbench = isMonicaShell()
       const groupHost = parseExecutionHostId(ownerHostId)
       const revision = options.expectedEnvironmentPairingRevision
       let runtimeId: string | undefined
@@ -237,12 +237,12 @@ export function createProjectGroupMutationActions(
             )
             if (
               !status.runtimeId ||
-              !status.capabilities?.includes(WORKBENCH_REPO_REMOVAL_RUNTIME_CAPABILITY)
+              !status.capabilities?.includes(MONICA_REPO_REMOVAL_RUNTIME_CAPABILITY)
             ) {
               throw new Error(
                 translate(
                   'auto.components.sidebar.RemoveFolderDialog.updatePairedHost',
-                  'Update Workbench on the paired host before removing a project registration.'
+                  'Update Monica on the paired host before removing a project registration.'
                 )
               )
             }

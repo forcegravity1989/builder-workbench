@@ -38,8 +38,8 @@ import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import type * as SidebarFeedbackDialogModule from './SidebarFeedbackDialog'
 import { translate } from '@/i18n/i18n'
 import { getUpdateCheckClickOptions, getUpdateCheckHint } from '@/lib/update-check-click-options'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { WORKBENCH_HELP_LINKS } from '@/workbench/help-links'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { MONICA_HELP_LINKS } from '@/monica/help-links'
 import { isWebClientLocation } from '@/lib/web-client-location'
 
 // Why lazy: the feedback form is only reachable from this menu's own item, so it does not
@@ -104,7 +104,7 @@ function ExternalMenuItem({
 }
 
 export function SidebarSettingsHelpMenu(): React.JSX.Element {
-  const isBW = isWorkbenchShell()
+  const isBW = isMonicaShell()
   const showNativeHelp = isBW && !isWebClientLocation()
   const openModal = useAppStore((s) => s.openModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
@@ -157,7 +157,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
     setIsRestartingOrca(true)
     toast.info(
       isBW
-        ? translate('guidance.restarting', 'Restarting BW…')
+        ? translate('guidance.restarting', 'Restarting Monica…')
         : translate(
             'auto.components.sidebar.SidebarSettingsHelpMenu.5161eef55d',
             'Restarting Orca…'
@@ -168,7 +168,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
         setIsRestartingOrca(false)
         toast.error(
           isBW
-            ? translate('guidance.restartFailed', "Couldn't restart BW.")
+            ? translate('guidance.restartFailed', "Couldn't restart Monica.")
             : translate(
                 'auto.components.sidebar.SidebarSettingsHelpMenu.4e8f5710d3',
                 "Couldn't restart Orca."
@@ -264,13 +264,13 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
               <>
                 <DropdownMenuItem onSelect={openMilestones}>
                   <School className="size-3.5" />
-                  {translate('guidance.gettingStarted', 'Getting Started with BW')}
+                  {translate('guidance.gettingStarted', 'Getting Started with Monica')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={() => openModal('feature-wall', { source: 'help_menu' })}
                 >
                   <Compass className="size-3.5" />
-                  {translate('guidance.explore', 'Explore BW')}
+                  {translate('guidance.explore', 'Explore Monica')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
@@ -334,7 +334,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
                 'auto.components.sidebar.SidebarSettingsHelpMenu.cdc87f897e',
                 'Docs'
               )}
-              url={isBW ? WORKBENCH_HELP_LINKS.docs : DOCS_URL}
+              url={isBW ? MONICA_HELP_LINKS.docs : DOCS_URL}
               icon={<BookOpen className="size-3.5" />}
             />
             <ExternalMenuItem
@@ -342,7 +342,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
                 'auto.components.sidebar.SidebarSettingsHelpMenu.5f83d86d92',
                 'Changelog'
               )}
-              url={isBW ? WORKBENCH_HELP_LINKS.changelog : CHANGELOG_URL}
+              url={isBW ? MONICA_HELP_LINKS.changelog : CHANGELOG_URL}
               icon={<ScrollText className="size-3.5" />}
             />
             <DropdownMenuSeparator />
@@ -378,7 +378,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
                 }}
               >
                 <Info className="size-3.5" />
-                {translate('guidance.about', 'About BW')}
+                {translate('guidance.about', 'About Monica')}
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuItem
@@ -401,7 +401,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
             <DropdownMenuItem onSelect={handleRestartOrca} disabled={isRestartingOrca}>
               <RotateCw className="size-3.5" />
               {isBW
-                ? translate('guidance.restart', 'Restart BW')
+                ? translate('guidance.restart', 'Restart Monica')
                 : translate(
                     'auto.components.sidebar.SidebarSettingsHelpMenu.ad3d3ed7f1',
                     'Restart Orca'

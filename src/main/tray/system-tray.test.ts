@@ -52,11 +52,11 @@ vi.mock('electron', () => ({
   nativeImage: { createFromPath: createFromPathMock }
 }))
 
-vi.mock('../../../resources/tray/workbench.png?asset&asarUnpack', () => ({
+vi.mock('../../../resources/tray/monica.png?asset&asarUnpack', () => ({
   default: '/assets/workbench.png'
 }))
 
-vi.mock('../../../resources/tray/workbench@2x.png?asset&asarUnpack', () => ({
+vi.mock('../../../resources/tray/monica@2x.png?asset&asarUnpack', () => ({
   default: '/assets/workbench@2x.png'
 }))
 
@@ -142,7 +142,7 @@ describe('createSystemTray', () => {
 
     expect(trayInstances).toHaveLength(1)
     expect(trayInstances[0].image).toBe(resizedImage)
-    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Workbench')
+    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Monica')
     expect(builtMenuItems().map((item) => item.label)).toEqual(['Open Orca', undefined, 'Quit'])
     const clickHandler = trayInstances[0].on.mock.calls.find((call) => call[0] === 'click')?.[1]
     expect(clickHandler).toBeTypeOf('function')
@@ -225,7 +225,7 @@ describe('dev instance indicator', () => {
     expect(trayInstances[0].image).toBe(baseMacImage)
     expect(trayInstances[0].setTitle).toHaveBeenCalledWith('DEV')
     expect(builtMenuItems()[0]).toMatchObject({
-      label: 'Workbench DEV (my-branch)',
+      label: 'Monica DEV (my-branch)',
       enabled: false
     })
   })
@@ -236,8 +236,8 @@ describe('dev instance indicator', () => {
 
     createSystemTray(createOptions({ isDevInstance: true }))
 
-    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Workbench DEV')
-    expect(builtMenuItems()[0]).toMatchObject({ label: 'Workbench DEV', enabled: false })
+    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Monica DEV')
+    expect(builtMenuItems()[0]).toMatchObject({ label: 'Monica DEV', enabled: false })
   })
 
   it('keeps the DEV marker in the tooltip across the attention toggle', async () => {
@@ -249,10 +249,10 @@ describe('dev instance indicator', () => {
 
     setTrayAttention(true)
     flushTraySceneMutation()
-    expect(created.setToolTip).toHaveBeenCalledWith('Workbench DEV (my-branch) - activity waiting')
+    expect(created.setToolTip).toHaveBeenCalledWith('Monica DEV (my-branch) - activity waiting')
     setTrayAttention(false)
     flushTraySceneMutation()
-    expect(created.setToolTip).toHaveBeenLastCalledWith('Workbench DEV (my-branch)')
+    expect(created.setToolTip).toHaveBeenLastCalledWith('Monica DEV (my-branch)')
   })
 
   it('marks the Windows tooltip without badging the icon', async () => {
@@ -261,10 +261,10 @@ describe('dev instance indicator', () => {
 
     createSystemTray(createOptions({ isDevInstance: true, devInstanceLabel: 'my-branch' }))
 
-    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Workbench DEV (my-branch)')
+    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Monica DEV (my-branch)')
     expect(trayInstances[0].setTitle).not.toHaveBeenCalled()
     expect(builtMenuItems()[0]).toMatchObject({
-      label: 'Workbench DEV (my-branch)',
+      label: 'Monica DEV (my-branch)',
       enabled: false
     })
   })
@@ -335,13 +335,13 @@ describe('setTrayAttention', () => {
     })
     expect(attentionImage.setTemplateImage).toHaveBeenCalledWith(false)
     expect(created.setImage).toHaveBeenCalledWith(attentionImage)
-    expect(created.setToolTip).toHaveBeenCalledWith('Workbench - activity waiting')
+    expect(created.setToolTip).toHaveBeenCalledWith('Monica - activity waiting')
 
     setTrayAttention(false)
     flushTraySceneMutation()
     expect(baseMacImage.setTemplateImage).toHaveBeenLastCalledWith(false)
     expect(created.setImage).toHaveBeenLastCalledWith(baseMacImage)
-    expect(created.setToolTip).toHaveBeenLastCalledWith('Workbench')
+    expect(created.setToolTip).toHaveBeenLastCalledWith('Monica')
   })
 
   it('reflects attention requested before deferred macOS creation', async () => {
@@ -488,7 +488,7 @@ describe('macOS hardening', () => {
     setTrayAttention(true)
     expect(() => flushTraySceneMutation()).not.toThrow()
     expect(created.setImage).toHaveBeenLastCalledWith(baseMacImage)
-    expect(created.setToolTip).toHaveBeenLastCalledWith('Workbench')
+    expect(created.setToolTip).toHaveBeenLastCalledWith('Monica')
     expect(warn).toHaveBeenCalledWith(
       '[system-tray] macOS attention icon failed; showing plain icon',
       expect.any(Error)

@@ -25,7 +25,7 @@ import {
   SIDEBAR_GROUP_FIXED_CHEVRON_CLASS,
   SidebarGroupChevron
 } from '../../ProjectHeaderActions'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import {
   getProjectGroupHeaderPaddingLeft,
   WORKTREE_SECTION_HEADER_PADDING_LEFT
@@ -182,7 +182,7 @@ export function renderWorktreeSectionHeaderRow(args: {
     row.count > 0 &&
     (isRepoHeader || isProjectGroupHeader || headerWorkspaceStatus !== null || isPinnedHeader)
   const fixedChevron =
-    isWorkbenchShell() && showHeaderCollapseAffordance && (isRepoHeader || isProjectGroupHeader)
+    isMonicaShell() && showHeaderCollapseAffordance && (isRepoHeader || isProjectGroupHeader)
   const collapseAffordance = showHeaderCollapseAffordance ? (
     <div
       className={

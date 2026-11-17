@@ -11,7 +11,7 @@ import { getAppEnvironment } from '../../shared/app-environment'
 import { PostHog, type PostHogOptions } from 'posthog-node'
 import type { CommonProps, EventName, EventProps, OptInVia } from '../../shared/telemetry-events'
 import type { Store } from '../persistence'
-import { isWorkbenchProduct } from '../startup/workbench-product'
+import { isMonicaProduct } from '../startup/monica-product'
 import { consumeBurstToken, resetBurstCapsForSession } from './burst-cap'
 import { getCohortAtEmit } from './cohort-classifier'
 import { resolveConsent, type ConsentState } from './consent'
@@ -52,7 +52,7 @@ let testTransportEnabled = false
 // First-launch `app_opened` gate: no events transmit until the banner resolves; keep mark+emit atomic.
 let appOpenedTrackedThisSession = false
 
-// The bootstrap injects BW's destination without importing the workbench layer here.
+// The bootstrap injects Monica's destination without importing the workbench layer here.
 export type TelemetryTransportFetchResponse = {
   status: number
   text: () => Promise<string>
@@ -69,20 +69,20 @@ export type TelemetryTransport = {
   shutdown?: (remainingMs: number) => Promise<void>
 }
 
-let workbenchTransport: TelemetryTransport | null = null
+let monicaTransport: TelemetryTransport | null = null
 
-/** BW bootstrap hook — call before `initTelemetry` (see `TelemetryTransport`). */
-export function setWorkbenchTelemetryTransport(transport: TelemetryTransport): void {
-  workbenchTransport = transport
+/** Monica bootstrap hook — call before `initTelemetry` (see `TelemetryTransport`). */
+export function setMonicaTelemetryTransport(transport: TelemetryTransport): void {
+  monicaTransport = transport
 }
 
-export function _resetWorkbenchTelemetryTransportForTests(): void {
-  workbenchTransport = null
+export function _resetMonicaTelemetryTransportForTests(): void {
+  monicaTransport = null
 }
 
-// Placeholder only: the BW transport never touches the network, but the SDK
+// Placeholder only: the Monica transport never touches the network, but the SDK
 // constructor requires a non-empty key.
-const WORKBENCH_TRANSPORT_WRITE_KEY = 'workbench-welink-transport'
+const MONICA_TRANSPORT_WRITE_KEY = 'monica-welink-transport'
 
 function buildCommonProps(installId: string, sid: string, channel: 'stable' | 'rc'): CommonProps {
   // Don't truncate here; the validator's `.max(64)` is authoritative, so an over-long string drops rather than being silently masked.
@@ -108,16 +108,16 @@ export function initTelemetry(store: Store): void {
   if (!TELEMETRY_ENABLED) {
     return
   }
-  // BW must never fall through to the official PostHog transport.
-  if (isWorkbenchProduct()) {
-    const bwTransport = workbenchTransport
-    if (!bwTransport) {
+  // Monica must never fall through to the official PostHog transport.
+  if (isMonicaProduct()) {
+    const transport = monicaTransport
+    if (!transport) {
       return
     }
     initTelemetryTransport(store, {
-      channel: 'stable', // BW builds inject no ORCA_BUILD_IDENTITY; the sink is not channel-routed.
-      writeKey: WORKBENCH_TRANSPORT_WRITE_KEY,
-      fetch: bwTransport.fetch
+      channel: 'stable', // Monica builds inject no ORCA_BUILD_IDENTITY; the sink is not channel-routed.
+      writeKey: MONICA_TRANSPORT_WRITE_KEY,
+      fetch: transport.fetch
     })
     return
   }
@@ -221,10 +221,10 @@ function waitForCaptureEnqueue(client: PostHog, event: EventName, uuid: string):
   })
 }
 
-// Native builds require official credentials; BW requires its injected transport.
+// Native builds require official credentials; Monica requires its injected transport.
 export function track<N extends EventName>(name: N, props: EventProps<N>): void {
   const transportAllowed =
-    TELEMETRY_ENABLED && (isWorkbenchProduct() ? workbenchTransport !== null : IS_OFFICIAL_BUILD)
+    TELEMETRY_ENABLED && (isMonicaProduct() ? monicaTransport !== null : IS_OFFICIAL_BUILD)
   if (!testTransportEnabled && !transportAllowed) {
     return
   }
@@ -372,9 +372,9 @@ export async function shutdownTelemetry(): Promise<void> {
     }
   }
   // SDK buffering and the destination share one quit deadline.
-  if (workbenchTransport?.shutdown) {
+  if (monicaTransport?.shutdown) {
     try {
-      await workbenchTransport.shutdown(Math.max(0, deadline - Date.now()))
+      await monicaTransport.shutdown(Math.max(0, deadline - Date.now()))
     } catch (err) {
       console.warn('[telemetry] workbench transport shutdown error (ignored):', err)
     }

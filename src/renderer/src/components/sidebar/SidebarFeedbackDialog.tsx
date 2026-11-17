@@ -20,7 +20,7 @@ import {
   hasAttachableFeedbackImage
 } from '@/lib/feedback-image-attachments'
 import { stripClientEnvironmentFooter } from '../../../../shared/client-environment-info'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { SidebarFeedbackImageAttachments } from './SidebarFeedbackImageAttachments'
 import { useSidebarFeedbackEnvironmentPrefill } from './use-sidebar-feedback-environment-prefill'
 import { useSidebarFeedbackImages } from './use-sidebar-feedback-images'
@@ -230,10 +230,10 @@ export function SidebarFeedbackDialog({
             {translate('auto.components.sidebar.SidebarFeedbackDialog.0eb643f07f', 'Send Feedback')}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {isWorkbenchShell()
+            {isMonicaShell()
               ? translate(
                   'auto.components.sidebar.SidebarFeedbackDialog.workbenchDescription',
-                  "Share what's working, what's broken, or what Workbench should do next. Reports are uploaded to the BW user group's WeLink space using your current WeLink account."
+                  "Share what's working, what's broken, or what Monica should do next. Reports are uploaded to the Monica user group's WeLink space using your current WeLink account."
                 )
               : translate(
                   'auto.components.sidebar.SidebarFeedbackDialog.a828fa4aee',
@@ -242,7 +242,7 @@ export function SidebarFeedbackDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {isWorkbenchShell() ? null : (
+        {isMonicaShell() ? null : (
           <div className="space-y-2 rounded-md border border-border/70 bg-muted/30 p-3">
             <div className="text-xs font-medium text-foreground">
               {translate(
@@ -341,7 +341,7 @@ export function SidebarFeedbackDialog({
                     'accent-foreground'
                   )}
                 />
-                {isWorkbenchShell()
+                {isMonicaShell()
                   ? translate(
                       'auto.components.sidebar.SidebarFeedbackDialog.omitGitHubIdentity',
                       'Do not include GitHub account information'
@@ -361,7 +361,7 @@ export function SidebarFeedbackDialog({
             </div>
           ) : (
             <div className="text-xs text-muted-foreground">
-              {isWorkbenchShell()
+              {isMonicaShell()
                 ? translate(
                     'auto.components.sidebar.SidebarFeedbackDialog.withoutGitHubIdentity',
                     'Your feedback will not include GitHub account information.'

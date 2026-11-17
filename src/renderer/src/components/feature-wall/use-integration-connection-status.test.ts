@@ -3,7 +3,7 @@ import {
   deriveIntegrationConnectionStatus,
   deriveIntegrationFlowState,
   deriveIntegrationStepStates,
-  deriveWorkbenchSetupIntegrationStatus
+  deriveMonicaSetupIntegrationStatus
 } from './use-integration-connection-status'
 import { deriveCliProviderCardState } from '@/components/settings/source-control-integration-cards'
 
@@ -384,7 +384,7 @@ describe('deriveIntegrationConnectionStatus', () => {
   })
 })
 
-describe('deriveWorkbenchSetupIntegrationStatus', () => {
+describe('deriveMonicaSetupIntegrationStatus', () => {
   it('uses current GitHub or CodeHub auth for both capabilities', () => {
     const authenticated = { installed: true, authenticated: true }
     const otherProviders = {
@@ -392,7 +392,7 @@ describe('deriveWorkbenchSetupIntegrationStatus', () => {
       linearStatus: { connected: true },
       jiraStatusChecked: false
     }
-    expect(deriveWorkbenchSetupIntegrationStatus(statusFacts(otherProviders))).toEqual({
+    expect(deriveMonicaSetupIntegrationStatus(statusFacts(otherProviders))).toEqual({
       trackerConnected: false,
       checking: false
     })
@@ -402,15 +402,15 @@ describe('deriveWorkbenchSetupIntegrationStatus', () => {
         ...otherProviders,
         preflightStatus: { [provider]: authenticated }
       })
-      expect(deriveWorkbenchSetupIntegrationStatus(facts)).toEqual({
+      expect(deriveMonicaSetupIntegrationStatus(facts)).toEqual({
         trackerConnected: true,
         checking: false
       })
       expect(
-        deriveWorkbenchSetupIntegrationStatus({ ...facts, preflightStatusContextKey: 'wsl:Ubuntu' })
+        deriveMonicaSetupIntegrationStatus({ ...facts, preflightStatusContextKey: 'wsl:Ubuntu' })
       ).toEqual({ trackerConnected: false, checking: true })
       expect(
-        deriveWorkbenchSetupIntegrationStatus({ ...facts, preflightStatusError: 'check failed' })
+        deriveMonicaSetupIntegrationStatus({ ...facts, preflightStatusError: 'check failed' })
       ).toEqual({ trackerConnected: false, checking: false })
     }
   })

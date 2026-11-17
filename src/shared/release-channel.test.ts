@@ -326,22 +326,22 @@ describe('release channel', () => {
   })
 })
 
-// Why: Workbench publishes every channel into its one public repo and has no dev
+// Why: Monica publishes every channel into its one public repo and has no dev
 // repos; the source constants must follow the product identity, or the restored
-// update chain serves Orca's packages to Workbench users (issue #338/#343).
-describe('Workbench update identity', () => {
+// update chain serves Orca's packages to Monica users (issue #338/#343).
+describe('Monica update identity', () => {
   afterEach(() => {
-    delete process.env.WORKBENCH_SHELL
+    delete process.env.MONICA_SHELL
     vi.resetModules()
   })
 
-  it('resolves every channel repo and release-notes link to the Workbench repo', async () => {
-    process.env.WORKBENCH_SHELL = '1'
+  it('resolves every channel repo and release-notes link to the Monica repo', async () => {
+    process.env.MONICA_SHELL = '1'
     vi.resetModules()
     const mod = await import('./release-channel.js')
-    expect(mod.MAIN_RELEASE_REPO).toBe(mod.WORKBENCH_RELEASE_REPO)
-    expect(mod.UPDATE_PRODUCT_NAME).toBe('Workbench')
-    expect(mod.WORKBENCH_RELEASE_REPO).toBe('forcegravity1989/builder-workbench')
+    expect(mod.MAIN_RELEASE_REPO).toBe(mod.MONICA_RELEASE_REPO)
+    expect(mod.UPDATE_PRODUCT_NAME).toBe('Monica')
+    expect(mod.MONICA_RELEASE_REPO).toBe('forcegravity1989/builder-workbench')
     for (const channel of mod.RELEASE_CHANNELS) {
       expect(mod.getReleaseRepoForChannel(channel)).toBe('forcegravity1989/builder-workbench')
     }

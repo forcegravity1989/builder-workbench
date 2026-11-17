@@ -14,7 +14,7 @@ import { LoaderCircle } from 'lucide-react'
 import { TaskPageGitHubRows } from './Rows'
 import { PaginationBar } from '../PaginationBar'
 import { supersedeGitHubListScrollRestore } from '../../task-page-github-list-scroll-restore'
-import { TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
+import { TaskPageScopeFooter } from '@/monica/TaskScopePanel'
 export function TaskPageGitHubList({
   model
 }: {
@@ -69,7 +69,7 @@ export function TaskPageGitHubList({
             state.taskPageData.openGitHubWorkItem ||
             // Why: the saved position key carries no scope identity; a scoped
             // visit must not store a page number an unscoped visit restores.
-            state.taskPageData.workbenchTaskScope
+            state.taskPageData.monicaTaskScope
           ) {
             return
           }
@@ -299,7 +299,7 @@ export function TaskPageGitHubList({
                     single page (totalPages <= 1) there's nothing else to show, so
                     surface the empty state instead of a blank panel. */}
         {!showGitHubTaskSkeletons &&
-        !model.workbenchScopeActive &&
+        !model.monicaScopeActive &&
         filteredWorkItems.length === 0 &&
         (softHiddenVisibleCount === 0 || totalPages <= 1) &&
         !tasksError &&

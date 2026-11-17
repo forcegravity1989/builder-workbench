@@ -15,10 +15,11 @@ import { OnboardingFooter } from './OnboardingFooter'
 import { shouldRequestOnboardingSkipConfirmation } from './onboarding-dismiss-target'
 import logo from '../../../../../resources/icon.png'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { MonicaBrandSlogan } from '@/monica/MonicaBrandSlogan'
 
 // Why: the wizard keeps two product identities — Orca builds keep the upstream
-// copy verbatim; the Workbench shell swaps brand mentions and the integrations
+// copy verbatim; the Monica shell swaps brand mentions and the integrations
 // pitch (CodeHub + gh, both optional). Both branches stay literal translate()
 // calls so the extractor sees every key.
 const stepCopy = {
@@ -30,10 +31,10 @@ const stepCopy = {
       )
     },
     get subtitle() {
-      return isWorkbenchShell()
+      return isMonicaShell()
         ? translate(
             'auto.components.onboarding.OnboardingFlow.43b8463d5c',
-            "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time."
+            "Monica works with every CLI agent. Choose the one you'll reach for most. Switch any time."
           )
         : translate(
             'auto.components.onboarding.OnboardingFlow.322fc50a18',
@@ -63,10 +64,10 @@ const stepCopy = {
       )
     },
     get subtitle() {
-      return isWorkbenchShell()
+      return isMonicaShell()
         ? translate(
             'auto.components.onboarding.OnboardingFlow.54fbfde99e',
-            'Workbench will notify you when agents are done or need help.'
+            'Monica will notify you when agents are done or need help.'
           )
         : translate(
             'auto.components.onboarding.OnboardingFlow.ff92d15436',
@@ -76,12 +77,12 @@ const stepCopy = {
   },
   integrations: {
     get title() {
-      return isWorkbenchShell()
+      return isMonicaShell()
         ? translate('auto.components.onboarding.OnboardingFlow.1130745139', 'Set up task sources')
         : translate('auto.components.onboarding.OnboardingFlow.ae3b00ca82', 'Set up GitHub tasks')
     },
     get subtitle() {
-      return isWorkbenchShell()
+      return isMonicaShell()
         ? translate(
             'auto.components.onboarding.OnboardingFlow.9977a23fbe',
             'Install the CLIs you need — CodeHub for issues and merge requests, GitHub for issues and pull requests. Both are optional.'
@@ -147,7 +148,7 @@ export default function OnboardingFlow({
 }: OnboardingFlowProps): React.JSX.Element {
   const flow = useOnboardingFlow(onboarding, onOnboardingChange)
   const continueShortcutModifierLabel = getScreenSubmitModifierLabel()
-  const isShell = isWorkbenchShell()
+  const isShell = isMonicaShell()
   const { currentStep, stepIndex, busyLabel } = flow
   const copy = stepCopy[currentStep.id]
   const shouldShowSkipToProjectSetup = currentStep.id !== 'notifications'
@@ -237,7 +238,7 @@ export default function OnboardingFlow({
             isShell
               ? translate(
                   'auto.components.onboarding.OnboardingFlow.c64d33bfb8',
-                  'Workbench onboarding'
+                  'Monica onboarding'
                 )
               : translate('auto.components.onboarding.OnboardingFlow.277ba45540', 'Orca onboarding')
           }
@@ -253,7 +254,7 @@ export default function OnboardingFlow({
               <img src={logo} alt="" aria-hidden="true" className="size-7 shrink-0" />
               <span>
                 {isShell
-                  ? translate('auto.components.onboarding.OnboardingFlow.78d1d003d2', 'Workbench')
+                  ? translate('auto.components.onboarding.OnboardingFlow.78d1d003d2', 'Monica')
                   : translate('auto.components.onboarding.OnboardingFlow.a249f81538', 'Orca')}
               </span>
             </div>
@@ -306,7 +307,7 @@ export default function OnboardingFlow({
                   {isShell
                     ? translate(
                         'auto.components.onboarding.OnboardingFlow.685d4ffbeb',
-                        'Welcome to Workbench'
+                        'Welcome to Monica'
                       )
                     : translate(
                         'auto.components.onboarding.OnboardingFlow.1b5e182e9f',
@@ -335,14 +336,21 @@ export default function OnboardingFlow({
               )}
             >
               {currentStep.id === 'agent' && (
-                <AgentStep
-                  selectedAgent={flow.selectedAgent}
-                  onSelect={flow.setSelectedAgent}
-                  detectedSet={flow.detectedSet}
-                  isDetecting={flow.isDetectingAgents}
-                  yoloPermissions={flow.yoloPermissions}
-                  onYoloPermissionsChange={flow.setYoloPermissions}
-                />
+                <>
+                  {isShell && (
+                    <div className="scrollbar-sleek mb-4 max-h-[28vh] shrink-0 overflow-y-auto">
+                      <MonicaBrandSlogan />
+                    </div>
+                  )}
+                  <AgentStep
+                    selectedAgent={flow.selectedAgent}
+                    onSelect={flow.setSelectedAgent}
+                    detectedSet={flow.detectedSet}
+                    isDetecting={flow.isDetectingAgents}
+                    yoloPermissions={flow.yoloPermissions}
+                    onYoloPermissionsChange={flow.setYoloPermissions}
+                  />
+                </>
               )}
               {currentStep.id === 'theme' && (
                 <ThemeStep

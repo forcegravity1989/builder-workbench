@@ -25,7 +25,7 @@ import { RepositoryHostSetupsSection } from './RepositoryHostSetupsSection'
 import { RepoSettingsDraftInput } from './RepositorySettingsDraftInput'
 import { RepositoryForkSyncSection } from './RepositoryForkSyncSection'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { RepositoryWindowsRuntimeSection } from './RepositoryWindowsRuntimeSection'
 import { matchesRepositoryIdentitySearch } from './repository-identity-search'
 import { RepositoryWorktreeDefaultsSection } from './RepositoryWorktreeDefaultsSection'
@@ -85,7 +85,7 @@ export function RepositoryPane({
   updateProject
 }: RepositoryPaneProps): React.JSX.Element {
   const isFolder = isFolderRepo(repo)
-  const workbench = isWorkbenchShell()
+  const workbench = isMonicaShell()
   // Why: this pane renders the switcher-selected host's repo row. Bind every
   // edit to that host so identity/host-specific writes land on the selected
   // host, not findRepoForHost's focused-host fallback (the same-id/self-pair

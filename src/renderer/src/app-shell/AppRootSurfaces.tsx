@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
-import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { isMonicaShell } from '../monica/is-monica-shell'
 import NewWorkspaceComposerModal from '../components/NewWorkspaceComposerModal'
 import { CrashReportDialog } from '../components/crash-report/CrashReportDialog'
 import { MarkdownTemplatePicker } from '../components/editor/MarkdownTemplatePicker'
@@ -294,20 +294,20 @@ export function AppRootSurfaces(props: {
             <UnexpectedSignoutCard />
           </OverlayBoundary>
         </Suspense>
-        {isWorkbenchShell() ? null : (
+        {isMonicaShell() ? null : (
           <OverlayBoundary boundaryId="overlay.star-nag" resetKey={activeView}>
             <StarNagCard />
           </OverlayBoundary>
         )}
       </NotificationCardStack>
-      {isWorkbenchShell() ? null : (
+      {isMonicaShell() ? null : (
         <OverlayBoundary boundaryId="overlay.star-nag-toast" resetKey={activeView}>
           <StarNagToastHost />
         </OverlayBoundary>
       )}
-      {isWorkbenchShell() ? null : <StarNagAgentValueMomentObserver />}
-      {/* BW consent is managed in Settings; native builds retain their first-launch notice. */}
-      {isWorkbenchShell() ? null : (
+      {isMonicaShell() ? null : <StarNagAgentValueMomentObserver />}
+      {/* Monica consent is managed in Settings; native builds retain their first-launch notice. */}
+      {isMonicaShell() ? null : (
         <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
           <TelemetryFirstLaunchSurface />
         </OverlayBoundary>
@@ -316,7 +316,7 @@ export function AppRootSurfaces(props: {
         <ZoomOverlay />
       </OverlayBoundary>
       <Suspense fallback={null}>
-        {isWorkbenchShell() && activeModal === 'confirm-remove-folder' ? (
+        {isMonicaShell() && activeModal === 'confirm-remove-folder' ? (
           <ModalBoundary boundaryId="modal.remove-project" resetKey>
             <RemoveFolderDialog />
           </ModalBoundary>
