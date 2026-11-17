@@ -1,0 +1,18 @@
+src/renderer/src/components/browser-pane/host-guest/browser-page-annotation-retention.test.ts
+  h_d0d195a8c70989 1-105
+src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts
+  h_d0d195a8c70989 96-98
+src/renderer/src/components/browser-pane/host-guest/browser-page-webview-navigation-handlers.ts
+  h_d0d195a8c70989 102-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "5850c206b634d7ed72cfe8348ba54cd8acf6e15e",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
