@@ -383,7 +383,15 @@ export function renderWorktreeSectionHeaderRow(args: {
         </div>
 
         {isWorkbenchShell() && isAllHeader ? (
-          <div className="flex shrink-0 items-center gap-1" data-workbench-workspace-actions="">
+          // Why stop propagation: these actions live inside the clickable row
+          // header; without it, clicking 选项/新建工作区 would also toggle the
+          // 工作区 collapse. Keyboard too, so Enter on the button doesn't collapse.
+          <div
+            className="flex shrink-0 items-center gap-1"
+            data-workbench-workspace-actions=""
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
             <SidebarWorkspaceOptionsMenu />
             <NewWorkspaceButton preserveWorkspaceBoardOpen={false} />
           </div>

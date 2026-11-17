@@ -36,6 +36,12 @@ export function WorkbenchSidebarSectionHeader({
       onKeyDown={
         interactive
           ? (event) => {
+              // Why target check: action buttons (帮助/新建) live inside this row;
+              // their Enter/Space must activate the button, not bubble up and
+              // collapse the section. Only the header surface itself toggles.
+              if (event.target !== event.currentTarget) {
+                return
+              }
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
                 onToggle?.()
@@ -56,6 +62,7 @@ export function WorkbenchSidebarSectionHeader({
         <span
           className="flex shrink-0 items-center gap-1"
           onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
         >
           {action}
         </span>

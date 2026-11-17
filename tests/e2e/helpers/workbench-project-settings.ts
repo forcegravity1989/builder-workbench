@@ -317,9 +317,11 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
       state.worktreesByRepo[id]?.some((tree) => tree.id === state.activeWorktreeId)
     )
   }, folderId)
-  const folderSidebar = page.locator('[data-workbench-version-section]')
-  await expect(folderSidebar).toHaveText('工作区')
-  await expect(folderSidebar.getByRole('button', { name: '新建版本', exact: true })).toHaveCount(0)
+  // Why: a folder project has no version section; the 工作区 region is the
+  // native flat "All" group header relabeled to 工作区 in the Workbench shell.
+  const workspacesHeader = page.locator('[data-sidebar-original-row-key="all"]')
+  await expect(workspacesHeader).toContainText('工作区')
+  await expect(page.getByRole('button', { name: '新建版本', exact: true })).toHaveCount(0)
   expect(existsSync(path.join(folderPath, '.git'))).toBe(false)
   expect(existsSync(path.join(folderPath, '.bw', 'project.toml'))).toBe(false)
   await page.screenshot({
