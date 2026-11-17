@@ -2,9 +2,9 @@ import { translate } from '@/i18n/i18n'
 import Sidebar from '../components/Sidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import type { VirtualizedScrollAnchor } from '../hooks/useVirtualizedScrollAnchor'
-import { isWorkbenchShell } from '../workbench/is-workbench-shell'
-import { WORKBENCH_RAIL_WIDTH } from '../workbench/WorkbenchRail'
-import { WorkbenchSidebarNav } from '../workbench/WorkbenchSidebarNav'
+import { isMonicaShell } from '../monica/is-monica-shell'
+import { MONICA_RAIL_WIDTH } from '../monica/MonicaRail'
+import { MonicaSidebarNav } from '../monica/MonicaSidebarNav'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 
 type WorktreeSidebarScrollRefs = {
@@ -21,7 +21,7 @@ export function WorktreeSidebar({
   scrollRefs: WorktreeSidebarScrollRefs
   panelVisible?: boolean
 }): React.JSX.Element {
-  const workbenchShell = isWorkbenchShell()
+  const monicaShell = isMonicaShell()
   return (
     <RecoverableRenderErrorBoundary
       boundaryId="sidebar.worktrees"
@@ -41,9 +41,9 @@ export function WorktreeSidebar({
       }
     >
       <Sidebar
-        panelVisible={panelVisible && (!workbenchShell || layout.sidebarOpen)}
-        leadingWidth={workbenchShell ? WORKBENCH_RAIL_WIDTH : 0}
-        workbenchTitle={workbenchShell ? <WorkbenchSidebarNav /> : undefined}
+        panelVisible={panelVisible && (!monicaShell || layout.sidebarOpen)}
+        leadingWidth={monicaShell ? MONICA_RAIL_WIDTH : 0}
+        monicaTitle={monicaShell ? <MonicaSidebarNav /> : undefined}
         worktreeScrollOffsetRef={scrollRefs.scrollOffsetRef}
         worktreeScrollAnchorRef={scrollRefs.scrollAnchorRef}
       />

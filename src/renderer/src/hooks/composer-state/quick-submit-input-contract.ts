@@ -30,7 +30,7 @@ export type QuickCreationExecutionInput = Pick<
   | 'sparseEnabled'
   | 'taskSourceContext'
   | 'telemetrySource'
-  | 'workbenchCreation'
+  | 'monicaCreation'
 >
 
 export type QuickSubmitPreparationInput = Pick<

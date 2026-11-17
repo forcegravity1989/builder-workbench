@@ -1,5 +1,5 @@
 // Why: mirrors the supported-image allow-list. Every accepted type needs a
-// filename extension — the reporting sink (BW #553) writes attachments to
+// filename extension — the reporting sink (Monica #553) writes attachments to
 // disk for the WeLink group-space upload, where the extension is the only
 // content-type signal.
 export const FEEDBACK_IMAGE_EXTENSIONS: Record<string, string> = {
