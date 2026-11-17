@@ -40,6 +40,8 @@ export type VersionCatalogDraftSource = {
 
 export type VersionCatalogEntry = {
   version: string
+  /** Timestamp of the current plan path entering trunk. Null means its time is unknown. */
+  planEnteredAt?: number | null
   /** 已合入主干的材料（业务正本来源）；草稿只附加、永不覆盖它。 */
   material: {
     plan?: VersionCatalogMaterialRef
@@ -55,25 +57,15 @@ export type VersionCatalogEntry = {
   state: 'working' | 'retired'
 }
 
-function latestMaterialCommitTime(material: VersionCatalogEntry['material']): number {
-  const plan = Date.parse(material.plan?.committedAt ?? '')
-  const acceptance = Date.parse(material.acceptance?.committedAt ?? '')
-  return Math.max(
-    Number.isFinite(plan) ? plan : -Infinity,
-    Number.isFinite(acceptance) ? acceptance : -Infinity
-  )
-}
-
 export function compareVersionDisplayOrder(
-  a: Pick<VersionCatalogEntry, 'state' | 'material'>,
-  b: Pick<VersionCatalogEntry, 'state' | 'material'>
+  a: Pick<VersionCatalogEntry, 'planEnteredAt'>,
+  b: Pick<VersionCatalogEntry, 'planEnteredAt'>
 ): number {
-  if (a.state !== b.state) {
-    return a.state === 'working' ? -1 : 1
-  }
-  const aTime = latestMaterialCommitTime(a.material)
-  const bTime = latestMaterialCommitTime(b.material)
-  return aTime === bTime ? 0 : aTime > bTime ? -1 : 1
+  const aTime = a.planEnteredAt ?? -Infinity
+  const bTime = b.planEnteredAt ?? -Infinity
+  return aTime === bTime
+    ? Number(b.planEnteredAt !== undefined) - Number(a.planEnteredAt !== undefined)
+    : bTime - aTime
 }
 
 /**
@@ -178,6 +170,7 @@ export function mergeVersionCatalog(args: {
     // 同版同流程多条记录（历史多周）时保留目录读到的第一条，不互相覆盖。
     if (record.workflow === 'plan') {
       entry.material.plan ??= ref
+      entry.planEnteredAt = null
     } else {
       entry.material.acceptance ??= ref
     }

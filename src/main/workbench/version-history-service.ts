@@ -1,5 +1,9 @@
 import { readCurrentVersionCatalog, withVersionTreeAlignment } from './version-current-catalog'
-import { readVersionHistoryLog, versionHistoryLogArgs } from './version-history-log'
+import {
+  planEntryLogArgs,
+  readVersionHistoryLog,
+  versionHistoryLogArgs
+} from './version-history-log'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import {
   PlanningMaterialSchema,
@@ -8,6 +12,7 @@ import {
 } from '../../shared/workbench/version-material'
 import {
   VersionHistoryListSchema,
+  VersionPlanEntryTimesSchema,
   VersionHistoryReadSchema,
   VersionHistoryReadPlanSchema,
   VersionTreePlansSchema,
@@ -102,6 +107,25 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
   }
 
   return {
+    async listPlanEntryTimes(input) {
+      const { scope, baselineCommit } = VersionPlanEntryTimesSchema.parse(input)
+      const baseline = await host.baseline(scope)
+      if (baseline.commit !== baselineCommit) {
+        return {}
+      }
+      const shallow =
+        (await host.git(scope, ['rev-parse', '--is-shallow-repository'])).toString().trim() ===
+        'true'
+      const log = await host.git(scope, planEntryLogArgs(baselineCommit, shallow))
+      const entries = new Map<string, number>()
+      for (const { version, committedAt } of readVersionHistoryLog(log)) {
+        const time = Date.parse(committedAt)
+        if (!entries.has(version) && Number.isFinite(time)) {
+          entries.set(version, time)
+        }
+      }
+      return Object.fromEntries(entries)
+    },
     async list(input) {
       const {
         scope,

@@ -21,7 +21,6 @@ let ffMultiMaterialCommit: string
 let ffMultiHeadCommit: string
 let acceptanceFirstCommit: string
 let acceptanceLatestCommit: string
-let afterAcceptanceCommit: string
 let unrelatedCommit: string
 const plan: PlanningMaterial = {
   schema_version: 3,
@@ -180,12 +179,6 @@ beforeAll(() => {
     })
   )
   acceptanceLatestCommit = commit('next acceptance week with the same cycle id', acceptancePath)
-  execFileSync('git', ['commit', '--allow-empty', '-m', 'Unrelated commit after acceptance'], {
-    cwd: root,
-    stdio: 'pipe',
-    env: { ...process.env, GIT_COMMITTER_DATE: '2026-11-01T02:00:00Z' }
-  })
-  afterAcceptanceCommit = git(['rev-parse', 'HEAD']).toString().trim()
   git(['switch', '-c', 'unrelated-history', adoptedCommit])
   writeFileSync(
     join(root, '.bw/planning/v1/data.json'),
@@ -400,7 +393,7 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks', 
   expect((await port.list({ scope, workflow: 'acceptance', allRevisions: true })).records).toEqual(
     []
   )
-  const current = await service(afterAcceptanceCommit).list({
+  const current = await port.list({
     scope,
     source: 'cycle',
     currentOnly: true,
@@ -408,11 +401,13 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks', 
     workflow: 'acceptance'
   })
   expect(current.records).toHaveLength(1)
-  expect(current.records[0].sourceCommit).toBe(afterAcceptanceCommit)
-  expect(current.records[0].committedAt).toBe(
-    git(['show', '-s', '--format=%cI', acceptanceLatestCommit]).toString().trim()
-  )
+  expect(current.records[0].sourceCommit).toBe(acceptanceLatestCommit)
   expect(current.problems).toEqual([])
+  const entryTimes = await port.listPlanEntryTimes({ scope, baselineCommit: adoptedCommit })
+  expect(entryTimes.v1).toBe(
+    Date.parse(git(['show', '-s', '--format=%cI', firstCommit]).toString())
+  )
+  await expect(port.listPlanEntryTimes({ scope, baselineCommit: firstCommit })).resolves.toEqual({})
 })
 
 it('lists version folders from data.json committed on the cycle branch itself', async () => {

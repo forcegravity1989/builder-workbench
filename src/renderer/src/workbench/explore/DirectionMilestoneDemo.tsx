@@ -26,6 +26,7 @@ const catalog: VersionCatalogState = {
   error: null,
   materialReady: true,
   materialError: null,
+  planOrderPending: false,
   reload: ignore
 }
 

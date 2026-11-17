@@ -201,7 +201,7 @@ function CatalogReadonlyMaterialView({
         {liveWorkspaces === 0 ? '（登记缺失，工作树/会话不可用）' : ''}
         ，读取主干已提交材料
         {state.kind === 'plan' || state.kind === 'acceptance'
-          ? `（来源 ${shortCommit(state.sourceCommit)}${state.committedAt ? `，材料最近提交于 ${state.committedAt}` : ''}）`
+          ? `（来源 ${shortCommit(state.sourceCommit)}，提交于 ${state.committedAt}）`
           : ''}
         。编辑或发起会话请先在版本行「初始化工作区」。
       </p>

@@ -24,6 +24,10 @@ export const VersionTreePlansSchema = z.strictObject({
   scope: MetricScopeSchema,
   adoptedCommit: SourceCommit.optional()
 })
+export const VersionPlanEntryTimesSchema = z.strictObject({
+  scope: MetricScopeSchema,
+  baselineCommit: SourceCommit
+})
 export const VersionHistoryReadPlanSchema = z.strictObject({
   scope: MetricScopeSchema,
   planRef: PlanReferenceSchema
@@ -43,7 +47,6 @@ export type VersionHistorySource = {
   sourceCommit: string
   revision: string
   workflow: 'plan' | 'acceptance'
-  /** Empty if the current material can be read but its change history is unavailable. */
   committedAt: string
 }
 export type VersionHistoryProblem = Pick<
@@ -84,6 +87,9 @@ export type VersionHistoryPlan = {
 }
 export type VersionHistoryPort = {
   list(input: z.infer<typeof VersionHistoryListSchema>): Promise<VersionHistoryCatalog>
+  listPlanEntryTimes(
+    input: z.infer<typeof VersionPlanEntryTimesSchema>
+  ): Promise<Record<string, number>>
   /** Lists plan folders on the cycle branch HEAD; one folder with data.json is one version. */
   listTreePlans(input: z.infer<typeof VersionTreePlansSchema>): Promise<VersionTreePlanCatalog>
   read(input: z.infer<typeof VersionHistoryReadSchema>): Promise<{

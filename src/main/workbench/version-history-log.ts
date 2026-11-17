@@ -1,23 +1,36 @@
 import { SourceCommit } from '../../shared/workbench/version-material'
 
-export function versionHistoryLogArgs(
-  commit: string,
-  history: 'all' | 'current' | 'shallow-current' = 'all'
-): string[] {
-  const current = history !== 'all'
+export function versionHistoryLogArgs(commit: string): string[] {
   return [
     'log',
     '-z',
-    current ? '--first-parent' : '--full-history',
-    ...(current ? [history === 'shallow-current' ? '--min-parents=1' : '--root'] : []),
+    '--full-history',
     '--diff-merges=first-parent',
     '--format=%H%x00%cI',
     '--name-only',
-    current ? '--diff-filter=AMT' : '--diff-filter=AM',
+    '--diff-filter=AM',
     '--no-renames',
     commit,
     '--',
     '.bw/planning'
+  ]
+}
+
+export function planEntryLogArgs(commit: string, shallow: boolean): string[] {
+  return [
+    'log',
+    '-z',
+    '--first-parent',
+    // A shallow boundary looks like an addition when diffed against an empty tree.
+    shallow ? '--min-parents=1' : '--root',
+    '--diff-merges=first-parent',
+    '--format=%H%x00%cI',
+    '--name-only',
+    '--diff-filter=A',
+    '--no-renames',
+    commit,
+    '--',
+    ':(glob).bw/planning/*/data.json'
   ]
 }
 

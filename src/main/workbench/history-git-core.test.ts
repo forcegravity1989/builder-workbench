@@ -17,14 +17,20 @@ const logTemplate = [
 ]
 
 describe('read-only history git allowlist', () => {
-  it('accepts the fixed history log with either traversal', () => {
+  it('accepts the fixed material and plan entry history reads', () => {
     expect(() => assertReadOnlyHistoryGitArgs(logTemplate)).not.toThrow()
-    const firstParent = logTemplate.with(2, '--first-parent').with(6, '--diff-filter=AMT')
+    const firstParent = logTemplate
+      .with(2, '--first-parent')
+      .with(6, '--diff-filter=A')
+      .with(10, ':(glob).bw/planning/*/data.json')
     for (const rootFlag of ['--root', '--min-parents=1']) {
       expect(() =>
         assertReadOnlyHistoryGitArgs(firstParent.toSpliced(3, 0, rootFlag))
       ).not.toThrow()
     }
+    expect(() =>
+      assertReadOnlyHistoryGitArgs(firstParent.with(10, ':(glob)**').toSpliced(3, 0, '--root'))
+    ).toThrowError(expect.objectContaining({ code: 'invalid-git-request' }))
     expect(() =>
       assertReadOnlyHistoryGitArgs(['rev-parse', '--is-shallow-repository'])
     ).not.toThrow()

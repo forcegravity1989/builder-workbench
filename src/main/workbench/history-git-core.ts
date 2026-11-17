@@ -3,7 +3,7 @@ import { gitReadOptionsForWorktree, type GitRuntimeOptions } from '../git/git-ru
 import { DEFAULT_GIT_MAX_BUFFER } from '../git/command-runner/git-exec-options'
 import { extractExecError } from '../git/exec-error'
 import { HistorySourceError } from './version-history-snapshot'
-import { versionHistoryLogArgs } from './version-history-log'
+import { planEntryLogArgs, versionHistoryLogArgs } from './version-history-log'
 
 const SHA = '(?:[a-f0-9]{40}|[a-f0-9]{64})'
 const MATERIAL_PATH = String.raw`\.bw\/planning\/(?!\.+$)[^/\0]+\/(?:data|acceptance)\.json`
@@ -33,13 +33,10 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
         return
       }
       const commit = args.at(-3) ?? ''
-      const history =
-        args[2] !== '--first-parent'
-          ? 'all'
-          : args[3] === '--min-parents=1'
-            ? 'shallow-current'
-            : 'current'
-      const allowed = versionHistoryLogArgs(commit, history)
+      const allowed =
+        args[2] === '--first-parent'
+          ? planEntryLogArgs(commit, args[3] === '--min-parents=1')
+          : versionHistoryLogArgs(commit)
       if (
         !new RegExp(`^${SHA}$`).test(commit) ||
         args.length !== allowed.length ||
@@ -138,7 +135,8 @@ export async function runReadOnlyHistoryGit(
     assertReadOnlyHistoryGitArgs(args)
     const { stdout } = await gitExecFileAsyncBuffer([...args], {
       ...gitReadOptionsForWorktree(repoPath, options),
-      maxBuffer: DEFAULT_GIT_MAX_BUFFER
+      maxBuffer: DEFAULT_GIT_MAX_BUFFER,
+      timeout: args[0] === 'log' && args[2] === '--first-parent' ? 5_000 : undefined
     })
     return { ok: true, stdout }
   } catch (error) {

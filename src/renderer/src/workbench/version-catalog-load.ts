@@ -80,7 +80,7 @@ export type VersionCatalogLoad = {
   problems: VersionCatalogProblem[]
   /** Provenance for failure retention in this view; never persisted or used as a cache policy. */
   goalSources?: Record<string, CatalogGoalSource>
-  history?: { key: string; ready: boolean; error: string | null }
+  history?: { key: string; ready: boolean; error: string | null; baselineCommit?: string }
 }
 
 /**
@@ -337,6 +337,13 @@ export async function loadVersionCatalog(args: {
     entries,
     problems,
     goalSources,
-    history: { key: historyKey, ready: !historyUnavailable, error: historyError }
+    history: {
+      key: historyKey,
+      ready: !historyUnavailable,
+      error: historyError,
+      baselineCommit:
+        committed.baselineCommit ??
+        (sameHistory ? previousLoad?.history?.baselineCommit : undefined)
+    }
   }
 }
