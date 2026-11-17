@@ -1,0 +1,103 @@
+config/scripts/check-readme-local-links.mjs
+  h_d0d195a8c70989 17
+config/scripts/verify-monica-update-download.mjs
+  h_d0d195a8c70989 8,12,21
+config/vitest-count-baseline.txt
+  h_d0d195a8c70989 1-2,5
+.github/ISSUE_TEMPLATE/bug_report.yml
+  h_d0d195a8c70989 2,22
+config/scripts/check-vitest-count-ratchet.mjs
+  h_d0d195a8c70989 8,23-26,35,43-44,49,194,258,274
+src/renderer/src/workbench/SYNC.md
+  h_d0d195a8c70989 1,5,9,11,16-17,24,27,33,40,43,46,49,51,55,57-63,65,67,69,73-75
+.gitignore
+  s_b8ea9b2e8dfd1b::t_cdfb00d77c8978 92
+  h_d0d195a8c70989 114-115,124-125
+config/scripts/release-win-monica.test.mjs
+  s_b8ea9b2e8dfd1b::t_3fead06d1710c3 20
+  h_d0d195a8c70989 6,14,16,81,91,93-94,99,112,130,132,142,147,184,204,222,236,244,248,258
+config/localization-coverage-allowlist.json
+  h_d0d195a8c70989 94,101
+config/localization-coverage-exclusions.json
+  h_d0d195a8c70989 3-4
+config/scripts/dev-monica-env.mjs
+  h_d0d195a8c70989 76-77,79,84,92
+package.json
+  h_d0d195a8c70989 2,4-6,17,72,110-112,114,117-118,146-147
+config/performance-audit.md
+  h_d0d195a8c70989 28
+config/tsconfig.node.json
+  h_d0d195a8c70989 3
+config/tsconfig.cli.json
+  h_d0d195a8c70989 3,156
+.github/CONTRIBUTING.md
+  h_d0d195a8c70989 48
+config/scripts/build-windows-cli-launcher.mjs
+  h_d0d195a8c70989 24,30,63-64,87
+.github/workflows/monica-package.yml
+  h_d0d195a8c70989 1,3,5,11,16,88,90,110-112
+config/scripts/generate-monica-skill-package.mjs
+  h_d0d195a8c70989 9,104,132
+config/scripts/build-mac-monica.mjs
+  h_d0d195a8c70989 5,7,15,17-18
+config/scripts/audit-localization-coverage.mjs
+  h_d0d195a8c70989 560
+.github/scripts/check-pr-issue.mjs
+  h_d0d195a8c70989 40
+config/vitest.config.ts
+  h_d0d195a8c70989 28
+.github/workflows/pr.yml
+  h_d0d195a8c70989 1,13,17,35,226,294,298,322-323,326,330
+config/tsconfig.web.json
+  h_d0d195a8c70989 3
+.github/ISSUE_TEMPLATE/other.yml
+  h_d0d195a8c70989 2
+config/scripts/check-vitest-count-ratchet.test.mjs
+  h_d0d195a8c70989 13-14,19,21-23,37-40,66-68,76-78
+.github/ISSUE_TEMPLATE/feature_request.yml
+  h_d0d195a8c70989 2
+config/scripts/build-windows-cli-launcher.test.mjs
+  h_d0d195a8c70989 109,127
+electron.vite.config.ts
+  h_d0d195a8c70989 57-61,279,308,312
+config/scripts/build-win-monica.mjs
+  h_d0d195a8c70989 5,18,26-28
+native/windows-cli-launcher/OrcaCliLauncher.cs
+  h_d0d195a8c70989 8-9
+config/scripts/generate-monica-icons.mjs
+  h_d0d195a8c70989 12,14,29-30
+config/scripts/release-win-monica.mjs
+  h_d0d195a8c70989 3-4,16-19,23-25,27-28,97,117,119,126,131,237,246,254-256,377
+  s_b8ea9b2e8dfd1b::t_23a63ed62f8c96 339
+config/scripts/run-electron-vite-dev.mjs
+  h_d0d195a8c70989 30-31,58,60-61,67,69,74-77,625,627
+config/electron-builder.config.cjs
+  h_d0d195a8c70989 73,427,460-461,477,481,507-509,511-512,514,568-569,573,682-683
+  s_b8ea9b2e8dfd1b::t_ff568e0b799947 173-182,582
+  s_b8ea9b2e8dfd1b::t_0ca8ceaa3eb8f0 583
+.github/workflows/monica-release.yml
+  h_d0d195a8c70989 1,3,8,13,22,87,118,120,122,143-144,166-167,169,174-175,177
+config/oxlint-dead-classes.json
+  h_d0d195a8c70989 71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "dd87e6a33b7883a8caa7e5bd6429983717d40bfb",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_b8ea9b2e8dfd1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "499b902b-9fdf-4742-a62d-84f8d1befcf2",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
