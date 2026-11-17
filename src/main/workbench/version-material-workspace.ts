@@ -5,7 +5,6 @@ import {
   validatePlanningVersion
 } from '../../shared/workbench/version-document'
 import { compareMaterialVersions } from '../../shared/workbench/version-catalog'
-import { enforcePlanningGoalIds } from '../../shared/workbench/planning-goal-ids'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
@@ -284,22 +283,7 @@ export function createVersionMaterialWorkspace(
     async save(input: VersionMaterialSave) {
       const request = VersionMaterialSaveSchema.parse(input)
       assertBindingVersion(request, request.version)
-      const store = await storeFor(request)
-      if (request.workflow !== 'plan') {
-        return store.save(request)
-      }
-      // 新计划/整组替换/已按序的计划在写入时统一编号为 G1…Gn；存量非规范
-      // 材料原样保留，读取兼容但不迁移（见 planning-goal-ids）。
-      const current = await store.read(request.version)
-      const document = enforcePlanningGoalIds(
-        request.document,
-        current && 'goals' in current.document ? current.document : null
-      )
-      return store.save({
-        version: request.version,
-        expectedRevision: request.expectedRevision,
-        document
-      })
+      return (await storeFor(request)).save(request)
     },
     /**
      * #516 制品登记：读当前文档 → 在工作树内核对制品文件真实存在（mtime 作

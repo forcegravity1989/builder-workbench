@@ -52,7 +52,8 @@ it('resolves the focused native tab: agent session, terminal leaf, or null for n
     tabId: 'terminal-a',
     paneKey: `terminal-a:${leaf}`
   })
-
+})
+it('rejects a workspace with the same id on another host', () => {
   mocks.state.getKnownWorktreeById = () => ({ hostId: 'ssh:elsewhere' }) as never
   expect(getActiveCycleSession(mocks.state, scope, 'wt')).toBeNull()
 })

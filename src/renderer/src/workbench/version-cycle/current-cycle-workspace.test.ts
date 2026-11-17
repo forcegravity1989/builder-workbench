@@ -27,8 +27,10 @@ beforeEach(() => {
   mocks.state.activeWorkspaceExecutionHostId = undefined
   mocks.state.getKnownWorktreeById = () => ({ hostId: 'local' })
 })
-it('accepts only the active terminal workspace and rejects a switched view, worktree, or host', () => {
+it('accepts the fixed tree while it is the active terminal workspace', () => {
   expect(() => assertCurrentCycleWorkspace(scope, 'wt')).not.toThrow()
+})
+it('rejects after a switch to another view, worktree, or host', () => {
   mocks.state.activeView = 'activity'
   expect(() => assertCurrentCycleWorkspace(scope, 'wt')).toThrow('工作区已切换')
   mocks.state.activeView = 'terminal'

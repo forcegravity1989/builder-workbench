@@ -23,7 +23,7 @@ export type WorkbenchVersionBinding = {
   version: string
   /** 工作用途：计划 / 验收 / 目标协作 / Issue 执行。 */
   workflow: WorkbenchVersionBindingWorkflow
-  /** 目标 ID（计划投影，按列表顺序 G1…Gn，改名不变；重排后需人工核对）；仅 goal/issue 用途可携带。 */
+  /** 稳定目标 ID（计划投影，改名/排序不变）；仅 goal/issue 用途可携带。 */
   goalId?: string
   /** Issue 执行的任务来源身份（provider/项目/宿主/仓库）；任务编号沿原生 linked 字段，不在此重复。 */
   taskSource?: TaskSourceContext
@@ -32,7 +32,7 @@ export type WorkbenchVersionBinding = {
 /**
  * workflow 与 goalId/taskSource 的一致性规则（写入与读回同一口径）：
  * - plan/acceptance：固定流程树属于版本本身，不带目标或任务来源；
- * - goal：协作树必须有 goalId（计划目标按列表顺序编号 G1…Gn），不承担单一任务来源；
+ * - goal：协作树必须有稳定 goalId，不承担单一任务来源；
  * - issue：执行树必须带任务来源身份，可选挂在目标目录下。
  */
 export const WorkbenchVersionBindingSchema = z

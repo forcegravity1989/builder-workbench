@@ -28,7 +28,7 @@ const plan: PlanningMaterial = {
   version: 'v0.5',
   cycleId: 'cycle-1',
   summary: { progress: '', risks: '' },
-  goals: [{ goalId: 'G1', title: '可编辑的计划', metricTargets: [] }],
+  goals: [{ goalId: 'g1', title: '可编辑的计划', metricTargets: [] }],
   tasks: []
 }
 const scope = { repoId: 'repo', worktreeId: 'plan', hostId: 'local', workflow: 'plan' as const }
@@ -123,8 +123,7 @@ describe('native version material service', () => {
   afterEach(async () => {
     setSshActiveMultiplexerResolver(null)
     // This test owns the freshly created temporary root, including both linked worktrees.
-    // Windows 上 git worktree 目录偶发仍被占用（EBUSY），沿仓内临时目录清理惯例重试。
-    await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
+    await rm(directory, { recursive: true, force: true })
   })
 
   it('does not create or choose a version; separates branches and exposes legacy/broken candidates', async () => {
@@ -184,30 +183,6 @@ describe('native version material service', () => {
     expect(await readFile(join(planning, '.bw/planning/v0.4/data.json'), 'utf8')).toBe(
       '{"schema_version":2}'
     )
-    // 写入侧规整只在材料服务里：新计划按列表顺序编号；存量非规范 id 原样透传。
-    const fresh = { ...plan, version: 'v0.6', cycleId: 'cycle-2' }
-    fresh.goals = [
-      { goalId: 'uuid-a', title: 'A', metricTargets: [] },
-      { goalId: 'uuid-b', title: 'B', metricTargets: [] }
-    ]
-    await service.save({ ...scope, version: 'v0.6', expectedRevision: null, document: fresh })
-    expect((await service.read({ ...scope, version: 'v0.6' }))?.document).toMatchObject({
-      goals: [{ goalId: 'G1' }, { goalId: 'G2' }]
-    })
-    const legacy = { ...plan, version: 'v0.7', cycleId: 'cycle-3' }
-    legacy.goals = [{ goalId: 'goal-g1-v1046', title: '旧目标', metricTargets: [] }]
-    await mkdir(join(planning, '.bw/planning/v0.7'))
-    await writeFile(join(planning, '.bw/planning/v0.7/data.json'), JSON.stringify(legacy))
-    const legacyRevision = (await service.read({ ...scope, version: 'v0.7' }))?.revision
-    await service.save({
-      ...scope,
-      version: 'v0.7',
-      expectedRevision: legacyRevision ?? null,
-      document: legacy
-    })
-    expect((await service.read({ ...scope, version: 'v0.7' }))?.document).toMatchObject({
-      goals: [{ goalId: 'goal-g1-v1046' }]
-    })
     await checkScheduledInitialization(service, scope, planning)
   })
 

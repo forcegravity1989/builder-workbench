@@ -138,22 +138,6 @@ export function useBoardAnnotations(boardId: string) {
     [boardId]
   )
 
-  /** Goal renumbering keeps unsent notes attached to the same goal object. */
-  const remapGoals = useCallback(
-    (remap: ReadonlyMap<string, string>) => {
-      const current = getSession(boardId)
-      const nextRef = (ref: AnnotationRef): AnnotationRef => {
-        const goalId = ref.goalId ? remap.get(ref.goalId) : undefined
-        return goalId && goalId !== ref.goalId ? { ...ref, goalId } : ref
-      }
-      patchSession(boardId, {
-        annotations: current.annotations.map((item) => ({ ...item, ref: nextRef(item.ref) })),
-        popover: current.popover ? { ...current.popover, ref: nextRef(current.popover.ref) } : null
-      })
-    },
-    [boardId]
-  )
-
   const numbersFor = useCallback(
     (match: AnnotationMatch): number[] =>
       numbered.filter((item) => annotationMatches(item.ref, match)).map((item) => item.number),
@@ -274,7 +258,6 @@ export function useBoardAnnotations(boardId: string) {
     update,
     remove,
     removeForGoal,
-    remapGoals,
     numbersFor,
     openPopover,
     closePopover,

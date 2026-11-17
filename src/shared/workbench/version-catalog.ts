@@ -21,7 +21,7 @@ export type VersionCatalogWorkspace = {
   binding: WorkbenchVersionBinding
 }
 
-/** 目标目录条目：从已保存计划投影（goalId 按列表顺序 G1…Gn，改名不变，增删/重排后重编号）。 */
+/** 目标目录条目：从已保存计划投影（goalId 稳定，改名/排序不变）。 */
 export type VersionCatalogGoalRef = { goalId: string; title: string }
 
 export type VersionCatalogMaterialRef = {

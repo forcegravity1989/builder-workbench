@@ -2,7 +2,6 @@ import { ErrorDetails } from '../error-feedback'
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
-import { planningGoalId } from '../../../../shared/workbench/planning-goal-ids'
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
@@ -75,12 +74,7 @@ export function PlanningGoals({
     if (!plan) {
       return
     }
-    // 新目标沿用屏上序号作为稳定 id；只有存量材料已占用该编号时才退回随机 id，
-    // 避免与不迁移的旧目标撞号。
-    const ordinal = planningGoalId(plan.goals.length)
-    const goalId = plan.goals.some((goal) => goal.goalId === ordinal)
-      ? crypto.randomUUID()
-      : ordinal
+    const goalId = crypto.randomUUID()
     edit({
       ...plan,
       goals: [...plan.goals, { goalId, title: '', metricTargets: [] }]
