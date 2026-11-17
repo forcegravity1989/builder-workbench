@@ -226,7 +226,7 @@ export function persistMacDockIcon(_value: unknown, options: PersistMacDockIconO
       return
     }
     // Clear custom Finder icons saved by previous versions so inactive Dock
-    // pins also resolve the packaged Workbench icon.
+    // pins also resolve the packaged Monica icon.
     await clearMacCustomIconMetadata(execFile, appBundlePath)
   })
 }

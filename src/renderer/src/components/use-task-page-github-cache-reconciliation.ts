@@ -92,13 +92,13 @@ export function useTaskPageGitHubCacheReconciliation(model: TaskPageGitHubDetail
         selectedWorkItemsCacheEntries
       )
       // Goal projection applies the exact source scope for each point-read row.
-      return pageData.workbenchTaskScope?.goalId
+      return pageData.monicaTaskScope?.goalId
         ? reconciled
         : reconciled.map((page) => (page ? (overlayPendingOnTaskPagePages([page])[0] ?? []) : null))
     })
   }, [
     githubMode,
-    pageData.workbenchTaskScope?.goalId,
+    pageData.monicaTaskScope?.goalId,
     selectedWorkItemsCacheEntries,
     taskSource,
     setPages

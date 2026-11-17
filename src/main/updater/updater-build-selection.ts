@@ -13,7 +13,7 @@ import {
 import { compareVersions } from '../updater-fallback'
 import { listReleaseBuilds, resolveTargetBuild } from '../updater-release-builds'
 import { UpdaterMenuChecks } from './updater-menu-checks'
-import { setRecoverableReleaseFeed } from './workbench-update-feed'
+import { setRecoverableReleaseFeed } from './monica-update-feed'
 
 /** Handles local-build selection and exact release-channel/tag jumps. */
 export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {

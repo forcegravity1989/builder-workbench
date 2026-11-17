@@ -7,15 +7,15 @@ import {
 } from '../../../../shared/execution-host'
 import { getRepoMapFromState, getWorktreeMapFromState } from '@/store/selectors'
 import { getProjectHostSetupProjectionFromState } from '@/store/project-host-setup-selector'
-import { buildWorkbenchSectionRows } from './worktree-list/listing/workbench-section-rows'
+import { buildMonicaSectionRows } from './worktree-list/listing/monica-section-rows'
 import { buildRows } from './worktree-list/grouping/build-rows'
 import { getPinnedWorktreeDisplayPolicy } from './worktree-list/grouping/row-types'
 import {
-  getWorkbenchSidebarProject,
+  getMonicaSidebarProject,
   scopeFolderWorkspacesForVersionSidebar,
   scopeWorktreesForVersionSidebar
 } from './worktree-list/listing/use-version-scoped-worktrees'
-import { getVersionSidebarProjection } from '@/workbench/version-sidebar-state'
+import { getVersionSidebarProjection } from '@/monica/version-sidebar-state'
 import { addHostSectionRows } from './host-section-rows'
 import { orderHostSectionOptions } from './host-section-order'
 import { buildSidebarHostOptions } from './sidebar-host-options'
@@ -60,15 +60,15 @@ export function computeRenderedSidebarWorktrees(
     state.worktreeCardProperties
   )
 
-  const workbenchProject = getWorkbenchSidebarProject(state, getVersionSidebarProjection())
+  const monicaProject = getMonicaSidebarProject(state, getVersionSidebarProjection())
   const versionScoped = scopeWorktreesForVersionSidebar({
-    workbenchProject,
+    monicaProject,
     filteredWorktrees: visibleWorktrees,
     worktreeLineageById: state.worktreeLineageById,
     worktreeMap: getWorktreeMapFromState(state)
   })
   const visibleProjectGroups = filterProjectGroupsForVisibleHosts(
-    workbenchProject?.groups ?? projectGroups,
+    monicaProject?.groups ?? projectGroups,
     visibleHostIdSet,
     defaultHostId
   )
@@ -100,7 +100,7 @@ export function computeRenderedSidebarWorktrees(
         visibleHostIdSet,
         defaultHostId
       ),
-      workbenchProject?.groups
+      monicaProject?.groups
     ),
     // Why no hostLabelById: it only feeds display-only host context labels, never row order.
     undefined,
@@ -113,14 +113,14 @@ export function computeRenderedSidebarWorktrees(
   // Deliberately a superset of its internal guards — on <=1 host it still no-ops, wasting only the registry build.
   const needsHostSections =
     state.workspaceHostScope !== ALL_EXECUTION_HOSTS_SCOPE || state.visibleWorkspaceHostIds != null
-  const sectionRows = buildWorkbenchSectionRows({
+  const sectionRows = buildMonicaSectionRows({
     rows,
-    workbench: workbenchProject !== undefined,
+    workbench: monicaProject !== undefined,
     groupBy: state.groupBy,
-    repoIds: workbenchProject?.repoIds ?? [],
+    repoIds: monicaProject?.repoIds ?? [],
     repoMap: getRepoMapFromState(state),
     projectGrouping: { projects: projection.projects, projectHostSetups: projection.setups },
-    projectGroups: workbenchProject ? visibleProjectGroups : projectGroups,
+    projectGroups: monicaProject ? visibleProjectGroups : projectGroups,
     withHostSections: (naturalRows) =>
       needsHostSections
         ? addHostSectionRows({

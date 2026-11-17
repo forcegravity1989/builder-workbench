@@ -50,7 +50,7 @@ async function withPreflightTimeout<T>(
  *  "absent" as a value. A caller that collapses that rejection into `false`
  *  makes "not installed" and "could not run it" the same answer; see
  *  docs/reference/wsl-probe-failure-semantics.md before doing so.
- *  `timeoutMs` (BW #553): probes keep the 5s default; long-running data
+ *  `timeoutMs` (Monica #553): probes keep the 5s default; long-running data
  *  commands (welink onebox uploads) pass their own deadline. */
 export async function execLocalPreflightCommandOrThrow(
   command: string,
@@ -103,7 +103,7 @@ export async function execCommandInWslOrThrow(
 export async function isCommandAvailable(
   command: string,
   wslTarget?: WslPreflightTarget,
-  // Why (BW #366): cloudbuild's cb rejects `--version` (cobra: unknown flag);
+  // Why (Monica #366): cloudbuild's cb rejects `--version` (cobra: unknown flag);
   // its `version` subcommand is the equivalent liveness probe. Callers pass
   // the args the CLI actually supports.
   versionArgs: string[] = ['--version']

@@ -4,15 +4,15 @@ export type GhStatus = 'checking' | 'connected' | 'not-installed' | 'not-authent
 // Why: parallel to GhStatus — GitLab uses glab and the same three failure
 // modes (probe in-flight / installed-but-unauth / missing entirely).
 export type GlabStatus = GhStatus
-// Why (BW #323): WeLink uses welink-cli and mirrors the gh failure modes.
+// Why (Monica #323): WeLink uses welink-cli and mirrors the gh failure modes.
 export type WelinkStatus = GhStatus
 export type BitbucketStatus = 'checking' | 'connected' | 'not-configured' | 'not-authenticated'
 export type AzureDevOpsStatus = 'checking' | 'configured' | 'not-configured' | 'not-authenticated'
 export type GiteaStatus = 'checking' | 'configured' | 'not-configured' | 'not-authenticated'
-// Why (BW #323): codehub-cli now reports auth like gh, so its status carries
+// Why (Monica #323): codehub-cli now reports auth like gh, so its status carries
 // the same installed-but-unauth middle state instead of a bare "available".
 export type CodeHubCliStatus = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
-// Why (BW #366): cloudbuild's cb mirrors the gh failure modes.
+// Why (Monica #366): cloudbuild's cb mirrors the gh failure modes.
 export type CloudbuildStatus = GhStatus
 export type PreflightRefreshProvider =
   | 'gh'
@@ -88,7 +88,7 @@ function ghStatusFromPreflight(status: PreflightStatus['gh']): GhStatus {
   return status.authenticated ? 'connected' : 'not-authenticated'
 }
 
-// Why (BW #323): mirrors ghStatusFromPreflight now that preflight reads
+// Why (Monica #323): mirrors ghStatusFromPreflight now that preflight reads
 // `codehub-cli auth status`. Older payloads without the auth readback fall
 // through to not-authenticated — the main process always sends it today.
 function codehubStatusFromPreflight(status: PreflightStatus['codehub']): CodeHubCliStatus {
@@ -105,7 +105,7 @@ function welinkStatusFromPreflight(status: PreflightStatus['welink']): WelinkSta
   return status.authenticated ? 'connected' : 'not-authenticated'
 }
 
-// Why (BW #366): mirrors welinkStatusFromPreflight for cloudbuild's cb.
+// Why (Monica #366): mirrors welinkStatusFromPreflight for cloudbuild's cb.
 function cloudbuildStatusFromPreflight(status: PreflightStatus['cloudbuild']): CloudbuildStatus {
   if (!status?.installed) {
     return 'not-installed'

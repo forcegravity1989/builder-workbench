@@ -123,19 +123,19 @@ describe('shouldSkipSingleInstanceLock', () => {
     expect(shouldSkipSingleInstanceLock({ isDev: false, isServeMode: false, env: {} })).toBe(false)
   })
 
-  it('never skips for Workbench so two dev mains cannot clobber workbench-dev repos', () => {
+  it('never skips for Monica so two dev mains cannot clobber workbench-dev repos', () => {
     expect(
       shouldSkipSingleInstanceLock({
         isDev: true,
         isServeMode: false,
-        env: { ORCA_PRODUCT_NAME: 'Workbench' }
+        env: { ORCA_PRODUCT_NAME: 'Monica' }
       })
     ).toBe(false)
     expect(
       shouldSkipSingleInstanceLock({
         isDev: true,
         isServeMode: false,
-        env: { WORKBENCH_SHELL: '1' }
+        env: { MONICA_SHELL: '1' }
       })
     ).toBe(false)
   })
