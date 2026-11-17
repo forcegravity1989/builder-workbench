@@ -1,10 +1,10 @@
 import { defineConfig } from '@stablyai/playwright-test'
 
 /**
- * Playwright config for the Workbench Electron smoke test.
+ * Playwright config for the Monica Electron smoke test.
  *
  * Run:
- *   pnpm run test:e2e:workbench    — build + run the Workbench smoke test (headless)
+ *   pnpm run test:e2e:monica    — build + run the Monica smoke test (headless)
  *   pnpm run test:e2e:headful      — run with visible window (for pointer-capture tests)
  *   SKIP_BUILD=1 pnpm run test:e2e — skip rebuild (faster iteration)
  *
@@ -42,22 +42,22 @@ export default defineConfig({
   projects: [
     {
       name: 'electron-headless',
-      // The Workbench lane owns the cycle and project configuration journeys. Legacy Orca
+      // The Monica lane owns the cycle and project configuration journeys. Legacy Orca
       // specs remain in the tree for source compatibility, but are not part of
       // the current CI entrypoint.
-      testMatch: 'workbench-cycle-smoke.spec.ts',
+      testMatch: 'monica-cycle-smoke.spec.ts',
       grepInvert: /@headful/,
       metadata: {
-        workbenchHeadful: false
+        monicaHeadful: false
       }
     },
     {
       name: 'electron-headful',
-      // Keep manual headful verification on the same Workbench smoke journey;
+      // Keep manual headful verification on the same Monica smoke journey;
       // restored legacy Orca specs are source-only compatibility material.
-      testMatch: 'workbench-cycle-smoke.spec.ts',
+      testMatch: 'monica-cycle-smoke.spec.ts',
       metadata: {
-        workbenchHeadful: true
+        monicaHeadful: true
       }
     }
   ]

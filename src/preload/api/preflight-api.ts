@@ -9,12 +9,12 @@ export type PreflightStatus = {
   gh: { installed: boolean; authenticated: boolean }
   /** Optional — older preload payloads predating GitLab support omit it; consumers gate on `glab?.installed`. */
   glab?: { installed: boolean; authenticated: boolean }
-  /** Optional like glab — older payloads predate the auth readback (BW #323). */
+  /** Optional like glab — older payloads predate the auth readback (Monica #323). */
   codehub?: { installed: boolean; authenticated: boolean }
-  /** Optional — BW #323: welink-cli presence + auth from `welink-cli auth status`.
-   *  wslDistro (BW #553): WSL distro the CLI was probed on, absent for local installs. */
+  /** Optional — Monica #323: welink-cli presence + auth from `welink-cli auth status`.
+   *  wslDistro (Monica #553): WSL distro the CLI was probed on, absent for local installs. */
   welink?: { installed: boolean; authenticated: boolean; wslDistro?: string }
-  /** Optional — BW #366: cloudbuild's cb presence + auth from `cb auth status`. */
+  /** Optional — Monica #366: cloudbuild's cb presence + auth from `cb auth status`. */
   cloudbuild?: { installed: boolean; authenticated: boolean }
   bitbucket?: { configured: boolean; authenticated: boolean; account: string | null }
   azureDevOps?: {

@@ -15,7 +15,7 @@ afterEach(async () => {
 })
 
 it('finishes the pinned GitHub package when its feed retires during transfer', async () => {
-  const cacheDir = await mkdtemp(join(tmpdir(), 'workbench-feed-'))
+  const cacheDir = await mkdtemp(join(tmpdir(), 'monica-feed-'))
   cleanup.push(() => rm(cacheDir, { recursive: true, force: true }))
   const bytes = Buffer.from('an installer payload')
   const paths: string[] = []
