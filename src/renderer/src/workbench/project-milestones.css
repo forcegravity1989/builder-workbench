@@ -57,17 +57,22 @@
   border-bottom: 1px solid var(--border);
   background: var(--card);
 }
-.wb-ml-roadmap > .wb-ml-label {
+.wb-ml-roadmap > .wb-ml-label,
+.wb-ml-version-row > .wb-ml-label {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 4px;
   font-size: 12px;
 }
-.wb-ml-label .wb-ml-cell-add {
-  position: absolute;
-  right: 5px;
-  top: 4px;
+.wb-ml-roadmap > .wb-ml-label {
+  gap: 4px;
+}
+.wb-ml-label-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
 }
 .wb-ml-node-axis {
   position: relative;
@@ -210,7 +215,6 @@
 }
 .wb-ml-version-row .wb-ml-label {
   color: var(--muted-foreground);
-  font-size: 12px;
 }
 .wb-ml-window {
   position: absolute;

@@ -579,8 +579,11 @@ import {
 } from '../workbench/package-pipeline'
 import { ReviewRequestSchema } from '../workbench/pr-review-request'
 import {
+  MilestoneDiscardRequestSchema,
   MilestoneReadRequestSchema,
-  MilestoneSubmitRequestSchema
+  MilestoneSaveRequestSchema,
+  MilestoneSubmitRequestSchema,
+  MilestoneWorkingRequestSchema
 } from '../workbench/project-milestones'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
 import { WorkbenchGroupRemoval, WorkbenchRepoRemoval } from '../workbench/repo-removal'
@@ -591,6 +594,7 @@ import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
   VersionHistoryReadSchema,
+  VersionPlanEntryTimesSchema,
   VersionTreePlansSchema
 } from '../workbench/version-history'
 import {
@@ -1233,6 +1237,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.submit': CharterSubmitRequestSchema,
   'workbench.fixedWorkspace.ensure': FixedWorkspaceEnsureSchema,
   'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.listPlanEntryTimes': VersionPlanEntryTimesSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
@@ -1247,8 +1252,11 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.milestones.discard': MilestoneDiscardRequestSchema,
   'workbench.milestones.read': MilestoneReadRequestSchema,
+  'workbench.milestones.save': MilestoneSaveRequestSchema,
   'workbench.milestones.submit': MilestoneSubmitRequestSchema,
+  'workbench.milestones.working': MilestoneWorkingRequestSchema,
   'workbench.overview.pull': WorkflowCommentsRequestSchema,
   'workbench.package.download': PackageDownloadSchema,
   'workbench.package.latest': PackageLatestSchema,

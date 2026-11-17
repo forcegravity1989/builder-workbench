@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { useState } from 'react'
-import { Flag, X } from 'lucide-react'
+import { createLucideIcon, Flag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -16,6 +16,10 @@ import {
 } from './use-milestone-gesture'
 
 const civilDate = z.iso.date()
+const FlagPlus = createLucideIcon('flag-plus', [
+  ['path', { d: 'M3.5 21V4.7 M3.5 5c5.1-4.1 8.6 4 14 0v8.3c-5.5 4-8.9-4.1-14 0', key: 'flag' }],
+  ['path', { d: 'M15.5 19h7 M19 15.5v7', key: 'plus' }]
+])
 
 type Actions = {
   enabled: boolean
@@ -182,21 +186,23 @@ export function MilestoneNavigation({
   return (
     <div className="wb-ml-roadmap" style={{ width: width + labelWidth }} aria-label="关键里程碑">
       <div className="wb-ml-label">
-        <strong>关键里程碑</strong>
+        <div className="wb-ml-label-title">
+          <strong>关键里程碑</strong>
+          {actions.enabled && (
+            <MilestoneIconButton
+              className="wb-ml-cell-add"
+              label="添加里程碑"
+              data-contextual-tour-target="milestone-start"
+              onClick={() => {
+                setNewDate(visibleDate())
+                setOutcome('')
+              }}
+            >
+              <FlagPlus className="size-4" aria-hidden="true" />
+            </MilestoneIconButton>
+          )}
+        </div>
         {groups.has('') && <NodeGroup nodes={groups.get('')!} {...actions} />}
-        {actions.enabled && (
-          <MilestoneIconButton
-            className="wb-ml-cell-add"
-            label="添加里程碑"
-            data-contextual-tour-target="milestone-start"
-            onClick={() => {
-              setNewDate(visibleDate())
-              setOutcome('')
-            }}
-          >
-            <Flag size={16} />
-          </MilestoneIconButton>
-        )}
       </div>
       <div className="wb-ml-node-axis" style={{ width }}>
         {dates.map((date, i) => {

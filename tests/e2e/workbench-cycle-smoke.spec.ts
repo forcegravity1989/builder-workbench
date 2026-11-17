@@ -271,7 +271,7 @@ test.describe('BW first-run project handoff', () => {
     await workbenchPage.screenshot({
       path: testInfo.outputPath('bw-getting-started-optional-reports.png')
     })
-    await gettingStarted.getByRole('button', { name: /^(Close|关闭)$/ }).click()
+    await gettingStarted.getByRole('button', { name: /^(Close setup guide|关闭入门)$/ }).click()
     await expect(gettingStarted).toBeHidden()
 
     await workbenchPage
@@ -377,9 +377,9 @@ fixedWorkspaceTest(
 isolatedProjectTest(
   'BW milestones: real editing, pointer drag, source return and safe submit failure @headful',
   async ({ workbenchPage, seededRepoPath, electronApp }, testInfo) => {
-    test.setTimeout(300_000)
-    await verifyMilestones(workbenchPage, seededRepoPath, testInfo)
-    await verifyMilestoneRestart(electronApp, testInfo)
+    test.setTimeout(600_000)
+    const material = await verifyMilestones(workbenchPage, seededRepoPath, testInfo)
+    await verifyMilestoneRestart(electronApp, testInfo, material)
   }
 )
 

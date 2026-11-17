@@ -21,6 +21,14 @@ export function historyErrorCode(reason: unknown): string | null {
 
 export function nativeVersionHistoryPort(runtimeOwnerEnvironmentId?: string): VersionHistoryPort {
   return {
+    listPlanEntryTimes({ scope, baselineCommit }) {
+      return callMetricRuntime<Record<string, number>>(
+        scope,
+        runtimeOwnerEnvironmentId,
+        'workbench.history.listPlanEntryTimes',
+        (ownerScope) => ({ scope: ownerScope, baselineCommit })
+      )
+    },
     list(input) {
       const request = VersionHistoryListSchema.parse(input)
       return callMetricRuntime<VersionHistoryCatalog>(

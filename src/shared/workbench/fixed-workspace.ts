@@ -1,11 +1,7 @@
 import { z } from 'zod'
 import type { Worktree } from '../worktree/types'
 import { Id, MaterialVersion } from './version-material-common'
-import {
-  legacyFlowBranch,
-  versionFlowBranch,
-  versionFlowTreeName
-} from './version-workspace-prepare'
+import { versionFlowBranch, versionFlowTreeName } from './version-workspace-prepare'
 
 export const FixedWorkspaceEnsureSchema = z
   .strictObject({
@@ -18,6 +14,8 @@ export const FixedWorkspaceEnsureSchema = z
   .superRefine((request, ctx) => {
     if (request.version && (request.kind === 'project' || request.kind === 'metrics')) {
       ctx.addIssue({ code: 'custom', message: 'Project and metrics workspaces have no version' })
+    } else if (!request.version && (request.kind === 'plan' || request.kind === 'acceptance')) {
+      ctx.addIssue({ code: 'custom', message: 'Plan and acceptance workspaces require a version' })
     }
   })
 
@@ -40,10 +38,7 @@ export function fixedWorkspaceDefinition(
     }
     return { branch, name: versionFlowTreeName(request.version, request.kind) }
   }
-  return {
-    branch: legacyFlowBranch(request.kind),
-    name: request.kind === 'plan' ? 'week-plan' : 'week-acceptance'
-  }
+  throw new Error('计划和验收工作区必须指定版本')
 }
 
 export function fixedWorkspaceRequestForBranch(
@@ -54,12 +49,6 @@ export function fixedWorkspaceRequestForBranch(
   }
   if (branch === 'bw/metrics-refresh') {
     return { kind: 'metrics' }
-  }
-  if (branch === legacyFlowBranch('plan')) {
-    return { kind: 'plan' }
-  }
-  if (branch === legacyFlowBranch('acceptance')) {
-    return { kind: 'acceptance' }
   }
   const match = /^bw\/([^/]+)\/(plan|acceptance)$/.exec(branch)
   if (match) {
