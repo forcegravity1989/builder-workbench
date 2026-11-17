@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import type { Repo } from '../../../shared/repo-types'
 import { resolveProjectSource } from './project-source-resolution'
-import { useProjectVersionCatalog } from './project-version-catalog'
+import { useProjectVersionCatalog, versionCatalogErrors } from './project-version-catalog'
 import { compareVersionDisplayOrder } from '../../../shared/workbench/version-catalog'
 import { readWallReadings } from './wall-readings-load'
 import type { WallCardReadings } from './wall-card-readings'
@@ -76,7 +76,7 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
     // The key includes catalog content; row reference churn must not refetch provider facts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
-  const reason = project.errors[0]
+  const reason = catalog ? versionCatalogErrors(catalog)[0] : project.sourceProblems[0]?.errors[0]
   const readings: WallCardReadings =
     repo.kind === 'folder'
       ? { kind: 'empty' }
@@ -101,7 +101,7 @@ export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRe
     refreshing:
       !!source &&
       source.kind !== 'folder' &&
-      (project.loading || (!!catalog && result?.key !== key)),
+      (catalog ? catalog.loading || result?.key !== key : project.loading),
     failed: !!reason || readings.kind === 'unknown'
   }
 }

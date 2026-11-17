@@ -15,6 +15,21 @@ import {
 } from './project-version-catalog-merge'
 type Reader = { repo: Repo; key: string }
 
+export function versionCatalogErrors(state: VersionCatalogState | null | undefined): string[] {
+  if (!state) {
+    return []
+  }
+  return [
+    ...new Set(
+      [
+        state.error,
+        state.materialError,
+        ...(state.catalog?.problems.map(({ message }) => message) ?? [])
+      ].filter((message): message is string => Boolean(message))
+    )
+  ]
+}
+
 function CatalogReader({
   reader,
   revision,
@@ -115,13 +130,21 @@ export function useProjectVersionCatalog(
     worktrees,
     repoIds: readers.map(({ repo }) => repo.id),
     loading: readers.length > sources.length || sources.some(({ state }) => state.loading),
-    errors: sources.flatMap(({ state }) =>
-      [
-        state.error,
-        state.materialError,
-        ...(state.catalog?.problems.map(({ message }) => message) ?? [])
-      ].filter((message): message is string => Boolean(message))
-    ),
-    reload: () => sources.forEach(({ state }) => state.reload())
+    worktreeInventoryReady:
+      readers.length === sources.length &&
+      sources.every(({ state }) => state.worktreeInventoryReady),
+    sourceProblems: sources.flatMap(({ repo, state }) => {
+      const errors = versionCatalogErrors(state)
+      return errors.length
+        ? [
+            {
+              key: versionCatalogSourceKey([repo]),
+              hostId: getRepoExecutionHostId(repo),
+              errors,
+              retry: state.reload
+            }
+          ]
+        : []
+    })
   }
 }

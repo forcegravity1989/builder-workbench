@@ -3,7 +3,7 @@ import { versionMaterialSelection, versionTreeKey } from './version-material-sel
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
 import type { Worktree } from '../../../shared/worktree/types'
-import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
+import { notifyWorkbenchError } from './error-feedback'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CircleHelp, Layers, Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -20,9 +20,11 @@ import {
 import { useProjectVersionCatalog } from './project-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
 import {
+  chooseVersionSourceWorkspace,
   initializeVersionWorkspace,
   navigateVersionWorkflow,
   openVersionTasks,
+  openVersionTasksFromWorkspace,
   startVersionGoal
 } from './version-nav-actions'
 import { VersionCleanupDialog } from './version-cleanup-dialog'
@@ -40,7 +42,7 @@ import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import { VersionTreeDisplayProvider, type VersionTreeDisplayInput } from './VersionNativeTrees'
-import { isVersionHostDisconnected } from './version-worktree-host'
+import { VersionCatalogSourceProblem } from './VersionCatalogSourceProblem'
 import {
   consumeVersionSidebarFocus,
   publishVersionSidebarProjection,
@@ -126,7 +128,7 @@ export function WorkbenchVersionNav({
   const project = useProjectVersionCatalog(repo, undefined, preference)
   const catalog = project.primary
   const materialReady = catalog?.materialReady ?? false
-  const problem = [...new Set(project.errors)].join('\n')
+  const hasSourceProblems = project.sourceProblems.length > 0
   const overviewVersion =
     activeView === 'activity' &&
     projectPage?.kind === 'version-overview' &&
@@ -211,7 +213,7 @@ export function WorkbenchVersionNav({
     if (
       !focusRequest ||
       focusRequest.repoId !== repoId ||
-      (!entries.some((entry) => entry.state === 'working') && !materialReady && !problem)
+      (!entries.some((entry) => entry.state === 'working') && !materialReady && !hasSourceProblems)
     ) {
       return
     }
@@ -235,7 +237,7 @@ export function WorkbenchVersionNav({
     focusRequest,
     repoId,
     materialReady,
-    problem,
+    hasSourceProblems,
     entries,
     expandedVersions,
     setExpandedOverrideAndStore
@@ -319,18 +321,14 @@ export function WorkbenchVersionNav({
         return
       }
       if (!source) {
-        const candidates = (['plan', 'acceptance'] as const)
-          .flatMap((workflow) =>
-            findVersionFlowWorktrees(project.worktrees, { version: entry.version, workflow })
-          )
-          .filter((tree) => !isVersionHostDisconnected(tree))
-        if (candidates.length) {
-          openWorkbenchWorkspaceChoice({
-            title: `${entry.version} · 选择总览的工作区`,
-            candidates,
+        if (
+          !chooseVersionSourceWorkspace({
+            purpose: 'overview',
+            version: entry.version,
+            worktrees: project.worktrees,
             onChoose: openOverviewFromTree
           })
-        } else {
+        ) {
           toast.error('该版本的材料来源尚未就绪，请检查主机连接。')
         }
         return
@@ -407,7 +405,9 @@ export function WorkbenchVersionNav({
               if (versionCatalog && sourceReady) {
                 await initializeVersionWorkspace({
                   catalog: versionCatalog,
-                  version: entry.version
+                  version: entry.version,
+                  knownWorktrees: project.worktrees,
+                  worktreeInventoryReady: project.worktreeInventoryReady
                 })
               }
             })
@@ -421,9 +421,26 @@ export function WorkbenchVersionNav({
                   goal: goal ?? null,
                   entry
                 })
-              } else {
-                toast.error('该版本的材料来源尚未就绪。请先打开此版本的工作区，或检查主机连接。')
+                return
               }
+              if (
+                !goal &&
+                chooseVersionSourceWorkspace({
+                  purpose: 'tasks',
+                  version: entry.version,
+                  worktrees: project.worktrees,
+                  onChoose: (tree) => {
+                    try {
+                      openVersionTasksFromWorkspace(tree, entry.version)
+                    } catch (error) {
+                      notifyWorkbenchError('无法打开版本任务', error, '刷新登记后重新选择工作区。')
+                    }
+                  }
+                })
+              ) {
+                return
+              }
+              toast.error('该版本的材料来源尚未就绪。打开此版本的工作区，或检查主机连接。')
             })
           }
           onStartGoal={(goal) =>
@@ -485,18 +502,13 @@ export function WorkbenchVersionNav({
         版本
       </WorkbenchSidebarSectionHeader>
 
-      {problem ? (
-        <div className="px-2 py-1 text-[11px] text-destructive">
-          <ErrorDetails summary="版本目录读取失败 · 查看详情" detail={problem} />
-          <button type="button" className="underline" onClick={project.reload}>
-            重试
-          </button>
-        </div>
-      ) : null}
-      {!problem && project.loading && entries.length === 0 ? (
+      {project.sourceProblems.map(({ key, ...problem }) => (
+        <VersionCatalogSourceProblem key={key} {...problem} />
+      ))}
+      {!hasSourceProblems && project.loading && entries.length === 0 ? (
         <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">版本目录读取中…</p>
       ) : null}
-      {!problem && !project.loading && entries.length === 0 ? (
+      {!hasSourceProblems && !project.loading && entries.length === 0 ? (
         <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">
           暂无版本 · 保存版本计划或从「＋ 新建版本」开始
         </p>

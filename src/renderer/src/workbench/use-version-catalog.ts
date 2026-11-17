@@ -38,6 +38,7 @@ export type VersionCatalogState = {
   planTrees: VersionCatalogPlanTree[]
   catalog: VersionCatalogLoad | null
   loading: boolean
+  worktreeInventoryReady: boolean
   error: string | null
   /** Bound trees can be visible before the committed material catalog is known. */
   materialReady: boolean
@@ -207,6 +208,7 @@ export function useVersionCatalogForRepo(
       planTrees,
       catalog,
       loading,
+      worktreeInventoryReady: sources.length > 0 && !discovery.loading && !discovery.error,
       error:
         error ??
         (!loading && !catalog.entries.length
@@ -224,6 +226,9 @@ export function useVersionCatalogForRepo(
       planTrees,
       catalog,
       loading,
+      sources.length,
+      discovery.loading,
+      discovery.error,
       error,
       historyReady,
       materialError,
