@@ -405,7 +405,7 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks', 
   expect(current.problems).toEqual([])
   const entryTimes = await port.listPlanEntryTimes({ scope, baselineCommit: adoptedCommit })
   expect(entryTimes.v1).toBe(
-    Date.parse(git(['show', '-s', '--format=%cI', firstCommit]).toString())
+    Date.parse(git(['show', '-s', '--format=%cI', firstCommit]).toString().trim())
   )
   await expect(port.listPlanEntryTimes({ scope, baselineCommit: firstCommit })).resolves.toEqual({})
 })
