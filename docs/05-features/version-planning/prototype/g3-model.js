@@ -1,4 +1,4 @@
-import { resolveMemberGoalId } from '../../../../src/shared/workbench/version-membership'
+import { resolveMemberGoalId } from '../../../../src/shared/monica/version-membership'
 import snapshot from './g3-snapshot.json'
 export { snapshot }
 export const g2Url = '../version-workspace/version-workspace-prototype.html'
@@ -19,17 +19,18 @@ export const meetingDirectives = snapshot.priorAcceptance.meetingDirectives || [
 // 实时参考行独立读回上版快照 Issue 的当前状态（gh / git，异步、可重试），
 // 只陈述 open 事实，不冒充人工确认的延期结论。演示数据为 v0.6 快照真实 4 条。
 export const priorLiveOpen = [
-  { number: 331, title: '【v0.6|G1】BW 自身 E2E 用户旅程用例缺失' },
+  { number: 331, title: '【v0.6|G1】Monica 自身 E2E 用户旅程用例缺失' },
   { number: 332, title: '【v0.6|G1】release skill 未落地步骤脚本化 + 版本描述规范 + 验收报告' },
   {
     number: 339,
-    title: '【v0.6|G1】工程能力在 BW 落地：使能项目/builders 工程化能力（intent/spec/原型/开发）'
+    title:
+      '【v0.6|G1】工程能力在 Monica 落地：使能项目/builders 工程化能力（intent/spec/原型/开发）'
   },
   { number: 341, title: '【v0.6|G2】帮 builders 梳理特性与核心指标：统一一版并录入真实数据' }
 ]
 // 发送弹窗演示数据：对齐 Orca 原生发送菜单（ReviewNotesSendMenuContent）——
 // 「发送至」运行中会话列表（状态点 + 名称，不可用行显示原因）+「新建智能体」
-// 快捷启动（会话就绪后自动递交指令）。指令预览区是 BW 包装层在原生菜单上加的。
+// 快捷启动（会话就绪后自动递交指令）。指令预览区是 Monica 包装层在原生菜单上加的。
 export const sendTargets = [
   { id: 'plan', name: '计划会话 · Claude', state: '运行中', stateKind: 'ok', eligible: true },
   { id: 'codex', name: 'Codex 后台会话', state: '需要授权', stateKind: 'warn', eligible: false }

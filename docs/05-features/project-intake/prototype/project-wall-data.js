@@ -80,7 +80,7 @@
   W.fixtures = () => [
     {
       id: 'bw',
-      name: 'Builder Workbench',
+      name: 'Monica',
       builder: '张悦',
       brief: '把项目计划、开发与验收放在同一条旅程里。',
       benchmark: '团队现有研发工作台',

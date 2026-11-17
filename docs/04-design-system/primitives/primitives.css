@@ -1,4 +1,4 @@
-/* Workbench — static renditions of the Orca primitives in src/renderer/src/components/ui/*, for previews and prototypes.
+/* Monica — static renditions of the Orca primitives in src/renderer/src/components/ui/*, for previews and prototypes.
    Each rule translates the primitive's Tailwind classes 1:1 and targets the same
    data-slot / data-variant / data-size / data-state attributes the React
    components render, so markup copied from the app styles the same way.

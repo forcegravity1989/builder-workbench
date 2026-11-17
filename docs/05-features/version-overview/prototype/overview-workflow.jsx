@@ -1,9 +1,9 @@
 import { snapshot, repository, formatTime } from './overview-data.js'
-import { readWorkflowComment } from '../../../../src/shared/workbench/workflow-report'
+import { readWorkflowComment } from '../../../../src/shared/monica/workflow-report'
 import {
   summarizeWorkflow,
   workflowMetricDisplay
-} from '../../../../src/renderer/src/workbench/version-overview/workflow-evidence'
+} from '../../../../src/renderer/src/monica/version-overview/workflow-evidence'
 import { HintButton } from './overview-components.jsx'
 // eslint-disable-next-line no-unused-vars
 const { React, useState } = window.BWPrototypeDependencies
@@ -36,7 +36,7 @@ export function WorkflowProductivity({ plan, unplanned }) {
     setNotice('')
     try {
       // Static preview rereads its captured source, not a pretend provider response.
-      const response = await fetch(new URL('prototype/bw-snapshot.json', location.href), {
+      const response = await fetch(new URL('prototype/monica-snapshot.json', location.href), {
         cache: 'no-store'
       })
       if (!response.ok) {

@@ -129,7 +129,7 @@ export function SourcePanel() {
   return (
     <>
       <p>
-        原型注释: 本稿使用 BW 自身的只读材料与 GitHub 快照，不是持续联网的数据接口。v0.8
+        原型注释: 本稿使用 Monica 自身的只读材料与 GitHub 快照，不是持续联网的数据接口。v0.8
         计划快照时间：
         {snapshot.source.checkedAt}。
       </p>
@@ -170,7 +170,8 @@ export function SourcePanel() {
         <dd>原型注释: v0.9 是未创建版本的布局示例，不是实际计划或新编号协议。</dd>
         <dt>工作会话</dt>
         <dd>
-          原型注释: Git 分支已核对；未读取 BW 宿主登记、会话、连接状态，不用 Git 数据推断运行事实。
+          原型注释: Git 分支已核对；未读取 Monica 宿主登记、会话、连接状态，不用 Git
+          数据推断运行事实。
         </dd>
         <dt>历史需求 / 任务</dt>
         <dd>

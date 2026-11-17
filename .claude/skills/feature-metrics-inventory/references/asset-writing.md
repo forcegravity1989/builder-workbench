@@ -4,7 +4,7 @@
 
 ## 落点总表
 
-| 盘点产出 | 被管项目落点 | BW 自身落点 | 界面可见性 |
+| 盘点产出 | 被管项目落点 | Monica 自身落点 | 界面可见性 |
 |---|---|---|---|
 | 名片 | `.bw/project.toml` 补空（固定分支 + PR 流，只补空不覆盖） | README / 原则 03 对照校准，不另写 | 总览项目卡（想做什么/对标/目标方向） |
 | 北极星 | `.bw/metrics.toml` `[north_star]`（可缺席） | 同左（现行有意缺席，不硬立） | 总览北极星卡（含「未配置」诚实态） |
@@ -33,7 +33,7 @@ schema、字段约束、脚本 stdout、窗口与 coverage 纪律全部以[指�
 
 - 默认单文件 `docs/features.md`，结构：头部维护约定（给谁看/管什么/何时更新）→ **一行主干**（特性按叙述顺序各一句话）→ 每特性一张卡（模板 [../assets/feature-card.md](../assets/feature-card.md)）→ **Not Now 清单与变更记录**（日期/改了什么/谁确认）。
 - 项目已有特性/路线文档时**就地对齐**（补旅程线与指标指针），不建第二份正本；落点选择记入 PR。
-- BW 自身不建 features.md：特性正本是 `docs/05-features/`，特性卡内容按其目录头部约定拆进对应特性的 intent/spec/STATUS。
+- Monica 自身不建 features.md：特性正本是 `docs/05-features/`，特性卡内容按其目录头部约定拆进对应特性的 intent/spec/STATUS。
 - 特性卡文档是人读正本，界面不消费——所以写给人看：人话、旅程一行箭头、指标附口径与来源指针；不堆实现细节。
 - 状态只用三值：active / completed（人确认 + 日期）/ canceled（原因 + 日期）；「有意搁置」进 Not Now 并可见，不静默删除（Linear 把 Canceled 做成一等状态的同款理由）。
 

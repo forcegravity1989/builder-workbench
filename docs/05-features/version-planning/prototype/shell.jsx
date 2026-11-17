@@ -18,7 +18,7 @@ function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
     <aside className="app-sidebar sidebar">
       <div className="brand">
         <span>B</span>
-        <strong>Builders’ Workbench</strong>
+        <strong>Monica</strong>
       </div>
       <nav aria-label="项目内导航">
         {[

@@ -93,12 +93,12 @@ test('baseline distinguishes content changes, removals, and incompatible rule ve
   assert.equal((await scanKnowledge({ ...f, baseline })).baseline.comparable, false)
 })
 
-test('BW profile classifies actual product, Orca and method files without restoring retired directories', async (t) => {
+test('Monica profile classifies actual product, Orca and method files without restoring retired directories', async (t) => {
   const f = await fixture(t)
-  const profile = fileURLToPath(new URL('../references/projects/bw-scan.json', import.meta.url))
+  const profile = fileURLToPath(new URL('../references/projects/monica-scan.json', import.meta.url))
   const paths = [
     'ref/README.md',
-    '.claude/skills/workbench-start/SKILL.md',
+    '.claude/skills/monica-start/SKILL.md',
     'standard/README.md',
     'docs/05-features/version-planning/spec.md'
   ]
@@ -112,7 +112,7 @@ test('BW profile classifies actual product, Orca and method files without restor
   assert.equal(result.files.find((x) => x.file === 'ref/README.md').type, 'Orca 工程参考')
   assert.equal(result.files.find((x) => x.file === 'AGENTS.md').scope, '本仓开发方法')
   assert.equal(result.files.find((x) => x.file === paths[1]).scope, '本仓开发方法')
-  assert.equal(result.files.find((x) => x.file === paths[3]).scope, 'BW 产品知识')
+  assert.equal(result.files.find((x) => x.file === paths[3]).scope, 'Monica 产品知识')
   assert.ok(!result.files.some((x) => x.file.startsWith('standard/')))
   assert.equal(result.errors.length, 0)
   assert.ok(result.skipped.some((x) => x.reason === 'selected-path-missing'))

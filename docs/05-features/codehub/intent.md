@@ -6,7 +6,7 @@
 
 ## 用户与问题
 
-被管项目的 Builder，仓库远程是 CodeHub（例如 `codehub-g.huawei.com`），本机有 `codehub-cli`。他要在 Workbench 里看 Issue 和 MR、处理关闭和评论，并在计划 / 验收里读回这些任务、选择已在主干基线上的版本。
+被管项目的 Builder，仓库远程是 CodeHub（例如 `codehub-g.huawei.com`），本机有 `codehub-cli`。他要在 Monica 里看 Issue 和 MR、处理关闭和评论，并在计划 / 验收里读回这些任务、选择已在主干基线上的版本。
 
 只接 GitHub 时，这类仓库进不了任务列表，归档还会去找 GitHub 的合入记录。找不到时，界面无法区分「还没归档」和「这个平台根本给不出合入证据」。
 

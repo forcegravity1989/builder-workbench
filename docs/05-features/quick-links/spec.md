@@ -18,7 +18,7 @@
 1. Builder 在底部状态栏右端看到「常用链接」入口（图标 + 条目数），点它弹出面板（与端口入口并列同构；点端口入口则切换到端口面板，二者互斥）。
 2. 面板头点「添加」，弹出表单：填名称 + 地址。
 3. 保存。地址通过校验后新条目出现在列表中；条目数 +1（状态栏入口与面板头同步更新）。
-4. 直接点击该行，在 BW 内置浏览器打开该地址（带修饰键转系统浏览器，与端口行一致）。
+4. 直接点击该行，在 Monica 内置浏览器打开该地址（带修饰键转系统浏览器，与端口行一致）。
 5. 切到另一个项目，看到的是那个项目的链接；切回本项目，原链接仍在。杀进程重开后仍能读回。
 
 **分支**：
@@ -89,10 +89,10 @@
 - *右栏子分区 / 新开一级导航 / 独立窗口*——均放弃。2026-11-13 人评审改为**与端口同构的状态栏入口 + popover 面板**：入口形态、面板尺寸与行结构都对齐 `PortsStatusSegment`，与端口入口并列，最贴合「端口之外补一个常用链接」的直觉。
 - *星标置顶 / 搜索框 / 分区折叠*——随「与端口同构」一并放弃（端口 popover 无这些）。若后续确有需要再单列确认。
 
-**成本 / 风险**：状态栏入口相关（`StatusBarSurface`、`StatusBarItem` 枚举）属上游 Orca 文件，改动需按 [design.md](design.md) 只做最小挂载 + 枚举登记（BW 自有组件优先，减少上游冲突面）；项目级持久化**复用既有 `window.api.fs` 桥**读写 `.bw/quick-links.json`，不新增主进程 IPC。
+**成本 / 风险**：状态栏入口相关（`StatusBarSurface`、`StatusBarItem` 枚举）属上游 Orca 文件，改动需按 [design.md](design.md) 只做最小挂载 + 枚举登记（Monica 自有组件优先，减少上游冲突面）；项目级持久化**复用既有 `window.api.fs` 桥**读写 `.bw/quick-links.json`，不新增主进程 IPC。
 
-**待决**：见 [intent 待决](intent.md#成功判据与待决问题)——持久化落点与格式、「项目」口径（BW 项目 vs repoId）、是否导入 web-manager 既有数据。面板交互已按「与端口同构」收敛（无星标/搜索/折叠），如需再加再单列。
+**待决**：见 [intent 待决](intent.md#成功判据与待决问题)——持久化落点与格式、「项目」口径（Monica 项目 vs repoId）、是否导入 web-manager 既有数据。面板交互已按「与端口同构」收敛（无星标/搜索/折叠），如需再加再单列。
 
 ## 实现落点建议（非实现设计）
 
-详见 [design.md](design.md)。核心：在 `StatusBarSurface` 与 `PortsStatusSegment` 并列处挂一个 BW 自有 `QuickLinksStatusSegment`（图标 + 计数 → popover 面板，与端口同构），并在状态栏可见项里登记新的 `StatusBarItem`；打开复用 `createBrowserTab` + 修饰键系统浏览器分支；持久化复用既有 `window.api.fs` 桥读写项目级 `.bw/quick-links.json`。原型 [prototype.html](prototype.html) 为纯前端演示假体。
+详见 [design.md](design.md)。核心：在 `StatusBarSurface` 与 `PortsStatusSegment` 并列处挂一个 Monica 自有 `QuickLinksStatusSegment`（图标 + 计数 → popover 面板，与端口同构），并在状态栏可见项里登记新的 `StatusBarItem`；打开复用 `createBrowserTab` + 修饰键系统浏览器分支；持久化复用既有 `window.api.fs` 桥读写项目级 `.bw/quick-links.json`。原型 [prototype.html](prototype.html) 为纯前端演示假体。

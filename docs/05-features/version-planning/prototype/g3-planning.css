@@ -1,6 +1,6 @@
-/* G3 candidate; shared typography, colors and radii come from the BW design system.
-   原型本地强调色 = BW claude 皮肤主色（设计系统 tokens 的 --color-accent 映射 Orca
-   中性 primary，不是 BW 赭色），角标 / 动作按钮 / 实时读回统一用它，深浅两主题给对比值。 */
+/* G3 candidate; shared typography, colors and radii come from the Monica design system.
+   原型本地强调色 = Monica claude 皮肤主色（设计系统 tokens 的 --color-accent 映射 Orca
+   中性 primary，不是 Monica 赭色），角标 / 动作按钮 / 实时读回统一用它，深浅两主题给对比值。 */
 :root {
   --g3-accent: #d97757;
 }
@@ -1246,7 +1246,7 @@ textarea {
   box-shadow: 0 16px 40px rgb(0 0 0 / 0.18);
   padding: 12px;
 }
-/* 发送指令弹窗（2026-10-22 真机反馈轮）：三段式——指令预览（BW 包装层新增）、
+/* 发送指令弹窗（2026-10-22 真机反馈轮）：三段式——指令预览（Monica 包装层新增）、
    「发送至」运行中会话、「新建智能体」快捷启动；后两段对应 Orca 原生发送菜单。 */
 .g3-send-pop {
   position: fixed;

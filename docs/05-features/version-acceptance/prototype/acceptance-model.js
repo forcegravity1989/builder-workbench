@@ -32,8 +32,8 @@ export const EMPTY_MINUTES = {
   consensus: [],
   followups: []
 }
-// 出包区块演示数据¹:BW 自身 dogfood,GitHub 变体(bw-package workflow 产候选包)。
-export const PIPELINES = ['BW Package Windows']
+// 出包区块演示数据¹:Monica 自身 dogfood,GitHub 变体(monica-package workflow 产候选包)。
+export const PIPELINES = ['Monica Package Windows']
 export const LATEST_PACKAGE = {
   project: 'forcegravity1989/builder-workbench',
   version: '1.4.198-local.1792540262.f5ac309b226a',

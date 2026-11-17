@@ -1,10 +1,10 @@
-# BW 开发规范
+# Monica 开发规范
 
-> **读者与时机**：开发、测试和检视 BW 自身的模型与开发者；AGENTS 直接要求在相关开发与交付前完整读取，不依赖调用 workbench-start。
+> **读者与时机**：开发、测试和检视 Monica 自身的模型与开发者；AGENTS 直接要求在相关开发与交付前完整读取，不依赖调用 monica-start。
 >
-> **位置与职责**：本篇是 BW 自身测试用例、独立检视、验证证据和 PR 呈现的仓级规范正本，独立于任何 Skill，不向被管项目分发。硬约束与任务读取入口见 [AGENTS](../AGENTS.md)，特性决定与六环见 [原则 02](01-principles/02-working-backwards.md)；Skill 承载执行步骤，模板承载呈现骨架。
+> **位置与职责**：本篇是 Monica 自身测试用例、独立检视、验证证据和 PR 呈现的仓级规范正本，独立于任何 Skill，不向被管项目分发。硬约束与任务读取入口见 [AGENTS](../AGENTS.md)，特性决定与六环见 [原则 02](01-principles/02-working-backwards.md)；Skill 承载执行步骤，模板承载呈现骨架。
 >
-> **结构与维护**：按验收依据 → 测试 → 检视 → 运行证据 → PR 组织。相关规则或执行入口变化时更新正文，并同批核对 AGENTS、原则 02、workbench-start 与两个输出模板的引用；不保存任务流水、遗留事项或规则修订史。
+> **结构与维护**：按验收依据 → 测试 → 检视 → 运行证据 → PR 组织。相关规则或执行入口变化时更新正文，并同批核对 AGENTS、原则 02、monica-start 与两个输出模板的引用；不保存任务流水、遗留事项或规则修订史。
 
 目录：[验收依据](#验收依据) · [测试用例](#测试用例) · [独立检视](#独立检视) · [运行证据](#运行证据) · [PR 正文与主验证评论](#pr-正文与主验证评论)
 
@@ -34,7 +34,7 @@
 ### 数量控制与存量维护
 
 - **每特性每次交付新增单测默认 ≤10 例**；核心算法通常个位数，超出须在 PR 正文说明必要性，不把新增回归大坝当交付物。
-- **总量只减不增**：`pnpm run check:vitest-count-ratchet` 以 `config/vitest-count-baseline.txt` 约束 `src/main/workbench`、`src/relay/workbench`、`src/renderer/src/workbench`、`src/shared/workbench` 的执行例数。新增须在同一交付删除至少同数量的存量，并在主验证评论说明新增属于哪类看护、删了什么及理由；不能靠提高基线、skip 或注释静音腾配额，skip 仍占额度。
+- **总量只减不增**：`pnpm run check:vitest-count-ratchet` 以 `config/vitest-count-baseline.txt` 约束 `src/main/monica`、`src/relay/monica`、`src/renderer/src/monica`、`src/shared/monica` 的执行例数。新增须在同一交付删除至少同数量的存量，并在主验证评论说明新增属于哪类看护、删了什么及理由；不能靠提高基线、skip 或注释静音腾配额，skip 仍占额度。
 - 已有合规单测随改维护；特性大改时同批盘点、合并重复、删除失效用例。删除依据是看护价值，不能为凑配额删除有效看护。
 - 三个单位分开：存量按**模块/测试文件**盘点，单例按**正负面清单**取舍，新增配额按**每特性每次交付**计算。特性不是存量归属边界，不要求另建尚无明确义务的测试特性归属清单。
 - 单测是核心能力的秒级回归看护，不追覆盖率；全量套件应保持开发机分钟级跑完。验收点与旅程的初期控量、注册和真实执行要求仍按原则 02 环 5–6。
@@ -86,7 +86,7 @@
 
 优先复用用户指定的稳定 dev 实例、已有项目和有效数据，先核对源码、实例归属与数据；首次初始化、破坏性操作或必须隔离时才用一次性 fixture。环境稳定不代表代码有效：改后确认新代码已加载，切换源码保留验证 profile 与数据。
 
-需要准备环境或发布截图时，完整读取 [验证执行参考](../.claude/skills/workbench-start/references/verification.md)；Windows Codex 的真壳操作由该参考指向宿主说明。
+需要准备环境或发布截图时，完整读取 [验证执行参考](../.claude/skills/monica-start/references/verification.md)；Windows Codex 的真壳操作由该参考指向宿主说明。
 
 按 AGENTS 与受影响用例执行实际门禁，复用当前 `tests/e2e/`、`tests/playwright.config.ts`、Vitest 和 PR workflow，不复制其他分支命令。界面/行为改动主动真壳取证；纯文档只报文档检查，不强启真壳。
 
@@ -98,7 +98,7 @@
 
 截图推到永不合入的 `shots/<分支名>`，图片内嵌使用 `https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg` 钉 SHA；不使用 `raw.githubusercontent` 或带斜杠分支名的图片地址。大改的改前/改后对照仍归所属特性 `docs/05-features/<id>/shots/`。
 
-发布步骤见[验证执行参考](../.claude/skills/workbench-start/references/verification.md#截图发布与读回)。推后读回远端图片内容，评论写后检查实际渲染能否加载；推送或评论成功不等于证据可读。
+发布步骤见[验证执行参考](../.claude/skills/monica-start/references/verification.md#截图发布与读回)。推后读回远端图片内容，评论写后检查实际渲染能否加载；推送或评论成功不等于证据可读。
 
 ## PR 正文与主验证评论
 
@@ -124,9 +124,9 @@
 |---|---|---|
 | 短正文 | 首行按上节关联 Issue（固定流程分支豁免），简述问题、最终变化、关键取舍、知识去向和未验范围，链接主验证评论；文档改动交代头部职责变化及授权、内容迁移/删除去向 | 随最终实现重写，不保留讨论流水；不用 Fixes / Closes 自动关闭 Issue |
 | 一条主验证评论 | 结论与证据版本，bug 前后或原型/spec 与实际对照，subagent 发现/处置/复核，真实验证及未验边界 | 补验、修复与 head 变化后原位更新，明确仍有效和重跑范围；命令、日志及额外截图折叠 |
-| workflow 指标评论 | 脚本生成的六项反馈指标、来源覆盖和方法版本 | 按 [真实任务反馈](../.claude/skills/workbench-start/references/workflow-feedback.md) 另行维护，不混入主验证评论 |
+| workflow 指标评论 | 脚本生成的六项反馈指标、来源覆盖和方法版本 | 按 [真实任务反馈](../.claude/skills/monica-start/references/workflow-feedback.md) 另行维护，不混入主验证评论 |
 
-正文按 [PR 模板](../.github/pull_request_template.md)，主验证评论按 [验证模板](../.claude/skills/workbench-start/assets/issue-verification.md) 裁剪。正文先让人知道最终改了什么，主评论先让人能判断结果；不把命令输出、重复方案和执行流水铺在顶部。
+正文按 [PR 模板](../.github/pull_request_template.md)，主验证评论按 [验证模板](../.claude/skills/monica-start/assets/issue-verification.md) 裁剪。正文先让人知道最终改了什么，主评论先让人能判断结果；不把命令输出、重复方案和执行流水铺在顶部。
 
 交付收尾完整读取上述真实任务反馈，从原始会话提取、标注并运行脚本，读回指标评论和 PR 标题；`[AI] ` 前缀的添加、移除及统计条件只按该正本维护。指标评论、验证评论、CI 与人审结论各自留证；不能以合入状态推断首次人审通过。
 

@@ -6,7 +6,7 @@
 
 | 能力 | 现成落点 | 本特性怎么用 |
 |---|---|---|
-| 状态栏入口与挂载 | `components/status-bar/StatusBarSurface.tsx`（`:255` 处与 `PortsStatusSegment` 并列挂载）、`use-status-bar-controller.ts`（`showPorts` 等可见项）、`StatusBarVisibilityMenu.tsx`（`toggleStatusBarItem`） | 在 `PortsStatusSegment` 旁挂 BW 自有 `QuickLinksStatusSegment`；在 `StatusBarItem` 枚举与可见项里登记新项（如 `quick-links`） |
+| 状态栏入口与挂载 | `components/status-bar/StatusBarSurface.tsx`（`:255` 处与 `PortsStatusSegment` 并列挂载）、`use-status-bar-controller.ts`（`showPorts` 等可见项）、`StatusBarVisibilityMenu.tsx`（`toggleStatusBarItem`） | 在 `PortsStatusSegment` 旁挂 Monica 自有 `QuickLinksStatusSegment`；在 `StatusBarItem` 枚举与可见项里登记新项（如 `quick-links`） |
 | 面板外壳与行结构 | `components/status-bar/PortsStatusSegment.tsx`（Popover 触发 + `PopoverContent side="top" align="end"` ~24rem、头 `icon+标题+计数`、体 `max-h` 滚动）、`ports-status-popover-rows.tsx`（行 `grid` + hover 动作簇 + 地址次行） | `QuickLinksStatusSegment` 直接照此结构：触发段（图标+计数）、popover 头、可滚动行区、分组头、行内 hover 动作（打开/复制/编辑/删除） |
 | 在内置浏览器打开 | `store` 的 `createBrowserTab(worktreeId, url, { activate: true })`；端口打开链 `lib/workspace-port-actions.ts` 的 `openWorkspacePortInBrowser` + `resolvePortOpenInOrcaBrowser`（`Shift+Ctrl`/`⇧⌘` → `window.api.shell.openUrl`） | 抽一个薄 `openQuickLinkInBrowser({ worktreeId, url, event })`：普通点击 `createBrowserTab`；修饰键走 `shell.openUrl`。**不新造浏览器通道** |
 | i18n | `translate(...)`，词条在 `en.json` 等 | 入口标题、按钮、空态、错误提示走 `translate`，其余语言回退英文 |
@@ -14,10 +14,10 @@
 
 ## 二、落点（已定：状态栏入口 + popover，与端口同构）
 
-- **入口**：新增 BW 自有 `QuickLinksStatusSegment`（图标 + 条目数），挂在 `StatusBarSurface` 里 `PortsStatusSegment` 相邻处（`:255` 附近），沿用其 `compact`/`iconOnly` 传参；点击弹出自己的 popover，`side="top" align="end" sideOffset={8}`、`w-[24rem]`，与端口面板互斥（同一时刻只开一个）。这是人 2026-11-13 评审确定的方案，取代先前「右栏子分区 / 独立窗口」。
+- **入口**：新增 Monica 自有 `QuickLinksStatusSegment`（图标 + 条目数），挂在 `StatusBarSurface` 里 `PortsStatusSegment` 相邻处（`:255` 附近），沿用其 `compact`/`iconOnly` 传参；点击弹出自己的 popover，`side="top" align="end" sideOffset={8}`、`w-[24rem]`，与端口面板互斥（同一时刻只开一个）。这是人 2026-11-13 评审确定的方案，取代先前「右栏子分区 / 独立窗口」。
 - **可见项**：在 `StatusBarItem` 枚举（`src/shared/ui-chrome-types.ts`、RPC 参数 `client-ui-params.ts`）与默认可见项、`StatusBarVisibilityMenu` 里登记新项，使其与端口一样可开关。
 - **面板内容**：参考 `ports-status-popover-rows`——分组头（项目名 + 计数）+ 链接行（名称主、地址次、点击整行在内置浏览器打开、hover 动作簇 复制/编辑/删除）+ 空态。产品界面内不写说明性注释文案。
-- **目录**：组件本体放 BW 自有目录（如 `src/renderer/src/workbench/quick-links/`），对上游文件的改动只在 `StatusBarSurface` 的一处最小挂载 + 枚举登记，降低上游同步冲突面，并在 [ref/upstream.md](../../../ref/upstream.md) 记差异。
+- **目录**：组件本体放 Monica 自有目录（如 `src/renderer/src/monica/quick-links/`），对上游文件的改动只在 `StatusBarSurface` 的一处最小挂载 + 枚举登记，降低上游同步冲突面，并在 [ref/upstream.md](../../../ref/upstream.md) 记差异。
 
 ## 三、数据与持久化（项目级，本地零业务数据库）
 

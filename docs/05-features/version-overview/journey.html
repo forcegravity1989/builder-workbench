@@ -12,7 +12,7 @@
       <header><span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html?rev=558-opt-in-2">打开高保真 ↗</a></header>
       <p class="eyebrow">原型注释: 本页是审阅指南，原型不作为生产运行证据</p>
       <h1>先看本版目标，按需开启过程统计。</h1>
-      <p class="lead">从 BW 原有侧边栏进入。SDLC 和 AI 生产力默认关闭，总览保留版本信息、目标、负责人、任务入口与人工验收，不显示统计占位。开启对应能力后，才显示原有特性历程或 AI workflow 生产力。</p>
+      <p class="lead">从 Monica 原有侧边栏进入。SDLC 和 AI 生产力默认关闭，总览保留版本信息、目标、负责人、任务入口与人工验收，不显示统计占位。开启对应能力后，才显示原有特性历程或 AI workflow 生产力。</p>
       <section class="intent"><h2>原型注释: #558 开关评审</h2><p>从侧栏「设置 → 实验性功能 → 按项目设置 → 版本总览统计」选择适用项目。下方单列 Orca 全局设置；项目的两个开关独立生效，作用范围为本机选定项目的所有版本，样式与入口复用 Orca。本原型不写真实设置、不采集远端数据，开启后仍为原固定快照。</p><nav><a href="prototype.html?scene=during&amp;sdlc=off&amp;ai=off">默认关闭 →</a><a href="prototype.html?scene=during&amp;sdlc=on&amp;ai=on">两项开启 →</a><a href="prototype.html?scene=during&amp;view=settings&amp;sdlc=off&amp;ai=off">实验设置 →</a></nav><p>下列阶段与生产力说明在对应开关开启后适用；本次不新增反复修改活动的统计模型。</p></section>
       <nav><a href="intent.md">意图 ↗</a><a href="spec.md">规格 ↗</a><span>原型注释: 使用 Orca 原生浏览器批注</span></nav>
       <section class="intent">
@@ -57,7 +57,7 @@
       </section>
       <section class="intent">
         <h2>读懂 AI workflow 生产力</h2>
-        <p>只统计本版目标内 Issue 的 PR 报告。小需求／bug 一个 Issue 对应一次开发交付和一份报告，新开发另开 Issue。六项指标口径沿 <a href="../../../.claude/skills/workbench-start/references/workflow-feedback.md">workbench-start 真实任务反馈</a>。</p>
+        <p>只统计本版目标内 Issue 的 PR 报告。小需求／bug 一个 Issue 对应一次开发交付和一份报告，新开发另开 Issue。六项指标口径沿 <a href="../../../.claude/skills/monica-start/references/workflow-feedback.md">monica-start 真实任务反馈</a>。</p>
         <p>主值如 1/4 表示四项有明确结论的任务中，一项有人介入；右上角 2 轮表示这些任务累计两轮。分母按每项指标自身的记录覆盖计算，有报告不代表六项都已有结论。开工额外输入只按任务计数；返工主值统计首次人审退回任务，右上角统计已完成返工轮次。</p>
         <p>首次进入后台读取，随后复用缓存；面板内刷新独立重读指标。失败保留同范围上次读数与截至时间，并显示错误。缺报告、待审或覆盖不足保持未知，PR 合入不能推出首次人审通过。</p>
         <p class="check">原型注释: <a href="https://github.com/forcegravity1989/builder-workbench/pull/505#issuecomment-6494691114" target="_blank" rel="noreferrer">PR #505 的单任务快照</a>用于展示读数。其 Issue #469 不在这份固定 v0.8 计划内，样例不计本版汇总；刷新仅重读原型快照。</p>

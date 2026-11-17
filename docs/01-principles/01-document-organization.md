@@ -19,10 +19,10 @@
 ├── CLAUDE.md          一行 @AGENTS.md 导入（入口件）
 └── CONTEXT.md         领域词表唯一正本（入口件）
 
-docs/（BW 产品知识与本仓开发规范；编号定序，architecture 是整体设计正本）
+docs/（Monica 产品知识与本仓开发规范；编号定序，architecture 是整体设计正本）
 ├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文
 ├── architecture.md    设计正本（Electron 叠层 + 模块设计；docs 内不编号）
-├── development.md     BW 自身测试、检视、验证证据与 PR 规范；独立于具体 Skill
+├── development.md     Monica 自身测试、检视、验证证据与 PR 规范；独立于具体 Skill
 ├── 02-adr/            架构决策的预留位置；存量已清空，后续按实际决策新增
 ├── 03-guide/          产品指南，按已验证的使用场景维护
 ├── 04-design-system/  视觉与交互规范：样式、token，以及引导与旅程覆盖规则
@@ -32,8 +32,8 @@ docs/（BW 产品知识与本仓开发规范；编号定序，architecture 是�
 ├── hifi/              八屏版式与旅程原型
 └── draft/             本地草稿/真实项目试用记录（不进仓）
 
-ref/                  按需引用的 Orca 工程参考，不替代 BW 产品知识
-.claude/skills/       BW 研发方法；standard/ 是给被管项目的执行规范
+ref/                  按需引用的 Orca 工程参考，不替代 Monica 产品知识
+.claude/skills/       Monica 研发方法；standard/ 是给被管项目的执行规范
 
 .teamai/               团队 harness 分发（skills / rules / hooks / MCP）——有则用之
 decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第二真相）
@@ -51,9 +51,9 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 | **docs/05-features/\<id\>/** | **特性级**要什么、规格（含原型）；STATUS 记录认可来源与当前验证边界 | 每个大特性/大改动一条；小修沿用所属特性 | 为小 bug 另立特性；产品总设计、词表、实现 plan、流水与遗留台账（遗留只进原生 Issue） |
 | **docs/06-module/** | 单个模块怎么实现的心智模型——设计面对的主要矛盾 / 取舍 | 模块新增或大改时补一篇 | 整体旅程与逻辑模块（在 architecture）；用户价值特性（在 05-features）；代码路径 / 数据字段 / 没建清单等实现细节 |
 | **docs/03-guide** | 人怎么用 / 怎么讲（只写已实践） | 站验证后补 | 未上线功能、实现黑话堆砌 |
-| **docs/10-reference/** | 业界在什么条件下观察到什么，或提出了什么方法。注明一手来源、日期、证据类型和适用局限 | 来源修订或新证据改变结论时 | BW 的采用取舍归对应特性或模块。旧设计快照和施工记录查 Git 或原 PR |
+| **docs/10-reference/** | 业界在什么条件下观察到什么，或提出了什么方法。注明一手来源、日期、证据类型和适用局限 | 来源修订或新证据改变结论时 | Monica 的采用取舍归对应特性或模块。旧设计快照和施工记录查 Git 或原 PR |
 | **docs/\*-prototype/design** | 当前迭代设计实况（一篇正本） | 站走完改实况 | 单次 MR 的 intent；修订流水账当正文 |
-| **docs/development.md** | BW 自身的测试、独立检视、证据与 PR 规则；供 AGENTS、Skills 和模板共同引用 | 规则或消费者变化时更新，沿用一个正本 | 具体工具操作、Skill 编排、任务流水；不向被管项目分发 |
+| **docs/development.md** | Monica 自身的测试、独立检视、证据与 PR 规则；供 AGENTS、Skills 和模板共同引用 | 规则或消费者变化时更新，沿用一个正本 | 具体工具操作、Skill 编排、任务流水；不向被管项目分发 |
 | **AGENTS / CLAUDE** | 本仓开发总入口与硬约束；专题细则由 AGENTS 直接指向唯一正文，CLAUDE 只导入 AGENTS | 开发规矩或入口变化时，先修已有规则与引用 | 重复专题细则、单次变更正文、产品主张 |
 | **.teamai/** | 可共享的 skills/hooks/规则如何同步到多工具 | 随团队政策 | 业务仓设计正本、docs/05-features 正文 |
 
@@ -65,7 +65,7 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 
 日常新增与小修只检查本次改动及必要引用，不默认全仓审计或重复模型评测。改变执行行为时按受影响路径验证；没有验证的数据不写成收益。变更原因与验证证据留在对应 commit/PR，未完成工作进入原生 Issue；当前知识同步到正本，不另建提交流水或平行规范。
 
-Workbench 研发知识库的目录约定适用于本仓。`standard/` 给被管项目提供执行规范；项目文档归属与落点遵循该项目自己的 `AGENTS.md` 及引用，不照搬 BW 的目录树。术语边界见 [`CONTEXT.md`](../../CONTEXT.md)「知识与规范资产」。
+Monica 研发知识库的目录约定适用于本仓。`standard/` 给被管项目提供执行规范；项目文档归属与落点遵循该项目自己的 `AGENTS.md` 及引用，不照搬 Monica 的目录树。术语边界见 [`CONTEXT.md`](../../CONTEXT.md)「知识与规范资产」。
 
 ## 3. 二者关系：01-principles · 05-features
 

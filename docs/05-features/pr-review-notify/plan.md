@@ -23,7 +23,7 @@
 ### A. 行为、原型和发送 UI
 
 - 同步现有 intent / spec 的发送对象、两类项目访问路径、再次发送、CodeHub 和验收点；调整 STATUS 时区分本轮待实现、历史验证和当前证据。
-- 在 `WorkbenchSendReviewMenuItems.tsx` 与通知再次发送入口共用收件人选择流程；弹窗通过原生挂载方式持有，避免菜单关闭导致弹窗卸载。
+- 在 `MonicaSendReviewMenuItems.tsx` 与通知再次发送入口共用收件人选择流程；弹窗通过原生挂载方式持有，避免菜单关闭导致弹窗卸载。
 - 优先复用 `components/github/PRFilterPickers.tsx` 的现有多选能力及 `components/ui/` 原语。只在确有共用需要时抽出原组件，不复制一套主机管理器或扩大改造其他选择器。
 - 原型继续直接导入产品展示组件；新增弹窗和场景使用同一组件，只有主机、请求与反馈使用模拟数据。原生 PR / MR 详情继续标为「沿用」，不另画页面。
 

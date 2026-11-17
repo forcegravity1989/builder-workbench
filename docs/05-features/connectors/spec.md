@@ -6,19 +6,19 @@
 
 ## 范围与入口
 
-- **入口**：设置 → 集成（Integrations）。BW 桌面壳内本机运行时生效。
+- **入口**：设置 → 集成（Integrations）。Monica 桌面壳内本机运行时生效。
 - **对象**：四张集成卡——代码托管组：GitHub（`gh`）、CodeHub（`codehub-cli`）；报告与诊断组：WeLink（`welink-cli`）；构建组：CloudBuild（`cb`，#366 增补 2026-10-19）。改前为八张卡，改后六张被收敛卡不再出现（去留见 intent 待决 1）。
 - **设计原则**：全部动作拼装 Orca 现有能力——检测用现有 preflight，安装入口 gh 保持外链、welink / codehub 由应用后台执行自包含命令（2026-10-16 真壳反馈拍板），「登录」复用上游 `OnboardingInlineCommandTerminal` 在卡内嵌终端里粘贴命令、人按回车执行（2026-10-19 拍板翻转，见取舍区）；不新造交互组件。
 - **账户范围**：本机集成卡只显示「账户范围：本机」；远程服务器仍显示凭据管理说明。中文界面的 CodeHub 状态、说明、操作与安装结果通知使用中文，CLI 命令原样显示。
 - **原型覆盖**：早期三卡的改前 / 改后布局、macOS / Windows 平台、本机 / 远端账户范围、每张卡状态组合与终端演示。原型中的安装 / 登录演示早于当前流程，不执行命令，也未覆盖常驻入门入口；现行行为以本篇和真实验证为准。
 
-### BW 入门中的复用入口
+### Monica 入门中的复用入口
 
-「BW 入门 → 连接集成」的「代码托管」组各显示一张 GitHub 和 CodeHub 卡，复用设置中的安装、登录与重新检查。两者任选其一，在当前运行环境检测确认 CLI 已安装并已登录后，即可使用任务和查看代码评审状态，此步显示完成。检测中、读取失败或切换运行环境后，完成状态由当前检测重新确定。集成按需配置，可以先关闭入门、添加项目并开始工作。首次设置提示用户可在设置 → 集成中稍后连接或重试 GitHub、CodeHub，CloudBuild 也在该设置页配置。
+「Monica 入门 → 连接集成」的「代码托管」组各显示一张 GitHub 和 CodeHub 卡，复用设置中的安装、登录与重新检查。两者任选其一，在当前运行环境检测确认 CLI 已安装并已登录后，即可使用任务和查看代码评审状态，此步显示完成。检测中、读取失败或切换运行环境后，完成状态由当前检测重新确定。集成按需配置，可以先关闭入门、添加项目并开始工作。首次设置提示用户可在设置 → 集成中稍后连接或重试 GitHub、CodeHub，CloudBuild 也在该设置页配置。
 
 「重新检查」读取 CLI 安装与登录状态，不代表任务读取或报告上传已经实际成功。
 
-WeLink 在入门中单列「报告与诊断（可选）」，复用现有卡片；用途是向 BW 用户群空间发送报告与诊断文件，不是向项目配置的群发送通知。其安装或登录状态不参与任务、评审来源的完成判断；外网不可用时可跳过，之后在设置 → 集成中配置。打开入口或重新检查不发送测试消息，也不改变报告发送逻辑。
+WeLink 在入门中单列「报告与诊断（可选）」，复用现有卡片；用途是向 Monica 用户群空间发送报告与诊断文件，不是向项目配置的群发送通知。其安装或登录状态不参与任务、评审来源的完成判断；外网不可用时可跳过，之后在设置 → 集成中配置。打开入口或重新检查不发送测试消息，也不改变报告发送逻辑。
 
 ## 完整用户旅程
 
@@ -103,7 +103,7 @@ GitHub、CodeHub、CloudBuild 的登录同一模板：`gh auth login`（设备�
 | I10 | 四 CLI 已装已登录 | 四卡显示已连接；「重新检查」读数一致 |
 | I11 | `cb` 未安装 | CloudBuild 卡在构建组显示未安装；卡上摆两行安装命令，点「安装」应用后台按序执行两步，卡显示安装中，完成弹通知并自动复查 |
 | I12 | `cb` 已装未登录（含 token 过期） | CloudBuild 卡显示未登录（过期 token 不亮绿灯）；点「登录」卡内展开内嵌终端，`cb login` 已粘贴待回车 |
-| I13 | BW 入门中分别试只连接 GitHub、只连接 CodeHub，并检查已有旧版完成标记的配置 | 两个提供方各显示一张卡，任一方在当前环境已登录即完成任务与评审来源设置。检测中、失败或环境改变后由当前检测重新确定，旧版完成标记不能代替登录状态 |
+| I13 | Monica 入门中分别试只连接 GitHub、只连接 CodeHub，并检查已有旧版完成标记的配置 | 两个提供方各显示一张卡，任一方在当前环境已登录即完成任务与评审来源设置。检测中、失败或环境改变后由当前检测重新确定，旧版完成标记不能代替登录状态 |
 | I14 | WeLink 未安装、未登录或内网不可用 | 入门说明报告与诊断可选，可跳过；不影响任务与评审来源完成，也不发送测试消息 |
 
 旅程（IJ01）：四 CLI 全缺的新机器 → 从集成页看全状态、按按钮指引装好登好（全程不手敲命令）→ 「重新检查」四卡全部已连接；杀进程重开仍全部已连接。
@@ -121,17 +121,17 @@ GitHub、CodeHub、CloudBuild 的登录同一模板：`gh auth login`（设备�
 
 **已采纳（2026-10-19 翻转）**：*卡片内嵌终端*——issue 初稿的设想，首版设计曾以「为设置页新造终端交互面」为由放弃；该前提不成立：上游 `OnboardingInlineCommandTerminal`（2026-05 起服务 onboarding / 技能安装等设置面板）就是现成的设置页内嵌终端——粘贴命令不回车、人按回车执行，OSC 133;D 报告命令结束供自动复查，卸载即清理后台页签。人拍板（2026-10-19）翻转采纳。
 
-**成本 / 风险**：集成页组件是上游 Orca 文件（非 `workbench/` 叠层目录），改动沿 CodeHub 卡先例直改并记入 upstream 对照，上游同步时需人工核对冲突；codehub-cli 安装口径依赖内网补齐。
+**成本 / 风险**：集成页组件是上游 Orca 文件（非 `monica/` 叠层目录），改动沿 CodeHub 卡先例直改并记入 upstream 对照，上游同步时需人工核对冲突；codehub-cli 安装口径依赖内网补齐。
 
 **待决**：原 4 项已全部由人拍板（2026-10-16），落点见 [intent 待决](intent.md#成功判据与待决问题)各条；cloudbuild 的「构建」分组为本特性自行判断，待人确认（intent 拍板 8）。
 
 ## 实现落点建议（非实现设计）
 
-- 渲染：`src/renderer/src/components/settings/IntegrationsPane.tsx` 收敛为四卡 + 三组分组标题；CodeHub / WeLink / CloudBuild 三卡落在 BW 自有文件 `bw-cli-integration-cards.tsx`——三卡共用一个 `BwCliIntegrationCard` 骨架（状态分支、安装区、登录区、卡内终端），每卡只是文案、探测字段与登录命令的薄配置（上游卡模块 `cli-source-control-integration-cards.tsx` 受 max-lines 预算约束，BW 卡不进），本机范围 hook 在 `use-local-cli-scope.ts`、安装动作 hook 在 `cli-install-action.ts`，经 barrel `source-control-integration-cards.tsx` 一并导出。
+- 渲染：`src/renderer/src/components/settings/IntegrationsPane.tsx` 收敛为四卡 + 三组分组标题；CodeHub / WeLink / CloudBuild 三卡落在 Monica 自有文件 `monica-cli-integration-cards.tsx`——三卡共用一个 `MonicaCliIntegrationCard` 骨架（状态分支、安装区、登录区、卡内终端），每卡只是文案、探测字段与登录命令的薄配置（上游卡模块 `cli-source-control-integration-cards.tsx` 受 max-lines 预算约束，Monica 卡不进），本机范围 hook 在 `use-local-cli-scope.ts`、安装动作 hook 在 `cli-install-action.ts`，经 barrel `source-control-integration-cards.tsx` 一并导出。
 - 状态：`source-control-preflight-card-status.ts` / `integrations-pane-status.ts` 增 `welinkStatus` / `cloudbuildStatus`；`CodeHubCliStatus` 补 `not-authenticated` / `connected`。
-- 主进程探测：`src/main/preflight/agent-detection.ts` 增 `welink-cli` / `cb` 探测与 codehub / welink / cb 的 `auth status` 读回（照 gh 现成模式）；BW 三 CLI 的探测与读鉴权编排下沉在 `bw-cli-auth-status.ts`（`probeBwClis` / `readBwCliAuths`，回调注入探测函数避免循环依赖），保住上游文件的 max-lines 预算；`preflight-command-exec.ts` 的 `isCommandAvailable` / `detectCommandRuntime` 增存活探测参数（cb 传 `version` 子命令）；`command-path-resolver.ts` 增 `resolveCommandOnLocalPath` 返回真实文件路径，`preflight-command-exec.ts` 把 `.cmd` / `.bat` 改经 `cmd.exe` 执行（Windows shim 盲区修复，2026-10-16 真壳发现）。
-- 安装后台执行：命令表在 `src/shared/bw-cli-install-commands.ts`（每 CLI 一组有序 argv，卡上文字行与后台执行同源；cloudbuild 为两条）；主进程 runner `src/main/ipc/bw-cli-install.ts` 按序执行各步、任一步失败即中止并报该步退出码（in-flight 去重，完成 / 失败经 `cliInstall:finished` 广播），随 `register-core-handlers` 注册；preload `bw-cli-install-api.ts` + `cli-install-bridge.ts`；渲染端 `cli-install-action.ts` 订阅完成通知（成功自动复查，失败带原因与输出尾部）。
+- 主进程探测：`src/main/preflight/agent-detection.ts` 增 `welink-cli` / `cb` 探测与 codehub / welink / cb 的 `auth status` 读回（照 gh 现成模式）；Monica 三 CLI 的探测与读鉴权编排下沉在 `monica-cli-auth-status.ts`（`probeMonicaClis` / `readMonicaCliAuths`，回调注入探测函数避免循环依赖），保住上游文件的 max-lines 预算；`preflight-command-exec.ts` 的 `isCommandAvailable` / `detectCommandRuntime` 增存活探测参数（cb 传 `version` 子命令）；`command-path-resolver.ts` 增 `resolveCommandOnLocalPath` 返回真实文件路径，`preflight-command-exec.ts` 把 `.cmd` / `.bat` 改经 `cmd.exe` 执行（Windows shim 盲区修复，2026-10-16 真壳发现）。
+- 安装后台执行：命令表在 `src/shared/monica-cli-install-commands.ts`（每 CLI 一组有序 argv，卡上文字行与后台执行同源；cloudbuild 为两条）；主进程 runner `src/main/ipc/monica-cli-install.ts` 按序执行各步、任一步失败即中止并报该步退出码（in-flight 去重，完成 / 失败经 `cliInstall:finished` 广播），随 `register-core-handlers` 注册；preload `monica-cli-install-api.ts` + `cli-install-bridge.ts`；渲染端 `cli-install-action.ts` 订阅完成通知（成功自动复查，失败带原因与输出尾部）。
 - 登录卡内终端：三卡未登录分支直接渲染上游 `OnboardingInlineCommandTerminal`（`src/renderer/src/components/onboarding/OnboardingInlineCommandTerminal.tsx`）——它自建品牌化临时终端域的 backing 页签（`brandEphemeralSetupTerminalWorktreeId`，不挂工作树）、内嵌 `TerminalPane`、等 PTY 就绪后经 `PASTE_TERMINAL_TEXT_EVENT` 粘贴命令**不回车**（人按回车执行，issue 原文形态）、OSC 133;D 回调 `onCommandFinished` 供卡自动复查、卸载或 PTY 退出即清理页签；卡片只传命令、标题、临时域 id（`connectors-{gh|codehub|welink|cloudbuild}-login`）与两个回调。被替代的浮动终端注入（`cli-command-injection.ts` 的 reveal 逻辑）已随本翻转删除。
 - 类型：`src/preload/api/preflight-api.ts` 的 `PreflightStatus.codehub` 补 `authenticated`，新增 `welink` / `cloudbuild`。
 - i18n：英文词条新增 / 调整（`en.json`，照 CodeHub 卡先例；其余语言走 defaultValue 回退）。
-- 上游 Orca 原生文件的差异随 PR 记入 [ref/upstream.md](../../../ref/upstream.md) 对照；`bw-cli-install-*`、`cli-install-action.ts` 为 BW 自有文件，无上游冲突面。
+- 上游 Orca 原生文件的差异随 PR 记入 [ref/upstream.md](../../../ref/upstream.md) 对照；`monica-cli-install-*`、`cli-install-action.ts` 为 Monica 自有文件，无上游冲突面。

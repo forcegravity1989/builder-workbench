@@ -7,11 +7,11 @@
 | 来源 | 借鉴与本包落点 | 没有照搬 / 怎样验证 |
 |---|---|---|
 | [BMAD 规划路径](https://docs.bmad-method.org/plan/choose-a-planning-path/) | 根据意图清晰度、范围和风险选择规划深度；对应本包任务分流 | 不安装其角色体系；文档小修无需完整新特性流程。验证小修能完成，缺决定的大变化能被识别 |
-| [OpenSpec 概念](https://github.com/Fission-AI/OpenSpec/blob/main/docs/concepts.md) | 分清现行规格与拟变化，变化结束同步正本；对应 spec/变化记录与存量处置 | 不强迫创建 openspec 目录；BW 当前 spec 语义先适配。验证旧规格不与新行为并存冲突 |
+| [OpenSpec 概念](https://github.com/Fission-AI/OpenSpec/blob/main/docs/concepts.md) | 分清现行规格与拟变化，变化结束同步正本；对应 spec/变化记录与存量处置 | 不强迫创建 openspec 目录；Monica 当前 spec 语义先适配。验证旧规格不与新行为并存冲突 |
 | [Matt Pocock Skills](https://github.com/mattpocock/skills) | 技能职责拆分、共享词表与 ADR；对应按需方法和概念/决策正本 | 当前上游 README 也建议每次变更先 grill。本包的小修直接执行是结合 BMAD 与用户目标的主动适配，并非照搬 Matt。验证任务路由与知识同步 |
 | [Matt writing-for-agents](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-for-agents/SKILL.md) | 指针写明用途和读取条件，按任务分支加载；同一概念集中说明，步骤有可观察完成条件 | 先把本地入口实际读对，不默认把上游所有写作主张设为硬门禁；验证触发、阅读与交付 |
 | [Diátaxis](https://diataxis.fr/) | 教程、操作、参考、解释按读者需要组织；对应使用文档契约 | 四类不是所有资产分类，也不强制每项生成四篇。验证读者能找到并完成具体任务 |
-| [HEART 原论文页面](https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/) | 从用户目标选择指标；对应特性价值与衡量关系 | 不强制套满所有维度；引领假设和 BW 指标不是论文直接给出的。验证来源可采、结果能帮助判断 |
+| [HEART 原论文页面](https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/) | 从用户目标选择指标；对应特性价值与衡量关系 | 不强制套满所有维度；引领假设和 Monica 指标不是论文直接给出的。验证来源可采、结果能帮助判断 |
 | [指标框架 Skill](https://github.com/mohitagw15856/pm-claude-skills/blob/main/skills/metrics-framework/SKILL.md) | 指标树、定义与衡量设计作为口径检查参考 | 社区 Skill 的自评分不构成效果证据；具体公式与阈值由项目验证 |
 | [Example Mapping](https://cucumber.io/docs/bdd/example-mapping/) | 规则、具体例子、未决问题的对应关系；对应验收场景 | 不要求每次组织讨论会；已明确的规则直接写可执行例子。验证例子能暴露误解 |
 | [TEA](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/) | 风险导向测试与验收追踪作为验证设计参考 | 不假设支持目标平台的 Electron/Orca；测试执行器复用项目已有设施。验证证据确实覆盖要求 |
@@ -32,13 +32,13 @@
 - [Superpowers brainstorming](https://github.com/obra/superpowers/blob/main/skills/brainstorming/SKILL.md)：此前报告用于比较设计澄清与验证纪律。本包不把其审批流程作为所有小修默认路径；本轮没有重新核读其完整实现。
 - [Spec Kit](https://github.com/github/spec-kit)：此前报告用于对照规格与实施的一致性。本包不引入另一套目录/制品链；本轮没有重新核读其扩展实现。
 
-## BW 继承与用户要求
+## Monica 继承与用户要求
 
-只读脚本与其确定性测试取自 BW 固定提交 `a2fbaf1d6359a3a13eea805c23ba963930e1796c` 的同名包（当时旧 main，现归档为 `archive/main-pre-orca`），仅复制本包四个 scripts 文件，未合并 Rust 产品实现。目标包按产品主干（时称 `bw-orca`，2026-09-30 扶正为 `main`）适配范围分类与映射，保留无网络、源文件只读、仓外输出和未检查项协议；运行结果以当前 PR 为准，不继承来源分支的 CI 或模型效果结论。六环/带入三问读取目标分支原则 02，不在本包复制旧 main 的 Rust 验收设施。
+只读脚本与其确定性测试取自 Monica 固定提交 `a2fbaf1d6359a3a13eea805c23ba963930e1796c` 的同名包（当时旧 main，现归档为 `archive/main-pre-orca`），仅复制本包四个 scripts 文件，未合并 Rust 产品实现。目标包按产品主干（时称 `bw-orca`，2026-09-30 扶正为 `main`）适配范围分类与映射，保留无网络、源文件只读、仓外输出和未检查项协议；运行结果以当前 PR 为准，不继承来源分支的 CI 或模型效果结论。六环/带入三问读取目标分支原则 02，不在本包复制旧 main 的 Rust 验收设施。
 
-- BW 的工作树、真实证据、人确认完成、Unknown 等是项目约束；不是上述框架带来的新设计。
-- AGENTS/顶层与 docs 都可整改；规范、存量瘦身和配套维护同块交付；先把 BW 做成可实践样例。这些来自用户方向。
-- 目录编号、现有测试/采集协议属于 BW 适配；其他项目先映射自己的结构。
+- Monica 的工作树、真实证据、人确认完成、Unknown 等是项目约束；不是上述框架带来的新设计。
+- AGENTS/顶层与 docs 都可整改；规范、存量瘦身和配套维护同块交付；先把 Monica 做成可实践样例。这些来自用户方向。
+- 目录编号、现有测试/采集协议属于 Monica 适配；其他项目先映射自己的结构。
 
 ## 每次采用或升级记录什么
 

@@ -48,9 +48,9 @@ export function ExperimentalSettings({
   onPetChange,
   onBack
 }) {
-  const [project, setProject] = React.useState('Builder Workbench')
-  const active = project === 'Builder Workbench' ? value : sample
-  const save = project === 'Builder Workbench' ? onChange : onSampleChange
+  const [project, setProject] = React.useState('Builder Monica')
+  const active = project === 'Builder Monica' ? value : sample
+  const save = project === 'Builder Monica' ? onChange : onSampleChange
   return (
     <>
       <div className="ov-top">
@@ -77,7 +77,7 @@ export function ExperimentalSettings({
                 value={project}
                 onChange={(event) => setProject(event.target.value)}
               >
-                <option>Builder Workbench</option>
+                <option>Builder Monica</option>
                 <option>示例项目</option>
               </select>
               <p className="set-desc">仅在本机对「{project}」的所有版本生效。</p>
@@ -107,7 +107,7 @@ export function ExperimentalSettings({
           />
         </section>
         <p className="ov-note">
-          原型注释: 版本总览使用 Builder Workbench 的固定快照。此处的设置只用于预览。
+          原型注释: 版本总览使用 Builder Monica 的固定快照。此处的设置只用于预览。
         </p>
       </div>
     </>

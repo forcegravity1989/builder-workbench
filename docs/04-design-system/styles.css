@@ -1,4 +1,4 @@
-/* Workbench — HTML class vocabulary for prototypes and docs pages (no React, no build).
+/* Monica — HTML class vocabulary for prototypes and docs pages (no React, no build).
    Values come from tokens.json via tokens.css (Orca's palette; light on :root, dark on
    [data-theme="dark"] or .dark). Product code uses the React primitives instead — see
    README.md. The class names are Builder's; the values they read are Orca's. */

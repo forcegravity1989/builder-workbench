@@ -6,9 +6,9 @@
 
 ## 设计边界
 
-AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开和 Automations。BW 只保存版本材料与人工输入，不复制 Issue、PR 或会议转写正本。绑定树沿 `bw/<版本>/acceptance` 与 `bw/<版本>/plan`，绑定决定版本；旧无绑定固定树沿 `bw/week-acceptance`、`bw/week-plan` 与明确选版偏好。运行与材料身份按项目、仓库、宿主、runtime owner、工作树和 workflow 隔离，不由会话标题或日期推断。
+AcceptancePage 是 Monica 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开和 Automations。Monica 只保存版本材料与人工输入，不复制 Issue、PR 或会议转写正本。绑定树沿 `bw/<版本>/acceptance` 与 `bw/<版本>/plan`，绑定决定版本；旧无绑定固定树沿 `bw/week-acceptance`、`bw/week-plan` 与明确选版偏好。运行与材料身份按项目、仓库、宿主、runtime owner、工作树和 workflow 隔离，不由会话标题或日期推断。
 
-不修改 Orca 核心：对象级动作经共用包装件 `workbench/plan-send-menu.tsx` 递交——它把动作按钮包进 Radix DropdownMenu，内容是**原生** `ReviewNotesSendMenuContent`（「发送至」运行中会话列表 +「新建智能体」快捷启动），同时开 `useAppStore.openAgentSendPopoverTargetMode` 让侧边栏 agent 行成为第二个发送面。`source` 沿用 `'browser-annotations'`、`launchSource` 沿用 `'notes_send'`，不扩 Orca 的 source union（扩它属于改原生协议，登记为上游接缝候选，不在本特性内做）。
+不修改 Orca 核心：对象级动作经共用包装件 `monica/plan-send-menu.tsx` 递交——它把动作按钮包进 Radix DropdownMenu，内容是**原生** `ReviewNotesSendMenuContent`（「发送至」运行中会话列表 +「新建智能体」快捷启动），同时开 `useAppStore.openAgentSendPopoverTargetMode` 让侧边栏 agent 行成为第二个发送面。`source` 沿用 `'browser-annotations'`、`launchSource` 沿用 `'notes_send'`，不扩 Orca 的 source union（扩它属于改原生协议，登记为上游接缝候选，不在本特性内做）。
 
 原生发送菜单与侧边栏发送目标使用同一份已准备请求；仅开启侧边栏目标状态不能替代菜单本体。
 
@@ -16,7 +16,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **决定（2026-10-22 负责人）**：计划屏目录下的板面逻辑**拷贝**到验收屏目录，两屏各自独立演进，不做提层重构、不新建共用抽象。代价是同类逻辑存在两份、后续会各自漂移；收益是验收屏的改动完全不触碰刚合入 main 的计划屏代码（#399），也不让任一屏的形态调整被另一屏拖累。
 
-**拷贝（源 → 落点，均在 `src/renderer/src/workbench/`）**：
+**拷贝（源 → 落点，均在 `src/renderer/src/monica/`）**：
 
 | 计划屏来源                                                               | 验收屏落点                                         | 拷贝时的改动                                                                                                                                                                                                                                                                                   |
 | ------------------------------------------------------------------------ | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -29,11 +29,11 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **直接 import，不拷贝**（这些不在计划屏目录下，是 #399 建在共用层、注释明写供两屏使用的模块，或 v9.5 起就是两屏共用的壳层）：
 
-- `workbench/annotations/`：`types.ts`（`AnnotationKind`/`AnnotationRef`/`annotationAttributes`/`annotationRefFromElement`）、`use-board-annotations.ts`（模块级会话 store，按 boardId 键控，两屏各传自己的板面身份）、`AnnotationPanel.tsx`、`AnnotationPopover.tsx`、`annotation-markdown.ts`、`annotation-markers.tsx`、`annotations.css`
-- `workbench/board-ui.tsx`（+ `board-ui.css`）：`BoardIconButton`、`BoardActionButton`、`BoardLines`
-- `workbench/plan-send-menu.tsx`：`PlanSendMenu`、`usePlanSendAction`、`SendActionWrap`——对象级动作与批注发送的原生发送弹窗包装件，#407 建在共用层。两屏共用同一件，`assistant` 参数只改用户可见文案里的 AI 角色名（验收屏传「验收助手」）
-- `workbench/plan-column-resize.ts`、`workbench/use-plan-chat-collapsed.ts`：会话栏收折壳（名字带 plan 但已是两屏共用壳，v9.5 起验收屏就在用）
-- `workbench/version-cycle/`：`ports.ts`、`cycle-context.ts`、`CycleWorkspaceProvider`、`use-material-autosave.ts`、`use-archive-pr-status.ts`、`AutomationConfigureButton.tsx`、`open-acceptance-source.ts`、`open-archive-pr.ts`、`trunk-update-port.ts`
+- `monica/annotations/`：`types.ts`（`AnnotationKind`/`AnnotationRef`/`annotationAttributes`/`annotationRefFromElement`）、`use-board-annotations.ts`（模块级会话 store，按 boardId 键控，两屏各传自己的板面身份）、`AnnotationPanel.tsx`、`AnnotationPopover.tsx`、`annotation-markdown.ts`、`annotation-markers.tsx`、`annotations.css`
+- `monica/board-ui.tsx`（+ `board-ui.css`）：`BoardIconButton`、`BoardActionButton`、`BoardLines`
+- `monica/plan-send-menu.tsx`：`PlanSendMenu`、`usePlanSendAction`、`SendActionWrap`——对象级动作与批注发送的原生发送弹窗包装件，#407 建在共用层。两屏共用同一件，`assistant` 参数只改用户可见文案里的 AI 角色名（验收屏传「验收助手」）
+- `monica/plan-column-resize.ts`、`monica/use-plan-chat-collapsed.ts`：会话栏收折壳（名字带 plan 但已是两屏共用壳，v9.5 起验收屏就在用）
+- `monica/version-cycle/`：`ports.ts`、`cycle-context.ts`、`CycleWorkspaceProvider`、`use-material-autosave.ts`、`use-archive-pr-status.ts`、`AutomationConfigureButton.tsx`、`open-acceptance-source.ts`、`open-archive-pr.ts`、`trunk-update-port.ts`
 
 发送弹窗的触发件用纯 button（`BoardActionButton`，2026-10-23 起发送触发件全部统一为图标+短动词格式），**不用 `BoardIconButton`**：后者内部已是 Radix `TooltipTrigger`，再套 `DropdownMenuTrigger asChild` 会让 tooltip 与 dropdown 的 `data-state` 与 aria 属性互相覆盖。计划屏同一做法。
 
@@ -55,7 +55,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **验收证据报告登记**：报告固定保存为 `.bw/planning/<版本>/acceptance-evidence.html`，复用 `preparedArtifacts` 与 `kind='verification'`。候选固定后先生成、登记，再核对待核对项；人的目标结论仍受原有字段守卫保护。`ORCA bw materials add-artifact` 在所属宿主核对文件存在，取 `mtime` 与材料现有 `candidateRef`，同 artifactId 更新并处理修订冲突。板面只读登记，不扫描文件猜测报告状态；路径围栏拒绝绝对路径及穿越，兼顾 Windows 与 POSIX 语义。
 
-聚合动作在共用发送包装中调用现有 `resolveWorkbenchPromptAssets`：核对原生工作树、宿主与版本，发送正文保留点击时的版本以便核对后续选版变化，复用 `installWorkbenchSkill` 取得正文路径，再交给原生会话选择器和快捷启动。准备中不开放发送，失败保留原因并可重试，菜单关闭或卸载后忽略迟到结果；报告生成规则仅由 Skill 的证据聚合 reference 维护。HTML 模板使用真实平台 URL，生成器按文本统一 LF 后调用原生 Skill bundle 创建器。
+聚合动作在共用发送包装中调用现有 `resolveMonicaPromptAssets`：核对原生工作树、宿主与版本，发送正文保留点击时的版本以便核对后续选版变化，复用 `installMonicaSkill` 取得正文路径，再交给原生会话选择器和快捷启动。准备中不开放发送，失败保留原因并可重试，菜单关闭或卸载后忽略迟到结果；报告生成规则仅由 Skill 的证据聚合 reference 维护。HTML 模板使用真实平台 URL，生成器按文本统一 LF 后调用原生 Skill bundle 创建器。
 
 **沿用**：`candidateRef`、`preparedArtifacts`（`kind=package`，含 checksum/location/实际命令）、`taskSnapshot`、`results[].decision`、`results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks.carry`、`planRef`、`workflow`。
 
@@ -90,7 +90,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 `minutes` 的规则与计划侧同构、少一条闭环往返：模型通道只能在 `confirmed` 为假时起草与改写正文（`consensus`/`followups` 文本、`sources`）；`confirmed`/`confirmedAt` 是人工标记，模型通道拒写；`confirmed` 为真时整节冻结，模型通道任何改写都拒绝。**确认可以撤销**，撤销是人在界面上的动作、走人工通道，撤销后 `confirmed` 置假且 `confirmedAt` 清除，模型可重新整理。验收侧 followups 无 `closed`，因此不需要计划侧那段按 id 往返闭环的校验。
 
-**`acceptanceMinutesChanges` 与 `planMinutesChanges` 的重复是有意保留的，不要抽共用骨架。** 两者同在 `src/main/workbench/`，不属「板面拷贝」那条授权的字面范围，所以在这里明写理由：可抽的公共部分约 20 行（深比较早退、已确认节拒写、confirmed/confirmedAt 归属判定），但计划侧另有一整块验收侧没有的 followup 闭环守卫（按 id 建 Map、新增条目不得预闭环、被删条目若已闭环要报），根因在类型层——`AcceptanceMeetingMinutes.followups` 是 `{id,text}` 无 `closed`，`PlanMeetingMinutes.followups` 带 `closed`。抽骨架要把这段差异做成回调或后置步骤注入，两个调用方各只剩 3–5 行，净收益接近零，代价是把一条**安全守卫**拆成跨文件的两半、读一处看不出拒写边界。同理 `material-human-guard.ts` 里 plan / acceptance 两个分支同形（差异只有 schema 常量、diff 函数与中文错误文案），也保持就地可读不做表驱动。
+**`acceptanceMinutesChanges` 与 `planMinutesChanges` 的重复是有意保留的，不要抽共用骨架。** 两者同在 `src/main/monica/`，不属「板面拷贝」那条授权的字面范围，所以在这里明写理由：可抽的公共部分约 20 行（深比较早退、已确认节拒写、confirmed/confirmedAt 归属判定），但计划侧另有一整块验收侧没有的 followup 闭环守卫（按 id 建 Map、新增条目不得预闭环、被删条目若已闭环要报），根因在类型层——`AcceptanceMeetingMinutes.followups` 是 `{id,text}` 无 `closed`，`PlanMeetingMinutes.followups` 带 `closed`。抽骨架要把这段差异做成回调或后置步骤注入，两个调用方各只剩 3–5 行，净收益接近零，代价是把一条**安全守卫**拆成跨文件的两半、读一处看不出拒写边界。同理 `material-human-guard.ts` 里 plan / acceptance 两个分支同形（差异只有 schema 常量、diff 函数与中文错误文案），也保持就地可读不做表驱动。
 
 ## 计划屏连带
 
@@ -138,4 +138,4 @@ Issue 成员与计划屏共用版本标签查询和本版标题段解析。已�
 
 真实旅程按 spec 验收点核对四区导航、批注、人判、纪要确认/撤销、部署与报告打开、归档原生 PR 页、发布与重启读回。Skill 聚合另核对新建/已有会话完整读取、待核对报告先登记可打开、补充后保留已定项；原型与静态接线不能替代模型会话及真壳证据。实际结果和未验范围留 PR，状态索引见 STATUS。
 
-Skill 正源为 `standard/skills/version-acceptance/`，分发复用完整原生 Skill 包；生成与安装路径统一见 [系统提示词与渐进加载](../../06-module/系统提示词与渐进加载.md)。改动后同步生成 `src/shared/workbench/skill-package.json`，不维护旧镜像或第二套正文。
+Skill 正源为 `standard/skills/version-acceptance/`，分发复用完整原生 Skill 包；生成与安装路径统一见 [系统提示词与渐进加载](../../06-module/系统提示词与渐进加载.md)。改动后同步生成 `src/shared/monica/skill-package.json`，不维护旧镜像或第二套正文。

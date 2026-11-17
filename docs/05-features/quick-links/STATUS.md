@@ -8,7 +8,7 @@
 |---|---|---|
 | 1 intent | 草案（待 gate） | [intent.md](intent.md)：价值=端口之外的常用链接、项目级、无状态灯、避「收藏夹病」；落点=与端口同构的状态栏入口（2026-11-13 人评审）；「项目」口径按激活仓库（`useActiveRepo`）实现，其余待决待人拍板 |
 | 2 spec | 草案（待 gate） | [spec.md](spec.md)：入口=状态栏图标+计数→popover、完整旅程、字段与校验规则、验收点 QL01–QL12、旅程 QLJ01；均为定义、未注册 |
-| 3 实现设计 | 已实现（待人评审，未真壳验证） | 代码：`src/renderer/src/workbench/quick-links/QuickLinksStatusSegment.tsx`（状态栏段+popover+内联增改表单）、`quick-links-store.ts`（经 `window.api.fs` 读写 `.bw/quick-links.json`，复用既有 fs 桥、不新增主进程 IPC）、`src/shared/workbench/quick-links.ts`（schema+URL 归一化/校验纯函数）；上游改动仅 `StatusBarSurface` 一处挂载、`StatusBarItem`/RPC 枚举与默认项、`StatusBarVisibilityMenu` 一项开关（见 [design.md](design.md)） |
+| 3 实现设计 | 已实现（待人评审，未真壳验证） | 代码：`src/renderer/src/monica/quick-links/QuickLinksStatusSegment.tsx`（状态栏段+popover+内联增改表单）、`quick-links-store.ts`（经 `window.api.fs` 读写 `.bw/quick-links.json`，复用既有 fs 桥、不新增主进程 IPC）、`src/shared/monica/quick-links.ts`（schema+URL 归一化/校验纯函数）；上游改动仅 `StatusBarSurface` 一处挂载、`StatusBarItem`/RPC 枚举与默认项、`StatusBarVisibilityMenu` 一项开关（见 [design.md](design.md)） |
 | 4 TDD | 未新增用例 | 纯函数（URL 归一化/去重/校验）未新增单测：受环 4 叠层 vitest 例数 ratchet（净零、只减不增）约束，本次无存量负面清单用例可对冲，故不增例；行为由真壳验收点覆盖，待专项回补 |
 | 5 验收点E2E | 待验证 | QL01–QL12 已定义（spec 验收表），未注册、未真壳执行 |
 | 6 旅程E2E | 待验证 | QLJ01 已定义、未注册、未真壳执行 |

@@ -183,7 +183,7 @@
   gap: 6px;
   flex-shrink: 0;
 }
-.panel-475 .bw-section,
+.panel-475 .monica-section,
 .panel-475 .native-projects,
 .panel-475 .native-project-tree-list,
 .panel-475 .version-children,
@@ -192,7 +192,7 @@
   flex-direction: column;
   gap: 6px;
 }
-.panel-475 .bw-section {
+.panel-475 .monica-section {
   margin-bottom: 6px;
 }
 .panel-475 .sidebar-section-heading-475 {

@@ -16,13 +16,13 @@ metadata:
 
 # feature-metrics-inventory — 特性与核心指标梳理
 
-> 30 秒导读：带 builder 按六站盘完一个项目——读回现状 → 名片 → 北极星（允许缺席）→ 特性 3–5 个 → 每特性 1 引领 + 1 滞后指标 → 落盘交接。每站模型只起草、人确认才落定；没数据记 Unknown；记录格式全沿项目既有正本与 BW 资产协议，不造平行账本。
+> 30 秒导读：带 builder 按六站盘完一个项目——读回现状 → 名片 → 北极星（允许缺席）→ 特性 3–5 个 → 每特性 1 引领 + 1 滞后指标 → 落盘交接。每站模型只起草、人确认才落定；没数据记 Unknown；记录格式全沿项目既有正本与 Monica 资产协议，不造平行账本。
 >
 > **状态：仓内 `0.1.0-pilot` 试用。** 任何使用者可采用；仓内采用不等于分发到 standard/。方法有效性按真实盘点任务证据检验，通过文件检查只说明可用，不说明成熟。
 
 ## 1. 适用范围与边界
 
-- 适用于 BW 自身与被管项目的「项目定义 + 可跟踪指标」收敛，主要客群是 1–3 人内部项目（内部工具/平台型居多，常无营收指标、无埋点）。
+- 适用于 Monica 自身与被管项目的「项目定义 + 可跟踪指标」收敛，主要客群是 1–3 人内部项目（内部工具/平台型居多，常无营收指标、无埋点）。
 - 本 Skill 只做盘点上半程：盘出名片、北极星、特性与指标候选口径，经人确认。指标配置写入、采集脚本、试采与合入沿 metrics-refresh SOP 与指标协议正本（见 [落盘与交接](references/asset-writing.md)），本 Skill 不另写一套。
 - 分流：名片→北极星→特性→指标的全程盘点归本 Skill；已有特性文档的特性指标验收证据连接与知识库治理归 project-knowledge（其 feature-evidence 为口径契约正本，本 Skill 引用遵循、不另立契约）；版本计划 → week-planning；被管项目缺开发约定 → project-handbook。加载本 Skill 不新增 push、合入、关闭 Issue 或确认完成的授权；一切远端写入沿项目 PR 流，人审人合。
 - 路径规则：本目录仅用于定位本 Skill 的 references 与模板；被盘项目以当前会话工作目录与 Git 信息为准，借树使用时分别记录方法路径与目标仓路径。
@@ -60,7 +60,7 @@ metadata:
 
 不靠记忆、不建状态文件——进度是可从资产推导的值，杀会话重开可完整重算：
 
-1. 读 `.bw/project.toml`（名片字段是否已填）、`.bw/metrics.toml`（有无 `[north_star]`；指标条数；`feature` 标签与 `leads` 是否齐）、特性卡文档（被管项目默认 `docs/features.md`，BW 自身为 `docs/05-features/`）。
+1. 读 `.bw/project.toml`（名片字段是否已填）、`.bw/metrics.toml`（有无 `[north_star]`；指标条数；`feature` 标签与 `leads` 是否齐）、特性卡文档（被管项目默认 `docs/features.md`，Monica 自身为 `docs/05-features/`）。
 2. 分流三档：**冷启动**（名片指标皆无）→ 从站 1 顺序走；**部分缺失** → 直接进缺失站，已有内容直接采用、不重问已确认的问题；**资料齐备** → 只做一致性体检（feature 标签与特性卡对得上、leads 唯一、有无触发退役判据的指标），报告结论。
 3. 向人复述进度（例：「名片已确认；北极星缺席有记录；特性卡 3 张缺旅程线；2 条指标缺采集脚本」），从人认的地方继续。
 
@@ -76,7 +76,7 @@ metadata:
 
 ## 6. 站 5：落盘、读回、交接
 
-1. 按 [落盘与交接](references/asset-writing.md) 的落点总表写入：名片 → `project.toml` 补空（PR 流）；北极星与指标 → `metrics.toml`（配置写入与合入交接 metrics-refresh）；特性卡 → 被管项目 `docs/features.md`（模板 [assets/feature-card.md](assets/feature-card.md)），BW 自身落 `docs/05-features/` 对应目录。
+1. 按 [落盘与交接](references/asset-writing.md) 的落点总表写入：名片 → `project.toml` 补空（PR 流）；北极星与指标 → `metrics.toml`（配置写入与合入交接 metrics-refresh）；特性卡 → 被管项目 `docs/features.md`（模板 [assets/feature-card.md](assets/feature-card.md)），Monica 自身落 `docs/05-features/` 对应目录。
 2. 写后读回逐字段展示核对；特性改名走显式迁移步骤（同步所有指标 `feature` 标签、文档标题与主干行、计划材料引用），不顺手改。
 3. **reader test**：请一个无上下文的新会话只读落盘文件回答三问——这个项目为谁解决什么问题？某特性的旅程是什么？某指标的口径与数据源是什么？答不出打回对应站重做。
 4. 如实区分「盘完」与「总览可见」：指标没有采集脚本时界面显示为问题而非读数；交接时说清走到哪一步。
