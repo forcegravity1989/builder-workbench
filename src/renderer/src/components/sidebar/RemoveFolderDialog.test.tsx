@@ -75,7 +75,7 @@ describe('RemoveFolderDialog', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it('warns that VM recipe cleanup controls file deletion for an explicit SSH owner', () => {
-    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    vi.stubEnv('VITE_MONICA_SHELL', '1')
     mocks.state.modalData.hostId = 'ssh:runtime-ssh-runtime-1'
     mocks.state.repos = [repo(null, 'ssh:runtime-ssh-runtime-1')]
 

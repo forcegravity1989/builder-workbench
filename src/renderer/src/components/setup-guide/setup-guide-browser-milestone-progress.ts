@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useAppStore } from '@/store'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import {
   FEATURE_WALL_SETUP_STEPS,
   getFeatureWallSetupSteps,
@@ -12,7 +12,7 @@ export function useSetupGuideBrowserMilestoneProgress(
   rawProgress: FeatureWallSetupProgress,
   historicalSplitTerminalDone: boolean
 ): FeatureWallSetupProgress {
-  const workbenchShell = isWorkbenchShell()
+  const monicaShell = isMonicaShell()
   const setupGuideSidebarDismissed = useAppStore((s) => s.setupGuideSidebarDismissed)
   const browserMilestoneMigrated = useAppStore((s) => s.setupGuideBrowserMilestoneMigrated)
   const browserMilestoneLegacyComplete = useAppStore(
@@ -43,12 +43,8 @@ export function useSetupGuideBrowserMilestoneProgress(
 
   return useMemo(
     () =>
-      getSetupGuideBrowserMilestoneAwareProgress(
-        rawProgress,
-        effectiveLegacyComplete,
-        workbenchShell
-      ),
-    [effectiveLegacyComplete, rawProgress, workbenchShell]
+      getSetupGuideBrowserMilestoneAwareProgress(rawProgress, effectiveLegacyComplete, monicaShell),
+    [effectiveLegacyComplete, rawProgress, monicaShell]
   )
 }
 
@@ -71,22 +67,22 @@ export function shouldMarkBrowserMilestoneLegacyComplete(input: {
 export function getSetupGuideBrowserMilestoneAwareProgress(
   progress: FeatureWallSetupProgress,
   browserMilestoneLegacyComplete: boolean,
-  workbenchShell = false
+  monicaShell = false
 ): FeatureWallSetupProgress {
   if (!browserMilestoneLegacyComplete) {
     return progress
   }
-  const setupSteps = getFeatureWallSetupSteps(workbenchShell)
+  const setupSteps = getFeatureWallSetupSteps(monicaShell)
   const stepDone = Object.fromEntries(
     FEATURE_WALL_SETUP_STEPS.map((step) => [
       step.id,
-      workbenchShell && (step.id === 'task-sources' || step.id === 'agent-capabilities')
+      monicaShell && (step.id === 'task-sources' || step.id === 'agent-capabilities')
         ? progress.stepDone[step.id]
         : true
     ])
   ) as Record<FeatureWallSetupStepId, boolean>
   // Why: profiles that finished or dismissed the pre-browser checklist keep
-  // that prior checklist contract. BW integrations remain live, and its hidden
+  // that prior checklist contract. Monica integrations remain live, and its hidden
   // CLI step must not gain completion from this migration.
   return {
     ...progress,

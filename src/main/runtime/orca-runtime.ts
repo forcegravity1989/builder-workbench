@@ -1,14 +1,14 @@
 import { installRuntimeLinearCommandSurface } from './runtime-linear-command-surface'
 import { OrcaRuntimeWithResolveWaiter } from './orca-runtime-resolve-waiter'
 import type { RuntimeCommandSurfaceHost } from './orca-runtime-core'
-import { nativeFixedWorkspaceService } from '../workbench/fixed-workspace-runtime'
+import { nativeFixedWorkspaceService } from '../monica/fixed-workspace-runtime'
 import type {
   FixedWorkspaceEnsureRequest,
   FixedWorkspaceEnsureResult
-} from '../../shared/workbench/fixed-workspace'
+} from '../../shared/monica/fixed-workspace'
 
 class OrcaRuntimeService extends OrcaRuntimeWithResolveWaiter {
-  ensureWorkbenchFixedWorkspace(
+  ensureMonicaFixedWorkspace(
     request: FixedWorkspaceEnsureRequest
   ): Promise<FixedWorkspaceEnsureResult> {
     return nativeFixedWorkspaceService(

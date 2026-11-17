@@ -9,7 +9,7 @@ import type { Worktree } from '../../../../shared/worktree/types'
 
 export type FeatureWallSetupProgressInput = {
   ready?: boolean
-  workbenchShell?: boolean
+  monicaShell?: boolean
   settings: GlobalSettings | null
   featureInteractions: FeatureInteractionState
   hasConnectedTaskSource: boolean
@@ -46,9 +46,9 @@ function countAvailableNonMainWorktrees(worktreesByRepo: Record<string, Worktree
 export function getFeatureWallSetupProgress(
   input: FeatureWallSetupProgressInput
 ): FeatureWallSetupProgress {
-  const setupSteps = getFeatureWallSetupSteps(input.workbenchShell)
+  const setupSteps = getFeatureWallSetupSteps(input.monicaShell)
   const agentCapabilitiesDone =
-    !input.workbenchShell &&
+    !input.monicaShell &&
     input.browserUseSkillInstalled &&
     input.computerUseSkillInstalled &&
     (input.computerUsePermissionsReady || input.computerUseUnavailable === true) &&
