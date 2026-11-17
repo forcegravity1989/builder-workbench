@@ -24,6 +24,7 @@ const catalog: VersionCatalogState = {
   catalog: null,
   loading: false,
   error: null,
+  worktreeInventoryReady: true,
   materialReady: true,
   materialError: null,
   reload: ignore
