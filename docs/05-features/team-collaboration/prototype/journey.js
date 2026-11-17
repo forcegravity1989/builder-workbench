@@ -79,7 +79,7 @@
   const demoSpace = '200000000000000001'
   const demoProjectGroup = '300000000000000001'
   const employees = { lead: 'A0010001', lin: 'A0010002', chen: 'A0010003' }
-  const addresses = { lin: '192.0.2.10', chen: '192.0.2.11:6768' }
+  const addresses = { lin: 'ws://192.0.2.10:6768', chen: 'ws://192.0.2.11:6771' }
   const dayMs = 86_400_000
   const auditRetentionDays = 30
   const sampleRepos = {
@@ -95,7 +95,7 @@
     }
   }
   const samplePairing = 'orca://pairing/demo-antai'
-  const key = 'bw-team-collaboration-342-team-connection'
+  const key = 'bw-team-collaboration-342-orca-endpoint'
   const actor = document.querySelector('#actor')
   const surface = document.querySelector('#surface')
   const dialog = document.querySelector('#dialog')
@@ -129,6 +129,7 @@
   function fixture(ready = false) {
     return {
       directory: ready ? seedDirectory() : null,
+      teamEndpoints: ready ? { ...addresses } : {},
       teamConnections: ready
         ? {
             lead: { lin: addresses.lin, chen: addresses.chen },
@@ -289,7 +290,9 @@
 
   function canReadTeamSource(owner, visitor = actor.value) {
     return (
-      registered(owner) && state.teamConnections[visitor][owner] === directoryHost(owner).address
+      registered(owner) &&
+      state.teamConnections[visitor][owner] === directoryHost(owner).address &&
+      state.teamEndpoints[owner] === directoryHost(owner).address
     )
   }
 
@@ -310,6 +313,15 @@
       return
     }
     const host = directoryHost(owner)
+    if (state.teamEndpoints[owner] !== host.address) {
+      confirm(
+        '无法连接 Orca 共享主机',
+        '<p>请让主机持有人在「共享此主机」启用团队只读连接，并核对团队目录里的 Orca 共享地址。</p>',
+        '返回项目墙',
+        () => show('wall')
+      )
+      return
+    }
     confirm(
       '连接团队主机',
       `<p>连接 <strong>${esc(host.name)}</strong> <span class="field-note">${esc(host.address)}</span>。通过 Orca 建立团队连接后，可以只读查看这台主机上的团队项目。</p>`,
@@ -406,15 +418,14 @@
 
   function validHostAddress(value) {
     try {
-      const endpoint = new URL(value.includes('://') ? value : `ws://${value}`)
+      const endpoint = new URL(value)
       return (
-        ['ws:', 'wss:'].includes(endpoint.protocol) &&
+        /^(wss?):\/\//i.test(value) &&
         endpoint.hostname &&
         !endpoint.username &&
         !endpoint.password &&
         !endpoint.search &&
-        !endpoint.hash &&
-        endpoint.pathname === '/'
+        !endpoint.hash
       )
     } catch {
       return false
@@ -430,7 +441,7 @@
     const invalid = draft.hosts.find((host) => !validHostAddress(host.address))
     if (invalid) {
       notify(
-        `${memberName(invalid.member_id)}的主机地址格式不对。请填 IP、主机名或 ws:// / wss:// 地址。`
+        `${memberName(invalid.member_id)}的 Orca 共享地址格式不对。请从「共享此主机」复制 ws:// 或 wss:// 地址。`
       )
       return
     }
@@ -461,7 +472,7 @@
     const people = Object.entries(names)
       .map(
         ([id, name]) =>
-          `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${name[0]}</span><span><strong>${name}</strong><small class="member-number">${employees[id]}</small></span></span></td><td>${id === 'lead' ? '群主 · Leader' : '成员'}</td><td><input class="input member-address" aria-label="${name}的主机地址" data-address="${id}" value="${esc(directoryHost(id, draft)?.address ?? '')}" placeholder="${addresses[id] ?? '可留空'}"${writable ? '' : ' readonly'}></td></tr>`
+          `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${name[0]}</span><span><strong>${name}</strong><small class="member-number">${employees[id]}</small></span></span></td><td>${id === 'lead' ? '群主 · Leader' : '成员'}</td><td><input class="input member-address" aria-label="${name}的 Orca 共享地址" data-address="${id}" value="${esc(directoryHost(id, draft)?.address ?? '')}" placeholder="${addresses[id] ?? '可留空'}"${writable ? '' : ' readonly'}></td></tr>`
       )
       .join('')
     const projects = draft.projects
@@ -473,8 +484,8 @@
     return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
       <header class="row between"><div><h2>团队设置</h2><p class="field-note">成员和群主来自 WeLink，目录文件的编辑权限由群空间管理。</p></div>${close}</header>
       <div class="directory-scroll"><div class="team-binding"><div><small>团队群</small><strong>基础体验小组</strong><small>${esc(draft.team_group_id)}</small></div><div><small>群空间</small><strong>基础体验小组群空间</strong><small>${esc(draft.team_space_id)}</small></div></div>
-      <div class="row between"><div><h3>成员与主机</h3><p class="field-note">使用默认端口 6768 时，可直接填局域网 IP。自定义端口填 IP:端口。</p></div>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div>
-      <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>主机地址</th></tr></thead><tbody>${people}</tbody></table></div>
+      <div class="row between"><div><h3>成员与主机</h3><p class="field-note">从对方 BW 的「共享此主机」复制 Orca 共享地址。</p></div>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div>
+      <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>Orca 共享地址</th></tr></thead><tbody>${people}</tbody></table></div>
       <div class="row between directory-project-head"><h3>团队项目</h3>${button(`${icon('Plus')} 登记项目`, 'edit-catalog-project', { disabled: !writable })}</div>
       ${projects ? `<div class="table-scroll"><table class="table directory-projects" aria-label="团队项目"><thead><tr><th>项目</th><th>主负责人</th><th>参与者</th><th>项目群 ID</th><th></th></tr></thead><tbody>${projects}</tbody></table></div>` : '<p class="field-note">从已有项目选择，关联项目群、主负责人和参与者。</p>'}
       </div><footer class="row between directory-footer">${button('查看目录文件', 'preview-directory', { kind: 'ghost' })}${writable ? button('保存到群空间', 'save-directory', { kind: 'primary' }) : '<span class="field-note">你有查看权限，编辑权限由 WeLink 管理。</span>'}</footer>
@@ -796,7 +807,12 @@
 
   function sharingServer() {
     const owner = actor.value
-    return `<section class="muted-frame"><h2>共享此 Orca 服务器</h2><p class="permission-hint">${icon('Lock')}主机完全访问。对方可以创建工作树、启动会话并使用宿主账号执行命令。</p>
+    const teamEndpoint = state.teamEndpoints[owner]
+    const teamConnection = hosts[owner]
+      ? `<section class="muted-frame"><h2>团队只读连接</h2><p class="field-note">启用后，把 Orca 共享地址登记到团队目录。已认证的团队成员可以只读查看本机团队项目。</p>
+        ${teamEndpoint ? `<label class="field demo-link">Orca 共享地址 <input class="input" value="${esc(teamEndpoint)}" readonly data-select-all></label>` : button('启用团队只读连接', 'enable-team-listener')}</section>`
+      : ''
+    return `${teamConnection}<section class="muted-frame"><h2>共享此 Orca 服务器</h2><p class="permission-hint">${icon('Lock')}主机完全访问。对方可以创建工作树、启动会话并使用宿主账号执行命令。</p>
       <div class="row"><span class="input pairing-address">局域网 · 另一台设备</span>${button('生成配对链接', 'generate-link', { disabled: owner !== 'lin' })}</div>
       ${owner === 'lin' && state.offered ? `<label class="field demo-link">配对链接 <input class="input" value="${samplePairing}" readonly data-select-all></label>` : ''}</section>
       <section class="muted-frame"><header class="row between"><h3>共享服务器访问</h3>${iconButton('RefreshCw', '刷新共享访问', 'refresh')}</header>${nativeGrantRows(owner)}</section>
@@ -933,6 +949,11 @@
     },
     'server-workflow': (value) => {
       current().workflow = value
+      render()
+    },
+    'enable-team-listener': () => {
+      const owner = actor.value
+      state.teamEndpoints[owner] = addresses[owner]
       render()
     },
     'generate-link': () => {
