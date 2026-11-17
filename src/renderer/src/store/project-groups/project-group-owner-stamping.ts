@@ -3,7 +3,7 @@ import { LOCAL_EXECUTION_HOST_ID, toSshExecutionHostId } from '../../../../share
 import type { RuntimeClientTarget } from '../../runtime/runtime-rpc-client'
 import { getRuntimeTargetHostId } from '../runtime-target-host'
 import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 export function projectGroupWithFetchedOwner(
   projectGroup: ProjectGroup,
@@ -16,7 +16,7 @@ export function projectGroupWithFetchedOwner(
     return {
       ...projectGroup,
       executionHostId: getRuntimeTargetHostId(target),
-      ...(isWorkbenchShell() && pairingRevision !== undefined
+      ...(isMonicaShell() && pairingRevision !== undefined
         ? { pairedCatalogRevision: pairingRevision }
         : {})
     }
