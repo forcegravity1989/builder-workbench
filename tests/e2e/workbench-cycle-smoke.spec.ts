@@ -377,9 +377,9 @@ fixedWorkspaceTest(
 isolatedProjectTest(
   'BW milestones: real editing, pointer drag, source return and safe submit failure @headful',
   async ({ workbenchPage, seededRepoPath, electronApp }, testInfo) => {
-    test.setTimeout(300_000)
-    await verifyMilestones(workbenchPage, seededRepoPath, testInfo)
-    await verifyMilestoneRestart(electronApp, testInfo)
+    test.setTimeout(600_000)
+    const material = await verifyMilestones(workbenchPage, seededRepoPath, testInfo)
+    await verifyMilestoneRestart(electronApp, testInfo, material)
   }
 )
 

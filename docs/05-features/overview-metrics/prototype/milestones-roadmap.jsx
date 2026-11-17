@@ -324,7 +324,7 @@ export function MilestoneGuide({ planning }) {
     ],
     [
       '提交评审',
-      '修改先保存在本机。提交生成或更新 PR，合入后再更新正式安排。',
+      '修改自动保存到项目材料工作树。提交后可在代码仓评审。里程碑旁的「更新代码」拉取该工作树的更新。',
       '.ml-milestone-heading .btn-primary'
     ]
   ]

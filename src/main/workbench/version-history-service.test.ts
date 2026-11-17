@@ -357,9 +357,9 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks', 
     expectedRevision: catalog.records[1].revision
   }
   expect((await port.read(request)).document).toMatchObject({ cycleId: 'spanning-weeks' })
-  expect(
-    (await port.read({ ...request, source: 'trunk' })).document
-  ).toMatchObject({ cycleId: 'spanning-weeks' })
+  expect((await port.read({ ...request, source: 'trunk' })).document).toMatchObject({
+    cycleId: 'spanning-weeks'
+  })
   await expect(port.read({ ...request, expectedRevision: firstRevision })).rejects.toMatchObject({
     code: 'history-identity-mismatch'
   })
@@ -403,6 +403,11 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks', 
   expect(current.records).toHaveLength(1)
   expect(current.records[0].sourceCommit).toBe(acceptanceLatestCommit)
   expect(current.problems).toEqual([])
+  const entryTimes = await port.listPlanEntryTimes({ scope, baselineCommit: adoptedCommit })
+  expect(entryTimes.v1).toBe(
+    Date.parse(git(['show', '-s', '--format=%cI', firstCommit]).toString().trim())
+  )
+  await expect(port.listPlanEntryTimes({ scope, baselineCommit: firstCommit })).resolves.toEqual({})
 })
 
 it('lists version folders from data.json committed on the cycle branch itself', async () => {

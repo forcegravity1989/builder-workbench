@@ -1,6 +1,7 @@
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
   VersionHistoryListSchema,
+  VersionPlanEntryTimesSchema,
   VersionHistoryReadSchema,
   VersionHistoryReadPlanSchema,
   VersionTreePlansSchema
@@ -9,6 +10,12 @@ import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-res
 import { nativeVersionHistoryService } from '../../../workbench/version-history-runtime'
 
 export const WORKBENCH_HISTORY_METHODS = [
+  defineWorkbenchMethod({
+    name: 'workbench.history.listPlanEntryTimes',
+    params: VersionPlanEntryTimesSchema,
+    handler: (params, { runtime }) =>
+      workbenchRuntimeResult(() => nativeVersionHistoryService(runtime).listPlanEntryTimes(params))
+  }),
   defineWorkbenchMethod({
     name: 'workbench.history.list',
     params: VersionHistoryListSchema,

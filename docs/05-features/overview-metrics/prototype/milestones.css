@@ -267,6 +267,10 @@
   min-height: 30px;
   padding: 6px 10px;
 }
+.ml-milestone-status {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
 .ml-first-plan {
   min-height: 180px;
   display: flex;
@@ -895,7 +899,8 @@
   align-items: center;
   gap: 10px;
 }
-.ml-spinner {
+.ml-spinner,
+.ml-updating-project svg {
   animation: ml-spin 1s linear infinite;
 }
 @keyframes ml-spin {

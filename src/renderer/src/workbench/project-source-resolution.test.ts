@@ -10,7 +10,11 @@ import {
   versionCatalogWorktrees,
   versionCatalogFingerprint
 } from './version-catalog-source'
-import { mergeVersionCatalog } from '../../../shared/workbench/version-catalog'
+import {
+  collectVersionCatalogWorkspaces,
+  mergeVersionCatalog
+} from '../../../shared/workbench/version-catalog'
+import { mergeProjectVersions, type CatalogSource } from './project-version-catalog-merge'
 import {
   retainUnavailableCatalogSources,
   type CatalogGoalSource
@@ -33,6 +37,67 @@ function repo(id: string, hostId: Repo['executionHostId'], owner = 'acme'): Repo
     }
   }
 }
+
+it('groups same-repo workspaces without replacing an unavailable material source', () => {
+  const source = (registration: Repo, versions: string[]): CatalogSource => {
+    const worktrees = versions.map(
+      (version) =>
+        ({
+          id: version,
+          repoId: registration.id,
+          hostId: registration.executionHostId,
+          workbenchVersionBinding: { schema: 1, version, workflow: 'plan' }
+        }) as Worktree
+    )
+    const entries = mergeVersionCatalog({
+      committed: { records: [], problems: [] },
+      goalsByVersion: new Map(
+        versions.map((version) => [version, [{ goalId: 'g1', title: registration.id }]])
+      ),
+      drafts: versions.map((version) => ({
+        version,
+        cycleId: registration.id,
+        revision: registration.id
+      })),
+      workspaces: collectVersionCatalogWorkspaces(worktrees, [registration.id])
+    })
+    return {
+      repo: registration,
+      state: {
+        scope: null,
+        home: null,
+        worktrees,
+        repoIds: [registration.id],
+        planTrees: [],
+        catalog: { entries, problems: [] },
+        loading: false,
+        error: null,
+        materialReady: true,
+        materialError: null,
+        planOrderPending: false,
+        reload: () => {}
+      }
+    }
+  }
+  const local = source(repo('local', 'local'), ['v1.0'])
+  const peer = source(repo('peer', 'runtime:peer'), ['v1.0', 'v1.1'])
+  const selectSource = (candidates: Repo[]) => candidates[0]
+  const [shared, peerOnly] = mergeProjectVersions([local, peer], local, undefined, selectSource)
+  expect(shared.entry.workspaces.map((tree) => tree.hostId)).toEqual(['local', 'runtime:peer'])
+  expect(shared.entry.goals.map((goal) => goal.title)).toEqual(['local'])
+  expect(shared.goalWorktrees).toEqual(local.state.worktrees)
+  expect(peerOnly.source).toBe(peer)
+
+  const unavailable = { ...local, state: { ...local.state, materialReady: false } }
+  const preferredPeer = { version: 'v1.1', repoId: 'peer', hostId: 'runtime:peer' as const }
+  const peerVersion = (preference?: Parameters<typeof mergeProjectVersions>[2]) =>
+    mergeProjectVersions([unavailable, peer], unavailable, preference, selectSource).find(
+      (row) => row.entry.version === 'v1.1'
+    )
+  expect(peerVersion()).toMatchObject({ source: null, entry: { state: 'working', goals: [] } })
+  expect(peerVersion(preferredPeer)?.source).toBe(peer)
+  expect(peerVersion({ ...preferredPeer, repoId: 'removed' })?.source).toBeNull()
+})
 
 it('uses the same checkout identity, then Orca host preference when no local copy exists', () => {
   const peer = repo('peer', 'runtime:peer')

@@ -58,7 +58,7 @@ export function WorkbenchSidebarVersions({
       return page.options ? findRepoForHost(s.repos, page.options.repoId, page.options) : null
     }
     if (page?.kind === 'cycle') {
-      const scope = page.options
+      const { scope } = page.options
       const hostId = scope.runtimeOwnerEnvironmentId
         ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
         : scope.hostId
