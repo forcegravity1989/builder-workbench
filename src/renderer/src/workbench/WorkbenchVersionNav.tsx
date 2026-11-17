@@ -90,6 +90,8 @@ export function WorkbenchVersionNav({
   const cycleView = useCycleView()
   const projectPage = useProjectPage()
   const [dialog, setDialog] = useState<DialogState>(null)
+  // Why: 已固定/版本/工作区 share one accordion; 版本 collapses its own row list.
+  const [collapsed, setCollapsed] = useState(false)
   const catalog = useVersionCatalogForRepo(repoId, hostId)
   const cleanupCatalog = useVersionCatalogForRepo(dialog?.mode === 'cleanup' ? repoId : null)
   const overviewVersion =
@@ -354,6 +356,8 @@ export function WorkbenchVersionNav({
     >
       <WorkbenchSidebarSectionHeader
         icon={Layers}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((value) => !value)}
         action={
           <>
             <Button
@@ -382,38 +386,44 @@ export function WorkbenchVersionNav({
         版本
       </WorkbenchSidebarSectionHeader>
 
-      {catalog.error ? (
-        <div className="px-2 py-1 text-[11px] text-destructive">
-          <ErrorDetails summary="版本目录读取失败 · 查看详情" detail={catalog.error} />
-          <button type="button" className="underline" onClick={catalog.reload}>
-            重试
-          </button>
-        </div>
-      ) : null}
-      {!catalog.error && catalog.loading && entries.length === 0 ? (
-        <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">版本目录读取中…</p>
-      ) : null}
-      {!catalog.error && !catalog.loading && entries.length === 0 ? (
-        <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">
-          暂无版本 · 保存版本计划或从「＋ 新建版本」开始
-        </p>
-      ) : null}
-      {problems.length > 0 ? (
-        <ErrorDetails
-          className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/70"
-          summary={`${problems.length} 项材料读取问题 · 查看详情`}
-          detail={problems.map((problem) => problem.message).join('\n')}
-        />
-      ) : null}
+      {!collapsed ? (
+        <>
+          {catalog.error ? (
+            <div className="px-2 py-1 text-[11px] text-destructive">
+              <ErrorDetails summary="版本目录读取失败 · 查看详情" detail={catalog.error} />
+              <button type="button" className="underline" onClick={catalog.reload}>
+                重试
+              </button>
+            </div>
+          ) : null}
+          {!catalog.error && catalog.loading && entries.length === 0 ? (
+            <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">
+              版本目录读取中…
+            </p>
+          ) : null}
+          {!catalog.error && !catalog.loading && entries.length === 0 ? (
+            <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">
+              暂无版本 · 保存版本计划或从「＋ 新建版本」开始
+            </p>
+          ) : null}
+          {problems.length > 0 ? (
+            <ErrorDetails
+              className="px-2 pb-1 text-[10.5px] text-worktree-sidebar-foreground/70"
+              summary={`${problems.length} 项材料读取问题 · 查看详情`}
+              detail={problems.map((problem) => problem.message).join('\n')}
+            />
+          ) : null}
 
-      <VersionSidebarPreview
-        repoId={repoId}
-        entries={entries}
-        activeVersion={activeVersion}
-        activeContextKey={`${activeView}:${activeObjectKey}`}
-        versionElements={versionElements}
-        renderRow={renderVersionRow}
-      />
+          <VersionSidebarPreview
+            repoId={repoId}
+            entries={entries}
+            activeVersion={activeVersion}
+            activeContextKey={`${activeView}:${activeObjectKey}`}
+            versionElements={versionElements}
+            renderRow={renderVersionRow}
+          />
+        </>
+      ) : null}
 
       {dialog?.mode === 'cleanup' ? (
         <VersionCleanupDialog
