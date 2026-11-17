@@ -1,9 +1,9 @@
-import { taskScopeGitHubViewerKey } from '@/workbench/task-scope-projection'
+import { taskScopeGitHubViewerKey } from '@/monica/task-scope-projection'
 import { taskPageWorkItemKey } from './task-page-work-item-signatures'
-import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
+import type { TaskPageMonicaScopeModel } from './use-task-page-monica-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import { matchesWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
+import { matchesMonicaTaskQuery } from '../../../shared/monica/task-scope'
 import { taskPageGitHubItemKey } from '@/components/task-page-github-work-item-mutation-registry'
 import { deriveTaskPagePRCheckSummary } from '@/components/task-page-pr-check-summary'
 import { deriveAdvertisedTotalPages } from '@/components/task-page-work-item-pagination'
@@ -14,7 +14,7 @@ import {
   getTaskPageRepoSourceContext
 } from './task-page-source-context'
 import { sameOptionalGitHubOwnerRepo } from './task-page-github-review-model'
-export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeModel) {
+export function useTaskPageGitHubListProjection(model: TaskPageMonicaScopeModel) {
   const {
     repoMap,
     fetchPRChecks,
@@ -31,8 +31,8 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     perRepoSourceState,
     activeGithubTaskKind,
     githubWorkItemMutation,
-    workbenchScopeActive,
-    workbenchScopeItemKeys
+    monicaScopeActive,
+    monicaScopeItemKeys
   } = model
   const goalDisplayQuery = model.appliedTaskSearch
   // Why: defense-in-depth — keep stale cache rows from leaking across the issue/PR split tabs.
@@ -47,32 +47,32 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
   const currentPageItems = useMemo(() => pages[currentPage] ?? [], [pages, currentPage])
   // Goal membership fences cache pre-paint; native Issue/PR filtering still applies.
   const typeFilteredCurrentPageItems = useMemo(() => {
-    if (!workbenchScopeActive) {
+    if (!monicaScopeActive) {
       return applyTypeFilter(currentPageItems)
     }
     if (activeGithubTaskKind === 'prs') {
       return []
     }
     return applyTypeFilter(currentPageItems).filter((item) =>
-      workbenchScopeItemKeys.has(taskPageWorkItemKey(item))
+      monicaScopeItemKeys.has(taskPageWorkItemKey(item))
     )
   }, [
     activeGithubTaskKind,
     applyTypeFilter,
     currentPageItems,
-    workbenchScopeActive,
-    workbenchScopeItemKeys
+    monicaScopeActive,
+    monicaScopeItemKeys
   ])
   // Why: soft-hide keeps membership-exit rows in pages for rollback/cursors but
   // removes them from the visible table (sticky ∪ pending membership).
   const filteredWorkItems = useMemo(
     () =>
       typeFilteredCurrentPageItems.filter((workItem) =>
-        workbenchScopeActive
-          ? matchesWorkbenchTaskQuery(
+        monicaScopeActive
+          ? matchesMonicaTaskQuery(
               { ...workItem, assignees: (workItem.assignees ?? []).map((user) => user.login) },
               goalDisplayQuery,
-              model.workbenchScopeViewerLogins.get(taskScopeGitHubViewerKey(workItem)) ?? null
+              model.monicaScopeViewerLogins.get(taskScopeGitHubViewerKey(workItem)) ?? null
             )
           : !githubWorkItemMutation.softHiddenItemKeys.has(
               taskPageGitHubItemKey(workItem.repoId, workItem.id)
@@ -81,9 +81,9 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     [
       githubWorkItemMutation.softHiddenItemKeys,
       typeFilteredCurrentPageItems,
-      workbenchScopeActive,
+      monicaScopeActive,
       goalDisplayQuery,
-      model.workbenchScopeViewerLogins
+      model.monicaScopeViewerLogins
     ]
   )
   const softHiddenVisibleCount = useMemo(
@@ -187,9 +187,9 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
   const fallbackTotalPages = lastLoadedPageFull
     ? Math.max(pages.length, lastLoadedPageIndex + 2)
     : Math.max(1, pages.length)
-  // Why: scoped (BW) lists materialize every page up front — the advertised
+  // Why: scoped (Monica) lists materialize every page up front — the advertised
   // count is the local page count, never an unscoped provider count query.
-  const totalPages = workbenchScopeActive
+  const totalPages = monicaScopeActive
     ? Math.max(1, pages.length)
     : deriveAdvertisedTotalPages({
         loadedPages: pages.length,

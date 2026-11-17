@@ -19,11 +19,11 @@ import {
   matchScopedTaskWorkspaces,
   notifyScopedWorkspaceUnavailable,
   resolveScopedComposerAdditions
-} from '@/workbench/scoped-task-workspace'
-import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
+} from '@/monica/scoped-task-workspace'
+import { dispatchScopedWorktrees } from '@/monica/version-workspace-choice-state'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
-  // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
+  // G2 (Monica)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
   // 原生创建器（解析住在 workbench/scoped-task-workspace，原生文件保持薄挂载
   // 并在行数上限内）；无范围时返回空对象，原生预填逐字不变。
   const scopedComposerAdditions = useCallback(
@@ -32,8 +32,8 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       type: string
       number: number
       provider: 'github' | 'codehub'
-    }) => resolveScopedComposerAdditions({ scope: model.workbenchScope, repoMap, item }),
-    [model.workbenchScope, repoMap]
+    }) => resolveScopedComposerAdditions({ scope: model.monicaScope, repoMap, item }),
+    [model.monicaScope, repoMap]
   )
   const openComposerForItem = useCallback(
     (item: GitHubWorkItem): void => {
@@ -77,12 +77,12 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const handleOpenOrUseGitHubWorkItem = useCallback(
     (item: GitHubWorkItem): void => {
       const worktrees = useAppStore.getState().allWorktrees()
-      // G2 (BW)：范围视图的 Issue 按明确版本绑定解析——唯一 → 直开；多候选 →
+      // G2 (Monica)：范围视图的 Issue 按明确版本绑定解析——唯一 → 直开；多候选 →
       // 选择器（绝不取数组第一棵）；无 → Start。PR 行与无范围视图保持原生
       // 「首个未归档树」语义逐字不变。
-      if (model.workbenchScope && item.type === 'issue') {
+      if (model.monicaScope && item.type === 'issue') {
         const scoped = matchScopedTaskWorkspaces({
-          scope: model.workbenchScope,
+          scope: model.monicaScope,
           worktrees,
           provider: 'github',
           number: item.number,
@@ -133,7 +133,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       }
       useAppStore.getState().recordFeatureInteraction('github-tasks')
     },
-    [handleUseWorkItem, model.workbenchScope, repoMap]
+    [handleUseWorkItem, model.monicaScope, repoMap]
   )
   const openComposerForGitLabItem = useCallback(
     (item: GitLabWorkItem): void => {
@@ -207,11 +207,11 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   )
   const handleUseCodeHubItem = useCallback(
     (item: CodeHubTaskItem): void => {
-      // G2 (BW)：范围视图的 CodeHub Issue 同样按明确绑定解析；无范围或 MR 行
+      // G2 (Monica)：范围视图的 CodeHub Issue 同样按明确绑定解析；无范围或 MR 行
       // 保持原生语义（直接进创建器）逐字不变。
-      if (model.workbenchScope && item.type === 'issue') {
+      if (model.monicaScope && item.type === 'issue') {
         const scoped = matchScopedTaskWorkspaces({
-          scope: model.workbenchScope,
+          scope: model.monicaScope,
           worktrees: useAppStore.getState().allWorktrees(),
           provider: 'codehub',
           number: item.iid,
@@ -231,7 +231,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       }
       openComposerForCodeHubItem(item)
     },
-    [codeHubSourceContextFor, model.workbenchScope, openComposerForCodeHubItem]
+    [codeHubSourceContextFor, model.monicaScope, openComposerForCodeHubItem]
   )
   const nextModel = model as typeof model & {
     openComposerForItem: typeof openComposerForItem

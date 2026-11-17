@@ -21,7 +21,7 @@ import { SetupGuideProgressRing } from './SetupGuideProgressRing'
 import { useSetupGuideProgress } from './use-setup-guide-progress'
 import { useSetupGuideOpenCloseTelemetry } from './use-setup-guide-telemetry'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { showOnboardingFromRenderer } from '../onboarding/show-onboarding-event'
 import { toast } from 'sonner'
 
@@ -53,7 +53,7 @@ function SetupGuideModalContent({
   lingering: boolean
 }): JSX.Element {
   const modalData = useAppStore((s) => s.modalData)
-  const isBW = isWorkbenchShell()
+  const isBW = isMonicaShell()
   const [openingInitialSetup, setOpeningInitialSetup] = useState(false)
   const closeModal = useAppStore((s) => s.closeModal)
   const setSetupGuideSidebarDismissed = useAppStore((s) => s.setSetupGuideSidebarDismissed)
@@ -156,7 +156,7 @@ function SetupGuideModalContent({
     toast.success(translate('guidance.setupGuideClosed', 'Setup guide closed'), {
       description: translate(
         'guidance.setupGuideReopen',
-        'You can reopen it from Help → Getting Started with BW.'
+        'You can reopen it from Help → Getting Started with Monica.'
       )
     })
   }
@@ -198,7 +198,7 @@ function SetupGuideModalContent({
           <div className="flex items-center gap-2">
             <DialogTitle className="text-lg">
               {isBW
-                ? translate('guidance.gettingStarted', 'Getting Started with BW')
+                ? translate('guidance.gettingStarted', 'Getting Started with Monica')
                 : translate(
                     'auto.components.setup.guide.SetupGuideModal.48a9e5ef2d',
                     'Getting started'
@@ -265,10 +265,10 @@ function SetupGuideModalContent({
 
 function isFeatureWallSetupStepId(
   value: unknown,
-  workbenchShell: boolean
+  monicaShell: boolean
 ): value is FeatureWallSetupStepId {
   return (
     typeof value === 'string' &&
-    getFeatureWallSetupStepIds(workbenchShell).includes(value as FeatureWallSetupStepId)
+    getFeatureWallSetupStepIds(monicaShell).includes(value as FeatureWallSetupStepId)
   )
 }

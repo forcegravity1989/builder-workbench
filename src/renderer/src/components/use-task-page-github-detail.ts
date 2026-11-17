@@ -164,14 +164,14 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
   }, [pageData.openGitLabWorkItem, setGitlabDialogItem])
   const openGitHubDetailPage = useCallback(
     (item: GitHubWorkItem, initialTab: ItemDialogTab = 'conversation') => {
-      // Why: a BW workbench scope must survive the detail round-trip (close
+      // Why: a Monica workbench scope must survive the detail round-trip (close
       // restores the scoped list), and the unscoped position key must not record
       // a scoped page number.
-      const workbenchTaskScope = useAppStore.getState().taskPageData.workbenchTaskScope ?? null
+      const monicaTaskScope = useAppStore.getState().taskPageData.monicaTaskScope ?? null
       const scrollTop = getTaskPageScrollTop(githubListScrollRef, githubListScrollTopRef.current)
       githubListScrollTopRef.current = scrollTop
       pendingGithubScrollRestoreRef.current = scrollTop
-      if (!workbenchTaskScope) {
+      if (!monicaTaskScope) {
         taskListPositionRef.current = {
           contextKey: githubResumeContextKey,
           page: currentPageRef.current,
@@ -183,7 +183,7 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
         {
           taskSource: 'github',
           preselectedRepoId: item.repoId,
-          ...(workbenchTaskScope ? { workbenchTaskScope } : {}),
+          ...(monicaTaskScope ? { monicaTaskScope } : {}),
           openGitHubWorkItem: item,
           openGitHubSourceContext: getTaskPageGitHubItemSource(repoMap.get(item.repoId), item),
           openGitHubInitialTab: initialTab

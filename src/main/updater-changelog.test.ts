@@ -250,8 +250,8 @@ describe('fetchChangelog', () => {
     expect(result!.release.releaseNotesUrl).toBe('https://onorca.dev/changelog/1.1.21')
   })
 
-  it('does not request Orca showcase content for Workbench', async () => {
-    vi.stubEnv('WORKBENCH_SHELL', '1')
+  it('does not request Orca showcase content for Monica', async () => {
+    vi.stubEnv('MONICA_SHELL', '1')
     try {
       await expect(fetchChangelog('0.7.0', '0.6.0')).resolves.toBeNull()
       expect(fetchMock).not.toHaveBeenCalled()

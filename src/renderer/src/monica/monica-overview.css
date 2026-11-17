@@ -1,0 +1,434 @@
+.monica-ov {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  color: var(--color-text);
+}
+.monica-ov .page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.monica-ov .page-head h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.monica-ov .content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: none;
+}
+.monica-ov .content > * {
+  flex-shrink: 0;
+}
+.monica-ov .card {
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.monica-ov .card-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.monica-ov .card-chevron {
+  flex-shrink: 0;
+  color: var(--color-neutral-600);
+  transition: transform 120ms ease;
+}
+.monica-ov .card-chevron.is-open {
+  transform: rotate(90deg);
+}
+.monica-ov .card-title {
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.monica-ov .detail-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 16px;
+  padding-top: 8px;
+  line-height: 1.4;
+  border-top: 1px solid var(--color-divider);
+}
+.monica-ov .detail-k {
+  color: var(--color-neutral-600);
+  font-size: 12px;
+}
+.monica-ov .detail-v {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.monica-ov .monica-muted {
+  color: var(--color-neutral-600);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.monica-ov .monica-ov-section {
+  padding: 0;
+  gap: 0;
+}
+.monica-ov #scoreboard {
+  position: relative;
+}
+.monica-metrics-preview .content {
+  padding: 8px 12px 12px;
+}
+/* 记分牌的批注窗浮在窗口上方，不盖住目标行和指标。计划/验收仍用板面内的定位。 */
+.monica-ov #scoreboard > .g3-annot-panel {
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  z-index: 80;
+}
+.monica-ov .monica-sb-annot-entry.monica-sb-annot-on {
+  border-color: var(--color-accent, #d97757);
+  color: var(--color-accent, #d97757);
+}
+.monica-ov .monica-sb-annot-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--color-accent, #d97757);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+.monica-ov .monica-sb-annot-notice {
+  margin: 0;
+  padding: 6px 16px;
+  font-size: 12px;
+  color: var(--color-neutral-600);
+  border-bottom: 1px solid var(--color-divider);
+}
+.monica-ov #scoreboard.annotating .monica-sb-body [data-annotate-kind] {
+  cursor: crosshair;
+}
+.monica-ov #scoreboard.annotating .monica-sb-body [data-annotate-kind]:hover {
+  outline: 1px dashed var(--color-foreground, currentColor);
+  outline-offset: 2px;
+}
+.monica-ov .monica-ov-section-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-divider);
+  min-width: 0;
+}
+.monica-ov .monica-ov-section-head h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+.monica-ov .tabs {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  gap: 4px;
+}
+.monica-ov .tab {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--color-neutral-600);
+  padding: 8px 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.monica-ov .tab[aria-selected='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  font-weight: 600;
+}
+.monica-ov .monica-ov-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.monica-ov .monica-btn-secondary {
+  background: var(--color-card);
+  color: var(--color-text);
+  border: 1px solid var(--color-neutral-300);
+  box-shadow: 0 1px 2px #0000000a;
+}
+.monica-ov .monica-btn-secondary:hover {
+  background: var(--color-neutral-100);
+}
+.monica-ov .monica-btn {
+  white-space: nowrap;
+}
+.monica-ov .monica-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.monica-ov .monica-ov-cycle {
+  background: var(--color-card);
+  color: var(--color-text);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  max-width: 100%;
+}
+.monica-ov .monica-ov-section-body {
+  padding: 12px 16px;
+}
+.monica-ov .monica-ov-alert {
+  color: var(--color-warning);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  margin: 4px 0;
+}
+.monica-ov #scoreboard .monica-ov-section-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.monica-ov .monica-sb-draft {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-neutral-600);
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+.monica-ov .monica-sb-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  overflow-x: auto;
+  padding: 4px 16px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.monica-ov .monica-sb-cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.monica-ov .monica-sb-cluster + .monica-sb-cluster {
+  margin-left: 28px;
+}
+.monica-ov .monica-sb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.monica-ov .monica-sb-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-neutral-400);
+}
+.monica-ov .monica-sb-dot-met {
+  background: var(--color-success);
+}
+.monica-ov .monica-sb-dot-unmet {
+  background: var(--color-warning);
+}
+.monica-ov .monica-sb-body {
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+}
+.monica-ov .monica-sb-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.monica-ov .monica-sb-measure {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 11rem);
+  gap: 4px 20px;
+  padding: 12px 24px 12px 0;
+}
+.monica-ov .monica-sb-measure + .monica-sb-measure {
+  padding: 12px 0 12px 24px;
+  border-left: 1px solid var(--color-divider);
+}
+.monica-ov .monica-sb-measure-empty {
+  display: block;
+}
+.monica-ov .monica-sb-role {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-neutral-600);
+}
+.monica-ov .monica-sb-name {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.monica-ov .monica-sb-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 10px;
+}
+.monica-ov .monica-sb-num {
+  font: 600 30px/1 var(--font-mono);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.monica-ov .monica-sb-num-unknown {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--color-neutral-500, var(--color-neutral-600));
+}
+.monica-ov .monica-sb-num-met {
+  color: var(--color-success);
+}
+.monica-ov .monica-sb-num-unmet {
+  color: var(--color-warning);
+}
+.monica-ov .monica-sb-finish {
+  font: 500 13px/1 var(--font-mono);
+  color: var(--color-neutral-600);
+}
+.monica-ov .monica-sb-trend {
+  align-self: end;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 64px;
+}
+.monica-ov .monica-sb-bar {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+}
+.monica-ov .monica-sb-bar i {
+  display: block;
+  width: 100%;
+  border-radius: 2px;
+  background: var(--color-neutral-300);
+}
+.monica-ov .monica-sb-bar-now i {
+  background: var(--color-neutral-600);
+}
+.monica-ov .monica-sb-bar-none i {
+  border: 1px dashed var(--color-neutral-300);
+  background: transparent;
+}
+.monica-ov .monica-sb-bar span {
+  font: 10px var(--font-mono);
+  color: var(--color-neutral-600);
+  white-space: nowrap;
+}
+.monica-ov .monica-sb-empty {
+  margin: 0;
+  padding: 16px;
+}
+
+.monica-ov :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 65rem) {
+  .monica-ov .content {
+    padding: 12px;
+  }
+  .monica-ov .monica-ov-section-head {
+    gap: 8px;
+  }
+}
+@media (max-width: 48rem) {
+  .monica-ov .monica-sb-duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .monica-ov .monica-sb-measure + .monica-sb-measure {
+    border-left: 0;
+    border-top: 1px solid var(--color-divider);
+  }
+  .monica-ov .monica-sb-measure + .monica-sb-measure {
+    padding: 12px 0;
+  }
+}
+
+/* 手动刷新指标期间阻塞总览:采集可能耗时,不允许在半新半旧的读数上继续点。
+   后台自动补采(缓存未命中)不挂这层,只转刷新按钮的图标。 */
+.monica-ov-refresh-block {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.32);
+  cursor: progress;
+}
+.monica-ov-refresh-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 13px;
+}
+.monica-ov-refresh-spin {
+  animation: monica-ov-refresh-spin 1s linear infinite;
+}
+@keyframes monica-ov-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.project-card-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 2px;
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .monica-ov .card-chevron {
+    transition: none;
+  }
+}

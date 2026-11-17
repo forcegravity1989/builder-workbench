@@ -18,7 +18,7 @@ const { state, rpc, local } = vi.hoisted(() => ({
   local: vi.fn()
 }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => state } }))
-vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => state.workbench }))
+vi.mock('@/monica/is-monica-shell', () => ({ isMonicaShell: () => state.workbench }))
 vi.mock('@/runtime/runtime-rpc-client', async () => ({
   ...(await vi.importActual<typeof RuntimeClientTarget>('@/runtime/runtime-client-target')),
   callRuntimeRpc: rpc
