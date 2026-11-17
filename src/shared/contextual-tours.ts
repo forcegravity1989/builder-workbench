@@ -330,7 +330,7 @@ export const CONTEXTUAL_TOURS = [
       },
       {
         title: '提交评审',
-        body: '草稿保存在本机。提交评审，合入后更新正式安排。',
+        body: '编辑自动保存到项目材料工作树。核对改动并提交评审；里程碑标题旁的「更新代码」可同步该工作树。',
         targetSelector: '[data-contextual-tour-target~="milestone-submit"]'
       }
     ]
