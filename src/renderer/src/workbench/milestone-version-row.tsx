@@ -129,14 +129,15 @@ export function MilestoneVersionRow({
   return (
     <div className="wb-ml-version-row" style={{ height }}>
       <div className="wb-ml-label">
-        <div>
+        <div className="wb-ml-label-title">
+          <span>特性 / 负责人</span>
           {editable && (
             <MilestoneIconButton className="wb-ml-cell-add" label="添加特性" onClick={addFeature}>
-              <ListPlus size={16} />
+              <ListPlus className="size-4" aria-hidden="true" />
             </MilestoneIconButton>
           )}
-          特性 / 负责人<small>{showActual ? '规划 / 实际日期' : '计划 · 日排期'}</small>
         </div>
+        <small>{showActual ? '规划 / 实际日期' : '计划 · 日排期'}</small>
       </div>
       <div className="wb-ml-track" style={{ width: canvasWidth }}>
         {!showActual &&

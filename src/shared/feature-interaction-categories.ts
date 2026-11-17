@@ -65,6 +65,7 @@ export const FEATURE_INTERACTION_CATEGORY_BY_ID = {
   'floating-workspace-hidden': 'workspace',
   notifications: 'settings',
   ports: 'resource_management',
+  'quick-links': 'resource_management',
   'quick-commands': 'launcher',
   'resource-manager': 'resource_management',
   'review-notes': 'review',
