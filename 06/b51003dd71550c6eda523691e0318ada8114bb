@@ -1,0 +1,34 @@
+src/renderer/src/i18n/en-runtime-required.json
+  s_da7ab51653058a::t_cc50e9bfc83110 237
+src/main/artifacts/self-hosted-share-service.test.ts
+  h_a7e858313fdba5 227-254
+src/main/artifacts/self-hosted-share-service.ts
+  h_a7e858313fdba5 85-88,90,92-94,122-126,146,174
+src/renderer/src/components/artifacts/ArtifactPublishButton.test.tsx
+  h_a7e858313fdba5 15,50-51,137-152
+src/renderer/src/components/artifacts/ArtifactPublishButton.tsx
+  h_a7e858313fdba5 90-94
+src/renderer/src/i18n/locales/en.json
+  h_a7e858313fdba5 16646,16658,16665
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "06b51003dd71550c6eda523691e0318ada8114bb",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
