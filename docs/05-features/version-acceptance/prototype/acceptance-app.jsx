@@ -745,7 +745,7 @@ function App() {
             <span>B</span>
             <strong>Monica</strong>
           </div>
-          <div className="g3-project">Builder Monica</div>
+          <div className="g3-project">Monica</div>
           <div className="g3-nav-muted">项目总览</div>
           <div className="g3-nav-muted">自动化</div>
           <div className="g3-nav-muted">知识库</div>
@@ -797,7 +797,7 @@ function App() {
           <header className="g3-header">
             <div>
               <div className="g3-breadcrumb">
-                Builder Monica <span>/</span> v0.7
+                Monica <span>/</span> v0.7
               </div>
               <h1>版本验收</h1>
             </div>

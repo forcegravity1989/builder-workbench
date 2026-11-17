@@ -11,7 +11,7 @@
 
 产品名用 **Monica**，名称来自 **Milestones · Orca · Needs · Iteration · Collaboration · Acceptance**；完整中英文 slogan 在 [README](README.md) 的产品简介维护。自有源码目录与非序列化工程符号使用 `monica` / `Monica` / `MONICA_*`。
 
-`.bw/`、`bw:*` 标签、`bw/…` 固定分支、`workbench.*` RPC / capability、`workbench:*` IPC 及已有持久化字段、存储键、profile 和安装标识是稳定技术契约，不随产品改名迁移；它们不作为界面品牌名。GitHub 仓库仍为 `forcegravity1989/builder-workbench`，真实仓库与历史来源链接保持不变。普通术语按通常含义，不另造隐喻；UI 与代码注释的写作规则在 [AGENTS](AGENTS.md)。
+`.bw/`、`bw:*` 标签、`bw/…` 固定分支、`workbench.*` RPC / capability、`workbench:*` IPC 及已有持久化字段、存储键、profile 和安装标识是稳定技术契约，不随产品改名迁移；它们不作为界面品牌名。知识库 Skill 的目录及 frontmatter name `bw-knowledge-docs` 同样是稳定安装／更新身份，不随品牌改名迁移；正文展示品牌为 Monica。GitHub 仓库仍为 `forcegravity1989/builder-workbench`，真实仓库与历史来源链接保持不变。普通术语按通常含义，不另造隐喻；UI 与代码注释的写作规则在 [AGENTS](AGENTS.md)。
 
 ## 用户与执行工具
 
