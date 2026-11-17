@@ -1,0 +1,512 @@
+docs/04-design-system/guidance.md
+  s_ed1a657828d194::t_679615c197d399 86-87,90
+  s_b8ea9b2e8dfd1b::t_8a6190553f375f 25-26,48,79-82,85,91-95,102-103,105-109,111-113,157-162,164-170
+docs/05-features/task-management/STATUS.md
+  s_ed1a657828d194::t_79485c19f2e542 12
+.bw/metrics.toml
+  s_ed1a657828d194::t_4a5b7f150345e5 6-7,28,30-33,38,63,66
+.bw/planning/v1.0/acceptance-evidence.html
+  s_ed1a657828d194::t_5342b7b63f290b 1-414
+.bw/planning/v1.0/acceptance.json
+  s_ed1a657828d194::t_7932d175ac5eee 1-1416
+.bw/planning/v1.1/data.json
+  s_ed1a657828d194::t_a8bf03d973b62e 1-65
+.bw/scripts/task-cycle-hours.py
+  s_ed1a657828d194::t_96fe6a477d34e7 1-294
+.bw/scripts/test_metric_history.py
+  s_ed1a657828d194::t_4539481266a119 31,99-150
+.claude/skills/journey-review/SKILL.md
+  s_ed1a657828d194::t_8b6633809dd9a3 9,45
+.claude/skills/workbench-start/SKILL.md
+  s_ed1a657828d194::t_4fdafa57648209 40
+AGENTS.md
+  s_ed1a657828d194::t_98b849396af35d 23,99
+docs/03-guide/issue-delivery/README.md
+  s_ed1a657828d194::t_f44df430a326df 1-16
+docs/03-guide/project-direction/README.md
+  s_ed1a657828d194::t_aaf4c4559d0b2b 25,31-32
+docs/03-guide/version-acceptance/README.md
+  s_ed1a657828d194::t_2ac3679b19e86c 1-16
+docs/03-guide/version-planning/README.md
+  s_ed1a657828d194::t_f64b77bf445574 1-41
+docs/04-design-system/README.md
+  s_ed1a657828d194::t_55826bba6a71d6 14,24
+docs/04-design-system/guidelines.md
+  s_ed1a657828d194::t_445aafb433638e 3,13,16,74,89-112,117,169,183-192
+docs/04-design-system/primitives/Button.md
+  s_ed1a657828d194::t_e463aa468d8c5e 19-30
+docs/05-features/codehub/STATUS.md
+  s_ed1a657828d194::t_318bed07e7553a 28
+docs/05-features/codehub/intent.md
+  s_ed1a657828d194::t_0af4de889a0fdd 23,27
+docs/05-features/codehub/spec.md
+  s_ed1a657828d194::t_4e11113a4f697c 23,46,59,73
+docs/05-features/connectors/spec.md
+  s_ed1a657828d194::t_96eb5d782a3bb2 12
+docs/05-features/explore-workbench/STATUS.md
+  s_ed1a657828d194::t_f4073198680b90 7,19-26
+docs/05-features/explore-workbench/prototype/w05-journey.html
+  s_ed1a657828d194::t_477b2fd74c701c 1-566
+docs/05-features/explore-workbench/spec.md
+  s_ed1a657828d194::t_a746ec32aaf37d 48-71
+docs/05-features/overview-metrics/STATUS.md
+  s_ed1a657828d194::t_0054c75c6bcf1d 40-41
+docs/05-features/overview-metrics/milestone-design.md
+  s_ed1a657828d194::t_0fc4ee85e8f52b 58
+docs/05-features/overview-metrics/spec.md
+  s_ed1a657828d194::t_63bf8e4ce0d6e9 36,44,64,82,186-192
+docs/05-features/project-intake/STATUS.md
+  s_ed1a657828d194::t_362779c361558f 7,11-12
+docs/05-features/project-intake/intent.md
+  s_ed1a657828d194::t_8f9b83471a0398 15,25
+docs/05-features/project-intake/prototype/project-wall-data.js
+  s_ed1a657828d194::t_2c948859befda9 97-98,100,119-120,122,152-153,155-156
+docs/05-features/project-intake/prototype/project-wall-views.js
+  s_ed1a657828d194::t_2cd97218117150 25,27,30-31,137
+docs/05-features/project-intake/spec.md
+  s_ed1a657828d194::t_0e9fb706679242 15,40,61,77
+docs/05-features/quick-links/STATUS.md
+  s_ed1a657828d194::t_507444a54e4d23 1-20
+docs/05-features/quick-links/design.md
+  s_ed1a657828d194::t_daa67db1cb82c0 1-46
+docs/05-features/quick-links/intent.md
+  s_ed1a657828d194::t_716c7dbe4605a7 1-57
+docs/05-features/quick-links/prototype.html
+  s_ed1a657828d194::t_f45f86aa6fe0da 1-608
+docs/05-features/quick-links/spec.md
+  s_ed1a657828d194::t_d2d0e162eb1931 1-98
+docs/05-features/version-acceptance/STATUS.md
+  s_ed1a657828d194::t_86bccb734c2ec6 9,23
+docs/05-features/version-acceptance/spec.md
+  s_ed1a657828d194::t_6152cc8696e31d 33-35,92
+docs/05-features/version-overview/prototype/overview-app.jsx
+  s_ed1a657828d194::t_7b28417d09f1a2 5,8,47,50-53,56,59-67,455,458-459,461,464-465
+docs/05-features/version-overview/prototype/overview.js
+  s_ed1a657828d194::t_d20ce267c13411 4,55
+docs/05-features/version-overview/spec.md
+  s_ed1a657828d194::t_44484057fb8879 27-37
+docs/05-features/version-planning/STATUS.md
+  s_ed1a657828d194::t_9006466adaa4f0 12-15
+docs/05-features/version-planning/spec.md
+  s_ed1a657828d194::t_5d9e098a8cf665 22,25,49,88,131,177,181,185-188
+docs/05-features/version-workspace/STATUS.md
+  s_ed1a657828d194::t_1c488e976f59d5 7-10
+docs/05-features/version-workspace/design.md
+  s_ed1a657828d194::t_3647be6edf4cb8 7,63,69-75,87,95,102
+docs/05-features/version-workspace/spec.md
+  s_ed1a657828d194::t_ad524ba39ac76c 17-19,25,36,57-60
+docs/06-module/客户端更新.md
+  s_ed1a657828d194::t_a8b333797ffc67 9-10
+docs/README.md
+  s_ed1a657828d194::t_9dc4055c0a7f11 22
+docs/architecture.md
+  s_ed1a657828d194::t_a745db9fe60240 21,24,76,86-88
+docs/development.md
+  s_ed1a657828d194::t_17f6606d0559ef 19-20,56-61
+docs/hifi/README.md
+  s_ed1a657828d194::t_68739b6ea00b25 9-10
+ref/upstream.md
+  s_ed1a657828d194::t_3b0967bffe9a46 128,154-155
+src/main/updater.publishing-window-feed.test.ts
+  s_ed1a657828d194::t_2d53db8f2bf969 1,3,36-39,265-294
+src/main/updater/updater-release-feed.ts
+  s_ed1a657828d194::t_81dad61a6c248c 8,163-164
+src/main/workbench/metrics-runtime.ts
+  s_ed1a657828d194::t_194e04b77c7569 16,128
+src/main/workbench/skill-install.test.ts
+  s_ed1a657828d194::t_ba0c5341069014 119
+src/main/workbench/skill-install.ts
+  s_ed1a657828d194::t_9c4eee26559bb2 86-90,97
+src/renderer/src/components/browser-pane/assemble-chrome/BrowserImportHintButton.tsx
+  s_ed1a657828d194::t_a4b7b36b6f5807 29,33-34,180
+src/renderer/src/components/browser-pane/assemble-chrome/BrowserToolbarMenu.tsx
+  s_ed1a657828d194::t_85ed2a21bf948c 22,31,53
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-chrome-header.tsx
+  s_ed1a657828d194::t_97f701414d70d4 20,46,75
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-pane.tsx
+  s_ed1a657828d194::t_244fb71ebf347a 6,49-53,310,349-350,367
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-toolbar.tsx
+  s_ed1a657828d194::t_b5ea8ebad35bea 1-2,35,74,111,168-170,214-224
+src/renderer/src/components/browser-pane/navigate/browser-address-bar-navigation.test.ts
+  s_ed1a657828d194::t_ae5f3e81e6c335 75
+src/renderer/src/components/browser-pane/navigate/browser-address-bar-navigation.ts
+  s_ed1a657828d194::t_ce25cc2be227c2 42
+src/renderer/src/components/browser-pane/workspace-doc/doc-preview-address-edit.tsx
+  s_ed1a657828d194::t_a9242ba8661c81 70
+src/renderer/src/components/contextual-tours/ContextualTourOverlay.tsx
+  s_ed1a657828d194::t_809f086f939265 257-260,267
+src/renderer/src/components/contextual-tours/ContextualTourProgressDots.tsx
+  s_ed1a657828d194::t_70465c0189ea3a 48
+src/renderer/src/components/contextual-tours/contextual-tour-overlay-measurement.ts
+  s_ed1a657828d194::t_44afe7434fec81 35-70
+src/renderer/src/components/contextual-tours/use-contextual-tour.ts
+  s_ed1a657828d194::t_0d4c12ecc9fc1a 5-6,21,23-28,40,45,47-48,51-54,227-228
+src/renderer/src/components/editor/DiffSectionHeader.tsx
+  s_ed1a657828d194::t_9cb17724c92937 89,93
+src/renderer/src/components/editor/EditorPanel.tsx
+  s_ed1a657828d194::t_09ea0050cefdaf 5-6,224-229,231,233-235,358
+src/renderer/src/components/editor/EditorPanelHeader.tsx
+  s_ed1a657828d194::t_984378c8f34c00 130,139
+src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.ts
+  s_ed1a657828d194::t_3bf946d22fba3f 4,8,112-113,128,130,132-134,136
+src/renderer/src/components/new-workspace/SetProjectLocationDialog.test.tsx
+  s_ed1a657828d194::t_0a4877a116670f 131-206
+src/renderer/src/components/new-workspace/SetProjectLocationDialog.tsx
+  s_ed1a657828d194::t_e8df67529be425 110-113,139-162,312-315
+src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.ts
+  s_ed1a657828d194::t_a99454e235cee2 5,101,119,126,159
+src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx
+  s_ed1a657828d194::t_52be33aa7bd25d 2-3,251,277,317
+src/renderer/src/components/settings/ProviderHostScopeControl.tsx
+  s_ed1a657828d194::t_8ef49eafe0adc1 41-43
+src/renderer/src/components/settings/provider-account-scope.ts
+  s_ed1a657828d194::t_6c2d84a49cdcfa 8,62-64,67-70
+src/renderer/src/components/setup-guide/SetupGuideModal.tsx
+  s_ed1a657828d194::t_be9f9708f3b125 1-2,142-162,169,177-183,185,189-194
+src/renderer/src/components/sidebar/WorktreeCard.quick-actions.test.tsx
+  s_ed1a657828d194::t_94b64ac8dd0957 409,414-417,420,422,425-426,430,446,455-456,460,469-470,473,475,478-479
+src/renderer/src/components/sidebar/use-worktree-card-controller.ts
+  s_ed1a657828d194::t_dc425a4db355c5 84-85
+src/renderer/src/components/sidebar/use-worktree-card-linked-details.ts
+  s_ed1a657828d194::t_3842ffe6dcdc24 145
+src/renderer/src/components/sidebar/use-worktree-card-workspace-actions.ts
+  s_ed1a657828d194::t_2d8c93a47062f0 7,87-106,192-193
+src/renderer/src/components/sidebar/workspace-delete-quick-action.ts
+  s_ed1a657828d194::t_d2fd16ddf7b82f 1-3,8
+src/renderer/src/components/sidebar/worktree-card-header.tsx
+  s_ed1a657828d194::t_0ba9fbc2b24106 2,79-81,88,95-106,282,306-387
+src/renderer/src/components/sidebar/worktree-card-presentation.tsx
+  s_ed1a657828d194::t_549405f14232a2 69-71,114-119,287
+src/renderer/src/components/status-bar/StatusBarSurface.tsx
+  s_ed1a657828d194::t_cd77e06121d401 46-50,91,263-265
+src/renderer/src/components/status-bar/StatusBarVisibilityMenu.tsx
+  s_ed1a657828d194::t_18271da67fc06f 1,176-185
+src/renderer/src/components/status-bar/use-status-bar-controller.ts
+  s_ed1a657828d194::t_cdce535a25acfb 162,272
+src/renderer/src/components/task-page/ListChrome.tsx
+  s_ed1a657828d194::t_825d45d121c9e3 8,19,52-64
+src/renderer/src/components/use-task-page-codehub-loading.test.tsx
+  s_ed1a657828d194::t_122d10638c4535 5
+src/renderer/src/components/use-task-page-codehub-loading.ts
+  s_ed1a657828d194::t_ce56236d35d0d5 1-2,66-68
+src/renderer/src/components/use-task-page-linear-creation-state.ts
+  s_ed1a657828d194::t_94f4a33d5cc9ad 7,169-170
+src/renderer/src/i18n/locales/en.json
+  s_ed1a657828d194::t_b142f219b5665f 295-313,3778,14532,15212-15225,15435,17811-17909,18230-18233
+src/renderer/src/i18n/locales/es.json
+  s_ed1a657828d194::t_c560295e765d16 12497
+src/renderer/src/i18n/locales/fr.json
+  s_ed1a657828d194::t_430f71b5849f01 13709
+src/renderer/src/i18n/locales/ja.json
+  s_ed1a657828d194::t_32d80d3cea31c3 12497
+src/renderer/src/i18n/locales/ko.json
+  s_ed1a657828d194::t_8ddcf8fde9c829 12564
+src/renderer/src/i18n/locales/zh.json
+  s_ed1a657828d194::t_3c5773c432a4e2 9371-9372,9374-9386,12743,13363-13364,13367,13373-13387,14940-15038,15359-15362
+src/renderer/src/lib/codehub-api.test.ts
+  s_ed1a657828d194::t_b6cc087fc4ff03 2,14-15,21,26-34,37,41-50,142-238
+src/renderer/src/lib/codehub-api.ts
+  s_ed1a657828d194::t_8d709cbff1e46f 4,15-16,35-38,40-48,52-55,58-67,69-70,72
+src/renderer/src/lib/file-preview.test.ts
+  s_ed1a657828d194::t_b13b223e173283 7
+src/renderer/src/store/slices/ui-hydration-workspace-preferences.test.ts
+  s_ed1a657828d194::t_f3046e49bd7e8a 143-144,155-156,163-164,181-182
+src/renderer/src/store/slices/ui/ui-slice-hydration-status-bar-items.ts
+  s_ed1a657828d194::t_dc48f322ecf955 11,21-22
+src/renderer/src/store/slices/ui/ui-slice-tour-actions.ts
+  s_ed1a657828d194::t_07dcd4e6d39490 9-12,87
+src/renderer/src/workbench/ImportBuilderHostsDialog.tsx
+  s_ed1a657828d194::t_a9a1dc99a7097c 1,20,47,77,104-105,159-160,177-178,283-286,288-328
+src/renderer/src/workbench/KnowledgePage.tsx
+  s_ed1a657828d194::t_bbcb0ef8bd6226 1,40,118,141,154,213-228
+src/renderer/src/workbench/LiveProjectWallCard.tsx
+  s_ed1a657828d194::t_e3b102cb0411cc 1-69
+src/renderer/src/workbench/NewVersionDialog.tsx
+  s_ed1a657828d194::t_e1388ffb809019 1,168-172,188-193
+src/renderer/src/workbench/OverviewPage.tsx
+  s_ed1a657828d194::t_80cb78adc7328e 1,19,29,145,174,177,220-223,226-248,306-309,333-339,349,360-361
+src/renderer/src/workbench/ProjectSettingsRail.tsx
+  s_ed1a657828d194::t_626927583ba9ca 1,99
+src/renderer/src/workbench/ProjectWallCard.tsx
+  s_ed1a657828d194::t_91d26f4dffc1cd 1,23-24,41-50,232-233,235-239,242,247-277
+src/renderer/src/workbench/ProjectWallPage.tsx
+  s_ed1a657828d194::t_8e7e7ef8104823 1-2,13,19-20,48-62,70,193,242,245-247,264-270
+src/renderer/src/workbench/TaskScopePanel.tsx
+  s_ed1a657828d194::t_ea6a3273c5d18a 1,123-127,144
+src/renderer/src/workbench/WorkbenchDeliveryHelp.tsx
+  s_ed1a657828d194::t_c8f32a96018cca 1-51
+src/renderer/src/workbench/WorkbenchScreenGuide.tsx
+  s_ed1a657828d194::t_ece2bf01b2780e 4,6,15-21,23-28,33-41,48-52,65,74,76-81,113-117,131-137,144-227,234-243,247,252-258,279-283,299-328
+src/renderer/src/workbench/WorkbenchSendReviewMenuItems.tsx
+  s_ed1a657828d194::t_ff7f2a2d4314ad 1,69-70,153,156,203,206
+src/renderer/src/workbench/WorkbenchVersionBindingMenuItems.tsx
+  s_ed1a657828d194::t_64c361beebe516 1,43
+src/renderer/src/workbench/WorkbenchVersionNav.tsx
+  s_ed1a657828d194::t_705c746dd06946 1,3,33,128-136,255,358-379,387,402-406
+src/renderer/src/workbench/annotations/AnnotationPanel.tsx
+  s_ed1a657828d194::t_d877fb591765b9 115,167
+src/renderer/src/workbench/annotations/AnnotationPopover.tsx
+  s_ed1a657828d194::t_523d2414598f49 3,37-39,41-73,76,86-87,102
+src/renderer/src/workbench/error-feedback.tsx
+  s_ed1a657828d194::t_ca9d63417998ab 1-42
+src/renderer/src/workbench/explore/AcceptanceDemoScenes.tsx
+  s_ed1a657828d194::t_0f93b8d908530b 1-275
+src/renderer/src/workbench/explore/AcceptanceWalkthrough.tsx
+  s_ed1a657828d194::t_3d89f1bb002561 1-87
+src/renderer/src/workbench/explore/BwExploreLayout.tsx
+  s_ed1a657828d194::t_b537018078d975 24-34,181-184
+src/renderer/src/workbench/explore/DeliveryBrowserDemo.tsx
+  s_ed1a657828d194::t_b151d28f73e157 1-184
+src/renderer/src/workbench/explore/DeliveryReviewScenes.tsx
+  s_ed1a657828d194::t_38970180488fa0 1-337
+src/renderer/src/workbench/explore/DeliveryTaskScenes.tsx
+  s_ed1a657828d194::t_655f5f92eefb32 1-302
+src/renderer/src/workbench/explore/DeliveryWalkthrough.tsx
+  s_ed1a657828d194::t_10c215698fd326 1-179
+src/renderer/src/workbench/explore/DirectionWalkthrough.tsx
+  s_ed1a657828d194::t_d16e11239391b6 5,9,39-44,72-78,82,85,88,91
+src/renderer/src/workbench/explore/JourneyPlayer.tsx
+  s_ed1a657828d194::t_23825f243f8d64 1-206
+src/renderer/src/workbench/explore/OutcomesDemoScenes.tsx
+  s_ed1a657828d194::t_414446fd0380b8 1-274
+src/renderer/src/workbench/explore/OutcomesWalkthrough.tsx
+  s_ed1a657828d194::t_d0f7c460081126 1-72
+src/renderer/src/workbench/explore/PlanningDemoScenes.tsx
+  s_ed1a657828d194::t_26d2231149fa33 1-349
+src/renderer/src/workbench/explore/PlanningWalkthrough.tsx
+  s_ed1a657828d194::t_301aafbb927029 1-101
+src/renderer/src/workbench/explore/bw-explore-catalog.ts
+  s_ed1a657828d194::t_46a4322a895981 2-9,15-19,26-32,55-64,73,76-83,132-141,150-159,235-236,247,259,268,277,285-286,348,353,358,404-405,416-424,441,459-460
+src/renderer/src/workbench/explore/planning-walkthrough.css
+  s_ed1a657828d194::t_cb5bbda6a14017 1-70
+src/renderer/src/workbench/knowledge-repo-loader.ts
+  s_ed1a657828d194::t_dc9935abae9d77 14,62,64,67,72-73,81-82,105,112-113,126,132,135-152
+src/renderer/src/workbench/metric-problems-panel.tsx
+  s_ed1a657828d194::t_10d1e1356cd154 1-2,5,9,16-20
+src/renderer/src/workbench/metrics-workspace-board.tsx
+  s_ed1a657828d194::t_45c522c54b4f76 117
+src/renderer/src/workbench/metrics/MetricEvidenceView.tsx
+  s_ed1a657828d194::t_441776efa108b5 1,47-64
+src/renderer/src/workbench/milestone-navigation.tsx
+  s_ed1a657828d194::t_e09c6d75b0e076 3,19-22,189-204
+src/renderer/src/workbench/milestone-timeline.tsx
+  s_ed1a657828d194::t_46077f4ad2d3c8 6,125,303
+src/renderer/src/workbench/milestone-version-row.tsx
+  s_ed1a657828d194::t_9b852ef6804f5d 132-133,136,140
+src/renderer/src/workbench/native-task-port.ts
+  s_ed1a657828d194::t_5c15c275efceb3 1,34-35
+src/renderer/src/workbench/overview-controls.tsx
+  s_ed1a657828d194::t_a2d23f3581130e 6-7,12,21
+src/renderer/src/workbench/overview-metric-readings.ts
+  s_ed1a657828d194::t_ca8950ed7156fd 106,118
+src/renderer/src/workbench/overview-scoreboard.tsx
+  s_ed1a657828d194::t_8294344d0a636a 2,12-13,30,40-42,46,57-58,136-143,161,165-170,173-181,254
+src/renderer/src/workbench/plan-send-menu.tsx
+  s_ed1a657828d194::t_98a9516629df9f 1,157-160
+src/renderer/src/workbench/post-create-version-binding.ts
+  s_ed1a657828d194::t_c637cd55c054ac 1-2,59-69,72
+src/renderer/src/workbench/pr-review-notifications/PrReviewNotificationItems.tsx
+  s_ed1a657828d194::t_3542706796e33f 1,150,152-156,162,166-176,203-215,217-242,244
+src/renderer/src/workbench/pr-review-notifications/PrReviewNotificationsView.tsx
+  s_ed1a657828d194::t_e64f610ac6be9e 1,121
+src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx
+  s_ed1a657828d194::t_2c21a02d3ecf20 1,88,128-132
+src/renderer/src/workbench/pr-review-notifications/review-target.ts
+  s_ed1a657828d194::t_97c2b062c70ca3 1,158
+src/renderer/src/workbench/pr-review-notifications/store.ts
+  s_ed1a657828d194::t_31549c0865b3bd 1,119-122,140
+src/renderer/src/workbench/project-milestones.css
+  s_ed1a657828d194::t_9b90ef7851e8c2 60-61,67-75
+src/renderer/src/workbench/project-milestones.tsx
+  s_ed1a657828d194::t_3cff7e1ed759d2 1,88-92,209,311,336-340,362
+src/renderer/src/workbench/project-page-state.ts
+  s_ed1a657828d194::t_f0427af3a104e8 63-68,70,112-115,117
+src/renderer/src/workbench/project-source-resolution.test.ts
+  s_ed1a657828d194::t_3e416930169f02 5-17,62-176
+src/renderer/src/workbench/quick-links/QuickLinksStatusSegment.tsx
+  s_ed1a657828d194::t_dbdcf40b818ad7 1-397
+src/renderer/src/workbench/quick-links/quick-links-store.ts
+  s_ed1a657828d194::t_138234b3502afd 1-71
+src/renderer/src/workbench/use-knowledge-repo.ts
+  s_ed1a657828d194::t_7eee014bb9a0f3 20,44,54,70,80,100-102,123
+src/renderer/src/workbench/use-overview-metric-collection.ts
+  s_ed1a657828d194::t_80e4afb33cfc68 20,66,70,74,108,122,126,160,164,179-192
+src/renderer/src/workbench/use-project-settings.ts
+  s_ed1a657828d194::t_ac3dd21656a820 1-2,285-290,321-323
+src/renderer/src/workbench/use-task-scope-viewers.ts
+  s_ed1a657828d194::t_29aa5ecfefac5e 3,7,48-52,68-71,88,117-118,121,124
+src/renderer/src/workbench/use-version-catalog-discovery.ts
+  s_ed1a657828d194::t_22a6f34c2298e8 1-86
+src/renderer/src/workbench/use-version-catalog.ts
+  s_ed1a657828d194::t_c4218dbfa8826f 1,3,5,11-15,20-28,30-31,48,51-52,55-56,59-72,78,83,85,88-90,92-110,114,119,121-124,126-127,132,135-145,147-152,155,159,161,163-164,178-188,195,197-203
+src/renderer/src/workbench/use-wall-readings.ts
+  s_ed1a657828d194::t_63bd4f25d1fb49 1,4-7,9,11-12,14-19,21-26,28-31,33-69,71-88
+src/renderer/src/workbench/version-acceptance/AcceptanceArchiveCard.tsx
+  s_ed1a657828d194::t_07241f5c805b63 1,151-160,166,169-171
+src/renderer/src/workbench/version-acceptance/AcceptanceBoard.tsx
+  s_ed1a657828d194::t_cac68ae593ad1c 1,22-24
+src/renderer/src/workbench/version-acceptance/AcceptanceBoardContent.tsx
+  s_ed1a657828d194::t_65db20be0b4af4 1,8,233,257,301-305,413
+src/renderer/src/workbench/version-acceptance/AcceptanceEmptyBoard.tsx
+  s_ed1a657828d194::t_805dd1bb4c0e45 1,50,62-69,71
+src/renderer/src/workbench/version-acceptance/AcceptanceGoalRow.tsx
+  s_ed1a657828d194::t_70445c59a63867 1,215-219
+src/renderer/src/workbench/version-acceptance/AcceptanceGoalRows.tsx
+  s_ed1a657828d194::t_2f4093a9d7aca5 1,83,98-102,119
+src/renderer/src/workbench/version-acceptance/AcceptanceGoalTasks.tsx
+  s_ed1a657828d194::t_da483d3bdb071f 1,122-126
+src/renderer/src/workbench/version-acceptance/AcceptanceMinutesSection.tsx
+  s_ed1a657828d194::t_11f2b6540ec34b 186-190,248,259,376-377,383
+src/renderer/src/workbench/version-acceptance/AcceptanceNotices.tsx
+  s_ed1a657828d194::t_351655efbc9900 1,35-37,40-46
+src/renderer/src/workbench/version-acceptance/AcceptancePackage.tsx
+  s_ed1a657828d194::t_694f7e29b45eae 1,230
+src/renderer/src/workbench/version-acceptance/AcceptancePrepareSection.tsx
+  s_ed1a657828d194::t_113b1545a47474 179-184,189-233
+src/renderer/src/workbench/version-acceptance/AcceptanceSections.tsx
+  s_ed1a657828d194::t_442da5dccfeca2 4,90-107,120,124,133-135
+src/renderer/src/workbench/version-acceptance/use-acceptance-draft.ts
+  s_ed1a657828d194::t_6644a8795b766d 1,37-38,110-111
+src/renderer/src/workbench/version-catalog-load.ts
+  s_ed1a657828d194::t_cbf94cc4743fe5 89-90,147-148,173-177,179-225,230,255
+src/renderer/src/workbench/version-catalog-retention.ts
+  s_ed1a657828d194::t_aecf9cbbfa47be 42,51,57-58,60-61
+src/renderer/src/workbench/version-catalog-source.ts
+  s_ed1a657828d194::t_60a024d26c4a78 1-103
+src/renderer/src/workbench/version-cycle/CycleStartCard.tsx
+  s_ed1a657828d194::t_b27d6fa788ba87 1,41,43,48-56
+src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx
+  s_ed1a657828d194::t_087372456c6637 1,76,100
+src/renderer/src/workbench/version-cycle/CycleWorkspaceShell.tsx
+  s_ed1a657828d194::t_6a7f615dda9d45 1,39-45,47,49,51
+src/renderer/src/workbench/version-cycle/ReadonlyMaterialSections.tsx
+  s_ed1a657828d194::t_70bdcb20ed5860 1,21,68-72,85-87
+src/renderer/src/workbench/version-cycle/VersionReadonlyMaterialView.tsx
+  s_ed1a657828d194::t_2afa1ae9577bc9 1,67-71,123-133,180-182
+src/renderer/src/workbench/version-cycle/ensure-cycle-automation.ts
+  s_ed1a657828d194::t_8daa27f222dde5 1,249,301,306
+src/renderer/src/workbench/version-cycle/metrics-setup.ts
+  s_ed1a657828d194::t_cf654eebe9aa7f 2-3,93,105-107,111,116
+src/renderer/src/workbench/version-cycle/trunk-update-port.ts
+  s_ed1a657828d194::t_fe17f7c738f0f8 1-2,60-67
+src/renderer/src/workbench/version-cycle/use-cycle-automation-draft.ts
+  s_ed1a657828d194::t_887b8723c2b7b1 45
+src/renderer/src/workbench/version-cycle/use-cycle-workspace-target.ts
+  s_ed1a657828d194::t_760c0e2f286408 1,297
+src/renderer/src/workbench/version-cycle/version-membership.ts
+  s_ed1a657828d194::t_45eccfc2c8bafc 3,63
+src/renderer/src/workbench/version-nav-actions.ts
+  s_ed1a657828d194::t_41af544fe2cf6f 1,97-100,138,143,150
+src/renderer/src/workbench/version-nav-rows.tsx
+  s_ed1a657828d194::t_f2a4d0bdaf60de 117
+src/renderer/src/workbench/version-overview-materials.ts
+  s_ed1a657828d194::t_28cbaee582d90e 75,86,201-204
+src/renderer/src/workbench/version-overview-page.tsx
+  s_ed1a657828d194::t_8de1bdd9e52f3a 1,33-34,37,44-45,47,49-73,75,213,221,224-230,238-241,254-255,257-259,263-264,324-326,399-403
+src/renderer/src/workbench/version-overview/overview-experiment-settings.tsx
+  s_ed1a657828d194::t_f9197286fe1690 1,143-147
+src/renderer/src/workbench/version-overview/read-feature-evidence.ts
+  s_ed1a657828d194::t_3bddd3c9f79ef9 3,6,68-74,133,211
+src/renderer/src/workbench/version-overview/workflow-productivity.tsx
+  s_ed1a657828d194::t_bd657ee6fd285b 1,96-104
+src/renderer/src/workbench/version-planning/PlanGoalMetrics.tsx
+  s_ed1a657828d194::t_73d2839c3f5d0f 1,182-188
+src/renderer/src/workbench/version-planning/PlanningAnnotationOverlays.tsx
+  s_ed1a657828d194::t_97642bd578bdd5 1,40
+src/renderer/src/workbench/version-planning/PlanningArchiveCard.tsx
+  s_ed1a657828d194::t_aec4b839fbb7bf 1,55,63-72
+src/renderer/src/workbench/version-planning/PlanningBoard.tsx
+  s_ed1a657828d194::t_74add1a34c521c 1,10,15,19-20,37,154,173-181,288,293-301,305-310,320-329
+src/renderer/src/workbench/version-planning/PlanningGoalCard.tsx
+  s_ed1a657828d194::t_fe19243b58701c 280
+src/renderer/src/workbench/version-planning/PlanningGoalTasks.tsx
+  s_ed1a657828d194::t_f998148635726b 1,101-105
+src/renderer/src/workbench/version-planning/PlanningGoals.tsx
+  s_ed1a657828d194::t_ede6cd2a47e89a 1,107,109-113,137-139,156
+src/renderer/src/workbench/version-planning/PlanningPersistenceNotice.tsx
+  s_ed1a657828d194::t_4e1bdc0ff0e723 1,21
+src/renderer/src/workbench/version-planning/PlanningSections.tsx
+  s_ed1a657828d194::t_850cce74e47818 1,14,16-17,32-33,49,114,120-148,168-174
+src/renderer/src/workbench/version-planning/PlanningStartCard.tsx
+  s_ed1a657828d194::t_3a37d3a72a6c0c 16-20
+src/renderer/src/workbench/version-planning/version-planning.css
+  s_ed1a657828d194::t_5ba4b0069c140c 383-386,885
+src/renderer/src/workbench/version-tree-bind-dialog.tsx
+  s_ed1a657828d194::t_1d4de3f61d931e 1,235-238
+src/renderer/src/workbench/version-workflow-progress.ts
+  s_ed1a657828d194::t_388f7930c9f051 1-55
+src/renderer/src/workbench/wall-card-readings.ts
+  s_ed1a657828d194::t_bb516e6b5cae64 4,14-15
+src/renderer/src/workbench/wall-readings-load.ts
+  s_ed1a657828d194::t_43c1f2f380ec60 12,17,19-21,23,25,28-53,60,77-81,83,85-86,88-101,108-110,117,120-124,126,131-136,143-146,167-169,171
+src/renderer/src/workbench/wall-refresh.ts
+  s_ed1a657828d194::t_31f8d45894aeb3 1,76
+src/shared/contextual-tours.test.ts
+  s_ed1a657828d194::t_8249fe2d5810c7 22-28,30-33,50,55-59
+src/shared/contextual-tours.ts
+  s_ed1a657828d194::t_59299fd5e1d44f 14,16-20,156,158,163,169,287-314,337-473
+src/shared/feature-education-telemetry.ts
+  s_ed1a657828d194::t_174d7c66e0778a 14-20,29,35,37-41
+src/shared/feature-interaction-catalog.ts
+  s_ed1a657828d194::t_c663dce3382986 47,144
+src/shared/feature-interaction-categories.ts
+  s_ed1a657828d194::t_6dcc61ddc49918 68
+src/shared/feature-interactions.test.ts
+  s_ed1a657828d194::t_905aa186761f50 80
+src/shared/persisted-ui-state-types.ts
+  s_ed1a657828d194::t_604da9192ede29 123-124
+src/shared/rpc-contract/client-ui-params.ts
+  s_ed1a657828d194::t_3106bb88e97ecc 75-76,187
+src/shared/status-bar-defaults.ts
+  s_ed1a657828d194::t_539409a8809d54 15-16
+src/shared/ui-chrome-types.ts
+  s_ed1a657828d194::t_0d2ddc7b12a01d 69
+src/shared/workbench/quick-links.ts
+  s_ed1a657828d194::t_7aa8107f4c7815 1-111
+src/shared/workbench/skill-package.json
+  s_ed1a657828d194::t_678773efbec6d0 4-7,9
+src/shared/workbench/version-acceptance-material.ts
+  s_ed1a657828d194::t_957340306708f6 146
+src/shared/workbench/version-planning-material.ts
+  s_ed1a657828d194::t_b3c9f395d85a34 60
+src/shared/workbench/version-workflow.ts
+  s_ed1a657828d194::t_863da5b8c6670a 6-8
+standard/references/version-records.md
+  s_ed1a657828d194::t_896b276c6c8591 69
+standard/skills/version-acceptance/SKILL.md
+  s_ed1a657828d194::t_08f5ee9c8809f6 30,32
+standard/skills/week-planning/SKILL.md
+  s_ed1a657828d194::t_9e17cbf977e382 22,53,56,70-72
+standard/skills/week-planning/references/data-and-runtime.md
+  s_ed1a657828d194::t_2f496d974e3eee 29
+tests/e2e/helpers/workbench-version-overview-fixture.ts
+  s_ed1a657828d194::t_2edaff730c0e4b 250
+tests/e2e/helpers/workbench-version-overview.ts
+  s_ed1a657828d194::t_8386c0cffbeef9 57-58,259-261
+tests/e2e/workbench-cycle-smoke.spec.ts
+  s_ed1a657828d194::t_778fda97e9da8d 98-108,111,209-230,274,466-470,477-490,568-569,574-584
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "0953b8b2749e3ce3a64184d9cc12da8e4d557864",
+  "prompts": {},
+  "sessions": {
+    "s_b8ea9b2e8dfd1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "499b902b-9fdf-4742-a62d-84f8d1befcf2",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_ed1a657828d194": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e17db41-203a-43d3-b383-1a8ab2ef4abd",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
