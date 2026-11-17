@@ -49,6 +49,7 @@ import { updateGpuAccelerationAboutPanel } from './gpu-lifecycle'
 import { reconcileManagedWslCliRegistrations } from '../cli/wsl-cli-registration-reconciliation'
 import { createWslCliReconciliationStartupBarrier } from './wsl-cli-reconciliation-startup-barrier'
 import { isAgentStatusHooksEnabled } from '../agent-hooks/managed-agent-hook-controls'
+import { isMonicaProduct, MONICA_APP_NAME } from './monica-product'
 
 export async function initializeReadyFoundation(): Promise<void> {
   logStartupMilestone('app-ready')
@@ -96,7 +97,9 @@ export async function initializeReadyFoundation(): Promise<void> {
   }
   electronApp.setAppUserModelId(identity.appUserModelId)
   // ready 后更新展示名称；macOS 加密服务身份仍由打包的既有 CFBundleName 确定。
-  app.setName(identity.isDev ? identity.appName : identity.name)
+  app.setName(
+    isMonicaProduct() ? MONICA_APP_NAME : identity.isDev ? identity.appName : identity.name
+  )
   updateGpuAccelerationAboutPanel()
   // Why: managed WSL launchers live outside the Windows app bundle, so keep their launcher/bridge contract synced across app updates.
   state.managedWslCliReconciliationStatus = 'pending'
