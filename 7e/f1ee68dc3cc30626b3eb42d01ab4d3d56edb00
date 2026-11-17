@@ -1,0 +1,14 @@
+src/cli/handlers/workbench-meeting.ts
+  h_a7e858313fdba5 200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "7ef1ee68dc3cc30626b3eb42d01ab4d3d56edb00",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
