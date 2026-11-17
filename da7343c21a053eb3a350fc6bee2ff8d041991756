@@ -1,0 +1,15 @@
+.github/workflows/tmp-typecheck-probe.yml
+  h_a7e858313fdba5 1-33
+  h_a7e858313fdba5 34-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "da7343c21a053eb3a350fc6bee2ff8d041991756",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
