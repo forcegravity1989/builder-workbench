@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { mapWithConcurrency } from '../../shared/map-with-concurrency'
 import { gitExecFileAsync } from '../git/runner'
 import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
 import {
@@ -22,29 +23,30 @@ export async function readMilestoneSnapshot(
   options: { wslDistro?: string },
   started: Set<string>
 ) {
+  const execOptions = { ...options, cwd: repoPath }
+  const [refList, tree] = await Promise.all([
+    gitExecFileAsync(
+      [
+        'for-each-ref',
+        '--format=%(refname) %(objectname)',
+        'refs/heads/bw/',
+        'refs/remotes/origin/bw/'
+      ],
+      execOptions
+    ),
+    gitExecFileAsync(
+      ['ls-tree', '-r', '-z', '--name-only', head, '--', '.bw/planning', MILESTONES_PATH],
+      execOptions
+    )
+  ])
   const refs = new Map(
-    (
-      await gitExecFileAsync(
-        [
-          'for-each-ref',
-          '--format=%(refname) %(objectname)',
-          'refs/heads/bw/',
-          'refs/remotes/origin/bw/'
-        ],
-        { ...options, cwd: repoPath }
-      )
-    ).stdout
+    refList.stdout
       .trim()
       .split('\n')
       .filter(Boolean)
       .map((line) => line.trim().split(' ') as [string, string])
   )
-  const files = (
-    await gitExecFileAsync(
-      ['ls-tree', '-r', '-z', '--name-only', head, '--', '.bw/planning', MILESTONES_PATH],
-      { ...options, cwd: repoPath }
-    )
-  ).stdout
+  const files = tree.stdout
     .split('\0')
     .filter((p) => p === MILESTONES_PATH || /^\.bw\/planning\/[^/]+\/data\.json$/.test(p))
     .sort()
@@ -88,8 +90,11 @@ export async function readMilestoneSnapshot(
     }
     return false
   }
-  for (const path of files) {
+  const blobs = await mapWithConcurrency(files, 4, async (path) => {
     const blob = await readGitBlobAtOidPath(repoPath, head, path, options)
+    return { path, blob }
+  })
+  for (const { path, blob } of blobs) {
     if (blob.failed || blob.isBinary || !blob.exists) {
       throw new Error(`未读到规划材料：${path}`)
     }

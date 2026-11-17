@@ -112,6 +112,7 @@ export function MetricsWorkspaceBoard(): JSX.Element {
           readings={metrics.zoneReadings}
           problems={metrics.problems}
           busy={metrics.busy}
+          pendingReadings={metrics.pendingReadings}
           onRefresh={() => void metrics.refreshReadings()}
           anchor={metrics.anchor}
           identity={identity}

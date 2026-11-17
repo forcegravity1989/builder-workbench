@@ -43,7 +43,7 @@ export function ProjectMilestones({
   refreshToken
 }: {
   scope: MilestoneScope | null
-  refreshToken?: string
+  refreshToken: number
 }) {
   const model = useMilestonePlanning(scope, refreshToken)
   const catalog = useVersionCatalogForRepo(
@@ -53,7 +53,7 @@ export function ProjectMilestones({
       : scope?.hostId
   )
   const { state, busy, dirty, error, patch, edit } = model
-  const formalHead = state?.data.formal.head
+  const formalHead = model.confirmed ? state?.data.formal.head : undefined
   const reloadCatalog = catalog.reload
   useEffect(() => {
     if (formalHead) {
@@ -77,14 +77,20 @@ export function ProjectMilestones({
     Boolean(state?.editing && !busy && state.data.project?.working)
   )
   useEffect(() => {
-    if (restoreScope && pageY !== undefined && root.current && restored.current !== restoreScope) {
+    if (
+      model.confirmed &&
+      restoreScope &&
+      pageY !== undefined &&
+      root.current &&
+      restored.current !== restoreScope
+    ) {
       const content = root.current.closest('.content')
       if (content) {
         content.scrollTop = pageY
         restored.current = restoreScope
       }
     }
-  }, [restoreScope, pageY])
+  }, [model.confirmed, restoreScope, pageY])
   if (!scope) {
     return (
       <section className="card wb-ml">
@@ -286,13 +292,15 @@ export function ProjectMilestones({
       className="wb-ml"
       data-validation-attempt={validationAttempt || undefined}
       data-draft-persistence={
-        state.saveError || state.fileChanged
-          ? 'failed'
-          : state.saving
-            ? 'saving'
-            : !model.unsaved
-              ? 'saved'
-              : 'idle'
+        !model.confirmed
+          ? undefined
+          : state.saveError || state.fileChanged
+            ? 'failed'
+            : state.saving
+              ? 'saving'
+              : !model.unsaved
+                ? 'saved'
+                : 'idle'
       }
       onFocusCapture={(event) => {
         if (event.target instanceof HTMLElement && event.target.matches('.wb-ml-inline')) {
@@ -320,6 +328,11 @@ export function ProjectMilestones({
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
+          {!model.confirmed && (
+            <span className="text-xs text-muted-foreground" role="status">
+              {model.reading ? '正式安排 · 正在读取项目材料与评审' : '当前显示正式安排'}
+            </span>
+          )}
           {status && !project?.workingError && (
             <span className="text-xs text-muted-foreground" role="status">
               {status}
@@ -463,7 +476,19 @@ export function ProjectMilestones({
         </details>
       )}
       {error && (
-        <ErrorDetails className="wb-ml-alert" summary="里程碑读取失败 · 查看详情" detail={error} />
+        <div className="wb-ml-alert">
+          <ErrorDetails summary="里程碑读取失败 · 查看详情" detail={error} />
+          {!model.confirmed && (
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={model.reading}
+              onClick={() => void model.reload()}
+            >
+              重试读取
+            </Button>
+          )}
+        </div>
       )}
       {state.data.formal.problems.length > 0 && (
         <details className="wb-ml-alert">
@@ -475,12 +500,12 @@ export function ProjectMilestones({
       )}
       {!editing && !hasPlanning ? (
         <div className="wb-ml-empty" data-contextual-tour-target="milestone-schedule">
-          还没有里程碑
+          {model.confirmed ? '还没有里程碑' : '正式安排中还没有里程碑'}
         </div>
       ) : (
         <MilestoneTimeline
           catalog={catalog}
-          key={`${restoreScope}:${editing}:${restoreKey}`}
+          key={`${restoreScope}:${model.confirmed}:${editing}:${restoreKey}`}
           draft={visible}
           formalDraft={formalDraft}
           editField={model.editField}

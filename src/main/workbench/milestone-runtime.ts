@@ -52,6 +52,7 @@ type Runtime = CharterRuntimeHost & {
   listManagedWorktrees(repo: string, limit: number): Promise<RuntimeWorktreeListResult>
 }
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
+const formalReads = new WeakMap<Runtime, Map<string, ReturnType<typeof readMilestoneSnapshot>>>()
 
 export function nativeMilestoneService(runtime: Runtime) {
   const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))
@@ -101,17 +102,39 @@ export function nativeMilestoneService(runtime: Runtime) {
     includeProject = false
   ): Promise<MilestoneRead> {
     const c = await resolve(scope)
-    const baseline = await runTrunkBaseline(c.repo.path, c.repo.worktreeBaseRef ?? null, c.options)
-    const { trees, started } = await readWorktrees(c.repo.id)
-    const formal = await readMilestoneSnapshot(c.repo.path, baseline.commit, c.options, started)
-    if (!includeProject) {
+    const [baseline, { trees, started }] = await Promise.all([
+      runTrunkBaseline(c.repo.path, c.repo.worktreeBaseRef ?? null, c.options),
+      readWorktrees(c.repo.id)
+    ])
+    const pending = formalReads.get(runtime) ?? new Map()
+    formalReads.set(runtime, pending)
+    const key = JSON.stringify([
+      c.target.hostId,
+      c.repo.id,
+      c.repo.path,
+      c.options.wslDistro,
+      baseline.commit,
+      [...started].sort()
+    ])
+    let snapshot = pending.get(key)
+    if (!snapshot) {
+      // A formal preview and a full read can share the same pinned Git material.
+      snapshot = readMilestoneSnapshot(c.repo.path, baseline.commit, c.options, started).finally(
+        () => pending.delete(key)
+      )
+      pending.set(key, snapshot)
+    }
+    const [formal, status] = await Promise.all([
+      snapshot,
+      includeProject ? readCharterStatus(c.repo, c.options) : null
+    ])
+    if (!status) {
       return {
         formal: formal.snapshot,
         project: null,
         review: { pr: null, remoteAvailable: null }
       }
     }
-    const status = await readCharterStatus(c.repo, c.options)
     const sameReviewBase = !status.reviewBase || status.reviewBase === baseline.sync?.branchName
     const review = status.pr?.state === 'open' && sameReviewBase ? status.pr : null
     const projectTrees = trees.filter(
