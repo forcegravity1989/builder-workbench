@@ -1,3 +1,4 @@
+import { versionTreeKey, type VersionMaterialSelection } from './version-material-selection'
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type {
   AcceptanceMaterial,
@@ -51,11 +52,13 @@ const loading = (): VersionOverviewMaterials => ({
 export function useVersionOverviewMaterials({
   catalog,
   version,
-  refreshToken
+  refreshToken,
+  selection
 }: {
   catalog: VersionCatalogState
   version: string
   refreshToken: number
+  selection?: VersionMaterialSelection
 }): VersionOverviewMaterials {
   const entry = catalog.catalog?.entries.find((e) => e.version === version)
   const lastRefresh = useRef(refreshToken)
@@ -70,6 +73,7 @@ export function useVersionOverviewMaterials({
     catalog.scope,
     catalog.home?.id,
     version,
+    selection,
     entry?.material,
     entry?.draft,
     entry?.problems,
@@ -81,6 +85,7 @@ export function useVersionOverviewMaterials({
     catalog.scope,
     catalog.home?.id,
     version,
+    selection,
     entry?.material,
     entry?.draft,
     entry?.problems,
@@ -106,7 +111,7 @@ export function useVersionOverviewMaterials({
         if (failure) {
           throw new Error(failure)
         }
-        return readMaterials(catalog, version, force)
+        return readMaterials(catalog, version, force, selection)
       },
       force || Boolean(failure)
     )
@@ -132,7 +137,12 @@ export function useVersionOverviewMaterials({
 
 export const overviewMaterialsCache =
   createOverviewReadCache<VersionOverviewMaterials>(retainMaterialRead)
-async function readMaterials(catalog: VersionCatalogState, version: string, force: boolean) {
+async function readMaterials(
+  catalog: VersionCatalogState,
+  version: string,
+  force: boolean,
+  selection?: VersionMaterialSelection
+) {
   const result = loading()
   const entry = catalog.catalog?.entries.find((e) => e.version === version)
   if (!catalog.scope || !catalog.home) {
@@ -147,10 +157,21 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
   const archive = nativeArchivePrPort(catalog.scope.runtimeOwnerEnvironmentId)
   let acceptancePlanSource = { scope, history }
 
-  const acceptanceRef = entry?.material.acceptance
-  const planRef = entry?.material.plan
+  const selected = selection
+    ? findVersionFlowWorktrees(catalog.worktrees, { version, workflow: selection.workflow }).find(
+        (tree) => versionTreeKey(tree) === selection.treeKey
+      )
+    : null
+  if (selection && !selected) {
+    throw new Error('所选工作区已变化，请从版本侧栏重新选择。')
+  }
+  const selectedPlan = selection?.workflow === 'plan' ? selected : null
+  const acceptanceRef = selection ? undefined : entry?.material.acceptance
+  const planRef = selectedPlan ? undefined : entry?.material.plan
   try {
-    if (acceptanceRef) {
+    if (selection?.workflow === 'plan') {
+      result.acceptance = { kind: 'missing' }
+    } else if (acceptanceRef) {
       const read = await history.read({
         scope,
         source: 'trunk',
@@ -166,10 +187,12 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
         sourceCommit: acceptanceRef.sourceCommit
       }
     } else {
-      const trees = findVersionFlowWorktrees(catalog.worktrees, {
-        version,
-        workflow: 'acceptance'
-      })
+      const trees = selected
+        ? [selected]
+        : findVersionFlowWorktrees(catalog.worktrees, {
+            version,
+            workflow: 'acceptance'
+          })
       if (trees.length > 1) {
         throw new Error('有多个验收工作区，请从验收入口核对来源')
       }
@@ -209,7 +232,10 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
     result.acceptance = { kind: 'error', message: `验收读取失败：${message(error)}` }
   }
   try {
-    if (result.acceptance.kind === 'error' && acceptanceRef) {
+    if (
+      result.acceptance.kind === 'error' &&
+      (acceptanceRef || selection?.workflow === 'acceptance')
+    ) {
       throw new Error('无法核对验收对应的固定计划，请重试验收读取')
     }
     const fixed =
@@ -235,15 +261,27 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
         ...(fixed.kind === 'committed' ? { sourceCommit: fixed.sourceCommit } : {})
       }
     } else {
-      if (findVersionFlowWorktrees(catalog.worktrees, { version, workflow: 'plan' }).length > 1) {
+      if (
+        !selectedPlan &&
+        findVersionFlowWorktrees(catalog.worktrees, { version, workflow: 'plan' }).length > 1
+      ) {
         throw new Error('有多个计划工作区，请从计划入口核对来源')
       }
       const read = await loadVersionPlanDocument({
         scope: catalog.scope!,
         homeWorktreeId: catalog.home!.id,
         version,
-        entry,
-        planTrees: catalog.planTrees
+        entry: selectedPlan ? null : entry,
+        planTrees: selectedPlan
+          ? catalog.planTrees.filter(
+              (tree) =>
+                tree.worktreeId === selectedPlan.id &&
+                tree.instanceId === selectedPlan.instanceId &&
+                tree.repoId === selectedPlan.repoId &&
+                tree.runtimeOwnerEnvironmentId ===
+                  nativeWorkspaceScope(selectedPlan).runtimeOwnerEnvironmentId
+            )
+          : catalog.planTrees
       })
       if (read.document) {
         result.plan = {
@@ -252,7 +290,7 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
           source: read.source === 'draft' ? 'draft' : 'committed',
           revision: read.revision
         }
-      } else if (entry?.draft || entry?.problems.length || !read.missing) {
+      } else if ((!selectedPlan && (entry?.draft || entry?.problems.length)) || !read.missing) {
         result.plan = { kind: 'error', message: read.problem ?? '计划来源读取失败' }
       } else {
         result.plan = { kind: 'missing' }

@@ -15,7 +15,6 @@ export function AcceptanceNotices({
   recoveryText,
   draft,
   controller,
-  busy,
   setError,
   onRetrySave,
   onRemoteDeleted
@@ -25,7 +24,6 @@ export function AcceptanceNotices({
   recoveryText: string | null
   draft: MaterialDraft<AcceptanceMaterial> | null
   controller: MaterialDraftController<AcceptanceMaterial>
-  busy: boolean
   setError(message: string): void
   onRetrySave(): void
   onRemoteDeleted(): void
@@ -92,7 +90,6 @@ export function AcceptanceNotices({
               </button>
               <button
                 className="wb-btn wb-btn-sm"
-                disabled={busy}
                 onClick={() => {
                   if (draft.remote) {
                     controller.useMerged(draft.document, draft.remote.revision)
@@ -126,7 +123,7 @@ export function AcceptanceNotices({
         </details>
       )}
       {draft?.error && draft.remote === undefined && (
-        <button className="wb-btn wb-btn-sm" disabled={busy} onClick={onRetrySave}>
+        <button className="wb-btn wb-btn-sm" onClick={onRetrySave}>
           重试保存
         </button>
       )}

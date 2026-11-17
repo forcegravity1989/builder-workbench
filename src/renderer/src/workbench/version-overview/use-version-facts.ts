@@ -1,3 +1,4 @@
+import type { VersionMaterialSelection } from '../version-material-selection'
 import { useMemo } from 'react'
 import { useVersionMembership } from '../version-cycle/use-version-membership'
 import type { VersionCatalogState } from '../use-version-catalog'
@@ -9,9 +10,10 @@ export function useVersionFacts(
   catalog: VersionCatalogState,
   version: string,
   refreshToken: number,
-  sdlcEnabled?: boolean
+  sdlcEnabled?: boolean,
+  selection?: VersionMaterialSelection
 ) {
-  const materials = useVersionOverviewMaterials({ catalog, version, refreshToken })
+  const materials = useVersionOverviewMaterials({ catalog, version, refreshToken, selection })
   const { plan, acceptance } = materials
   const historical = acceptance.kind === 'ready' && acceptance.source === 'committed'
   const planDocument = plan.kind === 'ready' ? plan.document : null

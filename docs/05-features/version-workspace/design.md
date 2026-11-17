@@ -66,16 +66,16 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 - **原生挂载**：`WorktreeMeta.workbenchVersionBinding`（undefined 保留 / null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）。BW 薄 helper `workbench.versionBinding.read/set`：原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径。
 - **版本目录**：`src/shared/workbench/version-catalog.ts` + 装载器——已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留（retired 收起回看）；绑定从登记现算，删树无悬空；草稿与目标从已保存计划派生，缓存按 owner/项目/仓库/版本/修订分隔。版本排序 `compareMaterialVersions`（点分段、纯数字段按数值）为单一实现：目录条目、项目总览、验收版本候选三处消费方已收敛，不再各持 Intl/裸 sort 口径。
 
-项目墙、侧栏和总览复用 `useVersionCatalogForRepo`。展示先用 `resolveProjectSource` 选择同一 Git 仓库的本机副本或 Orca 原生项目宿主；目录只接收该来源的登记。清理入口省略来源限制，汇总所有主机绑定。
+项目墙与侧栏用同一项目版本目录，按 Git 身份收集可访问的精确登记，逐登记复用 `useVersionCatalogForRepo` 独立读取。先合并版本存在证据与工作区，再对各版按本机优先和已确认的对端来源选材料。选树身份包含仓库、执行宿主、传输 owner、工作树及实例。
 
 读取顺序为原生 `fetchWorktrees` 的宿主限定权威发现 → 可见与检测到的工作树合并 → `nativeWorkspaceScope` 解析归属 → `loadVersionCatalog` 读取主干材料与计划树。原生发现承担配对、去重与登记合并；BW 不另建跨机同步和持久化目录。工作树身份、绑定、分支和 HEAD 构成材料失效依据，刷新与连接恢复触发重新发现。来源或发现失败不转换为空目录；共用目录按来源保留进程内上一读数，跨页后失败仍按材料来源与版本精确保留，成功空读会清除旧数据。快照不保存加载状态，也不阻止重新读取。
 
-墙卡从共用目录按显示排序取首版，额外读取进度与任务事实；不再独立装载版本目录或跨主机拼接材料。同来源的展示快照沿现有 `snapshot-cache` 保留，返回墙时先回显再读取，不作为跳过目录发现的依据。已处理的强制刷新编号随来源快照保留，普通回墙不重复绕过 provider 缓存。配对主机转接 SSH 时，沿原生宿主解析从 `pairedRegistration.hostId` 取得目标；缺少该登记时兼容 `connectionId`，显式本地登记不当作 SSH。监听所属主机和对应 SSH 目标的状态及连接代际，任一恢复均触发重读。打开总览与版本沿卡片所读来源。材料接口继续按实际工作树 owner 路由，旧无绑定固定计划树仍是有效材料入口。
+墙卡从共用目录按显示排序取首版，额外读取进度与任务事实；不再独立装载版本目录或跨主机拼接材料。同来源的展示快照沿现有 `snapshot-cache` 保留，返回墙时先回显再读取，不作为跳过目录发现的依据。已处理的强制刷新编号随来源快照保留，普通回墙不重复绕过 provider 缓存。配对主机转接 SSH 时，沿原生宿主解析从 `pairedRegistration.hostId` 取得目标；缺少该登记时兼容 `connectionId`，显式本地登记不当作 SSH。监听所属主机和对应 SSH 目标的状态及连接代际，任一恢复均触发重读。版本入口沿卡片所读版本与主机，项目名称及项目总览仍沿项目默认来源。材料接口按实际工作树 owner 路由，只接收绑定版本树。
 
 ### 新建版本与两棵流程树
 
 - **分支与命名**：流程树分支 `bw/<version>/plan`、`bw/<version>/acceptance`（沿 bw/ 命名空间）；树名 `plan-<version>` / `acceptance-<version>`。版本名过 MaterialVersion 目录规则后还须能组成合法分支名（Git ref 规则），不合法拒绝创建并如实报因。分支名只是 Git 起点与入口提示；版本归属始终由登记上的绑定决定，不从分支字符串反推。
-- **编排在归属 runtime**：`workbench.versionWorkspace.prepare` 保留版本绑定和材料编排；同版同用途已有绑定活树优先复用，即使其分支已改名。无绑定树时调用与 project、指标、旧计划/验收共用的 `workbench.fixedWorkspace.ensure`。该服务以独立 Git 扫描和原生登记确认占用，本地分支优先；本地缺失时查真实远端 head，唯一来源定向 fetch，缺少跟踪映射时仅补该分支的原生同名前缀窄 fetch 映射并保留既有条目，再无覆盖恢复同名本地分支；显式排除/异目标映射拒绝覆盖。远端均不存在才从原生项目基线新建。远端失败或多来源明确报错，不依赖 PR/MR 或缓存 ref 断言不存在。创建和登记仍走原生能力；已有未绑定/异版树不自动认领，归档树不自动恢复。材料初始化仍为 create-only。
+- **编排在归属 runtime**：`workbench.versionWorkspace.prepare` 保留版本绑定和材料编排；同版同用途已有绑定活树优先复用，即使其分支已改名。无绑定树时调用与 project、指标、版本流程共用的 `workbench.fixedWorkspace.ensure`。该服务以独立 Git 扫描和原生登记确认占用，本地分支优先；本地缺失时查真实远端 head，唯一来源定向 fetch，缺少跟踪映射时仅补该分支的原生同名前缀窄 fetch 映射并保留既有条目，再无覆盖恢复同名本地分支；显式排除/异目标映射拒绝覆盖。远端均不存在才从原生项目基线新建。远端失败或多来源明确报错，不依赖 PR/MR 或缓存 ref 断言不存在。创建和登记仍走原生能力；已有未绑定/异版树不自动认领，归档树不自动恢复。材料初始化仍为 create-only。
 - **去重**：固定工作区服务按宿主、仓库、分支合并在途请求，并按仓库串行准备，避免原生外部树登记列表相互覆盖；版本准备另将绑定和材料初始化包含在同一次在途操作中。完成或失败即清除在途项，重试重新核对实际 Git 与登记，不把带期限的创建结果缓存当成幂等依据。跨进程以 Git 无覆盖创建和创建后独立读回识别赢者。
 - **步骤链非原子**：计划树 → 计划绑定 → 空计划 → 验收树 → 验收绑定；每步即时落盘（原生登记/绑定登记/材料文件）。某步失败保留已成功结果、逐步返回状态与问题，不回滚、不删树；用户离开或超时不销毁宿主进程内的执行；重试=重入同一 prepare，按宿主真实登记补齐缺失步骤。补齐边界如实：「创建成功但绑定未写入」的窗口（实例身份缺失或写绑定失败）不在自动补齐范围——重入时该树按占用且归属不可证如实拒绝（不劫持、不按分支字符串认领），恢复需人工补绑定（P3 提供入口）或清理该树。
 - **创建结果核对**：原生返回分支非约定分支（占用触发 uniquify）→ 不绑定、不初始化、不标成功；误建树沿原生删除链默认口径 best-effort 清理（不附 force/豁免、不放宽删除安全规则），清理失败如实提示人工处理；并行对手已建对分支 → 按绑定重新发现并采用（winner adoption，较 ensureNamedWorktree 的分支名口径更严格：归属只认绑定）。
@@ -89,17 +89,17 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 - **任务屏范围契约**：版本入口保留本次版本上下文，预选可取消的版本标签，沿原生查询与分页；只有目标条件使用完整材料引用点读后筛选分页。Issue/PR、预设、仓库、搜索与原生过滤均保留；现有材料只有 Issue，保留目标时 PR 为空，取消目标后沿原生 PR 查询。去版本同时清目标，移除后的条件不再参与 Start/Open 绑定。入口条件不写全局 resume 查询，不改任务正本。
 - **统一 Start/Open 解析**：归属只认绑定+原生 linked 字段（shared/version-workspace-match.ts 纯函数核，协议单测看护）：Issue 树=绑定 (version, issue, taskSource) ∧ linked (type=issue, number, provider)；唯一→直开、多候选→BW 选择器（模块 store+Radix Dialog，挂载于应用壳，任务屏、详情弹窗与侧栏入口共用，不依赖侧栏是否显示）、无→原生创建器；PR 行与无范围路径保持原生「首个未归档树」语义。三处分发壳（板面开工箭头 issue-start-action、任务屏行、详情弹窗）共用 `dispatchScopedWorktrees`（唯一直开/多候选选择器/无返 'none' 回落；埋点与回落文案留调用方）。目标树/流程树同一绑定口径；父级建议仅唯一同项目同宿主目标树时给出（不建议不预建，原生选择器与创建期校验仍是权威）。
 - **开工与创建结果绑定**：目标/Issue 开工复用同一原生创建器，BW 只带入 initialParentWorktreeId 建议与 workbenchCreation 归属；原生备注由用户填写，不自动生成目标长备注或仅为备注预读计划；绑定在提交时按创建器**最终**仓库+最终任务来源解析（改仓库即失效），写入发生在**真实创建结果处**（result.worktree，早于取消/激活分支——树既建成归属即应记录），instanceId 必填围栏、读回确认、失败保留树+「重试写绑定」不重复建树；取消（未创建）零绑定。quick/background 链经 `WorktreeCreationRequest.workbenchVersionBinding`（纯可序列化，Retry 原样重放）；full 链镜像。
-- **main 侧版本化**：绑定即版本正本——材料授权（期望分支由绑定派生、跨版读写拒绝 cross-version、用途不混、list 只呈现绑定版）与选版（context 恒回绑定版、select 他版拒绝、不写第二份选版偏好）都在服务层+执行器双围栏；SSH 窄执行器命令带可选 binding（无绑定树不带字段，旧对端不受扰）；无绑定树全部沿旧固定分支语义（旧上下文显式保留）。common-dir/写前再授权/CAS 事务核不变。
-- **侧栏与进屏**：版本行=目录现算（材料∪绑定∪已提交目标回看），流程行=业务入口+本树入口合一（原生 agent 行/原生菜单/原生激活链复用）；进屏定位绑定树优先且**不进 ensure 路径**（多实例交选择器、无树如实拒绝，浏览不建树）；旧固定树仅在已存在时作为旧路径；「＋新建版本」与版本行「初始化工作区」共用 prepare 重入补齐语义。当前浏览版本是 UI 偏好（按项目隔离持久化），不是归属/执行正本。目录装载：多计划树入口（各版绑定树按自身 owner 路由＋旧固定树 legacyTrees 后置，绑定树排前）、草稿读取失败进 problem 通道、retired 版本目标从已提交计划派生（readPlan 固定来源，只读回看不要求树）、collect 按 projectId 过滤前提。延后项收口：固定工作区 Git 准备统一由归属 runtime 服务执行，renderer 不再持另一套 ref 匹配和建树逻辑；本地 IPC updateMeta 仅绑定字段显式 undefined=保留剥除（其余键沿原生 present-but-undefined 清除线约，H-1 收窄）。
+- **main 与 SSH 侧材料授权**：无对应流程绑定或跨版操作均拒绝，初始化同样核对绑定和分支。context 返回绑定版，select 仅接受同版。common-dir、写前再授权与 CAS 事务保留；主干历史独立读取。
+- **侧栏与进屏**：目录合并材料与绑定；流程多实例交原生卡片与现有选择器，无树进入只读回看。初始化依选定登记中准备状态判断，不用其他宿主替代。未选中多个草稿中的任一个时不派生任意草稿目标。
 
 ### 流程入口、绑定、清理与自动化
 
-- **屏内选版移除（P3b①）**：绑定树在计划面包屑与验收页头只读回显绑定版本（计划 `.g3-version-bound`；验收 v10 板面为 `AcceptanceHeader` 的 `boundVersion` 回显 `.acc-version-bound`，满板与空板共用），无屏内切换；旧无绑定固定树保留下拉与 `workbenchSelectedVersion` 偏好（J1 口径不变）。`VersionCycleContext.boundVersion` 由 Provider 从流程树绑定派生；main 侧跨版拒绝仍是唯一围栏权威，UI 移除只消灭死入口。验收屏 v10（#394）合入后回显已重接其页头（v10 原注释预留「until G2」接缝）。version-planning spec 选版条款已回写（其 design D1 标注落地）。
+- **屏内版本**：流程板回显绑定版本，通过版本侧栏切换。无绑定原生工作区不挂流程板。
 - **Issue 开工箭头永久 hookup（P3b②）**：板面 Issue 行箭头接 `issue-start-action.ts`——与任务屏范围行同一解析核（绑定+linked 双重证明；唯一直开/多候选选择器/无则原生创建器预填＋创建结果绑定）。版本未知或 provider 不在开工面（读回仅 github/codehub 就绪）回落原生详情；标题链接进原生详情语义不变，不另造继续逻辑。
 - **单树绑定/改绑/解绑**：`WorkbenchVersionBindingMenuItems` 薄挂载到全树原生 `WorktreeContextMenu`，普通项目树、版本流程树、目标/Issue 树与多实例中的具体树入口一致；不保留版本级“绑定已有工作树”按钮或批量绑定。选择器沿 `version-tree-bind-dialog` 与宿主路由绑定服务，流程用途须符合 `bw/<版本>/<用途>` 分支围栏；Issue 用途先从真实计划目标选引用，再读回 Issue；原生 linkedWorkItem、任务来源与版本绑定通过同一次 identity metadata 更新保存并共同读回核验，保留 instanceId 和宿主围栏。旧宿主不支持新增请求字段时整笔拒绝，不先改原生关联。解绑只清该树版本绑定，稳定身份、父子关系、linked task、文件与原生会话均保留，不级联改绑或解绑子树。
 - **版本级清理（P3b④）**：确认单=版本语义清单层（本版全部存活绑定实例；本机 owned 默认勾选、他宿主列而不勾＋owner/预检/在跑会话标注；断链宿主不可勾选，执行也复核；显式勾选可达宿主才经共享通道在归属宿主删除）；预检状态与原生确认单同一 hydration 来源；执行交原生 `runWorktreeBatchDelete` 漏斗（Orca 确认单/预检/force/宿主路由全原生，批量必确认）。删除只改执行面，目录现算无悬空绑定；不改写自动化条目——本版已启用的版本化自动化按本机登记探测（creationKey 全键精确匹配）在确认单如实提示，他宿主 runtime 条目不跨机探测（留白）。P3a 占位对话框同交付删除。
-- **只读回看（P3b⑤）**：无绑定树且无旧固定树的版本，计划/验收屏挂 `VersionReadonlyMaterialView`——history RPC 按目录固定 sourceCommit/revision 读主干已提交材料，human-guard 字段只呈现状态不提供入口；工作树/会话不可用由登记缺失推导；缺材料/读取失败如实报，浏览不建树。
-- **P5 自动化身份版本化**：creationKey=`bw-cycle:<scope>:<workflow>[:<version>]`（绑定树加版本维度，每版独立登记）；条目名版本在前；提示词钉绑定树真实分支＋绑定版本（context.version=绑定版，「绑定即定、不切版不推断」文案）。计划、验收两侧 start/configure 护栏均已撤除（验收侧随 #394 合入、验收 Skill 正本 v0.7.1 绑定感知同步后放开；`useEnsureCycleAutomation` 的临时 skip 参数同轮删除，不留兼容层）。standard/ 两侧同步：week-planning SKILL 归档步绑定感知（0.6.1，随 #410 合并为 0.7.1）＋version-acceptance SKILL v0.7.1（恢复/归档步：绑定版本树 bw/<版本>/acceptance、旧无绑定树 bw/week-acceptance 逐字保留）＋version-records 命名与 v10 语义合并＋asset-audit 读取处；bundle/manifest/registry/stub 重生成 verify 双检通过。
+- **只读回看（P3b⑤）**：无绑定树的版本，计划/验收屏挂 `VersionReadonlyMaterialView`——history RPC 按目录固定 sourceCommit/revision 读主干已提交材料，human-guard 字段只呈现状态不提供入口；工作树/会话不可用由登记缺失推导；缺材料/读取失败如实报，浏览不建树。
+- **自动化身份**：`creationKey=bw-cycle:<scope>:<workflow>:<version>` 独立登记；提示指向真实分支与绑定版本。旧任务仍保留自身已保存的设置，发布前由负责人核对和切换。
 - **版本总览接入**：侧栏每版「总览」行调用 `openVersionOverview`，在 activity 槽通过 `project-page-state` 挂载既有版本总览页面，从设置返回时保留原版本；内容、交互与样式归 [version-overview](../version-overview/spec.md)，本特性不复制其设计或原型。
 
 ### 伴飞裁定落地（2026-10-25 夜，#436 伴飞汇总 PR #437）
