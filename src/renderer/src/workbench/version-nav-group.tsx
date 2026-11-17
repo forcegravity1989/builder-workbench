@@ -90,6 +90,7 @@ export function VersionNavGroup({
       workflow: 'acceptance'
     }).length > 0
   const goalIds = new Set(entry.goals.map((goal) => goal.goalId))
+  const planChoice = entry.problems.find((problem) => problem.code === 'plan-source-ambiguous')
   // 材料暂不可读或目标已移除时，登记中的绑定树仍有原生入口。
   const eligibleGoalTrees = new Set(goalWorktrees)
   const ungroupedTrees = worktrees.filter((tree) => {
@@ -207,9 +208,9 @@ export function VersionNavGroup({
             )
           })}
           <BoundTreeRows trees={ungroupedTrees} sectionKey={`version:${entry.version}:ungrouped`} />
-          {entry.goals.length === 0 && ungroupedTrees.length === 0 ? (
+          {planChoice || (entry.goals.length === 0 && ungroupedTrees.length === 0) ? (
             <p className="px-1 py-0.5 text-[10.5px] text-worktree-sidebar-foreground/40">
-              目标来自本版计划
+              {planChoice?.message ?? '目标来自本版计划'}
             </p>
           ) : null}
           <WorkflowRow

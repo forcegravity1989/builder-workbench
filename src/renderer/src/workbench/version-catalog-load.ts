@@ -150,15 +150,7 @@ export async function loadVersionCatalog(args: {
     planCounts.set(version, (planCounts.get(version) ?? 0) + 1)
   }
   for (const planTree of planTrees) {
-    const count = planCounts.get(planTree.version)
-    if (count !== 1) {
-      if (count) {
-        problems.push({
-          code: 'plan-source-ambiguous',
-          message: `版本 ${planTree.version} 有多个计划工作区，请选择具体工作区。`
-        })
-        planCounts.delete(planTree.version)
-      }
+    if (planCounts.get(planTree.version) !== 1) {
       continue
     }
     // 单个计划树读取失败不拖垮整个目录：其余来源照实返回，失败进 problem 通道。
@@ -269,9 +261,15 @@ export async function loadVersionCatalog(args: {
     retainHistory: sameHistory && historyUnavailable
   })
 
-  // 已提交回看：有已提交计划材料但没有草稿派生目标的版本（旧版本/已清理
-  // 版本，树不存在或不可读），从固定提交读回目标与任务引用目录——只读回看不要求树。
   for (const entry of entries) {
+    if ((planCounts.get(entry.version) ?? 0) > 1) {
+      entry.problems.push({
+        workflow: 'plan',
+        code: 'plan-source-ambiguous',
+        message: '有多个计划工作区。点「计划」选择要打开的工作区。'
+      })
+    }
+    // 已提交计划可从固定提交读回目标，历史回看不要求绑定树。
     const planRef = entry.material.plan
     if (!planRef || entry.goals.length > 0 || historyUnavailable) {
       continue

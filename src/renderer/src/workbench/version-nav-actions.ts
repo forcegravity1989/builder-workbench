@@ -48,7 +48,10 @@ export function navigateVersionWorkflow(args: {
     })
     return
   }
-  if (!catalog?.scope || catalog.error) {
+  const committed = catalog?.catalog?.entries.find((entry) => entry.version === version)?.material[
+    workflow
+  ]
+  if (!catalog?.scope || (catalog.error && !committed)) {
     toast.error('项目工作区尚未就绪，请稍后再试')
     return
   }

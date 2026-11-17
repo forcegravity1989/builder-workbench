@@ -40,6 +40,7 @@ import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import { VersionTreeDisplayProvider, type VersionTreeDisplayInput } from './VersionNativeTrees'
+import { isVersionHostDisconnected } from './version-worktree-host'
 import {
   consumeVersionSidebarFocus,
   publishVersionSidebarProjection,
@@ -318,7 +319,20 @@ export function WorkbenchVersionNav({
         return
       }
       if (!source) {
-        toast.error('该版本的材料来源尚未就绪，请检查主机连接。')
+        const candidates = (['plan', 'acceptance'] as const)
+          .flatMap((workflow) =>
+            findVersionFlowWorktrees(project.worktrees, { version: entry.version, workflow })
+          )
+          .filter((tree) => !isVersionHostDisconnected(tree))
+        if (candidates.length) {
+          openWorkbenchWorkspaceChoice({
+            title: `${entry.version} · 选择总览的工作区`,
+            candidates,
+            onChoose: openOverviewFromTree
+          })
+        } else {
+          toast.error('该版本的材料来源尚未就绪，请检查主机连接。')
+        }
         return
       }
       for (const workflow of ['plan', 'acceptance'] as const) {
@@ -408,7 +422,7 @@ export function WorkbenchVersionNav({
                   entry
                 })
               } else {
-                toast.error('该版本的材料来源尚未就绪，请重试。')
+                toast.error('该版本的材料来源尚未就绪。请先打开此版本的工作区，或检查主机连接。')
               }
             })
           }
