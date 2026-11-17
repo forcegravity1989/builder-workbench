@@ -58,14 +58,20 @@ export type VersionCatalogEntry = {
 }
 
 export function compareVersionDisplayOrder(
-  a: Pick<VersionCatalogEntry, 'planEnteredAt'>,
-  b: Pick<VersionCatalogEntry, 'planEnteredAt'>
+  a: Pick<VersionCatalogEntry, 'state' | 'version' | 'planEnteredAt'>,
+  b: Pick<VersionCatalogEntry, 'state' | 'version' | 'planEnteredAt'>
 ): number {
-  const aTime = a.planEnteredAt ?? -Infinity
-  const bTime = b.planEnteredAt ?? -Infinity
-  return aTime === bTime
-    ? Number(b.planEnteredAt !== undefined) - Number(a.planEnteredAt !== undefined)
-    : bTime - aTime
+  // 在制(working)恒排在 retired 之前：只按时间排序时，未进主干的新在制版本会被老版本挤下去。
+  if (a.state !== b.state) {
+    return a.state === 'working' ? -1 : 1
+  }
+  const aTime = a.planEnteredAt
+  const bTime = b.planEnteredAt
+  // 同一状态内：双方都有“进入主干时间”时按时间降序；时间缺失或相同则按版本号降序兜底。
+  if (aTime != null && bTime != null && aTime !== bTime) {
+    return bTime - aTime
+  }
+  return compareMaterialVersions(b.version, a.version)
 }
 
 /**

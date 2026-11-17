@@ -82,7 +82,9 @@ it('groups same-repo workspaces without replacing an unavailable material source
   const local = source(repo('local', 'local'), ['v1.0'])
   const peer = source(repo('peer', 'runtime:peer'), ['v1.0', 'v1.1'])
   const selectSource = (candidates: Repo[]) => candidates[0]
-  const [shared, peerOnly] = mergeProjectVersions([local, peer], local, undefined, selectSource)
+  const merged = mergeProjectVersions([local, peer], local, undefined, selectSource)
+  const shared = merged.find((row) => row.entry.version === 'v1.0')!
+  const peerOnly = merged.find((row) => row.entry.version === 'v1.1')!
   expect(shared.entry.workspaces.map((tree) => tree.hostId)).toEqual(['local', 'runtime:peer'])
   expect(shared.entry.goals.map((goal) => goal.title)).toEqual(['local'])
   expect(shared.goalWorktrees).toEqual(local.state.worktrees)
