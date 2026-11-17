@@ -22,7 +22,7 @@ import {
   Wrench
 } from 'lucide-react'
 import type { SettingsNavigationBuildOptions } from './settings-navigation-build-options'
-import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { isMonicaShell } from '../monica/is-monica-shell'
 
 export function buildRemoteSettingsSections(
   { isMac, isWindowsTerminalHost, isWebClient, isDev, repos }: SettingsNavigationBuildOptions,
@@ -84,7 +84,7 @@ export function buildRemoteSettingsSections(
         'auto.hooks.useSettingsNavigationMetadata.3618579df6',
         'Privacy & Telemetry'
       ),
-      description: isWorkbenchShell()
+      description: isMonicaShell()
         ? translate(
             'auto.components.settings.PrivacyPane.workbenchSectionDescription',
             'Usage data, diagnostics, and telemetry controls.'

@@ -4,8 +4,11 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getExecutionHostLabel } from '../../../../shared/execution-host'
-import { GitHubIntegrationCard, GitLabIntegrationCard } from './cli-source-control-integration-cards'
-import { CodeHubIntegrationCard } from './bw-cli-integration-cards'
+import {
+  GitHubIntegrationCard,
+  GitLabIntegrationCard
+} from './cli-source-control-integration-cards'
+import { CodeHubIntegrationCard } from './monica-cli-integration-cards'
 
 const LOCAL_HOST_LABEL = getExecutionHostLabel('local')
 
@@ -43,7 +46,7 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-// Why (BW #323): install is an app-run background command — the cards call
+// Why (Monica #323): install is an app-run background command — the cards call
 // window.api.cliInstall, and happy-dom has no preload, so stub the surface
 // once for every case in this file.
 ;(window as { api?: unknown }).api = {
@@ -70,7 +73,7 @@ vi.mock('./source-control-preflight-card-status', () => ({
   usePreflightCardStatuses: () => mocks.preflight
 }))
 
-// Why (BW #323): login renders the upstream inline terminal inside the card
+// Why (Monica #323): login renders the upstream inline terminal inside the card
 // (user decision 2026-10-19); stub it like AgentSkillSetupPanel.test does so
 // the card cases do not drag the TerminalPane/xterm chain into happy-dom.
 vi.mock('../onboarding/OnboardingInlineCommandTerminal', () => ({
@@ -131,7 +134,7 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain(
       'Credentials and account checks for this provider are owned by this desktop client. Use Settings > Remote Orca Servers > Advanced to edit server-owned credentials.'
     )
-    // Why (BW #323): the Open Remote Servers shortcut was dropped from the
+    // Why (Monica #323): the Open Remote Servers shortcut was dropped from the
     // integration cards (user decision 2026-10-16); the scope label stays.
     expect(rendered.textContent).not.toContain('Open Remote Servers')
   })
@@ -183,7 +186,7 @@ describe('CLI source-control integration card account scope', () => {
 
     expect(rendered.textContent).toContain('Not installed')
     expect(rendered.textContent).toContain('codehub-cli is not on PATH.')
-    // Why (BW #323): the install command is user-confirmed (2026-10-16); the
+    // Why (Monica #323): the install command is user-confirmed (2026-10-16); the
     // card shows the exact self-contained command the button injects.
     expect(rendered.textContent).toContain(
       'npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false'
@@ -191,7 +194,7 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain('Install CodeHub CLI')
     expect(rendered.textContent).not.toContain('pending internal confirmation')
     expect(rendered.textContent).not.toContain('Log in')
-    // Why (BW #323): install runs as an app-owned background command (user
+    // Why (Monica #323): install runs as an app-owned background command (user
     // decision 2026-10-16) — clicking starts the runner and flips the card to
     // "Installing…" instead of opening a terminal session.
     await act(async () => {

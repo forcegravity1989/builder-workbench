@@ -177,9 +177,9 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
   )
   const commitTaskSearch = useCallback(
     (value: string): void => {
-      // Why: a BW workbench scope filters client-side over the materialized
+      // Why: a Monica workbench scope filters client-side over the materialized
       // reference set — no server qualifier prefix and no fetch skeletons.
-      if (model.workbenchScopeActive) {
+      if (model.monicaScopeActive) {
         const trimmed = value.trim()
         if (trimmed !== appliedTaskSearch) {
           setAppliedTaskSearch(trimmed)
@@ -195,7 +195,7 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
     [
       activeGithubTaskKind,
       appliedTaskSearch,
-      model.workbenchScopeActive,
+      model.monicaScopeActive,
       setTasksFiltering,
       setAppliedTaskSearch
     ]
@@ -209,9 +209,9 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
     if (!taskResumeApplied) {
       return
     }
-    // Why: scoped (BW) searches are view-local; persisting them would leak into
+    // Why: scoped (Monica) searches are view-local; persisting them would leak into
     // the unscoped resume query the next plain Tasks visit mounts with.
-    if (model.workbenchScopeActive) {
+    if (model.monicaScopeActive) {
       return
     }
     if (!githubSearchPersistReadyRef.current) {
@@ -226,7 +226,7 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
   }, [
     activeTaskPreset,
     appliedTaskSearch,
-    model.workbenchScopeActive,
+    model.monicaScopeActive,
     setTaskResumeState,
     taskResumeApplied,
     githubSearchPersistReadyRef

@@ -4,7 +4,7 @@ import type { Repo } from '../../shared/repo-types'
 import {
   hasConfirmedGroupMembership,
   type ConfirmedRepoRegistration
-} from '../../shared/workbench/repo-removal'
+} from '../../shared/monica/repo-removal'
 import type {
   FolderWorkspacePathStatus,
   FolderWorkspacePathStatusRequest

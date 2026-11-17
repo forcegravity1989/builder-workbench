@@ -1,4 +1,4 @@
-import { workbenchTaskEntryQuery } from '../../../shared/workbench/task-scope'
+import { monicaTaskEntryQuery } from '../../../shared/monica/task-scope'
 import type { TaskPageJiraListStateModel } from './use-task-page-jira-list-state'
 import { useEffect } from 'react'
 import { resolveVisibleTaskProvider } from '../../../shared/task-providers'
@@ -61,14 +61,14 @@ export function useTaskPageResumeRestoration(model: TaskPageJiraListStateModel) 
       )
     )
     setRepoSelection(resolvedInitialSelection)
-    const scope = pageData.workbenchTaskScope
+    const scope = pageData.monicaTaskScope
     setGithubMode(scope?.goalId ? 'items' : (taskResumeState?.githubMode ?? 'items'))
     const savedPreset = taskResumeState?.githubItemsPreset
     const preset =
       scope?.goalId || savedPreset === null
         ? null
         : normalizeGitHubTaskPreset(savedPreset ?? settings.defaultTaskViewPreset)
-    const query = workbenchTaskEntryQuery(
+    const query = monicaTaskEntryQuery(
       preset ? getTaskPresetQuery(preset) : (taskResumeState?.githubItemsQuery ?? ''),
       scope
     )
@@ -99,7 +99,7 @@ export function useTaskPageResumeRestoration(model: TaskPageJiraListStateModel) 
     persistedUIReady,
     settings,
     pageData.taskSource,
-    pageData.workbenchTaskScope,
+    pageData.monicaTaskScope,
     resolvedInitialSelection,
     taskResumeState,
     visibleTaskProviders,

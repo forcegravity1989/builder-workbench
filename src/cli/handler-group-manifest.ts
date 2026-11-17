@@ -13,12 +13,12 @@ export type HandlerGroup = {
 // real exports by handler-group-manifest.test.ts, so drift fails CI, not dispatch.
 export const HANDLER_GROUPS: readonly HandlerGroup[] = [
   {
-    name: 'workbench-meeting',
+    name: 'monica-meeting',
     keys: ['bw meeting transcript'],
-    load: async () => (await import('./handlers/workbench-meeting.js')).WORKBENCH_MEETING_HANDLERS
+    load: async () => (await import('./handlers/monica-meeting.js')).MONICA_MEETING_HANDLERS
   },
   {
-    name: 'workbench-materials',
+    name: 'monica-materials',
     keys: [
       'bw materials context',
       'bw materials select',
@@ -30,8 +30,7 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
       'bw materials migration-preview',
       'bw materials migrate'
     ],
-    load: async () =>
-      (await import('./handlers/workbench-materials.js')).WORKBENCH_MATERIAL_HANDLERS
+    load: async () => (await import('./handlers/monica-materials.js')).MONICA_MATERIAL_HANDLERS
   },
   {
     name: 'core',

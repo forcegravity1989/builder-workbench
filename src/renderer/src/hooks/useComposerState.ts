@@ -6,7 +6,7 @@ import type { TuiAgent } from '../../../shared/tui-agent'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
 import type { WorkspaceSource as WorkspaceCreateTelemetrySource } from '../../../shared/workspace-source'
 import type { WorkspaceStatus } from '../../../shared/worktree/types'
-import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
+import type { MonicaCreationContext } from '../../../shared/monica/creation-context'
 import { normalizeExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 import { isWorkItemLookupText } from '@/lib/work-item-lookup-text'
 import { resolveGitHubWorkItemIdentity } from '@/lib/github-work-item-identity'
@@ -40,7 +40,7 @@ export type UseComposerStateOptions = {
   initialWorkspaceStatus?: WorkspaceStatus
   initialBaseBranch?: string
   initialParentWorktreeId?: string | null
-  workbenchCreation?: WorkbenchCreationContext | null
+  monicaCreation?: MonicaCreationContext | null
   persistDraft: boolean
   onCreated?: () => void
   isSubmissionCancelled?: () => boolean

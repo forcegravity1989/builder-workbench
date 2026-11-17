@@ -13,7 +13,7 @@ export function useTaskPageStoreBindings() {
   const persistTaskResumeState = useAppStore((s) => s.setTaskResumeState)
   const setTaskResumeState = useCallback<typeof persistTaskResumeState>(
     (update) => {
-      if (!useAppStore.getState().taskPageData.workbenchTaskScope) {
+      if (!useAppStore.getState().taskPageData.monicaTaskScope) {
         persistTaskResumeState(update)
       }
     },

@@ -24,13 +24,13 @@ const NUMBERS_PER_QUERY = 20
 // statusCheckRollup 与 merge-metadata 不进批量——原生 PR 列表路径同样不带
 // （WORK_ITEM_PR_LIST_JSON_FIELDS 注释：per-row GraphQL 昂贵），checks 由行级
 // 预取机制按 headSha 补齐，merge-metadata 在单条链里也是 best-effort 附加调用。
-const ISSUE_FRAGMENT = `fragment BwIssueFields on Issue {
+const ISSUE_FRAGMENT = `fragment MonicaIssueFields on Issue {
   number title state url updatedAt
   labels(first: 20) { nodes { name } }
   author { login avatarUrl }
   assignees(first: 20) { nodes { login name avatarUrl } }
 }`
-const PR_FRAGMENT = `fragment BwPullRequestFields on PullRequest {
+const PR_FRAGMENT = `fragment MonicaPullRequestFields on PullRequest {
   number title state url updatedAt mergedAt isDraft
   reviewDecision additions deletions changedFiles
   headRefOid headRefName baseRefName
@@ -48,7 +48,7 @@ export function buildWorkItemsBatchQuery(owner: string, repo: string, numbers: n
   const selections = numbers
     .map(
       (number) =>
-        `i${number}: issue(number: ${number}) { ...BwIssueFields } p${number}: pullRequest(number: ${number}) { ...BwPullRequestFields }`
+        `i${number}: issue(number: ${number}) { ...MonicaIssueFields } p${number}: pullRequest(number: ${number}) { ...MonicaPullRequestFields }`
     )
     .join(' ')
   return `query { repository(owner: "${owner}", name: "${repo}") { ${selections} } } ${ISSUE_FRAGMENT} ${PR_FRAGMENT}`
