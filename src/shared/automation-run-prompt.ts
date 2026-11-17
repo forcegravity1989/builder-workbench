@@ -1,5 +1,5 @@
 /**
- * A manual run may carry one-shot context (e.g. BW material problems) that must
+ * A manual run may carry one-shot context (e.g. Monica material problems) that must
  * reach the session exactly once, in order, together with the saved prompt.
  * Combining happens at dispatch so the automation record is never rewritten and
  * no second delivery channel can race the saved prompt.
