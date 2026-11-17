@@ -17,27 +17,6 @@ export const SharePublishSchema = z
   })
   .strict()
 
-export const ShareConfigSaveSchema = z
-  .object({
-    serverUrl: z.string().max(2048),
-    // Omitted keeps the stored token; an empty string clears it.
-    uploadToken: z.string().max(4096).optional()
-  })
-  .strict()
-
-export const ShareConfigTestSchema = z
-  .object({
-    serverUrl: z.string().max(2048),
-    uploadToken: z.string().max(4096).optional()
-  })
-  .strict()
-
-export type ShareConfigView = {
-  serverUrl: string
-  uploadTokenSet: boolean
-  configured: boolean
-}
-
 export type ShareRecordView = {
   id: string
   url: string
@@ -54,8 +33,6 @@ export type ShareResult<T> =
   | { ok: false; error: { code: ShareErrorCode; message: string } }
 
 export type ShareErrorCode =
-  | 'not-configured'
-  | 'invalid-config'
   | 'unauthorized'
   /** The service refused the record's edit token; the link cannot be updated from this device. */
   | 'forbidden'

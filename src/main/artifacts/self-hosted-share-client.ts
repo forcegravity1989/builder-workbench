@@ -50,7 +50,7 @@ async function readErrorBody(response: Response): Promise<string> {
 
 function mapStatus(status: number, detail: string): ShareServiceError {
   if (status === 401) {
-    return new ShareServiceError('unauthorized', '分享服务拒绝了上传令牌，请检查设置中的上传令牌')
+    return new ShareServiceError('unauthorized', '分享服务拒绝了本机凭据')
   }
   // The service answers 403 only when the x-edit-token does not belong to the record.
   if (status === 403) {
@@ -72,6 +72,40 @@ function mapStatus(status: number, detail: string): ShareServiceError {
     return new ShareServiceError('busy', '分享服务正忙，请稍后再试')
   }
   return new ShareServiceError('server', `分享服务返回 ${status}${detail ? `：${detail}` : ''}`)
+}
+
+/**
+ * Mint a per-device upload token. The service returns the plaintext exactly once; the caller
+ * persists it and never exposes it to the renderer.
+ */
+export async function enrollClient(config: {
+  serverUrl: string
+  enrollKey: string
+  fetchImpl?: typeof fetch
+}): Promise<{ token: string; createdAt: string }> {
+  const fetchImpl = config.fetchImpl ?? fetch
+  let response: Response
+  try {
+    response = await fetchImpl(requestUrl(config.serverUrl, '/api/client-tokens'), {
+      method: 'POST',
+      headers: { 'x-enroll-key': config.enrollKey },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    })
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new ShareServiceError('network', `无法连接分享服务：${reason}`)
+  }
+  if (!response.ok) {
+    throw mapStatus(response.status, await readErrorBody(response))
+  }
+  const body = (await response.json()) as { token?: unknown; createdAt?: unknown }
+  if (typeof body.token !== 'string' || body.token.trim() === '') {
+    throw new ShareServiceError('server', '分享服务未返回有效的本机凭据')
+  }
+  return {
+    token: body.token,
+    createdAt: typeof body.createdAt === 'string' ? body.createdAt : new Date().toISOString()
+  }
 }
 
 async function requestJson<T>(

@@ -7,6 +7,8 @@ import { createShareService } from './self-hosted-share-service'
 
 type Call = { method: string; url: string; headers: Headers; body: unknown }
 
+const SERVER_URL = 'http://share.example.com'
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -16,7 +18,7 @@ function jsonResponse(status: number, body: unknown): Response {
 
 const created = {
   id: 'share-a',
-  url: 'http://share.example.com/s/share-a',
+  url: `${SERVER_URL}/s/share-a`,
   editToken: 'edit-a',
   expiresAt: '2026-12-16T00:00:00.000Z'
 }
@@ -25,26 +27,37 @@ describe('createShareService', () => {
   let dataDir: string
   let calls: Call[]
   let fetchImpl: ReturnType<typeof vi.fn>
+  let issuedTokens: number
 
-  const service = () =>
-    createShareService({ dataDir: () => dataDir, fetchImpl: fetchImpl as unknown as typeof fetch })
+  const service = (overrides: { enrollKey?: string } = {}) =>
+    createShareService({
+      dataDir: () => dataDir,
+      serverUrl: SERVER_URL,
+      enrollKey: overrides.enrollKey ?? 'enroll-key',
+      fetchImpl: fetchImpl as unknown as typeof fetch
+    })
 
   beforeEach(async () => {
     dataDir = await mkdtemp(join(tmpdir(), 'bw-share-service-'))
     calls = []
+    issuedTokens = 0
     fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = new Request(input as string, init)
       const body = init?.body ? JSON.parse(init.body as string) : null
       calls.push({ method: request.method, url: request.url, headers: request.headers, body })
-      if (request.url.endsWith('/healthz')) {
-        return jsonResponse(200, { status: 'ok' })
+      if (request.url.endsWith('/api/client-tokens')) {
+        issuedTokens += 1
+        return jsonResponse(201, {
+          token: `enrolled-token-${issuedTokens}`,
+          createdAt: '2026-11-16T00:00:00.000Z'
+        })
       }
       if (request.method === 'POST') {
         return jsonResponse(201, created)
       }
       if (request.method === 'PUT') {
         return jsonResponse(200, {
-          id: 'share-a',
+          id: created.id,
           url: created.url,
           expiresAt: created.expiresAt,
           updatedAt: '2026-11-16T12:00:00.000Z'
@@ -58,23 +71,23 @@ describe('createShareService', () => {
     await rm(dataDir, { recursive: true, force: true })
   })
 
-  it('refuses to publish before a server is configured', async () => {
-    const result = await service().publish({
-      sourceKey: '/repo/a.html',
-      content: '<h1>A</h1>',
-      fileName: 'a.html'
-    })
+  it('enrolls on first use and reuses the token for later shares', async () => {
+    const share = service()
 
-    expect(result).toMatchObject({ ok: false, error: { code: 'not-configured' } })
-    expect(fetchImpl).not.toHaveBeenCalled()
+    await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
+    await share.publish({ sourceKey: '/repo/b.html', content: '<h1>B</h1>', fileName: 'b.html' })
+
+    expect(calls.filter((call) => call.url.endsWith('/api/client-tokens'))).toHaveLength(1)
+    expect(calls[0]).toMatchObject({ method: 'POST', url: `${SERVER_URL}/api/client-tokens` })
+    expect(calls[0]?.headers.get('x-enroll-key')).toBe('enroll-key')
+    expect(calls[1]).toMatchObject({ method: 'POST', url: `${SERVER_URL}/api/shares` })
+    expect(calls[1]?.headers.get('x-upload-token')).toBe('enrolled-token-1')
+    expect(calls[2]).toMatchObject({ method: 'POST', url: `${SERVER_URL}/api/shares` })
+    expect(calls[2]?.headers.get('x-upload-token')).toBe('enrolled-token-1')
   })
 
-  it('creates a share with the upload token and remembers the link', async () => {
+  it('creates a share and remembers the link without leaking the edit token', async () => {
     const share = service()
-    await share.saveConfig({
-      serverUrl: 'http://share.example.com/',
-      uploadToken: 'upload-secret'
-    })
 
     const result = await share.publish({
       sourceKey: '/repo/a.html',
@@ -94,12 +107,11 @@ describe('createShareService', () => {
     })
     // The renderer may display the link, but the edit token must stay in the host process.
     expect(result.ok && 'editToken' in result.value).toBe(false)
-    expect(calls[0]).toMatchObject({
+    expect(calls[1]).toMatchObject({
       method: 'POST',
-      url: 'http://share.example.com/api/shares',
+      url: `${SERVER_URL}/api/shares`,
       body: { content: '<h1>A</h1>', fileName: 'a.html', title: 'Report' }
     })
-    expect(calls[0]?.headers.get('x-upload-token')).toBe('upload-secret')
 
     await expect(share.getLink('/repo/a.html')).resolves.toMatchObject({
       ok: true,
@@ -113,7 +125,6 @@ describe('createShareService', () => {
 
   it('updates an existing share through its edit token', async () => {
     const share = service()
-    await share.saveConfig({ serverUrl: 'http://share.example.com', uploadToken: 'upload-secret' })
     await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
 
     const result = await share.publish({
@@ -123,16 +134,15 @@ describe('createShareService', () => {
     })
 
     expect(result).toMatchObject({ ok: true, value: { change: 'updated' } })
-    expect(calls[1]).toMatchObject({
+    expect(calls[2]).toMatchObject({
       method: 'PUT',
-      url: 'http://share.example.com/api/shares/share-a'
+      url: `${SERVER_URL}/api/shares/share-a`
     })
-    expect(calls[1]?.headers.get('x-edit-token')).toBe('edit-a')
+    expect(calls[2]?.headers.get('x-edit-token')).toBe('edit-a')
   })
 
   it('creates a fresh share when the remote link is gone', async () => {
     const share = service()
-    await share.saveConfig({ serverUrl: 'http://share.example.com', uploadToken: 'upload-secret' })
     await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
     fetchImpl.mockImplementationOnce(async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = new Request(input as string, init)
@@ -147,14 +157,11 @@ describe('createShareService', () => {
     })
 
     expect(result).toMatchObject({ ok: true, value: { change: 'created' } })
-    expect(calls.map((call) => call.method)).toEqual(['POST', 'PUT', 'POST'])
+    expect(calls.map((call) => call.method)).toEqual(['POST', 'POST', 'PUT', 'POST'])
   })
 
   it('rejects oversized content before touching the network', async () => {
-    const share = service()
-    await share.saveConfig({ serverUrl: 'http://share.example.com', uploadToken: 'upload-secret' })
-
-    const result = await share.publish({
+    const result = await service().publish({
       sourceKey: '/repo/a.html',
       content: 'a'.repeat(SHARE_MAX_CONTENT_BYTES + 1),
       fileName: 'a.html'
@@ -164,14 +171,38 @@ describe('createShareService', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('maps an upload-token rejection to unauthorized', async () => {
+  it('re-enrolls and retries once when the server rejects the stored token', async () => {
     const share = service()
-    await share.saveConfig({ serverUrl: 'http://share.example.com', uploadToken: 'wrong' })
-    fetchImpl.mockImplementationOnce(async () =>
-      jsonResponse(401, { error: { code: 'unauthorized', message: 'bad token' } })
-    )
+    let rejected = false
+    fetchImpl.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input as string, init)
+      calls.push({ method: request.method, url: request.url, headers: request.headers, body: null })
+      if (request.url.endsWith('/api/client-tokens')) {
+        issuedTokens += 1
+        return jsonResponse(201, { token: `enrolled-token-${issuedTokens}` })
+      }
+      if (!rejected) {
+        rejected = true
+        return jsonResponse(401, { error: { code: 'unauthorized' } })
+      }
+      return jsonResponse(201, created)
+    })
 
     const result = await share.publish({
+      sourceKey: '/repo/a.html',
+      content: '<h1>A</h1>',
+      fileName: 'a.html'
+    })
+
+    expect(result).toMatchObject({ ok: true, value: { change: 'created' } })
+    expect(calls.filter((call) => call.url.endsWith('/api/client-tokens'))).toHaveLength(2)
+    expect(calls.at(-1)?.headers.get('x-upload-token')).toBe('enrolled-token-2')
+  })
+
+  it('reports an enrollment rejection as unauthorized', async () => {
+    fetchImpl.mockResolvedValueOnce(jsonResponse(401, { error: { code: 'unauthorized' } }))
+
+    const result = await service().publish({
       sourceKey: '/repo/a.html',
       content: '<h1>A</h1>',
       fileName: 'a.html'
@@ -182,25 +213,19 @@ describe('createShareService', () => {
 
   it('deletes the remote share before dropping the local record', async () => {
     const share = service()
-    await share.saveConfig({ serverUrl: 'http://share.example.com', uploadToken: 'upload-secret' })
     await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
 
     await expect(share.remove('/repo/a.html')).resolves.toEqual({ ok: true, value: null })
-    expect(calls[1]).toMatchObject({
+    expect(calls[2]).toMatchObject({
       method: 'DELETE',
-      url: 'http://share.example.com/api/shares/share-a'
+      url: `${SERVER_URL}/api/shares/share-a`
     })
-    expect(calls[1]?.headers.get('x-edit-token')).toBe('edit-a')
+    expect(calls[2]?.headers.get('x-edit-token')).toBe('edit-a')
     await expect(share.getLink('/repo/a.html')).resolves.toEqual({ ok: true, value: null })
   })
 
-  it('checks connectivity against the health endpoint', async () => {
-    await expect(
-      service().testConfig({ serverUrl: 'http://share.example.com/', uploadToken: 'token' })
-    ).resolves.toEqual({ ok: true, value: { serverUrl: 'http://share.example.com' } })
-    expect(calls[0]).toMatchObject({
-      method: 'GET',
-      url: 'http://share.example.com/healthz'
-    })
+  it('does not contact the network when removing an unknown file', async () => {
+    await expect(service().remove('/repo/none.html')).resolves.toEqual({ ok: true, value: null })
+    expect(fetchImpl).not.toHaveBeenCalled()
   })
 })

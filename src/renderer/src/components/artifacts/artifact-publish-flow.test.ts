@@ -14,7 +14,8 @@ vi.mock('dompurify', () => ({ default: { sanitize: mocks.sanitize } }))
 
 vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: mocks.callRuntimeRpc }))
 vi.mock('@/i18n/i18n', () => ({
-  translate: (_key: string, fallback: string) => fallback
+  translate: (_key: string, fallback: string, vars?: Record<string, string>) =>
+    fallback.replace(/\{\{(\w+)\}\}/g, (match, name: string) => vars?.[name] ?? match)
 }))
 vi.mock('sonner', () => ({
   toast: { error: mocks.toastError, success: mocks.toastSuccess }
@@ -82,21 +83,9 @@ describe('artifact publish flow', () => {
 
     await expect(publishArtifactFromSurface(() => Promise.resolve(request))).resolves.toBeNull()
     expect(mocks.toastError).toHaveBeenCalledWith('Could not share artifact', {
-      description: 'The share server rejected the upload token. Check it in Settings → Artifacts.'
+      description: 'The share server rejected this device. Try sharing again.'
     })
     expect(mocks.toastSuccess).not.toHaveBeenCalled()
-  })
-
-  it('uses the dedicated message when the share server is not configured', async () => {
-    mocks.callRuntimeRpc.mockResolvedValue({
-      ok: false,
-      error: { code: 'not-configured', message: '尚未配置分享服务地址' }
-    })
-
-    await publishArtifactFromSurface(() => Promise.resolve(request))
-    expect(mocks.toastError).toHaveBeenCalledWith('Share server is not configured', {
-      description: 'Set the share server address and upload token in Settings → Artifacts.'
-    })
   })
 
   it('turns transport codes into actionable guidance', async () => {
@@ -107,7 +96,7 @@ describe('artifact publish flow', () => {
 
     await publishArtifactFromSurface(() => Promise.resolve(request))
     expect(mocks.toastError).toHaveBeenCalledWith('Could not share artifact', {
-      description: 'Could not reach the share server. Check the address and network.'
+      description: 'Could not reach the share server. Check your network connection.'
     })
   })
 
@@ -140,7 +129,19 @@ describe('artifact publish flow', () => {
       )
     ).resolves.toBeNull()
     expect(mocks.callRuntimeRpc).not.toHaveBeenCalled()
-    expect(mocks.toastError).toHaveBeenCalledWith('Could not share artifact', {
+    expect(mocks.toastError).toHaveBeenCalledWith('File is too large to share', {
+      description: 'This file is 10.0 MiB; the share limit is 10 MiB.'
+    })
+  })
+
+  it('reports an oversized upload rejected by the service as a size error', async () => {
+    mocks.callRuntimeRpc.mockResolvedValue({
+      ok: false,
+      error: { code: 'too-large', message: 'content exceeds the limit' }
+    })
+
+    await expect(publishArtifactFromSurface(() => Promise.resolve(request))).resolves.toBeNull()
+    expect(mocks.toastError).toHaveBeenCalledWith('File is too large to share', {
       description: 'This artifact is too large to share.'
     })
   })
@@ -163,6 +164,6 @@ describe('artifact publish flow', () => {
     mocks.callRuntimeRpc.mockRejectedValue(new Error('rpc down'))
 
     await expect(publishArtifactFromSurface(() => Promise.resolve(request))).resolves.toBeNull()
-    expect(mocks.toastError).toHaveBeenCalledWith('Could not share artifact', undefined)
+    expect(mocks.toastError).toHaveBeenCalledWith('Could not share artifact')
   })
 })

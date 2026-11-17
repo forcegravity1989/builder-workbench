@@ -7,22 +7,12 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  openSettingsPage: vi.fn(),
-  openSettingsTarget: vi.fn(),
-  getShareConfig: vi.fn(),
   getPublishedLink: vi.fn(),
   copyLink: vi.fn(),
   openLink: vi.fn(),
   publish: vi.fn(),
+  remove: vi.fn(),
   openPopover: null as ((open: boolean) => void) | null
-}))
-
-vi.mock('@/store', () => ({
-  useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({
-      openSettingsPage: mocks.openSettingsPage,
-      openSettingsTarget: mocks.openSettingsTarget
-    })
 }))
 
 vi.mock('@/components/ui/popover', () => ({
@@ -53,7 +43,7 @@ vi.mock('@/i18n/i18n', () => ({
 }))
 
 vi.mock('./share-server-client', () => ({
-  getShareConfig: mocks.getShareConfig
+  removeShare: mocks.remove
 }))
 vi.mock('./artifact-publish-flow', () => ({
   publishArtifactFromSurface: mocks.publish
@@ -68,16 +58,9 @@ vi.mock('./artifact-link-actions', () => ({
 
 import { ArtifactPublishButton } from './ArtifactPublishButton'
 
-const configured = {
-  serverUrl: 'http://7.192.170.220:8787',
-  uploadTokenSet: true,
-  configured: true
-}
-
 describe('ArtifactPublishButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.getShareConfig.mockResolvedValue(configured)
     mocks.publish.mockResolvedValue({
       id: 'share-a',
       url: 'https://share.example.com/s/share-a',
@@ -87,6 +70,7 @@ describe('ArtifactPublishButton', () => {
     })
     mocks.getPublishedLink.mockResolvedValue(null)
     mocks.copyLink.mockResolvedValue(true)
+    mocks.remove.mockResolvedValue({ ok: true, value: null })
     mocks.openPopover = null
   })
 
@@ -104,38 +88,6 @@ describe('ArtifactPublishButton', () => {
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledWith(createRequest))
     expect(screen.getByText('https://share.example.com/s/share-a')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Update shared content' })).toBeInTheDocument()
-  })
-
-  it('routes an unconfigured share server to Artifacts settings', async () => {
-    const user = userEvent.setup()
-    mocks.getShareConfig.mockResolvedValue({
-      serverUrl: '',
-      uploadTokenSet: false,
-      configured: false
-    })
-    render(<ArtifactPublishButton sourceKey="/repo/report.md" createRequest={vi.fn()} />)
-
-    await user.click(screen.getByRole('button', { name: 'Share as artifact' }))
-    expect(await screen.findByText('Share server is not configured')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Generate link' })).toBeNull()
-
-    await user.click(screen.getByRole('button', { name: 'Open share settings' }))
-    expect(mocks.openSettingsTarget).toHaveBeenCalledWith({ pane: 'artifacts', repoId: null })
-    expect(mocks.openSettingsPage).toHaveBeenCalledOnce()
-    expect(mocks.publish).not.toHaveBeenCalled()
-  })
-
-  it('offers retry when the share settings cannot be read', async () => {
-    const user = userEvent.setup()
-    mocks.getShareConfig.mockRejectedValueOnce(new Error('rpc down'))
-    render(<ArtifactPublishButton sourceKey="/repo/report.md" createRequest={vi.fn()} />)
-
-    await user.click(screen.getByRole('button', { name: 'Share as artifact' }))
-    expect(await screen.findByText('Could not read the share server settings.')).toBeInTheDocument()
-
-    mocks.getShareConfig.mockResolvedValue(configured)
-    await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByRole('button', { name: 'Generate link' })).toBeInTheDocument()
   })
 
   it('shows and manages an existing public link', async () => {
@@ -163,25 +115,21 @@ describe('ArtifactPublishButton', () => {
     await waitFor(() => expect(mocks.publish).toHaveBeenCalledWith(createRequest))
   })
 
-  it('re-reads the share settings when the popover reopens', async () => {
+  it('removes a published link after inline confirmation', async () => {
     const user = userEvent.setup()
-    mocks.getShareConfig.mockResolvedValueOnce({
-      serverUrl: '',
-      uploadTokenSet: false,
-      configured: false
-    })
+    mocks.getPublishedLink.mockResolvedValue('http://7.192.170.220:8787/s/share-a')
     render(<ArtifactPublishButton sourceKey="/repo/report.md" createRequest={vi.fn()} />)
 
     await user.click(screen.getByRole('button', { name: 'Share as artifact' }))
-    expect(await screen.findByText('Share server is not configured')).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Remove link' }))
+    expect(
+      await screen.findByText('Remove this link? Anyone holding it will lose access.')
+    ).toBeInTheDocument()
+    expect(mocks.remove).not.toHaveBeenCalled()
 
-    // The settings pane stays mounted while hidden, so reopening must pick up a saved server.
-    mocks.getShareConfig.mockResolvedValue(configured)
-    mocks.openPopover?.(false)
-    await user.click(screen.getByRole('button', { name: 'Share as artifact' }))
-
+    await user.click(screen.getByRole('button', { name: 'Remove link' }))
+    await waitFor(() => expect(mocks.remove).toHaveBeenCalledWith('/repo/report.md'))
     expect(await screen.findByRole('button', { name: 'Generate link' })).toBeInTheDocument()
-    expect(mocks.getShareConfig).toHaveBeenCalledTimes(2)
   })
 
   it('looks up a persisted link only after the popover opens', async () => {

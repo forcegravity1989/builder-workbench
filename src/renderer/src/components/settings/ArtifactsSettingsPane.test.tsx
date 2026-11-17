@@ -7,9 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getDefaultSettings } from '../../../../shared/constants'
 
 const mocks = vi.hoisted(() => ({
-  getShareConfig: vi.fn(),
-  saveShareConfig: vi.fn(),
-  testShareConfig: vi.fn(),
   state: { isWebClient: false }
 }))
 
@@ -21,23 +18,12 @@ vi.mock('@/lib/web-client-location', () => ({
   isWebClientLocation: () => mocks.state.isWebClient
 }))
 
-vi.mock('../artifacts/share-server-client', () => ({
-  getShareConfig: mocks.getShareConfig,
-  saveShareConfig: mocks.saveShareConfig,
-  testShareConfig: mocks.testShareConfig
-}))
-
 import { ArtifactsSettingsPane } from './ArtifactsSettingsPane'
 
 describe('ArtifactsSettingsPane', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.state.isWebClient = false
-    mocks.getShareConfig.mockResolvedValue({
-      serverUrl: '',
-      uploadTokenSet: false,
-      configured: false
-    })
   })
 
   afterEach(cleanup)
@@ -88,23 +74,17 @@ describe('ArtifactsSettingsPane', () => {
     expect(updateSettings).toHaveBeenCalledWith({ showArtifactsButton: true })
   })
 
-  it('includes the self-hosted share server section', async () => {
-    render(<ArtifactsSettingsPane settings={getDefaultSettings('/tmp')} updateSettings={vi.fn()} />)
-
-    expect(screen.getByText('Share server')).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Test connection' })).toBeInTheDocument()
-    expect(mocks.getShareConfig).toHaveBeenCalledOnce()
-  })
-
-  it('makes the share server read-only on the web client', async () => {
+  it('makes artifact publishing read-only on the web client', async () => {
     mocks.state.isWebClient = true
     render(<ArtifactsSettingsPane settings={getDefaultSettings('/tmp')} updateSettings={vi.fn()} />)
 
     expect(
-      (await screen.findAllByText(/Desktop only\. Open Settings → Artifacts on the host device/))
-        .length
-    ).toBeGreaterThan(0)
-    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Test connection' })).toBeNull()
+      screen.getByText(
+        'Desktop only. Open Settings → Artifacts on the host device to change this setting.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('switch', { name: 'Allow publishing public artifact links' })
+    ).toBeDisabled()
   })
 })

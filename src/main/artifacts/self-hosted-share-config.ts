@@ -1,108 +1,65 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import type { ShareConfigView } from '../../shared/workbench/share'
-
-export type ShareConfig = {
-  serverUrl: string
-  uploadToken: string
-}
-
-type StoredShareConfig = ShareConfig & { version: 1 }
-
-export class ShareConfigError extends Error {
-  constructor(
-    readonly code: 'invalid-config',
-    message: string
-  ) {
-    super(message)
-    this.name = 'ShareConfigError'
-  }
-}
-
-/** Normalize a user-entered server address; empty means "not configured". */
-export function normalizeShareServerUrl(raw: string): string {
-  const trimmed = raw.trim()
-  if (!trimmed) {
-    return ''
-  }
-  let url: URL
-  try {
-    url = new URL(trimmed)
-  } catch {
-    throw new ShareConfigError('invalid-config', '分享服务地址不是有效的 URL')
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new ShareConfigError('invalid-config', '分享服务地址必须以 http:// 或 https:// 开头')
-  }
-  if (url.username || url.password) {
-    throw new ShareConfigError('invalid-config', '分享服务地址不能包含用户名或密码')
-  }
-  if (url.search || url.hash) {
-    throw new ShareConfigError('invalid-config', '分享服务地址不能包含查询参数或锚点')
-  }
-  const path = url.pathname.replace(/\/+$/, '')
-  return `${url.origin}${path}`
-}
-
-export function shareConfigView(config: ShareConfig): ShareConfigView {
-  return {
-    serverUrl: config.serverUrl,
-    uploadTokenSet: config.uploadToken !== '',
-    configured: config.serverUrl !== ''
-  }
-}
 
 /**
- * Settings for the self-hosted share service live in a Workbench-owned file rather than
- * Orca's settings store: the upload token is a secret and the address is deployment-specific,
- * so keeping both out of synced/UI settings avoids adding another protected-secret slot.
+ * Deployment endpoint compiled into the client. Changing it requires a reviewed code change,
+ * the same way the Workbench report group is fixed in code instead of user settings.
  */
-export function createShareConfigStore(options: { dataDir: () => string }): {
-  read: () => Promise<ShareConfig>
-  save: (update: { serverUrl: string; uploadToken?: string }) => Promise<ShareConfig>
+export const SHARE_SERVER_URL = 'http://7.192.170.220:8787'
+
+/**
+ * Must match `DEFAULT_ENROLL_KEY` on the service. It only keeps unrelated network clients from
+ * minting upload tokens; it is not a secret against anyone who can read this repository.
+ */
+export const SHARE_ENROLL_KEY = 'bwshare-enroll-7d41c9ab6e2f5083'
+
+type StoredShareClient = { version: 2; uploadToken: string }
+
+/**
+ * The per-device upload token is minted on first use and kept in a Workbench-owned file, so a
+ * user never copies or pastes credentials. The renderer never sees the token.
+ */
+export function createShareTokenStore(options: { dataDir: () => string }): {
+  read: () => Promise<string>
+  save: (token: string) => Promise<void>
 } {
   let writeChain: Promise<unknown> = Promise.resolve()
   const configPath = (): string => join(options.dataDir(), 'config.json')
 
-  async function read(): Promise<ShareConfig> {
+  async function read(): Promise<string> {
+    let raw: string
     try {
-      const raw = await readFile(configPath(), 'utf8')
-      const parsed = JSON.parse(raw) as Partial<StoredShareConfig> | null
-      if (!parsed || typeof parsed !== 'object') {
-        return { serverUrl: '', uploadToken: '' }
-      }
-      return {
-        serverUrl: typeof parsed.serverUrl === 'string' ? parsed.serverUrl : '',
-        uploadToken: typeof parsed.uploadToken === 'string' ? parsed.uploadToken : ''
-      }
+      raw = await readFile(configPath(), 'utf8')
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return { serverUrl: '', uploadToken: '' }
+        return ''
       }
-      // A corrupt file must not lock the form; keep the bad copy and let the user re-enter it.
+      throw error
+    }
+    try {
+      const parsed = JSON.parse(raw) as Partial<StoredShareClient> | null
+      if (!parsed || typeof parsed !== 'object') {
+        return ''
+      }
+      return typeof parsed.uploadToken === 'string' ? parsed.uploadToken : ''
+    } catch (error) {
       if (error instanceof SyntaxError) {
+        // A corrupt file must not lock sharing; keep the bad copy and enroll again.
         await quarantine(configPath())
-        return { serverUrl: '', uploadToken: '' }
+        return ''
       }
       throw error
     }
   }
 
-  function save(update: { serverUrl: string; uploadToken?: string }): Promise<ShareConfig> {
+  function save(token: string): Promise<void> {
     const run = writeChain.then(async () => {
-      const current = await read()
-      const next: StoredShareConfig = {
-        version: 1,
-        serverUrl: normalizeShareServerUrl(update.serverUrl),
-        uploadToken:
-          update.uploadToken === undefined ? current.uploadToken : update.uploadToken.trim()
-      }
+      const next: StoredShareClient = { version: 2, uploadToken: token.trim() }
       const path = configPath()
       await mkdir(dirname(path), { recursive: true, mode: 0o700 })
       const temp = `${path}.tmp`
       await writeFile(temp, `${JSON.stringify(next, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
       await rename(temp, path)
-      return { serverUrl: next.serverUrl, uploadToken: next.uploadToken }
     })
     writeChain = run.catch(() => undefined)
     return run
@@ -115,6 +72,6 @@ async function quarantine(path: string): Promise<void> {
   try {
     await rename(path, `${path}.corrupt-${Date.now()}`)
   } catch (error) {
-    console.error('Failed to quarantine corrupt share settings:', error)
+    console.error('Failed to quarantine corrupt share client state:', error)
   }
 }

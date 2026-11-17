@@ -17,7 +17,11 @@ export type ArtifactPublishPreparationErrorCode =
   | 'binary'
 
 export class ArtifactPublishPreparationError extends Error {
-  constructor(readonly code: ArtifactPublishPreparationErrorCode) {
+  constructor(
+    readonly code: ArtifactPublishPreparationErrorCode,
+    /** Actual size in bytes when the failure is `too-large`, so the message can state it. */
+    readonly bytes?: number
+  ) {
     super(code)
   }
 }
@@ -36,8 +40,9 @@ export function validateArtifactPublishRequest(request: ArtifactWriteRequest): P
     request.contentType === 'text/markdown'
       ? markdownToShareHtml(request.content, stripMarkdownExtension(request.fileName))
       : request.content
-  if (shareContentByteLength(content) > SHARE_MAX_CONTENT_BYTES) {
-    throw new ArtifactPublishPreparationError('too-large')
+  const bytes = shareContentByteLength(content)
+  if (bytes > SHARE_MAX_CONTENT_BYTES) {
+    throw new ArtifactPublishPreparationError('too-large', bytes)
   }
   return {
     sourceKey: request.sourceKey,
@@ -69,32 +74,62 @@ export async function publishArtifactFromSurface(
       )
       return result.value
     }
-    toast.error(shareErrorMessage(result.error.code), {
-      description: shareErrorDescription(result.error.code, result.error.message)
-    })
+    reportShareFailure(result.error.code, result.error.message)
     return null
   } catch (error) {
     console.error('Failed to publish artifact:', error)
-    toast.error(
-      translate(
-        'auto.components.artifacts.artifact-publish-flow.54b1805328',
-        'Could not share artifact'
-      ),
-      error instanceof ArtifactPublishPreparationError
-        ? { description: artifactPreparationErrorDescription(error.code) }
-        : undefined
-    )
+    if (error instanceof ArtifactPublishPreparationError) {
+      reportPreparationFailure(error)
+    } else {
+      toast.error(
+        translate(
+          'auto.components.artifacts.artifact-publish-flow.54b1805328',
+          'Could not share artifact'
+        )
+      )
+    }
     return null
   }
 }
 
-function shareErrorMessage(code: string): string {
-  if (code === 'not-configured') {
-    return translate(
-      'auto.components.artifacts.artifact-publish-flow.shareServerNotConfigured',
-      'Share server is not configured'
+/** Shared with link removal so every share failure names the cause instead of a generic error. */
+export function reportShareFailure(code: string, fallback: string): void {
+  if (code === 'too-large') {
+    toast.error(
+      translate(
+        'auto.components.artifacts.artifact-publish-flow.fileTooLarge',
+        'File is too large to share'
+      ),
+      { description: shareErrorDescription(code, fallback) }
     )
+    return
   }
+  toast.error(shareErrorMessage(), {
+    description: shareErrorDescription(code, fallback)
+  })
+}
+
+function reportPreparationFailure(error: ArtifactPublishPreparationError): void {
+  if (error.code === 'too-large') {
+    toast.error(
+      translate(
+        'auto.components.artifacts.artifact-publish-flow.fileTooLarge',
+        'File is too large to share'
+      ),
+      { description: artifactPreparationErrorDescription(error) }
+    )
+    return
+  }
+  toast.error(
+    translate(
+      'auto.components.artifacts.artifact-publish-flow.54b1805328',
+      'Could not share artifact'
+    ),
+    { description: artifactPreparationErrorDescription(error) }
+  )
+}
+
+function shareErrorMessage(): string {
   return translate(
     'auto.components.artifacts.artifact-publish-flow.shareFailed',
     'Could not share artifact'
@@ -104,20 +139,10 @@ function shareErrorMessage(code: string): string {
 /** The host reports stable error codes; only fall back to its message for unmapped failures. */
 function shareErrorDescription(code: string, fallback: string): string {
   switch (code) {
-    case 'not-configured':
-      return translate(
-        'auto.components.artifacts.artifact-publish-flow.notConfiguredDescription',
-        'Set the share server address and upload token in Settings → Artifacts.'
-      )
-    case 'invalid-config':
-      return translate(
-        'auto.components.artifacts.artifact-publish-flow.invalidConfigDescription',
-        'The share server address is not valid. Check it in Settings → Artifacts.'
-      )
     case 'unauthorized':
       return translate(
         'auto.components.artifacts.artifact-publish-flow.unauthorizedDescription',
-        'The share server rejected the upload token. Check it in Settings → Artifacts.'
+        'The share server rejected this device. Try sharing again.'
       )
     case 'forbidden':
       return translate(
@@ -152,7 +177,7 @@ function shareErrorDescription(code: string, fallback: string): string {
     case 'network':
       return translate(
         'auto.components.artifacts.artifact-publish-flow.networkDescription',
-        'Could not reach the share server. Check the address and network.'
+        'Could not reach the share server. Check your network connection.'
       )
     default:
       return fallback
@@ -163,18 +188,24 @@ function stripMarkdownExtension(fileName: string): string {
   return fileName.replace(/\.(md|markdown|mdx)$/i, '')
 }
 
-function artifactPreparationErrorDescription(code: ArtifactPublishPreparationErrorCode): string {
-  switch (code) {
+function artifactPreparationErrorDescription(error: ArtifactPublishPreparationError): string {
+  switch (error.code) {
     case 'empty':
       return translate(
         'auto.components.artifacts.artifact-publish-flow.fbb5018602',
         'This file is empty.'
       )
     case 'too-large':
-      return translate(
-        'auto.components.artifacts.artifact-publish-flow.6112db5a1c',
-        'This artifact is too large to share.'
-      )
+      return error.bytes === undefined
+        ? translate(
+            'auto.components.artifacts.artifact-publish-flow.6112db5a1c',
+            'This file exceeds the 10 MiB share limit.'
+          )
+        : translate(
+            'auto.components.artifacts.artifact-publish-flow.tooLargeWithSize',
+            'This file is {{size}}; the share limit is 10 MiB.',
+            { size: formatShareSize(error.bytes) }
+          )
     case 'unreadable':
       return translate(
         'auto.components.artifacts.artifact-publish-flow.e2ed5acd8c',
@@ -191,4 +222,9 @@ function artifactPreparationErrorDescription(code: ArtifactPublishPreparationErr
         'Artifacts must contain text.'
       )
   }
+}
+
+function formatShareSize(bytes: number): string {
+  const mib = bytes / (1024 * 1024)
+  return `${mib >= 10 ? mib.toFixed(1) : mib.toFixed(2)} MiB`
 }

@@ -1,6 +1,5 @@
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import { SettingsSwitchRow } from './SettingsFormControls'
-import { ShareServerSettingsSection } from './ShareServerSettingsSection'
 import { translate } from '@/i18n/i18n'
 import { isWebClientLocation } from '@/lib/web-client-location'
 
@@ -81,7 +80,6 @@ export function ArtifactsSettingsPane({
         checked={settings.showArtifactsButton === true}
         onChange={() => void updateSettings({ showArtifactsButton: !settings.showArtifactsButton })}
       />
-      <ShareServerSettingsSection />
       <section className="space-y-4 py-5">
         <div className="space-y-1">
           <h3 className="text-sm font-medium">

@@ -587,12 +587,7 @@ import {
 } from '../workbench/project-milestones'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
 import { WorkbenchGroupRemoval, WorkbenchRepoRemoval } from '../workbench/repo-removal'
-import {
-  ShareConfigSaveSchema,
-  ShareConfigTestSchema,
-  SharePublishSchema,
-  ShareSourceSchema
-} from '../workbench/share'
+import { SharePublishSchema, ShareSourceSchema } from '../workbench/share'
 import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
@@ -1276,9 +1271,6 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.review.identity': null,
   'workbench.review.inbox': null,
   'workbench.review.receive': ReviewRequestSchema,
-  'workbench.share.config.get': null,
-  'workbench.share.config.save': ShareConfigSaveSchema,
-  'workbench.share.config.test': ShareConfigTestSchema,
   'workbench.share.getLink': ShareSourceSchema,
   'workbench.share.publish': SharePublishSchema,
   'workbench.share.remove': ShareSourceSchema,

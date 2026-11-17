@@ -228,10 +228,22 @@
         }
       },
       "artifacts": {
+        "ArtifactPublishButton": {
+          "configReadFailed": "Could not read the share server settings.",
+          "loadingConfig": "Loading…",
+          "openShareSettings": "Open share settings",
+          "serverNotConfiguredDescription": "Set the server address and upload token in Settings to create links.",
+          "serverNotConfiguredTitle": "Share server is not configured"
+        },
         "ArtifactsPage": {
           "openArtifact": "Open artifact",
           "signInCopy": "Sign in to view and manage artifacts shared through your account.",
           "signInHeading": "Sign in to Orca"
+        },
+        "artifact-publish-flow": {
+          "6112db5a1c": "This artifact is too large to share.",
+          "networkDescription": "Could not reach the share server. Check the address and network.",
+          "unauthorizedDescription": "The share server rejected the upload token. Check it in Settings → Artifacts."
         }
       },
       "automations": {

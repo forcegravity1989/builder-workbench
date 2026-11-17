@@ -49,7 +49,7 @@ export async function readBrowserHtmlArtifactRequest(url: string): Promise<Artif
       throw new ArtifactPublishPreparationError('unsupported')
     }
     if (stat.size > ARTIFACT_MAX_CONTENT_BYTES) {
-      throw new ArtifactPublishPreparationError('too-large')
+      throw new ArtifactPublishPreparationError('too-large', stat.size)
     }
     const result = await window.api.fs.readFile({ filePath: file.filePath })
     if (result.isBinary) {

@@ -1,36 +1,25 @@
 import {
   SHARE_MAX_CONTENT_BYTES,
   shareContentByteLength,
-  type ShareConfigView,
   type SharePublishResult,
   type ShareRecordView,
   type ShareResult
 } from '../../shared/workbench/share'
 import {
-  checkShareService,
   createShare,
   deleteShare,
+  enrollClient,
   ShareServiceError,
   updateShare
 } from './self-hosted-share-client'
 import {
-  createShareConfigStore,
-  normalizeShareServerUrl,
-  ShareConfigError,
-  shareConfigView
+  createShareTokenStore,
+  SHARE_ENROLL_KEY,
+  SHARE_SERVER_URL
 } from './self-hosted-share-config'
 import { createShareRecordStore } from './self-hosted-share-records'
 
 export type ShareService = {
-  getConfig: () => Promise<ShareConfigView>
-  saveConfig: (update: {
-    serverUrl: string
-    uploadToken?: string
-  }) => Promise<ShareResult<ShareConfigView>>
-  testConfig: (input: {
-    serverUrl: string
-    uploadToken?: string
-  }) => Promise<ShareResult<{ serverUrl: string }>>
   publish: (request: {
     sourceKey: string
     content: string
@@ -42,75 +31,79 @@ export type ShareService = {
   list: () => Promise<ShareResult<(ShareRecordView & { sourceKey: string })[]>>
 }
 
+type ShareClientConfig = { serverUrl: string; uploadToken: string; fetchImpl?: typeof fetch }
+
 export function createShareService(options: {
   dataDir: () => string
+  serverUrl?: string
+  enrollKey?: string
   fetchImpl?: typeof fetch
 }): ShareService {
-  const configStore = createShareConfigStore(options)
+  const tokenStore = createShareTokenStore(options)
   const recordStore = createShareRecordStore(options)
+  const serverUrl = options.serverUrl ?? SHARE_SERVER_URL
+  const enrollKey = options.enrollKey ?? SHARE_ENROLL_KEY
+  let enrollment: Promise<string> | null = null
 
   function failure(error: unknown): ShareResult<never> {
     if (error instanceof ShareServiceError) {
       return { ok: false, error: { code: error.code, message: error.message } }
     }
-    if (error instanceof ShareConfigError) {
-      return { ok: false, error: { code: 'invalid-config', message: error.message } }
-    }
     const message = error instanceof Error ? error.message : String(error)
     return { ok: false, error: { code: 'unknown', message } }
   }
 
-  async function activeConfig(): Promise<{ serverUrl: string; uploadToken: string }> {
-    const config = await configStore.read()
-    if (!config.serverUrl) {
-      throw new ShareServiceError('not-configured', '尚未配置分享服务地址')
+  /** Enroll once per device; a stored token is reused for every later share. */
+  function uploadToken(): Promise<string> {
+    enrollment ??= (async () => {
+      const stored = await tokenStore.read()
+      if (stored) {
+        return stored
+      }
+      const issued = await enrollClient({
+        serverUrl,
+        enrollKey,
+        ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
+      })
+      await tokenStore.save(issued.token)
+      return issued.token
+    })().finally(() => {
+      enrollment = null
+    })
+    return enrollment
+  }
+
+  function clientConfig(token: string): ShareClientConfig {
+    return {
+      serverUrl,
+      uploadToken: token,
+      ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
     }
-    return config
+  }
+
+  /**
+   * A token revoked or wiped on the server should heal itself: drop the stored value, enroll
+   * again, and retry the operation once.
+   */
+  async function withToken<T>(operation: (config: ShareClientConfig) => Promise<T>): Promise<T> {
+    const token = await uploadToken()
+    try {
+      return await operation(clientConfig(token))
+    } catch (error) {
+      if (!(error instanceof ShareServiceError) || error.code !== 'unauthorized') {
+        throw error
+      }
+      await tokenStore.save('')
+      return operation(clientConfig(await uploadToken()))
+    }
   }
 
   return {
-    async getConfig() {
-      return shareConfigView(await configStore.read())
-    },
-
-    async saveConfig(update) {
-      try {
-        const saved = await configStore.save(update)
-        return { ok: true, value: shareConfigView(saved) }
-      } catch (error) {
-        return failure(error)
-      }
-    },
-
-    async testConfig(input) {
-      try {
-        const current = await configStore.read()
-        const serverUrl = normalizeShareServerUrl(input.serverUrl)
-        if (!serverUrl) {
-          throw new ShareServiceError('not-configured', '请先填写分享服务地址')
-        }
-        await checkShareService({
-          serverUrl,
-          uploadToken: input.uploadToken?.trim() || current.uploadToken,
-          ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
-        })
-        return { ok: true, value: { serverUrl } }
-      } catch (error) {
-        return failure(error)
-      }
-    },
-
     async publish(request) {
       try {
-        const config = await activeConfig()
         const bytes = shareContentByteLength(request.content)
         if (bytes > SHARE_MAX_CONTENT_BYTES) {
           throw new ShareServiceError('too-large', '文件超过 10 MiB，无法分享')
-        }
-        const clientConfig = {
-          serverUrl: config.serverUrl,
-          uploadToken: config.uploadToken,
-          ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
         }
         const payload = {
           content: request.content,
@@ -120,11 +113,8 @@ export function createShareService(options: {
         const existing = await recordStore.get(request.sourceKey)
         if (existing) {
           try {
-            const updated = await updateShare(
-              clientConfig,
-              existing.id,
-              existing.editToken,
-              payload
+            const updated = await withToken((config) =>
+              updateShare(config, existing.id, existing.editToken, payload)
             )
             const record = {
               id: updated.id,
@@ -144,7 +134,7 @@ export function createShareService(options: {
             await recordStore.remove(request.sourceKey)
           }
         }
-        const created = await createShare(clientConfig, payload)
+        const created = await withToken((config) => createShare(config, payload))
         const record = {
           id: created.id,
           url: created.url,
@@ -170,18 +160,9 @@ export function createShareService(options: {
 
     async remove(sourceKey) {
       try {
-        const config = await activeConfig()
         const record = await recordStore.get(sourceKey)
         if (record) {
-          await deleteShare(
-            {
-              serverUrl: config.serverUrl,
-              uploadToken: config.uploadToken,
-              ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
-            },
-            record.id,
-            record.editToken
-          )
+          await withToken((config) => deleteShare(config, record.id, record.editToken))
           await recordStore.remove(sourceKey)
         }
         return { ok: true, value: null }

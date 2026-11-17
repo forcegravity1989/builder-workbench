@@ -1,17 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Loader2, Share2 } from 'lucide-react'
+import { Loader2, Share2 } from 'lucide-react'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts'
-import type { ShareConfigView } from '../../../../shared/workbench/share'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import { useAppStore } from '@/store'
 import { ArtifactPublishedLinkPanel } from './ArtifactPublishedLinkPanel'
 import { getPublishedArtifactLink } from './artifact-published-link-client'
-import { publishArtifactFromSurface } from './artifact-publish-flow'
-import { getShareConfig } from './share-server-client'
+import { publishArtifactFromSurface, reportShareFailure } from './artifact-publish-flow'
+import { removeShare } from './share-server-client'
 
 type PublishedLinkLookup = {
   key: string
@@ -32,45 +30,15 @@ export function ArtifactPublishButton({
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [removing, setRemoving] = useState(false)
   const [lookupRevision, setLookupRevision] = useState(0)
   const [linkLookup, setLinkLookup] = useState<PublishedLinkLookup | null>(null)
-  const [config, setConfig] = useState<ShareConfigView | null>(null)
-  const [configError, setConfigError] = useState(false)
   const lookupSequence = useRef(0)
   const popoverContentRef = useRef<HTMLDivElement>(null)
-  const openSettingsPage = useAppStore((state) => state.openSettingsPage)
-  const openSettingsTarget = useAppStore((state) => state.openSettingsTarget)
-  const configured = config?.configured === true
-
-  useEffect(() => {
-    // Why: the settings pane stays mounted while the popover closes, so the config must be
-    // re-read on every open or a freshly saved server would still read as "not configured".
-    if (!open) {
-      return
-    }
-    setConfigError(false)
-    let cancelled = false
-    void getShareConfig()
-      .then((value) => {
-        if (!cancelled) {
-          setConfig(value)
-          setConfigError(false)
-        }
-      })
-      .catch((error: unknown) => {
-        console.error('Failed to read share service settings:', error)
-        if (!cancelled) {
-          setConfigError(true)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [lookupRevision, open])
 
   useEffect(() => {
     const sequence = ++lookupSequence.current
-    if (!open || !configured) {
+    if (!open) {
       setLinkLookup(null)
       return
     }
@@ -90,10 +58,10 @@ export function ArtifactPublishButton({
     return () => {
       lookupSequence.current += 1
     }
-  }, [configured, lookupRevision, open, sourceKey])
+  }, [lookupRevision, open, sourceKey])
 
   const publish = async (): Promise<void> => {
-    if (publishing || !configured) {
+    if (publishing) {
       return
     }
     setPublishing(true)
@@ -107,10 +75,21 @@ export function ArtifactPublishButton({
     }
   }
 
-  const openShareSettings = (): void => {
-    setOpen(false)
-    openSettingsTarget({ pane: 'artifacts', repoId: null })
-    openSettingsPage()
+  const remove = async (): Promise<void> => {
+    if (removing) {
+      return
+    }
+    setRemoving(true)
+    try {
+      const result = await removeShare(sourceKey)
+      if (!result.ok) {
+        reportShareFailure(result.error.code, result.error.message)
+        return
+      }
+      setLinkLookup({ key: sourceKey, status: 'loaded', shareUrl: null })
+    } finally {
+      setRemoving(false)
+    }
   }
 
   const label = translate(
@@ -118,10 +97,9 @@ export function ArtifactPublishButton({
     'Share as artifact'
   )
   const currentLookup = linkLookup?.key === sourceKey ? linkLookup : null
-  const checkingLink =
-    configured && currentLookup?.status !== 'loaded' && currentLookup?.status !== 'error'
+  const checkingLink = currentLookup?.status !== 'loaded' && currentLookup?.status !== 'error'
   const publishedLink = currentLookup?.status === 'loaded' ? currentLookup.shareUrl : null
-  const busy = publishing
+  const busy = publishing || removing
 
   return (
     <Popover open={open} onOpenChange={(nextOpen) => !busy && setOpen(nextOpen)}>
@@ -177,72 +155,7 @@ export function ArtifactPublishButton({
         </div>
 
         <div className="space-y-3 p-4">
-          {configError ? (
-            <div className="space-y-2">
-              <p className="text-xs leading-5 text-muted-foreground">
-                {translate(
-                  'auto.components.artifacts.ArtifactPublishButton.configReadFailed',
-                  'Could not read the share server settings.'
-                )}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => setLookupRevision((current) => current + 1)}
-              >
-                {translate('auto.components.artifacts.ArtifactPublishButton.tryAgain', 'Try again')}
-              </Button>
-            </div>
-          ) : !config ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" />
-              {translate(
-                'auto.components.artifacts.ArtifactPublishButton.loadingConfig',
-                'Loading…'
-              )}
-            </div>
-          ) : !configured ? (
-            <div className="space-y-2">
-              <div className="space-y-0.5">
-                <p className="text-xs font-medium">
-                  {translate(
-                    'auto.components.artifacts.ArtifactPublishButton.serverNotConfiguredTitle',
-                    'Share server is not configured'
-                  )}
-                </p>
-                <p className="text-[11px] leading-4 text-muted-foreground">
-                  {translate(
-                    'auto.components.artifacts.ArtifactPublishButton.serverNotConfiguredDescription',
-                    'Set the server address and upload token in Settings to create links.'
-                  )}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={openShareSettings}
-              >
-                {translate(
-                  'auto.components.artifacts.ArtifactPublishButton.openShareSettings',
-                  'Open share settings'
-                )}
-                <ArrowRight />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full"
-                onClick={() => setLookupRevision((current) => current + 1)}
-              >
-                {translate('auto.components.artifacts.ArtifactPublishButton.tryAgain', 'Try again')}
-              </Button>
-            </div>
-          ) : checkingLink ? (
+          {checkingLink ? (
             <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
               {translate(
@@ -273,8 +186,10 @@ export function ArtifactPublishButton({
               key={publishedLink}
               shareUrl={publishedLink}
               publishing={publishing}
+              removing={removing}
               sharingEnabled
               onUpdate={() => void publish()}
+              onRemove={() => void remove()}
             />
           ) : (
             <Button
