@@ -4,7 +4,7 @@ import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
 import { useEffect, useState } from 'react'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
-import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
+import { monicaVersionTaskLabel } from '../../../shared/monica/task-scope'
 
 const CODEHUB_LIST_LIMIT = 250
 // Why: 空数组必须是稳定引用，否则非 MR 视图下 effect 依赖每次渲染都变。
@@ -26,7 +26,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubLoading,
     setCodehubError
   } = model
-  const workbenchTaskScope = model.pageData.workbenchTaskScope
+  const monicaTaskScope = model.pageData.monicaTaskScope
   const serverQuery = codehubView === 'mrs' ? codehubQuery : ''
   const serverAuthor = codehubView === 'mrs' ? codehubAuthor : ''
   const serverAssignee = codehubView === 'mrs' ? codehubAssignee : ''
@@ -36,9 +36,9 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
       return
     }
     setCodehubHasMore(false)
-    // Why: a BW workbench scope materializes its own reference-driven CodeHub
+    // Why: a Monica workbench scope materializes its own reference-driven CodeHub
     // rows; the unscoped full-list fetch must not overwrite them.
-    if (workbenchTaskScope?.goalId) {
+    if (monicaTaskScope?.goalId) {
       return
     }
     const repos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
@@ -71,8 +71,8 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
           kind,
           state,
           limit: CODEHUB_LIST_LIMIT,
-          labels: workbenchTaskScope
-            ? [...new Set([workbenchVersionTaskLabel(workbenchTaskScope.version), ...serverLabels])]
+          labels: monicaTaskScope
+            ? [...new Set([monicaVersionTaskLabel(monicaTaskScope.version), ...serverLabels])]
             : serverLabels.length > 0
               ? serverLabels
               : undefined,
@@ -136,7 +136,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubItems,
     setCodehubLoading,
     taskSource,
-    workbenchTaskScope
+    monicaTaskScope
   ])
   const nextModel = model as typeof model & { codehubHasMore: boolean }
   nextModel.codehubHasMore = codehubHasMore

@@ -1,7 +1,7 @@
 import os from 'node:os'
 import { app, ipcMain } from 'electron'
 import { validateFeedbackImages, type FeedbackImageAttachment } from './feedback-image-attachments'
-import { submitWelinkReport } from '../workbench/reporting/report-submission'
+import { submitWelinkReport } from '../monica/reporting/report-submission'
 
 export type { FeedbackImageAttachment }
 
@@ -57,7 +57,7 @@ type InternalFeedbackSubmitArgs = FeedbackSubmitArgs & {
   feedbackWithoutDiagnosticBundle?: string
 }
 
-// Why: triage in the WeLink group space needs to know which Workbench build
+// Why: triage in the WeLink group space needs to know which Monica build
 // and which OS the report came from. The main process is the only place with
 // trusted access to these values (app.getVersion and the node os module), so
 // we enrich the payload here rather than trusting the renderer.

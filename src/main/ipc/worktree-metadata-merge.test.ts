@@ -104,7 +104,7 @@ describe('mergeWorktree identity projection', () => {
     expect(worktree.suppressedGitHubPR).toBe(42)
   })
 
-  it('projects BW version bindings without losing legacy metadata', () => {
+  it('projects Monica version bindings without losing legacy metadata', () => {
     const legacyMeta = {
       displayName: 'Feature',
       comment: 'note',

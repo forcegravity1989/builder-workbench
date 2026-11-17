@@ -1,4 +1,4 @@
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { toast } from 'sonner'
 import type { CliInstallStatus } from '../../../shared/cli-install-types'
 import { translate } from '@/i18n/i18n'
@@ -12,7 +12,7 @@ export function getAgentSkillCliPrerequisiteNotice(): string {
   return translate(
     'guidance.cliPrerequisite',
     'Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.',
-    { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+    { product: isMonicaShell() ? 'Monica' : 'Orca' }
   )
 }
 

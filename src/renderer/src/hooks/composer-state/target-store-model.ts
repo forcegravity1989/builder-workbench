@@ -12,7 +12,7 @@ import type {
 } from '../../../../shared/worktree/types'
 import type { ExecutionHostRegistryEntry } from '../../../../shared/execution-host-registry'
 import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
-import type { WorkbenchCreationContext } from '../../../../shared/workbench/creation-context'
+import type { MonicaCreationContext } from '../../../../shared/monica/creation-context'
 import type { ComposerDecisions } from './composer-decisions'
 import type { ComposerStoreActions } from './composer-store-actions'
 import type { SparsePreset } from '../../../../shared/worktree/create-types'
@@ -35,7 +35,7 @@ export type ComposerTargetStoreModel = {
   initialWorkspaceStatus: WorkspaceStatus | undefined
   initialBaseBranch: string | undefined
   initialParentWorktreeId: string | null
-  workbenchCreation: WorkbenchCreationContext | null
+  monicaCreation: MonicaCreationContext | null
   persistDraft: boolean
   onCreated: (() => void) | undefined
   isSubmissionCancelled: () => boolean

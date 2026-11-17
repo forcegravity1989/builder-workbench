@@ -1,4 +1,4 @@
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import type {
   FeatureWallSetupStep,
   FeatureWallSetupStepId
@@ -24,12 +24,12 @@ const getLocalizedFeatureWallSetupChecklistCopyById = createLocalizedCatalog(
       name: translate(
         'auto.components.feature.wall.feature.wall.setup.checklist.localized.copy.908898c3ee',
         "Use {{product}}'s browser",
-        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+        { product: isMonicaShell() ? 'Monica' : 'Orca' }
       ),
       description: translate(
         'auto.components.feature.wall.feature.wall.setup.checklist.localized.copy.43781563c3',
         'Browse your web app without leaving {{product}}. Grab any element and send its exact source and styles to an agent with one click.',
-        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+        { product: isMonicaShell() ? 'Monica' : 'Orca' }
       )
     },
     notifications: {
@@ -90,7 +90,7 @@ const getLocalizedFeatureWallSetupChecklistCopyById = createLocalizedCatalog(
       description: translate(
         'auto.components.feature.wall.feature.wall.setup.checklist.localized.copy.42525ba8a4',
         'Bring your key repos into {{product}} so you can start agent work without hunting for folders.',
-        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+        { product: isMonicaShell() ? 'Monica' : 'Orca' }
       )
     }
   })
