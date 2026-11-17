@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>任务链接直达 · 交互原型</title>
+<style>
+body{margin:32px auto;max-width:900px;padding:0 20px;background:#101114;color:#ededf0;font:15px system-ui}button,a{color:inherit}button{background:#202228;border:1px solid #383b44;border-radius:6px;padding:10px 14px;cursor:pointer}button:hover{background:#30333b}.menu{padding:8px;border:1px solid #383b44;border-radius:8px;max-width:420px}.menu button{display:block;width:100%;border:0;text-align:left}code{display:block;padding:10px;overflow-wrap:anywhere;color:#b5b7c0}small{color:#adb0ba}.hidden{display:none}.detail{border:1px solid #383b44;border-radius:8px;padding:20px}select{background:#202228;color:inherit;padding:8px;border-radius:6px}h1{font-size:22px}
+</style>
+<h1>从任务链接打开既有详情</h1>
+<p><small>导航交互原型，不是运行证据；详情仅表示现有页面的复用，未设计新管理动作。</small></p>
+<section id="conversation">
+<p>已交付到 <a href="#" id="link">PR #652</a>。请核对交付结果。</p>
+<label>示例 <select id="target"><option value="pr">GitHub PR</option><option value="issue">GitHub Issue</option><option value="mr">CodeHub MR</option><option value="unknown">未登记仓库</option></select></label>
+<div class="menu hidden" id="menu"><code id="url"></code><button id="open">☷ 在任务中打开 <small>Ctrl／Cmd + Click</small></button><button class="browser">↗ System Browser <small>Shift + Ctrl／Cmd + Click</small></button><button class="browser">◎ Orca Browser</button></div>
+<p id="message" role="status"></p>
+</section>
+<section id="detail" class="detail hidden"><button id="back">← 返回原会话</button><h2 id="title"></h2><p>复用已有原生详情：标题、正文、评论；PR／MR 沿已有检查项和文件变更页面。</p><small>读取走本机 gh／codehub-cli。本次点击只导航，不评论、不关闭、不合入。</small></section>
+<script>
+const $=id=>document.getElementById(id);const samples={pr:['https://github.com/forcegravity1989/builder-workbench/pull/652','PR #652'],issue:['https://github.com/forcegravity1989/builder-workbench/issues/651','Issue #651'],mr:['https://open.codehub.huawei.com/example/project/merge_requests/3','MR !3'],unknown:['https://github.com/example/not-registered/issues/1','Issue #1']};
+function open(){if($('target').value==='unknown'){$('message').textContent='未在已登记项目中找到此仓库。请先添加项目，或重新点击链接选择浏览器。';$('menu').classList.add('hidden');return}$('title').textContent=samples[$('target').value][1];$('conversation').classList.add('hidden');$('detail').classList.remove('hidden')}
+$('link').onclick=e=>{e.preventDefault();$('url').textContent=samples[$('target').value][0];if(e.ctrlKey||e.metaKey){if(e.shiftKey){$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。'}else open();return}$('menu').classList.toggle('hidden')};$('open').onclick=open;$('back').onclick=()=>{$('detail').classList.add('hidden');$('conversation').classList.remove('hidden');$('menu').classList.add('hidden')};document.querySelectorAll('.browser').forEach(button=>button.onclick=()=>{$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。';$('menu').classList.add('hidden')});$('target').onchange=()=>{$('link').textContent=samples[$('target').value][1];$('menu').classList.add('hidden');$('message').textContent=''};
+</script>
+</html>
