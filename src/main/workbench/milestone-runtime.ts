@@ -82,7 +82,7 @@ export function nativeMilestoneService(runtime: Runtime) {
   }
 
   async function readWorktrees(repoId: string) {
-    const result = await runtime.listManagedWorktrees('id:' + repoId, 10_000)
+    const result = await runtime.listManagedWorktrees(`id:${repoId}`, 10_000)
     if (result.truncated || result.totalCount > result.worktrees.length) {
       throw new Error('项目工作树未完整读取，请重试。')
     }
@@ -119,7 +119,7 @@ export function nativeMilestoneService(runtime: Runtime) {
         !tree.isArchived &&
         !tree.isMainWorktree &&
         getWorktreeExecutionHostId(tree, c.repo) === c.target.hostId &&
-        (tree.branch === CHARTER_BRANCH || tree.branch === 'refs/heads/' + CHARTER_BRANCH)
+        (tree.branch === CHARTER_BRANCH || tree.branch === `refs/heads/${CHARTER_BRANCH}`)
     )
     if (projectTrees.length > 1) {
       throw new Error('存在多个项目材料工作树，请核对登记。')
@@ -160,14 +160,14 @@ export function nativeMilestoneService(runtime: Runtime) {
           'log',
           '-1',
           '--format=%H',
-          (trackedTrunk || baseline.commit) + '..' + head,
+          `${trackedTrunk || baseline.commit}..${head}`,
           '--',
           MILESTONES_PATH
         ]))
       const upstream = await source.git([
         'for-each-ref',
         '--format=%(objectname)',
-        'refs/remotes/origin/' + CHARTER_BRANCH
+        `refs/remotes/origin/${CHARTER_BRANCH}`
       ])
       const unpublished =
         !!upstream &&
@@ -176,7 +176,7 @@ export function nativeMilestoneService(runtime: Runtime) {
           'log',
           '-1',
           '--format=%H',
-          upstream + '..' + head,
+          `${upstream}..${head}`,
           '--',
           MILESTONES_PATH
         ]))
@@ -302,7 +302,7 @@ export function nativeMilestoneService(runtime: Runtime) {
             const status = await git(['status', '--porcelain', '--', MILESTONES_PATH])
             const blob = await git([
               'hash-object',
-              '--path=' + MILESTONES_PATH,
+              `--path=${MILESTONES_PATH}`,
               '--',
               MILESTONES_PATH
             ])
@@ -324,7 +324,7 @@ export function nativeMilestoneService(runtime: Runtime) {
                 MILESTONES_PATH
               ])
             })
-            if ((await git(['rev-parse', 'HEAD:' + MILESTONES_PATH])) !== blob) {
+            if ((await git(['rev-parse', `HEAD:${MILESTONES_PATH}`])) !== blob) {
               throw new Error('本地提交与已核对的里程碑文件不同，请在工作树中核对后再推送。')
             }
             return [MILESTONES_PATH]
@@ -336,7 +336,7 @@ export function nativeMilestoneService(runtime: Runtime) {
               outcome: {
                 mode: 'failed',
                 stage: 'push',
-                error: '改动仍在工作树，推送未成功。' + oneLine(message(error)),
+                error: `改动仍在工作树，推送未成功。${oneLine(message(error))}`,
                 filled: paths
               }
             }

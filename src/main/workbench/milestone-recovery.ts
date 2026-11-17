@@ -11,7 +11,7 @@ export async function readLegacyMilestoneRecovery(
   directory: string,
   key: string
 ): Promise<MilestoneRecoveryRecord> {
-  const file = join(directory, createHash('sha256').update(key).digest('hex') + '.json')
+  const file = join(directory, `${createHash('sha256').update(key).digest('hex')}.json`)
   try {
     const info = await lstat(file)
     if (!info.isFile() || info.size > 20 * 1024 * 1024) {

@@ -18,7 +18,7 @@ export function validateMilestoneSubmission(
   for (const next of draft.versions) {
     const prior = registered.filter((v) => v.cycleId === next.cycleId)
     if (!prior.length && started.has(next.version)) {
-      throw new Error(next.version + ' 已开始计划，请核对并合入该版本材料。')
+      throw new Error(`${next.version} 已开始计划，请核对并合入该版本材料。`)
     }
     for (const old of prior) {
       if (old.version === next.version) {
@@ -28,7 +28,7 @@ export function validateMilestoneSubmission(
         throw new Error('版本改名不能仅改变大小写，请保留实际版本名称。')
       }
       if (old.started || started.has(old.version) || started.has(next.version)) {
-        throw new Error(old.version + ' 已开始计划，请在里程碑中保留其版本身份。')
+        throw new Error(`${old.version} 已开始计划，请在里程碑中保留其版本身份。`)
       }
     }
     if (
@@ -36,7 +36,7 @@ export function validateMilestoneSubmission(
         (v) => v.version.toLowerCase() === next.version.toLowerCase() && v.cycleId !== next.cycleId
       )
     ) {
-      throw new Error('版本 ' + next.version + ' 已存在。')
+      throw new Error(`版本 ${next.version} 已存在。`)
     }
   }
 }

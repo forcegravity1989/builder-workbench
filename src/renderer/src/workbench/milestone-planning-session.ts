@@ -83,7 +83,7 @@ export const unsaved = (s: Session) => !sameDraft(s.draft, s.saved)
 export function readView(key: string): View {
   const initial = { scrollX: null, scrollY: 0, pageY: 0 }
   try {
-    const value = JSON.parse(localStorage.getItem('bw:milestone-view:' + key) ?? 'null')
+    const value = JSON.parse(localStorage.getItem(`bw:milestone-view:${key}`) ?? 'null')
     const offset = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : 0)
     return value
       ? {
@@ -105,7 +105,7 @@ export function saveView(key: string) {
     const { viewDate, rangeOnly, scrollX, scrollY, pageY } = s
     try {
       localStorage.setItem(
-        'bw:milestone-view:' + key,
+        `bw:milestone-view:${key}`,
         JSON.stringify({ viewDate, rangeOnly, scrollX, scrollY, pageY })
       )
     } catch {

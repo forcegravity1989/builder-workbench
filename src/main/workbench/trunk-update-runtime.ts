@@ -101,7 +101,7 @@ export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
         const start = await readTrunkCheckout(read)
         checkout = start
         if (expectedBranch && (isTrunk || start.branch !== expectedBranch)) {
-          return refuse('工作树已切换分支，请回到 ' + expectedBranch + ' 后重试。')
+          return refuse(`工作树已切换分支，请回到 ${expectedBranch} 后重试。`)
         }
         const trunk = trunkSyncSource(baseline.sync)
         const upstream = isTrunk ? null : await readFlowUpstream(read, start.branch)

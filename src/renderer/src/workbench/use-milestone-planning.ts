@@ -39,7 +39,7 @@ export function useMilestonePlanning(
   scope: MilestoneScope | null,
   refreshToken: string | undefined
 ) {
-  const key = scope ? nativeWorkspaceScopeKey(scope) + ':' + scope.worktreeId : 'unavailable'
+  const key = scope ? `${nativeWorkspaceScopeKey(scope)}:${scope.worktreeId}` : 'unavailable'
   const current = useRef({ scope, key })
   current.current = { scope, key }
   const state = useSyncExternalStore(
@@ -334,7 +334,7 @@ export function useMilestonePlanning(
       put(key, { ...s, draft: s.legacy.draft })
       if (await flush(key, project)) {
         try {
-          localStorage.setItem('bw:milestone-restored:' + key, s.legacy.revision)
+          localStorage.setItem(`bw:milestone-restored:${key}`, s.legacy.revision)
         } catch {
           // A future read also compares the draft with the current file.
         }
