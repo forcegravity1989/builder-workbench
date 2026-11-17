@@ -1,6 +1,6 @@
 import { Menu, Tray, nativeImage, type NativeImage } from 'electron'
-import menuBarIconPath from '../../../resources/tray/workbench.png?asset&asarUnpack'
-import menuBarIconRetinaPath from '../../../resources/tray/workbench@2x.png?asset&asarUnpack'
+import menuBarIconPath from '../../../resources/tray/monica.png?asset&asarUnpack'
+import menuBarIconRetinaPath from '../../../resources/tray/monica@2x.png?asset&asarUnpack'
 import { deferAppKitSceneMutation } from '../appkit-scene-mutation'
 import { createAppIconImage } from '../app-icon'
 import { translateMain } from '../i18n/main-i18n'
@@ -44,9 +44,9 @@ let devIndicator: { label: string | null } | null = null
 // tooltip carries the worktree/branch label so hovering tells them apart.
 function baseTooltip(): string {
   if (!devIndicator) {
-    return 'Workbench'
+    return 'Monica'
   }
-  return devIndicator.label ? `Workbench DEV (${devIndicator.label})` : 'Workbench DEV'
+  return devIndicator.label ? `Monica DEV (${devIndicator.label})` : 'Monica DEV'
 }
 
 // Why: on Windows the notification area expects a 16px icon; the app icon PNG

@@ -11,8 +11,8 @@ import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { getHostDisplayLabelOverrides } from '../../../../../../shared/host-setting-overrides'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { buildWorkbenchSectionRows } from './workbench-section-rows'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { buildMonicaSectionRows } from './monica-section-rows'
 import { buildRows } from '../grouping/build-rows'
 import type { ProjectGroupingModel } from '../grouping/project-grouping'
 import type { PinnedWorktreeDisplayPolicy, Row, WorktreeGroupBy } from '../grouping/row-types'
@@ -24,7 +24,7 @@ import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
 
 type SectionRowsArgs = {
-  workbenchProject?: { repoId: string; repoIds: readonly string[] }
+  monicaProject?: { repoId: string; repoIds: readonly string[] }
   groupBy: WorktreeGroupBy
   projectOrderBy: ProjectOrderBy
   pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy
@@ -99,9 +99,9 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
         filterRepoIds: args.filterRepoIds
       })
     )
-    if (args.workbenchProject) {
+    if (args.monicaProject) {
       for (const repo of args.visibleReposForRows) {
-        if (args.workbenchProject.repoIds.includes(repo.id)) {
+        if (args.monicaProject.repoIds.includes(repo.id)) {
           ids.add(repo.id)
         }
       }
@@ -113,7 +113,7 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     args.visibleReposForRows,
     worktrees,
     worktreesByRepo,
-    args.workbenchProject
+    args.monicaProject
   ])
 
   // Why: subscribe on a flat key array (useShallow) so progress ticks don't rebuild the whole row model.
@@ -239,11 +239,11 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
   )
   const nativeSectionRows = useMemo(
     () =>
-      buildWorkbenchSectionRows({
+      buildMonicaSectionRows({
         rows,
-        workbench: isWorkbenchShell(),
+        workbench: isMonicaShell(),
         groupBy: args.groupBy,
-        repoIds: args.workbenchProject?.repoIds ?? [],
+        repoIds: args.monicaProject?.repoIds ?? [],
         repoMap,
         projectGrouping: args.projectGrouping,
         projectGroups: args.visibleProjectGroupsForRows,
@@ -262,7 +262,7 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       }),
     [
       args.groupBy,
-      args.workbenchProject,
+      args.monicaProject,
       args.projectGrouping,
       args.visibleProjectGroupsForRows,
       repoMap,

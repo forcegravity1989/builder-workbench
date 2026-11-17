@@ -24,7 +24,7 @@ export type FullCreationExecutionInput = Pick<
   | 'taskSourceContext'
   | 'telemetrySource'
   | 'tuiAgent'
-  | 'workbenchCreation'
+  | 'monicaCreation'
 >
 
 import { useCallback } from 'react'
@@ -43,8 +43,8 @@ import { settleFullCreationStructuredLaunch } from './full-creation-structured-l
 import { finalizeFullCreation, stopFullCreationForChangedHost } from './full-creation-finalization'
 import { buildFullCreationIssueCommand } from './full-creation-issue-command'
 import { buildFullCreationStartup } from './full-creation-startup'
-import { resolveWorkbenchCreationBinding } from '../../../../shared/workbench/creation-context'
-import { writeWorkbenchCreationBinding } from '@/workbench/post-create-version-binding'
+import { resolveMonicaCreationBinding } from '../../../../shared/monica/creation-context'
+import { writeMonicaCreationBinding } from '@/monica/post-create-version-binding'
 
 export function useFullCreationExecution(input: FullCreationExecutionInput) {
   const {
@@ -70,7 +70,7 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
     taskSourceContext,
     telemetrySource,
     tuiAgent,
-    workbenchCreation
+    monicaCreation
   } = input
 
   const executeFullCreation = useCallback(
@@ -200,16 +200,16 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
         return
       }
 
-      // G2 (BW): mirror of the quick/background path — attribution is written at
+      // G2 (Monica): mirror of the quick/background path — attribution is written at
       // the true creation result (instanceId-fenced), never at modal close.
       // 现状：full 链当前无 UI 调用方（submitQuick 是唯一入口），本镜像保持休眠；
       // full 链恢复使用时归属语义即与 quick 链一致，无需再实现。
-      const workbenchVersionBinding = resolveWorkbenchCreationBinding(workbenchCreation, {
+      const workbenchVersionBinding = resolveMonicaCreationBinding(monicaCreation, {
         repoId,
         taskSourceContext
       })
       if (workbenchVersionBinding) {
-        void writeWorkbenchCreationBinding(workbenchVersionBinding, worktree)
+        void writeMonicaCreationBinding(workbenchVersionBinding, worktree)
       }
 
       const trimmedNote = note.trim()
@@ -328,7 +328,7 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
       taskSourceContext,
       telemetrySource,
       tuiAgent,
-      workbenchCreation
+      monicaCreation
     ]
   )
 

@@ -75,7 +75,7 @@ export function CursorAccountsSection(): React.JSX.Element {
   }, [loadStatus, cursorUsage?.updatedAt])
 
   // Why: the effect below already reloads status when the refresh lands a new
-  // snapshot, and each load is a keychain read for an item Workbench does not own.
+  // snapshot, and each load is a keychain read for an item Monica does not own.
   const handleRefreshUsage = async (): Promise<void> => {
     setRefreshing(true)
     try {
@@ -89,10 +89,12 @@ export function CursorAccountsSection(): React.JSX.Element {
   const tokenFresh = status?.tokenFresh === true
   const sourceLabel = credentialSourceLabel(status?.credentialSource ?? null)
   // Identity and usage arrive independently; never pair different accounts.
-  const sameAccount = tokenFresh && status?.authProvenance != null &&
+  const sameAccount =
+    tokenFresh &&
+    status?.authProvenance != null &&
     status.authProvenance === cursorUsage?.usageMetadata?.authProvenance
-  const pools = sameAccount ? cursorUsage?.buckets ?? [] : []
-  const monthly = sameAccount ? cursorUsage?.monthly ?? null : null
+  const pools = sameAccount ? (cursorUsage?.buckets ?? []) : []
+  const monthly = sameAccount ? (cursorUsage?.monthly ?? null) : null
   // Why: hiding the row entirely leaves signed-in users with no explanation when
   // Cursor reports no allowance or the refresh failed — never let unknown usage
   // read as healthy, and never let a failed fetch render as an empty section.
@@ -120,7 +122,7 @@ export function CursorAccountsSection(): React.JSX.Element {
           <p className="text-xs text-muted-foreground">
             {translate(
               'auto.components.settings.CursorAccountsSection.subtitle',
-              'Shows your Cursor plan usage from the sign-in already on this computer. Workbench only reads it — it never changes your Cursor login.'
+              'Shows your Cursor plan usage from the sign-in already on this computer. Monica only reads it — it never changes your Cursor login.'
             )}
           </p>
         </div>
@@ -167,16 +169,16 @@ export function CursorAccountsSection(): React.JSX.Element {
                   ? sourceLabel
                     ? translate(
                         'auto.components.settings.CursorAccountsSection.signedInFrom',
-                        'Signed in. Workbench reads the session stored in {{source}}.',
+                        'Signed in. Monica reads the session stored in {{source}}.',
                         { source: sourceLabel }
                       )
                     : translate(
                         'auto.components.settings.CursorAccountsSection.signedInGeneric',
-                        'Signed in. Workbench reads the Cursor session stored on this computer.'
+                        'Signed in. Monica reads the Cursor session stored on this computer.'
                       )
                   : translate(
                       'auto.components.settings.CursorAccountsSection.expired',
-                      'Sign-in expired — run cursor-agent login on the computer running Workbench, then click Refresh usage.'
+                      'Sign-in expired — run cursor-agent login on the computer running Monica, then click Refresh usage.'
                     )}
               </p>
             </>

@@ -108,7 +108,7 @@ describe('browser milestone legacy setup guide progress', () => {
     expect(getSetupGuideBrowserMilestoneAwareProgress(original, false)).toBe(original)
   })
 
-  it('keeps BW integration progress live for legacy-complete profiles', () => {
+  it('keeps Monica integration progress live for legacy-complete profiles', () => {
     const original = makeProgress()
     expect(getSetupGuideBrowserMilestoneAwareProgress(original, true, true)).toMatchObject({
       stepDone: { browser: true, 'task-sources': false, 'agent-capabilities': false },

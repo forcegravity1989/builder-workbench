@@ -1,4 +1,4 @@
-import type { ConfirmedRepoRegistration } from '../../../../shared/workbench/repo-removal'
+import type { ConfirmedRepoRegistration } from '../../../../shared/monica/repo-removal'
 import type { SshRepoReadoption } from '../../../../shared/ssh-types'
 import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
 import type {
@@ -141,7 +141,7 @@ export type AddRepoPathOptions = {
   runtimeEnvironmentId?: string | null
   /** Overrides the host's basename naming for the new project. */
   displayName?: string
-  /** Originating modal for the first project added from the Workbench wall. */
+  /** Originating modal for the first project added from the Monica wall. */
   projectWallModal?: Record<string, unknown>
 }
 

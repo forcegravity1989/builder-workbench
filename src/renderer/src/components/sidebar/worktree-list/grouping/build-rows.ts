@@ -73,7 +73,7 @@ export function buildRows(
   pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings),
   /**
    * Trees kept out of their natural group but still eligible for the Pinned
-   * section. Why (#500): BW's version sidebar owns its bound trees and hides
+   * section. Why (#500): Monica's version sidebar owns its bound trees and hides
    * them from the project list; pinning one must still surface it under 已固定.
    */
   pinnedOnlyIdentities: ReadonlySet<string> = new Set<string>()

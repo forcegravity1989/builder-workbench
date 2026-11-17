@@ -50,12 +50,12 @@ describe('getFeatureWallSetupProgress', () => {
 
     expect(progress.stepDone['add-two-repos']).toBe(true)
     expect(progress.coreTotal).toBe(8)
-    const workbenchProgress = getFeatureWallSetupProgress(
-      makeInput({ workbenchShell: true, gitRepoCount: 2 })
+    const monicaProgress = getFeatureWallSetupProgress(
+      makeInput({ monicaShell: true, gitRepoCount: 2 })
     )
-    expect(workbenchProgress.coreTotal).toBe(7)
-    expect(workbenchProgress.coreDoneCount).toBe(1)
-    expect(workbenchProgress.stepDone['agent-capabilities']).toBe(false)
+    expect(monicaProgress.coreTotal).toBe(7)
+    expect(monicaProgress.coreDoneCount).toBe(1)
+    expect(monicaProgress.stepDone['agent-capabilities']).toBe(false)
   })
 
   it('preserves the durable setup step definition order', () => {

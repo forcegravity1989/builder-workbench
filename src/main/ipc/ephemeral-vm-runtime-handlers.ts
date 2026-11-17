@@ -2,10 +2,10 @@ import { app, ipcMain } from 'electron'
 import type { Store } from '../persistence'
 import { getSshTargetIdForExecutionHost } from '../../shared/execution-host'
 import {
-  WorkbenchRepoRemoval,
+  MonicaRepoRemoval,
   findConfirmedRepoRegistration,
   type ConfirmedRepoRegistration
-} from '../../shared/workbench/repo-removal'
+} from '../../shared/monica/repo-removal'
 import {
   listEphemeralVmRuntimes,
   updateEphemeralVmRuntimeStatus
@@ -88,7 +88,7 @@ export function registerEphemeralVmRuntimeHandlers(store: Store): void {
         throw new Error(`Ephemeral VM runtime has no repo id: ${args.runtimeId}`)
       }
       if (args.expectedRegistration) {
-        const expected = WorkbenchRepoRemoval.parse(args.expectedRegistration)
+        const expected = MonicaRepoRemoval.parse(args.expectedRegistration)
         if (
           runtime.sshTargetId !== getSshTargetIdForExecutionHost(expected.hostId) ||
           !findConfirmedRepoRegistration(store.getRepos(), expected)

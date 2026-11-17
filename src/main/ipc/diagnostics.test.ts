@@ -51,9 +51,9 @@ vi.mock('../observability', () => ({
   getDiagnosticsStatus: getDiagnosticsStatusMock
 }))
 
-// BW #553: upload/delete ride the WeLink group-space sink; the IPC contract
+// Monica #553: upload/delete ride the WeLink group-space sink; the IPC contract
 // (ticketId / thrown user-facing messages) is what these cases pin.
-vi.mock('../workbench/reporting/report-submission', () => ({
+vi.mock('../monica/reporting/report-submission', () => ({
   submitWelinkDiagnosticsBundle: submitWelinkBundleMock,
   deleteWelinkDiagnosticsBundle: deleteWelinkBundleMock
 }))

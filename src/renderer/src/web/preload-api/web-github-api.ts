@@ -206,7 +206,7 @@ export function createGitHubApi(): WebGitHubApi {
         GITHUB_WEB_RPC_METHODS.updateIssueTypeBySlug,
         args
       ),
-    // BW 墙卡读数只在 Electron 壳内使用；web 端未接入 Issue 状态批量读取，
+    // Monica 墙卡读数只在 Electron 壳内使用；web 端未接入 Issue 状态批量读取，
     // 如实返回读不到（读数端显示 Unknown，不装 0）。
     issueStates: async () => ({ items: [], error: ISSUE_STATES_WEB_UNAVAILABLE }),
     // 任务屏范围批量读回同理（#436 CF-6b）：web 端如实返回失败，范围装载按组

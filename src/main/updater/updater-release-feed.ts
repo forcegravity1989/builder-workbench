@@ -9,7 +9,7 @@ import type { CheckFailureSource } from './updater-state'
 import type { UpdateCheckVariant } from './updater-types'
 import { ReleaseFeedPreflightError } from './updater-state'
 import { UpdaterInstallExecution } from './updater-install-execution'
-import { setRecoverableReleaseFeed } from './workbench-update-feed'
+import { setRecoverableReleaseFeed } from './monica-update-feed'
 
 /** Owns concrete release-feed pinning and the one-shot prerelease fallback. */
 export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {

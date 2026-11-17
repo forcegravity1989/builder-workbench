@@ -6,7 +6,7 @@
 //   diagnostics:openBundlePreview    — open the retained payload in the OS.
 //   diagnostics:discardBundlePreview — delete a retained, unuploaded payload.
 //   diagnostics:uploadBundle         — upload the main-retained payload to the
-//                                      WeLink group space (BW #553 sink).
+//                                      WeLink group space (Monica #553 sink).
 //   diagnostics:deleteBundle         — recycle an uploaded bundle by ticket ID.
 //
 // Same threat model as the product-telemetry IPC (`ipc/telemetry.ts`):
@@ -28,7 +28,7 @@ import { resolveDiagnosticOrcaChannel } from '../observability/diagnostic-upload
 import {
   deleteWelinkDiagnosticsBundle,
   submitWelinkDiagnosticsBundle
-} from '../workbench/reporting/report-submission'
+} from '../monica/reporting/report-submission'
 
 export type DiagnosticsBundlePreview = Omit<CollectedBundle, 'payload'>
 type UploadBundleIpcResult = { ticketId: string } | { canceled: true }

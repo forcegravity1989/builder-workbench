@@ -106,7 +106,7 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
     initialLinearBranchName
   )
 
-  // G2 (BW): seed an optional parent suggestion (e.g. the unique goal workspace
+  // G2 (Monica): seed an optional parent suggestion (e.g. the unique goal workspace
   // for an issue start); the picker and create-time validation stay authoritative.
   const [parentWorktreeId, setParentWorktreeId] = useState<string | null>(
     initialParentWorktreeId ?? null
