@@ -504,6 +504,10 @@ module.exports = {
     entitlements: 'resources/build/entitlements.mac.plist',
     entitlementsInherit: 'resources/build/entitlements.mac.plist',
     extendInfo: {
+      // CFBundleName 是既有 Keychain 加密身份；仅展示名称随品牌更新。
+      ...(productName === 'Monica'
+        ? { CFBundleName: 'Workbench', CFBundleDisplayName: 'Monica' }
+        : {}),
       NSAppleEventsUsageDescription: `${productName} allows terminal-launched developer tools to automate local apps when you request it.`,
       NSBluetoothAlwaysUsageDescription: `${productName} allows terminal-launched developer tools to access Bluetooth devices when you request it.`,
       NSBluetoothPeripheralUsageDescription: `${productName} allows terminal-launched developer tools to access Bluetooth devices when you request it.`,

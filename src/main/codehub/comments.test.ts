@@ -1,4 +1,4 @@
-import { countUnresolvedCodeHubThreadsSince } from '../../shared/workbench/review-thread-counts'
+import { countUnresolvedCodeHubThreadsSince } from '../../shared/monica/review-thread-counts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { runCodeHubCliMock } = vi.hoisted(() => ({

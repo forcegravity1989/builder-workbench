@@ -275,7 +275,7 @@ function App() {
             <span>Monica</span>
           </div>
           <div className="ov-nav-group">
-            <strong>Builder Monica</strong>
+            <strong>Monica</strong>
           </div>
           <button className="nav-row" onClick={() => native('项目总览')}>
             <LayoutDashboard size={15} />
@@ -406,7 +406,7 @@ function App() {
           ) : (
             <>
               <div className="ov-top">
-                <span>Builder Monica</span>
+                <span>Monica</span>
                 <ChevronRight size={12} />
                 <span>{selected.version}</span>
                 <ChevronRight size={12} />
@@ -596,7 +596,7 @@ function App() {
           {dialog.kind === 'native' && (
             <>
               <Note>
-                沿用当前 Monica 的「{dialog.route}」，带入 Builder Monica{' '}
+                沿用当前 Monica 的「{dialog.route}」，带入 Monica{' '}
                 {dialog.route === '新建版本' ? '项目' : `/ ${selected.version}`}{' '}
                 上下文。此处保留原入口与旅程，真实会话和页面由现有能力承接；不会启动或操控日常
                 Monica。

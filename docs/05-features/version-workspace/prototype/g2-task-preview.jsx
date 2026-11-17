@@ -267,7 +267,7 @@ export function TaskPreview({
                   setFiltersOpen(false)
                 }}
               >
-                {repositorySelected ? 'Builder Monica' : '选择项目'}
+                {repositorySelected ? 'Monica' : '选择项目'}
                 <ChevronDown size={12} />
               </button>
               {repoOpen && (
@@ -279,7 +279,7 @@ export function TaskPreview({
                       onChange={(event) => setRepositorySelected(event.target.checked)}
                     />
                     <span>
-                      Builder Monica<small>{REPOSITORY}</small>
+                      Monica<small>{REPOSITORY}</small>
                     </span>
                   </label>
                 </div>
@@ -619,7 +619,7 @@ export function TaskPreview({
             <form className="native-task-newissue-form" onSubmit={createIssue}>
               <label>
                 项目
-                <input value="Builder Monica" readOnly />
+                <input value="Monica" readOnly />
               </label>
               <label>
                 标题

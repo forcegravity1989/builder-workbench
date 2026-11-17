@@ -422,7 +422,7 @@ describe('repo slice host identity routing', () => {
   })
 
   it('preserves the surviving host session and recency when the worktree ids match', async () => {
-    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    vi.stubEnv('VITE_MONICA_SHELL', '1')
     replaceRuntimeEnvironmentRevisions([{ id: 'env-1', createdAt: 12 }])
     runtimeEnvironmentCall.mockResolvedValue({
       id: 'rpc-remote-remove',

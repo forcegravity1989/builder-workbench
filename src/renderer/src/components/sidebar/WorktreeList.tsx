@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { WorkbenchSidebarVersions } from '@/workbench/WorkbenchSidebarNav'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { MonicaSidebarVersions } from '@/monica/MonicaSidebarNav'
 import { useShallow } from 'zustand/react/shallow'
 import {
   useAllWorktrees,
@@ -36,7 +36,7 @@ import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
 import {
   scopeDetectedWorktreesForVersionSidebar,
   scopeFolderWorkspacesForVersionSidebar,
-  useWorkbenchSidebarScope,
+  useMonicaSidebarScope,
   useVersionScopedWorktrees
 } from './worktree-list/listing/use-version-scoped-worktrees'
 import { useSidebarWorktreeFilters } from './worktree-list/listing/use-filters'
@@ -69,7 +69,7 @@ const WorktreeList = React.memo(function WorktreeList({
   const repoMap = useRepoMap()
   const worktreeMap = useWorktreeMap()
   const repos = useAppStore((s) => s.repos)
-  const { workbenchProject, workbenchScope } = useWorkbenchSidebarScope()
+  const { monicaProject, monicaScope } = useMonicaSidebarScope()
   const worktreeLineageById = useAppStore((s) => s.worktreeLineageById)
   const workspaceLineageByChildKey = useAppStore((s) => s.workspaceLineageByChildKey)
   const detectedWorktreesByRepo = useAppStore((s) => s.detectedWorktreesByRepo)
@@ -139,14 +139,14 @@ const WorktreeList = React.memo(function WorktreeList({
   })
   const { visibleWorktrees, pinnedOnlyIdentities: versionBoundIdentities } =
     useVersionScopedWorktrees({
-      workbenchProject,
+      monicaProject,
       filteredWorktrees,
       worktreeLineageById,
       worktreeMap
     })
   const nativeDetectedWorktrees = useMemo(
-    () => scopeDetectedWorktreesForVersionSidebar(detectedWorktreesByRepo, workbenchProject),
-    [detectedWorktreesByRepo, workbenchProject]
+    () => scopeDetectedWorktreesForVersionSidebar(detectedWorktreesByRepo, monicaProject),
+    [detectedWorktreesByRepo, monicaProject]
   )
   const effectiveCollapsedGroups = useEffectiveCollapsedGroups({
     collapsedGroups,
@@ -176,35 +176,35 @@ const WorktreeList = React.memo(function WorktreeList({
   })
   const visibleReposForRows = useMemo(
     () =>
-      workbenchProject
+      monicaProject
         ? visibleScope.visibleReposForRows.filter((repo) =>
-            workbenchProject.rows.some(
+            monicaProject.rows.some(
               (row) =>
                 row.id === repo.id && getRepoExecutionHostId(row) === getRepoExecutionHostId(repo)
             )
           )
         : visibleScope.visibleReposForRows,
-    [visibleScope.visibleReposForRows, workbenchProject]
+    [visibleScope.visibleReposForRows, monicaProject]
   )
   const visibleProjectGroupsForRows = useMemo(
     () =>
-      workbenchProject
+      monicaProject
         ? visibleScope.visibleProjectGroupsForRows.filter((group) =>
-            workbenchProject.groups.some(
+            monicaProject.groups.some(
               (item) =>
                 item.id === group.id && getProjectGroupHostId(item) === getProjectGroupHostId(group)
             )
           )
         : visibleScope.visibleProjectGroupsForRows,
-    [visibleScope.visibleProjectGroupsForRows, workbenchProject]
+    [visibleScope.visibleProjectGroupsForRows, monicaProject]
   )
   const visibleFolderWorkspacesForRows = useMemo(
     () =>
       scopeFolderWorkspacesForVersionSidebar(
         visibleScope.visibleFolderWorkspacesForRows,
-        workbenchProject?.groups
+        monicaProject?.groups
       ),
-    [visibleScope.visibleFolderWorkspacesForRows, workbenchProject?.groups]
+    [visibleScope.visibleFolderWorkspacesForRows, monicaProject?.groups]
   )
   const externalWorktreeCards = useSidebarExternalWorktreeCards({
     repos,
@@ -213,7 +213,7 @@ const WorktreeList = React.memo(function WorktreeList({
     filterRepoIds: filterState.filterRepoIds
   })
   const rowModel = useSidebarSectionRows({
-    workbenchProject: workbenchScope,
+    monicaProject: monicaScope,
     groupBy,
     projectOrderBy,
     pinnedDisplayPolicy,
@@ -279,7 +279,7 @@ const WorktreeList = React.memo(function WorktreeList({
       openModal('confirm-remove-folder', {
         repoId: repo.id,
         displayName: repo.displayName,
-        ...(isWorkbenchShell() ? { projectRemovalRegistration: repo } : {}),
+        ...(isMonicaShell() ? { projectRemovalRegistration: repo } : {}),
         hostId: getRepoExecutionHostId(repo)
       })
     },
@@ -319,8 +319,8 @@ const WorktreeList = React.memo(function WorktreeList({
     placeholderRepoCount: rowModel.placeholderRepoIds.size,
     importedWorktreeCardCount: externalWorktreeCards.importedWorktreesByRepo.size
   })
-  const versionContent = isWorkbenchShell() ? (
-    <WorkbenchSidebarVersions
+  const versionContent = isMonicaShell() ? (
+    <MonicaSidebarVersions
       visibleWorktrees={filteredWorktrees}
       filterOptions={filterOptions}
       sortedIds={sortedIds}
@@ -365,7 +365,7 @@ const WorktreeList = React.memo(function WorktreeList({
         activeWorktreeId={
           activeView === 'tasks' ||
           activeView === 'activity' ||
-          (isWorkbenchShell() && activeView === 'artifacts')
+          (isMonicaShell() && activeView === 'artifacts')
             ? null
             : currentSidebarWorktreeId
         }

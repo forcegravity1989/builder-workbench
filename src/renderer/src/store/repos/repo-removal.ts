@@ -13,7 +13,7 @@ import {
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
 import { runtimeTargetForExecutionHostId } from '../../runtime/runtime-client-target'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import {
   getRepoExecutionHostId,
   getSshTargetIdForExecutionHost,
@@ -57,7 +57,7 @@ export function createRepoRemovalActions(
           return
         }
         const ownerHostId = getRepoExecutionHostId(ownerRepo)
-        const workbench = isWorkbenchShell()
+        const workbench = isMonicaShell()
         const ownerHost = parseExecutionHostId(ownerHostId)
         const paired =
           workbench && ownerHost?.kind === 'runtime' ? ownerRepo.pairedRegistration : null
@@ -173,7 +173,7 @@ export function createRepoRemovalActions(
               throw new Error(
                 translate(
                   'auto.components.sidebar.RemoveFolderDialog.updatePairedHost',
-                  'Update Workbench on the paired host before removing a project registration.'
+                  'Update Monica on the paired host before removing a project registration.'
                 )
               )
             }

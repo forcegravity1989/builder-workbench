@@ -1,7 +1,7 @@
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { taskPageWorkItemKey } from '../../task-page-work-item-signatures'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
-import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
+import { resolveTaskRowWorkspace } from '@/monica/scoped-task-workspace'
 import { formatPRDelta } from '@/components/task-page-pr-delta-summary'
 import {
   isTaskPageGitHubDraftPR,
@@ -69,10 +69,10 @@ export function TaskPageGitHubRows({
       {!showGitHubTaskSkeletons &&
         filteredWorkItems.map((item) => {
           const itemRepo = repoMap.get(item.repoId) ?? null
-          // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；PR 行与
+          // G2 (Monica)：范围视图的 Issue 按明确绑定解析 Open/Start；PR 行与
           // 无范围视图沿原生附件语义（helper 内回落），行为逐字不变。
           const { attached: attachedWorkspace, hasWorkspace } = resolveTaskRowWorkspace({
-            scope: model.workbenchScope,
+            scope: model.monicaScope,
             worktrees: allWorktrees,
             provider: 'github',
             item,

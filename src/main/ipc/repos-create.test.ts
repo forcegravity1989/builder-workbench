@@ -170,8 +170,8 @@ describe('repos:create', () => {
     await expect(callDefaultCreateProjectParent()).resolves.toBe('J:\\PROJECTS')
   })
 
-  it('keeps new Workbench projects beside its D drive worktrees and honors host overrides', async () => {
-    vi.stubEnv('WORKBENCH_SHELL', '1')
+  it('keeps new Monica projects beside its D drive worktrees and honors host overrides', async () => {
+    vi.stubEnv('MONICA_SHELL', '1')
     try {
       mockStore.getSettings.mockReturnValue({
         workspaceDir: 'd:\\builders-workbench\\workspaces\\'
