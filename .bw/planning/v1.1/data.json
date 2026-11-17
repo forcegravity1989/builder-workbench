@@ -1,0 +1,65 @@
+{
+  "schema_version": 3,
+  "version": "v1.1",
+  "cycleId": "c8b79976-aa06-40fc-b70d-5dba4ef7369c",
+  "timeWindow": {
+    "start": "2026-11-16",
+    "end": "2026-11-20"
+  },
+  "summary": {
+    "progress": "",
+    "risks": "",
+    "progressSource": {
+      "version": "v1.0",
+      "cycleId": "590a76c1-85ca-41d5-91c3-00a5d03f3e04",
+      "sourceCommit": "5faf200fbeea5108156be86c5995c82eb64ea57f",
+      "revision": "sha256:96028c0659a92362dc34e8ce7b0b8c5112cbedbaee88dae563dee9e66c9ef468"
+    }
+  },
+  "goals": [
+    {
+      "goalId": "G1",
+      "title": "【团队多人协作】定义团队成员、项目可见范围与共享主机授权",
+      "acceptance": "1. 完成团队多人协作 特性的原型与意图规格的入库。\n2. 关键旅程真壳走通：团队/项目群绑定可读回、评审不依赖整机共享可送达并处理；",
+      "owner": "yuzhup",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G2",
+      "title": "【会议协作】打通各旅程会议与会议过程把控",
+      "acceptance": "1. 会议协作覆盖计划/原型/PR/验收等旅程的会议环节，易用、结合顺畅；优先深度绑定内部 WeLink 视频会议（未来可扩外部）；原型入库。\n2、原型评审会议旅程落地。\n",
+      "owner": "kanadead",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G3",
+      "title": "【运营运维】v1.0 稳定运营：问题处理、补丁版本、宣传与运营指标",
+      "acceptance": "1. 及时清理v1.0版本问题，发4个v1.0补丁版本。\n2 完成对外宣传规划与第一篇对外宣传文章（叙事按共识；不落代码仓）。\n3 遥测真正接入，能统计用户当前主要在 BW 上使用的功能。",
+      "owner": "yuzhup",
+      "metricTargets": []
+    }
+  ],
+  "tasks": [],
+  "minutes": {
+    "consensus": [
+      "G1（群组权限）、G2（会议体验）两个特性正常纳入 v1.1，进入 build 阶段。",
+      "G3 新增对外宣传交付：完成一份对外宣传规划与第一篇对外宣传文章。",
+      "对外宣传叙事结构：预设问题 → 在 BW 里怎么干 → 为解决什么问题做了什么特性 → 特性深化时扩展了哪些特性。",
+      "运营协作口径：减少 leader 干预以释放超级个体产出，用目标、特性原型、结果验收作为共识点保证结果与可维护性，并规划进入下一轮版本的快速迭代。"
+    ],
+    "followups": [],
+    "confirmed": true,
+    "confirmedAt": "2026-11-16T12:46:17.054Z",
+    "sources": "本会话板面批注 6 条 + 会上口述决定（2026-11-16）；未读取 eMeeting 语音转写稿。",
+    "updatedAt": "2026-11-16T12:46:07.403Z"
+  },
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-11-16T12:54:43.000Z",
+    "archivePr": {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 675
+    }
+  }
+}
