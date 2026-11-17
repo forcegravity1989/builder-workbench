@@ -94,6 +94,8 @@ export function WorkbenchVersionNav({
   const cycleView = useCycleView()
   const projectPage = useProjectPage()
   const [dialog, setDialog] = useState<DialogState>(null)
+  // Why: 已固定/版本/工作区 share one accordion; 版本 collapses its own row list.
+  const [collapsed, setCollapsed] = useState(false)
   const preference = useMemo(() => {
     if (activeView === 'activity' && projectPage?.kind === 'version-overview') {
       return projectPage.options
@@ -468,6 +470,8 @@ export function WorkbenchVersionNav({
     >
       <WorkbenchSidebarSectionHeader
         icon={Layers}
+        collapsed={collapsed}
+        onToggle={() => setCollapsed((value) => !value)}
         action={
           <>
             <Button
@@ -496,25 +500,31 @@ export function WorkbenchVersionNav({
         版本
       </WorkbenchSidebarSectionHeader>
 
-      {project.sourceProblems.map(({ key, ...problem }) => (
-        <VersionCatalogSourceProblem key={key} {...problem} />
-      ))}
-      {!hasSourceProblems && project.loading && entries.length === 0 ? (
-        <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">版本目录读取中…</p>
+      {!collapsed ? (
+        <>
+          {project.sourceProblems.map(({ key, ...problem }) => (
+            <VersionCatalogSourceProblem key={key} {...problem} />
+          ))}
+          {!hasSourceProblems && project.loading && entries.length === 0 ? (
+            <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">
+              版本目录读取中…
+            </p>
+          ) : null}
+          {!hasSourceProblems && !project.loading && entries.length === 0 ? (
+            <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">
+              暂无版本 · 保存版本计划或从「＋ 新建版本」开始
+            </p>
+          ) : null}
+          <VersionSidebarPreview
+            repoId={repoId}
+            entries={entries}
+            activeVersion={activeVersion}
+            activeContextKey={`${activeView}:${activeObjectKey}`}
+            versionElements={versionElements}
+            renderRow={renderVersionRow}
+          />
+        </>
       ) : null}
-      {!hasSourceProblems && !project.loading && entries.length === 0 ? (
-        <p className="px-2 py-1 text-[11px] text-worktree-sidebar-foreground/45">
-          暂无版本 · 保存版本计划或从「＋ 新建版本」开始
-        </p>
-      ) : null}
-      <VersionSidebarPreview
-        repoId={repoId}
-        entries={entries}
-        activeVersion={activeVersion}
-        activeContextKey={`${activeView}:${activeObjectKey}`}
-        versionElements={versionElements}
-        renderRow={renderVersionRow}
-      />
 
       {dialog?.mode === 'cleanup' ? (
         <VersionCleanupDialog
