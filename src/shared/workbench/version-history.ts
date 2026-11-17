@@ -43,6 +43,7 @@ export type VersionHistorySource = {
   sourceCommit: string
   revision: string
   workflow: 'plan' | 'acceptance'
+  /** Empty if the current material can be read but its change history is unavailable. */
   committedAt: string
 }
 export type VersionHistoryProblem = Pick<

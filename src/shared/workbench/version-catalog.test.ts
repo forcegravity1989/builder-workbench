@@ -5,6 +5,7 @@ import type { WorkbenchVersionBinding } from './version-binding'
 import { selectPriorVersionSource } from './prior-version-source'
 import {
   collectVersionCatalogWorkspaces,
+  compareVersionDisplayOrder,
   mergeVersionCatalog,
   versionCatalogCacheKey,
   type VersionCatalogWorkspace
@@ -128,7 +129,12 @@ describe('mergeVersionCatalog', () => {
       workspaces: collectVersionCatalogWorkspaces(worktrees, ['repo-1'])
     })
 
-    expect(entries.map((entry) => entry.version)).toEqual(['v0.5', 'v0.6', 'v0.7', 'v0.8'])
+    expect(entries.toSorted(compareVersionDisplayOrder).map((entry) => entry.version)).toEqual([
+      'v0.7',
+      'v0.6',
+      'v0.5',
+      'v0.8'
+    ])
     const v06 = entries.find((entry) => entry.version === 'v0.6')!
     expect(v06.state).toBe('retired')
     expect(v06.material.plan?.revision).toBe(sha('6'))
@@ -154,6 +160,19 @@ describe('mergeVersionCatalog', () => {
       { workflow: 'plan', code: 'history-unavailable', message: '无法读取固定提交中的材料' }
     ])
     expect(v05.state).toBe('retired')
+
+    const sameTimePlan = { ...v07.material.plan!, committedAt: '2026-10-01T08:00:00+08:00' }
+    const revisedAcceptance = { ...v06.material.acceptance!, committedAt: '2026-10-02T00:00:00Z' }
+    expect(
+      [
+        v05,
+        { ...v06, version: 'v1', material: { plan: sameTimePlan } },
+        { ...v07, version: 'zz-legacy', state: 'retired' as const },
+        { ...v06, version: '2026-Q4', material: { ...v06.material, acceptance: revisedAcceptance } }
+      ]
+        .toSorted(compareVersionDisplayOrder)
+        .map(({ version }) => version)
+    ).toEqual(['2026-Q4', 'v1', 'zz-legacy', 'v0.5'])
 
     // 前版先按目录排序确定，再找验收；v0.7 只有计划时不可借 v0.6 的验收。
     expect(selectPriorVersionSource('v0.8', committed)).toEqual({

@@ -64,7 +64,7 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 
 - **绑定契约**：`src/shared/workbench/version-binding.ts`（schema 1，workflow 与 goalId/taskSource 一致性 refine）；读回规范化把脏数据一律收敛为未绑定，不猜归属。绑定是版本归属唯一正本——不从分支字符串、会话标题或日期反推。
 - **原生挂载**：`WorktreeMeta.workbenchVersionBinding`（undefined 保留 / null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）。BW 薄 helper `workbench.versionBinding.read/set`：原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径。
-- **版本目录**：`src/shared/workbench/version-catalog.ts` + 装载器——已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留（retired 收起回看）；绑定从登记现算，删树无悬空；草稿与目标从已保存计划派生，缓存按 owner/项目/仓库/版本/修订分隔。版本排序 `compareMaterialVersions`（点分段、纯数字段按数值）为单一实现：目录条目、项目总览、验收版本候选三处消费方已收敛，不再各持 Intl/裸 sort 口径。
+- **版本目录**：`src/shared/workbench/version-catalog.ts` + 装载器——已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留（retired 收起回看）；绑定从登记现算，删树无悬空；草稿与目标从已保存计划派生，缓存按 owner/项目/仓库/版本/修订分隔。[版本排序](spec.md#版本排序)共用 `compareVersionDisplayOrder`。历史服务按当前材料路径批量读取基线的第一父提交链，保留原材料读取基线与修订。浅克隆的历史边界不提供变更时间。
 
 项目墙与侧栏用同一项目版本目录，按 Git 身份收集可访问的精确登记，逐登记复用 `useVersionCatalogForRepo` 独立读取。先合并版本存在证据与工作区，再对各版按本机优先和已确认的对端来源选材料。选树身份包含仓库、执行宿主、传输 owner、工作树及实例。
 
@@ -114,6 +114,6 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 - **三屏 Issue 读取**：任务页只有目标条件使用完整引用投影，版本入口走原生标签查询；task-reference-reader 与 native-task-port 统一计划、验收、任务屏及上版实时 Issue 的同源缓存与在途合并。GitHub 坐标归一后按现有支持域每 20 号调用 gh:workItemsBatch，成功片保留，失败/缺项补单读；environment runtime 不跨机代读；fork、非 origin 登记远端、显式 upstream 偏好与带端口 GHES 保留原生点读的选源语义。CodeHub 保留 issue/MR 读回和全局 6 并发上限。缓存只回显旧读数，后台读回整批发布；手动刷新等旧请求结束后再查源头。创建版本仍准备两树，但只等待目标主机登记读回，其他主机刷新不阻塞打开。
 - **Issue 工作树名称**：原生意图种子保留编号；自动预填在快捷/完整创建和分支重名去重后仍保持自动管理，显式人工名优先。两处侧栏均复用原生卡片标题规则及已保存的 linkedWorkItem.title，稳定展示 `#编号 完整标题`；分支保留在悬停与详情。已有 fixed 名称即使恰等于标题或分支也不替换，改绑不修改 pinned；旧宿主缺命名模式时仅保留原生空名/分支名回退，不按文本猜测非空名称的来源。
 - **开工预热（CF-6c）**：开工入口 openModal 前 fire-and-forget `prefetchWorktreeCreateBase`（命令面板同款）＋`repos.getGitUsername` 既有 IPC（触发 gh 用户名探测的进程级缓存，创建时分支前缀解析直接命中）；零新增原生 API、不改创建参数；超时重试窗口语义是原生的，不动。
-- 同 PR 早轮已落：版本排序显示层在制优先＋降序（CF-2，目录契约仍升序）、清理确认单文案精简（CF-7）、补绑定改「把工作区纳入版本」四步选择＋Issue 用途双标记（CF-4）、全局任务入口恢复显示（CF-1 再裁定）＋两入口 tooltip 区分。
+- 同 PR 早轮已落：清理确认单文案精简（CF-7）、补绑定改「把工作区纳入版本」四步选择＋Issue 用途双标记（CF-4）、全局任务入口恢复显示（CF-1 再裁定）＋两入口 tooltip 区分。
 
 原型构建：node docs/05-features/version-workspace/prototype/build-g2.cjs；加 --check 校验源码与生成物一致。独立 JSX/CSS 与真实计划快照在该特性的 prototype/ 下；复用现有 vendor.js 与设计系统资源，不修改已确认的旧原型。

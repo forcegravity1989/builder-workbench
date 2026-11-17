@@ -5,7 +5,6 @@ import {
 } from '../../../shared/workbench/version-material'
 import {
   collectVersionCatalogWorkspaces,
-  compareMaterialVersions,
   mergeVersionCatalog,
   versionCatalogCacheKey,
   type VersionCatalogDraftSource,
@@ -334,7 +333,6 @@ export async function loadVersionCatalog(args: {
     }
   }
 
-  entries.sort((a, b) => compareMaterialVersions(a.version, b.version))
   return {
     entries,
     problems,

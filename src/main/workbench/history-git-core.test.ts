@@ -17,8 +17,20 @@ const logTemplate = [
 ]
 
 describe('read-only history git allowlist', () => {
+  it('accepts the fixed history log with either traversal', () => {
+    expect(() => assertReadOnlyHistoryGitArgs(logTemplate)).not.toThrow()
+    const firstParent = logTemplate.with(2, '--first-parent').with(6, '--diff-filter=AMT')
+    for (const rootFlag of ['--root', '--min-parents=1']) {
+      expect(() =>
+        assertReadOnlyHistoryGitArgs(firstParent.toSpliced(3, 0, rootFlag))
+      ).not.toThrow()
+    }
+    expect(() =>
+      assertReadOnlyHistoryGitArgs(['rev-parse', '--is-shallow-repository'])
+    ).not.toThrow()
+  })
+
   it.each([
-    ['the fixed history log', logTemplate],
     ['a material blob read', ['show', `${sha}:.bw/planning/v1/data.json`]],
     ['an acceptance blob read', ['show', `${sha}:.bw/planning/v0.5/acceptance.json`]],
     ['an ancestry proof', ['merge-base', '--is-ancestor', sha, 'b'.repeat(40)]],
@@ -34,7 +46,10 @@ describe('read-only history git allowlist', () => {
     ['generic rev-parse targets', ['rev-parse', 'main']],
     ['rev-parse with extra args', ['rev-parse', 'HEAD', '--extra']],
     ['ls-tree outside planning', ['ls-tree', '-z', '--name-only', `${sha}:.bw`]],
-    ['ls-tree with recursion flags', ['ls-tree', '-r', '-z', '--name-only', `${sha}:.bw/planning`]],
+    [
+      'recursive ls-tree outside planning',
+      ['ls-tree', '-r', '-z', '--name-only', sha, '--', '.bw']
+    ],
     ['symbolic-ref moves', ['symbolic-ref', 'HEAD', 'refs/heads/x']],
     ['external diff hooks', ['log', '--ext-diff', sha]],
     ['arbitrary show targets', ['show', `${sha}:../../etc/passwd`]],

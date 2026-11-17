@@ -55,16 +55,25 @@ export type VersionCatalogEntry = {
   state: 'working' | 'retired'
 }
 
-/** Sidebar and wall use the same default version ordering. */
+function latestMaterialCommitTime(material: VersionCatalogEntry['material']): number {
+  const plan = Date.parse(material.plan?.committedAt ?? '')
+  const acceptance = Date.parse(material.acceptance?.committedAt ?? '')
+  return Math.max(
+    Number.isFinite(plan) ? plan : -Infinity,
+    Number.isFinite(acceptance) ? acceptance : -Infinity
+  )
+}
+
 export function compareVersionDisplayOrder(
-  a: Pick<VersionCatalogEntry, 'state' | 'version'>,
-  b: Pick<VersionCatalogEntry, 'state' | 'version'>
+  a: Pick<VersionCatalogEntry, 'state' | 'material'>,
+  b: Pick<VersionCatalogEntry, 'state' | 'material'>
 ): number {
-  return a.state !== b.state
-    ? a.state === 'working'
-      ? -1
-      : 1
-    : compareMaterialVersions(b.version, a.version)
+  if (a.state !== b.state) {
+    return a.state === 'working' ? -1 : 1
+  }
+  const aTime = latestMaterialCommitTime(a.material)
+  const bTime = latestMaterialCommitTime(b.material)
+  return aTime === bTime ? 0 : aTime > bTime ? -1 : 1
 }
 
 /**
@@ -193,7 +202,7 @@ export function mergeVersionCatalog(args: {
   for (const entry of entries.values()) {
     entry.state = entry.workspaces.length > 0 ? 'working' : 'retired'
   }
-  return [...entries.values()].sort((a, b) => compareMaterialVersions(a.version, b.version))
+  return [...entries.values()]
 }
 
 /**

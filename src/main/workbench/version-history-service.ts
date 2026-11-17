@@ -1,4 +1,5 @@
 import { readCurrentVersionCatalog, withVersionTreeAlignment } from './version-current-catalog'
+import { readVersionHistoryLog, versionHistoryLogArgs } from './version-history-log'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import {
   PlanningMaterialSchema,
@@ -126,62 +127,36 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           problems: catalog.problems.filter(matches)
         }
       }
-      const log = await host.git(scope, [
-        'log',
-        '-z',
-        '--full-history',
-        '--diff-merges=first-parent',
-        '--format=%H%x00%cI',
-        '--name-only',
-        '--diff-filter=AM',
-        '--no-renames',
-        baseline.commit,
-        '--',
-        '.bw/planning'
-      ])
-      let sourceCommit = ''
-      let committedAt = ''
+      const log = await host.git(scope, versionHistoryLogArgs(baseline.commit))
       const seen = new Set<string>()
       const records: VersionHistorySource[] = []
       const problems: VersionHistoryProblem[] = []
-      const tokens = log.toString('utf8').split('\0')
-      for (let index = 0; index < tokens.length; index++) {
-        const token = tokens[index]
-        if (SourceCommit.safeParse(token).success) {
-          sourceCommit = token
-          committedAt = tokens[++index]
+      for (const { file, version, workflow, sourceCommit, committedAt } of readVersionHistoryLog(
+        log
+      )) {
+        if (!matches({ version, workflow })) {
           continue
         }
-        // Git separates the commit header from its first raw path with one newline.
-        const line = token.replace(/^\n/, '')
-        const path = /^\.bw\/planning\/([^/]+)\/(data|acceptance)\.json$/.exec(line)
-        if (!path || !sourceCommit) {
-          continue
-        }
-        const workflow = path[2] === 'data' ? 'plan' : 'acceptance'
-        if (!matches({ version: path[1], workflow })) {
-          continue
-        }
-        if (!MaterialVersion.safeParse(path[1]).success) {
+        if (!MaterialVersion.safeParse(version).success) {
           problems.push({
-            version: path[1],
+            version,
             sourceCommit,
             workflow,
             committedAt,
             code: 'invalid-version',
-            message: `历史路径 ${line} 的版本目录不符合材料约定，未作为有效版本读取`
+            message: `历史路径 ${file} 的版本目录不符合材料约定，未作为有效版本读取`
           })
           continue
         }
         let snapshot: Awaited<ReturnType<typeof readSnapshot>>
         try {
-          snapshot = await readSnapshot(scope, sourceCommit, path[1], workflow)
+          snapshot = await readSnapshot(scope, sourceCommit, version, workflow)
         } catch (error) {
           if (!(error instanceof HistorySourceError)) {
             throw error
           }
           problems.push({
-            version: path[1],
+            version,
             sourceCommit,
             workflow,
             committedAt,
@@ -194,7 +169,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
         // history explicitly keeps each commit, because cycleId spans weeks.
         // Every record is reachable from the selected, pinned source tip.
         const key = JSON.stringify([
-          path[1],
+          version,
           workflow,
           allRevisions ? sourceCommit : snapshot.document.cycleId
         ])

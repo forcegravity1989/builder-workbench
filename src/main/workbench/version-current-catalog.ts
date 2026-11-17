@@ -8,6 +8,11 @@ import type {
   VersionTreePlanCatalog
 } from '../../shared/workbench/version-history'
 import { HistorySourceError } from './version-history-snapshot'
+import {
+  readVersionHistoryLog,
+  versionHistoryLogArgs,
+  versionMaterialAtGitPath
+} from './version-history-log'
 
 export async function withVersionTreeAlignment(
   scope: MetricScope,
@@ -48,28 +53,54 @@ export async function readCurrentVersionCatalog(
     '--',
     '.bw/planning'
   ])
-  const committedAt = (await git(scope, ['show', '-s', '--format=%cI', commit]))
+  const paths = files
     .toString('utf8')
-    .trim()
+    .split('\0')
+    .flatMap((file) => {
+      const material = versionMaterialAtGitPath(file)
+      return material ? [{ file, ...material }] : []
+    })
+  const changedAt = new Map<string, string>()
+  if (paths.length) {
+    // This read is optional so unavailable history does not hide the current snapshot.
+    const log = await git(scope, ['rev-parse', '--is-shallow-repository'])
+      .then((result) =>
+        git(
+          scope,
+          versionHistoryLogArgs(
+            commit,
+            result.toString().trim() === 'true' ? 'shallow-current' : 'current'
+          )
+        )
+      )
+      .catch(() => null)
+    if (log) {
+      for (const { file, committedAt } of readVersionHistoryLog(log)) {
+        if (!changedAt.has(file)) {
+          changedAt.set(file, committedAt)
+        }
+      }
+    }
+  }
   const records: VersionHistorySource[] = []
   const problems: VersionHistoryProblem[] = []
-  for (const file of files.toString('utf8').split('\0')) {
-    const path = /^\.bw\/planning\/([^/]+)\/(data|acceptance)\.json$/.exec(file)
-    if (!path) {
-      continue
+  for (const { file, version, workflow } of paths) {
+    const source = {
+      version,
+      sourceCommit: commit,
+      workflow,
+      committedAt: changedAt.get(file) ?? ''
     }
-    const workflow = path[2] === 'data' ? 'plan' : 'acceptance'
-    const source = { version: path[1], sourceCommit: commit, workflow, committedAt } as const
-    if (!MaterialVersion.safeParse(path[1]).success) {
+    if (!MaterialVersion.safeParse(version).success) {
       problems.push({
         ...source,
         code: 'invalid-version',
-        message: `版本目录 ${path[1]} 不符合材料约定`
+        message: `版本目录 ${version} 不符合材料约定`
       })
       continue
     }
     try {
-      const snapshot = await read(scope, commit, path[1], workflow)
+      const snapshot = await read(scope, commit, version, workflow)
       records.push({ ...source, cycleId: snapshot.document.cycleId, revision: snapshot.revision })
     } catch (error) {
       problems.push({
