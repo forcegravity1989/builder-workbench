@@ -13,7 +13,7 @@ const artifact = {
 }
 const caches: string[] = []
 async function cache(): Promise<string> {
-  const path = await mkdtemp(join(tmpdir(), 'workbench-update-'))
+  const path = await mkdtemp(join(tmpdir(), 'monica-update-'))
   caches.push(path)
   return path
 }

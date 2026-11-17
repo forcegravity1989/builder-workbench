@@ -1,19 +1,19 @@
-import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
+import { MONICA_REVIEW_NOTIFICATION_METHODS } from './monica-review-notifications'
 import { STATUS_METHODS } from './status'
-import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
-import { WORKBENCH_SKILL_METHODS } from './workbench-skills'
-import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
-import { WORKBENCH_VERSION_BINDING_METHODS } from './workbench-version-binding'
-import { WORKBENCH_VERSION_WORKSPACE_METHODS } from './workbench-version-workspace'
-import { WORKBENCH_FIXED_WORKSPACE_METHODS } from './workbench-fixed-workspace'
-import { WORKBENCH_METRICS_METHODS } from './workbench-metrics'
-import { WORKBENCH_PACKAGE_METHODS } from './workbench-package'
-import { WORKBENCH_ARCHIVE_METHODS } from './workbench-archive'
-import { WORKBENCH_RELEASE_METHODS } from './workbench-release'
-import { WORKBENCH_CHARTER_METHODS } from './workbench-charter'
-import { WORKBENCH_MILESTONE_METHODS } from './workbench-milestones'
-import { WORKBENCH_TRUNK_METHODS } from './workbench-trunk'
-import { WORKBENCH_REPO_REMOVAL_METHODS } from './workbench-repo-removal'
+import { MONICA_MATERIAL_METHODS } from './monica-materials'
+import { MONICA_SKILL_METHODS } from './monica-skills'
+import { MONICA_HISTORY_METHODS } from './monica-history'
+import { MONICA_VERSION_BINDING_METHODS } from './monica-version-binding'
+import { MONICA_VERSION_WORKSPACE_METHODS } from './monica-version-workspace'
+import { MONICA_FIXED_WORKSPACE_METHODS } from './monica-fixed-workspace'
+import { MONICA_METRICS_METHODS } from './monica-metrics'
+import { MONICA_PACKAGE_METHODS } from './monica-package'
+import { MONICA_ARCHIVE_METHODS } from './monica-archive'
+import { MONICA_RELEASE_METHODS } from './monica-release'
+import { MONICA_CHARTER_METHODS } from './monica-charter'
+import { MONICA_MILESTONE_METHODS } from './monica-milestones'
+import { MONICA_TRUNK_METHODS } from './monica-trunk'
+import { MONICA_REPO_REMOVAL_METHODS } from './monica-repo-removal'
 import { AI_VAULT_METHODS } from './ai-vault'
 import { AUTOMATION_METHODS } from './automations'
 import { REPO_METHODS } from './repo'
@@ -66,21 +66,21 @@ import { AGENT_HOOK_METHODS } from './agent-hooks'
 // grep-point for "what methods does the RPC server expose?" — useful when
 // auditing the security boundary or wiring new CLI commands.
 export const ALL_RPC_METHODS = [
-  ...WORKBENCH_REVIEW_NOTIFICATION_METHODS,
-  ...WORKBENCH_MATERIAL_METHODS,
-  ...WORKBENCH_SKILL_METHODS,
-  ...WORKBENCH_HISTORY_METHODS,
-  ...WORKBENCH_VERSION_BINDING_METHODS,
-  ...WORKBENCH_VERSION_WORKSPACE_METHODS,
-  ...WORKBENCH_FIXED_WORKSPACE_METHODS,
-  ...WORKBENCH_METRICS_METHODS,
-  ...WORKBENCH_PACKAGE_METHODS,
-  ...WORKBENCH_ARCHIVE_METHODS,
-  ...WORKBENCH_RELEASE_METHODS,
-  ...WORKBENCH_CHARTER_METHODS,
-  ...WORKBENCH_MILESTONE_METHODS,
-  ...WORKBENCH_TRUNK_METHODS,
-  ...WORKBENCH_REPO_REMOVAL_METHODS,
+  ...MONICA_REVIEW_NOTIFICATION_METHODS,
+  ...MONICA_MATERIAL_METHODS,
+  ...MONICA_SKILL_METHODS,
+  ...MONICA_HISTORY_METHODS,
+  ...MONICA_VERSION_BINDING_METHODS,
+  ...MONICA_VERSION_WORKSPACE_METHODS,
+  ...MONICA_FIXED_WORKSPACE_METHODS,
+  ...MONICA_METRICS_METHODS,
+  ...MONICA_PACKAGE_METHODS,
+  ...MONICA_ARCHIVE_METHODS,
+  ...MONICA_RELEASE_METHODS,
+  ...MONICA_CHARTER_METHODS,
+  ...MONICA_MILESTONE_METHODS,
+  ...MONICA_TRUNK_METHODS,
+  ...MONICA_REPO_REMOVAL_METHODS,
   ...STATUS_METHODS,
   ...AGENT_HOOK_METHODS,
   ...AI_VAULT_METHODS,

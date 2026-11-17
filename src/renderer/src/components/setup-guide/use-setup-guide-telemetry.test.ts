@@ -113,18 +113,18 @@ describe('setup guide step completion telemetry', () => {
     })
     vi.stubGlobal('localStorage', createMemoryStorage())
     trackMock.mockClear()
-    const workbenchState = createSetupGuideStepCompletionTelemetryState()
+    const monicaState = createSetupGuideStepCompletionTelemetryState()
     recordSetupGuideStepCompletionTelemetry({
-      state: workbenchState,
+      state: monicaState,
       progress: createProgress({}),
       setupGuideVisible: true,
-      workbenchShell: true
+      monicaShell: true
     })
     recordSetupGuideStepCompletionTelemetry({
-      state: workbenchState,
+      state: monicaState,
       progress: createProgress({ notifications: true, 'agent-capabilities': true }),
       setupGuideVisible: true,
-      workbenchShell: true
+      monicaShell: true
     })
     expect(trackMock).toHaveBeenCalledTimes(1)
     expect(trackMock).toHaveBeenCalledWith('setup_guide_step_completed', {

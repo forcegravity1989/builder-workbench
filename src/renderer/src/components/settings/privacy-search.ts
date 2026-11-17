@@ -5,12 +5,12 @@
 import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from './settings-search-keywords'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
-import { isWorkbenchShell } from '../../workbench/is-workbench-shell'
+import { isMonicaShell } from '../../monica/is-monica-shell'
 
 export const getPrivacyPaneSearchEntries = createLocalizedCatalog(() => [
   {
     title: translate('auto.components.settings.privacy.search.5c508bad41', 'Privacy & Telemetry'),
-    description: isWorkbenchShell()
+    description: isMonicaShell()
       ? translate(
           'auto.components.settings.PrivacyPane.workbenchSectionDescription',
           'Usage data, diagnostics, and telemetry controls.'
@@ -24,14 +24,14 @@ export const getPrivacyPaneSearchEntries = createLocalizedCatalog(() => [
       ...translateSearchKeyword('auto.components.settings.privacy.search.77d3180def', 'telemetry'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.4104f6f0f3', 'analytics'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.79c319948b', 'usage'),
-      ...(isWorkbenchShell()
+      ...(isMonicaShell()
         ? ['WeLink']
         : translateSearchKeyword(
             'auto.components.settings.privacy.search.b021b9cb81',
             'anonymous'
           )),
       ...translateSearchKeyword('auto.components.settings.privacy.search.3922051573', 'data'),
-      ...(isWorkbenchShell()
+      ...(isMonicaShell()
         ? []
         : translateSearchKeyword('auto.components.settings.privacy.search.2b5a5c312f', 'posthog')),
       ...translateSearchKeyword('auto.components.settings.privacy.search.27a27b2f63', 'opt out'),
@@ -39,16 +39,16 @@ export const getPrivacyPaneSearchEntries = createLocalizedCatalog(() => [
     ]
   },
   {
-    title: isWorkbenchShell()
+    title: isMonicaShell()
       ? translate('auto.components.settings.PrivacyPane.workbenchLabel', 'Share usage data')
       : translate(
           'auto.components.settings.privacy.search.57b283461a',
           'Share Anonymous Usage Data'
         ),
-    description: isWorkbenchShell()
+    description: isMonicaShell()
       ? translate(
           'auto.components.settings.PrivacyPane.workbenchDescription',
-          'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.'
+          'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed Monica user group space. The space may show the uploader.'
         )
       : translate(
           'auto.components.settings.privacy.search.b707cc3981',
@@ -57,7 +57,7 @@ export const getPrivacyPaneSearchEntries = createLocalizedCatalog(() => [
     keywords: [
       ...translateSearchKeyword('auto.components.settings.privacy.search.77d3180def', 'telemetry'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.79c319948b', 'usage'),
-      ...(isWorkbenchShell()
+      ...(isMonicaShell()
         ? ['WeLink']
         : translateSearchKeyword(
             'auto.components.settings.privacy.search.b021b9cb81',
