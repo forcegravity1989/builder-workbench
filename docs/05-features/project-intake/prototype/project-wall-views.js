@@ -7,33 +7,33 @@
   }
   W.renderCard = (p) => {
     const unknown = !W.available(p) || p.version === undefined
-    const version = unknown ? '版本未知' : p.version || '未使用版本'
+    const hasVersion = Boolean(p.version) && !unknown
+    const version = unknown ? '版本信息暂不可用' : p.version || '未建立版本'
     const taskCount = p.tasks ? `${p.tasks.completed} / ${p.tasks.total}` : '—'
-    return `<article class="project-card${s.config === p.id ? ' selected' : ''}" data-project="${esc(p.id)}">
-      <div class="card-top"><button class="project-name" data-action="open" data-id="${esc(p.id)}">${p.group ? icon('folder') : ''}${esc(p.name)}</button><div class="card-tools">${button('open-repo', 'external', p.remote ? '打开代码仓' : '打开本机文件夹', p.id)}${button('repo-settings', 'settings', '仓库设置', p.id)}${!W.project(p.id).hosts.includes('local') && p.remote ? button('clone-local', 'download', '克隆到本机', p.id) : ''}${p.kind === 'git' ? button('overview', 'overview', `项目总览 ${p.name}`, p.id) : ''}${button('config', 'edit', `项目信息 ${p.name}`, p.id)}${button('native-menu', 'more', p.group ? 'Orca 分组操作' : 'Orca 项目操作', p.id)}</div></div>
+    const membersId = `members-${p.id}`
+    return `<article class="project-card${s.config === p.id ? ' selected' : ''}" data-card-mode="${s.cardMode}" data-project="${esc(p.id)}">
+      <div class="card-top"><button class="project-name" title="${esc(p.name)}" data-action="open" data-id="${esc(p.id)}">${p.group ? icon('folder') : ''}${esc(p.name)}</button><div class="card-tools">${button('open-repo', 'external', p.remote ? '打开代码仓' : '打开本机文件夹', p.id)}${button('repo-settings', 'settings', '仓库设置', p.id)}${!W.project(p.id).hosts.includes('local') && p.remote ? button('clone-local', 'download', '克隆到本机', p.id) : ''}${p.kind === 'git' ? button('overview', 'overview', `项目总览 ${p.name}`, p.id) : ''}${button('config', 'edit', `项目信息 ${p.name}`, p.id)}${button('native-menu', 'more', p.group ? 'Orca 分组操作' : 'Orca 项目操作', p.id)}</div></div>
       <div class="identity-row"><span class="owner-row"><span>项目负责人</span><span class="owner-value" title="${esc(p.builder?.trim() || '—')}">${esc(p.builder?.trim() || '—')}</span></span><span class="host-sources">${W.sourceTags(p)}</span></div>
-      ${p.group ? `<details class="wall-repositories" open><summary><span>项目分组 · ${W.repoSlots(p).length} 个代码仓</span>${icon('chevron')}</summary>${W.renderMembers(p)}</details>` : ''}
-      ${
-        p.version && !unknown
-          ? `<div class="version-goals"><div class="version-heading"><span>版本目标</span><button class="inline-link" data-action="version" data-id="${p.id}">${esc(version)}</button></div><ul class="goal-list">${p.goals
+      <div class="version-goals"><div class="version-heading"><span>${hasVersion ? '版本目标' : '项目信息'}</span>${hasVersion ? `<button class="inline-link" data-action="version" data-id="${p.id}">${esc(version)}</button>` : ''}</div>${
+        hasVersion
+          ? `<ul class="goal-list">${p.goals
               .slice(0, 2)
-              .map((g) => `<li><span>${esc(g)}</span></li>`)
+              .map((g) => `<li><span title="${esc(g)}">${esc(g)}</span></li>`)
               .join(
                 ''
-              )}</ul>${p.goals.length > 2 ? `<button class="more-goals inline-link" data-action="version" data-id="${p.id}">另 ${p.goals.length - 2} 项目标</button>` : ''}</div>
-      <div class="stage-grid" aria-label="版本进展">${[
+              )}</ul><div class="goal-note">${p.goals.length > 2 ? `<button class="more-goals inline-link" data-action="version" data-id="${p.id}">另 ${p.goals.length - 2} 项目标</button>` : !p.goals.length ? '<span class="version-muted">暂无可读目标</span>' : ''}</div>`
+          : `<p class="card-description" title="${esc(p.brief || '')}">${esc(unknown ? version : p.brief || '未建立版本')}</p>`
+      }</div>
+      <div class="card-footer"><div class="card-meta">${p.group ? `<button class="inline-link" popovertarget="${membersId}">${W.repoSlots(p).length} 个代码仓</button><div id="${membersId}" class="member-popover" popover="auto">${W.renderMembers(p)}</div>` : ''}<span class="version-muted">${hasVersion ? (s.cardMode === 'compact' ? esc(version) : '') : version}</span>${p.pending ? '<span class="pending-mark">项目信息待合入</span>' : ''}</div><div class="stage-grid" aria-label="版本进展">${[
         ['计划', p.plan || '—', 'plan', p.planArchive],
         ['任务', taskCount, 'tasks'],
         ['验收', p.acceptance || '—', 'acceptance', p.acceptanceArchive]
       ]
         .map(
           ([label, value, target, archive]) =>
-            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}" title="${target === 'tasks' ? '任务已关闭／总数' : '查看流程材料'}"><span>${label}</span><b${archive ? ` title="${esc(archive)}"` : ''}>${esc(value)}</b></button>`
+            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}"${!hasVersion ? ' disabled' : ''} title="${target === 'tasks' ? '任务已关闭／总数' : '查看流程材料'}"><span>${label}</span><b${archive ? ` title="${esc(archive)}"` : ''}>${hasVersion ? esc(value) : '—'}</b></button>`
         )
-        .join('')}</div>`
-          : `<div class="unversioned"><p class="card-description">${esc(p.brief || '')}</p><span class="version-muted">${version}</span></div>`
-      }
-      ${p.pending ? '<span class="pending-mark">项目信息待合入</span>' : ''}
+        .join('')}</div></div>
     </article>`
   }
   W.renderMembers = (p) =>
@@ -80,7 +80,17 @@
                 ['personal', '个人']
               ],
               s.category
-            )}<span class="wall-updated">${s.hostReadFailed ? `部分主机未更新 ${W.help('显示上次读取结果。点击刷新项目墙可重新读取；主机连接在原生主机管理中处理。')}` : s.updated}</span></div><div id="project-grid"></div>`
+            )}<div class="card-modes" role="group" aria-label="卡片显示模式">${[
+              ['compact', '紧凑模式'],
+              ['detail', '详情模式']
+            ]
+              .map(
+                ([id, label]) =>
+                  `<button class="filter" data-action="card-mode" data-id="${id}" aria-pressed="${s.cardMode === id}">${label}</button>`
+              )
+              .join(
+                ''
+              )}</div><span class="wall-updated">${s.hostReadFailed ? `部分主机未更新 ${W.help('显示上次读取结果。点击刷新项目墙可重新读取；主机连接在原生主机管理中处理。')}` : s.updated}</span></div><div id="project-grid"></div>`
           : `<div class="empty-state">${icon('folder')}<h2>从一个项目开始</h2><p>打开已有文件夹、克隆代码仓，或新建项目。</p><button class="btn btn-primary" data-action="add">添加项目</button></div>`
       }`
     if (s.projects.length) {

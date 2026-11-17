@@ -1,6 +1,6 @@
 import { notifyWorkbenchError } from './error-feedback'
 import { useCallback, useRef, useState } from 'react'
-import { LoaderCircle, Plus, RefreshCw, UsersRound, X } from 'lucide-react'
+import { List, LoaderCircle, PanelsTopLeft, Plus, RefreshCw, UsersRound, X } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ import { isWallRowVisible, wallProjectVisibility } from './workbench-wall-projec
 import { buildWallHostFact } from './wall-host-facts'
 import { useWallCharters } from './use-wall-charters'
 import { TeamSettingsDialog } from './TeamSettingsDialog'
-import type { WallCardView } from './ProjectWallCard'
+import type { WallCardMode, WallCardView } from './ProjectWallCard'
 import { LiveProjectWallCard, type WallReadStatus } from './LiveProjectWallCard'
 import { useWallProjects } from './use-wall-projects'
 import { refreshProjectWall, useWallRefresh } from './wall-refresh'
@@ -39,6 +39,7 @@ export function ProjectWallPage() {
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('all')
   const [type, setType] = useState('all')
+  const [cardMode, setCardMode] = useState<WallCardMode>('detail')
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null)
@@ -177,6 +178,20 @@ export function ProjectWallPage() {
                   </Button>
                 ))}
               </div>
+              <div className="wall-display-modes" role="group" aria-label="卡片显示模式">
+                <WorkbenchIconButton
+                  label="紧凑模式"
+                  icon={List}
+                  aria-pressed={cardMode === 'compact'}
+                  onClick={() => setCardMode('compact')}
+                />
+                <WorkbenchIconButton
+                  label="详情模式"
+                  icon={PanelsTopLeft}
+                  aria-pressed={cardMode === 'detail'}
+                  onClick={() => setCardMode('detail')}
+                />
+              </div>
               <span
                 title={
                   partialRefresh
@@ -244,6 +259,7 @@ export function ProjectWallPage() {
                         <LiveProjectWallCard
                           key={card.project.key}
                           card={card}
+                          mode={cardMode}
                           refresh={refresh}
                           leave={leave}
                           onReadStatus={onReadStatus}
