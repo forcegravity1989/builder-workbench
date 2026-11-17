@@ -325,11 +325,12 @@ export function OverviewPage(): React.JSX.Element {
                 detail={versionProblem}
               />
             )}
-            <ProjectMilestones scope={milestoneScope} refreshToken={history?.baselineCommit} />
+            <ProjectMilestones scope={milestoneScope} refreshToken={historyState.retry} />
 
             <OverviewScoreboard
               catalog={catalog}
               readings={zoneReadings}
+              pendingReadings={metrics.pendingReadings}
               problems={metrics.problems}
               busy={busy}
               onRefresh={() => void refreshReadings()}

@@ -9,6 +9,7 @@ import { ensureNamedWorktree, nativeWorkspaceScopeKey } from './version-cycle/na
 import { updateTrunkCode } from './version-cycle/trunk-update-port'
 import {
   discardMilestoneWorking,
+  readFormalMilestones,
   readMilestones,
   readMilestoneWorking,
   submitMilestones,
@@ -35,10 +36,7 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 const savedScope = (scope: MilestoneScope, s: Session | undefined): MilestoneScope | null =>
   s?.data.project ? { ...scope, worktreeId: s.data.project.worktreeId } : null
 
-export function useMilestonePlanning(
-  scope: MilestoneScope | null,
-  refreshToken: string | undefined
-) {
+export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken: number) {
   const key = scope ? `${nativeWorkspaceScopeKey(scope)}:${scope.worktreeId}` : 'unavailable'
   const current = useRef({ scope, key })
   current.current = { scope, key }
@@ -53,6 +51,7 @@ export function useMilestonePlanning(
     () => undefined
   )
   const [reading, setReading] = useState(false)
+  const [preview, setPreview] = useState<{ key: string; state: Session } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [updateError, setUpdateError] = useState<string | null>(null)
   const generation = useRef(0)
@@ -68,7 +67,26 @@ export function useMilestonePlanning(
       setReading(true)
       setError(null)
       try {
-        const data = await readMilestones(target)
+        const full = readMilestones(target)
+        if (!sessions.has(key)) {
+          void readFormalMilestones(target)
+            .then(({ formal }) => {
+              if (active() && !sessions.has(key)) {
+                setPreview({
+                  key,
+                  state: fromMaterial(key, {
+                    formal,
+                    project: null,
+                    review: { pr: null, remoteAvailable: null }
+                  })
+                })
+              }
+            })
+            .catch(() => {
+              // The full read still reports source errors and any partial results.
+            })
+        }
+        const data = await full
         if (!active()) {
           return
         }
@@ -84,6 +102,7 @@ export function useMilestonePlanning(
             : previous
         )
         put(key, next)
+        setPreview(null)
         if (!previous) {
           void readLegacyMilestoneDraft(key)
             .then((legacy) => {
@@ -238,7 +257,7 @@ export function useMilestonePlanning(
     kind: 'prepare' | 'submit' | 'update',
     run: (project: MilestoneScope) => Promise<void> | void
   ) => {
-    if (!scope || reading || operations.has(key)) {
+    if (!scope || !sessions.has(key) || reading || operations.has(key)) {
       return
     }
     operations.set(key, kind)
@@ -343,10 +362,12 @@ export function useMilestonePlanning(
     })
 
   return {
-    state,
+    state: state ?? (preview?.key === key ? preview.state : null),
+    confirmed: state !== null,
+    reading,
     writing: operation === 'submit',
     updating: operation === 'update',
-    busy: reading || !!operation,
+    busy: reading || !!operation || state === null,
     error,
     updateError,
     dirty: state ? changed(state) : false,
