@@ -22,6 +22,7 @@ BW Issue 按主要用户结果选一个主归属。每行名称可直接用于�
 | 版本总览     | 查看本版目标、任务数、未完成数和验收结论。SDLC 和 AI 生产力统计默认关闭，可在本机按项目分别开启 | [版本总览规格](version-overview/spec.md) · [状态](version-overview/STATUS.md)                                                                        | 历程与事实来源已有规格、实现及协议测试，交互和真实数据验证范围见状态。                                                           |
 | 指标能力     | 定义指标、采集历史值，并在总览和验收中读回                                                      | [指标规格](overview-metrics/spec.md) · [指标六环状态](overview-metrics/STATUS.md#六环状态)                                                           | 历史采集和来源协议有定向验证；配置、采集、合入、采用及重启的完整旅程未验证。                                                     |
 | 内部集成     | 接通内部服务，使用 CodeHub 仓库与 WeLink 通信、发起评审                                         | [接入规格](connectors/spec.md)及[状态](connectors/STATUS.md) · [CodeHub 适配](codehub/intent.md)及[状态](codehub/STATUS.md)                          | 接入卡已有规格、实现和测试，完整登录旅程未验；CodeHub 有局部真壳证据。接入证据仅覆盖相应服务和动作。                             |
+| 团队多人协作 | 用团队目录发现项目、合看多台主机的项目进展，独立完成评审                                        | [意图](team-collaboration/intent.md) · [规格与原型](team-collaboration/spec.md) · [状态](team-collaboration/STATUS.md)                               | v1.1 G1 设计待评审（#342）。                                                                                                     |
 
 侧栏统一规划归版本会话管理，包括原生项目与工作区区域的布局、置顶、展开收起、显示身份和归属。任务列表、详情和处理交互归任务管理，来源特有的接入与通信归内部集成。多人协作随用户结果归属：把请求送到人并跟踪处理结果归通知，v0.8 只包含 PR 评审请求的发送、接收与结果跟踪；借助 WeLink 完成本版验收归版本验收。
 
