@@ -56,6 +56,7 @@
       editing: false,
       filter: 'all',
       category: 'all',
+      cardMode: 'detail',
       viewer: 'self',
       query: '',
       scenario: 'mixed',
