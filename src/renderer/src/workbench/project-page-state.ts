@@ -60,9 +60,14 @@ export function openProjectOverview(repo?: Repo): void {
   const state = useAppStore.getState()
   const current = repo ?? currentProjectRepo(state)
   const source = current && resolveProjectSource(state, current)
-  state.openActivityPage()
+  openProjectOverviewSource(source)
+}
+
+/** Keep the source already used to display a wall card. */
+export function openProjectOverviewSource(source: Repo | null): void {
+  useAppStore.getState().openActivityPage()
   setProjectPage({ kind: 'project-overview', options: projectSource(source) })
-  if (repo && source) {
+  if (source) {
     requestVersionSidebarFocus(source.id)
   }
 }
@@ -104,12 +109,12 @@ useAppStore.subscribe((state, previous) => {
   }
 })
 
+export function getProjectPage(): ProjectPage {
+  return projectPage
+}
+
 export function useProjectPage(): ProjectPage {
-  return useSyncExternalStore(
-    subscribeProjectPage,
-    () => projectPage,
-    () => null
-  )
+  return useSyncExternalStore(subscribeProjectPage, getProjectPage, () => null)
 }
 
 export function subscribeProjectPage(listener: () => void): () => void {

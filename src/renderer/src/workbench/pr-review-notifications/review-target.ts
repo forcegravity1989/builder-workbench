@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
 import { githubRepoIdentityKey } from '../../../../shared/github/repository-identity-key'
@@ -154,6 +155,6 @@ export async function openReviewPr(identity: ReviewRepoIdentity, prNumber: numbe
       { recordTasksInteraction: false, returnToPreviousView: true }
     )
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : String(error))
+    notifyWorkbenchError('无法打开评审', error, '检查项目和主机连接后重试。')
   }
 }

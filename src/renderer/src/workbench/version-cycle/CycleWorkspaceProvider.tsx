@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
@@ -72,7 +73,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     workflow: workflow ?? 'plan',
     existingId: automation.automationId,
     creationKey: automation.creationKey,
-    onError: setNotice
+    onError: (error) => notifyWorkbenchError('无法打开自动化配置', error, '检查项目工作区后重试。')
   })
   const start = useCallback(
     async (selectedVersion?: string | null) => {
@@ -96,7 +97,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             return false
           }
         }
-        setNotice(reason instanceof Error ? reason.message : String(reason))
+        notifyWorkbenchError('无法打开工作会话', reason, '检查会话工具和工作区后重试。')
         return false
       } finally {
         setBusy(false)

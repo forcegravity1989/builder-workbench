@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadUpdaterModule, warmUpdaterModule } from './updater-test-module-loader'
+import { AUTO_UPDATE_RETRY_INTERVAL_MS } from './updater/updater-state'
 
 const {
   appMock,
@@ -30,6 +31,10 @@ warmUpdaterModule()
 describe('updater', () => {
   beforeEach(() => {
     resetUpdaterMocks()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   // Why: native github provider + allowPrerelease traps RC users on the RC channel, so resolve the newest tag ourselves and pin the generic feed to it.
@@ -255,6 +260,36 @@ describe('updater', () => {
       provider: 'generic',
       url: 'https://github.com/stablyai/orca/releases/download/v1.4.26'
     })
+  })
+
+  it('waits for the newest stable Workbench release and offers it on automatic retry', async () => {
+    vi.stubEnv('WORKBENCH_SHELL', '1')
+    vi.useFakeTimers()
+    appMock.getVersion.mockReturnValue('0.9.1')
+    fetchNewerReleaseTagsMock
+      .mockResolvedValueOnce({ tags: [], state: 'not-ready', lastGoodTag: 'v0.9.2' })
+      .mockResolvedValueOnce(['v1.0.0'])
+    autoUpdaterMock.checkForUpdates.mockImplementation(() => {
+      autoUpdaterMock.emit('checking-for-update')
+      autoUpdaterMock.emit('update-available', { version: '1.0.0' })
+      return Promise.resolve(null)
+    })
+
+    const setLastUpdateCheckAt = vi.fn()
+    const { getUpdateStatus, setupAutoUpdater } = await loadUpdaterModule()
+    setupAutoUpdater({ webContents: { send: vi.fn() } } as never, { setLastUpdateCheckAt })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(fetchNewerReleaseTagsMock).toHaveBeenCalledTimes(1)
+    expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled()
+    expect(getUpdateStatus()).toEqual({ state: 'idle' })
+    expect(setLastUpdateCheckAt).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(AUTO_UPDATE_RETRY_INTERVAL_MS)
+
+    expect(autoUpdaterMock.checkForUpdates).toHaveBeenCalledTimes(1)
+    expect(getUpdateStatus()).toEqual({ state: 'available', version: '1.0.0', changelog: null })
+    expect(setLastUpdateCheckAt).toHaveBeenCalledTimes(1)
   })
 
   it('keeps background publishing-window fallback on the short retry cadence', async () => {

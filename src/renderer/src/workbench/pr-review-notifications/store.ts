@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import {
@@ -115,8 +116,10 @@ export async function sendReviewRequest(
     const failed = result.results.filter((entry) => !entry.ok)
     const delivered = result.results.length - failed.length
     if (failed.length) {
-      toast.error(
-        `评审请求送达 ${delivered}/${result.results.length}：${failed.map((entry) => `${entry.name}: ${entry.error}`).join('；')}`
+      notifyWorkbenchError(
+        `评审请求送达 ${delivered}/${result.results.length} 台主机`,
+        failed.map((entry) => `${entry.name}：${entry.error}`).join('\n'),
+        '检查未送达主机的连接后重试。'
       )
     } else {
       toast.success(`评审请求已送达 ${delivered} 台主机`)
@@ -134,7 +137,7 @@ export function deleteReviewNotification(id: string): void {
   try {
     setState(deleteOutgoingNote(state, id), true)
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : String(error))
+    notifyWorkbenchError('无法删除评审通知', error, '可稍后重试。')
   }
 }
 

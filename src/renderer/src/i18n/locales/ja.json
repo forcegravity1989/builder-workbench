@@ -12494,7 +12494,7 @@
           "6c4f1a8d2e": "チェック詳細を利用できません。"
         },
         "EditorPanelHeader": {
-          "fb8331694e": "プレビューを横に開く",
+          "fb8331694e": "プレビュー",
           "4157f3cbf3": "Markdown プレビューを開く",
           "269ce4842b": "相対パスをコピー",
           "7c08a1f990": "パスのコピー",
@@ -13113,7 +13113,6 @@
             "ffa4412b66": "次"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "の",
             "dcd6e6b03e": "ステップ {{value0}}/{{value1}}"
           },
           "contextual": {

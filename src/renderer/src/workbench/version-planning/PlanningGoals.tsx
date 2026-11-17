@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
@@ -103,11 +104,13 @@ export function PlanningGoals({
           <small>{plan ? `${plan.goals.length} 个目标` : '未建'}</small>
         </h2>
         {plan && (
-          <span className="g3-title-actions">
+          <div className="g3-title-actions">
             {(readError || membership.error) && (
-              <span className="g3-muted" role="status">
-                Issue 状态未知：{readError || membership.error}
-              </span>
+              <ErrorDetails
+                className="g3-muted"
+                summary="Issue 状态未知，检查项目远端与集成登录后刷新"
+                detail={readError || membership.error}
+              />
             )}
             <button
               type="button"
@@ -131,6 +134,9 @@ export function PlanningGoals({
                 className={refreshing ? 'is-spinning' : undefined}
               />
             </BoardIconButton>
+            <BoardIconButton label="添加目标" disabled={disabled} onClick={addGoal}>
+              <Plus size={16} aria-hidden="true" />
+            </BoardIconButton>
             {plan.goals.length > 0 && (
               <BoardIconButton
                 label={expanded ? '全部收起' : '全部展开'}
@@ -147,7 +153,7 @@ export function PlanningGoals({
                 )}
               </BoardIconButton>
             )}
-          </span>
+          </div>
         )}
       </div>
       {!plan ? (
@@ -196,9 +202,6 @@ export function PlanningGoals({
             onTask={onTask}
           />
           <div className="g3-goals-bottom">
-            <BoardIconButton label="添加目标" onClick={addGoal}>
-              <Plus size={16} aria-hidden="true" />
-            </BoardIconButton>
             <span>与计划助手一起明确目标、拆解 Issue。</span>
           </div>
         </fieldset>

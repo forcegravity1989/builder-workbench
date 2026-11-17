@@ -1,10 +1,11 @@
 import { useCallback, useRef } from 'react'
 import type React from 'react'
 import type { editor as monacoEditor } from 'monaco-editor'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { detectLanguage } from '@/lib/language-detect'
 import { joinPath } from '@/lib/path'
-import { openFilePreviewToSide } from '@/lib/file-preview'
+import { openFileInBrowserTab } from '@/lib/file-preview'
 import { getEditorFileOperationContext } from '@/lib/editor-file-operation-owner'
 import { writeRuntimeFile } from '@/runtime/runtime-file-client'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
@@ -25,7 +26,6 @@ export type CombinedDiffSectionActions = {
 }
 
 export function useCombinedDiffSectionActions({
-  activeGroupId,
   branchCompare,
   canOpenWorkspaceFileBrowserForPath,
   commitCompare,
@@ -109,8 +109,8 @@ export function useCombinedDiffSectionActions({
     ]
   )
 
-  // Why: match single-file HTML diffs — preview the on-disk working tree file
-  // beside the combined view when the section is still present on disk.
+  // Why: preview the on-disk working tree file of an HTML section in the main work area
+  // (the combined-diff tab's group) instead of a new side split, matching the editor header eye.
   const openSectionPreview = useCallback(
     (section: DiffSection) => {
       if (
@@ -125,31 +125,15 @@ export function useCombinedDiffSectionActions({
       ) {
         return
       }
-      // Why: use this combined-diff tab's group, not worktree activeGroupId —
-      // in a multi-pane layout the active group may be a different split.
-      const state = useAppStore.getState()
-      const sourceGroupId =
-        (state.unifiedTabsByWorktree[file.worktreeId] ?? []).find(
-          (tab) =>
-            tab.entityId === file.id && (tab.contentType === 'diff' || tab.contentType === 'editor')
-        )?.groupId ??
-        activeGroupId ??
-        null
-      openFilePreviewToSide({
-        language: detectLanguage(section.path),
+      const plan = openFileInBrowserTab({
         filePath: joinPath(file.filePath, section.path),
-        worktreeId: file.worktreeId,
-        sourceGroupId
+        worktreeId: file.worktreeId
       })
+      if (plan.status === 'unsupported') {
+        toast.error(plan.message)
+      }
     },
-    [
-      activeGroupId,
-      canOpenWorkspaceFileBrowserForPath,
-      file.filePath,
-      file.id,
-      file.worktreeId,
-      isCommitMode
-    ]
+    [canOpenWorkspaceFileBrowserForPath, file.filePath, file.worktreeId, isCommitMode]
   )
 
   const handleSectionSave = useCallback(

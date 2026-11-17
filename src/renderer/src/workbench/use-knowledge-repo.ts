@@ -17,6 +17,7 @@ export function useKnowledgeRepo(): {
   bodies: Record<string, string>
   setBodies: Dispatch<SetStateAction<Record<string, string>>>
   savedBodies: Record<string, string>
+  readErrors: Record<string, string>
   loading: boolean
   error: string | null
   unavailable: string | null
@@ -40,6 +41,7 @@ export function useKnowledgeRepo(): {
   const [docs, setDocs] = useState<KbDoc[]>([])
   const [bodies, setBodies] = useState<Record<string, string>>({})
   const [savedBodies, setSavedBodies] = useState<Record<string, string>>({})
+  const [readErrors, setReadErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
@@ -49,6 +51,7 @@ export function useKnowledgeRepo(): {
       setDocs([])
       setBodies({})
       setSavedBodies({})
+      setReadErrors({})
       setError(null)
       setLoading(false)
       return
@@ -64,6 +67,7 @@ export function useKnowledgeRepo(): {
         setDocs(snapshot.docs)
         setBodies(snapshot.bodies)
         setSavedBodies(snapshot.bodies)
+        setReadErrors(snapshot.readErrors)
         setLoading(false)
       })
       .catch((cause: unknown) => {
@@ -73,6 +77,7 @@ export function useKnowledgeRepo(): {
         setDocs([])
         setBodies({})
         setSavedBodies({})
+        setReadErrors({})
         setLoading(false)
         setError(cause instanceof Error ? cause.message : String(cause))
       })
@@ -91,6 +96,9 @@ export function useKnowledgeRepo(): {
     const doc = docs.find((d) => d.id === docId)
     if (!doc) {
       return { wrote: false, error: '文档不在清单里' }
+    }
+    if (loading || readErrors[docId]) {
+      return { wrote: false, error: '文档读取成功后才能写回' }
     }
     const content = contentOverride ?? bodies[docId]
     if (content == null) {
@@ -112,6 +120,7 @@ export function useKnowledgeRepo(): {
     bodies,
     setBodies,
     savedBodies,
+    readErrors,
     loading,
     error,
     unavailable,

@@ -1,3 +1,4 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import {
   worktreeHostMatchOptions,
   worktreeMatchesHost
@@ -36,6 +37,7 @@ export function KnowledgePage(): React.JSX.Element {
     bodies,
     setBodies,
     savedBodies,
+    readErrors,
     loading,
     error,
     unavailable,
@@ -113,7 +115,7 @@ export function KnowledgePage(): React.JSX.Element {
       if (result.wrote) {
         toast.success('已写回仓库')
       } else {
-        toast.error(result.error ?? '写回失败')
+        notifyWorkbenchError('文档写回失败', result.error, '检查仓库和文件权限后重试。')
       }
     } finally {
       setSaving(false)
@@ -136,7 +138,7 @@ export function KnowledgePage(): React.JSX.Element {
   const pageDesc = loading
     ? '正在从仓库加载文档…'
     : error
-      ? `加载失败：${error}`
+      ? '仓库文档加载失败，可刷新重试。'
       : unavailable
         ? unavailable
         : activeRepo
@@ -149,6 +151,7 @@ export function KnowledgePage(): React.JSX.Element {
         <div>
           <h1>知识库</h1>
           <p className="page-desc">{pageDesc}</p>
+          {error && !loading && <ErrorDetails detail={error} />}
         </div>
         <div className="page-actions">
           <button
@@ -207,7 +210,22 @@ export function KnowledgePage(): React.JSX.Element {
       </div>
 
       <div className={`kb-body${editorOpen && tab === 'docs' ? ' is-ed' : ''}`}>
-        {tab === 'docs' && editorOpen && docId ? (
+        {tab === 'docs' && editorOpen && docId && readErrors[docId] && (
+          <div className="p-4">
+            <button
+              type="button"
+              className="wb-btn wb-btn-secondary"
+              onClick={() => setEditorOpen(false)}
+            >
+              返回文档列表
+            </button>
+            <ErrorDetails
+              summary="文档读取失败，可刷新重试 · 查看详情"
+              detail={readErrors[docId]}
+            />
+          </div>
+        )}
+        {tab === 'docs' && editorOpen && docId && !readErrors[docId] ? (
           <KnowledgeDocEditor
             docs={docs}
             docId={docId}

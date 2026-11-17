@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ArrowUpRight } from 'lucide-react'
 import type {
   VersionGoal,
@@ -118,12 +119,11 @@ export function AcceptanceGoalTasks({
               <span className="acc-task-static">
                 <span className="acc-id">#{reference.number}</span>
               </span>
-              <span
-                className="acc-task-state"
-                title={read?.kind === 'unavailable' ? read.error : undefined}
-              >
-                状态未知
-              </span>
+              {read?.kind === 'unavailable' ? (
+                <ErrorDetails className="acc-task-state" summary="状态未知" detail={read.error} />
+              ) : (
+                <span className="acc-task-state">状态未知</span>
+              )}
               {markers}
               {row?.note && (
                 <span className="acc-task-note readonly" title="状态读不到 · 已存备注只读">

@@ -1,106 +1,90 @@
-import { useMemo } from 'react'
+import { useEffect } from 'react'
 import { useAppStore } from '@/store'
-import { branchName } from '@/lib/git-utils'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { worktreeMatchesHost } from '@/store/slices/worktrees/listing/worktree-host-ownership'
-import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
-import type { Worktree } from '../../../shared/worktree/types'
-import {
-  readWallReadings,
-  selectWallVersion,
-  type WallVersionSelection
-} from './wall-readings-load'
-import type { WallProject } from './workbench-wall-projects'
-import { wallProjectVersionRows } from './workbench-wall-projects'
+import type { Repo } from '../../../shared/repo-types'
+import { resolveProjectSource } from './project-source-resolution'
+import { useVersionCatalogForRepo } from './use-version-catalog'
+import { readWallReadings } from './wall-readings-load'
 import type { WallCardReadings } from './wall-card-readings'
-import { CHARTER_BRANCH } from './project-charter'
-import { createWallCardCache, loadWallCardRead, useWallCardReads } from './use-wall-card-reads'
+import { versionCatalogSourceKey, versionCatalogFingerprint } from './version-catalog-source'
 import { type useWallRefresh, wallReadRevision } from './wall-refresh'
+import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
-const cache = createWallCardCache<WallCardReadings>()
-const versions = createWallCardCache<WallVersionSelection>()
+const progressReads = new PrioritySemaphore(3)
+const displaySnapshots = createSnapshotCache<{
+  key: string
+  readings: WallCardReadings
+  forcedRevision: number
+} | null>(() => null)
 
-function useWallVersionReads(
-  projects: readonly WallProject[],
-  refresh: ReturnType<typeof useWallRefresh>
-) {
-  const visible = useAppStore((s) => s.worktreesByRepo)
-  const detected = useAppStore((s) => s.detectedWorktreesByRepo)
-  const reads = useMemo(
-    () =>
-      projects.map((project) => {
-        const rows = wallProjectVersionRows(project)
-        const trees = new Map<string, Worktree>()
-        for (const repo of rows) {
-          for (const tree of [
-            ...(visible[repo.id] ?? []),
-            ...(detected[repo.id]?.worktrees ?? [])
-          ]) {
-            if (worktreeMatchesHost(tree, getRepoExecutionHostId(repo))) {
-              const key = JSON.stringify([
-                getWorktreeHostIdentity(tree),
-                tree.runtimeOwnerEnvironmentId
-              ])
-              trees.set(key, tree)
-            }
-          }
-        }
-        const worktrees = [...trees.values()].filter(
-          (tree) =>
-            tree.isMainWorktree ||
-            tree.workbenchVersionBinding ||
-            branchName(tree.branch) !== CHARTER_BRANCH
-        )
-        return {
-          projectKey: project.key,
-          sourceKey: JSON.stringify(
-            rows.map((row) => [
-              getRepoExecutionHostId(row),
-              row.id,
-              row.path,
-              row.kind,
-              row.connectionId,
-              row.worktreeBaseRef,
-              row.gitRemoteIdentity,
-              row.issueSourcePreference,
-              row.upstream
-            ])
-          ),
-          ready: project.rows[0].kind === 'folder' || worktrees.length > 0,
-          revision: Math.max(refresh.visitRevision, wallReadRevision(refresh, rows)),
-          load: () => selectWallVersion(project, worktrees)
-        }
-      }),
-    [projects, visible, detected, refresh]
+export function useWallReadings(repo: Repo, refresh: ReturnType<typeof useWallRefresh>) {
+  const source = useAppStore((state) => resolveProjectSource(state, repo))
+  const sourceKey = source ? versionCatalogSourceKey([source]) : null
+  const revision = Math.max(
+    refresh.visitRevision,
+    wallReadRevision(refresh, source ? [source] : [repo])
   )
-  return reads
-}
-
-export function useWallReadings(
-  projects: readonly WallProject[],
-  refresh: ReturnType<typeof useWallRefresh>
-) {
-  const versionsToRead = useWallVersionReads(projects, refresh)
-  const reads = useMemo(
-    () =>
-      versionsToRead.map((source) => ({
-        ...source,
-        forceAtRevision: refresh.allRevision,
-        load: async (force: boolean) => {
-          const selection = await loadWallCardRead(versions(source.sourceKey), source)
-          if (!selection) {
-            throw new Error('未读到项目版本目录')
-          }
-          return readWallReadings(selection, force)
-        }
-      })),
-    [versionsToRead, refresh.allRevision]
+  const catalog = useVersionCatalogForRepo(
+    source?.kind === 'folder' ? null : (source?.id ?? null),
+    source ? getRepoExecutionHostId(source) : null,
+    revision
   )
-  const result = useWallCardReads(reads, cache)
-  for (const source of reads) {
-    if (!source.ready && !result.values[source.projectKey]) {
-      result.values[source.projectKey] = { kind: 'unknown', reason: '工作区尚未就绪' }
+  const snapshot = displaySnapshots(sourceKey ?? '')
+  const result = useSnapshotCache(snapshot)
+  const key = JSON.stringify([
+    sourceKey,
+    catalog.catalog,
+    catalog.scope,
+    versionCatalogFingerprint(catalog.worktrees),
+    catalog.loading,
+    catalog.error,
+    catalog.materialReady,
+    catalog.materialError,
+    revision
+  ])
+  useEffect(() => {
+    if (!source || source.kind === 'folder' || catalog.loading) {
+      return
     }
+    let cancelled = false
+    void (async () => {
+      const release = await progressReads.acquire(0)
+      try {
+        return cancelled
+          ? null
+          : await readWallReadings(
+              catalog,
+              refresh.allRevision > (snapshot.read()?.forcedRevision ?? 0)
+            )
+      } finally {
+        release()
+      }
+    })().then((readings) => {
+      if (!cancelled && readings) {
+        snapshot.publish({ key, readings, forcedRevision: refresh.allRevision })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+    // The key includes catalog content; row reference churn must not refetch provider facts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  const readings: WallCardReadings =
+    repo.kind === 'folder'
+      ? { kind: 'empty' }
+      : !source
+        ? { kind: 'unknown', reason: '项目来源尚未就绪，请检查主机连接后刷新。' }
+        : (result?.readings ?? { kind: 'loading' })
+  return {
+    source,
+    readings,
+    refreshing: !!source && source.kind !== 'folder' && (catalog.loading || result?.key !== key),
+    failed:
+      !!catalog.error ||
+      !!catalog.materialError ||
+      readings.kind === 'unknown' ||
+      (catalog.catalog?.problems.length ?? 0) > 0
   }
-  return result
 }

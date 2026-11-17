@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { notifyWorkbenchError } from './error-feedback'
+import { useCallback, useRef, useState } from 'react'
 import { FileInput, LoaderCircle, Plus, RefreshCw, X } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Input } from '@/components/ui/input'
@@ -10,25 +10,17 @@ import { WorkbenchWallGuide } from './WorkbenchScreenGuide'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import {
-  closeProjectPage,
-  openAddProject,
-  openProjectOverview,
-  openVersionOverview
-} from './project-page-state'
-import { resolveProjectSource } from './project-source-resolution'
+import { closeProjectPage, openAddProject } from './project-page-state'
 import { continueProjectWork } from './continue-project-work'
 import { isWallRowVisible, wallProjectVisibility } from './workbench-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
 import { useWallCharters } from './use-wall-charters'
 import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
-import { ProjectWallCard, type WallCardView } from './ProjectWallCard'
-import { useWallReadings } from './use-wall-readings'
+import type { WallCardView } from './ProjectWallCard'
+import { LiveProjectWallCard, type WallReadStatus } from './LiveProjectWallCard'
 import { useWallProjects } from './use-wall-projects'
 import { refreshProjectWall, useWallRefresh } from './wall-refresh'
 import { useWallNativeProjectActions } from './wall-native-project-actions'
-import { openVersionTasks } from './version-nav-actions'
 import './workbench-wall.css'
 import './project-settings.css'
 
@@ -53,8 +45,21 @@ export function ProjectWallPage() {
   const hasProjects = repos.some(isWallRowVisible)
   const projects = useWallProjects({ location, type })
   const charters = useWallCharters(projects, refresh)
-  const readings = useWallReadings(projects, refresh)
-  const cardReadFailed = charters.failed || readings.failed
+  const [readStatuses, setReadStatuses] = useState<Record<string, WallReadStatus>>({})
+  const onReadStatus = useCallback((key: string, status: WallReadStatus | null) => {
+    setReadStatuses((current) => {
+      const next = { ...current }
+      if (status) {
+        next[key] = status
+      } else {
+        delete next[key]
+      }
+      return next
+    })
+  }, [])
+  const cardReadFailed =
+    charters.failed || Object.values(readStatuses).some((status) => status.failed)
+  const readingsRefreshing = Object.values(readStatuses).some((status) => status.refreshing)
   const cards: WallCardView[] = projects.map((project) => {
     const charter = charters.values[project.key] ?? null
     return {
@@ -62,7 +67,7 @@ export function ProjectWallPage() {
       primaryRepo: project.rows[0],
       charter,
       displayName: project.group?.name || charter?.name?.trim() || project.name,
-      readings: readings.values[project.key] ?? { kind: 'loading' },
+      readings: { kind: 'loading' },
       hostTags: project.hostIds.map((hostId) => ({
         ...buildWallHostFact(hostId, environments, statuses, sshLabels),
         hostId,
@@ -185,7 +190,7 @@ export function ProjectWallPage() {
                     ? '部分主机未更新'
                     : cardReadFailed
                       ? '部分墙卡信息未更新'
-                      : updatedAt && (charters.refreshing || readings.refreshing)
+                      : updatedAt && (charters.refreshing || readingsRefreshing)
                         ? '读取墙卡信息…'
                         : updatedAt
                           ? `目录刷新于 ${updatedAt}`
@@ -234,9 +239,12 @@ export function ProjectWallPage() {
                     </h2>
                     <div className="wall-grid">
                       {items.map((card) => (
-                        <ProjectWallCard
+                        <LiveProjectWallCard
                           key={card.project.key}
                           card={card}
+                          refresh={refresh}
+                          leave={leave}
+                          onReadStatus={onReadStatus}
                           switching={switching === card.project.key}
                           configured={selectedCard?.project.key === card.project.key}
                           nativeMenu={native.projectMenu(card.project)}
@@ -253,49 +261,21 @@ export function ProjectWallPage() {
                             leave(() => {
                               setSwitching(card.project.key)
                               void continueProjectWork(repo)
-                                .catch((error) => toast.error(String(error)))
+                                .catch((error) =>
+                                  notifyWorkbenchError(
+                                    '无法打开项目',
+                                    error,
+                                    '检查项目来源和主机连接后重试。'
+                                  )
+                                )
                                 .finally(() => setSwitching(null))
                             })
                           }
-                          onOverview={() => leave(() => openProjectOverview(card.primaryRepo))}
                           onConfigure={(button) =>
                             leave(() => {
                               trigger.current = button
                               setSelected(card.project.key)
                               setDirty(false)
-                            })
-                          }
-                          onStage={(stage) =>
-                            leave(() => {
-                              if (card.readings.kind !== 'version') {
-                                return
-                              }
-                              const { catalog, version } = card.readings
-                              if (stage === 'tasks') {
-                                void openVersionTasks({
-                                  catalog,
-                                  version,
-                                  entry:
-                                    catalog.catalog?.entries.find(
-                                      (entry) => entry.version === version
-                                    ) ?? null
-                                }).catch((error) => toast.error(String(error)))
-                              } else {
-                                const source = resolveProjectSource(
-                                  useAppStore.getState(),
-                                  card.primaryRepo
-                                )
-                                if (!source) {
-                                  toast.error('项目来源尚未就绪')
-                                  return
-                                }
-                                openVersionOverview({
-                                  repoId: source.id,
-                                  hostId: getRepoExecutionHostId(source),
-                                  version,
-                                  workflow: stage
-                                })
-                              }
                             })
                           }
                         />

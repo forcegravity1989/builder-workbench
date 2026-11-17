@@ -254,14 +254,17 @@ export function ContextualTourOverlay(): JSX.Element | null {
     if (!activeTourId || !renderState || markedTourIdRef.current === activeTourId) {
       return
     }
-    if (getContextualTour(activeTourId).markSeenOn === 'dismiss') {
+    if (
+      getContextualTour(activeTourId).markSeenOn === 'dismiss' ||
+      (activeTourId === 'tasks' && activeTourSource === 'workbench_tasks_visible')
+    ) {
       return
     }
     // Why: a tour is considered seen only after its first measured target
     // paints, so missing or removed surfaces can retry on a later visit.
     markedTourIdRef.current = activeTourId
     markContextualToursSeen([activeTourId])
-  }, [activeTourId, markContextualToursSeen, renderState])
+  }, [activeTourId, activeTourSource, markContextualToursSeen, renderState])
 
   useEffect(() => {
     if (!activeTourId || !renderState || telemetryTourIdRef.current === activeTourId) {

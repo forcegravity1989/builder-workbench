@@ -1,11 +1,11 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { MessageSquarePlus } from 'lucide-react'
 import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
-import { toast } from 'sonner'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { useVersionMembership } from '../version-cycle/use-version-membership'
 import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { openArchivePrPage } from '../version-cycle/open-archive-pr'
-import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
+import { notifyTrunkUpdate } from '../version-cycle/trunk-update-port'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import { useReleaseStatus } from '../version-cycle/use-release-status'
 import { togglePlanChat } from '../plan-column-resize'
@@ -230,7 +230,7 @@ export function AcceptanceBoardContent({
         onSessionToggle={onSessionToggle}
         onRefresh={() =>
           void act(async () => {
-            toast.message(trunkUpdateNotice(await context.updateCode()))
+            notifyTrunkUpdate(await context.updateCode())
             await board.refreshData()
             await prStatus.refresh()
           })
@@ -254,7 +254,7 @@ export function AcceptanceBoardContent({
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
-            toast.message(trunkUpdateNotice(await context.updateCode()))
+            notifyTrunkUpdate(await context.updateCode())
             await board.refreshData()
             await prStatus.refresh()
           })
@@ -298,7 +298,11 @@ export function AcceptanceBoardContent({
         onRemoteDeleted={board.useRemoteDeletion}
       />
       <div className="acc-body">
-        <AcceptanceJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
+        <AcceptanceJourneyNav
+          active={spy.activeSection}
+          readyToReview={Boolean(plan && document) && !board.readOnly}
+          onNavigate={spy.navigate}
+        />
         {annotations.annotating && (
           <div className="acc-annotate-banner" role="status">
             批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见
@@ -406,7 +410,7 @@ export function AcceptanceBoardContent({
                 formatBoardAnnotationsAsMarkdown(annotations.annotations)
               )
             }
-            onCopyError={(message) => board.setError(`复制板面批注失败：${message}`)}
+            onCopyError={(error) => notifyWorkbenchError('复制板面批注失败', error, '可重新复制。')}
             onSent={() => {
               // onPromptDelivered only fires on a delivered send, so clearing here
               // never drops notes on failure/Esc (same option-A decision as the
