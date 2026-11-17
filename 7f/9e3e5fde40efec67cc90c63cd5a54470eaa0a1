@@ -1,0 +1,111 @@
+docs/04-design-system/guidance.md
+  s_ed1a657828d194::t_e9ac892e0e6d4e 85
+  s_ed1a657828d194::t_1a8d73298ae169 89
+docs/05-features/task-management/intent.md
+  s_ed1a657828d194::t_487780b10dd777 1-28
+docs/architecture.md
+  s_ed1a657828d194::t_b174895ac87ae0 81
+  s_ed1a657828d194::t_e3a3a581d01ef4 80
+src/renderer/src/components/link-actions/link-action-request.ts
+  s_ed1a657828d194::t_daa0b2a49bedd8 15
+docs/05-features/README.md
+  s_ed1a657828d194::t_0175457a99993e 18
+src/renderer/src/workbench/task-item-link-routing.ts
+  s_ed1a657828d194::t_ed911b176db0ef 1,6-7,13-51
+  s_ed1a657828d194::t_995003bda368c5 2-5,8-12,52
+src/shared/task-item-link.test.ts
+  s_ed1a657828d194::t_97a1363e22ccc5 1,20-85,130-130
+  s_ed1a657828d194::t_bb96128378c205 2-19
+  s_ed1a657828d194::t_a4c266e0838942 86-86,98-100,104-114,119-121
+  h_d0d195a8c70989 87-97,101-103,115-118,122-129
+  s_ed1a657828d194::t_f7b5b50d0709ec 131-133
+  h_d0d195a8c70989 134-163
+src/renderer/src/components/terminal-pane/terminal-url-link-hit-testing.ts
+  s_ed1a657828d194::t_ae7d41ca5895bb 91
+  s_ed1a657828d194::t_bcf26e9fed763f 17
+  s_ed1a657828d194::t_3dfbd979703238 75,78-79
+src/renderer/src/components/link-actions/LinkActionPopover.tsx
+  s_ed1a657828d194::t_be7d404b469e39 198-205
+  s_ed1a657828d194::t_a633ae9fab4a07 2
+  s_ed1a657828d194::t_156d7709f66d3b 41,43
+  s_ed1a657828d194::t_adb0a9c61d269a 47-49
+  s_ed1a657828d194::t_ea8084ecd8185c 22,27
+src/shared/codehub-api.ts
+  s_ed1a657828d194::t_9e40fc8fdf1196 81-85
+src/main/codehub/service.ts
+  s_ed1a657828d194::t_7fdae4ab21fef4 143-173
+  s_ed1a657828d194::t_c78d9ccb8b5a9b 14-15
+src/main/codehub/service.test.ts
+  s_ed1a657828d194::t_a0ea814dc2f419 48,54-95,102-111
+  s_ed1a657828d194::t_2ac1da478df46d 96-98
+  h_d0d195a8c70989 99-101
+  s_ed1a657828d194::t_e4e1194eab8f51 112
+docs/05-features/task-management/spec.md
+  s_ed1a657828d194::t_98b2a253844fe9 23-24
+  s_ed1a657828d194::t_443e969373254a 14
+  s_ed1a657828d194::t_10623acc6ddf3d 1-13,15-22,25-33,35-46
+  s_ed1a657828d194::t_6088a845d9d652 34
+.github/workflows/pr.yml
+  s_ed1a657828d194::t_6e26cef2cf1c87 262-269
+src/shared/task-item-link.ts
+  s_ed1a657828d194::t_b7552a94ee709c 90-98,102-102
+  s_ed1a657828d194::t_a16594cccce5cc 47
+  s_ed1a657828d194::t_57a07270a0436c 78-80
+  s_ed1a657828d194::t_3665bfd80c2f69 1-2
+  s_ed1a657828d194::t_b7b4a3482317c5 3-15,17-46,48-77,81-83,86-89,108-113
+  s_ed1a657828d194::t_37154a1ebd5a89 84-85
+  h_d0d195a8c70989 16,99-101,103-107
+  s_ed1a657828d194::t_9f0b40982c7a83 114-116
+docs/05-features/task-management/STATUS.md
+  s_ed1a657828d194::t_0566355d658d46 7-11,13-14
+  s_ed1a657828d194::t_2943542dddae4e 5
+  s_ed1a657828d194::t_7cc95d6c504505 12
+  s_ed1a657828d194::t_cd496d7b698cbc 1-4,6
+src/renderer/src/workbench/task-item-link-navigation.ts
+  s_ed1a657828d194::t_4970a2290b1232 16-20,75-76,82-85,92,101-102,105-106,108,111-113
+  s_ed1a657828d194::t_9e02a8d624b09d 12-13
+  s_ed1a657828d194::t_9cc54792f34b14 1-11,14-15,103,114-134
+  s_ed1a657828d194::t_66a36d7a703457 21-46,54-74
+  s_ed1a657828d194::t_d94ae9e144625a 86-91,93-100,104,107,109-110
+  h_d0d195a8c70989 47-53,77-81
+  s_ed1a657828d194::t_dfa9f72f030b6a 135-137
+  h_d0d195a8c70989 138-143
+docs/05-features/task-management/prototype.html
+  s_ed1a657828d194::t_d5743bf16624ba 1-22
+src/renderer/src/lib/http-link-destinations.ts
+  s_ed1a657828d194::t_4fee5529c61ea6 114-120
+  s_ed1a657828d194::t_7a13030d42fa6a 16,19-31,35
+  s_ed1a657828d194::t_07c18e4dc5e747 11
+  s_ed1a657828d194::t_7676d4e4bc26f8 3-6,17-18
+  s_ed1a657828d194::t_2575f16c969d8a 67-69
+  s_ed1a657828d194::t_436ecd6e646501 85-90,92-93,95-97
+src/renderer/src/components/terminal-pane/terminal-link-action-request.ts
+  s_ed1a657828d194::t_98fa1af3508ab1 35
+src/renderer/src/components/native-chat/native-chat-web-link-actions.ts
+  s_ed1a657828d194::t_8ce78ec32064ea 72
+  s_ed1a657828d194::t_86b4d65abb97ff 42
+  s_ed1a657828d194::t_79be76427a0c5f 9
+  s_ed1a657828d194::t_7a4089cb7fa5fd 62
+  h_d0d195a8c70989 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "7f9e3e5fde40efec67cc90c63cd5a54470eaa0a1",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_ed1a657828d194": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e17db41-203a-43d3-b383-1a8ab2ef4abd",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
