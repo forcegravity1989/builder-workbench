@@ -14,6 +14,52 @@
   ],
   "features": [
     {
+      "id": "0f97af1f-b228-4d78-9744-5f22c313e504",
+      "title": "团队多人协作",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "ff1985ed-5580-40f7-b913-057961d5b70a",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-11-16T00:00",
+            "end": "2026-11-21T00:00"
+          }
+        },
+        {
+          "id": "3eaeeae2-ea5b-499a-a409-b1e0972b13e4",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-23T00:00",
+            "end": "2026-11-29T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "70e7a7ce-7c32-41a0-8088-7a7d92a2faf3",
+      "title": "会议协作",
+      "owner": "kanadead",
+      "deliveries": [
+        {
+          "id": "db070ece-d2d7-435e-803d-8450b8006492",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-11-16T00:00",
+            "end": "2026-11-21T00:00"
+          }
+        },
+        {
+          "id": "53b7c831-c4a7-428e-b2e7-5e42d5636f64",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-23T00:00",
+            "end": "2026-11-29T00:00"
+          }
+        }
+      ]
+    },
+    {
       "id": "d2202d36-55fc-4ff3-82c9-4b73b0cc4909",
       "title": "项目墙",
       "owner": "yuzhup",
@@ -217,6 +263,14 @@
       }
     },
     {
+      "version": "v1.2",
+      "cycleId": "a9d0f078-d712-4ef0-b013-7c389570b2e3",
+      "timeWindow": {
+        "start": "2026-11-23",
+        "end": "2026-11-27"
+      }
+    },
+    {
       "version": "v0.4",
       "cycleId": "682dd484-2fe5-4409-a814-43011b1c4a08"
     },
@@ -227,14 +281,6 @@
     {
       "version": "v0.6",
       "cycleId": "d54e65f2-a5e9-45f5-8ffe-04de112ca9d8"
-    },
-    {
-      "version": "v1.2",
-      "cycleId": "a9d0f078-d712-4ef0-b013-7c389570b2e3",
-      "timeWindow": {
-        "start": "2026-11-23",
-        "end": "2026-11-27"
-      }
     }
   ]
 }
