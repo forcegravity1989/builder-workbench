@@ -150,6 +150,9 @@ export function PlanningGoals({
                 )}
               </BoardIconButton>
             )}
+            <BoardIconButton label="添加目标" disabled={disabled} onClick={addGoal}>
+              <Plus size={16} aria-hidden="true" />
+            </BoardIconButton>
           </div>
         )}
       </div>
@@ -199,9 +202,6 @@ export function PlanningGoals({
             onTask={onTask}
           />
           <div className="g3-goals-bottom">
-            <BoardIconButton label="添加目标" onClick={addGoal}>
-              <Plus size={16} aria-hidden="true" />
-            </BoardIconButton>
             <span>与计划助手一起明确目标、拆解 Issue。</span>
           </div>
         </fieldset>

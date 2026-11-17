@@ -23,21 +23,14 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
     <button type="button" class="btn btn-ghost">View logs</button>
     <button type="button" class="btn btn-secondary" disabled>Disabled</button>
   </div>
-  <div class="demo-head">Page header · 项目墙页头</div>
-  <div class="row" lang="zh">
-    <button type="button" class="btn btn-secondary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"></path></svg>添加项目</button>
+  <div class="demo-head">Icon buttons — 28px, tooltip names them · 图标按钮:28px,以 tooltip 命名</div>
+  <div class="row">
+    <button type="button" class="btn btn-primary btn-icon" aria-label="New build"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button>
+    <button type="button" class="btn btn-secondary btn-icon" aria-label="Filters"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg></button>
+    <button type="button" class="btn btn-ghost btn-icon" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
   </div>
-  <div class="demo-head">List end · 目标列表末尾</div>
-  <div lang="zh">
-    <ul>
-      <li>缩短项目接入时间</li>
-      <li>补齐版本验收证据</li>
-    </ul>
-    <button type="button" class="btn btn-ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"></path></svg>添加目标</button>
-  </div>
-  <p class="note" lang="zh">页头新增用带文字的按钮，集合内新增可用轻量的文字行。纯图标只用于容易识别的次要动作，参见 <a href="../primitives/Button.md#the-consumer-provides">Button 与 Tooltip 用法</a>。</p>
   <div class="demo-head">Full-width · 通栏按钮</div>
-  <button type="button" class="btn btn-primary btn-block"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"></path></svg>Create project</button>
+  <button type="button" class="btn btn-primary btn-block">Create project</button>
   <div class="demo-head">Tags · 标签</div>
   <div class="row">
     <span class="tag tag-accent">Accent</span>
@@ -59,7 +52,7 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
   </div>
   <div class="demo-head">Chinese labels · 中文示例</div>
   <div class="row" lang="zh">
-    <button type="button" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"></path></svg>新建构建</button>
+    <button type="button" class="btn btn-primary">新建构建</button>
     <button type="button" class="btn btn-secondary">预览</button>
     <button type="button" class="btn btn-ghost">查看日志</button>
     <span class="tag tag-success">已通过</span>

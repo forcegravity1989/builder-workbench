@@ -88,28 +88,27 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 
 ## 按钮与新增入口
 
-**先保证动作能被找到，再决定用多轻的样式。** 本节适用于 BW 叠层及其原型；继续复用 Orca 的 Button、Tooltip、DropdownMenu 和现有 token。
+**优先用易认的图标，把按钮放在动作对象旁边。** 用户应能凭图标、相邻标题或行内容判断点下去会做什么。BW 叠层与原型复用 Orca 的 Button、Tooltip、DropdownMenu 和现有 token。
 
 | 场景 | 用法 |
 |---|---|
-| 页面或区块的主要动作、用户要主动找的业务入口 | 默认可见，写清动作和对象。新增用统一的 `Plus` 加文字，如「+ 添加项目」。页级动作放页头工具栏，区块动作紧邻标题；同组动作相邻，位置稳定。 |
-| 在列表、看板或表格里追加一项 | 入口跟着所属集合，放列表末尾的「+ 添加目标」行，或放可持续找到的区块头。两个位置择一；列表很长或入口可能被滚出视口时，优先放区块头。 |
-| 空态或前提未满足 | 空态直接给出可执行的第一个动作。需要先进入规划、选项目或配置时，显示实际可执行的前置动作，并说明达成前提后能做什么。区分真正为空、筛选无结果和读取失败，按实际情况给添加、清筛选或重试。 |
-| 重复行、卡片和紧凑工具栏的次要动作 | 在对象明确、图标含义常见、动作无需首次发现时，可用纯图标，例如复制、刷新或关闭。卡片总览、配置仍放在卡片右上角，按本节判断是否带文字。文字重复且挤占内容的行级业务动作可收进对象自己的「更多操作」，菜单项写明动作。 |
-| 提交、取消或没有合适图标的动作 | 可用纯文字，如「保存草稿」「取消」。只有图标能帮助扫读、区分或理解动作时才配图标。仅打开菜单或表单时，标签应让人知道接下来能做什么。 |
+| 页面、区块或集合的新增入口 | 归属清楚时直接用 `Plus`。页级动作用稳定的页头位置，如「项目墙」里的 `+`。区块级动作放在标题同一行的固定操作位，如「本版目标」的 `+`。列表末尾也可以承载 `+`，前提是它紧跟最后一项，能看出是给哪组内容加一项。 |
+| 同屏的新增动作容易混淆 | 用「对象或动作图形 + 加号」组成一个图标，优先用现有 Lucide 图标，如 `CalendarPlus` 表示新增一段排期。对象图形从当前界面选，加号保持清楚，整个组合与同组按钮共用命中区和层级。 |
+| 图标与上下文仍不清楚 | 紧凑处可用一至两个字表达动作，例如「重试」。先核对标签能不能说清点下去会做什么，以及它和同组按钮是否协调。无法简写的动作放到有空间的区域，次要动作也可用有明确名称的菜单项承载。 |
+| 空态或前提未满足 | 让用户直接看到第一步。需要先进入规划、选项目或配置时，显示实际可执行的前置动作。空态或弹窗有空间时，可用明确的完整文字。区分真正为空、筛选无结果和读取失败，提供对应操作。 |
+| 提交、取消、删除确认 | 沿用现有按钮层级和动作文字，如「保存草稿」「取消」「删除工作树」。完整文字用于讲清结果。 |
 
-- **标签与强调分开。** 带文字的按钮也可以很轻。每个流程只有一个实底主要动作（`default`）；独立工具栏动作可用 `outline`，列表新增行可用轻量样式。需要紧凑时先把次要动作收进菜单，再调整布局；关键入口的文字不能在窄窗退成纯图标或被截到看不出对象。
-- **区分发现与编辑权限。** 首次新增或唯一的新增入口在动作可用时常驻，不能只在鼠标悬停、键盘聚焦或 Tooltip 中出现。编辑态专属动作可以继续留在编辑态，进入编辑的方式要明确，进入后主要新增动作直接可见。仅补充性的行内控件可随悬停出现，聚焦该控件或其所在行时也要显示，并有无需悬停的操作路径。
-- **让整个按钮可操作。** 按钮用原生语义，可用 Tab 或所在组件的键盘导航聚焦，焦点可见，Enter 和 Space 可触发。纯图标按钮用 `aria-label` 或 `aria-labelledby` 明确动作，在有多个相同动作时提供对象上下文，同时用 Tooltip 在悬停和聚焦时提示名称；可见文字按钮用文字命名，装饰图标对辅助技术隐藏。复用原语尺寸，密集处的指针命中区至少 24 × 24 CSS px，不把图标尺寸当成点击范围。
+- 主要入口在可操作时保持可见，Tooltip 使用简短的动作名称。行或区块已经说明对象时，提示中无需重复。编辑态专属动作继续随编辑态出现，进入编辑的入口需要清楚。可随悬停出现的补充动作也要能通过键盘找到和触发。
+- 同一区域里重复出现的标题操作使用同宽的操作位，图标和标题垂直居中。标题长短、换行或截断都不推动操作位横向移动。窄窗维持按钮与所属区块的关系，同组操作保持一致的尺寸与样式。每个流程只有一个实底主动作。
+- 纯图标按钮用 `aria-label` 或 `aria-labelledby` 提供完整动作名称，重复动作加上必要的对象上下文。短标签无法表达全义时，可访问名称包含可见短标签及完整动作。Tooltip 在悬停和聚焦时显示。采用原生按钮语义，键盘可聚焦、有可见焦点，Enter 和 Space 可触发。按钮命中区至少 24 × 24 CSS px。
 
-**走查办法。** 从用户任务出发检查空态、有内容和窄窗；不移动鼠标先找入口，再用键盘走一遍。确认入口文字能说明新增到哪里，按钮可操作，触发后能定位到新对象或填写位置。存量入口按本节走查。实际改变入口时，同批更新所属特性规格，并核对[引导与旅程矩阵](guidance.md)中的相关说明、演示与定位。
+**走查办法。** 隐去 Tooltip，检查空态、有内容和窄窗。用户能否从控件和附近内容说出「做什么、对谁做」，以及同时看到多个新增入口时能否区分。用长短不同的标题检查操作列是否对齐，在实际按钮尺寸下检查组合图标的两部分是否都能辨认。再用键盘检查焦点、提示和触发结果。实际改变入口时，同批更新所属特性规格，并核对[引导与旅程矩阵](guidance.md)中的相关说明、演示与定位。
 
 ### 设计依据
 
-- [Wiedenbeck 的按钮实验](https://www.tandfonline.com/doi/abs/10.1080/014492999119129)比较了纯文字、纯图标和图标配文字；新手对组合方案的易用性评价更好。对 BW 的启发是：加号帮助扫读，名称说明添加的对象。
-- [IBM Carbon 按钮规范](https://www.carbondesignsystem.com/building-blocks/core/components/button/guidelines)以动作标签表达结果，把纯图标限定在易识别或紧凑的场景；[GOV.UK 按钮规范](https://design-system.service.gov.uk/components/button/)用明确的动作文字区分继续、保存与提交。这支持 BW 先写清动作，再选择要不要加图标。
-- [GitHub Projects](https://docs.github.com/en/issues/planning-and-tracking-with-projects/managing-items-in-your-project/adding-items-to-your-project)在列表中提供新增行，[Notion](https://www.notion.com/help/intro-to-databases)同时提供页头和集合内新增，[Jira](https://support.atlassian.com/jira-software-cloud/docs/create-a-work-item-and-a-subtask/)同时提供全局创建和上下文创建。固定入口便于首次寻找，集合内入口便于连续添加且归属清楚。[Linear](https://linear.app/changelog/2025-01-23-pull-request-reviews)也使用分组或看板列中的加号；BW 采用它就近操作的思路，主要新增仍显示对象名称。
-- 键盘操作与可访问名称依据 [WAI Button Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)；BW 按钮命中区以 [WCAG 2.2 目标尺寸](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)的 24 CSS px 为底线，沿用 Orca 已有尺寸。
+- [IBM Carbon 按钮规范](https://www.carbondesignsystem.com/building-blocks/core/components/button/guidelines)说明纯图标适用于易识别或紧凑的场景。[Wiedenbeck 的按钮实验](https://www.tandfonline.com/doi/abs/10.1080/014492999119129)中，新手对图标配文字的易用性评价更好。BW 优先让摆放位置和相邻内容提供语义，在图标与上下文仍不足时补文字。
+- [GitHub Projects](https://docs.github.com/en/issues/planning-and-tracking-with-projects/managing-items-in-your-project/adding-items-to-your-project)和 [Notion](https://www.notion.com/help/intro-to-databases)提供集合内新增，[Linear](https://linear.app/changelog/2025-01-23-pull-request-reviews)使用列表分组或看板列里的加号，[Jira](https://support.atlassian.com/jira-software-cloud/docs/create-a-work-item-and-a-subtask/)同时提供全局和上下文创建。BW 按新增对象的作用范围选位置。
+- 键盘操作与可访问名称依据 [WAI Button Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)；24 CSS px 命中区参考 [WCAG 2.2 目标尺寸](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)，沿用 Orca 已有尺寸。
 
 ## 图标
 

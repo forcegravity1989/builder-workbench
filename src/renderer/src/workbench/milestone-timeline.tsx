@@ -3,7 +3,7 @@ import { MilestoneDayAxis, MilestoneDayGrid, MilestoneRangeToolbar } from './mil
 import { useRef, useState } from 'react'
 import { useMilestoneViewport, type MilestoneLocation } from './use-milestone-viewport'
 export type { MilestoneLocation } from './use-milestone-viewport'
-import { X, Wrench } from 'lucide-react'
+import { CalendarPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { MilestoneField } from './milestone-field'
 import { MilestoneActualBars } from './milestone-actual-bars'
@@ -122,9 +122,7 @@ export function MilestoneTimeline(props: Props) {
     if (
       !props.rangeOnly ||
       !f.title.trim() ||
-      (editing &&
-        !showActual &&
-        (f.id === props.newFeature || props.pinnedFeatures.includes(f.id)))
+      (editing && !showActual && (f.id === props.newFeature || props.pinnedFeatures.includes(f.id)))
     ) {
       return true
     }
@@ -302,7 +300,7 @@ export function MilestoneTimeline(props: Props) {
                             disabled={!enabled}
                             onClick={() => arrange(f)}
                           >
-                            <Wrench size={14} />
+                            <CalendarPlus className="size-4" aria-hidden="true" />
                           </MilestoneIconButton>
                           <MilestoneIconButton
                             label="删除特性"
