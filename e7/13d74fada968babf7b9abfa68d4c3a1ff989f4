@@ -1,0 +1,25 @@
+src/shared/workbench/skill-package.json
+  s_4166fdbe03de01::t_6007943b31afb5 4-7,9
+src/cli/workbench-meeting/session.test.ts
+  s_4166fdbe03de01::t_c0133d95ce9397 1,7,14-17,82-94,112-130,168-213
+src/cli/workbench-meeting/session.ts
+  s_4166fdbe03de01::t_717d0de00a2559 1,32,67-70,77-80,92-110,112-117,124-127,141,202,207,234,247-262,300-314
+standard/references/meeting-transcript.md
+  s_4166fdbe03de01::t_0f190929c0d153 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "e713d74fada968babf7b9abfa68d4c3a1ff989f4",
+  "prompts": {},
+  "sessions": {
+    "s_4166fdbe03de01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6fc1634-1a24-4184-9d0f-19b58e003275",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

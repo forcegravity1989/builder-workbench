@@ -1,0 +1,31 @@
+src/shared/workbench/skill-package.json
+  s_4166fdbe03de01::t_4f13e1571a10b6 4-6,9
+electron.vite.config.ts
+  s_4166fdbe03de01::t_b0774243e21907 262
+src/cli/handlers/workbench-meeting.ts
+  s_4166fdbe03de01::t_723d91a1ae3e7f 8,12,30-32
+src/cli/workbench-meeting/api.ts
+  s_4166fdbe03de01::t_0d9fd2b01b2a35 40-48,140,152
+src/cli/workbench-meeting/session.test.ts
+  s_4166fdbe03de01::t_b04faf60410bca 1-3,5,7-11,14-19,21,25-26,31-50,53-68,77,79,81-85,92,94-123,125-167,169-172
+src/cli/workbench-meeting/session.ts
+  s_4166fdbe03de01::t_a9aa3cc2edb028 1-2,4-10,12-26,29-45,48-56,66-67,72-73,76,79,84-90,92-96,98-101,104-114,118-123,126-128,130-143,145,147-148,150,152-158,160-167,169-176,178-181,183-185,187-190,192-207,209-218,220-250,252-260,263,265-272
+standard/references/meeting-transcript.md
+  s_4166fdbe03de01::t_ffd531d33e430a 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "c1cb35cdb5d7ed75d7c7c39898c44eabdf13075d",
+  "prompts": {},
+  "sessions": {
+    "s_4166fdbe03de01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6fc1634-1a24-4184-9d0f-19b58e003275",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

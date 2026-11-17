@@ -1,0 +1,16 @@
+config/scripts/verify-skills-cli-runtime.cjs
+  h_a7e858313fdba5 24-39,52,55,58,67-77,107,115-119,157-158
+config/scripts/verify-skills-cli-runtime.test.mjs
+  h_a7e858313fdba5 197-246
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "abdd4f25a39ba5e4845dab747c39a62f248b6b83",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
