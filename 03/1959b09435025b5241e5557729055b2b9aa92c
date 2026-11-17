@@ -1,0 +1,21 @@
+src/renderer/src/components/automations/AutomationListFilterMenu.tsx
+  s_fb9a718d4eea7b::t_4dabf3c9b92905 2
+  s_fb9a718d4eea7b::t_a03a2c4d122728 280-331
+  s_fb9a718d4eea7b::t_7650972196cf48 159,161-166,176-186,189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "031959b09435025b5241e5557729055b2b9aa92c",
+  "prompts": {},
+  "sessions": {
+    "s_fb9a718d4eea7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c3443311-2919-4d34-97ac-e9cd71ea943f",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

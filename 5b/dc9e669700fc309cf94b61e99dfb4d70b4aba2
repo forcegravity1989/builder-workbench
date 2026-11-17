@@ -1,0 +1,33 @@
+src/renderer/src/components/automations/automation-host-picker-groups.test.ts
+  s_fb9a718d4eea7b::t_be0c2667acc468 8
+  s_fb9a718d4eea7b::t_809f69ed71321c 100-130
+src/renderer/src/components/automations/automation-host-picker-groups.ts
+  s_fb9a718d4eea7b::t_26e7fcb2e3ff60 53-73
+  s_fb9a718d4eea7b::t_39e7456fa7bd3f 52
+src/renderer/src/i18n/locales/en.json
+  s_fb9a718d4eea7b::t_1a84f2c9199e36 15951-15953
+src/renderer/src/components/automations/AutomationListFilterMenu.tsx
+  s_fb9a718d4eea7b::t_832b18dce89a92 177-179
+  s_fb9a718d4eea7b::t_dee185216d1fc6 170-173
+  s_fb9a718d4eea7b::t_b60ff04e236898 234-254,263-289
+  s_fb9a718d4eea7b::t_8fcc6d3224e83c 262
+  s_fb9a718d4eea7b::t_8fd284d16d0d6d 24
+  s_fb9a718d4eea7b::t_53b822345de52f 158-169,174-176,180
+  s_fb9a718d4eea7b::t_87a550fb8c4ff7 23,25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "5bdc9e669700fc309cf94b61e99dfb4d70b4aba2",
+  "prompts": {},
+  "sessions": {
+    "s_fb9a718d4eea7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c3443311-2919-4d34-97ac-e9cd71ea943f",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

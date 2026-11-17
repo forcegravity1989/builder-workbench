@@ -1,0 +1,465 @@
+.bw/planning/v0.9/data.json
+  s_e384c864471d37::t_3969d064d69aec 4,7,11-17,19-113
+.claude/skills/feature-metrics-inventory/references/asset-writing.md
+  s_e384c864471d37::t_99c8d208cdb272 21,26
+.claude/skills/feature-metrics-inventory/references/metric-catalog.md
+  s_e384c864471d37::t_5be1c2ede4e319 5
+.claude/skills/feature-metrics-inventory/references/metric-rules.md
+  s_e384c864471d37::t_80adb47a519fc9 7
+.claude/skills/project-knowledge/SKILL.md
+  s_e384c864471d37::t_643201ba896db1 13,33,35-36,38,53
+.claude/skills/project-knowledge/references/projects/bw-scan.json
+  s_e384c864471d37::t_c31064bee9c27d 3,113
+.claude/skills/project-knowledge/references/projects/bw.md
+  s_e384c864471d37::t_49d0906edc24c5 15,19-22,32
+.claude/skills/workbench-release/references/acceptance-report-spec.md
+  s_e384c864471d37::t_88ce98e748d28e 23
+.claude/skills/workbench-start/references/loop/bw-loop-report.md
+  s_e384c864471d37::t_809f479f50f999 19-20,24,40-43,59,91,99,107,115,150,155
+.gitattributes
+  s_e384c864471d37::t_7b5028793c8218 55
+.github/pull_request_template.md
+  s_e384c864471d37::t_3e4ba9fd9ef7da 3
+AGENTS.md
+  s_e384c864471d37::t_4e692a0bac905a 4,21-22,56,62,79,86,102
+CONTEXT.md
+  s_e384c864471d37::t_c88a6742849038 16-17,32-33,60-61,64,73-74,84,89-90,103-104,136-138
+config/scripts/generate-bundled-skill-guides.mjs
+  s_e384c864471d37::t_93415c12116fd1 52,273,305-307,313
+config/scripts/generate-bundled-skill-guides.test.mjs
+  s_e384c864471d37::t_3afed7a392edbe 88,95,205
+config/scripts/generate-workbench-skill-package.mjs
+  s_e384c864471d37::t_4a57785a500fa0 1-140
+config/tsconfig.cli.json
+  s_e384c864471d37::t_1c723e2fcdf864 3
+config/tsconfig.node.json
+  s_e384c864471d37::t_a0e5b4dd2fbbfc 3
+config/tsconfig.web.json
+  s_e384c864471d37::t_0ca106349dacf5 3
+config/vitest-count-baseline.txt
+  s_e384c864471d37::t_edbc4b2dae7257 5
+docs/01-principles/01-document-organization.md
+  s_e384c864471d37::t_8e2cdc711893a7 53
+docs/01-principles/02-working-backwards.md
+  s_e384c864471d37::t_5a5d11cdb75fc1 154
+docs/05-features/README.md
+  s_e384c864471d37::t_4bad039a790e92 1,3,7-31
+docs/05-features/codehub/STATUS.md
+  s_e384c864471d37::t_d6101c4860495d 13
+docs/05-features/codehub/intent.md
+  s_e384c864471d37::t_23505345c5a431 29,31,35
+docs/05-features/codehub/spec.md
+  s_e384c864471d37::t_1c1e7e6e5bd3da 9-10,81
+docs/05-features/overview-metrics/STATUS.md
+  s_e384c864471d37::t_83bed69ac1fac0 5,7,9,11,13,15,24,43
+docs/05-features/overview-metrics/design.md
+  s_e384c864471d37::t_1e1f67c96880c7 51
+docs/05-features/overview-metrics/intent.md
+  s_e384c864471d37::t_3313ed519de228 5,7,9,13,15,17,21-25,27,29,31
+docs/05-features/overview-metrics/milestone-design.md
+  s_e384c864471d37::t_c83faacc42d4ec 3,5,7,9,11,13,15,17,19,21-27,33,37,47,56,58,60
+docs/05-features/overview-metrics/prototype.html
+  s_e384c864471d37::t_32d20681bf1b6f 6,10,16
+docs/05-features/overview-metrics/prototype/build-milestones.cjs
+  s_e384c864471d37::t_155e8bcce682c6 53
+docs/05-features/overview-metrics/prototype/milestone-review-nav.jsx
+  s_e384c864471d37::t_32c61811d4a30d 1-61
+docs/05-features/overview-metrics/prototype/milestones-calendar.js
+  s_e384c864471d37::t_1241cb2e5d7328 15-20,93,98-107,109-115,117-118,121-135
+docs/05-features/overview-metrics/prototype/milestones-data.js
+  s_e384c864471d37::t_1ec59ae7d8eec4 1-10,12-15,17-21,23-32,35-40,45,51,57-63,69,71,74-90,92,94-160,162-163,165-168,170-196,198,204,218-225,273-283,292-294,317-319,321-322,326-330,370
+docs/05-features/overview-metrics/prototype/milestones-fields.jsx
+  s_e384c864471d37::t_6628ee89436183 11-13,15,19-21,47-48
+docs/05-features/overview-metrics/prototype/milestones-panels.jsx
+  s_e384c864471d37::t_5648cdfefaa4ea 2,33,36-56,67,150-151,167-168,172,194
+docs/05-features/overview-metrics/prototype/milestones-roadmap.jsx
+  s_e384c864471d37::t_531ad1bd32bbbd 1-390
+docs/05-features/overview-metrics/prototype/milestones-sdlc.js
+  s_e384c864471d37::t_64adaac6a2d0db 2,5,7-16,18-23,25-38,41,44,48-53,56-67,70-76,79-102,104-107,110-151,153,156-160,163-164,166
+docs/05-features/overview-metrics/prototype/milestones-timeline.jsx
+  s_e384c864471d37::t_ea033e4ac10caa 2,5-6,18,22-23,38-41,49,51-67,74-83,85,87-91,103,112-118,136-137,141-143,145,158-193,195,197-201,208,228,246,266-273,276-278,280-290,292,295-312,316-345,353-363,370,373-374,376,378-393,399,424,431-444,458-469,474-482,485-501,503-505,507-509,516-517,523,541,544-547,552-569,571-582,591-593,624-639,641,669,700,715,727-742,745-762,764,767,779,785
+docs/05-features/overview-metrics/prototype/milestones.css
+  s_e384c864471d37::t_f9844e6cb4b4a1 590,732-736,738,740-742,744,746,748,751,756-759,761,763,766-767,772,776,779-782,786-795,797-801,803-813,815-821,823,825-833,835-837,839-846,848-868,871-875,877,879-882,884-888,890-892,894-899,901-903,905-906,908-911,913-914,916,918-930,933-939,941,987,1018-1024,1060,1093,1100,1151,1230-1377
+docs/05-features/overview-metrics/prototype/milestones.js
+  s_e384c864471d37::t_19591afd5d0c1b 4,15
+docs/05-features/overview-metrics/prototype/milestones.jsx
+  s_e384c864471d37::t_c43f6ac4c1c884 1-2,4,9,18-19,41,48-49,55-59,65-69,85,135,143,154,158-178,190,208,211-213,216-242,260-262,264,266-268,279,286-305,310,325,360,410,449-451,461-469,481,504-516,545-562,576-578,594,643,669-670,672-679
+docs/05-features/overview-metrics/spec.md
+  s_e384c864471d37::t_8c58b3581d42ce 5,9-12,14,16,18,20-25,27,29,31,33,35,37,39,41,43,45,47,49,51-56,58,60,62-71,73,75,77,79,81,83,85,87,89,91,93,95,97,99,101-108,110-116,118,130-136,142,144,177-187
+docs/05-features/reviewer-agent/STATUS.md
+  s_e384c864471d37::t_ea22765c19fa05 13
+docs/05-features/reviewer-agent/spec.md
+  s_e384c864471d37::t_2213023f83a281 14-15,25,33
+docs/05-features/version-acceptance/STATUS.md
+  s_e384c864471d37::t_38005bbe081ca4 15-20,40
+docs/05-features/version-acceptance/prototype/acceptance-app.jsx
+  s_e384c864471d37::t_2c0b4a34bf2d8f 1,664
+docs/05-features/version-acceptance/prototype/acceptance-journey.js
+  s_e384c864471d37::t_859d1055f4e5fe 4,20-22
+docs/05-features/version-acceptance/spec.md
+  s_e384c864471d37::t_de899d99bbd1c9 9-18,23,27,127
+docs/05-features/version-overview/STATUS.md
+  s_e384c864471d37::t_d6824d1562b7e1 5,7-14,16,18
+docs/05-features/version-overview/intent.md
+  s_e384c864471d37::t_4e5a41def055b2 13,15-17,25,27,36
+docs/05-features/version-overview/journey.html
+  s_e384c864471d37::t_96e02d4715ecb9 12,14-16,29,33,35,41,54
+docs/05-features/version-overview/prototype.html
+  s_e384c864471d37::t_b110e342d75583 6,9-10,15
+docs/05-features/version-overview/prototype/bw-snapshot.json
+  s_e384c864471d37::t_935fdca85eb697 465-702
+docs/05-features/version-overview/prototype/overview-app.jsx
+  s_e384c864471d37::t_b8b51e5a19b960 2,74-99,131,222-242,374-384,392-414,416-487,490-491,621
+docs/05-features/version-overview/prototype/overview-data.js
+  s_e384c864471d37::t_87c8f7dd54892f 7,115-134
+docs/05-features/version-overview/prototype/overview-sections.jsx
+  s_e384c864471d37::t_29cf82f4629050 2-8,27-28,65,77-86,90-102,106
+docs/05-features/version-overview/prototype/overview-settings.css
+  s_e384c864471d37::t_a319db4d3b0916 1-75
+docs/05-features/version-overview/prototype/overview-settings.jsx
+  s_e384c864471d37::t_3af99e608f42ca 1-115
+docs/05-features/version-overview/prototype/overview.js
+  s_e384c864471d37::t_2b88140d5792b5 4,55
+docs/05-features/version-overview/spec.md
+  s_e384c864471d37::t_9c7ece555d4c54 5-14,17,35-37,39,47,66,85,115,127,133,135,148,158
+docs/05-features/version-planning/STATUS.md
+  s_e384c864471d37::t_286deb42c540e8 12-17
+docs/05-features/version-planning/design.md
+  s_e384c864471d37::t_b24521f0ff21d0 25,45,58,62,67,91,93,105,109
+docs/05-features/version-planning/prototype/g3-app.jsx
+  s_e384c864471d37::t_f3059d7a14dfdf 1,209
+docs/05-features/version-planning/prototype/g3-planning.js
+  s_e384c864471d37::t_669b2f1a416c88 4,20-22
+docs/05-features/version-planning/spec.md
+  s_e384c864471d37::t_fc7a69544b4fdf 13-36,47,50,126,146,168,170,172,174,193
+docs/05-features/version-workspace/design.md
+  s_e384c864471d37::t_ca02dc19243e8c 16,28,86
+docs/05-features/version-workspace/intent.md
+  s_e384c864471d37::t_c501089c0c616e 1,7,15,27
+docs/05-features/version-workspace/spec.md
+  s_e384c864471d37::t_19e93b523624e8 1,7,65
+docs/05-features/version-workspace/version-workspace-journey.html
+  s_e384c864471d37::t_1acbd490b66031 1226
+docs/06-module/会话与执行.md
+  s_e384c864471d37::t_7b37501181fba6 9,11
+docs/06-module/关键信息维护.md
+  s_e384c864471d37::t_650bfa41e13cb1 3,11,18
+docs/06-module/技能与蒸馏.md
+  s_e384c864471d37::t_5c125fdb6dcce3 1,3,5,7,9,11,13,15
+docs/06-module/系统提示词与渐进加载.md
+  s_e384c864471d37::t_d0673b099762a2 1,3,5,7,9,11,13,15,17,19,21,23,25,27,29
+docs/10-reference/ai-native-delivery-value.md
+  s_e384c864471d37::t_a219896f5b097c 1-19
+docs/10-reference/ai-native-sdlc-playbook.md
+  s_e384c864471d37::t_153f318b0b8c54 1,3,5,7,9-16
+docs/README.md
+  s_e384c864471d37::t_d6b9f5815c9b0c 23,25
+docs/architecture.md
+  s_e384c864471d37::t_931df0e410865e 18,38,46,64
+package.json
+  s_e384c864471d37::t_2e8ce1851b1c5b 17,145-147
+resources/skills/snapshot-registry.json
+  s_e384c864471d37::t_8cf74d82139368 1905-1907
+src/main/persistence/applying-settings/settings-update.ts
+  s_e384c864471d37::t_84f20905372f62 59-69
+src/main/runtime/rpc/methods/index.ts
+  s_e384c864471d37::t_3567ef379b1076 3,68
+src/main/runtime/rpc/methods/workbench-skills.ts
+  s_e384c864471d37::t_72c5f1314942c3 1-11
+src/main/workbench/milestone-runtime.ts
+  s_e384c864471d37::t_42633fec7b4cc1 1,27,121-125,146,165,182-183,196-198,215-221,282
+src/main/workbench/milestone-snapshot.ts
+  s_e384c864471d37::t_be6373fa062a93 14,70,73,133-146,153
+src/main/workbench/milestone-started.ts
+  s_e384c864471d37::t_fac27998412a6b 2,21,35,38
+src/main/workbench/milestone-write-files.test.ts
+  s_e384c864471d37::t_12ea6f2e1d3576 9,107,146-194
+src/main/workbench/skill-install.test.ts
+  s_e384c864471d37::t_2a4dca459f6189 1-20,22-30,33,35-44,47-120,123-146,148-150
+src/main/workbench/skill-install.ts
+  s_e384c864471d37::t_00e50c5b782530 1-107
+src/main/workbench/version-history-runtime.ts
+  s_e384c864471d37::t_88e10ffe6a170a 110
+src/main/workbench/version-history-service.test.ts
+  s_e384c864471d37::t_ecce06afc25741 289-302,304-305,314,360-362,369-380,439
+src/main/workbench/version-history-service.ts
+  s_e384c864471d37::t_60544f58ff6e92 88-92,241-243
+src/main/workbench/version-history-snapshot.ts
+  s_e384c864471d37::t_725fa2a473bfb9 17
+src/renderer/src/components/contextual-tours/use-contextual-tour.ts
+  s_e384c864471d37::t_dd86d9bf7460de 17
+src/renderer/src/components/settings/ExperimentalPane.tsx
+  s_e384c864471d37::t_156026f9975d02 2-3,11,66-81
+src/renderer/src/components/settings/experimental-search.ts
+  s_e384c864471d37::t_81a03f6da98c39 1-2,13-20
+src/renderer/src/components/use-task-page-github-list-projection.ts
+  s_e384c864471d37::t_a0f7b9ae0a4217 4,35
+src/renderer/src/components/use-task-page-github-list-state.ts
+  s_e384c864471d37::t_e4584f10b20f73 32
+src/renderer/src/components/use-task-page-provider-state.ts
+  s_e384c864471d37::t_6cd772f8d2f94c 164-166
+src/renderer/src/components/use-task-page-repo-selection.ts
+  s_e384c864471d37::t_fdf01efdb82cd2 32-33,52-69,76-81
+src/renderer/src/components/use-task-page-resume-restoration.ts
+  s_e384c864471d37::t_8aec968ee1c704 1,64-77
+src/renderer/src/components/use-task-page-runtime-hosts.ts
+  s_e384c864471d37::t_9f12468f8a853d 1,32
+src/renderer/src/components/use-task-page-search-actions.ts
+  s_e384c864471d37::t_2af0bf2415aa27 39-42,85,102-105,114,174,191-195,198
+src/renderer/src/components/use-task-page-workbench-entry.ts
+  s_e384c864471d37::t_53fbbe63975414 1-67
+src/renderer/src/components/use-task-page-workbench-scope.ts
+  s_e384c864471d37::t_1ba133d250f109 3,6-7,13,46,164,180,184,212-225,231-233,237,240-243,255
+src/renderer/src/i18n/locales/en.json
+  s_e384c864471d37::t_0c8d71ba5fc573 7056-7057
+src/renderer/src/i18n/locales/es.json
+  s_e384c864471d37::t_b84288733b7059 5916-5917
+src/renderer/src/i18n/locales/fr.json
+  s_e384c864471d37::t_4da1fdab11f2b5 6692-6693
+src/renderer/src/i18n/locales/ja.json
+  s_e384c864471d37::t_879f10dfffe7b2 5901-5902
+src/renderer/src/i18n/locales/ko.json
+  s_e384c864471d37::t_284ebc6c731db7 5906-5907
+src/renderer/src/i18n/locales/zh.json
+  s_e384c864471d37::t_ca3a1388172755 5977-5978
+src/renderer/src/workbench/INVENTORY.md
+  s_e384c864471d37::t_0a72fc1e585a9d 8,24,32,39
+src/renderer/src/workbench/KnowledgePage.tsx
+  s_e384c864471d37::t_407a10a3f0157a 29-30,180,303
+src/renderer/src/workbench/TaskScopePanel.tsx
+  s_e384c864471d37::t_04dcef650e354d 51-52,54,56-58
+src/renderer/src/workbench/milestone-actual-bars.tsx
+  s_e384c864471d37::t_5b15c305228514 3-4,6,15-16,22,24-48
+src/renderer/src/workbench/milestone-actual-layout.ts
+  s_e384c864471d37::t_ae3e95e899461a 4-5,7-9,11,13,17-71,75,77-81,83-188,192-204,208-209,211
+src/renderer/src/workbench/milestone-add-feature.ts
+  s_e384c864471d37::t_a793e6c61134da 1-3,5-12,16-35
+src/renderer/src/workbench/milestone-change-summary.ts
+  s_e384c864471d37::t_c17b0fa141520a 5-19
+src/renderer/src/workbench/milestone-day-axis.tsx
+  s_e384c864471d37::t_1fda21a10eec93 1-6,12-15,20-22,27-47,68-107
+src/renderer/src/workbench/milestone-fact-readers.tsx
+  s_e384c864471d37::t_440fd2a816b9d0 2,4-16,18-100,113-115,121-129,132-133,135-146,153-158,184-205,208-211
+src/renderer/src/workbench/milestone-feature-facts.ts
+  s_e384c864471d37::t_1cc26b7b338111 1-4,7,12-16,19-27,36-178,183-184,187-190,193-196,201
+src/renderer/src/workbench/milestone-field.tsx
+  s_e384c864471d37::t_7c8d2eafaff549 6,15,23,25-27,51-52,56
+src/renderer/src/workbench/milestone-history-actions.tsx
+  s_e384c864471d37::t_4eb62dd4940e33 1-4,78-125
+src/renderer/src/workbench/milestone-navigation.tsx
+  s_e384c864471d37::t_f5e74f16f610a8 1-8,10-16,18-20,22-30,32-82,84-120,122-123,125-216,219-220,222-280,283-314
+src/renderer/src/workbench/milestone-planning-session.ts
+  s_e384c864471d37::t_e04f5fdaccb05b 4,166-196
+src/renderer/src/workbench/milestone-recovery.ts
+  s_e384c864471d37::t_0cb26d85e5f327 4-5,13-26,29-30,40-43
+src/renderer/src/workbench/milestone-review-button.tsx
+  s_e384c864471d37::t_ba9910e734feff 6,18,37-43,49,64
+src/renderer/src/workbench/milestone-row-grip.tsx
+  s_e384c864471d37::t_f54f0b7ddd9512 1-7,10-18,21-24,26,28-44,46-90,92-116
+src/renderer/src/workbench/milestone-stage-bars.tsx
+  s_e384c864471d37::t_f0c56696790425 18,20,26-27,45-64,66-70,72-83,109-111,114,119-125,127,129-152,154-156,158,160-173
+src/renderer/src/workbench/milestone-timeline.tsx
+  s_e384c864471d37::t_f9eb5e83196fc1 1-3,5,7,11-15,25-28,50,56,62-78,82-88,91-97,99,105,113-116,122-127,131-138,148,167,170-172,178,181,183-188,192-194,233-244,246-252,255,258-261,275-282,285-287,291-292,296-305,315-331,335-351,353,356-357,373-381
+src/renderer/src/workbench/milestone-version-row.tsx
+  s_e384c864471d37::t_11c98dfc41f7cd 1,3,17-20,31,80,83-86,100,103-106,120-121,125,127-128,131-140,142-198,200-227,229-242,244-245
+src/renderer/src/workbench/open-workflow-draft.ts
+  s_e384c864471d37::t_be5199257479b6 1-40
+src/renderer/src/workbench/project-milestones.css
+  s_e384c864471d37::t_45e18114a01f2f 61-62,64-67,69-81,83,85,88,91-93,95-110,113-114,118,120,122-123,125-127,129,131-137,139,141-147,149-167,169,171-173,184-187,556,563,614,632,698-788
+src/renderer/src/workbench/project-milestones.tsx
+  s_e384c864471d37::t_67d4094178a7ce 6-10,24,87,91,101-104,124-127,137-143,148-150,157-158,173-177,204,229-233,255-257,263,265-266,308-326,348-350,352-371,374-382
+src/renderer/src/workbench/project-page-state.ts
+  s_e384c864471d37::t_ef44628916a23d 68-74
+src/renderer/src/workbench/task-port.test.ts
+  s_e384c864471d37::t_328db5a5af90f1 23,148-179
+src/renderer/src/workbench/task-reference-reader.ts
+  s_e384c864471d37::t_ed2b468b6c789b 105-106,109-116,120,140-142,201-206,210,212,241-242,244,247-248,260-262,265-266,272-275,279-283,294-296
+src/renderer/src/workbench/task-reference-repo.ts
+  s_e384c864471d37::t_560fba40527181 95-96,102
+src/renderer/src/workbench/task-scope-load.ts
+  s_e384c864471d37::t_49a0ce0d9c8d6a 31-34,139
+src/renderer/src/workbench/task-scope-projection.ts
+  s_e384c864471d37::t_100f98b54fc7bc 53-58,66
+src/renderer/src/workbench/use-milestone-gesture.ts
+  s_e384c864471d37::t_a17d2af8294de8 2-6,11-14,19,24-25,30-45,47-49,53-54,66,68-80,82-83,85-88,92-95,97-115,117-123,126-131,133-140,143-207,210-211,222-229,233,250-251,259,262,271-294,296,300
+src/renderer/src/workbench/use-milestone-planning.ts
+  s_e384c864471d37::t_79f6e0bd8b4968 1,14,151,187-188,192,197,210-226,231,263,265
+src/renderer/src/workbench/use-milestone-source.ts
+  s_e384c864471d37::t_001135cb4cfde6 6-10,12-14,16,23,26-30
+src/renderer/src/workbench/version-acceptance/AcceptanceEmptyBoard.tsx
+  s_e384c864471d37::t_38fe2ccf55c859 51
+src/renderer/src/workbench/version-acceptance/use-acceptance-board.ts
+  s_e384c864471d37::t_0975831283c30c 16,139-141
+src/renderer/src/workbench/version-acceptance/use-acceptance-plan.ts
+  s_e384c864471d37::t_a1f3e23e569d81 14,120,141-148,159-162
+src/renderer/src/workbench/version-cycle/CycleStartCard.tsx
+  s_e384c864471d37::t_8d8c720a7b730c 4,10,33,51-52
+src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx
+  s_e384c864471d37::t_61c59298d2a8b0 8,78,81-82,87-88,105
+src/renderer/src/workbench/version-cycle/cycle-prompt.ts
+  s_e384c864471d37::t_6e759ef8867c68 3-4,9,11,14-24,26-27,29,31,34-35,37-46,49-53,57-59
+src/renderer/src/workbench/version-cycle/cycle-workspace-context.ts
+  s_e384c864471d37::t_1ce7db80b994bc 18-19
+src/renderer/src/workbench/version-cycle/ensure-cycle-automation.test.ts
+  s_e384c864471d37::t_84a98d3368fbba 9
+src/renderer/src/workbench/version-cycle/ensure-cycle-automation.ts
+  s_e384c864471d37::t_44104be82170fc 8
+src/renderer/src/workbench/version-cycle/metrics-setup.ts
+  s_e384c864471d37::t_34f2f29bad91a7 5,17-18,41
+src/renderer/src/workbench/version-cycle/start-cycle-session.ts
+  s_e384c864471d37::t_97c7bd394a3256 4-6,8,12,14-19
+src/renderer/src/workbench/version-history-port.ts
+  s_e384c864471d37::t_36482b09252da7 13-21
+src/renderer/src/workbench/version-nav-actions.ts
+  s_e384c864471d37::t_af1328ff4750c6 3,103,111-117
+src/renderer/src/workbench/version-overview-page.tsx
+  s_e384c864471d37::t_a24fdb872fdc03 10,14,16-20,23-28,69-77,81-89,109-110,119-131,151,172,235-246,262-270,272-294,306,314,317-340
+src/renderer/src/workbench/version-overview/feature-model.test.ts
+  s_e384c864471d37::t_1804d57d72db2c 25-26,365-368,373-375,377-378,384-394,396-397,402,404,408-416,418-468,470-471,473-495,497-510,512-530,533-545,547-580,582-588,591,593-605
+src/renderer/src/workbench/version-overview/goal-task-summary.ts
+  s_e384c864471d37::t_d6ee86c4b73cb0 1-19
+src/renderer/src/workbench/version-overview/overview-experiment-settings.tsx
+  s_e384c864471d37::t_e0d42a6fc0faf1 1-150
+src/renderer/src/workbench/version-overview/overview-experiments.ts
+  s_e384c864471d37::t_3a518ff63a4794 1-32
+src/renderer/src/workbench/version-overview/overview-provider-port.ts
+  s_e384c864471d37::t_86cb58791b8bea 52,61
+src/renderer/src/workbench/version-overview/overview-read-cache.test.ts
+  s_e384c864471d37::t_0b550968aee116 48-72
+src/renderer/src/workbench/version-overview/overview-read-cache.ts
+  s_e384c864471d37::t_484ec9dd051507 3-7,9,27-37,41,44,50-51,53-57,59-61,64-70,73-75,77-78
+src/renderer/src/workbench/version-overview/read-feature-evidence.ts
+  s_e384c864471d37::t_85af046918b1d5 23-24,31,37,47-48,50,78-132,135-154,158-159,161,163-164,166-169,227-229
+src/renderer/src/workbench/version-overview/read-overview-features.ts
+  s_e384c864471d37::t_be819c31674d11 13,29-34,44,62,159-201,203-227,229-246,261-271,273-287
+src/renderer/src/workbench/version-overview/read-version-evidence.ts
+  s_e384c864471d37::t_0fa87db4aa746f 19-20,26,42,71,155,178-179
+src/renderer/src/workbench/version-overview/read-workflow-evidence.ts
+  s_e384c864471d37::t_51359fa87d11bb 30-31,36-37,39-52,54-77,80-94,97-101
+src/renderer/src/workbench/version-overview/use-overview-features.ts
+  s_e384c864471d37::t_23b174bcfb3e08 1,10,29,31-33,41-51,100-117,120-127,130-133,139,143,147,150-151,169,176
+src/renderer/src/workbench/version-overview/use-version-facts.ts
+  s_e384c864471d37::t_37157c9faf21f1 9-10,22-23
+src/renderer/src/workbench/version-overview/use-workflow-evidence.ts
+  s_e384c864471d37::t_ec4ee49a586c0c 1,9,11-20,22-23,25,30,46-51,53-54,56-63,65,68,72,74,76-79
+src/renderer/src/workbench/version-overview/workflow-productivity.tsx
+  s_e384c864471d37::t_f5fb83ca9c5446 16,24,60
+src/renderer/src/workbench/version-planning/PlanningBoard.tsx
+  s_e384c864471d37::t_46f3946312fcdb 174
+src/renderer/src/workbench/version-planning/use-planning-start.ts
+  s_e384c864471d37::t_3cecd0954cae19 11,33
+src/renderer/src/workbench/version-planning/use-prior-carryovers.ts
+  s_e384c864471d37::t_cd53ad2d65fc02 17,232-242
+src/renderer/src/workbench/workbench-skill-install.ts
+  s_e384c864471d37::t_6c55890550ad58 1-36
+src/shared/contextual-tours.test.ts
+  s_e384c864471d37::t_54e4c5456254e0 19-20
+src/shared/contextual-tours.ts
+  s_e384c864471d37::t_7ae15ce3c4c577 12,227-248
+src/shared/feature-education-telemetry.ts
+  s_e384c864471d37::t_caab302e8d8f94 11-12,24
+src/shared/feature-interaction-catalog.ts
+  s_e384c864471d37::t_9e0a8e5cb66aeb 26,99
+src/shared/feature-interaction-categories.ts
+  s_e384c864471d37::t_bbf1d6b47a0267 47
+src/shared/feature-interactions.test.ts
+  s_e384c864471d37::t_5b99f54fca35b2 59
+src/shared/global-settings-types.ts
+  s_e384c864471d37::t_9cdc7e89996de4 460-461
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  s_e384c864471d37::t_f73f3b2757682c 583,1251
+src/shared/workbench/milestone-calendar.ts
+  s_e384c864471d37::t_b0dc848714532d 63,79-89,92-111,113-120,122-144,156-157,159-162,164,175,182,186-269
+src/shared/workbench/milestone-sdlc.ts
+  s_e384c864471d37::t_4800be27ee6b21 11-12,14,23-32,34-35,43-44,48,57,60-66,71-78,80-95,100,112-113,116-122,124-129,134-135,137-138,140,142-155,168-169
+src/shared/workbench/milestone-window-order.ts
+  s_e384c864471d37::t_b857023773badc 2,4,7,9-14,17-24,27,30-44,47,52
+src/shared/workbench/project-milestones.test.ts
+  s_e384c864471d37::t_375e8973444da6 13-14,25-26,29,32-33,35-36,40-42,45-49,54,59-61,81-91,93-95,100-101,110,113,117,119,121-124,129-134,136-164,166-185,187-192,195-200,203,206,209,212-213,218-220,224-233,235-238,240-243,245-249
+src/shared/workbench/project-milestones.ts
+  s_e384c864471d37::t_65d7d066775726 12,15,22-23,36-85,88-91,95,98,100-111,129,152-153,157-158,160,170-174,220-222,228
+src/shared/workbench/skill-assets.ts
+  s_e384c864471d37::t_0a3710b4a80f57 1-12
+src/shared/workbench/skill-package.json
+  s_e384c864471d37::t_55e5599bde4995 1-10
+src/shared/workbench/task-scope.test.ts
+  s_e384c864471d37::t_969d69250d2396 8,30-35,65-69,71-72
+src/shared/workbench/task-scope.ts
+  s_e384c864471d37::t_f79ac553ad7d88 43-51,57,60
+src/shared/workbench/version-history.ts
+  s_e384c864471d37::t_77021cad3d9f2b 72
+src/shared/workbench/work-calendar-2026.json
+  s_e384c864471d37::t_c8a0c5e07b11a9 1-55
+src/shared/workbench/work-calendar.ts
+  s_e384c864471d37::t_66268925c19a35 1-2,5-6,9-10,13-20
+standard/README.md
+  s_e384c864471d37::t_b831c9f763d3f2 1,3,5,7,9-17,19,21,23,25,27,29,31-34
+standard/references/execution.md
+  s_e384c864471d37::t_16489323750757 1-28
+standard/references/issue-state.md
+  s_e384c864471d37::t_30b9d0ecfa7acc 1,3,5,9,11,13-16,18,20-24,26,28,30,32,34,36,38,40-51
+standard/references/legacy-materials.md
+  s_e384c864471d37::t_90ec07408cd59b 11-19
+standard/references/meeting-minutes.md
+  s_e384c864471d37::t_8abd78a60c50db 18-20,22,34-38
+standard/references/metrics.md
+  s_e384c864471d37::t_cdd433c6268e61 25
+standard/references/version-records.md
+  s_e384c864471d37::t_e680912bdf9751 9-16,26,28,30-31,33-41
+standard/skills/README.md
+  s_e384c864471d37::t_053882abe185bd 1,3,5-9,11
+standard/skills/SKILL-MD-SPEC.md
+  s_e384c864471d37::t_c15726f11ae706 1,3,5,7-14,16,18,20-26,28,30-35,37,39,41,43
+standard/skills/metrics-refresh/SKILL.md
+  s_e384c864471d37::t_21fe5aaf6993cf 12-15,19-23,27,29
+standard/skills/version-acceptance/SKILL.md
+  s_e384c864471d37::t_6c152384e186df 12,14-16,18,20,24,28,34-35,37-38,55,60-61,63,69,73,75-76,78-80
+standard/skills/version-acceptance/assets/evidence-report-template.md
+  s_e384c864471d37::t_7b60b02406e9a5 1,17,20
+standard/skills/version-acceptance/references/evidence-aggregation.md
+  s_e384c864471d37::t_9c0ea0aea63122 1-41
+standard/skills/version-acceptance/references/meeting-preparation.md
+  s_e384c864471d37::t_76b5a39bf74389 1-29
+standard/skills/version-acceptance/references/minutes-sync.md
+  s_e384c864471d37::t_9b75ddeba1191e 3,16-17,19,21
+standard/skills/version-acceptance/references/screen-actions.md
+  s_e384c864471d37::t_fad986e4ac7ecd 1-17
+standard/skills/version-acceptance/scripts/minutes-cdp.mjs
+  s_e384c864471d37::t_4ef1b1a9081ff3 1-11,13-23,25,28-55,57-63,65-73,75-79,81-108,110-130,132-133,135-137
+standard/skills/week-planning/SKILL.md
+  s_e384c864471d37::t_371bf60fac0be1 5,12-16,24-30,37,40,42-43,45-46,54-56,61,64-65,71,73-77
+standard/skills/week-planning/references/data-and-runtime.md
+  s_e384c864471d37::t_6afae30e015176 3,11,15,21-26
+standard/templates/metrics.toml.tmpl
+  s_e384c864471d37::t_0467e4c071c6b8 3
+tests/e2e/fixtures/golden-stub-agent/golden-stub-agent.js
+  s_e384c864471d37::t_442c3d78bfd5e6 14,29-31,132-134
+tests/e2e/helpers/workbench-milestones.ts
+  s_e384c864471d37::t_10c547a7714778 32-35,71-72,86,102-117,140-141,144,146,148-150,152,165-173,175-177,179-186,188-189,191,243,248-252,274-291
+tests/e2e/helpers/workbench-overview-restart.ts
+  s_e384c864471d37::t_d20d409228e30e 3,11-88,137-139
+tests/e2e/helpers/workbench-version-overview-fixture.ts
+  s_e384c864471d37::t_a424a1d43fed41 217-220
+tests/e2e/helpers/workbench-version-overview.ts
+  s_e384c864471d37::t_c351ae465d53ff 15-19,77,143,235-236,248-253,287-293
+tests/e2e/helpers/workbench-workflow-draft.ts
+  s_e384c864471d37::t_a21cdc8e06efc8 1-31
+tests/e2e/workbench-cycle-smoke.spec.ts
+  s_e384c864471d37::t_ed16f00d6f8786 3,14-15,29-30,158-160,291,301-302,347-350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "4d3370db48b68bc13c3591f185ae99fd00d9f8f4",
+  "prompts": {},
+  "sessions": {
+    "s_e384c864471d37": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "s_e384c864471d37",
+        "model": "unknown"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

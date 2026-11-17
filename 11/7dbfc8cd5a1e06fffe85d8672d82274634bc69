@@ -1,0 +1,18 @@
+config/scripts/dev-workbench-env.mjs
+  h_1dcaf127381c33 1-2,5-75
+config/scripts/run-electron-vite-dev.mjs
+  h_1dcaf127381c33 26-31,45-52
+src/renderer/src/workbench/SYNC.md
+  h_1dcaf127381c33 49-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "117dbfc8cd5a1e06fffe85d8672d82274634bc69",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+src/shared/workbench/skill-package.json
+  s_4166fdbe03de01::t_3631019bf2056a 4-6,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "c666fa426dae0d047cde1b88a7b208654d37ab19",
+  "prompts": {},
+  "sessions": {
+    "s_4166fdbe03de01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6fc1634-1a24-4184-9d0f-19b58e003275",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

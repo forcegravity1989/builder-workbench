@@ -1,0 +1,49 @@
+src/renderer/src/components/editor/EditorPanelHeader.tsx
+  s_d45b1b4ae46c02::t_16d195d7417f1a 130,139
+src/renderer/src/i18n/locales/ko.json
+  s_d45b1b4ae46c02::t_8879b0e575291f 12562
+src/renderer/src/i18n/locales/es.json
+  s_d45b1b4ae46c02::t_df8ccd2a940f93 12495
+src/renderer/src/components/editor/combined-diff/review-controls/use-combined-diff-section-actions.ts
+  s_d45b1b4ae46c02::t_435213dd2bd07d 4,8
+  s_d45b1b4ae46c02::t_88577c64d95c81 112-113,128,130,132-134,136
+src/renderer/src/components/browser-pane/navigate/browser-address-bar-navigation.ts
+  s_d45b1b4ae46c02::t_0d86111b8f9657 42
+src/renderer/src/i18n/locales/en.json
+  s_d45b1b4ae46c02::t_945e5ff90c82e0 14405
+  s_d45b1b4ae46c02::t_0b47d7a11c0c88 15291
+src/renderer/src/components/browser-pane/navigate/browser-address-bar-navigation.test.ts
+  s_d45b1b4ae46c02::t_9a4a371f22defb 75
+src/renderer/src/i18n/locales/zh.json
+  s_d45b1b4ae46c02::t_5a7439908e918b 12590
+src/renderer/src/components/editor/DiffSectionHeader.tsx
+  s_d45b1b4ae46c02::t_e08e6746f8e6db 89,93
+src/renderer/src/i18n/locales/ja.json
+  s_d45b1b4ae46c02::t_c0d9e4a4e6c768 12495
+src/renderer/src/components/browser-pane/workspace-doc/doc-preview-address-edit.tsx
+  s_d45b1b4ae46c02::t_d41c5e19327232 70
+src/renderer/src/lib/file-preview.test.ts
+  s_d45b1b4ae46c02::t_312df694308965 7
+src/renderer/src/i18n/locales/fr.json
+  s_d45b1b4ae46c02::t_a0aa56ad0c596d 13707
+src/renderer/src/components/editor/EditorPanel.tsx
+  s_d45b1b4ae46c02::t_bfe65d4db41ca6 224-229,231,233-235
+  s_d45b1b4ae46c02::t_eb8b472afe4fc3 5-6
+  s_d45b1b4ae46c02::t_de3cdb98b2f3d7 358
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "5e903ff5c669edb968e82d84e535b21d4cb1d4b4",
+  "prompts": {},
+  "sessions": {
+    "s_d45b1b4ae46c02": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c8317433-3d6f-4d15-a6f3-86d0048c511f",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

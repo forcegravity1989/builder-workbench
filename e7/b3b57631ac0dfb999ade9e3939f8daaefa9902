@@ -1,0 +1,23 @@
+docs/architecture.md
+  s_b8ea9b2e8dfd1b::t_951e5668606cf0 92
+ref/upstream.md
+  s_b8ea9b2e8dfd1b::t_5c6419cd4b16a9 146
+CONTEXT.md
+  s_b8ea9b2e8dfd1b::t_1b2ed4e0851687 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "e7b3b57631ac0dfb999ade9e3939f8daaefa9902",
+  "prompts": {},
+  "sessions": {
+    "s_b8ea9b2e8dfd1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "499b902b-9fdf-4742-a62d-84f8d1befcf2",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

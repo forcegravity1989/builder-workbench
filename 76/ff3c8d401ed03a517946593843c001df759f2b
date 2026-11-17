@@ -1,0 +1,1454 @@
+config/electron-builder.config.cjs
+  s_b8ea9b2e8dfd1b::t_d450fe69cb6c39 507-510
+tests/playwright.config.ts
+  s_b8ea9b2e8dfd1b::t_50d402d2c5d4bc 4,45,56
+  s_b8ea9b2e8dfd1b::t_7742dffacfb785 7,48,51,58,60
+tests/AGENTS.md
+  s_b8ea9b2e8dfd1b::t_91f3b66602ba15 16
+docs/05-features/version-planning/prototype/build.cjs
+  s_b8ea9b2e8dfd1b::t_e4261492d355ce 126
+src/renderer/src/hooks/composer-state/full-creation-execution.ts
+  s_b8ea9b2e8dfd1b::t_8a842120fd1d81 27
+  h_d0d195a8c70989 46-47,73,203,207,212,331
+src/renderer/src/hooks/composer-state/quick-submit-input-contract.ts
+  s_b8ea9b2e8dfd1b::t_f9e15da70531d1 33
+CONTEXT.md
+  h_d0d195a8c70989 14
+docs/05-features/connectors/prototype.html
+  h_d0d195a8c70989 6
+docs/05-features/overview-metrics/prototype.html
+  h_d0d195a8c70989 16
+docs/05-features/overview-metrics/prototype/milestones.js
+  h_d0d195a8c70989 4
+docs/05-features/pr-review-notify/prototype/build.cjs
+  h_d0d195a8c70989 4,19-21,50-54
+docs/05-features/pr-review-notify/prototype/preview.css
+  h_d0d195a8c70989 5-12,64-68,74-75,79-88,102-107,116-117,120-134,142-143,169-171,174-181,185-186,190-195,217,241-249,258-260,263-264,267,421-423,514-516,553-555,599-600,603-605,638,652-654,711-713,817,1062-1064,1068-1070,1136-1137,1155-1160,1163-1165,1167-1169,1171-1173,1176-1181,1184-1189,1192-1197,1200-1205,1208-1213,1217-1219,1222-1226,1248-1250,1253-1255,1259-1266,1270-1277,1280-1303,1308,1348,1487-1491,1502-1503,1523-1527,1578,1583,1601,1606,1616,1621,1626,1631,1636,1641,1646-1649,1653,1659,1661,1665-1668,1672,1677,1685,1690,1695,1701,1707,1709,1713,1718,1723,1733,1787,1792,1848-1853,1858-1863,1868-1873,1878-1883,1897,1949,1959,1969,2007,2047,2120,2125,2130,2134,2139,2144,2149,2154,2159,2164,2169,2174,2179,2184,2189,2194,2199,2212-2213,2219-2221,2227-2228,2545-2547,2560-2562,2576-2583,2602-2603,2646-2647,2650-2651,2665-2666,2669-2670,2673-2674,2680-2681,2687-2688,2704-2705,2709-2710,2713-2714,2717-2718,2724-2725,2738-2739,2743-2744,2749-2762,2784-2787,2824-2825,2828-2832,2896-2898,2919-2923,3050-3056,3062-3063,3069-3070,3082-3084,3108-3109,3122-3123,3196-3200,3267-3268,3274-3276,3278-3280,3286-3290,3296-3298,3300-3302,3315-3316,3320-3321,3331-3335,3339-3343,3380-3381,3406,3408-3412,3433-3435,3437-3439,3453-3455,3457-3459,3607-3609,3619-3620,3627-3630,3636-3641,3647-3648,3654-3656,3701-3703,3705-3707,3716-3718,3720-3722,3783-3784,3797-3798,3849-3851,3853-3855,3865-3866,3905-3907,3930-3931,3987-3989,3991-3993,3996-3999,4002-4003,4081-4082,4123-4125,4129-4131,4150-4151,4178-4181,4249-4250,4289-4290,4304-4305,4308-4309,4368-4369,4469-4471,4487-4490,4515-4517,4541-4546,4557-4562,4609-4610,4651-4655,4703-4709,4720-4722,4786-4788,4859-4861,4872-4874,4902-4904,4968-4970,4972-4974,4986-4988,4990-4992,4996,5001,5006,5011,5016,5021,5026,5030,5034,5038,5042,5046,5051,5056,5060,5064,5068,5072,5076,5080,5084,5088,5093,5097,5102,5107,5111,5116,5120,5125,5129,5134,5138,5143,5148,5153,5158,5162,5166,5170,5174,5178,5182,5186,5190,5194,5198,5202,5207,5211,5215,5219,5223,5227,5231,5235,5239,5243,5247,5257-5261,5266-5270,5278-5284,5289-5295,5302-5307
+docs/05-features/pr-review-notify/prototype/preview.js
+  h_d0d195a8c70989 1-4,6,9,11-12,16,20,24,28,32-33,37,50,54,58,62,66-67,69,72-73,77-79,82,122,126,128
+docs/05-features/project-intake/g3-project-wall-prototype.html
+  h_d0d195a8c70989 6
+docs/05-features/project-intake/project-settings-prototype.html
+  h_d0d195a8c70989 40
+docs/05-features/project-intake/project-wall-readings-prototype.html
+  h_d0d195a8c70989 6
+docs/05-features/quick-links/prototype.html
+  h_d0d195a8c70989 299
+docs/05-features/version-acceptance/prototype/acceptance-app.jsx
+  h_d0d195a8c70989 748,800
+docs/05-features/version-acceptance/prototype/acceptance-journey.js
+  h_d0d195a8c70989 4,20-22
+docs/05-features/version-overview/prototype/overview-app.jsx
+  h_d0d195a8c70989 278,409,599
+docs/05-features/version-overview/prototype/overview-settings.jsx
+  h_d0d195a8c70989 51-53,80,109
+docs/05-features/version-overview/prototype/overview.js
+  h_d0d195a8c70989 4-6,11,27,44,46,55
+docs/05-features/version-planning/prototype/g3-app.jsx
+  h_d0d195a8c70989 403,451
+docs/05-features/version-planning/prototype/g3-planning.js
+  h_d0d195a8c70989 4,20-22
+docs/05-features/version-workspace/prototype/g2-task-preview.jsx
+  h_d0d195a8c70989 270,282,622
+docs/05-features/version-workspace/prototype/g2-workspace.js
+  h_d0d195a8c70989 4-5
+docs/05-features/version-workspace/prototype/g2-workspace.jsx
+  h_d0d195a8c70989 42,1025
+docs/05-features/version-workspace/version-workspace-journey.html
+  h_d0d195a8c70989 651,674,1252
+docs/architecture.md
+  h_d0d195a8c70989 68,92
+ref/upstream.md
+  h_d0d195a8c70989 146
+resources/skills/current-manifest.json
+  h_d0d195a8c70989 8-9,13,16-18,22,25-27
+resources/skills/snapshot-registry.json
+  h_d0d195a8c70989 1881-1882,1886,1889-1891,1895,1898-1900
+skills/bw-knowledge-docs/SKILL.md
+  h_d0d195a8c70989 4,9,11,34
+skills/bw-knowledge-docs/roles.md
+  h_d0d195a8c70989 3,5-14
+src/cli/handler-group-manifest.ts
+  h_d0d195a8c70989 16,18,21,33
+src/cli/handlers/monica-materials.test.ts
+  h_d0d195a8c70989 31
+src/cli/handlers/monica-materials.ts
+  h_d0d195a8c70989 8,13,23,50,104
+src/cli/handlers/monica-meeting.ts
+  h_d0d195a8c70989 7,13-14,303
+src/cli/specs/index.ts
+  h_d0d195a8c70989 2-3,24-25
+src/cli/specs/monica-materials.ts
+  h_d0d195a8c70989 6
+src/cli/specs/monica-meeting.ts
+  h_d0d195a8c70989 4
+src/main/app-icon.ts
+  h_d0d195a8c70989 229
+src/main/codehub/comments.test.ts
+  h_d0d195a8c70989 1
+src/main/dsh/dsh-hook-packages.test.ts
+  h_d0d195a8c70989 8
+src/main/dsh/dsh-integration.test.ts
+  h_d0d195a8c70989 29-34,69,85-90,119,123-125
+src/main/github/work-item-batch.ts
+  h_d0d195a8c70989 27,33,51
+src/main/ipc/codehub.ts
+  h_d0d195a8c70989 6,11
+src/main/ipc/command-path-resolver.test.ts
+  h_d0d195a8c70989 115
+src/main/ipc/diagnostics.test.ts
+  h_d0d195a8c70989 54,56
+src/main/ipc/diagnostics.ts
+  h_d0d195a8c70989 9,31
+src/main/ipc/ephemeral-vm-runtime-handlers.ts
+  h_d0d195a8c70989 5,8,91
+src/main/ipc/feedback-image-attachments.test.ts
+  h_d0d195a8c70989 33
+src/main/ipc/feedback-image-attachments.ts
+  h_d0d195a8c70989 2
+src/main/ipc/feedback.test.ts
+  h_d0d195a8c70989 18,22-23
+src/main/ipc/feedback.ts
+  h_d0d195a8c70989 4,60
+src/main/ipc/github-repo-routing.ts
+  h_d0d195a8c70989 16,75
+src/main/ipc/monica-cli-install.ts
+  h_d0d195a8c70989 5-9,11,18,20,26,29-32,57,70,90
+src/main/ipc/preflight-command-exec.ts
+  h_d0d195a8c70989 53,106
+src/main/ipc/preflight-host-cli-status.test.ts
+  h_d0d195a8c70989 140,163,252,285,299,315,369
+src/main/ipc/register-core-handlers/register-core-handlers.test.ts
+  h_d0d195a8c70989 400,403
+src/main/ipc/register-core-handlers/register-core-handlers.ts
+  h_d0d195a8c70989 5,16
+src/main/ipc/repos-create.test.ts
+  h_d0d195a8c70989 173-174
+src/main/ipc/repos/project-group-handlers.ts
+  h_d0d195a8c70989 8,10,56
+src/main/ipc/repos/repo-catalog-handlers.ts
+  h_d0d195a8c70989 12-13,110
+src/main/ipc/repos/repo-creation-handlers.ts
+  h_d0d195a8c70989 17,55,57,59
+src/main/ipc/worktree-metadata-merge.test.ts
+  h_d0d195a8c70989 107
+src/main/ipc/worktree-metadata-merge.ts
+  h_d0d195a8c70989 5,25
+src/main/ipc/worktrees/ipc-context-schemas.ts
+  h_d0d195a8c70989 10,35,38,43,53
+src/main/ipc/worktrees/metadata/register-worktree-metadata-handlers.ts
+  h_d0d195a8c70989 17,41,45
+src/main/menu/register-app-menu.ts
+  h_d0d195a8c70989 11,335
+src/main/monica/acceptance-human-guard.ts
+  h_d0d195a8c70989 5
+src/main/monica/archive-pr-status.ts
+  h_d0d195a8c70989 3,19-20,146,149,210
+src/main/monica/charter-create-review.ts
+  h_d0d195a8c70989 3-4,9,13,26
+src/main/monica/charter-pr-status.ts
+  h_d0d195a8c70989 8-9,16,66,101,129
+src/main/monica/charter-remote-probe.ts
+  h_d0d195a8c70989 7,12,15,92,103
+src/main/monica/charter-runtime.ts
+  h_d0d195a8c70989 12,19,27,32,34-36,39,45-47,51,53,67,222,232-239,242-250,317
+src/main/monica/cloud-dragon-cli-ops.ts
+  h_d0d195a8c70989 1,24
+src/main/monica/cloud-dragon-package-ops.ts
+  h_d0d195a8c70989 4
+src/main/monica/cloud-dragon-session.ts
+  h_d0d195a8c70989 116-119
+src/main/monica/fixed-workspace-runtime.ts
+  h_d0d195a8c70989 10,14,17
+src/main/monica/fixed-workspace-service.ts
+  h_d0d195a8c70989 19,22,36,53
+src/main/monica/fixed-workspace-tracking.ts
+  h_d0d195a8c70989 3
+src/main/monica/flow-trunk-merge.ts
+  h_d0d195a8c70989 5
+src/main/monica/flow-trunk-sync.ts
+  h_d0d195a8c70989 3
+src/main/monica/github-package-ops.ts
+  h_d0d195a8c70989 3-4,15,39
+src/main/monica/material-human-guard.test.ts
+  h_d0d195a8c70989 7,11
+src/main/monica/material-human-guard.ts
+  h_d0d195a8c70989 5,9,26
+src/main/monica/metrics-runtime.ts
+  h_d0d195a8c70989 3,9,16,19,32-34,86,138-140,142,146,189
+src/main/monica/metrics/collector-output.test.ts
+  h_d0d195a8c70989 6-7
+src/main/monica/metrics/collector-output.ts
+  h_d0d195a8c70989 6-8
+src/main/monica/metrics/collector-service.test.ts
+  h_d0d195a8c70989 2,4,88
+src/main/monica/metrics/collector-service.ts
+  h_d0d195a8c70989 15,17
+src/main/monica/metrics/definitions.ts
+  h_d0d195a8c70989 4-5
+src/main/monica/metrics/metrics-execution-core.test.ts
+  h_d0d195a8c70989 80,97-100
+src/main/monica/metrics/metrics-execution-core.ts
+  h_d0d195a8c70989 13-14
+src/main/monica/milestone-read.ts
+  h_d0d195a8c70989 1,4,23
+src/main/monica/milestone-recovery-ipc.ts
+  h_d0d195a8c70989 6
+src/main/monica/milestone-recovery.ts
+  h_d0d195a8c70989 8
+src/main/monica/milestone-runtime.ts
+  h_d0d195a8c70989 3,11,15-17,25,38-39,44,66
+src/main/monica/milestone-snapshot.ts
+  h_d0d195a8c70989 7-9,16
+src/main/monica/milestone-started.ts
+  h_d0d195a8c70989 2
+src/main/monica/milestone-version-source.ts
+  h_d0d195a8c70989 7
+src/main/monica/milestone-write-files.test.ts
+  h_d0d195a8c70989 9,12
+src/main/monica/milestone-write-files.ts
+  h_d0d195a8c70989 4
+src/main/monica/monica-exec-observability.test.ts
+  h_d0d195a8c70989 5-6,8,55,58,73,90,107,116,140
+src/main/monica/monica-exec-observability.ts
+  h_d0d195a8c70989 7,105,120
+src/main/monica/monica-phase-observability.test.ts
+  h_d0d195a8c70989 3
+src/main/monica/monica-phase-observability.ts
+  h_d0d195a8c70989 2,35
+src/main/monica/monica-rpc-observability.test.ts
+  h_d0d195a8c70989 6,42,44,55,66,85,96,108,121,123,127
+src/main/monica/monica-rpc-observability.ts
+  h_d0d195a8c70989 4,20,43,51
+src/main/monica/monica-runtime-result.ts
+  h_d0d195a8c70989 1-2,8,15,26,30,36
+src/main/monica/monica-trace-details.ts
+  h_d0d195a8c70989 19
+src/main/monica/overview-provider-context.ts
+  h_d0d195a8c70989 9-10,22,25
+src/main/monica/overview-pull.ts
+  h_d0d195a8c70989 1,3-5,18,30
+src/main/monica/package-pipeline-runtime.ts
+  h_d0d195a8c70989 2,9,25-26,28-30,41-43,84,91
+src/main/monica/plan-human-guard.ts
+  h_d0d195a8c70989 2
+src/main/monica/project-git-routing.ts
+  h_d0d195a8c70989 8,10,15,26-28
+src/main/monica/release-status.ts
+  h_d0d195a8c70989 3-4,8-9,34,39,69,108-111
+src/main/monica/reporting/report-submission.test.ts
+  h_d0d195a8c70989 72
+src/main/monica/reporting/report-submission.ts
+  h_d0d195a8c70989 99
+src/main/monica/reporting/telemetry-bootstrap.ts
+  h_d0d195a8c70989 1,5,8-10,16-17
+src/main/monica/reporting/welink-onebox-client.test.ts
+  h_d0d195a8c70989 40,43,48,50,57,78,129,132,153
+src/main/monica/reporting/welink-onebox-client.ts
+  h_d0d195a8c70989 7,27,29,33,293
+src/main/monica/reporting/welink-report-config.test.ts
+  h_d0d195a8c70989 10,18
+src/main/monica/reporting/welink-report-config.ts
+  h_d0d195a8c70989 1,3,6,9
+src/main/monica/reporting/welink-telemetry-sink.test.ts
+  h_d0d195a8c70989 57,59,64,186,327,342,353,362
+src/main/monica/reporting/welink-telemetry-sink.ts
+  h_d0d195a8c70989 10,25,140
+src/main/monica/review-inbox.ts
+  h_d0d195a8c70989 11
+src/main/monica/skill-install.test.ts
+  h_d0d195a8c70989 25-26,33,48,80,83,104,115,117-119,143
+src/main/monica/skill-install.ts
+  h_d0d195a8c70989 15-16,18,20,22,25-27
+src/main/monica/trunk-baseline.ts
+  h_d0d195a8c70989 3
+src/main/monica/trunk-sync.ts
+  h_d0d195a8c70989 2-3
+src/main/monica/trunk-update-runtime.ts
+  h_d0d195a8c70989 5-6,25,39,42-44,63,72
+src/main/monica/version-binding-service.test.ts
+  h_d0d195a8c70989 8,78,173
+src/main/monica/version-binding-service.ts
+  h_d0d195a8c70989 9-11,14-15,17-19,25,31,37,40,43,59,62,64,67,80,82,94,96
+src/main/monica/version-current-catalog.ts
+  h_d0d195a8c70989 1-2,9
+src/main/monica/version-document-path.ts
+  h_d0d195a8c70989 7
+src/main/monica/version-document-store.test.ts
+  h_d0d195a8c70989 8,33,88
+src/main/monica/version-document-store.ts
+  h_d0d195a8c70989 14
+src/main/monica/version-history-runtime.ts
+  h_d0d195a8c70989 2-5,9,14-16,24,27-29,34,70,107,125,139,156,169
+src/main/monica/version-history-service.test.ts
+  h_d0d195a8c70989 7,41,193,360-362
+src/main/monica/version-history-service.ts
+  h_d0d195a8c70989 2,7,17-19
+src/main/monica/version-history-snapshot.ts
+  h_d0d195a8c70989 5
+src/main/monica/version-material-artifact.test.ts
+  h_d0d195a8c70989 3-4
+src/main/monica/version-material-artifact.ts
+  h_d0d195a8c70989 3-5
+src/main/monica/version-material-error.ts
+  h_d0d195a8c70989 1-2
+src/main/monica/version-material-migration.test.ts
+  h_d0d195a8c70989 7,11,21
+src/main/monica/version-material-migration.ts
+  h_d0d195a8c70989 1-2,9,11
+src/main/monica/version-material-runtime.ts
+  h_d0d195a8c70989 2-3,9,60,62,64
+src/main/monica/version-material-service.test.ts
+  h_d0d195a8c70989 11,13-15,18,81,90,385
+src/main/monica/version-material-service.ts
+  h_d0d195a8c70989 11,13-15,22-24,29-30,34,42,50,61
+src/main/monica/version-material-workspace.ts
+  h_d0d195a8c70989 3-4,11,24,37,41,47-48,57
+src/main/monica/version-selection.ts
+  h_d0d195a8c70989 2-6,16-17,22
+src/main/monica/version-workspace-plan-initialize.ts
+  h_d0d195a8c70989 3-7,11
+src/main/monica/version-workspace-prepare.test.ts
+  h_d0d195a8c70989 5-10,92,136,221,338
+src/main/monica/version-workspace-prepare.ts
+  h_d0d195a8c70989 2,4-6,10,19,22-24,42,54,59,87,97,105,131,205
+src/main/monica/workflow-comments.ts
+  h_d0d195a8c70989 1,4,8,11,20,51
+src/main/monica/workspace-resolver.test.ts
+  h_d0d195a8c70989 3-5,9,13,32-33,84-85
+src/main/monica/workspace-resolver.ts
+  h_d0d195a8c70989 11-12,19-20,31-32,34,52,54,79-84,113,140-141,145-146
+src/main/observability/bundle.test.ts
+  h_d0d195a8c70989 1,3
+src/main/persistence-workspace-default.test.ts
+  h_d0d195a8c70989 37,46-48,120,128
+src/main/persistence/loading-store/loaded-state-parsing.ts
+  h_d0d195a8c70989 8,204,208
+src/main/preflight/agent-detection.ts
+  h_d0d195a8c70989 48-50,61,64-65,68,143,378,382,385,389,399,401-409
+src/main/preflight/monica-cli-auth-status.ts
+  h_d0d195a8c70989 1-2,12,14,20-22,33-36,52,68,74,98
+src/main/rate-limits/service/service-full-cycle-application.ts
+  h_d0d195a8c70989 204,231-234
+src/main/runtime/orca-runtime.ts
+  h_d0d195a8c70989 4,8,11
+src/main/runtime/rpc/methods/index.ts
+  h_d0d195a8c70989 1,3-16,69-83
+src/main/runtime/rpc/methods/monica-archive.ts
+  h_d0d195a8c70989 1-7,9-10,14,16,19,21,25
+src/main/runtime/rpc/methods/monica-charter.ts
+  h_d0d195a8c70989 1,7-9,11-12,16,18,22,24,28,30,34
+src/main/runtime/rpc/methods/monica-fixed-workspace.ts
+  h_d0d195a8c70989 1-3,5-6,10
+src/main/runtime/rpc/methods/monica-history.ts
+  h_d0d195a8c70989 1,7-9,11-12,16,18,22,24,28,30,34
+src/main/runtime/rpc/methods/monica-materials.ts
+  h_d0d195a8c70989 1,7,11-15,17-18,23,29,35,41,47,53,69
+src/main/runtime/rpc/methods/monica-metrics.ts
+  h_d0d195a8c70989 1-5,7-8,12,14,18,20,25
+src/main/runtime/rpc/methods/monica-milestones.ts
+  h_d0d195a8c70989 1,5-7,9-10,14,16,20
+src/main/runtime/rpc/methods/monica-package.ts
+  h_d0d195a8c70989 1,7-9,11-12,16,18,22,24,28,30,34
+src/main/runtime/rpc/methods/monica-release.ts
+  h_d0d195a8c70989 1-4,6-7,10
+src/main/runtime/rpc/methods/monica-repo-removal.ts
+  h_d0d195a8c70989 1-2,4-5,7,10,12
+src/main/runtime/rpc/methods/monica-review-notifications.ts
+  h_d0d195a8c70989 3-5,7-8,21,26,38
+src/main/runtime/rpc/methods/monica-skills.ts
+  h_d0d195a8c70989 1-3,5-6,8-9
+src/main/runtime/rpc/methods/monica-trunk.ts
+  h_d0d195a8c70989 1-4,6-7,11
+src/main/runtime/rpc/methods/monica-version-binding.ts
+  h_d0d195a8c70989 1,5-7,9-10,16
+src/main/runtime/rpc/methods/monica-version-workspace.ts
+  h_d0d195a8c70989 1-4,6-7
+src/main/runtime/rpc/methods/worktree-schemas.test.ts
+  h_d0d195a8c70989 151
+src/main/runtime/runtime-project-group-controller.ts
+  h_d0d195a8c70989 7
+src/main/runtime/runtime-remove-project-host-scope.test.ts
+  h_d0d195a8c70989 11
+src/main/runtime/runtime-repository-settings-controller.ts
+  h_d0d195a8c70989 3
+src/main/startup/configure-process.test.ts
+  h_d0d195a8c70989 355,359,361,369,377,379,388,392,396
+src/main/startup/configure-process.ts
+  h_d0d195a8c70989 10-13,217-219,230-231
+src/main/startup/dev-instance-identity.test.ts
+  h_d0d195a8c70989 16-18
+src/main/startup/dev-instance-identity.ts
+  h_d0d195a8c70989 5-9,75,77-78,85
+src/main/startup/gpu-lifecycle.ts
+  h_d0d195a8c70989 27,32
+src/main/startup/main-process-observers.ts
+  h_d0d195a8c70989 9-10,59-61
+src/main/startup/main-process-ready-foundation.ts
+  h_d0d195a8c70989 98-99
+src/main/startup/monica-product.test.ts
+  h_d0d195a8c70989 3-7,9-11,14-15,19,23,25-27,32
+src/main/startup/monica-product.ts
+  h_d0d195a8c70989 1-2,5,7-8,13,16-23,25-26,28,33-34
+src/main/startup/run-electron-vite-dev.test.ts
+  h_d0d195a8c70989 105,108-109,393,402,437,440-441,443
+src/main/startup/single-instance-lock.test.ts
+  h_d0d195a8c70989 126,131,138
+src/main/startup/single-instance-lock.ts
+  h_d0d195a8c70989 73,75
+src/main/telemetry/client-monica-transport.test.ts
+  h_d0d195a8c70989 14,20,61,67,75,98,131,133
+src/main/telemetry/client.ts
+  h_d0d195a8c70989 14,55,72,74-76,79-80,83,85,111-114,118-120,224,227,375,377
+src/main/tray/system-tray.test.ts
+  h_d0d195a8c70989 55,59,145,228,239-240,252,255,264,267,338,344,491
+src/main/tray/system-tray.ts
+  h_d0d195a8c70989 2-3,47,49
+src/main/updater-changelog.test.ts
+  h_d0d195a8c70989 253-254
+src/main/updater-changelog.ts
+  h_d0d195a8c70989 4,46-47
+src/main/updater.startup-scheduling.test.ts
+  h_d0d195a8c70989 37,39-41
+src/main/updater/monica-update-feed.ts
+  h_d0d195a8c70989 3,5,20-21
+src/main/updater/recoverable-update-feed.test.ts
+  h_d0d195a8c70989 18
+src/main/updater/resumable-update-download.test.ts
+  h_d0d195a8c70989 16
+src/main/updater/updater-build-selection.ts
+  h_d0d195a8c70989 16
+src/main/updater/updater-nudge.ts
+  h_d0d195a8c70989 6,11,53-54
+src/main/updater/updater-release-feed.ts
+  h_d0d195a8c70989 12
+src/main/window/createMainWindow.ts
+  h_d0d195a8c70989 35-39,88-89,93-94
+src/preload/api-types.ts
+  h_d0d195a8c70989 35,51
+src/preload/api/cli-install-bridge.ts
+  h_d0d195a8c70989 2,10,13
+src/preload/api/ephemeral-vm-api.ts
+  h_d0d195a8c70989 1
+src/preload/api/monica-cli-install-api.ts
+  h_d0d195a8c70989 2-4,6,8-10
+src/preload/api/preflight-api.ts
+  h_d0d195a8c70989 12,14-15,17
+src/preload/api/repository-api.ts
+  h_d0d195a8c70989 1
+src/preload/milestone-recovery.ts
+  h_d0d195a8c70989 2
+src/relay/monica/fixed-workspace-handler.ts
+  h_d0d195a8c70989 6-9,21
+src/relay/monica/history-handler.test.ts
+  h_d0d195a8c70989 5,8,15
+src/relay/monica/history-handler.ts
+  h_d0d195a8c70989 3-5,17
+src/relay/monica/metrics-handler.test.ts
+  h_d0d195a8c70989 2,7,134
+src/relay/monica/metrics-handler.ts
+  h_d0d195a8c70989 8-9,62,81
+src/relay/monica/version-material-handler.ts
+  h_d0d195a8c70989 3-5,12,17,32
+src/relay/relay-runtime-services.ts
+  h_d0d195a8c70989 12-15
+src/renderer/src/App.tsx
+  h_d0d195a8c70989 34,97
+src/renderer/src/app-shell/AppRootSurfaces.tsx
+  h_d0d195a8c70989 6,297,303,308-310,319
+src/renderer/src/app-shell/AppWorkspaceShell.tsx
+  h_d0d195a8c70989 1,16-27,42,45,48,51,54,59,65,84,88,94,111,117-118,134-135,172,195,198,206,208,221
+src/renderer/src/app-shell/TitlebarMainStrip.tsx
+  h_d0d195a8c70989 10,50
+src/renderer/src/app-shell/WorktreeSidebar.tsx
+  h_d0d195a8c70989 5-7,24,44-46
+src/renderer/src/app-shell/use-app-chrome-layout.ts
+  h_d0d195a8c70989 15-16,77-78,81,108
+src/renderer/src/app-startup-routing.test.ts
+  h_d0d195a8c70989 295
+src/renderer/src/components/Landing.tsx
+  h_d0d195a8c70989 262,265
+src/renderer/src/components/NewWorkspaceComposerModal.tsx
+  h_d0d195a8c70989 27,49,51,53-54,148
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-toolbar.tsx
+  h_d0d195a8c70989 1-2,223
+src/renderer/src/components/crash-report/CrashReportDialogSurface.tsx
+  h_d0d195a8c70989 25,49,52,56,59,80,83,270,273
+src/renderer/src/components/error-boundaries/RecoverableRenderErrorBoundary.lazy-chunk.test.tsx
+  h_d0d195a8c70989 11,17-18,53,121
+src/renderer/src/components/feature-wall/AgentCapabilitiesSetupAction.tsx
+  h_d0d195a8c70989 1,170,187
+src/renderer/src/components/feature-wall/BrowserUseSkillSetupCard.tsx
+  h_d0d195a8c70989 1,56
+src/renderer/src/components/feature-wall/ConnectIntegrationsList.tsx
+  h_d0d195a8c70989 1,29,32,67
+src/renderer/src/components/feature-wall/FeatureWallModal.tsx
+  h_d0d195a8c70989 13,40-41,50,53,66
+src/renderer/src/components/feature-wall/FeatureWallSetupChecklist.tsx
+  h_d0d195a8c70989 29,233,242,251,273-274,312
+src/renderer/src/components/feature-wall/FeatureWallTourSurface.tsx
+  h_d0d195a8c70989 35-37,68,71,460
+src/renderer/src/components/feature-wall/feature-wall-setup-checklist-localized-copy.ts
+  h_d0d195a8c70989 1,27,32,93
+src/renderer/src/components/feature-wall/feature-wall-setup-progress.test.ts
+  h_d0d195a8c70989 53-54,56-58
+src/renderer/src/components/feature-wall/feature-wall-setup-progress.ts
+  h_d0d195a8c70989 12,49,51
+src/renderer/src/components/feature-wall/feature-wall-tour-localized-copy.ts
+  h_d0d195a8c70989 7,10,68,81,96,142
+src/renderer/src/components/feature-wall/review-notes-terminal-phase.ts
+  h_d0d195a8c70989 3,85
+src/renderer/src/components/feature-wall/use-integration-connection-status.test.ts
+  h_d0d195a8c70989 6,387,395,405,410,413
+src/renderer/src/components/feature-wall/use-integration-connection-status.ts
+  h_d0d195a8c70989 175
+src/renderer/src/components/github-item-dialog/open-dialog/github-item-dialog.tsx
+  h_d0d195a8c70989 8-9,40,42,48,54,62,64,110
+src/renderer/src/components/notifications/mac-notification-permission-card.tsx
+  h_d0d195a8c70989 6,159,162,204,207,215,218
+src/renderer/src/components/onboarding/AgentStep.tsx
+  h_d0d195a8c70989 10,127,130
+src/renderer/src/components/onboarding/CodeHubRow.tsx
+  h_d0d195a8c70989 10,12,154
+src/renderer/src/components/onboarding/IntegrationsStep.tsx
+  h_d0d195a8c70989 12,245,247,255,263,269-270
+src/renderer/src/components/onboarding/NotificationStep.tsx
+  h_d0d195a8c70989 22,189,192
+src/renderer/src/components/onboarding/OnboardingFlow.tsx
+  h_d0d195a8c70989 18-19,22,34,37,67,70,80,85,151,241,257,310,339-353
+src/renderer/src/components/onboarding/WindowsTerminalStep.tsx
+  h_d0d195a8c70989 18,189,192
+src/renderer/src/components/onboarding/onboarding-flow-state.ts
+  h_d0d195a8c70989 10,18,22
+src/renderer/src/components/onboarding/use-onboarding-flow.test.ts
+  h_d0d195a8c70989 15,17-18,153,165
+src/renderer/src/components/onboarding/use-onboarding-flow.ts
+  h_d0d195a8c70989 17-18,45
+src/renderer/src/components/right-sidebar/source-control/listing/use-row-opening.ts
+  h_d0d195a8c70989 5
+src/renderer/src/components/right-sidebar/source-control/panel/header-toolbar.tsx
+  h_d0d195a8c70989 2-3,317
+src/renderer/src/components/settings/CursorAccountsSection.tsx
+  h_d0d195a8c70989 78,92-94,96-97,125,172,177,181
+src/renderer/src/components/settings/ExperimentalPane.tsx
+  h_d0d195a8c70989 2-3,66
+src/renderer/src/components/settings/IntegrationsPane.tsx
+  h_d0d195a8c70989 11,14,53
+src/renderer/src/components/settings/OrchestrationSetupCard.tsx
+  h_d0d195a8c70989 21,53
+src/renderer/src/components/settings/PrivacyPane.tsx
+  h_d0d195a8c70989 9,72,100,103
+src/renderer/src/components/settings/RepositoryPane.tsx
+  h_d0d195a8c70989 28,88
+src/renderer/src/components/settings/SettingsSetupGuidePane.tsx
+  h_d0d195a8c70989 9,12-13,23,31-32,40,45
+src/renderer/src/components/settings/SettingsSidebar.tsx
+  h_d0d195a8c70989 22,125,128,156-157
+src/renderer/src/components/settings/appearance-search.ts
+  h_d0d195a8c70989 182
+src/renderer/src/components/settings/bitbucket-integration-card.tsx
+  h_d0d195a8c70989 1,266,282,293
+src/renderer/src/components/settings/cli-install-action.ts
+  h_d0d195a8c70989 3,7,13,28,49
+src/renderer/src/components/settings/cli-source-control-integration-cards.test.tsx
+  h_d0d195a8c70989 7-11,49,76,137,189,197
+src/renderer/src/components/settings/cli-source-control-integration-cards.tsx
+  h_d0d195a8c70989 57,80,85,215,224
+src/renderer/src/components/settings/experimental-search.ts
+  h_d0d195a8c70989 1-2,13
+src/renderer/src/components/settings/integrations-pane-status.test.ts
+  h_d0d195a8c70989 114
+src/renderer/src/components/settings/integrations-pane-status.ts
+  h_d0d195a8c70989 7,12,15,91,108
+src/renderer/src/components/settings/integrations-search.ts
+  h_d0d195a8c70989 5,61,78
+src/renderer/src/components/settings/monica-cli-integration-cards.tsx
+  h_d0d195a8c70989 12-14,20-21,30,33,52,59,101,162,168,202,265,287,326,328,331
+src/renderer/src/components/settings/privacy-search.ts
+  h_d0d195a8c70989 8,13,27,34,42,48,51,60
+src/renderer/src/components/settings/provider-account-scope.ts
+  h_d0d195a8c70989 2,51,62
+src/renderer/src/components/settings/settings-project-section-renderer.tsx
+  h_d0d195a8c70989 8,52
+src/renderer/src/components/settings/settings-remote-security-section-renderers.tsx
+  h_d0d195a8c70989 8,90
+src/renderer/src/components/settings/settings-setup-guide-progress.ts
+  h_d0d195a8c70989 9,23,25,30,43,47-48
+src/renderer/src/components/settings/source-control-integration-cards.tsx
+  h_d0d195a8c70989 1-4,9
+src/renderer/src/components/settings/source-control-preflight-card-status.ts
+  h_d0d195a8c70989 76
+src/renderer/src/components/settings/token-source-control-integration-cards.tsx
+  h_d0d195a8c70989 1,92,99,208,215
+src/renderer/src/components/settings/use-local-cli-scope.ts
+  h_d0d195a8c70989 3
+src/renderer/src/components/setup-guide/SetupGuideModal.tsx
+  h_d0d195a8c70989 24,56,159,201,268,272
+src/renderer/src/components/setup-guide/setup-guide-browser-milestone-progress.ts
+  h_d0d195a8c70989 3,15,46-47,70,75,79,85
+src/renderer/src/components/setup-guide/use-setup-guide-progress.test.ts
+  h_d0d195a8c70989 111
+src/renderer/src/components/setup-guide/use-setup-guide-progress.ts
+  h_d0d195a8c70989 20,27,49-50,115,118,137,253-254,282,299,329
+src/renderer/src/components/setup-guide/use-setup-guide-telemetry.test.ts
+  h_d0d195a8c70989 116,118,121,124,127
+src/renderer/src/components/setup-guide/use-setup-guide-telemetry.ts
+  h_d0d195a8c70989 17,41-42,50,53,111,113-114,116,123,134,136,150,161,165-166,184,186,192,194
+src/renderer/src/components/sidebar/RemoveFolderDialog.test.tsx
+  h_d0d195a8c70989 78
+src/renderer/src/components/sidebar/RemoveFolderDialog.tsx
+  h_d0d195a8c70989 19,44
+src/renderer/src/components/sidebar/SetupGuideSidebarEntry.tsx
+  h_d0d195a8c70989 19,77,106-107
+src/renderer/src/components/sidebar/SidebarFeedbackDialog.tsx
+  h_d0d195a8c70989 23,233,236,245,344,364
+src/renderer/src/components/sidebar/SidebarNav.test.tsx
+  h_d0d195a8c70989 30
+src/renderer/src/components/sidebar/SidebarSettingsHelpMenu.tsx
+  h_d0d195a8c70989 41-42,107,160,171,267,273,337,345,381,404
+src/renderer/src/components/sidebar/SidebarTaskNavButton.tsx
+  h_d0d195a8c70989 19-20,147,165,170,175-176,186,189-190,232,280
+src/renderer/src/components/sidebar/SidebarToolbar.tsx
+  h_d0d195a8c70989 11,77,79
+src/renderer/src/components/sidebar/WorktreeContextMenuView.tsx
+  h_d0d195a8c70989 39-40,176-177
+src/renderer/src/components/sidebar/WorktreeList.tsx
+  h_d0d195a8c70989 3-4,39,72,142,148-149,179,181,187,191,193,199,205,207,216,282,322-323,368
+src/renderer/src/components/sidebar/delete-worktree-flow.test.ts
+  h_d0d195a8c70989 616
+src/renderer/src/components/sidebar/delete-worktree-flow.ts
+  h_d0d195a8c70989 19-20,60
+src/renderer/src/components/sidebar/index.tsx
+  h_d0d195a8c70989 21,46,54,168,197,271
+src/renderer/src/components/sidebar/rendered-sidebar-worktree-order.test.ts
+  h_d0d195a8c70989 3,306-307
+src/renderer/src/components/sidebar/rendered-sidebar-worktree-order.ts
+  h_d0d195a8c70989 10,14,18,63,65,71,103,116,118,120,123
+src/renderer/src/components/sidebar/visible-worktrees.ts
+  h_d0d195a8c70989 29,342-343
+src/renderer/src/components/sidebar/workspace-options-menu-items.tsx
+  h_d0d195a8c70989 24,43,123,138
+src/renderer/src/components/sidebar/worktree-list/grouping/build-rows.ts
+  h_d0d195a8c70989 76
+src/renderer/src/components/sidebar/worktree-list/listing/monica-section-rows.ts
+  h_d0d195a8c70989 10
+src/renderer/src/components/sidebar/worktree-list/listing/use-filters.ts
+  h_d0d195a8c70989 3,13
+src/renderer/src/components/sidebar/worktree-list/listing/use-section-rows.ts
+  h_d0d195a8c70989 14-15,27,102,104,116,242,244,246,265
+src/renderer/src/components/sidebar/worktree-list/listing/use-version-scoped-worktrees.ts
+  h_d0d195a8c70989 4,8,14,33,39,52,116,129-130,133,135-136,138,148-149,152,161,164,171-172,182-183,220,224,229
+src/renderer/src/components/sidebar/worktree-list/rows/SectionHeader.tsx
+  h_d0d195a8c70989 28,185
+src/renderer/src/components/sidebar/worktree-list/viewport/viewport-props.ts
+  h_d0d195a8c70989 32
+src/renderer/src/components/sidebar/worktree-list/viewport/virtual-rows.ts
+  h_d0d195a8c70989 3,60
+src/renderer/src/components/stats/ShareUsageCard.tsx
+  h_d0d195a8c70989 115
+src/renderer/src/components/stats/share-card-utils.tsx
+  h_d0d195a8c70989 135
+src/renderer/src/components/status-bar/StatusBarSurface.tsx
+  h_d0d195a8c70989 33,47,266
+src/renderer/src/components/status-bar/usage-error-copy.ts
+  h_d0d195a8c70989 155
+src/renderer/src/components/tab-group/TabGroupSplitLayout.test.ts
+  h_d0d195a8c70989 191
+src/renderer/src/components/task-page-default-repo-selection.ts
+  h_d0d195a8c70989 10-11,96
+src/renderer/src/components/task-page-github-landing-refresh-run.tsx
+  h_d0d195a8c70989 71,74
+src/renderer/src/components/task-page-github-quiet-refresh-run.tsx
+  h_d0d195a8c70989 55,57
+src/renderer/src/components/task-page-source-context.tsx
+  h_d0d195a8c70989 18,114,149
+src/renderer/src/components/task-page/Content.tsx
+  h_d0d195a8c70989 5,65
+src/renderer/src/components/task-page/ListChrome.tsx
+  h_d0d195a8c70989 1,5,8,24,60
+src/renderer/src/components/task-page/ProviderFilters.tsx
+  h_d0d195a8c70989 7,14
+src/renderer/src/components/task-page/TaskPage.tsx
+  h_d0d195a8c70989 26,70
+src/renderer/src/components/task-page/codehub/Detail.tsx
+  h_d0d195a8c70989 2,71,107
+src/renderer/src/components/task-page/codehub/Filters.tsx
+  h_d0d195a8c70989 15,54,118-119,122,134-135,138
+src/renderer/src/components/task-page/codehub/ItemList.tsx
+  h_d0d195a8c70989 39-40,75,77,79,87-88,173,185,187,380
+src/renderer/src/components/task-page/codehub/controls.test.tsx
+  h_d0d195a8c70989 37
+src/renderer/src/components/task-page/codehub/use-codehub-detail-item.ts
+  h_d0d195a8c70989 23,25,30
+src/renderer/src/components/task-page/github/Filters.tsx
+  h_d0d195a8c70989 1-2,18,58,62,83,91,135-136
+src/renderer/src/components/task-page/github/List.tsx
+  h_d0d195a8c70989 17,72,302
+src/renderer/src/components/task-page/github/ModeControls.tsx
+  h_d0d195a8c70989 10,16,37,88-89,92,106-107,111
+src/renderer/src/components/task-page/github/Rows.tsx
+  h_d0d195a8c70989 4,72,75
+src/renderer/src/components/terminal-pane/terminal-appearance.ts
+  h_d0d195a8c70989 27-28,61,81-82
+src/renderer/src/components/terminal-pane/use-terminal-pane-projection.ts
+  h_d0d195a8c70989 22-23,68-69
+src/renderer/src/components/use-task-page-codehub-loading.test.tsx
+  h_d0d195a8c70989 48
+src/renderer/src/components/use-task-page-codehub-loading.ts
+  h_d0d195a8c70989 7,29,39,41,74-75,139
+src/renderer/src/components/use-task-page-github-cache-reconciliation.ts
+  h_d0d195a8c70989 95,101
+src/renderer/src/components/use-task-page-github-detail.ts
+  h_d0d195a8c70989 167,170,174,186
+src/renderer/src/components/use-task-page-github-landing-refresh.ts
+  h_d0d195a8c70989 28
+src/renderer/src/components/use-task-page-github-list-projection.ts
+  h_d0d195a8c70989 1,3,6,17,34-35,50,57,63-64,71-72,75,84,86,190,192
+src/renderer/src/components/use-task-page-github-list-state.ts
+  h_d0d195a8c70989 32,119,125,135,152,167
+src/renderer/src/components/use-task-page-github-mutation-state.ts
+  h_d0d195a8c70989 5,39-40,54,57,110,137
+src/renderer/src/components/use-task-page-github-search-pagination.ts
+  h_d0d195a8c70989 180,182,198,212,214,229
+src/renderer/src/components/use-task-page-linear-creation-state.ts
+  h_d0d195a8c70989 7,169
+src/renderer/src/components/use-task-page-monica-entry.ts
+  h_d0d195a8c70989 4,8,10-11,36,59
+src/renderer/src/components/use-task-page-monica-scope.ts
+  h_d0d195a8c70989 3,5-8,10-11,15-16,18,20-23,25,28,46,72,77,130,178,188,223-224,234,245,269-272,274-276,278-284,287
+src/renderer/src/components/use-task-page-provider-state.ts
+  h_d0d195a8c70989 23,51,67,70,72,108,165
+src/renderer/src/components/use-task-page-repo-selection.ts
+  h_d0d195a8c70989 33,35,49,75,102
+src/renderer/src/components/use-task-page-resume-restoration.ts
+  h_d0d195a8c70989 1,64,71,102
+src/renderer/src/components/use-task-page-runtime-hosts.ts
+  h_d0d195a8c70989 1,32,34
+src/renderer/src/components/use-task-page-search-actions.ts
+  h_d0d195a8c70989 1,40,84,91,103,113,119,153,164,168,173,179,190-191,195,205
+src/renderer/src/components/use-task-page-source-availability.ts
+  h_d0d195a8c70989 3,41
+src/renderer/src/components/use-task-page-store-bindings.ts
+  h_d0d195a8c70989 16
+src/renderer/src/components/use-task-page-workspace-actions.ts
+  h_d0d195a8c70989 22-23,26,35-36,80,83,85,136,210,212,214,234
+src/renderer/src/env.d.ts
+  h_d0d195a8c70989 90
+src/renderer/src/hooks/composer-state/composer-submit-orchestration.ts
+  h_d0d195a8c70989 91,193
+src/renderer/src/hooks/composer-state/composer-target-store.ts
+  h_d0d195a8c70989 15,30,33,35,61,187
+src/renderer/src/hooks/composer-state/full-creation-execution.test.ts
+  h_d0d195a8c70989 89
+src/renderer/src/hooks/composer-state/quick-creation-execution.ts
+  h_d0d195a8c70989 13,52,233,235,287
+src/renderer/src/hooks/composer-state/quick-creation-request.ts
+  h_d0d195a8c70989 10,55
+src/renderer/src/hooks/composer-state/target-change-actions.ts
+  h_d0d195a8c70989 119
+src/renderer/src/hooks/composer-state/target-store-model.ts
+  h_d0d195a8c70989 15,38
+src/renderer/src/hooks/composer-state/workspace-identity-state.ts
+  h_d0d195a8c70989 109
+src/renderer/src/hooks/settings-navigation-remote-sections.ts
+  h_d0d195a8c70989 25,87
+src/renderer/src/hooks/useComposerState.ts
+  h_d0d195a8c70989 9,43
+src/renderer/src/i18n/en-runtime-required.json
+  h_d0d195a8c70989 645-646
+src/renderer/src/i18n/locales/en.json
+  h_d0d195a8c70989 927,4030,5336,5397,7504,7756,9859,10686,11878,11882-11884,13474,13508,13510,13541-13543,13566-13570,13640,13649,14205,15168-15171,16799,17792,17934,18166-18167,18171,18205,18207,18211-18212,18214-18215,18231
+src/renderer/src/i18n/locales/es.json
+  h_d0d195a8c70989 636,11482,11514,11516,11547-11549,11572-11576,11646,11655,14579
+src/renderer/src/i18n/locales/fr.json
+  h_d0d195a8c70989 746,12687,12719,12721,12752-12754,12777-12781,12851,12860,16210
+src/renderer/src/i18n/locales/ja.json
+  h_d0d195a8c70989 636,11482,11514,11516,11547-11549,11572-11576,11646,11655,14614
+src/renderer/src/i18n/locales/ko.json
+  h_d0d195a8c70989 639,11525,11557,11559,11590-11592,11615-11619,11689,11698,14753
+src/renderer/src/i18n/locales/zh.json
+  h_d0d195a8c70989 659,3514,4398,4458,6356,6600,8567,9389,10275,10279-10281,11697,11731,11733,11764-11766,11789-11793,11863,11872,12418,13330-13333,14444,14923,15169,15297-15298,15302,15336,15338,15342-15343,15345-15346,15362
+src/renderer/src/lib/agent-launch-routing-caller-census.test.ts
+  h_d0d195a8c70989 21
+src/renderer/src/lib/agent-skill-cli-prerequisite.ts
+  h_d0d195a8c70989 1,15
+src/renderer/src/lib/blocked-notification-fallback.ts
+  h_d0d195a8c70989 3,20,23,30,33
+src/renderer/src/lib/codehub-api.test.ts
+  h_d0d195a8c70989 21
+src/renderer/src/lib/codehub-api.ts
+  h_d0d195a8c70989 3,15,132
+src/renderer/src/lib/ephemeral-vm-runtime-cleanup.ts
+  h_d0d195a8c70989 7
+src/renderer/src/lib/pending-worktree-creation.ts
+  h_d0d195a8c70989 17,122,125
+src/renderer/src/lib/worktree-creation-flow-execute.ts
+  h_d0d195a8c70989 2,145,155
+src/renderer/src/main.tsx
+  h_d0d195a8c70989 8-9
+src/renderer/src/monica/INVENTORY.md
+  h_d0d195a8c70989 1,7-16,20-39
+src/renderer/src/monica/ImportBuilderHostsDialog.tsx
+  h_d0d195a8c70989 1,25,77,105,178,186,195,198-199,201-208,212,218-221,226,234,237,252,258,265-267,290-291,309,313,319,321,323-324,331,340,343,351,354
+src/renderer/src/monica/KnowledgeCodeGraph.tsx
+  h_d0d195a8c70989 3,35
+src/renderer/src/monica/KnowledgeDocEditor.tsx
+  h_d0d195a8c70989 35,179-183,191,197,205-206,249
+src/renderer/src/monica/KnowledgeDocEditorRail.tsx
+  h_d0d195a8c70989 16,23,26,86-90,112,143
+src/renderer/src/monica/KnowledgeDocsGuide.tsx
+  h_d0d195a8c70989 89,172,186,262,264-266,268,270,273
+src/renderer/src/monica/KnowledgePage.tsx
+  h_d0d195a8c70989 1,29,118,149,159,167,198-199,217,271,277,293,314
+src/renderer/src/monica/LiveProjectWallCard.tsx
+  h_d0d195a8c70989 9,55
+src/renderer/src/monica/MonicaBrandSlogan.tsx
+  h_d0d195a8c70989 1-33
+src/renderer/src/monica/MonicaDeliveryHelp.tsx
+  h_d0d195a8c70989 5,7,18,36-37,46
+src/renderer/src/monica/MonicaIconButton.tsx
+  h_d0d195a8c70989 5,17
+src/renderer/src/monica/MonicaRail.tsx
+  h_d0d195a8c70989 9,17,19,56,58,64,66,122,124-125,138
+src/renderer/src/monica/MonicaScreenGuide.tsx
+  h_d0d195a8c70989 14,27,44-45,48,80,106,111,138,155,171,180,195,206,208,220,227,245,248,260,267,271,276,285-286,288,291,296-297,299,302,307,314,316,321
+src/renderer/src/monica/MonicaSendReviewMenuItems.tsx
+  h_d0d195a8c70989 1,25,27,69,153,161,203,215
+src/renderer/src/monica/MonicaShellBootstrap.tsx
+  h_d0d195a8c70989 3,6,8
+src/renderer/src/monica/MonicaSidebarNav.tsx
+  h_d0d195a8c70989 5-6,21,28,50,69,99,101-102,106
+src/renderer/src/monica/MonicaSidebarSectionHeader.tsx
+  h_d0d195a8c70989 4
+src/renderer/src/monica/MonicaVersionBindingMenuItems.tsx
+  h_d0d195a8c70989 1,7-8,13,20,23,43
+src/renderer/src/monica/MonicaVersionNav.tsx
+  h_d0d195a8c70989 1,6,9-10,14,32-34,64,80,128,164,229,255,351,353,355,364,383
+src/renderer/src/monica/MonicaWorkspaceChoiceDialog.tsx
+  h_d0d195a8c70989 17-19,36-37,39,48,69
+src/renderer/src/monica/NewVersionDialog.tsx
+  h_d0d195a8c70989 14,19
+src/renderer/src/monica/OverviewPage.tsx
+  h_d0d195a8c70989 28-29,40,42,177,225-226,253,256,270,286-287,293,306,335,365-367
+src/renderer/src/monica/ProjectCharterFields.tsx
+  h_d0d195a8c70989 2,16
+src/renderer/src/monica/ProjectSettingsRail.tsx
+  h_d0d195a8c70989 1,15,20,99,107,116,118,121,129-130,157-158,160,167,179,194,198,207,217
+src/renderer/src/monica/ProjectSettingsReview.tsx
+  h_d0d195a8c70989 32,54,60
+src/renderer/src/monica/ProjectWallCard.tsx
+  h_d0d195a8c70989 20,25,68,73,125-126,162,166,170,175
+src/renderer/src/monica/ProjectWallPage.tsx
+  h_d0d195a8c70989 1,8-9,15,24,96-97,105-106,109,112,114,118,120,124,126,265
+src/renderer/src/monica/TaskScopePanel.tsx
+  h_d0d195a8c70989 3,6,12,15,30-37,45-46,53,55,57-59,64,69,71,76,98-102,104,107,110,113,117-119,122,126,129,132,135,158-159
+src/renderer/src/monica/VersionSidebarPreview.tsx
+  h_d0d195a8c70989 4
+src/renderer/src/monica/annotations/AnnotationPopover.tsx
+  h_d0d195a8c70989 14
+src/renderer/src/monica/annotations/types.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/archive-pr-port.ts
+  h_d0d195a8c70989 1-2
+src/renderer/src/monica/board-ui.css
+  h_d0d195a8c70989 53
+src/renderer/src/monica/builder-hosts-import.ts
+  h_d0d195a8c70989 4
+src/renderer/src/monica/charter-port.ts
+  h_d0d195a8c70989 13-14
+src/renderer/src/monica/charter-pr-notice.tsx
+  h_d0d195a8c70989 2,25,32,43,47,59
+src/renderer/src/monica/charter-snapshot.ts
+  h_d0d195a8c70989 4
+src/renderer/src/monica/codehub-task-item.ts
+  h_d0d195a8c70989 6
+src/renderer/src/monica/cycle-view-state.ts
+  h_d0d195a8c70989 8,85
+src/renderer/src/monica/error-feedback.tsx
+  h_d0d195a8c70989 28-29,32-33
+src/renderer/src/monica/explore/AcceptanceDemoScenes.tsx
+  h_d0d195a8c70989 5-6
+src/renderer/src/monica/explore/DeliveryTaskScenes.tsx
+  h_d0d195a8c70989 8,65
+src/renderer/src/monica/explore/DirectionCharterDemo.tsx
+  h_d0d195a8c70989 5,8,30,62,75,78,80,83,85-86,88,90,94,97,100-104
+src/renderer/src/monica/explore/DirectionMilestoneDemo.tsx
+  h_d0d195a8c70989 9,125,144-145,147,178
+src/renderer/src/monica/explore/DirectionWalkthrough.tsx
+  h_d0d195a8c70989 48,62
+src/renderer/src/monica/explore/DirectionWallDemo.tsx
+  h_d0d195a8c70989 4,49
+src/renderer/src/monica/explore/MonicaExploreLayout.tsx
+  h_d0d195a8c70989 7,9,14,21,37,48,192,195
+src/renderer/src/monica/explore/OutcomesDemoScenes.tsx
+  h_d0d195a8c70989 2,9,123-125,127,130,141-143,156-157,160,165,168,173-174,221-222
+src/renderer/src/monica/explore/OutcomesWalkthrough.tsx
+  h_d0d195a8c70989 31
+src/renderer/src/monica/explore/PlanningDemoScenes.tsx
+  h_d0d195a8c70989 1
+src/renderer/src/monica/explore/direction-walkthrough.css
+  h_d0d195a8c70989 22,26,30,38,41,44,47,50,54,59,63,66,77,98,101,105,156,159,162,165
+src/renderer/src/monica/explore/monica-explore-catalog.ts
+  h_d0d195a8c70989 315
+src/renderer/src/monica/goal-start-action.ts
+  h_d0d195a8c70989 3,10,30,42,60
+src/renderer/src/monica/help-links.ts
+  h_d0d195a8c70989 1
+src/renderer/src/monica/is-monica-shell.ts
+  h_d0d195a8c70989 1-2,4
+src/renderer/src/monica/issue-start-action.ts
+  h_d0d195a8c70989 3,16-17,63,93
+src/renderer/src/monica/knowledge-demo-data.ts
+  h_d0d195a8c70989 60,75
+src/renderer/src/monica/knowledge-doc-registry.ts
+  h_d0d195a8c70989 159
+src/renderer/src/monica/metric-runtime-rpc.ts
+  h_d0d195a8c70989 2-3,39
+src/renderer/src/monica/metrics-port.test.ts
+  h_d0d195a8c70989 6
+src/renderer/src/monica/metrics-port.ts
+  h_d0d195a8c70989 7
+src/renderer/src/monica/metrics-workspace-board.tsx
+  h_d0d195a8c70989 3,15,112
+src/renderer/src/monica/metrics-workspace-open.ts
+  h_d0d195a8c70989 3,14
+src/renderer/src/monica/metrics/MetricEvidenceView.tsx
+  h_d0d195a8c70989 2,8,45-46,52,57,65,67,71,74,93
+src/renderer/src/monica/metrics/MetricSelector.tsx
+  h_d0d195a8c70989 5,27
+src/renderer/src/monica/metrics/metric-evidence.css
+  h_d0d195a8c70989 1,7,11,16,22,29,35,42,46,51
+src/renderer/src/monica/milestone-actual-bars.tsx
+  h_d0d195a8c70989 5-6,32
+src/renderer/src/monica/milestone-actual-layout.ts
+  h_d0d195a8c70989 6-8
+src/renderer/src/monica/milestone-add-feature.ts
+  h_d0d195a8c70989 1,6-7
+src/renderer/src/monica/milestone-change-summary.ts
+  h_d0d195a8c70989 1
+src/renderer/src/monica/milestone-day-axis.tsx
+  h_d0d195a8c70989 4,9,14,28-29,32,36,67,74,106-107,119,142
+src/renderer/src/monica/milestone-fact-readers.tsx
+  h_d0d195a8c70989 3
+src/renderer/src/monica/milestone-feature-facts.ts
+  h_d0d195a8c70989 2,7-8
+src/renderer/src/monica/milestone-field.tsx
+  h_d0d195a8c70989 41
+src/renderer/src/monica/milestone-history-actions.tsx
+  h_d0d195a8c70989 14,58
+src/renderer/src/monica/milestone-navigation.tsx
+  h_d0d195a8c70989 11-12,32,65,78,82-86,98,103,187-192,197,209,220
+src/renderer/src/monica/milestone-planning-session.ts
+  h_d0d195a8c70989 1,7-8
+src/renderer/src/monica/milestone-port.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/milestone-recovery.ts
+  h_d0d195a8c70989 7
+src/renderer/src/monica/milestone-review-button.tsx
+  h_d0d195a8c70989 82
+src/renderer/src/monica/milestone-stage-bars.tsx
+  h_d0d195a8c70989 8-9,34-35,38,40,43,50,61,104-107,111,147,152,159,170,175,196
+src/renderer/src/monica/milestone-timeline.tsx
+  h_d0d195a8c70989 29,35,42,125,218,236,244,278,282-284,296,298,315,326,340,343,369-371,376
+src/renderer/src/monica/milestone-version-origin.tsx
+  h_d0d195a8c70989 20
+src/renderer/src/monica/milestone-version-row.tsx
+  h_d0d195a8c70989 12-13,47,130-131,134-138,145,151,188,192,196,217,237
+src/renderer/src/monica/monica-kb.css
+  h_d0d195a8c70989 2,10,13,22,27,32,36,46,51,61,64,72,83,88,93,105,110,117,125,132,137,140,148,151,158,162,167,173,178,181,184,187,192,196,201,216,219,224,230,234,238,248,253,259,264,277,280,285,288,292,295,301,309,314,322,327,341,347,350,354,363,366,369,372,375,381,384,389,394,398,408,411,416,421,428,435,440,446,449,453,467,470,477,480,483,488,494,502,513,518,521,528,531-532,537,540,549,555,559,572,583,590,593,601,607,615,618,623,628,633,638,643,655,661,664,668-669,672
+src/renderer/src/monica/monica-nav.ts
+  h_d0d195a8c70989 2,6,17
+src/renderer/src/monica/monica-object-context.ts
+  h_d0d195a8c70989 2,6,8,11
+src/renderer/src/monica/monica-overview.css
+  h_d0d195a8c70989 1,9,18,23,33,36,46,61,66,69,74,82,86,90,95,99,102,106,112,116,128,135,138,142,151,156,162,171,176,183,189,192,195,199,207,210,216,220,229,237,243,246,252,259,262,265,270,274,281,285,288,293,299,305,311,316,319,322,326,333,343,349,352,356,361,366,371,374,379,382,386,393,403,414-415,417,431
+src/renderer/src/monica/monica-skill-install.ts
+  h_d0d195a8c70989 2,11,14
+src/renderer/src/monica/monica-terminal-appearance.ts
+  h_d0d195a8c70989 3-4,6-8,11,15,20
+src/renderer/src/monica/monica-terminal.css
+  h_d0d195a8c70989 1
+src/renderer/src/monica/monica-tokens.css
+  h_d0d195a8c70989 1,90,126,136,140,145,149,153,157,161,176,180,185,189,192,197,206,209
+src/renderer/src/monica/monica-wall-projects.test.ts
+  h_d0d195a8c70989 9
+src/renderer/src/monica/monica-wall-projects.ts
+  h_d0d195a8c70989 13
+src/renderer/src/monica/monica-wall.css
+  h_d0d195a8c70989 1,10,18,24,29,35,40,49,64,70,79,107,251,257,261,265,268,274,283,293,299,304,310,315,322,328,334,339,354,360,364,373,376,379,383-384,387,391,398
+src/renderer/src/monica/overview-controls.tsx
+  h_d0d195a8c70989 17,24
+src/renderer/src/monica/overview-metric-readings.test.ts
+  h_d0d195a8c70989 6-7
+src/renderer/src/monica/overview-metric-readings.ts
+  h_d0d195a8c70989 2,4
+src/renderer/src/monica/overview-project-card.tsx
+  h_d0d195a8c70989 3,5,28,39,43
+src/renderer/src/monica/overview-scoreboard-model.test.ts
+  h_d0d195a8c70989 2-3
+src/renderer/src/monica/overview-scoreboard-model.ts
+  h_d0d195a8c70989 1-2
+src/renderer/src/monica/overview-scoreboard.tsx
+  h_d0d195a8c70989 12,16-17,117,123,132,137,139,144-145,147,153,158,174,183,189,193-195,198-199,254
+src/renderer/src/monica/overview-zone-series.test.ts
+  h_d0d195a8c70989 2-3
+src/renderer/src/monica/overview-zone-series.ts
+  h_d0d195a8c70989 1,6
+src/renderer/src/monica/package-pipeline-port.ts
+  h_d0d195a8c70989 11
+src/renderer/src/monica/post-create-version-binding.ts
+  h_d0d195a8c70989 7,16-17
+src/renderer/src/monica/pr-review-notifications/ReviewSendDialog.tsx
+  h_d0d195a8c70989 12
+src/renderer/src/monica/pr-review-notifications/ReviewSendDialogHost.tsx
+  h_d0d195a8c70989 2
+src/renderer/src/monica/pr-review-notifications/codehub-review.ts
+  h_d0d195a8c70989 1,11
+src/renderer/src/monica/pr-review-notifications/model.ts
+  h_d0d195a8c70989 9
+src/renderer/src/monica/pr-review-notifications/review-target.ts
+  h_d0d195a8c70989 1,23,158
+src/renderer/src/monica/pr-review-notifications/send-dialog-store.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/pr-review-notifications/storage.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/pr-review-notifications/store.ts
+  h_d0d195a8c70989 1,9,119,140
+src/renderer/src/monica/pr-review-notifications/transport.ts
+  h_d0d195a8c70989 7
+src/renderer/src/monica/project-charter.ts
+  h_d0d195a8c70989 2,10,13,23-24
+src/renderer/src/monica/project-milestones.css
+  h_d0d195a8c70989 1,10,19,25,28,34,40,45,52,60,67,72,76,82,86,97,101,111,116,120,125-126,140,145,149-150,154,157,162,167,175-176,179,183-185,189,202,206,211,215,228,231,239,244,250,254,257,262,266,269,275,280,290,293,298,307,310-311,318,329,335,346,352,358,363,366,370,380,384,392,396-397,400,405,411,417,421,433,436,439,448,451,461,465,473,479,484,492,499,502,506,510,514,519,526,537,545,548,554,557,560,565,569,576,579,584,592,595,604,617,621,624-625,629,647,652,656,665,670,678-679,684,689,694,697-698,701,704,713,722-723,727,733,736,745
+src/renderer/src/monica/project-milestones.tsx
+  h_d0d195a8c70989 1,4,16,30,34,63,78,86,226,238,260,262,311,331,337,343,362-366,369,376,378
+src/renderer/src/monica/project-settings.css
+  h_d0d195a8c70989 1-2,16,20-21,25,29,33,37,48,55,59,65,72,77,92,95,99,102,105,113,117,120,123-124,128,135,140,144,154,158,164-165,168,173,177,186,193-194,196,202,207,216,219,224,231,235,242,247,253,260,264,269
+src/renderer/src/monica/project-source-resolution.test.ts
+  h_d0d195a8c70989 13
+src/renderer/src/monica/project-source-resolution.ts
+  h_d0d195a8c70989 9
+src/renderer/src/monica/quick-links/QuickLinksStatusSegment.tsx
+  h_d0d195a8c70989 15,163,173-179,190-192
+src/renderer/src/monica/quick-links/quick-links-store.ts
+  h_d0d195a8c70989 10-11,60-63,65
+src/renderer/src/monica/release-port.ts
+  h_d0d195a8c70989 1-2
+src/renderer/src/monica/scoped-task-workspace.ts
+  h_d0d195a8c70989 8-9,14,16,21,32,66,101,137,141,143,174,187,190,218,225,233
+src/renderer/src/monica/scoreboard-measure.tsx
+  h_d0d195a8c70989 3,67,72-74,117-118,125-128,134-138
+src/renderer/src/monica/task-port.test.ts
+  h_d0d195a8c70989 326
+src/renderer/src/monica/task-port.ts
+  h_d0d195a8c70989 32,85,137
+src/renderer/src/monica/task-reference-reader.ts
+  h_d0d195a8c70989 157
+src/renderer/src/monica/task-scope-load.ts
+  h_d0d195a8c70989 8,38,65,91-92,100-101,122,154,183
+src/renderer/src/monica/task-scope-projection.ts
+  h_d0d195a8c70989 5-8,18-31,34,41,53,78,107,135-136
+src/renderer/src/monica/use-charter-pr-status.ts
+  h_d0d195a8c70989 3
+src/renderer/src/monica/use-milestone-gesture.ts
+  h_d0d195a8c70989 3,10-11
+src/renderer/src/monica/use-milestone-planning.ts
+  h_d0d195a8c70989 4,9,156
+src/renderer/src/monica/use-milestone-viewport.ts
+  h_d0d195a8c70989 1,10,17
+src/renderer/src/monica/use-overview-history.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/use-overview-metric-collection.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/use-project-settings.ts
+  h_d0d195a8c70989 2,7,14,95,225,322
+src/renderer/src/monica/use-task-scope-viewers.ts
+  h_d0d195a8c70989 4,15,78-79
+src/renderer/src/monica/use-version-catalog.ts
+  h_d0d195a8c70989 19
+src/renderer/src/monica/use-version-minutes.ts
+  h_d0d195a8c70989 8,14
+src/renderer/src/monica/use-wall-charters.ts
+  h_d0d195a8c70989 7
+src/renderer/src/monica/use-wall-projects.ts
+  h_d0d195a8c70989 4
+src/renderer/src/monica/version-acceptance/AcceptanceArchiveCard.tsx
+  h_d0d195a8c70989 2,5-6,10
+src/renderer/src/monica/version-acceptance/AcceptanceBoard.tsx
+  h_d0d195a8c70989 2-3
+src/renderer/src/monica/version-acceptance/AcceptanceBoardContent.tsx
+  h_d0d195a8c70989 1,32,77,413
+src/renderer/src/monica/version-acceptance/AcceptanceGoalRow.tsx
+  h_d0d195a8c70989 9
+src/renderer/src/monica/version-acceptance/AcceptanceGoalRows.tsx
+  h_d0d195a8c70989 7
+src/renderer/src/monica/version-acceptance/AcceptanceGoalTasks.tsx
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-acceptance/AcceptanceLegacyRecords.tsx
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-acceptance/AcceptanceMinutesSection.tsx
+  h_d0d195a8c70989 7
+src/renderer/src/monica/version-acceptance/AcceptanceNotices.tsx
+  h_d0d195a8c70989 2,56,73,94,107,129
+src/renderer/src/monica/version-acceptance/AcceptancePackage.tsx
+  h_d0d195a8c70989 4-5
+src/renderer/src/monica/version-acceptance/AcceptancePrepareSection.tsx
+  h_d0d195a8c70989 11-13
+src/renderer/src/monica/version-acceptance/AcceptanceSections.tsx
+  h_d0d195a8c70989 4,54,107
+src/renderer/src/monica/version-acceptance/acceptance-decision.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-acceptance/acceptance-issue-annotations.ts
+  h_d0d195a8c70989 8
+src/renderer/src/monica/version-acceptance/acceptance-legacy.test.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-acceptance/acceptance-legacy.ts
+  h_d0d195a8c70989 1
+src/renderer/src/monica/version-acceptance/acceptance-merge.ts
+  h_d0d195a8c70989 1
+src/renderer/src/monica/version-acceptance/acceptance-model.test.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/version-acceptance/acceptance-model.ts
+  h_d0d195a8c70989 6
+src/renderer/src/monica/version-acceptance/acceptance-task-evidence.test.ts
+  h_d0d195a8c70989 6
+src/renderer/src/monica/version-acceptance/acceptance-task-evidence.ts
+  h_d0d195a8c70989 6
+src/renderer/src/monica/version-acceptance/use-acceptance-board.ts
+  h_d0d195a8c70989 5-6
+src/renderer/src/monica/version-acceptance/use-acceptance-draft.ts
+  h_d0d195a8c70989 1,3,7,37,110
+src/renderer/src/monica/version-acceptance/use-acceptance-output.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/version-acceptance/use-acceptance-plan.ts
+  h_d0d195a8c70989 6-7,11,13
+src/renderer/src/monica/version-binding-port.ts
+  h_d0d195a8c70989 8-10,14-15,52,73,76,79
+src/renderer/src/monica/version-catalog-load.ts
+  h_d0d195a8c70989 5,14,18
+src/renderer/src/monica/version-catalog-plan-trees.ts
+  h_d0d195a8c70989 2,36
+src/renderer/src/monica/version-catalog-retention.ts
+  h_d0d195a8c70989 4
+src/renderer/src/monica/version-catalog-source.ts
+  h_d0d195a8c70989 10
+src/renderer/src/monica/version-cleanup-dialog.tsx
+  h_d0d195a8c70989 21
+src/renderer/src/monica/version-cycle/AutomationConfigureButton.tsx
+  h_d0d195a8c70989 11
+src/renderer/src/monica/version-cycle/CycleStartCard.tsx
+  h_d0d195a8c70989 31
+src/renderer/src/monica/version-cycle/CycleWorkspaceProvider.tsx
+  h_d0d195a8c70989 1,6,8,39,76,100
+src/renderer/src/monica/version-cycle/ReadonlyMaterialSections.tsx
+  h_d0d195a8c70989 10
+src/renderer/src/monica/version-cycle/UnclassifiedIssues.tsx
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-cycle/VersionReadonlyMaterialView.tsx
+  h_d0d195a8c70989 4
+src/renderer/src/monica/version-cycle/cycle-context.ts
+  h_d0d195a8c70989 1-2
+src/renderer/src/monica/version-cycle/cycle-prompt.ts
+  h_d0d195a8c70989 2-4,8-9,14,33,45,55
+src/renderer/src/monica/version-cycle/cycle-start-request.ts
+  h_d0d195a8c70989 1-2
+src/renderer/src/monica/version-cycle/cycle-workspace-context.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/version-cycle/cycle-workspace-view.ts
+  h_d0d195a8c70989 2-3,14
+src/renderer/src/monica/version-cycle/ensure-cycle-automation.test.ts
+  h_d0d195a8c70989 83,89,100,150-151
+src/renderer/src/monica/version-cycle/ensure-cycle-automation.ts
+  h_d0d195a8c70989 1,3,9-10,24,44,46-47,185,247,266,301,306
+src/renderer/src/monica/version-cycle/material-draft.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-cycle/metrics-setup.ts
+  h_d0d195a8c70989 3,13,32,111
+src/renderer/src/monica/version-cycle/native-cycle-workspace.ts
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-cycle/native-workspace.ts
+  h_d0d195a8c70989 12,17-18,20,100
+src/renderer/src/monica/version-cycle/open-acceptance-source.ts
+  h_d0d195a8c70989 5,11-12,33,66
+src/renderer/src/monica/version-cycle/open-archive-pr.ts
+  h_d0d195a8c70989 10
+src/renderer/src/monica/version-cycle/ports.ts
+  h_d0d195a8c70989 3-6,10
+src/renderer/src/monica/version-cycle/trunk-update-port.ts
+  h_d0d195a8c70989 2-4,65
+src/renderer/src/monica/version-cycle/use-archive-pr-status.ts
+  h_d0d195a8c70989 3-4
+src/renderer/src/monica/version-cycle/use-auto-worktree-base.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-cycle/use-cycle-automation-draft.ts
+  h_d0d195a8c70989 5,25-26,29
+src/renderer/src/monica/version-cycle/use-cycle-workspace-target.ts
+  h_d0d195a8c70989 1,6-7,21,24-25,268,297
+src/renderer/src/monica/version-cycle/use-fixed-acceptance-browse-target.ts
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-cycle/use-material-autosave.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-cycle/use-release-status.ts
+  h_d0d195a8c70989 3-4
+src/renderer/src/monica/version-cycle/use-workflow-version.ts
+  h_d0d195a8c70989 2,15-17,20-22,31-33,45-48,50-66
+src/renderer/src/monica/version-cycle/version-cycle.css
+  h_d0d195a8c70989 1,196
+src/renderer/src/monica/version-cycle/version-membership.ts
+  h_d0d195a8c70989 12-13,55,88
+src/renderer/src/monica/version-history-port.ts
+  h_d0d195a8c70989 10
+src/renderer/src/monica/version-labels.ts
+  h_d0d195a8c70989 1,44
+src/renderer/src/monica/version-material-port.ts
+  h_d0d195a8c70989 1,6
+src/renderer/src/monica/version-nav-actions.ts
+  h_d0d195a8c70989 1,6-8,13,17,47,97,138,143,150
+src/renderer/src/monica/version-nav-group.tsx
+  h_d0d195a8c70989 13-16,86,95,129
+src/renderer/src/monica/version-nav-rows.tsx
+  h_d0d195a8c70989 24-26,230,249
+src/renderer/src/monica/version-overview-materials.ts
+  h_d0d195a8c70989 2-3,15,18
+src/renderer/src/monica/version-overview-page.tsx
+  h_d0d195a8c70989 13,34,238
+src/renderer/src/monica/version-overview/feature-model.test.ts
+  h_d0d195a8c70989 21
+src/renderer/src/monica/version-overview/feature-timeline.ts
+  h_d0d195a8c70989 1,29
+src/renderer/src/monica/version-overview/material-cache.ts
+  h_d0d195a8c70989 4,22
+src/renderer/src/monica/version-overview/milestone-feature-fixture.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/version-overview/overview-provider-port.ts
+  h_d0d195a8c70989 4-6
+src/renderer/src/monica/version-overview/read-overview-features.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-overview/read-version-evidence.ts
+  h_d0d195a8c70989 6-7
+src/renderer/src/monica/version-overview/read-workflow-evidence.ts
+  h_d0d195a8c70989 1-2,10
+src/renderer/src/monica/version-overview/use-overview-features.ts
+  h_d0d195a8c70989 2,8,78
+src/renderer/src/monica/version-overview/use-workflow-evidence.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/version-overview/version-evidence.ts
+  h_d0d195a8c70989 4
+src/renderer/src/monica/version-overview/workflow-evidence.ts
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-overview/workflow-productivity.tsx
+  h_d0d195a8c70989 5
+src/renderer/src/monica/version-planning/PlanGoalMetrics.tsx
+  h_d0d195a8c70989 4-5,137
+src/renderer/src/monica/version-planning/PlanningAnnotationOverlays.tsx
+  h_d0d195a8c70989 1,40
+src/renderer/src/monica/version-planning/PlanningArchiveCard.tsx
+  h_d0d195a8c70989 2,5-6
+src/renderer/src/monica/version-planning/PlanningBoard.tsx
+  h_d0d195a8c70989 1,11,20,154,181,297
+src/renderer/src/monica/version-planning/PlanningGoalCard.tsx
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-planning/PlanningGoalTasks.tsx
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-planning/PlanningGoals.tsx
+  h_d0d195a8c70989 4
+src/renderer/src/monica/version-planning/PlanningMinutesSection.tsx
+  h_d0d195a8c70989 6
+src/renderer/src/monica/version-planning/PlanningPersistenceNotice.tsx
+  h_d0d195a8c70989 40,47,56,66
+src/renderer/src/monica/version-planning/PlanningPriorReview.tsx
+  h_d0d195a8c70989 3
+src/renderer/src/monica/version-planning/PlanningSections.tsx
+  h_d0d195a8c70989 4,55
+src/renderer/src/monica/version-planning/planning-progress-source.ts
+  h_d0d195a8c70989 1-2,10
+src/renderer/src/monica/version-planning/use-plan-metrics.ts
+  h_d0d195a8c70989 8,10-11
+src/renderer/src/monica/version-planning/use-planning-material.ts
+  h_d0d195a8c70989 5-7
+src/renderer/src/monica/version-planning/use-prior-carryovers.test.ts
+  h_d0d195a8c70989 2
+src/renderer/src/monica/version-planning/use-prior-carryovers.ts
+  h_d0d195a8c70989 3-4,9
+src/renderer/src/monica/version-planning/version-planning.css
+  h_d0d195a8c70989 84,100
+src/renderer/src/monica/version-task-entries.ts
+  h_d0d195a8c70989 4-5
+src/renderer/src/monica/version-tree-bind-dialog.tsx
+  h_d0d195a8c70989 1,27,30-34,43,112,183-184,235,250,260,276,278,298,306,326,332,409
+src/renderer/src/monica/version-workflow-progress.ts
+  h_d0d195a8c70989 1-3
+src/renderer/src/monica/version-workspace-choice-state.ts
+  h_d0d195a8c70989 15,20,29,34,41,47,62,81
+src/renderer/src/monica/version-workspace-port.ts
+  h_d0d195a8c70989 5-7,11,34
+src/renderer/src/monica/version-workspace-prepare-report.ts
+  h_d0d195a8c70989 1
+src/renderer/src/monica/wall-native-project-actions.tsx
+  h_d0d195a8c70989 10
+src/renderer/src/monica/wall-readings-load.ts
+  h_d0d195a8c70989 3-5,11,17,70
+src/renderer/src/monica/wall-refresh.ts
+  h_d0d195a8c70989 1,76
+src/renderer/src/store/project-groups/project-group-mutations.ts
+  h_d0d195a8c70989 18,20,212,240,245
+src/renderer/src/store/project-groups/project-group-owner-stamping.ts
+  h_d0d195a8c70989 6,19
+src/renderer/src/store/repos/owner-routing.ts
+  h_d0d195a8c70989 13,35
+src/renderer/src/store/repos/repo-removal.ts
+  h_d0d195a8c70989 16,60,176
+src/renderer/src/store/repos/repo-state.ts
+  h_d0d195a8c70989 1,144
+src/renderer/src/store/slices/repos-host-identity-routing.test.ts
+  h_d0d195a8c70989 425
+src/renderer/src/store/slices/repos-project-groups-owner-routing.test.ts
+  h_d0d195a8c70989 339
+src/renderer/src/store/slices/ui/ui-slice-contract-core.ts
+  h_d0d195a8c70989 15,73
+src/renderer/src/store/slices/ui/ui-slice-modal-actions.ts
+  h_d0d195a8c70989 3,17
+src/renderer/src/store/slices/ui/ui-slice-task-actions.ts
+  h_d0d195a8c70989 1,134,137,140
+src/renderer/src/store/slices/worktrees/metadata/worktree-meta-persist.test.ts
+  h_d0d195a8c70989 4,115,125
+src/renderer/src/store/slices/worktrees/metadata/worktree-meta-persist.ts
+  h_d0d195a8c70989 9,131
+src/renderer/src/web/preload-api/web-agent-accounts-api.ts
+  h_d0d195a8c70989 35
+src/renderer/src/web/preload-api/web-github-api.ts
+  h_d0d195a8c70989 209
+src/shared/app-icon.ts
+  h_d0d195a8c70989 1
+src/shared/automation-run-prompt.ts
+  h_d0d195a8c70989 2
+src/shared/feature-wall-setup-steps.ts
+  h_d0d195a8c70989 83,87-88,91-92,107,109,116,119,125,128
+src/shared/github/issue-state-types.ts
+  h_d0d195a8c70989 14
+src/shared/github/work-item-batch-types.ts
+  h_d0d195a8c70989 14
+src/shared/global-settings-types.ts
+  h_d0d195a8c70989 488
+src/shared/keybindings-default-bindings.test.ts
+  h_d0d195a8c70989 466
+src/shared/keybindings/definitions-core-2.ts
+  h_d0d195a8c70989 8
+src/shared/monica-cli-install-commands.ts
+  h_d0d195a8c70989 1,11,32,47,49-50,58,63-64
+src/shared/monica/branch-ref.ts
+  h_d0d195a8c70989 3,5
+src/shared/monica/charter.ts
+  h_d0d195a8c70989 5
+src/shared/monica/creation-context.test.ts
+  h_d0d195a8c70989 3,31,45,58,63,66,70,73,79
+src/shared/monica/creation-context.ts
+  h_d0d195a8c70989 3-5,9,13,26-27,29,37,45,55
+src/shared/monica/overview-pull.ts
+  h_d0d195a8c70989 3
+src/shared/monica/project-charter.ts
+  h_d0d195a8c70989 8
+src/shared/monica/quick-links.ts
+  h_d0d195a8c70989 94
+src/shared/monica/repo-removal.ts
+  h_d0d195a8c70989 8,22,24,26
+src/shared/monica/skill-assets.ts
+  h_d0d195a8c70989 3,12
+src/shared/monica/skill-package.json
+  h_d0d195a8c70989 4-6,9
+src/shared/monica/task-scope.test.ts
+  h_d0d195a8c70989 4-10,14,19,24,26,28,34-36,38-39,54,57-58,60,63,65,67-75
+src/shared/monica/task-scope.ts
+  h_d0d195a8c70989 13,30,44,46,51,53-54,56,59,61-62,68,71,75-76,85,98,111,149
+src/shared/monica/version-binding.test.ts
+  h_d0d195a8c70989 4-6,14,17-18,22,24,39,42,45,47,54,57,60,63,102,104,113-115,117,120,128,131-134
+src/shared/monica/version-binding.ts
+  h_d0d195a8c70989 9,15,17-18,20-21,25,38,40,42,96,100,104-106,139-140
+src/shared/monica/version-catalog.test.ts
+  h_d0d195a8c70989 4,201
+src/shared/monica/version-catalog.ts
+  h_d0d195a8c70989 2,18,88
+src/shared/monica/version-material-client.ts
+  h_d0d195a8c70989 44-45
+src/shared/monica/version-workspace-match.test.ts
+  h_d0d195a8c70989 77
+src/shared/monica/version-workspace-match.ts
+  h_d0d195a8c70989 5,78,96,119
+src/shared/protocol-version.ts
+  h_d0d195a8c70989 130,132,135,138-140,320-323
+src/shared/release-channel.test.ts
+  h_d0d195a8c70989 329,331-332,334,338-339,342-344
+src/shared/release-channel.ts
+  h_d0d195a8c70989 22,24,26,29,32,38,41-42,47,49-50,52-54
+src/shared/repo-types.ts
+  h_d0d195a8c70989 51
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  h_d0d195a8c70989 45-88,1258-1259,1264
+src/shared/rpc-contract/worktree-params.ts
+  h_d0d195a8c70989 15,134,136,138
+src/shared/secure-file-async.test.ts
+  h_d0d195a8c70989 18
+src/shared/task-source-context.ts
+  h_d0d195a8c70989 39
+src/shared/telemetry-feature-education-event-schemas.ts
+  h_d0d195a8c70989 22
+src/shared/worktree/meta-types.ts
+  h_d0d195a8c70989 4,19,21,24
+src/shared/worktree/types.ts
+  h_d0d195a8c70989 8,107,109
+tests/e2e/fixtures/monica-update-download-main.ts
+  h_d0d195a8c70989 12,15,17,120
+tests/e2e/global-setup.ts
+  h_d0d195a8c70989 20,41-43,46,53-55
+tests/e2e/helpers/monica-app.ts
+  h_d0d195a8c70989 2,29,38,40,44,59,63,66,70,98,130,166-167,204,236,281-282,446
+tests/e2e/helpers/monica-fixed-workspace-fixture.ts
+  h_d0d195a8c70989 6,93,140
+tests/e2e/helpers/monica-fixed-workspace-readback.ts
+  h_d0d195a8c70989 6
+tests/e2e/helpers/monica-fixed-workspace.ts
+  h_d0d195a8c70989 5,10,19,88
+tests/e2e/helpers/monica-flow-trunk-sync.ts
+  h_d0d195a8c70989 5-6
+tests/e2e/helpers/monica-launch-args.ts
+  h_d0d195a8c70989 3
+tests/e2e/helpers/monica-milestone-restart.ts
+  h_d0d195a8c70989 10,23-26,50,57,80,117
+tests/e2e/helpers/monica-milestones.ts
+  h_d0d195a8c70989 27-28,108,125,158,162,175,182-183,185,187,207,215,291-292
+tests/e2e/helpers/monica-overview-restart.ts
+  h_d0d195a8c70989 9-10,20,130,134-136,149
+tests/e2e/helpers/monica-project-settings.ts
+  h_d0d195a8c70989 7,21,53,55,59,70,241,244-246,250,263,285,287-289,291-293,322
+tests/e2e/helpers/monica-test-repo.ts
+  h_d0d195a8c70989 2,12,48
+tests/e2e/helpers/monica-version-overview-fixture.ts
+  h_d0d195a8c70989 5,8,58-61,76
+tests/e2e/helpers/monica-version-overview.ts
+  h_d0d195a8c70989 15,21,33,177,282
+tests/e2e/monica-cycle-smoke.spec.ts
+  h_d0d195a8c70989 3,8-13,15,18,26,32-35,40,42,45-46,52,56,59,109,124,127,134,136-137,141,145,151,153,167-168,171,173,176,178,185,194,197,199-200,206,210,228,231,233-234,263-264,271,277-278,281-282,286,293-296,334,338,340-341,348,362-363,365,370-371,373,378-379,381,438-439,444,446-447,449,457-463,466,471-474,477,483,488,491,500,502,505,511,522-526,554,557-560,564-567,569,572,574-575,585-586,590-591,593-595,599,604-610,615,623-624,644,647-650,653,656-658,661-662,665,667,670,672-674,676,678-681,684-686,693-696,699,710-711,719-720,723,726-727,731-735,743-744,747,751,756,758-759,761-763,769,774-777
+tests/e2e/monica-version-overview.spec.ts
+  h_d0d195a8c70989 1-2,5-6,8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "76ff3c8d401ed03a517946593843c001df759f2b",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_b8ea9b2e8dfd1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "499b902b-9fdf-4742-a62d-84f8d1befcf2",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

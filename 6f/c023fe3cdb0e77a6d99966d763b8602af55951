@@ -1,0 +1,52 @@
+config/tsconfig.cli.json
+  s_4166fdbe03de01::t_346876b22bf925 8-16
+src/cli/handlers/workbench-meeting.ts
+  s_4166fdbe03de01::t_26968de980c8d1 2,6-12,15,19,25,30-54,57-59,61-70,72
+src/cli/specs/workbench-meeting.ts
+  s_4166fdbe03de01::t_18c05f42539aaf 7,9-10
+src/cli/workbench-meeting/api.test.ts
+  s_4166fdbe03de01::t_f01d9ae5ac851e 1-66
+src/cli/workbench-meeting/api.ts
+  s_4166fdbe03de01::t_e31c2d63b9183f 1-4,6-114,116-123,125,127-134,136-154,156-199,201-209,211,213-242,244-245,247-257
+src/cli/workbench-meeting/chrome-cookies.test.ts
+  s_4166fdbe03de01::t_1e727c8755d2e1 1-71
+src/cli/workbench-meeting/chrome-cookies.ts
+  s_4166fdbe03de01::t_67e9e91f1863a8 1-11,14-20,22-28,31-40,42-45,47,50-56,58-62,65-73,76-80,83-94,96-132,134-172
+src/cli/workbench-meeting/docx.ts
+  s_4166fdbe03de01::t_2600f03a3b7194 1-95
+src/main/browser/browser-cookie-key-providers.ts
+  s_4166fdbe03de01::t_44d1fd144eaf67 1-169
+src/main/browser/browser-cookie-key.ts
+  s_4166fdbe03de01::t_1aaafd1ecb8caa 2-3,6-7,13,20,27,31
+src/shared/child-process/run-process.ts
+  s_4166fdbe03de01::t_662fd46636ed2a 330-333
+standard/references/meeting-transcript.md
+  s_4166fdbe03de01::t_de9ae5cd39696a 7,10,13,15,21,23,27,29
+standard/skills/version-acceptance/SKILL.md
+  s_4166fdbe03de01::t_95e53e57ab410f 61
+standard/skills/week-planning/SKILL.md
+  s_4166fdbe03de01::t_6693ae63645141 45
+src/shared/child-process/run-process.test.ts
+  h_a7e858313fdba5 92-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "6fc023fe3cdb0e77a6d99966d763b8602af55951",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_4166fdbe03de01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6fc1634-1a24-4184-9d0f-19b58e003275",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

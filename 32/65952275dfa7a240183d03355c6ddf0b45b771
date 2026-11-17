@@ -1,0 +1,14 @@
+.bw/milestones.json
+  h_1dcaf127381c33 2-3,5-6,10-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "3265952275dfa7a240183d03355c6ddf0b45b771",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

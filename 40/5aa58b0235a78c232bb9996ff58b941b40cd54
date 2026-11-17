@@ -1,0 +1,19 @@
+docs/05-features/version-planning/prototype/build.cjs
+  s_b8ea9b2e8dfd1b::t_7b82c481f7fa98 126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "405aa58b0235a78c232bb9996ff58b941b40cd54",
+  "prompts": {},
+  "sessions": {
+    "s_b8ea9b2e8dfd1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "499b902b-9fdf-4742-a62d-84f8d1befcf2",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+src/cli/handlers/workbench-meeting.ts
+  s_4166fdbe03de01::t_2bf5ef3d7faa92 10-11,175,190-228,261-280,310
+src/cli/workbench-meeting/protocol.ts
+  s_4166fdbe03de01::t_02a9239fbea8f8 40-79
+src/cli/workbench-meeting/protocol.test.ts
+  s_4166fdbe03de01::t_b0b4b0b356675b 7-13,44-60
+standard/references/meeting-transcript.md
+  s_0b3b0dd4d65665::t_feb42b49379c01 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "23d96cca3c6bfaf7972a6e94b069aa0ffe65e5c7",
+  "prompts": {},
+  "sessions": {
+    "s_0b3b0dd4d65665": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a1456042fc0bf3d57",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_4166fdbe03de01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6fc1634-1a24-4184-9d0f-19b58e003275",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

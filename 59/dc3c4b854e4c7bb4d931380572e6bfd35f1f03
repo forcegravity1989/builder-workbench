@@ -1,0 +1,43 @@
+src/renderer/src/components/sidebar/use-worktree-card-controller.ts
+  s_7a34c1d6f115d1::t_6fc19e4b0507cf 84-85
+src/renderer/src/components/sidebar/use-worktree-card-workspace-actions.ts
+  s_7a34c1d6f115d1::t_aa7c90f7eee91a 87-106
+  s_7a34c1d6f115d1::t_b5d819fe8a90b2 7
+  s_7a34c1d6f115d1::t_47f1ed83438e9f 192-193
+docs/05-features/version-workspace/spec.md
+  s_7a34c1d6f115d1::t_8197d239a49bf9 33
+src/renderer/src/components/sidebar/worktree-card-header.tsx
+  s_7a34c1d6f115d1::t_a11068ebd62a10 2,106
+  s_7a34c1d6f115d1::t_9b167ea4e8f647 98,102
+  s_7a34c1d6f115d1::t_b201b7b185a2ce 79-81,88,95-97,103-105
+  s_7a34c1d6f115d1::t_fe8e79bd31cd59 99-101
+  s_7a34c1d6f115d1::t_271ed65baa205c 282,306-342,344-360,362-387
+  s_7a34c1d6f115d1::t_72d59347023895 343,361
+src/renderer/src/components/sidebar/use-worktree-card-linked-details.ts
+  s_7a34c1d6f115d1::t_c67b91cea52d43 145
+src/renderer/src/components/sidebar/workspace-delete-quick-action.ts
+  s_7a34c1d6f115d1::t_a272bbf093f56d 1-3,8
+src/renderer/src/components/sidebar/worktree-card-presentation.tsx
+  s_7a34c1d6f115d1::t_d51cef88b156b6 69-71
+  s_7a34c1d6f115d1::t_4a0111f702acd0 114,116-119
+  s_7a34c1d6f115d1::t_f783c96433876d 115
+  s_7a34c1d6f115d1::t_f0a59d049d34ce 287
+src/renderer/src/components/sidebar/WorktreeCard.quick-actions.test.tsx
+  s_7a34c1d6f115d1::t_cfb56b8ab563e3 409,414-417,420,422,425-426,430,446,455-456,460,469-470,473,475,478-479
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "59dc3c4b854e4c7bb4d931380572e6bfd35f1f03",
+  "prompts": {},
+  "sessions": {
+    "s_7a34c1d6f115d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1e1e2765-dedd-4ae3-8257-a38c7ce2e41d",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

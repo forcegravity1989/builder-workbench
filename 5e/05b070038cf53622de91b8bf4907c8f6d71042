@@ -1,0 +1,20 @@
+.bw/metrics.toml
+  h_a7e858313fdba5 6-7,63,66
+.bw/scripts/task-cycle-hours.py
+  h_a7e858313fdba5 1-294
+.bw/scripts/test_metric_history.py
+  h_a7e858313fdba5 31,99-150
+docs/05-features/overview-metrics/STATUS.md
+  h_a7e858313fdba5 38-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "5e05b070038cf53622de91b8bf4907c8f6d71042",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
