@@ -86,7 +86,7 @@ describe('useFullCreationExecution cancellation', () => {
       taskSourceContext: null,
       telemetrySource: undefined,
       tuiAgent: 'claude',
-      workbenchCreation: null
+      monicaCreation: null
     } satisfies FullCreationExecutionInput
     const hook = renderHook(() => useFullCreationExecution(state))
 

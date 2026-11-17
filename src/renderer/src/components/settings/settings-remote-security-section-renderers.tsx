@@ -5,7 +5,7 @@ import { SshPane } from './SshPane'
 import { SettingsSection } from './SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { SettingsRenderContext } from './settings-render-context'
-import { isWorkbenchShell } from '../../workbench/is-workbench-shell'
+import { isMonicaShell } from '../../monica/is-monica-shell'
 
 export function renderServersSettingsSection(context: SettingsRenderContext): React.JSX.Element {
   const { model, navigation, view } = context
@@ -87,7 +87,7 @@ export function renderPrivacySettingsSection(context: SettingsRenderContext): Re
       id="privacy"
       title={translate('auto.components.settings.Settings.d7e3f62d70', 'Privacy & Telemetry')}
       description={
-        isWorkbenchShell()
+        isMonicaShell()
           ? translate(
               'auto.components.settings.PrivacyPane.workbenchSectionDescription',
               'Usage data, diagnostics, and telemetry controls.'

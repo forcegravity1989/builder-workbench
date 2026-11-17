@@ -5,9 +5,9 @@ import type { Repo } from '../../../shared/repo-types'
 import type { NestedRepoScanResult, ProjectGroup } from '../../../shared/project-group-types'
 import { notifyReposChanged } from './repos-changed-notification'
 import {
-  WorkbenchGroupRemoval,
+  MonicaGroupRemoval,
   hasConfirmedGroupMembership
-} from '../../../shared/workbench/repo-removal'
+} from '../../../shared/monica/repo-removal'
 import {
   ProjectGroupCancelNestedScanArgs,
   ProjectGroupCreateArgs,
@@ -53,7 +53,7 @@ export function registerProjectGroupHandlers(mainWindow: BrowserWindow, store: S
 
   ipcMain.handle('projectGroups:delete', (_event, rawArgs: unknown): boolean => {
     const args = parseProjectGroupIpcArgs(
-      WorkbenchGroupRemoval.partial({ members: true }),
+      MonicaGroupRemoval.partial({ members: true }),
       rawArgs,
       'invalid_project_group_delete_args'
     )

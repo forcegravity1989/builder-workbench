@@ -13,9 +13,9 @@ describe('dev-instance-identity', () => {
     })
   })
 
-  it('uses a Workbench identity for packaged Workbench builds', () => {
-    expect(getDevInstanceIdentity(false, { ORCA_PRODUCT_NAME: 'Workbench' })).toMatchObject({
-      name: 'Workbench',
+  it('uses a Monica identity for packaged Monica builds', () => {
+    expect(getDevInstanceIdentity(false, { ORCA_PRODUCT_NAME: 'Monica' })).toMatchObject({
+      name: 'Monica',
       appName: 'Workbench',
       isDev: false,
       appUserModelId: 'com.stablyai.workbench.dev'

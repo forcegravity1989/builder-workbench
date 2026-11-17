@@ -1,0 +1,100 @@
+import { ErrorDetails } from '../error-feedback'
+import type { MetricReading, MetricReadingEvidence } from '../../../../shared/monica/metrics'
+import './metric-evidence.css'
+import {
+  addCalendarDays,
+  calendarDayStart,
+  dayInTimezone
+} from '../../../../shared/monica/metric-windows'
+const NO_EVIDENCE: readonly MetricReadingEvidence[] = []
+
+function observationText(reading: MetricReadingEvidence): string {
+  const observation = reading.observation
+  if (observation.kind === 'instant') {
+    return `当前值 · ${observation.observedAt}`
+  }
+  const day = dayInTimezone(observation.start, observation.timezone)
+  const bucketEnd = calendarDayStart(
+    addCalendarDays(day, observation.granularity === 'week' ? 7 : 1),
+    observation.timezone
+  )
+  const partial = Date.parse(observation.end) < Date.parse(bucketEnd)
+  // An unfinished bucket is "so far"; a finished bucket with a gap is missing coverage, not "so far".
+  const label = partial
+    ? Date.parse(bucketEnd) > Date.now()
+      ? '截至采集时刻'
+      : '区间覆盖不全'
+    : '区间读数'
+  return `${label} · ${observation.start} 至 ${observation.end}（${observation.timezone}）`
+}
+
+/** The caller owns targets and decisions; this view only presents collected or saved evidence. */
+export function MetricEvidenceView({
+  result,
+  saved = NO_EVIDENCE,
+  busy = false
+}: {
+  result?: MetricReading
+  saved?: readonly MetricReadingEvidence[]
+  busy?: boolean
+}) {
+  const readings =
+    result?.status === 'ready' ? result.readings : (result?.previous?.readings ?? saved)
+  const historical = result && result.status !== 'ready' && readings.length > 0
+  return (
+    <div className="monica-metric-evidence" aria-live="polite">
+      {busy && <p className="monica-metric-message">正在读取…</p>}
+      {!busy &&
+        result &&
+        result.status !== 'ready' &&
+        (result.status === 'error' ? (
+          <ErrorDetails
+            className="monica-metric-message"
+            summary="指标采集或读取失败 · 查看详情"
+            detail={result.reason.message}
+          />
+        ) : (
+          <p className="monica-metric-message">
+            {result.reason.code === 'reading'
+              ? '正在读取…'
+              : result.reason.code === 'not-collected'
+                ? '尚未采集'
+                : '本次无可用读数'}
+          </p>
+        ))}
+      {!busy && !readings.length && <p className="monica-metric-message">暂无可核对的读数</p>}
+      {historical && (
+        <p className="monica-metric-message">已有证据保留原采集时间，不作为本次新读数。</p>
+      )}
+      {readings.map((reading) => (
+        <div
+          className="monica-metric-observation"
+          key={JSON.stringify([reading.ref, reading.observation, reading.collectedAt])}
+        >
+          <div className="monica-metric-value">
+            <strong>{String(reading.value)}</strong>
+            {reading.unit && <span>{reading.unit}</span>}
+          </div>
+          <details>
+            <summary>{observationText(reading)}</summary>
+            <dl>
+              <dt>来源</dt>
+              <dd>{reading.source}</dd>
+              <dt>采集时间</dt>
+              <dd>
+                <time dateTime={reading.collectedAt}>{reading.collectedAt}</time>
+              </dd>
+              <dt>配置版本</dt>
+              <dd>{reading.ref.configurationCommit}</dd>
+              <dt>采集脚本修订</dt>
+              <dd>{reading.collectorRevision}</dd>
+            </dl>
+            {reading.observation.kind === 'instant' && (
+              <p className="monica-metric-message">当前值不能证明历史周或区间目标已完成。</p>
+            )}
+          </details>
+        </div>
+      ))}
+    </div>
+  )
+}

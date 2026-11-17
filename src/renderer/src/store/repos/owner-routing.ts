@@ -10,7 +10,7 @@ import {
 } from '../../runtime/runtime-rpc-client'
 import type { getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
 import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { translate } from '@/i18n/i18n'
 import {
   getRepoExecutionHostId,
@@ -32,7 +32,7 @@ export function repoWithFetchedOwner(
     return {
       ...repo,
       executionHostId: getRuntimeTargetHostId(target),
-      ...(isWorkbenchShell()
+      ...(isMonicaShell()
         ? { pairedRegistration: { hostId: getRepoExecutionHostId(repo), pairingRevision } }
         : {})
     }

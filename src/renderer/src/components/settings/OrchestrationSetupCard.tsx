@@ -18,7 +18,7 @@ import {
 } from './CliSkillRuntimeSetup'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 export function OrchestrationSetupCard(props: {
   compact?: boolean
@@ -50,7 +50,7 @@ export function OrchestrationSetupCard(props: {
       description={translate(
         'guidance.orchestrationSetupDescription',
         'Enables agents to hand off context and coordinate work through {{product}}.',
-        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+        { product: isMonicaShell() ? 'Monica' : 'Orca' }
       )}
       command={installCommand}
       installedCommand={updateCommand}
