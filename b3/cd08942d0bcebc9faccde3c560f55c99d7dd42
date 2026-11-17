@@ -1,0 +1,46 @@
+services/bw-share/README.md
+  s_da7ab51653058a::t_da7b5014773cf3 16,26-27,43-44,73-74,86,95,114
+services/bw-share/test/http.test.mjs
+  s_da7ab51653058a::t_27f42c394a4114 6,275-329
+services/bw-share/test/helpers.mjs
+  s_da7ab51653058a::t_e73df7d66bf4e0 5-6,17,49-53,55,64
+services/bw-share/.env.example
+  s_da7ab51653058a::t_a1660f250d118b 12-17
+services/bw-share/src/http.mjs
+  s_da7ab51653058a::t_66a606048fba56 28,33-39,79-91,100,198-200,203,205-206,210-223
+services/bw-share/src/config.mjs
+  s_da7ab51653058a::t_fb46a5681196e7 8-12,19-20,40,68
+services/bw-share/src/client-tokens.mjs
+  s_4166fdbe03de01::t_558308290ebfca 1-97
+services/bw-share/src/main.mjs
+  s_da7ab51653058a::t_9b5e57365eb083 4,22-23,28-31,33,55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "b3cd08942d0bcebc9faccde3c560f55c99d7dd42",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_4166fdbe03de01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6fc1634-1a24-4184-9d0f-19b58e003275",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
