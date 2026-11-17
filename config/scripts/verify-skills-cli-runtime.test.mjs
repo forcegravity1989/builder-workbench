@@ -194,6 +194,56 @@ describe('skills CLI runtime closure', () => {
     }
   })
 
+  it('allows absent imports guarded by try/catch', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'orca-skills-cli-closure-'))
+    try {
+      await writeSkillsCliFixture(
+        root,
+        "try { require('bufferutil') } catch {}\nrequire('../../shared/needed.js')\n"
+      )
+      await mkdir(join(root, 'shared'), { recursive: true })
+      await writeFile(join(root, 'shared', 'needed.js'), '', 'utf8')
+
+      expect(collectRuntimeClosure(root)).toHaveLength(3)
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects unguarded imports that are absent', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'orca-skills-cli-closure-'))
+    try {
+      await writeSkillsCliFixture(root, "require('ws-native-accelerator')\n")
+
+      expect(() => collectRuntimeClosure(root)).toThrow(
+        /missing runtime import "ws-native-accelerator"/
+      )
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('allows installed packages to have absent internal requires', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'orca-skills-cli-closure-'))
+    try {
+      const artifactRoot = join(root, 'artifact')
+      const outDir = join(artifactRoot, 'out')
+      const packageDir = join(artifactRoot, 'node_modules', 'inside-package')
+      await writeSkillsCliFixture(outDir, "require('inside-package')\n")
+      await mkdir(packageDir, { recursive: true })
+      await writeFile(
+        join(packageDir, 'package.json'),
+        JSON.stringify({ main: 'index.js' }),
+        'utf8'
+      )
+      await writeFile(join(packageDir, 'index.js'), "require('lazily-loaded-internal')\n", 'utf8')
+
+      expect(collectRuntimeClosure(outDir, artifactRoot)).toHaveLength(3)
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('rejects optional dependencies resolved only outside the artifact', async () => {
     const root = await mkdtemp(join(tmpdir(), 'orca-skills-cli-closure-'))
     try {

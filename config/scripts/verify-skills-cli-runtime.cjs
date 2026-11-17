@@ -21,7 +21,22 @@ function runtimeImportSpecifiers(source, file) {
   )
   const specifiers = []
 
-  function visit(node) {
+  // Why: bundled third-party code (e.g. ws inside playwright-core) probes native
+  // accelerators with `try { require('bufferutil') } catch {}` without declaring
+  // them as optional dependencies. A guarded require is allowed to be absent.
+  function visit(node, guarded) {
+    if (ts.isTryStatement(node)) {
+      for (const statement of node.tryBlock.statements) {
+        visit(statement, guarded || node.catchClause !== undefined)
+      }
+      if (node.catchClause) {
+        visit(node.catchClause, guarded)
+      }
+      if (node.finallyBlock) {
+        visit(node.finallyBlock, guarded)
+      }
+      return
+    }
     if (ts.isCallExpression(node) && node.arguments.length > 0) {
       const [argument] = node.arguments
       const expression = node.expression
@@ -34,19 +49,30 @@ function runtimeImportSpecifiers(source, file) {
       const isDynamicImport = expression.kind === ts.SyntaxKind.ImportKeyword
 
       if ((isRequire || isRequireResolve || isDynamicImport) && ts.isStringLiteralLike(argument)) {
-        specifiers.push(argument.text)
+        specifiers.push({ specifier: argument.text, guarded })
       }
     }
-    ts.forEachChild(node, visit)
+    ts.forEachChild(node, (child) => visit(child, guarded))
   }
 
-  visit(sourceFile)
+  visit(sourceFile, false)
   return specifiers
 }
 
 function isOutsideRoot(root, target) {
   const pathFromRoot = relative(root, target)
   return isAbsolute(pathFromRoot) || pathFromRoot === '..' || pathFromRoot.startsWith(`..${sep}`)
+}
+
+/**
+ * Why: third-party packages sometimes require modules that are absent by design
+ * — native accelerators behind try/catch, or lazily loaded code paths their
+ * bundler never exercises (playwright-core's chromium-bidi bridge). Only our own
+ * compiled artifacts must have every require resolvable; for installed packages
+ * the package manager already owns that contract.
+ */
+function isInstalledPackageFile(artifactRoot, importer) {
+  return relative(artifactRoot, importer).split(sep).includes('node_modules')
 }
 
 function isOptionalPackageImport(artifactRoot, importer, specifier) {
@@ -78,7 +104,7 @@ function isOptionalPackageImport(artifactRoot, importer, specifier) {
   return false
 }
 
-function resolveRuntimeImport(outDir, artifactRoot, importer, specifier) {
+function resolveRuntimeImport(outDir, artifactRoot, importer, specifier, guarded = false) {
   if (BUILTINS.has(specifier) || isBuiltin(specifier)) {
     return null
   }
@@ -86,7 +112,11 @@ function resolveRuntimeImport(outDir, artifactRoot, importer, specifier) {
   try {
     resolved = createRequire(importer).resolve(specifier)
   } catch (error) {
-    if (isOptionalPackageImport(artifactRoot, importer, specifier)) {
+    if (
+      guarded ||
+      isInstalledPackageFile(artifactRoot, importer) ||
+      isOptionalPackageImport(artifactRoot, importer, specifier)
+    ) {
       return null
     }
     const detail = error instanceof Error ? error.message : String(error)
@@ -124,8 +154,8 @@ function collectRuntimeClosure(outDir, artifactRoot = dirname(outDir)) {
     }
     visited.add(file)
     const source = readFileSync(file, 'utf8')
-    for (const specifier of runtimeImportSpecifiers(source, file)) {
-      const resolved = resolveRuntimeImport(outDir, artifactRoot, file, specifier)
+    for (const { specifier, guarded } of runtimeImportSpecifiers(source, file)) {
+      const resolved = resolveRuntimeImport(outDir, artifactRoot, file, specifier, guarded)
       if (resolved && !isOutsideRoot(artifactRoot, resolved) && /\.(?:c|m)?js$/.test(resolved)) {
         pending.push(resolved)
       }
