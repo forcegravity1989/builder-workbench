@@ -5,6 +5,17 @@
     "../src/cli/**/*",
     "../src/shared/**/*",
     "../src/main/agent-state-file-reader.ts",
+    // Why: `bw meeting transcript` reuses the importer's Electron-free cookie reader
+    // (detection, snapshot, decryption, key providers) to read the user's own Chrome;
+    // the reader facade is also a main build input so electron-vite keeps it in out/main.
+    "../src/main/browser/browser-cookie-cli-reader.ts",
+    "../src/main/browser/browser-cookie-detection.ts",
+    "../src/main/browser/browser-cookie-detection-types.ts",
+    "../src/main/browser/chromium-cookie-path.ts",
+    "../src/main/browser/browser-cookie-decryption.ts",
+    "../src/main/browser/browser-cookie-sqlite.ts",
+    "../src/main/browser/browser-cookie-key-providers.ts",
+    "../src/main/browser/chromium-cookie-snapshot.ts",
     "../src/main/agent-hooks/grok-replay-guard.ts",
     "../src/main/agent-hooks/cursor-replay-guard.ts",
     "../src/main/claude/hook-script.ts",

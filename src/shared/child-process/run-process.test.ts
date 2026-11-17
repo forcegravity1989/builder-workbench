@@ -89,6 +89,15 @@ describe('runProcessSync', () => {
     expect(result.code === 0 && result.signal === null).toBe(false)
   })
 
+  it('forwards string input to the child stdin', () => {
+    const result = runProcessSync({
+      program: process.execPath,
+      args: ['-e', 'process.stdin.pipe(process.stdout)'],
+      input: 'payload'
+    })
+    expect(result.stdout).toBe('payload')
+  })
+
   it('captures stdout and the exit code without throwing on failure', () => {
     const result = runProcessSync({
       program: process.execPath,
