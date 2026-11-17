@@ -98,8 +98,9 @@ export function OverviewPage(): React.JSX.Element {
   const charterRead = useRepoCharterSnapshot(activeRepo ?? undefined)
   const charter = charterRead?.charter ?? null
   const versionCatalog = useVersionCatalogForRepo(activeRepoId, hostId)
-  const charterVersion =
-    versionCatalog.catalog?.entries.slice().sort(compareVersionDisplayOrder)[0]?.version ?? null
+  const charterVersion = versionCatalog.planOrderPending
+    ? null
+    : (versionCatalog.catalog?.entries.toSorted(compareVersionDisplayOrder)[0]?.version ?? null)
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
   const fixedTrees = overviewWorkflowTrees(baseScope, versionCatalog.worktrees, charterVersion)
   // 「更新代码」后 history/metrics 快照由按钮 handler 各自的 force reload 就地刷新，

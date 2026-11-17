@@ -594,6 +594,7 @@ import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
   VersionHistoryReadSchema,
+  VersionPlanEntryTimesSchema,
   VersionTreePlansSchema
 } from '../workbench/version-history'
 import {
@@ -1236,6 +1237,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.submit': CharterSubmitRequestSchema,
   'workbench.fixedWorkspace.ensure': FixedWorkspaceEnsureSchema,
   'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.listPlanEntryTimes': VersionPlanEntryTimesSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,

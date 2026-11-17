@@ -59,8 +59,9 @@ export function MetricsWorkspaceBoard(): JSX.Element {
     baseWorktree?.path
   ])
   const versionCatalog = useVersionCatalogForRepo(activeRepoId, baseScope?.hostId)
-  const catalogVersion =
-    versionCatalog.catalog?.entries.slice().sort(compareVersionDisplayOrder)[0]?.version ?? null
+  const catalogVersion = versionCatalog.planOrderPending
+    ? null
+    : (versionCatalog.catalog?.entries.toSorted(compareVersionDisplayOrder)[0]?.version ?? null)
   const fixedTrees = overviewWorkflowTrees(baseScope, versionCatalog.worktrees, catalogVersion)
   const metrics = useOverviewMetricCollection({
     baseScope,
