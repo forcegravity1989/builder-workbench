@@ -6,7 +6,10 @@ import { useAppStore } from '@/store'
 import type { CycleTaskReference } from './version-cycle/ports'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
-import { isVersionFlowWorkflow, prepareFailed } from '../../../shared/workbench/version-workspace-prepare'
+import {
+  isVersionFlowWorkflow,
+  prepareFailed
+} from '../../../shared/workbench/version-workspace-prepare'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
