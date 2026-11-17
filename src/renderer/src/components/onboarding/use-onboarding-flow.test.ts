@@ -12,10 +12,10 @@ vi.mock('sonner', () => ({
 }))
 
 // Why: the skip rule branches on the shell; a mutable flag lets one file
-// cover both the Workbench and Orca branches of shouldSkipIntegrationsStep.
+// cover both the Monica and Orca branches of shouldSkipIntegrationsStep.
 const shellFlag = vi.hoisted(() => ({ workbench: false }))
-vi.mock('@/workbench/is-workbench-shell', () => ({
-  isWorkbenchShell: () => shellFlag.workbench
+vi.mock('@/monica/is-monica-shell', () => ({
+  isMonicaShell: () => shellFlag.workbench
 }))
 
 describe('prepareSkippedOnboardingPreferences', () => {
@@ -150,7 +150,7 @@ describe('shouldSkipIntegrationsStep', () => {
     )
   })
 
-  it('skips for the Workbench shell only once both CLIs are installed', () => {
+  it('skips for the Monica shell only once both CLIs are installed', () => {
     shellFlag.workbench = true
     expect(
       shouldSkipIntegrationsStep(
@@ -162,7 +162,7 @@ describe('shouldSkipIntegrationsStep', () => {
     ).toBe(true)
   })
 
-  it('keeps the page for the Workbench shell when codehub-cli is missing', () => {
+  it('keeps the page for the Monica shell when codehub-cli is missing', () => {
     shellFlag.workbench = true
     expect(
       shouldSkipIntegrationsStep(

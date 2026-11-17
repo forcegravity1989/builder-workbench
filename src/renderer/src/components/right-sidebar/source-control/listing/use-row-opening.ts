@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { detectLanguage } from '@/lib/language-detect'
 import { joinPath } from '@/lib/path'
 import { useAppStore } from '@/store'
-import { finishSourceControlGuide } from '@/workbench/WorkbenchDeliveryHelp'
+import { finishSourceControlGuide } from '@/monica/MonicaDeliveryHelp'
 import type {
   GitBranchChangeEntry,
   GitBranchCompareSummary

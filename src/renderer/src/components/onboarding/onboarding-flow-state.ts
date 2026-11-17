@@ -7,7 +7,7 @@ import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import type { OnboardingState } from '../../../../shared/onboarding-state-types'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { STEPS } from './use-onboarding-flow-types'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 type TaskSourcesSnapshotProps = EventProps<'onboarding_task_sources_snapshot'>
 type TaskSourcesGithubStatus = TaskSourcesSnapshotProps['github_status']
@@ -15,11 +15,11 @@ type TaskSourcesLinearStatus = TaskSourcesSnapshotProps['linear_status']
 export type TaskSourcesExitAction = TaskSourcesSnapshotProps['exit_action']
 
 export function shouldSkipIntegrationsStep(status: AppState['preflightStatus']): boolean {
-  // Why (BW): the Workbench page pitches CodeHub alongside GitHub, so it only
+  // Why (Monica): the Monica page pitches CodeHub alongside GitHub, so it only
   // becomes redundant once both CLIs are installed; Orca keeps the upstream
   // gh-only rule. A missing codehub readback keeps the page visible — the
   // user can still skip past it.
-  if (isWorkbenchShell()) {
+  if (isMonicaShell()) {
     return status?.gh.installed === true && status?.codehub?.installed === true
   }
   return status?.gh.installed === true

@@ -7,13 +7,13 @@ import { translate } from '@/i18n/i18n'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { ExternalLink } from 'lucide-react'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 export function TaskPageGitHubModeControls({
   model,
   embedded = false
 }: {
   model: TaskPageComposerActionsModel
-  /** Workbench folds these controls into the filter row; children join that flex line. */
+  /** Monica folds these controls into the filter row; children join that flex line. */
   embedded?: boolean
 }): React.JSX.Element | null {
   const {
@@ -34,7 +34,7 @@ export function TaskPageGitHubModeControls({
     selectedGitHubRepoExternalLink,
     handleSelectGithubTaskKind
   } = model
-  const modeButtons = isWorkbenchShell()
+  const modeButtons = isMonicaShell()
     ? githubModeButtons.filter((mode) => mode.id !== 'project')
     : githubModeButtons
   return taskSource === 'github' ? (
@@ -85,11 +85,11 @@ export function TaskPageGitHubModeControls({
           getRepoHostLabel={getTaskPickerRepoHostLabel}
           onChange={(next) => {
             const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
-            if (model.workbenchScope) {
-              model.clearWorkbenchProject()
+            if (model.monicaScope) {
+              model.clearMonicaProject()
             }
             setRepoSelection(normalized)
-            if (!model.workbenchScope) {
+            if (!model.monicaScope) {
               void updateSettings({
                 defaultRepoSelection: [...normalized]
               }).catch(() => {
@@ -103,12 +103,12 @@ export function TaskPageGitHubModeControls({
             }
           }}
           onSelectAll={() => {
-            if (model.workbenchScope) {
-              model.clearWorkbenchProject()
+            if (model.monicaScope) {
+              model.clearMonicaProject()
             }
             const allIds = new Set(taskPickerRepos.map((r) => r.id))
             setRepoSelection(allIds)
-            if (!model.workbenchScope) {
+            if (!model.monicaScope) {
               void updateSettings({
                 defaultRepoSelection: null
               }).catch(() => {

@@ -2,7 +2,7 @@ import { basename } from 'node:path'
 import type { WorktreeMeta } from '../../shared/worktree/meta-types'
 import type { GitWorktreeInfo, Worktree } from '../../shared/worktree/types'
 import { DEFAULT_WORKSPACE_STATUS_ID } from '../../shared/workspace-statuses'
-import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
+import { normalizeStoredMonicaVersionBinding } from '../../shared/monica/version-binding'
 import { getLinkedWorkItemMetadata } from './worktree-linked-work-item-metadata'
 import { normalizeWorkspaceCreatorProvenance } from '../../shared/workspace-creator-provenance'
 import { createWorktreeIdentity } from '../../shared/worktree/identity'
@@ -22,9 +22,7 @@ export function mergeWorktree(
   // externally edited; garbage must read back as Unknown (absent), never as a
   // half-adopted binding. Write-side merge keeps undefined (old value) and null
   // (cleared) distinct; both project to absence here.
-  const workbenchVersionBinding = normalizeStoredWorkbenchVersionBinding(
-    meta?.workbenchVersionBinding
-  )
+  const workbenchVersionBinding = normalizeStoredMonicaVersionBinding(meta?.workbenchVersionBinding)
   const worktreeId = `${repoId}::${git.path}`
   const automaticDisplayName = branchShort || defaultDisplayName || basename(git.path)
   // CLI-created labels predate displayNameIsPinned but are still explicit names.

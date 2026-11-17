@@ -14,7 +14,7 @@ import {
   trackSetupGuideOpened,
   trackSetupGuideStepCompleted
 } from '@/lib/feature-education-telemetry'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 type SetupGuideTelemetrySession = {
   source: SetupGuideSource
@@ -38,8 +38,8 @@ export function useSetupGuideOpenCloseTelemetry(args: {
   progress: FeatureWallSetupProgress
   activeStepId: FeatureWallSetupStepId | null
 }): void {
-  const workbenchShell = isWorkbenchShell()
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(workbenchShell), [workbenchShell])
+  const monicaShell = isMonicaShell()
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(monicaShell), [monicaShell])
   const sessionRef = useRef<SetupGuideTelemetrySession | null>(null)
   const snapshotRef = useRef<SetupGuideTelemetrySnapshot>({
     completedCount: 0,
@@ -47,10 +47,10 @@ export function useSetupGuideOpenCloseTelemetry(args: {
     activeStepId: 'none'
   })
 
-  const completedCount = countCompletedSetupSteps(args.progress.stepDone, workbenchShell)
+  const completedCount = countCompletedSetupSteps(args.progress.stepDone, monicaShell)
   const firstIncompleteStepId = getSetupGuideTelemetryFirstIncompleteStepId(
     args.progress,
-    workbenchShell
+    monicaShell
   )
 
   snapshotRef.current = {
@@ -108,19 +108,19 @@ export function useSetupGuideOpenCloseTelemetry(args: {
 
 export function getSetupGuideTelemetryFirstIncompleteStepId(
   progress: FeatureWallSetupProgress,
-  workbenchShell = false
+  monicaShell = false
 ): FeatureWallSetupStepId | 'none' {
-  return countCompletedSetupSteps(progress.stepDone, workbenchShell) >=
-    getFeatureWallSetupStepIds(workbenchShell).length
+  return countCompletedSetupSteps(progress.stepDone, monicaShell) >=
+    getFeatureWallSetupStepIds(monicaShell).length
     ? 'none'
-    : getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, workbenchShell)
+    : getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, monicaShell)
 }
 
 export function useSetupGuideStepCompletionTelemetry(args: {
   progress: FeatureWallSetupProgress
   setupGuideVisible: boolean
 }): void {
-  const workbenchShell = isWorkbenchShell()
+  const monicaShell = isMonicaShell()
   const stateRef = useRef<SetupGuideStepCompletionTelemetryState | null>(null)
   if (!stateRef.current) {
     stateRef.current = createSetupGuideStepCompletionTelemetryState()
@@ -131,9 +131,9 @@ export function useSetupGuideStepCompletionTelemetry(args: {
       state: stateRef.current!,
       progress: args.progress,
       setupGuideVisible: args.setupGuideVisible,
-      workbenchShell
+      monicaShell
     })
-  }, [args.progress, args.progress.stepDone, args.setupGuideVisible, workbenchShell])
+  }, [args.progress, args.progress.stepDone, args.setupGuideVisible, monicaShell])
 }
 
 export function createSetupGuideStepCompletionTelemetryState(): SetupGuideStepCompletionTelemetryState {
@@ -147,7 +147,7 @@ export function recordSetupGuideStepCompletionTelemetry(args: {
   state: SetupGuideStepCompletionTelemetryState
   progress: FeatureWallSetupProgress
   setupGuideVisible: boolean
-  workbenchShell?: boolean
+  monicaShell?: boolean
 }): void {
   if (!args.state.emitted) {
     args.state.emitted = readEmittedSetupGuideStepIds()
@@ -158,12 +158,12 @@ export function recordSetupGuideStepCompletionTelemetry(args: {
   if (!previousDone || !args.setupGuideVisible) {
     // Why: hidden async refresh can flip already-complete setup state from false
     // to true; only visible guide actions are attributable enough to event.
-    persistCompletedSetupGuideStepBaselines(args.progress.stepDone, emitted, args.workbenchShell)
+    persistCompletedSetupGuideStepBaselines(args.progress.stepDone, emitted, args.monicaShell)
     return
   }
 
-  const completedCount = countCompletedSetupSteps(args.progress.stepDone, args.workbenchShell)
-  const stepIds = getFeatureWallSetupStepIds(args.workbenchShell)
+  const completedCount = countCompletedSetupSteps(args.progress.stepDone, args.monicaShell)
+  const stepIds = getFeatureWallSetupStepIds(args.monicaShell)
   for (const stepId of stepIds) {
     if (!args.progress.stepDone[stepId] || previousDone[stepId] || emitted.has(stepId)) {
       continue
@@ -181,17 +181,17 @@ export function recordSetupGuideStepCompletionTelemetry(args: {
 
 function countCompletedSetupSteps(
   done: Record<FeatureWallSetupStepId, boolean>,
-  workbenchShell = false
+  monicaShell = false
 ): number {
-  return getFeatureWallSetupStepIds(workbenchShell).filter((stepId) => done[stepId]).length
+  return getFeatureWallSetupStepIds(monicaShell).filter((stepId) => done[stepId]).length
 }
 
 function persistCompletedSetupGuideStepBaselines(
   done: Record<FeatureWallSetupStepId, boolean>,
   emitted: Set<FeatureWallSetupStepId>,
-  workbenchShell = false
+  monicaShell = false
 ): void {
-  for (const stepId of getFeatureWallSetupStepIds(workbenchShell)) {
+  for (const stepId of getFeatureWallSetupStepIds(monicaShell)) {
     if (!done[stepId] || emitted.has(stepId)) {
       continue
     }
