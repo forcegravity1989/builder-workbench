@@ -128,6 +128,82 @@ describe('SetProjectLocationDialog', () => {
     expect(onReady).toHaveBeenCalledWith('setup-openclaw-clone')
   })
 
+  it('prefills the local clone destination from the default project location', async () => {
+    const win = window as unknown as { api?: unknown }
+    const originalApi = win.api
+    win.api = {
+      repos: {
+        getDefaultCreateProjectParent: vi.fn().mockResolvedValue('/Users/alice/orca/projects')
+      }
+    }
+    try {
+      const user = renderDialog({
+        option: { ...option, id: 'needs-setup:local', hostId: 'local', label: 'Local Windows' }
+      })
+      await user.click(screen.getByRole('button', { name: /Clone from URL/ }))
+
+      const destination = await screen.findByDisplayValue('/Users/alice/orca/projects')
+      expect(destination).toBeTruthy()
+    } finally {
+      win.api = originalApi
+    }
+  })
+
+  it('leaves the clone destination empty on a remote host', async () => {
+    const win = window as unknown as { api?: unknown }
+    const originalApi = win.api
+    const getDefault = vi.fn().mockResolvedValue('/Users/alice/orca/projects')
+    win.api = { repos: { getDefaultCreateProjectParent: getDefault } }
+    try {
+      const user = renderDialog()
+      await user.click(screen.getByRole('button', { name: /Clone from URL/ }))
+
+      const destination = screen.getByPlaceholderText(
+        '/destination/on/host'
+      ) as HTMLInputElement
+      expect(destination.value).toBe('')
+      expect(getDefault).not.toHaveBeenCalled()
+    } finally {
+      win.api = originalApi
+    }
+  })
+
+  it('does not refill the clone destination after the user clears it', async () => {
+    const win = window as unknown as { api?: unknown }
+    const originalApi = win.api
+    let resolveDefault: (parent: string) => void = () => {}
+    win.api = {
+      repos: {
+        getDefaultCreateProjectParent: vi.fn().mockReturnValue(
+          new Promise<string>((resolve) => {
+            resolveDefault = resolve
+          })
+        )
+      }
+    }
+    try {
+      const user = renderDialog({
+        option: { ...option, id: 'needs-setup:local', hostId: 'local', label: 'Local Windows' }
+      })
+      await user.click(screen.getByRole('button', { name: /Clone from URL/ }))
+      const destination = screen.getByPlaceholderText(
+        '/destination/on/host'
+      ) as HTMLInputElement
+      await user.type(destination, '/custom/path')
+      await user.clear(destination)
+
+      await act(async () => {
+        resolveDefault('/Users/alice/orca/projects')
+      })
+
+      // A user who deliberately cleared the field keeps it empty; the late
+      // default must not snap it back.
+      expect(destination.value).toBe('')
+    } finally {
+      win.api = originalApi
+    }
+  })
+
   it('hides clone for folder projects', () => {
     renderDialog({ projectKind: 'folder' })
     expect(screen.queryByRole('button', { name: /Clone from URL/ })).toBeNull()
