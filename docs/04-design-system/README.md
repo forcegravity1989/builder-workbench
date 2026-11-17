@@ -21,7 +21,7 @@
 
 | 路径 | 是什么 |
 |---|---|
-| [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、图标、交互反馈、叠层对齐、中文排版、HTML 原型类 |
+| [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、[按钮与新增入口](guidelines.md#按钮与新增入口)、图标、交互反馈、叠层对齐、中文排版、HTML 原型类 |
 | [guidance.md](guidance.md) | 引导分工、展示/回看与新功能提示规则；BW 入门、探索 BW（工作/功能）两张矩阵及产出归属 |
 | [tokens.json](tokens.json) | 机读 token：颜色（light / dark 两主题，135 个）、字体与 10 个字号样式、间距、圆角、阴影；每个带 `usage` |
 | [tokens.css](tokens.css) | **生成文件，不要手改**——由 tokens.json 生成的 CSS 变量与 Geist `@font-face` |
