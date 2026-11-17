@@ -94,7 +94,6 @@ export function useMilestonePlanning(
             })
             .catch(() => toast.error('旧版里程碑草稿无法读取，原文件仍保留。'))
         }
-        return next
       } catch (reason) {
         if (active()) {
           setError(message(reason))

@@ -38,10 +38,10 @@ export async function readLegacyMilestoneDraft(
     await window.api.milestoneRecovery.read(key)
   )
   if (!payload || !revision || localStorage.getItem(`bw:milestone-restored:${key}`) === revision) {
-    return
+    return undefined
   }
   const record = milestoneRecoverySchema.parse(JSON.parse(payload))
-  if (JSON.stringify(record.draft) !== JSON.stringify(record.baseline)) {
-    return { ...record, revision }
-  }
+  return JSON.stringify(record.draft) === JSON.stringify(record.baseline)
+    ? undefined
+    : { ...record, revision }
 }
