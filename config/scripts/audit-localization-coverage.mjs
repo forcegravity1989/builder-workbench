@@ -557,7 +557,7 @@ async function readAllowlist(root, allowlistPath) {
   return JSON.parse(raw)
 }
 
-// Why: the BW overlay is Chinese-first and exempt from Orca i18n extraction as a whole subtree;
+// Why: the Monica overlay is Chinese-first and exempt from Orca i18n extraction as a whole subtree;
 // per-string allowlisting would need a reviewed entry for every copy change. Reasons required.
 async function readExclusions(root, exclusionsPath) {
   const absolutePath = path.resolve(root, exclusionsPath)

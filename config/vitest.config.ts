@@ -25,7 +25,7 @@ export default defineConfig({
       resolve('config/scripts/vitest-host-ports-setup.ts')
     ],
     // CI/E2E contract tests from the historical Orca harness are retained as
-    // source, but are not part of the Workbench test entrypoint.
+    // source, but are not part of the Monica test entrypoint.
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     // Why: the full suite runs heavy TS transforms plus real git/http fixtures;
     // the Vitest 5s defaults are too tight for the slowest integration cases.

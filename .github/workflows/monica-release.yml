@@ -1,16 +1,16 @@
-name: BW Release Windows
+name: Monica Release Windows
 
-# Why this file exists: the workbench-release skill drives stable version
+# Why this file exists: the monica-release skill drives stable version
 # releases. Packaging and publishing are fixed, network-heavy actions that
 # belong on a GitHub runner — local machines behind the corporate proxy
 # cannot upload ~190MB installers (the proxy 403s oversized POSTs), and local
 # builds also fight MAX_PATH worktrees and proxy-degraded downloads. This is
-# the release-side counterpart of bw-package.yml: bw-package publishes an
+# the release-side counterpart of monica-package.yml: monica-package publishes an
 # ADHOC-tagged prerelease for the acceptance screen's 出包 block; this
 # workflow publishes the stable v<version> release with all three updater
 # assets, from the release notes the skill prepared and confirmed locally.
 #
-#   gh workflow run bw-release.yml --ref main \
+#   gh workflow run monica-release.yml --ref main \
 #     -f version=0.6.0 -F notes=@release-notes.md
 #
 # The artifacts are stamped with the release version input verbatim, so the
@@ -19,7 +19,7 @@ name: BW Release Windows
 # that one string, and a -local build id here would strand every installer of
 # this release at "already up to date" forever (v0.6.0's split ledger). A
 # version containing "-rc" is published with --prerelease. The file name
-# intentionally does NOT start with `bw-package` — the acceptance screen's
+# intentionally does NOT start with `monica-package` — the acceptance screen's
 # package-pipeline dropdown must not list it.
 
 on:
@@ -84,7 +84,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          # Same shape as release-win-workbench.mjs's WORKBENCH_RELEASE_TAG_PATTERN:
+          # Same shape as release-win-monica.mjs's MONICA_RELEASE_TAG_PATTERN:
           # the package is stamped with this string, so anything else splits the ledger.
           if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+\.[0-9]+)?$ ]]; then
             echo "::error::version '$VERSION' is not X.Y.Z or X.Y.Z-rc.YYYYMMDD.N"
@@ -115,11 +115,11 @@ jobs:
           set -euo pipefail
           commit="$(echo "$GITHUB_SHA" | cut -c1-12)"
           echo "version=$VERSION" >>"$GITHUB_OUTPUT"
-          echo "Building Workbench $VERSION from ${GITHUB_REF_NAME} ($commit)"
+          echo "Building Monica $VERSION from ${GITHUB_REF_NAME} ($commit)"
 
-      - name: Build Workbench Windows installer
+      - name: Build Monica Windows installer
         shell: bash
-        run: pnpm run build:win:workbench
+        run: pnpm run build:win:monica
         env:
           # Why the adhoc channel flag: without it electron-builder stamps
           # publisherName 'SignPath Foundation' onto this unsigned build, and a
@@ -140,8 +140,8 @@ jobs:
         run: |
           set -euo pipefail
           ls -la dist/
-          test -f dist/workbench-windows-setup.exe
-          test -f dist/workbench-windows-setup.exe.blockmap
+          test -f dist/monica-windows-setup.exe
+          test -f dist/monica-windows-setup.exe.blockmap
           test -f dist/latest.yml
           # Ledger gate: latest.yml's version is what the in-app updater compares
           # against; if it differs from the release version, every installed copy
@@ -163,18 +163,18 @@ jobs:
           printf '%s' "$NOTES" > release-notes.md
           case "$VERSION" in
             *-rc*)
-              gh release create "v$VERSION" dist/workbench-windows-setup.exe \
-                dist/workbench-windows-setup.exe.blockmap dist/latest.yml \
+              gh release create "v$VERSION" dist/monica-windows-setup.exe \
+                dist/monica-windows-setup.exe.blockmap dist/latest.yml \
                 --target "$GITHUB_SHA" \
-                --title "Workbench $VERSION" \
+                --title "Monica $VERSION" \
                 --notes-file release-notes.md \
                 --prerelease
               ;;
             *)
-              gh release create "v$VERSION" dist/workbench-windows-setup.exe \
-                dist/workbench-windows-setup.exe.blockmap dist/latest.yml \
+              gh release create "v$VERSION" dist/monica-windows-setup.exe \
+                dist/monica-windows-setup.exe.blockmap dist/latest.yml \
                 --target "$GITHUB_SHA" \
-                --title "Workbench $VERSION" \
+                --title "Monica $VERSION" \
                 --notes-file release-notes.md
               ;;
           esac

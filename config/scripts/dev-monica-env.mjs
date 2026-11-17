@@ -73,17 +73,15 @@ export function inheritWindowsUserEnv(
   return restored
 }
 
-/** Workbench HMR / trial package env — keeps profile + Dock title off Orca Dev. */
-export function isWorkbenchDevEnv(env = process.env) {
+/** Monica HMR / trial package env — keeps profile + Dock title off Orca Dev. */
+export function isMonicaDevEnv(env = process.env) {
   return (
-    env.ORCA_PRODUCT_NAME === 'Workbench' ||
-    env.WORKBENCH_SHELL === '1' ||
-    env.VITE_WORKBENCH_SHELL === '1'
+    env.ORCA_PRODUCT_NAME === 'Monica' || env.MONICA_SHELL === '1' || env.VITE_MONICA_SHELL === '1'
   )
 }
 
 export function createDevDockTitle(branch, label, env = process.env) {
-  const product = isWorkbenchDevEnv(env) ? 'Workbench' : 'Orca'
+  const product = isMonicaDevEnv(env) ? 'Monica' : 'Orca'
   return `${product}: ${branch || label || 'dev'}`
 }
 
@@ -91,7 +89,7 @@ export function getDevUserDataPath(env = process.env) {
   if (env.ORCA_DEV_USER_DATA_PATH) {
     return env.ORCA_DEV_USER_DATA_PATH
   }
-  const dirName = isWorkbenchDevEnv(env) ? 'workbench-dev' : 'orca-dev'
+  const dirName = isMonicaDevEnv(env) ? 'workbench-dev' : 'orca-dev'
   if (process.platform === 'darwin') {
     return path.join(env.HOME ?? '', 'Library', 'Application Support', dirName)
   }

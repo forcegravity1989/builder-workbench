@@ -25,7 +25,7 @@ coverage by itself.
 
 Since the Orca CI/E2E isolation (see `ref/upstream.md`), `performance-contracts.yml`
 is retained as a dispatch-only historical workflow, and the terminal/SSH E2E entry
-commands it referenced are gone from `package.json`. The current Workbench PR check
+commands it referenced are gone from `package.json`. The current Monica PR check
 does not claim to measure rendered frame budgets, SSH RTT, WSL scheduling or a
 packaged Electron renderer; those require a separately reintroduced, scoped
 performance lane.

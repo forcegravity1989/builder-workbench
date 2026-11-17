@@ -9,9 +9,9 @@ import {
 } from './trim-windows-icon-source.mjs'
 
 const root = new URL('../../', import.meta.url)
-const source = decodePng(readFileSync(new URL('resources/icon-source/workbench.png', root)))
+const source = decodePng(readFileSync(new URL('resources/icon-source/monica.png', root)))
 if (source.width !== source.height || source.width < 1024) {
-  throw new Error('Workbench icon source must be square and at least 1024 pixels.')
+  throw new Error('Monica icon source must be square and at least 1024 pixels.')
 }
 
 const pngs = new Map()
@@ -26,8 +26,8 @@ const outputs = new Map([
   ['resources/icon.png', png(256)],
   ['resources/icon-dev.png', png(256)],
   ['resources/build/icon.png', png(1024)],
-  ['resources/tray/workbench.png', png(18)],
-  ['resources/tray/workbench@2x.png', png(36)],
+  ['resources/tray/monica.png', png(18)],
+  ['resources/tray/monica@2x.png', png(36)],
   [
     'resources/build/icon.ico',
     encodeIco(ICO_FRAME_SIZES.map((size) => resizeImage(source, size, size)))

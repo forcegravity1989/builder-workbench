@@ -45,7 +45,7 @@ Run the same checks that CI runs:
 ```bash
 pnpm run lint
 pnpm run typecheck
-pnpm exec vitest run --config config/vitest.config.ts src/main/workbench src/main/ipc/repos src/preload/api/platform-bridge.test.ts src/renderer/src/workbench src/relay/workbench src/shared/workbench
+pnpm exec vitest run --config config/vitest.config.ts src/main/monica src/main/ipc/repos src/preload/api/platform-bridge.test.ts src/renderer/src/monica src/relay/monica src/shared/monica
 pnpm run build:desktop
 ```
 

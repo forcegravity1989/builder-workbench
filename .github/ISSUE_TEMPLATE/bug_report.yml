@@ -1,5 +1,5 @@
 name: 报告问题
-description: 报告 Workbench 当前使用中的问题
+description: 报告 Monica 当前使用中的问题
 type: Bug
 labels:
   - bug
@@ -19,7 +19,7 @@ body:
     id: reproduction
     attributes:
       label: 复现步骤
-      description: 写明 Workbench 版本、系统、仓库/入口与操作步骤；偶发或尚未复现时如实说明。
+      description: 写明 Monica 版本、系统、仓库/入口与操作步骤；偶发或尚未复现时如实说明。
     validations:
       required: false
   - type: textarea

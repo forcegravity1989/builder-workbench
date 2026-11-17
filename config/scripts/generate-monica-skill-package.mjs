@@ -6,7 +6,7 @@ import { build } from 'esbuild'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const topics = ['week-planning', 'version-acceptance', 'metrics-refresh']
-const output = path.join(root, 'src/shared/workbench/skill-package.json')
+const output = path.join(root, 'src/shared/monica/skill-package.json')
 
 async function files(directory, prefix = '') {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -101,7 +101,7 @@ async function main() {
       }
     })
     const { createSkillBundleArchive } = await import(pathToFileURL(builder).href)
-    const archivePath = path.join(work, 'workbench.tar.gz')
+    const archivePath = path.join(work, 'monica.tar.gz')
     const bundle = await createSkillBundleArchive({
       sources,
       archivePath,
@@ -129,7 +129,7 @@ async function main() {
     } else if ((await readFile(output, 'utf8')) !== content) {
       const previous = JSON.parse(await readFile(output, 'utf8'))
       throw new Error(
-        `Workbench Skill package is stale; regenerate it. Stored identity: ${JSON.stringify(previous.package)}; generated identity: ${JSON.stringify(JSON.parse(content).package)}`
+        `Monica Skill package is stale; regenerate it. Stored identity: ${JSON.stringify(previous.package)}; generated identity: ${JSON.stringify(JSON.parse(content).package)}`
       )
     }
   } finally {

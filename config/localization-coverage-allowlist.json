@@ -91,14 +91,14 @@
     "count": 1
   },
   {
-    "filePath": "src/renderer/src/components/settings/bw-cli-integration-cards.tsx",
+    "filePath": "src/renderer/src/components/settings/monica-cli-integration-cards.tsx",
     "kind": "jsx-text",
     "text": "codehub-cli",
     "dynamic": false,
     "count": 1
   },
   {
-    "filePath": "src/renderer/src/components/settings/bw-cli-integration-cards.tsx",
+    "filePath": "src/renderer/src/components/settings/monica-cli-integration-cards.tsx",
     "kind": "jsx-text",
     "text": "welink-cli",
     "dynamic": false,

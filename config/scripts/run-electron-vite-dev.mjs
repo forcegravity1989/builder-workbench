@@ -27,8 +27,8 @@ import {
   createDevDockTitle,
   getDevUserDataPath,
   inheritWindowsUserEnv,
-  isWorkbenchDevEnv
-} from './dev-workbench-env.mjs'
+  isMonicaDevEnv
+} from './dev-monica-env.mjs'
 import { copyPrivateTree } from './space-sharing-copy.mjs'
 import {
   DEV_BUNDLE_ID,
@@ -55,26 +55,26 @@ const repoRoot = path.resolve(import.meta.dirname, '../..')
 const STABLE_NAME_FLAG = '--stable-name'
 // Why a runner flag rather than `VAR=value pnpm run ...` in package.json: pnpm executes
 // package scripts through cmd.exe on Windows, which cannot parse the POSIX env-prefix form,
-// so `dev:workbench` could not start there. Keeping the switch inside the runner is
+// so `dev:monica` could not start there. Keeping the switch inside the runner is
 // cross-platform and still pins the vars before the code below reads them for the profile,
-// Dock/window title and the Workbench HMR banner.
-const WORKBENCH_FLAG = '--workbench'
+// Dock/window title and the Monica HMR banner.
+const MONICA_FLAG = '--monica'
 const rawForwardedArgs = process.argv.slice(2)
 // Why: keep an escape hatch for tools that key off Electron's stock app name.
 // The flag is runner-only and must not leak into Chromium/electron-vite.
 const useStableElectronName =
   process.env.ORCA_DEV_STABLE_NAME === '1' || rawForwardedArgs.includes(STABLE_NAME_FLAG)
-const useWorkbenchShell = rawForwardedArgs.includes(WORKBENCH_FLAG)
+const useMonicaShell = rawForwardedArgs.includes(MONICA_FLAG)
 const forwardedRaw = rawForwardedArgs.filter(
-  (arg) => arg !== STABLE_NAME_FLAG && arg !== WORKBENCH_FLAG
+  (arg) => arg !== STABLE_NAME_FLAG && arg !== MONICA_FLAG
 )
 if (useStableElectronName) {
   process.env.ORCA_DEV_STABLE_NAME = '1'
 }
-if (useWorkbenchShell) {
-  process.env.WORKBENCH_SHELL = '1'
-  process.env.VITE_WORKBENCH_SHELL = '1'
-  process.env.ORCA_PRODUCT_NAME = 'Workbench'
+if (useMonicaShell) {
+  process.env.MONICA_SHELL = '1'
+  process.env.VITE_MONICA_SHELL = '1'
+  process.env.ORCA_PRODUCT_NAME = 'Monica'
 }
 
 function readGitValue(args) {
@@ -622,9 +622,9 @@ const isHelpOrVersion = forwardedRaw.some((a) => a === '--help' || a === '-h' ||
 if (!isHelpOrVersion && process.env.ORCA_DEV_INSTANCE_LABEL) {
   console.error(`[orca-dev] Instance: ${process.env.ORCA_DEV_INSTANCE_LABEL}`)
 }
-if (!isHelpOrVersion && isWorkbenchDevEnv()) {
+if (!isHelpOrVersion && isMonicaDevEnv()) {
   console.error(
-    '[orca-dev] Workbench shell ON — renderer HMR active; profile: workbench-dev (not orca-dev)'
+    '[orca-dev] Monica shell ON — renderer HMR active; profile: workbench-dev (not orca-dev)'
   )
 }
 // Why: automation launches this app while someone is working; announce that the

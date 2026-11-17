@@ -5,11 +5,11 @@ import { spawn } from 'node:child_process'
 import { build } from 'esbuild'
 
 const require = createRequire(import.meta.url)
-const outputDir = resolve('test-results/workbench-update-download')
+const outputDir = resolve('test-results/monica-update-download')
 await mkdir(outputDir, { recursive: true })
 const entry = resolve(outputDir, 'main.cjs')
 await build({
-  entryPoints: ['tests/e2e/fixtures/workbench-update-download-main.ts'],
+  entryPoints: ['tests/e2e/fixtures/monica-update-download-main.ts'],
   outfile: entry,
   bundle: true,
   platform: 'node',
@@ -18,7 +18,7 @@ await build({
 })
 const environment = {
   ...process.env,
-  WORKBENCH_UPDATE_EVIDENCE_DIR: await mkdtemp(resolve(outputDir, 'run-'))
+  MONICA_UPDATE_EVIDENCE_DIR: await mkdtemp(resolve(outputDir, 'run-'))
 }
 delete environment.ELECTRON_RUN_AS_NODE
 const child = spawn(require('electron'), [entry, '--disable-gpu'], {

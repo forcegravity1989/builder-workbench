@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import {
-  WORKBENCH_RELEASE_ASSETS,
+  MONICA_RELEASE_ASSETS,
   assertPublishAuthorized,
   buildGhReleaseCreateArgs,
   deriveReleaseTag,
@@ -11,13 +11,13 @@ import {
   parseReleaseArgs,
   readManifestVersion,
   resolveReleaseVersion,
-  runWorkbenchRelease,
+  runMonicaRelease,
   selectReleaseAssets
-} from './release-win-workbench.mjs'
+} from './release-win-monica.mjs'
 
 const tempDirs = []
 function makeTempDir() {
-  const dir = mkdtempSync(join(tmpdir(), 'wb-release-test-'))
+  const dir = mkdtempSync(join(tmpdir(), 'monica-release-test-'))
   tempDirs.push(dir)
   return dir
 }
@@ -78,7 +78,7 @@ describe('version and tag', () => {
   it('derives a valid tag and rejects malformed versions', () => {
     expect(deriveReleaseTag('0.6.0')).toBe('v0.6.0')
     expect(deriveReleaseTag('0.5.0-rc.20261011.4')).toBe('v0.5.0-rc.20261011.4')
-    expect(() => deriveReleaseTag('not-a-version')).toThrow(/valid Workbench release tag/)
+    expect(() => deriveReleaseTag('not-a-version')).toThrow(/valid Monica release tag/)
   })
 
   it('detects prerelease from the -rc.YYYYMMDD.N suffix', () => {
@@ -88,15 +88,15 @@ describe('version and tag', () => {
 })
 
 describe('selectReleaseAssets', () => {
-  it('reports all three Workbench assets missing for an empty dist', () => {
+  it('reports all three Monica assets missing for an empty dist', () => {
     const { assets, missing } = selectReleaseAssets(makeTempDir())
-    expect(assets.map((a) => a.name)).toEqual(WORKBENCH_RELEASE_ASSETS)
-    expect(missing).toEqual(WORKBENCH_RELEASE_ASSETS)
+    expect(assets.map((a) => a.name)).toEqual(MONICA_RELEASE_ASSETS)
+    expect(missing).toEqual(MONICA_RELEASE_ASSETS)
   })
 
   it('reports assets present once they exist', () => {
     const dir = makeTempDir()
-    for (const name of WORKBENCH_RELEASE_ASSETS) {
+    for (const name of MONICA_RELEASE_ASSETS) {
       writeFileSync(join(dir, name), 'x')
     }
     const { missing } = selectReleaseAssets(dir)
@@ -109,7 +109,7 @@ describe('readManifestVersion', () => {
     const dir = makeTempDir()
     writeFileSync(
       join(dir, 'latest.yml'),
-      'version: 0.7.0\nfiles:\n  - url: workbench-windows-setup.exe\n'
+      'version: 0.7.0\nfiles:\n  - url: monica-windows-setup.exe\n'
     )
     expect(readManifestVersion(dir)).toBe('0.7.0')
     writeFileSync(join(dir, 'latest.yml'), "version: '0.7.0-rc.20261101.1'\n")
@@ -127,9 +127,9 @@ describe('readManifestVersion', () => {
 describe('buildGhReleaseCreateArgs', () => {
   const base = {
     tag: 'v0.6.0',
-    assetPaths: ['dist/workbench-windows-setup.exe', 'dist/latest.yml'],
+    assetPaths: ['dist/monica-windows-setup.exe', 'dist/latest.yml'],
     target: 'abc123',
-    title: 'Workbench 0.6.0',
+    title: 'Monica 0.6.0',
     notesFile: 'notes.md'
   }
 
@@ -139,12 +139,12 @@ describe('buildGhReleaseCreateArgs', () => {
       'release',
       'create',
       'v0.6.0',
-      'dist/workbench-windows-setup.exe',
+      'dist/monica-windows-setup.exe',
       'dist/latest.yml',
       '--target',
       'abc123',
       '--title',
-      'Workbench 0.6.0',
+      'Monica 0.6.0',
       '--notes-file',
       'notes.md'
     ])
@@ -181,7 +181,7 @@ describe('assertPublishAuthorized', () => {
   })
 })
 
-describe('runWorkbenchRelease guards (prepare mode)', () => {
+describe('runMonicaRelease guards (prepare mode)', () => {
   function fakeExec(overrides) {
     return (command, args) => {
       const key = `${command} ${args.join(' ')}`
@@ -201,7 +201,7 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
     const dir = makeTempDir()
     if (withAssets) {
       mkdirSync(join(dir, 'dist'))
-      for (const name of WORKBENCH_RELEASE_ASSETS) {
+      for (const name of MONICA_RELEASE_ASSETS) {
         writeFileSync(
           join(dir, 'dist', name),
           name === 'latest.yml' ? `version: ${manifestVersion}\n` : 'x'
@@ -219,7 +219,7 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
   }
 
   it('flags missing assets and HEAD-not-on-remote, stays in prepare (never publishes)', async () => {
-    const result = await runWorkbenchRelease({
+    const result = await runMonicaRelease({
       argv: ['--version', '0.6.0'],
       cwd: makeProject(false),
       log: () => {},
@@ -233,7 +233,7 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
   })
 
   it('reports no blockers when assets exist and HEAD is on a remote branch', async () => {
-    const result = await runWorkbenchRelease({
+    const result = await runMonicaRelease({
       argv: ['--version', '0.6.0'],
       cwd: makeProject(true),
       log: () => {},
@@ -241,11 +241,11 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
     })
     expect(result.mode).toBe('prepare')
     expect(result.blockers).toEqual([])
-    expect(result.wouldRun).toContain('workbench-windows-setup.exe')
+    expect(result.wouldRun).toContain('monica-windows-setup.exe')
   })
 
   it('blocks when latest.yml carries a different version than the release tag', async () => {
-    const result = await runWorkbenchRelease({
+    const result = await runMonicaRelease({
       argv: ['--version', '0.6.0'],
       cwd: makeProject(true, '1.4.197-local.1792147652.ece1d72698d6'),
       log: () => {},
@@ -255,7 +255,7 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
   })
 
   it('blocks when the tag already has a published release', async () => {
-    const result = await runWorkbenchRelease({
+    const result = await runMonicaRelease({
       argv: ['--version', '0.6.0'],
       cwd: makeProject(true),
       log: () => {},

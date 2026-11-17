@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { resolvePnpmCliInvocation } from './pnpm-cli-invocation.mjs'
 
-// 发布出包必须注入产品版本号：--version <v> 或 WORKBENCH_RELEASE_VERSION=<v>。
+// 发布出包必须注入产品版本号：--version <v> 或 MONICA_RELEASE_VERSION=<v>。
 // 走 ORCA_WIN_ADHOC + ORCA_ADHOC_BUILD_VERSION 是 electron-builder.config.cjs 里
 // 现成的「未签名 Windows 构建」通道：它省略 publisherName（否则装机后 app-update.yml
 // 声明 SignPath，应用内更新器会按 Authenticode 拒收我们的未签名安装包），并把版本
@@ -15,7 +15,7 @@ function resolveInjectedVersion(argv) {
   if (fromFlag && !fromFlag.startsWith('--')) {
     return fromFlag.trim()
   }
-  const fromEnv = process.env.WORKBENCH_RELEASE_VERSION
+  const fromEnv = process.env.MONICA_RELEASE_VERSION
   return fromEnv && fromEnv.trim() ? fromEnv.trim() : null
 }
 
@@ -23,9 +23,9 @@ const releaseVersion = resolveInjectedVersion(process.argv.slice(2))
 
 const environment = {
   ...process.env,
-  WORKBENCH_SHELL: process.env.WORKBENCH_SHELL || '1',
-  VITE_WORKBENCH_SHELL: process.env.VITE_WORKBENCH_SHELL || '1',
-  ORCA_PRODUCT_NAME: process.env.ORCA_PRODUCT_NAME || 'Workbench',
+  MONICA_SHELL: process.env.MONICA_SHELL || '1',
+  VITE_MONICA_SHELL: process.env.VITE_MONICA_SHELL || '1',
+  ORCA_PRODUCT_NAME: process.env.ORCA_PRODUCT_NAME || 'Monica',
   ORCA_APP_ID: process.env.ORCA_APP_ID || 'com.stablyai.workbench.dev',
   ...(releaseVersion ? { ORCA_WIN_ADHOC: '1', ORCA_ADHOC_BUILD_VERSION: releaseVersion } : {})
 }

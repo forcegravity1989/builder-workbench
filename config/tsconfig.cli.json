@@ -1,6 +1,6 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
-  "files": ["../src/shared/workbench/work-calendar-2026.json"],
+  "files": ["../src/shared/monica/work-calendar-2026.json"],
   "include": [
     "../src/cli/**/*",
     "../src/shared/**/*",
@@ -153,7 +153,7 @@
     "../src/main/sqlite/sync-database.ts",
     "../src/main/win32-utils.ts",
     // Import-free stdin-forwarding rule shared by the remote CLI bridge; the
-    // workbench-materials handler test asserts the same contract.
+    // monica-materials handler test asserts the same contract.
     "../src/relay/remote-cli-stdin.ts"
   ],
   "compilerOptions": {

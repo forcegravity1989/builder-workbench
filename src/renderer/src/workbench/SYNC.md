@@ -1,78 +1,78 @@
-# Workbench 叠层开发与运行说明
+# Monica 叠层开发与运行说明
 
 > **维护约定**：给维护 Electron 叠层的开发者读；只管代码边界、开发运行入口和构建入口，不写产品目标或上游版本记录。正文结构为「原则 → 日常调试 → 品牌与开关 → 禁止」；代码落点、命令或边界变化时更新。产品目标见 [architecture](../../../../docs/architecture.md)，上游快照、删迁记录与同步取舍见 [ref/upstream.md](../../../../ref/upstream.md)。
 
-目标分支是主干 `main`（原 `bw-orca`，2026-09-30 扶正）。交互迁移须按当前 BW 意图重新决策；旧 Rust main（`archive/main-pre-orca`）与原型只能提供历史参考，不能视为现行实现正本。
+目标分支是主干 `main`（原 `bw-orca`，2026-09-30 扶正）。交互迁移须按当前 Monica 意图重新决策；旧 Rust main（`archive/main-pre-orca`）与原型只能提供历史参考，不能视为现行实现正本。
 
 总览 / 知识库挂在现有 `activity` / `space` 槽位；计划与验收从 `artifacts` 准备固定树后进入原生 `terminal`，在唯一工作区旁挂业务板（侧栏两个独立入口，保留原生项目列表，原生会话/工具侧栏不另实现）；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
 
-项目墙与接入页在 `activity` 内容槽内切换，共用 Orca 的侧栏、标题栏和窗口控件。新增 BW 屏的宽度与窗口拖动约束见 [桌面壳](../../../../docs/06-module/桌面壳.md#bw-屏幕接入规范)。
+项目墙与接入页在 `activity` 内容槽内切换，共用 Orca 的侧栏、标题栏和窗口控件。新增 Monica 屏的宽度与窗口拖动约束见 [桌面壳](../../../../docs/06-module/桌面壳.md#monica-屏幕接入规范)。
 
-Workbench 开发方法保留在 `.claude/skills/`；产品 Skill 正源在 `standard/skills/`。计划、验收、指标配置的根级 `skills/` Stub 与 CLI 指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，随原生机制分发；合并上游时保留 [upstream 清单](../../../../ref/upstream.md) 中 BW Skill 的 manifest 登记，不手改生成物。不迁 `crates/` 与 `standard/vendor`。
+Monica 开发方法保留在 `.claude/skills/`；产品 Skill 正源在 `standard/skills/`。计划、验收、指标配置的根级 `skills/` Stub 与 CLI 指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，随原生机制分发；合并上游时保留 [upstream 清单](../../../../ref/upstream.md) 中 Monica Skill 的 manifest 登记，不手改生成物。不迁 `crates/` 与 `standard/vendor`。
 
 ## 原则
 
 1. **upstream 核不动**：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、main runtime — 只挂载，不大段改写。
-2. **改动落叠层**：界面进入 `src/renderer/src/workbench/`；BW 契约、材料事务及宿主适配进入 `src/shared/workbench/`、`src/main/workbench/`；SSH 宿主侧挂载进入 `src/relay/workbench/`。BW 界面类名走自己的设计系统 CSS（`workbench-tokens.css` 等，非 Tailwind），`config/oxlint-dead-classes.json` 对 workbench 子树关闭 Tailwind 类审计（与既有 `feature-wall-*` allow 同一机制，改动经 PR 评审）。Orca i18n coverage 审计（`verify:localization-coverage`）经 `config/localization-coverage-exclusions.json` 对 workbench 子树目录级豁免——BW 是中文优先产品面，不走 i18n 抽取；豁免条目必须带 reason，BW 国际化时移除。原生组件里个别专名/BW 壳标签走 allowlist 复核条目。
-3. **原文件只留薄挂载**：界面用 `isWorkbenchShell()` 条件分支；RPC/CLI 注册与 relay 组合只登记 BW 入口，不向 Orca 工作树、连接、调度类塞入业务。Web/配对、SSH/WSL 沿用原生路由，BW 不重建连接层。
+2. **改动落叠层**：界面进入 `src/renderer/src/monica/`；Monica 契约、材料事务及宿主适配进入 `src/shared/monica/`、`src/main/monica/`；SSH 宿主侧挂载进入 `src/relay/monica/`。Monica 界面类名走自己的设计系统 CSS（`monica-tokens.css` 等，非 Tailwind），`config/oxlint-dead-classes.json` 对 monica 子树关闭 Tailwind 类审计（与既有 `feature-wall-*` allow 同一机制，改动经 PR 评审）。Orca i18n coverage 审计（`verify:localization-coverage`）经 `config/localization-coverage-exclusions.json` 对 monica 子树目录级豁免——Monica 是中文优先产品面，不走 i18n 抽取；豁免条目必须带 reason，Monica 国际化时移除。原生组件里个别专名/Monica 壳标签走 allowlist 复核条目。
+3. **原文件只留薄挂载**：界面用 `isMonicaShell()` 条件分支；RPC/CLI 注册与 relay 组合只登记 Monica 入口，不向 Orca 工作树、连接、调度类塞入业务。Web/配对、SSH/WSL 沿用原生路由，Monica 不重建连接层。
 4. **参考源**：产品意图与现行结构读 `docs/`；Orca 工程参考按需读 `ref/`；旧 Rust 旅程在迁移时重新决策。
 
 上游版本快照、身份核对、差异记录和实际同步取舍统一见 [upstream 同步说明](../../../../ref/upstream.md)。本文件不重复维护上游记录。
 
 ## 日常调试（热加载）
 
-改 `src/renderer/src/workbench/**` 时**不要**每次 `build:mac:workbench`。用 electron-vite 开发服：
+改 `src/renderer/src/monica/**` 时**不要**每次 `build:mac:monica`。用 electron-vite 开发服：
 
 ```bash
-pnpm run dev:workbench
+pnpm run dev:monica
 ```
 
 - Renderer（叠层 UI / CSS）保存即 HMR，所见即所得
 - Main / preload 变更会整窗重启（electron-vite 默认）
 - 独立 profile：macOS `~/Library/Application Support/workbench-dev`、Windows `%APPDATA%\workbench-dev`（不碰 `orca-dev`）
-- Dock 标题：`Workbench: <branch>`
+- Dock 标题：`Monica: <branch>`
 
 **自己看 UI**：不要设 `ORCA_BACKGROUND_LAUNCH=1`（该变量会隐藏窗口、藏 Dock，仅供 agent/CDP 自动化）。
 
 **Agent 用 CDP 调试又不抢焦点**：
 
 ```bash
-ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
+ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:monica
 ```
 
-`dev:workbench` 本身已跨平台可直接跑；上面的 env 前缀是 POSIX 写法，在 Windows cmd/PowerShell 下不成立，改用该 shell 自己的赋值：
+`dev:monica` 本身已跨平台可直接跑；上面的 env 前缀是 POSIX 写法，在 Windows cmd/PowerShell 下不成立，改用该 shell 自己的赋值：
 
 ```powershell
-$env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run dev:workbench
+$env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run dev:monica
 ```
 
-开发实例和其中的终端只继承启动进程的环境变量：从 IDE、agent 等环境被收敛的进程起 dev 时，启动前要先补上本机需要的用户级变量（如内网 CA 的 `NODE_EXTRA_CA_CERTS`）；Windows 上 `dev:workbench` 会自动从用户环境补回该变量（清单见 `config/scripts/dev-workbench-env.mjs`）。
+开发实例和其中的终端只继承启动进程的环境变量：从 IDE、agent 等环境被收敛的进程起 dev 时，启动前要先补上本机需要的用户级变量（如内网 CA 的 `NODE_EXTRA_CA_CERTS`）；Windows 上 `dev:monica` 会自动从用户环境补回该变量（清单见 `config/scripts/dev-monica-env.mjs`）。
 
-打试用包仍用：`pnpm run build:mac:workbench`（签名 / 分发 / CDP smoke 前再打）。
+打试用包仍用：`pnpm run build:mac:monica`（签名 / 分发 / CDP smoke 前再打）。
 
 ## 品牌与开关
 
-正式标志源为 `resources/icon-source/workbench.png`。运行 `pnpm run build:icons` 从同一原图生成界面/运行时 PNG、Windows 多尺寸 ICO 和 macOS ICNS（只需 Node 与仓内依赖，不依赖 Xcode）。`node config/scripts/generate-workbench-icons.mjs --check` 校验生成物。开发与生产使用同一标志；旧的水彩/蓝色 Orca 偏好归一为默认标志，macOS 启动时清除旧 Finder 自定义图标以使用包内标志。macOS 菜单栏使用同源 18px / 36px 原色图（不作模板着色），注意提示叠加在原图上，开发实例以 `DEV` 文字区分。
+正式标志源为 `resources/icon-source/monica.png`。运行 `pnpm run build:icons` 从同一原图生成界面/运行时 PNG、Windows 多尺寸 ICO 和 macOS ICNS（只需 Node 与仓内依赖，不依赖 Xcode）。`node config/scripts/generate-monica-icons.mjs --check` 校验生成物。开发与生产使用同一标志；旧的水彩/蓝色 Orca 偏好归一为默认标志，macOS 启动时清除旧 Finder 自定义图标以使用包内标志。macOS 菜单栏使用同源 18px / 36px 原色图（不作模板着色），注意提示叠加在原图上，开发实例以 `DEV` 文字区分。
 
-| Env | 作用 |
-|-----|------|
-| `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |
-| `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
-| `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
-| WeLink 群空间(上报落点) | `src/main/workbench/reporting/welink-report-config.ts` 固定 `WELINK_REPORT_SPACE_ID = 24160277`；设置与 env 不能改道，变更须走代码 PR。反馈/崩溃/诊断包使用「Workbench 上报」目录，用户开启后的遥测使用「Workbench 遥测」目录；均使用当前 WeLink 账号上传 |
-| `WORKBENCH_TELEMETRY_FLUSH_MS` | 遥测批次上传的定时间隔，默认 600000 毫秒（10 分钟），减少群空间文件和限流；开发/验收可缩短等待 |
+| Env                                      | 作用                                                                                                                                                                                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `MONICA_SHELL=1` / `VITE_MONICA_SHELL=1` | 启用 Monica 壳                                                                                                                                                                                                                                   |
+| `ORCA_PRODUCT_NAME=Monica`               | 打包名；且默认打开壳                                                                                                                                                                                                                             |
+| `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装                                                                                                                                                                                                                             |
+| WeLink 群空间(上报落点)                  | `src/main/monica/reporting/welink-report-config.ts` 固定 `WELINK_REPORT_SPACE_ID = 24160277`；设置与 env 不能改道，变更须走代码 PR。反馈/崩溃/诊断包使用「Monica 上报」目录，用户开启后的遥测使用「Monica 遥测」目录；均使用当前 WeLink 账号上传 |
+| `MONICA_TELEMETRY_FLUSH_MS`              | 遥测批次上传的定时间隔，默认 600000 毫秒（10 分钟），减少群空间文件和限流；开发/验收可缩短等待                                                                                                                                                   |
 
-打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
+打包：`pnpm run build:mac:monica`（本机仅 arm64，脚本 `config/scripts/build-mac-monica.mjs`）。
 
-Windows Workbench：`pnpm run build:win:workbench`（脚本 `config/scripts/build-win-workbench.mjs`，沿用 `electron-builder` 的 Windows/NSIS 配置）。 Workbench 使用带目录选择的安装向导，手动运行安装包时可选择安装位置；已有安装默认沿用原目录，应用内自动更新沿用原目录并跳过选择页。产品名与 appId 保持独立于官方 Orca。包内 `resources/bin/orca.exe` 仍使用原生命令名，按产品编译并调用同包的 `Workbench.exe`；Workbench 与 Orca 启动器分别缓存，不能混用。打包后须通过该启动器读取 Skill 与材料 schema，不能只用 Node 直接调用 CLI JS 代替验证。
+Windows Monica：`pnpm run build:win:monica`（脚本 `config/scripts/build-win-monica.mjs`，沿用 `electron-builder` 的 Windows/NSIS 配置）。 Monica 使用带目录选择的安装向导，手动运行安装包时可选择安装位置；已有安装默认沿用原目录，应用内自动更新沿用原目录并跳过选择页。产品名与 appId 保持独立于官方 Orca。包内 `resources/bin/orca.exe` 仍使用原生命令名，按产品编译并调用同包的 `Monica.exe`；Monica 与 Orca 启动器分别缓存，不能混用。打包后须通过该启动器读取 Skill 与材料 schema，不能只用 Node 直接调用 CLI JS 代替验证。
 
-Windows Workbench 的 Electron 语言资源只保留简体中文（`zh-CN`）和英语（`en-US`），其他系统语言回落英语；这不裁剪应用自身的翻译目录。打包清除运行依赖里的 MSVC 调试符号与编译中间文件，保留 `.node`、`.dll`、`.exe`。SSH relay 的全部目标平台文件只随 `extraResources` 放在 `resources/relay`，不重复进入 `app.asar`。
+Windows Monica 的 Electron 语言资源只保留简体中文（`zh-CN`）和英语（`en-US`），其他系统语言回落英语；这不裁剪应用自身的翻译目录。打包清除运行依赖里的 MSVC 调试符号与编译中间文件，保留 `.node`、`.dll`、`.exe`。SSH relay 的全部目标平台文件只随 `extraResources` 放在 `resources/relay`，不重复进入 `app.asar`。
 
 产物示例：
 
-- `dist/mac-arm64/Workbench.app`
-- `dist/Workbench-*-arm64-mac.zip`
-- `dist/Workbench-*-arm64.dmg`
+- `dist/mac-arm64/Monica.app`
+- `dist/Monica-*-arm64-mac.zip`
+- `dist/Monica-*-arm64.dmg`
 
 ## 禁止
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-// Workbench Windows 发布：出包 → tag → 上传三资产 → 建 GitHub Release → 读回。
-// 本脚本是 Builder Workbench 专用（只 3 个 Windows 资产），不复用 Orca 的多平台发布器。
+// Monica Windows 发布：出包 → tag → 上传三资产 → 建 GitHub Release → 读回。
+// 本脚本是 Monica 专用（只 3 个 Windows 资产），不复用 Orca 的多平台发布器。
 // 版本描述（Release body）一律由 --notes-file 传入，按 references/release-notes-spec.md 撰写；
 // 脚本绝不自动拼 body（不用 gh 的 --generate-notes），以免退回已合 PR 的扁平罗列。
 
@@ -13,19 +13,19 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { truncateReleaseBody } from './create-draft-release.mjs'
 
-// electron-builder.config.cjs 的 win artifactName 为 'workbench-windows-setup.${ext}'；latest.yml 是更新清单。
-export const WORKBENCH_RELEASE_ASSETS = [
-  'workbench-windows-setup.exe',
-  'workbench-windows-setup.exe.blockmap',
+// electron-builder.config.cjs 的 win artifactName 为 'monica-windows-setup.${ext}'；latest.yml 是更新清单。
+export const MONICA_RELEASE_ASSETS = [
+  'monica-windows-setup.exe',
+  'monica-windows-setup.exe.blockmap',
   'latest.yml'
 ]
 
-// Workbench rc 形态是 vX.Y.Z-rc.YYYYMMDD.N（日期.构建号），与 Orca 的 vX.Y.Z-rc.N 不同，
-// 故不复用 create-draft-release 的 parseDesktopReleaseTag，改用 Workbench 专用解析。
-const WORKBENCH_RELEASE_TAG_PATTERN = /^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+)\.(\d+))?$/
+// Monica rc 形态是 vX.Y.Z-rc.YYYYMMDD.N（日期.构建号），与 Orca 的 vX.Y.Z-rc.N 不同，
+// 故不复用 create-draft-release 的 parseDesktopReleaseTag，改用 Monica 专用解析。
+const MONICA_RELEASE_TAG_PATTERN = /^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+)\.(\d+))?$/
 
-export function parseWorkbenchReleaseTag(tag) {
-  const match = WORKBENCH_RELEASE_TAG_PATTERN.exec(tag)
+export function parseMonicaReleaseTag(tag) {
+  const match = MONICA_RELEASE_TAG_PATTERN.exec(tag)
   if (!match) {
     return null
   }
@@ -94,7 +94,7 @@ export function resolveReleaseVersion({ explicitVersion }) {
   const version = (explicitVersion ?? '').trim()
   if (!version) {
     throw new Error(
-      'No version: pass --version <X.Y.Z | X.Y.Z-rc.YYYYMMDD.N>. package.json 保留的是上游 Orca 基线版本，永远不作为 Workbench 发布版本。'
+      'No version: pass --version <X.Y.Z | X.Y.Z-rc.YYYYMMDD.N>. package.json 保留的是上游 Orca 基线版本，永远不作为 Monica 发布版本。'
     )
   }
   return version
@@ -114,21 +114,21 @@ export function readManifestVersion(distDir) {
 
 export function deriveReleaseTag(version) {
   const tag = `v${version}`
-  if (!parseWorkbenchReleaseTag(tag)) {
+  if (!parseMonicaReleaseTag(tag)) {
     throw new Error(
-      `Version "${version}" does not form a valid Workbench release tag (want vX.Y.Z or vX.Y.Z-rc.YYYYMMDD.N)`
+      `Version "${version}" does not form a valid Monica release tag (want vX.Y.Z or vX.Y.Z-rc.YYYYMMDD.N)`
     )
   }
   return tag
 }
 
 export function isPrereleaseTag(tag) {
-  const parsed = parseWorkbenchReleaseTag(tag)
+  const parsed = parseMonicaReleaseTag(tag)
   return Boolean(parsed && parsed.rcDate !== null)
 }
 
 export function selectReleaseAssets(distDir) {
-  const assets = WORKBENCH_RELEASE_ASSETS.map((name) => {
+  const assets = MONICA_RELEASE_ASSETS.map((name) => {
     const path = join(distDir, name)
     return { name, path, exists: existsSync(path) }
   })
@@ -234,7 +234,7 @@ function releaseExists(exec, tag) {
   }
 }
 
-export async function runWorkbenchRelease({
+export async function runMonicaRelease({
   argv,
   exec = defaultExec,
   log = console.log,
@@ -243,7 +243,7 @@ export async function runWorkbenchRelease({
   const args = parseReleaseArgs(argv)
   const version = resolveReleaseVersion({ explicitVersion: args.version })
   const tag = deriveReleaseTag(version)
-  const title = `Workbench ${version}`
+  const title = `Monica ${version}`
   const distDir = resolve(cwd, args.distDir)
   const notesFile = args.notesFile ? resolve(cwd, args.notesFile) : null
 
@@ -251,9 +251,9 @@ export async function runWorkbenchRelease({
 
   // 需要出包时复用唯一出包入口，不在此重造构建步骤；产品版本号随包注入，保证账本三处一致。
   if (args.build) {
-    log(`Building Workbench installer via build-win-workbench.mjs …`)
-    // process.execPath 而非字面 'node'：本机 node 不保证在 PATH（与 build-win-workbench 同口径）。
-    exec(process.execPath, ['config/scripts/build-win-workbench.mjs', '--version', version], {
+    log(`Building Monica installer via build-win-monica.mjs …`)
+    // process.execPath 而非字面 'node'：本机 node 不保证在 PATH（与 build-win-monica 同口径）。
+    exec(process.execPath, ['config/scripts/build-win-monica.mjs', '--version', version], {
       cwd,
       stdio: 'inherit'
     })
@@ -336,7 +336,7 @@ export async function runWorkbenchRelease({
 
   // body 可能超 GitHub 上限，复用 create-draft-release 的截断，写临时文件交给 gh。
   const body = truncateReleaseBody(readFileSync(notesFile, 'utf8'))
-  const tmpDir = mkdtempSync(join(tmpdir(), 'wb-release-'))
+  const tmpDir = mkdtempSync(join(tmpdir(), 'monica-release-'))
   try {
     const notesPath = join(tmpDir, 'RELEASE_NOTES.md')
     writeFileSync(notesPath, body, 'utf8')
@@ -374,7 +374,7 @@ export async function runWorkbenchRelease({
 }
 
 async function main() {
-  await runWorkbenchRelease({ argv: process.argv.slice(2) })
+  await runMonicaRelease({ argv: process.argv.slice(2) })
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
