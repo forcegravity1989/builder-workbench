@@ -55,7 +55,6 @@ function DeliveryWall({ closed }: { closed: boolean }) {
         catalog: null,
         loading: false,
         error: null,
-        worktreeInventoryReady: true,
         materialReady: true,
         materialError: null,
         reload: ignore

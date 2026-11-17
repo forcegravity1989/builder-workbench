@@ -405,9 +405,7 @@ export function WorkbenchVersionNav({
               if (versionCatalog && sourceReady) {
                 await initializeVersionWorkspace({
                   catalog: versionCatalog,
-                  version: entry.version,
-                  knownWorktrees: project.worktrees,
-                  worktreeInventoryReady: project.worktreeInventoryReady
+                  version: entry.version
                 })
               }
             })

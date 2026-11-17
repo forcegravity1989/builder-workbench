@@ -6,11 +6,7 @@ import { useAppStore } from '@/store'
 import type { CycleTaskReference } from './version-cycle/ports'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
-import {
-  isVersionFlowWorkflow,
-  prepareFailed,
-  VERSION_FLOW_WORKFLOWS
-} from '../../../shared/workbench/version-workspace-prepare'
+import { isVersionFlowWorkflow, prepareFailed } from '../../../shared/workbench/version-workspace-prepare'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -129,35 +125,11 @@ export function navigateVersionWorkflow(args: {
 export async function initializeVersionWorkspace(args: {
   catalog: VersionCatalogState
   version: string
-  knownWorktrees: readonly Worktree[]
-  worktreeInventoryReady: boolean
 }): Promise<void> {
-  const { catalog, version, knownWorktrees, worktreeInventoryReady } = args
+  const { catalog, version } = args
   const { scope } = catalog
   if (!scope) {
     toast.error('项目工作区尚未就绪，请稍后再试')
-    return
-  }
-  const missing = VERSION_FLOW_WORKFLOWS.filter(
-    (workflow) => findVersionFlowWorktrees(knownWorktrees, { version, workflow }).length === 0
-  )
-  if (!missing.length) {
-    toast.info(`版本 ${version} 已有计划和验收工作区。`)
-    return
-  }
-  if (!worktreeInventoryReady) {
-    toast.info('部分主机的工作区尚未读全。核对主机连接后再初始化。')
-    return
-  }
-  // Prepare runs on one owner. Reuse that owner's existing workflow instead of copying it.
-  if (
-    VERSION_FLOW_WORKFLOWS.some(
-      (workflow) =>
-        !missing.includes(workflow) &&
-        findVersionFlowWorktrees(catalog.worktrees, { version, workflow }).length === 0
-    )
-  ) {
-    toast.info('已有流程工作区在其他主机。打开已有工作区后，再补齐本版工作区。')
     return
   }
   toast.info(`正在为 ${version} 创建工作区…`)

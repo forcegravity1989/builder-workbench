@@ -130,9 +130,6 @@ export function useProjectVersionCatalog(
     worktrees,
     repoIds: readers.map(({ repo }) => repo.id),
     loading: readers.length > sources.length || sources.some(({ state }) => state.loading),
-    worktreeInventoryReady:
-      readers.length === sources.length &&
-      sources.every(({ state }) => state.worktreeInventoryReady),
     sourceProblems: sources.flatMap(({ repo, state }) => {
       const errors = versionCatalogErrors(state)
       return errors.length
