@@ -39,7 +39,7 @@ const plans = { 'v0.7': snapshot, 'v0.6': snapshotV06, 'v0.8': v08Plan }
 const emptyPlan = { goals: [], tasks: [], summary: {} }
 plans['v1.0'] = { goals: [{ goalId: 'G1', title: 'API 接口交付' }], tasks: [], summary: {} }
 const demoProjects = [
-  { id: 'bw', name: 'Builder Monica', initials: 'B', onWall: true },
+  { id: 'bw', name: 'Monica', initials: 'B', onWall: true },
   { id: 'api', name: 'Demo API', initials: 'D', onWall: true },
   { id: 'personal', name: 'personal-notes', initials: 'P', onWall: false }
 ]
@@ -1022,7 +1022,7 @@ function App() {
       return (
         <ReuseSurface
           title={`沿用现有${labels[screen]}屏（含会话区）`}
-          scope={`Builder Monica / ${version}`}
+          scope={`Monica / ${version}`}
           description={`侧栏这一行就是本版${labels[screen]}工作树入口，打开原有整屏：Orca 会话区与右侧${labels[screen]}板一起沿用。版本由侧栏带入，屏内不再选版；新会话仍从原板的“新建${labels[screen]}”发起。`}
         >
           <Button icon={MessageSquare} onClick={() => startWorkflow(screen)}>
