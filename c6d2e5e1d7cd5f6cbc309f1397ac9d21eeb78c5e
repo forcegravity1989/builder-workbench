@@ -1,0 +1,19 @@
+src/renderer/src/workbench/SYNC.md
+  s_8ed1d4b0c9eadb::t_6997f8d14c65c2 53-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "c6d2e5e1d7cd5f6cbc309f1397ac9d21eeb78c5e",
+  "prompts": {},
+  "sessions": {
+    "s_8ed1d4b0c9eadb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f569821-9766-478b-ba06-0bdb2a6c2d76",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

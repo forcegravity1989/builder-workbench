@@ -1,0 +1,26 @@
+src/renderer/src/components/new-workspace/SetProjectLocationDialog.test.tsx
+  s_4f466d2904e768::t_f7463020f4a60a 203
+  s_4f466d2904e768::t_9dc690e59cc344 143,145-158,160-169,171-188,192-201
+  s_4f466d2904e768::t_b252328a103fea 131,135-142,144,159,170,189-191,202,204-206
+  s_4f466d2904e768::t_6c88ac85b3d3f5 132-134
+src/renderer/src/components/new-workspace/SetProjectLocationDialog.tsx
+  s_4f466d2904e768::t_69b0e1b977224d 110-113
+  s_4f466d2904e768::t_8ca633f826e8e2 312-315
+  s_4f466d2904e768::t_df1abda59b8655 139-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "8750a1e95255c97b5b3bdb7e878f98fbad54c88c",
+  "prompts": {},
+  "sessions": {
+    "s_4f466d2904e768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "304e18ed-7a2d-4e32-bf13-c4de93c8e006",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

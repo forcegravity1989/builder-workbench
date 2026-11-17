@@ -1,0 +1,28 @@
+.bw/metrics.toml
+  s_b8ea9b2e8dfd1b::t_ddae39c9c61d42 3
+.bw/project.toml
+  s_b8ea9b2e8dfd1b::t_5234f08bae71a9 5
+  s_b8ea9b2e8dfd1b::t_995a63f5d2988e 1
+.bw/managed-projects.toml
+  s_b8ea9b2e8dfd1b::t_5d2820f3c132c7 3
+  s_b8ea9b2e8dfd1b::t_e1641ba919b9c4 8
+  s_b8ea9b2e8dfd1b::t_4f860298306ed3 12
+.bw/milestones.json
+  s_b8ea9b2e8dfd1b::t_a5fed263e10e19 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "aab41b7cb66d65f46da4abf53ee9c6d003932254",
+  "prompts": {},
+  "sessions": {
+    "s_b8ea9b2e8dfd1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "499b902b-9fdf-4742-a62d-84f8d1befcf2",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
