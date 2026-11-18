@@ -38,23 +38,24 @@ function repo(id: string, hostId: Repo['executionHostId'], owner = 'acme'): Repo
   }
 }
 
-it('groups same-repo workspaces without replacing an unavailable material source', () => {
-  const source = (registration: Repo, versions: string[]): CatalogSource => {
+it('orders drafts across same-repo workspaces without replacing an unavailable material source', () => {
+  const source = (registration: Repo, versions: [string, number][]): CatalogSource => {
     const worktrees = versions.map(
-      (version) =>
+      ([version, createdAt]) =>
         ({
           id: version,
           repoId: registration.id,
           hostId: registration.executionHostId,
+          createdAt,
           workbenchVersionBinding: { schema: 1, version, workflow: 'plan' }
         }) as Worktree
     )
     const entries = mergeVersionCatalog({
       committed: { records: [], problems: [] },
       goalsByVersion: new Map(
-        versions.map((version) => [version, [{ goalId: 'g1', title: registration.id }]])
+        versions.map(([version]) => [version, [{ goalId: 'g1', title: registration.id }]])
       ),
-      drafts: versions.map((version) => ({
+      drafts: versions.map(([version]) => ({
         version,
         cycleId: registration.id,
         revision: registration.id
@@ -79,10 +80,14 @@ it('groups same-repo workspaces without replacing an unavailable material source
       }
     }
   }
-  const local = source(repo('local', 'local'), ['v1.0'])
-  const peer = source(repo('peer', 'runtime:peer'), ['v1.0', 'v1.1'])
+  const local = source(repo('local', 'local'), [['v1.0', 30]])
+  const peer = source(repo('peer', 'runtime:peer'), [
+    ['v1.0', 10],
+    ['v1.1', 20]
+  ])
   const selectSource = (candidates: Repo[]) => candidates[0]
-  const [shared, peerOnly] = mergeProjectVersions([local, peer], local, undefined, selectSource)
+  const [peerOnly, shared] = mergeProjectVersions([local, peer], local, undefined, selectSource)
+  expect([peerOnly.entry.version, shared.entry.version]).toEqual(['v1.1', 'v1.0'])
   expect(shared.entry.workspaces.map((tree) => tree.hostId)).toEqual(['local', 'runtime:peer'])
   expect(shared.entry.goals.map((goal) => goal.title)).toEqual(['local'])
   expect(shared.goalWorktrees).toEqual(local.state.worktrees)
@@ -97,6 +102,11 @@ it('groups same-repo workspaces without replacing an unavailable material source
   expect(peerVersion()).toMatchObject({ source: null, entry: { state: 'working', goals: [] } })
   expect(peerVersion(preferredPeer)?.source).toBe(peer)
   expect(peerVersion({ ...preferredPeer, repoId: 'removed' })?.source).toBeNull()
+
+  peer.state.catalog!.entries[0].planEnteredAt = 25
+  const [adopted] = mergeProjectVersions([local, peer], local, undefined, selectSource)
+  expect(adopted.entry).toMatchObject({ version: 'v1.0', planEnteredAt: 25 })
+  expect(adopted.source).toBe(local)
 })
 
 it('uses the same checkout identity, then Orca host preference when no local copy exists', () => {
@@ -219,7 +229,22 @@ it('uses the same checkout identity, then Orca host preference when no local cop
     cycleId: version,
     revision: version
   }))
-  const previousEntries = mergeVersionCatalog({ committed: { records: [], problems: [] }, drafts })
+  const previousEntries = mergeVersionCatalog({
+    committed: {
+      records: [],
+      problems: [
+        {
+          version: 'v1.1',
+          workflow: 'plan',
+          sourceCommit: 'a'.repeat(40),
+          committedAt: '2026-11-17T10:00:00Z',
+          code: 'history-unavailable',
+          message: 'Cannot read the adopted plan'
+        }
+      ]
+    },
+    drafts
+  })
   const previousSources = Object.fromEntries(
     drafts.map((draft) => [draft.version, { kind: 'draft' as const, treeKey: 'legacy', draft }])
   )
@@ -236,7 +261,8 @@ it('uses the same checkout identity, then Orca host preference when no local cop
     availableDraftVersions: new Set(['v1.1']),
     unavailableDrafts: new Map([['legacy', new Set(['v1.0'])]]),
     historyKey: 'history',
-    retainHistory: false
+    retainHistory: true
   })
   expect(retained.map((entry) => entry.version).sort()).toEqual(['v1.0', 'v1.1'])
+  expect(retained.find((entry) => entry.version === 'v1.1')?.planEnteredAt).toBeNull()
 })

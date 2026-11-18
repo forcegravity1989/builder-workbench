@@ -54,6 +54,10 @@ export function mergeProjectVersions(
             )
           : null
       const automatic = preferred ?? candidates.find(({ source }) => source.repo === fallback)
+      const orderSource =
+        automatic?.entry.planEnteredAt !== undefined
+          ? automatic
+          : candidates.find(({ entry }) => entry.planEnteredAt !== undefined)
       const chosen = explicit
         ? candidates.find(
             ({ source }) =>
@@ -66,10 +70,10 @@ export function mergeProjectVersions(
       return {
         source: chosen?.source ?? null,
         planOrderPending:
-          !!automatic?.entry.material.plan && automatic.source.state.planOrderPending,
+          !!orderSource?.entry.material.plan && orderSource.source.state.planOrderPending,
         entry: {
           version,
-          planEnteredAt: automatic?.entry.planEnteredAt,
+          planEnteredAt: orderSource?.entry.planEnteredAt,
           state: workspaces.length ? 'working' : 'retired',
           workspaces,
           goals: chosen?.entry.goals ?? [],

@@ -101,6 +101,7 @@ describe('mergeVersionCatalog', () => {
         ownership: 'orca-managed',
         selectedCheckout: false,
         visible: false,
+        createdAt: Date.parse('2026-10-03T00:00:00Z'),
         workbenchVersionBinding: planBinding('v0.7')
       }),
       makeWorktree({
@@ -116,6 +117,11 @@ describe('mergeVersionCatalog', () => {
         id: 'repo-1::/repo/trees/archived',
         isArchived: true,
         workbenchVersionBinding: planBinding('v0.7')
+      }),
+      makeWorktree({
+        id: 'new-draft',
+        createdAt: Date.parse('2026-10-01T10:00:00Z'),
+        workbenchVersionBinding: planBinding('v0.8')
       })
     ]
     const entries = mergeVersionCatalog({
@@ -162,6 +168,7 @@ describe('mergeVersionCatalog', () => {
     expect(
       [
         v05,
+        entries.find((entry) => entry.version === 'v0.8')!,
         { ...v06, version: 'aaa-new', planEnteredAt: newEnteredAt },
         { ...v06, version: 'v2', planEnteredAt: newEnteredAt },
         {
@@ -174,7 +181,12 @@ describe('mergeVersionCatalog', () => {
       ]
         .toSorted(compareVersionDisplayOrder)
         .map(({ version }) => version)
-    ).toEqual(['aaa-new', 'v2', 'zz-legacy', 'v0.6', 'v0.5'])
+    ).toEqual(['v0.8', 'aaa-new', 'v2', 'zz-legacy', 'v0.5', 'v0.6'])
+    expect(
+      [v07, { ...v06, planEnteredAt: oldEnteredAt }]
+        .toSorted(compareVersionDisplayOrder)
+        .map(({ version }) => version)
+    ).toEqual(['v0.6', 'v0.7'])
 
     // 前版先按目录排序确定，再找验收；v0.7 只有计划时不可借 v0.6 的验收。
     expect(selectPriorVersionSource('v0.8', committed)).toEqual({

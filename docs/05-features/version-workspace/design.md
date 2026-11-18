@@ -65,7 +65,7 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 - **绑定契约**：`src/shared/workbench/version-binding.ts`（schema 1，workflow 与 goalId/taskSource 一致性 refine）；读回规范化把脏数据一律收敛为未绑定，不猜归属。绑定是版本归属唯一正本——不从分支字符串、会话标题或日期反推。
 - **原生挂载**：`WorktreeMeta.workbenchVersionBinding`（undefined 保留 / null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）。BW 薄 helper `workbench.versionBinding.read/set`：原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径。
 - **版本目录**：`src/shared/workbench/version-catalog.ts` + 装载器——已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留（retired 收起回看）；绑定从登记现算，删树无悬空；草稿与目标从已保存计划派生，缓存按 owner/项目/仓库/版本/修订分隔。
-- **版本排序**：在同一材料基线上沿第一父提交链批量读取计划路径的新增事件，每版取最近一次新增。浅克隆边界排除，历史不足沿[版本排序](spec.md#版本排序)回退。GitHub 和 CodeHub 都在项目宿主运行同一条只读 Git 查询。只在目录读到主干计划后独立查询，同一宿主与基线共用在途请求和页面会话缓存。导航和墙卡先显示，墙卡在排序就绪后读取首版进度。
+- **版本排序**：已进主干的计划沿材料基线的第一父提交链批量读取路径新增事件，每版取最近一次，浅克隆边界排除。未进主干的版本从 Orca 已加载的工作区登记读取创建时间，按[版本排序](spec.md#版本排序)选择。GitHub 和 CodeHub 共用项目宿主上的只读 Git 查询，同一宿主与基线共用在途请求和页面会话缓存。导航和墙卡先显示，墙卡在排序就绪后读取首版进度。
 
 项目墙与侧栏用同一项目版本目录，按 Git 身份收集可访问的精确登记，逐登记复用 `useVersionCatalogForRepo` 独立读取。先合并版本存在证据与工作区，再对各版按本机优先和已确认的对端来源选材料。选树身份包含仓库、执行宿主、传输 owner、工作树及实例。
 

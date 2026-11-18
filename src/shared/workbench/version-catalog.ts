@@ -18,6 +18,7 @@ export type VersionCatalogWorkspace = {
   instanceId: string | null
   hostId: string | null
   runtimeOwnerEnvironmentId: string | null
+  createdAt?: number
   binding: WorkbenchVersionBinding
 }
 
@@ -40,7 +41,7 @@ export type VersionCatalogDraftSource = {
 
 export type VersionCatalogEntry = {
   version: string
-  /** Timestamp of the current plan path entering trunk. Null means its time is unknown. */
+  /** Absent before adoption; null when the plan is on trunk but its entry time is unknown. */
   planEnteredAt?: number | null
   /** 已合入主干的材料（业务正本来源）；草稿只附加、永不覆盖它。 */
   material: {
@@ -57,15 +58,25 @@ export type VersionCatalogEntry = {
   state: 'working' | 'retired'
 }
 
-export function compareVersionDisplayOrder(
-  a: Pick<VersionCatalogEntry, 'planEnteredAt'>,
-  b: Pick<VersionCatalogEntry, 'planEnteredAt'>
-): number {
-  const aTime = a.planEnteredAt ?? -Infinity
-  const bTime = b.planEnteredAt ?? -Infinity
-  return aTime === bTime
-    ? Number(b.planEnteredAt !== undefined) - Number(a.planEnteredAt !== undefined)
-    : bTime - aTime
+type VersionDisplayEvidence = Pick<VersionCatalogEntry, 'planEnteredAt' | 'workspaces'>
+
+function versionDisplayTime({ planEnteredAt, workspaces }: VersionDisplayEvidence): number {
+  if (planEnteredAt !== undefined) {
+    return planEnteredAt ?? -Infinity
+  }
+  let earliest = Infinity
+  for (const { binding, createdAt } of workspaces) {
+    if (binding.workflow === 'plan' && createdAt !== undefined && Number.isFinite(createdAt)) {
+      earliest = Math.min(earliest, createdAt)
+    }
+  }
+  return earliest === Infinity ? -Infinity : earliest
+}
+
+export function compareVersionDisplayOrder(a: VersionDisplayEvidence, b: VersionDisplayEvidence) {
+  const aTime = versionDisplayTime(a)
+  const bTime = versionDisplayTime(b)
+  return aTime === bTime ? 0 : bTime - aTime
 }
 
 /**
@@ -98,6 +109,7 @@ export function collectVersionCatalogWorkspaces(
       instanceId: worktree.instanceId ?? null,
       hostId: worktree.hostId ?? null,
       runtimeOwnerEnvironmentId: worktree.runtimeOwnerEnvironmentId ?? null,
+      createdAt: worktree.createdAt,
       binding
     })
   }
@@ -176,7 +188,11 @@ export function mergeVersionCatalog(args: {
     }
   }
   for (const problem of args.committed.problems) {
-    entryFor(problem.version).problems.push({
+    const entry = entryFor(problem.version)
+    if (problem.workflow === 'plan') {
+      entry.planEnteredAt = null
+    }
+    entry.problems.push({
       workflow: problem.workflow,
       code: problem.code,
       message: problem.message

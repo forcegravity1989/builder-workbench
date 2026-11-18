@@ -203,7 +203,7 @@ export function useVersionCatalogForRepo(
           ? Number.isFinite(enteredAt)
             ? enteredAt
             : null
-          : undefined,
+          : entry.planEnteredAt,
         workspaces: bindings,
         state: bindings.length > 0 ? 'working' : 'retired'
       })
