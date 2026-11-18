@@ -1,0 +1,21 @@
+docs/10-reference/welink-video-meeting.md
+  s_db4ed03e3ba137::t_3b69f9871afaff 3
+docs/10-reference/welink-video-meeting.html
+  s_db4ed03e3ba137::t_46cae6ff678eb6 1-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "41942e7a1e414291738b27f8c8576c3fa5b24341",
+  "prompts": {},
+  "sessions": {
+    "s_db4ed03e3ba137": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "964958bd-71ca-44fa-a9f5-deacc6713ca3",
+        "model": "grok-4.7-high-fast"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
