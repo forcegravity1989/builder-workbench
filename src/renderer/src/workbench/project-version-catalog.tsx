@@ -130,7 +130,12 @@ export function useProjectVersionCatalog(
     worktrees,
     repoIds: readers.map(({ repo }) => repo.id),
     loading: readers.length > sources.length || sources.some(({ state }) => state.loading),
-    planOrderPending: versions.some((version) => version.planOrderPending),
+    // An unmerged version has its own workspace time and can be shown while
+    // merged-plan Git entry times are still loading.
+    planOrderPending:
+      versions[0]?.entry.mergeStatus === 'unmerged'
+        ? false
+        : versions.some((version) => version.planOrderPending),
     sourceProblems: sources.flatMap(({ repo, state }) => {
       const errors = versionCatalogErrors(state)
       return errors.length

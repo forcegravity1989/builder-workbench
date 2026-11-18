@@ -104,9 +104,104 @@ it('orders drafts across same-repo workspaces without replacing an unavailable m
   expect(peerVersion({ ...preferredPeer, repoId: 'removed' })?.source).toBeNull()
 
   peer.state.catalog!.entries[0].planEnteredAt = 25
-  const [adopted] = mergeProjectVersions([local, peer], local, undefined, selectSource)
+  const adopted = mergeProjectVersions([local, peer], local, undefined, selectSource).find(
+    (row) => row.entry.version === 'v1.0'
+  )!
   expect(adopted.entry).toMatchObject({ version: 'v1.0', planEnteredAt: 25 })
   expect(adopted.source).toBe(local)
+
+{
+  const mergedRepo = repo('merged', 'local')
+  const unmergedRepo = repo('unmerged', 'runtime:peer')
+  const mergedEntry = mergeVersionCatalog({
+    committed: {
+      records: [
+        {
+          version: 'v1.0',
+          cycleId: 'merged-cycle',
+          sourceCommit: 'a'.repeat(40),
+          revision: 'merged-revision',
+          workflow: 'plan',
+          committedAt: '2026-11-18T12:00:00Z'
+        }
+      ],
+      problems: []
+    },
+    drafts: [{ version: 'v1.0', cycleId: 'merged-cycle', revision: 'draft-revision' }],
+    workspaces: collectVersionCatalogWorkspaces(
+      [
+        {
+          id: 'merged-plan',
+          repoId: mergedRepo.id,
+          hostId: mergedRepo.executionHostId,
+          createdAt: 1,
+          workbenchVersionBinding: { schema: 1, version: 'v1.0', workflow: 'plan' }
+        } as Worktree
+      ],
+      [mergedRepo.id]
+    )
+  })[0]
+  const unmergedEntry = mergeVersionCatalog({
+    committed: { records: [], problems: [] },
+    workspaces: collectVersionCatalogWorkspaces(
+      [
+        {
+          id: 'unmerged-plan',
+          repoId: unmergedRepo.id,
+          hostId: unmergedRepo.executionHostId,
+          createdAt: 999,
+          workbenchVersionBinding: { schema: 1, version: 'v1.1', workflow: 'plan' }
+        } as Worktree
+      ],
+      [unmergedRepo.id]
+    )
+  })[0]
+  const source = (registration: Repo, entry: typeof mergedEntry): CatalogSource => ({
+    repo: registration,
+    state: {
+      scope: null,
+      home: null,
+      worktrees: [],
+      repoIds: [registration.id],
+      planTrees: [],
+      catalog: { entries: [entry], problems: [] },
+      loading: false,
+      error: null,
+      materialReady: true,
+      materialError: null,
+      planOrderPending: false,
+      reload: () => {}
+    }
+  })
+  const ordered = mergeProjectVersions(
+    [source(mergedRepo, mergedEntry), source(unmergedRepo, unmergedEntry)],
+    null,
+    undefined,
+    (candidates) => candidates[0]
+  )
+  expect(ordered.map(({ entry }) => entry.version)).toEqual(['v1.1', 'v1.0'])
+  expect(ordered[1].entry).toMatchObject({
+    mergeStatus: 'merged',
+    draft: { revision: 'draft-revision' }
+  })
+
+  const unreadableRepo = repo('unreadable', 'runtime:other')
+  const unreadableEntry = {
+    ...unmergedEntry,
+    version: 'v1.2',
+    mergeStatus: 'unknown' as const,
+    problems: [{ workflow: 'plan' as const, code: 'history-unavailable', message: 'unreadable' }]
+  }
+  const withUnreadable = mergeProjectVersions(
+    [source(unmergedRepo, unmergedEntry), source(unreadableRepo, unreadableEntry)],
+    null,
+    undefined,
+    (candidates) => candidates[0]
+  )
+  expect(withUnreadable.find(({ entry }) => entry.version === 'v1.2')?.entry.mergeStatus).toBe(
+    'unknown'
+  )
+}
 })
 
 it('uses the same checkout identity, then Orca host preference when no local copy exists', () => {
