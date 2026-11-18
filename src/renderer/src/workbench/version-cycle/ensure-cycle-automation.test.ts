@@ -76,11 +76,8 @@ beforeEach(() => {
   setState()
 })
 
-it('identity key embeds the cycle scope and workflow', () => {
-  expect(KEY).toBe(`bw-cycle:${JSON.stringify(['project', 'repo', 'local', '', 'plan'])}:plan`)
-})
-
 it('refreshes a stale BW-owned prompt in place and never recreates the entry', async () => {
+  expect(KEY).toBe(`bw-cycle:${JSON.stringify(['project', 'repo', 'local', '', 'plan'])}:plan`)
   rpcWith([
     {
       id: 'a1',

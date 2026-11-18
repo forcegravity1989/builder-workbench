@@ -4,7 +4,7 @@ import { decideTrunkUpdate, trunkRefusalSentence } from './trunk-sync'
 const trunk = { branch: 'main', baselineBranch: 'main', dirty: false }
 
 describe('trunk update decision', () => {
-  it('guards the main checkout: on-baseline, clean and without local commits', () => {
+  it('guards the main checkout and phrases each refusal as one cause plus the one next step', () => {
     expect(decideTrunkUpdate({ ...trunk, behind: 3, ahead: 0 })).toEqual({
       action: 'fast-forward',
       behind: 3
@@ -22,9 +22,6 @@ describe('trunk update decision', () => {
       action: 'refuse',
       reason: 'ahead-trunk'
     })
-  })
-
-  it('phrases a main-checkout refusal as one cause plus the one next step', () => {
     const mismatch = trunkRefusalSentence('branch-mismatch', {
       branch: 'hotfix',
       baselineBranch: 'main',

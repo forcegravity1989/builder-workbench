@@ -31,6 +31,11 @@ export const ReviewIncomingSchema = ReviewRequestSchema.extend({
 })
 export type ReviewIncomingRequest = z.infer<typeof ReviewIncomingSchema>
 
+export const ReviewDismissSchema = z.object({
+  repo: ReviewRepoSchema,
+  prNumber: z.number().int().positive()
+})
+
 export type ReviewPeerTarget = {
   environmentId: string
   name: string
