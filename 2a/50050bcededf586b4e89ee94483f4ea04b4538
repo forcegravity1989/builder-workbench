@@ -1,0 +1,41 @@
+ref/upstream.md
+  s_081c4d7d56ca75::t_864ff93c9e0b9b 148
+src/main/ipc/runtime-environment-connectivity-handlers.ts
+  s_081c4d7d56ca75::t_e724ca882043ab 9-10,33,70-72,139-141,158-164
+src/renderer/src/web/web-preload-api-runtime-environment.test.ts
+  s_081c4d7d56ca75::t_506ad8dccf068e 208-211,249-295
+src/main/ipc/runtime-environments-pairing.test.ts
+  s_081c4d7d56ca75::t_233b14e8a20197 83-86,141,477-481,529-556
+src/shared/runtime-environment-store.test.ts
+  s_081c4d7d56ca75::t_54fe7bf3d44412 14,227-246
+src/renderer/src/web/preload-api/web-runtime-session.ts
+  s_081c4d7d56ca75::t_2903c1bfa1c637 76-80
+src/shared/runtime-environment-store.ts
+  s_081c4d7d56ca75::t_139da1285fd471 130-150,158-167
+src/main/ipc/runtime-environment-verified-pairing-publish.ts
+  s_081c4d7d56ca75::t_5b03487a4ab46a 2-5,30-35
+src/main/ipc/runtime-environment-manual-disconnect.ts
+  s_081c4d7d56ca75::t_8f301d075ea342 1-2,4,8-35
+src/shared/runtime-environments.ts
+  s_081c4d7d56ca75::t_b63338d3a4d7d9 34-35
+src/renderer/src/web/preload-api/web-runtime-environments-api.ts
+  s_081c4d7d56ca75::t_c02c091cc85a24 12-13,189-191,194,201-209
+src/renderer/src/web/web-runtime-environment.ts
+  s_081c4d7d56ca75::t_5901c9139157b5 158-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "2a50050bcededf586b4e89ee94483f4ea04b4538",
+  "prompts": {},
+  "sessions": {
+    "s_081c4d7d56ca75": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "64c6243b-e037-43d9-a577-0251811feaf7",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
