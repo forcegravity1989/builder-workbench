@@ -542,11 +542,12 @@ describe('registerRuntimeEnvironmentHandlers', () => {
     // Simulate a restart: forget the in-memory hold and register from disk alone.
     resetRuntimeEnvironmentManualDisconnects()
     handleMock.mockReset()
-    sendRemoteRuntimeConnectionRequestMock.mockClear()
+    sendRemoteRuntimeRequestMock.mockClear()
     registerRuntimeEnvironmentHandlers(store as never)
 
     expect(isRuntimeEnvironmentManuallyDisconnected(added.environment.id)).toBe(true)
-    expect(sendRemoteRuntimeConnectionRequestMock).not.toHaveBeenCalled()
+    // The startup activation loop dials through the status owner's request path.
+    expect(sendRemoteRuntimeRequestMock).not.toHaveBeenCalled()
     const getStatus = handler<{ selector: string }, { ok: boolean; error?: { code: string } }>(
       'runtimeEnvironments:getStatus'
     )

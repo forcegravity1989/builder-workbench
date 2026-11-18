@@ -204,8 +204,9 @@ export function createRuntimeEnvironmentsApi(): NonNullable<
           environment,
           undefined
         )
-      } catch {
+      } catch (error) {
         // The in-session hold is already lifted; only the saved preference stays stale.
+        console.warn('[runtime-environments] failed to clear saved reconnect preference:', error)
       }
       closeActiveRuntimeClients()
       return callEnvironmentEnvelope<RuntimeStatus>(

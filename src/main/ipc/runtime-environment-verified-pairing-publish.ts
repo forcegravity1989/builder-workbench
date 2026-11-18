@@ -28,6 +28,8 @@ export async function publishVerifiedPairing(
   // Clear manual disconnect first so invalidation can create a fresh status owner.
   clearRuntimeEnvironmentManualDisconnect(environmentId)
   // Why: re-pairing is an explicit host action, so a saved launch hold must not outlive it.
+  // Defensive: today's pairing saves rebuild the record through the schema, which already drops
+  // the field; this guards future save paths that merge into the existing record instead.
   try {
     setEnvironmentReconnectOnLaunch(userDataPath, environmentId, undefined)
   } catch (error) {
