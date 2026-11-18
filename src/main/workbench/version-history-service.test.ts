@@ -199,7 +199,8 @@ afterAll(() => {
     if (dirname(target) !== resolve(tmpdir()) || !basename(target).startsWith('bw-history-')) {
       throw new Error('Unexpected test repository location')
     }
-    rmSync(target, { recursive: true, force: true })
+    // Why maxRetries: Windows git handle release lags, so the first rmdir can hit transient EPERM/EBUSY.
+    rmSync(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 })
 
