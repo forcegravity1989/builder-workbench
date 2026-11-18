@@ -1,6 +1,6 @@
 # WeLink 视频会议与 eMeeting 页面
 
-> 给要接视频会议、议题和纪要的人。2026-11-18 记录。没有打开已登录的 WeLink 视频会议窗口，所以这里没有窗口布局。有记载的是命令帮助、eMeeting 页面地址，以及本机 `meeting-minutes` 脚本实际点到或调用的控件和接口。
+> 给要接视频会议、议题和纪要的人。2026-11-18 记录。没有打开已登录的 WeLink 视频会议窗口，所以这里没有窗口布局。有记载的是命令帮助、eMeeting 页面地址，以及本机 `meeting-minutes` 脚本实际点到或调用的控件和接口。打不开内网页面时，打开同目录 [welink-video-meeting.html](welink-video-meeting.html)。
 
 ## 命令侧
 
