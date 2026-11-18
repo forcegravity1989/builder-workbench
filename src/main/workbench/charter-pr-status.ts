@@ -128,7 +128,9 @@ async function readCodeHubProjectBranchReview(
 export async function readCharterStatus(
   repo: WorkbenchWorkspaceRepo,
   execOptions: CharterGitExecOptions
-): Promise<CharterStatus & { mergedHeadOid?: string }> {
+): Promise<
+  CharterStatus & { mergedHeadOid?: string; reviewHeadOid?: string; reviewBase?: string }
+> {
   const executionHostId = getRepoExecutionHostId(repo as Repo)
   let headHasCharter = false
   let headContent: string | null = null
@@ -174,6 +176,10 @@ export async function readCharterStatus(
     }
     return {
       pr: { provider, number: review.number, url: review.url || null, state },
+      reviewHeadOid:
+        ('headSha' in review ? review.headSha : undefined) ??
+        ('headOid' in review ? review.headOid : undefined),
+      reviewBase: 'baseRefName' in review ? review.baseRefName : undefined,
       headHasCharter,
       headMatchesProposal,
       mergedHeadOid:

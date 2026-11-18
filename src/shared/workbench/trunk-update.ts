@@ -1,7 +1,10 @@
 import { z } from 'zod'
 import { MetricScopeSchema } from './metrics'
 
-export const TrunkUpdateSchema = z.strictObject({ scope: MetricScopeSchema })
+export const TrunkUpdateSchema = z.strictObject({
+  scope: MetricScopeSchema,
+  expectedBranch: z.string().min(1).optional()
+})
 
 /**
  * Result of the one code-sync entry: a screen's「更新代码」button. The system

@@ -93,7 +93,9 @@ describe('favicon retention across navigations', () => {
 
     expect(harness.faviconUrlRef.current).toBe(GITHUB_ICON)
     expect(harness.updates.some((update) => update.faviconUrl === null)).toBe(false)
-    expect(harness.invalidateBrowserAnnotationDocument).toHaveBeenCalledTimes(2)
+    // The first start re-enters the same document (a reload) so annotations survive; only the
+    // navigation to a different document invalidates them.
+    expect(harness.invalidateBrowserAnnotationDocument).toHaveBeenCalledTimes(1)
   })
 
   it('drops the icon when the navigation leaves the origin', () => {

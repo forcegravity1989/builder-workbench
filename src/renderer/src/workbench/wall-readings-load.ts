@@ -1,7 +1,4 @@
 import { readVersionMembership } from './version-cycle/version-membership'
-import { branchName } from '@/lib/git-utils'
-import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
-import { compareVersionDisplayOrder } from '../../../shared/workbench/version-catalog'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import {
   PlanningMaterialSchema,
@@ -10,7 +7,6 @@ import {
   type AcceptanceMaterial
 } from '../../../shared/workbench/version-material'
 import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
-import { cycleBranch } from './version-cycle/native-cycle-workspace'
 import { nativeVersionMaterialPort } from './version-material-port'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeArchivePrPort } from './archive-pr-port'
@@ -23,10 +19,11 @@ import type { VersionCatalogState } from './use-version-catalog'
 /** Wall-only progress reads use the same catalog and owner as the sidebar. */
 export async function readWallReadings(
   state: VersionCatalogState,
+  version: string,
   force: boolean
 ): Promise<WallCardReadings> {
   const { catalog, scope, home, worktrees } = state
-  const entry = [...(catalog?.entries ?? [])].sort(compareVersionDisplayOrder)[0]
+  const entry = catalog?.entries.find((candidate) => candidate.version === version)
   const error = state.error ?? state.materialError ?? catalog?.problems[0]?.message
   if (!entry) {
     if (state.loading) {
@@ -61,15 +58,7 @@ export async function readWallReadings(
       owner: NativeWorkspaceScope | null
     }> => {
       try {
-        const bound = findVersionFlowWorktrees(worktrees, { version: entry.version, workflow })
-        const trees = bound.length
-          ? bound
-          : worktrees.filter(
-              (tree) =>
-                !tree.isArchived &&
-                !normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding) &&
-                branchName(tree.branch) === cycleBranch({ workflow })
-            )
+        const trees = findVersionFlowWorktrees(worktrees, { version: entry.version, workflow })
         if (trees.length > 1) {
           throw new Error('有多个流程工作区，请进入项目核对来源')
         }
@@ -86,8 +75,7 @@ export async function readWallReadings(
               treeOwner.runtimeOwnerEnvironmentId
             ).read(entry.version)
           : null
-        // An empty legacy shared tree does not own this version.
-        const readCommitted = !tree || (!draft && !bound.length)
+        const readCommitted = !tree
         if (readCommitted && (!state.materialReady || state.materialError)) {
           throw new Error(state.materialError ?? '尚未读到主干材料')
         }

@@ -4,6 +4,7 @@ import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { runWorktreeDelete } from './delete-worktree-flow'
+import { runSleepWorktrees } from './sleep-worktree-flow'
 import { isEventTargetInsideCurrentTarget } from './worktree-card-dom-events'
 import type { ResolvedWorktreeCardProps } from './worktree-card-model'
 import { writeWorkspaceDragData } from './workspace-status'
@@ -82,6 +83,26 @@ export function useWorktreeCardWorkspaceActions({
       showDeleteQuickAction,
       worktree.id
     ]
+  )
+  // Why: mirror the context-menu "Pin/Unpin" so the hover button and the menu
+  // stay one behavior. `isPinned` from props flips as the store row updates.
+  const handleTogglePinQuickAction = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      useAppStore.getState().setWorktreesPinnedAndReveal([worktree.id], !worktree.isPinned)
+    },
+    [worktree.id, worktree.isPinned]
+  )
+  // Why: same sleep flow the context menu runs — close this workspace's live
+  // panels to free memory; the row stays in the list (no archive hide layer).
+  const handleSleepQuickAction = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      void runSleepWorktrees([worktree.id])
+    },
+    [worktree.id]
   )
   const handleOpenRenameErrorDialog = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -168,6 +189,8 @@ export function useWorktreeCardWorkspaceActions({
 
   return {
     handleWorkspaceQuickAction,
+    handleTogglePinQuickAction,
+    handleSleepQuickAction,
     handleOpenRenameErrorDialog,
     unreadTooltip,
     lineageChildAriaLabel,

@@ -6,6 +6,8 @@
 
 > **30 秒导读**:[index.html](index.html) 是单文件、浏览器直接打开的可点击原型。**给谁看**:要改 Workbench 界面的人。**现在还作数吗**:排版和八屏布局用于追溯设计目标;页内演示数据还是旧「规范铺底 / issue-policy」,现行方案看本页接入段和 [`docs/architecture.md`](../architecture.md) §1「项目约定」。三条总原则:①目标态,不是演示走场;②成熟组件原样沿用;③信息密度优先。
 
+> **制作规范正本**:做或改原型时的呈现约定(原型注释、注释密度、业界参考、阶段切换、复用标注、控件与文案)见 [设计系统 guidelines「HTML 原型与文档页」](../04-design-system/guidelines.md#html-原型与文档页),本节三原则是它的上位依据。
+
 2026-08-25 按现行壳收过一轮:去掉连接器表、下次触发、聊天登录、V3 六个 crate、`docs/plan/` / `docs/releases.md`、规范铺底当 agent workflow、发版本那张活。本地状态前缀 `bw-v4-hifi7-state`(旧 `hifi6` 不串味)。
 
 2026-08-29 再跟一轮(对齐 `pierce/orca-session`):通知页签整片删(群通知走事件注册表发项目群、个人提醒改 OS 弹窗后建,见 ADR-0003),剩八屏;计划屏定稿换成 `plan.html`(四列看板 + 列表视图 + 右上角下拉取代左栏 + 居中弹窗);会话屏只剩 Orca / Open Design 两页签;配置屏 Cursor 放开(底座已通);顶层设置加「Orca 网页地址」(配对 URL,存本机 `settings.toml`)。
