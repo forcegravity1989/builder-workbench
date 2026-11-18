@@ -1,14 +1,9 @@
 import React, { useEffect, useMemo } from 'react'
 import { useAppStore } from '@/store'
-import { FolderGit2 } from 'lucide-react'
 import type { VersionTreeDisplayInput } from './VersionNativeTrees'
-import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
-import {
-  publishVersionSidebarProjection,
-  useVersionSidebarProjection
-} from './version-sidebar-state'
+import { publishVersionSidebarProjection } from './version-sidebar-state'
 import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { useProjectPage } from './project-page-state'
@@ -63,7 +58,7 @@ export function WorkbenchSidebarVersions({
       return page.options ? findRepoForHost(s.repos, page.options.repoId, page.options) : null
     }
     if (page?.kind === 'cycle') {
-      const scope = page.options
+      const { scope } = page.options
       const hostId = scope.runtimeOwnerEnvironmentId
         ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
         : scope.hostId
@@ -86,7 +81,6 @@ export function WorkbenchSidebarVersions({
     return repo && repo.kind !== 'folder' ? resolveProjectSource(s, repo) : null
   })
   const versionRepoId = versionRepo?.id ?? null
-  const projection = useVersionSidebarProjection()
   useEffect(() => {
     if (!versionRepoId) {
       publishVersionSidebarProjection({ repoId: null, worktreeIdentities: new Set() })
@@ -98,16 +92,14 @@ export function WorkbenchSidebarVersions({
   )
   return (
     <div
-      className="flex min-w-0 flex-col"
+      className="flex min-w-0 flex-col pt-2"
       style={{ rowGap: WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP }}
       data-workbench-version-section
     >
       {versionRepo && <WorkbenchVersionNav nativeDisplay={display} repo={versionRepo} />}
-      <WorkbenchSidebarSectionHeader icon={FolderGit2}>
-        {versionRepoId && projection.repoId === versionRepoId && projection.worktreeIdentities.size
-          ? '其他工作区'
-          : '工作区'}
-      </WorkbenchSidebarSectionHeader>
+      {/* Why: the native flat "All" group now renders as the 工作区 section header;
+          this spacer keeps the Codex-style blank line between 版本 rows and it. */}
+      <div className="h-3 shrink-0" aria-hidden />
     </div>
   )
 }

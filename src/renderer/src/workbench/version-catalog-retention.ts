@@ -82,6 +82,7 @@ export function retainUnavailableCatalogSources({
     if (keepMaterial) {
       entry.material = { ...previous.material }
       entry.problems = [...previous.problems]
+      entry.planEnteredAt = previous.planEnteredAt
     }
     if (keepDraft && !entry.draft) {
       entry.draft = { cycleId: keepDraft.cycleId, revision: keepDraft.revision }

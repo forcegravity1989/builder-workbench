@@ -3,7 +3,7 @@ import { MilestoneDayAxis, MilestoneDayGrid, MilestoneRangeToolbar } from './mil
 import { useRef, useState } from 'react'
 import { useMilestoneViewport, type MilestoneLocation } from './use-milestone-viewport'
 export type { MilestoneLocation } from './use-milestone-viewport'
-import { X, Wrench } from 'lucide-react'
+import { CalendarPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { MilestoneField } from './milestone-field'
 import { MilestoneActualBars } from './milestone-actual-bars'
@@ -44,6 +44,7 @@ import {
 type Props = {
   catalog: VersionCatalogState
   draft: MilestoneDraft
+  formalDraft?: MilestoneDraft
   editing: boolean
   busy: boolean
   edit(update: (draft: MilestoneDraft) => MilestoneDraft): void
@@ -87,8 +88,12 @@ export function MilestoneTimeline(props: Props) {
   )
   const visible = gesture.preview ?? draft
   const facts = useMilestoneFactReaders(props.catalog)
-  const actualVersions = showActual ? milestoneVisibleActualVersions(draft, facts.values) : []
-  const plannedVersions = datedMilestoneVersions(visible)
+  const formalDraft = props.formalDraft ?? draft
+  const actualVersions = showActual ? milestoneVisibleActualVersions(formalDraft, facts.values) : []
+  const plannedVersions = datedMilestoneVersions(visible).filter(
+    (v) =>
+      !actualVersions.some((actual) => actual.cycleId === v.cycleId && actual.version !== v.version)
+  )
   const versions = (
     showActual
       ? [
@@ -101,13 +106,13 @@ export function MilestoneTimeline(props: Props) {
       (v) => milestoneDay(v.timeWindow!.start) <= end && milestoneDay(v.timeWindow!.end) >= origin
     )
     .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
+  const displayed = showActual ? formalDraft.material : visible.material
   const layouts = new Map(
-    visible.material.features.map((f) => [
-      f.id,
-      showActual ? milestoneActualLayout(f, visible.material, facts.values) : null
-    ])
+    showActual
+      ? displayed.features.map((f) => [f.id, milestoneActualLayout(f, displayed, facts.values)])
+      : []
   )
-  const chronological = visible.material.features.toSorted(
+  const chronological = displayed.features.toSorted(
     (a, b) => latestFeatureEnd(b) - latestFeatureEnd(a)
   )
   const order = [
@@ -122,9 +127,7 @@ export function MilestoneTimeline(props: Props) {
     if (
       !props.rangeOnly ||
       !f.title.trim() ||
-      (editing &&
-        !showActual &&
-        (f.id === props.newFeature || props.pinnedFeatures.includes(f.id)))
+      (editing && !showActual && (f.id === props.newFeature || props.pinnedFeatures.includes(f.id)))
     ) {
       return true
     }
@@ -205,7 +208,7 @@ export function MilestoneTimeline(props: Props) {
         showActual={showActual}
         onChange={setShowActual}
         featureCount={features.length}
-        totalCount={visible.material.features.length}
+        totalCount={displayed.features.length}
         ownerCount={new Set(features.map((f) => f.owner.trim()).filter(Boolean)).size}
       />
       <MilestoneRangeToolbar
@@ -302,7 +305,7 @@ export function MilestoneTimeline(props: Props) {
                             disabled={!enabled}
                             onClick={() => arrange(f)}
                           >
-                            <Wrench size={14} />
+                            <CalendarPlus className="size-4" aria-hidden="true" />
                           </MilestoneIconButton>
                           <MilestoneIconButton
                             label="删除特性"
@@ -346,7 +349,7 @@ export function MilestoneTimeline(props: Props) {
                   {showActual ? (
                     <MilestoneActualBars
                       feature={f}
-                      material={visible.material}
+                      material={displayed}
                       facts={facts.values}
                       origin={origin}
                       onOpen={props.open}

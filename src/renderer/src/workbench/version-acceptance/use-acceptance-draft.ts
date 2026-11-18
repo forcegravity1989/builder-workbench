@@ -157,9 +157,6 @@ export function useAcceptanceDraft(
         })
       }
     },
-    cancelAutomaticRead() {
-      recovery.request++
-    },
     clear() {
       recovery.request++
       setInitializationSuppressed(true)

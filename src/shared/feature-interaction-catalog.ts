@@ -44,6 +44,7 @@ export type FeatureInteractionId =
   | 'floating-workspace-hidden'
   | 'notifications'
   | 'ports'
+  | 'quick-links'
   | 'quick-commands'
   | 'resource-manager'
   | 'review-notes'
@@ -140,6 +141,7 @@ export const FEATURE_INTERACTIONS = [
   },
   { id: 'notifications', interaction: 'desktop notifications enabled or tested' },
   { id: 'ports', interaction: 'Ports popover opened, configured, or port action used' },
+  { id: 'quick-links', interaction: 'quick link added, edited, opened, or removed' },
   { id: 'quick-commands', interaction: 'terminal quick command created or edited' },
   { id: 'resource-manager', interaction: 'Resource Manager opened or configured' },
   { id: 'review-notes', interaction: 'review note added or sent to an agent' },

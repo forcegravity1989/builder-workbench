@@ -1,5 +1,5 @@
 import React from 'react'
-import { AlertCircle, Server, ServerOff, Star, Trash2 } from 'lucide-react'
+import { AlertCircle, Moon, Pin, PinOff, Server, ServerOff, Star, Trash2 } from 'lucide-react'
 
 import { RepoIconGlyph } from '@/components/repo/repo-icon'
 import { Badge } from '@/components/ui/badge'
@@ -76,18 +76,33 @@ export function WorktreeCardHeader({
     titleRenaming,
     handleOpenRenameErrorDialog,
     isFolder,
-    handleWorkspaceQuickAction
+    handleWorkspaceQuickAction,
+    handleTogglePinQuickAction,
+    handleSleepQuickAction
   } = card
   const {
     showPinnedRepoIcon,
     showInlineRepoBadge,
     showHeaderActions,
     showTitleRowPrimary,
+    showHoverQuickActions,
     showDeleteQuickAction,
     showTitleRowIndicators,
     titleRowIndicators,
     titleWrapper
   } = presentation
+
+  const pinAriaLabel = worktree.isPinned
+    ? translate('auto.components.sidebar.WorktreeContextMenu.697d0f6e1b', 'Unpin')
+    : translate('auto.components.sidebar.WorktreeContextMenu.3baa7d6507', 'Pin')
+  // Why: the icon button needs a short accessible name; the long sentence is
+  // the tooltip body explaining what sleeping actually does. Matches the
+  // context menu, which also labels this action plainly as "Sleep".
+  const sleepAriaLabel = 'Sleep'
+  const sleepTooltip = translate(
+    'auto.components.sidebar.WorktreeContextMenu.0918b35e4f',
+    'Close all active panels in this workspace to free up memory and CPU.'
+  )
 
   return (
     <div className="flex min-w-0 items-center justify-between gap-2">
@@ -264,7 +279,7 @@ export function WorktreeCardHeader({
         {showTitleRowIndicators && titleRowIndicators}
       </div>
 
-      {showHeaderActions && (
+      {(showHeaderActions || showHoverQuickActions) && (
         <div className="ml-auto flex shrink-0 items-center justify-center gap-1 pr-1.5">
           {showTitleRowPrimary && (
             <Tooltip>
@@ -288,31 +303,88 @@ export function WorktreeCardHeader({
             </Tooltip>
           )}
 
-          {showDeleteQuickAction && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  data-workspace-board-preserve-open=""
-                  onPointerDown={stopQuickActionPointerPropagation}
-                  onClick={handleWorkspaceQuickAction}
-                  className={cn(
-                    'inline-flex size-4 items-center justify-center rounded bg-transparent opacity-0 transition-colors transition-opacity',
-                    'group-hover/worktree-card:opacity-100 group-focus-within/worktree-card:opacity-100 focus-visible:opacity-100',
-                    'text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive'
-                  )}
-                  aria-label={translate(
-                    'auto.components.sidebar.WorktreeCard.6f09f58541',
-                    'Delete workspace'
-                  )}
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={8}>
-                {translate('auto.components.sidebar.WorktreeCard.6f09f58541', 'Delete workspace')}
-              </TooltipContent>
-            </Tooltip>
+          {/* Why: Codex-style hover chrome. The trio sits in-flow (reserving its
+              width) so it never overlays the ports/details trigger to its left;
+              it stays invisible and non-interactive until the card is hovered or
+              focused, so it cannot be clicked by accident. */}
+          {showHoverQuickActions && (
+            <div
+              className={cn(
+                'pointer-events-none flex items-center gap-0.5 opacity-0 transition-opacity',
+                'group-hover/worktree-card:pointer-events-auto group-hover/worktree-card:opacity-100',
+                'group-focus-within/worktree-card:pointer-events-auto group-focus-within/worktree-card:opacity-100',
+                'focus-within:pointer-events-auto focus-within:opacity-100'
+              )}
+              data-worktree-card-quick-actions=""
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    data-workspace-board-preserve-open=""
+                    onPointerDown={stopQuickActionPointerPropagation}
+                    onClick={handleTogglePinQuickAction}
+                    className="inline-flex size-4 items-center justify-center rounded bg-transparent text-muted-foreground transition-colors hover:bg-worktree-sidebar-foreground/10 hover:text-foreground focus-visible:bg-worktree-sidebar-foreground/10 focus-visible:text-foreground"
+                    aria-label={pinAriaLabel}
+                  >
+                    {worktree.isPinned ? (
+                      <PinOff className="size-3.5" />
+                    ) : (
+                      <Pin className="size-3.5" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8}>
+                  {pinAriaLabel}
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    data-workspace-board-preserve-open=""
+                    onPointerDown={stopQuickActionPointerPropagation}
+                    onClick={handleSleepQuickAction}
+                    className="inline-flex size-4 items-center justify-center rounded bg-transparent text-muted-foreground transition-colors hover:bg-worktree-sidebar-foreground/10 hover:text-foreground focus-visible:bg-worktree-sidebar-foreground/10 focus-visible:text-foreground"
+                    aria-label={sleepAriaLabel}
+                  >
+                    <Moon className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={8} className="max-w-[200px] text-pretty">
+                  {sleepTooltip}
+                </TooltipContent>
+              </Tooltip>
+
+              {showDeleteQuickAction && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      data-workspace-board-preserve-open=""
+                      onPointerDown={stopQuickActionPointerPropagation}
+                      onClick={handleWorkspaceQuickAction}
+                      className="inline-flex size-4 items-center justify-center rounded bg-transparent text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive"
+                      aria-label={translate(
+                        'auto.components.sidebar.WorktreeCard.6f09f58541',
+                        'Delete workspace'
+                      )}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8}>
+                    {translate(
+                      'auto.components.sidebar.WorktreeCard.6f09f58541',
+                      'Delete workspace'
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           )}
         </div>
       )}

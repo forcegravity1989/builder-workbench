@@ -5,7 +5,7 @@ import {
   upgradeMilestoneMaterial,
   ScheduledVersionSchema
 } from '../../../shared/workbench/project-milestones'
-import type { Session } from './milestone-planning-session'
+import { MilestoneRecoveryRecordSchema } from '../../../shared/workbench/milestone-recovery'
 
 // Recovery accepts unfinished fields; submission still validates the business material schema.
 const draftSchema = z.strictObject({
@@ -24,59 +24,24 @@ const draftSchema = z.strictObject({
   ),
   versions: z.array(ScheduledVersionSchema.extend({ version: z.string() }))
 })
-export const milestoneRecoverySchema = z.strictObject({
+const milestoneRecoverySchema = z.object({
   schema_version: z.literal(1),
   draft: draftSchema,
-  baseline: draftSchema,
-  expectedFormal: z.string().min(1),
-  expectedProposal: z.string().nullable(),
-  editing: z.boolean(),
-  month: z
-    .string()
-    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
-    .optional(),
-  viewDate: z.iso.date().optional(),
-  rangeOnly: z.boolean().optional(),
-  featureOrder: z.array(z.string()).max(2000).optional(),
-  pinnedFeatures: z.array(z.string()).max(2000).optional(),
-  scrollX: z.number().finite().nonnegative().nullable(),
-  scrollY: z.number().finite().nonnegative(),
-  pageY: z.number().finite().nonnegative(),
-  retry: z.boolean(),
-  submitError: z.string().optional()
+  baseline: draftSchema
 })
-export function milestoneRecoveryPayload(value: Session): string {
-  const {
-    draft,
-    baseline,
-    expectedFormal,
-    expectedProposal,
-    editing,
-    viewDate,
-    rangeOnly,
-    featureOrder,
-    pinnedFeatures,
-    scrollX,
-    scrollY,
-    pageY,
-    retry,
-    submitError
-  } = value
-  return JSON.stringify({
-    schema_version: 1,
-    draft,
-    baseline,
-    expectedFormal,
-    expectedProposal,
-    editing,
-    viewDate,
-    rangeOnly,
-    featureOrder,
-    pinnedFeatures,
-    scrollX,
-    scrollY,
-    pageY,
-    retry,
-    submitError
-  })
+export type LegacyMilestoneDraft = z.infer<typeof milestoneRecoverySchema> & { revision: string }
+
+export async function readLegacyMilestoneDraft(
+  key: string
+): Promise<LegacyMilestoneDraft | undefined> {
+  const { payload, revision } = MilestoneRecoveryRecordSchema.parse(
+    await window.api.milestoneRecovery.read(key)
+  )
+  if (!payload || !revision || localStorage.getItem(`bw:milestone-restored:${key}`) === revision) {
+    return undefined
+  }
+  const record = milestoneRecoverySchema.parse(JSON.parse(payload))
+  return JSON.stringify(record.draft) === JSON.stringify(record.baseline)
+    ? undefined
+    : { ...record, revision }
 }
