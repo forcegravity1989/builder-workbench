@@ -1,0 +1,23 @@
+src/main/ipc/runtime-environment-verified-pairing-publish.ts
+  s_081c4d7d56ca75::t_1a71e2fcf38ed8 31-32
+src/main/ipc/runtime-environments-pairing.test.ts
+  s_081c4d7d56ca75::t_8040c8a6c14586 545,549-550
+src/renderer/src/web/preload-api/web-runtime-environments-api.ts
+  s_081c4d7d56ca75::t_1b7aaa648d72cf 207,209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "91034dffbb0b680e1a0ca14dd98b96d3455aeb83",
+  "prompts": {},
+  "sessions": {
+    "s_081c4d7d56ca75": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "64c6243b-e037-43d9-a577-0251811feaf7",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
