@@ -37,7 +37,7 @@
       .icon-button:disabled { opacity: 0.4; cursor: default; }
       .icon-button[data-permission-hint] { opacity: 0.65; }
       .icon-button[data-permission-hint]:hover, .icon-button[data-permission-hint]:focus-visible { opacity: 1; }
-      .icon-button:focus-visible, .source-tag:focus-visible, .project-title:focus-visible, .notice-item:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+      .icon-button:focus-visible, .pcard-host:focus-visible, .pcard-name:focus-visible, .notice-item:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
       .proposed { color: var(--foreground); }
       .rail { width: 64px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; border-right: 1px solid var(--worktree-sidebar-border); background: var(--worktree-sidebar); padding: 10px 0; }
       .rail .icon-button { width: 40px; height: 40px; border-radius: 9px; }
@@ -51,29 +51,32 @@
       .wall { min-width: 0; flex: 1; padding: 24px; }
       .wall-heading { gap: 10px; flex-wrap: wrap; }
       .wall-heading small { margin-left: 6px; font-weight: 400; }
-      .wall-actions, .card-actions { display: flex; align-items: center; gap: 2px; }
+      .wall-actions, .pcard-actions { display: flex; align-items: center; gap: 2px; }
       .wall-filters { margin: 12px 0 26px; flex-wrap: wrap; }
       .wall-filters > .input { width: 190px; }
       .options { flex-wrap: wrap; padding: 4px; color: var(--muted-foreground); font-size: 12px; }
       .options > span { padding: 4px 6px; }
       .options > span:first-child { background: var(--muted); border-radius: var(--radius-sm); color: var(--foreground); }
       .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); margin-top: 10px; gap: 14px; }
-      .project-card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); min-width: 0; }
-      .project-card-head { flex-wrap: wrap; padding: 16px 16px 8px; }
-      .project-title, .source-tag, .notice-item { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-      .project-title { min-width: 90px; flex: 1; font-size: 15px; font-weight: 600; }
-      .card-actions .icon-button { width: 27px; height: 28px; }
-      .project-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 0 16px 14px; min-height: 36px; color: var(--muted-foreground); font-size: 11px; }
-      .project-identity strong { color: var(--foreground); font-weight: 500; }
-      .source-tag, .field-note { display: inline-flex; align-items: center; gap: 5px; }
-      .source-tag:hover { color: var(--foreground); }
+      .pcard { border: 1px solid var(--border); border-radius: 12px; background: var(--card); min-width: 0; }
+      .pcard-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; padding: 16px 16px 8px; }
+      .pcard-name, .pcard-host, .notice-item { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+      .pcard-name { min-width: 90px; flex: 1; font-size: 15px; font-weight: 600; }
+      .pcard-actions .icon-button { width: 27px; height: 28px; }
+      .pcard-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 0 16px 14px; min-height: 36px; color: var(--muted-foreground); font-size: 11px; }
+      .pcard-owner strong { color: var(--foreground); font-weight: 500; }
+      .pcard-source, .field-note { display: inline-flex; align-items: center; gap: 5px; }
+      .pcard-host:hover { color: var(--foreground); }
+      .pcard-owner { display: inline-flex; align-items: baseline; gap: 6px; }
+      .pcard-muted { color: var(--muted-foreground); }
+      .pcard-source-dot.is-offline { background: transparent; border: 1px solid var(--muted-foreground); }
       .source-access { color: var(--foreground); background: var(--muted); padding: 1px 4px; border-radius: var(--radius-sm); }
-      .source-dot, .tree-dot { width: 5px; height: 5px; border-radius: 50%; flex: none; background: var(--status-success); }
-      .project-delivery { margin: 0 16px; padding: 14px 0; min-height: 104px; border-top: 1px solid var(--border); font-size: 12px; }
-      .project-delivery .row { color: var(--muted-foreground); font-size: 11px; }
-      .project-delivery ul { margin: 8px 0 0; padding-left: 16px; line-height: 1.65; }
-      .project-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
-      .project-stages b { display: block; color: var(--foreground); margin-top: 3px; font-weight: 500; }
+      .pcard-source-dot, .tree-dot { width: 5px; height: 5px; border-radius: 50%; flex: none; background: var(--status-success); }
+      .pcard-delivery { margin: 0 16px; padding: 14px 0; min-height: 104px; border-top: 1px solid var(--border); font-size: 12px; }
+      .pcard-version { color: var(--muted-foreground); font-size: 11px; }
+      .pcard-delivery ul { margin: 8px 0 0; padding-left: 16px; line-height: 1.65; }
+      .pcard-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
+      .pcard-stages b { display: block; color: var(--foreground); margin-top: 3px; font-weight: 500; }
       .empty-wall { display: grid; place-items: center; text-align: center; gap: 7px; padding: 112px 10px 36px; color: var(--muted-foreground); }
       .empty-wall h2 { font-size: 19px; color: var(--foreground); }
       .project-settings { width: min(400px, 43%); flex: none; padding: 19px 16px; border-left: 1px solid var(--border); }
@@ -144,7 +147,6 @@
       .server-workflows button { min-width: 0; white-space: normal; border: 1px solid var(--border); }
       .permission-hint { width: 100%; padding: 7px; }
       .permission-hint svg { flex: none; }
-      .pairing-address { width: auto; }
       .demo-link { margin-top: 8px; }
       .grant-row { padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
       .grant-row + .grant-row { margin-top: 5px; }
@@ -176,15 +178,15 @@
       .team-directory .members-table { min-width: 460px; }
       .team-avatar { width: 26px; height: 26px; background: var(--muted); color: var(--foreground); font-size: 12px; }
       .member-number { display: block; overflow-wrap: anywhere; }
-      .member-address { min-width: 180px; }
+      .host-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+      .host-cell small { width: 100%; }
       .directory-project-head, .directory-footer { margin-top: 14px; }
       .directory-projects { min-width: 610px; }
       .directory-projects td:first-child { max-width: 230px; }
       .catalog-json { overflow: auto; max-height: 55vh; font-size: 12px; }
       .participants { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius); }
       .participants > legend { padding: 0 4px; }
-      .source-dot.pending { background: var(--muted-foreground); }
-      .source-tag:disabled { cursor: default; opacity: 0.8; }
+      .pcard-host:disabled { cursor: default; opacity: 0.8; }
       .team-wall-label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
       .walkthrough { margin: 0 0 10px; font-size: 12px; }
       .walkthrough li { margin-bottom: 5px; }
@@ -194,7 +196,7 @@
   <body>
     <main class="review-frame">
       <header class="review-header">
-        <div><h1>团队多人协作</h1><p><em>原型注释：</em>屏内是目标界面。未绑定的桌面看不到神盾局；群号 <code>938583054774198541</code>。项目墙按 repoId 聚合，同一项目的不同主机作为来源。只读时会话栏「＋」不能新建；完全访问在共享列表里授予。</p></div>
+        <div><h1>团队多人协作</h1><p><em>原型注释：</em>屏内是目标界面。未绑定的桌面看不到神盾局；群号 <code>938583054774198541</code>。绑定时通过 welink-cli 用当前 WeLink 身份匹配主机和群成员。项目墙沿用当前 BW 墙卡，同一 repoId 的成员来源自动合并。主机默认只出现在连接目标里，不自动建立连接。</p></div>
         <div class="row wrap">
           <label for="actor">模拟桌面</label>
           <select id="actor" class="input">
@@ -211,19 +213,19 @@
       <details class="walkthrough">
         <summary>原型注释：操作路线</summary>
         <ol>
-          <li>「从头开始」。韩岚绑定群号并保存。成员姓名、工号来自 WeLink 群，群空间成为团队目录正本。</li>
-          <li>林安绑定同一群号。在团队设置加入自己项目墙上的「星图服务」，填入本机 Orca 共享地址并保存到群空间。</li>
-          <li>陈远绑定该群后，项目墙显示一个「星图服务」团队项目和自己的「交付看板」。点击团队卡片右上角的团队来源图标，把本机「星图服务」来源加入同一项目。</li>
-          <li>林安在远程 Orca 设置生成访问链接。陈远在「连接到远程服务器」粘贴，打开林安来源，看到团队项目只读提示，尝试新建会话会被引导回本机。</li>
-          <li>林安在「共享服务器访问」对陈远点「授予完全访问」。两台桌面仍使用同一条 Orca 共享连接，陈远再点「＋」可以新建。主机持有人可以筛选动作、结果、时间和访问者，超过 30 天的记录自动清理。</li>
+          <li>「从头开始」。韩岚绑定群号。welink-cli 读取群主、成员、工号和头像，当前桌面的 WeLink 身份用于匹配主机归属，群空间成为团队目录正本。</li>
+          <li>林安绑定同一群号。团队设置自动列出韩岚、林安、陈远的主机，以及各主机当前的 Orca 共享状态。这里不填写局域网 IP，连接地址沿用 Orca 共享配置。</li>
+          <li>陈远绑定该群后，BW 根据同一个 repoId 自动把成员项目墙上的「星图服务」合并成一张现有样式的项目卡。他不需要重复添加星图服务，「交付看板」仍是他的个人项目。</li>
+          <li>在项目墙打开林安或陈远的来源。团队主机默认未连接，连接后默认只读。只读状态可以查看已有工作树、会话和终端输出，创建会话会提示回到本机。</li>
+          <li>陈远在自己的 Orca 共享主机设置里给林安主机授予完全访问。林安重新打开陈远来源后，可以在该项目下新建会话或新建工作树，并选择把工作树建在林安本机或陈远主机上。访问日志只由被访问主机持有人筛选查看，超过 30 天自动清理。</li>
         </ol>
       </details>
       <div class="preview"><div id="surface"></div><p class="proto-status" id="status" role="status" aria-live="polite"></p></div>
       <details class="references">
         <summary>原型注释：复用位置与演示范围</summary>
-        <p>页头动作沿用 <a href="../../../src/renderer/src/workbench/WorkbenchIconButton.tsx">WorkbenchIconButton</a> 和现有 Lucide 图标。团队设置采用同尺寸的 UsersRound 图标，放在<a href="../../../src/renderer/src/workbench/ProjectWallPage.tsx">项目墙原远程主机操作入口</a>的位置。项目卡片沿用当前墙卡布局，新增的 UsersRound 图标用于发布本机来源。</p>
+        <p>页头动作沿用 <a href="../../../src/renderer/src/workbench/WorkbenchIconButton.tsx">WorkbenchIconButton</a> 和现有 Lucide 图标。团队设置采用同尺寸的 UsersRound 图标，放在<a href="../../../src/renderer/src/workbench/ProjectWallPage.tsx">项目墙原远程主机操作入口</a>的位置。项目卡片复用当前 ProjectWallCard 的布局和操作，不增加团队专用卡片动作。原“批量导入主机”的页头入口改为同位置的 UsersRound“团队设置”入口。</p>
         <p>窗口、墙卡右栏、评审入口与远程设置分别对应 <a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/ProjectSettingsRail.tsx">ProjectSettingsRail</a>、<a href="../../../src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx">发送评审</a>及<a href="../../../src/renderer/src/components/settings/RuntimeEnvironmentsPane.tsx">远程 Orca 服务器</a>。浅化的是这条旅程周边的原生内容。</p>
-        <p>样例在浏览器内模拟按群号查群、群空间读写、成员从项目墙发布来源、双机聚合、Orca 同连接分层和 PR。访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">共享服务器访问</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，拟存于主机的 <code>userData/logs/</code> 并按天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
+        <p>样例在浏览器内模拟按群号查群、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">共享服务器访问</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，拟存于主机的 <code>userData/logs/</code> 并按天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
       </details>
     </main>
     <dialog id="dialog" class="dialog" aria-labelledby="dialog-title"></dialog>
