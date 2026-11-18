@@ -7,6 +7,6 @@ export const WORKBENCH_MEETING_COMMAND_SPECS: CommandSpec[] = [
     summary: 'Read eMeeting recordings through the native browser and save transcript JSON',
     usage:
       'orca bw meeting transcript --meeting-id <32-hex-id> (--list | --recording <all|index|name> --output <absolute-json-path>) [--page <id>] [--worktree <selector>] [--json]',
-    allowedFlags: [...GLOBAL_FLAGS, 'meeting-id', 'list', 'recording', 'output', 'worktree']
+    allowedFlags: [...GLOBAL_FLAGS, 'meeting-id', 'list', 'recording', 'output', 'page', 'worktree']
   }
 ]
