@@ -1,0 +1,27 @@
+src/renderer/src/lib/http-link-destinations.test.ts
+  s_ae4979e13149f8::t_d5babe22cb6d04 54-61
+src/renderer/src/lib/http-link-destinations.ts
+  s_ae4979e13149f8::t_44fad7ff309e76 68-71
+src/renderer/src/i18n/locales/zh.json
+  s_ae4979e13149f8::t_359ee7ed115ee9 2726-2730
+src/renderer/src/i18n/locales/en.json
+  s_ae4979e13149f8::t_c7d56faa071e92 3278
+src/renderer/src/i18n/locales/fr.json
+  s_ae4979e13149f8::t_02a9fdec843e17 2958
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "01664e5fe09d8cad4582e175673a1911e92dbe2e",
+  "prompts": {},
+  "sessions": {
+    "s_ae4979e13149f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10080851-7dc1-4667-b21e-92862ea9e769",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

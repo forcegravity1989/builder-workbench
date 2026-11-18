@@ -1,0 +1,31 @@
+src/main/browser/browser-guest-shortcut-forwarding.test.ts
+  s_5ba37a895b20da::t_765731ed915c90 548-562
+src/shared/keybindings-default-bindings.test.ts
+  s_8ed21a49a705a4::t_1f053ef58cc5a9 29-42
+src/shared/keybindings/definitions-core-3.ts
+  s_8ed21a49a705a4::t_b44272ce351101 11-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "ff0f442f5ad250356758b1a3c01b0724e3b10277",
+  "prompts": {},
+  "sessions": {
+    "s_5ba37a895b20da": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e941-3ca1-77a2-87dd-da49de21c96c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_8ed21a49a705a4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16292-e34c-74b2-b7f1-91a556e807b2",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
