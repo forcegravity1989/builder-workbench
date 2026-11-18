@@ -86,16 +86,23 @@
   // Catalog identity only. Which desktop currently has the repo is wallRepos.
   const catalogRepos = {
     star: {
+      repoId: 'star',
       name: project,
       repository: 'https://codehub.example.invalid/team/star',
-      group: demoProjectGroup
+      group: demoProjectGroup,
+      task: '发布清单导出'
     },
     board: {
+      repoId: 'board',
       name: '交付看板',
       repository: 'https://codehub.example.invalid/team/delivery-board',
-      group: ''
+      group: '',
+      task: '整理项目看板'
     }
   }
+  // The project wall is the local source of truth for what a desktop can publish.
+  // A team directory records only the canonical project identity and host members
+  // who have actively published that project as a source.
   const wallRepos = { lead: [], lin: ['star'], chen: ['star', 'board'] }
   const samplePairing = 'orca://pair?code=demo-antai'
   const charterOwner = '林安'
@@ -138,6 +145,7 @@
           prior: 'wall',
           server: false,
           workflow: 'connect',
+          repoId: 'star',
           addingServer: false,
           notifications: false,
           tab: 'session',
@@ -161,8 +169,13 @@
             chen: { lin: addresses.lin }
           }
         : { lead: {}, lin: {}, chen: {} },
-      directoryEditable: { lead: true, lin: true, chen: !ready },
-      offered: false,
+      // WeLink group-space permissions decide who can edit the shared file.
+      // The prototype keeps every bound member editable so the UI does not
+      // invent a second permission system.
+      directoryEditable: { lead: true, lin: true, chen: true },
+      generatedLinks: ready ? { lin: samplePairing } : {},
+      offered: ready,
+      accessModes: ready ? { chen: { lin: 'readonly' } } : { lead: {}, lin: {}, chen: {} },
       full: false,
       review: null,
       prunedExpired: 0,
@@ -198,9 +211,13 @@
       if (!raw) {
         return fixture(false)
       }
-      if (!raw.bound) {
-        raw.bound = { lead: false, lin: false, chen: false }
-      }
+      raw.bound ??= { lead: false, lin: false, chen: false }
+      raw.directory = normalizeDirectory(raw.directory)
+      raw.directoryEditable = { lead: true, lin: true, chen: true, ...(raw.directoryEditable ?? {}) }
+      raw.generatedLinks ??= raw.offered ? { lin: samplePairing } : {}
+      raw.accessModes ??= { lead: {}, lin: {}, chen: {} }
+      raw.teamConnections ??= { lead: {}, lin: {}, chen: {} }
+      raw.teamEndpoints ??= {}
       return raw
     } catch {
       return fixture(false)
@@ -294,10 +311,41 @@
     }))
     directory.projects = [
       {
+        repo_id: catalogRepos.star.repoId,
         name: catalogRepos.star.name,
-        repository: catalogRepos.star.repository
+        repository: catalogRepos.star.repository,
+        sources: [employees.lin, employees.chen]
       }
     ]
+    return directory
+  }
+
+  function repoIdForEntry(entry) {
+    if (!entry) {
+      return ''
+    }
+    if (entry.repo_id && catalogRepos[entry.repo_id]) {
+      return entry.repo_id
+    }
+    return Object.keys(catalogRepos).find(
+      (id) => catalogRepos[id].repository === entry.repository
+    ) ?? ''
+  }
+
+  function normalizeDirectory(directory) {
+    if (!directory) {
+      return directory
+    }
+    directory.projects = (directory.projects ?? []).map((entry) => {
+      const repoId = repoIdForEntry(entry)
+      return {
+        ...entry,
+        repo_id: repoId,
+        name: entry.name ?? catalogRepos[repoId]?.name ?? '未命名项目',
+        repository: entry.repository ?? catalogRepos[repoId]?.repository ?? '',
+        sources: [...new Set(entry.sources ?? [])]
+      }
+    })
     return directory
   }
 
@@ -311,24 +359,23 @@
     return state.bound?.[actor.value] ? state.directory : null
   }
 
-  function teamProject() {
-    return knownDirectory()?.projects.find(
-      ({ repository }) => repository === catalogRepos.star.repository
-    )
+  function teamProjects(directory = knownDirectory()) {
+    return directory?.projects ?? []
+  }
+
+  function teamProject(repoId = 'star', directory = knownDirectory()) {
+    return teamProjects(directory).find((entry) => repoIdForEntry(entry) === repoId)
   }
 
   function directoryHost(person, directory = knownDirectory()) {
     return directory?.hosts.find((entry) => entry.member_id === employees[person])
   }
 
-  function ensureShareEndpoint(person) {
-    if (!addresses[person]) {
-      return null
-    }
-    if (!state.teamEndpoints[person]) {
-      state.teamEndpoints[person] = addresses[person]
-    }
-    return state.teamEndpoints[person]
+  function sourceOwners(repoId = 'star', directory = knownDirectory()) {
+    const entry = teamProject(repoId, directory)
+    return (entry?.sources ?? [])
+      .map((memberId) => Object.keys(employees).find((person) => employees[person] === memberId))
+      .filter((person) => person && hosts[person])
   }
 
   function memberName(id) {
@@ -336,41 +383,54 @@
     return person ? names[person] : esc(id)
   }
 
-  // Interim: a directory host with address is a source for team projects.
-  // Whether opening the same repo alone should auto-add a host is still open.
-  function registered(person) {
-    return Boolean(teamProject() && directoryHost(person))
+  function accessLevel(owner, visitor = actor.value) {
+    if (owner === visitor) {
+      return 'owner'
+    }
+    return state.accessModes?.[visitor]?.[owner] ??
+      (state.full && owner === 'lin' && visitor === 'chen' ? 'full' : 'readonly')
   }
 
-  function canReadTeamSource(owner, visitor = actor.value) {
+  function registered(person, repoId = 'star', directory = knownDirectory()) {
+    return Boolean(teamProject(repoId, directory) && directoryHost(person, directory) && sourceOwners(repoId, directory).includes(person))
+  }
+
+  function canReadTeamSource(owner, visitor = actor.value, repoId = 'star') {
+    const host = directoryHost(owner)
     return (
-      registered(owner) &&
-      state.teamConnections[visitor][owner] === directoryHost(owner).address &&
-      state.teamEndpoints[owner] === directoryHost(owner).address
+      registered(owner, repoId) &&
+      state.teamConnections?.[visitor]?.[owner] === host?.address &&
+      state.teamEndpoints?.[owner] === host?.address
     )
   }
 
-  function sourceAvailable(owner) {
-    return owner === actor.value || ownsFullAccess(owner) || canReadTeamSource(owner)
+  function sourceAvailable(owner, repoId = 'star') {
+    return owner === actor.value || accessLevel(owner) === 'full' || canReadTeamSource(owner, actor.value, repoId)
   }
 
-  function enterSource(owner) {
+  function sourceValue(value) {
+    const [owner, repoId = 'star'] = String(value || '').split('|')
+    return { owner, repoId }
+  }
+
+  function enterSource(value) {
+    const { owner, repoId } = sourceValue(value)
     if (!hosts[owner]) {
       return
     }
-    if (sourceAvailable(owner)) {
-      openWorkspace(owner)
+    if (sourceAvailable(owner, repoId)) {
+      openWorkspace(owner, repoId)
       return
     }
-    if (!registered(owner)) {
-      notify('这个项目来源尚未登记，请返回项目墙选择可用来源。')
+    if (!registered(owner, repoId)) {
+      notify('这个项目来源尚未登记，请在项目墙加入本机来源或返回选择可用来源。')
       return
     }
     const host = directoryHost(owner)
     if (state.teamEndpoints[owner] !== host.address) {
       confirm(
         '无法连接 Orca 共享主机',
-        '<p>请让主机持有人先共享此主机，并核对目录里的共享地址。</p>',
+        '<p>请让主机持有人先共享此主机，并核对群空间目录里的共享地址。</p>',
         '返回项目墙',
         () => show('wall')
       )
@@ -382,10 +442,22 @@
       '连接',
       () => {
         state.teamConnections[actor.value][owner] = host.address
+        state.accessModes[actor.value] ??= {}
+        state.accessModes[actor.value][owner] = 'readonly'
         audit(owner, '连接共享主机', '已放行', host.name)
-        openWorkspace(owner)
+        openWorkspace(owner, repoId)
       }
     )
+  }
+
+  function ensureShareEndpoint(person) {
+    if (!addresses[person]) {
+      return null
+    }
+    if (!state.teamEndpoints[person]) {
+      state.teamEndpoints[person] = addresses[person]
+    }
+    return state.teamEndpoints[person]
   }
 
   function editCatalogProject(value) {
@@ -402,8 +474,9 @@
       )
       return
     }
+    const currentRepoId = repoIdForEntry(entry)
     const repoKey =
-      available.find(([, repo]) => repo.repository === entry?.repository)?.[0] ??
+      available.find(([id]) => id === currentRepoId)?.[0] ??
       available[0]?.[0] ??
       ''
     if (!repoKey) {
@@ -418,25 +491,28 @@
       .join('')
     confirm(
       entry ? '更换仓库' : '加入团队目录',
-      `<label class="field">本机项目<select id="directory-repo" class="input" name="repo">${selection}</select></label><p class="field-note" id="directory-remote">${catalogRepos[repoKey].repository}</p>`,
+      `<label class="field">本机项目<select id="directory-repo" class="input" name="repo">${selection}</select></label><p class="field-note" id="directory-remote">${catalogRepos[repoKey].repository}</p><p class="field-note">目录只记录项目身份和来源成员，负责人及参与者仍以项目约定为准。</p>`,
       '确认',
       (data) => {
-        const repo = catalogRepos[data.get('repo')]
-        if (!repo || !(wallRepos[actor.value] ?? []).includes(data.get('repo'))) {
+        const repoId = data.get('repo')
+        const repo = catalogRepos[repoId]
+        if (!repo || !(wallRepos[actor.value] ?? []).includes(repoId)) {
           notify('只能加入本机已有的仓库。')
           return
         }
         if (
           draft.projects.some(
-            (other, slot) => slot !== index && other.repository === repo.repository
+            (other, slot) => slot !== index && repoIdForEntry(other) === repoId
           )
         ) {
-          notify('这个仓库已在团队目录中。')
+          notify('这个项目已经在团队目录中，请从项目墙加入本机来源。')
           return
         }
         const next = {
+          repo_id: repo.repoId,
           name: repo.name,
-          repository: repo.repository
+          repository: repo.repository,
+          sources: [...new Set([...(entry?.sources ?? []), employees[actor.value]])]
         }
         if (index < 0) {
           draft.projects.push(next)
@@ -446,6 +522,30 @@
         render()
       }
     )
+  }
+
+  function joinTeamProject(repoId) {
+    const repo = catalogRepos[repoId]
+    const directory = knownDirectory()
+    const entry = teamProject(repoId, directory)
+    if (!repo || !directory || !entry) {
+      notify('这个项目还没有团队目录条目，请由团队成员从团队设置加入本机项目。')
+      return
+    }
+    if (!(wallRepos[actor.value] ?? []).includes(repoId)) {
+      notify('只能发布本机项目墙上的来源。')
+      return
+    }
+    entry.sources ??= []
+    const memberId = employees[actor.value]
+    if (entry.sources.includes(memberId)) {
+      notify('本机来源已经在团队项目中。')
+      return
+    }
+    entry.sources.push(memberId)
+    state.directory = normalizeDirectory(directory)
+    notify(`已把${repo.name}的本机来源加入${teamName}团队项目`)
+    render()
   }
 
   function recordAddress(person, address) {
@@ -521,20 +621,11 @@
     render()
   }
 
-  function projectSettings() {
-    const entry = teamProject()
-    const status = ''
-    return `<aside class="project-settings" aria-label="项目设置"><header class="row between"><div><small>项目设置</small><h2>${project}</h2></div>${iconButton('X', '关闭项目设置', 'panel')}</header>
-      <section class="settings-type"><div class="row between"><strong>项目类型</strong><span class="source-access">${entry ? '团队项目' : '个人项目'}</span></div>${status}</section>
-      <section class="muted-frame"><header class="row between"><h3>项目信息</h3>${iconButton('FilePenLine', '编辑项目信息')}</header><dl><dt>项目名称</dt><dd>${project}</dd><dt>想做什么</dt><dd>管理交付与发布清单</dd><dt>项目群</dt><dd>星图服务项目群 · ${esc(demoProjectGroup)}</dd><dt>项目负责人</dt><dd>${charterOwner}</dd></dl></section>
-    </aside>`
-  }
-
   function teamDirectory() {
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><h2>团队设置</h2>${close}</header><form id="team-lookup"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">输入群号后，BW 通过 WeLink 读取群主、成员和群空间。成员与项目来源直接在共享目录中维护。</p><form id="team-lookup"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = Object.entries(names)
@@ -547,40 +638,140 @@
       })
       .join('')
     const projects = draft.projects
-      .map(
-        (entry, index) =>
-          `<tr><td><strong>${esc(entry.name)}</strong><small class="member-number">${esc(entry.repository)}</small></td><td>${iconButton('Pencil', `更换${esc(entry.name)}`, 'edit-catalog-project', { value: String(index), disabled: !writable })}</td></tr>`
-      )
+      .map((entry, index) => {
+        const sources = (entry.sources ?? []).map(memberName).join('、') || '尚未发布来源'
+        return `<tr><td><strong>${esc(entry.name)}</strong><small class="member-number">${esc(entry.repository)}</small><small class="member-number">来源成员 · ${esc(sources)}</small></td><td>${iconButton('Pencil', `更换${esc(entry.name)}`, 'edit-catalog-project', { value: String(index), disabled: !writable })}</td></tr>`
+      })
       .join('')
     const projectTable = projects
-      ? `<div class="table-scroll"><table class="table directory-projects" aria-label="团队仓库"><thead><tr><th>仓库</th><th></th></tr></thead><tbody>${projects}</tbody></table></div>`
-      : '<p class="field-note">还没有团队仓库。</p>'
+      ? `<div class="table-scroll"><table class="table directory-projects" aria-label="团队项目目录"><thead><tr><th>项目身份与来源</th><th></th></tr></thead><tbody>${projects}</tbody></table></div>`
+      : '<p class="field-note">还没有团队项目。成员可以先在自己的项目墙打开本机项目，再加入团队。</p>'
     return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
-      <header class="row between"><h2>团队设置</h2>${close}</header>
+      <header class="row between"><div><small>WeLink 群空间目录</small><h2>团队设置</h2></div>${close}</header>
       <div class="directory-scroll"><div class="team-binding"><div><small>团队群</small><strong>${teamName}</strong><small>${esc(draft.team_group_id)}</small></div><div><small>群空间</small><strong>${teamName}群空间</strong><small>${esc(draft.team_space_id)}</small></div></div>
+      <p class="field-note directory-note">成员姓名和工号来自群成员信息。共享地址由各主机持有人发布，项目负责人和参与者留在项目约定中。</p>
       <div class="row between"><h3>成员与主机</h3>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div>
       <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>Orca 共享地址</th></tr></thead><tbody>${people}</tbody></table></div>
-      <div class="row between directory-project-head"><h3>团队仓库</h3>${button(`${icon('Plus')} 加入团队目录`, 'edit-catalog-project', { disabled: !writable })}</div>
+      <div class="row between directory-project-head"><div><h3>团队项目</h3><small>目录按 repoId 聚合，同一项目的主机来源在项目墙合并显示。</small></div>${button(`${icon('Plus')} 加入团队目录`, 'edit-catalog-project', { disabled: !writable })}</div>
       ${projectTable}
       </div><footer class="row between directory-footer">${button('查看目录文件', 'preview-directory', { kind: 'ghost' })}${writable ? button('保存到群空间', 'save-directory', { kind: 'primary' }) : '<span class="field-note">你有查看权限，编辑权限由 WeLink 管理。</span>'}</footer>
     </section></div>`
   }
 
-  function ownsFullAccess(owner) {
-    return actor.value === 'chen' && owner === 'lin' && state.full
+  function projectSettings() {
+    const repo = catalogRepos[current().repoId] ?? catalogRepos.star
+    const entry = teamProject(repo.repoId)
+    return `<aside class="project-settings" aria-label="项目设置"><header class="row between"><div><small>项目设置</small><h2>${esc(repo.name)}</h2></div>${iconButton('X', '关闭项目设置', 'panel')}</header>
+      <section class="settings-type"><div class="row between"><strong>项目类型</strong><span class="source-access">${entry ? '团队项目' : '个人项目'}</span></div></section><section class="muted-frame"><header class="row between"><h3>项目信息</h3>${iconButton('FilePenLine', '编辑项目信息')}</header><dl><dt>项目名称</dt><dd>${esc(repo.name)}</dd><dt>想做什么</dt><dd>${esc(repo.task)}</dd><dt>项目群</dt><dd>星图服务项目群 · ${esc(demoProjectGroup)}</dd><dt>项目负责人</dt><dd>${charterOwner}</dd></dl></section>
+    </aside>`
   }
 
-  function audit(owner, action, result, resource = `${project} · ${hosts[owner].tree}`) {
+  function projectCard(repoId, teamEntry = teamProject(repoId)) {
+    const repo = catalogRepos[repoId]
+    if (!repo) {
+      return ''
+    }
+    const local = localRepos().some(([id]) => id === repoId)
+    const owners = teamEntry ? sourceOwners(repoId) : local ? [actor.value] : []
+    if (!teamEntry && !local && !owners.length) {
+      return ''
+    }
+    const chips = owners
+      .map((owner) => {
+        const localSource = owner === actor.value
+        const full = ownsFullAccess(owner)
+        const accessible = sourceAvailable(owner, repoId)
+        const access = localSource
+          ? ''
+          : ` <span class="source-access">${full ? '完全访问' : accessible ? '只读' : '只读 · 待连接'}</span>`
+        const host = directoryHost(owner)?.name ?? hosts[owner].name
+        const label = localSource ? `${esc(host)} · 本机` : `${names[owner]} · ${esc(host)}`
+        return `<button type="button" class="source-tag" data-action="open-workspace" data-value="${owner}|${repoId}"><span class="source-dot${accessible ? '' : ' pending'}"></span>${label}${access}</button>`
+      })
+      .join('')
+    const sourceOwnersForRepo = sourceOwners(repoId)
+    const join = teamEntry && local && !sourceOwnersForRepo.includes(actor.value)
+      ? iconButton('UsersRound', '把本机来源加入团队项目', 'join-team-project', { value: repoId, added: true })
+      : ''
+    const defaultSource = local
+      ? actor.value
+      : (owners.find((owner) => sourceAvailable(owner, repoId)) ?? owners[0] ?? '')
+    const identity = teamEntry
+      ? `<span>项目负责人 <strong>${charterOwner}</strong></span>${chips || '<span>尚未发布主机来源</span>'}`
+      : `<span>个人项目 · 本机来源</span><small class="member-number">${esc(repo.repository)}</small>`
+    return `<article class="project-card" data-project-name="${esc(repo.name)}">
+      <header class="row between project-card-head">
+        <button type="button" class="project-title" data-action="open-workspace" data-value="${defaultSource}|${repoId}"${defaultSource ? '' : ' disabled'}>${esc(repo.name)}</button>
+        <div class="card-actions">${join}${iconButton('ExternalLink', '打开代码仓')}${iconButton('SlidersHorizontal', '仓库设置')}${iconButton('Download', '克隆到本机')}${iconButton('LayoutDashboard', '项目总览')}${iconButton('FilePenLine', '项目设置与项目信息', 'panel', { value: 'project', selected: current().panel === 'project' })}${iconButton('Ellipsis', '项目操作')}</div>
+      </header>
+      <div class="project-identity">${identity}</div>
+      <div class="project-delivery"><div class="row between"><span>版本目标</span><span>v1.1</span></div><ul><li>发布清单支持导出</li><li>在任务入口反馈导入结果</li></ul></div>
+      <footer class="project-stages"><span>计划 <b>已归档</b></span><span>交付 <b>进行中</b></span><span>验收 <b>未开始</b></span></footer>
+    </article>`
+  }
+
+  function wallPage() {
+    const desktop = current()
+    const directory = knownDirectory()
+    const teamEntries = teamProjects(directory)
+      .map((entry) => [repoIdForEntry(entry), entry])
+      .filter(([repoId]) => repoId)
+    const teamIds = new Set(teamEntries.map(([repoId]) => repoId))
+    const teamCards = teamEntries.map(([repoId, entry]) => projectCard(repoId, entry)).join('')
+    const personalCards = localRepos()
+      .filter(([repoId]) => !teamIds.has(repoId))
+      .map(([repoId]) => projectCard(repoId, null))
+      .join('')
+    const teamCount = teamEntries.length
+    const personalCount = localRepos().filter(([repoId]) => !teamIds.has(repoId)).length
+    const count = teamCount + personalCount
+    const team = directory
+      ? `<p class="team-wall-label">${icon('UsersRound')} ${teamName} <small>${actor.value === 'lead' ? '群主' : '成员'}</small></p>`
+      : ''
+    const heading = `<header class="row between wall-heading"><div><h1>项目墙 <small>${count} 个项目</small></h1>${team}</div><div class="wall-actions" aria-label="项目墙操作">
+      ${iconButton('CircleHelp', '项目墙帮助', 'help')}${iconButton('RefreshCw', '刷新项目目录和墙卡信息', 'refresh')}${iconButton('UsersRound', '团队设置', 'panel', { value: 'team', added: true })}${iconButton('Plus', '添加项目', 'legacy-add')}${iconButton('X', '关闭项目墙', 'open-workspace', { value: `${desktop.source}|${desktop.repoId}` })}
+    </div></header>`
+    const filters = `<div class="row wall-filters"><input class="input" aria-label="搜索项目" placeholder="搜索项目" data-filter><div class="row options"><span>全部</span><span>本机</span><span>远程</span></div><div class="row options"><span>全部类型</span><span>团队</span><span>个人</span></div></div>`
+    const groups = count
+      ? `${filters}<div id="wall-projects">${teamCount ? `<section><h2>团队项目 <small>${teamCount}</small></h2><div class="wall-grid">${teamCards}</div></section>` : ''}${personalCount ? `<section><h2>本机项目 <small>${personalCount}</small></h2><div class="wall-grid">${personalCards}</div></section>` : ''}</div>`
+      : `<div class="empty-wall"><h2>从一个项目开始</h2><div class="row wrap">${button('团队设置', 'panel', { value: 'team', kind: 'primary' })}${button('添加项目', 'legacy-add', { kind: 'ghost' })}</div></div>`
+    const wall = `<div class="wall-layout"><main class="wall">${heading}${groups}</main>${desktop.panel === 'project' ? projectSettings() : ''}</div>`
+    return windowFrame(wall, { overlay: desktop.panel === 'team' ? teamDirectory() : '' })
+  }
+
+  function ownsFullAccess(owner) {
+    return accessLevel(owner) === 'full'
+  }
+
+  function audit(owner, action, result, resource = `${catalogRepos[current().repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`) {
     const user = names[actor.value]
+    state.logs[owner] ??= []
     state.logs[owner].unshift([Date.now(), `${user} · ${user}桌面`, resource, action, result])
   }
 
-  function openWorkspace(owner) {
+  function authorizeRemoteAction(owner, action, repoId = current().repoId) {
+    const readActions = new Set([
+      '连接共享主机',
+      '查看工作树',
+      '读取项目文件',
+      '查看已有会话',
+      '查看终端输出',
+      '订阅资源更新',
+      '结束资源订阅'
+    ])
+    const allowed = accessLevel(owner) === 'full' || readActions.has(action)
+    const result = allowed ? '已放行' : action === '未归类动作' ? '已拒绝 · 未知动作' : '已拒绝 · 团队只读'
+    audit(owner, action, result, `${catalogRepos[repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`)
+    return allowed
+  }
+
+  function openWorkspace(owner, repoId = 'star') {
     const desktop = current()
     desktop.source = owner
+    desktop.repoId = repoId
     desktop.tab = 'session'
     if (owner !== actor.value) {
-      audit(owner, '查看已有会话', '已放行')
+      authorizeRemoteAction(owner, '查看已有会话', repoId)
     }
     show('workspace')
   }
@@ -597,7 +788,7 @@
     return `<aside class="rail" aria-label="Workbench 导航">
       ${iconButton('LayoutGrid', '项目墙', 'show', { value: 'wall', selected: screen === 'wall' })}
       <div class="rail-group">
-        ${iconButton('PackageCheck', '版本工作区', 'open-workspace', { value: current().source, selected: screen === 'workspace' })}
+        ${iconButton('PackageCheck', '版本工作区', 'open-workspace', { value: `${current().source}|${current().repoId}`, selected: screen === 'workspace' })}
         ${iconButton('LayoutDashboard', '项目总览')}
         ${iconButton('ListTodo', '任务')}
         ${iconButton('CalendarClock', '自动化')}
@@ -615,78 +806,6 @@
     return `<div class="window" data-screen="${mode}">${working ? '' : titlebar()}<div class="desktop${working ? ' working' : ''}">${working ? `<div class="left-workspace">${titlebar(false)}<div class="left-body">${rail(mode)}${worktreeSidebar()}</div></div>` : rail(mode)}<div class="main-pane">${body}</div></div>${notifications()}${overlay}</div>`
   }
 
-  function projectCard() {
-    const entry = teamProject()
-    const owners = Object.keys(hosts).filter((owner) => owner === actor.value || registered(owner))
-    if (!entry && !owners.length) {
-      return ''
-    }
-    const chips = owners
-      .map((owner) => {
-        const local = owner === actor.value
-        const full = ownsFullAccess(owner)
-        const accessible = sourceAvailable(owner)
-        const access = local
-          ? ''
-          : ` <span class="source-access">${full ? '完全访问' : accessible ? '只读' : '只读 · 待连接'}</span>`
-        const host = directoryHost(owner)?.name ?? hosts[owner].name
-        const label = local ? `${esc(host)} · 本机` : `${names[owner]} · ${esc(host)}`
-        return `<button type="button" class="source-tag" data-action="open-workspace" data-value="${owner}"><span class="source-dot${accessible ? '' : ' pending'}"></span>${label}${access}</button>`
-      })
-      .join('')
-    const defaultSource = hosts[actor.value]
-      ? actor.value
-      : (owners.find((owner) => canReadTeamSource(owner) || ownsFullAccess(owner)) ?? owners[0])
-    return `<article class="project-card" data-project-name="${project}">
-      <header class="row between project-card-head">
-        <button type="button" class="project-title" data-action="open-workspace" data-value="${defaultSource ?? ''}"${defaultSource ? '' : ' disabled'}>${project}</button>
-        <div class="card-actions">${iconButton('ExternalLink', '打开代码仓')}${iconButton('SlidersHorizontal', '仓库设置')}${iconButton('Download', '克隆到本机')}${iconButton('LayoutDashboard', '项目总览')}${iconButton('FilePenLine', '项目设置与项目信息', 'panel', { value: 'project', selected: current().panel === 'project' })}${iconButton('Ellipsis', '项目操作')}</div>
-      </header>
-      <div class="project-identity"><span>项目负责人 <strong>${charterOwner}</strong></span>${chips || '<span>暂无主机来源</span>'}</div>
-      <div class="project-delivery"><div class="row between"><span>版本目标</span><span>v1.1</span></div><ul><li>发布清单支持导出</li><li>在任务入口反馈导入结果</li></ul></div>
-      <footer class="project-stages"><span>计划 <b>已归档</b></span><span>交付 <b>进行中</b></span><span>验收 <b>未开始</b></span></footer>
-    </article>`
-  }
-
-  function wallPage() {
-    const desktop = current()
-    const card = projectCard()
-    const directory = knownDirectory()
-    const others = (directory?.projects ?? []).filter(
-      ({ repository }) => repository !== catalogRepos.star.repository
-    )
-    const otherCards = others
-      .map(
-        (entry) =>
-          `<article class="project-card" data-project-name="${esc(entry.name)}"><div class="project-card-head"><strong>${esc(entry.name)}</strong></div><div class="project-identity"><small class="member-number">${esc(entry.repository)}</small> · 暂无本机来源</div></article>`
-      )
-      .join('')
-    const localOnly =
-      !directory && localRepos().length
-        ? localRepos()
-            .map(
-              ([, repo]) =>
-                `<article class="project-card" data-project-name="${esc(repo.name)}"><div class="project-card-head"><strong>${esc(repo.name)}</strong></div><div class="project-identity">本机 · 尚未加入团队目录</div></article>`
-            )
-            .join('')
-        : ''
-    const count = Number(Boolean(card)) + others.length + (localOnly ? localRepos().length : 0)
-    const team = directory
-      ? `<p class="team-wall-label">${icon('UsersRound')} ${teamName} <small>${actor.value === 'lead' ? '群主' : '成员'}</small></p>`
-      : ''
-    const heading = `<header class="row between wall-heading"><div><h1>项目墙 <small>${count} 个项目</small></h1>${team}</div><div class="wall-actions" aria-label="项目墙操作">
-      ${iconButton('CircleHelp', '项目墙帮助', 'help')}${iconButton('RefreshCw', '刷新项目目录和墙卡信息', 'refresh')}${iconButton('UsersRound', '团队设置', 'panel', { value: 'team', added: true })}${iconButton('Plus', '添加项目', 'legacy-add')}${iconButton('X', '关闭项目墙', 'open-workspace', { value: desktop.source })}
-    </div></header>`
-    const filters = `<div class="row wall-filters"><input class="input" aria-label="搜索项目" placeholder="搜索项目" data-filter><div class="row options"><span>全部</span><span>本机</span><span>远程</span></div><div class="row options"><span>全部类型</span><span>团队</span><span>个人</span></div></div>`
-    const isTeam = Boolean(teamProject())
-    const teamCount = Number(Boolean(card && isTeam)) + others.length
-    const groups = count
-      ? `${filters}<div id="wall-projects">${teamCount ? `<section><h2>团队项目 <small>${teamCount}</small></h2><div class="wall-grid">${isTeam ? card : ''}${otherCards}</div></section>` : ''}${card && !isTeam ? `<section><h2>个人项目 <small>1</small></h2><div class="wall-grid">${card}</div></section>` : ''}${localOnly ? `<section><h2>本机项目 <small>${localRepos().length}</small></h2><div class="wall-grid">${localOnly}</div></section>` : ''}</div>`
-      : `<div class="empty-wall"><h2>从一个项目开始</h2><div class="row wrap">${button('团队设置', 'panel', { value: 'team', kind: 'primary' })}${button('添加项目', 'legacy-add', { kind: 'ghost' })}</div></div>`
-    const wall = `<div class="wall-layout"><main class="wall">${heading}${groups}</main>${desktop.panel === 'project' ? projectSettings() : ''}</div>`
-    return windowFrame(wall, { overlay: desktop.panel === 'team' ? teamDirectory() : '' })
-  }
-
   function table(label, headings, rows) {
     return `<div class="table-scroll"><table class="table" aria-label="${label}"><thead><tr>${headings.map((name) => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((value) => `<td>${esc(value)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
   }
@@ -699,26 +818,28 @@
   function worktreeSidebar() {
     const desktop = current()
     const owner = desktop.source
-    if (!sourceAvailable(owner)) {
-      return `<aside class="worktree-sidebar"><header class="project-header"><span class="project-avatar">星</span><div><strong>${project}</strong><small>项目来源未连接</small></div></header></aside>`
+    const repo = catalogRepos[desktop.repoId] ?? catalogRepos.star
+    if (!sourceAvailable(owner, desktop.repoId)) {
+      return `<aside class="worktree-sidebar"><header class="project-header"><span class="project-avatar">${repo.name[0]}</span><div><strong>${esc(repo.name)}</strong><small>项目来源未连接</small></div></header></aside>`
     }
     const showMenu = desktop.panel === 'worktree-menu'
-    return `<aside class="worktree-sidebar"><header class="project-header"><span class="project-avatar">星</span><div><strong>${project}</strong><small>当前项目</small></div></header>
+    return `<aside class="worktree-sidebar"><header class="project-header"><span class="project-avatar">${repo.name[0]}</span><div><strong>${esc(repo.name)}</strong><small>当前项目</small></div></header>
       <div class="sidebar-heading">${icon('Pin')} 已固定</div>
       <div class="sidebar-heading">${icon('FolderGit2')} 版本</div><div class="quiet-tree">v1.1</div>
       <div class="sidebar-heading">${icon('FolderGit2')} 其他工作区</div>
       <div class="workspace-row" data-worktree>
         <div class="row"><span class="tree-dot"></span><strong>${hosts[owner].tree}</strong>${iconButton('Ellipsis', '工作树操作', 'panel', { value: showMenu ? '' : 'worktree-menu' })}</div>
         <small>${hosts[owner].name}${readOnly() ? ' · 只读' : ''}</small>
-        ${showMenu ? `<div class="menu" role="menu" aria-label="工作树菜单"><small>工作区</small><span>${icon('Pencil')} 更新</span><span>${icon('Check')} 更改状态</span><span>${icon('PackageCheck')} 绑定版本</span>${button(`${icon('Send')} 发送评审…`, 'panel', { value: 'send', kind: 'ghost', disabled: readOnly() || owner !== 'lin' || !registered('lin') })}<hr><span>${icon('Copy')} 复制路径</span></div>` : ''}
+        ${showMenu ? `<div class="menu" role="menu" aria-label="工作树菜单"><small>工作区</small><span>${icon('Pencil')} 更新</span><span>${icon('Check')} 更改状态</span><span>${icon('PackageCheck')} 绑定版本</span>${button(`${icon('Send')} 发送评审…`, 'panel', { value: 'send', kind: 'ghost', disabled: readOnly() || owner !== 'lin' || !registered('lin', desktop.repoId) })}<hr><span>${icon('Copy')} 复制路径</span></div>` : ''}
       </div></aside>`
   }
 
   function workspacePage() {
     const desktop = current()
     const owner = desktop.source
+    const repo = catalogRepos[desktop.repoId] ?? catalogRepos.star
     const isReadonly = readOnly()
-    const available = sourceAvailable(owner)
+    const available = sourceAvailable(owner, desktop.repoId)
     const caption =
       isReadonly && available
         ? `<span class="readonly" title="可以查看已有内容。创建会话和发送输入需要主机完全访问。">${icon('Lock')}团队项目只读</span>`
@@ -730,8 +851,8 @@
       available && desktop.tab === 'new' && !isReadonly
         ? '<div class="session-preview"><h2>新会话</h2><p class="field-note">已在当前来源创建会话。</p></div>'
         : available
-          ? `<div class="session-preview"><p class="field-note">${hosts[owner].name} · ${hosts[owner].tree}</p><h2>${hosts[owner].task}</h2>${desktop.tab === 'terminal' ? '<pre>&gt; git status --short\\n M docs/usage.md</pre>' : '<p>已定位对应入口，下一步核对边界情况并补充评审说明。</p>'}<div class="quiet-lines" aria-hidden="true"><i></i><i></i><i></i></div></div>`
-          : `<div class="empty-wall"><h2>${registered(owner) ? '共享主机尚未连接' : '项目来源暂不可用'}</h2><p>${registered(owner) ? '连接后默认可只读查看。新建会话请使用本机工作区。' : '返回项目墙选择可用来源。'}</p>${registered(owner) ? button('连接共享主机', 'open-workspace', { value: owner }) : button('返回项目墙', 'show', { value: 'wall' })}</div>`
+          ? `<div class="session-preview"><p class="field-note">${hosts[owner].name} · ${hosts[owner].tree}</p><h2>${esc(repo.task)}</h2>${desktop.tab === 'terminal' ? '<pre>&gt; git status --short\n M docs/usage.md</pre>' : '<p>已定位对应入口，下一步核对边界情况并补充评审说明。</p>'}<div class="quiet-lines" aria-hidden="true"><i></i><i></i><i></i></div></div>`
+          : `<div class="empty-wall"><h2>${registered(owner, desktop.repoId) ? '共享主机尚未连接' : '项目来源暂不可用'}</h2><p>${registered(owner, desktop.repoId) ? '连接后默认可只读查看。新建会话请使用本机工作区。' : '返回项目墙选择可用来源。'}</p>${registered(owner, desktop.repoId) ? button('连接共享主机', 'open-workspace', { value: `${owner}|${desktop.repoId}` }) : button('返回项目墙', 'show', { value: 'wall' })}</div>`
     return windowFrame(tabs + content, { overlay: desktop.panel === 'send' ? sendReview() : '' })
   }
 
@@ -869,16 +990,16 @@
 
   function nativeGrantRows(owner) {
     const visitors = Object.keys(names).filter(
-      (visitor) => visitor !== owner && canReadTeamSource(owner, visitor)
+      (visitor) => visitor !== owner && canReadTeamSource(owner, visitor, current().repoId)
     )
-    if (!visitors.length && !(owner === 'lin' && state.full)) {
+    if (!visitors.length) {
       return '<p class="field-note">尚无共享服务器访问权限。</p>'
     }
     return visitors
       .map((visitor) => {
-        const elevated = owner === 'lin' && visitor === 'chen' && state.full
+        const elevated = accessLevel(owner, visitor) === 'full'
         const access = elevated ? '完全访问' : '只读'
-        const detail = elevated ? '完全访问' : '只读'
+        const detail = elevated ? '同一连接 · 可创建工作树与会话' : '同一连接 · 只能查看已有内容'
         const controls = elevated
           ? `${button('恢复只读', 'demote-access', { kind: 'ghost' })}${iconButton('Trash2', `撤销${names[visitor]}桌面的共享连接`, 'revoke')}`
           : owner === 'lin' && visitor === 'chen'
@@ -892,10 +1013,9 @@
   function sharingServer() {
     const owner = actor.value
     const canShare = Boolean(hosts[owner])
-    const generated =
-      owner === 'lin' && state.offered
-        ? `<label class="field demo-link">访问链接 <input class="input" value="${samplePairing}" readonly data-select-all></label>`
-        : ''
+    const generated = state.generatedLinks?.[owner]
+      ? `<label class="field demo-link">访问链接 <input class="input" value="${esc(state.generatedLinks[owner])}" readonly data-select-all></label><p class="field-note">链接只负责建立 Orca 连接，连接建立后仍按这台主机的访问层级执行。</p>`
+      : ''
     const form = canShare
       ? `<fieldset class="field"><legend>在哪里打开这个链接？</legend>
           <label class="check-row"><input type="radio" name="share-intent" checked disabled> 其他设备 <small>局域网或可达地址</small></label>
@@ -903,11 +1023,11 @@
           <label class="check-row"><input type="radio" name="share-intent" disabled> 自定义地址</label>
         </fieldset>
         <label class="field">连接地址<select class="input" disabled><option>${addresses[owner] ? addresses[owner].replace(/^wss?:\/\//, '') : '127.0.0.1'}</option></select></label>
-        <div class="row">${button('生成访问链接', 'generate-link', { kind: 'primary', disabled: owner !== 'lin' && owner !== 'chen' })}</div>
+        <div class="row">${button('生成访问链接', 'generate-link', { kind: 'primary' })}</div>
         ${generated}`
       : '<p class="field-note">当前模拟桌面没有可共享的本机工作站。</p>'
     return `<section class="muted-frame"><h2>分享此 Orca 服务器</h2>
-      <p class="permission-hint">${icon('Lock')}团队成员默认只读</p>
+      <p class="permission-hint">${icon('Lock')}团队成员默认只读，完全访问在同一共享连接上单独授予。</p>
       ${form}</section>
       <section class="muted-frame"><header class="row between"><h3>共享服务器访问</h3>${iconButton('RefreshCw', '刷新共享访问', 'refresh')}</header>${nativeGrantRows(owner)}</section>
       ${auditPane()}`
@@ -919,8 +1039,8 @@
       ? `<form id="pair-form" class="pair-form"><label class="field">名称 <input class="input" name="name" value="安泰工作站" required></label><label class="field">访问链接 <input name="link" class="input" placeholder="粘贴访问链接" required></label><footer class="dialog-actions">${button('取消', 'add-server', { kind: 'ghost' })}<button class="btn btn-primary" type="submit">连接</button></footer></form>`
       : ''
     const connected =
-      actor.value === 'chen' && canReadTeamSource('lin', 'chen')
-        ? `<p>安泰工作站 · 已连接 · ${state.full ? '完全访问' : '只读'}</p>`
+      actor.value === 'chen' && canReadTeamSource('lin', 'chen', desktop.repoId)
+        ? `<p>安泰工作站 · 已连接 · ${accessLevel('lin') === 'full' ? '完全访问' : '只读'} · 同一 Orca 共享连接</p>`
         : ''
     return `<section class="muted-frame"><header class="row between"><h2>连接到远程服务器</h2>${button(`${icon('Plus')} 添加服务器`, 'add-server')}</header>${connected}${form}</section>`
   }
@@ -1021,6 +1141,7 @@
     'legacy-add': () =>
       confirm('添加项目', '<p>打开已有文件夹、克隆代码仓，或新建项目。</p>', '关闭', () => {}),
     'edit-catalog-project': editCatalogProject,
+    'join-team-project': joinTeamProject,
     'save-directory': saveDirectory,
     'preview-directory': () =>
       confirm(
@@ -1032,11 +1153,8 @@
     tab: (value) => {
       const desktop = current()
       desktop.tab = value
-      if (
-        desktop.source !== actor.value &&
-        (canReadTeamSource(desktop.source) || ownsFullAccess(desktop.source))
-      ) {
-        audit(desktop.source, value === 'terminal' ? '查看终端输出' : '查看已有会话', '已放行')
+      if (desktop.source !== actor.value) {
+        authorizeRemoteAction(desktop.source, value === 'terminal' ? '查看终端输出' : '查看已有会话', desktop.repoId)
       }
       render()
     },
@@ -1069,6 +1187,8 @@
         notify('当前桌面没有可共享的本机工作站。')
         return
       }
+      state.generatedLinks ??= {}
+      state.generatedLinks[owner] = samplePairing
       state.offered = true
       state.teamEndpoints[owner] = addresses[owner]
       notify('已生成访问链接。对方粘贴后连上；团队成员默认只读。')
@@ -1088,6 +1208,8 @@
         '<p>陈远桌面将在<strong>同一条</strong> Orca 共享连接上升级为完全访问，可以创建工作树、启动会话并发送输入。</p>',
         '授予完全访问',
         () => {
+          state.accessModes.chen ??= {}
+          state.accessModes.chen.lin = 'full'
           state.full = true
           audit('lin', '授予完全访问', '已生效', '安泰工作站 · 陈远桌面')
           notify('陈远已提权为完全访问')
@@ -1096,6 +1218,8 @@
       )
     },
     'demote-access': () => {
+      state.accessModes.chen ??= {}
+      state.accessModes.chen.lin = 'readonly'
       state.full = false
       audit('lin', '恢复只读', '已生效', '安泰工作站 · 陈远桌面')
       notify('已恢复为团队只读，连接仍在')
@@ -1104,7 +1228,9 @@
     revoke: () => {
       state.full = false
       state.offered = false
+      delete state.generatedLinks.lin
       delete state.teamConnections.chen.lin
+      delete state.accessModes.chen?.lin
       audit('lin', '撤销共享连接', '已生效', '安泰工作站 · 陈远桌面')
       notify('已撤销陈远的共享连接')
       render()
@@ -1112,14 +1238,16 @@
     'new-session': () => {
       if (readOnly()) {
         const owner = current().source
+        const repoId = current().repoId
         const hasLocalWorkspace = Boolean(hosts[actor.value])
+        authorizeRemoteAction(owner, '新建会话', repoId)
         confirm(
           '当前来源为只读',
           `<p>你可以查看 ${esc(hosts[owner].name)} 上的已有会话和终端输出。${hasLocalWorkspace ? '请切回本机工作区新建会话。' : '请回项目墙，打开或克隆到本机后新建会话。'}</p>`,
           hasLocalWorkspace ? '切回本机工作区' : '返回项目墙',
           () => {
             if (hasLocalWorkspace) {
-              openWorkspace(actor.value)
+              openWorkspace(actor.value, repoId)
             } else {
               show('wall')
             }
@@ -1203,12 +1331,14 @@
       notify('评审请求已送达韩岚')
       render()
     } else if (event.target.id === 'pair-form') {
-      if (actor.value !== 'chen' || !state.offered || data.get('link') !== samplePairing) {
+      if (actor.value !== 'chen' || !state.generatedLinks?.lin || data.get('link') !== state.generatedLinks.lin) {
         notify('访问链接无效或已撤销。')
         return
       }
       state.teamEndpoints.lin = addresses.lin
       state.teamConnections.chen.lin = addresses.lin
+      state.accessModes.chen ??= {}
+      state.accessModes.chen.lin = 'readonly'
       state.full = false
       current().addingServer = false
       audit('lin', '连接共享主机', '已放行', hosts.lin.name)
