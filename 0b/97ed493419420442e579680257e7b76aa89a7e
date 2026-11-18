@@ -1,0 +1,23 @@
+src/shared/child-process/run-process.ts
+  s_320699b2a0793a::t_b62a503a33f947 330-334
+src/shared/child-process/process-spec.ts
+  s_320699b2a0793a::t_b62a503a33f947 37-41
+src/shared/child-process/run-process.test.ts
+  s_320699b2a0793a::t_b62a503a33f947 92,99-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "0b97ed493419420442e579680257e7b76aa89a7e",
+  "prompts": {},
+  "sessions": {
+    "s_320699b2a0793a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "084c4680-4f1c-4cff-bf4c-71f3f87feaf5",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

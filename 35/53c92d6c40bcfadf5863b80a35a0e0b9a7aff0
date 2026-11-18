@@ -1,0 +1,268 @@
+src/renderer/src/workbench/WorkbenchVersionNav.tsx
+  s_5ba37a895b20da::t_d75b5801e6af63 1-6,16-17,20,24,34,42,99-130,134,167-168,173-178,198,206,212-213,218,236-238,260,296-353,379-382,388,394-395,403-408,413-439,444-446,454,505-508,513,532-533,537,551-552
+docs/03-guide/project-direction/README.md
+  h_d0d195a8c70989 27,31,35,41-47,51
+docs/04-design-system/guidance.md
+  h_d0d195a8c70989 102-103,107
+docs/05-features/overview-metrics/STATUS.md
+  h_d0d195a8c70989 7-9
+docs/05-features/overview-metrics/intent.md
+  h_d0d195a8c70989 24
+docs/05-features/overview-metrics/milestone-design.md
+  h_d0d195a8c70989 17,31,33,35,37,39,41
+docs/05-features/overview-metrics/prototype.html
+  h_d0d195a8c70989 10,16
+docs/05-features/overview-metrics/prototype/milestones-data.js
+  h_d0d195a8c70989 220,280-281
+docs/05-features/overview-metrics/prototype/milestones-panels.jsx
+  h_d0d195a8c70989 32-35,279,282,285-290,314-318,324-330
+docs/05-features/overview-metrics/prototype/milestones-roadmap.jsx
+  h_d0d195a8c70989 327
+docs/05-features/overview-metrics/prototype/milestones.css
+  h_d0d195a8c70989 270-273,902-903
+docs/05-features/overview-metrics/prototype/milestones.js
+  h_d0d195a8c70989 4,24-25
+docs/05-features/overview-metrics/prototype/milestones.jsx
+  h_d0d195a8c70989 12-13,64-66,76-78,89,93-95,151,214,256,287-288,291-323,368-378,380-384,389,411,440-441,461-463,483-487,494,500,507,516-539,543,546,549-550,552,557-563,566-581,664,697,704
+docs/05-features/overview-metrics/spec.md
+  h_d0d195a8c70989 9,11,30-35,37-38,94,96,98-104,106,112-122,181
+docs/05-features/project-intake/intent.md
+  h_d0d195a8c70989 25
+docs/05-features/project-intake/spec.md
+  h_d0d195a8c70989 15,39,61,77
+docs/05-features/version-overview/spec.md
+  h_d0d195a8c70989 103,107
+docs/05-features/version-workspace/design.md
+  h_d0d195a8c70989 67-68,70,74,79,93-94,98,102-103,118
+docs/05-features/version-workspace/spec.md
+  h_d0d195a8c70989 17-18,25,46,50-51,55,86-87,134,136,140
+docs/06-module/桌面壳.md
+  h_d0d195a8c70989 9
+docs/architecture.md
+  h_d0d195a8c70989 17-26,42,66,76,80-85,87
+src/main/codehub/mr-branch-review.ts
+  h_d0d195a8c70989 57,220-222
+src/main/runtime/rpc/methods/workbench-history.ts
+  h_d0d195a8c70989 4,13-18
+src/main/runtime/rpc/methods/workbench-milestones.ts
+  h_d0d195a8c70989 4-6,17-37
+src/main/runtime/rpc/methods/workbench-trunk.ts
+  h_d0d195a8c70989 11-13
+src/main/workbench/charter-pr-status.ts
+  h_d0d195a8c70989 131-133,179-182
+src/main/workbench/history-git-core.test.ts
+  h_d0d195a8c70989 20-38,55-58
+src/main/workbench/history-git-core.ts
+  h_d0d195a8c70989 6,35-39,41-43,74,138-139
+src/main/workbench/milestone-document.ts
+  h_d0d195a8c70989 1,3-12,14-16,18-21,23-30,32-63,65-67,69-73,76-91
+src/main/workbench/milestone-recovery-ipc.ts
+  h_d0d195a8c70989 3,7,22-26
+src/main/workbench/milestone-recovery.ts
+  h_d0d195a8c70989 1-2,6,8,10-18,20-25
+src/main/workbench/milestone-runtime.ts
+  h_d0d195a8c70989 2-8,12,15-16,18,22,24-26,28,37,40-41,43-49,51-53,58-62,64-69,72,74-211,213-255,257,262,264,266,268-269,271-282,284,286-287,289-298,300-311,313-314,316-317,319-322,324,326-328,330-341,344-354,356-358,360,365-366
+src/main/workbench/milestone-snapshot.ts
+  h_d0d195a8c70989 14,172
+src/main/workbench/milestone-submit-validation.ts
+  h_d0d195a8c70989 1-2,4,6-10,12-16,18-33,35-37,39
+src/main/workbench/milestone-write-files.test.ts
+  h_d0d195a8c70989 6,10,13-20,22-27,29,31-36,38-50
+src/main/workbench/trunk-update-runtime.ts
+  h_d0d195a8c70989 68,103-105
+src/main/workbench/version-current-catalog.ts
+  h_d0d195a8c70989 11,58-59,62-64,68,73
+src/main/workbench/version-document-path.ts
+  h_d0d195a8c70989 31-54
+src/main/workbench/version-history-log.ts
+  h_d0d195a8c70989 1,3-42,44-56,58-62,64
+src/main/workbench/version-history-service.test.ts
+  h_d0d195a8c70989 360-362,406-410
+src/main/workbench/version-history-service.ts
+  h_d0d195a8c70989 2-6,15,110-128,154,158-161,164,166,171,177,183,196
+src/main/workbench/version-material-runtime.ts
+  h_d0d195a8c70989 33
+src/main/workbench/version-material-service.test.ts
+  h_d0d195a8c70989 44,46-49,71-75,83,91,105-107,117-118,126-136,148,203,299,314-326,329,544-548
+src/main/workbench/version-material-service.ts
+  h_d0d195a8c70989 46,54-55,66,72,82,88,95,102
+src/main/workbench/version-material-workspace.ts
+  h_d0d195a8c70989 61,141-143,145-146,148,154
+src/main/workbench/version-selection.ts
+  h_d0d195a8c70989 16,20-21,23-24,26
+src/preload/milestone-recovery.ts
+  h_d0d195a8c70989 5
+src/renderer/src/web/web-preload-api.ts
+  h_d0d195a8c70989 91
+src/renderer/src/workbench/INVENTORY.md
+  h_d0d195a8c70989 20-39
+src/renderer/src/workbench/LiveProjectWallCard.tsx
+  h_d0d195a8c70989 1-2,5,25-39,46-89
+src/renderer/src/workbench/OverviewPage.tsx
+  h_d0d195a8c70989 33,101-103,105,328
+src/renderer/src/workbench/ProjectWallCard.tsx
+  h_d0d195a8c70989 218-221,236-248
+src/renderer/src/workbench/VersionCatalogSourceProblem.tsx
+  h_d0d195a8c70989 1,3-4,6-28
+src/renderer/src/workbench/WorkbenchSidebarNav.tsx
+  h_d0d195a8c70989 61
+src/renderer/src/workbench/explore/DeliveryTaskScenes.tsx
+  h_d0d195a8c70989 60
+src/renderer/src/workbench/explore/DirectionMilestoneDemo.tsx
+  h_d0d195a8c70989 29,102,148-151,162,173,179
+src/renderer/src/workbench/metrics-workspace-board.tsx
+  h_d0d195a8c70989 1,4-7,12,61-65
+src/renderer/src/workbench/milestone-history-actions.tsx
+  h_d0d195a8c70989 32,41,58-59
+src/renderer/src/workbench/milestone-planning-session.ts
+  h_d0d195a8c70989 3,5,9-11,13-20,23,25,32-37,39,41,43-45,50,56-129,132-135,137-145,147-152,155-160,162-163,165-166,172-173,175-176,178-184,186-187,189,192-197,200,203-205,210-211,216-224
+src/renderer/src/workbench/milestone-port.ts
+  h_d0d195a8c70989 3-5,20-28,41,43,53-80,85
+src/renderer/src/workbench/milestone-recovery.ts
+  h_d0d195a8c70989 8,27,30,32-46
+src/renderer/src/workbench/milestone-review-button.tsx
+  h_d0d195a8c70989 15-16,29-30,33,49,53,55-57,59,65,68,75,100-101
+src/renderer/src/workbench/milestone-timeline.tsx
+  h_d0d195a8c70989 47,91-96,109,111-113,115,211,352
+src/renderer/src/workbench/project-milestones.tsx
+  h_d0d195a8c70989 6-8,15,36-37,43,56-66,77,114-137,141-143,153,225-227,229,232-248,259-261,267-269,289,293,323-326,332,347,353,359-362,366,368,375,377,379,385-388,391-401,404-405,408-448,457,485,492,497
+src/renderer/src/workbench/project-page-state.ts
+  h_d0d195a8c70989 1,19,27,91,93
+src/renderer/src/workbench/project-source-resolution.test.ts
+  h_d0d195a8c70989 13-17,41-101
+src/renderer/src/workbench/project-version-catalog-merge.ts
+  h_d0d195a8c70989 1-89
+src/renderer/src/workbench/project-version-catalog.tsx
+  h_d0d195a8c70989 1-16,18-20,22-46,49-66,68-69,71,73-125,127-146
+src/renderer/src/workbench/use-milestone-planning.ts
+  h_d0d195a8c70989 9-16,19,22-24,26-29,32-36,43-44,50,52-53,56-57,59-63,66-103,106-109,111,114,117-118,120-148,151-157,159-175,179-189,191-192,196,199,202-207,209-218,220,223-224,236-241,244,247-251,253,255-259,262,266-276,279-344,347-351,353,358,360-381,384
+src/renderer/src/workbench/use-milestone-source.ts
+  h_d0d195a8c70989 3,32
+src/renderer/src/workbench/use-version-catalog.ts
+  h_d0d195a8c70989 27,46,54-55,63-67,74,79,82,84,87,101-108,177-189,195-196,198-199,202-206,211-215,217,227-264
+src/renderer/src/workbench/use-version-plan-entry-times.ts
+  h_d0d195a8c70989 1-5,7-16,18-24,26-27,29-34,36-44,46-47,49-54
+src/renderer/src/workbench/use-wall-readings.ts
+  h_d0d195a8c70989 5,9,22-33,38-44,48,59-60,67,76,82-92,95-96,98-104
+src/renderer/src/workbench/version-acceptance/AcceptanceBoardContent.tsx
+  h_d0d195a8c70989 48,202-206,236-237
+src/renderer/src/workbench/version-acceptance/AcceptanceEmptyBoard.tsx
+  h_d0d195a8c70989 28,32-33,45
+src/renderer/src/workbench/version-acceptance/AcceptanceNotices.tsx
+  h_d0d195a8c70989 126
+src/renderer/src/workbench/version-acceptance/AcceptanceSections.tsx
+  h_d0d195a8c70989 8,35
+src/renderer/src/workbench/version-acceptance/use-acceptance-board.ts
+  h_d0d195a8c70989 76,87,231
+src/renderer/src/workbench/version-acceptance/use-acceptance-plan.ts
+  h_d0d195a8c70989 35
+src/renderer/src/workbench/version-catalog-load.ts
+  h_d0d195a8c70989 69,83,88,146-154,173,237,264-271,340-347
+src/renderer/src/workbench/version-catalog-plan-trees.ts
+  h_d0d195a8c70989 42
+src/renderer/src/workbench/version-cleanup-dialog.tsx
+  h_d0d195a8c70989 1-8,59-81,103,119-139,141,143-145,148-150,221-224,264-266,293
+src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx
+  h_d0d195a8c70989 29,57,67,87,105,129,135,155
+src/renderer/src/workbench/version-cycle/VersionReadonlyMaterialView.tsx
+  h_d0d195a8c70989 99
+src/renderer/src/workbench/version-cycle/cycle-context.ts
+  h_d0d195a8c70989 13
+src/renderer/src/workbench/version-cycle/cycle-prompt.ts
+  h_d0d195a8c70989 34-42,44
+src/renderer/src/workbench/version-cycle/cycle-workspace-view.ts
+  h_d0d195a8c70989 11-16
+src/renderer/src/workbench/version-cycle/native-cycle-workspace.ts
+  h_d0d195a8c70989 3-8,23-50
+src/renderer/src/workbench/version-cycle/native-workspace.test.ts
+  h_d0d195a8c70989 24,44,79-80,147
+src/renderer/src/workbench/version-cycle/trunk-update-port.ts
+  h_d0d195a8c70989 15-16,22-23,33
+src/renderer/src/workbench/version-cycle/use-cycle-workspace-target.ts
+  h_d0d195a8c70989 1,3,24-25,50-53,119-122
+src/renderer/src/workbench/version-history-port.ts
+  h_d0d195a8c70989 24-31
+src/renderer/src/workbench/version-material-selection.ts
+  h_d0d195a8c70989 1-35
+src/renderer/src/workbench/version-nav-actions.ts
+  h_d0d195a8c70989 1,9-14,26,28-30,32-82,85-86,92-95,111-114,119,148-152
+src/renderer/src/workbench/version-nav-group.tsx
+  h_d0d195a8c70989 40-42,65-67,86-91,93,95,102,144,197,211,213
+src/renderer/src/workbench/version-overview-materials.ts
+  h_d0d195a8c70989 1,55-56,61,76,88,114,140-145,160-170,172-174,190-195,235-238,264-267,274-284,293
+src/renderer/src/workbench/version-overview-page.tsx
+  h_d0d195a8c70989 1-2,83-88,102-103,141-153
+src/renderer/src/workbench/version-overview/material-cache.ts
+  h_d0d195a8c70989 11,27-36,39
+src/renderer/src/workbench/version-overview/use-version-facts.ts
+  h_d0d195a8c70989 1,13-14,16
+src/renderer/src/workbench/version-planning/PlanningBoard.tsx
+  h_d0d195a8c70989 5,17,138-150,168,285-286,288,320,324,327,342
+src/renderer/src/workbench/version-planning/PlanningSections.tsx
+  h_d0d195a8c70989 49
+src/renderer/src/workbench/version-planning/use-planning-prior-review.ts
+  h_d0d195a8c70989 27,101
+src/renderer/src/workbench/version-planning/use-planning-start.ts
+  h_d0d195a8c70989 18
+src/renderer/src/workbench/version-task-entries.ts
+  h_d0d195a8c70989 13,37-40,42
+src/renderer/src/workbench/version-workspace-choice-state.ts
+  h_d0d195a8c70989 18,43,46-50
+src/renderer/src/workbench/wall-card-readings.ts
+  h_d0d195a8c70989 9,13
+src/renderer/src/workbench/wall-readings-load.ts
+  h_d0d195a8c70989 22,26,61,78
+src/renderer/src/workbench/workbench-nav.ts
+  h_d0d195a8c70989 4,9-11
+src/shared/contextual-tours.ts
+  h_d0d195a8c70989 333
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  h_d0d195a8c70989 582,584-586,597,1240,1255,1257,1259
+src/shared/workbench/fixed-workspace.ts
+  h_d0d195a8c70989 4,17-18,41
+src/shared/workbench/project-milestones.ts
+  h_d0d195a8c70989 144-178,198-206,209-222,225,227-230,232-233,252-270
+src/shared/workbench/skill-package.json
+  h_d0d195a8c70989 4-7,9
+src/shared/workbench/trunk-update.ts
+  h_d0d195a8c70989 4-7
+src/shared/workbench/version-catalog.test.ts
+  h_d0d195a8c70989 8,132,159-178
+src/shared/workbench/version-catalog.ts
+  h_d0d195a8c70989 43-44,61-62,64-68,173,198
+src/shared/workbench/version-history.ts
+  h_d0d195a8c70989 27-30,90-92
+standard/references/version-records.md
+  h_d0d195a8c70989 5,9-16,18,20,69,73,75
+standard/skills/version-acceptance/SKILL.md
+  h_d0d195a8c70989 5,15-16,45,49,69
+standard/skills/week-planning/SKILL.md
+  h_d0d195a8c70989 5,15-16,37,71
+tests/e2e/helpers/workbench-milestone-restart.ts
+  h_d0d195a8c70989 2,11,13-17,20,23-24,30,43,67,70-73,86,110,116,118
+tests/e2e/helpers/workbench-milestones.ts
+  h_d0d195a8c70989 7-15,35,64-76,80,99,121-124,126-128,162-164,186-196,294,303,306,311-316,323-354,378-402,404-406,410
+tests/e2e/workbench-cycle-smoke.spec.ts
+  h_d0d195a8c70989 380-382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "3553c92d6c40bcfadf5863b80a35a0e0b9a7aff0",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_5ba37a895b20da": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e941-3ca1-77a2-87dd-da49de21c96c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

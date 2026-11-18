@@ -1,0 +1,18 @@
+src/renderer/src/workbench/project-source-resolution.test.ts
+  h_1dcaf127381c33 85-87
+src/shared/workbench/version-catalog.test.ts
+  h_1dcaf127381c33 159-163,165-171
+src/shared/workbench/version-catalog.ts
+  h_1dcaf127381c33 61-62,64-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "fde0fe7b44c9895b20a0ca0c7d84f710782b92c5",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
