@@ -1,0 +1,25 @@
+src/main/workbench/metrics/metrics-execution-core.test.ts
+  s_da7ab51653058a::t_bcc485ce0aeff4 100-101
+src/main/workbench/milestone-write-files.test.ts
+  s_da7ab51653058a::t_5ec213f375adca 231-232
+src/main/workbench/version-history-service.test.ts
+  s_da7ab51653058a::t_c8c208fb13e06f 196-197,361-363
+src/main/workbench/version-material-service.test.ts
+  s_da7ab51653058a::t_61ef16f85c11af 126-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "747bf162780e8769533129d7c2614a46c50b3ed3",
+  "prompts": {},
+  "sessions": {
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "external_qwen3.8-max"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
