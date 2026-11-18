@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+import { versionTreeKey } from './version-material-selection'
 import { ErrorDetails } from './error-feedback'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { useEffect, useRef, useState } from 'react'
@@ -78,8 +80,12 @@ function WorkflowProgress({
 
 export function VersionOverviewPage({ options }: { options: VersionOverviewOptions }) {
   const { repoId, hostId, version } = options
-  // 只读这次点击解析出的来源主机；本机有项目但没这版，就如实显示未同步。
-  const catalog = useVersionCatalogForRepo(repoId, hostId)
+  const catalog = useVersionCatalogForRepo(repoId, hostId, 0, true)
+  const selectedTree = options.selection
+    ? catalog.worktrees.find(
+        (tree) => !tree.isArchived && versionTreeKey(tree) === options.selection?.treeKey
+      )
+    : null
   const [refreshToken, setRefreshToken] = useState(0)
   const [focus, setFocus] = useState<string | null>(null)
   const projectId = useAppStore((state) => overviewProjectId(state, repoId))
@@ -93,7 +99,8 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
     catalog,
     version,
     refreshToken,
-    sdlcEnabled
+    sdlcEnabled,
+    options.selection
   )
   const milestoneSource = useMilestoneSource(catalog, refreshToken, sdlcEnabled)
   const { plan, acceptance } = materials
@@ -131,8 +138,19 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const projectName = useAppStore(
     (state) => findRepoForHost(state.repos, repoId, { hostId })?.displayName ?? '项目'
   )
-  const workflow = (kind: 'plan' | 'acceptance') =>
-    navigateVersionWorkflow({ catalog, version, workflow: kind, projectKey: repoId })
+  const workflow = (kind: 'plan' | 'acceptance') => {
+    if (options.selection && !selectedTree) {
+      toast.error('所选工作区已变化，请从版本侧栏重新选择。')
+      return
+    }
+    navigateVersionWorkflow({
+      catalog,
+      version,
+      workflow: kind,
+      projectKey: repoId,
+      worktrees: selectedTree && options.selection?.workflow === kind ? [selectedTree] : undefined
+    })
+  }
   const handledWorkflow = useRef<VersionOverviewOptions | null>(null)
   useEffect(() => {
     if (

@@ -77,6 +77,7 @@ describe('feature interactions', () => {
       'floating-workspace-hidden',
       'notifications',
       'ports',
+      'quick-links',
       'quick-commands',
       'resource-manager',
       'review-notes',

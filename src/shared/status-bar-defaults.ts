@@ -12,5 +12,6 @@ export const DEFAULT_STATUS_BAR_ITEMS: StatusBarItem[] = [
   'cursor',
   'ssh',
   'resource-usage',
-  'ports'
+  'ports',
+  'quick-links'
 ]

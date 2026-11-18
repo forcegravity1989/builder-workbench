@@ -5,6 +5,7 @@ import type { WorkbenchVersionBinding } from './version-binding'
 import { selectPriorVersionSource } from './prior-version-source'
 import {
   collectVersionCatalogWorkspaces,
+  compareVersionDisplayOrder,
   mergeVersionCatalog,
   versionCatalogCacheKey,
   type VersionCatalogWorkspace
@@ -100,6 +101,7 @@ describe('mergeVersionCatalog', () => {
         ownership: 'orca-managed',
         selectedCheckout: false,
         visible: false,
+        createdAt: Date.parse('2026-10-03T00:00:00Z'),
         workbenchVersionBinding: planBinding('v0.7')
       }),
       makeWorktree({
@@ -115,6 +117,11 @@ describe('mergeVersionCatalog', () => {
         id: 'repo-1::/repo/trees/archived',
         isArchived: true,
         workbenchVersionBinding: planBinding('v0.7')
+      }),
+      makeWorktree({
+        id: 'new-draft',
+        createdAt: Date.parse('2026-10-01T10:00:00Z'),
+        workbenchVersionBinding: planBinding('v0.8')
       })
     ]
     const entries = mergeVersionCatalog({
@@ -128,7 +135,7 @@ describe('mergeVersionCatalog', () => {
       workspaces: collectVersionCatalogWorkspaces(worktrees, ['repo-1'])
     })
 
-    expect(entries.map((entry) => entry.version)).toEqual(['v0.5', 'v0.6', 'v0.7', 'v0.8'])
+    expect(entries.map((entry) => entry.version)).toEqual(['v0.6', 'v0.7', 'v0.5', 'v0.8'])
     const v06 = entries.find((entry) => entry.version === 'v0.6')!
     expect(v06.state).toBe('retired')
     expect(v06.material.plan?.revision).toBe(sha('6'))
@@ -154,6 +161,32 @@ describe('mergeVersionCatalog', () => {
       { workflow: 'plan', code: 'history-unavailable', message: '无法读取固定提交中的材料' }
     ])
     expect(v05.state).toBe('retired')
+
+    const revisedAcceptance = { ...v06.material.acceptance!, committedAt: '2026-10-02T00:00:00Z' }
+    const oldEnteredAt = Date.parse('2026-09-01T00:00:00Z')
+    const newEnteredAt = Date.parse('2026-10-01T00:00:00Z')
+    expect(
+      [
+        v05,
+        entries.find((entry) => entry.version === 'v0.8')!,
+        { ...v06, version: 'aaa-new', planEnteredAt: newEnteredAt },
+        { ...v06, version: 'v2', planEnteredAt: newEnteredAt },
+        {
+          ...v07,
+          version: 'zz-legacy',
+          planEnteredAt: oldEnteredAt,
+          material: { ...v07.material, acceptance: revisedAcceptance }
+        },
+        v06
+      ]
+        .toSorted(compareVersionDisplayOrder)
+        .map(({ version }) => version)
+    ).toEqual(['v0.8', 'aaa-new', 'v2', 'zz-legacy', 'v0.5', 'v0.6'])
+    expect(
+      [v07, { ...v06, planEnteredAt: oldEnteredAt }]
+        .toSorted(compareVersionDisplayOrder)
+        .map(({ version }) => version)
+    ).toEqual(['v0.6', 'v0.7'])
 
     // 前版先按目录排序确定，再找验收；v0.7 只有计划时不可借 v0.6 的验收。
     expect(selectPriorVersionSource('v0.8', committed)).toEqual({

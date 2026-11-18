@@ -127,7 +127,7 @@ export function EditorPanelHeader({
                 onClick={onOpenPreviewToSide}
                 aria-label={translate(
                   'auto.components.editor.EditorPanelHeader.fb8331694e',
-                  'Open Preview to the Side'
+                  'Preview'
                 )}
               >
                 <Eye size={14} />
@@ -136,7 +136,7 @@ export function EditorPanelHeader({
             <TooltipContent side="bottom" sideOffset={4}>
               {translate(
                 'auto.components.editor.EditorPanelHeader.fb8331694e',
-                'Open Preview to the Side'
+                'Preview'
               )}
             </TooltipContent>
           </Tooltip>

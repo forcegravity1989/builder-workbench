@@ -54,6 +54,7 @@ export type CodeHubBranchReview = {
   number: number
   url: string
   state: 'open' | 'merged' | 'closed'
+  headOid?: string
   confirmedContainedHeadOid?: string
 }
 
@@ -216,6 +217,9 @@ export async function readCodeHubBranchReview(
           number: iid,
           url: codeHubMergeRequestUrl(args.remote, iid, detail.url ?? undefined),
           state: reviewState,
+          ...(typeof row.sha === 'string' && /^[a-f0-9]{40}$/i.test(row.sha)
+            ? { headOid: row.sha }
+            : {}),
           ...(reviewState === 'merged' ? { confirmedContainedHeadOid: args.currentHeadOid! } : {})
         }
         if (args.targetBranch) {

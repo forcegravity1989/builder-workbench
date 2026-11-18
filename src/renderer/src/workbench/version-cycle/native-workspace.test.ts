@@ -21,7 +21,7 @@ const row = (hostId: Worktree['hostId'], runtimeOwnerEnvironmentId?: string) =>
     repoId: 'repo',
     projectId: 'project',
     path: '/same/path',
-    branch: 'bw/week-plan',
+    branch: 'bw/v1/plan',
     hostId,
     runtimeOwnerEnvironmentId
   }) as Worktree
@@ -41,7 +41,7 @@ it('keeps fixed-workspace owner identity regardless of active focus and refresh 
   }
   const scope = nativeWorkspaceScope(b)
   expect(scope).toMatchObject({ hostId: 'ssh:b', runtimeOwnerEnvironmentId: 'transport-b' })
-  expect(findNamedWorktree(scope, 'bw/week-plan')).toBe(b)
+  expect(findNamedWorktree(scope, 'bw/v1/plan')).toBe(b)
 
   const owners = [
     { label: 'local', hostId: 'local', ownerHostId: 'local' },
@@ -76,8 +76,8 @@ it('keeps fixed-workspace owner identity regardless of active focus and refresh 
       ? toRuntimeExecutionHostId(runtimeOwnerEnvironmentId)
       : owner.hostId
     for (const workflow of ['plan', 'acceptance'] as const) {
-      const branch = workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
-      const name = workflow === 'plan' ? 'week-plan' : 'week-acceptance'
+      const branch = workflow === 'plan' ? 'bw/v1/plan' : 'bw/v1/acceptance'
+      const name = workflow === 'plan' ? 'plan-v1' : 'acceptance-v1'
       for (const refreshFails of [false, true]) {
         const label = `${owner.label}/${workflow}/refresh ${refreshFails ? 'failed' : 'succeeded'}`
         const raw = { ...row(owner.ownerHostId), branch }
@@ -144,6 +144,7 @@ it('keeps fixed-workspace owner identity regardless of active focus and refresh 
             repoId: 'repo',
             hostId: owner.ownerHostId,
             kind: workflow,
+            version: 'v1',
             setupDecision: 'inherit'
           },
           { timeoutMs: 600000 }

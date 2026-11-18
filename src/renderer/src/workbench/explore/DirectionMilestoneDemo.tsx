@@ -26,6 +26,7 @@ const catalog: VersionCatalogState = {
   error: null,
   materialReady: true,
   materialError: null,
+  planOrderPending: false,
   reload: ignore
 }
 
@@ -98,8 +99,7 @@ export function DirectionMilestoneDemo({ time, review }: { time: number; review:
   const moved = review || time >= 6650
   const draft = useMemo(() => demoDraft(hasNode, hasFeature, moved), [hasNode, hasFeature, moved])
   const pending = review && time >= 3800 && time < 6200
-  const merged = review && time >= 6200 && time < 7950
-  const formal = review && time >= 7950
+  const merged = review && time >= 6200
   const confirming = review && time >= 1250 && time < 3800
   const timeline = useMemo(() => <DemoTimeline draft={draft} editing={editing} />, [draft, editing])
   const changes = useMemo(() => describeMilestoneChanges(empty, draft), [draft])
@@ -145,8 +145,10 @@ export function DirectionMilestoneDemo({ time, review }: { time: number; review:
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={false} finishEditing={ignore} />
         <div className="wb-ml-actions">
-          {!review && hasNode && (
-            <span className="text-xs text-muted-foreground">草稿已保存在本机</span>
+          {hasNode && (
+            <span className="text-xs text-muted-foreground">
+              {merged ? '已合入' : pending ? '待评审' : '已保存 · 未提交'}
+            </span>
           )}
           {!editing && !review && (
             <Button
@@ -157,7 +159,7 @@ export function DirectionMilestoneDemo({ time, review }: { time: number; review:
               规划里程碑
             </Button>
           )}
-          {review && !formal && (
+          {review && !merged && (
             <MilestoneReviewButton
               busy={false}
               writing={false}
@@ -167,15 +169,14 @@ export function DirectionMilestoneDemo({ time, review }: { time: number; review:
               validate={() => true}
               hasReview={pending}
               openReview={pending ? ignore : undefined}
-              needsUpdate={merged}
-              updateFormal={ignore}
               changes={changes}
+              reviewInput={draft}
               submit={ignore}
             />
           )}
         </div>
       </header>
-      {editing || formal ? timeline : <div className="wb-ml-empty">还没有里程碑</div>}
+      {editing || hasNode ? timeline : <div className="wb-ml-empty">还没有里程碑</div>}
     </section>
   )
 }

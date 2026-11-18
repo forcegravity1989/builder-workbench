@@ -1,5 +1,5 @@
 import React from 'react'
-import { ListFilter, X } from 'lucide-react'
+import { ChevronRight, ListFilter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -20,6 +20,10 @@ import { AgentIcon, getAgentCatalog } from '@/lib/agent-catalog'
 import { searchAgentPickerEntries } from '@/lib/agent-picker-search'
 import { translate } from '@/i18n/i18n'
 import type { AutomationHostCatalogEntry } from './automation-host-catalog-types'
+import {
+  filterAutomationHostGroupsByQuery,
+  groupAutomationHostEntriesByAuthority
+} from './automation-host-picker-groups'
 import {
   countAutomationListFilters,
   EMPTY_AUTOMATION_LIST_FILTER,
@@ -151,6 +155,39 @@ export function AutomationListFilterMenu({
   const activeCount = countAutomationListFilters(filter)
   const selectedHostKeys = filter.hostStableKeys ?? []
 
+  // Why: a paired machine exposes its own Self plus every SSH target it can reach,
+  // and each paired builder can register dozens of SSH targets (their lab IPs). A
+  // flat list made the repeated orphan buckets ("Unassigned legacy automations")
+  // indistinguishable and turned the menu into a wall of addresses. Grouping the
+  // entries under their builder (authority) and collapsing each builder by default
+  // keeps one line per builder; the SSH targets and orphan bucket only show once a
+  // builder is expanded, and a search opens the matching builders so results are
+  // never hidden. The grouping helpers are shared with the create destination and
+  // the All-hosts list so position and grouping never disagree.
+  const [hostQuery, setHostQuery] = React.useState('')
+  const hostGroups = React.useMemo(
+    () => groupAutomationHostEntriesByAuthority(hostEntries ?? []),
+    [hostEntries]
+  )
+  const visibleHostGroups = React.useMemo(
+    () => filterAutomationHostGroupsByQuery(hostGroups, hostQuery),
+    [hostGroups, hostQuery]
+  )
+  const hostQueryActive = hostQuery.trim() !== ''
+  // Why only with several builders: a lone machine needs no collapse, and while
+  // searching every matching builder stays open so a hit is never behind a toggle.
+  const groupsAreCollapsible = hostGroups.length > 1
+  const [expandedAuthorityKeys, setExpandedAuthorityKeys] = React.useState<readonly string[]>([])
+  const toggleHostGroup = (authorityKey: string): void =>
+    setExpandedAuthorityKeys((previous) =>
+      previous.includes(authorityKey)
+        ? previous.filter((key) => key !== authorityKey)
+        : [...previous, authorityKey]
+    )
+  // Why require a query: an empty host list (still loading, or no hosts at all)
+  // must not be reported as "no search match" — there is nothing to have missed.
+  const showNoHostMatch = visibleHostGroups.length === 0 && hostQueryActive
+
   const toggleHost = (stableKey: string): void => {
     const nextHostKeys = selectedHostKeys.includes(stableKey)
       ? selectedHostKeys.filter((selectedKey) => selectedKey !== stableKey)
@@ -204,6 +241,27 @@ export function AutomationListFilterMenu({
                 {translate('auto.components.automations.AutomationsPage.tableHost', 'Host')}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="max-h-80 overflow-y-auto scrollbar-sleek">
+                <div className="p-1">
+                  <Input
+                    value={hostQuery}
+                    onChange={(event) => setHostQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Escape' && event.key !== 'Tab') {
+                        event.stopPropagation()
+                      }
+                    }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    placeholder={translate(
+                      'auto.components.automations.hostPicker.searchHosts',
+                      'Search hosts...'
+                    )}
+                    aria-label={translate(
+                      'auto.components.automations.hostPicker.searchHosts',
+                      'Search hosts...'
+                    )}
+                    className="h-7 px-2 text-xs"
+                  />
+                </div>
                 <DropdownMenuCheckboxItem
                   checked={selectedHostKeys.length === 0}
                   onCheckedChange={() => onChange({ ...filter, hostStableKeys: [] })}
@@ -211,16 +269,67 @@ export function AutomationListFilterMenu({
                 >
                   {translate('auto.components.automations.hostPicker.allHosts', 'All hosts')}
                 </DropdownMenuCheckboxItem>
-                {hostEntries.map((entry) => (
-                  <DropdownMenuCheckboxItem
-                    key={entry.stableKey}
-                    checked={selectedHostKeys.includes(entry.stableKey)}
-                    onCheckedChange={() => toggleHost(entry.stableKey)}
-                    onSelect={(event) => event.preventDefault()}
-                  >
-                    {entry.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
+                {showNoHostMatch ? (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    {translate(
+                      'auto.components.automations.hostPicker.noHostsMatch',
+                      'No hosts match your search.'
+                    )}
+                  </div>
+                ) : (
+                  visibleHostGroups.map((group) => {
+                    const expanded =
+                      !groupsAreCollapsible ||
+                      hostQueryActive ||
+                      expandedAuthorityKeys.includes(group.authorityKey)
+                    const groupHasSelection = group.entries.some((entry) =>
+                      selectedHostKeys.includes(entry.stableKey)
+                    )
+                    return (
+                      <React.Fragment key={group.authorityKey}>
+                        {groupsAreCollapsible ? (
+                          <DropdownMenuItem
+                            aria-expanded={expanded}
+                            onSelect={(event) => {
+                              event.preventDefault()
+                              toggleHostGroup(group.authorityKey)
+                            }}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span className="truncate">{group.authorityLabel}</span>
+                            <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+                              {group.entries.length}
+                              {groupHasSelection ? (
+                                <span className="size-1 rounded-full bg-foreground" />
+                              ) : null}
+                              <ChevronRight className={expanded ? 'size-3 rotate-90' : 'size-3'} />
+                            </span>
+                          </DropdownMenuItem>
+                        ) : null}
+                        {expanded ? (
+                          <div
+                            className={
+                              groupsAreCollapsible
+                                ? 'ml-2 border-l border-border/50 pl-1'
+                                : undefined
+                            }
+                          >
+                            {group.entries.map((entry) => (
+                              <DropdownMenuCheckboxItem
+                                key={entry.stableKey}
+                                checked={selectedHostKeys.includes(entry.stableKey)}
+                                onCheckedChange={() => toggleHost(entry.stableKey)}
+                                onSelect={(event) => event.preventDefault()}
+                              >
+                                {entry.label}
+                              </DropdownMenuCheckboxItem>
+                            ))}
+                          </div>
+                        ) : null}
+                      </React.Fragment>
+                    )
+                  })
+                )}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
