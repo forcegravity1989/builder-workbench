@@ -97,12 +97,29 @@ export function createBrowserPageWebviewNavigationHandlers({
     if (!event.isMainFrame || event.isInPlace || !event.url) {
       return
     }
-    // Main-frame document starts include reloads; fragment-only updates keep annotations.
-    invalidateBrowserAnnotationDocumentRef.current()
-    setBrowserOverlayViewport({ scrollX: 0, scrollY: 0, version: 0 })
-    const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     const browserStartedUrl = redactKagiSessionToken(event.url)
     const startedUrl = normalizeBrowserNavigationUrl(browserStartedUrl) ?? browserStartedUrl
+    // Why only a different document invalidates: a reload re-enters the same document, so its
+    // annotations still describe the same DOM and must survive Reload. Compare the destination
+    // against the document being left (getURL) rather than the destination ref, because Orca-driven
+    // navigations point that ref at the destination before assigning src.
+    let committedUrl: string | null = null
+    try {
+      committedUrl = webview.getURL() || null
+    } catch {
+      // Why: a guest that hasn't attached yet rejects getURL(); nothing committed means the first document.
+    }
+    const committedDocumentUrl = committedUrl
+      ? (normalizeBrowserNavigationUrl(committedUrl) ?? committedUrl)
+      : null
+    const sameDocument =
+      committedDocumentUrl !== null &&
+      committedDocumentUrl.split('#')[0] === startedUrl.split('#')[0]
+    if (!sameDocument) {
+      invalidateBrowserAnnotationDocumentRef.current()
+    }
+    setBrowserOverlayViewport({ scrollX: 0, scrollY: 0, version: 0 })
+    const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     if (pendingRecoveryNavigation?.targetUrl === startedUrl) {
       pendingRecoveryNavigation.started = true
     }
