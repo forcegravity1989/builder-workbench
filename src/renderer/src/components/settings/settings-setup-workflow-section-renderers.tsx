@@ -117,7 +117,7 @@ export function renderAutomationsSettingsSection(
 }
 
 export function renderArtifactsSettingsSection(context: SettingsRenderContext): React.JSX.Element {
-  const { model, navigation, view } = context
+  const { navigation, view } = context
   return (
     <SettingsSection
       id="artifacts"
@@ -129,9 +129,7 @@ export function renderArtifactsSettingsSection(context: SettingsRenderContext): 
       )}
       searchEntries={navigation.getSectionSearchEntries('artifacts')}
     >
-      {view.isSectionMounted('artifacts') ? (
-        <ArtifactsSettingsPane settings={model.settings} updateSettings={model.updateSettings} />
-      ) : null}
+      {view.isSectionMounted('artifacts') ? <ArtifactsSettingsPane /> : null}
     </SettingsSection>
   )
 }

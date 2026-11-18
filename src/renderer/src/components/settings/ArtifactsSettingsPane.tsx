@@ -1,21 +1,12 @@
-import type { GlobalSettings } from '../../../../shared/global-settings-types'
-import { SettingsSwitchRow } from './SettingsFormControls'
+import { ArtifactsSharedLinksSection } from './ArtifactsSharedLinksSection'
 import { translate } from '@/i18n/i18n'
 import { isWebClientLocation } from '@/lib/web-client-location'
 
 type HowToStep = { key: string; title: string; description: string }
 
-export function ArtifactsSettingsPane({
-  settings,
-  updateSettings
-}: {
-  settings: GlobalSettings
-  updateSettings: (updates: Partial<GlobalSettings>) => Promise<void>
-}): React.JSX.Element {
-  // The Artifacts page and CLI still publish through Orca's cloud service, and this host-side
-  // capability is their only grant path, so it stays until they move to the self-hosted service.
+export function ArtifactsSettingsPane(): React.JSX.Element {
+  // The shared-files list is kept by the host app, so web clients only get the pointer.
   const isWebClient = isWebClientLocation()
-  const sharingEnabled = settings.artifactSharingEnabled === true
   const howToSteps: HowToStep[] = [
     {
       key: 'share',
@@ -51,35 +42,6 @@ export function ArtifactsSettingsPane({
 
   return (
     <div className="divide-y divide-border">
-      <SettingsSwitchRow
-        label={translate(
-          'auto.components.settings.artifacts.allowPublishing',
-          'Allow publishing public artifact links'
-        )}
-        description={
-          isWebClient
-            ? translate(
-                'auto.components.settings.artifacts.allowPublishingWebDescription',
-                'Desktop only. Open Settings → Artifacts on the host device to change this setting.'
-              )
-            : translate(
-                'auto.components.settings.artifacts.allowPublishingDescription',
-                'Publish HTML and Markdown files as links anyone with the URL can open. Existing links remain until you delete them from Artifacts.'
-              )
-        }
-        checked={sharingEnabled}
-        disabled={isWebClient}
-        onChange={() => void updateSettings({ artifactSharingEnabled: !sharingEnabled })}
-      />
-      <SettingsSwitchRow
-        label={translate('auto.components.settings.artifacts.showButton', 'Show Artifacts Button')}
-        description={translate(
-          'auto.components.settings.artifacts.showButtonDescription',
-          'Show the Artifacts shortcut in the sidebar.'
-        )}
-        checked={settings.showArtifactsButton === true}
-        onChange={() => void updateSettings({ showArtifactsButton: !settings.showArtifactsButton })}
-      />
       <section className="space-y-4 py-5">
         <div className="space-y-1">
           <h3 className="text-sm font-medium">
@@ -107,6 +69,24 @@ export function ArtifactsSettingsPane({
           ))}
         </ol>
       </section>
+      {isWebClient ? (
+        <section className="space-y-1 py-5">
+          <h3 className="text-sm font-medium">
+            {translate(
+              'auto.components.settings.artifacts.sharedLinksTitle',
+              "Files you've shared"
+            )}
+          </h3>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {translate(
+              'auto.components.settings.artifacts.sharedLinksWebDescription',
+              'Desktop only. Open Settings → Artifacts on the host device to see and delete your shared links.'
+            )}
+          </p>
+        </section>
+      ) : (
+        <ArtifactsSharedLinksSection />
+      )}
     </div>
   )
 }

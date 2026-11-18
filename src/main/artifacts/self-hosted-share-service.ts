@@ -1,6 +1,7 @@
 import {
   SHARE_MAX_CONTENT_BYTES,
   shareContentByteLength,
+  type ShareListEntry,
   type SharePublishResult,
   type ShareRecordView,
   type ShareResult
@@ -28,7 +29,7 @@ export type ShareService = {
   }) => Promise<ShareResult<SharePublishResult>>
   getLink: (sourceKey: string) => Promise<ShareResult<ShareRecordView | null>>
   remove: (sourceKey: string) => Promise<ShareResult<null>>
-  list: () => Promise<ShareResult<(ShareRecordView & { sourceKey: string })[]>>
+  list: () => Promise<ShareResult<ShareListEntry[]>>
 }
 
 type ShareClientConfig = { serverUrl: string; uploadToken: string; fetchImpl?: typeof fetch }

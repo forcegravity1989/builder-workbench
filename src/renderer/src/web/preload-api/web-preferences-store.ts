@@ -152,9 +152,6 @@ export async function getRuntimeBackedStoredSettings(): Promise<GlobalSettings> 
     }
     // Read-only mirror: the host owns this capability and `syncRuntimeBackedSettings` never
     // sends it back, so web shows what the host enforces instead of a local value it ignores.
-    if (typeof result.settings.artifactSharingEnabled === 'boolean') {
-      runtimeSettings.artifactSharingEnabled = result.settings.artifactSharingEnabled
-    }
     if (typeof result.settings.agentSkillSharingEnabled === 'boolean') {
       runtimeSettings.agentSkillSharingEnabled = result.settings.agentSkillSharingEnabled
     }

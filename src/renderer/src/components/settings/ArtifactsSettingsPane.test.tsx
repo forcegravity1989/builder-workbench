@@ -4,10 +4,14 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getDefaultSettings } from '../../../../shared/constants'
+import type { ShareListEntry } from '../../../../shared/workbench/share'
 
 const mocks = vi.hoisted(() => ({
-  state: { isWebClient: false }
+  state: { isWebClient: false },
+  entries: [] as unknown[],
+  confirm: vi.fn(async () => true),
+  removeShare: vi.fn(async (_sourceKey: string) => ({ ok: true, value: null })),
+  reportShareFailure: vi.fn()
 }))
 
 vi.mock('@/i18n/i18n', () => ({
@@ -18,23 +22,42 @@ vi.mock('@/lib/web-client-location', () => ({
   isWebClientLocation: () => mocks.state.isWebClient
 }))
 
+vi.mock('@/components/confirmation-dialog-context', () => ({
+  useConfirmationDialog: () => mocks.confirm
+}))
+
+vi.mock('../artifacts/share-server-client', () => ({
+  listShares: async () => mocks.entries,
+  removeShare: mocks.removeShare
+}))
+
+vi.mock('../artifacts/artifact-publish-flow', () => ({
+  reportShareFailure: mocks.reportShareFailure
+}))
+
 import { ArtifactsSettingsPane } from './ArtifactsSettingsPane'
+
+const sharedEntry: ShareListEntry = {
+  id: 'share-1',
+  url: 'http://shares.example/s/share-1',
+  expiresAt: '2026-09-06T00:00:00.000Z',
+  updatedAt: '2026-08-06T00:00:00.000Z',
+  sourceKey: '/repo/report.html'
+}
 
 describe('ArtifactsSettingsPane', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.state.isWebClient = false
+    mocks.entries = []
+    mocks.confirm.mockResolvedValue(true)
+    mocks.removeShare.mockResolvedValue({ ok: true, value: null })
   })
 
   afterEach(cleanup)
 
   it('explains the complete sharing workflow', () => {
-    render(
-      <ArtifactsSettingsPane
-        settings={{ ...getDefaultSettings('/tmp'), showArtifactsButton: true }}
-        updateSettings={vi.fn()}
-      />
-    )
+    render(<ArtifactsSettingsPane />)
 
     expect(screen.getByText('How to use Artifacts')).toBeInTheDocument()
     expect(screen.getByText('Choose a file to share')).toBeInTheDocument()
@@ -52,39 +75,34 @@ describe('ArtifactsSettingsPane', () => {
     ).toBeInTheDocument()
     expect(screen.queryByText('Manage it in Orca')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Sign in to Orca' })).not.toBeInTheDocument()
-    // The Artifacts page and CLI still publish through Orca's cloud path and need this grant.
+  })
+
+  it('lists files shared from this computer and deletes a link after confirmation', async () => {
+    const user = userEvent.setup()
+    mocks.entries = [sharedEntry]
+    render(<ArtifactsSettingsPane />)
+
+    expect(await screen.findByText('report.html')).toBeInTheDocument()
+    expect(screen.getByText('http://shares.example/s/share-1')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(mocks.confirm).toHaveBeenCalled()
+    expect(mocks.removeShare).toHaveBeenCalledWith('/repo/report.html')
     expect(
-      screen.getByRole('switch', { name: 'Allow publishing public artifact links' })
+      await screen.findByText(
+        'No shared files yet. Open an HTML or Markdown file and choose Share as artifact.'
+      )
     ).toBeInTheDocument()
   })
 
-  it('controls only sidebar visibility', async () => {
-    const user = userEvent.setup()
-    const updateSettings = vi.fn()
-    render(
-      <ArtifactsSettingsPane
-        settings={{ ...getDefaultSettings('/tmp'), showArtifactsButton: false }}
-        updateSettings={updateSettings}
-      />
-    )
-
-    const toggle = screen.getByRole('switch', { name: 'Show Artifacts Button' })
-    expect(toggle).toHaveAttribute('aria-checked', 'false')
-    await user.click(toggle)
-    expect(updateSettings).toHaveBeenCalledWith({ showArtifactsButton: true })
-  })
-
-  it('makes artifact publishing read-only on the web client', async () => {
+  it('keeps the shared-files list on the host device for web clients', () => {
     mocks.state.isWebClient = true
-    render(<ArtifactsSettingsPane settings={getDefaultSettings('/tmp')} updateSettings={vi.fn()} />)
+    render(<ArtifactsSettingsPane />)
 
     expect(
       screen.getByText(
-        'Desktop only. Open Settings → Artifacts on the host device to change this setting.'
+        'Desktop only. Open Settings → Artifacts on the host device to see and delete your shared links.'
       )
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('switch', { name: 'Allow publishing public artifact links' })
-    ).toBeDisabled()
   })
 })

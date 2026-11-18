@@ -60,6 +60,10 @@ type RetiredGlobalSettings = {
   terminalScrollbackBytes?: unknown
   enableGitHubAttribution?: unknown
   showAgentsSidebar?: unknown
+  artifactsEnabled?: unknown
+  artifactSharingEnabled?: unknown
+  showArtifactsButton?: unknown
+  skipDeleteArtifactConfirm?: unknown
 }
 
 export function stripRetiredGlobalSettings(
@@ -69,11 +73,19 @@ export function stripRetiredGlobalSettings(
     terminalScrollbackBytes: _legacyScrollbackBytes,
     enableGitHubAttribution: _legacyGitHubAttribution,
     showAgentsSidebar: _legacyShowAgentsSidebar,
+    artifactsEnabled: _legacyArtifactsEnabled,
+    artifactSharingEnabled: _legacyArtifactSharingEnabled,
+    showArtifactsButton: _legacyShowArtifactsButton,
+    skipDeleteArtifactConfirm: _legacySkipDeleteArtifactConfirm,
     ...rest
   } = (settings ?? {}) as Partial<GlobalSettings> & RetiredGlobalSettings
   void _legacyScrollbackBytes
   void _legacyGitHubAttribution
   void _legacyShowAgentsSidebar
+  void _legacyArtifactsEnabled
+  void _legacyArtifactSharingEnabled
+  void _legacyShowArtifactsButton
+  void _legacySkipDeleteArtifactConfirm
   return rest
 }
 

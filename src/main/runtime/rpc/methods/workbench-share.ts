@@ -1,7 +1,11 @@
 import type { RpcContext } from '../core'
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import { nativeShareService } from '../../../artifacts/self-hosted-share-runtime'
-import { SharePublishSchema, ShareSourceSchema } from '../../../../shared/workbench/share'
+import {
+  ShareListSchema,
+  SharePublishSchema,
+  ShareSourceSchema
+} from '../../../../shared/workbench/share'
 
 /** The per-device upload token is minted and kept by the host device only. */
 function requireHostDevice(context: Pick<RpcContext, 'clientKind'>): void {
@@ -33,6 +37,14 @@ export const WORKBENCH_SHARE_METHODS = [
     handler: (params, context) => {
       requireHostDevice(context)
       return nativeShareService().remove(params.sourceKey)
+    }
+  }),
+  defineWorkbenchMethod({
+    name: 'workbench.share.list',
+    params: ShareListSchema,
+    handler: (_params, context) => {
+      requireHostDevice(context)
+      return nativeShareService().list()
     }
   })
 ]

@@ -15,7 +15,6 @@ import { describe, expect, it } from 'vitest'
 // and update the count.
 const AUDITED_GLOBAL_FETCH_LINES = new Map<string, number>([
   // HTTP call sites — body consumed or cancelled on every path, including !ok
-  ['main/artifacts/artifact-cloud-request.ts', 1],
   ['main/azure-devops/azure-devops-api-request.ts', 1],
   ['main/bitbucket/client.ts', 1],
   ['main/bitbucket/user-request.ts', 1],

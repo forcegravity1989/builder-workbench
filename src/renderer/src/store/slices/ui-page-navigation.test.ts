@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getDefaultSettings } from '../../../../shared/constants'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import type { LinearIssue } from '../../../../shared/linear/issue-types'
@@ -845,9 +844,8 @@ describe('createUISlice space navigation', () => {
     expect(store.getState().worktreeNavHistoryIndex).toBe(0)
   })
 
-  it('opens and restores Artifacts when its sidebar shortcut is hidden', () => {
+  it('opens and restores the Artifacts view', () => {
     const store = createUIStore()
-    store.setState({ settings: { ...getDefaultSettings('/tmp'), showArtifactsButton: false } })
 
     store.getState().openArtifactsPage()
     expect(store.getState().activeView).toBe('artifacts')

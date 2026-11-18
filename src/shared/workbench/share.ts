@@ -8,6 +8,8 @@ export const SHARE_TOO_LARGE_MESSAGE = 'This file is too large to share (limit 1
 
 export const ShareSourceSchema = z.object({ sourceKey: z.string().min(1).max(8192) }).strict()
 
+export const ShareListSchema = z.object({}).strict()
+
 export const SharePublishSchema = z
   .object({
     sourceKey: z.string().min(1).max(8192),
@@ -27,6 +29,9 @@ export type ShareRecordView = {
 export type SharePublishResult = ShareRecordView & {
   change: 'created' | 'updated'
 }
+
+/** One link this machine created; `sourceKey` is the file it was shared from. */
+export type ShareListEntry = ShareRecordView & { sourceKey: string }
 
 export type ShareResult<T> =
   | { ok: true; value: T }

@@ -1,4 +1,8 @@
-import type { SharePublishResult, ShareResult } from '../../../../shared/workbench/share'
+import type {
+  ShareListEntry,
+  SharePublishResult,
+  ShareResult
+} from '../../../../shared/workbench/share'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 
 const LOCAL_RUNTIME = { kind: 'local' } as const
@@ -30,4 +34,16 @@ export async function getShareLink(sourceKey: string): Promise<string | null> {
 
 export function removeShare(sourceKey: string): Promise<ShareResult<null>> {
   return callRuntimeRpc<ShareResult<null>>(LOCAL_RUNTIME, 'workbench.share.remove', { sourceKey })
+}
+
+export async function listShares(): Promise<ShareListEntry[]> {
+  const result = await callRuntimeRpc<ShareResult<ShareListEntry[]>>(
+    LOCAL_RUNTIME,
+    'workbench.share.list',
+    {}
+  )
+  if (!result.ok) {
+    throw new Error(result.error.message)
+  }
+  return result.value
 }

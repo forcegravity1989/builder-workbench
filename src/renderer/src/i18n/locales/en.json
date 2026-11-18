@@ -11676,7 +11676,20 @@
           "keywordHtml": "HTML",
           "keywordMarkdown": "Markdown",
           "keywordUpload": "upload",
-          "manageStepDescriptionV2": "Reopen the same file and use Share as artifact to publish new content over the same link."
+          "manageStepDescriptionV2": "Reopen the same file and use Share as artifact to publish new content over the same link.",
+          "sharedLinksTitle": "Files you've shared",
+          "sharedLinksDescription": "Links this computer created. Deleting a link makes it stop working immediately.",
+          "keywordLink": "link",
+          "keywordDelete": "delete",
+          "sharedLinksWebDescription": "Desktop only. Open Settings → Artifacts on the host device to see and delete your shared links.",
+          "sharedLinksLoadFailed": "Could not load your shared files.",
+          "sharedLinksDeleteTitle": "Delete this shared link?",
+          "sharedLinksDeleteDescription": "The link stops working for everyone immediately. Share the file again to create a new one.",
+          "sharedLinksDeleteConfirm": "Delete",
+          "sharedLinksLoading": "Loading…",
+          "sharedLinksEmpty": "No shared files yet. Open an HTML or Markdown file and choose Share as artifact.",
+          "sharedLinksDeleting": "Deleting…",
+          "sharedLinksDelete": "Delete"
         },
         "orcaAccount": {
           "connected": "Connected",
