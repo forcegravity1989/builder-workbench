@@ -1,0 +1,88 @@
+docs/05-features/team-collaboration/prototype.html
+  s_fd7483dceb9334::t_03f3bd8eda5287 201
+  s_fd7483dceb9334::t_bfa4ae714fca42 212,214-217
+  s_fd7483dceb9334::t_1140c3831f1cd2 225
+  s_fd7483dceb9334::t_cfbef5c78de4a0 197
+docs/05-features/team-collaboration/welink-cli-spike.md
+  s_fd7483dceb9334::t_5e374cc3316c78 1-47
+docs/05-features/team-collaboration/STATUS.md
+  s_fd7483dceb9334::t_04cee76b18bc2e 5
+docs/05-features/team-collaboration/prototype/journey.js
+  s_fd7483dceb9334::t_eb29a378d70e26 100,103-119
+  s_fd7483dceb9334::t_f119511fe8598e 512-513
+  s_fd7483dceb9334::t_60bd31fd2d0923 526
+  s_fd7483dceb9334::t_8a012d260473d1 373
+  s_fd7483dceb9334::t_c88c9752abf930 529
+  s_fd7483dceb9334::t_417c0d67432196 945-946,950
+  s_fd7483dceb9334::t_47dde3c65d0165 741
+  s_fd7483dceb9334::t_221df317f56f10 339-340,342
+  s_fd7483dceb9334::t_791a23391f8022 518,520
+  s_fd7483dceb9334::t_d9c87a8409d4d5 78-79,86-87,99
+  s_fd7483dceb9334::t_7533f1f3633769 734
+  s_fd7483dceb9334::t_b511c7b5fc67a5 1073-1074,1081-1101,1107-1109
+  s_fd7483dceb9334::t_c8b16f784c09ff 154-155
+  s_fd7483dceb9334::t_7f72f760865e60 1190-1198
+  s_fd7483dceb9334::t_98373b058feda4 1207,1210-1212,1214-1215
+  s_fd7483dceb9334::t_70cbe3bab1b05a 799,801,803-806
+  s_fd7483dceb9334::t_c030b36c156033 552,563
+  s_fd7483dceb9334::t_dcffdedbf36c19 971
+  s_fd7483dceb9334::t_5847ffe0c15940 537,543,546,555-557,559,561,564
+  s_fd7483dceb9334::t_370629547ac7ef 675
+  s_fd7483dceb9334::t_0986204003fad2 1018
+  s_fd7483dceb9334::t_5ff8a9ac25ff41 197-200,203-204
+  s_fd7483dceb9334::t_60cfa52fba8fbb 304-309,316
+  s_fd7483dceb9334::t_c0d23a7a258152 311
+  s_fd7483dceb9334::t_51e95eed398cb2 843-845
+  s_fd7483dceb9334::t_56ce441d282a2e 381
+  s_fd7483dceb9334::t_7d2e7e1d2c91d4 1068-1071
+  s_fd7483dceb9334::t_07e4b2add050a9 421
+  s_fd7483dceb9334::t_0d75188af0e887 541-542,544-545,547
+  s_fd7483dceb9334::t_05279bbaffa19e 685
+  s_fd7483dceb9334::t_79ec464e6f134e 1008
+  s_fd7483dceb9334::t_deee1c3341dbb2 645
+  s_fd7483dceb9334::t_f9884219647e49 179-185
+  s_fd7483dceb9334::t_c711fc6cd492af 910
+  s_fd7483dceb9334::t_ce87c8549b654e 560
+  s_fd7483dceb9334::t_de3eefdcfb3b0d 1173
+  s_fd7483dceb9334::t_079fab2eb91a72 310,312-313,315,320,324-333
+  s_fd7483dceb9334::t_b4b7c95e8789f3 654-655,664-674,684
+  s_fd7483dceb9334::t_2a740b7deacfe6 101,1067,1102-1103
+  s_fd7483dceb9334::t_cd358185628a95 897
+  s_fd7483dceb9334::t_17f194feaeb7c9 944,947-949
+  s_fd7483dceb9334::t_0160f52c8b1307 102
+  s_fd7483dceb9334::t_2365dc25fca3dc 395-398,400-404,406-413,424-428
+  s_fd7483dceb9334::t_6fd8c3c5fef200 380,385
+  s_fd7483dceb9334::t_ffd229fc207225 1237-1240
+  s_fd7483dceb9334::t_e8a98bd8545262 846
+  s_fd7483dceb9334::t_9b58cdd7498438 201-202
+  s_fd7483dceb9334::t_92aedf01d97611 297-298
+  s_fd7483dceb9334::t_9f838a5a6d409b 881
+  s_fd7483dceb9334::t_e66f931c25adc4 420,434,439
+  s_fd7483dceb9334::t_193b62f34d4094 489-499,506,508-509,511
+  s_fd7483dceb9334::t_626f2cbc7b6ff8 871-880,882-889,895-896,898-907,909,911
+  s_fd7483dceb9334::t_0e1c9895077a43 399
+  s_fd7483dceb9334::t_6919e823a16a26 661
+  s_fd7483dceb9334::t_41d6840afe77b0 894,908
+  s_fd7483dceb9334::t_84fb5df3ccf25e 919,921-925
+  s_fd7483dceb9334::t_2f0c5cf974c206 656
+  s_fd7483dceb9334::t_891670752702aa 972-986
+  s_fd7483dceb9334::t_26228ba695cab3 153
+  s_fd7483dceb9334::t_f7fbd7c25c2919 168,186,206
+  s_fd7483dceb9334::t_fa05ec09ac9c8a 848
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "0f9651666bac1040458c3d6dae4acb2396d73e81",
+  "prompts": {},
+  "sessions": {
+    "s_fd7483dceb9334": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3bbf7863-4f40-43e6-94c4-62f3782da3e2",
+        "model": "default"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
