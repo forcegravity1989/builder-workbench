@@ -65,7 +65,10 @@ export function httpLinkActionDestinationsFor(
 
 export function httpLinkDestinationLabel(destination: HttpLinkDestination): string {
   if (destination === 'task') {
-    return '在任务中打开'
+    return translate(
+      'auto.components.terminal.pane.TerminalLinkActionPopover.openInTask',
+      'Open in Task'
+    )
   }
   return destination === 'orca'
     ? translate(
