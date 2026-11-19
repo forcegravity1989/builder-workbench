@@ -28,8 +28,8 @@ PJ01 和 PJ02 仅是旧资产中的分支名称。它们不再各自生成用户
 | spec | 已确认 | W02 行为、失败边界、P01–P12 和用例入口已收敛到 [spec](spec.md) |
 | 实现设计 | 已同步 | 当前模块、材料事务和原生接缝见 [design](design.md) |
 | 核心算法与协议 | 部分有证据 | 材料 CAS、纪要守卫、来源映射和任务读取有既有源码与测试。模型并发、迁移和远端身份仍需对应环境复验 |
-| 验收点 E2E | 部分 | 既有 `workbench-cycle-smoke.spec.ts` 覆盖 W02 入口、版本计划主链、材料保存和独立读回。完整真壳的批注发送、指标采集和 CodeHub MR 尚未统一验证 |
-| 用户旅程 E2E | 部分 | W02 主链是唯一用户旅程入口。真实模型会话、任务协作、会议转写和 PR 人审链路仍待真实环境验证 |
+| 验收点 E2E | 部分 | 旅程 ID W02；文件 `tests/e2e/workbench-cycle-smoke.spec.ts`，标题 `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料与 renderer 重载后的计划入口；批注发送、指标采集和 CodeHub MR 尚未统一验证 |
+| 用户旅程 E2E | 部分 | 同一 W02 入口和标题；真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料与 renderer 重载后的计划入口。真实模型会话、任务协作、会议转写和 PR 人审链路仍待真实环境验证 |
 
 ## 验收点矩阵
 
@@ -50,11 +50,10 @@ PJ01 和 PJ02 仅是旧资产中的分支名称。它们不再各自生成用户
 
 ## 用例与资产边界
 
-- 当前用户旅程 E2E 数量为一条，入口是 `tests/e2e/workbench-cycle-smoke.spec.ts` 中的 W02 主链。
-- 当前验收点 E2E 目标数量为一条，优先复用 W02 主链。只有 W02 无法观察的高风险边界才新增，并需在 [spec](spec.md) 登记观察结果和独立读回。
+- W02 的主旅程和验收点复用同一入口：文件、标题、执行项目、真实环境、独立读回和状态按本表登记。只有 W02 无法观察的高风险边界才新增，并需在 [spec](spec.md) 登记观察结果和独立读回。
 - 核心 TDD 仅覆盖材料协议、来源映射、CAS 冲突、自动化去重和导航返回等稳定逻辑，位置跟随实现放在 `src/**` 的 `*.test.ts(x)`。普通 UI 变化不新增 TDD。
 - 特性验收 E2E 和 W02 用户旅程 E2E 统一位于 `tests/e2e/`，Workbench 当前白名单入口是 `tests/e2e/workbench-allowlist.ts`。
-- 本轮不新增业务 E2E，不调整原型文件，不把原型播放或静态检查写成真实用户证据。
+- 原型播放和静态检查不计为真实用户证据；新增业务 E2E 仍须经过本特性 spec 的验收边界和 Workbench 白名单约束。
 
 ## 未决项
 
