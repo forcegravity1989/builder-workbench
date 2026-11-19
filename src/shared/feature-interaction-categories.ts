@@ -52,6 +52,7 @@ export const FEATURE_INTERACTION_CATEGORY_BY_ID = {
   'workbench-acceptance': 'workspace',
   'workbench-scoreboard': 'workspace',
   'workbench-version-overview': 'workspace',
+  'workbench-version-tasks': 'workspace',
   'workspace-creation': 'workspace',
   'agent-browser-setup': 'setup',
   'agent-browser-use': 'agent',

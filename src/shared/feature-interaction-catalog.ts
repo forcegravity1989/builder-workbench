@@ -31,6 +31,7 @@ export type FeatureInteractionId =
   | 'workbench-acceptance'
   | 'workbench-scoreboard'
   | 'workbench-version-overview'
+  | 'workbench-version-tasks'
   | 'workspace-creation'
   | 'agent-browser-setup'
   | 'agent-browser-use'
@@ -112,6 +113,7 @@ export const FEATURE_INTERACTIONS = [
   { id: 'workbench-acceptance', interaction: 'version acceptance screen entered' },
   { id: 'workbench-scoreboard', interaction: 'project scoreboard viewed' },
   { id: 'workbench-version-overview', interaction: 'version overview opened' },
+  { id: 'workbench-version-tasks', interaction: 'version task screen entered' },
   { id: 'workspace-creation', interaction: 'workspace creation flow opened' },
   { id: 'agent-browser-setup', interaction: 'Agent Browser Use setup enabled or opened' },
   { id: 'agent-browser-use', interaction: 'agent browser runtime method used' },

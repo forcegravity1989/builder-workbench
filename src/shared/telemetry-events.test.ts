@@ -695,4 +695,25 @@ describe('BW feature-usage events (#687)', () => {
     expect(eventSchemas.bw_version_created.safeParse({}).success).toBe(true)
     expect(eventSchemas.bw_version_created.safeParse({ version: 'v0.9' }).success).toBe(false)
   })
+
+  it('bw_task_start accepts every outcome × source pair and rejects unknown or free-text values', () => {
+    for (const outcome of ['opened', 'choice-opened', 'composer-opened', 'unavailable'] as const) {
+      for (const source of ['task-screen', 'task-dialog', 'plan-board'] as const) {
+        expect(eventSchemas.bw_task_start.safeParse({ outcome, source }).success).toBe(true)
+      }
+    }
+    expect(
+      eventSchemas.bw_task_start.safeParse({ outcome: 'started', source: 'plan-board' }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.bw_task_start.safeParse({ outcome: 'opened', source: 'sidebar' }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.bw_task_start.safeParse({
+        outcome: 'opened',
+        source: 'plan-board',
+        issue_title: '#687 修复遥测'
+      }).success
+    ).toBe(false)
+  })
 })

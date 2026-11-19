@@ -6,6 +6,7 @@ import {
   appStarredOrcaSchema,
   bwAssistantRequestSentSchema,
   bwPackageBuildSchema,
+  bwTaskStartSchema,
   bwVersionCreatedSchema,
   featureInteractionUsageBucketReachedSchema,
   repoAddedSchema,
@@ -107,6 +108,7 @@ export const eventSchemas = {
 
   bw_assistant_request_sent: bwAssistantRequestSentSchema,
   bw_package_build: bwPackageBuildSchema,
+  bw_task_start: bwTaskStartSchema,
   bw_version_created: bwVersionCreatedSchema,
 
   repo_added: repoAddedSchema,

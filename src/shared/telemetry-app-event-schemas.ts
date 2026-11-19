@@ -167,3 +167,22 @@ export const bwPackageBuildSchema = z
   .strict()
 
 export const bwVersionCreatedSchema = z.object({}).strict()
+
+// 任务开工/打开（#687 补缺）：outcome 记分发核的真实去向，source 区分
+// 三处入口；工作区名、Issue 标题等自由文本不上报。
+export const bwTaskStartOutcomeSchema = z.enum([
+  'opened',
+  'choice-opened',
+  'composer-opened',
+  'unavailable'
+])
+export type BwTaskStartOutcome = z.infer<typeof bwTaskStartOutcomeSchema>
+export const bwTaskStartSourceSchema = z.enum(['task-screen', 'task-dialog', 'plan-board'])
+export type BwTaskStartSource = z.infer<typeof bwTaskStartSourceSchema>
+
+export const bwTaskStartSchema = z
+  .object({
+    outcome: bwTaskStartOutcomeSchema,
+    source: bwTaskStartSourceSchema
+  })
+  .strict()

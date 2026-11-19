@@ -10,6 +10,7 @@ import {
   resolveTaskRowWorkspace
 } from '@/workbench/scoped-task-workspace'
 import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
+import { track } from '@/lib/telemetry'
 import { translate } from '@/i18n/i18n'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitHubItemDialogProps } from '../load-item-details/github-item-dialog-types'
@@ -83,9 +84,13 @@ export default function GitHubItemDialog({
                 )
               )
           })
+          // Why: scoped dispatch is the BW start path (#687) — 'none' falls
+          // through to onUse, which opens the composer.
           if (outcome !== 'none') {
+            track('bw_task_start', { outcome, source: 'task-dialog' })
             return
           }
+          track('bw_task_start', { outcome: 'composer-opened', source: 'task-dialog' })
           onUse(item)
           return
         }

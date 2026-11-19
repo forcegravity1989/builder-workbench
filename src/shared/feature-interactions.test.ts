@@ -64,6 +64,7 @@ describe('feature interactions', () => {
       'workbench-acceptance',
       'workbench-scoreboard',
       'workbench-version-overview',
+      'workbench-version-tasks',
       'workspace-creation',
       'agent-browser-setup',
       'agent-browser-use',
