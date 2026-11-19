@@ -19,7 +19,7 @@ export function isWorkspaceGoneError(error: unknown): boolean {
 }
 
 export function workspaceGoneMessage(): string {
-  return '工作区已随版本清理；版本材料与目录已保留，可在版本总览回看，继续工作请重新准备工作区。'
+  return '工作区的工作树已删除；版本材料与目录已保留，可在版本总览回看，继续工作请重新准备工作区。'
 }
 
 function diagnosticText(error: unknown): string {
@@ -55,7 +55,7 @@ export function notifyWorkbenchError(title: string, error: unknown, description?
   if (isWorkspaceGoneError(error)) {
     // The caller's title and retry-oriented description no longer fit: nothing at the old
     // scope can succeed, and the way forward is the version overview, not another attempt.
-    toast.error('工作区已清理', {
+    toast.error('工作树已删除', {
       description: (
         <div>
           <div>{workspaceGoneMessage()}</div>

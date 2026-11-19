@@ -110,11 +110,13 @@ export class OrcaRuntimeWithResolveWorktreeSelector extends OrcaRuntimeWithResol
       throw new Error('selector_ambiguous')
     }
     const miss = new Error('selector_not_found')
-    // Why at the choke point: every selector table (fleet show, worktree activation, session
-    // launch, terminal launch, file dispatches) funnels through this throw, and only the
+    // Why at the choke point: every worktree-selector table (fleet show, worktree activation,
+    // session launch, terminal launch, file dispatches) funnels through this throw, and only the
     // `workbench.*` RPC family had caller spans — a miss on any other channel left no trace
-    // (#727). Optional call: intermediate classes of the composed runtime always define it,
-    // but a standalone subclass must not turn a miss into a TypeError.
+    // (#727). Not recorded here: the `active` contract throw above and folder-workspace misses,
+    // which resolve outside this function and carry no repo/worktree facts. Optional call:
+    // intermediate classes of the composed runtime always define it, but a standalone subclass
+    // must not turn a miss into a TypeError.
     if (!isNonMissSelector(selector)) {
       this.emitWorktreeSelectorMiss?.(
         selector,

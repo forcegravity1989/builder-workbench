@@ -168,6 +168,8 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
   async showManagedTerminalWorkspace(worktreeSelector: string) {
     // Misses are recorded at the resolver choke point. The only `!managedWorktree` case is the
     // floating-terminal sentinel, a contract non-miss that must not dilute the signal.
+    // Folder-workspace misses resolve outside the resolver and stay unrecorded by design: they
+    // carry no repo/worktree facts for the span to report.
     const target = await this.resolveTerminalWorkspaceLaunchTarget(
       worktreeSelector,
       'showManagedTerminalWorkspace'
@@ -273,7 +275,7 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
   }
 
   async sleepManagedWorktree(worktreeSelector: string): Promise<{ worktreeId: string }> {
-    const worktree = await this.resolveWorktreeSelector(worktreeSelector)
+    const worktree = await this.resolveWorktreeSelector(worktreeSelector, 'sleepManagedWorktree')
     // Why: sleep is renderer-initiated on desktop (it tears down tab state
     // before killing PTYs). The notifier tells the renderer to run its own
     // sleep flow so all cleanup happens in the correct order.

@@ -4,9 +4,10 @@ import { WORKTREE_ID_SEPARATOR } from '../../shared/worktree/id'
 import { startSpan } from '../observability/tracer'
 
 /**
- * Where the lookup gave up. `resolver` is the choke point every selector table miss funnels
- * through (`resolveWorktreeSelector`), `host-scoped` the `id:` + requiredHostId short-circuit a
- * managed workspace uses, which never reaches the resolver.
+ * Where the lookup gave up. `resolver` is the choke point every worktree-selector miss funnels
+ * through (`resolveWorktreeSelector`; folder-workspace misses resolve elsewhere and carry no
+ * facts to report), `host-scoped` the `id:` + requiredHostId short-circuit a managed workspace
+ * uses, which never reaches the resolver.
  */
 export type WorktreeSelectorMissStage = 'resolver' | 'host-scoped'
 
@@ -18,8 +19,8 @@ export type WorktreeSelectorMissFacts = {
   readonly stage: WorktreeSelectorMissStage
   /**
    * The entry that asked for the resolution (`showManagedWorktree`, `activateManagedWorktree`,
-   * `structured-session`, …), or `null` when an unthreaded internal caller missed. Distinguishes
-   * a user-facing surface from benign probes without a span per RPC channel.
+   * `structured-session-location`, …), or `null` when an unthreaded internal caller missed.
+   * Distinguishes a user-facing surface from benign probes without a span per RPC channel.
    */
   readonly caller: string | null
   readonly selector: string

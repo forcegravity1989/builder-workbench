@@ -28,9 +28,13 @@ export function usePlanningMaterial(
   const [busy, setBusy] = useState(false)
   const selection = useRef({ value: 0 })
   const listRequest = useRef({ value: 0 })
-  // Set once the scope stops resolving (version cleanup deleted the worktree): every later poll
-  // would fail the same way, so the intervals stand down instead of refreshing a dead error (#727).
+  // Set once the scope stops resolving (worktree deleted): every later poll would fail the same
+  // way, so the intervals stand down instead of refreshing a dead error (#727). Latched on two
+  // consecutive misses: a single `selector_not_found` can be a transient rejected scan, which the
+  // native contract treats as a real answer, and latching on one would freeze a self-healing
+  // poller on a live workspace.
   const gone = useRef(false)
+  const goneMisses = useRef(0)
   const [persistError, setPersistError] = useState<string | null>(null)
   const current = useRef({ port, scopeKey })
   current.current = { port, scopeKey }
@@ -92,9 +96,13 @@ export function usePlanningMaterial(
     } catch (reason) {
       if (isCurrent() && request === listRequest.current.value) {
         if (isWorkspaceGoneError(reason)) {
-          gone.current = true
-          setError(workspaceGoneMessage())
+          goneMisses.current += 1
+          if (goneMisses.current >= 2) {
+            gone.current = true
+            setError(workspaceGoneMessage())
+          }
         } else {
+          goneMisses.current = 0
           setError(reason instanceof Error ? reason.message : '无法列出版本')
         }
       }
@@ -105,6 +113,7 @@ export function usePlanningMaterial(
     selection.current.value++
     controller?.clear()
     gone.current = false
+    goneMisses.current = 0
     setDraft(null)
     setVersions([])
     setError(null)
@@ -217,9 +226,13 @@ export function usePlanningMaterial(
       void controller.refresh().catch((reason) => {
         if (isCurrent() && token === selection.current.value) {
           if (isWorkspaceGoneError(reason)) {
-            gone.current = true
-            setError(workspaceGoneMessage())
+            goneMisses.current += 1
+            if (goneMisses.current >= 2) {
+              gone.current = true
+              setError(workspaceGoneMessage())
+            }
           } else {
+            goneMisses.current = 0
             setError(String(reason))
           }
         }

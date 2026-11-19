@@ -76,9 +76,13 @@ export function useAcceptanceBoard({
   const associated = Boolean(document && document.version === context.version)
   const readOnly = Boolean(context.syncing) || !associated || !fixed.plan
   const lifetime = useRef({ active: true })
-  // Set once the scope stops resolving (version cleanup deleted the worktree): later polls would
-  // fail the same way, so the interval stands down instead of refreshing a dead error (#727).
+  // Set once the scope stops resolving (worktree deleted): later polls would fail the same way,
+  // so the interval stands down instead of refreshing a dead error (#727). Latched on two
+  // consecutive misses: a single `selector_not_found` can be a transient rejected scan, which the
+  // native contract treats as a real answer, and latching on one would freeze a self-healing
+  // poller on a live workspace.
   const gone = useRef(false)
+  const goneMisses = useRef(0)
   useEffect(() => {
     const state = lifetime.current
     state.active = true
@@ -164,13 +168,18 @@ export function useAcceptanceBoard({
   ])
   useEffect(() => {
     gone.current = false
+    goneMisses.current = 0
     const timer = setInterval(() => {
       if (!context.syncing && !gone.current) {
         void controller.refresh().catch((reason) => {
           if (isWorkspaceGoneError(reason)) {
-            gone.current = true
-            setError(workspaceGoneMessage())
+            goneMisses.current += 1
+            if (goneMisses.current >= 2) {
+              gone.current = true
+              setError(workspaceGoneMessage())
+            }
           } else {
+            goneMisses.current = 0
             setError(String(reason))
           }
         })
