@@ -29,6 +29,7 @@ describe('codehub mutations', () => {
   })
 
   it('creates an issue with codehub-cli, including an optional assignee', async () => {
+    const description = '中文描述🙂\n"引号"\\反斜杠\n'.repeat(3000)
     runCodeHubCliMock.mockResolvedValue(
       JSON.stringify({ iid: 4, title: 'Login', web_url: 'https://example/4' })
     )
@@ -36,7 +37,7 @@ describe('codehub mutations', () => {
       remote,
       execOptions: { cwd: '/repo' },
       title: 'Login',
-      description: 'SSO',
+      description,
       assignee: 'ada'
     })
     expect(runCodeHubCliMock).toHaveBeenCalledWith(
@@ -51,12 +52,12 @@ describe('codehub mutations', () => {
         'codehub-g.huawei.com',
         '-f',
         'json',
-        '--description',
-        'SSO',
+        '--body-file',
+        '-',
         '--assignee',
         'ada'
       ],
-      { cwd: '/repo' }
+      { cwd: '/repo', stdin: description.trim() }
     )
     expect(created.iid).toBe(4)
   })

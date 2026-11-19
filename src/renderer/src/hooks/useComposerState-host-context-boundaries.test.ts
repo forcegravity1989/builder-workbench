@@ -726,6 +726,13 @@ describe('useComposerState host-context boundaries', () => {
     expect(COMPOSER_SOURCE.quickCreation).not.toContain('resolveQuickWorkspaceSubmitAgent')
   })
 
+  it('does not synthesize a terminal issue command when no template is configured', () => {
+    const quickSubmit = COMPOSER_SOURCE.quickSubmitPreparation
+
+    expect(quickSubmit).toContain('template: submitIssueCommandTemplate')
+    expect(quickSubmit).not.toContain('DEFAULT_ISSUE_COMMAND_TEMPLATE')
+  })
+
   it('keeps sentinel-based Jira and Linear starts out of issue-command templates', () => {
     const submitSources =
       COMPOSER_SOURCE.derived +

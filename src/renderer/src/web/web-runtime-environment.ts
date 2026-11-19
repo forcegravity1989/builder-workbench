@@ -155,6 +155,21 @@ export function updateStoredEnvironmentRuntimeId(
   return next
 }
 
+/** Persists the user's launch reconnect intent for the single paired server. */
+export function updateStoredEnvironmentReconnectOnLaunch(
+  environment: StoredWebRuntimeEnvironment,
+  reconnectOnLaunch: boolean | undefined
+): StoredWebRuntimeEnvironment {
+  const next: StoredWebRuntimeEnvironment = { ...environment, updatedAt: Date.now() }
+  if (reconnectOnLaunch === undefined) {
+    delete next.reconnectOnLaunch
+  } else {
+    next.reconnectOnLaunch = reconnectOnLaunch
+  }
+  saveStoredWebRuntimeEnvironment(next)
+  return next
+}
+
 export function isMixedContentWebSocket(endpoint: string): boolean {
   return window.location.protocol === 'https:' && endpoint.startsWith('ws://')
 }

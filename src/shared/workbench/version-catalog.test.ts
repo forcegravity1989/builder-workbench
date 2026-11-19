@@ -5,7 +5,9 @@ import type { WorkbenchVersionBinding } from './version-binding'
 import { selectPriorVersionSource } from './prior-version-source'
 import {
   collectVersionCatalogWorkspaces,
+  compareMaterialVersions,
   compareVersionDisplayOrder,
+  hasUnmergedPlanDraft,
   mergeVersionCatalog,
   versionCatalogCacheKey,
   type VersionCatalogWorkspace
@@ -142,8 +144,13 @@ describe('mergeVersionCatalog', () => {
     expect(v06.material.acceptance?.revision).toBe(sha('7'))
     const v07 = entries.find((entry) => entry.version === 'v0.7')!
     expect(v07.state).toBe('working')
+    expect(v07.mergeStatus).toBe('merged')
     expect(v07.material.plan?.revision).toBe(sha('8'))
     expect(v07.draft?.revision).toBe(sha('9'))
+    expect(hasUnmergedPlanDraft(v07)).toBe(true)
+    expect(
+      hasUnmergedPlanDraft({ ...v07, draft: { ...v07.draft!, revision: sha('8') } })
+    ).toBe(false)
     expect(v07.goals).toEqual([{ goalId: 'G1', title: '打通绑定' }])
     expect(
       v07.workspaces.map((workspace: VersionCatalogWorkspace) => [
@@ -161,6 +168,11 @@ describe('mergeVersionCatalog', () => {
       { workflow: 'plan', code: 'history-unavailable', message: '无法读取固定提交中的材料' }
     ])
     expect(v05.state).toBe('retired')
+    expect(v05.mergeStatus).toBe('unknown')
+
+    const v08 = entries.find((entry) => entry.version === 'v0.8')!
+    expect(v08.mergeStatus).toBe('unmerged')
+    expect(v08.planStartedAt).toBe(Date.parse('2026-10-01T10:00:00Z'))
 
     const revisedAcceptance = { ...v06.material.acceptance!, committedAt: '2026-10-02T00:00:00Z' }
     const oldEnteredAt = Date.parse('2026-09-01T00:00:00Z')
@@ -181,12 +193,51 @@ describe('mergeVersionCatalog', () => {
       ]
         .toSorted(compareVersionDisplayOrder)
         .map(({ version }) => version)
-    ).toEqual(['v0.8', 'aaa-new', 'v2', 'zz-legacy', 'v0.5', 'v0.6'])
+    ).toEqual(['v0.8', 'aaa-new', 'v2', 'zz-legacy', 'v0.6', 'v0.5'])
     expect(
       [v07, { ...v06, planEnteredAt: oldEnteredAt }]
         .toSorted(compareVersionDisplayOrder)
         .map(({ version }) => version)
     ).toEqual(['v0.6', 'v0.7'])
+
+    const unmergedWithoutTime = mergeVersionCatalog({
+      committed: { records: [], problems: [] },
+      workspaces: collectVersionCatalogWorkspaces(
+        [
+          makeWorktree({ id: 'v0.9-plan', workbenchVersionBinding: planBinding('v0.9') }),
+          makeWorktree({ id: 'v0.10-plan', workbenchVersionBinding: planBinding('v0.10') })
+        ],
+        ['repo-1']
+      )
+    })
+    expect(
+      unmergedWithoutTime.map(({ version }) => version).toSorted(compareMaterialVersions)
+    ).toEqual(['v0.9', 'v0.10'])
+    const unavailableBaseline = mergeVersionCatalog({
+      committed: { records: [], problems: [] },
+      historyAvailable: false,
+      workspaces: collectVersionCatalogWorkspaces(
+        [makeWorktree({ id: 'unavailable-plan', workbenchVersionBinding: planBinding('v1.1') })],
+        ['repo-1']
+      )
+    })
+    expect(unavailableBaseline[0].mergeStatus).toBe('unknown')
+    const acceptanceOnly = mergeVersionCatalog({
+      committed: {
+        records: [
+          {
+            version: 'v1.2',
+            cycleId: 'acceptance-only',
+            sourceCommit: 'b'.repeat(40),
+            revision: sha('b'),
+            workflow: 'acceptance',
+            committedAt: '2026-11-18T00:00:00Z'
+          }
+        ],
+        problems: []
+      }
+    })
+    expect(acceptanceOnly[0].mergeStatus).toBe('unknown')
 
     // 前版先按目录排序确定，再找验收；v0.7 只有计划时不可借 v0.6 的验收。
     expect(selectPriorVersionSource('v0.8', committed)).toEqual({
