@@ -112,7 +112,9 @@ describe('self-hosted share client status mapping', () => {
     )
 
     expect(error).toBeInstanceOf(ShareServiceError)
-    expect((error as ShareServiceError).code).toBe('busy')
+    // Its own code: 'busy' would borrow the "try again shortly" copy for a state that only an
+    // operator can clear.
+    expect((error as ShareServiceError).code).toBe('enrollment-full')
     expect((error as ShareServiceError).message).toContain('需要运维处理')
   })
 
@@ -135,7 +137,7 @@ describe('self-hosted share client status mapping', () => {
     )
 
     expect(error).toBeInstanceOf(ShareServiceError)
-    expect((error as ShareServiceError).code).toBe('server')
+    expect((error as ShareServiceError).code).toBe('registry-unavailable')
     expect((error as ShareServiceError).message).toContain('需要运维')
   })
 

@@ -18,6 +18,13 @@ type PublishedLinkLookup = {
   shareUrl: string | null
 }
 
+function removeFailedTitle(): string {
+  return translate(
+    'auto.components.artifacts.ArtifactPublishButton.removeFailed',
+    'Could not remove the link.'
+  )
+}
+
 export function ArtifactPublishButton({
   sourceKey,
   createRequest,
@@ -87,7 +94,7 @@ export function ArtifactPublishButton({
     try {
       const result = await removeShare(sourceKey)
       if (!result.ok) {
-        reportShareFailure(result.error.code, result.error.message)
+        reportShareFailure(result.error.code, result.error.message, removeFailedTitle())
         // stale-record means the host already dropped the local record, so the panel must stop
         // showing a link this machine can no longer manage; sharing again creates a fresh one.
         if (result.error.code === 'stale-record') {
@@ -103,10 +110,8 @@ export function ArtifactPublishButton({
       console.error('Failed to remove shared artifact link:', error)
       reportShareFailure(
         'unknown',
-        translate(
-          'auto.components.artifacts.ArtifactPublishButton.removeFailed',
-          'Could not remove the link.'
-        )
+        error instanceof Error ? error.message : String(error),
+        removeFailedTitle()
       )
     } finally {
       setRemoving(false)
@@ -163,79 +168,82 @@ export function ArtifactPublishButton({
             )}
           </h3>
           <p className="text-xs leading-5 text-muted-foreground">
-            {publishedLink
+            {webOnly
               ? translate(
-                  'auto.components.artifacts.ArtifactPublishButton.publishedDescription',
-                  'Anyone with this link can view the shared file.'
+                  'auto.components.artifacts.ArtifactPublishButton.webOnly',
+                  'Desktop only. Open this file on the host device to share it.'
                 )
-              : translate(
-                  'auto.components.artifacts.ArtifactPublishButton.confirmDescription',
-                  'This publishes the current file at a link anyone with the URL can view.'
-                )}
+              : publishedLink
+                ? translate(
+                    'auto.components.artifacts.ArtifactPublishButton.publishedDescription',
+                    'Anyone with this link can view the shared file.'
+                  )
+                : translate(
+                    'auto.components.artifacts.ArtifactPublishButton.confirmDescription',
+                    'This publishes the current file at a link anyone with the URL can view.'
+                  )}
           </p>
         </div>
 
-        <div className="space-y-3 p-4">
-          {webOnly ? (
-            <p className="text-xs leading-5 text-muted-foreground">
-              {translate(
-                'auto.components.artifacts.ArtifactPublishButton.webOnly',
-                'Desktop only. Open this file on the host device to share it.'
-              )}
-            </p>
-          ) : checkingLink ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" />
-              {translate(
-                'auto.components.artifacts.ArtifactPublishButton.checkingLink',
-                'Checking for an existing link…'
-              )}
-            </div>
-          ) : currentLookup?.status === 'error' ? (
-            <div className="space-y-2">
-              <p className="text-xs leading-5 text-muted-foreground">
+        {webOnly ? null : (
+          <div className="space-y-3 p-4">
+            {checkingLink ? (
+              <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+                <Loader2 className="size-3.5 animate-spin" />
                 {translate(
-                  'auto.components.artifacts.ArtifactPublishButton.checkFailed',
-                  'Could not check for an existing link.'
+                  'auto.components.artifacts.ArtifactPublishButton.checkingLink',
+                  'Checking for an existing link…'
                 )}
-              </p>
+              </div>
+            ) : currentLookup?.status === 'error' ? (
+              <div className="space-y-2">
+                <p className="text-xs leading-5 text-muted-foreground">
+                  {translate(
+                    'auto.components.artifacts.ArtifactPublishButton.checkFailed',
+                    'Could not check for an existing link.'
+                  )}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setLookupRevision((current) => current + 1)}
+                >
+                  {translate(
+                    'auto.components.artifacts.ArtifactPublishButton.tryAgain',
+                    'Try again'
+                  )}
+                </Button>
+              </div>
+            ) : publishedLink ? (
+              <ArtifactPublishedLinkPanel
+                key={publishedLink}
+                shareUrl={publishedLink}
+                publishing={publishing}
+                removing={removing}
+                onUpdate={() => void publish()}
+                onRemove={() => void remove()}
+              />
+            ) : (
               <Button
                 type="button"
-                variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={() => setLookupRevision((current) => current + 1)}
+                disabled={busy}
+                onClick={() => void publish()}
               >
-                {translate('auto.components.artifacts.ArtifactPublishButton.tryAgain', 'Try again')}
+                {publishing ? <Loader2 className="animate-spin" /> : <Share2 />}
+                {publishing
+                  ? translate('auto.components.artifacts.ArtifactPublishButton.sharing', 'Sharing…')
+                  : translate(
+                      'auto.components.artifacts.ArtifactPublishButton.sharePublicLink',
+                      'Generate link'
+                    )}
               </Button>
-            </div>
-          ) : publishedLink ? (
-            <ArtifactPublishedLinkPanel
-              key={publishedLink}
-              shareUrl={publishedLink}
-              publishing={publishing}
-              removing={removing}
-              onUpdate={() => void publish()}
-              onRemove={() => void remove()}
-            />
-          ) : (
-            <Button
-              type="button"
-              size="sm"
-              className="w-full"
-              disabled={busy}
-              onClick={() => void publish()}
-            >
-              {publishing ? <Loader2 className="animate-spin" /> : <Share2 />}
-              {publishing
-                ? translate('auto.components.artifacts.ArtifactPublishButton.sharing', 'Sharing…')
-                : translate(
-                    'auto.components.artifacts.ArtifactPublishButton.sharePublicLink',
-                    'Generate link'
-                  )}
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   )

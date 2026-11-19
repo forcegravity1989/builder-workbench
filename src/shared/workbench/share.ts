@@ -75,6 +75,12 @@ export type ShareErrorCode =
   | 'too-large'
   | 'rate-limited'
   | 'busy'
+  /** The service's device-token registry is full; only an operator can clear it. */
+  | 'enrollment-full'
+  /** The service could not read its device-token registry and refuses new shares. */
+  | 'registry-unavailable'
+  /** This machine's own record index could not be read, so the list is not trustworthy. */
+  | 'records-unreadable'
   | 'not-found'
   | 'unsupported'
   | 'network'

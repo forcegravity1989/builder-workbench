@@ -174,9 +174,9 @@ describe('orca CLI skill guidance', () => {
     // Same-file identity and the two delete surfaces agents must not confuse.
     expect(skill).toContain('`update` is the same operation')
     expect(skill).toContain('`unshare` deletes by file path and `delete` by the id from `list`')
-    // A link is not permanent, and `list` is where an agent reads when it ends.
-    expect(skill).toContain('with its id, URL and expiry')
-    expect(skill).toContain('so a link is not permanent')
+    // `list` is where an agent reads a link's lifetime, including the "kept forever" case.
+    expect(skill).toContain('with its id, URL, last update and expiry')
+    expect(skill).toContain('expires: never')
     // Host-only surface, snapshot semantics, and network-reach publicity.
     expect(skill).toContain('desktop app on this computer')
     expect(skill).toContain('a snapshot, not a live view')
@@ -193,6 +193,24 @@ describe('orca CLI skill guidance', () => {
     expect(skill).not.toContain('Allow publishing public artifact links')
     expect(skill).not.toContain('Publishing is off by default')
     expect(skill).not.toContain('signed-in Orca account')
+    // The command reference ships in the same bundle. `signed-in Orca account` is excluded here on
+    // purpose: its skill-sharing section still describes the retained Orca cloud permission.
+    const reference = readSkill(
+      join(projectDir, 'skill-guides', 'orca-cli', 'references', 'publishing.md')
+    ).replace(/\s+/gu, ' ')
+    for (const removed of [
+      'artifact_sharing_disabled',
+      'Allow publishing public artifact links',
+      'Publishing is off by default',
+      'The publish gate and its recovery are in the guide body'
+    ]) {
+      expect(reference).not.toContain(removed)
+    }
+    // The list surface the guide promises, and the codes it tells an agent not to retry.
+    expect(reference).toContain('800 KB')
+    expect(skill).toContain('expires: never')
+    expect(skill).toContain('`enrollment-full`')
+    expect(skill).toContain('`stale-record`')
   })
 })
 

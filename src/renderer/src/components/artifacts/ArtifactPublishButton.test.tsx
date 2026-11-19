@@ -146,9 +146,15 @@ describe('ArtifactPublishButton', () => {
 
     // Not silent, but the notification carries the outcome — never the raw transport exception.
     await waitFor(() =>
-      expect(mocks.reportFailure).toHaveBeenCalledWith('unknown', 'Could not remove the link.')
+      expect(mocks.reportFailure).toHaveBeenCalledWith(
+        'unknown',
+        'runtime bridge closed',
+        'Could not remove the link.'
+      )
     )
-    expect(mocks.reportFailure.mock.calls[0]?.[1]).not.toContain('runtime bridge closed')
+    // The raw transport text stays a diagnostic argument; the copy the user sees is the title
+    // plus the localized description this code maps to.
+    expect(mocks.reportFailure.mock.calls[0]?.[2]).toBe('Could not remove the link.')
     expect(await screen.findByText('http://7.192.170.220:8787/s/share-a')).toBeInTheDocument()
   })
 
@@ -168,7 +174,11 @@ describe('ArtifactPublishButton', () => {
     await user.click(screen.getByRole('button', { name: 'Remove link' }))
 
     await waitFor(() =>
-      expect(mocks.reportFailure).toHaveBeenCalledWith('stale-record', expect.any(String))
+      expect(mocks.reportFailure).toHaveBeenCalledWith(
+        'stale-record',
+        expect.any(String),
+        'Could not remove the link.'
+      )
     )
     expect(await screen.findByRole('button', { name: 'Generate link' })).toBeInTheDocument()
     expect(screen.queryByText('http://7.192.170.220:8787/s/share-a')).not.toBeInTheDocument()

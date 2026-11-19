@@ -16682,7 +16682,11 @@
           "networkDescription": "Could not reach the share server. Check your network connection.",
           "fileTooLarge": "File is too large to share",
           "tooLargeWithSize": "This file is {{size}}; the share limit is 10 MiB.",
-          "staleRecordDescription": "This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server."
+          "staleRecordDescription": "This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server.",
+          "enrollmentFullDescription": "The share server has no room left for new devices. An administrator has to clear its device list before sharing works again.",
+          "registryUnavailableDescription": "The share server cannot read its device list and is refusing new shares. An administrator has to restore it on the server.",
+          "recordsUnreadableDescription": "Your share history on this computer could not be read, so this list may be incomplete. Existing links may still work; sharing a file again creates a new link.",
+          "unknownDescription": "Something went wrong while sharing. The details are in the app logs."
         },
         "ArtifactPublishedLinkPanel": {
           "copyLink": "Copy link",

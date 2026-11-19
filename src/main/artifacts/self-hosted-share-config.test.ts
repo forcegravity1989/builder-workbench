@@ -1,12 +1,20 @@
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { restrictWindowsPath } from '../../shared/secure-path-windows-acl'
 import {
   createShareTokenStore,
   SHARE_ENROLL_KEY,
   SHARE_SERVER_URL
 } from './self-hosted-share-config'
+
+vi.mock('../../shared/secure-path-windows-acl', () => ({
+  restrictWindowsPath: vi.fn(async () => true),
+  restrictWindowsPathSync: vi.fn(() => true),
+  bestEffortRestrictWindowsPath: vi.fn(),
+  resetSecureFileWindowsUserSidForTests: vi.fn()
+}))
 
 describe('share deployment constants', () => {
   it('hardcodes the service address and enrollment key', () => {
@@ -37,7 +45,12 @@ describe('createShareTokenStore', () => {
 
     await expect(store.read()).resolves.toBe('secret-token')
     const file = join(dataDir, 'config.json')
-    if (process.platform !== 'win32') {
+    if (process.platform === 'win32') {
+      // Windows ignores the 0o600 creation mode, so the ACL restriction is the real guard. The
+      // primitive has its own tests; here the contract is that the store asks for it on the
+      // published path, which is what the shipping platform needs asserted.
+      expect(vi.mocked(restrictWindowsPath)).toHaveBeenCalledWith(file, false)
+    } else {
       expect((await stat(file)).mode & 0o777).toBe(0o600)
     }
     expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({

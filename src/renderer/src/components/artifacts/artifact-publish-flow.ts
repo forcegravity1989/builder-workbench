@@ -92,21 +92,21 @@ export async function publishArtifactFromSurface(
   }
 }
 
-/** Shared with link removal so every share failure names the cause instead of a generic error. */
-export function reportShareFailure(code: string, fallback: string): void {
-  if (code === 'too-large') {
-    toast.error(
-      translate(
-        'auto.components.artifacts.artifact-publish-flow.fileTooLarge',
-        'File is too large to share'
-      ),
-      { description: shareErrorDescription(code, fallback) }
-    )
-    return
-  }
-  toast.error(shareErrorMessage(), {
-    description: shareErrorDescription(code, fallback)
-  })
+/**
+ * Shared with link removal so every share failure names the cause instead of a generic error.
+ * `title` lets a caller say which action failed — "Could not share artifact" is the wrong heading
+ * for a delete that did not work.
+ */
+export function reportShareFailure(code: string, fallback: string, title?: string): void {
+  const heading =
+    title ??
+    (code === 'too-large'
+      ? translate(
+          'auto.components.artifacts.artifact-publish-flow.fileTooLarge',
+          'File is too large to share'
+        )
+      : shareErrorMessage())
+  toast.error(heading, { description: shareErrorDescription(code, fallback) })
 }
 
 function reportPreparationFailure(error: ArtifactPublishPreparationError): void {
@@ -136,8 +136,13 @@ function shareErrorMessage(): string {
   )
 }
 
-/** The host reports stable error codes; only fall back to its message for unmapped failures. */
-function shareErrorDescription(code: string, fallback: string): string {
+/**
+ * The host reports stable error codes and every one of them has localized words here, so a raw
+ * host message — Chinese, and sometimes carrying a file name or an exception — never reaches the
+ * interface. The host message stays the `fallback` for a code this build does not know, and it is
+ * what the CLI prints.
+ */
+export function shareErrorDescription(code: string, fallback: string): string {
   switch (code) {
     case 'unauthorized':
       return translate(
@@ -183,6 +188,26 @@ function shareErrorDescription(code: string, fallback: string): string {
       return translate(
         'auto.components.artifacts.artifact-publish-flow.networkDescription',
         'Could not reach the share server. Check your network connection.'
+      )
+    case 'enrollment-full':
+      return translate(
+        'auto.components.artifacts.artifact-publish-flow.enrollmentFullDescription',
+        'The share server has no room left for new devices. An administrator has to clear its device list before sharing works again.'
+      )
+    case 'registry-unavailable':
+      return translate(
+        'auto.components.artifacts.artifact-publish-flow.registryUnavailableDescription',
+        'The share server cannot read its device list and is refusing new shares. An administrator has to restore it on the server.'
+      )
+    case 'records-unreadable':
+      return translate(
+        'auto.components.artifacts.artifact-publish-flow.recordsUnreadableDescription',
+        'Your share history on this computer could not be read, so this list may be incomplete. Existing links may still work; sharing a file again creates a new link.'
+      )
+    case 'unknown':
+      return translate(
+        'auto.components.artifacts.artifact-publish-flow.unknownDescription',
+        'Something went wrong while sharing. The details are in the app logs.'
       )
     default:
       return fallback

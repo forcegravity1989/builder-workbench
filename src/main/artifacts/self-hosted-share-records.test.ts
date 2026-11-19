@@ -1,7 +1,8 @@
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { restrictWindowsPath } from '../../shared/secure-path-windows-acl'
 import { createShareRecordStore } from './self-hosted-share-records'
 
 const record = (id: string, updatedAt: string) => ({
@@ -11,6 +12,13 @@ const record = (id: string, updatedAt: string) => ({
   expiresAt: '2026-12-16T00:00:00.000Z',
   updatedAt
 })
+
+vi.mock('../../shared/secure-path-windows-acl', () => ({
+  restrictWindowsPath: vi.fn(async () => true),
+  restrictWindowsPathSync: vi.fn(() => true),
+  bestEffortRestrictWindowsPath: vi.fn(),
+  resetSecureFileWindowsUserSidForTests: vi.fn()
+}))
 
 describe('createShareRecordStore', () => {
   let dataDir: string
@@ -49,7 +57,12 @@ describe('createShareRecordStore', () => {
 
     await expect(store.get('/repo/a.md')).resolves.toBeNull()
     const file = join(dataDir, 'records.json')
-    if (process.platform !== 'win32') {
+    if (process.platform === 'win32') {
+      // Windows ignores the 0o600 creation mode, so the ACL restriction is the real guard. The
+      // primitive has its own tests; here the contract is that the store asks for it on the
+      // published path, which is what the shipping platform needs asserted.
+      expect(vi.mocked(restrictWindowsPath)).toHaveBeenCalledWith(file, false)
+    } else {
       expect((await stat(file)).mode & 0o777).toBe(0o600)
     }
     expect(JSON.parse(await readFile(file, 'utf8'))).toMatchObject({ version: 1 })
@@ -149,5 +162,23 @@ describe('createShareRecordStore', () => {
     await store.put('/repo/new.md', record('new', '2026-11-18T00:00:00.000Z'))
     const keys = (await store.list()).map((entry) => entry.sourceKey)
     expect(keys.sort()).toEqual(['/repo/forever.md', '/repo/new.md', '/repo/odd.md'])
+  })
+
+  it('bounds the index and drops the oldest entries first', async () => {
+    const store = createShareRecordStore({ dataDir: () => dataDir })
+    const records: Record<string, unknown> = {}
+    // One past the cap, oldest first: entry 0 is the one that has to go.
+    for (let index = 0; index <= 10_000; index += 1) {
+      const updatedAt = new Date(Date.UTC(2026, 0, 1) + index).toISOString()
+      records[`/repo/f${index}.md`] = record(`id-${index}`, updatedAt)
+    }
+    await writeFile(join(dataDir, 'records.json'), JSON.stringify({ version: 1, records }))
+
+    await store.put('/repo/newest.md', record('newest', '2026-11-18T00:00:00.000Z'))
+
+    const listed = await store.list()
+    expect(listed).toHaveLength(10_000)
+    expect(listed.some((entry) => entry.sourceKey === '/repo/f0.md')).toBe(false)
+    expect(listed.some((entry) => entry.sourceKey === '/repo/newest.md')).toBe(true)
   })
 })

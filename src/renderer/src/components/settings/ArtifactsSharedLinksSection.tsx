@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ShareListEntry } from '../../../../shared/workbench/share'
 import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
-import { reportShareFailure } from '../artifacts/artifact-publish-flow'
+import { reportShareFailure, shareErrorDescription } from '../artifacts/artifact-publish-flow'
 import { listShares, removeShare, ShareLinkError } from '../artifacts/share-server-client'
 import { Button } from '../ui/button'
 
@@ -49,6 +49,13 @@ function fileBaseName(path: string): string {
  * Files this computer published, with link removal. The host keeps the list, so this section
  * only renders on the host device; web clients see the pointer in ArtifactsSettingsPane.
  */
+function deleteFailedTitle(): string {
+  return translate(
+    'auto.components.settings.artifacts.sharedLinksDeleteFailed',
+    'Could not delete this shared link.'
+  )
+}
+
 export function ArtifactsSharedLinksSection(): React.JSX.Element {
   const confirm = useConfirmationDialog()
   const [entries, setEntries] = useState<ShareListEntry[] | null>(null)
@@ -68,11 +75,11 @@ export function ArtifactsSharedLinksSection(): React.JSX.Element {
       .catch((error: unknown) => {
         console.error('Failed to load shared files:', error)
         if (!cancelled) {
-          // An unreadable record index is reported by the host with the reason and the next step;
-          // a generic "could not load" would hide that the links may still exist.
+          // An unreadable record index has its own code, so the user learns the list may be
+          // incomplete rather than seeing a generic failure — or a raw host message.
           setLoadError(
             error instanceof ShareLinkError
-              ? error.message
+              ? shareErrorDescription(error.code, error.message)
               : translate(
                   'auto.components.settings.artifacts.sharedLinksLoadFailed',
                   'Could not load your shared files.'
@@ -110,7 +117,7 @@ export function ArtifactsSharedLinksSection(): React.JSX.Element {
       try {
         const result = await removeShare(entry.sourceKey)
         if (!result.ok) {
-          reportShareFailure(result.error.code, result.error.message)
+          reportShareFailure(result.error.code, result.error.message, deleteFailedTitle())
           // A refused edit token drops the local record, so the row is gone even though the call
           // failed; reload instead of leaving a row that no longer matches the host.
           setReloadToken((token) => token + 1)
@@ -123,10 +130,8 @@ export function ArtifactsSharedLinksSection(): React.JSX.Element {
         console.error('Failed to remove shared link:', error)
         reportShareFailure(
           'unknown',
-          translate(
-            'auto.components.settings.artifacts.sharedLinksDeleteFailed',
-            'Could not delete this shared link.'
-          )
+          error instanceof Error ? error.message : String(error),
+          deleteFailedTitle()
         )
       } finally {
         setRemovingKey(null)

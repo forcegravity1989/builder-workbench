@@ -7,7 +7,9 @@ export function formatSharedLinkList(entries: readonly ShareListEntry[]): string
   return entries
     .map(
       (entry) =>
-        `${entry.sourceKey}\n  id: ${entry.id}\n  updated: ${entry.updatedAt}\n  url: ${entry.url}`
+        `${entry.sourceKey}\n  id: ${entry.id}\n  updated: ${entry.updatedAt}\n  expires: ${
+          entry.expiresAt || 'never'
+        }\n  url: ${entry.url}`
     )
     .join('\n\n')
 }

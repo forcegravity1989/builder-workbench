@@ -50,6 +50,9 @@ export function createShareService(options: {
     if (error instanceof ShareServiceError) {
       return { ok: false, error: { code: error.code, message: error.message } }
     }
+    // A raw filesystem or transport error is diagnostics, not copy. The CLI prints the message and
+    // the log keeps the stack; the interface maps the code to its own words.
+    console.error('Workbench share failed:', error)
     const message = error instanceof Error ? error.message : String(error)
     return { ok: false, error: { code: 'unknown', message } }
   }
@@ -267,13 +270,14 @@ export function createShareService(options: {
         if (unreadable && entries.length === 0) {
           // An index we could not read is not the same as an empty one: the links it recorded are
           // still live on the server, so "nothing shared" would be a false all-clear.
+          console.error('Workbench share records are unreadable:', unreadable)
           return {
             ok: false,
             error: {
-              code: 'unknown' as const,
-              message: `本机分享记录无法读取，无法确认你分享过哪些文件；这些链接可能仍然有效，重新分享同一文件会建立新链接${
+              code: 'records-unreadable' as const,
+              message: `本机分享记录无法读取${
                 unreadable.archivedAs ? `（已隔离为 ${unreadable.archivedAs}）` : ''
-              }`
+              }，无法确认你分享过哪些文件；这些链接可能仍然有效，重新分享同一文件会建立新链接`
             }
           }
         }

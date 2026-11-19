@@ -74,7 +74,7 @@ export function createShareRecordStore(options: { dataDir: () => string }): {
     const run = writeChain.then(async () => {
       const payload: StoredRecords = {
         version: 1,
-        records: pruneExpired(update(await readAll()))
+        records: pruneToCap(pruneExpired(update(await readAll())))
       }
       // Durable: these records hold the only copy of each link's edit token, so a rename that
       // survives a power loss with zero bytes would silently orphan every link this machine made.
@@ -151,6 +151,26 @@ function pruneExpired(
       continue
     }
     next[sourceKey] = record
+  }
+  return next
+}
+
+/**
+ * Bound the index: an agent sharing in a loop must not grow it without limit. Expired links are
+ * already gone by then, so this only ever drops the oldest of what is still live.
+ */
+const MAX_RECORDS = 10_000
+
+function pruneToCap(records: Record<string, ShareRecord>): Record<string, ShareRecord> {
+  const keys = Object.keys(records)
+  if (keys.length <= MAX_RECORDS) {
+    return records
+  }
+  const next = { ...records }
+  for (const key of keys
+    .sort((left, right) => records[left].updatedAt.localeCompare(records[right].updatedAt))
+    .slice(0, keys.length - MAX_RECORDS)) {
+    delete next[key]
   }
   return next
 }

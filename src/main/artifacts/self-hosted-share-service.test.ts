@@ -396,7 +396,7 @@ describe('createShareService', () => {
     await writeFile(join(dataDir, 'records.json'), '')
 
     const result = await share.list()
-    expect(result).toMatchObject({ ok: false, error: { code: 'unknown' } })
+    expect(result).toMatchObject({ ok: false, error: { code: 'records-unreadable' } })
     expect(result.ok || result.error.message).toContain('无法读取')
 
     await share.publish({ sourceKey: '/repo/b.html', content: '<h1>B</h1>', fileName: 'b.html' })

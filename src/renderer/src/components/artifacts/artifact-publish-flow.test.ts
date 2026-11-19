@@ -100,10 +100,22 @@ describe('artifact publish flow', () => {
     })
   })
 
-  it('keeps the host message for codes it does not know', async () => {
+  it('does not put a raw host error in front of the user', async () => {
     mocks.callRuntimeRpc.mockResolvedValue({
       ok: false,
-      error: { code: 'unknown', message: 'disk full' }
+      error: { code: 'unknown', message: "EACCES: permission denied, open 'records.json'" }
+    })
+
+    await publishArtifactFromSurface(() => Promise.resolve(request))
+    expect(mocks.toastError).toHaveBeenCalledWith('Could not share artifact', {
+      description: 'Something went wrong while sharing. The details are in the app logs.'
+    })
+  })
+
+  it('keeps the host message for a code this build does not know', async () => {
+    mocks.callRuntimeRpc.mockResolvedValue({
+      ok: false,
+      error: { code: 'from-the-future', message: 'disk full' }
     })
 
     await publishArtifactFromSurface(() => Promise.resolve(request))
