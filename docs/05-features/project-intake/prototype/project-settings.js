@@ -163,6 +163,7 @@
       active: null,
       filter: 'all',
       category: 'all',
+      cardMode: 'detail',
       viewer: 'self',
       query: '',
       scenario,
@@ -238,6 +239,11 @@
     filter: (id) => {
       s.filter = id
       W.renderWall()
+    },
+    'card-mode': (id) => {
+      s.cardMode = id
+      W.renderWall()
+      document.querySelector(`[data-action="card-mode"][data-id="${id}"]`)?.focus()
     },
     category: (id) => {
       s.category = id

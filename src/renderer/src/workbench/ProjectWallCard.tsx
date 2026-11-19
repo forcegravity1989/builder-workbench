@@ -1,6 +1,7 @@
 import { ErrorDetails } from './error-feedback'
 import type { ReactNode } from 'react'
 import {
+  AlertCircle,
   Download,
   ExternalLink,
   FilePenLine,
@@ -15,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import type { Repo } from '../../../shared/repo-types'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
@@ -24,6 +26,7 @@ import type { WallCardReadings } from './wall-card-readings'
 import type { VersionWorkflowProgress } from './version-workflow-progress'
 import type { WallProject, WallRepoSlot } from './workbench-wall-projects'
 
+export type WallCardMode = 'compact' | 'detail'
 export type CardHostTag = {
   hostId: string
   label: string
@@ -88,6 +91,7 @@ function RepositoryAction({
 
 export function ProjectWallCard({
   card,
+  mode = 'detail',
   switching,
   configured,
   onOpen,
@@ -100,6 +104,7 @@ export function ProjectWallCard({
   onRepoSettings
 }: {
   card: WallCardView
+  mode?: WallCardMode
   switching: boolean
   configured: boolean
   onOpen(repo?: Repo): void
@@ -122,6 +127,7 @@ export function ProjectWallCard({
   return (
     <article
       className={`pcard${configured ? ' is-configured' : ''}`}
+      data-card-mode={mode}
       data-workbench-project-id={primaryRepo.id}
       data-workbench-project-key={project.key}
     >
@@ -130,6 +136,7 @@ export function ProjectWallCard({
           type="button"
           className="pcard-name"
           data-contextual-tour-target="workbench-wall-project"
+          title={card.displayName}
           disabled={switching}
           onClick={() => onOpen()}
         >
@@ -182,44 +189,36 @@ export function ProjectWallCard({
           项目负责人{' '}
           <strong title={card.charter?.owner?.trim()}>{card.charter?.owner?.trim() || '—'}</strong>
         </span>
-        {card.hostTags.map((tag) => (
-          <button
-            type="button"
-            key={tag.hostId}
-            className="pcard-host"
-            onClick={() =>
-              onOpen(project.rows.find((row) => getRepoExecutionHostId(row) === tag.hostId))
-            }
-            disabled={tag.online === false}
-            aria-label={`在 ${tag.label} 继续工作`}
-          >
-            <ProjectSourceTag tag={tag} interactive />
-          </button>
-        ))}
-      </div>
-      {project.group && (
-        <details className="pcard-members">
-          <summary>{project.slots.length} 个代码仓</summary>
-          {project.slots.map((member) => (
-            <div key={`${getRepoExecutionHostId(member.repo)}:${member.repoId}`}>
-              <button type="button" onClick={() => onOpen(member.repo)}>
-                {member.name}
-              </button>
-              {repoMenu(member.repo)}
-            </div>
+        <div className="pcard-hosts">
+          {card.hostTags.map((tag) => (
+            <button
+              type="button"
+              key={tag.hostId}
+              className="pcard-host"
+              onClick={() =>
+                onOpen(project.rows.find((row) => getRepoExecutionHostId(row) === tag.hostId))
+              }
+              disabled={tag.online === false}
+              aria-label={`在 ${tag.label} 继续工作`}
+            >
+              <ProjectSourceTag tag={tag} interactive />
+            </button>
           ))}
-        </details>
-      )}
-      <div className={`pcard-delivery${readings.kind === 'version' ? '' : ' is-compact'}`}>
+        </div>
+      </div>
+      <div className="pcard-delivery">
+        <div className="pcard-version">
+          <span>{readings.kind === 'version' ? '版本目标' : '项目信息'}</span>
+          <span>
+            {readings.kind === 'version'
+              ? readings.sourceLabel
+                ? `${readings.version} · ${readings.sourceLabel}`
+                : readings.version
+              : ''}
+          </span>
+        </div>
         {readings.kind === 'version' ? (
           <>
-            <div className="pcard-version">
-              <span>版本目标</span>
-              <span>
-                {readings.version}
-                {readings.sourceLabel ? ` · ${readings.sourceLabel}` : null}
-              </span>
-            </div>
             <ul>
               {readings.goals.slice(0, 2).map((title, index) => (
                 <li key={index} title={title}>
@@ -227,66 +226,120 @@ export function ProjectWallCard({
                 </li>
               ))}
             </ul>
-            {readings.goals.length > 2 && (
-              <span className="pcard-muted">另 {readings.goals.length - 2} 项目标</span>
-            )}
-            {!readings.goals.length && <span className="pcard-muted">暂无可读目标</span>}
-          </>
-        ) : readings.kind === 'unknown' ? (
-          <>
-            {readings.version ? (
-              <div className="pcard-version">
-                <span>版本目标</span>
-                <span>{readings.version}</span>
-              </div>
-            ) : null}
-            <ErrorDetails
-              className="pcard-muted"
-              summary="版本信息暂不可用 · 查看详情"
-              detail={readings.reason}
-            />
+            <div className="pcard-goal-note">
+              {readings.goals.length > 2 && (
+                <span className="pcard-muted">另 {readings.goals.length - 2} 项目标</span>
+              )}
+              {!readings.goals.length && <span className="pcard-muted">暂无可读目标</span>}
+            </div>
           </>
         ) : (
-          <div className="pcard-muted">
+          <p className="pcard-brief" title={card.charter?.brief?.trim()}>
             {readings.kind === 'loading'
               ? '正在读取版本…'
-              : card.charter?.brief?.trim() || '未建立版本'}
-          </div>
+              : readings.kind === 'unknown'
+                ? '版本信息暂不可用'
+                : card.charter?.brief?.trim() || '未建立版本'}
+          </p>
         )}
       </div>
-      {readings.kind === 'version' && (
-        <>
-          <div className="pcard-stages">
-            <button type="button" onClick={() => onStage('plan')}>
-              <span>计划</span>
+      <div className="pcard-footer">
+        <div className="pcard-meta">
+          {project.group && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="pcard-members">
+                  {project.slots.length} 个代码仓
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="pcard-member-list p-3" align="start">
+                {project.slots.map((member) => (
+                  <div key={`${getRepoExecutionHostId(member.repo)}:${member.repoId}`}>
+                    <button type="button" onClick={() => onOpen(member.repo)}>
+                      {member.name}
+                    </button>
+                    {repoMenu(member.repo)}
+                  </div>
+                ))}
+              </PopoverContent>
+            </Popover>
+          )}
+          <span className="pcard-version-status">
+            {readings.kind === 'version'
+              ? mode === 'compact'
+                ? readings.version
+                : ''
+              : readings.kind === 'loading'
+                ? '正在读取版本…'
+                : readings.kind === 'unknown'
+                  ? '版本信息暂不可用'
+                  : '未建立版本'}
+          </span>
+          {(readings.kind === 'unknown' ||
+            (readings.kind === 'version' &&
+              (workflowProblem(readings.plan) || workflowProblem(readings.acceptance)))) && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <WorkbenchIconButton label="查看读取问题" icon={AlertCircle} />
+              </PopoverTrigger>
+              <PopoverContent className="w-80 max-w-[calc(100vw-32px)] p-3" align="end">
+                {readings.kind === 'unknown' ? (
+                  <ErrorDetails summary="版本读取详情" detail={readings.reason} />
+                ) : readings.kind === 'version' ? (
+                  (['plan', 'acceptance'] as const).map((workflow) => {
+                    const detail = workflowProblem(readings[workflow])
+                    return detail ? (
+                      <ErrorDetails
+                        key={workflow}
+                        summary={workflow === 'plan' ? '计划读取详情' : '验收读取详情'}
+                        detail={detail}
+                      />
+                    ) : null
+                  })
+                ) : null}
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+        <div className="pcard-stages">
+          <button
+            type="button"
+            disabled={readings.kind !== 'version'}
+            onClick={() => onStage('plan')}
+          >
+            <span>计划</span>
+            {readings.kind === 'version' ? (
               <WorkflowProgress progress={readings.plan} />
-            </button>
-            <button type="button" onClick={() => onStage('tasks')}>
-              <span>任务</span>
-              <strong>
-                {readings.tasks ? `${readings.tasks.closed} / ${readings.tasks.total}` : '—'}
-              </strong>
-            </button>
-            <button type="button" onClick={() => onStage('acceptance')}>
-              <span>验收</span>
+            ) : (
+              <strong>—</strong>
+            )}
+          </button>
+          <button
+            type="button"
+            disabled={readings.kind !== 'version'}
+            onClick={() => onStage('tasks')}
+          >
+            <span>任务</span>
+            <strong>
+              {readings.kind === 'version' && readings.tasks
+                ? `${readings.tasks.closed} / ${readings.tasks.total}`
+                : '—'}
+            </strong>
+          </button>
+          <button
+            type="button"
+            disabled={readings.kind !== 'version'}
+            onClick={() => onStage('acceptance')}
+          >
+            <span>验收</span>
+            {readings.kind === 'version' ? (
               <WorkflowProgress progress={readings.acceptance} />
-            </button>
-          </div>
-          {(['plan', 'acceptance'] as const).map((workflow) => {
-            const detail = workflowProblem(readings[workflow])
-            return detail ? (
-              <ErrorDetails
-                key={workflow}
-                className="pcard-muted px-4 pb-2"
-                summary={
-                  workflow === 'plan' ? '计划读取问题 · 查看详情' : '验收读取问题 · 查看详情'
-                }
-                detail={detail}
-              />
-            ) : null
-          })}
-        </>
-      )}
+            ) : (
+              <strong>—</strong>
+            )}
+          </button>
+        </div>
+      </div>
     </article>
   )
 }
