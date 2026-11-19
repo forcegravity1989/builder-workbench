@@ -1,0 +1,26 @@
+src/main/browser/chrome-session-bridge.test.ts
+  s_8749124ad999df::t_cee3ae2da1b245 1-92
+src/main/browser/chrome-session-bridge.ts
+  s_8749124ad999df::t_db449681b8bd88 157-159
+  s_8749124ad999df::t_a9349ff6f7cad0 142-144
+  s_8749124ad999df::t_274abd30d2aaf8 1-2
+  s_8749124ad999df::t_5a825bba7d0198 3-141,145-156,160-183,188-226,248-259,261-263,265-279
+  s_8749124ad999df::t_6a1c2a30ca9ddb 184-187
+  s_8749124ad999df::t_a8e206bc3fdee5 227-247,260,264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "143ba5004a40c06cecdfb7a9ad4d2b42cea15772",
+  "prompts": {},
+  "sessions": {
+    "s_8749124ad999df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "73939546-699a-4ec8-a61e-cb3d314ae0a1",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
