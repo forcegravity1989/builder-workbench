@@ -42,7 +42,8 @@ export async function assertHumanFieldsUntouched(
   if (!isModelSaveChannel(caller)) {
     return
   }
-  // The read schema is strict; save-only fields cannot enter the read scope.
+  // The read schema validates known fields and preserves unknown extensions;
+  // the guard compares only the known human-owned fields below.
   const { expectedRevision: _expectedRevision, document: _document, ...readInput } = params
   const stored = (await read(readInput))?.document
   if (params.workflow === 'plan') {
