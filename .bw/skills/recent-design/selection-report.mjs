@@ -17,21 +17,29 @@ const markdown = (value) =>
   escape(value)
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => `<a href="${href}">${label}</a>`)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
-const rows = (section) =>
-  readme
-    .split(section)[1]
+const rows = (section, columnCount) => {
+  const content = readme.split(section)[1]
+  if (!content) {
+    throw new Error(`Missing selection section: ${section}`)
+  }
+  return content
     .split('## ')[0]
     .split('\n')
-    .filter((line) => line.startsWith('|') && !line.includes('---'))
+    .filter((line) => line.startsWith('|') && !/^\|[\s:|-]+\|$/.test(line))
     .slice(1)
-    .map((line) =>
-      line
+    .map((line) => {
+      const cells = line
         .split('|')
         .slice(1, -1)
         .map((cell) => cell.trim())
-    )
-const selected = rows('## 已采用')
-const excluded = rows('## 本轮未采用')
+      if (cells.length !== columnCount || cells.some((cell) => !cell)) {
+        throw new Error(`Invalid table row in ${section}: ${line}`)
+      }
+      return cells
+    })
+}
+const selected = rows('## 已采用', 4)
+const excluded = rows('## 本轮未采用', 2)
 const groups = [
   ['界面降噪与收尾', ['quieter', 'distill', 'critique', 'polish']],
   [
@@ -116,15 +124,15 @@ footer{border-top:1px solid var(--border);padding-top:var(--space-4);margin-top:
 <body>
 <main class="report">
 <header class="page-head"><div><h1>Recent Design 技能选型报告</h1><p class="lead">选能改善 BW 桌面研发的方法，不再安装另一套设计系统、需求流程或浏览器工具链。</p><p class="meta">面向 Builders’ Workbench（BW）自身研发 · 来源版本固定在清单 · 这是选型说明，不是效果验收报告</p></div><a href="https://recent.design/skills">来源：Recent Design 聚合目录</a></header>
-<div class="summary" aria-label="选型数量"><div><strong>${selected.length + excluded.length}</strong><span>目录条目</span></div><div><strong>${selected.length}</strong><span>采用项</span></div><div><strong>${sources.skills.length}</strong><span>完整上游技能镜像</span></div><div><strong>${impeccable.adaptedCommands.length}</strong><span>BW 本地方法适配</span></div><div><strong>${excluded.length}</strong><span>本轮不采用</span></div></div>
+<div class="summary" aria-label="选型数量"><div><strong>${selected.length + excluded.length}</strong><span>本轮审查条目</span></div><div><strong>${selected.length}</strong><span>采用项</span></div><div><strong>${sources.skills.length}</strong><span>完整上游技能镜像</span></div><div><strong>${impeccable.adaptedCommands.length}</strong><span>BW 本地方法适配</span></div><div><strong>${excluded.length}</strong><span>本轮不采用</span></div></div>
 <nav class="contents" aria-label="报告章节"><a href="#criteria">选型标准</a>${groups.map((item, index) => `<a href="#group-${index}">${item[0]}</a>`).join('')}<a href="#excluded">为什么没选</a><a href="#use">怎么用</a><a href="#sources">来源与证据</a></nav>
 <section class="section" id="criteria"><h2>为什么是这批技能</h2><ol><li><strong>技术匹配。</strong>能用于 Electron 的 DOM、React、TypeScript，而非移动端或 Next.js 服务端。</li><li><strong>结果明确。</strong>能改善高频工作中的界面噪声、操作反馈、动效、对比度或代码契约。</li><li><strong>不另起体系。</strong>复用 BW 的 Orca 原语、语义 token 和既有开发/特性确认路径。</li><li><strong>可以审查。</strong>保存完整正文、必读参考、固定 commit 和许可；不把联网指针叫完整安装。</li></ol><div class="boundary"><p><strong>有条件采用，不是全部照搬。</strong>BW 设计系统与已认可特性优先；外部审美偏好不是 bug 依据。没有必要就不新增库、不换字体和色板、不执行外部工具，也不自动把这些技能分发到被管项目。</p></div></section>
 ${groups.map(section).join('\n')}
-<section class="section" id="excluded"><h2>这 11 项为什么本轮没选</h2><p>不采用不等于技能差，而是当前技术栈不匹配、已有能力重叠，或会引入本次不需要的流程与工具。</p><div class="scroll"><table class="table"><caption>本轮未采用条目与理由</caption><thead><tr><th scope="col">技能</th><th scope="col">为什么不选 / 用什么替代</th></tr></thead><tbody>${excluded.map((row) => `<tr><th scope="row"><code>${escape(row[0])}</code></th><td>${markdown(row[1])}</td></tr>`).join('\n')}</tbody></table></div></section>
-<section class="section" id="use"><h2>在 BW 中怎么用</h2><p>正文放在 <code>.bw/skills/recent-design/</code>；由 <code>.claude/skills/recent-design/SKILL.md</code> 路由读取。不是一次把 14 份正文全部加入上下文。</p><pre><code>/recent-design quieter 检查侧栏里过多的视觉强调
+<section class="section" id="excluded"><h2>这 ${excluded.length} 项为什么本轮没选</h2><p>不采用不等于技能差，而是当前技术栈不匹配、已有能力重叠，或会引入本次不需要的流程与工具。</p><div class="scroll"><table class="table"><caption>本轮未采用条目与理由</caption><thead><tr><th scope="col">技能</th><th scope="col">为什么不选 / 用什么替代</th></tr></thead><tbody>${excluded.map((row) => `<tr><th scope="row"><code>${escape(row[0])}</code></th><td>${markdown(row[1])}</td></tr>`).join('\n')}</tbody></table></div></section>
+<section class="section" id="use"><h2>在 BW 中怎么用</h2><p>正文放在 <code>.bw/skills/recent-design/</code>；由 <code>.claude/skills/recent-design/SKILL.md</code> 路由读取。不是一次把 ${selected.length} 份正文全部加入上下文。</p><pre><code>/recent-design quieter 检查侧栏里过多的视觉强调
 /recent-design review-animations 检查图标切换动效
 /recent-design vercel-react-best-practices 排查列表重渲染</code></pre><p>入口先完整读取清单与仓规，再选择最窄的技能及必读参考。Impeccable 四项是本地适配，不安装 Impeccable CLI；<code>choreograph</code> 仅作为动效评审的相邻参考，不另算采用项。</p></section>
-<section class="section" id="sources"><h2>来源、许可与证据边界</h2><p>下列版本来自 <a href="sources.json">sources.json</a>。许可文件与声明保留原文；Vercel MIT 声明不是额外完成的法律审查，也不是向被管项目分发的授权。</p><div class="scroll"><table class="table"><caption>10 份上游技能的固定来源</caption><thead><tr><th scope="col">技能目录</th><th scope="col">一手仓库</th><th scope="col">固定 commit</th><th scope="col">许可依据</th></tr></thead><tbody>${licenses}</tbody></table></div><p>Impeccable：<a href="${impeccable.repository}/tree/${impeccable.commit}">pbakaus/impeccable</a>，固定版本 <code>${impeccable.commit.slice(0, 12)}</code>，保留 Apache-2.0 LICENSE 与 NOTICE；四个本地适配和原命令分开，版本见 <a href="impeccable-source.json">impeccable-source.json</a>。</p><div class="evidence"><strong>本报告不声称什么</strong><p>资产文件可定位、哈希/引用检查或 PR CI 通过，不证明模型在真实宿主中读到并遵守，也不证明界面体验已改善。动态验证结果以 <a href="https://github.com/forcegravity1989/builder-workbench/pull/736#issuecomment-7004898978">PR 主验证评论</a> 为准，本报告不复制运行状态。</p></div></section>
+<section class="section" id="sources"><h2>来源、许可与证据边界</h2><p>下列版本来自 <a href="sources.json">sources.json</a>。许可文件与声明保留原文；Vercel MIT 声明不是额外完成的法律审查，也不是向被管项目分发的授权。</p><div class="scroll"><table class="table"><caption>${sources.skills.length} 份上游技能的固定来源</caption><thead><tr><th scope="col">技能目录</th><th scope="col">一手仓库</th><th scope="col">固定 commit</th><th scope="col">许可依据</th></tr></thead><tbody>${licenses}</tbody></table></div><p>Impeccable：<a href="${impeccable.repository}/tree/${impeccable.commit}">pbakaus/impeccable</a>，固定版本 <code>${impeccable.commit.slice(0, 12)}</code>，保留 Apache-2.0 LICENSE 与 NOTICE；四个本地适配和原命令分开，版本见 <a href="impeccable-source.json">impeccable-source.json</a>。</p><div class="evidence"><strong>本报告不声称什么</strong><p>资产文件可定位、哈希/引用检查或 PR CI 通过，不证明模型在真实宿主中读到并遵守，也不证明界面体验已改善。动态验证结果以 <a href="https://github.com/forcegravity1989/builder-workbench/pull/736">PR 主验证评论</a> 为准，本报告不复制运行状态。</p></div></section>
 <footer><p>选型正本：<a href="README.md">README.md</a> · <a href="https://github.com/forcegravity1989/builder-workbench/issues/735">Issue #735</a> · <a href="https://github.com/forcegravity1989/builder-workbench/pull/736">PR #736</a></p><p class="meta">生成投影：selection-report.mjs。样式复用 BW 设计系统；CSS、token 与字体嵌入单个 HTML，下载后可离线打开。文档和上游来源链接需要访问对应文件或网络。</p></footer>
 </main>
 </body>

@@ -4,7 +4,7 @@
 
 通过 [仓内入口](../../../.claude/skills/recent-design/SKILL.md) 使用，例如 `/recent-design review-animations 检查侧栏展开动效`。本入口是一个按需读取的路由，不会将所有正文塞入上下文。技能文件纳入 Git；新会话是否发现入口、模型是否实际读到并遵守，须在真实宿主会话中另验。
 
-给人阅读的 [HTML 选型报告](selection-report.html) 是本篇与来源清单的只读投影，逐项说明为什么选、使用结果、限制与未选理由。修改本篇或来源后运行 `node .bw/skills/recent-design/selection-report.mjs` 同步；生成器嵌入现有设计系统样式与字体，单个 HTML 下载后可离线打开，不维护第二份选型正本。
+给人阅读的 [HTML 选型报告](selection-report.html) 是本篇与来源清单的只读投影，逐项说明为什么选、用来做什么、限制与未选理由。修改本篇或来源后运行 `node .bw/skills/recent-design/selection-report.mjs` 同步；生成器嵌入现有设计系统样式与字体，单个 HTML 下载后可离线打开，不维护第二份选型正本。
 
 ## 使用边界
 
