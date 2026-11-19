@@ -164,6 +164,7 @@
           workflow: 'connect',
           repoId: 'star',
           addingServer: false,
+          selectedAccessVisitors: [],
           notifications: false,
           tab: 'session',
           auditFilters: defaultAuditFilters()
@@ -601,7 +602,7 @@
         const settings = id === actor.value && writable
           ? button('共享与授权', 'open-sharing-settings', { kind: 'ghost' })
           : ''
-        return `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${member.avatar}</span><span><strong>${member.name}</strong><small class="member-number">${member.member_id}</small></span></span></td><td><span class="source-access">${localTag}</span></td><td><div class="host-cell"><div class="row between"><strong>${hostLabel(id)}</strong><span class="member-number">${member.host_id}</span></div><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${writable ? '' : ' readonly'}>${fill}${settings}</div></div></td></tr>`
+        return `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${member.avatar}</span><span><strong>${member.name}</strong><small class="member-number">${member.member_id}</small></span></span></td><td><span class="source-access">${localTag}</span></td><td><div class="host-cell"><div class="row between"><strong>${hostLabel(id)}</strong><span class="member-number">${member.host_id}</span></div><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${writable ? '' : ' readonly'}><span class="host-actions">${fill}${settings}</span></div></div></td></tr>`
       })
       .join('')
 
@@ -654,7 +655,7 @@
               : '只读'
             : '未连接'
         const stateClass = connected ? ' is-online' : ' is-offline'
-        return `<button type="button" class="pcard-host" data-action="open-workspace" data-value="${owner}|${repoId}"><span class="pcard-source"><span class="pcard-source-dot${stateClass}"></span>${esc(hostLabel(owner))} · ${access}</span></button>`
+        return `<button type="button" class="pcard-host" data-action="open-workspace" data-value="${owner}|${repoId}"${connected || localSource ? '' : ' disabled'}><span class="pcard-source"><span class="pcard-source-dot${stateClass}"></span>${esc(hostLabel(owner))} · ${access}</span></button>`
       })
       .join('')
     const defaultSource = local
@@ -757,7 +758,7 @@
         ${iconButton('CalendarClock', '自动化')}
         ${iconButton('BookOpen', '知识库')}
       </div>
-      <div class="rail-bottom">${iconButton('Network', 'SSH 状态')}${iconButton('Settings', '设置', 'show', { value: 'settings' })}${iconButton('CircleHelp', '帮助', 'help')}</div>
+      <div class="rail-bottom">${iconButton('Network', '管理远程主机', 'manage-remote')}${iconButton('Settings', '设置', 'show', { value: 'settings' })}${iconButton('CircleHelp', '帮助', 'help')}</div>
     </aside>`
   }
 
@@ -952,13 +953,19 @@
   }
 
   function nativeGrantRows(owner) {
+    const endpoint = endpointFor(owner)
     const visitors = Object.keys(names).filter(
-      (visitor) => visitor !== owner && canReadTeamSource(owner, visitor, current().repoId)
+      (visitor) => visitor !== owner && endpoint && state.teamConnections?.[visitor]?.[owner] === endpoint
     )
     if (!visitors.length) {
       return '<p class="field-note">尚无共享服务器访问权限。其他团队主机连接后会出现在这里。</p>'
     }
-    return visitors
+    const selected = new Set(current().selectedAccessVisitors ?? [])
+    const pending = visitors.filter((visitor) => accessLevel(owner, visitor) !== 'full')
+    const toolbar = pending.length
+      ? `<div class="grant-toolbar row between"><span>选择要升级的已连接主机</span>${button('授予完全访问', 'bulk-elevate-access', { value: owner, kind: 'secondary', disabled: !pending.some((visitor) => selected.has(visitor)) })}</div>`
+      : ''
+    return `${toolbar}${visitors
       .map((visitor) => {
         const elevated = accessLevel(owner, visitor) === 'full'
         const access = elevated ? '完全访问' : '只读'
@@ -966,10 +973,10 @@
         const target = `${owner}|${visitor}`
         const controls = elevated
           ? `${button('恢复只读', 'demote-access', { value: target, kind: 'ghost' })}${iconButton('Trash2', `撤销${names[visitor]}桌面的共享连接`, 'revoke', { value: target })}`
-          : button('授予完全访问', 'elevate-access', { value: target, kind: 'secondary' })
+          : `<label class="grant-select"><input type="checkbox" data-access-target="${visitor}"${selected.has(visitor) ? ' checked' : ''}>选择</label>`
         return `<div class="grant-row row between"><div><strong>${hostLabel(visitor)}</strong><small>${detail}</small></div><div class="row"><span class="source-access">${access}</span>${controls}</div></div>`
       })
-      .join('')
+      .join('')}`
   }
   function sharingServer() {
     const owner = actor.value
@@ -1096,6 +1103,7 @@
       const desktop = current()
       desktop.server = true
       desktop.workflow = 'share'
+      desktop.selectedAccessVisitors = []
       show('settings')
     },
     'fill-own-share': () => {
@@ -1153,13 +1161,25 @@
           render()
         }
       ),
-    'settings-back': () => show(current().prior),
+    'settings-back': () => {
+      current().selectedAccessVisitors = []
+      show(current().prior)
+    },
+    'manage-remote': () => {
+      const desktop = current()
+      desktop.server = true
+      desktop.workflow = 'connect'
+      show('settings')
+    },
     server: () => {
       current().server = true
       render()
     },
     'server-workflow': (value) => {
       current().workflow = value
+      if (value !== 'share') {
+        current().selectedAccessVisitors = []
+      }
       render()
     },
     'generate-link': () => {
@@ -1179,21 +1199,28 @@
       current().addingServer = !current().addingServer
       render()
     },
-    'elevate-access': (value) => {
-      const [owner, visitor] = String(value || '').split('|')
-      if (!owner || !visitor || !canReadTeamSource(owner, visitor)) {
-        notify('目标主机还没有建立只读连接。')
+    'bulk-elevate-access': (ownerValue) => {
+      const owner = String(ownerValue || actor.value)
+      const selected = (current().selectedAccessVisitors ?? []).filter(
+        (visitor) => visitor !== owner && endpointFor(owner) && state.teamConnections?.[visitor]?.[owner] === endpointFor(owner) && accessLevel(owner, visitor) !== 'full'
+      )
+      if (!selected.length) {
+        notify('请先选择要授予完全访问的已连接主机。')
         return
       }
       confirm(
         '授予完全访问',
-        `<p>${hostLabel(visitor)}将在<strong>同一条</strong> Orca 共享连接上升级为完全访问，可以在${hostLabel(owner)}上创建工作树、启动会话并发送输入。</p>`,
+        `<p>将给以下主机授予<strong>整机</strong>完全访问：${selected.map((visitor) => esc(hostLabel(visitor))).join('、')}。</p><p class="field-note">未选主机保持只读；授权沿用同一条 Orca 共享连接。</p>`,
         '授予完全访问',
         () => {
-          state.accessModes[visitor] ??= {}
-          state.accessModes[visitor][owner] = 'full'
-          audit(owner, '授予完全访问', '已生效', `${hostLabel(owner)} · ${hostLabel(visitor)}`)
-          notify(`已给${hostLabel(visitor)}授予${hostLabel(owner)}的完全访问`)
+          state.accessModes ??= { lead: {}, lin: {}, chen: {} }
+          for (const visitor of selected) {
+            state.accessModes[visitor] ??= {}
+            state.accessModes[visitor][owner] = 'full'
+            audit(owner, '授予完全访问', '已生效', `${hostLabel(owner)} · ${hostLabel(visitor)}`)
+          }
+          current().selectedAccessVisitors = []
+          notify(`已给 ${selected.map((visitor) => hostLabel(visitor)).join('、')} 授予完全访问`)
           render()
         }
       )
@@ -1292,6 +1319,19 @@
     }
     event.preventDefault()
     actions.panel('worktree-menu')
+  })
+
+  surface.addEventListener('change', (event) => {
+    if (!event.target.matches('input[data-access-target]')) {
+      return
+    }
+    current().selectedAccessVisitors = [...surface.querySelectorAll('input[data-access-target]:checked')].map(
+      (input) => input.dataset.accessTarget
+    )
+    const grant = surface.querySelector('[data-action="bulk-elevate-access"]')
+    if (grant) {
+      grant.disabled = current().selectedAccessVisitors.length === 0
+    }
   })
 
   surface.addEventListener('input', (event) => {

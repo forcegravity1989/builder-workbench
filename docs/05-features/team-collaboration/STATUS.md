@@ -2,4 +2,7 @@
 
 > 供设计评审、实现与验收者核对当前认可和证据。目标见 [意图](intent.md)，行为见 [规格](spec.md)，阶段和证据边界变化时更新。
 
-- 主单 [#342](https://github.com/forcegravity1989/builder-workbench/issues/342) 已记录群空间、跨主机项目整合、两档权限和宿主留痕方向。[旅程原型](prototype.html) 待人评审，intent/spec 尚未按这轮反馈改写。WeLink 命令核对见 [welink-cli 预研](welink-cli-spike.md)：已知群号可查成员；由登录态枚举全部分组和由群号取群空间 ID，这次 help 里没有。真实 WeLink 读写、双机和宿主鉴权未验。
+- 主单 [#342](https://github.com/forcegravity1989/builder-workbench/issues/342) 已记录群空间承载团队目录、跨主机项目聚合、团队项目默认只读、整机单独授权和宿主留痕方向。
+- [旅程原型](prototype.html) 已按当前共识更新：项目卡和未连接状态沿用现有 BW；连接从左下角「管理远程主机」进入；授权页支持选择多个已连接只读设备后一次授予完全访问；日志默认 14 天。
+- intent/spec 已同步到当前设计，等待人确认后生成仓外实现 plan。当前原型只模拟 WeLink/Orca 行为；真实 WeLink 读写、双机通信、宿主鉴权、日志落盘和重启读回未验。
+- WeLink 命令核对见 [welink-cli 预研](welink-cli-spike.md)：已知群号可查成员；由登录态枚举全部分组和由群号取群空间信息仍需内网实测。
