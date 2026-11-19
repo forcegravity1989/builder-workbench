@@ -1,0 +1,19 @@
+src/renderer/src/components/github-item-dialog/open-dialog/github-item-dialog.tsx
+  s_22f96f89bf7a40::t_498d8a8927d004 63-75,213,228,248,274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "558f33176013e1d8f8e68f098435bbd1b2c560a9",
+  "prompts": {},
+  "sessions": {
+    "s_22f96f89bf7a40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bdaa978f-a60f-43fb-b601-625dc3e5348b",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
