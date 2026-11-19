@@ -78,7 +78,7 @@ describe('registered workbench workspace identity', () => {
     })
   })
 
-  it('passes the explicit host to native lookup and translates its misses', async () => {
+  it('passes the explicit host and preserves UNKNOWN selector misses', async () => {
     const { host, trees } = fixture()
     const showManagedWorktree = vi.fn(async () => trees[1])
     const native = nativeWorkbenchWorkspaceHost({ listRepos: host.listRepos, showManagedWorktree })
@@ -88,9 +88,11 @@ describe('registered workbench workspace identity', () => {
     await reauthorize()
     expect(showManagedWorktree).toHaveBeenCalledTimes(2)
     expect(showManagedWorktree).toHaveBeenCalledWith('id:tree', 'ssh:builder')
-    // Why here: a deleted worktree must reach BW users as an actionable verdict, not the bare
-    // native code (#727); this is the seam where the native answer enters every BW channel.
     showManagedWorktree.mockRejectedValueOnce(new Error('selector_not_found'))
+    await expect(resolver.resolve(scope)).rejects.toThrow('selector_not_found')
+    // Only the runtime's explicit local disappearance verdict is actionable; a generic miss may
+    // be a temporary scan gap and must keep the retry path.
+    showManagedWorktree.mockRejectedValueOnce(new Error('workspace-gone'))
     await expect(resolver.resolve(scope)).rejects.toMatchObject({ code: 'workspace-gone' })
   })
 })

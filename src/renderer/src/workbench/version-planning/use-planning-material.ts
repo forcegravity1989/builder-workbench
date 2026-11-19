@@ -34,7 +34,8 @@ export function usePlanningMaterial(
   // native contract treats as a real answer, and latching on one would freeze a self-healing
   // poller on a live workspace.
   const gone = useRef(false)
-  const goneMisses = useRef(0)
+  const listGoneMisses = useRef(0)
+  const refreshGoneMisses = useRef(0)
   const [persistError, setPersistError] = useState<string | null>(null)
   const current = useRef({ port, scopeKey })
   current.current = { port, scopeKey }
@@ -89,6 +90,7 @@ export function usePlanningMaterial(
     try {
       const items = await port.list()
       if (isCurrent() && request === listRequest.current.value) {
+        listGoneMisses.current = 0
         setVersions((previous) =>
           JSON.stringify(previous) === JSON.stringify(items) ? previous : items
         )
@@ -96,13 +98,13 @@ export function usePlanningMaterial(
     } catch (reason) {
       if (isCurrent() && request === listRequest.current.value) {
         if (isWorkspaceGoneError(reason)) {
-          goneMisses.current += 1
-          if (goneMisses.current >= 2) {
+          listGoneMisses.current += 1
+          if (listGoneMisses.current >= 2) {
             gone.current = true
             setError(workspaceGoneMessage())
           }
         } else {
-          goneMisses.current = 0
+          listGoneMisses.current = 0
           setError(reason instanceof Error ? reason.message : '无法列出版本')
         }
       }
@@ -113,7 +115,8 @@ export function usePlanningMaterial(
     selection.current.value++
     controller?.clear()
     gone.current = false
-    goneMisses.current = 0
+    listGoneMisses.current = 0
+    refreshGoneMisses.current = 0
     setDraft(null)
     setVersions([])
     setError(null)
@@ -142,6 +145,9 @@ export function usePlanningMaterial(
       }
       const token = ++selection.current.value
       controller.clear()
+      gone.current = false
+      listGoneMisses.current = 0
+      refreshGoneMisses.current = 0
       setBusy(true)
       setError(null)
       try {
@@ -211,6 +217,9 @@ export function usePlanningMaterial(
   const clear = useCallback(() => {
     selection.current.value++
     controller?.clear()
+    gone.current = false
+    listGoneMisses.current = 0
+    refreshGoneMisses.current = 0
     setBusy(false)
     setError(null)
   }, [controller])
@@ -223,17 +232,24 @@ export function usePlanningMaterial(
         return
       }
       const token = selection.current.value
-      void controller.refresh().catch((reason) => {
-        if (isCurrent() && token === selection.current.value) {
-          if (isWorkspaceGoneError(reason)) {
-            goneMisses.current += 1
-            if (goneMisses.current >= 2) {
-              gone.current = true
-              setError(workspaceGoneMessage())
+      void controller.refresh()
+        .then(() => {
+          if (isCurrent() && token === selection.current.value) {
+            refreshGoneMisses.current = 0
+          }
+        })
+        .catch((reason) => {
+          if (isCurrent() && token === selection.current.value) {
+            if (isWorkspaceGoneError(reason)) {
+              refreshGoneMisses.current += 1
+              if (refreshGoneMisses.current >= 2) {
+                gone.current = true
+                setError(workspaceGoneMessage())
+              }
+            } else {
+              refreshGoneMisses.current = 0
+              setError(String(reason))
             }
-          } else {
-            goneMisses.current = 0
-            setError(String(reason))
           }
         }
       })

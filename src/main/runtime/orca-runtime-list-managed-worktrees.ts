@@ -160,9 +160,49 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
           error,
           'showManagedWorktree'
         )
+        if (requiredHostId && this.isConfirmedLocalWorktreeGone(worktreeSelector, requiredHostId)) {
+          throw Object.assign(new Error('workspace-gone'), { code: 'workspace-gone' })
+        }
       }
       throw error
     }
+  }
+
+  /**
+   * A generic selector miss is normally UNKNOWN: a Git/provider scan may have failed or lagged.
+   * Only the local, host-qualified path can be proved here without asking another runtime: the
+   * repo owner is unique, its host metadata is gone, and the filesystem path is absent.
+   */
+  protected isConfirmedLocalWorktreeGone(
+    selector: string,
+    requiredHostId: ExecutionHostId
+  ): boolean {
+    if (!this.store) {
+      return false
+    }
+    const parsedHost = parseExecutionHostId(requiredHostId)
+    if (!parsedHost || parsedHost.kind !== 'local' || !selector.startsWith('id:')) {
+      return false
+    }
+    const worktreeId = selector.slice(3)
+    const parsed = splitWorktreeIdForFilesystem(worktreeId)
+    if (!parsed?.repoId || !parsed.worktreePath) {
+      return false
+    }
+    const owners = this.store.getRepos().filter(
+      (repo) => repo.id === parsed.repoId && getRepoExecutionHostId(repo) === parsedHost.id
+    )
+    if (owners.length !== 1) {
+      return false
+    }
+    const store = this.store as {
+      getWorktreeMetaForHost?: (id: string, hostId: ExecutionHostId) => unknown
+      getWorktreeMeta?: (id: string) => unknown
+    }
+    const meta = store.getWorktreeMetaForHost
+      ? store.getWorktreeMetaForHost(worktreeId, parsedHost.id)
+      : store.getWorktreeMeta?.(worktreeId)
+    return meta == null && !existsSync(parsed.worktreePath)
   }
 
   async showManagedTerminalWorkspace(worktreeSelector: string) {
@@ -207,9 +247,28 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
       const [onlyHostId] = hostIds
       const repoHost =
         hostIds.size === 1 ? (onlyHostId === LOCAL_EXECUTION_HOST_ID ? 'local' : 'remote') : null
-      const meta = worktreeId ? (this.store?.getWorktreeMeta(worktreeId) ?? null) : null
+      const metaHostId =
+        requiredHostId ?? (hostIds.size === 1 ? onlyHostId : null)
+      const parsedMetaHostId = metaHostId ? parseExecutionHostId(metaHostId) : null
+      const metaStore = this.store as {
+        getWorktreeMetaForHost?: (id: string, hostId: ExecutionHostId) => unknown
+        getWorktreeMeta?: (id: string) => unknown
+        getAllWorktreeMetaForHost?: (hostId: ExecutionHostId) => Record<string, unknown>
+        getAllWorktreeMeta?: () => Record<string, unknown>
+      }
+      const meta =
+        worktreeId && parsedMetaHostId
+          ? (metaStore.getWorktreeMetaForHost
+              ? (metaStore.getWorktreeMetaForHost(worktreeId, parsedMetaHostId) ?? null)
+              : (metaStore.getWorktreeMeta?.(worktreeId) ?? null))
+          : null
       const snapshotWorktrees = this.resolvedWorktrees.peek()?.worktrees ?? null
-      const repoMetaEntries = parsed ? (this.store?.getAllWorktreeMeta() ?? null) : null
+      const repoMetaEntries =
+        parsed && parsedMetaHostId
+          ? (metaStore.getAllWorktreeMetaForHost
+              ? metaStore.getAllWorktreeMetaForHost(parsedMetaHostId)
+              : (metaStore.getAllWorktreeMeta?.() ?? null))
+          : null
       let repoMetaCount: number | null = null
       if (parsed && repoMetaEntries) {
         repoMetaCount = Object.keys(repoMetaEntries).filter((id) => {

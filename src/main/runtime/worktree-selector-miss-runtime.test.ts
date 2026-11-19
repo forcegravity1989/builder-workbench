@@ -56,6 +56,24 @@ afterEach(() => {
 })
 
 describe('showManagedWorktree selector misses', () => {
+  it('returns a gone verdict only for a confirmed missing local worktree', async () => {
+    const runtime = new OrcaRuntimeService(makeStore() as never)
+    const missingId = `repo-1::${missingWorktreePath()}`
+
+    await expect(runtime.showManagedWorktree(`id:${missingId}`, 'local')).rejects.toMatchObject({
+      code: 'workspace-gone',
+      message: 'workspace-gone'
+    })
+  })
+
+  it('keeps a host-scoped miss unknown when the path still exists', async () => {
+    const runtime = new OrcaRuntimeService(makeStore() as never)
+
+    await expect(runtime.showManagedWorktree('id:repo-1::/tmp', 'local')).rejects.toThrow(
+      'selector_not_found'
+    )
+  })
+
   it('records the selector and repo facts when an explicit worktree id does not resolve', async () => {
     const runtime = new OrcaRuntimeService(makeStore() as never)
     const missingId = `repo-1::${missingWorktreePath()}`
@@ -104,6 +122,32 @@ describe('showManagedWorktree selector misses', () => {
     expect(attributes['repo.host']).toBe('remote')
     // Why null: a remote worktree's path says nothing about this process's filesystem.
     expect(attributes['path.exists_local']).toBeNull()
+  })
+
+  it('reads metadata from the requested host when repo IDs collide', async () => {
+    const base = makeStore()
+    const missingId = `repo-1::${missingWorktreePath()}`
+    const store = {
+      ...base,
+      getRepos: () => [
+        { ...base.getRepos()[0], executionHostId: 'local' as const },
+        { ...base.getRepos()[0], executionHostId: 'ssh:build-01' as const }
+      ],
+      getWorktreeMeta: () => ({ hostId: 'ssh:build-01' }),
+      getWorktreeMetaForHost: (_id: string, hostId: string) =>
+        hostId === 'ssh:build-01' ? { hostId } : undefined,
+      getAllWorktreeMetaForHost: (hostId: string) =>
+        hostId === 'ssh:build-01' ? { [missingId]: { hostId } } : {}
+    }
+    const runtime = new OrcaRuntimeService(store as never)
+
+    await expect(runtime.showManagedWorktree(`id:${missingId}`, 'local')).rejects.toMatchObject({
+      code: 'workspace-gone'
+    })
+    const attributes = missAttributes()!
+    expect(attributes['repo.host']).toBeNull()
+    expect(attributes['meta.present']).toBe(false)
+    expect(attributes['repo.meta_count']).toBe(0)
   })
 
   it('does not record a miss when the selector resolves, is ambiguous, or is rejected by contract', async () => {

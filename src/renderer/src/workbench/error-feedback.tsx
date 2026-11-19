@@ -12,9 +12,7 @@ export function isWorkspaceGoneError(error: unknown): boolean {
   const code = (error as { code?: unknown } | null)?.code
   return (
     code === 'workspace-gone' ||
-    code === 'selector_not_found' ||
-    hasRuntimeRpcErrorCode(error, 'workspace-gone') ||
-    hasRuntimeRpcErrorCode(error, 'selector_not_found')
+    hasRuntimeRpcErrorCode(error, 'workspace-gone')
   )
 }
 

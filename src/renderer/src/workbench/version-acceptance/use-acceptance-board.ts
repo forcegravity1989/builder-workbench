@@ -171,18 +171,22 @@ export function useAcceptanceBoard({
     goneMisses.current = 0
     const timer = setInterval(() => {
       if (!context.syncing && !gone.current) {
-        void controller.refresh().catch((reason) => {
-          if (isWorkspaceGoneError(reason)) {
-            goneMisses.current += 1
-            if (goneMisses.current >= 2) {
-              gone.current = true
-              setError(workspaceGoneMessage())
-            }
-          } else {
+        void controller.refresh()
+          .then(() => {
             goneMisses.current = 0
-            setError(String(reason))
-          }
-        })
+          })
+          .catch((reason) => {
+            if (isWorkspaceGoneError(reason)) {
+              goneMisses.current += 1
+              if (goneMisses.current >= 2) {
+                gone.current = true
+                setError(workspaceGoneMessage())
+              }
+            } else {
+              goneMisses.current = 0
+              setError(String(reason))
+            }
+          })
       }
     }, 5000)
     return () => clearInterval(timer)
