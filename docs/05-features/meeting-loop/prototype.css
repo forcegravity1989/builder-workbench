@@ -74,8 +74,8 @@ button:focus-visible, textarea:focus-visible { outline: 2px solid var(--ring); o
 @media (max-width: 760px) { .meeting-screen.is-live .meeting-layout { grid-template-columns: 1fr; }.meeting-screen.is-live .meeting-index, .meeting-screen.is-live .welink-column, .meeting-screen.is-live .session-column, .meeting-screen.is-live .context-column { grid-column: auto; grid-row: auto; }.meeting-screen.is-live .welink-column { min-height: 340px; }.meeting-screen.is-live .session-column { min-height: 480px; } }
 /* Review adjustments: contextual launch, concrete templates, and project handoff. */
 .meeting-screen-header { align-items: flex-start; }
-.meeting-screen-actions { display: none; }
-.floating-launcher { display: none !important; }
+.meeting-screen-actions { display: flex; align-items: center; gap: 6px; }
+
 .tree-group-muted { opacity: .72; }
 .tree-group-muted .tree-heading { border-top: 1px dashed var(--border); padding-top: 10px; }
 .tree-group-muted .tree-add { opacity: .9; }
