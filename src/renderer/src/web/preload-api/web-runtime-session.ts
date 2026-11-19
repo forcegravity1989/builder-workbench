@@ -73,6 +73,11 @@ export async function observeWebRuntimeStatus(
 
 export const manuallyDisconnectedEnvironmentIds = new Set<string>()
 
+// Why: the browser keeps one paired server, so its saved launch hold hydrates before any probe.
+if (webRuntimeState.activeEnvironment?.reconnectOnLaunch === false) {
+  manuallyDisconnectedEnvironmentIds.add(webRuntimeState.activeEnvironment.id)
+}
+
 export const runtimeCallQueuePool = new RuntimeRpcCallQueuePool()
 
 export function invalidateRuntimeWorktreeCaches(): void {

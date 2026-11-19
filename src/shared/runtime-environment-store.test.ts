@@ -11,6 +11,7 @@ import {
   listEnvironments,
   MAX_RUNTIME_ENVIRONMENT_STORE_FILE_BYTES,
   markEnvironmentUsed,
+  setEnvironmentReconnectOnLaunch,
   updateEnvironmentFromPairingCode
 } from './runtime-environment-store'
 
@@ -221,6 +222,26 @@ describe('runtime environment store', () => {
     // Once the throttle window elapses, it persists again.
     markEnvironmentUsed(userDataPath, env.id, { runtimeId: 'runtime-1', now: 61_000 })
     expect(listEnvironments(userDataPath)[0]!.lastUsedAt).toBe(61_000)
+  })
+
+  it('persists a manual-disconnect hold and clears it on an explicit reconnect', () => {
+    const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-env-store-'))
+    tempDirs.push(userDataPath)
+    const env = addEnvironmentFromPairingCode(userDataPath, {
+      name: 'dev box',
+      pairingCode: pairingCode()
+    })
+    expect(listEnvironments(userDataPath)[0]?.reconnectOnLaunch).toBeUndefined()
+
+    setEnvironmentReconnectOnLaunch(userDataPath, env.id, false)
+    expect(listEnvironments(userDataPath)[0]).toMatchObject({
+      id: env.id,
+      reconnectOnLaunch: false
+    })
+
+    setEnvironmentReconnectOnLaunch(userDataPath, env.id, undefined)
+    // Clearing removes the field instead of leaving `true`, so old builds keep reconnecting.
+    expect('reconnectOnLaunch' in listEnvironments(userDataPath)[0]!).toBe(false)
   })
 
   it('persists immediately when the runtimeId changes within the throttle window', () => {

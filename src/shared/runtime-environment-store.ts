@@ -127,6 +127,27 @@ export function removeEnvironment(userDataPath: string, selector: string): Known
   return environment
 }
 
+/** Persists the user's launch reconnect intent: false holds the host disconnected after restarts. */
+export function setEnvironmentReconnectOnLaunch(
+  userDataPath: string,
+  selector: string,
+  reconnectOnLaunch: boolean | undefined
+): KnownRuntimeEnvironment {
+  const store = readPersistedEnvironmentStore(userDataPath)
+  const environment = resolveEnvironmentFromStore(store, selector)
+  const next: KnownRuntimeEnvironment = { ...environment, updatedAt: Date.now() }
+  if (reconnectOnLaunch === undefined) {
+    delete next.reconnectOnLaunch
+  } else {
+    next.reconnectOnLaunch = reconnectOnLaunch
+  }
+  writeEnvironmentStore(userDataPath, {
+    version: 1,
+    environments: store.environments.map((entry) => (entry.id === environment.id ? next : entry))
+  })
+  return next
+}
+
 export function updateEnvironmentFromPairingCode(
   userDataPath: string,
   selector: string,
@@ -134,11 +155,16 @@ export function updateEnvironmentFromPairingCode(
 ): KnownRuntimeEnvironment {
   const offer = parseRemotePairingCode(userDataPath, args.pairingCode)
   const current = resolveEnvironmentFromStore(readEnvironmentStore(userDataPath), selector)
-  return replaceEnvironmentPairing(userDataPath, selector, { ...offer, publicKeyB64: savedHostKeySpelling(current, offer) }, {
-    now: args.now ?? Date.now(),
-    runtimeId: args.runtimeId,
-    connectionDependency: current.connectionDependency
-  })
+  return replaceEnvironmentPairing(
+    userDataPath,
+    selector,
+    { ...offer, publicKeyB64: savedHostKeySpelling(current, offer) },
+    {
+      now: args.now ?? Date.now(),
+      runtimeId: args.runtimeId,
+      connectionDependency: current.connectionDependency
+    }
+  )
 }
 
 /** Swaps a saved server's pairing in place, keeping its id, name and history. */
