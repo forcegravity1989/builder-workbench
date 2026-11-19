@@ -1,0 +1,20 @@
+docs/10-reference/welink-cli.md
+  h_d0d195a8c70989 1-239
+docs/10-reference/welink-video-meeting.html
+  h_d0d195a8c70989 1-142
+docs/10-reference/welink-video-meeting.md
+  h_d0d195a8c70989 1-63
+docs/README.md
+  h_d0d195a8c70989 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "351837dfe8395321f07f1c7c09625274733819a2",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
