@@ -50,8 +50,8 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.review.dismiss',
     params: ReviewDismissSchema,
-    handler: async ({ repo, prNumber }) => ({
-      dismissed: await dismissReviewRequest(repo, prNumber)
+    handler: async ({ repo, prNumber, seenReceivedAt }) => ({
+      dismissed: await dismissReviewRequest(repo, prNumber, seenReceivedAt)
     })
   })
 ]

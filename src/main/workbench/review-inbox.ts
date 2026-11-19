@@ -38,16 +38,26 @@ export async function readReviewInbox(): Promise<ReviewIncomingRequest[]> {
   return [...latest.values()]
 }
 
-export function dismissReviewRequest(repo: ReviewRepoIdentity, prNumber: number): Promise<boolean> {
-  // The inbox UI groups by project and PR, so one dismissal must clear every stored
-  // sender/round for that PR; otherwise an older hidden entry resurfaces.
+export function dismissReviewRequest(
+  repo: ReviewRepoIdentity,
+  prNumber: number,
+  seenReceivedAt: string
+): Promise<boolean> {
+  // The inbox UI groups by project and PR, so a dismissal clears every entry the user
+  // could have seen (receivedAt <= the displayed one); otherwise an older hidden
+  // sender/round resurfaces. Entries received after that snapshot were never shown;
+  // dropping an acknowledged delivery would lose it silently, so they stay and
+  // reappear through the next reconciliation.
   const write = writes
     .catch(() => undefined)
     .then(async () => {
       const items = await readStoredInbox()
       const key = reviewRepositoryKey(repo)
       const remaining = items.filter(
-        (item) => reviewRepositoryKey(item.repo) !== key || item.prNumber !== prNumber
+        (item) =>
+          reviewRepositoryKey(item.repo) !== key ||
+          item.prNumber !== prNumber ||
+          item.receivedAt > seenReceivedAt
       )
       if (remaining.length === items.length) {
         return false

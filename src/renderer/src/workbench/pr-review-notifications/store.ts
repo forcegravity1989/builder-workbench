@@ -153,7 +153,7 @@ export function deleteReviewNotification(id: string): void {
 
 async function dismissIncoming(note: ReviewIncomingNote): Promise<void> {
   inboxGeneration += 1
-  await dismissReviewInbox(note.repo, note.prNumber)
+  await dismissReviewInbox(note.repo, note.prNumber, note.receivedAt)
   setState(removeIncomingNote(state, note.id))
 }
 export function dismissIncomingReview(note: ReviewIncomingNote): void {

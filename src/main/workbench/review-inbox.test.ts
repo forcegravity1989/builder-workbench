@@ -48,7 +48,7 @@ afterEach(() => {
 })
 
 describe('review inbox dismissal protocol', () => {
-  it('removes every stored sender/round of the dismissed PR only, and the removal survives a fresh read', async () => {
+  it('clears every seen sender/round of the dismissed PR only, keeps unseen newer arrivals, and survives a fresh read', async () => {
     const inbox = await loadInbox()
     await inbox.receiveReviewRequest(request(1))
     await inbox.receiveReviewRequest(request(2))
@@ -58,15 +58,31 @@ describe('review inbox dismissal protocol', () => {
       cycleId: '22222222-2222-4222-8222-222222222222',
       round: 2
     })
+    const seen = (await inbox.readReviewInbox()).find((item) => item.prNumber === 7)!.receivedAt
 
-    await expect(inbox.dismissReviewRequest(repo, 7)).resolves.toBe(true)
-    expect((await inbox.readReviewInbox()).map((item) => item.prNumber)).toEqual([1, 2])
+    // A request acknowledged after the user's snapshot must not be swallowed by the dismissal.
+    await inbox.receiveReviewRequest({
+      ...request(7, 'peer-c'),
+      cycleId: '33333333-3333-4333-8333-333333333333'
+    })
 
-    await expect(inbox.dismissReviewRequest(repo, 1)).resolves.toBe(true)
+    await expect(inbox.dismissReviewRequest(repo, 7, seen)).resolves.toBe(true)
+    const afterSeven = await inbox.readReviewInbox()
+    expect(afterSeven.map((item) => item.prNumber)).toEqual([1, 2, 7])
+    expect(afterSeven.find((item) => item.prNumber === 7)!.senderId).toBe('peer-c')
+
+    const seenSeven = afterSeven.find((item) => item.prNumber === 7)!.receivedAt
+    await expect(inbox.dismissReviewRequest(repo, 7, seenSeven)).resolves.toBe(true)
+    await expect(inbox.dismissReviewRequest(repo, 1, seen)).resolves.toBe(true)
     expect((await inbox.readReviewInbox()).map((item) => item.prNumber)).toEqual([2])
+
+    // A snapshot older than every stored entry dismisses nothing.
+    await expect(inbox.dismissReviewRequest(repo, 2, '2000-01-01T00:00:00.000Z')).resolves.toBe(
+      false
+    )
 
     const reloaded = await loadInbox()
     expect((await reloaded.readReviewInbox()).map((item) => item.prNumber)).toEqual([2])
-    await expect(reloaded.dismissReviewRequest(repo, 1)).resolves.toBe(false)
+    await expect(reloaded.dismissReviewRequest(repo, 1, seen)).resolves.toBe(false)
   })
 })

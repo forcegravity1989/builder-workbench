@@ -10,10 +10,15 @@ import type {
 export const readReviewInbox = () =>
   callRuntimeRpc<ReviewIncomingRequest[]>({ kind: 'local' }, 'workbench.review.inbox')
 
-export const dismissReviewInbox = (repo: ReviewRepoIdentity, prNumber: number) =>
+export const dismissReviewInbox = (
+  repo: ReviewRepoIdentity,
+  prNumber: number,
+  seenReceivedAt: string
+) =>
   callRuntimeRpc<{ dismissed: boolean }>({ kind: 'local' }, 'workbench.review.dismiss', {
     repo,
-    prNumber
+    prNumber,
+    seenReceivedAt
   })
 
 export const readReviewSender = () =>
