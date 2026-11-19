@@ -14,7 +14,7 @@ export function PlanningStartCard({
       <div className="vc-start-line">
         <p>{version ? `${version} ` : ''}计划尚未开始</p>
         <BoardActionButton
-          data-contextual-tour-target="workbench-plan-start"
+          data-contextual-tour-target="monica-plan-start"
           disabled={busy}
           onClick={onStart}
         >

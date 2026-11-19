@@ -180,7 +180,7 @@ describe('submitWelinkReport orchestration', () => {
     )
     const receiptPath = join(
       testUserData,
-      'workbench-diagnostic-receipts',
+      'monica-diagnostic-receipts',
       'diagsubmissionid000001.json'
     )
     expect(JSON.parse(readFileSync(receiptPath, 'utf8'))).toEqual({

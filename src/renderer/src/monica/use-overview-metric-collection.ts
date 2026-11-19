@@ -13,6 +13,7 @@ import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 const cache = createSnapshotCache(() => ({
   catalog: null as MetricCatalog | null,
   readings: {} as Partial<Record<ZoneGranularity, OverviewReadResult>>,
+  pendingReadings: null as ReadonlySet<string> | null,
   anchor: new Date().toISOString(),
   loaded: false,
   busy: false,
@@ -87,26 +88,62 @@ export function useOverviewMetricCollection(args: {
       }
       const owner = baseScope.runtimeOwnerEnvironmentId
       const now = new Date().toISOString()
-      entry.publish({ ...entry.read(), busy: true, refreshing: mode === 'recollect' })
+      entry.publish({
+        ...entry.read(),
+        busy: true,
+        refreshing: mode === 'recollect',
+        pendingReadings: null
+      })
       entry.pending = (async () => {
         try {
           const catalog = await nativeMetricsPort(owner).list(scope)
           const readings: Partial<Record<ZoneGranularity, OverviewReadResult>> = {}
           const oldReadings = entry.read().readings
           const order: ZoneGranularity[] = [granularity, granularity === 'day' ? 'week' : 'day']
+          const pendingReadings = new Set(catalog.definitions.map((def) => def.ref.definitionHash))
+          const northKey = catalog.definitions.find((def) => def.role === 'north_star')?.ref
+            .definitionHash
+          const publish = (pending = entry.read().pendingReadings) => {
+            entry.publish({
+              ...entry.read(),
+              catalog,
+              readings: { ...oldReadings, ...readings },
+              pendingReadings: pending,
+              anchor: now,
+              catalogError: null
+            })
+          }
+          const reportReading = (
+            key: string,
+            value: OverviewReadResult['map'][string],
+            problem?: string
+          ) => {
+            const partial = readings[granularity]
+            readings[granularity] = {
+              map: { ...partial?.map, [key]: value },
+              north: key === northKey ? value : (partial?.north ?? null),
+              problems: [...(partial?.problems ?? []), ...(problem ? [problem] : [])]
+            }
+            pendingReadings.delete(key)
+            publish(new Set(pendingReadings))
+          }
+          if (mode === 'initial') {
+            publish(new Set(pendingReadings))
+          }
           for (const grain of order) {
-            const request = { scope, owner, catalog, granularity: grain, now }
+            const request = {
+              scope,
+              owner,
+              catalog,
+              granularity: grain,
+              now,
+              onReading: mode === 'initial' && grain === granularity ? reportReading : undefined
+            }
             const previous =
               mode === 'recollect' ? oldReadings[grain] : await readAllMetricReadings(request)
             if (mode !== 'recollect') {
               readings[grain] = previous
-              entry.publish({
-                ...entry.read(),
-                catalog,
-                readings: { ...oldReadings, ...readings },
-                anchor: now,
-                catalogError: null
-              })
+              publish()
             }
             readings[grain] = await refreshMetricReadings({
               ...request,
@@ -114,16 +151,14 @@ export function useOverviewMetricCollection(args: {
               onlyMissing: mode !== 'recollect',
               sharedNorth: grain === order[1] ? readings[order[0]]?.north : undefined
             })
-            entry.publish({
-              ...entry.read(),
-              catalog,
-              readings: { ...oldReadings, ...readings },
-              anchor: now,
-              catalogError: null
-            })
+            publish()
           }
         } catch (error) {
-          entry.publish({ ...entry.read(), catalogError: `指标读取失败：${String(error)}` })
+          entry.publish({
+            ...entry.read(),
+            pendingReadings: null,
+            catalogError: `指标读取失败：${String(error)}`
+          })
         } finally {
           entry.pending = null
           entry.publish({ ...entry.read(), loaded: true, busy: false, refreshing: false })

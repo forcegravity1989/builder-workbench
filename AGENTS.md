@@ -9,7 +9,7 @@
 
 ## 按任务读取
 
-本仓开发 Monica。**主干 `main`**（原 `bw-orca`，2026-09-30 扶正）是 Orca Electron 执行核上的产品叠层，不是 Rust 三 crate 桌面；旧 Rust main 已归档为 `archive/main-pre-orca`。叠层 `src/renderer/src/monica/`，规范 `standard/`。相对 upstream 删了什么、从旧 main 合入了什么、以及遗留项读 [ref/upstream.md](ref/upstream.md)。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
+本仓开发 Monica（Monica）。**主干 `main`**（原 `bw-orca`，2026-09-30 扶正）是 Orca Electron 执行核上的产品叠层，不是 Rust 三 crate 桌面；旧 Rust main 已归档为 `archive/main-pre-orca`。叠层 `src/renderer/src/monica/`，规范 `standard/`。相对 upstream 删了什么、从旧 main 合入了什么、以及遗留项读 [ref/upstream.md](ref/upstream.md)。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
 
 **[docs/01-principles/](docs/01-principles/README.md) 是最慢变的原则正本**，不得用草稿实现或聊天结论推翻。按任务读取对应资料，不把所有正文堆进入口：
 
@@ -18,9 +18,9 @@
 | 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/monica/` |
 | 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/monica/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
 | 本仓开发、测试、检视与 PR 交付 | 设计或调整测试、开展独立检视、编写 PR 正文与验证评论前，完整读取 [开发规范](docs/development.md)。本仓会话均适用，不以是否调用起手 Skill 为条件。特性确认、历史兼容取舍与自主交付边界直接读 [02 §3.2](docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)。 |
-| 仓外 IDE 新会话 | 本篇 → [monica-start](.claude/skills/monica-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Monica 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
+| Monica 自身研发会话 | 直接修改本仓代码、文档或测试并交付 Monica 自身 PR 的会话，先读取 [monica-start](.claude/skills/monica-start/SKILL.md)，再按其起手、验证与交付步骤执行；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。开发规范仍以本表上一行指向的 [docs/development.md](docs/development.md) 为正本。Monica 发起的被管项目执行会话沿产品提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill。 |
 | 提单或维护 Monica 自身 Issue | 创建、改写或关联前，完整读取[通用 Issue 规范](standard/references/issue-state.md)和[Monica 特性矩阵](docs/05-features/README.md)，按主要用户结果选主归属。纳入版本计划时再执行[计划 Skill](standard/skills/week-planning/SKILL.md)的纳入要求。 |
-| 特性级变更 | 从[特性矩阵](docs/05-features/README.md)定位所属旅程，对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，原型后的最终对齐按 §3.2，之后生成仓外实现 plan 并自主交付。大风险仍按原则处理。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
+| 特性级变更 | 从[特性矩阵](docs/05-features/README.md)定位所属旅程，对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，原型后的最终对齐按 §3.2，之后生成仓外实现 plan 并自主交付。大风险仍按原则处理。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链。做/改原型先读 [设计系统 guidelines「HTML 原型与文档页」](docs/04-design-system/guidelines.md#html-原型与文档页) 与 [高保真三原则](docs/hifi/README.md) |
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则挂 Issue 直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
@@ -96,7 +96,7 @@ PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。测
 
 - 汇报说明做了什么、结果、下一步；代号首次出现附人话。UI 写对象、动作、结果，必要时补失败原因和下一步，不展示内部协议与实现历史。
 - 术语以 [CONTEXT](CONTEXT.md) 为准；新领域词先登记，代号先查重再登记到词表或 ADR。普通词按通常含义使用，不另造隐喻；文案调整不等于改协议值。
-- 注释只写代码无法表达的约束、原因、单位、协议及边界，不复述控制流或历史；实现术语留在代码与技术对照中。
+- 代码注释遵循[开发规范](docs/development.md#代码注释)。实现术语留在代码与技术对照中。
 - 新文档用头部给出 30 秒导读与维护约定；工具导入、上游镜像或生成文件遵守对应格式，不机械塞入头部。具体例外听原则 01。
 
 ### commit 与 PR

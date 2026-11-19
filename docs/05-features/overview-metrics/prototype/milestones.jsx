@@ -9,6 +9,8 @@ import {
   editVersionName
 } from './milestones-sdlc.js'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
+import ArrowDownToLine from 'lucide-react/dist/esm/icons/arrow-down-to-line.js'
+import LoaderCircle from 'lucide-react/dist/esm/icons/loader-circle.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
@@ -59,6 +61,9 @@ function App() {
     [theme, setTheme] = useState('light'),
     [notice, setNotice] = useState(''),
     [saveError, setSaveError] = useState(''),
+    [updatingProject, setUpdatingProject] = useState(false),
+    [updateSample, setUpdateSample] = useState(''),
+    [updateConflict, setUpdateConflict] = useState(false),
     [newFeature, setNewFeature] = useState(null),
     [submitting, setSubmitting] = useState(false),
     [submitError, setSubmitError] = useState(''),
@@ -68,8 +73,9 @@ function App() {
   const board = useRef(null),
     state = cases[caseId],
     dirty = JSON.stringify(state.draft) !== JSON.stringify(state.submitted),
-    current = planning ? state.draft : state.published,
-    empty = !planning && !state.published
+    plan = state.draft,
+    empty = !planning && !plan.milestones.length && !plan.versions.length && !plan.features.length,
+    busy = submitting || updatingProject
   useEffect(() => {
     if (new URLSearchParams(location.search).has('review')) {
       board.current?.scrollIntoView({ block: 'start' })
@@ -80,11 +86,13 @@ function App() {
     empty: { past: [], future: [], field: null }
   })
   const history = histories.current[caseId]
-  const plan = current || state.draft,
-    changes = changesBetween(state.submitted, state.draft),
+  const changes = changesBetween(state.submitted, state.draft),
     problem = incomplete(state.draft, state.submitted)
   const setState = (updater) => setCases((all) => ({ ...all, [caseId]: updater(all[caseId]) }))
   const editPlan = (updater, fieldEdit = false) => {
+    if (busy) {
+      return
+    }
     const draft = updater(state.draft)
     if (JSON.stringify(draft) === JSON.stringify(state.draft)) {
       return
@@ -140,6 +148,7 @@ function App() {
     setCaseId(value === 'empty' ? 'empty' : 'existing')
     setPlanning(value === 'planning')
     setSubmitError('')
+    setUpdateConflict(false)
     setModal(null)
   }
   const begin = () => {
@@ -202,6 +211,7 @@ function App() {
   const requestReview = () => {
     if (problem) {
       setValidationAttempt(true)
+      setPlanning(true)
       setNotice(problem)
       requestAnimationFrame(() => {
         const field = [...document.querySelectorAll('[data-required="true"]')].find(
@@ -243,7 +253,7 @@ function App() {
   }
   const submit = async (demo) => {
     const preview = ['success', 'failure'].includes(demo)
-    if (submitLock.current || (!preview && (!dirty || problem || state.review === 'merged'))) {
+    if (submitLock.current || updatingProject || (!preview && (!dirty || problem || saveError))) {
       return
     }
     submitLock.current = true
@@ -274,14 +284,43 @@ function App() {
     submitLock.current = false
     setSubmitting(false)
   }
-  const publish = () => {
-    if (state.review !== 'merged') {
+  const updateProject = async () => {
+    if (busy || saveError) {
       return
     }
-    setState((s) => ({ ...s, published: clone(s.submitted), review: 'none' }))
-    setPlanning(dirty)
-    setModal(null)
-    setNotice(dirty ? '正式安排已更新，未提交修改仍保留' : '正式安排已更新')
+    setUpdatingProject(true)
+    setUpdateConflict(false)
+    setNotice('正在更新项目材料工作树…')
+    await new Promise((resolve) => setTimeout(resolve, 650))
+    if (updateSample === 'conflict') {
+      setUpdateConflict(true)
+      setNotice('')
+    } else {
+      if (updateSample === 'incoming') {
+        const milestone = {
+          id: crypto.randomUUID(),
+          date: currentDay,
+          outcome: '核对下一阶段交付安排'
+        }
+        const addIncoming = (material) => ({
+          ...material,
+          milestones: [...material.milestones, milestone]
+        })
+        setState((s) => ({
+          ...s,
+          draft: addIncoming(s.draft),
+          submitted: addIncoming(s.submitted),
+          review: s.review === 'merged' ? 'none' : s.review
+        }))
+        history.past = []
+        history.future = []
+        history.field = null
+        navigate(currentDay)
+        setUpdateSample('')
+      }
+      setNotice(updateSample === 'incoming' ? '项目材料工作树已更新' : '项目材料工作树已是最新')
+    }
+    setUpdatingProject(false)
   }
   const openVersion = (version, item) => {
     const history = historyPlans.find((p) => p.version === version)
@@ -326,21 +365,28 @@ function App() {
             <option value="error">原型注释：验收读取失败</option>
           </select>
           <select
-            aria-label="原型注释：播放提交反馈"
-            value=""
-            disabled={submitting}
-            onChange={(e) => submit(e.target.value)}
+            aria-label="原型注释：模拟 Git 操作结果"
+            value={updateSample}
+            disabled={busy}
+            onChange={(e) => {
+              const sample = e.target.value
+              if (sample === 'success' || sample === 'failure') {
+                void submit(sample)
+              } else {
+                setUpdateSample(sample)
+              }
+            }}
           >
-            <option value="" disabled>
-              演示提交反馈
-            </option>
-            <option value="success">播放：提交成功</option>
-            <option value="failure">播放：提交失败</option>
+            <option value="">演示：工作树已是最新</option>
+            <option value="incoming">演示：远端有新里程碑</option>
+            <option value="conflict">演示：工作树更新冲突</option>
+            <option value="success">演示：提交成功</option>
+            <option value="failure">演示：提交失败</option>
           </select>
           <IconAction
             label="重置原型"
             icon={RefreshCw}
-            disabled={submitting}
+            disabled={busy}
             onClick={() => setModal({ type: 'reset' })}
           />
           <button
@@ -362,6 +408,7 @@ function App() {
         onKeyDown={(event) => {
           if (
             !planning ||
+            busy ||
             event.target.closest('input, textarea, [contenteditable="true"]') ||
             !(event.ctrlKey || event.metaKey) ||
             !['z', 'y'].includes(event.key.toLowerCase())
@@ -390,14 +437,8 @@ function App() {
                 <select
                   className="input"
                   aria-label="原型场景"
-                  disabled={submitting}
-                  value={
-                    planning
-                      ? 'planning'
-                      : caseId === 'empty' && !state.published
-                        ? 'empty'
-                        : 'ready'
-                  }
+                  disabled={busy}
+                  value={planning ? 'planning' : empty ? 'empty' : 'ready'}
                   onChange={(e) => choose(e.target.value)}
                 >
                   <option value="empty">尚无里程碑</option>
@@ -417,11 +458,9 @@ function App() {
               <h1>项目总览</h1>
               <button
                 className="btn btn-secondary"
-                onClick={() =>
-                  state.review === 'merged'
-                    ? publish()
-                    : setNotice('原型注释: 当前未连接真实主干更新。')
-                }
+                title="更新代码 · 主检出"
+                aria-label="更新代码 · 主检出"
+                onClick={() => setNotice('原型注释：复用总览现有的主检出更新。')}
               >
                 更新代码
               </button>
@@ -441,26 +480,31 @@ function App() {
                 </div>
                 <div className="ml-actions">
                   <MilestoneGuide planning={planning} />
+                  {!saveError && !empty && (dirty || state.review !== 'none') && (
+                    <span className="ml-milestone-status" role="status">
+                      {dirty ? '已保存 · 未提交' : state.review === 'open' ? '待评审' : '已合入'}
+                    </span>
+                  )}
                   {planning ? (
                     <>
                       <div className="ml-edit-actions" role="group" aria-label="规划编辑操作">
                         <IconAction
                           label="撤销 · Ctrl+Z"
                           icon={Undo2}
-                          disabled={!history.past.length}
+                          disabled={busy || !history.past.length}
                           onClick={() => stepHistory()}
                         />
                         <IconAction
                           label="重做 · Ctrl+Shift+Z"
                           icon={Redo2}
-                          disabled={!history.future.length}
+                          disabled={busy || !history.future.length}
                           onClick={() => stepHistory(true)}
                         />
                         <span className="ml-action-divider" />
                         <IconAction
                           label="放弃本次修改，恢复最近提交"
                           icon={RotateCcw}
-                          disabled={!dirty}
+                          disabled={busy || !dirty}
                           onClick={() => {
                             restore()
                             history.past = []
@@ -469,56 +513,72 @@ function App() {
                           }}
                         />
                       </div>
-                      {state.review === 'merged' ? (
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => setModal({ type: 'review' })}
-                        >
-                          更新正式安排
-                        </button>
-                      ) : (
-                        <button
-                          className="btn btn-primary"
-                          disabled={submitting || (state.review === 'none' && !dirty)}
-                          title={
-                            dirty
-                              ? problem || '核对本次变更'
-                              : state.review === 'none'
-                                ? '没有未提交修改'
-                                : '查看已提交的评审'
-                          }
-                          onClick={requestReview}
-                        >
-                          {submitting
-                            ? '提交中…'
-                            : dirty
-                              ? state.review === 'open'
-                                ? '更新评审'
-                                : '提交评审'
-                              : state.review === 'open'
-                                ? '查看评审'
-                                : '提交评审'}
-                        </button>
-                      )}
+                      <button
+                        className="btn btn-primary"
+                        disabled={
+                          busy || (!dirty && state.review !== 'open') || (dirty && !!saveError)
+                        }
+                        title={
+                          dirty
+                            ? problem || '核对本次变更'
+                            : state.review !== 'open'
+                              ? '没有未提交修改'
+                              : '查看已提交的评审'
+                        }
+                        onClick={requestReview}
+                      >
+                        {submitting
+                          ? '提交中…'
+                          : dirty
+                            ? state.review === 'open'
+                              ? '更新评审'
+                              : '提交评审'
+                            : state.review === 'open'
+                              ? '查看评审'
+                              : '提交评审'}
+                      </button>
                     </>
                   ) : (
                     <>
-                      <button className="btn btn-primary" onClick={begin}>
+                      <button className="btn btn-primary" disabled={busy} onClick={begin}>
                         规划里程碑
                       </button>
-                      {state.review !== 'none' && (
+                      {(dirty || state.review === 'open') && (
                         <button
                           className="btn btn-secondary"
-                          disabled={submitting}
-                          onClick={() => setModal({ type: 'review', viewOnly: true })}
+                          disabled={busy || (dirty && !!saveError)}
+                          onClick={requestReview}
                         >
-                          {state.review === 'merged' ? '更新正式安排' : '查看评审'}
+                          {dirty ? (state.review === 'open' ? '更新评审' : '提交评审') : '查看评审'}
                         </button>
                       )}
                     </>
                   )}
+                  <IconAction
+                    label={updatingProject ? '正在更新项目材料工作树' : '更新代码 · 项目材料工作树'}
+                    icon={updatingProject ? LoaderCircle : ArrowDownToLine}
+                    className={updatingProject ? 'ml-updating-project' : ''}
+                    disabled={busy || Boolean(saveError)}
+                    onClick={() => void updateProject()}
+                  />
                 </div>
               </div>
+              {updateConflict && (
+                <div className="ml-submit-error" role="alert">
+                  <span>项目材料工作树更新有冲突，当前修改已保留。</span>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() =>
+                      info(
+                        '处理更新冲突',
+                        '原型注释：复用源代码控制和原生会话，在项目材料工作树中核对本地与远端改动，处理后再更新。'
+                      )
+                    }
+                  >
+                    查看处理方式
+                  </button>
+                </div>
+              )}
               {empty ? (
                 <div className="ml-first-plan">
                   <CalendarRange size={30} />
@@ -601,7 +661,7 @@ function App() {
                     </div>
                   )}
                   <div className="ml-material-origin">
-                    <span>{planning ? '规划编辑中' : '正式安排'}</span>
+                    <span>项目材料工作树</span>
                     <button className="btn btn-ghost" onClick={() => setModal({ type: 'sources' })}>
                       查看来源
                     </button>
@@ -634,14 +694,14 @@ function App() {
           invalid={submitting || Boolean(problem)}
           state={state}
           changes={changes}
-          submit={submit}
+          submit={() => void submit()}
           markMerged={() => setState((s) => ({ ...s, review: 'merged' }))}
-          publish={publish}
           close={() => setModal(null)}
         />
       )}
       {modal?.type === 'sources' && (
         <Modal title="里程碑资料来源" close={() => setModal(null)} wide>
+          <p>当前排期来自项目材料工作树 bw/project 的 .bw/milestones.json。</p>
           <p>
             原型注释: 版本来源为 .bw/planning。历史材料未记录规划时间，不绘入时间轴；不使用 GitHub
             Releases 补日期。

@@ -17,7 +17,7 @@ export function traceStderrTail(stderr: string): string {
 }
 
 export function recordMonicaFailure(span: ActiveSpan, rawCode: string, message?: string): void {
-  const code = safeLabel(rawCode, 'workbench-error')
+  const code = safeLabel(rawCode, 'monica-error')
   span.setAttribute('status', 'failed')
   span.setAttribute('errorCode', code)
   span.fail(message ? `${code}: ${message}` : code)

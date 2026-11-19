@@ -31,7 +31,7 @@ export function ProjectCard({
           className="card-toggle"
           aria-expanded={open}
           title={open ? '收起项目名片' : '展开项目名片'}
-          data-contextual-tour-target="workbench-overview-card"
+          data-contextual-tour-target="monica-overview-card"
           onClick={() => setExpanded((value) => !value)}
         >
           <ChevronRight size={14} aria-hidden className={`card-chevron${open ? ' is-open' : ''}`} />
@@ -44,7 +44,7 @@ export function ProjectCard({
               label="编辑项目信息"
               icon={FilePenLine}
               onClick={onEdit}
-              data-contextual-tour-target="workbench-overview-edit"
+              data-contextual-tour-target="monica-overview-edit"
             />
           )}
         </div>

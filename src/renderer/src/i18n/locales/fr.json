@@ -2955,6 +2955,7 @@
             "openWithDefaultApp": "Ouvrir avec l'application par défaut",
             "switchTerminal": "Changer de terminal",
             "openTaskTerminal": "Ouvrir le terminal de tâches",
+            "openInTask": "Ouvrir dans la tâche",
             "systemBrowser": "Navigateur système",
             "orcaBrowser": "Navigateur Orca",
             "terminalLinkSettings": "Paramètres des liens du terminal",

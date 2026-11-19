@@ -129,18 +129,19 @@ export function MilestoneVersionRow({
   return (
     <div className="monica-ml-version-row" style={{ height }}>
       <div className="monica-ml-label">
-        <div>
+        <div className="monica-ml-label-title">
+          <span>特性 / 负责人</span>
           {editable && (
             <MilestoneIconButton
               className="monica-ml-cell-add"
               label="添加特性"
               onClick={addFeature}
             >
-              <ListPlus size={16} />
+              <ListPlus className="size-4" aria-hidden="true" />
             </MilestoneIconButton>
           )}
-          特性 / 负责人<small>{showActual ? '规划 / 实际日期' : '计划 · 日排期'}</small>
         </div>
+        <small>{showActual ? '规划 / 实际日期' : '计划 · 日排期'}</small>
       </div>
       <div className="monica-ml-track" style={{ width: canvasWidth }}>
         {!showActual &&

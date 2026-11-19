@@ -141,34 +141,41 @@ export function upgradeMilestoneMaterial(value: unknown): unknown {
     }))
   }
 }
-export const MilestoneMaterialSchema = z
-  .strictObject({
-    schema_version: z.literal(4),
-    milestones: z.array(MilestoneNodeSchema).max(2000),
-    features: z.array(MilestoneFeatureSchema).max(2000),
-    versionPlans: z.array(ScheduledVersionSchema).max(2000).optional()
-  })
-  .superRefine((value, context) => {
-    if (
-      new Set(value.milestones.map((m) => m.id)).size !== value.milestones.length ||
-      new Set(value.features.map((f) => f.id)).size !== value.features.length
-    ) {
-      context.addIssue({ code: 'custom', message: '里程碑或特性身份重复' })
-    }
-    if (value.milestones.some((m) => !m.outcome.trim())) {
-      context.addIssue({ code: 'custom', message: '请补全里程碑成果' })
-    }
-    if (value.milestones.some((m) => m.outcome.trim().length > 200)) {
-      context.addIssue({ code: 'custom', message: '里程碑成果最多 200 字' })
-    }
-    const versions = value.versionPlans ?? []
-    if (
-      new Set(versions.map((v) => v.cycleId)).size !== versions.length ||
-      new Set(versions.map((v) => v.version.toLowerCase())).size !== versions.length
-    ) {
-      context.addIssue({ code: 'custom', message: '版本名称或身份不能重复' })
-    }
-  })
+export const MilestoneWorkingMaterialSchema = z.strictObject({
+  schema_version: z.literal(4),
+  milestones: z.array(MilestoneNodeSchema).max(2000),
+  features: z
+    .array(MilestoneFeatureSchema.extend({ title: z.string(), owner: z.string() }))
+    .max(2000),
+  versionPlans: z
+    .array(ScheduledVersionSchema.extend({ version: z.string() }))
+    .max(2000)
+    .optional()
+})
+export const MilestoneMaterialSchema = MilestoneWorkingMaterialSchema.extend({
+  features: z.array(MilestoneFeatureSchema).max(2000),
+  versionPlans: z.array(ScheduledVersionSchema).max(2000).optional()
+}).superRefine((value, context) => {
+  if (
+    new Set(value.milestones.map((m) => m.id)).size !== value.milestones.length ||
+    new Set(value.features.map((f) => f.id)).size !== value.features.length
+  ) {
+    context.addIssue({ code: 'custom', message: '里程碑或特性身份重复' })
+  }
+  if (value.milestones.some((m) => !m.outcome.trim())) {
+    context.addIssue({ code: 'custom', message: '请补全里程碑成果' })
+  }
+  if (value.milestones.some((m) => m.outcome.trim().length > 200)) {
+    context.addIssue({ code: 'custom', message: '里程碑成果最多 200 字' })
+  }
+  const versions = value.versionPlans ?? []
+  if (
+    new Set(versions.map((v) => v.cycleId)).size !== versions.length ||
+    new Set(versions.map((v) => v.version.toLowerCase())).size !== versions.length
+  ) {
+    context.addIssue({ code: 'custom', message: '版本名称或身份不能重复' })
+  }
+})
 export type ScheduledVersion = z.infer<typeof ScheduledVersionSchema>
 export type MilestoneFeature = z.infer<typeof MilestoneFeatureSchema>
 export type MilestoneDelivery = z.infer<typeof MilestoneDeliverySchema>
@@ -187,23 +194,43 @@ export type MilestoneSnapshot = {
   problems: string[]
 }
 export type MilestoneRead = {
-  sourceNotice?: string
-  mergedProposal?: boolean
-  branchHead: string | null
   formal: MilestoneSnapshot
-  proposal: MilestoneSnapshot | null
+  project: {
+    worktreeId: string
+    committed: MilestoneSnapshot
+    working: MilestoneWorkingFile | null
+    workingError?: string
+    pendingReview: boolean
+    incorporated: boolean
+    reviewed: boolean
+  } | null
   review: Pick<CharterStatus, 'pr' | 'queryFailed' | 'remoteAvailable'>
 }
-export const MilestoneReadRequestSchema = z.strictObject({ scope: MetricScopeSchema })
+export type MilestoneWorkingFile = {
+  revision: string | null
+  material: MilestoneMaterial | null
+}
+export const MilestoneReadRequestSchema = z.strictObject({
+  scope: MetricScopeSchema,
+  includeProject: z.boolean().optional()
+})
+export const MilestoneWorkingRequestSchema = z.strictObject({ scope: MetricScopeSchema })
+export const MilestoneSaveRequestSchema = z.strictObject({
+  scope: MetricScopeSchema,
+  expectedRevision: z.string().nullable(),
+  material: MilestoneWorkingMaterialSchema
+})
 export const MilestoneSubmitRequestSchema = z.strictObject({
   scope: MetricScopeSchema,
-  expectedFormal: z.string().min(1),
-  expectedProposal: z.string().nullable(),
-  material: MilestoneMaterialSchema,
-  versions: z.array(ScheduledVersionSchema).max(2000)
+  expectedRevision: z.string()
 })
+export const MilestoneDiscardRequestSchema = MilestoneSubmitRequestSchema.extend({
+  expectedRevision: z.string().nullable()
+})
+export type MilestoneSave = z.infer<typeof MilestoneSaveRequestSchema>
 export type MilestoneSubmit = z.infer<typeof MilestoneSubmitRequestSchema>
-export type MilestoneSubmitResult = { outcome: CharterSubmitOutcome; proposal: MilestoneSnapshot }
+export type MilestoneDiscard = z.infer<typeof MilestoneDiscardRequestSchema>
+export type MilestoneSubmitResult = { outcome: CharterSubmitOutcome }
 
 export const emptyMilestones = (): MilestoneMaterial => ({
   schema_version: 4,
@@ -221,6 +248,25 @@ export function milestoneDraft(snapshot: MilestoneSnapshot): MilestoneDraft {
       ...(timeWindow ? { timeWindow: { ...timeWindow } } : {})
     }))
   }
+}
+
+export function milestoneWorkingDraft(file: MilestoneWorkingFile, committed: MilestoneSnapshot) {
+  const baseline = milestoneDraft(committed)
+  if (!file.material) {
+    return baseline
+  }
+  const { versionPlans, ...material } = file.material
+  return {
+    material,
+    versions: versionPlans?.toSorted(compareMilestoneWindows) ?? baseline.versions
+  }
+}
+
+export function compareMilestoneWindows(a: ScheduledVersion, b: ScheduledVersion): number {
+  return (
+    (a.timeWindow?.start ?? '9999').localeCompare(b.timeWindow?.start ?? '9999') ||
+    a.version.localeCompare(b.version)
+  )
 }
 export function milestoneProblems(draft: MilestoneDraft, baseline?: MilestoneDraft): string[] {
   const parsed = MilestoneMaterialSchema.safeParse(draft.material)

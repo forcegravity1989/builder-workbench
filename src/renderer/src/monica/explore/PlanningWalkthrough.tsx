@@ -45,7 +45,7 @@ function steps(): JourneyStep[] {
       ),
       duration: 5500,
       cues: [
-        [1500, '[data-contextual-tour-target="workbench-plan-issues"]'],
+        [1500, '[data-contextual-tour-target="monica-plan-issues"]'],
         [3700, '.g3-task-link']
       ],
       Scene: PlanningTasksDemo

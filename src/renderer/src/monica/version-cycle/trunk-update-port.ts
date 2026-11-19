@@ -12,13 +12,15 @@ const pending = new Map<string, Promise<TrunkUpdateResult>>()
  */
 export function updateTrunkCode(
   scope: MetricScope,
-  runtimeOwnerEnvironmentId?: string
+  runtimeOwnerEnvironmentId?: string,
+  expectedBranch?: string
 ): Promise<TrunkUpdateResult> {
   const key = JSON.stringify([
     scope.repoId,
     scope.worktreeId,
     scope.hostId,
-    runtimeOwnerEnvironmentId
+    runtimeOwnerEnvironmentId,
+    expectedBranch
   ])
   const running = pending.get(key)
   if (running) {
@@ -28,7 +30,7 @@ export function updateTrunkCode(
     scope,
     runtimeOwnerEnvironmentId,
     'workbench.trunk.update',
-    (ownerScope) => ({ scope: ownerScope }),
+    (ownerScope) => ({ scope: ownerScope, ...(expectedBranch ? { expectedBranch } : {}) }),
     // The owner Git service has a four-minute budget. Leave time for RPC routing
     // and process termination before the renderer reports a timeout.
     300_000

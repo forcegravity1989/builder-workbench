@@ -1,7 +1,7 @@
 ---
 name: monica-start
 description: >-
-  Use when starting or continuing Monica development in an external
+  Use when starting or continuing Builder Monica development in an external
   IDE: fix bugs, adjust existing features, develop new features, or validate a
   delivery, including feature migration with renewed product decisions.
   Route knowledge governance to project-knowledge; choose planning
@@ -15,13 +15,13 @@ metadata:
 
 # monica-start — Monica 开发与交付
 
-> **读者与时机**：在仓外 IDE 开始或继续 Monica 开发的模型与开发者。先确认目标仓与依据，再按任务分流，连续实施、检视和交付。
+> **读者与时机**：直接修改本仓代码、文档或测试并交付 Monica 自身 PR 的模型与开发者。先确认目标仓与依据，再按任务分流，连续实施、检视和交付。
 >
 > **职责与维护**：本篇只编排读取与动作；项目约束归 AGENTS，特性决定和六环归原则 02，测试/检视/PR 规则归[开发规范](../../../docs/development.md)。按起手 → 分流 → 实施 → 交付 → 反哺组织；读取路径或工作步骤变化时更新。仓内试用不等于向 standard 分发，正文不保存任务流水。
 
 ## 1. 适用范围与入口
 
-- 本 Skill 服务 Monica 自身研发，不自动启动全仓资产治理，也不重新制定版本计划。Monica 内项目执行沿产品提示与被管项目 AGENTS，不自动叠加本入口；Monica 自身规则由本仓 AGENTS 直接引导读取，不依赖此 Skill 被调用。
+- 本 Skill 是 Monica 自身研发会话的起手与交付编排入口，不自动启动全仓资产治理，也不重新制定版本计划。AGENTS 与 `docs/development.md` 仍是硬规则正本，规则效力不依赖 Skill 是否被调用。Monica 发起的被管项目执行会话沿产品提示与被管项目 AGENTS，不自动叠加本入口。
 - 沿当前会话已有授权执行；本 Skill 不新增 push、发消息、远端写入、合入、关闭 Issue 或发布授权。用户已明确的范围不重复请求开工批准。
 - 修改本 Skill 前完整读取 [Skill 写作约定](../../../standard/skills/SKILL-MD-SPEC.md)。职责、格式或存量治理转 [project-knowledge](../project-knowledge/SKILL.md)；普通开发只同步受影响知识。
 - 本目录只定位方法及 references；业务目标以会话工作目录和 Git 为准。借另一 worktree 的 Skill 时记录方法与目标仓版本，业务操作显式指定目标仓，不把方法所在树当目标。
@@ -37,7 +37,7 @@ metadata:
 
 ## 3. 分流：按意图与影响
 
-开始特性设计或制作原型前，读取并执行 [原则 02 §3.2](../../../docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收) 的设计依据与确认要求。
+开始特性设计或制作原型前，读取并执行 [原则 02 §3.2](../../../docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收) 的设计依据与确认要求；做/改原型时按 [设计系统 guidelines「HTML 原型与文档页」](../../../docs/04-design-system/guidelines.md#html-原型与文档页) 呈现（原型注释、业界参考、阶段切换、复用标注、控件与文案）。
 
 涉及用户可见入口、操作路径或结果变化时，设计前完整读取[引导与旅程规范及矩阵](../../../docs/04-design-system/guidance.md)，定位受影响行，按[开发规范的验收依据](../../../docs/development.md#验收依据)明确本次引导。
 

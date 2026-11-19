@@ -4,6 +4,15 @@ import path from 'node:path'
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@stablyai/playwright-test'
 
+export async function openMilestoneOverview(page: Page, force = false) {
+  const entry = page.getByRole('button', { name: '项目总览', exact: true })
+  await expect(entry).toBeVisible({ timeout: 60_000 })
+  if ((await entry.getAttribute('aria-current')) !== 'page') {
+    await entry.click({ force, timeout: 60_000 })
+  }
+  await expect(page.locator('.monica-ml')).toBeVisible({ timeout: 60_000 })
+}
+
 async function moveNode(page: Page, node: Locator, delta: number) {
   await node.scrollIntoViewIfNeeded()
   const source = await node.boundingBox()
@@ -23,7 +32,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await page.setViewportSize({ width: 1280, height: 850 })
   const git = (args: string[]) =>
     execFileSync('git', args, { cwd: repoPath, encoding: 'utf8' }).trim()
-  await page.getByRole('button', { name: '项目总览', exact: true }).click()
+  await openMilestoneOverview(page)
   const board = page.locator('.monica-ml')
   const windows = board.locator('.monica-ml-window:not(.monica-ml-unused-week)')
   await expect(board.getByText('还没有里程碑')).toBeVisible({ timeout: 60_000 })
@@ -52,10 +61,23 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await expect(board.getByLabel('负责人', { exact: true })).toHaveValue('Builder')
   await board.getByRole('button', { name: '放弃本次修改，恢复最近提交', exact: true }).click()
 
+  await expect(board).toHaveAttribute('data-draft-persistence', 'saved')
+  const projectTree = await page.evaluate(() => {
+    const tree = window.__store
+      ?.getState()
+      .allWorktrees()
+      .find((item) => item.branch?.replace('refs/heads/', '') === 'bw/project')
+    if (!tree) {
+      throw new Error('Project material worktree was not prepared')
+    }
+    return tree.path
+  })
+  const projectGit = (args: string[]) =>
+    execFileSync('git', args, { cwd: projectTree, encoding: 'utf8' }).trim()
   const versions = ['v1.0.0', 'v1.0.1', 'v0.7.0']
   const ref = (i: number) => ({ version: versions[i], cycleId: `milestone-e2e-${i}` })
   for (const [i, version] of versions.entries()) {
-    const directory = path.join(repoPath, '.bw/planning', version)
+    const directory = path.join(projectTree, '.bw/planning', version)
     mkdirSync(directory, { recursive: true })
     writeFileSync(
       path.join(directory, 'data.json'),
@@ -74,6 +96,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
     )
   }
   const materialPath = path.join(repoPath, '.bw/milestones.json')
+  const workingPath = path.join(projectTree, '.bw/milestones.json')
   const material = {
     schema_version: 3,
     milestones: [{ id: 'launch', date: '2026-11-05', outcome: '协作能力形成可用闭环' }],
@@ -95,11 +118,14 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
       }))
     }))
   }
-  writeFileSync(materialPath, JSON.stringify(material))
-  git(['add', '.bw/planning', '.bw/milestones.json'])
-  git(['commit', '-m', 'seed dated milestone materials'])
+  writeFileSync(workingPath, JSON.stringify(material))
+  projectGit(['add', '.bw/planning', '.bw/milestones.json'])
+  projectGit(['commit', '-m', 'seed dated milestone materials'])
+  git(['merge', '--ff-only', 'bw/project'])
   const formalHead = git(['rev-parse', 'HEAD'])
-  await board.getByRole('button', { name: '刷新里程碑与评审', exact: true }).click()
+  await expect(board.getByLabel('特性名称', { exact: true }).first()).toHaveValue('消息与通知', {
+    timeout: 40_000
+  })
   await board.getByLabel('特性显示范围').selectOption('all')
   await board.getByLabel('定位日期', { exact: true }).fill('2026-11-01')
   await expect(board.getByLabel('特性名称', { exact: true }).first()).toHaveValue('消息与通知')
@@ -125,7 +151,6 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   const rows = board.locator('.monica-ml-row')
   await rows.first().getByLabel('负责人', { exact: true }).fill('临时负责人')
   await board.getByRole('button', { name: '撤销', exact: true }).click()
-  await board.getByRole('button', { name: '刷新里程碑与评审', exact: true }).click()
   await expect(board.getByRole('button', { name: '重做', exact: true })).toBeEnabled()
   await board.getByRole('button', { name: '重做', exact: true }).click()
   await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('临时负责人')
@@ -134,7 +159,9 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await rows.first().getByLabel('负责人', { exact: true }).press('Tab')
   await board.getByRole('button', { name: '结束编辑，返回项目里程碑', exact: true }).click()
   await expect(board.getByLabel('负责人', { exact: true })).toHaveCount(0)
-  await board.getByRole('button', { name: '继续规划', exact: true }).click()
+  await expect(board).toHaveAttribute('data-draft-persistence', 'saved')
+  expect(JSON.parse(readFileSync(workingPath, 'utf8')).features[0].owner).toBe('评审 Builder')
+  await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
   await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('评审 Builder')
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('Builder 1')
@@ -156,6 +183,17 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
     has: page.getByLabel('特性名称', { exact: true }).and(page.locator('[value="消息与通知"]'))
   })
   const deliveryBar = notification.locator('.monica-ml-delivery-body').first()
+  await board.getByLabel('定位日期', { exact: true }).fill('2026-11-01')
+  await expect
+    .poll(() =>
+      deliveryBar.evaluate((node) => {
+        const rect = node.getBoundingClientRect()
+        return node.contains(
+          document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+        )
+      })
+    )
+    .toBe(true)
   const initialDelivery = await deliveryBar.getAttribute('title')
   await moveNode(page, deliveryBar, 252)
   await expect(deliveryBar).toHaveAttribute('title', /2026-11-09 00:00 — 2026-11-16 00:00/)
@@ -253,7 +291,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   const failure = board.locator('details').filter({ hasText: '里程碑提交失败' })
   await expect(failure.locator('summary')).toBeVisible({ timeout: 120_000 })
   await failure.locator('summary').click()
-  await expect(failure).toContainText('未确认远端身份')
+  await expect(failure).toContainText('未确认代码仓远端')
   await expect(failure.getByRole('button', { name: '重试提交' })).toBeEnabled()
   await expect(notification.getByLabel('负责人', { exact: true })).toHaveValue('评审 Builder')
   await page.screenshot({ path: info.outputPath('milestones-submit-retained.png') })
@@ -262,20 +300,58 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '放弃本次修改，恢复最近提交', exact: true }).click()
   await expect(rows).toHaveCount(2)
   await expect(board.getByRole('button', { name: '提交评审', exact: true })).toBeDisabled()
+  expect(projectGit(['status', '--porcelain', '--', '.bw/milestones.json'])).toBe('')
   await board.getByRole('button', { name: '结束编辑，返回项目里程碑', exact: true }).click()
   await page.reload()
-  await page.getByRole('button', { name: '项目总览', exact: true }).click()
+  await openMilestoneOverview(page)
   await expect(board.getByText('消息与通知', { exact: true })).toBeVisible({ timeout: 60_000 })
   await expect(board.getByText('工程能力观测', { exact: true })).toBeVisible()
   await expect(board.getByText('知识库', { exact: true })).toHaveCount(0)
   await page.screenshot({ path: info.outputPath('milestones-reloaded.png') })
+  const remote = path.join(repoPath, '.git', 'milestones-remote.git')
+  execFileSync('git', ['init', '--bare', '--initial-branch=main', remote])
+  git(['remote', 'add', 'origin', remote])
+  git(['push', '-u', 'origin', 'HEAD:main'])
+  projectGit(['push', '-u', 'origin', 'bw/project'])
+
   const startedPlanPath = path.join(repoPath, '.bw/planning/v1.0.0/data.json')
   const startedPlan = JSON.parse(readFileSync(startedPlanPath, 'utf8'))
   startedPlan.summary.progress = '已开始制定计划'
   writeFileSync(startedPlanPath, JSON.stringify(startedPlan))
   git(['add', '.bw/planning/v1.0.0/data.json'])
   git(['commit', '-m', 'start version planning'])
-  await board.getByRole('button', { name: '刷新里程碑与评审', exact: true }).click()
+  git(['push', 'origin', 'HEAD:main'])
+  const mainHead = git(['rev-parse', 'HEAD'])
+  const peer = path.join(repoPath, '.git', 'milestones-peer')
+  git(['clone', '--branch', 'bw/project', remote, peer])
+  const peerGit = (args: string[]) =>
+    execFileSync('git', args, { cwd: peer, encoding: 'utf8' }).trim()
+  writeFileSync(path.join(peer, 'review-notes.md'), 'Unrelated peer change for sync\n')
+  peerGit(['add', 'review-notes.md'])
+  peerGit([
+    '-c',
+    'user.name=fixture',
+    '-c',
+    'user.email=fixture@example.com',
+    'commit',
+    '-m',
+    'unrelated peer change'
+  ])
+  peerGit(['push'])
+  const update = board.getByRole('button', { name: '更新代码 · 项目材料工作树', exact: true })
+  await update.click()
+  const updated = page.getByText('项目材料工作树已更新', { exact: true })
+  const updateRefused = board.getByText('项目材料工作树未更新 · 查看详情', { exact: true })
+  await expect(updated.or(updateRefused)).toBeVisible({ timeout: 120_000 })
+  if (await updateRefused.isVisible()) {
+    await updateRefused.click()
+    throw new Error(await updateRefused.locator('..').innerText())
+  }
+  expect(readFileSync(path.join(projectTree, 'review-notes.md'), 'utf8')).toContain(
+    'Unrelated peer change'
+  )
+  expect(git(['rev-parse', 'HEAD'])).toBe(mainHead)
+  await page.screenshot({ path: info.outputPath('milestones-project-updated.png') })
   await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
   await windows
     .first()
@@ -299,9 +375,37 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByLabel('负责人', { exact: true }).first().fill('重启后恢复的草案')
   await board.getByLabel('负责人', { exact: true }).first().press('Tab')
   await expect(board).toHaveAttribute('data-draft-persistence', 'saved')
+  const local = readFileSync(workingPath, 'utf8')
+  expect(JSON.parse(local).features[0].owner).toBe('重启后恢复的草案')
+  const peerPath = path.join(peer, '.bw/milestones.json')
+  const peerInput = JSON.parse(readFileSync(peerPath, 'utf8'))
+  peerInput.features[0].owner = '另一位 Builder'
+  writeFileSync(peerPath, JSON.stringify(peerInput))
+  peerGit(['add', '.bw/milestones.json'])
+  peerGit([
+    '-c',
+    'user.name=fixture',
+    '-c',
+    'user.email=fixture@example.com',
+    'commit',
+    '-m',
+    'update same milestone'
+  ])
+  peerGit(['push'])
+  await update.click()
+  await expect(board.getByText('项目材料工作树未更新 · 查看详情', { exact: true })).toBeVisible({
+    timeout: 120_000
+  })
+  expect(readFileSync(workingPath, 'utf8')).toBe(local)
+  expect(git(['rev-parse', 'HEAD'])).toBe(mainHead)
+  await page.screenshot({ path: info.outputPath('milestones-project-conflict.png') })
+
   await page.reload()
-  await page.getByRole('button', { name: '项目总览', exact: true }).click()
+  await openMilestoneOverview(page)
+  await expect(board.getByText('已保存 · 未提交', { exact: true })).toBeVisible()
+  await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
   await expect(board.getByLabel('负责人', { exact: true }).first()).toHaveValue('重启后恢复的草案')
   await expect(board).toHaveAttribute('data-draft-persistence', 'saved')
   expect(JSON.parse(readFileSync(materialPath, 'utf8'))).toEqual(material)
+  return workingPath
 }

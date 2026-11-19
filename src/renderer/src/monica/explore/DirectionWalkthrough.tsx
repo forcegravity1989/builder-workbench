@@ -49,7 +49,7 @@ const pointerCues: readonly (readonly [at: number, target: string][])[] = [
   ],
   [
     [790, '.card-toggle'],
-    [2320, '[data-contextual-tour-target="workbench-overview-edit"]'],
+    [2320, '[data-contextual-tour-target="monica-overview-edit"]'],
     [3960, '#direction-demo-opportunity'],
     [7090, '[data-demo-action="review"]']
   ],

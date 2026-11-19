@@ -30,7 +30,7 @@ import { ErrorDetails, notifyMonicaError } from './error-feedback'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
-import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
+import { overviewWorkflowTrees } from './version-cycle/native-cycle-workspace'
 import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { ProjectMilestones } from './project-milestones'
@@ -98,23 +98,11 @@ export function OverviewPage(): React.JSX.Element {
   const charterRead = useRepoCharterSnapshot(activeRepo ?? undefined)
   const charter = charterRead?.charter ?? null
   const versionCatalog = useVersionCatalogForRepo(activeRepoId, hostId)
-  const charterVersion =
-    versionCatalog.catalog?.entries.slice().sort(compareVersionDisplayOrder)[0]?.version ?? null
+  const charterVersion = versionCatalog.planOrderPending
+    ? null
+    : (versionCatalog.catalog?.entries.toSorted(compareVersionDisplayOrder)[0]?.version ?? null)
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
-  const fixedTrees = useMemo(() => {
-    if (!baseScope) {
-      return { plan: null, acceptance: null, error: null }
-    }
-    try {
-      return {
-        plan: findCycleWorktree({ ...baseScope, workflow: 'plan' })?.id ?? null,
-        acceptance: findCycleWorktree({ ...baseScope, workflow: 'acceptance' })?.id ?? null,
-        error: null
-      }
-    } catch (error) {
-      return { plan: null, acceptance: null, error: String(error) }
-    }
-  }, [baseScope])
+  const fixedTrees = overviewWorkflowTrees(baseScope, versionCatalog.worktrees, charterVersion)
   // 「更新代码」后 history/metrics 快照由按钮 handler 各自的 force reload 就地刷新，
   // 不换键、不清空显示。
   const [updatingTrunk, setUpdatingTrunk] = useState(false)
@@ -222,9 +210,9 @@ export function OverviewPage(): React.JSX.Element {
   const scoreboardAvailable = Boolean(milestoneScope && activeRepo?.kind !== 'folder')
   const scoreboardGuideReady = scoreboardAvailable && !busy && !refreshing && !settingsOpen
 
-  useMonicaScreenGuide('workbench-overview', Boolean(activeRepo && !settingsOpen))
+  useMonicaScreenGuide('monica-overview', Boolean(activeRepo && !settingsOpen))
   useMonicaScreenGuide(
-    'workbench-scoreboard',
+    'monica-scoreboard',
     scoreboardAvailable && !settingsOpen && !refreshing,
     visibleScoreboard === dataIdentity && scoreboardGuideReady
   )
@@ -238,7 +226,7 @@ export function OverviewPage(): React.JSX.Element {
         const visible = entries.at(-1)?.intersectionRatio === 1
         setVisibleScoreboard(visible ? dataIdentity : null)
         if (!visible) {
-          useAppStore.getState().cancelContextualTour('workbench-scoreboard')
+          useAppStore.getState().cancelContextualTour('monica-scoreboard')
         }
       },
       { threshold: 1 }
@@ -268,7 +256,7 @@ export function OverviewPage(): React.JSX.Element {
               <button
                 type="button"
                 className="monica-btn monica-btn-primary"
-                data-contextual-tour-target="workbench-overview-add"
+                data-contextual-tour-target="monica-overview-add"
                 onClick={() => openAddProject()}
               >
                 + 添加项目
@@ -337,15 +325,12 @@ export function OverviewPage(): React.JSX.Element {
                 detail={versionProblem}
               />
             )}
-            <ProjectMilestones
-              scope={milestoneScope}
-              refreshToken={history?.baselineCommit}
-              updateFormal={updateTrunk}
-            />
+            <ProjectMilestones scope={milestoneScope} refreshToken={historyState.retry} />
 
             <OverviewScoreboard
               catalog={catalog}
               readings={zoneReadings}
+              pendingReadings={metrics.pendingReadings}
               problems={metrics.problems}
               busy={busy}
               onRefresh={() => void refreshReadings()}

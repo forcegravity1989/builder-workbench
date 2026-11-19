@@ -58,10 +58,13 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../monica/package-pipeline'
-import { ReviewRequestSchema } from '../monica/pr-review-request'
+import { ReviewDismissSchema, ReviewRequestSchema } from '../monica/pr-review-request'
 import {
+  MilestoneDiscardRequestSchema,
   MilestoneReadRequestSchema,
-  MilestoneSubmitRequestSchema
+  MilestoneSaveRequestSchema,
+  MilestoneSubmitRequestSchema,
+  MilestoneWorkingRequestSchema
 } from '../monica/project-milestones'
 import { ReleaseStatusRequestSchema } from '../monica/release-status'
 import { MonicaGroupRemoval, MonicaRepoRemoval } from '../monica/repo-removal'
@@ -72,6 +75,7 @@ import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
   VersionHistoryReadSchema,
+  VersionPlanEntryTimesSchema,
   VersionTreePlansSchema
 } from '../monica/version-history'
 import {
@@ -1233,6 +1237,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.submit': CharterSubmitRequestSchema,
   'workbench.fixedWorkspace.ensure': FixedWorkspaceEnsureSchema,
   'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.listPlanEntryTimes': VersionPlanEntryTimesSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
@@ -1247,8 +1252,11 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.milestones.discard': MilestoneDiscardRequestSchema,
   'workbench.milestones.read': MilestoneReadRequestSchema,
+  'workbench.milestones.save': MilestoneSaveRequestSchema,
   'workbench.milestones.submit': MilestoneSubmitRequestSchema,
+  'workbench.milestones.working': MilestoneWorkingRequestSchema,
   'workbench.overview.pull': WorkflowCommentsRequestSchema,
   'workbench.package.download': PackageDownloadSchema,
   'workbench.package.latest': PackageLatestSchema,
@@ -1258,6 +1266,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.repo.deleteGroup': MonicaGroupRemoval,
   'workbench.repo.removeRegistration': MonicaRepoRemoval,
   'workbench.review.comments': PullRequest,
+  'workbench.review.dismiss': ReviewDismissSchema,
   'workbench.review.identity': null,
   'workbench.review.inbox': null,
   'workbench.review.receive': ReviewRequestSchema,

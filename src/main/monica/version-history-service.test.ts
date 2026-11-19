@@ -32,6 +32,12 @@ const plan: PlanningMaterial = {
 }
 const digest = (raw: Buffer) => `sha256:${createHash('sha256').update(raw).digest('hex')}`
 const git = (args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' })
+const gitWithEnv = (args: string[], environment: NodeJS.ProcessEnv) =>
+  execFileSync('git', args, {
+    cwd: root,
+    stdio: 'pipe',
+    env: { ...process.env, ...environment }
+  })
 const commit = (message: string, path = '.bw/planning/v1/data.json') => {
   git(['add', path])
   git(['commit', '-m', message])
@@ -197,13 +203,13 @@ afterAll(() => {
   }
 })
 
-function service(cycleHead?: string) {
+function service(cycleHead?: string, baselineCommit = adoptedCommit) {
   return createVersionHistoryService({
     async git(_scope, args) {
       return git(args)
     },
     async baseline() {
-      return { ref: 'adopted', commit: adoptedCommit }
+      return { ref: 'adopted', commit: baselineCommit }
     },
     async worktreeHead() {
       return cycleHead ?? git(['rev-parse', 'HEAD']).toString().trim()
@@ -403,6 +409,11 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks', 
   expect(current.records).toHaveLength(1)
   expect(current.records[0].sourceCommit).toBe(acceptanceLatestCommit)
   expect(current.problems).toEqual([])
+  const entryTimes = await port.listPlanEntryTimes({ scope, baselineCommit: adoptedCommit })
+  expect(entryTimes.v1).toBe(
+    Date.parse(git(['show', '-s', '--format=%cI', firstCommit]).toString().trim())
+  )
+  await expect(port.listPlanEntryTimes({ scope, baselineCommit: firstCommit })).resolves.toEqual({})
 })
 
 it('lists version folders from data.json committed on the cycle branch itself', async () => {
@@ -538,5 +549,35 @@ it('reads a committed plan from a cycle branch HEAD that diverged from the adopt
     expect(loaded.document.cycleId).toBe('unmerged-cycle')
   } finally {
     git(['switch', 'adopted'])
+  }
+
+  {
+    const baselineBefore = adoptedCommit
+    const planPath = '.bw/planning/v1.7/data.json'
+    const sideAddedAt = '2026-11-16T12:08:27Z'
+    git(['switch', '-c', 'side-added-version', baselineBefore])
+    mkdirSync(join(root, '.bw/planning/v1.7'), { recursive: true })
+    writeFileSync(
+      join(root, planPath),
+      JSON.stringify({ ...plan, version: 'v1.7', cycleId: 'side-added-cycle' })
+    )
+    git(['add', planPath])
+    gitWithEnv(['commit', '-m', 'add side-branch version'], {
+      GIT_AUTHOR_DATE: sideAddedAt,
+      GIT_COMMITTER_DATE: sideAddedAt
+    })
+    const sideAddedCommit = git(['rev-parse', 'HEAD']).toString().trim()
+    git(['switch', 'adopted'])
+    git(['merge', '--no-ff', 'side-added-version', '-m', 'adopt side-branch version'])
+    const mergedBaseline = git(['rev-parse', 'HEAD']).toString().trim()
+
+    const entryTimes = await service(undefined, mergedBaseline).listPlanEntryTimes({
+      scope,
+      baselineCommit: mergedBaseline
+    })
+    expect(entryTimes['v1.7']).toBe(Date.parse(sideAddedAt))
+    expect(entryTimes['v1.7']).toBe(
+      Date.parse(git(['show', '-s', '--format=%cI', sideAddedCommit]).toString().trim())
+    )
   }
 })

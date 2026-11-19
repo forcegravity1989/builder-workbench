@@ -14,7 +14,7 @@ import type {
   WorkspaceStatusDefinition
 } from '../../../../../../shared/worktree/types'
 import type { GroupHeaderRow, WorktreeGroupBy } from '../grouping/row-types'
-import { PINNED_GROUP_KEY } from '../grouping/group-keys'
+import { ALL_GROUP_KEY, PINNED_GROUP_KEY } from '../grouping/group-keys'
 import { getWorkspaceStatusFromGroupKey } from '../../workspace-status'
 import { getVirtualRowTransform } from '../viewport/virtual-rows'
 import { resolveProjectGroupHeaderColor } from '../../project-header-color'
@@ -26,6 +26,8 @@ import {
   SidebarGroupChevron
 } from '../../ProjectHeaderActions'
 import { isMonicaShell } from '@/monica/is-monica-shell'
+import SidebarWorkspaceOptionsMenu from '@/components/sidebar/SidebarWorkspaceOptionsMenu'
+import { NewWorkspaceButton } from '@/components/sidebar/sidebar-header-actions'
 import {
   getProjectGroupHeaderPaddingLeft,
   WORKTREE_SECTION_HEADER_PADDING_LEFT
@@ -148,6 +150,10 @@ export function renderWorktreeSectionHeaderRow(args: {
       ? getWorkspaceStatusFromGroupKey(row.key, ctx.workspaceStatuses)
       : null
   const isPinnedHeader = row.key === PINNED_GROUP_KEY
+  const isAllHeader = row.key === ALL_GROUP_KEY
+  // Why: in the Workbench shell the flat "All" group is the 工作区 section header,
+  // so it shares the guide chevron + section actions with 已固定/版本.
+  const workbenchSectionHeader = isMonicaShell() && (isPinnedHeader || isAllHeader)
   const repoHeaderColor = resolveProjectGroupHeaderColor({
     groupBy: ctx.groupBy,
     headerKey: row.key,
@@ -180,26 +186,31 @@ export function renderWorktreeSectionHeaderRow(args: {
   // Why: repo/project/status/pinned share compact section chrome; flat "All" stays a simple label.
   const showHeaderCollapseAffordance =
     row.count > 0 &&
-    (isRepoHeader || isProjectGroupHeader || headerWorkspaceStatus !== null || isPinnedHeader)
+    (isRepoHeader ||
+      isProjectGroupHeader ||
+      headerWorkspaceStatus !== null ||
+      isPinnedHeader ||
+      (isMonicaShell() && isAllHeader))
   const fixedChevron =
     isMonicaShell() && showHeaderCollapseAffordance && (isRepoHeader || isProjectGroupHeader)
-  const collapseAffordance = showHeaderCollapseAffordance ? (
-    <div
-      className={
-        fixedChevron ? SIDEBAR_GROUP_FIXED_CHEVRON_CLASS : SIDEBAR_GROUP_CHEVRON_SLOT_CLASS
-      }
-      data-repo-header-collapse-affordance=""
-      aria-hidden
-      onPointerDown={handleRepoHeaderCollapseAffordancePointerDown}
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        ctx.toggleGroupWithScrollAnchor(row.key)
-      }}
-    >
-      <SidebarGroupChevron expanded={!isHeaderCollapsed} />
-    </div>
-  ) : null
+  const collapseAffordance =
+    showHeaderCollapseAffordance && !workbenchSectionHeader ? (
+      <div
+        className={
+          fixedChevron ? SIDEBAR_GROUP_FIXED_CHEVRON_CLASS : SIDEBAR_GROUP_CHEVRON_SLOT_CLASS
+        }
+        data-repo-header-collapse-affordance=""
+        aria-hidden
+        onPointerDown={handleRepoHeaderCollapseAffordancePointerDown}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          ctx.toggleGroupWithScrollAnchor(row.key)
+        }}
+      >
+        <SidebarGroupChevron expanded={!isHeaderCollapsed} />
+      </div>
+    ) : null
   return (
     <div
       key={vItem.key}
@@ -359,12 +370,32 @@ export function renderWorktreeSectionHeaderRow(args: {
               <div className="min-w-0 truncate text-[13px] font-semibold leading-none">
                 {row.label}
               </div>
+              {workbenchSectionHeader ? (
+                <span className="flex shrink-0 items-center text-muted-foreground/60" aria-hidden>
+                  <SidebarGroupChevron expanded={!isHeaderCollapsed} />
+                </span>
+              ) : null}
               <RepoForkIndicator upstream={row.repo?.upstream} />
               <FolderPathStatusIndicator status={projectGroupPathStatus} />
               {isRepoHeader ? <RepoScanUnavailableIndicator repo={row.repo!} /> : null}
             </div>
           </div>
         </div>
+
+        {isMonicaShell() && isAllHeader ? (
+          // Why stop propagation: these actions live inside the clickable row
+          // header; without it, clicking 选项/新建工作区 would also toggle the
+          // 工作区 collapse. Keyboard too, so Enter on the button doesn't collapse.
+          <div
+            className="flex shrink-0 items-center gap-1"
+            data-workbench-workspace-actions=""
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <SidebarWorkspaceOptionsMenu />
+            <NewWorkspaceButton preserveWorkspaceBoardOpen={false} />
+          </div>
+        ) : null}
 
         <ProjectHeaderActions className={fixedChevron ? 'can-hover:right-[26px]' : undefined}>
           {fixedChevron ? null : collapseAffordance}

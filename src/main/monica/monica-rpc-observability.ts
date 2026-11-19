@@ -31,7 +31,7 @@ export function defineMonicaMethod<TName extends string, TSchema extends ZodType
         (span) => {
           const onError = (error: unknown): never => {
             if (isAbortError(error)) {
-              span.interrupt('workbench-rpc-cancelled')
+              span.interrupt('monica-rpc-cancelled')
             }
             throw error
           }
@@ -42,7 +42,7 @@ export function defineMonicaMethod<TName extends string, TSchema extends ZodType
                 const { code, message } = failure.error
                 recordMonicaFailure(
                   span,
-                  typeof code === 'string' ? code : 'workbench-error',
+                  typeof code === 'string' ? code : 'monica-error',
                   typeof message === 'string' ? message : undefined
                 )
               } else {

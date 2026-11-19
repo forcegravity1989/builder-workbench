@@ -274,7 +274,7 @@ export function PlanningGoalCard({
             {onSendAction(
               `按 ${goalNumber} 验收标准核对已有 Issue，给出拆解与关联建议`,
               '拆解请求',
-              <BoardActionButton data-contextual-tour-target="workbench-plan-issues">
+              <BoardActionButton data-contextual-tour-target="monica-plan-issues">
                 <BrainCircuit size={14} aria-hidden="true" /> 拆解 Issue
               </BoardActionButton>
             )}

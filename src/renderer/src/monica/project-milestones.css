@@ -57,17 +57,22 @@
   border-bottom: 1px solid var(--border);
   background: var(--card);
 }
-.monica-ml-roadmap > .monica-ml-label {
+.monica-ml-roadmap > .monica-ml-label,
+.monica-ml-version-row > .monica-ml-label {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 4px;
   font-size: 12px;
 }
-.monica-ml-label .monica-ml-cell-add {
-  position: absolute;
-  right: 5px;
-  top: 4px;
+.monica-ml-roadmap > .monica-ml-label {
+  gap: 4px;
+}
+.monica-ml-label-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
 }
 .monica-ml-node-axis {
   position: relative;
@@ -210,7 +215,6 @@
 }
 .monica-ml-version-row .monica-ml-label {
   color: var(--muted-foreground);
-  font-size: 12px;
 }
 .monica-ml-window {
   position: absolute;

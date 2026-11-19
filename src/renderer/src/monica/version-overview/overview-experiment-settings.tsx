@@ -64,7 +64,7 @@ export function OverviewExperimentSettings() {
       description={`版本总览统计 ${overviewExperimentEntries.map((entry) => entry.title).join(' ')}`}
       keywords={overviewExperimentEntries.flatMap((entry) => [...entry.keywords])}
       className="space-y-3 py-2"
-      id="workbench-overview-experiments"
+      id="monica-overview-experiments"
     >
       <SettingsSubsectionHeader title="按项目设置" />
       <Card

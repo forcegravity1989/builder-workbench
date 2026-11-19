@@ -1,14 +1,10 @@
-import { branchName } from '@/lib/git-utils'
 import { normalizeStoredMonicaVersionBinding } from '../../../shared/monica/version-binding'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionCatalogPlanTree } from './version-catalog-load'
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
-import { cycleBranch } from './version-cycle/native-cycle-workspace'
 
 export function versionCatalogPlanTrees(worktrees: readonly Worktree[]): VersionCatalogPlanTree[] {
   const trees: VersionCatalogPlanTree[] = []
-  const legacyTrees: VersionCatalogPlanTree[] = []
-  const legacyBranch = cycleBranch({ workflow: 'plan' })
   const ownerOf = (tree: Worktree) => {
     try {
       const treeScope = nativeWorkspaceScope(tree)
@@ -41,17 +37,7 @@ export function versionCatalogPlanTrees(worktrees: readonly Worktree[]): Version
         version: binding.version,
         ...ownerOf(tree)
       })
-      continue
-    }
-    if (!binding && branchName(tree.branch) === legacyBranch) {
-      legacyTrees.push({
-        worktreeId: tree.id,
-        instanceId: tree.instanceId,
-        version: null,
-        ...ownerOf(tree)
-      })
     }
   }
-  // 绑定树排前：目录 goals 派生按先到先得，绑定副本优先于旧固定树副本（C-2）。
-  return [...trees, ...legacyTrees]
+  return trees
 }

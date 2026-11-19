@@ -136,7 +136,7 @@ export function ProjectWallPage() {
                 aria-label="搜索项目"
                 placeholder="搜索项目"
                 data-contextual-tour-target={
-                  filtered.length || !hasFilters ? 'workbench-wall-start' : undefined
+                  filtered.length || !hasFilters ? 'monica-wall-start' : undefined
                 }
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -202,7 +202,7 @@ export function ProjectWallPage() {
             <div className="empty-center">
               <h2>从一个项目开始</h2>
               <p>打开已有文件夹、克隆代码仓，或新建项目。</p>
-              <Button onClick={openAddProject} data-contextual-tour-target="workbench-wall-start">
+              <Button onClick={openAddProject} data-contextual-tour-target="monica-wall-start">
                 添加项目
               </Button>
             </div>
@@ -213,7 +213,7 @@ export function ProjectWallPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  data-contextual-tour-target="workbench-wall-start"
+                  data-contextual-tour-target="monica-wall-start"
                   onClick={() =>
                     leave(() => {
                       setQuery('')

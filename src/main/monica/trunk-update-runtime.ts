@@ -62,7 +62,7 @@ function refuse(reason: string): TrunkUpdateResult {
 export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
   const resolver = createMonicaWorkspaceResolver(nativeMonicaWorkspaceHost(runtime))
   return {
-    async updateCode(scope: MetricScope): Promise<TrunkUpdateResult> {
+    async updateCode(scope: MetricScope, expectedBranch?: string): Promise<TrunkUpdateResult> {
       const signal = AbortSignal.timeout(TRUNK_UPDATE_BUDGET_MS)
       const { target, repo, reauthorize } = await resolver.resolve(scope)
       if (parseExecutionHostId(target.hostId)?.kind !== 'local') {
@@ -97,6 +97,9 @@ export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
         }
         const start = await readTrunkCheckout(read)
         checkout = start
+        if (expectedBranch && (isTrunk || start.branch !== expectedBranch)) {
+          return refuse(`工作树已切换分支，请回到 ${expectedBranch} 后重试。`)
+        }
         const trunk = trunkSyncSource(baseline.sync)
         const upstream = isTrunk ? null : await readFlowUpstream(read, start.branch)
 

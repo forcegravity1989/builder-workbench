@@ -18,7 +18,7 @@ export const projectSettingsTest = test.extend({
     })
     const git = (args: string[]) => execFileSync('git', args, { cwd: repoPath })
     git(['init', '--initial-branch=main'])
-    git(['config', 'user.name', 'Monica E2E'])
+    git(['config', 'user.name', 'Workbench E2E'])
     git(['config', 'user.email', 'e2e@test.local'])
     writeFileSync(path.join(repoPath, 'README.md'), '# Isolated project configuration fixture\n')
     git(['add', 'README.md'])
@@ -319,9 +319,16 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
       state.worktreesByRepo[id]?.some((tree) => tree.id === state.activeWorktreeId)
     )
   }, folderId)
-  const folderSidebar = page.locator('[data-monica-version-section]')
-  await expect(folderSidebar).toHaveText('工作区')
-  await expect(folderSidebar.getByRole('button', { name: '新建版本', exact: true })).toHaveCount(0)
+  // Why: the real Workbench sidebar uses flat grouping (groupBy='none'), where the
+  // native "All" group is relabeled 工作区 and heads the workspaces region. The
+  // fresh e2e profile defaults to groupBy='repo', so switch to flat to mirror what
+  // the product actually renders before asserting the 工作区 section header.
+  await page.evaluate(() => window.__store!.getState().setGroupBy('none'))
+  const workspacesHeader = page.locator('[data-sidebar-original-row-key="all"]')
+  await expect(workspacesHeader).toContainText('工作区')
+  // A folder project has no version workflow: no 版本 section and no 新建版本 action.
+  await expect(page.locator('[data-monica-versions]')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '新建版本', exact: true })).toHaveCount(0)
   expect(existsSync(path.join(folderPath, '.git'))).toBe(false)
   expect(existsSync(path.join(folderPath, '.bw', 'project.toml'))).toBe(false)
   await page.screenshot({

@@ -91,7 +91,7 @@ function withExecSpan(
         return await run()
       } catch (error) {
         if (isAbortError(error)) {
-          span.interrupt('workbench-exec-cancelled')
+          span.interrupt('monica-exec-cancelled')
         } else {
           recordExecFailure(span, error, command)
         }

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { _electron as electron, expect, type ElectronApplication } from '@stablyai/playwright-test'
 import type { TestInfo } from '@playwright/test'
 import {
@@ -8,38 +8,29 @@ import {
 } from './electron-home-isolation'
 import { closeElectronAppForE2E, forceQuitElectronAppForE2E } from './electron-process-shutdown'
 import { getMonicaElectronLaunchArgs } from './monica-launch-args'
+import { openMilestoneOverview } from './monica-milestones'
 
-export async function verifyMilestoneRestart(previous: ElectronApplication, info: TestInfo) {
+export async function verifyMilestoneRestart(
+  previous: ElectronApplication,
+  info: TestInfo,
+  workingPath: string
+) {
   const profile = await previous.evaluate(({ app }) => app.getPath('userData'))
   const previousPid = previous.process().pid
-  const recoveryDirectory = path.join(profile, 'workbench', 'milestone-drafts')
-  const readRecovery = () =>
-    Object.fromEntries(
-      (existsSync(recoveryDirectory) ? readdirSync(recoveryDirectory) : [])
-        .filter((name) => name.endsWith('.json'))
-        .map((name) => [name, readFileSync(path.join(recoveryDirectory, name), 'utf8')])
-    )
+  const readMaterial = () => readFileSync(workingPath, 'utf8')
   const previousPage = await previous.firstWindow()
   await expect(previousPage.locator('.monica-ml')).toHaveAttribute(
     'data-draft-persistence',
     'saved'
   )
-  const recoveryBefore = readRecovery()
-  expect(
-    Object.values(recoveryBefore).some((raw) => {
-      const record = JSON.parse(raw)
-      return (
-        record.payload &&
-        JSON.parse(record.payload).draft.material.features[0]?.owner === '重启后恢复的草案'
-      )
-    })
-  ).toBe(true)
+  const materialBefore = readMaterial()
+  expect(JSON.parse(materialBefore).features[0]?.owner).toBe('重启后恢复的草案')
   const before = await previousPage.evaluate(() => ({
     url: location.href,
     activeWorktree: window.__store?.getState().activeWorktreeId
   }))
   await info.attach('milestone-before-force-quit', {
-    body: JSON.stringify({ profile, previousPid, before, recoveryBefore }),
+    body: JSON.stringify({ profile, previousPid, before, materialBefore }),
     contentType: 'application/json'
   })
   const { ELECTRON_RUN_AS_NODE: _unused, ...inheritedEnv } = process.env
@@ -47,12 +38,12 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
   const isolation = createElectronHomeIsolation({
     inheritedEnv,
     launchEnv: {},
-    extraEnv: { MONICA_SHELL: '1', VITE_MONICA_SHELL: '1', ORCA_PRODUCT_NAME: 'Monica' },
+    extraEnv: { MONICA_SHELL: '1', VITE_MONICA_SHELL: '1', ORCA_PRODUCT_NAME: 'Workbench' },
     userDataDir: profile
   })
   await forceQuitElectronAppForE2E(previous)
   // Independently read disk bytes after process death, before a new renderer can write anything.
-  expect(readRecovery()).toEqual(recoveryBefore)
+  expect(readMaterial()).toEqual(materialBefore)
   const restarted = await electron.launch({
     args: getMonicaElectronLaunchArgs(path.join(process.cwd(), 'out/main/index.js'), false),
     env: {
@@ -76,9 +67,13 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
       { polling: 100 }
     )
     // Background restart has no animation frames for click stability; force only skips that check.
-    await page.getByRole('button', { name: '项目总览', exact: true }).click({ force: true })
+    await openMilestoneOverview(page, true)
     const board = page.locator('.monica-ml')
     try {
+      await expect(board.getByText('已保存 · 未提交', { exact: true })).toBeVisible({
+        timeout: 60_000
+      })
+      await board.getByRole('button', { name: '规划里程碑', exact: true }).click({ force: true })
       await expect(board.getByLabel('负责人', { exact: true }).first()).toHaveValue(
         '重启后恢复的草案',
         { timeout: 60_000 }
@@ -91,7 +86,7 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
             userData: app.getPath('userData'),
             home: app.getPath('home')
           })),
-          recovery: readRecovery(),
+          material: readMaterial(),
           page: await page.evaluate(() => ({
             url: location.href,
             body: document.body.innerText,
@@ -115,26 +110,15 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
     await expect(board.getByLabel('特性名称', { exact: true }).nth(1)).toHaveValue('工程能力观测')
     await expect(board.getByText('知识库', { exact: true })).toHaveCount(0)
     await expect(board.locator('.monica-ml-row')).toHaveCount(2)
-    await expect
-      .poll(() =>
-        Object.values(readRecovery()).every((raw) => {
-          const payload = JSON.parse(raw).payload
-          if (!payload) {
-            return true
-          }
-          const saved = JSON.parse(payload)
-          return JSON.stringify(saved.draft) === JSON.stringify(saved.baseline) && !!saved.viewDate
-        })
-      )
-      .toBe(true)
+    await expect.poll(() => JSON.parse(readMaterial()).features[0]?.owner).toBe('Builder 1')
     await info.attach('milestone-process-restart', {
       body: JSON.stringify({
         previousPid,
         restartedPid: restarted.process().pid,
         formalFeatures: 2,
-        unsentDraftRecovered: true,
+        workingCopyReopened: true,
         durableBytesSurvivedForceQuit: true,
-        restoreClearedDraft: true
+        discardRestoredCommittedMaterial: true
       }),
       contentType: 'application/json'
     })

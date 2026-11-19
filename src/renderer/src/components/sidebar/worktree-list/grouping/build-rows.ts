@@ -11,6 +11,8 @@ import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getCyclicProjectedWorktreeLineageIds } from '../../worktree-lineage-projection'
 import { ALL_GROUP_KEY, ALL_GROUP_META } from './group-keys'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { FolderGit2 } from 'lucide-react'
 import { appendOrderedGroups } from './group-sections'
 import type { SectionAppendContext } from './group-sections'
 import {
@@ -170,10 +172,10 @@ export function buildRows(
       result.push({
         type: 'header',
         key: ALL_GROUP_KEY,
-        label: ALL_GROUP_META.label,
+        label: isMonicaShell() ? '工作区' : ALL_GROUP_META.label,
         count: naturalWorktrees.length + renderableFolderWorkspaces.length,
         tone: ALL_GROUP_META.tone,
-        icon: ALL_GROUP_META.icon,
+        icon: isMonicaShell() ? FolderGit2 : ALL_GROUP_META.icon,
         hostWorktreeCounts: getLaneHostWorktreeCounts(
           naturalWorktrees,
           renderableFolderWorkspaces,

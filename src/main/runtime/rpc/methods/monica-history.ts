@@ -1,6 +1,7 @@
 import { defineMonicaMethod } from '../../../monica/monica-rpc-observability'
 import {
   VersionHistoryListSchema,
+  VersionPlanEntryTimesSchema,
   VersionHistoryReadSchema,
   VersionHistoryReadPlanSchema,
   VersionTreePlansSchema
@@ -9,6 +10,12 @@ import { monicaRuntimeResult } from '../../../monica/monica-runtime-result'
 import { nativeVersionHistoryService } from '../../../monica/version-history-runtime'
 
 export const MONICA_HISTORY_METHODS = [
+  defineMonicaMethod({
+    name: 'workbench.history.listPlanEntryTimes',
+    params: VersionPlanEntryTimesSchema,
+    handler: (params, { runtime }) =>
+      monicaRuntimeResult(() => nativeVersionHistoryService(runtime).listPlanEntryTimes(params))
+  }),
   defineMonicaMethod({
     name: 'workbench.history.list',
     params: VersionHistoryListSchema,

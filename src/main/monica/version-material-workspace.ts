@@ -40,9 +40,7 @@ import type {
   VersionMigrationRead
 } from '../../shared/monica/version-material-migration'
 import {
-  LEGACY_PLAN_BRANCH,
   isVersionFlowWorkflow,
-  legacyFlowBranch,
   versionFlowBranch
 } from '../../shared/monica/version-workspace-prepare'
 import { branchFullRef } from '../../shared/monica/branch-ref'
@@ -57,15 +55,7 @@ export function createVersionMaterialWorkspace(
   binding?: MonicaVersionBinding | null
 ) {
   const flowBinding = binding && isVersionFlowWorkflow(binding.workflow) ? binding : null
-  /**
-   * G2 (P3a)：绑定树的期望分支由绑定决定（版本归属由登记绑定承担，分支名不是
-   * 身份）；无绑定树沿旧固定分支语义（旧上下文显式保留）。用途不符（目标/
-   * Issue 树、计划树收验收范围等）一律拒绝——计划与验收用途不混。
-   */
-  function expectedBranchFor(scope: VersionMaterialScope): string {
-    if (!binding) {
-      return legacyFlowBranch(scope.workflow)
-    }
+  function expectedBranchFor(scope: Pick<VersionMaterialScope, 'workflow'>): string {
     if (!flowBinding || flowBinding.workflow !== scope.workflow) {
       throw new WorkspaceScopeError('invalid-scope', '该工作树不是此用途的流程树，材料读写被拒绝')
     }
@@ -124,14 +114,6 @@ export function createVersionMaterialWorkspace(
     })
   }
 
-  /**
-   * 创建期核对：树属于本仓库且 HEAD 正是创建约定的流程分支（不要求旧固定分支）。
-   * 分支字符串在这里只做「写没写错树」的核对，版本归属由绑定登记承担。
-   */
-  async function authorizeCreatedTree(expectedBranch: string): Promise<string> {
-    return assertTreeGitIdentity(expectedBranch)
-  }
-
   const migration = createVersionMaterialMigration(storeFor)
   return {
     // 双围栏的执行器侧：迁移与初始化同样过绑定版本断言（服务层已断言，
@@ -153,33 +135,20 @@ export function createVersionMaterialWorkspace(
       input: VersionMaterialInitialize
     ): Promise<{ created: boolean; revision: string }> {
       const request = VersionMaterialInitializeSchema.parse(input)
-      // 绑定树围栏：初始化是计划用途操作，绑定必须正是该版计划流程。
-      if (binding && (!flowBinding || flowBinding.workflow !== 'plan')) {
-        throw new WorkspaceScopeError('invalid-scope', '该工作树不是计划流程树，初始化被拒绝')
+      const expectedBranch = expectedBranchFor({ workflow: 'plan' })
+      if (request.version !== flowBinding?.version) {
+        throw new WorkspaceScopeError('cross-version', '只能初始化工作树绑定版本的计划材料')
       }
-      if (
-        flowBinding &&
-        flowBinding.workflow === 'plan' &&
-        request.version !== flowBinding.version
-      ) {
-        throw new WorkspaceScopeError(
-          'cross-version',
-          `该工作树绑定版本 ${flowBinding.version}，拒绝初始化 ${request.version} 的计划材料`
-        )
+      if (request.expectedBranch !== expectedBranch) {
+        throw new WorkspaceScopeError('wrong-branch', '初始化分支与工作树绑定不一致')
       }
-      if (!binding && request.expectedBranch !== LEGACY_PLAN_BRANCH) {
-        // 无绑定树沿与读/写相同的旧语义：只认旧固定计划分支。expectedBranch 由
-        // 请求方给出，缺此围栏时 relay 面可在任意已解析树初始化材料（纵深一致；
-        // 现唯一调用方 prepare 恒先绑定后初始化，不会命中）。
-        throw new WorkspaceScopeError('invalid-scope', '无绑定树仅支持在旧固定计划分支初始化材料')
-      }
-      const root = await authorizeCreatedTree(request.expectedBranch)
+      const root = await assertTreeGitIdentity(expectedBranch)
       const store = createVersionDocumentStore<PlanningMaterial>({
         trustedWorkspacePath: root,
         workflow: 'plan',
         decode: (value) => PlanningMaterialSchema.parse(value),
         beforeCommit: async () => {
-          if ((await authorizeCreatedTree(request.expectedBranch)) !== root) {
+          if ((await assertTreeGitIdentity(expectedBranch)) !== root) {
             throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
           }
         }

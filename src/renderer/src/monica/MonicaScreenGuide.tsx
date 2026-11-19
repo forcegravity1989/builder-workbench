@@ -28,16 +28,16 @@ import { normalizeStoredMonicaVersionBinding } from '../../../shared/monica/vers
 import { activateVersionWorktree } from './version-worktree-host'
 
 const guideSources = {
-  'workbench-wall': 'project_wall_visible',
-  'workbench-overview': 'project_overview_visible',
-  'workbench-scoreboard': 'project_scoreboard_visible',
-  'workbench-milestones': 'milestone_planning',
-  'workbench-plan': 'version_plan_visible',
-  'workbench-acceptance': 'version_acceptance_visible',
-  'workbench-version-overview': 'version_overview_visible',
-  'workbench-versions': 'version_sidebar_visible',
+  'monica-wall': 'project_wall_visible',
+  'monica-overview': 'project_overview_visible',
+  'monica-scoreboard': 'project_scoreboard_visible',
+  'monica-milestones': 'milestone_planning',
+  'monica-plan': 'version_plan_visible',
+  'monica-acceptance': 'version_acceptance_visible',
+  'monica-version-overview': 'version_overview_visible',
+  'monica-versions': 'version_sidebar_visible',
   browser: 'browser_visible',
-  'workbench-source-control': 'workbench_source_control_visible',
+  'monica-source-control': 'workbench_source_control_visible',
   tasks: 'workbench_tasks_visible'
 } as const
 
@@ -101,12 +101,12 @@ export function replayMonicaGuide(id: MonicaGuideId): void {
     maxAttempts: 80,
     waitForActiveTourToClear: true,
     shouldContinue: () => {
-      if (id === 'workbench-milestones') {
+      if (id === 'monica-milestones') {
         document
           .querySelector('.monica-ml [data-contextual-tour-target~="milestone-start"]')
           ?.scrollIntoView({ block: 'center' })
       }
-      if (id === 'workbench-scoreboard') {
+      if (id === 'monica-scoreboard') {
         document
           .querySelector('[data-monica-scoreboard-guide]')
           ?.scrollIntoView({ block: 'center' })
@@ -122,9 +122,9 @@ export function replayMonicaGuide(id: MonicaGuideId): void {
   })
   timer = window.setTimeout(() => {
     clearPending()
-    if (id === 'workbench-milestones') {
+    if (id === 'monica-milestones') {
       toast('里程碑暂未就绪。等项目规划读完，或从里程碑重试读取后再打开引导。')
-    } else if (id === 'workbench-scoreboard') {
+    } else if (id === 'monica-scoreboard') {
       toast(
         translate(
           'guidance.outcomes.scoreboardUnavailable',
@@ -159,7 +159,7 @@ export function openMonicaGuide(id: MonicaGuideId): void {
     }, 0)
     return
   }
-  if (id === 'workbench-source-control') {
+  if (id === 'monica-source-control') {
     if (!state.activeWorktreeId) {
       toast('请先打开一个 Git 工作区，再从源代码管理工具栏打开检视引导。')
       return
@@ -180,7 +180,7 @@ export function openMonicaGuide(id: MonicaGuideId): void {
     replayMonicaGuide(id)
     return
   }
-  if (id === 'workbench-plan' || id === 'workbench-versions') {
+  if (id === 'monica-plan' || id === 'monica-versions') {
     if (!activeRepo || !isGitRepoKind(activeRepo)) {
       openProjectWall()
       toast('请先打开一个 Git 项目，再进入侧栏「版本工作区」。')
@@ -196,16 +196,16 @@ export function openMonicaGuide(id: MonicaGuideId): void {
     state.setSidebarOpen(true)
     state.setSidebarBody('workspaces')
     if (
-      id === 'workbench-plan' &&
+      id === 'monica-plan' &&
       !explicit &&
       tree &&
       tree.repoId === activeRepo.id &&
       binding?.workflow === 'plan' &&
       activateVersionWorktree(tree)
     ) {
-      replayMonicaGuide('workbench-plan')
+      replayMonicaGuide('monica-plan')
     } else if (page?.kind === 'version-overview') {
-      replayMonicaGuide('workbench-versions')
+      replayMonicaGuide('monica-versions')
     } else if (
       explicit &&
       (!currentRepo ||
@@ -217,17 +217,17 @@ export function openMonicaGuide(id: MonicaGuideId): void {
     } else {
       closeProjectPage()
       state.setActiveView('terminal')
-      replayMonicaGuide('workbench-versions')
+      replayMonicaGuide('monica-versions')
     }
     return
   }
-  if (id === 'workbench-milestones' && activeRepo?.kind === 'folder') {
+  if (id === 'monica-milestones' && activeRepo?.kind === 'folder') {
     openProjectWall()
     toast('打开一个 Git 项目的总览，再从页头帮助选择「里程碑引导」。')
-    replayMonicaGuide('workbench-wall')
+    replayMonicaGuide('monica-wall')
     return
   }
-  if (id === 'workbench-scoreboard' && (!activeRepo || !isGitRepoKind(activeRepo))) {
+  if (id === 'monica-scoreboard' && (!activeRepo || !isGitRepoKind(activeRepo))) {
     openProjectWall()
     toast(
       translate(
@@ -237,12 +237,12 @@ export function openMonicaGuide(id: MonicaGuideId): void {
     )
     return
   }
-  if (id === 'workbench-wall') {
+  if (id === 'monica-wall') {
     openProjectWall()
   } else {
     openProjectOverview(activeRepo ?? undefined)
   }
-  replayMonicaGuide(id === 'workbench-milestones' && !activeRepo ? 'workbench-overview' : id)
+  replayMonicaGuide(id === 'monica-milestones' && !activeRepo ? 'monica-overview' : id)
 }
 
 export function MonicaOverviewHelp({
@@ -264,16 +264,16 @@ export function MonicaOverviewHelp({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => replayMonicaGuide('workbench-overview')}>
+        <DropdownMenuItem onSelect={() => replayMonicaGuide('monica-overview')}>
           项目名片引导
         </DropdownMenuItem>
         {milestones && (
-          <DropdownMenuItem onSelect={() => replayMonicaGuide('workbench-milestones')}>
+          <DropdownMenuItem onSelect={() => replayMonicaGuide('monica-milestones')}>
             里程碑引导
           </DropdownMenuItem>
         )}
         {scoreboard && (
-          <DropdownMenuItem onSelect={() => replayMonicaGuide('workbench-scoreboard')}>
+          <DropdownMenuItem onSelect={() => replayMonicaGuide('monica-scoreboard')}>
             {translate('guidance.outcomes.scoreboardHelp', 'Scoreboard guide')}
           </DropdownMenuItem>
         )}
@@ -283,12 +283,12 @@ export function MonicaOverviewHelp({
 }
 
 export function MonicaWallGuide({ enabled }: { enabled: boolean }) {
-  useMonicaScreenGuide('workbench-wall', enabled)
+  useMonicaScreenGuide('monica-wall', enabled)
   return (
     <MonicaIconButton
       label="项目墙帮助"
       icon={CircleHelp}
-      onClick={() => replayMonicaGuide('workbench-wall')}
+      onClick={() => replayMonicaGuide('monica-wall')}
     />
   )
 }
@@ -308,13 +308,13 @@ export function MonicaVersionResultHelp({
   screen,
   enabled
 }: {
-  screen: 'workbench-acceptance' | 'workbench-version-overview'
+  screen: 'monica-acceptance' | 'monica-version-overview'
   enabled: boolean
 }) {
   useMonicaScreenGuide(screen, enabled)
   return (
     <MonicaIconButton
-      label={screen === 'workbench-acceptance' ? '版本验收帮助' : '版本总览帮助'}
+      label={screen === 'monica-acceptance' ? '版本验收帮助' : '版本总览帮助'}
       icon={CircleHelp}
       className="shrink-0"
       disabled={!enabled}

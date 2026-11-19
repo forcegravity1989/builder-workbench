@@ -8,6 +8,8 @@ export const MONICA_TRUNK_METHODS = [
     name: 'workbench.trunk.update',
     params: TrunkUpdateSchema,
     handler: (params, { runtime }) =>
-      monicaRuntimeResult(() => createTrunkUpdateService(runtime).updateCode(params.scope))
+      monicaRuntimeResult(() =>
+        createTrunkUpdateService(runtime).updateCode(params.scope, params.expectedBranch)
+      )
   })
 ]

@@ -6,6 +6,7 @@ import {
 } from '@/components/terminal-pane/terminal-link-activation'
 import {
   buildHttpLinkActions,
+  httpLinkActionDestinationsForUrl,
   openRoutedHttpLink,
   type HttpLinkActionDestinations,
   type HttpLinkDestination
@@ -38,6 +39,7 @@ export function handleNativeChatWebLink(
   url: string,
   deps: NativeChatWebLinkDeps
 ): boolean {
+  const destinations = httpLinkActionDestinationsForUrl(url, deps.destinations)!
   const open = (destination: HttpLinkDestination | undefined): void =>
     openRoutedHttpLink(url, {
       worktreeId: deps.worktreeId,
@@ -48,11 +50,7 @@ export function handleNativeChatWebLink(
 
   if (isTerminalLinkDirectActivation(event)) {
     event.preventDefault()
-    open(
-      event.shiftKey
-        ? (deps.destinations.alternate ?? deps.destinations.primary)
-        : deps.destinations.primary
-    )
+    open(event.shiftKey ? (destinations.alternate ?? destinations.primary) : destinations.primary)
     return true
   }
   if (!isTerminalLinkActionActivation(event)) {
@@ -61,7 +59,7 @@ export function handleNativeChatWebLink(
 
   event.preventDefault()
   if (!deps.actionsEnabled) {
-    open(deps.destinations.primary)
+    open(destinations.primary)
     return true
   }
   const keyboardAnchor = event.detail === 0 ? event.currentTarget?.getBoundingClientRect() : null
@@ -71,7 +69,7 @@ export function handleNativeChatWebLink(
     destination: url,
     kind: 'url',
     restoreFocus: deps.restoreFocus,
-    ...buildHttpLinkActions(deps.destinations, open)
+    ...buildHttpLinkActions(destinations, open)
   })
   return true
 }

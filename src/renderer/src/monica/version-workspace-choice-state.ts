@@ -15,6 +15,7 @@ import { activateVersionWorktree } from './version-worktree-host'
 export type MonicaWorkspaceChoice = {
   title: string
   candidates: Worktree[]
+  onChoose?: (worktree: Worktree) => void
 }
 
 let choice: MonicaWorkspaceChoice | null = null
@@ -39,9 +40,14 @@ export function closeMonicaWorkspaceChoice(): void {
 }
 
 export function chooseMonicaWorkspace(worktree: Worktree): void {
+  const onChoose = choice?.onChoose
   choice = null
   emit()
-  activateVersionWorktree(worktree)
+  if (onChoose) {
+    onChoose(worktree)
+  } else {
+    activateVersionWorktree(worktree)
+  }
 }
 
 export function useMonicaWorkspaceChoice(): MonicaWorkspaceChoice | null {
@@ -59,7 +65,7 @@ type ScopedWorkspaceDispatch = 'opened' | 'choice-opened' | 'unavailable' | 'non
 
 /**
  * 统一 Start/Open 的公共分发壳（板面开工箭头、任务屏行、详情弹窗三处共用）：
- * 唯一候选 → 宿主限定直开，激活失败走 onUnavailable；多候选 → Monica 选择器
+ * 唯一候选 → 宿主限定直开，激活失败走 onUnavailable；多候选 → BW 选择器
  * （绝不取第一棵）；无候选 → 返回 'none' 由调用方回落原生语义。埋点与回落
  * 文案各处不同（toast/notify/创建器），留在调用方，不在此强行统一。
  */

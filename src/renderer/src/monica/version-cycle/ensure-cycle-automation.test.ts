@@ -76,17 +76,14 @@ beforeEach(() => {
   setState()
 })
 
-it('identity key embeds the cycle scope and workflow', () => {
+it('refreshes a stale BW-owned prompt in place and never recreates the entry', async () => {
   expect(KEY).toBe(`bw-cycle:${JSON.stringify(['project', 'repo', 'local', '', 'plan'])}:plan`)
-})
-
-it('refreshes a stale Monica-owned prompt in place and never recreates the entry', async () => {
   rpcWith([
     {
       id: 'a1',
       creationKey: KEY,
       name: '被人改过名',
-      prompt: '旧版 Monica 提示',
+      prompt: '旧版 BW 提示',
       workspaceId: null
     } as Automation
   ])
@@ -97,7 +94,7 @@ it('refreshes a stale Monica-owned prompt in place and never recreates the entry
   expect(createCalls()).toHaveLength(0)
   const [params] = updateCalls()
   expect(params).toMatchObject({ id: 'a1' })
-  // 覆盖同步只动 Monica 所有的提示词，人所有的字段（名字、开关、时间、模型）不出现在更新里。
+  // 覆盖同步只动 BW 所有的提示词，人所有的字段（名字、开关、时间、模型）不出现在更新里。
   expect(params.updates).toEqual({ prompt: 'CYCLE-PROMPT' })
 })
 

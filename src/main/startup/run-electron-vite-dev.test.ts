@@ -409,8 +409,8 @@ describe('run-electron-vite-dev', () => {
           ORCA_SKIP_DEV_WEB_PREPARE: '1',
           ORCA_DEV_WRAPPER_TEST_PID_FILE: pidFile,
           ORCA_DEV_WRAPPER_TEST_ENV_FILE: envFile,
-          ORCA_DEV_BRANCH: 'feature/workbench-shell',
-          ORCA_DEV_WORKTREE_NAME: 'workbench-ui'
+          ORCA_DEV_BRANCH: 'feature/monica-shell',
+          ORCA_DEV_WORKTREE_NAME: 'monica-ui'
         }),
         stdio: 'ignore'
       }
@@ -436,11 +436,11 @@ describe('run-electron-vite-dev', () => {
     }
     expect(envSnapshot.args).not.toContain('--monica')
     expect(envSnapshot.args).toContain('--remote-debugging-port=9446')
-    expect(envSnapshot.label).toBe('workbench-ui @ feature/workbench-shell')
+    expect(envSnapshot.label).toBe('monica-ui @ feature/monica-shell')
     // Why dockTitle: it is derived from isMonicaDevEnv(), so the Monica prefix
     // is the observable that the runner actually set MONICA_SHELL rather than
     // merely accepting the flag.
-    expect(envSnapshot.dockTitle).toBe('Monica: feature/workbench-shell')
+    expect(envSnapshot.dockTitle).toBe('Monica: feature/monica-shell')
 
     await stopWrapperAndTrackedPids(wrapper, trackedPids)
   })

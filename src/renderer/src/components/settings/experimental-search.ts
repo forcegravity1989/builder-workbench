@@ -15,7 +15,7 @@ export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
           title: entry.title,
           description: entry.description,
           keywords: [...entry.keywords],
-          targetSectionId: 'workbench-overview-experiments'
+          targetSectionId: 'monica-overview-experiments'
         }))
       : []),
     {

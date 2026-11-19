@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react'
-import { Check, Copy, ExternalLink, Globe, Settings } from 'lucide-react'
+import { Check, Copy, ExternalLink, Globe, ListTodo, Settings } from 'lucide-react'
 import { toast } from 'sonner'
 import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import { Button } from '@/components/ui/button'
@@ -19,10 +19,12 @@ type LinkActionPopoverProps<TRequest extends LinkActionRequest> = {
 function ActionRow({
   action,
   alternate,
+  showShortcut = true,
   onRun
 }: {
   action: LinkAction
   alternate: boolean
+  showShortcut?: boolean
   onRun: () => void
 }): React.JSX.Element {
   const isMac = navigator.userAgent.includes('Mac')
@@ -36,12 +38,15 @@ function ActionRow({
       variant="ghost"
       onClick={onRun}
     >
+      {action.task ? <ListTodo className="size-3.5" /> : null}
       {action.external === true ? <ExternalLink className="size-3.5" /> : null}
-      {action.external === false ? <Globe className="size-3.5" /> : null}
+      {!action.task && action.external === false ? <Globe className="size-3.5" /> : null}
       <span className="min-w-0 flex-1 truncate text-left" title={action.label}>
         {action.label}
       </span>
-      <ShortcutKeyCombo keys={keys} keyCapClassName="min-w-5 px-1 py-0 text-[11px]" />
+      {showShortcut ? (
+        <ShortcutKeyCombo keys={keys} keyCapClassName="min-w-5 px-1 py-0 text-[11px]" />
+      ) : null}
     </Button>
   )
 }
@@ -188,6 +193,14 @@ export function LinkActionPopover<TRequest extends LinkActionRequest>({
               action={request.alternate}
               alternate
               onRun={() => runAction(request.alternate!)}
+            />
+          ) : null}
+          {request.additional ? (
+            <ActionRow
+              action={request.additional}
+              alternate={false}
+              showShortcut={false}
+              onRun={() => runAction(request.additional!)}
             />
           ) : null}
         </PopoverContent>

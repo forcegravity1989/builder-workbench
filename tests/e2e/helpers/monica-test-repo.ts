@@ -37,7 +37,7 @@ export function createSeededTestRepo(options: { publishPath?: boolean } = {}): s
   // Why: realpathSync so the seeded path matches the store's repo.path on
   // macOS, where os.tmpdir() (/var/...) symlinks to /private/var/... and the
   // app canonicalizes repo.path via `git rev-parse --show-toplevel` on add.
-  const testRepoDir = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'workbench-e2e-repo-')))
+  const testRepoDir = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'monica-e2e-repo-')))
 
   execSync('git init', { cwd: testRepoDir, stdio: 'pipe' })
   execSync('git config user.email "e2e@test.local"', { cwd: testRepoDir, stdio: 'pipe' })
@@ -50,7 +50,7 @@ export function createSeededTestRepo(options: { publishPath?: boolean } = {}): s
   writeFileSync(path.join(testRepoDir, 'CLAUDE.md'), '# CLAUDE.md\n\nTest instructions for E2E.\n')
   writeFileSync(
     path.join(testRepoDir, 'package.json'),
-    `${JSON.stringify({ name: 'workbench-e2e-test', version: '0.0.0', private: true }, null, 2)}\n`
+    `${JSON.stringify({ name: 'monica-e2e-test', version: '0.0.0', private: true }, null, 2)}\n`
   )
   writeFileSync(path.join(testRepoDir, '.gitignore'), 'node_modules/\n')
   mkdirSync(path.join(testRepoDir, 'src'), { recursive: true })

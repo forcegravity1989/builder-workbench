@@ -11,7 +11,7 @@
 | 改产品界面（React） | [guidelines.md](guidelines.md) → 对应的 `primitives/<名>.md` | `src/renderer/src/components/ui/` 的原语 + Tailwind token 类（`bg-card`、`text-muted-foreground`） |
 | 走查旅程、设计引导或制作指南/传播素材 | 完整读取 [guidance.md](guidance.md) | 在入门或探索矩阵定位内容行，复用现有机制，逐格维护覆盖与产出 |
 | 改叠层 CSS（`src/renderer/src/monica/*.css`） | [guidelines.md](guidelines.md)「Monica 叠层怎么对齐」 | `var(--foreground)` 这类 Orca 名；存量的 `--color-*` 角色名见 tokens.json |
-| 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」 | `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名，照示例页抄标记 |
+| 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」（含原型注释、业界参考、阶段切换、复用标注、控件与文案约定）+ [高保真三条总原则](../hifi/README.md) | `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名，照示例页抄标记 |
 | 查某个颜色/间距/圆角的值 | [tokens.json](tokens.json) | 每个 token 带 `usage`，说明用在哪、配在什么底上 |
 | 加或改一个 token | 先改 `main.css`（`:root` 与 `.dark` 都给值，`@theme inline` 暴露），再同步 [tokens.json](tokens.json) | `node config/scripts/design-system-tokens.mjs --write` |
 
@@ -21,7 +21,7 @@
 
 | 路径 | 是什么 |
 |---|---|
-| [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、图标、交互反馈、叠层对齐、中文排版、HTML 原型类 |
+| [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、[按钮与新增入口](guidelines.md#按钮与新增入口)、图标、交互反馈、叠层对齐、中文排版、HTML 原型类 |
 | [guidance.md](guidance.md) | 引导分工、展示/回看与新功能提示规则；Monica 入门、探索 Monica（工作/功能）两张矩阵及产出归属 |
 | [tokens.json](tokens.json) | 机读 token：颜色（light / dark 两主题，135 个）、字体与 10 个字号样式、间距、圆角、阴影；每个带 `usage` |
 | [tokens.css](tokens.css) | **生成文件，不要手改**——由 tokens.json 生成的 CSS 变量与 Geist `@font-face` |
@@ -29,7 +29,7 @@
 | [primitives/](primitives/) | 15 个 Orca React 原语：`<名>.md` 用法与 props、`<名>.html` 浅色预览（加 `data-theme="dark"` 看深色）、`primitives.css` 静态复刻样式、`index.d.ts` props 类型 |
 | [components/](components/)、[foundations/](foundations/) | HTML 类词汇的示例页（纯 HTML、无脚本，浏览器直接开） |
 
-图标从 `lucide-react` 引入，不进本目录；产品标志统一使用 [`resources/icon-source/monica.png`](../../resources/icon-source/monica.png)，保留原图颜色与构图，浅色/深色主题均不反色；界面引用生成的 `resources/icon.png`，应用图标也在 [`resources/`](../../resources/)；Geist 字体文件在 `src/renderer/src/assets/fonts/`。
+图标从 `lucide-react` 引入，不进本目录；产品标志统一使用 [`resources/icon-source/workbench.png`](../../resources/icon-source/workbench.png)，保留原图颜色与构图，浅色/深色主题均不反色；界面引用生成的 `resources/icon.png`，应用图标也在 [`resources/`](../../resources/)；Geist 字体文件在 `src/renderer/src/assets/fonts/`。
 
 ## 值从哪来、怎么不漂
 
@@ -42,4 +42,4 @@
 
 - 15 个原语之外的 `components/ui/`（accordion、button-group、collapsible、color-picker、context-menu、hover-card、popover、progress、scroll-area、separator、sheet、slider、sonner、toggle、toggle-group、repo-multi-combobox）尚未写说明，用之前直接读源码。
 - 终端符号字体 `Orca Nerd Font Symbols`、只用于单个界面的 `main.css` 配方（工作树卡片激活态、文件树选中、Sonner 细节、终端与 Markdown 预览样式）不登记为 token。
-- claude.ai 上的设计系统页面（[Workbench Design System (Orca)，原品牌标题](https://claude.ai/artifact/GysYQpWCHMe1nZEbtxvLVL)，仅所有者可见）是本目录的浏览视图：改动先进仓，再从仓同步过去，不反向改。
+- claude.ai 上的设计系统页面（[Monica Design System (Orca)](https://claude.ai/artifact/GysYQpWCHMe1nZEbtxvLVL)，仅所有者可见）是本目录的浏览视图：改动先进仓，再从仓同步过去，不反向改。

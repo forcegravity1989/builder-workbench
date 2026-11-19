@@ -13,7 +13,7 @@ import { notifyMonicaError } from './error-feedback'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { OverviewRefresh } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
-import type { MetricCatalog, MetricReading } from '../../../shared/monica/metrics'
+import type { MetricCatalog, MetricDefinition, MetricReading } from '../../../shared/monica/metrics'
 import type { PlanningMaterial } from '../../../shared/monica/version-planning-material'
 import { buildScoreboardScenes, type ScoreboardScene } from './overview-scoreboard-model'
 import { zoneBucketLabels, zoneChartRange } from './overview-zone-series'
@@ -29,6 +29,7 @@ export function OverviewScoreboard({
   readings,
   problems,
   busy,
+  pendingReadings,
   onRefresh,
   anchor,
   identity,
@@ -45,6 +46,7 @@ export function OverviewScoreboard({
   readings: Record<string, MetricReading | null>
   problems: string[]
   busy: boolean
+  pendingReadings: ReadonlySet<string> | null
   onRefresh(): void
   anchor?: string
   identity: string
@@ -65,13 +67,18 @@ export function OverviewScoreboard({
   const timezone = catalog?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
   const range = zoneChartRange(SCOREBOARD_GRANULARITY, timezone, anchor)
   const labels = zoneBucketLabels(range)
+  const viewFor = (def: MetricDefinition) =>
+    measureView(
+      def,
+      readings,
+      labels,
+      range,
+      timezone,
+      pendingReadings?.has(def.ref.definitionHash) ?? busy
+    )
   const views = (scene: ScoreboardScene) => ({
-    lagging: scene.lagging
-      ? measureView(scene.lagging, readings, labels, range, timezone, busy)
-      : null,
-    leading: scene.leading
-      ? measureView(scene.leading, readings, labels, range, timezone, busy)
-      : null
+    lagging: scene.lagging ? viewFor(scene.lagging) : null,
+    leading: scene.leading ? viewFor(scene.leading) : null
   })
   const tabVerdict = (scene: ScoreboardScene): 'met' | 'unmet' | 'unknown' | null => {
     const focus = scene.focus
@@ -81,7 +88,7 @@ export function OverviewScoreboard({
     if (!focus || !def) {
       return null
     }
-    const measured = measureView(def, readings, labels, range, timezone, busy)
+    const measured = viewFor(def)
     return scoreboardVerdict(def, focus.target, measured)
   }
   const focused = scenes.filter((scene) => scene.focus)
@@ -138,7 +145,7 @@ export function OverviewScoreboard({
         ref={guideHeaderRef}
         data-monica-scoreboard-guide={guideHeaderRef ? '' : undefined}
       >
-        <h2 data-contextual-tour-target={guideReady ? 'workbench-scoreboard-title' : undefined}>
+        <h2 data-contextual-tour-target={guideReady ? 'monica-scoreboard-title' : undefined}>
           记分牌
         </h2>
         {catalog?.draft && <span className="monica-sb-draft">草稿</span>}
@@ -158,7 +165,7 @@ export function OverviewScoreboard({
             className="monica-btn monica-btn-secondary monica-btn-sm"
             disabled={setupBusy}
             onClick={onSetup}
-            data-contextual-tour-target={guideReady ? 'workbench-scoreboard-setup' : undefined}
+            data-contextual-tour-target={guideReady ? 'monica-scoreboard-setup' : undefined}
           >
             <MessageSquarePlus size={14} aria-hidden="true" /> 配置指标
           </button>
@@ -166,7 +173,7 @@ export function OverviewScoreboard({
             label="刷新"
             busy={busy}
             onClick={onRefresh}
-            tourTarget={guideReady ? 'workbench-scoreboard-refresh' : undefined}
+            tourTarget={guideReady ? 'monica-scoreboard-refresh' : undefined}
           />
         </div>
       </header>

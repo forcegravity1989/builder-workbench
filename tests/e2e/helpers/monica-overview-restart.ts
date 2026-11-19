@@ -59,7 +59,7 @@ export async function enableProjectStats(page: Page, info: TestInfo, issueState:
     state.openSettingsTarget({
       pane: 'experimental',
       repoId: null,
-      sectionId: 'workbench-overview-experiments'
+      sectionId: 'monica-overview-experiments'
     })
     state.openSettingsPage()
   })

@@ -8,22 +8,23 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent
 } from '@/components/ui/dropdown-menu'
-import { PrReviewNotificationsView } from '@/monica/pr-review-notifications/PrReviewNotificationsView'
-import { ReviewSendMenuItem } from '@/monica/pr-review-notifications/ReviewSendMenuItem'
-import { ReviewSendDialog } from '@/monica/pr-review-notifications/ReviewSendDialog'
+import { PrReviewNotificationsView } from '@/workbench/pr-review-notifications/PrReviewNotificationsView'
+import { ReviewSendMenuItem } from '@/workbench/pr-review-notifications/ReviewSendMenuItem'
+import { ReviewSendDialog } from '@/workbench/pr-review-notifications/ReviewSendDialog'
 import {
   applyIncomingRequest,
   recordSentReview,
   deleteOutgoingNote,
+  removeIncomingNote,
   EMPTY_REVIEW_NOTIFICATIONS,
   type ReviewNotificationsState,
   type ReviewReadback
-} from '@/monica/pr-review-notifications/model'
+} from '@/workbench/pr-review-notifications/model'
 import type {
   ReviewRequestPayload,
   ReviewPeerTarget,
   ReviewSendInput
-} from '../../../../src/shared/monica/pr-review-request'
+} from '../../../../src/shared/workbench/pr-review-request'
 import { i18n } from '@/i18n/i18n'
 
 const targets: ReviewPeerTarget[] = [
@@ -50,8 +51,8 @@ function Preview() {
   const [sendError, setSendError] = useState<string | null>(null)
   const [openError, setOpenError] = useState<string | null>(null)
   const repo = codehub
-    ? { host: 'codehub-g.huawei.com', path: 'Org/Group/monica-demo' }
-    : { host: 'github.com', path: 'example/monica-demo' }
+    ? { host: 'codehub-g.huawei.com', path: 'Org/Group/workbench-demo' }
+    : { host: 'github.com', path: 'example/workbench-demo' }
   const openSend = async () => {
     setSendError(null)
     setSelected(author.pending[0]?.targets ?? author.outgoing[0]?.deliveries ?? targets)
@@ -236,6 +237,7 @@ function Preview() {
           }
         }}
         onDelete={(id) => setAuthor((s) => deleteOutgoingNote(s, id))}
+        onDismissIncoming={(note) => setReviewer((s) => removeIncomingNote(s, note.id))}
         onResend={openSend}
         missingProject={() => missingProject}
       />

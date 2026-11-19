@@ -88,7 +88,7 @@ describe('defineMonicaMethod', () => {
       handler: async () => ({ ok: false as const, error: { code: 'not a code!', message: 'x' } })
     })
     await badCode.handler(input, ctx)
-    expect(records[1].attributes.errorCode).toBe('workbench-error')
+    expect(records[1].attributes.errorCode).toBe('monica-error')
     expect(records[1].attributes).not.toHaveProperty('message')
   })
 

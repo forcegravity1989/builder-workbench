@@ -5,6 +5,6 @@ import workbench from './playwright.config'
 export default defineConfig(workbench, {
   projects: workbench.projects?.map((project) => ({
     ...project,
-    testMatch: 'workbench-version-overview.spec.ts'
+    testMatch: 'monica-version-overview.spec.ts'
   }))
 })

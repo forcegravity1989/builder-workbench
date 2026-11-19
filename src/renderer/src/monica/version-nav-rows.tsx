@@ -114,7 +114,7 @@ export function WorkflowRow({
       <button
         type="button"
         onClick={onNavigate}
-        data-contextual-tour-target={workflow === 'plan' ? 'workbench-versions-plan' : undefined}
+        data-contextual-tour-target={workflow === 'plan' ? 'monica-versions-plan' : undefined}
         disabled={busy}
         title={branchTitle}
         aria-current={active ? 'page' : undefined}

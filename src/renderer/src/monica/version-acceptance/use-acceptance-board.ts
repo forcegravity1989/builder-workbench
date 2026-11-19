@@ -64,20 +64,16 @@ export function useAcceptanceBoard({
     refresh: refreshDraft,
     clear: useRemoteDeletion,
     initializationSuppressed,
-    cancelAutomaticRead,
     loadedRefresh
   } = useAcceptanceDraft(recoveryKey, port, context.version ?? undefined, context.materialRefresh)
   const catalog = useAcceptanceSources(history, materialPort, metricScope, context.materialRefresh)
-  const [version, setVersion] = useState(context.version ?? '')
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
   const scroll = useRef<HTMLDivElement>(null)
-  const generation = useRef(0)
   const document = draft?.document
   const fixed = useFixedAcceptancePlan(history, metricScope, document?.planRef)
   const output = useAcceptanceOutput(context, controller)
   const associated = Boolean(document && document.version === context.version)
-  const readOnly = busy || Boolean(context.syncing) || !associated || !fixed.plan
+  const readOnly = Boolean(context.syncing) || !associated || !fixed.plan
   const lifetime = useRef({ active: true })
   useEffect(() => {
     const state = lifetime.current
@@ -88,7 +84,7 @@ export function useAcceptanceBoard({
   }, [])
   const isCurrent = useCallback(() => lifetime.current.active, [])
   const selection = useRef({ value: 0 })
-  const canSave = useCallback(() => !context.syncing && !busy, [context.syncing, busy])
+  const canSave = useCallback(() => !context.syncing, [context.syncing])
   const autosave = useMaterialAutosave({
     controller,
     draft,
@@ -170,15 +166,6 @@ export function useAcceptanceBoard({
     }, 5000)
     return () => clearInterval(timer)
   }, [controller, context.syncing])
-  useEffect(
-    () => () => {
-      generation.current++
-    },
-    []
-  )
-  useEffect(() => {
-    setVersion(document?.version ?? context.version ?? '')
-  }, [document?.version, context.version])
   useEffect(() => {
     if (scroll.current) {
       try {
@@ -188,36 +175,6 @@ export function useAcceptanceBoard({
       }
     }
   }, [document?.version, recoveryKey])
-  async function loadVersion(value: string) {
-    const original = controller.value
-    if (original?.dirty && !(await autosave.flush())) {
-      setError('修改尚未保存，请处理保存提示后再切换版本。')
-      return
-    }
-    const savedOriginal = controller.value
-    cancelAutomaticRead()
-    const token = ++generation.current
-    setBusy(true)
-    try {
-      await port.read(value)
-      if (token !== generation.current) {
-        return
-      }
-      if (controller.value !== savedOriginal) {
-        setError('切换期间材料已变化，已保留当前输入；请保存后重新选择版本。')
-        return
-      }
-      await context.selectVersion(value)
-    } catch (reason) {
-      if (token === generation.current) {
-        setError(String(reason))
-      }
-    } finally {
-      if (token === generation.current) {
-        setBusy(false)
-      }
-    }
-  }
   async function refreshData() {
     setError(null)
     try {
@@ -271,18 +228,14 @@ export function useAcceptanceBoard({
     controller,
     recoveryError,
     recoveryText,
-    versions: catalog.versions,
-    materialProblems: catalog.materialProblems,
-    version,
+    version: context.version ?? '',
     error: error ?? fixed.error ?? catalog.error,
     setError,
-    busy,
     ...output,
     scroll,
     document,
     plan: fixed.plan,
     readOnly,
-    loadVersion,
     refreshData,
     saving: autosave.saving,
     retrySave: autosave.save,

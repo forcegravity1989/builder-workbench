@@ -129,7 +129,7 @@ export function ProjectWallCard({
         <button
           type="button"
           className="pcard-name"
-          data-contextual-tour-target="workbench-wall-project"
+          data-contextual-tour-target="monica-wall-project"
           disabled={switching}
           onClick={() => onOpen()}
         >
@@ -164,7 +164,7 @@ export function ProjectWallCard({
               icon={LayoutDashboard}
               onClick={onOverview}
               data-monica-open-overview
-              data-contextual-tour-target="workbench-wall-overview"
+              data-contextual-tour-target="monica-wall-overview"
             />
           )}
           <MonicaIconButton
@@ -215,7 +215,10 @@ export function ProjectWallCard({
           <>
             <div className="pcard-version">
               <span>版本目标</span>
-              <span>{readings.version}</span>
+              <span>
+                {readings.version}
+                {readings.sourceLabel ? ` · ${readings.sourceLabel}` : null}
+              </span>
             </div>
             <ul>
               {readings.goals.slice(0, 2).map((title, index) => (
@@ -230,11 +233,19 @@ export function ProjectWallCard({
             {!readings.goals.length && <span className="pcard-muted">暂无可读目标</span>}
           </>
         ) : readings.kind === 'unknown' ? (
-          <ErrorDetails
-            className="pcard-muted"
-            summary="版本信息暂不可用 · 查看详情"
-            detail={readings.reason}
-          />
+          <>
+            {readings.version ? (
+              <div className="pcard-version">
+                <span>版本目标</span>
+                <span>{readings.version}</span>
+              </div>
+            ) : null}
+            <ErrorDetails
+              className="pcard-muted"
+              summary="版本信息暂不可用 · 查看详情"
+              detail={readings.reason}
+            />
+          </>
         ) : (
           <div className="pcard-muted">
             {readings.kind === 'loading'

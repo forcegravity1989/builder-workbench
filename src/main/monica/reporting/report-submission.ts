@@ -70,7 +70,7 @@ export function getReportingTempRoot(): string {
   } catch {
     base = tmpdir()
   }
-  return join(base, 'workbench-reporting')
+  return join(base, 'monica-reporting')
 }
 
 /** `YYYYMMDD-HHMMSS` local-time stamp; shared by all uniquely-named upload files. */

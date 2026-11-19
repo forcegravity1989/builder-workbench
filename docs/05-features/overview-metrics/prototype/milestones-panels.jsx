@@ -30,6 +30,10 @@ export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
       <p className="muted">
+        原型注释：#684
+        复用版本计划和验收的自动保存与工作树更新。项目总览的主检出更新、排期和记分牌沿用现有入口。
+      </p>
+      <p className="muted">
         原型注释: 2026-11-05
         核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准；此入口仅供原型评审，不进入产品界面。
       </p>
@@ -268,25 +272,24 @@ export function PlanningReviewPanel({
   changes,
   submit,
   markMerged,
-  publish,
   close,
   viewOnly,
   invalid
 }) {
   const dirty = changes.length > 0
   const [viewReview, setViewReview] = useState(Boolean(viewOnly))
+  const confirming = dirty && !viewReview
   return (
     <Modal
-      title={
-        dirty && !viewReview && state.review !== 'merged'
-          ? '核对本次变更'
-          : state.review === 'merged'
-            ? '已合入，待更新'
-            : '已提交，待合入'
-      }
+      title={confirming ? '核对本次变更' : state.review === 'merged' ? '评审已合入' : '待评审'}
       close={close}
     >
-      {dirty && !viewReview && state.review !== 'merged' ? (
+      <p className="muted">
+        {confirming
+          ? '原型注释：此弹窗模拟提交前核对。BW 使用按钮旁的「本次改动」浮层，点「确认提交」继续。'
+          : '原型注释：此弹窗模拟评审状态。BW 的「查看评审」会打开代码托管平台的 PR / MR。'}
+      </p>
+      {confirming ? (
         <>
           {changes.map((c, i) => (
             <div className="ml-confirm-row" key={i}>
@@ -308,35 +311,27 @@ export function PlanningReviewPanel({
             </button>
           </footer>
         </>
-      ) : state.review === 'merged' ? (
-        <>
-          <p>正式总览将更新为最近已提交并合入的规划。</p>
-          {dirty && <p>另有未提交修改，更新后继续保留。</p>}
-          <footer>
-            <button className="btn btn-primary" onClick={publish}>
-              更新正式安排
-            </button>
-          </footer>
-        </>
       ) : (
         <>
-          <p>已提交的规划正在等待 PR / MR 合入。</p>
+          <p>
+            {state.review === 'merged'
+              ? '已提交的规划已合入主干。'
+              : '已提交的规划正在等待 PR / MR 合入。'}
+          </p>
           <footer>
             <button className="btn btn-secondary" onClick={close}>
               返回总览
             </button>
           </footer>
-          <div className="ml-prototype-controls">
-            <button className="btn btn-ghost" onClick={markMerged}>
-              原型注释: 模拟人工已合入
-            </button>
-          </div>
+          {state.review === 'open' && (
+            <div className="ml-prototype-controls">
+              <button className="btn btn-ghost" onClick={markMerged}>
+                原型注释：模拟人工已合入
+              </button>
+            </div>
+          )}
         </>
       )}
-      <p className="ml-footnote">
-        原型注释: 此处演示 bw/project → PR/MR → 主干的状态；没有真实 Git
-        写入。还原仅针对最近提交后的修改，阶段成果仍由人确认。
-      </p>
     </Modal>
   )
 }

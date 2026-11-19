@@ -19,17 +19,17 @@ const railClassName =
   'scrollbar-sleek min-h-0 max-h-44 overflow-y-auto border-b border-border bg-card p-2 md:max-h-none md:border-b-0 md:border-r'
 const rowClassName = 'h-auto min-h-9 w-full justify-start whitespace-normal text-left'
 const featureGuides: Partial<Record<ExploreFeatureId, MonicaGuideId>> = {
-  'project-wall': 'workbench-wall',
-  'project-overview': 'workbench-overview',
-  metrics: 'workbench-scoreboard',
-  milestones: 'workbench-milestones',
-  'version-planning': 'workbench-plan',
-  'version-navigation': 'workbench-versions',
+  'project-wall': 'monica-wall',
+  'project-overview': 'monica-overview',
+  metrics: 'monica-scoreboard',
+  milestones: 'monica-milestones',
+  'version-planning': 'monica-plan',
+  'version-navigation': 'monica-versions',
   browser: 'browser',
-  review: 'workbench-source-control',
+  review: 'monica-source-control',
   'delivery-browser': 'browser',
-  'delivery-review': 'workbench-source-control',
-  'delivery-workspaces': 'workbench-versions',
+  'delivery-review': 'monica-source-control',
+  'delivery-workspaces': 'monica-versions',
   'delivery-tasks': 'tasks',
   tasks: 'tasks'
 }

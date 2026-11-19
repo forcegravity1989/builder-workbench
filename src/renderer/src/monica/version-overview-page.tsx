@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+import { versionTreeKey } from './version-material-selection'
 import { ErrorDetails } from './error-feedback'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { useEffect, useRef, useState } from 'react'
@@ -48,7 +50,7 @@ function WorkflowProgress({
   return (
     <div
       data-contextual-tour-target={
-        kind === 'acceptance' ? 'workbench-version-overview-progress' : undefined
+        kind === 'acceptance' ? 'monica-version-overview-progress' : undefined
       }
     >
       {kind === 'plan' ? '计划' : '验收'} · {label}
@@ -78,8 +80,12 @@ function WorkflowProgress({
 
 export function VersionOverviewPage({ options }: { options: VersionOverviewOptions }) {
   const { repoId, hostId, version } = options
-  // 只读这次点击解析出的来源主机；本机有项目但没这版，就如实显示未同步。
-  const catalog = useVersionCatalogForRepo(repoId, hostId)
+  const catalog = useVersionCatalogForRepo(repoId, hostId, 0, true)
+  const selectedTree = options.selection
+    ? catalog.worktrees.find(
+        (tree) => !tree.isArchived && versionTreeKey(tree) === options.selection?.treeKey
+      )
+    : null
   const [refreshToken, setRefreshToken] = useState(0)
   const [focus, setFocus] = useState<string | null>(null)
   const projectId = useAppStore((state) => overviewProjectId(state, repoId))
@@ -93,7 +99,8 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
     catalog,
     version,
     refreshToken,
-    sdlcEnabled
+    sdlcEnabled,
+    options.selection
   )
   const milestoneSource = useMilestoneSource(catalog, refreshToken, sdlcEnabled)
   const { plan, acceptance } = materials
@@ -131,8 +138,19 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const projectName = useAppStore(
     (state) => findRepoForHost(state.repos, repoId, { hostId })?.displayName ?? '项目'
   )
-  const workflow = (kind: 'plan' | 'acceptance') =>
-    navigateVersionWorkflow({ catalog, version, workflow: kind, projectKey: repoId })
+  const workflow = (kind: 'plan' | 'acceptance') => {
+    if (options.selection && !selectedTree) {
+      toast.error('所选工作区已变化，请从版本侧栏重新选择。')
+      return
+    }
+    navigateVersionWorkflow({
+      catalog,
+      version,
+      workflow: kind,
+      projectKey: repoId,
+      worktrees: selectedTree && options.selection?.workflow === kind ? [selectedTree] : undefined
+    })
+  }
   const handledWorkflow = useRef<VersionOverviewOptions | null>(null)
   useEffect(() => {
     if (
@@ -210,7 +228,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               label: '刷新来源',
               Icon: RefreshCw,
               action: refresh,
-              target: 'workbench-version-overview-refresh',
+              target: 'monica-version-overview-refresh',
               busy:
                 features.loading ||
                 membership.busy ||
@@ -236,7 +254,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           ))}
         </div>
         <MonicaVersionResultHelp
-          screen="workbench-version-overview"
+          screen="monica-version-overview"
           enabled={plan.kind !== 'loading' && acceptance.kind !== 'loading'}
         />
       </header>
@@ -322,7 +340,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               <button
                 className="bwo-badge"
                 data-contextual-tour-target={
-                  index === 0 ? 'workbench-version-overview-decision' : undefined
+                  index === 0 ? 'monica-version-overview-decision' : undefined
                 }
                 onClick={() => workflow('acceptance')}
                 title={result?.decision?.reason ?? result?.note ?? '打开本版验收记录'}

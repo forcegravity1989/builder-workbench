@@ -5,7 +5,6 @@ import {
 } from '../../../shared/monica/version-material'
 import {
   collectVersionCatalogWorkspaces,
-  compareMaterialVersions,
   mergeVersionCatalog,
   versionCatalogCacheKey,
   type VersionCatalogDraftSource,
@@ -67,8 +66,7 @@ export type VersionCatalogPlanTree = {
   instanceId?: string
   repoId?: string
   ownerError?: string
-  /** 绑定限定的版本（已绑定计划树）；null=旧固定树（无绑定限定，列全部可读版本）。 */
-  version: string | null
+  version: string
   /** 树自身的执行宿主与归属 runtime（配对宿主树按 owner 路由，不假定与主树同宿主）。 */
   hostId?: string | null
   runtimeOwnerEnvironmentId?: string | null
@@ -82,13 +80,12 @@ export type VersionCatalogLoad = {
   problems: VersionCatalogProblem[]
   /** Provenance for failure retention in this view; never persisted or used as a cache policy. */
   goalSources?: Record<string, CatalogGoalSource>
-  history?: { key: string; ready: boolean; error: string | null }
+  history?: { key: string; ready: boolean; error: string | null; baselineCommit?: string }
 }
 
 /**
  * 装载所选来源的版本目录：主干已提交材料 ∪ 存活绑定；草稿目录、目标与任务
- * 引用从已保存计划派生（旧固定树与各版
- * 绑定计划树并列入口）；有已提交材料但没有草稿派生目标的版本，从已提交计划
+ * 引用从已绑定计划树的已保存计划派生；有已提交材料但没有草稿派生目标的版本，从已提交计划
  * 派生目标与任务引用（只读回看，不要求树存在）。已清理版本随材料仍入列
  * （retired 收起）。读取失败如实进 problems（调用方显示未知与原因），不装绿。
  */
@@ -146,7 +143,15 @@ export async function loadVersionCatalog(args: {
   const goalSources: Record<string, CatalogGoalSource> = Object.create(null)
   // null means the tree could not be listed; otherwise only these versions failed.
   const unavailableDrafts = new Map<string, Set<string> | null>()
-  for (const planTree of args.planTrees ?? []) {
+  const planTrees = args.planTrees ?? []
+  const planCounts = new Map<string, number>()
+  for (const { version } of planTrees) {
+    planCounts.set(version, (planCounts.get(version) ?? 0) + 1)
+  }
+  for (const planTree of planTrees) {
+    if (planCounts.get(planTree.version) !== 1) {
+      continue
+    }
     // 单个计划树读取失败不拖垮整个目录：其余来源照实返回，失败进 problem 通道。
     try {
       if (planTree.ownerError) {
@@ -165,9 +170,7 @@ export async function loadVersionCatalog(args: {
       )
       const candidates = await materialPort.list()
       for (const candidate of candidates) {
-        // 绑定树只派生自己绑定的版本（main 侧授权同样拒绝跨版；客户端先滤，
-        // 避免无谓读取）。旧固定树（version null）保持全量列举的旧上下文。
-        if (planTree.version !== null && candidate.version !== planTree.version) {
+        if (candidate.version !== planTree.version) {
           continue
         }
         try {
@@ -231,7 +234,7 @@ export async function loadVersionCatalog(args: {
       if (!isVersionHostDisconnected(planTree)) {
         problems.push({
           code: 'draft-source-unavailable',
-          message: `计划树${planTree.version ? ` ${planTree.version}` : '（旧固定树）'}草稿读取失败：${
+          message: `版本 ${planTree.version} 的计划草稿读取失败：${
             reason instanceof Error ? reason.message : String(reason)
           }`
         })
@@ -241,6 +244,7 @@ export async function loadVersionCatalog(args: {
 
   const entries = mergeVersionCatalog({
     committed,
+    historyAvailable: !historyUnavailable,
     drafts,
     goalsByVersion,
     workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, args.projectId)
@@ -257,9 +261,15 @@ export async function loadVersionCatalog(args: {
     retainHistory: sameHistory && historyUnavailable
   })
 
-  // 已提交回看：有已提交计划材料但没有草稿派生目标的版本（旧版本/已清理
-  // 版本，树不存在或不可读），从固定提交读回目标与任务引用目录——只读回看不要求树。
   for (const entry of entries) {
+    if ((planCounts.get(entry.version) ?? 0) > 1) {
+      entry.problems.push({
+        workflow: 'plan',
+        code: 'plan-source-ambiguous',
+        message: '有多个计划工作区。点「计划」选择要打开的工作区。'
+      })
+    }
+    // 已提交计划可从固定提交读回目标，历史回看不要求绑定树。
     const planRef = entry.material.plan
     if (!planRef || entry.goals.length > 0 || historyUnavailable) {
       continue
@@ -324,11 +334,17 @@ export async function loadVersionCatalog(args: {
     }
   }
 
-  entries.sort((a, b) => compareMaterialVersions(a.version, b.version))
   return {
     entries,
     problems,
     goalSources,
-    history: { key: historyKey, ready: !historyUnavailable, error: historyError }
+    history: {
+      key: historyKey,
+      ready: !historyUnavailable,
+      error: historyError,
+      baselineCommit:
+        committed.baselineCommit ??
+        (sameHistory ? previousLoad?.history?.baselineCommit : undefined)
+    }
   }
 }

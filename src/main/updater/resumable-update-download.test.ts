@@ -7,7 +7,7 @@ import { downloadResumableUpdate } from './resumable-update-download'
 
 const content = Buffer.from('a verified update package '.repeat(2048))
 const artifact = {
-  url: 'https://example.test/v0.8.0/workbench-windows-setup.exe',
+  url: 'https://example.test/v0.8.0/monica-windows-setup.exe',
   size: content.length,
   sha512: createHash('sha512').update(content).digest('base64')
 }

@@ -13,7 +13,7 @@ const ReceiptSchema = z.object({
 export type DiagnosticUploadReceipt = z.infer<typeof ReceiptSchema>
 
 function receiptDirectory(): string {
-  return join(getCanonicalUserDataPath(), 'workbench-diagnostic-receipts')
+  return join(getCanonicalUserDataPath(), 'monica-diagnostic-receipts')
 }
 
 function receiptPath(ticketId: string): string {

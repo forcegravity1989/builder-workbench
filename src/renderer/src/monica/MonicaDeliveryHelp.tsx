@@ -28,13 +28,13 @@ export function MonicaBrowserHelp({ ready }: { ready: boolean }) {
 
 export function finishSourceControlGuide() {
   const state = useAppStore.getState()
-  if (state.activeContextualTourId === 'workbench-source-control') {
-    state.completeContextualTour('workbench-source-control')
+  if (state.activeContextualTourId === 'monica-source-control') {
+    state.completeContextualTour('monica-source-control')
   }
 }
 
 export function MonicaSourceControlHelp() {
-  useMonicaScreenGuide('workbench-source-control', true)
+  useMonicaScreenGuide('monica-source-control', true)
   return (
     <Button
       type="button"
@@ -43,7 +43,7 @@ export function MonicaSourceControlHelp() {
       className="shrink-0"
       title="源代码管理帮助"
       aria-label="源代码管理帮助"
-      onClick={() => replayMonicaGuide('workbench-source-control')}
+      onClick={() => replayMonicaGuide('monica-source-control')}
     >
       <CircleHelp size={15} />
     </Button>

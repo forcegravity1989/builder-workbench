@@ -15,7 +15,7 @@ import { configureGoldenStubAgent, getGoldenStubAgentLaunchEnv } from './helpers
 import { verifyWorkflowDraft } from './helpers/monica-workflow-draft'
 
 /**
- * Monica main-chain smoke (G2 journey): creating a version must prepare the
+ * BW main-chain smoke (G2 journey): creating a version must prepare the
  * bound plan/acceptance flow trees through workbench.versionWorkspace.prepare,
  * mount the plan board beside the native terminal, keep material edits on the
  * bound tree's own disk path (binding-fenced authorization), survive a renderer
@@ -32,7 +32,7 @@ test.use({
   monicaAppExtraEnv: {
     MONICA_SHELL: '1',
     VITE_MONICA_SHELL: '1',
-    ORCA_PRODUCT_NAME: 'Monica'
+    ORCA_PRODUCT_NAME: 'Workbench'
   }
 })
 
@@ -42,7 +42,7 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   const help = monicaPage.locator('[data-monica-rail]').getByRole('button', {
     name: /^(Help|帮助)$/
   })
-  const exploreName = /^(Explore Monica|探索 Monica)$/
+  const exploreName = /^(Explore BW|探索 BW)$/
   const dialog = monicaPage.getByRole('dialog', { name: exploreName })
   const features = dialog.getByRole('tab', { name: /^(Features|功能)$/ })
   const journeys = dialog.getByRole('tab', { name: /^(Work journeys|工作旅程)$/ })
@@ -131,7 +131,7 @@ test('explores work journeys and reuses feature demonstrations from Help', async
     .getByRole('navigation', { name: /^(Related features|相关功能)$/ })
     .getByRole('button', { name: /^(Project overview|项目总览)$/ })
     .click()
-  await dialog.getByRole('button', { name: /^(Try it in Monica|在界面中跟做)$/ }).click()
+  await dialog.getByRole('button', { name: /^(Try it in BW|在界面中跟做)$/ }).click()
   await expect(dialog).toBeHidden()
   const overviewHelp = monicaPage.getByRole('button', { name: '项目总览帮助', exact: true })
   const guide = monicaPage.locator('[data-contextual-tour-panel]')
@@ -142,7 +142,7 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   await expect(guide.getByText('查看项目名片', { exact: true })).toBeVisible()
 })
 
-test.describe('Monica first-run project handoff', () => {
+test.describe('BW first-run project handoff', () => {
   test.use({ dismissOnboarding: false, seedTestRepo: false })
 
   test('stays on the project wall after cancel and first add until the user opens the project', async ({
@@ -183,7 +183,7 @@ test.describe('Monica first-run project handoff', () => {
     await expect
       .poll(() =>
         monicaPage.evaluate(async () =>
-          (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-wall')
+          (await window.api.ui.get()).contextualToursSeenIds?.includes('monica-wall')
         )
       )
       .toBe(true)
@@ -194,7 +194,7 @@ test.describe('Monica first-run project handoff', () => {
     const help = monicaPage.locator('[data-monica-rail]').getByRole('button', {
       name: /^(Help|帮助)$/
     })
-    const exploreName = /^(Explore Monica|探索 Monica)$/
+    const exploreName = /^(Explore BW|探索 BW)$/
     await help.click()
     await monicaPage.getByRole('menuitem', { name: exploreName }).click()
     const explore = monicaPage.getByRole('dialog', { name: exploreName })
@@ -228,7 +228,7 @@ test.describe('Monica first-run project handoff', () => {
     await monicaPage.keyboard.press('Escape')
     await expect(explore).toBeHidden()
 
-    const gettingStartedName = /^(Getting Started with Monica|Monica 入门)$/
+    const gettingStartedName = /^(Getting Started with BW|BW 入门)$/
     await help.click()
     await monicaPage.getByRole('menuitem', { name: gettingStartedName }).click()
     const gettingStarted = monicaPage.getByRole('dialog', { name: gettingStartedName })
@@ -279,7 +279,7 @@ test.describe('Monica first-run project handoff', () => {
       .getByRole('button', { name: /^(Settings|设置)$/ })
       .click()
     const setupGuideSettingsRow = monicaPage.getByRole('button', {
-      name: /^(Getting Started with Monica,|Monica 入门，)/
+      name: /^(Getting Started with BW,|BW 入门，)/
     })
     await expect(setupGuideSettingsRow).toHaveAttribute('aria-label', /of 7 complete|\/ 7 项/)
     await setupGuideSettingsRow.click()
@@ -359,7 +359,7 @@ test.describe('Monica first-run project handoff', () => {
 })
 
 isolatedProjectTest(
-  'Monica project settings: reviewed edits, conflict protection and filesystem read-back',
+  'BW project settings: reviewed edits, conflict protection and filesystem read-back',
   async ({ monicaPage, seededRepoPath }, testInfo) => {
     test.setTimeout(300_000)
     await verifyProjectSettings(monicaPage, seededRepoPath, testInfo)
@@ -367,7 +367,7 @@ isolatedProjectTest(
 )
 
 fixedWorkspaceTest(
-  'Monica fixed workspaces: restore remote branches with narrow fetch and existing reviews',
+  'BW fixed workspaces: restore remote branches with narrow fetch and existing reviews',
   async ({ monicaPage, fixedRemote }, testInfo) => {
     test.setTimeout(900_000)
     await verifyFixedWorkspaceRemoteReuse(monicaPage, fixedRemote, testInfo)
@@ -375,11 +375,11 @@ fixedWorkspaceTest(
 )
 
 isolatedProjectTest(
-  'Monica milestones: real editing, pointer drag, source return and safe submit failure @headful',
+  'BW milestones: real editing, pointer drag, source return and safe submit failure @headful',
   async ({ monicaPage, seededRepoPath, electronApp }, testInfo) => {
-    test.setTimeout(300_000)
-    await verifyMilestones(monicaPage, seededRepoPath, testInfo)
-    await verifyMilestoneRestart(electronApp, testInfo)
+    test.setTimeout(600_000)
+    const material = await verifyMilestones(monicaPage, seededRepoPath, testInfo)
+    await verifyMilestoneRestart(electronApp, testInfo, material)
   }
 )
 
@@ -435,13 +435,13 @@ async function clickVersionRowEntry(page: Page, name: string): Promise<void> {
   }).toPass({ timeout: 60_000 })
 }
 
-test('Monica cycle main chain: bound flow trees via new-version prepare, material save and independent read-back', async ({
+test('BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back', async ({
   monicaPage,
   seededRepoPath
 }, testInfo) => {
   test.setTimeout(900_000)
 
-  // The workbench chrome is the readiness signal for the Monica shell; the helper
+  // The workbench chrome is the readiness signal for the BW shell; the helper
   // already seeded the project repo and its worktrees.
   await expect(monicaPage.locator('[data-monica-nav]')).toBeVisible({ timeout: 180_000 })
   await recordWorkspaceInventory(monicaPage, seededRepoPath, testInfo, 'initial')
@@ -481,7 +481,7 @@ test('Monica cycle main chain: bound flow trees via new-version prepare, materia
   await expect
     .poll(() =>
       monicaPage.evaluate(async () =>
-        (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-plan')
+        (await window.api.ui.get()).contextualToursSeenIds?.includes('monica-plan')
       )
     )
     .toBe(true)
@@ -773,6 +773,6 @@ test('Monica cycle main chain: bound flow trees via new-version prepare, materia
   })
   await monicaPage.locator('#shortcut-filter-search').fill('批注')
   await expect(monicaPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
-  await expect(monicaPage.getByRole('heading', { name: 'Monica' })).toBeVisible()
+  await expect(monicaPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
   await recordWorkspaceInventory(monicaPage, seededRepoPath, testInfo, 'final')
 })

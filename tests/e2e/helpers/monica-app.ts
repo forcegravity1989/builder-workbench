@@ -174,7 +174,7 @@ export const test = base.extend<MonicaTestFixtures, MonicaWorkerFixtures>({
     // this Electron fixture has released watchers, terminals, and daemons.
     void registerPostElectronShutdownCleanup
     const mainPath = path.join(process.cwd(), 'out', 'main', 'index.js')
-    const userDataDir = mkdtempSync(path.join(os.tmpdir(), 'workbench-e2e-userdata-'))
+    const userDataDir = mkdtempSync(path.join(os.tmpdir(), 'monica-e2e-userdata-'))
 
     if (dismissOnboarding) {
       // Why: onboarding renders a fullscreen `fixed inset-0 z-[100]` overlay
