@@ -78,12 +78,13 @@
   const project = '星图服务'
   const teamName = '神盾局'
   const demoGroup = '938583054774198541'
-  const demoSpace = '200000000000000001'
+  const demoSpaceUrl = 'welink://group-space/shield-team'
   const demoProjectGroup = '300000000000000001'
   const employees = { lead: 'A0010001', lin: 'A0010002', chen: 'A0010003' }
   const addresses = { lin: 'ws://192.0.2.10:6768', chen: 'ws://192.0.2.11:6771' }
   const dayMs = 86_400_000
-  const auditRetentionDays = 30
+  const auditRetentionDays = 14
+  const auditLogDirectory = 'userData/logs/orca-shared-host/'
 
   function hostLabel(person) {
     return `${names[person] ?? '成员'}的主机`
@@ -122,7 +123,7 @@
   const wallRepos = { lead: [], lin: ['star'], chen: ['star', 'board'] }
   const samplePairing = 'orca://pair?code=demo-antai'
   const charterOwner = '林安'
-  const key = 'bw-team-collaboration-342-bind'
+  const key = 'bw-team-collaboration-342-bind-v3'
   const auditActionTaxonomy = [
     '连接共享主机',
     '查看工作树',
@@ -314,7 +315,7 @@
     return {
       schema_version: 1,
       team_group_id: groupId,
-      team_space_id: demoSpace,
+      team_space_url: demoSpaceUrl,
       identity_source: 'welink-cli',
       hosts: directoryMembers(),
       projects: []
@@ -372,6 +373,8 @@
       return directory
     }
     directory.identity_source ??= 'welink-cli'
+    directory.team_space_url ??= directory.team_space_id ? `welink://group-space/${directory.team_space_id}` : demoSpaceUrl
+    delete directory.team_space_id
     const previousHosts = new Map((directory.hosts ?? []).map((host) => [host.member_id, host]))
     directory.hosts = directoryMembers().map((member) => {
       const previous = { ...(previousHosts.get(member.member_id) ?? {}) }
@@ -415,7 +418,11 @@
   }
 
   function endpointFor(person, directory = knownDirectory()) {
-    return state.teamEndpoints?.[person] ?? directoryHostRecord(person, directory)?.orca_endpoint ?? ''
+    const record = directoryHostRecord(person, directory)
+    if (record && Object.prototype.hasOwnProperty.call(record, 'orca_endpoint')) {
+      return record.orca_endpoint ?? ''
+    }
+    return state.teamEndpoints?.[person] ?? ''
   }
 
   function hydrateEndpoints(directory = state.directory) {
@@ -580,28 +587,21 @@
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">绑定群号后，BW 通过 welink-cli 读取群主、成员、工号和头像，并读取群空间目录。当前主机的 WeLink 登录身份用于匹配“这是林安的主机”还是“这是陈远的主机”。</p><form id="team-lookup"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">输入群号，BW 会从 WeLink 读取成员和群空间。</p><form id="team-lookup"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = Object.keys(names)
       .map((id) => {
         const member = weLinkMember(id)
-        const connection = state.teamConnections?.[actor.value]?.[id]
         const endpoint = endpointFor(id, draft)
-        const status = id === actor.value
-          ? '本机'
-          : connection
-            ? `已连接 · ${accessLevel(id, actor.value) === 'full' ? '完全访问' : '只读'}`
-            : endpoint
-              ? '已登记 · 默认断开'
-              : '未登记 Orca 共享地址'
-        const address = endpoint
-          ? `<small class="member-number">${esc(endpoint)}</small>`
-          : '<small class="member-number">共享后可一键带入</small>'
-        const fill = id === actor.value && writable && state.teamEndpoints?.[id]
-          ? button('一键带入本机地址', 'fill-own-share', { kind: 'ghost' })
+        const localTag = id === actor.value ? '本机' : '非本机'
+        const fill = id === actor.value && writable
+          ? button(endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share', { kind: 'ghost' })
           : ''
-        return `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${member.avatar}</span><span><strong>${member.name}</strong><small class="member-number">${member.member_id}</small></span></span></td><td>${id === 'lead' ? '群主' : '成员'}</td><td><div class="host-cell"><strong>${hostLabel(id)}</strong><small class="member-number">${member.host_id}</small>${address}<span class="source-access">${status}</span>${fill}</div></td></tr>`
+        const settings = id === actor.value && writable
+          ? button('共享与授权', 'open-sharing-settings', { kind: 'ghost' })
+          : ''
+        return `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${member.avatar}</span><span><strong>${member.name}</strong><small class="member-number">${member.member_id}</small></span></span></td><td><span class="source-access">${localTag}</span></td><td><div class="host-cell"><div class="row between"><strong>${hostLabel(id)}</strong><span class="member-number">${member.host_id}</span></div><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${writable ? '' : ' readonly'}>${fill}${settings}</div></div></td></tr>`
       })
       .join('')
 
@@ -616,9 +616,8 @@
       : '<p class="field-note">群空间还没有登记项目。先点击“登记项目”，再从各成员项目墙同步来源。</p>'
     return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
       <header class="row between"><div><small>WeLink 群空间目录</small><h2>团队设置</h2></div>${close}</header>
-      <div class="directory-scroll"><div class="team-binding"><div><small>团队群</small><strong>${teamName}</strong><small>${esc(draft.team_group_id)}</small></div><div><small>群空间</small><strong>${teamName}群空间</strong><small>${esc(draft.team_space_id)}</small></div></div>
-      <p class="field-note directory-note">成员身份由 WeLink 群返回。主机身份由各自桌面的 welink-cli 登录用户匹配。Orca 共享状态和访问级别仍由主机持有人在 Orca 设置中管理。</p>
-      <div class="row between"><h3>成员与主机</h3>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div>
+      <div class="directory-scroll"><div class="directory-links"><div><small>团队群</small><strong>${teamName}</strong><small>群号 ${esc(draft.team_group_id)}</small></div><div class="row"><small>群空间</small>${button('打开群空间', 'open-space', { value: draft.team_space_url, kind: 'ghost' })}</div></div>
+       <div class="row between"><h3>成员与主机</h3><div class="row"><span class="directory-tip" title="成员来自 WeLink 群，地址来自 Orca 共享设置。完全访问在共享访问页管理。">${icon('CircleHelp')}</span>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div></div>
       <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>主机与 Orca 地址</th></tr></thead><tbody>${people}</tbody></table></div>
       <div class="row between directory-project-head"><div><h3>团队项目</h3><small>先登记项目，再把成员项目墙中相同 repoId 的来源自动合并。</small></div><div class="row">${writable ? button(`${icon('Plus')} 登记项目`, 'register-project', { kind: 'ghost' }) : ''}${iconButton('RefreshCw', '从成员项目墙同步项目', 'refresh-directory')}</div></div>
       ${projectTable}
@@ -876,7 +875,7 @@
   }
 
   function defaultAuditFilters() {
-    return { action: '', result: '', period: '30', search: '' }
+    return { action: '', result: '', period: '14', search: '' }
   }
 
   function pruneAudit() {
@@ -928,7 +927,7 @@
     const pruned = state.prunedExpired
       ? `<p class="field-note" role="status">已清理 ${state.prunedExpired} 条超过 ${auditRetentionDays} 天的记录。</p>`
       : ''
-    return `<section class="muted-frame audit-pane"><h3>本机访问日志</h3><p class="field-note">最近 ${auditRetentionDays} 天，到期自动清理。</p>${pruned}
+    return `<section class="muted-frame audit-pane"><h3>本机访问日志</h3><p class="field-note">最近 ${auditRetentionDays} 天，到期自动清理。</p><p class="field-note">日志目录 · ${auditLogDirectory}</p>${pruned}
       <div class="audit-filters">
         ${auditFilter('动作', 'action', [['', '全部动作'], ...auditActionTaxonomy.map((action) => [action, action])])}
         ${auditFilter('结果', 'result', [
@@ -940,7 +939,7 @@
         ${auditFilter('时间', 'period', [
           ['1', '最近 24 小时'],
           ['7', '最近 7 天'],
-          ['30', '最近 30 天']
+          ['14', '最近 14 天']
         ])}
         <label class="field audit-search">搜索<input type="search" class="input" data-audit-filter="search" value="${esc(current().auditFilters.search)}" placeholder="成员、设备、项目或资源"></label>
         ${button('重置', 'reset-audit', { kind: 'ghost' })}
@@ -979,7 +978,7 @@
       ? `<label class="field demo-link">访问链接 <input class="input" value="${esc(state.generatedLinks[owner])}" readonly data-select-all></label><p class="field-note">链接只建立 Orca 共享连接。连接建立后，访问级别仍在这台主机的共享列表中单独判断。</p>`
       : ''
     const form = canShare
-      ? `<p class="field-note">当前主机由 WeLink 身份识别为 <strong>${hostLabel(owner)}</strong>。共享地址、监听端口和传输方式沿用 Orca 共享主机配置，不在团队目录中重复填写。</p>
+      ? `<p class="field-note">WeLink 身份：<strong>${hostLabel(owner)}</strong>。地址沿用 Orca 共享主机配置。</p>
         <div class="row">${button('生成访问链接', 'generate-link', { kind: 'primary' })}</div>
         ${generated}`
       : '<p class="field-note">当前模拟桌面没有可共享的主机。</p>'
@@ -1089,15 +1088,24 @@
       render()
     },
     'register-project': () => registerProjectDialog(current().directoryDraft),
+    'open-space': (value) => notify(`已打开 WeLink 群空间${value ? ` · ${value}` : ''}`),
+    'open-sharing-settings': () => {
+      const desktop = current()
+      desktop.server = true
+      desktop.workflow = 'share'
+      show('settings')
+    },
     'fill-own-share': () => {
       const draft = current().directoryDraft
-      const endpoint = state.teamEndpoints?.[actor.value]
+      const endpoint = state.teamEndpoints?.[actor.value] ?? addresses[actor.value]
       const host = draft?.hosts?.find((entry) => entry.member_id === employees[actor.value])
       if (!draft || !host || !endpoint) {
         notify('当前 Orca 共享设置还没有可带入的主机地址。')
         return
       }
       host.orca_endpoint = endpoint
+      state.teamEndpoints[actor.value] = endpoint
+      state.generatedLinks[actor.value] ??= `orca://pair?code=demo-${actor.value}`
       state.directory = syncDirectory(structuredClone(draft))
       hydrateEndpoints()
       current().directoryDraft = structuredClone(state.directory)
@@ -1286,6 +1294,11 @@
   surface.addEventListener('input', (event) => {
     if (event.target.dataset.auditFilter === 'search') {
       updateAuditFilter(event.target)
+    }
+    if (event.target.matches('input[data-address]')) {
+      const person = event.target.dataset.address
+      const host = current().directoryDraft?.hosts?.find((entry) => entry.member_id === employees[person])
+      if (host) host.orca_endpoint = event.target.value.trim()
     }
     if (event.target.hasAttribute('data-filter')) {
       const query = event.target.value.trim()

@@ -82,7 +82,7 @@
       .project-settings { width: min(400px, 43%); flex: none; padding: 19px 16px; border-left: 1px solid var(--border); }
       .project-settings > header { margin-bottom: 14px; }
       .project-settings > header h2 { font-size: 18px; }
-      .settings-type, .muted-frame, .team-binding > div { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; }
+      .settings-type, .muted-frame { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; }
       .settings-type label { font-size: 13px; }
       .settings-type .input { margin-top: 6px; }
       .muted-frame dl { display: grid; grid-template-columns: minmax(64px, 28%) 1fr; gap: 6px 9px; font-size: 12px; }
@@ -96,8 +96,7 @@
       dialog.dialog::backdrop { background: color-mix(in srgb, var(--foreground) 28%, transparent); }
       .surface-dialog h2, .dialog-form h2 { font-size: 18px; margin: 0; }
       .dialog-form .field, .pair-form .field { display: grid; gap: 5px; margin-top: 10px; }
-      .team-binding { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
-      .team-binding strong, .team-binding small, .grant-row small { display: block; }
+      .grant-row small { display: block; }
       .team-group { margin-top: 12px; }
       .table-scroll { overflow: auto; margin-top: 6px; }
       .table { min-width: 330px; }
@@ -170,16 +169,23 @@
         .server-workflows { grid-template-columns: 1fr; }
         .task-layout { grid-template-columns: 1fr; }
       }
-      .team-directory { width: min(870px, 100%); display: flex; flex-direction: column; overflow: hidden; }
+      .team-directory { width: min(760px, 100%); display: flex; flex-direction: column; overflow: hidden; }
       .team-directory > header, .directory-footer { flex: none; }
-      .directory-scroll { min-height: 0; overflow: auto; padding: 0 3px; }
+      .directory-scroll { min-height: 0; max-height: 58vh; overflow: auto; padding: 0 3px; }
       .directory-footer { padding-top: 8px; border-top: 1px solid var(--border); }
-      @media (min-width: 761px) { .window[data-screen="wall"]:has(.team-directory) .desktop { min-height: 650px; } }
+      @media (min-width: 761px) { .window[data-screen="wall"]:has(.team-directory) .desktop { min-height: 548px; } }
       .team-directory .members-table { min-width: 460px; }
+      .directory-links { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
+      .directory-links > div:first-child { display: grid; gap: 2px; }
+      .directory-links strong, .directory-links small { display: block; }
+      .directory-links .row { align-items: center; gap: 8px; }
+      .directory-tip { color: var(--muted-foreground); }
       .team-avatar { width: 26px; height: 26px; background: var(--muted); color: var(--foreground); font-size: 12px; }
       .member-number { display: block; overflow-wrap: anywhere; }
       .host-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
       .host-cell small { width: 100%; }
+      .host-cell > .row small { width: auto; }
+      .member-address { flex: 1 1 180px; min-width: 0; }
       .directory-project-head, .directory-footer { margin-top: 14px; }
       .directory-projects { min-width: 610px; }
       .directory-projects td:first-child { max-width: 230px; }
@@ -216,9 +222,9 @@
           <li>「从头开始」。韩岚绑定群号。welink-cli 读取群主、成员、工号和头像，当前桌面的 WeLink 身份用于匹配主机归属，群空间先只承载成员、主机和群空间信息，项目目录为空。</li>
           <li>林安绑定同一群号。项目墙保留当前 BW 的「添加项目」入口，团队设置也提供「登记项目」。登记星图服务后，项目身份写入群空间。</li>
           <li>陈远绑定该群后，BW 根据同一个 repoId 把成员项目墙上的「星图服务」来源合并成一张现有样式的项目卡。他不需要重复添加星图服务，「交付看板」仍是他的个人项目。</li>
-          <li>主机持有人在 Orca 共享主机设置里生成共享配置，回到团队设置点击「一键带入本机地址」。群成员随后自动看到这个地址和连接目标，连接默认保持断开，建立连接后默认只读。</li>
+          <li>在团队设置的本机地址栏点击「一键生成并填入」；已有 Orca 配置时按钮变为「一键填入」。群成员随后自动看到地址和连接目标，连接默认保持断开，建立连接后默认只读。</li>
           <li>在项目墙打开林安或陈远的来源。只读状态可以查看已有工作树、会话和终端输出，创建会话或工作树会提示当前权限。</li>
-          <li>陈远在自己的 Orca 共享主机设置里给林安主机授予完全访问。林安重新打开陈远来源后，可以在该项目下新建会话或新建工作树，并选择把工作树建在林安本机或陈远主机上。访问日志只由被访问主机持有人筛选查看，超过 30 天自动清理。</li>
+          <li>陈远在自己的 Orca 共享主机设置里给林安主机授予完全访问。林安重新打开陈远来源后，可以在该项目下新建会话或新建工作树，并选择把工作树建在林安本机或陈远主机上。访问日志只由被访问主机持有人筛选查看，超过 14 天自动清理。</li>
         </ol>
       </details>
       <div class="preview"><div id="surface"></div><p class="proto-status" id="status" role="status" aria-live="polite"></p></div>
@@ -226,7 +232,7 @@
         <summary>原型注释：复用位置与演示范围</summary>
         <p>页头动作沿用 <a href="../../../src/renderer/src/workbench/WorkbenchIconButton.tsx">WorkbenchIconButton</a> 和现有 Lucide 图标。团队设置采用同尺寸的 UsersRound 图标，放在<a href="../../../src/renderer/src/workbench/ProjectWallPage.tsx">项目墙原远程主机操作入口</a>的位置。项目卡片复用当前 ProjectWallCard 的布局和操作，不增加团队专用卡片动作。原“批量导入主机”的页头入口改为同位置的 UsersRound“团队设置”入口。</p>
         <p>窗口、墙卡右栏、评审入口与远程设置分别对应 <a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/ProjectSettingsRail.tsx">ProjectSettingsRail</a>、<a href="../../../src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx">发送评审</a>及<a href="../../../src/renderer/src/components/settings/RuntimeEnvironmentsPane.tsx">远程 Orca 服务器</a>。浅化的是这条旅程周边的原生内容。</p>
-        <p>样例在浏览器内模拟按群号查群、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">共享服务器访问</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，拟存于主机的 <code>userData/logs/</code> 并按天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
+        <p>样例在浏览器内模拟按群号查群、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。团队地址、连接和授权复用 Orca 原生共享主机设置；访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">共享服务器访问</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，存于主机的 <code>userData/logs/orca-shared-host/</code> 并按 14 天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
       </details>
     </main>
     <dialog id="dialog" class="dialog" aria-labelledby="dialog-title"></dialog>
