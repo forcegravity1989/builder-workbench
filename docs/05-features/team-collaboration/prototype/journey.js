@@ -310,20 +310,6 @@
     }))
   }
 
-  function teamProjectsFromWalls() {
-    return Object.values(catalogRepos)
-      .filter((repo) => repo.group)
-      .map((repo) => ({
-        repo_id: repo.repoId,
-        name: repo.name,
-        repository: repo.repository,
-        sources: Object.keys(wallRepos)
-          .filter((person) => (wallRepos[person] ?? []).includes(repo.repoId))
-          .map((person) => employees[person])
-      }))
-      .filter((entry) => entry.sources.length)
-  }
-
   function blankDirectory(groupId = demoGroup) {
     return {
       schema_version: 1,
@@ -331,8 +317,21 @@
       team_space_id: demoSpace,
       identity_source: 'welink-cli',
       hosts: directoryMembers(),
-      projects: teamProjectsFromWalls()
+      projects: []
     }
+  }
+
+  function mergeProjectSources(projects = []) {
+    return projects
+      .map((entry) => {
+        const repoId = repoIdForEntry(entry)
+        const sources = new Set(entry.sources ?? [])
+        Object.keys(wallRepos)
+          .filter((person) => (wallRepos[person] ?? []).includes(repoId))
+          .forEach((person) => sources.add(employees[person]))
+        return { ...entry, repo_id: repoId, sources: [...sources] }
+      })
+      .filter((entry) => entry.repo_id)
   }
 
   function syncDirectory(directory) {
@@ -341,12 +340,19 @@
       ...member,
       ...(next.hosts ?? []).find((host) => host.member_id === member.member_id)
     }))
-    next.projects = teamProjectsFromWalls()
+    next.projects = mergeProjectSources(next.projects)
     return next
   }
 
   function seedDirectory() {
-    return syncDirectory(blankDirectory())
+    const directory = blankDirectory()
+    directory.projects = [{
+      repo_id: catalogRepos.star.repoId,
+      name: catalogRepos.star.name,
+      repository: catalogRepos.star.repository,
+      sources: [employees.lin, employees.chen]
+    }]
+    return syncDirectory(directory)
   }
 
   function repoIdForEntry(entry) {
@@ -369,6 +375,7 @@
     const previousHosts = new Map((directory.hosts ?? []).map((host) => [host.member_id, host]))
     directory.hosts = directoryMembers().map((member) => {
       const previous = { ...(previousHosts.get(member.member_id) ?? {}) }
+      if (!previous.orca_endpoint && previous.address) previous.orca_endpoint = previous.address
       delete previous.address
       delete previous.host_status
       return {
@@ -401,6 +408,21 @@
 
   function knownDirectory() {
     return state.bound?.[actor.value] ? state.directory : null
+  }
+
+  function directoryHostRecord(person, directory = knownDirectory()) {
+    return directory?.hosts?.find((host) => host.member_id === employees[person])
+  }
+
+  function endpointFor(person, directory = knownDirectory()) {
+    return state.teamEndpoints?.[person] ?? directoryHostRecord(person, directory)?.orca_endpoint ?? ''
+  }
+
+  function hydrateEndpoints(directory = state.directory) {
+    Object.keys(names).forEach((person) => {
+      const endpoint = directoryHostRecord(person, directory)?.orca_endpoint
+      if (endpoint) state.teamEndpoints[person] = endpoint
+    })
   }
 
   function teamProjects(directory = knownDirectory()) {
@@ -440,7 +462,7 @@
   }
 
   function canReadTeamSource(owner, visitor = actor.value, repoId = 'star') {
-    const endpoint = state.teamEndpoints?.[owner]
+    const endpoint = endpointFor(owner)
     return (
       registered(owner, repoId) &&
       Boolean(endpoint) &&
@@ -470,7 +492,7 @@
       notify('这个项目来源还没同步到群空间目录，请在团队设置刷新团队目录。')
       return
     }
-    if (!state.teamEndpoints[owner]) {
+    if (!endpointFor(owner)) {
       confirm(
         '无法连接 Orca 共享主机',
         '<p>请让主机持有人先在 Orca 共享主机设置中打开共享，并核对当前团队主机状态。</p>',
@@ -484,7 +506,7 @@
       `<p>连接 <strong>${esc(hostLabel(owner))}</strong>。连接地址由 Orca 共享配置提供，团队成员默认只读。</p>`,
       '连接',
       () => {
-        state.teamConnections[actor.value][owner] = state.teamEndpoints[owner]
+        state.teamConnections[actor.value][owner] = endpointFor(owner)
         state.accessModes[actor.value] ??= {}
         state.accessModes[actor.value][owner] = 'readonly'
         audit(owner, '连接共享主机', '已放行', hostLabel(owner))
@@ -500,10 +522,58 @@
       return
     }
     state.directory = syncDirectory(structuredClone(draft))
+    hydrateEndpoints()
     state.bound[actor.value] = true
     current().directoryBase = JSON.stringify(state.directory)
     notify('已同步成员身份和项目墙信息到群空间')
     render()
+  }
+
+  function availableTeamProjects(draft = current().directoryDraft) {
+    const registered = new Set((draft?.projects ?? []).map((entry) => repoIdForEntry(entry)))
+    return localRepos().filter(([repoId]) => !registered.has(repoId))
+  }
+
+  function registerProjectDialog(draft = null) {
+    const available = availableTeamProjects(draft ?? knownDirectory())
+    if (!available.length) {
+      notify('本机项目墙没有可登记的新项目。')
+      return
+    }
+    const options = available
+      .map(([repoId, repo]) => `<option value="${repoId}">${esc(repo.name)}</option>`)
+      .join('')
+    confirm(
+      '登记团队项目',
+      `<label class="field">项目墙来源<select class="input" name="repo" required>${options}</select></label><p class="field-note">登记后，群空间记录项目身份。其他成员项目墙中相同 repoId 的来源会自动合并到项目卡片。</p>`,
+      '登记项目',
+      (data) => {
+        const repoId = String(data.get('repo') || '')
+        const repo = catalogRepos[repoId]
+        if (!repo) return
+        const target = draft ?? state.directory
+        target.projects ??= []
+        if (target.projects.some((entry) => repoIdForEntry(entry) === repoId)) {
+          notify('这个项目已经登记在群空间。')
+          return
+        }
+        target.projects.push({
+          repo_id: repo.repoId,
+          name: repo.name,
+          repository: repo.repository,
+          sources: [employees[actor.value]]
+        })
+        if (draft) {
+          render()
+          return
+        }
+        state.directory = syncDirectory(target)
+        current().directoryDraft = structuredClone(state.directory)
+        current().directoryBase = JSON.stringify(state.directory)
+        notify(`已登记${repo.name}，来源会按项目墙自动同步`)
+        render()
+      }
+    )
   }
 
   function teamDirectory() {
@@ -517,16 +587,24 @@
       .map((id) => {
         const member = weLinkMember(id)
         const connection = state.teamConnections?.[actor.value]?.[id]
+        const endpoint = endpointFor(id, draft)
         const status = id === actor.value
           ? '本机'
           : connection
             ? `已连接 · ${accessLevel(id, actor.value) === 'full' ? '完全访问' : '只读'}`
-            : state.teamEndpoints?.[id]
-              ? '可连接 · 默认只读'
-              : '未启用 Orca 共享'
-        return `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${member.avatar}</span><span><strong>${member.name}</strong><small class="member-number">${member.member_id}</small></span></span></td><td>${id === 'lead' ? '群主' : '成员'}</td><td><div class="host-cell"><strong>${hostLabel(id)}</strong><small class="member-number">${member.host_id}</small><span class="source-access">${status}</span></div></td></tr>`
+            : endpoint
+              ? '已登记 · 默认断开'
+              : '未登记 Orca 共享地址'
+        const address = endpoint
+          ? `<small class="member-number">${esc(endpoint)}</small>`
+          : '<small class="member-number">共享后可一键带入</small>'
+        const fill = id === actor.value && writable && state.teamEndpoints?.[id]
+          ? button('一键带入本机地址', 'fill-own-share', { kind: 'ghost' })
+          : ''
+        return `<tr><td><span class="row"><span class="avatar team-avatar" aria-hidden="true">${member.avatar}</span><span><strong>${member.name}</strong><small class="member-number">${member.member_id}</small></span></span></td><td>${id === 'lead' ? '群主' : '成员'}</td><td><div class="host-cell"><strong>${hostLabel(id)}</strong><small class="member-number">${member.host_id}</small>${address}<span class="source-access">${status}</span>${fill}</div></td></tr>`
       })
       .join('')
+
     const projects = draft.projects
       .map((entry) => {
         const sources = (entry.sources ?? []).map(memberName).join('、') || '尚未读取来源'
@@ -535,14 +613,14 @@
       .join('')
     const projectTable = projects
       ? `<div class="table-scroll"><table class="table directory-projects" aria-label="团队项目目录"><thead><tr><th>项目身份与来源</th><th>同步</th></tr></thead><tbody>${projects}</tbody></table></div>`
-      : '<p class="field-note">群成员项目墙还没有可合并的团队项目。</p>'
+      : '<p class="field-note">群空间还没有登记项目。先点击“登记项目”，再从各成员项目墙同步来源。</p>'
     return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
       <header class="row between"><div><small>WeLink 群空间目录</small><h2>团队设置</h2></div>${close}</header>
       <div class="directory-scroll"><div class="team-binding"><div><small>团队群</small><strong>${teamName}</strong><small>${esc(draft.team_group_id)}</small></div><div><small>群空间</small><strong>${teamName}群空间</strong><small>${esc(draft.team_space_id)}</small></div></div>
       <p class="field-note directory-note">成员身份由 WeLink 群返回。主机身份由各自桌面的 welink-cli 登录用户匹配。Orca 共享状态和访问级别仍由主机持有人在 Orca 设置中管理。</p>
       <div class="row between"><h3>成员与主机</h3>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div>
-      <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>主机与连接</th></tr></thead><tbody>${people}</tbody></table></div>
-      <div class="row between directory-project-head"><div><h3>团队项目</h3><small>同一 repoId 在成员项目墙中出现时自动合并。无需成员重复添加同一个项目。</small></div>${iconButton('RefreshCw', '从成员项目墙同步项目', 'refresh-directory')}</div>
+      <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>主机与 Orca 地址</th></tr></thead><tbody>${people}</tbody></table></div>
+      <div class="row between directory-project-head"><div><h3>团队项目</h3><small>先登记项目，再把成员项目墙中相同 repoId 的来源自动合并。</small></div><div class="row">${writable ? button(`${icon('Plus')} 登记项目`, 'register-project', { kind: 'ghost' }) : ''}${iconButton('RefreshCw', '从成员项目墙同步项目', 'refresh-directory')}</div></div>
       ${projectTable}
       </div><footer class="row between directory-footer">${button('查看群空间文件', 'preview-directory', { kind: 'ghost' })}${writable ? button('同步到群空间', 'save-directory', { kind: 'primary' }) : '<span class="field-note">你有查看权限，编辑权限由 WeLink 群空间管理。</span>'}</footer>
     </section></div>`
@@ -915,10 +993,14 @@
   function connectingServer() {
     const desktop = current()
     const targets = Object.keys(names)
-      .filter((owner) => owner !== actor.value && state.generatedLinks?.[owner])
+      .filter((owner) => owner !== actor.value && (endpointFor(owner) || state.generatedLinks?.[owner]))
     const target = desktop.connectionTarget ?? targets[0] ?? ''
+    const targetEndpoint = target ? endpointFor(target) : ''
+    const targetAccess = targetEndpoint
+      ? `<p class="field-note">群空间已带入 ${esc(hostLabel(target))} 的 Orca 地址，连接建立后默认只读。</p>`
+      : `<label class="field">访问链接 <input name="link" class="input" placeholder="粘贴 ${target ? hostLabel(target) : '主机持有人'} 提供的 Orca 访问链接" required></label>`
     const form = desktop.addingServer
-      ? `<form id="pair-form" class="pair-form"><label class="field">目标主机<select class="input" name="owner" required>${targets.map((owner) => `<option value="${owner}"${owner === target ? ' selected' : ''}>${hostLabel(owner)}</option>`).join('')}</select></label><label class="field">访问链接 <input name="link" class="input" placeholder="粘贴 ${target ? hostLabel(target) : '主机持有人'} 提供的 Orca 访问链接" required></label><footer class="dialog-actions">${button('取消', 'add-server', { kind: 'ghost' })}<button class="btn btn-primary" type="submit"${targets.length ? '' : ' disabled'}>连接</button></footer></form>`
+      ? `<form id="pair-form" class="pair-form"><label class="field">目标主机<select class="input" name="owner" required>${targets.map((owner) => `<option value="${owner}"${owner === target ? ' selected' : ''}>${hostLabel(owner)}</option>`).join('')}</select></label>${targetAccess}<footer class="dialog-actions">${button('取消', 'add-server', { kind: 'ghost' })}<button class="btn btn-primary" type="submit"${targets.length ? '' : ' disabled'}>连接</button></footer></form>`
       : ''
     const connected = Object.keys(names)
       .filter((owner) => owner !== actor.value && canReadTeamSource(owner, actor.value, desktop.repoId))
@@ -1000,13 +1082,36 @@
         return
       }
       state.directory = syncDirectory(state.directory)
+      hydrateEndpoints()
       desktop.directoryDraft = structuredClone(state.directory)
       desktop.directoryBase = JSON.stringify(state.directory)
       notify('已从 WeLink 群和成员项目墙刷新团队目录')
       render()
     },
-    'legacy-add': () =>
-      confirm('添加项目', '<p>打开已有文件夹、克隆代码仓，或新建项目。</p>', '关闭', () => {}),
+    'register-project': () => registerProjectDialog(current().directoryDraft),
+    'fill-own-share': () => {
+      const draft = current().directoryDraft
+      const endpoint = state.teamEndpoints?.[actor.value]
+      const host = draft?.hosts?.find((entry) => entry.member_id === employees[actor.value])
+      if (!draft || !host || !endpoint) {
+        notify('当前 Orca 共享设置还没有可带入的主机地址。')
+        return
+      }
+      host.orca_endpoint = endpoint
+      state.directory = syncDirectory(structuredClone(draft))
+      hydrateEndpoints()
+      current().directoryDraft = structuredClone(state.directory)
+      current().directoryBase = JSON.stringify(state.directory)
+      notify(`已从${hostLabel(actor.value)}的 Orca 配置带入共享地址`)
+      render()
+    },
+    'legacy-add': () => {
+      if (state.bound?.[actor.value] && availableTeamProjects(knownDirectory()).length) {
+        registerProjectDialog()
+        return
+      }
+      confirm('添加项目', '<p>打开已有文件夹、克隆代码仓，或新建项目。</p>', '关闭', () => {})
+    },
     'save-directory': saveDirectory,
     'preview-directory': () =>
       confirm(
@@ -1212,6 +1317,7 @@
           ? state.directory
           : blankDirectory(data.get('group'))
       )
+      hydrateEndpoints()
       const desktop = current()
       desktop.directoryDraft = structuredClone(state.directory)
       desktop.directoryBase = JSON.stringify(state.directory)
@@ -1225,13 +1331,14 @@
     } else if (event.target.id === 'pair-form') {
       const owner = String(data.get('owner') || '')
       const link = String(data.get('link') || '')
-      if (!owner || owner === actor.value || !state.generatedLinks?.[owner] || link !== state.generatedLinks[owner]) {
-        notify('访问链接无效或已撤销。')
+      const endpoint = endpointFor(owner)
+      if (!owner || owner === actor.value || (!endpoint && (!state.generatedLinks?.[owner] || link !== state.generatedLinks[owner]))) {
+        notify('群空间还没有这个主机的 Orca 地址，请让主机持有人先登记共享地址。')
         return
       }
-      state.teamEndpoints[owner] = addresses[owner]
+      state.teamEndpoints[owner] = endpoint || addresses[owner]
       state.teamConnections[actor.value] ??= {}
-      state.teamConnections[actor.value][owner] = addresses[owner]
+      state.teamConnections[actor.value][owner] = endpoint || addresses[owner]
       state.accessModes[actor.value] ??= {}
       state.accessModes[actor.value][owner] = 'readonly'
       current().addingServer = false
