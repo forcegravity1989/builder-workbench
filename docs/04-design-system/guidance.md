@@ -47,19 +47,19 @@
 
 “入门内容”包括入门页以及它可重开的初始设置；“配置/操作”只有实际动作与结果验证后才勾。“首次启动”指首次安装时的引导，不能用手动重开初始设置代替。BW 当前七项内容来自[入门清单][setup]；弹窗与设置内嵌清单共用可见项、进度与默认选中规则。点弹窗右上角「关闭入门」会关闭弹窗，并提示可从「帮助 → BW 入门」重新打开。CLI、Skills 与桌面权限不计入 BW 入门进度，也不由清单主动探测；[初始设置][onboarding]按平台和已有状态选取步骤。
 
-| 编号与准备事项                 | 入门内容                                                                                                 | 配置/操作                                                                                      | 首次启动                                             | 新功能提示             | 使用说明 |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------- | -------- |
-| G01 安装 BW、确认启动条件      | ☐                                                                                                        | 待验：安装包                                                                                   | —                                                    | —                      | ☐        |
-| G02 选择默认智能体             | [✅ 选择与说明][setup-copy]                                                                              | 待验                                                                                           | [待验：agent][onboarding]                            | —                      | ☐        |
-| G03 开启通知                   | [✅ 通知设置][setup-copy]                                                                                | 待验                                                                                           | [待验：notifications][onboarding]                    | —                      | ☐        |
-| G04 CLI 与 Skills              | —（不列入 BW 入门）                                                                                      | [待验：设置中的 CLI 管理][cli-settings]及各能力的按需配置                                      | —                                                    | [待验：orca-cli][tips] | ☐        |
-| G05 连接集成服务               | [✅ 既有入口说明][setup-copy]；[待验：GitHub 与 CodeHub 各一张，可选 WeLink 报告入口][integration-setup] | [待验：任一代码托管登录即满足任务和评审，WeLink 可跳过][integration-setup]；设置中的集成见 F29 | [待验：首次设置可稍后在集成页连接或重试][onboarding] | —                      | ☐        |
-| G06 自动准备工作区             | [✅ 设置脚本][setup-copy]                                                                                | [待验：当前项目、空输入与保存/执行][setup-actions]                                             | —                                                    | —                      | ☐        |
-| G07 纳入多个项目               | [✅ 多项目说明][setup-copy]                                                                              | [待验：添加项目][setup-actions]                                                                | —                                                    | —                      | ☐        |
-| G08 并行处理任务（能力体验）   | [✅ 两个工作区][setup-copy]；复用 F01                                                                    | [待验：开始体验][setup-actions]                                                                | —                                                    | —                      | 复用 F01 |
-| G09 使用内置浏览器（能力体验） | [✅ BW 浏览器][setup-copy]；复用 F08                                                                     | [待验：开始体验][setup-actions]                                                                | —                                                    | —                      | 复用 F08 |
-| G10 主题与外观                 | [待验：初始设置内][onboarding]                                                                           | 待验                                                                                           | [待验：theme][onboarding]                            | —                      | ☐        |
-| G11 Windows 终端准备           | [待验：初始设置内][onboarding]                                                                           | 待验                                                                                           | [待验：windows_terminal][onboarding]                 | —                      | ☐        |
+| 编号与准备事项 | 入门内容 | 配置/操作 | 首次启动 | 新功能提示 | 使用说明 |
+|---|---|---|---|---|---|
+| G01 安装 BW、确认启动条件 | ☐ | 待验：安装包 | — | — | ☐ |
+| G02 选择默认智能体 | [✅ 选择与说明][setup-copy] | 待验 | [待验：agent][onboarding] | — | ☐ |
+| G03 开启通知 | [✅ 通知设置][setup-copy] | 待验 | [待验：notifications][onboarding] | — | ☐ |
+| G04 CLI 与 Skills | —（不列入 BW 入门） | [待验：设置中的 CLI 管理][cli-settings]及各能力的按需配置 | — | [待验：orca-cli][tips] | ☐ |
+| G05 连接集成服务 | [✅ 既有入口说明][setup-copy]；[待验：GitHub 与 CodeHub 各一张，可选 WeLink 报告入口][integration-setup] | [待验：任一代码托管登录即满足任务和评审，WeLink 可跳过][integration-setup]；设置中的集成见 F29 | [待验：首次设置可稍后在集成页连接或重试][onboarding] | — | ☐ |
+| G06 自动准备工作区 | [✅ 设置脚本][setup-copy] | [待验：当前项目、空输入与保存/执行][setup-actions] | — | — | ☐ |
+| G07 纳入多个项目 | [✅ 多项目说明][setup-copy] | [待验：添加项目][setup-actions] | — | — | ☐ |
+| G08 并行处理任务（能力体验） | [✅ 两个工作区][setup-copy]；复用 F01 | [待验：开始体验][setup-actions] | — | — | 复用 F01 |
+| G09 使用内置浏览器（能力体验） | [✅ BW 浏览器][setup-copy]；复用 F08 | [待验：开始体验][setup-actions] | — | — | 复用 F08 |
+| G10 主题与外观 | [待验：初始设置内][onboarding] | 待验 | [待验：theme][onboarding] | — | ☐ |
+| G11 Windows 终端准备 | [待验：初始设置内][onboarding] | 待验 | [待验：windows_terminal][onboarding] | — | ☐ |
 
 G08/G09 保留在入门的“能力体验”里，与探索共用内容，位置与完成判据不随 G04 撤下改变。G04 仍由设置和按需能力入口提供，不把从清单撤下记成配置完成，也不由此推断浏览器体验已完成；原生 Orca 清单保持原有 Skills 与权限判据。G07 的多项目介绍不等于完整项目纳入指南。首次添加的空项目墙交接与成功后留墙见 F19/F20。
 
@@ -146,6 +146,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [tours]: ../../src/shared/contextual-tours.ts
 [milestone-guide]: ../../src/renderer/src/workbench/project-milestones.tsx
 [tips]: ../../src/shared/feature-tips.ts
+
 [direction-evidence]: https://github.com/forcegravity1989/builder-workbench/pull/640#issuecomment-6824962114
 [direction-content]: ../../src/renderer/src/workbench/explore/DirectionWalkthrough.tsx
 [direction-wall]: ../../src/renderer/src/workbench/ProjectWallPage.tsx
@@ -153,14 +154,19 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [direction-guide]: ../03-guide/project-direction/README.md
 [direction-poster]: ../03-guide/project-direction/journey.jpg
 [direction-poster-source]: ../03-guide/project-direction/journey.html
+
 [planning-content]: ../../src/renderer/src/workbench/explore/PlanningWalkthrough.tsx
 [planning-guide]: ../03-guide/version-planning/README.md
+
 [acceptance-content]: ../../src/renderer/src/workbench/explore/AcceptanceWalkthrough.tsx
 [acceptance-guide]: ../03-guide/version-acceptance/README.md
+
 [direction-prototype]: ../05-features/explore-workbench/prototype.html
+
 [delivery-content]: ../../src/renderer/src/workbench/explore/DeliveryWalkthrough.tsx
 [delivery-help]: ../../src/renderer/src/workbench/WorkbenchDeliveryHelp.tsx
 [delivery-browser-recheck]: https://github.com/forcegravity1989/builder-workbench/pull/669#issuecomment-6895397151
 [review-inbox-cleanup]: https://github.com/forcegravity1989/builder-workbench/pull/723#issuecomment-6998672235
 [delivery-guide]: ../03-guide/issue-delivery/README.md
+
 [outcomes-content]: ../../src/renderer/src/workbench/explore/OutcomesWalkthrough.tsx
