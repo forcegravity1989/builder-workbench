@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { isWebClientLocation } from '@/lib/web-client-location'
 import { cn } from '@/lib/utils'
 import { ArtifactPublishedLinkPanel } from './ArtifactPublishedLinkPanel'
 import { getPublishedArtifactLink } from './artifact-published-link-client'
@@ -35,10 +36,13 @@ export function ArtifactPublishButton({
   const [linkLookup, setLinkLookup] = useState<PublishedLinkLookup | null>(null)
   const lookupSequence = useRef(0)
   const popoverContentRef = useRef<HTMLDivElement>(null)
+  // Links live on the host, so a browser client gets the pointer instead of a doomed lookup and a
+  // "Try again" that can never succeed.
+  const webOnly = isWebClientLocation()
 
   useEffect(() => {
     const sequence = ++lookupSequence.current
-    if (!open) {
+    if (!open || webOnly) {
       setLinkLookup(null)
       return
     }
@@ -58,7 +62,7 @@ export function ArtifactPublishButton({
     return () => {
       lookupSequence.current += 1
     }
-  }, [lookupRevision, open, sourceKey])
+  }, [lookupRevision, open, sourceKey, webOnly])
 
   const publish = async (): Promise<void> => {
     if (publishing) {
@@ -89,9 +93,16 @@ export function ArtifactPublishButton({
       setLinkLookup({ key: sourceKey, status: 'loaded', shareUrl: null })
     } catch (error) {
       // Why: the runtime bridge can fail before the host answers; without this the panel just
-      // stops spinning and the rejection goes unhandled.
+      // stops spinning and the rejection goes unhandled. The transport detail goes to the console —
+      // a notification carries the outcome and the next step, not an internal exception message.
       console.error('Failed to remove shared artifact link:', error)
-      reportShareFailure('unknown', error instanceof Error ? error.message : String(error))
+      reportShareFailure(
+        'unknown',
+        translate(
+          'auto.components.artifacts.ArtifactPublishButton.removeFailed',
+          'Could not remove the link.'
+        )
+      )
     } finally {
       setRemoving(false)
     }
@@ -160,7 +171,14 @@ export function ArtifactPublishButton({
         </div>
 
         <div className="space-y-3 p-4">
-          {checkingLink ? (
+          {webOnly ? (
+            <p className="text-xs leading-5 text-muted-foreground">
+              {translate(
+                'auto.components.artifacts.ArtifactPublishButton.webOnly',
+                'Desktop only. Open this file on the host device to share it.'
+              )}
+            </p>
+          ) : checkingLink ? (
             <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
               <Loader2 className="size-3.5 animate-spin" />
               {translate(
@@ -192,7 +210,6 @@ export function ArtifactPublishButton({
               shareUrl={publishedLink}
               publishing={publishing}
               removing={removing}
-              sharingEnabled
               onUpdate={() => void publish()}
               onRemove={() => void remove()}
             />

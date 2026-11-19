@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, Copy, ExternalLink, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -9,14 +9,12 @@ export function ArtifactPublishedLinkPanel({
   shareUrl,
   publishing,
   removing,
-  sharingEnabled,
   onUpdate,
   onRemove
 }: {
   shareUrl: string
   publishing: boolean
   removing: boolean
-  sharingEnabled: boolean
   onUpdate: () => void
   onRemove: () => void
 }): React.JSX.Element {
@@ -24,6 +22,16 @@ export function ArtifactPublishedLinkPanel({
   const [copied, setCopied] = useState(false)
   const copiedResetTimerRef = useRef<number | null>(null)
   const mountedRef = useRef(false)
+  const wasRemovingRef = useRef(false)
+
+  // The confirmation stays open while the removal runs so its spinner is the progress indicator.
+  // A success replaces this panel with the share button; a failure keeps it and shows a toast.
+  useEffect(() => {
+    if (wasRemovingRef.current && !removing) {
+      setConfirmingRemove(false)
+    }
+    wasRemovingRef.current = removing
+  }, [removing])
 
   const clearCopiedResetTimer = useCallback((): void => {
     if (copiedResetTimerRef.current !== null) {
@@ -111,27 +119,22 @@ export function ArtifactPublishedLinkPanel({
         </Tooltip>
       </div>
 
-      {sharingEnabled ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-full"
-          disabled={publishing || removing}
-          onClick={onUpdate}
-        >
-          {publishing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-          {publishing
-            ? translate(
-                'auto.components.artifacts.ArtifactPublishedLinkPanel.updating',
-                'Updating…'
-              )
-            : translate(
-                'auto.components.artifacts.ArtifactPublishedLinkPanel.update',
-                'Update shared content'
-              )}
-        </Button>
-      ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={publishing || removing}
+        onClick={onUpdate}
+      >
+        {publishing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+        {publishing
+          ? translate('auto.components.artifacts.ArtifactPublishedLinkPanel.updating', 'Updating…')
+          : translate(
+              'auto.components.artifacts.ArtifactPublishedLinkPanel.update',
+              'Update shared content'
+            )}
+      </Button>
 
       {confirmingRemove ? (
         <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
@@ -147,10 +150,7 @@ export function ArtifactPublishedLinkPanel({
               variant="destructive"
               size="sm"
               disabled={removing}
-              onClick={() => {
-                setConfirmingRemove(false)
-                onRemove()
-              }}
+              onClick={onRemove}
             >
               {removing ? <Loader2 className="animate-spin" /> : <Trash2 />}
               {translate(

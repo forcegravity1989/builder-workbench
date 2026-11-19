@@ -1,21 +1,46 @@
 import { z } from 'zod'
+import { ARTIFACT_MAX_CONTENT_BYTES } from '../artifacts'
 
-/** Matches `BW_SHARE_MAX_BYTES` on the self-hosted service; larger content is rejected before upload. */
-export const SHARE_MAX_CONTENT_BYTES = 10 * 1024 * 1024
-
-/** Transport-level refusal the service reports as `too_large`; kept for error mapping. */
-export const SHARE_TOO_LARGE_MESSAGE = 'This file is too large to share (limit 10 MiB).'
+/**
+ * The service's per-share cap (`BW_SHARE_MAX_BYTES`). Aliased from the artifact contract so there is
+ * one number to change; larger content is rejected before it reaches the network.
+ */
+export const SHARE_MAX_CONTENT_BYTES = ARTIFACT_MAX_CONTENT_BYTES
 
 export const ShareSourceSchema = z.object({ sourceKey: z.string().min(1).max(8192) }).strict()
 
 export const ShareListSchema = z.object({}).strict()
 
+/**
+ * The service answers 400 when a name carries a control character (`services/bw-share/src/payload.mjs`),
+ * and it refuses the whole upload for it — so reject that here, where the message can name the file.
+ */
+function hasControlCharacter(value: string): boolean {
+  for (const character of value) {
+    const code = character.codePointAt(0) ?? 0
+    if (code < 32 || code === 127) {
+      return true
+    }
+  }
+  return false
+}
+
+const PRINTABLE_NAME_MESSAGE = 'must not contain control characters'
+
 export const SharePublishSchema = z
   .object({
     sourceKey: z.string().min(1).max(8192),
     content: z.string().min(1),
-    fileName: z.string().min(1).max(255),
-    title: z.string().max(200).optional()
+    fileName: z
+      .string()
+      .min(1)
+      .max(255)
+      .refine((value) => !hasControlCharacter(value), `fileName ${PRINTABLE_NAME_MESSAGE}`),
+    title: z
+      .string()
+      .max(200)
+      .refine((value) => !hasControlCharacter(value), `title ${PRINTABLE_NAME_MESSAGE}`)
+      .optional()
   })
   .strict()
 
@@ -41,6 +66,11 @@ export type ShareErrorCode =
   | 'unauthorized'
   /** The service refused the record's edit token; the link cannot be updated from this device. */
   | 'forbidden'
+  /**
+   * The record's edit token no longer matches the link, so the host dropped the record: the row is
+   * gone from this machine, but the public link may still work until an operator deletes it.
+   */
+  | 'stale-record'
   | 'too-large'
   | 'rate-limited'
   | 'busy'

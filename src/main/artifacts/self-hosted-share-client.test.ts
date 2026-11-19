@@ -35,16 +35,85 @@ async function codeFor(fetchImpl: typeof fetch): Promise<string> {
 
 describe('self-hosted share client status mapping', () => {
   it.each([
-    [401, { error: { code: 'unauthorized', message: 'bad token' } }, 'unauthorized'],
-    [403, { error: { code: 'forbidden', message: 'bad edit token' } }, 'forbidden'],
-    [413, { error: { code: 'too_large', message: 'too big' } }, 'too-large'],
-    [429, { error: { code: 'rate_limited', message: 'slow down' } }, 'rate-limited'],
-    [415, { error: { code: 'unsupported_type', message: 'html only' } }, 'unsupported'],
-    [404, { error: { code: 'not_found', message: 'missing' } }, 'not-found'],
-    [503, { error: { code: 'busy', message: 'service busy' } }, 'busy'],
-    [500, { error: { code: 'internal', message: 'boom' } }, 'server']
+    [
+      401,
+      { error: { code: 'unauthorized', message: 'Missing or invalid x-upload-token header.' } },
+      'unauthorized'
+    ],
+    [
+      403,
+      { error: { code: 'forbidden', message: 'Edit token does not match this share.' } },
+      'forbidden'
+    ],
+    [
+      413,
+      { error: { code: 'too_large', message: 'content exceeds 10485760 bytes.' } },
+      'too-large'
+    ],
+    [
+      429,
+      { error: { code: 'rate_limited', message: 'Too many writes; retry in a minute.' } },
+      'rate-limited'
+    ],
+    [
+      415,
+      { error: { code: 'unsupported_media_type', message: 'Only text/html content is accepted.' } },
+      'unsupported'
+    ],
+    [404, { error: { code: 'not_found', message: 'Share not found.' } }, 'not-found'],
+    [
+      503,
+      { error: { code: 'busy', message: 'Too many uploads in flight; retry shortly.' } },
+      'busy'
+    ],
+    [500, { error: { code: 'internal', message: 'Internal server error.' } }, 'server']
   ])('maps HTTP %i to %s', async (status, body, expected) => {
     await expect(codeFor(respond(status, body))).resolves.toBe(expected)
+  })
+
+  it('follows the service error code rather than the status', async () => {
+    // A reverse proxy or a future service change can pair any status with a known code; the code
+    // is the declared contract, so it wins.
+    await expect(
+      codeFor(
+        respond(500, { error: { code: 'too_large', message: 'content exceeds 1024 bytes.' } })
+      )
+    ).resolves.toBe('too-large')
+  })
+
+  it('falls back to the status when the body is not the service envelope', async () => {
+    // A proxy in front of the service answers 413 with its own HTML page.
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response('<html>413</html>', {
+          status: 413,
+          headers: { 'content-type': 'text/html' }
+        })
+    ) as unknown as typeof fetch
+
+    await expect(codeFor(fetchImpl)).resolves.toBe('too-large')
+  })
+
+  it('reports a full enrollment registry as needing an operator, not a retry', async () => {
+    const error = await createShare(
+      {
+        ...config,
+        fetchImpl: respond(503, {
+          error: {
+            code: 'enrollment_full',
+            message: 'Client token registry is full; contact the operator.'
+          }
+        })
+      },
+      { content: '<h1>A</h1>', fileName: 'a.html' }
+    ).then(
+      () => null,
+      (caught: unknown) => caught
+    )
+
+    expect(error).toBeInstanceOf(ShareServiceError)
+    expect((error as ShareServiceError).code).toBe('busy')
+    expect((error as ShareServiceError).message).toContain('需要运维处理')
   })
 
   it('reports a transport failure as a network error', async () => {
@@ -92,5 +161,24 @@ describe('self-hosted share client status mapping', () => {
         'edit-a'
       )
     ).resolves.toBeUndefined()
+  })
+
+  it('releases the body of a delete it does not read', async () => {
+    // An unread undici body can take the whole process down (orca#8695); the 404 short-circuit
+    // returns without parsing, so it has to cancel explicitly.
+    let cancelled = false
+    const response = new Response(new ReadableStream({ cancel: () => (cancelled = true) }), {
+      status: 404,
+      headers: { 'content-type': 'application/json' }
+    })
+
+    await expect(
+      deleteShare(
+        { ...config, fetchImpl: vi.fn(async () => response) as unknown as typeof fetch },
+        'share-a',
+        'edit-a'
+      )
+    ).resolves.toBeUndefined()
+    expect(cancelled).toBe(true)
   })
 })

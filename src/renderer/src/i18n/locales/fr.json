@@ -5053,7 +5053,6 @@
           "0ccba862b8": "Ouvrir les tâches GitHub",
           "fee535205b": "Tâches",
           "d599269755": "Masquer de la barre latérale",
-          "artifacts": "Artefacts",
           "skills": "Skills"
         },
         "SidebarRepositoryFilterSection": {
@@ -6879,9 +6878,6 @@
           "0e9fc0eadc": "Dossier des espaces de travail",
           "e2955d9ccb": "Configure où sont créés les nouveaux espaces de travail.",
           "7511097c5d": "Espace de travail",
-          "31e300af1c": "Confirmer avant de supprimer les artefacts",
-          "fb29a73a17": "Afficher une boîte de dialogue de confirmation avant de supprimer un artefact partagé et de rompre son lien public.",
-          "bf46474e33": "Demander confirmation avant de supprimer un artefact partagé. Quiconque détient son lien public perd l'accès.",
           "externalWorktrees": "Worktrees externes",
           "externalWorktreesDescription": "Choisissez si les worktrees créés en dehors d'Orca apparaissent par défaut.",
           "show": "Afficher",
@@ -10962,7 +10958,7 @@
           "shareStepDescription": "Ouvrez un fichier HTML ou Markdown et sélectionnez Partager comme artifact, ou demandez à un agent de le partager.",
           "linkStepTitle": "Copier le lien public",
           "linkStepDescription": "Après publication, copiez le lien et envoyez-le à votre équipe.",
-          "manageStepTitle": "Gérer dans Orca"
+          "manageStepTitle": "Mettre à jour ou supprimer le lien"
         },
         "orcaAccount": {
           "connected": "Connecté",
@@ -15074,14 +15070,6 @@
           "8490e5d36a": "Confirmer",
           "56f5c60e0c": "Annuler",
           "92bac3217e": "Ne plus demander"
-        },
-        "skip": {
-          "saved": "Cette confirmation sera ignorée la prochaine fois.",
-          "savedDescription": "Vous pouvez changer cela dans les paramètres.",
-          "openSettings": "Ouvrir les paramètres",
-          "preference": {
-            "0b0cb6e3f9": "Impossible d'enregistrer la préférence de confirmation."
-          }
         }
       },
       "jira": {
@@ -15413,7 +15401,7 @@
           "430019efd0": "Artifact partagé",
           "2fc727c831": "Artifact mis à jour",
           "fbb5018602": "Ce fichier est vide.",
-          "6112db5a1c": "Les artifacts partagés depuis Orca doivent peser moins de 800 Ko.",
+          "6112db5a1c": "Ce fichier dépasse la limite de partage de 10 Mio.",
           "e2ed5acd8c": "Orca n'a pas pu lire ce fichier. Ouvrez-le depuis un espace de travail et réessayez.",
           "6d475e9b25": "Seuls les fichiers HTML et Markdown locaux peuvent être partagés comme artifacts.",
           "29a406be09": "Les artifacts doivent contenir du texte."

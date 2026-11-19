@@ -1,4 +1,5 @@
 import type {
+  ShareErrorCode,
   ShareListEntry,
   SharePublishResult,
   ShareResult
@@ -6,6 +7,21 @@ import type {
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 
 const LOCAL_RUNTIME = { kind: 'local' } as const
+
+/**
+ * A host-side share failure, carrying the code and the message the host chose for it. Callers show
+ * the message when the host has something specific to say — an unreadable record index, for
+ * instance — and fall back to their own copy otherwise.
+ */
+export class ShareLinkError extends Error {
+  constructor(
+    readonly code: ShareErrorCode,
+    message: string
+  ) {
+    super(message)
+    this.name = 'ShareLinkError'
+  }
+}
 
 export function publishShare(request: {
   sourceKey: string
@@ -27,7 +43,7 @@ export async function getShareLink(sourceKey: string): Promise<string | null> {
     { sourceKey }
   )
   if (!result.ok) {
-    throw new Error(result.error.message)
+    throw new ShareLinkError(result.error.code, result.error.message)
   }
   return result.value?.url ?? null
 }
@@ -43,7 +59,7 @@ export async function listShares(): Promise<ShareListEntry[]> {
     {}
   )
   if (!result.ok) {
-    throw new Error(result.error.message)
+    throw new ShareLinkError(result.error.code, result.error.message)
   }
   return result.value
 }

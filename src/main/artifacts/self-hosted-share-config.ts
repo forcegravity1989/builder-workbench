@@ -1,5 +1,6 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readFile, rename } from 'node:fs/promises'
+import { join } from 'node:path'
+import { writeSecureJsonFileAsync } from '../../shared/secure-file-async'
 
 /**
  * Deployment endpoint compiled into the client. Changing it requires a reviewed code change,
@@ -23,7 +24,6 @@ export function createShareTokenStore(options: { dataDir: () => string }): {
   read: () => Promise<string>
   save: (token: string) => Promise<void>
 } {
-  let writeChain: Promise<unknown> = Promise.resolve()
   const configPath = (): string => join(options.dataDir(), 'config.json')
 
   async function read(): Promise<string> {
@@ -53,16 +53,18 @@ export function createShareTokenStore(options: { dataDir: () => string }): {
   }
 
   function save(token: string): Promise<void> {
-    const run = writeChain.then(async () => {
-      const next: StoredShareClient = { version: 2, uploadToken: token.trim() }
-      const path = configPath()
-      await mkdir(dirname(path), { recursive: true, mode: 0o700 })
-      const temp = `${path}.tmp`
-      await writeFile(temp, `${JSON.stringify(next, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
-      await rename(temp, path)
-    })
-    writeChain = run.catch(() => undefined)
-    return run
+    const next: StoredShareClient = { version: 2, uploadToken: token.trim() }
+    // The shared writer serializes per path, restricts the ACL before the rename publishes the
+    // credential, and fsyncs so a power loss cannot leave a zero-length token file behind.
+    return writeSecureJsonFileAsync(configPath(), next, undefined, { durable: true }).then(
+      (restricted) => {
+        if (restricted === false) {
+          console.error(
+            'Workbench share token was saved but its permissions could not be restricted'
+          )
+        }
+      }
+    )
   }
 
   return { read, save }

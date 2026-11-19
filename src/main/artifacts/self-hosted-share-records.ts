@@ -1,5 +1,6 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readFile, rename } from 'node:fs/promises'
+import { basename, dirname, join } from 'node:path'
+import { writeSecureJsonFileAsync } from '../../shared/secure-file-async'
 
 /** Edit token is kept because overwriting or deleting a link must come from this machine. */
 export type ShareRecord = {
@@ -21,51 +22,67 @@ export function createShareRecordStore(options: { dataDir: () => string }): {
   list: () => Promise<{ sourceKey: string; record: ShareRecord }[]>
   put: (sourceKey: string, record: ShareRecord) => Promise<void>
   remove: (sourceKey: string) => Promise<void>
+  /** Index this process had to set aside as unreadable, so an empty list is not reported as fact. */
+  unreadableIndex: () => { file: string; archivedAs: string | null } | null
 } {
+  // Serializes the read-modify-write as a whole; the shared writer only serializes the write.
   let writeChain: Promise<unknown> = Promise.resolve()
+  let unreadable: { file: string; archivedAs: string | null } | null = null
   const recordsPath = (): string => join(options.dataDir(), 'records.json')
 
   async function readAll(): Promise<Record<string, ShareRecord>> {
+    let raw: string
     try {
-      const raw = await readFile(recordsPath(), 'utf8')
-      const parsed = JSON.parse(raw) as Partial<StoredRecords> | null
-      if (!parsed || typeof parsed !== 'object' || typeof parsed.records !== 'object') {
-        return {}
-      }
-      const records: Record<string, ShareRecord> = {}
-      for (const [sourceKey, value] of Object.entries(parsed.records ?? {})) {
-        if (isShareRecord(value)) {
-          records[sourceKey] = value
-        }
-      }
-      return records
+      raw = await readFile(recordsPath(), 'utf8')
     } catch (error) {
+      // "No file yet" is the ordinary first run. Every other failure means the bytes were never
+      // seen, so setting the file aside would destroy an index that may be perfectly good.
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return {}
-      }
-      // A corrupt index must not block every future share; keep the bad file for recovery.
-      if (error instanceof SyntaxError) {
-        await quarantine(recordsPath())
         return {}
       }
       throw error
     }
+    let parsed: Partial<StoredRecords> | null
+    try {
+      parsed = JSON.parse(raw) as Partial<StoredRecords> | null
+    } catch {
+      parsed = null
+    }
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.records !== 'object') {
+      const file = basename(recordsPath())
+      unreadable ??= { file, archivedAs: await quarantine(recordsPath()) }
+      return {}
+    }
+    const records: Record<string, ShareRecord> = {}
+    let malformed = 0
+    for (const [sourceKey, value] of Object.entries(parsed.records ?? {})) {
+      if (isShareRecord(value)) {
+        records[sourceKey] = value
+      } else {
+        malformed += 1
+      }
+    }
+    if (malformed > 0) {
+      console.error(`Ignored ${malformed} malformed share record(s) in ${basename(recordsPath())}`)
+    }
+    return records
   }
 
   function mutate(
     update: (records: Record<string, ShareRecord>) => Record<string, ShareRecord>
   ): Promise<void> {
     const run = writeChain.then(async () => {
-      const records = update(await readAll())
-      const path = recordsPath()
-      await mkdir(dirname(path), { recursive: true, mode: 0o700 })
-      const payload: StoredRecords = { version: 1, records }
-      const temp = `${path}.tmp`
-      await writeFile(temp, `${JSON.stringify(payload, null, 2)}\n`, {
-        encoding: 'utf8',
-        mode: 0o600
+      const payload: StoredRecords = { version: 1, records: update(await readAll()) }
+      // Durable: these records hold the only copy of each link's edit token, so a rename that
+      // survives a power loss with zero bytes would silently orphan every link this machine made.
+      const restricted = await writeSecureJsonFileAsync(recordsPath(), payload, undefined, {
+        durable: true
       })
-      await rename(temp, path)
+      if (restricted === false) {
+        console.error(
+          'Workbench share records were saved but their permissions could not be restricted'
+        )
+      }
     })
     writeChain = run.catch(() => undefined)
     return run
@@ -90,15 +107,22 @@ export function createShareRecordStore(options: { dataDir: () => string }): {
         delete next[sourceKey]
         return next
       })
+    },
+    unreadableIndex() {
+      return unreadable
     }
   }
 }
 
-async function quarantine(path: string): Promise<void> {
+/** Returns the archived name, or null when the unreadable file could not be moved aside. */
+async function quarantine(path: string): Promise<string | null> {
+  const archivedAs = `${basename(path)}.corrupt-${Date.now()}`
   try {
-    await rename(path, `${path}.corrupt-${Date.now()}`)
+    await rename(path, join(dirname(path), archivedAs))
+    return archivedAs
   } catch (error) {
     console.error('Failed to quarantine corrupt share data:', error)
+    return null
   }
 }
 

@@ -227,11 +227,6 @@
           "hiddenCount": "{{value0}} hidden"
         }
       },
-      "artifacts": {
-        "artifact-publish-flow": {
-          "6112db5a1c": "This artifact is too large to share."
-        }
-      },
       "automations": {
         "AutomationCustomCronPanel": {
           "cadb7b0bc9": "invalid"
@@ -345,16 +340,6 @@
           "BrowserToolbarMenu": {
             "6aa42813e4": "Imported {{value0}} cookies from {{value1}}{{value2}}."
           }
-        }
-      },
-      "confirmation": {
-        "skip": {
-          "openSettings": "Open Settings",
-          "preference": {
-            "0b0cb6e3f9": "Could not save the confirmation preference."
-          },
-          "saved": "We'll skip this confirmation next time.",
-          "savedDescription": "You can change this in Settings."
         }
       },
       "contextual": {
@@ -1207,10 +1192,7 @@
           "a0832ccdb1": "downloaded"
         },
         "GeneralWorkspaceSettingsSection": {
-          "31e300af1c": "Ask Before Deleting Artifacts",
-          "bf46474e33": "Show a confirmation before deleting a shared artifact. Anyone holding its public link loses access.",
           "externalWorktreesDescription": "Choose whether worktrees created outside Orca appear by default.",
-          "fb29a73a17": "Show a confirmation dialog before deleting a shared artifact and breaking its public link.",
           "hide": "Hide",
           "show": "Show"
         },
@@ -1874,8 +1856,7 @@
           "scopedTo": "{{value0}} visible"
         },
         "SidebarNav": {
-          "9c95e1ce91": "Agents",
-          "artifacts": "Artifacts"
+          "9c95e1ce91": "Agents"
         },
         "SidebarSettingsHelpMenu": {
           "d396773ef0": "checking"

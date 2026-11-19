@@ -1,4 +1,5 @@
 import type { ShareErrorCode } from '../../shared/workbench/share'
+import { cancelUnreadResponseBody } from '../lib/unread-response-body'
 
 export class ShareServiceError extends Error {
   constructor(
@@ -33,45 +34,81 @@ type ShareUpdateResponse = {
 
 const REQUEST_TIMEOUT_MS = 30_000
 
+/**
+ * `services/bw-share/src/errors.mjs` declares these codes part of the service contract, so the
+ * code decides the mapping and the status is only a fallback for a body we could not parse — an
+ * HTML 413 from a reverse proxy in front of the service, for instance.
+ */
+const CODE_BY_SERVICE_CODE: Record<string, ShareErrorCode> = {
+  unauthorized: 'unauthorized',
+  forbidden: 'forbidden',
+  not_found: 'not-found',
+  too_large: 'too-large',
+  unsupported_media_type: 'unsupported',
+  rate_limited: 'rate-limited',
+  busy: 'busy',
+  enrollment_full: 'busy'
+}
+
+const CODE_BY_STATUS: Record<number, ShareErrorCode> = {
+  401: 'unauthorized',
+  403: 'forbidden',
+  404: 'not-found',
+  413: 'too-large',
+  415: 'unsupported',
+  429: 'rate-limited',
+  503: 'busy'
+}
+
+const MESSAGE_BY_CODE: Partial<Record<ShareErrorCode, string>> = {
+  unauthorized: '分享服务拒绝了本机凭据',
+  forbidden: '本机记录无法更新该分享链接，链接可能已不属于此设备',
+  'not-found': '分享链接不存在或已过期',
+  'too-large': '文件超过分享服务的单份上限',
+  unsupported: '分享服务只接受 HTML 内容',
+  'rate-limited': '上传太频繁，请稍后再试',
+  busy: '分享服务正忙，请稍后再试'
+}
+
+const ENROLLMENT_FULL_MESSAGE = '分享服务的设备登记已满，需要运维处理后才会恢复'
+
 function requestUrl(base: string, path: string): string {
   return `${base}${path}`
 }
 
-async function readErrorBody(response: Response): Promise<string> {
+function toShareError(status: number, serviceCode: string, message: string): ShareServiceError {
+  if (serviceCode === 'enrollment_full') {
+    return new ShareServiceError('busy', ENROLLMENT_FULL_MESSAGE)
+  }
+  const code = CODE_BY_SERVICE_CODE[serviceCode] ?? CODE_BY_STATUS[status]
+  if (!code) {
+    return new ShareServiceError('server', `分享服务返回 ${status}${message ? `：${message}` : ''}`)
+  }
+  return new ShareServiceError(code, MESSAGE_BY_CODE[code] ?? `分享服务返回 ${status}`)
+}
+
+/** Drains the body on every path: an unread body can take the whole process down (orca#8695). */
+async function readErrorBody(response: Response): Promise<{ code: string; message: string }> {
   try {
     const body = (await response.json()) as { error?: { code?: unknown; message?: unknown } }
-    const code = typeof body.error?.code === 'string' ? body.error.code : ''
-    const message = typeof body.error?.message === 'string' ? body.error.message : ''
-    return `${code} ${message}`.trim()
+    return {
+      code: typeof body.error?.code === 'string' ? body.error.code : '',
+      message: typeof body.error?.message === 'string' ? body.error.message : ''
+    }
   } catch {
-    return ''
+    await cancelUnreadResponseBody(response)
+    return { code: '', message: '' }
   }
 }
 
-function mapStatus(status: number, detail: string): ShareServiceError {
-  if (status === 401) {
-    return new ShareServiceError('unauthorized', '分享服务拒绝了本机凭据')
-  }
-  // The service answers 403 only when the x-edit-token does not belong to the record.
-  if (status === 403) {
-    return new ShareServiceError('forbidden', '本机记录无法更新该分享链接，链接可能已不属于此设备')
-  }
-  if (status === 413) {
-    return new ShareServiceError('too-large', '文件超过分享服务的单份上限（10 MiB）')
-  }
-  if (status === 429) {
-    return new ShareServiceError('rate-limited', '上传太频繁，请稍后再试')
-  }
-  if (status === 415) {
-    return new ShareServiceError('unsupported', '分享服务只接受 HTML 内容')
-  }
-  if (status === 404) {
-    return new ShareServiceError('not-found', '分享链接不存在或已过期')
-  }
-  if (status === 503 && detail.includes('busy')) {
-    return new ShareServiceError('busy', '分享服务正忙，请稍后再试')
-  }
-  return new ShareServiceError('server', `分享服务返回 ${status}${detail ? `：${detail}` : ''}`)
+async function toShareErrorFrom(response: Response): Promise<ShareServiceError> {
+  const { code, message } = await readErrorBody(response)
+  return toShareError(response.status, code, message)
+}
+
+function toNetworkError(error: unknown): ShareServiceError {
+  const reason = error instanceof Error ? error.message : String(error)
+  return new ShareServiceError('network', `无法连接分享服务：${reason}`)
 }
 
 /**
@@ -83,7 +120,7 @@ export async function enrollClient(config: {
   enrollKey: string
   fetchImpl?: typeof fetch
 }): Promise<{ token: string; createdAt: string }> {
-  const fetchImpl = config.fetchImpl ?? fetch
+  const fetchImpl = config.fetchImpl ?? globalThis.fetch
   let response: Response
   try {
     response = await fetchImpl(requestUrl(config.serverUrl, '/api/client-tokens'), {
@@ -92,14 +129,19 @@ export async function enrollClient(config: {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     })
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
-    throw new ShareServiceError('network', `无法连接分享服务：${reason}`)
+    throw toNetworkError(error)
   }
   if (!response.ok) {
-    throw mapStatus(response.status, await readErrorBody(response))
+    throw await toShareErrorFrom(response)
   }
-  const body = (await response.json()) as { token?: unknown; createdAt?: unknown }
-  if (typeof body.token !== 'string' || body.token.trim() === '') {
+  let body: { token?: unknown; createdAt?: unknown } | null
+  try {
+    body = (await response.json()) as { token?: unknown; createdAt?: unknown }
+  } catch {
+    await cancelUnreadResponseBody(response)
+    body = null
+  }
+  if (!body || typeof body.token !== 'string' || body.token.trim() === '') {
     throw new ShareServiceError('server', '分享服务未返回有效的本机凭据')
   }
   return {
@@ -113,7 +155,7 @@ async function requestJson<T>(
   path: string,
   init: { method: string; headers?: Record<string, string>; body?: string }
 ): Promise<T> {
-  const fetchImpl = config.fetchImpl ?? fetch
+  const fetchImpl = config.fetchImpl ?? globalThis.fetch
   let response: Response
   try {
     response = await fetchImpl(requestUrl(config.serverUrl, path), {
@@ -121,29 +163,16 @@ async function requestJson<T>(
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     })
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
-    throw new ShareServiceError('network', `无法连接分享服务：${reason}`)
+    throw toNetworkError(error)
   }
   if (!response.ok) {
-    throw mapStatus(response.status, await readErrorBody(response))
+    throw await toShareErrorFrom(response)
   }
-  return (await response.json()) as T
-}
-
-export async function checkShareService(config: ShareClientConfig): Promise<void> {
-  const fetchImpl = config.fetchImpl ?? fetch
-  let response: Response
   try {
-    response = await fetchImpl(requestUrl(config.serverUrl, '/healthz'), {
-      method: 'GET',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-    })
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
-    throw new ShareServiceError('network', `无法连接分享服务：${reason}`)
-  }
-  if (!response.ok) {
-    throw mapStatus(response.status, '')
+    return (await response.json()) as T
+  } catch {
+    await cancelUnreadResponseBody(response)
+    throw new ShareServiceError('server', '分享服务返回了无法解析的结果')
   }
 }
 
@@ -179,7 +208,7 @@ export async function deleteShare(
   id: string,
   editToken: string
 ): Promise<void> {
-  const fetchImpl = config.fetchImpl ?? fetch
+  const fetchImpl = config.fetchImpl ?? globalThis.fetch
   let response: Response
   try {
     response = await fetchImpl(
@@ -191,10 +220,13 @@ export async function deleteShare(
       }
     )
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error)
-    throw new ShareServiceError('network', `无法连接分享服务：${reason}`)
+    throw toNetworkError(error)
   }
-  if (!response.ok && response.status !== 404) {
-    throw mapStatus(response.status, await readErrorBody(response))
+  // A 404 means the link is already gone, which is what the caller wanted; every other failure
+  // keeps the local record so the removal can be retried.
+  if (response.ok || response.status === 404) {
+    await cancelUnreadResponseBody(response)
+    return
   }
+  throw await toShareErrorFrom(response)
 }

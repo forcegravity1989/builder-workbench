@@ -23,6 +23,9 @@ const PACKAGED_RUNTIME_PACKAGE_ROOTS = [
   'jsonc-parser',
   // Why: the tsc-compiled CLI renders Markdown to HTML for `orca artifacts share`;
   // marked is dependency-free, so the single package copy is the whole runtime need.
+  // Caveat: marked is declared in devDependencies, unlike every other entry here. That holds only
+  // because every install path in this repo is a full one (install:release uses --frozen-lockfile
+  // without --prod). Add a pruned/prod-only install and this must move to dependencies first.
   'marked',
   'node-pty',
   // Why: main-process CloudDragon session dynamically imports it at runtime

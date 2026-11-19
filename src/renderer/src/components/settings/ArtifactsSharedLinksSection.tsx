@@ -3,18 +3,40 @@ import type { ShareListEntry } from '../../../../shared/workbench/share'
 import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { reportShareFailure } from '../artifacts/artifact-publish-flow'
-import { listShares, removeShare } from '../artifacts/share-server-client'
+import { listShares, removeShare, ShareLinkError } from '../artifacts/share-server-client'
 import { Button } from '../ui/button'
 
-/** SSH shares key records by `["ssh", target, path]` JSON; local shares use a plain file path. */
+/**
+ * Records are keyed by where the share came from: a plain path for a local file, or a JSON tuple
+ * naming the remote surface — `["ssh", target, path]` from an SSH host, `["editor", environment,
+ * host, path]` from a remote runtime editor (see `markdownArtifactSourceKey`).
+ */
 function sharedFileLabel(sourceKey: string): string {
+  let parsed: unknown
   try {
-    const parsed: unknown = JSON.parse(sourceKey)
-    if (Array.isArray(parsed) && parsed[0] === 'ssh' && typeof parsed[2] === 'string') {
-      return `${fileBaseName(parsed[2])} · SSH ${String(parsed[1])}`
-    }
+    parsed = JSON.parse(sourceKey)
   } catch {
-    // Not JSON: a local file path.
+    return fileBaseName(sourceKey)
+  }
+  if (!Array.isArray(parsed)) {
+    return fileBaseName(sourceKey)
+  }
+  const [kind, ...rest] = parsed
+  if (kind === 'ssh' && typeof rest[1] === 'string') {
+    return `${fileBaseName(rest[1])} · SSH ${String(rest[0])}`
+  }
+  if (kind === 'editor' && typeof rest[2] === 'string') {
+    const host = String(rest[1] ?? '')
+    const environment = typeof rest[0] === 'string' ? rest[0] : null
+    return `${fileBaseName(rest[2])} · ${environment ? `${host} · ${environment}` : host}`
+  }
+  // An unrecognized tuple still gets a readable name rather than a slice of raw JSON; the exact
+  // key stays in the row's title attribute.
+  for (let index = parsed.length - 1; index >= 0; index -= 1) {
+    const part = parsed[index]
+    if (typeof part === 'string') {
+      return fileBaseName(part)
+    }
   }
   return fileBaseName(sourceKey)
 }
@@ -32,30 +54,37 @@ export function ArtifactsSharedLinksSection(): React.JSX.Element {
   const [entries, setEntries] = useState<ShareListEntry[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [removingKey, setRemovingKey] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
     let cancelled = false
+    setLoadError(null)
     listShares()
       .then((value) => {
         if (!cancelled) {
           setEntries(value)
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('Failed to load shared files:', error)
         if (!cancelled) {
+          // An unreadable record index is reported by the host with the reason and the next step;
+          // a generic "could not load" would hide that the links may still exist.
           setLoadError(
-            translate(
-              'auto.components.settings.artifacts.sharedLinksLoadFailed',
-              'Could not load your shared files.'
-            )
+            error instanceof ShareLinkError
+              ? error.message
+              : translate(
+                  'auto.components.settings.artifacts.sharedLinksLoadFailed',
+                  'Could not load your shared files.'
+                )
           )
+          setEntries(null)
         }
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reloadToken])
 
   const remove = useCallback(
     async (entry: ShareListEntry): Promise<void> => {
@@ -82,6 +111,9 @@ export function ArtifactsSharedLinksSection(): React.JSX.Element {
         const result = await removeShare(entry.sourceKey)
         if (!result.ok) {
           reportShareFailure(result.error.code, result.error.message)
+          // A refused edit token drops the local record, so the row is gone even though the call
+          // failed; reload instead of leaving a row that no longer matches the host.
+          setReloadToken((token) => token + 1)
           return
         }
         setEntries(
@@ -89,7 +121,13 @@ export function ArtifactsSharedLinksSection(): React.JSX.Element {
         )
       } catch (error) {
         console.error('Failed to remove shared link:', error)
-        reportShareFailure('unknown', error instanceof Error ? error.message : String(error))
+        reportShareFailure(
+          'unknown',
+          translate(
+            'auto.components.settings.artifacts.sharedLinksDeleteFailed',
+            'Could not delete this shared link.'
+          )
+        )
       } finally {
         setRemovingKey(null)
       }
@@ -111,7 +149,14 @@ export function ArtifactsSharedLinksSection(): React.JSX.Element {
         </p>
       </div>
 
-      {loadError ? <p className="text-xs text-destructive">{loadError}</p> : null}
+      {loadError ? (
+        <div className="space-y-2">
+          <p className="text-xs text-destructive">{loadError}</p>
+          <Button variant="outline" size="xs" onClick={() => setReloadToken((token) => token + 1)}>
+            {translate('auto.components.settings.artifacts.sharedLinksRetry', 'Try again')}
+          </Button>
+        </div>
+      ) : null}
       {!loadError && entries === null ? (
         <p className="text-xs text-muted-foreground">
           {translate('auto.components.settings.artifacts.sharedLinksLoading', 'Loading…')}

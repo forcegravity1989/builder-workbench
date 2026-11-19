@@ -80,4 +80,32 @@ describe('createShareRecordStore', () => {
     await expect(store.get('/repo/bad.md')).resolves.toBeNull()
     await expect(store.get('/repo/good.md')).resolves.toMatchObject({ id: 'good' })
   })
+
+  it('reports a zero-length index as unreadable instead of as "nothing shared"', async () => {
+    const store = createShareRecordStore({ dataDir: () => dataDir })
+    await store.put('/repo/a.md', record('a', '2026-11-16T00:00:00.000Z'))
+    // What a rename that outlived a power loss looks like: the name exists, the bytes do not.
+    await writeFile(join(dataDir, 'records.json'), '')
+
+    await expect(store.list()).resolves.toEqual([])
+    const unreadable = store.unreadableIndex()
+    expect(unreadable).toMatchObject({ file: 'records.json' })
+    expect(unreadable?.archivedAs).toMatch(/^records\.json\.corrupt-\d+$/)
+    await expect(stat(join(dataDir, String(unreadable?.archivedAs)))).resolves.toBeDefined()
+  })
+
+  it('reports an index whose records block is missing, not just one that will not parse', async () => {
+    const store = createShareRecordStore({ dataDir: () => dataDir })
+    await writeFile(join(dataDir, 'records.json'), JSON.stringify({ version: 1 }))
+
+    await expect(store.list()).resolves.toEqual([])
+    expect(store.unreadableIndex()).toMatchObject({ file: 'records.json' })
+  })
+
+  it('reports nothing when the index was simply never written', async () => {
+    const store = createShareRecordStore({ dataDir: () => dataDir })
+
+    await expect(store.list()).resolves.toEqual([])
+    expect(store.unreadableIndex()).toBeNull()
+  })
 })

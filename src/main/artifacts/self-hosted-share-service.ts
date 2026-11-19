@@ -105,58 +105,97 @@ export function createShareService(options: {
     }
   }
 
-  return {
-    async publish(request) {
-      try {
-        const bytes = shareContentByteLength(request.content)
-        if (bytes > SHARE_MAX_CONTENT_BYTES) {
-          throw new ShareServiceError('too-large', '文件超过 10 MiB，无法分享')
-        }
-        const payload = {
-          content: request.content,
-          fileName: request.fileName,
-          ...(request.title ? { title: request.title } : {})
-        }
-        const existing = await recordStore.get(request.sourceKey)
-        if (existing) {
-          try {
-            const updated = await updateShare(
-              clientConfig(''),
-              existing.id,
-              existing.editToken,
-              payload
-            )
-            const record = {
-              id: updated.id,
-              url: updated.url,
-              editToken: existing.editToken,
-              expiresAt: updated.expiresAt,
-              updatedAt: updated.updatedAt
-            }
-            await recordStore.put(request.sourceKey, record)
-            // Why: only the host may keep the edit token; it must never reach the renderer.
-            return { ok: true, value: { ...toView(record), change: 'updated' as const } }
-          } catch (error) {
-            // A link removed on the server or expired locally should not block a fresh share.
-            if (!(error instanceof ShareServiceError) || error.code !== 'not-found') {
-              throw error
-            }
-            await recordStore.remove(request.sourceKey)
-          }
-        }
-        const created = await withUploadToken((config) => createShare(config, payload))
-        const record = {
-          id: created.id,
-          url: created.url,
-          editToken: created.editToken,
-          expiresAt: created.expiresAt,
-          updatedAt: new Date().toISOString()
-        }
-        await recordStore.put(request.sourceKey, record)
-        return { ok: true, value: { ...toView(record), change: 'created' as const } }
-      } catch (error) {
-        return failure(error)
+  /**
+   * One operation per file at a time. Two publishes of the same file — the toolbar popover and
+   * the editor header, or the page and `orca artifacts share` — would each read "no record yet",
+   * each create a link, and the loser's link would survive on the server with no local record and
+   * no edit token left to remove it.
+   */
+  const chains = new Map<string, Promise<unknown>>()
+
+  function serialized<T>(key: string, task: () => Promise<T>): Promise<T> {
+    const previous = chains.get(key) ?? Promise.resolve()
+    const run = previous.then(task, task)
+    const queued = run.then(
+      () => undefined,
+      () => undefined
+    )
+    chains.set(key, queued)
+    void queued.then(() => {
+      if (chains.get(key) === queued) {
+        chains.delete(key)
       }
+    })
+    return run
+  }
+
+  async function publishOnce(request: {
+    sourceKey: string
+    content: string
+    fileName: string
+    title?: string
+  }): Promise<ShareResult<SharePublishResult>> {
+    try {
+      const bytes = shareContentByteLength(request.content)
+      if (bytes > SHARE_MAX_CONTENT_BYTES) {
+        throw new ShareServiceError('too-large', '文件超过 10 MiB，无法分享')
+      }
+      const payload = {
+        content: request.content,
+        fileName: request.fileName,
+        ...(request.title ? { title: request.title } : {})
+      }
+      const existing = await recordStore.get(request.sourceKey)
+      if (existing) {
+        try {
+          const updated = await updateShare(
+            clientConfig(''),
+            existing.id,
+            existing.editToken,
+            payload
+          )
+          const record = {
+            id: updated.id,
+            url: updated.url,
+            editToken: existing.editToken,
+            expiresAt: updated.expiresAt,
+            updatedAt: updated.updatedAt
+          }
+          await recordStore.put(request.sourceKey, record)
+          // Why: only the host may keep the edit token; it must never reach the renderer.
+          return { ok: true, value: { ...toView(record), change: 'updated' as const } }
+        } catch (error) {
+          // A link the server no longer knows (404), or one whose edit token this machine no
+          // longer holds (403: records restored from backup, copied between machines, or a rebuilt
+          // server data directory), must not block a fresh share. Dropping the record is what
+          // makes the fallthrough below create a new link instead of failing forever.
+          if (
+            !(error instanceof ShareServiceError) ||
+            (error.code !== 'not-found' && error.code !== 'forbidden')
+          ) {
+            throw error
+          }
+          await recordStore.remove(request.sourceKey)
+        }
+      }
+      const created = await withUploadToken((config) => createShare(config, payload))
+      const record = {
+        id: created.id,
+        url: created.url,
+        editToken: created.editToken,
+        expiresAt: created.expiresAt,
+        updatedAt: new Date().toISOString()
+      }
+      await recordStore.put(request.sourceKey, record)
+      return { ok: true, value: { ...toView(record), change: 'created' as const } }
+    } catch (error) {
+      return failure(error)
+    }
+  }
+
+  return {
+    publish(request) {
+      return serialized(request.sourceKey, () => publishOnce(request))
     },
 
     async getLink(sourceKey) {
@@ -168,22 +207,57 @@ export function createShareService(options: {
       }
     },
 
-    async remove(sourceKey) {
-      try {
-        const record = await recordStore.get(sourceKey)
-        if (record) {
-          await deleteShare(clientConfig(''), record.id, record.editToken)
+    remove(sourceKey) {
+      return serialized(sourceKey, async () => {
+        try {
+          const record = await recordStore.get(sourceKey)
+          if (!record) {
+            return { ok: true, value: null }
+          }
+          try {
+            await deleteShare(clientConfig(''), record.id, record.editToken)
+          } catch (error) {
+            // The server refuses this machine's edit token, so the link is no longer ours to
+            // delete. Keeping the row would leave an entry that can never be removed; drop it and
+            // say plainly that the public link may still exist.
+            if (!(error instanceof ShareServiceError) || error.code !== 'forbidden') {
+              throw error
+            }
+            await recordStore.remove(sourceKey)
+            return {
+              ok: false,
+              error: {
+                code: 'stale-record' as const,
+                message:
+                  '本机记录已移除，但服务端拒绝了这份编辑令牌，原链接可能仍然存在，需要运维在服务端删除'
+              }
+            }
+          }
           await recordStore.remove(sourceKey)
+          return { ok: true, value: null }
+        } catch (error) {
+          return failure(error)
         }
-        return { ok: true, value: null }
-      } catch (error) {
-        return failure(error)
-      }
+      })
     },
 
     async list() {
       try {
         const entries = await recordStore.list()
+        const unreadable = recordStore.unreadableIndex()
+        if (unreadable && entries.length === 0) {
+          // An index we could not read is not the same as an empty one: the links it recorded are
+          // still live on the server, so "nothing shared" would be a false all-clear.
+          return {
+            ok: false,
+            error: {
+              code: 'unknown' as const,
+              message: `本机分享记录无法读取，无法确认你分享过哪些文件；这些链接可能仍然有效，重新分享同一文件会建立新链接${
+                unreadable.archivedAs ? `（已隔离为 ${unreadable.archivedAs}）` : ''
+              }`
+            }
+          }
+        }
         return {
           ok: true,
           value: entries.map(({ sourceKey, record }) => ({ ...toView(record), sourceKey }))

@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -255,5 +255,83 @@ describe('createShareService', () => {
   it('does not contact the network when removing an unknown file', async () => {
     await expect(service().remove('/repo/none.html')).resolves.toEqual({ ok: true, value: null })
     expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('serializes two shares of one file into a single link', async () => {
+    const share = service()
+
+    const [first, second] = await Promise.all([
+      share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' }),
+      share.publish({ sourceKey: '/repo/a.html', content: '<h1>A2</h1>', fileName: 'a.html' })
+    ])
+
+    // Without serialization both reads see "no record yet" and the loser's link is orphaned on the
+    // server: no local record, no edit token, nothing in the product can remove it.
+    expect(
+      calls.filter((call) => call.method === 'POST' && call.url.endsWith('/api/shares'))
+    ).toHaveLength(1)
+    expect(calls.filter((call) => call.method === 'PUT')).toHaveLength(1)
+    expect(first).toMatchObject({ ok: true, value: { change: 'created' } })
+    expect(second).toMatchObject({ ok: true, value: { change: 'updated' } })
+    await expect(share.list()).resolves.toMatchObject({
+      ok: true,
+      value: [{ sourceKey: '/repo/a.html', id: created.id }]
+    })
+  })
+
+  it('recreates the link when the server refuses the stored edit token', async () => {
+    const share = service()
+    await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
+    fetchImpl.mockImplementationOnce(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input as string, init)
+      calls.push({ method: request.method, url: request.url, headers: request.headers, body: null })
+      return jsonResponse(403, { error: { code: 'forbidden' } })
+    })
+
+    const result = await share.publish({
+      sourceKey: '/repo/a.html',
+      content: '<h1>B</h1>',
+      fileName: 'a.html'
+    })
+
+    // The record came from a backup or another machine, so the link is not ours to update; a fresh
+    // share has to work instead of failing the same way forever.
+    expect(result).toMatchObject({ ok: true, value: { change: 'created' } })
+    expect(calls.map((call) => call.method)).toEqual(['POST', 'POST', 'PUT', 'POST'])
+  })
+
+  it('drops a record the server will not let it delete, and says the link may survive', async () => {
+    const share = service()
+    await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
+    fetchImpl.mockImplementationOnce(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input as string, init)
+      calls.push({ method: request.method, url: request.url, headers: request.headers, body: null })
+      return jsonResponse(403, { error: { code: 'forbidden' } })
+    })
+
+    const result = await share.remove('/repo/a.html')
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'stale-record' } })
+    expect(result.ok || result.error.message).toContain('原链接可能仍然存在')
+    await expect(share.getLink('/repo/a.html')).resolves.toEqual({ ok: true, value: null })
+    await expect(share.list()).resolves.toMatchObject({ ok: true, value: [] })
+  })
+
+  it('reports an unreadable record index instead of an empty list', async () => {
+    const share = service()
+    await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })
+    // A zero-length file is what a rename that survived a power loss looks like: the links it
+    // recorded are still live on the server, so "no files shared" would be a false all-clear.
+    await writeFile(join(dataDir, 'records.json'), '')
+
+    const result = await share.list()
+    expect(result).toMatchObject({ ok: false, error: { code: 'unknown' } })
+    expect(result.ok || result.error.message).toContain('无法读取')
+
+    await share.publish({ sourceKey: '/repo/b.html', content: '<h1>B</h1>', fileName: 'b.html' })
+    await expect(share.list()).resolves.toMatchObject({
+      ok: true,
+      value: [{ sourceKey: '/repo/b.html' }]
+    })
   })
 })

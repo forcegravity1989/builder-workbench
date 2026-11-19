@@ -149,6 +149,11 @@ function shareErrorDescription(code: string, fallback: string): string {
         'auto.components.artifacts.artifact-publish-flow.forbiddenDescription',
         'This device can no longer update the link. Share the file again to create a new one.'
       )
+    case 'stale-record':
+      return translate(
+        'auto.components.artifacts.artifact-publish-flow.staleRecordDescription',
+        'This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server.'
+      )
     case 'too-large':
       return translate(
         'auto.components.artifacts.artifact-publish-flow.tooLargeDescription',

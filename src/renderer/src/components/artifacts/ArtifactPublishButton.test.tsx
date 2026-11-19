@@ -134,7 +134,7 @@ describe('ArtifactPublishButton', () => {
     expect(await screen.findByRole('button', { name: 'Generate link' })).toBeInTheDocument()
   })
 
-  it('reports a transport failure while removing instead of going silent', async () => {
+  it('reports a transport failure while removing with user-facing copy', async () => {
     const user = userEvent.setup()
     mocks.getPublishedLink.mockResolvedValue('http://7.192.170.220:8787/s/share-a')
     mocks.remove.mockRejectedValue(new Error('runtime bridge closed'))
@@ -144,9 +144,11 @@ describe('ArtifactPublishButton', () => {
     await user.click(await screen.findByRole('button', { name: 'Remove link' }))
     await user.click(screen.getByRole('button', { name: 'Remove link' }))
 
+    // Not silent, but the notification carries the outcome — never the raw transport exception.
     await waitFor(() =>
-      expect(mocks.reportFailure).toHaveBeenCalledWith('unknown', 'runtime bridge closed')
+      expect(mocks.reportFailure).toHaveBeenCalledWith('unknown', 'Could not remove the link.')
     )
+    expect(mocks.reportFailure.mock.calls[0]?.[1]).not.toContain('runtime bridge closed')
     expect(await screen.findByText('http://7.192.170.220:8787/s/share-a')).toBeInTheDocument()
   })
 

@@ -63,7 +63,9 @@ type PreparedShareRequest = { sourceKey: string; content: string; fileName: stri
 
 /**
  * Mirrors the Share as artifact button: Markdown is rendered into a standalone HTML document
- * because the share service stores HTML only, and the same file always maps to the same link.
+ * because the share service stores HTML only. Records are keyed by source key, so repeating a
+ * command overwrites that same link — but only within this surface: the editor keys a remote file
+ * by an `["ssh", target, path]` tuple, so one remote file shared from both keeps two links.
  * `marked` is ESM-only and this CLI is emitted as CommonJS, hence the dynamic import.
  */
 async function readShareRequest(ctx: HandlerContext): Promise<PreparedShareRequest> {

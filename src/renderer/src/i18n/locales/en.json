@@ -5440,7 +5440,6 @@
           "0ccba862b8": "Open GitHub tasks",
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
-          "artifacts": "Artifacts",
           "skills": "Skills"
         },
         "SidebarRepositoryFilterSection": {
@@ -7312,9 +7311,6 @@
           "0e9fc0eadc": "Workspace Directory",
           "e2955d9ccb": "Configure where new workspaces are created.",
           "7511097c5d": "Workspace",
-          "31e300af1c": "Ask Before Deleting Artifacts",
-          "fb29a73a17": "Show a confirmation dialog before deleting a shared artifact and breaking its public link.",
-          "bf46474e33": "Show a confirmation before deleting a shared artifact. Anyone holding its public link loses access.",
           "externalWorktrees": "External worktrees",
           "externalWorktreesDescription": "Choose whether worktrees created outside Orca appear by default.",
           "show": "Show",
@@ -11677,7 +11673,9 @@
           "sharedLinksLoading": "Loading…",
           "sharedLinksEmpty": "No shared files yet. Open an HTML or Markdown file and choose Share as artifact.",
           "sharedLinksDeleting": "Deleting…",
-          "sharedLinksDelete": "Delete"
+          "sharedLinksDelete": "Delete",
+          "sharedLinksRetry": "Try again",
+          "sharedLinksDeleteFailed": "Could not delete this shared link."
         },
         "orcaAccount": {
           "connected": "Connected",
@@ -16219,14 +16217,6 @@
           "8490e5d36a": "Confirm",
           "56f5c60e0c": "Cancel",
           "92bac3217e": "Don't ask again"
-        },
-        "skip": {
-          "saved": "We'll skip this confirmation next time.",
-          "savedDescription": "You can change this in Settings.",
-          "openSettings": "Open Settings",
-          "preference": {
-            "0b0cb6e3f9": "Could not save the confirmation preference."
-          }
         }
       },
       "jira": {
@@ -16668,14 +16658,16 @@
           "publishedDescription": "Anyone with this link can view the shared file.",
           "checkingLink": "Checking for an existing link…",
           "checkFailed": "Could not check for an existing link.",
-          "tryAgain": "Try again"
+          "tryAgain": "Try again",
+          "webOnly": "Desktop only. Open this file on the host device to share it.",
+          "removeFailed": "Could not remove the link."
         },
         "artifact-publish-flow": {
           "54b1805328": "Could not share artifact",
           "430019efd0": "Artifact shared",
           "2fc727c831": "Artifact updated",
           "fbb5018602": "This file is empty.",
-          "6112db5a1c": "This artifact is too large to share.",
+          "6112db5a1c": "This file exceeds the 10 MiB share limit.",
           "e2ed5acd8c": "Orca couldn't read this file. Open it from a workspace and try again.",
           "6d475e9b25": "Only local HTML and Markdown files can be shared as artifacts.",
           "29a406be09": "Artifacts must contain text.",
@@ -16689,7 +16681,8 @@
           "unsupportedDescription": "The share server only accepts HTML content.",
           "networkDescription": "Could not reach the share server. Check your network connection.",
           "fileTooLarge": "File is too large to share",
-          "tooLargeWithSize": "This file is {{size}}; the share limit is 10 MiB."
+          "tooLargeWithSize": "This file is {{size}}; the share limit is 10 MiB.",
+          "staleRecordDescription": "This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server."
         },
         "ArtifactPublishedLinkPanel": {
           "copyLink": "Copy link",
