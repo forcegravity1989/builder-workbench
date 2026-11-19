@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LoaderCircle, RefreshCw, Save, UsersRound, X } from 'lucide-react'
+import { Link2, LoaderCircle, RefreshCw, Save, UsersRound, X } from 'lucide-react'
 import type { TeamDirectory } from '../../../shared/team-directory'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -10,12 +10,31 @@ type TeamSettingsDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
+const TEAM_SPACE_STORAGE_KEY = 'bw:team-space-id:'
+
+function rememberedSpaceId(groupId: string): string {
+  try {
+    return window.localStorage.getItem(`${TEAM_SPACE_STORAGE_KEY}${groupId}`) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function rememberSpaceId(groupId: string, spaceId: string): void {
+  try {
+    window.localStorage.setItem(`${TEAM_SPACE_STORAGE_KEY}${groupId}`, spaceId)
+  } catch {
+    // The directory remains authoritative when browser storage is unavailable.
+  }
+}
+
 export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogProps): React.JSX.Element {
   const [groupId, setGroupId] = useState('')
   const [spaceId, setSpaceId] = useState('')
   const [directory, setDirectory] = useState<TeamDirectory | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [generatingHostId, setGeneratingHostId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -29,18 +48,30 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
 
   const enterTeam = (): void => {
     setError(null)
+    const nextGroupId = groupId.trim()
+    const knownSpaceId = rememberedSpaceId(nextGroupId)
+    setGroupId(nextGroupId)
+    setSpaceId(knownSpaceId)
     setDirectory({
       schema_version: 1,
-      team_group_id: groupId.trim(),
-      team_space_id: spaceId.trim(),
+      team_group_id: nextGroupId,
+      team_space_id: knownSpaceId,
       identity_source: 'welink-cli',
       hosts: [],
       projects: []
     })
+    if (knownSpaceId) {
+      void loadDirectory(nextGroupId, knownSpaceId)
+    }
   }
 
-  const loadDirectory = async (): Promise<void> => {
-    if (!groupId.trim() || !spaceId.trim()) {
+  async function loadDirectory(
+    requestedGroupId = groupId,
+    requestedSpaceId = spaceId
+  ): Promise<void> {
+    const nextGroupId = requestedGroupId.trim()
+    const nextSpaceId = requestedSpaceId.trim()
+    if (!nextGroupId || !nextSpaceId) {
       setError('请填写群 ID 和群空间 ID。')
       return
     }
@@ -48,10 +79,13 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     setError(null)
     try {
       const result = await window.api.teamCollaboration.readDirectory({
-        groupId: groupId.trim(),
-        spaceId: spaceId.trim()
+        groupId: nextGroupId,
+        spaceId: nextSpaceId
       })
       setDirectory(result.directory)
+      setGroupId(result.directory.team_group_id)
+      setSpaceId(result.directory.team_space_id)
+      rememberSpaceId(result.directory.team_group_id, result.directory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '读取团队目录失败。')
     } finally {
@@ -68,10 +102,46 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     setError(null)
     try {
       await window.api.teamCollaboration.writeDirectory(directory)
+      rememberSpaceId(directory.team_group_id, directory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '同步团队目录失败。')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const generateHostAddress = async (memberId: string): Promise<void> => {
+    if (!directory?.team_group_id) {
+      return
+    }
+    setGeneratingHostId(memberId)
+    setError(null)
+    try {
+      const result = await window.api.mobile.getRuntimePairingUrl({
+        rotate: true,
+        reach: 'network',
+        accessMode: 'team-read',
+        teamBinding: { teamGroupId: directory.team_group_id, memberId }
+      })
+      if (!result.available) {
+        throw new Error(result.guidance ?? '当前主机无法生成 Orca 共享地址。')
+      }
+      setDirectory((current) =>
+        current
+          ? {
+              ...current,
+              hosts: current.hosts.map((host) =>
+                host.member_id === memberId
+                  ? { ...host, host_id: result.deviceId, orca_endpoint: result.endpoint }
+                  : host
+              )
+            }
+          : current
+      )
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '生成 Orca 共享地址失败。')
+    } finally {
+      setGeneratingHostId(null)
     }
   }
 
@@ -83,7 +153,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
             <UsersRound className="size-4" /> 团队设置
           </DialogTitle>
           <DialogDescription>
-            先用群 ID 进入团队；群空间已有团队目录时直接填写或读回空间 ID。
+            输入群 ID 后管理团队成员、主机和项目。
           </DialogDescription>
         </DialogHeader>
         {!directory ? (
@@ -138,9 +208,43 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
                 <p className="px-3 py-4 text-sm text-muted-foreground">读取目录后显示成员与主机。</p>
               ) : (
                 directory.hosts.map((host) => (
-                  <div key={host.member_id} className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2 text-sm last:border-b-0">
-                    <span>{host.name ?? host.member_id}</span>
-                    <span className="text-muted-foreground">{host.orca_endpoint ?? '未登记 Orca 地址'}</span>
+                  <div key={host.member_id} className="flex items-center gap-3 border-b border-border/40 px-3 py-2 text-sm last:border-b-0">
+                    <span className="w-32 shrink-0">{host.name ?? host.member_id}</span>
+                    <Input
+                      aria-label={`${host.name ?? host.member_id} 的 Orca 地址`}
+                      value={host.orca_endpoint ?? ''}
+                      placeholder="Orca 共享地址"
+                      onChange={(event) => {
+                        const endpoint = event.target.value
+                        setDirectory((current) =>
+                          current
+                            ? {
+                                ...current,
+                                hosts: current.hosts.map((candidate) =>
+                                  candidate.member_id === host.member_id
+                                    ? { ...candidate, orca_endpoint: endpoint || undefined }
+                                    : candidate
+                                )
+                              }
+                            : current
+                        )
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      title="生成并填入本机 Orca 地址"
+                      aria-label={`为 ${host.name ?? host.member_id} 生成并填入 Orca 地址`}
+                      onClick={() => void generateHostAddress(host.member_id)}
+                      disabled={generatingHostId !== null}
+                    >
+                      {generatingHostId === host.member_id ? (
+                        <LoaderCircle className="size-3.5 animate-spin" />
+                      ) : (
+                        <Link2 className="size-3.5" />
+                      )}
+                    </Button>
                   </div>
                 ))
               )}

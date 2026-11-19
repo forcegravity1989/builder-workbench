@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -6,6 +6,8 @@ import {
   downloadOneboxFile,
   findOneboxFile,
   listFolder,
+  parseFirstJsonObject,
+  removeReportFile,
   runWelinkCli,
   type WelinkRoute,
   uploadOneboxFile
@@ -20,14 +22,22 @@ export type TeamDirectoryReadResult = {
 
 async function queryGroupMembers(route: WelinkRoute, groupId: string): Promise<TeamDirectoryMember[]> {
   const { stdout } = await runWelinkCli(route, ['im', 'query-group-member', '--group-id', groupId], 30_000)
-  const parsed = JSON.parse(stdout) as unknown
+  const parsed = parseJsonPayload(stdout)
+  if (!parsed) {
+    throw new Error('query-group-member returned no JSON payload')
+  }
   const rows = Array.isArray(parsed)
     ? parsed
     : parsed && typeof parsed === 'object' && Array.isArray((parsed as { members?: unknown }).members)
       ? (parsed as { members: unknown[] }).members
-      : []
+      : null
+  if (!rows) {
+    throw new Error('query-group-member returned an invalid members payload')
+  }
   return rows.flatMap((row) => {
-    if (!row || typeof row !== 'object') return []
+    if (!row || typeof row !== 'object') {
+      return []
+    }
     const value = row as Record<string, unknown>
     const memberId = value.memberAccount ?? value.welinkId ?? value.member_id
     const memberType = value.memberType
@@ -43,6 +53,27 @@ async function queryGroupMembers(route: WelinkRoute, groupId: string): Promise<T
   })
 }
 
+function parseJsonPayload(stdout: string): unknown {
+  try {
+    return JSON.parse(stdout) as unknown
+  } catch {
+    const object = parseFirstJsonObject(stdout)
+    if (object) {
+      return object
+    }
+    const start = stdout.indexOf('[')
+    const end = stdout.lastIndexOf(']')
+    if (start !== -1 && end > start) {
+      try {
+        return JSON.parse(stdout.slice(start, end + 1)) as unknown
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
+}
+
 function parseDirectory(text: string, groupId: string, spaceId: string): TeamDirectory {
   const parsed = JSON.parse(text) as Partial<TeamDirectory>
   return {
@@ -50,9 +81,54 @@ function parseDirectory(text: string, groupId: string, spaceId: string): TeamDir
     team_group_id: groupId,
     team_space_id: spaceId,
     identity_source: 'welink-cli',
-    hosts: Array.isArray(parsed.hosts) ? parsed.hosts : [],
-    projects: Array.isArray(parsed.projects) ? parsed.projects : []
+    hosts: normalizeMembers(parsed.hosts),
+    projects: normalizeProjects(parsed.projects)
   }
+}
+
+function normalizeMembers(value: unknown): TeamDirectoryMember[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== 'object') {
+      return []
+    }
+    const member = candidate as Record<string, unknown>
+    if (typeof member.member_id !== 'string' || member.member_id.length === 0) {
+      return []
+    }
+    return [{
+      member_id: member.member_id,
+      ...(typeof member.name === 'string' ? { name: member.name } : {}),
+      ...(typeof member.avatar === 'string' ? { avatar: member.avatar } : {}),
+      ...(typeof member.host_id === 'string' ? { host_id: member.host_id } : {}),
+      identity_source: 'welink-cli' as const,
+      ...(typeof member.orca_endpoint === 'string' ? { orca_endpoint: member.orca_endpoint } : {})
+    }]
+  })
+}
+
+function normalizeProjects(value: unknown): TeamDirectory['projects'] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== 'object') {
+      return []
+    }
+    const project = candidate as Record<string, unknown>
+    if (typeof project.repo_id !== 'string' || !Array.isArray(project.sources)) {
+      return []
+    }
+    const sources = project.sources.filter((source): source is string => typeof source === 'string')
+    return [{
+      repo_id: project.repo_id,
+      ...(typeof project.name === 'string' ? { name: project.name } : {}),
+      ...(typeof project.repository === 'string' ? { repository: project.repository } : {}),
+      sources
+    }]
+  })
 }
 
 async function resolveTeamFolder(route: WelinkRoute, spaceId: string): Promise<string> {
@@ -94,7 +170,7 @@ export async function readTeamDirectory(args: {
         // The CLI may create a directory named after the file id; inspect below.
       }
     }
-    const files = await import('node:fs/promises').then(({ readdir }) => readdir(root))
+    const files = await readdir(root)
     for (const file of files) {
       if (file.endsWith('.json')) {
         const directory = parseDirectory(await readFile(join(root, file), 'utf8'), args.groupId, args.spaceId)
@@ -110,7 +186,7 @@ export async function readTeamDirectory(args: {
 
 function mergeMembers(current: TeamDirectoryMember[], saved: TeamDirectoryMember[]): TeamDirectoryMember[] {
   const savedById = new Map(saved.map((member) => [member.member_id, member]))
-  return current.map((member) => ({ ...member, ...savedById.get(member.member_id) }))
+  return current.map((member) => ({ ...savedById.get(member.member_id), ...member }))
 }
 
 export async function writeTeamDirectory(args: {
@@ -122,7 +198,12 @@ export async function writeTeamDirectory(args: {
   try {
     await writeFile(path, `${JSON.stringify(args.directory, null, 2)}\n`, 'utf8')
     const folderId = await resolveTeamFolder(args.route, args.directory.team_space_id)
-    return { fileId: await uploadOneboxFile(args.route, args.directory.team_space_id, folderId, path) }
+    const previous = await findOneboxFile(args.route, args.directory.team_space_id, 'team.json')
+    const fileId = await uploadOneboxFile(args.route, args.directory.team_space_id, folderId, path)
+    if (previous && previous.id !== fileId) {
+      await removeReportFile(args.route, args.directory.team_space_id, previous.id)
+    }
+    return { fileId }
   } finally {
     await rm(root, { recursive: true, force: true })
   }
