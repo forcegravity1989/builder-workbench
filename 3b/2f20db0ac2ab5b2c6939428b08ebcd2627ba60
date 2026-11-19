@@ -1,0 +1,19 @@
+src/renderer/src/workbench/action-icon-keyframes.ts
+  s_5a40a9623e94fc::t_65a4f13f2d7aed 59-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "3b2f20db0ac2ab5b2c6939428b08ebcd2627ba60",
+  "prompts": {},
+  "sessions": {
+    "s_5a40a9623e94fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f3a2-d0d6-7830-9172-07961e1421d5",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
