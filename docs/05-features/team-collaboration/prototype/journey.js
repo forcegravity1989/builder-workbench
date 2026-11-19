@@ -1088,7 +1088,10 @@
       render()
     },
     'register-project': () => registerProjectDialog(current().directoryDraft),
-    'open-space': (value) => notify(`已打开 WeLink 群空间${value ? ` · ${value}` : ''}`),
+    'open-space': (value) => {
+      if (value) window.open(value, '_blank', 'noopener')
+      notify(`已打开 WeLink 群空间${value ? ` · ${value}` : ''}`)
+    },
     'open-sharing-settings': () => {
       const desktop = current()
       desktop.server = true
