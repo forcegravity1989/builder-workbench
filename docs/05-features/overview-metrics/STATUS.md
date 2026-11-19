@@ -28,7 +28,7 @@
 | 2 spec | 已确认 | 里程碑、指标、异常、M01–M10 和 W05 子链见 [spec](spec.md)。原型是设计输入，不代表生产证据。 |
 | 3 实现设计 | 已同步 | MetricsPort、VersionHistoryPort、指标执行、缓存隔离、记分牌和配置会话边界见 [design](design.md)。 |
 | 4 协议看护 | 部分 | 指标定义、窗口、来源、Unknown、去重、历史读回和记分牌配对已有核心测试入口。真实脚本、跨宿主和数据权限仍待验。 |
-| 5 验收点 E2E | 部分 | 旅程 ID W05；文件 `tests/e2e/workbench-version-overview.spec.ts`；标题 `BW version overview: real sources, version identity and process restart`；执行项目 `electron-headless`；真实环境为 Electron / CI fixture；独立读回为绑定工作树磁盘材料、侧栏入口和 renderer 重载。 |
+| 5 验收点 E2E | 部分 | 旅程 ID W05；文件 `tests/e2e/workbench-version-overview.spec.ts`；标题 `BW version overview: real sources, version identity and process restart`；执行项目 `electron-headless`；真实环境为 Electron fixture；通过 `tests/playwright.overview.config.ts` 显式运行，使用操作者提供的 GitHub 只读认证，不属于默认 PR CI；独立读回为绑定工作树磁盘材料、侧栏入口和 renderer 重载。 |
 | 6 用户旅程 E2E | 部分 | W05 复用同一物理用例和入口，不另建第二条业务 E2E。当前只观察版本材料回看进入总览的子链，指标配置、试采、评审合入、验收采用、后续计划/任务和重启独立复算仍待真实环境。 |
 
 ## 核心 TDD 入口
