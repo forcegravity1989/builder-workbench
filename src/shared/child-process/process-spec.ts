@@ -34,8 +34,11 @@ export type ProcessSpec = {
   env?: NodeJS.ProcessEnv
   /** Kill the process (and, on Windows, its console) after this long. */
   timeoutMs?: number | null
-  /** Written to stdin then closed. Omit to leave stdin empty and closed. */
-  input?: string
+  /**
+   * Written to stdin then closed. A string is UTF-8 encoded; a Buffer passes
+   * through unchanged. Omit to leave stdin empty and closed.
+   */
+  input?: string | Buffer
   /** Cap on captured stdout/stderr; output past it is discarded. */
   maxOutputBytes?: number
   /** Kills the process when aborted; the result still reports the exit. */

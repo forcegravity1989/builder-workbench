@@ -22,6 +22,7 @@ export function PrReviewNotificationsView({
   onError,
   onOpen,
   onDelete,
+  onDismissIncoming,
   onResend,
   missingProject
 }: {
@@ -32,6 +33,7 @@ export function PrReviewNotificationsView({
   onError: (message: string) => void
   onOpen: (identity: ReviewIncomingNote['repo'], prNumber: number) => Promise<void>
   onDelete: (id: string) => void
+  onDismissIncoming: (note: ReviewIncomingNote) => void
   onResend: (note: ReviewOutgoingNote) => Promise<void>
   missingProject: (note: ReviewIncomingNote) => boolean
 }): React.JSX.Element {
@@ -163,6 +165,7 @@ export function PrReviewNotificationsView({
                       note={note}
                       missingProject={missingProject(note)}
                       onOpen={() => void openNote(note.repo, note.prNumber)}
+                      onDismiss={() => onDismissIncoming(note)}
                     />
                   ))
                 )}

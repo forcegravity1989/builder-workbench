@@ -577,7 +577,7 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
-import { ReviewRequestSchema } from '../workbench/pr-review-request'
+import { ReviewDismissSchema, ReviewRequestSchema } from '../workbench/pr-review-request'
 import {
   MilestoneDiscardRequestSchema,
   MilestoneReadRequestSchema,
@@ -1266,6 +1266,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.repo.deleteGroup': WorkbenchGroupRemoval,
   'workbench.repo.removeRegistration': WorkbenchRepoRemoval,
   'workbench.review.comments': PullRequest,
+  'workbench.review.dismiss': ReviewDismissSchema,
   'workbench.review.identity': null,
   'workbench.review.inbox': null,
   'workbench.review.receive': ReviewRequestSchema,

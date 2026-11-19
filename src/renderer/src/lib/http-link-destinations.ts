@@ -1,17 +1,38 @@
 import { translate } from '@/i18n/i18n'
 import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import {
+  openWorkbenchTaskItemLink,
+  workbenchTaskItemLink
+} from '@/workbench/task-item-link-routing'
 
 // Catalog keys keep their original terminal namespace: they are opaque ids with
 // shipped translations, and the popover is now shared with native chat.
 
-export type HttpLinkDestination = 'orca' | 'system'
+export type HttpLinkDestination = 'orca' | 'system' | 'task'
 
 export type HttpLinkActionDestinations = {
   primary: HttpLinkDestination
   alternate?: HttpLinkDestination
+  additional?: HttpLinkDestination
+}
+
+export function httpLinkActionDestinationsForUrl(
+  url: string,
+  destinations: HttpLinkActionDestinations | undefined
+): HttpLinkActionDestinations | undefined {
+  return workbenchTaskItemLink(url)
+    ? {
+        primary: 'task',
+        alternate: 'system',
+        ...([destinations?.primary, destinations?.alternate].includes('orca')
+          ? { additional: 'orca' as const }
+          : {})
+      }
+    : destinations
 }
 
 export type HttpLinkAction = {
+  task?: boolean
   external?: boolean
   label: string
   run: () => void | Promise<void>
@@ -43,6 +64,12 @@ export function httpLinkActionDestinationsFor(
 }
 
 export function httpLinkDestinationLabel(destination: HttpLinkDestination): string {
+  if (destination === 'task') {
+    return translate(
+      'auto.components.terminal.pane.TerminalLinkActionPopover.openInTask',
+      'Open in Task'
+    )
+  }
   return destination === 'orca'
     ? translate(
         'auto.components.terminal.pane.TerminalLinkActionPopover.orcaBrowser',
@@ -58,26 +85,19 @@ export function httpLinkDestinationLabel(destination: HttpLinkDestination): stri
 export function buildHttpLinkActions(
   destinations: HttpLinkActionDestinations | undefined,
   open: (destination: HttpLinkDestination | undefined) => void | Promise<void>
-): { primary: HttpLinkAction; alternate?: HttpLinkAction } {
-  const primaryDestination = destinations?.primary
-  const primary: HttpLinkAction = {
-    external: primaryDestination === 'system',
-    label: primaryDestination
-      ? httpLinkDestinationLabel(primaryDestination)
+): { primary: HttpLinkAction; alternate?: HttpLinkAction; additional?: HttpLinkAction } {
+  const actionFor = (destination: HttpLinkDestination | undefined): HttpLinkAction => ({
+    ...(destination === 'task' ? { task: true } : {}),
+    external: destination === 'system',
+    label: destination
+      ? httpLinkDestinationLabel(destination)
       : translate('auto.components.terminal.pane.TerminalLinkActionPopover.openLink', 'Open link'),
-    run: () => open(primaryDestination)
-  }
-  const alternateDestination = destinations?.alternate
-  if (!alternateDestination) {
-    return { primary }
-  }
+    run: () => open(destination)
+  })
   return {
-    primary,
-    alternate: {
-      external: alternateDestination === 'system',
-      label: httpLinkDestinationLabel(alternateDestination),
-      run: () => open(alternateDestination)
-    }
+    primary: actionFor(destinations?.primary),
+    ...(destinations?.alternate ? { alternate: actionFor(destinations.alternate) } : {}),
+    ...(destinations?.additional ? { additional: actionFor(destinations.additional) } : {})
   }
 }
 
@@ -94,6 +114,13 @@ export type RoutedHttpLinkOptions = {
 }
 
 export function openRoutedHttpLink(url: string, deps: RoutedHttpLinkOptions): void {
+  if (
+    deps.forceDestination === 'task' ||
+    (!deps.forceDestination && !deps.modifierHeld && workbenchTaskItemLink(url))
+  ) {
+    void openWorkbenchTaskItemLink(url)
+    return
+  }
   // Why: the clicked link's owner beats the global active runtime for both local and remote routes.
   const sourceOwner = deps.sourceOwner ?? { kind: 'local' }
   if (deps.forceDestination) {
