@@ -94,7 +94,11 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
       // Only the runtime's explicit local disappearance verdict is actionable here. A generic
       // `selector_not_found` is UNKNOWN: a live Git/provider scan can fail or lag, so callers must
       // retain their retry path instead of claiming that the worktree was deleted.
-      if (error instanceof Error && error.message === 'workspace-gone') {
+      if (
+        error instanceof Error &&
+        error.message === 'selector_not_found' &&
+        (error as { worktreeGoneEvidence?: unknown }).worktreeGoneEvidence === true
+      ) {
         throw new WorkspaceScopeError('workspace-gone', '工作树已删除，请回到版本总览或另选工作区')
       }
       throw error

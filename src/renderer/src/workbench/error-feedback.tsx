@@ -4,9 +4,8 @@ import { hasRuntimeRpcErrorCode } from '../runtime/runtime-rpc-client'
 
 /**
  * The workspace a screen is bound to no longer resolves: version cleanup deleted its worktree
- * (or a paired owner runtime on an older build still answers with the bare native code instead
- * of the translated `workspace-gone`). Screens must stop polling and say what happened (#727);
- * a bare protocol code is not a user-readable verdict.
+ * after the BW resolver has received explicit disappearance evidence. A bare native
+ * `selector_not_found` remains UNKNOWN and must keep its retry path (#727).
  */
 export function isWorkspaceGoneError(error: unknown): boolean {
   const code = (error as { code?: unknown } | null)?.code

@@ -251,8 +251,7 @@ export function usePlanningMaterial(
               setError(String(reason))
             }
           }
-        }
-      })
+        })
     }, 5000)
     return () => clearInterval(timer)
   }, [controller, selectedVersion, isCurrent])

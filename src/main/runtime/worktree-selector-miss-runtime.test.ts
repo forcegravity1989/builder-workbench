@@ -61,8 +61,8 @@ describe('showManagedWorktree selector misses', () => {
     const missingId = `repo-1::${missingWorktreePath()}`
 
     await expect(runtime.showManagedWorktree(`id:${missingId}`, 'local')).rejects.toMatchObject({
-      code: 'workspace-gone',
-      message: 'workspace-gone'
+      message: 'selector_not_found',
+      worktreeGoneEvidence: true
     })
   })
 

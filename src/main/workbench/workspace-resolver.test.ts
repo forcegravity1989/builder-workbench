@@ -92,7 +92,9 @@ describe('registered workbench workspace identity', () => {
     await expect(resolver.resolve(scope)).rejects.toThrow('selector_not_found')
     // Only the runtime's explicit local disappearance verdict is actionable; a generic miss may
     // be a temporary scan gap and must keep the retry path.
-    showManagedWorktree.mockRejectedValueOnce(new Error('workspace-gone'))
+    showManagedWorktree.mockRejectedValueOnce(
+      Object.assign(new Error('selector_not_found'), { worktreeGoneEvidence: true })
+    )
     await expect(resolver.resolve(scope)).rejects.toMatchObject({ code: 'workspace-gone' })
   })
 })

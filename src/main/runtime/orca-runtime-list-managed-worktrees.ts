@@ -161,7 +161,9 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
           'showManagedWorktree'
         )
         if (requiredHostId && this.isConfirmedLocalWorktreeGone(worktreeSelector, requiredHostId)) {
-          throw Object.assign(new Error('workspace-gone'), { code: 'workspace-gone' })
+          // Keep Orca's native RPC contract (`selector_not_found`) unchanged. The BW workspace
+          // resolver receives this in-process evidence marker and translates it at its own boundary.
+          throw Object.assign(new Error('selector_not_found'), { worktreeGoneEvidence: true })
         }
       }
       throw error
