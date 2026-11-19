@@ -26,6 +26,42 @@ function planIdentity(entry: VersionCatalogEntry | undefined): string | undefine
   return entry?.draft?.cycleId ?? entry?.material.plan?.cycleId
 }
 
+function mergedStatus(
+  candidates: { source: CatalogSource; entry: VersionCatalogEntry }[],
+  primaryUnavailable: boolean
+): VersionCatalogEntry['mergeStatus'] {
+  if (candidates.some(({ entry }) => entry.mergeStatus === 'merged')) {
+    return 'merged'
+  }
+  if (candidates.some(({ entry }) => entry.problems.some((problem) => problem.workflow === 'plan'))) {
+    return 'unknown'
+  }
+  if (
+    primaryUnavailable ||
+    candidates.some(
+      ({ source, entry }) => !source.state.materialReady && entry.mergeStatus === 'unknown'
+    )
+  ) {
+    return 'unknown'
+  }
+  if (candidates.some(({ entry }) => entry.mergeStatus === 'unmerged')) {
+    return 'unmerged'
+  }
+  return 'unknown'
+}
+
+function earliestPlanStart(
+  candidates: { entry: VersionCatalogEntry }[]
+): number | null | undefined {
+  const times = candidates
+    .map(({ entry }) => entry.planStartedAt)
+    .filter((time): time is number => time !== undefined && time !== null && Number.isFinite(time))
+  if (times.length > 0) {
+    return Math.min(...times)
+  }
+  return candidates.some(({ entry }) => entry.planStartedAt !== undefined) ? null : undefined
+}
+
 export function mergeProjectVersions(
   sources: CatalogSource[],
   primary: CatalogSource | null,
@@ -55,9 +91,15 @@ export function mergeProjectVersions(
           : null
       const automatic = preferred ?? candidates.find(({ source }) => source.repo === fallback)
       const orderSource =
-        automatic?.entry.planEnteredAt !== undefined
+        (automatic?.entry.planEnteredAt !== undefined && automatic.entry.planEnteredAt !== null
           ? automatic
-          : candidates.find(({ entry }) => entry.planEnteredAt !== undefined)
+          : null) ??
+        candidates.find(
+          ({ entry }) => entry.planEnteredAt !== undefined && entry.planEnteredAt !== null
+        ) ??
+        (automatic?.entry.planEnteredAt !== undefined
+          ? automatic
+          : candidates.find(({ entry }) => entry.planEnteredAt !== undefined))
       const chosen = explicit
         ? candidates.find(
             ({ source }) =>
@@ -67,18 +109,24 @@ export function mergeProjectVersions(
         : automatic
       const workspaces = candidates.flatMap(({ entry }) => entry.workspaces)
       const materialIdentity = planIdentity(chosen?.entry)
+      const draft = chosen?.entry.draft ?? candidates.find(({ entry }) => entry.draft)?.entry.draft
       return {
         source: chosen?.source ?? null,
         planOrderPending:
           !!orderSource?.entry.material.plan && orderSource.source.state.planOrderPending,
         entry: {
           version,
+          mergeStatus: mergedStatus(
+            candidates,
+            primary !== null && !primary.state.materialReady
+          ),
           planEnteredAt: orderSource?.entry.planEnteredAt,
+          planStartedAt: earliestPlanStart(candidates),
           state: workspaces.length ? 'working' : 'retired',
           workspaces,
           goals: chosen?.entry.goals ?? [],
           material: chosen?.entry.material ?? {},
-          draft: chosen?.entry.draft,
+          draft,
           problems: chosen?.entry.problems ?? []
         },
         goalWorktrees: candidates.flatMap(({ source, entry }) =>
