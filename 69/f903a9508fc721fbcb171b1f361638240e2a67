@@ -1,0 +1,25 @@
+src/main/runtime/orca-runtime-list-managed-worktrees.ts
+  s_6436b56d71ca17::t_5a83634872b224 4-10,126-139,141-144,146,151-209
+src/main/runtime/worktree-selector-miss-runtime.test.ts
+  s_6436b56d71ca17::t_20fa8232cd9f90 1-77
+src/main/runtime/worktree-selector-miss.test.ts
+  s_6436b56d71ca17::t_78fc4f0e2a2858 1-127
+src/main/runtime/worktree-selector-miss.ts
+  s_6436b56d71ca17::t_2760d01096184f 1-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "69f903a9508fc721fbcb171b1f361638240e2a67",
+  "prompts": {},
+  "sessions": {
+    "s_6436b56d71ca17": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cdb1de3b-db6e-45a0-8687-225d01771cca",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
