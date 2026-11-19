@@ -17,7 +17,7 @@ const SHUTDOWN_GRACE_MS = 5000
 export async function startServer(options = {}) {
   const log = options.log ?? console.log
   const config = options.config ?? loadConfig()
-  const store = createShareStore(config)
+  const store = createShareStore({ ...config, log })
   await store.init()
   const clientTokens = createClientTokenStore({ dataDir: config.dataDir, log })
   await clientTokens.init()

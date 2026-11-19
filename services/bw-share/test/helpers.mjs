@@ -39,21 +39,25 @@ export async function makeStore(overrides = {}) {
   }
 }
 
-export async function startTestServer(overrides = {}) {
-  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-'))
+/**
+ * @param {Record<string, unknown>} [overrides]
+ * @param {{ dataDir?: string }} [options]  Pass a prepared data directory to seed registry or share
+ *   state before the service reads it — a damaged registry, an existing share, a full token list.
+ */
+export async function startTestServer(overrides = {}, options = {}) {
+  const dataDir = options.dataDir ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-')))
+  // A caller-provided directory outlives one server: the damaged-registry and restart cases boot
+  // twice over the same state, so only remove what this helper created.
+  const ownsDataDir = options.dataDir === undefined
   const config = testConfig(dataDir, overrides)
-  const store = createShareStore(config)
-  await store.init()
   /** @type {string[]} */
   const logs = []
-  const clientTokens = createClientTokenStore({
-    dataDir,
-    log: (line) => logs.push(line)
-  })
+  const log = (line) => logs.push(line)
+  const store = createShareStore({ ...config, log })
+  await store.init()
+  const clientTokens = createClientTokenStore({ dataDir, log })
   await clientTokens.init()
-  const server = http.createServer(
-    createRequestHandler({ store, clientTokens, config, log: (line) => logs.push(line) })
-  )
+  const server = http.createServer(createRequestHandler({ store, clientTokens, config, log }))
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = /** @type {import('node:net').AddressInfo} */ (server.address())
   return {
@@ -67,7 +71,9 @@ export async function startTestServer(overrides = {}) {
     async close() {
       server.closeAllConnections?.()
       await new Promise((resolve) => server.close(resolve))
-      await fs.rm(dataDir, { recursive: true, force: true })
+      if (ownsDataDir) {
+        await fs.rm(dataDir, { recursive: true, force: true })
+      }
     }
   }
 }

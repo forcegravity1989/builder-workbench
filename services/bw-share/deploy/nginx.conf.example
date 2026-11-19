@@ -25,9 +25,11 @@ server {
         proxy_pass http://127.0.0.1:8787;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
-        # $remote_addr overwrites any client-supplied value. Do not switch to
-        # $proxy_add_x_forwarded_for: the service reads the rightmost entry as the rate-limit key,
-        # and appending would still let a caller pad the list it controls.
+        # One trusted hop: this is the peer the service reads (rightmost X-Forwarded-For entry) as
+        # its rate-limit key. Appending via $proxy_add_x_forwarded_for is equally safe for a single
+        # hop, because anything left of the trusted entry is ignored. With several proxy layers,
+        # append at every hop and trust only the last one — overwriting at each hop would collapse
+        # every client into the innermost proxy's single rate-limit budget.
         proxy_set_header X-Forwarded-For   $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host  $host;

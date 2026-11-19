@@ -33,9 +33,9 @@ export function isValidShareId(id) {
 }
 
 /**
- * @param {{ dataDir: string, retentionDays: number }} options
+ * @param {{ dataDir: string, retentionDays: number, log?: (line: string) => void }} options
  */
-export function createShareStore({ dataDir, retentionDays }) {
+export function createShareStore({ dataDir, retentionDays, log = () => {} }) {
   /** @type {Map<string, Promise<void>>} */
   const locks = new Map()
 
@@ -68,8 +68,8 @@ export function createShareStore({ dataDir, retentionDays }) {
     }
     // Meta first: a crash before the content lands leaves a share that reads as missing and is
     // swept at expiry, instead of an unreferenced content file that nothing would ever clean up.
-    await writeFileAtomic(metaPath(id), JSON.stringify(meta, null, 2))
-    await writeFileAtomic(contentPath(id), payload.content)
+    await writeFileAtomic(metaPath(id), JSON.stringify(meta, null, 2), log)
+    await writeFileAtomic(contentPath(id), payload.content, log)
     return { id, editToken, meta }
   }
 
@@ -106,8 +106,8 @@ export function createShareStore({ dataDir, retentionDays }) {
       // Content first, then metadata. If the second write is lost, a viewer still gets a complete
       // document — `open()` takes the length and the bytes from one fd — and only the display name
       // and the renewed expiry lag, which the next update corrects.
-      await writeFileAtomic(contentPath(id), payload.content)
-      await writeFileAtomic(metaPath(id), JSON.stringify(meta, null, 2))
+      await writeFileAtomic(contentPath(id), payload.content, log)
+      await writeFileAtomic(metaPath(id), JSON.stringify(meta, null, 2), log)
       return meta
     })
   }
@@ -337,8 +337,9 @@ export function createShareStore({ dataDir, retentionDays }) {
  *
  * @param {string} filePath
  * @param {string | Buffer} data
+ * @param {(line: string) => void} [log]
  */
-export async function writeFileAtomic(filePath, data) {
+export async function writeFileAtomic(filePath, data, log = () => {}) {
   const tmp = `${filePath}.tmp-${randomBytes(8).toString('hex')}`
   try {
     const handle = await fs.open(tmp, 'w', 0o600)
@@ -352,8 +353,16 @@ export async function writeFileAtomic(filePath, data) {
   } catch (error) {
     await fs.rm(tmp, { force: true })
     if (isSharingViolation(error)) {
+      // The retry budget is spent, so this is either a reader that outlasted it or a lasting
+      // permission problem. Say which file and why: the caller only sees a retryable 503, and
+      // without this line the access log is the only trace.
+      log(
+        `gave up replacing ${path.basename(filePath)} after ${RENAME_ATTEMPTS} attempts: ${
+          /** @type {NodeJS.ErrnoException} */ (error).code
+        }`
+      )
       // The previous version is still complete and consistent, so this is worth retrying.
-      throw new ShareError(503, 'busy', 'The share is being read; retry the update in a moment.')
+      throw new ShareError(503, 'busy', 'The file is in use; retry in a moment.')
     }
     throw error
   }

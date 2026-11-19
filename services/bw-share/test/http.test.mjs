@@ -7,9 +7,8 @@ import test from 'node:test'
 import { createClientTokenStore } from '../src/client-tokens.mjs'
 import { DEFAULT_ENROLL_KEY } from '../src/config.mjs'
 import { isShareError } from '../src/errors.mjs'
-import { createRequestHandler, SHARE_PAGE_CSP } from '../src/http.mjs'
-import { createShareStore } from '../src/store.mjs'
-import { startTestServer, testConfig, updateRequest, writeRequest } from './helpers.mjs'
+import { SHARE_PAGE_CSP } from '../src/http.mjs'
+import { startTestServer, updateRequest, writeRequest } from './helpers.mjs'
 
 /** @param {Response} response */
 async function json(response) {
@@ -391,6 +390,13 @@ test('viewing while updating never answers 500 and never misstates content-lengt
       updated.status === 200 || updated.status === 503,
       `round ${round}: unexpected ${updated.status} (${updatedBody})`
     )
+    if (updated.status === 503) {
+      // The caller only sees a retryable 503, so the reason has to reach the operator's log.
+      assert.ok(
+        server.logs.some((line) => /gave up replacing/.test(line)),
+        `round ${round}: a refused write left no diagnostic in the log`
+      )
+    }
     const declared = Number(view.headers.get('content-length'))
     const body = await view.text()
     assert.equal(
@@ -424,30 +430,6 @@ test('a full client token registry reports enrollment_full, not a retryable busy
   })
 })
 
-/** Boots over a data dir the test prepared, so registry state can be seeded or damaged first. */
-async function startOverDir(dataDir, overrides = {}) {
-  const config = testConfig(dataDir, overrides)
-  const store = createShareStore(config)
-  await store.init()
-  /** @type {string[]} */
-  const logs = []
-  const log = (line) => logs.push(line)
-  const clientTokens = createClientTokenStore({ dataDir, log })
-  await clientTokens.init()
-  const server = http.createServer(createRequestHandler({ store, clientTokens, config, log }))
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
-  const address = /** @type {import('node:net').AddressInfo} */ (server.address())
-  return {
-    base: `http://127.0.0.1:${address.port}`,
-    logs,
-    clientTokens,
-    async close() {
-      server.closeAllConnections?.()
-      await new Promise((resolve) => server.close(resolve))
-    }
-  }
-}
-
 const DAMAGED_REGISTRIES = [
   ['truncated to zero bytes', ''],
   ['not JSON at all', '{ not json'],
@@ -461,7 +443,7 @@ for (const [label, contents] of DAMAGED_REGISTRIES) {
     t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
     await fs.writeFile(path.join(dataDir, 'client-tokens.json'), contents)
 
-    const server = await startOverDir(dataDir)
+    const server = await startTestServer({}, { dataDir })
     t.after(() => server.close())
     assert.equal(server.clientTokens.isDegraded(), true)
 
@@ -497,14 +479,14 @@ test('a damaged registry still serves shares and still honours a static token', 
   t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
 
   // Create a share while the instance is healthy and anonymous-open.
-  const healthy = await startOverDir(dataDir)
+  const healthy = await startTestServer({}, { dataDir })
   const created = await json(
     await writeRequest(`${healthy.base}/api/shares`, { content: HTML, fileName: 'a.html' })
   )
   await healthy.close()
 
   await fs.writeFile(path.join(dataDir, 'client-tokens.json'), '{ not json')
-  const server = await startOverDir(dataDir, { uploadToken: 'static-secret' })
+  const server = await startTestServer({ uploadToken: 'static-secret' }, { dataDir })
   t.after(() => server.close())
   assert.equal(server.clientTokens.isDegraded(), true)
 
@@ -529,7 +511,7 @@ test('a fresh instance with no registry still accepts anonymous writes', async (
   // fresh-instance posture, "registry unreadable" is not.
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-fresh-'))
   t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
-  const server = await startOverDir(dataDir)
+  const server = await startTestServer({}, { dataDir })
   t.after(() => server.close())
   assert.equal(server.clientTokens.isDegraded(), false)
 
@@ -545,7 +527,7 @@ test('an issued token still authenticates after a restart', async (t) => {
   const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-restart-'))
   t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
 
-  const first = await startOverDir(dataDir, { uploadToken: 'static-secret' })
+  const first = await startTestServer({ uploadToken: 'static-secret' }, { dataDir })
   const enrolled = await fetch(`${first.base}/api/client-tokens`, {
     method: 'POST',
     headers: { 'x-enroll-key': DEFAULT_ENROLL_KEY }
@@ -553,7 +535,7 @@ test('an issued token still authenticates after a restart', async (t) => {
   const { token } = await json(enrolled)
   await first.close()
 
-  const second = await startOverDir(dataDir, { uploadToken: 'static-secret' })
+  const second = await startTestServer({ uploadToken: 'static-secret' }, { dataDir })
   t.after(() => second.close())
   assert.equal(second.clientTokens.isDegraded(), false)
   const uploaded = await writeRequest(
@@ -566,4 +548,37 @@ test('an issued token still authenticates after a restart', async (t) => {
   // The durable write leaves no staging file behind.
   const leftovers = (await fs.readdir(dataDir)).filter((name) => name.includes('.tmp'))
   assert.deepEqual(leftovers, [])
+})
+
+test('a viewer who leaves mid-download does not hold the file against the next update', async (t) => {
+  const server = await startTestServer({ maxBytes: 4 * 1024 * 1024 })
+  t.after(() => server.close())
+  const large = `<p>${'y'.repeat(2 * 1024 * 1024)}</p>`
+  const created = await json(
+    await writeRequest(`${server.base}/api/shares`, { content: large, fileName: 'r.html' })
+  )
+
+  // Read one chunk and walk away. pipe() leaves the source running when the destination closes, so
+  // without an explicit destroy the handle survives until GC and, on Windows, the next update of
+  // this share spends its whole rename retry budget and answers 503.
+  const controller = new AbortController()
+  const view = await fetch(created.url, { signal: controller.signal })
+  const reader = view.body.getReader()
+  await reader.read()
+  controller.abort()
+  await reader.cancel().catch(() => {})
+  await new Promise((resolve) => setTimeout(resolve, 200))
+
+  const updated = await updateRequest(
+    `${server.base}/api/shares/${created.id}`,
+    { content: '<p>v2</p>', fileName: 'r.html' },
+    { 'x-edit-token': created.editToken }
+  )
+  const body = await updated.text()
+  assert.equal(
+    updated.status,
+    200,
+    `update after an aborted read answered ${updated.status}: ${body}`
+  )
+  assert.equal(await (await fetch(created.url)).text(), '<p>v2</p>')
 })

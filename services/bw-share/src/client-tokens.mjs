@@ -80,8 +80,10 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
     log(
       `client token registry is unusable because ${reason}. It was left in place at ${path.basename(
         registryPath
-      )}; uploads without a static token and all enrollment are refused until an operator ` +
-        'restores it, or deletes it to accept the fresh-instance posture on purpose.'
+      )}; creating shares without a static upload token and all enrollment are refused until an ` +
+        'operator restores or deletes that file and restarts the service. Deleting it accepts the ' +
+        'fresh-instance posture (open writes) on purpose. Updating or deleting an existing share ' +
+        'still works: those authenticate with the edit token of that share, not with the registry.'
     )
   }
 
@@ -124,7 +126,8 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
       // would come back as "unusable" and take every device's write access with it.
       await writeFileAtomic(
         registryPath,
-        `${JSON.stringify({ version: REGISTRY_VERSION, tokens: entries }, null, 2)}\n`
+        `${JSON.stringify({ version: REGISTRY_VERSION, tokens: entries }, null, 2)}\n`,
+        log
       )
     })
     writeChain = run.catch(() => undefined)

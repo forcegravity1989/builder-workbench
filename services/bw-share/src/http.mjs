@@ -180,6 +180,12 @@ export function createRequestHandler({
           log(`failed to stream share: ${error instanceof Error ? error.message : String(error)}`)
           response.destroy()
         })
+        // pipe() leaves the source running when the destination closes, so a viewer who closes the
+        // tab mid-download would keep the file open until GC. On Windows that held handle makes the
+        // next update of this share burn its rename retries and answer 503.
+        response.on('close', () => {
+          share.stream.destroy()
+        })
         share.stream.pipe(response)
         return
       }
