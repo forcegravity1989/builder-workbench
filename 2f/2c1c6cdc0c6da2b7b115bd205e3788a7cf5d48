@@ -1,0 +1,326 @@
+.bw/skills/recent-design/distill/SKILL.md
+  s_fea8c38b5eafb2::t_54292e22744daf 1-28
+.gitignore
+  s_fea8c38b5eafb2::t_80c4ba7baaf4da 128-129
+.bw/skills/recent-design/polish/SKILL.md
+  s_fea8c38b5eafb2::t_76bdba941fae32 1-28
+.bw/skills/recent-design/README.md
+  s_fea8c38b5eafb2::t_55f8ab9f4eec11 1-19,21-38,40-54,57-59
+  s_fea8c38b5eafb2::t_0f510c961764a9 56
+  s_fea8c38b5eafb2::t_8aa25614eeba98 55
+  s_fea8c38b5eafb2::t_80f1afc08ee796 20
+  s_fea8c38b5eafb2::t_022a41ccfd4ab9 39
+.bw/skills/recent-design/critique/SKILL.md
+  s_fea8c38b5eafb2::t_a0e9fd5ae5f755 1-35
+AGENTS.md
+  s_fea8c38b5eafb2::t_2be3aea95afb70 29
+.gitattributes
+  s_fea8c38b5eafb2::t_59792ac54bd747 17-19
+.claude/skills/recent-design/SKILL.md
+  s_fea8c38b5eafb2::t_b4149a1b73122c 1-6,8-11,13
+  s_fea8c38b5eafb2::t_8b5ae8c36e56d9 12,14-16
+  s_fea8c38b5eafb2::t_433bdb0765a166 7
+.bw/skills/recent-design/quieter/SKILL.md
+  s_fea8c38b5eafb2::t_65d72c4ae0e378 1-28
+.bw/skills/recent-design/animation-vocabulary/SKILL.md
+  s_c7277b997ba253::t_b10e4b4d53cc45 1-179
+.bw/skills/recent-design/choreograph/SKILL.md
+  s_c7277b997ba253::t_88c15543d0c831 1-170
+.bw/skills/recent-design/composition-patterns/AGENTS.md
+  s_c7277b997ba253::t_b8fef1926e75d4 1-946
+.bw/skills/recent-design/composition-patterns/README.md
+  s_c7277b997ba253::t_993a745f829224 1-60
+.bw/skills/recent-design/composition-patterns/SKILL.md
+  s_c7277b997ba253::t_9996518c08b06c 1-89
+.bw/skills/recent-design/composition-patterns/metadata.json
+  s_6bca17e84cb1b7::t_40dabab646d33d 1-11
+.bw/skills/recent-design/composition-patterns/rules/_sections.md
+  s_6bca17e84cb1b7::t_083e6fe9e4631d 1-29
+.bw/skills/recent-design/composition-patterns/rules/_template.md
+  s_054764f825ec57::t_2220a07ea03543 1-24
+.bw/skills/recent-design/emil-design-eng/SKILL.md
+  s_c7277b997ba253::t_0d62bc32b17e19 1-684
+.bw/skills/recent-design/licenses/emilkowalski--skills/LICENSE
+  s_c7277b997ba253::t_a4fb428243955f 1-21
+.bw/skills/recent-design/licenses/jakubkrehel--make-interfaces-feel-better/LICENSE
+  s_c7277b997ba253::t_e0fca3f32c8386 1-21
+.bw/skills/recent-design/licenses/jakubkrehel--oklch-skill/LICENSE
+  s_c7277b997ba253::t_8563fce2cd1e51 1-21
+.bw/skills/recent-design/make-interfaces-feel-better/SKILL.md
+  s_c7277b997ba253::t_46a20f03580ac6 1-187
+.bw/skills/recent-design/make-interfaces-feel-better/agents/openai.yaml
+  s_c7277b997ba253::t_65a2a5d2993d4d 1-3
+.bw/skills/recent-design/make-interfaces-feel-better/animations.md
+  s_c7277b997ba253::t_15a22734f958c6 1-403
+.bw/skills/recent-design/make-interfaces-feel-better/icons.md
+  s_c7277b997ba253::t_e224048804bd60 1-63
+.bw/skills/recent-design/make-interfaces-feel-better/performance.md
+  s_c7277b997ba253::t_e9ffd085208bef 1-88
+.bw/skills/recent-design/make-interfaces-feel-better/surfaces.md
+  s_c7277b997ba253::t_9088ae20a2079f 1-256
+.bw/skills/recent-design/make-interfaces-feel-better/typography.md
+  s_c7277b997ba253::t_8b8a67f41891b7 1-157
+.bw/skills/recent-design/oklch-skill/SKILL.md
+  s_c7277b997ba253::t_1b20276793bc44 1-90
+.bw/skills/recent-design/oklch-skill/accessibility-contrast.md
+  s_c7277b997ba253::t_3982bc8bb23dcb 1-74
+.bw/skills/recent-design/oklch-skill/color-conversion.md
+  s_c7277b997ba253::t_3bc063437d2211 1-53
+.bw/skills/recent-design/oklch-skill/gamut-and-tailwind.md
+  s_c7277b997ba253::t_df9b5c26006dd8 1-103
+.bw/skills/recent-design/oklch-skill/palette-generation.md
+  s_c7277b997ba253::t_522c43d51a952b 1-93
+.bw/skills/recent-design/react-best-practices/rules/js-cache-property-access.md
+  s_054764f825ec57::t_8e777a8d8b4d86 1-28
+.bw/skills/recent-design/react-best-practices/rules/js-cache-storage.md
+  s_054764f825ec57::t_b3f6d258ae4d93 1-70
+.bw/skills/recent-design/react-best-practices/rules/rendering-svg-precision.md
+  s_054764f825ec57::t_b091df7a40e38e 1-28
+.bw/skills/recent-design/react-best-practices/rules/rendering-usetransition-loading.md
+  s_054764f825ec57::t_64b4772a967f45 1-75
+.bw/skills/recent-design/react-best-practices/rules/rerender-move-effect-to-event.md
+  s_6bca17e84cb1b7::t_1e67308871a1c2 1-45
+.bw/skills/recent-design/react-best-practices/rules/rerender-use-deferred-value.md
+  s_6bca17e84cb1b7::t_2ea2abfdac53bc 1-59
+.bw/skills/recent-design/react-best-practices/rules/rerender-use-ref-transient-values.md
+  s_6bca17e84cb1b7::t_d52a87d88e888b 1-73
+.bw/skills/recent-design/react-best-practices/rules/server-after-nonblocking.md
+  s_6bca17e84cb1b7::t_b3fc065af565ac 1-73
+.bw/skills/recent-design/react-best-practices/rules/server-no-shared-module-state.md
+  s_6bca17e84cb1b7::t_65095da1d6fe10 1-50
+.bw/skills/recent-design/react-best-practices/rules/server-serialization.md
+  s_c7277b997ba253::t_c1293a1f8e785e 1-38
+.bw/skills/recent-design/review-animations/SKILL.md
+  s_c7277b997ba253::t_594fa050ebf4f5 1-113
+.bw/skills/recent-design/review-animations/STANDARDS.md
+  s_c7277b997ba253::t_585de170a373c6 1-188
+.bw/skills/recent-design/upstream/impeccable/distill.md
+  s_6bca17e84cb1b7::t_8b1576a60d002f 1-111
+.bw/skills/recent-design/upstream/impeccable/quieter.md
+  s_6bca17e84cb1b7::t_ab46bcb7911468 1-99
+.bw/skills/recent-design/baseline-ui/SKILL.md
+  h_d0d195a8c70989 1-85
+.bw/skills/recent-design/choreograph/RECIPES.md
+  h_d0d195a8c70989 1-287
+.bw/skills/recent-design/composition-patterns/rules/architecture-avoid-boolean-props.md
+  h_d0d195a8c70989 1-100
+.bw/skills/recent-design/composition-patterns/rules/architecture-compound-components.md
+  h_d0d195a8c70989 1-112
+.bw/skills/recent-design/composition-patterns/rules/patterns-children-over-render-props.md
+  h_d0d195a8c70989 1-87
+.bw/skills/recent-design/composition-patterns/rules/patterns-explicit-variants.md
+  h_d0d195a8c70989 1-100
+.bw/skills/recent-design/composition-patterns/rules/react19-no-forwardref.md
+  h_d0d195a8c70989 1-42
+.bw/skills/recent-design/composition-patterns/rules/state-context-interface.md
+  h_d0d195a8c70989 1-191
+.bw/skills/recent-design/composition-patterns/rules/state-decouple-implementation.md
+  h_d0d195a8c70989 1-113
+.bw/skills/recent-design/composition-patterns/rules/state-lift-state.md
+  h_d0d195a8c70989 1-125
+.bw/skills/recent-design/frontend-design/LICENSE.txt
+  h_d0d195a8c70989 1-177
+.bw/skills/recent-design/frontend-design/SKILL.md
+  h_d0d195a8c70989 1-71
+.bw/skills/recent-design/impeccable-source.json
+  h_d0d195a8c70989 1-37
+.bw/skills/recent-design/licenses/anthropics--skills/LICENSE.txt
+  h_d0d195a8c70989 1-177
+.bw/skills/recent-design/licenses/ibelick--ui-skills/LICENSE
+  h_d0d195a8c70989 1-21
+.bw/skills/recent-design/licenses/pbakaus--impeccable/LICENSE
+  h_d0d195a8c70989 1-191
+.bw/skills/recent-design/licenses/pbakaus--impeccable/NOTICE.md
+  h_d0d195a8c70989 1-33
+.bw/skills/recent-design/licenses/vercel-labs--agent-skills/README.upstream.md
+  h_d0d195a8c70989 1-216
+.bw/skills/recent-design/licenses/wshobson--agents/LICENSE
+  h_d0d195a8c70989 1-21
+.bw/skills/recent-design/react-best-practices/AGENTS.md
+  h_d0d195a8c70989 1-3810
+.bw/skills/recent-design/react-best-practices/README.md
+  h_d0d195a8c70989 1-123
+.bw/skills/recent-design/react-best-practices/SKILL.md
+  h_d0d195a8c70989 1-149
+.bw/skills/recent-design/react-best-practices/metadata.json
+  h_d0d195a8c70989 1-15
+.bw/skills/recent-design/react-best-practices/rules/_sections.md
+  h_d0d195a8c70989 1-46
+.bw/skills/recent-design/react-best-practices/rules/_template.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/react-best-practices/rules/advanced-effect-event-deps.md
+  h_d0d195a8c70989 1-56
+.bw/skills/recent-design/react-best-practices/rules/advanced-event-handler-refs.md
+  h_d0d195a8c70989 1-55
+.bw/skills/recent-design/react-best-practices/rules/advanced-init-once.md
+  h_d0d195a8c70989 1-42
+.bw/skills/recent-design/react-best-practices/rules/advanced-use-latest.md
+  h_d0d195a8c70989 1-39
+.bw/skills/recent-design/react-best-practices/rules/async-api-routes.md
+  h_d0d195a8c70989 1-38
+.bw/skills/recent-design/react-best-practices/rules/async-cheap-condition-before-await.md
+  h_d0d195a8c70989 1-37
+.bw/skills/recent-design/react-best-practices/rules/async-defer-await.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/async-dependencies.md
+  h_d0d195a8c70989 1-51
+.bw/skills/recent-design/react-best-practices/rules/async-parallel.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/react-best-practices/rules/async-suspense-boundaries.md
+  h_d0d195a8c70989 1-99
+.bw/skills/recent-design/react-best-practices/rules/bundle-analyzable-paths.md
+  h_d0d195a8c70989 1-63
+.bw/skills/recent-design/react-best-practices/rules/bundle-barrel-imports.md
+  h_d0d195a8c70989 1-60
+.bw/skills/recent-design/react-best-practices/rules/bundle-conditional.md
+  h_d0d195a8c70989 1-31
+.bw/skills/recent-design/react-best-practices/rules/bundle-defer-third-party.md
+  h_d0d195a8c70989 1-49
+.bw/skills/recent-design/react-best-practices/rules/bundle-dynamic-imports.md
+  h_d0d195a8c70989 1-35
+.bw/skills/recent-design/react-best-practices/rules/bundle-preload.md
+  h_d0d195a8c70989 1-50
+.bw/skills/recent-design/react-best-practices/rules/client-event-listeners.md
+  h_d0d195a8c70989 1-74
+.bw/skills/recent-design/react-best-practices/rules/client-localstorage-schema.md
+  h_d0d195a8c70989 1-71
+.bw/skills/recent-design/react-best-practices/rules/client-passive-event-listeners.md
+  h_d0d195a8c70989 1-48
+.bw/skills/recent-design/react-best-practices/rules/client-swr-dedup.md
+  h_d0d195a8c70989 1-56
+.bw/skills/recent-design/react-best-practices/rules/js-batch-dom-css.md
+  h_d0d195a8c70989 1-107
+.bw/skills/recent-design/react-best-practices/rules/js-cache-function-results.md
+  h_d0d195a8c70989 1-80
+.bw/skills/recent-design/react-best-practices/rules/js-combine-iterations.md
+  h_d0d195a8c70989 1-32
+.bw/skills/recent-design/react-best-practices/rules/js-early-exit.md
+  h_d0d195a8c70989 1-50
+.bw/skills/recent-design/react-best-practices/rules/js-flatmap-filter.md
+  h_d0d195a8c70989 1-60
+.bw/skills/recent-design/react-best-practices/rules/js-hoist-regexp.md
+  h_d0d195a8c70989 1-45
+.bw/skills/recent-design/react-best-practices/rules/js-index-maps.md
+  h_d0d195a8c70989 1-37
+.bw/skills/recent-design/react-best-practices/rules/js-length-check-first.md
+  h_d0d195a8c70989 1-49
+.bw/skills/recent-design/react-best-practices/rules/js-min-max-loop.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/js-request-idle-callback.md
+  h_d0d195a8c70989 1-105
+.bw/skills/recent-design/react-best-practices/rules/js-set-map-lookups.md
+  h_d0d195a8c70989 1-24
+.bw/skills/recent-design/react-best-practices/rules/js-tosorted-immutable.md
+  h_d0d195a8c70989 1-57
+.bw/skills/recent-design/react-best-practices/rules/rendering-activity.md
+  h_d0d195a8c70989 1-26
+.bw/skills/recent-design/react-best-practices/rules/rendering-animate-svg-wrapper.md
+  h_d0d195a8c70989 1-47
+.bw/skills/recent-design/react-best-practices/rules/rendering-conditional-render.md
+  h_d0d195a8c70989 1-40
+.bw/skills/recent-design/react-best-practices/rules/rendering-content-visibility.md
+  h_d0d195a8c70989 1-38
+.bw/skills/recent-design/react-best-practices/rules/rendering-hoist-jsx.md
+  h_d0d195a8c70989 1-46
+.bw/skills/recent-design/react-best-practices/rules/rendering-hydration-no-flicker.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/rendering-hydration-suppress-warning.md
+  h_d0d195a8c70989 1-30
+.bw/skills/recent-design/react-best-practices/rules/rendering-resource-hints.md
+  h_d0d195a8c70989 1-85
+.bw/skills/recent-design/react-best-practices/rules/rendering-script-defer-async.md
+  h_d0d195a8c70989 1-68
+.bw/skills/recent-design/react-best-practices/rules/rerender-defer-reads.md
+  h_d0d195a8c70989 1-39
+.bw/skills/recent-design/react-best-practices/rules/rerender-dependencies.md
+  h_d0d195a8c70989 1-45
+.bw/skills/recent-design/react-best-practices/rules/rerender-derived-state-no-effect.md
+  h_d0d195a8c70989 1-40
+.bw/skills/recent-design/react-best-practices/rules/rerender-derived-state.md
+  h_d0d195a8c70989 1-29
+.bw/skills/recent-design/react-best-practices/rules/rerender-functional-setstate.md
+  h_d0d195a8c70989 1-74
+.bw/skills/recent-design/react-best-practices/rules/rerender-lazy-state-init.md
+  h_d0d195a8c70989 1-58
+.bw/skills/recent-design/react-best-practices/rules/rerender-memo-with-default-value.md
+  h_d0d195a8c70989 1-38
+.bw/skills/recent-design/react-best-practices/rules/rerender-memo.md
+  h_d0d195a8c70989 1-44
+.bw/skills/recent-design/react-best-practices/rules/rerender-no-inline-components.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/rerender-simple-expression-in-memo.md
+  h_d0d195a8c70989 1-35
+.bw/skills/recent-design/react-best-practices/rules/rerender-split-combined-hooks.md
+  h_d0d195a8c70989 1-64
+.bw/skills/recent-design/react-best-practices/rules/rerender-transitions.md
+  h_d0d195a8c70989 1-40
+.bw/skills/recent-design/react-best-practices/rules/server-auth-actions.md
+  h_d0d195a8c70989 1-96
+.bw/skills/recent-design/react-best-practices/rules/server-cache-lru.md
+  h_d0d195a8c70989 1-41
+.bw/skills/recent-design/react-best-practices/rules/server-cache-react.md
+  h_d0d195a8c70989 1-76
+.bw/skills/recent-design/react-best-practices/rules/server-dedup-props.md
+  h_d0d195a8c70989 1-65
+.bw/skills/recent-design/react-best-practices/rules/server-hoist-static-io.md
+  h_d0d195a8c70989 1-149
+.bw/skills/recent-design/react-best-practices/rules/server-parallel-fetching.md
+  h_d0d195a8c70989 1-83
+.bw/skills/recent-design/react-best-practices/rules/server-parallel-nested-fetching.md
+  h_d0d195a8c70989 1-34
+.bw/skills/recent-design/sources.json
+  h_d0d195a8c70989 1-660
+.bw/skills/recent-design/typescript-advanced-types/SKILL.md
+  h_d0d195a8c70989 1-318
+.bw/skills/recent-design/typescript-advanced-types/references/details.md
+  h_d0d195a8c70989 1-404
+.bw/skills/recent-design/upstream/impeccable/critique.md
+  h_d0d195a8c70989 1-329
+.bw/skills/recent-design/upstream/impeccable/polish.md
+  h_d0d195a8c70989 1-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "2f2c1c6cdc0c6da2b7b115bd205e3788a7cf5d48",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_054764f825ec57": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "90ca7cde-c8b8-4ac9-8f4b-1aecacb56b91",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_6bca17e84cb1b7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3781255e-2ff0-4d0a-8d21-4988f28fcae4",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_c7277b997ba253": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af69acd2-d360-4f0b-aaa5-8909ad4d0a8d",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    },
+    "s_fea8c38b5eafb2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "27ff8bfa-21fa-419d-9fd1-125e384395b4",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
