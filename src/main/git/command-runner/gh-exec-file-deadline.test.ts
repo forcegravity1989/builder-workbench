@@ -83,10 +83,13 @@ describe('gh exec deadline', () => {
       return child
     })
 
+    const input = JSON.stringify({ body: '中文正文🙂\n'.repeat(6000) })
     const result = await ghExecFileAsync(['api', '--include', 'user/starred/stablyai/orca'], {
-      timeout: 15_000
+      timeout: 15_000,
+      stdin: input
     })
 
+    expect(child.stdin?.end).toHaveBeenCalledWith(input)
     expect(result.stdout).toContain('204 No Content')
     const [command, args, options] = spawnMock.mock.calls[0]
     expect(command).toBe('gh')
