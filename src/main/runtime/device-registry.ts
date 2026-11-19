@@ -41,6 +41,14 @@ export type DeviceEntry = {
   pushRegistration?: MobilePushRegistration
 }
 
+/** Runtime links are read-only by default; full access is an explicit host-owner upgrade. */
+export function effectiveRuntimeAccessMode(device: Pick<DeviceEntry, 'scope' | 'accessMode'>): RuntimeAccessMode {
+  if (device.scope !== 'runtime') {
+    return 'full'
+  }
+  return device.accessMode ?? 'team-read'
+}
+
 function validRelayBinding(value: unknown, deviceId: string): RelayDeviceBinding | undefined {
   if (!value || typeof value !== 'object') {
     return undefined
@@ -109,7 +117,11 @@ export class DeviceRegistry {
       pairedAt: Date.now(),
       lastSeenAt: 0,
       pairingReach,
-      ...(accessMode === 'team-read' ? { accessMode, teamBinding } : {})
+      ...(scope === 'runtime'
+        ? { accessMode, ...(teamBinding ? { teamBinding } : {}) }
+        : accessMode === 'team-read'
+          ? { accessMode, ...(teamBinding ? { teamBinding } : {}) }
+          : {})
     }
     const nextDevices = [...existingDevices, entry]
     // Why: a credential is not valid until its durable registry write succeeds.
@@ -128,15 +140,15 @@ export class DeviceRegistry {
     name: string,
     scope: DeviceScope = 'mobile',
     pairingReach: RuntimePairingReach = 'network',
-    accessMode: RuntimeAccessMode = 'full',
+    accessMode?: RuntimeAccessMode,
     teamBinding?: RuntimeTeamBinding
   ): DeviceEntry {
     const existing = this.devices.find(
       (d) =>
         d.lastSeenAt === 0 &&
         d.scope === scope &&
-        (d.accessMode ?? 'full') === accessMode &&
-        (accessMode !== 'team-read' ||
+        effectiveRuntimeAccessMode(d) === (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) &&
+        ((accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) !== 'team-read' ||
           (d.teamBinding?.teamGroupId === teamBinding?.teamGroupId &&
             d.teamBinding?.memberId === teamBinding?.memberId))
     )
@@ -147,7 +159,13 @@ export class DeviceRegistry {
         ? this.setPairingReach(existing, 'network')
         : existing
     }
-    return this.addDevice(name, scope, pairingReach, accessMode, teamBinding)
+    return this.addDevice(
+      name,
+      scope,
+      pairingReach,
+      accessMode ?? (scope === 'runtime' ? 'team-read' : 'full'),
+      teamBinding
+    )
   }
 
   private setPairingReach(existing: DeviceEntry, pairingReach: RuntimePairingReach): DeviceEntry {
@@ -172,15 +190,15 @@ export class DeviceRegistry {
     name: string,
     scope: DeviceScope = 'mobile',
     pairingReach: RuntimePairingReach = 'network',
-    accessMode: RuntimeAccessMode = 'full',
+    accessMode?: RuntimeAccessMode,
     teamBinding?: RuntimeTeamBinding
   ): DeviceEntry {
     const retainedDevices = this.devices.filter(
       (d) =>
         d.lastSeenAt !== 0 ||
         d.scope !== scope ||
-        (d.accessMode ?? 'full') !== accessMode ||
-        (accessMode === 'team-read' &&
+        effectiveRuntimeAccessMode(d) !== (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) ||
+        ((accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) === 'team-read' &&
           (d.teamBinding?.teamGroupId !== teamBinding?.teamGroupId ||
             d.teamBinding?.memberId !== teamBinding?.memberId))
     )
@@ -189,7 +207,7 @@ export class DeviceRegistry {
       name,
       scope,
       pairingReach,
-      accessMode,
+      accessMode ?? (scope === 'runtime' ? 'team-read' : 'full'),
       teamBinding
     )
   }
@@ -212,7 +230,7 @@ export class DeviceRegistry {
 
   getAccessMode(deviceId: string): RuntimeAccessMode | null {
     const device = this.getDevice(deviceId)
-    return device ? device.accessMode ?? 'full' : null
+    return device ? effectiveRuntimeAccessMode(device) : null
   }
 
   setAccessMode(
@@ -220,9 +238,6 @@ export class DeviceRegistry {
     accessMode: RuntimeAccessMode,
     teamBinding?: RuntimeTeamBinding
   ): boolean {
-    if (accessMode === 'team-read' && !teamBinding) {
-      return false
-    }
     const index = this.devices.findIndex((candidate) => candidate.deviceId === deviceId)
     if (index === -1) {
       return false
@@ -233,7 +248,7 @@ export class DeviceRegistry {
       }
       if (accessMode === 'full') {
         const { accessMode: _accessMode, teamBinding: _teamBinding, ...rest } = device
-        return rest
+        return device.scope === 'runtime' ? { ...rest, accessMode: 'full' } : rest
       }
       return { ...device, accessMode, teamBinding }
     })
@@ -398,8 +413,8 @@ export class DeviceRegistry {
         // Why: registries written before this field existed only ever held network-reach grants (phones and
         // LAN links), so a missing value must keep binding every interface on reconnect.
         pairingReach: device.pairingReach === 'this-computer' ? 'this-computer' : 'network',
-        ...(device.accessMode === 'team-read' && device.teamBinding
-          ? { accessMode: 'team-read' as const, teamBinding: device.teamBinding }
+        ...(device.accessMode === 'team-read'
+          ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
           : {}),
         // Why: a malformed row must degrade to "no background push", never fail the load
         // and strand every paired device.

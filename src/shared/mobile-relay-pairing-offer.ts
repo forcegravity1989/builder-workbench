@@ -105,13 +105,6 @@ export function createPairingOfferSchema(now: () => number = () => Date.now()) {
           message: 'Relay offers require a canonical 32-byte public key'
         })
       }
-      if (offer.accessMode === 'team-read' && !offer.teamBinding) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['teamBinding'],
-          message: 'Team-read offers require a team binding'
-        })
-      }
       if (offer.teamBinding && offer.accessMode !== 'team-read') {
         ctx.addIssue({
           code: 'custom',

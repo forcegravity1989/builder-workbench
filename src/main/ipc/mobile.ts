@@ -7,7 +7,7 @@ import type {
 import type { MobilePairingConnectionMode } from '../../shared/mobile-pairing-connection-mode'
 import { classifyRemotePairingHostname } from '../../shared/remote-pairing-address'
 import type { RuntimePairingReach } from '../../shared/runtime-pairing-reach'
-import type { DeviceEntry } from '../runtime/device-registry'
+import { effectiveRuntimeAccessMode, type DeviceEntry } from '../runtime/device-registry'
 import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../shared/runtime-session-contracts'
 import { NETWORK_EXPOSURE_FAILED_GUIDANCE } from '../runtime/network-exposure-guidance'
 import {
@@ -46,8 +46,8 @@ function toRuntimeAccessGrant(device: DeviceEntry): RuntimeAccessGrant {
     name: device.name,
     createdAt: device.pairedAt,
     lastSeenAt: device.lastSeenAt > 0 ? device.lastSeenAt : null,
-    ...(device.accessMode === 'team-read'
-      ? { accessMode: device.accessMode, teamBinding: device.teamBinding }
+    ...(effectiveRuntimeAccessMode(device) === 'team-read'
+      ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
       : {})
   }
 }
@@ -280,7 +280,7 @@ export function registerMobileHandlers(
         const device = registry.getDevice(deviceId)
         if (
           device?.scope === 'runtime' &&
-          device.accessMode === 'team-read' &&
+          effectiveRuntimeAccessMode(device) === 'team-read' &&
           rpcServer.getMobileSocketWiring?.()?.isDeviceConnected(device.deviceId) === true &&
           registry.setAccessMode(device.deviceId, 'full')
         ) {

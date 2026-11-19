@@ -1,4 +1,4 @@
-import type { DeviceEntry, DeviceRegistry, DeviceScope } from '../device-registry'
+import { effectiveRuntimeAccessMode, type DeviceEntry, type DeviceRegistry, type DeviceScope } from '../device-registry'
 import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../shared/runtime-session-contracts'
 import type { E2EEKeypair } from '../e2ee-keypair'
 import type { MobileSocketWiring } from '../rpc/mobile-socket-wiring'
@@ -153,8 +153,8 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       publicKeyB64,
       pairedDeviceId: device.deviceId,
       scope: 'runtime',
-      ...(device.accessMode === 'team-read'
-        ? { accessMode: device.accessMode, teamBinding: device.teamBinding }
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
         : {})
     })
     return {
@@ -212,16 +212,16 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     const endpoint = advertised.endpoint
     const deviceName = args.name ?? `CLI ${new Date().toLocaleDateString()}`
     const scope = args.scope ?? 'runtime'
-    if (args.accessMode === 'team-read' && (scope !== 'runtime' || !args.teamBinding)) {
+    if (args.accessMode === 'team-read' && scope !== 'runtime') {
       return pairingUnavailable(
         'invalid_access_mode',
-        'Team-read pairing requires a runtime scope and a team binding.'
+        'Team-read pairing requires a runtime scope.'
       )
     }
     let device: DeviceEntry
     try {
       const reach = args.reach ?? 'network'
-      const accessMode = args.accessMode ?? 'full'
+      const accessMode = args.accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')
       device = args.rotate
         ? this.deviceRegistry.rotatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding)
         : this.deviceRegistry.getOrCreatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding)
@@ -236,8 +236,8 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       publicKeyB64,
       pairedDeviceId: device.deviceId,
       scope,
-      ...(device.accessMode === 'team-read'
-        ? { accessMode: device.accessMode, teamBinding: device.teamBinding }
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
         : {})
     })
     return {

@@ -7,7 +7,7 @@ import { fingerprintAuthenticatedPairingCredential } from '../rpc/orchestration-
 import type { AuthenticatedMobileSocket } from '../rpc/mobile-socket-wiring'
 import type { RpcRequest, RpcResponse } from '../rpc/core'
 import type { WebSocketTransport } from '../rpc/ws-transport'
-import type { DeviceScope } from '../device-registry'
+import { effectiveRuntimeAccessMode, type DeviceScope } from '../device-registry'
 import { RuntimeRpcRequestAdmission } from './runtime-rpc-request-admission'
 import { classifyRuntimeLongPoll } from './runtime-rpc-long-poll'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
@@ -86,13 +86,14 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       )
       return
     }
-    const teamReadDenial = teamReadDenialReason(device.accessMode, request.method)
+    const accessMode = effectiveRuntimeAccessMode(device)
+    const teamReadDenial = teamReadDenialReason(accessMode, request.method)
     if (teamReadDenial) {
       this.getRuntimeAccessAudit().record({
         at: Date.now(),
         deviceId: device.deviceId,
         deviceName: device.name,
-        accessMode: device.accessMode ?? 'full',
+        accessMode,
         ...(device.teamBinding
           ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
           : undefined),
@@ -141,7 +142,7 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
           at: Date.now(),
           deviceId: device.deviceId,
           deviceName: device.name,
-          accessMode: device.accessMode ?? 'full',
+          accessMode,
           ...(device.teamBinding
             ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
             : undefined),
@@ -186,7 +187,7 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         connectionId,
         clientId: token,
         pairedDeviceId: device.deviceId,
-        accessMode: device.accessMode ?? 'full',
+        accessMode,
         teamBinding: device.teamBinding,
         // Why: gates the mobile-only payload diet so full-screen web/desktop clients aren't truncated.
         clientKind: device.scope,
