@@ -1,0 +1,34 @@
+src/renderer/src/components/github-item-dialog/open-dialog/github-item-dialog.tsx
+  h_a7e858313fdba5 13,87-88,90,93
+src/renderer/src/components/use-task-page-workbench-scope.ts
+  h_a7e858313fdba5 26,48-50
+src/renderer/src/components/use-task-page-workspace-actions.ts
+  h_a7e858313fdba5 24,99-103,111,235,238
+src/renderer/src/workbench/issue-start-action.ts
+  h_a7e858313fdba5 2,60-65
+src/shared/feature-interaction-catalog.ts
+  h_a7e858313fdba5 34,116
+src/shared/feature-interaction-categories.ts
+  h_a7e858313fdba5 55
+src/shared/feature-interactions.test.ts
+  h_a7e858313fdba5 67
+src/shared/telemetry-app-event-schemas.ts
+  h_a7e858313fdba5 170-188
+src/shared/telemetry-event-registry.ts
+  h_a7e858313fdba5 9,111
+src/shared/telemetry-events.test.ts
+  h_a7e858313fdba5 698-718
+src/shared/telemetry-events.ts
+  h_a7e858313fdba5 47-48,56-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "49ab5e8dd911bde3ff980510bb5294a4a7ee7db8",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
