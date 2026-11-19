@@ -25,6 +25,13 @@ export const HEADLESS_RUNTIME_WINDOW_ID = 0
 
 export type DeviceScope = 'mobile' | 'runtime'
 
+export type RuntimeAccessMode = 'full' | 'team-read'
+
+export type RuntimeTeamBinding = {
+  teamGroupId: string
+  memberId: string
+}
+
 export type RuntimeTerminalDriverState =
   | { kind: 'idle' }
   | { kind: 'desktop' }

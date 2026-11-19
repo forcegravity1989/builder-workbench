@@ -10,7 +10,7 @@ import {
   isUnreadableError,
   writeSecureJsonFile
 } from '../../shared/secure-file'
-import type { DeviceScope } from '../../shared/runtime-types'
+import type { DeviceScope, RuntimeAccessMode, RuntimeTeamBinding } from '../../shared/runtime-types'
 import { DEVICE_REGISTRY_FILENAME } from './mobile-pairing-files'
 import type { RelayDeviceBinding } from './relay/relay-revoke-outbox'
 import type { MobilePairingConnectionMode } from '../../shared/mobile-pairing-connection-mode'
@@ -34,6 +34,8 @@ export type DeviceEntry = {
   // Why: STA-2370 — a grant minted for "This computer only" proves nothing about off-host reach when its
   // client connects, so the bind decision must be able to tell it apart from a LAN/phone grant.
   pairingReach?: RuntimePairingReach
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
   // Why: survives a desktop restart so the host can keep pushing without the phone
   // re-registering. Absent on every registry written before background push existed.
   pushRegistration?: MobilePushRegistration
@@ -77,16 +79,27 @@ export class DeviceRegistry {
   addDevice(
     name: string,
     scope: DeviceScope = 'mobile',
-    pairingReach: RuntimePairingReach = 'network'
+    pairingReach: RuntimePairingReach = 'network',
+    accessMode: RuntimeAccessMode = 'full',
+    teamBinding?: RuntimeTeamBinding
   ): DeviceEntry {
-    return this.createAndPersistDevice(this.devices, name, scope, pairingReach)
+    return this.createAndPersistDevice(
+      this.devices,
+      name,
+      scope,
+      pairingReach,
+      accessMode,
+      teamBinding
+    )
   }
 
   private createAndPersistDevice(
     existingDevices: DeviceEntry[],
     name: string,
     scope: DeviceScope,
-    pairingReach: RuntimePairingReach
+    pairingReach: RuntimePairingReach,
+    accessMode: RuntimeAccessMode,
+    teamBinding?: RuntimeTeamBinding
   ): DeviceEntry {
     const entry: DeviceEntry = {
       deviceId: randomUUID(),
@@ -95,7 +108,8 @@ export class DeviceRegistry {
       scope,
       pairedAt: Date.now(),
       lastSeenAt: 0,
-      pairingReach
+      pairingReach,
+      ...(accessMode === 'team-read' ? { accessMode, teamBinding } : {})
     }
     const nextDevices = [...existingDevices, entry]
     // Why: a credential is not valid until its durable registry write succeeds.
@@ -113,9 +127,19 @@ export class DeviceRegistry {
   getOrCreatePendingDevice(
     name: string,
     scope: DeviceScope = 'mobile',
-    pairingReach: RuntimePairingReach = 'network'
+    pairingReach: RuntimePairingReach = 'network',
+    accessMode: RuntimeAccessMode = 'full',
+    teamBinding?: RuntimeTeamBinding
   ): DeviceEntry {
-    const existing = this.devices.find((d) => d.lastSeenAt === 0 && d.scope === scope)
+    const existing = this.devices.find(
+      (d) =>
+        d.lastSeenAt === 0 &&
+        d.scope === scope &&
+        (d.accessMode ?? 'full') === accessMode &&
+        (accessMode !== 'team-read' ||
+          (d.teamBinding?.teamGroupId === teamBinding?.teamGroupId &&
+            d.teamBinding?.memberId === teamBinding?.memberId))
+    )
     if (existing) {
       // Why: the same pending token can be re-advertised at a broader reach; widen it but never narrow it,
       // or a link already handed out for off-host use would stop being served after the next launch.
@@ -123,7 +147,7 @@ export class DeviceRegistry {
         ? this.setPairingReach(existing, 'network')
         : existing
     }
-    return this.addDevice(name, scope, pairingReach)
+    return this.addDevice(name, scope, pairingReach, accessMode, teamBinding)
   }
 
   private setPairingReach(existing: DeviceEntry, pairingReach: RuntimePairingReach): DeviceEntry {
@@ -147,10 +171,27 @@ export class DeviceRegistry {
   rotatePendingDevice(
     name: string,
     scope: DeviceScope = 'mobile',
-    pairingReach: RuntimePairingReach = 'network'
+    pairingReach: RuntimePairingReach = 'network',
+    accessMode: RuntimeAccessMode = 'full',
+    teamBinding?: RuntimeTeamBinding
   ): DeviceEntry {
-    const retainedDevices = this.devices.filter((d) => d.lastSeenAt !== 0 || d.scope !== scope)
-    return this.createAndPersistDevice(retainedDevices, name, scope, pairingReach)
+    const retainedDevices = this.devices.filter(
+      (d) =>
+        d.lastSeenAt !== 0 ||
+        d.scope !== scope ||
+        (d.accessMode ?? 'full') !== accessMode ||
+        (accessMode === 'team-read' &&
+          (d.teamBinding?.teamGroupId !== teamBinding?.teamGroupId ||
+            d.teamBinding?.memberId !== teamBinding?.memberId))
+    )
+    return this.createAndPersistDevice(
+      retainedDevices,
+      name,
+      scope,
+      pairingReach,
+      accessMode,
+      teamBinding
+    )
   }
 
   removeDevice(deviceId: string): boolean {
@@ -167,6 +208,38 @@ export class DeviceRegistry {
 
   getDevice(deviceId: string): DeviceEntry | null {
     return this.devices.find((d) => d.deviceId === deviceId) ?? null
+  }
+
+  getAccessMode(deviceId: string): RuntimeAccessMode | null {
+    const device = this.getDevice(deviceId)
+    return device ? device.accessMode ?? 'full' : null
+  }
+
+  setAccessMode(
+    deviceId: string,
+    accessMode: RuntimeAccessMode,
+    teamBinding?: RuntimeTeamBinding
+  ): boolean {
+    if (accessMode === 'team-read' && !teamBinding) {
+      return false
+    }
+    const index = this.devices.findIndex((candidate) => candidate.deviceId === deviceId)
+    if (index === -1) {
+      return false
+    }
+    const next = this.devices.map((device, candidateIndex) => {
+      if (candidateIndex !== index) {
+        return device
+      }
+      if (accessMode === 'full') {
+        const { accessMode: _accessMode, teamBinding: _teamBinding, ...rest } = device
+        return rest
+      }
+      return { ...device, accessMode, teamBinding }
+    })
+    this.save(next)
+    this.devices = next
+    return true
   }
 
   getPendingDevice(scope: DeviceScope = 'mobile'): DeviceEntry | null {
@@ -325,6 +398,9 @@ export class DeviceRegistry {
         // Why: registries written before this field existed only ever held network-reach grants (phones and
         // LAN links), so a missing value must keep binding every interface on reconnect.
         pairingReach: device.pairingReach === 'this-computer' ? 'this-computer' : 'network',
+        ...(device.accessMode === 'team-read' && device.teamBinding
+          ? { accessMode: 'team-read' as const, teamBinding: device.teamBinding }
+          : {}),
         // Why: a malformed row must degrade to "no background push", never fail the load
         // and strand every paired device.
         pushRegistration: parseMobilePushRegistration(device.pushRegistration)

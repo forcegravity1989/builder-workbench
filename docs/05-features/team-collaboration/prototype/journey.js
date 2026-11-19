@@ -226,12 +226,12 @@
       }
       raw.bound ??= { lead: false, lin: false, chen: false }
       raw.directory = normalizeDirectory(raw.directory)
-      raw.directoryEditable = { lead: true, lin: true, chen: true, ...(raw.directoryEditable ?? {}) }
+      raw.directoryEditable = { lead: true, lin: true, chen: true, ...raw.directoryEditable }
       raw.generatedLinks ??= raw.offered ? { lin: samplePairing } : {}
       raw.accessModes ??= { lead: {}, lin: {}, chen: {} }
       raw.teamConnections ??= { lead: {}, lin: {}, chen: {} }
       raw.teamEndpoints ??= {}
-      raw.accessModes = { lead: {}, lin: {}, chen: {}, ...(raw.accessModes ?? {}) }
+      raw.accessModes = { lead: {}, lin: {}, chen: {}, ...raw.accessModes }
       return raw
     } catch {
       return fixture(false)
@@ -378,8 +378,10 @@
     delete directory.team_space_id
     const previousHosts = new Map((directory.hosts ?? []).map((host) => [host.member_id, host]))
     directory.hosts = directoryMembers().map((member) => {
-      const previous = { ...(previousHosts.get(member.member_id) ?? {}) }
-      if (!previous.orca_endpoint && previous.address) previous.orca_endpoint = previous.address
+      const previous = { ...previousHosts.get(member.member_id) }
+      if (!previous.orca_endpoint && previous.address) {
+        previous.orca_endpoint = previous.address
+      }
       delete previous.address
       delete previous.host_status
       return {
@@ -420,7 +422,7 @@
 
   function endpointFor(person, directory = knownDirectory()) {
     const record = directoryHostRecord(person, directory)
-    if (record && Object.prototype.hasOwnProperty.call(record, 'orca_endpoint')) {
+    if (record && Object.hasOwn(record, 'orca_endpoint')) {
       return record.orca_endpoint ?? ''
     }
     return state.teamEndpoints?.[person] ?? ''
@@ -429,7 +431,9 @@
   function hydrateEndpoints(directory = state.directory) {
     Object.keys(names).forEach((person) => {
       const endpoint = directoryHostRecord(person, directory)?.orca_endpoint
-      if (endpoint) state.teamEndpoints[person] = endpoint
+      if (endpoint) {
+        state.teamEndpoints[person] = endpoint
+      }
     })
   }
 
@@ -558,7 +562,9 @@
       (data) => {
         const repoId = String(data.get('repo') || '')
         const repo = catalogRepos[repoId]
-        if (!repo) return
+        if (!repo) {
+          return
+        }
         const target = draft ?? state.directory
         target.projects ??= []
         if (target.projects.some((entry) => repoIdForEntry(entry) === repoId)) {
@@ -1096,7 +1102,9 @@
     },
     'register-project': () => registerProjectDialog(current().directoryDraft),
     'open-space': (value) => {
-      if (value) window.open(value, '_blank', 'noopener')
+      if (value) {
+        window.open(value, '_blank', 'noopener')
+      }
       notify(`已打开 WeLink 群空间${value ? ` · ${value}` : ''}`)
     },
     'open-sharing-settings': () => {
@@ -1341,7 +1349,9 @@
     if (event.target.matches('input[data-address]')) {
       const person = event.target.dataset.address
       const host = current().directoryDraft?.hosts?.find((entry) => entry.member_id === employees[person])
-      if (host) host.orca_endpoint = event.target.value.trim()
+      if (host) {
+        host.orca_endpoint = event.target.value.trim()
+      }
     }
     if (event.target.hasAttribute('data-filter')) {
       const query = event.target.value.trim()

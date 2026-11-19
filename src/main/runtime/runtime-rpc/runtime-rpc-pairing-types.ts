@@ -66,6 +66,7 @@ export type PairingOfferUnavailableReason =
   | 'invalid_advertised_endpoint'
   | 'relay_mint_failed'
   | 'network_exposure_failed'
+  | 'invalid_access_mode'
 
 export type PairingOfferUnavailable = {
   available: false
