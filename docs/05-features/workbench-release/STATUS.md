@@ -16,7 +16,7 @@ Workbench 的固定发布动作已由 `.github/workflows/bw-release.yml` 承接�
 | 2 spec | ◐ | 出包、发布、正文规范、报告归档和 R01–R06 见 [spec.md](spec.md)。 |
 | 3 实现设计 | ◐ | [workbench-release 技能](../../../.claude/skills/workbench-release/SKILL.md)、`.github/workflows/bw-release.yml`、`build-win-workbench.mjs`、`release-win-workbench.mjs` 以及两份正文规范和模板。该入口是脚本与 workflow 资产，没有单独 `design.md`。 |
 | 4 TDD / 协议看护 | ◐ | `config/scripts/release-win-workbench.test.mjs` 覆盖标签解析、资产核对、gh 参数、授权闸、阻断项聚合和版本账本门禁。出包脚本本身没有独立单测。 |
-| 5 验收点 E2E | ◐ | R01–R06 是发布工具操作验收点。v0.6.0 对 R01、R02、R03、R05 有真实发布记录，R04 失败分支和 R06 报告尚未实走。当前没有注册到 `tests/e2e` 的 Workbench 业务 E2E。 |
+| 5 验收点 E2E | ◐ | R01–R06 是发布工具操作验收点。R01、R02、R03、R05 有真实发布证据，R04 失败分支和 R06 报告尚未实走。当前没有注册到 `tests/e2e` 的 Workbench 业务 E2E。 |
 | 6 用户旅程 E2E | — | 研发保障能力没有独立 Builder 用户旅程。历史 RJ01 只作 crosswalk 线索，不计入 W01–W05，也不注册为当前 E2E。 |
 
 ## 验收点证据
@@ -29,11 +29,11 @@ Workbench 的固定发布动作已由 `.github/workflows/bw-release.yml` 承接�
 | R04 | ◐ | workflow 与发布脚本阻断项 | 标签已存在、资产缺失、未登录等失败分支没有独立运行记录。 |
 | R05 | ● | 版本描述规范、模板和 workflow `notes` 输入 | 真实发布证据确认正文按「这版有什么变化」单节发布并读回核验。 |
 | R06 | ◐ | 验收报告规范、模板和 `preparedArtifacts` 登记 | 仓内规范与模板存在，尚无一份真实版本收尾报告的读回证据。 |
-| RJ01（历史） | ◐ | 出包、正文、授权发布、读回和报告归档链 | v0.6.0 走到发布读回，验收报告段未执行。该标识保留作历史 crosswalk。 |
+| RJ01（历史） | ◐ | 出包、正文、授权发布、读回和报告归档链 | 既有证据走到发布读回，验收报告段未执行。该标识保留作历史 crosswalk。 |
 
 ## 未验证边界
 
 - 安装包真实安装和升级链仍需在目标 Windows 环境验证。
-- 版本账本修复已在 workflow 和本机脚本中接入，历史 v0.6.0 产物不代表修复后的版本验证结果。
+- 版本账本校验已在 workflow 和本机脚本中接入，安装与升级验证仍需对应环境独立执行。
 - 失败分支、验收报告真实收尾和报告登记读回尚未形成独立运行证据。
 - 本地脚本与 GitHub runner 的一致性需要在 Actions 运行中复核。
