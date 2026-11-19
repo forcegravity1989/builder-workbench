@@ -2,6 +2,8 @@
 
 > **维护约定**：给设计、实现、内容维护和验收者读取。本篇只维护探索目录的导航、内容区域、状态和接入约束。用户结果见 [intent](intent.md)，当前六环和证据边界见 [STATUS](STATUS.md)，内容范围和覆盖矩阵见 [引导规范与矩阵](../../04-design-system/guidance.md)。不追加开发流水或被替代方案。
 
+布局评审使用 [可点原型](prototype.html)。原型只表达目标布局和内容顺序，不证明生产行为或业务旅程已经通过。
+
 ## 范围与完整旅程
 
 探索 BW 是产品基础资产。它把 W01–W05 的核心工作联系和功能入口组织到一个可回看的界面，业务结果由各特性承接。
@@ -58,7 +60,7 @@ W06“持续维护”和 W07“沉淀复用”在矩阵中保持建设中描述�
 - 内容优先扩展现有目录与渲染组件，复用 Orca 的播放器、BW 组件和设计 token。不要为探索另造业务状态或执行通道。
 - 内容动作只在目标内容、功能入口和适用验证都存在时展示。加载失败沿内容的真实失败提示和恢复动作，不用“内容准备中”掩盖失败。
 - 样例动画可以使用安全 fixture 和独立样例。它必须明确为播放内容，不读写用户项目，不代表业务状态。
-- 原型文件位于本目录的 prototype/ 和 prototype.html。它们只用于布局评审。本次资产整改不修改原型、HTML、JSX、CSS 或生成物。
+- 原型文件位于本目录的 prototype/ 和 prototype.html。它们只用于布局评审，不是业务实现入口。HTML、JSX、CSS 和生成物沿原型维护规范管理。
 
 当前实现入口包括 [FeatureWallModal](../../../src/renderer/src/components/feature-wall/FeatureWallModal.tsx)、[FeatureWallTourPanel](../../../src/renderer/src/components/feature-wall/FeatureWallTourPanel.tsx)、[FeatureWallRail](../../../src/renderer/src/components/feature-wall/FeatureWallRail.tsx)、[FeatureWallTourSurface](../../../src/renderer/src/components/feature-wall/FeatureWallTourSurface.tsx)、[原生内容目录](../../../src/shared/feature-wall-workflows.ts) 和 [本地化内容](../../../src/renderer/src/components/feature-wall/feature-wall-tour-localized-copy.ts)。这些入口负责目录和播放器接线，不改变所属特性的业务事实。
 
