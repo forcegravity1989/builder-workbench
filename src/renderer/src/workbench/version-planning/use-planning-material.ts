@@ -11,6 +11,7 @@ import {
   useMaterialAutosave,
   type MaterialAutosaveOptions
 } from '../version-cycle/use-material-autosave'
+import { isWorkspaceGoneError, workspaceGoneMessage } from '../error-feedback'
 
 export function planningDraftKey(scopeKey: string, version: string) {
   return `workbench.plan.draft:${scopeKey}:${encodeURIComponent(version)}`
@@ -27,6 +28,9 @@ export function usePlanningMaterial(
   const [busy, setBusy] = useState(false)
   const selection = useRef({ value: 0 })
   const listRequest = useRef({ value: 0 })
+  // Set once the scope stops resolving (version cleanup deleted the worktree): every later poll
+  // would fail the same way, so the intervals stand down instead of refreshing a dead error (#727).
+  const gone = useRef(false)
   const [persistError, setPersistError] = useState<string | null>(null)
   const current = useRef({ port, scopeKey })
   current.current = { port, scopeKey }
@@ -87,7 +91,12 @@ export function usePlanningMaterial(
       }
     } catch (reason) {
       if (isCurrent() && request === listRequest.current.value) {
-        setError(reason instanceof Error ? reason.message : '无法列出版本')
+        if (isWorkspaceGoneError(reason)) {
+          gone.current = true
+          setError(workspaceGoneMessage())
+        } else {
+          setError(reason instanceof Error ? reason.message : '无法列出版本')
+        }
       }
     }
   }, [port, isCurrent])
@@ -95,13 +104,18 @@ export function usePlanningMaterial(
   useEffect(() => {
     selection.current.value++
     controller?.clear()
+    gone.current = false
     setDraft(null)
     setVersions([])
     setError(null)
     setPersistError(null)
     setBusy(false)
     void list()
-    const timer = setInterval(() => void list(), 5000)
+    const timer = setInterval(() => {
+      if (!gone.current) {
+        void list()
+      }
+    }, 5000)
     const selections = selection.current
     const lists = listRequest.current
     return () => {
@@ -196,10 +210,18 @@ export function usePlanningMaterial(
       return
     }
     const timer = setInterval(() => {
+      if (gone.current) {
+        return
+      }
       const token = selection.current.value
       void controller.refresh().catch((reason) => {
         if (isCurrent() && token === selection.current.value) {
-          setError(String(reason))
+          if (isWorkspaceGoneError(reason)) {
+            gone.current = true
+            setError(workspaceGoneMessage())
+          } else {
+            setError(String(reason))
+          }
         }
       })
     }, 5000)
