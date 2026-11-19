@@ -13,6 +13,8 @@ The Workbench lane keeps at most one main user journey for each of the five Expl
 
 Explore BW's work journeys and feature catalog are the coverage index, not a substitute for real feature evidence. Keep one small Explore smoke for catalog navigation; map each active feature to its one real Electron journey. Before adding a spec, classify the need as a protocol check, an acceptance-point check or a main journey. Move pure calculations and data contracts to the relevant unit or protocol suite. Merge checks that exercise the same user result and read-back. Add a branch or failure journey only when the feature specification names the risk and the existing main journey cannot observe it. The default Workbench CI entrypoint is the `testMatch` set in `tests/playwright.config.ts`, so a source file outside that entrypoint is not coverage until the configuration and feature registration both point to it.
 
+This is the target rule for new coverage. Existing feature `STATUS.md` IDs such as PJ/AJ/CJ/IJ/J/QL/RJ remain historical until the feature-asset migration establishes a W01–W05 crosswalk; do not treat their presence as current registration or add a same-named spec during the migration gap.
+
 ## Workbench test locations
 
 - TDD and protocol checks stay beside the implementation under `src/**` as `*.test.ts(x)` and are governed by the Workbench Vitest ratchet.
