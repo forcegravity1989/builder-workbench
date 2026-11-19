@@ -107,7 +107,7 @@ function toWelinkReportError(error: unknown): WelinkReportError {
   return new WelinkReportError(classifyWelinkErrorText(errorOutput(error)), errorOutput(error))
 }
 
-async function runWelinkCli(
+export async function runWelinkCli(
   route: WelinkRoute,
   args: string[],
   timeoutMs: number
@@ -121,6 +121,66 @@ async function runWelinkCli(
   } catch (error) {
     throw toWelinkReportError(error)
   }
+}
+
+export async function downloadOneboxFile(
+  route: WelinkRoute,
+  spaceId: string,
+  fileId: string,
+  outputDirectory: string
+): Promise<string> {
+  await runWelinkCli(
+    route,
+    ['onebox', 'file-download', '--space-id', spaceId, '--file-id', fileId, '--output', outputDirectory],
+    WELINK_UPLOAD_TIMEOUT_MS
+  )
+  return outputDirectory
+}
+
+export async function findOneboxFile(
+  route: WelinkRoute,
+  spaceId: string,
+  name: string
+): Promise<OneboxNode | null> {
+  const { stdout } = await runWelinkCli(
+    route,
+    ['onebox', 'node-search', '--space-id', spaceId, '--name', name, '--exact-search', '--file-type', 'file'],
+    WELINK_METADATA_TIMEOUT_MS
+  )
+  const parsed = parseFirstJsonObject(stdout)
+  const candidates = Array.isArray(parsed?.files)
+    ? parsed.files
+    : Array.isArray(parsed?.nodes)
+      ? parsed.nodes
+      : []
+  const candidate = candidates.find((entry) => {
+    if (!entry || typeof entry !== 'object') return false
+    const record = entry as Record<string, unknown>
+    return (record.name ?? record.fileName) === name
+  })
+  if (!candidate || typeof candidate !== 'object') return null
+  const record = candidate as Record<string, unknown>
+  const id = normalizeOneboxId(record.id ?? record.fileId ?? record.nodeId)
+  return id ? { id, name } : null
+}
+
+export async function uploadOneboxFile(
+  route: WelinkRoute,
+  spaceId: string,
+  folderId: string,
+  windowsFilePath: string
+): Promise<string> {
+  const cliPath = route.wslDistro ? toLinuxPath(windowsFilePath) : windowsFilePath
+  const { stdout } = await runWelinkCli(
+    route,
+    ['onebox', 'file-upload', '--space-id', spaceId, '--parent', folderId, cliPath],
+    WELINK_UPLOAD_TIMEOUT_MS
+  )
+  const fileId = parseUploadedFileId(stdout)
+  if (!fileId) {
+    throw new WelinkReportError('unknown', 'file-upload printed no File ID')
+  }
+  return fileId
 }
 
 async function withRateLimitRetry<T>(fn: () => Promise<T>): Promise<T> {
@@ -205,7 +265,7 @@ export function parseFolderListing(json: Record<string, unknown> | null): {
   return { folders }
 }
 
-async function listFolder(
+export async function listFolder(
   route: WelinkRoute,
   spaceId: string,
   parentId: string
@@ -262,7 +322,7 @@ async function listFolder(
   }
 }
 
-async function createFolder(
+export async function createFolder(
   route: WelinkRoute,
   spaceId: string,
   parentId: string,
