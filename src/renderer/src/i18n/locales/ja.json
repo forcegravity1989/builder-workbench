@@ -14159,13 +14159,6 @@
         "needsActionChip": "{{value0}} 件の対応が必要",
         "unresolvedChip": "{{value0}} 件未解決"
       },
-      "artifacts": {
-        "ArtifactsPage": {
-          "deleteTitle": "成果物を削除しますか？",
-          "deleteDescription": "「{{name}}」は公開リンクで利用できなくなります。",
-          "delete": "削除"
-        }
-      },
       "ComposerParentWorktreePicker": {
         "label": "親ワークツリー",
         "noParent": "親なし",

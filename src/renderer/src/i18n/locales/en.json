@@ -11662,20 +11662,8 @@
           "linkStepTitle": "Copy the public link",
           "linkStepDescription": "After publishing, copy the link and send it to your team.",
           "manageStepTitle": "Update or remove the link",
-          "showButton": "Show Artifacts Button",
-          "showButtonDescription": "Show the Artifacts shortcut in the sidebar.",
-          "allowPublishing": "Allow publishing public artifact links",
-          "allowPublishingWebDescription": "Desktop only. Open Settings → Artifacts on the host device to change this setting.",
-          "allowPublishingDescription": "Publish HTML and Markdown files as links anyone with the URL can open. Existing links remain until you delete them from Artifacts.",
-          "allowPublishingSearchDescription": "Allow Orca to publish HTML and Markdown files as public links.",
           "keywordArtifacts": "artifacts",
           "keywordShare": "share",
-          "keywordPublish": "publish",
-          "keywordPublic": "public",
-          "keywordPermission": "permission",
-          "keywordHtml": "HTML",
-          "keywordMarkdown": "Markdown",
-          "keywordUpload": "upload",
           "manageStepDescriptionV2": "Reopen the same file and use Share as artifact to publish new content over the same link.",
           "sharedLinksTitle": "Files you've shared",
           "sharedLinksDescription": "Links this computer created. Deleting a link makes it stop working immediately.",
@@ -16669,60 +16657,8 @@
         "streamCapabilityUnsupported": "The selected runtime does not support remote browser streaming."
       },
       "artifacts": {
-        "ArtifactsPage": {
-          "signInAgain": "Sign in to Orca again to load artifacts.",
-          "loadFailed": "Could not load artifacts.",
-          "deleteTitle": "Delete artifact?",
-          "deleteDescription": "“{{name}}” will no longer be available at its public link.",
-          "delete": "Delete",
-          "deleteFailed": "Could not delete the artifact.",
-          "title": "Artifacts",
-          "refresh": "Refresh",
-          "signInHeading": "Sign in to Orca",
-          "signInCopy": "Sign in to view and manage artifacts shared through your account.",
-          "signingIn": "Signing in…",
-          "signIn": "Sign in to Orca",
-          "empty": "No shared artifacts",
-          "emptyCopy": "Open an HTML or Markdown file and select Share as artifact, or ask your agent to share it.",
-          "openArtifact": "Open artifact",
-          "deleteArtifact": "Delete artifact",
-          "moreAvailable": "More artifacts are available",
-          "moreAvailableCopy": "Load the next page to continue.",
-          "loadMoreFailed": "Could not load more artifacts.",
-          "publishingOff": "Publishing is turned off",
-          "publishingOffCopy": "Nothing on this device can create a public artifact link yet. Allow publishing in Settings → Artifacts, then share from an open HTML or Markdown file or ask your agent.",
-          "openArtifactsSettings": "Open Settings → Artifacts",
-          "retry": "Retry",
-          "reconnectHeading": "Sign in to Orca again",
-          "reconnectCopy": "Sign in again to view and manage the artifacts shared through your account.",
-          "signInAgainAction": "Sign in again",
-          "unconfiguredCopy": "Orca account sign-in is not configured on this machine yet.",
-          "openAccountSettings": "Open account settings"
-        },
         "copySuccess": "Artifact link copied",
         "copyFailed": "Could not copy artifact link",
-        "copyLink": "Copy link",
-        "openInBrowser": "Open in browser",
-        "preview": "Artifact preview",
-        "previewUnavailable": "Preview unavailable",
-        "previewUnavailableDescription": "Open this artifact in your browser to view it.",
-        "actions": "Artifact actions",
-        "ArtifactActions": {
-          "more": "More artifact actions"
-        },
-        "ArtifactCollection": {
-          "loadMore": "Load more",
-          "noMatches": "No matches"
-        },
-        "ArtifactDetailHeader": {
-          "publicLink": "Anyone with this link can view it",
-          "close": "Close"
-        },
-        "updatedAt": "Updated {{when}}",
-        "updatedRecently": "recently",
-        "expiryUnknown": "Expiry unknown",
-        "expired": "Link expired",
-        "expires": "Link expires {{when}}",
         "ArtifactPublishButton": {
           "a4a49da6af": "Share as artifact",
           "confirmTitle": "Share as artifact",
@@ -16763,29 +16699,7 @@
           "removeConfirm": "Remove this link? Anyone holding it will lose access.",
           "remove": "Remove link",
           "cancelRemove": "Cancel"
-        },
-        "ArtifactDetailDrawer": {
-          "description": "Preview and manage this shared artifact."
-        },
-        "ArtifactListSearchField": {
-          "label": "Search artifacts",
-          "placeholder": "Search...",
-          "clear": "Clear search"
-        },
-        "ArtifactListTableHeader": {
-          "name": "Name",
-          "type": "Type",
-          "size": "Size",
-          "updated": "Updated",
-          "expires": "Expires",
-          "actions": "Actions"
-        },
-        "ArtifactsPageSkeleton": {
-          "loading": "Loading artifacts"
-        },
-        "expiredCompact": "Expired",
-        "typeMarkdown": "Markdown",
-        "typeHtml": "HTML"
+        }
       },
       "BrowserCookieImportMachineNotice": {
         "clientLabel": "Browsers on this device",

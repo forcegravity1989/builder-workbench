@@ -228,83 +228,9 @@
         }
       },
       "artifacts": {
-        "ArtifactActions": {
-          "more": "More artifact actions"
-        },
-        "ArtifactCollection": {
-          "loadMore": "Load more",
-          "noMatches": "No matches"
-        },
-        "ArtifactDetailDrawer": {
-          "description": "Preview and manage this shared artifact."
-        },
-        "ArtifactDetailHeader": {
-          "close": "Close",
-          "publicLink": "Anyone with this link can view it"
-        },
-        "ArtifactListSearchField": {
-          "clear": "Clear search",
-          "label": "Search artifacts",
-          "placeholder": "Search..."
-        },
-        "ArtifactListTableHeader": {
-          "actions": "Actions",
-          "expires": "Expires",
-          "name": "Name",
-          "size": "Size",
-          "type": "Type",
-          "updated": "Updated"
-        },
-        "ArtifactsPage": {
-          "delete": "Delete",
-          "deleteArtifact": "Delete artifact",
-          "deleteDescription": "“{{name}}” will no longer be available at its public link.",
-          "deleteFailed": "Could not delete the artifact.",
-          "deleteTitle": "Delete artifact?",
-          "empty": "No shared artifacts",
-          "emptyCopy": "Open an HTML or Markdown file and select Share as artifact, or ask your agent to share it.",
-          "loadFailed": "Could not load artifacts.",
-          "loadMoreFailed": "Could not load more artifacts.",
-          "moreAvailable": "More artifacts are available",
-          "moreAvailableCopy": "Load the next page to continue.",
-          "openAccountSettings": "Open account settings",
-          "openArtifact": "Open artifact",
-          "openArtifactsSettings": "Open Settings → Artifacts",
-          "publishingOff": "Publishing is turned off",
-          "publishingOffCopy": "Nothing on this device can create a public artifact link yet. Allow publishing in Settings → Artifacts, then share from an open HTML or Markdown file or ask your agent.",
-          "reconnectCopy": "Sign in again to view and manage the artifacts shared through your account.",
-          "reconnectHeading": "Sign in to Orca again",
-          "refresh": "Refresh",
-          "retry": "Retry",
-          "signIn": "Sign in to Orca",
-          "signInAgain": "Sign in to Orca again to load artifacts.",
-          "signInAgainAction": "Sign in again",
-          "signInCopy": "Sign in to view and manage artifacts shared through your account.",
-          "signInHeading": "Sign in to Orca",
-          "signingIn": "Signing in…",
-          "title": "Artifacts",
-          "unconfiguredCopy": "Orca account sign-in is not configured on this machine yet."
-        },
-        "ArtifactsPageSkeleton": {
-          "loading": "Loading artifacts"
-        },
-        "actions": "Artifact actions",
         "artifact-publish-flow": {
           "6112db5a1c": "This artifact is too large to share."
-        },
-        "copyLink": "Copy link",
-        "expired": "Link expired",
-        "expiredCompact": "Expired",
-        "expires": "Link expires {{when}}",
-        "expiryUnknown": "Expiry unknown",
-        "openInBrowser": "Open in browser",
-        "preview": "Artifact preview",
-        "previewUnavailable": "Preview unavailable",
-        "previewUnavailableDescription": "Open this artifact in your browser to view it.",
-        "typeHtml": "HTML",
-        "typeMarkdown": "Markdown",
-        "updatedAt": "Updated {{when}}",
-        "updatedRecently": "recently"
+        }
       },
       "automations": {
         "AutomationCustomCronPanel": {
@@ -1624,20 +1550,6 @@
             "f412abbba5": "claude",
             "ff8de8a2ad": "display"
           }
-        },
-        "artifacts": {
-          "allowPublishing": "Allow publishing public artifact links",
-          "allowPublishingDescription": "Publish HTML and Markdown files as links anyone with the URL can open. Existing links remain until you delete them from Artifacts.",
-          "allowPublishingSearchDescription": "Allow Orca to publish HTML and Markdown files as public links.",
-          "allowPublishingWebDescription": "Desktop only. Open Settings → Artifacts on the host device to change this setting.",
-          "keywordHtml": "HTML",
-          "keywordMarkdown": "Markdown",
-          "keywordPermission": "permission",
-          "keywordPublic": "public",
-          "keywordPublish": "publish",
-          "keywordUpload": "upload",
-          "showButton": "Show Artifacts Button",
-          "showButtonDescription": "Show the Artifacts shortcut in the sidebar."
         },
         "auto": {
           "rename": {
