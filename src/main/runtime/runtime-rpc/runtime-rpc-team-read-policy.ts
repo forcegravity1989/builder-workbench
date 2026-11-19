@@ -123,10 +123,27 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   'session.tabs.subscribe',
   'session.tabs.subscribeAll',
   'session.tabs.unsubscribe',
-  'session.tabs.unsubscribeAll'
+  'session.tabs.unsubscribeAll',
+  'files.open',
+  'files.openDiff',
+  'files.readDir',
+  'files.readChunk',
+  'files.browseServerDir',
+  'files.listAll',
+  'files.listMarkdownDocuments',
+  'files.pathsExist',
+  'files.watch',
+  'worktree.ps',
+  'git.branchCompare',
+  'git.localBranches',
+  'git.remoteFileUrl',
+  'git.remoteCommitUrl',
+  'git.submoduleStatus',
+  'git.upstreamStatus',
+  'codehub.listComments'
 ])
 
-const READ_METHOD_SUFFIX = /(?:^|\.)(?:list|show|get|read|history|diff|stat|status|search|find|preview|info|current|capabilities|is|console|network|snapshot|screenshot|inspect|resolve|describe|check|view|views|changes|comments?|checks|summary|open|diff|dir|all|watch|pathsexist|browse|branches|remote|upstream|submodule|ps)$/i
+const READ_METHOD_SUFFIX = /(?:^|\.)(?:list|show|get|read|history|diff|stat|status|search|find|preview|info|current|capabilities|is|console|network|snapshot|screenshot|inspect|resolve|describe|check|view|views|changes|checks|summary|dir|watch|pathsexist|browse|branches|remote|upstream|submodule|ps)$/i
 
 function isReadMethod(method: string): boolean {
   return TEAM_READ_ALLOWED_METHODS.has(method) || READ_METHOD_SUFFIX.test(method)

@@ -78,7 +78,6 @@
   const project = '星图服务'
   const teamName = '神盾局'
   const demoGroup = '938583054774198541'
-  const demoSpaceUrl = 'welink://group-space/shield-team'
   const demoProjectGroup = '300000000000000001'
   const employees = { lead: 'A0010001', lin: 'A0010002', chen: 'A0010003' }
   const addresses = { lin: 'ws://192.0.2.10:6768', chen: 'ws://192.0.2.11:6771' }
@@ -316,7 +315,6 @@
     return {
       schema_version: 1,
       team_group_id: groupId,
-      team_space_url: demoSpaceUrl,
       identity_source: 'welink-cli',
       hosts: directoryMembers(),
       projects: []
@@ -374,7 +372,9 @@
       return directory
     }
     directory.identity_source ??= 'welink-cli'
-    directory.team_space_url ??= directory.team_space_id ? `welink://group-space/${directory.team_space_id}` : demoSpaceUrl
+    if (!directory.team_space_url) {
+      delete directory.team_space_url
+    }
     delete directory.team_space_id
     const previousHosts = new Map((directory.hosts ?? []).map((host) => [host.member_id, host]))
     directory.hosts = directoryMembers().map((member) => {
@@ -623,7 +623,7 @@
       : '<p class="field-note">群空间还没有登记项目。先点击“登记项目”，再从各成员项目墙同步来源。</p>'
     return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
       <header class="row between"><div><small>WeLink 群空间目录</small><h2>团队设置</h2></div>${close}</header>
-      <div class="directory-scroll"><div class="directory-links"><div><small>团队群</small><strong>${teamName}</strong><small>群号 ${esc(draft.team_group_id)}</small></div><div class="row"><small>群空间</small>${button('打开群空间', 'open-space', { value: draft.team_space_url, kind: 'ghost' })}</div></div>
+      <div class="directory-scroll"><div class="directory-links"><div><small>团队群</small><strong>${teamName}</strong><small>群号 ${esc(draft.team_group_id)}</small></div><div class="row"><small>群空间</small>${draft.team_space_url ? button('打开群空间', 'open-space', { value: draft.team_space_url, kind: 'ghost' }) : '<span class="field-note">群空间目标待内网接口提供</span>'}</div></div>
        <div class="row between"><h3>成员与主机</h3><div class="row"><span class="directory-tip" title="成员来自 WeLink 群，地址来自 Orca 共享设置。完全访问在共享访问页管理。">${icon('CircleHelp')}</span>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div></div>
       <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>主机与 Orca 地址</th></tr></thead><tbody>${people}</tbody></table></div>
       <div class="row between directory-project-head"><div><h3>团队项目</h3><small>先登记项目，再把成员项目墙中相同 repoId 的来源自动合并。</small></div><div class="row">${writable ? button(`${icon('Plus')} 登记项目`, 'register-project', { kind: 'ghost' }) : ''}${iconButton('RefreshCw', '从成员项目墙同步项目', 'refresh-directory')}</div></div>
