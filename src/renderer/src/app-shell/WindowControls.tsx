@@ -25,7 +25,7 @@ export function WindowControls(): React.JSX.Element {
         aria-label={translate('auto.App.bbb7f90669', 'Minimize')}
         onClick={() => window.api.ui.minimize()}
       >
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden data-workbench-action-icon>
           <path d="M0 5h10v1H0z" fill="currentColor" />
         </svg>
       </button>
@@ -40,12 +40,12 @@ export function WindowControls(): React.JSX.Element {
       >
         {maximized ? (
           // Restore icon (two overlapping squares)
-          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden data-workbench-action-icon>
             <path d="M2 0v2H0v8h8V8h2V0H2zm6 9H1V3h7v6zM9 7H8V2H3V1h6v6z" fill="currentColor" />
           </svg>
         ) : (
           // Maximize icon (single square outline)
-          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden data-workbench-action-icon>
             <path d="M0 0v10h10V0H0zm9 9H1V1h8v8z" fill="currentColor" />
           </svg>
         )}
@@ -56,7 +56,7 @@ export function WindowControls(): React.JSX.Element {
         // Why: route close through main so the 'close' event fires the terminal-running confirmation guard; window.close() is unreliable in sandboxed renderers.
         onClick={() => window.api.ui.requestClose()}
       >
-        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden data-workbench-action-icon>
           <path d="M1 0L0 1l4 4-4 4 1 1 4-4 4 4 1-1-4-4 4-4-1-1-4 4-4-4z" fill="currentColor" />
         </svg>
       </button>

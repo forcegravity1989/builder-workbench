@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from './is-workbench-shell'
+import { installActionIconMotion } from './action-icon-motion'
 
 /** claude tokens; keep left nav open; land on plan when idle terminal. */
 export function WorkbenchShellBootstrap(): null {
@@ -20,6 +21,7 @@ export function WorkbenchShellBootstrap(): null {
     if (state.activeView === 'terminal' && !state.activeWorktreeId) {
       state.openArtifactsPage()
     }
+    return installActionIconMotion()
   }, [])
   return null
 }
