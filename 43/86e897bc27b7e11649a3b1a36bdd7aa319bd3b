@@ -1,0 +1,52 @@
+src/renderer/src/components/tab-bar/QuickLaunchButton.tsx
+  s_5a40a9623e94fc::t_c0ff257a0110a6 248-250
+  h_d0d195a8c70989 206-209
+src/renderer/src/workbench/WorkbenchShellBootstrap.tsx
+  s_5a40a9623e94fc::t_10781da061f4c8 4,24
+docs/04-design-system/guidelines.md
+  s_5a40a9623e94fc::t_10781da061f4c8 137
+src/renderer/src/workbench/action-icon-keyframes.ts
+  s_5a40a9623e94fc::t_7b88cdbe92d8b8 126,162
+  s_5a40a9623e94fc::t_3daa901280d56e 108-110
+  s_5a40a9623e94fc::t_a25dddeb318998 163-164
+  s_5a40a9623e94fc::t_10781da061f4c8 1-13,15-19,22-59,61-78,80-99,101,103-105,107,111,113,117-125,127-159,161,183-186
+  s_5a40a9623e94fc::t_688e020e631c6a 14,20-21,60,79,100,102,106,112,114,160,165-182
+  s_5a40a9623e94fc::t_79298d2d19608d 115-116
+src/renderer/src/components/icons/LinearIcon.tsx
+  s_5a40a9623e94fc::t_902a5a3c35a5a4 9-15
+src/renderer/src/components/icons/WarpIcon.tsx
+  s_5a40a9623e94fc::t_902a5a3c35a5a4 8-14
+src/renderer/src/app-shell/WindowControls.tsx
+  s_5a40a9623e94fc::t_c0ff257a0110a6 28,43,48,59
+src/renderer/src/components/icons/JiraIcon.tsx
+  s_5a40a9623e94fc::t_902a5a3c35a5a4 6
+src/renderer/src/workbench/action-icon-motion.ts
+  s_5a40a9623e94fc::t_344676181080d7 18-23,25,103-104,107,134-143,145-148,161-183,185-187,192,194-195,200-201
+  s_5a40a9623e94fc::t_001fd96c8d4255 29,144,149-160,193,199
+  s_5a40a9623e94fc::t_c0ff257a0110a6 17,26-28,32-33,54-55,61,93
+  s_5a40a9623e94fc::t_a25dddeb318998 30,116,119-121,184
+  s_5a40a9623e94fc::t_80c5d74a9f3d40 56-60,62-81,91-92,94-100,112,114-115,117,122-133
+  s_5a40a9623e94fc::t_10781da061f4c8 1-16,24,31,34-53,82-90,101-102,105-106,108-111,113,188-191,196-198,202
+  h_d0d195a8c70989 118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "4386e897bc27b7e11649a3b1a36bdd7aa319bd3b",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_5a40a9623e94fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f3a2-d0d6-7830-9172-07961e1421d5",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
