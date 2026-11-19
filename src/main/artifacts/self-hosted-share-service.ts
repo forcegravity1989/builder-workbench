@@ -188,7 +188,24 @@ export function createShareService(options: {
         expiresAt: created.expiresAt ?? '',
         updatedAt: new Date().toISOString()
       }
-      await recordStore.put(request.sourceKey, record)
+      try {
+        await recordStore.put(request.sourceKey, record)
+      } catch (error) {
+        // The link exists and its edit token dies with the failed write, which would leave a public
+        // link nothing in the product can remove. Undo the create; if that fails too, say so where
+        // an operator can find it, then report the original failure.
+        const undone = await deleteShare(clientConfig(''), created.id, created.editToken).then(
+          () => true,
+          () => false
+        )
+        if (!undone) {
+          console.error(
+            `Share ${created.id} was created but could not be recorded or removed; it needs operator cleanup on the share service`,
+            error
+          )
+        }
+        throw error
+      }
       return { ok: true, value: { ...toView(record), change: 'created' as const } }
     } catch (error) {
       return failure(error)

@@ -73,13 +73,20 @@ const MESSAGE_BY_CODE: Partial<Record<ShareErrorCode, string>> = {
 
 const ENROLLMENT_FULL_MESSAGE = '分享服务的设备登记已满，需要运维处理后才会恢复'
 
+const REGISTRY_UNAVAILABLE_MESSAGE =
+  '分享服务读不出设备凭据记录，已拒绝写入，需要运维在服务端恢复或删除该文件'
+
 function requestUrl(base: string, path: string): string {
   return `${base}${path}`
 }
 
 function toShareError(status: number, serviceCode: string, message: string): ShareServiceError {
+  // Two refusals that retrying cannot clear, so they must not borrow the "try again shortly" copy.
   if (serviceCode === 'enrollment_full') {
     return new ShareServiceError('busy', ENROLLMENT_FULL_MESSAGE)
+  }
+  if (serviceCode === 'registry_unavailable') {
+    return new ShareServiceError('server', REGISTRY_UNAVAILABLE_MESSAGE)
   }
   const code = CODE_BY_SERVICE_CODE[serviceCode] ?? CODE_BY_STATUS[status]
   if (!code) {

@@ -152,6 +152,28 @@ describe('ArtifactPublishButton', () => {
     expect(await screen.findByText('http://7.192.170.220:8787/s/share-a')).toBeInTheDocument()
   })
 
+  it('stops showing the link once the host reports the record is stale', async () => {
+    const user = userEvent.setup()
+    mocks.getPublishedLink.mockResolvedValue('http://7.192.170.220:8787/s/share-a')
+    // The host removed the local record because the service refused its edit token, so the panel
+    // must not keep offering a link this machine can no longer manage.
+    mocks.remove.mockResolvedValue({
+      ok: false,
+      error: { code: 'stale-record', message: '本机记录已移除，原链接可能仍然存在' }
+    })
+    render(<ArtifactPublishButton sourceKey="/repo/report.md" createRequest={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Share as artifact' }))
+    await user.click(await screen.findByRole('button', { name: 'Remove link' }))
+    await user.click(screen.getByRole('button', { name: 'Remove link' }))
+
+    await waitFor(() =>
+      expect(mocks.reportFailure).toHaveBeenCalledWith('stale-record', expect.any(String))
+    )
+    expect(await screen.findByRole('button', { name: 'Generate link' })).toBeInTheDocument()
+    expect(screen.queryByText('http://7.192.170.220:8787/s/share-a')).not.toBeInTheDocument()
+  })
+
   it('looks up a persisted link only after the popover opens', async () => {
     const user = userEvent.setup()
     render(<ArtifactPublishButton sourceKey="/repo/report.md" createRequest={vi.fn()} />)

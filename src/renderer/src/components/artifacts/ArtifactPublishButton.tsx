@@ -88,6 +88,11 @@ export function ArtifactPublishButton({
       const result = await removeShare(sourceKey)
       if (!result.ok) {
         reportShareFailure(result.error.code, result.error.message)
+        // stale-record means the host already dropped the local record, so the panel must stop
+        // showing a link this machine can no longer manage; sharing again creates a fresh one.
+        if (result.error.code === 'stale-record') {
+          setLinkLookup({ key: sourceKey, status: 'loaded', shareUrl: null })
+        }
         return
       }
       setLinkLookup({ key: sourceKey, status: 'loaded', shareUrl: null })

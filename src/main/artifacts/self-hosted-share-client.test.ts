@@ -116,6 +116,29 @@ describe('self-hosted share client status mapping', () => {
     expect((error as ShareServiceError).message).toContain('需要运维处理')
   })
 
+  it('reports an unreadable device registry as needing an operator', async () => {
+    const error = await createShare(
+      {
+        ...config,
+        fetchImpl: respond(503, {
+          error: {
+            code: 'registry_unavailable',
+            message:
+              'Device registry is unreadable; uploads are refused until an operator restores it.'
+          }
+        })
+      },
+      { content: '<h1>A</h1>', fileName: 'a.html' }
+    ).then(
+      () => null,
+      (caught: unknown) => caught
+    )
+
+    expect(error).toBeInstanceOf(ShareServiceError)
+    expect((error as ShareServiceError).code).toBe('server')
+    expect((error as ShareServiceError).message).toContain('需要运维')
+  })
+
   it('reports a transport failure as a network error', async () => {
     const fetchImpl = vi.fn(async () => {
       throw new Error('fetch failed')

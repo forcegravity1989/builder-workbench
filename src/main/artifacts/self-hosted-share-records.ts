@@ -86,6 +86,11 @@ export function createShareRecordStore(options: { dataDir: () => string }): {
           'Workbench share records were saved but their permissions could not be restricted'
         )
       }
+      // The index on disk is one this process just wrote, so the earlier "could not read it"
+      // verdict no longer describes it. Without this the settings page keeps reporting a failure
+      // that sharing has already resolved — and would report it again after the user deletes
+      // their last record, when the empty list is the truth.
+      unreadable = null
     })
     writeChain = run.catch(() => undefined)
     return run

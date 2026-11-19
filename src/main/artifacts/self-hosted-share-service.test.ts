@@ -357,6 +357,37 @@ describe('createShareService', () => {
     ).toHaveLength(1)
   })
 
+  it('undoes the remote share when the local record cannot be written', async () => {
+    // The link exists and its edit token dies with the failed write, which would leave a public
+    // link nothing in the product can remove. Injection: the moment the service answers the
+    // create, the data directory is replaced by a regular file, so the record write cannot land.
+    fetchImpl.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input as string, init)
+      calls.push({ method: request.method, url: request.url, headers: request.headers, body: null })
+      if (request.url.endsWith('/api/client-tokens')) {
+        issuedTokens += 1
+        return jsonResponse(201, { token: `enrolled-token-${issuedTokens}` })
+      }
+      if (request.method === 'POST') {
+        await rm(dataDir, { recursive: true, force: true })
+        await writeFile(dataDir, 'not a directory')
+        return jsonResponse(201, created)
+      }
+      return new Response(null, { status: 204 })
+    })
+
+    const result = await service().publish({
+      sourceKey: '/repo/a.html',
+      content: '<h1>A</h1>',
+      fileName: 'a.html'
+    })
+
+    expect(result).toMatchObject({ ok: false })
+    // enroll, create, then the compensating delete — no link left behind without a record.
+    expect(calls.map((call) => call.method)).toEqual(['POST', 'POST', 'DELETE'])
+    expect(calls[2]?.url).toBe(`${SERVER_URL}/api/shares/${created.id}`)
+  })
+
   it('reports an unreadable record index instead of an empty list', async () => {
     const share = service()
     await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })

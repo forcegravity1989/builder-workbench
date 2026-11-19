@@ -109,6 +109,21 @@ describe('createShareRecordStore', () => {
     expect(store.unreadableIndex()).toBeNull()
   })
 
+  it('stops reporting the index as unreadable once it has written one', async () => {
+    const store = createShareRecordStore({ dataDir: () => dataDir })
+    await writeFile(join(dataDir, 'records.json'), '')
+    await expect(store.list()).resolves.toEqual([])
+    expect(store.unreadableIndex()).not.toBeNull()
+
+    // The index on disk is now one this process wrote, so the settings page must stop claiming it
+    // cannot be read — including after the user deletes their last record.
+    await store.put('/repo/a.md', record('a', '2026-11-16T00:00:00.000Z'))
+    expect(store.unreadableIndex()).toBeNull()
+    await store.remove('/repo/a.md')
+    await expect(store.list()).resolves.toEqual([])
+    expect(store.unreadableIndex()).toBeNull()
+  })
+
   it('drops expired links on the next write but never one that may still work', async () => {
     const store = createShareRecordStore({ dataDir: () => dataDir })
     const stamp = '2026-11-16T00:00:00.000Z'
