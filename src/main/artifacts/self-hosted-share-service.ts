@@ -158,7 +158,9 @@ export function createShareService(options: {
             id: updated.id,
             url: updated.url,
             editToken: existing.editToken,
-            expiresAt: updated.expiresAt,
+            // The service answers null when retention is off; records keep '' for "no expiry" so
+            // the stored shape stays a plain string and a reload cannot mistake it for garbage.
+            expiresAt: updated.expiresAt ?? '',
             updatedAt: updated.updatedAt
           }
           await recordStore.put(request.sourceKey, record)
@@ -183,7 +185,7 @@ export function createShareService(options: {
         id: created.id,
         url: created.url,
         editToken: created.editToken,
-        expiresAt: created.expiresAt,
+        expiresAt: created.expiresAt ?? '',
         updatedAt: new Date().toISOString()
       }
       await recordStore.put(request.sourceKey, record)

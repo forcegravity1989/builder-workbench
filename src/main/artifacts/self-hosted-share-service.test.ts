@@ -317,6 +317,46 @@ describe('createShareService', () => {
     await expect(share.list()).resolves.toMatchObject({ ok: true, value: [] })
   })
 
+  it('keeps one link when the service runs without retention', async () => {
+    // BW_SHARE_RETENTION_DAYS=0 makes the service answer `expiresAt: null`. Stored as null the
+    // record fails its own string check on reload, so every share would silently mint a new link.
+    fetchImpl.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const request = new Request(input as string, init)
+      calls.push({ method: request.method, url: request.url, headers: request.headers, body: null })
+      if (request.url.endsWith('/api/client-tokens')) {
+        issuedTokens += 1
+        return jsonResponse(201, { token: `enrolled-token-${issuedTokens}` })
+      }
+      if (request.method === 'POST') {
+        return jsonResponse(201, { ...created, expiresAt: null })
+      }
+      return jsonResponse(200, {
+        id: created.id,
+        url: created.url,
+        expiresAt: null,
+        updatedAt: '2026-11-16T12:00:00.000Z'
+      })
+    })
+    const share = service()
+
+    const first = await share.publish({
+      sourceKey: '/repo/a.html',
+      content: '<h1>A</h1>',
+      fileName: 'a.html'
+    })
+    expect(first).toMatchObject({ ok: true, value: { change: 'created', expiresAt: '' } })
+
+    const second = await share.publish({
+      sourceKey: '/repo/a.html',
+      content: '<h1>B</h1>',
+      fileName: 'a.html'
+    })
+    expect(second).toMatchObject({ ok: true, value: { change: 'updated', id: created.id } })
+    expect(
+      calls.filter((call) => call.method === 'POST' && call.url.endsWith('/api/shares'))
+    ).toHaveLength(1)
+  })
+
   it('reports an unreadable record index instead of an empty list', async () => {
     const share = service()
     await share.publish({ sourceKey: '/repo/a.html', content: '<h1>A</h1>', fileName: 'a.html' })

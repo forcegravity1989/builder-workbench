@@ -22,13 +22,14 @@ type ShareCreateResponse = {
   id: string
   url: string
   editToken: string
-  expiresAt: string
+  /** Null when the service runs with retention disabled (`BW_SHARE_RETENTION_DAYS=0`). */
+  expiresAt: string | null
 }
 
 type ShareUpdateResponse = {
   id: string
   url: string
-  expiresAt: string
+  expiresAt: string | null
   updatedAt: string
 }
 

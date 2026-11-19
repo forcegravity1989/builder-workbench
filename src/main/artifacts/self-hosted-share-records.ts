@@ -72,7 +72,10 @@ export function createShareRecordStore(options: { dataDir: () => string }): {
     update: (records: Record<string, ShareRecord>) => Record<string, ShareRecord>
   ): Promise<void> {
     const run = writeChain.then(async () => {
-      const payload: StoredRecords = { version: 1, records: update(await readAll()) }
+      const payload: StoredRecords = {
+        version: 1,
+        records: pruneExpired(update(await readAll()))
+      }
       // Durable: these records hold the only copy of each link's edit token, so a rename that
       // survives a power loss with zero bytes would silently orphan every link this machine made.
       const restricted = await writeSecureJsonFileAsync(recordsPath(), payload, undefined, {
@@ -124,6 +127,27 @@ async function quarantine(path: string): Promise<string | null> {
     console.error('Failed to quarantine corrupt share data:', error)
     return null
   }
+}
+
+/**
+ * Links the service has already dropped are not worth keeping: they read as live in the cleanup
+ * list and removing one is a no-op the user has to initiate. `''` means the service keeps links
+ * forever, and an unparseable stamp is kept rather than guessed at — pruning must never lose a
+ * record that may still work.
+ */
+function pruneExpired(
+  records: Record<string, ShareRecord>,
+  now = Date.now()
+): Record<string, ShareRecord> {
+  const next: Record<string, ShareRecord> = {}
+  for (const [sourceKey, record] of Object.entries(records)) {
+    const expiry = record.expiresAt ? Date.parse(record.expiresAt) : Number.NaN
+    if (!Number.isNaN(expiry) && expiry <= now) {
+      continue
+    }
+    next[sourceKey] = record
+  }
+  return next
 }
 
 function isShareRecord(value: unknown): value is ShareRecord {

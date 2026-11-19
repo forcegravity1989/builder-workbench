@@ -47,6 +47,7 @@ export const SharePublishSchema = z
 export type ShareRecordView = {
   id: string
   url: string
+  /** Empty when the service keeps links forever (`BW_SHARE_RETENTION_DAYS=0`). */
   expiresAt: string
   updatedAt: string
 }

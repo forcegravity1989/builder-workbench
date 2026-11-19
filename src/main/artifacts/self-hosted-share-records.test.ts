@@ -108,4 +108,31 @@ describe('createShareRecordStore', () => {
     await expect(store.list()).resolves.toEqual([])
     expect(store.unreadableIndex()).toBeNull()
   })
+
+  it('drops expired links on the next write but never one that may still work', async () => {
+    const store = createShareRecordStore({ dataDir: () => dataDir })
+    const stamp = '2026-11-16T00:00:00.000Z'
+    await writeFile(
+      join(dataDir, 'records.json'),
+      JSON.stringify({
+        version: 1,
+        records: {
+          '/repo/gone.md': {
+            ...record('gone', stamp),
+            expiresAt: new Date(Date.now() - 1000).toISOString()
+          },
+          // '' is what the service reports when it keeps links forever.
+          '/repo/forever.md': { ...record('forever', stamp), expiresAt: '' },
+          '/repo/odd.md': { ...record('odd', stamp), expiresAt: 'not-a-date' }
+        }
+      })
+    )
+
+    // Reads do not prune: what is on disk is what the user is told.
+    await expect(store.list()).resolves.toHaveLength(3)
+
+    await store.put('/repo/new.md', record('new', '2026-11-18T00:00:00.000Z'))
+    const keys = (await store.list()).map((entry) => entry.sourceKey)
+    expect(keys.sort()).toEqual(['/repo/forever.md', '/repo/new.md', '/repo/odd.md'])
+  })
 })
