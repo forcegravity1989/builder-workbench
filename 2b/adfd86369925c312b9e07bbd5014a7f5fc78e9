@@ -1,0 +1,67 @@
+docs/05-features/pr-review-notify/STATUS.md
+  s_a529121177f35b::t_f700ca322ce7e4 11-13
+docs/05-features/pr-review-notify/prototype/README.md
+  s_a529121177f35b::t_e9e15a8947384a 5
+docs/05-features/pr-review-notify/prototype/preview.css
+  s_a529121177f35b::t_f22907a2c07e0e 358-360,451-453,490-492,586-588,645-647,996-998,1002-1004
+docs/05-features/pr-review-notify/prototype/preview.js
+  s_a529121177f35b::t_83b823b1f86a3b 1,3,6,8-9,13,17,21,25,29-30,34,47,51,55,59,63-64,66,69-70,74-76,79,82,85,91,104,119,123,125
+docs/05-features/pr-review-notify/prototype/preview.tsx
+  s_a529121177f35b::t_71e3f0be297a90 18,240
+docs/05-features/pr-review-notify/spec.md
+  s_a529121177f35b::t_92739d53f443fa 28-29,55,57,59,63
+src/main/runtime/rpc/methods/workbench-review-notifications.ts
+  s_a529121177f35b::t_c88d256c6aaf83 4-12,49-55
+src/main/workbench/review-inbox.test.ts
+  s_a529121177f35b::t_c2c191248ba542 1-72
+src/main/workbench/review-inbox.ts
+  s_a529121177f35b::t_22ccbd0de504dc 10-11,41-62
+src/main/workbench/trunk-sync.test.ts
+  s_a529121177f35b::t_843a4bd490a707 7
+src/renderer/src/workbench/explore/DeliveryReviewScenes.tsx
+  s_a529121177f35b::t_2346f4db99e71d 325-330
+src/renderer/src/workbench/pr-review-notifications/PrReviewNotificationItems.tsx
+  s_a529121177f35b::t_dc62d80d5c1f4a 194-195,200,205-224
+src/renderer/src/workbench/pr-review-notifications/PrReviewNotifications.tsx
+  s_a529121177f35b::t_b861da210a9e77 13-14,61
+src/renderer/src/workbench/pr-review-notifications/PrReviewNotificationsView.tsx
+  s_a529121177f35b::t_c0287bc4604869 25,36,168
+src/renderer/src/workbench/pr-review-notifications/model.test.ts
+  s_081c4d7d56ca75::t_099a32567c3f4e 1-51
+src/renderer/src/workbench/pr-review-notifications/model.ts
+  s_a529121177f35b::t_51899ee50d90ae 85-116
+src/renderer/src/workbench/pr-review-notifications/store.ts
+  s_a529121177f35b::t_3175405a923640 13-14,16,26-31,44-46,154-164,187-197,234,237,241-249
+src/renderer/src/workbench/pr-review-notifications/transport.ts
+  s_a529121177f35b::t_38482fad08455b 5,13-18
+src/renderer/src/workbench/version-cycle/ensure-cycle-automation.test.ts
+  s_a529121177f35b::t_0885d4b6437c38 80
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  s_a529121177f35b::t_f894bb3bf0235e 580,1269
+src/shared/workbench/pr-review-request.ts
+  s_a529121177f35b::t_2cc03fa52d690b 34-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "2badfd86369925c312b9e07bbd5014a7f5fc78e9",
+  "prompts": {},
+  "sessions": {
+    "s_081c4d7d56ca75": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "64c6243b-e037-43d9-a577-0251811feaf7",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_a529121177f35b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f517fe0d-19bf-40c4-8774-37d4e33de57f",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
