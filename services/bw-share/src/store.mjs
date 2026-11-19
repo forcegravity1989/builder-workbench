@@ -1,5 +1,4 @@
 import { randomBytes } from 'node:crypto'
-import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { ShareError } from './errors.mjs'
@@ -7,6 +6,8 @@ import { hashToken, tokenMatchesHash } from './tokens.mjs'
 
 const SHARE_ID_PATTERN = /^[A-Za-z0-9_-]{22}$/
 const STALE_TEMP_MS = 60 * 60 * 1000
+const RENAME_ATTEMPTS = 5
+const RENAME_RETRY_DELAY_MS = 40
 
 /**
  * @typedef {object} ShareMeta
@@ -137,15 +138,34 @@ export function createShareStore({ dataDir, retentionDays }) {
     if (!meta || isExpired(meta)) {
       return null
     }
+    // Length and body must come from one open file description. A concurrent update renames a new
+    // version in; stat-then-open would advertise the old size for the new bytes and the viewer
+    // would get a truncated or over-long response.
+    let handle
     try {
-      const stats = await fs.stat(contentPath(id))
-      return { meta, size: stats.size, stream: createReadStream(contentPath(id)) }
+      handle = await fs.open(contentPath(id), 'r')
     } catch (error) {
       if (isMissingFile(error)) {
         return null
       }
       throw error
     }
+    let size
+    try {
+      size = (await handle.stat()).size
+    } catch (error) {
+      await handle.close()
+      throw error
+    }
+    const stream = handle.createReadStream()
+    stream.once('close', () => {
+      try {
+        handle.close().catch(() => {})
+      } catch {
+        // The stream already released the handle.
+      }
+    })
+    return { meta, size, stream }
   }
 
   /**
@@ -324,12 +344,43 @@ async function writeFileAtomic(filePath, data) {
     } finally {
       await handle.close()
     }
-    await fs.rename(tmp, filePath)
+    await renameOverTarget(tmp, filePath)
   } catch (error) {
     await fs.rm(tmp, { force: true })
+    if (isSharingViolation(error)) {
+      // The previous version is still complete and consistent, so this is worth retrying.
+      throw new ShareError(503, 'busy', 'The share is being read; retry the update in a moment.')
+    }
     throw error
   }
   await syncDirectory(path.dirname(filePath))
+}
+
+/**
+ * Windows refuses to rename over a file a viewer is still streaming, so a read that overlaps an
+ * update would otherwise fail. Linux replaces the inode and readers keep the old one, so this
+ * retry only ever costs anything on Windows.
+ *
+ * @param {string} tmp
+ * @param {string} filePath
+ */
+async function renameOverTarget(tmp, filePath) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await fs.rename(tmp, filePath)
+    } catch (error) {
+      if (attempt >= RENAME_ATTEMPTS || !isSharingViolation(error)) {
+        throw error
+      }
+      await new Promise((resolve) => setTimeout(resolve, RENAME_RETRY_DELAY_MS * attempt))
+    }
+  }
+}
+
+/** @param {unknown} error */
+function isSharingViolation(error) {
+  const code = /** @type {NodeJS.ErrnoException} */ (error)?.code
+  return code === 'EPERM' || code === 'EBUSY'
 }
 
 /** @param {string} dir */

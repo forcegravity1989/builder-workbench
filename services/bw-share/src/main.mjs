@@ -31,7 +31,9 @@ export async function startServer(options = {}) {
     )
   }
   const server = http.createServer(createRequestHandler({ store, clientTokens, config, log }))
-  server.requestTimeout = 30_000
+  // A 10 MiB report can arrive as a 60 MiB transport body once JSON escaping is counted, so the
+  // body budget needs more than a small request warrants. Headers keep the tight budget.
+  server.requestTimeout = 120_000
   server.headersTimeout = 15_000
   await new Promise((resolve, reject) => {
     const onError = (error) => {

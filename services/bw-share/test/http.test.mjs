@@ -327,3 +327,72 @@ test('issued client tokens are stored as hashes only', async (t) => {
   await reloaded.init()
   assert.equal(reloaded.matches(token), true)
 })
+
+test('trustProxy keys the rate limit on the proxy-appended address, not a forged prefix', async (t) => {
+  const server = await startTestServer({ trustProxy: true, rateLimitPerMinute: 1 })
+  t.after(() => server.close())
+  const payload = { content: HTML, fileName: 'report.html' }
+
+  const first = await writeRequest(`${server.base}/api/shares`, payload, {
+    'x-forwarded-for': '9.9.9.9, 10.0.0.7'
+  })
+  assert.equal(first.status, 201)
+
+  // Same real peer, different forged prefix: the allowance must not reset.
+  const second = await writeRequest(`${server.base}/api/shares`, payload, {
+    'x-forwarded-for': '8.8.8.8, 10.0.0.7'
+  })
+  assert.equal(second.status, 429)
+  assert.equal((await json(second)).error.code, 'rate_limited')
+})
+
+test('a served read releases the file so the next update succeeds', async (t) => {
+  const server = await startTestServer()
+  t.after(() => server.close())
+  const created = await json(
+    await writeRequest(`${server.base}/api/shares`, { content: HTML, fileName: 'r.html' })
+  )
+  assert.equal(await (await fetch(created.url)).text(), HTML)
+
+  const updated = await updateRequest(
+    `${server.base}/api/shares/${created.id}`,
+    { content: '<p>v2</p>', fileName: 'r.html' },
+    { 'x-edit-token': created.editToken }
+  )
+  assert.equal(updated.status, 200)
+  assert.equal(await (await fetch(created.url)).text(), '<p>v2</p>')
+})
+
+test('viewing while updating never answers 500 and never misstates content-length', async (t) => {
+  const server = await startTestServer({ maxBytes: 4 * 1024 * 1024 })
+  t.after(() => server.close())
+  const large = `<p>${'y'.repeat(2 * 1024 * 1024)}</p>`
+  const created = await json(
+    await writeRequest(`${server.base}/api/shares`, { content: large, fileName: 'r.html' })
+  )
+
+  for (let round = 0; round < 12; round += 1) {
+    const content = round % 2 === 0 ? '<p>small</p>' : large
+    const [view, updated] = await Promise.all([
+      fetch(created.url),
+      updateRequest(
+        `${server.base}/api/shares/${created.id}`,
+        { content, fileName: 'r.html' },
+        { 'x-edit-token': created.editToken }
+      )
+    ])
+    const updatedBody = await updated.text()
+    assert.notEqual(updated.status, 500, `round ${round}: update answered 500 (${updatedBody})`)
+    assert.ok(
+      updated.status === 200 || updated.status === 503,
+      `round ${round}: unexpected ${updated.status} (${updatedBody})`
+    )
+    const declared = Number(view.headers.get('content-length'))
+    const body = await view.text()
+    assert.equal(
+      Buffer.byteLength(body),
+      declared,
+      `round ${round}: content-length ${declared} but ${Buffer.byteLength(body)} bytes streamed`
+    )
+  }
+})

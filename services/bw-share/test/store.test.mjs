@@ -154,3 +154,70 @@ test('retentionDays 0 keeps shares without an expiry', async (t) => {
   assert.equal(await env.store.sweep(), 0)
   assert.ok(await env.store.read(created.id))
 })
+
+test('open reports the length of the bytes it actually streams', async (t) => {
+  const env = await makeStore()
+  t.after(() => env.cleanup())
+  const created = await env.store.create({ content: HTML, fileName: 'a.html' })
+
+  const share = await env.store.open(created.id)
+  assert.ok(share)
+  const chunks = []
+  for await (const chunk of share.stream) {
+    chunks.push(chunk)
+  }
+  const body = Buffer.concat(chunks)
+  assert.equal(share.size, body.length)
+  assert.equal(body.toString('utf8'), HTML)
+})
+
+test('a read still in flight never turns an update into a filesystem error', async (t) => {
+  const env = await makeStore()
+  t.after(() => env.cleanup())
+  const created = await env.store.create({ content: HTML, fileName: 'a.html' })
+
+  // Never consumed: on Windows this keeps a handle on the current version for the whole update.
+  const held = await env.store.open(created.id)
+  assert.ok(held)
+  const outcome = await env.store
+    .update(created.id, created.editToken, { content: '<p>v2</p>', fileName: 'a.html' })
+    .then(
+      () => 'updated',
+      (error) => error
+    )
+  held.stream.destroy()
+
+  if (outcome !== 'updated') {
+    // Retryable, and the previous version is still intact and readable.
+    assertShareError(outcome, 'busy')
+    assert.equal(/** @type {{ status: number }} */ (outcome).status, 503)
+  }
+  const read = await env.store.read(created.id)
+  assert.ok(read)
+  assert.ok([HTML, '<p>v2</p>'].includes(read.content.toString('utf8')))
+})
+
+test('a finished read releases the file so the next update succeeds', async (t) => {
+  const env = await makeStore()
+  t.after(() => env.cleanup())
+  const created = await env.store.create({ content: HTML, fileName: 'a.html' })
+
+  const share = await env.store.open(created.id)
+  assert.ok(share)
+  for await (const chunk of share.stream) {
+    void chunk
+  }
+  await new Promise((resolve) => {
+    if (share.stream.closed) {
+      resolve(undefined)
+      return
+    }
+    share.stream.once('close', resolve)
+  })
+
+  const updated = await env.store.update(created.id, created.editToken, {
+    content: '<p>v2</p>',
+    fileName: 'a.html'
+  })
+  assert.equal(updated.bytes, Buffer.byteLength('<p>v2</p>'))
+})

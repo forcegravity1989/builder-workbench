@@ -344,7 +344,10 @@ function resolveBaseUrl(req, config) {
  */
 function clientIp(req, config) {
   if (config.trustProxy) {
-    const forwarded = firstHeader(req.headers['x-forwarded-for'])
+    // A trusted proxy appends the peer it actually saw, so only the rightmost entry is one a
+    // client cannot write itself. Taking the leftmost would let any caller rotate the rate-limit
+    // key by spoofing X-Forwarded-For.
+    const forwarded = lastHeader(req.headers['x-forwarded-for'])
     if (forwarded) {
       return forwarded
     }
@@ -365,6 +368,11 @@ function headerValue(value) {
 /** @param {string | string[] | undefined} value */
 function firstHeader(value) {
   return headerValue(value).split(',')[0].trim()
+}
+
+/** @param {string | string[] | undefined} value */
+function lastHeader(value) {
+  return headerValue(value).split(',').at(-1)?.trim() ?? ''
 }
 
 /**
