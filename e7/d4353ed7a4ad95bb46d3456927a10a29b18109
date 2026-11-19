@@ -1,0 +1,23 @@
+src/renderer/src/i18n/en-runtime-required.json
+  s_da7ab51653058a::t_ed4798cab2f797 233
+src/renderer/src/i18n/locales/en.json
+  s_da7ab51653058a::t_dcd820567e3666 16626
+src/renderer/src/i18n/locales/fr.json
+  s_da7ab51653058a::t_d4571a031c4ab2 10964,15426
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "e7d4353ed7a4ad95bb46d3456927a10a29b18109",
+  "prompts": {},
+  "sessions": {
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
