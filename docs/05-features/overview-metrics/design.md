@@ -1,6 +1,6 @@
 # 总览指标实现设计
 
-> **维护约定**：给实现与技术评审者读取。本文只管指标数据流、采集、缓存与边界，不写排期或运行流水。行为见 [spec](spec.md)，共享消费方见 [计划设计](../version-planning/design.md#共享边界)，证据与缺口见 [STATUS](STATUS.md)。架构定位见 [architecture](../../architecture.md)。
+> **维护约定**：给实现与技术评审者读取。本文只管指标数据流、采集、缓存与边界，不写排期或运行流水。行为见 [spec](spec.md)，计划侧接缝见 [计划设计](../version-planning/design.md#模块边界)，证据与缺口见 [STATUS](STATUS.md)。架构定位见 [architecture](../../architecture.md)。
 >
 > 本文描述当前实现约束，运行状态与未验证边界见 [STATUS](STATUS.md)。
 
