@@ -50,9 +50,9 @@
 - `title` 最长 200 字符，`fileName` 最长 255 字符且不能含控制字符。
 - 分享页带 `Content-Security-Policy: sandbox allow-scripts ...`，报告里的脚本能跑，但拿不到本服务的 origin、Cookie 或存储。可加载的内容一律 `nosniff`、`no-store`、`no-referrer`。
 
-`POST /api/client-tokens` 用登记密钥换一枚随机上传令牌（256 位），返回明文一次，服务端只落 sha256；同一设备不应重复登记。登记密钥编译在 Workbench 客户端里，只用于挡住无关网络客户端自行发令牌，不是抵御能读仓库的人的机密（见「写入权限的真实边界」）。换 `BW_SHARE_ENROLL_KEY` 只阻止新登记，已签发的设备令牌继续可用；`BW_SHARE_ENROLL_KEY` 留空则回落到客户端内置的公开默认值，即登记无法关闭。要撤销全部已登记设备，停止服务、删除 `<dataDir>/client-tokens.json` 再启动（客户端下次分享会重新登记）——**删完注册表后实例又回到「无静态令牌且无设备令牌」的匿名可写状态**，要同时设 `BW_SHARE_UPLOAD_TOKEN` 才能一直保持要求令牌。注册表只增不减（无过期、无淘汰），满 5000 条后登记持续返回 503，需运维清理文件才恢复。
+`POST /api/client-tokens` 用登记密钥换一枚随机上传令牌（256 位），返回明文一次，服务端只落 sha256；同一设备不应重复登记。登记密钥编译在 Workbench 客户端里，只用于挡住无关网络客户端自行发令牌，不是抵御能读仓库的人的机密（见「写入权限的真实边界」）。换 `BW_SHARE_ENROLL_KEY` 只阻止新登记，已签发的设备令牌继续可用；`BW_SHARE_ENROLL_KEY` 留空则回落到客户端内置的公开默认值，即登记无法关闭。要撤销全部已登记设备，停止服务、删除 `<dataDir>/client-tokens.json` 再启动（客户端下次分享会重新登记）——**删完注册表后实例又回到「无静态令牌且无设备令牌」的匿名可写状态**，要同时设 `BW_SHARE_UPLOAD_TOKEN` 才能一直保持要求令牌。注册表只增不减（无过期、无淘汰），满 5000 条后登记持续返回 503 `enrollment_full`，需运维清理文件才恢复。
 
-错误统一为 `{"error":{"code":"...","message":"..."}}`。常见码：`bad_request`、`unauthorized`、`forbidden`、`not_found`、`too_large`、`unsupported_media_type`、`rate_limited`、`method_not_allowed`，以及 `busy`——`busy` 有三种成因：在途上传占满 64 MiB 内存预算、目标分享正被读取导致本次覆盖失败（这两种重试即可），以及设备令牌注册表已满（重试无效，需运维清理）。
+错误统一为 `{"error":{"code":"...","message":"..."}}`。常见码：`bad_request`、`unauthorized`、`forbidden`、`not_found`、`too_large`、`unsupported_media_type`、`rate_limited`、`method_not_allowed`，以及两个 503：`busy`（在途上传占满 64 MiB 内存预算，或目标分享正被读取导致本次覆盖失败——两者重试即可）与 `enrollment_full`（设备令牌注册表已满，重试无效，需运维清理文件）。
 
 ## 本地试跑
 

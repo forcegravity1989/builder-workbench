@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import http from 'node:http'
+import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { createClientTokenStore } from '../src/client-tokens.mjs'
+import { isShareError } from '../src/errors.mjs'
 import { SHARE_PAGE_CSP } from '../src/http.mjs'
 import { startTestServer, updateRequest, writeRequest } from './helpers.mjs'
 
@@ -395,4 +397,27 @@ test('viewing while updating never answers 500 and never misstates content-lengt
       `round ${round}: content-length ${declared} but ${Buffer.byteLength(body)} bytes streamed`
     )
   }
+})
+
+test('a full client token registry reports enrollment_full, not a retryable busy', async (t) => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-full-'))
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+  const tokens = Array.from({ length: 5000 }, (_, index) => ({
+    hash: String(index).padStart(64, '0'),
+    createdAt: new Date().toISOString()
+  }))
+  await fs.writeFile(
+    path.join(dataDir, 'client-tokens.json'),
+    JSON.stringify({ version: 1, tokens })
+  )
+
+  const store = createClientTokenStore({ dataDir, log: () => {} })
+  await store.init()
+  assert.equal(store.size(), 5000)
+  await assert.rejects(store.issue(), (error) => {
+    assert.ok(isShareError(error), `expected ShareError, got ${String(error)}`)
+    assert.equal(/** @type {{ status: number }} */ (error).status, 503)
+    assert.equal(/** @type {{ code: string }} */ (error).code, 'enrollment_full')
+    return true
+  })
 })

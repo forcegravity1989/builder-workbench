@@ -66,7 +66,12 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
 
   async function issue() {
     if (tokens.size >= MAX_TOKENS) {
-      throw new ShareError(503, 'busy', 'Client token registry is full; contact the operator.')
+      // Its own code: unlike the in-flight body budget, retrying cannot clear this one.
+      throw new ShareError(
+        503,
+        'enrollment_full',
+        'Client token registry is full; contact the operator.'
+      )
     }
     const token = randomBytes(TOKEN_BYTES).toString('hex')
     const createdAt = new Date(now()).toISOString()
