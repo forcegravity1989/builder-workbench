@@ -1,0 +1,73 @@
+src/renderer/src/workbench/NewVersionDialog.tsx
+  s_22f96f89bf7a40::t_e2fe4c01dfa002 6,100-101
+src/renderer/src/workbench/OverviewPage.tsx
+  s_22f96f89bf7a40::t_d9c09ce051f811 29,220-223
+src/renderer/src/workbench/ProjectWallPage.tsx
+  s_22f96f89bf7a40::t_e583557c2ef330 10,29
+src/renderer/src/workbench/WorkbenchVersionNav.tsx
+  s_22f96f89bf7a40::t_e4e4ba40c091d1 38,173-178
+src/renderer/src/workbench/annotations/AnnotationPanel.tsx
+  s_22f96f89bf7a40::t_56767f47b03759 6,95,110-111,205-206
+src/renderer/src/workbench/explore/AcceptanceDemoScenes.tsx
+  s_22f96f89bf7a40::t_5f3ad3390f7a64 23-24
+src/renderer/src/workbench/explore/PlanningDemoScenes.tsx
+  s_22f96f89bf7a40::t_403cab5de75f49 27-28
+src/renderer/src/workbench/plan-send-menu.tsx
+  s_22f96f89bf7a40::t_40f58f60b0d450 13-17,27,42,46,53-54,60,71-72,81-83,99-108,155,195
+src/renderer/src/workbench/project-milestones.tsx
+  s_22f96f89bf7a40::t_2afd74d4b3fca9 39,80-82
+src/renderer/src/workbench/version-acceptance/AcceptanceArchiveCard.tsx
+  s_22f96f89bf7a40::t_23af798ad73f69 143-144,179-180
+src/renderer/src/workbench/version-acceptance/AcceptanceBoardContent.tsx
+  s_22f96f89bf7a40::t_61c4450a5468fc 74,386
+src/renderer/src/workbench/version-acceptance/AcceptanceMinutesSection.tsx
+  s_22f96f89bf7a40::t_b08a9f42333284 144-145,403-404
+src/renderer/src/workbench/version-acceptance/AcceptancePackage.tsx
+  s_22f96f89bf7a40::t_c7fd6def5050c9 4,177-186
+src/renderer/src/workbench/version-acceptance/AcceptancePage.tsx
+  s_22f96f89bf7a40::t_4bf6b915d4a3d4 7,24
+src/renderer/src/workbench/version-acceptance/AcceptancePrepareSection.tsx
+  s_22f96f89bf7a40::t_d80a957d023edc 123-124,176-177,226
+src/renderer/src/workbench/version-overview-page.tsx
+  s_22f96f89bf7a40::t_a547dc57ed0d71 37,83
+src/renderer/src/workbench/version-planning/PlanningAnnotationOverlays.tsx
+  s_22f96f89bf7a40::t_872ff8ca160541 31
+src/renderer/src/workbench/version-planning/PlanningBoard.tsx
+  s_22f96f89bf7a40::t_89a1ea0c70937f 22,120,192
+src/renderer/src/workbench/version-planning/PlanningGoalCard.tsx
+  s_22f96f89bf7a40::t_77ff65ba68a5fb 282-283
+src/renderer/src/workbench/version-planning/PlanningMinutesSection.tsx
+  s_22f96f89bf7a40::t_fe1fd043f31dbd 60,69-74
+src/renderer/src/workbench/workbench-screen-usage.ts
+  s_22f96f89bf7a40::t_e25af12b122d22 1-28
+src/shared/feature-interaction-catalog.ts
+  s_22f96f89bf7a40::t_4a6830cec3fd0c 29-33,110-114
+src/shared/feature-interaction-categories.ts
+  s_22f96f89bf7a40::t_6ff395d9f9be7c 50-54
+src/shared/feature-interactions.test.ts
+  s_22f96f89bf7a40::t_9ae5c87067a008 62-66,219,224
+src/shared/telemetry-app-event-schemas.ts
+  s_22f96f89bf7a40::t_b634634da38511 135-169
+src/shared/telemetry-event-registry.ts
+  s_22f96f89bf7a40::t_88c3f35b758891 7-9,108-111
+src/shared/telemetry-events.test.ts
+  s_22f96f89bf7a40::t_6eff67f3f2591e 644-698
+src/shared/telemetry-events.ts
+  s_22f96f89bf7a40::t_0af74ea39189e4 45-46,52-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "3555702172c94c62c685f649c079e99981fa9e74",
+  "prompts": {},
+  "sessions": {
+    "s_22f96f89bf7a40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bdaa978f-a60f-43fb-b601-625dc3e5348b",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
