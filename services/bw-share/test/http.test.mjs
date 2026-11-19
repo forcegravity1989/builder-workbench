@@ -5,9 +5,11 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { createClientTokenStore } from '../src/client-tokens.mjs'
+import { DEFAULT_ENROLL_KEY } from '../src/config.mjs'
 import { isShareError } from '../src/errors.mjs'
-import { SHARE_PAGE_CSP } from '../src/http.mjs'
-import { startTestServer, updateRequest, writeRequest } from './helpers.mjs'
+import { createRequestHandler, SHARE_PAGE_CSP } from '../src/http.mjs'
+import { createShareStore } from '../src/store.mjs'
+import { startTestServer, testConfig, updateRequest, writeRequest } from './helpers.mjs'
 
 /** @param {Response} response */
 async function json(response) {
@@ -420,4 +422,148 @@ test('a full client token registry reports enrollment_full, not a retryable busy
     assert.equal(/** @type {{ code: string }} */ (error).code, 'enrollment_full')
     return true
   })
+})
+
+/** Boots over a data dir the test prepared, so registry state can be seeded or damaged first. */
+async function startOverDir(dataDir, overrides = {}) {
+  const config = testConfig(dataDir, overrides)
+  const store = createShareStore(config)
+  await store.init()
+  /** @type {string[]} */
+  const logs = []
+  const log = (line) => logs.push(line)
+  const clientTokens = createClientTokenStore({ dataDir, log })
+  await clientTokens.init()
+  const server = http.createServer(createRequestHandler({ store, clientTokens, config, log }))
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = /** @type {import('node:net').AddressInfo} */ (server.address())
+  return {
+    base: `http://127.0.0.1:${address.port}`,
+    logs,
+    clientTokens,
+    async close() {
+      server.closeAllConnections?.()
+      await new Promise((resolve) => server.close(resolve))
+    }
+  }
+}
+
+const DAMAGED_REGISTRIES = [
+  ['truncated to zero bytes', ''],
+  ['not JSON at all', '{ not json'],
+  ['JSON of the wrong shape', JSON.stringify({ hello: 'world' })],
+  ['a registry version this build does not know', JSON.stringify({ version: 99, tokens: [] })]
+]
+
+for (const [label, contents] of DAMAGED_REGISTRIES) {
+  test(`a damaged token registry (${label}) refuses writes instead of reopening them`, async (t) => {
+    const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-damaged-'))
+    t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+    await fs.writeFile(path.join(dataDir, 'client-tokens.json'), contents)
+
+    const server = await startOverDir(dataDir)
+    t.after(() => server.close())
+    assert.equal(server.clientTokens.isDegraded(), true)
+
+    // Before the restart this service needed a device token; "no tokens loaded" must not read as
+    // "fresh instance", or an authenticated service silently becomes anonymous-writable.
+    const anonymous = await writeRequest(`${server.base}/api/shares`, {
+      content: HTML,
+      fileName: 'a.html'
+    })
+    assert.equal(anonymous.status, 503)
+    assert.equal((await json(anonymous)).error.code, 'registry_unavailable')
+
+    // Enrollment would rewrite the registry with only the new device, revoking everybody else.
+    const enroll = await fetch(`${server.base}/api/client-tokens`, {
+      method: 'POST',
+      headers: { 'x-enroll-key': DEFAULT_ENROLL_KEY }
+    })
+    assert.equal(enroll.status, 503)
+    assert.equal((await json(enroll)).error.code, 'registry_unavailable')
+
+    // The file is left for the operator instead of being replaced or moved aside, so a restart
+    // reaches the same verdict rather than the fresh-instance posture.
+    assert.equal(await fs.readFile(path.join(dataDir, 'client-tokens.json'), 'utf8'), contents)
+    assert.ok(
+      server.logs.some((line) => /registry is unusable/.test(line)),
+      `expected an operator-facing log, got: ${server.logs.join(' | ')}`
+    )
+  })
+}
+
+test('a damaged registry still serves shares and still honours a static token', async (t) => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-damaged-read-'))
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+
+  // Create a share while the instance is healthy and anonymous-open.
+  const healthy = await startOverDir(dataDir)
+  const created = await json(
+    await writeRequest(`${healthy.base}/api/shares`, { content: HTML, fileName: 'a.html' })
+  )
+  await healthy.close()
+
+  await fs.writeFile(path.join(dataDir, 'client-tokens.json'), '{ not json')
+  const server = await startOverDir(dataDir, { uploadToken: 'static-secret' })
+  t.after(() => server.close())
+  assert.equal(server.clientTokens.isDegraded(), true)
+
+  // Reading needs no registry: colleagues keep being able to open the link. The link is fetched
+  // from the restarted server, which listens on a new port.
+  const view = await fetch(`${server.base}/s/${created.id}`)
+  assert.equal(view.status, 200)
+  assert.equal(await view.text(), HTML)
+
+  // A static token is verifiable without the registry, so operator scripts keep working.
+  const withStatic = await writeRequest(
+    `${server.base}/api/shares`,
+    { content: HTML, fileName: 'b.html' },
+    { 'x-upload-token': 'static-secret' }
+  )
+  assert.equal(withStatic.status, 201)
+  await withStatic.body?.cancel()
+})
+
+test('a fresh instance with no registry still accepts anonymous writes', async (t) => {
+  // Pins the distinction the degraded path depends on: "never enrolled" is the documented
+  // fresh-instance posture, "registry unreadable" is not.
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-fresh-'))
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+  const server = await startOverDir(dataDir)
+  t.after(() => server.close())
+  assert.equal(server.clientTokens.isDegraded(), false)
+
+  const anonymous = await writeRequest(`${server.base}/api/shares`, {
+    content: HTML,
+    fileName: 'a.html'
+  })
+  assert.equal(anonymous.status, 201)
+  await anonymous.body?.cancel()
+})
+
+test('an issued token still authenticates after a restart', async (t) => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-restart-'))
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+
+  const first = await startOverDir(dataDir, { uploadToken: 'static-secret' })
+  const enrolled = await fetch(`${first.base}/api/client-tokens`, {
+    method: 'POST',
+    headers: { 'x-enroll-key': DEFAULT_ENROLL_KEY }
+  })
+  const { token } = await json(enrolled)
+  await first.close()
+
+  const second = await startOverDir(dataDir, { uploadToken: 'static-secret' })
+  t.after(() => second.close())
+  assert.equal(second.clientTokens.isDegraded(), false)
+  const uploaded = await writeRequest(
+    `${second.base}/api/shares`,
+    { content: HTML, fileName: 'a.html' },
+    { 'x-upload-token': token }
+  )
+  assert.equal(uploaded.status, 201)
+  await uploaded.body?.cancel()
+  // The durable write leaves no staging file behind.
+  const leftovers = (await fs.readdir(dataDir)).filter((name) => name.includes('.tmp'))
+  assert.deepEqual(leftovers, [])
 })

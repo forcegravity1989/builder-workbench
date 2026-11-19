@@ -196,18 +196,31 @@ function methodNotAllowed(allow) {
 
 /**
  * Writes are anonymous only on a fresh development instance: a configured static token or any
- * issued per-device token turns the check on.
+ * issued per-device token turns the check on. A registry that could not be read turns it *off*
+ * instead of open — the enrolled-device set is unknown, so neither "allow" nor "this token is
+ * valid" can be concluded.
  *
  * @param {import('node:http').IncomingMessage} req
  * @param {import('./config.mjs').ShareConfig} config
  * @param {ReturnType<import('./client-tokens.mjs').createClientTokenStore>} clientTokens
  */
 function requireUploadToken(req, config, clientTokens) {
+  const provided = headerValue(req.headers['x-upload-token'])
+  // A configured static token is verifiable without the registry, so it keeps working.
+  if (tokenMatches(provided, config.uploadToken)) {
+    return
+  }
+  if (clientTokens.isDegraded()) {
+    throw new ShareError(
+      503,
+      'registry_unavailable',
+      'Device registry is unreadable; uploads are refused until an operator restores or removes it.'
+    )
+  }
   if (!config.uploadToken && clientTokens.size() === 0) {
     return
   }
-  const provided = headerValue(req.headers['x-upload-token'])
-  if (tokenMatches(provided, config.uploadToken) || clientTokens.matches(provided)) {
+  if (clientTokens.matches(provided)) {
     return
   }
   throw new ShareError(401, 'unauthorized', 'Missing or invalid x-upload-token header.')

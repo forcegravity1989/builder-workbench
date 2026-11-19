@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { ShareError } from './errors.mjs'
+import { writeFileAtomic } from './store.mjs'
 
 const REGISTRY_VERSION = 1
 const TOKEN_BYTES = 32
@@ -14,8 +15,16 @@ export function hashClientToken(token) {
 }
 
 /**
- * Per-device upload tokens issued on demand. Only hashes are stored, and the plaintext is
- * returned exactly once, mirroring how share edit tokens are handled.
+ * Per-device upload tokens issued on demand. Only hashes are stored, and the plaintext is returned
+ * exactly once, mirroring how share edit tokens are handled.
+ *
+ * A registry that exists but cannot be trusted — unreadable, truncated, or a shape this build does
+ * not understand — puts the store in a degraded state instead of an empty one. Empty would mean
+ * "no device has enrolled yet", which opens writes on a service that was authenticated before the
+ * restart; issuing a token would rewrite the registry with only that device and silently revoke
+ * everybody else. So while degraded, enrollment and device-token uploads are refused and the file
+ * is left in place for an operator, who restores it or deletes it to accept the fresh-instance
+ * posture deliberately.
  *
  * @param {object} options
  * @param {string} options.dataDir
@@ -26,45 +35,76 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
   const registryPath = path.join(dataDir, 'client-tokens.json')
   /** @type {Map<string, string>} hash → createdAt */
   let tokens = new Map()
+  let degraded = false
   let writeChain = Promise.resolve()
 
   async function init() {
+    let raw
     try {
-      const raw = await readFile(registryPath, 'utf8')
-      const parsed = JSON.parse(raw)
-      const entries = Array.isArray(parsed?.tokens) ? parsed.tokens : []
-      tokens = new Map(
-        entries
-          .filter((entry) => typeof entry?.hash === 'string' && /^[a-f0-9]{64}$/.test(entry.hash))
-          .map((entry) => [
-            entry.hash,
-            typeof entry.createdAt === 'string' ? entry.createdAt : new Date(now()).toISOString()
-          ])
-      )
+      raw = await readFile(registryPath, 'utf8')
     } catch (error) {
       if (/** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT') {
         return
       }
-      log(
-        `ignoring unreadable client token registry: ${error instanceof Error ? error.message : String(error)}`
-      )
-      try {
-        await rename(registryPath, `${registryPath}.corrupt-${Date.now()}`)
-      } catch (renameError) {
-        log(`could not quarantine client token registry: ${String(renameError)}`)
-      }
+      degraded = true
+      return reportDamaged(`it could not be read: ${describe(error)}`)
     }
+    let parsed
+    try {
+      parsed = JSON.parse(raw)
+    } catch (error) {
+      degraded = true
+      return reportDamaged(`it is not valid JSON: ${describe(error)}`)
+    }
+    if (parsed?.version !== REGISTRY_VERSION || !Array.isArray(parsed.tokens)) {
+      degraded = true
+      return reportDamaged('it is not a token registry this build understands')
+    }
+    const entries = parsed.tokens.filter(
+      (entry) => typeof entry?.hash === 'string' && /^[a-f0-9]{64}$/.test(entry.hash)
+    )
+    tokens = new Map(
+      entries.map((entry) => [
+        entry.hash,
+        typeof entry.createdAt === 'string' ? entry.createdAt : new Date(now()).toISOString()
+      ])
+    )
+    if (entries.length !== parsed.tokens.length) {
+      log(
+        `client token registry held ${parsed.tokens.length - entries.length} unusable entr(ies); the rest still authenticate`
+      )
+    }
+  }
+
+  function reportDamaged(reason) {
+    log(
+      `client token registry is unusable because ${reason}. It was left in place at ${path.basename(
+        registryPath
+      )}; uploads without a static token and all enrollment are refused until an operator ` +
+        'restores it, or deletes it to accept the fresh-instance posture on purpose.'
+    )
   }
 
   /** @param {string} token */
   function matches(token) {
-    if (typeof token !== 'string' || token.length === 0) {
+    if (degraded || typeof token !== 'string' || token.length === 0) {
       return false
     }
     return tokens.has(hashClientToken(token))
   }
 
+  function assertUsable() {
+    if (degraded) {
+      throw new ShareError(
+        503,
+        'registry_unavailable',
+        'Client token registry is unreadable; an operator has to restore or remove it.'
+      )
+    }
+  }
+
   async function issue() {
+    assertUsable()
     if (tokens.size >= MAX_TOKENS) {
       // Its own code: unlike the in-flight body budget, retrying cannot clear this one.
       throw new ShareError(
@@ -80,13 +120,12 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
     const run = writeChain.then(async () => {
       const entries = [...snapshot].map(([hash, issuedAt]) => ({ hash, createdAt: issuedAt }))
       await mkdir(dataDir, { recursive: true, mode: 0o700 })
-      const temp = `${registryPath}.tmp`
-      await writeFile(
-        temp,
-        `${JSON.stringify({ version: REGISTRY_VERSION, tokens: entries }, null, 2)}\n`,
-        { encoding: 'utf8', mode: 0o600 }
+      // Durable, like the shares themselves: a registry that survives a power loss with zero bytes
+      // would come back as "unusable" and take every device's write access with it.
+      await writeFileAtomic(
+        registryPath,
+        `${JSON.stringify({ version: REGISTRY_VERSION, tokens: entries }, null, 2)}\n`
       )
-      await rename(temp, registryPath)
     })
     writeChain = run.catch(() => undefined)
     await run
@@ -97,6 +136,12 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
     init,
     matches,
     issue,
-    size: () => tokens.size
+    size: () => tokens.size,
+    isDegraded: () => degraded
   }
+}
+
+/** @param {unknown} error */
+function describe(error) {
+  return error instanceof Error ? error.message : String(error)
 }

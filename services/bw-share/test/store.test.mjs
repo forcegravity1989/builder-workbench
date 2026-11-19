@@ -221,3 +221,72 @@ test('a finished read releases the file so the next update succeeds', async (t) 
   })
   assert.equal(updated.bytes, Buffer.byteLength('<p>v2</p>'))
 })
+
+const BROKEN_METADATA = [
+  ['editTokenHash missing', (meta) => delete meta.editTokenHash],
+  [
+    'editTokenHash not a digest',
+    (meta) => {
+      meta.editTokenHash = 'nope'
+    }
+  ],
+  [
+    'expiresAt unparseable',
+    (meta) => {
+      meta.expiresAt = 'not-a-date'
+    }
+  ],
+  [
+    'bytes not a number',
+    (meta) => {
+      meta.bytes = '12'
+    }
+  ],
+  [
+    'another share id',
+    (meta) => {
+      meta.id = 'aaaaaaaaaaaaaaaaaaaaaa'
+    }
+  ]
+]
+
+for (const [label, mutate] of BROKEN_METADATA) {
+  test(`metadata that cannot describe a share (${label}) reads as missing and is swept`, async (t) => {
+    const env = await makeStore()
+    t.after(() => env.cleanup())
+    const created = await env.store.create({ content: HTML, fileName: 'a.html' })
+    const metaPath = path.join(env.dataDir, `${created.id}.json`)
+    const meta = JSON.parse(await fs.readFile(metaPath, 'utf8'))
+    mutate(meta)
+    await fs.writeFile(metaPath, JSON.stringify(meta))
+
+    // A 404 the client already handles by recreating the link — not a 500 from a token check with
+    // no hash to compare, and not a share the sweep can never reclaim.
+    assert.equal(await env.store.read(created.id), null)
+    assert.equal(await env.store.open(created.id), null)
+    await assert.rejects(
+      env.store.update(created.id, created.editToken, { content: '<p>x</p>', fileName: 'a.html' }),
+      (error) => {
+        assertShareError(error, 'not_found')
+        return true
+      }
+    )
+    await assert.rejects(env.store.remove(created.id, created.editToken), (error) => {
+      assertShareError(error, 'not_found')
+      return true
+    })
+    assert.equal(await env.store.sweep(), 1)
+    assert.deepEqual(await fs.readdir(env.dataDir), [])
+  })
+}
+
+test('metadata this build wrote is still accepted', async (t) => {
+  const env = await makeStore()
+  t.after(() => env.cleanup())
+  const created = await env.store.create({ content: HTML, fileName: 'a.html' })
+
+  const read = await env.store.read(created.id)
+  assert.ok(read)
+  assert.equal(read.content.toString('utf8'), HTML)
+  assert.equal(await env.store.sweep(), 0)
+})

@@ -25,7 +25,7 @@ export async function startServer(options = {}) {
   if (removed > 0) {
     log(`removed ${removed} expired share(s) at startup`)
   }
-  if (!config.uploadToken && clientTokens.size() === 0) {
+  if (!config.uploadToken && clientTokens.size() === 0 && !clientTokens.isDegraded()) {
     log(
       'warning: no upload token is configured and no device has enrolled yet; uploads are open until one does.'
     )

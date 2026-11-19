@@ -103,6 +103,9 @@ export function createShareStore({ dataDir, retentionDays }) {
       } else {
         delete meta.title
       }
+      // Content first, then metadata. If the second write is lost, a viewer still gets a complete
+      // document — `open()` takes the length and the bytes from one fd — and only the display name
+      // and the renewed expiry lag, which the next update corrects.
       await writeFileAtomic(contentPath(id), payload.content)
       await writeFileAtomic(metaPath(id), JSON.stringify(meta, null, 2))
       return meta
@@ -245,7 +248,7 @@ export function createShareStore({ dataDir, retentionDays }) {
     try {
       const raw = await fs.readFile(metaPath(id), 'utf8')
       const parsed = JSON.parse(raw)
-      if (typeof parsed !== 'object' || parsed === null || parsed.id !== id) {
+      if (!isShareMeta(parsed, id)) {
         return null
       }
       return /** @type {ShareMeta} */ (parsed)
@@ -329,12 +332,13 @@ export function createShareStore({ dataDir, retentionDays }) {
 
 /**
  * The maxBytes limit is enforced on the decoded payload; this store trusts its caller for that
- * check and only guards the filesystem mechanics.
+ * check and only guards the filesystem mechanics. Shared with the client-token registry so both
+ * on-disk states survive a power loss the same way.
  *
  * @param {string} filePath
  * @param {string | Buffer} data
  */
-async function writeFileAtomic(filePath, data) {
+export async function writeFileAtomic(filePath, data) {
   const tmp = `${filePath}.tmp-${randomBytes(8).toString('hex')}`
   try {
     const handle = await fs.open(tmp, 'w', 0o600)
@@ -394,6 +398,39 @@ async function syncDirectory(dir) {
   } finally {
     await handle?.close()
   }
+}
+
+/**
+ * Metadata that cannot describe a usable share is treated as missing. Why: a half-written or
+ * hand-edited `<id>.json` would otherwise reach the edit-token check with no hash to compare (a
+ * 500 for the caller) or an unparseable expiry that never compares as past, so the sweep would
+ * skip those files forever. As missing, the share answers 404 — which clients already handle by
+ * recreating the link — and the sweep reclaims both files.
+ *
+ * @param {unknown} value
+ * @param {string} id
+ */
+function isShareMeta(value, id) {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  const meta = /** @type {Record<string, unknown>} */ (value)
+  if (meta.id !== id) {
+    return false
+  }
+  if (typeof meta.editTokenHash !== 'string' || !/^[a-f0-9]{64}$/.test(meta.editTokenHash)) {
+    return false
+  }
+  if (typeof meta.fileName !== 'string' || typeof meta.bytes !== 'number') {
+    return false
+  }
+  if (typeof meta.createdAt !== 'string' || typeof meta.updatedAt !== 'string') {
+    return false
+  }
+  if (meta.expiresAt === null) {
+    return true
+  }
+  return typeof meta.expiresAt === 'string' && !Number.isNaN(Date.parse(meta.expiresAt))
 }
 
 /** @param {unknown} error */
