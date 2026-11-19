@@ -32,7 +32,7 @@ export function closeTerminalLinkActionRequest(
 
 type LinkActionDetails = Pick<
   TerminalLinkActionRequest,
-  'destination' | 'kind' | 'primary' | 'alternate'
+  'destination' | 'kind' | 'primary' | 'alternate' | 'additional'
 >
 
 export function requestTerminalLinkAction(

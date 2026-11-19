@@ -3275,6 +3275,7 @@
             "openWithDefaultApp": "Open with default app",
             "switchTerminal": "Switch terminal",
             "openTaskTerminal": "Open task terminal",
+            "openInTask": "Open in Task",
             "systemBrowser": "System Browser",
             "orcaBrowser": "Orca Browser",
             "terminalLinkSettings": "Terminal link settings",

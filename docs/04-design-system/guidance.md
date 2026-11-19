@@ -83,11 +83,11 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 工作 | W06 让项目持续可维护（建设中）：审视项目知识、架构与技术债 → 决定处理或暂缓 → 执行并验证 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 工作 | W07 把跑通的做法变成下次少操心（建设中）：总结真实工作 → 沉淀可复用做法 → 在下次同类任务复用并检验 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 功能 | F01 创建工作区、隔离并行任务 | 重点：创建、隔离、切换与继续工作 | [✅ 工作区演示][explore-copy]；[✅ 样例独立开工和切换][delivery-content] | ☐ | [待验：workspace-creation][tours] | — | ☐ | — |
-| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ 既有 GitHub/Linear 片段][explore-copy]；[待验：W02 关联任务与开工片段][planning-content]；[✅ 样例目标任务与状态回看][delivery-content] | [✅ 任务页帮助中文重播：来源、筛选、从任务开工][screen-guide] | [待验：首次触发、完成与持久读回][tours] | — | 复用 W02；CLI 参考见 F29 | — |
+| 功能 | F02 [任务管理](../05-features/task-management/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ 既有 GitHub/Linear 片段][explore-copy]；[待验：W02 关联任务与开工片段][planning-content]；[✅ 样例目标任务与状态回看][delivery-content] | [✅ 任务页帮助中文重播：来源、筛选、从任务开工][screen-guide]；[待验：链接菜单的内部任务动作、浏览器备用及失败恢复](../05-features/task-management/spec.md#用户旅程) | [待验：首次触发、完成与持久读回][tours] | — | 复用 W02；CLI 参考见 F29 | — |
 | 功能 | F03 智能体运行状态 | 随屏 → F01/F06：运行、等待、受阻状态及继续操作 | [✅ 状态演示][explore-copy]；[✅ 样例工作区状态][delivery-content] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F04 智能体编排 | 暂缓专项；保留已有编排演示 | [✅ 编排演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F05 账号用量 | 随屏 → F06：账号身份、用量/额度、未知或受限时的下一步 | [✅ 用量演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
-| 功能 | F06 终端、分屏与智能体会话 | 重点：终端、分屏、智能体会话及上下文恢复 | [✅ 终端演示][explore-copy]；[✅ 样例切换并返回原会话][delivery-content] | ☐ | [待验：workspace-agent-sessions][tours] | — | ☐ | — |
+| 功能 | F06 终端、分屏与智能体会话 | 重点：终端、分屏、智能体会话及上下文恢复；链接直达与返回复用 F02 | [✅ 终端演示][explore-copy]；[✅ 样例切换并返回原会话][delivery-content] | 复用 F02 的链接动作与失败恢复；其余 ☐ | [待验：workspace-agent-sessions][tours] | — | ☐ | — |
 | 功能 | F07 编辑器 | 随屏 → F06/F09：打开、编辑与核对文件改动 | [✅ 编辑器演示][explore-copy]；[✅ 样例返修差异][delivery-content] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F08 内置浏览器、抓取与批注 | 重点：页面、抓取与批注；协作时复用 F24 的共享主机连接核对 | [✅ 浏览器演示][explore-copy]；[✅ 样例原型批注和会话入口][delivery-content] | [✅ Windows 浏览器帮助重播、空白页提示、添加和展开回看批注][delivery-help]；[✅ Windows 双标签重播、切离取消与关闭后台页][delivery-browser-recheck] | [待验：browser][tours] | — | ☐ | — |
 | 功能 | F09 评审意见与代码差异 | 重点：检查改动、留意见与继续处理；承接 F10/F11 | [✅ 差异/意见演示][explore-copy]；[✅ 样例文件评论与返修][delivery-content] | [✅ Windows 筛选展开后重播与真实差异打开][delivery-help] | [✅ Windows 首次出现、跳过及重启读回][delivery-help] | — | ☐ | — |

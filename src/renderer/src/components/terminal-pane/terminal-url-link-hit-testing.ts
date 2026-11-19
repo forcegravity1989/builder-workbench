@@ -14,6 +14,7 @@ import { buildWrappedLogicalLine, rangeForParsedFileLink } from './wrapped-termi
 import { isTerminalLinkifierHoverActive } from '@/lib/pane-manager/terminal-linkifier-hover-reset'
 import {
   buildHttpLinkActions,
+  httpLinkActionDestinationsForUrl,
   openRoutedHttpLink,
   type HttpLinkActionDestinations,
   type HttpLinkDestination,
@@ -71,10 +72,11 @@ export function handleTerminalHttpLink(
   event: MouseEvent | undefined,
   deps: UrlLinkHitTestDeps
 ): boolean {
+  const destinations = httpLinkActionDestinationsForUrl(url, deps.actionDestinations)
   if (isTerminalHttpLinkActivation(event)) {
     const forceDestination = event?.shiftKey
-      ? (deps.actionDestinations?.alternate ?? deps.actionDestinations?.primary)
-      : deps.actionDestinations?.primary
+      ? (destinations?.alternate ?? destinations?.primary)
+      : destinations?.primary
     openRoutedHttpLink(url, {
       ...deps,
       modifierHeld: forceDestination ? false : Boolean(event?.shiftKey),
@@ -86,7 +88,7 @@ export function handleTerminalHttpLink(
   return requestTerminalLinkAction(event, deps.linkActionContext, {
     destination: deps.actionDestination ?? url,
     kind: 'url',
-    ...buildHttpLinkActions(deps.actionDestinations, (destination) =>
+    ...buildHttpLinkActions(destinations, (destination) =>
       openRoutedHttpLink(url, { ...deps, modifierHeld: false, forceDestination: destination })
     )
   })
