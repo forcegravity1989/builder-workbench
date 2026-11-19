@@ -2,12 +2,24 @@ import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import type {
   ReviewIncomingRequest,
   ReviewPeerTarget,
+  ReviewRepoIdentity,
   ReviewRequestPayload,
   ReviewSendResult
 } from '../../../../shared/workbench/pr-review-request'
 
 export const readReviewInbox = () =>
   callRuntimeRpc<ReviewIncomingRequest[]>({ kind: 'local' }, 'workbench.review.inbox')
+
+export const dismissReviewInbox = (
+  repo: ReviewRepoIdentity,
+  prNumber: number,
+  seenReceivedAt: string
+) =>
+  callRuntimeRpc<{ dismissed: boolean }>({ kind: 'local' }, 'workbench.review.dismiss', {
+    repo,
+    prNumber,
+    seenReceivedAt
+  })
 
 export const readReviewSender = () =>
   callRuntimeRpc<{ sender: string }>({ kind: 'local' }, 'workbench.review.identity')
