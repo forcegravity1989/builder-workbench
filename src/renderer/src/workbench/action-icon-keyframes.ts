@@ -56,9 +56,10 @@ function draw(stroke: Element): Animation {
 }
 
 export function animateActionIcon(icon: Element): Animation[] {
-  const name = Array.from(icon.classList)
-    .findLast((className) => className.startsWith('lucide-'))
-    ?.slice('lucide-'.length)
+  const name =
+    Array.from(icon.classList)
+      .findLast((className) => className.startsWith('lucide-'))
+      ?.slice('lucide-'.length) ?? ''
   const parts = Array.from(icon.children)
 
   switch (name) {
