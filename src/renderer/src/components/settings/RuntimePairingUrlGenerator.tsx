@@ -339,9 +339,9 @@ export function RuntimePairingUrlGenerator({
     }
   }
 
-  const grantRuntimeFullAccess = async (grants: RuntimeAccessGrant[]): Promise<void> => {
+  const grantRuntimeFullAccess = async (grants: RuntimeAccessGrant[]): Promise<boolean> => {
     if (grants.length === 0) {
-      return
+      return false
     }
     setGrantingFullAccess(true)
     try {
@@ -352,14 +352,30 @@ export function RuntimePairingUrlGenerator({
       if (mountedRef.current) {
         toast.success(
           result.granted.length === 1
-            ? 'Full access granted.'
-            : `Full access granted to ${result.granted.length} devices.`
+            ? translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGranted',
+                'Full access granted.'
+              )
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantedCount',
+                'Full access granted to {{value0}} devices.',
+                { value0: result.granted.length }
+              )
         )
       }
+      return result.granted.length === grants.length
     } catch (error) {
       if (mountedRef.current) {
-        toast.error(error instanceof Error ? error.message : 'Failed to grant full access.')
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantFailed',
+                'Failed to grant full access.'
+              )
+        )
       }
+      return false
     } finally {
       if (mountedRef.current) {
         setGrantingFullAccess(false)

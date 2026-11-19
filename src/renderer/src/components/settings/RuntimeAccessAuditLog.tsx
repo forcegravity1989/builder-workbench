@@ -5,6 +5,14 @@ import type {
 } from '../../../../shared/runtime-access-grants'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '../ui/select'
+import { translate } from '@/i18n/i18n'
 
 type RuntimeAccessAuditLogProps = {
   entries: RuntimeAccessAuditEntry[]
@@ -37,8 +45,15 @@ export function RuntimeAccessAuditLog({
     <div className="space-y-2 border-t border-border/40 pt-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-medium">Shared host access log</h3>
-          <p className="text-muted-foreground text-xs">Request metadata · last 14 days</p>
+          <h3 className="text-sm font-medium">
+            {translate('auto.components.settings.RuntimeAccessAuditLog.title', 'Shared host access log')}
+          </h3>
+          <p className="text-muted-foreground text-xs">
+            {translate(
+              'auto.components.settings.RuntimeAccessAuditLog.description',
+              'Request metadata · last 14 days'
+            )}
+          </p>
         </div>
         <Button
           type="button"
@@ -46,58 +61,59 @@ export function RuntimeAccessAuditLog({
           size="icon-xs"
           onClick={onRefresh}
           disabled={isLoading}
-          aria-label="Refresh shared host access log"
+          aria-label={translate(
+            'auto.components.settings.RuntimeAccessAuditLog.refresh',
+            'Refresh shared host access log'
+          )}
         >
           <RefreshCw className={isLoading ? 'animate-spin' : undefined} />
         </Button>
       </div>
       <div className="flex flex-wrap gap-2">
-        <select
-          value={action}
-          onChange={(event) => onActionChange(event.target.value)}
-          className="h-8 max-w-56 rounded-md border border-input bg-background px-2 text-xs"
-          aria-label="Filter log action"
-        >
-          <option value="all">All actions</option>
-          {[...new Set(entries.map((entry) => entry.method))].map((method) => (
-            <option key={method} value={method}>
-              {method}
-            </option>
-          ))}
-        </select>
-        <select
-          value={result}
-          onChange={(event) =>
-            onResultChange(event.target.value as RuntimeAccessAuditResult | 'all')
-          }
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-          aria-label="Filter log result"
-        >
-          <option value="all">All results</option>
-          <option value="allowed">Allowed</option>
-          <option value="denied">Denied</option>
-          <option value="error">Error</option>
-        </select>
-        <select
-          value={sinceDays}
-          onChange={(event) => onSinceDaysChange(Number(event.target.value) as 1 | 7 | 14)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-          aria-label="Filter log time"
-        >
-          <option value="1">Last 24 hours</option>
-          <option value="7">Last 7 days</option>
-          <option value="14">Last 14 days</option>
-        </select>
+        <Select value={action} onValueChange={onActionChange}>
+          <SelectTrigger size="sm" aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.action', 'Filter log action')}>
+            <SelectValue placeholder={translate('auto.components.settings.RuntimeAccessAuditLog.allActions', 'All actions')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{translate('auto.components.settings.RuntimeAccessAuditLog.allActions', 'All actions')}</SelectItem>
+            {[...new Set([...(action !== 'all' ? [action] : []), ...entries.map((entry) => entry.method)])].map((method) => (
+              <SelectItem key={method} value={method}>{method}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={result} onValueChange={(value) => onResultChange(value as RuntimeAccessAuditResult | 'all')}>
+          <SelectTrigger size="sm" aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.result', 'Filter log result')}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{translate('auto.components.settings.RuntimeAccessAuditLog.allResults', 'All results')}</SelectItem>
+            <SelectItem value="allowed">{translate('auto.components.settings.RuntimeAccessAuditLog.allowed', 'Allowed')}</SelectItem>
+            <SelectItem value="denied">{translate('auto.components.settings.RuntimeAccessAuditLog.denied', 'Denied')}</SelectItem>
+            <SelectItem value="error">{translate('auto.components.settings.RuntimeAccessAuditLog.error', 'Error')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={String(sinceDays)} onValueChange={(value) => onSinceDaysChange(Number(value) as 1 | 7 | 14)}>
+          <SelectTrigger size="sm" aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.time', 'Filter log time')}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">{translate('auto.components.settings.RuntimeAccessAuditLog.lastDay', 'Last 24 hours')}</SelectItem>
+            <SelectItem value="7">{translate('auto.components.settings.RuntimeAccessAuditLog.lastWeek', 'Last 7 days')}</SelectItem>
+            <SelectItem value="14">{translate('auto.components.settings.RuntimeAccessAuditLog.lastTwoWeeks', 'Last 14 days')}</SelectItem>
+          </SelectContent>
+        </Select>
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search device or action"
+          placeholder={translate('auto.components.settings.RuntimeAccessAuditLog.search', 'Search device or action')}
           className="h-8 min-w-48 text-xs"
-          aria-label="Search shared host access log"
+          aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.search', 'Search device or action')}
         />
       </div>
       {entries.length === 0 ? (
-        <p className="text-muted-foreground text-xs">No matching access records.</p>
+        <p className="text-muted-foreground text-xs">
+          {translate('auto.components.settings.RuntimeAccessAuditLog.empty', 'No matching access records.')}
+        </p>
       ) : (
         <div className="max-h-64 overflow-auto scrollbar-sleek rounded-md border border-border/60">
           {entries.map((entry) => (
@@ -114,13 +130,17 @@ export function RuntimeAccessAuditLog({
               <span
                 className={
                   entry.result === 'allowed'
-                    ? 'text-emerald-600'
+                    ? 'text-status-success'
                     : entry.result === 'denied'
-                      ? 'text-amber-600'
+                      ? 'text-muted-foreground'
                       : 'text-destructive'
                 }
               >
-                {entry.result}
+                {entry.result === 'allowed'
+                  ? translate('auto.components.settings.RuntimeAccessAuditLog.allowed', 'Allowed')
+                  : entry.result === 'denied'
+                    ? translate('auto.components.settings.RuntimeAccessAuditLog.denied', 'Denied')
+                    : translate('auto.components.settings.RuntimeAccessAuditLog.error', 'Error')}
               </span>
             </div>
           ))}
