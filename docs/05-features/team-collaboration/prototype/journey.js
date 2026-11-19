@@ -78,6 +78,7 @@
   const project = '星图服务'
   const teamName = '神盾局'
   const demoGroup = '938583054774198541'
+  const demoSpaceId = '20065474'
   const demoProjectGroup = '300000000000000001'
   const employees = { lead: 'A0010001', lin: 'A0010002', chen: 'A0010003' }
   const addresses = { lin: 'ws://192.0.2.10:6768', chen: 'ws://192.0.2.11:6771' }
@@ -311,10 +312,11 @@
     }))
   }
 
-  function blankDirectory(groupId = demoGroup) {
+  function blankDirectory(groupId = demoGroup, spaceId = demoSpaceId) {
     return {
       schema_version: 1,
       team_group_id: groupId,
+      team_space_id: spaceId,
       identity_source: 'welink-cli',
       hosts: directoryMembers(),
       projects: []
@@ -372,10 +374,6 @@
       return directory
     }
     directory.identity_source ??= 'welink-cli'
-    if (!directory.team_space_url) {
-      delete directory.team_space_url
-    }
-    delete directory.team_space_id
     const previousHosts = new Map((directory.hosts ?? []).map((host) => [host.member_id, host]))
     directory.hosts = directoryMembers().map((member) => {
       const previous = { ...previousHosts.get(member.member_id) }
@@ -594,7 +592,7 @@
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">输入群号，BW 会从 WeLink 读取成员和群空间。</p><form id="team-lookup"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">输入群 ID 和群空间 ID，BW 会读取成员并使用该空间保存团队目录。</p><form id="team-lookup"><div class="directory-id-grid"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field">群空间 ID<input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = Object.keys(names)
@@ -623,7 +621,7 @@
       : '<p class="field-note">群空间还没有登记项目。先点击“登记项目”，再从各成员项目墙同步来源。</p>'
     return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
       <header class="row between"><div><small>WeLink 群空间目录</small><h2>团队设置</h2></div>${close}</header>
-      <div class="directory-scroll"><div class="directory-links"><div><small>团队群</small><strong>${teamName}</strong><small>群号 ${esc(draft.team_group_id)}</small></div><div class="row"><small>群空间</small>${draft.team_space_url ? button('打开群空间', 'open-space', { value: draft.team_space_url, kind: 'ghost' }) : '<span class="field-note">群空间目标待内网接口提供</span>'}</div></div>
+      <div class="directory-scroll"><div class="directory-links"><label class="directory-id-field"><small>团队群 ID</small><input class="input" inputmode="numeric" data-directory-field="team_group_id" value="${esc(draft.team_group_id ?? '')}" /></label><label class="directory-id-field"><small>群空间 ID</small><input class="input" inputmode="numeric" data-directory-field="team_space_id" value="${esc(draft.team_space_id ?? '')}" /></label></div>
        <div class="row between"><h3>成员与主机</h3><div class="row"><span class="directory-tip" title="成员来自 WeLink 群，地址来自 Orca 共享设置。完全访问在共享访问页管理。">${icon('CircleHelp')}</span>${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div></div>
       <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>身份</th><th>主机与 Orca 地址</th></tr></thead><tbody>${people}</tbody></table></div>
       <div class="row between directory-project-head"><div><h3>团队项目</h3><small>先登记项目，再把成员项目墙中相同 repoId 的来源自动合并。</small></div><div class="row">${writable ? button(`${icon('Plus')} 登记项目`, 'register-project', { kind: 'ghost' }) : ''}${iconButton('RefreshCw', '从成员项目墙同步项目', 'refresh-directory')}</div></div>
@@ -1353,6 +1351,15 @@
         host.orca_endpoint = event.target.value.trim()
       }
     }
+    if (event.target.matches('input[data-directory-field]')) {
+      const field = event.target.dataset.directoryField
+      if (field === 'team_group_id' || field === 'team_space_id') {
+        const draft = current().directoryDraft
+        if (draft) {
+          draft[field] = event.target.value.trim()
+        }
+      }
+    }
     if (event.target.hasAttribute('data-filter')) {
       const query = event.target.value.trim()
       for (const card of document.querySelectorAll('[data-project-name]')) {
@@ -1373,15 +1380,15 @@
       dialog.close()
       confirmForm(data)
     } else if (event.target.id === 'team-lookup') {
-      if (data.get('group') !== demoGroup) {
-        notify(`样例只支持群号 ${demoGroup}`)
+      if (data.get('group') !== demoGroup || data.get('space') !== demoSpaceId) {
+        notify(`样例需要群号 ${demoGroup} 和群空间 ID ${demoSpaceId}`)
         return
       }
       state.bound[actor.value] = true
       state.directory = syncDirectory(
         state.directory?.team_group_id === data.get('group')
           ? state.directory
-          : blankDirectory(data.get('group'))
+          : blankDirectory(data.get('group'), data.get('space'))
       )
       hydrateEndpoints()
       const desktop = current()
