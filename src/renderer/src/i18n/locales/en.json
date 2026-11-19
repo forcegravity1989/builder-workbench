@@ -13682,6 +13682,12 @@
             "370a1faf67": "Open in browser",
             "2c69728c2a": "Open link in browser",
             "6f07a18604": "Name",
+            "codehubMode": "CodeHub",
+            "codehubEmpty": "No matching CodeHub issues.",
+            "codehubEmptyStart": "Start typing to search CodeHub issues.",
+            "codehubLoadFailed": "Couldn’t load CodeHub issues. Check sign-in or permissions, then retry.",
+            "codehubRetry": "Retry",
+            "codehubMoreResults": "Showing the first results. Narrow your keywords to see more.",
             "2e4c7c95fe": "Branch",
             "2cfc6be192": "GitLab",
             "7a47af0565": "Linear",
@@ -13723,7 +13729,8 @@
             "jiraMode": "Jira",
             "jiraSelectBindFailed": "Couldn’t link this Jira issue. Pick the matching site or reconnect Jira, then try again.",
             "emoji": "Emoji",
-            "loadingLinearIssue": "Loading Linear issue…"
+            "loadingLinearIssue": "Loading Linear issue…",
+            "searchCodeHub": "Search CodeHub issues"
           },
           "ProjectCombobox": {
             "empty": "No projects match your search.",

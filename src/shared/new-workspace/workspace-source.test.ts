@@ -116,6 +116,19 @@ describe('workspace source policy', () => {
       kind: 'gitlab-issue',
       label: '#7 Self hosted'
     })
+    // Why: CodeHub issue paths also contain '/-/issues/'; host detection must
+    // win so the source is not mislabeled as GitLab or GitHub.
+    const codehubIssue = {
+      type: 'issue' as const,
+      number: 12,
+      title: 'CodeHub fix',
+      url: 'https://codehub-g.huawei.com/Org/Group/repo/-/issues/12'
+    }
+    expect(getWorkspaceSourceProvider(codehubIssue)).toBe('codehub')
+    expect(buildWorkspaceSourceSelection({ linkedWorkItem: codehubIssue })).toMatchObject({
+      kind: 'codehub-issue',
+      label: '#12 CodeHub fix'
+    })
     expect(shouldApplyWorkspaceSourceAutoName({ currentName: '#42', lastAutoName: 'old' })).toBe(
       true
     )

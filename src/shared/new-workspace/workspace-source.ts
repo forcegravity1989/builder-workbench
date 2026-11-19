@@ -1,4 +1,5 @@
 import { getLinearOrganizationUrlKeyFromIssueUrl } from '../linear/links'
+import { isCodeHubUrl } from '../codehub'
 import type { FolderWorkspaceLinkedTask } from '../folder-workspace-types'
 import type { JiraIssue } from '../jira-types'
 import type { LinearIssue } from '../linear/issue-types'
@@ -46,6 +47,7 @@ export type WorkspaceSourceSelectionKind =
   | 'github-issue'
   | 'gitlab-mr'
   | 'gitlab-issue'
+  | 'codehub-issue'
   | 'branch'
   | 'linear'
   | 'jira'
@@ -87,6 +89,11 @@ export function getWorkspaceSourceProvider(item: WorkspaceSourceItemLike): Works
   }
   if (item.jiraIdentifier || isJiraIssueUrl(item.url)) {
     return 'jira'
+  }
+  // Why: CodeHub issue URLs contain '/-/issues/', which the GitLab regexes
+  // below would otherwise claim; detect the CodeHub host first.
+  if (isCodeHubUrl(item.url)) {
+    return 'codehub'
   }
   if (item.type === 'mr' || isGitLabIssueUrl(item.url)) {
     return 'gitlab'
@@ -202,9 +209,11 @@ export function buildWorkspaceSourceSelection(args: {
           ? linkedWorkItem.type === 'mr'
             ? 'gitlab-mr'
             : 'gitlab-issue'
-          : linkedWorkItem.type === 'pr'
-            ? 'github-pr'
-            : 'github-issue'
+          : provider === 'codehub'
+            ? 'codehub-issue'
+            : linkedWorkItem.type === 'pr'
+              ? 'github-pr'
+              : 'github-issue'
   return {
     kind,
     label:
