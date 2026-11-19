@@ -6,10 +6,10 @@ import {
 import type { VersionHistoryCatalog } from './version-history'
 
 /**
- * G2 版本目录（逻辑目录，不是实体树）：目录 = 主干已提交材料 ∪ 明确绑定的在制
- * 版本，去重保留材料来源；已清理版本仍入列（收起回看）。绑定实例从原生登记
- * 现算汇总（含配对宿主），任何路径删树后登记消失、目录自然不显示悬空绑定——
- * 本模块不持久化任何目录副本（spec「目录、绑定、持久化与共享」）。
+ * G2 版本目录（逻辑目录，不是实体树）：目录 = 主干已提交材料 ∪ 明确绑定的版本，
+ * 去重保留材料来源；已清理版本仍入列（收起回看）。合入状态只由主干材料与计划
+ * 绑定证据决定，工作区活跃状态独立推导。绑定实例从原生登记现算汇总（含配对宿主），
+ * 任何路径删树后登记消失、目录自然不显示悬空绑定。本模块不持久化目录副本。
  */
 
 /** 目录中的一个存活绑定实例；跨宿主汇总沿归属登记，不复制凭据或路径。 */
@@ -39,10 +39,16 @@ export type VersionCatalogDraftSource = {
   revision: string
 }
 
+export type VersionCatalogMergeStatus = 'merged' | 'unmerged' | 'unknown'
+
 export type VersionCatalogEntry = {
   version: string
+  /** The trunk baseline proves whether this version's plan has been merged. */
+  mergeStatus: VersionCatalogMergeStatus
   /** Absent before adoption; null when the plan is on trunk but its entry time is unknown. */
   planEnteredAt?: number | null
+  /** Earliest known creation time of a live plan workspace for this version. */
+  planStartedAt?: number | null
   /** 已合入主干的材料（业务正本来源）；草稿只附加、永不覆盖它。 */
   material: {
     plan?: VersionCatalogMaterialRef
@@ -50,7 +56,7 @@ export type VersionCatalogEntry = {
   }
   /** 材料存在但读不到的问题如实列出，不隐藏有效记录。 */
   problems: { workflow: 'plan' | 'acceptance'; code: string; message: string }[]
-  /** 已保存计划的未合入草稿；有 material.plan 时仅标注差异存在，不冒充定稿。 */
+  /** 已保存计划工作树投影；有 material.plan 时只用于比较修订，不冒充定稿。 */
   draft?: { cycleId: string; revision: string }
   goals: VersionCatalogGoalRef[]
   workspaces: VersionCatalogWorkspace[]
@@ -58,25 +64,53 @@ export type VersionCatalogEntry = {
   state: 'working' | 'retired'
 }
 
-type VersionDisplayEvidence = Pick<VersionCatalogEntry, 'planEnteredAt' | 'workspaces'>
+type VersionDisplayEvidence = Pick<
+  VersionCatalogEntry,
+  'version' | 'mergeStatus' | 'planEnteredAt' | 'planStartedAt'
+>
 
-function versionDisplayTime({ planEnteredAt, workspaces }: VersionDisplayEvidence): number {
-  if (planEnteredAt !== undefined) {
-    return planEnteredAt ?? -Infinity
+export function hasUnmergedPlanDraft(
+  entry: Pick<VersionCatalogEntry, 'material' | 'draft'>
+): boolean {
+  return Boolean(
+    entry.material.plan &&
+      entry.draft &&
+      entry.draft.revision !== entry.material.plan.revision
+  )
+}
+
+function mergeStatusRank(status: VersionCatalogMergeStatus): number {
+  if (status === 'unmerged') {
+    return 0
   }
-  let earliest = Infinity
-  for (const { binding, createdAt } of workspaces) {
-    if (binding.workflow === 'plan' && createdAt !== undefined && Number.isFinite(createdAt)) {
-      earliest = Math.min(earliest, createdAt)
-    }
+  if (status === 'merged') {
+    return 1
   }
-  return earliest === Infinity ? -Infinity : earliest
+  return 2
+}
+
+function compareKnownTimesDescending(a: number | null | undefined, b: number | null | undefined) {
+  const aKnown = a !== null && a !== undefined && Number.isFinite(a)
+  const bKnown = b !== null && b !== undefined && Number.isFinite(b)
+  if (aKnown && bKnown) {
+    return b! - a!
+  }
+  if (aKnown !== bKnown) {
+    return aKnown ? -1 : 1
+  }
+  return 0
 }
 
 export function compareVersionDisplayOrder(a: VersionDisplayEvidence, b: VersionDisplayEvidence) {
-  const aTime = versionDisplayTime(a)
-  const bTime = versionDisplayTime(b)
-  return aTime === bTime ? 0 : bTime - aTime
+  const statusOrder = mergeStatusRank(a.mergeStatus) - mergeStatusRank(b.mergeStatus)
+  if (statusOrder !== 0) {
+    return statusOrder
+  }
+  const timeOrder = compareKnownTimesDescending(
+    a.mergeStatus === 'unmerged' ? a.planStartedAt : a.planEnteredAt,
+    b.mergeStatus === 'unmerged' ? b.planStartedAt : b.planEnteredAt
+  )
+  return timeOrder !== 0 ? timeOrder : compareMaterialVersions(a.version, b.version)
 }
 
 /**
@@ -117,8 +151,8 @@ export function collectVersionCatalogWorkspaces(
 }
 
 /**
- * 版本感知排序（P2 延后项①收口）：点分段逐段比较，纯数字段按数值
- * （v0.9 < v0.10），其余按字典序；同输入同输出，不做语义猜测。
+ * 版本感知排序的稳定兜底：点分段逐段比较，纯数字段按数值（v0.9 < v0.10），
+ * 其余按字典序；同输入同输出，不把版本号当作合入状态证据。
  */
 export function compareMaterialVersions(a: string, b: string): number {
   const partsA = a.split('.')
@@ -145,10 +179,12 @@ export function compareMaterialVersions(a: string, b: string): number {
 
 /**
  * 合并目录：已提交材料 ∪ 草稿派生 ∪ 存活绑定。纯函数——同输入同输出，
- * 状态（working/retired）只从存活绑定推导，没绑定就是 retired，不猜。
+ * mergeStatus 从主干与计划绑定证据推导，state 仍只表示是否存在存活绑定。
  */
 export function mergeVersionCatalog(args: {
   committed: VersionHistoryCatalog
+  /** False means the baseline could not be read, so absence is not proof of an unmerged plan. */
+  historyAvailable?: boolean
   drafts?: readonly VersionCatalogDraftSource[] | null
   goalsByVersion?: ReadonlyMap<string, readonly VersionCatalogGoalRef[]> | null
   workspaces?: readonly VersionCatalogWorkspace[] | null
@@ -161,6 +197,7 @@ export function mergeVersionCatalog(args: {
     }
     const created: VersionCatalogEntry = {
       version,
+      mergeStatus: 'unknown',
       material: {},
       problems: [],
       goals: [],
@@ -209,6 +246,22 @@ export function mergeVersionCatalog(args: {
     entryFor(workspace.binding.version).workspaces.push(workspace)
   }
   for (const entry of entries.values()) {
+    const planWorkspaces = entry.workspaces.filter(({ binding }) => binding.workflow === 'plan')
+    if (planWorkspaces.length > 0) {
+      const knownTimes = planWorkspaces
+        .map(({ createdAt }) => createdAt)
+        .filter(
+          (createdAt): createdAt is number => createdAt !== undefined && Number.isFinite(createdAt)
+        )
+      entry.planStartedAt = knownTimes.length > 0 ? Math.min(...knownTimes) : null
+    }
+    const hasMaterial = Boolean(entry.material.plan)
+    const hasPlanProblem = entry.problems.some((problem) => problem.workflow === 'plan')
+    entry.mergeStatus = hasMaterial
+      ? 'merged'
+      : args.historyAvailable !== false && !hasPlanProblem && planWorkspaces.length > 0
+        ? 'unmerged'
+        : 'unknown'
     entry.state = entry.workspaces.length > 0 ? 'working' : 'retired'
   }
   return [...entries.values()]

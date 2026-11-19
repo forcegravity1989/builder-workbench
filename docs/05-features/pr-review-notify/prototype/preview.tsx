@@ -15,6 +15,7 @@ import {
   applyIncomingRequest,
   recordSentReview,
   deleteOutgoingNote,
+  removeIncomingNote,
   EMPTY_REVIEW_NOTIFICATIONS,
   type ReviewNotificationsState,
   type ReviewReadback
@@ -236,6 +237,7 @@ function Preview() {
           }
         }}
         onDelete={(id) => setAuthor((s) => deleteOutgoingNote(s, id))}
+        onDismissIncoming={(note) => setReviewer((s) => removeIncomingNote(s, note.id))}
         onResend={openSend}
         missingProject={() => missingProject}
       />
