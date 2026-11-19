@@ -105,7 +105,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工与[读取来源](../architecture.md#页面读取来源)；名片直接编辑及本地保存 | [✅ 与 W01 共用名片动画][direction-content] | [总览页头帮助 → 项目名片引导][screen-guide]；里程碑见 F18；记分牌见 F28 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：在本版目标标题栏添加目标，填写验收条件，关联任务、批注与归档 | [✅ 共用 W02 片段及跟做入口；评审片段含对象批注][planning-content] | [✅ 计划页头最右侧帮助；已有材料时指向目标、批注、归档][screen-guide] | [✅ 首步、跳过与主进程读回][tours]；新进程持久读回及其他弹窗协调待验 | — | 复用 W02，已验样例批注添加与编号回看 | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话；[版本排序](../05-features/version-workspace/spec.md#版本排序)沿用既有引导入口；和项目墙共用同仓版本目录；多工作区用原生主机标识及既有选择入口（#671），失败重试待真实双机验证（#658） | [待验：与 W02 共用选版和开工片段][planning-content]；[✅ 样例目标目录和工作区][delivery-content] | [✅ 版本侧栏帮助打开引导][screen-guide] | [待验：侧栏首次出现及跳过读回][tours] | — | 复用 W02 | — |
-| 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | [✅ Windows 样例选主机、项目暂不可访问及打开已有通知][delivery-content]；真实送达待验 | ☐ | ☐ | — | ☐ | — |
+| 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视；待我评审手动删除与合入/关闭读回后自动移除（#699），删除入口真壳核对见[检视评论][review-inbox-cleanup] | [✅ Windows 样例选主机、项目暂不可访问及打开已有通知][delivery-content]；真实送达与双机往返待验 | ☐ | ☐ | — | ☐ | — |
 | 功能 | F25 [版本验收](../05-features/version-acceptance/spec.md) | 重点：核验证据、人的结论及归档 | [复用 W04 验收片段][acceptance-content] | [✅ 验收页头问号重播][screen-guide] | [✅ Windows 首次出现、跳过与新进程读回][tours] | — | 复用 W04 | — |
 | 功能 | F26 [工程部署](../05-features/version-acceptance/spec.md) | 暂缓：本期不新增工程部署引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)、目标、任务、验收事实与[版本未同步提示](../05-features/version-overview/spec.md#来源历史与缓存)；SDLC 本期不新增引导与素材 | [复用 W04 读回片段][acceptance-content] | [✅ 版本总览页头问号重播][screen-guide] | [✅ Windows 首次出现、跳过与新进程读回][tours] | — | 复用 W04 | — |
@@ -165,6 +165,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [delivery-content]: ../../src/renderer/src/workbench/explore/DeliveryWalkthrough.tsx
 [delivery-help]: ../../src/renderer/src/workbench/WorkbenchDeliveryHelp.tsx
 [delivery-browser-recheck]: https://github.com/forcegravity1989/builder-workbench/pull/669#issuecomment-6895397151
+[review-inbox-cleanup]: https://github.com/forcegravity1989/builder-workbench/pull/723#issuecomment-6998672235
 [delivery-guide]: ../03-guide/issue-delivery/README.md
 
 [outcomes-content]: ../../src/renderer/src/workbench/explore/OutcomesWalkthrough.tsx
