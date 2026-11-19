@@ -38,7 +38,7 @@ export async function verifyMilestoneRestart(
   const isolation = createElectronHomeIsolation({
     inheritedEnv,
     launchEnv: {},
-    extraEnv: { MONICA_SHELL: '1', VITE_MONICA_SHELL: '1', ORCA_PRODUCT_NAME: 'Workbench' },
+    extraEnv: { MONICA_SHELL: '1', VITE_MONICA_SHELL: '1', ORCA_PRODUCT_NAME: 'Monica' },
     userDataDir: profile
   })
   await forceQuitElectronAppForE2E(previous)

@@ -32,7 +32,7 @@ test.use({
   monicaAppExtraEnv: {
     MONICA_SHELL: '1',
     VITE_MONICA_SHELL: '1',
-    ORCA_PRODUCT_NAME: 'Workbench'
+    ORCA_PRODUCT_NAME: 'Monica'
   }
 })
 
@@ -42,7 +42,7 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   const help = monicaPage.locator('[data-monica-rail]').getByRole('button', {
     name: /^(Help|帮助)$/
   })
-  const exploreName = /^(Explore BW|探索 BW)$/
+  const exploreName = /^(Explore Monica|探索 Monica)$/
   const dialog = monicaPage.getByRole('dialog', { name: exploreName })
   const features = dialog.getByRole('tab', { name: /^(Features|功能)$/ })
   const journeys = dialog.getByRole('tab', { name: /^(Work journeys|工作旅程)$/ })
@@ -194,7 +194,7 @@ test.describe('BW first-run project handoff', () => {
     const help = monicaPage.locator('[data-monica-rail]').getByRole('button', {
       name: /^(Help|帮助)$/
     })
-    const exploreName = /^(Explore BW|探索 BW)$/
+    const exploreName = /^(Explore Monica|探索 Monica)$/
     await help.click()
     await monicaPage.getByRole('menuitem', { name: exploreName }).click()
     const explore = monicaPage.getByRole('dialog', { name: exploreName })
@@ -773,6 +773,6 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   })
   await monicaPage.locator('#shortcut-filter-search').fill('批注')
   await expect(monicaPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
-  await expect(monicaPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
+  await expect(monicaPage.getByRole('heading', { name: 'Monica' })).toBeVisible()
   await recordWorkspaceInventory(monicaPage, seededRepoPath, testInfo, 'final')
 })
