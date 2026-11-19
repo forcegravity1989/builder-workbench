@@ -78,18 +78,19 @@ describe('registered workbench workspace identity', () => {
     })
   })
 
-  it('passes the explicit host to native lookup instead of an unqualified fleet selector', async () => {
+  it('passes the explicit host to native lookup and translates its misses', async () => {
     const { host, trees } = fixture()
     const showManagedWorktree = vi.fn(async () => trees[1])
     const native = nativeWorkbenchWorkspaceHost({ listRepos: host.listRepos, showManagedWorktree })
     const resolver = createWorkbenchWorkspaceResolver(native)
-    const { reauthorize } = await resolver.resolve({
-      repoId: 'repo',
-      worktreeId: 'tree',
-      hostId: 'ssh:builder'
-    })
+    const scope = { repoId: 'repo', worktreeId: 'tree', hostId: 'ssh:builder' }
+    const { reauthorize } = await resolver.resolve(scope)
     await reauthorize()
     expect(showManagedWorktree).toHaveBeenCalledTimes(2)
     expect(showManagedWorktree).toHaveBeenCalledWith('id:tree', 'ssh:builder')
+    // Why here: a deleted worktree must reach BW users as an actionable verdict, not the bare
+    // native code (#727); this is the seam where the native answer enters every BW channel.
+    showManagedWorktree.mockRejectedValueOnce(new Error('selector_not_found'))
+    await expect(resolver.resolve(scope)).rejects.toMatchObject({ code: 'workspace-gone' })
   })
 })
