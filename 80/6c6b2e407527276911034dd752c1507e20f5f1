@@ -1,0 +1,27 @@
+src/shared/browser-url.ts
+  s_8749124ad999df::t_96f6b1ab5b5515 343-378
+src/main/browser/browser-manager-guest-navigation-policy.ts
+  s_8749124ad999df::t_5a5940caee15a8 30-49,56-58
+  s_8749124ad999df::t_779734e4de7852 168
+  s_8749124ad999df::t_73005c2b8880c1 150
+  s_8749124ad999df::t_4d0a20d753a128 1,4
+src/shared/browser-url.test.ts
+  s_8749124ad999df::t_f608d38843a5b5 11
+  s_8749124ad999df::t_c6fa231f4de53d 17-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "806c6b2e407527276911034dd752c1507e20f5f1",
+  "prompts": {},
+  "sessions": {
+    "s_8749124ad999df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "73939546-699a-4ec8-a61e-cb3d314ae0a1",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
