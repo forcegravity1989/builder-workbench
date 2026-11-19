@@ -8,7 +8,9 @@ export const KEYBINDING_DEFINITION_CORE_3: readonly KeybindingDefinition[] = [
     group: 'Browser',
     scope: 'browser',
     searchKeywords: ['shortcut', 'browser', 'reload', 'refresh'],
-    defaultBindings: platformBindings(['Mod+R'])
+    // F5 is a non-text function key, so the parser must allow bare bindings.
+    defaultBindings: platformBindings(['Mod+R', 'F5']),
+    allowBareKeybindings: true
   },
   {
     id: 'browser.hardReload',
