@@ -1,4 +1,5 @@
 import { defineConfig } from '@stablyai/playwright-test'
+import { WORKBENCH_PR_SMOKE_SPEC } from './e2e/workbench-allowlist'
 
 /**
  * Playwright config for the Workbench Electron smoke test.
@@ -42,10 +43,9 @@ export default defineConfig({
   projects: [
     {
       name: 'electron-headless',
-      // The Workbench lane owns the cycle and project configuration journeys. Legacy Orca
-      // specs remain in the tree for source compatibility, but are not part of
-      // the current CI entrypoint.
-      testMatch: 'workbench-cycle-smoke.spec.ts',
+      // The Workbench PR lane is an explicit allowlist. Other specs under
+      // tests/e2e belong to Orca or dedicated lanes and are not BW coverage.
+      testMatch: WORKBENCH_PR_SMOKE_SPEC,
       grepInvert: /@headful/,
       metadata: {
         workbenchHeadful: false
@@ -53,9 +53,8 @@ export default defineConfig({
     },
     {
       name: 'electron-headful',
-      // Keep manual headful verification on the same Workbench smoke journey;
-      // restored legacy Orca specs are source-only compatibility material.
-      testMatch: 'workbench-cycle-smoke.spec.ts',
+      // Keep manual headful verification on the same Workbench smoke allowlist.
+      testMatch: WORKBENCH_PR_SMOKE_SPEC,
       metadata: {
         workbenchHeadful: true
       }
