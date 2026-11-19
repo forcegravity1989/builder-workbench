@@ -1,0 +1,18 @@
+.bw/skills/recent-design/README.md
+  h_d0d195a8c70989 7-8,21-36
+.bw/skills/recent-design/selection-report.html
+  h_d0d195a8c70989 1-76
+.bw/skills/recent-design/selection-report.mjs
+  h_d0d195a8c70989 1-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "c7e78dd1c571ecd9944b63747099dd776627348e",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

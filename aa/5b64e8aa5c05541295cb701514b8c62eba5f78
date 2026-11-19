@@ -1,0 +1,121 @@
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-state.ts
+  s_054764f825ec57::t_9f4c23926c23e0 5,19-22,32,65-72,85-86
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-presentation.ts
+  s_054764f825ec57::t_9f4c23926c23e0 49-51,86-88,95-97,124-129,162-163,209,212,289-294
+  s_054764f825ec57::t_8a2b419a7bd30a 100
+  s_054764f825ec57::t_dd97f053585aef 91,210-211,215,231
+src/renderer/src/hooks/composer-state/source-context-state.ts
+  s_054764f825ec57::t_9f4c23926c23e0 36,196-204,263-264
+docs/05-features/version-workspace/spec.md
+  s_054764f825ec57::t_8805ecae69ef36 120-127,129-130,132-157
+  h_d0d195a8c70989 128,131
+src/renderer/src/components/new-workspace/smart-workspace-localized-options.tsx
+  s_054764f825ec57::t_9f4c23926c23e0 2,60-67
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-foundation.ts
+  s_054764f825ec57::t_9f4c23926c23e0 7-8,102-112,134-162,228
+  s_054764f825ec57::t_ee4807391a91bd 120-133
+src/renderer/src/hooks/composer-state/composer-card-props.ts
+  s_054764f825ec57::t_9f4c23926c23e0 58,92,175,183
+src/renderer/src/components/new-workspace/new-workspace-composer-card-props.ts
+  s_054764f825ec57::t_9f4c23926c23e0 14,74,77,93
+  s_054764f825ec57::t_cb4932df589674 75-76
+src/renderer/src/components/new-workspace/NewWorkspaceComposerNameSection.tsx
+  s_054764f825ec57::t_9f4c23926c23e0 17,26,52,61,98,107
+docs/05-features/version-workspace/version-workspace-source-prototype.html
+  s_054764f825ec57::t_8805ecae69ef36 1-151
+src/shared/new-workspace/smart-workspace-source-results.ts
+  s_054764f825ec57::t_9f4c23926c23e0 3,21-29,35,46,221-222,239-240,297-305
+src/renderer/src/hooks/composer-state/composer-card-contract.ts
+  s_054764f825ec57::t_9f4c23926c23e0 72,80
+src/renderer/src/hooks/composer-state/composer-source-state.ts
+  s_054764f825ec57::t_9f4c23926c23e0 10,192-213,312
+src/renderer/src/components/new-workspace/use-smart-workspace-field-availability.ts
+  s_054764f825ec57::t_9f4c23926c23e0 32-33,59-60,64,89-94,96-98,109-111,120-121,152-153,157,167-169,243-244,251,263-265,285
+  s_054764f825ec57::t_21b9ce7864d3e8 99-108,112,119,122,286
+src/shared/new-workspace/workspace-source.test.ts
+  s_054764f825ec57::t_9efbde13ec5fd2 119-131
+src/renderer/src/components/new-workspace/smart-workspace-source-row-content.tsx
+  s_054764f825ec57::t_9f4c23926c23e0 44-46,75,130-136
+src/renderer/src/components/new-workspace/use-smart-workspace-codehub-search.ts
+  s_054764f825ec57::t_9f4c23926c23e0 1-26,30-43,48-78,89-92,96,98,101-116,120-124
+  s_054764f825ec57::t_4d8ea951372015 93
+  s_054764f825ec57::t_ee7f94c8b7d878 27-29
+  s_054764f825ec57::t_0666e869cbcf3e 44-47
+  s_054764f825ec57::t_fe20d4f482c4dc 79-81,86-88
+  s_054764f825ec57::t_7fcc1493355eb6 94-95
+  s_054764f825ec57::t_1bf9d465a80749 97
+  s_054764f825ec57::t_aa979f1d8a81e4 99-100
+  s_054764f825ec57::t_4a3ef40d63356d 117-119
+  h_d0d195a8c70989 82-85
+src/renderer/src/hooks/composer-state/source-context-model.ts
+  s_054764f825ec57::t_9f4c23926c23e0 32-33
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-controller.ts
+  s_054764f825ec57::t_9f4c23926c23e0 17,81-89,112-116
+  s_054764f825ec57::t_7fcf46df9a70d2 75
+src/main/codehub/work-items.ts
+  s_054764f825ec57::t_9c928c679f8c6a 147,149-178
+  s_054764f825ec57::t_641da79c06550e 145-146,148
+src/renderer/src/components/new-workspace/smart-workspace-source-results-surface.tsx
+  s_054764f825ec57::t_9f4c23926c23e0 19,153-163,166-198
+  s_054764f825ec57::t_00ae5a73225240 116-118
+  s_054764f825ec57::t_eb9287751bed67 18
+  s_054764f825ec57::t_d4287831c998f6 20-22
+  s_054764f825ec57::t_5af509b70777c6 119-121
+  h_d0d195a8c70989 122-137
+src/renderer/src/components/new-workspace/smart-workspace-name-field-model.ts
+  s_054764f825ec57::t_9f4c23926c23e0 6,22,34,71-79,91
+  s_054764f825ec57::t_cf07394371eef3 23-24
+src/renderer/src/hooks/composer-state/assemble-composer-model.ts
+  s_054764f825ec57::t_9f4c23926c23e0 32
+src/shared/new-workspace/workspace-source.ts
+  s_054764f825ec57::t_aae6a2dea7beeb 212-216
+  s_054764f825ec57::t_cd87404686f34a 93-97
+  s_054764f825ec57::t_0c4d0007d908af 50
+  s_054764f825ec57::t_f1b6f50319fa4c 2
+src/renderer/src/hooks/composer-state/codehub-provider-selection.ts
+  s_054764f825ec57::t_9f4c23926c23e0 1-8,11-35,44-57,64-83,85-103,105-117
+  s_054764f825ec57::t_b04a0dcd4dab1a 9-10,36-43,58-63,84,104,118-122
+src/main/codehub/work-items.test.ts
+  s_054764f825ec57::t_756831886e0ba9 91-118
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-actions.ts
+  s_054764f825ec57::t_9f4c23926c23e0 43,81,123,129
+  s_054764f825ec57::t_a134a6dfda32b5 64-66,82-87,130-131
+src/renderer/src/hooks/composer-state/composer-source-state-contract.ts
+  s_054764f825ec57::t_9f4c23926c23e0 35
+src/renderer/src/hooks/composer-state/composer-source-model.ts
+  s_054764f825ec57::t_9f4c23926c23e0 2,57,60
+  s_054764f825ec57::t_244de2a4caa738 58-59
+src/renderer/src/components/new-workspace/smart-workspace-name-field-copy.ts
+  s_054764f825ec57::t_f489f916521cb0 88,90-91,93,95-96,98,100-101,103,105-106,108-116
+src/renderer/src/components/new-workspace/use-smart-workspace-github-search.ts
+  s_054764f825ec57::t_9b1f6624d0be5c 42-47,75,121,160-161,196,234
+src/renderer/src/i18n/locales/en.json
+  s_054764f825ec57::t_5761e94e44f9f2 13685-13690,13732-13733
+src/renderer/src/i18n/locales/zh.json
+  s_054764f825ec57::t_1e9e51f0c8f48a 11903-11908,11949-11950
+src/shared/new-workspace/smart-workspace-command-value.ts
+  s_054764f825ec57::t_f82b2f024b4954 5,49-53
+src/shared/new-workspace/smart-workspace-url-source-results.ts
+  s_054764f825ec57::t_87d24df6167ef2 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "aa5b64e8aa5c05541295cb701514b8c62eba5f78",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_054764f825ec57": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "90ca7cde-c8b8-4ac9-8f4b-1aecacb56b91",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

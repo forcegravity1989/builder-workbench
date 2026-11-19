@@ -1,0 +1,23 @@
+.bw/skills/recent-design/README.md
+  s_787a4933ba55b7::t_f5dd9fa89fdd93 7
+.bw/skills/recent-design/selection-report.html
+  s_787a4933ba55b7::t_607eda8ad293b9 32,72
+.bw/skills/recent-design/selection-report.mjs
+  s_787a4933ba55b7::t_45c466e19febdf 20-25,28,30-31,35-42,127,131-132,135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "5c7642b9613a9fcd79bef61694a616c56a81d153",
+  "prompts": {},
+  "sessions": {
+    "s_787a4933ba55b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f3b2-e169-76c0-9c20-4e29a152f951",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
