@@ -4,6 +4,9 @@ import {
   agentStartedSchema,
   appOpenedSchema,
   appStarredOrcaSchema,
+  bwAssistantRequestSentSchema,
+  bwPackageBuildSchema,
+  bwVersionCreatedSchema,
   featureInteractionUsageBucketReachedSchema,
   repoAddedSchema,
   starNagOutcomeEventSchema,
@@ -101,6 +104,10 @@ export const eventSchemas = {
   app_starred_orca: appStarredOrcaSchema,
   star_nag_outcome: starNagOutcomeEventSchema,
   feature_interaction_usage_bucket_reached: featureInteractionUsageBucketReachedSchema,
+
+  bw_assistant_request_sent: bwAssistantRequestSentSchema,
+  bw_package_build: bwPackageBuildSchema,
+  bw_version_created: bwVersionCreatedSchema,
 
   repo_added: repoAddedSchema,
   add_repo_setup_step_action: addRepoSetupStepActionEventSchema,

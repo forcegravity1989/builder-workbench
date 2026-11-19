@@ -26,6 +26,11 @@ export type FeatureInteractionId =
   | 'workbench-wall'
   | 'workbench-overview'
   | 'workbench-milestones'
+  | 'workbench-versions'
+  | 'workbench-plan'
+  | 'workbench-acceptance'
+  | 'workbench-scoreboard'
+  | 'workbench-version-overview'
   | 'workspace-creation'
   | 'agent-browser-setup'
   | 'agent-browser-use'
@@ -102,6 +107,11 @@ export const FEATURE_INTERACTIONS = [
   { id: 'workbench-wall', interaction: 'project wall opened' },
   { id: 'workbench-overview', interaction: 'project overview opened' },
   { id: 'workbench-milestones', interaction: 'project milestone planning opened' },
+  { id: 'workbench-versions', interaction: 'version workspace sidebar entered' },
+  { id: 'workbench-plan', interaction: 'version plan screen entered' },
+  { id: 'workbench-acceptance', interaction: 'version acceptance screen entered' },
+  { id: 'workbench-scoreboard', interaction: 'project scoreboard viewed' },
+  { id: 'workbench-version-overview', interaction: 'version overview opened' },
   { id: 'workspace-creation', interaction: 'workspace creation flow opened' },
   { id: 'agent-browser-setup', interaction: 'Agent Browser Use setup enabled or opened' },
   { id: 'agent-browser-use', interaction: 'agent browser runtime method used' },

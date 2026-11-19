@@ -132,3 +132,38 @@ export const agentErrorSchema = z
     nth_repo_added: nthRepoAddedSchema
   })
   .strict()
+
+// ── BW feature-usage events (#687) ───────────────────────────────────────
+// Same enum-only discipline: free text (meeting subjects, deploy URLs,
+// pipeline and version names) never crosses the wire.
+
+export const bwAssistantRequestActionIdSchema = z.enum([
+  'deploy',
+  'book-meeting',
+  'aggregate-report',
+  'archive-pr',
+  'release',
+  'breakdown-goal',
+  'organize-minutes',
+  'sync-minutes',
+  // 板面批注面板的发送也走 PlanSendMenu 送达链路，是同一挂载点的真实路径。
+  'send-annotations'
+])
+export type BwAssistantRequestActionId = z.infer<typeof bwAssistantRequestActionIdSchema>
+export const bwAssistantRequestScreenSchema = z.enum(['plan', 'acceptance'])
+export type BwAssistantRequestScreen = z.infer<typeof bwAssistantRequestScreenSchema>
+
+export const bwAssistantRequestSentSchema = z
+  .object({
+    action_id: bwAssistantRequestActionIdSchema,
+    screen: bwAssistantRequestScreenSchema
+  })
+  .strict()
+
+export const bwPackageBuildSchema = z
+  .object({
+    outcome: z.enum(['launched', 'failed'])
+  })
+  .strict()
+
+export const bwVersionCreatedSchema = z.object({}).strict()

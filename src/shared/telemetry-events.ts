@@ -42,10 +42,16 @@ export type {
 } from './telemetry-property-schemas'
 
 export {
+  bwAssistantRequestActionIdSchema,
+  bwAssistantRequestScreenSchema,
   featureInteractionCategorySchema,
   featureInteractionIdSchema,
   featureInteractionUsageBucketSchema,
   featureInteractionUsageBucketSourceSchema
+} from './telemetry-app-event-schemas'
+export type {
+  BwAssistantRequestActionId,
+  BwAssistantRequestScreen
 } from './telemetry-app-event-schemas'
 export {
   hookInstallAgentSchema,
