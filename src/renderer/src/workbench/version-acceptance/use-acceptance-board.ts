@@ -14,6 +14,7 @@ import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
 import { historyErrorCode } from '../version-history-port'
+import { isWorkspaceGoneError, workspaceGoneMessage } from '../error-feedback'
 import { replaceGoalTaskEvidence } from './acceptance-task-evidence'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
@@ -75,6 +76,9 @@ export function useAcceptanceBoard({
   const associated = Boolean(document && document.version === context.version)
   const readOnly = Boolean(context.syncing) || !associated || !fixed.plan
   const lifetime = useRef({ active: true })
+  // Set once the scope stops resolving (version cleanup deleted the worktree): later polls would
+  // fail the same way, so the interval stands down instead of refreshing a dead error (#727).
+  const gone = useRef(false)
   useEffect(() => {
     const state = lifetime.current
     state.active = true
@@ -159,9 +163,17 @@ export function useAcceptanceBoard({
     metricScope
   ])
   useEffect(() => {
+    gone.current = false
     const timer = setInterval(() => {
-      if (!context.syncing) {
-        void controller.refresh().catch((reason) => setError(String(reason)))
+      if (!context.syncing && !gone.current) {
+        void controller.refresh().catch((reason) => {
+          if (isWorkspaceGoneError(reason)) {
+            gone.current = true
+            setError(workspaceGoneMessage())
+          } else {
+            setError(String(reason))
+          }
+        })
       }
     }, 5000)
     return () => clearInterval(timer)
@@ -182,7 +194,7 @@ export function useAcceptanceBoard({
       await refreshDraft()
       await catalog.refresh()
     } catch (reason) {
-      setError(String(reason))
+      setError(isWorkspaceGoneError(reason) ? workspaceGoneMessage() : String(reason))
     }
   }
   /** Whole-document edit for sections that are not one goal result (minutes). */
