@@ -131,7 +131,7 @@ test('explores work journeys and reuses feature demonstrations from Help', async
     .getByRole('navigation', { name: /^(Related features|相关功能)$/ })
     .getByRole('button', { name: /^(Project overview|项目总览)$/ })
     .click()
-  await dialog.getByRole('button', { name: /^(Try it in BW|在界面中跟做)$/ }).click()
+  await dialog.getByRole('button', { name: /^(Try it in Monica|在界面中跟做)$/ }).click()
   await expect(dialog).toBeHidden()
   const overviewHelp = monicaPage.getByRole('button', { name: '项目总览帮助', exact: true })
   const guide = monicaPage.locator('[data-contextual-tour-panel]')
@@ -228,7 +228,7 @@ test.describe('BW first-run project handoff', () => {
     await monicaPage.keyboard.press('Escape')
     await expect(explore).toBeHidden()
 
-    const gettingStartedName = /^(Getting Started with BW|BW 入门)$/
+    const gettingStartedName = /^(Getting Started with Monica|Monica 入门)$/
     await help.click()
     await monicaPage.getByRole('menuitem', { name: gettingStartedName }).click()
     const gettingStarted = monicaPage.getByRole('dialog', { name: gettingStartedName })
@@ -279,7 +279,7 @@ test.describe('BW first-run project handoff', () => {
       .getByRole('button', { name: /^(Settings|设置)$/ })
       .click()
     const setupGuideSettingsRow = monicaPage.getByRole('button', {
-      name: /^(Getting Started with BW,|BW 入门，)/
+      name: /^(Getting Started with Monica,|Monica 入门，)/
     })
     await expect(setupGuideSettingsRow).toHaveAttribute('aria-label', /of 7 complete|\/ 7 项/)
     await setupGuideSettingsRow.click()
