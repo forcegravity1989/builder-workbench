@@ -4,6 +4,8 @@
 
 通过 [仓内入口](../../../.claude/skills/recent-design/SKILL.md) 使用，例如 `/recent-design review-animations 检查侧栏展开动效`。本入口是一个按需读取的路由，不会将所有正文塞入上下文。技能文件纳入 Git；新会话是否发现入口、模型是否实际读到并遵守，须在真实宿主会话中另验。
 
+给人阅读的 [HTML 选型报告](selection-report.html) 是本篇与来源清单的只读投影，逐项说明为什么选、使用结果、限制与未选理由。修改本篇或来源后运行 `node .bw/skills/recent-design/selection-report.mjs` 同步；生成器嵌入现有设计系统样式与字体，单个 HTML 下载后可离线打开，不维护第二份选型正本。
+
 ## 使用边界
 
 - 范围是 BW 自身的 Electron / React / TypeScript 研发，不是移动端、Next.js 服务端或 Vercel 部署。
@@ -16,22 +18,22 @@
 
 Recent 页面是聚合目录，不是单一技能仓库。下表按其条目筛选；其中 UI Skills 已改名为 `baseline-ui`，Impeccable 的四个条目已合并成命令，本仓保留有限的本地适配。
 
-| Recent 条目 / 本地技能      | BW 使用结果                          | 正文与范围                                                                                                                                               |
-| --------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| quieter                     | 减少视觉噪声，保留状态可辨性         | [本地适配](quieter/SKILL.md)；不照搬降低对比度、加暖灰等建议                                                                                             |
-| distill                     | 清理重复控件和无关信息               | [本地适配](distill/SKILL.md)；不擅自删能力或改信息结构                                                                                                   |
-| critique                    | 以用户任务评议设计，输出有依据的问题 | [本地适配](critique/SKILL.md)；不运行外部检测器或把审美评分当健康信号                                                                                    |
-| polish                      | 收尾布局、状态、交互与一致性         | [本地适配](polish/SKILL.md)；不暗中重设计                                                                                                                |
-| UI Skills → baseline-ui     | 检查语义控件、键盘、布局与反馈       | [上游正文](baseline-ui/SKILL.md)；只用现有原语，库偏好不是替换理由                                                                                       |
-| emil-design-eng             | 打磨按钮、浮层、反馈和细节           | [上游正文](emil-design-eng/SKILL.md)；不统一给高频操作加缩放/弹簧                                                                                        |
-| make-interfaces-feel-better | 具体组件的交互、字形和光学对齐       | [上游正文](make-interfaces-feel-better/SKILL.md)；不替代整段旅程验收                                                                                     |
-| animation-vocabulary        | 将动效描述转换成准确术语             | [上游正文](animation-vocabulary/SKILL.md)；只命名，不实现或变更领域词表                                                                                  |
-| review-animations           | 检查动效目的、频率、性能和无障碍     | [上游正文](review-animations/SKILL.md) + [标准](review-animations/STANDARDS.md)；需要编排时才读 [相邻参考](choreograph/SKILL.md)，该参考不是额外安装入口 |
-| oklch-skill                 | 理解色彩转换、色域与对比度           | [上游正文](oklch-skill/SKILL.md)；保留已有 token，不批量转色或自动反转深色主题；亮度差/APCA 是辅助线索，实际 WCAG 对比度单独测量                         |
-| vercel-react-best-practices | 检查 React 重渲染、事件、异步与打包  | [上游正文](react-best-practices/SKILL.md)；不采用 Next/RSC/SSR/Vercel 专用建议，按实际 React 版本确认 API                                                |
-| vercel-composition-patterns | 优化组件组合与 props 边界            | [上游正文](composition-patterns/SKILL.md)；复用原语，不另造组件框架                                                                                      |
-| typescript-advanced-types   | 为真实数据契约选择恰当类型           | [上游正文](typescript-advanced-types/SKILL.md)；不为展示技巧增加类型复杂度                                                                               |
-| frontend-design             | 在已有品牌与规格内探索具体界面表达   | [上游正文](frontend-design/SKILL.md)；不重建 token/字体，不把营销 hero 套进日常桌面工作流                                                                |
+| Recent 条目 / 本地技能      | 为什么选给 BW                                                                                 | BW 使用结果                          | 正文与范围                                                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| quieter                     | 高频工作台需要减少同屏竞争；针对背景、字重、边框和过量动效降噪，而非只追求好看                | 减少视觉噪声，保留状态可辨性         | [本地适配](quieter/SKILL.md)；不照搬降低对比度、加暖灰等建议                                                                                             |
+| distill                     | 版本、目标、工作区与任务容易重复展示；以主任务为中心清理重复信息与操作障碍                    | 清理重复控件和无关信息               | [本地适配](distill/SKILL.md)；不擅自删能力或改信息结构                                                                                                   |
+| critique                    | 补充视觉层级、可发现性与恢复路径的设计观察，回答“为什么难用”；不替代正式独立检视              | 以用户任务评议设计，输出有依据的问题 | [本地适配](critique/SKILL.md)；不运行外部检测器或把审美评分当健康信号                                                                                    |
+| polish                      | BW 体验跨越列表、浮层、表单与会话入口；沿完整路径收尾，避免只修一张截图                       | 收尾布局、状态、交互与一致性         | [本地适配](polish/SKILL.md)；不暗中重设计                                                                                                                |
+| UI Skills → baseline-ui     | 语义控件、键盘、焦点、布局等基础检查适用于 Electron 的 DOM 界面，无须新产品框架               | 检查语义控件、键盘、布局与反馈       | [上游正文](baseline-ui/SKILL.md)；只用现有原语，库偏好不是替换理由                                                                                       |
+| emil-design-eng             | 按使用频率判断动效、浮层起点与反馈细节，适合高频按钮、浮层和工具提示的综合打磨                | 打磨按钮、浮层、反馈和细节           | [上游正文](emil-design-eng/SKILL.md)；不统一给高频操作加缩放/弹簧                                                                                        |
+| make-interfaces-feel-better | 将字形、图标光学对齐与交互感觉落实为局部组件检查项，补充综合原则                              | 具体组件的交互、字形和光学对齐       | [上游正文](make-interfaces-feel-better/SKILL.md)；不替代整段旅程验收                                                                                     |
+| animation-vocabulary        | 把“弹一下”“跟着变”等描述转成精确术语，降低图标和界面动效的沟通歧义，不引入动画库              | 将动效描述转换成准确术语             | [上游正文](animation-vocabulary/SKILL.md)；只命名，不实现或变更领域词表                                                                                  |
+| review-animations           | 专门核对目的、频率、时长、起点、可中断性、GPU 属性与 reduced-motion，防止装饰动效拖慢高频操作 | 检查动效目的、频率、性能和无障碍     | [上游正文](review-animations/SKILL.md) + [标准](review-animations/STANDARDS.md)；需要编排时才读 [相邻参考](choreograph/SKILL.md)，该参考不是额外安装入口 |
+| oklch-skill                 | BW 采用统一 token 并覆盖浅深主题；色域、转换和对比度知识可解释某个状态色为何不可读            | 理解色彩转换、色域与对比度           | [上游正文](oklch-skill/SKILL.md)；保留已有 token，不批量转色或自动反转深色主题；亮度差/APCA 是辅助线索，实际 WCAG 对比度单独测量                         |
+| vercel-react-best-practices | 客户端 React、事件订阅、异步和重渲染规则匹配 BW 渲染层，可用于有实际现象的性能排查            | 检查 React 重渲染、事件、异步与打包  | [上游正文](react-best-practices/SKILL.md)；不采用 Next/RSC/SSR/Vercel 专用建议，按实际 React 版本确认 API                                                |
+| vercel-composition-patterns | 用显式变体和组合边界减少布尔 props 的组合漏洞，改善现有原语/组件 API，而非另建组件库          | 优化组件组合与 props 边界            | [上游正文](composition-patterns/SKILL.md)；复用原语，不另造组件框架                                                                                      |
+| typescript-advanced-types   | 联合、映射和条件类型可用于准确表达真实数据契约，帮助识别不合法状态                            | 为真实数据契约选择恰当类型           | [上游正文](typescript-advanced-types/SKILL.md)；不为展示技巧增加类型复杂度                                                                               |
+| frontend-design             | 从真实产品内容与用户任务探索层级表达，避免通用营销模板；仅补充 BW 既定视觉方向                | 在已有品牌与规格内探索具体界面表达   | [上游正文](frontend-design/SKILL.md)；不重建 token/字体，不把营销 hero 套进日常桌面工作流                                                                |
 
 ## 本轮未采用
 
