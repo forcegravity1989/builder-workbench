@@ -1,6 +1,8 @@
 # Artifact and skill publishing commands
 
-The publish gate and its recovery are in the guide body. This is the command surface behind it.
+Artifact sharing has no publish gate; its boundaries are in the guide body. The
+skill-sharing permission is default-off and described in its section below. This is the
+command surface for both.
 
 ## Artifacts
 

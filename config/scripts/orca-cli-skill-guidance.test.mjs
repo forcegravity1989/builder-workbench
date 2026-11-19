@@ -158,21 +158,41 @@ describe('orca CLI skill guidance', () => {
     expect(skill).not.toContain('live_sk_')
   })
 
-  // Publishing defaults to off, so an agent that follows the unconditional share workflow
-  // just loops on denials. The guide has to teach the opt-in and the recovery.
-  it('teaches the artifact publish opt-in and its recovery path', () => {
+  // Artifact sharing is zero-config on a self-hosted service, so an agent that still believes
+  // in a publish gate would send the user to a setting that no longer exists, and an agent that
+  // ignores the CLI transport limit would loop retries on an oversized file. The distributed
+  // guide has to teach the real boundaries and their next steps.
+  it('teaches zero-config artifact sharing and its failure boundaries', () => {
     // Normalized so the assertions survive reflowing the guide's prose.
     const skill = readSkill().replace(/\s+/gu, ' ')
 
-    expect(skill).toContain('**Publishing is off by default and only a human can turn it on.**')
+    // Zero config: no account, no toggle, no human step before the first share.
+    expect(skill).toContain('the service address is built into the app')
+    expect(skill).toContain('enrolls itself on its first share')
+    expect(skill).toContain('no Orca account is involved')
+    expect(skill).toContain('There is no publish switch and nothing for a human to enable first')
+    // Same-file identity and the two delete surfaces agents must not confuse.
+    expect(skill).toContain('`update` is the same operation')
+    expect(skill).toContain('`unshare` deletes by file path and `delete` by the id from `list`')
+    // A link is not permanent, and `list` is where an agent reads when it ends.
+    expect(skill).toContain('with its id, URL and expiry')
+    expect(skill).toContain('so a link is not permanent')
+    // Host-only surface, snapshot semantics, and network-reach publicity.
+    expect(skill).toContain('desktop app on this computer')
+    expect(skill).toContain('a snapshot, not a live view')
+    // The transport limit points to the page flow; retrying cannot shrink the file.
+    expect(skill).toContain('800 KB per command')
+    expect(skill).toContain('do not retry or trim it to fit')
+    expect(skill).toContain('Share as artifact instead')
+    expect(skill).toContain('may be retried;')
+    // Revocation and cleanup stay reachable for the user.
     expect(skill).toContain('Settings → Artifacts')
-    expect(skill).toContain('Allow publishing public artifact links')
-    expect(skill).toContain('artifact_sharing_disabled')
-    expect(skill).toContain('There is no CLI or RPC way to grant it')
-    expect(skill).toContain('Do not retry')
-    // The gate is device-wide, and revocation surfaces stay reachable.
-    expect(skill).toContain('every caller on the device, agent or human')
-    expect(skill).toContain('`list`, `unshare`, and `delete` are never gated')
+    expect(skill).toContain(`"Files you've shared"`)
+    // The removed cloud gate must not creep back into the distributed guide.
+    expect(skill).not.toContain('artifact_sharing_disabled')
+    expect(skill).not.toContain('Allow publishing public artifact links')
+    expect(skill).not.toContain('Publishing is off by default')
+    expect(skill).not.toContain('signed-in Orca account')
   })
 })
 
