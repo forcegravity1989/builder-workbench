@@ -1,11 +1,23 @@
 # AGENTS.md — Workbench smoke test
 
-The directory contains the Workbench Electron smoke test and the small fixture closure it needs, plus the historical Orca E2E specs, fixtures and helpers retained as frozen source after the Orca CI/E2E isolation (see `ref/upstream.md`). `tests/playwright.config.ts` discovers only `workbench-cycle-smoke.spec.ts`, so the legacy files never run in the Workbench lane — do not "clean them up" and do not assume they execute. Keep new coverage focused on Workbench journeys and update this file when the smoke harness changes.
+The directory contains the Workbench Electron smoke test and the small fixture closure it needs, plus Orca and dedicated-lane E2E sources. The Workbench allowlist is `workbench-allowlist.ts`: `tests/playwright.config.ts` discovers only `workbench-cycle-smoke.spec.ts`, and `tests/playwright.overview.config.ts` discovers only `workbench-version-overview.spec.ts`. Other specs are not BW feature coverage; they remain owned by their dedicated workflows or historical source policy and must not be admitted to the Workbench lane by wildcard matching.
 
 The discovered spec covers the cycle main chain, project configuration and milestone planning. The configuration journey uses real charter RPC and filesystem writes in a disposable repository, checks conflict protection and reload read-back, and emits screenshots on success as well as failure. The headful milestone journey exercises inline edits, pointer dragging, row ordering, grouped undo/redo across same-revision refresh, materializing unused workweek windows, rendering existing source dates, version navigation and source return, safe submission failure without a remote, and unsent-draft recovery after reload and a new process. These journeys do not create a remote PR. Retain the fixture-owned ChildProcess before the test because Playwright's process handle can be disposed by force-quit. Windows profile cleanup may retain only explicitly identified locked external Sogou log files and reports their profile path; all other cleanup failures remain errors.
 
 
 A focused version-overview journey uses `tests/playwright.overview.config.ts` and the same Electron fixture. It reads GitHub through the operator-provided authentication, seeds only a per-test disposable Git repository, and validates real material/source reads, native navigation and process restart. Run it explicitly with the local `node_modules/@playwright/test/cli.js`; it does not add external-provider requirements to the default CI smoke. Screenshots and traces remain local evidence.
+
+## Register one main journey per active feature
+
+The Workbench lane keeps at most one main user journey for each of the five Explore BW work journeys. The feature matrix maps feature ownership and gaps onto those cross-feature journeys; the 30+ feature entries do not become 30+ journey specs. A single spec may cover several features when the product flow naturally crosses their boundaries. Give each registered journey the ID used by the Explore/spec catalog, and record the covered features, file, test title, execution project, read-back point and current status in the feature `STATUS.md`. An acceptance-point check is capped at one per feature and should reuse the main journey when it already observes the boundary. A second physical E2E needs a named risk; more than two needs human approval.
+
+Explore BW's work journeys and feature catalog are the coverage index, not a substitute for real feature evidence. Keep one small Explore smoke for catalog navigation; map each active feature to its one real Electron journey. Before adding a spec, classify the need as a protocol check, an acceptance-point check or a main journey. Move pure calculations and data contracts to the relevant unit or protocol suite. Merge checks that exercise the same user result and read-back. Add a branch or failure journey only when the feature specification names the risk and the existing main journey cannot observe it. The default Workbench CI entrypoint is the `testMatch` set in `tests/playwright.config.ts`, so a source file outside that entrypoint is not coverage until the configuration and feature registration both point to it.
+
+## Workbench test locations
+
+- TDD and protocol checks stay beside the implementation under `src/**` as `*.test.ts(x)` and are governed by the Workbench Vitest ratchet.
+- Feature acceptance E2E and cross-feature journey E2E stay under this directory. The current Workbench-owned allowlist has two spec files: the PR smoke entrypoint and the explicit version-overview entrypoint in `workbench-allowlist.ts`.
+- The five Explore journeys are logical registrations, not five mandatory files. Add a file only when an existing allowlisted test cannot observe the real user result.
 
 ## Build the App With `--mode e2e` Before Running the Smoke Test
 
