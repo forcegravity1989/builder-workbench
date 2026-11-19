@@ -166,11 +166,11 @@ describe('self-hosted share client status mapping', () => {
   it('releases the body of a delete it does not read', async () => {
     // An unread undici body can take the whole process down (orca#8695); the 404 short-circuit
     // returns without parsing, so it has to cancel explicitly.
-    let cancelled = false
-    const response = new Response(new ReadableStream({ cancel: () => (cancelled = true) }), {
+    const response = new Response('{"error":{"code":"not_found","message":"Share not found."}}', {
       status: 404,
       headers: { 'content-type': 'application/json' }
     })
+    const cancel = vi.spyOn(response.body!, 'cancel')
 
     await expect(
       deleteShare(
@@ -179,6 +179,6 @@ describe('self-hosted share client status mapping', () => {
         'edit-a'
       )
     ).resolves.toBeUndefined()
-    expect(cancelled).toBe(true)
+    expect(cancel).toHaveBeenCalled()
   })
 })
