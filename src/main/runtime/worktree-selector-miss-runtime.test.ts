@@ -68,9 +68,12 @@ describe('showManagedWorktree selector misses', () => {
     )
 
     const [fleet, terminal] = missRecords()
-    expect([fleet['selector.stage'], terminal['selector.stage']]).toEqual([
-      'fleet',
-      'terminal-workspace'
+    // One span per miss: the fleet path records at the resolver choke point, not twice.
+    expect(missRecords()).toHaveLength(2)
+    expect([fleet['selector.stage'], terminal['selector.stage']]).toEqual(['resolver', 'resolver'])
+    expect([fleet['selector.caller'], terminal['selector.caller']]).toEqual([
+      'showManagedWorktree',
+      'showManagedTerminalWorkspace'
     ])
     expect(terminal['selector.kind']).toBe('id')
     expect(terminal['selector.worktree_id']).toBe(missingId)
@@ -120,5 +123,31 @@ describe('showManagedWorktree selector misses', () => {
     )
 
     expect(missAttributes()).toBeNull()
+  })
+
+  it('records misses from direct resolver callers that bypass the show entries', async () => {
+    const runtime = new OrcaRuntimeService(makeStore() as never)
+    const missingId = `repo-1::${missingWorktreePath()}`
+    const internals = runtime as never as {
+      resolveRuntimeFileTarget(selector: string): Promise<unknown>
+      resolveWorktreeSelector(selector: string, caller?: string): Promise<unknown>
+    }
+
+    // Why these two: before the choke point they threw selector_not_found without any trace
+    // record — the session-click family of #727 was invisible in every bundle.
+    await expect(internals.resolveRuntimeFileTarget(`id:${missingId}`)).rejects.toThrow(
+      'selector_not_found'
+    )
+    await expect(
+      internals.resolveWorktreeSelector(`id:${missingId}`, 'test-caller')
+    ).rejects.toThrow('selector_not_found')
+
+    const records = missRecords()
+    expect(records).toHaveLength(2)
+    expect([records[0]['selector.caller'], records[1]['selector.caller']]).toEqual([
+      'file-target',
+      'test-caller'
+    ])
+    expect(records[0]['selector.stage']).toBe('resolver')
   })
 })

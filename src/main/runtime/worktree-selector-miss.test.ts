@@ -57,7 +57,8 @@ describe('recordWorktreeSelectorMiss', () => {
   it('records a Failure span and keeps unknown facts distinguishable from absent ones', () => {
     recordWorktreeSelectorMiss(
       {
-        stage: 'fleet',
+        stage: 'resolver',
+        caller: 'showManagedWorktree',
         selector: 'id:repo-1::/wt/acceptance-v0.8',
         requiredHostId: null,
         worktreeId: 'repo-1::/wt/acceptance-v0.8',
@@ -75,6 +76,7 @@ describe('recordWorktreeSelectorMiss', () => {
     recordWorktreeSelectorMiss(
       {
         stage: 'host-scoped',
+        caller: null,
         selector: 'id:repo-1::/wt',
         requiredHostId: 'ssh:build-01',
         worktreeId: 'repo-1::/wt',
@@ -100,7 +102,8 @@ describe('recordWorktreeSelectorMiss', () => {
     expect(record.exit._tag).toBe('Failure')
     expect(record.exit.cause).toContain('selector_not_found')
     expect(record.attributes['selector.kind']).toBe('id')
-    expect(record.attributes['selector.stage']).toBe('fleet')
+    expect(record.attributes['selector.stage']).toBe('resolver')
+    expect(record.attributes['selector.caller']).toBe('showManagedWorktree')
     expect(record.attributes['selector.stripped_value']).toBe('repo-1::/wt/acceptance-v0.8')
     expect(record.attributes['repo.host']).toBe('local')
     expect(record.attributes['path.exists_local']).toBe(false)
@@ -109,6 +112,7 @@ describe('recordWorktreeSelectorMiss', () => {
     expect(record.attributes['repo.meta_count']).toBe(32)
 
     expect(unknown.attributes['selector.required_host_id']).toBe('ssh:build-01')
+    expect(unknown.attributes['selector.caller']).toBeNull()
     expect(unknown.attributes['repo.known']).toBe(false)
     expect(unknown.attributes['meta.present']).toBeNull()
     expect(unknown.attributes['resolved.worktree_count']).toBeNull()

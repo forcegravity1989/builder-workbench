@@ -4,11 +4,11 @@ import { WORKTREE_ID_SEPARATOR } from '../../shared/worktree/id'
 import { startSpan } from '../observability/tracer'
 
 /**
- * Where the lookup gave up. `fleet` covers the ordinary selector table, `host-scoped` the
- * `id:` + requiredHostId path a managed workspace uses, `terminal-workspace` the terminal
- * launch target path.
+ * Where the lookup gave up. `resolver` is the choke point every selector table miss funnels
+ * through (`resolveWorktreeSelector`), `host-scoped` the `id:` + requiredHostId short-circuit a
+ * managed workspace uses, which never reaches the resolver.
  */
-export type WorktreeSelectorMissStage = 'fleet' | 'host-scoped' | 'terminal-workspace'
+export type WorktreeSelectorMissStage = 'resolver' | 'host-scoped'
 
 /**
  * Everything the runtime already knows when a selector fails to resolve. Kept as a plain
@@ -16,6 +16,12 @@ export type WorktreeSelectorMissStage = 'fleet' | 'host-scoped' | 'terminal-work
  */
 export type WorktreeSelectorMissFacts = {
   readonly stage: WorktreeSelectorMissStage
+  /**
+   * The entry that asked for the resolution (`showManagedWorktree`, `activateManagedWorktree`,
+   * `structured-session`, …), or `null` when an unthreaded internal caller missed. Distinguishes
+   * a user-facing surface from benign probes without a span per RPC channel.
+   */
+  readonly caller: string | null
   readonly selector: string
   readonly requiredHostId: string | null
   readonly worktreeId: string | null
@@ -106,6 +112,7 @@ export function recordWorktreeSelectorMiss(facts: WorktreeSelectorMissFacts, cau
       'selector.kind': worktreeSelectorKind(facts.selector),
       'selector.value': facts.selector,
       'selector.stage': facts.stage,
+      'selector.caller': facts.caller,
       'selector.required_host_id': facts.requiredHostId,
       'selector.worktree_id': facts.worktreeId,
       'selector.stripped_value': facts.selector.replace(SELECTOR_PREFIX_RE, ''),

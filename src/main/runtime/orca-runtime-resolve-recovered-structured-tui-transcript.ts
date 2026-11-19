@@ -95,7 +95,10 @@ export class OrcaRuntimeWithResolveRecoveredStructuredTuiTranscript extends Orca
   }
 
   protected async resolveStructuredAgentSessionLocation(worktreeSelector: string) {
-    const target = await this.resolveRuntimeFileTarget(worktreeSelector)
+    const target = await this.resolveRuntimeFileTarget(
+      worktreeSelector,
+      'structured-session-location'
+    )
     const repo = this.store?.getRepo(target.worktree.repoId)
     const folderScope = parseWorkspaceKey(target.worktree.id)
     const folderWorkspace = folderScope?.type === 'folder'
@@ -186,7 +189,9 @@ export class OrcaRuntimeWithResolveRecoveredStructuredTuiTranscript extends Orca
       input.agent
     )
     const location = await this.resolveStructuredAgentSessionLocation(input.worktree)
-    const workspacePath = (await this.resolveRuntimeFileTarget(input.worktree)).worktree.path
+    const workspacePath = (
+      await this.resolveRuntimeFileTarget(input.worktree, 'structured-session-path')
+    ).worktree.path
     const host = getStructuredAgentSessionHost()
     const committedReplay = resolveCommittedStructuredAgentSessionAdoptionIntent({
       host,

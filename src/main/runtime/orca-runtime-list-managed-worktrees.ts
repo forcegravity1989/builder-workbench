@@ -130,33 +130,35 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
   }
 
   async showManagedWorktree(worktreeSelector: string, requiredHostId?: ExecutionHostId) {
-    const stage: WorktreeSelectorMissStage = requiredHostId === undefined ? 'fleet' : 'host-scoped'
+    if (requiredHostId === undefined) {
+      // Fleet misses are recorded at the resolver choke point; wrapping here too would double-record.
+      return await this.resolveWorktreeSelector(worktreeSelector, 'showManagedWorktree')
+    }
     // Why sampled before resolving: resolution itself repopulates the snapshot, so reading
     // freshness afterwards would report a fresh cache for every miss and answer nothing.
     const cacheFreshAtRequest = this.hasFreshResolvedWorktreeCache()
     try {
-      if (requiredHostId !== undefined) {
-        if (!worktreeSelector.startsWith('id:') || !parseExecutionHostId(requiredHostId)) {
-          throw new Error('selector_not_found')
-        }
-        const worktree = await this.resolveExplicitWorktreeIdScoped(
-          worktreeSelector.slice(3),
-          requiredHostId
-        )
-        if (!worktree) {
-          throw new Error('selector_not_found')
-        }
-        return worktree
+      if (!worktreeSelector.startsWith('id:') || !parseExecutionHostId(requiredHostId)) {
+        throw new Error('selector_not_found')
       }
-      return await this.resolveWorktreeSelector(worktreeSelector)
+      const worktree = await this.resolveExplicitWorktreeIdScoped(
+        worktreeSelector.slice(3),
+        requiredHostId
+      )
+      if (!worktree) {
+        throw new Error('selector_not_found')
+      }
+      return worktree
     } catch (error) {
+      // The host-scoped short-circuit never reaches the resolver, so it records here.
       if (isSelectorNotFound(error) && !isNonMissSelector(worktreeSelector)) {
         this.emitWorktreeSelectorMiss(
           worktreeSelector,
-          stage,
+          'host-scoped',
           requiredHostId ?? null,
           cacheFreshAtRequest,
-          error
+          error,
+          'showManagedWorktree'
         )
       }
       throw error
@@ -164,25 +166,16 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
   }
 
   async showManagedTerminalWorkspace(worktreeSelector: string) {
-    const cacheFreshAtRequest = this.hasFreshResolvedWorktreeCache()
-    try {
-      const target = await this.resolveTerminalWorkspaceLaunchTarget(worktreeSelector)
-      if (!target.managedWorktree) {
-        throw new Error('selector_not_found')
-      }
-      return target.managedWorktree
-    } catch (error) {
-      if (isSelectorNotFound(error) && !isNonMissSelector(worktreeSelector)) {
-        this.emitWorktreeSelectorMiss(
-          worktreeSelector,
-          'terminal-workspace',
-          null,
-          cacheFreshAtRequest,
-          error
-        )
-      }
-      throw error
+    // Misses are recorded at the resolver choke point. The only `!managedWorktree` case is the
+    // floating-terminal sentinel, a contract non-miss that must not dilute the signal.
+    const target = await this.resolveTerminalWorkspaceLaunchTarget(
+      worktreeSelector,
+      'showManagedTerminalWorkspace'
+    )
+    if (!target.managedWorktree) {
+      throw new Error('selector_not_found')
     }
+    return target.managedWorktree
   }
 
   /**
@@ -195,7 +188,8 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
     stage: WorktreeSelectorMissStage,
     requiredHostId: string | null,
     cacheFreshAtRequest: boolean,
-    cause: unknown
+    cause: unknown,
+    caller: string | null = null
   ): void {
     try {
       const worktreeId = worktreeIdFromSelector(selector)
@@ -224,6 +218,7 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
       recordWorktreeSelectorMiss(
         {
           stage,
+          caller,
           selector,
           requiredHostId,
           worktreeId,
