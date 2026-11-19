@@ -205,6 +205,10 @@ describe('web runtime environment identity', () => {
       globals.window.api.runtimeEnvironments.getStatus({ selector: 'web-server-a' })
     ).resolves.toMatchObject({ ok: true })
     await globals.window.api.runtimeEnvironments.disconnect({ selector: 'web-server-a' })
+    // The saved hold survives a browser reload, not just the in-memory session.
+    expect(
+      JSON.parse(globals.storage.getItem('orca.web.runtimeEnvironment.v1') ?? '{}')
+    ).toMatchObject({ id: 'web-server-a', reconnectOnLaunch: false })
 
     await expect(globals.window.api.runtimeEnvironments.list()).resolves.toMatchObject([
       { id: 'web-server-a' }
@@ -242,6 +246,53 @@ describe('web runtime environment identity', () => {
     expect(
       JSON.parse(globals.storage.getItem('orca.web.runtimeEnvironment.v1') ?? '{}')
     ).toMatchObject({ pairedDeviceId: 'paired-device-a' })
+    // Connect lifts the saved hold so the server reconnects on the next load.
+    expect(
+      JSON.parse(globals.storage.getItem('orca.web.runtimeEnvironment.v1') ?? '{}')
+    ).not.toHaveProperty('reconnectOnLaunch')
+  })
+
+  it('restores a saved manual-disconnect hold after a browser reload', async () => {
+    const client = vi.fn()
+    vi.doMock('./web-runtime-client', () => ({
+      WebRuntimeClient: class {
+        constructor() {
+          client()
+        }
+
+        call(): Promise<RuntimeRpcResponse<unknown>> {
+          return Promise.resolve({
+            id: 'status.get',
+            ok: true,
+            result: {},
+            _meta: { runtimeId: 'runtime-1' }
+          })
+        }
+
+        close(): void {}
+      }
+    }))
+    const first = installBrowserGlobals('Linux')
+    writeStoredRuntimeEnvironment(first.storage, 'web-server-a')
+    const firstApi = await import('./web-preload-api')
+    firstApi.installWebPreloadApi()
+    await first.window.api.runtimeEnvironments.disconnect({ selector: 'web-server-a' })
+    const saved = first.storage.getItem('orca.web.runtimeEnvironment.v1')!
+
+    // Reload: fresh modules, same browser storage, no in-memory hold from the old page.
+    vi.resetModules()
+    const reloaded = installBrowserGlobals('Linux')
+    reloaded.storage.setItem('orca.web.runtimeEnvironment.v1', saved)
+    const reloadedApi = await import('./web-preload-api')
+    reloadedApi.installWebPreloadApi()
+
+    await expect(
+      reloaded.window.api.runtimeEnvironments.getStatus({ selector: 'web-server-a' })
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'runtime_manually_disconnected' }
+    })
+    expect(client).not.toHaveBeenCalled()
   })
 
   it('fences a web runtime response that completes after manual disconnect', async () => {
