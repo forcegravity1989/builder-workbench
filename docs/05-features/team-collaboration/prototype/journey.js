@@ -312,7 +312,7 @@
     }))
   }
 
-  function blankDirectory(groupId = demoGroup, spaceId = demoSpaceId) {
+  function blankDirectory(groupId = demoGroup, spaceId = '') {
     return {
       schema_version: 1,
       team_group_id: groupId,
@@ -347,7 +347,7 @@
   }
 
   function seedDirectory() {
-    const directory = blankDirectory()
+    const directory = blankDirectory(demoGroup, demoSpaceId)
     directory.projects = [{
       repo_id: catalogRepos.star.repoId,
       name: catalogRepos.star.name,
@@ -527,6 +527,10 @@
 
   function saveDirectory() {
     const draft = current().directoryDraft
+    if (!draft?.team_space_id) {
+      notify('请先填写群空间 ID，再同步团队目录。')
+      return
+    }
     if (current().directoryBase !== JSON.stringify(state.directory)) {
       notify('群空间目录已更新。保留了你的草稿，请先核对最新目录。')
       return
@@ -592,7 +596,7 @@
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">输入群 ID 和群空间 ID，BW 会读取成员并使用该空间保存团队目录。</p><form id="team-lookup"><div class="directory-id-grid"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field">群空间 ID<input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">输入群 ID 进入团队目录；如果群空间里还没有团队 JSON，再在目录第一行填写群空间 ID。</p><form id="team-lookup"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><footer class="dialog-actions"><button type="submit" class="btn btn-primary">进入团队设置</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = Object.keys(names)
@@ -1380,15 +1384,15 @@
       dialog.close()
       confirmForm(data)
     } else if (event.target.id === 'team-lookup') {
-      if (data.get('group') !== demoGroup || data.get('space') !== demoSpaceId) {
-        notify(`样例需要群号 ${demoGroup} 和群空间 ID ${demoSpaceId}`)
+      if (data.get('group') !== demoGroup) {
+        notify(`样例只支持群号 ${demoGroup}`)
         return
       }
       state.bound[actor.value] = true
       state.directory = syncDirectory(
         state.directory?.team_group_id === data.get('group')
           ? state.directory
-          : blankDirectory(data.get('group'), data.get('space'))
+          : blankDirectory(data.get('group'))
       )
       hydrateEndpoints()
       const desktop = current()
