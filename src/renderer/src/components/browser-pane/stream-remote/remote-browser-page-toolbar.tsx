@@ -117,16 +117,34 @@ export function RemoteBrowserPageToolbar({
             variant="ghost"
             className={`h-7 w-7 ${annotationMode ? 'bg-accent text-foreground' : ''}`}
             aria-pressed={annotationMode}
-            aria-label="批注页面元素"
+            aria-label={translate(
+              'auto.components.browser.pane.BrowserPane.prototypeReview.annotateElements',
+              'Annotate page elements'
+            )}
             disabled={!annotationAvailable}
-            title={annotationAvailable ? undefined : '仅原型评审页可批注'}
+            title={
+              annotationAvailable
+                ? undefined
+                : translate(
+                    'auto.components.browser.pane.BrowserPane.prototypeReview.onlyReviewPages',
+                    'Only prototype review pages support annotations'
+                  )
+            }
             onClick={onToggleAnnotation}
           >
             <MessageSquarePlus className="size-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom" sideOffset={4}>
-          {annotationMode ? '退出批注模式' : '批注页面元素'}
+          {annotationMode
+            ? translate(
+                'auto.components.browser.pane.BrowserPane.prototypeReview.exitAnnotationMode',
+                'Exit annotation mode'
+              )
+            : translate(
+                'auto.components.browser.pane.BrowserPane.prototypeReview.annotateElements',
+                'Annotate page elements'
+              )}
         </TooltipContent>
       </Tooltip>
       <MarkupDrawButton

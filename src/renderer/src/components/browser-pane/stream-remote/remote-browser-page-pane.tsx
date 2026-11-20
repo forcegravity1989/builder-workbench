@@ -39,6 +39,7 @@ import { RemoteBrowserPageViewport } from './remote-browser-page-viewport'
 import { useRemotePrototypeAnnotations } from './use-remote-prototype-annotations'
 import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
 import { usePrototypeReviewNotifications } from '@/workbench/pr-review-notifications/prototype-store'
+import { translate } from '@/i18n/i18n'
 
 export function RemoteBrowserPagePane({
   browserTab,
@@ -482,12 +483,20 @@ export function RemoteBrowserPagePane({
       />
       {pendingAnnotationPoint ? (
         <div className="absolute bottom-4 left-1/2 z-40 w-72 -translate-x-1/2 rounded-md border bg-popover p-3 text-xs shadow-lg">
-          <div className="mb-2 font-medium">添加页面批注</div>
+          <div className="mb-2 font-medium">
+            {translate(
+              'auto.components.browser.pane.BrowserPane.prototypeReview.addAnnotation',
+              'Add page annotation'
+            )}
+          </div>
           <textarea
             className="min-h-16 w-full rounded border bg-background p-2"
             value={annotationText}
             onChange={(event) => setAnnotationText(event.target.value)}
-            placeholder="输入批注"
+            placeholder={translate(
+              'auto.components.browser.pane.BrowserPane.prototypeReview.annotationPlaceholder',
+              'Enter annotation'
+            )}
           />
           <div className="mt-2 flex justify-end gap-2">
             <button
@@ -495,7 +504,7 @@ export function RemoteBrowserPagePane({
               className="rounded border px-2 py-1"
               onClick={() => setPendingAnnotationPoint(null)}
             >
-              取消
+              {translate('auto.components.browser.pane.BrowserPane.fa6ea61de3', 'Cancel')}
             </button>
             <button
               type="button"
@@ -511,7 +520,10 @@ export function RemoteBrowserPagePane({
                 })
               }}
             >
-              提交批注
+              {translate(
+                'auto.components.browser.pane.BrowserPane.prototypeReview.submitAnnotation',
+                'Submit annotation'
+              )}
             </button>
           </div>
         </div>

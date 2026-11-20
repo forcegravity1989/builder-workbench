@@ -30,7 +30,10 @@ function createBrowserPageAnnotationFromPrototype(
     payload: {
       page: {
         sanitizedUrl: annotation.documentKey,
-        title: '原型评审页',
+        title: translate(
+          'auto.components.browser.pane.BrowserPane.prototypeReview.pageTitle',
+          'Prototype review page'
+        ),
         viewportWidth: 0,
         viewportHeight: 0,
         scrollX: 0,
