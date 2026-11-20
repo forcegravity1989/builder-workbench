@@ -2,13 +2,14 @@ import { ErrorDetails } from './error-feedback'
 import type { ReactNode } from 'react'
 import {
   AlertCircle,
+  CircleUserRound,
   Download,
   ExternalLink,
   FilePenLine,
+  FolderGit2,
   LayoutDashboard,
   LoaderCircle,
-  SlidersHorizontal,
-  type LucideIcon
+  SlidersHorizontal
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -20,7 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { Repo } from '../../../shared/repo-types'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
-import { ProjectSourceTag } from './ProjectSourceTag'
+import { WallSourceAvatarGroup } from './WallSourceAvatarGroup'
 import type { ProjectCharter } from './project-charter'
 import type { WallCardReadings } from './wall-card-readings'
 import type { VersionWorkflowProgress } from './version-workflow-progress'
@@ -53,42 +54,6 @@ function workflowProblem(progress: VersionWorkflowProgress): string | undefined 
   )
 }
 
-function RepositoryAction({
-  slots,
-  label,
-  icon,
-  onSelect
-}: {
-  slots: readonly WallRepoSlot[]
-  label: string
-  icon: LucideIcon
-  onSelect(slot: WallRepoSlot): void
-}) {
-  if (!slots.length) {
-    return null
-  }
-  if (slots.length === 1) {
-    return <WorkbenchIconButton label={label} icon={icon} onClick={() => onSelect(slots[0])} />
-  }
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <WorkbenchIconButton label={label} icon={icon} />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {slots.map((slot) => (
-          <DropdownMenuItem
-            key={`${getRepoExecutionHostId(slot.repo)}:${slot.repoId}`}
-            onSelect={() => onSelect(slot)}
-          >
-            {slot.name}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
 export function ProjectWallCard({
   card,
   mode = 'detail',
@@ -117,6 +82,18 @@ export function ProjectWallCard({
   onRepoSettings(repo: Repo): void
 }) {
   const { readings, project, primaryRepo } = card
+  const identifiedVersion =
+    readings.kind === 'version'
+      ? readings.sourceLabel
+        ? `${readings.version} · ${readings.sourceLabel}`
+        : readings.version
+      : readings.kind === 'unknown'
+        ? readings.version
+        : undefined
+  const versionStatus =
+    readings.kind === 'loading' ? '正在读取版本…' : readings.kind === 'unknown' ? '无' : null
+  const goals = readings.kind === 'version' ? readings.goals : []
+  const brief = !goals.length ? card.charter?.brief?.trim() : undefined
   const openRepository = (slot: WallRepoSlot) => {
     if (slot?.href) {
       void window.api.shell.openUrl(slot.href)
@@ -143,37 +120,44 @@ export function ProjectWallCard({
           {card.displayName}
         </button>
         <div className="pcard-actions">
-          <RepositoryAction
-            label={primaryRepo.kind === 'folder' ? '打开文件夹' : '打开代码仓'}
-            icon={ExternalLink}
-            slots={project.slots.filter(
-              (slot) => slot.href || getRepoExecutionHostId(slot.repo) === 'local'
-            )}
-            onSelect={openRepository}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <WorkbenchIconButton label="代码仓操作" icon={FolderGit2} />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {project.slots.map((slot) => (
+                <div key={`${getRepoExecutionHostId(slot.repo)}:${slot.repoId}`}>
+                  {project.slots.length > 1 && <span className="pcard-menu-repo">{slot.name}</span>}
+                  <DropdownMenuItem
+                    disabled={!slot.href && getRepoExecutionHostId(slot.repo) !== 'local'}
+                    onSelect={() => openRepository(slot)}
+                  >
+                    <ExternalLink />
+                    {slot.repo.kind === 'folder' ? '打开文件夹' : '打开代码仓'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onRepoSettings(slot.repo)}>
+                    <SlidersHorizontal />
+                    仓库设置
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={!slot.remoteUrl || slot.hostIds.includes('local')}
+                    onSelect={() => onClone(slot)}
+                  >
+                    <Download />
+                    克隆到本机
+                  </DropdownMenuItem>
+                </div>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <WorkbenchIconButton
+            label={primaryRepo.kind === 'folder' ? '项目总览（普通文件夹不可用）' : '项目总览'}
+            icon={LayoutDashboard}
+            disabled={primaryRepo.kind === 'folder'}
+            onClick={onOverview}
+            data-workbench-open-overview
+            data-contextual-tour-target="workbench-wall-overview"
           />
-          <RepositoryAction
-            label="仓库设置"
-            icon={SlidersHorizontal}
-            slots={project.slots}
-            onSelect={(slot) => onRepoSettings(slot.repo)}
-          />
-          <RepositoryAction
-            label="克隆到本机"
-            icon={Download}
-            slots={project.slots.filter(
-              (slot) => slot.remoteUrl && !slot.hostIds.includes('local')
-            )}
-            onSelect={onClone}
-          />
-          {primaryRepo.kind !== 'folder' && (
-            <WorkbenchIconButton
-              label="项目总览"
-              icon={LayoutDashboard}
-              onClick={onOverview}
-              data-workbench-open-overview
-              data-contextual-tour-target="workbench-wall-overview"
-            />
-          )}
           <WorkbenchIconButton
             label="项目设置与项目信息"
             icon={switching ? LoaderCircle : FilePenLine}
@@ -185,122 +169,131 @@ export function ProjectWallCard({
         </div>
       </div>
       <div className="pcard-identity">
-        <span className="pcard-owner">
-          项目负责人{' '}
-          <strong title={card.charter?.owner?.trim()}>{card.charter?.owner?.trim() || '—'}</strong>
-        </span>
-        <div className="pcard-hosts">
-          {card.hostTags.map((tag) => (
+        <Popover>
+          <PopoverTrigger asChild>
             <button
               type="button"
-              key={tag.hostId}
-              className="pcard-host"
-              onClick={() =>
-                onOpen(project.rows.find((row) => getRepoExecutionHostId(row) === tag.hostId))
-              }
-              disabled={tag.online === false}
-              aria-label={`在 ${tag.label} 继续工作`}
+              className="pcard-person-avatar"
+              aria-label="项目负责人"
+              title={`项目负责人：${card.charter?.owner?.trim() || '未设置'}`}
             >
-              <ProjectSourceTag tag={tag} interactive />
+              <CircleUserRound size={22} />
             </button>
-          ))}
-        </div>
-      </div>
-      <div className="pcard-delivery">
-        <div className="pcard-version">
-          <span>{readings.kind === 'version' ? '版本目标' : '项目信息'}</span>
-          <span>
-            {readings.kind === 'version'
-              ? readings.sourceLabel
-                ? `${readings.version} · ${readings.sourceLabel}`
-                : readings.version
-              : ''}
-          </span>
-        </div>
-        {readings.kind === 'version' ? (
-          <>
-            <ul>
-              {readings.goals.slice(0, 2).map((title, index) => (
-                <li key={index} title={title}>
-                  {title}
-                </li>
+          </PopoverTrigger>
+          <PopoverContent className="p-3" align="start">
+            项目负责人：{card.charter?.owner?.trim() || '未设置'}
+          </PopoverContent>
+        </Popover>
+        <span className="pcard-owner-name" title={card.charter?.owner?.trim()}>
+          {card.charter?.owner?.trim() || '—'}
+        </span>
+        <WallSourceAvatarGroup
+          sources={card.hostTags.map((tag) => ({
+            id: tag.hostId,
+            label: tag.label,
+            online: tag.online,
+            onOpen: () =>
+              onOpen(project.rows.find((row) => getRepoExecutionHostId(row) === tag.hostId))
+          }))}
+        />
+        {project.group && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className="pcard-members">
+                成员
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="pcard-member-list p-3" align="end">
+              {project.slots.map((member) => (
+                <div key={`${getRepoExecutionHostId(member.repo)}:${member.repoId}`}>
+                  <button type="button" onClick={() => onOpen(member.repo)}>
+                    {member.name}
+                  </button>
+                  {repoMenu(member.repo)}
+                </div>
               ))}
-            </ul>
-            <div className="pcard-goal-note">
-              {readings.goals.length > 2 && (
-                <span className="pcard-muted">另 {readings.goals.length - 2} 项目标</span>
-              )}
-              {!readings.goals.length && <span className="pcard-muted">暂无可读目标</span>}
-            </div>
-          </>
-        ) : (
-          <p className="pcard-brief" title={card.charter?.brief?.trim()}>
-            {readings.kind === 'loading'
-              ? '正在读取版本…'
-              : readings.kind === 'unknown'
-                ? '版本信息暂不可用'
-                : card.charter?.brief?.trim() || '未建立版本'}
-          </p>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
-      <div className="pcard-footer">
-        <div className="pcard-meta">
-          {project.group && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button type="button" className="pcard-members">
-                  {project.slots.length} 个代码仓
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="pcard-member-list p-3" align="start">
-                {project.slots.map((member) => (
-                  <div key={`${getRepoExecutionHostId(member.repo)}:${member.repoId}`}>
-                    <button type="button" onClick={() => onOpen(member.repo)}>
-                      {member.name}
-                    </button>
-                    {repoMenu(member.repo)}
-                  </div>
-                ))}
-              </PopoverContent>
-            </Popover>
-          )}
-          <span className="pcard-version-status">
-            {readings.kind === 'version'
-              ? mode === 'compact'
-                ? readings.version
-                : ''
-              : readings.kind === 'loading'
-                ? '正在读取版本…'
-                : readings.kind === 'unknown'
-                  ? '版本信息暂不可用'
-                  : '未建立版本'}
+      <div className="pcard-version">
+        <span className="pcard-version-value" title={identifiedVersion}>
+          {identifiedVersion ?? '—'}
+        </span>
+        <span className="pcard-release" title="现有墙卡材料未提供发布日期">
+          发布 —
+        </span>
+        {versionStatus && (
+          <span
+            className="pcard-muted"
+            title={readings.kind === 'unknown' ? '读取失败；打开读取问题查看原因' : versionStatus}
+          >
+            {versionStatus}
           </span>
-          {(readings.kind === 'unknown' ||
-            (readings.kind === 'version' &&
-              (workflowProblem(readings.plan) || workflowProblem(readings.acceptance)))) && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <WorkbenchIconButton label="查看读取问题" icon={AlertCircle} />
-              </PopoverTrigger>
-              <PopoverContent className="w-80 max-w-[calc(100vw-32px)] p-3" align="end">
-                {readings.kind === 'unknown' ? (
-                  <ErrorDetails summary="版本读取详情" detail={readings.reason} />
-                ) : readings.kind === 'version' ? (
-                  (['plan', 'acceptance'] as const).map((workflow) => {
-                    const detail = workflowProblem(readings[workflow])
-                    return detail ? (
-                      <ErrorDetails
-                        key={workflow}
-                        summary={workflow === 'plan' ? '计划读取详情' : '验收读取详情'}
-                        detail={detail}
-                      />
-                    ) : null
-                  })
-                ) : null}
-              </PopoverContent>
-            </Popover>
-          )}
-        </div>
+        )}
+        {(readings.kind === 'unknown' ||
+          (readings.kind === 'version' &&
+            (workflowProblem(readings.plan) || workflowProblem(readings.acceptance)))) && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <WorkbenchIconButton label="查看读取问题" icon={AlertCircle} />
+            </PopoverTrigger>
+            <PopoverContent className="w-80 max-w-[calc(100vw-32px)] p-3" align="end">
+              {readings.kind === 'unknown' ? (
+                <ErrorDetails summary="版本读取详情" detail={readings.reason} />
+              ) : readings.kind === 'version' ? (
+                (['plan', 'acceptance'] as const).map((workflow) => {
+                  const detail = workflowProblem(readings[workflow])
+                  return detail ? (
+                    <ErrorDetails
+                      key={workflow}
+                      summary={workflow === 'plan' ? '计划读取详情' : '验收读取详情'}
+                      detail={detail}
+                    />
+                  ) : null
+                })
+              ) : null}
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+      <div className="pcard-delivery">
+        {goals.length > 0 ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="pcard-goal-preview"
+                aria-label={`查看全部 ${goals.length} 项目标`}
+              >
+                <ul>
+                  {goals.slice(0, 2).map((title, index) => (
+                    <li key={index} title={title}>
+                      {title}
+                    </li>
+                  ))}
+                </ul>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="pcard-goal-list p-3" align="start">
+              <strong>{identifiedVersion} · 月度版本目标</strong>
+              <ol>
+                {goals.map((title, index) => (
+                  <li key={index}>{title}</li>
+                ))}
+              </ol>
+              <button type="button" className="pcard-members" onClick={() => onStage('plan')}>
+                进入版本计划
+              </button>
+            </PopoverContent>
+          </Popover>
+        ) : brief ? (
+          <p className="pcard-brief" title={brief}>
+            {brief}
+          </p>
+        ) : null}
+      </div>
+      <div className="pcard-footer">
         <div className="pcard-stages">
           <button
             type="button"

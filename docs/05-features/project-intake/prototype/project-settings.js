@@ -447,6 +447,100 @@
     },
     reset: () => guarded(() => reset())
   }
+  const setPeopleExpanded = (group, expanded) => {
+    clearTimeout(group.peopleTimer)
+    const entries = [...group.querySelectorAll('.person-entry')]
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    entries.forEach((entry, index) => {
+      entry.style.setProperty(
+        '--people-delay',
+        `${(expanded ? index : entries.length - 1 - index) * 70}ms`
+      )
+    })
+    group.dataset.targetExpanded = String(expanded)
+    if (expanded) {
+      group.dataset.folded = 'false'
+      const track = group.querySelector('.people-track')
+      const bounds = group.getBoundingClientRect()
+      const card = group.closest('.project-card').getBoundingClientRect()
+      const laneWidth = group.querySelector('.people-lane').getBoundingClientRect().width
+      const width = Math.min(laneWidth + 14, Math.max(26, card.width - 26))
+      group.style.setProperty('--people-panel-width', `${width}px`)
+      group.style.setProperty('--people-panel-left', `${card.right - 13 - width - bounds.left}px`)
+      void track.offsetWidth
+    }
+    group.dataset.expanded = String(expanded)
+    group.querySelectorAll('button').forEach((button) => {
+      button.setAttribute('aria-expanded', String(expanded))
+    })
+    if (!expanded) {
+      group.peopleTimer = setTimeout(
+        () => {
+          group.dataset.folded = 'true'
+          group.querySelector('.people-track').scrollLeft = 0
+          group.style.removeProperty('--people-panel-width')
+          group.style.removeProperty('--people-panel-left')
+        },
+        reduced ? 0 : 280 + Math.max(0, entries.length - 1) * 70
+      )
+    }
+  }
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-action="people-toggle"]')
+    document.querySelectorAll('.people-avatars[data-expanded="true"]').forEach((group) => {
+      if (!group.contains(event.target)) {
+        setPeopleExpanded(group, false)
+      }
+    })
+    if (!trigger) {
+      return
+    }
+    const group = trigger.closest('.people-avatars')
+    setPeopleExpanded(group, group.dataset.targetExpanded !== 'true')
+  })
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') {
+      return
+    }
+    document.querySelectorAll('.people-avatars[data-expanded="true"]').forEach((group) => {
+      event.preventDefault()
+      setPeopleExpanded(group, false)
+      group.querySelector('button').focus({ preventScroll: true })
+    })
+  })
+  const positionCardPopover = (panel, trigger) => {
+    const anchor = trigger.getBoundingClientRect()
+    if (panel.classList.contains('goal-popover')) {
+      const card = trigger.closest('.project-card').getBoundingClientRect()
+      panel.style.width = `${Math.min(420, card.width - 26, window.innerWidth - 16)}px`
+    }
+    const bounds = panel.getBoundingClientRect()
+    const preferredLeft = panel.classList.contains('goal-popover')
+      ? anchor.left
+      : anchor.right - bounds.width
+    const left = Math.max(8, Math.min(preferredLeft, window.innerWidth - bounds.width - 8))
+    const below = anchor.bottom + 6
+    const top =
+      below + bounds.height <= window.innerHeight - 8
+        ? below
+        : Math.max(8, anchor.top - bounds.height - 6)
+    panel.style.left = `${left}px`
+    panel.style.top = `${top}px`
+  }
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[popovertarget]')
+    const panel = trigger && W.$(trigger.getAttribute('popovertarget'))
+    if (!panel?.classList.contains('member-popover')) {
+      return
+    }
+    event.preventDefault()
+    if (panel.matches(':popover-open')) {
+      panel.hidePopover()
+    } else {
+      panel.showPopover()
+      positionCardPopover(panel, trigger)
+    }
+  })
   document.addEventListener('click', (event) => {
     if (
       repoMenu &&
