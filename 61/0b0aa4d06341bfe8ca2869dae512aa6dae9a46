@@ -1,0 +1,24 @@
+.push-probe.txt
+  h_d0d195a8c70989 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "610b0aa4d06341bfe8ca2869dae512aa6dae9a46",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_787a4933ba55b7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f3b2-e169-76c0-9c20-4e29a152f951",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

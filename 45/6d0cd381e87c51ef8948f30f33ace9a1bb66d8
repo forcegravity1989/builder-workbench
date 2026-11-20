@@ -1,0 +1,7 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "456d0cd381e87c51ef8948f30f33ace9a1bb66d8",
+  "prompts": {}
+}
