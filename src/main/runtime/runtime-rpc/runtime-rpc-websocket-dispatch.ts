@@ -138,19 +138,24 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         } catch {
           // Keep the error result when a handler emitted a malformed frame.
         }
-        this.getRuntimeAccessAudit().record({
-          at: Date.now(),
-          deviceId: device.deviceId,
-          deviceName: device.name,
-          accessMode,
-          ...(device.teamBinding
-            ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
-            : undefined),
-          method: request.method,
-          result,
-          requestId: request.id,
-          durationMs: Date.now() - auditStartedAt
-        })
+        // Team-read catalog hydration can issue many successful read calls per
+        // repaint. Keep the audit useful by retaining denied/error requests and
+        // all full-access activity, while leaving routine read hydration out.
+        if (!(accessMode === 'team-read' && result === 'allowed')) {
+          this.getRuntimeAccessAudit().record({
+            at: Date.now(),
+            deviceId: device.deviceId,
+            deviceName: device.name,
+            accessMode,
+            ...(device.teamBinding
+              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              : undefined),
+            method: request.method,
+            result,
+            requestId: request.id,
+            durationMs: Date.now() - auditStartedAt
+          })
+        }
       }
       reply(scopedResponse)
     }

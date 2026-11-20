@@ -68,6 +68,20 @@ export class RuntimeAccessAudit {
     return entries.sort((a, b) => b.at - a.at)
   }
 
+  async clear(): Promise<void> {
+    let files: string[]
+    try {
+      files = await readdir(this.directory)
+    } catch {
+      return
+    }
+    await Promise.all(
+      files
+        .filter((file) => /^\d{4}-\d{2}-\d{2}\.ndjson$/.test(file))
+        .map((file) => unlink(join(this.directory, file)).catch(() => undefined))
+    )
+  }
+
   private schedulePrune(): void {
     if (this.prunePromise) {
       return

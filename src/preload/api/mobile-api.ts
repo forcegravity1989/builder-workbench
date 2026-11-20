@@ -96,6 +96,7 @@ export type MobileApi = {
     since?: number
     search?: string
   }) => Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }>
+  clearRuntimeAccessAudit: () => Promise<{ cleared: boolean }>
   revokeRuntimeAccess: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
   isWebSocketReady: () => Promise<{ ready: boolean; endpoint: string | null }>
   getRelayStatus: () => Promise<MobileRelayStatusDetail>

@@ -27,6 +27,23 @@ type TeamSettingsDialogProps = {
 }
 
 const TEAM_SPACE_STORAGE_KEY = 'bw:team-space-id:'
+const TEAM_GROUP_STORAGE_KEY = 'bw:team-group-id'
+
+function rememberedGroupId(): string {
+  try {
+    return window.localStorage.getItem(TEAM_GROUP_STORAGE_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function rememberGroupId(groupId: string): void {
+  try {
+    window.localStorage.setItem(TEAM_GROUP_STORAGE_KEY, groupId)
+  } catch {
+    // The directory remains authoritative when browser storage is unavailable.
+  }
+}
 
 function rememberedSpaceId(groupId: string): string {
   try {
@@ -69,8 +86,6 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
 
   useEffect(() => {
     if (!open) {
-      setGroupId('')
-      setSpaceId('')
       setDirectory(null)
       setCurrentMemberId(null)
       setSelectedProjectId('')
@@ -95,6 +110,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     setSpaceIdRequired(false)
     setGroupId(nextGroupId)
     setSpaceId(nextSpaceId)
+    rememberGroupId(nextGroupId)
     void loadDirectory(nextGroupId, nextSpaceId)
   }
 
@@ -119,6 +135,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setCurrentMemberId(result.currentMemberId)
       setGroupId(result.directory.team_group_id)
       setSpaceId(result.directory.team_space_id)
+      rememberGroupId(result.directory.team_group_id)
       rememberSpaceId(result.directory.team_group_id, result.directory.team_space_id)
     } catch (cause) {
       if (!directory) {
@@ -130,6 +147,22 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     }
   }
 
+  useEffect(() => {
+    if (!open || directory) {
+      return
+    }
+    const rememberedGroup = rememberedGroupId()
+    if (!rememberedGroup) {
+      return
+    }
+    const rememberedSpace = rememberedSpaceId(rememberedGroup)
+    setGroupId(rememberedGroup)
+    setSpaceId(rememberedSpace)
+    if (rememberedSpace) {
+      void loadDirectory(rememberedGroup, rememberedSpace)
+    }
+  }, [open, directory])
+
   const saveDirectory = async (): Promise<void> => {
     if (!directory || !directory.team_group_id || !directory.team_space_id) {
       setError('请填写群 ID 和群空间 ID。')
@@ -139,6 +172,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     setError(null)
     try {
       await window.api.teamCollaboration.writeDirectory(directory)
+      rememberGroupId(directory.team_group_id)
       rememberSpaceId(directory.team_group_id, directory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '同步团队目录失败。')
@@ -230,6 +264,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setDirectory(nextDirectory)
       setSelectedProjectId('')
       setProjectRegisterOpen(false)
+      rememberGroupId(nextDirectory.team_group_id)
       rememberSpaceId(nextDirectory.team_group_id, nextDirectory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登记团队项目失败。')
@@ -269,9 +304,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
                 onChange={(event) => {
                   const nextGroupId = event.target.value
                   setGroupId(nextGroupId)
-                  if (!spaceId.trim()) {
-                    setSpaceId(rememberedSpaceId(nextGroupId.trim()))
-                  }
+                  setSpaceId(rememberedSpaceId(nextGroupId.trim()))
                 }}
                 inputMode="numeric"
               />

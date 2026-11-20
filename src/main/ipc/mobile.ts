@@ -327,6 +327,15 @@ export function registerMobileHandlers(
     }
   )
 
+  ipcMain.handle('mobile:clearRuntimeAccessAudit', async () => {
+    const audit = rpcServer.getRuntimeAccessAudit?.()
+    if (!audit) {
+      return { cleared: false }
+    }
+    await audit.clear()
+    return { cleared: true }
+  })
+
   ipcMain.handle('mobile:revokeDevice', async (_event, args: { deviceId: string }) => {
     const registry = rpcServer.getDeviceRegistry()
     if (!registry) {

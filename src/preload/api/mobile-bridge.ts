@@ -96,6 +96,8 @@ export const mobileApi = {
     search?: string
   }): Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }> =>
     ipcRenderer.invoke('mobile:listRuntimeAccessAudit', args),
+  clearRuntimeAccessAudit: (): Promise<{ cleared: boolean }> =>
+    ipcRenderer.invoke('mobile:clearRuntimeAccessAudit'),
 
   revokeRuntimeAccess: (args: { deviceId: string }): Promise<{ revoked: boolean }> =>
     ipcRenderer.invoke('mobile:revokeRuntimeAccess', args),

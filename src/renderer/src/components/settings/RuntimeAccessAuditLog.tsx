@@ -1,4 +1,4 @@
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import type {
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult
@@ -26,6 +26,7 @@ type RuntimeAccessAuditLogProps = {
   onSinceDaysChange: (value: 1 | 7 | 14) => void
   onSearchChange: (value: string) => void
   onRefresh: () => void
+  onClear: () => void
 }
 
 export function RuntimeAccessAuditLog({
@@ -39,7 +40,8 @@ export function RuntimeAccessAuditLog({
   onResultChange,
   onSinceDaysChange,
   onSearchChange,
-  onRefresh
+  onRefresh,
+  onClear
 }: RuntimeAccessAuditLogProps): React.JSX.Element {
   return (
     <div className="space-y-2 border-t border-border/40 pt-3">
@@ -55,19 +57,31 @@ export function RuntimeAccessAuditLog({
             )}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          onClick={onRefresh}
-          disabled={isLoading}
-          aria-label={translate(
-            'auto.components.settings.RuntimeAccessAuditLog.refresh',
-            'Refresh shared host access log'
-          )}
-        >
-          <RefreshCw className={isLoading ? 'animate-spin' : undefined} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={onRefresh}
+            disabled={isLoading}
+            aria-label={translate(
+              'auto.components.settings.RuntimeAccessAuditLog.refresh',
+              'Refresh shared host access log'
+            )}
+          >
+            <RefreshCw className={isLoading ? 'animate-spin' : undefined} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClear}
+            disabled={isLoading || entries.length === 0}
+          >
+            <Trash2 className="size-3.5" />
+            {translate('auto.components.settings.RuntimeAccessAuditLog.clear', '清理日志')}
+          </Button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Select value={action} onValueChange={onActionChange}>
