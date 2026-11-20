@@ -1,0 +1,60 @@
+src/main/artifacts/self-hosted-share-config.test.ts
+  s_da7ab51653058a::t_d34fc16d14d3f9 6-8,11-14,18,29-31,34-36,38,43-44,50-52,54,57-62,64,67-69,71-73
+src/renderer/src/components/artifacts/ArtifactPublishButton.test.tsx
+  s_da7ab51653058a::t_905c4a27919b51 14,46,73,118,120,124-131
+src/renderer/src/components/artifacts/ArtifactPublishButton.tsx
+  s_da7ab51653058a::t_8575666a1f3087 2,11-12,33,41,61,64,78-92,100,102,158,189,192
+src/renderer/src/components/artifacts/ArtifactPublishedLinkPanel.tsx
+  s_da7ab51653058a::t_f8a31ab4363a09 2,11,13-14,18,21,23,120,135-187
+src/renderer/src/components/artifacts/artifact-publish-flow.ts
+  s_da7ab51653058a::t_3f4e3374a03a57 20-24,43-45,77,81-97,100-101,103,105,107-109,112-119,121,123-132,145,180,191-192,199-208,226-230
+src/renderer/src/components/browser-pane/describe-page/browser-artifact-upload.ts
+  s_da7ab51653058a::t_9dc8075078a000 52
+docs/05-features/artifact-sharing/intent.md
+  s_da7ab51653058a::t_85a3916508f65c 11,19,24
+docs/05-features/artifact-sharing/spec.md
+  s_da7ab51653058a::t_76cd5899c55cc4 8-9,14-16,22,26-28,34-35,42-44,49-52,56
+src/main/artifacts/self-hosted-share-client.ts
+  s_da7ab51653058a::t_53d151680a502e 53,77-110
+src/main/artifacts/self-hosted-share-config.ts
+  s_da7ab51653058a::t_a9a8baae7c3004 4-8,10-14,16,19-20,22-24,29-30,32,35,37-45,47,49,55,57,75
+src/main/artifacts/self-hosted-share-service.test.ts
+  s_da7ab51653058a::t_c250b84d46f055 10-11,21,30,32-38,43,48-53,60,74-75,77-86,89,110,112,137,139,141,160,164,174,176-189,197-210,219,221,223,227-229
+src/main/artifacts/self-hosted-share-service.ts
+  s_da7ab51653058a::t_71d429a8a458f4 11,16-18,34-35,38-39,42,44-46,56-73,76-82,84-94,96-99,101,116-117,137,165
+src/main/runtime/rpc/methods/workbench-share.ts
+  s_da7ab51653058a::t_e03cb978bb81c1 4,6,9
+src/renderer/src/components/artifacts/artifact-publish-flow.test.ts
+  s_da7ab51653058a::t_ffafe00dabb124 17-18,86,99,132-144,167
+src/renderer/src/components/artifacts/share-server-client.ts
+  s_da7ab51653058a::t_bdf2d66290db56 1
+src/renderer/src/components/settings/ArtifactsSettingsPane.test.tsx
+  s_da7ab51653058a::t_a74d0c0b91aec7 77,82-88
+src/renderer/src/i18n/locales/en.json
+  s_da7ab51653058a::t_9c45eabf0c60f2 16706-16708,16714-16717
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  s_da7ab51653058a::t_405d910bb388e2 590
+src/renderer/src/i18n/en-runtime-required.json
+  h_a7e858313fdba5 231-237,242-246
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "eee7d0b169b9c5d1e5a5c1f1b51359740ca5d209",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
