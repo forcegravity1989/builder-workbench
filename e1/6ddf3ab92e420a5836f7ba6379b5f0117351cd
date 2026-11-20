@@ -1,0 +1,14 @@
+src/renderer/src/monica/MonicaBrandSlogan.tsx
+  h_d0d195a8c70989 10-32,40-45,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "e16ddf3ab92e420a5836f7ba6379b5f0117351cd",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
