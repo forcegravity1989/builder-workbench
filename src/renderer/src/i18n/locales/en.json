@@ -8223,7 +8223,8 @@
           "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link.",
           "fullAccessGranted": "Full access granted.",
           "fullAccessGrantedCount": "Full access granted to {{value0}} devices.",
-          "fullAccessGrantFailed": "Failed to grant full access."
+          "fullAccessGrantFailed": "Failed to grant full access.",
+          "failedToLoadAccessLog": "Failed to load access log."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",

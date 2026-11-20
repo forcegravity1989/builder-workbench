@@ -138,7 +138,14 @@ export function RuntimePairingUrlGenerator({
       }
     } catch (error) {
       if (mountedRef.current) {
-        toast.error(error instanceof Error ? error.message : 'Failed to load access log.')
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.failedToLoadAccessLog',
+                'Failed to load access log.'
+              )
+        )
       }
     } finally {
       if (mountedRef.current) {
