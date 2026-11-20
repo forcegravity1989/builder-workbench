@@ -3,7 +3,8 @@ import { toast } from 'sonner'
 import { notifyWorkbenchError } from '../error-feedback'
 import {
   PrototypeReviewRequestSchema,
-  type PrototypeReviewPageRef
+  type PrototypeReviewPageRef,
+  type PrototypeReviewRequest
 } from '../../../../shared/workbench/prototype-review-request'
 import type { ReviewPeerTarget } from '../../../../shared/workbench/pr-review-request'
 import {
