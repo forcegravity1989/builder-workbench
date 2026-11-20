@@ -18,7 +18,7 @@ export type PrototypeReviewAnnotation = z.infer<typeof PrototypeReviewAnnotation
 /** Keep in-page fragment navigation in the same annotation document. */
 export function canonicalPrototypeReviewDocumentKey(value: string): string {
   const hashIndex = value.indexOf('#')
-  return (hashIndex >= 0 ? value.slice(0, hashIndex) : value) || 'about:blank'
+  return (hashIndex !== -1 ? value.slice(0, hashIndex) : value) || 'about:blank'
 }
 
 const PrototypeReviewAnnotationTarget = BrowserTarget.extend({
