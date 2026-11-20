@@ -29,6 +29,28 @@ type RuntimeAccessAuditLogProps = {
   onClear: () => void
 }
 
+const AUDIT_METHOD_LABELS: Record<string, string> = {
+  'access.grant.full': '授予完全访问',
+  'access.revoke': '撤销访问',
+  'workbench.review.receive': '接收评审通知',
+  'repo.list': '读取项目目录',
+  'projectGroup.list': '读取项目分组',
+  'folderWorkspace.list': '读取工作区',
+  'worktree.list': '读取工作树',
+  'worktree.show': '读取工作树详情',
+  'files.read': '读取文件',
+  'files.list': '读取文件列表',
+  'files.search': '搜索文件',
+  'git.status': '读取 Git 状态',
+  'git.history': '读取 Git 历史',
+  'terminal.read': '读取终端输出',
+  'terminal.list': '读取终端列表'
+}
+
+function auditMethodLabel(method: string): string {
+  return AUDIT_METHOD_LABELS[method] ?? method
+}
+
 export function RuntimeAccessAuditLog({
   entries,
   isLoading,
@@ -91,7 +113,7 @@ export function RuntimeAccessAuditLog({
           <SelectContent>
             <SelectItem value="all">{translate('auto.components.settings.RuntimeAccessAuditLog.allActions', 'All actions')}</SelectItem>
             {[...new Set([...(action !== 'all' ? [action] : []), ...entries.map((entry) => entry.method)])].map((method) => (
-              <SelectItem key={method} value={method}>{method}</SelectItem>
+              <SelectItem key={method} value={method}>{auditMethodLabel(method)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -136,9 +158,9 @@ export function RuntimeAccessAuditLog({
               className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2 text-xs last:border-b-0"
             >
               <div className="min-w-0">
-                <div className="truncate font-medium">{entry.method}</div>
+                <div className="truncate font-medium">{auditMethodLabel(entry.method)}</div>
                 <div className="text-muted-foreground truncate">
-                  {entry.deviceName ?? entry.deviceId} · {new Date(entry.at).toLocaleString()}
+                  {entry.method} · {entry.deviceName ?? entry.deviceId} · {new Date(entry.at).toLocaleString()}
                 </div>
               </div>
               <span
