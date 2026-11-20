@@ -190,6 +190,13 @@ export async function readVersionMinutes(input: MinutesInput): Promise<VersionMi
     const snapshot = acceptanceResult.value
     if (snapshot) {
       const document = AcceptanceMaterialSchema.parse(snapshot.document)
+      result.acceptance = {
+        document,
+        draft: snapshot.draft,
+        source: snapshot.draft
+          ? '当前材料（未归档）'
+          : `采用版本 · ${acceptanceRecord!.sourceCommit.slice(0, 12)}`
+      }
       if (revision && document.planRef.revision !== revision) {
         result.acceptanceError = '现有验收对应较早计划，本轮尚无对应验收'
       } else if (result.planError) {
@@ -214,19 +221,13 @@ export async function readVersionMinutes(input: MinutesInput): Promise<VersionMi
               ? `验收所用计划 · ${adopted.source.sourceCommit.slice(0, 12)}`
               : '验收所用计划（草稿）'
         }
-        result.acceptance = {
-          document,
-          draft: snapshot.draft,
-          source: snapshot.draft
-            ? '当前材料（未归档）'
-            : `采用版本 · ${acceptanceRecord!.sourceCommit.slice(0, 12)}`
-        }
       }
     }
   } catch (error) {
     result.acceptanceError = message(error)
-    // An unrelated latest plan cannot stand beside an acceptance whose reference failed.
-    if (acceptanceRecord) {
+    // Keep an independently readable current plan visible when the acceptance's
+    // pinned plan reference is stale or malformed.
+    if (acceptanceRecord && !result.planDocument) {
       result.plan = null
       result.planDocument = null
       result.planError = '无法核对验收所用计划'

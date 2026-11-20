@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { materialObject } from './version-material-common'
 
 /**
  * SOP stage track for the plan/acceptance cycle screens. The session model
@@ -20,7 +21,7 @@ export type PlanWorkflowStage = (typeof PLAN_WORKFLOW_STAGES)[number]
 export type AcceptanceWorkflowStage = (typeof ACCEPTANCE_WORKFLOW_STAGES)[number]
 
 /** PR/MR reference recorded by the model when the archive stage opens a review. */
-export const WorkflowArchivePrSchema = z.strictObject({
+export const WorkflowArchivePrSchema = materialObject({
   provider: z.string().min(1),
   repository: z.string().min(1),
   number: z.number().int().positive()
@@ -33,17 +34,25 @@ export type WorkflowArchivePr = z.infer<typeof WorkflowArchivePrSchema>
  * and assets are provider-computed on every read and never stored here; the
  * Git tag and the provider Release page stay the source of truth.
  */
-export const WorkflowReleaseRefSchema = z.strictObject({
+export const WorkflowReleaseRefSchema = materialObject({
   tag: z.string().min(1)
 })
 export type WorkflowReleaseRef = z.infer<typeof WorkflowReleaseRefSchema>
 
-export const PlanWorkflowStateSchema = z.strictObject({
+export const PlanWorkflowStateSchema = materialObject({
   stage: z.enum(PLAN_WORKFLOW_STAGES),
   updatedAt: z.iso.datetime({ offset: true }),
   archivePr: WorkflowArchivePrSchema.optional()
+}).superRefine((workflow, context) => {
+  if (Object.hasOwn(workflow, 'release')) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Plan workflow cannot carry acceptance release metadata',
+      path: ['release']
+    })
+  }
 })
-export const AcceptanceWorkflowStateSchema = z.strictObject({
+export const AcceptanceWorkflowStateSchema = materialObject({
   stage: z.enum(ACCEPTANCE_WORKFLOW_STAGES),
   updatedAt: z.iso.datetime({ offset: true }),
   archivePr: WorkflowArchivePrSchema.optional(),
