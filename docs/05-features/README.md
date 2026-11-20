@@ -2,6 +2,30 @@
 
 > 开发特性、给 BW Issue 定归属或核对交付现状时读。本篇是 BW 归属名称、文档入口和六环链状态总览的正本。按用户旅程一项结果一行，横向能力列在旅程之后；共用目录可分行。归属或证据变化时同步对应行，具体行为读规格，链状态按各自 STATUS 的证据范围填写。判据见[原则 02 §6.2–6.3](../01-principles/02-working-backwards.md#62-六环交付链)。
 
+制作、盘点或清理特性原型时，先读[原则 02 §3.2](../01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)和[设计系统 HTML 原型规范](../04-design-system/guidelines.md#html-原型与文档页)，再用本篇的[原型入口映射](#原型入口映射)确认当前入口与归属。本篇只维护入口索引；原型规则不在这里复制。
+
+## 原型入口映射
+
+本表是 2026-11-20 的资产盘点基线，不是另一份原型规范。原型规则、复用约束和历史处置以[原则 02 §3.2](../01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)为唯一正本；本表只回答“当前先打开哪一个入口、其它文件是什么身份”。本轮只盘点，不改原型内容、不删除文件，也不宣称所有 `spec.md` / `STATUS.md` 已完成入口同步。
+
+| 特性目录 | 当前入口 | 其它资产身份 |
+|---|---|---|
+| `codehub` | 无独立入口 | 来源适配，复用任务管理/集成入口 |
+| `connectors` | [`prototype.html`](connectors/prototype.html) | 无并列当前稿 |
+| `explore-workbench` | [`prototype.html`](explore-workbench/prototype.html) | `prototype/w05-journey.html` 待确认身份 |
+| `overview-metrics` | [`prototype.html`](overview-metrics/prototype.html) | `prototype/scoreboard.html` 及旧源文件待后续清理 |
+| `pr-review-notify` | [`prototype/index.html`](pr-review-notify/prototype/index.html) | `prototype/` 为当前构建源与生成物 |
+| `project-intake` | [`project-settings-prototype.html`](project-intake/project-settings-prototype.html) | `g3-project-wall-prototype.html`、`project-wall-readings-prototype.html` 为历史/辅助稿 |
+| `quick-links` | [`prototype.html`](quick-links/prototype.html) | 无并列当前稿 |
+| `reviewer-agent` | 无当前入口 | [`prototype.html`](reviewer-agent/prototype.html) 为历史方案 |
+| `task-management` | [`prototype.html`](task-management/prototype.html) | 无并列当前稿 |
+| `version-acceptance` | [`acceptance-journey-prototype.html`](version-acceptance/acceptance-journey-prototype.html) | `prototype.html` 为旧基线，`showcase-v0.5-g1.html` 为历史 Showcase |
+| `version-overview` | [`prototype.html`](version-overview/prototype.html) | [`journey.html`](version-overview/journey.html) 为评审辅助页 |
+| `version-planning` | [`planning-journey-prototype.html`](version-planning/planning-journey-prototype.html) | `prototype.html` 与旧 `prototype/` 源待后续清理 |
+| `version-workspace` | [`version-workspace-prototype-475.html`](version-workspace/version-workspace-prototype-475.html) | [`version-workspace-journey.html`](version-workspace/version-workspace-journey.html) 为评审辅助页；旧 `version-workspace-prototype.html` 为历史稿 |
+| `workbench-release` | 无独立入口 | 非 UI 支撑能力，出包入口归版本验收 |
+
+下一批按正文稳定后的特性决定逐项：先同步 `spec/STATUS` 入口，再确认复用与历史身份，最后在同一清理提交中删除重复/过期资产并统一当前入口命名。`docs/hifi/` 继续作为历史档案，不是当前原型正本。
 ## 特性矩阵
 
 BW Issue 按主要用户结果选一个主归属。每行名称可直接用于标题；版本、目标和主单身份按[通用 Issue 规范](../../standard/references/issue-state.md)填写。
