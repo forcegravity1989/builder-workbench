@@ -18,6 +18,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { useAppStore } from '@/store'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 
 type TeamSettingsDialogProps = {
   open: boolean
@@ -46,6 +47,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   const [groupId, setGroupId] = useState('')
   const [spaceId, setSpaceId] = useState('')
   const [directory, setDirectory] = useState<TeamDirectory | null>(null)
+  const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [generatingHostId, setGeneratingHostId] = useState<string | null>(null)
@@ -63,6 +65,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setGroupId('')
       setSpaceId('')
       setDirectory(null)
+      setCurrentMemberId(null)
       setSelectedProjectId('')
       setError(null)
     }
@@ -99,6 +102,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
         spaceId: nextSpaceId
       })
       setDirectory(result.directory)
+      setCurrentMemberId(result.currentMemberId)
       setGroupId(result.directory.team_group_id)
       setSpaceId(result.directory.team_space_id)
       rememberSpaceId(result.directory.team_group_id, result.directory.team_space_id)
@@ -127,7 +131,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   }
 
   const generateHostAddress = async (memberId: string): Promise<void> => {
-    if (!directory?.team_group_id) {
+    if (!directory?.team_group_id || currentMemberId !== memberId) {
       return
     }
     setGeneratingHostId(memberId)
@@ -181,6 +185,10 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setError('请选择带有远端仓库身份的本机项目。')
       return
     }
+    if (!currentMemberId || !directory.hosts.some((host) => host.member_id === currentMemberId)) {
+      setError('未能确认当前 WeLink 成员身份，请重新读取团队目录后重试。')
+      return
+    }
     if (directory.projects.some((project) => project.repo_id === identity.canonicalKey)) {
       setError('这个项目已经登记在团队目录中。')
       return
@@ -195,7 +203,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
           repo_id: identity.canonicalKey,
           name: repo.displayName,
           repository: identity.remoteUrl,
-          sources: []
+          sources: [currentMemberId]
         }
       ]
     }
@@ -222,6 +230,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   const availableProjects = directory
     ? repos.filter(
         (repo) =>
+          getRepoExecutionHostId(repo) === 'local' &&
           Boolean(repo.gitRemoteIdentity?.canonicalKey) &&
           !directory.projects.some((project) => project.repo_id === repo.gitRemoteIdentity?.canonicalKey)
       )
@@ -337,21 +346,23 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
                         )
                       }}
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      title="生成并填入本机 Orca 地址"
-                      aria-label={`为 ${host.name ?? host.member_id} 生成并填入 Orca 地址`}
-                      onClick={() => void generateHostAddress(host.member_id)}
-                      disabled={generatingHostId !== null}
-                    >
-                      {generatingHostId === host.member_id ? (
-                        <LoaderCircle className="size-3.5 animate-spin" />
-                      ) : (
-                        <Link2 className="size-3.5" />
-                      )}
-                    </Button>
+                    {currentMemberId === host.member_id ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        title="生成并填入本机 Orca 地址"
+                        aria-label="生成并填入本机 Orca 地址"
+                        onClick={() => void generateHostAddress(host.member_id)}
+                        disabled={generatingHostId !== null}
+                      >
+                        {generatingHostId === host.member_id ? (
+                          <LoaderCircle className="size-3.5 animate-spin" />
+                        ) : (
+                          <Link2 className="size-3.5" />
+                        )}
+                      </Button>
+                    ) : null}
                   </div>
                 ))
               )}
@@ -377,7 +388,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
                     variant="secondary"
                     size="sm"
                     onClick={() => void registerProject()}
-                    disabled={!selectedProjectId || saving}
+                    disabled={!selectedProjectId || saving || !currentMemberId}
                   >
                     {saving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
                     登记项目

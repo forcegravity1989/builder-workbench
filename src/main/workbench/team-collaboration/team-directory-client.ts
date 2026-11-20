@@ -17,6 +17,7 @@ export type { TeamDirectory } from '../../../shared/team-directory'
 export type TeamDirectoryReadResult = {
   directory: TeamDirectory
   fileId: string | null
+  currentMemberId: string | null
 }
 
 async function queryGroupMembers(route: WelinkRoute, groupId: string): Promise<TeamDirectoryMember[]> {
@@ -71,6 +72,41 @@ function parseJsonPayload(stdout: string): unknown {
         return null
       }
     }
+    return null
+  }
+}
+
+function findCurrentMemberId(value: unknown): string | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  for (const [key, candidate] of Object.entries(value as Record<string, unknown>)) {
+    if (
+      ['uid', 'userId', 'user_id', 'memberAccount', 'account'].includes(key) &&
+      typeof candidate === 'string' &&
+      candidate.trim()
+    ) {
+      return candidate.trim()
+    }
+    const nested = findCurrentMemberId(candidate)
+    if (nested) {
+      return nested
+    }
+  }
+  return null
+}
+
+async function queryCurrentMemberId(route: WelinkRoute): Promise<string | null> {
+  try {
+    const { stdout, stderr } = await runWelinkCli(route, ['auth', 'status'], 30_000)
+    const parsed = findCurrentMemberId(parseJsonPayload(stdout))
+    if (parsed) {
+      return parsed
+    }
+    const output = `${stdout}\n${stderr}`
+    const match = output.match(/(?:UID|User\s*ID|账号|用户\s*ID)\s*[:：]\s*([A-Za-z0-9._-]+)/i)
+    return match?.[1] ?? null
+  } catch {
     return null
   }
 }
@@ -159,7 +195,10 @@ export async function readTeamDirectory(args: {
   groupId: string
   spaceId: string
 }): Promise<TeamDirectoryReadResult> {
-  const members = await queryGroupMembers(args.route, args.groupId)
+  const [members, currentMemberId] = await Promise.all([
+    queryGroupMembers(args.route, args.groupId),
+    queryCurrentMemberId(args.route)
+  ])
   const node = await findTeamDirectoryFile(args.route, args.spaceId)
   if (!node) {
     return {
@@ -171,7 +210,8 @@ export async function readTeamDirectory(args: {
         hosts: members,
         projects: []
       },
-      fileId: null
+      fileId: null,
+      currentMemberId
     }
   }
   const root = await mkdtemp(join(tmpdir(), 'bw-team-directory-'))
@@ -182,7 +222,7 @@ export async function readTeamDirectory(args: {
       try {
         const directory = parseDirectory(await readFile(candidate, 'utf8'), args.groupId, args.spaceId)
         directory.hosts = mergeMembers(members, directory.hosts)
-        return { directory, fileId: node.id }
+        return { directory, fileId: node.id, currentMemberId }
       } catch {
         // The CLI may create a directory named after the file id; inspect below.
       }
@@ -196,7 +236,7 @@ export async function readTeamDirectory(args: {
           args.spaceId
         )
         directory.hosts = mergeMembers(members, directory.hosts)
-        return { directory, fileId: node.id }
+        return { directory, fileId: node.id, currentMemberId }
       }
     }
     throw new Error('team.json download did not produce a JSON file')
