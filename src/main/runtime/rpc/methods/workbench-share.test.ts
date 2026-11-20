@@ -100,4 +100,26 @@ describe('workbench.share RPC methods', () => {
       expect(mocks.list).not.toHaveBeenCalled()
     }
   )
+
+  it.each(CASES)(
+    'reaches the service for desktop-renderer $methodName calls over the runtime IPC channel',
+    async (testCase) => {
+      const expected = { ok: true, value: null }
+      const serviceMethod = mocks[testCase.serviceMethod]
+      serviceMethod.mockResolvedValue(expected)
+      const target = method(testCase.methodName)
+      if (isStreamingMethod(target)) {
+        throw new Error(`${testCase.methodName} must be a request method`)
+      }
+
+      await expect(
+        target.handler(testCase.params, {
+          runtime,
+          clientId: 'desktop-renderer',
+          clientKind: 'runtime'
+        })
+      ).resolves.toBe(expected)
+      expect(serviceMethod).toHaveBeenCalledWith(...testCase.expectedArgs)
+    }
+  )
 })
