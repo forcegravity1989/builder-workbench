@@ -209,9 +209,14 @@ function App() {
     <div className="ov-app">
       <div className="review-bar">
         <strong>
-          原型注释: #{334} · {revision}
+          {shellMeta.productName} → 版本总览 <span className="tag tag-neutral">原型评审</span>
         </strong>
-        <span title={shellMeta.source}>壳：{shellMeta.productName} · 内容：版本快照示例</span>
+        <span title={shellMeta.source}>复用当前 BW 外壳 · 内容为版本快照示例 · {revision}</span>
+        <nav aria-label="特性文档入口">
+          <a href="../intent.md">意图</a>
+          <a href="../spec.md">规格</a>
+          <a href="../STATUS.md">状态</a>
+        </nav>
         <select
           aria-label="版本生命周期情景"
           value={scenario}
