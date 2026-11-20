@@ -36,6 +36,8 @@ import {
 } from './remote-browser-page-context-menu'
 import { RemoteBrowserPageToolbar } from './remote-browser-page-toolbar'
 import { RemoteBrowserPageViewport } from './remote-browser-page-viewport'
+import { useRemotePrototypeAnnotations } from './use-remote-prototype-annotations'
+import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
 
 export function RemoteBrowserPagePane({
   browserTab,
@@ -89,6 +91,12 @@ export function RemoteBrowserPagePane({
   // Kept as one slot so the newest notice replaces the previous one, as a single toast should.
   const [paneNotice, setPaneNotice] = useState<RemoteBrowserPaneNotice | null>(null)
   const [paneBusy, setPaneBusy] = useState(false)
+  const [annotationMode, setAnnotationMode] = useState(false)
+  const [pendingAnnotationPoint, setPendingAnnotationPoint] = useState<{
+    x: number
+    y: number
+  } | null>(null)
+  const [annotationText, setAnnotationText] = useState('')
   const certificateFailure = useAppStore(
     (s) => s.browserCertificateFailuresByPageId[browserTab.id] ?? null
   )
@@ -283,6 +291,38 @@ export function RemoteBrowserPagePane({
     setPaneNotice
   })
 
+  const annotationPageId = lifecycle.tokens.remotePage
+  const annotationDocumentKey = canonicalPrototypeReviewDocumentKey(
+    browserTab.docLocation?.filePath ?? browserTab.url
+  )
+  const { annotations, addAnnotation } = useRemotePrototypeAnnotations({
+    runtimeTarget,
+    runtimeWorktree,
+    pageId: annotationPageId,
+    documentKey: annotationDocumentKey,
+    enabled: annotationMode
+  })
+  const handleAnnotationPointerDown = (event: React.PointerEvent<HTMLImageElement>): void => {
+    if (annotationMode) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+    handleRemotePointerDown(event)
+  }
+  const handleAnnotationPointerUp = (event: React.PointerEvent<HTMLImageElement>): void => {
+    if (!annotationMode) {
+      handleRemotePointerUp(event)
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    const point = getRemoteImagePoint(event)
+    if (point) {
+      setPendingAnnotationPoint(point)
+    }
+  }
+
   useRemoteBrowserPageWheel({
     busy,
     imageRef,
@@ -394,6 +434,11 @@ export function RemoteBrowserPagePane({
         onBack={() => void runRemoteNavigation('browser.back')}
         onForward={() => void runRemoteNavigation('browser.forward')}
         onReload={() => void runRemoteNavigation('browser.reload')}
+        annotationMode={annotationMode}
+        onToggleAnnotation={() => {
+          setAnnotationMode((current) => !current)
+          setPendingAnnotationPoint(null)
+        }}
       />
       <RemoteBrowserPageViewport
         remoteViewportRef={remoteViewportRef}
@@ -415,11 +460,49 @@ export function RemoteBrowserPagePane({
         onReload={() => void runRemoteNavigation('browser.reload')}
         onGoto={(url) => void runRemoteNavigation('browser.goto', url)}
         onReconnect={reconnectRemoteStream}
-        handleRemotePointerDown={handleRemotePointerDown}
-        handleRemotePointerUp={handleRemotePointerUp}
+        handleRemotePointerDown={handleAnnotationPointerDown}
+        handleRemotePointerUp={handleAnnotationPointerUp}
         handleRemoteContextMenu={handleRemoteContextMenu}
         handleRemoteScreenshotKeyDown={handleRemoteScreenshotKeyDown}
+        annotationMode={annotationMode}
+        annotations={annotations}
       />
+      {pendingAnnotationPoint ? (
+        <div className="absolute bottom-4 left-1/2 z-40 w-72 -translate-x-1/2 rounded-md border bg-popover p-3 text-xs shadow-lg">
+          <div className="mb-2 font-medium">添加页面批注</div>
+          <textarea
+            className="min-h-16 w-full rounded border bg-background p-2"
+            value={annotationText}
+            onChange={(event) => setAnnotationText(event.target.value)}
+            placeholder="输入批注"
+          />
+          <div className="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              className="rounded border px-2 py-1"
+              onClick={() => setPendingAnnotationPoint(null)}
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              className="rounded bg-primary px-2 py-1 text-primary-foreground disabled:opacity-50"
+              disabled={!annotationText.trim()}
+              onClick={() => {
+                if (!pendingAnnotationPoint) {
+                  return
+                }
+                void addAnnotation(pendingAnnotationPoint, annotationText).then(() => {
+                  setPendingAnnotationPoint(null)
+                  setAnnotationText('')
+                })
+              }}
+            >
+              提交批注
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

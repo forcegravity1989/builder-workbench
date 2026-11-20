@@ -584,6 +584,15 @@ import {
   MilestoneSubmitRequestSchema,
   MilestoneWorkingRequestSchema
 } from '../workbench/project-milestones'
+import {
+  PrototypeReviewAnnotationAddSchema,
+  PrototypeReviewAnnotationDeleteSchema,
+  PrototypeReviewAnnotationListSchema
+} from '../workbench/prototype-review-annotation'
+import {
+  PrototypeReviewDismissSchema,
+  PrototypeReviewRequestSchema
+} from '../workbench/prototype-review-request'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
 import { WorkbenchGroupRemoval, WorkbenchRepoRemoval } from '../workbench/repo-removal'
 import { ShareListSchema, SharePublishSchema, ShareSourceSchema } from '../workbench/share'
@@ -1255,6 +1264,13 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
+  'workbench.prototypeReview.annotations.add': PrototypeReviewAnnotationAddSchema,
+  'workbench.prototypeReview.annotations.delete': PrototypeReviewAnnotationDeleteSchema,
+  'workbench.prototypeReview.annotations.list': PrototypeReviewAnnotationListSchema,
+  'workbench.prototypeReview.dismiss': PrototypeReviewDismissSchema,
+  'workbench.prototypeReview.identity': null,
+  'workbench.prototypeReview.inbox': null,
+  'workbench.prototypeReview.receive': PrototypeReviewRequestSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
   'workbench.repo.deleteGroup': WorkbenchGroupRemoval,
   'workbench.repo.removeRegistration': WorkbenchRepoRemoval,

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
+import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
 import { translate } from '@/i18n/i18n'
 import type {
   BrowserAnnotationIntent,
@@ -7,6 +9,74 @@ import type {
 } from '../../../../../shared/browser-grab-types'
 import { formatBrowserAnnotationsAsMarkdown } from './browser-annotation-output'
 import { EMPTY_BROWSER_ANNOTATIONS } from '../describe-page/browser-annotation-geometry'
+import {
+  canonicalPrototypeReviewDocumentKey,
+  type PrototypeReviewAnnotation
+} from '../../../../../shared/workbench/prototype-review-annotation'
+import { usePrototypeReviewNotifications } from '@/workbench/pr-review-notifications/prototype-store'
+
+function createBrowserPageAnnotationFromPrototype(
+  annotation: PrototypeReviewAnnotation,
+  browserPageId: string
+): BrowserPageAnnotation {
+  const rect = { x: annotation.x, y: annotation.y, width: 1, height: 1 }
+  return {
+    id: annotation.id,
+    browserPageId,
+    comment: annotation.comment,
+    intent: 'question',
+    priority: 'important',
+    createdAt: annotation.createdAt,
+    payload: {
+      page: {
+        sanitizedUrl: annotation.documentKey,
+        title: '原型评审页',
+        viewportWidth: 0,
+        viewportHeight: 0,
+        scrollX: 0,
+        scrollY: 0,
+        devicePixelRatio: 1,
+        capturedAt: annotation.createdAt
+      },
+      target: {
+        tagName: 'prototype-review',
+        selector: '[data-prototype-review-annotation]',
+        textSnippet: annotation.label ?? `${annotation.host} 的批注`,
+        htmlSnippet: '',
+        attributes: {},
+        accessibility: {
+          role: null,
+          accessibleName: null,
+          ariaLabel: null,
+          ariaLabelledBy: null
+        },
+        rectViewport: rect,
+        rectPage: rect,
+        computedStyles: {
+          display: 'block',
+          position: 'static',
+          width: '1px',
+          height: '1px',
+          margin: '',
+          padding: '',
+          color: '',
+          backgroundColor: '',
+          border: '',
+          borderRadius: '',
+          fontFamily: '',
+          fontSize: '',
+          fontWeight: '',
+          lineHeight: '',
+          textAlign: '',
+          zIndex: ''
+        }
+      },
+      nearbyText: [],
+      ancestorPath: [],
+      screenshot: null
+    }
+  }
+}
 
 export function useBrowserPageAnnotationSend({
   browserTabId,
@@ -39,6 +109,18 @@ export function useBrowserPageAnnotationSend({
   const browserAnnotations = useAppStore(
     (s) => s.browserAnnotationsByPageId[browserTabId] ?? EMPTY_BROWSER_ANNOTATIONS
   )
+  const browserPage = useAppStore((s) =>
+    Object.values(s.browserPagesByWorkspace)
+      .flat()
+      .find((page) => page.id === browserTabId)
+  )
+  const documentKey = canonicalPrototypeReviewDocumentKey(
+    browserPage?.docLocation?.filePath ?? browserPage?.url ?? 'about:blank'
+  )
+  const prototypeReviewState = usePrototypeReviewNotifications()
+  const prototypeReviewActive =
+    prototypeReviewState.outgoing.some((note) => note.page.browserPageId === browserTabId) ||
+    prototypeReviewState.incoming.some((note) => note.page.browserPageId === browserTabId)
   const activeGroupId = useAppStore((s) => s.activeGroupIdByWorktree[worktreeId])
   const browserAnnotationsRef = useRef(browserAnnotations)
   const [browserAnnotationsCopied, setBrowserAnnotationsCopied] = useState(false)
@@ -62,6 +144,47 @@ export function useBrowserPageAnnotationSend({
   const updateBrowserPageAnnotation = useAppStore((s) => s.updateBrowserPageAnnotation)
   const clearBrowserPageAnnotations = useAppStore((s) => s.clearBrowserPageAnnotations)
   const recordFeatureInteraction = useAppStore((s) => s.recordFeatureInteraction)
+  const addBrowserPageAnnotation = useAppStore((s) => s.addBrowserPageAnnotation)
+
+  useEffect(() => {
+    if (!prototypeReviewActive) {
+      return
+    }
+    let stopped = false
+    const syncRemoteAnnotations = async (): Promise<void> => {
+      try {
+        const remote = await callRuntimeRpc<PrototypeReviewAnnotation[]>(
+          { kind: 'local' },
+          'workbench.prototypeReview.annotations.list',
+          { worktree: toRuntimeWorktreeSelector(worktreeId), page: browserTabId, documentKey },
+          { timeoutMs: 15_000, suppressFeatureInteraction: true }
+        )
+        if (stopped) {
+          return
+        }
+        const existing = new Set(
+          useAppStore.getState().browserAnnotationsByPageId[browserTabId]?.map((item) => item.id) ??
+            []
+        )
+        for (const annotation of remote) {
+          if (existing.has(annotation.id)) {
+            continue
+          }
+          addBrowserPageAnnotation(
+            createBrowserPageAnnotationFromPrototype(annotation, browserTabId)
+          )
+        }
+      } catch {
+        // A page without prototype-review annotations, or a temporarily unavailable runtime, is normal.
+      }
+    }
+    void syncRemoteAnnotations()
+    const timer = window.setInterval(() => void syncRemoteAnnotations(), 5000)
+    return () => {
+      stopped = true
+      window.clearInterval(timer)
+    }
+  }, [addBrowserPageAnnotation, browserTabId, documentKey, prototypeReviewActive, worktreeId])
 
   useLayoutEffect(() => {
     browserAnnotationsRef.current = browserAnnotations
@@ -198,9 +321,15 @@ export function useBrowserPageAnnotationSend({
         setBrowserAnnotationsCopied(false)
       }
       deleteBrowserPageAnnotation(browserTabId, annotationId)
+      void callRuntimeRpc(
+        { kind: 'local' },
+        'workbench.prototypeReview.annotations.delete',
+        { pageId: browserTabId, documentKey, annotationId },
+        { timeoutMs: 15_000, suppressFeatureInteraction: true }
+      ).catch(() => undefined)
       recordFeatureInteraction('browser-annotations')
     },
-    [browserTabId, deleteBrowserPageAnnotation, recordFeatureInteraction]
+    [browserTabId, deleteBrowserPageAnnotation, documentKey, recordFeatureInteraction]
   )
 
   const handleUpdateBrowserAnnotation = useCallback(
