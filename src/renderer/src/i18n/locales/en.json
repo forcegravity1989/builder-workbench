@@ -8056,7 +8056,18 @@
           "27cf8507ad": "Refresh shared access",
           "f031182867": "Shared Server Access",
           "df142657a5": "Not used yet",
-          "b18d1764ef": "Last used {{value0}}"
+          "b18d1764ef": "Last used {{value0}}",
+          "selectedCount": "{{value0}} selected",
+          "selectReadonly": "Select connected read-only devices",
+          "grantFullAccess": "Grant full access",
+          "selectForFullAccess": "Select {{value0}} for full access",
+          "teamReadonly": "Team read-only",
+          "fullAccess": "Full access",
+          "connected": " · Connected",
+          "confirmTitle": "Grant full access?",
+          "confirmDescription": "The selected devices will be able to create worktrees, start sessions, send input, and run commands on this host.",
+          "cancel": "Cancel",
+          "confirmGrant": "Grant full access"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "Remove {{value0}}",
@@ -8209,7 +8220,11 @@
           "noExternalAddress": "No address for another device was found. Connect this computer to a LAN or Tailscale, refresh, or choose Custom address.",
           "staleAddress": "The connection address changed. Generate a new link for {{address}}.",
           "customInvalid": "Enter a valid host, host:port, IPv6 address, or ws(s):// URL.",
-          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link."
+          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link.",
+          "fullAccessGranted": "Full access granted.",
+          "fullAccessGrantedCount": "Full access granted to {{value0}} devices.",
+          "fullAccessGrantFailed": "Failed to grant full access.",
+          "failedToLoadAccessLog": "Failed to load access log."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",
@@ -11893,6 +11908,24 @@
           "staleUsage": "Last known usage — the latest refresh failed: {{reason}}",
           "usageLabel": "Usage",
           "unknownUsage": "Current usage is unavailable. Refresh usage to try again."
+        },
+        "RuntimeAccessAuditLog": {
+          "title": "Shared host access log",
+          "description": "Request metadata · last 14 days",
+          "refresh": "Refresh shared host access log",
+          "action": "Filter log action",
+          "allActions": "All actions",
+          "result": "Filter log result",
+          "allResults": "All results",
+          "allowed": "Allowed",
+          "denied": "Denied",
+          "error": "Error",
+          "time": "Filter log time",
+          "lastDay": "Last 24 hours",
+          "lastWeek": "Last 7 days",
+          "lastTwoWeeks": "Last 14 days",
+          "search": "Search device or action",
+          "empty": "No matching access records."
         }
       },
       "right": {

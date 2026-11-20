@@ -1,10 +1,29 @@
 import { z } from 'zod'
+import type { RuntimeAccessMode, RuntimeTeamBinding } from './runtime-session-contracts'
 
 export type RuntimeAccessGrant = {
   deviceId: string
   name: string
   createdAt: number
   lastSeenAt: number | null
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
+  connected?: boolean
+}
+
+export type RuntimeAccessAuditResult = 'allowed' | 'denied' | 'error'
+
+export type RuntimeAccessAuditEntry = {
+  at: number
+  deviceId: string
+  deviceName?: string
+  accessMode: 'full' | 'team-read'
+  teamGroupId?: string
+  memberId?: string
+  method: string
+  result: RuntimeAccessAuditResult
+  requestId?: string
+  durationMs?: number
 }
 
 // Only public link metadata is retained by the renderer. Credentials stay in DeviceRegistry.
