@@ -1,6 +1,7 @@
 import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
+import { WORKBENCH_SHARE_METHODS } from './workbench-share'
 import { WORKBENCH_SKILL_METHODS } from './workbench-skills'
 import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
 import { WORKBENCH_VERSION_BINDING_METHODS } from './workbench-version-binding'
@@ -59,7 +60,6 @@ import { PAIRING_METHODS } from './pairing'
 import { UPDATER_METHODS } from './updater'
 import { AGENT_SESSION_METHODS } from './agent-session'
 import { STRUCTURED_AGENT_SESSION_METHODS } from './structured-agent-session'
-import { ARTIFACT_METHODS } from './artifacts'
 import { AGENT_HOOK_METHODS } from './agent-hooks'
 
 // Why: a flat manifest keeps registration order explicit and provides one
@@ -68,6 +68,7 @@ import { AGENT_HOOK_METHODS } from './agent-hooks'
 export const ALL_RPC_METHODS = [
   ...WORKBENCH_REVIEW_NOTIFICATION_METHODS,
   ...WORKBENCH_MATERIAL_METHODS,
+  ...WORKBENCH_SHARE_METHODS,
   ...WORKBENCH_SKILL_METHODS,
   ...WORKBENCH_HISTORY_METHODS,
   ...WORKBENCH_VERSION_BINDING_METHODS,
@@ -84,7 +85,6 @@ export const ALL_RPC_METHODS = [
   ...STATUS_METHODS,
   ...AGENT_HOOK_METHODS,
   ...AI_VAULT_METHODS,
-  ...ARTIFACT_METHODS,
   ...AUTOMATION_METHODS,
   ...REPO_METHODS,
   ...WORKTREE_METHODS,

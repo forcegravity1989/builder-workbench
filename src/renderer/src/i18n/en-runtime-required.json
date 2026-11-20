@@ -227,16 +227,6 @@
           "hiddenCount": "{{value0}} hidden"
         }
       },
-      "artifacts": {
-        "ArtifactsPage": {
-          "openArtifact": "Open artifact",
-          "signInCopy": "Sign in to view and manage artifacts shared through your account.",
-          "signInHeading": "Sign in to Orca"
-        },
-        "artifact-publish-flow": {
-          "5cb4f5ec36": "Copy link"
-        }
-      },
       "automations": {
         "AutomationCustomCronPanel": {
           "cadb7b0bc9": "invalid"
@@ -1542,14 +1532,6 @@
             "f412abbba5": "claude",
             "ff8de8a2ad": "display"
           }
-        },
-        "artifacts": {
-          "account": "Orca account",
-          "connected": "Connected",
-          "enable": "Enable Artifacts",
-          "enableDescription": "Add Artifacts to the sidebar so you can open and delete shared files.",
-          "openArtifactsDescription": "View and delete links shared through your account.",
-          "signInRequired": "Sign in is required to upload and manage artifacts."
         },
         "auto": {
           "rename": {

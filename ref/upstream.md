@@ -103,6 +103,7 @@ git rev-parse 'v1.4.251^{commit}'
 - **Orca Mobile 产品已删除**：`mobile/` Expo 客户端、桌面 Mobile 产品页、Mobile 导航和对应 CI 不应在同步时恢复。
 - **配对协议能力仍保留**：`src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator、relay/pairing 等活体协议不等同于 Mobile 产品，不因删除产品页一起删除。
 - **产品文档正本已替换**：仓根 `AGENTS.md`、`README.md`、`CONTEXT.md`、`CLAUDE.md` 与 `docs/` 是 BW 正本；上游工程参考进入 `ref/`，不覆盖 BW 产品文档。
+- **Orca 云端 Artifacts 分享已删除**：`artifacts.*` 七方法 RPC、`ArtifactCloudService`、`RuntimeArtifactController`、`artifact-sharing-gate`、`profile-artifact-cloud-cleanup`、云端 `ArtifactsPage` 及配套开关（`artifactsEnabled`/`artifactSharingEnabled`/`showArtifactsButton`/`skipDeleteArtifactConfirm`）不应在同步时恢复。产物分享改走自建 `services/bw-share`，见 [artifact-sharing](../docs/05-features/artifact-sharing/spec.md)。保留项：`activeView==='artifacts'` 与 `openArtifactsPage`（Workbench 项目页画布，非云端页）、`artifact-cloud-config.ts`（skill 云分享仍用）、`agentSkillSharingEnabled`/`AGENT_SKILL_*` 错误码（skill 分享是保留功能）、publish 流组件与 `FILE_TERMINAL_ARTIFACT_METHODS`。
 - **上游对外文档站不作为 BW 产品站**：`docs/site/`、README 多语言/营销素材和专项工程笔记不自动恢复；需要时从 Git 历史追溯来源。
 - **上报出口统一为 WeLink 群空间**：反馈、崩溃报告、诊断包和用户开启后的产品遥测共用 `src/main/workbench/reporting/` 的 welink-cli onebox 客户端。反馈与诊断保留原生入口、附件降级和确认流程；原 onorca.dev HTTP 上传链及 `ORCA_DIAGNOSTICS_TOKEN_URL` 配置已删除。遥测默认关闭、仅在设置开启，原生 consent、burst cap、validator 与 SDK 队列保留，由 BW bootstrap 注入 posthog-node 自定义 fetch，汇入独立遥测目录。同步时吸收原生管线语义，保留传输注入和默认关闭边界，不恢复 onorca.dev 或 PostHog 网络发送，也不另建上报出口。
 

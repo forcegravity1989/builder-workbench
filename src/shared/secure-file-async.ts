@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { chmod, mkdir, open, rename, rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { hardenSecureDirectoryOnce } from './secure-file'
+import { bestEffortFsyncDirectorySync, hardenSecureDirectoryOnce } from './secure-file'
 import { restrictWindowsPath } from './secure-path-windows-acl'
 
 const pendingWrites = new Map<string, Promise<boolean | undefined>>()
@@ -10,13 +10,14 @@ const pendingWrites = new Map<string, Promise<boolean | undefined>>()
 export function writeSecureJsonFileAsync(
   targetPath: string,
   value: unknown,
-  canPublish?: () => Promise<boolean>
+  canPublish?: () => Promise<boolean>,
+  options: { durable?: boolean } = {}
 ): Promise<boolean | undefined> {
   const contents = JSON.stringify(value, null, 2)
   const previous = pendingWrites.get(targetPath) ?? Promise.resolve(true)
   const write = previous
     .catch(() => false)
-    .then(() => writeSecureFile(targetPath, contents, canPublish))
+    .then(() => writeSecureFile(targetPath, contents, canPublish, options))
   pendingWrites.set(targetPath, write)
   void write
     .finally(() => {
@@ -39,7 +40,8 @@ async function restrictFile(path: string): Promise<boolean> {
 async function writeSecureFile(
   targetPath: string,
   contents: string,
-  canPublish?: () => Promise<boolean>
+  canPublish?: () => Promise<boolean>,
+  options: { durable?: boolean } = {}
 ): Promise<boolean | undefined> {
   const directory = dirname(targetPath)
   await mkdir(directory, { recursive: true, mode: 0o700 })
@@ -56,6 +58,11 @@ async function writeSecureFile(
       // Windows ignores the creation mode. Protect the empty file before writing credentials.
       stagedRestricted = await restrictFile(staged)
       await file.writeFile(contents, 'utf8')
+      // Why: a rename is atomic against other processes but not against power loss; without this
+      // the published name can survive with zero bytes, which reads back as "no data at all".
+      if (options.durable) {
+        await file.sync()
+      }
     } finally {
       await file.close()
     }
@@ -66,6 +73,9 @@ async function writeSecureFile(
     // A rename on the same volume preserves the protected DACL, as in the sync writer.
     await rename(staged, targetPath)
     const publishedRestricted = await restrictFile(targetPath)
+    if (options.durable) {
+      bestEffortFsyncDirectorySync(directory)
+    }
     return stagedRestricted && publishedRestricted
   } catch (error) {
     await rm(staged, { force: true })

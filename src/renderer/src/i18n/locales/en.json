@@ -5440,7 +5440,6 @@
           "0ccba862b8": "Open GitHub tasks",
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
-          "artifacts": "Artifacts",
           "skills": "Skills"
         },
         "SidebarRepositoryFilterSection": {
@@ -7312,9 +7311,6 @@
           "0e9fc0eadc": "Workspace Directory",
           "e2955d9ccb": "Configure where new workspaces are created.",
           "7511097c5d": "Workspace",
-          "31e300af1c": "Ask Before Deleting Artifacts",
-          "fb29a73a17": "Show a confirmation dialog before deleting a shared artifact and breaking its public link.",
-          "bf46474e33": "Show a confirmation before deleting a shared artifact. Anyone holding its public link loses access.",
           "externalWorktrees": "External worktrees",
           "externalWorktreesDescription": "Choose whether worktrees created outside Orca appear by default.",
           "show": "Show",
@@ -11653,13 +11649,6 @@
           "title": "macOS permission grants aren’t reaching terminals"
         },
         "artifacts": {
-          "enable": "Enable Artifacts",
-          "enableDescription": "Add Artifacts to the sidebar so you can open and delete shared files.",
-          "account": "Orca account",
-          "connected": "Connected",
-          "signInRequired": "Sign in is required to upload and manage artifacts.",
-          "signingIn": "Signing in…",
-          "signIn": "Sign in to Orca",
           "title": "Artifacts",
           "description": "Share HTML and Markdown files with your team and manage their public links.",
           "howToTitle": "How to use Artifacts",
@@ -11668,32 +11657,25 @@
           "shareStepDescription": "Open an HTML or Markdown file and select Share as artifact, or ask an agent to share it.",
           "linkStepTitle": "Copy the public link",
           "linkStepDescription": "After publishing, copy the link and send it to your team.",
-          "manageStepTitle": "Manage it in Orca",
-          "manageStepDescription": "Open Artifacts from the sidebar to preview or remove links.",
-          "openArtifacts": "Open Artifacts",
-          "openArtifactsDescription": "View and delete links shared through your account.",
-          "showButton": "Show Artifacts Button",
-          "showButtonDescription": "Show the Artifacts shortcut in the sidebar.",
-          "openArtifactsDescriptionV2": "Preview, copy, and manage links shared through your account.",
-          "signInTitle": "Sign in to share artifacts",
-          "signInDescription": "Use your Orca account to upload artifacts and manage their public links.",
-          "signInAgain": "Sign in again",
-          "enableStepTitle": "Enable artifact sharing",
-          "enableStepWebDescription": "Open Settings → Artifacts in the Orca desktop app on the host device and enable publishing.",
-          "enableStepDescription": "Turn on “Allow publishing public artifact links” above.",
-          "allowPublishing": "Allow publishing public artifact links",
-          "allowPublishingWebDescription": "Desktop only. Open Settings → Artifacts on the host device to change this setting.",
-          "allowPublishingDescription": "Publish HTML and Markdown files as links anyone with the URL can open. Existing links remain until you delete them from Artifacts.",
-          "howToDescriptionDisabled": "Enable artifact sharing above to publish HTML or Markdown files as public links.",
-          "allowPublishingSearchDescription": "Allow Orca to publish HTML and Markdown files as public links.",
+          "manageStepTitle": "Update or remove the link",
           "keywordArtifacts": "artifacts",
           "keywordShare": "share",
-          "keywordPublish": "publish",
-          "keywordPublic": "public",
-          "keywordPermission": "permission",
-          "keywordHtml": "HTML",
-          "keywordMarkdown": "Markdown",
-          "keywordUpload": "upload"
+          "manageStepDescriptionV2": "Reopen the same file and use Share as artifact to publish new content over the same link.",
+          "sharedLinksTitle": "Files you've shared",
+          "sharedLinksDescription": "Links this computer created. Deleting a link makes it stop working immediately.",
+          "keywordLink": "link",
+          "keywordDelete": "delete",
+          "sharedLinksWebDescription": "Desktop only. Open Settings → Artifacts on the host device to see and delete your shared links.",
+          "sharedLinksLoadFailed": "Could not load your shared files.",
+          "sharedLinksDeleteTitle": "Delete this shared link?",
+          "sharedLinksDeleteDescription": "The link stops working for everyone immediately. Share the file again to create a new one.",
+          "sharedLinksDeleteConfirm": "Delete",
+          "sharedLinksLoading": "Loading…",
+          "sharedLinksEmpty": "No shared files yet. Open an HTML or Markdown file and choose Share as artifact.",
+          "sharedLinksDeleting": "Deleting…",
+          "sharedLinksDelete": "Delete",
+          "sharedLinksRetry": "Try again",
+          "sharedLinksDeleteFailed": "Could not delete this shared link."
         },
         "orcaAccount": {
           "connected": "Connected",
@@ -16235,14 +16217,6 @@
           "8490e5d36a": "Confirm",
           "56f5c60e0c": "Cancel",
           "92bac3217e": "Don't ask again"
-        },
-        "skip": {
-          "saved": "We'll skip this confirmation next time.",
-          "savedDescription": "You can change this in Settings.",
-          "openSettings": "Open Settings",
-          "preference": {
-            "0b0cb6e3f9": "Could not save the confirmation preference."
-          }
         }
       },
       "jira": {
@@ -16673,120 +16647,56 @@
         "streamCapabilityUnsupported": "The selected runtime does not support remote browser streaming."
       },
       "artifacts": {
-        "ArtifactsPage": {
-          "signInAgain": "Sign in to Orca again to load artifacts.",
-          "loadFailed": "Could not load artifacts.",
-          "deleteTitle": "Delete artifact?",
-          "deleteDescription": "“{{name}}” will no longer be available at its public link.",
-          "delete": "Delete",
-          "deleteFailed": "Could not delete the artifact.",
-          "title": "Artifacts",
-          "refresh": "Refresh",
-          "signInHeading": "Sign in to Orca",
-          "signInCopy": "Sign in to view and manage artifacts shared through your account.",
-          "signingIn": "Signing in…",
-          "signIn": "Sign in to Orca",
-          "empty": "No shared artifacts",
-          "emptyCopy": "Open an HTML or Markdown file and select Share as artifact, or ask your agent to share it.",
-          "openArtifact": "Open artifact",
-          "deleteArtifact": "Delete artifact",
-          "moreAvailable": "More artifacts are available",
-          "moreAvailableCopy": "Load the next page to continue.",
-          "loadMoreFailed": "Could not load more artifacts.",
-          "publishingOff": "Publishing is turned off",
-          "publishingOffCopy": "Nothing on this device can create a public artifact link yet. Allow publishing in Settings → Artifacts, then share from an open HTML or Markdown file or ask your agent.",
-          "openArtifactsSettings": "Open Settings → Artifacts",
-          "retry": "Retry",
-          "reconnectHeading": "Sign in to Orca again",
-          "reconnectCopy": "Sign in again to view and manage the artifacts shared through your account.",
-          "signInAgainAction": "Sign in again",
-          "unconfiguredCopy": "Orca account sign-in is not configured on this machine yet.",
-          "openAccountSettings": "Open account settings"
-        },
         "copySuccess": "Artifact link copied",
         "copyFailed": "Could not copy artifact link",
-        "copyLink": "Copy link",
-        "openInBrowser": "Open in browser",
-        "preview": "Artifact preview",
-        "previewUnavailable": "Preview unavailable",
-        "previewUnavailableDescription": "Open this artifact in your browser to view it.",
-        "actions": "Artifact actions",
-        "ArtifactActions": {
-          "more": "More artifact actions"
-        },
-        "ArtifactCollection": {
-          "loadMore": "Load more",
-          "noMatches": "No matches"
-        },
-        "ArtifactDetailHeader": {
-          "publicLink": "Anyone with this link can view it",
-          "close": "Close"
-        },
-        "updatedAt": "Updated {{when}}",
-        "updatedRecently": "recently",
-        "expiryUnknown": "Expiry unknown",
-        "expired": "Link expired",
-        "expires": "Link expires {{when}}",
         "ArtifactPublishButton": {
           "a4a49da6af": "Share as artifact",
           "confirmTitle": "Share as artifact",
           "confirmDescription": "This publishes the current file at a link anyone with the URL can view.",
-          "accountTitle": "Orca account",
-          "accountDescription": "Sign in to create and manage this link.",
-          "signingIn": "Signing in…",
-          "signInAgain": "Sign in again",
-          "signIn": "Sign in",
-          "publishingOffTitle": "Artifact sharing is off",
-          "publishingOffDescription": "Learn about public links and enable sharing in Settings.",
-          "openSettings": "Open Artifacts settings",
           "sharing": "Sharing…",
           "sharePublicLink": "Generate link",
           "publishedDescription": "Anyone with this link can view the shared file.",
           "checkingLink": "Checking for an existing link…",
           "checkFailed": "Could not check for an existing link.",
-          "tryAgain": "Try again"
+          "tryAgain": "Try again",
+          "webOnly": "Desktop only. Open this file on the host device to share it.",
+          "removeFailed": "Could not remove the link."
         },
         "artifact-publish-flow": {
-          "9a078a0c65": "Artifact sharing is unavailable",
-          "bba20daa6d": "Sign in to Orca and try again.",
           "54b1805328": "Could not share artifact",
           "430019efd0": "Artifact shared",
           "2fc727c831": "Artifact updated",
-          "5cb4f5ec36": "Copy link",
           "fbb5018602": "This file is empty.",
-          "6112db5a1c": "This artifact is too large to share.",
+          "6112db5a1c": "This file exceeds the 10 MiB share limit.",
           "e2ed5acd8c": "Orca couldn't read this file. Open it from a workspace and try again.",
           "6d475e9b25": "Only local HTML and Markdown files can be shared as artifacts.",
-          "29a406be09": "Artifacts must contain text."
+          "29a406be09": "Artifacts must contain text.",
+          "shareFailed": "Could not share artifact",
+          "unauthorizedDescription": "The share server rejected this device. Try sharing again.",
+          "forbiddenDescription": "This device can no longer update the link. Share the file again to create a new one.",
+          "tooLargeDescription": "This artifact exceeds the 10 MiB share limit.",
+          "rateLimitedDescription": "Too many uploads. Try again in a minute.",
+          "busyDescription": "The share server is busy. Try again shortly.",
+          "notFoundDescription": "The shared link no longer exists on the server.",
+          "unsupportedDescription": "The share server only accepts HTML content.",
+          "networkDescription": "Could not reach the share server. Check your network connection.",
+          "fileTooLarge": "File is too large to share",
+          "tooLargeWithSize": "This file is {{size}}; the share limit is 10 MiB.",
+          "staleRecordDescription": "This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server.",
+          "enrollmentFullDescription": "The share server has no room left for new devices. An administrator has to clear its device list before sharing works again.",
+          "registryUnavailableDescription": "The share server cannot read its device list and is refusing new shares. An administrator has to restore it on the server.",
+          "recordsUnreadableDescription": "Your share history on this computer could not be read, so this list may be incomplete. Existing links may still work; sharing a file again creates a new link.",
+          "unknownDescription": "Something went wrong while sharing. The details are in the app logs."
         },
         "ArtifactPublishedLinkPanel": {
           "copyLink": "Copy link",
           "openLink": "Open link",
           "updating": "Updating…",
-          "update": "Update shared content"
-        },
-        "ArtifactDetailDrawer": {
-          "description": "Preview and manage this shared artifact."
-        },
-        "ArtifactListSearchField": {
-          "label": "Search artifacts",
-          "placeholder": "Search...",
-          "clear": "Clear search"
-        },
-        "ArtifactListTableHeader": {
-          "name": "Name",
-          "type": "Type",
-          "size": "Size",
-          "updated": "Updated",
-          "expires": "Expires",
-          "actions": "Actions"
-        },
-        "ArtifactsPageSkeleton": {
-          "loading": "Loading artifacts"
-        },
-        "expiredCompact": "Expired",
-        "typeMarkdown": "Markdown",
-        "typeHtml": "HTML"
+          "update": "Update shared content",
+          "removeConfirm": "Remove this link? Anyone holding it will lose access.",
+          "remove": "Remove link",
+          "cancelRemove": "Cancel"
+        }
       },
       "BrowserCookieImportMachineNotice": {
         "clientLabel": "Browsers on this device",
