@@ -1,5 +1,5 @@
-import { overviewTest } from './helpers/workbench-version-overview-fixture'
-import { verifyVersionOverview } from './helpers/workbench-version-overview'
+import { overviewTest } from '../../helpers/workbench-version-overview-fixture'
+import { verifyVersionOverview } from '../../helpers/workbench-version-overview'
 
 overviewTest(
   'BW version overview: real sources, version identity and process restart',

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>创建工作树 · 来源标签按仓自适应（局部原型）</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <style>
+      body {
+        padding: 24px;
+      }
+      .proto-wrap {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .proto-creator {
+        width: 460px;
+      }
+      .proto-tags {
+        display: flex;
+        gap: 8px;
+        margin: 8px 0;
+      }
+      .proto-note {
+        color: var(--muted-foreground);
+        font-style: italic;
+        font-size: 12px;
+      }
+      .proto-stack > * {
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>创建工作树 · 来源标签按仓自适应（局部原型）</h1>
+    <p class="proto-note">
+      原型注释：本次只演示既有「新建工作区」创建器里 [智能][GitHub][分支][名称]
+      这行标签的平台项随所选项目自适应；其余布局、字段与动作沿用现状，不是已交付能力。
+    </p>
+    <p class="proto-note">
+      业界参考：沿用 Orca 创建器与任务选取做法，平台判定参考 GitHub / CodeHub 仓库配置口径；BW
+      仅做标签与来源适配。
+    </p>
+
+    <div class="proto-wrap">
+      <section class="card proto-creator">
+        <h2>新建工作区</h2>
+        <div class="proto-stack">
+          <label
+            >项目
+            <select class="input" id="project">
+              <option value="github">Builder Workbench（GitHub）</option>
+              <option value="codehub">内部服务仓（CodeHub）</option>
+              <option value="unknown">配置未知仓库</option>
+              <option value="gitlab">GitLab 仓库</option>
+            </select>
+          </label>
+          <label>运行于<input class="input" value="本机" readonly /></label>
+          <label>名称<input class="input" id="name" placeholder="由选中条目带入" /></label>
+
+          <div class="proto-tags" id="tags">
+            <span class="tag">智能</span>
+            <span class="tag" id="platform-tag">GitHub</span>
+            <span class="tag">分支</span>
+            <span class="tag">名称</span>
+          </div>
+
+          <input class="input" id="search" placeholder="搜索 Issue…" />
+          <div class="list" id="results"></div>
+          <p class="proto-note" id="state-note"></p>
+
+          <details>
+            <summary>高级</summary>
+            <p class="proto-note">备注、父级建议，沿用现状。</p>
+          </details>
+          <button class="btn btn-primary btn-block">创建工作树</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>状态说明</h2>
+        <ul>
+          <li>平台项一次只显示一个，切换只通过选择项目进行。</li>
+          <li>GitHub 保留原有 PR/Issue 选择与搜索，不变。</li>
+          <li>配置未知：不回退为 GitHub，显示未知/不可用。</li>
+          <li>GitLab 等既有平台保持原样，本次不改动。</li>
+          <li>未配置 / 登录失败 / 无结果：分别给出真实提示，不冒充空结果。</li>
+          <li>切换项目：清空已选与结果，旧请求作废。</li>
+          <li>选中项只带入名称与会话初始描述，不自动关闭 Issue。</li>
+        </ul>
+      </section>
+    </div>
+
+    <script>
+      const MODEL = {
+        github: {
+          tag: 'GitHub',
+          rows: ['示例 Issue A', '示例 Issue B'],
+          note: '保留原有 PR/Issue 选择与搜索，不变。'
+        },
+        codehub: {
+          tag: 'CodeHub',
+          rows: ['示例 Issue A', '示例 Issue B'],
+          note: '仅 Issue，无 MR；服务端搜索有界时提示缩小筛选。'
+        },
+        unknown: {
+          tag: '未知',
+          rows: [],
+          note: '配置未知：不回退为 GitHub，如实提示未知/不可用。'
+        },
+        gitlab: { tag: 'GitLab', rows: [], note: 'GitLab 等既有平台保持原样，本次不改动。' }
+      }
+      const project = document.getElementById('project')
+      const platformTag = document.getElementById('platform-tag')
+      const results = document.getElementById('results')
+      const note = document.getElementById('state-note')
+      const nameInput = document.getElementById('name')
+      const search = document.getElementById('search')
+
+      function render(key) {
+        const m = MODEL[key]
+        platformTag.textContent = m.tag
+        note.textContent = m.note || ''
+        results.innerHTML = ''
+        if (m.rows.length) {
+          m.rows.forEach((title) => {
+            const row = document.createElement('div')
+            row.className = 'list-row'
+            row.innerHTML =
+              '<span>' + title + '</span><button class="btn btn-secondary">选中</button>'
+            row.querySelector('button').addEventListener('click', () => {
+              nameInput.value = title
+            })
+            results.appendChild(row)
+          })
+        }
+      }
+
+      // 切换项目：清空已选与结果，旧请求作废（此处重渲染即丢弃旧列表）。
+      project.addEventListener('change', () => {
+        nameInput.value = ''
+        search.value = ''
+        render(project.value)
+      })
+
+      render('github')
+    </script>
+  </body>
+</html>

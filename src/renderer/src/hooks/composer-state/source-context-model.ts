@@ -29,5 +29,7 @@ export type ComposerSourceContextModel = {
   derivedGitHubTaskSourceContext: TaskSourceContext | null
   taskSourceContext: TaskSourceContext | null
   selectedRepoGitHubSourceContext: TaskSourceContext | null
+  selectedRepoCodeHubSourceContext: TaskSourceContext | null
+  smartNameCodeHubSourceContext: TaskSourceContext | null
   smartNameJiraSourceContext: TaskSourceContext | null
 }

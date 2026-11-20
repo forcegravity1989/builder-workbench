@@ -10,11 +10,11 @@
 
 | 旅程 | 本特性观察结果 | 入口与边界 |
 | --- | --- | --- |
-| W02 制定版本计划 | 从版本入口选择或新建版本，准备并进入计划工作区，目录、绑定与材料可读回 | 复用现有 `tests/e2e/workbench-cycle-smoke.spec.ts` 的版本准备和计划段；真实创建失败恢复、旧材料回看仍需真壳验证 |
-| W03 构建交付 | 从版本目标进入任务与工作区，切换并恢复会话，工作区绑定不串版 | 同一烟测只覆盖已接线的绑定与重载链；多候选、跨宿主、真实 provider 与会话续接仍需真壳验证 |
+| W02 制定版本计划 | 从版本入口选择或新建版本，准备并进入计划工作区，目录、绑定与材料可读回 | 复用现有 `tests/e2e/workbench/journeys/w02-cycle-main.spec.ts` 的版本准备和计划段；真实创建失败恢复、旧材料回看仍需真壳验证 |
+| W03 构建交付 | 从版本目标进入任务与工作区，切换并恢复会话，工作区绑定不串版 | 同一 W02 主链只覆盖已接线的绑定与重载链；多候选、跨宿主、真实 provider 与会话续接仍需真壳验证 |
 | W04 验收成果 | 版本验收板、报告和总览结果 | 由 `version-acceptance` 与 `version-overview` 特性维护，不在本特性新增 E2E |
 
-本特性最多登记一条验收点 E2E。现有烟测作为共享入口复用，不新增业务 E2E 文件。J1–J9 是旧资料中的特性内验收/风险标签，不是九条用户旅程，也不要求一一对应测试文件。
+本特性最多登记一条验收点 E2E。现有 W02 主链作为共享入口复用，不新增业务 E2E 文件。J1–J9 是旧资料中的特性内验收/风险标签，不是九条用户旅程，也不要求一一对应测试文件。
 
 | 旧标签 | 现行含义 | 旅程映射 | 当前状态 |
 | --- | --- | --- | --- |
@@ -34,7 +34,7 @@
 | spec | 已确认 | 双列侧栏、版本目录、绑定、流程树、任务开工、清理和失败边界见 [spec](spec.md) |
 | design | 已确认 | 绑定契约、目录装载、准备编排、原生复用和删除链见 [design](design.md) |
 | 核心协议 | 部分验证 | 绑定读回规范化、目录合并、owner/instance 围栏、准备去重、任务归属解析已有协议与静态证据。真实宿主、Git 占用和跨机链路仍需验证 |
-| 验收点 E2E | 部分验证 | 旅程 ID W02/W03；文件 `tests/e2e/workbench-cycle-smoke.spec.ts`，标题 `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料、renderer 重载后的侧栏定位和验收树挂载。它是共享主链，不新增专属副本 |
+| 验收点 E2E | 部分验证 | 旅程 ID W02/W03；文件 `tests/e2e/workbench/journeys/w02-cycle-main.spec.ts`，标题 `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料、renderer 重载后的侧栏定位和验收树挂载。它是共享主链，不新增专属副本 |
 | 用户旅程 E2E | 部分验证 | W02/W03 复用同一入口、标题、执行项目和独立读回；当前主链只观察 W03 的绑定/重载部分，Issue→目标→工作区切换、会话恢复、双机和清理执行仍由真壳验收补齐，不将 J 标签伪装成已执行旅程 |
 
 ## 已验证范围
@@ -43,7 +43,7 @@
 - 版本目录由已提交材料与存活绑定合并得出，工作树删除后不留悬空绑定，读取失败保持未知并保留来源边界。
 - 版本准备按计划树、绑定、空计划、验收树、绑定的步骤链落盘。重入复用已完成步骤，失败保留现场，不把部分完成报告成成功。
 - 任务和 Issue 开工只接受绑定与原生 linked 字段的双重证明。多候选交原生选择器，缺少证明时回到原生创建器。
-- 现有 headless Electron 烟测已读回绑定材料、磁盘内容、renderer 重载后的侧栏定位和验收树挂载。该证据不覆盖双版本、双机或真实 provider 全范围。
+- 现有 headless Electron PR E2E 已读回绑定材料、磁盘内容、renderer 重载后的侧栏定位和验收树挂载。该证据不覆盖双版本、双机或真实 provider 全范围。
 
 ## 未验证与下一步
 

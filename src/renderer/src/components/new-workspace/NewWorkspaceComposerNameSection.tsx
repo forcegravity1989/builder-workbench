@@ -14,6 +14,7 @@ type NewWorkspaceComposerNameSectionProps = Pick<
   | 'name'
   | 'onNameValueChange'
   | 'onSmartGitHubItemSelect'
+  | 'onSmartCodeHubIssueSelect'
   | 'onSmartGitLabItemSelect'
   | 'onSmartBranchSelect'
   | 'onSmartLinearIssueSelect'
@@ -22,6 +23,7 @@ type NewWorkspaceComposerNameSectionProps = Pick<
   | 'smartNameSelection'
   | 'onClearSmartNameSelection'
   | 'smartNameGitHubSourceContext'
+  | 'smartNameCodeHubSourceContext'
   | 'smartNameJiraSourceContext'
   | 'selectedRepoRequiresConnection'
   | 'selectedRepoIsGit'
@@ -47,6 +49,7 @@ export function NewWorkspaceComposerNameSection({
   name,
   onNameValueChange,
   onSmartGitHubItemSelect,
+  onSmartCodeHubIssueSelect,
   onSmartGitLabItemSelect,
   onSmartBranchSelect,
   onSmartLinearIssueSelect,
@@ -55,6 +58,7 @@ export function NewWorkspaceComposerNameSection({
   smartNameSelection,
   onClearSmartNameSelection,
   smartNameGitHubSourceContext,
+  smartNameCodeHubSourceContext,
   smartNameJiraSourceContext,
   selectedRepoRequiresConnection,
   selectedRepoIsGit,
@@ -91,6 +95,7 @@ export function NewWorkspaceComposerNameSection({
         value={name}
         onValueChange={onNameValueChange}
         onGitHubItemSelect={onSmartGitHubItemSelect}
+        onCodeHubIssueSelect={onSmartCodeHubIssueSelect}
         onGitLabItemSelect={onSmartGitLabItemSelect}
         onBranchSelect={onSmartBranchSelect}
         onLinearIssueSelect={onSmartLinearIssueSelect}
@@ -99,6 +104,7 @@ export function NewWorkspaceComposerNameSection({
         selectedSource={smartNameSelection}
         onClearSelectedSource={onClearSmartNameSelection}
         githubSourceContext={smartNameGitHubSourceContext}
+        codehubSourceContext={smartNameCodeHubSourceContext}
         jiraSourceContext={smartNameJiraSourceContext}
         disabled={selectedRepoRequiresConnection}
         disabledPlaceholder={translate(
