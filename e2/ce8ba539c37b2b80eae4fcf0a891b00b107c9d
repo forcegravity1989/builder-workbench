@@ -1,0 +1,75 @@
+src/renderer/src/workbench/ProjectWallPage.tsx
+  s_1fcb41ef984e01::t_254e172b2668f1 262
+  s_1fcb41ef984e01::t_ca17dda88c10fc 20
+  s_1fcb41ef984e01::t_7c5a8a156cb102 181-194
+  s_1fcb41ef984e01::t_82a4ad82802378 42
+docs/05-features/project-intake/spec.md
+  s_1fcb41ef984e01::t_e93a56bff68794 17
+  s_1fcb41ef984e01::t_beea06e3ddb095 90
+  s_1fcb41ef984e01::t_af52730334ec97 47
+  s_1fcb41ef984e01::t_7d710afb997057 43-44
+docs/05-features/project-intake/prototype/project-settings.css
+  s_1fcb41ef984e01::t_f748951540d161 491-494,498-509,511,513-524,529
+  s_1fcb41ef984e01::t_2a4dd4d9e0f030 468-470
+  s_1fcb41ef984e01::t_23009b085697bc 561,563,566
+  s_1fcb41ef984e01::t_481953e4b4c1f4 439-440,442
+  s_1fcb41ef984e01::t_445b27468033c8 360-362
+  s_1fcb41ef984e01::t_c45865408e4538 384
+  s_1fcb41ef984e01::t_054fe35ab768a4 321-322,328-337
+  s_1fcb41ef984e01::t_bd0acf7b73083f 315,317,338,510,512
+  s_1fcb41ef984e01::t_59eadd10a39282 370
+  s_1fcb41ef984e01::t_6c885ebbd16680 344-347
+docs/05-features/project-intake/STATUS.md
+  s_1fcb41ef984e01::t_ba59fabae5902f 12
+src/renderer/src/workbench/workbench-wall.css
+  s_1fcb41ef984e01::t_24f776ac3cb2bb 175-179
+  s_1fcb41ef984e01::t_8c189936d8c812 64-72,77,81-82,88-93,246-248,273
+  s_1fcb41ef984e01::t_8fe85e9183c8f2 121
+  s_1fcb41ef984e01::t_5fda296be99e02 330-331
+  s_1fcb41ef984e01::t_042a9120c9f6e6 140,149,152-164
+  s_1fcb41ef984e01::t_22c24fcf832e50 99,109-112
+  s_1fcb41ef984e01::t_4ade9971e78e6c 208,216,221-223,236-245,254-272,274-279,283,287,299-302,308-311,316-319,322,324-329,332-333,340-341,343
+docs/05-features/project-intake/prototype/project-wall-views.js
+  s_1fcb41ef984e01::t_43d0409abd1a4b 10-11,13-15
+  h_d0d195a8c70989 17-19,21,24-27,34,36,83-93
+docs/05-features/project-intake/intent.md
+  s_1fcb41ef984e01::t_8c010c2732cfa9 13
+docs/05-features/project-intake/prototype/project-settings.js
+  s_1fcb41ef984e01::t_8d72a0da767b47 243-247
+  s_1fcb41ef984e01::t_d598dbd6f8236e 166
+docs/05-features/project-intake/prototype/project-wall-data.js
+  s_1fcb41ef984e01::t_c504350269bb16 59
+src/renderer/src/workbench/ProjectWallCard.tsx
+  s_1fcb41ef984e01::t_7c22d97c55e145 4,208
+  s_1fcb41ef984e01::t_5392659e5abe41 130
+  s_1fcb41ef984e01::t_63417332a68420 139
+  s_1fcb41ef984e01::t_c56cf8949de40a 29
+  s_1fcb41ef984e01::t_a666d40e30ae0c 107
+  s_1fcb41ef984e01::t_4919386892cfcd 19
+  s_1fcb41ef984e01::t_c5c0312e0f035e 192-205,207
+  s_1fcb41ef984e01::t_64feb2d9c6b2d2 209-211,219,229-234,237,240-243,246-268,272-304,310,316
+  s_1fcb41ef984e01::t_24d90f5099a938 94
+  h_d0d195a8c70989 269-271,305-309,311,313-315,317-321
+  h_d0d195a8c70989 322-335,337-342
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "e2ce8ba539c37b2b80eae4fcf0a891b00b107c9d",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_1fcb41ef984e01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f93905d-ebd5-46d2-af46-e81161c37d0e",
+        "model": "gpt-6.1-sol-AIgateway"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
