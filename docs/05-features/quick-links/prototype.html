@@ -1,606 +1,152 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Workbench · 常用链接 交互原型（状态栏入口）</title>
-    <link rel="stylesheet" href="../../04-design-system/styles.css" />
-    <style>
-      :root {
-        --bg: var(--color-bg);
-        --card: var(--color-card);
-        --surface: var(--color-surface);
-        --text: var(--color-text);
-        --muted: var(--muted-foreground);
-        --faint: color-mix(in srgb, var(--color-text) 55%, transparent);
-        --line: var(--color-divider);
-        --line-soft: color-mix(in srgb, var(--color-divider) 60%, transparent);
-        --accent: var(--color-accent);
-        --blue: var(--color-accent-2);
-        --success: var(--color-success);
-        --success-deep: var(--color-success-deep);
-        --danger: var(--color-danger);
-        --danger-deep: var(--color-danger-deep);
-        --radius: var(--radius-md);
-        --font: var(--font-sans);
-        --mono: var(--font-mono);
-      }
-      * { box-sizing: border-box; }
-      html, body { margin: 0; height: 100%; }
-      body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: var(--font);
-        font-size: 13px;
-        -webkit-font-smoothing: antialiased;
-      }
-      button { font-family: inherit; cursor: pointer; }
-      button:focus-visible, input:focus-visible {
-        outline: 2px solid var(--blue);
-        outline-offset: 2px;
-      }
-
-      .page { max-width: 1080px; margin: 0 auto; padding: 28px 24px 48px; }
-      .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
-      .head h1 { font-size: 22px; font-weight: 650; margin: 0; display: flex; align-items: center; gap: 10px; }
-      .head p { margin: 8px 0 0; color: var(--muted); font-size: 12px; max-width: 640px; line-height: 1.7; }
-      .head .reset { font-size: 11px; padding: 6px 11px; display: inline-flex; align-items: center; gap: 6px; }
-      .head .reset:hover { color: var(--text); border-color: var(--faint); }
-
-      .banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; color: var(--muted); font-size: 11px; margin: 16px 0 20px; }
-
-      .cols { display: grid; grid-template-columns: 1fr 340px; gap: 28px; align-items: start; }
-
-      /* ── simulated app window + status bar ── */
-      .stage { position: relative; }
-      .window {
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        overflow: hidden;
-        background: var(--card);
-        box-shadow: var(--shadow-floating);
-      }
-      .win-body { height: 360px; padding: 20px 22px; background:
-        linear-gradient(180deg, color-mix(in srgb, var(--surface) 55%, var(--card)), var(--card)); }
-      .win-body .kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
-      .win-body h2 { font-size: 15px; margin: 6px 0 10px; }
-      .win-body p { font-size: 12px; color: var(--muted); line-height: 1.8; max-width: 460px; }
-      .win-body .hintrow { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
-      .win-body .chipmock { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--card); }
-
-      .statusbar {
-        display: flex;
-        align-items: center;
-        height: 30px;
-        padding: 0 12px;
-        gap: 16px;
-        border-top: 1px solid var(--line);
-        background: var(--card);
-        font-size: 12px;
-        user-select: none;
-        position: relative;
-      }
-      .statusbar .spacer { flex: 1; }
-      .sb-left, .sb-right { display: flex; align-items: center; gap: 12px; }
-      .sb-usage { display: inline-flex; align-items: center; gap: 8px; padding: 2px 5px; border-radius: 4px; }
-      .sb-usage .badge { font-size: 9px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 3px; }
-      .sb-usage .pct { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-
-      /* status-bar segment — 与 Orca PortsStatusSegment 同构 */
-      .status-segment {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border-radius: 4px;
-        padding: 2px 4px;
-        border: 0;
-        background: none;
-        color: var(--muted);
-      }
-      .status-segment:hover, .status-segment[aria-expanded="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-      .status-segment svg { color: var(--muted); }
-      .status-segment .n { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--muted); }
-
-      /* ── popover — 与 PortsStatusSegment 的 PopoverContent 同构 ── */
-      .popover {
-        position: absolute;
-        bottom: 36px;
-        right: 12px;
-        width: 24rem;
-        max-width: calc(100vw - 2rem);
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        box-shadow: var(--shadow-menu);
-        z-index: 30;
-        overflow: hidden;
-        padding: 0;
-      }
-      .popover[hidden] { display: none; }
-      .pop-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        border-bottom: 1px solid var(--line);
-        padding: 6px 12px;
-      }
-      .pop-head .pl { display: flex; align-items: center; gap: 6px; color: var(--text); }
-      .pop-head .pl svg { color: var(--muted); }
-      .pop-head .title { font-size: 12px; font-weight: 600; }
-      .pop-head .count { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
-      .pop-head .pr { display: flex; align-items: center; gap: 2px; }
-      .pop-head .add {
-        display: inline-flex; align-items: center; gap: 4px;
-        font-size: 11px; color: var(--blue); border: 0; background: none;
-        padding: 3px 6px; border-radius: 5px;
-      }
-      .pop-head .add:hover { background: color-mix(in srgb, var(--blue) 8%, transparent); }
-      .pop-head .icon-btn { border: 0; background: none; color: var(--muted); padding: 4px; border-radius: 5px; display: inline-flex; }
-      .pop-head .icon-btn:hover { background: var(--surface); color: var(--text); }
-
-      .pop-body { max-height: 24rem; overflow-y: auto; scrollbar-width: thin; }
-
-      .group-head {
-        position: sticky; top: 0; z-index: 1;
-        display: flex; align-items: center; gap: 6px;
-        padding: 6px 12px;
-        background: color-mix(in srgb, var(--surface) 70%, var(--card));
-        border-bottom: 1px solid var(--line-soft);
-        font-size: 10.5px; color: var(--muted); font-weight: 600;
-      }
-      .group-head .gcount { color: var(--faint); font-weight: 500; font-variant-numeric: tabular-nums; }
-      .group-head .gsp { flex: 1; }
-
-      .rows { padding: 4px; }
-
-      /* row — 与 ports-status-popover-rows 同构：主行 + 次行 + hover 动作簇 */
-      .lrow {
-        display: grid;
-        grid-template-columns: 16px minmax(0, 1fr) auto;
-        align-items: start;
-        gap: 8px;
-        border-radius: 6px;
-        padding: 6px 8px;
-        position: relative;
-        cursor: pointer;
-      }
-      .lrow:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
-      .lrow .glyph { color: var(--faint); padding-top: 1px; display: flex; }
-      .lrow .main { min-width: 0; }
-      .lrow .lname { font-size: 12px; font-weight: 550; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .lrow .lurl { font-family: var(--mono); font-size: 10px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-      .lrow .acts { display: flex; align-items: center; gap: 1px; opacity: 0; transition: opacity 0.1s; }
-      .lrow:hover .acts, .lrow:focus-within .acts { opacity: 1; }
-      .lrow .act { border: 0; background: none; color: var(--muted); padding: 3px; border-radius: 4px; display: inline-flex; }
-      .lrow .act:hover { background: var(--surface); color: var(--text); }
-      .lrow .act.danger:hover { color: var(--danger-deep); }
-
-      /* ports demo rows reuse the same row grid for parity */
-      .prow { display: grid; grid-template-columns: 3.5rem minmax(0,1fr) auto; align-items: start; gap: 8px; border-radius: 6px; padding: 6px 8px; }
-      .prow:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
-      .prow .port { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
-      .prow .proc { min-width: 0; }
-      .prow .pname { font-size: 12px; color: var(--text); }
-      .prow .paddr { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-top: 2px; }
-      .prow .acts { display: flex; gap: 1px; opacity: 0; }
-      .prow:hover .acts { opacity: 1; }
-      .prow .act { border: 0; background: none; color: var(--muted); padding: 3px; border-radius: 4px; display: inline-flex; }
-      .prow .act:hover { background: var(--surface); color: var(--text); }
-
-      .empty { text-align: center; padding: 26px 16px; color: var(--faint); }
-      .empty h3 { margin: 8px 0 4px; font-size: 12px; color: var(--muted); }
-      .empty p { margin: 0; font-size: 11px; }
-
-      /* ── annotation column ── */
-      .notes h2 { font-size: 13px; font-weight: 650; margin: 2px 0 8px; }
-      .notes p, .notes li { font-size: 12px; color: var(--muted); line-height: 1.75; }
-      .notes ul { margin: 6px 0 16px; padding-left: 18px; }
-      .notes .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
-      .notes .k { font-size: 11px; font-weight: 650; color: var(--text); margin: 0 0 6px; }
-      .notes .decisions { display: grid; gap: 8px; }
-      .notes .decisions div { font-size: 12px; }
-      .notes .decisions b { color: var(--text); font-weight: 600; }
-      .log { font-family: var(--mono); font-size: 10.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; max-height: 150px; overflow: auto; line-height: 1.9; }
-      .log .t { color: var(--faint); margin-right: 8px; }
-      .log:empty::after { content: "操作记录会显示在这里…"; color: var(--faint); }
-
-      /* ── modal ── */
-      dialog.modal { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px; width: min(440px, calc(100vw - 32px)); background: var(--card); color: var(--text); box-shadow: var(--shadow-dialog); }
-      dialog.modal::backdrop { background: color-mix(in srgb, var(--color-text) 28%, transparent); backdrop-filter: blur(1.5px); }
-      dialog.modal h2 { font-size: 16px; margin: 0 0 4px; }
-      dialog.modal .sub { color: var(--muted); font-size: 11px; margin: 0 0 18px; }
-      dialog.modal label { display: block; font-size: 11px; color: var(--muted); margin: 12px 0 6px; }
-      dialog.modal input { width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; font-size: 12px; color: var(--text); background: var(--card); }
-      dialog.modal input.err { border-color: var(--danger); }
-      .form-err { color: var(--danger-deep); font-size: 11px; background: color-mix(in srgb, var(--danger) 9%, transparent); padding: 8px 10px; border-radius: 5px; margin-top: 10px; }
-      .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-      .modal-foot .btn { font-size: 12px; padding: 7px 14px; }
-
-      .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); font-size: 12px; padding: 10px 16px; border-radius: 8px; opacity: 0; pointer-events: none; transition: all 0.22s; max-width: 90vw; z-index: 60; }
-      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    </style>
-  </head>
-  <body>
-    <div class="page">
-      <div class="head">
-        <div>
-          <h1>常用链接 <span class="tag tag-neutral">交互原型 · 状态栏入口</span></h1>
-          <p>与 Orca 右下角<b>「端口」入口同构</b>：在底部状态栏放一个<b>图标 + 计数</b>的入口，点开是它<b>自己的 popover 面板</b>，而不是右栏里的子分区、也不是另开的窗口。面板内容照端口面板的范式做：分组头 + 链接行（点击行直接在内置浏览器打开，hover 出复制/编辑/删除），保存网页地址、一键打开。</p>
-        </div>
-        <button class="btn btn-secondary reset" id="resetBtn" title="恢复初始模拟数据">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-          重置场景
-        </button>
-      </div>
-
-      <div class="banner">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
-        当前壳：Workbench 状态栏入口；链接列表是本页示例快照。模拟数据仅本页内存生效，刷新即重置；「打开」不真正打开浏览器，只提示将在 BW 内置浏览器打开。点状态栏右下角两个图标分别看「端口」与「常用链接」的弹出面板。
-      </div>
-
-      <div class="cols">
-        <!-- 左列：模拟应用窗口 + 底部状态栏 + 弹出面板 -->
-        <div class="stage">
-          <div class="window">
-            <div class="win-body">
-              <div class="kicker">Workbench · 主内容区</div>
-              <h2>这里是应用主区（示意）</h2>
-              <p>入口不在右栏、也不新开窗口，而在底部状态栏右端——与「端口」入口并列。点右下角的「常用链接」图标即可弹出本特性的面板。</p>
-              <div class="hintrow">
-                <span class="chipmock">编辑器</span>
-                <span class="chipmock">内置浏览器</span>
-                <span class="chipmock">终端</span>
-              </div>
-            </div>
-
-            <div class="statusbar">
-              <div class="sb-left">
-                <span class="sb-usage">
-                  <span class="badge">CL</span><span class="pct">62%</span>
-                  <span class="badge">CX</span><span class="pct">40%</span>
-                </span>
-              </div>
-              <div class="spacer"></div>
-              <div class="sb-right">
-                <!-- 端口入口（Orca 原生，仅作同构参照） -->
-                <button class="status-segment" id="portsSeg" aria-expanded="false" title="端口（Orca 原生入口）">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
-                  <span class="n">12</span>
-                </button>
-                <!-- 常用链接入口（本特性，同构） -->
-                <button class="status-segment" id="linksSeg" aria-expanded="false" title="常用链接">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
-                  <span class="n" id="linksCount">0</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 常用链接 popover（本特性） -->
-          <div class="popover" id="linksPopover" hidden role="dialog" aria-label="常用链接">
-            <div class="pop-head">
-              <div class="pl">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
-                <span class="title">常用链接</span>
-                <span class="count" id="popCount">0</span>
-              </div>
-              <div class="pr">
-                <button class="add" id="addBtn" title="添加常用链接">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>添加
-                </button>
-              </div>
-            </div>
-            <div class="pop-body">
-              <div class="group-head">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
-                <span>Builder Workbench</span>
-                <span class="gsp"></span>
-                <span class="gcount" id="groupCount">0</span>
-              </div>
-              <div class="rows" id="linksList"></div>
-            </div>
-          </div>
-
-          <!-- 端口 popover（Orca 原生，仅作同构参照，静态） -->
-          <div class="popover" id="portsPopover" hidden role="dialog" aria-label="端口">
-            <div class="pop-head">
-              <div class="pl">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
-                <span class="title">Ports</span>
-                <span class="count">2 / 12</span>
-              </div>
-            </div>
-            <div class="pop-body">
-              <div class="group-head">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
-                <span>Active Workspace</span>
-                <span class="gsp"></span><span class="gcount">2</span>
-              </div>
-              <div class="rows">
-                <div class="prow">
-                  <div class="port">:5173</div>
-                  <div class="proc"><div class="pname">vite</div><div class="paddr">localhost:5173</div></div>
-                  <div class="acts">
-                    <button class="act" title="打开"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></button>
-                    <button class="act" title="复制"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
-                  </div>
-                </div>
-                <div class="prow">
-                  <div class="port">:4310</div>
-                  <div class="proc"><div class="pname">node API</div><div class="paddr">localhost:4310</div></div>
-                  <div class="acts">
-                    <button class="act" title="打开"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></button>
-                    <button class="act" title="复制"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
-                  </div>
-                </div>
-              </div>
+<html lang="zh" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workbench · 常用链接 · 状态栏入口原型</title>
+  <link rel="stylesheet" href="../../04-design-system/styles.css" />
+  <style>
+    :root { --rail-width:64px; --object-sidebar-width:248px; }
+    * { box-sizing:border-box; }
+    body { min-height:100vh; margin:0; background:var(--color-bg); color:var(--color-text); }
+    button,input,select { font:inherit; }
+    .bw-window,.app-body,.workspace-shell { display:flex; min-height:100vh; flex-direction:column; }
+    .titlebar { display:flex; height:36px; align-items:center; gap:10px; padding:0 12px; border-bottom:1px solid var(--worktree-sidebar-border); color:var(--muted-foreground); font-size:11px; }
+    .titlebar strong { color:var(--color-text); }
+    .titlebar span:nth-child(2) { flex:1; }
+    .window-actions { display:flex; gap:2px; }
+    .window-actions button,.rail button,.sidebar-row { cursor:pointer; }
+    .window-actions button { width:24px; height:22px; border:0; border-radius:var(--radius-sm); background:transparent; color:inherit; }
+    .window-actions button:hover { background:var(--color-surface); color:var(--color-text); }
+    .app-body { flex:1; min-height:calc(100vh - 36px); flex-direction:row; }
+    .rail { display:flex; width:var(--rail-width); flex:0 0 var(--rail-width); flex-direction:column; align-items:center; gap:4px; border-right:1px solid var(--worktree-sidebar-border); background:var(--worktree-sidebar); padding:10px 0; }
+    .rail button { position:relative; display:grid; width:40px; height:40px; place-items:center; border:0; border-radius:9px; background:transparent; color:var(--worktree-sidebar-foreground); opacity:.62; }
+    .rail button:hover,.rail button[aria-current="page"] { background:var(--worktree-sidebar-accent); opacity:1; }
+    .rail button[aria-current="page"]::before { position:absolute; left:-12px; top:10px; bottom:10px; width:2px; border-radius:2px; background:currentColor; content:''; }
+    .rail .wall { background:var(--color-text); color:var(--color-bg); opacity:1; }
+    .rail-divider { width:40px; border-top:1px solid var(--worktree-sidebar-border); margin:2px 0 4px; }
+    .rail-spacer { flex:1; }
+    .object-sidebar { display:flex; width:var(--object-sidebar-width); flex:0 0 var(--object-sidebar-width); flex-direction:column; border-right:1px solid var(--worktree-sidebar-border); background:var(--worktree-sidebar); color:var(--worktree-sidebar-foreground); }
+    .project-head { display:flex; min-height:58px; align-items:center; gap:9px; padding:10px 14px; border-bottom:1px solid var(--worktree-sidebar-border); }
+    .project-mark { display:grid; width:28px; height:28px; place-items:center; border-radius:7px; background:var(--color-accent); color:#fff; font-size:12px; font-weight:650; }
+    .project-name { min-width:0; }
+    .project-name strong,.project-name small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .project-name strong { font-size:13px; }
+    .project-name small { margin-top:2px; color:color-mix(in srgb,var(--worktree-sidebar-foreground) 55%,transparent); font-size:10px; }
+    .sidebar-scroll { overflow:auto; padding:10px 8px; }
+    .sidebar-label { padding:6px 8px 4px; color:color-mix(in srgb,var(--worktree-sidebar-foreground) 55%,transparent); font-size:10px; }
+    .sidebar-row { display:flex; width:100%; align-items:center; gap:7px; border:0; border-radius:6px; background:transparent; color:inherit; padding:7px 8px; text-align:left; font-size:12px; }
+    .sidebar-row:hover { background:var(--worktree-sidebar-accent); }
+    .sidebar-row .row-icon { width:16px; color:color-mix(in srgb,var(--worktree-sidebar-foreground) 60%,transparent); text-align:center; }
+    .sidebar-row small { margin-left:auto; color:color-mix(in srgb,var(--worktree-sidebar-foreground) 50%,transparent); }
+    .workspace-shell { min-width:0; flex:1; position:relative; background:var(--color-bg); }
+    .workspace { min-width:0; flex:1; overflow:auto; }
+    .prototype-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; border-bottom:1px solid var(--color-divider); background:var(--color-surface); padding:9px 22px; color:var(--muted-foreground); font-size:11px; }
+    .prototype-meta strong { color:var(--color-text); }
+    .prototype-meta a { color:inherit; text-decoration:underline; text-underline-offset:2px; }
+    .prototype-meta .meta-status { margin-left:auto; }
+    .content { max-width:1040px; margin:0 auto; padding:28px 32px 56px; }
+    .page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:18px; }
+    .page-head h1 { margin:0; font-size:22px; letter-spacing:-.02em; }
+    .page-head p { max-width:690px; margin:7px 0 0; color:var(--muted-foreground); font-size:12px; line-height:1.7; }
+    .shell-note { margin:0 0 18px; border:1px dashed var(--color-divider); border-radius:var(--radius-md); padding:10px 12px; color:var(--muted-foreground); font-size:11px; line-height:1.65; }
+    .shell-note strong { color:var(--color-text); }
+    .feature-grid { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:24px; align-items:start; }
+    .feature-card { min-height:280px; }
+    .feature-card h2 { margin:0 0 8px; font-size:15px; }
+    .feature-card p { color:var(--muted-foreground); font-size:12px; line-height:1.7; }
+    .hint-list { display:grid; gap:8px; margin-top:18px; color:var(--muted-foreground); font-size:12px; }
+    .hint-list span { display:flex; gap:8px; align-items:baseline; }
+    .hint-list b { color:var(--color-text); font-weight:600; }
+    .side-note { color:var(--muted-foreground); font-size:11px; line-height:1.7; }
+    .side-note h3 { margin:0 0 7px; color:var(--color-text); font-size:12px; }
+    .side-note p { margin:0 0 12px; }
+    .statusbar { position:relative; display:flex; height:32px; align-items:center; gap:16px; border-top:1px solid var(--color-divider); background:var(--color-card); padding:0 14px; font-size:11px; }
+    .statusbar-spacer { flex:1; }
+    .status-segment { display:inline-flex; align-items:center; gap:6px; border:0; border-radius:4px; background:transparent; color:var(--muted-foreground); padding:3px 5px; cursor:pointer; }
+    .status-segment:hover,.status-segment[aria-expanded="true"] { background:color-mix(in srgb,var(--color-accent) 14%,transparent); color:var(--color-text); }
+    .status-segment .count { font-variant-numeric:tabular-nums; }
+    .popover { position:absolute; right:14px; bottom:42px; z-index:20; width:390px; max-width:calc(100vw - 32px); overflow:hidden; border:1px solid var(--color-divider); border-radius:var(--radius-lg); background:var(--color-card); box-shadow:var(--shadow-menu); }
+    .popover[hidden],dialog[hidden] { display:none; }
+    .pop-head { display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom:1px solid var(--color-divider); padding:8px 12px; }
+    .pop-head strong { font-size:12px; }
+    .pop-head small { color:var(--muted-foreground); }
+    .link-list { max-height:300px; overflow:auto; padding:4px; }
+    .link-row { display:grid; grid-template-columns:16px minmax(0,1fr) auto; align-items:start; gap:8px; border-radius:6px; padding:8px; cursor:pointer; }
+    .link-row:hover { background:var(--color-surface); }
+    .link-row .name { font-size:12px; font-weight:600; }
+    .link-row .url { overflow:hidden; color:var(--muted-foreground); font-family:var(--font-mono); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+    .row-actions { display:flex; gap:2px; opacity:0; }
+    .link-row:hover .row-actions,.link-row:focus-within .row-actions { opacity:1; }
+    .row-actions button { border:0; border-radius:4px; background:transparent; color:var(--muted-foreground); padding:3px; cursor:pointer; }
+    .row-actions button:hover { background:var(--color-surface); color:var(--color-text); }
+    .empty { padding:26px 16px; text-align:center; color:var(--muted-foreground); font-size:11px; }
+    dialog { width:min(440px,calc(100vw - 32px)); border:1px solid var(--color-divider); border-radius:var(--radius-lg); background:var(--color-card); color:var(--color-text); padding:20px; box-shadow:var(--shadow-dialog); }
+    dialog::backdrop { background:color-mix(in srgb,var(--color-text) 28%,transparent); }
+    dialog h2 { margin:0 0 4px; font-size:16px; }
+    dialog p { color:var(--muted-foreground); font-size:11px; }
+    dialog label { display:block; margin:12px 0 5px; color:var(--muted-foreground); font-size:11px; }
+    dialog input { width:100%; height:34px; border:1px solid var(--color-divider); border-radius:var(--radius-sm); background:var(--color-card); color:var(--color-text); padding:0 9px; }
+    .form-error { margin-top:8px; color:var(--color-danger); font-size:11px; }
+    .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; border-top:1px solid var(--color-divider); padding-top:14px; }
+    .toast { position:fixed; left:50%; bottom:52px; z-index:30; transform:translateX(-50%) translateY(10px); opacity:0; pointer-events:none; border-radius:var(--radius-md); background:var(--color-text); color:var(--color-bg); padding:9px 13px; font-size:11px; transition:opacity .16s,transform .16s; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    @media (max-width:800px) { :root { --object-sidebar-width:190px; } .content { padding:22px 18px 46px; } .feature-grid { grid-template-columns:1fr; } .prototype-meta .meta-status { margin-left:0; } }
+  </style>
+</head>
+<body>
+  <main class="bw-window" data-shell="current-bw-shell">
+    <header class="titlebar" aria-label="Workbench 标题栏"><strong>Workbench</strong><span>Builder Workbench · 当前壳轮廓</span><span class="window-actions"><button type="button" data-nav="最小化" title="最小化" aria-label="最小化">−</button><button type="button" data-nav="最大化" title="最大化" aria-label="最大化">□</button><button type="button" data-nav="关闭" title="关闭" aria-label="关闭">×</button></span></header>
+    <div class="app-body">
+      <aside class="rail" aria-label="Workbench 导航">
+        <button class="wall" type="button" data-nav="项目墙" title="项目墙" aria-label="项目墙">▦</button><div class="rail-divider" aria-hidden="true"></div>
+        <button type="button" data-nav="版本工作区" title="版本工作区" aria-label="版本工作区">▣</button><button type="button" data-nav="项目总览" title="项目总览" aria-label="项目总览">◫</button><button type="button" data-nav="任务" title="任务" aria-label="任务">✓</button><button type="button" data-nav="自动化" title="自动化" aria-label="自动化">◷</button><button type="button" data-nav="知识库" title="知识库" aria-label="知识库">▤</button>
+        <span class="rail-spacer"></span><button type="button" data-nav="管理远程主机" title="管理远程主机" aria-label="管理远程主机">⌁</button><button type="button" data-nav="设置与帮助" title="设置与帮助" aria-label="设置与帮助">⚙</button>
+      </aside>
+      <aside class="object-sidebar" aria-label="项目对象侧栏">
+        <div class="project-head"><span class="project-mark">B</span><span class="project-name"><strong>Builder Workbench</strong><small>当前项目</small></span></div>
+        <nav class="sidebar-scroll" aria-label="项目与版本导航"><div class="sidebar-label">固定</div><button class="sidebar-row" type="button" data-nav="项目墙"><span class="row-icon">▦</span>项目墙</button><button class="sidebar-row" type="button" data-nav="项目总览"><span class="row-icon">◫</span>项目总览</button><div class="sidebar-label">版本</div><button class="sidebar-row" type="button" data-nav="v1.1"><span class="row-icon">▾</span>v1.1<span>›</span></button><button class="sidebar-row" type="button" data-nav="目标"><span class="row-icon">○</span>目标与验收<small>3</small></button><div class="sidebar-label">工作区</div><button class="sidebar-row" type="button" data-nav="当前工作区"><span class="row-icon">□</span>当前工作区</button></nav>
+      </aside>
+      <section class="workspace-shell">
+        <div class="workspace">
+          <div class="prototype-meta" aria-label="原型评审信息"><strong>常用链接</strong><span>BW 位置：当前项目状态栏</span><span>当前稿</span><span>数据：演示链接</span><span class="meta-status"><a href="intent.md">意图</a> · <a href="spec.md">规格</a> · <a href="STATUS.md">状态</a></span></div>
+          <div class="content">
+            <header class="page-head"><div><h1>常用链接</h1><p>从当前项目状态栏打开自己的链接面板，保存项目级网页地址，并沿 Orca 端口入口的 popover 行为复用。</p></div><button class="btn btn-secondary" id="resetBtn" type="button">重置场景</button></header>
+            <p class="shell-note"><strong>原型注释：复用当前 BW 外壳。</strong> Rail、项目对象侧栏、版本目录、状态栏和页头按当前 BW/Orca 层级表达；本特性只新增状态栏「常用链接」入口和面板。示例链接与壳元数据分开，刷新后恢复演示数据。</p>
+            <div class="feature-grid">
+              <section class="card feature-card"><h2>状态栏入口</h2><p>点右下角「常用链接」图标打开面板；「端口」保留为 Orca 原生入口的同构参照，面板同一时刻只打开一个。</p><div class="hint-list"><span><b>添加 / 编辑</b> 名称与 http/https 地址，重复地址和账号密码会显示失败原因。</span><span><b>打开</b> 点击链接行提示将在 BW 内置浏览器打开。</span><span><b>复制 / 删除</b> 行内 Tooltip 按钮；删除需要确认。</span><span><b>项目级</b> 当前项目单独保存链接，不扫描端口、不探活。</span></div></section>
+              <aside class="card side-note"><h3>原型注释：交互范围</h3><p>本页可走通面板开合、添加、编辑、复制、删除确认、地址校验、空态和重置。演示服务不真正打开浏览器。</p><p><strong>真实代码复用：</strong>状态栏 segment、popover 和设置页表单的 Orca 原语形态。</p><p><strong>仍需验证：</strong>Electron 状态栏挂载、项目持久化和内置浏览器路由。</p></aside>
             </div>
           </div>
         </div>
-
-        <!-- notes -->
-        <div class="notes">
-          <div class="card">
-            <p class="k">这是什么 / 为什么这么做</p>
-            <ul style="margin-bottom:0">
-              <li><b>与端口同构</b>：底部状态栏「图标 + 计数」入口 → 点开自己的 popover 面板；位置、尺寸、行结构都与 <code>PortsStatusSegment</code> 一致（人评审意见，2026-11-13）。</li>
-              <li><b>不再做</b>：右栏子分区、另开的独立窗口——都已放弃。</li>
-              <li><b>只做「端口之外」</b>：本地服务识别与打开已由 Orca 端口面板覆盖，本特性不重复造扫描器。</li>
-              <li><b>项目级保存</b>：不同项目存不同链接；重开 BW 仍在。</li>
-              <li><b>克制、隔离</b>：不探活、不自愈、不显示假的“状态灯”，避免退化成泛用书签管理器。</li>
-            </ul>
-          </div>
-
-          <div class="card">
-            <p class="k">可评审的交互</p>
-            <div class="decisions">
-              <div>· <b>入口</b>：状态栏图标 + 计数；点击开合面板。</div>
-              <div>· <b>添加 / 编辑</b>：名称 + 地址；地址须 http/https、不能带账号密码、不能与已有重复。</div>
-              <div>· <b>打开</b>：直接点击该行即在内置浏览器打开；hover 出「复制 / 编辑 / 删除」。</div>
-              <div>· <b>复制 / 删除</b>：行内图标即时操作。</div>
-              <div>· <b>分组</b>：按项目分组，显示当前项目及其链接数。</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <p class="k">操作记录</p>
-            <div class="log" id="log"></div>
-          </div>
-        </div>
-      </div>
+        <footer class="statusbar" aria-label="Workbench 状态栏"><span>当前项目</span><span class="statusbar-spacer"></span><button class="status-segment" id="portsSeg" type="button" aria-expanded="false" title="端口（Orca 原生入口）">⌁ <span class="count">12</span></button><button class="status-segment" id="linksSeg" type="button" aria-expanded="false" title="常用链接">↗ <span class="count" id="linksCount">0</span></button>
+          <div class="popover" id="linksPopover" hidden role="dialog" aria-label="常用链接"><div class="pop-head"><strong>常用链接</strong><span><small id="popCount">0</small> <button class="btn btn-ghost" id="addBtn" type="button">添加</button></span></div><div class="link-list" id="linksList"></div></div>
+          <div class="popover" id="portsPopover" hidden role="dialog" aria-label="端口"><div class="pop-head"><strong>端口</strong><small>Orca 原生入口</small></div><div class="empty">端口列表由当前工作区真实读数提供。</div></div>
+        </footer>
+      </section>
     </div>
-
-    <!-- add/edit dialog -->
-    <dialog class="modal" id="dlg">
-      <form method="dialog" id="linkForm">
-        <h2 id="dlgTitle">添加常用链接</h2>
-        <p class="sub">项目级保存 · 保存后仅用于本原型演示</p>
-        <label for="fName">名称</label>
-        <input id="fName" placeholder="例如 内部文档" autocomplete="off" />
-        <label for="fUrl">地址</label>
-        <input id="fUrl" placeholder="https://example.com" autocomplete="off" />
-        <div class="form-err" id="fErr" style="display:none"></div>
-        <div class="modal-foot">
-          <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
-          <button type="submit" class="btn btn-primary" id="saveBtn">保存</button>
-        </div>
-      </form>
-    </dialog>
-
-    <div class="toast" id="toast"></div>
-
-    <script>
-      const DEFAULT_LINKS = [
-        { id: 'l1', name: '内部设计规范', url: 'https://design.internal/docs' },
-        { id: 'l2', name: '构建流水线', url: 'https://ci.internal/pipelines' },
-        { id: 'l3', name: '团队看板', url: 'https://board.internal/team' }
-      ];
-      let links = [];
-      let editingId = null;
-
-      const el = (id) => document.getElementById(id);
-      const linksList = el('linksList');
-      const linksCount = el('linksCount');
-      const popCount = el('popCount');
-      const groupCount = el('groupCount');
-      const linksPopover = el('linksPopover');
-      const portsPopover = el('portsPopover');
-      const linksSeg = el('linksSeg');
-      const portsSeg = el('portsSeg');
-      const dlg = el('dlg');
-      const fName = el('fName');
-      const fUrl = el('fUrl');
-      const fErr = el('fErr');
-      const logBox = el('log');
-
-      function reset() {
-        links = DEFAULT_LINKS.map((l) => ({ ...l }));
-        editingId = null;
-        logBox.innerHTML = '';
-        closePopovers();
-        render();
-      }
-
-      function logLine(msg) {
-        const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-        const line = document.createElement('div');
-        line.innerHTML = '<span class="t">' + t + '</span>' + msg;
-        logBox.appendChild(line);
-        logBox.scrollTop = logBox.scrollHeight;
-      }
-
-      function toast(msg) {
-        const t = el('toast');
-        t.textContent = msg;
-        t.classList.add('show');
-        clearTimeout(toast._t);
-        toast._t = setTimeout(() => t.classList.remove('show'), 1900);
-      }
-
-      function escapeHtml(s) {
-        return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-      }
-
-      function displayUrl(u) {
-        try {
-          const url = new URL(u);
-          return url.host + (url.pathname === '/' ? '' : url.pathname);
-        } catch {
-          return u;
-        }
-      }
-
-      function icon(paths, size) {
-        return '<svg width="' + (size || 13) + '" height="' + (size || 13) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + paths + '</svg>';
-      }
-
-      function render() {
-        const n = String(links.length);
-        linksCount.textContent = n;
-        popCount.textContent = n;
-        groupCount.textContent = n;
-        linksList.innerHTML = '';
-
-        if (links.length === 0) {
-          linksList.innerHTML =
-            '<div class="empty"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><h3>还没有常用链接</h3><p>点上方「添加」保存一个网页地址。</p></div>';
-          return;
-        }
-
-        for (const l of links) {
-          const row = document.createElement('div');
-          row.className = 'lrow';
-
-          const glyph = document.createElement('div');
-          glyph.className = 'glyph';
-          glyph.innerHTML = icon('<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>', 13);
-
-          const main = document.createElement('div');
-          main.className = 'main';
-          main.innerHTML = '<div class="lname">' + escapeHtml(l.name) + '</div><div class="lurl">' + escapeHtml(displayUrl(l.url)) + '</div>';
-
-          const acts = document.createElement('div');
-          acts.className = 'acts';
-
-          const copy = document.createElement('button');
-          copy.className = 'act';
-          copy.title = '复制地址';
-          copy.innerHTML = icon('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>');
-          copy.addEventListener('click', (e) => {
-            e.stopPropagation();
-            try { navigator.clipboard && navigator.clipboard.writeText(l.url); } catch {}
-            toast('已复制地址');
-            logLine('复制：' + escapeHtml(l.url));
-          });
-
-          const edit = document.createElement('button');
-          edit.className = 'act';
-          edit.title = '编辑';
-          edit.innerHTML = icon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>');
-          edit.addEventListener('click', (e) => { e.stopPropagation(); openDialog(l); });
-
-          const del = document.createElement('button');
-          del.className = 'act danger';
-          del.title = '删除';
-          del.innerHTML = icon('<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>');
-          del.addEventListener('click', (e) => { e.stopPropagation(); deleteLink(l); });
-
-          acts.append(copy, edit, del);
-          row.title = '在内置浏览器打开 ' + l.url;
-          row.addEventListener('click', () => openLink(l));
-          row.append(glyph, main, acts);
-          linksList.appendChild(row);
-        }
-      }
-
-      function openLink(l) {
-        toast('将在 BW 内置浏览器打开：' + l.url);
-        logLine('打开：' + escapeHtml(l.name) + ' → ' + escapeHtml(l.url));
-      }
-
-      function deleteLink(l) {
-        links = links.filter((x) => x.id !== l.id);
-        logLine('删除：' + escapeHtml(l.name));
-        render();
-      }
-
-      function openDialog(editTarget) {
-        editingId = editTarget ? editTarget.id : null;
-        el('dlgTitle').textContent = editTarget ? '编辑常用链接' : '添加常用链接';
-        fName.value = editTarget ? editTarget.name : '';
-        fUrl.value = editTarget ? editTarget.url : '';
-        fName.classList.remove('err');
-        fUrl.classList.remove('err');
-        fErr.style.display = 'none';
-        dlg.showModal();
-        setTimeout(() => fName.focus(), 30);
-      }
-
-      function validate() {
-        const name = fName.value.trim();
-        const raw = fUrl.value.trim();
-        if (!name) return { err: '请填写名称。', focus: fName };
-        let url;
-        try { url = new URL(raw); } catch { return { err: '请输入完整地址，例如 https://example.com。', focus: fUrl }; }
-        if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
-          return { err: '地址需使用 http/https，且不能包含账号密码。', focus: fUrl };
-        const normalized = url.href.replace(/\/$/, '');
-        if (links.some((x) => x.id !== editingId && x.url.replace(/\/$/, '') === normalized))
-          return { err: '这个地址已在常用链接中，请勿重复添加。', focus: fUrl };
-        return { name, url: normalized };
-      }
-
-      el('linkForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const v = validate();
-        if (v.err) {
-          fErr.textContent = v.err;
-          fErr.style.display = 'block';
-          v.focus.classList.add('err');
-          v.focus.focus();
-          return;
-        }
-        if (editingId) {
-          const l = links.find((x) => x.id === editingId);
-          l.name = v.name;
-          l.url = v.url;
-          logLine('编辑：' + escapeHtml(v.name));
-        } else {
-          links.push({ id: 'l' + Date.now(), name: v.name, url: v.url });
-          logLine('添加：' + escapeHtml(v.name));
-        }
-        dlg.close();
-        render();
-      });
-
-      el('cancelBtn').addEventListener('click', () => dlg.close());
-      el('addBtn').addEventListener('click', (e) => { e.stopPropagation(); openDialog(null); });
-      el('resetBtn').addEventListener('click', reset);
-
-      /* ── popover open/close：与端口一致，同一时刻只开一个 ── */
-      function closePopovers() {
-        linksPopover.hidden = true;
-        portsPopover.hidden = true;
-        linksSeg.setAttribute('aria-expanded', 'false');
-        portsSeg.setAttribute('aria-expanded', 'false');
-      }
-      function toggle(pop, segment) {
-        const willOpen = pop.hidden;
-        closePopovers();
-        if (willOpen) { pop.hidden = false; segment.setAttribute('aria-expanded', 'true'); }
-      }
-      linksSeg.addEventListener('click', (e) => { e.stopPropagation(); toggle(linksPopover, linksSeg); });
-      portsSeg.addEventListener('click', (e) => { e.stopPropagation(); toggle(portsPopover, portsSeg); });
-      linksPopover.addEventListener('click', (e) => e.stopPropagation());
-      portsPopover.addEventListener('click', (e) => e.stopPropagation());
-      document.addEventListener('click', (e) => {
-        // 添加/编辑弹窗内的点击不关闭入口——保存/取消后常用链接面板保持展开
-        if (dlg.contains(e.target)) return;
-        closePopovers();
-      });
-
-      reset();
-    </script>
-  </body>
+  </main>
+  <dialog id="linkDialog"><form method="dialog" id="linkForm"><h2 id="dialogTitle">添加常用链接</h2><p>项目级保存 · 本页只模拟状态</p><label for="nameInput">名称</label><input id="nameInput" autocomplete="off" placeholder="例如 内部文档" /><label for="urlInput">地址</label><input id="urlInput" autocomplete="off" placeholder="https://example.com" /><div class="form-error" id="formError" hidden></div><div class="dialog-actions"><button class="btn btn-secondary" id="cancelBtn" type="button">取消</button><button class="btn btn-primary" type="submit">保存</button></div></form></dialog>
+  <dialog id="confirmDialog"><form method="dialog"><h2>删除常用链接？</h2><p id="confirmText"></p><div class="dialog-actions"><button class="btn btn-secondary" value="cancel">取消</button><button class="btn btn-danger" id="confirmDelete" value="confirm">删除</button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module">import { CURRENT_BW_SHELL } from '../prototype-shell-meta.js'; const shell=document.querySelector('[data-shell]'); if(shell) shell.dataset.shellSource=CURRENT_BW_SHELL.source;</script>
+  <script>
+    const DEMO_LINKS = [{ id:'l1', name:'内部设计规范', url:'https://design.internal/docs' }, { id:'l2', name:'构建流水线', url:'https://ci.internal/pipelines' }, { id:'l3', name:'团队看板', url:'https://board.internal/team' }]
+    let links=[]; let editingId=null; let deleteId=null
+    const $=(id)=>document.getElementById(id); const list=$('linksList'); const linksSeg=$('linksSeg'); const portsSeg=$('portsSeg'); const linksPopover=$('linksPopover'); const portsPopover=$('portsPopover'); const linkDialog=$('linkDialog'); const confirmDialog=$('confirmDialog')
+    const escapeHtml=(value)=>String(value).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const toast=(text)=>{ const node=$('toast'); node.textContent=text; node.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>node.classList.remove('show'),1800) }
+    const displayUrl=(value)=>{ try { const url=new URL(value); return url.host+(url.pathname==='/'?'':url.pathname) } catch { return value } }
+    function closePopovers(){ linksPopover.hidden=true; portsPopover.hidden=true; linksSeg.setAttribute('aria-expanded','false'); portsSeg.setAttribute('aria-expanded','false') }
+    function render(){ $('linksCount').textContent=links.length; $('popCount').textContent=links.length; list.innerHTML=''; if(!links.length){ list.innerHTML='<div class="empty">还没有常用链接<br>点击「添加」保存一个网页地址。</div>'; return } links.forEach((link)=>{ const row=document.createElement('div'); row.className='link-row'; row.tabIndex=0; row.title='在 BW 内置浏览器打开 '+link.url; row.innerHTML='<span aria-hidden="true">↗</span><span><span class="name">'+escapeHtml(link.name)+'</span><br><span class="url">'+escapeHtml(displayUrl(link.url))+'</span></span><span class="row-actions"><button type="button" data-action="copy" title="复制地址" aria-label="复制地址">⧉</button><button type="button" data-action="edit" title="编辑" aria-label="编辑">✎</button><button type="button" data-action="delete" title="删除" aria-label="删除">×</button></span>'; row.addEventListener('click',()=>toast('将在 BW 内置浏览器打开：'+link.url)); row.addEventListener('keydown',(event)=>{if(event.key==='Enter') row.click()}); row.querySelectorAll('[data-action]').forEach((button)=>button.addEventListener('click',(event)=>{event.stopPropagation(); const action=button.dataset.action; if(action==='copy'){navigator.clipboard?.writeText(link.url); toast('已复制地址')} else if(action==='edit'){ openDialog(link) } else if(action==='delete'){ requestDelete(link) }})); list.appendChild(row) }) }
+    function openDialog(link){ editingId=link?.id||null; $('dialogTitle').textContent=link?'编辑常用链接':'添加常用链接'; $('nameInput').value=link?.name||''; $('urlInput').value=link?.url||''; $('formError').hidden=true; linkDialog.showModal(); $('nameInput').focus() }
+    function requestDelete(link){ deleteId=link.id; $('confirmText').textContent='将删除“'+link.name+'”，演示数据会立即移除。'; confirmDialog.showModal() }
+    function validate(){ const name=$('nameInput').value.trim(); const raw=$('urlInput').value.trim(); if(!name) return '请填写名称。'; let url; try{url=new URL(raw)}catch{return '请输入完整地址，例如 https://example.com。'} if(!['http:','https:'].includes(url.protocol)||url.username||url.password) return '地址需使用 http/https，且不能包含账号密码。'; const normalized=url.href.replace(/\/$/,''); if(links.some((item)=>item.id!==editingId&&item.url.replace(/\/$/,'')===normalized)) return '这个地址已存在，请勿重复添加。'; return {name,url:normalized} }
+    $('linkForm').addEventListener('submit',(event)=>{event.preventDefault(); const value=validate(); if(typeof value==='string'){ $('formError').textContent=value; $('formError').hidden=false; return } if(editingId){const link=links.find((item)=>item.id===editingId); link.name=value.name; link.url=value.url; toast('已更新常用链接')}else{links.push({id:'l'+Date.now(),...value}); toast('已添加常用链接')} linkDialog.close(); render()})
+    $('cancelBtn').addEventListener('click',()=>linkDialog.close()); $('addBtn').addEventListener('click',()=>openDialog()); $('confirmDelete').addEventListener('click',(event)=>{event.preventDefault(); links=links.filter((link)=>link.id!==deleteId); confirmDialog.close(); render(); toast('已删除常用链接')}); $('resetBtn').addEventListener('click',()=>{links=DEMO_LINKS.map((link)=>({...link})); closePopovers(); render(); toast('已恢复演示场景')})
+    function toggle(popover,segment){const willOpen=popover.hidden; closePopovers(); if(willOpen){popover.hidden=false; segment.setAttribute('aria-expanded','true')}} linksSeg.addEventListener('click',(event)=>{event.stopPropagation();toggle(linksPopover,linksSeg)}); portsSeg.addEventListener('click',(event)=>{event.stopPropagation();toggle(portsPopover,portsSeg)}); document.addEventListener('click',(event)=>{if(!event.target.closest('.statusbar')) closePopovers()})
+    document.querySelectorAll('[data-nav]').forEach((button)=>button.addEventListener('click',()=>toast('示意：'+button.dataset.nav+' 是当前 BW 原生入口，本页不切换真实 Electron 页面。')))
+    links=DEMO_LINKS.map((link)=>({...link})); render()
+  </script>
+</body>
 </html>
