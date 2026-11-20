@@ -9,7 +9,9 @@ import type {
   ReviewPeerTarget
 } from '../../../../../shared/workbench/pr-review-request'
 
+// oxlint-disable-next-line typescript/no-redundant-type-constituents -- zod-inferred request types are resolved by the runtime schema; the intersection adds the persisted identity fields.
 export type PrototypeReviewIncomingNote = PrototypeReviewIncomingRequest & { id: string }
+// oxlint-disable-next-line typescript/no-redundant-type-constituents -- zod-inferred request types are resolved by the runtime schema; the intersection adds delivery metadata.
 export type PrototypeReviewOutgoingNote = PrototypeReviewRequest & {
   id: string
   deliveries: ReviewPeerDelivery[]

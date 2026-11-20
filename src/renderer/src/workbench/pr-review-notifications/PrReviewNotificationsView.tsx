@@ -58,6 +58,7 @@ export function PrReviewNotificationsView({
   missingProject: (note: ReviewIncomingNote) => boolean
   prototypeNotifications: PrototypeReviewState
   onOpenPrototype: (
+    // oxlint-disable-next-line typescript/no-redundant-type-constituents -- both note shapes are concrete zod-inferred request records with different persisted metadata.
     note: PrototypeReviewIncomingNote | PrototypeReviewOutgoingNote
   ) => Promise<void>
   onDeletePrototype: (id: string) => void
