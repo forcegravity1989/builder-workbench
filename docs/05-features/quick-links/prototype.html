@@ -222,16 +222,15 @@
     </style>
   </head>
   <body>
-    <div class="bw-prototype-shell">
-      <header class="bw-prototype-topbar"><div class="bw-prototype-brand"><span class="bw-prototype-brand-mark">W</span><span>Workbench</span></div><span class="bw-prototype-context">Builder Workbench</span><span class="bw-prototype-top-actions">当前项目 · BW · 本机</span></header>
-      <div class="bw-prototype-layout">
-        <aside class="bw-prototype-sidebar" aria-label="Workbench 导航">
-          <section><p class="bw-prototype-sidebar-label">项目</p><nav class="bw-prototype-nav"><a href="#">⌂ <span>项目墙</span></a><a href="#">▦ <span>项目总览</span></a></nav></section>
-          <section><p class="bw-prototype-sidebar-label">状态栏入口</p><nav class="bw-prototype-nav"><a href="#" aria-current="page">↗ <span>常用链接</span></a><a href="#">◉ <span>端口</span></a></nav></section>
-          <div class="bw-prototype-sidebar-card"><strong>当前项目</strong><small>Builder Workbench</small><small>链接内容只在本页示例中生效</small></div>
-        </aside>
-        <main class="bw-prototype-main">
-          <div class="page">
+    <header class="prototype-review-bar" aria-label="原型评审信息">
+      <span class="prototype-review-title"><strong>快速链接</strong><span class="prototype-review-path">BW 状态栏 → 常用链接</span></span>
+      <span class="prototype-review-badge">复用当前 BW 外壳</span>
+      <span class="prototype-review-badge">示例数据 · 仅本页内存</span>
+      <nav class="prototype-review-links" aria-label="特性资料">
+        <a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a>
+      </nav>
+    </header>
+    <div class="page">
       <div class="head">
         <div>
           <h1>常用链接 <span class="tag tag-neutral">交互原型 · 状态栏入口</span></h1>
@@ -242,8 +241,6 @@
           重置场景
         </button>
       </div>
-
-      <p class="bw-prototype-review-note">原型注释：复用当前 BW 外壳；状态栏和弹出面板是本特性变化，链接、端口和打开动作都是本页示例，不会写入真实浏览器。</p>
 
       <div class="banner">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
@@ -613,9 +610,5 @@
 
       reset();
     </script>
-          </div>
-        </main>
-      </div>
-    </div>
   </body>
 </html>

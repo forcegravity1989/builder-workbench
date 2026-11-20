@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../../04-design-system/styles.css">
   <style>
     html, body { min-height: 100%; }
-    body { margin: 0; padding: 0 0 60px; }
+    body { max-width: 880px; margin: 0 auto; padding: 0 20px 60px; }
     [hidden] { display: none !important; }
     button, input, select { font: inherit; }
 
@@ -74,17 +74,16 @@
   </style>
 </head>
 <body>
-  <div class="bw-prototype-shell">
-    <header class="bw-prototype-topbar"><div class="bw-prototype-brand"><span class="bw-prototype-brand-mark">W</span><span>Workbench</span></div><span class="bw-prototype-context">Builder Workbench</span><span class="bw-prototype-top-actions">当前项目 · BW · 本机</span></header>
-    <div class="bw-prototype-layout">
-      <aside class="bw-prototype-sidebar" aria-label="Workbench 导航">
-        <section><p class="bw-prototype-sidebar-label">项目</p><nav class="bw-prototype-nav"><a href="#">⌂ <span>项目墙</span></a><a href="#">▦ <span>项目总览</span></a></nav></section>
-        <section><p class="bw-prototype-sidebar-label">设置</p><nav class="bw-prototype-nav"><a href="#" aria-current="page">⚙ <span>集成</span></a><a href="#">↗ <span>常用链接</span></a></nav></section>
-        <div class="bw-prototype-sidebar-card"><strong>当前项目</strong><small>Builder Workbench</small><small>集成状态来自本机 CLI</small></div>
-      </aside>
-      <main class="bw-prototype-main">
-        <header class="page-head"><div><div class="task-breadcrumb">Builder Workbench / 设置 / 集成</div><h1>集成</h1><p class="page-desc">查看 BW 依赖的 GitHub、CodeHub、WeLink 和 CloudBuild 连接状态，并从卡片进入安装或登录。</p></div></header>
-        <p class="bw-prototype-review-note">原型注释：复用当前 BW 外壳；卡片、状态和终端为示例快照，右侧切换只用于评审，不代表真实 CLI 已安装或登录。</p>
+
+  <header class="prototype-review-bar" aria-label="原型评审信息">
+    <span class="prototype-review-title"><strong>连接器</strong><span class="prototype-review-path">BW 设置 → 集成</span></span>
+    <span class="prototype-review-badge">复用当前 BW 外壳</span>
+    <span class="prototype-review-badge">示例数据 · 评审切换</span>
+    <nav class="prototype-review-links" aria-label="特性资料">
+      <a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a>
+    </nav>
+  </header>
+
   <div class="preview">
     <strong>集成页三卡收敛</strong>
     <span class="group">
@@ -223,9 +222,6 @@
     <p><strong>评审说明</strong> — 当前壳：Workbench 集成页；卡片和命令状态是本页示例快照。每张卡右上角的下拉是评审用状态切换，不属产品 UI。点「安装」「登录」在开发屏弹一个终端页签（演示假体），命令已注入执行，按 Enter 模拟完成；gh 的「安装」跳 cli.github.com（现有外链行为），codehub 的安装口径待内网补、如实占位。命令结束后回卡上点「重新检查」翻状态。远端服务器范围下不给安装 / 登录按钮。</p>
   </div>
 
-      </main>
-    </div>
-  </div>
   <script>
     var root = document.documentElement
 
