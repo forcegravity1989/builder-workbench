@@ -44,11 +44,13 @@ function toRuntimeAccessGrant(device: DeviceEntry): RuntimeAccessGrant {
   return {
     deviceId: device.deviceId,
     name: device.name,
+    ...(device.avatar ? { avatar: device.avatar } : {}),
     createdAt: device.pairedAt,
     lastSeenAt: device.lastSeenAt > 0 ? device.lastSeenAt : null,
     ...(effectiveRuntimeAccessMode(device) === 'team-read'
-      ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
-      : {})
+      ? { accessMode: 'team-read' as const }
+      : { accessMode: 'full' as const }),
+    ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
   }
 }
 
@@ -163,6 +165,8 @@ export function registerMobileHandlers(
         reach?: RuntimePairingReach
         accessMode?: RuntimeAccessMode
         teamBinding?: RuntimeTeamBinding
+        name?: string
+        avatar?: string
       }
     ) => {
       const ip = args?.address ?? (await getDefaultPairingAddress(getDefaultRouteInterfaceNames))
@@ -196,10 +200,19 @@ export function registerMobileHandlers(
 
       // Why: web/desktop runtime clients need full runtime access, not the
       // mobile allowlist used by phone QR pairing.
+      const displayName =
+        typeof args?.name === 'string' && args.name.trim().length > 0 && args.name.length <= 256
+          ? args.name.trim()
+          : `Runtime ${new Date().toLocaleDateString()}`
+      const displayAvatar =
+        typeof args?.avatar === 'string' && args.avatar.length > 0 && args.avatar.length <= 4096
+          ? args.avatar
+          : undefined
       const offer = rpcServer.createPairingOffer({
         address: ip,
         rotate: args?.rotate,
-        name: `Runtime ${new Date().toLocaleDateString()}`,
+        name: displayName,
+        ...(displayAvatar ? { avatar: displayAvatar } : undefined),
         scope: 'runtime',
         // Why: a grant that only ever pointed at loopback must not make the next launch bind every
         // interface when its local client reconnects (that would restore the exposure one restart later).

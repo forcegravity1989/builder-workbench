@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CircleHelp, Link2, LoaderCircle, Plus, RefreshCw, Save, UsersRound, X } from 'lucide-react'
+import { CircleHelp, Link2, LoaderCircle, Plus, RefreshCw, Save, Settings, UsersRound, X } from 'lucide-react'
 import type { TeamDirectory } from '../../../shared/team-directory'
 import { Button } from '@/components/ui/button'
 import {
@@ -203,7 +203,11 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   }
 
   const generateHostAddress = async (memberId: string): Promise<void> => {
-    if (!directory?.team_group_id || currentMemberId !== memberId) {
+    const host = directory?.hosts.find((candidate) => candidate.member_id === memberId)
+    if (!directory?.team_group_id || currentMemberId !== memberId || !host) {
+      return
+    }
+    if (host.orca_endpoint) {
       return
     }
     setGeneratingHostId(memberId)
@@ -213,10 +217,12 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
         // A fresh team-read link is the only link this host can safely mint.
         // The link is written to the team directory; this host must never
         // verify its own pairing code as a remote environment.
-        rotate: true,
+        rotate: false,
         reach: 'network',
         accessMode: 'team-read',
-        teamBinding: { teamGroupId: directory.team_group_id, memberId }
+        teamBinding: { teamGroupId: directory.team_group_id, memberId },
+        name: host.name ?? memberId,
+        ...(host.avatar ? { avatar: host.avatar } : {})
       })
       if (!result.available) {
         throw new Error(result.guidance ?? '当前主机无法生成 Orca 共享地址。')
@@ -254,26 +260,28 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setError('未能确认当前 WeLink 成员身份，请重新读取团队目录后重试。')
       return
     }
-    if (directory.projects.some((project) => project.repo_id === identity.canonicalKey)) {
-      setError('这个项目已经登记在团队目录中。')
-      return
-    }
+    const alreadyRegistered = directory.projects.some(
+      (project) => project.repo_id === identity.canonicalKey
+    )
     setSaving(true)
     setError(null)
-    const nextDirectory: TeamDirectory = {
-      ...directory,
-      projects: [
-        ...directory.projects,
-        {
-          repo_id: identity.canonicalKey,
-          name: repo.displayName,
-          repository: identity.remoteUrl,
-          sources: [currentMemberId]
+    const nextDirectory: TeamDirectory = alreadyRegistered
+      ? directory
+      : {
+          ...directory,
+          projects: [
+            ...directory.projects,
+            {
+              repo_id: identity.canonicalKey,
+              name: repo.displayName,
+              repository: identity.remoteUrl
+            }
+          ]
         }
-      ]
-    }
     try {
-      await window.api.teamCollaboration.writeDirectory(nextDirectory)
+      if (!alreadyRegistered) {
+        await window.api.teamCollaboration.writeDirectory(nextDirectory)
+      }
       const updated = await updateRepo(
         repo.id,
         { projectVisibility: 'team' },
@@ -300,12 +308,9 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
         (repo) =>
           getRepoExecutionHostId(repo) === 'local' &&
           Boolean(repo.gitRemoteIdentity?.canonicalKey) &&
-          !directory.projects.some((project) => project.repo_id === repo.gitRemoteIdentity?.canonicalKey)
+          repo.projectVisibility !== 'team'
       )
     : []
-  const memberName = (memberId: string): string =>
-    directory?.hosts.find((host) => host.member_id === memberId)?.name ?? memberId
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="max-w-3xl">
@@ -412,88 +417,127 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
                     <thead className="border-b border-border/40 text-left text-xs text-muted-foreground">
                       <tr>
                         <th className="px-3 py-2 font-medium">成员</th>
-                        <th className="px-3 py-2 font-medium">身份</th>
                         <th className="px-3 py-2 font-medium">主机与 Orca 地址</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {directory.hosts.map((host) => {
-                        const isCurrent = currentMemberId === host.member_id
-                        const isLeader = /owner|leader/i.test(host.member_type ?? '')
-                        return (
-                          <tr key={host.member_id} className="border-b border-border/40 last:border-b-0">
-                            <td className="px-3 py-3 align-top">
-                              <div className="flex items-center gap-2">
-                                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                                  {(host.avatar ?? host.name ?? host.member_id).slice(0, 1)}
-                                </span>
-                                <span className="min-w-0">
-                                  <span className="block font-medium">{host.name ?? host.member_id}</span>
-                                  <span className="block text-xs text-muted-foreground">{host.member_id}</span>
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-3 py-3 align-top">
-                              <span className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                                {isCurrent ? '本机' : '非本机'}
-                              </span>
-                              {isLeader ? <span className="ml-1 text-xs text-muted-foreground">群主</span> : null}
-                            </td>
-                            <td className="px-3 py-3 align-top">
-                              <div className="space-y-2">
+                      {[...directory.hosts]
+                        .sort((a, b) => {
+                          const aLeader = /owner|leader/i.test(a.member_type ?? '')
+                          const bLeader = /owner|leader/i.test(b.member_type ?? '')
+                          return Number(bLeader) - Number(aLeader)
+                        })
+                        .map((host) => {
+                          const isCurrent = currentMemberId === host.member_id
+                          const isLeader = /owner|leader/i.test(host.member_type ?? '')
+                          return (
+                            <tr key={host.member_id} className="border-b border-border/40 last:border-b-0">
+                              <td className="px-3 py-3 align-top">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium">{host.name ?? host.member_id}的主机</span>
-                                  <span className="text-xs text-muted-foreground">{host.host_id ?? '未登记'}</span>
+                                  {host.avatar ? (
+                                    <img
+                                      src={host.avatar}
+                                      alt=""
+                                      className="size-7 shrink-0 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                                      {(host.name ?? host.member_id).slice(0, 1)}
+                                    </span>
+                                  )}
+                                  <span className="min-w-0">
+                                    <span className="flex items-center gap-1.5 font-medium">
+                                      {host.name ?? host.member_id}
+                                      {isLeader ? (
+                                        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-normal">
+                                          群主
+                                        </span>
+                                      ) : null}
+                                      {isCurrent ? (
+                                        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-normal">
+                                          本机
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                  </span>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Input
-                                    className="min-w-48 flex-1"
-                                    aria-label={`${host.name ?? host.member_id} 的 Orca 地址`}
-                                    value={host.orca_endpoint ?? ''}
-                                    placeholder="Orca 共享地址"
-                                    onChange={(event) => {
-                                      const endpoint = event.target.value
-                                      setDirectory((current) =>
-                                        current
-                                          ? {
-                                              ...current,
-                                              hosts: current.hosts.map((candidate) =>
-                                                candidate.member_id === host.member_id
-                                                  ? { ...candidate, orca_endpoint: endpoint || undefined }
-                                                  : candidate
-                                              )
-                                            }
-                                          : current
-                                      )
-                                    }}
-                                  />
-                                  {isCurrent ? (
-                                    <>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => void generateHostAddress(host.member_id)}
-                                        disabled={generatingHostId !== null}
-                                      >
-                                        {generatingHostId === host.member_id ? (
-                                          <LoaderCircle className="size-3.5 animate-spin" />
-                                        ) : (
-                                          <Link2 className="size-3.5" />
-                                        )}
-                                        {host.orca_endpoint ? '一键填入' : '一键生成并填入'}
-                                      </Button>
-                                      <Button type="button" variant="ghost" size="sm" onClick={openSharingSettings}>
-                                        共享与授权
-                                      </Button>
-                                    </>
-                                  ) : null}
+                              </td>
+                              <td className="px-3 py-3 align-top">
+                                <div className="space-y-2">
+                                  <div className="font-medium" title={host.host_id ?? undefined}>
+                                    {host.name ?? host.member_id}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Input
+                                      className="min-w-56 flex-1"
+                                      aria-label={`${host.name ?? host.member_id} 的 Orca 地址`}
+                                      value={host.orca_endpoint ?? ''}
+                                      placeholder="Orca 共享地址"
+                                      onChange={(event) => {
+                                        const endpoint = event.target.value
+                                        setDirectory((current) =>
+                                          current
+                                            ? {
+                                                ...current,
+                                                hosts: current.hosts.map((candidate) =>
+                                                  candidate.member_id === host.member_id
+                                                    ? { ...candidate, orca_endpoint: endpoint || undefined }
+                                                    : candidate
+                                                )
+                                              }
+                                            : current
+                                        )
+                                      }}
+                                    />
+                                    {isCurrent ? (
+                                      <>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="icon-sm"
+                                              onClick={() => void generateHostAddress(host.member_id)}
+                                              disabled={generatingHostId !== null}
+                                              aria-label={
+                                                host.orca_endpoint
+                                                  ? '一键填入 Orca 地址'
+                                                  : '一键生成并填入 Orca 地址'
+                                              }
+                                            >
+                                              {generatingHostId === host.member_id ? (
+                                                <LoaderCircle className="size-3.5 animate-spin" />
+                                              ) : (
+                                                <Link2 className="size-3.5" />
+                                              )}
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            {host.orca_endpoint ? '一键填入' : '一键生成并填入'}
+                                          </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="icon-sm"
+                                              onClick={openSharingSettings}
+                                              aria-label="共享与授权"
+                                            >
+                                              <Settings className="size-3.5" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>共享与授权</TooltipContent>
+                                        </Tooltip>
+                                      </>
+                                    ) : null}
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
+                              </td>
+                            </tr>
+                          )
+                        })}
                     </tbody>
                   </table>
                 </div>
@@ -562,11 +606,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
                     <div className="min-w-0">
                       <div className="font-medium">{project.name ?? project.repo_id}</div>
                       <div className="truncate text-xs text-muted-foreground">{project.repository ?? project.repo_id}</div>
-                      <div className="text-xs text-muted-foreground">
-                        已从项目墙合并 · {project.sources.length > 0 ? project.sources.map(memberName).join('、') : '尚未读取来源'}
-                      </div>
                     </div>
-                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">自动同步</span>
                   </div>
                 ))
               )}
@@ -574,7 +614,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
             <div className="flex items-center justify-end border-t border-border/60 pt-3">
               <Button type="button" onClick={() => void saveDirectory()} disabled={saving || !spaceId.trim()}>
                 {saving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-                同步到群空间
+                保存到群空间
               </Button>
             </div>
             {error ? <p className="text-sm text-destructive">{error}</p> : null}

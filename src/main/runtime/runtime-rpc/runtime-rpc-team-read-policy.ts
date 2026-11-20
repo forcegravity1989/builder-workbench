@@ -101,6 +101,8 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   'stats.summary',
   'status.get',
   'repo.list',
+  'project.list',
+  'projectHostSetup.list',
   'projectGroup.list',
   'folderWorkspace.list',
   'codehub.viewer',
@@ -136,6 +138,7 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   'files.list',
   'files.stat',
   'files.search',
+  'files.searchPaths',
   'files.readPreview',
   'files.readDocPreview',
   'files.openDiff',
@@ -146,11 +149,16 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   'files.listMarkdownDocuments',
   'files.pathsExist',
   'files.watch',
+  'files.unwatch',
+  'files.resolveTerminalPath',
   'worktree.ps',
   'worktree.list',
   'worktree.show',
   'worktree.detectedList',
   'worktree.lineageList',
+  'worktree.listRetiredNames',
+  'worktree.resolvePrBase',
+  'worktree.resolveMrBase',
   'git.branchCompare',
   'git.branchDiff',
   'git.commitCompare',
@@ -165,11 +173,65 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   'git.remoteCommitUrl',
   'git.submoduleStatus',
   'git.upstreamStatus',
-  'codehub.listComments'
+  'codehub.listComments',
+  'codehub.listTasks',
+  'codehub.listLabels',
+  'codehub.listMembers',
+  'codehub.listPipelines',
+  'codehub.mrForBranch',
+  'codehub.viewTask',
+  'codehub.mrChecks',
+  'codehub.mrChanges',
+  'github.repoViewer',
+  'github.workItem',
+  'github.workItemByOwnerRepo',
+  'github.workItemDetails',
+  'github.prComments',
+  'github.prChecks',
+  'github.prCheckDetails',
+  'github.prFileContents',
+  'github.prForBranch',
+  'github.repoSlug',
+  'github.repoUpstream',
+  'github.rateLimit',
+  'github.listWorkItems',
+  'github.listIssues',
+  'github.countWorkItems',
+  'github.listLabels',
+  'github.listAssignableUsers',
+  'github.project.listAccessible',
+  'github.project.listLabelsBySlug',
+  'github.project.listAssignableUsersBySlug',
+  'github.project.listIssueTypesBySlug',
+  'github.project.resolveRef',
+  'github.project.listViews',
+  'github.project.viewTable',
+  'workbench.review.comments',
+  'files.readTerminalArtifact',
+  'files.readTerminalArtifactPreview',
+  'host.wsl.isAvailable',
+  'host.wsl.listDistros',
+  'host.pwsh.isAvailable',
+  'host.gitBash.isAvailable',
+  'preflight.detectRemoteWindowsTerminalCapabilities',
+  'preflight.check',
+  'preflight.detectAgents',
+  'terminal.resolveActive',
+  'terminal.resolvePane',
+  'terminal.resolveIdentity',
+  'terminal.inspectProcess',
+  'terminal.agentStatus'
 ])
 
-function isReadMethod(method: string): boolean {
+export function isReadMethod(method: string): boolean {
   return TEAM_READ_ALLOWED_METHODS.has(method)
+}
+
+// Successful reads are intentionally quiet in the host audit. Project walls and sidebars hydrate
+// repeatedly; recording those calls would hide the connection, authorization, and failure events
+// that a host owner actually needs to review.
+export function isRoutineReadRuntimeMethod(method: string): boolean {
+  return method !== 'workbench.review.receive' && isReadMethod(method)
 }
 
 export function teamReadDenialReason(

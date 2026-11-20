@@ -699,13 +699,15 @@ describe('registerMobileHandlers', () => {
           deviceId: 'pending-runtime',
           name: 'Copied link',
           createdAt: 5,
-          lastSeenAt: null
+          lastSeenAt: null,
+          accessMode: 'team-read'
         },
         {
           deviceId: 'runtime-1',
           name: 'Browser',
           createdAt: 3,
-          lastSeenAt: 4
+          lastSeenAt: 4,
+          accessMode: 'team-read'
         }
       ]
     })

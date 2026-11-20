@@ -63,14 +63,7 @@ function requireDirectory(value: unknown): TeamDirectory {
       ...(project.name ? { name: requireText(project.name, `projects[${index}].name`, 256) } : {}),
       ...(project.repository
         ? { repository: requireText(project.repository, `projects[${index}].repository`, 512) }
-        : {}),
-      sources: Array.isArray(project.sources)
-        ? project.sources.map((source, sourceIndex) =>
-            requireText(source, `projects[${index}].sources[${sourceIndex}]`, 512)
-          )
-        : (() => {
-            throw new Error(`projects[${index}].sources must be an array.`)
-          })()
+        : {})
     }
   })
   return {

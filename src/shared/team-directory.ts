@@ -12,7 +12,6 @@ export type TeamDirectoryProject = {
   repo_id: string
   name?: string
   repository?: string
-  sources: string[]
 }
 
 export type TeamDirectory = {

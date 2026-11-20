@@ -157,15 +157,13 @@ function normalizeProjects(value: unknown): TeamDirectory['projects'] {
       return []
     }
     const project = candidate as Record<string, unknown>
-    if (typeof project.repo_id !== 'string' || !Array.isArray(project.sources)) {
+    if (typeof project.repo_id !== 'string') {
       return []
     }
-    const sources = project.sources.filter((source): source is string => typeof source === 'string')
     return [{
       repo_id: project.repo_id,
       ...(typeof project.name === 'string' ? { name: project.name } : {}),
-      ...(typeof project.repository === 'string' ? { repository: project.repository } : {}),
-      sources
+      ...(typeof project.repository === 'string' ? { repository: project.repository } : {})
     }]
   })
 }

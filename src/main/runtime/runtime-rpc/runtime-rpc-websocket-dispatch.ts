@@ -11,7 +11,7 @@ import { effectiveRuntimeAccessMode, type DeviceScope } from '../device-registry
 import { RuntimeRpcRequestAdmission } from './runtime-rpc-request-admission'
 import { classifyRuntimeLongPoll } from './runtime-rpc-long-poll'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
-import { teamReadDenialReason } from './runtime-rpc-team-read-policy'
+import { isRoutineReadRuntimeMethod, teamReadDenialReason } from './runtime-rpc-team-read-policy'
 
 // Why: status.get has no per-connection context in the dispatcher, so stamp the scope here at the transport boundary.
 function injectDeviceScope(response: string, scope: DeviceScope): string {
@@ -138,10 +138,10 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         } catch {
           // Keep the error result when a handler emitted a malformed frame.
         }
-        // Team-read catalog hydration can issue many successful read calls per
-        // repaint. Keep the audit useful by retaining denied/error requests and
-        // all full-access activity, while leaving routine read hydration out.
-        if (!(accessMode === 'team-read' && result === 'allowed')) {
+        // Project walls and sidebars hydrate repeatedly for both access modes. Keep the audit useful
+        // by retaining denied/error requests and explicit writes while leaving routine successful
+        // reads out.
+        if (!(isRoutineReadRuntimeMethod(request.method) && result === 'allowed')) {
           this.getRuntimeAccessAudit().record({
             at: Date.now(),
             deviceId: device.deviceId,

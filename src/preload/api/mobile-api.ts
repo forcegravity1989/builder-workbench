@@ -62,6 +62,8 @@ export type MobileApi = {
     reach?: RuntimePairingReach
     accessMode?: RuntimeAccessMode
     teamBinding?: RuntimeTeamBinding
+    name?: string
+    avatar?: string
   }) => Promise<
     | {
         available: false
