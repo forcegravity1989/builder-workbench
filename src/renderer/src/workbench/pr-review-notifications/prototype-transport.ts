@@ -2,11 +2,11 @@ import { callRuntimeRpc, getRuntimeEnvironmentStatus } from '@/runtime/runtime-r
 import type {
   ReviewPeerTarget,
   ReviewPeerDelivery
-} from '../../../../../shared/workbench/pr-review-request'
+} from '../../../../shared/workbench/pr-review-request'
 import type {
   PrototypeReviewIncomingRequest,
   PrototypeReviewRequest
-} from '../../../../../shared/workbench/prototype-review-request'
+} from '../../../../shared/workbench/prototype-review-request'
 
 export const readPrototypeReviewInbox = () =>
   callRuntimeRpc<PrototypeReviewIncomingRequest[]>(

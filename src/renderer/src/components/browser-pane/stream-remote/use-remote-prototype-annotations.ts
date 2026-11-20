@@ -8,7 +8,8 @@ export function useRemotePrototypeAnnotations({
   runtimeWorktree,
   pageId,
   documentKey,
-  enabled
+  enabled,
+  prototypeReviewActive
 }: {
   runtimeTarget: () => RemoteBrowserRuntimeTarget | null
   runtimeWorktree: string
@@ -29,9 +30,9 @@ export function useRemotePrototypeAnnotations({
       return
     }
     void window.api.runtimeEnvironments
-      .getStatusSnapshots()
-      .then((snapshots) => {
-        const name = snapshots.find((item) => item.environmentId === environmentId)?.name
+      .list()
+      .then((environments) => {
+        const name = environments.find((item) => item.id === environmentId)?.name
         if (name) {
           setHostName(name)
         }

@@ -3,11 +3,11 @@ import {
   type PrototypeReviewIncomingRequest,
   type PrototypeReviewRequest,
   type PrototypeReviewPageRef
-} from '../../../../../shared/workbench/prototype-review-request'
+} from '../../../../shared/workbench/prototype-review-request'
 import type {
   ReviewPeerDelivery,
   ReviewPeerTarget
-} from '../../../../../shared/workbench/pr-review-request'
+} from '../../../../shared/workbench/pr-review-request'
 
 // oxlint-disable-next-line typescript/no-redundant-type-constituents -- zod-inferred request types are resolved by the runtime schema; the intersection adds the persisted identity fields.
 export type PrototypeReviewIncomingNote = PrototypeReviewIncomingRequest & { id: string }

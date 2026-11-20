@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PrototypeReviewRequestSchema } from '../../../../../shared/workbench/prototype-review-request'
+import { PrototypeReviewRequestSchema } from '../../../../shared/workbench/prototype-review-request'
 import {
   EMPTY_PROTOTYPE_REVIEW_STATE,
   prototypeReviewId,

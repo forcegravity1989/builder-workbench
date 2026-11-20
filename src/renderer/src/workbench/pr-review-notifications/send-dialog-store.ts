@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { ReviewSendInput } from '../../../../shared/workbench/pr-review-request'
-import type { PrototypeReviewPageRef } from '../../../../../shared/workbench/prototype-review-request'
+import type { PrototypeReviewPageRef } from '../../../../shared/workbench/prototype-review-request'
 
 export type ReviewSendDialogRequest =
   | { kind: 'pr'; request: ReviewSendInput }

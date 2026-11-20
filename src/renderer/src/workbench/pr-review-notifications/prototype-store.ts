@@ -4,8 +4,8 @@ import { notifyWorkbenchError } from '../error-feedback'
 import {
   PrototypeReviewRequestSchema,
   type PrototypeReviewPageRef
-} from '../../../../../shared/workbench/prototype-review-request'
-import type { ReviewPeerTarget } from '../../../../../shared/workbench/pr-review-request'
+} from '../../../../shared/workbench/prototype-review-request'
+import type { ReviewPeerTarget } from '../../../../shared/workbench/pr-review-request'
 import {
   deletePrototypeOutgoing,
   EMPTY_PROTOTYPE_REVIEW_STATE,
@@ -23,13 +23,14 @@ import {
 import {
   deliverPrototypeReviewRequest,
   dismissPrototypeReviewInbox,
+  enrichPrototypeReviewPage,
   readPrototypeReviewInbox,
   readPrototypeReviewSender
 } from './prototype-transport'
 import type { PrototypeReviewSendResult } from './prototype-transport'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
-import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
+import { canonicalPrototypeReviewDocumentKey } from '../../../../shared/workbench/prototype-review-annotation'
 import { useAppStore } from '@/store'
 
 let state: PrototypeReviewState = EMPTY_PROTOTYPE_REVIEW_STATE

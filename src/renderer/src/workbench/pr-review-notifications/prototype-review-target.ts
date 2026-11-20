@@ -2,7 +2,7 @@ import { useAppStore } from '@/store'
 import { refreshWebRuntimeSessionTabsSnapshot } from '@/runtime/web-runtime-session'
 import { isWebRuntimeSessionActive } from '@/runtime/web-runtime-session-environment'
 import { selectWebRuntimeSessionBrowserWorktree } from '@/runtime/web-runtime-session-workspace-selection'
-import type { PrototypeReviewPageRef } from '../../../../../shared/workbench/prototype-review-request'
+import type { PrototypeReviewPageRef } from '../../../../shared/workbench/prototype-review-request'
 
 async function resolveEnvironmentId(page: PrototypeReviewPageRef): Promise<string> {
   if (page.sourceRuntimeId) {
