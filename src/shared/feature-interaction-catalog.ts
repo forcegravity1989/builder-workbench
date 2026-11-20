@@ -26,6 +26,12 @@ export type FeatureInteractionId =
   | 'monica-wall'
   | 'monica-overview'
   | 'monica-milestones'
+  | 'monica-versions'
+  | 'monica-plan'
+  | 'monica-acceptance'
+  | 'monica-scoreboard'
+  | 'monica-version-overview'
+  | 'monica-version-tasks'
   | 'workspace-creation'
   | 'agent-browser-setup'
   | 'agent-browser-use'
@@ -102,6 +108,12 @@ export const FEATURE_INTERACTIONS = [
   { id: 'monica-wall', interaction: 'project wall opened' },
   { id: 'monica-overview', interaction: 'project overview opened' },
   { id: 'monica-milestones', interaction: 'project milestone planning opened' },
+  { id: 'monica-versions', interaction: 'version workspace sidebar entered' },
+  { id: 'monica-plan', interaction: 'version plan screen entered' },
+  { id: 'monica-acceptance', interaction: 'version acceptance screen entered' },
+  { id: 'monica-scoreboard', interaction: 'project scoreboard viewed' },
+  { id: 'monica-version-overview', interaction: 'version overview opened' },
+  { id: 'monica-version-tasks', interaction: 'version task screen entered' },
   { id: 'workspace-creation', interaction: 'workspace creation flow opened' },
   { id: 'agent-browser-setup', interaction: 'Agent Browser Use setup enabled or opened' },
   { id: 'agent-browser-use', interaction: 'agent browser runtime method used' },

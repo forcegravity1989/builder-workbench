@@ -14,6 +14,7 @@ import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
 import { historyErrorCode } from '../version-history-port'
+import { isWorkspaceGoneError, workspaceGoneMessage } from '../error-feedback'
 import { replaceGoalTaskEvidence } from './acceptance-task-evidence'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
@@ -75,6 +76,13 @@ export function useAcceptanceBoard({
   const associated = Boolean(document && document.version === context.version)
   const readOnly = Boolean(context.syncing) || !associated || !fixed.plan
   const lifetime = useRef({ active: true })
+  // Set once the scope stops resolving (worktree deleted): later polls would fail the same way,
+  // so the interval stands down instead of refreshing a dead error (#727). Latched on two
+  // consecutive misses: a single `selector_not_found` can be a transient rejected scan, which the
+  // native contract treats as a real answer, and latching on one would freeze a self-healing
+  // poller on a live workspace.
+  const gone = useRef(false)
+  const goneMisses = useRef(0)
   useEffect(() => {
     const state = lifetime.current
     state.active = true
@@ -159,9 +167,27 @@ export function useAcceptanceBoard({
     metricScope
   ])
   useEffect(() => {
+    gone.current = false
+    goneMisses.current = 0
     const timer = setInterval(() => {
-      if (!context.syncing) {
-        void controller.refresh().catch((reason) => setError(String(reason)))
+      if (!context.syncing && !gone.current) {
+        void controller
+          .refresh()
+          .then(() => {
+            goneMisses.current = 0
+          })
+          .catch((reason) => {
+            if (isWorkspaceGoneError(reason)) {
+              goneMisses.current += 1
+              if (goneMisses.current >= 2) {
+                gone.current = true
+                setError(workspaceGoneMessage())
+              }
+            } else {
+              goneMisses.current = 0
+              setError(String(reason))
+            }
+          })
       }
     }, 5000)
     return () => clearInterval(timer)
@@ -182,7 +208,7 @@ export function useAcceptanceBoard({
       await refreshDraft()
       await catalog.refresh()
     } catch (reason) {
-      setError(String(reason))
+      setError(isWorkspaceGoneError(reason) ? workspaceGoneMessage() : String(reason))
     }
   }
   /** Whole-document edit for sections that are not one goal result (minutes). */

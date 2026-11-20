@@ -35,6 +35,7 @@
 | [monica-start](../.claude/skills/monica-start/SKILL.md) | Monica 自己的开发与交付方法；按任务分流，知识定义与治理 Skill 共用 |
 | [journey-review](../.claude/skills/journey-review/SKILL.md) | 按用户指定的单条 Monica 旅程走查、修复和瘦身，补引导/指南/按需传播素材并更新矩阵 |
 | [project-knowledge](../.claude/skills/project-knowledge/SKILL.md) | 项目知识整改、只读全景与反哺方法；当地已认可规范优先，逐块清理存量 |
+| [tests/e2e/AGENTS.md](../tests/e2e/AGENTS.md) · [Monica E2E 白名单](../tests/e2e/workbench-allowlist.ts) | Monica 三类用例的位置、登记规则和当前 CI 入口；实际 E2E 规范与证据仍回到 [development.md](development.md) |
 | [orca-boundary-review](../.claude/skills/orca-boundary-review/SKILL.md) | 周期复核与 Orca/Monica 边界候选；先读当前 Monica，公开上游变化只由人采纳后写回正本 |
 | [monica-release](../.claude/skills/monica-release/SKILL.md) | Windows Monica 出包与 GitHub Release 发布；正式发布须用户明确授权 |
 | [ref/](../ref/upstream.md) | 按需读取的 Orca 工程参考；修改对应执行核、协议或同步上游时读，不覆盖 Monica 产品正本 |

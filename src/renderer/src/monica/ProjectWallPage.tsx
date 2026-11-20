@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { MonicaIconButton } from './MonicaIconButton'
 import { MonicaWallGuide } from './MonicaScreenGuide'
+import { useMonicaScreenUsage } from './monica-screen-usage'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
@@ -25,6 +26,7 @@ import './monica-wall.css'
 import './project-settings.css'
 
 export function ProjectWallPage() {
+  useMonicaScreenUsage('monica-wall', true)
   const repos = useAppStore((s) => s.repos)
   const environments = useAppStore((s) => s.runtimeEnvironments)
   const statuses = useAppStore((s) => s.runtimeStatusByEnvironmentId)

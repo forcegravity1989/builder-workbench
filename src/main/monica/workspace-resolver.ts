@@ -87,7 +87,23 @@ export function createMonicaWorkspaceResolver(host: MonicaWorkspaceHost) {
       repoId: scope.repoId,
       hostId: scope.hostId
     })
-    const trees = (await host.listWorktrees(scope)).filter(
+    let listedTrees: Awaited<ReturnType<MonicaWorkspaceHost['listWorktrees']>>
+    try {
+      listedTrees = await host.listWorktrees(scope)
+    } catch (error) {
+      // Only the runtime's explicit local disappearance verdict is actionable here. A generic
+      // `selector_not_found` is UNKNOWN: a live Git/provider scan can fail or lag, so callers must
+      // retain their retry path instead of claiming that the worktree was deleted.
+      if (
+        error instanceof Error &&
+        error.message === 'selector_not_found' &&
+        (error as { worktreeGoneEvidence?: unknown }).worktreeGoneEvidence === true
+      ) {
+        throw new WorkspaceScopeError('workspace-gone', '工作树已删除，请回到版本总览或另选工作区')
+      }
+      throw error
+    }
+    const trees = listedTrees.filter(
       (tree) =>
         tree.id === scope.worktreeId &&
         tree.repoId === repo.id &&

@@ -5,7 +5,13 @@ import type {
 } from '../../../../shared/monica/version-material'
 import type { CycleTaskRead } from '../version-cycle/ports'
 import { issueKey } from './acceptance-issue-annotations'
-import { emptyGoalResult, upsertGoalResult, type GoalResult } from './acceptance-model'
+import {
+  candidateReferenceIdentity,
+  emptyGoalResult,
+  planReferenceIdentity,
+  upsertGoalResult,
+  type GoalResult
+} from './acceptance-model'
 import {
   captureTaskSnapshot,
   goalTaskEvidence,
@@ -44,12 +50,24 @@ function goalEvidenceText(
   }
   const { decision: _decision, ...evidence } =
     document.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
+  const projectArtifact = (artifact: AcceptanceMaterial['preparedArtifacts'][number]) => ({
+    artifactId: artifact.artifactId,
+    kind: artifact.kind,
+    location: artifact.location,
+    candidateRef: candidateReferenceIdentity(artifact.candidateRef),
+    generatedAt: artifact.generatedAt,
+    command: artifact.command,
+    executionRoot: artifact.executionRoot,
+    checksum: artifact.checksum
+  })
   const candidatePackages = document.preparedArtifacts
     .filter((item) => item.kind === 'package')
     .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
+    .map(projectArtifact)
   const artifacts = document.preparedArtifacts
     .filter((item) => item.kind !== 'package')
     .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
+    .map(projectArtifact)
   const tasks =
     references &&
     goalTaskEvidence(document, references, goalId).map((item) => ({
@@ -64,8 +82,8 @@ function goalEvidenceText(
     stableValue({
       version: document.version,
       cycleId: document.cycleId,
-      planRef: document.planRef,
-      candidateRef: document.candidateRef ?? null,
+      planRef: planReferenceIdentity(document.planRef),
+      candidateRef: candidateReferenceIdentity(document.candidateRef),
       demoEnv: document.demoEnv ?? null,
       candidatePackages,
       goal,

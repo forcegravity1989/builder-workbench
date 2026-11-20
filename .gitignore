@@ -125,6 +125,8 @@ playwright-report/
 !/.claude/skills/monica-release/**
 !/.claude/skills/feature-metrics-inventory/
 !/.claude/skills/feature-metrics-inventory/**
+!/.claude/skills/recent-design/
+!/.claude/skills/recent-design/**
 /.agents/skills/
 /skills-lock.json
 

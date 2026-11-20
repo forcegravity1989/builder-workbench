@@ -1,0 +1,37 @@
+{
+  "repository": "https://github.com/pbakaus/impeccable",
+  "commit": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+  "adaptedCommands": ["quieter", "distill", "critique", "polish"],
+  "files": [
+    {
+      "path": "upstream/impeccable/quieter.md",
+      "sourcePath": "plugin/skills/impeccable/reference/quieter.md",
+      "sha256": "51592b206ae91048701d221391a1ecd9011c6a103ecf8f2c29d7c0896198ecf5"
+    },
+    {
+      "path": "upstream/impeccable/distill.md",
+      "sourcePath": "plugin/skills/impeccable/reference/distill.md",
+      "sha256": "a5702d46b5a17a38c555044439c2e76585848ee8c5a74b8470fa5de06aaa03f8"
+    },
+    {
+      "path": "upstream/impeccable/critique.md",
+      "sourcePath": "plugin/skills/impeccable/reference/critique.md",
+      "sha256": "bb05789ea0f0a5c83188761d87e660928c8c49e9ffa032e6bd23a16fa673265f"
+    },
+    {
+      "path": "upstream/impeccable/polish.md",
+      "sourcePath": "plugin/skills/impeccable/reference/polish.md",
+      "sha256": "9f72c0e802821cacbd034398b7456d27ecd8230e3049d48f71b6773ece166ec8"
+    },
+    {
+      "path": "licenses/pbakaus--impeccable/LICENSE",
+      "sourcePath": "LICENSE",
+      "sha256": "02bb8c3b4e70190e3986c0404ad2fd8d639b4f534252d82379cc1b502b6d1812"
+    },
+    {
+      "path": "licenses/pbakaus--impeccable/NOTICE.md",
+      "sourcePath": "NOTICE.md",
+      "sha256": "01bf53e5d24d64e19e9e1c33b24c37cef0d314323df7bf678c6ba22d4528a115"
+    }
+  ]
+}

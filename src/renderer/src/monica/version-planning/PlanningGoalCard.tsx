@@ -276,7 +276,8 @@ export function PlanningGoalCard({
               '拆解请求',
               <BoardActionButton data-contextual-tour-target="monica-plan-issues">
                 <BrainCircuit size={14} aria-hidden="true" /> 拆解 Issue
-              </BoardActionButton>
+              </BoardActionButton>,
+              'breakdown-goal'
             )}
           </div>
           {issueMembershipKnown && (

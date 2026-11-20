@@ -35,6 +35,7 @@ import { getRepoExecutionHostId, toRuntimeExecutionHostId } from '../../../share
 import type { Repo } from '../../../shared/repo-types'
 import { versionRepoIdentity } from '../../../shared/monica/version-repo-identity'
 import { replayMonicaGuide, useMonicaScreenGuide } from './MonicaScreenGuide'
+import { useMonicaScreenUsage } from './monica-screen-usage'
 import { MonicaSidebarSectionHeader } from './MonicaSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -168,6 +169,12 @@ export function MonicaVersionNav({
       !project.loading &&
       activeView === 'terminal' &&
       !activeWorktree?.workbenchVersionBinding
+  )
+  // Why: the version sidebar is the primary surface exactly when no version is
+  // bound; guide-only flags (dialog/material) gate tours, not usage counting.
+  useMonicaScreenUsage(
+    'monica-versions',
+    activeView === 'terminal' && !activeWorktree?.workbenchVersionBinding
   )
 
   const ordered = project.versions

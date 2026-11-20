@@ -26,6 +26,7 @@
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
 | 新增或改变用户可见入口、操作路径或结果，或走查旅程、修改引导、制作指南与传播素材 | 完整读取[引导与旅程规范及矩阵](docs/04-design-system/guidance.md)，定位受影响的旅程与功能行，按[开发规范的验收依据](docs/development.md#验收依据)处理本次引导。逐条整改使用 [journey-review](.claude/skills/journey-review/SKILL.md) |
 | 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
+| 使用 Recent Design 的界面、动效与前端研发技能 | 从 [recent-design](.claude/skills/recent-design/SKILL.md) 进入，按 [.bw 技能清单](.bw/skills/recent-design/README.md) 选取并完整读取正文；Monica 设计系统、特性依据与开发规范优先。不自动分发到 `standard/`。 |
 | 周期复核 Orca/Monica 边界 | 读 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md)；先读当前 Monica 正本，再核对 Orca 公开版本；只把人采纳的稳定变化写回对应正本 |
 | 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范。合入记录见 [ref/upstream.md](ref/upstream.md) |
 

@@ -122,7 +122,7 @@ export function forwardElectronProcessLogs(app: ElectronApplication, testInfo: T
 /**
  * Extended Playwright test with Workbench-specific fixtures.
  *
- * `workbenchPage` — the main Workbench renderer window.
+ * `monicaPage` — the main Workbench renderer window.
  *
  * Test-scoped: each test gets a fresh Electron instance and isolated
  * userData directory so state cannot leak across specs through persistence.

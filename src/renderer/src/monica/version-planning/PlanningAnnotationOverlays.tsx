@@ -28,6 +28,7 @@ export function PlanningAnnotationOverlays({
           annotations={annotations.numbered}
           annotating={annotations.annotating}
           worktreeId={worktreeId}
+          screen="plan"
           onClose={annotations.closePanel}
           onUpdate={annotations.update}
           onRemove={annotations.remove}

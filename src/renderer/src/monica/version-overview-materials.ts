@@ -17,7 +17,7 @@ import { findVersionFlowWorktrees } from '../../../shared/monica/version-workspa
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { nativeVersionMaterialPort } from './version-material-port'
 import { AcceptanceMaterialSchema } from '../../../shared/monica/version-material'
-import { assertFixedPlan } from './version-acceptance/acceptance-model'
+import { assertFixedPlan, type PlanReference } from './version-acceptance/acceptance-model'
 
 export type OverviewDocument<T> =
   | { kind: 'loading' }
@@ -45,7 +45,7 @@ const loading = (): VersionOverviewMaterials => ({
   acceptance: { kind: 'loading' },
   prStatuses: { plan: null, acceptance: null }
 })
-/** Acceptance pins its plan, including while acceptance is still a draft. */
+/** Acceptance pins its plan when readable; a failed reference leaves the current plan readable. */
 export function useVersionOverviewMaterials({
   catalog,
   version,
@@ -165,6 +165,15 @@ async function readMaterials(
   const selectedPlan = selection?.workflow === 'plan' ? selected : null
   const acceptanceRef = selection ? undefined : entry?.material.acceptance
   const planRef = selectedPlan ? undefined : entry?.material.plan
+  const currentPlanRef: PlanReference | null = planRef
+    ? {
+        kind: 'committed',
+        version,
+        cycleId: planRef.cycleId,
+        sourceCommit: planRef.sourceCommit,
+        revision: planRef.revision
+      }
+    : null
   try {
     if (selection?.workflow === 'plan') {
       result.acceptance = { kind: 'missing' }
@@ -228,25 +237,9 @@ async function readMaterials(
   } catch (error) {
     result.acceptance = { kind: 'error', message: `验收读取失败：${message(error)}` }
   }
+  let fixed: PlanReference | null = null
   try {
-    if (
-      result.acceptance.kind === 'error' &&
-      (acceptanceRef || selection?.workflow === 'acceptance')
-    ) {
-      throw new Error('无法核对验收对应的固定计划，请重试验收读取')
-    }
-    const fixed =
-      result.acceptance.kind === 'ready'
-        ? result.acceptance.document.planRef
-        : planRef
-          ? {
-              kind: 'committed' as const,
-              version,
-              cycleId: planRef.cycleId,
-              sourceCommit: planRef.sourceCommit,
-              revision: planRef.revision
-            }
-          : null
+    fixed = result.acceptance.kind === 'ready' ? result.acceptance.document.planRef : currentPlanRef
     if (fixed) {
       const source = result.acceptance.kind === 'ready' ? acceptancePlanSource : { scope, history }
       const read = await source.history.readPlan({ scope: source.scope, planRef: fixed })
@@ -294,7 +287,25 @@ async function readMaterials(
       }
     }
   } catch (error) {
-    result.plan = { kind: 'error', message: `计划读取失败：${message(error)}` }
+    let recovered = false
+    if (currentPlanRef && fixed !== currentPlanRef) {
+      try {
+        const read = await history.readPlan({ scope, planRef: currentPlanRef })
+        result.plan = {
+          kind: 'ready',
+          document: assertFixedPlan(currentPlanRef, read),
+          revision: read.revision,
+          source: 'committed',
+          sourceCommit: currentPlanRef.sourceCommit
+        }
+        recovered = true
+      } catch {
+        // Keep the original pinned-plan failure as the visible diagnosis.
+      }
+    }
+    if (!recovered) {
+      result.plan = { kind: 'error', message: `计划读取失败：${message(error)}` }
+    }
   }
   await Promise.all(
     (['plan', 'acceptance'] as const).map(async (kind) => {

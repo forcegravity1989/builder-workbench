@@ -85,7 +85,7 @@ export function AcceptanceJourneyNav({
           key={id}
           type="button"
           data-contextual-tour-target={
-            id === 'prepare' || readyToReview ? `workbench-acceptance-${id}` : undefined
+            id === 'prepare' || readyToReview ? `monica-acceptance-${id}` : undefined
           }
           onClick={() => onNavigate(id)}
           aria-current={active === id ? 'location' : undefined}

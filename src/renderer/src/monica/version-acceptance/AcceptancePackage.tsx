@@ -1,6 +1,7 @@
 import { ErrorDetails } from '../error-feedback'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, Plus } from 'lucide-react'
+import { track } from '@/lib/telemetry'
 import type { MetricScope } from '../../../../shared/monica/metrics'
 import type { PackageLatest, PackagePipelinePort } from '../../../../shared/monica/package-pipeline'
 import { BoardActionButton } from '../board-ui'
@@ -170,8 +171,16 @@ export function AcceptancePackage({
 
   const onLaunch = () =>
     runAction('launch', async () => {
-      await port.launch({ scope, pipeline })
-      setNotice('流水线已启动，运行约需几分钟；最新包信息每分钟自动刷新。')
+      // 结果层埋点（#687）：outcome 只记受理成败，流水线运行结果由最新包
+      // 刷新带回，不进遥测；流水线名等自由文本不上报。
+      try {
+        await port.launch({ scope, pipeline })
+        track('bw_package_build', { outcome: 'launched' })
+        setNotice('流水线已启动，运行约需几分钟；最新包信息每分钟自动刷新。')
+      } catch (reason) {
+        track('bw_package_build', { outcome: 'failed' })
+        throw reason
+      }
     })
 
   const onDownload = () =>

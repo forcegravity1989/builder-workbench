@@ -22,7 +22,7 @@ import {
 // past its line budget; the barrel re-exports them next to the upstream
 // cards. The three cards share one install / login / re-check skeleton — the
 // per-CLI differences are copy, probe ids and the login command only, so each
-// card is a thin config wrapper over BwCliIntegrationCard below.
+// card is a thin config wrapper over MonicaCliIntegrationCard below.
 
 // Why: copy fields are thunks around literal translate() calls — i18next-cli's
 // extractor only sees literal call sites, so plain key strings in the config

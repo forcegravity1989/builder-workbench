@@ -33,7 +33,7 @@ function runInstallStep(
   return new Promise((resolve, reject) => {
     // Why: npm is npm.cmd on Windows — route through cmd.exe so the shim
     // resolves; posix spawns npm directly. cmd.exe /c bare-expands the argv,
-    // so BW_CLI_INSTALL_COMMANDS entries must never carry cmd.exe
+    // so MONICA_CLI_INSTALL_COMMANDS entries must never carry cmd.exe
     // metacharacters (space & | < > ^ ( ) , ;) — registry URLs and package
     // ids are safe. No timeout: installs against the internal registry can
     // take minutes, and the finish broadcast carries the outcome either way.

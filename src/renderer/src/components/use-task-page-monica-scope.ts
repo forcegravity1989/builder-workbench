@@ -23,6 +23,7 @@ import {
 } from '@/monica/task-scope-projection'
 import { useAppStore } from '@/store'
 import { useTaskScopeViewers } from '@/monica/use-task-scope-viewers'
+import { useMonicaScreenUsage } from '@/monica/monica-screen-usage'
 
 /** Only a selected goal materializes references; a version uses native queries. */
 export function useTaskPageMonicaScope(model: TaskPageJiraCreationMetadataModel) {
@@ -44,6 +45,9 @@ export function useTaskPageMonicaScope(model: TaskPageJiraCreationMetadataModel)
     setCodehubError
   } = model
   const { entry, scope } = useTaskPageMonicaEntry(model)
+  // Why: the version-scoped task screen is a BW surface (#687) — count entry
+  // once per scope activation, not per goal/version switch inside the screen.
+  useMonicaScreenUsage('monica-version-tasks', scope !== null)
   const goalScope = scope?.goalId ? scope : null
   const goalIssueView =
     model.taskSource === 'codehub'

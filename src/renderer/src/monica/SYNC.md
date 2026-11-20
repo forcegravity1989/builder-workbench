@@ -67,11 +67,11 @@ Windows 上 `pnpm install` 会就地编译原生模块（`@orca/windows-registry
 
 | Env | 作用 |
 |-----|------|
-| `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |
+| `MONICA_SHELL=1` / `VITE_MONICA_SHELL=1` | 启用 Workbench 壳 |
 | `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
 | `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
 | WeLink 群空间(上报落点) | `src/main/monica/reporting/welink-report-config.ts` 固定 `WELINK_REPORT_SPACE_ID = 24160277`；设置与 env 不能改道，变更须走代码 PR。反馈/崩溃/诊断包使用「Workbench 上报」目录，用户开启后的遥测使用「Workbench 遥测」目录；均使用当前 WeLink 账号上传 |
-| `WORKBENCH_TELEMETRY_FLUSH_MS` | 遥测批次上传的定时间隔，默认 600000 毫秒（10 分钟），减少群空间文件和限流；开发/验收可缩短等待 |
+| `MONICA_TELEMETRY_FLUSH_MS` | 遥测批次上传的定时间隔，默认 600000 毫秒（10 分钟），减少群空间文件和限流；开发/验收可缩短等待 |
 
 打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
 

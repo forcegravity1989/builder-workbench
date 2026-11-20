@@ -1,5 +1,5 @@
 /* Monica tokens (claude warm palette) — from loop-buddy bw-tokens.css.
-   Only active when html[data-skin=ds] is set by WorkbenchShellBootstrap.
+   Only active when html[data-skin=ds] is set by MonicaShellBootstrap.
    Dark theme (#354): neutrals + status follow the design-system overlay-role
    dark values (docs/04-design-system/tokens.json → Orca `.dark`); the bridge
    below is light-only so Orca's own `.dark` chrome vars own the dark shell. */

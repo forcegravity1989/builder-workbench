@@ -78,9 +78,8 @@ const legacyDocument = {
 
 describe('legacy acceptance material', () => {
   it('parses a pre-v10 document as-is and projects every legacy category; v10 documents project nothing', () => {
-    // The material schema is strict, so dropping the retired keys outright would
-    // turn every stored pre-v10 file into "corrupt material" and lose real human
-    // input. They stay optional and read-only.
+    // Known fields remain validated while retired fields and newer unknown keys
+    // survive the read projection, so real human input stays available.
     const parsed = AcceptanceMaterialSchema.parse(legacyDocument)
     expect(parsed.results[0].progress).toBe('本轮完成联调')
     expect(parsed.results[0].deliveries).toEqual([

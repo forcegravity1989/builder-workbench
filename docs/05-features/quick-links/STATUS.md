@@ -1,20 +1,29 @@
-# STATUS — 与「端口」同构的状态栏「常用链接」入口（quick-links）
+# STATUS — 项目级常用链接
 
-> **维护约定**：本篇记录本特性六环链现状与证据，格式按 [02 §6.2](../../01-principles/02-working-backwards.md)「STATUS 格式」；更新触发：任一环状态或证据变化，随引发它的 PR 同批提交，不记流水。
+> **维护约定**：只登记当前六环状态、旅程归属、E2E 登记和未验证边界。用户结果见 [intent.md](intent.md)，当前行为见 [spec.md](spec.md)，实现落点见 [design.md](design.md)。运行日志、截图和修复过程留在对应 PR 验证评论。
 
-**现状（2026-11-13）**：范围已由人经多轮澄清收敛——Orca 端口面板已覆盖服务识别与打开（复用、不重建），web-manager 的增量是「存储网页标签」，落点为**与端口同构的状态栏「常用链接」入口 + 独立 popover 面板**（来源 [#650](https://github.com/forcegravity1989/builder-workbench/issues/650)；2026-11-13 人评审由「右栏子分区/独立窗口」改定为状态栏入口）。**本轮已落地实现代码**（`QuickLinksStatusSegment` + 项目级 `.bw/quick-links.json` 读写），但**尚未真壳验证**（未跑两屏/会话注入类真壳 E2E，截图证据未产出）。intent / spec / design 仍为草案待人 gate。
+## 当前结论
 
-| 环 | 状态 | 证据或已知债 |
-|---|---|---|
-| 1 intent | 草案（待 gate） | [intent.md](intent.md)：价值=端口之外的常用链接、项目级、无状态灯、避「收藏夹病」；落点=与端口同构的状态栏入口（2026-11-13 人评审）；「项目」口径按激活仓库（`useActiveRepo`）实现，其余待决待人拍板 |
-| 2 spec | 草案（待 gate） | [spec.md](spec.md)：入口=状态栏图标+计数→popover、完整旅程、字段与校验规则、验收点 QL01–QL12、旅程 QLJ01；均为定义、未注册 |
-| 3 实现设计 | 已实现（待人评审，未真壳验证） | 代码：`src/renderer/src/monica/quick-links/QuickLinksStatusSegment.tsx`（状态栏段+popover+内联增改表单）、`quick-links-store.ts`（经 `window.api.fs` 读写 `.bw/quick-links.json`，复用既有 fs 桥、不新增主进程 IPC）、`src/shared/monica/quick-links.ts`（schema+URL 归一化/校验纯函数）；上游改动仅 `StatusBarSurface` 一处挂载、`StatusBarItem`/RPC 枚举与默认项、`StatusBarVisibilityMenu` 一项开关（见 [design.md](design.md)） |
-| 4 TDD | 未新增用例 | 纯函数（URL 归一化/去重/校验）未新增单测：受环 4 叠层 vitest 例数 ratchet（净零、只减不增）约束，本次无存量负面清单用例可对冲，故不增例；行为由真壳验收点覆盖，待专项回补 |
-| 5 验收点E2E | 待验证 | QL01–QL12 已定义（spec 验收表），未注册、未真壳执行 |
-| 6 旅程E2E | 待验证 | QLJ01 已定义、未注册、未真壳执行 |
+特性仍是草案，待人 gate。状态栏入口、popover、项目级 `.bw/quick-links.json` 读写和 URL 校验代码已有实现。原型保持为交互设计输入，尚未形成真壳验收证据。当前不登记业务 E2E，也不把它映射为 W01–W05 用户旅程。
 
-**已知债**：
+## 六环状态
 
-1. **已写实现、未真壳验证**——真实持久化读回、项目隔离、杀进程读回、内置浏览器打开需真壳执行并留证据；本状态不宣称能力已交付。
-2. **单测缺口**——受 ratchet 净零约束本轮不增例，纯函数待专项回补（可考虑同交付对冲删除负面清单用例后在 PR 说明）。
-3. **默认开启迁移的已知取舍**——既有本地 profile 首次升级时经一次性 flag 补入该入口；新 profile 由 `DEFAULT_STATUS_BAR_ITEMS` 默认带出。真壳需验证升级路径。
+| 环 | 状态 | 当前依据与边界 |
+| --- | --- | --- |
+| 1 intent | 草案，待 gate | 用户结果、价值、范围、排除和候选 QLJ01 见 [intent.md](intent.md)。 |
+| 2 spec | 草案，待 gate | 状态栏入口、项目隔离、字段校验、失败边界和 QL01–QL12 见 [spec.md](spec.md)。 |
+| 3 实现设计 | 已有实现，待 gate | 组件、状态栏挂载、fs 桥持久化和校验函数见 [design.md](design.md)。尚未以真壳证据确认交付。 |
+| 4 TDD / 协议 | 未新增 | 现有协议或纯函数覆盖不能替代真壳验收。 |
+| 5 验收点 E2E | 未登记 | QL01–QL12 是验收定义，尚未登记文件、执行项目、真实环境或独立读回方式。 |
+| 6 用户旅程 E2E | — | 当前没有 Explore 用户结果，不登记 W01–W05 旅程 E2E。QLJ01 仅是待 gate 的候选旅程。 |
+
+## E2E 登记
+
+当前无业务 E2E 登记。若 gate 后确认需要真实验证，最多登记一条验收点入口和一条跨特性用户旅程入口，并补齐旅程 ID、特性、文件与测试标题、执行项目、真实环境、独立读回方式和状态。
+
+## 未验证边界
+
+- 项目隔离、持久化失败、坏文件处理和杀进程重启读回尚未形成当前真壳证据。
+- 内置浏览器打开、修饰键转系统浏览器、剪贴板和端口面板互斥尚未形成当前真壳证据。
+- `.bw/quick-links.json` 的格式和按激活仓库归属仍待 gate 确认。
+- 原型播放和静态代码检查不能替代上述行为证据。验证结果写入对应 PR 评论，完成后再更新本篇当前状态。

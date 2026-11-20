@@ -36,6 +36,7 @@ import { MilestoneIconButton } from './milestone-icon-button'
 import { sameDraft } from './milestone-planning-session'
 import { activateVersionWorktree } from './version-worktree-host'
 import { useMonicaScreenGuide } from './MonicaScreenGuide'
+import { useMonicaScreenUsage } from './monica-screen-usage'
 import './project-milestones.css'
 
 export function ProjectMilestones({
@@ -76,6 +77,9 @@ export function ProjectMilestones({
     'monica-milestones',
     Boolean(state?.editing && !busy && state.data.project?.working)
   )
+  // Why: entering milestone planning is the usage; the guide's busy/working gates
+  // keep tours quiet but must not gate the usage count.
+  useMonicaScreenUsage('monica-milestones', Boolean(state?.editing))
   useEffect(() => {
     if (
       model.confirmed &&

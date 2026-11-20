@@ -1,35 +1,30 @@
 # intent — CodeHub 适配
 
-> **状态：草案，待人 gate。** 从已落地提交回写：`05dfa7455`（任务来源）、`b0005c098`（任务页工具条与 GitHub 对齐）、`7ca46d402`（计划与验收里的任务读写、归档状态、验收可选版本）。源码说明现在怎样，不代替产品认可。
->
-> **维护约定**：给判断「项目托管在 CodeHub 上时，Builder 能完成哪些事」的人读。行为见 [spec.md](spec.md)，链状态见 [STATUS.md](STATUS.md)。工程对照在 [ref/upstream.md](../../../ref/upstream.md) 的 CodeHub 节，命令用法在 [codehub-cli 指南](../../03-guide/codehub-cli.md)。边界变化时改本篇，不把实现清单抄进正文。
+> **维护约定**：给产品、设计、实现和验收者读取。本篇只维护 CodeHub 来源适配的用户结果、价值、范围和归属。当前行为与判据见 [spec.md](spec.md)，证据边界见 [STATUS.md](STATUS.md)。不在正文记录提交、讨论或逐次验证流水。
 
-## 用户与问题
+## 用户结果
 
-被管项目的 Builder，仓库远程是 CodeHub（例如 `codehub-g.huawei.com`），本机有 `codehub-cli`。他要在 Monica 里看 Issue 和 MR、处理关闭和评论，并在计划 / 验收里读回这些任务、选择已在主干基线上的版本。
+使用 CodeHub 仓库的 Builder 可以在 Monica 中查找、查看和处理 Issue／MR，并在版本计划和版本验收中继续使用同一来源的任务与归档信息。CodeHub 来源能正确保持“读不到平台证据”的未知状态。
 
-只接 GitHub 时，这类仓库进不了任务列表，归档还会去找 GitHub 的合入记录。找不到时，界面无法区分「还没归档」和「这个平台根本给不出合入证据」。
+任务列表、详情和处理动作属于[任务管理](../task-management/intent.md)。CodeHub 登录、CLI 和来源连接属于[内部集成](../connectors/intent.md)。本目录只维护 CodeHub 作为来源时的差异与边界。
 
 ## 价值与依据
 
-核心收益是：CodeHub 仓库按自己的平台工作。任务走 `codehub-cli`，不借用 `gh`。归档 PR 状态在读不回时保持未知，并说明原因。验收可以按主干基线上的版本目录开始，不先要求一条 GitHub 式的合入证明。
+CodeHub 仓库使用 `codehub-cli` 完成任务读写，避免把 GitHub CLI 或 GitHub 的项目身份误用于内部仓库。计划和验收按 CodeHub 项目路径读回任务，归档状态按平台记录读回，缺少证据时显示未知并说明原因。
 
-依据是上面三笔提交，以及上游对照里已经写明的任务页行为。多个真实 Builder 的使用读回还没有，价值效果仍是假设。
+## 范围
 
-## 目标体验
+- 识别 CodeHub 远程、选择 `codehub-cli`、读取登录状态并给出缺失或未登录原因。
+- 提供 Issue／MR 列表、详情、评论、关闭、重开、标签和 MR 检查项、文件变更及行评论。
+- 在计划和验收中按 CodeHub 项目路径打开任务，并按来源读取归档 MR 状态。
+- 从主干基线上的 `.bw/planning/<版本>/data.json` 读取可选验收版本。该规则对所有来源生效，通用行为由[版本验收](../version-acceptance/intent.md)维护。
 
-选中的仓库远程都是 CodeHub，且 `codehub-cli` 已安装时，打开任务页就落在 CodeHub。工具条与 GitHub 任务页同一行：Issues / MRs、项目、开放 / 我的、MR 另有待评审、筛选、搜索、新建、刷新。点一行看详情，可以评论；Issue 能改标题，按完成、不计划或重复关闭，也可以重新打开；MR 可以关闭。MR 详情能看检查项与文件变更，样式与 GitHub 项目一致，文件变更页可对行评论；检查项读 `mr gate`，文件变更读 `mr changes`，不引入 cloudbuild-cli。
+## 排除与归属
 
-计划或验收里关联的 CodeHub 任务，按 CodeHub 项目路径读回并打开详情。归档 MR 状态取自可核对的 CodeHub 记录，读取失败时显示未知及原因。开始验收时，主干基线上 `.bw/planning/<版本>/data.json` 存在，就可以把该目录里的当前计划当作原承诺。
-
-## 范围与边界
-
-- **做**：CodeHub 作为与 GitHub、GitLab 并列的任务来源；任务列表、详情和已实现的写操作；计划 / 验收对 CodeHub 任务的读回和打开；CodeHub 归档 MR 状态按来源读回；验收版本列表改为读取主干基线上的计划目录（这条规则对所有平台生效，行为正文在[验收规格](../version-acceptance/spec.md)，本特性负责 CodeHub 上为什么必须如此）。
-- **范围外**：把 CodeHub 收成 GitHub Enterprise 或 GitLab；草稿 MR 与 Mark ready；评论表情、已读、修改评论正文；发明一条 CodeHub 合入提交的读回通道。
-- **归属**：CodeHub 来源适配属于内部集成。任务管理、版本计划与版本验收分别承接各自的用户结果，复用这里的读写和归档证据规则。
+- 不把 CodeHub 收敛为 GitHub Enterprise 或 GitLab，也不新增草稿 MR、Mark ready、表情、已读或修改评论正文。
+- 不为 CodeHub 建立独立 Explore 用户旅程或第二条跨特性 E2E。W03「构建交付」承接任务处理，W04「验收成果」承接计划、归档和版本选择。
+- CJ01 是历史 CodeHub 旅程标识，仅映射到 W03/W04 的来源适配片段，不单独登记旅程 E2E。
 
 ## 成功判据
 
-**判据**：Builder 在 CodeHub 仓库上能列出并打开自己的 Issue，关闭时先有关单评论再关闭；杀进程重开后列表仍从 CLI 读回。归档不出现假的「已合入」或假的「尚未创建」。没有 `data.json` 的目录不会变成可选版本。
-
-只有可独立读回的平台证据才能确认合入。
+CodeHub 仓库中的任务能按真实项目身份列出和打开，关闭 Issue 时先写原因评论，失败则保留打开状态。计划和验收能打开同一任务，归档读不回时保持未知。退出并重启后，页面仍从 CLI 和平台事实重新读取，而不是从本地状态推断结果。

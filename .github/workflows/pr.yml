@@ -299,7 +299,7 @@ jobs:
         run: pnpm run build:desktop
 
   e2e:
-    name: Monica Electron smoke
+    name: Monica Electron PR E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: verify
@@ -327,14 +327,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
 
-      - name: Run Monica smoke
+      - name: Run Monica PR E2E allowlist
         run: xvfb-run --auto-servernum pnpm run test:e2e:monica
 
       # Preserve successful journey screenshots as well as failure diagnostics.
-      - name: Upload Monica smoke evidence
+      - name: Upload Monica PR E2E evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: monica-smoke-test-results
+          name: monica-pr-e2e-results
           path: test-results/
           if-no-files-found: ignore
