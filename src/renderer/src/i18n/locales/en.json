@@ -8220,7 +8220,9 @@
           "fullAccessGranted": "Full access granted.",
           "fullAccessGrantedCount": "Full access granted to {{value0}} devices.",
           "fullAccessGrantFailed": "Failed to grant full access.",
-          "failedToLoadAccessLog": "Failed to load access log."
+          "failedToLoadAccessLog": "Failed to load access log.",
+          "clearConfirm": "Clear this host's shared access log?",
+          "clearFailed": "Failed to clear shared access log."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",
@@ -11907,7 +11909,8 @@
           "lastWeek": "Last 7 days",
           "lastTwoWeeks": "Last 14 days",
           "search": "Search device or action",
-          "empty": "No matching access records."
+          "empty": "No matching access records.",
+          "clear": "Clear log"
         }
       },
       "right": {
