@@ -18,7 +18,7 @@
 | 人决定调整 | 提供进入计划、任务和验收的原生入口 | 不自动改 Issue、目标或验收结论 |
 | 形成后续计划或任务 | 将下一步交给相应原生入口 | 版本计划和任务管理承接后续动作 |
 
-本特性不按功能项拆分用户旅程。W05 是唯一主用户旅程入口，特性验收点与主旅程可以复用同一个物理 E2E。
+本特性不按功能项拆分用户旅程。W05 是唯一主用户旅程入口，特性验收点与主旅程可以复用同一条 E2E。
 
 ## 六环登记
 
@@ -28,7 +28,7 @@
 | 2 spec | 已确认 | 版本生命周期、事实来源、失败边界和 VO01–VO13 见 [spec](spec.md)。原型是设计输入，不是生产证据。 |
 | 3 实现设计 | 部分 | 生产入口为 `src/renderer/src/workbench/version-overview-page.tsx`，事实解析、缓存、来源读取和统计开关位于 `src/renderer/src/workbench/version-overview/`。真实 provider、跨宿主和外部权限仍需核验。 |
 | 4 TDD | 部分 | `feature-model.test.ts`、`overview-read-cache.test.ts`、`version-material-port.test.ts` 以及相关材料服务测试看护事实解析、缓存和材料协议。UI 外观和完整用户路径由 E2E 与真壳验收承担。 |
-| 5 验收点 E2E | 部分 | 文件 `tests/e2e/workbench-version-overview.spec.ts`，标题 `BW version overview: real sources, version identity and process restart`，执行项目 `electron-headless`。真实环境为 Electron / CI fixture，独立读回为绑定工作树磁盘材料、侧栏入口和 renderer 重载。真实外部来源、配置指标和跨宿主仍待验。 |
+| 5 验收点 E2E | 部分 | 文件 `tests/e2e/workbench/acceptance/version-overview.spec.ts`，标题 `BW version overview: real sources, version identity and process restart`，执行项目 `electron-headless`。真实环境为 Electron / CI fixture，独立读回为绑定工作树磁盘材料、侧栏入口和 renderer 重载。真实外部来源、配置指标和跨宿主仍待验。 |
 | 6 用户旅程 E2E | 部分 | W05 复用同一文件和标题，不另建第二条业务 E2E。当前覆盖从版本材料回看到总览的子链，指标配置、试采、评审合入、验收采用、后续计划或任务及完整进程重启复算仍待真实环境。 |
 
 ## 验收边界

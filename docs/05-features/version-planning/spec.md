@@ -74,12 +74,12 @@
 | P08 保存与恢复 | CAS 冲突不覆盖输入，重启和切版本后独立读回 | 材料读写服务 |
 | P09 归档状态 | 归档卡显示真实 PR 或 MR 状态并打开原生评审页 | `workflow.archivePr` |
 | P10 总览接续 | 总览读取存储纪要和版本摘要，无纪要时如实显示未记录 | 版本总览 |
-| P11 批注和对象动作 | 批注面板、发送弹窗、剪贴板和失败提示遵循原生边界 | `workbench-cycle-smoke.spec.ts` 与真壳验证 |
-| P12 批注快捷键 | 默认 Alt+A 可进出，输入和终端聚焦时不误触发，改绑后新键生效 | `workbench-cycle-smoke.spec.ts` |
+| P11 批注和对象动作 | 批注面板、发送弹窗、剪贴板和失败提示遵循原生边界 | tests/e2e/workbench/journeys/w02-cycle-main.spec.ts 与真壳验证 |
+| P12 批注快捷键 | 默认 Alt+A 可进出，输入和终端聚焦时不误触发，改绑后新键生效 | tests/e2e/workbench/journeys/w02-cycle-main.spec.ts |
 
 ## 用例入口与衡量
 
-当前主用户旅程入口是 `tests/e2e/workbench-cycle-smoke.spec.ts` 中的 W02 探索和版本计划主链测试。它可覆盖版本创建、计划入口、材料保存、重载读回和总览接续。真实模型会话、远端任务关联、CodeHub MR、真实会议转写和完整 PR 评审仍需在对应环境验证。
+当前主用户旅程入口是 `tests/e2e/workbench/journeys/w02-cycle-main.spec.ts` 中的 W02 探索和版本计划主链测试。它可覆盖版本创建、计划入口、材料保存、重载读回和总览接续。真实模型会话、远端任务关联、CodeHub MR、真实会议转写和完整 PR 评审仍需在对应环境验证。
 
 验收点 E2E 继续按每个特性最多一条控制。当前不新增第二条业务 E2E，也不把每个功能项拆成独立用户旅程。纯算法、材料协议和冲突处理回到 TDD 或集成测试。
 

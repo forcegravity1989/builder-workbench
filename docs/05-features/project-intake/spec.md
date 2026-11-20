@@ -97,6 +97,6 @@ HTML 全部状态在内存，刷新重置，不读写真实配置或仓库。浏
 
 ## 实现验收
 
-验收点 E2E 的唯一特性入口是 `tests/e2e/workbench-cycle-smoke.spec.ts` 中的 `BW project settings: reviewed edits, conflict protection and filesystem read-back`，辅助代码在 `tests/e2e/helpers/workbench-project-settings.ts`。它验证短确认、负责人保真写入、并发原文冲突、全局通知、退出保护和 renderer 重载，不证明真实远端评审或完整进程重启。
+验收点 E2E 的唯一特性入口是 `tests/e2e/workbench/acceptance/project-settings.spec.ts` 中的 `BW project settings: reviewed edits, conflict protection and filesystem read-back`，辅助代码在 `tests/e2e/helpers/workbench-project-settings.ts`。它验证短确认、负责人保真写入、并发原文冲突、全局通知、退出保护和 renderer 重载，不证明真实远端评审或完整进程重启。
 
 PW-01 至 PW-09 的原型判据同时是生产对照依据。W01 用户旅程入口是同一文件中的 `BW first-run project handoff`，覆盖首次添加后留在墙上、用户主动打开项目的主链。真实验证需另外覆盖普通文件夹无名片可达、类型持久化与共享来源过滤、多主机同仓与同 ID、分组多仓操作、侧栏当前项目范围、墙与对应版本页状态一致。具体执行结果及留白只写 STATUS 和 PR 验证评论。
