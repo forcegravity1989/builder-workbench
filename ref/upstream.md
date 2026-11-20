@@ -105,6 +105,7 @@ git rev-parse 'v1.4.251^{commit}'
 - **产品文档正本已替换**：仓根 `AGENTS.md`、`README.md`、`CONTEXT.md`、`CLAUDE.md` 与 `docs/` 是 BW 正本；上游工程参考进入 `ref/`，不覆盖 BW 产品文档。
 - **上游对外文档站不作为 BW 产品站**：`docs/site/`、README 多语言/营销素材和专项工程笔记不自动恢复；需要时从 Git 历史追溯来源。
 - **上报出口统一为 WeLink 群空间**：反馈、崩溃报告、诊断包和用户开启后的产品遥测共用 `src/main/workbench/reporting/` 的 welink-cli onebox 客户端。反馈与诊断保留原生入口、附件降级和确认流程；原 onorca.dev HTTP 上传链及 `ORCA_DIAGNOSTICS_TOKEN_URL` 配置已删除。遥测默认关闭、仅在设置开启，原生 consent、burst cap、validator 与 SDK 队列保留，由 BW bootstrap 注入 posthog-node 自定义 fetch，汇入独立遥测目录。同步时吸收原生管线语义，保留传输注入和默认关闭边界，不恢复 onorca.dev 或 PostHog 网络发送，也不另建上报出口。
+- **配对网页客户端不再投影到 out/web（issue #493）**：上游 #10989 的 `project-renderer-web-client.mjs` 把 renderer 产物二次压缩投影成 out/web，并与 out/renderer 一起打进 app.asar，形成近重复的 ~90MiB 前端资源。BW 删除该投影脚本与 `build:web-from-renderer` 链，打包应用直接从 out/renderer 提供 `web-index.html`（`findBundledWebClientRoot` 候选 out/web → out/renderer → 未打包入口的同级目录），electron-builder 排除 out/web，原入口隔离断言迁入 `verify-web-build.mjs`（打包链以 `verify:web-entry` 调用）。同步时不得恢复投影脚本、`build:web-from-renderer` 脚本，或把 out/web 重新计入打包 files。
 
 ### 2.2 目录和挂载边界
 

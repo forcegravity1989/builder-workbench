@@ -41,7 +41,7 @@ for (const args of [
   ['run', 'build:cli'],
   ['run', 'build:electron-vite'],
   ['run', 'verify:built-skills-cli'],
-  ['run', 'build:web-from-renderer'],
+  ['run', 'verify:web-entry'],
   ['run', 'ensure:electron-runtime'],
   [
     'exec',

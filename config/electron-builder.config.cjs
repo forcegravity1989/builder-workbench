@@ -226,8 +226,13 @@ module.exports = {
     '!out/**/*.map',
     // Why: SSH deploy reads Resources/relay; extraResources already carries every target.
     '!out/relay{,/**/*}',
-    // Why: Vite's manifest is only used to project the paired web client.
+    // Why: the paired web client is served from out/renderer (issue #493); the
+    // manifest is a build-time input with no runtime consumer.
     '!out/renderer/.vite{,/**/*}',
+    // Why: out/web is the dev-only standalone web build. Packaged apps serve the
+    // paired web client from out/renderer, so a stale local out/web must not
+    // bloat app.asar as a near-duplicate of the renderer bundle.
+    '!out/web{,/**/*}',
     // Why: out/electron-dev caches `pnpm dev`'s per-branch Electron.app copies (~270MB each).
     // CI never creates it, but packaging on a machine that has run dev would pack them all.
     '!out/electron-dev{,/**/*}',

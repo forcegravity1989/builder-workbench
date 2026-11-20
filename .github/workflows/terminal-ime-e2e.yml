@@ -85,7 +85,6 @@ jobs:
         run: |
           pnpm run build:relay
           pnpm exec electron-vite build --mode e2e
-          pnpm run build:web-from-renderer
       - name: Run native Wayland Hangul terminating digit
         env:
           SKIP_BUILD: '1'

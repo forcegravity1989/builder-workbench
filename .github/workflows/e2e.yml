@@ -26,7 +26,7 @@ jobs:
           native-runtime: node
 
       # Why: building here avoids parallel builds inside Playwright globalSetup;
-      # paired-browser specs also need the standalone web bundle.
+      # paired-browser specs read the web client from the electron-vite renderer output.
       - name: Build E2E outputs
         env:
           VITE_EXPOSE_STORE: 'true'
@@ -35,7 +35,6 @@ jobs:
           pnpm run build:relay &
           relay_pid=$!
           npx electron-vite build --mode e2e || status=1
-          pnpm run build:web-from-renderer || status=1
           wait "$relay_pid" || status=1
           exit "$status"
 
