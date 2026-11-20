@@ -238,7 +238,7 @@
   </div>
 
   <div class="card legend">
-    <p><strong>原型注释：复用当前 BW 外壳</strong> — Rail、项目对象侧栏、版本目录和设置页位置来自当前 Workbench/Orca；卡片和命令状态是本页演示快照。每张卡右上角的下拉是评审用状态切换，不属产品 UI。点「安装」「登录」在开发屏弹一个终端页签（演示假体），命令已注入执行，按 Enter 模拟完成；命令结束后回卡上点「重新检查」翻状态。远端服务器范围下不给安装 / 登录按钮。示例命令和状态不代表生产事实；真实 CLI 安装、登录、WeLink/CloudBuild 内网接口仍需验证。</p>
+    <p><strong>原型注释：当前 BW 外壳定位轮廓，未加载真实组件</strong> — Rail、项目对象侧栏、版本目录和设置页位置按当前 Workbench/Orca 层级表达；卡片和命令状态是本页演示快照。每张卡右上角的下拉是评审用状态切换，不属产品 UI。点「安装」「登录」在开发屏弹一个终端页签（演示假体），命令已注入执行，按 Enter 模拟完成；命令结束后回卡上点「重新检查」翻状态。远端服务器范围下不给安装 / 登录按钮。示例命令、状态、项目名和远端主机名不代表生产事实；真实 CLI 安装、登录、WeLink/CloudBuild 内网接口仍需验证。真实壳来源：<a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/WorkbenchRail.tsx">WorkbenchRail</a>、<a href="../../../src/renderer/src/workbench/WorkbenchSidebarNav.tsx">WorkbenchSidebarNav</a>、<a href="../../../src/renderer/src/workbench/WorkbenchVersionNav.tsx">WorkbenchVersionNav</a>、<a href="../../../src/renderer/src/components/settings/RuntimeEnvironmentsPane.tsx">RuntimeEnvironmentsPane</a>。</p>
   </div>
 
       </div></div></section>

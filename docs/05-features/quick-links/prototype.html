@@ -112,10 +112,10 @@
           <div class="prototype-meta" aria-label="原型评审信息"><strong>常用链接</strong><span>BW 位置：当前项目状态栏</span><span>当前稿</span><span>数据：演示链接</span><span class="meta-status"><a href="intent.md">意图</a> · <a href="spec.md">规格</a> · <a href="STATUS.md">状态</a></span></div>
           <div class="content">
             <header class="page-head"><div><h1>常用链接</h1><p>从当前项目状态栏打开自己的链接面板，保存项目级网页地址，并沿 Orca 端口入口的 popover 行为复用。</p></div><button class="btn btn-secondary" id="resetBtn" type="button">重置场景</button></header>
-            <p class="shell-note"><strong>原型注释：复用当前 BW 外壳。</strong> Rail、项目对象侧栏、版本目录、状态栏和页头按当前 BW/Orca 层级表达；本特性只新增状态栏「常用链接」入口和面板。示例链接与壳元数据分开，刷新后恢复演示数据。</p>
+            <p class="shell-note"><strong>原型注释：当前 BW 外壳定位轮廓，未加载真实组件。</strong> Rail、项目对象侧栏、版本目录、状态栏和页头按当前 BW/Orca 层级表达；本特性只新增状态栏「常用链接」入口和面板。侧栏项目名、版本和端口计数是演示壳元数据；示例链接与壳元数据分开，刷新后恢复演示数据。壳导航只反馈入口名称，不切换真实 Electron 页面。</p>
             <div class="feature-grid">
               <section class="card feature-card"><h2>状态栏入口</h2><p>点右下角「常用链接」图标打开面板；「端口」保留为 Orca 原生入口的同构参照，面板同一时刻只打开一个。</p><div class="hint-list"><span><b>添加 / 编辑</b> 名称与 http/https 地址，重复地址和账号密码会显示失败原因。</span><span><b>打开</b> 点击链接行提示将在 BW 内置浏览器打开。</span><span><b>复制 / 删除</b> 行内 Tooltip 按钮；删除需要确认。</span><span><b>项目级</b> 当前项目单独保存链接，不扫描端口、不探活。</span></div></section>
-              <aside class="card side-note"><h3>原型注释：交互范围</h3><p>本页可走通面板开合、添加、编辑、复制、删除确认、地址校验、空态和重置。演示服务不真正打开浏览器。</p><p><strong>真实代码复用：</strong>状态栏 segment、popover 和设置页表单的 Orca 原语形态。</p><p><strong>仍需验证：</strong>Electron 状态栏挂载、项目持久化和内置浏览器路由。</p></aside>
+              <aside class="card side-note"><h3>原型注释：交互范围</h3><p>本页可走通面板开合、添加、编辑、复制、删除确认、地址校验、空态和重置。演示服务不真正打开浏览器。</p><p><strong>真实代码来源：</strong><a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/WorkbenchRail.tsx">WorkbenchRail</a>、<a href="../../../src/renderer/src/workbench/WorkbenchSidebarNav.tsx">WorkbenchSidebarNav</a>；状态栏和 popover 沿 Orca 原语形态表达。</p><p><strong>仍需验证：</strong>Electron 状态栏挂载、项目持久化和内置浏览器路由。</p></aside>
             </div>
           </div>
         </div>
