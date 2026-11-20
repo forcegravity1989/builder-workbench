@@ -139,7 +139,7 @@ function Preview() {
       <Toaster theme={dark ? 'dark' : 'light'} />
       <iframe
         title="沿用当前版本工作区原型"
-        src="../../version-workspace/prototype.html"
+        src="../../version-workspace/version-workspace-prototype-475.html"
         style={{
           position: 'fixed',
           inset: 48,
