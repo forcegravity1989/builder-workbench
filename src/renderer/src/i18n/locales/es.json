@@ -12494,7 +12494,7 @@
           "6c4f1a8d2e": "Los detalles del check no están disponibles."
         },
         "EditorPanelHeader": {
-          "fb8331694e": "Abrir vista previa al lado",
+          "fb8331694e": "Vista previa",
           "4157f3cbf3": "Abrir vista previa de Markdown",
           "269ce4842b": "Copiar ruta relativa",
           "7c08a1f990": "Copiar ruta",
@@ -13113,7 +13113,6 @@
             "ffa4412b66": "próximo"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "de",
             "dcd6e6b03e": "Paso {{value0}} de {{value1}}"
           },
           "contextual": {

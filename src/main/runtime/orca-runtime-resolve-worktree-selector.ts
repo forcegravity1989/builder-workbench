@@ -15,14 +15,21 @@ import type { WorkspaceKey } from '../../shared/folder-workspace-types'
 import type { Repo } from '../../shared/repo-types'
 import type { Store } from '../persistence'
 import { areWorktreePathsEqual, mergeWorktree } from '../ipc/worktree-logic'
+import { isNonMissSelector } from './worktree-selector-miss'
 
 export class OrcaRuntimeWithResolveWorktreeSelector extends OrcaRuntimeWithResolveBrowserNetworkExecutionHostForWorktree {
-  protected async resolveWorktreeSelector(selector: string): Promise<ResolvedWorktree> {
+  protected async resolveWorktreeSelector(
+    selector: string,
+    caller?: string
+  ): Promise<ResolvedWorktree> {
+    // Why sampled before resolving: resolution repopulates the snapshot, so reading freshness
+    // at the miss below would report a fresh cache for every miss and answer nothing.
+    const cacheFreshAtRequest = this.hasFreshResolvedWorktreeCache()
     const explicitWorktreeId = this.getValidatedExplicitWorktreeIdSelector(selector)
     // Why only `id:`: every other selector kind is matched across the whole fleet, and their
     // `selector_ambiguous` contract is defined over all repos. Scoping those would silently pick a
     // winner where today they correctly refuse. An `id:` selector already names its repo.
-    if (explicitWorktreeId && !this.hasFreshResolvedWorktreeCache()) {
+    if (explicitWorktreeId && !cacheFreshAtRequest) {
       const scoped = await this.resolveExplicitWorktreeIdScoped(explicitWorktreeId)
       if (scoped) {
         return scoped
@@ -102,7 +109,25 @@ export class OrcaRuntimeWithResolveWorktreeSelector extends OrcaRuntimeWithResol
     if (candidates.length > 1) {
       throw new Error('selector_ambiguous')
     }
-    throw new Error('selector_not_found')
+    const miss = new Error('selector_not_found')
+    // Why at the choke point: every worktree-selector table (fleet show, worktree activation,
+    // session launch, terminal launch, file dispatches) funnels through this throw, and only the
+    // `workbench.*` RPC family had caller spans — a miss on any other channel left no trace
+    // (#727). Not recorded here: the `active` contract throw above and folder-workspace misses,
+    // which resolve outside this function and carry no repo/worktree facts. Optional call:
+    // intermediate classes of the composed runtime always define it, but a standalone subclass
+    // must not turn a miss into a TypeError.
+    if (!isNonMissSelector(selector)) {
+      this.emitWorktreeSelectorMiss?.(
+        selector,
+        'resolver',
+        null,
+        cacheFreshAtRequest,
+        miss,
+        caller ?? null
+      )
+    }
+    throw miss
   }
 
   protected resolveLineageForWorktreeCreate(

@@ -141,6 +141,9 @@ const {
 }))
 
 vi.mock('electron', () => ({
+  ipcMain: {
+    handle: vi.fn()
+  },
   app: {
     getPath: getPathMock,
     once: vi.fn()

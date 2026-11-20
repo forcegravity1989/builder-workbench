@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeLink 视频会议 / eMeeting 页面结构</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font: 15px/1.6 "Segoe UI", sans-serif; background: #f6f6f6; color: #1a1a1a; }
+  header, main { max-width: 880px; margin: 0 auto; padding: 24px 20px; }
+  header { padding-bottom: 0; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  h2 { font-size: 18px; margin: 0 0 12px; }
+  p, li { margin: 0 0 8px; }
+  a { color: #0b57d0; }
+  nav a { margin-right: 14px; }
+  .note { font-size: 13px; color: #555; }
+  section { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px 18px; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; border-top: 1px solid #eee; padding: 8px 6px; }
+  th { width: 28%; color: #555; font-weight: 600; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .bar { display: flex; gap: 8px; margin: 12px 0; }
+  .tab { border: 1px solid #ccc; background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+  .tab[aria-current="true"] { background: #111; color: #fff; border-color: #111; }
+  .box { border: 1px solid #e4e4e4; border-radius: 6px; padding: 12px; margin-top: 10px; background: #fafafa; }
+  button.action { border: 0; background: #111; color: #fff; border-radius: 6px; padding: 8px 12px; }
+  button.ghost { border: 1px solid #ccc; background: #fff; border-radius: 6px; padding: 8px 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>WeLink 视频会议 / eMeeting</h1>
+  <p class="note">这不是官方界面截图。没有打开已登录的视频会议窗口。这一页把命令帮助和 eMeeting 脚本实际用到的地址、字段、按钮放在一起，数字都是示例。</p>
+  <nav>
+    <a href="#detail">会议详情</a>
+    <a href="#topics">议题</a>
+    <a href="#ai">AI 听</a>
+    <a href="#minutes">会议纪要</a>
+  </nav>
+</header>
+<main>
+  <section id="detail">
+    <h2>会议详情</h2>
+    <p>创建命令 <code>welink-cli meeting create</code> 只有主题、开始、结束、与会人。帮助里没有视频、AI 听、纪要、议题参数。</p>
+    <table>
+      <tr><th>主题</th><td>团队计划会</td></tr>
+      <tr><th>开始</th><td>毫秒时间戳，示例对应 09:30</td></tr>
+      <tr><th>结束</th><td>毫秒时间戳，示例对应 10:15</td></tr>
+      <tr><th>与会人</th><td><code>--meeting-user-list</code>，帮助写的是 W3 ID，可多个</td></tr>
+      <tr><th>会议主键</th><td><code>response.id</code>，数字。议题命令的 <code>--meeting-id</code> 用这个。示例 202674731</td></tr>
+      <tr><th>enMeetingId</th><td>32 位。eMeeting 地址用这个。示例 <code>E4F634E7F6D7828CFD6DD9E0E1D3F415</code></td></tr>
+      <tr><th>接入</th><td>建会响应 <code>onlineMeeting.onlineMeetingMsg</code> 里的 Host 链接、Guest 链接、会议 ID</td></tr>
+    </table>
+    <p class="note">查询详情是 <code>welink-cli meeting info --meeting-id</code>。64 位 ID 不是上面的 32 位 enMeetingId，不能截断后拿去打开纪要。</p>
+    <p class="note">eMeeting 没有会议室字段。房间只出现在本地记录和群通知正文里。</p>
+  </section>
+
+  <section id="topics">
+    <h2>议题</h2>
+    <p>议题不是建会参数。建会之后用 <code>topic-create</code> 写入，也可以改、删、查。</p>
+    <table>
+      <tr><th>名称</th><td><code>--topic-name</code></td></tr>
+      <tr><th>类别</th><td>帮助中的例子：汇报类、决策类、学习类、研讨类、演示类、审批类</td></tr>
+      <tr><th>成员</th><td><code>--topic-member-list</code>，W3 ID，可多个</td></tr>
+      <tr><th>议题 ID</th><td>数字。修改、删除、查材料时用 <code>--topic-id</code></td></tr>
+    </table>
+    <div class="box">
+      <strong>示例一场会的三条议题</strong>
+      <table>
+        <tr><th>01</th><td>G2 会议协作进本周 · 决策类</td></tr>
+        <tr><th>02</th><td>本周纳入 · 决策类</td></tr>
+        <tr><th>03</th><td>上版遗留 · 研讨类</td></tr>
+      </table>
+    </div>
+    <p>纪要接口读回议题时还有汇报人：<code>roleKey</code> 为 <code>topicReporter</code> 的成员，带姓名和工号。</p>
+    <p class="note">有 <code>topic-materials</code> 可以按会议 ID 和议题 ID 查材料。材料页面这次没打开，这里不编内容。</p>
+  </section>
+
+  <section id="ai">
+    <h2>AI 听</h2>
+    <p>本机 meeting-minutes 技术参考写：AI 听在 <code>welink-cli meeting create</code> 创建视频会议时默认开启。<code>meeting create --help</code> 里没有这个开关。</p>
+    <p>会后页面地址：</p>
+    <p><code>https://w3.huawei.com/emeeting/#/aiSummary/E4F634E7F6D7828CFD6DD9E0E1D3F415/4</code></p>
+    <div class="bar" role="tablist" aria-label="AI 摘要页上脚本遇到的两种正文">
+      <button type="button" class="tab" id="tab-text" aria-current="true">语音转文字</button>
+      <button type="button" class="tab" id="tab-empty">未生成纪要</button>
+    </div>
+    <div class="box" id="ai-text">
+      <p>脚本按文字精确点击「语音转文字」，再读 class 名包含 <code>overflow-auto</code> 的容器里的文字，当作转写稿。</p>
+      <p>示例容器开头：发言人标签和句子。脚本说明发言人标签不能可靠区分多人，页面改版后这套抓取会失效。</p>
+    </div>
+    <div class="box" id="ai-empty" hidden>
+      <p>页面正文里若出现下面任一提示，脚本认为这场会没有转写稿：</p>
+      <ul>
+        <li>未生成纪要</li>
+        <li>内容过短</li>
+        <li>未检测到足够的有效内容</li>
+      </ul>
+      <p class="note">常见原因是没人进入视频会议，或时长太短。</p>
+    </div>
+  </section>
+
+  <section id="minutes">
+    <h2>会议纪要</h2>
+    <p>页面地址：</p>
+    <p><code>https://w3.huawei.com/emeeting/#/meeting/minutes/E4F634E7F6D7828CFD6DD9E0E1D3F415</code></p>
+    <div class="box">
+      <h2>本次会议主要内容</h2>
+      <p>会议级正文。写入时不带 topicId。</p>
+    </div>
+    <div class="box">
+      <h2>议题 · G2 会议协作进本周</h2>
+      <p>每个议题一块正文，写入时带该议题的 topicId 和 HTML。</p>
+    </div>
+    <p>读：<code>GET /emeeting/server/api/meeting/v1/getMeetingSummryText/{enMeetingId}</code></p>
+    <p>写：<code>POST /emeeting/server/api/meeting/v1/addMeetingSummryText</code>，<code>saveHistory</code> 为 false。脚本注释写这是草稿，不产生历史版本。读回的是转义后的 HTML，写入要送原始 HTML。</p>
+    <p>
+      <button type="button" class="action" id="send">发送纪要</button>
+    </p>
+    <p class="note" id="send-note">脚本不调用这个按钮。meeting-minutes 写明由人在这个页面上点击「发送纪要」。</p>
+  </section>
+</main>
+<script>
+document.getElementById("tab-text").onclick = function () {
+  document.getElementById("ai-text").hidden = false
+  document.getElementById("ai-empty").hidden = true
+  this.setAttribute("aria-current", "true")
+  document.getElementById("tab-empty").setAttribute("aria-current", "false")
+}
+document.getElementById("tab-empty").onclick = function () {
+  document.getElementById("ai-text").hidden = true
+  document.getElementById("ai-empty").hidden = false
+  this.setAttribute("aria-current", "true")
+  document.getElementById("tab-text").setAttribute("aria-current", "false")
+}
+document.getElementById("send").onclick = function () {
+  document.getElementById("send-note").textContent = "这里没有真正发送。页面上这个动作留在 eMeeting，由人点击。"
+}
+</script>
+</body>
+</html>

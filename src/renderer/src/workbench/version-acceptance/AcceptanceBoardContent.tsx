@@ -45,7 +45,7 @@ export function AcceptanceBoardContent({
 }: AcceptanceBoardProps & { recoveryKey: string }) {
   const startedKey = cycleStartedViewKey({
     ...context,
-    version: context.version ?? context.boundVersion
+    version: context.version
   })
   const [started, setStarted] = useState(() => hasCycleStarted(startedKey))
   const board = useAcceptanceBoard({ context, history, recoveryKey, started })
@@ -71,7 +71,7 @@ export function AcceptanceBoardContent({
   // on surfaces where the button does not render (empty board, no fixed plan).
   useAnnotationModeShortcut(Boolean(plan && document), annotations.toggleMode)
   const [notice, setNotice] = useState('')
-  const sendAction = usePlanSendAction(worktreeId, setNotice, '验收助手')
+  const sendAction = usePlanSendAction(worktreeId, setNotice, 'acceptance', '验收助手')
   const prepareReportPrompt = async () =>
     (
       await resolveWorkbenchPromptAssets(
@@ -195,23 +195,15 @@ export function AcceptanceBoardContent({
       draftKey: recoveryKey,
       goalId: task.reference.goalId
     })
-  // Only acceptance-side problems make a version unreadable *here*. The catalog
-  // also carries plan-side problems, and blaming those on the acceptance dropdown
-  // is what made a perfectly readable version look broken.
-  const unreadable = board.materialProblems
-    .filter((item) => item.workflow === 'acceptance')
-    .map((item) => item.version)
   const state = !document
     ? ''
     : board.draft?.error
       ? '保存待处理'
-      : board.busy
-        ? '读取中…'
-        : board.draft?.dirty
-          ? board.saving
-            ? '正在保存…'
-            : '正在保存修改…'
-          : '已保存'
+      : board.draft?.dirty
+        ? board.saving
+          ? '正在保存…'
+          : '正在保存修改…'
+        : '已保存'
   const popover = annotations.popover
 
   if (!document && !started) {
@@ -220,7 +212,6 @@ export function AcceptanceBoardContent({
         board={board}
         context={context}
         entry={entry}
-        unreadable={unreadable}
         state={state}
         chatCollapsed={chatCollapsed}
         onStarted={() => {
@@ -242,15 +233,11 @@ export function AcceptanceBoardContent({
   return (
     <main className={`acc-board${annotations.annotating ? ' annotating' : ''}`} lang="zh">
       <AcceptanceHeader
-        currentVersion={board.version}
-        versions={[...new Set([...board.versions, ...(board.version ? [board.version] : [])])]}
-        unreadable={unreadable}
-        boundVersion={context.boundVersion}
-        disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
+        boundVersion={context.version}
+        disabled={!context.materialPort || Boolean(context.syncing)}
         state={state}
         sessionCollapsed={chatCollapsed}
         onSessionToggle={onSessionToggle}
-        onSelect={(version) => void board.loadVersion(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
@@ -292,7 +279,6 @@ export function AcceptanceBoardContent({
         recoveryText={board.recoveryText}
         draft={board.draft}
         controller={board.controller}
-        busy={board.busy}
         setError={board.setError}
         onRetrySave={() => void board.retrySave()}
         onRemoteDeleted={board.useRemoteDeletion}
@@ -397,6 +383,7 @@ export function AcceptanceBoardContent({
             annotating={annotations.annotating}
             worktreeId={worktreeId}
             assistant="验收助手"
+            screen="acceptance"
             onClose={annotations.closePanel}
             onUpdate={annotations.update}
             onRemove={annotations.remove}

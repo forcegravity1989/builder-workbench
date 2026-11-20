@@ -68,6 +68,7 @@ export function retainUnavailableCatalogSources({
     if (!entry && (keepMaterial || keepDraft)) {
       entry = {
         version: previous.version,
+        mergeStatus: 'unknown',
         material: {},
         problems: [],
         goals: [],
@@ -82,6 +83,16 @@ export function retainUnavailableCatalogSources({
     if (keepMaterial) {
       entry.material = { ...previous.material }
       entry.problems = [...previous.problems]
+      entry.planEnteredAt = previous.planEnteredAt
+    }
+    if (entry.mergeStatus === 'unknown' && (keepMaterial || keepDraft)) {
+      entry.mergeStatus = previous.mergeStatus ?? 'unknown'
+    }
+    if (
+      (entry.planStartedAt === undefined || entry.planStartedAt === null) &&
+      previous.planStartedAt !== undefined
+    ) {
+      entry.planStartedAt = previous.planStartedAt
     }
     if (keepDraft && !entry.draft) {
       entry.draft = { cycleId: keepDraft.cycleId, revision: keepDraft.revision }

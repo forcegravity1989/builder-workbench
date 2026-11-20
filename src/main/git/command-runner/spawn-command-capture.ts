@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { endSubprocessStdin } from '../../../shared/subprocess-stdin-write'
 import { recordSubprocessSpawn } from '../../diagnostics/main-thread-churn-probe'
 import { getSpawnArgsForWindows } from '../../win32-utils'
 import { createAbortError } from './abort-error'
@@ -12,6 +13,7 @@ export type CommandExecOptions = {
   env?: NodeJS.ProcessEnv
   signal?: AbortSignal
   wslDistro?: string
+  stdin?: string
 }
 
 export async function spawnCommandCapture(
@@ -34,7 +36,7 @@ export async function spawnCommandCapture(
     const child = spawn(spawnCmd, spawnArgs, {
       cwd: options.cwd,
       env: options.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: [options.stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
       windowsHide: true
     })
     recordSubprocessSpawn(spawnCmd, spawnArgs, performance.now() - spawnStartedAt)
@@ -105,5 +107,8 @@ export async function spawnCommandCapture(
     child.stderr?.on('data', onStderrData)
     child.on('error', onError)
     child.on('close', onClose)
+    if (options.stdin !== undefined) {
+      endSubprocessStdin(child.stdin, options.stdin)
+    }
   })
 }

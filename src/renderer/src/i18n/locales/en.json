@@ -292,6 +292,25 @@
     }
   },
   "auto": {
+    "workbench": {
+      "quickLinks": {
+        "add": "Add",
+        "cancel": "Cancel",
+        "copied": "Copied {{url}}",
+        "copy": "Copy",
+        "corrupt": "Quick links file could not be read; existing file was left untouched.",
+        "delete": "Delete",
+        "edit": "Edit",
+        "empty": "No quick links yet. Click Add to create one.",
+        "namePlaceholder": "Name",
+        "save": "Save",
+        "saveFailed": "Failed to save quick links",
+        "title": "Quick Links",
+        "tooltip": "Quick Links — {{count}}",
+        "trigger": "Quick Links, {{count}}",
+        "urlPlaceholder": "https://example.com"
+      }
+    },
     "App": {
       "221a95ba38": "Retry onboarding or close it and continue in the app.",
       "f02d37278a": "Onboarding hit an error.",
@@ -3256,6 +3275,7 @@
             "openWithDefaultApp": "Open with default app",
             "switchTerminal": "Switch terminal",
             "openTaskTerminal": "Open task terminal",
+            "openInTask": "Open in Task",
             "systemBrowser": "System Browser",
             "orcaBrowser": "Orca Browser",
             "terminalLinkSettings": "Terminal link settings",
@@ -3756,6 +3776,7 @@
           },
           "StatusBar": {
             "9659e38343": "Ports",
+            "quickLinks": "Quick Links",
             "d1e1a7a6bf": "Resource Manager",
             "24ac89df1a": "Remote Hosts",
             "5e59007df4": "Kimi Usage",
@@ -8035,7 +8056,18 @@
           "27cf8507ad": "Refresh shared access",
           "f031182867": "Shared Server Access",
           "df142657a5": "Not used yet",
-          "b18d1764ef": "Last used {{value0}}"
+          "b18d1764ef": "Last used {{value0}}",
+          "selectedCount": "{{value0}} selected",
+          "selectReadonly": "Select connected read-only devices",
+          "grantFullAccess": "Grant full access",
+          "selectForFullAccess": "Select {{value0}} for full access",
+          "teamReadonly": "Team read-only",
+          "fullAccess": "Full access",
+          "connected": " · Connected",
+          "confirmTitle": "Grant full access?",
+          "confirmDescription": "The selected devices will be able to create worktrees, start sessions, send input, and run commands on this host.",
+          "cancel": "Cancel",
+          "confirmGrant": "Grant full access"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "Remove {{value0}}",
@@ -8188,7 +8220,11 @@
           "noExternalAddress": "No address for another device was found. Connect this computer to a LAN or Tailscale, refresh, or choose Custom address.",
           "staleAddress": "The connection address changed. Generate a new link for {{address}}.",
           "customInvalid": "Enter a valid host, host:port, IPv6 address, or ws(s):// URL.",
-          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link."
+          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link.",
+          "fullAccessGranted": "Full access granted.",
+          "fullAccessGrantedCount": "Full access granted to {{value0}} devices.",
+          "fullAccessGrantFailed": "Failed to grant full access.",
+          "failedToLoadAccessLog": "Failed to load access log."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",
@@ -11872,6 +11908,24 @@
           "staleUsage": "Last known usage — the latest refresh failed: {{reason}}",
           "usageLabel": "Usage",
           "unknownUsage": "Current usage is unavailable. Refresh usage to try again."
+        },
+        "RuntimeAccessAuditLog": {
+          "title": "Shared host access log",
+          "description": "Request metadata · last 14 days",
+          "refresh": "Refresh shared host access log",
+          "action": "Filter log action",
+          "allActions": "All actions",
+          "result": "Filter log result",
+          "allResults": "All results",
+          "allowed": "Allowed",
+          "denied": "Denied",
+          "error": "Error",
+          "time": "Filter log time",
+          "lastDay": "Last 24 hours",
+          "lastWeek": "Last 7 days",
+          "lastTwoWeeks": "Last 14 days",
+          "search": "Search device or action",
+          "empty": "No matching access records."
         }
       },
       "right": {
@@ -13661,6 +13715,12 @@
             "370a1faf67": "Open in browser",
             "2c69728c2a": "Open link in browser",
             "6f07a18604": "Name",
+            "codehubMode": "CodeHub",
+            "codehubEmpty": "No matching CodeHub issues.",
+            "codehubEmptyStart": "Start typing to search CodeHub issues.",
+            "codehubLoadFailed": "Couldn’t load CodeHub issues. Check sign-in or permissions, then retry.",
+            "codehubRetry": "Retry",
+            "codehubMoreResults": "Showing the first results. Narrow your keywords to see more.",
             "2e4c7c95fe": "Branch",
             "2cfc6be192": "GitLab",
             "7a47af0565": "Linear",
@@ -13702,7 +13762,8 @@
             "jiraMode": "Jira",
             "jiraSelectBindFailed": "Couldn’t link this Jira issue. Pick the matching site or reconnect Jira, then try again.",
             "emoji": "Emoji",
-            "loadingLinearIssue": "Loading Linear issue…"
+            "loadingLinearIssue": "Loading Linear issue…",
+            "searchCodeHub": "Search CodeHub issues"
           },
           "ProjectCombobox": {
             "empty": "No projects match your search.",
@@ -14509,7 +14570,7 @@
           "6c4f1a8d2e": "Check details are unavailable."
         },
         "EditorPanelHeader": {
-          "fb8331694e": "Open Preview to the Side",
+          "fb8331694e": "Preview",
           "4157f3cbf3": "Open Markdown Preview",
           "269ce4842b": "Copy Relative Path",
           "7c08a1f990": "Copy Path",
@@ -15182,7 +15243,6 @@
             "complete": "Done"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "of",
             "dcd6e6b03e": "Step {{value0}} of {{value1}}"
           },
           "contextual": {
@@ -15190,6 +15250,20 @@
               "overlay": {
                 "measurement": {
                   "38b3155418": "Next",
+                  "tasks": {
+                    "source": {
+                      "title": "Choose the work source",
+                      "body": "Choose the project or work source. If none is available, check your connections in Settings."
+                    },
+                    "filter": {
+                      "title": "Filter to the work you need",
+                      "body": "Use presets and search to narrow issues, reviews, merge requests, or tasks."
+                    },
+                    "start": {
+                      "title": "Start from work items",
+                      "body": "Use Start or Open on a task, issue, review, or merge request to bring its context into a workspace."
+                    }
+                  },
                   "automations": {
                     "intro": {
                       "title": "What is an automation?",
@@ -15399,7 +15473,7 @@
             "756bfc25c9": "Open",
             "09a9489aa5": "Show",
             "2a4c4b8e1f": "Copy",
-            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Open Preview to the Side\" on the file instead."
+            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead."
           },
           "BrowserToolbarMenu": {
             "429ef481f9": "Cancel",
@@ -15948,7 +16022,9 @@
         },
         "hostPicker": {
           "allHosts": "All hosts",
-          "loadingHost": "Loading host…"
+          "loadingHost": "Loading host…",
+          "searchHosts": "Search hosts...",
+          "noHostsMatch": "No hosts match your search."
         },
         "ownerConflict": {
           "dismiss": "Dismiss"
@@ -18192,7 +18268,10 @@
     },
     "cliPrerequisite": "Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.",
     "providerRemoteCredentials": "This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.",
-    "providerLocalCredentials": "This desktop client owns the provider credentials and account checks. Edit server-owned credentials in the advanced settings for that server.",
+    "providerLocalAccount": "Local desktop",
+    "closeSetupGuide": "Close setup guide",
+    "setupGuideClosed": "Setup guide closed",
+    "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
     "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
     "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."
   }

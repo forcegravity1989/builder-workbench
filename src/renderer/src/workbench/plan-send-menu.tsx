@@ -10,6 +10,11 @@ import {
 import { ReviewNotesSendMenuContent } from '@/components/editor/ReviewNotesSendMenuContent'
 import { preventAgentSendTargetOutsideDismiss } from '@/components/browser-pane/annotate/prevent-agent-send-target-outside-dismiss'
 import { revealPlanChat } from './plan-column-resize'
+import { track } from '@/lib/telemetry'
+import type {
+  BwAssistantRequestActionId,
+  BwAssistantRequestScreen
+} from '../../../shared/telemetry-events'
 // Owns .g3-send-preview; imported here so the preview is styled on every board
 // that uses this menu, not only where board-ui happens to be loaded first.
 import './board-ui.css'
@@ -19,6 +24,7 @@ export type SendActionWrap = (
   prompt: string,
   label: string,
   button: ReactElement,
+  actionId: BwAssistantRequestActionId,
   preparePrompt?: () => Promise<string>
 ) => ReactElement
 
@@ -33,22 +39,25 @@ const DEFAULT_ASSISTANT = '计划助手'
 export function usePlanSendAction(
   worktreeId: string | null,
   onSentNotice: (message: string) => void,
+  screen: BwAssistantRequestScreen,
   assistant = DEFAULT_ASSISTANT
 ): SendActionWrap {
   return useCallback(
-    (prompt, label, button, preparePrompt) => (
+    (prompt, label, button, actionId, preparePrompt) => (
       <PlanSendMenu
         worktreeId={worktreeId}
         prompt={prompt}
         preparePrompt={preparePrompt}
         label={label}
         assistant={assistant}
+        actionId={actionId}
+        screen={screen}
         onSent={() => onSentNotice(`${label}已发送给${assistant} · 在会话栏查看进展`)}
       >
         {button}
       </PlanSendMenu>
     ),
-    [worktreeId, onSentNotice, assistant]
+    [worktreeId, onSentNotice, screen, assistant]
   )
 }
 
@@ -59,6 +68,8 @@ export function PlanSendMenu({
   preparePrompt,
   label,
   assistant = DEFAULT_ASSISTANT,
+  actionId,
+  screen,
   onSent,
   children
 }: {
@@ -67,6 +78,9 @@ export function PlanSendMenu({
   preparePrompt?: () => Promise<string>
   label: string
   assistant?: string
+  actionId: BwAssistantRequestActionId
+  /** Plan/acceptance identity for usage telemetry; absent = not a cycle-board request. */
+  screen?: BwAssistantRequestScreen
   onSent?(): void
   children: ReactElement
 }) {
@@ -82,6 +96,16 @@ export function PlanSendMenu({
   const [preparedPrompt, setPreparedPrompt] = useState<string | null>(null)
   const [prepareError, setPrepareError] = useState('')
   const preparation = useRef({ generation: 0 })
+  // Why: telemetry counts real delivery only — a click that never reaches an
+  // assistant session (menu closed, target cancelled) is not a request sent.
+  // Without a screen identity the send is not a plan/acceptance cycle-board
+  // request and emits no usage event.
+  const onDelivered = useCallback(() => {
+    onSent?.()
+    if (screen) {
+      track('bw_assistant_request_sent', { action_id: actionId, screen })
+    }
+  }, [onSent, actionId, screen])
   // Why: mirror NotesSendMenu — when the store's target mode leaves this id
   // (sent from the sidebar, or taken over by another source), the local menu
   // must collapse too instead of lingering.
@@ -128,7 +152,7 @@ export function PlanSendMenu({
                 prompt: resolved,
                 label,
                 launchSource: 'notes_send',
-                onPromptDelivered: onSent
+                onPromptDelivered: onDelivered
               })
             } catch (reason) {
               if (request === preparation.current.generation) {
@@ -168,7 +192,7 @@ export function PlanSendMenu({
             prompt={preparedPrompt}
             promptDelivery="submit-after-ready"
             launchSource="notes_send"
-            onPromptDelivered={onSent}
+            onPromptDelivered={onDelivered}
           />
         )}
       </DropdownMenuContent>

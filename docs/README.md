@@ -23,7 +23,7 @@
 | [04-design-system/](04-design-system/README.md) | 视觉与交互规范、样式、token；[引导与旅程规范](04-design-system/guidance.md)维护入门、探索两张矩阵及展示/回看规则 | 设计或修改界面、引导、旅程内容与传播素材 |
 | [05-features/](05-features/README.md) | BW 特性矩阵、Issue 归属与文档入口，各特性的定义和证据由其规格与 STATUS 承载 | 提单时核对主归属，开发或盘点时按用户旅程查看定义及链状态 |
 | [06-module/](06-module/README.md) | 模块实现心智、主要矛盾与取舍 | 修改某一模块前 |
-| [10-reference/](10-reference/) | 业界研究与公开方法的一手资料提炼 | 比较 AI 辅助开发的实测结果，读[交付研究](10-reference/ai-native-delivery-value.md)。了解 Anthropic 的六阶段实践，读 [SDLC Playbook](10-reference/ai-native-sdlc-playbook.md) |
+| [10-reference/](10-reference/) | 业界研究与公开方法的一手资料提炼；内部工具的命令与页面记录也放这里 | 比较 AI 辅助开发的实测结果，读[交付研究](10-reference/ai-native-delivery-value.md)。了解 Anthropic 的六阶段实践，读 [SDLC Playbook](10-reference/ai-native-sdlc-playbook.md)。查本机 WeLink 命令，读 [welink-cli](10-reference/welink-cli.md)。查视频会议与 eMeeting 页面，读 [welink-video-meeting](10-reference/welink-video-meeting.md) |
 | [hifi/](hifi/) | 屏幕版式与旅程原型 | 对照交互设计；原型不是已交付界面 |
 
 模型从 AGENTS 的任务路径到达这里，再读目标文件原文头部和正文；到达链接不等于读取，更不等于已遵守。产品目标与当前实现冲突时，分别回到 03 与 architecture 核对，不能把主张或原型改写成已经交付。
@@ -35,6 +35,7 @@
 | [workbench-start](../.claude/skills/workbench-start/SKILL.md) | BW 自己的开发与交付方法；按任务分流，知识定义与治理 Skill 共用 |
 | [journey-review](../.claude/skills/journey-review/SKILL.md) | 按用户指定的单条 BW 旅程走查、修复和瘦身，补引导/指南/按需传播素材并更新矩阵 |
 | [project-knowledge](../.claude/skills/project-knowledge/SKILL.md) | 项目知识整改、只读全景与反哺方法；当地已认可规范优先，逐块清理存量 |
+| [tests/e2e/AGENTS.md](../tests/e2e/AGENTS.md) · [Workbench E2E 白名单](../tests/e2e/workbench-allowlist.ts) | Workbench 三类用例的位置、登记规则和当前 CI 入口；实际 E2E 规范与证据仍回到 [development.md](development.md) |
 | [orca-boundary-review](../.claude/skills/orca-boundary-review/SKILL.md) | 周期复核与 Orca/BW 边界候选；先读当前 BW，公开上游变化只由人采纳后写回正本 |
 | [workbench-release](../.claude/skills/workbench-release/SKILL.md) | Windows Workbench 出包与 GitHub Release 发布；正式发布须用户明确授权 |
 | [ref/](../ref/upstream.md) | 按需读取的 Orca 工程参考；修改对应执行核、协议或同步上游时读，不覆盖 BW 产品正本 |

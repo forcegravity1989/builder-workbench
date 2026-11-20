@@ -15,6 +15,7 @@ import { activateVersionWorktree } from './version-worktree-host'
 export type WorkbenchWorkspaceChoice = {
   title: string
   candidates: Worktree[]
+  onChoose?: (worktree: Worktree) => void
 }
 
 let choice: WorkbenchWorkspaceChoice | null = null
@@ -39,9 +40,14 @@ export function closeWorkbenchWorkspaceChoice(): void {
 }
 
 export function chooseWorkbenchWorkspace(worktree: Worktree): void {
+  const onChoose = choice?.onChoose
   choice = null
   emit()
-  activateVersionWorktree(worktree)
+  if (onChoose) {
+    onChoose(worktree)
+  } else {
+    activateVersionWorktree(worktree)
+  }
 }
 
 export function useWorkbenchWorkspaceChoice(): WorkbenchWorkspaceChoice | null {

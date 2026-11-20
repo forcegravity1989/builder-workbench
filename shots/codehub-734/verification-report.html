@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>真机验证报告 · CodeHub 来源自适应 · #734</title>
+<style>
+body{margin:0;background:#0f1115;color:#e6ebf2;font:15px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 70px}
+h1{font-size:25px;margin:0 0 6px}.sub{color:#9aa7b8}
+h2{font-size:19px;margin:30px 0 10px;border-bottom:1px solid #2a3340;padding-bottom:8px}
+.card{background:#161a21;border:1px solid #2a3340;border-radius:14px;padding:16px;margin:12px 0}
+img{width:100%;border:1px solid #2a3340;border-radius:10px;display:block;margin:10px 0}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.badge{font-size:12.5px;padding:4px 10px;border-radius:999px;border:1px solid #245c33;background:#0f2417;color:#b7f0c0}
+.badge.warn{border-color:#5c4a16;background:#241d0c;color:#f2d495}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+th,td{border:1px solid #2a3340;padding:8px 10px;text-align:left}th{background:#1c222b;color:#9aa7b8}
+code{font-family:ui-monospace,Consolas,monospace;background:#0b0e13;border:1px solid #2a3340;padding:1px 6px;border-radius:6px;font-size:13px}
+.muted{color:#9aa7b8}.ok{color:#9ff0ad}
+.foot{margin-top:36px;border-top:1px solid #2a3340;padding-top:12px;color:#9aa7b8;font-size:12.5px}
+</style></head><body><div class="wrap">
+<h1>创建工作树 · 来源按仓库平台自适应（CodeHub）— 真机验证报告</h1>
+<p class="sub">真实 Electron + 真实 <code>codehub-cli</code> + 真实 CodeHub 仓库（隔离 profile，未触碰用户项目/profile）· Issue <a href="https://github.com/forcegravity1989/builder-workbench/issues/734" style="color:#58a6ff">#734</a> · 2026-11-19</p>
+<div class="badges">
+<span class="badge">真实仓库 shunfenger → 识别为 CodeHub</span>
+<span class="badge">标签 智能/CodeHub/分支/名称（无 GitHub）</span>
+<span class="badge">真实关键词命中真实议题</span>
+<span class="badge">选中生成来源标记</span>
+<span class="badge warn">隔离临时 profile，只读仓库</span>
+</div>
+
+<h2>1. 平台识别与标签自适应</h2>
+<div class="card">
+<p>注册真实仓库 <code>D:/02.Coding/orca/workspace/shunfenger</code>（origin 指向内网 CodeHub），主进程识别 <code>gitRemoteIdentity.canonicalKey = szv-open.codehub.huawei.com/innersource/shunfenger_G/shunfenger</code>。创建器来源标签行随之为 <b>智能 / CodeHub / 分支 / 名称</b>，不再出现 GitHub。</p>
+<img alt="CodeHub 标签行" src="1-codehub-tabs.jpg"/>
+</div>
+
+<h2>2. 真实关键词搜索</h2>
+<div class="card">
+<p>在来源输入框输入关键词「修复」，服务端 <code>codehub-cli search issue</code> 返回真实 CodeHub 议题，候选中出现真实议题条目。</p>
+<img alt="真实搜索候选" src="2-codehub-search.jpg"/>
+</div>
+
+<h2>3. 选中议题并生成来源标记</h2>
+<div class="card">
+<p>选中真实议题后生成来源标记（<code>#编号 + 标题</code>），作为工作树名称与通用任务关联来源。</p>
+<img alt="选中后来源标记" src="3-codehub-selected.jpg"/>
+</div>
+
+<h2>4. 静态与单测门禁（同分支）</h2>
+<div class="card"><table>
+<tr><th>门禁</th><th>结果</th></tr>
+<tr><td>受影响单测（8 文件）</td><td class="ok">102 passed</td></tr>
+<tr><td>测试总量闸门</td><td class="ok">220 / 220</td></tr>
+<tr><td>前端 + 主进程 tsc</td><td class="ok">通过</td></tr>
+<tr><td>oxlint / 反冗余 / oxfmt</td><td class="ok">通过</td></tr>
+<tr><td>本地化覆盖/提取、文档链接</td><td class="ok">通过</td></tr>
+</table></div>
+
+<h2>5. 说明与边界</h2>
+<div class="card"><ul>
+<li>真机验证使用隔离临时 profile 与一次性目录，HOME/USERPROFILE 重定向并断言非真实 home；仅把 <code>codehub-cli</code> 凭据复制进该临时 HOME 使真实查询可用，结束后删除。</li>
+<li>仅读取真实仓库与议题，未在真实项目创建工作树、未创建/关闭 Issue。</li>
+<li>本次范围仅 CodeHub Issue；<code>issue list</code> 带 label/scope 时不走关键词搜索属既有 CLI 边界。</li>
+<li>全量 <code>typecheck</code> 的 e2e/cloud 工程存在与本改动无关的既有类型错误，未计入通过。</li>
+</ul></div>
+
+<div class="foot">真机验证产物。截图与真实 CodeHub 数据按用户要求未脱敏。生成于 2026-11-19。</div>
+</div></body></html>

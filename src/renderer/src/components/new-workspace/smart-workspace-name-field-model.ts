@@ -3,6 +3,7 @@ import type { useAppStore } from '@/store'
 import type { parseGitHubIssueOrPRLink, RepoSlug } from '@/lib/github-links'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import type { GitLabWorkItem } from '../../../../shared/gitlab-types'
+import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { JiraIssue, JiraSite } from '../../../../shared/jira-types'
 import type { LinearIssue } from '../../../../shared/linear/issue-types'
 import type { BaseRefSearchResult } from '../../../../shared/repo-types'
@@ -18,6 +19,9 @@ export type SmartWorkspaceNameFieldProps = {
   value: string
   onValueChange: (value: string) => void
   onGitHubItemSelect: (item: GitHubWorkItem) => void
+  /** Optional; CodeHub issue select — mutually exclusive with GitHub based on repo platform.
+   *  sourceContext is derived from the item's own repo (folder results can span repos). */
+  onCodeHubIssueSelect?: (item: CodeHubTaskItem, sourceContext: TaskSourceContext | null) => void
   /** Optional; when omitted, GitLab paste-URL detection is silently skipped. */
   onGitLabItemSelect?: (item: GitLabWorkItem) => void
   onBranchSelect: (refName: string, localBranchName: string) => void
@@ -27,6 +31,7 @@ export type SmartWorkspaceNameFieldProps = {
   selectedSource: SmartWorkspaceNameSelection | null
   onClearSelectedSource: () => void
   githubSourceContext?: TaskSourceContext | null
+  codehubSourceContext?: TaskSourceContext | null
   jiraSourceContext?: TaskSourceContext | null
   inputRef?: React.RefObject<HTMLInputElement | null>
   onPlainEnter?: () => void
@@ -63,7 +68,15 @@ export type NormalizedSmartWorkspaceNameFieldProps = Omit<
 }
 
 export type SmartWorkspaceNameSelection = {
-  kind: 'github-pr' | 'github-issue' | 'gitlab-mr' | 'gitlab-issue' | 'branch' | 'linear' | 'jira'
+  kind:
+    | 'github-pr'
+    | 'github-issue'
+    | 'codehub-issue'
+    | 'gitlab-mr'
+    | 'gitlab-issue'
+    | 'branch'
+    | 'linear'
+    | 'jira'
   label: string
   url?: string
 }
@@ -75,6 +88,7 @@ export type RowEntry =
 export type RepoBackedSearchTarget = {
   repo: RepoOption
   githubSourceContext: TaskSourceContext | null
+  codehubSourceContext: TaskSourceContext | null
   gitlabSourceContext: TaskSourceContext | null
 }
 

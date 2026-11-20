@@ -142,22 +142,40 @@ export async function listCodeHubTasks(args: {
   assignee?: string
 }): Promise<CodeHubTaskItem[]> {
   const limit = args.limit && args.limit > 0 ? Math.floor(args.limit) : 30
-  const flags = [
-    args.kind,
-    'list',
-    '-p',
-    args.remote.project,
-    '-H',
-    args.remote.host.replace(/:\d+$/, ''),
-    '-f',
-    'json',
-    '--order-by',
-    'updated_at',
-    '--sort',
-    'desc',
-    '--limit',
-    String(limit)
-  ]
+  // Why: `search issue` has no --labels/--scope; only the creator's pure
+  // search+state+limit call uses it, while filter combos keep `issue list`.
+  const searchingIssues =
+    args.kind === 'issue' && !!args.search?.trim() && !args.labels?.length && !args.scope
+  const flags = searchingIssues
+    ? [
+        'search',
+        'issue',
+        args.search!.trim(),
+        '-p',
+        args.remote.project,
+        '-H',
+        args.remote.host.replace(/:\d+$/, ''),
+        '-f',
+        'json',
+        '--limit',
+        String(limit)
+      ]
+    : [
+        args.kind,
+        'list',
+        '-p',
+        args.remote.project,
+        '-H',
+        args.remote.host.replace(/:\d+$/, ''),
+        '-f',
+        'json',
+        '--order-by',
+        'updated_at',
+        '--sort',
+        'desc',
+        '--limit',
+        String(limit)
+      ]
   if (args.state !== 'all') {
     flags.push('--state', args.state)
   }

@@ -39,6 +39,12 @@ export function useSmartWorkspaceGithubSearch({
     setOpen,
     setCrossRepoPrompt
   } = foundation
+  // Why: only repos that are actually GitHub remotes should be queried; a folder
+  // may also contain CodeHub or unknown repos whose github context is null.
+  const githubTargets = useMemo(
+    () => repoBackedSearchTargets.filter((target) => target.githubSourceContext !== null),
+    [repoBackedSearchTargets]
+  )
   const normalizedGhQuery = useMemo(
     () => normalizeGitHubLinkQuery(sourceQueryWithinLimit ? debouncedQuery : ''),
     [debouncedQuery, sourceQueryWithinLimit]
@@ -66,7 +72,7 @@ export function useSmartWorkspaceGithubSearch({
       void resolveSmartWorkspaceGithubDirectLink({
         directLink,
         crossRepoSwitchTarget,
-        repoBackedSearchTargets,
+        repoBackedSearchTargets: githubTargets,
         selectedRepo,
         githubSourceContext,
         repos,
@@ -112,7 +118,7 @@ export function useSmartWorkspaceGithubSearch({
             }
           : { kind: 'hash-number' as const, number: directNumber }
       const request = Promise.all(
-        repoBackedSearchTargets.map((target) =>
+        githubTargets.map((target) =>
           lookupSmartGitHubSubmitItem({
             repoPath: target.repo.path,
             repoId: target.repo.id,
@@ -151,8 +157,8 @@ export function useSmartWorkspaceGithubSearch({
 
     const trimmed = normalizedGhQuery.query.trim()
     const query = trimmed ? normalizedGhQuery.query : ''
-    if (repoBackedSearchTargets.length === 1) {
-      const target = repoBackedSearchTargets[0]
+    if (githubTargets.length === 1) {
+      const target = githubTargets[0]
       const cached = getCachedWorkItems(
         target.repo.id,
         RESULT_LIMIT,
@@ -187,7 +193,7 @@ export function useSmartWorkspaceGithubSearch({
     } else {
       setGithubLoading(true)
       void fetchWorkItemsAcrossRepos(
-        repoBackedSearchTargets.map((target) => ({
+        githubTargets.map((target) => ({
           repoId: target.repo.id,
           path: target.repo.path,
           executionHostId: target.repo.executionHostId,
@@ -225,7 +231,7 @@ export function useSmartWorkspaceGithubSearch({
     normalizedGhQuery,
     parsedGhLink,
     repos,
-    repoBackedSearchTargets,
+    githubTargets,
     githubSourceContext,
     selectedRepo,
     crossRepoSwitchTarget,

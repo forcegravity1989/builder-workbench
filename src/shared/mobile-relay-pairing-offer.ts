@@ -77,6 +77,13 @@ export function createPairingOfferSchema(now: () => number = () => Date.now()) {
       publicKeyB64: z.string().min(1).max(PAIRING_PUBLIC_KEY_MAX_CHARACTERS),
       pairedDeviceId: z.string().min(1).max(128).optional(),
       scope: PairingScopeSchema.optional(),
+      accessMode: z.enum(['full', 'team-read']).optional(),
+      teamBinding: z
+        .object({
+          teamGroupId: z.string().min(1).max(256),
+          memberId: z.string().min(1).max(256)
+        })
+        .optional(),
       relay: relaySchema.optional()
     })
     .superRefine((offer, ctx) => {
@@ -96,6 +103,13 @@ export function createPairingOfferSchema(now: () => number = () => Date.now()) {
           code: 'custom',
           path: ['publicKeyB64'],
           message: 'Relay offers require a canonical 32-byte public key'
+        })
+      }
+      if (offer.teamBinding && offer.accessMode !== 'team-read') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['accessMode'],
+          message: 'Team binding is only valid for team-read offers'
         })
       }
     })

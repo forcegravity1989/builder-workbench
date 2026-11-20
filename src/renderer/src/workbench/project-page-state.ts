@@ -1,3 +1,4 @@
+import type { VersionMaterialSelection } from './version-material-selection'
 import { useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
@@ -15,6 +16,7 @@ export type VersionOverviewOptions = {
   hostId: ExecutionHostId
   version: string
   workflow?: 'plan' | 'acceptance'
+  selection?: VersionMaterialSelection
 }
 
 type ProjectSource = Pick<VersionOverviewOptions, 'repoId' | 'hostId'>
@@ -22,7 +24,7 @@ type ProjectPage =
   | { kind: 'wall' }
   | { kind: 'project-overview' | 'knowledge'; options: ProjectSource | null }
   | { kind: 'version-overview'; options: VersionOverviewOptions }
-  | { kind: 'cycle'; options: NativeWorkspaceScope }
+  | { kind: 'cycle'; options: { scope: NativeWorkspaceScope; version: string } }
   | null
 
 let projectPage: ProjectPage = null
@@ -86,9 +88,9 @@ export function openVersionOverview(options: VersionOverviewOptions): void {
   setProjectPage({ kind: 'version-overview', options: { ...options } })
 }
 
-export function openCycleProject(scope: NativeWorkspaceScope): void {
+export function openCycleProject(scope: NativeWorkspaceScope, version: string): void {
   useAppStore.getState().openArtifactsPage()
-  setProjectPage({ kind: 'cycle', options: scope })
+  setProjectPage({ kind: 'cycle', options: { scope, version } })
 }
 
 export function closeProjectPage(): void {

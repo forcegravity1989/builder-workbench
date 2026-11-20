@@ -26,6 +26,12 @@ export type FeatureInteractionId =
   | 'workbench-wall'
   | 'workbench-overview'
   | 'workbench-milestones'
+  | 'workbench-versions'
+  | 'workbench-plan'
+  | 'workbench-acceptance'
+  | 'workbench-scoreboard'
+  | 'workbench-version-overview'
+  | 'workbench-version-tasks'
   | 'workspace-creation'
   | 'agent-browser-setup'
   | 'agent-browser-use'
@@ -44,6 +50,7 @@ export type FeatureInteractionId =
   | 'floating-workspace-hidden'
   | 'notifications'
   | 'ports'
+  | 'quick-links'
   | 'quick-commands'
   | 'resource-manager'
   | 'review-notes'
@@ -101,6 +108,12 @@ export const FEATURE_INTERACTIONS = [
   { id: 'workbench-wall', interaction: 'project wall opened' },
   { id: 'workbench-overview', interaction: 'project overview opened' },
   { id: 'workbench-milestones', interaction: 'project milestone planning opened' },
+  { id: 'workbench-versions', interaction: 'version workspace sidebar entered' },
+  { id: 'workbench-plan', interaction: 'version plan screen entered' },
+  { id: 'workbench-acceptance', interaction: 'version acceptance screen entered' },
+  { id: 'workbench-scoreboard', interaction: 'project scoreboard viewed' },
+  { id: 'workbench-version-overview', interaction: 'version overview opened' },
+  { id: 'workbench-version-tasks', interaction: 'version task screen entered' },
   { id: 'workspace-creation', interaction: 'workspace creation flow opened' },
   { id: 'agent-browser-setup', interaction: 'Agent Browser Use setup enabled or opened' },
   { id: 'agent-browser-use', interaction: 'agent browser runtime method used' },
@@ -140,6 +153,7 @@ export const FEATURE_INTERACTIONS = [
   },
   { id: 'notifications', interaction: 'desktop notifications enabled or tested' },
   { id: 'ports', interaction: 'Ports popover opened, configured, or port action used' },
+  { id: 'quick-links', interaction: 'quick link added, edited, opened, or removed' },
   { id: 'quick-commands', interaction: 'terminal quick command created or edited' },
   { id: 'resource-manager', interaction: 'Resource Manager opened or configured' },
   { id: 'review-notes', interaction: 'review note added or sent to an agent' },
