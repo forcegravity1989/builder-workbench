@@ -62,6 +62,6 @@ VersionHistoryPort.list 的 currentOnly 查询固定本次主干基线 SHA，以
 
 ## 验证与代价
 
-核心 TDD 覆盖窗口/时区、定义指纹与场景声明、真实零与 Unknown、坏输出、去重与过期结果、历史不补值、关系消歧、记分牌配对、计划推出聚焦与完成线判定。验收点和 W05 用户旅程复用 `tests/e2e/workbench-version-overview.spec.ts` 的现有主链，真实脚本、宿主路由、配置会话、跨屏采用和重启读回需要真实环境独立复验。
+核心 TDD 覆盖窗口/时区、定义指纹与场景声明、真实零与 Unknown、坏输出、去重与过期结果、历史不补值、关系消歧、记分牌配对、计划推出聚焦与完成线判定。验收点和 W05 用户旅程复用 `tests/e2e/workbench/acceptance/version-overview.spec.ts` 的现有主链，真实脚本、宿主路由、配置会话、跨屏采用和重启读回需要真实环境独立复验。
 
 主要风险是采集口径随版本材料 schema 漂移、项目/宿主混用和缓存伪装当前值。契约 fixture 只用于局部验证；真实脚本、宿主路由与跨屏采用仍须独立读回，证据与未验证项见 [STATUS](STATUS.md)。

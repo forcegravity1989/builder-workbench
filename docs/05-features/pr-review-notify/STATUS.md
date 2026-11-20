@@ -24,7 +24,7 @@ GitHub PR 与 CodeHub MR 的通知范围、主机多选、首次全选、重发�
 | 验收点 | W03/W04 | — | — | — | — | — | 未登记，当前没有通知专属真实 Electron 用例 |
 | 用户旅程 | W03/W04 | — | — | — | — | — | 未登记，完整通知主链待双主机环境验证 |
 
-`tests/e2e/workbench-cycle-smoke.spec.ts` 中的 `explores work journeys and reuses feature demonstrations from Help` 只验证探索入口和模拟演示，不填入上表，也不能作为 N01–N13 的验收证据。后续若建立一条真实主链，应同时登记文件、标题、执行项目、真实环境和独立读回，不为每个功能拆分用例。
+Explore BW 的导航和演示不登记为业务 E2E；N01–N13 当前没有独立的特性验收 E2E，后续只有形成真实用户结果并完成登记时才新增一条。
 
 ## W03 / W04 交叉索引
 

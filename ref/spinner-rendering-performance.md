@@ -141,8 +141,7 @@ ORCA_BACKGROUND_LAUNCH=1 pnpm bench:spinners --verify-only --scale-factor=2
 
 The spinner E2E spec (`spinner-workspace-perf.spec.ts`) is retained Orca source:
 since the Orca CI/E2E isolation (see `ref/upstream.md`), the Workbench playwright
-lane discovers only `workbench-cycle-smoke.spec.ts`, so running the spinner spec
-requires temporarily widening `testMatch` in `tests/playwright.config.ts`.
+lane reads the Workbench PR E2E allowlist, so running the spinner spec requires its dedicated lane or an explicit file argument; do not widen the Workbench allowlist.
 
 The full-app command rebuilds in `e2e` mode. For a fresh build already made with
 `pnpm exec electron-vite build --mode e2e`, `SKIP_BUILD=1` reuses it. Do not reuse
