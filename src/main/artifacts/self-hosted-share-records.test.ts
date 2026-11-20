@@ -164,11 +164,13 @@ describe('createShareRecordStore', () => {
     expect(keys.sort()).toEqual(['/repo/forever.md', '/repo/new.md', '/repo/odd.md'])
   })
 
-  it('bounds the index and drops the oldest entries first', async () => {
+  it('never drops a live record to bound the file', async () => {
+    // There is deliberately no count cap: dropping the oldest rows would discard links that are
+    // still public and still editable, and once the edit token is gone nothing in the product can
+    // revoke them. Expiry is the only safe bound.
     const store = createShareRecordStore({ dataDir: () => dataDir })
     const records: Record<string, unknown> = {}
-    // One past the cap, oldest first: entry 0 is the one that has to go.
-    for (let index = 0; index <= 10_000; index += 1) {
+    for (let index = 0; index < 500; index += 1) {
       const updatedAt = new Date(Date.UTC(2026, 0, 1) + index).toISOString()
       records[`/repo/f${index}.md`] = record(`id-${index}`, updatedAt)
     }
@@ -177,8 +179,8 @@ describe('createShareRecordStore', () => {
     await store.put('/repo/newest.md', record('newest', '2026-11-18T00:00:00.000Z'))
 
     const listed = await store.list()
-    expect(listed).toHaveLength(10_000)
-    expect(listed.some((entry) => entry.sourceKey === '/repo/f0.md')).toBe(false)
+    expect(listed).toHaveLength(501)
+    expect(listed.some((entry) => entry.sourceKey === '/repo/f0.md')).toBe(true)
     expect(listed.some((entry) => entry.sourceKey === '/repo/newest.md')).toBe(true)
   })
 })

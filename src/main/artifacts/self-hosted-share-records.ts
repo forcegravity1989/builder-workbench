@@ -74,7 +74,7 @@ export function createShareRecordStore(options: { dataDir: () => string }): {
     const run = writeChain.then(async () => {
       const payload: StoredRecords = {
         version: 1,
-        records: pruneToCap(pruneExpired(update(await readAll())))
+        records: pruneExpired(update(await readAll()))
       }
       // Durable: these records hold the only copy of each link's edit token, so a rename that
       // survives a power loss with zero bytes would silently orphan every link this machine made.
@@ -139,6 +139,12 @@ async function quarantine(path: string): Promise<string | null> {
  * list and removing one is a no-op the user has to initiate. `''` means the service keeps links
  * forever, and an unparseable stamp is kept rather than guessed at — pruning must never lose a
  * record that may still work.
+ *
+ * There is deliberately no count cap. Dropping the oldest rows to bound the file would discard
+ * records whose links are still public and still editable, and once the edit token is gone nothing
+ * in the product can revoke them — the exact orphan this store exists to prevent. Expiry is the only
+ * safe bound: what it drops is already a 404 on the server. Growth is bounded in practice by the
+ * service's retention window, and a record is ~200 bytes.
  */
 function pruneExpired(
   records: Record<string, ShareRecord>,
@@ -151,26 +157,6 @@ function pruneExpired(
       continue
     }
     next[sourceKey] = record
-  }
-  return next
-}
-
-/**
- * Bound the index: an agent sharing in a loop must not grow it without limit. Expired links are
- * already gone by then, so this only ever drops the oldest of what is still live.
- */
-const MAX_RECORDS = 10_000
-
-function pruneToCap(records: Record<string, ShareRecord>): Record<string, ShareRecord> {
-  const keys = Object.keys(records)
-  if (keys.length <= MAX_RECORDS) {
-    return records
-  }
-  const next = { ...records }
-  for (const key of keys
-    .sort((left, right) => records[left].updatedAt.localeCompare(records[right].updatedAt))
-    .slice(0, keys.length - MAX_RECORDS)) {
-    delete next[key]
   }
   return next
 }
