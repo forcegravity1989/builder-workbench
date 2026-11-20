@@ -200,6 +200,13 @@
       </div>
       <div id="group-im"></div>
     </div>
+    <div class="section">
+      <div class="section-head">
+        <h4>构建</h4>
+        <p>构建入口依赖的 CloudBuild CLI。</p>
+      </div>
+      <div id="group-build"></div>
+    </div>
   </div>
 
   <div class="card legend">
@@ -209,8 +216,9 @@
   <script>
     var root = document.documentElement
 
-    /* ── 数据：三卡（与 spec 命令表一致） ── */
+    /* ── 数据：四卡（与 spec 命令表一致） ── */
     var WELINK_INSTALL = 'npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false'
+    var CLOUDBUILD_INSTALL = 'npm config set @hw-cloudbuild:registry https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ && npm install -g @hw-cloudbuild/cloudbuild-cli'
 
     var CLIS = [
       {
@@ -223,7 +231,7 @@
       {
         id: 'codehub', group: 'codehost', name: 'CodeHub', icon: '⌘',
         desc: 'Issues and merge requests via the', cmd: 'codehub-cli',
-        install: { kind: 'pending' },
+        install: { kind: 'command', command: 'npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false' },
         login: 'codehub-cli auth login',
         status: 'not-installed'
       },
@@ -232,6 +240,13 @@
         desc: 'Reports and diagnostics via the', cmd: 'welink-cli',
         install: { kind: 'command', command: WELINK_INSTALL },
         login: 'welink-cli auth login',
+        status: 'not-installed'
+      },
+      {
+        id: 'cloudbuild', group: 'build', name: 'CloudBuild', icon: '▣',
+        desc: 'Build and delivery status via the', cmd: 'cb',
+        install: { kind: 'command', command: CLOUDBUILD_INSTALL },
+        login: 'cb login',
         status: 'not-installed'
       }
     ]
@@ -256,7 +271,7 @@
     }
 
     function renderCards() {
-      ['codehost', 'im'].forEach(function (group) {
+      ['codehost', 'im', 'build'].forEach(function (group) {
         var container = document.getElementById('group-' + group)
         container.textContent = ''
         CLIS.filter(function (c) { return c.group === group }).forEach(function (cli) {
