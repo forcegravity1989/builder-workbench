@@ -44,6 +44,9 @@ function requireDirectory(value: unknown): TeamDirectory {
       member_id: host.member_id,
       ...(host.name ? { name: requireText(host.name, `hosts[${index}].name`, 256) } : {}),
       ...(host.avatar ? { avatar: requireText(host.avatar, `hosts[${index}].avatar`) } : {}),
+      ...(host.member_type
+        ? { member_type: requireText(host.member_type, `hosts[${index}].member_type`, 128) }
+        : {}),
       ...(host.host_id ? { host_id: requireText(host.host_id, `hosts[${index}].host_id`, 256) } : {}),
       identity_source: 'welink-cli' as const,
       ...(host.orca_endpoint
