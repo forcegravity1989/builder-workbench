@@ -154,11 +154,15 @@ export async function findOneboxFile(
       ? parsed.nodes
       : []
   const candidate = candidates.find((entry) => {
-    if (!entry || typeof entry !== 'object') return false
+    if (!entry || typeof entry !== 'object') {
+      return false
+    }
     const record = entry as Record<string, unknown>
     return (record.name ?? record.fileName) === name
   })
-  if (!candidate || typeof candidate !== 'object') return null
+  if (!candidate || typeof candidate !== 'object') {
+    return null
+  }
   const record = candidate as Record<string, unknown>
   const id = normalizeOneboxId(record.id ?? record.fileId ?? record.nodeId)
   return id ? { id, name } : null
