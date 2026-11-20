@@ -22,7 +22,8 @@ Explore BW's five work journeys and 30+ feature entries are the coverage index. 
 
 不要再增加第四种用户可见测试类型或别名。Explore 导航和功能演示属于产品/UI 证据，不是 Workbench 业务 E2E，不得加入任一白名单。纯计算和数据协议放入 TDD。
 
-When reviewing or adding a test, record only the stable mapping in the feature matrix and the relevant feature `STATUS.md`: journey ID or feature ID, file, test title, and independent read-back. Do not maintain a run-by-run count or a changelog in this directory.
+When reviewing or adding a test, record only the stable mapping in the feature matrix and the relevant feature `STATUS.md`: journey ID or feature ID, file, test title, and independent read-back. Every real Workbench E2E captures a screenshot at its key successful result; failures retain the Playwright screenshot or trace. Screenshots are human evidence and do not replace DOM, file, Git, or process read-back. Workbench CI uses Playwright's native `_electron.launch()`; CDP belongs to `workbench-start` real-desktop verification and is not another test kind. Do not maintain a run-by-run count or a changelog in this directory.
+
 ## Build the App With `--mode e2e` Before Running Workbench E2E
 
 E2E tests read Zustand state via `window.__store`. That global is only assigned when the preload bundle is built in `e2e` mode, which is applied when you pass `--mode e2e` to `electron-vite build`. A plain `pnpm build` or `pnpm build:electron-vite` produces an `out/` tree **without** the store exposed, so reusing it with `SKIP_BUILD=1` makes every spec hang on `waitForFunction(() => Boolean(window.__store))` and time out at 30s.
