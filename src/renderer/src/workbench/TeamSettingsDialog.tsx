@@ -49,20 +49,14 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   const enterTeam = (): void => {
     setError(null)
     const nextGroupId = groupId.trim()
-    const knownSpaceId = rememberedSpaceId(nextGroupId)
-    setGroupId(nextGroupId)
-    setSpaceId(knownSpaceId)
-    setDirectory({
-      schema_version: 1,
-      team_group_id: nextGroupId,
-      team_space_id: knownSpaceId,
-      identity_source: 'welink-cli',
-      hosts: [],
-      projects: []
-    })
-    if (knownSpaceId) {
-      void loadDirectory(nextGroupId, knownSpaceId)
+    const nextSpaceId = spaceId.trim() || rememberedSpaceId(nextGroupId)
+    if (!nextGroupId || !nextSpaceId) {
+      setError('请填写群 ID 和群空间 ID。')
+      return
     }
+    setGroupId(nextGroupId)
+    setSpaceId(nextSpaceId)
+    void loadDirectory(nextGroupId, nextSpaceId)
   }
 
   async function loadDirectory(
@@ -153,17 +147,34 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
             <UsersRound className="size-4" /> 团队设置
           </DialogTitle>
           <DialogDescription>
-            输入群 ID 后管理团队成员、主机和项目。
+            输入群 ID 和群空间 ID 后管理团队成员、主机和项目。
           </DialogDescription>
         </DialogHeader>
         {!directory ? (
           <div className="space-y-3">
-            <label className="space-y-1 text-sm">
-              <span>WeLink 群 ID</span>
-              <Input value={groupId} onChange={(event) => setGroupId(event.target.value)} inputMode="numeric" />
-            </label>
-            <Button type="button" onClick={enterTeam} disabled={!groupId.trim()}>
-              进入团队设置
+            <div className="grid grid-cols-2 gap-3">
+              <label className="space-y-1 text-sm">
+                <span>WeLink 群 ID</span>
+                <Input
+                  value={groupId}
+                  onChange={(event) => {
+                    const nextGroupId = event.target.value
+                    setGroupId(nextGroupId)
+                    if (!spaceId.trim()) {
+                      setSpaceId(rememberedSpaceId(nextGroupId.trim()))
+                    }
+                  }}
+                  inputMode="numeric"
+                />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>群空间 ID</span>
+                <Input value={spaceId} onChange={(event) => setSpaceId(event.target.value)} inputMode="numeric" />
+              </label>
+            </div>
+            <Button type="button" onClick={enterTeam} disabled={!groupId.trim() || !spaceId.trim() || loading}>
+              {loading ? <LoaderCircle className="size-3.5 animate-spin" /> : <UsersRound className="size-3.5" />}
+              绑定团队
             </Button>
           </div>
         ) : (

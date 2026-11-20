@@ -596,7 +596,7 @@
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">输入群 ID 进入团队目录；如果群空间里还没有团队 JSON，再在目录第一行填写群空间 ID。</p><form id="team-lookup"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><footer class="dialog-actions"><button type="submit" class="btn btn-primary">进入团队设置</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog" role="dialog" aria-label="团队设置"><header class="row between"><div><small>团队资产</small><h2>团队设置</h2></div>${close}</header><p class="field-note">首次绑定需要 WeLink 群 ID 和群空间 ID；本机记住后下次直接打开团队目录。</p><form id="team-lookup"><div class="directory-id-grid"><label class="field">WeLink 群 ID<input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field">群空间 ID<input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = Object.keys(names)
@@ -1384,7 +1384,7 @@
       dialog.close()
       confirmForm(data)
     } else if (event.target.id === 'team-lookup') {
-      if (data.get('group') !== demoGroup) {
+      if (data.get('group') !== demoGroup || data.get('space') !== demoSpaceId) {
         notify(`样例只支持群号 ${demoGroup}`)
         return
       }
@@ -1392,7 +1392,7 @@
       state.directory = syncDirectory(
         state.directory?.team_group_id === data.get('group')
           ? state.directory
-          : blankDirectory(data.get('group'))
+          : blankDirectory(data.get('group'), data.get('space'))
       )
       hydrateEndpoints()
       const desktop = current()
