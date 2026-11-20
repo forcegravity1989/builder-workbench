@@ -248,7 +248,7 @@ export class DeviceRegistry {
       }
       if (accessMode === 'full') {
         const { accessMode: _accessMode, teamBinding: _teamBinding, ...rest } = device
-        return device.scope === 'runtime' ? { ...rest, accessMode: 'full' } : rest
+        return device.scope === 'runtime' ? { ...rest, accessMode: 'full' as const } : rest
       }
       return { ...device, accessMode, teamBinding }
     })

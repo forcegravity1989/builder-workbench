@@ -30,6 +30,8 @@ async function queryGroupMembers(route: WelinkRoute, groupId: string): Promise<T
     ? parsed
     : parsed && typeof parsed === 'object' && Array.isArray((parsed as { members?: unknown }).members)
       ? (parsed as { members: unknown[] }).members
+      : parsed && typeof parsed === 'object' && Array.isArray((parsed as { respData?: unknown }).respData)
+        ? (parsed as { respData: unknown[] }).respData
       : null
   if (!rows) {
     throw new Error('query-group-member returned an invalid members payload')
