@@ -207,12 +207,11 @@ function App() {
   }
   return (
     <div className="ov-app">
-      <div className="prototype-review-bar review-bar">
+      <div className="review-bar">
         <strong>
           {shellMeta.productName} → 版本总览 <span className="tag tag-neutral">原型评审</span>
         </strong>
         <span title={shellMeta.source}>复用当前 BW 外壳 · 内容为版本快照示例 · {revision}</span>
-        <span className="prototype-review-badge">示例快照 · 只读来源</span>
         <nav aria-label="特性文档入口">
           <a href="../intent.md">意图</a>
           <a href="../spec.md">规格</a>

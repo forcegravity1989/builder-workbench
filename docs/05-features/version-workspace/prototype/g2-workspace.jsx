@@ -1386,16 +1386,12 @@ function App() {
   )
   return (
     <div className="prototype">
-      <div className="prototype-review-bar review-bar">
+      <div className="review-bar">
         <strong>{is475 ? '版本会话管理 · 双列侧栏' : '#439 既有能力修正 · 版本工作区'}</strong>
         <span>
           {is475 ? '分区布局与更多版本 · 交互原型' : '既有能力纠偏 · 数据与操作仅在本页演示'}
         </span>
         <span title={shellMeta.source}>壳：{shellMeta.productName} · 内容：示例快照</span>
-        <span className="prototype-review-badge">复用当前 BW 外壳</span>
-        <nav className="prototype-review-links" aria-label="特性资料">
-          <a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a>
-        </nav>
         <div className="review-actions" aria-label="原型评审工具">
           {is475 && (
             <button onClick={() => setModal({ type: 'review-523' })}>操作旅程与已知差异</button>
