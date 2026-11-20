@@ -1,0 +1,50 @@
+# Reverse proxy in front of bw-share. Keep BW_SHARE_TRUST_PROXY=true on the
+# service so client IPs and the https scheme come from the forwarded headers.
+# Replace share.example.com and the certificate paths with real values.
+
+server {
+    listen 80;
+    server_name share.example.com;
+
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name share.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/share.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/share.example.com/privkey.pem;
+
+    # The service caps content at 10 MiB, but JSON escaping can turn that into a 60 MiB transport
+    # body, so the proxy must not cut in below the service's own 6x + 1 MiB budget.
+    client_max_body_size 64m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        # One trusted hop: this is the peer the service reads (rightmost X-Forwarded-For entry) as
+        # its rate-limit key. Appending via $proxy_add_x_forwarded_for is equally safe for a single
+        # hop, because anything left of the trusted entry is ignored. With several proxy layers,
+        # append at every hop and trust only the last one — overwriting at each hop would collapse
+        # every client into the innermost proxy's single rate-limit budget.
+        proxy_set_header X-Forwarded-For   $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_read_timeout 60s;
+    }
+
+    # Hosting under a path prefix (BW_SHARE_PUBLIC_BASE_URL=https://host/team) requires stripping
+    # the prefix: the trailing slash on proxy_pass does that. Replace the location above with this.
+    # location /team/ {
+    #     proxy_pass http://127.0.0.1:8787/;
+    #     proxy_http_version 1.1;
+    #     proxy_set_header Host              $host;
+    #     proxy_set_header X-Forwarded-For   $remote_addr;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    #     proxy_set_header X-Forwarded-Host  $host;
+    #     proxy_read_timeout 60s;
+    # }
+}

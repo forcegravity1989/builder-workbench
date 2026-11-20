@@ -1,0 +1,14 @@
+{
+  "name": "@builder-workbench/share-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted HTML review link service for Builders' Workbench",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/main.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.9"
+  }
+}
