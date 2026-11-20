@@ -588,7 +588,7 @@ function App() {
                 工作树分支已核对，不能由 Git 推断 BW
                 宿主登记或会话状态。落地沿原有工作树激活和任务开工：唯一匹配直接进入，多实例按宿主选择，无匹配进入原生创建器。本原型不创建或激活工作树。
               </Note>
-              <Link href="../version-workspace/version-workspace-prototype.html?rev=439-feedback">
+              <Link href="../version-workspace/prototype.html?rev=439-feedback">
                 查看现有原生入口衔接
               </Link>
             </>
@@ -629,12 +629,12 @@ function App() {
                 </p>
               </div>
               {dialog.route === '版本计划' && (
-                <Link href="../version-planning/planning-journey-prototype.html">
+                <Link href="../version-planning/prototype.html">
                   打开已有计划高保真
                 </Link>
               )}
               {dialog.route === '版本验收' && (
-                <Link href="../version-acceptance/acceptance-journey-prototype.html">
+                <Link href="../version-acceptance/prototype.html">
                   打开已有验收高保真
                 </Link>
               )}
@@ -642,7 +642,7 @@ function App() {
                 <Link href={`${repository}/pull/460`}>项目总览设计 PR #460</Link>
               )}
               {!['版本计划', '版本验收', '项目总览'].includes(dialog.route) && (
-                <Link href="../version-workspace/version-workspace-prototype.html?rev=439-feedback">
+                <Link href="../version-workspace/prototype.html?rev=439-feedback">
                   打开现有壳与任务开工原型
                 </Link>
               )}

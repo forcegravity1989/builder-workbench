@@ -1,7 +1,7 @@
 import { resolveMemberGoalId } from '../../../../src/shared/workbench/version-membership'
 import snapshot from './g3-snapshot.json'
 export { snapshot }
-export const g2Url = '../version-workspace/version-workspace-prototype.html'
+export const g2Url = '../version-workspace/prototype.html'
 export const stages = [
   // 第一步按 #426（v0.7 验收会决议）从「上版回顾」改名「计划准备」，与验收屏
   // 「验收准备」口径一致；区块内容仍是上版两行遗留的回显。

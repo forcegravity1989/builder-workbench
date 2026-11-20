@@ -4,7 +4,7 @@
 >
 > 状态：设计已评审定稿；接线要求的生产验证缺口见 STATUS。架构定位：事实与执行由 Orca 承担，规范与壳由 BW 叠层适配。
 
-本文维护有效的版本工作区机制；侧栏布局以[当前高保真](version-workspace-prototype-475.html)为准。行为判据见 [spec](spec.md)，实施与验证证据只在 [STATUS](STATUS.md)及关联 PR 维护。
+本文维护有效的版本工作区机制；侧栏布局以[当前高保真](prototype.html)为准。行为判据见 [spec](spec.md)，实施与验证证据只在 [STATUS](STATUS.md)及关联 PR 维护。
 
 ## 侧栏布局与原生复用（#475 / #500）
 

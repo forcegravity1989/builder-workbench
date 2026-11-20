@@ -6,7 +6,7 @@
 
 版本计划是探索 BW 的工作旅程 W02“制定版本计划”的业务承接。W02 的五步是确定规划哪一版、定目标与验收标准、把目标落成任务、评审并归档、从计划开工。W02 的完整入口和演示结构见 [探索 BW 规格](../explore-workbench/spec.md#w02-制定版本计划)。
 
-计划高保真形态见 [planning-journey-prototype.html](planning-journey-prototype.html)。`prototype.html` 和 `prototype/` 目录中的文件是原型资产，不是持久化、模型执行或远端写回证据。原型构建和视觉核验不改变本规格中的生产验收结论。
+计划高保真形态见 [prototype.html](prototype.html)。`prototype.html` 和 `prototype/` 目录中的文件是原型资产，不是持久化、模型执行或远端写回证据。原型构建和视觉核验不改变本规格中的生产验收结论。
 
 ## W02 与旧旅程标识的对应关系
 

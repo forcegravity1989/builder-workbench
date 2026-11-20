@@ -1,7 +1,7 @@
 // 验收侧状态为交互原型演示数据，计划复用既有快照。
 import snapshot from '../../version-planning/prototype/g3-snapshot.json'
 export { snapshot }
-export const g2Url = '../version-workspace/version-workspace-prototype.html'
+export const g2Url = '../version-workspace/prototype.html'
 // 按钮只展示请求意图；生产入口另附宿主实际安装的完整 Skill 路径。
 export const minutesRequestPrompt =
   '整理本次验收会的会议纪要：把会话中已发送的板面批注提炼为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'

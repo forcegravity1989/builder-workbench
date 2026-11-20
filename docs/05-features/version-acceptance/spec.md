@@ -2,7 +2,7 @@
 
 > 给设计、实现与验收者读取。本文是版本验收的当前行为和可观察判据。价值见 [intent](intent.md)，实现边界见 [design](design.md)，证据见 [STATUS](STATUS.md)。本特性承接探索 BW 的 W04「验收成果」。只记录当前规则、失败边界与未决行为。
 
-当前交互原型是 [acceptance-journey-prototype.html](acceptance-journey-prototype.html)。[prototype.html](prototype.html) 是旧版基线原型，只用于追溯形态差异。原型和静态检查不能证明生产行为或 W04 真实旅程。
+当前交互原型是 [prototype.html](prototype.html)。旧版基线与 Showcase 页面已从工作树删除，历史形态由 Git 追溯。原型和静态检查不能证明生产行为或 W04 真实旅程。
 
 ## W04 与旧标识
 

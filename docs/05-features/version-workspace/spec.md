@@ -2,13 +2,13 @@
 
 > 给设计、实现与验收者读取；本文管目标行为与判据，工程边界见 [design](design.md)，价值见 [intent](intent.md)，执行证据见 [STATUS](STATUS.md)。行为变化时改对应主题，不记录开发流水。
 >
-> 状态：版本工作区业务边界已经确认；现行布局见本篇「双列侧栏」。[当前高保真](version-workspace-prototype-475.html) 为布局评审资产，实施与验证缺口见 STATUS。计划/验收整屏复用边界见 [版本计划 spec](../version-planning/spec.md)。
+> 状态：版本工作区业务边界已经确认；现行布局见本篇「双列侧栏」。[当前高保真](prototype.html) 为布局评审资产，实施与验证缺口见 STATUS。计划/验收整屏复用边界见 [版本计划 spec](../version-planning/spec.md)。
 
 > 本篇承接整个侧栏的布局与交互，包括版本、目标和会话目录，原生项目与工作区的显示身份、绑定、置顶和展开收起，以及流程树准备、进入与清理。已定义的具体行为见下文；[版本总览](../version-overview/spec.md)承接版本结果回看。
 
-当前原型入口为 [version-workspace-prototype-475.html](version-workspace-prototype-475.html)。原单列业务旅程原型与[旅程报告](version-workspace-journey.html)仅作来源参考，不能替代现行行为或真实证据。原型资产由本特性 `prototype/` 维护，布局评审结果以当前高保真为准。
+当前原型入口为 [prototype.html](prototype.html)。原单列业务旅程原型与[旅程报告](version-workspace-journey.html)仅作来源参考，不能替代现行行为或真实证据。原型资产由本特性 `prototype/` 维护，布局评审结果以当前高保真为准。
 
-关联 [#383](https://github.com/forcegravity1989/builder-workbench/issues/383)、[#328](https://github.com/forcegravity1989/builder-workbench/issues/328)、[#334](https://github.com/forcegravity1989/builder-workbench/issues/334)。本文与[当前侧栏高保真](version-workspace-prototype-475.html)定义 G2 行为；[旅程及数据说明报告](version-workspace-journey.html)保留业务来源参考，计划屏（G3）规格见 [版本计划 spec](../version-planning/spec.md)。已定稿决定：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、目标与 Issue 开工复用同一原生创建器、不新增周冻结或目录生成操作；版本收尾提供版本级清理（复用 Orca 原生删除链），不另做归档隐藏层。生产接线与真壳证据见 STATUS。
+关联 [#383](https://github.com/forcegravity1989/builder-workbench/issues/383)、[#328](https://github.com/forcegravity1989/builder-workbench/issues/328)、[#334](https://github.com/forcegravity1989/builder-workbench/issues/334)。本文与[当前侧栏高保真](prototype.html)定义 G2 行为；[旅程及数据说明报告](version-workspace-journey.html)保留业务来源参考，计划屏（G3）规格见 [版本计划 spec](../version-planning/spec.md)。已定稿决定：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、目标与 Issue 开工复用同一原生创建器、不新增周冻结或目录生成操作；版本收尾提供版本级清理（复用 Orca 原生删除链），不另做归档隐藏层。生产接线与真壳证据见 STATUS。
 
 ### 绑定、可见性与连接状态
 
@@ -47,7 +47,7 @@
 - Rail 的任务入口直接复用原生任务按钮，只适配图标布局和对象上下文高亮；保留当前项目预选、悬停/聚焦预取及原生任务说明。
 - 「全部项目工作区」默认把当前选中项目的完整分组放在第一位，其余沿用原生顺序；若项目在原生项目组内，保留组内结构，提升整个所属顶层分组。显式宿主分组保持宿主顺序。只做展示投影，不覆盖用户持久化的项目顺序。
 - 实体工作区沿 Orca 的排序选项。按项目分组时，项目默认手动排序，工作区默认按最近活动排序，主工作树按原生规则置首。目标目录按目标业务顺序展示。
-- 高保真入口：[version-workspace-prototype-475.html](version-workspace-prototype-475.html)。评审工具提供跨项目示例和原生重复显示开关的内存演示；未展开的原生菜单标明复用，原型不证明宿主通信、虚拟列表、键盘定位或真实会话行为已验证。
+- 高保真入口：[prototype.html](prototype.html)。评审工具提供跨项目示例和原生重复显示开关的内存演示；未展开的原生菜单标明复用，原型不证明宿主通信、虚拟列表、键盘定位或真实会话行为已验证。
 
 ### 版本工作区引导
 

@@ -2,7 +2,7 @@
 
 > 给接手开发、评审和验收的人读取。本文只记录当前认可、已验证证据与未验证边界，不记录实施轮次、测试增删流水或历史状态复制。价值见 [intent](intent.md)，行为见 [spec](spec.md)，实现取舍见 [design](design.md)。
 >
-> 当前形态以 [双列高保真](version-workspace-prototype-475.html) 为准。原型只用于布局评审，不能替代真实 Electron、宿主、文件或会话证据。版本总览的状态由 [version-overview STATUS](../version-overview/STATUS.md) 维护。
+> 当前形态以 [双列高保真](prototype.html) 为准。原型只用于布局评审，不能替代真实 Electron、宿主、文件或会话证据。版本总览的状态由 [version-overview STATUS](../version-overview/STATUS.md) 维护。
 
 ## 旅程归属与用例入口
 

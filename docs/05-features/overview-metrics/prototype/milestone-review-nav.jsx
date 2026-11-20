@@ -3,8 +3,8 @@
 const { React } = window.BWPrototypeDependencies
 const screens = [
   ['project', '① 里程碑', '../overview-metrics/prototype.html?review=590'],
-  ['plan', '② 计划助手配合', '../version-planning/planning-journey-prototype.html?review=551'],
-  ['acceptance', '③ 验收依据', '../version-acceptance/acceptance-journey-prototype.html?review=551']
+  ['plan', '② 计划助手配合', '../version-planning/prototype.html?review=551'],
+  ['acceptance', '③ 验收依据', '../version-acceptance/prototype.html?review=551']
 ]
 const notes = {
   project:

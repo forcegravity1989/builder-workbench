@@ -580,7 +580,7 @@ function App() {
                       <IconButton
                         name="arrow"
                         label="查看验收屏设计（版式示意）"
-                        href="../version-acceptance/acceptance-journey-prototype.html"
+                        href="../version-acceptance/prototype.html"
                       />
                     )}
                   </div>
