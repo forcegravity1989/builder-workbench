@@ -1,28 +1,29 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workbench · 常用链接 交互原型（状态栏入口）</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
     <style>
       :root {
-        --bg: #faf9f5;
-        --card: #ffffff;
-        --surface: #f3f1ea;
-        --text: #1f1e1d;
-        --muted: #6b6a64;
-        --faint: #9a988f;
-        --line: #e6e3da;
-        --line-soft: #efece3;
-        --accent: #c96442;
-        --blue: #3a6ea5;
-        --success: #579766;
-        --success-deep: #286037;
-        --danger: #c15f4d;
-        --danger-deep: #883324;
-        --radius: 8px;
-        --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-        --mono: "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+        --bg: var(--color-bg);
+        --card: var(--color-card);
+        --surface: var(--color-surface);
+        --text: var(--color-text);
+        --muted: var(--muted-foreground);
+        --faint: color-mix(in srgb, var(--color-text) 55%, transparent);
+        --line: var(--color-divider);
+        --line-soft: color-mix(in srgb, var(--color-divider) 60%, transparent);
+        --accent: var(--color-accent);
+        --blue: var(--color-accent-2);
+        --success: var(--color-success);
+        --success-deep: var(--color-success-deep);
+        --danger: var(--color-danger);
+        --danger-deep: var(--color-danger-deep);
+        --radius: var(--radius-md);
+        --font: var(--font-sans);
+        --mono: var(--font-mono);
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; height: 100%; }
@@ -42,9 +43,8 @@
       .page { max-width: 1080px; margin: 0 auto; padding: 28px 24px 48px; }
       .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
       .head h1 { font-size: 22px; font-weight: 650; margin: 0; display: flex; align-items: center; gap: 10px; }
-      .tag { font-size: 10px; font-weight: 500; border: 1px solid var(--line); color: var(--muted); padding: 2px 7px; border-radius: 5px; }
       .head p { margin: 8px 0 0; color: var(--muted); font-size: 12px; max-width: 640px; line-height: 1.7; }
-      .head .reset { border: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 11px; padding: 6px 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; }
+      .head .reset { font-size: 11px; padding: 6px 11px; display: inline-flex; align-items: center; gap: 6px; }
       .head .reset:hover { color: var(--text); border-color: var(--faint); }
 
       .banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; color: var(--muted); font-size: 11px; margin: 16px 0 20px; }
@@ -58,7 +58,7 @@
         border-radius: 10px;
         overflow: hidden;
         background: var(--card);
-        box-shadow: 0 12px 34px rgba(31,30,29,0.08);
+        box-shadow: var(--shadow-floating);
       }
       .win-body { height: 360px; padding: 20px 22px; background:
         linear-gradient(180deg, color-mix(in srgb, var(--surface) 55%, var(--card)), var(--card)); }
@@ -87,7 +87,7 @@
       .sb-usage .pct { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
       /* status-bar segment — 与 Orca PortsStatusSegment 同构 */
-      .seg {
+      .status-segment {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -97,9 +97,9 @@
         background: none;
         color: var(--muted);
       }
-      .seg:hover, .seg[aria-expanded="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-      .seg svg { color: var(--muted); }
-      .seg .n { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--muted); }
+      .status-segment:hover, .status-segment[aria-expanded="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+      .status-segment svg { color: var(--muted); }
+      .status-segment .n { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--muted); }
 
       /* ── popover — 与 PortsStatusSegment 的 PopoverContent 同构 ── */
       .popover {
@@ -111,7 +111,7 @@
         background: var(--card);
         border: 1px solid var(--line);
         border-radius: 10px;
-        box-shadow: 0 16px 44px rgba(31,30,29,0.16);
+        box-shadow: var(--shadow-menu);
         z-index: 30;
         overflow: hidden;
         padding: 0;
@@ -206,8 +206,8 @@
       .log:empty::after { content: "操作记录会显示在这里…"; color: var(--faint); }
 
       /* ── modal ── */
-      dialog.modal { border: 1px solid var(--line); border-radius: 10px; padding: 22px; width: min(440px, calc(100vw - 32px)); background: var(--card); color: var(--text); box-shadow: 0 18px 70px rgba(0,0,0,0.18); }
-      dialog.modal::backdrop { background: rgba(31,30,29,0.28); backdrop-filter: blur(1.5px); }
+      dialog.modal { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px; width: min(440px, calc(100vw - 32px)); background: var(--card); color: var(--text); box-shadow: var(--shadow-dialog); }
+      dialog.modal::backdrop { background: color-mix(in srgb, var(--color-text) 28%, transparent); backdrop-filter: blur(1.5px); }
       dialog.modal h2 { font-size: 16px; margin: 0 0 4px; }
       dialog.modal .sub { color: var(--muted); font-size: 11px; margin: 0 0 18px; }
       dialog.modal label { display: block; font-size: 11px; color: var(--muted); margin: 12px 0 6px; }
@@ -215,9 +215,7 @@
       dialog.modal input.err { border-color: var(--danger); }
       .form-err { color: var(--danger-deep); font-size: 11px; background: color-mix(in srgb, var(--danger) 9%, transparent); padding: 8px 10px; border-radius: 5px; margin-top: 10px; }
       .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-      .btn { border: 1px solid var(--line); background: var(--card); color: var(--text); font-size: 12px; padding: 7px 14px; border-radius: 6px; }
-      .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
-      .btn.primary:hover { opacity: 0.9; }
+      .modal-foot .btn { font-size: 12px; padding: 7px 14px; }
 
       .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); font-size: 12px; padding: 10px 16px; border-radius: 8px; opacity: 0; pointer-events: none; transition: all 0.22s; max-width: 90vw; z-index: 60; }
       .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -227,10 +225,10 @@
     <div class="page">
       <div class="head">
         <div>
-          <h1>常用链接 <span class="tag">交互原型 · 状态栏入口</span></h1>
+          <h1>常用链接 <span class="tag tag-neutral">交互原型 · 状态栏入口</span></h1>
           <p>与 Orca 右下角<b>「端口」入口同构</b>：在底部状态栏放一个<b>图标 + 计数</b>的入口，点开是它<b>自己的 popover 面板</b>，而不是右栏里的子分区、也不是另开的窗口。面板内容照端口面板的范式做：分组头 + 链接行（点击行直接在内置浏览器打开，hover 出复制/编辑/删除），保存网页地址、一键打开。</p>
         </div>
-        <button class="reset" id="resetBtn" title="恢复初始模拟数据">
+        <button class="btn btn-secondary reset" id="resetBtn" title="恢复初始模拟数据">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
           重置场景
         </button>
@@ -238,7 +236,7 @@
 
       <div class="banner">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
-        模拟数据 · 仅本页内存生效，刷新即重置；「打开」不真正打开浏览器，只提示将在 BW 内置浏览器打开。点状态栏右下角两个图标分别看「端口」与「常用链接」的弹出面板。
+        当前壳：Workbench 状态栏入口；链接列表是本页示例快照。模拟数据仅本页内存生效，刷新即重置；「打开」不真正打开浏览器，只提示将在 BW 内置浏览器打开。点状态栏右下角两个图标分别看「端口」与「常用链接」的弹出面板。
       </div>
 
       <div class="cols">
@@ -266,12 +264,12 @@
               <div class="spacer"></div>
               <div class="sb-right">
                 <!-- 端口入口（Orca 原生，仅作同构参照） -->
-                <button class="seg" id="portsSeg" aria-expanded="false" title="端口（Orca 原生入口）">
+                <button class="status-segment" id="portsSeg" aria-expanded="false" title="端口（Orca 原生入口）">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
                   <span class="n">12</span>
                 </button>
                 <!-- 常用链接入口（本特性，同构） -->
-                <button class="seg" id="linksSeg" aria-expanded="false" title="常用链接">
+                <button class="status-segment" id="linksSeg" aria-expanded="false" title="常用链接">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
                   <span class="n" id="linksCount">0</span>
                 </button>
@@ -384,8 +382,8 @@
         <input id="fUrl" placeholder="https://example.com" autocomplete="off" />
         <div class="form-err" id="fErr" style="display:none"></div>
         <div class="modal-foot">
-          <button type="button" class="btn" id="cancelBtn">取消</button>
-          <button type="submit" class="btn primary" id="saveBtn">保存</button>
+          <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">保存</button>
         </div>
       </form>
     </dialog>
@@ -587,10 +585,10 @@
         linksSeg.setAttribute('aria-expanded', 'false');
         portsSeg.setAttribute('aria-expanded', 'false');
       }
-      function toggle(pop, seg) {
+      function toggle(pop, segment) {
         const willOpen = pop.hidden;
         closePopovers();
-        if (willOpen) { pop.hidden = false; seg.setAttribute('aria-expanded', 'true'); }
+        if (willOpen) { pop.hidden = false; segment.setAttribute('aria-expanded', 'true'); }
       }
       linksSeg.addEventListener('click', (e) => { e.stopPropagation(); toggle(linksPopover, linksSeg); });
       portsSeg.addEventListener('click', (e) => { e.stopPropagation(); toggle(portsPopover, portsSeg); });

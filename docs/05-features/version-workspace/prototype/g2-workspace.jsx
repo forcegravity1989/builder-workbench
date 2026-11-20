@@ -5,6 +5,7 @@ import { IconAction as Button } from './g2-icon-action.jsx'
 import { DesignReferences } from './g2-design-references.jsx'
 import { useBindingDemo } from './g2-binding-demo.jsx'
 import { TaskPreview } from './g2-task-preview.jsx'
+import { CURRENT_BW_SHELL as shellMeta } from '../../prototype-shell-meta.js'
 
 const {
   // React is used by the shared JSX build factory.
@@ -1390,6 +1391,7 @@ function App() {
         <span>
           {is475 ? '分区布局与更多版本 · 交互原型' : '既有能力纠偏 · 数据与操作仅在本页演示'}
         </span>
+        <span title={shellMeta.source}>壳：{shellMeta.productName} · 内容：示例快照</span>
         <div className="review-actions" aria-label="原型评审工具">
           {is475 && (
             <button onClick={() => setModal({ type: 'review-523' })}>操作旅程与已知差异</button>
@@ -1447,7 +1449,7 @@ function App() {
             <>
               <div className="app-header">
                 <span className="brand-mark">B</span>
-                <strong>Workbench</strong>
+                <strong>{shellMeta.productName}</strong>
                 <small>⌘ K</small>
               </div>
               <Nav

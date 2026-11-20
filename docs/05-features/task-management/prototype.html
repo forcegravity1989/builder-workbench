@@ -1,22 +1,41 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>任务链接直达 · 交互原型</title>
+<link rel="stylesheet" href="../../04-design-system/styles.css">
 <style>
-body{margin:32px auto;max-width:900px;padding:0 20px;background:#101114;color:#ededf0;font:15px system-ui}button,a{color:inherit}button{background:#202228;border:1px solid #383b44;border-radius:6px;padding:10px 14px;cursor:pointer}button:hover{background:#30333b}.menu{padding:8px;border:1px solid #383b44;border-radius:8px;max-width:420px}.menu button{display:block;width:100%;border:0;text-align:left}code{display:block;padding:10px;overflow-wrap:anywhere;color:#b5b7c0}small{color:#adb0ba}.hidden{display:none}.detail{border:1px solid #383b44;border-radius:8px;padding:20px}select{background:#202228;color:inherit;padding:8px;border-radius:6px}h1{font-size:22px}
+body { max-width: 900px; margin: var(--space-8) auto; padding: 0 var(--space-4); }
+h1 { font-size: 22px; }
+.prototype-copy { margin-bottom: var(--space-4); }
+.menu { margin-top: var(--space-3); padding: var(--space-2); border: 1px solid var(--color-divider); border-radius: var(--radius-md); max-width: 420px; background: var(--color-card); }
+.menu button { display: flex; width: 100%; justify-content: flex-start; text-align: left; margin-top: var(--space-1); }
+.menu button:first-of-type { margin-top: 0; }
+code { display: block; padding: var(--space-3); overflow-wrap: anywhere; color: var(--color-neutral-600); background: var(--color-surface); border-radius: var(--radius-sm); }
+small { color: var(--muted-foreground); }
+.hidden { display: none; }
+.detail { margin-top: var(--space-4); }
+.detail p { max-width: 70ch; }
+select.input { max-width: 220px; }
 </style>
+</head>
+<body>
+<main>
 <h1>从任务链接打开既有详情</h1>
-<p><small>导航交互原型，不是运行证据；详情仅表示现有页面的复用，未设计新管理动作。</small></p>
+<p class="prototype-copy"><small>原型注释：任务入口复用当前 BW 壳；PR、Issue 与 MR 仅为旧版示例数据，不代表当前仓库状态。</small></p>
 <section id="conversation">
 <p>已交付到 <a href="#" id="link">PR #652</a>。请核对交付结果。</p>
-<label>示例 <select id="target"><option value="pr">GitHub PR</option><option value="issue">GitHub Issue</option><option value="mr">CodeHub MR</option><option value="unknown">未登记仓库</option></select></label>
-<div class="menu hidden" id="menu"><code id="url"></code><button id="open">☷ 在任务中打开 <small>Ctrl／Cmd + Click</small></button><button class="browser">↗ System Browser <small>Shift + Ctrl／Cmd + Click</small></button><button class="browser">◎ Orca Browser</button></div>
+<label>示例 <select class="input" id="target"><option value="pr">GitHub PR</option><option value="issue">GitHub Issue</option><option value="mr">CodeHub MR</option><option value="unknown">未登记仓库</option></select></label>
+<div class="menu hidden" id="menu"><code id="url"></code><button class="btn btn-secondary" id="open">☷ 在任务中打开 <small>Ctrl／Cmd + Click</small></button><button class="btn btn-ghost browser">↗ System Browser <small>Shift + Ctrl／Cmd + Click</small></button><button class="btn btn-ghost browser">◎ Orca Browser</button></div>
 <p id="message" role="status"></p>
 </section>
-<section id="detail" class="detail hidden"><button id="back">← 返回原会话</button><h2 id="title"></h2><p>复用已有原生详情：标题、正文、评论；PR／MR 沿已有检查项和文件变更页面。</p><small>读取走本机 gh／codehub-cli。本次点击只导航，不评论、不关闭、不合入。</small></section>
+<section id="detail" class="card detail hidden"><button class="btn btn-ghost" id="back">← 返回原会话</button><h2 id="title"></h2><p>复用已有原生详情：标题、正文、评论；PR／MR 沿已有检查项和文件变更页面。</p><small>读取走本机 gh／codehub-cli。本次点击只导航，不评论、不关闭、不合入。</small></section>
+</main>
 <script>
-const $=id=>document.getElementById(id);const samples={pr:['https://github.com/forcegravity1989/builder-workbench/pull/652','PR #652'],issue:['https://github.com/forcegravity1989/builder-workbench/issues/651','Issue #651'],mr:['https://open.codehub.huawei.com/example/project/merge_requests/3','MR !3'],unknown:['https://github.com/example/not-registered/issues/1','Issue #1']};
-function open(){if($('target').value==='unknown'){$('message').textContent='未在已登记项目中找到此仓库。请先添加项目，或重新点击链接选择浏览器。';$('menu').classList.add('hidden');return}$('title').textContent=samples[$('target').value][1];$('conversation').classList.add('hidden');$('detail').classList.remove('hidden')}
-$('link').onclick=e=>{e.preventDefault();$('url').textContent=samples[$('target').value][0];if(e.ctrlKey||e.metaKey){if(e.shiftKey){$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。'}else open();return}$('menu').classList.toggle('hidden')};$('open').onclick=open;$('back').onclick=()=>{$('detail').classList.add('hidden');$('conversation').classList.remove('hidden');$('menu').classList.add('hidden')};document.querySelectorAll('.browser').forEach(button=>button.onclick=()=>{$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。';$('menu').classList.add('hidden')});$('target').onchange=()=>{$('link').textContent=samples[$('target').value][1];$('menu').classList.add('hidden');$('message').textContent=''};
+const $=id=>document.getElementById(id);const SAMPLE_TASK_LINKS={pr:['https://github.com/forcegravity1989/builder-workbench/pull/652','PR #652'],issue:['https://github.com/forcegravity1989/builder-workbench/issues/651','Issue #651'],mr:['https://open.codehub.huawei.com/example/project/merge_requests/3','MR !3'],unknown:['https://github.com/example/not-registered/issues/1','Issue #1']};
+function open(){if($('target').value==='unknown'){$('message').textContent='未在已登记项目中找到此仓库。请先添加项目，或重新点击链接选择浏览器。';$('menu').classList.add('hidden');return}$('title').textContent=SAMPLE_TASK_LINKS[$('target').value][1];$('conversation').classList.add('hidden');$('detail').classList.remove('hidden')}
+$('link').onclick=e=>{e.preventDefault();$('url').textContent=SAMPLE_TASK_LINKS[$('target').value][0];if(e.ctrlKey||e.metaKey){if(e.shiftKey){$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。'}else open();return}$('menu').classList.toggle('hidden')};$('open').onclick=open;$('back').onclick=()=>{$('detail').classList.add('hidden');$('conversation').classList.remove('hidden');$('menu').classList.add('hidden')};document.querySelectorAll('.browser').forEach(button=>button.onclick=()=>{$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。';$('menu').classList.add('hidden')});$('target').onchange=()=>{$('link').textContent=SAMPLE_TASK_LINKS[$('target').value][1];$('menu').classList.add('hidden');$('message').textContent=''};
 </script>
+</body>
 </html>
