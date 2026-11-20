@@ -46,6 +46,9 @@ export function useSmartWorkspaceNameFieldPresentation(
     selectedRepo,
     value,
     githubItems,
+    codehubItems,
+    codehubSourceAvailable,
+    codehubLoading,
     debouncedQuery,
     gitlabSourceAvailable,
     gitlabItems,
@@ -80,17 +83,21 @@ export function useSmartWorkspaceNameFieldPresentation(
     linearIssues.length === 0
   const githubUrlIntent = useMemo(
     () =>
-      isSmartWorkspaceSourceQueryWithinLimit(value) && (mode === 'smart' || mode === 'github')
+      isSmartWorkspaceSourceQueryWithinLimit(value) &&
+      !codehubSourceAvailable &&
+      (mode === 'smart' || mode === 'github')
         ? parseGitHubIssueOrPRLink(value)
         : null,
-    [mode, value]
+    [codehubSourceAvailable, mode, value]
   )
   const gitlabUrlIntent = useMemo(
     () =>
-      isSmartWorkspaceSourceQueryWithinLimit(value) && (mode === 'smart' || mode === 'gitlab')
+      isSmartWorkspaceSourceQueryWithinLimit(value) &&
+      !codehubSourceAvailable &&
+      (mode === 'smart' || mode === 'gitlab')
         ? parseGitLabIssueOrMRLink(value)
         : null,
-    [mode, value]
+    [codehubSourceAvailable, mode, value]
   )
   const rows = useMemo<RowEntry[]>(() => {
     if (jiraSource.intent && jiraSource.accountChoices.length > 0) {
@@ -111,6 +118,12 @@ export function useSmartWorkspaceNameFieldPresentation(
       }),
       githubItems: getVisibleHeldProviderResults({
         items: githubItems,
+        value,
+        debouncedQuery
+      }),
+      codehubAvailable: codehubSourceAvailable,
+      codehubItems: getVisibleHeldProviderResults({
+        items: codehubItems,
         value,
         debouncedQuery
       }),
@@ -146,6 +159,8 @@ export function useSmartWorkspaceNameFieldPresentation(
   }, [
     branches,
     branchResultsSource,
+    codehubItems,
+    codehubSourceAvailable,
     debouncedQuery,
     githubItems,
     githubUrlIntent,
@@ -191,10 +206,13 @@ export function useSmartWorkspaceNameFieldPresentation(
     if (jiraSource.intent) {
       return 'jira'
     }
-    if (/^#\d+$/.test(trimmed) || parseGitHubIssueOrPRLink(trimmed) !== null) {
+    if (
+      !codehubSourceAvailable &&
+      (/^#\d+$/.test(trimmed) || parseGitHubIssueOrPRLink(trimmed) !== null)
+    ) {
       return 'github'
     }
-    if (parseGitLabIssueOrMRLink(trimmed) !== null) {
+    if (!codehubSourceAvailable && parseGitLabIssueOrMRLink(trimmed) !== null) {
       return 'gitlab'
     }
     if (linearAvailable) {
@@ -210,7 +228,7 @@ export function useSmartWorkspaceNameFieldPresentation(
       }
     }
     return null
-  }, [jiraSource.intent, linearAvailable, rows, value])
+  }, [codehubSourceAvailable, jiraSource.intent, linearAvailable, rows, value])
   const unresolvedLinearUrlIntent =
     linearUrlIntentOwnsInput &&
     linearAvailable &&
@@ -268,7 +286,12 @@ export function useSmartWorkspaceNameFieldPresentation(
     linearLoading && (!linearUrlIntentOwnsInput || showLinearUrlLoadingFeedback)
   const loading = jiraSource.intent
     ? jiraSource.loading
-    : githubLoading || gitlabLoading || branchesLoading || visibleLinearLoading || jiraLoading
+    : githubLoading ||
+      codehubLoading ||
+      gitlabLoading ||
+      branchesLoading ||
+      visibleLinearLoading ||
+      jiraLoading
   // Why: only spin on first load, not refreshes with retained rows.
   const showSearchSpinner = loading && searchResultRows.length === 0
   const ActiveInputIcon =

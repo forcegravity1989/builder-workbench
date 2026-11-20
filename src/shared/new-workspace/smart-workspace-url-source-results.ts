@@ -14,6 +14,7 @@ export type SmartWorkspaceGitLabUrlIntent = NonNullable<ReturnType<typeof parseG
 type SmartWorkspaceUrlSourceMode =
   | 'smart'
   | 'github'
+  | 'codehub'
   | 'gitlab'
   | 'branches'
   | 'linear'
