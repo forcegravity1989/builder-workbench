@@ -1,0 +1,149 @@
+services/bw-share/.gitignore
+  s_da7ab51653058a::t_d672e92d01fa9c 1-3
+services/bw-share/src/config.mjs
+  s_da7ab51653058a::t_d3bfb137eb5a9a 1-7,13-18,21-39,41-67,69-132
+  s_da7ab51653058a::t_fb46a5681196e7 8-12,19-20,40,68
+services/bw-share/src/payload.mjs
+  s_da7ab51653058a::t_28eb347e9f981d 1-70
+services/bw-share/test/payload.test.mjs
+  s_da7ab51653058a::t_7e208e8ea226e1 1-77
+.github/workflows/pr.yml
+  s_da7ab51653058a::t_085ef241045a7a 220-222
+services/bw-share/.env.example
+  s_da7ab51653058a::t_bd8ba4afe5c21e 1-11,18-34
+  s_da7ab51653058a::t_a1660f250d118b 12-17
+services/bw-share/deploy/bw-share.service
+  s_da7ab51653058a::t_dc9be03dc7607f 1-39
+services/bw-share/package.json
+  s_da7ab51653058a::t_d6163ce3e1684c 1-14
+services/bw-share/src/errors.mjs
+  s_da7ab51653058a::t_243f275041be6e 1-24
+services/bw-share/src/http.mjs
+  s_da7ab51653058a::t_7825a1f908e964 1-27,29-32,40-78,92-99,101-182,189-203,209-210,212,217-218,243-365,370-391,397-493
+  s_da7ab51653058a::t_66a606048fba56 28,33-39,79-91,100,204,208,211,213,226,230-242
+services/bw-share/src/main.mjs
+  s_da7ab51653058a::t_a825f5588ae33f 1-3,5-19,21,24-27,32,37-56,58-92
+  s_da7ab51653058a::t_9b5e57365eb083 4,22-23,29-31,33,57
+services/bw-share/src/store.mjs
+  s_da7ab51653058a::t_484e9651db2cf4 1,2-8,11-35,37,39-70,73-105,111-143,148,150-155,172-250,252-334,337-339,341,343-351,353-354,367-371,399-411,445-448
+services/bw-share/src/tokens.mjs
+  s_da7ab51653058a::t_f948d56ce79c0a 1-38
+services/bw-share/test/config.test.mjs
+  s_da7ab51653058a::t_5ae74a46fd3220 1-51
+services/bw-share/test/helpers.mjs
+  s_da7ab51653058a::t_274e3edbe06adb 1-4,7-16,18-41,52,53-54,61-67,69-73,77-97
+  s_da7ab51653058a::t_e73df7d66bf4e0 5-6,17,59,68
+services/bw-share/test/http.test.mjs
+  s_da7ab51653058a::t_632f0df2631128 1-3,5-6,10-277
+  s_da7ab51653058a::t_27f42c394a4114 7,278-332
+services/bw-share/README.md
+  h_a7e858313fdba5 1-15,19-20,30-33,42-53,57-78,91-96,98,100-105,109-111,113-126
+  s_da7ab51653058a::t_da7b5014773cf3 16,55,97
+services/bw-share/deploy/nginx.conf.example
+  h_a7e858313fdba5 1-19,23-27,33-50
+services/bw-share/test/store.test.mjs
+  h_a7e858313fdba5 1-156
+services/bw-share/src/client-tokens.mjs
+  s_4166fdbe03de01::t_558308290ebfca 1,3-4,6-17,28-37,39-41,43,45-48,73,75,76-78,90-91,93-97,108,110,117-124,129,131,132-141,144-145
+src/renderer/src/components/artifacts/share-server-client.ts
+  s_da7ab51653058a::t_ce5160ce4ae922 1-63
+docs/05-features/README.md
+  s_da7ab51653058a::t_d2f68af034075d 20
+src/renderer/src/components/artifacts/ArtifactPublishButton.tsx
+  s_da7ab51653058a::t_13bf7a624e22e7 4,14,37-38,43-69,73,77,81,87,93,96,103,110,120-125,136,180-187,191-193,195,198-207,211-212,217-218,227,230-231,235-243,245,276,284
+src/main/artifacts/self-hosted-share-config.ts
+  s_da7ab51653058a::t_47d8b7e8139a6d 1-120
+src/renderer/src/components/artifacts/markdown-share-html.ts
+  s_da7ab51653058a::t_133553259afe39 1-56
+src/renderer/src/components/artifacts/artifact-publish-flow.test.ts
+  s_da7ab51653058a::t_a905997309d68c 2,9-10,13-14,22,30-34,42-43,50-51,53,56-63,65-72,74,77-81,83-87,90-93,96-141,149-150,152-154,157-158,162-163,165-166
+src/main/artifacts/self-hosted-share-config.test.ts
+  s_da7ab51653058a::t_9fd3271d3edfb0 1-124
+src/renderer/src/components/settings/ArtifactsSettingsPane.tsx
+  s_da7ab51653058a::t_95d880a965a0c1 3,5,16-17,42-45,47-48,84,91-94
+src/main/artifacts/self-hosted-share-service.ts
+  s_da7ab51653058a::t_8b8a13dabb6d68 1-219
+src/main/runtime/rpc/methods/index.ts
+  s_da7ab51653058a::t_ecbdce6a9dedf2 4,72
+src/main/artifacts/self-hosted-share-records.test.ts
+  s_da7ab51653058a::t_ba488f140c7cb5 1-83
+src/renderer/src/i18n/locales/en.json
+  s_8c81b81a979e3d::t_a54b5c5605be57 11663-11664,11879-11898,16702-16707,16717-16719
+  s_8c81b81a979e3d::t_2062a74509d47f 16720-16722
+  h_a7e858313fdba5 11649,16723-16729
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  s_da7ab51653058a::t_cadc0febfb25b3 590-595,1279-1284
+src/main/artifacts/self-hosted-share-client.test.ts
+  s_da7ab51653058a::t_e5666f1e1c99c4 1-96
+src/renderer/src/components/artifacts/artifact-published-link-client.test.ts
+  s_da7ab51653058a::t_23c9d78c4f2a56 15-21,25,29,35,39-44
+src/renderer/src/components/artifacts/artifact-published-link-client.ts
+  s_da7ab51653058a::t_303a90081ef491 1,3-5
+src/shared/workbench/share.ts
+  s_da7ab51653058a::t_6c166333ce33ad 1-73
+src/renderer/src/components/settings/ShareServerSettingsSection.tsx
+  s_da7ab51653058a::t_cc653ac264e849 1-260
+docs/05-features/artifact-sharing/spec.md
+  s_da7ab51653058a::t_fc2ffe2f9afd89 1-53
+src/renderer/src/components/artifacts/artifact-publish-flow.ts
+  s_da7ab51653058a::t_061aa7938e8c17 2,4-7,9-10,25-31,35-39,42-49,54,56-70,72-75,87,91-96,98-101,104-159,162-163
+docs/05-features/artifact-sharing/intent.md
+  s_da7ab51653058a::t_ed87dd5402ec48 1-24
+src/renderer/src/components/settings/ShareServerSettingsSection.test.tsx
+  s_da7ab51653058a::t_f6b0977a17dd82 1-177
+src/main/artifacts/self-hosted-share-client.ts
+  s_da7ab51653058a::t_ebee54a131d488 1-166
+src/renderer/src/components/artifacts/ArtifactPublishButton.test.tsx
+  s_da7ab51653058a::t_33818d50eab0a0 12,17,55-57,71-76,80,82-86,105,109,111-115,119-120,122,128-130,133-138,144,146-150,156,158,166,168-172,176-184,197-208,212
+src/renderer/src/components/settings/ArtifactsSettingsPane.test.tsx
+  s_da7ab51653058a::t_6f2a92dbbd022d 10-13,24-27,34,36-40,61,63-65,67-69,71,75,91,94-96,99,104-108
+src/main/runtime/rpc/methods/workbench-share.ts
+  s_da7ab51653058a::t_dd726f394a640d 2-61
+  s_da7ab51653058a::t_62a0e85ffb366d 1
+src/main/artifacts/self-hosted-share-runtime.ts
+  s_da7ab51653058a::t_ee2c353824d1c7 1-17
+src/main/artifacts/self-hosted-share-service.test.ts
+  s_da7ab51653058a::t_d181c0b25ce688 1-206
+src/main/artifacts/self-hosted-share-records.ts
+  s_da7ab51653058a::t_75d2db191b374c 1-117
+docs/04-design-system/guidance.md
+  s_8c81b81a979e3d::t_e35a0c20f4ab94 114
+  s_da7ab51653058a::t_b9ba9273498c19 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "700cd3f45b7a9b7a2b8784739686400038df9215",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_4166fdbe03de01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6fc1634-1a24-4184-9d0f-19b58e003275",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_8c81b81a979e3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "172b7580-7578-4e89-b13d-d8824d1cf87b",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

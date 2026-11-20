@@ -1,0 +1,87 @@
+src/main/persistence/applying-settings/terminal-settings-migrations.ts
+  s_da7ab51653058a::t_74cfdc40bb067f 63-66,76-79,85-88
+src/main/runtime/rpc/methods/workbench-share.test.ts
+  s_da7ab51653058a::t_93376e36ff0145 2-4,7-10,13-14,17-24,27-31,34-63,65,68-77,79-82,84-90,92-102
+src/main/workbench/workbench-rpc-observability.test.ts
+  s_da7ab51653058a::t_52e779e9d9d4c4 123-126
+src/renderer/src/i18n/en-runtime-required.json
+  s_da7ab51653058a::t_97f1424c71ddec 231-257,259-270,272-281,283-289,291,294-307,424-433,1284-1285,1287,1628-1641,1965-1966
+src/renderer/src/i18n/locales/en.json
+  s_da7ab51653058a::t_20dba17ea305cb 11664-11677
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  s_da7ab51653058a::t_53a5871d6221ab 589,1267
+config/packaged-runtime-node-modules.cjs
+  s_da7ab51653058a::t_b12f76c52c9b0d 24-26
+docs/05-features/artifact-sharing/intent.md
+  s_da7ab51653058a::t_d000163cb2398e 16,18
+docs/05-features/artifact-sharing/spec.md
+  s_da7ab51653058a::t_e67b55312c55ba 9-10,24,47,53-54
+ref/upstream.md
+  s_da7ab51653058a::t_c2aae4e327135e 106
+skill-guides/orca-cli/references/publishing.md
+  s_da7ab51653058a::t_de5516434f9349 11,16-25,28-29
+src/cli/artifact-format.ts
+  s_da7ab51653058a::t_34ac0a878a2765 1,3-4,7-11,15-16
+src/cli/bundled-skill-guides.ts
+  s_da7ab51653058a::t_7cafbd9d27ed44 27,36
+src/cli/handlers/artifacts.test.ts
+  s_da7ab51653058a::t_61bb7e65faa581 7-23,25-30,36,39,49-85,87-95,119,129,132-133,139,143-147,150,152-153,155,162-165,168-174,177,179-182,184-185,187-201
+src/cli/handlers/artifacts.ts
+  s_da7ab51653058a::t_ae85e568e781ea 8-9,13,16-18,35,39,55,62-63,65-67,69,72,87,89,94,97-104,107,110,115-118,120-130,136-138,140-141,143-144,149-150,152,157-167,169-170
+src/cli/index.test.ts
+  s_da7ab51653058a::t_074bd186d4d108 266,273
+src/cli/specs/artifacts.ts
+  s_da7ab51653058a::t_7578e09bd29fb6 7-9,15-17,23-25,30-32,38-40
+src/main/artifacts/self-hosted-share-service.ts
+  s_0ee84484606401::t_66d399f63cfe13 4,32
+src/main/runtime/rpc/methods/workbench-share.ts
+  s_0ee84484606401::t_248dae8129c6db 4-8,41-48
+src/main/runtime/runtime-client-settings.ts
+  s_da7ab51653058a::t_40d0726c3f2684 167-172,174-185,187-204
+src/renderer/src/components/artifacts/markdown-share-html.ts
+  s_da7ab51653058a::t_009aab0e49bf7a 3,9
+src/renderer/src/components/artifacts/share-server-client.ts
+  s_da7ab51653058a::t_3682c6f316274e 1-5,38-49
+src/renderer/src/components/settings/ArtifactsSettingsPane.test.tsx
+  s_da7ab51653058a::t_d268cc3239f6b9 7,10-14,25-37,40-47,52-54,60,80,82-95,98,100,104
+src/renderer/src/components/settings/ArtifactsSettingsPane.tsx
+  s_da7ab51653058a::t_9b6c0df0a2acdf 1,7-8,72-89
+src/renderer/src/components/settings/ArtifactsSharedLinksSection.tsx
+  s_da7ab51653058a::t_fcbc7bf81abc29 1-3,5-7,9-19,22-23,26-34,37-41,44-52,56,58-98,101-118,120-159,161
+src/renderer/src/components/settings/artifacts-settings-search.ts
+  s_da7ab51653058a::t_81cf51dfb382c7 7,9-10,15-16
+src/renderer/src/components/settings/settings-setup-workflow-section-renderers.tsx
+  s_da7ab51653058a::t_5c4aeaa8124108 120,132
+src/renderer/src/components/sidebar/SidebarNav.tsx
+  s_da7ab51653058a::t_2c65c6fa5e7c3c 2
+src/renderer/src/store/slices/ui-page-navigation.test.ts
+  s_da7ab51653058a::t_53928ac5814176 847
+src/shared/workbench/share-html.ts
+  s_da7ab51653058a::t_626f6d966e8fc6 1-23,25-45,48-54
+src/shared/workbench/share.ts
+  s_0ee84484606401::t_ee73ca29152e83 11-12,33-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "53b1a0fb79022c4bfe3e0e9231a0fecad584f978",
+  "prompts": {},
+  "sessions": {
+    "s_0ee84484606401": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a595fe4218c043e03",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "external_qwen3.8-max"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

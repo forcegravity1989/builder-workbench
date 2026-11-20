@@ -1,0 +1,16 @@
+src/main/runtime/rpc/methods/workbench-share.test.ts
+  h_a7e858313fdba5 103-124
+src/main/runtime/rpc/methods/workbench-share.ts
+  h_a7e858313fdba5 11-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "cfeffbdf6a6924d427a5047a1de867ec5c3e2602",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
