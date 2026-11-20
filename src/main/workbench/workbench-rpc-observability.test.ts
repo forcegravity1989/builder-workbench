@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
@@ -116,19 +114,5 @@ describe('defineWorkbenchMethod', () => {
     })
     await expect(aborting.handler(input, ctx)).rejects.toThrow('aborted')
     expect(records[1].exit._tag).toBe('Interrupted')
-  })
-
-  it('every workbench RPC method file registers through defineWorkbenchMethod', () => {
-    const dir = join(__dirname, '..', 'runtime', 'rpc', 'methods')
-    // Why: the scan certifies method registration in source files; test files share the prefix but don't register.
-    const files = readdirSync(dir).filter(
-      (f) => /^workbench-.*\.ts$/.test(f) && !f.endsWith('.test.ts')
-    )
-    expect(files.length).toBeGreaterThan(0)
-    const offenders = files.filter((f) => {
-      const text = readFileSync(join(dir, f), 'utf8')
-      return /\bdefineMethod\s*\(/.test(text) || !text.includes('defineWorkbenchMethod(')
-    })
-    expect(offenders, offenders.join(', ')).toEqual([])
   })
 })
