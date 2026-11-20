@@ -269,12 +269,35 @@ export function parseFolderListing(json: Record<string, unknown> | null): {
   return { folders }
 }
 
+/** Parse the file entries returned alongside folders by `onebox folder-list`. */
+export function parseFileListing(json: Record<string, unknown> | null): OneboxNode[] {
+  if (!Array.isArray(json?.files)) {
+    throw new WelinkReportError('cli-incompatible', 'folder-list returned no files array')
+  }
+  return json.files.map((entry) => {
+    if (typeof entry !== 'object' || entry === null) {
+      throw new WelinkReportError('cli-incompatible', 'folder-list returned an invalid file')
+    }
+    const record = entry as Record<string, unknown>
+    const id = normalizeOneboxId(record.id ?? record.fileId ?? record.nodeId)
+    const name = record.name ?? record.fileName
+    if (!id || typeof name !== 'string') {
+      throw new WelinkReportError(
+        'cli-incompatible',
+        'folder-list returned an invalid file identity'
+      )
+    }
+    return { id, name }
+  })
+}
+
 export async function listFolder(
   route: WelinkRoute,
   spaceId: string,
   parentId: string
-): Promise<{ folders: OneboxNode[] }> {
+): Promise<{ folders: OneboxNode[]; files: OneboxNode[] }> {
   const folders: OneboxNode[] = []
+  const files: OneboxNode[] = []
   let offset = 0
   for (;;) {
     const { stdout } = await withRateLimitRetry(() =>
@@ -313,9 +336,10 @@ export async function listFolder(
       throw new WelinkReportError('cli-incompatible', 'folder-list returned invalid pagination')
     }
     folders.push(...parseFolderListing(parsed).folders)
+    files.push(...parseFileListing(parsed))
     offset += limit
     if (offset >= totalCount) {
-      return { folders }
+      return { folders, files }
     }
     if (parsed.folders.length + parsed.files.length === 0) {
       throw new WelinkReportError(

@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import {
   createFolder,
   downloadOneboxFile,
-  findOneboxFile,
   listFolder,
   parseFirstJsonObject,
   removeReportFile,
@@ -139,13 +138,29 @@ async function resolveTeamFolder(route: WelinkRoute, spaceId: string): Promise<s
   return existing?.id ?? createFolder(route, spaceId, '0', 'BW')
 }
 
+async function findTeamDirectoryFile(
+  route: WelinkRoute,
+  spaceId: string
+): Promise<{ id: string; name: string } | null> {
+  const root = await listFolder(route, spaceId, '0')
+  const folder = root.folders.find((entry) => entry.name === 'BW')
+  if (!folder) {
+    return null
+  }
+  return (
+    (await listFolder(route, spaceId, folder.id)).files.find(
+      (entry) => entry.name === 'team.json'
+    ) ?? null
+  )
+}
+
 export async function readTeamDirectory(args: {
   route: WelinkRoute
   groupId: string
   spaceId: string
 }): Promise<TeamDirectoryReadResult> {
   const members = await queryGroupMembers(args.route, args.groupId)
-  const node = await findOneboxFile(args.route, args.spaceId, 'team.json')
+  const node = await findTeamDirectoryFile(args.route, args.spaceId)
   if (!node) {
     return {
       directory: {
@@ -175,7 +190,11 @@ export async function readTeamDirectory(args: {
     const files = await readdir(root)
     for (const file of files) {
       if (file.endsWith('.json')) {
-        const directory = parseDirectory(await readFile(join(root, file), 'utf8'), args.groupId, args.spaceId)
+        const directory = parseDirectory(
+          await readFile(join(root, file), 'utf8'),
+          args.groupId,
+          args.spaceId
+        )
         directory.hosts = mergeMembers(members, directory.hosts)
         return { directory, fileId: node.id }
       }
@@ -186,7 +205,10 @@ export async function readTeamDirectory(args: {
   }
 }
 
-function mergeMembers(current: TeamDirectoryMember[], saved: TeamDirectoryMember[]): TeamDirectoryMember[] {
+function mergeMembers(
+  current: TeamDirectoryMember[],
+  saved: TeamDirectoryMember[]
+): TeamDirectoryMember[] {
   const savedById = new Map(saved.map((member) => [member.member_id, member]))
   return current.map((member) => ({ ...savedById.get(member.member_id), ...member }))
 }
@@ -200,7 +222,7 @@ export async function writeTeamDirectory(args: {
   try {
     await writeFile(path, `${JSON.stringify(args.directory, null, 2)}\n`, 'utf8')
     const folderId = await resolveTeamFolder(args.route, args.directory.team_space_id)
-    const previous = await findOneboxFile(args.route, args.directory.team_space_id, 'team.json')
+    const previous = await findTeamDirectoryFile(args.route, args.directory.team_space_id)
     const fileId = await uploadOneboxFile(args.route, args.directory.team_space_id, folderId, path)
     if (previous && previous.id !== fileId) {
       await removeReportFile(args.route, args.directory.team_space_id, previous.id)

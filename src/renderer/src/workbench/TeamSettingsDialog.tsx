@@ -1,9 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Link2, LoaderCircle, RefreshCw, Save, UsersRound, X } from 'lucide-react'
+import { Link2, LoaderCircle, Plus, RefreshCw, Save, UsersRound, X } from 'lucide-react'
 import type { TeamDirectory } from '../../../shared/team-directory'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { useAppStore } from '@/store'
 
 type TeamSettingsDialogProps = {
   open: boolean
@@ -35,13 +49,21 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [generatingHostId, setGeneratingHostId] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const repos = useAppStore((state) => state.repos)
+  const updateRepo = useAppStore((state) => state.updateRepo)
+  const setRuntimeEnvironments = useAppStore((state) => state.setRuntimeEnvironments)
+  const readRuntimeHostStatusSnapshots = useAppStore(
+    (state) => state.readRuntimeHostStatusSnapshots
+  )
 
   useEffect(() => {
     if (!open) {
       setGroupId('')
       setSpaceId('')
       setDirectory(null)
+      setSelectedProjectId('')
       setError(null)
     }
   }, [open])
@@ -120,6 +142,16 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       if (!result.available) {
         throw new Error(result.guidance ?? '当前主机无法生成 Orca 共享地址。')
       }
+      const registration = await window.api.runtimeEnvironments.verifyAndAddFromPairingCode({
+        name: directory.hosts.find((host) => host.member_id === memberId)?.name ?? memberId,
+        pairingCode: result.pairingUrl,
+        allowLoopback: false
+      })
+      if (!registration.ok) {
+        throw new Error(registration.message)
+      }
+      setRuntimeEnvironments(await window.api.runtimeEnvironments.list())
+      await readRuntimeHostStatusSnapshots()
       setDirectory((current) =>
         current
           ? {
@@ -138,6 +170,62 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setGeneratingHostId(null)
     }
   }
+
+  const registerProject = async (): Promise<void> => {
+    if (!directory || !selectedProjectId) {
+      return
+    }
+    const repo = repos.find((candidate) => candidate.id === selectedProjectId)
+    const identity = repo?.gitRemoteIdentity
+    if (!repo || !identity?.canonicalKey) {
+      setError('请选择带有远端仓库身份的本机项目。')
+      return
+    }
+    if (directory.projects.some((project) => project.repo_id === identity.canonicalKey)) {
+      setError('这个项目已经登记在团队目录中。')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const nextDirectory: TeamDirectory = {
+      ...directory,
+      projects: [
+        ...directory.projects,
+        {
+          repo_id: identity.canonicalKey,
+          name: repo.displayName,
+          repository: identity.remoteUrl,
+          sources: []
+        }
+      ]
+    }
+    try {
+      await window.api.teamCollaboration.writeDirectory(nextDirectory)
+      const updated = await updateRepo(
+        repo.id,
+        { projectVisibility: 'team' },
+        { hostId: repo.executionHostId ?? undefined }
+      )
+      if (!updated) {
+        throw new Error('项目已写入群空间，但本机项目墙未能更新为团队项目。')
+      }
+      setDirectory(nextDirectory)
+      setSelectedProjectId('')
+      rememberSpaceId(nextDirectory.team_group_id, nextDirectory.team_space_id)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '登记团队项目失败。')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const availableProjects = directory
+    ? repos.filter(
+        (repo) =>
+          Boolean(repo.gitRemoteIdentity?.canonicalKey) &&
+          !directory.projects.some((project) => project.repo_id === repo.gitRemoteIdentity?.canonicalKey)
+      )
+    : []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -169,10 +257,18 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
               </label>
               <label className="space-y-1 text-sm">
                 <span>群空间 ID</span>
-                <Input value={spaceId} onChange={(event) => setSpaceId(event.target.value)} inputMode="numeric" />
+                <Input
+                  value={spaceId}
+                  onChange={(event) => setSpaceId(event.target.value)}
+                  inputMode="numeric"
+                />
               </label>
             </div>
-            <Button type="button" onClick={enterTeam} disabled={!groupId.trim() || !spaceId.trim() || loading}>
+            <Button
+              type="button"
+              onClick={enterTeam}
+              disabled={!groupId.trim() || !spaceId.trim() || loading}
+            >
               {loading ? <LoaderCircle className="size-3.5 animate-spin" /> : <UsersRound className="size-3.5" />}
               绑定团队
             </Button>
@@ -261,14 +357,44 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
               )}
             </div>
             <div className="rounded-lg border border-border/60">
-              <div className="border-b border-border/60 px-3 py-2 text-sm font-medium">团队项目</div>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+                <div className="text-sm font-medium">团队项目</div>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                    <SelectTrigger className="h-8 w-56 text-xs" aria-label="选择本机项目">
+                      <SelectValue placeholder="选择本机项目" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableProjects.map((repo) => (
+                        <SelectItem key={repo.id} value={repo.id}>
+                          {repo.displayName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void registerProject()}
+                    disabled={!selectedProjectId || saving}
+                  >
+                    {saving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+                    登记项目
+                  </Button>
+                </div>
+              </div>
               {directory.projects.length === 0 ? (
                 <p className="px-3 py-4 text-sm text-muted-foreground">还没有登记团队项目。</p>
               ) : (
                 directory.projects.map((project) => (
                   <div key={project.repo_id} className="border-b border-border/40 px-3 py-2 text-sm last:border-b-0">
                     <div className="font-medium">{project.name ?? project.repo_id}</div>
-                    <div className="text-muted-foreground">来源 {project.sources.join('、')}</div>
+                    <div className="text-muted-foreground">
+                      {project.sources.length > 0
+                        ? `来源 ${project.sources.join('、')}`
+                        : '来源由各主机同步'}
+                    </div>
                   </div>
                 ))
               )}
