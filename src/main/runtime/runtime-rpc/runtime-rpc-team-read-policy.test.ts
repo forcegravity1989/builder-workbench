@@ -17,6 +17,7 @@ describe('team-read RPC policy', () => {
     expect(teamReadDenialReason('team-read', 'worktree.list')).toBeNull()
     expect(teamReadDenialReason('team-read', 'files.read')).toBeNull()
     expect(teamReadDenialReason('team-read', 'files.search')).toBeNull()
+    expect(teamReadDenialReason('team-read', 'workbench.review.receive')).toBeNull()
     expect(teamReadDenialReason('team-read', 'worktree.detectedList')).toBeNull()
     expect(teamReadDenialReason('team-read', 'worktree.lineageList')).toBeNull()
     expect(teamReadDenialReason('team-read', 'git.checkIgnored')).toBeNull()
