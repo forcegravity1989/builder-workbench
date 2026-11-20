@@ -653,9 +653,14 @@ function App() {
   }
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
-      <div className="g3-demo-bar">
+      <div className="g3-demo-bar prototype-review-bar">
         <MilestoneReviewNav screen="acceptance" />
         <small className="g3-shell-meta">{shellMeta.reviewNote}</small>
+        <span className="prototype-review-badge">复用当前 BW 外壳</span>
+        <span className="prototype-review-badge">示例快照 · 场景切换</span>
+        <nav className="prototype-review-links" aria-label="特性资料">
+          <a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a>
+        </nav>
         <label className="g3-scene">
           时期
           <select
