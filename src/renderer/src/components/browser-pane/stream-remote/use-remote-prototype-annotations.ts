@@ -15,6 +15,7 @@ export function useRemotePrototypeAnnotations({
   pageId: string | null
   documentKey: string
   enabled: boolean
+  prototypeReviewActive: boolean
 }): {
   annotations: PrototypeReviewAnnotation[]
   addAnnotation: (point: { x: number; y: number }, comment: string) => Promise<void>
@@ -39,7 +40,7 @@ export function useRemotePrototypeAnnotations({
   }, [runtimeTarget])
   const refresh = useCallback(async () => {
     const target = runtimeTarget()
-    if (!enabled || !target || !pageId) {
+    if (!enabled || !prototypeReviewActive || !target || !pageId) {
       setAnnotations([])
       return
     }
@@ -50,21 +51,21 @@ export function useRemotePrototypeAnnotations({
       { timeoutMs: 15_000, suppressFeatureInteraction: true }
     )
     setAnnotations(next)
-  }, [documentKey, enabled, pageId, runtimeTarget, runtimeWorktree])
+  }, [documentKey, enabled, pageId, prototypeReviewActive, runtimeTarget, runtimeWorktree])
 
   useEffect(() => {
     void refresh().catch(() => setAnnotations([]))
-    if (!enabled) {
+    if (!enabled || !prototypeReviewActive) {
       return
     }
     const timer = window.setInterval(() => void refresh().catch(() => undefined), 5000)
     return () => window.clearInterval(timer)
-  }, [enabled, refresh])
+  }, [enabled, prototypeReviewActive, refresh])
 
   const addAnnotation = useCallback(
     async (point: { x: number; y: number }, comment: string) => {
       const target = runtimeTarget()
-      if (!target || !pageId || !comment.trim()) {
+      if (!prototypeReviewActive || !target || !pageId || !comment.trim()) {
         return
       }
       const added = await callRuntimeRpc<PrototypeReviewAnnotation>(
@@ -82,13 +83,13 @@ export function useRemotePrototypeAnnotations({
       )
       setAnnotations((current) => [...current, added])
     },
-    [documentKey, hostName, pageId, runtimeTarget, runtimeWorktree]
+    [documentKey, hostName, pageId, prototypeReviewActive, runtimeTarget, runtimeWorktree]
   )
 
   const deleteAnnotation = useCallback(
     async (annotationId: string) => {
       const target = runtimeTarget()
-      if (!target || !pageId) {
+      if (!prototypeReviewActive || !target || !pageId) {
         return
       }
       await callRuntimeRpc(
@@ -99,7 +100,7 @@ export function useRemotePrototypeAnnotations({
       )
       setAnnotations((current) => current.filter((annotation) => annotation.id !== annotationId))
     },
-    [documentKey, pageId, runtimeTarget]
+    [documentKey, pageId, prototypeReviewActive, runtimeTarget]
   )
 
   return { annotations, addAnnotation, deleteAnnotation }

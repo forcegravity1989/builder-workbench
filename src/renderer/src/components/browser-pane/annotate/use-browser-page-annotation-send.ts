@@ -168,6 +168,19 @@ export function useBrowserPageAnnotationSend({
         )
         for (const annotation of remote) {
           if (existing.has(annotation.id)) {
+            const local = useAppStore
+              .getState()
+              .browserAnnotationsByPageId[browserTabId]?.find((item) => item.id === annotation.id)
+            if (
+              local?.payload.target.tagName === 'prototype-review' &&
+              local.comment !== annotation.comment
+            ) {
+              updateBrowserPageAnnotation(browserTabId, annotation.id, {
+                comment: annotation.comment,
+                intent: local.intent,
+                imagePaths: local.imagePaths
+              })
+            }
             continue
           }
           addBrowserPageAnnotation(
@@ -184,7 +197,14 @@ export function useBrowserPageAnnotationSend({
       stopped = true
       window.clearInterval(timer)
     }
-  }, [addBrowserPageAnnotation, browserTabId, documentKey, prototypeReviewActive, worktreeId])
+  }, [
+    addBrowserPageAnnotation,
+    browserTabId,
+    documentKey,
+    prototypeReviewActive,
+    updateBrowserPageAnnotation,
+    worktreeId
+  ])
 
   useLayoutEffect(() => {
     browserAnnotationsRef.current = browserAnnotations
@@ -294,14 +314,14 @@ export function useBrowserPageAnnotationSend({
       return
     }
     void window.api.ui.writeClipboardText(browserAnnotationsPrompt)
-    recordFeatureInteraction('browser-annotations')
+    void recordFeatureInteraction('browser-annotations')
     clearTimeout(annotationCopyTimerRef.current)
     setBrowserAnnotationsCopied(true)
     annotationCopyTimerRef.current = setTimeout(() => setBrowserAnnotationsCopied(false), 1400)
   }, [browserAnnotationsPrompt, recordFeatureInteraction])
 
   const handleBrowserAnnotationsSentToAgent = useCallback((): void => {
-    recordFeatureInteraction('browser-annotations-sent-to-agent')
+    void recordFeatureInteraction('browser-annotations-sent-to-agent')
   }, [recordFeatureInteraction])
 
   const handleClearBrowserAnnotations = useCallback((): void => {
@@ -310,7 +330,7 @@ export function useBrowserPageAnnotationSend({
     }
     clearTimeout(annotationCopyTimerRef.current)
     setBrowserAnnotationsCopied(false)
-    recordFeatureInteraction('browser-annotations')
+    void recordFeatureInteraction('browser-annotations')
     clearBrowserPageAnnotations(browserTabId)
   }, [browserTabId, clearBrowserPageAnnotations, recordFeatureInteraction])
 
@@ -327,7 +347,7 @@ export function useBrowserPageAnnotationSend({
         { pageId: browserTabId, documentKey, annotationId },
         { timeoutMs: 15_000, suppressFeatureInteraction: true }
       ).catch(() => undefined)
-      recordFeatureInteraction('browser-annotations')
+      void recordFeatureInteraction('browser-annotations')
     },
     [browserTabId, deleteBrowserPageAnnotation, documentKey, recordFeatureInteraction]
   )
@@ -340,9 +360,36 @@ export function useBrowserPageAnnotationSend({
       imagePaths: string[]
     ): void => {
       updateBrowserPageAnnotation(browserTabId, annotationId, { comment, intent, imagePaths })
-      recordFeatureInteraction('browser-annotations')
+      if (prototypeReviewActive) {
+        const annotation = browserAnnotationsRef.current.find((item) => item.id === annotationId)
+        if (annotation) {
+          void callRuntimeRpc(
+            { kind: 'local' },
+            'workbench.prototypeReview.annotations.add',
+            {
+              worktree: toRuntimeWorktreeSelector(worktreeId),
+              page: browserTabId,
+              id: annotationId,
+              documentKey,
+              comment,
+              x: annotation.payload.target.rectPage.x,
+              y: annotation.payload.target.rectPage.y,
+              label: annotation.payload.target.textSnippet || undefined
+            },
+            { timeoutMs: 15_000, suppressFeatureInteraction: true }
+          ).catch(() => undefined)
+        }
+      }
+      void recordFeatureInteraction('browser-annotations')
     },
-    [browserTabId, recordFeatureInteraction, updateBrowserPageAnnotation]
+    [
+      browserTabId,
+      documentKey,
+      prototypeReviewActive,
+      recordFeatureInteraction,
+      updateBrowserPageAnnotation,
+      worktreeId
+    ]
   )
 
   return {

@@ -28,6 +28,7 @@ export function RemoteBrowserPageToolbar({
   onForward,
   onReload,
   annotationMode,
+  annotationAvailable,
   onToggleAnnotation
 }: {
   runtimeEnvironmentId: string
@@ -48,6 +49,7 @@ export function RemoteBrowserPageToolbar({
   onForward: () => void
   onReload: () => void
   annotationMode: boolean
+  annotationAvailable: boolean
   onToggleAnnotation: () => void
 }): React.JSX.Element {
   return (
@@ -116,6 +118,8 @@ export function RemoteBrowserPageToolbar({
             className={`h-7 w-7 ${annotationMode ? 'bg-accent text-foreground' : ''}`}
             aria-pressed={annotationMode}
             aria-label="批注页面元素"
+            disabled={!annotationAvailable}
+            title={annotationAvailable ? undefined : '仅原型评审页可批注'}
             onClick={onToggleAnnotation}
           >
             <MessageSquarePlus className="size-4" />

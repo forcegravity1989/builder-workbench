@@ -38,6 +38,7 @@ import { RemoteBrowserPageToolbar } from './remote-browser-page-toolbar'
 import { RemoteBrowserPageViewport } from './remote-browser-page-viewport'
 import { useRemotePrototypeAnnotations } from './use-remote-prototype-annotations'
 import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
+import { usePrototypeReviewNotifications } from '@/workbench/pr-review-notifications/prototype-store'
 
 export function RemoteBrowserPagePane({
   browserTab,
@@ -97,6 +98,16 @@ export function RemoteBrowserPagePane({
     y: number
   } | null>(null)
   const [annotationText, setAnnotationText] = useState('')
+  const prototypeReviewState = usePrototypeReviewNotifications()
+  const prototypeReviewActive =
+    prototypeReviewState.outgoing.some((note) => note.page.browserPageId === browserTab.id) ||
+    prototypeReviewState.incoming.some((note) => note.page.browserPageId === browserTab.id)
+  useEffect(() => {
+    if (!prototypeReviewActive) {
+      setAnnotationMode(false)
+      setPendingAnnotationPoint(null)
+    }
+  }, [prototypeReviewActive])
   const certificateFailure = useAppStore(
     (s) => s.browserCertificateFailuresByPageId[browserTab.id] ?? null
   )
@@ -300,7 +311,8 @@ export function RemoteBrowserPagePane({
     runtimeWorktree,
     pageId: annotationPageId,
     documentKey: annotationDocumentKey,
-    enabled: annotationMode
+    enabled: annotationMode,
+    prototypeReviewActive
   })
   const handleAnnotationPointerDown = (event: React.PointerEvent<HTMLImageElement>): void => {
     if (annotationMode) {
@@ -435,6 +447,7 @@ export function RemoteBrowserPagePane({
         onForward={() => void runRemoteNavigation('browser.forward')}
         onReload={() => void runRemoteNavigation('browser.reload')}
         annotationMode={annotationMode}
+        annotationAvailable={prototypeReviewActive}
         onToggleAnnotation={() => {
           setAnnotationMode((current) => !current)
           setPendingAnnotationPoint(null)
