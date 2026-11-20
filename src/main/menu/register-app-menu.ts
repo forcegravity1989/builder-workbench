@@ -8,7 +8,7 @@ import {
 import type { UpdateCheckOptions } from '../../shared/update-status-types'
 import { translateMain } from '../i18n/main-i18n'
 import { createAppMenuSelectionItem } from './app-menu-selection-item'
-import { isWorkbenchProduct } from '../startup/workbench-product'
+import { isMonicaProduct } from '../startup/monica-product'
 
 export type AppearanceMenuState = {
   showTasksButton: boolean
@@ -332,7 +332,7 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     editMenu,
     viewMenu,
     windowMenu,
-    ...(isWorkbenchProduct() ? [] : [helpMenu])
+    ...(isMonicaProduct() ? [] : [helpMenu])
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

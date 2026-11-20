@@ -25,7 +25,7 @@ import {
   SIDEBAR_GROUP_FIXED_CHEVRON_CLASS,
   SidebarGroupChevron
 } from '../../ProjectHeaderActions'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import SidebarWorkspaceOptionsMenu from '@/components/sidebar/SidebarWorkspaceOptionsMenu'
 import { NewWorkspaceButton } from '@/components/sidebar/sidebar-header-actions'
 import {
@@ -153,7 +153,7 @@ export function renderWorktreeSectionHeaderRow(args: {
   const isAllHeader = row.key === ALL_GROUP_KEY
   // Why: in the Workbench shell the flat "All" group is the 工作区 section header,
   // so it shares the guide chevron + section actions with 已固定/版本.
-  const workbenchSectionHeader = isWorkbenchShell() && (isPinnedHeader || isAllHeader)
+  const workbenchSectionHeader = isMonicaShell() && (isPinnedHeader || isAllHeader)
   const repoHeaderColor = resolveProjectGroupHeaderColor({
     groupBy: ctx.groupBy,
     headerKey: row.key,
@@ -190,9 +190,9 @@ export function renderWorktreeSectionHeaderRow(args: {
       isProjectGroupHeader ||
       headerWorkspaceStatus !== null ||
       isPinnedHeader ||
-      (isWorkbenchShell() && isAllHeader))
+      (isMonicaShell() && isAllHeader))
   const fixedChevron =
-    isWorkbenchShell() && showHeaderCollapseAffordance && (isRepoHeader || isProjectGroupHeader)
+    isMonicaShell() && showHeaderCollapseAffordance && (isRepoHeader || isProjectGroupHeader)
   const collapseAffordance =
     showHeaderCollapseAffordance && !workbenchSectionHeader ? (
       <div
@@ -382,7 +382,7 @@ export function renderWorktreeSectionHeaderRow(args: {
           </div>
         </div>
 
-        {isWorkbenchShell() && isAllHeader ? (
+        {isMonicaShell() && isAllHeader ? (
           // Why stop propagation: these actions live inside the clickable row
           // header; without it, clicking 选项/新建工作区 would also toggle the
           // 工作区 collapse. Keyboard too, so Enter on the button doesn't collapse.

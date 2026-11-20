@@ -15,7 +15,7 @@ import {
   parseGitHubRemoteUrl,
   projectHostSetupProjectionFromRepos
 } from '../../../shared/project-host-setup-projection'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { taskPageWorkItemRepository } from './task-page-work-item-signatures'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { ExecutionHostRegistryEntry } from '../../../shared/execution-host-registry'
@@ -111,7 +111,7 @@ export function getTaskPageRepoSourceContext(
   gitlabProjectRef?: GitLabProjectRef | null
 ): TaskSourceContext | null {
   const source = getRepoTaskSourceContext(repo, provider, gitlabProjectRef)
-  if (!source || !repo || provider !== 'github' || !isWorkbenchShell()) {
+  if (!source || !repo || provider !== 'github' || !isMonicaShell()) {
     return source
   }
   const remote = repo.gitRemoteIdentity
@@ -146,7 +146,7 @@ export function getTaskPageGitHubItemSource(
   previous?: TaskSourceContext | null
 ): TaskSourceContext | null {
   const context = getTaskPageRepoSourceContext(repo, 'github')
-  if (!isWorkbenchShell()) {
+  if (!isMonicaShell()) {
     return previous ?? context
   }
   const source = context ?? previous

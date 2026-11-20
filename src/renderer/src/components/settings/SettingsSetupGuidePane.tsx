@@ -6,11 +6,11 @@ import {
 import type { FeatureWallSetupStepId } from '../../../../shared/feature-wall-setup-steps'
 import { FeatureWallSetupChecklist } from '../feature-wall/FeatureWallSetupChecklist'
 import { useSettingsSetupGuideFullProgress } from './settings-setup-guide-progress'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 export function SettingsSetupGuidePane(): React.JSX.Element {
-  const workbenchShell = isWorkbenchShell()
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(workbenchShell), [workbenchShell])
+  const monicaShell = isMonicaShell()
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(monicaShell), [monicaShell])
   const [userSelectedStep, setUserSelectedStep] = useState(false)
   const [orchestrationSkillInstalled, setOrchestrationSkillInstalled] = useState(false)
   const [browserUseSkillInstalled, setBrowserUseSkillInstalled] = useState(false)
@@ -20,7 +20,7 @@ export function SettingsSetupGuidePane(): React.JSX.Element {
     browserUseSkillInstalled
   )
   const [activeStepId, setActiveStepId] = useState<FeatureWallSetupStepId>(() =>
-    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, workbenchShell)
+    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, monicaShell)
   )
   const activeStep = setupSteps.find((step) => step.id === activeStepId) ?? setupSteps[0] ?? null
 
@@ -28,8 +28,8 @@ export function SettingsSetupGuidePane(): React.JSX.Element {
     if (userSelectedStep) {
       return
     }
-    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, workbenchShell))
-  }, [progress.stepDone, userSelectedStep, workbenchShell])
+    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, monicaShell))
+  }, [progress.stepDone, userSelectedStep, monicaShell])
 
   useEffect(() => {
     if (!activeStep || userSelectedStep || !progress.stepDone[activeStep.id]) {
@@ -37,12 +37,12 @@ export function SettingsSetupGuidePane(): React.JSX.Element {
     }
     const nextUnfinishedStepId = getFirstIncompleteFeatureWallSetupStepId(
       progress.stepDone,
-      workbenchShell
+      monicaShell
     )
     if (nextUnfinishedStepId !== activeStep.id) {
       setActiveStepId(nextUnfinishedStepId)
     }
-  }, [activeStep, progress.stepDone, userSelectedStep, workbenchShell])
+  }, [activeStep, progress.stepDone, userSelectedStep, monicaShell])
 
   const handleSelectStep = (id: FeatureWallSetupStepId): void => {
     setUserSelectedStep(true)

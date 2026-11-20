@@ -6,7 +6,7 @@
 
 ## 旅程归属与用例入口
 
-探索 BW 的工作旅程是跨特性的主目录。本特性登记在 W02 和 W03，W04 的验收成果由版本验收特性负责。
+探索 Monica 的工作旅程是跨特性的主目录。本特性登记在 W02 和 W03，W04 的验收成果由版本验收特性负责。
 
 | 旅程 | 本特性观察结果 | 入口与边界 |
 | --- | --- | --- |
@@ -34,7 +34,7 @@
 | spec | 已确认 | 双列侧栏、版本目录、绑定、流程树、任务开工、清理和失败边界见 [spec](spec.md) |
 | design | 已确认 | 绑定契约、目录装载、准备编排、原生复用和删除链见 [design](design.md) |
 | 核心协议 | 部分验证 | 绑定读回规范化、目录合并、owner/instance 围栏、准备去重、任务归属解析已有协议与静态证据。真实宿主、Git 占用和跨机链路仍需验证 |
-| 验收点 E2E | 部分验证 | 旅程 ID W02/W03；文件 `tests/e2e/workbench/journeys/w02-cycle-main.spec.ts`，标题 `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料、renderer 重载后的侧栏定位和验收树挂载。它是共享主链，不新增专属副本 |
+| 验收点 E2E | 部分验证 | 旅程 ID W02/W03；文件 `tests/e2e/workbench/journeys/w02-cycle-main.spec.ts`，标题 `Monica cycle main chain: bound flow trees via new-version prepare, material save and independent read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料、renderer 重载后的侧栏定位和验收树挂载。它是共享主链，不新增专属副本 |
 | 用户旅程 E2E | 部分验证 | W02/W03 复用同一入口、标题、执行项目和独立读回；当前主链只观察 W03 的绑定/重载部分，Issue→目标→工作区切换、会话恢复、双机和清理执行仍由真壳验收补齐，不将 J 标签伪装成已执行旅程 |
 
 ## 已验证范围

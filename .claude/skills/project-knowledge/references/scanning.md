@@ -4,7 +4,7 @@
 
 ## 运行环境与链接检查
 
-运行环境为 Node.js 24，无第三方运行依赖。BW 的映射放在 [bw-scan.json](projects/bw-scan.json)，包含范围、文档类型和候选结构提示；其他项目复制并调整映射，不能直接继承 BW 目录。
+运行环境为 Node.js 24，无第三方运行依赖。Monica 的映射放在 [monica-scan.json](projects/monica-scan.json)，包含范围、文档类型和候选结构提示；其他项目复制并调整映射，不能直接继承 Monica 目录。
 
 没有相应环境时可用现有工具验证文档，明确本包脚本未运行。单次链接检查只读显式指定的 Markdown，不遍历全仓：
 
@@ -30,7 +30,7 @@ node --test <Skill>/scripts/scan-knowledge.test.mjs
 `include` 是可能存在的文件/目录清单，不是规范要求。不存在的候选路径会显示为 `selected-path-missing`；不恢复已退役文件，也不能据此判为本轮缺失交付。本包提供独立的 Node 测试入口；是否被当前 CI 执行须核验实际 workflow，不能沿用来源分支“已接入”声明。全库扫描结果不是 CI 门禁。
 
 ```text
-node <Skill>/scripts/scan-knowledge.mjs --root <目标仓> --profile <Skill>/references/projects/bw-scan.json --out <仓外报告目录>
+node <Skill>/scripts/scan-knowledge.mjs --root <目标仓> --profile <Skill>/references/projects/monica-scan.json --out <仓外报告目录>
 ```
 
 输出固定为 `knowledge.json` 与 `knowledge.html`。输出目录必须在目标仓之外，避免扫描器覆写源文件或把生成物当新知识。目录别名（如 macOS 临时目录、Windows junction 或短路径）按真实落点判断；报告文件本身不能是符号链接、硬链接或非普通文件。只有本次指定输出会被更新，无远端写入。
@@ -47,9 +47,9 @@ node <Skill>/scripts/scan-knowledge.mjs --root <目标仓> --profile <Skill>/ref
 | 内容对象 | CHANGELOG 的二级分组和段落长度；采用指定表头的验收映射行 | 只能统计已映射结构，不将未知数据记成零特性/零验收 |
 | 候选债务 | 缺文件引用、完全重复的长段落、待核对结构、扫描范围内无入链 | 人核对后决定处置；不自动删档/改规则 |
 
-映射 JSON 是可执行检查配置，`contractSource` 指回其人读规范。内容契约变动时一起修改和验证；它不是第二份项目业务正本。当前 BW 映射是试验候选，尚未在全仓采纳，结构提示仅供整改选择。
+映射 JSON 是可执行检查配置，`contractSource` 指回其人读规范。内容契约变动时一起修改和验证；它不是第二份项目业务正本。当前 Monica 映射是试验候选，尚未在全仓采纳，结构提示仅供整改选择。
 
-`rules` 按顺序取首条匹配，`type` 标内容类型，`scope` 标职责归属；未给 scope 时使用 `defaultScope`，仍缺则为“未分类”。BW 映射将 ref 放在通用 README 规则之前，区分 Orca 工程参考、BW 产品知识和本仓开发方法；standard 为产品分发资产，默认不扫描。其他项目应自己映射，扫描器不硬编码 BW 目录语义。
+`rules` 按顺序取首条匹配，`type` 标内容类型，`scope` 标职责归属；未给 scope 时使用 `defaultScope`，仍缺则为“未分类”。Monica 映射将 ref 放在通用 README 规则之前，区分 Orca 工程参考、Monica 产品知识和本仓开发方法；standard 为产品分发资产，默认不扫描。其他项目应自己映射，扫描器不硬编码 Monica 目录语义。
 
 ## 用于看护
 

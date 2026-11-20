@@ -7,7 +7,7 @@ import { useShortcutLabel } from '../hooks/useShortcutLabel'
 import { useAppStore } from '../store'
 import { hasCustomTitleBar } from './app-window-chrome'
 import type { AppChromeLayout } from './use-app-chrome-layout'
-import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { isMonicaShell } from '../monica/is-monica-shell'
 
 export function RightSidebarToggle(): React.JSX.Element {
   const toggleRightSidebar = useAppStore((s) => s.toggleRightSidebar)
@@ -47,7 +47,7 @@ export function TitlebarMainStrip({ layout }: { layout: AppChromeLayout }): Reac
 
   return (
     <>
-      {layout.activeView === 'activity' && !isWorkbenchShell() ? (
+      {layout.activeView === 'activity' && !isMonicaShell() ? (
         <ActivityTitlebarControls />
       ) : layout.creationLayoutActive ? null : (
         <div

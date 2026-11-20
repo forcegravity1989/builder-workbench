@@ -5,10 +5,7 @@ import { normalizeKagiSessionLink } from '../../../shared/browser-url'
 import type { PersistedState } from '../../../shared/persisted-state-types'
 import type { SshPtyConsumerRecovery } from '../../../shared/ssh-types'
 import { getDefaultPersistedState } from '../../../shared/constants'
-import {
-  isWorkbenchProduct,
-  WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
-} from '../../startup/workbench-product'
+import { isMonicaProduct, MONICA_DEFAULT_WINDOWS_WORKSPACE_DIR } from '../../startup/monica-product'
 import { pruneLocalTerminalScrollbackBuffers } from '../../../shared/workspace-session-terminal-buffers'
 import { pruneWorkspaceSessionBrowserHistory } from '../../../shared/workspace-session-browser-history'
 import { clearMissingProjectGroupMemberships } from '../../../shared/project-groups'
@@ -204,11 +201,11 @@ export class LoadedStateParsingOperations {
       if (
         !fileExistedOnLoad &&
         process.platform === 'win32' &&
-        isWorkbenchProduct() &&
+        isMonicaProduct() &&
         !hasStateBackup(dataFile) &&
         existsSync('D:\\')
       ) {
-        result.settings.workspaceDir = WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
+        result.settings.workspaceDir = MONICA_DEFAULT_WINDOWS_WORKSPACE_DIR
         this.runtime.loadNeedsSave = true
       }
     }

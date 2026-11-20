@@ -14,7 +14,7 @@ import { planWorktreeSortOrderUpdates } from '../../../../shared/worktree/sort-o
 import { readBranchRenameFailureOutputForDisplay } from '../../../agent-hooks/branch-rename-failure-output'
 import {
   normalizeLinkedWorkItemFields,
-  normalizeWorkbenchVersionBindingField
+  normalizeMonicaVersionBindingField
 } from '../ipc-context-schemas'
 import { listDesktopLineageForHost } from './host-lineage-listing'
 import type { WorktreeIpcContext } from '../worktree-ipc-context'
@@ -38,11 +38,11 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       if (args.executionHostId !== undefined && !executionHostId) {
         throw new Error('Invalid execution host identity.')
       }
-      const validatedUpdates = normalizeWorkbenchVersionBindingField(
+      const validatedUpdates = normalizeMonicaVersionBindingField(
         normalizeLinkedWorkItemFields(args.updates)
       )
       // G2 P3a 收口（P1 延后项，最终检视 H-1 收窄）：仅绑定字段按「显式 undefined=
-      // 保留旧值」剥除（其契约由 normalizeWorkbenchVersionBindingField 承担）；其余键
+      // 保留旧值」剥除（其契约由 normalizeMonicaVersionBindingField 承担）；其余键
       // 保持原生本地 IPC 线约——present-but-undefined 在 spread 中清除字段
       // （baseRef/pushTarget 两条原生清除链依赖该信号，见 worktree-meta-update-application
       // 头注；全局剥除会使清除静默失效、重开后旧值复活，违反重开前后一致铁律）。

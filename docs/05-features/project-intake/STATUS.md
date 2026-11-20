@@ -16,8 +16,8 @@ G1 的用户结果、范围和行为规格已确认。源码已接入统一原�
 | 2 spec | ● | 当前行为、PW-01—PW-09 判据及可点原型见 [spec](spec.md)。 |
 | 3 实现设计 | ◐ | 复用原生添加、项目墙、菜单、工作区和版本材料来源；多主机、分组和失败恢复尚未完整真壳验证。 |
 | 4 协议看护 | ◐ | 项目负责人 TOML 保真写入、原文冲突保护、个人／团队配置与来源过滤已有用例入口；远端评审和跨主机读回待验。 |
-| 5 验收点 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/acceptance/project-settings.spec.ts`，标题 `BW project settings: reviewed edits, conflict protection and filesystem read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目文件系统内容和 renderer 重载后的设置入口。 |
-| 6 用户旅程 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/journeys/w01-project-handoff.spec.ts`，标题 `BW first-run project handoff`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目卡留在墙上、用户点击后进入工作区。探索演示不计作真实旅程证据。 |
+| 5 验收点 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/acceptance/project-settings.spec.ts`，标题 `Monica project settings: reviewed edits, conflict protection and filesystem read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目文件系统内容和 renderer 重载后的设置入口。 |
+| 6 用户旅程 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/journeys/w01-project-handoff.spec.ts`，标题 `Monica first-run project handoff`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目卡留在墙上、用户点击后进入工作区。探索演示不计作真实旅程证据。 |
 
 ## W01 交叉索引
 

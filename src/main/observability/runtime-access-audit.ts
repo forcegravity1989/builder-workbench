@@ -39,7 +39,9 @@ export class RuntimeAccessAudit {
     await this.prune()
     let files: string[]
     try {
-      files = (await readdir(this.directory)).filter((file) => /^\d{4}-\d{2}-\d{2}\.ndjson$/.test(file))
+      files = (await readdir(this.directory)).filter((file) =>
+        /^\d{4}-\d{2}-\d{2}\.ndjson$/.test(file)
+      )
     } catch {
       return []
     }
@@ -98,7 +100,10 @@ export class RuntimeAccessAudit {
   }
 }
 
-function matchesAuditFilter(entry: RuntimeAccessAuditEntry, filter: RuntimeAccessAuditFilter): boolean {
+function matchesAuditFilter(
+  entry: RuntimeAccessAuditEntry,
+  filter: RuntimeAccessAuditFilter
+): boolean {
   if (filter.action && entry.method !== filter.action) {
     return false
   }

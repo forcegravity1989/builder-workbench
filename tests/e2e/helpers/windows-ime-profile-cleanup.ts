@@ -6,7 +6,7 @@ export async function removeUserDataDirAfterShutdown(userDataDir: string): Promi
   const root = path.resolve(userDataDir)
   if (
     path.dirname(root).toLowerCase() !== path.resolve(os.tmpdir()).toLowerCase() ||
-    !/^workbench-e2e-userdata-[\w-]+$/.test(path.basename(root)) ||
+    !/^monica-e2e-userdata-[\w-]+$/.test(path.basename(root)) ||
     (existsSync(root) && (!lstatSync(root).isDirectory() || lstatSync(root).isSymbolicLink()))
   ) {
     throw new Error('Refusing to remove a directory outside the isolated E2E profile boundary')

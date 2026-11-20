@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react'
-import { WorkbenchSourceControlHelp } from '@/workbench/WorkbenchDeliveryHelp'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { MonicaSourceControlHelp } from '@/monica/MonicaDeliveryHelp'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { GitPullRequestArrow, Loader2, Search, X } from 'lucide-react'
 import type { GitBranchCompareSummary } from '../../../../../../shared/git-diff-compare-types'
 import type { GitBranchLineTotal } from '../../../../../../shared/git-status-types'
@@ -248,7 +248,7 @@ export function SourceControlHeaderToolbar({
             <button
               type="button"
               data-testid="source-control-filter-toggle"
-              data-contextual-tour-target="workbench-source-control-filter"
+              data-contextual-tour-target="monica-source-control-filter"
               className={cn(
                 'relative inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
                 normalizedFilter && 'bg-muted text-foreground'
@@ -274,7 +274,7 @@ export function SourceControlHeaderToolbar({
               <input
                 ref={filterInputRef}
                 data-testid="source-control-filter-input"
-                data-contextual-tour-target="workbench-source-control-filter"
+                data-contextual-tour-target="monica-source-control-filter"
                 type="text"
                 value={filterQuery}
                 onChange={(event) => onFilterQueryChange(event.target.value)}
@@ -314,7 +314,7 @@ export function SourceControlHeaderToolbar({
             </Button>
           </>
         )}
-        {isWorkbenchShell() && <WorkbenchSourceControlHelp />}
+        {isMonicaShell() && <MonicaSourceControlHelp />}
       </div>
 
       {shouldShowSourceControlBranchContextChrome(branchSummary, compareBaseRef, headDisplay) ? (

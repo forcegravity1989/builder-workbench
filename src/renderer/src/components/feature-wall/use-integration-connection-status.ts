@@ -172,7 +172,7 @@ function getPreflightConnectionFacts(facts: PreflightStatusFacts): {
   }
 }
 
-export function deriveWorkbenchSetupIntegrationStatus(
+export function deriveMonicaSetupIntegrationStatus(
   facts: PreflightStatusFacts
 ): Pick<IntegrationConnectionStatus, 'trackerConnected' | 'checking'> {
   const { githubConnected, codehubConnected, checking } = getPreflightConnectionFacts(facts)

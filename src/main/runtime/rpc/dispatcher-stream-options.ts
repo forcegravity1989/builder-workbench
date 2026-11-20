@@ -1,7 +1,10 @@
 import type { RuntimeCapability } from '../../../shared/protocol-version'
 import type { TerminalStreamFrame } from '../../../shared/terminal-stream-protocol'
 import type { PairingRpcContext } from './core'
-import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../shared/runtime-session-contracts'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../shared/runtime-session-contracts'
 
 export type RpcDispatchStreamingOptions = {
   authenticatedCallerFingerprint?: string

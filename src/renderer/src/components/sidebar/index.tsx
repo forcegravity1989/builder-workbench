@@ -18,7 +18,7 @@ import { useWorkspaceRevealBodyRedirect } from './use-workspace-reveal-body-redi
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 // Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
 // previews, thread derivation); users on the workspace view should not load or render any of it.
@@ -43,7 +43,7 @@ export const WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME =
 type SidebarProps = {
   panelVisible?: boolean
   leadingWidth?: number
-  workbenchTitle?: React.ReactNode
+  monicaTitle?: React.ReactNode
   worktreeScrollOffsetRef: React.MutableRefObject<number>
   worktreeScrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
 }
@@ -51,7 +51,7 @@ type SidebarProps = {
 function Sidebar({
   panelVisible = true,
   leadingWidth = 0,
-  workbenchTitle,
+  monicaTitle,
   worktreeScrollOffsetRef,
   worktreeScrollAnchorRef
 }: SidebarProps): React.JSX.Element {
@@ -165,7 +165,7 @@ function Sidebar({
 
   const sidebarHeader = (
     <SidebarHeader
-      titleContent={workbenchTitle}
+      titleContent={monicaTitle}
       onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
       activityOptionsTarget={setAgentOptionsTarget}
     />
@@ -194,7 +194,7 @@ function Sidebar({
           {sidebarOpen && (
             <>
               {/* Fixed controls */}
-              {workbenchTitle ? null : <SidebarNav />}
+              {monicaTitle ? null : <SidebarNav />}
               {sidebarHeader}
               {sidebarBody === 'agents' ? (
                 <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
@@ -268,7 +268,7 @@ function Sidebar({
       {/* Global pages still use these native dialogs and drawers when the panel is absent. */}
       <React.Suspense fallback={null}>
         {activeModal === 'edit-meta' ? <WorktreeMetaDialog /> : null}
-        {!isWorkbenchShell() && activeModal === 'confirm-remove-folder' ? (
+        {!isMonicaShell() && activeModal === 'confirm-remove-folder' ? (
           <RemoveFolderDialog />
         ) : null}
         {activeModal === 'worktree-visibility' ? <WorktreeVisibilityDialog /> : null}

@@ -1,11 +1,11 @@
-import { TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
+import { TaskPageScopeHeader } from '@/monica/TaskScopePanel'
 import { useEffect } from 'react'
 import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { TaskPageSourceBar } from './SourceBar'
 import { AlertCircle } from 'lucide-react'
-import { WorkbenchTaskHelp } from '@/workbench/WorkbenchScreenGuide'
+import { MonicaTaskHelp } from '@/monica/MonicaScreenGuide'
 import { TaskPageGitHubModeControls } from './github/ModeControls'
 import { TaskPageProviderFilters } from './ProviderFilters'
 export function TaskPageListChrome({
@@ -21,7 +21,7 @@ export function TaskPageListChrome({
     setGithubMode,
     setTaskResumeState
   } = model
-  const workbench = isWorkbenchShell()
+  const workbench = isMonicaShell()
   // Why: Projects is hidden in the shell, so a resumed project mode would show a view with no way back.
   useEffect(() => {
     if (!workbench || githubMode !== 'project') {
@@ -57,7 +57,7 @@ export function TaskPageListChrome({
               <div className="min-w-0 flex-1">
                 <TaskPageProviderFilters model={model} />
               </div>
-              <WorkbenchTaskHelp enabled={!taskPageListChromeHidden && !newIssueOpen} />
+              <MonicaTaskHelp enabled={!taskPageListChromeHidden && !newIssueOpen} />
             </div>
           ) : (
             <TaskPageProviderFilters model={model} />

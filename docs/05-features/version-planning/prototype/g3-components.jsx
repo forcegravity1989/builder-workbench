@@ -123,7 +123,7 @@ export function ActionButton({ icon = 'agent', children, className = '', ...prop
   )
 }
 // 发送指令弹窗：对齐 Orca 原生发送菜单（「发送至」运行中会话 + 不可用原因 +
-// 「新建智能体」快捷启动），顶部指令预览是 BW 包装层加的——原生菜单不显示
+// 「新建智能体」快捷启动），顶部指令预览是 Monica 包装层加的——原生菜单不显示
 // 待发送文本，人确认「发什么、发给谁」后再发送。演示不真正发送。
 export function SendPopover({ request, rect, onPick, onClose }) {
   useEffect(() => {
@@ -186,7 +186,7 @@ export function SendPopover({ request, rect, onPick, onClose }) {
         ))}
       </div>
       <footer className="g3-annotation">
-        对齐 Orca 原生发送菜单（会话列表 + 快捷启动复用原生组件）；指令预览为 BW
+        对齐 Orca 原生发送菜单（会话列表 + 快捷启动复用原生组件）；指令预览为 Monica
         包装层新增。演示不真正发送。
       </footer>
     </div>
@@ -883,7 +883,7 @@ export function AnnotationPanel({
 // 对象批注小窗：贴着被批注元素弹出，交互对齐 Orca 元素批注弹窗
 // （对象名标题、textarea、取消 / 添加）。小窗只负责新增：右上角 × 仅关闭小窗、
 // 不动已记录批注（第七轮修正 × 误删）；已有批注的编辑 / 删除在面板卡片上。
-// BW 差异：小窗不带意图分段与发送行——发送统一走面板底部经原生发送弹窗。
+// Monica 差异：小窗不带意图分段与发送行——发送统一走面板底部经原生发送弹窗。
 export function AnnotationPopover({ target, rect, onSave, onCancel }) {
   const [draft, setDraft] = useState('')
   const POP_W = 320

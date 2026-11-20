@@ -34,7 +34,7 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback,
   i18n: { language: 'en' }
 }))
-vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => true }))
+vi.mock('@/monica/is-monica-shell', () => ({ isMonicaShell: () => true }))
 vi.mock('@/components/task-project-source-combobox', () => ({ default: () => null }))
 // Why: Files 页签会真挂 Monaco diff,本测试只看工具条与复制控件,照
 // pr-files-combined-diff-section-index.test.tsx 的先例把 diff 体 mock 掉。

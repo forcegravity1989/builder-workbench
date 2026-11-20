@@ -32,11 +32,11 @@ import { installMainWindowWebviewSecurity } from './main-window-webview-security
 import { rectHasVisibleAreaOnAnyDisplay } from './window-bounds-validation'
 import { installWindowsPathRegistryChangeListener } from '../pty/windows-path-registry-change'
 import {
-  clampWorkbenchDefaultWindowBounds,
-  isWorkbenchProduct,
-  WORKBENCH_DEFAULT_WINDOW_HEIGHT,
-  WORKBENCH_DEFAULT_WINDOW_WIDTH
-} from '../startup/workbench-product'
+  clampMonicaDefaultWindowBounds,
+  isMonicaProduct,
+  MONICA_DEFAULT_WINDOW_HEIGHT,
+  MONICA_DEFAULT_WINDOW_WIDTH
+} from '../startup/monica-product'
 
 export { WINDOW_QUIT_RENDERER_ACK_TIMEOUT_MS }
 
@@ -85,13 +85,13 @@ export function createMainWindow(
   const defaultBounds = (() => {
     try {
       const workAreaSize = screen.getPrimaryDisplay().workAreaSize
-      if (isWorkbenchProduct()) {
-        return clampWorkbenchDefaultWindowBounds(workAreaSize)
+      if (isMonicaProduct()) {
+        return clampMonicaDefaultWindowBounds(workAreaSize)
       }
       return workAreaSize
     } catch {
-      return isWorkbenchProduct()
-        ? { width: WORKBENCH_DEFAULT_WINDOW_WIDTH, height: WORKBENCH_DEFAULT_WINDOW_HEIGHT }
+      return isMonicaProduct()
+        ? { width: MONICA_DEFAULT_WINDOW_WIDTH, height: MONICA_DEFAULT_WINDOW_HEIGHT }
         : { width: 1200, height: 800 }
     }
   })()

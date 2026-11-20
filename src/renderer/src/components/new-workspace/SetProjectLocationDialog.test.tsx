@@ -158,9 +158,7 @@ describe('SetProjectLocationDialog', () => {
       const user = renderDialog()
       await user.click(screen.getByRole('button', { name: /Clone from URL/ }))
 
-      const destination = screen.getByPlaceholderText(
-        '/destination/on/host'
-      ) as HTMLInputElement
+      const destination = screen.getByPlaceholderText('/destination/on/host') as HTMLInputElement
       expect(destination.value).toBe('')
       expect(getDefault).not.toHaveBeenCalled()
     } finally {
@@ -186,9 +184,7 @@ describe('SetProjectLocationDialog', () => {
         option: { ...option, id: 'needs-setup:local', hostId: 'local', label: 'Local Windows' }
       })
       await user.click(screen.getByRole('button', { name: /Clone from URL/ }))
-      const destination = screen.getByPlaceholderText(
-        '/destination/on/host'
-      ) as HTMLInputElement
+      const destination = screen.getByPlaceholderText('/destination/on/host') as HTMLInputElement
       await user.type(destination, '/custom/path')
       await user.clear(destination)
 

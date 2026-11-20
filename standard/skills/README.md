@@ -1,4 +1,4 @@
-# Workbench Skills
+# Monica Skills
 
 > 给维护产品 Skill 的人和模型读；只列技能职责与读取入口，不承载 SOP 或更新流水。技能或分发职责变化时更新。修改前完整读取 [Skill 写作规范](SKILL-MD-SPEC.md)，源与完整包的分工见 [standard](../README.md)。
 

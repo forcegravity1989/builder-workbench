@@ -17,19 +17,19 @@ describe('contextual tour definitions', () => {
       'automations',
       'floating-workspace',
       'workspace-creation',
-      'workbench-wall',
-      'workbench-overview',
-      'workbench-scoreboard',
-      'workbench-milestones',
-      'workbench-plan',
-      'workbench-acceptance',
-      'workbench-version-overview',
-      'workbench-source-control',
-      'workbench-versions'
+      'monica-wall',
+      'monica-overview',
+      'monica-scoreboard',
+      'monica-milestones',
+      'monica-plan',
+      'monica-acceptance',
+      'monica-version-overview',
+      'monica-source-control',
+      'monica-versions'
     ]
     const stepLimits: Partial<Record<ContextualTourId, number>> = {
       'workspace-agent-sessions': 5,
-      'workbench-acceptance': 4
+      'monica-acceptance': 4
     }
 
     expect(CONTEXTUAL_TOURS.map((tour) => tour.id)).toEqual(expectedIds)
@@ -52,7 +52,7 @@ describe('contextual tour definitions', () => {
         expect(step.title.length).toBeGreaterThan(0)
         expect(step.body.length).toBeGreaterThan(0)
         expect(step.body.length).toBeLessThanOrEqual(140)
-        if ('id' in step && step.id === 'workbench-source-control-diff') {
+        if ('id' in step && step.id === 'monica-source-control-diff') {
           expect(step.targetSelector).toBe('[data-testid="source-control-entry"]')
         } else {
           expect(step.targetSelector).toContain('data-contextual-tour-target')

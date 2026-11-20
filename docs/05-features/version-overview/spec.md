@@ -28,7 +28,7 @@
 
 ## 页面与生命周期
 
-页面按“版本基础信息 → 版本目标 → 按需显示的 AI workflow 生产力”组织，保留 BW 原有侧栏及计划、任务、验收和原生会话入口。
+页面按“版本基础信息 → 版本目标 → 按需显示的 AI workflow 生产力”组织，保留 Monica 原有侧栏及计划、任务、验收和原生会话入口。
 
 | 场景           | 内容与来源                                                                                     |
 | -------------- | ---------------------------------------------------------------------------------------------- |
@@ -72,7 +72,7 @@
 
 ## 六阶段与时间依据
 
-[Claude SDLC](https://claude.com/resources/articles/the-ai-native-sdlc-playbook)提供阶段分析参考。实际边界采用 BW 的明确来源，不按 PR 序号猜测，也不把阶段做成强制审批状态机。
+[Claude SDLC](https://claude.com/resources/articles/the-ai-native-sdlc-playbook)提供阶段分析参考。实际边界采用 Monica 的明确来源，不按 PR 序号猜测，也不把阶段做成强制审批状态机。
 
 | 阶段     | 时间边界与来源                                                                                                                          |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -142,7 +142,7 @@ GitHub 使用已有 Issue 回链、显式链接与原生工作树关联；回链
 
 ## AI workflow 生产力
 
-只读取当前版本计划目标内 Issue 所关联 PR 的六项 workflow 报告评论。指标名称、计数和返工定义沿 [workbench-start 真实任务反馈](../../../.claude/skills/workbench-start/references/workflow-feedback.md)，本屏负责读取、汇总和展示，不另建公式，也不读取会话正文。
+只读取当前版本计划目标内 Issue 所关联 PR 的六项 workflow 报告评论。指标名称、计数和返工定义沿 [monica-start 真实任务反馈](../../../.claude/skills/monica-start/references/workflow-feedback.md)，本屏负责读取、汇总和展示，不另建公式，也不读取会话正文。
 
 小需求／bug 按一个 Issue、一次开发交付、一份 PR 报告统计。合入后的新开发另开 Issue；报告修订更新原评论。报告不唯一、缺报告、缺结论或记录覆盖不足时保留未知，不选最新报告或跨 PR 归并。特性设计／开发分 PR 的 SDLC 证据与小任务报告统计分别处理。
 
@@ -164,7 +164,7 @@ AI 生产力开启后进入版本总览才在后台读取报告，不阻塞版�
 
 ## 原型与验收判据
 
-入口：[高保真](prototype.html?rev=530-draft-1)、[审阅旅程](journey.html)。可编辑源码在 `prototype/overview-*.jsx`、`overview-data.js`、`overview.css`；`overview.js` 由 `build-overview.cjs` 生成。共用设计系统、version-workspace 壳样式与原型资源；固定样本 `bw-snapshot.json` 不是业务协议。
+入口：[高保真](prototype.html?rev=530-draft-1)、[审阅旅程](journey.html)。可编辑源码在 `prototype/overview-*.jsx`、`overview-data.js`、`overview.css`；`overview.js` 由 `build-overview.cjs` 生成。共用设计系统、version-workspace 壳样式与原型资源；固定样本 `monica-snapshot.json` 不是业务协议。
 
 原型默认采用 #334 计划、设计和开发 PR 合入快照，显示 Test 进行中；读取时间随快照标明。规划长度、Maintain 与历史完整历程使用明确标注的模拟；模拟状态不链接到实际状态不同的 PR。workflow 使用 [PR #505 报告](https://github.com/forcegravity1989/builder-workbench/pull/505#issuecomment-6494691114) 的单任务快照，计划外样例不计入本版汇总。页面内编辑只用于评审，刷新还原；不写正式材料。原型说明统一以 `原型注释:` 开头，正式提示不加该前缀。
 

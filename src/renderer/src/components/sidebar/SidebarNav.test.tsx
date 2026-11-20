@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/store', () => ({
-  // Why Object.assign: SidebarNav 的导入链经 WorkbenchSidebarNav 拉起 project-page-state，
+  // Why Object.assign: SidebarNav 的导入链经 MonicaSidebarNav 拉起 project-page-state，
   // 后者在模块加载期就调用 useAppStore.subscribe（b67746489 引入）；纯 selector mock 会在
   // import 时抛「subscribe is not a function」，整个文件收不了用例。
   useAppStore: Object.assign(

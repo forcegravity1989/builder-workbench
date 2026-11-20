@@ -8,14 +8,14 @@ import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import { RecoverableRenderErrorBoundary } from './RecoverableRenderErrorBoundary'
 
 const reportCrashMock = vi.hoisted(() => vi.fn())
-const isWorkbenchShellMock = vi.hoisted(() => vi.fn(() => false))
+const isMonicaShellMock = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/lib/react-error-boundary-reporting', () => ({
   reportReactErrorBoundaryCrash: reportCrashMock
 }))
 
-vi.mock('@/workbench/is-workbench-shell', () => ({
-  isWorkbenchShell: isWorkbenchShellMock
+vi.mock('@/monica/is-monica-shell', () => ({
+  isMonicaShell: isMonicaShellMock
 }))
 
 const RELOAD_GUARD_KEY = 'orca:lazy-chunk-reload-attempted'
@@ -50,7 +50,7 @@ describe('RecoverableRenderErrorBoundary lazy chunk containment', () => {
 
   beforeEach(() => {
     reportCrashMock.mockReset()
-    isWorkbenchShellMock.mockReturnValue(false)
+    isMonicaShellMock.mockReturnValue(false)
     window.sessionStorage.clear()
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
   })
@@ -118,7 +118,7 @@ describe('RecoverableRenderErrorBoundary lazy chunk containment', () => {
   })
 
   it('does not prompt a crash-report dialog from workbench recoverable errors', async () => {
-    isWorkbenchShellMock.mockReturnValue(true)
+    isMonicaShellMock.mockReturnValue(true)
     function BrokenSurface(): ReactElement {
       throw new Error('workbench overlay render failure')
     }

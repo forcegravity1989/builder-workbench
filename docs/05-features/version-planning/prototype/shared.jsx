@@ -3,12 +3,12 @@ import { metrics, original } from './snapshot.js'
 
 const currentTitles = [
   '上线 Orca 重构版，补齐高优先级特性的六环',
-  '推进 BW 从 PR 到上线的自动化流程',
+  '推进 Monica 从 PR 到上线的自动化流程',
   '优化周一屏，推动更多项目使用'
 ]
 const deliveries = [
   'v0.5 验收报告：六环矩阵、验收 E2E 与用户旅程',
-  'BW CI/CD 勾勾表现状，至少推进 1 项落地',
+  'Monica CI/CD 勾勾表现状，至少推进 1 项落地',
   '周一屏反馈处理结果'
 ]
 // 验收面演示预置：口径参照 v0.5 真实验收结果（2026-10-10 周报快照与 showcase 归档记录），

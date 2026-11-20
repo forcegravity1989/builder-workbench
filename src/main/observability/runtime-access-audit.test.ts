@@ -21,7 +21,10 @@ describe('RuntimeAccessAudit', () => {
     const entries = await audit.list({ result: 'allowed', search: 'Builder' })
     expect(entries).toHaveLength(1)
     expect(entries[0]?.method).toBe('worktree.list')
-    const contents = await readFile(join(audit.getDirectory(), `${new Date().toISOString().slice(0, 10)}.ndjson`), 'utf8')
+    const contents = await readFile(
+      join(audit.getDirectory(), `${new Date().toISOString().slice(0, 10)}.ndjson`),
+      'utf8'
+    )
     expect(contents).not.toContain('shell')
   })
 

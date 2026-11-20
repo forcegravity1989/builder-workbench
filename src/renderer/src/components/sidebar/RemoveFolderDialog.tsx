@@ -16,7 +16,7 @@ import {
   selectRepoRemovalHostLabel
 } from '@/store/repos/repo-removal-registration'
 import type { Repo } from '../../../../shared/repo-types'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import {
   getRepoExecutionHostId,
   getSshTargetIdForExecutionHost,
@@ -41,7 +41,7 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   const hostId = normalizeExecutionHostId(
     typeof modalData.hostId === 'string' ? modalData.hostId : null
   )
-  const workbench = isWorkbenchShell()
+  const workbench = isMonicaShell()
   const selectedRepo = useAppStore((s) =>
     hostId ? findRepoForHost(s.repos, repoId, { hostId }) : null
   )

@@ -6,17 +6,28 @@
 模型维护前必须读取本注释；范围变更按 AGENTS.md「文档怎么读、怎么维护」先与人确认。
 -->
 
-# Builders' Workbench
+# Monica
 
 **做得快，也交代得清。**
 
-给组织里带一条产品线、要向 Leader 交代结果的 Builder 的 AI 时代桌面工作台。目标是让 AI 跑完能跑的、你少搬运少记账；在版本开始定可验收的承诺，结束时逐目标对照证据下结论，随时查看真实数据，让交代用的材料来自工作过程。方向和完成始终由你确认。同一 Builder 的个人项目也可在 BW 中工作，不改变主要客群；哪些已可用见下节。
+**Monica — Milestones.Orca.Needs.Iteration.Collaboration.Acceptance.**
+
+| English | 中文 |
+| --- | --- |
+| Align on Milestones. | 以里程碑对齐目标。 |
+| Build on Orca. | 以 Orca 支撑构建。 |
+| Create around Needs. | 以需求驱动创造。 |
+| Develop through Iteration. | 以迭代持续完善。 |
+| Execute through Collaboration. | 以协作推进执行。 |
+| Finish with Acceptance. | 以验收确认完成。 |
+
+给组织里带一条产品线、要向 Leader 交代结果的 Builder 的 AI 时代桌面工作台。目标是让 AI 跑完能跑的、你少搬运少记账；在版本开始定可验收的承诺，结束时逐目标对照证据下结论，随时查看真实数据，让交代用的材料来自工作过程。方向和完成始终由你确认。同一 Builder 的个人项目也可在 Monica 中工作，不改变主要客群；哪些已可用见下节。
 
 ![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/pr.yml/badge.svg?branch=main)
 
 ## 当前可用范围
 
-Workbench 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Windows，目前仍在内测与持续建设中。
+Monica 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Windows，目前仍在内测与持续建设中。
 
 - 接入本地或远端 GitHub / CodeHub 仓库，维护项目约定。
 - 计划与验收复用 Orca 原生会话工作区，右侧业务板读写版本材料；“开始计划／开始验收”准备完整 Skill 并打开会话草稿，由用户发送后执行，普通新建会话沿用 Orca。
@@ -30,10 +41,10 @@ Workbench 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Wi
 需要 Node.js 与 pnpm。日常热加载：
 
 ```bash
-pnpm run dev:workbench
+pnpm run dev:monica
 ```
 
-构建完成后打开 Workbench 窗口。打开或接入项目后进入计划、任务或知识库页签；新路线的完整用户指南随迁移验收补齐。叠层说明见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md)。
+构建完成后打开 Monica 窗口。打开或接入项目后进入计划、任务或知识库页签；新路线的完整用户指南随迁移验收补齐。叠层说明见 [`SYNC.md`](src/renderer/src/monica/SYNC.md)。
 
 **启动窗口与实际开工是两件事。** 执行 Issue 还需要所选工具、会话宿主以及对应仓库的访问权限；具体依赖与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。完整开发、深链、测试与门禁命令只在 [AGENTS.md](AGENTS.md) 维护。
 
@@ -48,4 +59,4 @@ pnpm run dev:workbench
 | 领域概念与容易混淆的词 | [CONTEXT.md](CONTEXT.md) |
 | 开发或让模型修改本仓 | [AGENTS.md](AGENTS.md) |
 
-产品称 **Builders' Workbench / Workbench / BW**，工程标识使用 `bw`。变更原因与验证证据查对应 commit / PR，当前知识以以上正本为准。
+产品名为 **Monica**；稳定技术标识与真实仓库地址的边界见 [CONTEXT.md「命名」](CONTEXT.md#命名)。变更原因与验证证据查对应 commit / PR，当前知识以以上正本为准。

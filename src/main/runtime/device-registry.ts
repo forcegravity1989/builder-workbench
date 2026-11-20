@@ -42,7 +42,9 @@ export type DeviceEntry = {
 }
 
 /** Runtime links are read-only by default; full access is an explicit host-owner upgrade. */
-export function effectiveRuntimeAccessMode(device: Pick<DeviceEntry, 'scope' | 'accessMode'>): RuntimeAccessMode {
+export function effectiveRuntimeAccessMode(
+  device: Pick<DeviceEntry, 'scope' | 'accessMode'>
+): RuntimeAccessMode {
   if (device.scope !== 'runtime') {
     return 'full'
   }
@@ -147,7 +149,8 @@ export class DeviceRegistry {
       (d) =>
         d.lastSeenAt === 0 &&
         d.scope === scope &&
-        effectiveRuntimeAccessMode(d) === (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) &&
+        effectiveRuntimeAccessMode(d) ===
+          (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) &&
         ((accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) !== 'team-read' ||
           (d.teamBinding?.teamGroupId === teamBinding?.teamGroupId &&
             d.teamBinding?.memberId === teamBinding?.memberId))
@@ -197,7 +200,8 @@ export class DeviceRegistry {
       (d) =>
         d.lastSeenAt !== 0 ||
         d.scope !== scope ||
-        effectiveRuntimeAccessMode(d) !== (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) ||
+        effectiveRuntimeAccessMode(d) !==
+          (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) ||
         ((accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) === 'team-read' &&
           (d.teamBinding?.teamGroupId !== teamBinding?.teamGroupId ||
             d.teamBinding?.memberId !== teamBinding?.memberId))
@@ -414,7 +418,10 @@ export class DeviceRegistry {
         // LAN links), so a missing value must keep binding every interface on reconnect.
         pairingReach: device.pairingReach === 'this-computer' ? 'this-computer' : 'network',
         ...(device.accessMode === 'team-read'
-          ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
+          ? {
+              accessMode: 'team-read' as const,
+              ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+            }
           : {}),
         // Why: a malformed row must degrade to "no background push", never fail the load
         // and strand every paired device.

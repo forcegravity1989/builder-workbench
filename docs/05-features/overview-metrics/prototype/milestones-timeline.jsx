@@ -1,4 +1,4 @@
-import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
+import { workCalendarDay } from '../../../../src/shared/monica/work-calendar.ts'
 import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left.js'
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js'
 import LocateFixed from 'lucide-react/dist/esm/icons/locate-fixed.js'

@@ -24,12 +24,12 @@ import {
 } from './windows-install-dir-acl-recovery'
 import { mainProcessState as state, gpuFallbackEnvironment } from './main-process-state'
 import { createGpuAccelerationAboutPanelOptions } from '../menu/gpu-acceleration-about-panel'
-import { isWorkbenchProduct } from './workbench-product'
+import { isMonicaProduct } from './monica-product'
 
 export function updateGpuAccelerationAboutPanel(): void {
   app.setAboutPanelOptions(
     createGpuAccelerationAboutPanelOptions({
-      appName: isWorkbenchProduct() ? 'BW' : app.name,
+      appName: isMonicaProduct() ? 'Monica' : app.name,
       appVersion: app.getVersion(),
       platform: process.platform,
       gpuFallbackActive: state.gpuFallbackActiveThisLaunch,

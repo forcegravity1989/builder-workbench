@@ -5,8 +5,8 @@ using System.Text;
 
 internal static class OrcaCliLauncher
 {
-#if WORKBENCH
-    private const string AppExecutableName = "Workbench.exe";
+#if MONICA
+    private const string AppExecutableName = "Monica.exe";
 #else
     private const string AppExecutableName = "Orca.exe";
 #endif

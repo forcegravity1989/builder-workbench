@@ -4,7 +4,7 @@
 
 ## 模块边界
 
-版本计划位于 `src/renderer/src/workbench/version-planning/`，通过 `version-cycle` 共享层接入项目、版本、材料、任务、会话和归档能力。计划屏负责目标、纪要和计划侧投影，验收屏负责验收结论和实际交付，指标域负责指标定义与采集。Orca 负责 Tasks、工作树、会话、Automations、项目身份和权限。
+版本计划位于 `src/renderer/src/monica/version-planning/`，通过 `version-cycle` 共享层接入项目、版本、材料、任务、会话和归档能力。计划屏负责目标、纪要和计划侧投影，验收屏负责验收结论和实际交付，指标域负责指标定义与采集。Orca 负责 Tasks、工作树、会话、Automations、项目身份和权限。
 
 | 业务区域 | 当前落点 | 责任 |
 | --- | --- | --- |
@@ -29,7 +29,7 @@
 
 ## 原生复用与导航
 
-每版计划默认绑定 `bw/<version>/plan`，验收绑定 `bw/<version>/acceptance`，旧无绑定上下文兼容 `bw/week-plan` 和 `bw/week-acceptance`。计划屏直接复用 Orca 的 Terminal、TabBar、会话历史、工具、Tasks 页面和 Automations。普通原生新建会话不注入 BW 提示，专用入口只准备完整 Skill 包和可编辑请求草稿。
+每版计划默认绑定 `bw/<version>/plan`，验收绑定 `bw/<version>/acceptance`，旧无绑定上下文兼容 `bw/week-plan` 和 `bw/week-acceptance`。计划屏直接复用 Orca 的 Terminal、TabBar、会话历史、工具、Tasks 页面和 Automations。普通原生新建会话不注入 Monica 提示，专用入口只准备完整 Skill 包和可编辑请求草稿。
 
 任务详情使用 `TaskOrigin` 携带项目、版本、目标筛选、滚动和草稿来源，返回时复用原生导航历史并恢复计划上下文。归档通过 `workflow.archivePr` 读取 provider、仓库和编号，经 `workbench.archive.prStatus` 获取状态，读不到保持 `unknown`。不按分支名探测 PR，不用字节级合入证明替代原生状态。
 

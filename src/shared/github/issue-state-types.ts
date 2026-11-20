@@ -11,7 +11,7 @@ export type IssueStatesBatchResult = {
 }
 
 /**
- * web 表面未接入批量读取时的如实失败原因。文案属 BW 中文产品面（最终显示在
+ * web 表面未接入批量读取时的如实失败原因。文案属 Monica 中文产品面（最终显示在
  * 墙卡 Unknown 提示），常量放 shared 供 web shim 引用，避免在 Orca 本地化
  * 审计面内内联中文字面量。
  */

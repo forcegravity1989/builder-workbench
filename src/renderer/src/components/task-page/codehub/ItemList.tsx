@@ -36,8 +36,8 @@ import {
   GITHUB_TASK_STICKY_TITLE_HEADER_CLASS,
   getTaskPageRepoSourceContext
 } from '../../task-page-source-context'
-import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
-import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
+import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/monica/TaskScopePanel'
+import { resolveTaskRowWorkspace } from '@/monica/scoped-task-workspace'
 import { CodeHubAssigneesCell } from './AssigneesCell'
 import { CodeHubLabelsCell } from './LabelsCell'
 
@@ -72,15 +72,11 @@ export function TaskPageCodeHubItemList({
   const gridClass = mrView ? GITHUB_PR_TASK_GRID_CLASS : GITHUB_TASK_GRID_CLASS
   const query = codehubQuery.trim().toLowerCase()
   const authorFilter =
-    codehubView === 'issues' && !model.workbenchScopeActive
-      ? codehubAuthor.trim().toLowerCase()
-      : ''
+    codehubView === 'issues' && !model.monicaScopeActive ? codehubAuthor.trim().toLowerCase() : ''
   const assigneeFilter =
-    codehubView === 'issues' && !model.workbenchScopeActive
-      ? codehubAssignee.trim().toLowerCase()
-      : ''
+    codehubView === 'issues' && !model.monicaScopeActive ? codehubAssignee.trim().toLowerCase() : ''
   const labelFilters =
-    codehubView === 'issues' && !model.workbenchScopeActive
+    codehubView === 'issues' && !model.monicaScopeActive
       ? model.codehubLabels.map((label) => label.toLowerCase())
       : []
   const visibleItems = codehubItems.filter((item) => {
@@ -88,8 +84,8 @@ export function TaskPageCodeHubItemList({
       return false
     }
     if (
-      model.workbenchScopeActive &&
-      (mrView || !model.workbenchScopeCodeHubItemKeys.has(`${item.repoId}:${item.iid}`))
+      model.monicaScopeActive &&
+      (mrView || !model.monicaScopeCodeHubItemKeys.has(`${item.repoId}:${item.iid}`))
     ) {
       return false
     }
@@ -174,7 +170,7 @@ export function TaskPageCodeHubItemList({
         visibleItems.length === 0 &&
         !model.codehubHasMore &&
         !codehubError &&
-        !model.workbenchScopeActive ? (
+        !model.monicaScopeActive ? (
           <div className="px-4 py-12 text-center">
             <p className="text-base font-medium text-foreground">
               {mrView
@@ -186,9 +182,9 @@ export function TaskPageCodeHubItemList({
         {visibleItems.map((item) => {
           const key = `${item.repoId ?? ''}:${item.type}:${item.iid}`
           const repo = selectedRepos.find((candidate) => candidate.id === item.repoId)
-          // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；无范围保持原 Start。
+          // G2 (Monica)：范围视图的 Issue 按明确绑定解析 Open/Start；无范围保持原 Start。
           const rowWorkspace = resolveTaskRowWorkspace({
-            scope: model.workbenchScope,
+            scope: model.monicaScope,
             worktrees: allWorktrees,
             provider: 'codehub',
             item: { repoId: item.repoId, type: item.type, number: item.iid },
@@ -381,7 +377,7 @@ export function TaskPageCodeHubItemList({
           filteredCount={visibleItems.length}
         />
         <CodeHubListResultNotice
-          hasMore={!codehubLoading && !model.workbenchScopeActive && model.codehubHasMore}
+          hasMore={!codehubLoading && !model.monicaScopeActive && model.codehubHasMore}
         />
       </div>
     </div>

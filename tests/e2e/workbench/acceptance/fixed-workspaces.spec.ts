@@ -1,10 +1,10 @@
-import { fixedWorkspaceTest } from '../../helpers/workbench-fixed-workspace-fixture'
-import { verifyFixedWorkspaceRemoteReuse } from '../../helpers/workbench-fixed-workspace'
+import { fixedWorkspaceTest } from '../../helpers/monica-fixed-workspace-fixture'
+import { verifyFixedWorkspaceRemoteReuse } from '../../helpers/monica-fixed-workspace'
 
 fixedWorkspaceTest(
   'BW fixed workspaces: restore remote branches with narrow fetch and existing reviews',
-  async ({ workbenchPage, fixedRemote }, testInfo) => {
+  async ({ monicaPage, fixedRemote }, testInfo) => {
     fixedWorkspaceTest.setTimeout(900_000)
-    await verifyFixedWorkspaceRemoteReuse(workbenchPage, fixedRemote, testInfo)
+    await verifyFixedWorkspaceRemoteReuse(monicaPage, fixedRemote, testInfo)
   }
 )

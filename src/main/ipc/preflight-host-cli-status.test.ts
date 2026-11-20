@@ -137,7 +137,7 @@ describe('preflight', () => {
   // call-shape assertions stay one line each.
   const EXEC_OPTS = { encoding: 'utf-8', timeout: 5000, windowsHide: true }
 
-  // Why (BW #323): every auth-readback case queues the same six version
+  // Why (Monica #323): every auth-readback case queues the same six version
   // probes before its auth variation — one helper keeps the repeated prefix
   // from eating the file's max-lines budget. Returns the mock so cases (and
   // mockHappyAuthPathPrefix) can chain their variation.
@@ -160,7 +160,7 @@ describe('preflight', () => {
 
   // Why: every preflight run probes (in order) `git --version`, `gh --version`,
   // `glab --version`, `codehub-cli --version`, `welink-cli --version`,
-  // `cb version` (BW #366: cb rejects --version), then in parallel
+  // `cb version` (Monica #366: cb rejects --version), then in parallel
   // `gh auth status` + `glab auth status` + `codehub-cli auth status` +
   // `welink-cli auth status` + `cb auth status` — eleven execFile calls per
   // cycle. Tests below provide values for all eleven.
@@ -249,7 +249,7 @@ describe('preflight', () => {
     expect(status.glab).toEqual({ installed: true, authenticated: false })
   })
 
-  // Why (BW #323): welink-cli exits 0 in every logged-out state — an EXPIRED
+  // Why (Monica #323): welink-cli exits 0 in every logged-out state — an EXPIRED
   // token (human decision on intent 待决 3, 2026-10-16: NOT authenticated, no
   // green light on a stale token), a failed probe without markers, and
   // never-logged-in (real-shell capture 2026-10-16: "Status: not
@@ -282,7 +282,7 @@ describe('preflight', () => {
     }
   })
 
-  // Why (BW #323): codehub-cli prints a host table whose LOGIN column reads
+  // Why (Monica #323): codehub-cli prints a host table whose LOGIN column reads
   // `yes`; partial output can surface on a thrown error, so the markers must
   // rescue it the same way gh's "Logged in" does.
   it('reads codehub login markers from a failed auth status output', async () => {
@@ -296,7 +296,7 @@ describe('preflight', () => {
     expect(status.codehub).toEqual({ installed: true, authenticated: true })
   })
 
-  // Why (BW #323): codehub-cli exits 0 when logged out too (real-shell capture
+  // Why (Monica #323): codehub-cli exits 0 when logged out too (real-shell capture
   // 2026-10-16: "You are not logged in." with exit 0) — trusting the exit code
   // lit a false green; the LOGIN-column markers decide.
   it('treats codehub as unauthenticated when auth status exits 0 logged out', async () => {
@@ -312,7 +312,7 @@ describe('preflight', () => {
     expect(status.codehub).toEqual({ installed: true, authenticated: false })
   })
 
-  // Why (BW #366): cb is the first probed CLI that rejects `--version`
+  // Why (Monica #366): cb is the first probed CLI that rejects `--version`
   // (cobra: unknown flag) — its `version` subcommand is the liveness probe —
   // and like codehub/welink its `auth status` exits 0 even on an expired
   // token (real-shell capture 2026-10-19: `Token Expires: … (expired)`), so
@@ -366,7 +366,7 @@ describe('preflight', () => {
     expect(execFileAsyncMock).not.toHaveBeenCalledWith('cb', ['--version'], expect.anything())
   })
 
-  // Why (BW #323): npm-installed CLIs on Windows only expose .cmd shims,
+  // Why (Monica #323): npm-installed CLIs on Windows only expose .cmd shims,
   // which CreateProcess cannot launch — the probe must resolve the shim and
   // route it through cmd.exe, or a successful install keeps reading
   // "not installed" (real-shell finding 2026-10-16).

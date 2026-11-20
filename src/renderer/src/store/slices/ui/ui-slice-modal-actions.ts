@@ -1,6 +1,6 @@
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
 import { settleEvictedModalData } from '../modal-slot-dismissal'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { normalizeExecutionHostId } from '../../../../../shared/execution-host'
 import { findRepoForHost } from '../repo-host-identity'
 
@@ -14,7 +14,7 @@ export function createUiModalActions(set: UISliceSet, get: UISliceGet): Partial<
       }
       if (
         modal === 'confirm-remove-folder' &&
-        isWorkbenchShell() &&
+        isMonicaShell() &&
         typeof data.repoId === 'string' &&
         !Object.hasOwn(data, 'projectRemovalRegistration')
       ) {

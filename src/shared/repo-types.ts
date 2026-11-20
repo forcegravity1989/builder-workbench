@@ -48,7 +48,7 @@ export type Repo = {
   id: string
   path: string
   displayName: string
-  /** BW wall visibility, stored on this host's registration; absent means personal. */
+  /** Monica wall visibility, stored on this host's registration; absent means personal. */
   projectVisibility?: 'personal' | 'team'
   badgeColor: string
   repoIcon?: RepoIcon | null

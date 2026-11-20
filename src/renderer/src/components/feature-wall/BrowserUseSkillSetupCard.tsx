@@ -1,4 +1,4 @@
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import type { JSX } from 'react'
 import {
   ORCA_CLI_SKILL_INSTALL_COMMAND,
@@ -53,7 +53,7 @@ export function BrowserUseSkillSetupCard(props: {
       description={translate(
         'auto.components.feature.wall.BrowserUseSkillSetupCard.cbc45022d4',
         "Enables agents to navigate and verify pages in {{product}}'s browser.",
-        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+        { product: isMonicaShell() ? 'Monica' : 'Orca' }
       )}
       command={installCommand}
       installedCommand={updateCommand}

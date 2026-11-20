@@ -16,8 +16,8 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useRepoMap } from '@/store/selectors'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { GLOBAL_TASKS_ENTRY_TITLE } from '@/workbench/version-labels'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { GLOBAL_TASKS_ENTRY_TITLE } from '@/monica/version-labels'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import { getTaskPresetQuery } from '../../../../shared/task-preset-query'
 import {
@@ -144,7 +144,7 @@ export function SidebarTaskNavButton({
         firstGitRepo.path,
         PER_REPO_FETCH_LIMIT,
         getTaskPresetQuery(defaultTaskViewPreset),
-        isWorkbenchShell()
+        isMonicaShell()
           ? { sourceContext: getTaskPageRepoSourceContext(firstGitRepo, 'github') }
           : undefined
       )
@@ -162,18 +162,18 @@ export function SidebarTaskNavButton({
     void updateSettings({ showTasksButton: false })
   }, [updateSettings])
 
-  if (!isWorkbenchShell() && !showTasksButton) {
+  if (!isMonicaShell() && !showTasksButton) {
     return null
   }
 
   const tasksActive = active ?? activeView === 'tasks'
-  const label = isWorkbenchShell()
+  const label = isMonicaShell()
     ? '任务'
     : translate('auto.components.sidebar.SidebarNav.fee535205b', 'Tasks')
   // An ineligible preselection prevents the native initial fetch from choosing a fallback repo.
   const currentProjectRepoId = activeRepoId ?? repos[0]?.id ?? null
-  const workbenchProjectRepoId =
-    isWorkbenchShell() &&
+  const monicaProjectRepoId =
+    isMonicaShell() &&
     currentProjectRepoId &&
     getTaskEligibleRepos(repos).some((repo) => repo.id === currentProjectRepoId)
       ? currentProjectRepoId
@@ -183,11 +183,11 @@ export function SidebarTaskNavButton({
     <div className="group relative">
       <button
         type="button"
-        {...(isWorkbenchShell() ? { title: GLOBAL_TASKS_ENTRY_TITLE } : {})}
+        {...(isMonicaShell() ? { title: GLOBAL_TASKS_ENTRY_TITLE } : {})}
         onClick={() => {
           onBeforeNavigate?.()
-          if (workbenchProjectRepoId) {
-            openTaskPage({ preselectedRepoId: workbenchProjectRepoId })
+          if (monicaProjectRepoId) {
+            openTaskPage({ preselectedRepoId: monicaProjectRepoId })
           } else {
             openTaskPage()
           }
@@ -229,7 +229,7 @@ export function SidebarTaskNavButton({
         />
         <span className={variant === 'rail' ? 'sr-only' : 'flex-1'}>{label}</span>
       </button>
-      {isWorkbenchShell() ? null : (
+      {isMonicaShell() ? null : (
         <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 can-hover:pointer-events-none can-hover:opacity-0 can-hover:group-hover:pointer-events-auto can-hover:group-hover:opacity-100 can-hover:group-focus-within:pointer-events-auto can-hover:group-focus-within:opacity-100">
           {visibleTaskProviders.includes('github') ? (
             <TaskProviderShortcut
@@ -277,7 +277,7 @@ export function SidebarTaskNavButton({
     </div>
   )
 
-  if (isWorkbenchShell()) {
+  if (isMonicaShell()) {
     return button
   }
 

@@ -111,7 +111,7 @@ describe('getPreflightIntegrationStatuses', () => {
     ).toBe('checking')
   })
 
-  // Why (BW #366): cloudbuild's cb rides the same presence + auth readback
+  // Why (Monica #366): cloudbuild's cb rides the same presence + auth readback
   // derivation as welink — asserted here instead of a new case so the
   // vitest-count ratchet stays put.
   it('derives welink-cli and cloudbuild status from presence and auth readback', () => {

@@ -1,4 +1,4 @@
-import type { ConfirmedRepoRegistration } from '../../shared/workbench/repo-removal'
+import type { ConfirmedRepoRegistration } from '../../shared/monica/repo-removal'
 import type { OrcaHooks } from '../../shared/orca-yaml-hook-types'
 import type { PublicKnownRuntimeEnvironment } from '../../shared/runtime-environments'
 import type { EphemeralVmRecipeDoctorResult } from '../../shared/ephemeral-vm-recipes'

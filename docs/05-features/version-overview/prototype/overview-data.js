@@ -1,4 +1,4 @@
-import snapshot from './bw-snapshot.json'
+import snapshot from './monica-snapshot.json'
 export { snapshot }
 export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>

@@ -201,7 +201,7 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
     }
     const grok = settleSiblingProviderResult('grok', grokSettled)
     let cursor = settleSiblingProviderResult('cursor', cursorSettled)
-    // Cursor changes its login outside BW; recheck after the network await.
+    // Cursor changes its login outside Monica; recheck after the network await.
     const latestCursorAuth = await readCursorAuthSession()
     if (signal.aborted) {
       return
@@ -228,7 +228,10 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
         cursor,
         cursor.usageMetadata?.failureKind === 'stale-token'
           ? null
-          : previousCursorUsageForAccount(cursor.usageMetadata?.authProvenance, previousState.cursor)
+          : previousCursorUsageForAccount(
+              cursor.usageMetadata?.authProvenance,
+              previousState.cursor
+            )
       )
     })
   }

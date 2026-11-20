@@ -1,10 +1,10 @@
 import { ipcMain } from 'electron'
-import { resolveWelinkRoute } from '../workbench/reporting/report-submission'
+import { resolveWelinkRoute } from '../monica/reporting/report-submission'
 import {
   readTeamDirectory,
   writeTeamDirectory,
   type TeamDirectory
-} from '../workbench/team-collaboration/team-directory-client'
+} from '../monica/team-collaboration/team-directory-client'
 
 const NUMERIC_ID = /^\d{1,32}$/
 const TEXT_ID = /^.{1,256}$/u
@@ -44,7 +44,9 @@ function requireDirectory(value: unknown): TeamDirectory {
       member_id: host.member_id,
       ...(host.name ? { name: requireText(host.name, `hosts[${index}].name`, 256) } : {}),
       ...(host.avatar ? { avatar: requireText(host.avatar, `hosts[${index}].avatar`) } : {}),
-      ...(host.host_id ? { host_id: requireText(host.host_id, `hosts[${index}].host_id`, 256) } : {}),
+      ...(host.host_id
+        ? { host_id: requireText(host.host_id, `hosts[${index}].host_id`, 256) }
+        : {}),
       identity_source: 'welink-cli' as const,
       ...(host.orca_endpoint
         ? { orca_endpoint: requireText(host.orca_endpoint, `hosts[${index}].orca_endpoint`) }
@@ -90,14 +92,11 @@ export function registerTeamCollaborationHandlers(): void {
     }
   )
 
-  ipcMain.handle(
-    'teamCollaboration:writeDirectory',
-    async (_event, directory: TeamDirectory) => {
-      const safeDirectory = requireDirectory(directory)
-      return writeTeamDirectory({
-        route: await resolveWelinkRoute(),
-        directory: safeDirectory
-      })
-    }
-  )
+  ipcMain.handle('teamCollaboration:writeDirectory', async (_event, directory: TeamDirectory) => {
+    const safeDirectory = requireDirectory(directory)
+    return writeTeamDirectory({
+      route: await resolveWelinkRoute(),
+      directory: safeDirectory
+    })
+  })
 }

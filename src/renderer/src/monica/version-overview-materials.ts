@@ -1,0 +1,334 @@
+import { versionTreeKey, type VersionMaterialSelection } from './version-material-selection'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
+import type { AcceptanceMaterial, PlanningMaterial } from '../../../shared/monica/version-material'
+import type { ArchivePrStatusResult } from '../../../shared/monica/archive-pr-status'
+import type { VersionCatalogState } from './use-version-catalog'
+import { nativeVersionHistoryPort } from './version-history-port'
+import { nativeArchivePrPort } from './archive-pr-port'
+import { loadVersionPlanDocument } from './version-task-entries'
+import { createOverviewReadCache } from './version-overview/overview-read-cache'
+import { validTime } from './version-overview/feature-model'
+import {
+  retainMaterialRead,
+  materialSourceInputs,
+  materialReadMessage as message
+} from './version-overview/material-cache'
+import { findVersionFlowWorktrees } from '../../../shared/monica/version-workspace-match'
+import { nativeWorkspaceScope } from './version-cycle/native-workspace'
+import { nativeVersionMaterialPort } from './version-material-port'
+import { AcceptanceMaterialSchema } from '../../../shared/monica/version-material'
+import { assertFixedPlan, type PlanReference } from './version-acceptance/acceptance-model'
+
+export type OverviewDocument<T> =
+  | { kind: 'loading' }
+  | {
+      kind: 'ready'
+      document: T
+      source: 'committed' | 'draft'
+      sourceCommit?: string
+      acceptedAt?: string
+      revision?: string
+    }
+  | { kind: 'missing' }
+  | { kind: 'error'; message: string }
+export type VersionOverviewMaterials = {
+  plan: OverviewDocument<PlanningMaterial>
+  acceptance: OverviewDocument<AcceptanceMaterial>
+  prStatuses: { plan: ArchivePrStatusResult | null; acceptance: ArchivePrStatusResult | null }
+  readAt?: string
+  refreshing?: boolean
+  stale?: boolean
+  problems?: string[]
+}
+const loading = (): VersionOverviewMaterials => ({
+  plan: { kind: 'loading' },
+  acceptance: { kind: 'loading' },
+  prStatuses: { plan: null, acceptance: null }
+})
+/** Acceptance pins its plan when readable; a failed reference leaves the current plan readable. */
+export function useVersionOverviewMaterials({
+  catalog,
+  version,
+  refreshToken,
+  selection
+}: {
+  catalog: VersionCatalogState
+  version: string
+  refreshToken: number
+  selection?: VersionMaterialSelection
+}): VersionOverviewMaterials {
+  const entry = catalog.catalog?.entries.find((e) => e.version === version)
+  const lastRefresh = useRef(refreshToken)
+  const inputs = materialSourceInputs(
+    catalog.worktrees,
+    catalog.planTrees,
+    version,
+    Boolean(entry?.material.plan || entry?.material.acceptance)
+  )
+  const waitingForCatalog = catalog.loading && !catalog.materialReady
+  const sourceKey = JSON.stringify([
+    catalog.scope,
+    catalog.home?.id,
+    version,
+    selection,
+    entry?.material,
+    entry?.draft,
+    entry?.problems,
+    inputs
+  ])
+  const key = JSON.stringify([
+    refreshToken,
+    waitingForCatalog,
+    catalog.scope,
+    catalog.home?.id,
+    version,
+    selection,
+    entry?.material,
+    entry?.draft,
+    entry?.problems,
+    catalog.materialReady,
+    catalog.materialError,
+    catalog.error,
+    inputs
+  ])
+  const state = useSyncExternalStore(
+    (listener) => overviewMaterialsCache.subscribe(sourceKey, listener),
+    () => overviewMaterialsCache.get(sourceKey)
+  )
+  useEffect(() => {
+    if (waitingForCatalog) {
+      return
+    }
+    const force = lastRefresh.current !== refreshToken
+    lastRefresh.current = refreshToken
+    const failure = catalog.materialError ?? catalog.error
+    void overviewMaterialsCache.read(
+      sourceKey,
+      async () => {
+        if (failure) {
+          throw new Error(failure)
+        }
+        return readMaterials(catalog, version, force, selection)
+      },
+      force || Boolean(failure)
+    )
+    // Source key includes owner, version and material revisions.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  const value = state.value ?? loading()
+  return {
+    ...value,
+    ...(state.error && !state.value
+      ? {
+          plan: { kind: 'error' as const, message: state.error },
+          acceptance: { kind: 'error' as const, message: state.error }
+        }
+      : {}),
+    problems: [...(value.problems ?? []), ...(state.error ? [state.error] : [])],
+    refreshing: state.loading || waitingForCatalog,
+    stale:
+      value.stale ||
+      Boolean(state.error && state.value && !value.refreshing && !value.problems?.length)
+  }
+}
+
+export const overviewMaterialsCache =
+  createOverviewReadCache<VersionOverviewMaterials>(retainMaterialRead)
+async function readMaterials(
+  catalog: VersionCatalogState,
+  version: string,
+  force: boolean,
+  selection?: VersionMaterialSelection
+) {
+  const result = loading()
+  const entry = catalog.catalog?.entries.find((e) => e.version === version)
+  if (!catalog.scope || !catalog.home) {
+    throw new Error('项目工作区尚未就绪')
+  }
+  const scope = {
+    repoId: catalog.scope.repoId,
+    worktreeId: catalog.home.id,
+    hostId: catalog.scope.hostId
+  }
+  const history = nativeVersionHistoryPort(catalog.scope.runtimeOwnerEnvironmentId)
+  const archive = nativeArchivePrPort(catalog.scope.runtimeOwnerEnvironmentId)
+  let acceptancePlanSource = { scope, history }
+
+  const selected = selection
+    ? findVersionFlowWorktrees(catalog.worktrees, { version, workflow: selection.workflow }).find(
+        (tree) => versionTreeKey(tree) === selection.treeKey
+      )
+    : null
+  if (selection && !selected) {
+    throw new Error('所选工作区已变化，请从版本侧栏重新选择。')
+  }
+  const selectedPlan = selection?.workflow === 'plan' ? selected : null
+  const acceptanceRef = selection ? undefined : entry?.material.acceptance
+  const planRef = selectedPlan ? undefined : entry?.material.plan
+  const currentPlanRef: PlanReference | null = planRef
+    ? {
+        kind: 'committed',
+        version,
+        cycleId: planRef.cycleId,
+        sourceCommit: planRef.sourceCommit,
+        revision: planRef.revision
+      }
+    : null
+  try {
+    if (selection?.workflow === 'plan') {
+      result.acceptance = { kind: 'missing' }
+    } else if (acceptanceRef) {
+      const read = await history.read({
+        scope,
+        source: 'trunk',
+        sourceCommit: acceptanceRef.sourceCommit,
+        version,
+        cycleId: acceptanceRef.cycleId,
+        workflow: 'acceptance'
+      })
+      result.acceptance = {
+        kind: 'ready',
+        document: read.document as AcceptanceMaterial,
+        source: 'committed',
+        sourceCommit: acceptanceRef.sourceCommit
+      }
+    } else {
+      const trees = selected
+        ? [selected]
+        : findVersionFlowWorktrees(catalog.worktrees, {
+            version,
+            workflow: 'acceptance'
+          })
+      if (trees.length > 1) {
+        throw new Error('有多个验收工作区，请从验收入口核对来源')
+      }
+      if (trees[0]) {
+        const owner = nativeWorkspaceScope(trees[0])
+        const draftScope = {
+          repoId: owner.repoId,
+          worktreeId: trees[0].id,
+          hostId: owner.hostId
+        }
+        const draft = await nativeVersionMaterialPort(
+          { ...draftScope, workflow: 'acceptance' },
+          owner.runtimeOwnerEnvironmentId
+        ).read(version)
+        result.acceptance = draft
+          ? {
+              kind: 'ready',
+              document: AcceptanceMaterialSchema.parse(draft.document),
+              source: 'draft'
+            }
+          : { kind: 'missing' }
+        if (draft) {
+          acceptancePlanSource = {
+            scope: draftScope,
+            history: nativeVersionHistoryPort(owner.runtimeOwnerEnvironmentId)
+          }
+        }
+      } else {
+        const problem = entry?.problems.find((item) => item.workflow === 'acceptance')
+        if (problem) {
+          throw new Error(problem.message)
+        }
+        result.acceptance = { kind: 'missing' }
+      }
+    }
+  } catch (error) {
+    result.acceptance = { kind: 'error', message: `验收读取失败：${message(error)}` }
+  }
+  let fixed: PlanReference | null = null
+  try {
+    fixed = result.acceptance.kind === 'ready' ? result.acceptance.document.planRef : currentPlanRef
+    if (fixed) {
+      const source = result.acceptance.kind === 'ready' ? acceptancePlanSource : { scope, history }
+      const read = await source.history.readPlan({ scope: source.scope, planRef: fixed })
+      result.plan = {
+        kind: 'ready',
+        document: assertFixedPlan(fixed, read),
+        revision: read.revision,
+        source: fixed.kind === 'committed' ? 'committed' : 'draft',
+        ...(fixed.kind === 'committed' ? { sourceCommit: fixed.sourceCommit } : {})
+      }
+    } else {
+      if (
+        !selectedPlan &&
+        findVersionFlowWorktrees(catalog.worktrees, { version, workflow: 'plan' }).length > 1
+      ) {
+        throw new Error('有多个计划工作区，请从计划入口核对来源')
+      }
+      const read = await loadVersionPlanDocument({
+        scope: catalog.scope!,
+        homeWorktreeId: catalog.home!.id,
+        version,
+        entry: selectedPlan ? null : entry,
+        planTrees: selectedPlan
+          ? catalog.planTrees.filter(
+              (tree) =>
+                tree.worktreeId === selectedPlan.id &&
+                tree.instanceId === selectedPlan.instanceId &&
+                tree.repoId === selectedPlan.repoId &&
+                tree.runtimeOwnerEnvironmentId ===
+                  nativeWorkspaceScope(selectedPlan).runtimeOwnerEnvironmentId
+            )
+          : catalog.planTrees
+      })
+      if (read.document) {
+        result.plan = {
+          kind: 'ready',
+          document: read.document,
+          source: read.source === 'draft' ? 'draft' : 'committed',
+          revision: read.revision
+        }
+      } else if ((!selectedPlan && (entry?.draft || entry?.problems.length)) || !read.missing) {
+        result.plan = { kind: 'error', message: read.problem ?? '计划来源读取失败' }
+      } else {
+        result.plan = { kind: 'missing' }
+      }
+    }
+  } catch (error) {
+    let recovered = false
+    if (currentPlanRef && fixed !== currentPlanRef) {
+      try {
+        const read = await history.readPlan({ scope, planRef: currentPlanRef })
+        result.plan = {
+          kind: 'ready',
+          document: assertFixedPlan(currentPlanRef, read),
+          revision: read.revision,
+          source: 'committed',
+          sourceCommit: currentPlanRef.sourceCommit
+        }
+        recovered = true
+      } catch {
+        // Keep the original pinned-plan failure as the visible diagnosis.
+      }
+    }
+    if (!recovered) {
+      result.plan = { kind: 'error', message: `计划读取失败：${message(error)}` }
+    }
+  }
+  await Promise.all(
+    (['plan', 'acceptance'] as const).map(async (kind) => {
+      const doc = result[kind]
+      const pr = doc.kind === 'ready' ? doc.document.workflow?.archivePr : null
+      if (!pr) {
+        return
+      }
+      try {
+        const status = await archive.readStatus(scope, pr, force)
+        result.prStatuses[kind] = status
+        if (
+          kind === 'acceptance' &&
+          result.acceptance.kind === 'ready' &&
+          status.state === 'merged' &&
+          validTime(status.mergedAt)
+        ) {
+          result.acceptance = { ...result.acceptance, acceptedAt: status.mergedAt }
+        }
+      } catch {
+        result.prStatuses[kind] = { state: 'unknown', reason: '归档 PR 读取失败' }
+      }
+    })
+  )
+  return { ...result, prStatuses: { ...result.prStatuses } }
+}

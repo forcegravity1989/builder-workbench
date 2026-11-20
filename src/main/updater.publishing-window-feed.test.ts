@@ -263,7 +263,7 @@ describe('updater', () => {
   })
 
   it('waits for the newest stable Workbench release and offers it on automatic retry', async () => {
-    vi.stubEnv('WORKBENCH_SHELL', '1')
+    vi.stubEnv('MONICA_SHELL', '1')
     vi.useFakeTimers()
     appMock.getVersion.mockReturnValue('0.9.1')
     fetchNewerReleaseTagsMock

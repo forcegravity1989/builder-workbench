@@ -7,10 +7,10 @@ import { getMainE2EConfig } from '../e2e-config'
 import { DISABLED_CHROMIUM_FEATURES } from './disabled-chromium-features'
 import { readHttp1CompatibilityMarker } from './http1-compatibility-marker'
 import {
-  isWorkbenchProduct,
-  WORKBENCH_DEV_USER_DATA_DIR_NAME,
-  WORKBENCH_USER_DATA_DIR_NAME
-} from './workbench-product'
+  isMonicaProduct,
+  MONICA_DEV_USER_DATA_DIR_NAME,
+  MONICA_USER_DATA_DIR_NAME
+} from './monica-product'
 
 const DEV_PARENT_SHUTDOWN_GRACE_MS = 3000
 const HTTP1_COMPATIBILITY_ENV_VAR = 'ORCA_DISABLE_HTTP2'
@@ -214,11 +214,9 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
-    // Why: Workbench.app still ships package.json name "orca"; without a pin,
-    // userData shares Application Support/orca and the single-instance lock
-    // activates the installed Orca instead of launching Workbench.
-    if (isWorkbenchProduct()) {
-      app.setPath('userData', join(app.getPath('appData'), WORKBENCH_USER_DATA_DIR_NAME))
+    // 品牌名与既有 profile 独立，保持存量项目、会话及单实例锁的读取路径。
+    if (isMonicaProduct()) {
+      app.setPath('userData', join(app.getPath('appData'), MONICA_USER_DATA_DIR_NAME))
     }
     return
   }
@@ -229,8 +227,8 @@ export function configureDevUserDataPath(isDev: boolean): void {
     return
   }
   // Why: without a dev-only path, pnpm dev overwrites the packaged app's runtime pointer under userData and breaks the orca CLI.
-  // Workbench shell reuses the same runner but must not share orca-dev (repos / onboarding state diverge).
-  const devDirName = isWorkbenchProduct() ? WORKBENCH_DEV_USER_DATA_DIR_NAME : 'orca-dev'
+  // Monica shell reuses the same runner but must not share orca-dev (repos / onboarding state diverge).
+  const devDirName = isMonicaProduct() ? MONICA_DEV_USER_DATA_DIR_NAME : 'orca-dev'
   app.setPath('userData', join(app.getPath('appData'), devDirName))
 }
 

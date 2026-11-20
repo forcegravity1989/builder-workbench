@@ -6,7 +6,7 @@ import type { TelemetryConsentState } from '../../../../shared/telemetry-consent
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { PRIVACY_URL, getConsentState, setOptIn as telemetrySetOptIn } from '../../lib/telemetry'
-import { isWorkbenchShell } from '../../workbench/is-workbench-shell'
+import { isMonicaShell } from '../../monica/is-monica-shell'
 import { useAppStore } from '../../store'
 import { PrivacyDiagnosticsSection } from './PrivacyDiagnosticsSection'
 import { translate } from '@/i18n/i18n'
@@ -69,7 +69,7 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
 
   const blocked = computeBlockedReason(consent)
   const toggleChecked = settings.telemetry?.optedIn === true
-  const telemetryLabel = isWorkbenchShell()
+  const telemetryLabel = isMonicaShell()
     ? translate('auto.components.settings.PrivacyPane.workbenchLabel', 'Share usage data')
     : translate('auto.components.settings.PrivacyPane.fe904ac984', 'Share anonymous usage data')
 
@@ -97,10 +97,10 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
             <Label>{telemetryLabel}</Label>
           </div>
           <p className="text-xs text-muted-foreground">
-            {isWorkbenchShell() ? (
+            {isMonicaShell() ? (
               translate(
                 'auto.components.settings.PrivacyPane.workbenchDescription',
-                'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.'
+                'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed Monica user group space. The space may show the uploader.'
               )
             ) : (
               <>

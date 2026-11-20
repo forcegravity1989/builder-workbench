@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BW G2 · 从创建版本到回看交付</title>
+    <title>Monica G2 · 从创建版本到回看交付</title>
     <link rel="stylesheet" href="../../04-design-system/styles.css" />
     <!--
     Design discussion report for the Builder and implementers.
@@ -648,7 +648,7 @@
   </head>
   <body>
     <header class="top">
-      <strong>Builder Workbench / G2 旅程说明</strong>
+      <strong>Monica / G2 旅程说明</strong>
       <div class="actions">
         <a href="version-workspace-prototype.html?rev=8">回到高保真</a
         ><button class="btn btn-ghost" id="theme">深色</button
@@ -671,7 +671,7 @@
         <div class="eyebrow">意图 / 规格 / 高保真对齐 · 补充阅读</div>
         <h1>创建一个版本之后，<br />我们的工作会怎样展开？</h1>
         <p class="lede">
-          以 Builder Workbench 自身的 v0.7 / G2 为贯穿示例，把侧栏、实际工作、Orca
+          以 Monica 自身的 v0.7 / G2 为贯穿示例，把侧栏、实际工作、Orca
           配置、磁盘文件和仓库材料连在一起。
         </p>
         <div class="tagline">
@@ -739,7 +739,7 @@
               <div id="tree" class="sidebar-demo"></div>
               <p class="note">
                 这里仅说明行与行的关系，不是另一套原生工作树 UI。产品中要复用 Orca 卡片、agent
-                行、菜单与父子关系；“流程名称 + 页面入口”是 BW 所需的少量适配。
+                行、菜单与父子关系；“流程名称 + 页面入口”是 Monica 所需的少量适配。
               </p>
             </div>
             <div class="box">
@@ -762,7 +762,7 @@
             </div>
           </div>
           <p class="note">
-            复用不能解释为“所有行完全零改动”：新增版本/目标目录由 BW
+            复用不能解释为“所有行完全零改动”：新增版本/目标目录由 Monica
             负责，合并入口需要接入既有卡片的展示与激活动作。原生分支操作、会话、父子关系继续由 Orca
             负责。
           </p>
@@ -813,7 +813,7 @@
                   <td>
                     调用与 Issue
                     同一原生创建器，预填目标名称、交付约定和关联任务引用。用户确认任务范围与执行选项，不另加
-                    BW 开工向导。
+                    Monica 开工向导。
                   </td>
                 </tr>
                 <tr>
@@ -854,7 +854,7 @@
               VS Code
               官方把“相关工作共享工作区”和“独立任务用隔离工作树”列为不同选择，并区分会话关系与代码隔离。Claude
               Code 也提供工作树启动与复用方式。这些文档没有给出“每个 Issue
-              必须一棵树”的统一标准；据此，我建议 BW
+              必须一棵树”的统一标准；据此，我建议 Monica
               提供业务上下文和可改的建议值，让隔离方式沿用原生选择。
             </p>
             <p>
@@ -897,7 +897,7 @@
             </p>
           </details>
           <div class="callout">
-            <strong>BW 给 Builder 增加的价值：</strong
+            <strong>Monica 给 Builder 增加的价值：</strong
             >把计划承诺、执行工作区和验收依据串在同一版本里，让目标可找到、任务不串版、计划变更可识别、结果可回看。Orca
             继续负责执行；不要求 Builder 重复维护一套目录、任务状态或聊天记录。
           </div>
@@ -984,7 +984,7 @@
                   <td>GitHub / CodeHub 等远端</td>
                   <td>Issue 正文与状态、PR/MR、评审与合入结果、已有发布系统中的制品/发布记录。</td>
                   <td>
-                    用户在原生界面操作或明确让 agent 执行时改变。BW 材料保存引用，不另外复制一套
+                    用户在原生界面操作或明确让 agent 执行时改变。Monica 材料保存引用，不另外复制一套
                     Issue 状态，也不以点击导航替人关闭任务。
                   </td>
                 </tr>
@@ -994,7 +994,7 @@
           <div class="callout">
             <strong>G2 还要补一条绑定关系：</strong
             >“这台机器上的这棵原生工作树，属于本项目的哪个版本、计划/验收还是哪个目标”。建议扩展既有工作区附属信息，避免新建
-            BW
+            Monica
             业务数据库。具体持久化字段、跨机器恢复与旧记录迁移仍待方案确定；当前没有已经落地的“版本目录配置文件”可直接填。
           </div>
           <div class="storage-stage">
@@ -1033,7 +1033,7 @@
                   <td>侧栏与完整会话区</td>
                   <td>原生分支卡片、agent 列表、会话、终端、分屏与工具。</td>
                   <td>
-                    按项目/版本/目标组织挂载；计划/验收合成一行入口，选中时打开既有 BW
+                    按项目/版本/目标组织挂载；计划/验收合成一行入口，选中时打开既有 Monica
                     业务板。可能需要薄的展示与路由接入。
                   </td>
                 </tr>
@@ -1078,7 +1078,7 @@
             <div class="box">
               <h3>会新增或更新的本机记录</h3>
               <p>
-                原生工作树登记、按需父子关系、原生会话/自动化记录，以及待定义的 BW
+                原生工作树登记、按需父子关系、原生会话/自动化记录，以及待定义的 Monica
                 归属信息。这些是使用产品时产生的状态。
               </p>
             </div>
@@ -1091,7 +1091,7 @@
             </div>
           </div>
           <p class="note">
-            实现顺序仍是先复用原生能力，再做 BW 挂载与范围适配。若某点必须改变 Orca
+            实现顺序仍是先复用原生能力，再做 Monica 挂载与范围适配。若某点必须改变 Orca
             核心执行协议或宿主路由，应回到方案确认；当前研究没有理由重写会话、调度或工作树引擎。
           </p>
         </section>
@@ -1170,7 +1170,7 @@
               <span class="pill solid">用户已确认</span>
               <h3 style="margin-top: 12px">目标与 Issue 共用原生创建器</h3>
               <p>
-                BW 带入已知归属、名称与合适父级建议；Builder
+                Monica 带入已知归属、名称与合适父级建议；Builder
                 沿用原生分支、模型和执行选项。没有必要先选一种所有人必须遵守的工作树模式。
               </p>
             </div>
@@ -1221,7 +1221,7 @@
                   >验收规格</a
                 >
               </li>
-              <li><a href="../../architecture.md">架构 · 原生执行核与 BW 叠层、版本材料</a></li>
+              <li><a href="../../architecture.md">架构 · 原生执行核与 Monica 叠层、版本材料</a></li>
               <li>
                 <a href="../../../standard/references/version-records.md"
                   >版本材料契约</a
@@ -1231,7 +1231,7 @@
                 原生工作树/父子：WorktreeCard、WorktreeCardAgents、runtime-worktree-lineage-controller、persistence/loading-store/metadata-lineage-operations
               </li>
               <li>
-                当前流程定位：workbench/version-selection、CycleWorkspaceShell；运行：ensure-cycle-automation、start-cycle-automation
+                当前流程定位：monica/version-selection、CycleWorkspaceShell；运行：ensure-cycle-automation、start-cycle-automation
               </li>
               <li>
                 任务与打开：TaskPage、use-task-page-workspace-actions、github-work-item-workspace-attachment
@@ -1249,17 +1249,17 @@
       const steps = [
         {
           name: '选择项目',
-          title: '从项目墙进入 Builder Workbench',
+          title: '从项目墙进入 Monica',
           tag: '已有能力 + 导航调整',
           action:
-            '在项目墙选中 BW，主区进入项目总览，第二列收起。点击 Rail 的版本工作区进入对象上下文，第二列显示全局已固定、当前项目版本和全部项目工作区；当前项目完整分组优先，其他项目保留原生折叠记忆，未上墙个人项目仍可达。工具栏固定在顶部，导航不准备工作树。',
+            '在项目墙选中 Monica，主区进入项目总览，第二列收起。点击 Rail 的版本工作区进入对象上下文，第二列显示全局已固定、当前项目版本和全部项目工作区；当前项目完整分组优先，其他项目保留原生折叠记忆，未上墙个人项目仍可达。工具栏固定在顶部，导航不准备工作树。',
           result: '你清楚当前在为哪个项目工作；已有版本与材料可读。',
           reuse: '项目身份、所在机器、连接、已登记仓库由 Orca 提供；现有项目总览继续使用。',
           bw: '增加围绕当前项目的版本目录。当前侧栏采用全局已固定、当前项目版本、全部项目工作区三段；顶部固定原生工具栏，全部项目工作区保留当前项目与私人项目的原生入口，不另建工作树或会话系统。',
           config: '沿用已接入项目的原生记录。切换选中项是导航状态变化，不因此重配 Git 或模型。',
           disk: '打开已接入项目不新建工作树、不写计划；读取现有材料。首次接入/克隆仍走原有项目流程，本步骤不重复接入。',
           remote: '不改远端 Issue、PR 或发布记录。',
-          limit: '这层版本侧栏是 G2 行为；私人项目不补 BW 版本结构。'
+          limit: '这层版本侧栏是 G2 行为；私人项目不补 Monica 版本结构。'
         },
         {
           name: '创建版本',
@@ -1285,7 +1285,7 @@
             '以下以已有目标的 v0.7 材料说明。点“计划”进入现有屏；点屏内“新建计划”开始协作。继续会话则点计划行下面的原生 agent。',
           result: '右边仍是当前计划屏，旁边仍是完整原生会话区；讨论与直接编辑指向同一份本版材料。',
           reuse:
-            '现有计划板、材料读写、原生会话与工具。当前“新建计划”通过已登记的原生自动化手动运行，并携带 BW 规划指引。',
+            '现有计划板、材料读写、原生会话与工具。当前“新建计划”通过已登记的原生自动化手动运行，并携带 Monica 规划指引。',
           bw: '把运行明确绑定 v0.7 的计划树；本版目标形成后，任务下出现 G1/G2 等逻辑目录。目录内容从计划读，不重新录一遍。',
           config:
             '首次具备条件时准备原生流程自动化条目，定时默认关闭；记录新会话。每版条目的组织方式仍待技术收敛，不能让切换浏览版本改掉已运行会话的归属。',
@@ -1443,7 +1443,7 @@
       const nav = document.getElementById('step-nav')
       const labels = [
         ['reuse', '复用 Orca'],
-        ['bw', 'BW 补什么'],
+        ['bw', 'Monica 补什么'],
         ['config', '配置 / 记录'],
         ['disk', '磁盘 / 仓库'],
         ['remote', '远端变化']
@@ -1507,9 +1507,9 @@
         ],
         issue: [
           '#383 是真实工作树的挂载位置',
-          '工作树和其 agent 沿用原生 UI。目录里出现它，是因为 BW 增加了 v0.7 / G2 的业务绑定。'
+          '工作树和其 agent 沿用原生 UI。目录里出现它，是因为 Monica 增加了 v0.7 / G2 的业务绑定。'
         ],
-        agent: ['打开原生会话', '使用原生工作区、标签、分屏与工具，不另画或另存一套 BW 聊天。'],
+        agent: ['打开原生会话', '使用原生工作区、标签、分屏与工具，不另画或另存一套 Monica 聊天。'],
         overview: ['本版总览是新屏', '汇总该版的计划、任务、验收与发布事实；项目总览仍沿用原特性。']
       }
       let treeMode = 'compact'

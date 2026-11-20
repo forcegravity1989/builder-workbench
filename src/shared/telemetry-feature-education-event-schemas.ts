@@ -19,7 +19,7 @@ export const setupGuideStepIdOrNoneSchema = z.enum([
   'none'
 ] as const)
 export const terminalPaneSplitSourceSchema = z.enum(TERMINAL_PANE_SPLIT_SOURCES)
-// BW omits the CLI step; native Orca and older clients still report eight steps.
+// Monica omits the CLI step; native Orca and older clients still report eight steps.
 const setupGuideTotalStepsSchema = z.number().int().min(7).max(8)
 
 export const contextualTourShownSchema = z

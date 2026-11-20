@@ -6,7 +6,7 @@
 
 核对项目根、工作区、版本、流程和实际工具路径。已有文件先读修订再改，不依靠宿主 cwd 推断项目。右板编辑会自动保存，“更新代码”先把本屏工作树快进到主干最新、再重读材料（快进不了保持原样并提示交会话处理，材料仍照常重读）；模型写入前仍须重新读取 revision，不能假定刚才看到的值未变。模型与右侧编辑器必须调用同一材料服务，以 expectedRevision 保存；冲突保留双方输入，不能用直接写文件绕开校验。
 
-结构使用 `ORCA bw materials schema --workflow plan|acceptance --json` 读取；子命令清单与参数以 `ORCA bw materials --help` 为准（context/select/list/read/save/schema 等），修订约束以版本材料 reference 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。Skill 安装目录是工具与模板来源，项目 .bw 是业务材料；不在项目里复制日常 HTML 编辑器，不另起浏览器服务。普通项目缺产品资产时由宿主补分发，不能要求用户克隆 BW 源码。
+结构使用 `ORCA bw materials schema --workflow plan|acceptance --json` 读取；子命令清单与参数以 `ORCA bw materials --help` 为准（context/select/list/read/save/schema 等），修订约束以版本材料 reference 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。Skill 安装目录是工具与模板来源，项目 .bw 是业务材料；不在项目里复制日常 HTML 编辑器，不另起浏览器服务。普通项目缺产品资产时由宿主补分发，不能要求用户克隆 Monica 源码。
 
 项目里程碑可提前登记未来版本；开始计划先读已有材料并沿用身份，不重新初始化覆盖。已合入的 `.bw/milestones.json` 与 `versionPlans` 是可选参考，没有里程碑照常制定和渲染计划。预期与本版采用日期的分工、旧材料读法、名称同步及评审边界见[里程碑与版本排期](../../../references/version-records.md#里程碑与版本排期)；宏观安排不代替版内特性 Issue、目标与范围讨论。
 

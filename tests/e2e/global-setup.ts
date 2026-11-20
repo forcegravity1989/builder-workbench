@@ -17,7 +17,7 @@ import {
   createSeededTestRepo,
   E2E_TEST_REPO_PATH_FILE_ENV,
   TEST_REPO_PATH_FILE
-} from './helpers/workbench-test-repo'
+} from './helpers/monica-test-repo'
 
 // Why re-export: the disposable-repo path is owned by the seeded-repo helper,
 // but legacy specs and global-teardown import it from './global-setup'. Keep
@@ -40,19 +40,19 @@ export default function globalSetup(): void {
     // the explicit env var keeps older local overrides working too.
     // Why the Workbench triple: this playwright config only serves the
     // Workbench PR E2E lane, and the shell is build-time baked —
-    // isWorkbenchShell() reads import.meta.env.VITE_WORKBENCH_SHELL, which
+    // isMonicaShell() reads import.meta.env.VITE_MONICA_SHELL, which
     // electron.vite.config.ts derives from these vars in the build process
     // env. Without them the build yields a plain Orca renderer and the Workbench tests
-    // never sees [data-workbench-nav]. Setting them here (not per-shell in
+    // never sees [data-monica-nav]. Setting them here (not per-shell in
     // package.json) keeps Windows cmd, POSIX shells and CI on one source.
     console.error('[e2e] Building Electron app with electron-vite build --mode e2e...')
     execSync('npx electron-vite build --mode e2e', {
       env: {
         ...process.env,
         VITE_EXPOSE_STORE: 'true',
-        WORKBENCH_SHELL: '1',
-        VITE_WORKBENCH_SHELL: '1',
-        ORCA_PRODUCT_NAME: 'Workbench'
+        MONICA_SHELL: '1',
+        VITE_MONICA_SHELL: '1',
+        ORCA_PRODUCT_NAME: 'Monica'
       },
       cwd: root,
       stdio: 'inherit',

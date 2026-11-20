@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { getLocalExecutionHostLabel } from '../../../../shared/execution-host'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 
@@ -48,7 +48,7 @@ export function getProviderAccountScope(
         'Remote server: {{value0}}',
         { value0: runtimeId }
       ),
-      description: isWorkbenchShell()
+      description: isMonicaShell()
         ? translate(
             'guidance.providerRemoteCredentials',
             'This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.'
@@ -59,7 +59,7 @@ export function getProviderAccountScope(
           )
     }
   }
-  if (isWorkbenchShell()) {
+  if (isMonicaShell()) {
     return { label: translate('guidance.providerLocalAccount', 'Local desktop') }
   }
   return {

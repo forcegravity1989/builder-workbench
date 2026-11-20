@@ -2,7 +2,7 @@ import type { TaskPageLinearCreationStateModel } from './use-task-page-linear-cr
 import { getGitHubTaskKind } from '@/components/task-page-github-task-kind'
 import { useMemo, useLayoutEffect, useEffect, useCallback, useRef } from 'react'
 import { parseTaskQuery } from '../../../shared/task-query'
-import { workbenchGoalMutationQuery } from '../../../shared/workbench/task-scope'
+import { monicaGoalMutationQuery } from '../../../shared/monica/task-scope'
 import {
   setTaskPageGitHubMutationQueryKey,
   getOrCreateQuietRevalidateState,
@@ -36,8 +36,8 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
   const activeGithubTaskKind = getGitHubTaskKind(activeTaskPreset, appliedTaskSearch)
   const appliedTaskQuery = useMemo(() => parseTaskQuery(appliedTaskSearch), [appliedTaskSearch])
   const mutationQuery = useMemo(
-    () => workbenchGoalMutationQuery(appliedTaskQuery, !!model.pageData.workbenchTaskScope?.goalId),
-    [appliedTaskQuery, model.pageData.workbenchTaskScope?.goalId]
+    () => monicaGoalMutationQuery(appliedTaskQuery, !!model.pageData.monicaTaskScope?.goalId),
+    [appliedTaskQuery, model.pageData.monicaTaskScope?.goalId]
   )
 
   // Why: multi-repo queryKey omits a singular sourceScope (scopes include repoId).
@@ -51,10 +51,10 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
       )
     ].sort()
     const repoIds = selectedRepos.map((repo) => repo.id).sort()
-    const goal = model.pageData.workbenchTaskScope
+    const goal = model.pageData.monicaTaskScope
     const scopeKey = goal?.goalId ? `::goal:${JSON.stringify([goal.version, goal.goalId])}` : ''
     return `${githubMode}::${hostOrSetupIds.join(',')}::${repoIds.join(',')}::${appliedTaskSearch}${scopeKey}`
-  }, [appliedTaskSearch, githubMode, selectedRepos, model.pageData.workbenchTaskScope])
+  }, [appliedTaskSearch, githubMode, selectedRepos, model.pageData.monicaTaskScope])
   useLayoutEffect(() => {
     setTaskPageGitHubMutationQueryKey(githubWorkItemMutationQueryKey)
   }, [githubWorkItemMutationQueryKey])
@@ -107,7 +107,7 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
     patchWorkItem: patchCoordinatedGitHubWorkItem
   })
   useLayoutEffect(() => {
-    if (model.pageData.workbenchTaskScope?.goalId) {
+    if (model.pageData.monicaTaskScope?.goalId) {
       return
     }
     const items = pages.flatMap((page) => page ?? [])
@@ -134,7 +134,7 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
     githubWorkItemMutationQueryKey,
     pages,
     model.repoMap,
-    model.pageData.workbenchTaskScope?.goalId
+    model.pageData.monicaTaskScope?.goalId
   ])
   const observedQuietScopeRef = useRef({
     queryKey: '',

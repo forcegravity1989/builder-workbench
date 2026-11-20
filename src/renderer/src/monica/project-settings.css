@@ -1,0 +1,272 @@
+.monica-icon-button,
+html[data-skin='ds'] .monica-btn.monica-icon-button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  flex: none;
+  color: var(--muted-foreground);
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+.monica-icon-button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+.monica-icon-button:focus-visible,
+.monica-project-settings :is(button, input, textarea):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.monica-icon-button[aria-pressed='true'] {
+  color: var(--foreground);
+  background: var(--accent);
+}
+.monica-icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+.monica-icon-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.monica-project-settings {
+  width: 400px;
+  max-width: 100%;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+.monica-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 24px 16px;
+}
+.monica-config-eyebrow {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.monica-config-header h2 {
+  margin: 6px 0 0;
+  font-size: 18px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.monica-config-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 16px 20px;
+  scrollbar-width: thin;
+}
+.monica-config-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+.monica-config-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 14px 12px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.monica-config-toggle:hover {
+  background: var(--accent);
+}
+.monica-config-toggle > svg {
+  flex: none;
+  color: var(--muted-foreground);
+}
+.monica-config-toggle > svg:last-child {
+  transition: transform 0.15s;
+}
+.monica-config-toggle[data-state='open'] > svg:last-child {
+  transform: rotate(180deg);
+}
+.monica-config-summary {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  text-align: right;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.monica-config-body {
+  padding: 0 16px 16px;
+  font-size: 12px;
+}
+.monica-config-facts {
+  margin: 0;
+}
+.monica-config-facts > div {
+  padding-top: 14px;
+}
+.monica-config-facts dt,
+.monica-config-fields label > span {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.monica-config-facts dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.monica-config-fields {
+  display: grid;
+  gap: 14px;
+  padding-top: 10px;
+}
+.monica-config-fields label {
+  display: grid;
+  gap: 6px;
+}
+.monica-config-fields :is(input, textarea) {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+}
+.monica-config-fields textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.monica-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.monica-config-facts + .monica-config-actions,
+.monica-config-fields + .monica-config-actions {
+  margin-top: 12px;
+}
+.monica-config-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.monica-config-footer p {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.monica-config-draft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  margin-bottom: 10px;
+  color: var(--muted-foreground);
+}
+.monica-config-submit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.monica-icon-spin {
+  animation: monica-icon-spin 1s linear infinite;
+}
+@keyframes monica-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 1100px) {
+  .monica-project-settings {
+    width: 368px;
+  }
+}
+@media (max-width: 680px) {
+  .monica-project-settings {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    z-index: 10;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .monica-icon-spin {
+    animation: none;
+  }
+  .monica-config-toggle > svg:last-child {
+    transition: none;
+  }
+}
+
+.monica-config-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 18px;
+  font-size: 12px;
+}
+.monica-config-type [data-slot='select-trigger'] {
+  margin-left: auto;
+  width: 150px;
+}
+.monica-config-info-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+}
+.monica-config-info-heading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+.monica-config-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.monica-overview-with-settings {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  position: relative;
+}
+.monica-overview-with-settings > .monica-ov {
+  min-width: 0;
+  flex: 1;
+}
+.monica-overview-charter-heading {
+  display: flex;
+  align-items: center;
+  padding-right: 12px;
+}
+.monica-overview-charter-heading .card-toggle {
+  flex: 1;
+  min-width: 0;
+}

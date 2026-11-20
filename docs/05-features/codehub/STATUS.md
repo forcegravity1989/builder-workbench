@@ -13,8 +13,8 @@ CodeHub 任务来源、任务页读写、计划与验收的来源适配已有实
 | 1 intent | 已确认 | 用户结果、范围、归属和排除见 [intent.md](intent.md)。 |
 | 2 spec | 已确认 | 来源身份、任务页、计划／验收、归档规则及 C01–C13 见 [spec.md](spec.md)。 |
 | 3 实现设计 | 部分 | CodeHub 行为复用任务管理和内部集成，平台边界见 [ref/upstream.md](../../../ref/upstream.md) 与 [codehub-cli 指南](../../03-guide/codehub-cli.md)。本目录没有独立 design.md。完整真实来源链仍待验证。 |
-| 4 TDD | 部分 | `src/main/codehub/`、`src/shared/codehub-mr-detail.test.ts`、`src/renderer/src/workbench/task-port.test.ts` 及来源预检测试覆盖命令形状、身份校验、状态映射和失败语义。它们不替代真实 CodeHub 旅程。 |
-| 5 验收点 E2E | 未登记 | C01–C13 由任务管理、版本计划和版本验收的主链承接。当前没有 CodeHub 专属 Workbench 白名单用例，不为每个 C 判据拆分用例。 |
+| 4 TDD | 部分 | `src/main/codehub/`、`src/shared/codehub-mr-detail.test.ts`、`src/renderer/src/monica/task-port.test.ts` 及来源预检测试覆盖命令形状、身份校验、状态映射和失败语义。它们不替代真实 CodeHub 旅程。 |
+| 5 验收点 E2E | 未登记 | C01–C13 由任务管理、版本计划和版本验收的主链承接。当前没有 CodeHub 专属 Monica 白名单用例，不为每个 C 判据拆分用例。 |
 | 6 用户旅程 E2E | 未登记 | CJ01 是旧标识，映射到 W03/W04 的 CodeHub 片段。当前没有独立用户旅程入口，探索演示和 CLI 单独读回不能作为通过证据。 |
 
 ## W03 / W04 交叉索引
@@ -36,5 +36,5 @@ CodeHub 任务来源、任务页读写、计划与验收的来源适配已有实
 - 真实 CodeHub 项目中的列表、评论、关闭、MR 检查项、文件变更、行评论和标签编辑完整链路。
 - `codehub-cli` 缺失、未登录、权限失败、项目身份不一致和分页边界在真实 Electron 中的提示。
 - 计划和验收从真实 CodeHub 项目打开任务、读取归档 MR 以及主干基线版本目录的完整 W03/W04 旅程。
-- 退出 Workbench、重启进程和重新加载后，任务状态、评论与未知状态均从 CLI 和平台事实独立读回。
+- 退出 Monica、重启进程和重新加载后，任务状态、评论与未知状态均从 CLI 和平台事实独立读回。
 - 原型、探索演示、协议测试和远程 CI 不能替代上述真实来源与重启证据。

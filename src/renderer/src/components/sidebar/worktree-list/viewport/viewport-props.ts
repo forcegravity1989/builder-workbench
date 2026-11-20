@@ -29,7 +29,7 @@ export type VirtualizedWorktreeViewportProps = {
   rows: HostSectionRow[]
   /**
    * Content rendered above the virtual rows inside the same scroll container
-   * (#475: the BW second column shares one scrollbar between 已固定/版本 and the
+   * (#475: the Monica second column shares one scrollbar between 已固定/版本 and the
    * Orca project list). The virtualizer offsets by its measured height.
    */
   afterPinnedContent?: React.ReactNode

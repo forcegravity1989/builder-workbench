@@ -5,7 +5,7 @@ import { expect, it } from 'vitest'
 import { describeDshProfilesMissingHookPackages } from './dsh-hook-packages'
 
 it('requires the executor and protocol in each initialized profile', () => {
-  const home = mkdtempSync(join(tmpdir(), 'bw-dsh-packages-'))
+  const home = mkdtempSync(join(tmpdir(), 'monica-dsh-packages-'))
   try {
     expect(describeDshProfilesMissingHookPackages(home)).toBeNull()
     const profile = join(home, 'profiles', 'dsh-tui')

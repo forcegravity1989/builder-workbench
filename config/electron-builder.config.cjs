@@ -70,7 +70,7 @@ const macExecutableName = process.env.ORCA_PRODUCT_NAME || 'Orca'
 const linuxExecutableName = process.env.ORCA_PRODUCT_NAME
   ? String(process.env.ORCA_PRODUCT_NAME).toLowerCase().replace(/\s+/g, '-')
   : 'orca-ide'
-const protocolScheme = process.env.ORCA_PRODUCT_NAME === 'Workbench' ? 'workbench' : 'orca'
+const protocolScheme = process.env.ORCA_PRODUCT_NAME === 'Monica' ? 'workbench' : 'orca'
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
   to: 'onboarding/feature-wall'
@@ -170,20 +170,16 @@ module.exports = {
   productName,
   protocols: [{ name: productName, schemes: [protocolScheme] }],
   toolsets: { appimage: '1.0.3' },
-  // Why: Electron resolves default userData from package.json `name`. Workbench
-  // must not inherit "orca" or it shares the single-instance lock with Orca.app.
-  ...(devChannelBuildVersion || localBuildVersion || productName === 'Workbench'
-    ? {
-        extraMetadata: {
-          ...(devChannelBuildVersion
-            ? { version: devChannelBuildVersion }
-            : localBuildVersion
-              ? { version: localBuildVersion }
-              : {}),
-          ...(productName === 'Workbench' ? { name: 'workbench', productName: 'Workbench' } : {})
-        }
-      }
-    : {}),
+  // Electron 的存储身份不随展示名称改变，避免隔离已有 profile 和加密凭据。
+  extraMetadata: {
+    name: productName === 'Monica' ? 'workbench' : 'orca',
+    ...(devChannelBuildVersion
+      ? { version: devChannelBuildVersion }
+      : localBuildVersion
+        ? { version: localBuildVersion }
+        : {}),
+    ...(productName === 'Monica' ? { productName: 'Monica' } : {})
+  },
   directories: {
     buildResources: 'resources/build'
   },
@@ -428,7 +424,7 @@ module.exports = {
   },
   win: {
     executableName: macExecutableName,
-    ...(productName === 'Workbench' ? { electronLanguages: ['zh-CN', 'en-US'] } : {}),
+    ...(productName === 'Monica' ? { electronLanguages: ['zh-CN', 'en-US'] } : {}),
     // Why: Windows installers are signed after electron-builder packaging by
     // SignPath, so the packager cannot infer the updater publisherName.
     //
@@ -461,8 +457,8 @@ module.exports = {
       },
       {
         from:
-          productName === 'Workbench'
-            ? 'native/windows-cli-launcher/.build/workbench/orca.exe'
+          productName === 'Monica'
+            ? 'native/windows-cli-launcher/.build/monica/orca.exe'
             : 'native/windows-cli-launcher/.build/orca.exe',
         to: 'bin/orca.exe'
       },
@@ -478,11 +474,11 @@ module.exports = {
     ]
   },
   nsis: {
-    ...(productName === 'Workbench'
+    ...(productName === 'Monica'
       ? { oneClick: false, allowToChangeInstallationDirectory: true }
       : {}),
     artifactName:
-      productName === 'Workbench' ? 'workbench-windows-setup.${ext}' : 'orca-windows-setup.${ext}',
+      productName === 'Monica' ? 'monica-windows-setup.${ext}' : 'orca-windows-setup.${ext}',
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',
     createDesktopShortcut: 'always',
@@ -508,20 +504,18 @@ module.exports = {
     entitlements: 'resources/build/entitlements.mac.plist',
     entitlementsInherit: 'resources/build/entitlements.mac.plist',
     extendInfo: {
-      NSAppleEventsUsageDescription:
-        'Orca allows terminal-launched developer tools to automate local apps when you request it.',
-      NSBluetoothAlwaysUsageDescription:
-        'Orca allows terminal-launched developer tools to access Bluetooth devices when you request it.',
-      NSBluetoothPeripheralUsageDescription:
-        'Orca allows terminal-launched developer tools to access Bluetooth devices when you request it.',
+      // CFBundleName 是既有 Keychain 加密身份；仅展示名称随品牌更新。
+      ...(productName === 'Monica'
+        ? { CFBundleName: 'Workbench', CFBundleDisplayName: 'Monica' }
+        : {}),
+      NSAppleEventsUsageDescription: `${productName} allows terminal-launched developer tools to automate local apps when you request it.`,
+      NSBluetoothAlwaysUsageDescription: `${productName} allows terminal-launched developer tools to access Bluetooth devices when you request it.`,
+      NSBluetoothPeripheralUsageDescription: `${productName} allows terminal-launched developer tools to access Bluetooth devices when you request it.`,
       NSCameraUsageDescription: "Application requests access to the device's camera.",
-      NSLocationUsageDescription:
-        'Orca allows terminal-launched developer tools to access location when you request it.',
-      NSLocalNetworkUsageDescription:
-        'Orca allows terminal-launched developer tools to discover and connect to local development servers when you request it.',
+      NSLocationUsageDescription: `${productName} allows terminal-launched developer tools to access location when you request it.`,
+      NSLocalNetworkUsageDescription: `${productName} allows terminal-launched developer tools to discover and connect to local development servers when you request it.`,
       NSMicrophoneUsageDescription: "Application requests access to the device's microphone.",
-      NSAudioCaptureUsageDescription:
-        'Orca allows terminal-launched developer tools to capture desktop audio when you request it.',
+      NSAudioCaptureUsageDescription: `${productName} allows terminal-launched developer tools to capture desktop audio when you request it.`,
       NSBonjourServices: ['_http._tcp', '_https._tcp'],
       NSDocumentsFolderUsageDescription:
         "Application requests access to the user's Documents folder.",
@@ -575,12 +569,12 @@ module.exports = {
     target: [
       {
         target: 'dmg',
-        // Why: Workbench trial packs are arm64-only (host natives); full Orca keeps both.
-        arch: process.env.ORCA_PRODUCT_NAME === 'Workbench' ? ['arm64'] : ['x64', 'arm64']
+        // Why: Monica trial packs are arm64-only (host natives); full Orca keeps both.
+        arch: process.env.ORCA_PRODUCT_NAME === 'Monica' ? ['arm64'] : ['x64', 'arm64']
       },
       {
         target: 'zip',
-        arch: process.env.ORCA_PRODUCT_NAME === 'Workbench' ? ['arm64'] : ['x64', 'arm64']
+        arch: process.env.ORCA_PRODUCT_NAME === 'Monica' ? ['arm64'] : ['x64', 'arm64']
       }
     ]
   },
@@ -589,8 +583,8 @@ module.exports = {
   forceCodeSigning: isMacRelease,
   dmg: {
     artifactName:
-      process.env.ORCA_PRODUCT_NAME === 'Workbench'
-        ? 'Workbench-${version}-${arch}.${ext}'
+      process.env.ORCA_PRODUCT_NAME === 'Monica'
+        ? 'Monica-${version}-${arch}.${ext}'
         : 'orca-macos-${arch}.${ext}'
   },
   linux: {
@@ -689,8 +683,8 @@ module.exports = {
   npmRebuild: true,
   publish: {
     provider: 'github',
-    owner: productName === 'Workbench' ? 'forcegravity1989' : 'stablyai',
-    repo: productName === 'Workbench' ? 'builder-workbench' : (devChannelRepo ?? 'orca'),
+    owner: productName === 'Monica' ? 'forcegravity1989' : 'stablyai',
+    repo: productName === 'Monica' ? 'builder-workbench' : (devChannelRepo ?? 'orca'),
     releaseType: devChannelRepo ? 'prerelease' : 'release'
   }
 }

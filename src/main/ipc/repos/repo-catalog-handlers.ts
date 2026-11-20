@@ -9,8 +9,8 @@ import type {
 import { normalizeExecutionHostId } from '../../../shared/execution-host'
 import {
   findConfirmedRepoRegistration,
-  WorkbenchRepoRemoval
-} from '../../../shared/workbench/repo-removal'
+  MonicaRepoRemoval
+} from '../../../shared/monica/repo-removal'
 import { enrichRepoGitUsernames } from '../../repo-git-username-enrichment'
 import { enrichMissingRepoGitRemoteIdentities } from '../../repo-git-remote-identity-enrichment'
 import { invalidateAuthorizedRootsCache } from '../registered-worktree-roots-cache'
@@ -107,7 +107,7 @@ export function registerRepoCatalogHandlers(mainWindow: BrowserWindow, store: St
         throw new Error(`Invalid host ID: ${args.hostId}`)
       }
       if (args.expected) {
-        const expected = WorkbenchRepoRemoval.parse({
+        const expected = MonicaRepoRemoval.parse({
           ...args.expected,
           repoId: args.repoId,
           hostId

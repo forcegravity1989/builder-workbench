@@ -80,16 +80,16 @@ export const FEATURE_WALL_SETUP_STEPS: readonly FeatureWallSetupStep[] = [
 
 export const FEATURE_WALL_SETUP_STEP_IDS = FEATURE_WALL_SETUP_STEPS.map((step) => step.id)
 
-const WORKBENCH_SETUP_STEPS = FEATURE_WALL_SETUP_STEPS.filter(
+const MONICA_SETUP_STEPS = FEATURE_WALL_SETUP_STEPS.filter(
   (step) => step.id !== 'agent-capabilities'
 )
 
-export function getFeatureWallSetupSteps(workbenchShell = false): readonly FeatureWallSetupStep[] {
-  return workbenchShell ? WORKBENCH_SETUP_STEPS : FEATURE_WALL_SETUP_STEPS
+export function getFeatureWallSetupSteps(monicaShell = false): readonly FeatureWallSetupStep[] {
+  return monicaShell ? MONICA_SETUP_STEPS : FEATURE_WALL_SETUP_STEPS
 }
 
-export function getFeatureWallSetupStepIds(workbenchShell = false): FeatureWallSetupStepId[] {
-  return getFeatureWallSetupSteps(workbenchShell).map((step) => step.id)
+export function getFeatureWallSetupStepIds(monicaShell = false): FeatureWallSetupStepId[] {
+  return getFeatureWallSetupSteps(monicaShell).map((step) => step.id)
 }
 
 export function getFeatureWallSetupSectionId(
@@ -104,28 +104,28 @@ export function getFeatureWallSetupSectionId(
 
 export function getFeatureWallSetupStepsForSection(
   sectionId: FeatureWallSetupSectionId,
-  workbenchShell = false
+  monicaShell = false
 ): readonly FeatureWallSetupStep[] {
-  return getFeatureWallSetupSteps(workbenchShell).filter(
+  return getFeatureWallSetupSteps(monicaShell).filter(
     (step) => getFeatureWallSetupSectionId(step.id) === sectionId
   )
 }
 
 export function getFirstIncompleteFeatureWallSetupStepId(
   stepDone: Partial<Record<FeatureWallSetupStepId, boolean>>,
-  workbenchShell = false
+  monicaShell = false
 ): FeatureWallSetupStepId {
   // Why: onboarding should prioritize Setup, while durable definitions retain the original order.
-  const setupStep = getFeatureWallSetupStepsForSection('setup', workbenchShell).find(
+  const setupStep = getFeatureWallSetupStepsForSection('setup', monicaShell).find(
     (step) => !stepDone[step.id]
   )
   if (setupStep) {
     return setupStep.id
   }
-  const parallelStep = getFeatureWallSetupStepsForSection('parallel-work', workbenchShell).find(
+  const parallelStep = getFeatureWallSetupStepsForSection('parallel-work', monicaShell).find(
     (step) => !stepDone[step.id]
   )
-  return parallelStep?.id ?? getFeatureWallSetupSteps(workbenchShell)[0].id
+  return parallelStep?.id ?? getFeatureWallSetupSteps(monicaShell)[0].id
 }
 
 export function isFeatureWallSetupStepId(value: unknown): value is FeatureWallSetupStepId {

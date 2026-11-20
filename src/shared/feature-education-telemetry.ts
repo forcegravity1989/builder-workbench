@@ -9,15 +9,15 @@ export const FEATURE_EDUCATION_CONTEXTUAL_TOUR_IDS = [
   'automations',
   'floating-workspace',
   'workspace-creation',
-  'workbench-wall',
-  'workbench-overview',
-  'workbench-scoreboard',
-  'workbench-milestones',
-  'workbench-plan',
-  'workbench-acceptance',
-  'workbench-version-overview',
-  'workbench-versions',
-  'workbench-source-control'
+  'monica-wall',
+  'monica-overview',
+  'monica-scoreboard',
+  'monica-milestones',
+  'monica-plan',
+  'monica-acceptance',
+  'monica-version-overview',
+  'monica-versions',
+  'monica-source-control'
 ] as const satisfies readonly ContextualTourId[]
 
 export const FEATURE_EDUCATION_SOURCES = [

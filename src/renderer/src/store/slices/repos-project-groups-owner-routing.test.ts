@@ -336,7 +336,7 @@ describe('project group state cascades stay scoped to the owner host', () => {
   })
 
   it('keeps a paired group when its confirmed pairing has been replaced', async () => {
-    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    vi.stubEnv('VITE_MONICA_SHELL', '1')
     const store = createTestStore()
     store.setState({
       projectGroups: [

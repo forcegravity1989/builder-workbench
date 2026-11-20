@@ -1,6 +1,6 @@
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubApi } from '../../../shared/codehub-api'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { useAppStore } from '@/store'
 import { getExplicitRuntimeOwnerEnvironmentId } from './repo-runtime-owner'
@@ -12,7 +12,7 @@ import {
 
 type CodeHubTaskRepository = { host?: string | null; project?: string | null }
 
-// Source ownership identifies the registration even when BW uses the local account;
+// Source ownership identifies the registration even when Monica uses the local account;
 // later UI focus changes must not redirect an open task.
 function route<K extends keyof CodeHubApi>(
   method: K,
@@ -129,7 +129,7 @@ export function createTaskPageCodeHubApi(
   taskRepository?: CodeHubTaskRepository
 ): CodeHubApi {
   return createCodeHubApi(sourceContext, {
-    execution: isWorkbenchShell() ? 'local' : 'owner',
+    execution: isMonicaShell() ? 'local' : 'owner',
     taskRepository
   })
 }

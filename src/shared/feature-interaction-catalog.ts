@@ -23,15 +23,15 @@ export type FeatureInteractionId =
   | 'browser-annotations-sent-to-agent'
   | 'browser-grab'
   | 'markdown-file-created'
-  | 'workbench-wall'
-  | 'workbench-overview'
-  | 'workbench-milestones'
-  | 'workbench-versions'
-  | 'workbench-plan'
-  | 'workbench-acceptance'
-  | 'workbench-scoreboard'
-  | 'workbench-version-overview'
-  | 'workbench-version-tasks'
+  | 'monica-wall'
+  | 'monica-overview'
+  | 'monica-milestones'
+  | 'monica-versions'
+  | 'monica-plan'
+  | 'monica-acceptance'
+  | 'monica-scoreboard'
+  | 'monica-version-overview'
+  | 'monica-version-tasks'
   | 'workspace-creation'
   | 'agent-browser-setup'
   | 'agent-browser-use'
@@ -105,15 +105,15 @@ export const FEATURE_INTERACTIONS = [
   },
   { id: 'browser-grab', interaction: 'browser element grab or screenshot used' },
   { id: 'markdown-file-created', interaction: 'untitled markdown file explicitly created' },
-  { id: 'workbench-wall', interaction: 'project wall opened' },
-  { id: 'workbench-overview', interaction: 'project overview opened' },
-  { id: 'workbench-milestones', interaction: 'project milestone planning opened' },
-  { id: 'workbench-versions', interaction: 'version workspace sidebar entered' },
-  { id: 'workbench-plan', interaction: 'version plan screen entered' },
-  { id: 'workbench-acceptance', interaction: 'version acceptance screen entered' },
-  { id: 'workbench-scoreboard', interaction: 'project scoreboard viewed' },
-  { id: 'workbench-version-overview', interaction: 'version overview opened' },
-  { id: 'workbench-version-tasks', interaction: 'version task screen entered' },
+  { id: 'monica-wall', interaction: 'project wall opened' },
+  { id: 'monica-overview', interaction: 'project overview opened' },
+  { id: 'monica-milestones', interaction: 'project milestone planning opened' },
+  { id: 'monica-versions', interaction: 'version workspace sidebar entered' },
+  { id: 'monica-plan', interaction: 'version plan screen entered' },
+  { id: 'monica-acceptance', interaction: 'version acceptance screen entered' },
+  { id: 'monica-scoreboard', interaction: 'project scoreboard viewed' },
+  { id: 'monica-version-overview', interaction: 'version overview opened' },
+  { id: 'monica-version-tasks', interaction: 'version task screen entered' },
   { id: 'workspace-creation', interaction: 'workspace creation flow opened' },
   { id: 'agent-browser-setup', interaction: 'Agent Browser Use setup enabled or opened' },
   { id: 'agent-browser-use', interaction: 'agent browser runtime method used' },

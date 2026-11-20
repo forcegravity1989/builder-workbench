@@ -1,5 +1,5 @@
-import { WORKBENCH_GOAL_SEARCH_PLACEHOLDER } from '@/workbench/TaskScopePanel'
-import { seedWorkbenchTaskQuery } from '../../../../../shared/workbench/task-scope'
+import { MONICA_GOAL_SEARCH_PLACEHOLDER } from '@/monica/TaskScopePanel'
+import { seedMonicaTaskQuery } from '../../../../../shared/monica/task-scope'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { getGitHubTaskKindPresets } from '@/components/task-page-localized-options'
 import { cn } from '@/lib/utils'
@@ -15,7 +15,7 @@ import { hasUpstreamCandidateDivergence, hasDivergentSources } from '../../task-
 import IssueSourceIndicator from '@/components/github/IssueSourceIndicator'
 import IssueSourceSelector, { issueSourceChipClass } from '@/components/github/IssueSourceSelector'
 import RepoBadgeLabel from '@/components/repo/RepoBadgeLabel'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { TaskPageGitHubModeControls } from './ModeControls'
 export function TaskPageGitHubFilters({
   model
@@ -55,11 +55,11 @@ export function TaskPageGitHubFilters({
     handleTaskSearchKeyDown,
     githubTasksBusy
   } = model
-  const workbench = isWorkbenchShell()
+  const workbench = isMonicaShell()
   return (
     // Why: top of the joined GitHub list card — pairs with the
     // table shell below (rounded-t-none border-t-0) as one surface.
-    // Workbench puts Issues/PRs, presets, and Filters on that one row.
+    // Monica puts Issues/PRs, presets, and Filters on that one row.
     <div
       className="flex min-w-0 flex-col gap-2.5 rounded-md rounded-b-none border border-border/50 bg-muted/35 px-3 py-2.5"
       data-contextual-tour-target="tasks-search-presets"
@@ -80,7 +80,7 @@ export function TaskPageGitHubFilters({
                 key={option.id}
                 type="button"
                 onClick={() => {
-                  const query = seedWorkbenchTaskQuery(option.query, model.workbenchScope)
+                  const query = seedMonicaTaskQuery(option.query, model.monicaScope)
                   setTaskSearchInput(query)
                   setAppliedTaskSearch(query)
                   setActiveTaskPreset(option.id)
@@ -88,7 +88,7 @@ export function TaskPageGitHubFilters({
                     githubItemsPreset: option.id,
                     githubItemsQuery: query
                   })
-                  if (!model.workbenchScopeActive) {
+                  if (!model.monicaScopeActive) {
                     setTaskRefreshNonce((current) => current + 1)
                   }
                 }}
@@ -132,8 +132,8 @@ export function TaskPageGitHubFilters({
               onChange={handleTaskSearchChange}
               onKeyDown={handleTaskSearchKeyDown}
               placeholder={
-                model.workbenchScopeActive && activeGithubTaskKind === 'issues'
-                  ? WORKBENCH_GOAL_SEARCH_PLACEHOLDER
+                model.monicaScopeActive && activeGithubTaskKind === 'issues'
+                  ? MONICA_GOAL_SEARCH_PLACEHOLDER
                   : activeGithubTaskKind === 'prs'
                     ? translate('auto.components.TaskPage.eee4df4c66', 'Search GitHub PRs...')
                     : translate('auto.components.TaskPage.b15ceb409d', 'Search GitHub issues...')

@@ -19,7 +19,7 @@ import { translate } from '@/i18n/i18n'
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '../terminal-pane/use-system-prefers-dark'
 import { useAppStore } from '@/store'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 type NavSection = {
   id: string
@@ -122,10 +122,10 @@ function SettingsSetupGuideNavRow({
       type="button"
       aria-current={setupActive ? 'page' : undefined}
       aria-label={
-        isWorkbenchShell()
+        isMonicaShell()
           ? translate(
               'guidance.setupProgress',
-              'Getting Started with BW, {{done}} of {{total}} complete.',
+              'Getting Started with Monica, {{done}} of {{total}} complete.',
               { done: progress.doneCount, total: progress.total }
             )
           : translate(
@@ -153,8 +153,8 @@ function SettingsSetupGuideNavRow({
       />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[13px] font-medium leading-4">
-          {isWorkbenchShell()
-            ? translate('guidance.gettingStarted', 'Getting Started with BW')
+          {isMonicaShell()
+            ? translate('guidance.gettingStarted', 'Getting Started with Monica')
             : translate(
                 'auto.components.settings.SettingsSidebar.6503182299',
                 'Onboarding checklist'

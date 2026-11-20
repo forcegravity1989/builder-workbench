@@ -1,0 +1,287 @@
+import { readdir, readFile, realpath } from 'node:fs/promises'
+import { join } from 'node:path'
+import { VersionDocumentError, validatePlanningVersion } from '../../shared/monica/version-document'
+import { compareMaterialVersions } from '../../shared/monica/version-catalog'
+import {
+  AcceptanceMaterialSchema,
+  PlanningMaterialSchema,
+  type AcceptanceMaterial,
+  type PlanningMaterial,
+  type VersionMaterial
+} from '../../shared/monica/version-material'
+import {
+  VersionMaterialAddArtifactSchema,
+  VersionMaterialReadSchema,
+  VersionMaterialSaveSchema,
+  VersionMaterialScopeSchema,
+  VersionMaterialInitializeSchema,
+  type VersionMaterialAddArtifact,
+  type VersionMaterialScope,
+  type VersionMaterialRead,
+  type VersionMaterialSave,
+  type VersionMaterialCandidate,
+  type VersionMaterialInitialize
+} from '../../shared/monica/version-material-request'
+import { resolveGitDir } from '../git/source-control/resolve-git-dir'
+import { resolveGitCommonDir } from '../git/source-control/resolve-git-common-dir'
+import { WorkspaceScopeError } from './workspace-scope-error'
+import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
+import { createVersionDocumentStore } from './version-document-store'
+import { isMissingFile, resolveVersionPlanningRoot } from './version-document-path'
+import {
+  buildPreparedArtifact,
+  registerPreparedArtifact,
+  statArtifactFile
+} from './version-material-artifact'
+import { createVersionMaterialMigration } from './version-material-migration'
+import type { MonicaVersionBinding } from '../../shared/monica/version-binding'
+import type {
+  VersionMigrationApply,
+  VersionMigrationRead
+} from '../../shared/monica/version-material-migration'
+import {
+  isVersionFlowWorkflow,
+  versionFlowBranch
+} from '../../shared/monica/version-workspace-prepare'
+import { branchFullRef } from '../../shared/monica/branch-ref'
+import { readWorkspaceScheduledVersion } from './milestone-version-source'
+
+/** Runs on the filesystem owner; paths come from the authenticated native inventory adapter. */
+export type VersionMaterialWorkspace = { repoPath: string; worktreePath: string }
+
+export function createVersionMaterialWorkspace(
+  target: VersionMaterialWorkspace,
+  reauthorize?: () => Promise<void>,
+  binding?: MonicaVersionBinding | null
+) {
+  const flowBinding = binding && isVersionFlowWorkflow(binding.workflow) ? binding : null
+  function expectedBranchFor(scope: Pick<VersionMaterialScope, 'workflow'>): string {
+    if (!flowBinding || flowBinding.workflow !== scope.workflow) {
+      throw new WorkspaceScopeError('invalid-scope', '该工作树不是此用途的流程树，材料读写被拒绝')
+    }
+    const branch = versionFlowBranch(flowBinding.version, scope.workflow)
+    if (!branch) {
+      throw new WorkspaceScopeError('invalid-scope', '绑定版本无法组成合法流程分支，请核对登记')
+    }
+    return branch
+  }
+  /** 跨版围栏：本版树只能读写它绑定的材料版本（拒绝把 v0.7 的树用于 v0.8）。 */
+  function assertBindingVersion(scope: VersionMaterialScope, version: string): void {
+    if (flowBinding && flowBinding.workflow === scope.workflow && version !== flowBinding.version) {
+      throw new WorkspaceScopeError(
+        'cross-version',
+        `该工作树绑定版本 ${flowBinding.version}，拒绝读写 ${version} 的材料`
+      )
+    }
+  }
+  // Git 身份围栏单实现（最终检视 M-1）：读写授权与创建期核对共用，防安全围栏漂移。
+  async function assertTreeGitIdentity(expectedBranch: string): Promise<string> {
+    await reauthorize?.()
+    const root = await realpath(resolveWorktreeHostPath(target.worktreePath) ?? target.worktreePath)
+    const gitDir = await resolveGitDir(root)
+    const [repoCommon, treeCommon, head] = await Promise.all([
+      resolveGitDir(target.repoPath).then(resolveGitCommonDir).then(realpath),
+      resolveGitCommonDir(gitDir).then(realpath),
+      readFile(join(gitDir, 'HEAD'), 'utf8')
+    ])
+    if (repoCommon !== treeCommon) {
+      throw new WorkspaceScopeError('invalid-scope', '工作树不属于所选 Git 项目')
+    }
+    if (head.trim() !== `ref: ${branchFullRef(expectedBranch)}`) {
+      throw new WorkspaceScopeError('wrong-branch', `请使用 ${expectedBranch} 工作树`)
+    }
+    return root
+  }
+
+  async function authorize(scope: VersionMaterialScope): Promise<string> {
+    return assertTreeGitIdentity(expectedBranchFor(scope))
+  }
+
+  async function storeFor(scope: VersionMaterialScope) {
+    const root = await authorize(scope)
+    return createVersionDocumentStore<VersionMaterial>({
+      trustedWorkspacePath: root,
+      workflow: scope.workflow,
+      decode: (value) =>
+        scope.workflow === 'plan'
+          ? PlanningMaterialSchema.parse(value)
+          : AcceptanceMaterialSchema.parse(value),
+      beforeCommit: async () => {
+        if ((await authorize(scope)) !== root) {
+          throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
+        }
+      }
+    })
+  }
+
+  const migration = createVersionMaterialMigration(storeFor)
+  return {
+    // 双围栏的执行器侧：迁移与初始化同样过绑定版本断言（服务层已断言，
+    // 此处覆盖 relay 直达执行器的路径，纵深一致）。
+    previewMigration: async (input: VersionMigrationRead) => {
+      assertBindingVersion(input, input.version)
+      return migration.previewMigration(input)
+    },
+    migrate: async (input: VersionMigrationApply) => {
+      assertBindingVersion(input, input.version)
+      return migration.migrate(input)
+    },
+    /**
+     * G2 P2 空计划初始化：create-only（expectedRevision null），已有材料一律
+     * 不覆盖并如实回报修订；已存在但读不懂的材料（migration-required/损坏）
+     * 原样抛出，交迁移或人处理。走同一材料事务核心（互斥、原子替换）。
+     */
+    async initializeEmptyPlan(
+      input: VersionMaterialInitialize
+    ): Promise<{ created: boolean; revision: string }> {
+      const request = VersionMaterialInitializeSchema.parse(input)
+      const expectedBranch = expectedBranchFor({ workflow: 'plan' })
+      if (request.version !== flowBinding?.version) {
+        throw new WorkspaceScopeError('cross-version', '只能初始化工作树绑定版本的计划材料')
+      }
+      if (request.expectedBranch !== expectedBranch) {
+        throw new WorkspaceScopeError('wrong-branch', '初始化分支与工作树绑定不一致')
+      }
+      const root = await assertTreeGitIdentity(expectedBranch)
+      const store = createVersionDocumentStore<PlanningMaterial>({
+        trustedWorkspacePath: root,
+        workflow: 'plan',
+        decode: (value) => PlanningMaterialSchema.parse(value),
+        beforeCommit: async () => {
+          if ((await assertTreeGitIdentity(expectedBranch)) !== root) {
+            throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
+          }
+        }
+      })
+      const existing = await store.read(request.version)
+      if (existing) {
+        return { created: false, revision: existing.revision }
+      }
+      const scheduled = await readWorkspaceScheduledVersion(root, request.version)
+      const document: PlanningMaterial = {
+        schema_version: 3,
+        version: request.version,
+        cycleId: scheduled?.cycleId ?? request.cycleId,
+        ...(scheduled?.timeWindow ? { timeWindow: scheduled.timeWindow } : {}),
+        summary: {
+          progress: '',
+          risks: '',
+          ...(request.progressSource ? { progressSource: request.progressSource } : {})
+        },
+        goals: [],
+        tasks: []
+      }
+      try {
+        const saved = await store.save({
+          version: request.version,
+          expectedRevision: null,
+          document
+        })
+        return { created: true, revision: saved.revision }
+      } catch (error) {
+        // 并发首建：两 prepare 都读到空、都 create-only save，文件锁内后到者得
+        // revision-conflict。材料恰被先到者创建一次（CAS 保证），对本调用是幂等
+        // 「已存在」而非失败——重读回报真实修订，不让双击场景透出误导性冲突。
+        if (error instanceof VersionDocumentError && error.code === 'revision-conflict') {
+          const raced = await store.read(request.version)
+          if (raced) {
+            return { created: false, revision: raced.revision }
+          }
+        }
+        throw error
+      }
+    },
+    async list(input: VersionMaterialScope): Promise<VersionMaterialCandidate[]> {
+      const scope = VersionMaterialScopeSchema.parse(input)
+      const root = await authorize(scope)
+      const planningRoot = await resolveVersionPlanningRoot(root)
+      let entries
+      try {
+        entries = await readdir(planningRoot, { withFileTypes: true })
+      } catch (error) {
+        if (isMissingFile(error)) {
+          return []
+        }
+        throw error
+      }
+      const store = await storeFor(scope)
+      const candidates: VersionMaterialCandidate[] = []
+      for (const entry of entries) {
+        if (!entry.isDirectory() && !entry.isSymbolicLink()) {
+          continue
+        }
+        try {
+          validatePlanningVersion(entry.name)
+        } catch {
+          continue
+        }
+        // 绑定树只呈现自己绑定的版本（检出目录含全部历史版本材料，跨版读取
+        // 由断言拒绝；列表先收窄，客户端不靠列表冒充跨版可见性）。
+        if (
+          flowBinding &&
+          flowBinding.workflow === scope.workflow &&
+          entry.name !== flowBinding.version
+        ) {
+          continue
+        }
+        try {
+          if (await store.read(entry.name)) {
+            candidates.push({ version: entry.name, state: 'ready' })
+          }
+        } catch (error) {
+          if (!(error instanceof VersionDocumentError)) {
+            throw error
+          }
+          candidates.push({
+            version: entry.name,
+            state: error.code === 'migration-required' ? 'migration-required' : 'invalid',
+            error: error.message
+          })
+        }
+      }
+      return candidates.sort((a, b) => compareMaterialVersions(a.version, b.version))
+    },
+    async read(input: VersionMaterialRead) {
+      const request = VersionMaterialReadSchema.parse(input)
+      assertBindingVersion(request, request.version)
+      return (await storeFor(request)).read(request.version)
+    },
+    async save(input: VersionMaterialSave) {
+      const request = VersionMaterialSaveSchema.parse(input)
+      assertBindingVersion(request, request.version)
+      return (await storeFor(request)).save(request)
+    },
+    /**
+     * #516 制品登记：读当前文档 → 在工作树内核对制品文件真实存在（mtime 作
+     * generatedAt）→ 复用材料现有 candidateRef → 同 artifactId 覆盖 → 走同一
+     * store.save 事务核（CAS revision 守卫），冲突自动重读重试一次。文件校验
+     * 必须发生在拥有工作树的一侧：本函数经 relay 在远端执行，CLI 侧不 stat。
+     * 操作面只收制品字段，文档从新鲜读取重建、只改 preparedArtifacts——人工
+     * 字段按构造原样往返，不依赖 save RPC 的通道守卫。
+     */
+    async addArtifact(
+      input: VersionMaterialAddArtifact
+    ): Promise<{ revision: string; artifact: AcceptanceMaterial['preparedArtifacts'][number] }> {
+      const request = VersionMaterialAddArtifactSchema.parse(input)
+      assertBindingVersion(request, request.version)
+      const root = await authorize(request)
+      const generatedAtMs = await statArtifactFile(root, request.location)
+      const store = createVersionDocumentStore<AcceptanceMaterial>({
+        trustedWorkspacePath: root,
+        workflow: 'acceptance',
+        decode: (value) => AcceptanceMaterialSchema.parse(value),
+        beforeCommit: async () => {
+          if ((await authorize(request)) !== root) {
+            throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
+          }
+        }
+      })
+      return registerPreparedArtifact(
+        () => store.read(request.version),
+        async (expectedRevision, document) =>
+          (await store.save({ version: request.version, expectedRevision, document })).revision,
+        (document) => buildPreparedArtifact(document, request, generatedAtMs)
+      )
+    }
+  }
+}

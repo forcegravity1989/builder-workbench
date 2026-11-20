@@ -1,4 +1,4 @@
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { Fragment, useState } from 'react'
 import {
   AzureDevOpsIntegrationCard,
@@ -26,10 +26,10 @@ import {
 import { translate } from '@/i18n/i18n'
 
 export function ConnectIntegrationsList(): React.JSX.Element {
-  return isWorkbenchShell() ? <BwConnectIntegrationsList /> : <OrcaConnectIntegrationsList />
+  return isMonicaShell() ? <MonicaConnectIntegrationsList /> : <OrcaConnectIntegrationsList />
 }
 
-function BwConnectIntegrationsList(): React.JSX.Element {
+function MonicaConnectIntegrationsList(): React.JSX.Element {
   return (
     <IntegrationCardPresentationProvider value="setup-guide">
       <div className="space-y-5">
@@ -64,7 +64,7 @@ function BwConnectIntegrationsList(): React.JSX.Element {
             <p className="text-xs text-muted-foreground">
               {translate(
                 'auto.components.feature.wall.ConnectIntegrationsList.reports_description',
-                'Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations.'
+                'Send reports and diagnostic files to the Monica user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations.'
               )}
             </p>
           </div>

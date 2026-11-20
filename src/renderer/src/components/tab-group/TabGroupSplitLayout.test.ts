@@ -188,7 +188,7 @@ describe('TabGroupSplitLayout', () => {
     )
   })
 
-  it('can omit top-right header space when the terminal is embedded beside a BW board', () => {
+  it('can omit top-right header space when the terminal is embedded beside a Monica board', () => {
     const element = TabGroupSplitLayout({
       layout: { type: 'leaf', groupId: 'group-1' },
       worktreeId: 'wt-1',

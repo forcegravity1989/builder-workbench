@@ -12,8 +12,8 @@ import {
   hasRequestedBackgroundTerminalWorktreeMount,
   subscribeBackgroundTerminalWorktreeMountRequests
 } from '../components/terminal/background-terminal-worktree-mount'
-import { isWorkbenchShell } from '../workbench/is-workbench-shell'
-import { WORKBENCH_RAIL_WIDTH } from '../workbench/WorkbenchRail'
+import { isMonicaShell } from '../monica/is-monica-shell'
+import { MONICA_RAIL_WIDTH } from '../monica/MonicaRail'
 
 export type AppChromeLayout = ReturnType<typeof useAppChromeLayout>
 
@@ -74,11 +74,11 @@ export function useAppChromeLayout() {
   const workspaceChromeActive =
     activeView === 'terminal' && activeWorktreeId !== null && !creationLayoutActive
   const hasTabBar = tabCount >= 2
-  // Activity/Space are full-page in stock Orca (sidebar hidden). Workbench reuses
-  // those slots for 总览/知识库 but still needs the left rail for Workbench nav.
+  // Activity/Space are full-page in stock Orca (sidebar hidden). Monica reuses
+  // those slots for 总览/知识库 but still needs the left rail for Monica nav.
   const showSidebar =
     activeView !== 'settings' &&
-    (isWorkbenchShell() || (activeView !== 'activity' && activeView !== 'space'))
+    (isMonicaShell() || (activeView !== 'activity' && activeView !== 'space'))
   // Tasks/Landing show the full titlebar only when the sidebar is collapsed; open, they mirror workspace view (creation suppresses it).
   const stackedSidebarOpen =
     !workspaceChromeActive && !creationLayoutActive && showSidebar && sidebarOpen
@@ -105,7 +105,7 @@ export function useAppChromeLayout() {
 
     const updateWidth = (): void => {
       // The Rail already reserves its own width; tabs only need room for the overhang.
-      const railWidth = isWorkbenchShell() ? WORKBENCH_RAIL_WIDTH : 0
+      const railWidth = isMonicaShell() ? MONICA_RAIL_WIDTH : 0
       setCollapsedSidebarHeaderWidth(
         Math.max(0, controls.getBoundingClientRect().width - railWidth)
       )

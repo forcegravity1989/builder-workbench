@@ -17,14 +17,14 @@ import {
   useInstalledAgentSkill
 } from '@/hooks/useInstalledAgentSkills'
 import { useActiveProjectSkillRuntime } from '@/hooks/useActiveProjectSkillRuntime'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import {
   getFeatureWallSetupProgress,
   type FeatureWallSetupProgress
 } from '../feature-wall/feature-wall-setup-progress'
 import {
   deriveIntegrationConnectionStatus,
-  deriveWorkbenchSetupIntegrationStatus
+  deriveMonicaSetupIntegrationStatus
 } from '../feature-wall/use-integration-connection-status'
 import { useSetupGuideBrowserMilestoneProgress } from './setup-guide-browser-milestone-progress'
 import {
@@ -46,8 +46,8 @@ export function useSetupGuideProgress(
   orchestrationSkillInstalled: boolean,
   browserUseSkillInstalled: boolean
 ): FeatureWallSetupProgress {
-  const workbenchShell = isWorkbenchShell()
-  const refreshAgentCapabilities = shouldRefreshCoreState && !workbenchShell
+  const monicaShell = isMonicaShell()
+  const refreshAgentCapabilities = shouldRefreshCoreState && !monicaShell
   const settings = useAppStore((s) => s.settings)
   const featureInteractions = useAppStore((s) => s.featureInteractions)
   const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
@@ -112,10 +112,10 @@ export function useSetupGuideProgress(
     if (!preflightStatusCurrent || !preflightStatusChecked) {
       void refreshPreflightStatus()
     }
-    if (!workbenchShell && (!linearStatusCurrent || !linearStatusChecked)) {
+    if (!monicaShell && (!linearStatusCurrent || !linearStatusChecked)) {
       void checkLinearConnection()
     }
-    if (!workbenchShell && (!jiraStatusCurrent || !jiraStatusChecked)) {
+    if (!monicaShell && (!jiraStatusCurrent || !jiraStatusChecked)) {
       void checkJiraConnection()
     }
   }, [
@@ -134,7 +134,7 @@ export function useSetupGuideProgress(
     providerRuntimeContextKey,
     refreshPreflightStatus,
     shouldRefreshCoreState,
-    workbenchShell
+    monicaShell
   ])
 
   const orderedGitRepos = useMemo(() => {
@@ -250,8 +250,8 @@ export function useSetupGuideProgress(
     preflightStatusLoading,
     expectedPreflightContextKey
   }
-  const taskSourceStatus = workbenchShell
-    ? deriveWorkbenchSetupIntegrationStatus(preflightFacts)
+  const taskSourceStatus = monicaShell
+    ? deriveMonicaSetupIntegrationStatus(preflightFacts)
     : deriveIntegrationConnectionStatus({
         ...preflightFacts,
         linearStatus,
@@ -279,7 +279,7 @@ export function useSetupGuideProgress(
   const ready = getSetupGuideProgressReady({
     refreshEnabled: shouldRefreshCoreState,
     settingsLoaded: settings !== null,
-    agentCapabilitiesIncluded: !workbenchShell,
+    agentCapabilitiesIncluded: !monicaShell,
     // Why: task-source readiness is a capability group. Once any provider is
     // usable, unrelated stale provider checks should not hide setup progress.
     preflightStatusChecked: !taskSourceStatus.checking,
@@ -296,7 +296,7 @@ export function useSetupGuideProgress(
   const rawProgress = useMemo(() => {
     const input = {
       ready,
-      workbenchShell,
+      monicaShell,
       settings,
       featureInteractions,
       hasConnectedTaskSource,
@@ -326,7 +326,7 @@ export function useSetupGuideProgress(
     orchestrationSkillInstalled,
     settings,
     worktreesByRepo,
-    workbenchShell
+    monicaShell
   ])
   const historicalSplitTerminalDone = hasFeatureInteraction(
     featureInteractions,

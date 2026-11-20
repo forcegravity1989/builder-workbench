@@ -21,9 +21,9 @@ IJ01「四 CLI 全缺 → 安装并登录 → 重新检查全绿 → 重启后�
 | --- | --- | --- |
 | 1 intent | 已确认 | 用户结果、价值、范围、排除和 W03/W04 归属见 [intent.md](intent.md)。 |
 | 2 spec | 已确认 | 四 CLI 的命令、状态、路径、失败边界和 I01–I14 见 [spec.md](spec.md)。 |
-| 3 实现设计 | 已同步 | 设置入口、卡片骨架、CLI 探测、安装执行和卡内终端分别落在 `src/renderer/src/components/settings/IntegrationsPane.tsx`、`src/renderer/src/components/settings/bw-cli-integration-cards.tsx`、`src/main/preflight/agent-detection.ts`、`src/main/preflight/bw-cli-auth-status.ts`、`src/main/ipc/bw-cli-install.ts` 和 `src/shared/bw-cli-install-commands.ts`。 |
+| 3 实现设计 | 已同步 | 设置入口、卡片骨架、CLI 探测、安装执行和卡内终端分别落在 `src/renderer/src/components/settings/IntegrationsPane.tsx`、`src/renderer/src/components/settings/monica-cli-integration-cards.tsx`、`src/main/preflight/agent-detection.ts`、`src/main/preflight/monica-cli-auth-status.ts`、`src/main/ipc/monica-cli-install.ts` 和 `src/shared/monica-cli-install-commands.ts`。 |
 | 4 TDD / 协议 | 已有 | `src/main/ipc/preflight-host-cli-status.test.ts`、`src/main/ipc/command-path-resolver.test.ts`、`src/renderer/src/components/settings/integrations-pane-status.test.ts` 和 `src/renderer/src/components/settings/cli-source-control-integration-cards.test.tsx` 看护探测、输出标记、状态推导、shim 路由和既有卡片行为。它们不替代真实 Electron 验收。 |
-| 5 验收点 E2E | 待验 | I01–I14 已定义，当前没有注册到 Workbench 白名单的业务 E2E。未来最多登记一条真实入口，执行项目、真实环境和独立读回需在登记时补齐。 |
+| 5 验收点 E2E | 待验 | I01–I14 已定义，当前没有注册到 Monica 白名单的业务 E2E。未来最多登记一条真实入口，执行项目、真实环境和独立读回需在登记时补齐。 |
 | 6 用户旅程 E2E | — | 集成是 W03/W04 的前置能力，没有独立 Explore 用户结果。IJ01 只作历史 crosswalk，不注册为当前用户旅程 E2E。 |
 
 ## E2E 登记

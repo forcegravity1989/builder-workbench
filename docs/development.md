@@ -1,10 +1,10 @@
-# BW 开发规范
+# Monica 开发规范
 
-> **读者与时机**：开发、测试和检视 BW 自身的模型与开发者；AGENTS 直接要求在相关开发与交付前完整读取，不依赖调用 workbench-start。
+> **读者与时机**：开发、测试和检视 Monica 自身的模型与开发者；AGENTS 直接要求在相关开发与交付前完整读取，不依赖调用 monica-start。
 >
-> **位置与职责**：本篇是 BW 自身测试用例、独立检视、验证证据和 PR 呈现的仓级规范正本，独立于任何 Skill，不向被管项目分发。硬约束与任务读取入口见 [AGENTS](../AGENTS.md)，特性决定与六环见 [原则 02](01-principles/02-working-backwards.md)；Skill 承载执行步骤，模板承载呈现骨架。
+> **位置与职责**：本篇是 Monica 自身测试用例、独立检视、验证证据和 PR 呈现的仓级规范正本，独立于任何 Skill，不向被管项目分发。硬约束与任务读取入口见 [AGENTS](../AGENTS.md)，特性决定与六环见 [原则 02](01-principles/02-working-backwards.md)；Skill 承载执行步骤，模板承载呈现骨架。
 >
-> **结构与维护**：按验收依据 → 测试 → 检视 → 运行证据 → PR 组织。相关规则或执行入口变化时更新正文，并同批核对 AGENTS、原则 02、workbench-start 与两个输出模板的引用；不保存任务流水、遗留事项或规则修订史。
+> **结构与维护**：按验收依据 → 测试 → 检视 → 运行证据 → PR 组织。相关规则或执行入口变化时更新正文，并同批核对 AGENTS、原则 02、monica-start 与两个输出模板的引用；不保存任务流水、遗留事项或规则修订史。
 
 目录：[验收依据](#验收依据) · [测试用例](#测试用例) · [独立检视](#独立检视) · [运行证据](#运行证据) · [PR 正文与主验证评论](#pr-正文与主验证评论)
 
@@ -37,26 +37,26 @@
 |---|---|---|
 | TDD | 看护核心算法和数据协议 | 只有输入、输出和边界需要独立断言时才入库；有效核心 TDD 受保护，不为凑数量删改 |
 | 特性验收 E2E | 看护特性内关键验收判据 | 每个特性最多登记一条；跨特性用户旅程已经覆盖时直接复用，不另建第二条 |
-| 跨特性用户旅程 E2E | 证明跨特性工作旅程完成一件完整的事 | 以探索 BW 的 5 条工作旅程为目录，每条最多一条真实 Electron 主旅程，经过真实结果和独立读回 |
+| 跨特性用户旅程 E2E | 证明跨特性工作旅程完成一件完整的事 | 以探索 Monica 的 5 条工作旅程为目录，每条最多一条真实 Electron 主旅程，经过真实结果和独立读回 |
 
-探索 BW 的 5 条工作旅程是跨特性用户旅程 E2E 的目录；30+ 个功能项是旅程中的能力入口，不各自生成一条用户旅程 E2E。特性矩阵仍是归属和缺口正本：每个特性映射到至少一条工作旅程，并在特性内登记关键验收边界。只有主旅程无法观察的特性验收边界，才在该特性下登记一条特性验收 E2E；同一条真实 E2E 可以登记到多个特性。没有真实用户结果的预研、纯开发方法资产和已退役能力不计入跨特性用户旅程 E2E。
+探索 Monica 的 5 条工作旅程是跨特性用户旅程 E2E 的目录；30+ 个功能项是旅程中的能力入口，不各自生成一条用户旅程 E2E。特性矩阵仍是归属和缺口正本：每个特性映射到至少一条工作旅程，并在特性内登记关键验收边界。只有主旅程无法观察的特性验收边界，才在该特性下登记一条特性验收 E2E；同一条真实 E2E 可以登记到多个特性。没有真实用户结果的预研、纯开发方法资产和已退役能力不计入跨特性用户旅程 E2E。
 
-探索 BW 的“用户工作旅程”和“功能”是主旅程选择与覆盖登记的目录：每个在用特性从中找到一条主结果并指向一条真实 E2E。探索页自己的用例只证明目录、导航和演示可用；样例播放不算真实特性旅程证据。
+探索 Monica 的“用户工作旅程”和“功能”是主旅程选择与覆盖登记的目录：每个在用特性从中找到一条主结果并指向一条真实 E2E。探索页自己的用例只证明目录、导航和演示可用；样例播放不算真实特性旅程证据。
 
 E2E 登记至少包含旅程 ID 或特性 ID、所属特性、用例文件和测试标题、执行入口、真实环境、独立读回方式以及当前状态。真实 Workbench E2E 还必须在关键成功结果保留截图；失败时保留 Playwright 截图或 trace。截图是给人看的证据，不能替代 DOM、文件、Git 或进程读回。当前 CI E2E 使用 Playwright 原生 Electron 启动；CDP 是 `workbench-start` 的真实桌面验收手段，不是第四种测试类型。特性 `STATUS.md` 维护这些入口，`docs/05-features/README.md` 只保留汇总链接和当前覆盖结论。未注册、只在原型中运行或只读替身数据的用例不能记为 E2E 通过。
 
 本节是后续新增和迁移的目标规范，不宣称存量特性资产已完成迁移。只有 `intent.md` 定义了持续用户结果的产品特性才进入 W01–W05；产品基础、研发保障、待定/预研以及没有独立用户结果的支撑能力归入其承载特性，不另建旅程。现有 `STATUS.md` 中的 PJ/AJ/CJ/IJ/J/QL/RJ 等编号在特性资产迁移 PR 完成前保持历史身份；迁移前不得据此新增同名 E2E，也不能把旧编号直接当作 W01–W05 登记通过。迁移 PR 逐特性复核 `intent.md`、`spec.md`、`design.md` 与 `STATUS.md`，建立 crosswalk 后再按本节维护。
 
-位置固定为三类：TDD / 协议用例跟随实现放在 `src/**` 的 `*.test.ts(x)`；两种 Workbench E2E 共享 `tests/e2e/workbench/` 父目录，特性验收 E2E 放在 `acceptance/`，跨特性用户旅程 E2E 放在 `journeys/`；名单集中由 `tests/e2e/workbench-allowlist.ts` 与 Playwright config 管理。历史 Orca 和专用 lane 用例不进入 BW 白名单，也不计入 BW 特性覆盖数量。
+位置固定为三类：TDD / 协议用例跟随实现放在 `src/**` 的 `*.test.ts(x)`；两种 Monica E2E 共享 `tests/e2e/workbench/` 父目录，特性验收 E2E 放在 `acceptance/`，跨特性用户旅程 E2E 放在 `journeys/`；名单集中由 `tests/e2e/workbench-allowlist.ts` 与 Playwright config 管理。历史 Orca 和专用 lane 用例不进入 Monica 白名单，也不计入 Monica 特性覆盖数量。
 
-Workbench 的触发范围固定如下：
+Monica 的触发范围固定如下：
 
 | 触发 | 入口 | 范围 |
 |---|---|---|
-| PR CI | `pnpm run test:e2e:workbench` | `WORKBENCH_PR_ALLOWLIST`：W01、W02 和项目设置验收，共 3 个文件 |
-| 明确需要完整验收时 | `pnpm run test:e2e:workbench:explicit` | `WORKBENCH_EXPLICIT_ALLOWLIST`：在 PR 集合外加固定工作区和里程碑，共 5 个文件 |
+| PR CI | `pnpm run test:e2e:monica` | `MONICA_PR_ALLOWLIST`：W01、W02 和项目设置验收，共 3 个文件 |
+| 明确需要完整验收时 | `pnpm run test:e2e:monica:explicit` | `MONICA_EXPLICIT_ALLOWLIST`：在 PR 集合外加固定工作区和里程碑，共 5 个文件 |
 | 版本总览专项 | `tests/playwright.overview.config.ts` | 仅 `version-overview.spec.ts`，需要真实只读 provider 身份 |
-| release 出包 | 出包 workflow | 不运行 Workbench 业务 E2E |
+| release 出包 | 出包 workflow | 不运行 Monica 业务 E2E |
 
 优化存量用例时按“主旅程、验收点、协议、重复或失效”先分类，再决定合并、降层或删除。没有证据证明重复的用例保留，不能按文件数、断言数或启动次数机械删减。
 
@@ -122,7 +122,7 @@ Workbench 的触发范围固定如下：
 
 优先复用用户指定的稳定 dev 实例、已有项目和有效数据，先核对源码、实例归属与数据；首次初始化、破坏性操作或必须隔离时才用一次性 fixture。环境稳定不代表代码有效：改后确认新代码已加载，切换源码保留验证 profile 与数据。
 
-需要准备环境或发布截图时，完整读取 [验证执行参考](../.claude/skills/workbench-start/references/verification.md)；Windows Codex 的真壳操作由该参考指向宿主说明。
+需要准备环境或发布截图时，完整读取 [验证执行参考](../.claude/skills/monica-start/references/verification.md)；Windows Codex 的真壳操作由该参考指向宿主说明。
 
 按 AGENTS 与受影响用例执行实际门禁，复用当前 `tests/e2e/`、`tests/playwright.config.ts`、Vitest 和 PR workflow，不复制其他分支命令。界面/行为改动主动真壳取证；纯文档只报文档检查，不强启真壳。
 
@@ -134,7 +134,7 @@ Workbench 的触发范围固定如下：
 
 截图推到永不合入的 `shots/<分支名>`，图片内嵌使用 `https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg` 钉 SHA；不使用 `raw.githubusercontent` 或带斜杠分支名的图片地址。大改的改前/改后对照仍归所属特性 `docs/05-features/<id>/shots/`。
 
-发布步骤见[验证执行参考](../.claude/skills/workbench-start/references/verification.md#截图发布与读回)。推后读回远端图片内容，评论写后检查实际渲染能否加载；推送或评论成功不等于证据可读。
+发布步骤见[验证执行参考](../.claude/skills/monica-start/references/verification.md#截图发布与读回)。推后读回远端图片内容，评论写后检查实际渲染能否加载；推送或评论成功不等于证据可读。
 
 ## PR 正文与主验证评论
 
@@ -160,9 +160,9 @@ Workbench 的触发范围固定如下：
 |---|---|---|
 | 短正文 | 首行按上节关联 Issue（固定流程分支豁免），简述问题、最终变化、关键取舍、知识去向和未验范围，链接主验证评论；文档改动交代头部职责变化及授权、内容迁移/删除去向 | 随最终实现重写，不保留讨论流水；不用 Fixes / Closes 自动关闭 Issue |
 | 一条主验证评论 | 结论与证据版本，bug 前后或原型/spec 与实际对照，subagent 发现/处置/复核，真实验证及未验边界 | 补验、修复与 head 变化后原位更新，明确仍有效和重跑范围；命令、日志及额外截图折叠 |
-| workflow 指标评论 | 脚本生成的六项反馈指标、来源覆盖和方法版本 | 按 [真实任务反馈](../.claude/skills/workbench-start/references/workflow-feedback.md) 另行维护，不混入主验证评论 |
+| workflow 指标评论 | 脚本生成的六项反馈指标、来源覆盖和方法版本 | 按 [真实任务反馈](../.claude/skills/monica-start/references/workflow-feedback.md) 另行维护，不混入主验证评论 |
 
-正文按 [PR 模板](../.github/pull_request_template.md)，主验证评论按 [验证模板](../.claude/skills/workbench-start/assets/issue-verification.md) 裁剪。正文先让人知道最终改了什么，主评论先让人能判断结果；不把命令输出、重复方案和执行流水铺在顶部。
+正文按 [PR 模板](../.github/pull_request_template.md)，主验证评论按 [验证模板](../.claude/skills/monica-start/assets/issue-verification.md) 裁剪。正文先让人知道最终改了什么，主评论先让人能判断结果；不把命令输出、重复方案和执行流水铺在顶部。
 
 交付收尾完整读取上述真实任务反馈，从原始会话提取、标注并运行脚本，读回指标评论和 PR 标题；`[AI] ` 前缀的添加、移除及统计条件只按该正本维护。指标评论、验证评论、CI 与人审结论各自留证；不能以合入状态推断首次人审通过。
 

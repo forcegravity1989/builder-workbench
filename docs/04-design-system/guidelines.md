@@ -1,8 +1,8 @@
-# Workbench 设计规范
+# Monica 设计规范
 
 > **本篇维护约定**：给写界面、做原型、改样式的人和任何 code agent（Claude Code、Codex 等）读取。只写视觉与交互规则、token 怎么用、组件怎么选；具体取值看 [tokens.json](tokens.json)，单个原语的细节看 [primitives/](primitives/)。结构：总则 → 文案 → 颜色 → 字体 → 间距/圆角/层级 → 组件选型 → 按钮与新增入口 → 图标 → 交互 → 平台 → 叠层对齐 → 中文排版 → HTML 原型。Orca 规则原文在 [ref/STYLEGUIDE.md](../../ref/STYLEGUIDE.md)，两者冲突以 Orca 为准；规则或 STYLEGUIDE 变化时更新本篇。
 
-Workbench 跑在 Orca 执行核上，界面语言就是 Orca 的：**单色、安静，颜色只留给状态。** 产品大部分时间在托管别人的工具（终端、Monaco、Markdown 预览、浏览器），所以自己的 chrome 要退后、做框。Workbench 叠层页面（总览、计划、验收、知识库、项目墙）与 Orca 原生界面用同一套 token、同一批 shadcn 原语，不另起皮肤。
+Monica 跑在 Orca 执行核上，界面语言就是 Orca 的：**单色、安静，颜色只留给状态。** 产品大部分时间在托管别人的工具（终端、Monaco、Markdown 预览、浏览器），所以自己的 chrome 要退后、做框。Monica 叠层页面（总览、计划、验收、知识库、项目墙）与 Orca 原生界面用同一套 token、同一批 shadcn 原语，不另起皮肤。
 
 拿不准时：先用 `muted` / `accent` / `border`，再考虑颜色；先用变量，再考虑写 hex；先找最近的原语，再考虑写自定义 CSS。
 
@@ -43,7 +43,7 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 - `workspace-status-done` / `-review` / `-progress` 是 PR 状态，两套主题同色，只做圆点。
 - `git-decoration-*`、`diff-*`、`git-graph-*` 只用于 git 状态，沿用 VS Code 配色。
 - 图表用 `chart-1`…`chart-5`，一个蓝色按明度排开。
-- `warning` / `warning-background` / `warning-text`、`destructive-background` 是 **Workbench 增补**（`tokens.json` 里 usage 以 Addition 开头）：Orca 没有警告色，叠层的状态标签需要。产品代码要用，先把它们加进 `main.css` 两套主题并在 `@theme inline` 暴露。
+- `warning` / `warning-background` / `warning-text`、`destructive-background` 是 **Monica 增补**（`tokens.json` 里 usage 以 Addition 开头）：Orca 没有警告色，叠层的状态标签需要。产品代码要用，先把它们加进 `main.css` 两套主题并在 `@theme inline` 暴露。
 - 状态永远配文字或图标，不靠颜色单独区分。
 
 **列表行**（工作树、命令面板、设置导航）：静止透明；悬停 `accent`（工作树侧栏里用 `sidebar-accent`）；键盘选中不要只铺 `accent`——浅色浮层上它几乎看不见，用 jump-palette 配方（`foreground` 12% 混入 `background` + 1px 内描边）；持续的「当前」行同样 `accent`，再加 `data-current="true"`。
@@ -141,7 +141,7 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 
 macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按平台选（Mac `metaKey`，其他 `ctrlKey`；菜单加速键 `CmdOrCtrl`）。macOS 标题栏左侧 80px 留给红绿灯，不放可点区域。暗色切换：应用在根节点加 `.dark`；文档页与原型在 `<html>` 或任意子树加 `data-theme="dark"`（两者 `tokens.css` 都认）。插件主题可以改皮肤，但来源与授权界面锁定 `orca-security-*`，插件改不动。
 
-## Workbench 叠层怎么对齐
+## Monica 叠层怎么对齐
 
 - 叠层页面用上面的 token 和 `src/renderer/src/components/ui/` 原语，不另起皮肤。
 - 叠层 CSS 现有的 `--color-*` 角色名（`color-text`、`color-divider`、`color-neutral-600`、`color-success-soft`…）已并入 `tokens.json`，**改指向 Orca 的值**（usage 以 Overlay role 开头，写明对应哪个 Orca token）。新写的叠层 CSS 直接用 Orca 名（`--foreground`、`--border`、`--muted-foreground`），角色名只为存量代码保留。

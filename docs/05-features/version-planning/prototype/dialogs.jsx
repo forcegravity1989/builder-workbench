@@ -146,7 +146,7 @@ function PrototypeDialogs({ copied, copyText, modal, setModal }) {
               </div>
             </div>
           )}
-          {modal.type === 'route' && <p>沿用现有 Orca / BW 入口，本轮不扩展该界面。</p>}
+          {modal.type === 'route' && <p>沿用现有 Orca / Monica 入口，本轮不扩展该界面。</p>}
         </div>
       </section>
     </div>

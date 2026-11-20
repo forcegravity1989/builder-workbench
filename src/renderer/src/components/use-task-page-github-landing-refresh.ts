@@ -25,7 +25,7 @@ export function useTaskPageGitHubLandingRefresh(model: TaskPageGitHubSearchPagin
     workItemsInvalidationNonce,
     taskResumeApplied,
     githubWorkItemMutationQueryKey,
-    model.pageData.workbenchTaskScope?.goalId
+    model.pageData.monicaTaskScope?.goalId
   ])
 
   // Why: track true unmount only. The quiet-revalidate coalescing keys off the

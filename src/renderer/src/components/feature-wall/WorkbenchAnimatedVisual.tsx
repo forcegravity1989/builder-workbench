@@ -212,13 +212,13 @@ function buildReducedMotionState(
 }
 
 // Why: stable identities — a fresh cursorTarget per render would re-fire the cursor layout effect.
-const WORKBENCH_TOUR_REDUCED_MOTION_STATE = buildReducedMotionState('tour')
-const WORKBENCH_TWO_AGENTS_REDUCED_MOTION_STATE = buildReducedMotionState('two-agents-checklist')
+const MONICA_TOUR_REDUCED_MOTION_STATE = buildReducedMotionState('tour')
+const MONICA_TWO_AGENTS_REDUCED_MOTION_STATE = buildReducedMotionState('two-agents-checklist')
 
 function getReducedMotionState(
   variant: WorkbenchAnimatedVisualVariant
 ): WorkbenchTerminalVisualState {
   return variant === 'two-agents-checklist'
-    ? WORKBENCH_TWO_AGENTS_REDUCED_MOTION_STATE
-    : WORKBENCH_TOUR_REDUCED_MOTION_STATE
+    ? MONICA_TWO_AGENTS_REDUCED_MOTION_STATE
+    : MONICA_TOUR_REDUCED_MOTION_STATE
 }

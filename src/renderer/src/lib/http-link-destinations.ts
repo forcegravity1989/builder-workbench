@@ -1,9 +1,6 @@
 import { translate } from '@/i18n/i18n'
 import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/http-link-routing'
-import {
-  openWorkbenchTaskItemLink,
-  workbenchTaskItemLink
-} from '@/workbench/task-item-link-routing'
+import { openWorkbenchTaskItemLink, workbenchTaskItemLink } from '@/monica/task-item-link-routing'
 
 // Catalog keys keep their original terminal namespace: they are opaque ids with
 // shipped translations, and the popover is now shared with native chat.

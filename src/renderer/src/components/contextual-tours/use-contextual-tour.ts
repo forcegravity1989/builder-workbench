@@ -16,16 +16,16 @@ const TOUR_SOURCES = {
   tasks: 'tasks_open',
   automations: 'automations_open',
   'floating-workspace': 'floating_workspace_visible',
-  'workbench-wall': 'project_wall_visible',
-  'workbench-overview': 'project_overview_visible',
-  'workbench-scoreboard': 'project_scoreboard_visible',
-  'workbench-milestones': 'milestone_planning',
-  'workbench-plan': 'version_plan_visible',
-  'workbench-acceptance': 'version_acceptance_visible',
-  'workbench-version-overview': 'version_overview_visible',
-  'workbench-versions': 'version_sidebar_visible',
+  'monica-wall': 'project_wall_visible',
+  'monica-overview': 'project_overview_visible',
+  'monica-scoreboard': 'project_scoreboard_visible',
+  'monica-milestones': 'milestone_planning',
+  'monica-plan': 'version_plan_visible',
+  'monica-acceptance': 'version_acceptance_visible',
+  'monica-version-overview': 'version_overview_visible',
+  'monica-versions': 'version_sidebar_visible',
   'workspace-creation': 'workspace_creation_visible',
-  'workbench-source-control': 'workbench_source_control_visible'
+  'monica-source-control': 'workbench_source_control_visible'
 } satisfies Record<ContextualTourId, string>
 
 export type UseContextualTourOptions = {

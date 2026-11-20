@@ -1,6 +1,6 @@
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../shared/execution-host'
 import { isFolderRepo } from '../../shared/repo-kind'
-import { findConfirmedRepoRegistration } from '../../shared/workbench/repo-removal'
+import { findConfirmedRepoRegistration } from '../../shared/monica/repo-removal'
 import type { Repo } from '../../shared/repo-types'
 import { invalidateAuthorizedRootsCache } from '../ipc/filesystem-auth'
 import { prepareLocalWorktreeRootForRepo } from '../worktree-root-preparation'

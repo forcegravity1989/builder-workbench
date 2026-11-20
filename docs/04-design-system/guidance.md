@@ -1,20 +1,20 @@
 # 引导与旅程规范
 
-> **读者与时机**：盘点 BW 用户旅程、设计引导、更新指南或制作传播素材的人与模型，开始相关工作前完整读取。
+> **读者与时机**：盘点 Monica 用户旅程、设计引导、更新指南或制作传播素材的人与模型，开始相关工作前完整读取。
 > **职责与边界**：本篇维护引导分工、展示规则、两张内容矩阵和产出归属；业务行为与验收归所属特性，研发执行归 [journey-review](../../.claude/skills/journey-review/SKILL.md)，问题与处理进度归 Issue。矩阵记录各内容项在不同入口和产物中的覆盖，不另做任务进度表。
-> **结构与更新**：入口分工 → 展示与结果 → 矩阵口径 → BW 入门矩阵 → 探索 BW 矩阵 → 新功能提示 → 产出与维护。新增、调整或验证一个内容项时，同批更新对应行、复用关系和来源。
+> **结构与更新**：入口分工 → 展示与结果 → 矩阵口径 → Monica 入门矩阵 → 探索 Monica 矩阵 → 新功能提示 → 产出与维护。新增、调整或验证一个内容项时，同批更新对应行、复用关系和来源。
 
 ## 入口分工
 
-本轮旅程面向 2–3 人共同做项目、一个组有多个项目的 builder。每个人使用自己的 BW，共享项目目标、任务与交付事实。用户可以先开始一件工作，再按需要使用版本运作和高级能力。
+本轮旅程面向 2–3 人共同做项目、一个组有多个项目的 builder。每个人使用自己的 Monica，共享项目目标、任务与交付事实。用户可以先开始一件工作，再按需要使用版本运作和高级能力。
 
-- **BW 入门**回答“怎样准备好、开始第一件事”：必要组件、智能体与按需配置，包含 BW 采用的 Orca 能力。不是必须全部打勾才能开工的清单。
-- **探索 BW**回答“怎样用 BW 工作、某个功能有什么用”：**工作旅程**用相连的步骤说明一件事的起点、动作和结果，依次串联局部动画。**功能**用局部动画介绍一个能力或屏幕。两类在同一张矩阵中，工作行复用功能行。
+- **Monica 入门**回答“怎样准备好、开始第一件事”：必要组件、智能体与按需配置，包含 Monica 采用的 Orca 能力。不是必须全部打勾才能开工的清单。
+- **探索 Monica**回答“怎样用 Monica 工作、某个功能有什么用”：**工作旅程**用相连的步骤说明一件事的起点、动作和结果，依次串联局部动画。**功能**用局部动画介绍一个能力或屏幕。两类在同一张矩阵中，工作行复用功能行。
 - **操作中引导**回答“我在这个屏幕，下一步怎样做”：屏内帮助启动指向真实控件的逐步引导。空态和简短文字也可说明前提与恢复动作，各自的覆盖记录在对应功能行。
 
-通用帮助集中在左下角问号，入门和探索持续可回看。文档、变更日志、快捷键等仍沿[底部帮助](../../src/renderer/src/components/sidebar/SidebarSettingsHelpMenu.tsx)与 [BW 链接](../../src/renderer/src/workbench/help-links.ts)维护；反馈/报告通道独立维护。新功能提示是投放方式，海报/漫画是传播产物，都挂回内容行，不增加同级“旅程中心”。**旅程先成立，再按需配传播；没有海报不妨碍旅程使用。**
+通用帮助集中在左下角问号，入门和探索持续可回看。文档、变更日志、快捷键等仍沿[底部帮助](../../src/renderer/src/components/sidebar/SidebarSettingsHelpMenu.tsx)与 [Monica 链接](../../src/renderer/src/monica/help-links.ts)维护；反馈/报告通道独立维护。新功能提示是投放方式，海报/漫画是传播产物，都挂回内容行，不增加同级“旅程中心”。**旅程先成立，再按需配传播；没有海报不妨碍旅程使用。**
 
-探索的目录与内容承载设计见[探索 BW 布局规格](../05-features/explore-workbench/spec.md)及其原型。本篇继续维护内容范围与覆盖，不复制界面规格。
+探索的目录与内容承载设计见[探索 Monica 布局规格](../05-features/explore-monica/spec.md)及其原型。本篇继续维护内容范围与覆盖，不复制界面规格。
 
 ## 展示与结果
 
@@ -43,37 +43,37 @@
 
 未改动的入门说明与 **11 页探索演示**沿用 [#610 真壳验证](https://github.com/forcegravity1989/builder-workbench/pull/610#issuecomment-6768810094)；范围是中英文展示与关闭后回看，**不包含配置成功、新安装或完整工作旅程**。当前入门清单的删项与计数、集成调整仍待对应版本验证，下表逐格保留实际边界，不整体翻绿。
 
-## BW 入门矩阵
+## Monica 入门矩阵
 
-“入门内容”包括入门页以及它可重开的初始设置；“配置/操作”只有实际动作与结果验证后才勾。“首次启动”指首次安装时的引导，不能用手动重开初始设置代替。BW 当前七项内容来自[入门清单][setup]；弹窗与设置内嵌清单共用可见项、进度与默认选中规则。点弹窗右上角「关闭入门」会关闭弹窗，并提示可从「帮助 → BW 入门」重新打开。CLI、Skills 与桌面权限不计入 BW 入门进度，也不由清单主动探测；[初始设置][onboarding]按平台和已有状态选取步骤。
+“入门内容”包括入门页以及它可重开的初始设置；“配置/操作”只有实际动作与结果验证后才勾。“首次启动”指首次安装时的引导，不能用手动重开初始设置代替。Monica 当前七项内容来自[入门清单][setup]；弹窗与设置内嵌清单共用可见项、进度与默认选中规则。点弹窗右上角「关闭入门」会关闭弹窗，并提示可从「帮助 → Monica 入门」重新打开。CLI、Skills 与桌面权限不计入 Monica 入门进度，也不由清单主动探测；[初始设置][onboarding]按平台和已有状态选取步骤。
 
 | 编号与准备事项 | 入门内容 | 配置/操作 | 首次启动 | 新功能提示 | 使用说明 |
 |---|---|---|---|---|---|
-| G01 安装 BW、确认启动条件 | ☐ | 待验：安装包 | — | — | ☐ |
+| G01 安装 Monica、确认启动条件 | ☐ | 待验：安装包 | — | — | ☐ |
 | G02 选择默认智能体 | [✅ 选择与说明][setup-copy] | 待验 | [待验：agent][onboarding] | — | ☐ |
 | G03 开启通知 | [✅ 通知设置][setup-copy] | 待验 | [待验：notifications][onboarding] | — | ☐ |
-| G04 CLI 与 Skills | —（不列入 BW 入门） | [待验：设置中的 CLI 管理][cli-settings]及各能力的按需配置 | — | [待验：orca-cli][tips] | ☐ |
+| G04 CLI 与 Skills | —（不列入 Monica 入门） | [待验：设置中的 CLI 管理][cli-settings]及各能力的按需配置 | — | [待验：orca-cli][tips] | ☐ |
 | G05 连接集成服务 | [✅ 既有入口说明][setup-copy]；[待验：GitHub 与 CodeHub 各一张，可选 WeLink 报告入口][integration-setup] | [待验：任一代码托管登录即满足任务和评审，WeLink 可跳过][integration-setup]；设置中的集成见 F29 | [待验：首次设置可稍后在集成页连接或重试][onboarding] | — | ☐ |
 | G06 自动准备工作区 | [✅ 设置脚本][setup-copy] | [待验：当前项目、空输入与保存/执行][setup-actions] | — | — | ☐ |
 | G07 纳入多个项目 | [✅ 多项目说明][setup-copy] | [待验：添加项目][setup-actions] | — | — | ☐ |
 | G08 并行处理任务（能力体验） | [✅ 两个工作区][setup-copy]；复用 F01 | [待验：开始体验][setup-actions] | — | — | 复用 F01 |
-| G09 使用内置浏览器（能力体验） | [✅ BW 浏览器][setup-copy]；复用 F08 | [待验：开始体验][setup-actions] | — | — | 复用 F08 |
+| G09 使用内置浏览器（能力体验） | [✅ Monica 浏览器][setup-copy]；复用 F08 | [待验：开始体验][setup-actions] | — | — | 复用 F08 |
 | G10 主题与外观 | [待验：初始设置内][onboarding] | 待验 | [待验：theme][onboarding] | — | ☐ |
 | G11 Windows 终端准备 | [待验：初始设置内][onboarding] | 待验 | [待验：windows_terminal][onboarding] | — | ☐ |
 
 G08/G09 保留在入门的“能力体验”里，与探索共用内容，位置与完成判据不随 G04 撤下改变。G04 仍由设置和按需能力入口提供，不把从清单撤下记成配置完成，也不由此推断浏览器体验已完成；原生 Orca 清单保持原有 Skills 与权限判据。G07 的多项目介绍不等于完整项目纳入指南。首次添加的空项目墙交接与成功后留墙见 F19/F20。
 
-## 探索 BW 矩阵
+## 探索 Monica 矩阵
 
 工作行围绕[产品主张与飞轮](../01-principles/03-press-release-faq-flywheel.md)组织完整用户结果：明确方向 → 制定版本计划 → 构建交付 → 验收成果 → 查看效果 → 调整下一轮；项目知识与已验证做法逐轮积累。W01–W05 是可独立进入的核心旅程，顺序表达工作联系，查看效果后可回到下一轮方向与计划。W06/W07 对应「持续维护」「沉淀复用」，是贯穿每轮的建设中能力。安装、准备和添加项目沿入门与功能行维护；并行、中断续作和多项目切换按需要融入工作过程。
 
-工作行管理完整旅程，屏内帮助/首次进入由功能行承接。探索 BW 在同一弹窗中按工作旅程与功能分组，复用[原有十一页演示][explore]。未填内容展示标题、简介和「内容准备中」，W06/W07 展示「建设中」。内容承载先复用现有探索目录与展示机制；先筛选旅程依赖及用户可见的基础功能，打磨易用性、修复 BUG 并补本屏引导，再串联、实走完整旅程并制作所需演示、指南与传播素材。功能行的勾只覆盖格内所写片段，不要求每屏独立制作整套素材。
+工作行管理完整旅程，屏内帮助/首次进入由功能行承接。探索 Monica 在同一弹窗中按工作旅程与功能分组，复用[原有十一页演示][explore]。未填内容展示标题、简介和「内容准备中」，W06/W07 展示「建设中」。内容承载先复用现有探索目录与展示机制；先筛选旅程依赖及用户可见的基础功能，打磨易用性、修复 BUG 并补本屏引导，再串联、实走完整旅程并制作所需演示、指南与传播素材。功能行的勾只覆盖格内所写片段，不要求每屏独立制作整套素材。
 
 W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库，以及已有的 AI 工作流、开发规范、Skill 和定时能力，还需形成用户可实际使用的治理与复用闭环。已有资产、入口或本机做法不等于这两条产品旅程已可用；本期不安排它们的完整引导与传播。工程部署及 SDLC 统计也不纳入本期新增引导与素材；版本总览的基础事实、衡量产品效果的指标仍在核心旅程范围内。
 
 功能行的本期选择为 **16 项重点、8 项随屏处理、5 项暂缓**。“本期安排与核对点”记录采用范围，不是执行进度；重点项按实际界面分组走查，随屏项在所指入口核对并保留各格证据，不因合并讲解而丢失检查点。暂缓项保留已有内容，未选中路径不新增专项教程；F26 工程部署和 F27 中的 SDLC 按本期排除范围处理。共享主机的连接、配对、项目可访问性与断连恢复归 F24，浏览器协作 F08 复用；F13 暂缓不免除协作路径实际依赖的连接检查。
 
-| 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 屏内帮助 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
+| 分类 | 编号与内容 | 本期安排与核对点 | 探索 Monica | 屏内帮助 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|---|
 | 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；Windows 本机演示仓实走至变更核对与失败恢复；共享仓的合入及多人读回待验 | [✅ 四步播放、暂停、重播与关闭回看][direction-content] · [Windows 证据][direction-evidence] · [已认可布局与名片顺序][direction-prototype] | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
 | 工作 | W02 制定版本计划：定版 → 定目标与验收标准 → 关联任务 → 评审归档 → 开工 | 核心旅程；本机首版建版、保存与读回已验，真实模型、归档评审和开工待验 | [✅ 五步切换、播放、暂停与重播][planning-content] | 复用 F02、F18、F22、F23 | 同左 | — | [✅ 本机建版与保存读回][planning-guide]；协作环节待验 | 待定传播样式，复用指南截图 |
@@ -143,29 +143,29 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [explore]: ../../src/shared/feature-wall-workflows.ts
 [explore-copy]: ../../src/renderer/src/components/feature-wall/feature-wall-tour-localized-copy.ts
 [tours]: ../../src/shared/contextual-tours.ts
-[milestone-guide]: ../../src/renderer/src/workbench/project-milestones.tsx
+[milestone-guide]: ../../src/renderer/src/monica/project-milestones.tsx
 [tips]: ../../src/shared/feature-tips.ts
 
 [direction-evidence]: https://github.com/forcegravity1989/builder-workbench/pull/640#issuecomment-6824962114
-[direction-content]: ../../src/renderer/src/workbench/explore/DirectionWalkthrough.tsx
-[direction-wall]: ../../src/renderer/src/workbench/ProjectWallPage.tsx
-[screen-guide]: ../../src/renderer/src/workbench/WorkbenchScreenGuide.tsx
+[direction-content]: ../../src/renderer/src/monica/explore/DirectionWalkthrough.tsx
+[direction-wall]: ../../src/renderer/src/monica/ProjectWallPage.tsx
+[screen-guide]: ../../src/renderer/src/monica/MonicaScreenGuide.tsx
 [direction-guide]: ../03-guide/project-direction/README.md
 [direction-poster]: ../03-guide/project-direction/journey.jpg
 [direction-poster-source]: ../03-guide/project-direction/journey.html
 
-[planning-content]: ../../src/renderer/src/workbench/explore/PlanningWalkthrough.tsx
+[planning-content]: ../../src/renderer/src/monica/explore/PlanningWalkthrough.tsx
 [planning-guide]: ../03-guide/version-planning/README.md
 
-[acceptance-content]: ../../src/renderer/src/workbench/explore/AcceptanceWalkthrough.tsx
+[acceptance-content]: ../../src/renderer/src/monica/explore/AcceptanceWalkthrough.tsx
 [acceptance-guide]: ../03-guide/version-acceptance/README.md
 
-[direction-prototype]: ../05-features/explore-workbench/prototype.html
+[direction-prototype]: ../05-features/explore-monica/prototype.html
 
-[delivery-content]: ../../src/renderer/src/workbench/explore/DeliveryWalkthrough.tsx
-[delivery-help]: ../../src/renderer/src/workbench/WorkbenchDeliveryHelp.tsx
+[delivery-content]: ../../src/renderer/src/monica/explore/DeliveryWalkthrough.tsx
+[delivery-help]: ../../src/renderer/src/monica/MonicaDeliveryHelp.tsx
 [delivery-browser-recheck]: https://github.com/forcegravity1989/builder-workbench/pull/669#issuecomment-6895397151
 [review-inbox-cleanup]: https://github.com/forcegravity1989/builder-workbench/pull/723#issuecomment-6998672235
 [delivery-guide]: ../03-guide/issue-delivery/README.md
 
-[outcomes-content]: ../../src/renderer/src/workbench/explore/OutcomesWalkthrough.tsx
+[outcomes-content]: ../../src/renderer/src/monica/explore/OutcomesWalkthrough.tsx

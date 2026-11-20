@@ -48,7 +48,7 @@ export default defineConfig({
       testMatch: [...WORKBENCH_PR_ALLOWLIST],
       grepInvert: /@headful/,
       metadata: {
-        workbenchHeadful: false
+        monicaHeadful: false
       }
     },
     {
@@ -56,7 +56,7 @@ export default defineConfig({
       // Keep manual headful verification on the same Workbench PR allowlist.
       testMatch: [...WORKBENCH_PR_ALLOWLIST],
       metadata: {
-        workbenchHeadful: true
+        monicaHeadful: true
       }
     }
   ]

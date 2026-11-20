@@ -148,7 +148,7 @@ describe('worktree RPC schemas', () => {
     ).toBe(false)
   })
 
-  it('parses BW version binding writes and clears, rejecting incoherent payloads', () => {
+  it('parses Monica version binding writes and clears, rejecting incoherent payloads', () => {
     const parsed = WorktreeSet.parse({
       worktree: 'id:r1::/repos/wt',
       workbenchVersionBinding: {

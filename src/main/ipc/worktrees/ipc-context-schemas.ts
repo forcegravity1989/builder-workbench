@@ -7,7 +7,7 @@ import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { ListDetectedWorktreesArgs } from '../../../shared/detected-worktree-provider-contract'
 import { WorkspaceLinkedItemSchema } from '../../../shared/workspace-linked-item-schema'
 import { TaskSourceContextSchema } from '../../../shared/task-source-context-schema'
-import { WorkbenchVersionBindingSchema } from '../../../shared/workbench/version-binding'
+import { MonicaVersionBindingSchema } from '../../../shared/monica/version-binding'
 import { isWorkspaceLinkedItemSourceContextMatch } from '../../../shared/workspace-linked-item-source-context'
 
 export type CreateWorktreeArgsWithSystemProvenance = CreateWorktreeArgs & {
@@ -32,15 +32,15 @@ export type DetectedWorktreeRequestArgs = { repoId: string } | ListDetectedWorkt
 
 export const NullableWorkspaceLinkedItemSchema = WorkspaceLinkedItemSchema.nullable()
 export const NullableTaskSourceContextSchema = TaskSourceContextSchema.nullable()
-export const NullableWorkbenchVersionBindingSchema = WorkbenchVersionBindingSchema.nullable()
+export const NullableMonicaVersionBindingSchema = MonicaVersionBindingSchema.nullable()
 
 /**
- * The local metadata IPC path carries no zod gate of its own, so the BW G2
+ * The local metadata IPC path carries no zod gate of its own, so the Monica G2
  * version binding is validated here with the same shared contract the RPC
  * whitelist uses; malformed payloads fail instead of persisting garbage.
  * undefined stays untouched (old value kept), null clears.
  */
-export function normalizeWorkbenchVersionBindingField<
+export function normalizeMonicaVersionBindingField<
   T extends {
     workbenchVersionBinding?: unknown
   }
@@ -50,9 +50,7 @@ export function normalizeWorkbenchVersionBindingField<
   }
   return {
     ...input,
-    workbenchVersionBinding: NullableWorkbenchVersionBindingSchema.parse(
-      input.workbenchVersionBinding
-    )
+    workbenchVersionBinding: NullableMonicaVersionBindingSchema.parse(input.workbenchVersionBinding)
   }
 }
 

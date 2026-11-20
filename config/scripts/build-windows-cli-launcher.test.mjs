@@ -106,7 +106,7 @@ describe('Windows CLI launcher', () => {
       const cliPath = join(resourcesPath, 'app.asar.unpacked', 'out', 'cli', 'index.js')
       mkdirSync(join(resourcesPath, 'bin'), { recursive: true })
       mkdirSync(dirname(cliPath), { recursive: true })
-      copyFileSync(process.execPath, join(appRoot, 'Workbench.exe'))
+      copyFileSync(process.execPath, join(appRoot, 'Monica.exe'))
       writeFileSync(
         cliPath,
         `process.stdout.write(JSON.stringify({
@@ -124,7 +124,7 @@ describe('Windows CLI launcher', () => {
         {
           cwd: projectRoot,
           encoding: 'utf8',
-          env: { ...process.env, ORCA_PRODUCT_NAME: 'Workbench' }
+          env: { ...process.env, ORCA_PRODUCT_NAME: 'Monica' }
         }
       )
       expect(build.status, `${build.stdout}\n${build.stderr}`).toBe(0)

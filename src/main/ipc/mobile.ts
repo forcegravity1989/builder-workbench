@@ -47,7 +47,10 @@ function toRuntimeAccessGrant(device: DeviceEntry): RuntimeAccessGrant {
     createdAt: device.pairedAt,
     lastSeenAt: device.lastSeenAt > 0 ? device.lastSeenAt : null,
     ...(effectiveRuntimeAccessMode(device) === 'team-read'
-      ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
+      ? {
+          accessMode: 'team-read' as const,
+          ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+        }
       : {})
   }
 }
@@ -261,49 +264,44 @@ export function registerMobileHandlers(
         .sort((a, b) => b.pairedAt - a.pairedAt)
         .map((device) => ({
           ...toRuntimeAccessGrant(device),
-          ...(socketWiring
-            ? { connected: socketWiring.isDeviceConnected(device.deviceId) }
-            : {})
+          ...(socketWiring ? { connected: socketWiring.isDeviceConnected(device.deviceId) } : {})
         }))
     }
   })
 
-  ipcMain.handle(
-    'mobile:grantRuntimeFullAccess',
-    (_event, args: { deviceIds: string[] }) => {
-      const registry = rpcServer.getDeviceRegistry()
-      if (!registry || !Array.isArray(args?.deviceIds)) {
-        return { granted: [] as string[] }
-      }
-      const granted: string[] = []
-      for (const deviceId of new Set(args.deviceIds)) {
-        const device = registry.getDevice(deviceId)
-        if (
-          device?.scope === 'runtime' &&
-          effectiveRuntimeAccessMode(device) === 'team-read' &&
-          rpcServer.getMobileSocketWiring?.()?.isDeviceConnected(device.deviceId) === true &&
-          registry.setAccessMode(device.deviceId, 'full')
-        ) {
-          granted.push(device.deviceId)
-          rpcServer.getRuntimeAccessAudit?.()?.record({
-            at: Date.now(),
-            deviceId: device.deviceId,
-            deviceName: device.name,
-            accessMode: 'full',
-            ...(device.teamBinding
-              ? {
-                  teamGroupId: device.teamBinding.teamGroupId,
-                  memberId: device.teamBinding.memberId
-                }
-              : undefined),
-            method: 'access.grant.full',
-            result: 'allowed'
-          })
-        }
-      }
-      return { granted }
+  ipcMain.handle('mobile:grantRuntimeFullAccess', (_event, args: { deviceIds: string[] }) => {
+    const registry = rpcServer.getDeviceRegistry()
+    if (!registry || !Array.isArray(args?.deviceIds)) {
+      return { granted: [] as string[] }
     }
-  )
+    const granted: string[] = []
+    for (const deviceId of new Set(args.deviceIds)) {
+      const device = registry.getDevice(deviceId)
+      if (
+        device?.scope === 'runtime' &&
+        effectiveRuntimeAccessMode(device) === 'team-read' &&
+        rpcServer.getMobileSocketWiring?.()?.isDeviceConnected(device.deviceId) === true &&
+        registry.setAccessMode(device.deviceId, 'full')
+      ) {
+        granted.push(device.deviceId)
+        rpcServer.getRuntimeAccessAudit?.()?.record({
+          at: Date.now(),
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          accessMode: 'full',
+          ...(device.teamBinding
+            ? {
+                teamGroupId: device.teamBinding.teamGroupId,
+                memberId: device.teamBinding.memberId
+              }
+            : undefined),
+          method: 'access.grant.full',
+          result: 'allowed'
+        })
+      }
+    }
+    return { granted }
+  })
 
   ipcMain.handle(
     'mobile:listRuntimeAccessAudit',

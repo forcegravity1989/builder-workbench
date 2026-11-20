@@ -613,7 +613,7 @@ describe('delete worktree flow', () => {
   })
 
   it('rejects a paired primary workspace when the catalog has its same-id SSH sibling', () => {
-    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    vi.stubEnv('VITE_MONICA_SHELL', '1')
     setWorktrees([{ id: 'main', hostId: 'runtime:peer', isMainWorktree: true }])
     mocks.state.repos = [
       {

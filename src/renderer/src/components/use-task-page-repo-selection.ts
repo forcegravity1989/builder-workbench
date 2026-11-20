@@ -30,9 +30,9 @@ import {
 import type { TaskProvider } from '../../../shared/task-providers'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { resolveReferenceRepo } from '@/workbench/task-reference-repo'
+import { resolveReferenceRepo } from '@/monica/task-reference-repo'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { getTaskPageRepoSourceContext } from './task-page-source-context'
 export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
   const {
@@ -46,7 +46,7 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     preflightStatusCurrent,
     linearConnected
   } = model
-  const workbench = isWorkbenchShell()
+  const workbench = isMonicaShell()
   const registeredRepos = useMemo(() => getTaskEligibleRepos(repos), [repos])
   const eligibleRepos = useMemo(
     () =>
@@ -72,7 +72,7 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     }
     const home = registeredRepos.find((repo) => repo.id === preferred)
     if (home) {
-      const goalScope = pageData.workbenchTaskScope
+      const goalScope = pageData.monicaTaskScope
       if (goalScope?.goalId) {
         const target = { repoId: home.id, hostId: getRepoExecutionHostId(home) }
         const deps = { repos: () => registeredRepos }
@@ -99,7 +99,7 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     registeredRepos,
     workbench,
     pageData.preselectedRepoId,
-    pageData.workbenchTaskScope,
+    pageData.monicaTaskScope,
     settings?.defaultRepoSelection
   ])
   const [repoSelection, setRepoSelection] = useState<ReadonlySet<string>>(resolvedInitialSelection)

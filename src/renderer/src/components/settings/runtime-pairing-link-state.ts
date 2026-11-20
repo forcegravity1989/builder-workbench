@@ -4,7 +4,10 @@ import {
   type RuntimePairingLinkReference
 } from '../../../../shared/runtime-access-grants'
 import type { RuntimePairingReach } from '../../../../shared/runtime-pairing-reach'
-import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../../shared/runtime-session-contracts'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../../shared/runtime-session-contracts'
 
 export const RUNTIME_PAIRING_LOOPBACK_ADDRESS = '127.0.0.1'
 

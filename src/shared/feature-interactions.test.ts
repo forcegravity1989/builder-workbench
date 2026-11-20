@@ -56,15 +56,15 @@ describe('feature interactions', () => {
       'browser-annotations-sent-to-agent',
       'browser-grab',
       'markdown-file-created',
-      'workbench-wall',
-      'workbench-overview',
-      'workbench-milestones',
-      'workbench-versions',
-      'workbench-plan',
-      'workbench-acceptance',
-      'workbench-scoreboard',
-      'workbench-version-overview',
-      'workbench-version-tasks',
+      'monica-wall',
+      'monica-overview',
+      'monica-milestones',
+      'monica-versions',
+      'monica-plan',
+      'monica-acceptance',
+      'monica-scoreboard',
+      'monica-version-overview',
+      'monica-version-tasks',
       'workspace-creation',
       'agent-browser-setup',
       'agent-browser-use',
@@ -217,7 +217,7 @@ describe('feature interactions', () => {
         `recordFeatureInteraction(?:\\?\\.)?\\(\\s*['"]${escaped}['"]`
       )
       const contextualTourRecord = new RegExp(`useContextualTour\\(\\s*['"]${escaped}['"]`)
-      const workbenchScreenUsage = new RegExp(`useWorkbenchScreenUsage\\(\\s*['"]${escaped}['"]`)
+      const workbenchScreenUsage = new RegExp(`useMonicaScreenUsage\\(\\s*['"]${escaped}['"]`)
       const runtimeMappingReturn = new RegExp(`return[^\\n]*['"]${escaped}['"]`)
       return (
         !directRecord.test(productionText) &&

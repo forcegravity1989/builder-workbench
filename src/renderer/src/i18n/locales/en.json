@@ -924,7 +924,7 @@
         "notification": {
           "fallback": {
             "de50bef680": "macOS is blocking Orca notifications",
-            "8d4c07e6b5": "macOS is blocking Workbench notifications"
+            "8d4c07e6b5": "macOS is blocking Monica notifications"
           }
         }
       },
@@ -4028,7 +4028,7 @@
               "plan": "Plan",
               "expired": {
                 "label": "Sign-in expired",
-                "message": "Sign in with Cursor IDE or run cursor-agent login on the computer running Workbench, then retry usage."
+                "message": "Sign in with Cursor IDE or run cursor-agent login on the computer running Monica, then retry usage."
               }
             }
           },
@@ -5334,7 +5334,7 @@
           "removeDescriptionLocal": "This only removes {{name}} from Orca. It is still on your disk.",
           "removeDescriptionRuntime": "Remove the registration for {{name}} on this host. Its files stay on that host.",
           "registrationUnavailable": "This project registration is no longer available. Check the project list.",
-          "updatePairedHost": "Update Workbench on the paired host before removing a project registration.",
+          "updatePairedHost": "Update Monica on the paired host before removing a project registration.",
           "removeDescriptionVmRecipe": "This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted."
         },
         "ScrollToCurrentWorkspaceToolbarButton": {
@@ -5395,7 +5395,7 @@
           "imageReadFailed": "Could not read the attached images. Try attaching them again.",
           "attachWhileSending": "Wait for the current feedback to finish sending before attaching more images.",
           "imagesNotDelivered": "Feedback sent, but image delivery could not be confirmed.",
-          "workbenchDescription": "Share what's working, what's broken, or what Workbench should do next. Reports are uploaded to the BW user group's WeLink space using your current WeLink account.",
+          "workbenchDescription": "Share what's working, what's broken, or what Monica should do next. Reports are uploaded to the Monica user group's WeLink space using your current WeLink account.",
           "omitGitHubIdentity": "Do not include GitHub account information",
           "withoutGitHubIdentity": "Your feedback will not include GitHub account information."
         },
@@ -7502,7 +7502,7 @@
           "codeHostGroupTitle": "Code hosting",
           "codeHostGroupDescription": "CLIs for tasks, pull requests, merge requests, and review status.",
           "imGroupTitle": "Reports and diagnostics",
-          "imGroupDescription": "Send reports and diagnostic files to the BW user-group space.",
+          "imGroupDescription": "Send reports and diagnostic files to the Monica user-group space.",
           "buildGroupTitle": "Build",
           "buildGroupDescription": "CLIs for pipeline execution and package builds."
         },
@@ -7754,7 +7754,7 @@
           "fe904ac984": "Share anonymous usage data",
           "77410e0566": "Privacy policy",
           "8bfdd23a88": "Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.",
-          "workbenchDescription": "Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.",
+          "workbenchDescription": "Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed Monica user group space. The space may show the uploader.",
           "workbenchLabel": "Share usage data",
           "workbenchSectionDescription": "Usage data, diagnostics, and telemetry controls.",
           "afec8b03be": "ci"
@@ -9872,7 +9872,7 @@
             "codehubKeyword": "codehub",
             "codehubCliKeyword": "codehub-cli",
             "welinkTitle": "WeLink Integration",
-            "welinkDescription": "welink-cli installation and login for reports and diagnostics in the BW user-group space.",
+            "welinkDescription": "welink-cli installation and login for reports and diagnostics in the Monica user-group space.",
             "welinkKeyword": "welink",
             "welinkCliKeyword": "welink-cli",
             "cloudbuildTitle": "CloudBuild Integration",
@@ -10699,7 +10699,7 @@
                   "codehubAuthLoginCommand": "codehub-cli auth login --all",
                   "welinkDescription": "Reports and diagnostics via the",
                   "welinkUnavailable": "welink-cli status is not available in this runtime yet.",
-                  "welinkMissing": "Install welink-cli to send reports and diagnostic files to the BW user-group space. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
+                  "welinkMissing": "Install welink-cli to send reports and diagnostic files to the Monica user-group space. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
                   "welinkNotAuthenticated": "welink-cli is installed but not authenticated.",
                   "welinkInstallButton": "Install WeLink CLI",
                   "welinkAuthLoginCommand": "welink-cli auth login",
@@ -11891,13 +11891,13 @@
             "desktop": "Cursor IDE"
           },
           "title": "Cursor",
-          "subtitle": "Shows your Cursor plan usage from the sign-in already on this computer. Workbench only reads it — it never changes your Cursor login.",
+          "subtitle": "Shows your Cursor plan usage from the sign-in already on this computer. Monica only reads it — it never changes your Cursor login.",
           "dashboardLink": "Cursor dashboard",
           "loading": "Loading…",
           "signedIn": "Signed in",
-          "signedInFrom": "Signed in. Workbench reads the session stored in {{source}}.",
-          "signedInGeneric": "Signed in. Workbench reads the Cursor session stored on this computer.",
-          "expired": "Sign-in expired — run cursor-agent login on the computer running Workbench, then click Refresh usage.",
+          "signedInFrom": "Signed in. Monica reads the session stored in {{source}}.",
+          "signedInGeneric": "Signed in. Monica reads the Cursor session stored on this computer.",
+          "expired": "Sign-in expired — run cursor-agent login on the computer running Monica, then click Refresh usage.",
           "signedOut": "No Cursor sign-in found on this computer",
           "signedOutHelp": "Sign in with Cursor IDE, or run cursor-agent login in a terminal, then click Refresh usage here.",
           "refreshUsage": "Refresh usage",
@@ -13505,7 +13505,7 @@
           "yoloPermissionsLabel": "Yolo / Dangerously skip permissions",
           "yoloPermissionsInfo": "Agent permission info",
           "yoloPermissionsTooltip": "Skip permission checks for agents for less interruptions",
-          "0e00a37e49": "isn't on your PATH yet. Workbench will set it as your default and you can install it any time."
+          "0e00a37e49": "isn't on your PATH yet. Monica will set it as your default and you can install it any time."
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Press Enter to run the command and confirm npx if asked. You can also set this up later in Settings.",
@@ -13539,9 +13539,9 @@
           "0b4a7d23ab": "Signing in",
           "a74c6d6b18": "not-installed",
           "c773943637": "Start a workspace from any CodeHub issue or merge request, prefilled with its title and context",
-          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench",
+          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Monica",
           "c1ee44aa7a": "GitHub works too — issues, pull requests, and CI checks via the GitHub CLI",
-          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Workbench",
+          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Monica",
           "172af1b2c8": "CodeHub",
           "5b0e29617c": "Issues and merge requests.",
           "10e495afa8": "Install CodeHub CLI",
@@ -13572,9 +13572,9 @@
           "4f6a1da718": "Open System Settings",
           "90b5d2e363": "macOS is not delivering Orca notifications",
           "2c47f5465f": "Turn on Allow notifications for Orca in System Settings. This step updates automatically once enabled.",
-          "72256f6d85": "Pick the alert Workbench plays after a desktop notification is delivered.",
-          "3f8a21c6d0": "Allow notifications for Workbench",
-          "b7e94d02a1": "macOS is not delivering Workbench notifications"
+          "72256f6d85": "Pick the alert Monica plays after a desktop notification is delivered.",
+          "3f8a21c6d0": "Allow notifications for Monica",
+          "b7e94d02a1": "macOS is not delivering Monica notifications"
         },
         "OnboardingFlow": {
           "1130745139": "Set up task sources",
@@ -13597,11 +13597,11 @@
           "c47e1bd149": "agent",
           "windowsTerminalTitle": "Set Windows terminal defaults",
           "windowsTerminalSubtitle": "Choose the DEFAULT Shell for new panes and how right-click behaves in the terminal.",
-          "78d1d003d2": "Workbench",
-          "685d4ffbeb": "Welcome to Workbench",
-          "c64d33bfb8": "Workbench onboarding",
-          "43b8463d5c": "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time.",
-          "54fbfde99e": "Workbench will notify you when agents are done or need help.",
+          "78d1d003d2": "Monica",
+          "685d4ffbeb": "Welcome to Monica",
+          "c64d33bfb8": "Monica onboarding",
+          "43b8463d5c": "Monica works with every CLI agent. Choose the one you'll reach for most. Switch any time.",
+          "54fbfde99e": "Monica will notify you when agents are done or need help.",
           "9977a23fbe": "Install the CLIs you need — CodeHub for issues and merge requests, GitHub for issues and pull requests. Both are optional."
         },
         "OnboardingFooter": {
@@ -13671,7 +13671,7 @@
           "windowsDefault": "Windows default",
           "rightClickBehavior": "Right-click behavior",
           "rightClickBehaviorDescription": "Pick the terminal mouse behavior that matches your Windows muscle memory.",
-          "184e11638a": "Choose the shell Workbench opens for new Windows terminal panes."
+          "184e11638a": "Choose the shell Monica opens for new Windows terminal panes."
         },
         "mac": {
           "notification": {
@@ -13680,7 +13680,7 @@
                 "f696515944": "Click Allow in the macOS dialog.",
                 "3d18cf71f9": "Updates automatically.",
                 "721d2bedb6": "Turn on Allow notifications for Orca in System Settings.",
-                "c25d81f9e3": "Turn on Allow notifications for Workbench in System Settings."
+                "c25d81f9e3": "Turn on Allow notifications for Monica in System Settings."
               }
             }
           }
@@ -14243,7 +14243,7 @@
             "review_step_description": "Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.",
             "task_step_title": "Start agents on your tasks without leaving {{product}}",
             "reports_title": "Reports and diagnostics (optional)",
-            "reports_description": "Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations."
+            "reports_description": "Send reports and diagnostic files to the Monica user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations."
           },
           "connect": {
             "integration": {
@@ -15206,10 +15206,10 @@
             "ead6fc0510": "No automatic crash report was captured. You can still send details and include recent diagnostic logs when available.",
             "b082f27490": "Attach recent diagnostic logs",
             "e59f0b9427": "Sends a capped redacted log bundle with the report.",
-            "workbenchUiErrorTitle": "Workbench hit a recoverable UI error",
-            "workbenchClosedTitle": "Workbench closed unexpectedly",
-            "workbenchNotesPlaceholder": "Optional: what were you doing before Workbench closed?",
-            "workbenchBrand": "Workbench"
+            "workbenchUiErrorTitle": "Monica hit a recoverable UI error",
+            "workbenchClosedTitle": "Monica closed unexpectedly",
+            "workbenchNotesPlaceholder": "Optional: what were you doing before Monica closed?",
+            "workbenchBrand": "Monica"
           },
           "submit": {
             "notice": {
@@ -16839,7 +16839,7 @@
       "web": {
         "preloadApi": {
           "cursorAccounts": {
-            "hostOnly": "Cursor sign-in details are only readable on the computer running Workbench."
+            "hostOnly": "Cursor sign-in details are only readable on the computer running Monica."
           }
         }
       }
@@ -17832,7 +17832,7 @@
     "retry": "Retry"
   },
   "brand": {
-    "workbench": "Workbench"
+    "workbench": "Monica"
   },
   "runtime": {
     "remoteServerPairingErrors": {
@@ -17974,7 +17974,7 @@
       "resume": "Resume",
       "playSequence": "Play in order",
       "playClip": "Play clip",
-      "followAlong": "Try it in BW",
+      "followAlong": "Try it in Monica",
       "restart": "Replay",
       "sample": "Sample project"
     },
@@ -18206,12 +18206,12 @@
         "description": "Let AI prepare commit and PR drafts for you."
       }
     },
-    "explore": "Explore BW",
-    "exploreDescription": "Browse work journeys and feature demonstrations in BW.",
+    "explore": "Explore Monica",
+    "exploreDescription": "Browse work journeys and feature demonstrations in Monica.",
     "experiences": "Try the capabilities",
     "addProjectFirst": "First add a project you'd like to work on.",
     "done": "Done",
-    "exploreFooter": "Reopen any time from the bottom question mark > Explore BW.",
+    "exploreFooter": "Reopen any time from the bottom question mark > Explore Monica.",
     "tourFooter": "Reopen any time from Help > Explore Orca.",
     "continue": "Continue",
     "demo": {
@@ -18245,17 +18245,17 @@
       "workspaceLogin": "fix login race condition",
       "workspaceCi": "speed up CI pipeline"
     },
-    "setupProgress": "Getting Started with BW, {{done}} of {{total}} complete.",
+    "setupProgress": "Getting Started with Monica, {{done}} of {{total}} complete.",
     "progress": "{{done}} of {{total}} complete",
-    "gettingStarted": "Getting Started with BW",
+    "gettingStarted": "Getting Started with Monica",
     "initialSetupFailed": "Could not open initial setup. Please try again.",
     "initialSetup": "Initial Setup",
     "setupDescription": "Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.",
-    "restarting": "Restarting BW…",
-    "restartFailed": "Couldn't restart BW.",
+    "restarting": "Restarting Monica…",
+    "restartFailed": "Couldn't restart Monica.",
     "reportCrash": "Report Crash",
-    "about": "About BW",
-    "restart": "Restart BW",
+    "about": "About Monica",
+    "restart": "Restart Monica",
     "orchestrationSetupDescription": "Enables agents to hand off context and coordinate work through {{product}}.",
     "thinking": {
       "none": "None",
@@ -18271,7 +18271,7 @@
     "providerLocalAccount": "Local desktop",
     "closeSetupGuide": "Close setup guide",
     "setupGuideClosed": "Setup guide closed",
-    "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
+    "setupGuideReopen": "You can reopen it from Help → Getting Started with Monica.",
     "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
     "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."
   }

@@ -4,10 +4,10 @@ import type { WorkbenchStep } from '../../../../shared/workbench-steps'
 import type { ReviewStep } from '../../../../shared/review-steps'
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 const getWorkflowCopy = createLocalizedCatalog(() => {
-  const product = isWorkbenchShell() ? 'BW' : 'Orca'
+  const product = isMonicaShell() ? 'Monica' : 'Orca'
   return {
     workspaces: {
       title: translate('guidance.tour.workspaces.title', 'Workspaces'),
@@ -65,7 +65,7 @@ const getAgentCopy = createLocalizedCatalog(() => ({
     description: translate(
       'guidance.tour.orchestration.description',
       'Enable agents to manage and coordinate {{product}} workspaces to execute larger tasks.',
-      { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+      { product: isMonicaShell() ? 'Monica' : 'Orca' }
     )
   },
   usage: {
@@ -78,7 +78,7 @@ const getAgentCopy = createLocalizedCatalog(() => ({
   }
 }))
 
-const getWorkbenchCopy = createLocalizedCatalog(() => ({
+const getMonicaCopy = createLocalizedCatalog(() => ({
   terminal: {
     name: translate('guidance.tour.terminal.title', 'Terminal'),
     subtitle: translate('guidance.tour.terminal.title', 'Terminal'),
@@ -93,7 +93,7 @@ const getWorkbenchCopy = createLocalizedCatalog(() => ({
     description: translate(
       'guidance.tour.editor.description',
       'Use our Notion-style markdown editor to write notes without leaving {{product}}.',
-      { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+      { product: isMonicaShell() ? 'Monica' : 'Orca' }
     )
   },
   browser: {
@@ -139,7 +139,7 @@ export function localizeAgentsStep(step: AgentsStep): AgentsStep {
 }
 
 export function localizeWorkbenchStep(step: WorkbenchStep): WorkbenchStep {
-  return { ...step, ...getWorkbenchCopy()[step.id] }
+  return { ...step, ...getMonicaCopy()[step.id] }
 }
 
 export function localizeReviewStep(step: ReviewStep): ReviewStep {

@@ -102,11 +102,11 @@ function devWrapperTestEnv(extra: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     }
   }
   delete env.ELECTRON_EXEC_PATH
-  // Why: the Workbench switches decide the Dock title now that `--workbench` sets
+  // Why: the Monica switches decide the Dock title now that `--monica` sets
   // them, so an ambient value would let the flag cases below pass without the flag
   // ever being consumed.
-  delete env.WORKBENCH_SHELL
-  delete env.VITE_WORKBENCH_SHELL
+  delete env.MONICA_SHELL
+  delete env.VITE_MONICA_SHELL
   delete env.ORCA_PRODUCT_NAME
   return { ...env, ...extra }
 }
@@ -390,7 +390,7 @@ describe('run-electron-vite-dev', () => {
     await stopWrapperAndTrackedPids(wrapper, trackedPids)
   })
 
-  it('consumes the workbench flag before forwarding args to electron-vite', async () => {
+  it('consumes the monica flag before forwarding args to electron-vite', async () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'orca-dev-wrapper-'))
     const pidFile = join(tempDir, 'grandchild.pid')
     const envFile = join(tempDir, 'env.json')
@@ -399,7 +399,7 @@ describe('run-electron-vite-dev', () => {
 
     const wrapper = spawn(
       process.execPath,
-      [wrapperPath, '--workbench', '--remote-debugging-port=9446'],
+      [wrapperPath, '--monica', '--remote-debugging-port=9446'],
       {
         cwd: resolve('.'),
         env: devWrapperTestEnv({
@@ -409,8 +409,8 @@ describe('run-electron-vite-dev', () => {
           ORCA_SKIP_DEV_WEB_PREPARE: '1',
           ORCA_DEV_WRAPPER_TEST_PID_FILE: pidFile,
           ORCA_DEV_WRAPPER_TEST_ENV_FILE: envFile,
-          ORCA_DEV_BRANCH: 'feature/workbench-shell',
-          ORCA_DEV_WORKTREE_NAME: 'workbench-ui'
+          ORCA_DEV_BRANCH: 'feature/monica-shell',
+          ORCA_DEV_WORKTREE_NAME: 'monica-ui'
         }),
         stdio: 'ignore'
       }
@@ -434,13 +434,13 @@ describe('run-electron-vite-dev', () => {
       label: string
       dockTitle: string
     }
-    expect(envSnapshot.args).not.toContain('--workbench')
+    expect(envSnapshot.args).not.toContain('--monica')
     expect(envSnapshot.args).toContain('--remote-debugging-port=9446')
-    expect(envSnapshot.label).toBe('workbench-ui @ feature/workbench-shell')
-    // Why dockTitle: it is derived from isWorkbenchDevEnv(), so the Workbench prefix
-    // is the observable that the runner actually set WORKBENCH_SHELL rather than
+    expect(envSnapshot.label).toBe('monica-ui @ feature/monica-shell')
+    // Why dockTitle: it is derived from isMonicaDevEnv(), so the Monica prefix
+    // is the observable that the runner actually set MONICA_SHELL rather than
     // merely accepting the flag.
-    expect(envSnapshot.dockTitle).toBe('Workbench: feature/workbench-shell')
+    expect(envSnapshot.dockTitle).toBe('Monica: feature/monica-shell')
 
     await stopWrapperAndTrackedPids(wrapper, trackedPids)
   })

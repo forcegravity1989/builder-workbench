@@ -1,6 +1,6 @@
 import { NOTE_TARGETS } from './review-animated-visual-shared'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 // Why: terminal-phase logic for the Notes panel lives here so the imperative
 // loop in ReviewNotesAnimatedVisual stays under the per-file lint cap. The
@@ -82,7 +82,7 @@ export async function runTerminalPhase(ctx: TerminalPhaseContext): Promise<void>
     text.textContent = translate(
       'guidance.demo.notesLoaded',
       'Loaded {{total}} review notes from {{product}}',
-      { total: NOTE_TARGETS.length, product: isWorkbenchShell() ? 'BW' : 'Orca' }
+      { total: NOTE_TARGETS.length, product: isMonicaShell() ? 'Monica' : 'Orca' }
     )
     loadedEl.replaceChildren(check, text)
   }

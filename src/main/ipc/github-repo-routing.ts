@@ -13,7 +13,7 @@ import {
 import { githubRepoIdentityKey } from '../../shared/github/repository-identity-key'
 import type { LocalGitExecOptions } from '../github/gh-utils'
 import { isValidGitHubApiRepository } from '../github/github-api-repository-validation'
-import { isWorkbenchProduct } from '../startup/workbench-product'
+import { isMonicaProduct } from '../startup/monica-product'
 import type { Store } from '../persistence'
 import { getLocalProjectWorktreeGitOptions } from '../project-runtime-git-options'
 
@@ -72,7 +72,7 @@ export function assertRegisteredGitHubRepo(
   args: string | GitHubRepoScopedArgs,
   store: Store
 ): GitHubRequestRepo {
-  if (typeof args !== 'string' && args.sourceContext?.localTaskAccount && isWorkbenchProduct()) {
+  if (typeof args !== 'string' && args.sourceContext?.localTaskAccount && isMonicaProduct()) {
     const identity = args.sourceContext.providerIdentity
     if (identity?.provider !== 'github' || !isValidGitHubApiRepository(identity)) {
       throw new Error('GitHub repository identity is unavailable')

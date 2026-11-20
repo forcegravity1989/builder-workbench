@@ -112,7 +112,7 @@ describe('isCommandOnLocalPath', () => {
       ).resolves.toBe(true)
     })
 
-    // Why (BW #323): the preflight exec route needs the resolved path (not
+    // Why (Monica #323): the preflight exec route needs the resolved path (not
     // just found/not-found) to send .cmd shims through cmd.exe. The resolver
     // joins with forward slashes by design (see its own comment), so the
     // resolved path is the posix-joined candidate.

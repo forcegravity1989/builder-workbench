@@ -116,7 +116,7 @@ export function useTargetChangeActions(input: TargetChangeActionsInput) {
         ? getLinearLinkedWorkItemBranchName(linkedWorkItem)
         : undefined
       setRepoId(value)
-      // G2 (BW): a parent suggestion is repo-scoped — a repo switch clears the
+      // G2 (Monica): a parent suggestion is repo-scoped — a repo switch clears the
       // stale pick instead of carrying it into create-time validation.
       setParentWorktreeId(null)
       if (!options.preserveStartFrom) {

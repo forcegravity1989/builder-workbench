@@ -1,7 +1,7 @@
 import { net } from 'electron'
 import type { ChangelogData } from '../shared/update-status-types'
 import { compareVersions } from './updater-fallback'
-import { isWorkbenchProduct } from './startup/workbench-product'
+import { isMonicaProduct } from './startup/monica-product'
 
 type ChangelogEntry = {
   version: string
@@ -43,8 +43,8 @@ export async function fetchChangelog(
   incomingVersion: string,
   localVersion: string
 ): Promise<ChangelogData | null> {
-  // Workbench release notes use the existing GitHub link; Orca's showcase belongs to Orca.
-  if (isWorkbenchProduct()) {
+  // Monica release notes use the existing GitHub link; Orca's showcase belongs to Orca.
+  if (isMonicaProduct()) {
     return null
   }
   const res = await net.fetch('https://onorca.dev/whats-new/changelog.json', {

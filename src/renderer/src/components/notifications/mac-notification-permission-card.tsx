@@ -3,7 +3,7 @@ import { BellRing, Check, Settings, TriangleAlert } from 'lucide-react'
 import type { NotificationDeliveryProbeResult } from '../../../../shared/notification-settings-types'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 export type MacNotificationPermissionState =
   | 'checking'
@@ -156,10 +156,10 @@ export function MacNotificationPermissionCard({
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <BellRing className="size-4" />
-              {isWorkbenchShell()
+              {isMonicaShell()
                 ? translate(
                     'auto.components.onboarding.NotificationStep.3f8a21c6d0',
-                    'Allow notifications for Workbench'
+                    'Allow notifications for Monica'
                   )
                 : translate(
                     'auto.components.onboarding.NotificationStep.95d99b52fa',
@@ -201,10 +201,10 @@ export function MacNotificationPermissionCard({
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
               <TriangleAlert className="size-4" />
-              {isWorkbenchShell()
+              {isMonicaShell()
                 ? translate(
                     'auto.components.onboarding.NotificationStep.b7e94d02a1',
-                    'macOS is not delivering Workbench notifications'
+                    'macOS is not delivering Monica notifications'
                   )
                 : translate(
                     'auto.components.onboarding.NotificationStep.90b5d2e363',
@@ -212,10 +212,10 @@ export function MacNotificationPermissionCard({
                   )}
             </div>
             <p className="max-w-[58ch] text-[13px] leading-relaxed text-amber-700/80 dark:text-amber-200/80">
-              {isWorkbenchShell()
+              {isMonicaShell()
                 ? translate(
                     'auto.components.onboarding.mac.notification.permission.card.c25d81f9e3',
-                    'Turn on Allow notifications for Workbench in System Settings.'
+                    'Turn on Allow notifications for Monica in System Settings.'
                   )
                 : translate(
                     'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',

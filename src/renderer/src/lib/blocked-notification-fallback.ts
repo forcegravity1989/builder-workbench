@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 // Why: agent completions can dispatch in bursts; one in-app pointer at the
 // broken OS setting per session teaches the fix without nagging.
@@ -17,20 +17,20 @@ export function showBlockedNotificationFallbackToast(): void {
   }
   shownThisSession = true
   toast.warning(
-    isWorkbenchShell()
+    isMonicaShell()
       ? translate(
           'auto.lib.blocked.notification.fallback.8d4c07e6b5',
-          'macOS is blocking Workbench notifications'
+          'macOS is blocking Monica notifications'
         )
       : translate(
           'auto.lib.blocked.notification.fallback.de50bef680',
           'macOS is blocking Orca notifications'
         ),
     {
-      description: isWorkbenchShell()
+      description: isMonicaShell()
         ? translate(
             'auto.components.onboarding.mac.notification.permission.card.c25d81f9e3',
-            'Turn on Allow notifications for Workbench in System Settings.'
+            'Turn on Allow notifications for Monica in System Settings.'
           )
         : translate(
             'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',

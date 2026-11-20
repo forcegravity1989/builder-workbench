@@ -54,11 +54,11 @@ const ORCA_POSTHOG_WRITE_KEY_LITERAL =
     ? JSON.stringify(orcaPostHogWriteKey)
     : 'null'
 
-const workbenchShellEnabled =
-  process.env.VITE_WORKBENCH_SHELL === '1' ||
-  process.env.WORKBENCH_SHELL === '1' ||
-  process.env.ORCA_PRODUCT_NAME === 'Workbench'
-const VITE_WORKBENCH_SHELL_LITERAL = JSON.stringify(workbenchShellEnabled ? '1' : '0')
+const monicaShellEnabled =
+  process.env.VITE_MONICA_SHELL === '1' ||
+  process.env.MONICA_SHELL === '1' ||
+  process.env.ORCA_PRODUCT_NAME === 'Monica'
+const VITE_MONICA_SHELL_LITERAL = JSON.stringify(monicaShellEnabled ? '1' : '0')
 
 function createStartupDiagnosticsBanner(chunkName: string): string {
   return `
@@ -276,7 +276,7 @@ export const electronViteConfig: UserConfig = {
     define: {
       ORCA_BUILD_IDENTITY: ORCA_BUILD_IDENTITY_LITERAL,
       ORCA_POSTHOG_WRITE_KEY: ORCA_POSTHOG_WRITE_KEY_LITERAL,
-      WORKBENCH_SHELL: VITE_WORKBENCH_SHELL_LITERAL
+      MONICA_SHELL: VITE_MONICA_SHELL_LITERAL
     },
     // Why: @xterm/headless declares "exports": null in package.json, which
     // prevents Vite's default resolver from finding the CJS entry. Point
@@ -305,11 +305,11 @@ export const electronViteConfig: UserConfig = {
       }
     },
     define: {
-      'import.meta.env.VITE_WORKBENCH_SHELL': VITE_WORKBENCH_SHELL_LITERAL,
+      'import.meta.env.VITE_MONICA_SHELL': VITE_MONICA_SHELL_LITERAL,
       // Why: shared/release-channel resolves the update-source repo at import time
       // and is bundled into the renderer too (update card / settings link into it),
       // so the renderer needs the same compile-time product flag as main.
-      WORKBENCH_SHELL: VITE_WORKBENCH_SHELL_LITERAL
+      MONICA_SHELL: VITE_MONICA_SHELL_LITERAL
     },
     plugins: [react(), tailwindcss()],
     worker: {

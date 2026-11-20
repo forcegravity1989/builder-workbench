@@ -53,9 +53,9 @@ codehub-cli project label update "bug" --color "#00FF00" -p Org/Group/repo -H gr
 codehub-cli project label delete "bug" -y -p Org/Group/repo -H green
 ```
 
-`list` 的 `--limit` 默认只有 10 且不翻页，要拿全量名单必须显式给足（Workbench 取 100）；删除要 `-y` 跳过终端确认。
+`list` 的 `--limit` 默认只有 10 且不翻页，要拿全量名单必须显式给足（Monica 取 100）；删除要 `-y` 跳过终端确认。
 
-标签分项目/组两级：`project label list` 只回项目自有标签，组级要用 `group label list` 取；项目标签接口的 `include_ancestor_groups` 参数服务端不认（2026-10-27 实测）。Workbench 标签下拉按用户裁定只取项目级名单，共享组池不进下拉；给议题打组级标签在输入框直接键入名字即可，与项目标签混用一次保存（2026-10-27 实测）。
+标签分项目/组两级：`project label list` 只回项目自有标签，组级要用 `group label list` 取；项目标签接口的 `include_ancestor_groups` 参数服务端不认（2026-10-27 实测）。Monica 标签下拉按用户裁定只取项目级名单，共享组池不进下拉；给议题打组级标签在输入框直接键入名字即可，与项目标签混用一次保存（2026-10-27 实测）。
 
 ```bash
 codehub-cli group label list Org/Group -H green
@@ -71,7 +71,7 @@ codehub-cli issue comment create 12 --body "评论内容" -p Org/Group/repo -H g
 codehub-cli issue comment delete 12 <comment-id> -p Org/Group/repo -H green
 ```
 
-关闭和重新打开没有「完成 / 不计划 / 重复」这类原因参数。Workbench 在 CodeHub 上关单时，先写一条评论，再关闭：
+关闭和重新打开没有「完成 / 不计划 / 重复」这类原因参数。Monica 在 CodeHub 上关单时，先写一条评论，再关闭：
 
 ```bash
 codehub-cli issue comment create 12 --body "关闭原因: completed" -p Org/Group/repo -H green
@@ -109,7 +109,7 @@ codehub-cli mr review delete 8 --note-id <note-id> -p Org/Group/repo -H green
 codehub-cli mr review delete 8 --discussion-id <discussion-id> --note-id <note-id> -p Org/Group/repo -H green
 ```
 
-不带 `--path` 是普通评论；带 `--path` 和 `--line` 是行级 DiffNote，`--start-line` 指多行范围的起始行（行号是新文件侧的真实行号）。DiffNote 需要的 diff_refs 由 CLI 从 MR 详情自动获取，不用额外传提交锚点。行级 DiffNote 走评审接口，服务器要求必填严重级别（`setting review-config` 的 `note_required_attributes.severity`），空值报 CH.00406030；Workbench 默认发最轻的 `suggestion`，界面上不提供级别选择。线程内回复用 `mr review reply`，discussion id 是第二个位置参数（不是 flag）。删除独立 note 只用 `--note-id`；discussion 内的 note 要加 `--discussion-id`。issue 评论没有 discussion 语义。
+不带 `--path` 是普通评论；带 `--path` 和 `--line` 是行级 DiffNote，`--start-line` 指多行范围的起始行（行号是新文件侧的真实行号）。DiffNote 需要的 diff_refs 由 CLI 从 MR 详情自动获取，不用额外传提交锚点。行级 DiffNote 走评审接口，服务器要求必填严重级别（`setting review-config` 的 `note_required_attributes.severity`），空值报 CH.00406030；Monica 默认发最轻的 `suggestion`，界面上不提供级别选择。线程内回复用 `mr review reply`，discussion id 是第二个位置参数（不是 flag）。删除独立 note 只用 `--note-id`；discussion 内的 note 要加 `--discussion-id`。issue 评论没有 discussion 语义。
 
 CodeHub 这边不使用草稿，也不使用 Mark ready。新建 MR 不要加草稿参数。
 
@@ -122,7 +122,7 @@ codehub-cli issue view 12 -p Org/Group/repo -H green --json iid,title,state
 
 `-f` 可选 `text`、`json`、`yaml`、`tsv`、`quiet`。
 
-## Workbench 任务列表
+## Monica 任务列表
 
 任务绑定 Orca 登记的 CodeHub 仓库身份。桌面、Web/配对使用同一服务，操作按仓库所属 runtime 路由；SSH 仓库路径不作本机工作目录，WSL 使用项目运行环境中的命令。
 

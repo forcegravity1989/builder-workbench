@@ -191,9 +191,9 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
     if (!parsed?.repoId || !parsed.worktreePath) {
       return false
     }
-    const owners = this.store.getRepos().filter(
-      (repo) => repo.id === parsed.repoId && getRepoExecutionHostId(repo) === parsedHost.id
-    )
+    const owners = this.store
+      .getRepos()
+      .filter((repo) => repo.id === parsed.repoId && getRepoExecutionHostId(repo) === parsedHost.id)
     if (owners.length !== 1) {
       return false
     }
@@ -249,8 +249,7 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
       const [onlyHostId] = hostIds
       const repoHost =
         hostIds.size === 1 ? (onlyHostId === LOCAL_EXECUTION_HOST_ID ? 'local' : 'remote') : null
-      const metaHostId =
-        requiredHostId ?? (hostIds.size === 1 ? onlyHostId : null)
+      const metaHostId = requiredHostId ?? (hostIds.size === 1 ? onlyHostId : null)
       const parsedMetaHostId = metaHostId ? parseExecutionHostId(metaHostId) : null
       const metaStore = this.store as {
         getWorktreeMetaForHost?: (id: string, hostId: ExecutionHostId) => unknown
@@ -260,16 +259,16 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
       }
       const meta =
         worktreeId && parsedMetaHostId
-          ? (metaStore.getWorktreeMetaForHost
-              ? (metaStore.getWorktreeMetaForHost(worktreeId, parsedMetaHostId) ?? null)
-              : (metaStore.getWorktreeMeta?.(worktreeId) ?? null))
+          ? metaStore.getWorktreeMetaForHost
+            ? (metaStore.getWorktreeMetaForHost(worktreeId, parsedMetaHostId) ?? null)
+            : (metaStore.getWorktreeMeta?.(worktreeId) ?? null)
           : null
       const snapshotWorktrees = this.resolvedWorktrees.peek()?.worktrees ?? null
       const repoMetaEntries =
         parsed && parsedMetaHostId
-          ? (metaStore.getAllWorktreeMetaForHost
-              ? metaStore.getAllWorktreeMetaForHost(parsedMetaHostId)
-              : (metaStore.getAllWorktreeMeta?.() ?? null))
+          ? metaStore.getAllWorktreeMetaForHost
+            ? metaStore.getAllWorktreeMetaForHost(parsedMetaHostId)
+            : (metaStore.getAllWorktreeMeta?.() ?? null)
           : null
       let repoMetaCount: number | null = null
       if (parsed && repoMetaEntries) {

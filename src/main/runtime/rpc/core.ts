@@ -10,7 +10,10 @@ import type {
 } from '../../../shared/mobile-relay-credential-contract'
 import type { RuntimeCapability } from '../../../shared/protocol-version'
 import type { OrchestrationCompatibilityEvidence } from '../../../shared/orchestration-compatibility-evidence'
-import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../shared/runtime-session-contracts'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../shared/runtime-session-contracts'
 
 export type PairingRpcContext = {
   getEndpoints(params: PairingGetEndpointsParams): Promise<PairingGetEndpointsResult>

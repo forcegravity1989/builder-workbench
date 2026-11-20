@@ -6,11 +6,11 @@
 
 ## 能力边界
 
-项目连接、宿主路由、文件与命令执行沿用 Orca 原生能力；BW 不按本机、Web/配对或 SSH/WSL 另设产品限制。操作在工作树所属宿主执行，连接或权限不可用时呈现原生失败，不切换到其他机器读写。
+项目连接、宿主路由、文件与命令执行沿用 Orca 原生能力；Monica 不按本机、Web/配对或 SSH/WSL 另设产品限制。操作在工作树所属宿主执行，连接或权限不可用时呈现原生失败，不切换到其他机器读写。
 
 指标协议统一使用 BizMetrics 的定义、feature/leads 关系以及日/周、刷新、历史和错误语义。Electron 适配只通过当前 MetricsPort 与 Orca 原生宿主能力接入，不引入独立 Rust bridge。项目研发统计不属于总览记分牌。
 
-BW 自用指标脚本按已合入来源读取计划活动、Issue 和其他事件。非空计划的实质变化按提交时间归周，纯格式迁移和空计划不计；历史材料中的时间戳只用于解释对应记录。白名单项目、计划历史和事件账固定读取 BW_METRICS_DATA_COMMIT，脏工作区不参与读数。来源与宿主不满足条件时返回 Unknown 及原因。
+Monica 自用指标脚本按已合入来源读取计划活动、Issue 和其他事件。非空计划的实质变化按提交时间归周，纯格式迁移和空计划不计；历史材料中的时间戳只用于解释对应记录。白名单项目、计划历史和事件账固定读取 BW_METRICS_DATA_COMMIT，脏工作区不参与读数。来源与宿主不满足条件时返回 Unknown 及原因。
 
 来源直查太慢的指标走两层架构：项目侧预采集落仓内事件账（daily-observation.jsonl），协议脚本只读已备好的源——「计划制定时长」按此实现，归属条款见指标协议。成功查询（包括零新增）按项目记录真实 coverage；失败、截断及旧账缺覆盖证明时不扩大覆盖。读数只采用全部白名单项目共同可信的连续覆盖，部分窗口声明实际边界，没有事件不出点。时长按绝对时间差计算，保留负值与夏令时语义。
 
@@ -19,10 +19,10 @@ BW 自用指标脚本按已合入来源读取计划活动、Issue 和其他事�
 | 层                            | 责任                                                                                       |
 | ----------------------------- | ------------------------------------------------------------------------------------------ |
 | shared/workbench metrics 契约 | MetricDefinition、MetricRef、MetricReading、窗口/错误模型与可比较性                        |
-| BW 主进程指标服务             | 可信项目定位、业务定义/脚本读取与执行、任务去重、输出校验、证据/缓存 |
+| Monica 主进程指标服务             | 可信项目定位、业务定义/脚本读取与执行、任务去重、输出校验、证据/缓存 |
 | renderer/workbench           | 记分牌消费 MetricsPort：场景分组、结果/引领配对、从当前版本计划推出聚焦与完成线，并按完成线判定输赢 |
 | 计划 / 验收                   | 保存选定 metricRef 和版本目标 / 引用真实 readingRef；不另跑脚本、不保存一份手填实际数      |
-| Orca                          | 项目/宿主身份、权限与通用进程/文件基础设施；不装 BW 指标业务                               |
+| Orca                          | 项目/宿主身份、权限与通用进程/文件基础设施；不装 Monica 指标业务                               |
 
 复用 MetricsPort.list(project)、read(ref,window)、refresh(ref,window)；刷新返回可追溯 run/状态，读取返回 value 或 Unknown 及原因，不能仅用 null 吞掉失败。MetricRef 包含项目、指标名称与定义指纹，名称不唯一须先消歧；leads 是声明关系，不自动证明因果。
 
@@ -34,13 +34,13 @@ VersionHistoryPort.list 的 currentOnly 查询固定本次主干基线 SHA，以
 
 ## 采集、存储与窗口
 
-沿 metrics schema2，不顺带升级全项目协议。MetricDefinition 保留 name/def/target/collect/feature/leads；目录另带可选 [[feature]]（name/value）作为场景声明，只决定页签顺序和价值说明，不参与定义指纹，也不构成指标。MetricReading 带 value、window、granularity、collectedAt、source、definitionHash、collectorRevision/执行指纹；版本材料引用读数的稳定标识/快照，证据缓存可以重建，不引入 BW 业务数据库。
+沿 metrics schema2，不顺带升级全项目协议。MetricDefinition 保留 name/def/target/collect/feature/leads；目录另带可选 [[feature]]（name/value）作为场景声明，只决定页签顺序和价值说明，不参与定义指纹，也不构成指标。MetricReading 带 value、window、granularity、collectedAt、source、definitionHash、collectorRevision/执行指纹；版本材料引用读数的稳定标识/快照，证据缓存可以重建，不引入 Monica 业务数据库。
 
 项目时区与版本约定明确解析为左闭右开窗口；同一 ref+定义指纹+执行指纹+数据目标+窗口+宿主的刷新合并执行，不让过期请求覆盖后发结果。主进程用 argv 执行已登记采集，不经 shell 拼接；默认超时遵循协议，输出只接收一个合法 JSON，标准错误用于诊断，不当读数。
 
 能力注册为 main RPC（workbench.metrics.list/read/refresh、workbench.history.list/read/readPlan、workbench.archive.prStatus）；SSH 宿主经窄执行器 workbench.metrics.execute / workbench.history.execute 运行采集与历史命令，不扩 provider.exec 白名单。定义唯一正源为 .bw/metrics.toml；目录从主干基线（主检出 HEAD，或钉定基线）解析最新已合入提交，读取不在后台 fetch。单次采集固定该提交的定义、脚本及相关依赖，在隔离 checkout 内执行（preparation lock，finally 清理），BW_METRICS_TIMEZONE / BW_METRICS_DATA_ROOT / BW_METRICS_DATA_COMMIT 显式传递。默认窗口「本周截至采集时刻」保留脚本返回的真实 coverage；历史纪要读取当时保存的 baseline，不被新采集覆盖。
 
-业务定义只接受 script + retro=true，脚本按日/周输出历史 points；仅当前 value 输出不再支持，缺点留缺。源数据与历史存储归用户项目或外部服务所有，BW 不登记每日自动化、bw/ledger 或 readings 日写回。既有历史证据仍按原字段读取，不自动改写或删除。总览读数在本次应用运行内按项目缓存，主动刷新更新；计划/验收保存采用的证据，不积累独立时序台账。缓存按项目、定义/执行指纹与窗口区分，不能当事实正本。
+业务定义只接受 script + retro=true，脚本按日/周输出历史 points；仅当前 value 输出不再支持，缺点留缺。源数据与历史存储归用户项目或外部服务所有，Monica 不登记每日自动化、bw/ledger 或 readings 日写回。既有历史证据仍按原字段读取，不自动改写或删除。总览读数在本次应用运行内按项目缓存，主动刷新更新；计划/验收保存采用的证据，不积累独立时序台账。缓存按项目、定义/执行指纹与窗口区分，不能当事实正本。
 
 定义变更让旧读数保持历史身份；跨定义不可自动比较。刷新失败时返回错误与旧记录的时间，不给旧记录换新时间。计算改善幅度前检查数值/单位/口径；字符串只展示，不把非数字硬转 0。
 
@@ -48,7 +48,7 @@ VersionHistoryPort.list 的 currentOnly 查询固定本次主干基线 SHA，以
 
 ## 配置任务与采用
 
-“配置指标”每次经 metrics-setup 管线新建原生会话并进入该会话，使用独立固定维护分支 **bw/metrics-refresh**（树名 metrics-refresh），由 cycle-prompt 准备完整指标 Skill 并预填一句请求，保持为草稿、由用户发送。工作树定位、创建、目录、登记和宿主路由复用 Orca；不硬编码物理目录或项目主分支，不删除重建已有树，不因新会话重置未完成改动，不按标题续接会话。模型完整读取 Skill、公共规范和项目 AGENTS，直接核对维护树的定义、脚本与错误，普通项目不依赖自身拥有 standard/。返回总览按项目与宿主恢复指标场景页签。入口不添加 BW 配置页、周流程或指标自动化。
+“配置指标”每次经 metrics-setup 管线新建原生会话并进入该会话，使用独立固定维护分支 **bw/metrics-refresh**（树名 metrics-refresh），由 cycle-prompt 准备完整指标 Skill 并预填一句请求，保持为草稿、由用户发送。工作树定位、创建、目录、登记和宿主路由复用 Orca；不硬编码物理目录或项目主分支，不删除重建已有树，不因新会话重置未完成改动，不按标题续接会话。模型完整读取 Skill、公共规范和项目 AGENTS，直接核对维护树的定义、脚本与错误，普通项目不依赖自身拥有 standard/。返回总览按项目与宿主恢复指标场景页签。入口不添加 Monica 配置页、周流程或指标自动化。
 
 配置任务形成定义和脚本的可评审改动，通过项目 PR 流程合入。总览及版本流程读主干基线（主检出）；新采集固定本次来源，不锁在旧计划配置提交。未合入的配置文件直接显示在记分牌上并标明草稿，不写入正式读数。刷新直接调用 MetricsPort，不启动模型。
 
@@ -58,7 +58,7 @@ VersionHistoryPort.list 的 currentOnly 查询固定本次主干基线 SHA，以
 
 总览记分牌由 overview-scoreboard-model 现算：场景顺序取 catalog.features 再补定义上出现的特性，每签结果取计划写了目标值的滞后（否则第一条），引领取 leads 指向该结果的（计划写了目标值的优先，否则取未关联任何结果的），不借用关联其他结果的引领；没有引领时第二格取下一个结果。其余定义不在牌上列出。聚焦不另存：读取当前版本的计划文档，把 goals[].metricTargets 中非空目标值按指标名并入场景，场景内任一指标有目标值即聚焦并排在前面，完成线取所展示结果、引领的目标值并贴在读数旁；切换版本即换聚焦。输赢只在完成线带比较符且单位与定义一致、并有最近数值读数时判定，用点和数字的颜色表示，不写输赢文案，也不手设状态。价值说明、口径和四原则口号不在总览展示。读数沿首次准备、快照复用与主动刷新链；业务刷新按协议采集读数，界面只展示场景记分牌，不设单独北极星按钮。走势用最近五周窗口的桶值画简单柱，不提供日／周切换，不引入图表库。项目墙只保留自身来源判定。总览筛选保存在按项目／宿主区分的会话视图偏好中，只保存场景页签，不保存版本选择或读数。版本全文与来源由原生版本入口承接，总览不恢复计划/验收双栏。
 
-普通项目只需提供符合协议的指标目录和历史来源，不依赖 BW 源码或 `standard/`。北极星占位不成为已注册业务指标。跨项目、跨宿主和来源权限必须沿项目身份隔离。
+普通项目只需提供符合协议的指标目录和历史来源，不依赖 Monica 源码或 `standard/`。北极星占位不成为已注册业务指标。跨项目、跨宿主和来源权限必须沿项目身份隔离。
 
 ## 验证与代价
 

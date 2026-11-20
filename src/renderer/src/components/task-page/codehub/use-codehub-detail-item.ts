@@ -20,14 +20,14 @@ export function useCodeHubDetailItem(model: TaskPageSourceAvailabilityModel) {
           selectedRepos.find(
             (candidate) => candidate.id === item.repoId && candidate.path === item.repoPath
           ) ?? state.repos.find((candidate) => candidate.id === item.repoId)
-        // Why: a BW workbench scope must survive the detail round-trip so the
+        // Why: a Monica workbench scope must survive the detail round-trip so the
         // close path restores the scoped list, matching the GitHub detail flow.
-        const workbenchTaskScope = state.taskPageData.workbenchTaskScope ?? null
+        const monicaTaskScope = state.taskPageData.monicaTaskScope ?? null
         openTaskPage(
           {
             taskSource: 'codehub',
             preselectedRepoId: item.repoId,
-            ...(workbenchTaskScope ? { workbenchTaskScope } : {}),
+            ...(monicaTaskScope ? { monicaTaskScope } : {}),
             openCodeHubTask: item,
             openCodeHubSourceContext: getTaskPageRepoSourceContext(repo, 'codehub')
           },

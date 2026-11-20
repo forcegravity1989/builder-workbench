@@ -4,7 +4,7 @@
 
 ## 用户结果
 
-使用 CodeHub 仓库的 Builder 可以在 Workbench 中查找、查看和处理 Issue／MR，并在版本计划和版本验收中继续使用同一来源的任务与归档信息。CodeHub 来源能正确保持“读不到平台证据”的未知状态。
+使用 CodeHub 仓库的 Builder 可以在 Monica 中查找、查看和处理 Issue／MR，并在版本计划和版本验收中继续使用同一来源的任务与归档信息。CodeHub 来源能正确保持“读不到平台证据”的未知状态。
 
 任务列表、详情和处理动作属于[任务管理](../task-management/intent.md)。CodeHub 登录、CLI 和来源连接属于[内部集成](../connectors/intent.md)。本目录只维护 CodeHub 作为来源时的差异与边界。
 

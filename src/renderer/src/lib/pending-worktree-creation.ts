@@ -14,7 +14,7 @@ import type { AgentStartupPlan } from '@/lib/tui-agent-startup'
 import type { AgentStartedTelemetry } from '@/lib/worktree-startup-payload'
 import type { TaskSourceContext, WorkspaceRunContext } from '../../../shared/task-source-context'
 import type { AgentLaunchRoute } from '@/lib/agent-launch-routing'
-import type { WorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
+import type { MonicaVersionBinding } from '../../../shared/monica/version-binding'
 import type { AgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
 
 /** Two-phase status reported by the main process while a worktree is created.
@@ -119,10 +119,10 @@ export type WorktreeCreationRequest = {
   /** When the composer stays open for sequential creates, completion must not
    *  steal focus from the next workspace name field. */
   suppressTerminalFocusOnCompletion?: boolean
-  /** G2 (BW): version binding resolved at submit time from the composer's
+  /** G2 (Monica): version binding resolved at submit time from the composer's
    *  workbench creation context; written at the true creation result with an
    *  instanceId fence. Plain-serializable so Retry replays it verbatim. */
-  workbenchVersionBinding?: WorkbenchVersionBinding | null
+  workbenchVersionBinding?: MonicaVersionBinding | null
 }
 
 /** Renderer-only, session-ephemeral record of an in-flight (or failed) worktree

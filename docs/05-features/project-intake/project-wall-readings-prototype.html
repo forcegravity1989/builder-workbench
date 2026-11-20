@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Builder Workbench · 项目墙读数高保真</title>
+  <title>Monica · 项目墙读数高保真</title>
   <link rel="stylesheet" href="../../04-design-system/styles.css">
   <style>
     :root { --rw-sidebar: 248px; --rw-topbar: 42px; }
@@ -27,12 +27,12 @@
     .shell { min-height:0; display:grid; grid-template-columns:var(--rw-sidebar) minmax(0,1fr); }
     .sidebar { min-height:0; display:flex; flex-direction:column; overflow:hidden; border-right:1px solid var(--sidebar-border); color:var(--sidebar-foreground); background:var(--sidebar); }
     .sidebar-head { padding:12px 10px 10px; }
-    .workbench-button, .nav button, .sidebar-footer button { display:flex; align-items:center; gap:8px; width:100%; min-height:28px; padding:0 8px; border:0; border-radius:var(--radius-sm); color:color-mix(in srgb,var(--sidebar-foreground) 72%,transparent); background:transparent; text-align:left; cursor:pointer; font-size:12px; }
-    .workbench-button { padding:7px 8px; color:inherit; }
-    .workbench-button:hover, .workbench-button.active, .nav button:hover, .nav button.active, .sidebar-footer button:hover { color:var(--sidebar-accent-foreground); background:var(--sidebar-accent); }
-    .workbench-button strong, .workbench-button small { display:block; }
-    .workbench-button strong { font-size:13px; font-weight:600; }
-    .workbench-button small { margin-top:2px; color:color-mix(in srgb,var(--sidebar-foreground) 55%,transparent); font-size:10px; }
+    .monica-button, .nav button, .sidebar-footer button { display:flex; align-items:center; gap:8px; width:100%; min-height:28px; padding:0 8px; border:0; border-radius:var(--radius-sm); color:color-mix(in srgb,var(--sidebar-foreground) 72%,transparent); background:transparent; text-align:left; cursor:pointer; font-size:12px; }
+    .monica-button { padding:7px 8px; color:inherit; }
+    .monica-button:hover, .monica-button.active, .nav button:hover, .nav button.active, .sidebar-footer button:hover { color:var(--sidebar-accent-foreground); background:var(--sidebar-accent); }
+    .monica-button strong, .monica-button small { display:block; }
+    .monica-button strong { font-size:13px; font-weight:600; }
+    .monica-button small { margin-top:2px; color:color-mix(in srgb,var(--sidebar-foreground) 55%,transparent); font-size:10px; }
     .nav { display:grid; gap:2px; padding:0 10px 10px; }
     .nav-icon { width:15px; color:currentColor; text-align:center; }
     .sidebar-section { min-height:0; display:flex; flex:1; flex-direction:column; padding:9px 10px 0; border-top:1px solid var(--sidebar-border); }
@@ -105,7 +105,7 @@
   <div class="window">
     <header class="topbar">
       <span class="mark" aria-hidden="true">W</span>
-      <span class="topbar-title">Workbench</span>
+      <span class="topbar-title">Monica</span>
       <span class="topbar-meta">Orca runtime</span>
       <span class="spacer"></span>
       <span class="tag tag-neutral">本机 + 2 台 Builder 主机</span>
@@ -113,16 +113,16 @@
     </header>
 
     <div class="shell">
-      <aside class="sidebar" aria-label="Workbench 侧栏">
+      <aside class="sidebar" aria-label="Monica 侧栏">
         <div class="sidebar-head">
-          <button class="workbench-button active" type="button" title="打开项目墙">
+          <button class="monica-button active" type="button" title="打开项目墙">
             <span class="mark" aria-hidden="true">B</span>
             <span><strong>builder-workbench</strong><small>项目墙 · workbench</small></span>
             <span class="spacer"></span><span aria-hidden="true">⌄</span>
           </button>
         </div>
 
-        <nav class="nav" aria-label="BW 屏幕">
+        <nav class="nav" aria-label="Monica 屏幕">
           <button type="button" data-coming-soon="true"><span class="nav-icon">▣</span>总览</button>
           <button type="button" data-coming-soon="true"><span class="nav-icon">◫</span>计划</button>
           <button type="button" data-coming-soon="true"><span class="nav-icon">✓</span>验收</button>
@@ -153,7 +153,7 @@
           <div class="page-inner">
             <header class="page-head">
               <div>
-                <div class="kicker">Workbench / 项目墙</div>
+                <div class="kicker">Monica / 项目墙</div>
                 <h1>项目墙</h1>
                 <p>只展示能读到 .bw/project.toml 的项目。卡片给事实、不给结论：版本定没定、承诺推进到哪、有没有会话在跑、有没有 PR 等着合——判断与催办归人。</p>
               </div>
@@ -174,7 +174,7 @@
 
             <div class="wall-grid" id="wall-grid">
 
-              <article class="card wall-card" aria-label="项目卡：workbench">
+              <article class="card wall-card" aria-label="项目卡：Monica">
                 <div class="card-top">
                   <div class="source-tags"><span class="tag tag-neutral" title="本机注册的工作树">本机</span></div>
                   <span class="tag tag-accent">当前</span>

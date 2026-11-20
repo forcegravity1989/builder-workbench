@@ -34,7 +34,7 @@ vi.mock('./ssh/ssh-config-parser', () => ({
   sshConfigHostsToTargets: vi.fn(() => [])
 }))
 
-describe('Workbench first-install workspace directory', () => {
+describe('Monica first-install workspace directory', () => {
   const stores: Store[] = []
   const openStore = () => {
     const store = createStore()
@@ -43,9 +43,9 @@ describe('Workbench first-install workspace directory', () => {
   }
 
   beforeEach(() => {
-    testState.dir = mkdtempSync(join(tmpdir(), 'workbench-workspace-default-'))
-    vi.stubEnv('WORKBENCH_SHELL', '1')
-    vi.stubEnv('ORCA_PRODUCT_NAME', 'Workbench')
+    testState.dir = mkdtempSync(join(tmpdir(), 'monica-workspace-default-'))
+    vi.stubEnv('MONICA_SHELL', '1')
+    vi.stubEnv('ORCA_PRODUCT_NAME', 'Monica')
     driveExists.mockReset().mockReturnValue(true)
   })
 
@@ -117,7 +117,7 @@ describe('Workbench first-install workspace directory', () => {
   )
 
   it('leaves the Orca product default unchanged on Windows', async () => {
-    vi.stubEnv('WORKBENCH_SHELL', '')
+    vi.stubEnv('MONICA_SHELL', '')
     vi.stubEnv('ORCA_PRODUCT_NAME', 'Orca')
     await withPlatform('win32', async () => {
       expect(openStore().getSettings().workspaceDir).toBe(getDefaultWorkspaceDir(homedir()))
@@ -125,7 +125,7 @@ describe('Workbench first-install workspace directory', () => {
     })
   })
 
-  it('leaves the Workbench default unchanged outside Windows', async () => {
+  it('leaves the Monica default unchanged outside Windows', async () => {
     await withPlatform('linux', async () => {
       expect(openStore().getSettings().workspaceDir).toBe(getDefaultWorkspaceDir(homedir()))
       expect(driveExists).not.toHaveBeenCalled()

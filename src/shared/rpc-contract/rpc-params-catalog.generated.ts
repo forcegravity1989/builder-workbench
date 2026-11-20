@@ -42,6 +42,54 @@ import {
   PairingGetEndpointsParamsSchema,
   PairingProvisionRelayParamsSchema
 } from '../mobile-relay-credential-contract'
+import { ArchivePrStatusRequestSchema } from '../monica/archive-pr-status'
+import {
+  CharterProbeRequestSchema,
+  CharterReadRequestSchema,
+  CharterScopeSchema,
+  CharterStatusRequestSchema,
+  CharterSubmitRequestSchema
+} from '../monica/charter'
+import { FixedWorkspaceEnsureSchema } from '../monica/fixed-workspace'
+import { MetricReadRequestSchema } from '../monica/metrics'
+import {
+  PackageDownloadSchema,
+  PackageLatestSchema,
+  PackageLaunchSchema,
+  PackagePipelineListSchema
+} from '../monica/package-pipeline'
+import { ReviewDismissSchema, ReviewRequestSchema } from '../monica/pr-review-request'
+import {
+  MilestoneDiscardRequestSchema,
+  MilestoneReadRequestSchema,
+  MilestoneSaveRequestSchema,
+  MilestoneSubmitRequestSchema,
+  MilestoneWorkingRequestSchema
+} from '../monica/project-milestones'
+import { ReleaseStatusRequestSchema } from '../monica/release-status'
+import { MonicaGroupRemoval, MonicaRepoRemoval } from '../monica/repo-removal'
+import { MonicaSkillPrepareRequest } from '../monica/skill-assets'
+import { TrunkUpdateSchema } from '../monica/trunk-update'
+import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../monica/version-binding'
+import {
+  VersionHistoryListSchema,
+  VersionHistoryReadPlanSchema,
+  VersionHistoryReadSchema,
+  VersionPlanEntryTimesSchema,
+  VersionTreePlansSchema
+} from '../monica/version-history'
+import {
+  VersionMigrationApplySchema,
+  VersionMigrationReadSchema
+} from '../monica/version-material-migration'
+import {
+  VersionMaterialAddArtifactSchema,
+  VersionMaterialReadSchema,
+  VersionMaterialSaveSchema,
+  VersionMaterialScopeSchema
+} from '../monica/version-material-request'
+import { VersionWorkspacePrepareSchema } from '../monica/version-workspace-prepare'
+import { WorkflowCommentsRequestSchema } from '../monica/workflow-comments'
 import { pluginConsentRequestSchema } from '../plugins/plugin-consent-request'
 import {
   AccountsUnsubscribeParams,
@@ -561,54 +609,6 @@ import {
   SkillUploadChunkRequestSchema,
   SkillUploadCommitRequestSchema
 } from '../skill-upload-session-contract'
-import { ArchivePrStatusRequestSchema } from '../workbench/archive-pr-status'
-import {
-  CharterProbeRequestSchema,
-  CharterReadRequestSchema,
-  CharterScopeSchema,
-  CharterStatusRequestSchema,
-  CharterSubmitRequestSchema
-} from '../workbench/charter'
-import { FixedWorkspaceEnsureSchema } from '../workbench/fixed-workspace'
-import { MetricReadRequestSchema } from '../workbench/metrics'
-import {
-  PackageDownloadSchema,
-  PackageLatestSchema,
-  PackageLaunchSchema,
-  PackagePipelineListSchema
-} from '../workbench/package-pipeline'
-import { ReviewDismissSchema, ReviewRequestSchema } from '../workbench/pr-review-request'
-import {
-  MilestoneDiscardRequestSchema,
-  MilestoneReadRequestSchema,
-  MilestoneSaveRequestSchema,
-  MilestoneSubmitRequestSchema,
-  MilestoneWorkingRequestSchema
-} from '../workbench/project-milestones'
-import { ReleaseStatusRequestSchema } from '../workbench/release-status'
-import { WorkbenchGroupRemoval, WorkbenchRepoRemoval } from '../workbench/repo-removal'
-import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
-import { TrunkUpdateSchema } from '../workbench/trunk-update'
-import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
-import {
-  VersionHistoryListSchema,
-  VersionHistoryReadPlanSchema,
-  VersionHistoryReadSchema,
-  VersionPlanEntryTimesSchema,
-  VersionTreePlansSchema
-} from '../workbench/version-history'
-import {
-  VersionMigrationApplySchema,
-  VersionMigrationReadSchema
-} from '../workbench/version-material-migration'
-import {
-  VersionMaterialAddArtifactSchema,
-  VersionMaterialReadSchema,
-  VersionMaterialSaveSchema,
-  VersionMaterialScopeSchema
-} from '../workbench/version-material-request'
-import { VersionWorkspacePrepareSchema } from '../workbench/version-workspace-prepare'
-import { WorkflowCommentsRequestSchema } from '../workbench/workflow-comments'
 
 // Why: the host parses params with these schemas, so a client that matches this map
 // matches the dispatcher. Clients must import it for types only — parsing a params
@@ -1263,14 +1263,14 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
-  'workbench.repo.deleteGroup': WorkbenchGroupRemoval,
-  'workbench.repo.removeRegistration': WorkbenchRepoRemoval,
+  'workbench.repo.deleteGroup': MonicaGroupRemoval,
+  'workbench.repo.removeRegistration': MonicaRepoRemoval,
   'workbench.review.comments': PullRequest,
   'workbench.review.dismiss': ReviewDismissSchema,
   'workbench.review.identity': null,
   'workbench.review.inbox': null,
   'workbench.review.receive': ReviewRequestSchema,
-  'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
+  'workbench.skills.prepare': MonicaSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,

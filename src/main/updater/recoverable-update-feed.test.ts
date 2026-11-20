@@ -15,7 +15,7 @@ afterEach(async () => {
 })
 
 it('finishes the pinned GitHub package when its feed retires during transfer', async () => {
-  const cacheDir = await mkdtemp(join(tmpdir(), 'workbench-feed-'))
+  const cacheDir = await mkdtemp(join(tmpdir(), 'monica-feed-'))
   cleanup.push(() => rm(cacheDir, { recursive: true, force: true }))
   const bytes = Buffer.from('an installer payload')
   const paths: string[] = []
@@ -43,7 +43,7 @@ it('finishes the pinned GitHub package when its feed retires during transfer', a
           version: '0.8.0',
           files: [
             {
-              url: 'workbench-windows-setup.exe',
+              url: 'monica-windows-setup.exe',
               size: bytes.length,
               sha512: createHash('sha512').update(bytes).digest('base64')
             }
@@ -77,6 +77,6 @@ it('finishes the pinned GitHub package when its feed retires during transfer', a
   expect(Buffer.concat(chunks)).toEqual(bytes)
   expect(paths).toEqual([
     'https://github.com/forcegravity1989/builder-workbench/releases/latest/download/latest.yml',
-    'https://github.com/forcegravity1989/builder-workbench/releases/download/v0.8.0/workbench-windows-setup.exe'
+    'https://github.com/forcegravity1989/builder-workbench/releases/download/v0.8.0/monica-windows-setup.exe'
   ])
 })

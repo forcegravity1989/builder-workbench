@@ -2,10 +2,11 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 import type { AppIdentity } from '../../shared/app-identity'
 import {
-  isWorkbenchProduct,
-  WORKBENCH_APP_NAME,
-  WORKBENCH_APP_USER_MODEL_ID
-} from './workbench-product'
+  isMonicaProduct,
+  MONICA_APP_NAME,
+  MONICA_STORAGE_APP_NAME,
+  MONICA_APP_USER_MODEL_ID
+} from './monica-product'
 
 const BASE_APP_NAME = 'Orca'
 const BASE_APP_USER_MODEL_ID = 'com.stablyai.orca'
@@ -71,17 +72,17 @@ export function getDevInstanceIdentity(
   env: NodeJS.ProcessEnv = process.env
 ): DevInstanceIdentity {
   if (!isDev) {
-    if (isWorkbenchProduct(env)) {
+    if (isMonicaProduct(env)) {
       return {
-        name: WORKBENCH_APP_NAME,
-        appName: WORKBENCH_APP_NAME,
+        name: MONICA_APP_NAME,
+        appName: MONICA_STORAGE_APP_NAME,
         isDev: false,
         devLabel: null,
         devBranch: null,
         devWorktreeName: null,
         devRepoRoot: null,
         dockBadgeLabel: null,
-        appUserModelId: WORKBENCH_APP_USER_MODEL_ID
+        appUserModelId: MONICA_APP_USER_MODEL_ID
       }
     }
     return {

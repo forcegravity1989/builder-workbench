@@ -1,6 +1,6 @@
 import type { TaskPageRuntimeHostsModel } from './use-task-page-runtime-hosts'
 import { useCallback, useMemo } from 'react'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import type { Repo } from '../../../shared/repo-types'
 import {
   getTaskPageRepoSourceContext,
@@ -38,7 +38,7 @@ export function useTaskPageSourceAvailabilityPrelude(model: TaskPageRuntimeHosts
   } = model
   const getTaskPickerRepoHostLabel = useCallback(
     (repo: Repo): string | null => {
-      if (isWorkbenchShell()) {
+      if (isMonicaShell()) {
         return null
       }
       const provider = taskSource === 'gitlab' ? 'gitlab' : 'github'

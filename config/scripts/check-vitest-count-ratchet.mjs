@@ -5,7 +5,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 
-// Ratchet gate for the BW-overlay vitest case count (AGENTS 提交前门禁 / 02 环 4).
+// Ratchet gate for the Monica-overlay vitest case count (AGENTS 提交前门禁 / 02 环 4).
 //
 // 环 4 keeps only two kinds of unit tests: core-algorithm pure derivations and
 // E2E-critical data protocols. The overlay suite's TOTAL executed case count is
@@ -20,10 +20,10 @@ import { pathToFileURL } from 'node:url'
 
 const BASELINE_PATH = 'config/vitest-count-baseline.txt'
 export const SUITE_DIRS = [
-  'src/main/workbench',
-  'src/relay/workbench',
-  'src/renderer/src/workbench',
-  'src/shared/workbench'
+  'src/main/monica',
+  'src/relay/monica',
+  'src/renderer/src/monica',
+  'src/shared/monica'
 ]
 
 export function parseBaseline(text) {
@@ -32,7 +32,7 @@ export function parseBaseline(text) {
     .map((l) => l.trim())
     .find((l) => l && !l.startsWith('#'))
   const [key, n] = line ? line.split(/\s+/) : []
-  if (key !== 'workbench' || !/^\d+$/.test(n ?? '')) {
+  if (key !== 'monica' || !/^\d+$/.test(n ?? '')) {
     return null
   }
   return Number(n)
@@ -40,13 +40,13 @@ export function parseBaseline(text) {
 
 export function baselineText(count) {
   const header = [
-    '# BW 叠层 vitest 总执行例数 ratchet（环 4：全局一个数，只减不增，新增先对冲）。',
-    '# 范围：src/{main,relay,renderer/src,shared}/workbench 套件实际执行例数（含 it.each 展开与 skip/todo）。',
+    '# Monica 叠层 vitest 总执行例数 ratchet（环 4：全局一个数，只减不增，新增先对冲）。',
+    '# 范围：src/{main,relay,renderer/src,shared}/monica 套件实际执行例数（含 it.each 展开与 skip/todo）。',
     '# 核对：pnpm check:vitest-count-ratchet　收紧（只降不升）：--prune　初始化：--init',
     '# 依据：AGENTS.md 提交前门禁、docs/01-principles/02-working-backwards.md 环 4（2026-09-30 拍板）。',
     ''
   ].join('\n')
-  return `${header}workbench ${count}\n`
+  return `${header}monica ${count}\n`
 }
 
 export function areaOf(relPath) {
@@ -191,7 +191,7 @@ export function main(root = process.cwd()) {
   }
   const baseline = parseBaseline(fs.readFileSync(baselineFile, 'utf8'))
   if (baseline === null) {
-    console.error(`::error::Unparseable ${BASELINE_PATH} — expected a "workbench <count>" line.`)
+    console.error(`::error::Unparseable ${BASELINE_PATH} — expected a "monica <count>" line.`)
     return 1
   }
   const reportPath = path.join(os.tmpdir(), `vitest-count-ratchet-${process.pid}.json`)
@@ -255,7 +255,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (arg === '--init') {
     const total = measure(root)
     writeBaseline(root, total)
-    console.log(`Wrote ${BASELINE_PATH} with workbench ${total}.`)
+    console.log(`Wrote ${BASELINE_PATH} with monica ${total}.`)
     process.exit(0)
   }
   if (arg === '--prune') {
@@ -271,7 +271,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       process.exit(1)
     }
     writeBaseline(root, total)
-    console.log(`Pruned ${BASELINE_PATH} to workbench ${total}.`)
+    console.log(`Pruned ${BASELINE_PATH} to monica ${total}.`)
     process.exit(0)
   }
   process.exit(main(root))

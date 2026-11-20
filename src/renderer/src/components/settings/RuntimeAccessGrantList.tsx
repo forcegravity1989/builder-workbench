@@ -52,7 +52,9 @@ export function RuntimeAccessGrantList({
     () => grants.filter((grant) => grant.accessMode === 'team-read' && grant.connected === true),
     [grants]
   )
-  const selectedGrants = selectableGrants.filter((grant) => selectedGrantIds.includes(grant.deviceId))
+  const selectedGrants = selectableGrants.filter((grant) =>
+    selectedGrantIds.includes(grant.deviceId)
+  )
 
   const toggleGrant = (deviceId: string): void => {
     setSelectedGrantIds((current) =>
@@ -149,8 +151,7 @@ export function RuntimeAccessGrantList({
           {grants.map((grant) => {
             const isCurrent = currentGrantId === grant.deviceId
             const isRevoking = revokingGrantId === grant.deviceId
-            const canGrantFullAccess =
-              grant.accessMode === 'team-read' && grant.connected === true
+            const canGrantFullAccess = grant.accessMode === 'team-read' && grant.connected === true
             return (
               <div
                 key={grant.deviceId}
@@ -276,7 +277,11 @@ export function RuntimeAccessGrantList({
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
               {translate('auto.components.settings.RuntimeAccessGrantList.cancel', 'Cancel')}
             </Button>
-            <Button type="button" onClick={() => void grantFullAccess()} disabled={grantingFullAccess}>
+            <Button
+              type="button"
+              onClick={() => void grantFullAccess()}
+              disabled={grantingFullAccess}
+            >
               {grantingFullAccess ? <Loader2 className="size-3.5 animate-spin" /> : null}
               {translate(
                 'auto.components.settings.RuntimeAccessGrantList.confirmGrant',

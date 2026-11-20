@@ -5,11 +5,8 @@ import { useAppStore } from '@/store'
 import { findGithubIssueWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
-import {
-  matchScopedTaskWorkspaces,
-  resolveTaskRowWorkspace
-} from '@/workbench/scoped-task-workspace'
-import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
+import { matchScopedTaskWorkspaces, resolveTaskRowWorkspace } from '@/monica/scoped-task-workspace'
+import { dispatchScopedWorktrees } from '@/monica/version-workspace-choice-state'
 import { track } from '@/lib/telemetry'
 import { translate } from '@/i18n/i18n'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
@@ -43,19 +40,19 @@ export default function GitHubItemDialog({
   const allWorktrees = useAllWorktrees()
   // G2 (BW)：范围详情沿 TaskPageData 读取范围（详情往返已带范围），Issue 的
   // 归属工作区按明确绑定解析；无范围时原生「首个未归档树」语义逐字不变。
-  const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
+  const monicaTaskScope = useAppStore((s) => s.taskPageData.monicaTaskScope ?? null)
   const issueAttachedWorkspace = useMemo(() => {
     if (workItem?.type !== 'issue') {
       return null
     }
     return resolveTaskRowWorkspace({
-      scope: workbenchTaskScope,
+      scope: monicaTaskScope,
       worktrees: allWorktrees,
       provider: 'github',
       item: { repoId: effectiveRepoId, type: 'issue', number: workItem.number },
       sourceContext: sourceContext ?? null
     }).attached
-  }, [allWorktrees, effectiveRepoId, workItem, workbenchTaskScope, sourceContext])
+  }, [allWorktrees, effectiveRepoId, workItem, monicaTaskScope, sourceContext])
   const issueAttachedWorkspaceLabel = issueAttachedWorkspace
     ? getWorktreeAttachmentLabel(issueAttachedWorkspace)
     : null
@@ -65,20 +62,20 @@ export default function GitHubItemDialog({
   // them as composer-opened; PR rows stay silent like the task screen.
   const handleStartWorkspaceFromDialog = useCallback(
     (item: GitHubWorkItem): void => {
-      if (workbenchTaskScope && item.type === 'issue') {
+      if (monicaTaskScope && item.type === 'issue') {
         track('bw_task_start', { outcome: 'composer-opened', source: 'task-dialog' })
       }
       onUse(item)
     },
-    [workbenchTaskScope, onUse]
+    [monicaTaskScope, onUse]
   )
 
   const handleOpenOrUseIssueWorkspace = useCallback(
     (item: GitHubWorkItem): void => {
       const worktrees = useAppStore.getState().allWorktrees()
-      if (workbenchTaskScope) {
+      if (monicaTaskScope) {
         const scoped = matchScopedTaskWorkspaces({
-          scope: workbenchTaskScope,
+          scope: monicaTaskScope,
           worktrees,
           provider: 'github',
           number: item.number,
@@ -128,7 +125,7 @@ export default function GitHubItemDialog({
         )
       }
     },
-    [effectiveRepoId, onUse, sourceContext, workbenchTaskScope]
+    [effectiveRepoId, onUse, sourceContext, monicaTaskScope]
   )
 
   const {

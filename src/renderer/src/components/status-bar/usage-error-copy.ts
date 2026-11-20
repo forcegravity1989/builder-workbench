@@ -152,7 +152,7 @@ export function getProviderUsageErrorMessage(p: ProviderRateLimits): string {
   if (p.provider === 'cursor' && p.usageMetadata?.failureKind === 'stale-token') {
     return translate(
       'auto.components.status.bar.tooltip.cursor.expired.message',
-      'Sign in with Cursor IDE or run cursor-agent login on the computer running Workbench, then retry usage.'
+      'Sign in with Cursor IDE or run cursor-agent login on the computer running Monica, then retry usage.'
     )
   }
   if (p.provider === 'claude') {

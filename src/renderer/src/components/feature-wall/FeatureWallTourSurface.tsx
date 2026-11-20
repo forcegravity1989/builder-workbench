@@ -32,9 +32,9 @@ import { getScreenSubmitModifierLabel } from '@/lib/screen-submit-shortcut'
 import { useFeatureWallTourKeyboardShortcut } from './use-feature-wall-tour-keyboard-shortcut'
 import { useFeatureWallTourRailKeydown } from './use-feature-wall-tour-rail-keydown'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { BwExploreLayout } from '@/workbench/explore/BwExploreLayout'
-import type { ExploreDemo } from '@/workbench/explore/bw-explore-catalog'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { MonicaExploreLayout } from '@/monica/explore/MonicaExploreLayout'
+import type { ExploreDemo } from '@/monica/explore/monica-explore-catalog'
 import {
   localizeAgentsStep,
   localizeWorkbenchStep,
@@ -65,10 +65,10 @@ export function FeatureWallTourSurface({
   className,
   panelClassName,
   doneLabel = translate('guidance.done', 'Done'),
-  footerText = isWorkbenchShell()
+  footerText = isMonicaShell()
     ? translate(
         'guidance.exploreFooter',
-        'Reopen any time from the bottom question mark > Explore BW.'
+        'Reopen any time from the bottom question mark > Explore Monica.'
       )
     : translate('guidance.tourFooter', 'Reopen any time from Help > Explore Orca.'),
   enableKeyboardShortcut = true,
@@ -457,7 +457,7 @@ export function FeatureWallTourSurface({
       renderLayout={
         workbenchCatalog
           ? (preview) => (
-              <BwExploreLayout
+              <MonicaExploreLayout
                 demo={preview}
                 onSelectDemo={selectDemo}
                 footerText={footerText}

@@ -1,17 +1,17 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useShallow } from 'zustand/react/shallow'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import {
   useVersionSidebarProjection,
   type VersionSidebarProjection
-} from '@/workbench/version-sidebar-state'
+} from '@/monica/version-sidebar-state'
 import type { AppState } from '@/store/types'
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getPinnedSectionWorktrees } from '../../pinned-section-worktrees'
-import { buildWallProjects } from '@/workbench/workbench-wall-projects'
+import { buildWallProjects } from '@/monica/monica-wall-projects'
 import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
@@ -30,13 +30,13 @@ type VersionSidebarScope = {
 }
 
 type VersionScopedWorktreesArgs = {
-  workbenchProject?: VersionSidebarScope
+  monicaProject?: VersionSidebarScope
   filteredWorktrees: readonly Worktree[]
   worktreeLineageById: Readonly<Record<string, WorktreeLineage>>
   worktreeMap: ReadonlyMap<string, Worktree>
 }
 
-export function getWorkbenchSidebarProject(
+export function getMonicaSidebarProject(
   state: Pick<
     AppState,
     | 'activeRepoId'
@@ -49,7 +49,7 @@ export function getWorkbenchSidebarProject(
   >,
   versionProjection: VersionSidebarProjection
 ) {
-  if (!isWorkbenchShell()) {
+  if (!isMonicaShell()) {
     return undefined
   }
   const { activeRepoId, activeWorkspaceExecutionHostId: activeHostId, repos, projectGroups } = state
@@ -113,7 +113,7 @@ export function getWorkbenchSidebarProject(
   }
 }
 
-export function useWorkbenchSidebarScope() {
+export function useMonicaSidebarScope() {
   const state = useAppStore(
     useShallow((s) => ({
       activeRepoId: s.activeRepoId,
@@ -126,18 +126,16 @@ export function useWorkbenchSidebarScope() {
     }))
   )
   const versionProjection = useVersionSidebarProjection()
-  const workbenchProject = useMemo(
-    () => getWorkbenchSidebarProject(state, versionProjection),
+  const monicaProject = useMemo(
+    () => getMonicaSidebarProject(state, versionProjection),
     [state, versionProjection]
   )
-  const workbenchScope = useMemo(
+  const monicaScope = useMemo(
     () =>
-      workbenchProject
-        ? { repoId: workbenchProject.repoId, repoIds: workbenchProject.repoIds }
-        : undefined,
-    [workbenchProject]
+      monicaProject ? { repoId: monicaProject.repoId, repoIds: monicaProject.repoIds } : undefined,
+    [monicaProject]
   )
-  return { workbenchProject, workbenchScope }
+  return { monicaProject, monicaScope }
 }
 
 /**
@@ -147,11 +145,11 @@ export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs
   visibleWorktrees: Worktree[]
   pinnedOnlyIdentities?: ReadonlySet<string>
 } {
-  const { workbenchProject, filteredWorktrees, worktreeLineageById, worktreeMap } = args
-  if (!workbenchProject) {
+  const { monicaProject, filteredWorktrees, worktreeLineageById, worktreeMap } = args
+  if (!monicaProject) {
     return { visibleWorktrees: [...filteredWorktrees] }
   }
-  const projectWorktrees = filteredWorktrees.filter((tree) => inProject(tree, workbenchProject))
+  const projectWorktrees = filteredWorktrees.filter((tree) => inProject(tree, monicaProject))
   const pinnedIdentities = new Set(
     getPinnedSectionWorktrees(projectWorktrees, worktreeLineageById, worktreeMap).map(
       getWorktreeHostIdentity
@@ -160,18 +158,18 @@ export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs
   return {
     visibleWorktrees: projectWorktrees.filter((tree) => {
       const identity = getWorktreeHostIdentity(tree)
-      return pinnedIdentities.has(identity) || !workbenchProject.worktreeIdentities.has(identity)
+      return pinnedIdentities.has(identity) || !monicaProject.worktreeIdentities.has(identity)
     }),
     pinnedOnlyIdentities: new Set(
-      [...pinnedIdentities].filter((identity) => workbenchProject.worktreeIdentities.has(identity))
+      [...pinnedIdentities].filter((identity) => monicaProject.worktreeIdentities.has(identity))
     )
   }
 }
 
 export function scopeDetectedWorktreesForVersionSidebar<
   T extends { worktrees: readonly Worktree[] }
->(byRepo: Record<string, T>, workbenchProject?: VersionSidebarScope): Record<string, T> {
-  if (!workbenchProject) {
+>(byRepo: Record<string, T>, monicaProject?: VersionSidebarScope): Record<string, T> {
+  if (!monicaProject) {
     return byRepo
   }
   return Object.fromEntries(
@@ -181,8 +179,8 @@ export function scopeDetectedWorktreesForVersionSidebar<
         ...detected,
         worktrees: detected.worktrees.filter(
           (tree) =>
-            inProject(tree, workbenchProject) &&
-            !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
+            inProject(tree, monicaProject) &&
+            !monicaProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
         )
       }
     ])
@@ -219,15 +217,15 @@ export function useVersionScopedWorktrees(args: VersionScopedWorktreesArgs): {
   visibleWorktrees: Worktree[]
   pinnedOnlyIdentities?: ReadonlySet<string>
 } {
-  const { workbenchProject, filteredWorktrees, worktreeLineageById, worktreeMap } = args
+  const { monicaProject, filteredWorktrees, worktreeLineageById, worktreeMap } = args
   return useMemo(
     () =>
       scopeWorktreesForVersionSidebar({
-        workbenchProject,
+        monicaProject,
         filteredWorktrees,
         worktreeLineageById,
         worktreeMap
       }),
-    [filteredWorktrees, workbenchProject, worktreeLineageById, worktreeMap]
+    [filteredWorktrees, monicaProject, worktreeLineageById, worktreeMap]
   )
 }

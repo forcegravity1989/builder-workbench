@@ -36,7 +36,7 @@ export type TaskSourceContext = {
   repoId?: string | null
   providerIdentity?: TaskProviderIdentity | null
   accountLabel?: string | null
-  /** Desktop account selected by the Workbench Tasks page. */
+  /** Desktop account selected by the Monica Tasks page. */
   localTaskAccount?: true
   taskRemoteCandidates?: {
     origin?: GitHubOwnerRepo

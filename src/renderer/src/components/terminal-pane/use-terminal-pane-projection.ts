@@ -19,8 +19,8 @@ import type { TerminalPaneMobileController } from './use-terminal-pane-mobile-ac
 import { useAppStore } from '@/store'
 import { makePaneKey } from '../../../../shared/stable-pane-id'
 import { resolvePaneAgentSessionId } from './pane-agent-session-id'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { workbenchTerminalBackground } from '@/workbench/workbench-terminal-appearance'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { monicaTerminalBackground } from '@/monica/monica-terminal-appearance'
 
 export function useTerminalPaneProjection(controller: TerminalPaneMobileController) {
   const {
@@ -65,8 +65,8 @@ export function useTerminalPaneProjection(controller: TerminalPaneMobileControll
     appSurface: effectiveAppearance?.mode,
     backgroundOpacity: settings?.terminalBackgroundOpacity
   })
-  const paneTitleBackground = isWorkbenchShell()
-    ? workbenchTerminalBackground(effectiveAppearance?.mode ?? 'light')
+  const paneTitleBackground = isMonicaShell()
+    ? monicaTerminalBackground(effectiveAppearance?.mode ?? 'light')
     : (resolveOpaqueTerminalBackground(terminalBackground, {
         appSurface: effectiveAppearance?.mode,
         backgroundOpacity: settings?.terminalBackgroundOpacity

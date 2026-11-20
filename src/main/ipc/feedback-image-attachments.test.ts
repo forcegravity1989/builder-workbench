@@ -30,7 +30,7 @@ describe('isSupportedFeedbackImageContentType', () => {
   )
 })
 
-// Why (BW #553): the feedbackImageFilename / appendFeedbackImagesToFormData
+// Why (Monica #553): the feedbackImageFilename / appendFeedbackImagesToFormData
 // cases were removed with the HTTP multipart transport — the WeLink sink
 // writes attachments to disk and derives extensions from the same allow-list.
 

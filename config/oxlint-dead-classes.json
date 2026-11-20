@@ -68,7 +68,7 @@
       }
     },
     {
-      "files": ["**/src/renderer/src/workbench/**/*.tsx"],
+      "files": ["**/src/renderer/src/monica/**/*.tsx"],
       "rules": {
         "shadcn/no-unknown-classes": "off"
       }

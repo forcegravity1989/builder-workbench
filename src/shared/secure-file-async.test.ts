@@ -15,7 +15,7 @@ describe('asynchronous secure publication', () => {
   let directory: string
   beforeEach(() => {
     Object.defineProperty(process, 'platform', { configurable: true, value: 'win32' })
-    directory = mkdtempSync(join(tmpdir(), 'bw-async-secure-'))
+    directory = mkdtempSync(join(tmpdir(), 'monica-async-secure-'))
     vi.mocked(restrictWindowsPath).mockReset().mockResolvedValue(true)
   })
   afterEach(() => {

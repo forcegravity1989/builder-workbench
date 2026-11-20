@@ -1878,26 +1878,26 @@
     "bw-knowledge-docs": [
       {
         "releaseRevision": 1,
-        "packageDigest": "9507ff68e1785a5e2f7ab27408ea58d2313c293f8527944b87121fe6d72464d9",
-        "gitTreeSha": "20baf6b636bbf676bc2a7e1cfd8ee80df8673435",
+        "packageDigest": "41ef6e62298da06ec6460915f8e5a0ae6991421fa6cfd2cd553bd7d83ba330b8",
+        "gitTreeSha": "44e27e24d79a69e27d25ebc679f0253d9c8bd122",
         "files": [
           {
             "path": "SKILL.md",
-            "size": 2019,
+            "size": 2007,
             "executable": false,
             "classification": "text",
-            "exactSha256": "c8557ca42e516920fd309dc219e5aadca77aa94d353b465582d50f1c0e04ee85",
-            "textNormalizedSha256": "c8557ca42e516920fd309dc219e5aadca77aa94d353b465582d50f1c0e04ee85",
-            "identitySha256": "c8557ca42e516920fd309dc219e5aadca77aa94d353b465582d50f1c0e04ee85"
+            "exactSha256": "a2037b3ac9fc6d3559b984861e4c475806564ac237f94cddd5dcefb529b55494",
+            "textNormalizedSha256": "a2037b3ac9fc6d3559b984861e4c475806564ac237f94cddd5dcefb529b55494",
+            "identitySha256": "a2037b3ac9fc6d3559b984861e4c475806564ac237f94cddd5dcefb529b55494"
           },
           {
             "path": "roles.md",
-            "size": 1793,
+            "size": 2058,
             "executable": false,
             "classification": "text",
-            "exactSha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be",
-            "textNormalizedSha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be",
-            "identitySha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be"
+            "exactSha256": "905b805c65cc040ddbeed67fe0c1bd764dfa0b1e48170edca858586c47c6e842",
+            "textNormalizedSha256": "905b805c65cc040ddbeed67fe0c1bd764dfa0b1e48170edca858586c47c6e842",
+            "identitySha256": "905b805c65cc040ddbeed67fe0c1bd764dfa0b1e48170edca858586c47c6e842"
           }
         ]
       }

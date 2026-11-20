@@ -429,7 +429,7 @@ function App() {
         <div className="ml-workspace">
           <header className="ml-topbar">
             <span>
-              Builders’ Workbench <span>›</span>项目总览
+              Monica <span>›</span>项目总览
             </span>
             <div className="ml-actions">
               <label className="ml-scene-label">

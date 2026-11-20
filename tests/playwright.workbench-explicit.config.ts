@@ -7,8 +7,6 @@ export default defineConfig(workbench, {
   projects: workbench.projects?.map((project) => ({
     ...project,
     testMatch: [...WORKBENCH_EXPLICIT_ALLOWLIST],
-    ...(project.name === 'electron-headless'
-      ? { grepInvert: /@headful/ }
-      : { grep: /@headful/ })
+    ...(project.name === 'electron-headless' ? { grepInvert: /@headful/ } : { grep: /@headful/ })
   }))
 })

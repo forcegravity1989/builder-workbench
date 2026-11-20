@@ -7,9 +7,9 @@ import { OnboardingInlineCommandTerminal } from './OnboardingInlineCommandTermin
 import { translate } from '@/i18n/i18n'
 import { useCliInstall } from '@/components/settings/cli-install-action'
 import { useIsLocalCliScope } from '@/components/settings/use-local-cli-scope'
-import { formatBwCliInstallCommandLines } from '../../../../shared/bw-cli-install-commands'
+import { formatMonicaCliInstallCommandLines } from '../../../../shared/monica-cli-install-commands'
 
-// Why (BW): the Workbench wizard pitches CodeHub as the primary task source.
+// Why (Monica): the Monica wizard pitches CodeHub as the primary task source.
 // The row reuses the real capability chain from the Settings connectors cards
 // (#323): preflight `codehub-cli auth status` readback, app-run npm install,
 // and card-embedded `codehub-cli auth login --all` — copy only mirrors the
@@ -151,7 +151,7 @@ export function CodeHubRow(): React.JSX.Element {
         <div className="px-5 pb-5">
           {/* Why: the displayed line is exactly what the app-run install
               executes (shared source of truth with the Settings cards). */}
-          {formatBwCliInstallCommandLines('codehub').map((line) => (
+          {formatMonicaCliInstallCommandLines('codehub').map((line) => (
             <p key={line} className="break-all font-mono text-[11px] text-muted-foreground">
               {line}
             </p>

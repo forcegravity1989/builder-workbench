@@ -4,7 +4,7 @@ import {
   toSshExecutionHostId,
   type ExecutionHostId
 } from '../../../shared/execution-host'
-import type { ConfirmedRepoRegistration } from '../../../shared/workbench/repo-removal'
+import type { ConfirmedRepoRegistration } from '../../../shared/monica/repo-removal'
 import { composeWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 
 /**

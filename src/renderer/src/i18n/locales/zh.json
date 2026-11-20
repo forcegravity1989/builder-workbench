@@ -656,7 +656,7 @@
         "notification": {
           "fallback": {
             "de50bef680": "macOS 正在阻止 Orca 通知",
-            "8d4c07e6b5": "macOS 正在拦截 Workbench 通知"
+            "8d4c07e6b5": "macOS 正在拦截 Monica 通知"
           }
         }
       },
@@ -3516,7 +3516,7 @@
             "cursor": {
               "expired": {
                 "label": "登录已过期",
-                "message": "请在运行 Workbench 的电脑上登录 Cursor IDE 或运行 cursor-agent login，然后刷新用量。"
+                "message": "请在运行 Monica 的电脑上登录 Cursor IDE 或运行 cursor-agent login，然后刷新用量。"
               },
               "plan": "套餐"
             }
@@ -4400,7 +4400,7 @@
           "removeDescriptionLocal": "此操作仅将 {{name}} 从 Orca 中移除。文件仍保留在您的磁盘上。",
           "removeDescriptionRuntime": "将从该主机移除 {{name}} 的项目登记，仓库文件会保留。",
           "registrationUnavailable": "项目登记已不可用，请返回项目列表确认。",
-          "updatePairedHost": "请先升级配对主机上的 Workbench，再移除项目登记。"
+          "updatePairedHost": "请先升级配对主机上的 Monica，再移除项目登记。"
         },
         "ScrollToCurrentWorkspaceToolbarButton": {
           "23989bb663": "显示活动工作区"
@@ -4460,7 +4460,7 @@
           "imageReadFailed": "无法读取附加的图片。请重新附加。",
           "attachWhileSending": "请等待当前反馈发送完成，再附加更多图片。",
           "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。",
-          "workbenchDescription": "分享使用体验、遇到的问题或对 Workbench 的建议。反馈会使用你当前的 WeLink 账号上传到 BW 用户群的群空间。",
+          "workbenchDescription": "分享使用体验、遇到的问题或对 Monica 的建议。反馈会使用你当前的 WeLink 账号上传到 Monica 用户群的群空间。",
           "omitGitHubIdentity": "不附带 GitHub 账号信息",
           "withoutGitHubIdentity": "反馈中不会附带 GitHub 账号信息。"
         },
@@ -6358,7 +6358,7 @@
           "codeHostGroupTitle": "代码托管",
           "codeHostGroupDescription": "用于任务、拉取请求、合并请求与评审状态的命令行工具。",
           "imGroupTitle": "报告与诊断",
-          "imGroupDescription": "用于向 BW 用户群空间发送报告和诊断文件。",
+          "imGroupDescription": "用于向 Monica 用户群空间发送报告和诊断文件。",
           "buildGroupTitle": "构建",
           "buildGroupDescription": "用于流水线执行与出包的命令行工具。"
         },
@@ -6602,7 +6602,7 @@
           "fe904ac984": "共享匿名使用数据",
           "77410e0566": "隐私政策",
           "8bfdd23a88": "帮助我们弄清楚下一步要构建什么。 Orca 会发送匿名计数，记录您使用的功能以及出现故障的位置。",
-          "workbenchDescription": "默认关闭。开启后，功能使用和错误计数会使用当前 WeLink 账号上传到固定的 BW 用户群空间，群空间可能显示上传者。",
+          "workbenchDescription": "默认关闭。开启后，功能使用和错误计数会使用当前 WeLink 账号上传到固定的 Monica 用户群空间，群空间可能显示上传者。",
           "workbenchLabel": "共享使用数据",
           "workbenchSectionDescription": "使用数据、诊断和遥测控制。",
           "afec8b03be": "CI"
@@ -8569,7 +8569,7 @@
             "b79c21bd42": "GitHub",
             "7166b9090c": "通过 gh CLI 进行 GitHub 身份验证。",
             "f16e41cc72": "GitHub 集成",
-            "welinkDescription": "安装并登录 welink-cli，用于向 BW 用户群空间发送报告和诊断文件。"
+            "welinkDescription": "安装并登录 welink-cli，用于向 Monica 用户群空间发送报告和诊断文件。"
           }
         },
         "jira": {
@@ -9391,7 +9391,7 @@
                   "installingButton": "正在安装…",
                   "codehubMissing": "未检测到 codehub-cli。安装需要 npm，并能访问内网软件源；暂时不可用时可稍后配置。",
                   "welinkDescription": "发送报告和诊断文件，使用",
-                  "welinkMissing": "安装 welink-cli 可向 BW 用户群空间发送报告和诊断文件。安装需要 npm，并能访问内网软件源；暂时不可用时可稍后配置。"
+                  "welinkMissing": "安装 welink-cli 可向 Monica 用户群空间发送报告和诊断文件。安装需要 npm，并能访问内网软件源；暂时不可用时可稍后配置。"
                 }
               }
             }
@@ -10277,13 +10277,13 @@
         },
         "CursorAccountsSection": {
           "title": "Cursor",
-          "subtitle": "从此电脑上已有的 Cursor 登录读取套餐用量。Workbench 仅读取，不会更改您的 Cursor 登录。",
+          "subtitle": "从此电脑上已有的 Cursor 登录读取套餐用量。Monica 仅读取，不会更改您的 Cursor 登录。",
           "dashboardLink": "Cursor 用量面板",
           "loading": "正在读取…",
           "signedIn": "已登录",
-          "signedInFrom": "已登录。Workbench 读取 {{source}} 中保存的登录。",
-          "signedInGeneric": "已登录。Workbench 读取此电脑上保存的 Cursor 登录。",
-          "expired": "登录已过期：请在运行 Workbench 的电脑上登录 Cursor IDE 或运行 cursor-agent login，然后刷新用量。",
+          "signedInFrom": "已登录。Monica 读取 {{source}} 中保存的登录。",
+          "signedInGeneric": "已登录。Monica 读取此电脑上保存的 Cursor 登录。",
+          "expired": "登录已过期：请在运行 Monica 的电脑上登录 Cursor IDE 或运行 cursor-agent login，然后刷新用量。",
           "signedOut": "此电脑上未找到 Cursor 登录",
           "signedOutHelp": "请登录 Cursor IDE，或在终端运行 cursor-agent login，然后在此刷新用量。",
           "refreshUsage": "刷新用量",
@@ -11699,7 +11699,7 @@
           "yoloPermissionsLabel": "Yolo / 危险地跳过权限检查",
           "yoloPermissionsInfo": "智能体权限信息",
           "yoloPermissionsTooltip": "跳过智能体权限检查，减少打断",
-          "0e00a37e49": "还不在你的 PATH 上。Workbench 会把它设为默认，你可以随时再安装。"
+          "0e00a37e49": "还不在你的 PATH 上。Monica 会把它设为默认，你可以随时再安装。"
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "按 Enter 运行命令并在询问时确认 npx。您也可以稍后在“设置”中进行设置。",
@@ -11733,9 +11733,9 @@
           "0b4a7d23ab": "登录",
           "a74c6d6b18": "未安装",
           "c773943637": "从任意 CodeHub 议题或合并请求发起工作区，标题与上下文自动带齐",
-          "6d4596cdf7": "在任务视图里浏览 CodeHub 议题与合并请求，无需离开 Workbench",
+          "6d4596cdf7": "在任务视图里浏览 CodeHub 议题与合并请求，无需离开 Monica",
           "c1ee44aa7a": "GitHub 同样支持——通过 GitHub CLI 处理议题、拉取请求与 CI 检查",
-          "09df324e47": "阅读、评论并合并拉取请求或合并请求，无需离开 Workbench",
+          "09df324e47": "阅读、评论并合并拉取请求或合并请求，无需离开 Monica",
           "172af1b2c8": "CodeHub",
           "5b0e29617c": "议题与合并请求。",
           "10e495afa8": "安装 CodeHub CLI",
@@ -11766,9 +11766,9 @@
           "4f6a1da718": "打开系统设置",
           "90b5d2e363": "macOS 未送达 Orca 的通知",
           "2c47f5465f": "在系统设置中启用 Orca 的允许通知。启用后此步骤会自动更新。",
-          "72256f6d85": "选择桌面通知送达后 Workbench 播放的提示音。",
-          "3f8a21c6d0": "允许 Workbench 通知",
-          "b7e94d02a1": "macOS 未送达 Workbench 通知"
+          "72256f6d85": "选择桌面通知送达后 Monica 播放的提示音。",
+          "3f8a21c6d0": "允许 Monica 通知",
+          "b7e94d02a1": "macOS 未送达 Monica 通知"
         },
         "OnboardingFlow": {
           "1130745139": "设置任务源",
@@ -11791,11 +11791,11 @@
           "c47e1bd149": "智能体",
           "windowsTerminalTitle": "设置 Windows 终端默认值",
           "windowsTerminalSubtitle": "为新面板选择默认 Shell，以及终端中右键单击的行为。",
-          "78d1d003d2": "Workbench",
-          "685d4ffbeb": "欢迎使用 Workbench",
-          "c64d33bfb8": "Workbench 新手引导",
-          "43b8463d5c": "Workbench 兼容所有 CLI 智能体。选一个你最常用的，随时可以更换。",
-          "54fbfde99e": "当智能体完成任务或需要帮助时，Workbench 会通知你。",
+          "78d1d003d2": "Monica",
+          "685d4ffbeb": "欢迎使用 Monica",
+          "c64d33bfb8": "Monica 新手引导",
+          "43b8463d5c": "Monica 兼容所有 CLI 智能体。选一个你最常用的，随时可以更换。",
+          "54fbfde99e": "当智能体完成任务或需要帮助时，Monica 会通知你。",
           "9977a23fbe": "按需安装 CLI——CodeHub 管议题与合并请求，GitHub 管议题与拉取请求。两者都是可选的。"
         },
         "OnboardingFooter": {
@@ -11865,7 +11865,7 @@
           "windowsDefault": "Windows 默认值",
           "rightClickBehavior": "右键单击行为",
           "rightClickBehaviorDescription": "选择符合你在 Windows 上使用习惯的终端鼠标行为。",
-          "184e11638a": "选择 Workbench 为新 Windows 终端面板打开的 shell。"
+          "184e11638a": "选择 Monica 为新 Windows 终端面板打开的 shell。"
         },
         "mac": {
           "notification": {
@@ -11874,7 +11874,7 @@
                 "f696515944": "在 macOS 对话框中点按允许。",
                 "3d18cf71f9": "将自动更新。",
                 "721d2bedb6": "在系统设置中为 Orca 开启允许通知。",
-                "c25d81f9e3": "在系统设置中打开「允许 Workbench 通知」。"
+                "c25d81f9e3": "在系统设置中打开「允许 Monica 通知」。"
               }
             }
           }
@@ -12427,7 +12427,7 @@
             "review_step_description": "连接评审提供方，让 {{product}} 显示 PR 或 MR 状态、检查和评审。",
             "task_step_title": "无需离开 {{product}}，即可让智能体处理任务",
             "reports_title": "报告与诊断（可选）",
-            "reports_description": "用于向 BW 用户群空间发送报告和诊断文件。无法访问内网时可跳过，之后仍可在设置 → 集成中配置。"
+            "reports_description": "用于向 Monica 用户群空间发送报告和诊断文件。无法访问内网时可跳过，之后仍可在设置 → 集成中配置。"
           },
           "connect": {
             "integration": {
@@ -13339,10 +13339,10 @@
             "ead6fc0510": "没有捕获到自动崩溃报告。你仍然可以发送详情，并在可用时包含最近的诊断日志。",
             "b082f27490": "附加最近的诊断日志",
             "e59f0b9427": "随报告发送经过删减且有大小限制的日志包。",
-            "workbenchUiErrorTitle": "Workbench 出现了可恢复的界面错误",
-            "workbenchClosedTitle": "Workbench 意外关闭",
-            "workbenchNotesPlaceholder": "可选：Workbench 关闭前，你正在做什么？",
-            "workbenchBrand": "Workbench"
+            "workbenchUiErrorTitle": "Monica 出现了可恢复的界面错误",
+            "workbenchClosedTitle": "Monica 意外关闭",
+            "workbenchNotesPlaceholder": "可选：Monica 关闭前，你正在做什么？",
+            "workbenchBrand": "Monica"
           },
           "submit": {
             "notice": {
@@ -14453,7 +14453,7 @@
       "web": {
         "preloadApi": {
           "cursorAccounts": {
-            "hostOnly": "只能在运行 Workbench 的电脑上读取 Cursor 登录详情。"
+            "hostOnly": "只能在运行 Monica 的电脑上读取 Cursor 登录详情。"
           }
         }
       }
@@ -14932,7 +14932,7 @@
     }
   },
   "brand": {
-    "workbench": "Workbench"
+    "workbench": "Monica"
   },
   "runtime": {
     "remoteServerPairingErrors": {
@@ -15178,7 +15178,7 @@
         },
         "internal-integrations": {
           "title": "CodeHub / WeLink",
-          "summary": "配置沿 BW 入门，具体使用结合任务和协作场景。"
+          "summary": "配置沿 Monica 入门，具体使用结合任务和协作场景。"
         }
       },
       "labels": {
@@ -15306,12 +15306,12 @@
         "description": "让 AI 为你准备提交信息和 PR 草稿。"
       }
     },
-    "explore": "探索 BW",
-    "exploreDescription": "浏览 BW 的工作旅程与功能演示。",
+    "explore": "探索 Monica",
+    "exploreDescription": "浏览 Monica 的工作旅程与功能演示。",
     "experiences": "能力体验",
     "addProjectFirst": "请先纳入一个要开展工作的项目。",
     "done": "完成",
-    "exploreFooter": "可随时从底部问号 → 探索 BW 重看。",
+    "exploreFooter": "可随时从底部问号 → 探索 Monica 重看。",
     "tourFooter": "可随时从帮助 → 探索 Orca 重看。",
     "continue": "继续",
     "demo": {
@@ -15345,17 +15345,17 @@
       "workspaceLogin": "修复登录竞态问题",
       "workspaceCi": "加速 CI 流水线"
     },
-    "setupProgress": "BW 入门，已完成 {{done}} / {{total}} 项。",
+    "setupProgress": "Monica 入门，已完成 {{done}} / {{total}} 项。",
     "progress": "已完成 {{done}} / {{total}} 项",
-    "gettingStarted": "BW 入门",
+    "gettingStarted": "Monica 入门",
     "initialSetupFailed": "无法打开初始设置，请重试。",
     "initialSetup": "初始设置",
     "setupDescription": "准备使用环境，并按需配置你要用的能力。未完成全部清单也可以开始工作。",
-    "restarting": "正在重启 BW…",
-    "restartFailed": "无法重启 BW。",
+    "restarting": "正在重启 Monica…",
+    "restartFailed": "无法重启 Monica。",
     "reportCrash": "报告崩溃",
-    "about": "关于 BW",
-    "restart": "重启 BW",
+    "about": "关于 Monica",
+    "restart": "重启 Monica",
     "orchestrationSetupDescription": "让智能体通过 {{product}} 交接上下文并协调工作。",
     "thinking": {
       "none": "无",
@@ -15371,7 +15371,7 @@
     "providerLocalAccount": "本机",
     "closeSetupGuide": "关闭入门",
     "setupGuideClosed": "已关闭入门",
-    "setupGuideReopen": "可从「帮助 → BW 入门」重新打开。",
+    "setupGuideReopen": "可从「帮助 → Monica 入门」重新打开。",
     "cliRegistrationTitle": "请将 Orca CLI 注册到 PATH 后继续。",
     "cliRegistrationDescription": "请允许系统授权，让能力配置可以使用 Orca CLI 命令。"
   }

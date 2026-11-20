@@ -34,11 +34,11 @@ describe('updater', () => {
     vi.useFakeTimers()
   })
 
-  // Why: Workbench builds once disabled every updater entry ("manual update"
+  // Why: Monica builds once disabled every updater entry ("manual update"
   // guard); #338 restores the native chain and only repoints the feed to the
-  // Workbench release repo. This pins both halves of that contract.
-  it('configures the Workbench build against the Workbench release repo', async () => {
-    vi.stubEnv('WORKBENCH_SHELL', '1')
+  // Monica release repo. This pins both halves of that contract.
+  it('configures the Monica build against the Monica release repo', async () => {
+    vi.stubEnv('MONICA_SHELL', '1')
     try {
       const mainWindow = { webContents: { send: vi.fn() } }
       const updater = await loadUpdaterModule()

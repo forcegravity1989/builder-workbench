@@ -1,4 +1,4 @@
-import { MilestoneVersionOrigin } from '../workbench/milestone-version-origin'
+import { MilestoneVersionOrigin } from '../monica/milestone-version-origin'
 import { Suspense, useRef } from 'react'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
@@ -13,18 +13,18 @@ import { TitlebarLeftControls } from './TitlebarLeftControls'
 import { RightSidebarToggle, TitlebarMainStrip } from './TitlebarMainStrip'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
-import { isWorkbenchShell } from '../workbench/is-workbench-shell'
-import { PrReviewNotifications } from '../workbench/pr-review-notifications/PrReviewNotifications'
-import { useProjectPage } from '../workbench/project-page-state'
-import { CycleWorkspaceProvider } from '../workbench/version-cycle/CycleWorkspaceProvider'
-import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-context'
-import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
-import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
-import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
-import { WorkbenchRail } from '../workbench/WorkbenchRail'
-import { WorkbenchWorkspaceChoiceDialog } from '../workbench/WorkbenchWorkspaceChoiceDialog'
-import { WorkbenchVersionBindingDialog } from '../workbench/version-tree-bind-dialog'
-import { useWorkbenchObjectContext } from '../workbench/workbench-object-context'
+import { isMonicaShell } from '../monica/is-monica-shell'
+import { PrReviewNotifications } from '../monica/pr-review-notifications/PrReviewNotifications'
+import { useProjectPage } from '../monica/project-page-state'
+import { CycleWorkspaceProvider } from '../monica/version-cycle/CycleWorkspaceProvider'
+import { useCycleWorkspace } from '../monica/version-cycle/cycle-workspace-context'
+import { usePlanColumnResize } from '../monica/use-plan-column-resize'
+import { useMetricsWorkspaceOpen } from '../monica/metrics-workspace-open'
+import { useMetricsBandResize } from '../monica/use-metrics-band-resize'
+import { MonicaRail } from '../monica/MonicaRail'
+import { MonicaWorkspaceChoiceDialog } from '../monica/MonicaWorkspaceChoiceDialog'
+import { MonicaVersionBindingDialog } from '../monica/version-tree-bind-dialog'
+import { useMonicaObjectContext } from '../monica/monica-object-context'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -39,30 +39,30 @@ const ArtifactsPage = lazy(() => import('../components/artifacts/ArtifactsPage')
 const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/WorkspaceSpacePage'))
 const Terminal = lazy(() => import('../components/Terminal'))
 const OverviewPage = lazy(() =>
-  import('../workbench/OverviewPage').then((m) => ({ default: m.OverviewPage }))
+  import('../monica/OverviewPage').then((m) => ({ default: m.OverviewPage }))
 )
 const VersionOverviewPage = lazy(() =>
-  import('../workbench/version-overview-page').then((m) => ({ default: m.VersionOverviewPage }))
+  import('../monica/version-overview-page').then((m) => ({ default: m.VersionOverviewPage }))
 )
 const KnowledgePage = lazy(() =>
-  import('../workbench/KnowledgePage').then((m) => ({ default: m.KnowledgePage }))
+  import('../monica/KnowledgePage').then((m) => ({ default: m.KnowledgePage }))
 )
 const CycleWorkspacePage = lazy(() =>
-  import('../workbench/CycleWorkspacePage').then((m) => ({ default: m.CycleWorkspacePage }))
+  import('../monica/CycleWorkspacePage').then((m) => ({ default: m.CycleWorkspacePage }))
 )
 const MetricsWorkspaceBoard = lazy(() =>
-  import('../workbench/metrics-workspace-board').then((m) => ({
+  import('../monica/metrics-workspace-board').then((m) => ({
     default: m.MetricsWorkspaceBoard
   }))
 )
 const ProjectWallPage = lazy(() =>
-  import('../workbench/ProjectWallPage').then((m) => ({ default: m.ProjectWallPage }))
+  import('../monica/ProjectWallPage').then((m) => ({ default: m.ProjectWallPage }))
 )
 
 function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element {
   const { activeView, activeWorktreeId, activePendingCreationId, creationLayoutActive } = layout
   const projectPage = useProjectPage()
-  if (isWorkbenchShell() && activeView === 'activity') {
+  if (isMonicaShell() && activeView === 'activity') {
     if (projectPage?.kind === 'wall') {
       return <ProjectWallPage />
     }
@@ -81,23 +81,17 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
     <>
       {activeView === 'settings' ? <Settings /> : null}
       {activeView === 'skills' ? <SkillsPage /> : null}
-      {activeView === 'artifacts' ? isWorkbenchShell() ? null : <ArtifactsPage /> : null}
+      {activeView === 'artifacts' ? isMonicaShell() ? null : <ArtifactsPage /> : null}
       {activeView === 'tasks' ? <TaskPage /> : null}
       {activeView === 'automations' ? <AutomationsPage /> : null}
       {activeView === 'activity' ? (
-        isWorkbenchShell() ? (
+        isMonicaShell() ? (
           <OverviewPage />
         ) : (
           <ActivityPrototypePage />
         )
       ) : null}
-      {activeView === 'space' ? (
-        isWorkbenchShell() ? (
-          <KnowledgePage />
-        ) : (
-          <WorkspaceSpacePage />
-        )
-      ) : null}
+      {activeView === 'space' ? isMonicaShell() ? <KnowledgePage /> : <WorkspaceSpacePage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <WorktreeCreationPanel
           creationId={activePendingCreationId}
@@ -114,14 +108,14 @@ export function AppWorkspaceShell(props: {
   layout: AppChromeLayout
   floatingWorkspace: FloatingWorkspacePanelState
 }): React.JSX.Element {
-  if (!isWorkbenchShell()) {
+  if (!isMonicaShell()) {
     return <AppWorkspaceContent {...props} />
   }
   return (
     <CycleWorkspaceProvider>
       <AppWorkspaceContent {...props} />
-      <WorkbenchWorkspaceChoiceDialog />
-      <WorkbenchVersionBindingDialog />
+      <MonicaWorkspaceChoiceDialog />
+      <MonicaVersionBindingDialog />
       <PrReviewNotifications />
     </CycleWorkspaceProvider>
   )
@@ -137,8 +131,8 @@ function AppWorkspaceContent(props: {
   const metricsOnly = metricsBoard && !cycle
   const band = useMetricsBandResize()
   const resize = usePlanColumnResize(Boolean(cycle?.context.worktreeId))
-  const workbenchShell = isWorkbenchShell()
-  const showObjectPanel = useWorkbenchObjectContext()
+  const monicaShell = isMonicaShell()
+  const showObjectPanel = useMonicaObjectContext()
   const titlebarLeftControls = <TitlebarLeftControls layout={layout} />
   const titlebarMainStrip = <TitlebarMainStrip layout={layout} />
   // Why: keep virtualized scroll memory above the sidebar's workspace/landing remount so the left list doesn't restart at scrollTop 0.
@@ -175,7 +169,7 @@ function AppWorkspaceContent(props: {
                   className={cn(
                     'flex min-h-0 shrink-0 flex-col',
                     !layout.sidebarOpen && 'relative overflow-visible',
-                    !layout.sidebarOpen && !workbenchShell && 'w-0'
+                    !layout.sidebarOpen && !monicaShell && 'w-0'
                   )}
                 >
                   <div
@@ -198,10 +192,10 @@ function AppWorkspaceContent(props: {
                     className={cn(
                       'flex min-h-0 flex-1',
                       // The Rail stays below the 36px titlebar when the titlebar floats.
-                      workbenchShell && layout.leftTitlebarChromeLayout.isFloating && 'pt-9'
+                      monicaShell && layout.leftTitlebarChromeLayout.isFloating && 'pt-9'
                     )}
                   >
-                    {workbenchShell ? <WorkbenchRail /> : null}
+                    {monicaShell ? <MonicaRail /> : null}
                     <WorktreeSidebar
                       layout={layout}
                       scrollRefs={sidebarScrollRefs}
@@ -209,9 +203,9 @@ function AppWorkspaceContent(props: {
                     />
                   </div>
                 </div>
-              ) : workbenchShell ? (
+              ) : monicaShell ? (
                 <div className="flex min-h-0 min-w-0">
-                  <WorkbenchRail />
+                  <MonicaRail />
                   <WorktreeSidebar
                     layout={layout}
                     scrollRefs={sidebarScrollRefs}
@@ -224,7 +218,7 @@ function AppWorkspaceContent(props: {
             ) : null}
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
               {layout.stackedSidebarOpen &&
-              (workbenchShell ||
+              (monicaShell ||
                 (layout.activeView !== 'automations' && layout.activeView !== 'artifacts')) ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}

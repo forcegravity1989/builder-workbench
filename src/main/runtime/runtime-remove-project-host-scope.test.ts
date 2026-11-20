@@ -8,7 +8,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../shared/repo-types'
 import { createProjectGroup } from '../../shared/project-groups'
-import { hasConfirmedGroupMembership } from '../../shared/workbench/repo-removal'
+import { hasConfirmedGroupMembership } from '../../shared/monica/repo-removal'
 import { OrcaRuntimeService } from './orca-runtime'
 
 function makeRepos(): Repo[] {

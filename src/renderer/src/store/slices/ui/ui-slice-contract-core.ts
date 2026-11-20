@@ -12,7 +12,7 @@ import type { LaunchSource } from '../../../../../shared/telemetry-events'
 import type { TaskSourceContext } from '../../../../../shared/task-source-context'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
 import type { TaskResumeState, TopLevelView } from '../../../../../shared/ui-chrome-types'
-import type { WorkbenchTaskScope } from '../../../../../shared/workbench/task-scope'
+import type { MonicaTaskScope } from '../../../../../shared/monica/task-scope'
 
 export type PendingSidebarWorktreeReveal = {
   worktreeId: string
@@ -70,7 +70,7 @@ export type TaskPageData = {
   openJiraIssue?: JiraIssue
   openJiraSourceContext?: TaskSourceContext | null
   /** Optional local entry filters: native version label and complete goal references. */
-  workbenchTaskScope?: WorkbenchTaskScope | null
+  monicaTaskScope?: MonicaTaskScope | null
 }
 
 export type NewWorkspaceDraft = {

@@ -6,8 +6,8 @@ import { registerSystemResumeBroadcast } from '../system-resume-broadcast'
 import { agentHookServer } from '../agent-hooks/server'
 import { installHookStatusSessionTabsRepublish } from '../agent-hooks/hook-status-session-tabs-republish'
 import { initTelemetry, track } from '../telemetry/client'
-import { isWorkbenchProduct } from './workbench-product'
-import { installWorkbenchTelemetryTransport } from '../workbench/reporting/telemetry-bootstrap'
+import { isMonicaProduct } from './monica-product'
+import { installMonicaTelemetryTransport } from '../monica/reporting/telemetry-bootstrap'
 import { setCodexTrustGrantTelemetry } from '../codex/codex-trust-grant-telemetry'
 import { initObservability } from '../observability'
 import { recordDurableCrashBreadcrumb } from '../crash-reporting/durable-crash-breadcrumb'
@@ -56,9 +56,9 @@ export function initializeMainProcessObservers(): void {
     unsubscribeStatusFreshness()
     uninstallHookStatusRepublish()
   }
-  // Consent defaults and the BW destination must be set before native telemetry starts.
-  if (isWorkbenchProduct()) {
-    installWorkbenchTelemetryTransport(store)
+  // Consent defaults and the Monica destination must be set before native telemetry starts.
+  if (isMonicaProduct()) {
+    installMonicaTelemetryTransport(store)
   }
   // Initialize before IPC handlers and renderers can call track().
   initTelemetry(store)

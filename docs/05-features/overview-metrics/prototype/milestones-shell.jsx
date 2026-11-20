@@ -18,13 +18,13 @@ export function Sidebar({ empty, onVersion, onInfo, onHome, versions = fixedVers
     <aside className="ml-sidebar" aria-label="项目导航">
       <div className="ml-brand">
         <span className="ml-logo">W</span>
-        <strong>Workbench</strong>
+        <strong>Monica</strong>
       </div>
       <button className="ml-nav" onClick={() => onInfo('项目墙', '原型注释: 复用当前项目墙入口。')}>
         <LayoutDashboard size={16} />
         项目墙
       </button>
-      <div className="ml-project-name">Builders’ Workbench</div>
+      <div className="ml-project-name">Monica</div>
       <button
         className="ml-nav"
         onClick={() => onInfo('任务', '原型注释: 复用原生任务列表，原型不读写 Issue。')}
@@ -119,7 +119,7 @@ export function ProjectContext() {
       </div>
       <div className="ml-context">
         <section className="ml-card">
-          <h2>Builders’ Workbench</h2>
+          <h2>Monica</h2>
           <dl>
             <dt>项目负责人</dt>
             <dd>—</dd>
@@ -128,7 +128,7 @@ export function ProjectContext() {
             <dt>对标</dt>
             <dd>—</dd>
             <dt>愿景</dt>
-            <dd>更多项目纳入 Workbench 管理</dd>
+            <dd>更多项目纳入 Monica 管理</dd>
             <dt>项目群</dt>
             <dd>—</dd>
           </dl>

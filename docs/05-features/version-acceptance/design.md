@@ -4,7 +4,7 @@
 
 ## 模块边界
 
-版本验收页面位于 `src/renderer/src/workbench/version-acceptance/`，通过 `version-cycle` 接入项目、版本、材料、任务、会话、浏览器、归档和发布状态。Orca 负责原生会话、工作树、Tasks、Automations、宿主身份和权限。BW 只保存验收材料和人工输入，不复制 Issue、PR/MR 或会议系统正本。
+版本验收页面位于 `src/renderer/src/monica/version-acceptance/`，通过 `version-cycle` 接入项目、版本、材料、任务、会话、浏览器、归档和发布状态。Orca 负责原生会话、工作树、Tasks、Automations、宿主身份和权限。Monica 只保存验收材料和人工输入，不复制 Issue、PR/MR 或会议系统正本。
 
 | 区域 | 责任 | 主要落点 |
 | --- | --- | --- |

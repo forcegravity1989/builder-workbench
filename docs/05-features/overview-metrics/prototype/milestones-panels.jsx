@@ -44,7 +44,7 @@ export function ReferencePanel({ close }) {
           </a>
         </h3>
         <p>
-          借鉴：关键节点独立设置日期，可添加、编辑、删除，不限每月一个。BW
+          借鉴：关键节点独立设置日期，可添加、编辑、删除，不限每月一个。Monica
           仅保留日期与预期成果，不加入依赖或任务绑定。
         </p>
         <p>
@@ -55,7 +55,7 @@ export function ReferencePanel({ close }) {
           >
             Asana · Timeline ↗
           </a>
-          ：借鉴关键节点与持续条形的区别；本稿保留 BW 原旗帜样式。
+          ：借鉴关键节点与持续条形的区别；本稿保留 Monica 原旗帜样式。
         </p>
       </section>
       <section className="ml-reference">
@@ -105,7 +105,7 @@ export function ReferencePanel({ close }) {
           </a>
         </h3>
         <p>
-          借鉴：在对象附近建立排期、直接改日期。BW
+          借鉴：在对象附近建立排期、直接改日期。Monica
           在同一连续画布添加特性，空周在使用时登记；拖节点保持特性身份。
         </p>
       </section>
@@ -128,7 +128,9 @@ export function ReferencePanel({ close }) {
           </a>
         </h3>
         <p>借鉴：把方向、优先级、主导人和目标日期放在同一规划视图，再连接执行。</p>
-        <p className="muted">取舍：不照搬组织层级或手设健康灯；BW 保留一项特性跨版本的整体身份。</p>
+        <p className="muted">
+          取舍：不照搬组织层级或手设健康灯；Monica 保留一项特性跨版本的整体身份。
+        </p>
       </section>
       <section className="ml-reference">
         <h3>

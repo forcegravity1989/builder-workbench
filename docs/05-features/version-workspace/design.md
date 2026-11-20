@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者在动代码、拆并行边界前读取；本文管实现设计与共享契约，不写执行步骤。行为见 [spec](spec.md)，当前实现以源码及 [architecture](../../architecture.md) 为准。实现取舍变化时更新，落地后把稳定模块心智回写 06-module。
 >
-> 状态：设计已评审定稿；接线要求的生产验证缺口见 STATUS。架构定位：事实与执行由 Orca 承担，规范与壳由 BW 叠层适配。
+> 状态：设计已评审定稿；接线要求的生产验证缺口见 STATUS。架构定位：事实与执行由 Orca 承担，规范与壳由 Monica 叠层适配。
 
 本文维护有效的版本工作区机制；侧栏布局以[当前高保真](version-workspace-prototype-475.html)为准。行为判据见 [spec](spec.md)，实施与验证证据只在 [STATUS](STATUS.md)及关联 PR 维护。
 
@@ -12,9 +12,9 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 
 版本目录与原生分区共用虚拟列表的行间距。紧跟内容行末尾的项目区标题或同层项目标题时，原生列表直接使用行间距。版本与项目箭头共用 Orca 的图形和槽位。前三条以外的收起状态独立于各版本子目录展开态，仅影响渲染；工作树去重仍从完整目录推导。从其他入口激活余量版本后，版本目录先展开再用同一滚动容器定位。
 
-原生 buildRows 继续构建固定栏与自然分组；buildWorkbenchSectionRows 只移动完整段：固定栏跟随当前项目（保留该项目各可见主机的固定树），当前项目完整顶层分组优先，自然分组继续交给宿主包装。快捷键的侧栏顺序回放复用同一投影。useVisibleSidebarWorktrees 提供同一份过滤输入，原生列表和版本目录候选均调用 computeVisibleWorktrees，不另写 BW 筛选规则。版本候选包含检测到但未进入会话投影的树；完整候选先过滤再按宿主限定身份投影到各目录，保留原生跨目录父子关系例外，不改变原绑定集合或流程存在性判断。实体行沿用原生排序，固定后的单位置或重复显示沿用 profile 的 showPinnedWorktreesInGroups 设置，默认只显示一处。
+原生 buildRows 继续构建固定栏与自然分组；buildWorkbenchSectionRows 只移动完整段：固定栏跟随当前项目（保留该项目各可见主机的固定树），当前项目完整顶层分组优先，自然分组继续交给宿主包装。快捷键的侧栏顺序回放复用同一投影。useVisibleSidebarWorktrees 提供同一份过滤输入，原生列表和版本目录候选均调用 computeVisibleWorktrees，不另写 Monica 筛选规则。版本候选包含检测到但未进入会话投影的树；完整候选先过滤再按宿主限定身份投影到各目录，保留原生跨目录父子关系例外，不改变原绑定集合或流程存在性判断。实体行沿用原生排序，固定后的单位置或重复显示沿用 profile 的 showPinnedWorktreesInGroups 设置，默认只显示一处。
 
-从全局模块返回「版本工作区」仅切回原生 terminal 内容，不调用 artifacts 准备链；已在版本对象上下文时保留当前页面，并恢复工作区目录视图。版本展开集合以 repoId 分隔，默认展开不持久化为用户选择，新建成功回调展开新版本；项目墙触发的一次性定位由共享请求消费，重挂载不重放。原生列表的 Enter 处理只接管容器自身焦点，保留目录按钮的默认激活。工具栏、菜单和固定策略均沿原生实现，不提供 BW 专用默认或重复列表。Rail 任务入口挂载 SidebarTaskNavButton 的图标变体，预选和预取仍由原组件承担，离开项目页面由 BW 导航回调处理。
+从全局模块返回「版本工作区」仅切回原生 terminal 内容，不调用 artifacts 准备链；已在版本对象上下文时保留当前页面，并恢复工作区目录视图。版本展开集合以 repoId 分隔，默认展开不持久化为用户选择，新建成功回调展开新版本；项目墙触发的一次性定位由共享请求消费，重挂载不重放。原生列表的 Enter 处理只接管容器自身焦点，保留目录按钮的默认激活。工具栏、菜单和固定策略均沿原生实现，不提供 Monica 专用默认或重复列表。Rail 任务入口挂载 SidebarTaskNavButton 的图标变体，预选和预取仍由原组件承担，离开项目页面由 Monica 导航回调处理。
 
 全局页面通过 Sidebar 的 panelVisible 仅移除目录面板，原生对话框、工作区看板和 Agent Dashboard 抽屉继续由同一个 Sidebar 承载，确保任务创建与自动化的 hook 信任确认仍能完成。工作区多候选选择器与版本绑定对话框挂载在 AppWorkspaceShell；普通任务等全页入口仍能复用这些对话框。
 
@@ -22,9 +22,9 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 
 这些要求修正既有能力，不新增特性。行为边界见 [spec](spec.md)，验证状态见 [STATUS](STATUS.md)。
 
-- 项目墙进入保留项目总览，BW 侧栏定位最新在制版；复用原生激活时关闭原生区域 reveal，不改全局筛选。
+- 项目墙进入保留项目总览，Monica 侧栏定位最新在制版；复用原生激活时关闭原生区域 reveal，不改全局筛选。
 - 原生项目列表只调整展示投影：当前合并项目所有宿主成员置首，按宿主限定身份排除已挂到有效版本入口的树，避免侧栏重复；未归版或缺版本目录的树仍从原生区可达；缺目标但版本有效的树由版本未分组区承接，解绑后回到此处。仅作展示投影，隐藏父级下的可见子树不改真实 parentWorkspace。其他项目保留原生折叠记忆；沿用原生行、全局工具栏和项目菜单，不造新项目分组。
-- 版本树复用原生 WorktreeCard 与原生 row builder，主机标识、菜单、会话及子树不再由 BW 简化行重画。Issue 树名称统一自动名称判据与显示路径，复用已存 linkedWorkItem.title；显式手工命名优先，分支与目录不变。
+- 版本树复用原生 WorktreeCard 与原生 row builder，主机标识、菜单、会话及子树不再由 Monica 简化行重画。Issue 树名称统一自动名称判据与显示路径，复用已存 linkedWorkItem.title；显式手工命名优先，分支与目录不变。
 - 版本任务入口使用完整原生查询，预选可取消的版本标签。目标入口按该目标的完整 Issue 引用打开，首次不继承其他视图的筛选；进入后沿用原生筛选、分页、详情与开工。目标 PR 不作推导。CodeHub 标签查询必须先核实实际 CLI 契约，不能猜参数或把有上限的结果过滤冒充完整范围。
 - 目标开工删掉 buildGoalStartNote 及仅用于它的计划预读，保留原生备注、Issue 链接、宿主与绑定/父级规则。公共计划读取与 #449 缓存保留。
 
@@ -36,19 +36,19 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 | [原生行构建](../../../src/renderer/src/components/sidebar/worktree-list/grouping/row-builders.ts)、[WorktreeCardAgents](../../../src/renderer/src/components/sidebar/WorktreeCardAgents.tsx)                                                                                               | 候选复用工作树卡片与会话激活；后者可接预过滤 agents，但当前活动/保留行不等于全部持久历史。不能只筛当前标签就宣称完整回看；工作树卡片、父子缩进及 agent 行本身也应复用，不另画一套生产组件。                                   |
 | [创建参数](../../../src/shared/worktree/create-types.ts)、[创建执行](../../../src/renderer/src/hooks/composer-state/full-creation-execution.ts)、[父级处理](../../../src/renderer/src/store/slices/worktrees/create/worktree-create-parent-pick.ts)                                        | 同一原生创建路径已有 baseBranch、parentWorkspace、linkedWorkItem、sparseCheckout。基线与父级分开确定；父关系不携带父树的未提交修改，也不决定合入路线。                                                                        |
 | [稀疏创建](../../../src/main/git/worktree-sparse-add.ts)、[高级创建选项](../../../src/renderer/src/components/new-workspace/NewWorkspaceComposerAdvancedSection.tsx)                                                                                                                       | 已有 no-checkout + cone sparse-checkout 及目录预设。计划/验收可考虑只检出必要资产，但需验证配置、Skill、材料、采集脚本及其依赖可读，不能默认所有仓库适用。                                                                    |
-| [AiVaultPanel](../../../src/renderer/src/components/right-sidebar/AiVaultPanel.tsx)、[会话记录](../../../src/shared/agent-session-record.ts)、[BW 会话身份](../../../src/renderer/src/workbench/version-cycle/native-session.ts)                                                           | 复用原生历史与继续行为。持久会话位置、宿主、原生会话标识保持原协议；终端 pane 与 provider 历史标识不能假定同一。按版本跨工作树聚合仍需适配与重启验证。                                                                        |
-| [versionSelection](../../../src/main/workbench/version-selection.ts)、[CycleWorkspaceProvider](../../../src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx)、[手动会话启动](../../../src/renderer/src/workbench/version-cycle/start-cycle-session.ts)                     | 手动入口在当前流程树打开可编辑草稿；选版保存在工作树 metadata，定时自动化仍要求 existing workspace 匹配。只改侧栏筛选不足以实现两个版本独立运行；必须把运行归属与正在浏览的版本拆开。                                         |
-| [单树删除链](../../../src/renderer/src/components/sidebar/run-worktree-delete-with-toast.ts)、[删除预检与执行](../../../src/main/ipc/worktrees/removal/execute-worktree-removal.ts)、[工作区清理对话框](../../../src/renderer/src/components/workspace-cleanup/WorkspaceCleanupDialog.tsx) | 版本级清理复用与右击单树删除、状态栏清理对话框同一条删除链：预检（未提交修改/子树/归档 hook）、权限复核与失败提示全沿原生；BW 只加版本粒度的确认单聚合与 owner 标注。绑定挂在登记上、随删树消失，不另造删除路径或归档隐藏层。 |
+| [AiVaultPanel](../../../src/renderer/src/components/right-sidebar/AiVaultPanel.tsx)、[会话记录](../../../src/shared/agent-session-record.ts)、[Monica 会话身份](../../../src/renderer/src/monica/version-cycle/native-session.ts)                                                           | 复用原生历史与继续行为。持久会话位置、宿主、原生会话标识保持原协议；终端 pane 与 provider 历史标识不能假定同一。按版本跨工作树聚合仍需适配与重启验证。                                                                        |
+| [versionSelection](../../../src/main/monica/version-selection.ts)、[CycleWorkspaceProvider](../../../src/renderer/src/monica/version-cycle/CycleWorkspaceProvider.tsx)、[手动会话启动](../../../src/renderer/src/monica/version-cycle/start-cycle-session.ts)                     | 手动入口在当前流程树打开可编辑草稿；选版保存在工作树 metadata，定时自动化仍要求 existing workspace 匹配。只改侧栏筛选不足以实现两个版本独立运行；必须把运行归属与正在浏览的版本拆开。                                         |
+| [单树删除链](../../../src/renderer/src/components/sidebar/run-worktree-delete-with-toast.ts)、[删除预检与执行](../../../src/main/ipc/worktrees/removal/execute-worktree-removal.ts)、[工作区清理对话框](../../../src/renderer/src/components/workspace-cleanup/WorkspaceCleanupDialog.tsx) | 版本级清理复用与右击单树删除、状态栏清理对话框同一条删除链：预检（未提交修改/子树/归档 hook）、权限复核与失败提示全沿原生；Monica 只加版本粒度的确认单聚合与 owner 标注。绑定挂在登记上、随删树消失，不另造删除路径或归档隐藏层。 |
 
 复用必须覆盖 UI 和调用链：
 
-- 计划/验收继续沿 [CycleWorkspaceShell](../../../src/renderer/src/workbench/version-cycle/CycleWorkspaceShell.tsx) 挂载现有板，左侧为 [AppWorkspaceShell](../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx) 的完整 Terminal；本特性不改计划/验收业务板及其内部布局。G2 高保真将这套组合标为一个既有整屏，避免分别画两个占位区而误示新增屏幕。
+- 计划/验收继续沿 [CycleWorkspaceShell](../../../src/renderer/src/monica/version-cycle/CycleWorkspaceShell.tsx) 挂载现有板，左侧为 [AppWorkspaceShell](../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx) 的完整 Terminal；本特性不改计划/验收业务板及其内部布局。G2 高保真将这套组合标为一个既有整屏，避免分别画两个占位区而误示新增屏幕。
 - [TaskPage](../../../src/renderer/src/components/task-page/TaskPage.tsx) 没有通用的版本筛选 props，模型包含来源、全局缓存与分页。必须从版本成员查询结果和计划目标构建完整范围，通过原生数据路径读回并驱动同一列表；不能只过滤全局列表当前页，否则遗漏任务、计数不实。
-- [原生 Issue 行](../../../src/renderer/src/components/task-page/github/Rows.tsx) 已有未关联时 Start、已关联时 Open；[执行动作](../../../src/renderer/src/components/use-task-page-workspace-actions.ts) 走原生创建器与激活路径。其 [关联查找](../../../src/renderer/src/lib/github-work-item-workspace-attachment.ts) 目前按 repoId、Issue 类型和编号取首个未归档树，不含版本/目标。薄适配须显式解析业务绑定，避免同 Issue 跨版时打开错误工作区。已有原生创建器可由目标入口预填上下文，但当前输入没有初始父级，完成回调也不返回工作区身份，需在创建链路取得真实结果后绑定。当前路径见 [nativeTaskPort](../../../src/renderer/src/workbench/native-task-port.ts)，不另建 Issue 数据正本。
+- [原生 Issue 行](../../../src/renderer/src/components/task-page/github/Rows.tsx) 已有未关联时 Start、已关联时 Open；[执行动作](../../../src/renderer/src/components/use-task-page-workspace-actions.ts) 走原生创建器与激活路径。其 [关联查找](../../../src/renderer/src/lib/github-work-item-workspace-attachment.ts) 目前按 repoId、Issue 类型和编号取首个未归档树，不含版本/目标。薄适配须显式解析业务绑定，避免同 Issue 跨版时打开错误工作区。已有原生创建器可由目标入口预填上下文，但当前输入没有初始父级，完成回调也不返回工作区身份，需在创建链路取得真实结果后绑定。当前路径见 [nativeTaskPort](../../../src/renderer/src/monica/native-task-port.ts)，不另建 Issue 数据正本。
 - 计划里的 Issue 继续进共用原生详情；本原型移除独立开工/继续，与 #385 的计划直接开工诉求留作 G3 对齐。如保留快捷入口，只调用同一个原生动作。
-- [OverviewPage](../../../src/renderer/src/workbench/OverviewPage.tsx) 保持现状。项目总览仅标明沿用入口，不嵌入或复刻已有原型；版本总览由独立特性维护，本特性只导航到既有界面。
+- [OverviewPage](../../../src/renderer/src/monica/OverviewPage.tsx) 保持现状。项目总览仅标明沿用入口，不嵌入或复刻已有原型；版本总览由独立特性维护，本特性只导航到既有界面。
 
-布局将版本与目标作为逻辑目录；新建版本准备计划和验收两棵独立固定树，保留流程入口，实际树使用同一套 Orca 原生卡片独立呈现。目标工作树按需创建，Issue 使用同一原生创建器；合适父级是可修改建议，不强制嵌套。创建交给原生执行核，BW 负责导航和明确的业务归属；不重建终端、会话租约、历史存储或另一套任务完成状态。实际薄挂载能否满足全部接缝还需验证；如必须改变 Orca 核心、协议或宿主路由，先提交具体取舍给人决定。
+布局将版本与目标作为逻辑目录；新建版本准备计划和验收两棵独立固定树，保留流程入口，实际树使用同一套 Orca 原生卡片独立呈现。目标工作树按需创建，Issue 使用同一原生创建器；合适父级是可修改建议，不强制嵌套。创建交给原生执行核，Monica 负责导航和明确的业务归属；不重建终端、会话租约、历史存储或另一套任务完成状态。实际薄挂载能否满足全部接缝还需验证；如必须改变 Orca 核心、协议或宿主路由，先提交具体取舍给人决定。
 
 ## 共享边界与不可越过的约束
 
@@ -60,14 +60,14 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 
 ### 绑定契约与版本目录
 
-- **绑定契约**：`src/shared/workbench/version-binding.ts`（schema 1，workflow 与 goalId/taskSource 一致性 refine）；读回规范化把脏数据一律收敛为未绑定，不猜归属。绑定是版本归属唯一正本——不从分支字符串、会话标题或日期反推。
-- **原生挂载**：`WorktreeMeta.workbenchVersionBinding`（undefined 保留 / null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）。BW 薄 helper `workbench.versionBinding.read/set`：原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径。
-- **版本目录**：`src/shared/workbench/version-catalog.ts` + 装载器——已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留（retired 收起回看）；绑定从登记现算，删树无悬空；草稿与目标从已保存计划派生，缓存按 owner/项目/仓库/版本/修订分隔。
+- **绑定契约**：`src/shared/monica/version-binding.ts`（schema 1，workflow 与 goalId/taskSource 一致性 refine）；读回规范化把脏数据一律收敛为未绑定，不猜归属。绑定是版本归属唯一正本——不从分支字符串、会话标题或日期反推。
+- **原生挂载**：`WorktreeMeta.workbenchVersionBinding`（undefined 保留 / null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）。Monica 薄 helper `workbench.versionBinding.read/set`：原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径。
+- **版本目录**：`src/shared/monica/version-catalog.ts` + 装载器——已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留（retired 收起回看）；绑定从登记现算，删树无悬空；草稿与目标从已保存计划派生，缓存按 owner/项目/仓库/版本/修订分隔。
 - **版本排序**：目录把合入状态、工作区活跃状态和展示时间分开计算。主干当前材料证明已合入；同仓各主机的未归档计划绑定证明进入在研，主干没有该版计划材料时归入未合入组。未合入组取所有可见主机计划树中最早的 `createdAt`，已合入组沿材料基线读取实际新增 `data.json` 的提交时间；读取进入时间时排除 merge 提交，避免侧分支新增被归到合并时刻。已合入版本有计划工作树时仍留在已合入组，只沿 `draft` 事实显示草稿标记。跨主机读取沿每棵树 owner 路由，某台主机暂不可用保留 Unknown 证据，不把缺读转换为空目录或另一种合入状态。项目墙和侧栏共用同一比较器；未合入版本已经可确定时，墙卡不等待已合入版本的 Git 时间读取。
 
 项目墙与侧栏用同一项目版本目录，按 Git 身份收集可访问的精确登记，逐登记复用 `useVersionCatalogForRepo` 独立读取。先合并版本存在证据与工作区，再对各版按本机优先和已确认的对端来源选材料。选树身份包含仓库、执行宿主、传输 owner、工作树及实例。
 
-读取顺序为原生 `fetchWorktrees` 的宿主限定权威发现 → 可见与检测到的工作树合并 → `nativeWorkspaceScope` 解析归属 → `loadVersionCatalog` 读取主干材料与计划树。原生发现承担配对、去重与登记合并；BW 不另建跨机同步和持久化目录。工作树身份、绑定、分支和 HEAD 构成材料失效依据，刷新与连接恢复触发重新发现。来源或发现失败不转换为空目录；共用目录按来源保留进程内上一读数，跨页后失败仍按材料来源与版本精确保留，成功空读会清除旧数据。快照不保存加载状态，也不阻止重新读取。
+读取顺序为原生 `fetchWorktrees` 的宿主限定权威发现 → 可见与检测到的工作树合并 → `nativeWorkspaceScope` 解析归属 → `loadVersionCatalog` 读取主干材料与计划树。原生发现承担配对、去重与登记合并；Monica 不另建跨机同步和持久化目录。工作树身份、绑定、分支和 HEAD 构成材料失效依据，刷新与连接恢复触发重新发现。来源或发现失败不转换为空目录；共用目录按来源保留进程内上一读数，跨页后失败仍按材料来源与版本精确保留，成功空读会清除旧数据。快照不保存加载状态，也不阻止重新读取。
 
 墙卡从共用目录按显示排序取首版，额外读取进度与任务事实；不再独立装载版本目录或跨主机拼接材料。同来源的展示快照沿现有 `snapshot-cache` 保留，返回墙时先回显再读取，不作为跳过目录发现的依据。已处理的强制刷新编号随来源快照保留，普通回墙不重复绕过 provider 缓存。配对主机转接 SSH 时，沿原生宿主解析从 `pairedRegistration.hostId` 取得目标；缺少该登记时兼容 `connectionId`，显式本地登记不当作 SSH。监听所属主机和对应 SSH 目标的状态及连接代际，任一恢复均触发重读。版本入口沿卡片所读版本与主机，项目名称及项目总览仍沿项目默认来源。材料接口按实际工作树 owner 路由，只接收绑定版本树。
 
@@ -86,8 +86,8 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 ### 任务范围、开工链与版本化导航
 
 - **任务屏范围契约**：版本入口保留本次版本上下文，预选可取消的版本标签，沿原生查询与分页；只有目标条件使用完整材料引用点读后筛选分页。Issue/PR、预设、仓库、搜索与原生过滤均保留；现有材料只有 Issue，保留目标时 PR 为空，取消目标后沿原生 PR 查询。去版本同时清目标，移除后的条件不再参与 Start/Open 绑定。入口条件不写全局 resume 查询，不改任务正本。
-- **统一 Start/Open 解析**：归属只认绑定+原生 linked 字段（shared/version-workspace-match.ts 纯函数核，协议单测看护）：Issue 树=绑定 (version, issue, taskSource) ∧ linked (type=issue, number, provider)；唯一→直开、多候选→BW 选择器（模块 store+Radix Dialog，挂载于应用壳，任务屏、详情弹窗与侧栏入口共用，不依赖侧栏是否显示）、无→原生创建器；PR 行与无范围路径保持原生「首个未归档树」语义。三处分发壳（板面开工箭头 issue-start-action、任务屏行、详情弹窗）共用 `dispatchScopedWorktrees`（唯一直开/多候选选择器/无返 'none' 回落；埋点与回落文案留调用方）。目标树/流程树同一绑定口径；父级建议仅唯一同项目同宿主目标树时给出（不建议不预建，原生选择器与创建期校验仍是权威）。
-- **开工与创建结果绑定**：目标/Issue 开工复用同一原生创建器，BW 只带入 initialParentWorktreeId 建议与 workbenchCreation 归属；原生备注由用户填写，不自动生成目标长备注或仅为备注预读计划；绑定在提交时按创建器**最终**仓库+最终任务来源解析（改仓库即失效），写入发生在**真实创建结果处**（result.worktree，早于取消/激活分支——树既建成归属即应记录），instanceId 必填围栏、读回确认、失败保留树+「重试写绑定」不重复建树；取消（未创建）零绑定。quick/background 链经 `WorktreeCreationRequest.workbenchVersionBinding`（纯可序列化，Retry 原样重放）；full 链镜像。
+- **统一 Start/Open 解析**：归属只认绑定+原生 linked 字段（shared/version-workspace-match.ts 纯函数核，协议单测看护）：Issue 树=绑定 (version, issue, taskSource) ∧ linked (type=issue, number, provider)；唯一→直开、多候选→Monica 选择器（模块 store+Radix Dialog，挂载于应用壳，任务屏、详情弹窗与侧栏入口共用，不依赖侧栏是否显示）、无→原生创建器；PR 行与无范围路径保持原生「首个未归档树」语义。三处分发壳（板面开工箭头 issue-start-action、任务屏行、详情弹窗）共用 `dispatchScopedWorktrees`（唯一直开/多候选选择器/无返 'none' 回落；埋点与回落文案留调用方）。目标树/流程树同一绑定口径；父级建议仅唯一同项目同宿主目标树时给出（不建议不预建，原生选择器与创建期校验仍是权威）。
+- **开工与创建结果绑定**：目标/Issue 开工复用同一原生创建器，Monica 只带入 initialParentWorktreeId 建议与 workbenchCreation 归属；原生备注由用户填写，不自动生成目标长备注或仅为备注预读计划；绑定在提交时按创建器**最终**仓库+最终任务来源解析（改仓库即失效），写入发生在**真实创建结果处**（result.worktree，早于取消/激活分支——树既建成归属即应记录），instanceId 必填围栏、读回确认、失败保留树+「重试写绑定」不重复建树；取消（未创建）零绑定。quick/background 链经 `WorktreeCreationRequest.workbenchVersionBinding`（纯可序列化，Retry 原样重放）；full 链镜像。
 - **main 与 SSH 侧材料授权**：无对应流程绑定或跨版操作均拒绝，初始化同样核对绑定和分支。context 返回绑定版，select 仅接受同版。common-dir、写前再授权与 CAS 事务保留；主干历史独立读取。
 - **侧栏与进屏**：目录合并材料与绑定；流程多实例交原生卡片与现有选择器，无树进入只读回看。初始化依选定登记中准备状态判断，不用其他宿主替代。未选中多个草稿中的任一个时不派生任意草稿目标。
 
@@ -105,9 +105,9 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。侧栏�
 
 以下条目是当前接线约束。UI 判据见 spec，本节只记录设计取舍：
 
-- **初始化入口**：流程行菜单的「准备流程工作区」删除——入口挪版本行图标按钮（FolderPlus，非三个点），流程树不齐（plan/acceptance 任一缺）才显示、两树齐即消失；点击**直接执行** prepare 无确认单（人裁定：创建类不设确认单，busy 态＋toast 如实回报），执行链住 `version-nav-actions.initializeVersionWorkspace`，准备结果的 `prepareFailed` 判定在 `shared/workbench/version-workspace-prepare.ts`，由新建对话框、直接初始化与主进程协议测试共用；展示摘要由 renderer 的 `version-workspace-prepare-report.ts` 生成；归档版本不加拦截提醒（归档版继续干活是合理旅程）。NewVersionDialog 只剩 create 模式（prepare 模式失去调用方同交付删除）。只读回看指路文案对齐。
+- **初始化入口**：流程行菜单的「准备流程工作区」删除——入口挪版本行图标按钮（FolderPlus，非三个点），流程树不齐（plan/acceptance 任一缺）才显示、两树齐即消失；点击**直接执行** prepare 无确认单（人裁定：创建类不设确认单，busy 态＋toast 如实回报），执行链住 `version-nav-actions.initializeVersionWorkspace`，准备结果的 `prepareFailed` 判定在 `shared/monica/version-workspace-prepare.ts`，由新建对话框、直接初始化与主进程协议测试共用；展示摘要由 renderer 的 `version-workspace-prepare-report.ts` 生成；归档版本不加拦截提醒（归档版继续干活是合理旅程）。NewVersionDialog 只剩 create 模式（prepare 模式失去调用方同交付删除）。只读回看指路文案对齐。
 - **准备工作区的 setup 策略**：创建参数 `setupDecision:'inherit'→'skip'`（原生既有开关，automations headless 同口径）——不开 Setup 终端、不装依赖、建树跳过 setup 脚本；流程树上会话 agent 需要依赖时自己装（材料读写与 CLI 注入不需要）。legacy 固定树 ensure（native-workspace.ts）显式不动。
-- **树行与原生会话**：版本树由登记和绑定现算可见，不以有无已恢复会话为条件；会话行和历史继续复用 Orca 机制。各具体树整行右击复用同一原生菜单；流程多实例直接展示具体实例，不用三点菜单代替树本身。业务目录动作与单树维护分开，单树改绑不改父子或其他树归属。宿主断链只显示原生连接图标，不追加 BW 离线标签或 toast，点击保留当前内容；绑定/清理执行仍校验宿主可达性。侧栏复用原生滚动，不给数据目录引入第二套滚动。
+- **树行与原生会话**：版本树由登记和绑定现算可见，不以有无已恢复会话为条件；会话行和历史继续复用 Orca 机制。各具体树整行右击复用同一原生菜单；流程多实例直接展示具体实例，不用三点菜单代替树本身。业务目录动作与单树维护分开，单树改绑不改父子或其他树归属。宿主断链只显示原生连接图标，不追加 Monica 离线标签或 toast，点击保留当前内容；绑定/清理执行仍校验宿主可达性。侧栏复用原生滚动，不给数据目录引入第二套滚动。
 - **计划/验收初态**：prepare 的空计划不表示流程已开始。两屏未开始显示短卡，只有原生运行会话实际打开后才展开四区；无目标保持空列表。启动视图按流程/版本/scope/owner/工作树在渲染进程内保留，切屏不重现开始卡；已有有效材料独立恢复，不从普通 shell 推断。显式“初始化工作区”继续沿 prepare 补齐，不因浏览或断链激活自动建树。
 - **版本查询与目标身份**：CodeHub 版本标签经已有 listTasks → service → IPC/RPC → CLI 下推 AND 查询；沿原生每仓 250 条，CLI 自动翻页并以 limit+1 推导 hasMore，界面明确还有更多，目标引用点读仍完整。目标 @me 按每条任务实际 repo 的来源、runtime/WSL 与托管站点调用只读 viewer，GitHub 不借用全局本机账号；只在需要身份时查询、刷新重新读，失败显示未知，不持久化账号或凭据。
 - **三屏 Issue 读取**：任务页只有目标条件使用完整引用投影，版本入口走原生标签查询；task-reference-reader 与 native-task-port 统一计划、验收、任务屏及上版实时 Issue 的同源缓存与在途合并。GitHub 坐标归一后按现有支持域每 20 号调用 gh:workItemsBatch，成功片保留，失败/缺项补单读；environment runtime 不跨机代读；fork、非 origin 登记远端、显式 upstream 偏好与带端口 GHES 保留原生点读的选源语义。CodeHub 保留 issue/MR 读回和全局 6 并发上限。缓存只回显旧读数，后台读回整批发布；手动刷新等旧请求结束后再查源头。创建版本仍准备两树，但只等待目标主机登记读回，其他主机刷新不阻塞打开。

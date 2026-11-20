@@ -1,14 +1,14 @@
 ---
 name: bw-knowledge-docs
 description: >-
-  Maintain Workbench knowledge-base role map (`.bw/knowledge-map.toml`) for AI-native
+  Maintain Monica knowledge-base role map (`.bw/knowledge-map.toml`) for AI-native
   project docs. Use when onboarding a repo, KB classification looks wrong, reviewing a
   draft knowledge map, or restructuring docs into user/engineering roles.
 ---
 
-# Workbench 文档维护
+# Monica 文档维护
 
-仓与仓的**路径不同**，但 AI-native 项目的**文档角色**一致。不要把单仓路径写死进 Workbench 代码；真相在该仓的 `.bw/knowledge-map.toml`。
+仓与仓的**路径不同**，但 AI-native 项目的**文档角色**一致。不要把单仓路径写死进 Monica 代码；真相在该仓的 `.bw/knowledge-map.toml`。
 
 详细角色与维护策略见同目录 [`roles.md`](roles.md)。
 
@@ -31,7 +31,7 @@ description: >-
 
 ## 禁止
 
-- 把某个仓库的路径白名单提交进 Orca/Workbench 运行时代码
+- 把某个仓库的路径白名单提交进 Orca/Monica 运行时代码
 - 把实现现状写回愿景 / 契约「正本」来消对账差异
 - 用「文档很多」当理由把整棵 `docs/` 丢进同一 role
 

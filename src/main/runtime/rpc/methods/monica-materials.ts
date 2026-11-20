@@ -1,0 +1,75 @@
+import { defineMonicaMethod } from '../../../monica/monica-rpc-observability'
+import {
+  VersionMaterialAddArtifactSchema,
+  VersionMaterialReadSchema,
+  VersionMaterialSaveSchema,
+  VersionMaterialScopeSchema
+} from '../../../../shared/monica/version-material-request'
+import {
+  VersionMigrationReadSchema,
+  VersionMigrationApplySchema
+} from '../../../../shared/monica/version-material-migration'
+import { materialResult } from '../../../monica/version-material-error'
+import { assertHumanFieldsUntouched } from '../../../monica/material-human-guard'
+import { nativeVersionMaterialService } from '../../../monica/version-material-runtime'
+import { versionSelection } from '../../../monica/version-selection'
+
+export const MONICA_MATERIAL_METHODS = [
+  defineMonicaMethod({
+    name: 'workbench.materials.context',
+    params: VersionMaterialScopeSchema,
+    handler: (params, { runtime }) => materialResult(() => versionSelection(runtime, params))
+  }),
+  defineMonicaMethod({
+    name: 'workbench.materials.select',
+    params: VersionMaterialReadSchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => versionSelection(runtime, params, params.version))
+  }),
+  defineMonicaMethod({
+    name: 'workbench.materials.previewMigration',
+    params: VersionMigrationReadSchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => nativeVersionMaterialService(runtime).previewMigration(params))
+  }),
+  defineMonicaMethod({
+    name: 'workbench.materials.migrate',
+    params: VersionMigrationApplySchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => nativeVersionMaterialService(runtime).migrate(params))
+  }),
+  defineMonicaMethod({
+    name: 'workbench.materials.list',
+    params: VersionMaterialScopeSchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => nativeVersionMaterialService(runtime).list(params))
+  }),
+  defineMonicaMethod({
+    name: 'workbench.materials.read',
+    params: VersionMaterialReadSchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => nativeVersionMaterialService(runtime).read(params))
+  }),
+  defineMonicaMethod({
+    name: 'workbench.materials.save',
+    params: VersionMaterialSaveSchema,
+    handler: (params, ctx) =>
+      materialResult(async () => {
+        const service = nativeVersionMaterialService(ctx.runtime)
+        // Human-only conclusions enter through UI channels only; the CLI channel
+        // (no clientKind) must round-trip them unchanged. Guard runs on the owning
+        // runtime because the CLI client itself cannot be trusted.
+        await assertHumanFieldsUntouched((input) => service.read(input), params, ctx)
+        return service.save(params)
+      })
+  }),
+  // #516 制品登记：操作面只收制品字段，文档在拥有工作树的一侧从新鲜读取
+  // 重建、只改 preparedArtifacts——人工字段按构造原样往返，无需 save 的通道
+  // 守卫（见 version-material-artifact.ts）。
+  defineMonicaMethod({
+    name: 'workbench.materials.addArtifact',
+    params: VersionMaterialAddArtifactSchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => nativeVersionMaterialService(runtime).addArtifact(params))
+  })
+]

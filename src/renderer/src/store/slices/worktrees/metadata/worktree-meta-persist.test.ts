@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RuntimeClientTarget } from '../../../../runtime/runtime-rpc-client'
 import {
-  WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY,
+  MONICA_VERSION_BINDING_RUNTIME_CAPABILITY,
   WORKTREE_GITHUB_PR_SUPPRESSION_RUNTIME_CAPABILITY
 } from '../../../../../../shared/protocol-version'
 import { persistWorktreeMeta } from './worktree-meta-persist'
@@ -112,7 +112,7 @@ describe('persistWorktreeMeta GitHub PR suppression compatibility', () => {
     expect(mocks.assertCapability).not.toHaveBeenCalled()
   })
 
-  it('gates BW version binding writes and clears on workbench.version-binding.v1', async () => {
+  it('gates Monica version binding writes and clears on workbench.version-binding.v1', async () => {
     // 无能力的对端会剥掉未知键：写入假成功、清除留悬空绑定，两个方向都必须拦下。
     mocks.assertCapability.mockRejectedValue(new Error('update required'))
 
@@ -122,7 +122,7 @@ describe('persistWorktreeMeta GitHub PR suppression compatibility', () => {
 
     expect(mocks.assertCapability).toHaveBeenCalledWith(
       'env-1',
-      WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY,
+      MONICA_VERSION_BINDING_RUNTIME_CAPABILITY,
       expect.stringContaining('version binding')
     )
     expect(mocks.callRuntimeRpc).not.toHaveBeenCalled()

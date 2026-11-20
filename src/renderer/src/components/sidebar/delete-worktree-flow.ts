@@ -16,8 +16,8 @@ import {
   LOCAL_EXECUTION_HOST_ID
 } from '../../../../shared/execution-host'
 import { normalizeRuntimePathForComparison } from '../../../../shared/cross-platform-path'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { worktreeActivationHostOpts } from '@/workbench/worktree-activation-host-opts'
+import { isMonicaShell } from '@/monica/is-monica-shell'
+import { worktreeActivationHostOpts } from '@/monica/worktree-activation-host-opts'
 import {
   resolveWorktreeBatchDeleteTargets,
   toWorktreeDeleteIdentities,
@@ -57,7 +57,7 @@ export function runWorktreeDelete(worktreeId: string, options: WorktreeDeleteOpt
     return
   }
   if (target.isMainWorktree) {
-    const workbench = isWorkbenchShell()
+    const workbench = isMonicaShell()
     const targetHostId = workbench
       ? worktreeActivationHostOpts(target)?.executionHostId
       : target.hostId

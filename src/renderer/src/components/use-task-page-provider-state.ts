@@ -20,7 +20,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   } = model
   const taskSourceManuallyChangedRef = useRef(false)
   const lastPageTaskSourceRef = useRef(pageData.taskSource)
-  const workbenchTaskScope = pageData.workbenchTaskScope ?? null
+  const monicaTaskScope = pageData.monicaTaskScope ?? null
   const taskResumeAppliedRef = useRef(false)
   const githubSearchPersistReadyRef = useRef(false)
   const linearSearchPersistReadyRef = useRef(false)
@@ -48,7 +48,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
       }
       const saved = resolveVisibleTaskProvider(pageData.taskSource, visibleTaskProviders)
       if (
-        !workbenchTaskScope?.goalId &&
+        !monicaTaskScope?.goalId &&
         selectionIsCodeHub &&
         visibleTaskProviders.includes('codehub') &&
         !suppressCodeHubAutoRef.current &&
@@ -64,12 +64,12 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     selectionIsCodeHub,
     visibleTaskProviders,
     setTaskSource,
-    workbenchTaskScope?.goalId
+    monicaTaskScope?.goalId
   ])
   useEffect(() => {
-    // Why: a BW workbench scope keeps the source its entry explicitly opened;
+    // Why: a Monica workbench scope keeps the source its entry explicitly opened;
     // repo-remote auto-switching must not override the scoped view.
-    if (workbenchTaskScope?.goalId) {
+    if (monicaTaskScope?.goalId) {
       return
     }
     const selectionKey = selectedRepos
@@ -105,7 +105,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     implicitTaskSourceRestored,
     visibleTaskProviders,
     setTaskSource,
-    workbenchTaskScope
+    monicaTaskScope
   ])
   useEffect(() => {
     if (!visibleTaskProviders.includes(taskSource)) {
@@ -162,7 +162,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   }, [gitlabItems, gitlabView])
   const [codehubView, setCodehubView] = useState<'issues' | 'mrs'>('issues')
   const [codehubState, setCodehubState] = useState<'opened' | 'closed' | 'merged' | 'all'>(
-    workbenchTaskScope?.goalId ? 'all' : 'opened'
+    monicaTaskScope?.goalId ? 'all' : 'opened'
   )
   const [codehubItems, setCodehubItems] = useState<CodeHubTaskItem[]>([])
   const [codehubLoading, setCodehubLoading] = useState(false)

@@ -1,4 +1,4 @@
-# AGENTS.md — Workbench 开发约定
+# AGENTS.md — Monica 开发约定
 
 > **本篇维护约定**
 >
@@ -9,25 +9,25 @@
 
 ## 按任务读取
 
-本仓开发 Builders' Workbench（Workbench / BW）。**主干 `main`**（原 `bw-orca`，2026-09-30 扶正）是 Orca Electron 执行核上的产品叠层，不是 Rust 三 crate 桌面；旧 Rust main 已归档为 `archive/main-pre-orca`。叠层 `src/renderer/src/workbench/`，规范 `standard/`。相对 upstream 删了什么、从旧 main 合入了什么、以及遗留项读 [ref/upstream.md](ref/upstream.md)。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
+本仓开发 Monica（Monica）。**主干 `main`**（原 `bw-orca`，2026-09-30 扶正）是 Orca Electron 执行核上的产品叠层，不是 Rust 三 crate 桌面；旧 Rust main 已归档为 `archive/main-pre-orca`。叠层 `src/renderer/src/monica/`，规范 `standard/`。相对 upstream 删了什么、从旧 main 合入了什么、以及遗留项读 [ref/upstream.md](ref/upstream.md)。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
 
 **[docs/01-principles/](docs/01-principles/README.md) 是最慢变的原则正本**，不得用草稿实现或聊天结论推翻。按任务读取对应资料，不把所有正文堆进入口：
 
 | 任务 | 读取路径与动作 |
 |---|---|
-| 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
-| 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
+| 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/monica/` |
+| 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/monica/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
 | 本仓开发、测试、检视与 PR 交付 | 设计或调整测试、开展独立检视、编写 PR 正文与验证评论前，完整读取 [开发规范](docs/development.md)。本仓会话均适用，不以是否调用起手 Skill 为条件。特性确认、历史兼容取舍与自主交付边界直接读 [02 §3.2](docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)。 |
-| BW 自身研发会话 | 直接修改本仓代码、文档或测试并交付 BW 自身 PR 的会话，先读取 [workbench-start](.claude/skills/workbench-start/SKILL.md)，再按其起手、验证与交付步骤执行；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。开发规范仍以本表上一行指向的 [docs/development.md](docs/development.md) 为正本。Workbench 发起的被管项目执行会话沿产品提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill。 |
-| 提单或维护 BW 自身 Issue | 创建、改写或关联前，完整读取[通用 Issue 规范](standard/references/issue-state.md)和[BW 特性矩阵](docs/05-features/README.md)，按主要用户结果选主归属。纳入版本计划时再执行[计划 Skill](standard/skills/week-planning/SKILL.md)的纳入要求。 |
+| Monica 自身研发会话 | 直接修改本仓代码、文档或测试并交付 Monica 自身 PR 的会话，先读取 [monica-start](.claude/skills/monica-start/SKILL.md)，再按其起手、验证与交付步骤执行；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。开发规范仍以本表上一行指向的 [docs/development.md](docs/development.md) 为正本。Monica 发起的被管项目执行会话沿产品提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill。 |
+| 提单或维护 Monica 自身 Issue | 创建、改写或关联前，完整读取[通用 Issue 规范](standard/references/issue-state.md)和[Monica 特性矩阵](docs/05-features/README.md)，按主要用户结果选主归属。纳入版本计划时再执行[计划 Skill](standard/skills/week-planning/SKILL.md)的纳入要求。 |
 | 特性级变更 | 从[特性矩阵](docs/05-features/README.md)定位所属旅程，对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，原型后的最终对齐按 §3.2，之后生成仓外实现 plan 并自主交付。大风险仍按原则处理。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链。做/改原型先读 [设计系统 guidelines「HTML 原型与文档页」](docs/04-design-system/guidelines.md#html-原型与文档页) 与 [高保真三原则](docs/hifi/README.md) |
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则挂 Issue 直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
 | 新增或改变用户可见入口、操作路径或结果，或走查旅程、修改引导、制作指南与传播素材 | 完整读取[引导与旅程规范及矩阵](docs/04-design-system/guidance.md)，定位受影响的旅程与功能行，按[开发规范的验收依据](docs/development.md#验收依据)处理本次引导。逐条整改使用 [journey-review](.claude/skills/journey-review/SKILL.md) |
 | 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
-| 使用 Recent Design 的界面、动效与前端研发技能 | 从 [recent-design](.claude/skills/recent-design/SKILL.md) 进入，按 [.bw 技能清单](.bw/skills/recent-design/README.md) 选取并完整读取正文；BW 设计系统、特性依据与开发规范优先。不自动分发到 `standard/`。 |
-| 周期复核 Orca/BW 边界 | 读 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md)；先读当前 BW 正本，再核对 Orca 公开版本；只把人采纳的稳定变化写回对应正本 |
+| 使用 Recent Design 的界面、动效与前端研发技能 | 从 [recent-design](.claude/skills/recent-design/SKILL.md) 进入，按 [.bw 技能清单](.bw/skills/recent-design/README.md) 选取并完整读取正文；Monica 设计系统、特性依据与开发规范优先。不自动分发到 `standard/`。 |
+| 周期复核 Orca/Monica 边界 | 读 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md)；先读当前 Monica 正本，再核对 Orca 公开版本；只把人采纳的稳定变化写回对应正本 |
 | 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范。合入记录见 [ref/upstream.md](ref/upstream.md) |
 
 Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍须落回 `docs/05-features/<id>/`。找不到设计落点先澄清并补正本，再写代码；未锁定决策先走 grill/domain-modeling。跨会话以仓内正本及可追溯的 commit/PR 为据，不凭上次聊天改代码。
@@ -57,10 +57,10 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 | 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
 - Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
-- Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
+- Monica MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
-- 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；按“先复用原生能力 → 再用 BW 薄挂载或自有模块接入 → 只有确实必须改变 Orca 核心、协议或宿主路由时才停在方案层交人决定”的顺序判断。优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
-- 设计前查清当前 BW 仓内已采用的 Orca 技术方案、代码、UI 组件、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点；已有能力直接复用，确有缺口再做最小适配。不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。
+- 日常 Monica 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；按“先复用原生能力 → 再用 Monica 薄挂载或自有模块接入 → 只有确实必须改变 Orca 核心、协议或宿主路由时才停在方案层交人决定”的顺序判断。优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
+- 设计前查清当前 Monica 仓内已采用的 Orca 技术方案、代码、UI 组件、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点；已有能力直接复用，确有缺口再做最小适配。不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。
 - 方案纠正或重做时，同一交付内清除被替代的尝试代码、错误文档、配置及入口引用，必要的测试随正确行为更新；不为错误方案留兼容层、回退或双路径。现行正本只写有效方案，历史由 Git 追溯，不另建错误尝试台账；不扩 scope，未建如实标未建。
 - V3 与旧 Rust 三 crate 已不在本分支；不能用已删除的 `crates/` 解释现行 Electron 壳。历史在 `v3` 分支与 `archive/main-pre-orca`（旧 main 归档），查旧模块名时读[当时的挪移对照表](https://github.com/forcegravity1989/builder-workbench/blob/805b2fe4120c2d9fc73c9eae50949e5e69a2b477/docs/10-reference/v3-and-module-migration.md)。
 
@@ -69,24 +69,24 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 Node.js + pnpm；桌面壳是 Electron（Orca 叠层），macOS / Windows。叠层热加载与真壳验证入口：
 
 ```bash
-pnpm run dev:workbench
+pnpm run dev:monica
 pnpm test
 pnpm run lint
 pnpm run typecheck
 ```
 
-`dev:workbench` 已设置 `WORKBENCH_SHELL=1`、`VITE_WORKBENCH_SHELL=1`、`ORCA_PRODUCT_NAME=Workbench`，使用独立 profile `workbench-dev`。Agent 自动化可加 `ORCA_BACKGROUND_LAUNCH=1` 与 `REMOTE_DEBUGGING_PORT=9337`。打试用包见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md) 的 `pnpm run build:mac:workbench`。
+`dev:monica` 已设置 `MONICA_SHELL=1`、`VITE_MONICA_SHELL=1`、`ORCA_PRODUCT_NAME=Monica`，使用独立 profile `workbench-dev`。Agent 自动化可加 `ORCA_BACKGROUND_LAUNCH=1` 与 `REMOTE_DEBUGGING_PORT=9337`。打试用包见 [`SYNC.md`](src/renderer/src/monica/SYNC.md) 的 `pnpm run build:mac:monica`。
 
-旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。现有 Electron 构建入口以 SYNC 和 package.json 为准；BW 的 CI/CD、评审与正式出包链随迁移任务验证，不能据此宣称已完成 v0.5 交付。
+旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。现有 Electron 构建入口以 SYNC 和 package.json 为准；Monica 的 CI/CD、评审与正式出包链随迁移任务验证，不能据此宣称已完成 v0.5 交付。
 
-计划、验收和「配置指标」手动入口准备完整 Skill 包后打开原生会话草稿，用户发送后由模型完整读取 Skill 及其必读规范；定时运行仍沿原生自动化。普通原生新建会话不额外注入 BW 提示（`version-cycle/cycle-prompt.ts`，正源 `standard/`）。路径、宿主与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
+计划、验收和「配置指标」手动入口准备完整 Skill 包后打开原生会话草稿，用户发送后由模型完整读取 Skill 及其必读规范；定时运行仍沿原生自动化。普通原生新建会话不额外注入 Monica 提示（`version-cycle/cycle-prompt.ts`，正源 `standard/`）。路径、宿主与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
 
 ### 提交前门禁
 
 每个 commit 前过 husky `lint-staged`（oxlint / oxfmt）。改叠层或注入逻辑时再跑受影响的 Vitest，例如：
 
 ```bash
-pnpm exec vitest run --config config/vitest.config.ts src/main/workbench/skill-install.test.ts
+pnpm exec vitest run --config config/vitest.config.ts src/main/monica/skill-install.test.ts
 ```
 
 PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。测试入库、数量控制、失败分诊、真实验收与检视要求统一在[开发规范](docs/development.md)。相关检查入口包括 `pnpm run check:vitest-count-ratchet` 和 `pnpm run check:max-lines-ratchet`；文件行数配置以 [`.oxlintrc.json`](.oxlintrc.json) 为准。按职责边界组织代码，不以机械抽取或增加豁免来掩盖结构问题。

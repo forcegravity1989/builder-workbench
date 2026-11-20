@@ -7,7 +7,7 @@ import { formatOptionalPrimaryShortcutLabel } from '@/hooks/useShortcutLabel'
 import { translate } from '@/i18n/i18n'
 import { openWorkspaceCreationComposerWithTourHandoff } from '../contextual-tours/workspace-creation-tour-handoff'
 import SidebarWorkspaceOptionsMenu from './SidebarWorkspaceOptionsMenu'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 function AddProjectButton({
   preserveWorkspaceBoardOpen
@@ -94,7 +94,7 @@ export function SidebarHeaderActions({
         <>
           {/* Why: in the Workbench shell 选项/新建工作区 sink to the 工作区 section
               header, so the top bar keeps only project identity + activity + 添加项目. */}
-          {isWorkbenchShell() ? null : (
+          {isMonicaShell() ? null : (
             <SidebarWorkspaceOptionsMenu
               preserveWorkspaceBoardOpen
               onMenuOpenChange={onWorkspaceBoardMenuOpenChange}
@@ -103,7 +103,7 @@ export function SidebarHeaderActions({
           <AddProjectButton preserveWorkspaceBoardOpen />
         </>
       )}
-      {isWorkbenchShell() ? null : <NewWorkspaceButton preserveWorkspaceBoardOpen />}
+      {isMonicaShell() ? null : <NewWorkspaceButton preserveWorkspaceBoardOpen />}
     </div>
   )
 }

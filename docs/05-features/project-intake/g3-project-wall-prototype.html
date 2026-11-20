@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Builder Workbench · G3 项目墙高保真</title>
+  <title>Monica · G3 项目墙高保真</title>
   <link rel="stylesheet" href="../../04-design-system/styles.css">
   <style>
     :root { --g3-sidebar: 248px; --g3-topbar: 42px; }
@@ -27,12 +27,12 @@
     .shell { min-height:0; display:grid; grid-template-columns:var(--g3-sidebar) minmax(0,1fr); }
     .sidebar { min-height:0; display:flex; flex-direction:column; overflow:hidden; border-right:1px solid var(--sidebar-border); color:var(--sidebar-foreground); background:var(--sidebar); }
     .sidebar-head { padding:12px 10px 10px; }
-    .workbench-button, .nav button, .sidebar-footer button { display:flex; align-items:center; gap:8px; width:100%; min-height:28px; padding:0 8px; border:0; border-radius:var(--radius-sm); color:color-mix(in srgb,var(--sidebar-foreground) 72%,transparent); background:transparent; text-align:left; cursor:pointer; font-size:12px; }
-    .workbench-button { padding:7px 8px; color:inherit; }
-    .workbench-button:hover, .workbench-button.active, .nav button:hover, .nav button.active, .sidebar-footer button:hover { color:var(--sidebar-accent-foreground); background:var(--sidebar-accent); }
-    .workbench-button strong, .workbench-button small { display:block; }
-    .workbench-button strong { font-size:13px; font-weight:600; }
-    .workbench-button small { margin-top:2px; color:color-mix(in srgb,var(--sidebar-foreground) 55%,transparent); font-size:10px; }
+    .monica-button, .nav button, .sidebar-footer button { display:flex; align-items:center; gap:8px; width:100%; min-height:28px; padding:0 8px; border:0; border-radius:var(--radius-sm); color:color-mix(in srgb,var(--sidebar-foreground) 72%,transparent); background:transparent; text-align:left; cursor:pointer; font-size:12px; }
+    .monica-button { padding:7px 8px; color:inherit; }
+    .monica-button:hover, .monica-button.active, .nav button:hover, .nav button.active, .sidebar-footer button:hover { color:var(--sidebar-accent-foreground); background:var(--sidebar-accent); }
+    .monica-button strong, .monica-button small { display:block; }
+    .monica-button strong { font-size:13px; font-weight:600; }
+    .monica-button small { margin-top:2px; color:color-mix(in srgb,var(--sidebar-foreground) 55%,transparent); font-size:10px; }
     .nav { display:grid; gap:2px; padding:0 10px 10px; }
     .nav-icon { width:15px; color:currentColor; text-align:center; }
     .sidebar-section { min-height:0; display:flex; flex:1; flex-direction:column; padding:9px 10px 0; border-top:1px solid var(--sidebar-border); }
@@ -126,7 +126,7 @@
   <div class="window">
     <header class="topbar">
       <span class="mark" aria-hidden="true">W</span>
-      <span class="topbar-title">Workbench</span>
+      <span class="topbar-title">Monica</span>
       <span class="topbar-meta">Orca runtime</span>
       <span class="spacer"></span>
       <span class="tag tag-neutral" id="host-count-tag">仅本机</span>
@@ -134,16 +134,16 @@
     </header>
 
     <div class="shell">
-      <aside class="sidebar" aria-label="Workbench 侧栏">
+      <aside class="sidebar" aria-label="Monica 侧栏">
         <div class="sidebar-head">
-          <button class="workbench-button active" type="button" data-view-target="wall" title="打开项目墙">
+          <button class="monica-button active" type="button" data-view-target="wall" title="打开项目墙">
             <span class="mark" aria-hidden="true">B</span>
             <span><strong>builder-workbench</strong><small>项目墙 · workbench</small></span>
             <span class="spacer"></span><span aria-hidden="true">⌄</span>
           </button>
         </div>
 
-        <nav class="nav" aria-label="BW 屏幕">
+        <nav class="nav" aria-label="Monica 屏幕">
           <button type="button" data-view-target="overview"><span class="nav-icon">▣</span>总览</button>
           <button type="button" data-coming-soon="true"><span class="nav-icon">◫</span>计划</button>
           <button type="button" data-coming-soon="true"><span class="nav-icon">✓</span>验收</button>
@@ -176,7 +176,7 @@
           <div class="page-inner">
             <header class="page-head">
               <div>
-                <div class="kicker">Workbench / 项目墙</div>
+                <div class="kicker">Monica / 项目墙</div>
                 <h1>项目墙</h1>
                 <p>只展示能读到 .bw/project.toml 的项目；Orca Projects 保留全部项目和工作树，不做过滤。</p>
               </div>
@@ -196,7 +196,7 @@
             </div>
 
             <div class="wall-grid" id="wall-grid">
-              <article class="card wall-card" aria-label="项目卡：workbench">
+              <article class="card wall-card" aria-label="项目卡：Monica">
                 <div class="card-top">
                   <div class="source-tags" id="source-tags"><span class="tag tag-neutral" title="本机注册的工作树">本机</span></div>
                   <span class="tag tag-accent">当前</span>
@@ -205,7 +205,7 @@
                 <p class="card-summary">1、所有项目都一样。 2、加速并规范项目运作。3、一张工作台打通所有系统，集成各种好用组件和工作流</p>
                 <div class="card-meta">
                   <span>对标 workbuddy</span>
-                  <span>目标方向 更多的项目纳入到workbench管理</span>
+                  <span>目标方向 更多的项目纳入到 Monica 管理</span>
                   <span>1 个代码仓 · <span id="card-wt-count">5</span> 个工作树</span>
                 </div>
 
@@ -223,7 +223,7 @@
                   <button class="btn btn-primary" type="button" id="open-overview-button">打开项目总览</button>
                   <button class="btn btn-secondary" type="button" id="edit-charter-button">编辑名片</button>
                   <button class="btn btn-secondary" type="button" id="add-repo-button">＋ 代码仓</button>
-                  <span class="hint">Builder 主机的工作树明细与切换在左侧 Orca Projects（原生全量列表），BW 各屏沿用所选主机上下文</span>
+                  <span class="hint">Builder 主机的工作树明细与切换在左侧 Orca Projects（原生全量列表），Monica 各屏沿用所选主机上下文</span>
                 </div>
               </article>
             </div>
@@ -234,7 +234,7 @@
           <div class="page-inner">
             <header class="page-head">
               <div>
-                <div class="kicker">Workbench / 总览</div>
+                <div class="kicker">Monica / 总览</div>
                 <h1>workbench</h1>
                 <p>当前激活：<span id="ov-context">本机 · main</span></p>
               </div>
@@ -244,7 +244,7 @@
                 <div class="overview-head">
                   <div><span class="tag tag-accent">当前项目</span><h2 class="overview-title">workbench</h2></div>
                 </div>
-                <p class="overview-note">项目墙卡片和 Orca Projects 指向同一项目；总览、计划、验收、知识库沿用当前激活的主机与工作树上下文。切换 Builder 主机的工作树在 Orca Projects 原生列表进行，BW 屏随所选上下文读取；离线主机读取失败会如实显示，不冒充成功。</p>
+                <p class="overview-note">项目墙卡片和 Orca Projects 指向同一项目；总览、计划、验收、知识库沿用当前激活的主机与工作树上下文。切换 Builder 主机的工作树在 Orca Projects 原生列表进行，Monica 屏随所选上下文读取；离线主机读取失败会如实显示，不冒充成功。</p>
                 <div class="overview-grid">
                   <div class="overview-cell"><small>项目名片</small><strong>.bw/project.toml · 已读到</strong></div>
                   <div class="overview-cell"><small>执行主机</small><strong id="ov-host">本机</strong></div>
@@ -253,7 +253,7 @@
                 </div>
               </article>
               <article class="card overview-card">
-                <div class="overview-head"><h2 class="overview-title">项目材料</h2><span class="tag tag-neutral">复用 BW 现有屏</span></div>
+                <div class="overview-head"><h2 class="overview-title">项目材料</h2><span class="tag tag-neutral">复用 Monica 现有屏</span></div>
                 <p class="overview-note">计划 / 验收 / 自动化 / 知识库继续读取当前激活项目与主机；这些屏不在本次高保真范围内，沿用现有实现。</p>
               </article>
             </div>
@@ -269,7 +269,7 @@
       <p class="dialog-description">导入共享的 Orca 主机配对配置，批量添加 Builder 主机；不克隆项目，也不改动 Orca Projects 的全量列表。导入后自动刷新各主机仓库目录，项目是否上墙仍按各项目里能否读到 .bw/project.toml 判定。</p>
       <div class="dialog-section">
         <span class="dialog-label">配置文件</span>
-        <div class="file-row"><span class="file-name" id="file-name">builder-workbench-hosts.json</span><label class="btn btn-secondary" for="config-file">选择文件</label><input id="config-file" type="file" accept=".json,.toml" hidden><button class="btn btn-ghost" type="button" id="download-template">下载模板</button></div>
+        <div class="file-row"><span class="file-name" id="file-name">builder-monica-hosts.json</span><label class="btn btn-secondary" for="config-file">选择文件</label><input id="config-file" type="file" accept=".json,.toml" hidden><button class="btn btn-ghost" type="button" id="download-template">下载模板</button></div>
         <p class="dialog-hint">结构就是「主机名: 该主机 Orca 分享的配对地址」：每台 Builder 主机把自己的配对地址发给你，按模板合成一个 json 即可导入；名字自己取，导入后用于墙上来源标签。</p>
       </div>
       <div class="dialog-section"><span class="dialog-label">将导入的主机</span><div class="import-hosts"><label class="import-host"><input type="checkbox" checked><span class="import-copy"><strong>Builder 01</strong><span>remote-orca-01 · 配对配置已验证</span></span><span class="tag tag-neutral">待导入</span></label><label class="import-host"><input type="checkbox" checked><span class="import-copy"><strong>Builder 02</strong><span>remote-orca-02 · 配对配置已验证</span></span><span class="tag tag-neutral">待导入</span></label></div></div>
@@ -300,7 +300,7 @@
       document.querySelectorAll('.nav [data-view-target]').forEach(function (button) {
         button.classList.toggle('active', button.dataset.viewTarget === view)
       })
-      document.querySelector('.workbench-button').classList.toggle('active', view === 'wall')
+      document.querySelector('.monica-button').classList.toggle('active', view === 'wall')
     }
 
     function updateCounts() {
@@ -437,7 +437,7 @@
       document.getElementById('ov-wt').textContent = 'main'
       document.getElementById('ov-path').textContent = 'E:\\zhuyu\\code\\builder-workbench'
       showView('overview')
-      showToast('已激活本机 · main；切换 Builder 主机工作树请在左侧 Orca Projects 选择，BW 屏随所选上下文读取')
+      showToast('已激活本机 · main；切换 Builder 主机工作树请在左侧 Orca Projects 选择，Monica 屏随所选上下文读取')
     })
 
     document.getElementById('repo-delete').addEventListener('click', function () {
@@ -453,7 +453,7 @@
         document.querySelectorAll('[data-native]').forEach(function (item) { item.classList.toggle('active', item === button) })
         const host = button.querySelector('.native-host').textContent
         const branch = button.querySelector('.native-copy small').textContent.split(' · ')[0]
-        showToast('Orca Projects 是原生全量列表（含未纳入 BW 的工作树）：' + branch + ' · ' + host + '；选中后 BW 各屏沿用该主机上下文')
+        showToast('Orca Projects 是原生全量列表（含未纳入 Monica 的工作树）：' + branch + ' · ' + host + '；选中后 Monica 各屏沿用该主机上下文')
       })
     })
 

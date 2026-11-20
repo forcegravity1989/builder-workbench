@@ -1,0 +1,44 @@
+import { ErrorDetails } from '../error-feedback'
+import type { PackagePipelinePort } from '../../../../shared/monica/package-pipeline'
+import type { VersionHistoryPort } from '../../../../shared/monica/version-history'
+import type { VersionCycleContext } from '../version-cycle/cycle-context'
+import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import { AcceptanceBoardContent } from './AcceptanceBoardContent'
+
+export type AcceptanceBoardProps = {
+  context: VersionCycleContext
+  history: VersionHistoryPort
+  packages: PackagePipelinePort
+  entry: CycleEntry
+}
+
+export function AcceptanceBoard(props: AcceptanceBoardProps) {
+  const { context } = props
+  if (!context.scope || !context.worktreeId || !context.materialPort) {
+    return (
+      <div className="acc-empty-screen">
+        <h1>版本验收</h1>
+        <p>打开验收工作区，再明确版本与计划来源。</p>
+        {context.error && (
+          <ErrorDetails summary="验收工作区未就绪 · 查看详情" detail={context.error} />
+        )}
+      </div>
+    )
+  }
+  const identity = JSON.stringify([
+    context.scope.projectId,
+    context.scope.repoId,
+    context.scope.hostId,
+    context.scope.runtimeOwnerEnvironmentId,
+    context.worktreeId,
+    context.worktreeInstanceId,
+    context.version
+  ])
+  return (
+    <AcceptanceBoardContent
+      key={identity}
+      {...props}
+      recoveryKey={`bw:acceptance:draft:${identity}`}
+    />
+  )
+}

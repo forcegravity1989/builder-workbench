@@ -73,7 +73,7 @@ export function usePreflightCardStatuses(
     preflightStatusChecked &&
     preflightCurrent &&
     preflightStatusError !== null
-  // Why (BW #323): a re-check must only flip the clicked card to checking
+  // Why (Monica #323): a re-check must only flip the clicked card to checking
   // (user decision 2026-10-19). The last complete preflightStatus stays the
   // input while a refresh is in flight so sibling cards keep their displayed
   // status; the clicked card's `refreshingProviders` is what turns its own

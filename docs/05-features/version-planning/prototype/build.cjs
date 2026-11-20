@@ -123,7 +123,7 @@ esbuild
   .then(async (result) => {
     const text = result.outputFiles[0].text
     if (check) {
-      if (fs.readFileSync(output, 'utf8') !== text) {
+      if (fs.readFileSync(output, 'utf8').replace(/\r\n/g, '\n') !== text) {
         throw new Error('Prototype runtime is stale; rebuild it.')
       }
       console.log('Prototype runtime matches its sources.')

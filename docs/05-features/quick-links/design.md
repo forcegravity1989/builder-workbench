@@ -8,7 +8,7 @@
 
 | 能力 | 复用落点 | 约束 |
 | --- | --- | --- |
-| 状态栏入口和可见性 | `StatusBarSurface`、状态栏控制器、`StatusBarVisibilityMenu` | 仅增加 BW 自有入口并登记可见项 |
+| 状态栏入口和可见性 | `StatusBarSurface`、状态栏控制器、`StatusBarVisibilityMenu` | 仅增加 Monica 自有入口并登记可见项 |
 | 面板和行结构 | `PortsStatusSegment` 及其 popover 行组件 | 沿用入口、popover、计数和行内动作范式 |
 | 浏览器打开 | `createBrowserTab` 和端口打开链 | 普通点击走内置浏览器，修饰键走系统浏览器 |
 | 文件读写 | 既有 `window.api.fs` 桥 | 不新增主进程 IPC 或业务数据库 |
@@ -17,9 +17,9 @@
 
 ## 当前落点
 
-- BW 自有组件位于 `src/renderer/src/workbench/quick-links/`，包括状态栏段、popover 和存储逻辑。
+- Monica 自有组件位于 `src/renderer/src/monica/quick-links/`，包括状态栏段、popover 和存储逻辑。
 - 现有状态栏挂载点只增加常用链接入口，`StatusBarItem`、RPC 参数和可见性菜单增加对应枚举项。
-- 纯函数校验位于 `src/shared/workbench/quick-links.ts`，负责 schema、URL 归一化和重复检查。
+- 纯函数校验位于 `src/shared/monica/quick-links.ts`，负责 schema、URL 归一化和重复检查。
 - 真实代码当前已有实现，但仍需 gate 和真壳证据确认是否作为产品能力交付。
 
 ## 数据与持久化

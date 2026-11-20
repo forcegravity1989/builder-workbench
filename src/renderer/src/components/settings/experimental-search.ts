@@ -1,5 +1,5 @@
-import { overviewExperimentEntries } from '@/workbench/version-overview/overview-experiments'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { overviewExperimentEntries } from '@/monica/version-overview/overview-experiments'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import type { SettingsSearchEntry } from './settings-search'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { translate } from '@/i18n/i18n'
@@ -10,12 +10,12 @@ import { getEphemeralVmsSearchEntry } from './ephemeral-vms-search'
 
 export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
   (): SettingsSearchEntry[] => [
-    ...(isWorkbenchShell()
+    ...(isMonicaShell()
       ? overviewExperimentEntries.map((entry) => ({
           title: entry.title,
           description: entry.description,
           keywords: [...entry.keywords],
-          targetSectionId: 'workbench-overview-experiments'
+          targetSectionId: 'monica-overview-experiments'
         }))
       : []),
     {

@@ -259,7 +259,7 @@ risk.
 
 Historically, an `xterm_patch_sync` job in `.github/workflows/pr.yml` ran
 `regenerate-xterm-patches.mjs --check` on every PR. That job was dropped with the
-Orca CI/E2E isolation (see `ref/upstream.md`); the Workbench CI does not include
+Orca CI/E2E isolation (see `ref/upstream.md`); the Monica CI does not include
 it, so the check is now manual:
 
 ```bash

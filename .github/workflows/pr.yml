@@ -1,4 +1,4 @@
-name: Workbench CI
+name: Monica CI
 
 on:
   pull_request:
@@ -10,11 +10,11 @@ on:
     # Why no paths filter: trigger-level path filters drop the check entirely on
     # excluded PRs (the lesson the old code_paths detector encoded). If verify is
     # ever made a required check, docs-only PRs would hang without a report.
-    # Every PR gets the full Workbench CI instead.
+    # Every PR gets the full Monica CI instead.
   workflow_dispatch:
 
 concurrency:
-  group: workbench-ci-${{ github.event.pull_request.number || github.ref }}
+  group: monica-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -32,7 +32,7 @@ jobs:
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: node
-      # Exercise the native network owners as well as the BW overlay suites below.
+      # Exercise the native network owners as well as the Monica overlay suites below.
       # Fixtures cannot establish two-machine Windows acceptance or account access.
       - name: Test shared host pairing, transport and subscription contracts
         run: >-
@@ -226,7 +226,7 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
-      - name: Test Workbench contracts and count ratchet
+      - name: Test Monica contracts and count ratchet
         run: pnpm run check:vitest-count-ratchet
 
       - name: Test native reporting and repository integration code
@@ -302,11 +302,11 @@ jobs:
         run: pnpm run build:desktop
 
   e2e:
-    name: Workbench Electron PR E2E
+    name: Monica Electron PR E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: verify
-    # The Workbench build-time flags (WORKBENCH_SHELL / VITE_WORKBENCH_SHELL /
+    # The Monica build-time flags (MONICA_SHELL / VITE_MONICA_SHELL /
     # ORCA_PRODUCT_NAME) are baked by tests/e2e/global-setup.ts into the
     # electron-vite build it runs — one source for CI, macOS and Windows.
 
@@ -330,14 +330,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
 
-      - name: Run Workbench PR E2E allowlist
-        run: xvfb-run --auto-servernum pnpm run test:e2e:workbench
+      - name: Run Monica PR E2E allowlist
+        run: xvfb-run --auto-servernum pnpm run test:e2e:monica
 
       # Preserve successful journey screenshots as well as failure diagnostics.
-      - name: Upload Workbench PR E2E evidence
+      - name: Upload Monica PR E2E evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: workbench-pr-e2e-results
+          name: monica-pr-e2e-results
           path: test-results/
           if-no-files-found: ignore

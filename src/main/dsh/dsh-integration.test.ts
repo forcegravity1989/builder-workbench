@@ -26,7 +26,12 @@ describe('DSH launch and provider contracts', () => {
   })
 
   it('distinguishes DSH profiles from launcher workspace arguments', () => {
-    for (const command of ['dsh web', 'dsh headless task', 'dsh --profile=sdk', 'dsh plugin list']) {
+    for (const command of [
+      'dsh web',
+      'dsh headless task',
+      'dsh --profile=sdk',
+      'dsh plugin list'
+    ]) {
       expect(recognizeAgentProcessFromCommandLine(command)).toBeNull()
     }
     for (const command of [
@@ -61,7 +66,7 @@ describe('DSH launch and provider contracts', () => {
     expect(event('PermissionRequest')).toBeNull()
   })
 
-  it('keeps DSH title identity through both BW title consumers', () => {
+  it('keeps DSH title identity through both Monica title consumers', () => {
     for (const title of ['✦ 🐋 task', '⠂ 🐋 task']) {
       expect(getAgentLabel(title)).toBe('DeepSeek Harness')
       expect(isClaudeAgent(title)).toBe(false)
@@ -77,7 +82,12 @@ describe('DSH launch and provider contracts', () => {
   it('resumes only the hook-reported DSH id on the DSH backend', () => {
     const session = extractAgentProviderSession('dsh', { session_id: 's1', transcript_path: '' })
     expect(session).toEqual({ key: 'session_id', id: 's1' })
-    expect(getAgentResumeArgv('dsh', session!)).toEqual(['dsh-tui', '--backend=dsh', '--resume', 's1'])
+    expect(getAgentResumeArgv('dsh', session!)).toEqual([
+      'dsh-tui',
+      '--backend=dsh',
+      '--resume',
+      's1'
+    ])
     for (const platform of ['darwin', 'linux', 'win32'] as const) {
       const plan = buildAgentResumeStartupPlan({
         agent: 'dsh',
@@ -106,11 +116,13 @@ describe('DSH launch and provider contracts', () => {
 
   it('preserves user patch rows across install and removal, including orphan markers', () => {
     const user =
-      "# >>> orca-managed-dsh-hooks (managed by Orca; do not edit) >>>\n- id: user-row\n  config: {}\n"
+      '# >>> orca-managed-dsh-hooks (managed by Orca; do not edit) >>>\n- id: user-row\n  config: {}\n'
     const installed = applyManagedDshPatch(user, "C:/owner's home/dsh-hooks.json")!
     expect(installed).toContain("configPath: 'C:/owner''s home/dsh-hooks.json'")
     expect(removeManagedDshPatch(installed).text).toBe(user)
-    expect(removeManagedDshPatch(applyManagedDshPatch('[]\n', '/tmp/hooks.json')!).text).toBe('[]\n')
+    expect(removeManagedDshPatch(applyManagedDshPatch('[]\n', '/tmp/hooks.json')!).text).toBe(
+      '[]\n'
+    )
     expect(applyManagedDshPatch('[{id: user}]\n', '/tmp/hooks.json')).toBeNull()
   })
 })

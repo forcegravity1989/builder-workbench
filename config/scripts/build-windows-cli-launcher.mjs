@@ -21,13 +21,13 @@ export function shouldReuseCompiledWindowsCliLauncher(
   return statSync(outputPath).mtimeMs >= statSync(sourcePath).mtimeMs
 }
 
-function defaultOutputPath(projectRoot, isWorkbench) {
+function defaultOutputPath(projectRoot, isMonica) {
   return join(
     projectRoot,
     'native',
     'windows-cli-launcher',
     '.build',
-    ...(isWorkbench ? ['workbench'] : []),
+    ...(isMonica ? ['monica'] : []),
     'orca.exe'
   )
 }
@@ -60,8 +60,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
   const repoRoot = resolve(import.meta.dirname, '../..')
   const sourcePath = join(repoRoot, 'native', 'windows-cli-launcher', 'OrcaCliLauncher.cs')
-  const isWorkbench = process.env.ORCA_PRODUCT_NAME === 'Workbench'
-  const outputPath = readArg('--output') ?? defaultOutputPath(repoRoot, isWorkbench)
+  const isMonica = process.env.ORCA_PRODUCT_NAME === 'Monica'
+  const outputPath = readArg('--output') ?? defaultOutputPath(repoRoot, isMonica)
   const compilerPath = findFrameworkCompiler(process.env)
 
   if (!compilerPath) {
@@ -84,7 +84,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       '/target:exe',
       '/optimize+',
       '/warnaserror+',
-      ...(isWorkbench ? ['/define:WORKBENCH'] : []),
+      ...(isMonica ? ['/define:MONICA'] : []),
       `/out:${outputPath}`,
       sourcePath
     ],

@@ -1,4 +1,4 @@
-/* Prototype-only layout; project settings styles are imported directly from BW. */
+/* Prototype-only layout; project settings styles are imported directly from Monica. */
 * {
   box-sizing: border-box;
 }
@@ -677,23 +677,23 @@ svg {
 .tree-row:hover {
   color: var(--muted-foreground);
 }
-.wb-config-toggle {
+.monica-config-toggle {
   list-style: none;
 }
-.wb-config-toggle::-webkit-details-marker {
+.monica-config-toggle::-webkit-details-marker {
   display: none;
 }
-.wb-config-toggle svg {
+.monica-config-toggle svg {
   width: 16px;
   height: 16px;
 }
-.wb-config-section[open] > .wb-config-toggle > svg:last-child {
+.monica-config-section[open] > .monica-config-toggle > svg:last-child {
   transform: rotate(180deg);
 }
-.wb-config-header {
+.monica-config-header {
   padding: 18px 16px 14px;
 }
-.wb-config-header h2 {
+.monica-config-header h2 {
   font-size: 16px;
 }
 .config-header-actions {
@@ -704,7 +704,7 @@ svg {
 .config-info-wrap {
   position: relative;
 }
-.config-info-wrap .wb-config-toggle {
+.config-info-wrap .monica-config-toggle {
   padding-right: 44px;
 }
 .info-edit {
@@ -754,26 +754,26 @@ svg {
   font-size: 11px;
   color: var(--muted-foreground);
 }
-.wb-config-scroll {
+.monica-config-scroll {
   padding: 0 16px 16px;
 }
-.wb-config-fields {
+.monica-config-fields {
   gap: 12px;
 }
-.wb-config-facts > div {
+.monica-config-facts > div {
   padding-top: 10px;
 }
-.wb-config-facts dd {
+.monica-config-facts dd {
   font-size: 12px;
 }
-.wb-config-footer {
+.monica-config-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 16px;
 }
-.wb-config-footer .btn {
+.monica-config-footer .btn {
   width: auto;
 }
 .review-status {
@@ -781,7 +781,7 @@ svg {
   font-size: 12px;
   color: var(--muted-foreground);
 }
-.wb-config-summary {
+.monica-config-summary {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -805,7 +805,7 @@ svg {
   min-height: 32px;
   padding: 5px 9px;
 }
-.wb-config-path {
+.monica-config-path {
   font-family: inherit;
 }
 dialog {
@@ -1064,7 +1064,7 @@ dialog::backdrop {
   .four-principles {
     font-size: 10px;
   }
-  .wb-project-settings {
+  .monica-project-settings {
     z-index: 30;
   }
   .project-sidebar {

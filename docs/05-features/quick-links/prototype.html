@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Workbench · 常用链接 交互原型（状态栏入口）</title>
+    <title>Monica · 常用链接 交互原型（状态栏入口）</title>
     <style>
       :root {
         --bg: #faf9f5;
@@ -238,7 +238,7 @@
 
       <div class="banner">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
-        模拟数据 · 仅本页内存生效，刷新即重置；「打开」不真正打开浏览器，只提示将在 BW 内置浏览器打开。点状态栏右下角两个图标分别看「端口」与「常用链接」的弹出面板。
+        模拟数据 · 仅本页内存生效，刷新即重置；「打开」不真正打开浏览器，只提示将在 Monica 内置浏览器打开。点状态栏右下角两个图标分别看「端口」与「常用链接」的弹出面板。
       </div>
 
       <div class="cols">
@@ -246,7 +246,7 @@
         <div class="stage">
           <div class="window">
             <div class="win-body">
-              <div class="kicker">Workbench · 主内容区</div>
+              <div class="kicker">Monica · 主内容区</div>
               <h2>这里是应用主区（示意）</h2>
               <p>入口不在右栏、也不新开窗口，而在底部状态栏右端——与「端口」入口并列。点右下角的「常用链接」图标即可弹出本特性的面板。</p>
               <div class="hintrow">
@@ -296,7 +296,7 @@
             <div class="pop-body">
               <div class="group-head">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
-                <span>Builder Workbench</span>
+                <span>Monica</span>
                 <span class="gsp"></span>
                 <span class="gcount" id="groupCount">0</span>
               </div>
@@ -349,7 +349,7 @@
               <li><b>与端口同构</b>：底部状态栏「图标 + 计数」入口 → 点开自己的 popover 面板；位置、尺寸、行结构都与 <code>PortsStatusSegment</code> 一致（人评审意见，2026-11-13）。</li>
               <li><b>不再做</b>：右栏子分区、另开的独立窗口——都已放弃。</li>
               <li><b>只做「端口之外」</b>：本地服务识别与打开已由 Orca 端口面板覆盖，本特性不重复造扫描器。</li>
-              <li><b>项目级保存</b>：不同项目存不同链接；重开 BW 仍在。</li>
+              <li><b>项目级保存</b>：不同项目存不同链接；重开 Monica 仍在。</li>
               <li><b>克制、隔离</b>：不探活、不自愈、不显示假的“状态灯”，避免退化成泛用书签管理器。</li>
             </ul>
           </div>
@@ -517,7 +517,7 @@
       }
 
       function openLink(l) {
-        toast('将在 BW 内置浏览器打开：' + l.url);
+        toast('将在 Monica 内置浏览器打开：' + l.url);
         logLine('打开：' + escapeHtml(l.name) + ' → ' + escapeHtml(l.url));
       }
 

@@ -1,5 +1,5 @@
 name: 讨论或预研
-description: 记录尚需判断价值、范围或方案的 Workbench 问题
+description: 记录尚需判断价值、范围或方案的 Monica 问题
 body:
   - type: markdown
     attributes:

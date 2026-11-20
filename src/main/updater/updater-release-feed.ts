@@ -5,12 +5,12 @@ import {
 } from '../updater-prerelease-feed'
 import { isMissingUpdateManifestFailure, isPrereleaseVersion } from '../updater-fallback'
 import { MAIN_RELEASE_REPO } from '../../shared/release-channel'
-import { isWorkbenchProduct } from '../startup/workbench-product'
+import { isMonicaProduct } from '../startup/monica-product'
 import type { CheckFailureSource } from './updater-state'
 import type { UpdateCheckVariant } from './updater-types'
 import { ReleaseFeedPreflightError } from './updater-state'
 import { UpdaterInstallExecution } from './updater-install-execution'
-import { setRecoverableReleaseFeed } from './workbench-update-feed'
+import { setRecoverableReleaseFeed } from './monica-update-feed'
 
 /** Owns concrete release-feed pinning and the one-shot prerelease fallback. */
 export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
@@ -161,7 +161,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
     if (releaseTagsResult.state === 'not-ready') {
       this.clearPrereleaseFallbackContext()
       // Workbench stable waits for the newest release so users only have to install once.
-      if (releaseTagsResult.lastGoodTag && (includePrerelease || !isWorkbenchProduct())) {
+      if (releaseTagsResult.lastGoodTag && (includePrerelease || !isMonicaProduct())) {
         // Why: during a publish window the newest tag is unsafe; a verified last-good concrete feed lets electron-updater emit a real result.
         const url = getReleaseDownloadUrl(releaseTagsResult.lastGoodTag)
         console.info(

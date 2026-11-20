@@ -1,4 +1,4 @@
-import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
+import { workCalendarDay } from '../../../../src/shared/monica/work-calendar.ts'
 // Review-only date planning. Formal version membership remains in version plans.
 export const dayMs = 86400000
 export const day = (date) => Date.parse(`${date}T00:00:00Z`) / dayMs

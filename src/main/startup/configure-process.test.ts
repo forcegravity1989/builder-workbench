@@ -352,13 +352,13 @@ describe('configureDevUserDataPath', () => {
     expect(app.setPath).toHaveBeenCalledWith('userData', join('/tmp/app-data', 'orca-dev'))
   })
 
-  it('moves Workbench shell dev runs onto workbench-dev userData', async () => {
+  it('moves Monica shell dev runs onto workbench-dev userData', async () => {
     const { app } = await import('electron')
     const { configureDevUserDataPath } = await import('./configure-process')
     const previousProductName = process.env.ORCA_PRODUCT_NAME
-    const previousWorkbenchShell = process.env.WORKBENCH_SHELL
+    const previousMonicaShell = process.env.MONICA_SHELL
     delete process.env.ORCA_DEV_USER_DATA_PATH
-    process.env.ORCA_PRODUCT_NAME = 'Workbench'
+    process.env.ORCA_PRODUCT_NAME = 'Monica'
 
     try {
       vi.mocked(app.setPath).mockClear()
@@ -366,7 +366,7 @@ describe('configureDevUserDataPath', () => {
       expect(app.setPath).toHaveBeenCalledWith('userData', join('/tmp/app-data', 'workbench-dev'))
     } finally {
       restoreEnv('ORCA_PRODUCT_NAME', previousProductName)
-      restoreEnv('WORKBENCH_SHELL', previousWorkbenchShell)
+      restoreEnv('MONICA_SHELL', previousMonicaShell)
     }
   })
 
@@ -374,9 +374,9 @@ describe('configureDevUserDataPath', () => {
     const { app } = await import('electron')
     const { configureDevUserDataPath } = await import('./configure-process')
     const previousProductName = process.env.ORCA_PRODUCT_NAME
-    const previousWorkbenchShell = process.env.WORKBENCH_SHELL
+    const previousMonicaShell = process.env.MONICA_SHELL
     delete process.env.ORCA_PRODUCT_NAME
-    delete process.env.WORKBENCH_SHELL
+    delete process.env.MONICA_SHELL
 
     try {
       vi.mocked(app.setPath).mockClear()
@@ -385,15 +385,15 @@ describe('configureDevUserDataPath', () => {
       expect(app.setPath).not.toHaveBeenCalled()
     } finally {
       restoreEnv('ORCA_PRODUCT_NAME', previousProductName)
-      restoreEnv('WORKBENCH_SHELL', previousWorkbenchShell)
+      restoreEnv('MONICA_SHELL', previousMonicaShell)
     }
   })
 
-  it('pins packaged Workbench runs onto a separate userData path', async () => {
+  it('pins packaged Monica runs onto a separate userData path', async () => {
     const { app } = await import('electron')
     const { configureDevUserDataPath } = await import('./configure-process')
     const previousProductName = process.env.ORCA_PRODUCT_NAME
-    process.env.ORCA_PRODUCT_NAME = 'Workbench'
+    process.env.ORCA_PRODUCT_NAME = 'Monica'
 
     try {
       vi.mocked(app.setPath).mockClear()

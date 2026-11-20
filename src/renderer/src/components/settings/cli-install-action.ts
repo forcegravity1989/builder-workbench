@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { BwCliInstallId } from '../../../../shared/bw-cli-install-commands'
+import type { MonicaCliInstallId } from '../../../../shared/monica-cli-install-commands'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 
-// Why (BW #323): install is an app-run background command (user decision
+// Why (Monica #323): install is an app-run background command (user decision
 // 2026-10-16) — the card keeps showing "Installing…" for the whole run and
 // the finish broadcast drives the completion / failure notification. The
 // run itself is owned by the main process, so the card resyncs on mount to
 // survive navigate-away-and-back.
 
-const INSTALL_TOAST_DEFAULTS: Record<BwCliInstallId, { succeeded: string; failed: string }> = {
+const INSTALL_TOAST_DEFAULTS: Record<MonicaCliInstallId, { succeeded: string; failed: string }> = {
   codehub: {
     succeeded: 'CodeHub CLI installed. Re-checking its status…',
     failed: 'CodeHub CLI install failed.'
@@ -25,7 +25,7 @@ const INSTALL_TOAST_DEFAULTS: Record<BwCliInstallId, { succeeded: string; failed
   }
 }
 
-export function useCliInstall(cli: BwCliInstallId): {
+export function useCliInstall(cli: MonicaCliInstallId): {
   installing: boolean
   startInstall: () => void
 } {
@@ -46,7 +46,7 @@ export function useCliInstall(cli: BwCliInstallId): {
             defaults.succeeded
           )
         )
-        // Why (BW #323): the app ran the install, so it knows when it ends —
+        // Why (Monica #323): the app ran the install, so it knows when it ends —
         // re-check automatically (user decision 2026-10-16). Terminal-injected
         // logins still rely on the manual Re-check because the app cannot see
         // a terminal command's exit.

@@ -37,7 +37,7 @@ try {
 console.log(JSON.stringify(result, null, 2))
 if (process.env.GITHUB_STEP_SUMMARY) {
   const details = result.exempt
-    ? 'BW 固定流程分支，豁免 Issue 关联检查。'
+    ? 'Monica 固定流程分支，豁免 Issue 关联检查。'
     : result.findings.map((f) => `- ${f.code}: ${f.detail}`).join('\n') ||
       '首行引用均为可读的本仓 Issue。'
   // Render remote text as code, never as HTML or workflow commands.

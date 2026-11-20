@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { writeWorkbenchCreationBinding } from '@/workbench/post-create-version-binding'
+import { writeMonicaCreationBinding } from '@/monica/post-create-version-binding'
 import { useAppStore } from '@/store'
 import {
   getProjectHostSetupForRepoHost,
@@ -142,7 +142,7 @@ export async function executeWorktreeCreation(
     return
   }
   const worktree = result.worktree
-  // G2 (BW): version attribution is recorded at the true creation result —
+  // G2 (Monica): version attribution is recorded at the true creation result —
   // before any cancellation/activation branch, so a created tree keeps its
   // binding even when this run's UI handoff is abandoned. Failures surface
   // honestly (tree kept, binding-retry offered) and never block the native flow.
@@ -152,7 +152,7 @@ export async function executeWorktreeCreation(
     const state = useAppStore.getState()
     const ownerHost = repoHostId(state, worktree.repoId)
     const setup = getProjectHostSetupForRepoHost(state, worktree.repoId, ownerHost)
-    void writeWorkbenchCreationBinding(
+    void writeMonicaCreationBinding(
       preparedRequest.workbenchVersionBinding,
       withRepoHostOwnership(worktree, ownerHost, setup)
     )

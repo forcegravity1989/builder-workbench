@@ -15,12 +15,12 @@ vi.mock('electron', () => ({
   }
 }))
 
-// Why (BW #553): the transport is the WeLink group-space sink; these cases
+// Why (Monica #553): the transport is the WeLink group-space sink; these cases
 // pin what feedback.ts still owns — payload assembly (identity allow-list,
 // lane rules), image validation, and result pass-through. The sink's own
 // protocol (packaging, failure classification) is guarded in
-// src/main/workbench/reporting/ tests and real-shell acceptance.
-vi.mock('../workbench/reporting/report-submission', () => ({
+// src/main/monica/reporting/ tests and real-shell acceptance.
+vi.mock('../monica/reporting/report-submission', () => ({
   submitWelinkReport: submitWelinkReportMock
 }))
 

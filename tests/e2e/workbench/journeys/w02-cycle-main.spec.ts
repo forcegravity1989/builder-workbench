@@ -1,18 +1,21 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { test as baseTest, expect } from '../../helpers/workbench-app'
+import { test as baseTest, expect } from '../../helpers/monica-app'
 import type { Page } from '@playwright/test'
-import { configureGoldenStubAgent, getGoldenStubAgentLaunchEnv } from '../../helpers/golden-stub-agent'
-import { recordWorkspaceInventory } from '../../helpers/workbench-fixed-workspace-readback'
-import { verifyWorkflowDraft } from '../../helpers/workbench-workflow-draft'
+import {
+  configureGoldenStubAgent,
+  getGoldenStubAgentLaunchEnv
+} from '../../helpers/golden-stub-agent'
+import { recordWorkspaceInventory } from '../../helpers/monica-fixed-workspace-readback'
+import { verifyWorkflowDraft } from '../../helpers/monica-workflow-draft'
 
 const test = baseTest.extend({ launchEnv: getGoldenStubAgentLaunchEnv() })
 
 test.use({
-  workbenchAppExtraEnv: {
-    WORKBENCH_SHELL: '1',
-    VITE_WORKBENCH_SHELL: '1',
-    ORCA_PRODUCT_NAME: 'Workbench'
+  monicaAppExtraEnv: {
+    MONICA_SHELL: '1',
+    VITE_MONICA_SHELL: '1',
+    ORCA_PRODUCT_NAME: 'Monica'
   }
 })
 
@@ -69,17 +72,17 @@ async function clickVersionRowEntry(page: Page, name: string): Promise<void> {
 }
 
 test('BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back', async ({
-  workbenchPage,
+  monicaPage,
   seededRepoPath
 }, testInfo) => {
   test.setTimeout(900_000)
 
   // The workbench chrome is the readiness signal for the BW shell; the helper
   // already seeded the project repo and its worktrees.
-  await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
-  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'initial')
+  await expect(monicaPage.locator('[data-monica-nav]')).toBeVisible({ timeout: 180_000 })
+  await recordWorkspaceInventory(monicaPage, seededRepoPath, testInfo, 'initial')
 
-  await workbenchPage.evaluate(() => {
+  await monicaPage.evaluate(() => {
     const state = window.__store?.getState()
     const repoId = state?.activeRepoId ?? state?.repos[0]?.id
     if (!repoId) {
@@ -87,41 +90,41 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     }
     localStorage.setItem(`workbench.version-expanded:${repoId}`, '[]')
   })
-  await workbenchPage.reload()
-  await expect(workbenchPage.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
-  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
-  await workbenchPage.getByRole('button', { name: /^(查看活动|View activity)$/ }).click()
-  await expect(workbenchPage.locator('[data-workbench-versions]')).toHaveCount(0)
-  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
-  await expect(workbenchPage.locator('[data-workbench-versions]')).toBeVisible()
+  await monicaPage.reload()
+  await expect(monicaPage.locator('[data-monica-rail]')).toBeVisible({ timeout: 180_000 })
+  await monicaPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await monicaPage.getByRole('button', { name: /^(查看活动|View activity)$/ }).click()
+  await expect(monicaPage.locator('[data-monica-versions]')).toHaveCount(0)
+  await monicaPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await expect(monicaPage.locator('[data-monica-versions]')).toBeVisible()
 
   // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
-  const versionGuide = workbenchPage.locator('[data-contextual-tour-panel]')
+  const versionGuide = monicaPage.locator('[data-contextual-tour-panel]')
   const dismissVersionGuide = versionGuide.locator('[data-contextual-tour-skip]')
   if (await dismissVersionGuide.isVisible()) {
     await dismissVersionGuide.click()
   }
-  await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).press('Enter')
-  await workbenchPage.getByLabel('版本名').fill('v9.9')
-  await workbenchPage.getByRole('button', { name: '创建版本', exact: true }).click()
-  await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
+  await monicaPage.getByRole('button', { name: '新建版本', exact: true }).press('Enter')
+  await monicaPage.getByLabel('版本名').fill('v9.9')
+  await monicaPage.getByRole('button', { name: '创建版本', exact: true }).click()
+  await expect(monicaPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 180_000
   })
-  const planGuide = workbenchPage.locator('[data-contextual-tour-panel]')
+  const planGuide = monicaPage.locator('[data-contextual-tour-panel]')
   await expect(planGuide.getByText('开始或继续计划', { exact: true })).toBeVisible()
   await planGuide.locator('[data-contextual-tour-skip]').click()
   await expect(planGuide).toBeHidden()
   await expect
     .poll(() =>
-      workbenchPage.evaluate(async () =>
-        (await window.api.ui.get()).contextualToursSeenIds?.includes('workbench-plan')
+      monicaPage.evaluate(async () =>
+        (await window.api.ui.get()).contextualToursSeenIds?.includes('monica-plan')
       )
     )
     .toBe(true)
-  await workbenchPage.getByRole('button', { name: '版本计划帮助', exact: true }).click()
+  await monicaPage.getByRole('button', { name: '版本计划帮助', exact: true }).click()
   await expect(planGuide.getByText('开始或继续计划', { exact: true })).toBeVisible()
   await planGuide.locator('[data-contextual-tour-skip]').click()
-  const createdVersionToggle = workbenchPage.getByRole('button', {
+  const createdVersionToggle = monicaPage.getByRole('button', {
     name: 'v9.9 展开或收起',
     exact: true
   })
@@ -130,18 +133,18 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'false')
   await createdVersionToggle.press('Enter')
   await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'true')
-  const planTreePath = await waitForFixedWorktree(workbenchPage, 'bw/v9.9/plan')
+  const planTreePath = await waitForFixedWorktree(monicaPage, 'bw/v9.9/plan')
   await expect
-    .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
+    .poll(() => monicaPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
   // prepare 只初始化空计划，不启动 agent；未开始卡在真实会话启动或材料形成后展开。
-  await expect(workbenchPage.getByRole('button', { name: '开始计划', exact: true })).toBeVisible({
+  await expect(monicaPage.getByRole('button', { name: '开始计划', exact: true })).toBeVisible({
     timeout: 60_000
   })
   await expect
     .poll(
       () =>
-        workbenchPage.evaluate(() => {
+        monicaPage.evaluate(() => {
           const store = window.__store
           return store ? store.getState().activeWorktreeId : null
         }),
@@ -152,11 +155,11 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     )
     .not.toBeNull()
   // prepare 的空计划是 create-only 初始化；绑定树无屏内选版，页头只读回显绑定版本。
-  await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
-  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'prepared')
-  await configureGoldenStubAgent(workbenchPage, { agentArgs: '--codex-draft' })
-  await workbenchPage.getByRole('button', { name: '开始计划', exact: true }).click()
-  await verifyWorkflowDraft(workbenchPage, 'week-planning', testInfo)
+  await expect(monicaPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
+  await recordWorkspaceInventory(monicaPage, seededRepoPath, testInfo, 'prepared')
+  await configureGoldenStubAgent(monicaPage, { agentArgs: '--codex-draft' })
+  await monicaPage.getByRole('button', { name: '开始计划', exact: true }).click()
+  await verifyWorkflowDraft(monicaPage, 'week-planning', testInfo)
 
   // The conversation/CLI creates materials in product use. Seed only this test
   // version on the bound tree's real path; listing and editing remain UI work.
@@ -184,28 +187,28 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   // The board polls the host; the seeded goal card proves the re-read happened
   // before we edit (autosave must carry the fresh revision). G3 目标卡：标题在
   // 卡头 strong 回显，行内编辑经「编辑目标」进入、无保存按钮（自动保存）。
-  await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText('验证计划材料保存', {
+  await expect(monicaPage.locator('.g3-goal-toggle strong')).toHaveText('验证计划材料保存', {
     timeout: 60_000
   })
-  await expect(workbenchPage.getByRole('button', { name: '添加目标', exact: true })).toBeVisible()
-  await workbenchPage.getByRole('button', { name: '展开 G1' }).click()
-  await workbenchPage.getByRole('button', { name: '编辑目标', exact: true }).click()
-  await workbenchPage
+  await expect(monicaPage.getByRole('button', { name: '添加目标', exact: true })).toBeVisible()
+  await monicaPage.getByRole('button', { name: '展开 G1' }).click()
+  await monicaPage.getByRole('button', { name: '编辑目标', exact: true }).click()
+  await monicaPage
     .getByRole('textbox', { name: 'G1 目标', exact: true })
     .fill('验证计划材料保存·烟测')
   // 行内编辑聚焦时和弦不触发（isEditableTarget 守卫，#444）。
-  await workbenchPage.keyboard.press('Alt+A')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
-  await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
-  await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
+  await monicaPage.keyboard.press('Alt+A')
+  await expect(monicaPage.locator('.g3-annotate-banner')).toHaveCount(0)
+  await monicaPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
+  await expect(monicaPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
   // The plan guide yields while autosave is writing. Start replay after the edit settles.
-  await expect(workbenchPage.locator('.vp-title-row').getByRole('status')).toHaveText('已保存')
+  await expect(monicaPage.locator('.vp-title-row').getByRole('status')).toHaveText('已保存')
 
   // ---- 批注模式同键进出（#444）：Alt+A ≡ 点页头按钮，再按退出 ----
-  const annotateEntry = workbenchPage.locator('.g3-annotate-entry')
+  const annotateEntry = monicaPage.locator('.g3-annotate-entry')
   await expect(annotateEntry).toBeVisible()
-  const planHelp = workbenchPage.getByRole('button', { name: '版本计划帮助', exact: true })
-  await expect(workbenchPage.locator('.g3-header-tools + button')).toHaveAttribute(
+  const planHelp = monicaPage.getByRole('button', { name: '版本计划帮助', exact: true })
+  await expect(monicaPage.locator('.g3-header-tools + button')).toHaveAttribute(
     'aria-label',
     '版本计划帮助'
   )
@@ -215,37 +218,37 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await planGuide.getByRole('button', { name: /^(Next|下一步)$/ }).press('Enter')
   await expect(planGuide.getByRole('heading', { name: '评审后归档' })).toBeVisible()
   await planGuide.locator('[data-contextual-tour-skip]').click()
-  await workbenchPage.keyboard.press('Alt+A')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
+  await monicaPage.keyboard.press('Alt+A')
+  await expect(monicaPage.locator('.g3-annotate-banner')).toBeVisible()
   await expect(annotateEntry).toHaveAttribute('aria-pressed', 'true')
   await expect(annotateEntry).toHaveAttribute('title', expect.stringMatching(/Alt\+A|⌥A/))
   // Esc 不再退出模式（2026-10-29 拍板）：无小窗时按 Esc 模式保持，横幅不提 Esc。
-  await workbenchPage.keyboard.press('Escape')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
+  await monicaPage.keyboard.press('Escape')
+  await expect(monicaPage.locator('.g3-annotate-banner')).toBeVisible()
   await expect(annotateEntry).toHaveAttribute('aria-pressed', 'true')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).not.toContainText('Esc')
-  await workbenchPage.keyboard.press('Alt+A')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
+  await expect(monicaPage.locator('.g3-annotate-banner')).not.toContainText('Esc')
+  await monicaPage.keyboard.press('Alt+A')
+  await expect(monicaPage.locator('.g3-annotate-banner')).toHaveCount(0)
   await expect(annotateEntry).toHaveAttribute('aria-pressed', 'false')
 
   // 改绑生效：store 走与设置录制相同的保存链；新和弦进出、旧和弦失效后恢复默认。
-  await workbenchPage.evaluate(async () => {
+  await monicaPage.evaluate(async () => {
     await window.__store
       ?.getState()
       .setKeybindingOverride('workbench.toggleAnnotationMode', ['Alt+Shift+A'])
   })
-  await workbenchPage.keyboard.press('Alt+Shift+A')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
-  await workbenchPage.keyboard.press('Alt+A')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
-  await workbenchPage.keyboard.press('Alt+Shift+A')
-  await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
-  await workbenchPage.evaluate(async () => {
+  await monicaPage.keyboard.press('Alt+Shift+A')
+  await expect(monicaPage.locator('.g3-annotate-banner')).toBeVisible()
+  await monicaPage.keyboard.press('Alt+A')
+  await expect(monicaPage.locator('.g3-annotate-banner')).toBeVisible()
+  await monicaPage.keyboard.press('Alt+Shift+A')
+  await expect(monicaPage.locator('.g3-annotate-banner')).toHaveCount(0)
+  await monicaPage.evaluate(async () => {
     await window.__store?.getState().resetKeybindingOverride('workbench.toggleAnnotationMode')
   })
 
   // 终端聚焦时和弦流向 TUI（getKeybindingContext 守卫）；终端缺席则降级人工项。
-  const terminalInput = workbenchPage.locator('.xterm-helper-textarea').first()
+  const terminalInput = monicaPage.locator('.xterm-helper-textarea').first()
   if (
     await terminalInput.waitFor({ state: 'visible', timeout: 15_000 }).then(
       () => true,
@@ -253,8 +256,8 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     )
   ) {
     await terminalInput.focus()
-    await workbenchPage.keyboard.press('Alt+A')
-    await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
+    await monicaPage.keyboard.press('Alt+A')
+    await expect(monicaPage.locator('.g3-annotate-banner')).toHaveCount(0)
   }
 
   // Iron-law read-back: the material exists on the bound worktree's own disk path.
@@ -274,63 +277,62 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
       { timeout: 30_000, message: 'plan material never landed on disk' }
     )
     .toBe('v9.9:验证计划材料保存·烟测')
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
+  await monicaPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
 
   // ---- 重载读回：绑定即版本正本，侧栏版本行重新进屏，材料从宿主恢复 ----
-  await workbenchPage.reload()
-  await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
-  await clickVersionRowEntry(workbenchPage, '计划')
-  await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
+  await monicaPage.reload()
+  await expect(monicaPage.locator('[data-monica-nav]')).toBeVisible({ timeout: 180_000 })
+  await clickVersionRowEntry(monicaPage, '计划')
+  await expect(monicaPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', {
+  await expect(monicaPage.locator('.g3-version-bound')).toHaveText('v9.9', {
     timeout: 120_000
   })
-  await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText(
-    '验证计划材料保存·烟测',
-    { timeout: 60_000 }
-  )
-
-  // ---- 验收屏：同一 prepare 交付的绑定验收树挂载 ----
-  await clickVersionRowEntry(workbenchPage, '验收')
-  await expect(workbenchPage.getByRole('heading', { name: '版本验收' })).toBeVisible({
+  await expect(monicaPage.locator('.g3-goal-toggle strong')).toHaveText('验证计划材料保存·烟测', {
     timeout: 60_000
   })
-  await waitForFixedWorktree(workbenchPage, 'bw/v9.9/acceptance')
+
+  // ---- 验收屏：同一 prepare 交付的绑定验收树挂载 ----
+  await clickVersionRowEntry(monicaPage, '验收')
+  await expect(monicaPage.getByRole('heading', { name: '版本验收' })).toBeVisible({
+    timeout: 60_000
+  })
+  await waitForFixedWorktree(monicaPage, 'bw/v9.9/acceptance')
   await expect
-    .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
+    .poll(() => monicaPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
   // 计划尚未合入也可打开草稿；fixture agent 不执行模型动作，材料仍须核验固定计划。
-  await expect(workbenchPage.locator('.acc-empty-board')).toBeVisible({ timeout: 60_000 })
+  await expect(monicaPage.locator('.acc-empty-board')).toBeVisible({ timeout: 60_000 })
   // 空板无批注入口，和弦无反应（条件可用性负例，#444）。
-  await workbenchPage.keyboard.press('Alt+A')
-  await expect(workbenchPage.locator('.acc-annotate-banner')).toHaveCount(0)
-  await expect(workbenchPage.locator('.acc-annotate-entry')).toHaveCount(0)
+  await monicaPage.keyboard.press('Alt+A')
+  await expect(monicaPage.locator('.acc-annotate-banner')).toHaveCount(0)
+  await expect(monicaPage.locator('.acc-annotate-entry')).toHaveCount(0)
   await expect(
-    workbenchPage.getByRole('button', { name: '开始验收', exact: true }).first()
+    monicaPage.getByRole('button', { name: '开始验收', exact: true }).first()
   ).toBeVisible({ timeout: 60_000 })
-  await expect(workbenchPage.getByRole('button', { name: '开始验收', exact: true })).toBeEnabled()
-  await workbenchPage.getByRole('button', { name: '开始验收', exact: true }).click()
-  await verifyWorkflowDraft(workbenchPage, 'version-acceptance', testInfo)
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
+  await expect(monicaPage.getByRole('button', { name: '开始验收', exact: true })).toBeEnabled()
+  await monicaPage.getByRole('button', { name: '开始验收', exact: true }).click()
+  await verifyWorkflowDraft(monicaPage, 'version-acceptance', testInfo)
+  await monicaPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 墙卡和总览名片使用同一个在制版本，包含只有草稿的版本。----
-  await workbenchPage.getByRole('button', { name: '项目墙', exact: true }).click()
-  const versionCard = workbenchPage.locator('[data-workbench-project-key]').filter({
-    has: workbenchPage.locator('.pcard-version').getByText('v9.9', { exact: true })
+  await monicaPage.getByRole('button', { name: '项目墙', exact: true }).click()
+  const versionCard = monicaPage.locator('[data-monica-project-key]').filter({
+    has: monicaPage.locator('.pcard-version').getByText('v9.9', { exact: true })
   })
   const savedGoal = '验证计划材料保存·烟测'
   const updatedGoal = '回到项目墙后静默更新的目标'
   const planFile = path.join(materialDirectory, 'data.json')
   const savedPlan = readFileSync(planFile, 'utf8')
   await expect(versionCard.locator('.pcard-delivery li')).toHaveText(savedGoal)
-  const wallRepoId = await versionCard.getAttribute('data-workbench-project-id')
-  await workbenchPage.getByRole('button', { name: '关闭项目墙', exact: true }).click()
-  await expect(workbenchPage.locator('[data-screen="wall"]')).toHaveCount(0)
-  await workbenchPage.evaluate((id) => {
+  const wallRepoId = await versionCard.getAttribute('data-monica-project-id')
+  await monicaPage.getByRole('button', { name: '关闭项目墙', exact: true }).click()
+  await expect(monicaPage.locator('[data-screen="wall"]')).toHaveCount(0)
+  await monicaPage.evaluate((id) => {
     const observer = new MutationObserver(() => {
       const delivery = document.querySelector(
-        `[data-workbench-project-id="${CSS.escape(id ?? '')}"] .pcard-delivery`
+        `[data-monica-project-id="${CSS.escape(id ?? '')}"] .pcard-delivery`
       )
       if (delivery) {
         document.documentElement.dataset.firstWallDelivery = delivery.textContent ?? ''
@@ -341,8 +343,8 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   }, wallRepoId)
   try {
     writeFileSync(planFile, savedPlan.replace(savedGoal, updatedGoal))
-    await workbenchPage.getByRole('button', { name: '项目墙', exact: true }).click()
-    await expect(workbenchPage.locator('html')).toHaveAttribute(
+    await monicaPage.getByRole('button', { name: '项目墙', exact: true }).click()
+    await expect(monicaPage.locator('html')).toHaveAttribute(
       'data-first-wall-delivery',
       new RegExp(savedGoal)
     )
@@ -350,23 +352,23 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   } finally {
     writeFileSync(planFile, savedPlan)
   }
-  await versionCard.locator('[data-workbench-open-overview]').click({ timeout: 60_000 })
-  await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
+  await versionCard.locator('[data-monica-open-overview]').click({ timeout: 60_000 })
+  await expect(monicaPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.locator('#project-card')).toContainText('v9.9', {
+  await expect(monicaPage.locator('#project-card')).toContainText('v9.9', {
     timeout: 60_000
   })
-  await expect(workbenchPage.getByText('未配置北极星指标')).toHaveCount(0)
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
+  await expect(monicaPage.getByText('未配置北极星指标')).toHaveCount(0)
+  await monicaPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
 
   // ---- 版本级清理确认单：本机实例默认勾选；删除执行沿 Orca 原生确认单，
   // 破坏性步骤不进 CI（J9 归人验证），此处只核对清单结构与取消路径。----
-  await expect(workbenchPage.locator('[data-workbench-versions]')).toHaveCount(0)
-  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
-  await expect(workbenchPage.locator('[data-workbench-versions]')).toBeVisible()
-  await workbenchPage.getByRole('button', { name: '清理 v9.9 工作树' }).click()
-  const cleanup = workbenchPage.getByRole('dialog').filter({ hasText: '清理 v9.9 工作树' })
+  await expect(monicaPage.locator('[data-monica-versions]')).toHaveCount(0)
+  await monicaPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await expect(monicaPage.locator('[data-monica-versions]')).toBeVisible()
+  await monicaPage.getByRole('button', { name: '清理 v9.9 工作树' }).click()
+  const cleanup = monicaPage.getByRole('dialog').filter({ hasText: '清理 v9.9 工作树' })
   await expect(cleanup.getByRole('checkbox')).toHaveCount(2, { timeout: 60_000 })
   await expect(cleanup.getByRole('checkbox').first()).toBeChecked()
   await expect(cleanup.getByRole('button', { name: /删除所勾选（2）/ })).toBeEnabled()
@@ -374,41 +376,39 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(cleanup).toHaveCount(0)
 
   // The saved bound-tree plan is visible as a draft; it is not a formal plan or acceptance.
-  const v99Group = workbenchPage.locator('.wb-version-group', {
-    has: workbenchPage.getByRole('button', { name: 'v9.9 展开或收起' })
+  const v99Group = monicaPage.locator('.monica-version-group', {
+    has: monicaPage.getByRole('button', { name: 'v9.9 展开或收起' })
   })
   await v99Group.getByRole('button', { name: '总览', exact: true }).click()
-  await expect(workbenchPage.getByRole('heading', { name: 'v9.9 版本总览' })).toBeVisible({
+  await expect(monicaPage.getByRole('heading', { name: 'v9.9 版本总览' })).toBeVisible({
     timeout: 60_000
   })
   await expect(
-    workbenchPage.locator('.bwo-header').getByText('计划草稿', { exact: true })
+    monicaPage.locator('.bwo-header').getByText('计划草稿', { exact: true })
   ).toBeVisible({
     timeout: 60_000
   })
   await expect(
-    workbenchPage.getByRole('heading', { name: '验证计划材料保存·烟测', exact: true })
+    monicaPage.getByRole('heading', { name: '验证计划材料保存·烟测', exact: true })
   ).toBeVisible()
-  await expect(
-    workbenchPage.getByRole('button', { name: '未记录验收 ↗', exact: true })
-  ).toBeVisible()
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
+  await expect(monicaPage.getByRole('button', { name: '未记录验收 ↗', exact: true })).toBeVisible()
+  await monicaPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
 
-  await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()
-  await workbenchPage.getByRole('button', { name: '配置指标', exact: true }).first().click()
-  await verifyWorkflowDraft(workbenchPage, 'metrics-refresh', testInfo)
+  await monicaPage.getByRole('button', { name: '项目总览', exact: true }).click()
+  await monicaPage.getByRole('button', { name: '配置指标', exact: true }).first().click()
+  await verifyWorkflowDraft(monicaPage, 'metrics-refresh', testInfo)
 
   // ---- 设置页 Shortcuts 收录与搜索（#444 走原生键位体系）----
   // 打开方式不是判据，走 store action 直达 shortcuts pane（与菜单/侧栏按钮同链切
   // activeView）。不点 i18n 按钮：原生 UI 文案随系统 locale，CI Linux 是英文，
   // 中文 accessible name 在 CI 上必超时（本地中文 Windows 曾误绿）。
-  await workbenchPage.evaluate(() => {
+  await monicaPage.evaluate(() => {
     const store = window.__store?.getState()
     store?.openSettingsPage()
     store?.openSettingsTarget({ pane: 'shortcuts', repoId: null })
   })
-  await workbenchPage.locator('#shortcut-filter-search').fill('批注')
-  await expect(workbenchPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
-  await expect(workbenchPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
-  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'final')
+  await monicaPage.locator('#shortcut-filter-search').fill('批注')
+  await expect(monicaPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
+  await expect(monicaPage.getByRole('heading', { name: 'Monica' })).toBeVisible()
+  await recordWorkspaceInventory(monicaPage, seededRepoPath, testInfo, 'final')
 })

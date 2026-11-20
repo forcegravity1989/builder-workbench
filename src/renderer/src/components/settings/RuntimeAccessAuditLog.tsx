@@ -5,13 +5,7 @@ import type {
 } from '../../../../shared/runtime-access-grants'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '../ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { translate } from '@/i18n/i18n'
 
 type RuntimeAccessAuditLogProps = {
@@ -46,7 +40,10 @@ export function RuntimeAccessAuditLog({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-medium">
-            {translate('auto.components.settings.RuntimeAccessAuditLog.title', 'Shared host access log')}
+            {translate(
+              'auto.components.settings.RuntimeAccessAuditLog.title',
+              'Shared host access log'
+            )}
           </h3>
           <p className="text-muted-foreground text-xs">
             {translate(
@@ -71,48 +68,118 @@ export function RuntimeAccessAuditLog({
       </div>
       <div className="flex flex-wrap gap-2">
         <Select value={action} onValueChange={onActionChange}>
-          <SelectTrigger size="sm" aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.action', 'Filter log action')}>
-            <SelectValue placeholder={translate('auto.components.settings.RuntimeAccessAuditLog.allActions', 'All actions')} />
+          <SelectTrigger
+            size="sm"
+            aria-label={translate(
+              'auto.components.settings.RuntimeAccessAuditLog.action',
+              'Filter log action'
+            )}
+          >
+            <SelectValue
+              placeholder={translate(
+                'auto.components.settings.RuntimeAccessAuditLog.allActions',
+                'All actions'
+              )}
+            />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{translate('auto.components.settings.RuntimeAccessAuditLog.allActions', 'All actions')}</SelectItem>
-            {[...new Set([...(action !== 'all' ? [action] : []), ...entries.map((entry) => entry.method)])].map((method) => (
-              <SelectItem key={method} value={method}>{method}</SelectItem>
+            <SelectItem value="all">
+              {translate(
+                'auto.components.settings.RuntimeAccessAuditLog.allActions',
+                'All actions'
+              )}
+            </SelectItem>
+            {[
+              ...new Set([
+                ...(action !== 'all' ? [action] : []),
+                ...entries.map((entry) => entry.method)
+              ])
+            ].map((method) => (
+              <SelectItem key={method} value={method}>
+                {method}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={result} onValueChange={(value) => onResultChange(value as RuntimeAccessAuditResult | 'all')}>
-          <SelectTrigger size="sm" aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.result', 'Filter log result')}>
+        <Select
+          value={result}
+          onValueChange={(value) => onResultChange(value as RuntimeAccessAuditResult | 'all')}
+        >
+          <SelectTrigger
+            size="sm"
+            aria-label={translate(
+              'auto.components.settings.RuntimeAccessAuditLog.result',
+              'Filter log result'
+            )}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{translate('auto.components.settings.RuntimeAccessAuditLog.allResults', 'All results')}</SelectItem>
-            <SelectItem value="allowed">{translate('auto.components.settings.RuntimeAccessAuditLog.allowed', 'Allowed')}</SelectItem>
-            <SelectItem value="denied">{translate('auto.components.settings.RuntimeAccessAuditLog.denied', 'Denied')}</SelectItem>
-            <SelectItem value="error">{translate('auto.components.settings.RuntimeAccessAuditLog.error', 'Error')}</SelectItem>
+            <SelectItem value="all">
+              {translate(
+                'auto.components.settings.RuntimeAccessAuditLog.allResults',
+                'All results'
+              )}
+            </SelectItem>
+            <SelectItem value="allowed">
+              {translate('auto.components.settings.RuntimeAccessAuditLog.allowed', 'Allowed')}
+            </SelectItem>
+            <SelectItem value="denied">
+              {translate('auto.components.settings.RuntimeAccessAuditLog.denied', 'Denied')}
+            </SelectItem>
+            <SelectItem value="error">
+              {translate('auto.components.settings.RuntimeAccessAuditLog.error', 'Error')}
+            </SelectItem>
           </SelectContent>
         </Select>
-        <Select value={String(sinceDays)} onValueChange={(value) => onSinceDaysChange(Number(value) as 1 | 7 | 14)}>
-          <SelectTrigger size="sm" aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.time', 'Filter log time')}>
+        <Select
+          value={String(sinceDays)}
+          onValueChange={(value) => onSinceDaysChange(Number(value) as 1 | 7 | 14)}
+        >
+          <SelectTrigger
+            size="sm"
+            aria-label={translate(
+              'auto.components.settings.RuntimeAccessAuditLog.time',
+              'Filter log time'
+            )}
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="1">{translate('auto.components.settings.RuntimeAccessAuditLog.lastDay', 'Last 24 hours')}</SelectItem>
-            <SelectItem value="7">{translate('auto.components.settings.RuntimeAccessAuditLog.lastWeek', 'Last 7 days')}</SelectItem>
-            <SelectItem value="14">{translate('auto.components.settings.RuntimeAccessAuditLog.lastTwoWeeks', 'Last 14 days')}</SelectItem>
+            <SelectItem value="1">
+              {translate('auto.components.settings.RuntimeAccessAuditLog.lastDay', 'Last 24 hours')}
+            </SelectItem>
+            <SelectItem value="7">
+              {translate('auto.components.settings.RuntimeAccessAuditLog.lastWeek', 'Last 7 days')}
+            </SelectItem>
+            <SelectItem value="14">
+              {translate(
+                'auto.components.settings.RuntimeAccessAuditLog.lastTwoWeeks',
+                'Last 14 days'
+              )}
+            </SelectItem>
           </SelectContent>
         </Select>
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder={translate('auto.components.settings.RuntimeAccessAuditLog.search', 'Search device or action')}
+          placeholder={translate(
+            'auto.components.settings.RuntimeAccessAuditLog.search',
+            'Search device or action'
+          )}
           className="h-8 min-w-48 text-xs"
-          aria-label={translate('auto.components.settings.RuntimeAccessAuditLog.search', 'Search device or action')}
+          aria-label={translate(
+            'auto.components.settings.RuntimeAccessAuditLog.search',
+            'Search device or action'
+          )}
         />
       </div>
       {entries.length === 0 ? (
         <p className="text-muted-foreground text-xs">
-          {translate('auto.components.settings.RuntimeAccessAuditLog.empty', 'No matching access records.')}
+          {translate(
+            'auto.components.settings.RuntimeAccessAuditLog.empty',
+            'No matching access records.'
+          )}
         </p>
       ) : (
         <div className="max-h-64 overflow-auto scrollbar-sleek rounded-md border border-border/60">

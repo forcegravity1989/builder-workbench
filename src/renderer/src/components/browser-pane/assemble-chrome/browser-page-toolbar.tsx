@@ -1,5 +1,5 @@
-import { WorkbenchBrowserHelp } from '@/workbench/WorkbenchDeliveryHelp'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { MonicaBrowserHelp } from '@/monica/MonicaDeliveryHelp'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { translate } from '@/i18n/i18n'
@@ -220,7 +220,7 @@ export function BrowserPageToolbar({
             onDestroyWebview={() => destroyPersistentWebview(browserPageId)}
             ownsBrowserTour={ownsBrowserTour}
           />
-          {isWorkbenchShell() && <WorkbenchBrowserHelp ready={!isBlankTab && !markupIsActive} />}
+          {isMonicaShell() && <MonicaBrowserHelp ready={!isBlankTab && !markupIsActive} />}
         </>
       }
     />

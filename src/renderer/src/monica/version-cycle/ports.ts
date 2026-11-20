@@ -1,0 +1,97 @@
+import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { TaskSourceContext } from '../../../../shared/task-source-context'
+import type { VersionWorkflow } from '../../../../shared/monica/version-document'
+import type { PlanningMaterial } from '../../../../shared/monica/version-material'
+import type { ArchivePrStatusResult } from '../../../../shared/monica/archive-pr-status'
+import type { ReleaseStatusResult } from '../../../../shared/monica/release-status'
+import type {
+  WorkflowArchivePr,
+  WorkflowReleaseRef
+} from '../../../../shared/monica/version-workflow'
+
+/** Native identity, not a path-derived project or a title-derived run. */
+export type CycleScope = {
+  projectId: string
+  repoId: string
+  hostId: ExecutionHostId
+  runtimeOwnerEnvironmentId?: string
+  workflow: VersionWorkflow
+}
+
+export type CycleSession = CycleScope & {
+  worktreeId: string
+  sessionId: string
+  tabId: string
+  paneKey?: string
+  kind: 'terminal' | 'structured'
+  title: string
+  runId?: string
+}
+
+export type TaskOrigin = CycleScope & {
+  page: 'plan' | 'acceptance'
+  version: string
+  cycleId: string
+  worktreeId: string
+  sessionId?: string
+  goalId?: string
+  scrollTop: number
+  draftKey: string
+}
+
+export type CycleTaskReference = PlanningMaterial['tasks'][number] & { kind?: 'issue' }
+export type CycleTaskSnapshot = {
+  reference: CycleTaskReference
+  source: TaskSourceContext
+  iid: number
+  title: string
+  state: string
+  url: string
+  labels?: string[]
+  assignee?: string
+  readAt: string
+}
+export type CycleTaskRead =
+  | { reference: CycleTaskReference; kind: 'ready'; task: CycleTaskSnapshot }
+  | {
+      reference: CycleTaskReference
+      kind: 'unavailable'
+      error: string
+      readAt: string
+      source?: TaskSourceContext
+    }
+
+export type TaskPort = {
+  cacheKey?(scope: CycleScope, references: readonly CycleTaskReference[]): string
+  /** Previous provider reads for this exact source; display only, never fresh evidence. */
+  cached?(scope: CycleScope, references: readonly CycleTaskReference[]): CycleTaskRead[] | null
+  listVersion(
+    scope: CycleScope,
+    references: readonly CycleTaskReference[]
+  ): Promise<CycleTaskRead[]>
+  refresh(scope: CycleScope, references: readonly CycleTaskReference[]): Promise<CycleTaskRead[]>
+  openDetail(task: CycleTaskSnapshot, origin: TaskOrigin): Promise<void>
+}
+
+export type ArchivePrScope = {
+  repoId: string
+  worktreeId: string
+  hostId: ExecutionHostId
+  runtimeOwnerEnvironmentId?: string
+}
+export type ArchivePrPort = {
+  /** Status of the one recorded archive PR, read on the worktree's owning runtime. */
+  readStatus(
+    scope: ArchivePrScope,
+    pr: WorkflowArchivePr,
+    force?: boolean
+  ): Promise<ArchivePrStatusResult>
+}
+
+export type ReleaseStatusPort = {
+  /**
+   * Status of the recorded release tag (#462), read on the worktree's owning
+   * runtime — provider facts stay provider-computed, unreadable stays unknown.
+   */
+  readStatus(scope: ArchivePrScope, release: WorkflowReleaseRef): Promise<ReleaseStatusResult>
+}

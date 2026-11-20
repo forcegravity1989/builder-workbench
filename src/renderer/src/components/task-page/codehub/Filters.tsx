@@ -12,7 +12,7 @@ import { normalizeTaskRepoSelection } from '@/components/task-page-default-repo-
 import { LoaderCircle, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 export function TaskPageCodeHubFilters({
   model
@@ -51,7 +51,7 @@ export function TaskPageCodeHubFilters({
   useEffect(() => {
     setSearchDraft(codehubQuery)
   }, [codehubQuery])
-  const workbench = isWorkbenchShell()
+  const workbench = isMonicaShell()
   const presets: readonly (readonly ['open' | 'mine' | 'review', string])[] =
     codehubView === 'mrs'
       ? ([
@@ -115,11 +115,11 @@ export function TaskPageCodeHubFilters({
             getRepoHostLabel={getTaskPickerRepoHostLabel}
             onChange={(next) => {
               const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
-              if (model.workbenchScope) {
-                model.clearWorkbenchProject()
+              if (model.monicaScope) {
+                model.clearMonicaProject()
               }
               setRepoSelection(normalized)
-              if (!model.workbenchScope) {
+              if (!model.monicaScope) {
                 void updateSettings({ defaultRepoSelection: [...normalized] }).catch(() => {
                   toast.error(
                     translate(
@@ -131,11 +131,11 @@ export function TaskPageCodeHubFilters({
               }
             }}
             onSelectAll={() => {
-              if (model.workbenchScope) {
-                model.clearWorkbenchProject()
+              if (model.monicaScope) {
+                model.clearMonicaProject()
               }
               setRepoSelection(new Set(taskPickerRepos.map((repo) => repo.id)))
-              if (!model.workbenchScope) {
+              if (!model.monicaScope) {
                 void updateSettings({ defaultRepoSelection: null }).catch(() => {
                   toast.error(
                     translate(

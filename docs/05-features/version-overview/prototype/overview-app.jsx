@@ -2,7 +2,7 @@ import { OverviewSections } from './overview-sections.jsx'
 import { ExperimentalSettings, SettingsIcon } from './overview-settings.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { Dialog, SourcePanel } from './overview-components.jsx'
-import { versionWorkflowProgress } from '../../../../src/renderer/src/workbench/version-workflow-progress'
+import { versionWorkflowProgress } from '../../../../src/renderer/src/monica/version-workflow-progress'
 import {
   snapshot,
   acceptanceForVersion,
@@ -269,13 +269,13 @@ function App() {
         </div>
       </div>
       <div className="ov-shell">
-        <aside className="ov-sidebar" aria-label="BW 项目与版本侧边栏">
+        <aside className="ov-sidebar" aria-label="Monica 项目与版本侧边栏">
           <div className="ov-brand">
             <LayoutDashboard size={22} />
-            <span>Workbench</span>
+            <span>Monica</span>
           </div>
           <div className="ov-nav-group">
-            <strong>Builder Workbench</strong>
+            <strong>Monica</strong>
           </div>
           <button className="nav-row" onClick={() => native('项目总览')}>
             <LayoutDashboard size={15} />
@@ -387,7 +387,7 @@ function App() {
             设置
           </button>
           <Note>
-            沿用 BW
+            沿用 Monica
             导航与原生树卡片；版下树按任务关系展示，实际绑定、宿主与会话未读取，完整原生菜单不变。v0.9
             仅用于未制定计划情景，未创建真实版本。
           </Note>
@@ -406,7 +406,7 @@ function App() {
           ) : (
             <>
               <div className="ov-top">
-                <span>Builder Workbench</span>
+                <span>Monica</span>
                 <ChevronRight size={12} />
                 <span>{selected.version}</span>
                 <ChevronRight size={12} />
@@ -585,7 +585,7 @@ function App() {
                 <dd>尚未读取</dd>
               </dl>
               <Note>
-                工作树分支已核对，不能由 Git 推断 BW
+                工作树分支已核对，不能由 Git 推断 Monica
                 宿主登记或会话状态。落地沿原有工作树激活和任务开工：唯一匹配直接进入，多实例按宿主选择，无匹配进入原生创建器。本原型不创建或激活工作树。
               </Note>
               <Link href="../version-workspace/version-workspace-prototype.html?rev=439-feedback">
@@ -596,9 +596,10 @@ function App() {
           {dialog.kind === 'native' && (
             <>
               <Note>
-                沿用当前 BW 的「{dialog.route}」，带入 Builder Workbench{' '}
+                沿用当前 Monica 的「{dialog.route}」，带入 Monica{' '}
                 {dialog.route === '新建版本' ? '项目' : `/ ${selected.version}`}{' '}
-                上下文。此处保留原入口与旅程，真实会话和页面由现有能力承接；不会启动或操控日常 BW。
+                上下文。此处保留原入口与旅程，真实会话和页面由现有能力承接；不会启动或操控日常
+                Monica。
               </Note>
               {dialog.goal && (
                 <p>

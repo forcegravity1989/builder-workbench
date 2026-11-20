@@ -10,7 +10,7 @@ import { ensureHooksConfirmed } from '@/lib/ensure-hooks-confirmed'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { runBackgroundWorktreeCreation } from '@/lib/worktree-creation-flow'
 import { translate } from '@/i18n/i18n'
-import { resolveWorkbenchCreationBinding } from '../../../../shared/workbench/creation-context'
+import { resolveMonicaCreationBinding } from '../../../../shared/monica/creation-context'
 import {
   prepareQuickComposerStartup,
   resolveQuickComposerAgentLaunchRoute
@@ -49,7 +49,7 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
     sparseEnabled,
     taskSourceContext,
     telemetrySource,
-    workbenchCreation
+    monicaCreation
   } = input
 
   const executeQuickCreation = useCallback(
@@ -230,9 +230,9 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
         promptDelivery,
         quickTelemetry,
         suppressTerminalFocusOnCompletion: createMultiple,
-        // G2 (BW): resolved at submit time against the FINAL repo + task source;
+        // G2 (Monica): resolved at submit time against the FINAL repo + task source;
         // a repo switch drops the context (stale attribution is never bound).
-        workbenchVersionBinding: resolveWorkbenchCreationBinding(workbenchCreation, {
+        workbenchVersionBinding: resolveMonicaCreationBinding(monicaCreation, {
           repoId,
           taskSourceContext
         })
@@ -284,7 +284,7 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
       sparseEnabled,
       taskSourceContext,
       telemetrySource,
-      workbenchCreation
+      monicaCreation
     ]
   )
 

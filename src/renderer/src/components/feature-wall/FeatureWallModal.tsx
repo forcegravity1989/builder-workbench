@@ -10,7 +10,7 @@ import {
 import { useAppStore } from '@/store'
 import { FeatureWallTourSurface } from './FeatureWallTourSurface'
 import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 
 export default function FeatureWallModal(): JSX.Element | null {
   const activeModal = useAppStore((s) => s.activeModal)
@@ -37,8 +37,8 @@ export default function FeatureWallModal(): JSX.Element | null {
       >
         <DialogHeader className="gap-1 border-b border-border px-7 py-4">
           <DialogTitle className="text-lg">
-            {isWorkbenchShell()
-              ? translate('guidance.explore', 'Explore BW')
+            {isMonicaShell()
+              ? translate('guidance.explore', 'Explore Monica')
               : translate(
                   'auto.components.feature.wall.FeatureWallModal.3567e147c8',
                   'Get to know Orca'
@@ -47,10 +47,10 @@ export default function FeatureWallModal(): JSX.Element | null {
           {/* Why: Radix requires a description for the dialog to be a11y-compliant,
               but we don't want it visible - the rail and step copy already orient users. */}
           <DialogDescription className="sr-only">
-            {isWorkbenchShell()
+            {isMonicaShell()
               ? translate(
                   'guidance.exploreDescription',
-                  'Browse work journeys and feature demonstrations in BW.'
+                  'Browse work journeys and feature demonstrations in Monica.'
                 )
               : translate(
                   'auto.components.feature.wall.FeatureWallModal.33dca8bbbe',
@@ -63,7 +63,7 @@ export default function FeatureWallModal(): JSX.Element | null {
           isOpen={isOpen}
           source={source}
           onDone={closeModal}
-          workbenchCatalog={isWorkbenchShell()}
+          workbenchCatalog={isMonicaShell()}
         />
       </DialogContent>
     </Dialog>

@@ -252,12 +252,12 @@ function App() {
         <div className="g3-design-notes">
           <p>
             <strong>界面边界</strong>：左侧导航属于 G2；计划助手在左侧完整复用 Orca
-            原生会话——整栏（含顶部标签栏与会话标题）都是原生，候选不绘制 BW
-            会话头，「计划助手」是这个原生会话的产品称呼。会话收折沿用已落地壳行为：BW
+            原生会话——整栏（含顶部标签栏与会话标题）都是原生，候选不绘制 Monica
+            会话头，「计划助手」是这个原生会话的产品称呼。会话收折沿用已落地壳行为：Monica
             板面页头带图标的「收起会话 / 展开会话」按钮，页头不再另设助手图标入口，
             原生会话本身不带关闭 ×。对象级动作（拆解 Issue、整理纪要、批注发送）是 图标 +
             短动词文字按钮（2026-10-22 真机反馈轮：纯小图标隐蔽），点击弹出发送弹窗——
-            与浏览器批注「发送给 Agent」同一条 Orca 原生链路：顶部指令预览（BW
+            与浏览器批注「发送给 Agent」同一条 Orca 原生链路：顶部指令预览（Monica
             包装层新增，原生菜单不显示待发送文本）、「发送至」运行中会话列表（不可用行显示原因）、
             「新建智能体」快捷启动（会话就绪后自动递交指令），人确认目标后发送；发送成功板面底栏给
             「已发送至 ××× · 在会话栏查看进展」瞬态反馈，动作同时自动展开会话栏。
@@ -314,11 +314,11 @@ function App() {
             只关闭小窗、不动已记录批注）→ 右侧「板面批注（N）」面板承担记录列表与卡片级管理
             （每卡带笔形编辑 / × 删除入口，编辑为卡片内行内编辑；高度随内容、列表限高内滚动，
             不覆盖板面），「添加板面级批注」复用同一个小窗；复制或经原生发送弹窗发给计划助手。 与
-            Orca 弹窗的差异：BW 小窗不带意图分段与发送行——批注是评审会速记、
+            Orca 弹窗的差异：Monica 小窗不带意图分段与发送行——批注是评审会速记、
             整批作为纪要输入，发送统一走面板底部经原生发送弹窗。板面编号角标与面板卡片同号。
-            纪要区不参与批注。BW 板面元素的捕获层（元素映射为业务对象引用）留实现设计。
+            纪要区不参与批注。Monica 板面元素的捕获层（元素映射为业务对象引用）留实现设计。
             <strong>第八轮：发送成功即清空已递交批注</strong>——Orca 两条原生路径行为相反 （元素批注
-            tray 不清、另给批量清除按钮；Markdown/diff 评审批注清），BW 选后者：
+            tray 不清、另给批量清除按钮；Markdown/diff 评审批注清），Monica 选后者：
             批注是速记、正本是生成后的纪要，且每次发送都是全量清单，留着会让下次发送重复计数、
             污染纪要。清空只在发送成功门控内发生，批注模式与面板保持开启，面板转「暂无批注」
             读作「已全部递交」，板面回执明说清了几条，不让人以为丢了数据。
@@ -398,9 +398,9 @@ function App() {
         <aside className="g3-sidebar">
           <div className="g3-brand">
             <span>B</span>
-            <strong>Workbench</strong>
+            <strong>Monica</strong>
           </div>
-          <div className="g3-project">Builder Workbench</div>
+          <div className="g3-project">Monica</div>
           <div className="g3-nav-muted">项目总览</div>
           <div className="g3-nav-muted">自动化</div>
           <div className="g3-nav-muted">知识库</div>
@@ -448,7 +448,7 @@ function App() {
           <header className="g3-header">
             <div>
               <div className="g3-breadcrumb">
-                Builder Workbench <span>/</span> v0.7
+                Monica <span>/</span> v0.7
               </div>
               <h1>版本计划</h1>
             </div>

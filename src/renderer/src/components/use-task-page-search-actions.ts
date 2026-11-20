@@ -1,4 +1,4 @@
-import { seedWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
+import { seedMonicaTaskQuery } from '../../../shared/monica/task-scope'
 import type { TaskPageGitHubQuietRefreshModel } from './use-task-page-github-quiet-refresh'
 import React, { useCallback, useEffect } from 'react'
 import type { PRFilterChange } from '@/components/github/PRFilterDropdowns'
@@ -37,7 +37,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   const applyPRFilterChange = useCallback(
     (change: PRFilterChange): void => {
       let next =
-        model.workbenchScope?.goalId && !taskSearchInput.trim()
+        model.monicaScope?.goalId && !taskSearchInput.trim()
           ? ''
           : scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
       // Why: withQualifier round-trips through parseTaskQuery so each dropdown's patch preserves prior filters and free-text.
@@ -81,14 +81,14 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
         githubItemsQuery: next
       })
       // Why: a filter change replaces every row's meaning; show the load skeleton so stale rows don't read as if the filter did nothing.
-      if (!model.workbenchScope?.goalId) {
+      if (!model.monicaScope?.goalId) {
         setTasksFiltering(true)
         setTaskRefreshNonce((current) => current + 1)
       }
     },
     [
       activeGithubTaskKind,
-      model.workbenchScope,
+      model.monicaScope,
       setTaskResumeState,
       taskSearchInput,
       setActiveTaskPreset,
@@ -100,7 +100,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   )
   const handleApplyTaskSearch = useCallback((): void => {
     const scoped =
-      model.workbenchScope?.goalId && !taskSearchInput.trim()
+      model.monicaScope?.goalId && !taskSearchInput.trim()
         ? ''
         : scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
     setTaskSearchInput(scoped)
@@ -110,13 +110,13 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
       githubItemsPreset: null,
       githubItemsQuery: scoped
     })
-    if (!model.workbenchScope?.goalId) {
+    if (!model.monicaScope?.goalId) {
       setTasksFiltering(true)
       setTaskRefreshNonce((current) => current + 1)
     }
   }, [
     activeGithubTaskKind,
-    model.workbenchScope,
+    model.monicaScope,
     setTaskResumeState,
     taskSearchInput,
     setTasksFiltering,
@@ -150,7 +150,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     (kind: GitHubTaskKind): void => {
       const preset = getDefaultPresetForGitHubTaskKind(kind)
       let query = getTaskPresetQuery(preset)
-      if (model.workbenchScope) {
+      if (model.monicaScope) {
         const parsed = parseTaskQuery(taskSearchInput)
         parsed.scope = kind === 'prs' ? 'pr' : 'issue'
         if (kind === 'issues') {
@@ -161,22 +161,22 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
             parsed.state = 'open'
           }
         }
-        query = seedWorkbenchTaskQuery(serializeTaskQuery(parsed), model.workbenchScope)
+        query = seedMonicaTaskQuery(serializeTaskQuery(parsed), model.monicaScope)
       }
       setTaskSearchInput(query)
       setAppliedTaskSearch(query)
-      setActiveTaskPreset(model.workbenchScope ? null : preset)
+      setActiveTaskPreset(model.monicaScope ? null : preset)
       setTaskResumeState({
         githubItemsPreset: preset,
         githubItemsQuery: query
       })
-      if (!model.workbenchScope?.goalId) {
+      if (!model.monicaScope?.goalId) {
         setTasksFiltering(true)
         setTaskRefreshNonce((current) => current + 1)
       }
     },
     [
-      model.workbenchScope,
+      model.monicaScope,
       taskSearchInput,
       setTaskResumeState,
       setActiveTaskPreset,
@@ -187,12 +187,12 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     ]
   )
   const handleResetGithubTaskSearch = useCallback((): void => {
-    if (model.workbenchScope) {
-      const goalIssues = model.workbenchScope.goalId && activeGithubTaskKind === 'issues'
+    if (model.monicaScope) {
+      const goalIssues = model.monicaScope.goalId && activeGithubTaskKind === 'issues'
       const preset = getDefaultPresetForGitHubTaskKind(activeGithubTaskKind)
       const next = goalIssues
         ? ''
-        : seedWorkbenchTaskQuery(getTaskPresetQuery(preset), model.workbenchScope)
+        : seedMonicaTaskQuery(getTaskPresetQuery(preset), model.monicaScope)
       setTaskSearchInput(next)
       setAppliedTaskSearch(next)
       setActiveTaskPreset(goalIssues ? null : preset)
@@ -202,7 +202,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   }, [
     activeGithubTaskKind,
     handleSelectGithubTaskKind,
-    model.workbenchScope,
+    model.monicaScope,
     setTaskSearchInput,
     setAppliedTaskSearch,
     setActiveTaskPreset

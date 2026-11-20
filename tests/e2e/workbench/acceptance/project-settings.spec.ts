@@ -1,9 +1,9 @@
-import { projectSettingsTest, verifyProjectSettings } from '../../helpers/workbench-project-settings'
+import { projectSettingsTest, verifyProjectSettings } from '../../helpers/monica-project-settings'
 
 projectSettingsTest(
   'BW project settings: reviewed edits, conflict protection and filesystem read-back',
-  async ({ workbenchPage, seededRepoPath }, testInfo) => {
+  async ({ monicaPage, seededRepoPath }, testInfo) => {
     projectSettingsTest.setTimeout(300_000)
-    await verifyProjectSettings(workbenchPage, seededRepoPath, testInfo)
+    await verifyProjectSettings(monicaPage, seededRepoPath, testInfo)
   }
 )

@@ -29,7 +29,7 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
   const [appliedTaskSearch, setAppliedTaskSearch] = useState(initialTaskQuery)
   const taskSearchInputRef = useRef<HTMLInputElement>(null)
   const [activeTaskPreset, setActiveTaskPreset] = useState<TaskViewPresetId | null>(
-    pageData.workbenchTaskScope?.goalId ? null : defaultTaskViewPreset
+    pageData.monicaTaskScope?.goalId ? null : defaultTaskViewPreset
   )
   const [tasksLoading, setTasksLoading] = useState(false)
   const [tasksRefreshing, setTasksRefreshing] = useState(false)
@@ -116,13 +116,13 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
   const countWorkItemsAcrossRepos = useAppStore((s) => s.countWorkItemsAcrossRepos)
   useEffect(() => {
     const page = pages[currentPage]
-    // Why: scoped (BW) pages are reference-driven; writing them into the
+    // Why: scoped (Monica) pages are reference-driven; writing them into the
     // query-keyed resume cache would leak scope rows into unscoped visits.
     if (
       !taskResumeApplied ||
       taskSource !== 'github' ||
       githubMode !== 'items' ||
-      pageData.workbenchTaskScope ||
+      pageData.monicaTaskScope ||
       !page
     ) {
       return
@@ -132,7 +132,7 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
     currentPage,
     githubMode,
     githubResumeContextKey,
-    pageData.workbenchTaskScope,
+    pageData.monicaTaskScope,
     pages,
     taskResumeApplied,
     taskSource
@@ -149,7 +149,7 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
       pageData.openGitHubWorkItem ||
       // Why: the saved position key carries no scope; a scoped visit must not
       // store a page number an unscoped visit would later restore.
-      pageData.workbenchTaskScope ||
+      pageData.monicaTaskScope ||
       pendingGithubScrollRestoreRef.current !== null
     ) {
       return
@@ -164,7 +164,7 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
     githubMode,
     githubResumeContextKey,
     pageData.openGitHubWorkItem,
-    pageData.workbenchTaskScope,
+    pageData.monicaTaskScope,
     taskSource
   ])
   useEffect(

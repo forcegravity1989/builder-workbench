@@ -1,6 +1,6 @@
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
-import { OverviewExperimentSettings } from '@/workbench/version-overview/overview-experiment-settings'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { OverviewExperimentSettings } from '@/monica/version-overview/overview-experiment-settings'
+import { isMonicaShell } from '@/monica/is-monica-shell'
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { useAppStore } from '../../store'
@@ -63,7 +63,7 @@ export function ExperimentalPane({
 
   return (
     <div className="space-y-4">
-      {isWorkbenchShell() && (
+      {isMonicaShell() && (
         <>
           <OverviewExperimentSettings />
           <SettingsSubsectionHeader

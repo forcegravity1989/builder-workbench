@@ -5,8 +5,8 @@
 import './lib/react-devtools-commit-hook-shim'
 import './lib/react-commit-cascade-observer'
 import './assets/main.css'
-import './workbench/workbench-tokens.css'
-import './workbench/workbench-terminal.css'
+import './monica/monica-tokens.css'
+import './monica/monica-terminal.css'
 
 import { StrictMode } from 'react'
 import { useTranslation } from 'react-i18next'

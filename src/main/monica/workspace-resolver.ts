@@ -1,0 +1,173 @@
+import {
+  getWorktreeExecutionHostId,
+  parseExecutionHostId,
+  type ExecutionHostId
+} from '../../shared/execution-host'
+import type { Repo } from '../../shared/repo-types'
+import type { Worktree } from '../../shared/worktree/types'
+import { resolveRepoOwnershipEvidence } from '../ipc/worktrees/listing/worktree-host-ownership'
+import { WorkspaceScopeError } from './workspace-scope-error'
+
+export type MonicaWorkspaceScope = { repoId: string; worktreeId: string; hostId: string }
+export type MonicaWorkspaceTarget = {
+  hostId: ExecutionHostId
+  repoPath: string
+  worktreePath: string
+  /** Native worktree identity: the repo's main checkout, not a path comparison. */
+  isMainWorktree: boolean
+}
+/** Registered repo facts a Monica host adapter needs beyond the resolved paths. */
+export type MonicaWorkspaceRepo = Pick<
+  Repo,
+  | 'id'
+  | 'path'
+  | 'kind'
+  | 'connectionId'
+  | 'executionHostId'
+  | 'worktreeBaseRef'
+  | 'worktreeBasePath'
+  | 'gitRemoteIdentity'
+>
+export type MonicaWorkspaceHost = {
+  listRepos(): MonicaWorkspaceRepo[]
+  listWorktrees(
+    scope: MonicaWorkspaceScope
+  ): Promise<
+    Pick<
+      Worktree,
+      | 'id'
+      | 'repoId'
+      | 'path'
+      | 'hostId'
+      | 'runtimeOwnerEnvironmentId'
+      | 'isArchived'
+      | 'isMainWorktree'
+      | 'workbenchVersionBinding'
+    >[]
+  >
+}
+
+/** Repo-level owner authorization shared by workspace resolution and version
+ *  provisioning (which runs before any worktree of the version exists). */
+export function createMonicaRepoResolver(host: Pick<MonicaWorkspaceHost, 'listRepos'>) {
+  function resolveRepo(input: { repoId: string; hostId: string }): {
+    repo: MonicaWorkspaceRepo
+    hostId: ExecutionHostId
+  } {
+    const hostId = parseExecutionHostId(input.hostId)
+    if (!hostId || hostId.kind === 'runtime') {
+      throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 访问')
+    }
+    const candidates = host.listRepos().filter((repo) => repo.id === input.repoId)
+    const evidence = candidates.map(resolveRepoOwnershipEvidence)
+    if (evidence.some((owner) => owner.status !== 'owned')) {
+      throw new WorkspaceScopeError('invalid-scope', '项目宿主登记无效或冲突')
+    }
+    const repos = candidates.filter((_, index) => {
+      const owner = evidence[index]
+      return owner.status === 'owned' && owner.hostId === hostId.id
+    })
+    if (repos.length !== 1 || repos[0].kind === 'folder') {
+      throw new WorkspaceScopeError('invalid-scope', 'Git 项目身份不存在或不唯一')
+    }
+    return { repo: repos[0], hostId: hostId.id }
+  }
+  return { resolveRepo }
+}
+
+/** Resolve registered identity on its owner runtime; executors retain Git and workflow checks. */
+export function createMonicaWorkspaceResolver(host: MonicaWorkspaceHost) {
+  const repoResolver = createMonicaRepoResolver(host)
+  async function authorize(scope: MonicaWorkspaceScope): Promise<{
+    target: MonicaWorkspaceTarget
+    repo: MonicaWorkspaceRepo
+    worktree: Awaited<ReturnType<MonicaWorkspaceHost['listWorktrees']>>[number]
+  }> {
+    const { repo, hostId } = repoResolver.resolveRepo({
+      repoId: scope.repoId,
+      hostId: scope.hostId
+    })
+    let listedTrees: Awaited<ReturnType<MonicaWorkspaceHost['listWorktrees']>>
+    try {
+      listedTrees = await host.listWorktrees(scope)
+    } catch (error) {
+      // Only the runtime's explicit local disappearance verdict is actionable here. A generic
+      // `selector_not_found` is UNKNOWN: a live Git/provider scan can fail or lag, so callers must
+      // retain their retry path instead of claiming that the worktree was deleted.
+      if (
+        error instanceof Error &&
+        error.message === 'selector_not_found' &&
+        (error as { worktreeGoneEvidence?: unknown }).worktreeGoneEvidence === true
+      ) {
+        throw new WorkspaceScopeError('workspace-gone', '工作树已删除，请回到版本总览或另选工作区')
+      }
+      throw error
+    }
+    const trees = listedTrees.filter(
+      (tree) =>
+        tree.id === scope.worktreeId &&
+        tree.repoId === repo.id &&
+        (tree.hostId == null || parseExecutionHostId(tree.hostId) !== null) &&
+        getWorktreeExecutionHostId(tree, repo) === hostId &&
+        !tree.runtimeOwnerEnvironmentId
+    )
+    if (trees.length !== 1 || trees[0].isArchived) {
+      throw new WorkspaceScopeError('invalid-scope', '工作树身份不存在、已归档或不唯一')
+    }
+    return {
+      target: {
+        hostId,
+        repoPath: repo.path,
+        worktreePath: trees[0].path,
+        isMainWorktree: trees[0].isMainWorktree
+      },
+      repo,
+      worktree: trees[0]
+    }
+  }
+  return {
+    async resolve(scope: MonicaWorkspaceScope) {
+      const capturedScope = {
+        repoId: scope.repoId,
+        worktreeId: scope.worktreeId,
+        hostId: scope.hostId
+      }
+      const resolved = await authorize(capturedScope)
+      const target = Object.freeze(resolved.target)
+      const repo = Object.freeze(resolved.repo)
+      return {
+        target,
+        repo,
+        worktree: resolved.worktree,
+        async reauthorize() {
+          const current = await authorize(capturedScope)
+          if (
+            current.target.repoPath !== target.repoPath ||
+            current.target.worktreePath !== target.worktreePath
+          ) {
+            throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
+          }
+        }
+      }
+    }
+  }
+}
+
+export function nativeMonicaWorkspaceHost(runtime: {
+  listRepos: MonicaWorkspaceHost['listRepos']
+  showManagedWorktree(
+    selector: string,
+    requiredHostId?: ExecutionHostId
+  ): Promise<Awaited<ReturnType<MonicaWorkspaceHost['listWorktrees']>>[number]>
+}): MonicaWorkspaceHost {
+  return {
+    listRepos: () => runtime.listRepos(),
+    listWorktrees: async (scope) => {
+      const hostId = parseExecutionHostId(scope.hostId)
+      if (!hostId || hostId.kind === 'runtime') {
+        throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 访问')
+      }
+      return [await runtime.showManagedWorktree(`id:${scope.worktreeId}`, hostId.id)]
+    }
+  }
+}

@@ -89,7 +89,7 @@ design-docs/
 # Machine-local agent hook endpoint files may contain auth tokens.
 /agent-hooks/
 
-# Product docs came from Workbench's old main (now archived as archive/main-pre-orca): `docs/`, AGENTS.md, …
+# 产品文档来自旧 main（现已归档为 archive/main-pre-orca）：`docs/`、AGENTS.md 等。
 # Upstream Orca engineering notes that we still need for sync live under `ref/`.
 # See ref/upstream.md. Do not reinstate the old docs/** allow-list.
 
@@ -111,8 +111,8 @@ playwright-report/
 
 # Agent skill installations (machine-local, populated by agent tooling)
 /.claude/skills/*
-!/.claude/skills/workbench-start/
-!/.claude/skills/workbench-start/**
+!/.claude/skills/monica-start/
+!/.claude/skills/monica-start/**
 !/.claude/skills/journey-review/
 !/.claude/skills/journey-review/**
 !/.claude/skills/project-knowledge/
@@ -121,8 +121,8 @@ playwright-report/
 !/.claude/skills/design-system-import/**
 !/.claude/skills/version-report/
 !/.claude/skills/version-report/**
-!/.claude/skills/workbench-release/
-!/.claude/skills/workbench-release/**
+!/.claude/skills/monica-release/
+!/.claude/skills/monica-release/**
 !/.claude/skills/feature-metrics-inventory/
 !/.claude/skills/feature-metrics-inventory/**
 !/.claude/skills/recent-design/

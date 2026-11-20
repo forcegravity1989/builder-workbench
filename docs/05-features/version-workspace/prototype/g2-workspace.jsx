@@ -39,7 +39,7 @@ const plans = { 'v0.7': snapshot, 'v0.6': snapshotV06, 'v0.8': v08Plan }
 const emptyPlan = { goals: [], tasks: [], summary: {} }
 plans['v1.0'] = { goals: [{ goalId: 'G1', title: 'API 接口交付' }], tasks: [], summary: {} }
 const demoProjects = [
-  { id: 'bw', name: 'Builder Workbench', initials: 'B', onWall: true },
+  { id: 'bw', name: 'Monica', initials: 'B', onWall: true },
   { id: 'api', name: 'Demo API', initials: 'D', onWall: true },
   { id: 'personal', name: 'personal-notes', initials: 'P', onWall: false }
 ]
@@ -1022,7 +1022,7 @@ function App() {
       return (
         <ReuseSurface
           title={`沿用现有${labels[screen]}屏（含会话区）`}
-          scope={`Builder Workbench / ${version}`}
+          scope={`Monica / ${version}`}
           description={`侧栏这一行就是本版${labels[screen]}工作树入口，打开原有整屏：Orca 会话区与右侧${labels[screen]}板一起沿用。版本由侧栏带入，屏内不再选版；新会话仍从原板的“新建${labels[screen]}”发起。`}
         >
           <Button icon={MessageSquare} onClick={() => startWorkflow(screen)}>
@@ -1447,7 +1447,7 @@ function App() {
             <>
               <div className="app-header">
                 <span className="brand-mark">B</span>
-                <strong>Workbench</strong>
+                <strong>Monica</strong>
                 <small>⌘ K</small>
               </div>
               <Nav
@@ -1469,7 +1469,7 @@ function App() {
             ref={sidebarScrollRef}
             className="sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar"
           >
-            <div className="bw-section">
+            <div className="monica-section">
               {!is475 && projectHeading475}
               {is475 && pinnedSection475}
               {!is475 && moduleNavs475}
@@ -1738,7 +1738,7 @@ function App() {
           </div>
           <p className="muted">
             实际创建沿用 Orca 原生创建器和父级选择。需要独立做目标协作时才创建；目标和 Issue
-            都复用原生创建器，BW
+            都复用原生创建器，Monica
             带入可修改的名称、已知版本与目标归属和合适父级建议。用户决定实际执行方式；已有树不自动改挂，版本目录不是实体父树。
           </p>
         </Modal>
@@ -1872,7 +1872,7 @@ function App() {
         <Modal title={`清理 ${modal.version} 工作树`} close={() => setModal(null)}>
           <p className="muted">
             与右击单树删除、Orca 工作区清理同一条删除链：未提交修改、子树与归档 hook
-            预检不豁免；删除的是磁盘检出与原生登记（含 BW 绑定），Git
+            预检不豁免；删除的是磁盘检出与原生登记（含 Monica 绑定），Git
             材料与版本目录保留，版本仍在侧栏收起回看。
           </p>
           <div className="goal-action-list" ref={cleanupListRef}>
@@ -1940,7 +1940,7 @@ function App() {
           <div className="tree-explanation">
             <div>任务</div>
             <div>
-              └ G2 · 目标目录 <small>BW 业务分组</small>
+              └ G2 · 目标目录 <small>Monica 业务分组</small>
             </div>
             <div>
               　 ├ issue-328 → agent <small>可直接属于目标目录</small>

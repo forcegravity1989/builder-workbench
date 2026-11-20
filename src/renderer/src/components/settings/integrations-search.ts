@@ -2,7 +2,7 @@ import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from './settings-search-keywords'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 
-// Why (BW #323): the catalog mirrors the collapsed three-card pane. Entries
+// Why (Monica #323): the catalog mirrors the collapsed three-card pane. Entries
 // for the six hidden cards are dropped with their UI; their locale keys stay
 // pending 待决 1 (six-card code keep-or-drop).
 export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
@@ -58,7 +58,7 @@ export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
     ),
     description: translate(
       'auto.components.settings.integrations.search.welinkDescription',
-      'welink-cli installation and login for reports and diagnostics in the BW user-group space.'
+      'welink-cli installation and login for reports and diagnostics in the Monica user-group space.'
     ),
     keywords: [
       ...translateSearchKeyword(
@@ -75,7 +75,7 @@ export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
       )
     ]
   },
-  // Why (BW #366): cloudbuild's cb joins the pane for pipeline execution and
+  // Why (Monica #366): cloudbuild's cb joins the pane for pipeline execution and
   // package builds.
   {
     title: translate(
