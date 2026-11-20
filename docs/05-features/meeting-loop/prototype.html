@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BW G2 会议助手悬浮窗原型</title>
+<link rel="stylesheet" href="../../04-design-system/styles.css">
+<link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+<main class="review-frame">
+  <header class="review-header">
+    <div><h1>BW G2 · 会议助手悬浮窗</h1><p><em>本轮只验证三件事</em> 一句话定会、从 BW 快捷打开 WeLink、会后把结果写回当前工作模型。</p></div>
+    <div class="review-tools"><button class="btn btn-ghost" id="reset" type="button">重新开始</button><button class="btn btn-ghost" id="theme" type="button">主题</button></div>
+  </header>
+  <div class="placement-note"><span class="new-tag">G2 最小闭环</span><span>会议助手知道固定会议、项目上下文和结果写回位置；WeLink 负责群通知、视频和正式纪要</span><span class="note-separator">·</span><span class="reuse-tag">BW</span><span>上下文与工作模型</span><span class="note-separator">·</span><span class="reuse-tag">WeLink</span><span>会议事实</span></div>
+
+  <section class="bw-shell" aria-label="Builder Workbench 应用骨架">
+    <header class="bw-titlebar"><div class="bw-brand-mark">BW</div><div class="bw-titlebar-name"><strong>Builder Workbench</strong><span>复用 BW 原生标题栏</span></div><div class="bw-titlebar-context"><span>星图团队</span><span>/</span><span>登录体验</span><span>/</span><strong>项目会话</strong></div><div class="bw-window-controls" aria-hidden="true"><span>—</span><span>□</span><span>×</span></div></header>
+    <div class="bw-shell-body">
+      <aside class="bw-rail reuse-surface" aria-label="复用 BW WorkbenchRail"><div class="rail-logo">□</div><div class="rail-divider"></div><div class="rail-item is-active"><span>▤</span><small>项目总览</small></div><div class="rail-item"><span>▣</span><small>版本工作区</small></div><div class="rail-item"><span>✓</span><small>任务</small></div><div class="rail-item"><span>◷</span><small>自动化</small></div><div class="rail-spacer"></div><div class="rail-item"><span>⚙</span><small>设置</small></div></aside>
+      <div class="bw-content-surface">
+        <div class="bw-content-context"><span class="reuse-tag">当前项目</span><span>星图团队 · 登录体验 · v1.1</span><span class="context-separator">·</span><strong>项目会话</strong><span class="context-separator">·</span><span>原型已完成</span></div>
+        <section class="project-session-shell" aria-label="登录体验项目会话">
+          <aside class="project-session-sidebar reuse-surface">
+            <div class="project-sidebar-title"><strong>登录体验</strong><button class="icon-button" type="button" title="项目更多">⋯</button></div>
+            <div class="project-sidebar-section">工作树</div>
+            <div class="project-worktree-row is-selected"><span>◇</span><span><strong>login-experience</strong><small>当前 worktree · v1.1</small></span><button class="icon-button worktree-menu-trigger" id="worktree-trigger" type="button" title="打开工作树菜单" aria-expanded="false">⋯</button></div>
+            <div class="worktree-menu" id="worktree-menu" hidden><button id="launch-review" type="button">发起项目原型评审会</button><small>固定会议类型、默认参会人和写回位置由 BW 上下文带入</small></div>
+            <small class="project-sidebar-note">会议助手从这里启动；预约后仍可留在项目会话继续工作。</small>
+          </aside>
+          <section class="project-session-reuse" aria-label="复用 Orca 项目会话">
+            <header class="project-session-header"><div><span class="reuse-tag">复用 Orca 会话屏</span><strong>项目会话</strong><span>当前工作树 login-experience</span></div><button class="icon-button" type="button" title="会话更多">⋯</button></header>
+            <div class="session-reuse-hint"><span>项目会话、工具栏和输入区沿用 Orca</span><span>这里演示会议助手入口</span></div>
+            <div class="project-session-body"><div class="project-session-message"><span class="message-avatar">BW</span><div><p>原型已完成，可以进入评审。</p><div class="prototype-inline-row"><span class="browser-mark">BW</span><div><strong>登录体验原型预览</strong><small>当前 worktree 里的 HTML 原型</small></div><button class="icon-button" type="button" title="原型更多">⋯</button></div><small class="project-session-note">点击工作树右侧菜单，会议助手会带入项目、版本、目标和验收标准。</small></div></div></div>
+            <div class="project-session-composer"><span>复用 Orca 原生输入区</span><span>会议助手悬浮后，这里仍可继续工作</span></div>
+          </section>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <aside class="floating-assistant" id="assistant" hidden aria-label="BW 会议助手悬浮窗">
+    <header class="assistant-header"><div><span class="assistant-mark small">BW</span><div><strong>会议助手</strong><small id="assistant-summary">项目原型评审会</small></div></div><div><span class="session-state" id="assistant-status">准备中</span><button class="icon-button" id="assistant-minimize" type="button" title="最小化会议助手">−</button><button class="icon-button" id="assistant-close" type="button" title="关闭会议助手">×</button></div></header>
+    <div class="assistant-source"><span>当前来源</span><strong>登录体验 · v1.1 · login-experience</strong><small>结果写回：登录体验 · v1.1</small></div>
+    <div class="assistant-body" id="assistant-body"></div>
+  </aside>
+  <aside class="floating-launcher" id="launcher" hidden aria-label="重新打开 BW 会议助手"><span class="assistant-mark small">BW</span><div><strong>会议助手</strong><small id="launcher-status">准备中</small></div><button class="icon-button" id="assistant-expand" type="button" title="重新打开会议助手">↗</button></aside>
+  <p class="prototype-status" id="status" role="status" aria-live="polite"></p>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id)
+const meeting = {
+  type: '项目原型评审会',
+  source: '登录体验 · v1.1 · login-experience',
+  writeback: '登录体验 · v1.1',
+  prompt: '请为登录体验 v1.1 的当前 worktree login-experience 发起项目原型评审会。沿用项目默认参会人和固定会议规则，带入当前目标、原型入口、验收标准和最近变更。定会后从 BW 打开 WeLink，会议结束时把确认结果写回登录体验 · v1.1。',
+  people: '项目负责人、产品、设计和开发',
+  time: '周三 15:00'
+}
+let assistantStep = 'closed'
+let welinkOpened = false
+
+function status(message) {
+  $('status').textContent = message
+  window.setTimeout(() => { if ($('status').textContent === message) $('status').textContent = '' }, 2600)
+}
+function promptView() {
+  return '<div class="assistant-intro"><strong>一句话定好固定会议</strong><span>入口已经告诉我这是项目原型评审会；我会使用 BW 当前项目上下文，不要求你重新选模板。</span></div><div class="assistant-prompt-card"><span class="card-label">注入给会议助手的提示词</span><textarea id="assistant-prompt">' + meeting.prompt + '</textarea><small>按回车发送。助手只在缺信息时追问，然后给出预约结果。</small><div class="card-actions"><button class="btn btn-primary" data-action="send-prompt" type="button">回车发送并定会</button></div></div>'
+}
+function bookedView() {
+  return '<div class="assistant-intro"><strong>会议已经定好</strong><span>固定会议、默认参会人和项目写回位置都已从 BW 上下文带入。</span></div><div class="assistant-booking-card"><div class="card-top"><div><span class="card-label">已预约</span><h3>' + meeting.type + '</h3></div><span class="live-badge">' + meeting.time + '</span></div><div class="booking-row"><span>参会人</span><strong>' + meeting.people + '</strong></div><div class="booking-row"><span>WeLink 群通知</span><strong>已准备</strong></div><div class="booking-row"><span>结果写回</span><strong>' + meeting.writeback + '</strong></div><div class="card-actions"><button class="btn btn-primary" data-action="open-welink" type="button">打开 WeLink</button><button class="btn btn-secondary" data-action="finish-meeting" type="button">模拟会议结束</button></div></div><div class="assistant-note">BW 负责知道这是什么项目会议、用哪个固定规则、结果要回到哪里；WeLink 负责群通知、视频和正式纪要。</div>'
+}
+function welinkView() {
+  return '<div class="assistant-intro"><strong>WeLink 已打开</strong><span>你可以在 WeLink 里查看预约、进入视频会议和处理正式纪要。</span></div><div class="assistant-welink-card"><span class="browser-mark">W</span><strong>WeLink 原生会议页面</strong><small>' + meeting.type + ' · ' + meeting.time + ' · ' + meeting.people + '</small><div class="card-actions"><button class="btn btn-primary" data-action="open-video" type="button">打开视频会议网站</button><button class="btn btn-secondary" data-action="back-assistant" type="button">回到会议助手</button></div></div>' + (welinkOpened ? '<div class="assistant-note">WeLink 视频会议已在原生浏览器页签打开。会议助手不重画视频，仍可从悬浮窗回到 BW。</div>' : '')
+}
+function afterView() {
+  return '<div class="assistant-intro"><strong>会议结束，结果准备回流</strong><span>你可以把确认后的共识和遗留写回当前 BW 工作模型；WeLink 正式纪要继续保留在 WeLink。</span></div><div class="assistant-writeback-card"><span class="card-label">待确认写回</span><div class="writeback-row"><span>共识</span><strong>当前原型覆盖主要登录路径</strong></div><div class="writeback-row"><span>遗留</span><strong>错误提示文案需要再评估</strong></div><div class="writeback-row"><span>写回目标</span><strong>' + meeting.writeback + '</strong></div><div class="card-actions"><button class="btn btn-primary" data-action="writeback" type="button">确认并写回 BW</button><button class="btn btn-secondary" data-action="back-assistant" type="button">稍后处理</button></div></div>'
+}
+function doneView() {
+  return '<div class="assistant-intro"><strong>结果已回到 BW</strong><span>共识和遗留已经关联到登录体验 · v1.1，后续工作继续在项目会话里完成。</span></div><div class="assistant-writeback-card"><span class="context-tag">已写回工作模型</span><div class="writeback-row"><span>会议来源</span><strong>' + meeting.type + '</strong></div><div class="writeback-row"><span>后续位置</span><strong>' + meeting.writeback + '</strong></div><div class="card-actions"><button class="btn btn-secondary" data-action="close" type="button">关闭会议助手</button></div></div>'
+}
+function renderAssistant() {
+  $('assistant').hidden = assistantStep === 'closed'
+  $('launcher').hidden = assistantStep === 'closed' || assistantStep === 'prompt' || assistantStep === 'done'
+  const labels = { prompt: '准备中', booked: '已预约', welink: '会前查看', after: '待写回', done: '已完成', closed: '准备中' }
+  $('assistant-status').textContent = labels[assistantStep]
+  $('launcher-status').textContent = labels[assistantStep]
+  $('assistant-body').innerHTML = assistantStep === 'prompt' ? promptView() : assistantStep === 'booked' ? bookedView() : assistantStep === 'welink' ? welinkView() : assistantStep === 'after' ? afterView() : assistantStep === 'done' ? doneView() : ''
+}
+function openAssistant() {
+  assistantStep = 'prompt'
+  welinkOpened = false
+  $('project-session-shell').hidden = false
+  $('assistant').hidden = false
+  $('launcher').hidden = true
+  renderAssistant()
+  status('会议助手已打开，项目评审提示词已经注入')
+}
+function closeAssistant() {
+  assistantStep = 'closed'
+  $('assistant').hidden = true
+  $('launcher').hidden = true
+}
+function handleAssistantAction(action) {
+  if (action === 'send-prompt') { assistantStep = 'booked'; renderAssistant(); status('提示词已发送，固定会议已预约，WeLink 群通知已准备'); return }
+  if (action === 'open-welink') { assistantStep = 'welink'; renderAssistant(); return }
+  if (action === 'open-video') { welinkOpened = true; renderAssistant(); status('已打开 WeLink 视频会议网站'); return }
+  if (action === 'back-assistant') { assistantStep = 'booked'; renderAssistant(); return }
+  if (action === 'finish-meeting') { assistantStep = 'after'; renderAssistant(); status('会议结束，结果候选已准备写回 BW'); return }
+  if (action === 'writeback') { assistantStep = 'done'; renderAssistant(); status('人工确认完成，结果已写回当前 BW 工作模型'); return }
+  if (action === 'close') { closeAssistant() }
+}
+$('worktree-trigger').addEventListener('click', (event) => { event.stopPropagation(); const menu = $('worktree-menu'); menu.hidden = !menu.hidden; event.currentTarget.setAttribute('aria-expanded', String(!menu.hidden)) })
+$('launch-review').addEventListener('click', () => { $('worktree-menu').hidden = true; $('worktree-trigger').setAttribute('aria-expanded', 'false'); openAssistant() })
+$('assistant-body').addEventListener('click', (event) => { const action = event.target.closest?.('[data-action]')?.dataset.action; if (action) handleAssistantAction(action) })
+$('assistant-body').addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey && event.target.id === 'assistant-prompt') { event.preventDefault(); handleAssistantAction('send-prompt') } })
+$('assistant-minimize').addEventListener('click', () => { $('assistant').hidden = true; $('launcher').hidden = false })
+$('assistant-close').addEventListener('click', closeAssistant)
+$('assistant-expand').addEventListener('click', () => { $('assistant').hidden = false; $('launcher').hidden = true; renderAssistant() })
+$('reset').addEventListener('click', () => { closeAssistant(); $('worktree-menu').hidden = true; $('worktree-trigger').setAttribute('aria-expanded', 'false') })
+$('theme').addEventListener('click', () => { document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark' })
+renderAssistant()
+</script>
+</body>
+</html>
+
