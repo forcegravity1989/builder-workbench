@@ -2,7 +2,7 @@
 
 > **本篇维护约定**：给写界面、做原型、改样式或引导的人与模型读取，动手前先读。只写入口：怎么用、文件各是什么、值从哪来、怎么同步；视觉与组件规则在 [guidelines.md](guidelines.md)，引导内容与旅程覆盖在 [guidance.md](guidance.md)，不在这里重复。文件增删、正本或同步方式变化时更新。
 
-> **30 秒导读**：Workbench 的界面语言与 Orca 对齐——单色、安静，颜色只留给状态。**值的正本是 [`src/renderer/src/assets/main.css`](../../src/renderer/src/assets/main.css)**，本目录是它的可读镜像加上 Workbench 的增补，全部是普通 Markdown / JSON / CSS / HTML，任何 agent 不需要专门工具就能读。写产品代码看 [guidelines.md](guidelines.md) + [primitives/](primitives/)；做不跑 React 的原型页只链 [styles.css](styles.css)。
+> **30 秒导读**：Workbench 的界面语言与 Orca 对齐——单色、安静，颜色只留给状态。**值的正本是 [`src/renderer/src/assets/main.css`](../../src/renderer/src/assets/main.css)**，本目录是它的可读镜像加上 Workbench 的增补，全部是普通 Markdown / JSON / CSS / HTML，任何 agent 不需要专门工具就能读。写产品代码看 [guidelines.md](guidelines.md) + [primitives/](primitives/)；不跑 React 的静态原型页链 [styles.css](styles.css)，React/生成型原型沿用 token 与 React 原语，并保留源码和构建入口。
 
 ## 按任务读
 
@@ -11,7 +11,7 @@
 | 改产品界面（React） | [guidelines.md](guidelines.md) → 对应的 `primitives/<名>.md` | `src/renderer/src/components/ui/` 的原语 + Tailwind token 类（`bg-card`、`text-muted-foreground`） |
 | 走查旅程、设计引导或制作指南/传播素材 | 完整读取 [guidance.md](guidance.md) | 在入门或探索矩阵定位内容行，复用现有机制，逐格维护覆盖与产出 |
 | 改叠层 CSS（`src/renderer/src/workbench/*.css`） | [guidelines.md](guidelines.md)「Workbench 叠层怎么对齐」 | `var(--foreground)` 这类 Orca 名；存量的 `--color-*` 角色名见 tokens.json |
-| 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」（含原型注释、业界参考、阶段切换、复用标注、控件与文案约定）+ [高保真三条总原则](../hifi/README.md) | `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名，照示例页抄标记 |
+| 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」下的[入口与正本](guidelines.md#原型入口与正本)、[当前 BW 外壳](guidelines.md#当前-bw-外壳)、[特性增量](guidelines.md#特性增量与跨特性复用)、[交互完成度](guidelines.md#交互完成度)、[数据与验证边界](guidelines.md#数据示例与验证边界)、[资产治理](guidelines.md#资产历史与并行工作树)和[评审清单](guidelines.md#原型评审清单) + [高保真三条总原则](../hifi/README.md) | 静态 HTML 使用 `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名；React/生成型原型使用 token/React 原语并通过既定构建入口生成 |
 | 查某个颜色/间距/圆角的值 | [tokens.json](tokens.json) | 每个 token 带 `usage`，说明用在哪、配在什么底上 |
 | 加或改一个 token | 先改 `main.css`（`:root` 与 `.dark` 都给值，`@theme inline` 暴露），再同步 [tokens.json](tokens.json) | `node config/scripts/design-system-tokens.mjs --write` |
 
@@ -21,7 +21,7 @@
 
 | 路径 | 是什么 |
 |---|---|
-| [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、[按钮与新增入口](guidelines.md#按钮与新增入口)、图标、交互反馈、叠层对齐、中文排版、HTML 原型类 |
+| [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、[按钮与新增入口](guidelines.md#按钮与新增入口)、图标、交互反馈、叠层对齐、中文排版，以及按章节组织的 HTML 原型入口、BW 外壳、特性增量、交互、数据边界和资产治理 |
 | [guidance.md](guidance.md) | 引导分工、展示/回看与新功能提示规则；BW 入门、探索 BW（工作/功能）两张矩阵及产出归属 |
 | [tokens.json](tokens.json) | 机读 token：颜色（light / dark 两主题，135 个）、字体与 10 个字号样式、间距、圆角、阴影；每个带 `usage` |
 | [tokens.css](tokens.css) | **生成文件，不要手改**——由 tokens.json 生成的 CSS 变量与 Geist `@font-face` |

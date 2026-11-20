@@ -1,22 +1,246 @@
 <!doctype html>
-<html lang="zh-CN">
-<meta charset="utf-8">
-<title>任务链接直达 · 交互原型</title>
-<style>
-body{margin:32px auto;max-width:900px;padding:0 20px;background:#101114;color:#ededf0;font:15px system-ui}button,a{color:inherit}button{background:#202228;border:1px solid #383b44;border-radius:6px;padding:10px 14px;cursor:pointer}button:hover{background:#30333b}.menu{padding:8px;border:1px solid #383b44;border-radius:8px;max-width:420px}.menu button{display:block;width:100%;border:0;text-align:left}code{display:block;padding:10px;overflow-wrap:anywhere;color:#b5b7c0}small{color:#adb0ba}.hidden{display:none}.detail{border:1px solid #383b44;border-radius:8px;padding:20px}select{background:#202228;color:inherit;padding:8px;border-radius:6px}h1{font-size:22px}
-</style>
-<h1>从任务链接打开既有详情</h1>
-<p><small>导航交互原型，不是运行证据；详情仅表示现有页面的复用，未设计新管理动作。</small></p>
-<section id="conversation">
-<p>已交付到 <a href="#" id="link">PR #652</a>。请核对交付结果。</p>
-<label>示例 <select id="target"><option value="pr">GitHub PR</option><option value="issue">GitHub Issue</option><option value="mr">CodeHub MR</option><option value="unknown">未登记仓库</option></select></label>
-<div class="menu hidden" id="menu"><code id="url"></code><button id="open">☷ 在任务中打开 <small>Ctrl／Cmd + Click</small></button><button class="browser">↗ System Browser <small>Shift + Ctrl／Cmd + Click</small></button><button class="browser">◎ Orca Browser</button></div>
-<p id="message" role="status"></p>
-</section>
-<section id="detail" class="detail hidden"><button id="back">← 返回原会话</button><h2 id="title"></h2><p>复用已有原生详情：标题、正文、评论；PR／MR 沿已有检查项和文件变更页面。</p><small>读取走本机 gh／codehub-cli。本次点击只导航，不评论、不关闭、不合入。</small></section>
-<script>
-const $=id=>document.getElementById(id);const samples={pr:['https://github.com/forcegravity1989/builder-workbench/pull/652','PR #652'],issue:['https://github.com/forcegravity1989/builder-workbench/issues/651','Issue #651'],mr:['https://open.codehub.huawei.com/example/project/merge_requests/3','MR !3'],unknown:['https://github.com/example/not-registered/issues/1','Issue #1']};
-function open(){if($('target').value==='unknown'){$('message').textContent='未在已登记项目中找到此仓库。请先添加项目，或重新点击链接选择浏览器。';$('menu').classList.add('hidden');return}$('title').textContent=samples[$('target').value][1];$('conversation').classList.add('hidden');$('detail').classList.remove('hidden')}
-$('link').onclick=e=>{e.preventDefault();$('url').textContent=samples[$('target').value][0];if(e.ctrlKey||e.metaKey){if(e.shiftKey){$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。'}else open();return}$('menu').classList.toggle('hidden')};$('open').onclick=open;$('back').onclick=()=>{$('detail').classList.add('hidden');$('conversation').classList.remove('hidden');$('menu').classList.add('hidden')};document.querySelectorAll('.browser').forEach(button=>button.onclick=()=>{$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。';$('menu').classList.add('hidden')});$('target').onchange=()=>{$('link').textContent=samples[$('target').value][1];$('menu').classList.add('hidden');$('message').textContent=''};
-</script>
+<html lang="zh" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workbench · 任务管理 · 链接直达原型</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <style>
+      :root { --rail-width: 64px; --object-sidebar-width: 248px; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; background: var(--color-bg); color: var(--color-text); }
+      button, select, a { font: inherit; }
+      .bw-window { display: flex; min-height: 100vh; flex-direction: column; }
+      .titlebar { display: flex; height: 36px; align-items: center; gap: 10px; padding: 0 12px; border-bottom: 1px solid var(--worktree-sidebar-border); background: var(--color-bg); color: var(--muted-foreground); font-size: 11px; }
+      .titlebar-brand { color: var(--color-text); font-weight: 650; }
+      .titlebar-drag { flex: 1; color: var(--muted-foreground); }
+      .window-actions { display: flex; gap: 2px; }
+      .window-actions button { width: 24px; height: 22px; border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; cursor: pointer; }
+      .window-actions button:hover { background: var(--color-surface); color: var(--color-text); }
+      .app-body { display: flex; min-height: calc(100vh - 36px); flex: 1; }
+      .rail { display: flex; width: var(--rail-width); flex: 0 0 var(--rail-width); flex-direction: column; align-items: center; gap: 4px; border-right: 1px solid var(--worktree-sidebar-border); background: var(--worktree-sidebar); padding: 10px 0; }
+      .rail button { position: relative; display: grid; width: 40px; height: 40px; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--worktree-sidebar-foreground); cursor: pointer; opacity: .62; }
+      .rail button:hover, .rail button[aria-current="page"] { background: var(--worktree-sidebar-accent); opacity: 1; }
+      .rail button[aria-current="page"]::before { position: absolute; left: -12px; top: 10px; bottom: 10px; width: 2px; border-radius: 2px; background: currentColor; content: ''; }
+      .rail .wall { margin-bottom: 4px; background: var(--color-text); color: var(--color-bg); opacity: 1; }
+      .rail-divider { width: 40px; border-top: 1px solid var(--worktree-sidebar-border); margin: 2px 0 4px; }
+      .rail-spacer { flex: 1; }
+      .object-sidebar { display: flex; width: var(--object-sidebar-width); flex: 0 0 var(--object-sidebar-width); flex-direction: column; border-right: 1px solid var(--worktree-sidebar-border); background: var(--worktree-sidebar); color: var(--worktree-sidebar-foreground); }
+      .project-head { display: flex; align-items: center; gap: 9px; min-height: 58px; padding: 10px 14px; border-bottom: 1px solid var(--worktree-sidebar-border); }
+      .project-mark { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 7px; background: var(--color-accent); color: white; font-size: 12px; font-weight: 650; }
+      .project-name { min-width: 0; }
+      .project-name strong, .project-name small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .project-name strong { font-size: 13px; }
+      .project-name small { margin-top: 2px; color: color-mix(in srgb, var(--worktree-sidebar-foreground) 55%, transparent); font-size: 10px; }
+      .sidebar-scroll { overflow: auto; padding: 10px 8px; }
+      .sidebar-label { padding: 6px 8px 4px; color: color-mix(in srgb, var(--worktree-sidebar-foreground) 55%, transparent); font-size: 10px; }
+      .sidebar-row { display: flex; width: 100%; align-items: center; gap: 7px; border: 0; border-radius: 6px; background: transparent; color: inherit; padding: 7px 8px; text-align: left; cursor: pointer; font-size: 12px; }
+      .sidebar-row:hover, .sidebar-row[aria-current="page"] { background: var(--worktree-sidebar-accent); }
+      .sidebar-row .row-icon { width: 16px; color: color-mix(in srgb, var(--worktree-sidebar-foreground) 60%, transparent); text-align: center; }
+      .sidebar-row small { margin-left: auto; color: color-mix(in srgb, var(--worktree-sidebar-foreground) 50%, transparent); }
+      .workspace { min-width: 0; flex: 1; overflow: auto; background: var(--color-bg); }
+      .prototype-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; border-bottom: 1px solid var(--color-divider); background: var(--color-surface); padding: 9px 22px; color: var(--muted-foreground); font-size: 11px; }
+      .prototype-meta strong { color: var(--color-text); font-weight: 600; }
+      .prototype-meta a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+      .prototype-meta .meta-status { margin-left: auto; }
+      .content { max-width: 980px; margin: 0 auto; padding: 28px 32px 56px; }
+      .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+      .page-head h1 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+      .page-head p { max-width: 650px; margin: 7px 0 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.65; }
+      .head-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+      .shell-note { margin: 0 0 16px; border: 1px dashed var(--color-divider); border-radius: var(--radius-md); padding: 10px 12px; color: var(--muted-foreground); font-size: 11px; line-height: 1.6; }
+      .shell-note strong { color: var(--color-text); }
+      .journey-card { max-width: 760px; }
+      .journey-card h2 { margin: 0 0 6px; font-size: 15px; }
+      .journey-card > p { margin: 0 0 16px; color: var(--muted-foreground); font-size: 12px; line-height: 1.6; }
+      .context-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border-bottom: 1px solid var(--color-divider); padding-bottom: 14px; }
+      .context-row label { color: var(--muted-foreground); font-size: 11px; }
+      .context-row .input { width: 190px; }
+      .task-link { color: var(--color-text); font-weight: 600; text-underline-offset: 3px; }
+      .menu { display: grid; gap: 8px; margin-top: 14px; border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-card); padding: 12px; box-shadow: var(--shadow-floating); }
+      .menu code { display: block; overflow-wrap: anywhere; border-radius: var(--radius-sm); background: var(--color-surface); padding: 9px 10px; color: var(--muted-foreground); font-size: 11px; }
+      .menu-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+      .message { min-height: 22px; margin: 10px 0 0; color: var(--muted-foreground); font-size: 12px; }
+      .message[data-kind="error"] { color: var(--color-danger); }
+      .detail { margin-top: 16px; }
+      .detail h2 { margin: 18px 0 8px; font-size: 17px; }
+      .detail p { max-width: 70ch; color: var(--muted-foreground); font-size: 12px; line-height: 1.7; }
+      .detail small { color: var(--muted-foreground); }
+      .references { max-width: 760px; margin-top: 24px; border-top: 1px solid var(--color-divider); padding-top: 14px; color: var(--muted-foreground); font-size: 11px; line-height: 1.7; }
+      .references summary { cursor: pointer; color: var(--color-text); }
+      .references a { color: inherit; }
+      @media (max-width: 760px) { :root { --object-sidebar-width: 190px; } .content { padding: 22px 18px 44px; } .prototype-meta .meta-status { margin-left: 0; } }
+    </style>
+  </head>
+  <body>
+    <main class="bw-window" data-shell="current-bw-shell">
+      <header class="titlebar" aria-label="Workbench 标题栏">
+        <span class="titlebar-brand">Workbench</span>
+        <span class="titlebar-drag">Builder Workbench · 当前壳轮廓</span>
+        <span class="window-actions" aria-label="窗口操作">
+          <button type="button" data-nav="最小化" title="最小化" aria-label="最小化">−</button>
+          <button type="button" data-nav="最大化" title="最大化" aria-label="最大化">□</button>
+          <button type="button" data-nav="关闭" title="关闭" aria-label="关闭">×</button>
+        </span>
+      </header>
+      <div class="app-body">
+        <aside class="rail" aria-label="Workbench 导航">
+          <button class="wall" type="button" data-nav="项目墙" aria-label="项目墙" title="项目墙">▦</button>
+          <div class="rail-divider" aria-hidden="true"></div>
+          <button type="button" data-nav="版本工作区" aria-label="版本工作区" title="版本工作区">▣</button>
+          <button type="button" data-nav="项目总览" aria-label="项目总览" title="项目总览">◫</button>
+          <button type="button" data-nav="任务" aria-current="page" title="任务" aria-label="任务">✓</button>
+          <button type="button" data-nav="自动化" aria-label="自动化" title="自动化">◷</button>
+          <button type="button" data-nav="知识库" aria-label="知识库" title="知识库">▤</button>
+          <span class="rail-spacer"></span>
+          <button type="button" data-nav="管理远程主机" aria-label="管理远程主机" title="管理远程主机">⌁</button>
+          <button type="button" data-nav="设置与帮助" aria-label="设置与帮助" title="设置与帮助">⚙</button>
+        </aside>
+        <aside class="object-sidebar" aria-label="项目对象侧栏">
+          <div class="project-head">
+            <span class="project-mark">B</span>
+            <span class="project-name"><strong>Builder Workbench</strong><small>当前项目</small></span>
+          </div>
+          <nav class="sidebar-scroll" aria-label="项目与版本导航">
+            <div class="sidebar-label">固定</div>
+            <button class="sidebar-row" type="button" data-nav="项目墙"><span class="row-icon">▦</span>项目墙</button>
+            <button class="sidebar-row" type="button" data-nav="项目总览"><span class="row-icon">◫</span>项目总览</button>
+            <div class="sidebar-label">版本</div>
+            <button class="sidebar-row" type="button" data-nav="v1.1"><span class="row-icon">▾</span>v1.1<span>›</span></button>
+            <button class="sidebar-row" type="button" data-nav="目标"><span class="row-icon">○</span>目标与验收<small>3</small></button>
+            <div class="sidebar-label">工作区</div>
+            <button class="sidebar-row" type="button" data-nav="当前工作区"><span class="row-icon">□</span>当前工作区</button>
+          </nav>
+        </aside>
+        <section class="workspace">
+          <div class="prototype-meta" aria-label="原型评审信息">
+            <strong>任务管理</strong><span>BW 位置：任务 Rail → 当前项目上下文</span><span>当前稿</span><span>数据：演示任务链接</span><span class="meta-status"><a href="intent.md">意图</a> · <a href="spec.md">规格</a> · <a href="STATUS.md">状态</a></span>
+          </div>
+          <div class="content">
+            <header class="page-head">
+              <div>
+                <h1>任务链接直达</h1>
+                <p>从原生会话或终端打开既有 Issue、PR 或 MR，保留当前项目和工作区上下文。</p>
+              </div>
+              <div class="head-actions"><button class="btn btn-secondary" type="button" id="reset">重置场景</button></div>
+            </header>
+            <p class="shell-note"><strong>原型注释：当前 BW 外壳定位轮廓，未加载真实组件。</strong> Rail、项目对象侧栏、版本目录和页面页头按 `AppWorkspaceShell`、`WorkbenchRail`、`WorkbenchSidebarNav`、`WorkbenchVersionNav` 的现行层级表达；本页正文只新增任务链接动作。窗口按钮和壳导航只反馈入口名称，不切换真实 Electron 页面。</p>
+            <section class="card journey-card" aria-labelledby="journey-title">
+              <h2 id="journey-title">从任务链接打开既有详情</h2>
+              <p>普通点击显示动作菜单；Ctrl／Cmd 点击直接执行主动作；Shift + Ctrl／Cmd 点击保留显式浏览器路径。</p>
+              <div id="conversation">
+                <div class="context-row">
+                  <span>会话消息</span>
+                  <a class="task-link" href="#" id="task-link">PR #652</a>
+                  <label for="target">演示来源</label>
+                  <select class="input" id="target">
+                    <option value="pr">GitHub PR</option>
+                    <option value="issue">GitHub Issue</option>
+                    <option value="mr">CodeHub MR</option>
+                    <option value="unknown">未登记仓库</option>
+                  </select>
+                </div>
+                <div class="menu" id="menu" hidden>
+                  <code id="url"></code>
+                  <div class="menu-actions">
+                    <button class="btn btn-primary" type="button" id="open">在任务中打开</button>
+                    <button class="btn btn-ghost browser" type="button">System Browser</button>
+                    <button class="btn btn-ghost browser" type="button">Orca Browser</button>
+                  </div>
+                </div>
+                <p class="message" id="message" role="status" aria-live="polite"></p>
+              </div>
+              <section class="card detail" id="detail" hidden>
+                <button class="btn btn-ghost" type="button" id="back">← 返回原会话</button>
+                <h2 id="detail-title"></h2>
+                <p>复用已有原生详情：标题、正文、评论；PR／MR 沿已有检查项和文件变更页面。本次点击只导航，不评论、不关闭、不合入。</p>
+                <small>原型注释：读取走本机 gh／codehub-cli；真实来源和权限以运行时读回为准。</small>
+              </section>
+            </section>
+            <details class="references">
+              <summary>原型注释：真实代码复用与待验证边界</summary>
+              <p><strong>真实代码复用：</strong><a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/WorkbenchRail.tsx">WorkbenchRail</a>、<a href="../../../src/renderer/src/workbench/WorkbenchSidebarNav.tsx">WorkbenchSidebarNav</a>、<a href="../../../src/renderer/src/workbench/WorkbenchVersionNav.tsx">WorkbenchVersionNav</a>；任务详情和链接路由沿 <a href="spec.md">任务管理规格</a>。</p>
+              <p><strong>仍需验证：</strong>真实 Electron 壳内的点击入口、GitHub/CodeHub CLI 登录与权限、失败返回原会话，以及内置浏览器对查询和锚点的保留。</p>
+              <p><strong>示例数据：</strong>任务编号、仓库地址和来源均为演示数据，不代表当前仓库事实。</p>
+            </details>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script type="module">
+      import { CURRENT_BW_SHELL } from '../prototype-shell-meta.js'
+
+      const shell = document.querySelector('[data-shell]')
+      if (shell) shell.dataset.shellSource = CURRENT_BW_SHELL.source
+    </script>
+    <script>
+      const $ = (id) => document.getElementById(id)
+      const SAMPLE_TASK_LINKS = {
+        pr: ['https://github.com/forcegravity1989/builder-workbench/pull/652', 'PR #652'],
+        issue: ['https://github.com/forcegravity1989/builder-workbench/issues/651', 'Issue #651'],
+        mr: ['https://open.codehub.huawei.com/example/project/merge_requests/3', 'MR !3'],
+        unknown: ['https://github.com/example/not-registered/issues/1', 'Issue #1']
+      }
+
+      function setMessage(text, kind = '') {
+        $('message').textContent = text
+        $('message').dataset.kind = kind
+      }
+
+      function showMenu() {
+        $('url').textContent = SAMPLE_TASK_LINKS[$('target').value][0]
+        $('menu').hidden = false
+      }
+
+      function openTask() {
+        const sample = SAMPLE_TASK_LINKS[$('target').value]
+        if ($('target').value === 'unknown') {
+          $('menu').hidden = true
+          setMessage('未在已登记项目中找到此仓库。请先添加项目，或重新点击链接选择浏览器。', 'error')
+          return
+        }
+        $('detail-title').textContent = sample[1]
+        $('conversation').hidden = true
+        $('detail').hidden = false
+        setMessage('已沿当前项目上下文打开既有任务详情。')
+      }
+
+      $('task-link').addEventListener('click', (event) => {
+        event.preventDefault()
+        if (event.ctrlKey || event.metaKey) {
+          if (event.shiftKey) setMessage('示意：显式浏览器打开保留原链接，不进入任务详情。')
+          else openTask()
+          return
+        }
+        showMenu()
+      })
+      $('open').addEventListener('click', openTask)
+      $('back').addEventListener('click', () => {
+        $('detail').hidden = true
+        $('conversation').hidden = false
+        $('menu').hidden = true
+        setMessage('已返回原会话。')
+      })
+      document.querySelectorAll('.browser').forEach((button) => button.addEventListener('click', () => {
+        $('menu').hidden = true
+        setMessage('示意：显式浏览器打开保留原始链接、查询和锚点。')
+      }))
+      $('target').addEventListener('change', () => {
+        $('task-link').textContent = SAMPLE_TASK_LINKS[$('target').value][1]
+        $('menu').hidden = true
+        setMessage('')
+      })
+      $('reset').addEventListener('click', () => {
+        $('target').value = 'pr'
+        $('task-link').textContent = SAMPLE_TASK_LINKS.pr[1]
+        $('detail').hidden = true
+        $('conversation').hidden = false
+        $('menu').hidden = true
+        setMessage('已恢复演示场景。')
+      })
+      document.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => {
+        setMessage(`示意：${button.dataset.nav} 是当前 BW 的原生入口，未在本页切换真实 Electron 页面。`)
+      }))
+    </script>
+  </body>
 </html>
