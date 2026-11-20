@@ -7,7 +7,8 @@ import {
   ReviewIncomingSchema,
   migrateStoredReviewRequest,
   reviewRepositoryKey,
-  type ReviewIncomingRequest
+  type ReviewIncomingRequest,
+  type ReviewRepoIdentity
 } from '../../shared/workbench/pr-review-request'
 
 const InboxSchema = z.array(z.preprocess(migrateStoredReviewRequest, ReviewIncomingSchema))
@@ -35,6 +36,38 @@ export async function readReviewInbox(): Promise<ReviewIncomingRequest[]> {
     }
   }
   return [...latest.values()]
+}
+
+export function dismissReviewRequest(
+  repo: ReviewRepoIdentity,
+  prNumber: number,
+  seenReceivedAt: string
+): Promise<boolean> {
+  // The inbox UI groups by project and PR, so a dismissal clears every entry the user
+  // could have seen (receivedAt <= the displayed one); otherwise an older hidden
+  // sender/round resurfaces. Entries received after that snapshot were never shown;
+  // dropping an acknowledged delivery would lose it silently, so they stay and
+  // reappear through the next reconciliation.
+  const write = writes
+    .catch(() => undefined)
+    .then(async () => {
+      const items = await readStoredInbox()
+      const key = reviewRepositoryKey(repo)
+      const remaining = items.filter(
+        (item) =>
+          reviewRepositoryKey(item.repo) !== key ||
+          item.prNumber !== prNumber ||
+          item.receivedAt > seenReceivedAt
+      )
+      if (remaining.length === items.length) {
+        return false
+      }
+      await mkdir(getCanonicalUserDataPath(), { recursive: true })
+      await writePluginFileAtomically(inboxPath(), JSON.stringify(remaining), { mode: 0o600 })
+      return true
+    })
+  writes = write
+  return write
 }
 
 export function receiveReviewRequest(request: ReviewIncomingRequest): Promise<boolean> {

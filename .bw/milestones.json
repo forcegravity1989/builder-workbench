@@ -10,9 +10,65 @@
       "id": "1b4c9cbf-104e-494f-87a7-39cfe26c9360",
       "date": "2026-11-15",
       "outcome": "围绕项目管理与多人协作发布V1.0版本"
+    },
+    {
+      "id": "17538c7a-4e9f-4cd3-a8bf-466bc861e789",
+      "date": "2026-11-23",
+      "outcome": "第一篇对外宣传发出"
+    },
+    {
+      "id": "74a8bc5e-298c-40c8-b050-3ebad98ddd9e",
+      "date": "2026-11-30",
+      "outcome": "扩大用户群体，外溢到PL组外"
     }
   ],
   "features": [
+    {
+      "id": "0f97af1f-b228-4d78-9744-5f22c313e504",
+      "title": "团队多人协作",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "ff1985ed-5580-40f7-b913-057961d5b70a",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-11-16T00:00",
+            "end": "2026-11-21T00:00"
+          }
+        },
+        {
+          "id": "3eaeeae2-ea5b-499a-a409-b1e0972b13e4",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-23T00:00",
+            "end": "2026-11-29T00:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "70e7a7ce-7c32-41a0-8088-7a7d92a2faf3",
+      "title": "会议协作",
+      "owner": "kanadead",
+      "deliveries": [
+        {
+          "id": "db070ece-d2d7-435e-803d-8450b8006492",
+          "phase": "Build",
+          "timeWindow": {
+            "start": "2026-11-16T00:00",
+            "end": "2026-11-21T00:00"
+          }
+        },
+        {
+          "id": "53b7c831-c4a7-428e-b2e7-5e42d5636f64",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-23T00:00",
+            "end": "2026-11-29T00:00"
+          }
+        }
+      ]
+    },
     {
       "id": "d2202d36-55fc-4ff3-82c9-4b73b0cc4909",
       "title": "项目墙",
@@ -47,6 +103,14 @@
           "timeWindow": {
             "start": "2026-11-02T00:00",
             "end": "2026-11-16T00:00"
+          }
+        },
+        {
+          "id": "e3bc7084-3f77-486d-b656-e29da57152c5",
+          "phase": "Maintain",
+          "timeWindow": {
+            "start": "2026-11-23T00:00",
+            "end": "2026-11-29T00:00"
           }
         }
       ]
@@ -185,6 +249,14 @@
       }
     },
     {
+      "version": "v0.9",
+      "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+      "timeWindow": {
+        "start": "2026-11-02",
+        "end": "2026-11-08"
+      }
+    },
+    {
       "version": "v1.0",
       "cycleId": "a6dd7bdb-7e31-4eba-bd1c-0e5f75f6f000",
       "timeWindow": {
@@ -201,6 +273,14 @@
       }
     },
     {
+      "version": "v1.2",
+      "cycleId": "a9d0f078-d712-4ef0-b013-7c389570b2e3",
+      "timeWindow": {
+        "start": "2026-11-23",
+        "end": "2026-11-27"
+      }
+    },
+    {
       "version": "v0.4",
       "cycleId": "682dd484-2fe5-4409-a814-43011b1c4a08"
     },
@@ -211,14 +291,6 @@
     {
       "version": "v0.6",
       "cycleId": "d54e65f2-a5e9-45f5-8ffe-04de112ca9d8"
-    },
-    {
-      "version": "v0.9",
-      "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
-      "timeWindow": {
-        "start": "2026-11-02",
-        "end": "2026-11-08"
-      }
     }
   ]
 }

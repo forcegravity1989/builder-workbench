@@ -19,17 +19,16 @@ const logTemplate = [
 describe('read-only history git allowlist', () => {
   it('accepts the fixed material and plan entry history reads', () => {
     expect(() => assertReadOnlyHistoryGitArgs(logTemplate)).not.toThrow()
-    const firstParent = logTemplate
-      .with(2, '--first-parent')
-      .with(6, '--diff-filter=A')
-      .with(10, ':(glob).bw/planning/*/data.json')
+    const planEntry = logTemplate
+      .with(2, '--no-merges')
+      .toSpliced(3, 1)
+      .with(5, '--diff-filter=A')
+      .with(9, ':(glob).bw/planning/*/data.json')
     for (const rootFlag of ['--root', '--min-parents=1']) {
-      expect(() =>
-        assertReadOnlyHistoryGitArgs(firstParent.toSpliced(3, 0, rootFlag))
-      ).not.toThrow()
+      expect(() => assertReadOnlyHistoryGitArgs(planEntry.toSpliced(3, 0, rootFlag))).not.toThrow()
     }
     expect(() =>
-      assertReadOnlyHistoryGitArgs(firstParent.with(10, ':(glob)**').toSpliced(3, 0, '--root'))
+      assertReadOnlyHistoryGitArgs(planEntry.with(9, ':(glob)**').toSpliced(3, 0, '--root'))
     ).toThrowError(expect.objectContaining({ code: 'invalid-git-request' }))
     expect(() =>
       assertReadOnlyHistoryGitArgs(['rev-parse', '--is-shallow-repository'])

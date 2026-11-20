@@ -78,7 +78,11 @@ export const CodeHubListPipelines = Repo.extend({ iid: Iid })
 export const CodeHubMrChecks = Repo.extend({ iid: Iid })
 export const CodeHubMrForBranch = Repo.extend({ sourceBranch: z.string().trim().min(1) })
 export const CodeHubMrChanges = Repo.extend({ iid: Iid })
-export const CodeHubViewTask = Repo.extend({ kind: Kind, iid: Iid })
+export const CodeHubViewTask = Repo.extend({
+  kind: Kind,
+  iid: Iid,
+  expectedUrl: z.string().url().max(8192).optional()
+})
 export const CodeHubListComments = Repo.extend({
   kind: Kind,
   iid: Iid,

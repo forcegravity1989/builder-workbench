@@ -1,5 +1,8 @@
 import type { VerifyAndAddRuntimeEnvironmentResult } from '../../shared/remote-pairing-verification'
-import { listEnvironments } from '../../shared/runtime-environment-store'
+import {
+  listEnvironments,
+  setEnvironmentReconnectOnLaunch
+} from '../../shared/runtime-environment-store'
 import { getRuntimeEnvironmentStatusOwner } from './runtime-environment-request-connections'
 import { clearRuntimeEnvironmentManualDisconnect } from './runtime-environment-manual-disconnect'
 
@@ -24,6 +27,14 @@ export async function publishVerifiedPairing(
   const environmentId = result.environment.id
   // Clear manual disconnect first so invalidation can create a fresh status owner.
   clearRuntimeEnvironmentManualDisconnect(environmentId)
+  // Why: re-pairing is an explicit host action, so a saved launch hold must not outlive it.
+  // Defensive: today's pairing saves rebuild the record through the schema, which already drops
+  // the field; this guards future save paths that merge into the existing record instead.
+  try {
+    setEnvironmentReconnectOnLaunch(userDataPath, environmentId, undefined)
+  } catch (error) {
+    console.warn('[runtime-environments] failed to clear saved reconnect preference:', error)
+  }
   await replaced?.invalidateTransport(environmentId)
   // Invalidation may yield to a newer pairing save.
   if (savedPairingRevision(userDataPath, environmentId) !== result.environment.pairingRevision) {

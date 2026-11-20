@@ -10,7 +10,8 @@ import {
   refreshOutgoingReview,
   getReviewNotifications,
   useReviewNotifications,
-  deleteReviewNotification
+  deleteReviewNotification,
+  dismissIncomingReview
 } from './store'
 import { openReviewSendDialog } from './send-dialog-store'
 import { ReviewSendDialogHost } from './ReviewSendDialogHost'
@@ -57,6 +58,7 @@ export function PrReviewNotifications(): React.JSX.Element {
         onError={setError}
         onOpen={openReviewPr}
         onDelete={deleteReviewNotification}
+        onDismissIncoming={dismissIncomingReview}
         onResend={async (note) => {
           openReviewSendDialog(note)
         }}

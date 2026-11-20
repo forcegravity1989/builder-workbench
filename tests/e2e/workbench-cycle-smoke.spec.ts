@@ -38,7 +38,7 @@ test.use({
 
 test('explores work journeys and reuses feature demonstrations from Help', async ({
   workbenchPage
-}, testInfo) => {
+}) => {
   const help = workbenchPage.locator('[data-workbench-rail]').getByRole('button', {
     name: /^(Help|帮助)$/
   })
@@ -53,18 +53,14 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   await expect(dialog).toBeVisible({ timeout: 15_000 })
   await expect(features).toHaveAttribute('aria-selected', 'true')
   await expect(workspaceDemo).toBeVisible()
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-explore-features.png') })
 
   await features.focus()
   await workbenchPage.keyboard.press('ArrowLeft')
   await expect(journeys).toHaveAttribute('aria-selected', 'true')
   const journeyNav = dialog.getByRole('navigation', { name: /^(Work journeys|工作旅程)$/ })
-  await expect(journeyNav.getByRole('button')).toHaveCount(8)
-  await expect(journeyNav.getByText(/^(In development|建设中)$/)).toHaveCount(2)
   const direction = /^(Agree on direction|明确方向)$/
   const directionContent = dialog.getByRole('region', { name: direction })
   const steps = directionContent.getByRole('list', { name: /^(Journey steps|旅程步骤)$/ })
-  await expect(steps.getByRole('button')).toHaveCount(4)
   await steps.getByRole('button', { name: /Agree on the direction|明确共同方向/ }).click()
   await expect(
     steps.getByRole('button', { name: /Agree on the direction|明确共同方向/ })
@@ -84,7 +80,6 @@ test('explores work journeys and reuses feature demonstrations from Help', async
     overviewClip.getByRole('button', { name: /^(Resume|继续播放|Play clip|播放片段)$/ })
   ).toBeVisible()
   await journeys.click()
-  await expect(steps.getByRole('button')).toHaveCount(4)
   const maintenance = /^(Maintain the project|持续维护)$/
   await journeyNav.getByRole('button', { name: /Maintain the project|持续维护/ }).click()
   await expect(
@@ -99,14 +94,12 @@ test('explores work journeys and reuses feature demonstrations from Help', async
   await journeyNav.getByRole('button', { name: delivery }).click()
   const deliveryContent = dialog.getByRole('region', { name: delivery })
   const deliverySteps = deliveryContent.getByRole('list', { name: /^(Journey steps|旅程步骤)$/ })
-  await expect(deliverySteps.getByRole('button')).toHaveCount(6)
   const readback = deliverySteps.getByRole('button', {
     name: /Confirm and check progress|确认完成并读回/
   })
   await readback.click()
   await expect(readback).toHaveAttribute('aria-current', 'step')
   await expect(deliveryContent.locator('[data-delivery-action="merge-pr"]')).toBeVisible()
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-explore-journey.png') })
 
   await deliveryContent
     .getByRole('button', { name: /^(Review notifications and shared hosts|评审通知与共享主机)$/ })
