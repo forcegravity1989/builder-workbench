@@ -1396,6 +1396,9 @@
           "b91e36a986": "web",
           "de6d5cff95": "This computer ("
         },
+        "RuntimeAccessAuditLog": {
+          "clear": "Clear log"
+        },
         "Settings": {
           "084d8fac5b": "Privacy & Security",
           "2309068a6f": "destructive",
