@@ -33,10 +33,10 @@ AJ01 不再作为独立用户旅程登记。W04 是探索 BW 的唯一主目录�
 
 | 角色 | 旅程 ID | 用例文件 | 用例标题 | 执行项目 | 真实环境 | 独立读回 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 验收点 | W04 | `tests/e2e/workbench-cycle-smoke.spec.ts` | `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back` | `electron-headless` | 真实 Electron / CI fixture，覆盖验收入口和绑定验收树挂载 | 绑定工作树磁盘材料与 renderer 重载后的验收入口 | 部分，完整 A01–A15 未覆盖 |
+| 验收点 | W04 | `tests/e2e/workbench/journeys/w02-cycle-main.spec.ts` | `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back` | `electron-headless` | 真实 Electron / CI fixture，覆盖验收入口和绑定验收树挂载 | 绑定工作树磁盘材料与 renderer 重载后的验收入口 | 部分，完整 A01–A15 未覆盖 |
 | 用户旅程 | W04 | 同上 | 同上 | `electron-headless` | 同上 | 同上 | 部分，完整 W04 主链未覆盖 |
 
-同一物理入口同时登记两种证据角色。验收点 E2E 不另建第二条，除非规格新增无法由 W04 观察的高风险边界。`tests/e2e/workbench-cycle-smoke.spec.ts` 中的 Explore 模拟播放不填入本表，也不能替代真实业务验收。
+同一条 E2E同时登记两种证据角色。验收点 E2E 不另建第二条，除非规格新增无法由 W04 观察的高风险边界。`tests/e2e/workbench/journeys/w02-cycle-main.spec.ts` 中的 Explore 模拟播放不填入本表，也不能替代真实业务验收。
 
 ## 验收矩阵
 

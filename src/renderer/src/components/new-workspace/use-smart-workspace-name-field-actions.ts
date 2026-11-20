@@ -40,6 +40,7 @@ export function useSmartWorkspaceNameFieldActions(
     jiraSourceContext,
     onBranchSelect,
     onGitHubItemSelect,
+    onCodeHubIssueSelect,
     onGitLabItemSelect,
     onJiraIssueSelect,
     onLinearIssueSelect,
@@ -60,7 +61,9 @@ export function useSmartWorkspaceNameFieldActions(
     selectedRepo,
     allowCrossRepoProjectAdd,
     addRepo,
-    repoSlugCacheRef
+    repoSlugCacheRef,
+    repoBackedSearchTargets,
+    codehubSourceContext
   } = foundation
   const { selectJiraAccount, jiraBoundSourceContext, activeEmojiShortcode } = presentation
 
@@ -75,6 +78,13 @@ export function useSmartWorkspaceNameFieldActions(
         onValueChange(row.name)
       } else if (row.kind === 'github') {
         onGitHubItemSelect(row.item)
+      } else if (row.kind === 'codehub') {
+        // Why: folder results can span repos; link the item's own source context.
+        const target = repoBackedSearchTargets.find((entry) => entry.repo.id === row.item.repoId)
+        onCodeHubIssueSelect?.(
+          row.item,
+          target?.codehubSourceContext ?? codehubSourceContext ?? null
+        )
       } else if (row.kind === 'gitlab') {
         onGitLabItemSelect?.(row.item)
       } else if (row.kind === 'branch') {
@@ -110,12 +120,15 @@ export function useSmartWorkspaceNameFieldActions(
       jiraSourceContext,
       onBranchSelect,
       onGitHubItemSelect,
+      onCodeHubIssueSelect,
       onGitLabItemSelect,
       onJiraIssueSelect,
       onLinearIssueSelect,
       onValueChange,
       setOpen,
-      selectJiraAccount
+      selectJiraAccount,
+      repoBackedSearchTargets,
+      codehubSourceContext
     ]
   )
   const openSelectedSource = useCallback((): void => {

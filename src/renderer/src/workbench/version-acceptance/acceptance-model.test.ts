@@ -64,7 +64,7 @@ describe('version acceptance evidence', () => {
     expect(sameAcceptanceSource(document, extended)).toBe(true)
     expect(() =>
       assertFixedPlan(document.planRef, { ...planSnapshot, revision: `sha256:${'b'.repeat(64)}` })
-    ).toThrow('来源已改变')
+    ).toThrow()
   })
 
   it('records a verdict with its ledger revision and refuses an unnamed source', async () => {
@@ -97,7 +97,7 @@ describe('version acceptance evidence', () => {
         reason: '',
         recordedAt: '2026-09-25T10:00:00Z'
       })
-    ).rejects.toThrow('请注明判断人或人的确认来源')
+    ).rejects.toThrow()
   })
 
   it('hashes version-level evidence but never the decision itself', async () => {

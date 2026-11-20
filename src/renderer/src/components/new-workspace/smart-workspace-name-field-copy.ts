@@ -85,30 +85,35 @@ export function getSmartWorkspaceNameFieldCopy({
             'auto.components.new.workspace.SmartWorkspaceNameField.searchGitHub',
             'Search GitHub PRs and issues'
           )
-        : mode === 'gitlab'
+        : mode === 'codehub'
           ? translate(
-              'auto.components.new.workspace.SmartWorkspaceNameField.searchGitLab',
-              'Search GitLab MRs and issues'
+              'auto.components.new.workspace.SmartWorkspaceNameField.searchCodeHub',
+              'Search CodeHub issues'
             )
-          : mode === 'branches'
+          : mode === 'gitlab'
             ? translate(
-                'auto.components.new.workspace.SmartWorkspaceNameField.searchBranches',
-                'Search branches'
+                'auto.components.new.workspace.SmartWorkspaceNameField.searchGitLab',
+                'Search GitLab MRs and issues'
               )
-            : mode === 'linear'
+            : mode === 'branches'
               ? translate(
-                  'auto.components.new.workspace.SmartWorkspaceNameField.searchLinear',
-                  'Search Linear issues'
+                  'auto.components.new.workspace.SmartWorkspaceNameField.searchBranches',
+                  'Search branches'
                 )
-              : mode === 'jira'
+              : mode === 'linear'
                 ? translate(
-                    'auto.components.new.workspace.SmartWorkspaceNameField.searchJira',
-                    'Search Jira issues or paste an issue URL'
+                    'auto.components.new.workspace.SmartWorkspaceNameField.searchLinear',
+                    'Search Linear issues'
                   )
-                : translate(
-                    'auto.components.new.workspace.SmartWorkspaceNameField.workspaceName',
-                    'Workspace name'
-                  )
+                : mode === 'jira'
+                  ? translate(
+                      'auto.components.new.workspace.SmartWorkspaceNameField.searchJira',
+                      'Search Jira issues or paste an issue URL'
+                    )
+                  : translate(
+                      'auto.components.new.workspace.SmartWorkspaceNameField.workspaceName',
+                      'Workspace name'
+                    )
 
   return {
     crossRepoSwitchTitle,

@@ -28,7 +28,7 @@ PJ01 和 PJ02 仅是旧资产中的分支名称。它们不再各自生成用户
 | spec | 已确认 | W02 行为、失败边界、P01–P12 和用例入口已收敛到 [spec](spec.md) |
 | 实现设计 | 已同步 | 当前模块、材料事务和原生接缝见 [design](design.md) |
 | 核心算法与协议 | 部分有证据 | 材料 CAS、纪要守卫、来源映射和任务读取有既有源码与测试。模型并发、迁移和远端身份仍需对应环境复验 |
-| 验收点 E2E | 部分 | 旅程 ID W02；文件 `tests/e2e/workbench-cycle-smoke.spec.ts`，标题 `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料与 renderer 重载后的计划入口；批注发送、指标采集和 CodeHub MR 尚未统一验证 |
+| 验收点 E2E | 部分 | 旅程 ID W02；文件 `tests/e2e/workbench/journeys/w02-cycle-main.spec.ts`，标题 `BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料与 renderer 重载后的计划入口；批注发送、指标采集和 CodeHub MR 尚未统一验证 |
 | 用户旅程 E2E | 部分 | 同一 W02 入口和标题；真实 Electron / CI fixture；独立读回为绑定工作树磁盘材料与 renderer 重载后的计划入口。真实模型会话、任务协作、会议转写和 PR 人审链路仍待真实环境验证 |
 
 ## 验收点矩阵
@@ -46,7 +46,7 @@ PJ01 和 PJ02 仅是旧资产中的分支名称。它们不再各自生成用户
 | P09 归档状态 | 部分 | GitHub PR 状态与原生页面入口已有覆盖，CodeHub MR 未验证 |
 | P10 总览接续 | 部分 | 总览读取存储纪要的路径已有覆盖，跨版本和坏材料边界待补真实读回 |
 | P11 批注与发送 | 待验证 | 代码已有原生发送弹窗、剪贴板和失败语义，真壳发送、读回和剪贴板链路尚未形成当前证据 |
-| P12 批注快捷键 | 部分 | `workbench-cycle-smoke.spec.ts` 覆盖键位进入、退出、守卫和改绑，真实平台组合键差异仍需人工验收 |
+| P12 批注快捷键 | 部分 | tests/e2e/workbench/journeys/w02-cycle-main.spec.ts 覆盖键位进入、退出、守卫和改绑，真实平台组合键差异仍需人工验收 |
 
 ## 用例与资产边界
 
