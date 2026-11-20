@@ -11925,7 +11925,8 @@
           "lastWeek": "Last 7 days",
           "lastTwoWeeks": "Last 14 days",
           "search": "Search device or action",
-          "empty": "No matching access records."
+          "empty": "No matching access records.",
+          "clear": "Clear log"
         }
       },
       "right": {

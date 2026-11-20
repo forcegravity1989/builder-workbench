@@ -164,6 +164,9 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     if (rememberedSpace) {
       void loadDirectory(rememberedGroup, rememberedSpace)
     }
+    // The loader is intentionally stable for this open-session bootstrap; rerunning
+    // it for every renderer callback would issue duplicate OneBox reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, directory])
 
   useEffect(() => {
