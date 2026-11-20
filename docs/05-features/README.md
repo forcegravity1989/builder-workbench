@@ -15,7 +15,7 @@
 | `explore-workbench` | [`prototype.html`](explore-workbench/prototype.html) | [`prototype/w05-journey.html`](explore-workbench/prototype/w05-journey.html) 为 W05 旅程评审辅助页 |
 | `overview-metrics` | [`prototype.html`](overview-metrics/prototype.html) | [`prototype/scoreboard.html`](overview-metrics/prototype/scoreboard.html) 是当前总览原型内嵌的指标评审子页；不是并列入口 |
 | `pr-review-notify` | [`prototype/index.html`](pr-review-notify/prototype/index.html) | `prototype/` 为当前构建源与生成物；入口形态因构建目录保留 `index.html` |
-| `project-intake` | [`prototype.html`](project-intake/prototype.html) | 旧 G3 项目墙与墙卡读数页面已删除，历史由 Git 追溯 |
+| `project-intake` | [`project-settings-prototype.html`](project-intake/project-settings-prototype.html) | 项目墙相关原型由活动特性工作树维护，本 PR 不重绘或删除 |
 | `quick-links` | [`prototype.html`](quick-links/prototype.html) | 无并列当前稿 |
 | `reviewer-agent` | 无当前入口 | 历史方案原型已删除；旧稿由 Git 追溯 |
 | `task-management` | [`prototype.html`](task-management/prototype.html) | 无并列当前稿 |
