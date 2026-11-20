@@ -112,7 +112,10 @@ export class OrcaRuntimeWithCreateAgentSession extends OrcaRuntimeWithGetAgentSe
     const operation = (async (): Promise<RuntimeCreateAgentSessionResult> => {
       // Why: reserve the client operation before any async preflight so concurrent retries cannot
       // both observe an empty ledger and reach the execution owner independently.
-      const workspace = await this.resolveTerminalWorkspaceLaunchScope(request.worktree)
+      const workspace = await this.resolveTerminalWorkspaceLaunchScope(
+        request.worktree,
+        'createAgentSession'
+      )
       if (
         !(await this.executionOwnerSupportsAgentSessionOperation(
           workspace,

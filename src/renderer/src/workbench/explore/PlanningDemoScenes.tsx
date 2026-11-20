@@ -24,7 +24,8 @@ const noTaskAction = async () => {}
 const passthrough: Parameters<typeof PlanningMinutesSection>[0]['onSendAction'] = (
   _request,
   _label,
-  button
+  button,
+  _actionId
 ) => button
 const version = 'v0.2'
 const issueTitle = '实现首场交换预约'
