@@ -1,0 +1,24 @@
+src/cli/specs/workbench-meeting.ts
+  s_da7ab51653058a::t_6023afef0b0d8a 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "d32fb5fcab82164f08b784a3b68370886c16ce06",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
