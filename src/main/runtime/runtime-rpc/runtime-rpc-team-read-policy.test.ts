@@ -16,6 +16,9 @@ describe('team-read RPC policy', () => {
   it('keeps existing read methods available and leaves full grants unchanged', () => {
     expect(teamReadDenialReason('team-read', 'worktree.list')).toBeNull()
     expect(teamReadDenialReason('team-read', 'files.read')).toBeNull()
+    expect(teamReadDenialReason('team-read', 'files.search')).toBeNull()
+    expect(teamReadDenialReason('team-read', 'worktree.detectedList')).toBeNull()
+    expect(teamReadDenialReason('team-read', 'git.checkIgnored')).toBeNull()
     expect(teamReadDenialReason('team-read', 'future.mutate')).toContain('requires full access')
     expect(teamReadDenialReason('full', 'terminal.send')).toBeNull()
     expect(teamReadDenialReason(undefined, 'terminal.send')).toBeNull()
