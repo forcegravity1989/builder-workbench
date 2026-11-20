@@ -1,0 +1,35 @@
+.github/workflows/e2e.yml
+  s_ebbd9b5d2c4880::t_cb02df863fbb5a 29
+config/electron-builder.config.cjs
+  s_ebbd9b5d2c4880::t_761e5811a90f3d 229-230,232-235
+config/scripts/build-win-workbench.mjs
+  s_ebbd9b5d2c4880::t_147e4b668086ef 44
+config/scripts/verify-web-build.mjs
+  s_ebbd9b5d2c4880::t_63dff9f6b2956c 1,5-8,19-56
+package.json
+  s_ebbd9b5d2c4880::t_1d3b99ff8db139 98-99,101-102
+ref/upstream.md
+  s_ebbd9b5d2c4880::t_068c8fc9991036 108
+src/main/startup/bundled-web-client-root.test.ts
+  s_ebbd9b5d2c4880::t_17db264ef4a3f8 1,3,5,7,9-12,15-18,23-24,28-32,34,37-39,41,44-50,52,55-56,58
+src/main/startup/bundled-web-client-root.ts
+  s_ebbd9b5d2c4880::t_b7de047da0ddab 1-15
+src/main/startup/main-process-serve.ts
+  s_ebbd9b5d2c4880::t_35ec6333f39c88 1-2,6,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "d4a580a49c2e2d9da3e2d0727de43ceef5aad45a",
+  "prompts": {},
+  "sessions": {
+    "s_ebbd9b5d2c4880": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aaf5ced-aacf-4f48-8842-3d051e11c760",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
