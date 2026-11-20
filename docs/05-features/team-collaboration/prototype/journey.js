@@ -463,11 +463,6 @@
     return Object.keys(wallRepos).filter((person) => (wallRepos[person] ?? []).includes(repoId) && hosts[person])
   }
 
-  function memberName(id) {
-    const person = Object.keys(employees).find((key) => employees[key] === id)
-    return person ? names[person] : esc(id)
-  }
-
   function accessLevel(owner, visitor = actor.value) {
     if (owner === visitor) {
       return 'owner'
@@ -769,7 +764,6 @@
   }
 
   function remoteHostPopover() {
-    const desktop = current()
     const connections = Object.keys(names).filter((owner) => owner !== actor.value && state.teamConnections?.[actor.value]?.[owner])
     const available = Object.keys(names).filter((owner) => owner !== actor.value && endpointFor(owner) && !state.teamConnections?.[actor.value]?.[owner])
     const row = (owner, connected) => `<div class="remote-host-row"><div class="remote-host-main"><span class="remote-host-dot${connected ? ' is-connected' : ''}"></span><span><strong>${hostLabel(owner)}</strong><small>${connected ? '已连接 · 只读' : '已登记 · 未连接'}</small></span></div>${button(connected ? '断开' : '连接', connected ? 'disconnect-host' : 'quick-connect-host', { value: owner, kind: 'ghost' })}</div>`

@@ -114,6 +114,10 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   // Receiving a review request appends one inbox record; it cannot start a
   // session, execute a command, or mutate the host project.
   'workbench.review.receive',
+  'workbench.prototypeReview.identity',
+  'workbench.prototypeReview.inbox',
+  'workbench.prototypeReview.receive',
+  'workbench.prototypeReview.dismiss',
   'workbench.versionBinding.read',
   'pairing.getEndpoints',
   'runtime.clientEvents.subscribe',
