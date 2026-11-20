@@ -3,47 +3,79 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>任务链接直达 · 交互原型</title>
+<title>Workbench · 任务管理 · 原型</title>
 <link rel="stylesheet" href="../../04-design-system/styles.css">
 <style>
-body { max-width: 900px; margin: var(--space-8) auto; padding: 0 var(--space-4); }
-h1 { font-size: 22px; }
-.prototype-copy { margin-bottom: var(--space-4); }
-.menu { margin-top: var(--space-3); padding: var(--space-2); border: 1px solid var(--color-divider); border-radius: var(--radius-md); max-width: 420px; background: var(--color-card); }
-.menu button { display: flex; width: 100%; justify-content: flex-start; text-align: left; margin-top: var(--space-1); }
-.menu button:first-of-type { margin-top: 0; }
-code { display: block; padding: var(--space-3); overflow-wrap: anywhere; color: var(--color-neutral-600); background: var(--color-surface); border-radius: var(--radius-sm); }
-small { color: var(--muted-foreground); }
-.hidden { display: none; }
-.detail { margin-top: var(--space-4); }
-.detail p { max-width: 70ch; }
-select.input { max-width: 220px; }
+body { margin: 0; }
+.task-breadcrumb { margin-bottom: 5px; color: var(--muted-foreground); font-size: 11px; }
+.task-layout { display: grid; grid-template-columns: minmax(360px, 0.9fr) minmax(400px, 1.1fr); gap: var(--space-4); }
+.task-panel { min-width: 0; }
+.task-panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.task-panel-head h2 { margin: 0; font-size: 15px; }
+.task-count { color: var(--muted-foreground); font-size: 11px; }
+.task-filter { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); }
+.task-filter .input { max-width: 180px; }
+.task-list { display: grid; gap: 2px; }
+.task-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; width: 100%; padding: 10px; border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.task-row:hover, .task-row[aria-current='true'] { border-color: var(--color-divider); background: var(--color-surface); }
+.task-kind { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 5px; background: var(--color-accent-100); color: var(--color-text); font-size: 10px; font-weight: 700; }
+.task-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.task-row-meta { display: block; margin-top: 3px; color: var(--muted-foreground); font-size: 10px; }
+.task-status { color: var(--muted-foreground); font-size: 10px; white-space: nowrap; }
+.task-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.task-detail-head h2 { margin: 0; font-size: 17px; }
+.task-detail-head p { margin: 5px 0 0; color: var(--muted-foreground); font-size: 11px; }
+.task-detail-body { margin-top: var(--space-5); display: grid; gap: var(--space-4); }
+.task-detail-body h3 { margin: 0 0 5px; font-size: 12px; }
+.task-detail-body p { margin: 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.7; }
+.task-link-demo { margin-top: var(--space-5); }
+.task-link-demo h2 { margin: 0 0 5px; font-size: 14px; }
+.task-link-demo > p { margin: 0 0 var(--space-3); color: var(--muted-foreground); font-size: 11px; }
+.task-link-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.task-link-actions .input { min-width: 180px; }
+.task-message { min-height: 18px; margin: var(--space-2) 0 0; color: var(--muted-foreground); font-size: 11px; }
+@media (max-width: 900px) { .task-layout { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<header class="prototype-review-bar" aria-label="原型评审信息">
-  <span class="prototype-review-title"><strong>任务管理</strong><span class="prototype-review-path">BW 会话 → 任务链接直达</span></span>
-  <span class="prototype-review-badge">复用当前 BW 外壳</span>
-  <span class="prototype-review-badge">旧版示例数据 · 只导航</span>
-  <nav class="prototype-review-links" aria-label="特性资料">
-    <a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a>
-  </nav>
-</header>
-<main>
-<h1>从任务链接打开既有详情</h1>
-<p class="prototype-copy"><small>原型注释：任务入口复用当前 BW 壳；PR、Issue 与 MR 仅为旧版示例数据，不代表当前仓库状态。</small></p>
-<section id="conversation">
-<p>已交付到 <a href="#" id="link">PR #652</a>。请核对交付结果。</p>
-<label>示例 <select class="input" id="target"><option value="pr">GitHub PR</option><option value="issue">GitHub Issue</option><option value="mr">CodeHub MR</option><option value="unknown">未登记仓库</option></select></label>
-<div class="menu hidden" id="menu"><code id="url"></code><button class="btn btn-secondary" id="open">☷ 在任务中打开 <small>Ctrl／Cmd + Click</small></button><button class="btn btn-ghost browser">↗ System Browser <small>Shift + Ctrl／Cmd + Click</small></button><button class="btn btn-ghost browser">◎ Orca Browser</button></div>
-<p id="message" role="status"></p>
-</section>
-<section id="detail" class="card detail hidden"><button class="btn btn-ghost" id="back">← 返回原会话</button><h2 id="title"></h2><p>复用已有原生详情：标题、正文、评论；PR／MR 沿已有检查项和文件变更页面。</p><small>读取走本机 gh／codehub-cli。本次点击只导航，不评论、不关闭、不合入。</small></section>
-</main>
+<div class="bw-prototype-shell">
+  <header class="bw-prototype-topbar">
+    <div class="bw-prototype-brand"><span class="bw-prototype-brand-mark">W</span><span>Workbench</span></div>
+    <span class="bw-prototype-context">Builder Workbench</span>
+    <span class="bw-prototype-top-actions"><span>当前项目 · BW</span><span aria-hidden="true">·</span><span>本机</span></span>
+  </header>
+  <div class="bw-prototype-layout">
+    <aside class="bw-prototype-sidebar" aria-label="Workbench 导航">
+      <section>
+        <p class="bw-prototype-sidebar-label">项目</p>
+        <nav class="bw-prototype-nav"><a href="#">⌂ <span>项目墙</span></a><a href="#">▦ <span>项目总览</span></a></nav>
+      </section>
+      <section>
+        <p class="bw-prototype-sidebar-label">版本与工作</p>
+        <nav class="bw-prototype-nav"><a href="#">◇ <span>版本计划</span></a><a href="#">▤ <span>版本工作区</span></a><a href="#" aria-current="page">✓ <span>任务</span></a><a href="#">◷ <span>版本验收</span></a></nav>
+      </section>
+      <div class="bw-prototype-sidebar-card"><strong>当前工作区</strong><small>main · Builder Workbench</small><small>会话：交付核对</small></div>
+    </aside>
+    <main class="bw-prototype-main">
+      <header class="page-head"><div><div class="task-breadcrumb">Builder Workbench / 任务</div><h1>任务</h1><p class="page-desc">从会话或终端链接打开既有 Issue、PR 或 MR，并在完成查看后回到原工作上下文。</p></div><div class="page-actions"><button class="btn btn-secondary" id="refresh">刷新任务</button></div></header>
+      <p class="bw-prototype-review-note">原型注释：复用当前 BW 外壳；左侧导航、项目上下文和任务详情沿用原生页面。下方任务、来源和状态为旧版示例数据，只演示链接直达与返回原会话。</p>
+      <div class="bw-prototype-content"><div class="task-layout">
+        <section class="card task-panel" aria-labelledby="task-list-title"><div class="task-panel-head"><h2 id="task-list-title">本版任务</h2><span class="task-count">3 项 · 示例快照</span></div><div class="task-filter"><select class="input" id="target" aria-label="任务来源"><option value="pr">GitHub PR</option><option value="issue">GitHub Issue</option><option value="mr">CodeHub MR</option><option value="unknown">未登记仓库</option></select><button class="btn btn-ghost" id="clear">清除筛选</button></div><div class="task-list" id="taskList"></div></section>
+        <section class="card task-panel" aria-labelledby="task-detail-title"><div class="task-detail-head"><div><h2 id="task-detail-title">PR #652 · 任务详情</h2><p id="detailMeta">GitHub · forcegravity1989/builder-workbench · 待核对</p></div><span class="tag status-progress">待处理</span></div><div class="task-detail-body"><div><h3>交付说明</h3><p>沿用既有 PR 详情页展示标题、正文、评论、检查项和文件变更。此处只提供入口和返回上下文，不重画原生详情。</p></div><div><h3>当前上下文</h3><p>版本 v0.7 · 目标 G2 · 工作区 main · 会话「交付核对」。关闭详情后保留这些筛选和会话位置。</p></div><div><h3>失败边界</h3><p id="failure">未登记项目、身份不符、缺少 CLI 或无权限时显示原因和下一步，不自动打开同号任务，也不自动改走浏览器。</p></div></div><div class="task-link-demo"><h2>会话中的任务链接</h2><p>这是本特性的主路径：普通点击先显示动作菜单，选择后进入已有任务详情。</p><div class="task-link-actions"><select class="input" id="linkTarget" aria-label="任务链接示例"><option value="pr">PR #652</option><option value="issue">Issue #651</option><option value="mr">MR !3</option><option value="unknown">未登记仓库任务</option></select><button class="btn btn-primary" id="open">在任务中打开</button><button class="btn btn-ghost" id="browser">选择浏览器</button></div><p class="task-message" id="message" role="status"></p></div></section>
+      </div></div>
+    </main>
+  </div>
+</div>
 <script>
-const $=id=>document.getElementById(id);const SAMPLE_TASK_LINKS={pr:['https://github.com/forcegravity1989/builder-workbench/pull/652','PR #652'],issue:['https://github.com/forcegravity1989/builder-workbench/issues/651','Issue #651'],mr:['https://open.codehub.huawei.com/example/project/merge_requests/3','MR !3'],unknown:['https://github.com/example/not-registered/issues/1','Issue #1']};
-function open(){if($('target').value==='unknown'){$('message').textContent='未在已登记项目中找到此仓库。请先添加项目，或重新点击链接选择浏览器。';$('menu').classList.add('hidden');return}$('title').textContent=SAMPLE_TASK_LINKS[$('target').value][1];$('conversation').classList.add('hidden');$('detail').classList.remove('hidden')}
-$('link').onclick=e=>{e.preventDefault();$('url').textContent=SAMPLE_TASK_LINKS[$('target').value][0];if(e.ctrlKey||e.metaKey){if(e.shiftKey){$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。'}else open();return}$('menu').classList.toggle('hidden')};$('open').onclick=open;$('back').onclick=()=>{$('detail').classList.add('hidden');$('conversation').classList.remove('hidden');$('menu').classList.add('hidden')};document.querySelectorAll('.browser').forEach(button=>button.onclick=()=>{$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。';$('menu').classList.add('hidden')});$('target').onchange=()=>{$('link').textContent=SAMPLE_TASK_LINKS[$('target').value][1];$('menu').classList.add('hidden');$('message').textContent=''};
+const tasks={pr:{kind:'PR',title:'修复交付报告来源读取',meta:'PR #652 · GitHub · 待核对'},issue:{kind:'IS',title:'任务详情返回原会话',meta:'Issue #651 · GitHub · 进行中'},mr:{kind:'MR',title:'同步 CodeHub 合并请求状态',meta:'MR !3 · CodeHub · 待评审'},unknown:{kind:'?',title:'未登记仓库任务',meta:'Issue #1 · 未登记来源 · 不可打开'}};
+const list=document.getElementById('taskList'),target=document.getElementById('target'),linkTarget=document.getElementById('linkTarget'),message=document.getElementById('message');
+function renderList(active='pr'){list.innerHTML=Object.entries(tasks).map(([key,item])=>`<button class="task-row" aria-current="${key===active}" data-key="${key}"><span class="task-kind">${item.kind}</span><span><span class="task-row-title">${item.title}</span><span class="task-row-meta">${item.meta}</span></span><span class="task-status">${key==='pr'?'当前':''}</span></button>`).join('');list.querySelectorAll('.task-row').forEach(row=>row.onclick=()=>selectTask(row.dataset.key));}
+function selectTask(key){const item=tasks[key];document.getElementById('task-detail-title').textContent=`${item.meta.split(' · ')[0]} · 任务详情`;document.getElementById('detailMeta').textContent=item.meta;target.value=key;renderList(key);}
+document.getElementById('open').onclick=()=>{const key=linkTarget.value;if(key==='unknown'){message.textContent='未在已登记项目中找到此仓库。请先添加项目，或选择浏览器继续。';return}selectTask(key);message.textContent='已沿 Workbench 内部入口打开既有任务详情（演示）。';};
+document.getElementById('browser').onclick=()=>{message.textContent='示意：保留原始链接并交给用户选择 System Browser 或 Orca Browser。';};
+document.getElementById('refresh').onclick=()=>{renderList(target.value);message.textContent='已重新读取示例任务列表。';};
+document.getElementById('clear').onclick=()=>{target.value='pr';renderList('pr');message.textContent='已恢复本版任务范围。';};
+renderList();
 </script>
 </body>
 </html>
