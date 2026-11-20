@@ -59,7 +59,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await expect(page.locator('[data-monica-rail]')).toBeVisible({ timeout: 180_000 })
   await openWall()
   const toolbar = page.getByRole('group', { name: '项目墙操作' })
-  for (const label of ['刷新项目目录和墙卡信息', '批量导入主机', '添加项目', '关闭项目墙']) {
+  for (const label of ['刷新项目目录和墙卡信息', '团队设置', '添加项目', '关闭项目墙']) {
     await expect(toolbar.getByRole('button', { name: label, exact: true })).toHaveText('')
   }
   const registered = (await page.evaluate(() => window.api.repos.list())).find(

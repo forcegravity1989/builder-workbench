@@ -7,10 +7,11 @@ import { fingerprintAuthenticatedPairingCredential } from '../rpc/orchestration-
 import type { AuthenticatedMobileSocket } from '../rpc/mobile-socket-wiring'
 import type { RpcRequest, RpcResponse } from '../rpc/core'
 import type { WebSocketTransport } from '../rpc/ws-transport'
-import type { DeviceScope } from '../device-registry'
+import { effectiveRuntimeAccessMode, type DeviceScope } from '../device-registry'
 import { RuntimeRpcRequestAdmission } from './runtime-rpc-request-admission'
 import { classifyRuntimeLongPoll } from './runtime-rpc-long-poll'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
+import { teamReadDenialReason } from './runtime-rpc-team-read-policy'
 
 // Why: status.get has no per-connection context in the dispatcher, so stamp the scope here at the transport boundary.
 function injectDeviceScope(response: string, scope: DeviceScope): string {
@@ -85,6 +86,24 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       )
       return
     }
+    const accessMode = effectiveRuntimeAccessMode(device)
+    const teamReadDenial = teamReadDenialReason(accessMode, request.method)
+    if (teamReadDenial) {
+      this.getRuntimeAccessAudit().record({
+        at: Date.now(),
+        deviceId: device.deviceId,
+        deviceName: device.name,
+        accessMode,
+        ...(device.teamBinding
+          ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+          : undefined),
+        method: request.method,
+        result: 'denied',
+        requestId: request.id
+      })
+      reply(JSON.stringify(this.buildError(request.id, 'forbidden', teamReadDenial)))
+      return
+    }
 
     // Why: bind deviceToken to this socket so ws.on('close') knows which mobile client disconnected.
     if (wsTransport && ws) {
@@ -101,10 +120,40 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
     const abortRegistration = ws ? this.registerWebSocketDispatchAbort(ws) : null
 
     // Why: older pairings may lack scope metadata, so stamp the authenticated scope onto status.get.
-    const replyForRequest =
-      request.method === 'status.get'
-        ? (response: string): void => reply(injectDeviceScope(response, device.scope))
-        : reply
+    const auditStartedAt = Date.now()
+    let auditRecorded = false
+    const replyForRequest = (response: string): void => {
+      const scopedResponse =
+        request.method === 'status.get' ? injectDeviceScope(response, device.scope) : response
+      if (!auditRecorded) {
+        auditRecorded = true
+        let result: 'allowed' | 'denied' | 'error' = 'error'
+        try {
+          const parsed = JSON.parse(scopedResponse) as RpcResponse
+          if (parsed.ok === true) {
+            result = 'allowed'
+          } else if (parsed.error.code === 'forbidden' || parsed.error.code === 'unauthorized') {
+            result = 'denied'
+          }
+        } catch {
+          // Keep the error result when a handler emitted a malformed frame.
+        }
+        this.getRuntimeAccessAudit().record({
+          at: Date.now(),
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          accessMode,
+          ...(device.teamBinding
+            ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+            : undefined),
+          method: request.method,
+          result,
+          requestId: request.id,
+          durationMs: Date.now() - auditStartedAt
+        })
+      }
+      reply(scopedResponse)
+    }
 
     const connectionId = ws ? this.mobileSocketWiring?.getConnectionId(ws) : undefined
     const pairingProvider = this.mobileRelayPairingProvider
@@ -138,6 +187,8 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         connectionId,
         clientId: token,
         pairedDeviceId: device.deviceId,
+        accessMode,
+        teamBinding: device.teamBinding,
         // Why: gates the mobile-only payload diet so full-screen web/desktop clients aren't truncated.
         clientKind: device.scope,
         clientCapabilities: authenticatedSocket?.clientCapabilities,

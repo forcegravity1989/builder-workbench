@@ -1,9 +1,14 @@
 import { app, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
-import type { RuntimeAccessGrant } from '../../shared/runtime-access-grants'
+import type {
+  RuntimeAccessAuditEntry,
+  RuntimeAccessAuditResult,
+  RuntimeAccessGrant
+} from '../../shared/runtime-access-grants'
 import type { MobilePairingConnectionMode } from '../../shared/mobile-pairing-connection-mode'
 import { classifyRemotePairingHostname } from '../../shared/remote-pairing-address'
 import type { RuntimePairingReach } from '../../shared/runtime-pairing-reach'
-import type { DeviceEntry } from '../runtime/device-registry'
+import { effectiveRuntimeAccessMode, type DeviceEntry } from '../runtime/device-registry'
+import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../shared/runtime-session-contracts'
 import { NETWORK_EXPOSURE_FAILED_GUIDANCE } from '../runtime/network-exposure-guidance'
 import {
   getDefaultPairingAddress,
@@ -40,7 +45,13 @@ function toRuntimeAccessGrant(device: DeviceEntry): RuntimeAccessGrant {
     deviceId: device.deviceId,
     name: device.name,
     createdAt: device.pairedAt,
-    lastSeenAt: device.lastSeenAt > 0 ? device.lastSeenAt : null
+    lastSeenAt: device.lastSeenAt > 0 ? device.lastSeenAt : null,
+    ...(effectiveRuntimeAccessMode(device) === 'team-read'
+      ? {
+          accessMode: 'team-read' as const,
+          ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+        }
+      : {})
   }
 }
 
@@ -147,7 +158,16 @@ export function registerMobileHandlers(
 
   ipcMain.handle(
     'mobile:getRuntimePairingUrl',
-    async (_event, args?: { address?: string; rotate?: boolean; reach?: RuntimePairingReach }) => {
+    async (
+      _event,
+      args?: {
+        address?: string
+        rotate?: boolean
+        reach?: RuntimePairingReach
+        accessMode?: RuntimeAccessMode
+        teamBinding?: RuntimeTeamBinding
+      }
+    ) => {
       const ip = args?.address ?? (await getDefaultPairingAddress(getDefaultRouteInterfaceNames))
       if (!ip) {
         return { available: false as const }
@@ -186,7 +206,9 @@ export function registerMobileHandlers(
         scope: 'runtime',
         // Why: a grant that only ever pointed at loopback must not make the next launch bind every
         // interface when its local client reconnects (that would restore the exposure one restart later).
-        reach: thisComputerOnly ? 'this-computer' : 'network'
+        reach: thisComputerOnly ? 'this-computer' : 'network',
+        ...(args?.accessMode ? { accessMode: args.accessMode } : undefined),
+        ...(args?.teamBinding ? { teamBinding: args.teamBinding } : undefined)
       })
       if (!offer.available) {
         return { available: false as const }
@@ -234,14 +256,74 @@ export function registerMobileHandlers(
     }
     // Why: generated web/runtime links are bearer credentials even before a
     // client first connects, so pending runtime grants must stay revocable.
+    const socketWiring = rpcServer.getMobileSocketWiring?.()
     return {
       grants: registry
         .listDevices()
         .filter((d) => d.scope === 'runtime')
         .sort((a, b) => b.pairedAt - a.pairedAt)
-        .map(toRuntimeAccessGrant)
+        .map((device) => ({
+          ...toRuntimeAccessGrant(device),
+          ...(socketWiring ? { connected: socketWiring.isDeviceConnected(device.deviceId) } : {})
+        }))
     }
   })
+
+  ipcMain.handle('mobile:grantRuntimeFullAccess', (_event, args: { deviceIds: string[] }) => {
+    const registry = rpcServer.getDeviceRegistry()
+    if (!registry || !Array.isArray(args?.deviceIds)) {
+      return { granted: [] as string[] }
+    }
+    const granted: string[] = []
+    for (const deviceId of new Set(args.deviceIds)) {
+      const device = registry.getDevice(deviceId)
+      if (
+        device?.scope === 'runtime' &&
+        effectiveRuntimeAccessMode(device) === 'team-read' &&
+        rpcServer.getMobileSocketWiring?.()?.isDeviceConnected(device.deviceId) === true &&
+        registry.setAccessMode(device.deviceId, 'full')
+      ) {
+        granted.push(device.deviceId)
+        rpcServer.getRuntimeAccessAudit?.()?.record({
+          at: Date.now(),
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          accessMode: 'full',
+          ...(device.teamBinding
+            ? {
+                teamGroupId: device.teamBinding.teamGroupId,
+                memberId: device.teamBinding.memberId
+              }
+            : undefined),
+          method: 'access.grant.full',
+          result: 'allowed'
+        })
+      }
+    }
+    return { granted }
+  })
+
+  ipcMain.handle(
+    'mobile:listRuntimeAccessAudit',
+    async (
+      _event,
+      args?: {
+        action?: string
+        result?: RuntimeAccessAuditResult
+        since?: number
+        search?: string
+      }
+    ): Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }> => {
+      const audit = rpcServer.getRuntimeAccessAudit?.()
+      if (!audit) {
+        return { entries: [], directory: '' }
+      }
+      return {
+        entries: await audit.list(args),
+        directory: audit.getDirectory()
+      }
+    }
+  )
 
   ipcMain.handle('mobile:revokeDevice', async (_event, args: { deviceId: string }) => {
     const registry = rpcServer.getDeviceRegistry()

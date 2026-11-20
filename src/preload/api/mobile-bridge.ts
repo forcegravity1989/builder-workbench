@@ -2,10 +2,13 @@ import { ipcRenderer } from 'electron'
 import type { MobileRelayStatusDetail } from '../../shared/mobile-relay-status'
 import type { MobilePairingConnectionMode } from '../../shared/mobile-pairing-connection-mode'
 import type { RuntimePairingReach } from '../../shared/runtime-pairing-reach'
+import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../shared/runtime-session-contracts'
 import type { MobileRelayMintFailure } from '../../shared/mobile-relay-mint-failure'
 import type {
   RuntimePairingLinkReference,
-  RuntimePairingLink
+  RuntimePairingLink,
+  RuntimeAccessAuditEntry,
+  RuntimeAccessAuditResult
 } from '../../shared/runtime-access-grants'
 import type { PreloadApi } from '../api-types'
 
@@ -52,8 +55,14 @@ export const mobileApi = {
     // Why: the widen is one-way and host-wide, so main must gate it on the reach the user picked, not
     // on how the typed address happens to look (a Custom loopback may front an SSH tunnel).
     reach?: RuntimePairingReach
+    accessMode?: RuntimeAccessMode
+    teamBinding?: RuntimeTeamBinding
   }): Promise<
-    | { available: false; reason?: 'network_exposure_failed'; guidance?: string }
+    | {
+        available: false
+        reason?: 'network_exposure_failed' | 'invalid_access_mode'
+        guidance?: string
+      }
     | {
         available: true
         pairingUrl: string
@@ -76,6 +85,17 @@ export const mobileApi = {
     ipcRenderer.invoke('mobile:revokeDevice', args),
 
   listRuntimeAccessGrants: () => ipcRenderer.invoke('mobile:listRuntimeAccessGrants'),
+
+  grantRuntimeFullAccess: (args: { deviceIds: string[] }): Promise<{ granted: string[] }> =>
+    ipcRenderer.invoke('mobile:grantRuntimeFullAccess', args),
+
+  listRuntimeAccessAudit: (args?: {
+    action?: string
+    result?: RuntimeAccessAuditResult
+    since?: number
+    search?: string
+  }): Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }> =>
+    ipcRenderer.invoke('mobile:listRuntimeAccessAudit', args),
 
   revokeRuntimeAccess: (args: { deviceId: string }): Promise<{ revoked: boolean }> =>
     ipcRenderer.invoke('mobile:revokeRuntimeAccess', args),

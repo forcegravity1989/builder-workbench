@@ -75,6 +75,7 @@ describe('web preload API composition', () => {
       'gitBash',
       'agentStatus',
       'mobile',
+      'teamCollaboration',
       'telemetryTrack',
       'telemetrySetOptIn',
       'telemetryGetConsentState',

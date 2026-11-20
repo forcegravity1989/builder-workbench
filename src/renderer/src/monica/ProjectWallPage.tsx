@@ -1,6 +1,6 @@
 import { notifyMonicaError } from './error-feedback'
 import { useCallback, useRef, useState } from 'react'
-import { FileInput, LoaderCircle, Plus, RefreshCw, X } from 'lucide-react'
+import { LoaderCircle, Plus, RefreshCw, UsersRound, X } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,7 @@ import { continueProjectWork } from './continue-project-work'
 import { isWallRowVisible, wallProjectVisibility } from './monica-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
 import { useWallCharters } from './use-wall-charters'
-import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
+import { TeamSettingsDialog } from './TeamSettingsDialog'
 import type { WallCardView } from './ProjectWallCard'
 import { LiveProjectWallCard, type WallReadStatus } from './LiveProjectWallCard'
 import { useWallProjects } from './use-wall-projects'
@@ -33,7 +33,7 @@ export function ProjectWallPage() {
   const sshLabels = useAppStore((s) => s.sshTargetLabels)
   const refresh = useWallRefresh()
   const { refreshing, partialRefresh, updatedAt } = refresh
-  const [importOpen, setImportOpen] = useState(false)
+  const [teamSettingsOpen, setTeamSettingsOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -104,7 +104,7 @@ export function ProjectWallPage() {
               </h1>
             </div>
             <div className="page-actions" role="group" aria-label="项目墙操作">
-              <MonicaWallGuide enabled={!selectedCard && !importOpen && !leaveAction} />
+              <MonicaWallGuide enabled={!selectedCard && !teamSettingsOpen && !leaveAction} />
               <MonicaIconButton
                 label="刷新项目目录和墙卡信息"
                 icon={refreshing ? LoaderCircle : RefreshCw}
@@ -114,10 +114,10 @@ export function ProjectWallPage() {
                 data-monica-refresh
               />
               <MonicaIconButton
-                label="批量导入主机"
-                icon={FileInput}
-                onClick={() => setImportOpen(true)}
-                data-monica-import-hosts
+                label="团队设置"
+                icon={UsersRound}
+                onClick={() => setTeamSettingsOpen(true)}
+                data-monica-team-settings
               />
               <MonicaIconButton
                 label="添加项目"
@@ -308,11 +308,7 @@ export function ProjectWallPage() {
           />
         )}
         {native.dialogs}
-        <ImportBuilderHostsDialog
-          open={importOpen}
-          onClose={() => setImportOpen(false)}
-          onImported={refreshProjectWall}
-        />
+        <TeamSettingsDialog open={teamSettingsOpen} onOpenChange={setTeamSettingsOpen} />
         <Dialog
           open={leaveAction !== null}
           onOpenChange={(open) => {

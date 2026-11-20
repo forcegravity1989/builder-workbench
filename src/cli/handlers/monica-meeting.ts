@@ -7,6 +7,8 @@ import { RuntimeClientError } from '../runtime/types'
 import { meetingPageExpression } from '../monica-meeting/page'
 import {
   MeetingRecordingSchema,
+  findDuplicateTranscript,
+  recordingTitleMatches,
   selectMeetingRecordings,
   verifyTranscriptChunks,
   type MeetingRecording
@@ -25,10 +27,6 @@ const Meta = z.object({
 const Inventory = z.object({ recordings: z.array(MeetingRecordingSchema) })
 const delay = (milliseconds = 500) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds))
-const titleMatches = (title: string, name: string) =>
-  /^录制-\d+-\d+$/.test(name)
-    ? (title.match(/录制-\d+-\d+/g) ?? []).some((value) => value === name)
-    : title.includes(name)
 // #412: generic not-ready failures must say which acquisition stage timed out;
 // without it every DOM/timing regression collapses into one indistinguishable code.
 const pollStageLabels: Record<string, string> = {
@@ -174,6 +172,7 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
     const selected = selectMeetingRecordings(inventory, selection!)
     const transcripts: (MeetingRecording &
       ReturnType<typeof verifyTranscriptChunks> & { sourceRef: string })[] = []
+    const readFingerprints: { length: number; fingerprint: string }[] = []
     for (const recording of selected) {
       if (hasSelector) {
         if (transcripts.length > 0) {
@@ -188,13 +187,46 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
           )
         }
         await readPage('pick', { label: recording.label })
-        await poll(
-          'ready',
-          (value) => typeof value.title === 'string' && titleMatches(value.title, recording.name),
-          undefined,
-          60,
-          'title-after-pick'
-        )
+        // Why: a single-recording view has nothing to switch to; the selector can
+        // still exist with one item, and its header may be the meeting subject.
+        // Content checks below (chunk verification + HH:MM guard) are the real proof.
+        if (inventory.length > 1) {
+          let observedTitle = ''
+          try {
+            await poll(
+              'ready',
+              (value) =>
+                typeof value.title === 'string' &&
+                value.title.trim().length > 0 &&
+                recordingTitleMatches(value.title, recording.name),
+              (value) => {
+                if (typeof value.title === 'string') {
+                  observedTitle = value.title
+                }
+              },
+              60,
+              'title-after-pick'
+            )
+          } catch (reason) {
+            if (
+              reason instanceof RuntimeClientError &&
+              reason.code === 'meeting-page-unavailable'
+            ) {
+              throw new RuntimeClientError(
+                'meeting-page-unavailable',
+                `切换录制后标题未更新（期望包含「${recording.name}」，当前标题「${observedTitle || '未读到'}」）。`,
+                {
+                  stage: 'title-after-pick',
+                  expected: recording.name,
+                  observedTitle,
+                  browserPageId: page,
+                  url
+                }
+              )
+            }
+            throw reason
+          }
+        }
         await delay(2_500)
       }
       // Attribution (round-9, 项 E): a missing transcript tab on an already rendered
@@ -227,7 +259,26 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
         throw reason
       }
       await delay(2_500)
-      const captured = Meta.parse(await readPage('capture'))
+      // Why: when the header shows the meeting subject we cannot verify the
+      // switch by title, so a stale panel could silently duplicate the previous
+      // recording and still report all readings complete. Give the switch a
+      // short grace period, then refuse to save a duplicate.
+      let captured = Meta.parse(await readPage('capture'))
+      for (
+        let attempt = 0;
+        attempt < 8 && findDuplicateTranscript(readFingerprints, captured);
+        attempt++
+      ) {
+        await delay()
+        captured = Meta.parse(await readPage('capture'))
+      }
+      if (findDuplicateTranscript(readFingerprints, captured)) {
+        throw new RuntimeClientError(
+          'meeting-transcript-duplicate',
+          `切换录制「${recording.name}」后转写内容与上一场完全相同，未确认切换生效，未保存。`,
+          { browserPageId: page, url }
+        )
+      }
       const chunks: string[] = []
       for (let offset = 0; offset < captured.length; offset += 24_000) {
         const chunk = await readPage('chunk', { offset, size: 24_000 })
@@ -257,6 +308,7 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
         )
       }
       transcripts.push({ ...recording, sourceRef: `${url} · ${recording.name}`, ...verified })
+      readFingerprints.push(captured)
     }
     const topics = await readPage('topics')
     const result = {

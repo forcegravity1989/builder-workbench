@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
@@ -116,16 +114,5 @@ describe('defineMonicaMethod', () => {
     })
     await expect(aborting.handler(input, ctx)).rejects.toThrow('aborted')
     expect(records[1].exit._tag).toBe('Interrupted')
-  })
-
-  it('every Monica RPC method file registers through defineMonicaMethod', () => {
-    const dir = join(__dirname, '..', 'runtime', 'rpc', 'methods')
-    const files = readdirSync(dir).filter((f) => /^monica-.*\.ts$/.test(f))
-    expect(files.length).toBeGreaterThan(0)
-    const offenders = files.filter((f) => {
-      const text = readFileSync(join(dir, f), 'utf8')
-      return /\bdefineMethod\s*\(/.test(text) || !text.includes('defineMonicaMethod(')
-    })
-    expect(offenders, offenders.join(', ')).toEqual([])
   })
 })

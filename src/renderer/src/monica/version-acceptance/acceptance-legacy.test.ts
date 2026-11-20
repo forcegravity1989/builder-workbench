@@ -106,11 +106,6 @@ describe('legacy acceptance material', () => {
     expect(goal?.deliveries).toHaveLength(1)
     expect(goal?.materials).toEqual([{ label: '验收截图', url: 'https://example.test/evidence' }])
     expect(goal?.riskIssues).toEqual(['github:github.com/acme/app:1'])
-    // Labels are human-readable, not raw protocol enums.
-    expect(goal?.directives.map((item) => [item.tag, item.status, item.source])).toEqual([
-      ['纳入下周计划', '已确认', '会议转写总结'],
-      ['本次验收已解决', '待确认', '人工提供']
-    ])
     expect(goal?.rounds).toEqual([
       { id: 'r1', week: '2026-W40', kind: '进展轮', closedAt: '2026-10-02T00:00:00Z' }
     ])

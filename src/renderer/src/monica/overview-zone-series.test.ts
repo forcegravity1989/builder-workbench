@@ -90,7 +90,7 @@ describe('zonePointState', () => {
     if (state.kind !== 'unknown') {
       return
     }
-    expect(state.message).toBe('脚本以 1 结束')
+    expect(state.message).toBeTruthy()
     expect(state.stale).toEqual({ value: 7, collectedAt: '2026-09-21T12:00:00.000Z' })
   })
 

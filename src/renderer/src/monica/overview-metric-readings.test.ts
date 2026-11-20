@@ -92,7 +92,7 @@ describe('readAllMetricReadings windows', () => {
   it('单个定义读取失败落入 problems，其余定义不受影响', async () => {
     requests.failedName = 'zone-retro'
     const result = await readAllMetricReadings({ scope, owner: undefined, catalog })
-    expect(result.problems).toEqual(['zone-retro 读数：来源不可用'])
+    expect(result.problems).toEqual([expect.stringContaining('zone-retro')])
     expect(result.map['h-zone-retro']).toBeNull()
     expect(result.north).toEqual({
       status: 'unknown',

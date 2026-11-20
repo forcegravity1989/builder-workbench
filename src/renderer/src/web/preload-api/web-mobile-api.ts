@@ -15,6 +15,8 @@ export function createWebMobileApi(): Partial<PreloadApi> {
       listDevices: () => Promise.resolve({ devices: [] }),
       revokeDevice: () => Promise.resolve({ revoked: false }),
       listRuntimeAccessGrants: () => Promise.resolve({ grants: [] }),
+      grantRuntimeFullAccess: () => Promise.resolve({ granted: [] }),
+      listRuntimeAccessAudit: () => Promise.resolve({ entries: [], directory: '' }),
       revokeRuntimeAccess: () => Promise.resolve({ revoked: false }),
       isWebSocketReady: () =>
         Promise.resolve({ ready: Boolean(webRuntimeState.activeEnvironment), endpoint: null }),
