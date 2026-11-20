@@ -11900,6 +11900,12 @@
             "370a1faf67": "在浏览器中打开",
             "2c69728c2a": "在浏览器中打开链接",
             "6f07a18604": "名称",
+            "codehubMode": "CodeHub",
+            "codehubEmpty": "没有匹配的 CodeHub 议题。",
+            "codehubEmptyStart": "输入以搜索 CodeHub 议题。",
+            "codehubLoadFailed": "无法加载 CodeHub 议题，请检查登录或权限后重试。",
+            "codehubRetry": "重试",
+            "codehubMoreResults": "仅显示前几条结果，请缩小关键词查看更多。",
             "2e4c7c95fe": "分支",
             "2cfc6be192": "GitLab",
             "7a47af0565": "Linear",
@@ -11940,7 +11946,8 @@
             "searchJira": "搜索 Jira 议题或粘贴议题 URL",
             "jiraMode": "Jira",
             "jiraSelectBindFailed": "无法关联此 Jira 议题。请选择匹配的站点或重新连接 Jira，然后重试。",
-            "emoji": "Emoji"
+            "emoji": "Emoji",
+            "searchCodeHub": "搜索 CodeHub 议题"
           },
           "ProjectCombobox": {
             "empty": "没有匹配搜索的项目。",

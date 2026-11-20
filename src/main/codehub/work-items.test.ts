@@ -88,6 +88,34 @@ describe('listCodeHubTasks', () => {
       expect(command).not.toContain('--state')
       expect(command[command.indexOf('--limit') + 1]).toBe('251')
     }
+    await listCodeHubTasks({ remote, kind: 'issue', state: 'opened', search: 'login' })
+    expect(runCodeHubCliMock.mock.lastCall?.[0]).toEqual([
+      'search',
+      'issue',
+      'login',
+      '-p',
+      'Org/Group/repo',
+      '-H',
+      'codehub-g.huawei.com',
+      '-f',
+      'json',
+      '--limit',
+      '30',
+      '--state',
+      'opened'
+    ])
+    // Why: search + labels/scope must stay on `issue list` so filters and
+    // limit-based hasMore are not silently dropped or refiltered.
+    await listCodeHubTasks({
+      remote,
+      kind: 'issue',
+      state: 'opened',
+      search: 'login',
+      labels: ['bug']
+    })
+    const filteredCommand = runCodeHubCliMock.mock.lastCall?.[0] as string[]
+    expect(filteredCommand.slice(0, 2)).toEqual(['issue', 'list'])
+    expect(filteredCommand).toContain('--labels')
     runCodeHubCliMock.mockResolvedValue('null')
     expect(await listCodeHubTasks({ remote, kind: 'issue', state: 'all', labels: [] })).toEqual([])
     expect(runCodeHubCliMock.mock.lastCall?.[0]).not.toContain('--labels')

@@ -4,6 +4,7 @@ import {
   type RuntimePairingLinkReference
 } from '../../../../shared/runtime-access-grants'
 import type { RuntimePairingReach } from '../../../../shared/runtime-pairing-reach'
+import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../../shared/runtime-session-contracts'
 
 export const RUNTIME_PAIRING_LOOPBACK_ADDRESS = '127.0.0.1'
 
@@ -19,6 +20,8 @@ export type RuntimePairingUrlGeneratorProps = {
   framed?: boolean
   showHeader?: boolean
   showGeneratorForm?: boolean
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
 }
 
 // Why: pairing tokens remain in the main-process registry, so the last link can

@@ -33,6 +33,7 @@ import {
   normalizeTaskSourceContext
 } from '../../../../shared/task-source-context'
 import { resolveJiraSourceHostId } from '@/lib/jira-source-host'
+import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
 import {
   normalizeGitHubLinkedWorkItem,
   getGitHubLinkedWorkItemIdentity
@@ -192,6 +193,15 @@ export function useComposerSourceContextState(input: ComposerSourceContextStateI
     })
   }, [projects, selectedRepo, selectedRepoIsGit, selectedWorkspaceTarget, taskSourceContext])
 
+  // Why: CodeHub identity comes from the repo git remote via the shared task-page
+  // resolver — never reuse the GitHub context (it would impersonate GitHub).
+  const selectedRepoCodeHubSourceContext = useMemo(() => {
+    if (!selectedRepo || !selectedRepoIsGit) {
+      return null
+    }
+    return getRepoTaskSourceContext(selectedRepo, 'codehub')
+  }, [selectedRepo, selectedRepoIsGit])
+
   const smartNameJiraSourceContext = useMemo(() => {
     if (!selectedProjectId) {
       return null
@@ -250,6 +260,8 @@ export function useComposerSourceContextState(input: ComposerSourceContextStateI
     derivedGitHubTaskSourceContext,
     taskSourceContext,
     selectedRepoGitHubSourceContext,
+    selectedRepoCodeHubSourceContext,
+    smartNameCodeHubSourceContext: selectedRepoCodeHubSourceContext,
     smartNameJiraSourceContext
   }
 }
