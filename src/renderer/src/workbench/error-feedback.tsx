@@ -1,5 +1,23 @@
 import { toast } from 'sonner'
 import { sanitizeCrashReportString } from '../../../shared/crash-report-redaction'
+import { hasRuntimeRpcErrorCode } from '../runtime/runtime-rpc-client'
+
+/**
+ * The workspace a screen is bound to no longer resolves: version cleanup deleted its worktree
+ * after the BW resolver has received explicit disappearance evidence. A bare native
+ * `selector_not_found` remains UNKNOWN and must keep its retry path (#727).
+ */
+export function isWorkspaceGoneError(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code
+  return (
+    code === 'workspace-gone' ||
+    hasRuntimeRpcErrorCode(error, 'workspace-gone')
+  )
+}
+
+export function workspaceGoneMessage(): string {
+  return '工作区的工作树已删除；版本材料与目录已保留，可在版本总览回看，继续工作请重新准备工作区。'
+}
 
 function diagnosticText(error: unknown): string {
   const text = error instanceof Error ? (error.stack ?? error.message) : String(error ?? '')
@@ -31,6 +49,19 @@ export function logWorkbenchError(title: string, error: unknown): void {
 
 export function notifyWorkbenchError(title: string, error: unknown, description?: string): void {
   logWorkbenchError(title, error)
+  if (isWorkspaceGoneError(error)) {
+    // The caller's title and retry-oriented description no longer fit: nothing at the old
+    // scope can succeed, and the way forward is the version overview, not another attempt.
+    toast.error('工作树已删除', {
+      description: (
+        <div>
+          <div>{workspaceGoneMessage()}</div>
+          <ErrorDetails detail={error} />
+        </div>
+      )
+    })
+    return
+  }
   toast.error(title, {
     description: (
       <div>

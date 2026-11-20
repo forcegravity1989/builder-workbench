@@ -10,6 +10,7 @@ import {
   resolveTaskRowWorkspace
 } from '@/workbench/scoped-task-workspace'
 import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
+import { track } from '@/lib/telemetry'
 import { translate } from '@/i18n/i18n'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitHubItemDialogProps } from '../load-item-details/github-item-dialog-types'
@@ -59,6 +60,19 @@ export default function GitHubItemDialog({
     ? getWorktreeAttachmentLabel(issueAttachedWorkspace)
     : null
 
+  // Why: dialog Start entries that bypass the scoped dispatch (no attached
+  // workspace, or an explicit "start new") still open the composer — count
+  // them as composer-opened; PR rows stay silent like the task screen.
+  const handleStartWorkspaceFromDialog = useCallback(
+    (item: GitHubWorkItem): void => {
+      if (workbenchTaskScope && item.type === 'issue') {
+        track('bw_task_start', { outcome: 'composer-opened', source: 'task-dialog' })
+      }
+      onUse(item)
+    },
+    [workbenchTaskScope, onUse]
+  )
+
   const handleOpenOrUseIssueWorkspace = useCallback(
     (item: GitHubWorkItem): void => {
       const worktrees = useAppStore.getState().allWorktrees()
@@ -83,9 +97,13 @@ export default function GitHubItemDialog({
                 )
               )
           })
+          // Why: scoped dispatch is the BW start path (#687) — 'none' falls
+          // through to onUse, which opens the composer.
           if (outcome !== 'none') {
+            track('bw_task_start', { outcome, source: 'task-dialog' })
             return
           }
+          track('bw_task_start', { outcome: 'composer-opened', source: 'task-dialog' })
           onUse(item)
           return
         }
@@ -192,7 +210,7 @@ export default function GitHubItemDialog({
           handleCopyWorkItemLink={handleCopyWorkItemLink}
           issueAttachedWorkspace={issueAttachedWorkspace}
           handleOpenOrUseIssueWorkspace={handleOpenOrUseIssueWorkspace}
-          onUse={onUse}
+          onUse={handleStartWorkspaceFromDialog}
           localState={localState}
           effectiveRepoId={effectiveRepoId}
           repoPath={repoPath}
@@ -207,7 +225,7 @@ export default function GitHubItemDialog({
           issueAttachedWorkspaceLabel={issueAttachedWorkspaceLabel}
           effectiveRepoId={effectiveRepoId}
           repoPath={repoPath}
-          onUse={onUse}
+          onUse={handleStartWorkspaceFromDialog}
           linkCopied={linkCopied}
           setLinkCopyButtonRef={setLinkCopyButtonRef}
           handleCopyWorkItemLink={handleCopyWorkItemLink}
@@ -227,7 +245,7 @@ export default function GitHubItemDialog({
           onLabelsChange={setLocalLabels}
           onMutated={invalidateCurrentDetailsCache}
           assignees={details?.assignees ?? []}
-          onUse={onUse}
+          onUse={handleStartWorkspaceFromDialog}
           onOpenOrUse={handleOpenOrUseIssueWorkspace}
           attachedWorkspaceLabel={issueAttachedWorkspaceLabel}
         />
@@ -253,7 +271,7 @@ export default function GitHubItemDialog({
             onStateChange={setLocalState}
             onLabelsChange={setLocalLabels}
             onMutated={invalidateCurrentDetailsCache}
-            onUse={onUse}
+            onUse={handleStartWorkspaceFromDialog}
             onOpenOrUse={handleOpenOrUseIssueWorkspace}
             attachedWorkspaceLabel={issueAttachedWorkspaceLabel}
             onCommentAdded={appendOptimisticComment}

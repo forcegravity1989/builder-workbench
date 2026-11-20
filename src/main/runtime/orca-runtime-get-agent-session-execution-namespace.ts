@@ -105,7 +105,10 @@ export class OrcaRuntimeWithGetAgentSessionExecutionNamespace extends OrcaRuntim
     if (!this.store) {
       throw new Error('runtime_unavailable')
     }
-    const workspace = await this.resolveTerminalWorkspaceLaunchScope(request.worktree)
+    const workspace = await this.resolveTerminalWorkspaceLaunchScope(
+      request.worktree,
+      'agentSessionNamespace'
+    )
     const resolvedNamespace = this.getAgentSessionExecutionNamespace(workspace, request.agent)
     const namespace =
       resolvedNamespace && handoffAuthority

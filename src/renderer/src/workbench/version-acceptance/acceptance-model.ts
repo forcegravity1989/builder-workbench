@@ -10,6 +10,35 @@ export type CandidateReference = NonNullable<AcceptanceMaterial['candidateRef']>
 export type PreparedArtifact = AcceptanceMaterial['preparedArtifacts'][number]
 export type GoalResult = AcceptanceMaterial['results'][number]
 
+export function planReferenceIdentity(reference: PlanReference) {
+  return reference.kind === 'committed'
+    ? {
+        kind: reference.kind,
+        version: reference.version,
+        cycleId: reference.cycleId,
+        revision: reference.revision,
+        sourceCommit: reference.sourceCommit
+      }
+    : {
+        kind: reference.kind,
+        version: reference.version,
+        cycleId: reference.cycleId,
+        revision: reference.revision,
+        sourceWorktreeId: reference.sourceWorktreeId,
+        sourceHostId: reference.sourceHostId
+      }
+}
+
+export function candidateReferenceIdentity(reference: CandidateReference | null | undefined) {
+  return reference
+    ? {
+        repository: reference.repository,
+        version: reference.version,
+        commit: reference.commit
+      }
+    : null
+}
+
 /**
  * Identity of the acceptance a human verdict binds to. Rounds are retired with
  * the cross-week scenario, so the source is the version, cycle, fixed plan
@@ -19,8 +48,10 @@ export function sameAcceptanceSource(left: AcceptanceMaterial, right: Acceptance
   return (
     left.version === right.version &&
     left.cycleId === right.cycleId &&
-    JSON.stringify(left.planRef) === JSON.stringify(right.planRef) &&
-    JSON.stringify(left.candidateRef) === JSON.stringify(right.candidateRef)
+    JSON.stringify(planReferenceIdentity(left.planRef)) ===
+      JSON.stringify(planReferenceIdentity(right.planRef)) &&
+    JSON.stringify(candidateReferenceIdentity(left.candidateRef)) ===
+      JSON.stringify(candidateReferenceIdentity(right.candidateRef))
   )
 }
 
