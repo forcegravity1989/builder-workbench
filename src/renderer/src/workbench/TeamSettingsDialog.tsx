@@ -65,6 +65,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   const [groupId, setGroupId] = useState('')
   const [spaceId, setSpaceId] = useState('')
   const [directory, setDirectory] = useState<TeamDirectory | null>(null)
+  const [directoryBase, setDirectoryBase] = useState<string | null>(null)
   const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -87,6 +88,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   useEffect(() => {
     if (!open) {
       setDirectory(null)
+      setDirectoryBase(null)
       setCurrentMemberId(null)
       setSelectedProjectId('')
       setProjectRegisterOpen(false)
@@ -132,6 +134,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
         spaceId: nextSpaceId
       })
       setDirectory(result.directory)
+      setDirectoryBase(JSON.stringify(result.directory))
       setCurrentMemberId(result.currentMemberId)
       setGroupId(result.directory.team_group_id)
       setSpaceId(result.directory.team_space_id)
@@ -162,6 +165,21 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       void loadDirectory(rememberedGroup, rememberedSpace)
     }
   }, [open, directory])
+
+  useEffect(() => {
+    if (!open || !directory || !directoryBase || saving || generatingHostId || projectRegisterOpen) {
+      return
+    }
+    if (JSON.stringify(directory) !== directoryBase) {
+      return
+    }
+    const timer = window.setInterval(() => {
+      void loadDirectory(groupId, spaceId)
+    }, 30_000)
+    return () => window.clearInterval(timer)
+    // A directory refresh must not interrupt an in-progress local edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, directory, directoryBase, saving, generatingHostId, projectRegisterOpen, groupId, spaceId])
 
   const saveDirectory = async (): Promise<void> => {
     if (!directory || !directory.team_group_id || !directory.team_space_id) {
@@ -262,6 +280,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
         throw new Error('项目已写入群空间，但本机项目墙未能更新为团队项目。')
       }
       setDirectory(nextDirectory)
+      setDirectoryBase(JSON.stringify(nextDirectory))
       setSelectedProjectId('')
       setProjectRegisterOpen(false)
       rememberGroupId(nextDirectory.team_group_id)
