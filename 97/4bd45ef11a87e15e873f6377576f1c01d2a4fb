@@ -1,0 +1,60 @@
+services/bw-share/.gitignore
+  s_da7ab51653058a::t_d672e92d01fa9c 1-3
+services/bw-share/src/config.mjs
+  s_da7ab51653058a::t_d3bfb137eb5a9a 1-124
+services/bw-share/src/payload.mjs
+  s_da7ab51653058a::t_28eb347e9f981d 1-70
+services/bw-share/test/payload.test.mjs
+  s_da7ab51653058a::t_7e208e8ea226e1 1-77
+.github/workflows/pr.yml
+  s_da7ab51653058a::t_085ef241045a7a 220-222
+services/bw-share/.env.example
+  s_da7ab51653058a::t_bd8ba4afe5c21e 1-30
+services/bw-share/deploy/bw-share.service
+  s_da7ab51653058a::t_dc9be03dc7607f 1-39
+services/bw-share/package.json
+  s_da7ab51653058a::t_d6163ce3e1684c 1-14
+services/bw-share/src/errors.mjs
+  s_da7ab51653058a::t_243f275041be6e 1-24
+services/bw-share/src/http.mjs
+  s_da7ab51653058a::t_7825a1f908e964 1-430
+services/bw-share/src/main.mjs
+  s_da7ab51653058a::t_a825f5588ae33f 1-85
+services/bw-share/src/store.mjs
+  s_da7ab51653058a::t_484e9651db2cf4 1-351
+services/bw-share/src/tokens.mjs
+  s_da7ab51653058a::t_f948d56ce79c0a 1-38
+services/bw-share/test/config.test.mjs
+  s_da7ab51653058a::t_5ae74a46fd3220 1-51
+services/bw-share/test/helpers.mjs
+  s_da7ab51653058a::t_274e3edbe06adb 1-82
+services/bw-share/test/http.test.mjs
+  s_da7ab51653058a::t_632f0df2631128 1-273
+services/bw-share/README.md
+  h_a7e858313fdba5 1-110
+services/bw-share/deploy/nginx.conf.example
+  h_a7e858313fdba5 1-44
+services/bw-share/test/store.test.mjs
+  h_a7e858313fdba5 1-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "974bd45ef11a87e15e873f6377576f1c01d2a4fb",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_da7ab51653058a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3172dc29-8106-44bc-b1e0-d7d38ef67ce3",
+        "model": "DeepSeek-V4.1-Flash-1017"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
