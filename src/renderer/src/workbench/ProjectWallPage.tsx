@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { WorkbenchWallGuide } from './WorkbenchScreenGuide'
+import { useWorkbenchScreenUsage } from './workbench-screen-usage'
 import { ProjectSettingsRail } from './ProjectSettingsRail'
 import { charterSourceKey } from './charter-snapshot'
 import { useAppStore } from '@/store'
@@ -25,6 +26,7 @@ import './workbench-wall.css'
 import './project-settings.css'
 
 export function ProjectWallPage() {
+  useWorkbenchScreenUsage('workbench-wall', true)
   const repos = useAppStore((s) => s.repos)
   const environments = useAppStore((s) => s.runtimeEnvironments)
   const statuses = useAppStore((s) => s.runtimeStatusByEnvironmentId)

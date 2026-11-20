@@ -34,6 +34,7 @@ import {
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
 import { versionWorkflowProgress } from './version-workflow-progress'
 import { WorkbenchVersionResultHelp } from './WorkbenchScreenGuide'
+import { useWorkbenchScreenUsage } from './workbench-screen-usage'
 import './version-overview/overview.css'
 
 function WorkflowProgress({
@@ -79,6 +80,7 @@ function WorkflowProgress({
 }
 
 export function VersionOverviewPage({ options }: { options: VersionOverviewOptions }) {
+  useWorkbenchScreenUsage('workbench-version-overview', true)
   const { repoId, hostId, version } = options
   const catalog = useVersionCatalogForRepo(repoId, hostId, 0, true)
   const selectedTree = options.selection

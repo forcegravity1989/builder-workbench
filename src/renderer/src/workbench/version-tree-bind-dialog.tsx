@@ -201,7 +201,7 @@ export function VersionTreeBindDialog({
         }
         const repo = resolveReferenceRepo(taskDeps, ownerScope, reference)
         if (!repo) {
-          throw new Error(`未在已登记项目中找到 ${reference.repository} 对应的项目`)
+          throw new Error(`未在已登记项目中找到 ${String(reference.repository)} 对应的项目`)
         }
         const taskSource = getRepoTaskSourceContext(repo, reference.provider)
         if (!taskSource) {

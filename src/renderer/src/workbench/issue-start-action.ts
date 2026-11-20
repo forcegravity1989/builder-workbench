@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store'
+import { track } from '@/lib/telemetry'
 import { getLinkedWorkItemWorkspaceName } from '../../../shared/workspace-name'
 import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import {
@@ -55,6 +56,12 @@ export function openIssueWorkspaceOrStart(args: {
     candidates,
     choiceTitle: `#${task.iid} ${task.title}`,
     onUnavailable: notifyScopedWorkspaceUnavailable
+  })
+  // Why: outcome is the dispatch truth (#687) — 'none' falls through to the
+  // native composer below, which is also a real start attempt.
+  track('bw_task_start', {
+    outcome: outcome === 'none' ? 'composer-opened' : outcome,
+    source: 'plan-board'
   })
   if (outcome !== 'none') {
     return true
