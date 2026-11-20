@@ -434,7 +434,20 @@ const DAMAGED_REGISTRIES = [
   ['truncated to zero bytes', ''],
   ['not JSON at all', '{ not json'],
   ['JSON of the wrong shape', JSON.stringify({ hello: 'world' })],
-  ['a registry version this build does not know', JSON.stringify({ version: 99, tokens: [] })]
+  ['a registry version this build does not know', JSON.stringify({ version: 99, tokens: [] })],
+  // Shape-valid but empty: what an operator gets by emptying the file instead of deleting it. No
+  // normal path writes an empty token list, so this must not read as a fresh instance.
+  ['valid JSON holding an empty token list', JSON.stringify({ version: 1, tokens: [] })],
+  [
+    'valid JSON whose every token hash is unusable',
+    JSON.stringify({
+      version: 1,
+      tokens: [
+        { hash: 'not-a-digest', createdAt: '2026-01-01T00:00:00.000Z' },
+        { hash: 'also-not-a-digest' }
+      ]
+    })
+  ]
 ]
 
 for (const [label, contents] of DAMAGED_REGISTRIES) {
@@ -581,4 +594,51 @@ test('a viewer who leaves mid-download does not hold the file against the next u
     `update after an aborted read answered ${updated.status}: ${body}`
   )
   assert.equal(await (await fetch(created.url)).text(), '<p>v2</p>')
+})
+
+test('a registry with some unusable entries keeps the usable ones and stays closed', async (t) => {
+  const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bw-share-partial-'))
+  t.after(() => fs.rm(dataDir, { recursive: true, force: true }))
+
+  // Enroll one device on a healthy instance, then corrupt a second entry by hand.
+  const healthy = await startTestServer({ uploadToken: 'static-secret' }, { dataDir })
+  const enrolled = await fetch(`${healthy.base}/api/client-tokens`, {
+    method: 'POST',
+    headers: { 'x-enroll-key': DEFAULT_ENROLL_KEY }
+  })
+  const { token } = await json(enrolled)
+  await healthy.close()
+
+  const registryPath = path.join(dataDir, 'client-tokens.json')
+  const registry = JSON.parse(await fs.readFile(registryPath, 'utf8'))
+  registry.tokens.push({ hash: 'not-a-digest', createdAt: '2026-01-01T00:00:00.000Z' })
+  await fs.writeFile(registryPath, JSON.stringify(registry, null, 2))
+
+  const server = await startTestServer({ uploadToken: 'static-secret' }, { dataDir })
+  t.after(() => server.close())
+  // Dropping unusable entries only narrows who may write, so this is not a degraded registry.
+  assert.equal(server.clientTokens.isDegraded(), false)
+  assert.equal(server.clientTokens.size(), 1)
+
+  const anonymous = await writeRequest(`${server.base}/api/shares`, {
+    content: HTML,
+    fileName: 'a.html'
+  })
+  assert.equal(anonymous.status, 401)
+  await anonymous.body?.cancel()
+
+  const withToken = await writeRequest(
+    `${server.base}/api/shares`,
+    { content: HTML, fileName: 'b.html' },
+    { 'x-upload-token': token }
+  )
+  assert.equal(withToken.status, 201)
+  await withToken.body?.cancel()
+
+  assert.ok(
+    server.logs.some(
+      (line) => /held 1 unusable entr/.test(line) && /the other 1 still authenticate/.test(line)
+    ),
+    `expected a quantified partial-loss log, got: ${server.logs.join(' | ')}`
+  )
 })

@@ -18,13 +18,13 @@ export function hashClientToken(token) {
  * Per-device upload tokens issued on demand. Only hashes are stored, and the plaintext is returned
  * exactly once, mirroring how share edit tokens are handled.
  *
- * A registry that exists but cannot be trusted — unreadable, truncated, or a shape this build does
- * not understand — puts the store in a degraded state instead of an empty one. Empty would mean
- * "no device has enrolled yet", which opens writes on a service that was authenticated before the
- * restart; issuing a token would rewrite the registry with only that device and silently revoke
- * everybody else. So while degraded, enrollment and device-token uploads are refused and the file
- * is left in place for an operator, who restores it or deletes it to accept the fresh-instance
- * posture deliberately.
+ * A registry that exists but cannot be trusted — unreadable, truncated, a shape this build does
+ * not understand, or one that yields no usable token — puts the store in a degraded state instead
+ * of an empty one. Empty would mean "no device has enrolled yet", which opens writes on a service
+ * that was authenticated before the restart; issuing a token would rewrite the registry with only
+ * that device and silently revoke everybody else. So while degraded, enrollment and device-token
+ * uploads are refused and the file is left in place for an operator, who restores it or deletes it
+ * to accept the fresh-instance posture deliberately.
  *
  * @param {object} options
  * @param {string} options.dataDir
@@ -63,6 +63,19 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
     const entries = parsed.tokens.filter(
       (entry) => typeof entry?.hash === 'string' && /^[a-f0-9]{64}$/.test(entry.hash)
     )
+    if (entries.length === 0) {
+      // Present but holding nothing usable is not a fresh instance: no normal path writes an empty
+      // token list, so this is a registry somebody emptied or one whose every entry is corrupt.
+      // Reading it as "no device has enrolled yet" would reopen anonymous writes on a service that
+      // was authenticated before the restart, which is exactly what the degraded state exists to
+      // prevent.
+      degraded = true
+      return reportDamaged(
+        parsed.tokens.length === 0
+          ? 'it exists but holds no device token'
+          : `none of its ${parsed.tokens.length} entries is a usable token hash`
+      )
+    }
     tokens = new Map(
       entries.map((entry) => [
         entry.hash,
@@ -71,7 +84,8 @@ export function createClientTokenStore({ dataDir, log = console.log, now = Date.
     )
     if (entries.length !== parsed.tokens.length) {
       log(
-        `client token registry held ${parsed.tokens.length - entries.length} unusable entr(ies); the rest still authenticate`
+        `client token registry held ${parsed.tokens.length - entries.length} unusable entr(ies); ` +
+          `the other ${entries.length} still authenticate`
       )
     }
   }
