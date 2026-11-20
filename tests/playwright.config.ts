@@ -1,17 +1,17 @@
 import { defineConfig } from '@stablyai/playwright-test'
-import { WORKBENCH_PR_SMOKE_SPEC } from './e2e/workbench-allowlist'
+import { WORKBENCH_PR_ALLOWLIST } from './e2e/workbench-allowlist'
 
 /**
- * Playwright config for the Workbench Electron smoke test.
+ * Playwright config for the Workbench PR E2E allowlist.
  *
  * Run:
- *   pnpm run test:e2e:workbench    — build + run the Workbench smoke test (headless)
+ *   pnpm run test:e2e:workbench    — build + run the Workbench PR E2E allowlist (headless)
  *   pnpm run test:e2e:headful      — run with visible window (for pointer-capture tests)
  *   SKIP_BUILD=1 pnpm run test:e2e — skip rebuild (faster iteration)
  *
  * globalSetup builds the Electron app and creates a seeded test git repo.
  * globalTeardown cleans up the test repo.
- * The smoke test uses _electron.launch() to start the app — no manual setup needed.
+ * The allowlisted tests use _electron.launch() to start the app — no manual setup needed.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -45,7 +45,7 @@ export default defineConfig({
       name: 'electron-headless',
       // The Workbench PR lane is an explicit allowlist. Other specs under
       // tests/e2e belong to Orca or dedicated lanes and are not BW coverage.
-      testMatch: WORKBENCH_PR_SMOKE_SPEC,
+      testMatch: [...WORKBENCH_PR_ALLOWLIST],
       grepInvert: /@headful/,
       metadata: {
         workbenchHeadful: false
@@ -53,8 +53,8 @@ export default defineConfig({
     },
     {
       name: 'electron-headful',
-      // Keep manual headful verification on the same Workbench smoke allowlist.
-      testMatch: WORKBENCH_PR_SMOKE_SPEC,
+      // Keep manual headful verification on the same Workbench PR allowlist.
+      testMatch: [...WORKBENCH_PR_ALLOWLIST],
       metadata: {
         workbenchHeadful: true
       }

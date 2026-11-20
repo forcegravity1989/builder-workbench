@@ -204,13 +204,13 @@ MJ01：普通项目 → 配置指标新会话 → 确认口径并实现历史脚
 
 ## 证据入口
 
-本特性沿三层证据登记，物理用例可以同时承担验收点和 W05 主旅程。登记字段固定为旅程 ID、所属特性、文件与测试标题、执行项目、真实环境、独立读回方式和当前状态。
+本特性沿三类测试用例登记，E2E可以同时承担验收点和 W05 主旅程。登记字段固定为旅程 ID、所属特性、文件与测试标题、执行项目、真实环境、独立读回方式和当前状态。
 
 | 层级 | 当前入口 | 证据与边界 |
 | --- | --- | --- |
 | TDD | `src/main/workbench/metrics/*.test.ts`、`src/shared/workbench/metrics.test.ts`、`src/renderer/src/workbench/overview-*.test.ts` | 只看护指标协议、窗口/来源语义和记分牌配对等核心逻辑。UI 外观和交互由 E2E 与真壳验收。 |
-| 验收点 E2E | W05；`tests/e2e/workbench-version-overview.spec.ts`，标题 `BW version overview: real sources, version identity and process restart`；执行项目 `electron-headless` | 真实 Electron fixture；通过 `tests/playwright.overview.config.ts` 显式运行，使用操作者提供的 GitHub 只读认证，不属于默认 PR CI。通过总览、版本材料和配置指标入口，独立读回绑定工作树材料与 renderer 重载。指标真实采集、外部来源和配置会话完整旅程仍是部分。 |
-| 用户旅程 E2E | W05；复用同一文件和测试标题 | 该物理用例覆盖从版本材料回看进入总览的子链，不另建第二条业务 E2E。配置指标、试采、评审合入、验收采用和重启独立复算仍待真实环境。 |
+| 验收点 E2E | W05；`tests/e2e/workbench/acceptance/version-overview.spec.ts`，标题 `BW version overview: real sources, version identity and process restart`；执行项目 `electron-headless` | 真实 Electron fixture；通过 `tests/playwright.overview.config.ts` 显式运行，使用操作者提供的 GitHub 只读认证，不属于默认 PR CI。通过总览、版本材料和配置指标入口，独立读回绑定工作树材料与 renderer 重载。指标真实采集、外部来源和配置会话完整旅程仍是部分。 |
+| 用户旅程 E2E | W05；复用同一文件和测试标题 | 该条 E2E覆盖从版本材料回看进入总览的子链，不另建第二条业务 E2E。配置指标、试采、评审合入、验收采用和重启独立复算仍待真实环境。 |
 ## 布局约束
 
 1280 与 1920 两种窗口宽度下内容铺满 Orca 内容槽，不横向溢出。记分牌结果与引领左右并排，更窄时上下排列；场景页签过多时横向滚动。里程碑时间轴在自身区域横向滚动，特性标签固定；不在总览铺开计划/验收全文。页面本身允许纵向滚动。原型读数不是实时采集，真实 Electron 与脚本证据在实施后补齐。
