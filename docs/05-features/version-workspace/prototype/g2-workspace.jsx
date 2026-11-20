@@ -1034,8 +1034,8 @@ function App() {
             className="prototype-board-link"
             href={
               screen === 'plan'
-                ? '../version-planning/planning-journey-prototype.html'
-                : '../version-acceptance/acceptance-journey-prototype.html'
+                ? '../version-planning/prototype.html'
+                : '../version-acceptance/prototype.html'
             }
           >
             查看本轮{labels[screen]}屏高保真 →

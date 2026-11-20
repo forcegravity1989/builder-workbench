@@ -6,26 +6,27 @@
 
 ## 原型入口映射
 
-本表是 2026-11-20 的资产盘点基线，不是另一份原型规范。原型规则、复用约束和历史处置以[原则 02 §3.2](../01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)为唯一正本；本表只回答“当前先打开哪一个入口、其它文件是什么身份”。本轮只盘点，不改原型内容、不删除文件，也不宣称所有 `spec.md` / `STATUS.md` 已完成入口同步。
+本表是 2026-11-20 的资产盘点与清理结果，不是另一份原型规范。原型规则、复用约束和历史处置以[原则 02 §3.2](../01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)为唯一正本；本表只回答“当前先打开哪一个入口、其它文件是什么身份”。当前稿统一使用各特性目录下的 `prototype.html`；构建型原型的源码和生成物留在对应 `prototype/` 目录，必要的旅程报告或嵌入评审页单独标明。
 
 | 特性目录 | 当前入口 | 其它资产身份 |
 |---|---|---|
 | `codehub` | 无独立入口 | 来源适配，复用任务管理/集成入口 |
 | `connectors` | [`prototype.html`](connectors/prototype.html) | 无并列当前稿 |
-| `explore-workbench` | [`prototype.html`](explore-workbench/prototype.html) | `prototype/w05-journey.html` 待确认身份 |
-| `overview-metrics` | [`prototype.html`](overview-metrics/prototype.html) | `prototype/scoreboard.html` 及旧源文件待后续清理 |
-| `pr-review-notify` | [`prototype/index.html`](pr-review-notify/prototype/index.html) | `prototype/` 为当前构建源与生成物 |
-| `project-intake` | [`project-settings-prototype.html`](project-intake/project-settings-prototype.html) | `g3-project-wall-prototype.html`、`project-wall-readings-prototype.html` 为历史/辅助稿 |
+| `explore-workbench` | [`prototype.html`](explore-workbench/prototype.html) | [`prototype/w05-journey.html`](explore-workbench/prototype/w05-journey.html) 为 W05 旅程评审辅助页 |
+| `overview-metrics` | [`prototype.html`](overview-metrics/prototype.html) | [`prototype/scoreboard.html`](overview-metrics/prototype/scoreboard.html) 是当前总览原型内嵌的指标评审子页；不是并列入口 |
+| `pr-review-notify` | [`prototype/index.html`](pr-review-notify/prototype/index.html) | `prototype/` 为当前构建源与生成物；入口形态因构建目录保留 `index.html` |
+| `project-intake` | [`prototype.html`](project-intake/prototype.html) | 旧 G3 项目墙与墙卡读数页面已删除，历史由 Git 追溯 |
 | `quick-links` | [`prototype.html`](quick-links/prototype.html) | 无并列当前稿 |
-| `reviewer-agent` | 无当前入口 | [`prototype.html`](reviewer-agent/prototype.html) 为历史方案 |
+| `reviewer-agent` | 无当前入口 | 历史方案原型已删除；旧稿由 Git 追溯 |
 | `task-management` | [`prototype.html`](task-management/prototype.html) | 无并列当前稿 |
-| `version-acceptance` | [`acceptance-journey-prototype.html`](version-acceptance/acceptance-journey-prototype.html) | `prototype.html` 为旧基线，`showcase-v0.5-g1.html` 为历史 Showcase |
+| `version-acceptance` | [`prototype.html`](version-acceptance/prototype.html) | 旧基线与 Showcase 页面已删除；当前旅程源码与生成物在 `prototype/` |
 | `version-overview` | [`prototype.html`](version-overview/prototype.html) | [`journey.html`](version-overview/journey.html) 为评审辅助页 |
-| `version-planning` | [`planning-journey-prototype.html`](version-planning/planning-journey-prototype.html) | `prototype.html` 与旧 `prototype/` 源待后续清理 |
-| `version-workspace` | [`version-workspace-prototype-475.html`](version-workspace/version-workspace-prototype-475.html) | [`version-workspace-journey.html`](version-workspace/version-workspace-journey.html) 为评审辅助页；旧 `version-workspace-prototype.html` 为历史稿 |
+| `version-planning` | [`prototype.html`](version-planning/prototype.html) | 旧基线已删除；当前旅程源码与生成物在 `prototype/` |
+| `version-workspace` | [`prototype.html`](version-workspace/prototype.html) | [`version-workspace-journey.html`](version-workspace/version-workspace-journey.html) 为评审辅助页；旧单列稿已删除 |
 | `workbench-release` | 无独立入口 | 非 UI 支撑能力，出包入口归版本验收 |
 
-下一批按正文稳定后的特性决定逐项：先同步 `spec/STATUS` 入口，再确认复用与历史身份，最后在同一清理提交中删除重复/过期资产并统一当前入口命名。`docs/hifi/` 继续作为历史档案，不是当前原型正本。
+后续新增或替换原型时，先在对应特性正文确认当前稿和复用边界，再更新本表；不在本表复制原型规范，也不把原型当成交付证据。`docs/hifi/` 继续作为历史档案，不是当前原型正本。
+
 ## 特性矩阵
 
 BW Issue 按主要用户结果选一个主归属。每行名称可直接用于标题；版本、目标和主单身份按[通用 Issue 规范](../../standard/references/issue-state.md)填写。
@@ -38,7 +39,7 @@ BW Issue 按主要用户结果选一个主归属。每行名称可直接用于�
 | 项目墙       | 跨项目、主机扫墙，按真实读数选择要跟进的项目                                                    | [墙卡规格](project-intake/spec.md) · [状态](project-intake/STATUS.md)                                                                                | 个人／团队本机属性、项目负责人、精简墙卡和当前项目侧栏原型待批注（#497/#345）；额外视图撤去，#489 仅文字；生产状态不因原型提升。 |
 | 项目总览     | 按日期和特性安排里程碑，对照版本计划与实际目标结果                                              | [总览规格](overview-metrics/spec.md) · [里程碑状态](overview-metrics/STATUS.md#当前结论)                                                 | #590 原型及关键逻辑已确认；版本复用与材料提交范围已有 Windows 真壳局部验证，完整旅程边界见状态。                                 |
 | 版本计划     | 与团队确定本版目标、验收条件和任务，评审并归档计划                                              | [计划规格](version-planning/spec.md) · [状态](version-planning/STATUS.md)                                                                            | 目标与规格已确认，材料协议和部分真壳旅程已验；模型执行与真实来源归档的覆盖见状态。                                               |
-| 版本会话管理 | 从侧栏找到版本、目标、工作区与会话，准备并进入流程树                                            | [侧栏规格](version-workspace/spec.md) · [当前侧栏原型](version-workspace/version-workspace-prototype-475.html) · [状态](version-workspace/STATUS.md) | 版本导航、绑定和工作区生命周期；W02/W03 归属、验收入口与未验证边界见 STATUS。                                       |
+| 版本会话管理 | 从侧栏找到版本、目标、工作区与会话，准备并进入流程树                                            | [侧栏规格](version-workspace/spec.md) · [当前侧栏原型](version-workspace/prototype.html) · [状态](version-workspace/STATUS.md) | 版本导航、绑定和工作区生命周期；W02/W03 归属、验收入口与未验证边界见 STATUS。                                       |
 | 任务管理     | 跨来源查找、筛选和处理 Issue、PR/MR，跟进任务结果                                               | [链接直达规格](task-management/spec.md) · [状态](task-management/STATUS.md) · [CodeHub 任务页](codehub/spec.md#任务页行为) · [CodeHub 范围证据](codehub/STATUS.md)                                                             | 独立用户特性；链接直达定义与菜单原型已确认，真实旅程待验。CodeHub 任务行为和证据按其子能力范围维护。                                          |
 | 通知         | 把需要人回应的请求送到人，并在 BW 内跟踪处理结果；v0.8 只做 PR / MR 评审通知                    | [规格](pr-review-notify/spec.md) · [状态](pr-review-notify/STATUS.md) · [原型](pr-review-notify/prototype/index.html)                                | 主机多选与 CodeHub MR 已接入；静态复检及本机简单 CDP 已验，两主机及内部旅程待验。                                                |
 | 产物分享     | 把本地 HTML 报告、原型或验收材料上传到团队自管服务，生成同事可打开的链接                     | [产物分享规格](artifact-sharing/spec.md) · [状态](artifact-sharing/STATUS.md) · [服务端说明](../../services/bw-share/README.md)                                                             | 客户端入口、自动设备令牌、本机记录与移除链接已实现并有协议测试；真实内网、重启读回与链接更新旅程待验，边界见状态。                                       |
