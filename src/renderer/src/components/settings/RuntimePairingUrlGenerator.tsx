@@ -155,7 +155,15 @@ export function RuntimePairingUrlGenerator({
   }, [auditAction, auditResult, auditSearch, auditSinceDays, mountedRef])
 
   const clearRuntimeAccessAudit = useCallback(async (): Promise<void> => {
-    if (runtimeAccessAudit.length === 0 || !window.confirm('清理当前主机的共享访问日志？')) {
+    if (
+      runtimeAccessAudit.length === 0 ||
+      !window.confirm(
+        translate(
+          'auto.components.settings.RuntimePairingUrlGenerator.clearConfirm',
+          'Clear this host\'s shared access log?'
+        )
+      )
+    ) {
       return
     }
     try {
@@ -165,7 +173,14 @@ export function RuntimePairingUrlGenerator({
       }
     } catch (error) {
       if (mountedRef.current) {
-        toast.error(error instanceof Error ? error.message : '清理共享访问日志失败。')
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.clearFailed',
+                'Failed to clear shared access log.'
+              )
+        )
       }
     }
   }, [mountedRef, runtimeAccessAudit.length])
