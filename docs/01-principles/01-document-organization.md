@@ -119,7 +119,7 @@ docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | sp
 docs/05-features/<change-id>/
   intent.md    # 要什么 / 为何 / 约束（意图 gate；gate 前未决问题清零——决策进正文与取舍，遗留进原生 Issue，不留开放问题节）
   spec.md      # 需求+设计；必须含可点原型的链接与操作逻辑（规格 gate）
-  prototype.html # 本特性可点入口；可编辑源码和本地资源位于同目录 prototype/
+  prototype.html # 默认可点入口；构建型或多页原型可用目录入口，并在 spec/入口映射中说明；可编辑源码和本地资源位于同目录 prototype/
   STATUS.md    # draft | accepted | building | in_review | shipped | rejected
 ```
 
