@@ -1,4 +1,6 @@
 import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
+import { WORKBENCH_PROTOTYPE_REVIEW_METHODS } from './workbench-prototype-review-notifications'
+import { WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS } from './workbench-prototype-review-annotations'
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
 import { WORKBENCH_SHARE_METHODS } from './workbench-share'
@@ -67,6 +69,8 @@ import { AGENT_HOOK_METHODS } from './agent-hooks'
 // auditing the security boundary or wiring new CLI commands.
 export const ALL_RPC_METHODS = [
   ...WORKBENCH_REVIEW_NOTIFICATION_METHODS,
+  ...WORKBENCH_PROTOTYPE_REVIEW_METHODS,
+  ...WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS,
   ...WORKBENCH_MATERIAL_METHODS,
   ...WORKBENCH_SHARE_METHODS,
   ...WORKBENCH_SKILL_METHODS,

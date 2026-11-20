@@ -10,6 +10,9 @@ import {
 } from 'react'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
+import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
+import { hasPrototypeReviewPage } from '@/workbench/pr-review-notifications/prototype-store'
 import type {
   BrowserAnnotationIntent,
   BrowserGrabPayload
@@ -44,6 +47,8 @@ const annotationAddedGrabToastMessage = (): string =>
 
 export function useBrowserPageGrabAnnotations({
   browserTabId,
+  worktreeId,
+  documentKey,
   toolTargetId = browserTabId,
   isActive,
   grab,
@@ -56,6 +61,8 @@ export function useBrowserPageGrabAnnotations({
 }: {
   /** Scopes the stored annotations. Stable for the life of the surface. */
   browserTabId: string
+  worktreeId: string
+  documentKey: string
   /**
    * The id main resolves to a guest. Defaults to the annotation scope, which is the same string
    * for a browser page — a preview re-mints this on recovery, and its annotations must not be
@@ -270,8 +277,9 @@ export function useBrowserPageGrabAnnotations({
       if (!payload) {
         return
       }
+      const annotationId = createBrowserAnnotationId()
       addBrowserPageAnnotation({
-        id: createBrowserAnnotationId(),
+        id: annotationId,
         browserPageId: browserTabId,
         comment,
         intent,
@@ -280,13 +288,38 @@ export function useBrowserPageGrabAnnotations({
         payload: createBrowserAnnotationPayload(payload),
         ...(imagePaths.length > 0 ? { imagePaths } : {})
       })
+      if (hasPrototypeReviewPage(browserTabId)) {
+        void callRuntimeRpc(
+          { kind: 'local' },
+          'workbench.prototypeReview.annotations.add',
+          {
+            worktree: toRuntimeWorktreeSelector(worktreeId),
+            page: browserTabId,
+            id: annotationId,
+            documentKey,
+            comment,
+            x: payload.target.rectPage.x,
+            y: payload.target.rectPage.y,
+            label: payload.target.textSnippet || undefined
+          },
+          { timeoutMs: 15_000, suppressFeatureInteraction: true }
+        ).catch(() => undefined)
+      }
       recordFeatureInteraction('browser-annotations')
       pendingAnnotationPayloadRef.current = null
       setPendingAnnotationPayload(null)
       showGrabToast(annotationAddedGrabToastMessage(), 'success', payload)
       grab.rearm()
     },
-    [addBrowserPageAnnotation, browserTabId, grab, recordFeatureInteraction, showGrabToast]
+    [
+      addBrowserPageAnnotation,
+      browserTabId,
+      documentKey,
+      grab,
+      recordFeatureInteraction,
+      showGrabToast,
+      worktreeId
+    ]
   )
 
   const handleCancelPendingBrowserAnnotation = useCallback((): void => {
