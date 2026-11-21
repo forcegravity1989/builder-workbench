@@ -203,7 +203,10 @@ function QuickLaunchAgentMenuItemsInner({
                   'Couldn’t read agent settings. Check the host connection and try again.'
                 )
               : detectedIds && detectedIds.length > 0
-                ? translate('auto.components.tab.bar.QuickLaunchButton.8dea9b5cdf', 'No enabled agents')
+                ? translate(
+                    'auto.components.tab.bar.QuickLaunchButton.8dea9b5cdf',
+                    'No enabled agents'
+                  )
                 : translate(
                     'auto.components.tab.bar.QuickLaunchButton.e518f544b1',
                     'No agents detected'
@@ -242,7 +245,9 @@ function QuickLaunchAgentMenuItemsInner({
             {isStructuredLaunchPending ? (
               <Loader2 className="size-3.5 shrink-0 animate-spin" aria-hidden="true" />
             ) : (
-              <AgentIcon agent={agent} size={14} />
+              <span data-workbench-action-icon className="inline-flex shrink-0">
+                <AgentIcon agent={agent} size={14} />
+              </span>
             )}
             <span className="flex-1">{menuLabel}</span>
             {showsDefaultAgentShortcut ? (
