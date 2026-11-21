@@ -1,0 +1,26 @@
+.bw/planning/v1.1/acceptance.json
+  s_1d337e6d1e934f::t_00d44f23157668 1-937
+.bw/planning/v1.1/acceptance-evidence.html
+  h_a7e858313fdba5 1-896
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "0f1bb5b36771b5aa6a063295eb5343c44b78841e",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_1d337e6d1e934f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df125eb7-cf37-44a8-9bfb-6a48a92443e0",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
