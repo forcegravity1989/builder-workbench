@@ -15458,7 +15458,16 @@
             "756bfc25c9": "Open",
             "09a9489aa5": "Show",
             "2a4c4b8e1f": "Copy",
-            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead."
+            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead.",
+            "prototypeReview": {
+              "pageTitle": "Prototype review page",
+              "addAnnotation": "Add page annotation",
+              "annotationPlaceholder": "Enter annotation",
+              "submitAnnotation": "Submit annotation",
+              "annotateElements": "Annotate page elements",
+              "onlyReviewPages": "Only prototype review pages support annotations",
+              "exitAnnotationMode": "Exit annotation mode"
+            }
           },
           "BrowserToolbarMenu": {
             "429ef481f9": "Cancel",
