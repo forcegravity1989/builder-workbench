@@ -8,15 +8,15 @@ import '../project-settings.css'
 import '../workbench-overview.css'
 
 export const sampleCharter: ProjectCharter = {
-  name: '周末书集',
+  name: '运营看板',
   kind: '',
   benchmark: '',
-  owner: '林小满',
-  brief: '让邻居用手机预约周末的图书交换。',
-  opportunity: '让社区借书更方便。'
+  owner: '运营小组',
+  brief: '让团队每周都能看见运营重点，并知道下一步怎么推进。',
+  opportunity: '让运营工作有共同目标，也能按阶段复盘。'
 }
 
-const vision = '每周都有人带一本书来，也带一本书回家。'
+const vision = '让团队每周都能看见下一步，并知道怎样判断完成。'
 const ignore = () => {}
 
 export function DirectionOverviewFrame({

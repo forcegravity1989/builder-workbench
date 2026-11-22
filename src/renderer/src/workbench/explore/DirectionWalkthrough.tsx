@@ -3,6 +3,7 @@ import { DirectionWallDemo } from './DirectionWallDemo'
 import { DirectionCharterDemo } from './DirectionCharterDemo'
 import { DirectionMilestoneDemo } from './DirectionMilestoneDemo'
 import { JourneyPlayer, type JourneyStep } from './JourneyPlayer'
+import { DirectionWorkbenchFrame } from './DirectionWorkbenchFrame'
 
 const durations = [5700, 9800, 8300, 9550] as const
 
@@ -37,10 +38,10 @@ function getCopy() {
 }
 
 const scenes = [
-  DirectionWallDemo,
-  DirectionCharterDemo,
-  ({ time }: { time: number }) => <DirectionMilestoneDemo time={time} review={false} />,
-  ({ time }: { time: number }) => <DirectionMilestoneDemo time={time} review />
+  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="wall" location="项目墙 / 运营看板"><DirectionWallDemo time={time} /></DirectionWorkbenchFrame>,
+  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="overview" location="项目总览 / 运营看板"><DirectionCharterDemo time={time} /></DirectionWorkbenchFrame>,
+  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="overview" location="项目总览 / 阶段安排"><DirectionMilestoneDemo time={time} review={false} /></DirectionWorkbenchFrame>,
+  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="overview" location="项目总览 / 阶段安排"><DirectionMilestoneDemo time={time} review /></DirectionWorkbenchFrame>
 ] as const
 const pointerCues: readonly (readonly [at: number, target: string][])[] = [
   [
@@ -65,7 +66,6 @@ const pointerCues: readonly (readonly [at: number, target: string][])[] = [
     [1050, '[data-contextual-tour-target="milestone-submit"]'],
     [3500, '[data-demo-action="confirm"]'],
     [5100, '[data-contextual-tour-target="milestone-submit"]'],
-    [7660, '[data-contextual-tour-target="milestone-submit"]']
   ]
 ]
 
@@ -79,7 +79,7 @@ function getSteps(): JourneyStep[] {
 }
 
 export function DirectionJourney() {
-  return <JourneyPlayer steps={getSteps()} />
+  return <JourneyPlayer steps={getSteps()} playbackRate={1.45} />
 }
 export function DirectionWall() {
   return <JourneyPlayer steps={getSteps().slice(0, 1)} />

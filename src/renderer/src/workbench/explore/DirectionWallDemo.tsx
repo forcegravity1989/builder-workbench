@@ -35,7 +35,7 @@ function makeCard(id: string, name: string, charter: WallCardView['charter']): W
 }
 
 const bookExchange = makeCard('direction-demo', sampleCharter.name, sampleCharter)
-const communityMap = makeCard('direction-demo-secondary', '社区地图', null)
+const communityMap = makeCard('direction-demo-secondary', '社区内容计划', null)
 
 export function DirectionWallDemo({ time }: { time: number }) {
   if (time >= 4300) {
