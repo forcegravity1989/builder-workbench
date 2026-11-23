@@ -349,12 +349,35 @@ export function registerMobileHandlers(
     return { cleared: true }
   })
 
+  // Revoking a shared-host link is an authorization change the owner reviews in the access log.
+  // The device is read before revoking and the entry is written only if the revoke took effect.
+  const auditRevocation = (deviceId: string): ((revoked: boolean) => boolean) => {
+    const device = rpcServer.getDeviceRegistry()?.getDevice(deviceId)
+    return (revoked) => {
+      if (revoked && device?.scope === 'runtime') {
+        rpcServer.getRuntimeAccessAudit?.()?.record({
+          at: Date.now(),
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          accessMode: effectiveRuntimeAccessMode(device),
+          ...(device.teamBinding
+            ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+            : undefined),
+          method: 'access.revoke',
+          result: 'allowed'
+        })
+      }
+      return revoked
+    }
+  }
+
   ipcMain.handle('mobile:revokeDevice', async (_event, args: { deviceId: string }) => {
     const registry = rpcServer.getDeviceRegistry()
     if (!registry) {
       return { revoked: false }
     }
-    return { revoked: await rpcServer.revokeMobileDevice(args.deviceId) }
+    const audit = auditRevocation(args.deviceId)
+    return { revoked: audit(await rpcServer.revokeMobileDevice(args.deviceId)) }
   })
 
   ipcMain.handle('mobile:revokeRuntimeAccess', (_event, args: { deviceId: string }) => {
@@ -362,7 +385,8 @@ export function registerMobileHandlers(
     if (!registry) {
       return { revoked: false }
     }
-    return { revoked: rpcServer.revokeRuntimeAccess(args.deviceId) }
+    const audit = auditRevocation(args.deviceId)
+    return { revoked: audit(rpcServer.revokeRuntimeAccess(args.deviceId)) }
   })
 
   ipcMain.handle('mobile:isWebSocketReady', () => {

@@ -709,8 +709,12 @@ describe('registerMobileHandlers', () => {
 
   it('revokes runtime access through the runtime server', () => {
     const revokeRuntimeAccess = vi.fn().mockReturnValue(true)
+    const record = vi.fn()
     const rpcServer = {
-      getDeviceRegistry: () => ({}),
+      getDeviceRegistry: () => ({
+        getDevice: () => ({ deviceId: 'runtime-1', name: '安迪', scope: 'runtime' })
+      }),
+      getRuntimeAccessAudit: () => ({ record }),
       revokeRuntimeAccess
     }
 
@@ -720,12 +724,15 @@ describe('registerMobileHandlers', () => {
       revoked: true
     })
     expect(revokeRuntimeAccess).toHaveBeenCalledWith('runtime-1')
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: 'runtime-1', method: 'access.revoke', result: 'allowed' })
+    )
   })
 
   it('awaits mobile device revocation before replying', async () => {
     const revokeMobileDevice = vi.fn().mockResolvedValue(true)
     const rpcServer = {
-      getDeviceRegistry: () => ({}),
+      getDeviceRegistry: () => ({ getDevice: () => undefined }),
       revokeMobileDevice
     }
 
