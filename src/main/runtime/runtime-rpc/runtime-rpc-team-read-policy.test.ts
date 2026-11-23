@@ -7,7 +7,12 @@ describe('team-read RPC policy', () => {
       'worktree.create',
       'agentSession.create',
       'orchestration.send',
-      'terminal.send'
+      'terminal.send',
+      'browser.mouseClick',
+      'browser.keypress',
+      'browser.goto',
+      'browser.eval',
+      'browser.reload'
     ]) {
       expect(teamReadDenialReason('team-read', method)).toContain('requires full access')
     }
@@ -24,6 +29,14 @@ describe('team-read RPC policy', () => {
     expect(teamReadDenialReason('team-read', 'github.project.viewTable')).toBeNull()
     expect(teamReadDenialReason('team-read', 'codehub.listTasks')).toBeNull()
     expect(teamReadDenialReason('team-read', 'git.checkIgnored')).toBeNull()
+    for (const method of [
+      'browser.tabList',
+      'browser.tabShow',
+      'browser.screencast',
+      'browser.screencast.unsubscribe'
+    ]) {
+      expect(teamReadDenialReason('team-read', method)).toBeNull()
+    }
     expect(teamReadDenialReason('team-read', 'git.conflictOperation')).toBeNull()
     expect(teamReadDenialReason('team-read', 'future.mutate')).toContain('requires full access')
     expect(teamReadDenialReason('full', 'terminal.send')).toBeNull()
@@ -34,6 +47,8 @@ describe('team-read RPC policy', () => {
     expect(isRoutineReadRuntimeMethod('project.list')).toBe(true)
     expect(isRoutineReadRuntimeMethod('terminal.resolvePane')).toBe(true)
     expect(isRoutineReadRuntimeMethod('workbench.review.receive')).toBe(false)
+    expect(isRoutineReadRuntimeMethod('workbench.prototypeReview.annotations.add')).toBe(false)
+    expect(isRoutineReadRuntimeMethod('browser.screencast')).toBe(true)
     expect(isRoutineReadRuntimeMethod('terminal.send')).toBe(false)
   })
 })

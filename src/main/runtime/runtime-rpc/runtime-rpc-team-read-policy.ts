@@ -140,6 +140,15 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   'session.tabs.subscribeAll',
   'session.tabs.unsubscribe',
   'session.tabs.unsubscribeAll',
+  // View-only browser access for prototype review: list and show the shared page and watch its
+  // screencast. Input, navigation, eval and upload stay denied; comments go through the dedicated
+  // workbench.prototypeReview.annotations methods above.
+  'browser.tabList',
+  'browser.tabCurrent',
+  'browser.tabShow',
+  'browser.screenshot',
+  'browser.screencast',
+  'browser.screencast.unsubscribe',
   'files.open',
   'files.read',
   'files.list',
@@ -237,8 +246,15 @@ export function isReadMethod(method: string): boolean {
 // Successful reads are intentionally quiet in the host audit. Project walls and sidebars hydrate
 // repeatedly; recording those calls would hide the connection, authorization, and failure events
 // that a host owner actually needs to review.
+const AUDITED_TEAM_READ_METHODS = new Set([
+  'workbench.review.receive',
+  'workbench.prototypeReview.receive',
+  'workbench.prototypeReview.annotations.add',
+  'workbench.prototypeReview.annotations.delete'
+])
+
 export function isRoutineReadRuntimeMethod(method: string): boolean {
-  return method !== 'workbench.review.receive' && isReadMethod(method)
+  return !AUDITED_TEAM_READ_METHODS.has(method) && isReadMethod(method)
 }
 
 export function teamReadDenialReason(

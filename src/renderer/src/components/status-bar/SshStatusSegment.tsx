@@ -24,6 +24,7 @@ import {
   workspaceSyncProblemLabel
 } from './ssh-status-segment-copy'
 import { SshTargetStatusRow } from './SshTargetStatusRow'
+import { TeamHostRefreshMenuItem } from '../../workbench/TeamHostRefreshMenuItem'
 import { connectRuntimeEnvironmentAndRecordStatus } from './runtime-environment-explicit-connect'
 import {
   overallDotColor,
@@ -319,6 +320,7 @@ export function SshStatusSegment({
           />
         ))}
         <DropdownMenuSeparator />
+        <TeamHostRefreshMenuItem />
         <DropdownMenuItem
           onSelect={() => {
             recordFeatureInteraction('ssh')

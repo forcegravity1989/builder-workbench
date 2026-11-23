@@ -1,10 +1,13 @@
-import { ipcMain } from 'electron'
+import { app, ipcMain } from 'electron'
 import { resolveWelinkRoute } from '../workbench/reporting/report-submission'
 import {
   readTeamDirectory,
   writeTeamDirectory,
   type TeamDirectory
 } from '../workbench/team-collaboration/team-directory-client'
+import { syncTeamHosts } from '../workbench/team-collaboration/team-host-sync'
+import { markRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-manual-disconnect'
+import { invalidateRuntimeEnvironmentTransport } from './runtime-environments'
 
 const NUMERIC_ID = /^\d{1,32}$/
 const TEXT_ID = /^.{1,256}$/u
@@ -47,7 +50,9 @@ function requireDirectory(value: unknown): TeamDirectory {
       ...(host.member_type
         ? { member_type: requireText(host.member_type, `hosts[${index}].member_type`, 128) }
         : {}),
-      ...(host.host_id ? { host_id: requireText(host.host_id, `hosts[${index}].host_id`, 256) } : {}),
+      ...(host.host_id
+        ? { host_id: requireText(host.host_id, `hosts[${index}].host_id`, 256) }
+        : {}),
       identity_source: 'welink-cli' as const,
       ...(host.orca_endpoint
         ? { orca_endpoint: requireText(host.orca_endpoint, `hosts[${index}].orca_endpoint`) }
@@ -87,13 +92,28 @@ export function registerTeamCollaborationHandlers(): void {
   )
 
   ipcMain.handle(
-    'teamCollaboration:writeDirectory',
-    async (_event, directory: TeamDirectory) => {
-      const safeDirectory = requireDirectory(directory)
-      return writeTeamDirectory({
+    'teamCollaboration:syncHosts',
+    async (_event, args: { groupId: string; spaceId: string }) => {
+      const groupId = requireId(args?.groupId, 'groupId')
+      const spaceId = requireId(args?.spaceId, 'spaceId')
+      const { directory, currentMemberId } = await readTeamDirectory({
         route: await resolveWelinkRoute(),
-        directory: safeDirectory
+        groupId,
+        spaceId
+      })
+      return syncTeamHosts(directory.hosts, currentMemberId, {
+        userDataPath: app.getPath('userData'),
+        holdDisconnected: markRuntimeEnvironmentManuallyDisconnected,
+        invalidateTransport: invalidateRuntimeEnvironmentTransport
       })
     }
   )
+
+  ipcMain.handle('teamCollaboration:writeDirectory', async (_event, directory: TeamDirectory) => {
+    const safeDirectory = requireDirectory(directory)
+    return writeTeamDirectory({
+      route: await resolveWelinkRoute(),
+      directory: safeDirectory
+    })
+  })
 }

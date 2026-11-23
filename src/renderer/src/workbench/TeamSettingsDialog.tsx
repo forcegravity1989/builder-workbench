@@ -20,6 +20,7 @@ import {
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
+import { rememberedTeamBinding, rememberTeamBinding, syncTeamHosts } from './team-hosts'
 
 type TeamSettingsDialogProps = {
   open: boolean
@@ -28,29 +29,6 @@ type TeamSettingsDialogProps = {
 
 // Last directory read in this renderer session, shown immediately on reopen while a fresh read runs.
 let directorySnapshot: { directory: TeamDirectory; currentMemberId: string | null } | null = null
-
-const TEAM_GROUP_STORAGE_KEY = 'bw:team-group-id'
-const TEAM_SPACE_STORAGE_KEY = 'bw:team-space-id'
-
-function rememberedBinding(): { groupId: string; spaceId: string } {
-  try {
-    return {
-      groupId: window.localStorage.getItem(TEAM_GROUP_STORAGE_KEY) ?? '',
-      spaceId: window.localStorage.getItem(TEAM_SPACE_STORAGE_KEY) ?? ''
-    }
-  } catch {
-    return { groupId: '', spaceId: '' }
-  }
-}
-
-function rememberBinding(groupId: string, spaceId: string): void {
-  try {
-    window.localStorage.setItem(TEAM_GROUP_STORAGE_KEY, groupId)
-    window.localStorage.setItem(TEAM_SPACE_STORAGE_KEY, spaceId)
-  } catch {
-    // The directory remains authoritative when browser storage is unavailable.
-  }
-}
 
 export function TeamSettingsDialog({
   open,
@@ -92,7 +70,7 @@ export function TeamSettingsDialog({
 
   const enterTeam = (): void => {
     setError(null)
-    void loadDirectory(groupId, spaceId)
+    void loadDirectory(groupId, spaceId).then(() => syncTeamHosts().catch(() => undefined))
   }
 
   async function loadDirectory(
@@ -123,7 +101,7 @@ export function TeamSettingsDialog({
       setCurrentMemberId(result.currentMemberId)
       setGroupId(result.directory.team_group_id)
       setSpaceId(result.directory.team_space_id)
-      rememberBinding(result.directory.team_group_id, result.directory.team_space_id)
+      rememberTeamBinding(result.directory.team_group_id, result.directory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '读取团队目录失败。')
     } finally {
@@ -135,7 +113,7 @@ export function TeamSettingsDialog({
     if (!open || directory) {
       return
     }
-    const binding = rememberedBinding()
+    const binding = rememberedTeamBinding()
     setGroupId(binding.groupId)
     setSpaceId(binding.spaceId)
     if (binding.groupId && binding.spaceId) {
@@ -148,6 +126,7 @@ export function TeamSettingsDialog({
         setCurrentMemberId(directorySnapshot.currentMemberId)
       }
       void loadDirectory(binding.groupId, binding.spaceId)
+      void syncTeamHosts().catch(() => undefined)
     }
     // The loader is intentionally stable for this open-session bootstrap; rerunning
     // it for every renderer callback would issue duplicate OneBox reads.
@@ -194,7 +173,7 @@ export function TeamSettingsDialog({
     setError(null)
     try {
       await window.api.teamCollaboration.writeDirectory(directory)
-      rememberBinding(directory.team_group_id, directory.team_space_id)
+      rememberTeamBinding(directory.team_group_id, directory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '同步团队目录失败。')
     } finally {
@@ -291,7 +270,7 @@ export function TeamSettingsDialog({
       setDirectoryBase(JSON.stringify(nextDirectory))
       setSelectedProjectId('')
       setProjectRegisterOpen(false)
-      rememberBinding(nextDirectory.team_group_id, nextDirectory.team_space_id)
+      rememberTeamBinding(nextDirectory.team_group_id, nextDirectory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登记团队项目失败。')
     } finally {
@@ -307,7 +286,7 @@ export function TeamSettingsDialog({
           repo.projectVisibility !== 'team'
       )
     : []
-  const savedBinding = rememberedBinding()
+  const savedBinding = rememberedTeamBinding()
   const checkingBinding =
     !directory && !error && Boolean(savedBinding.groupId && savedBinding.spaceId)
   const showSpinner = !directory && (loading || checkingBinding)
