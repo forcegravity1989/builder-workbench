@@ -11,7 +11,7 @@ import { effectiveRuntimeAccessMode, type DeviceScope } from '../device-registry
 import { RuntimeRpcRequestAdmission } from './runtime-rpc-request-admission'
 import { classifyRuntimeLongPoll } from './runtime-rpc-long-poll'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
-import { teamReadDenialReason } from './runtime-rpc-team-read-policy'
+import { isRoutineReadRuntimeMethod, teamReadDenialReason } from './runtime-rpc-team-read-policy'
 
 // Why: status.get has no per-connection context in the dispatcher, so stamp the scope here at the transport boundary.
 function injectDeviceScope(response: string, scope: DeviceScope): string {
@@ -138,19 +138,24 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         } catch {
           // Keep the error result when a handler emitted a malformed frame.
         }
-        this.getRuntimeAccessAudit().record({
-          at: Date.now(),
-          deviceId: device.deviceId,
-          deviceName: device.name,
-          accessMode,
-          ...(device.teamBinding
-            ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
-            : undefined),
-          method: request.method,
-          result,
-          requestId: request.id,
-          durationMs: Date.now() - auditStartedAt
-        })
+        // Project walls and sidebars hydrate repeatedly for both access modes. Keep the audit useful
+        // by retaining denied/error requests and explicit writes while leaving routine successful
+        // reads out.
+        if (!(isRoutineReadRuntimeMethod(request.method) && result === 'allowed')) {
+          this.getRuntimeAccessAudit().record({
+            at: Date.now(),
+            deviceId: device.deviceId,
+            deviceName: device.name,
+            accessMode,
+            ...(device.teamBinding
+              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              : undefined),
+            method: request.method,
+            result,
+            requestId: request.id,
+            durationMs: Date.now() - auditStartedAt
+          })
+        }
       }
       reply(scopedResponse)
     }

@@ -4,16 +4,17 @@ import type {
   ReviewSendInput
 } from '../../../../shared/workbench/pr-review-request'
 import { ReviewSendDialog } from './ReviewSendDialog'
-import { useReviewSendDialog } from './send-dialog-store'
+import { useReviewSendDialog, type ReviewSendDialogRequest } from './send-dialog-store'
 import { getReviewNotifications, sendReviewRequest } from './store'
 import { reviewNoteId } from './model'
 import { listConnectedReviewTargets } from './transport'
+import { getPrototypeReviewNotifications, sendPrototypeReview } from './prototype-store'
 
 function SendDialog({
   request,
   onClose
 }: {
-  request: ReviewSendInput
+  request: ReviewSendDialogRequest
   onClose: () => void
 }): React.JSX.Element {
   const [available, setAvailable] = useState<ReviewPeerTarget[]>([])
@@ -21,17 +22,34 @@ function SendDialog({
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [draft, setDraft] = useState(request)
+  const isPrototype = request.kind === 'prototype'
+  const prRequest = request.kind === 'pr' ? request.request : null
+  const prototypePage = request.kind === 'prototype' ? request.page : null
+  const [draft, setDraft] = useState<ReviewSendInput | null>(prRequest)
   useEffect(() => {
     let cancelled = false
-    const state = getReviewNotifications()
-    const id = reviewNoteId(request.repo, request.prNumber)
-    const previous = state.outgoing.find((note) => note.id === id)
-    const retry = state.pending.find(
-      (attempt) => reviewNoteId(attempt.request.repo, attempt.request.prNumber) === id
-    )
-    const defaults = retry?.targets ?? previous?.deliveries
-    setDraft(retry?.request ?? request)
+    let defaults: ReviewPeerTarget[] | undefined
+    let retryPr: ReviewSendInput | undefined
+    if (isPrototype && prototypePage) {
+      const state = getPrototypeReviewNotifications()
+      const previous = state.outgoing.find(
+        (note) => note.page.browserPageId === prototypePage.browserPageId
+      )
+      const retry = state.pending.find(
+        (attempt) => attempt.request.page.browserPageId === prototypePage.browserPageId
+      )
+      defaults = retry?.targets ?? previous?.deliveries
+    } else if (prRequest) {
+      const state = getReviewNotifications()
+      const id = reviewNoteId(prRequest.repo, prRequest.prNumber)
+      const previous = state.outgoing.find((note) => note.id === id)
+      const retry = state.pending.find(
+        (attempt) => reviewNoteId(attempt.request.repo, attempt.request.prNumber) === id
+      )
+      defaults = retry?.targets ?? previous?.deliveries
+      retryPr = retry?.request
+    }
+    setDraft(isPrototype ? null : (retryPr ?? prRequest))
     setSelected(defaults ?? [])
     void listConnectedReviewTargets()
       .then((targets) => {
@@ -53,7 +71,7 @@ function SendDialog({
     return () => {
       cancelled = true
     }
-  }, [request])
+  }, [isPrototype, prRequest, prototypePage, request])
   async function send(): Promise<void> {
     if (sending) {
       return
@@ -61,7 +79,12 @@ function SendDialog({
     setSending(true)
     setError(null)
     try {
-      const result = await sendReviewRequest(draft, selected)
+      const result =
+        isPrototype && prototypePage
+          ? await sendPrototypeReview(prototypePage, selected)
+          : draft
+            ? await sendReviewRequest(draft, selected)
+            : { results: [] }
       if (result.results.some((target) => target.ok)) {
         onClose()
       } else {
@@ -75,7 +98,11 @@ function SendDialog({
   }
   return (
     <ReviewSendDialog
-      request={draft}
+      request={
+        isPrototype && prototypePage
+          ? { kind: 'prototype', page: prototypePage }
+          : { kind: 'pr', request: draft! }
+      }
       available={available}
       selected={selected}
       loading={loading}
