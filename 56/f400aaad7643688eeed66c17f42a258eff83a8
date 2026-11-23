@@ -1,0 +1,22 @@
+docs/05-features/team-collaboration/intent.md
+  s_02ab5765848c38::t_037b3822ef6e4b 19
+docs/05-features/team-collaboration/spec.md
+  s_02ab5765848c38::t_1b184a5d673222 30
+  s_02ab5765848c38::t_f9e3175ccbefd8 95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "56f400aaad7643688eeed66c17f42a258eff83a8",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+src/main/workbench/team-collaboration/team-host-sync.ts
+  s_02ab5765848c38::t_bad23b318d7ade 1-99,101-123
+  s_02ab5765848c38::t_140eabe17768c9 100
+src/renderer/src/workbench/team-hosts.ts
+  s_02ab5765848c38::t_3ef7a1b2f1103a 1-42
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_1dcae12b884d03 10-15
+  s_02ab5765848c38::t_c6266b1bffa8c6 32-39
+  s_02ab5765848c38::t_387a02744f4d07 50-51
+src/renderer/src/components/status-bar/SshStatusSegment.tsx
+  s_02ab5765848c38::t_a9575218b6a45e 27,323
+src/renderer/src/workbench/TeamSettingsDialog.tsx
+  s_02ab5765848c38::t_a9575218b6a45e 23,104,116,129,176,273,289
+  h_1dcaf127381c33 73
+src/renderer/src/workbench/TeamHostRefreshMenuItem.tsx
+  s_02ab5765848c38::t_c0a75bc6b28c80 1-30
+src/renderer/src/app-shell/AppWorkspaceShell.tsx
+  s_02ab5765848c38::t_a9575218b6a45e 18,125
+src/renderer/src/workbench/TeamHostSyncOnStart.tsx
+  s_02ab5765848c38::t_ba09bca78bf111 1-15
+docs/05-features/team-collaboration/spec.md
+  s_02ab5765848c38::t_2a2c1d808e5165 27,71
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_b7055e715e05e0 143-151,249-255,257
+src/preload/api/team-collaboration-bridge.ts
+  s_02ab5765848c38::t_0cf0fc642cfb79 8-9
+src/renderer/src/web/preload-api/web-team-collaboration-api.ts
+  s_02ab5765848c38::t_b0d1af1d63f10e 9-11
+src/main/ipc/team-collaboration.ts
+  s_02ab5765848c38::t_893faa418cff37 1,8-10,53-55,95-99,101-107,111-118
+src/preload/api/team-collaboration-api.ts
+  s_02ab5765848c38::t_8540274560a821 9-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "c36134cc2e9a5b4fea95a6162963d6106fb8862d",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

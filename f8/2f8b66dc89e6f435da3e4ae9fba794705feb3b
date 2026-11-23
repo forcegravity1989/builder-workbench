@@ -1,0 +1,646 @@
+src/renderer/src/monica/version-acceptance/AcceptanceSections.tsx
+  s_b8ea9b2e8dfd1b::t_b2c231cf14da0f 88
+.bw/skills/recent-design/README.md
+  h_d0d195a8c70989 1-61
+.bw/skills/recent-design/animation-vocabulary/SKILL.md
+  h_d0d195a8c70989 1-179
+.bw/skills/recent-design/baseline-ui/SKILL.md
+  h_d0d195a8c70989 1-85
+.bw/skills/recent-design/choreograph/RECIPES.md
+  h_d0d195a8c70989 1-287
+.bw/skills/recent-design/choreograph/SKILL.md
+  h_d0d195a8c70989 1-170
+.bw/skills/recent-design/composition-patterns/AGENTS.md
+  h_d0d195a8c70989 1-946
+.bw/skills/recent-design/composition-patterns/README.md
+  h_d0d195a8c70989 1-60
+.bw/skills/recent-design/composition-patterns/SKILL.md
+  h_d0d195a8c70989 1-89
+.bw/skills/recent-design/composition-patterns/metadata.json
+  h_d0d195a8c70989 1-11
+.bw/skills/recent-design/composition-patterns/rules/_sections.md
+  h_d0d195a8c70989 1-29
+.bw/skills/recent-design/composition-patterns/rules/_template.md
+  h_d0d195a8c70989 1-24
+.bw/skills/recent-design/composition-patterns/rules/architecture-avoid-boolean-props.md
+  h_d0d195a8c70989 1-100
+.bw/skills/recent-design/composition-patterns/rules/architecture-compound-components.md
+  h_d0d195a8c70989 1-112
+.bw/skills/recent-design/composition-patterns/rules/patterns-children-over-render-props.md
+  h_d0d195a8c70989 1-87
+.bw/skills/recent-design/composition-patterns/rules/patterns-explicit-variants.md
+  h_d0d195a8c70989 1-100
+.bw/skills/recent-design/composition-patterns/rules/react19-no-forwardref.md
+  h_d0d195a8c70989 1-42
+.bw/skills/recent-design/composition-patterns/rules/state-context-interface.md
+  h_d0d195a8c70989 1-191
+.bw/skills/recent-design/composition-patterns/rules/state-decouple-implementation.md
+  h_d0d195a8c70989 1-113
+.bw/skills/recent-design/composition-patterns/rules/state-lift-state.md
+  h_d0d195a8c70989 1-125
+.bw/skills/recent-design/critique/SKILL.md
+  h_d0d195a8c70989 1-35
+.bw/skills/recent-design/distill/SKILL.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/emil-design-eng/SKILL.md
+  h_d0d195a8c70989 1-684
+.bw/skills/recent-design/frontend-design/LICENSE.txt
+  h_d0d195a8c70989 1-177
+.bw/skills/recent-design/frontend-design/SKILL.md
+  h_d0d195a8c70989 1-71
+.bw/skills/recent-design/impeccable-source.json
+  h_d0d195a8c70989 1-37
+.bw/skills/recent-design/licenses/anthropics--skills/LICENSE.txt
+  h_d0d195a8c70989 1-177
+.bw/skills/recent-design/licenses/emilkowalski--skills/LICENSE
+  h_d0d195a8c70989 1-21
+.bw/skills/recent-design/licenses/ibelick--ui-skills/LICENSE
+  h_d0d195a8c70989 1-21
+.bw/skills/recent-design/licenses/jakubkrehel--make-interfaces-feel-better/LICENSE
+  h_d0d195a8c70989 1-21
+.bw/skills/recent-design/licenses/jakubkrehel--oklch-skill/LICENSE
+  h_d0d195a8c70989 1-21
+.bw/skills/recent-design/licenses/pbakaus--impeccable/LICENSE
+  h_d0d195a8c70989 1-191
+.bw/skills/recent-design/licenses/pbakaus--impeccable/NOTICE.md
+  h_d0d195a8c70989 1-33
+.bw/skills/recent-design/licenses/vercel-labs--agent-skills/README.upstream.md
+  h_d0d195a8c70989 1-216
+.bw/skills/recent-design/licenses/wshobson--agents/LICENSE
+  h_d0d195a8c70989 1-21
+.bw/skills/recent-design/make-interfaces-feel-better/SKILL.md
+  h_d0d195a8c70989 1-187
+.bw/skills/recent-design/make-interfaces-feel-better/agents/openai.yaml
+  h_d0d195a8c70989 1-3
+.bw/skills/recent-design/make-interfaces-feel-better/animations.md
+  h_d0d195a8c70989 1-403
+.bw/skills/recent-design/make-interfaces-feel-better/icons.md
+  h_d0d195a8c70989 1-63
+.bw/skills/recent-design/make-interfaces-feel-better/performance.md
+  h_d0d195a8c70989 1-88
+.bw/skills/recent-design/make-interfaces-feel-better/surfaces.md
+  h_d0d195a8c70989 1-256
+.bw/skills/recent-design/make-interfaces-feel-better/typography.md
+  h_d0d195a8c70989 1-157
+.bw/skills/recent-design/oklch-skill/SKILL.md
+  h_d0d195a8c70989 1-90
+.bw/skills/recent-design/oklch-skill/accessibility-contrast.md
+  h_d0d195a8c70989 1-74
+.bw/skills/recent-design/oklch-skill/color-conversion.md
+  h_d0d195a8c70989 1-53
+.bw/skills/recent-design/oklch-skill/gamut-and-tailwind.md
+  h_d0d195a8c70989 1-103
+.bw/skills/recent-design/oklch-skill/palette-generation.md
+  h_d0d195a8c70989 1-93
+.bw/skills/recent-design/polish/SKILL.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/quieter/SKILL.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/react-best-practices/AGENTS.md
+  h_d0d195a8c70989 1-3810
+.bw/skills/recent-design/react-best-practices/README.md
+  h_d0d195a8c70989 1-123
+.bw/skills/recent-design/react-best-practices/SKILL.md
+  h_d0d195a8c70989 1-149
+.bw/skills/recent-design/react-best-practices/metadata.json
+  h_d0d195a8c70989 1-15
+.bw/skills/recent-design/react-best-practices/rules/_sections.md
+  h_d0d195a8c70989 1-46
+.bw/skills/recent-design/react-best-practices/rules/_template.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/react-best-practices/rules/advanced-effect-event-deps.md
+  h_d0d195a8c70989 1-56
+.bw/skills/recent-design/react-best-practices/rules/advanced-event-handler-refs.md
+  h_d0d195a8c70989 1-55
+.bw/skills/recent-design/react-best-practices/rules/advanced-init-once.md
+  h_d0d195a8c70989 1-42
+.bw/skills/recent-design/react-best-practices/rules/advanced-use-latest.md
+  h_d0d195a8c70989 1-39
+.bw/skills/recent-design/react-best-practices/rules/async-api-routes.md
+  h_d0d195a8c70989 1-38
+.bw/skills/recent-design/react-best-practices/rules/async-cheap-condition-before-await.md
+  h_d0d195a8c70989 1-37
+.bw/skills/recent-design/react-best-practices/rules/async-defer-await.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/async-dependencies.md
+  h_d0d195a8c70989 1-51
+.bw/skills/recent-design/react-best-practices/rules/async-parallel.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/react-best-practices/rules/async-suspense-boundaries.md
+  h_d0d195a8c70989 1-99
+.bw/skills/recent-design/react-best-practices/rules/bundle-analyzable-paths.md
+  h_d0d195a8c70989 1-63
+.bw/skills/recent-design/react-best-practices/rules/bundle-barrel-imports.md
+  h_d0d195a8c70989 1-60
+.bw/skills/recent-design/react-best-practices/rules/bundle-conditional.md
+  h_d0d195a8c70989 1-31
+.bw/skills/recent-design/react-best-practices/rules/bundle-defer-third-party.md
+  h_d0d195a8c70989 1-49
+.bw/skills/recent-design/react-best-practices/rules/bundle-dynamic-imports.md
+  h_d0d195a8c70989 1-35
+.bw/skills/recent-design/react-best-practices/rules/bundle-preload.md
+  h_d0d195a8c70989 1-50
+.bw/skills/recent-design/react-best-practices/rules/client-event-listeners.md
+  h_d0d195a8c70989 1-74
+.bw/skills/recent-design/react-best-practices/rules/client-localstorage-schema.md
+  h_d0d195a8c70989 1-71
+.bw/skills/recent-design/react-best-practices/rules/client-passive-event-listeners.md
+  h_d0d195a8c70989 1-48
+.bw/skills/recent-design/react-best-practices/rules/client-swr-dedup.md
+  h_d0d195a8c70989 1-56
+.bw/skills/recent-design/react-best-practices/rules/js-batch-dom-css.md
+  h_d0d195a8c70989 1-107
+.bw/skills/recent-design/react-best-practices/rules/js-cache-function-results.md
+  h_d0d195a8c70989 1-80
+.bw/skills/recent-design/react-best-practices/rules/js-cache-property-access.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/react-best-practices/rules/js-cache-storage.md
+  h_d0d195a8c70989 1-70
+.bw/skills/recent-design/react-best-practices/rules/js-combine-iterations.md
+  h_d0d195a8c70989 1-32
+.bw/skills/recent-design/react-best-practices/rules/js-early-exit.md
+  h_d0d195a8c70989 1-50
+.bw/skills/recent-design/react-best-practices/rules/js-flatmap-filter.md
+  h_d0d195a8c70989 1-60
+.bw/skills/recent-design/react-best-practices/rules/js-hoist-regexp.md
+  h_d0d195a8c70989 1-45
+.bw/skills/recent-design/react-best-practices/rules/js-index-maps.md
+  h_d0d195a8c70989 1-37
+.bw/skills/recent-design/react-best-practices/rules/js-length-check-first.md
+  h_d0d195a8c70989 1-49
+.bw/skills/recent-design/react-best-practices/rules/js-min-max-loop.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/js-request-idle-callback.md
+  h_d0d195a8c70989 1-105
+.bw/skills/recent-design/react-best-practices/rules/js-set-map-lookups.md
+  h_d0d195a8c70989 1-24
+.bw/skills/recent-design/react-best-practices/rules/js-tosorted-immutable.md
+  h_d0d195a8c70989 1-57
+.bw/skills/recent-design/react-best-practices/rules/rendering-activity.md
+  h_d0d195a8c70989 1-26
+.bw/skills/recent-design/react-best-practices/rules/rendering-animate-svg-wrapper.md
+  h_d0d195a8c70989 1-47
+.bw/skills/recent-design/react-best-practices/rules/rendering-conditional-render.md
+  h_d0d195a8c70989 1-40
+.bw/skills/recent-design/react-best-practices/rules/rendering-content-visibility.md
+  h_d0d195a8c70989 1-38
+.bw/skills/recent-design/react-best-practices/rules/rendering-hoist-jsx.md
+  h_d0d195a8c70989 1-46
+.bw/skills/recent-design/react-best-practices/rules/rendering-hydration-no-flicker.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/rendering-hydration-suppress-warning.md
+  h_d0d195a8c70989 1-30
+.bw/skills/recent-design/react-best-practices/rules/rendering-resource-hints.md
+  h_d0d195a8c70989 1-85
+.bw/skills/recent-design/react-best-practices/rules/rendering-script-defer-async.md
+  h_d0d195a8c70989 1-68
+.bw/skills/recent-design/react-best-practices/rules/rendering-svg-precision.md
+  h_d0d195a8c70989 1-28
+.bw/skills/recent-design/react-best-practices/rules/rendering-usetransition-loading.md
+  h_d0d195a8c70989 1-75
+.bw/skills/recent-design/react-best-practices/rules/rerender-defer-reads.md
+  h_d0d195a8c70989 1-39
+.bw/skills/recent-design/react-best-practices/rules/rerender-dependencies.md
+  h_d0d195a8c70989 1-45
+.bw/skills/recent-design/react-best-practices/rules/rerender-derived-state-no-effect.md
+  h_d0d195a8c70989 1-40
+.bw/skills/recent-design/react-best-practices/rules/rerender-derived-state.md
+  h_d0d195a8c70989 1-29
+.bw/skills/recent-design/react-best-practices/rules/rerender-functional-setstate.md
+  h_d0d195a8c70989 1-74
+.bw/skills/recent-design/react-best-practices/rules/rerender-lazy-state-init.md
+  h_d0d195a8c70989 1-58
+.bw/skills/recent-design/react-best-practices/rules/rerender-memo-with-default-value.md
+  h_d0d195a8c70989 1-38
+.bw/skills/recent-design/react-best-practices/rules/rerender-memo.md
+  h_d0d195a8c70989 1-44
+.bw/skills/recent-design/react-best-practices/rules/rerender-move-effect-to-event.md
+  h_d0d195a8c70989 1-45
+.bw/skills/recent-design/react-best-practices/rules/rerender-no-inline-components.md
+  h_d0d195a8c70989 1-82
+.bw/skills/recent-design/react-best-practices/rules/rerender-simple-expression-in-memo.md
+  h_d0d195a8c70989 1-35
+.bw/skills/recent-design/react-best-practices/rules/rerender-split-combined-hooks.md
+  h_d0d195a8c70989 1-64
+.bw/skills/recent-design/react-best-practices/rules/rerender-transitions.md
+  h_d0d195a8c70989 1-40
+.bw/skills/recent-design/react-best-practices/rules/rerender-use-deferred-value.md
+  h_d0d195a8c70989 1-59
+.bw/skills/recent-design/react-best-practices/rules/rerender-use-ref-transient-values.md
+  h_d0d195a8c70989 1-73
+.bw/skills/recent-design/react-best-practices/rules/server-after-nonblocking.md
+  h_d0d195a8c70989 1-73
+.bw/skills/recent-design/react-best-practices/rules/server-auth-actions.md
+  h_d0d195a8c70989 1-96
+.bw/skills/recent-design/react-best-practices/rules/server-cache-lru.md
+  h_d0d195a8c70989 1-41
+.bw/skills/recent-design/react-best-practices/rules/server-cache-react.md
+  h_d0d195a8c70989 1-76
+.bw/skills/recent-design/react-best-practices/rules/server-dedup-props.md
+  h_d0d195a8c70989 1-65
+.bw/skills/recent-design/react-best-practices/rules/server-hoist-static-io.md
+  h_d0d195a8c70989 1-149
+.bw/skills/recent-design/react-best-practices/rules/server-no-shared-module-state.md
+  h_d0d195a8c70989 1-50
+.bw/skills/recent-design/react-best-practices/rules/server-parallel-fetching.md
+  h_d0d195a8c70989 1-83
+.bw/skills/recent-design/react-best-practices/rules/server-parallel-nested-fetching.md
+  h_d0d195a8c70989 1-34
+.bw/skills/recent-design/react-best-practices/rules/server-serialization.md
+  h_d0d195a8c70989 1-38
+.bw/skills/recent-design/review-animations/SKILL.md
+  h_d0d195a8c70989 1-113
+.bw/skills/recent-design/review-animations/STANDARDS.md
+  h_d0d195a8c70989 1-188
+.bw/skills/recent-design/selection-report.html
+  h_d0d195a8c70989 1-76
+.bw/skills/recent-design/selection-report.mjs
+  h_d0d195a8c70989 1-142
+.bw/skills/recent-design/sources.json
+  h_d0d195a8c70989 1-660
+.bw/skills/recent-design/typescript-advanced-types/SKILL.md
+  h_d0d195a8c70989 1-318
+.bw/skills/recent-design/typescript-advanced-types/references/details.md
+  h_d0d195a8c70989 1-404
+.bw/skills/recent-design/upstream/impeccable/critique.md
+  h_d0d195a8c70989 1-329
+.bw/skills/recent-design/upstream/impeccable/distill.md
+  h_d0d195a8c70989 1-111
+.bw/skills/recent-design/upstream/impeccable/polish.md
+  h_d0d195a8c70989 1-105
+.bw/skills/recent-design/upstream/impeccable/quieter.md
+  h_d0d195a8c70989 1-99
+.claude/skills/project-knowledge/references/feature-evidence.md
+  h_d0d195a8c70989 54-57
+.claude/skills/recent-design/SKILL.md
+  h_d0d195a8c70989 1-16
+.gitattributes
+  h_d0d195a8c70989 17-19
+.github/workflows/pr.yml
+  h_d0d195a8c70989 302,330,334,338
+.gitignore
+  h_d0d195a8c70989 128-129
+AGENTS.md
+  h_d0d195a8c70989 29
+docs/05-features/README.md
+  h_d0d195a8c70989 15,17-18,26-31
+docs/05-features/codehub/STATUS.md
+  h_d0d195a8c70989 3,5,7,9,11-18,20,22-25,27,29-32,34,36-40
+docs/05-features/codehub/intent.md
+  h_d0d195a8c70989 3,5,7,9,13,15,17-20,22,24-26,30
+docs/05-features/codehub/spec.md
+  h_d0d195a8c70989 3,5,7,9,11,13-16,18,20-23,25,27-29,31,34-51
+docs/05-features/connectors/STATUS.md
+  h_d0d195a8c70989 1,3,5,7,9,11-14,16-38
+docs/05-features/connectors/intent.md
+  h_d0d195a8c70989 1,3,5,7,11,13,15-18,20,22,24,26,28,30,32
+docs/05-features/connectors/spec.md
+  h_d0d195a8c70989 1,3,5,7,9,11,13-18,20,22,24-30,32,34,36-40,42,44-48,50,52-67,69
+docs/05-features/explore-monica/STATUS.md
+  h_d0d195a8c70989 1,3,5,7,9,11,13-20,22,24-39
+docs/05-features/explore-monica/intent.md
+  h_d0d195a8c70989 3,5,7,9-13,15,17-21,23,25,27-32,34,36-39
+docs/05-features/explore-monica/spec.md
+  h_d0d195a8c70989 1,3,5,9,11-17,19,21,23,25-29,31,33,35-37,41,45,49,53,55,57,59-63,65,67,69-78,80
+docs/05-features/monica-release/STATUS.md
+  h_d0d195a8c70989 1-39
+docs/05-features/overview-metrics/STATUS.md
+  h_d0d195a8c70989 1,3,5,7,9,11,13-19,21,23,25-32,34,36,38-42,44,46,48-58,62-66
+docs/05-features/overview-metrics/design.md
+  h_d0d195a8c70989 3,5,7,11,13,59,61,65
+docs/05-features/overview-metrics/intent.md
+  h_d0d195a8c70989 1,3,7,9,11,13-16,18,20-23,25,27,29,31,33
+docs/05-features/overview-metrics/milestone-design.md
+  h_d0d195a8c70989 29
+docs/05-features/overview-metrics/spec.md
+  h_d0d195a8c70989 3,5,85,124,205-213
+docs/05-features/pr-review-notify/STATUS.md
+  h_d0d195a8c70989 1,3,5,7,9,11-18,20-42
+docs/05-features/pr-review-notify/intent.md
+  h_d0d195a8c70989 1,3,5,7,9,11,13-16,18-20,22,24
+docs/05-features/pr-review-notify/spec.md
+  h_d0d195a8c70989 1,3,5,7-10,12,14-18,20,22-26,28,30-33,37-57
+docs/05-features/project-intake/STATUS.md
+  h_d0d195a8c70989 3,5,7,9,11,13,15-20,22,24,26,28-30
+docs/05-features/project-intake/intent.md
+  h_d0d195a8c70989 3,22,27,29
+docs/05-features/project-intake/spec.md
+  h_d0d195a8c70989 3-5,9,11,19,68,70,80,100,102
+docs/05-features/quick-links/STATUS.md
+  h_d0d195a8c70989 1,3,5,7,9,11-29
+docs/05-features/quick-links/design.md
+  h_d0d195a8c70989 1,3-5,7,9-14,16,18,20-23,25,27,29-36,38,40-48
+docs/05-features/quick-links/intent.md
+  h_d0d195a8c70989 1,3,5,7,9,11,13,15,17,19-22,24,26-29,31,33,35,37-39,41,43-46
+docs/05-features/quick-links/spec.md
+  h_d0d195a8c70989 1,3,5,7,9-12,14,16-20,22,24-28,30,32-45,47,49,51
+docs/05-features/task-management/STATUS.md
+  h_d0d195a8c70989 3-30
+docs/05-features/task-management/intent.md
+  h_d0d195a8c70989 3,5,7,11,13,15-17,19,21,25
+docs/05-features/task-management/spec.md
+  h_d0d195a8c70989 3,5,7,9,11,13-17,19,21-27,29,31-38,42
+docs/05-features/version-acceptance/STATUS.md
+  h_d0d195a8c70989 1,3,5,7,9,11-17,19,21,23-30,32-58
+docs/05-features/version-acceptance/design.md
+  h_d0d195a8c70989 3,5,7,9-16,18,20,22,24,26,28,30,32,34,36,38,40
+docs/05-features/version-acceptance/intent.md
+  h_d0d195a8c70989 1,3,7,11,15,17-20,24-29,31,33,35
+docs/05-features/version-acceptance/spec.md
+  h_d0d195a8c70989 3,5,7,9-13,15,17,19,21,23,25,27,29,31,35,37,41,43,45,47,49,51,53,55,57-73,75,77
+docs/05-features/version-overview/STATUS.md
+  h_d0d195a8c70989 3,5,7-36,38-42,44,46-50
+docs/05-features/version-overview/intent.md
+  h_d0d195a8c70989 11-12
+docs/05-features/version-overview/spec.md
+  h_d0d195a8c70989 5-18
+docs/05-features/version-planning/STATUS.md
+  h_d0d195a8c70989 1,3,5,7,9,11,13-19,21,23,25-32,34,36-49,51,53-56,58,60
+docs/05-features/version-planning/design.md
+  h_d0d195a8c70989 3,5,7,9-16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50
+docs/05-features/version-planning/intent.md
+  h_d0d195a8c70989 1,3,7,11,15,17-22,26-28,30,32,34
+docs/05-features/version-planning/spec.md
+  h_d0d195a8c70989 3,5,7,9,11,13-17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,49,51,53,55,57-61,63,65-78,80,82,84,86,88
+docs/05-features/version-workspace/STATUS.md
+  h_d0d195a8c70989 3-54
+docs/05-features/version-workspace/design.md
+  h_d0d195a8c70989 3,5,21,23,31,45,53,55,79,83,97,99-100,104,106,108-109,115-116
+docs/05-features/version-workspace/intent.md
+  h_d0d195a8c70989 3,5,9,13,17-25,27,29,33
+docs/05-features/version-workspace/spec.md
+  h_d0d195a8c70989 9,62,112-149,157,183-184,186,188-192,194,196,198-200
+docs/05-features/version-workspace/version-workspace-source-prototype.html
+  h_d0d195a8c70989 1-151
+docs/05-features/workbench-release/intent.md
+  h_d0d195a8c70989 1-30
+docs/05-features/workbench-release/spec.md
+  h_d0d195a8c70989 1-62
+docs/README.md
+  h_d0d195a8c70989 38
+docs/development.md
+  h_d0d195a8c70989 25,34-62,65-67,70
+package.json
+  h_d0d195a8c70989 118
+ref/spinner-rendering-performance.md
+  h_d0d195a8c70989 144
+ref/upstream.md
+  h_d0d195a8c70989 174-175
+shots/codehub-734/verification-report.html
+  h_d0d195a8c70989 1-67
+src/main/codehub/work-items.test.ts
+  h_d0d195a8c70989 91-118
+src/main/codehub/work-items.ts
+  h_d0d195a8c70989 145-178
+src/main/ipc/monica-cli-install.ts
+  h_d0d195a8c70989 36
+src/main/monica/material-human-guard.ts
+  h_d0d195a8c70989 45-46
+src/main/monica/version-history-service.test.ts
+  h_d0d195a8c70989 347-348
+src/main/monica/workspace-resolver.test.ts
+  h_d0d195a8c70989 81,86-87,91-98
+src/main/monica/workspace-resolver.ts
+  h_d0d195a8c70989 90-106
+src/main/runtime/orca-runtime-activate-managed-worktree.ts
+  h_d0d195a8c70989 53
+src/main/runtime/orca-runtime-create-agent-session.ts
+  h_d0d195a8c70989 115-118
+src/main/runtime/orca-runtime-get-agent-session-execution-namespace.ts
+  h_d0d195a8c70989 108-111
+src/main/runtime/orca-runtime-list-managed-worktrees.ts
+  h_d0d195a8c70989 3-17,133-140,152-169,171-207,211-218,225-308,338
+src/main/runtime/orca-runtime-persist-headless-terminal-title.ts
+  h_d0d195a8c70989 177,196-199,216
+src/main/runtime/orca-runtime-resolve-browser-network-execution-host-for-worktree.ts
+  h_d0d195a8c70989 91-92,94,98-99,129-132
+src/main/runtime/orca-runtime-resolve-recovered-structured-tui-transcript.ts
+  h_d0d195a8c70989 98-101,192-194
+src/main/runtime/orca-runtime-resolve-worktree-selector.ts
+  h_d0d195a8c70989 18,21-27,32,112-130
+src/main/runtime/worktree-selector-miss-runtime.test.ts
+  h_d0d195a8c70989 1-197
+src/main/runtime/worktree-selector-miss.test.ts
+  h_d0d195a8c70989 1-120
+src/main/runtime/worktree-selector-miss.ts
+  h_d0d195a8c70989 1-131
+src/main/updater.publishing-window-feed.test.ts
+  h_d0d195a8c70989 266
+src/renderer/src/components/feature-wall/WorkbenchAnimatedVisual.tsx
+  h_d0d195a8c70989 215-216,222-223
+src/renderer/src/components/github-item-dialog/open-dialog/github-item-dialog.tsx
+  h_d0d195a8c70989 10,41,60-72,97-98,100,103,210,225,245,271
+src/renderer/src/components/new-workspace/NewWorkspaceComposerNameSection.tsx
+  h_d0d195a8c70989 17,26,52,61,98,107
+src/renderer/src/components/new-workspace/new-workspace-composer-card-props.ts
+  h_d0d195a8c70989 14,74-77,93
+src/renderer/src/components/new-workspace/smart-workspace-localized-options.tsx
+  h_d0d195a8c70989 2,60-67
+src/renderer/src/components/new-workspace/smart-workspace-name-field-copy.ts
+  h_d0d195a8c70989 88,90-91,93,95-96,98,100-101,103,105-106,108-116
+src/renderer/src/components/new-workspace/smart-workspace-name-field-model.ts
+  h_d0d195a8c70989 6,22-24,34,71-79,91
+src/renderer/src/components/new-workspace/smart-workspace-source-results-surface.tsx
+  h_d0d195a8c70989 18-22,116-137,153-163,166-198
+src/renderer/src/components/new-workspace/smart-workspace-source-row-content.tsx
+  h_d0d195a8c70989 44-46,75,130-136
+src/renderer/src/components/new-workspace/use-smart-workspace-codehub-search.ts
+  h_d0d195a8c70989 1-124
+src/renderer/src/components/new-workspace/use-smart-workspace-field-availability.ts
+  h_d0d195a8c70989 32-33,59-60,64,89-94,96-112,119-122,152-153,157,167-169,243-244,251,263-265,285-286
+src/renderer/src/components/new-workspace/use-smart-workspace-github-search.ts
+  h_d0d195a8c70989 42-47,75,121,160-161,196,234
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-actions.ts
+  h_d0d195a8c70989 43,64-66,81-87,123,129-131
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-controller.ts
+  h_d0d195a8c70989 17,75,81-89,112-116
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-foundation.ts
+  h_d0d195a8c70989 7-8,102-112,120-162,228
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-presentation.ts
+  h_d0d195a8c70989 49-51,86-88,91,95-97,100,124-129,162-163,209-212,215,231,289-294
+src/renderer/src/components/new-workspace/use-smart-workspace-name-field-state.ts
+  h_d0d195a8c70989 5,19-22,32,65-72,85-86
+src/renderer/src/components/settings/monica-cli-integration-cards.tsx
+  h_d0d195a8c70989 25
+src/renderer/src/components/use-task-page-monica-scope.ts
+  h_d0d195a8c70989 26,48-50
+src/renderer/src/components/use-task-page-workspace-actions.ts
+  h_d0d195a8c70989 24,27,81,99-103,111,217,235,238
+src/renderer/src/hooks/composer-state/assemble-composer-model.ts
+  h_d0d195a8c70989 32
+src/renderer/src/hooks/composer-state/codehub-provider-selection.ts
+  h_d0d195a8c70989 1-122
+src/renderer/src/hooks/composer-state/composer-card-contract.ts
+  h_d0d195a8c70989 72,80
+src/renderer/src/hooks/composer-state/composer-card-props.ts
+  h_d0d195a8c70989 58,92,175,183
+src/renderer/src/hooks/composer-state/composer-source-model.ts
+  h_d0d195a8c70989 2,57-60
+src/renderer/src/hooks/composer-state/composer-source-state-contract.ts
+  h_d0d195a8c70989 35
+src/renderer/src/hooks/composer-state/composer-source-state.ts
+  h_d0d195a8c70989 10,192-213,312
+src/renderer/src/hooks/composer-state/source-context-model.ts
+  h_d0d195a8c70989 32-33
+src/renderer/src/hooks/composer-state/source-context-state.ts
+  h_d0d195a8c70989 36,196-204,263-264
+src/renderer/src/i18n/locales/en.json
+  h_d0d195a8c70989 13685-13690,13732-13733
+src/renderer/src/i18n/locales/zh.json
+  h_d0d195a8c70989 11903-11908,11949-11950
+src/renderer/src/monica/INVENTORY.md
+  h_d0d195a8c70989 13,22,30-31
+src/renderer/src/monica/MonicaVersionNav.tsx
+  h_d0d195a8c70989 38,173-178
+src/renderer/src/monica/NewVersionDialog.tsx
+  h_d0d195a8c70989 6,100-101
+src/renderer/src/monica/OverviewPage.tsx
+  h_d0d195a8c70989 29,220-223
+src/renderer/src/monica/ProjectWallPage.tsx
+  h_d0d195a8c70989 10,29
+src/renderer/src/monica/SYNC.md
+  h_d0d195a8c70989 70,74
+src/renderer/src/monica/annotations/AnnotationPanel.tsx
+  h_d0d195a8c70989 6,95,110-111,205-206
+src/renderer/src/monica/error-feedback.tsx
+  h_d0d195a8c70989 3-17,44,49-61
+src/renderer/src/monica/explore/AcceptanceDemoScenes.tsx
+  h_d0d195a8c70989 23-24
+src/renderer/src/monica/explore/PlanningDemoScenes.tsx
+  h_d0d195a8c70989 27-28
+src/renderer/src/monica/issue-start-action.ts
+  h_d0d195a8c70989 2,60-65
+src/renderer/src/monica/monica-screen-usage.ts
+  h_d0d195a8c70989 1-28
+src/renderer/src/monica/monica-tokens.css
+  h_d0d195a8c70989 2
+src/renderer/src/monica/plan-send-menu.tsx
+  h_d0d195a8c70989 13-17,27,42,46,53-54,60,71-72,81-83,99-108,155,195
+src/renderer/src/monica/project-milestones.tsx
+  h_d0d195a8c70989 39,80-82
+src/renderer/src/monica/use-version-minutes.ts
+  h_d0d195a8c70989 193-199,228-230
+src/renderer/src/monica/version-acceptance/AcceptanceArchiveCard.tsx
+  h_d0d195a8c70989 143-144,179-180
+src/renderer/src/monica/version-acceptance/AcceptanceBoardContent.tsx
+  h_d0d195a8c70989 74,386
+src/renderer/src/monica/version-acceptance/AcceptanceMinutesSection.tsx
+  h_d0d195a8c70989 144-145,403-404
+src/renderer/src/monica/version-acceptance/AcceptancePackage.tsx
+  h_d0d195a8c70989 4,174-183
+src/renderer/src/monica/version-acceptance/AcceptancePage.tsx
+  h_d0d195a8c70989 7,24
+src/renderer/src/monica/version-acceptance/AcceptancePrepareSection.tsx
+  h_d0d195a8c70989 120-121,173-174,223
+src/renderer/src/monica/version-acceptance/acceptance-decision.ts
+  h_d0d195a8c70989 8-14,53-62,66,70,85-86
+src/renderer/src/monica/version-acceptance/acceptance-legacy.test.ts
+  h_d0d195a8c70989 81-82
+src/renderer/src/monica/version-acceptance/acceptance-model.test.ts
+  h_d0d195a8c70989 61-64,115-117
+src/renderer/src/monica/version-acceptance/acceptance-model.ts
+  h_d0d195a8c70989 13-41,51-54
+src/renderer/src/monica/version-acceptance/use-acceptance-board.ts
+  h_d0d195a8c70989 17,79-85,170-171,173-190,211
+src/renderer/src/monica/version-acceptance/use-acceptance-draft.ts
+  h_d0d195a8c70989 1,38-42
+src/renderer/src/monica/version-overview-materials.ts
+  h_d0d195a8c70989 20,48,168-176,240,242,290-308
+src/renderer/src/monica/version-overview-page.tsx
+  h_d0d195a8c70989 37,83
+src/renderer/src/monica/version-planning/PlanningAnnotationOverlays.tsx
+  h_d0d195a8c70989 31
+src/renderer/src/monica/version-planning/PlanningBoard.tsx
+  h_d0d195a8c70989 22,120,192
+src/renderer/src/monica/version-planning/PlanningGoalCard.tsx
+  h_d0d195a8c70989 279-280
+src/renderer/src/monica/version-planning/PlanningMinutesSection.tsx
+  h_d0d195a8c70989 60,69-74
+src/renderer/src/monica/version-planning/use-planning-material.ts
+  h_d0d195a8c70989 14,31-38,93,100-109,117-119,126-130,148-150,220-222,231-233,235-255
+src/renderer/src/monica/version-tree-bind-dialog.tsx
+  h_d0d195a8c70989 204
+src/shared/feature-interaction-catalog.ts
+  h_d0d195a8c70989 29-34,111-116
+src/shared/feature-interaction-categories.ts
+  h_d0d195a8c70989 50-55
+src/shared/feature-interactions.test.ts
+  h_d0d195a8c70989 62-67,220,225
+src/shared/monica/version-acceptance-material.ts
+  h_d0d195a8c70989 14,30-46,57,74,86,104-153,156-157,160-168
+src/shared/monica/version-material-common.ts
+  h_d0d195a8c70989 5-11,23,29,37-44,48,56,64,83,93,105,137,146,153,163,169,181,195,213-217,220,225,232,238-259,261
+src/shared/monica/version-planning-material.ts
+  h_d0d195a8c70989 7,20-42,46-80,82-83
+src/shared/monica/version-time-window.ts
+  h_d0d195a8c70989 2,5-8
+src/shared/monica/version-workflow.test.ts
+  h_d0d195a8c70989 14-20,54-55,59,63-82
+src/shared/monica/version-workflow.ts
+  h_d0d195a8c70989 2,24,37,42,46-53,55
+src/shared/new-workspace/smart-workspace-command-value.ts
+  h_d0d195a8c70989 5,49-53
+src/shared/new-workspace/smart-workspace-source-results.ts
+  h_d0d195a8c70989 3,21-29,35,46,221-222,239-240,297-305
+src/shared/new-workspace/smart-workspace-url-source-results.ts
+  h_d0d195a8c70989 17
+src/shared/new-workspace/workspace-source.test.ts
+  h_d0d195a8c70989 119-131
+src/shared/new-workspace/workspace-source.ts
+  h_d0d195a8c70989 2,50,93-97,212-216
+src/shared/telemetry-app-event-schemas.ts
+  h_d0d195a8c70989 135-188
+src/shared/telemetry-event-registry.ts
+  h_d0d195a8c70989 7-10,109-113
+src/shared/telemetry-events.test.ts
+  h_d0d195a8c70989 644-719
+src/shared/telemetry-events.ts
+  h_d0d195a8c70989 45-48,54-59
+tests/e2e/AGENTS.md
+  h_d0d195a8c70989 1,3,5-7,9,11,13-26,30,57
+tests/e2e/global-setup.ts
+  h_d0d195a8c70989 41-42,45
+tests/e2e/helpers/monica-app.ts
+  h_d0d195a8c70989 125
+tests/e2e/workbench-allowlist.ts
+  h_d0d195a8c70989 1-25
+tests/e2e/workbench/acceptance/fixed-workspaces.spec.ts
+  h_d0d195a8c70989 1-10
+tests/e2e/workbench/acceptance/milestones.spec.ts
+  h_d0d195a8c70989 1-12
+tests/e2e/workbench/acceptance/project-settings.spec.ts
+  h_d0d195a8c70989 1-9
+tests/e2e/workbench/acceptance/version-overview.spec.ts
+  h_d0d195a8c70989 1-10
+tests/e2e/workbench/journeys/w01-project-handoff.spec.ts
+  h_d0d195a8c70989 1-121
+tests/e2e/workbench/journeys/w02-cycle-main.spec.ts
+  h_d0d195a8c70989 3,6-10
+tests/playwright.config.ts
+  h_d0d195a8c70989 2,5,8,14,46-48,56-57
+tests/playwright.overview.config.ts
+  h_d0d195a8c70989 3,5,9
+tests/playwright.workbench-explicit.config.ts
+  h_d0d195a8c70989 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "f82f8b66dc89e6f435da3e4ae9fba794705feb3b",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_b8ea9b2e8dfd1b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "499b902b-9fdf-4742-a62d-84f8d1befcf2",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

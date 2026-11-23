@@ -1,0 +1,19 @@
+src/renderer/src/workbench/TeamHostRefreshMenuItem.tsx
+  s_02ab5765848c38::t_fb5d6381298110 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "637dabc3e734912623456b7b8bd6c4bb11c5659b",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
