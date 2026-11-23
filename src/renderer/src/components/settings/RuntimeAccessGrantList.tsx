@@ -14,6 +14,25 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { translate } from '@/i18n/i18n'
 
+function GrantAvatar({ grant }: { grant: RuntimeAccessGrant }): React.JSX.Element {
+  const [failedSource, setFailedSource] = useState<string | null>(null)
+  if (grant.avatar && failedSource !== grant.avatar) {
+    return (
+      <img
+        src={grant.avatar}
+        alt=""
+        className="size-7 shrink-0 rounded-full object-cover"
+        onError={() => setFailedSource(grant.avatar ?? null)}
+      />
+    )
+  }
+  return (
+    <span className="bg-muted flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium">
+      {grant.name.slice(0, 1).toUpperCase()}
+    </span>
+  )
+}
+
 function formatAccessTimestamp(timestamp: number): string {
   return new Intl.DateTimeFormat(undefined, {
     month: 'short',
@@ -52,7 +71,9 @@ export function RuntimeAccessGrantList({
     () => grants.filter((grant) => grant.accessMode === 'team-read' && grant.connected === true),
     [grants]
   )
-  const selectedGrants = selectableGrants.filter((grant) => selectedGrantIds.includes(grant.deviceId))
+  const selectedGrants = selectableGrants.filter((grant) =>
+    selectedGrantIds.includes(grant.deviceId)
+  )
 
   const toggleGrant = (deviceId: string): void => {
     setSelectedGrantIds((current) =>
@@ -74,10 +95,7 @@ export function RuntimeAccessGrantList({
     <div className={className}>
       <div className="mb-2 flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium">
-          {translate(
-            'auto.components.settings.RuntimeAccessGrantList.f031182867',
-            'Shared Server Access'
-          )}
+          {translate('auto.components.settings.RuntimeAccessGrantList.title', 'Shared links')}
         </h3>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -149,8 +167,7 @@ export function RuntimeAccessGrantList({
           {grants.map((grant) => {
             const isCurrent = currentGrantId === grant.deviceId
             const isRevoking = revokingGrantId === grant.deviceId
-            const canGrantFullAccess =
-              grant.accessMode === 'team-read' && grant.connected === true
+            const canGrantFullAccess = grant.accessMode === 'team-read' && grant.connected === true
             return (
               <div
                 key={grant.deviceId}
@@ -166,8 +183,10 @@ export function RuntimeAccessGrantList({
                       { value0: grant.name }
                     )}
                   />
-                ) : <div className="size-4 shrink-0" aria-hidden="true" />}
-                {grant.avatar ? <img src={grant.avatar} alt="" className="size-7 shrink-0 rounded-full object-cover" /> : null}
+                ) : (
+                  <div className="size-4 shrink-0" aria-hidden="true" />
+                )}
+                <GrantAvatar grant={grant} />
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="truncate text-sm font-medium">{grant.name}</span>
@@ -181,23 +200,6 @@ export function RuntimeAccessGrantList({
                     ) : null}
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {translate(
-                      'auto.components.settings.RuntimeAccessGrantList.87b16cd11d',
-                      'Created'
-                    )}
-                    {formatAccessTimestamp(grant.createdAt)} ·{' '}
-                    {grant.lastSeenAt
-                      ? translate(
-                          'auto.components.settings.RuntimeAccessGrantList.b18d1764ef',
-                          'Last used {{value0}}',
-                          { value0: formatAccessTimestamp(grant.lastSeenAt) }
-                        )
-                      : translate(
-                          'auto.components.settings.RuntimeAccessGrantList.df142657a5',
-                          'Not used yet'
-                        )}
-                  </div>
-                  <div className="text-muted-foreground text-xs">
                     {grant.accessMode === 'team-read'
                       ? translate(
                           'auto.components.settings.RuntimeAccessGrantList.teamReadonly',
@@ -207,12 +209,22 @@ export function RuntimeAccessGrantList({
                           'auto.components.settings.RuntimeAccessGrantList.fullAccess',
                           'Full access'
                         )}
+                    {' · '}
                     {grant.connected === true
                       ? translate(
                           'auto.components.settings.RuntimeAccessGrantList.connected',
-                          ' · Connected'
+                          'Connected'
                         )
-                      : ''}
+                      : grant.lastSeenAt
+                        ? translate(
+                            'auto.components.settings.RuntimeAccessGrantList.b18d1764ef',
+                            'Last used {{value0}}',
+                            { value0: formatAccessTimestamp(grant.lastSeenAt) }
+                          )
+                        : translate(
+                            'auto.components.settings.RuntimeAccessGrantList.df142657a5',
+                            'Not used yet'
+                          )}
                   </div>
                 </div>
                 <Tooltip>
@@ -277,7 +289,11 @@ export function RuntimeAccessGrantList({
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
               {translate('auto.components.settings.RuntimeAccessGrantList.cancel', 'Cancel')}
             </Button>
-            <Button type="button" onClick={() => void grantFullAccess()} disabled={grantingFullAccess}>
+            <Button
+              type="button"
+              onClick={() => void grantFullAccess()}
+              disabled={grantingFullAccess}
+            >
               {grantingFullAccess ? <Loader2 className="size-3.5 animate-spin" /> : null}
               {translate(
                 'auto.components.settings.RuntimeAccessGrantList.confirmGrant',

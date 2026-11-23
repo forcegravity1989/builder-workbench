@@ -8059,11 +8059,12 @@
           "selectForFullAccess": "Select {{value0}} for full access",
           "teamReadonly": "Team read-only",
           "fullAccess": "Full access",
-          "connected": " · Connected",
+          "connected": "Connected",
           "confirmTitle": "Grant full access?",
           "confirmDescription": "The selected devices will be able to create worktrees, start sessions, send input, and run commands on this host.",
           "cancel": "Cancel",
-          "confirmGrant": "Grant full access"
+          "confirmGrant": "Grant full access",
+          "title": "Shared links"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "Remove {{value0}}",

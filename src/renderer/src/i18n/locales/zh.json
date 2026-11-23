@@ -6897,11 +6897,12 @@
           "selectForFullAccess": "选择 {{value0}} 授予完全访问",
           "teamReadonly": "团队只读",
           "fullAccess": "完全访问",
-          "connected": " · 已连接",
+          "connected": "已连接",
           "confirmTitle": "授予完全访问？",
           "confirmDescription": "所选设备将可以在本机创建工作树、启动会话、发送输入并运行命令。",
           "cancel": "取消",
-          "confirmGrant": "授予完全访问"
+          "confirmGrant": "授予完全访问",
+          "title": "我分享出去的链接"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "删除 {{value0}}",

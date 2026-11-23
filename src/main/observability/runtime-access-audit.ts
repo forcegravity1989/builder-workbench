@@ -4,6 +4,10 @@ import type {
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult
 } from '../../shared/runtime-access-grants'
+import {
+  runtimeAccessAuditActionKey,
+  runtimeAccessAuditActionLabel
+} from '../../shared/runtime-access-audit-labels'
 
 export const RUNTIME_ACCESS_AUDIT_RETENTION_DAYS = 14
 
@@ -39,7 +43,9 @@ export class RuntimeAccessAudit {
     await this.prune()
     let files: string[]
     try {
-      files = (await readdir(this.directory)).filter((file) => /^\d{4}-\d{2}-\d{2}\.ndjson$/.test(file))
+      files = (await readdir(this.directory)).filter((file) =>
+        /^\d{4}-\d{2}-\d{2}\.ndjson$/.test(file)
+      )
     } catch {
       return []
     }
@@ -112,8 +118,11 @@ export class RuntimeAccessAudit {
   }
 }
 
-function matchesAuditFilter(entry: RuntimeAccessAuditEntry, filter: RuntimeAccessAuditFilter): boolean {
-  if (filter.action && entry.method !== filter.action) {
+function matchesAuditFilter(
+  entry: RuntimeAccessAuditEntry,
+  filter: RuntimeAccessAuditFilter
+): boolean {
+  if (filter.action && runtimeAccessAuditActionKey(entry.method) !== filter.action) {
     return false
   }
   if (filter.result && entry.result !== filter.result) {
@@ -123,7 +132,7 @@ function matchesAuditFilter(entry: RuntimeAccessAuditEntry, filter: RuntimeAcces
     return false
   }
   if (filter.search) {
-    const haystack = `${entry.deviceId} ${entry.deviceName ?? ''} ${entry.method} ${entry.memberId ?? ''}`
+    const haystack = `${entry.deviceId} ${entry.deviceName ?? ''} ${entry.method} ${runtimeAccessAuditActionLabel(runtimeAccessAuditActionKey(entry.method))} ${entry.memberId ?? ''}`
     if (!haystack.toLowerCase().includes(filter.search.toLowerCase())) {
       return false
     }
