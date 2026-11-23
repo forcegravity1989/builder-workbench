@@ -68,6 +68,25 @@ function exactIdentityMatch(repo: Repo, repository: string): boolean {
   return candidates.some((candidate) => candidate === repository)
 }
 
+function bareGitHubSlug(repository: string): string | null {
+  const trimmed = repository
+    .trim()
+    .replace(/\.git$/i, '')
+    .replace(/^\/+|\/+$/g, '')
+  if (!trimmed || trimmed.includes('://') || trimmed.includes('@') || trimmed.includes(':')) {
+    return null
+  }
+  const parts = trimmed.split('/').filter(Boolean)
+  return parts.length === 2 ? parts.join('/') : null
+}
+
+/** Bare `owner/repo` github references default to github.com — the same host
+ * default the archive status chain applies (src/main/workbench/archive-pr-status.ts). */
+function githubReferenceKey(repository: string): string {
+  const slug = bareGitHubSlug(repository)
+  return normalizeGitRemoteUrl(repository) ?? (slug ? `github.com/${slug}` : repository)
+}
+
 /** CodeHub prefers its own project path, falling back to identity-key equality. */
 function codeHubIdentityMatches(repo: Repo, repository: string): boolean {
   const remote =
@@ -97,10 +116,8 @@ function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolea
     ) {
       return false
     }
-    return (
-      Boolean(knownGitHubIssueSource(repo, reference.repository)) ||
-      exactIdentityMatch(repo, reference.repository)
-    )
+    const key = githubReferenceKey(reference.repository)
+    return Boolean(knownGitHubIssueSource(repo, key)) || exactIdentityMatch(repo, key)
   }
   return exactIdentityMatch(repo, reference.repository)
 }
@@ -129,12 +146,12 @@ export function gitHubIdentityForTaskReference(
   repo: Repo,
   repository: string
 ): GitHubOwnerRepo | undefined {
-  const known = knownGitHubIssueSource(repo, repository)
+  const key = githubReferenceKey(repository)
+  const known = knownGitHubIssueSource(repo, key)
   if (known) {
     return known
   }
   const remote = repo.gitRemoteIdentity
-  const key = normalizeGitRemoteUrl(repository) ?? repository
   if (remote?.originUrl && normalizeGitRemoteUrl(remote.originUrl) === key) {
     return parseGitHubRemoteUrl(remote.originUrl, true) ?? undefined
   }

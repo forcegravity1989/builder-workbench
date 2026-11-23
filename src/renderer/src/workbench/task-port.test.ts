@@ -269,6 +269,26 @@ describe('createTaskPort reads', () => {
       })
     ).listVersion(scope, [ghReference])
     expect(batch).not.toHaveBeenCalled()
+
+    // #761: 裸 owner/repo 引用按 github.com 默认 host 解析,不跨 host 误配企业实例。
+    mocks.lookupGitHub.mockResolvedValue(ghItem)
+    const [bareRead] = await createTaskPort(makeDeps()).listVersion(scope, [
+      { ...ghReference, repository: 'acme/repo' }
+    ])
+    expect(bareRead?.kind).toBe('ready')
+    expect(mocks.lookupGitHub).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        sourceContext: expect.objectContaining({
+          providerIdentity: { provider: 'github', owner: 'acme', repo: 'repo' }
+        })
+      })
+    )
+    const [enterpriseBare] = await createTaskPort(
+      makeDeps({ repos: () => [enterprise] })
+    ).listVersion({ ...scope, repoId: enterprise.id }, [
+      { ...ghReference, repository: 'acme/repo' }
+    ])
+    expect(enterpriseBare?.kind).toBe('unavailable')
   })
 
   it('reads CodeHub project references and keeps unknown provider state unavailable', async () => {
