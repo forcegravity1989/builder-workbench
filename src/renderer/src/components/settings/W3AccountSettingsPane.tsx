@@ -57,11 +57,6 @@ function failureMessage(reason: Extract<W3AccountView, { kind: 'failed' }>['reas
         'auto.components.settings.w3Account.failedOpen',
         'Could not open the W3 login window.'
       )
-    default:
-      return translate(
-        'auto.components.settings.w3Account.failedGeneric',
-        'Could not complete W3 sign-in.'
-      )
   }
 }
 

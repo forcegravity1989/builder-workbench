@@ -11686,7 +11686,6 @@
           "employeeNoLabel": "Employee No.",
           "failedAccountParse": "W3 reported a login, but no valid profile could be read. Try again.",
           "failedCancelled": "Sign-in was cancelled.",
-          "failedGeneric": "Could not complete W3 sign-in.",
           "failedHeading": "Sign-in not completed",
           "failedLogin": "The W3 session did not complete login. Try again.",
           "failedNotConfigured": "Sign-in is not configured yet. Contact your administrator.",

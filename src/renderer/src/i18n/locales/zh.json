@@ -5425,7 +5425,6 @@
           "employeeNoLabel": "工号",
           "failedAccountParse": "W3 已登录，但未能读取有效资料，请重试。",
           "failedCancelled": "登录已取消。",
-          "failedGeneric": "未能完成 W3 登录。",
           "failedHeading": "登录未完成",
           "failedLogin": "W3 会话未完成登录，请重试。",
           "failedNotConfigured": "登录尚未配置，请联系管理员。",
