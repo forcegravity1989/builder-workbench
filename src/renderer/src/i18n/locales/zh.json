@@ -6890,7 +6890,18 @@
           "27cf8507ad": "刷新共享访问",
           "f031182867": "共享服务器访问",
           "df142657a5": "尚未使用",
-          "b18d1764ef": "最后使用 {{value0}}"
+          "b18d1764ef": "最后使用 {{value0}}",
+          "selectedCount": "已选 {{value0}} 台",
+          "selectReadonly": "选择已连接的只读设备",
+          "grantFullAccess": "授予完全访问",
+          "selectForFullAccess": "选择 {{value0}} 授予完全访问",
+          "teamReadonly": "团队只读",
+          "fullAccess": "完全访问",
+          "connected": " · 已连接",
+          "confirmTitle": "授予完全访问？",
+          "confirmDescription": "所选设备将可以在本机创建工作树、启动会话、发送输入并运行命令。",
+          "cancel": "取消",
+          "confirmGrant": "授予完全访问"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "删除 {{value0}}",
@@ -10314,6 +10325,25 @@
               "notConfigured": "使用 Atlassian API 令牌或访问令牌连接 Bitbucket Cloud 账号。也可以设置 ORCA_BITBUCKET_* 环境变量，环境变量优先。"
             }
           }
+        },
+        "RuntimeAccessAuditLog": {
+          "title": "共享主机访问日志",
+          "description": "请求记录 · 最近 14 天",
+          "refresh": "刷新共享主机访问日志",
+          "clear": "清理日志",
+          "action": "按操作筛选",
+          "allActions": "全部操作",
+          "result": "按结果筛选",
+          "allResults": "全部结果",
+          "allowed": "已允许",
+          "denied": "已拒绝",
+          "error": "出错",
+          "time": "按时间筛选",
+          "lastDay": "最近 24 小时",
+          "lastWeek": "最近 7 天",
+          "lastTwoWeeks": "最近 14 天",
+          "search": "搜索设备或操作",
+          "empty": "没有符合条件的访问记录。"
         }
       },
       "right": {
