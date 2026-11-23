@@ -173,6 +173,7 @@ export function WallSourceAvatarGroup({ sources }: { sources: readonly WallAvata
                 type="button"
                 className="pcard-avatar-name"
                 tabIndex={expanded ? 0 : -1}
+                aria-hidden={!expanded}
                 title={source.label}
                 disabled={source.online === false}
                 onClick={source.onOpen}
