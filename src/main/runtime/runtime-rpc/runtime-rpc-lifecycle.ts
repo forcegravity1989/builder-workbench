@@ -8,6 +8,7 @@ import type { DeviceRegistry } from '../device-registry'
 import type { E2EEKeypair } from '../e2ee-keypair'
 import { UnpairedDeviceAuthThrottle } from '../rpc/unpaired-device-auth-throttle'
 import { MobileSocketWiring } from '../rpc/mobile-socket-wiring'
+import { effectiveRuntimeAccessMode } from '../device-registry'
 import { RuntimeRpcWebSocketDispatch } from './runtime-rpc-websocket-dispatch'
 import {
   formatWsEndpoint,
@@ -226,7 +227,7 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         )
       },
       onBinary: (socket, bytes) => this.handleWebSocketBinaryMessage(bytes, socket.ws),
-      onReady: () => {
+      onReady: (socket) => {
         // Why: first authenticated mobile/remote client (direct WS and
         // cloud relay both attach here) starts path-candidate tracking.
         // Activation is a local-host concern: candidate buffers live on the
@@ -234,6 +235,20 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         // legitimately lack this method (its own server activates it).
         this.runtime.activateRecentPtyPathCandidateTracking?.()
         this.mobileRelayPairingProvider?.onDemandStateChanged?.()
+        const device = deviceRegistry.getDevice(socket.device.deviceId)
+        if (device?.scope === 'runtime') {
+          this.getRuntimeAccessAudit().record({
+            at: Date.now(),
+            deviceId: device.deviceId,
+            deviceName: device.name,
+            accessMode: effectiveRuntimeAccessMode(device),
+            ...(device.teamBinding
+              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              : undefined),
+            method: 'connection.open',
+            result: 'allowed'
+          })
+        }
       },
       onClose: (socket, hasOtherConnections) => {
         if (!socket) {
@@ -246,6 +261,20 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         this.binaryMessageRouter.deleteConnection(socket.connectionId)
         if (!hasOtherConnections) {
           this.runtime.onClientDisconnected(socket.device.deviceToken)
+        }
+        const device = deviceRegistry.getDevice(socket.device.deviceId)
+        if (device?.scope === 'runtime' && !hasOtherConnections) {
+          this.getRuntimeAccessAudit().record({
+            at: Date.now(),
+            deviceId: device.deviceId,
+            deviceName: device.name,
+            accessMode: effectiveRuntimeAccessMode(device),
+            ...(device.teamBinding
+              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              : undefined),
+            method: 'connection.close',
+            result: 'allowed'
+          })
         }
       },
       // Why: relay attempts are authorized upstream; only direct failures should prompt local re-pairing.

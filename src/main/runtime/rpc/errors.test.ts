@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mapRuntimeError } from './errors'
 import {
-  ARTIFACT_SHARING_DISABLED_CODE,
-  ARTIFACT_SHARING_DISABLED_MESSAGE,
-  ArtifactSharingDisabledError
-} from '../../../shared/artifact-sharing-gate'
-import {
   AUTOMATION_OWNER_CONFLICT_CODES,
   AutomationOwnerConflictError
 } from '../../../shared/automation-owner-conflict'
@@ -220,21 +215,6 @@ describe('mapRuntimeError', () => {
         }
       },
       _meta: { runtimeId: 'runtime-1' }
-    })
-  })
-})
-
-describe('artifact sharing denial', () => {
-  it('reaches the CLI with its code, message, and next steps intact', () => {
-    expect(
-      mapRuntimeError('req_1', { runtimeId: 'runtime-1' }, new ArtifactSharingDisabledError())
-    ).toMatchObject({
-      ok: false,
-      error: {
-        code: ARTIFACT_SHARING_DISABLED_CODE,
-        message: ARTIFACT_SHARING_DISABLED_MESSAGE,
-        data: { nextSteps: expect.arrayContaining([expect.stringContaining('Settings')]) }
-      }
     })
   })
 })

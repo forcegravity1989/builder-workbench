@@ -9,10 +9,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import type {
-  ReviewPeerTarget,
-  ReviewSendInput
-} from '../../../../shared/workbench/pr-review-request'
+import type { ReviewPeerTarget } from '../../../../shared/workbench/pr-review-request'
+import type { ReviewSendDialogRequest } from './send-dialog-store'
 
 export const reviewPeerKey = (target: ReviewPeerTarget): string =>
   `${target.environmentId}:${target.pairingRevision}`
@@ -28,7 +26,7 @@ export function ReviewSendDialog({
   onClose,
   onSend
 }: {
-  request: ReviewSendInput
+  request: ReviewSendDialogRequest
   available: ReviewPeerTarget[]
   selected: ReviewPeerTarget[]
   loading: boolean
@@ -40,6 +38,10 @@ export function ReviewSendDialog({
 }): React.JSX.Element {
   const availableKeys = new Set(available.map(reviewPeerKey))
   const unavailable = selected.filter((target) => !availableKeys.has(reviewPeerKey(target)))
+  const description =
+    request.kind === 'prototype'
+      ? `共享页签 · ${request.page.sourceHostName} · ${request.page.title}`
+      : `${request.request.repo.path} #${request.request.prNumber} · ${request.request.title}`
   return (
     <Dialog
       open
@@ -52,9 +54,7 @@ export function ReviewSendDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>发送评审</DialogTitle>
-          <DialogDescription>
-            {request.repo.path} #{request.prNumber} · {request.title}
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>收件主机 · 已选 {selected.length} 台</span>

@@ -1,4 +1,4 @@
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import type {
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult
@@ -26,6 +26,72 @@ type RuntimeAccessAuditLogProps = {
   onSinceDaysChange: (value: 1 | 7 | 14) => void
   onSearchChange: (value: string) => void
   onRefresh: () => void
+  onClear: () => void
+}
+
+const AUDIT_METHOD_LABELS: Record<string, string> = {
+  'connection.open': '建立共享连接',
+  'connection.close': '断开共享连接',
+  'access.grant.full': '授予完全访问',
+  'access.revoke': '撤销访问',
+  'workbench.review.receive': '接收评审通知',
+  'repo.list': '读取项目目录',
+  'projectGroup.list': '读取项目分组',
+  'project.list': '读取项目',
+  'projectHostSetup.list': '读取项目主机配置',
+  'folderWorkspace.list': '读取工作区',
+  'worktree.list': '读取工作树',
+  'worktree.show': '读取工作树详情',
+  'worktree.listRetiredNames': '读取已归档工作树名称',
+  'files.read': '读取文件',
+  'files.list': '读取文件列表',
+  'files.search': '搜索文件',
+  'files.searchPaths': '搜索文件路径',
+  'git.status': '读取 Git 状态',
+  'git.history': '读取 Git 历史',
+  'terminal.read': '读取终端输出',
+  'terminal.list': '读取终端列表',
+  'codehub.mrForBranch': '读取 CodeHub 合并请求',
+  'codehub.listTasks': '读取 CodeHub 任务列表',
+  'codehub.listLabels': '读取 CodeHub 标签',
+  'codehub.listMembers': '读取 CodeHub 成员',
+  'codehub.listPipelines': '读取 CodeHub 流水线',
+  'codehub.viewTask': '读取 CodeHub 任务',
+  'codehub.mrChecks': '读取 CodeHub 检查',
+  'github.workItem': '读取 GitHub 工作项',
+  'github.workItemDetails': '读取 GitHub 工作项详情',
+  'github.prComments': '读取 PR 评论',
+  'github.prChecks': '读取 PR 检查',
+  'github.prFileContents': '读取 PR 文件',
+  'github.repoSlug': '读取 GitHub 仓库信息',
+  'github.repoUpstream': '读取 GitHub 上游仓库',
+  'github.rateLimit': '读取 GitHub 速率限制',
+  'github.listWorkItems': '读取 GitHub 工作项列表',
+  'github.listIssues': '读取 GitHub Issue 列表',
+  'github.countWorkItems': '读取 GitHub 工作项数量',
+  'github.listLabels': '读取 GitHub 标签',
+  'github.listAssignableUsers': '读取 GitHub可分配成员',
+  'github.project.listAccessible': '读取 GitHub 项目列表',
+  'github.project.listLabelsBySlug': '读取 GitHub 项目标签',
+  'github.project.listAssignableUsersBySlug': '读取 GitHub 项目成员',
+  'github.project.listIssueTypesBySlug': '读取 GitHub 项目类型',
+  'github.project.resolveRef': '读取 GitHub 项目引用',
+  'github.project.listViews': '读取 GitHub 项目视图',
+  'github.project.viewTable': '读取 GitHub 项目表格',
+  'files.readTerminalArtifact': '读取终端产物',
+  'files.readTerminalArtifactPreview': '读取终端产物预览',
+  'preflight.check': '读取主机预检状态',
+  'preflight.detectAgents': '读取可用 Agent',
+  'terminal.resolveActive': '读取活动终端',
+  'terminal.resolvePane': '读取终端面板',
+  'terminal.resolveIdentity': '读取终端身份',
+  'terminal.inspectProcess': '读取终端进程',
+  'terminal.agentStatus': '读取终端 Agent 状态',
+  'workbench.review.comments': '读取评审评论'
+}
+
+function auditMethodLabel(method: string): string {
+  return AUDIT_METHOD_LABELS[method] ?? `其他操作（${method}）`
 }
 
 export function RuntimeAccessAuditLog({
@@ -39,7 +105,8 @@ export function RuntimeAccessAuditLog({
   onResultChange,
   onSinceDaysChange,
   onSearchChange,
-  onRefresh
+  onRefresh,
+  onClear
 }: RuntimeAccessAuditLogProps): React.JSX.Element {
   return (
     <div className="space-y-2 border-t border-border/40 pt-3">
@@ -55,19 +122,31 @@ export function RuntimeAccessAuditLog({
             )}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          onClick={onRefresh}
-          disabled={isLoading}
-          aria-label={translate(
-            'auto.components.settings.RuntimeAccessAuditLog.refresh',
-            'Refresh shared host access log'
-          )}
-        >
-          <RefreshCw className={isLoading ? 'animate-spin' : undefined} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={onRefresh}
+            disabled={isLoading}
+            aria-label={translate(
+              'auto.components.settings.RuntimeAccessAuditLog.refresh',
+              'Refresh shared host access log'
+            )}
+          >
+            <RefreshCw className={isLoading ? 'animate-spin' : undefined} />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClear}
+            disabled={isLoading || entries.length === 0}
+          >
+            <Trash2 className="size-3.5" />
+            {translate('auto.components.settings.RuntimeAccessAuditLog.clear', '清理日志')}
+          </Button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Select value={action} onValueChange={onActionChange}>
@@ -77,7 +156,7 @@ export function RuntimeAccessAuditLog({
           <SelectContent>
             <SelectItem value="all">{translate('auto.components.settings.RuntimeAccessAuditLog.allActions', 'All actions')}</SelectItem>
             {[...new Set([...(action !== 'all' ? [action] : []), ...entries.map((entry) => entry.method)])].map((method) => (
-              <SelectItem key={method} value={method}>{method}</SelectItem>
+              <SelectItem key={method} value={method}>{auditMethodLabel(method)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -122,7 +201,7 @@ export function RuntimeAccessAuditLog({
               className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2 text-xs last:border-b-0"
             >
               <div className="min-w-0">
-                <div className="truncate font-medium">{entry.method}</div>
+                <div className="truncate font-medium">{auditMethodLabel(entry.method)}</div>
                 <div className="text-muted-foreground truncate">
                   {entry.deviceName ?? entry.deviceId} · {new Date(entry.at).toLocaleString()}
                 </div>

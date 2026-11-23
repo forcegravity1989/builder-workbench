@@ -4,6 +4,7 @@ import type { RuntimeAccessMode, RuntimeTeamBinding } from './runtime-session-co
 export type RuntimeAccessGrant = {
   deviceId: string
   name: string
+  avatar?: string
   createdAt: number
   lastSeenAt: number | null
   accessMode?: RuntimeAccessMode
