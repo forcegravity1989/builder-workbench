@@ -309,7 +309,9 @@ const WorktreeList = React.memo(function WorktreeList({
     worktrees: allWorktrees,
     folderWorkspaces,
     hasFilters,
-    clearFilters
+    clearFilters,
+    filteredWorktrees,
+    worktreeLineageById
   })
 
   const filtersHideAllRows = shouldFiltersHideAllRows({
@@ -373,6 +375,7 @@ const WorktreeList = React.memo(function WorktreeList({
         currentWorktreeId={currentSidebarWorktreeId}
         groupBy={groupBy}
         pinnedDisplayPolicy={pinnedDisplayPolicy}
+        versionBoundPinnedIdentities={versionBoundIdentities}
         projectOrderBy={projectOrderBy}
         toggleGroup={toggleGroup}
         collapsedGroups={effectiveCollapsedGroups}

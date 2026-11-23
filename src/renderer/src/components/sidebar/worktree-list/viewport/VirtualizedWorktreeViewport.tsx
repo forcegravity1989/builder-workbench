@@ -25,6 +25,7 @@ import { useWorktreePointerDrag } from '../drag/use-pointer-drag'
 import { useWorktreeSidebarHeaderDrag } from '../drag/use-header-drag'
 import { useWorktreeSidebarScrollSuppression } from './use-scroll-suppression'
 import { EMPTY_PROJECT_GROUPS, type VirtualizedWorktreeViewportProps } from './viewport-props'
+import { AfterPinnedScrollProvider, type AfterPinnedScrollApi } from './after-pinned-scroll-context'
 import { useWorktreeDropCommitContext } from '../drag/use-drop-commit-context'
 import { buildWorktreeVirtualRowContext } from './virtual-row-context'
 import { renderWorktreeVirtualRow } from '../rows/virtual-row-dispatch'
@@ -99,6 +100,22 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
     [props.afterPinnedContent, measurements, measuredTotalSize]
   )
 
+  // Why: the version tree renders inside one virtualized row and cannot reach the
+  // virtualizer itself; lend it the scroll handles for #762 reveals.
+  const afterPinnedScrollApi = useMemo<AfterPinnedScrollApi>(
+    () => ({
+      scrollRef,
+      scrollContentRowIntoView: () => {
+        const index = renderRows.findIndex((row) => row.type === 'content')
+        if (index !== -1) {
+          virtualization.virtualizer.scrollToIndex(index, { align: 'start', behavior: 'auto' })
+        }
+      },
+      markRevealScroll: scrollSuppression.markRevealScroll
+    }),
+    [renderRows, virtualization.virtualizer, scrollSuppression.markRevealScroll]
+  )
+
   const headerDrag = useWorktreeSidebarHeaderDrag({
     rows,
     renderRows,
@@ -168,6 +185,7 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
     toggleGroup,
     groupBy,
     pinnedDisplayPolicy,
+    pinnedOnlyIdentities: props.versionBoundPinnedIdentities,
     defaultHostId: props.defaultHostId,
     prCache: props.prCache,
     workspaceStatuses,
@@ -334,54 +352,56 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
   })
 
   return (
-    <div
-      data-worktree-sidebar-container
-      data-contextual-tour-target="workspace-list"
-      className="relative min-h-0 flex-1"
-    >
+    <AfterPinnedScrollProvider value={afterPinnedScrollApi}>
       <div
-        ref={setScrollRootRef}
-        data-worktree-sidebar
-        tabIndex={0}
-        role="listbox"
-        aria-label={translate('auto.components.sidebar.WorktreeList.bfbedc547b', 'Worktrees')}
-        aria-orientation="vertical"
-        aria-multiselectable="true"
-        aria-activedescendant={getActiveDescendantOptionId({
-          activeWorktreeId,
-          activeWorkspaceExecutionHostId: props.activeWorkspaceExecutionHostId,
-          primaryActiveRowKey: primaryActive.primaryActiveWorktreeRow?.rowKey,
-          pinnedDisplayPolicy,
-          renderRows,
-          virtualItems
-        })}
-        onKeyDown={handleContainerKeyDown}
-        // Why: trackpad momentum fires sparse scroll events after the input stream quiets; suppress correction until the viewport stops.
-        onScroll={handleScroll}
-        onPointerDown={handleScrollPointerDown}
-        onTouchMove={markDirectScrollInput}
-        onWheel={markDirectScrollInput}
-        onDragOver={nativeDrag.handleWorktreeDragOver}
-        onDrop={nativeDrag.handleWorktreeDrop}
-        className="worktree-sidebar-scrollbar h-full overflow-y-auto overflow-x-hidden pl-1 scrollbar-sleek outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset pt-px"
-        style={WORKTREE_SIDEBAR_SCROLL_STYLE}
+        data-worktree-sidebar-container
+        data-contextual-tour-target="workspace-list"
+        className="relative min-h-0 flex-1"
       >
         <div
-          role="presentation"
-          className="relative w-full"
-          style={{ height: `${virtualization.virtualizer.getTotalSize()}px` }}
+          ref={setScrollRootRef}
+          data-worktree-sidebar
+          tabIndex={0}
+          role="listbox"
+          aria-label={translate('auto.components.sidebar.WorktreeList.bfbedc547b', 'Worktrees')}
+          aria-orientation="vertical"
+          aria-multiselectable="true"
+          aria-activedescendant={getActiveDescendantOptionId({
+            activeWorktreeId,
+            activeWorkspaceExecutionHostId: props.activeWorkspaceExecutionHostId,
+            primaryActiveRowKey: primaryActive.primaryActiveWorktreeRow?.rowKey,
+            pinnedDisplayPolicy,
+            renderRows,
+            virtualItems
+          })}
+          onKeyDown={handleContainerKeyDown}
+          // Why: trackpad momentum fires sparse scroll events after the input stream quiets; suppress correction until the viewport stops.
+          onScroll={handleScroll}
+          onPointerDown={handleScrollPointerDown}
+          onTouchMove={markDirectScrollInput}
+          onWheel={markDirectScrollInput}
+          onDragOver={nativeDrag.handleWorktreeDragOver}
+          onDrop={nativeDrag.handleWorktreeDrop}
+          className="worktree-sidebar-scrollbar h-full overflow-y-auto overflow-x-hidden pl-1 scrollbar-sleek outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset pt-px"
+          style={WORKTREE_SIDEBAR_SCROLL_STYLE}
         >
-          {renderWorktreeSidebarDropIndicators({
-            headerDrag,
-            worktreeDragState: runtime.worktreeDragState
-          })}
-          {virtualItems.map((vItem) => {
-            const row = renderRows[vItem.index]
-            return row ? renderWorktreeVirtualRow(rowContext, row, vItem) : null
-          })}
+          <div
+            role="presentation"
+            className="relative w-full"
+            style={{ height: `${virtualization.virtualizer.getTotalSize()}px` }}
+          >
+            {renderWorktreeSidebarDropIndicators({
+              headerDrag,
+              worktreeDragState: runtime.worktreeDragState
+            })}
+            {virtualItems.map((vItem) => {
+              const row = renderRows[vItem.index]
+              return row ? renderWorktreeVirtualRow(rowContext, row, vItem) : null
+            })}
+          </div>
         </div>
+        {showScrollToTop ? <WorktreeListScrollToTopButton onClick={scrollToTop} /> : null}
       </div>
-      {showScrollToTop ? <WorktreeListScrollToTopButton onClick={scrollToTop} /> : null}
-    </div>
+    </AfterPinnedScrollProvider>
   )
 })

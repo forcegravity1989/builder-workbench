@@ -12,7 +12,8 @@ export function VersionSidebarPreview({
   activeVersion,
   activeContextKey,
   versionElements,
-  renderRow
+  renderRow,
+  forceReveal = null
 }: {
   repoId: string
   entries: readonly VersionCatalogEntry[]
@@ -20,13 +21,26 @@ export function VersionSidebarPreview({
   activeContextKey: string
   versionElements: RefObject<Map<string, HTMLDivElement>>
   renderRow: (entry: VersionCatalogEntry) => ReactNode
+  /** #762: a reveal request targeting an overflow version force-expands 更多版本. */
+  forceReveal?: { version: string; sequence: number } | null
 }): React.JSX.Element {
   const moreVersionsId = useId()
   const activeOlderVersion =
     entries.findIndex((entry) => entry.version === activeVersion) >= PREVIEW_LIMIT
       ? activeVersion
       : null
-  const revealKey = activeOlderVersion ? `${activeOlderVersion}:${activeContextKey}` : null
+  const forcedOlderVersion =
+    forceReveal &&
+    entries.findIndex((entry) => entry.version === forceReveal.version) >= PREVIEW_LIMIT
+      ? forceReveal
+      : null
+  // A fresh reveal request wins over the active-version auto-expand so an explicitly
+  // collapsed 更多版本 reopens even when the active version is itself an overflow version.
+  const revealKey = forcedOlderVersion
+    ? `request:${forcedOlderVersion.version}:${forcedOlderVersion.sequence}`
+    : activeOlderVersion
+      ? `${activeOlderVersion}:${activeContextKey}`
+      : null
   const [overflow, setOverflow] = useState({
     repoId,
     revealKey,
@@ -41,18 +55,19 @@ export function VersionSidebarPreview({
     })
   }
 
+  const scrollTargetVersion = forcedOlderVersion?.version ?? activeOlderVersion ?? null
   useEffect(() => {
-    if (!activeOlderVersion) {
+    if (!scrollTargetVersion) {
       return
     }
     const frame = requestAnimationFrame(() => {
       versionElements.current
-        .get(activeOlderVersion)
+        .get(scrollTargetVersion)
         ?.querySelector('button')
         ?.scrollIntoView({ block: 'nearest' })
     })
     return () => cancelAnimationFrame(frame)
-  }, [activeOlderVersion, revealKey, repoId, versionElements])
+  }, [scrollTargetVersion, revealKey, repoId, versionElements])
 
   const showMore = overflow.expanded
   const moreVersionCount = entries.length - PREVIEW_LIMIT
