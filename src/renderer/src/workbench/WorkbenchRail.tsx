@@ -26,7 +26,7 @@ type RailEntry = {
   onSelect: () => void
 }
 
-export function WorkbenchRailButton({ entry }: { entry: RailEntry }): React.JSX.Element {
+function RailButton({ entry }: { entry: RailEntry }): React.JSX.Element {
   const Icon = entry.icon
   return (
     <button
@@ -139,7 +139,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
         className="flex w-full flex-col items-center gap-1 border-t border-worktree-sidebar-border pt-2"
       >
         {entries.slice(0, 2).map((entry) => (
-          <WorkbenchRailButton key={entry.id} entry={entry} />
+          <RailButton key={entry.id} entry={entry} />
         ))}
         <SidebarTaskNavButton
           variant="rail"
@@ -147,7 +147,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
           onBeforeNavigate={closeProjectPage}
         />
         {entries.slice(2).map((entry) => (
-          <WorkbenchRailButton key={entry.id} entry={entry} />
+          <RailButton key={entry.id} entry={entry} />
         ))}
       </nav>
       <div className="flex-1" />

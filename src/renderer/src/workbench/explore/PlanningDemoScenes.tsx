@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { BoardActionButton } from '../board-ui'
 import { CalendarRange, Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { sampleCharter } from './DirectionCharterDemo'
+import { sampleCharter } from './sample-charter'
 import '../version-planning/version-planning.css'
 import './planning-walkthrough.css'
 

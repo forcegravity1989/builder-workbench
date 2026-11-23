@@ -30,55 +30,6 @@
 .direction-demo-scene .wb-ov .page-head {
   padding: 0 16px;
 }
-.direction-demo-scene .direction-charter-editor {
-  position: static;
-  width: min(100%, 610px);
-  padding: 0;
-}
-.direction-charter-editor .wb-config-header {
-  padding: 12px 16px 6px;
-}
-.direction-charter-editor .wb-config-header h2 {
-  margin: 0;
-}
-.direction-charter-editor .wb-config-section {
-  margin: 4px 16px 0;
-}
-.direction-charter-editor .wb-config-info-heading {
-  padding: 4px 12px 0;
-}
-.direction-charter-editor .wb-config-body {
-  padding: 0 12px 12px;
-  font-size: 13px;
-}
-.direction-charter-editor .wb-config-fields {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 14px;
-  padding-top: 0;
-}
-.direction-charter-editor .wb-config-fields label {
-  min-width: 0;
-  gap: 2px;
-}
-.direction-charter-editor .wb-config-fields :is(input, textarea) {
-  padding: 5px 8px;
-}
-.direction-charter-editor .wb-config-fields textarea {
-  min-height: 46px;
-  resize: none;
-}
-.direction-charter-editor label:has(#direction-demo-benchmark) {
-  grid-row: 3;
-}
-.direction-charter-editor[data-demo-typing] #direction-demo-opportunity {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 1px var(--ring);
-}
-.direction-charter-editor .wb-config-footer {
-  min-height: 46px;
-  margin-top: 8px;
-  padding: 5px 16px;
-}
 .direction-demo-scene .direction-wall-demo {
   padding: 16px;
   overflow: visible;
@@ -92,34 +43,11 @@
 .direction-wall-demo .wall-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.direction-demo-scene .direction-milestone-demo {
-  margin: 0;
-}
-.direction-milestone-demo :is(.wb-ml-sdlc-toolbar, .wb-ml-range-toolbar, .wb-ml-today) {
-  display: none;
-}
-.direction-milestone-demo .wb-ml-day-cell.today {
-  box-shadow: none;
-  font-weight: inherit;
-}
-.direction-milestone-demo .wb-ml-scroll {
-  scrollbar-width: none;
-}
 .direction-demo-scene .direction-demo-focus {
   width: min(100%, 420px);
   max-width: 100%;
   padding: 16px;
   overflow: visible;
-}
-.direction-milestone-form h3 {
-  margin: 0 0 12px;
-  font-size: 16px;
-  font-weight: 600;
-}
-.direction-milestone-form label {
-  display: grid;
-  gap: 4px;
-  font-size: 13px;
 }
 .direction-demo-spotlight {
   position: absolute;
@@ -153,128 +81,9 @@
     min-height: 332px;
     padding-block: 10px;
   }
-  .direction-charter-editor .wb-config-header {
-    padding-block: 8px 4px;
-  }
-  .direction-charter-editor .wb-config-fields {
-    gap: 6px 14px;
-  }
-  .direction-charter-editor .wb-config-fields textarea {
-    min-height: 38px;
-  }
-  .direction-charter-editor .wb-config-footer {
-    min-height: 38px;
-    margin-top: 4px;
-  }
 }
 @container (max-width: 520px) {
   .direction-wall-demo .wall-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.direction-workbench-frame {
-  position: relative;
-  width: min(100%, max(440px, calc((100vh - 380px) * 1.638889)));
-  aspect-ratio: 1180 / 720;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--background);
-  color: var(--foreground);
-}
-.direction-frame-viewport {
-  position: absolute;
-  width: 1180px;
-  height: 720px;
-  transform-origin: top left;
-}
-.direction-frame-titlebar {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  height: 36px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border);
-  font-size: 12px;
-}
-.direction-frame-title {
-  flex: 1;
-  text-align: center;
-}
-.direction-frame-body {
-  display: flex;
-  height: 684px;
-}
-.direction-frame-sidebar {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  width: 280px;
-  border-right: 1px solid var(--worktree-sidebar-border);
-}
-.direction-frame-main {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  background: var(--background);
-}
-.direction-frame-location {
-  height: 34px;
-  padding: 8px 20px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-.direction-frame-main > .direction-demo-window {
-  width: 100%;
-  min-height: calc(100% - 34px);
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-.direction-frame-main > .direction-demo-focus {
-  width: calc(100% - 48px);
-  margin: 24px;
-}
-.direction-frame-main .direction-wall-demo {
-  padding: 20px;
-}
-.direction-frame-main .wb-ov .content {
-  padding: 20px;
-}
-.direction-charter-layout {
-  display: flex;
-  height: calc(100% - 34px);
-  min-width: 0;
-}
-.direction-charter-layout > .wb-ov {
-  flex: 1;
-  width: auto;
-  min-width: 0;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-.direction-charter-layout > .direction-charter-editor {
-  position: static;
-  width: 400px;
-  min-width: 400px;
-  max-width: 400px;
-  min-height: 0;
-  border: 0;
-  border-left: 1px solid var(--border);
-  border-radius: 0;
-  box-shadow: none;
-}
-.direction-charter-layout .wb-config-fields {
-  grid-template-columns: minmax(0, 1fr);
-}
-.direction-charter-layout .wb-config-footer {
-  margin-top: auto;
-}
-.direction-frame-main .direction-milestone-demo {
-  margin: 0;
-  width: 100%;
 }

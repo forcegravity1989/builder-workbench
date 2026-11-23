@@ -20,13 +20,7 @@ export type JourneyStep = {
   Scene: ComponentType<{ time: number }>
 }
 
-export function JourneyPlayer({
-  steps,
-  playbackRate = 1
-}: {
-  steps: readonly JourneyStep[]
-  playbackRate?: number
-}) {
+export function JourneyPlayer({ steps }: { steps: readonly JourneyStep[] }) {
   const [index, setIndex] = useState(0)
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -48,10 +42,10 @@ export function JourneyPlayer({
       const now = performance.now()
       const elapsed = now - last
       last = now
-      setTime((value) => Math.min(value + elapsed * playbackRate, duration))
+      setTime((value) => Math.min(value + elapsed, duration))
     }, 32)
     return () => window.clearInterval(timer)
-  }, [duration, playing, playbackRate])
+  }, [duration, playing])
 
   useEffect(() => {
     if (!playing || time < duration) {
