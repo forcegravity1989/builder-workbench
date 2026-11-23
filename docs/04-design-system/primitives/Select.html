@@ -11,6 +11,8 @@
   <div class="pv-col" style="padding:0;gap:8px">
     <button data-slot="select-trigger" data-size="default" style="width:200px"><span data-slot="select-value">Claude Code</span><svg class="lucide lucide-chevron-down select-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <button data-slot="select-trigger" data-size="sm" data-placeholder style="width:200px"><span data-slot="select-value">Choose a shell</span><svg class="lucide lucide-chevron-down select-chevron" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    <button data-slot="select-trigger" disabled>Unavailable</button>
+    <button data-slot="select-trigger" aria-invalid="true" class="is-focus">Invalid selection</button>
   </div>
   <div data-slot="select-content" style="width:200px">
     <div data-slot="select-label">Agent</div>

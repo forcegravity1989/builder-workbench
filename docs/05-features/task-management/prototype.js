@@ -82,7 +82,7 @@ function render() {
   })
   $('search').placeholder = '按标题、编号或仓库搜索演示任务…'
   $('projects').textContent =
-    projectSet.length === 1 ? projectSet[0] + ' ⌄' : `${projectSet.length} 个项目 ⌄`
+    projectSet.length === 1 ? `${projectSet[0]} ⌄` : `${projectSet.length} 个项目 ⌄`
   $('presets').replaceChildren()
   const options =
     kind === 'issue'
@@ -114,17 +114,15 @@ function render() {
   ]
     .filter(Boolean)
     .join(' · ')
-  $('head').innerHTML =
-    '<tr>' +
-    [
-      'ID',
-      '标题 / 上下文',
-      ...(kind === 'issue' ? ['负责人', '标签', '状态'] : ['评审人', '检查项', '合并']),
-      '已更新',
-      ''
-    ]
-      .map((x) => `<th>${x}</th>`)
-      .join('')
+  $('head').innerHTML = `<tr>${[
+    'ID',
+    '标题 / 上下文',
+    ...(kind === 'issue' ? ['负责人', '标签', '状态'] : ['评审人', '检查项', '合并']),
+    '已更新',
+    ''
+  ]
+    .map((x) => `<th>${x}</th>`)
+    .join('')}</tr>`
   const all = $('scenario').value === 'normal' ? matching() : []
   const count = Math.max(1, Math.ceil(all.length / pageSize))
   page = Math.min(page, count - 1)
@@ -141,7 +139,7 @@ function render() {
     b.onclick = () => openDetail(row)
     td.append(b)
     const sub = document.createElement('small')
-    sub.textContent = row.author + ' · ' + row.repo
+    sub.textContent = `${row.author} · ${row.repo}`
     td.append(sub)
     tr.append(td)
     const cells =
@@ -154,7 +152,7 @@ function render() {
       if (kind === 'issue' && index < 3) {
         const key = ['assignee', 'label', 'state'][index]
         const button = document.createElement('button')
-        button.textContent = value + ' ⌄'
+        button.textContent = `${value} ⌄`
         button.setAttribute('aria-label', `修改 #${row.id} ${['负责人', '标签', '状态'][index]}`)
         button.onclick = () => {
           const menu = $('rowMenu')
@@ -177,8 +175,8 @@ function render() {
             menu.append(option)
           })
           const rect = button.getBoundingClientRect()
-          menu.style.left = Math.min(rect.left, innerWidth - 300) + 'px'
-          menu.style.top = rect.bottom + 'px'
+          menu.style.left = `${Math.min(rect.left, innerWidth - 300)}px`
+          menu.style.top = `${rect.bottom}px`
           menu.showPopover()
         }
         cell.replaceChildren(button)
@@ -218,7 +216,9 @@ function render() {
     const button = document.createElement('button')
     button.textContent = String(index + 1)
     button.classList.toggle('active', index === page)
-    if (index === page) button.setAttribute('aria-current', 'page')
+    if (index === page) {
+      button.setAttribute('aria-current', 'page')
+    }
     button.onclick = () => {
       page = index
       render()
@@ -357,13 +357,19 @@ $('refresh').onclick = () => {
   }, 350)
 }
 $('scenario').onchange = () => {
-  if (!selected) render()
+  if (!selected) {
+    render()
+  }
 }
 $('journey').onchange = () => {
-  if ($('journey').value === 'create') create()
-  else $('back').click()
+  if ($('journey').value === 'create') {
+    create()
+  } else {
+    $('back').click()
+  }
 }
-$('theme').onchange = () => (document.documentElement.dataset.theme = $('theme').value)
+$('theme').onchange = () =>
+  document.documentElement.classList.toggle('dark', $('theme').value === 'dark')
 $('reset').onclick = () => {
   document.querySelectorAll(':popover-open').forEach((x) => x.hidePopover())
   document.querySelectorAll('dialog[open]').forEach((x) => x.close())
@@ -375,8 +381,8 @@ reset()
 function showPicker(id, anchor) {
   const rect = $(anchor).getBoundingClientRect()
   const node = $(id)
-  node.style.left = Math.min(rect.left, innerWidth - 300) + 'px'
-  node.style.top = rect.bottom + 6 + 'px'
+  node.style.left = `${Math.min(rect.left, innerWidth - 300)}px`
+  node.style.top = `${rect.bottom + 6}px`
   node.showPopover()
 }
 document
@@ -414,8 +420,8 @@ function appendRowActions(tr, row) {
       menu.append(button)
     }
     const r = more.getBoundingClientRect()
-    menu.style.left = Math.min(r.left, innerWidth - 300) + 'px'
-    menu.style.top = r.bottom + 'px'
+    menu.style.left = `${Math.min(r.left, innerWidth - 300)}px`
+    menu.style.top = `${r.bottom}px`
     menu.showPopover()
   }
   td.append(start, more)
@@ -453,11 +459,11 @@ function filterSections() {
     ['assignee', '负责人']
   ]) {
     const b = document.createElement('button')
-    b.textContent = name + ' ›'
+    b.textContent = `${name} ›`
     b.onclick = () => {
       menu.replaceChildren()
       const back = document.createElement('button')
-      back.textContent = '← ' + name
+      back.textContent = `← ${name}`
       back.onclick = filterSections
       menu.append(back)
       options[key].forEach(([value, label]) => {
@@ -478,13 +484,15 @@ function filterSections() {
 function openDetail(row) {
   $('tabs').hidden = false
   renderDetailBase(row)
-  $('detailTitle').textContent = row.title + ' #' + row.id
+  $('detailTitle').textContent = `${row.title} #${row.id}`
   const launch = document.createElement('button')
   launch.className = 'detail-launch'
   launch.textContent = row.id % 2 ? '从议题开始工作区 →' : '打开工作区 →'
   launch.onclick = () => workspaceBoundary(row)
   $('detailTitle').append(launch)
-  if (row.kind !== 'issue') return
+  if (row.kind !== 'issue') {
+    return
+  }
   $('tabs').hidden = true
   const body = $('body')
   body.replaceChildren()
@@ -508,7 +516,7 @@ function openDetail(row) {
   const description = document.createElement('section')
   description.className = 'conversation'
   const head = document.createElement('header')
-  head.textContent = row.author + ' · 2 小时前'
+  head.textContent = `${row.author} · 2 小时前`
   const text = document.createElement('p')
   text.style.whiteSpace = 'pre-line'
   text.textContent = row.body

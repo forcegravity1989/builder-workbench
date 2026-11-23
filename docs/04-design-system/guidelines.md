@@ -1,8 +1,8 @@
 # Workbench 设计规范
 
-> **本篇维护约定**：给写界面、做原型、改样式的人和任何 code agent（Claude Code、Codex 等）读取。只写视觉与交互规则、token 怎么用、组件怎么选；具体取值看 [tokens.json](tokens.json)，单个原语的细节看 [primitives/](primitives/)。结构：总则 → 文案 → 颜色 → 字体 → 间距/圆角/层级 → 组件选型 → 按钮与新增入口 → 图标 → 交互 → 平台 → 叠层对齐 → 中文排版 → HTML 原型。Orca 规则原文在 [ref/STYLEGUIDE.md](../../ref/STYLEGUIDE.md)，两者冲突以 Orca 为准；规则或 STYLEGUIDE 变化时更新本篇。
+> **本篇维护约定**：给写界面、做原型、改样式的人和任何 code agent（Claude Code、Codex 等）读取。只写视觉与交互规则、token 怎么用、组件怎么选；具体取值看 [tokens.json](tokens.json)，单个原语的细节看 [primitives/](primitives/)。结构：总则 → 文案 → 颜色 → 字体 → 间距/圆角/层级 → 组件选型 → 按钮与新增入口 → 图标 → 交互 → 平台 → 叠层对齐 → 中文排版 → HTML 原型。Orca 来源规则在 [ref/STYLEGUIDE.md](../../ref/STYLEGUIDE.md)；本篇规定 BW 当前采用的规则，不能用上游描述覆盖已采用的 BW 界面。规则、实际组件或主题变化时同步本篇。
 
-Workbench 跑在 Orca 执行核上，界面语言就是 Orca 的：**单色、安静，颜色只留给状态。** 产品大部分时间在托管别人的工具（终端、Monaco、Markdown 预览、浏览器），所以自己的 chrome 要退后、做框。Workbench 叠层页面（总览、计划、验收、知识库、项目墙）与 Orca 原生界面用同一套 token、同一批 shadcn 原语，不另起皮肤。
+**以当前仓内 BW/Orca 的真实界面为统一基线。** 产品组件复用 `src/renderer/src/components/ui/`，基础 token 来自 `main.css`，BW 运行时主题还叠加 `workbench-tokens.css`，实际启用条件由 `WorkbenchShellBootstrap.tsx` 决定。当前 BW 浅色使用暖色背景和陶土色主动作，不能把 Orca 基础单色 token 当作 BW 的最终显示值。界面应安静地承载终端、编辑器与内容，避免装饰性强调；新增设计只呈现明确评审的差异，不借原型治理更换产品皮肤。
 
 拿不准时：先用 `muted` / `accent` / `border`，再考虑颜色；先用变量，再考虑写 hex；先找最近的原语，再考虑写自定义 CSS。
 
@@ -12,7 +12,7 @@ Workbench 跑在 Orca 执行核上，界面语言就是 Orca 的：**单色、�
 - **写对象、动作、结果。** 必要时补失败原因和下一步。不展示内部协议、实现历史和代号。
 - **失败先给可理解、可处理的反馈。** 用户触发的短暂失败复用 Orca 的全局轻量通知（Sonner toast）。数据持续不可用、草稿未保存或用户需要在原位置重试时，在受影响的区域显示明确的错误状态和恢复动作。页面正文、工具提示与通知摘要不得直接拼接异常、命令输出或堆栈。技术原因放在可展开的详情及已有诊断日志中，沿用日志的凭据脱敏与输出限制。
 - **直接动词 + 具体名词。** 删「请」「只需」「您可以」「简单地」这类填充；英文同理删 please / simply / just / you can。
-- **没有解释性小字。** 标题不解释自己，同一状态不说两遍（色点 + 文字已够），空态给获取数据的动作而不是自述。
+- **删冗余说明，保留决策所需的信息。** 标题不解释自己，同一状态不说两遍；字段范围、前提、后果与恢复方式可放在字段说明、Tooltip 或错误反馈中。空态给获取数据的动作，产品画布不堆原型注释。
 - 按钮文字写「动作 + 对象」，如「删除工作树」「创建工作树」。上下文已明确时可简写「取消」「保存」。按钮用文字还是图标，见[按钮与新增入口](#按钮与新增入口)。
 - 数字、计数、快捷键右对齐；文字左对齐。
 
@@ -29,7 +29,7 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 | `secondary` / `secondary-foreground` | 紧挨 primary 的次要实心动作 | 肯定动作 |
 | `muted` / `muted-foreground` | 降级文字、说明、占位、禁用 chrome | 正文、主动作 |
 | `accent` / `accent-foreground` | ghost 按钮与列表行的悬停/激活底 | 实心按钮（用 `secondary`） |
-| `destructive` | 删除、丢弃、不可逆；错误态 | 取消 |
+| `destructive` | 删除、覆盖或丢弃已保存内容；不可逆确认；错误态 | 仅退出当前操作的取消、关闭 |
 | `border` | 所有细线：分隔、卡边、输入框外框 | 重强调（那是 `ring`） |
 | `input` | 表单控件外框与暗色填充 | 表单以外 |
 | `ring` | focus-visible 外圈、选中光晕 | 常驻装饰 |
@@ -131,7 +131,7 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 
 - 先预留之后要占的空间（用 `width` 不用 `min-width`），控件不在动作中改变大小。
 - 本地快、远程（SSH）慢的动作：禁用立即绑定，可见加载态延后约 200ms。
-- 退出路径不加重：取消、关闭、丢弃不是 destructive，用 ghost、无颜色、无快捷键。
+- 按动作后果区分退出与破坏：仅取消当前操作、关闭弹窗用 ghost 等次要样式，不加危险色或快捷键；会删除、覆盖或丢弃已有内容的确认使用 destructive，并说明后果，不能仅凭按钮叫「丢弃」或「取消」判断。
 - 弹窗、浮层、命令面：默认焦点落在最可能用的输入或主动作上，回车触发主动作，Esc 退出。
 - 高频动作放在最顺手的位置，低频动作收进菜单或高级区；常见流程 1–2 步完成。
 - 动画只用来交代展开/收起的连续性，尊重「减少动态效果」。
@@ -139,13 +139,13 @@ Token 成对使用：一个面 + 一个在其上达标的前景。
 
 ## 平台与主题
 
-macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按平台选（Mac `metaKey`，其他 `ctrlKey`；菜单加速键 `CmdOrCtrl`）。macOS 标题栏左侧 80px 留给红绿灯，不放可点区域。暗色切换：应用在根节点加 `.dark`；文档页与原型在 `<html>` 或任意子树加 `data-theme="dark"`（两者 `tokens.css` 都认）。插件主题可以改皮肤，但来源与授权界面锁定 `orca-security-*`，插件改不动。
+macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按平台选（Mac `metaKey`，其他 `ctrlKey`；菜单加速键 `CmdOrCtrl`）。macOS 标题栏左侧 80px 留给红绿灯，不放可点区域。暗色切换：应用和模拟 BW 主题的原型在根节点切换 `.dark`；BW 保留 `data-skin="ds" data-theme="claude"`，不把 `data-theme` 改成 `dark`。只展示基础 token 的文档页可用 `data-theme="dark"`。插件主题可以改皮肤，但来源与授权界面锁定 `orca-security-*`，插件改不动。
 
 ## Workbench 叠层怎么对齐
 
-- 叠层页面用上面的 token 和 `src/renderer/src/components/ui/` 原语，不另起皮肤。
-- 叠层 CSS 现有的 `--color-*` 角色名（`color-text`、`color-divider`、`color-neutral-600`、`color-success-soft`…）已并入 `tokens.json`，**改指向 Orca 的值**（usage 以 Overlay role 开头，写明对应哪个 Orca token）。新写的叠层 CSS 直接用 Orca 名（`--foreground`、`--border`、`--muted-foreground`），角色名只为存量代码保留。
-- **同名不同义，小心 `--color-accent`**：叠层角色 `--color-accent` = 主色 `primary`；Tailwind 主题里的 `--color-accent`（`bg-accent` 背后那个）= 灰色悬停底 `accent`。新代码不要再写 `--color-accent`。
+- 先核对 [WorkbenchShellBootstrap](../../src/renderer/src/workbench/WorkbenchShellBootstrap.tsx) 的主题属性、[main.css](../../src/renderer/src/assets/main.css) 和 [workbench-tokens.css](../../src/renderer/src/workbench/workbench-tokens.css) 的覆盖关系，再沿用真实页面的组件与 token，不另起皮肤。
+- `tokens.json` 中 usage 以 Overlay role 开头的 `--color-*` 是文档基础映射，不代表运行时 BW 覆盖后的取值。新写组件优先使用 `--foreground`、`--border`、`--muted-foreground` 等语义变量；存量角色按产品中的实际声明核对，原型不得以文档映射替换产品主题。
+- **同名不同义，小心 `--color-accent`**：文档基础映射将此角色对应到 `primary`，但 BW 运行时覆盖保留陶土色，深色下不等于原生 `--primary`；Tailwind 的 `bg-accent` 使用的是悬停底 `--accent`。使用前确认所在层与主题，新组件用明确的语义 token，不沿用有歧义的别名。
 - 旧类映射：`.wb-btn-primary` → Button `default`，`.wb-btn-secondary` → `outline`，`.wb-btn-ghost` → `ghost`，`.wb-btn-sm` → `size="xs"`（24px）；`.wb-card` → Card；`.wb-tag-*` → Badge（成功用 `dot` + `status-success`，危险用 `destructive`，其余 `outline` / `secondary`）；`.wb-mono` → `font-mono`；`.wb-muted` → `muted-foreground`。
 - 叠层需要新颜色时，先进 `main.css` 的 `:root` 与 `.dark` 并在 `@theme inline` 暴露，再登记到 `tokens.json`；不在叠层 CSS 里写 hex。
 
@@ -162,7 +162,9 @@ macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按�
 
 ## HTML 原型与文档页
 
-原型、文档页、验收展示这类**不跑 React** 的静态页面，只链一份 `styles.css`（它会引入 `tokens.css`），用下面的类搭，不写自定义颜色。React/生成型原型不套这条静态 HTML 入口规则，应沿用 token、React 原语和现有构建入口；源码是可编辑正本，生成物由构建更新，不手改生成物或打包依赖。类名沿用原 Builder，值全部来自 Orca；产品代码不用这些静态类，用 React 原语。
+制作原型遵循三点：**表达完整目标路径；成熟组件原样复用；保留真实信息密度。** 目标路径包含当前基线与待评审增量，不是为了演示而虚构的成功走场。
+
+**静态文档与评审工具区**使用 `styles.css`（引入 `tokens.css`）及下表类名；这些通用控件示例不定义 BW 产品外壳。**产品画布**优先使用真实 React 组件、当前主题与既有构建入口；静态表达也须对照真实页面，不能因为 `.btn`、`.sidebar` 或 `.set-row` 可用就替换实际控件、导航或设置布局。颜色沿用来源变量，不自造配色。源码是可编辑正本，生成物由构建更新，不手改生成物或打包依赖。
 
 | 类 | 用途 | 示例页 |
 |---|---|---|
@@ -172,14 +174,16 @@ macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按�
 | `.card` 系列、`.board` 系列 | 卡片、看板列 | `components/cards.html` |
 | `.status` + `.status-dot` + `-todo` / `-progress` / `-review` / `-done` / `-blocked` | 状态点 + 文字；进行中/评审/完成取 `workspace-status-*`，阻塞取 `destructive` | `components/status.html` |
 | `.avatar` 系列 | 人圆形，Agent 方圆角 | `components/status.html` |
-| `.nav`、`.sidebar` 系列、`.tabs` + `.tab` | 顶栏、侧栏（28px 行）、下划线标签页 | `components/navigation.html` |
+| `.nav`、`.sidebar` 系列、`.tabs` + `.tab` | 文档导航、列表与标签页示例；不是 BW 外壳 | `components/navigation.html` |
 | `.list` + `.list-row`、`.table` | 密集事项行（等宽 ID、标题省略）、数据表 | `components/table.html` |
 | `.dialog` 系列、`.toast` 系列 | 模态、反色通知 | `components/dialog.html` |
 | `.cmdk` 系列 | ⌘K 命令面板 | `components/command.html` |
-| `.page-head`、`.section`、`.set-group` + `.set-row`、`.toggle`、`.choice`、`.path` | 设置页骨架 | `components/settings.html` |
+| `.page-head`、`.section`、`.set-group` + `.set-row`、`.toggle`、`.choice`、`.path` | 文档表单与设置行示例 | `components/settings.html` |
 | `.frame` | 图像框：发丝线、小圆角 | `foundations/image.html` |
 
-**设置页骨架**（原型用；应用内设置页沿用 Orca 的 `components/settings/`）：`.page-head`（标题、页级动作靠右）→ 若干 `.section` → 每节一张 `.set-group`。一行 `.set-row` = 左边标题 + 至多一句说明，行尾一个控件（开关、`.seg`、`select.input`、`.input`、`.path` + 次按钮、或 `.status`），控件落在同一条竖线上。自己就能生效的控件不配保存键；打一半不能生效的自由输入旁边留一颗安静的「保存」。
+**设置行示例**（文档用；BW 设置原型与应用都先读取当前 `components/settings/` 的布局与行为）：`.page-head`（标题、页级动作靠右）→ 若干 `.section` → 每节一张 `.set-group`。一行 `.set-row` = 左边标题 + 至多一句说明，行尾一个控件（开关、`.seg`、`select.input`、`.input`、`.path` + 次按钮、或 `.status`），控件落在同一条竖线上。自己就能生效的控件不配保存键；打一半不能生效的自由输入旁边留一颗安静的「保存」。
+
+静态 BW 原型在 `styles.css` 后直接加载当前产品的 `src/renderer/src/workbench/workbench-tokens.css`，不抄录主题值。从 `docs/05-features/<id>/prototype.html` 加载时路径为 `../../../src/renderer/src/workbench/workbench-tokens.css`；`<html>` 设置 `data-skin="ds" data-theme="claude"`，明暗切换只增删 `.dark`。这只复用运行时主题，不能据此声称已复用 React 控件或完整外壳。
 
 ### 原型入口与正本
 
@@ -194,7 +198,7 @@ macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按�
 
 外壳结构从 [AppWorkspaceShell](../../src/renderer/src/app-shell/AppWorkspaceShell.tsx) 和 [WorkbenchRail](../../src/renderer/src/workbench/WorkbenchRail.tsx) 读取，对象侧栏由 [workbench-object-context](../../src/renderer/src/workbench/workbench-object-context.ts) 决定是否出现，再沿原生侧栏、[项目身份](../../src/renderer/src/workbench/WorkbenchSidebarNav.tsx)与[版本导航](../../src/renderer/src/workbench/WorkbenchVersionNav.tsx)核对内容。标题栏、对象侧栏、状态栏和页头的显示条件随实际路由与状态变化，不能机械拼成每屏必有的骨架。例如全局任务屏没有对象侧栏，带版本范围的任务屏才保留对象上下文。
 
-已有界面优先加载真实组件和样式；静态表达须按同一代码版本与真实界面的布局、图标、尺寸及交互核对，并标明「静态表达」及未覆盖部分。源码链接只能证明参照位置，不能证明组件已复用或视觉已一致。公共壳与评审区的可编辑实现只保留一份，通过引用或构建复用；仅共享元数据不算共享界面。
+已有界面优先加载真实组件和样式；静态表达须按同一代码版本与真实界面的布局、图标、尺寸及交互核对，并标明「静态表达」及未覆盖部分。源码链接只能证明参照位置，不能证明组件已复用或视觉已一致。复用已有的公共壳与评审区实现，通过引用或构建使用，不能复制维护多个版本；仅共享元数据不算共享界面。当前静态组件示例不是完整公共壳，任务屏原型也只作为该路由的校准样板；没有可用共享实现时如实说明静态参照边界，不宣称已经复用。
 
 最小轮廓只适用于明确评审落点的局部草图，须标注「原型注释：外壳定位草图，非高保真样板」并说明省略部分。它不能作为完整特性屏、公共模板或高保真校准完成的依据。外壳不得以旧稿、其他特性的手绘副本或记忆作为当前来源。
 
@@ -216,7 +220,7 @@ macOS、Windows、Linux 三端，明暗两套主题都要成立。修饰键按�
 
 ### 资产、历史与并行工作树
 
-变更前检查 worktree 和分支。被其他工作树认领的原型、正文或生成源冻结，在负责人定稿并回收前不得覆盖、删除或重命名。当前稿保留必要评审页、可编辑源码、构建入口和运行依赖；生成物由其源码更新，不将生成文件可打开当作源码可删除的依据。确认重复、过期或被替代的资产直接删除，历史由 Git 追溯，不另存旧稿继续充当当前参考。删除时核对引用、构建依赖和当前入口能否重建；入口或来源变更同批更新特性矩阵与 `spec.md`。
+变更前检查 worktree 和分支。被其他工作树认领的原型、正文或生成源冻结，在负责人定稿并回收前不得覆盖、删除或重命名。当前稿保留必要评审页、可编辑源码、构建入口和运行依赖；生成物由其源码更新，不将生成文件可打开当作源码可删除的依据。所有保留的当前资产遵循同一套现行规范，不因创建时间保留旧标准。确认重复、过期或被替代的资产直接删除，历史由 Git 追溯，不另存旧稿继续充当当前参考。删除时核对引用、构建依赖和当前入口能否重建；入口或来源变更同批更新特性矩阵与 `spec.md`。
 
 ### 原型评审清单
 
