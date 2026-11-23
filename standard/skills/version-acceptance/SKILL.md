@@ -35,7 +35,7 @@ metadata:
 | ------------- | ------------------------------------------------------------------------------------------ |
 | `preparation` | 候选固定、验收会议预订完成(或人说明自行安排)、演示环境部署可用、验收证据报告聚合生成并登记 |
 | `showcase`    | 会议演示完成、每个目标的达成/不达成已由人在界面标记                                        |
-| `archive`     | 提交归档 PR 之前;PR 开出后把 provider/repository/number 写入 `workflow.archivePr`          |
+| `archive`     | 提交归档 PR 之前;PR 开出后把 provider/repository/number 写入 `workflow.archivePr`,repository 记 `<host>/<owner>/<repo>` 形式 |
 
 纪要的人工确认是材料字段事实,不占 stage。恢复会话时先按材料实际进度校准 stage;stage 不代表目标达成,也不代表 PR 已合入或版本已发布。
 
