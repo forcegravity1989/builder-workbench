@@ -1,0 +1,27 @@
+docs/05-features/artifact-sharing/STATUS.md
+  s_a271062a47d04c::t_2abf01427966e1 5,11-14,18-19,35-41
+docs/05-features/artifact-sharing/intent.md
+  s_a271062a47d04c::t_7fec69847fb3b1 13,19-20
+docs/05-features/artifact-sharing/prototype/annotations-viewer.html
+  s_a271062a47d04c::t_e108bd833505e1 1-781
+docs/05-features/artifact-sharing/spec.md
+  s_a271062a47d04c::t_987eba30932973 3,12,33-42,70-84,88
+docs/architecture.md
+  s_a271062a47d04c::t_b2693127ce2aeb 68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "bf6c985e9f2766e24fb155cceed8a8404b6ec201",
+  "prompts": {},
+  "sessions": {
+    "s_a271062a47d04c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "49fc675b-aaac-4bee-84d9-27300ad2e776",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

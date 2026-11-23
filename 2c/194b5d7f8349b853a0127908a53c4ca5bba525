@@ -1,0 +1,30 @@
+src/shared/runtime-access-audit-labels.ts
+  s_02ab5765848c38::t_f11895b4452aa5 1-79,81-83,85-87,89-95
+  s_02ab5765848c38::t_15fc29bb24dd55 80,84,88
+src/main/observability/runtime-access-audit.ts
+  s_02ab5765848c38::t_ce9a2070033a5e 7-10,46-48,121-125,135
+src/renderer/src/components/settings/RuntimeAccessAuditLog.tsx
+  s_02ab5765848c38::t_d586a883c8ba69 8,10-12,49-52,89-101,104-118,122-132,136-150,153-163,167-178,184-187,189-192,197-200,210-212,215-217
+src/renderer/src/components/settings/RuntimeAccessGrantList.tsx
+  s_02ab5765848c38::t_14e57d0bcf249a 17-35,74-76,98,170,186-189,212,216,218-227,292-296
+src/renderer/src/i18n/locales/en.json
+  s_02ab5765848c38::t_ee0a2831f3999d 8062,8066-8067
+src/renderer/src/i18n/locales/zh.json
+  s_02ab5765848c38::t_0efcb5f72ea246 6900,6904-6905
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "2c194b5d7f8349b853a0127908a53c4ca5bba525",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

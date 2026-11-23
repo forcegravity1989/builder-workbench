@@ -1,0 +1,51 @@
+src/renderer/src/workbench/TeamSettingsMembers.tsx
+  s_02ab5765848c38::t_5e8304f9188ccc 98
+  s_02ab5765848c38::t_2da54e200e4cf3 49
+  s_02ab5765848c38::t_ccb68812b9a878 2
+src/main/workbench/team-collaboration/team-directory-client.ts
+  s_02ab5765848c38::t_b215722c8a7ff2 398,402-405
+  s_02ab5765848c38::t_33884c8a078e97 260,265-270
+  s_02ab5765848c38::t_685c20756db2a5 277,283
+  s_02ab5765848c38::t_746c402a3c46ee 294,298-299,301,315-318,324-328,337-338,340,356,360-361,369-370
+  s_02ab5765848c38::t_6827f670d4f327 271,319-323,329-336,339,341-353
+  s_02ab5765848c38::t_0b5025eb688958 100,106-117,122-127,131,137-140
+  s_02ab5765848c38::t_38c36010b10965 272
+docs/05-features/team-collaboration/prototype/journey.js
+  s_02ab5765848c38::t_2c1f6efe7d7d7b 611
+  s_02ab5765848c38::t_a6340acb0b2ae0 601
+src/main/workbench/reporting/welink-onebox-client.ts
+  s_02ab5765848c38::t_0e188fe3a2cbbf 361
+  s_02ab5765848c38::t_36e3f3f97f20ee 134-143,156-166,316-317
+src/renderer/src/workbench/TeamSettingsDialog.tsx
+  s_02ab5765848c38::t_21c898bb90c365 233
+  s_02ab5765848c38::t_934d1cddea6c6d 73-74,76-79
+  s_02ab5765848c38::t_19a0e19a782e27 310-310,313-313
+  s_02ab5765848c38::t_3f2fc4df51ee53 142-149
+  s_02ab5765848c38::t_44437a973fdce9 1
+  s_02ab5765848c38::t_2c6e5f8209cb1a 29-31
+  s_02ab5765848c38::t_af87c80515b81b 115-122
+  h_1dcaf127381c33 311-312
+  s_02ab5765848c38::t_09cc3fe9e112f7 314
+  s_02ab5765848c38::t_033b0cc386e3ba 319,321,338
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "344f95c1889af0104e95370d1060bd016e7284ef",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

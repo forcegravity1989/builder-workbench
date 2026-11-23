@@ -1,0 +1,14 @@
+.bw/planning/v1.1/acceptance.json
+  h_a7e858313fdba5 935-940
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "2da846ff49059d381dc76eb48dfdfc113eac42d0",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

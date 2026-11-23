@@ -1,0 +1,47 @@
+services/bw-share/README.md
+  s_00b31d97ac33ac::t_0da367d0facca2 14-15,29,35-47,60-67,120,141
+services/bw-share/src/annotations-store.mjs
+  s_a271062a47d04c::t_88c2252e6d0ce0 1-304
+services/bw-share/src/bridge.js
+  s_a271062a47d04c::t_60c17613184d5a 1-197
+services/bw-share/src/http.mjs
+  s_a271062a47d04c::t_d7cc82938fc6fd 4,25-39,43,46-47,53,56-57,174-280,287-288,292-298,301-302,307,548-609
+services/bw-share/src/main.mjs
+  s_a271062a47d04c::t_a0f8f460d1fbc5 1,4,26-28,38-48
+services/bw-share/src/store.mjs
+  s_a271062a47d04c::t_a76044e9b727fa 35-45,229-238,321,352-367
+services/bw-share/src/viewer.html
+  s_a271062a47d04c::t_2ff133558ca7f7 1-717
+services/bw-share/test/annotations-http.test.mjs
+  s_a271062a47d04c::t_b4e9dc339fc8f3 1-233
+services/bw-share/test/annotations-store.test.mjs
+  s_a271062a47d04c::t_2b06dfd555c82a 1-189
+services/bw-share/test/helpers.mjs
+  s_a271062a47d04c::t_da6f4dcdfef505 1,6,62-75
+services/bw-share/test/http.test.mjs
+  s_a271062a47d04c::t_92e49f7d74594f 64,77,85,170,189,358,366,380,508,578,596
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "2eeb7821d1cee3afbe8f7d214575a568dce90100",
+  "prompts": {},
+  "sessions": {
+    "s_00b31d97ac33ac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fffb1277-0168-4db3-8e03-5da8b379d86a",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    },
+    "s_a271062a47d04c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "49fc675b-aaac-4bee-84d9-27300ad2e776",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
