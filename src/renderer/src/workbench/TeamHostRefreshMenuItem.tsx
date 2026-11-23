@@ -1,4 +1,3 @@
-import { UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { hasTeamBinding, syncTeamHosts } from './team-hosts'
@@ -21,10 +20,5 @@ export function TeamHostRefreshMenuItem(): React.JSX.Element | null {
       toast.error(cause instanceof Error ? cause.message : '刷新团队主机失败。')
     }
   }
-  return (
-    <DropdownMenuItem onSelect={() => void refresh()}>
-      <UsersRound className="size-3.5" />
-      刷新团队主机
-    </DropdownMenuItem>
-  )
+  return <DropdownMenuItem onSelect={() => void refresh()}>刷新团队主机</DropdownMenuItem>
 }
