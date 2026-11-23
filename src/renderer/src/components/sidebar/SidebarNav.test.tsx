@@ -88,7 +88,6 @@ vi.mock('@/components/ui/context-menu', () => ({
 import SidebarNav, {
   getSetupGuideSidebarEntryReady,
   shouldShowAutomationsButton,
-  shouldShowArtifactsButton,
   shouldShowSetupGuideEntry
 } from './SidebarNav'
 
@@ -258,37 +257,6 @@ describe('SidebarNav', () => {
     expect(working?.querySelector('svg')).toBeNull()
     expect(done?.querySelector('svg')).toBeNull()
     expect(idle?.querySelector('svg')).toBeNull()
-  })
-
-  it('hides the Artifacts entry by default for older settings', () => {
-    expect(shouldShowArtifactsButton(null)).toBe(false)
-    expect(shouldShowArtifactsButton({})).toBe(false)
-    expect(shouldShowArtifactsButton({ showArtifactsButton: true })).toBe(true)
-    expect(shouldShowArtifactsButton({ showArtifactsButton: false })).toBe(false)
-  })
-
-  it('opens Artifacts from the sidebar', async () => {
-    setSidebarState({
-      settings: { ...getDefaultSettings('/tmp'), showArtifactsButton: true }
-    })
-    const container = await renderSidebarNav()
-
-    await clickButton(getButtonByText(container, 'Artifacts'))
-
-    expect(mocks.openArtifactsPage).toHaveBeenCalledOnce()
-  })
-
-  it('hides Artifacts from its context menu', async () => {
-    setSidebarState({
-      settings: { ...getDefaultSettings('/tmp'), showArtifactsButton: true }
-    })
-    const container = await renderSidebarNav()
-    const row = getButtonByText(container, 'Artifacts')
-    const menu = row.closest('[data-testid="context-menu"]')
-
-    await clickButton(getHideButton(menu as Element))
-
-    expect(mocks.updateSettings).toHaveBeenCalledWith({ showArtifactsButton: false })
   })
 
   it('updates localized labels when the language changes after mount', async () => {
