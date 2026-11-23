@@ -172,4 +172,109 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.direction-workbench-frame{width:min(100%,900px);min-height:412px;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--background);color:var(--foreground);box-shadow:var(--shadow-sm)}.direction-frame-titlebar{display:flex;align-items:center;height:36px;padding:0 14px;border-bottom:1px solid var(--border);font-size:11px}.direction-frame-project{width:220px;color:var(--muted-foreground)}.direction-frame-title{flex:1;text-align:left;font-weight:600}.direction-frame-command{color:var(--muted-foreground)}.direction-frame-body{display:grid;grid-template-columns:64px 236px minmax(0,1fr);height:376px;min-height:0}.direction-frame-rail{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 12px;border-right:1px solid var(--sidebar-border);background:var(--sidebar)}.direction-frame-mark{display:grid;width:36px;height:36px;place-items:center;margin-bottom:6px;border:0;border-radius:9px;background:var(--foreground);color:var(--background)}.direction-frame-rail nav{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;padding-top:8px;border-top:1px solid var(--sidebar-border)}.direction-frame-rail-button{position:relative;display:grid;width:40px;height:40px;place-items:center;border-radius:9px;color:var(--sidebar-foreground);opacity:.62}.direction-frame-rail-button.is-active{background:var(--sidebar-accent);opacity:1}.direction-frame-rail-button.is-active:before{position:absolute;top:10px;bottom:10px;left:-12px;width:2px;border-radius:2px;background:var(--sidebar-foreground);content:\"\"}.direction-frame-rail-spacer{flex:1}.direction-frame-muted-icon{color:var(--sidebar-foreground);opacity:.62}.direction-frame-sidebar{min-width:0;overflow:hidden;border-right:1px solid var(--border);background:var(--card)}.direction-frame-sidebar-head{display:flex;align-items:center;gap:9px;height:56px;padding:0 16px;border-bottom:1px solid var(--border)}.direction-frame-sidebar-head>span:last-child{min-width:0}.direction-frame-sidebar-head strong,.direction-frame-sidebar-head small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.direction-frame-sidebar-head strong{font-size:13px}.direction-frame-sidebar-head small{margin-top:2px;color:var(--muted-foreground);font-size:10px}.direction-frame-avatar{display:grid;width:28px;height:28px;place-items:center;border-radius:7px;background:var(--foreground);color:var(--background);font-size:11px;font-weight:600}.direction-frame-sidebar-section{display:flex;flex-direction:column;gap:2px;padding:18px 12px 0}.direction-frame-sidebar-section>small{margin:0 8px 7px;color:var(--muted-foreground);font-size:10px}.direction-frame-sidebar-section>span{display:flex;align-items:center;gap:8px;min-height:32px;padding:6px 10px;border-radius:6px;color:var(--muted-foreground);font-size:12px}.direction-frame-sidebar-section>span.is-active{background:var(--accent);color:var(--foreground);font-weight:600}.direction-frame-sidebar-section i{width:5px;height:5px;border-radius:50%;background:currentColor}.direction-frame-main{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--background)}.direction-frame-location{position:absolute;top:9px;right:14px;z-index:3;padding:3px 7px;border:1px solid var(--border);border-radius:var(--radius-sm);background:color-mix(in srgb,var(--card) 94%,transparent);color:var(--muted-foreground);font-size:10px}.direction-frame-main>.direction-demo-window{width:100%;min-height:100%;border:0;border-radius:0;box-shadow:none}.direction-frame-main .direction-wall-demo{padding:16px}.direction-frame-main .wb-ov .content{padding:14px 16px 18px}.direction-frame-main .direction-charter-editor{width:100%;max-width:none}.direction-frame-main .direction-milestone-demo{margin:0;width:100%}@media(max-width:700px){.direction-frame-body{grid-template-columns:52px 180px minmax(0,1fr)}.direction-frame-project{width:180px}}
+
+.direction-workbench-frame {
+  position: relative;
+  width: min(100%, max(440px, calc((100vh - 380px) * 1.638889)));
+  aspect-ratio: 1180 / 720;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  color: var(--foreground);
+}
+.direction-frame-viewport {
+  position: absolute;
+  width: 1180px;
+  height: 720px;
+  transform-origin: top left;
+}
+.direction-frame-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 36px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.direction-frame-title {
+  flex: 1;
+  text-align: center;
+}
+.direction-frame-body {
+  display: flex;
+  height: 684px;
+}
+.direction-frame-sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 280px;
+  border-right: 1px solid var(--worktree-sidebar-border);
+}
+.direction-frame-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--background);
+}
+.direction-frame-location {
+  height: 34px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.direction-frame-main > .direction-demo-window {
+  width: 100%;
+  min-height: calc(100% - 34px);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.direction-frame-main > .direction-demo-focus {
+  width: calc(100% - 48px);
+  margin: 24px;
+}
+.direction-frame-main .direction-wall-demo {
+  padding: 20px;
+}
+.direction-frame-main .wb-ov .content {
+  padding: 20px;
+}
+.direction-charter-layout {
+  display: flex;
+  height: calc(100% - 34px);
+  min-width: 0;
+}
+.direction-charter-layout > .wb-ov {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.direction-charter-layout > .direction-charter-editor {
+  position: static;
+  width: 400px;
+  min-width: 400px;
+  max-width: 400px;
+  min-height: 0;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+.direction-charter-layout .wb-config-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+.direction-charter-layout .wb-config-footer {
+  margin-top: auto;
+}
+.direction-frame-main .direction-milestone-demo {
+  margin: 0;
+  width: 100%;
+}

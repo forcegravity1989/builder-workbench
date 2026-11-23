@@ -19,6 +19,10 @@ export function WorkbenchSidebarNav(): React.JSX.Element {
     return s.repos.find((repo) => repo.id === active)?.displayName?.trim() || null
   })
 
+  return <WorkbenchProjectIdentity projectName={projectName} />
+}
+
+export function WorkbenchProjectIdentity({ projectName }: { projectName: string | null }) {
   return (
     <div
       className="flex min-w-0 flex-1 items-center gap-2"

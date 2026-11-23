@@ -20,7 +20,13 @@ export type JourneyStep = {
   Scene: ComponentType<{ time: number }>
 }
 
-export function JourneyPlayer({ steps, playbackRate = 1 }: { steps: readonly JourneyStep[]; playbackRate?: number }) {
+export function JourneyPlayer({
+  steps,
+  playbackRate = 1
+}: {
+  steps: readonly JourneyStep[]
+  playbackRate?: number
+}) {
   const [index, setIndex] = useState(0)
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)

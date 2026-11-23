@@ -38,10 +38,29 @@ function getCopy() {
 }
 
 const scenes = [
-  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="wall" location="项目墙 / 运营看板"><DirectionWallDemo time={time} /></DirectionWorkbenchFrame>,
-  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="overview" location="项目总览 / 运营看板"><DirectionCharterDemo time={time} /></DirectionWorkbenchFrame>,
-  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="overview" location="项目总览 / 阶段安排"><DirectionMilestoneDemo time={time} review={false} /></DirectionWorkbenchFrame>,
-  ({ time }: { time: number }) => <DirectionWorkbenchFrame active="overview" location="项目总览 / 阶段安排"><DirectionMilestoneDemo time={time} review /></DirectionWorkbenchFrame>
+  ({ time }: { time: number }) => (
+    <DirectionWorkbenchFrame
+      active={time >= 4300 ? 'overview' : 'wall'}
+      location={time >= 4300 ? '项目总览 / 运营看板' : '项目墙'}
+    >
+      <DirectionWallDemo time={time} />
+    </DirectionWorkbenchFrame>
+  ),
+  ({ time }: { time: number }) => (
+    <DirectionWorkbenchFrame active="overview" location="项目总览 / 运营看板">
+      <DirectionCharterDemo time={time} />
+    </DirectionWorkbenchFrame>
+  ),
+  ({ time }: { time: number }) => (
+    <DirectionWorkbenchFrame active="overview" location="项目总览 / 阶段安排">
+      <DirectionMilestoneDemo time={time} review={false} />
+    </DirectionWorkbenchFrame>
+  ),
+  ({ time }: { time: number }) => (
+    <DirectionWorkbenchFrame active="overview" location="项目总览 / 阶段安排">
+      <DirectionMilestoneDemo time={time} review />
+    </DirectionWorkbenchFrame>
+  )
 ] as const
 const pointerCues: readonly (readonly [at: number, target: string][])[] = [
   [
@@ -65,7 +84,7 @@ const pointerCues: readonly (readonly [at: number, target: string][])[] = [
   [
     [1050, '[data-contextual-tour-target="milestone-submit"]'],
     [3500, '[data-demo-action="confirm"]'],
-    [5100, '[data-contextual-tour-target="milestone-submit"]'],
+    [5100, '[data-contextual-tour-target="milestone-submit"]']
   ]
 ]
 
