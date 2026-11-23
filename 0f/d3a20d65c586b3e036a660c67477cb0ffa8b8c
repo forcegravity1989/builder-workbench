@@ -1,0 +1,19 @@
+src/renderer/src/i18n/locales/zh.json
+  s_ee3407e3069508::t_7902d5734588b0 6893-6904,10328-10346
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "0fd3a20d65c586b3e036a660c67477cb0ffa8b8c",
+  "prompts": {},
+  "sessions": {
+    "s_ee3407e3069508": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "s_ee3407e3069508",
+        "model": "unknown"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
