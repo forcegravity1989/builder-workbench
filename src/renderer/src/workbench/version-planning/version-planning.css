@@ -147,19 +147,6 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 .g3-breadcrumb > span {
   margin: 0 8px;
 }
-.g3-version-select {
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font-size: 12px;
-  padding: 0 2px;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-}
-.g3-version-select:hover:not(:disabled) {
-  color: var(--color-text);
-  background: var(--accent);
-}
 /* G2（#383）：绑定计划树的只读回显——版本由绑定决定，屏内不切换。 */
 .g3-version-bound {
   color: var(--color-text);
@@ -379,6 +366,10 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+#goals > .g3-section-title > .g3-title-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 /* 批注模式入口（#426 v0.7 验收会决议：移回页头右上角——页头不随内容滚动，
    会中随时进出批注模式、未发送角标常驻可见；取代第八轮「入口贴对象」取舍）。
@@ -877,11 +868,8 @@ html[data-skin='ds'].dark .g3-annotate-entry.g3-mode-on .g3-annotate-count {
   font-weight: 500;
 }
 .g3-goals-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
   padding-top: 12px;
+  text-align: end;
 }
 .g3-goals-bottom > span {
   color: var(--muted-foreground);
@@ -1136,9 +1124,6 @@ html[data-skin='ds'].dark .g3-annotate-entry.g3-mode-on .g3-annotate-count {
     flex-wrap: wrap;
   }
   .g3-minutes-head {
-    flex-wrap: wrap;
-  }
-  .g3-goals-bottom {
     flex-wrap: wrap;
   }
 }

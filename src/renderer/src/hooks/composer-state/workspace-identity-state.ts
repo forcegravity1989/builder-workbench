@@ -6,6 +6,8 @@ type WorkspaceIdentityStateInput = Pick<
   | 'initialLinearBranchName'
   | 'initialLinkedWorkItem'
   | 'initialParentWorktreeId'
+  | 'isProjectGroupTarget'
+  | 'folderTargetAgentDetectionTarget'
   | 'linkedWorkItem'
   | 'linkedWorkItemSeedIdentity'
   | 'name'
@@ -13,10 +15,9 @@ type WorkspaceIdentityStateInput = Pick<
   | 'persistDraft'
   | 'selectedRepoConnectionId'
   | 'selectedRepoSettings'
-  | 'settings'
 >
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, type SetStateAction } from 'react'
 import { getLinkedWorkItemProvider, isGitLabIssueUrl } from '@/lib/new-workspace'
 import {
   type SmartNameMode,
@@ -27,6 +28,7 @@ import type { TuiAgent } from '../../../../shared/tui-agent'
 import { filterEnabledTuiAgents, isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
 import { getAgentCatalog } from '@/lib/agent-catalog'
 import { useAppStore } from '@/store'
+import { useHostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
 
 export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
   const {
@@ -34,14 +36,15 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
     initialLinearBranchName,
     initialLinkedWorkItem,
     initialParentWorktreeId,
+    isProjectGroupTarget,
+    folderTargetAgentDetectionTarget,
     linkedWorkItem,
     linkedWorkItemSeedIdentity,
     name,
     newWorkspaceDraft,
     persistDraft,
     selectedRepoConnectionId,
-    selectedRepoSettings,
-    settings
+    selectedRepoSettings
   } = input
 
   const [linkedIssue, setLinkedIssue] = useState<string>(() => {
@@ -131,16 +134,25 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
   // Why: a fork PR with "Allow edits from maintainers" off can't be pushed to; warn (don't block) so a rejected push isn't a surprise.
   const [forkPushWarning, setForkPushWarning] = useState<string | null>(null)
 
-  const disabledTuiAgentKey = (settings?.disabledTuiAgents ?? []).join('\u0000')
+  const repoRuntimeEnvironmentId = selectedRepoSettings?.activeRuntimeEnvironmentId?.trim() || null
+  const detectionTarget = isProjectGroupTarget
+    ? folderTargetAgentDetectionTarget
+    : selectedRepoConnectionId
+      ? { kind: 'ssh' as const, connectionId: selectedRepoConnectionId }
+      : repoRuntimeEnvironmentId
+        ? { kind: 'runtime' as const, environmentId: repoRuntimeEnvironmentId }
+        : { kind: 'local' as const }
+  const agentLaunchPreferences = useHostAgentLaunchPreferences(detectionTarget)
+  const disabledTuiAgentKey = (agentLaunchPreferences.disabledTuiAgents ?? []).join('\u0000')
 
   const disabledTuiAgents = useMemo<TuiAgent[]>(
-    () => settings?.disabledTuiAgents ?? [],
+    () => agentLaunchPreferences.disabledTuiAgents ?? [],
     // Why: settings IPC clones arrays, so key on the disabled-agent content, not the array ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [disabledTuiAgentKey]
   )
 
-  // Why: the long-form composer requires a real TuiAgent, so a global 'blank' pref collapses to Claude (blank only exists in quick-create).
+  // The long-form composer requires an enabled agent; blank is only available in quick-create.
   const enabledCatalogAgents = useMemo(
     () =>
       filterEnabledTuiAgents(
@@ -150,23 +162,13 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
     [disabledTuiAgents]
   )
 
-  const fallbackDefaultAgent: TuiAgent =
-    settings?.defaultTuiAgent &&
-    settings.defaultTuiAgent !== 'blank' &&
-    isTuiAgentEnabled(settings.defaultTuiAgent, disabledTuiAgents)
-      ? settings.defaultTuiAgent
-      : (enabledCatalogAgents[0] ?? 'claude')
-
-  const [tuiAgent, setTuiAgent] = useState<TuiAgent>(
-    persistDraft ? (newWorkspaceDraft?.agent ?? fallbackDefaultAgent) : fallbackDefaultAgent
-  )
-
   // Why: for a repo on an SSH host or runtime env, read the per-host agent list so the dialog shows the host's installed agents, not local.
-  const connectionId = selectedRepoConnectionId
+  const connectionId = detectionTarget?.kind === 'ssh' ? detectionTarget.connectionId : null
 
   const isRemote = typeof connectionId === 'string'
 
-  const runtimeEnvironmentId = selectedRepoSettings?.activeRuntimeEnvironmentId?.trim() || null
+  const runtimeEnvironmentId =
+    detectionTarget?.kind === 'runtime' ? detectionTarget.environmentId : null
 
   const detectedAgentList = useAppStore((s) => {
     if (isRemote) {
@@ -187,6 +189,35 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
   const detectedAgentIds = useMemo<Set<TuiAgent> | null>(
     () => (detectedAgentList ? new Set(detectedAgentList) : null),
     [detectedAgentList]
+  )
+
+  const configuredDefault = agentLaunchPreferences.defaultTuiAgent
+  const detectedDefault = configuredDefault
+    ? undefined
+    : enabledCatalogAgents.find((agent) => detectedAgentIds?.has(agent))
+  const fallbackDefaultAgent: TuiAgent =
+    configuredDefault &&
+    configuredDefault !== 'blank' &&
+    isTuiAgentEnabled(configuredDefault, disabledTuiAgents)
+      ? configuredDefault
+      : (detectedDefault ?? enabledCatalogAgents[0] ?? 'claude')
+  // Host preferences and detection may arrive later; only a draft or user choice is an override.
+  const [agentOverride, setAgentOverride] = useState<TuiAgent | undefined>(
+    persistDraft ? newWorkspaceDraft?.agent : undefined
+  )
+  const tuiAgent =
+    agentOverride && isTuiAgentEnabled(agentOverride, disabledTuiAgents)
+      ? agentOverride
+      : fallbackDefaultAgent
+  const setTuiAgent = useCallback(
+    (next: SetStateAction<TuiAgent>): void => {
+      setAgentOverride((current) => {
+        const previous =
+          current && isTuiAgentEnabled(current, disabledTuiAgents) ? current : fallbackDefaultAgent
+        return typeof next === 'function' ? next(previous) : next
+      })
+    },
+    [disabledTuiAgents, fallbackDefaultAgent]
   )
 
   return {
@@ -222,6 +253,7 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
     forkPushWarning,
     setForkPushWarning,
     disabledTuiAgentKey,
+    agentLaunchPreferences,
     disabledTuiAgents,
     enabledCatalogAgents,
     fallbackDefaultAgent,

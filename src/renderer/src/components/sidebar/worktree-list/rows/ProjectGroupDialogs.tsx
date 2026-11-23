@@ -98,14 +98,12 @@ export function SidebarWorktreeListDialogs({
       <ProjectGroupDeleteDialog
         open={deleteDialog !== null}
         groupName={deleteDialog?.groupName ?? ''}
+        hostLabel={dialogs.deleteGroupHostLabel}
+        removesVirtualMachine={dialogs.removesVirtualMachine}
         projectCount={dialogs.deleteProjectCount}
         projectNames={dialogs.deleteProjectNames}
         removeContainedProjects={dialogs.removeContainedProjects}
-        onRemoveContainedProjectsChange={(removeContainedProjects) => {
-          setDeleteDialog((current) =>
-            current ? { ...current, removeContainedProjects } : current
-          )
-        }}
+        onRemoveContainedProjectsChange={dialogs.setRemoveContainedProjects}
         onOpenChange={(open) => {
           if (!open) {
             setDeleteDialog(null)

@@ -4,7 +4,8 @@ import {
   getTaskEligibleRepos,
   normalizeTaskRepoSelection,
   getDefaultTaskRepoSelection,
-  getTaskProjectPickerGroups
+  getTaskProjectPickerGroups,
+  getTaskRepoProjectKey
 } from '@/components/task-page-default-repo-selection'
 import { areStringSetsEqual } from '@/components/task-page-string-set-equality'
 import { buildSelectedReposKey } from '@/components/task-page-work-item-pagination'
@@ -29,6 +30,9 @@ import {
 import type { TaskProvider } from '../../../shared/task-providers'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { resolveReferenceRepo } from '@/workbench/task-reference-repo'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getTaskPageRepoSourceContext } from './task-page-source-context'
 export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
   const {
@@ -42,21 +46,81 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     preflightStatusCurrent,
     linearConnected
   } = model
-  const eligibleRepos = useMemo(() => getTaskEligibleRepos(repos), [repos])
+  const workbench = isWorkbenchShell()
+  const registeredRepos = useMemo(() => getTaskEligibleRepos(repos), [repos])
+  const eligibleRepos = useMemo(
+    () =>
+      workbench
+        ? getTaskProjectPickerGroups(registeredRepos).map((group) => group.repo)
+        : registeredRepos,
+    [registeredRepos, workbench]
+  )
 
   // Why: initial selection precedence — explicit preselection > persisted defaultRepoSelection > all eligible; preselection wins so "open tasks for this repo" lands single-repo.
   const resolvedInitialSelection = useMemo<ReadonlySet<string>>(() => {
     const preferred = pageData.preselectedRepoId
-    if (preferred && eligibleRepos.some((repo) => repo.id === preferred)) {
-      return new Set([preferred])
+    const select = (ids: ReadonlySet<string>) => {
+      if (!workbench) {
+        return ids
+      }
+      const keys = new Set(
+        registeredRepos.filter((repo) => ids.has(repo.id)).map(getTaskRepoProjectKey)
+      )
+      return new Set(
+        eligibleRepos.filter((repo) => keys.has(getTaskRepoProjectKey(repo))).map((repo) => repo.id)
+      )
+    }
+    const home = registeredRepos.find((repo) => repo.id === preferred)
+    if (home) {
+      const goalScope = pageData.workbenchTaskScope
+      if (goalScope?.goalId) {
+        const target = { repoId: home.id, hostId: getRepoExecutionHostId(home) }
+        const deps = { repos: () => registeredRepos }
+        const selected = new Set<string>()
+        for (const reference of goalScope.references) {
+          const repo = resolveReferenceRepo(deps, target, reference)
+          if (repo) {
+            selected.add(repo.id)
+          }
+        }
+        if (selected.size) {
+          return select(selected)
+        }
+      }
+      return select(new Set([home.id]))
     }
     const persisted = settings?.defaultRepoSelection
     if (Array.isArray(persisted)) {
-      return normalizeTaskRepoSelection(eligibleRepos, new Set(persisted))
+      return normalizeTaskRepoSelection(eligibleRepos, select(new Set(persisted)))
     }
     return getDefaultTaskRepoSelection(eligibleRepos)
-  }, [eligibleRepos, pageData.preselectedRepoId, settings?.defaultRepoSelection])
+  }, [
+    eligibleRepos,
+    registeredRepos,
+    workbench,
+    pageData.preselectedRepoId,
+    pageData.workbenchTaskScope,
+    settings?.defaultRepoSelection
+  ])
   const [repoSelection, setRepoSelection] = useState<ReadonlySet<string>>(resolvedInitialSelection)
+  const selectedProjectKeys = useMemo(
+    () =>
+      new Set(
+        registeredRepos.filter((repo) => repoSelection.has(repo.id)).map(getTaskRepoProjectKey)
+      ),
+    [registeredRepos, repoSelection]
+  )
+  const selectedScopeRepoIds = useMemo(
+    () =>
+      workbench
+        ? new Set(
+            registeredRepos
+              .filter((repo) => selectedProjectKeys.has(getTaskRepoProjectKey(repo)))
+              .map((repo) => repo.id)
+          )
+        : repoSelection,
+    [registeredRepos, repoSelection, selectedProjectKeys, workbench]
+  )
   const taskPickerGroups = useMemo(
     () => getTaskProjectPickerGroups(eligibleRepos, repoSelection),
     [eligibleRepos, repoSelection]
@@ -207,6 +271,7 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     taskPickerGroups: typeof taskPickerGroups
     taskPickerRepos: typeof taskPickerRepos
     prevTaskPickerCountRef: typeof prevTaskPickerCountRef
+    selectedScopeRepoIds: typeof selectedScopeRepoIds
     selectedRepos: typeof selectedRepos
     selectedReposKey: typeof selectedReposKey
     primaryRepo: typeof primaryRepo
@@ -239,6 +304,7 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
   nextModel.taskPickerGroups = taskPickerGroups
   nextModel.taskPickerRepos = taskPickerRepos
   nextModel.prevTaskPickerCountRef = prevTaskPickerCountRef
+  nextModel.selectedScopeRepoIds = selectedScopeRepoIds
   nextModel.selectedRepos = selectedRepos
   nextModel.selectedReposKey = selectedReposKey
   nextModel.primaryRepo = primaryRepo

@@ -120,14 +120,17 @@ export function ProjectContext() {
       <div className="ml-context">
         <section className="ml-card">
           <h2>Builders’ Workbench</h2>
-          <p>让 builders 更快、更好地做项目</p>
           <dl>
-            <dt>目标用户</dt>
-            <dd>Builder、Leader</dd>
-            <dt>目标方向</dt>
+            <dt>项目负责人</dt>
+            <dd>—</dd>
+            <dt>想做什么</dt>
+            <dd>让 builders 更快、更好地做项目</dd>
+            <dt>对标</dt>
+            <dd>—</dd>
+            <dt>愿景</dt>
             <dd>更多项目纳入 Workbench 管理</dd>
-            <dt>远端</dt>
-            <dd>forcegravity1989/builder-workbench</dd>
+            <dt>项目群</dt>
+            <dd>—</dd>
           </dl>
         </section>
         <section className="ml-card">

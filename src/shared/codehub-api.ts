@@ -9,7 +9,11 @@ import type {
   CodeHubTaskItem
 } from './codehub-tasks'
 
-const Repo = z.object({ repoPath: z.string().min(1), repoId: z.string().nullish() })
+const Repo = z.object({
+  repoPath: z.string().min(1),
+  repoId: z.string().nullish(),
+  remoteUrl: z.string().min(1).max(2048).optional()
+})
 const Iid = z.number().int().positive()
 const Kind = z.enum(['issue', 'mr'])
 export type CodeHubRepoArgs = z.infer<typeof Repo>
@@ -72,9 +76,19 @@ export const CodeHubMergeMr = Repo.extend({ iid: Iid, auto: z.boolean().optional
 export const CodeHubSetReviewers = Repo.extend({ iid: Iid, reviewers: z.array(z.string()) })
 export const CodeHubListPipelines = Repo.extend({ iid: Iid })
 export const CodeHubMrChecks = Repo.extend({ iid: Iid })
+export const CodeHubMrForBranch = Repo.extend({ sourceBranch: z.string().trim().min(1) })
 export const CodeHubMrChanges = Repo.extend({ iid: Iid })
-export const CodeHubViewTask = Repo.extend({ kind: Kind, iid: Iid })
-export const CodeHubListComments = Repo.extend({ kind: Kind, iid: Iid })
+export const CodeHubViewTask = Repo.extend({
+  kind: Kind,
+  iid: Iid,
+  expectedUrl: z.string().url().max(8192).optional()
+})
+export const CodeHubListComments = Repo.extend({
+  kind: Kind,
+  iid: Iid,
+  requireComplete: z.boolean().optional(),
+  requireCompleteThreads: z.boolean().optional()
+})
 export const CodeHubCreateComment = Repo.extend({
   kind: Kind,
   iid: Iid,
@@ -108,6 +122,7 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   setReviewers: CodeHubSetReviewers,
   listPipelines: CodeHubListPipelines,
   mrChecks: CodeHubMrChecks,
+  mrForBranch: CodeHubMrForBranch,
   mrChanges: CodeHubMrChanges,
   viewTask: CodeHubViewTask,
   listComments: CodeHubListComments,
@@ -116,6 +131,11 @@ export const CODEHUB_REQUEST_SCHEMAS = {
 }
 
 export type CodeHubApi = {
+  mrForBranch: (args: z.infer<typeof CodeHubMrForBranch>) => Promise<{
+    number: number
+    url: string
+    state: 'open' | 'merged' | 'closed'
+  } | null>
   listTasks: (
     args: z.infer<typeof CodeHubListTasks>
   ) => Promise<{ remote: CodeHubRemote; items: CodeHubTaskItem[]; hasMore: boolean }>

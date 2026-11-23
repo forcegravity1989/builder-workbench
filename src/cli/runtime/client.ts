@@ -156,7 +156,8 @@ export class RuntimeClient {
       }
       if (this.environmentSelector) {
         markEnvironmentUsed(this.userDataPath, this.environmentSelector, {
-          runtimeId: response._meta.runtimeId
+          runtimeId: response._meta.runtimeId,
+          pairingDeviceToken: this.remotePairing.deviceToken
         })
       }
       return response

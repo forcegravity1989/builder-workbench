@@ -18,12 +18,12 @@
 
 - 字段语义：`name` / `kind` / `brief`（想做什么）/ `benchmark`（对标）/ `opportunity`（目标方向，**定性**）。
 - **保真补空**：只补空字段；已填字段要改须人显式确认并留 PR 记录。
-- 走固定分支 + PR 流，人审人合；协议细节以 bw-assets 与关键信息维护正本为准：[bw-assets](../../../../standard/system-prompt/references/bw-assets.md)、[关键信息维护](../../../../docs/06-module/关键信息维护.md)。
+- 走固定分支 + PR 流，人审人合；协议细节以 [关键信息维护](../../../../docs/06-module/关键信息维护.md) 正本为准。
 - **量化北极星不进 project.toml**：`opportunity` 历史别名是 north_star，现行语义是定性目标方向；量化北极星只落 metrics.toml `[north_star]`。
 
 ## metrics.toml 写入纪律
 
-schema、字段约束、脚本 stdout、窗口与 coverage 纪律全部以[指标协议](../../../../standard/system-prompt/references/metrics.md)为正本，此处只列盘点侧要点：
+schema、字段约束、脚本 stdout、窗口与 coverage 纪律全部以[指标协议](../../../../standard/references/metrics.md)为正本，此处只列盘点侧要点：
 
 - `feature` 字段 = 特性名（稳定标签），界面按它分页签；`leads` 只写在引领上、值 = 它盯的滞后指标 `name`，同 feature 组内必须唯一解析（解析不唯一会被报 ambiguous-relation——这正好暴露「一个特性配了多条滞后」，回站 4 收敛）。
 - `target` 是意图声明不是事实，可空；实际读数不可手填；没配置 = not-configured，坏文件 = invalid-definition——向人解释时不混用。

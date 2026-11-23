@@ -1,5 +1,7 @@
+import { ErrorDetails } from '../error-feedback'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, Plus } from 'lucide-react'
+import { track } from '@/lib/telemetry'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type {
   PackageLatest,
@@ -172,8 +174,16 @@ export function AcceptancePackage({
 
   const onLaunch = () =>
     runAction('launch', async () => {
-      await port.launch({ scope, pipeline })
-      setNotice('流水线已启动，运行约需几分钟；最新包信息每分钟自动刷新。')
+      // 结果层埋点（#687）：outcome 只记受理成败，流水线运行结果由最新包
+      // 刷新带回，不进遥测；流水线名等自由文本不上报。
+      try {
+        await port.launch({ scope, pipeline })
+        track('bw_package_build', { outcome: 'launched' })
+        setNotice('流水线已启动，运行约需几分钟；最新包信息每分钟自动刷新。')
+      } catch (reason) {
+        track('bw_package_build', { outcome: 'failed' })
+        throw reason
+      }
     })
 
   const onDownload = () =>
@@ -226,9 +236,7 @@ export function AcceptancePackage({
         </p>
       )}
       {error && (
-        <p className="va-error" role="alert">
-          {error}
-        </p>
+        <ErrorDetails className="va-error" summary="制品包操作未完成 · 查看详情" detail={error} />
       )}
       {notice && (
         <p className="va-notice" role="status">

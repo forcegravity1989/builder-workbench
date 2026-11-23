@@ -1,22 +1,25 @@
+import { ErrorDetails, notifyWorkbenchError } from '../error-feedback'
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent
 } from 'react'
-import { toast } from 'sonner'
-import { MessageSquarePlus } from 'lucide-react'
+import { CircleHelp } from 'lucide-react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
-import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
-import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
+import { notifyTrunkUpdate } from '../version-cycle/trunk-update-port'
+import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
-import { BoardActionButton } from '../board-ui'
+import { BoardIconButton } from '../board-ui'
+import { replayWorkbenchGuide, useWorkbenchScreenGuide } from '../WorkbenchScreenGuide'
+import { useWorkbenchScreenUsage } from '../workbench-screen-usage'
 import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
@@ -24,15 +27,15 @@ import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { annotationRefFromElement } from '../annotations/types'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { usePlanMetrics } from './use-plan-metrics'
-import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
+import { useVersionMembership } from '../version-cycle/use-version-membership'
 import { PlanningStartCard } from './PlanningStartCard'
 import { PlanningMinutesSection } from './PlanningMinutesSection'
 import { PlanningPriorReview } from './PlanningPriorReview'
 import { PlanningArchiveCard } from './PlanningArchiveCard'
 import { openArchivePrPage } from '../version-cycle/open-archive-pr'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
-import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
+import { PlanningAnnotationButton, PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { useJourneySpy } from './use-journey-spy'
 import { usePlanningViewMemory } from './use-planning-view-memory'
 import { usePlanningPriorReview } from './use-planning-prior-review'
@@ -61,9 +64,8 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const canSave = useCallback(() => !context.syncing, [context.syncing])
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
+  const membership = useVersionMembership(scope, plan)
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
-  const selection = usePlanVersionSelection(material, context.selectVersion)
-  const selecting = selection.busy
   const [openingPr, setOpeningPr] = useState(false)
   const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
@@ -90,23 +92,17 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
   const { pruneMissing } = annotations
-  // Model-side edits (poll) may drop goals/task references: prune annotations
-  // whose object no longer exists on the board instead of keeping orphans.
-  const goalsKey = JSON.stringify(plan?.goals.map((goal) => goal.goalId) ?? [])
-  const tasksKey = JSON.stringify(plan?.tasks.map((task) => [task.goalId, task.number]) ?? [])
   useEffect(() => {
     if (!plan) {
       return
     }
     const goalIds = new Set(plan.goals.map((goal) => goal.goalId))
-    const issueKeys = new Set(
-      plan.tasks.filter((task) => task.goalId).map((task) => `${task.goalId}:${task.number}`)
-    )
+    const issueKeys = new Set(membership.references?.map((task) => `${task.goalId}:${task.number}`))
     pruneMissing(
       (goalId) => goalIds.has(goalId),
-      (goalId, number) => issueKeys.has(`${goalId}:${number}`)
+      (goalId, number) => !membership.references || issueKeys.has(`${goalId}:${number}`)
     )
-  }, [goalsKey, tasksKey, plan, pruneMissing])
+  }, [plan, pruneMissing, membership.references])
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
@@ -121,7 +117,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const sendNotice = useCallback((message: string) => updateView({ notice: message }), [updateView])
   // Object-level actions wrap their trigger button in the native send menu
   // (instruction preview + session picker); see plan-send-menu.tsx.
-  const wrapSend = usePlanSendAction(worktreeId, sendNotice)
+  const wrapSend = usePlanSendAction(worktreeId, sendNotice, 'plan')
   const viewMemory = usePlanningViewMemory(plan ? selectionKey : null, content)
   const currentSelection = useRef(selectionKey)
   currentSelection.current = selectionKey
@@ -140,7 +136,19 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     } else {
       clearMaterial()
     }
-  }, [selectedVersion, selectedState, selectMaterial, clearMaterial, context.materialRefresh])
+  }, [selectedVersion, selectMaterial, clearMaterial, context.materialRefresh])
+  const readNewlyListedMaterial = useEffectEvent((version: string) => {
+    // Inventory can finish after the bound document. Do not clear a plan that
+    // has already loaded, since that also tears down its first-entry guide.
+    if (plan?.version !== version) {
+      void selectMaterial(version)
+    }
+  })
+  useEffect(() => {
+    if (selectedVersion && selectedState) {
+      readNewlyListedMaterial(selectedVersion)
+    }
+  }, [selectedVersion, selectedState])
   const listMaterials = material.list
   useEffect(() => {
     if (context.materialRefresh) {
@@ -154,11 +162,11 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       await operation()
     } catch (reason) {
       if (currentSelection.current === selectionKey) {
-        updateView({ notice: reason instanceof Error ? reason.message : String(reason) })
+        notifyWorkbenchError('无法完成计划操作', reason, '核对计划材料后重试。')
       }
     }
   }
-  const disabled = !plan || Boolean(context.syncing) || selecting
+  const disabled = !plan || Boolean(context.syncing)
   const { prior, progressSource, priorError, priorLive, openingSource, openAcceptance } =
     usePlanningPriorReview({
       context,
@@ -171,10 +179,17 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const { startVersion, started, start } = usePlanningStart({
     context,
     entry,
-    material,
-    priorState: prior.state,
-    priorError
+    material
   })
+  const guideReady =
+    !material.busy &&
+    (!context.version || plan?.version === context.version || Boolean(material.error)) &&
+    !context.syncing &&
+    !entry.busy &&
+    (!started || Boolean(plan)) &&
+    !annotations.annotating
+  useWorkbenchScreenGuide('workbench-plan', guideReady)
+  useWorkbenchScreenUsage('workbench-plan', true)
   const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
   // Why: same gate as the header entry button below — the chord must not exist
   // on surfaces where the button does not render.
@@ -200,15 +215,13 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       draftKey: planningDraftKey(scopeKey, plan.version)
     })
   }
-  /** Whole-card delete: goal, its task references and its annotations all leave the plan. */
   const removeGoal = (goalId: string) => {
     if (!plan) {
       return
     }
     edit({
       ...plan,
-      goals: plan.goals.filter((goal) => goal.goalId !== goalId),
-      tasks: plan.tasks.filter((task) => task.goalId !== goalId)
+      goals: plan.goals.filter((goal) => goal.goalId !== goalId)
     })
     annotations.removeForGoal(goalId)
   }
@@ -271,58 +284,52 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   return (
     <div className={`vp-board${annotations.annotating ? ' annotating' : ''}`}>
       <PlanningHeader
-        currentVersion={plan?.version ?? ''}
-        boundVersion={context.boundVersion}
-        versions={material.versions}
-        disabled={!materialPort || selecting || Boolean(context.syncing)}
+        boundVersion={context.version}
+        disabled={!materialPort || Boolean(context.syncing)}
         state={state}
-        branch={context.branch ?? cycleBranch(entry)}
+        branch={context.branch ?? ''}
         sessionCollapsed={chatCollapsed}
         onSessionToggle={onSessionToggle}
-        onSelect={(version) => void selection.select(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
-            toast.message(trunkUpdateNotice(await context.updateCode()))
+            notifyTrunkUpdate(await context.updateCode())
             await material.refresh()
             await prStatus.refresh()
           })
         }
+        helpEntry={
+          <BoardIconButton
+            label="版本计划帮助"
+            disabled={!guideReady}
+            onClick={() => replayWorkbenchGuide('workbench-plan')}
+          >
+            <CircleHelp size={15} aria-hidden="true" />
+          </BoardIconButton>
+        }
         annotateEntry={
           // 计划未建时无目标可批注，不渲染入口（spec 会议纪要条款）。
           started && plan ? (
-            <BoardActionButton
-              className={`g3-annotate-entry${annotations.annotating ? ' g3-mode-on' : ''}`}
-              aria-pressed={annotations.annotating}
-              title={
-                annotations.annotating
-                  ? `退出批注模式${annotateShortcut ? `（${annotateShortcut}）` : ''}`
-                  : `批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见${annotateShortcut ? `（${annotateShortcut} 进入）` : ''}`
-              }
-              onClick={annotations.toggleMode}
-            >
-              <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
-              {annotations.annotations.length > 0 && (
-                <span className="g3-annotate-count">{annotations.annotations.length}</span>
-              )}
-            </BoardActionButton>
+            <PlanningAnnotationButton
+              active={annotations.annotating}
+              count={annotations.annotations.length}
+              shortcut={annotateShortcut}
+              onToggle={annotations.toggleMode}
+            />
           ) : undefined
         }
       />
-      {(material.error ||
-        notice ||
-        selection.error ||
-        context.error ||
-        entry.notice ||
-        priorError) && (
-        <p className="vp-notice" role="status">
-          {material.error ||
-            selection.error ||
-            context.error ||
-            notice ||
-            entry.notice ||
-            priorError}
-        </p>
+      {(material.error || notice || context.error || entry.notice || priorError) && (
+        <div className="vp-notice" role="status">
+          {notice && <p>{notice}</p>}
+          {entry.notice && <p>{entry.notice}</p>}
+          {(material.error || context.error || priorError) && (
+            <ErrorDetails
+              summary="计划材料或工作区未就绪 · 查看详情"
+              detail={material.error || context.error || priorError}
+            />
+          )}
+        </div>
       )}
       <PlanningPersistenceNotice material={material} onAct={act} />
       {!started ? (
@@ -334,7 +341,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           />
         </div>
       ) : (
-        <div className="vp-body" inert={selecting} aria-busy={selecting}>
+        <div className="vp-body">
           <PlanningJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
           {annotations.annotating && (
             <div className="g3-annotate-banner" role="status">
@@ -377,6 +384,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
               onSendAction={wrapSend}
               numbersFor={annotations.numbersFor}
               onOpenAnnotationPanel={annotations.openPanel}
+              membership={membership}
             />
             <PlanningMinutesSection
               plan={plan}

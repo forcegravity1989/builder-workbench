@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type {
@@ -9,6 +10,8 @@ import { BoardIconButton } from '../board-ui'
 import { goalCardViewKey } from '../cycle-view-state'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
+import { UnclassifiedIssues } from '../version-cycle/UnclassifiedIssues'
+import type { VersionMembership } from '../version-cycle/use-version-membership'
 import { AcceptanceGoalRow } from './AcceptanceGoalRow'
 
 /**
@@ -24,6 +27,7 @@ export function AcceptanceGoalRows({
   onGoalChange,
   onTask,
   onSnapshot,
+  membership,
   numbersFor,
   onOpenAnnotationPanel,
   sectionRef
@@ -33,10 +37,11 @@ export function AcceptanceGoalRows({
   disabled: boolean
   scope: CycleScope
   taskPort: TaskPort
-  onGoalChange(next: AcceptanceMaterial, goalId: string): void
+  onGoalChange(next: AcceptanceMaterial, goalId: string, recordEvidence?: boolean): void
   onTask(task: CycleTaskSnapshot): Promise<void>
   /** Feeds the material task snapshot the human verdict's ledger revision cites. */
   onSnapshot(reads: CycleTaskRead[]): void
+  membership: VersionMembership
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
   sectionRef: Ref<HTMLElement>
@@ -51,9 +56,16 @@ export function AcceptanceGoalRows({
   const {
     reads,
     error: readError,
-    busy: refreshing,
+    busy: readsBusy,
     refresh: refreshIssues
-  } = useCycleTaskReads({ scope, tasks: plan.tasks, taskPort, onFreshReads: onSnapshot })
+  } = useCycleTaskReads({
+    scope,
+    tasks: membership.references ?? undefined,
+    taskPort,
+    onFreshReads: onSnapshot
+  })
+  const refreshing = membership.busy || readsBusy
+  const error = membership.error ?? readError
 
   const readsByReference = reads
     ? new Map(
@@ -68,11 +80,13 @@ export function AcceptanceGoalRows({
     <section id="showcase" ref={sectionRef} aria-label="Showcase">
       <div className="acc-section-title">
         <h2>Showcase</h2>
-        <span className="acc-title-actions">
+        <div className="acc-title-actions">
           <BoardIconButton
             label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
-            disabled={disabled || !plan.tasks.length || refreshing}
-            onClick={() => void refreshIssues()}
+            disabled={refreshing}
+            onClick={() => {
+              void membership.refresh().then(() => refreshIssues())
+            }}
           >
             <RefreshCw
               size={15}
@@ -80,10 +94,12 @@ export function AcceptanceGoalRows({
               className={refreshing ? 'is-spinning' : undefined}
             />
           </BoardIconButton>
-          {readError && (
-            <span className="acc-muted" role="status">
-              Issue 状态未知：{readError}
-            </span>
+          {error && (
+            <ErrorDetails
+              className="acc-muted"
+              summary="Issue 状态未知 · 查看详情"
+              detail={error}
+            />
           )}
           {plan.goals.length > 0 && (
             <BoardIconButton
@@ -100,7 +116,7 @@ export function AcceptanceGoalRows({
               )}
             </BoardIconButton>
           )}
-        </span>
+        </div>
       </div>
       <fieldset disabled={disabled} className="acc-goal-fieldset">
         <div className="acc-goal-list">
@@ -112,7 +128,10 @@ export function AcceptanceGoalRows({
               plan={plan}
               document={document}
               disabled={disabled}
-              relatedTasks={plan.tasks.filter((task) => task.goalId === goal.goalId)}
+              issueMembershipKnown={Boolean(membership.references)}
+              relatedTasks={
+                membership.references?.filter((task) => task.goalId === goal.goalId) ?? []
+              }
               reads={readsByReference}
               onTask={onTask}
               onGoalChange={onGoalChange}
@@ -125,6 +144,12 @@ export function AcceptanceGoalRows({
           ))}
         </div>
       </fieldset>
+      <UnclassifiedIssues
+        rows={membership.references?.filter((task) => !task.goalId) ?? []}
+        reads={readsByReference}
+        version={plan.version}
+        onTask={onTask}
+      />
     </section>
   )
 }

@@ -31,6 +31,7 @@ import {
   CodeHubMergeMr,
   CodeHubMrChanges,
   CodeHubMrChecks,
+  CodeHubMrForBranch,
   CodeHubSetIssueState,
   CodeHubSetReviewers,
   CodeHubUpdateIssueLabels,
@@ -53,13 +54,13 @@ import {
   SelectCodexAccountForTargetParams
 } from './accounts-params'
 import { PrepareCodexForWslPaneParams } from './agent-hooks-params'
+import { AgentLaunchSettingsMutation } from './agent-launch-settings-params'
 import { CreateAgentSessionParams, EnsureAgentSessionParams } from './agent-session-params'
 import {
   AiVaultListSessionsParams,
   AiVaultPrepareSessionResumeParams,
   AiVaultSessionTitlesParams
 } from './ai-vault-params'
-import { ArtifactsDeleteParams, ListOptions, SourceRequest, WriteRequest } from './artifacts-params'
 import {
   AutomationCreate,
   AutomationId,
@@ -575,17 +576,34 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
+import { ReviewDismissSchema, ReviewRequestSchema } from '../workbench/pr-review-request'
 import {
+  MilestoneDiscardRequestSchema,
   MilestoneReadRequestSchema,
-  MilestoneSubmitRequestSchema
+  MilestoneSaveRequestSchema,
+  MilestoneSubmitRequestSchema,
+  MilestoneWorkingRequestSchema
 } from '../workbench/project-milestones'
+import {
+  PrototypeReviewAnnotationAddSchema,
+  PrototypeReviewAnnotationDeleteSchema,
+  PrototypeReviewAnnotationListSchema
+} from '../workbench/prototype-review-annotation'
+import {
+  PrototypeReviewDismissSchema,
+  PrototypeReviewRequestSchema
+} from '../workbench/prototype-review-request'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
+import { WorkbenchGroupRemoval, WorkbenchRepoRemoval } from '../workbench/repo-removal'
+import { ShareListSchema, SharePublishSchema, ShareSourceSchema } from '../workbench/share'
+import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
 import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
   VersionHistoryReadSchema,
+  VersionPlanEntryTimesSchema,
   VersionTreePlansSchema
 } from '../workbench/version-history'
 import {
@@ -646,13 +664,6 @@ export const RPC_PARAMS_BY_METHOD = {
   'aiVault.resolveSessionTitles': AiVaultSessionTitlesParams,
   'aiVault.searchSessions': AiVaultSearchRequestSchema,
   'aiVault.searchStatus': AiVaultSearchStatusRequestSchema,
-  'artifacts.delete': ArtifactsDeleteParams,
-  'artifacts.getPublishedLink': SourceRequest,
-  'artifacts.list': ListOptions,
-  'artifacts.publish': WriteRequest,
-  'artifacts.share': WriteRequest,
-  'artifacts.unshare': SourceRequest,
-  'artifacts.update': WriteRequest,
   'automation.create': AutomationCreate,
   'automation.delete': AutomationId,
   'automation.list': AutomationList,
@@ -767,6 +778,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.mergeMr': CodeHubMergeMr,
   'codehub.mrChanges': CodeHubMrChanges,
   'codehub.mrChecks': CodeHubMrChecks,
+  'codehub.mrForBranch': CodeHubMrForBranch,
   'codehub.setIssueState': CodeHubSetIssueState,
   'codehub.setReviewers': CodeHubSetReviewers,
   'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
@@ -1140,7 +1152,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'session.tabs.unsubscribeAll': SessionTabsUnsubscribeAllParams,
   'session.tabs.updatePaneLayout': UpdatePaneLayout,
   'settings.get': null,
+  'settings.getAgentLaunch': null,
   'settings.getTerminalQuickCommands': null,
+  'settings.mutateAgentLaunch': AgentLaunchSettingsMutation,
   'settings.mutateNativeChatSessionOptions': NativeChatSessionOptionsMutation,
   'settings.update': SettingsUpdate,
   'settings.updatePRBotAuthorOverride': PRBotAuthorOverrideUpdate,
@@ -1225,6 +1239,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.submit': CharterSubmitRequestSchema,
   'workbench.fixedWorkspace.ensure': FixedWorkspaceEnsureSchema,
   'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.listPlanEntryTimes': VersionPlanEntryTimesSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
@@ -1239,14 +1254,36 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.milestones.discard': MilestoneDiscardRequestSchema,
   'workbench.milestones.read': MilestoneReadRequestSchema,
+  'workbench.milestones.save': MilestoneSaveRequestSchema,
   'workbench.milestones.submit': MilestoneSubmitRequestSchema,
+  'workbench.milestones.working': MilestoneWorkingRequestSchema,
   'workbench.overview.pull': WorkflowCommentsRequestSchema,
   'workbench.package.download': PackageDownloadSchema,
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
+  'workbench.prototypeReview.annotations.add': PrototypeReviewAnnotationAddSchema,
+  'workbench.prototypeReview.annotations.delete': PrototypeReviewAnnotationDeleteSchema,
+  'workbench.prototypeReview.annotations.list': PrototypeReviewAnnotationListSchema,
+  'workbench.prototypeReview.dismiss': PrototypeReviewDismissSchema,
+  'workbench.prototypeReview.identity': null,
+  'workbench.prototypeReview.inbox': null,
+  'workbench.prototypeReview.receive': PrototypeReviewRequestSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
+  'workbench.repo.deleteGroup': WorkbenchGroupRemoval,
+  'workbench.repo.removeRegistration': WorkbenchRepoRemoval,
+  'workbench.review.comments': PullRequest,
+  'workbench.review.dismiss': ReviewDismissSchema,
+  'workbench.review.identity': null,
+  'workbench.review.inbox': null,
+  'workbench.review.receive': ReviewRequestSchema,
+  'workbench.share.getLink': ShareSourceSchema,
+  'workbench.share.list': ShareListSchema,
+  'workbench.share.publish': SharePublishSchema,
+  'workbench.share.remove': ShareSourceSchema,
+  'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,

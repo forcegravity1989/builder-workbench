@@ -18,6 +18,8 @@ const {
     },
     worktreesByRepo: {} as Record<string, unknown[]>,
     repos: [] as unknown[],
+    runtimeEnvironments: [],
+    runtimeStatusByEnvironmentId: new Map(),
     openSettingsPage: vi.fn(),
     openSettingsTarget: vi.fn()
   },
@@ -121,8 +123,12 @@ beforeEach(() => {
   openSettingsTargetMock.mockReset()
   storeState.settings.defaultTuiAgent = 'codex'
   storeState.settings.disabledTuiAgents = []
-  storeState.worktreesByRepo = {}
-  storeState.repos = []
+  storeState.worktreesByRepo = {
+    'repo-1': [{ id: 'worktree-1', repoId: 'repo-1', hostId: 'local' }]
+  }
+  storeState.repos = [{ id: 'repo-1' }]
+  storeState.runtimeEnvironments = []
+  storeState.runtimeStatusByEnvironmentId = new Map()
   storeState.openSettingsPage = openSettingsPageMock
   storeState.openSettingsTarget = openSettingsTargetMock
 })

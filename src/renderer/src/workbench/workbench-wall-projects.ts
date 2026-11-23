@@ -1,10 +1,8 @@
 import type { ProjectGroup } from '../../../shared/project-group-types'
 import type { Repo } from '../../../shared/repo-types'
-import type { Worktree } from '../../../shared/worktree/types'
 import { stripCredentialsFromMessage } from '../../../shared/git-remote-error'
 import {
   getRepoExecutionHostId,
-  getWorktreeExecutionHostId,
   LOCAL_EXECUTION_HOST_ID,
   parseExecutionHostId
 } from '../../../shared/execution-host'
@@ -12,12 +10,14 @@ import {
   getProjectIdentityKey,
   isHostLocalProjectId
 } from '../../../shared/project-host-setup-projection'
-import { composeWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
+import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
 import { remoteUrlToWebHref, repoLinkLabel } from './wall-repo-links'
+import { getProjectGroupHostId } from '@/store/slices/project-group-owner-routing'
 
 export type WallRepoSlot = {
   /** 展示行(优先本机注册)的 repo id。 */
   repoId: string
+  repo: Repo
   name: string
   path: string
   /** Display label for the remote (owner/repo or host/path). */
@@ -35,6 +35,7 @@ export type WallProject = {
   /** `group:<id>` or `solo:<identityKey>` */
   key: string
   groupId: string | null
+  group?: ProjectGroup | null
   name: string
   /** 激活默认落点:本机主注册优先,其次组件内首行。 */
   primaryRepoId: string
@@ -106,6 +107,12 @@ function wallIdentityKey(repo: Repo): string {
   return isHostLocalProjectId(key) ? `row:${rowHostId(repo)}::${repo.id}` : `id:${key}`
 }
 
+export function wallProjectVersionRows(project: WallProject): Repo[] {
+  const primary = project.rows[0]
+  const identity = versionRepoIdentity(primary)
+  return identity ? project.rows.filter((row) => versionRepoIdentity(row) === identity) : [primary]
+}
+
 function distinctHostIds(repos: readonly Repo[]): string[] {
   const seen = new Set<string>()
   const ordered: string[] = []
@@ -130,6 +137,7 @@ function toSlotFromRows(rows: readonly Repo[]): WallRepoSlot {
   const localRow = rows.find(isLocalRow)
   return {
     repoId: preferred.id,
+    repo: preferred,
     name: preferred.displayName || '未命名仓',
     path: preferred.path,
     linkLabel: repoLinkLabel(preferred),
@@ -151,13 +159,33 @@ function sortComponentRows(rows: readonly Repo[], indexById: Map<string, number>
     if (orderDelta !== 0) {
       return orderDelta
     }
-    return (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0)
+    return (indexById.get(rowKey(a)) ?? 0) - (indexById.get(rowKey(b)) ?? 0)
   })
 }
 
 type UnionFind = {
   find: (key: string) => string
   union: (a: string, b: string) => void
+}
+
+const rowKey = (repo: Repo): string => `${rowHostId(repo)}::${repo.id}`
+const groupKey = (group: ProjectGroup): string => `${getProjectGroupHostId(group)}::${group.id}`
+const rowGroupKey = (repo: Repo): string => `${rowHostId(repo)}::${repo.projectGroupId}`
+
+/** Shared-host visibility is only a wall filter, never an execution permission. */
+export function isWallRowVisible(repo: Repo): boolean {
+  return (
+    parseExecutionHostId(rowHostId(repo))?.kind !== 'runtime' || repo.projectVisibility === 'team'
+  )
+}
+
+export function wallProjectVisibility(project: WallProject): 'personal' | 'team' {
+  const ownRows = project.rows.filter(
+    (row) => parseExecutionHostId(rowHostId(row))?.kind !== 'runtime'
+  )
+  return (ownRows.length ? ownRows : project.rows).every((row) => row.projectVisibility === 'team')
+    ? 'team'
+    : 'personal'
 }
 
 function createUnionFind(): UnionFind {
@@ -208,13 +236,10 @@ export function buildWallProjects(
 ): WallProject[] {
   const rows = dedupeWallRows(repos, hosts)
   const indexById = new Map<string, number>()
-  rows.forEach((repo, index) => indexById.set(repo.id, index))
+  rows.forEach((repo, index) => indexById.set(rowKey(repo), index))
 
-  const groupById = new Map(groups.map((g) => [g.id, g]))
+  const groupById = new Map(groups.map((g) => [groupKey(g), g]))
   const uf = createUnionFind()
-  // 行键按 repoId:跨主机撞出同一 repoId(理论上 Orca 允许,实际是同一注册的重复行)时
-  // 隐式并卡——方向与 G3「同一项目一张卡」一致;计数与槽仍按行/host 各自去重。
-  const rowKey = (repo: Repo): string => `row:${repo.id}`
 
   // 先让每行自成一个集合。
   for (const repo of rows) {
@@ -234,8 +259,8 @@ export function buildWallProjects(
   // 按用户项目组归并(仅当组仍存在,避免引用已删组的悬挂 id 造成错误归并)。
   const firstRowByGroup = new Map<string, Repo>()
   for (const repo of rows) {
-    const groupId = repo.projectGroupId
-    if (!groupId || !groupById.has(groupId)) {
+    const groupId = rowGroupKey(repo)
+    if (!repo.projectGroupId || !groupById.has(groupId)) {
       continue
     }
     const prior = firstRowByGroup.get(groupId)
@@ -263,12 +288,18 @@ export function buildWallProjects(
     const sorted = sortComponentRows(componentRows, indexById)
     // 组件对应的组:取成员里 tabOrder 最小、名字最小的现存组(确定性)。
     const memberGroupIds = [
-      ...new Set(sorted.map((r) => r.projectGroupId).filter(Boolean))
+      ...new Set(sorted.filter((r) => r.projectGroupId).map(rowGroupKey))
     ] as string[]
     const componentGroups = memberGroupIds
       .map((id) => groupById.get(id))
       .filter((g): g is ProjectGroup => Boolean(g))
-      .sort((a, b) => a.tabOrder - b.tabOrder || a.name.localeCompare(b.name))
+      .sort(
+        (a, b) =>
+          Number(getProjectGroupHostId(b) === 'local') -
+            Number(getProjectGroupHostId(a) === 'local') ||
+          a.tabOrder - b.tabOrder ||
+          a.name.localeCompare(b.name)
+      )
     const group = componentGroups[0] ?? null
 
     // 槽:按代码仓身份去重(同一仓多主机 → 一槽)。
@@ -287,8 +318,9 @@ export function buildWallProjects(
     const primaryRepoId = sorted.find(isLocalRow)?.id ?? sorted[0].id
     const soloIdentity = wallIdentityKey(sorted.find(isLocalRow) ?? sorted[0])
     projects.push({
-      key: group ? `group:${group.id}` : `solo:${soloIdentity}`,
+      key: group ? `group:${groupKey(group)}` : `solo:${soloIdentity}`,
       groupId: group ? group.id : null,
+      group,
       name: group ? group.name : (sorted.find(isLocalRow) ?? sorted[0]).displayName || '未命名项目',
       primaryRepoId,
       repoIds: [...new Set(sorted.map((r) => r.id))],
@@ -300,10 +332,10 @@ export function buildWallProjects(
 
   // 排序:有组的卡按组 tabOrder/名字在前,其余按组件首行注册顺序。
   const firstIndexOf = (project: WallProject): number =>
-    Math.min(...project.repoIds.map((id) => indexById.get(id) ?? Number.MAX_SAFE_INTEGER))
+    Math.min(...project.rows.map((row) => indexById.get(rowKey(row)) ?? Number.MAX_SAFE_INTEGER))
   projects.sort((a, b) => {
-    const ga = a.groupId ? groupById.get(a.groupId) : null
-    const gb = b.groupId ? groupById.get(b.groupId) : null
+    const ga = a.group
+    const gb = b.group
     if (ga && gb) {
       return ga.tabOrder - gb.tabOrder || ga.name.localeCompare(gb.name)
     }
@@ -317,33 +349,4 @@ export function buildWallProjects(
   })
 
   return projects
-}
-
-/**
- * 墙卡工作树计数(现算,不写死):对该项目全部在册注册行,累计各自 host 名下的工作树,
- * 按 host-qualified 身份去重,保证「同一项目多主机」不重复计数、已删主机残留行不计入
- * (rows 已由 buildWallProjects 过滤到当前主机目录)。没数据自然得 0,不装绿(铁律二)。
- */
-export function countWallProjectWorktrees(
-  rows: readonly Repo[],
-  worktreesByRepo: Record<string, readonly Worktree[]>
-): number {
-  const seen = new Set<string>()
-  let count = 0
-  for (const row of rows) {
-    const hostId = rowHostId(row)
-    for (const worktree of worktreesByRepo[row.id] ?? []) {
-      // 只计属于本注册行 host 的工作树;legacy 无 hostId 的行按所属仓 host 归属。
-      if (getWorktreeExecutionHostId(worktree, row) !== hostId) {
-        continue
-      }
-      const identity = composeWorktreeHostIdentity(worktree.hostId, worktree.id)
-      if (seen.has(identity)) {
-        continue
-      }
-      seen.add(identity)
-      count += 1
-    }
-  }
-  return count
 }

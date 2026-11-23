@@ -46,7 +46,20 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run dev:workbench
 ```
 
+开发实例和其中的终端只继承启动进程的环境变量：从 IDE、agent 等环境被收敛的进程起 dev 时，启动前要先补上本机需要的用户级变量（如内网 CA 的 `NODE_EXTRA_CA_CERTS`）；Windows 上 `dev:workbench` 会自动从用户环境补回该变量（清单见 `config/scripts/dev-workbench-env.mjs`）。
+
 打试用包仍用：`pnpm run build:mac:workbench`（签名 / 分发 / CDP smoke 前再打）。
+
+### Windows 原生构建前置（新工作区 / 首次 setup）
+
+Windows 上 `pnpm install` 会就地编译原生模块（`@orca/windows-registry`、`@vscode/windows-process-tree`、`node-pty`）。编译失败会让整个 setup 中断（`ERR_PNPM_EXECUTOR_LIFECYCLE_SCRIPT_FAILED`），首次或新工作区需先具备：
+
+- **Node 24**：以 `package.json` 的 `engines` 为准，与 CI 一致。
+- **Visual Studio 2022「生成工具」含"使用 C++ 的桌面开发"工作负载**（MSVC v143 + Windows SDK）。只装 LLVM/核心组件会在 `node-gyp rebuild` 报 `missing any VC++ toolset`。补装（管理员）：
+  `vs_installer.exe modify --installPath "<VS BuildTools 目录>" --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet --norestart`
+- **内网头文件镜像**：node-gyp 需下载 Node/Electron 编译头文件；直连 `nodejs.org`/`electronjs.org` 常被证书吊销检查拦截（`unable to verify the first certificate`）。在 `~/.npmrc` 增加 `disturl=https://repo.huaweicloud.com/nodejs`，或设用户环境变量 `npm_config_disturl`；并确认 `~/.electron-gyp/<electron 版本>` 已有对应头文件。
+
+**长路径（MAX_PATH 260）**：原生编译的中间产物 `.obj/.pdb` 受 260 字符限制。工作区绝对路径较长（如 `.bw/worktrees/<repo>/<中文任务名>` 叠加深层 `.pnpm/`）时，`@vscode/windows-process-tree` 的 obj 路径可达 261+，报 `C1083: 无法打开编译器生成的文件 ""`。即使 `LongPathsEnabled=1`，MSVC 的 CL 任务仍可能失败；`subst` 短盘符会被 `realpath` 还原而无效。规避：把仓库安装到较短路径（如 `C:\bw`）、工作区目录名短且用 ASCII，确保 `.obj/.pdb` 绝对路径 < 260。验证：`native/windows-registry/build/Release/*.node` 生成，`node config/scripts/rebuild-native-deps.mjs` 输出 `Native modules already load in Electron`。
 
 ## 品牌与开关
 
@@ -57,6 +70,8 @@ $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run
 | `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |
 | `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
 | `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
+| WeLink 群空间(上报落点) | `src/main/workbench/reporting/welink-report-config.ts` 固定 `WELINK_REPORT_SPACE_ID = 24160277`；设置与 env 不能改道，变更须走代码 PR。反馈/崩溃/诊断包使用「Workbench 上报」目录，用户开启后的遥测使用「Workbench 遥测」目录；均使用当前 WeLink 账号上传 |
+| `WORKBENCH_TELEMETRY_FLUSH_MS` | 遥测批次上传的定时间隔，默认 600000 毫秒（10 分钟），减少群空间文件和限流；开发/验收可缩短等待 |
 
 打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
 

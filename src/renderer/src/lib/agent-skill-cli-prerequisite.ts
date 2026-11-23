@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { toast } from 'sonner'
 import type { CliInstallStatus } from '../../../shared/cli-install-types'
 import { translate } from '@/i18n/i18n'
@@ -7,10 +8,15 @@ type EnsureOrcaCliAvailableOptions = {
   registrationPromptDelayMs?: number
 }
 
-export const AGENT_SKILL_CLI_PREREQUISITE_NOTICE =
-  'Before opening setup, Orca may show a system prompt to register the Orca CLI command on PATH.'
+export function getAgentSkillCliPrerequisiteNotice(): string {
+  return translate(
+    'guidance.cliPrerequisite',
+    'Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.',
+    { product: isWorkbenchShell() ? 'BW' : 'Orca' }
+  )
+}
 
-export const CLI_PREREQUISITE_REGISTRATION_TOAST = 'Orca needs to register its CLI on PATH.'
+export const CLI_PREREQUISITE_REGISTRATION_TOAST = 'Register the Orca CLI on PATH to continue.'
 export const CLI_PREREQUISITE_REGISTRATION_TOAST_DESCRIPTION =
   'Approve the system prompt so skill setup can use the Orca CLI command.'
 
@@ -61,8 +67,11 @@ export async function ensureOrcaCliAvailableForAgentSkillTerminal({
 }
 
 export async function showOrcaCliRegistrationPromptToast(delayMs = 700): Promise<void> {
-  toast.message(CLI_PREREQUISITE_REGISTRATION_TOAST, {
-    description: CLI_PREREQUISITE_REGISTRATION_TOAST_DESCRIPTION
+  toast.message(translate('guidance.cliRegistrationTitle', CLI_PREREQUISITE_REGISTRATION_TOAST), {
+    description: translate(
+      'guidance.cliRegistrationDescription',
+      CLI_PREREQUISITE_REGISTRATION_TOAST_DESCRIPTION
+    )
   })
   await delay(delayMs)
 }
@@ -115,7 +124,7 @@ function showCliPrerequisiteWarning(status: CliInstallStatus): void {
     toast.warning(
       translate(
         'auto.lib.agent.skill.cli.prerequisite.windowsPathUnknown',
-        'Orca could not check your Windows user PATH'
+        'Could not check your Windows user PATH'
       ),
       {
         description:

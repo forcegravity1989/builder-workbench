@@ -44,6 +44,7 @@ export function createRepoUpdateSchema<T extends Readonly<Record<string, z.ZodTy
     ...selectorFields,
     updates: z.object({
       displayName: OptionalString,
+      projectVisibility: z.enum(['personal', 'team']).optional(),
       badgeColor: RepoBadgeColor,
       repoIcon: z
         .unknown()

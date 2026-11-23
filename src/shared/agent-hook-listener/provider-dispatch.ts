@@ -21,6 +21,7 @@ import { normalizeGrokEvent } from './providers/grok-events'
 import { normalizeCopilotEvent } from './providers/copilot-events'
 import { normalizeHermesEvent } from './providers/hermes-events'
 import { normalizeDevinEvent } from './providers/devin-events'
+import { normalizeDshEvent } from './providers/dsh-events'
 import { normalizeKimiEvent } from './providers/kimi-events'
 
 export type ProviderDispatchResult = {
@@ -144,6 +145,9 @@ export function normalizeProviderEvent(input: {
       break
     case 'devin':
       payload = normalizeDevinEvent(state, eventName, promptText, paneKey, hookPayload)
+      break
+    case 'dsh':
+      payload = normalizeDshEvent(state, eventName, promptText, paneKey, hookPayload)
       break
     case 'kimi':
       payload = normalizeKimiEvent(state, eventName, promptText, paneKey, hookPayload)

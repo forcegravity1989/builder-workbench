@@ -46,6 +46,8 @@ import {
 import { AgentAvailabilityControl, type AgentCatalogRowProps } from './AgentCatalogRow'
 import { AgentDefaultSetting } from './AgentDefaultSetting'
 import { AgentDetectionCatalog } from './AgentDetectionCatalog'
+import { HostAgentLaunchSettings } from './HostAgentLaunchSettings'
+import { lastVerifiedRuntimeStatus } from '../../../../shared/runtime-host-status'
 
 export {
   buildAgentAvailabilitySettingsUpdate,
@@ -147,6 +149,15 @@ export function AgentsPane({
   wslCapabilitiesLoading
 }: AgentsPaneProps): React.JSX.Element {
   const activeServerEnvironmentId = settings.activeRuntimeEnvironmentId?.trim() || null
+  const activeEnvironment = useAppStore((state) =>
+    state.runtimeEnvironments.find((entry) => entry.id === activeServerEnvironmentId)
+  )
+  const runtimeId = useAppStore((state) =>
+    activeServerEnvironmentId
+      ? lastVerifiedRuntimeStatus(state.runtimeStatusByEnvironmentId.get(activeServerEnvironmentId))
+          ?.runtimeId
+      : undefined
+  )
   const agentDetectionTarget = useMemo<AgentDetectionTarget>(
     () =>
       activeServerEnvironmentId
@@ -235,6 +246,24 @@ export function AgentsPane({
         : undefined
   })
 
+  if (activeServerEnvironmentId) {
+    return (
+      <HostAgentLaunchSettings
+        key={JSON.stringify([
+          activeServerEnvironmentId,
+          activeEnvironment?.pairingRevision ?? activeEnvironment?.createdAt,
+          runtimeId
+        ])}
+        environmentId={activeServerEnvironmentId}
+        pairingRevision={activeEnvironment?.pairingRevision ?? activeEnvironment?.createdAt}
+        runtimeId={runtimeId}
+        hostName={activeServerName ?? activeServerEnvironmentId}
+        renderPermissions={(mode, onChange) => (
+          <AgentPermissionsSetting mode={mode} onChange={onChange} />
+        )}
+      />
+    )
+  }
   return (
     <div className="space-y-8">
       <AgentDefaultSetting

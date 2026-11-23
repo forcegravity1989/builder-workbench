@@ -15,6 +15,11 @@ export function renderSmartWorkspaceSourceResults(
     localInputRef,
     tabsListRef,
     mode,
+    value,
+    codehubHasMore,
+    codehubError,
+    codehubRefreshNonce: _codehubRefreshNonce,
+    setCodehubRefreshNonce,
     mrStateFilters,
     mrStateFilter,
     setMrStateFilter,
@@ -108,6 +113,28 @@ export function renderSmartWorkspaceSourceResults(
               />
             ))}
           </div>
+        ) : (mode === 'codehub' || mode === 'smart') &&
+          codehubError &&
+          searchResultRows.length === 0 ? (
+          <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+            <span className="block text-destructive">
+              {translate(
+                'auto.components.new.workspace.SmartWorkspaceNameField.codehubLoadFailed',
+                'Couldn’t load CodeHub issues. Check sign-in or permissions, then retry.'
+              )}
+            </span>
+            <Button
+              type="button"
+              variant="link"
+              size="xs"
+              onClick={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
+            >
+              {translate(
+                'auto.components.new.workspace.SmartWorkspaceNameField.codehubRetry',
+                'Retry'
+              )}
+            </Button>
+          </div>
         ) : loading && searchResultRows.length === 0 ? (
           <div className="space-y-1 p-1">
             {[0, 1, 2].map((index) => (
@@ -123,32 +150,52 @@ export function renderSmartWorkspaceSourceResults(
                     'auto.components.new.workspace.SmartWorkspaceNameField.3e8bb1176a',
                     'Connect Linear in Settings to search issues.'
                   )
-                : getSmartWorkspaceEmptyHint(mode)}
+                : mode === 'codehub'
+                  ? value.trim()
+                    ? translate(
+                        'auto.components.new.workspace.SmartWorkspaceNameField.codehubEmpty',
+                        'No matching CodeHub issues.'
+                      )
+                    : translate(
+                        'auto.components.new.workspace.SmartWorkspaceNameField.codehubEmptyStart',
+                        'Start typing to search CodeHub issues.'
+                      )
+                  : getSmartWorkspaceEmptyHint(mode)}
           </div>
         ) : searchResultRows.length > 0 ? (
-          <CommandGroup className="p-1">
-            {searchResultRows.map((row) => (
-              <CommandItem
-                key={row.value}
-                value={row.value}
-                onSelect={() => handleSelect(row)}
-                className={getRowItemClassName(row)}
-              >
-                <RowIcon row={row} />
-                <RowLabel
-                  row={row}
-                  jiraSite={
-                    showJiraSiteContext && row.kind === 'jira'
-                      ? (jiraConnectionStatus?.sites?.find(
-                          (site) => site.id === row.issue.siteId
-                        ) ?? null)
-                      : null
-                  }
-                  showJiraSiteContext={showJiraSiteContext}
-                />
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <>
+            <CommandGroup className="p-1">
+              {searchResultRows.map((row) => (
+                <CommandItem
+                  key={row.value}
+                  value={row.value}
+                  onSelect={() => handleSelect(row)}
+                  className={getRowItemClassName(row)}
+                >
+                  <RowIcon row={row} />
+                  <RowLabel
+                    row={row}
+                    jiraSite={
+                      showJiraSiteContext && row.kind === 'jira'
+                        ? (jiraConnectionStatus?.sites?.find(
+                            (site) => site.id === row.issue.siteId
+                          ) ?? null)
+                        : null
+                    }
+                    showJiraSiteContext={showJiraSiteContext}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            {mode === 'codehub' && codehubHasMore ? (
+              <div className="border-t border-border/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+                {translate(
+                  'auto.components.new.workspace.SmartWorkspaceNameField.codehubMoreResults',
+                  'Showing the first results. Narrow your keywords to see more.'
+                )}
+              </div>
+            ) : null}
+          </>
         ) : null}
       </CommandList>
     </PopoverContent>

@@ -1,4 +1,9 @@
 import { readCurrentVersionCatalog, withVersionTreeAlignment } from './version-current-catalog'
+import {
+  planEntryLogArgs,
+  readVersionHistoryLog,
+  versionHistoryLogArgs
+} from './version-history-log'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import {
   PlanningMaterialSchema,
@@ -7,6 +12,7 @@ import {
 } from '../../shared/workbench/version-material'
 import {
   VersionHistoryListSchema,
+  VersionPlanEntryTimesSchema,
   VersionHistoryReadSchema,
   VersionHistoryReadPlanSchema,
   VersionTreePlansSchema,
@@ -39,28 +45,6 @@ export type VersionHistoryHost = {
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-  async function verifySource(scope: MetricScope, sourceCommit: string, includeCycle = false) {
-    const baseline = await host.baseline(scope)
-    SourceCommit.parse(baseline.commit)
-    const tips = includeCycle
-      ? [SourceCommit.parse(await host.worktreeHead(scope)), baseline.commit]
-      : [baseline.commit]
-    for (const tip of tips) {
-      try {
-        await host.git(scope, ['merge-base', '--is-ancestor', sourceCommit, tip])
-        return baseline
-      } catch {
-        // not on this tip; the other one may still carry it
-      }
-    }
-    throw new HistorySourceError(
-      'unverified-source',
-      includeCycle
-        ? '材料提交不在本分支或主干基线历史上；没有改读最新材料'
-        : '无法证明材料提交已合入项目主干基线；没有改读最新材料'
-    )
-  }
-
   async function readSnapshot(
     scope: MetricScope,
     sourceCommit: string,
@@ -107,6 +91,11 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           workflow: 'plan'
         })
       } catch (error) {
+        // A folder without data.json is simply not a plan; only unreadable
+        // material is a problem.
+        if (error instanceof HistorySourceError && error.code === 'history-unavailable') {
+          continue
+        }
         problems.push({
           version: name,
           code: error instanceof HistorySourceError ? error.code : 'history-unavailable',
@@ -118,6 +107,25 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
   }
 
   return {
+    async listPlanEntryTimes(input) {
+      const { scope, baselineCommit } = VersionPlanEntryTimesSchema.parse(input)
+      const baseline = await host.baseline(scope)
+      if (baseline.commit !== baselineCommit) {
+        return {}
+      }
+      const shallow =
+        (await host.git(scope, ['rev-parse', '--is-shallow-repository'])).toString().trim() ===
+        'true'
+      const log = await host.git(scope, planEntryLogArgs(baselineCommit, shallow))
+      const entries = new Map<string, number>()
+      for (const { version, committedAt } of readVersionHistoryLog(log)) {
+        const time = Date.parse(committedAt)
+        if (!entries.has(version) && Number.isFinite(time)) {
+          entries.set(version, time)
+        }
+      }
+      return Object.fromEntries(entries)
+    },
     async list(input) {
       const {
         scope,
@@ -143,62 +151,36 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           problems: catalog.problems.filter(matches)
         }
       }
-      const log = await host.git(scope, [
-        'log',
-        '-z',
-        '--full-history',
-        '--diff-merges=first-parent',
-        '--format=%H%x00%cI',
-        '--name-only',
-        '--diff-filter=AM',
-        '--no-renames',
-        baseline.commit,
-        '--',
-        '.bw/planning'
-      ])
-      let sourceCommit = ''
-      let committedAt = ''
+      const log = await host.git(scope, versionHistoryLogArgs(baseline.commit))
       const seen = new Set<string>()
       const records: VersionHistorySource[] = []
       const problems: VersionHistoryProblem[] = []
-      const tokens = log.toString('utf8').split('\0')
-      for (let index = 0; index < tokens.length; index++) {
-        const token = tokens[index]
-        if (SourceCommit.safeParse(token).success) {
-          sourceCommit = token
-          committedAt = tokens[++index]
+      for (const { file, version, workflow, sourceCommit, committedAt } of readVersionHistoryLog(
+        log
+      )) {
+        if (!matches({ version, workflow })) {
           continue
         }
-        // Git separates the commit header from its first raw path with one newline.
-        const line = token.replace(/^\n/, '')
-        const path = /^\.bw\/planning\/([^/]+)\/(data|acceptance)\.json$/.exec(line)
-        if (!path || !sourceCommit) {
-          continue
-        }
-        const workflow = path[2] === 'data' ? 'plan' : 'acceptance'
-        if (!matches({ version: path[1], workflow })) {
-          continue
-        }
-        if (!MaterialVersion.safeParse(path[1]).success) {
+        if (!MaterialVersion.safeParse(version).success) {
           problems.push({
-            version: path[1],
+            version,
             sourceCommit,
             workflow,
             committedAt,
             code: 'invalid-version',
-            message: `历史路径 ${line} 的版本目录不符合材料约定，未作为有效版本读取`
+            message: `历史路径 ${file} 的版本目录不符合材料约定，未作为有效版本读取`
           })
           continue
         }
         let snapshot: Awaited<ReturnType<typeof readSnapshot>>
         try {
-          snapshot = await readSnapshot(scope, sourceCommit, path[1], workflow)
+          snapshot = await readSnapshot(scope, sourceCommit, version, workflow)
         } catch (error) {
           if (!(error instanceof HistorySourceError)) {
             throw error
           }
           problems.push({
-            version: path[1],
+            version,
             sourceCommit,
             workflow,
             committedAt,
@@ -211,7 +193,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
         // history explicitly keeps each commit, because cycleId spans weeks.
         // Every record is reachable from the selected, pinned source tip.
         const key = JSON.stringify([
-          path[1],
+          version,
           workflow,
           allRevisions ? sourceCommit : snapshot.document.cycleId
         ])
@@ -236,7 +218,6 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     },
     async read(input) {
       const request = VersionHistoryReadSchema.parse(input)
-      await verifySource(request.scope, request.sourceCommit, request.source === 'cycle')
       const snapshot = await readSnapshot(
         request.scope,
         request.sourceCommit,
@@ -256,8 +237,9 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     },
     async readPlan(input) {
       const { scope, planRef } = VersionHistoryReadPlanSchema.parse(input)
-      const baseline =
-        planRef.kind === 'committed' ? await verifySource(scope, planRef.sourceCommit, true) : null
+      // The baseline is display metadata only; whether the plan commit is
+      // reachable from trunk decides nothing here.
+      const baseline = planRef.kind === 'committed' ? await host.baseline(scope) : null
       const snapshot =
         planRef.kind === 'committed'
           ? await readSnapshot(scope, planRef.sourceCommit, planRef.version, 'plan')

@@ -25,6 +25,7 @@ export function requestSharedControl<TResult>(args: {
   send: (requestId: string) => void
   retireRequestId?: (requestId: string) => void
   signal?: AbortSignal
+  beforeSend?: () => void
   // Why: default off — ordinary short RPCs keep an absolute deadline. Only
   // long-polls routed through this path opt in so keepalives extend them.
   refreshTimeoutOnKeepalive?: boolean
@@ -93,7 +94,19 @@ export function requestSharedControl<TResult>(args: {
       return
     }
     void ensureReady().then(
-      () => send(requestId),
+      () => {
+        try {
+          args.beforeSend?.()
+        } catch (error) {
+          rejectSharedControlPendingRequest(
+            pendingRequests,
+            requestId,
+            toRemoteRuntimeClientError(error)
+          )
+          return
+        }
+        send(requestId)
+      },
       (error) =>
         rejectSharedControlPendingRequest(
           pendingRequests,

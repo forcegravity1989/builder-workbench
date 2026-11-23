@@ -14,6 +14,7 @@ import {
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import type * as SetProjectLocationDialogModule from '@/components/new-workspace/SetProjectLocationDialog'
 import { unwrapRuntimeRpcResult } from '@/runtime/runtime-rpc-client'
+import { mutateHostAgentLaunchSettings } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
 import { withUiConnectTimeout } from '@/ssh/ssh-connect-ui-timeout'
 import { isSshConnectInFlight, trackSshConnect } from '@/ssh/ssh-connect-in-flight'
 import { translate } from '@/i18n/i18n'
@@ -84,10 +85,16 @@ export default function NewWorkspaceComposerCard(
   const { isFileDragOver, dragHandlers } = useComposerFileDragOver()
   const openModal = useAppStore((state) => state.openModal)
   const activeModal = useAppStore((state) => state.activeModal)
-  const defaultTuiAgent = useAppStore((state) => state.settings?.defaultTuiAgent ?? null)
-  const disabledTuiAgents = useAppStore(
+  const localDefaultTuiAgent = useAppStore((state) => state.settings?.defaultTuiAgent ?? null)
+  const localDisabledTuiAgents = useAppStore(
     (state) => state.settings?.disabledTuiAgents ?? DEFAULT_DISABLED_TUI_AGENTS
   )
+  const defaultTuiAgent = props.agentLaunchPreferences
+    ? props.agentLaunchPreferences.defaultTuiAgent ?? null
+    : localDefaultTuiAgent
+  const disabledTuiAgents = props.agentLaunchPreferences
+    ? props.agentLaunchPreferences.disabledTuiAgents
+    : localDisabledTuiAgents
   const updateSettings = useAppStore((state) => state.updateSettings)
   const projects = useAppStore((state) => state.projects)
   const repos = useAppStore((state) => state.repos)
@@ -262,9 +269,27 @@ export default function NewWorkspaceComposerCard(
   )
   const handleSetDefaultAgent = React.useCallback(
     (next: TuiAgent | 'blank' | null): void => {
-      void updateSettings({ defaultTuiAgent: next })
+      const preferences = props.agentLaunchPreferences
+      const owner = preferences?.owner
+      if (
+        (preferences && !preferences.isAvailable) ||
+        (owner && (!owner.runtimeId || owner.pairingRevision === undefined))
+      ) {
+        return
+      }
+      const update = owner
+        ? mutateHostAgentLaunchSettings(owner, { type: 'default', agent: next })
+        : updateSettings({ defaultTuiAgent: next })
+      void Promise.resolve(update).catch(() => {
+        toast.error(
+          translate(
+            'settings.agents.saveFailed',
+            'Couldn’t save agent settings. Check the host connection and try again.'
+          )
+        )
+      })
     },
-    [updateSettings]
+    [props.agentLaunchPreferences, updateSettings]
   )
   const handleNamePlainEnter = React.useCallback((): void => {
     const agentTrigger = composerRef?.current?.querySelector<HTMLElement>(

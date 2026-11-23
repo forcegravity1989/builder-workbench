@@ -65,34 +65,72 @@ describe('feature education telemetry event schemas', () => {
   })
 
   it('accepts setup guide telemetry payloads with bounded help menu sources', () => {
-    expect(
-      eventSchemas.setup_guide_opened.safeParse({
-        source: 'help_menu',
-        initial_completed_count: 0,
-        total_steps: 8,
-        first_incomplete_step_id: 'two-worktrees'
-      }).success
-    ).toBe(true)
+    for (const totalSteps of [7, 8]) {
+      expect(
+        eventSchemas.setup_guide_opened.safeParse({
+          source: 'help_menu',
+          initial_completed_count: 0,
+          total_steps: totalSteps,
+          first_incomplete_step_id: 'two-worktrees'
+        }).success
+      ).toBe(true)
 
-    expect(
-      eventSchemas.setup_guide_closed.safeParse({
-        source: 'help_menu',
-        outcome: 'dismissed',
-        initial_completed_count: 2,
-        final_completed_count: 2,
-        total_steps: 8,
-        active_step_id: 'notifications'
-      }).success
-    ).toBe(true)
+      expect(
+        eventSchemas.setup_guide_closed.safeParse({
+          source: 'help_menu',
+          outcome: 'dismissed',
+          initial_completed_count: 2,
+          final_completed_count: 2,
+          total_steps: totalSteps,
+          active_step_id: 'notifications'
+        }).success
+      ).toBe(true)
+      expect(
+        eventSchemas.setup_guide_step_completed.safeParse({
+          step_id: 'notifications',
+          section_id: 'setup',
+          completed_count: totalSteps,
+          total_steps: totalSteps,
+          setup_guide_visible: true
+        }).success
+      ).toBe(true)
+    }
   })
 
-  it('rejects inactive historical setup guide step ids', () => {
+  it('rejects inactive historical setup guide step ids and impossible counts', () => {
     expect(
       eventSchemas.setup_guide_opened.safeParse({
         source: 'help_menu',
         initial_completed_count: 0,
         total_steps: 8,
         first_incomplete_step_id: 'split-terminal'
+      }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.setup_guide_opened.safeParse({
+        source: 'help_menu',
+        initial_completed_count: 8,
+        total_steps: 7,
+        first_incomplete_step_id: 'none'
+      }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.setup_guide_closed.safeParse({
+        source: 'help_menu',
+        outcome: 'dismissed',
+        initial_completed_count: 7,
+        final_completed_count: 8,
+        total_steps: 7,
+        active_step_id: 'notifications'
+      }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.setup_guide_step_completed.safeParse({
+        step_id: 'notifications',
+        section_id: 'setup',
+        completed_count: 8,
+        total_steps: 7,
+        setup_guide_visible: true
       }).success
     ).toBe(false)
   })

@@ -1,11 +1,15 @@
+import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useMemo, type JSX } from 'react'
 import { useAppStore } from '@/store'
-import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
+import {
+  compareMaterialVersions,
+  compareVersionDisplayOrder
+} from '../../../shared/workbench/version-catalog'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { useOverviewHistory } from './use-overview-history'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useVersionMinutes } from './use-version-minutes'
-import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
+import { overviewWorkflowTrees } from './version-cycle/native-cycle-workspace'
 import {
   nativeWorkspaceScope,
   nativeWorkspaceScopeKey,
@@ -54,19 +58,11 @@ export function MetricsWorkspaceBoard(): JSX.Element {
     activeRepo?.gitRemoteIdentity,
     baseWorktree?.path
   ])
-  const fixedTrees = useMemo(() => {
-    if (!baseScope) {
-      return { plan: null, acceptance: null }
-    }
-    try {
-      return {
-        plan: findCycleWorktree({ ...baseScope, workflow: 'plan' })?.id ?? null,
-        acceptance: findCycleWorktree({ ...baseScope, workflow: 'acceptance' })?.id ?? null
-      }
-    } catch {
-      return { plan: null, acceptance: null }
-    }
-  }, [baseScope])
+  const versionCatalog = useVersionCatalogForRepo(activeRepoId, baseScope?.hostId)
+  const catalogVersion = versionCatalog.planOrderPending
+    ? null
+    : (versionCatalog.catalog?.entries.toSorted(compareVersionDisplayOrder)[0]?.version ?? null)
+  const fixedTrees = overviewWorkflowTrees(baseScope, versionCatalog.worktrees, catalogVersion)
   const metrics = useOverviewMetricCollection({
     baseScope,
     baseWorktreeId,
@@ -114,7 +110,9 @@ export function MetricsWorkspaceBoard(): JSX.Element {
         <OverviewScoreboard
           catalog={metrics.catalog}
           readings={metrics.zoneReadings}
+          problems={metrics.problems}
           busy={metrics.busy}
+          pendingReadings={metrics.pendingReadings}
           onRefresh={() => void metrics.refreshReadings()}
           anchor={metrics.anchor}
           identity={identity}
@@ -123,6 +121,7 @@ export function MetricsWorkspaceBoard(): JSX.Element {
           setupBusy={metricsSetup.busy || !baseScope}
           onSetup={() => void metricsSetup.prepareMetrics()}
           worktreeId={baseWorktreeId}
+          baseScope={baseScope}
         />
       </div>
     </section>

@@ -1,4 +1,11 @@
 import type { GitHubApiRepository } from './github-api-repository'
+import { normalizeGitHubRemoteHost } from '../../shared/git-remote-host-alias'
+import { resolveSshConfigHostname } from './github-ssh-host-alias-resolution'
+import { isValidGitHubApiRepository } from './github-api-repository-validation'
+import {
+  githubRepoIdentityKey,
+  isDefaultGitHubHost
+} from '../../shared/github/repository-identity-key'
 import {
   getOwnerRepoForRemote,
   type GitHubRemoteIdentityProbeOptions,
@@ -6,7 +13,8 @@ import {
 } from './gh-utils'
 import {
   getEnterpriseGitHubRepoSlug,
-  getEnterpriseGitHubRepoSlugForRemote
+  getEnterpriseGitHubRepoSlugForRemote,
+  isGitHubHostAuthenticatedForGlobalCli
 } from './github-enterprise-repository'
 import {
   githubApiRepositoryProbeCacheKey,
@@ -54,6 +62,33 @@ export async function getGitHubApiRepositoryForRemote(
 ): Promise<GitHubApiRepository | null> {
   // Why: generic PR resolution prefers upstream, but this API represents the
   // caller-selected remote exactly (#7331).
+  const taskRepository = localGitOptions.taskRepository
+  if (taskRepository) {
+    const candidate = localGitOptions.taskRemoteCandidates
+      ? remoteName === 'origin'
+        ? localGitOptions.taskRemoteCandidates.origin
+        : remoteName === 'upstream'
+          ? localGitOptions.taskRemoteCandidates.upstream
+          : null
+      : remoteName === 'origin'
+        ? taskRepository
+        : null
+    if (!candidate || !isValidGitHubApiRepository(candidate)) {
+      return null
+    }
+    let host = candidate.host ?? 'github.com'
+    if (/^[a-z0-9][a-z0-9_-]*$/i.test(host)) {
+      const { hostname } = await resolveSshConfigHostname(host)
+      host = normalizeGitHubRemoteHost(hostname ?? host)
+    }
+    if (!isDefaultGitHubHost(host) && !(await isGitHubHostAuthenticatedForGlobalCli(host))) {
+      if (githubRepoIdentityKey(candidate) === githubRepoIdentityKey(taskRepository)) {
+        throw new Error('GitHub repository host is unavailable in the local gh account')
+      }
+      return null
+    }
+    return { ...candidate, host }
+  }
   const requireVerifiedSshProbe = probeOptions.requireVerifiedSshProbe === true
   const verifiedIdentityArgs = requireVerifiedSshProbe ? ([probeOptions] as const) : []
   const ownerRepo = await getOwnerRepoForRemote(

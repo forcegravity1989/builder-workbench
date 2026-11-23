@@ -58,7 +58,7 @@ export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
     ),
     description: translate(
       'auto.components.settings.integrations.search.welinkDescription',
-      'welink-cli presence and login for project group notifications.'
+      'welink-cli installation and login for reports and diagnostics in the BW user-group space.'
     ),
     keywords: [
       ...translateSearchKeyword(
@@ -91,7 +91,10 @@ export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
         'auto.components.settings.integrations.search.cloudbuildKeyword',
         'cloudbuild'
       ),
-      ...translateSearchKeyword('auto.components.settings.integrations.search.cloudbuildCbKeyword', 'cb'),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.cloudbuildCbKeyword',
+        'cb'
+      ),
       ...translateSearchKeyword(
         'auto.components.settings.integrations.search.c450244ad7',
         'integration'

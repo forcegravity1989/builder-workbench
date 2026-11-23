@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { fetchMock, handlers } = vi.hoisted(() => ({
-  fetchMock: vi.fn(),
+const { submitWelinkReportMock, handlers } = vi.hoisted(() => ({
+  submitWelinkReportMock: vi.fn(),
   handlers: new Map<string, (_event: unknown, args?: unknown) => unknown>()
 }))
 
@@ -12,27 +12,31 @@ vi.mock('electron', () => ({
       handlers.set(channel, handler)
     }),
     removeHandler: vi.fn((channel: string) => handlers.delete(channel))
-  },
-  net: { fetch: (...args: unknown[]) => fetchMock(...args) }
+  }
 }))
 
-import { MAX_FEEDBACK_IMAGE_RESPONSE_BYTES } from './feedback-image-attachments'
-import { registerFeedbackHandlers, submitFeedback } from './feedback'
+// Why (BW #553): the transport is the WeLink group-space sink; these cases
+// pin what feedback.ts still owns — payload assembly (identity allow-list,
+// lane rules), image validation, and result pass-through. The sink's own
+// protocol (packaging, failure classification) is guarded in
+// src/main/workbench/reporting/ tests and real-shell acceptance.
+vi.mock('../workbench/reporting/report-submission', () => ({
+  submitWelinkReport: submitWelinkReportMock
+}))
 
-function okResponse(): Response {
-  return { ok: true, status: 200 } as unknown as Response
+import { registerFeedbackHandlers, submitFeedback, type FeedbackSubmitBody } from './feedback'
+
+function pngImage(): { contentType: string; data: Uint8Array } {
+  return { contentType: 'image/png', data: new Uint8Array(4).fill(1) }
 }
 
-function errorResponse(status: number): Response {
-  return { ok: false, status } as unknown as Response
-}
-
-function requestInit(callIndex = 0): RequestInit {
-  return fetchMock.mock.calls[callIndex]?.[1] as RequestInit
-}
-
-function postedBody(callIndex = 0): Record<string, unknown> {
-  return JSON.parse(String(requestInit(callIndex).body)) as Record<string, unknown>
+function imageSubmitArgs(images: unknown[]): Parameters<typeof submitFeedback>[0] {
+  return {
+    feedback: 'with images',
+    githubLogin: null,
+    githubEmail: null,
+    images
+  } as Parameters<typeof submitFeedback>[0]
 }
 
 function diagnosticSubmitArgs(): Parameters<typeof submitFeedback>[0] {
@@ -53,16 +57,15 @@ function diagnosticSubmitArgs(): Parameters<typeof submitFeedback>[0] {
   }
 }
 
+function sentBody(callIndex = 0): FeedbackSubmitBody {
+  return submitWelinkReportMock.mock.calls[callIndex][0] as FeedbackSubmitBody
+}
+
 describe('submitFeedback', () => {
   beforeEach(() => {
-    vi.useRealTimers()
     handlers.clear()
-    fetchMock.mockReset()
-    fetchMock.mockResolvedValue(okResponse())
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
+    submitWelinkReportMock.mockReset()
+    submitWelinkReportMock.mockResolvedValue({ ok: true })
   })
 
   it('strips GitHub identity and anonymous contact fields when submitted anonymously', async () => {
@@ -77,7 +80,7 @@ describe('submitFeedback', () => {
     }
     await submitFeedback(anonymousArgs)
 
-    const body = postedBody()
+    const body = sentBody()
     expect(body).toMatchObject({
       feedback: 'private bug report',
       submissionType: 'feedback',
@@ -98,30 +101,12 @@ describe('submitFeedback', () => {
       githubEmail: 'trusted@example.com'
     })
 
-    const body = postedBody()
-    expect(body).toMatchObject({
+    expect(sentBody()).toMatchObject({
       feedback: 'public bug report',
       submissionType: 'feedback',
       githubLogin: 'trusted-user',
       githubEmail: 'trusted@example.com',
       appVersion: '1.2.3-test'
-    })
-  })
-
-  it('preserves crash submissions for the crash report lane', async () => {
-    await submitFeedback({
-      feedback: '[Crash Report]',
-      submissionType: 'crash',
-      submitAnonymously: false,
-      githubLogin: 'trusted-user',
-      githubEmail: null
-    } as Parameters<typeof submitFeedback>[0])
-
-    expect(postedBody()).toMatchObject({
-      feedback: '[Crash Report]',
-      submissionType: 'crash',
-      githubLogin: 'trusted-user',
-      githubEmail: null
     })
   })
 
@@ -132,480 +117,118 @@ describe('submitFeedback', () => {
       bytes: 25,
       spanCount: 1
     }
+    // A stale renderer state must not smuggle a bundle onto the feedback lane.
     await submitFeedback({
-      feedback: '[Crash Report]',
-      submissionType: 'crash',
-      submitAnonymously: true,
+      feedback: 'feature request',
       githubLogin: null,
       githubEmail: null,
       diagnosticBundle
     } as Parameters<typeof submitFeedback>[0])
-    await submitFeedback({
-      feedback: 'normal feedback',
-      submitAnonymously: true,
-      githubLogin: null,
-      githubEmail: null,
+    expect(sentBody(0).diagnosticBundle).toBeUndefined()
+
+    await submitFeedback(diagnosticSubmitArgs())
+    expect(sentBody(1)).toMatchObject({
+      submissionType: 'crash',
       diagnosticBundle
+    })
+  })
+
+  it('drops images from crash submissions without failing the report', async () => {
+    // Why: the crash lane discards images, so validating them there would
+    // abort a crash report the user needs delivered.
+    await submitFeedback({
+      ...diagnosticSubmitArgs(),
+      images: [pngImage(), { contentType: 'application/pdf', data: new Uint8Array(0) }]
     } as Parameters<typeof submitFeedback>[0])
 
-    const crashInit = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined
-    const feedbackInit = fetchMock.mock.calls[1]?.[1] as RequestInit | undefined
-    const crashFormData = crashInit?.body as FormData
-    expect(crashFormData).toBeInstanceOf(FormData)
-    expect(crashInit?.headers).toBeUndefined()
-    expect(crashFormData.get('submissionType')).toBe('crash')
-    expect(crashFormData.get('diagnosticBundleSubmissionId')).toBe(
-      diagnosticBundle.bundleSubmissionId
+    const body = sentBody()
+    expect(body.images).toBeUndefined()
+    expect(body.submissionType).toBe('crash')
+  })
+
+  it('rejects unsupported image types and oversized counts before any sink call', async () => {
+    const unsupported = await submitFeedback(
+      imageSubmitArgs([{ contentType: 'application/pdf', data: new Uint8Array(4) }])
     )
-    expect(crashFormData.get('diagnosticBundleBytes')).toBe(String(diagnosticBundle.bytes))
-    expect(crashFormData.get('diagnosticBundleSpanCount')).toBe(String(diagnosticBundle.spanCount))
-    const file = crashFormData.get('diagnosticBundleFile')
-    expect(file).toBeInstanceOf(Blob)
-    await expect((file as Blob).text()).resolves.toBe(diagnosticBundle.content)
-    expect(JSON.parse(String(feedbackInit?.body))).not.toHaveProperty('diagnosticBundle')
+    expect(unsupported.ok).toBe(false)
+
+    const tooMany = await submitFeedback(
+      imageSubmitArgs(Array.from({ length: 5 }, () => pngImage()))
+    )
+    expect(tooMany.ok).toBe(false)
+
+    expect(submitWelinkReportMock).not.toHaveBeenCalled()
   })
 
-  it('retries a rejected diagnostic attachment as report-only JSON on the website API', async () => {
-    fetchMock.mockResolvedValueOnce(errorResponse(413)).mockResolvedValueOnce(okResponse())
+  it('rejects hostile IPC image payloads at the handler boundary', async () => {
+    registerFeedbackHandlers()
+    const submit = handlers.get('feedback:submit')!
 
-    await expect(submitFeedback(diagnosticSubmitArgs())).resolves.toEqual({
-      ok: true,
-      diagnosticBundleFailure: { status: 413, error: 'status 413' }
-    })
-
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
-    expect(requestInit(0).body).toBeInstanceOf(FormData)
-    expect(fetchMock.mock.calls[1]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
-    expect(requestInit(1).headers).toEqual({
-      'Content-Type': 'application/json'
-    })
-    expect(postedBody(1)).toMatchObject({
-      feedback:
-        '[Crash Report]\n\nDiagnostic log:\n- Status: not uploaded\n- Reason: attachment failed',
-      submissionType: 'crash'
-    })
-    expect(postedBody(1)).not.toHaveProperty('diagnosticBundle')
-  })
-
-  it('retries a diagnostic attachment server error as report-only JSON on the website API', async () => {
-    fetchMock.mockResolvedValueOnce(errorResponse(502)).mockResolvedValueOnce(okResponse())
-
-    await expect(submitFeedback(diagnosticSubmitArgs())).resolves.toEqual({
-      ok: true,
-      diagnosticBundleFailure: { status: 502, error: 'status 502' }
-    })
-
-    expect(fetchMock.mock.calls[1]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
-    expect(requestInit(1).headers).toEqual({ 'Content-Type': 'application/json' })
-    expect(postedBody(1)).not.toHaveProperty('diagnosticBundle')
-  })
-
-  it('retries a diagnostic attachment network error as report-only JSON on the website API', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('attachment network failed'))
-    fetchMock.mockResolvedValueOnce(okResponse())
-
-    await expect(submitFeedback(diagnosticSubmitArgs())).resolves.toEqual({
-      ok: true,
-      diagnosticBundleFailure: { status: null, error: 'attachment network failed' }
-    })
-
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[1]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
-    expect(requestInit(1).body).not.toBeInstanceOf(FormData)
-    expect(postedBody(1)).not.toHaveProperty('diagnosticBundle')
-  })
-
-  it('allows 60 seconds for a diagnostic attachment before retrying report-only JSON', async () => {
-    vi.useFakeTimers()
-    fetchMock.mockImplementationOnce((_url: string, init?: RequestInit) => {
-      return new Promise((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () => reject(new Error('runtime abort text')))
-      })
-    })
-    fetchMock.mockResolvedValueOnce(okResponse())
-    const result = submitFeedback(diagnosticSubmitArgs())
-
-    await vi.advanceTimersByTimeAsync(59_999)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    await vi.advanceTimersByTimeAsync(1)
-
-    await expect(result).resolves.toEqual({
-      ok: true,
-      diagnosticBundleFailure: { status: null, error: 'request timed out after 60 seconds' }
-    })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[1]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
-    expect(postedBody(1)).not.toHaveProperty('diagnosticBundle')
-  })
-
-  it('retries a proxy-rejected diagnostic attachment as website JSON', async () => {
-    fetchMock.mockResolvedValueOnce(errorResponse(403)).mockResolvedValueOnce(okResponse())
-
-    await expect(submitFeedback(diagnosticSubmitArgs())).resolves.toEqual({
-      ok: true,
-      diagnosticBundleFailure: { status: 403, error: 'status 403' }
-    })
-    expect(fetchMock.mock.calls[1]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
-    expect(requestInit(1).body).not.toBeInstanceOf(FormData)
-  })
-
-  it.each([401, 409, 429])(
-    'does not retry a diagnostic attachment rejected with status %s',
-    async (status) => {
-      fetchMock.mockResolvedValueOnce(errorResponse(status))
-
-      await expect(submitFeedback(diagnosticSubmitArgs())).resolves.toEqual({
-        ok: false,
-        status,
-        error: `status ${status}`
-      })
-      expect(fetchMock).toHaveBeenCalledTimes(1)
-    }
-  )
-
-  it('preserves attachment and report-only failures when the degraded retry fails', async () => {
-    fetchMock.mockRejectedValueOnce(new Error('attachment network failed'))
-    fetchMock.mockRejectedValueOnce(new Error('report-only network failed'))
-
-    await expect(submitFeedback(diagnosticSubmitArgs())).resolves.toEqual({
-      ok: false,
-      status: null,
-      error: 'report-only network failed',
-      diagnosticBundleFailure: { status: null, error: 'attachment network failed' }
-    })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('retries the website API when the primary feedback request stalls', async () => {
-    vi.useFakeTimers()
-    fetchMock.mockImplementationOnce((_url: string, init?: RequestInit) => {
-      return new Promise((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () => reject(new Error('request aborted')))
-      })
-    })
-    fetchMock.mockResolvedValueOnce(okResponse())
-
-    const result = submitFeedback({
-      feedback: 'stalled primary',
-      submitAnonymously: false,
-      githubLogin: 'trusted-user',
-      githubEmail: 'trusted@example.com'
-    })
-    await vi.advanceTimersByTimeAsync(10_000)
-
-    await expect(Promise.race([result, Promise.resolve('pending')])).resolves.toEqual({ ok: true })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      'https://www.onorca.dev/v1/feedback',
-      'https://www.onorca.dev/v1/feedback'
-    ])
-  })
-
-  it('does not retry a non-diagnostic 404', async () => {
-    fetchMock.mockResolvedValueOnce(errorResponse(404))
-
-    await expect(
-      submitFeedback({
-        feedback: 'missing feedback route',
-        submitAnonymously: true,
-        githubLogin: null,
-        githubEmail: null
-      })
-    ).resolves.toEqual({ ok: false, status: 404, error: 'status 404' })
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
-  })
-
-  it('does not retry again when the website retry stalls after a primary server error', async () => {
-    vi.useFakeTimers()
-    fetchMock.mockResolvedValueOnce(errorResponse(500))
-    fetchMock.mockImplementationOnce((_url: string, init?: RequestInit) => {
-      return new Promise((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () => reject(new Error('retry aborted')))
-      })
-    })
-
-    const result = submitFeedback({
-      feedback: 'primary 500 and retry stalled',
-      submitAnonymously: false,
-      githubLogin: 'trusted-user',
-      githubEmail: 'trusted@example.com'
-    })
-    await vi.advanceTimersByTimeAsync(10_000)
-
-    await expect(Promise.race([result, Promise.resolve('pending')])).resolves.toEqual({
-      ok: false,
-      status: null,
-      error: 'status 500; retry: request timed out after 10 seconds'
-    })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      'https://www.onorca.dev/v1/feedback',
-      'https://www.onorca.dev/v1/feedback'
-    ])
-  })
-
-  it('preserves the primary status when a same-host retry also returns a server error', async () => {
-    fetchMock.mockResolvedValueOnce(errorResponse(502)).mockResolvedValueOnce(errorResponse(503))
-
-    await expect(
-      submitFeedback({
-        feedback: 'primary and retry both server errors',
-        submitAnonymously: true,
-        githubLogin: null,
-        githubEmail: null
-      })
-    ).resolves.toEqual({
-      ok: false,
-      status: 503,
-      error: 'status 502; retry: status 503'
-    })
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('posts to the website API first so crash reports use the snippet-capable route', async () => {
-    await submitFeedback({
-      feedback: '[Crash Report]',
-      submissionType: 'crash',
-      submitAnonymously: true,
+    // Why: the renderer screens types first, so this lane only matters for a
+    // renderer invoking the channel directly — the case the handler guards.
+    const prototypeType = (await submit(null, {
+      feedback: 'images attached',
       githubLogin: null,
-      githubEmail: null
-    } as Parameters<typeof submitFeedback>[0])
+      githubEmail: null,
+      images: [{ contentType: 'constructor', data: new Uint8Array(4).fill(1) }]
+    })) as { ok: boolean; error?: string }
+    expect(prototypeType).toMatchObject({ ok: false, error: 'Unsupported image type.' })
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://www.onorca.dev/v1/feedback')
+    const malformedBytes = (await submit(null, {
+      feedback: 'images attached',
+      githubLogin: null,
+      githubEmail: null,
+      images: [{ contentType: 'image/png', data: '8388608' }]
+    })) as { ok: boolean; error?: string }
+    expect(malformedBytes).toMatchObject({ ok: false, error: 'Invalid image attachment bytes.' })
+
+    const oversizedBatch = (await submit(null, {
+      feedback: 'images attached',
+      githubLogin: null,
+      githubEmail: null,
+      images: Array.from({ length: 5 }, () => ({ contentType: 'image/png', data: '8388608' }))
+    })) as { ok: boolean; error?: string }
+    expect(oversizedBatch).toMatchObject({ ok: false, error: 'Attach 4 images or fewer.' })
+
+    expect(submitWelinkReportMock).not.toHaveBeenCalled()
   })
 
   it('forces renderer IPC submissions onto the feedback lane', async () => {
     registerFeedbackHandlers()
-    await handlers.get('feedback:submit')?.(null, {
-      feedback: 'not a crash report',
+    await handlers.get('feedback:submit')!(null, {
+      feedback: 'compromised renderer wants the crash lane',
       submissionType: 'crash',
-      submitAnonymously: false,
-      githubLogin: 'trusted-user',
+      githubLogin: null,
       githubEmail: null
     })
 
-    expect(postedBody()).toMatchObject({
-      feedback: 'not a crash report',
-      submissionType: 'feedback',
-      githubLogin: 'trusted-user',
-      githubEmail: null
-    })
+    expect(sentBody().submissionType).toBe('feedback')
   })
 
-  describe('image attachments', () => {
-    function pngImage(bytes = 8): { contentType: string; data: Uint8Array } {
-      return { contentType: 'image/png', data: new Uint8Array(bytes).fill(1) }
-    }
-
-    function imageSubmitArgs(
-      images: { contentType: string; data: Uint8Array }[]
-    ): Parameters<typeof submitFeedback>[0] {
-      return {
-        feedback: 'images attached',
-        submissionType: 'feedback',
-        githubLogin: 'someone',
-        githubEmail: null,
-        images
-      }
-    }
-
-    function jsonResponse(body: unknown): Response {
-      return Response.json(body, { status: 202 })
-    }
-
-    it('sends attached images as multipart form parts', async () => {
-      await submitFeedback(imageSubmitArgs([pngImage(), pngImage()]))
-
-      const body = requestInit().body as FormData
-      expect(body).toBeInstanceOf(FormData)
-      expect(body.getAll('feedbackImage')).toHaveLength(2)
-      expect(body.get('feedback')).toBe('images attached')
-      // Why: multipart must not lose the enrichment fields the JSON lane sends.
-      expect(body.get('submissionType')).toBe('feedback')
-      expect(body.get('appVersion')).toBe('1.2.3-test')
+  it('passes sink results and the report-only fallback text through unchanged', async () => {
+    submitWelinkReportMock.mockResolvedValue({
+      ok: true,
+      imagesDelivered: false,
+      diagnosticBundleFailure: { status: null, error: '附件上传失败' }
+    })
+    const okResult = await submitFeedback(imageSubmitArgs([pngImage()]))
+    expect(okResult).toEqual({
+      ok: true,
+      imagesDelivered: false,
+      diagnosticBundleFailure: { status: null, error: '附件上传失败' }
     })
 
-    it('keeps the JSON lane when nothing is attached', async () => {
-      await submitFeedback(imageSubmitArgs([]))
-
-      expect(requestInit().body).not.toBeInstanceOf(FormData)
-      expect(postedBody().feedback).toBe('images attached')
+    submitWelinkReportMock.mockResolvedValue({
+      ok: false,
+      status: null,
+      error: '无法访问 WeLink 内网接口(上报仅内网可达);请检查网络后重试。'
     })
-
-    it('reports partial delivery when the server could not attach the images', async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ ok: true, imagesDelivered: false }))
-
-      await expect(submitFeedback(imageSubmitArgs([pngImage()]))).resolves.toEqual({
-        ok: true,
-        imagesDelivered: false
-      })
-    })
-
-    it('accepts the production atomic-success response when it omits the image result', async () => {
-      fetchMock.mockResolvedValue(jsonResponse({ ok: true }))
-
-      await expect(submitFeedback(imageSubmitArgs([pngImage()]))).resolves.toEqual({
-        ok: true,
-        imagesDelivered: true
-      })
-    })
-
-    it('reports unconfirmed delivery for a settled non-JSON 2xx', async () => {
-      fetchMock.mockResolvedValue({
-        ok: true,
-        status: 202,
-        json: async () => {
-          throw new SyntaxError('Unexpected token')
-        }
-      } as unknown as Response)
-
-      await expect(submitFeedback(imageSubmitArgs([pngImage()]))).resolves.toEqual({
-        ok: true,
-        imagesDelivered: false
-      })
-    })
-
-    it('reports unconfirmed delivery when the response body aborts before the deadline', async () => {
-      fetchMock.mockResolvedValue({
-        ok: true,
-        status: 202,
-        json: async () => {
-          throw new TypeError('terminated')
-        }
-      } as unknown as Response)
-
-      await expect(submitFeedback(imageSubmitArgs([pngImage()]))).resolves.toEqual({
-        ok: true,
-        imagesDelivered: false
-      })
-      expect(requestInit().signal).toMatchObject({ aborted: false })
-    })
-
-    it('bounds the image-delivery response body', async () => {
-      fetchMock.mockResolvedValue(
-        new Response('x'.repeat(MAX_FEEDBACK_IMAGE_RESPONSE_BYTES + 1), { status: 202 })
-      )
-
-      await expect(submitFeedback(imageSubmitArgs([pngImage()]))).resolves.toEqual({
-        ok: true,
-        imagesDelivered: false
-      })
-    })
-
-    it('fails a stalled delivery response body at the attachment timeout', async () => {
-      vi.useFakeTimers()
-      fetchMock.mockImplementation((_url: string, init?: RequestInit) =>
-        Promise.resolve({
-          ok: true,
-          status: 202,
-          json: () =>
-            new Promise((_resolve, reject) => {
-              init?.signal?.addEventListener('abort', () => reject(new Error('body aborted')))
-            })
-        } as unknown as Response)
-      )
-
-      const result = submitFeedback(imageSubmitArgs([pngImage()]))
-      await vi.advanceTimersByTimeAsync(60_000)
-
-      await expect(result).resolves.toEqual({
-        ok: false,
-        status: null,
-        error: 'request timed out after 60 seconds'
-      })
-      expect(requestInit().signal).toMatchObject({ aborted: true })
-    })
-
-    it('rejects unsupported image types before any request is made', async () => {
-      const result = await submitFeedback(
-        imageSubmitArgs([{ contentType: 'application/pdf', data: new Uint8Array(4) }])
-      )
-
-      expect(result.ok).toBe(false)
-      expect(fetchMock).not.toHaveBeenCalled()
-    })
-
-    // Why: the renderer screens types first, so this lane only matters for a
-    // renderer invoking the channel directly — the case the handler guards.
-    it('rejects a prototype member posing as a content type over IPC', async () => {
-      registerFeedbackHandlers()
-      const result = (await handlers.get('feedback:submit')?.(null, {
-        feedback: 'images attached',
-        githubLogin: null,
-        githubEmail: null,
-        images: [{ contentType: 'constructor', data: new Uint8Array(4).fill(1) }]
-      })) as { ok: boolean; error?: string }
-
-      expect(result).toMatchObject({ ok: false, error: 'Unsupported image type.' })
-      expect(fetchMock).not.toHaveBeenCalled()
-    })
-
-    it('rejects malformed IPC bytes before typed-array normalization', async () => {
-      registerFeedbackHandlers()
-      const result = (await handlers.get('feedback:submit')?.(null, {
-        feedback: 'images attached',
-        githubLogin: null,
-        githubEmail: null,
-        images: [{ contentType: 'image/png', data: '8388608' }]
-      })) as { ok: boolean; error?: string }
-
-      expect(result).toMatchObject({ ok: false, error: 'Invalid image attachment bytes.' })
-      expect(fetchMock).not.toHaveBeenCalled()
-    })
-
-    it('rejects oversized IPC batches before normalizing their entries', async () => {
-      registerFeedbackHandlers()
-      const result = (await handlers.get('feedback:submit')?.(null, {
-        feedback: 'images attached',
-        githubLogin: null,
-        githubEmail: null,
-        images: Array.from({ length: 5 }, () => ({
-          contentType: 'image/png',
-          data: '8388608'
-        }))
-      })) as { ok: boolean; error?: string }
-
-      expect(result).toMatchObject({ ok: false, error: 'Attach 4 images or fewer.' })
-      expect(fetchMock).not.toHaveBeenCalled()
-    })
-
-    it('rejects more images than the supported count', async () => {
-      const result = await submitFeedback(
-        imageSubmitArgs(Array.from({ length: 5 }, () => pngImage()))
-      )
-
-      expect(result.ok).toBe(false)
-      expect(fetchMock).not.toHaveBeenCalled()
-    })
-
-    it('does not fail a crash report over images it was never going to send', async () => {
-      // Why: the crash lane discards images, so validating them there would
-      // abort a crash report the user needs delivered.
-      await submitFeedback({
-        ...diagnosticSubmitArgs(),
-        images: Array.from({ length: 9 }, () => ({
-          contentType: 'application/pdf',
-          data: new Uint8Array(0)
-        }))
-      } as Parameters<typeof submitFeedback>[0])
-
-      expect(fetchMock).toHaveBeenCalledTimes(1)
-      const body = requestInit().body as FormData
-      expect(body.getAll('feedbackImage')).toHaveLength(0)
-      expect(body.get('submissionType')).toBe('crash')
-    })
-
-    it('drops images from crash submissions', async () => {
-      await submitFeedback({
-        ...diagnosticSubmitArgs(),
-        images: [pngImage()]
-      } as Parameters<typeof submitFeedback>[0])
-
-      const body = requestInit().body as FormData
-      expect(body.getAll('feedbackImage')).toHaveLength(0)
-      expect(body.get('diagnosticBundleSubmissionId')).toBe('bundleabcdefghijklmnop')
-    })
+    const failed = await submitFeedback(diagnosticSubmitArgs())
+    expect(failed).toMatchObject({ ok: false, status: null })
+    expect((failed as { error: string }).error).toContain('内网')
+    // The crash lane's bundle-less retry text travels to the sink verbatim.
+    expect(submitWelinkReportMock.mock.calls[1][1]).toBe(
+      '[Crash Report]\n\nDiagnostic log:\n- Status: not uploaded\n- Reason: attachment failed'
+    )
   })
 })

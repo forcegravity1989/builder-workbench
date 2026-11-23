@@ -4,6 +4,7 @@ import {
   toSshExecutionHostId,
   type ExecutionHostId
 } from '../../../shared/execution-host'
+import type { ConfirmedRepoRegistration } from '../../../shared/workbench/repo-removal'
 import { composeWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 
 /**
@@ -33,6 +34,7 @@ export async function cleanupEphemeralVmRuntimesForDeleted(args: {
   // Raw runtime-owned SSH target ids (e.g. a removed repo's connectionId) whose
   // backing runtime should also be torn down, even if no workspace id matched.
   runtimeOwnedSshTargetIds?: readonly string[]
+  expectedRegistration?: ConfirmedRepoRegistration
 }): Promise<EphemeralVmCleanupSummary> {
   const destroyedSshTargetIds = new Set<string>()
   const retainedSshTargetIds = new Set<string>()
@@ -70,7 +72,10 @@ export async function cleanupEphemeralVmRuntimesForDeleted(args: {
     )
     for (const runtime of matchingRuntimes) {
       try {
-        const cleaned = await window.api.ephemeralVm.cleanup({ runtimeId: runtime.id })
+        const cleaned = await window.api.ephemeralVm.cleanup({
+          runtimeId: runtime.id,
+          ...(args.expectedRegistration ? { expectedRegistration: args.expectedRegistration } : {})
+        })
         if (runtime.sshTargetId) {
           const targetIds = cleaned.sshTargetId ? retainedSshTargetIds : destroyedSshTargetIds
           targetIds.add(runtime.sshTargetId)

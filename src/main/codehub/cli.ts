@@ -2,7 +2,7 @@ import { commandExecFileAsync } from '../git/command-runner/command-exec-file'
 import { extractExecError, isMissingCommandBinaryError } from '../git/exec-error'
 import { withCodeHubSpan } from '../observability/instrumentation'
 
-export type CodeHubExecOptions = { cwd?: string; wslDistro?: string }
+export type CodeHubExecOptions = { cwd?: string; wslDistro?: string; stdin?: string }
 
 export async function runCodeHubCli(
   args: readonly string[],

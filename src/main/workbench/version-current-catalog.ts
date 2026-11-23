@@ -8,6 +8,7 @@ import type {
   VersionTreePlanCatalog
 } from '../../shared/workbench/version-history'
 import { HistorySourceError } from './version-history-snapshot'
+import { versionMaterialAtGitPath } from './version-history-log'
 
 export async function withVersionTreeAlignment(
   scope: MetricScope,
@@ -54,22 +55,22 @@ export async function readCurrentVersionCatalog(
   const records: VersionHistorySource[] = []
   const problems: VersionHistoryProblem[] = []
   for (const file of files.toString('utf8').split('\0')) {
-    const path = /^\.bw\/planning\/([^/]+)\/(data|acceptance)\.json$/.exec(file)
-    if (!path) {
+    const material = versionMaterialAtGitPath(file)
+    if (!material) {
       continue
     }
-    const workflow = path[2] === 'data' ? 'plan' : 'acceptance'
-    const source = { version: path[1], sourceCommit: commit, workflow, committedAt } as const
-    if (!MaterialVersion.safeParse(path[1]).success) {
+    const { version, workflow } = material
+    const source = { version, sourceCommit: commit, workflow, committedAt }
+    if (!MaterialVersion.safeParse(version).success) {
       problems.push({
         ...source,
         code: 'invalid-version',
-        message: `版本目录 ${path[1]} 不符合材料约定`
+        message: `版本目录 ${version} 不符合材料约定`
       })
       continue
     }
     try {
-      const snapshot = await read(scope, commit, path[1], workflow)
+      const snapshot = await read(scope, commit, version, workflow)
       records.push({ ...source, cycleId: snapshot.document.cycleId, revision: snapshot.revision })
     } catch (error) {
       problems.push({

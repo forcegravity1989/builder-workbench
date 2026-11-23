@@ -1,6 +1,10 @@
 import type { AgentHookSource } from '../../shared/agent-hook-relay'
 import { ORCA_HOOK_RAW_JSON_TRANSPORT } from '../../shared/agent-hook-types'
 
+export function posixCurlCommand(curlCommand = 'curl'): string {
+  return `LC_ALL= LC_NUMERIC=C ${curlCommand}`
+}
+
 export function buildPosixAgentHookPostCommand(
   source: AgentHookSource,
   options: { curlCommand?: string; indent?: string } = {}

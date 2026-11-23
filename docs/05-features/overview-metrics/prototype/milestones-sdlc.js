@@ -1,173 +1,158 @@
-import * as core from '../../../../src/shared/workbench/milestone-sdlc.ts'
-import { settleMilestoneWindows } from '../../../../src/shared/workbench/milestone-window-order.ts'
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
-import { editMilestoneVersionName } from '../../../../src/shared/workbench/milestone-calendar.ts'
-// Prototype-only civil-day coordinates. Actual evidence retains its original timestamp.
+// Review-only date planning. Formal version membership remains in version plans.
 export const dayMs = 86400000
 export const day = (date) => Date.parse(`${date}T00:00:00Z`) / dayMs
-export const dateOf = (value) => new Date(value * dayMs).toISOString().slice(0, 10)
-export const phases = ['Plan', 'Design', 'Build', 'Test', 'Deploy', 'Maintain']
-export const actualDay = (timestamp) => (Date.parse(timestamp) + 8 * 3600000) / dayMs
-export const actualAsOf = '2026-11-11T15:30:00+08:00'
-export function isRest(value) {
-  return !workCalendarDay(dateOf(value)).working
-}
-export function defaultStages(version, maintain = false) {
-  if (maintain) {
-    return [{ phase: 'Maintain', start: day(version.start), end: day(version.end) + 1 }]
-  }
-  let cursor = day(version.start)
-  return [2, 4, 1, 2, 1].map((slots, index) => {
-    while (isRest(Math.floor(cursor))) {
-      cursor = Math.floor(cursor) + 1
-    }
-    const start = cursor
-    for (let slot = 0; slot < slots; slot++) {
-      while (isRest(Math.floor(cursor))) {
-        cursor = Math.floor(cursor) + 1
-      }
-      cursor += 0.5
-    }
-    return { phase: phases[index], start, end: cursor }
-  })
-}
-
-function toDraft(plan) {
-  return {
-    versions: plan.versions.map((v) => ({
-      version: v.name,
-      cycleId: v.id,
-      timeWindow: { start: v.start, end: v.end }
-    })),
-    material: {
-      schema_version: 2,
-      months: plan.months,
-      features: plan.features.map((f) => ({
-        ...f,
-        deliveries: f.deliveries.map((d, i) => ({
-          id: `${f.id}-${i}`,
-          version: {
-            version: plan.versions.find((v) => v.id === d.versionId).name,
-            cycleId: d.versionId
-          },
-          goalSlot: d.goalSlot,
-          goalId: d.goalId,
-          stages: d.stages.map((s) => ({
-            ...s,
-            start: core.plannedTime(s.start),
-            end: core.plannedTime(s.end)
-          }))
-        }))
-      }))
-    }
-  }
-}
-function fromDraft(plan, draft) {
-  return {
-    ...plan,
-    versions: draft.versions.map((v) => ({
-      ...plan.versions.find((old) => old.id === v.cycleId),
-      name: v.version,
-      start: v.timeWindow.start,
-      end: v.timeWindow.end
-    })),
-    features: draft.material.features.map((f) => ({
-      ...plan.features.find((old) => old.id === f.id),
-      deliveries: f.deliveries.map((d, i) => ({
-        ...plan.features.find((old) => old.id === f.id).deliveries[i],
-        versionId: d.version.cycleId,
-        goalId: d.goalId,
-        goalSlot: d.goalSlot,
-        stages: d.stages.map((s) => ({
-          ...s,
-          start: core.plannedDay(s.start),
-          end: core.plannedDay(s.end)
-        }))
-      }))
-    }))
-  }
-}
-export function fitVersions(plan, ids) {
-  return fromDraft(
-    plan,
-    core.fitMilestoneVersions(
-      toDraft(plan),
-      new Set(ids.filter((id) => !plan.versions.find((v) => v.id === id)?.started))
-    )
-  )
-}
+export const dateOf = (value) => new Date(Math.round(value * dayMs)).toISOString().slice(0, 10)
+export const phases = ['Build', 'Maintain']
+export const isRest = (value) => !workCalendarDay(dateOf(value)).working
+export const defaultStages = (version, maintain = false) => [
+  { phase: maintain ? 'Maintain' : 'Build', start: day(version.start), end: day(version.end) + 1 }
+]
 export function editVersionName(plan, id, name, previousName, submitted) {
-  const result = editMilestoneVersionName(
-    toDraft(plan),
-    id,
-    name,
-    previousName === undefined
-      ? undefined
-      : { previousName, registered: toDraft(submitted).versions }
-  )
-  return { plan: fromDraft(plan, result.draft), problem: result.problem }
+  const version = plan.versions.find((v) => v.id === id)
+  if (!version) {
+    return { plan }
+  }
+  if (version.hasExecution) {
+    return { plan, problem: '已建立执行记录的版本保留名称，排期仍可调整' }
+  }
+  if (previousName !== undefined && !name.trim()) {
+    if (submitted.versions.some((v) => v.id === id)) {
+      return {
+        plan: {
+          ...plan,
+          versions: plan.versions.map((v) => (v.id === id ? { ...v, name: previousName } : v))
+        },
+        problem: '该版本已提交，保留版本名称'
+      }
+    }
+    return { plan: { ...plan, versions: plan.versions.filter((v) => v.id !== id) } }
+  }
+  return {
+    plan: { ...plan, versions: plan.versions.map((v) => (v.id === id ? { ...v, name } : v)) }
+  }
 }
 export function laneConflict(plan) {
-  return core.milestoneLaneConflict(toDraft(plan))
+  return plan.features.find((f) =>
+    f.deliveries
+      .toSorted((a, b) => a.stages[0].start - b.stages[0].start)
+      .some((d, i, all) => {
+        const previous = all[i - 1]
+        return previous && d.stages[0].start < previous.stages.at(-1).end - 1e-8
+      })
+  )?.id
 }
 export function settleWindows(before, candidate) {
-  const result = settleMilestoneWindows(
-    toDraft(before),
-    toDraft(candidate),
-    new Set(before.versions.filter((v) => v.started).map((v) => v.id))
-  )
-  return { plan: fromDraft(candidate, result.draft), conflict: result.conflict }
+  const conflict = scheduleProblem(candidate, before)
+  return { plan: conflict ? before : candidate, conflict }
 }
 export function adjustVersion(plan, id, mode, delta) {
-  if (plan.versions.find((v) => v.id === id)?.started || mode !== 'move') {
+  const version = plan.versions.find((v) => v.id === id)
+  if (!version || !Number.isInteger(delta)) {
     return plan
   }
-  return fromDraft(plan, core.adjustMilestoneVersion(toDraft(plan), id, delta))
-}
-export function adjustDelivery(plan, featureId, deliveryIndex, mode, stageIndex, delta, targetId) {
-  const delivery = plan.features.find((f) => f.id === featureId)?.deliveries[deliveryIndex]
-  if (
-    !delivery?.stages.length ||
-    plan.versions.find((v) => v.id === delivery.versionId)?.started ||
-    (targetId && plan.versions.find((v) => v.id === targetId)?.started)
-  ) {
+  const start = day(version.start) + (mode !== 'end' ? delta : 0)
+  const end = day(version.end) + (mode !== 'start' ? delta : 0)
+  if (start > end) {
     return plan
   }
-  const draft = toDraft(plan)
-  return fromDraft(
-    plan,
-    core.adjustMilestoneDelivery(
-      draft,
-      featureId,
-      `${featureId}-${deliveryIndex}`,
-      mode,
-      stageIndex,
-      delta,
-      draft.versions.find((v) => v.cycleId === targetId)
+  return {
+    ...plan,
+    versions: plan.versions.map((v) =>
+      v.id === id ? { ...v, start: dateOf(start), end: dateOf(end) } : v
     )
-  )
+  }
 }
-export function scheduleProblem(plan) {
-  for (const feature of plan.features) {
-    for (const delivery of feature.deliveries) {
-      const version = plan.versions.find((v) => v.id === delivery.versionId)
-      if (!version) {
-        return `${feature.title} 的关联版本不存在`
+export function adjustDelivery(plan, featureId, index, mode, delta) {
+  const feature = plan.features.find((f) => f.id === featureId)
+  const delivery = feature?.deliveries[index]
+  if (!delivery?.stages.length || !Number.isInteger(delta * 2)) {
+    return plan
+  }
+  const first = delivery.stages[0],
+    last = delivery.stages.at(-1)
+  const start = first.start + (mode !== 'end' ? delta : 0)
+  const end = last.end + (mode !== 'start' ? delta : 0)
+  if (end - start < 0.5) {
+    return plan
+  }
+  const deliveries = feature.deliveries.map((d, i) =>
+    i === index ? { ...d, stages: [{ phase: first.phase, start, end }] } : d
+  )
+  // Extending Build carries following maintenance forward as one undoable edit.
+  if (first.phase === 'Build' && end > last.end) {
+    let cursor = end
+    const later = feature.deliveries
+      .filter(
+        (d) =>
+          d.id !== delivery.id &&
+          d.stages[0].phase === 'Maintain' &&
+          d.stages[0].start >= first.start
+      )
+      .toSorted((a, b) => a.stages[0].start - b.stages[0].start)
+    for (const next of later) {
+      if (next.stages.at(-1).end <= start) {
+        continue
       }
-      if (
-        !version.started &&
-        delivery.stages.length &&
-        (delivery.stages[0].start < day(version.start) ||
-          delivery.stages.at(-1).end > day(version.end) + 1)
-      ) {
-        return `${feature.title || '新特性'} 的计划超出 ${version.name}：请调整阶段或版本边界`
+      const offset = cursor - next.stages[0].start
+      if (offset <= 0) {
+        break
       }
-    }
-    const first = feature.deliveries.find((d) => d.stages[0]?.phase === 'Plan')
-    const maintain = feature.deliveries.find((d) => d.stages[0]?.phase === 'Maintain')
-    if (first && maintain && maintain.stages[0].start < first.stages.at(-1).end) {
-      return `${feature.title} 的 Maintain 不能早于首版计划结束`
+      const shifted = {
+        ...next,
+        stages: next.stages.map((s) => ({ ...s, start: s.start + offset, end: s.end + offset }))
+      }
+      deliveries[deliveries.findIndex((d) => d.id === next.id)] = shifted
+      cursor = shifted.stages.at(-1).end
     }
   }
-  return ''
+  return {
+    ...plan,
+    features: plan.features.map((f) => (f.id === featureId ? { ...f, deliveries } : f))
+  }
 }
+export function scheduleProblem(plan, before = { versions: [] }) {
+  const prior = new Map(before.versions.map((v) => [v.id, v]))
+  for (let i = 0; i < plan.versions.length; i++) {
+    for (const b of plan.versions.slice(i + 1)) {
+      const a = plan.versions[i]
+      if (a.start <= b.end && b.start <= a.end) {
+        const oldA = prior.get(a.id),
+          oldB = prior.get(b.id)
+        const start = [a.start, b.start].sort().at(-1),
+          end = [a.end, b.end].sort()[0]
+        if (
+          oldA &&
+          oldB &&
+          start >= oldA.start &&
+          start >= oldB.start &&
+          end <= oldA.end &&
+          end <= oldB.end
+        ) {
+          continue
+        }
+        return '版本日期重叠，请调整相关版本'
+      }
+    }
+  }
+  for (const feature of plan.features) {
+    if (
+      feature.deliveries.some(
+        (d) =>
+          !d.stages.length ||
+          d.stages.some(
+            (s) =>
+              !phases.includes(s.phase) ||
+              !Number.isFinite(s.start) ||
+              !Number.isFinite(s.end) ||
+              s.end - s.start < 0.5
+          )
+      )
+    ) {
+      return `${feature.title || '新特性'}的安排至少保留半天`
+    }
+  }
+  return laneConflict(plan) ? '同一特性的安排不能重叠，调整开始或结束日期' : ''
+}
+export const latestFeatureEnd = (feature) =>
+  Math.max(-Infinity, ...feature.deliveries.flatMap((d) => d.stages.map((s) => s.end)))

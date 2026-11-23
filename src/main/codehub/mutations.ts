@@ -31,13 +31,18 @@ export async function createCodeHubIssue(args: {
   ]
   const description = args.description?.trim()
   if (description) {
-    flags.push('--description', description)
+    flags.push('--body-file', '-')
   }
   const assignee = args.assignee?.trim()
   if (assignee) {
     flags.push('--assignee', assignee)
   }
-  const parsed = parseJson(await runCodeHubCli(flags, args.execOptions))
+  const parsed = parseJson(
+    await runCodeHubCli(
+      flags,
+      description ? { ...args.execOptions, stdin: description } : args.execOptions
+    )
+  )
   const record = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
   const iid = Number(record.iid ?? record.number)
   const url = record.web_url ?? record.html_url ?? record.url

@@ -1,10 +1,11 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { MessageSquarePlus } from 'lucide-react'
 import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
-import { toast } from 'sonner'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
+import { useVersionMembership } from '../version-cycle/use-version-membership'
 import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { openArchivePrPage } from '../version-cycle/open-archive-pr'
-import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
+import { notifyTrunkUpdate } from '../version-cycle/trunk-update-port'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import { useReleaseStatus } from '../version-cycle/use-release-status'
 import { togglePlanChat } from '../plan-column-resize'
@@ -28,6 +29,7 @@ import { AcceptanceMinutesSection } from './AcceptanceMinutesSection'
 import { AcceptancePrepareSection } from './AcceptancePrepareSection'
 import { openAcceptanceMaterial } from './open-acceptance-material'
 import { usePlanSendAction } from '../plan-send-menu'
+import { resolveWorkbenchPromptAssets } from '../version-cycle/cycle-prompt'
 import { useAcceptanceBoard } from './use-acceptance-board'
 import { useAcceptanceJourneySpy } from './use-acceptance-journey-spy'
 import './acceptance.css'
@@ -43,13 +45,14 @@ export function AcceptanceBoardContent({
 }: AcceptanceBoardProps & { recoveryKey: string }) {
   const startedKey = cycleStartedViewKey({
     ...context,
-    version: context.version ?? context.boundVersion
+    version: context.version
   })
   const [started, setStarted] = useState(() => hasCycleStarted(startedKey))
   const board = useAcceptanceBoard({ context, history, recoveryKey, started })
   // Non-null: the outer component already refused to render without a workspace.
   const { scope, worktreeId } = board
   const { document, plan } = board
+  const membership = useVersionMembership(scope, plan?.document)
   const scopeKey = scope ? cycleScopeKey(scope) : ''
   // Stable board identity for annotation lifetime: context.version is the native
   // selection and does not flicker through re-select transients (draft null).
@@ -68,10 +71,14 @@ export function AcceptanceBoardContent({
   // on surfaces where the button does not render (empty board, no fixed plan).
   useAnnotationModeShortcut(Boolean(plan && document), annotations.toggleMode)
   const [notice, setNotice] = useState('')
-  // 注入动作走共用发送弹窗(与计划屏同一件);assistant 只改用户可见文案里的 AI 角色名。
-  // 取代原 use-acceptance-action-send:那个钩子只开侧边栏 target mode、从不渲染选择器,
-  // 点击处什么都不弹——该 worktree 无可发会话时连高亮都不触发,是纯静默 no-op。
-  const sendAction = usePlanSendAction(worktreeId, setNotice, '验收助手')
+  const sendAction = usePlanSendAction(worktreeId, setNotice, 'acceptance', '验收助手')
+  const prepareReportPrompt = async () =>
+    (
+      await resolveWorkbenchPromptAssets(
+        { ...scope, worktreeId, version: board.version, workflow: 'version-acceptance' },
+        `聚合 ${board.version} 的验收证据报告`
+      )
+    ).prompt
   const chatCollapsed = usePlanChatCollapsed()
   const spy = useAcceptanceJourneySpy()
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
@@ -79,25 +86,17 @@ export function AcceptanceBoardContent({
   const [openingPr, setOpeningPr] = useState(false)
   const { pruneMissing } = annotations
 
-  const goalsKey = JSON.stringify(plan?.document.goals.map((goal) => goal.goalId) ?? [])
-  const tasksKey = JSON.stringify(
-    plan?.document.tasks.map((task) => [task.goalId, task.number]) ?? []
-  )
   useEffect(() => {
     if (!plan) {
       return
     }
     const goalIds = new Set(plan.document.goals.map((goal) => goal.goalId))
-    const issueKeys = new Set(
-      plan.document.tasks
-        .filter((task) => task.goalId)
-        .map((task) => `${task.goalId}:${task.number}`)
-    )
+    const issueKeys = new Set(membership.references?.map((task) => `${task.goalId}:${task.number}`))
     pruneMissing(
       (goalId) => goalIds.has(goalId),
-      (goalId, number) => issueKeys.has(`${goalId}:${number}`)
+      (goalId, number) => !membership.references || issueKeys.has(`${goalId}:${number}`)
     )
-  }, [goalsKey, tasksKey, plan, pruneMissing])
+  }, [plan, pruneMissing, membership.references])
 
   const act = async (operation: () => Promise<unknown>) => {
     setNotice('')
@@ -167,7 +166,7 @@ export function AcceptanceBoardContent({
   const { saveTaskSnapshot, setError } = board
   const handleSnapshot = useCallback(
     (reads: CycleTaskRead[]) => {
-      if (document) {
+      if (document && membership.references && !membership.busy && !board.readOnly) {
         try {
           saveTaskSnapshot(document, reads)
         } catch (reason) {
@@ -177,8 +176,13 @@ export function AcceptanceBoardContent({
     },
     // saveTaskSnapshot re-reads the live controller value; the document identity
     // is what makes a stale snapshot refuse to overwrite newer material.
-    [document, saveTaskSnapshot, setError]
+    [document, saveTaskSnapshot, setError, membership.references, membership.busy, board.readOnly]
   )
+  useEffect(() => {
+    if (membership.references?.length === 0) {
+      handleSnapshot([])
+    }
+  }, [membership.references, handleSnapshot])
   const openTask = (task: CycleTaskSnapshot) =>
     context.taskPort.openDetail(task, {
       ...scope,
@@ -191,23 +195,15 @@ export function AcceptanceBoardContent({
       draftKey: recoveryKey,
       goalId: task.reference.goalId
     })
-  // Only acceptance-side problems make a version unreadable *here*. The catalog
-  // also carries plan-side problems, and blaming those on the acceptance dropdown
-  // is what made a perfectly readable version look broken.
-  const unreadable = board.materialProblems
-    .filter((item) => item.workflow === 'acceptance')
-    .map((item) => item.version)
   const state = !document
     ? ''
     : board.draft?.error
       ? '保存待处理'
-      : board.busy
-        ? '读取中…'
-        : board.draft?.dirty
-          ? board.saving
-            ? '正在保存…'
-            : '正在保存修改…'
-          : '已保存'
+      : board.draft?.dirty
+        ? board.saving
+          ? '正在保存…'
+          : '正在保存修改…'
+        : '已保存'
   const popover = annotations.popover
 
   if (!document && !started) {
@@ -216,7 +212,6 @@ export function AcceptanceBoardContent({
         board={board}
         context={context}
         entry={entry}
-        unreadable={unreadable}
         state={state}
         chatCollapsed={chatCollapsed}
         onStarted={() => {
@@ -226,7 +221,7 @@ export function AcceptanceBoardContent({
         onSessionToggle={onSessionToggle}
         onRefresh={() =>
           void act(async () => {
-            toast.message(trunkUpdateNotice(await context.updateCode()))
+            notifyTrunkUpdate(await context.updateCode())
             await board.refreshData()
             await prStatus.refresh()
           })
@@ -238,19 +233,15 @@ export function AcceptanceBoardContent({
   return (
     <main className={`acc-board${annotations.annotating ? ' annotating' : ''}`} lang="zh">
       <AcceptanceHeader
-        currentVersion={board.version}
-        versions={[...new Set([...board.versions, ...(board.version ? [board.version] : [])])]}
-        unreadable={unreadable}
-        boundVersion={context.boundVersion}
-        disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
+        boundVersion={context.version}
+        disabled={!context.materialPort || Boolean(context.syncing)}
         state={state}
         sessionCollapsed={chatCollapsed}
         onSessionToggle={onSessionToggle}
-        onSelect={(version) => void board.loadVersion(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
-            toast.message(trunkUpdateNotice(await context.updateCode()))
+            notifyTrunkUpdate(await context.updateCode())
             await board.refreshData()
             await prStatus.refresh()
           })
@@ -288,13 +279,16 @@ export function AcceptanceBoardContent({
         recoveryText={board.recoveryText}
         draft={board.draft}
         controller={board.controller}
-        busy={board.busy}
         setError={board.setError}
         onRetrySave={() => void board.retrySave()}
         onRemoteDeleted={board.useRemoteDeletion}
       />
       <div className="acc-body">
-        <AcceptanceJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
+        <AcceptanceJourneyNav
+          active={spy.activeSection}
+          readyToReview={Boolean(plan && document) && !board.readOnly}
+          onNavigate={spy.navigate}
+        />
         {annotations.annotating && (
           <div className="acc-annotate-banner" role="status">
             批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见
@@ -318,6 +312,7 @@ export function AcceptanceBoardContent({
             scope={board.metricScope}
             disabled={board.readOnly}
             onSendAction={sendAction}
+            prepareReportPrompt={prepareReportPrompt}
             onOpenMaterial={openMaterial}
             sectionRef={spy.sectionRefs.prepare}
           />
@@ -329,7 +324,8 @@ export function AcceptanceBoardContent({
               scope={board.scope}
               taskPort={context.taskPort}
               onGoalChange={board.editGoal}
-              onTask={openTask}
+              onTask={(task) => act(() => openTask(task))}
+              membership={membership}
               onSnapshot={handleSnapshot}
               numbersFor={annotations.numbersFor}
               onOpenAnnotationPanel={annotations.openPanel}
@@ -387,6 +383,7 @@ export function AcceptanceBoardContent({
             annotating={annotations.annotating}
             worktreeId={worktreeId}
             assistant="验收助手"
+            screen="acceptance"
             onClose={annotations.closePanel}
             onUpdate={annotations.update}
             onRemove={annotations.remove}
@@ -400,7 +397,7 @@ export function AcceptanceBoardContent({
                 formatBoardAnnotationsAsMarkdown(annotations.annotations)
               )
             }
-            onCopyError={(message) => board.setError(`复制板面批注失败：${message}`)}
+            onCopyError={(error) => notifyWorkbenchError('复制板面批注失败', error, '可重新复制。')}
             onSent={() => {
               // onPromptDelivered only fires on a delivered send, so clearing here
               // never drops notes on failure/Esc (same option-A decision as the

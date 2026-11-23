@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useMountedRef } from '@/hooks/useMountedRef'
-import type { RuntimeAccessGrant } from '../../../../shared/runtime-access-grants'
+import type {
+  RuntimeAccessAuditEntry,
+  RuntimeAccessAuditResult,
+  RuntimeAccessGrant
+} from '../../../../shared/runtime-access-grants'
 import { useRuntimePairingLinkRecall } from './use-runtime-pairing-link-recall'
 import { Label } from '../ui/label'
 import { RuntimeAccessGrantList } from './RuntimeAccessGrantList'
+import { RuntimeAccessAuditLog } from './RuntimeAccessAuditLog'
 import { translate } from '@/i18n/i18n'
 import { RuntimePairingGeneratorForm } from './RuntimePairingGeneratorForm'
 import {
@@ -20,7 +25,9 @@ import {
 export function RuntimePairingUrlGenerator({
   framed = true,
   showHeader = true,
-  showGeneratorForm = true
+  showGeneratorForm = true,
+  accessMode,
+  teamBinding
 }: RuntimePairingUrlGeneratorProps): React.JSX.Element {
   const [networkInterfaces, setNetworkInterfaces] = useState<{ name: string; address: string }[]>(
     []
@@ -45,6 +52,13 @@ export function RuntimePairingUrlGenerator({
   const [isLoadingAccessGrants, setIsLoadingAccessGrants] = useState(false)
   const [refreshingNetworkInterfaces, setRefreshingNetworkInterfaces] = useState(false)
   const [revokingGrantId, setRevokingGrantId] = useState<string | null>(null)
+  const [grantingFullAccess, setGrantingFullAccess] = useState(false)
+  const [runtimeAccessAudit, setRuntimeAccessAudit] = useState<RuntimeAccessAuditEntry[]>([])
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false)
+  const [auditResult, setAuditResult] = useState<RuntimeAccessAuditResult | 'all'>('all')
+  const [auditAction, setAuditAction] = useState('all')
+  const [auditSinceDays, setAuditSinceDays] = useState<1 | 7 | 14>(14)
+  const [auditSearch, setAuditSearch] = useState('')
   const [copiedTarget, setCopiedTarget] = useState<'web' | 'pairing' | null>(null)
   const [isGeneratingPairing, setIsGeneratingPairing] = useState(false)
   const networkInterfaceLoadIdRef = useRef(0)
@@ -106,6 +120,70 @@ export function RuntimePairingUrlGenerator({
     },
     [mountedRef]
   )
+
+  const loadRuntimeAccessAudit = useCallback(async (): Promise<void> => {
+    if (!window.api.mobile.listRuntimeAccessAudit) {
+      return
+    }
+    setIsLoadingAudit(true)
+    try {
+      const result = await window.api.mobile.listRuntimeAccessAudit({
+        action: auditAction === 'all' ? undefined : auditAction,
+        result: auditResult === 'all' ? undefined : auditResult,
+        search: auditSearch.trim() || undefined,
+        since: Date.now() - auditSinceDays * 24 * 60 * 60 * 1000
+      })
+      if (mountedRef.current) {
+        setRuntimeAccessAudit(result.entries)
+      }
+    } catch (error) {
+      if (mountedRef.current) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.failedToLoadAccessLog',
+                'Failed to load access log.'
+              )
+        )
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsLoadingAudit(false)
+      }
+    }
+  }, [auditAction, auditResult, auditSearch, auditSinceDays, mountedRef])
+
+  const clearRuntimeAccessAudit = useCallback(async (): Promise<void> => {
+    if (
+      runtimeAccessAudit.length === 0 ||
+      !window.confirm(
+        translate(
+          'auto.components.settings.RuntimePairingUrlGenerator.clearConfirm',
+          'Clear this host\'s shared access log?'
+        )
+      )
+    ) {
+      return
+    }
+    try {
+      const result = await window.api.mobile.clearRuntimeAccessAudit()
+      if (result.cleared && mountedRef.current) {
+        setRuntimeAccessAudit([])
+      }
+    } catch (error) {
+      if (mountedRef.current) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.clearFailed',
+                'Failed to clear shared access log.'
+              )
+        )
+      }
+    }
+  }, [mountedRef, runtimeAccessAudit.length])
 
   const loadNetworkInterfaces = useCallback(
     async (options: { showToastOnError?: boolean } = {}): Promise<void> => {
@@ -169,6 +247,10 @@ export function RuntimePairingUrlGenerator({
     }
   }, [loadRuntimeAccessGrants])
 
+  useEffect(() => {
+    void loadRuntimeAccessAudit()
+  }, [loadRuntimeAccessAudit])
+
   const generateRuntimePairingUrl = async (): Promise<void> => {
     linkEditRevisionRef.current += 1
     const address = selectedAddress.trim()
@@ -184,7 +266,9 @@ export function RuntimePairingUrlGenerator({
         rotate: true,
         // Why: main gates the one-way network widen on this, so the declared choice must travel with the
         // address — the address alone cannot tell "This computer only" from a loopback tunnel front-end.
-        reach: runtimePairingReachForIntent(intent)
+        reach: runtimePairingReachForIntent(intent),
+        ...(accessMode ? { accessMode } : undefined),
+        ...(teamBinding ? { teamBinding } : undefined)
       })
       if (!result.available) {
         if (mountedRef.current) {
@@ -289,6 +373,50 @@ export function RuntimePairingUrlGenerator({
     } finally {
       if (mountedRef.current) {
         setRevokingGrantId(null)
+      }
+    }
+  }
+
+  const grantRuntimeFullAccess = async (grants: RuntimeAccessGrant[]): Promise<boolean> => {
+    if (grants.length === 0) {
+      return false
+    }
+    setGrantingFullAccess(true)
+    try {
+      const result = await window.api.mobile.grantRuntimeFullAccess({
+        deviceIds: grants.map((grant) => grant.deviceId)
+      })
+      await loadRuntimeAccessGrants()
+      if (mountedRef.current) {
+        toast.success(
+          result.granted.length === 1
+            ? translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGranted',
+                'Full access granted.'
+              )
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantedCount',
+                'Full access granted to {{value0}} devices.',
+                { value0: result.granted.length }
+              )
+        )
+      }
+      return result.granted.length === grants.length
+    } catch (error) {
+      if (mountedRef.current) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantFailed',
+                'Failed to grant full access.'
+              )
+        )
+      }
+      return false
+    } finally {
+      if (mountedRef.current) {
+        setGrantingFullAccess(false)
       }
     }
   }
@@ -408,8 +536,24 @@ export function RuntimePairingUrlGenerator({
         currentGrantId={runtimePairingDeviceId}
         isLoading={isLoadingAccessGrants}
         revokingGrantId={revokingGrantId}
+        grantingFullAccess={grantingFullAccess}
         onRefresh={() => void loadRuntimeAccessGrants({ showToastOnError: true })}
         onRevoke={(grant) => void revokeRuntimeAccess(grant)}
+        onGrantFullAccess={grantRuntimeFullAccess}
+      />
+      <RuntimeAccessAuditLog
+        entries={runtimeAccessAudit}
+        isLoading={isLoadingAudit}
+        action={auditAction}
+        result={auditResult}
+        sinceDays={auditSinceDays}
+        search={auditSearch}
+        onActionChange={setAuditAction}
+        onResultChange={setAuditResult}
+        onSinceDaysChange={setAuditSinceDays}
+        onSearchChange={setAuditSearch}
+        onRefresh={() => void loadRuntimeAccessAudit()}
+        onClear={() => void clearRuntimeAccessAudit()}
       />
     </div>
   )

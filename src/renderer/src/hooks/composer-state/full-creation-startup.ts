@@ -3,6 +3,7 @@ import type { AgentStartupPlan } from '@/lib/tui-agent-startup'
 import type { WorktreeStartupPayload } from '@/lib/worktree-startup-payload'
 
 export function buildFullCreationStartup(args: {
+  agentLaunchOwner?: WorktreeStartupPayload['agentLaunchOwner']
   startupPlan: AgentStartupPlan | null
   backendSpawnedStartup: boolean
   agent: TuiAgent
@@ -14,6 +15,7 @@ export function buildFullCreationStartup(args: {
     return undefined
   }
   return {
+    ...(args.agentLaunchOwner ? { agentLaunchOwner: args.agentLaunchOwner } : {}),
     command: args.startupPlan.launchCommand,
     ...(args.startupPlan.env ? { env: args.startupPlan.env } : {}),
     launchConfig: args.startupPlan.launchConfig,

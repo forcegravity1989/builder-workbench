@@ -1,19 +1,24 @@
-import { getGitHubSourceRuntimeTarget } from '@/lib/github-source-runtime-context'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import {
+  getRepoTaskSourceContext,
+  getTaskPageRepoSourceContext
+} from '@/components/task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
-import {
-  getTaskSourceCacheScope,
-  type TaskSourceContext
-} from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/task-source-context'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import { createSnapshotCache } from './snapshot-cache'
 import type { TaskPortDeps } from './task-port'
-import { resolveReferenceRepo, viewCodeHubTaskByIid } from './task-reference-repo'
-import type { CycleScope, CycleTaskRead, CycleTaskReference } from './version-cycle/ports'
+import {
+  gitHubIdentityForTaskReference,
+  knownGitHubIssueSource,
+  resolveReferenceRepo,
+  viewCodeHubTaskByIid,
+  type TaskReadHome
+} from './task-reference-repo'
+import type { CycleTaskRead, CycleTaskReference } from './version-cycle/ports'
 
-type ReadHome = Pick<CycleScope, 'repoId' | 'hostId'>
 type ReadyValue = { source: TaskSourceContext; readAt: string } & (
   | { kind: 'github'; item: GitHubWorkItem }
   | { kind: 'codehub'; item: CodeHubTaskItem; state: string }
@@ -76,22 +81,48 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       }
     }
   }
-  function locate(home: ReadHome, reference: CycleTaskReference) {
+  function locate(home: TaskReadHome, reference: CycleTaskReference) {
     const repo = resolveReferenceRepo(deps, home, reference)
-    const source =
+    const context =
       repo && (reference.provider === 'github' || reference.provider === 'codehub')
         ? getTaskPageRepoSourceContext(repo, reference.provider)
         : null
+    const issueSource =
+      repo && reference.provider === 'github'
+        ? gitHubIdentityForTaskReference(repo, reference.repository)
+        : undefined
+    const source =
+      context?.localTaskAccount && issueSource
+        ? {
+            ...context,
+            taskRemoteCandidates: undefined,
+            providerIdentity: { provider: 'github' as const, ...issueSource }
+          }
+        : context
+    // 任务数据固定本机，缓存按远端项目身份归并；同一项目跨主机多行登记共用一份。
+    const repository = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
     const key = JSON.stringify([
-      source ? getTaskSourceCacheScope(source) : [home.repoId, home.hostId, reference.repository],
-      repo?.path,
-      repo?.issueSourcePreference ?? 'auto',
-      repo?.upstream,
-      repo?.gitRemoteIdentity,
       reference.provider,
+      reference.kind,
+      repository,
+      knownGitHubIssueSource(repo ?? undefined, repository),
+      source?.providerIdentity,
+      repo?.issueSourcePreference ?? 'auto',
       reference.number
     ])
     return { repo, source, key, entry: cache(key) }
+  }
+  function forRepo(
+    value: TaskReferenceValue,
+    repo: ReturnType<typeof resolveReferenceRepo>
+  ): TaskReferenceValue {
+    if (value.kind === 'unavailable' || !repo) {
+      return value
+    }
+    const source = getRepoTaskSourceContext(repo, value.kind) ?? value.source
+    return value.kind === 'github'
+      ? { ...value, item: { ...value.item, repoId: repo.id }, source }
+      : { ...value, item: { ...value.item, repoId: repo.id, repoPath: repo.path }, source }
   }
   function unavailable(reason: unknown): TaskReferenceValue {
     return {
@@ -102,11 +133,22 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
   }
   type Job = ReturnType<typeof locate> & {
     reference: CycleTaskReference
+    consumers: Set<AbortSignal | undefined>
+    needed(): boolean
     finish(value: TaskReferenceValue): void
+  }
+  const pendingJobs = new Map<string, Job>()
+  function requireJob(job: Job) {
+    if (!job.needed()) {
+      const reason = new DOMException('读取已取消', 'AbortError')
+      job.finish(unavailable(reason))
+      throw reason
+    }
   }
   async function single(job: Job): Promise<void> {
     try {
       const value = await limited(async (): Promise<ReadyValue> => {
+        requireJob(job)
         const { repo, source, reference } = job
         if (!repo) {
           throw new Error(`未在已登记项目中找到引用仓库 ${reference.repository}`)
@@ -119,14 +161,24 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
             repoPath: repo.path,
             repoId: repo.id,
             sourceContext: source,
-            number: reference.number
+            number: reference.number,
+            issueSource: source.localTaskAccount
+              ? gitHubIdentityForTaskReference(repo, reference.repository)
+              : knownGitHubIssueSource(repo, reference.repository)
           })
           if (!item) {
             throw new Error(`GitHub 未返回编号 ${reference.number} 的工作项`)
           }
-          return { kind: 'github', item: { ...item, repoId: repo.id }, source, readAt: deps.now() }
+          return {
+            kind: 'github',
+            item: { ...item, repoId: repo.id },
+            source: getRepoTaskSourceContext(repo, 'github') ?? source,
+            readAt: deps.now()
+          }
         }
-        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference.number)
+        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference, () =>
+          requireJob(job)
+        )
         if (!/^(open|opened|closed|merged)$/i.test(detail.state)) {
           throw new Error(`CodeHub 未返回可识别的任务状态：${detail.state}`)
         }
@@ -158,13 +210,15 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         !deps.lookupGitHubWorkItems ||
         job.reference.provider !== 'github' ||
         !job.source ||
+        (job.repo &&
+          knownGitHubIssueSource(job.repo, job.reference.repository) &&
+          job.reference.repository !== job.repo.gitRemoteIdentity?.canonicalKey) ||
         !parsed ||
         job.repo?.upstream ||
         (job.repo?.gitRemoteIdentity?.remoteName &&
           job.repo.gitRemoteIdentity.remoteName !== 'origin') ||
         job.repo?.issueSourcePreference === 'upstream' ||
-        parsed.host?.includes(':') ||
-        getGitHubSourceRuntimeTarget(job.source).kind === 'environment'
+        parsed.host?.includes(':')
       ) {
         singles.push(job)
         continue
@@ -185,14 +239,18 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       for (let start = 0; start < group.jobs.length; start += 20) {
         const chunk = group.jobs.slice(start, start + 20)
         reads.push(
-          limited(() =>
-            deps.lookupGitHubWorkItems!({
+          limited(() => {
+            const needed = chunk.filter((job) => job.needed())
+            if (!needed.length) {
+              return Promise.resolve({ items: [] })
+            }
+            return deps.lookupGitHubWorkItems!({
               host: group.host === 'github.com' ? null : group.host,
               owner: group.owner,
               repo: group.repo,
-              numbers: [...new Set(chunk.map((job) => job.reference.number))]
+              numbers: [...new Set(needed.map((job) => job.reference.number))]
             })
-          ).then(
+          }).then(
             async (result) => {
               const byNumber = new Map(result.items.map((item) => [item.number, item]))
               await Promise.all(
@@ -202,7 +260,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
                     job.finish({
                       kind: 'github',
                       item: { ...item, repoId: job.repo.id },
-                      source: job.source,
+                      source: getRepoTaskSourceContext(job.repo, 'github') ?? job.source,
                       readAt: deps.now()
                     })
                     return
@@ -219,16 +277,16 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     await Promise.all(reads)
   }
   async function read(
-    home: ReadHome,
+    home: TaskReadHome,
     references: readonly CycleTaskReference[],
-    force = false
+    force = false,
+    signal?: AbortSignal
   ): Promise<TaskReferenceValue[]> {
+    signal?.throwIfAborted()
     if (force) {
       // A click during a previous load requests another source check after it.
-      const pending = references
-        .map((reference) => locate(home, reference).entry.pending)
-        .filter((read) => read !== null)
-      await Promise.all(pending)
+      await Promise.all(references.flatMap((ref) => locate(home, ref).entry.pending ?? []))
+      signal?.throwIfAborted()
     }
     const jobs: Job[] = []
     const pending = references.map((reference) => {
@@ -240,21 +298,34 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         entry.pending = new Promise<void>((resolve) => {
           complete = resolve
         })
-        jobs.push({
+        const consumers = new Set([signal])
+        const needed = () => [...consumers].some((consumer) => !consumer?.aborted)
+        const job: Job = {
           ...target,
           reference,
+          consumers,
+          needed,
           finish(value) {
             if (settled) {
               return
             }
             settled = true
-            entry.publish(value)
+            if (needed()) {
+              entry.publish(value)
+            }
+            pendingJobs.delete(target.key)
             entry.pending = null
             complete()
           }
-        })
+        }
+        pendingJobs.set(target.key, job)
+        jobs.push(job)
+      } else {
+        pendingJobs.get(target.key)?.consumers.add(signal)
       }
-      return entry.pending.then(() => entry.read() ?? unavailable('未读取到任务'))
+      return entry.pending.then(() =>
+        forRepo(entry.read() ?? unavailable('未读取到任务'), target.repo)
+      )
     })
     void load(jobs).catch((reason) => {
       for (const job of jobs) {
@@ -263,16 +334,22 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         }
       }
     })
-    return Promise.all(pending)
+    const values = await Promise.all(pending)
+    signal?.throwIfAborted()
+    return values
   }
   function cached(
-    home: ReadHome,
+    home: TaskReadHome,
     references: readonly CycleTaskReference[]
   ): TaskReferenceValue[] | null {
-    const values = references.map((reference) => locate(home, reference).entry.read())
+    const values = references.map((reference) => {
+      const { entry, repo } = locate(home, reference)
+      const value = entry.read()
+      return value && forRepo(value, repo)
+    })
     return values.some(Boolean) ? values.map((value) => value ?? unavailable('尚未读取')) : null
   }
-  const key = (home: ReadHome, references: readonly CycleTaskReference[]) =>
+  const key = (home: TaskReadHome, references: readonly CycleTaskReference[]) =>
     JSON.stringify(references.map((reference) => locate(home, reference).key))
   return { read, cached, key }
 }

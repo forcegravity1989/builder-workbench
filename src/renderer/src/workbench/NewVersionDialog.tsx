@@ -1,7 +1,9 @@
+import { ErrorDetails } from './error-feedback'
 import React, { useState } from 'react'
 import { Plus, LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { track } from '@/lib/telemetry'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -24,23 +26,21 @@ import type { VersionCatalogState } from './use-version-catalog'
 import { closeProjectPage } from './project-page-state'
 
 /**
- * G2 「＋ 新建版本」轻表单（P3a，高保真修订 8 · Primer Create 口径）：只要一个
- * 必要输入；重名/非法名就地提示并保留输入；提交走归属宿主的
- * workbench.versionWorkspace.prepare——部分成功保留并逐步回报，重入即补齐；
- * 两树就绪不启动 agent、不启用自动化、不预建目标/任务树。
- * 已存在版本补准备不进本表单——版本行「初始化工作区」直接执行（#436 伴飞
- * 裁定：创建类动作不设确认单）。
+ * 只准备流程树，不启动会话、自动化或预建目标/任务树。
+ * 部分成功保留并逐步回报；已有版本从版本行补齐，不重复创建。
  */
 
 export function NewVersionDialog({
   catalog,
   projectKey,
   projectName,
+  onCreated,
   onClose
 }: {
   catalog: VersionCatalogState
   projectKey: string | null
   projectName: string | null
+  onCreated: (version: string) => void
   onClose: () => void
 }): React.JSX.Element {
   const [name, setName] = useState('')
@@ -97,8 +97,11 @@ export function NewVersionDialog({
       catalog.reload()
       const failed = prepareFailed(result)
       if (!failed) {
+        // 结果层埋点（#687）：版本工作区完整创建成功才计数；版本名不上报。
+        track('bw_version_created', {})
         const planStep = result.steps.find((step) => step.workflow === 'plan')
         setBrowsedVersion(projectKey, version)
+        onCreated(version)
         closeProjectPage()
         onClose()
         if (
@@ -165,9 +168,11 @@ export function NewVersionDialog({
             />
           </label>
           {formError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {formError}
-            </p>
+            <ErrorDetails
+              className="text-sm text-destructive"
+              summary="版本工作区未就绪 · 查看详情"
+              detail={formError}
+            />
           ) : null}
           {report ? (
             <div className="flex flex-col gap-1 rounded-md border border-border/50 p-3 text-[12px]">
@@ -183,9 +188,12 @@ export function NewVersionDialog({
                 </p>
               ))}
               {report.problems.map((problem) => (
-                <p key={`${problem.workflow}:${problem.code}`} className="text-destructive">
-                  {WORKFLOW_TREE_LABELS[problem.workflow]}：{problem.message}
-                </p>
+                <ErrorDetails
+                  key={`${problem.workflow}:${problem.code}`}
+                  className="text-destructive"
+                  summary={`${WORKFLOW_TREE_LABELS[problem.workflow]}未就绪 · 查看详情`}
+                  detail={problem.message}
+                />
               ))}
               {reportFailed ? (
                 <p className="text-muted-foreground">已创建的工作区会保留，可以重试完成创建。</p>

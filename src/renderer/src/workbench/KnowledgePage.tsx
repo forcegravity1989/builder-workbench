@@ -1,3 +1,8 @@
+import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
+import {
+  worktreeHostMatchOptions,
+  worktreeMatchesHost
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -32,8 +37,10 @@ export function KnowledgePage(): React.JSX.Element {
     bodies,
     setBodies,
     savedBodies,
+    readErrors,
     loading,
     error,
+    unavailable,
     reload,
     saveDoc
   } = useKnowledgeRepo()
@@ -108,7 +115,7 @@ export function KnowledgePage(): React.JSX.Element {
       if (result.wrote) {
         toast.success('已写回仓库')
       } else {
-        toast.error(result.error ?? '写回失败')
+        notifyWorkbenchError('文档写回失败', result.error, '检查仓库和文件权限后重试。')
       }
     } finally {
       setSaving(false)
@@ -119,21 +126,24 @@ export function KnowledgePage(): React.JSX.Element {
     if (!activeRepo) {
       return ''
     }
+    const options = worktreeHostMatchOptions(s, activeRepo.id, 'local')
     const list = s.worktreesByRepo[activeRepo.id] ?? []
-    if (s.activeWorktreeId && list.some((w) => w.id === s.activeWorktreeId)) {
-      return s.activeWorktreeId
-    }
-    return list[0]?.id ?? ''
+    return (
+      list.find((tree) => tree.isMainWorktree && worktreeMatchesHost(tree, 'local', options))?.id ??
+      ''
+    )
   })
 
   const repoLabel = activeRepo?.displayName?.trim() || activeRepo?.path || '未选项目'
   const pageDesc = loading
     ? '正在从仓库加载文档…'
     : error
-      ? `加载失败：${error}`
-      : activeRepo
-        ? `${docs.length} 份仓库文档 · ${repoLabel}`
-        : '请先接入项目'
+      ? '仓库文档加载失败，可刷新重试。'
+      : unavailable
+        ? unavailable
+        : activeRepo
+          ? `${docs.length} 份仓库文档 · ${repoLabel}`
+          : '请先添加项目'
 
   return (
     <div className={`wb-kb${editorOpen && tab === 'docs' ? ' is-ed' : ''}`} data-screen="kb">
@@ -141,6 +151,7 @@ export function KnowledgePage(): React.JSX.Element {
         <div>
           <h1>知识库</h1>
           <p className="page-desc">{pageDesc}</p>
+          {error && !loading && <ErrorDetails detail={error} />}
         </div>
         <div className="page-actions">
           <button
@@ -186,7 +197,7 @@ export function KnowledgePage(): React.JSX.Element {
               type="button"
               className="wb-btn wb-btn-primary wb-btn-sm"
               data-workbench-kb-rescan
-              onClick={() => toast.message('原型演示：会开 asset-audit 会话，只写评论不替改')}
+              onClick={() => toast.message('原型演示：知识盘点会话入口尚未接入')}
             >
               现在盘一遍
             </button>
@@ -199,7 +210,22 @@ export function KnowledgePage(): React.JSX.Element {
       </div>
 
       <div className={`kb-body${editorOpen && tab === 'docs' ? ' is-ed' : ''}`}>
-        {tab === 'docs' && editorOpen && docId ? (
+        {tab === 'docs' && editorOpen && docId && readErrors[docId] && (
+          <div className="p-4">
+            <button
+              type="button"
+              className="wb-btn wb-btn-secondary"
+              onClick={() => setEditorOpen(false)}
+            >
+              返回文档列表
+            </button>
+            <ErrorDetails
+              summary="文档读取失败，可刷新重试 · 查看详情"
+              detail={readErrors[docId]}
+            />
+          </div>
+        )}
+        {tab === 'docs' && editorOpen && docId && !readErrors[docId] ? (
           <KnowledgeDocEditor
             docs={docs}
             docId={docId}
@@ -309,9 +335,7 @@ export function KnowledgePage(): React.JSX.Element {
                 )
               })}
             </div>
-            <div className="hint">
-              没有升级按钮。重盘是开一场 asset-audit 会话，不是在这屏改文件。
-            </div>
+            <div className="hint">知识盘点会话入口尚未接入；本页只展示已有资产。</div>
           </div>
         ) : null}
       </div>

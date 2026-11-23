@@ -32,6 +32,7 @@ import type { TuiAgent } from '../../../../shared/tui-agent'
 import { settleComposerSubmit } from '@/lib/composer-submit-cancellation'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
 import {
+  getFolderWorkspaceAgentLaunchPlatform,
   resolveFolderWorkspaceLaunchDraft,
   submitFolderWorkspaceCreate
 } from '@/components/sidebar/folder-workspace-composer-submit'
@@ -47,6 +48,7 @@ import {
   getWorkspaceCreateErrorToastMessage
 } from '@/lib/workspace-create-error-format'
 import { toast } from 'sonner'
+import { prepareHostAgentStartupInputs } from '@/lib/host-agent-startup-inputs'
 
 export function useFolderSubmitOrchestration(input: FolderSubmitOrchestrationInput) {
   const {
@@ -111,6 +113,16 @@ export function useFolderSubmitOrchestration(input: FolderSubmitOrchestrationInp
           agent && submitLinkedWorkItem
             ? resolveFolderWorkspaceLaunchDraft(submitLinkedWorkItem, note)
             : null
+        const hostStartup = await prepareHostAgentStartupInputs({
+          environmentId: folderTargetRuntimeEnvironmentId,
+          agent,
+          settings,
+          platform: getFolderWorkspaceAgentLaunchPlatform(selectedProjectGroup),
+          isRemote: folderTargetIsRemote
+        })
+        if (isSubmissionCancelled()) {
+          return
+        }
         const folderWorkspaceCreated = await submitFolderWorkspaceCreate({
           projectGroup: selectedProjectGroup,
           name: smartGitHubMetadata?.workspaceName ?? name,
@@ -119,6 +131,7 @@ export function useFolderSubmitOrchestration(input: FolderSubmitOrchestrationInp
           linkedTaskSourceContext: taskSourceContext,
           note,
           quickAgent: agent,
+          ...(hostStartup.owner ? { hostStartup } : {}),
           autoRenameBranchFromWork: settings?.autoRenameBranchFromWork,
           agentCmdOverrides: settings?.agentCmdOverrides,
           agentArgs: agent
@@ -148,7 +161,8 @@ export function useFolderSubmitOrchestration(input: FolderSubmitOrchestrationInp
           runtimeEnvironmentId: folderTargetRuntimeEnvironmentId,
           createFolderWorkspace: (input) =>
             createFolderWorkspace(input, {
-              runtimeEnvironmentId: folderTargetRuntimeEnvironmentId
+              runtimeEnvironmentId: folderTargetRuntimeEnvironmentId,
+              ...(hostStartup.owner ? { agentLaunchOwner: hostStartup.owner } : {})
             }),
           onOpenChange: (open) => {
             if (!open) {

@@ -122,6 +122,16 @@ export class MobileSocketWiring {
     return this.connectionIds.size
   }
 
+  /** Returns whether a device currently has an authenticated socket. */
+  isDeviceConnected(deviceId: string): boolean {
+    for (const socket of this.authenticatedSockets.values()) {
+      if (socket.device.deviceId === deviceId) {
+        return true
+      }
+    }
+    return false
+  }
+
   terminateDeviceConnections(deviceToken: string): number {
     let terminated = 0
     for (const transport of this.transports) {

@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TaskPageJiraCreationMetadataModel } from './use-task-page-jira-creation-metadata'
-import { parseTaskQuery } from '../../../shared/task-query'
+import { useTaskPageWorkbenchEntry } from './use-task-page-workbench-entry'
 import {
   workbenchTaskScopeKey,
-  workbenchVersionTaskLabel,
-  seedWorkbenchTaskQuery,
-  removeWorkbenchVersionQuery
+  removeWorkbenchVersionQuery,
+  type WorkbenchTaskScope
 } from '../../../shared/workbench/task-scope'
 import {
   loadWorkbenchTaskScope,
   cachedWorkbenchTaskScope,
   requireVersionTaskScopeHome,
+  versionTaskRepoProvider,
   type TaskScopeLoadResult
 } from '@/workbench/task-scope-load'
 import { nativeTaskReferenceReader } from '@/workbench/native-task-port'
@@ -23,6 +23,7 @@ import {
 } from '@/workbench/task-scope-projection'
 import { useAppStore } from '@/store'
 import { useTaskScopeViewers } from '@/workbench/use-task-scope-viewers'
+import { useWorkbenchScreenUsage } from '@/workbench/workbench-screen-usage'
 
 /** Only a selected goal materializes references; a version uses native queries. */
 export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataModel) {
@@ -43,19 +44,10 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setCodehubLoading,
     setCodehubError
   } = model
-  const entry = pageData.workbenchTaskScope ?? null
-  const versionLabel = entry ? workbenchVersionTaskLabel(entry.version) : null
-  const query = parseTaskQuery(model.appliedTaskSearch)
-  const entryKey = entry ? JSON.stringify([entry.version, pageData.preselectedRepoId]) : ''
-  const [seededEntryKey, setSeededEntryKey] = useState(entryKey)
-  const previousEntry = useRef(entry)
-  const scope =
-    entry &&
-    (model.taskSource !== 'github' ||
-      query.labels.includes(versionLabel!) ||
-      seededEntryKey !== entryKey)
-      ? entry
-      : null
+  const { entry, scope } = useTaskPageWorkbenchEntry(model)
+  // Why: the version-scoped task screen is a BW surface (#687) — count entry
+  // once per scope activation, not per goal/version switch inside the screen.
+  useWorkbenchScreenUsage('workbench-version-tasks', scope !== null)
   const goalScope = scope?.goalId ? scope : null
   const goalIssueView =
     model.taskSource === 'codehub'
@@ -68,7 +60,12 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
       return null
     }
     try {
-      return requireVersionTaskScopeHome(pageData.preselectedRepoId, { repos, activeRepoId })
+      return requireVersionTaskScopeHome(
+        pageData.preselectedRepoId,
+        { repos, activeRepoId },
+        goalScope.homeHostId,
+        goalScope.runtimeOwnerEnvironmentId
+      )
     } catch {
       return null
     }
@@ -99,31 +96,6 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
   const result = scopeLoad && scopeLoad.key === scopeKey ? scopeLoad.result : cached
 
   useEffect(() => {
-    if (!entry) {
-      previousEntry.current = null
-      setSeededEntryKey('')
-      return
-    }
-    if (!taskResumeApplied || seededEntryKey === entryKey) {
-      return
-    }
-    setSeededEntryKey(entryKey)
-    const next = seedWorkbenchTaskQuery(model.appliedTaskSearch, entry, previousEntry.current)
-    previousEntry.current = entry
-    model.setTaskSearchInput(next)
-    model.setAppliedTaskSearch(next)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entryKey, seededEntryKey, taskResumeApplied])
-  useEffect(() => {
-    if (!entry || scope || !taskResumeApplied) {
-      return
-    }
-    useAppStore.setState((state) => ({
-      taskPageData: { ...state.taskPageData, workbenchTaskScope: null }
-    }))
-  }, [entry, scope, taskResumeApplied])
-
-  useEffect(() => {
     if (!goalScope || !taskResumeApplied || !goalIssueView) {
       setScopeLoading(false)
       if (goalScope && !goalIssueView) {
@@ -151,7 +123,14 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setCodehubLoading(!result)
     void (async () => {
       try {
-        const target = home ?? requireVersionTaskScopeHome(pageData.preselectedRepoId)
+        const target =
+          home ??
+          requireVersionTaskScopeHome(
+            pageData.preselectedRepoId,
+            undefined,
+            goalScope.homeHostId,
+            goalScope.runtimeOwnerEnvironmentId
+          )
         const loaded = await loadWorkbenchTaskScope(goalScope, target, force)
         if (cancelled) {
           return
@@ -197,8 +176,8 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     workItemsInvalidationNonce
   ])
 
-  const selectedRepoKey = [...model.repoSelection].sort().join('|')
-  const codehubGoalQuery = buildCodeHubGoalQuery(model, goalScope)
+  const selectedRepoKey = [...model.selectedScopeRepoIds].sort().join('|')
+  const codehubGoalQuery = buildCodeHubGoalQuery(model)
   const goalViewers = useTaskScopeViewers(model, result, !!goalScope && goalIssueView)
   const { filterProblem } = resolveWorkbenchTaskScopeFilters({
     active: !!goalScope && goalIssueView,
@@ -212,14 +191,13 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     }
     const { githubPages, codehubItems } = projectWorkbenchTaskScope({
       result,
-      selectedRepoIds: model.repoSelection,
+      selectedRepoIds: model.selectedScopeRepoIds,
       githubIssueView: model.activeGithubTaskKind !== 'prs',
-      // Goal membership comes from plan references; the seeded version label is navigation context.
-      githubQuery: removeWorkbenchVersionQuery(model.appliedTaskSearch, goalScope),
+      githubQuery: model.appliedTaskSearch,
       viewerLogins: goalViewers.logins,
       githubPageSize,
       codehubIssueView: model.codehubView !== 'mrs',
-      codehubQuery: removeWorkbenchVersionQuery(codehubGoalQuery, goalScope),
+      codehubQuery: codehubGoalQuery,
       codehubPreset: model.codehubPreset,
       blocked: !!filterProblem || goalViewers.loading
     })
@@ -247,20 +225,38 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     githubPageSize
   ])
   const itemKeys = useMemo(() => workbenchTaskScopeItemKeys(result), [result])
+  const removeScope = (next: WorkbenchTaskScope | null) => {
+    const repo = pageData.preselectedRepoId ? model.repoMap.get(pageData.preselectedRepoId) : null
+    const home = entry?.goalId ? repo : null
+    if (home) {
+      model.setRepoSelection(new Set([home.id]))
+    }
+    useAppStore.setState((state) => ({
+      taskPageData: {
+        ...state.taskPageData,
+        ...(home ? { taskSource: versionTaskRepoProvider(home) } : {}),
+        workbenchTaskScope: next
+      }
+    }))
+  }
   const clearVersion = () => {
     if (!entry) {
       return
     }
     model.setTasksRefreshing(false)
-    const next = removeWorkbenchVersionQuery(model.appliedTaskSearch, entry)
+    const next = entry.goalId
+      ? model.appliedTaskSearch
+      : removeWorkbenchVersionQuery(model.appliedTaskSearch, entry)
     model.setTaskSearchInput(next)
     model.setAppliedTaskSearch(next)
     model.setTasksFiltering(true)
-    useAppStore.setState((state) => ({
-      taskPageData: { ...state.taskPageData, workbenchTaskScope: null }
-    }))
+    removeScope(null)
   }
   const clearProject = () => {
+    // In a goal, the project picker narrows its references just like the other native filters.
+    if (scope?.goalId) {
+      return
+    }
     clearVersion()
     useAppStore.setState((state) => ({
       taskPageData: { ...state.taskPageData, preselectedRepoId: undefined, taskSource: undefined }
@@ -272,12 +268,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     }
     model.setTasksRefreshing(false)
     model.setTasksFiltering(true)
-    useAppStore.setState((state) => ({
-      taskPageData: {
-        ...state.taskPageData,
-        workbenchTaskScope: { ...scope, goalId: null, goalLabel: null, references: [] }
-      }
-    }))
+    removeScope({ ...scope, goalId: null, goalLabel: null, references: [] })
   }
   const nextModel = model as typeof model & WorkbenchTaskScopeModelFields
   nextModel.workbenchScopeActive = goalScope !== null

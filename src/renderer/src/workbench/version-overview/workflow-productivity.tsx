@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -13,17 +14,15 @@ export function WorkflowProductivity({
   plan,
   version,
   revision,
-  planState,
-  sourceReady
+  planState
 }: {
   catalog: VersionCatalogState
   plan: PlanningMaterial | null
   version: string
   revision?: string
   planState: 'ready' | 'missing' | 'loading' | 'error'
-  sourceReady: boolean
 }) {
-  const evidence = useWorkflowEvidence(catalog, plan, version, revision, sourceReady)
+  const evidence = useWorkflowEvidence(catalog, plan, version, revision)
   const empty = plan
     ? workflowReferences(plan).map((reference) => ({
         reference,
@@ -59,9 +58,7 @@ export function WorkflowProductivity({
         {evidence.value
           ? ` · ${readable.length} 项有报告`
           : evidence.loading
-            ? sourceReady
-              ? ' · 正在后台读取报告…'
-              : ' · 等待版本来源…'
+            ? ' · 正在后台读取报告…'
             : ''}
         {evidence.value && (
           <span title="北京时间 UTC+08:00"> · 读取于 {timeLabel(evidence.value.readAt)}</span>
@@ -96,10 +93,15 @@ export function WorkflowProductivity({
         })}
       </div>
       {evidence.error && (
-        <p role="alert" className="text-xs text-destructive">
-          {evidence.error}
-          {evidence.value ? '；保留上次读数。' : '；当前读数未知。'}
-        </p>
+        <ErrorDetails
+          className="text-xs text-destructive"
+          summary={
+            evidence.value
+              ? '工作流证据读取失败，保留上次读数 · 查看详情'
+              : '工作流证据读取失败，当前读数未知 · 查看详情'
+          }
+          detail={evidence.error}
+        />
       )}
       {evidence.value && (
         <details className="bwo-muted mt-3">

@@ -13,6 +13,7 @@ import {
   type MetricCollectorContext,
   type MetricsHost
 } from './metrics/collector-service'
+import { traceStderrTail } from './workbench-trace-details'
 import { MetricCollectorError } from './metrics/collector-output'
 import { decodeMetricDefinitions } from './metrics/definitions'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
@@ -124,7 +125,7 @@ export function interpretOutcome(
     throw new MetricCollectorError('output-truncated', '采集输出超出上限被截断，本次读数不可用')
   }
   if (outcome.code !== 0) {
-    const detail = outcome.stderr.trim().slice(-400)
+    const detail = traceStderrTail(outcome.stderr)
     throw new MetricCollectorError(
       'collector-failed',
       `采集脚本以 ${outcome.code ?? outcome.signal ?? '未知方式'} 结束${detail ? `：${detail}` : ''}`

@@ -96,7 +96,7 @@ vi.mock('@/lib/telemetry', () => ({
 }))
 vi.mock('@/runtime/web-runtime-session', () => ({
   createWebRuntimeSessionTerminal: vi.fn(),
-  createWebRuntimeAgentSessionTerminalWithLaunchDraft: vi.fn(),
+  deliverCreatedWebRuntimeAgentSessionPrompt: vi.fn(),
   isWebRuntimeSessionActive: vi.fn(() => false),
   isWebTerminalSurfaceTabId: vi.fn(() => false)
 }))

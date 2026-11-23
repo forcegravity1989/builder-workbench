@@ -249,7 +249,7 @@ export function renderFloatingTerminalPanelSurface({
                             lifecyclePtyId: ptyId
                           })
                         }}
-                        onCloseTab={() => closeFloatingItemConfirmed(tab.id)}
+                        onCloseTab={(reason) => closeFloatingItemConfirmed(tab.id, { reason })}
                       />
                     </div>
                   )

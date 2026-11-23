@@ -28,6 +28,7 @@ def load(name):
 plan = load("plan-cycle-hours")
 collect = load("collect-daily-observation")
 closed = load("closed-issues")
+cycle = load("task-cycle-hours")
 UTC = dt.timezone.utc
 PROJECT = {"name": "sample", "remote": "owner/sample", "provider": "github"}
 
@@ -94,6 +95,58 @@ class MetricHistoryTests(unittest.TestCase):
         self.assertEqual(plan.median_hours([end], anchor), (148.0, 1))
         self.assertEqual(plan.median_hours([anchor - dt.timedelta(hours=8)], anchor), (-8.0, 1))
         self.assertIsNone(plan.median_hours([], anchor))
+
+    def test_task_cycle_pairs_earliest_pr_and_drops_retro_records(self):
+        issues = [
+            {"number": 10, "createdAt": "2026-10-01T00:00:00Z"},
+            {"number": 11, "createdAt": "2026-10-05T00:00:00Z"},
+            {"number": 12, "createdAt": "2026-10-05T00:00:00Z"},
+            {"number": 13, "createdAt": "2026-10-05T00:00:00Z"},
+            {"number": 14, "createdAt": "2026-10-05T00:00:00Z"},
+            {"number": 15, "createdAt": "2026-10-05T00:00:00Z"},
+        ]
+        prs = [
+            {"number": 20, "createdAt": "2026-10-02T06:00:00Z", "body": "关联 #10\n\n正文"},
+            {"number": 21, "createdAt": "2026-10-03T06:00:00Z", "body": "关联 #10\n\n返工"},
+            {"number": 22, "createdAt": "2026-10-04T00:00:00Z", "body": "关联 #20"},
+            {"number": 23, "createdAt": "2026-10-04T00:00:00Z", "body": "关联 #11"},
+            {"number": 24, "createdAt": "2026-10-05T12:00:00Z",
+             "body": "关联 #12、#13\n\nCloses #14 #15"},
+        ]
+        with contextlib.redirect_stderr(io.StringIO()):
+            pairs = cycle.build_pairs(prs, issues)
+        # 21 是同一 Issue 的返工、22 引用到 PR、23 的 PR 早于 Issue,都不计;
+        # 24 同时服务 #12、#13、#14、#15,每个 Issue 各配一对
+        self.assertEqual(sorted(n for _, _, n in pairs), [20, 24, 24, 24, 24])
+        first = next(pair for pair in pairs if pair[2] == 20)
+        self.assertEqual(first[0], instant("2026-10-01T00:00:00Z"))
+        self.assertEqual(first[1] - first[0], dt.timedelta(hours=30))
+
+    def test_task_cycle_buckets_skip_empty_and_declare_partial_coverage(self):
+        tz = ZoneInfo("Asia/Shanghai")
+        anchor = dt.datetime(2026, 10, 1, 9, tzinfo=tz)
+        pairs = [
+            (anchor, anchor + dt.timedelta(hours=2), 1),
+            (anchor, anchor + dt.timedelta(hours=4), 2),
+            (anchor + dt.timedelta(days=9), anchor + dt.timedelta(days=9, hours=8), 3),
+            (anchor + dt.timedelta(days=12), anchor + dt.timedelta(days=12, hours=5), 4),
+        ]
+        with contextlib.redirect_stderr(io.StringIO()):
+            points = cycle.build_points(pairs, "week", dt.date(2026, 9, 28),
+                                        dt.date(2026, 10, 15), tz,
+                                        dt.datetime(2026, 10, 20, tzinfo=tz))
+        self.assertEqual([p["week"] for p in points], ["2026-W40", "2026-W41", "2026-W42"])
+        self.assertEqual(points[0]["value"], 3.0)  # 两个样本取中位
+        self.assertNotIn("coverage", points[0])  # 完整且已结束的周不声明
+        self.assertEqual(points[2]["value"], 5.0)
+        self.assertEqual(points[2]["coverage"],
+                         {"start": "2026-10-12T00:00:00+08:00",
+                          "end": "2026-10-15T00:00:00+08:00"})
+        with contextlib.redirect_stderr(io.StringIO()):
+            empty = cycle.build_points(pairs[:3], "week", dt.date(2026, 9, 28),
+                                       dt.date(2026, 10, 19), tz,
+                                       dt.datetime(2026, 10, 20, tzinfo=tz))
+        self.assertEqual([p["week"] for p in empty], ["2026-W40", "2026-W41"])
 
     def test_missing_cli_truncation_and_malformed_provider_output_fail_honestly(self):
         with contextlib.redirect_stderr(io.StringIO()):

@@ -134,6 +134,11 @@ describe('agent session option catalog', () => {
       effort: 'high',
       fastMode: true
     })
+    for (const trailing of [['--model', 'custom'], ['-m', 'custom'], ['--model=custom']]) {
+      expect(resolveAgentSessionOptionLaunch('cursor', { model: 'auto' }, trailing)).toEqual({
+        args: [], appliedValues: {}
+      })
+    }
     expect(resolved.args).toEqual(['--model', 'gpt-5.3-codex-high-fast'])
     expect(resolved.appliedValues).toEqual({
       model: 'gpt-5.3-codex',

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   deriveIntegrationConnectionStatus,
   deriveIntegrationFlowState,
-  deriveIntegrationStepStates
+  deriveIntegrationStepStates,
+  deriveWorkbenchSetupIntegrationStatus
 } from './use-integration-connection-status'
 import { deriveCliProviderCardState } from '@/components/settings/source-control-integration-cards'
 
@@ -75,7 +76,7 @@ describe('deriveIntegrationStepStates', () => {
   })
 
   it('completes the task step from a connected code host without a tracker', () => {
-    // GitHub/GitLab issues double as a task source, so a connected code host
+    // Code-host issues double as a task source, so a connected code host
     // resolves step 2 outright instead of asking for an extra acknowledgement.
     expect(
       deriveIntegrationStepStates({
@@ -112,23 +113,30 @@ describe('deriveIntegrationStepStates', () => {
 })
 
 describe('deriveIntegrationConnectionStatus', () => {
-  it('does not expose cached GitHub review readiness while preflight is unresolved', () => {
-    const cachedGitHub = {
-      gh: { installed: true, authenticated: true },
-      glab: { installed: false, authenticated: false }
-    }
+  it('does not expose cached code-host readiness while preflight is unresolved', () => {
     const unresolvedFacts: Partial<StatusFacts>[] = [
-      { preflightStatus: cachedGitHub, preflightStatusLoading: true },
-      { preflightStatus: cachedGitHub, preflightStatusChecked: false },
-      { preflightStatus: cachedGitHub, preflightStatusContextKey: 'wsl:Ubuntu' }
+      { preflightStatusLoading: true },
+      { preflightStatusChecked: false },
+      { preflightStatusContextKey: 'wsl:Ubuntu' }
     ]
 
-    for (const overrides of unresolvedFacts) {
-      expect(deriveIntegrationConnectionStatus(statusFacts(overrides))).toMatchObject({
-        reviewConnected: false,
-        reviewProviderName: null,
-        reviewChecking: true
-      })
+    for (const provider of ['gh', 'glab', 'codehub']) {
+      for (const overrides of unresolvedFacts) {
+        expect(
+          deriveIntegrationConnectionStatus(
+            statusFacts({
+              preflightStatus: { [provider]: { installed: true, authenticated: true } },
+              ...overrides
+            })
+          )
+        ).toMatchObject({
+          reviewConnected: false,
+          reviewProviderName: null,
+          codeHostTaskProviderName: null,
+          taskSourceNames: [],
+          reviewChecking: true
+        })
+      }
     }
   })
 
@@ -138,7 +146,8 @@ describe('deriveIntegrationConnectionStatus', () => {
         statusFacts({
           preflightStatus: {
             gh: { installed: true, authenticated: true },
-            glab: { installed: false, authenticated: false }
+            glab: { installed: false, authenticated: false },
+            codehub: { installed: true, authenticated: true }
           },
           preflightStatusError: 'failed to check gh'
         })
@@ -146,27 +155,32 @@ describe('deriveIntegrationConnectionStatus', () => {
     ).toMatchObject({
       reviewConnected: false,
       reviewProviderName: null,
+      codeHostTaskProviderName: null,
+      taskSourceNames: [],
       reviewChecking: false,
       checking: false
     })
   })
 
-  it('does not expose cached GitLab review readiness while preflight is stale', () => {
-    expect(
-      deriveIntegrationConnectionStatus(
-        statusFacts({
-          preflightStatus: {
-            gh: { installed: false, authenticated: false },
-            glab: { installed: true, authenticated: true }
-          },
-          preflightStatusContextKey: 'wsl:Debian'
-        })
-      )
-    ).toMatchObject({
-      reviewConnected: false,
-      reviewProviderName: null,
-      reviewChecking: true
-    })
+  it('requires CodeHub installation and authentication regardless of WeLink auth', () => {
+    for (const codehub of [
+      undefined,
+      { installed: false, authenticated: true },
+      { installed: true, authenticated: false },
+      { installed: true }
+    ]) {
+      const preflightStatus = {
+        codehub,
+        welink: { installed: true, authenticated: true }
+      }
+      expect(deriveIntegrationConnectionStatus(statusFacts({ preflightStatus }))).toMatchObject({
+        reviewConnected: false,
+        codeHostTaskProviderName: null,
+        trackerConnected: false,
+        taskSourceNames: [],
+        checking: false
+      })
+    }
   })
 
   it('does not expose cached Linear or Jira tracker readiness while checks are stale', () => {
@@ -255,14 +269,15 @@ describe('deriveIntegrationConnectionStatus', () => {
         statusFacts({
           preflightStatus: {
             gh: { installed: true, authenticated: true },
-            glab: { installed: true, authenticated: true }
+            glab: { installed: true, authenticated: true },
+            codehub: { installed: true, authenticated: true }
           },
           linearStatus: { connected: true },
           jiraStatus: { connected: true }
         })
       )
     ).toMatchObject({
-      taskSourceNames: ['Linear', 'Jira', 'GitHub', 'GitLab']
+      taskSourceNames: ['Linear', 'Jira', 'GitHub', 'GitLab', 'CodeHub']
     })
 
     expect(
@@ -369,6 +384,38 @@ describe('deriveIntegrationConnectionStatus', () => {
   })
 })
 
+describe('deriveWorkbenchSetupIntegrationStatus', () => {
+  it('uses current GitHub or CodeHub auth for both capabilities', () => {
+    const authenticated = { installed: true, authenticated: true }
+    const otherProviders = {
+      preflightStatus: { glab: authenticated, welink: authenticated },
+      linearStatus: { connected: true },
+      jiraStatusChecked: false
+    }
+    expect(deriveWorkbenchSetupIntegrationStatus(statusFacts(otherProviders))).toEqual({
+      trackerConnected: false,
+      checking: false
+    })
+
+    for (const provider of ['gh', 'codehub']) {
+      const facts = statusFacts({
+        ...otherProviders,
+        preflightStatus: { [provider]: authenticated }
+      })
+      expect(deriveWorkbenchSetupIntegrationStatus(facts)).toEqual({
+        trackerConnected: true,
+        checking: false
+      })
+      expect(
+        deriveWorkbenchSetupIntegrationStatus({ ...facts, preflightStatusContextKey: 'wsl:Ubuntu' })
+      ).toEqual({ trackerConnected: false, checking: true })
+      expect(
+        deriveWorkbenchSetupIntegrationStatus({ ...facts, preflightStatusError: 'check failed' })
+      ).toEqual({ trackerConnected: false, checking: false })
+    }
+  })
+})
+
 describe('deriveCliProviderCardState', () => {
   it('does not show cached CLI auth as connected while preflight is stale or errored', () => {
     const connectedCli = { installed: true, authenticated: true }
@@ -425,28 +472,29 @@ describe('deriveIntegrationFlowState', () => {
   })
 
   it('completes the flow from a connected code host once tracker checks settle', () => {
-    const status = deriveIntegrationConnectionStatus(
-      statusFacts({
-        preflightStatus: {
-          gh: { installed: true, authenticated: true },
-          glab: { installed: false, authenticated: false }
-        }
+    for (const [provider, name] of [
+      ['gh', 'GitHub'],
+      ['glab', 'GitLab'],
+      ['codehub', 'CodeHub']
+    ] as const) {
+      const status = deriveIntegrationConnectionStatus(
+        statusFacts({ preflightStatus: { [provider]: { installed: true, authenticated: true } } })
+      )
+      expect(status).toMatchObject({
+        reviewProviderName: name,
+        codeHostTaskProviderName: name,
+        trackerConnected: true,
+        taskSourceNames: [name],
+        checking: false
       })
-    )
 
-    expect(
-      deriveIntegrationFlowState({
-        reviewConnected: status.reviewConnected,
-        trackerProviderName: status.trackerProviderName,
-        codeHostTaskProviderName: status.codeHostTaskProviderName,
-        trackerChecking: status.trackerChecking
+      expect(deriveIntegrationFlowState(status)).toMatchObject({
+        review: 'done',
+        task: 'done',
+        complete: true,
+        taskResolved: true
       })
-    ).toMatchObject({
-      review: 'done',
-      task: 'done',
-      complete: true,
-      taskResolved: true
-    })
+    }
   })
 
   it('keeps tracker-before-code-host completion scoped to the task step only', () => {

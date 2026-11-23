@@ -19,6 +19,7 @@ import { registerLinearHandlers } from '../linear'
 import { registerJiraHandlers } from '../jira'
 import { registerBitbucketHandlers } from '../bitbucket'
 import { registerFeedbackHandlers } from '../feedback'
+import { registerTeamCollaborationHandlers } from '../team-collaboration'
 import { registerCrashReportingHandlers } from '../crash-reporting'
 import { registerExportHandlers } from '../export'
 import { registerStatsHandlers } from '../stats'
@@ -67,6 +68,7 @@ import { registerAgentTrustHandlers } from '../agent-trust'
 import { registerClaudeAccountHandlers } from '../claude-accounts'
 import { registerMiniMaxCredentialsHandlers } from '../minimax-credentials'
 import { registerGrokAccountHandlers } from '../grok-accounts'
+import { registerCursorAccountHandlers } from '../cursor-accounts'
 import { registerUpdaterHandlers } from '../../window/attach-main-window-services'
 import {
   registerClipboardHandlers,
@@ -154,6 +156,7 @@ export function registerCoreHandlers(
   registerClaudeAccountHandlers(claudeAccounts)
   registerMiniMaxCredentialsHandlers(rateLimits)
   registerGrokAccountHandlers()
+  registerCursorAccountHandlers()
   registerRateLimitHandlers(rateLimits, codexAccounts)
   registerGitHubHandlers(store, stats)
   registerGitLabHandlers(store)
@@ -163,6 +166,7 @@ export function registerCoreHandlers(
   registerJiraHandlers()
   registerBitbucketHandlers()
   registerFeedbackHandlers()
+  registerTeamCollaborationHandlers()
   if (crashReports) {
     registerCrashReportingHandlers(crashReports)
   }

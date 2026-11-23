@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workbench · 常用链接 交互原型（状态栏入口）</title>
+    <style>
+      :root {
+        --bg: #faf9f5;
+        --card: #ffffff;
+        --surface: #f3f1ea;
+        --text: #1f1e1d;
+        --muted: #6b6a64;
+        --faint: #9a988f;
+        --line: #e6e3da;
+        --line-soft: #efece3;
+        --accent: #c96442;
+        --blue: #3a6ea5;
+        --success: #579766;
+        --success-deep: #286037;
+        --danger: #c15f4d;
+        --danger-deep: #883324;
+        --radius: 8px;
+        --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        --mono: "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 13px;
+        -webkit-font-smoothing: antialiased;
+      }
+      button { font-family: inherit; cursor: pointer; }
+      button:focus-visible, input:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 2px;
+      }
+
+      .page { max-width: 1080px; margin: 0 auto; padding: 28px 24px 48px; }
+      .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
+      .head h1 { font-size: 22px; font-weight: 650; margin: 0; display: flex; align-items: center; gap: 10px; }
+      .tag { font-size: 10px; font-weight: 500; border: 1px solid var(--line); color: var(--muted); padding: 2px 7px; border-radius: 5px; }
+      .head p { margin: 8px 0 0; color: var(--muted); font-size: 12px; max-width: 640px; line-height: 1.7; }
+      .head .reset { border: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 11px; padding: 6px 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; }
+      .head .reset:hover { color: var(--text); border-color: var(--faint); }
+
+      .banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; color: var(--muted); font-size: 11px; margin: 16px 0 20px; }
+
+      .cols { display: grid; grid-template-columns: 1fr 340px; gap: 28px; align-items: start; }
+
+      /* ── simulated app window + status bar ── */
+      .stage { position: relative; }
+      .window {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--card);
+        box-shadow: 0 12px 34px rgba(31,30,29,0.08);
+      }
+      .win-body { height: 360px; padding: 20px 22px; background:
+        linear-gradient(180deg, color-mix(in srgb, var(--surface) 55%, var(--card)), var(--card)); }
+      .win-body .kicker { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+      .win-body h2 { font-size: 15px; margin: 6px 0 10px; }
+      .win-body p { font-size: 12px; color: var(--muted); line-height: 1.8; max-width: 460px; }
+      .win-body .hintrow { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+      .win-body .chipmock { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--card); }
+
+      .statusbar {
+        display: flex;
+        align-items: center;
+        height: 30px;
+        padding: 0 12px;
+        gap: 16px;
+        border-top: 1px solid var(--line);
+        background: var(--card);
+        font-size: 12px;
+        user-select: none;
+        position: relative;
+      }
+      .statusbar .spacer { flex: 1; }
+      .sb-left, .sb-right { display: flex; align-items: center; gap: 12px; }
+      .sb-usage { display: inline-flex; align-items: center; gap: 8px; padding: 2px 5px; border-radius: 4px; }
+      .sb-usage .badge { font-size: 9px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 3px; }
+      .sb-usage .pct { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+      /* status-bar segment — 与 Orca PortsStatusSegment 同构 */
+      .seg {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 4px;
+        padding: 2px 4px;
+        border: 0;
+        background: none;
+        color: var(--muted);
+      }
+      .seg:hover, .seg[aria-expanded="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+      .seg svg { color: var(--muted); }
+      .seg .n { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+      /* ── popover — 与 PortsStatusSegment 的 PopoverContent 同构 ── */
+      .popover {
+        position: absolute;
+        bottom: 36px;
+        right: 12px;
+        width: 24rem;
+        max-width: calc(100vw - 2rem);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow: 0 16px 44px rgba(31,30,29,0.16);
+        z-index: 30;
+        overflow: hidden;
+        padding: 0;
+      }
+      .popover[hidden] { display: none; }
+      .pop-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border-bottom: 1px solid var(--line);
+        padding: 6px 12px;
+      }
+      .pop-head .pl { display: flex; align-items: center; gap: 6px; color: var(--text); }
+      .pop-head .pl svg { color: var(--muted); }
+      .pop-head .title { font-size: 12px; font-weight: 600; }
+      .pop-head .count { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+      .pop-head .pr { display: flex; align-items: center; gap: 2px; }
+      .pop-head .add {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 11px; color: var(--blue); border: 0; background: none;
+        padding: 3px 6px; border-radius: 5px;
+      }
+      .pop-head .add:hover { background: color-mix(in srgb, var(--blue) 8%, transparent); }
+      .pop-head .icon-btn { border: 0; background: none; color: var(--muted); padding: 4px; border-radius: 5px; display: inline-flex; }
+      .pop-head .icon-btn:hover { background: var(--surface); color: var(--text); }
+
+      .pop-body { max-height: 24rem; overflow-y: auto; scrollbar-width: thin; }
+
+      .group-head {
+        position: sticky; top: 0; z-index: 1;
+        display: flex; align-items: center; gap: 6px;
+        padding: 6px 12px;
+        background: color-mix(in srgb, var(--surface) 70%, var(--card));
+        border-bottom: 1px solid var(--line-soft);
+        font-size: 10.5px; color: var(--muted); font-weight: 600;
+      }
+      .group-head .gcount { color: var(--faint); font-weight: 500; font-variant-numeric: tabular-nums; }
+      .group-head .gsp { flex: 1; }
+
+      .rows { padding: 4px; }
+
+      /* row — 与 ports-status-popover-rows 同构：主行 + 次行 + hover 动作簇 */
+      .lrow {
+        display: grid;
+        grid-template-columns: 16px minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 8px;
+        border-radius: 6px;
+        padding: 6px 8px;
+        position: relative;
+        cursor: pointer;
+      }
+      .lrow:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+      .lrow .glyph { color: var(--faint); padding-top: 1px; display: flex; }
+      .lrow .main { min-width: 0; }
+      .lrow .lname { font-size: 12px; font-weight: 550; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .lrow .lurl { font-family: var(--mono); font-size: 10px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+      .lrow .acts { display: flex; align-items: center; gap: 1px; opacity: 0; transition: opacity 0.1s; }
+      .lrow:hover .acts, .lrow:focus-within .acts { opacity: 1; }
+      .lrow .act { border: 0; background: none; color: var(--muted); padding: 3px; border-radius: 4px; display: inline-flex; }
+      .lrow .act:hover { background: var(--surface); color: var(--text); }
+      .lrow .act.danger:hover { color: var(--danger-deep); }
+
+      /* ports demo rows reuse the same row grid for parity */
+      .prow { display: grid; grid-template-columns: 3.5rem minmax(0,1fr) auto; align-items: start; gap: 8px; border-radius: 6px; padding: 6px 8px; }
+      .prow:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+      .prow .port { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); }
+      .prow .proc { min-width: 0; }
+      .prow .pname { font-size: 12px; color: var(--text); }
+      .prow .paddr { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-top: 2px; }
+      .prow .acts { display: flex; gap: 1px; opacity: 0; }
+      .prow:hover .acts { opacity: 1; }
+      .prow .act { border: 0; background: none; color: var(--muted); padding: 3px; border-radius: 4px; display: inline-flex; }
+      .prow .act:hover { background: var(--surface); color: var(--text); }
+
+      .empty { text-align: center; padding: 26px 16px; color: var(--faint); }
+      .empty h3 { margin: 8px 0 4px; font-size: 12px; color: var(--muted); }
+      .empty p { margin: 0; font-size: 11px; }
+
+      /* ── annotation column ── */
+      .notes h2 { font-size: 13px; font-weight: 650; margin: 2px 0 8px; }
+      .notes p, .notes li { font-size: 12px; color: var(--muted); line-height: 1.75; }
+      .notes ul { margin: 6px 0 16px; padding-left: 18px; }
+      .notes .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
+      .notes .k { font-size: 11px; font-weight: 650; color: var(--text); margin: 0 0 6px; }
+      .notes .decisions { display: grid; gap: 8px; }
+      .notes .decisions div { font-size: 12px; }
+      .notes .decisions b { color: var(--text); font-weight: 600; }
+      .log { font-family: var(--mono); font-size: 10.5px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; max-height: 150px; overflow: auto; line-height: 1.9; }
+      .log .t { color: var(--faint); margin-right: 8px; }
+      .log:empty::after { content: "操作记录会显示在这里…"; color: var(--faint); }
+
+      /* ── modal ── */
+      dialog.modal { border: 1px solid var(--line); border-radius: 10px; padding: 22px; width: min(440px, calc(100vw - 32px)); background: var(--card); color: var(--text); box-shadow: 0 18px 70px rgba(0,0,0,0.18); }
+      dialog.modal::backdrop { background: rgba(31,30,29,0.28); backdrop-filter: blur(1.5px); }
+      dialog.modal h2 { font-size: 16px; margin: 0 0 4px; }
+      dialog.modal .sub { color: var(--muted); font-size: 11px; margin: 0 0 18px; }
+      dialog.modal label { display: block; font-size: 11px; color: var(--muted); margin: 12px 0 6px; }
+      dialog.modal input { width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; font-size: 12px; color: var(--text); background: var(--card); }
+      dialog.modal input.err { border-color: var(--danger); }
+      .form-err { color: var(--danger-deep); font-size: 11px; background: color-mix(in srgb, var(--danger) 9%, transparent); padding: 8px 10px; border-radius: 5px; margin-top: 10px; }
+      .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+      .btn { border: 1px solid var(--line); background: var(--card); color: var(--text); font-size: 12px; padding: 7px 14px; border-radius: 6px; }
+      .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+      .btn.primary:hover { opacity: 0.9; }
+
+      .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); font-size: 12px; padding: 10px 16px; border-radius: 8px; opacity: 0; pointer-events: none; transition: all 0.22s; max-width: 90vw; z-index: 60; }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="head">
+        <div>
+          <h1>常用链接 <span class="tag">交互原型 · 状态栏入口</span></h1>
+          <p>与 Orca 右下角<b>「端口」入口同构</b>：在底部状态栏放一个<b>图标 + 计数</b>的入口，点开是它<b>自己的 popover 面板</b>，而不是右栏里的子分区、也不是另开的窗口。面板内容照端口面板的范式做：分组头 + 链接行（点击行直接在内置浏览器打开，hover 出复制/编辑/删除），保存网页地址、一键打开。</p>
+        </div>
+        <button class="reset" id="resetBtn" title="恢复初始模拟数据">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+          重置场景
+        </button>
+      </div>
+
+      <div class="banner">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+        模拟数据 · 仅本页内存生效，刷新即重置；「打开」不真正打开浏览器，只提示将在 BW 内置浏览器打开。点状态栏右下角两个图标分别看「端口」与「常用链接」的弹出面板。
+      </div>
+
+      <div class="cols">
+        <!-- 左列：模拟应用窗口 + 底部状态栏 + 弹出面板 -->
+        <div class="stage">
+          <div class="window">
+            <div class="win-body">
+              <div class="kicker">Workbench · 主内容区</div>
+              <h2>这里是应用主区（示意）</h2>
+              <p>入口不在右栏、也不新开窗口，而在底部状态栏右端——与「端口」入口并列。点右下角的「常用链接」图标即可弹出本特性的面板。</p>
+              <div class="hintrow">
+                <span class="chipmock">编辑器</span>
+                <span class="chipmock">内置浏览器</span>
+                <span class="chipmock">终端</span>
+              </div>
+            </div>
+
+            <div class="statusbar">
+              <div class="sb-left">
+                <span class="sb-usage">
+                  <span class="badge">CL</span><span class="pct">62%</span>
+                  <span class="badge">CX</span><span class="pct">40%</span>
+                </span>
+              </div>
+              <div class="spacer"></div>
+              <div class="sb-right">
+                <!-- 端口入口（Orca 原生，仅作同构参照） -->
+                <button class="seg" id="portsSeg" aria-expanded="false" title="端口（Orca 原生入口）">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
+                  <span class="n">12</span>
+                </button>
+                <!-- 常用链接入口（本特性，同构） -->
+                <button class="seg" id="linksSeg" aria-expanded="false" title="常用链接">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+                  <span class="n" id="linksCount">0</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 常用链接 popover（本特性） -->
+          <div class="popover" id="linksPopover" hidden role="dialog" aria-label="常用链接">
+            <div class="pop-head">
+              <div class="pl">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+                <span class="title">常用链接</span>
+                <span class="count" id="popCount">0</span>
+              </div>
+              <div class="pr">
+                <button class="add" id="addBtn" title="添加常用链接">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>添加
+                </button>
+              </div>
+            </div>
+            <div class="pop-body">
+              <div class="group-head">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+                <span>Builder Workbench</span>
+                <span class="gsp"></span>
+                <span class="gcount" id="groupCount">0</span>
+              </div>
+              <div class="rows" id="linksList"></div>
+            </div>
+          </div>
+
+          <!-- 端口 popover（Orca 原生，仅作同构参照，静态） -->
+          <div class="popover" id="portsPopover" hidden role="dialog" aria-label="端口">
+            <div class="pop-head">
+              <div class="pl">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
+                <span class="title">Ports</span>
+                <span class="count">2 / 12</span>
+              </div>
+            </div>
+            <div class="pop-body">
+              <div class="group-head">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+                <span>Active Workspace</span>
+                <span class="gsp"></span><span class="gcount">2</span>
+              </div>
+              <div class="rows">
+                <div class="prow">
+                  <div class="port">:5173</div>
+                  <div class="proc"><div class="pname">vite</div><div class="paddr">localhost:5173</div></div>
+                  <div class="acts">
+                    <button class="act" title="打开"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></button>
+                    <button class="act" title="复制"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+                  </div>
+                </div>
+                <div class="prow">
+                  <div class="port">:4310</div>
+                  <div class="proc"><div class="pname">node API</div><div class="paddr">localhost:4310</div></div>
+                  <div class="acts">
+                    <button class="act" title="打开"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></button>
+                    <button class="act" title="复制"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- notes -->
+        <div class="notes">
+          <div class="card">
+            <p class="k">这是什么 / 为什么这么做</p>
+            <ul style="margin-bottom:0">
+              <li><b>与端口同构</b>：底部状态栏「图标 + 计数」入口 → 点开自己的 popover 面板；位置、尺寸、行结构都与 <code>PortsStatusSegment</code> 一致（人评审意见，2026-11-13）。</li>
+              <li><b>不再做</b>：右栏子分区、另开的独立窗口——都已放弃。</li>
+              <li><b>只做「端口之外」</b>：本地服务识别与打开已由 Orca 端口面板覆盖，本特性不重复造扫描器。</li>
+              <li><b>项目级保存</b>：不同项目存不同链接；重开 BW 仍在。</li>
+              <li><b>克制、隔离</b>：不探活、不自愈、不显示假的“状态灯”，避免退化成泛用书签管理器。</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <p class="k">可评审的交互</p>
+            <div class="decisions">
+              <div>· <b>入口</b>：状态栏图标 + 计数；点击开合面板。</div>
+              <div>· <b>添加 / 编辑</b>：名称 + 地址；地址须 http/https、不能带账号密码、不能与已有重复。</div>
+              <div>· <b>打开</b>：直接点击该行即在内置浏览器打开；hover 出「复制 / 编辑 / 删除」。</div>
+              <div>· <b>复制 / 删除</b>：行内图标即时操作。</div>
+              <div>· <b>分组</b>：按项目分组，显示当前项目及其链接数。</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="k">操作记录</p>
+            <div class="log" id="log"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- add/edit dialog -->
+    <dialog class="modal" id="dlg">
+      <form method="dialog" id="linkForm">
+        <h2 id="dlgTitle">添加常用链接</h2>
+        <p class="sub">项目级保存 · 保存后仅用于本原型演示</p>
+        <label for="fName">名称</label>
+        <input id="fName" placeholder="例如 内部文档" autocomplete="off" />
+        <label for="fUrl">地址</label>
+        <input id="fUrl" placeholder="https://example.com" autocomplete="off" />
+        <div class="form-err" id="fErr" style="display:none"></div>
+        <div class="modal-foot">
+          <button type="button" class="btn" id="cancelBtn">取消</button>
+          <button type="submit" class="btn primary" id="saveBtn">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const DEFAULT_LINKS = [
+        { id: 'l1', name: '内部设计规范', url: 'https://design.internal/docs' },
+        { id: 'l2', name: '构建流水线', url: 'https://ci.internal/pipelines' },
+        { id: 'l3', name: '团队看板', url: 'https://board.internal/team' }
+      ];
+      let links = [];
+      let editingId = null;
+
+      const el = (id) => document.getElementById(id);
+      const linksList = el('linksList');
+      const linksCount = el('linksCount');
+      const popCount = el('popCount');
+      const groupCount = el('groupCount');
+      const linksPopover = el('linksPopover');
+      const portsPopover = el('portsPopover');
+      const linksSeg = el('linksSeg');
+      const portsSeg = el('portsSeg');
+      const dlg = el('dlg');
+      const fName = el('fName');
+      const fUrl = el('fUrl');
+      const fErr = el('fErr');
+      const logBox = el('log');
+
+      function reset() {
+        links = DEFAULT_LINKS.map((l) => ({ ...l }));
+        editingId = null;
+        logBox.innerHTML = '';
+        closePopovers();
+        render();
+      }
+
+      function logLine(msg) {
+        const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+        const line = document.createElement('div');
+        line.innerHTML = '<span class="t">' + t + '</span>' + msg;
+        logBox.appendChild(line);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      function toast(msg) {
+        const t = el('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toast._t);
+        toast._t = setTimeout(() => t.classList.remove('show'), 1900);
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
+      function displayUrl(u) {
+        try {
+          const url = new URL(u);
+          return url.host + (url.pathname === '/' ? '' : url.pathname);
+        } catch {
+          return u;
+        }
+      }
+
+      function icon(paths, size) {
+        return '<svg width="' + (size || 13) + '" height="' + (size || 13) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + paths + '</svg>';
+      }
+
+      function render() {
+        const n = String(links.length);
+        linksCount.textContent = n;
+        popCount.textContent = n;
+        groupCount.textContent = n;
+        linksList.innerHTML = '';
+
+        if (links.length === 0) {
+          linksList.innerHTML =
+            '<div class="empty"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><h3>还没有常用链接</h3><p>点上方「添加」保存一个网页地址。</p></div>';
+          return;
+        }
+
+        for (const l of links) {
+          const row = document.createElement('div');
+          row.className = 'lrow';
+
+          const glyph = document.createElement('div');
+          glyph.className = 'glyph';
+          glyph.innerHTML = icon('<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>', 13);
+
+          const main = document.createElement('div');
+          main.className = 'main';
+          main.innerHTML = '<div class="lname">' + escapeHtml(l.name) + '</div><div class="lurl">' + escapeHtml(displayUrl(l.url)) + '</div>';
+
+          const acts = document.createElement('div');
+          acts.className = 'acts';
+
+          const copy = document.createElement('button');
+          copy.className = 'act';
+          copy.title = '复制地址';
+          copy.innerHTML = icon('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>');
+          copy.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try { navigator.clipboard && navigator.clipboard.writeText(l.url); } catch {}
+            toast('已复制地址');
+            logLine('复制：' + escapeHtml(l.url));
+          });
+
+          const edit = document.createElement('button');
+          edit.className = 'act';
+          edit.title = '编辑';
+          edit.innerHTML = icon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>');
+          edit.addEventListener('click', (e) => { e.stopPropagation(); openDialog(l); });
+
+          const del = document.createElement('button');
+          del.className = 'act danger';
+          del.title = '删除';
+          del.innerHTML = icon('<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>');
+          del.addEventListener('click', (e) => { e.stopPropagation(); deleteLink(l); });
+
+          acts.append(copy, edit, del);
+          row.title = '在内置浏览器打开 ' + l.url;
+          row.addEventListener('click', () => openLink(l));
+          row.append(glyph, main, acts);
+          linksList.appendChild(row);
+        }
+      }
+
+      function openLink(l) {
+        toast('将在 BW 内置浏览器打开：' + l.url);
+        logLine('打开：' + escapeHtml(l.name) + ' → ' + escapeHtml(l.url));
+      }
+
+      function deleteLink(l) {
+        links = links.filter((x) => x.id !== l.id);
+        logLine('删除：' + escapeHtml(l.name));
+        render();
+      }
+
+      function openDialog(editTarget) {
+        editingId = editTarget ? editTarget.id : null;
+        el('dlgTitle').textContent = editTarget ? '编辑常用链接' : '添加常用链接';
+        fName.value = editTarget ? editTarget.name : '';
+        fUrl.value = editTarget ? editTarget.url : '';
+        fName.classList.remove('err');
+        fUrl.classList.remove('err');
+        fErr.style.display = 'none';
+        dlg.showModal();
+        setTimeout(() => fName.focus(), 30);
+      }
+
+      function validate() {
+        const name = fName.value.trim();
+        const raw = fUrl.value.trim();
+        if (!name) return { err: '请填写名称。', focus: fName };
+        let url;
+        try { url = new URL(raw); } catch { return { err: '请输入完整地址，例如 https://example.com。', focus: fUrl }; }
+        if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password)
+          return { err: '地址需使用 http/https，且不能包含账号密码。', focus: fUrl };
+        const normalized = url.href.replace(/\/$/, '');
+        if (links.some((x) => x.id !== editingId && x.url.replace(/\/$/, '') === normalized))
+          return { err: '这个地址已在常用链接中，请勿重复添加。', focus: fUrl };
+        return { name, url: normalized };
+      }
+
+      el('linkForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const v = validate();
+        if (v.err) {
+          fErr.textContent = v.err;
+          fErr.style.display = 'block';
+          v.focus.classList.add('err');
+          v.focus.focus();
+          return;
+        }
+        if (editingId) {
+          const l = links.find((x) => x.id === editingId);
+          l.name = v.name;
+          l.url = v.url;
+          logLine('编辑：' + escapeHtml(v.name));
+        } else {
+          links.push({ id: 'l' + Date.now(), name: v.name, url: v.url });
+          logLine('添加：' + escapeHtml(v.name));
+        }
+        dlg.close();
+        render();
+      });
+
+      el('cancelBtn').addEventListener('click', () => dlg.close());
+      el('addBtn').addEventListener('click', (e) => { e.stopPropagation(); openDialog(null); });
+      el('resetBtn').addEventListener('click', reset);
+
+      /* ── popover open/close：与端口一致，同一时刻只开一个 ── */
+      function closePopovers() {
+        linksPopover.hidden = true;
+        portsPopover.hidden = true;
+        linksSeg.setAttribute('aria-expanded', 'false');
+        portsSeg.setAttribute('aria-expanded', 'false');
+      }
+      function toggle(pop, seg) {
+        const willOpen = pop.hidden;
+        closePopovers();
+        if (willOpen) { pop.hidden = false; seg.setAttribute('aria-expanded', 'true'); }
+      }
+      linksSeg.addEventListener('click', (e) => { e.stopPropagation(); toggle(linksPopover, linksSeg); });
+      portsSeg.addEventListener('click', (e) => { e.stopPropagation(); toggle(portsPopover, portsSeg); });
+      linksPopover.addEventListener('click', (e) => e.stopPropagation());
+      portsPopover.addEventListener('click', (e) => e.stopPropagation());
+      document.addEventListener('click', (e) => {
+        // 添加/编辑弹窗内的点击不关闭入口——保存/取消后常用链接面板保持展开
+        if (dlg.contains(e.target)) return;
+        closePopovers();
+      });
+
+      reset();
+    </script>
+  </body>
+</html>

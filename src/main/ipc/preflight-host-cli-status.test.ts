@@ -266,7 +266,7 @@ describe('preflight', () => {
       () =>
         execFileAsyncMock.mockResolvedValueOnce({
           stdout:
-            'Configuration:\n  Environment:  pro\n\nCredentials:\n  Status:       not authenticated\n  Hint:         Run \'welink-cli auth login\' to authenticate.\n'
+            "Configuration:\n  Environment:  pro\n\nCredentials:\n  Status:       not authenticated\n  Hint:         Run 'welink-cli auth login' to authenticate.\n"
         })
     ]) {
       mockHappyAuthPathPrefix().mockResolvedValueOnce({
@@ -383,7 +383,7 @@ describe('preflight', () => {
     )
     execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
       if (command === 'cmd.exe') {
-        return args.includes('auth')
+        return args[0].includes('"auth"')
           ? { stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' }
           : { stdout: 'codehub-cli version 1.4.1\n' }
       }
@@ -403,8 +403,8 @@ describe('preflight', () => {
     expect(status.codehub).toEqual({ installed: true, authenticated: true })
     expect(execFileAsyncMock).toHaveBeenCalledWith(
       'cmd.exe',
-      ['/d', '/c', 'C:\\Users\\dev\\AppData\\Roaming\\npm\\codehub-cli.cmd', '--version'],
-      expect.objectContaining({ windowsHide: true })
+      ['/d /v:off /s /c ""C:\\Users\\dev\\AppData\\Roaming\\npm\\codehub-cli.cmd" "--version""'],
+      expect.objectContaining({ windowsHide: true, windowsVerbatimArguments: true })
     )
   })
 

@@ -5,6 +5,7 @@ import {
   ALL_HOSTS_OPTION_VALUE,
   automationHostFilterForEntry,
   automationHostSearchText,
+  filterAutomationHostGroupsByQuery,
   groupAutomationHostEntriesByAuthority
 } from './automation-host-picker-groups'
 
@@ -95,5 +96,36 @@ describe('automation host picker groups', () => {
   it('indexes search text over both the host and its authority', () => {
     expect(automationHostSearchText(runtimeSelf('env-a', 'Alpha Box'))).toBe('alpha box alpha box')
     expect(automationHostSearchText(desktopSsh('t1', 'WEB-01'))).toBe('this computer web-01')
+  })
+
+  it('drops authorities whose entries all miss the query and keeps the matches', () => {
+    const groups = groupAutomationHostEntriesByAuthority([
+      desktopSsh('t1', 'web-01'),
+      desktopSsh('t2', 'web-02'),
+      runtimeSelf('env-a', 'Alpha Box')
+    ])
+
+    const byHost = filterAutomationHostGroupsByQuery(groups, 'WEB')
+    expect(byHost.map((group) => group.authorityLabel)).toEqual(['This computer'])
+    expect(byHost.flatMap((group) => group.entries).map((entry) => entry.label)).toEqual([
+      'web-01',
+      'web-02'
+    ])
+
+    const byAuthority = filterAutomationHostGroupsByQuery(groups, 'alpha')
+    expect(byAuthority.map((group) => group.authorityLabel)).toEqual(['Alpha Box'])
+    expect(byAuthority.flatMap((group) => group.entries).map((entry) => entry.label)).toEqual([
+      'Alpha Box'
+    ])
+  })
+
+  it('returns every group unchanged for a blank query and nothing for a miss', () => {
+    const groups = groupAutomationHostEntriesByAuthority([
+      desktopSsh('t1', 'web-01'),
+      runtimeSelf('env-a', 'Alpha Box')
+    ])
+
+    expect(filterAutomationHostGroupsByQuery(groups, '   ')).toEqual(groups)
+    expect(filterAutomationHostGroupsByQuery(groups, 'no-such-host')).toEqual([])
   })
 })

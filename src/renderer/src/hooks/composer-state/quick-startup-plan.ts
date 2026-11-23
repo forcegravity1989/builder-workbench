@@ -12,6 +12,17 @@ import {
 import { resolveInitialNativeChatSessionOptions } from '@/components/native-chat/native-chat-launch-session-options'
 import { isNativeChatTranscriptLocalReadable } from '@/lib/native-chat-transcript-readability'
 import { tuiAgentToAgentKind } from '@/lib/telemetry'
+import { useAppStore } from '@/store'
+import {
+  planAgentSessionLaunch,
+  type AgentSessionLaunchRequest
+} from '@/lib/agent-session-launch-plan'
+import { resolveQuickCreateLinkedWorkItemPrompt } from '@/lib/linked-work-item-context'
+import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
+import {
+  prepareHostAgentStartupInputs,
+  type PreparedHostAgentStartup
+} from '@/lib/host-agent-startup-inputs'
 
 export type QuickComposerStartupInput = {
   agent: TuiAgent | null
@@ -23,6 +34,7 @@ export type QuickComposerStartupInput = {
   shell: AgentStartupShell | null | undefined
   isRemote: boolean
   telemetrySource: WorktreeCreationRequest['telemetrySource']
+  hostStartup?: PreparedHostAgentStartup
 }
 
 export type QuickComposerStartup = {
@@ -31,10 +43,66 @@ export type QuickComposerStartup = {
   telemetry: AgentStartedTelemetry | null
 }
 
+type PreparedQuickComposerStartup = QuickComposerStartup & {
+  agentLaunchOwner: PreparedHostAgentStartup['owner']
+  quickPrompt: string
+  quickDraftPrompt: string | null
+}
+
+export async function prepareQuickComposerStartup(
+  input: Omit<QuickComposerStartupInput, 'hostStartup' | 'prompt' | 'draftPrompt'> & {
+    linkedWorkItem: LinkedWorkItemSummary | null
+    note: string
+    runtimeEnvironmentId: string | null | undefined
+    usesEphemeralVm: boolean
+  }
+): Promise<PreparedQuickComposerStartup> {
+  const { agent, linkedWorkItem: submitLinkedWorkItem } = input
+  const promptLinkedWorkItem = agent === null ? null : submitLinkedWorkItem
+  const { prompt: quickPrompt, draftPrompt: quickDraftPrompt } =
+    resolveQuickCreateLinkedWorkItemPrompt(promptLinkedWorkItem, input.note)
+  const hostStartup = await prepareHostAgentStartupInputs({
+    environmentId: input.usesEphemeralVm ? null : input.runtimeEnvironmentId?.trim(),
+    agent: input.agent,
+    settings: input.settings,
+    platform: input.platform,
+    shell: input.shell,
+    isRemote: input.isRemote
+  })
+  return {
+    ...buildQuickComposerStartup({
+      ...input,
+      prompt: quickPrompt,
+      draftPrompt: quickDraftPrompt,
+      hostStartup
+    }),
+    agentLaunchOwner: hostStartup.owner,
+    quickPrompt,
+    quickDraftPrompt
+  }
+}
+
+export function resolveQuickComposerAgentLaunchRoute(
+  agent: TuiAgent | null,
+  request: Omit<AgentSessionLaunchRequest, 'agent'>
+): WorktreeCreationRequest['agentLaunchRoute'] {
+  return agent
+    ? planAgentSessionLaunch(useAppStore.getState(), { ...request, agent }).route
+    : 'terminal-tui'
+}
+
 export function buildQuickComposerStartup(input: QuickComposerStartupInput): QuickComposerStartup {
   const { agent, draftPrompt, prompt, settings } = input
+  const launchInputs = input.hostStartup?.inputs ?? {
+    cmdOverrides: settings?.agentCmdOverrides ?? {},
+    agentArgs: agent ? resolveTuiAgentLaunchArgs(agent, settings?.agentDefaultArgs) : undefined,
+    agentEnv: agent ? resolveTuiAgentLaunchEnv(agent, settings?.agentDefaultEnv) : undefined,
+    platform: input.platform,
+    shell: input.shell ?? undefined,
+    isRemote: input.isRemote
+  }
   const sessionOptions =
-    agent === null
+    agent === null || input.hostStartup?.hostOwned
       ? undefined
       : resolveInitialNativeChatSessionOptions(
           {
@@ -58,13 +126,8 @@ export function buildQuickComposerStartup(input: QuickComposerStartupInput): Qui
       : buildAgentDraftLaunchPlan({
           agent,
           draft: draftPrompt,
-          cmdOverrides: settings?.agentCmdOverrides ?? {},
-          agentArgs: resolveTuiAgentLaunchArgs(agent, settings?.agentDefaultArgs),
-          agentEnv: resolveTuiAgentLaunchEnv(agent, settings?.agentDefaultEnv),
           sessionOptions,
-          platform: input.platform,
-          shell: input.shell ?? undefined,
-          isRemote: input.isRemote
+          ...launchInputs
         })
   let startupPlan: AgentStartupPlan | null = null
   if (draftLaunchPlan) {
@@ -84,13 +147,8 @@ export function buildQuickComposerStartup(input: QuickComposerStartupInput): Qui
     startupPlan = buildAgentStartupPlan({
       agent,
       prompt,
-      cmdOverrides: settings?.agentCmdOverrides ?? {},
-      agentArgs: resolveTuiAgentLaunchArgs(agent, settings?.agentDefaultArgs),
-      agentEnv: resolveTuiAgentLaunchEnv(agent, settings?.agentDefaultEnv),
       sessionOptions,
-      platform: input.platform,
-      shell: input.shell ?? undefined,
-      isRemote: input.isRemote,
+      ...launchInputs,
       allowEmptyPromptLaunch: true
     })
     if (startupPlan && draftPrompt) {

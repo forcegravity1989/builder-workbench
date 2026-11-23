@@ -116,7 +116,7 @@ describeOnWindows('a secure store that exists but cannot be read', () => {
     writeFileSync(filePath, original)
     makeUnreadable(filePath)
 
-    expect(() => loadOrCreateE2EEKeypair(dir)).toThrow(/Refusing to (regenerate|overwrite)/)
+    await expect(loadOrCreateE2EEKeypair(dir)).rejects.toThrow(/Refusing to (regenerate|overwrite)/)
 
     // The point: the secret key is still the one every paired phone derived its shared secret from.
     icacls(filePath, '/reset', '/q')

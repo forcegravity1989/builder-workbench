@@ -462,5 +462,243 @@
       "updatedAt": "2026-10-29T11:11:20Z"
     },
     "readAt": "2026-10-29T11:59:20.612Z"
+  },
+  "taskStates": {
+    "checkedAt": "2026-11-05T02:41:29.2575816Z",
+    "source": "Read-only GitHub Issue state snapshot for prototype; current task states, not historical acceptance results.",
+    "tasks": [
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 158,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/158",
+        "updatedAt": "2026-10-31T05:18:54Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 199,
+        "state": "OPEN",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/199",
+        "updatedAt": "2026-11-04T02:07:44Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 317,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/317",
+        "updatedAt": "2026-10-23T08:05:38Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 323,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/323",
+        "updatedAt": "2026-10-21T02:14:43Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 328,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/328",
+        "updatedAt": "2026-10-26T01:39:05Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 334,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
+        "updatedAt": "2026-11-02T03:10:30Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 338,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/338",
+        "updatedAt": "2026-10-22T07:39:27Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 341,
+        "state": "OPEN",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
+        "updatedAt": "2026-11-03T09:40:33Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 354,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/354",
+        "updatedAt": "2026-10-30T10:54:59Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 372,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/372",
+        "updatedAt": "2026-10-26T01:38:00Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 374,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/374",
+        "updatedAt": "2026-10-23T02:43:34Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 383,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/383",
+        "updatedAt": "2026-10-25T07:11:49Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 384,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/384",
+        "updatedAt": "2026-10-23T02:43:29Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 385,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/385",
+        "updatedAt": "2026-10-26T01:38:24Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 387,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/387",
+        "updatedAt": "2026-10-23T08:03:44Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 400,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/400",
+        "updatedAt": "2026-10-23T01:37:45Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 404,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/404",
+        "updatedAt": "2026-10-30T10:55:01Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 415,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/415",
+        "updatedAt": "2026-10-28T02:42:03Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 419,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/419",
+        "updatedAt": "2026-10-30T02:35:19Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 421,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/421",
+        "updatedAt": "2026-10-30T10:55:04Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 422,
+        "state": "OPEN",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/422",
+        "updatedAt": "2026-11-04T02:26:36Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 425,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/425",
+        "updatedAt": "2026-10-27T08:58:26Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 427,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/427",
+        "updatedAt": "2026-10-30T10:54:54Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 432,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/432",
+        "updatedAt": "2026-10-30T10:54:56Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 438,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/438",
+        "updatedAt": "2026-10-30T10:55:06Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 440,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/440",
+        "updatedAt": "2026-10-31T05:19:02Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 443,
+        "state": "OPEN",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/443",
+        "updatedAt": "2026-11-03T09:40:38Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 444,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/444",
+        "updatedAt": "2026-10-30T10:55:17Z"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 445,
+        "state": "CLOSED",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/445",
+        "updatedAt": "2026-10-30T06:09:36Z"
+      }
+    ]
   }
 }

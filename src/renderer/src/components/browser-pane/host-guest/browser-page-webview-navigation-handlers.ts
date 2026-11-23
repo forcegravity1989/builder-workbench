@@ -40,6 +40,7 @@ export type BrowserPageWebviewNavigationHandlersArgs = {
   faviconUrlRef: MutableRefObject<string | null>
   setAddressBarValue: Dispatch<SetStateAction<string>>
   annotationViewportBridgeTokenRef: MutableRefObject<string>
+  invalidateBrowserAnnotationDocumentRef: MutableRefObject<() => void>
   setBrowserOverlayViewport: Dispatch<SetStateAction<BrowserOverlayViewport>>
 }
 
@@ -67,7 +68,8 @@ export function createBrowserPageWebviewNavigationHandlers({
   faviconUrlRef,
   setAddressBarValue,
   annotationViewportBridgeTokenRef,
-  setBrowserOverlayViewport
+  setBrowserOverlayViewport,
+  invalidateBrowserAnnotationDocumentRef
 }: BrowserPageWebviewNavigationHandlersArgs): BrowserPageWebviewNavigationHandlers {
   const clearFaviconIfOriginChanges = (
     event: Electron.DidStartNavigationEvent | Electron.DidRedirectNavigationEvent
@@ -95,9 +97,29 @@ export function createBrowserPageWebviewNavigationHandlers({
     if (!event.isMainFrame || event.isInPlace || !event.url) {
       return
     }
-    const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     const browserStartedUrl = redactKagiSessionToken(event.url)
     const startedUrl = normalizeBrowserNavigationUrl(browserStartedUrl) ?? browserStartedUrl
+    // Why only a different document invalidates: a reload re-enters the same document, so its
+    // annotations still describe the same DOM and must survive Reload. Compare the destination
+    // against the document being left (getURL) rather than the destination ref, because Orca-driven
+    // navigations point that ref at the destination before assigning src.
+    let committedUrl: string | null = null
+    try {
+      committedUrl = webview.getURL() || null
+    } catch {
+      // Why: a guest that hasn't attached yet rejects getURL(); nothing committed means the first document.
+    }
+    const committedDocumentUrl = committedUrl
+      ? (normalizeBrowserNavigationUrl(committedUrl) ?? committedUrl)
+      : null
+    const sameDocument =
+      committedDocumentUrl !== null &&
+      committedDocumentUrl.split('#')[0] === startedUrl.split('#')[0]
+    if (!sameDocument) {
+      invalidateBrowserAnnotationDocumentRef.current()
+    }
+    setBrowserOverlayViewport({ scrollX: 0, scrollY: 0, version: 0 })
+    const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     if (pendingRecoveryNavigation?.targetUrl === startedUrl) {
       pendingRecoveryNavigation.started = true
     }
@@ -126,6 +148,9 @@ export function createBrowserPageWebviewNavigationHandlers({
     const browserModelUrl = redactKagiSessionToken(currentUrl)
     const normalizedBrowserModelUrl =
       normalizeBrowserNavigationUrl(browserModelUrl) ?? browserModelUrl
+    if (lastKnownWebviewUrlRef.current?.split('#')[0] !== normalizedBrowserModelUrl.split('#')[0]) {
+      invalidateBrowserAnnotationDocumentRef.current()
+    }
     lastKnownWebviewUrlRef.current = normalizedBrowserModelUrl
     rememberLiveBrowserUrl(browserTabId, browserModelUrl)
     // Why: don't overwrite in-progress typing (see above).

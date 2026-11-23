@@ -12,6 +12,7 @@ import {
 } from '../../../../shared/tui-agent-selection'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import type { DashboardHostAgentPreferences } from './use-dashboard-host-agent-preferences'
 
 export type DashboardLaunchDetectionState = Pick<
   AppState,
@@ -51,36 +52,45 @@ function detectedAgentsForWorktree(
   worktreeId: string,
   repoId: string,
   catalog: DashboardLaunchCatalog
-): readonly TuiAgent[] {
+): { agents: readonly TuiAgent[]; environmentId?: string } {
   const workspaceScope = parseWorkspaceKey(worktreeId)
   if (workspaceScope?.type === 'folder') {
     const folder = catalog.foldersById.get(workspaceScope.folderWorkspaceId)
     const group = folder ? catalog.groupsById.get(folder.projectGroupId) : undefined
-    const host = parseExecutionHostId(group?.executionHostId)
+    const host = parseExecutionHostId(folder?.executionHostId ?? group?.executionHostId)
     if (host?.kind === 'runtime') {
-      return state.runtimeDetectedAgentIds?.[host.environmentId] ?? []
+      return {
+        agents: state.runtimeDetectedAgentIds?.[host.environmentId] ?? [],
+        environmentId: host.environmentId
+      }
     }
     const connectionId = folder?.connectionId ?? group?.connectionId
-    return connectionId ? (state.remoteDetectedAgentIds?.[connectionId] ?? []) : []
+    return { agents: connectionId ? (state.remoteDetectedAgentIds?.[connectionId] ?? []) : [] }
   }
 
   const worktree = catalog.worktreesByRepoAndId.get(repoId)?.get(worktreeId)
   const repo = catalog.reposById.get(worktree?.repoId ?? repoId)
   const host = parseExecutionHostId(worktree?.hostId ?? repo?.executionHostId)
   if (host?.kind === 'runtime') {
-    return state.runtimeDetectedAgentIds?.[host.environmentId] ?? []
+    return {
+      agents: state.runtimeDetectedAgentIds?.[host.environmentId] ?? [],
+      environmentId: host.environmentId
+    }
   }
   const connectionId = host?.kind === 'ssh' ? host.targetId : repo?.connectionId
-  return connectionId
-    ? (state.remoteDetectedAgentIds?.[connectionId] ?? [])
-    : (state.detectedAgentIds ?? [])
+  return {
+    agents: connectionId
+      ? (state.remoteDetectedAgentIds?.[connectionId] ?? [])
+      : (state.detectedAgentIds ?? [])
+  }
 }
 
 /** Host-detected choices plus providers already proven to run in the workspace. */
 export function buildDashboardWorktreeLaunchOptions(
   state: DashboardLaunchOptionState,
   cards: readonly DashboardCard[],
-  workspaces: readonly DashboardWorkspace[] = []
+  workspaces: readonly DashboardWorkspace[] = [],
+  hostPreferences?: DashboardHostAgentPreferences
 ): Record<string, TuiAgent[]> {
   const catalog = buildDashboardLaunchCatalog(state)
   const cardsByWorktreeId = new Map<string, DashboardCard[]>()
@@ -105,9 +115,16 @@ export function buildDashboardWorktreeLaunchOptions(
       break
     }
     const worktreeCards = cardsByWorktreeId.get(worktreeId) ?? []
-    const available = new Set<TuiAgent>(
-      detectedAgentsForWorktree(state, worktreeId, repoId, catalog)
-    )
+    const detected = detectedAgentsForWorktree(state, worktreeId, repoId, catalog)
+    const hostPreference = detected.environmentId
+      ? hostPreferences?.get(detected.environmentId)
+      : undefined
+    if (detected.environmentId && !hostPreference?.isAvailable) {
+      result[worktreeId] = []
+      continue
+    }
+    const preferences = hostPreference ?? state.settings
+    const available = new Set<TuiAgent>(detected.agents)
     for (const card of worktreeCards) {
       if (isTuiAgent(card.agentType)) {
         available.add(card.agentType)
@@ -115,9 +132,9 @@ export function buildDashboardWorktreeLaunchOptions(
     }
     const enabled = filterEnabledTuiAgents(
       TUI_AGENT_AUTO_PICK_ORDER.filter((agent) => available.has(agent)),
-      state.settings?.disabledTuiAgents
+      preferences?.disabledTuiAgents
     )
-    const preferred = state.settings?.defaultTuiAgent
+    const preferred = preferences?.defaultTuiAgent
     result[worktreeId] =
       preferred && preferred !== 'blank' && enabled.includes(preferred)
         ? [preferred, ...enabled.filter((agent) => agent !== preferred)]

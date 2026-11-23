@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { normalizeExecutionHostId, type ExecutionHostId } from '../execution-host'
 import { Id, MaterialVersion, VersionTaskReferenceSchema } from './version-material-common'
 import {
   type ParsedTaskQuery,
@@ -28,11 +29,17 @@ export function workbenchGoalMutationQuery(
  */
 export const WorkbenchTaskScopeSchema = z.strictObject({
   version: MaterialVersion,
+  homeHostId: z
+    .custom<ExecutionHostId>(
+      (value) => typeof value === 'string' && normalizeExecutionHostId(value) === value
+    )
+    .optional(),
+  runtimeOwnerEnvironmentId: Id.optional(),
   /** Only a selected goal uses the complete reference set. */
   goalId: Id.nullish(),
   /** 仅展示（如「G2 · 目标句」）；业务身份只认 goalId。 */
   goalLabel: z.string().nullish(),
-  references: z.array(VersionTaskReferenceSchema)
+  references: z.array(VersionTaskReferenceSchema.extend({ kind: z.literal('issue').optional() }))
 })
 export type WorkbenchTaskScope = z.infer<typeof WorkbenchTaskScopeSchema>
 
@@ -40,15 +47,24 @@ export function workbenchVersionTaskLabel(version: string): string {
   return `bw:plan:${version}`
 }
 
+/** Explicit goal navigation starts from its plan references, independent of a saved native search. */
+export function workbenchTaskEntryQuery(
+  query: string,
+  scope: WorkbenchTaskScope | null | undefined,
+  previousScope?: WorkbenchTaskScope | null
+): string {
+  return scope?.goalId ? '' : seedWorkbenchTaskQuery(query, scope, previousScope)
+}
+
 export function seedWorkbenchTaskQuery(
   query: string,
   scope: WorkbenchTaskScope | null | undefined,
   previousScope?: WorkbenchTaskScope | null
 ): string {
-  if (!scope) {
+  if (!scope || scope.goalId) {
     return query
   }
-  if (previousScope && previousScope.version !== scope.version) {
+  if (previousScope && !previousScope.goalId && previousScope.version !== scope.version) {
     query = removeWorkbenchVersionQuery(query, previousScope)
   }
   const labels = parseTaskQuery(query).labels

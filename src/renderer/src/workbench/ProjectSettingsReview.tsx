@@ -1,93 +1,78 @@
-import { X } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { WorkbenchIconButton } from './WorkbenchIconButton'
-import { CHARTER_LABELS, type useProjectSettings } from './use-project-settings'
+import { useState } from 'react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CHARTER_LABELS, type ProjectCharter } from './project-charter'
+
+type ReviewFields = {
+  changes: readonly (keyof typeof CHARTER_LABELS)[]
+  value: ProjectCharter
+  localOnly: boolean
+  disabled?: boolean
+  onConfirm(): void
+}
+
+export function ProjectSettingsReviewSummary({
+  changes,
+  value,
+  localOnly,
+  disabled,
+  onConfirm
+}: ReviewFields) {
+  return (
+    <>
+      <strong>本次修改</strong>
+      <ul>
+        {changes.map((field) => (
+          <li key={field}>
+            {CHARTER_LABELS[field]}：{(value[field] ?? '').trim() || '留空'}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        className="wb-btn wb-btn-primary"
+        disabled={disabled}
+        onClick={onConfirm}
+      >
+        {localOnly ? '确认保存' : '确认提交'}
+      </button>
+    </>
+  )
+}
 
 export function ProjectSettingsReview({
-  model,
-  open,
-  setOpen,
-  onSubmitted,
-  saveLocally
-}: {
-  model: ReturnType<typeof useProjectSettings>
-  open: boolean
-  setOpen: (open: boolean) => void
-  onSubmitted: () => void
-  saveLocally: boolean
-}) {
+  value,
+  changes,
+  localOnly,
+  busy,
+  disabled,
+  onConfirm
+}: Omit<ReviewFields, 'value'> & { value: ProjectCharter | null; busy: boolean }) {
+  const [open, setOpen] = useState(false)
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(open) => {
-        if (!model.busy) {
-          setOpen(open)
-        }
-      }}
-    >
-      <DialogContent showCloseButton={false} className="wb-config-review">
-        <header>
-          <DialogTitle>确认项目信息变更</DialogTitle>
-          <WorkbenchIconButton
-            label="关闭变更对比"
-            icon={X}
-            onClick={() => setOpen(false)}
-            disabled={model.busy}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className="wb-btn wb-btn-primary" disabled={disabled}>
+          {busy ? '提交中…' : localOnly ? '保存' : '提交评审'}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        aria-label="确认项目信息变更"
+        className="wb-ml-review max-h-[min(28rem,70vh)] overflow-auto scrollbar-sleek break-words"
+        align="end"
+      >
+        {value && (
+          <ProjectSettingsReviewSummary
+            changes={changes}
+            value={value}
+            localOnly={localOnly}
+            disabled={disabled}
+            onConfirm={() => {
+              setOpen(false)
+              onConfirm()
+            }}
           />
-        </header>
-        <DialogDescription>
-          {saveLocally
-            ? '变更将保存到项目所在主机，尚未共享。'
-            : '提交后等待评审；合入并更新代码后，项目卡片显示新信息。'}
-        </DialogDescription>
-        <div className="wb-config-diff">
-          {model.changes.map((field) => (
-            <section key={field}>
-              <h3>{CHARTER_LABELS[field]}</h3>
-              <dl>
-                <div>
-                  <dt>原值</dt>
-                  <dd>{model.form!.baseline[field] || '未填写'}</dd>
-                </div>
-                <div>
-                  <dt>改为</dt>
-                  <dd>{model.form!.value[field].trim() || '留空'}</dd>
-                </div>
-              </dl>
-            </section>
-          ))}
-        </div>
-        {model.error ? (
-          <p className="wb-config-error" role="alert">
-            {model.error}
-          </p>
-        ) : null}
-        <footer>
-          <button
-            type="button"
-            className="wb-btn wb-btn-ghost"
-            disabled={model.busy}
-            onClick={() => setOpen(false)}
-          >
-            继续编辑
-          </button>
-          <button
-            type="button"
-            className="wb-btn wb-btn-primary"
-            disabled={model.busy}
-            onClick={() =>
-              void model.submit().then((ok) => {
-                if (ok) {
-                  setOpen(false)
-                  onSubmitted()
-                }
-              })
-            }
-          >
-            {model.busy ? '提交中…' : saveLocally ? '保存到主机' : '提交 PR'}
-          </button>
-        </footer>
-      </DialogContent>
-    </Dialog>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }

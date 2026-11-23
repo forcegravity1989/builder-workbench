@@ -32,6 +32,12 @@ const plan: PlanningMaterial = {
 }
 const digest = (raw: Buffer) => `sha256:${createHash('sha256').update(raw).digest('hex')}`
 const git = (args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' })
+const gitWithEnv = (args: string[], environment: NodeJS.ProcessEnv) =>
+  execFileSync('git', args, {
+    cwd: root,
+    stdio: 'pipe',
+    env: { ...process.env, ...environment }
+  })
 const commit = (message: string, path = '.bw/planning/v1/data.json') => {
   git(['add', path])
   git(['commit', '-m', message])
@@ -193,17 +199,18 @@ afterAll(() => {
     if (dirname(target) !== resolve(tmpdir()) || !basename(target).startsWith('bw-history-')) {
       throw new Error('Unexpected test repository location')
     }
-    rmSync(target, { recursive: true, force: true })
+    // Why maxRetries: Windows git handle release lags, so the first rmdir can hit transient EPERM/EBUSY.
+    rmSync(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 })
 
-function service(cycleHead?: string) {
+function service(cycleHead?: string, baselineCommit = adoptedCommit) {
   return createVersionHistoryService({
     async git(_scope, args) {
       return git(args)
     },
     async baseline() {
-      return { ref: 'adopted', commit: adoptedCommit }
+      return { ref: 'adopted', commit: baselineCommit }
     },
     async worktreeHead() {
       return cycleHead ?? git(['rev-parse', 'HEAD']).toString().trim()
@@ -286,9 +293,23 @@ it('lists one record per cycle round across no-ff, ff and rebase history while p
     workflow: 'plan'
   })
   expect(unverifiedRead.document.version).toBe('unverified')
+  // An unmerged branch commit is readable: the file exists and parses, and
+  // being reachable from trunk proves nothing about displaying it.
+  const unmergedRaw = git(['show', `${unmergedCommit}:.bw/planning/v1/data.json`])
+  const unmergedPlan = await port.readPlan({
+    scope,
+    planRef: {
+      ...planRef,
+      cycleId: 'unmerged-cycle',
+      revision: digest(unmergedRaw),
+      sourceCommit: unmergedCommit
+    }
+  })
+  expect(unmergedPlan.document.cycleId).toBe('unmerged-cycle')
+  // A missing material path is a missing source, not a format error.
   await expect(
-    port.readPlan({ scope, planRef: { ...planRef, sourceCommit: unmergedCommit } })
-  ).rejects.toMatchObject({ code: 'unverified-source' })
+    port.readPlan({ scope, planRef: { ...planRef, version: 'v9.9' } })
+  ).rejects.toMatchObject({ code: 'history-unavailable' })
   await expect(
     port.readPlan({ scope, planRef: { ...planRef, cycleId: 'second-cycle' } })
   ).rejects.toMatchObject({ code: 'history-identity-mismatch' })
@@ -297,7 +318,7 @@ it('lists one record per cycle round across no-ff, ff and rebase history while p
   ).rejects.toMatchObject({ code: 'history-identity-mismatch' })
 })
 
-it('reads reachable trunk and cycle revisions without losing same-cycle weeks or accepting unrelated branches', async () => {
+it('reads reachable trunk and cycle revisions without losing same-cycle weeks', async () => {
   const result = await service().read({
     scope,
     sourceCommit: ffMultiMaterialCommit,
@@ -324,8 +345,8 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks or
     'spanning-weeks'
   ])
   // Rounds are retired with the cross-week scenario: VersionHistorySource no
-  // longer declares round metadata, and stored material that still has rounds
-  // reads through the strip-on-read projection instead of failing strict parse.
+  // longer declares round metadata, while stored legacy fields remain readable
+  // through the passthrough material schema.
   const collapsed = await port.list({
     scope,
     source: 'cycle',
@@ -343,8 +364,8 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks or
     expectedRevision: catalog.records[1].revision
   }
   expect((await port.read(request)).document).toMatchObject({ cycleId: 'spanning-weeks' })
-  await expect(port.read({ ...request, source: 'trunk' })).rejects.toMatchObject({
-    code: 'unverified-source'
+  expect((await port.read({ ...request, source: 'trunk' })).document).toMatchObject({
+    cycleId: 'spanning-weeks'
   })
   await expect(port.read({ ...request, expectedRevision: firstRevision })).rejects.toMatchObject({
     code: 'history-identity-mismatch'
@@ -352,16 +373,18 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks or
   await expect(port.read({ ...request, cycleId: 'different-cycle' })).rejects.toMatchObject({
     code: 'history-identity-mismatch'
   })
-  await expect(
-    port.read({
-      scope,
-      source: 'cycle',
-      sourceCommit: unrelatedCommit,
-      version: 'v1',
-      cycleId: 'unrelated',
-      workflow: 'plan'
-    })
-  ).rejects.toMatchObject({ code: 'unverified-source' })
+  expect(
+    (
+      await port.read({
+        scope,
+        source: 'cycle',
+        sourceCommit: unrelatedCommit,
+        version: 'v1',
+        cycleId: 'unrelated',
+        workflow: 'plan'
+      })
+    ).document.cycleId
+  ).toBe('unrelated')
   expect(
     (
       await port.read({
@@ -387,6 +410,11 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks or
   expect(current.records).toHaveLength(1)
   expect(current.records[0].sourceCommit).toBe(acceptanceLatestCommit)
   expect(current.problems).toEqual([])
+  const entryTimes = await port.listPlanEntryTimes({ scope, baselineCommit: adoptedCommit })
+  expect(entryTimes.v1).toBe(
+    Date.parse(git(['show', '-s', '--format=%cI', firstCommit]).toString().trim())
+  )
+  await expect(port.listPlanEntryTimes({ scope, baselineCommit: firstCommit })).resolves.toEqual({})
 })
 
 it('lists version folders from data.json committed on the cycle branch itself', async () => {
@@ -420,7 +448,7 @@ it('lists version folders from data.json committed on the cycle branch itself', 
     workflow: 'plan'
   })
   expect(catalog.plans.some((item) => item.version === 'template')).toBe(false)
-  // 合规目录即候选；不合规目录不静默消失。
+  // 合规目录即候选；格式/身份问题目录不静默消失（缺 data.json 的目录静默跳过）。
   expect(catalog.plans.map((item) => item.version)).toEqual(
     expect.arrayContaining(['v1', 'unverified'])
   )
@@ -523,4 +551,34 @@ it('reads a committed plan from a cycle branch HEAD that diverged from the adopt
   } finally {
     git(['switch', 'adopted'])
   }
+
+{
+  const baselineBefore = adoptedCommit
+  const planPath = '.bw/planning/v1.7/data.json'
+  const sideAddedAt = '2026-11-16T12:08:27Z'
+  git(['switch', '-c', 'side-added-version', baselineBefore])
+  mkdirSync(join(root, '.bw/planning/v1.7'), { recursive: true })
+  writeFileSync(
+    join(root, planPath),
+    JSON.stringify({ ...plan, version: 'v1.7', cycleId: 'side-added-cycle' })
+  )
+  git(['add', planPath])
+  gitWithEnv(['commit', '-m', 'add side-branch version'], {
+    GIT_AUTHOR_DATE: sideAddedAt,
+    GIT_COMMITTER_DATE: sideAddedAt
+  })
+  const sideAddedCommit = git(['rev-parse', 'HEAD']).toString().trim()
+  git(['switch', 'adopted'])
+  git(['merge', '--no-ff', 'side-added-version', '-m', 'adopt side-branch version'])
+  const mergedBaseline = git(['rev-parse', 'HEAD']).toString().trim()
+
+  const entryTimes = await service(undefined, mergedBaseline).listPlanEntryTimes({
+    scope,
+    baselineCommit: mergedBaseline
+  })
+  expect(entryTimes['v1.7']).toBe(Date.parse(sideAddedAt))
+  expect(entryTimes['v1.7']).toBe(
+    Date.parse(git(['show', '-s', '--format=%cI', sideAddedCommit]).toString().trim())
+  )
+}
 })

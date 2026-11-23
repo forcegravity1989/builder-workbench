@@ -32,6 +32,7 @@ export type ComposerSourceState = {
     | 'selectAddedProjectRepo'
   >
   githubProviderSelection: Pick<ComposerModel, 'handleSmartGitHubItemSelect'>
+  codehubProviderSelection: Pick<ComposerModel, 'handleSmartCodeHubIssueSelect'>
   gitlabProviderSelection: Pick<ComposerModel, 'handleSmartGitLabItemSelect'>
   workItemSourceActions: Pick<
     ComposerModel,

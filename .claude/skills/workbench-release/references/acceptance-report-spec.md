@@ -20,7 +20,7 @@
 ## 硬规则
 
 1. **人话**：面向领导，功能与达成讲清楚，实现细节与编号不进正文。
-2. **诚实边界**：证据分层（Issue 关闭 = 任务事实，不等于目标验收）；缺数如实 **Unknown，不填 0**；未达项写清「原承诺哪里没达到、原因、下一步」，**不从原计划删除以制造达成**；**报告完整 ≠ 目标全达成**（参照 [`evidence-and-follow-up.md`](../../../../standard/skills/version-acceptance/references/evidence-and-follow-up.md)、[`version-records.md`](../../../../standard/system-prompt/references/version-records.md)）。
+2. **诚实边界**：证据分层（Issue 关闭 = 任务事实，不等于目标验收）；缺数如实 **Unknown，不填 0**；未达项写清「原承诺哪里没达到、原因、下一步」，**不从原计划删除以制造达成**；**报告完整 ≠ 目标全达成**（参照 [`evidence-and-follow-up.md`](../../../../standard/skills/version-acceptance/references/evidence-and-follow-up.md)、[`version-records.md`](../../../../standard/references/version-records.md)）。
 3. **按功能 / 目标组织，不裸罗列**：工作与任务归到**功能**和**目标**下用人话讲，不是把 issue 清单、目标清单、用例清单原样倒出来。
 4. **达成口径统一**：目标用 `达成 / 大体达成 / 部分达成 / 未达成`；流程与用例未跑的标 `未验`；不用格值符号。
 5. **文本周整**：分段换行，多条用序号或短横线，不把多件事挤成一段。

@@ -11,6 +11,7 @@ import {
   LegacyAcceptanceDirectiveSchema,
   LegacyAcceptanceRoundSchema,
   MaterialRevision,
+  materialObject,
   MetricReadingEvidenceSchema,
   PlanReferenceSchema,
   safeMaterialUrl,
@@ -26,10 +27,9 @@ import {
  * while set. Followup ids are stable so human edits do not renumber the points
  * the next plan screen cites.
  */
-export const AcceptanceMeetingMinutesSchema = z
-  .strictObject({
+export const AcceptanceMeetingMinutesSchema = materialObject({
     consensus: z.array(z.string()),
-    followups: z.array(z.strictObject({ id: Id, text: z.string() })),
+    followups: z.array(materialObject({ id: Id, text: z.string() })),
     confirmed: z.boolean(),
     confirmedAt: z.iso.datetime({ offset: true }).optional(),
     sources: z.string().optional(),
@@ -55,7 +55,7 @@ export type AcceptanceMeetingMinutes = z.infer<typeof AcceptanceMeetingMinutesSc
  * launched state instead of faking a link. Absent means not deployed yet.
  */
 export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
-  z.strictObject({
+  materialObject({
     kind: z.literal('url'),
     // Human-facing system name for the board link text (「XX 系统」); the board
     // falls back to the raw URL when absent (2026-10-23 高保真反馈轮).
@@ -72,7 +72,7 @@ export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
         'Demo environment must be an absolute http(s) URL'
       )
   }),
-  z.strictObject({ kind: z.literal('launched'), detail: z.string().trim().min(1) })
+  materialObject({ kind: z.literal('launched'), detail: z.string().trim().min(1) })
 ])
 
 export type AcceptanceDemoEnvironment = z.infer<typeof AcceptanceDemoEnvironmentSchema>
@@ -84,7 +84,7 @@ export type AcceptanceDemoEnvironment = z.infer<typeof AcceptanceDemoEnvironment
  * goes through the same preview-then-execute flow in the session. Model-written,
  * so it stays out of the human guard and CAS merge takes the remote value.
  */
-export const AcceptanceMeetingSchema = z.strictObject({
+export const AcceptanceMeetingSchema = materialObject({
   title: z.string().trim().min(1),
   // Human-readable local time, e.g. 「10-31(周五) 14:00–15:00」.
   time: z.string().trim().min(1),
@@ -102,8 +102,7 @@ export const AcceptanceMeetingSchema = z.strictObject({
 
 export type AcceptanceMeeting = z.infer<typeof AcceptanceMeetingSchema>
 
-export const AcceptanceMaterialSchema = z
-  .strictObject({
+export const AcceptanceMaterialSchema = materialObject({
     ...Identity,
     planRef: PlanReferenceSchema,
     candidateRef: CandidateReferenceSchema.optional(),
@@ -113,8 +112,7 @@ export const AcceptanceMaterialSchema = z
     demoEnv: AcceptanceDemoEnvironmentSchema.optional(),
     // Version-level booked acceptance meeting (#471); absent means not booked.
     meeting: AcceptanceMeetingSchema.optional(),
-    preparationReview: z
-      .strictObject({
+    preparationReview: materialObject({
         source: Id,
         recordedAt: z.iso.datetime({ offset: true }),
         materialRevision: MaterialRevision
@@ -123,7 +121,7 @@ export const AcceptanceMaterialSchema = z
     // Absent means not recorded, while [] records an empty task set.
     taskSnapshot: z.array(VersionTaskSnapshotSchema).optional(),
     results: z.array(
-      z.strictObject({
+      materialObject({
         goalId: Id,
         readings: z.array(MetricReadingEvidenceSchema),
         decision: HumanDecision.optional(),
@@ -134,7 +132,7 @@ export const AcceptanceMaterialSchema = z
         // Pre-v10 human input, read-only: no v10 surface writes these, the board
         // shows them in one labelled legacy block, and a file on disk is only
         // converted through the session migration path with human confirmation.
-        deliveries: z.array(z.strictObject({ title: z.string(), location: z.string() })).optional(),
+        deliveries: z.array(materialObject({ title: z.string(), location: z.string() })).optional(),
         materials: z.array(AcceptanceMaterialLinkSchema).optional(),
         progress: z.string().optional(),
         rounds: z.array(LegacyAcceptanceRoundSchema).optional(),
@@ -143,8 +141,7 @@ export const AcceptanceMaterialSchema = z
     ),
     // Meeting conclusions; the durable record the board annotations feed into.
     minutes: AcceptanceMeetingMinutesSchema.optional(),
-    // Session-model-written SOP progress; absent means not started. The board
-    // renders no lamps: the four on-screen stages are locators, not this enum.
+    // Optional progress recorded by the acceptance assistant.
     workflow: AcceptanceWorkflowStateSchema.optional()
   })
   .superRefine((document, context) => {
@@ -154,6 +151,15 @@ export const AcceptanceMaterialSchema = z
         message: 'Acceptance must reference the same version plan',
         path: ['planRef']
       })
+    }
+    for (const field of ['timeWindow', 'summary', 'goals', 'tasks']) {
+      if (Object.hasOwn(document, field)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Acceptance material cannot carry planning field ${field}`,
+          path: [field]
+        })
+      }
     }
     if (new Set(document.results.map((result) => result.goalId)).size !== document.results.length) {
       context.addIssue({

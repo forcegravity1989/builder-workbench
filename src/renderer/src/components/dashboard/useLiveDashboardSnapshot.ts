@@ -3,6 +3,7 @@ import { useAppStore } from '@/store'
 import type { DashboardSnapshot } from '../../../../shared/dashboard-snapshot'
 import { buildDashboardSnapshot } from './build-dashboard-snapshot'
 import { createWorktreeAgentRowsCache } from './worktree-agent-rows-cache'
+import { useDashboardHostAgentPreferences } from './use-dashboard-host-agent-preferences'
 
 /**
  * Builds the dashboard snapshot directly from the live renderer store for the
@@ -11,6 +12,7 @@ import { createWorktreeAgentRowsCache } from './worktree-agent-rows-cache'
  * is no relay, so we derive it here from the same builder the bridge uses.
  */
 export function useLiveDashboardSnapshot(): DashboardSnapshot {
+  const hostAgentPreferences = useDashboardHostAgentPreferences(true)
   const rowsCacheRef = useRef<ReturnType<typeof createWorktreeAgentRowsCache>>(undefined!)
   rowsCacheRef.current ??= createWorktreeAgentRowsCache()
   const repos = useAppStore((s) => s.repos)
@@ -108,7 +110,7 @@ export function useLiveDashboardSnapshot(): DashboardSnapshot {
         Date.now(),
         // Why: unchanged worktrees reuse their row pipeline; card assembly still runs
         // fresh against the review/host/status slices this memo subscribes to.
-        { rowsCache: rowsCacheRef.current, rowsGeneration: agentStatusEpoch }
+        { rowsCache: rowsCacheRef.current, rowsGeneration: agentStatusEpoch, hostAgentPreferences }
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -143,6 +145,7 @@ export function useLiveDashboardSnapshot(): DashboardSnapshot {
       detectedAgentIds,
       remoteDetectedAgentIds,
       runtimeDetectedAgentIds,
+      hostAgentPreferences,
       agentStatusEpoch
     ]
   )

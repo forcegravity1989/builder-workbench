@@ -1,5 +1,4 @@
 import React from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { cn } from '@/lib/utils'
 import type {
@@ -35,6 +34,7 @@ import type { WorktreeRowDragState } from '../drag/row-state'
 export type WorktreeVirtualRowContext = {
   renderRows: RenderRow[]
   firstHeaderIndex: number
+
   activeStickyHeaderIndexRef: React.MutableRefObject<number | null>
   activeStickyHostIndexRef: React.MutableRefObject<number | null>
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
@@ -94,7 +94,7 @@ function renderHostHeaderVirtualRow(
         row={row}
         onToggle={() => ctx.toggleGroupWithScrollAnchor(row.key)}
         onDragPointerDown={
-          !row.partialPresentation && ctx.orderedHostIds.length > 1
+          ctx.orderedHostIds.length > 1
             ? (e) => ctx.hostDrag.onHandlePointerDown(e, row.hostId)
             : undefined
         }
@@ -129,7 +129,9 @@ function renderLineageGroupVirtualRow(
         ctx.worktreeDragState.draggingWorktreeId !== null &&
           'transition-transform duration-150 ease-out will-change-transform'
       )}
-      style={{ transform: getWorktreeVirtualRowTransform(vItem.start, parentPreviewOffset) }}
+      style={{
+        transform: getWorktreeVirtualRowTransform(vItem.start, parentPreviewOffset)
+      }}
     >
       <div className="overflow-visible">
         {parent
@@ -153,39 +155,33 @@ export function renderWorktreeVirtualRow(
   row: RenderRow,
   vItem: VirtualItem
 ): React.JSX.Element | null {
+  if (row.type === 'content') {
+    return (
+      <div
+        key={vItem.key}
+        role="presentation"
+        data-index={vItem.index}
+        data-worktree-virtual-row
+        data-worktree-virtual-row-key={String(vItem.key)}
+        ref={ctx.measureVirtualRowElement}
+        className="absolute left-0 right-0 top-0"
+        style={{ transform: getVirtualRowTransform(vItem.start) }}
+      >
+        {row.content}
+      </div>
+    )
+  }
   if (row.type === 'host-header') {
     return renderHostHeaderVirtualRow(ctx, row, vItem)
   }
 
   if (row.type === 'header') {
-    if (row.displaySection) {
-      const Icon = row.displaySection.expanded ? ChevronDown : ChevronRight
-      return (
-        <div
-          key={vItem.key}
-          data-index={vItem.index}
-          ref={ctx.measureVirtualRowElement}
-          className="absolute left-0 right-0 top-0 border-t border-worktree-sidebar-foreground/10"
-          style={{ transform: getVirtualRowTransform(vItem.start) }}
-        >
-          <button
-            type="button"
-            aria-expanded={row.displaySection.expanded}
-            onClick={row.displaySection.onToggle}
-            className="flex h-7 w-full items-center gap-1.5 px-3 text-left text-[11px] text-worktree-sidebar-foreground/55 hover:text-worktree-sidebar-foreground"
-          >
-            <Icon className="size-3.5" />
-            <span>{row.label}</span>
-            {row.count > 0 ? <span className="ml-auto">{row.count}</span> : null}
-          </button>
-        </div>
-      )
-    }
     return renderWorktreeSectionHeaderRow({
       ctx: ctx.header,
       row,
       vItem,
       isActiveStickyHeader: ctx.activeStickyHeaderIndexRef.current === vItem.index,
+
       hasStickyHost: ctx.activeStickyHostIndexRef.current !== null,
       hasHeaderTopSpacing: shouldUseHeaderTopSpacing({
         rows: ctx.renderRows,
@@ -205,6 +201,7 @@ export function renderWorktreeVirtualRow(
       row,
       vItem,
       measureVirtualRowElement: ctx.measureVirtualRowElement,
+
       actionState: ctx.importedWorktreeCardActionState.get(row.repo.id),
       onShow: ctx.onShowImportedWorktrees,
       onKeepHidden: ctx.onKeepImportedWorktreesHidden
@@ -216,6 +213,7 @@ export function renderWorktreeVirtualRow(
       row,
       vItem,
       measureVirtualRowElement: ctx.measureVirtualRowElement,
+
       actionState: ctx.newExternalWorktreeInboxActionState.get(row.repo.id),
       onReview: ctx.onOpenWorktreeVisibility,
       onSuppress: ctx.onOpenSuppressExternalWorktreeInbox
@@ -263,7 +261,9 @@ export function renderWorktreeVirtualRow(
         ctx.worktreeDragState.draggingWorktreeId !== null &&
           'transition-transform duration-150 ease-out will-change-transform'
       )}
-      style={{ transform: getWorktreeVirtualRowTransform(vItem.start, itemPreviewOffset) }}
+      style={{
+        transform: getWorktreeVirtualRowTransform(vItem.start, itemPreviewOffset)
+      }}
       onDragOver={
         itemWorkspaceStatus
           ? (event) => ctx.onWorkspaceStatusDragOver(event, itemWorkspaceStatus)

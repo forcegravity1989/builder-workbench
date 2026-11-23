@@ -13,6 +13,9 @@ import {
 import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
+import { historyErrorCode } from '../version-history-port'
+import { isWorkspaceGoneError, workspaceGoneMessage } from '../error-feedback'
+import { replaceGoalTaskEvidence } from './acceptance-task-evidence'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
 /**
@@ -62,21 +65,24 @@ export function useAcceptanceBoard({
     refresh: refreshDraft,
     clear: useRemoteDeletion,
     initializationSuppressed,
-    cancelAutomaticRead,
     loadedRefresh
   } = useAcceptanceDraft(recoveryKey, port, context.version ?? undefined, context.materialRefresh)
   const catalog = useAcceptanceSources(history, materialPort, metricScope, context.materialRefresh)
-  const [version, setVersion] = useState(context.version ?? '')
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
   const scroll = useRef<HTMLDivElement>(null)
-  const generation = useRef(0)
   const document = draft?.document
   const fixed = useFixedAcceptancePlan(history, metricScope, document?.planRef)
   const output = useAcceptanceOutput(context, controller)
   const associated = Boolean(document && document.version === context.version)
-  const readOnly = busy || Boolean(context.syncing) || !associated || !fixed.plan
+  const readOnly = Boolean(context.syncing) || !associated || !fixed.plan
   const lifetime = useRef({ active: true })
+  // Set once the scope stops resolving (worktree deleted): later polls would fail the same way,
+  // so the interval stands down instead of refreshing a dead error (#727). Latched on two
+  // consecutive misses: a single `selector_not_found` can be a transient rejected scan, which the
+  // native contract treats as a real answer, and latching on one would freeze a self-healing
+  // poller on a live workspace.
+  const gone = useRef(false)
+  const goneMisses = useRef(0)
   useEffect(() => {
     const state = lifetime.current
     state.active = true
@@ -86,7 +92,7 @@ export function useAcceptanceBoard({
   }, [])
   const isCurrent = useCallback(() => lifetime.current.active, [])
   const selection = useRef({ value: 0 })
-  const canSave = useCallback(() => !context.syncing && !busy, [context.syncing, busy])
+  const canSave = useCallback(() => !context.syncing, [context.syncing])
   const autosave = useMaterialAutosave({
     controller,
     draft,
@@ -135,7 +141,9 @@ export function useAcceptanceBoard({
         }
       })
       .catch((reason) => {
-        if (current) {
+        // No plan file yet (e.g. the version's plan is not merged): stay on the
+        // empty board until the user refreshes; format problems still surface.
+        if (current && historyErrorCode(reason) !== 'history-unavailable') {
           setError(String(reason))
         }
       })
@@ -159,22 +167,30 @@ export function useAcceptanceBoard({
     metricScope
   ])
   useEffect(() => {
+    gone.current = false
+    goneMisses.current = 0
     const timer = setInterval(() => {
-      if (!context.syncing) {
-        void controller.refresh().catch((reason) => setError(String(reason)))
+      if (!context.syncing && !gone.current) {
+        void controller.refresh()
+          .then(() => {
+            goneMisses.current = 0
+          })
+          .catch((reason) => {
+            if (isWorkspaceGoneError(reason)) {
+              goneMisses.current += 1
+              if (goneMisses.current >= 2) {
+                gone.current = true
+                setError(workspaceGoneMessage())
+              }
+            } else {
+              goneMisses.current = 0
+              setError(String(reason))
+            }
+          })
       }
     }, 5000)
     return () => clearInterval(timer)
   }, [controller, context.syncing])
-  useEffect(
-    () => () => {
-      generation.current++
-    },
-    []
-  )
-  useEffect(() => {
-    setVersion(document?.version ?? context.version ?? '')
-  }, [document?.version, context.version])
   useEffect(() => {
     if (scroll.current) {
       try {
@@ -184,36 +200,6 @@ export function useAcceptanceBoard({
       }
     }
   }, [document?.version, recoveryKey])
-  async function loadVersion(value: string) {
-    const original = controller.value
-    if (original?.dirty && !(await autosave.flush())) {
-      setError('修改尚未保存，请处理保存提示后再切换版本。')
-      return
-    }
-    const savedOriginal = controller.value
-    cancelAutomaticRead()
-    const token = ++generation.current
-    setBusy(true)
-    try {
-      await port.read(value)
-      if (token !== generation.current) {
-        return
-      }
-      if (controller.value !== savedOriginal) {
-        setError('切换期间材料已变化，已保留当前输入；请保存后重新选择版本。')
-        return
-      }
-      await context.selectVersion(value)
-    } catch (reason) {
-      if (token === generation.current) {
-        setError(String(reason))
-      }
-    } finally {
-      if (token === generation.current) {
-        setBusy(false)
-      }
-    }
-  }
   async function refreshData() {
     setError(null)
     try {
@@ -221,7 +207,7 @@ export function useAcceptanceBoard({
       await refreshDraft()
       await catalog.refresh()
     } catch (reason) {
-      setError(String(reason))
+      setError(isWorkspaceGoneError(reason) ? workspaceGoneMessage() : String(reason))
     }
   }
   /** Whole-document edit for sections that are not one goal result (minutes). */
@@ -237,7 +223,7 @@ export function useAcceptanceBoard({
     }
     controller.edit(next)
   }
-  function editGoal(next: AcceptanceMaterial, goalId: string) {
+  function editGoal(next: AcceptanceMaterial, goalId: string, recordEvidence = false) {
     const current = controller.value?.document
     const result = next.results.find((item) => item.goalId === goalId)
     if (!current || !result) {
@@ -252,7 +238,10 @@ export function useAcceptanceBoard({
     // 控制器值为准，否则会把并发写入盖掉。
     controller.edit({
       ...current,
-      results: upsertGoalResult(current.results, result)
+      results: upsertGoalResult(current.results, result),
+      ...(recordEvidence
+        ? { taskSnapshot: replaceGoalTaskEvidence(current.taskSnapshot, goalId, next.taskSnapshot) }
+        : {})
     })
   }
   return {
@@ -264,18 +253,14 @@ export function useAcceptanceBoard({
     controller,
     recoveryError,
     recoveryText,
-    versions: catalog.versions,
-    materialProblems: catalog.materialProblems,
-    version,
+    version: context.version ?? '',
     error: error ?? fixed.error ?? catalog.error,
     setError,
-    busy,
     ...output,
     scroll,
     document,
     plan: fixed.plan,
     readOnly,
-    loadVersion,
     refreshData,
     saving: autosave.saving,
     retrySave: autosave.save,

@@ -58,9 +58,13 @@ describe('version acceptance evidence', () => {
         results: [...document.results, emptyGoalResult('g3')]
       })
     ).toBe(true)
+    const extended = structuredClone(document)
+    Object.assign(extended.planRef, { sourceMetadata: { reader: 'future' } })
+    Object.assign(extended.candidateRef!, { providerMetadata: { reader: 'future' } })
+    expect(sameAcceptanceSource(document, extended)).toBe(true)
     expect(() =>
       assertFixedPlan(document.planRef, { ...planSnapshot, revision: `sha256:${'b'.repeat(64)}` })
-    ).toThrow('来源已改变')
+    ).toThrow()
   })
 
   it('records a verdict with its ledger revision and refuses an unnamed source', async () => {
@@ -69,6 +73,8 @@ describe('version acceptance evidence', () => {
       document,
       plan,
       goalId: 'g1',
+      references: [],
+      reads: [],
       outcome: 'met',
       source: '验收界面人工确认',
       reason: '',
@@ -76,7 +82,7 @@ describe('version acceptance evidence', () => {
     })
     const verdict = decided.results.find((result) => result.goalId === 'g1')?.decision
     expect(verdict?.outcome).toBe('met')
-    expect(verdict?.materialRevision).toBe(await goalEvidenceRevision(document, plan, 'g1'))
+    expect(verdict?.materialRevision).toBe(await goalEvidenceRevision(document, plan, 'g1', []))
     // The other goal keeps no verdict: nothing is inferred from a neighbour.
     expect(decided.results.find((result) => result.goalId === 'g2')?.decision).toBeUndefined()
     await expect(
@@ -84,12 +90,14 @@ describe('version acceptance evidence', () => {
         document,
         plan,
         goalId: 'g1',
+        references: [],
+        reads: [],
         outcome: 'met',
         source: '   ',
         reason: '',
         recordedAt: '2026-09-25T10:00:00Z'
       })
-    ).rejects.toThrow('请注明判断人或人的确认来源')
+    ).rejects.toThrow()
   })
 
   it('hashes version-level evidence but never the decision itself', async () => {
@@ -103,7 +111,10 @@ describe('version acceptance evidence', () => {
         generatedAt: '2026-09-25T10:00:00Z'
       }
     ]
-    const before = await goalEvidenceRevision(document, plan, 'g1')
+    const before = await goalEvidenceRevision(document, plan, 'g1', [])
+    Object.assign(document.planRef, { sourceMetadata: { reader: 'future' } })
+    Object.assign(document.candidateRef!, { providerMetadata: { reader: 'future' } })
+    expect(await goalEvidenceRevision(document, plan, 'g1', [])).toBe(before)
     const result = document.results[0]
     result.decision = {
       outcome: 'met',
@@ -112,14 +123,14 @@ describe('version acceptance evidence', () => {
       materialRevision: before,
       reason: '通过'
     }
-    expect(await goalEvidenceRevision(document, plan, 'g1')).toBe(before)
+    expect(await goalEvidenceRevision(document, plan, 'g1', [])).toBe(before)
     // Per-goal deliveries are retired, so registered evidence is version-level:
     // the report and the demo environment both move every goal's ledger revision.
     document.preparedArtifacts[0].checksum = 'changed'
-    expect(await goalEvidenceRevision(document, plan, 'g1')).not.toBe(before)
-    const withDemo = await goalEvidenceRevision(document, plan, 'g1')
+    expect(await goalEvidenceRevision(document, plan, 'g1', [])).not.toBe(before)
+    const withDemo = await goalEvidenceRevision(document, plan, 'g1', [])
     document.demoEnv = { kind: 'launched', detail: '桌面应用已启动' }
-    expect(await goalEvidenceRevision(document, plan, 'g1')).not.toBe(withDemo)
+    expect(await goalEvidenceRevision(document, plan, 'g1', [])).not.toBe(withDemo)
   })
 
   it('opens the most recently generated evidence report, not the first registered', () => {

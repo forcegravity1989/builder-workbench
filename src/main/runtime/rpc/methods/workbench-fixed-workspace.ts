@@ -1,9 +1,9 @@
-import { defineMethod } from '../core'
+import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import { FixedWorkspaceEnsureSchema } from '../../../../shared/workbench/fixed-workspace'
 import { materialResult } from '../../../workbench/version-material-error'
 
 export const WORKBENCH_FIXED_WORKSPACE_METHODS = [
-  defineMethod({
+  defineWorkbenchMethod({
     name: 'workbench.fixedWorkspace.ensure',
     params: FixedWorkspaceEnsureSchema,
     handler: (params, { runtime }) =>

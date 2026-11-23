@@ -56,6 +56,15 @@ describe('feature interactions', () => {
       'browser-annotations-sent-to-agent',
       'browser-grab',
       'markdown-file-created',
+      'workbench-wall',
+      'workbench-overview',
+      'workbench-milestones',
+      'workbench-versions',
+      'workbench-plan',
+      'workbench-acceptance',
+      'workbench-scoreboard',
+      'workbench-version-overview',
+      'workbench-version-tasks',
       'workspace-creation',
       'agent-browser-setup',
       'agent-browser-use',
@@ -74,6 +83,7 @@ describe('feature interactions', () => {
       'floating-workspace-hidden',
       'notifications',
       'ports',
+      'quick-links',
       'quick-commands',
       'resource-manager',
       'review-notes',
@@ -207,10 +217,12 @@ describe('feature interactions', () => {
         `recordFeatureInteraction(?:\\?\\.)?\\(\\s*['"]${escaped}['"]`
       )
       const contextualTourRecord = new RegExp(`useContextualTour\\(\\s*['"]${escaped}['"]`)
+      const workbenchScreenUsage = new RegExp(`useWorkbenchScreenUsage\\(\\s*['"]${escaped}['"]`)
       const runtimeMappingReturn = new RegExp(`return[^\\n]*['"]${escaped}['"]`)
       return (
         !directRecord.test(productionText) &&
         !contextualTourRecord.test(productionText) &&
+        !workbenchScreenUsage.test(productionText) &&
         !runtimeMappingReturn.test(productionText)
       )
     })

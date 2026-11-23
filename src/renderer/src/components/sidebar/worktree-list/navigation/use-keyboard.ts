@@ -149,7 +149,7 @@ export function useWorktreeListKeyboardNavigation(args: {
         markDirectScrollInput()
         navigateWorktree(e.key === 'ArrowUp' ? 'up' : 'down')
         e.preventDefault()
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' && e.target === e.currentTarget) {
         const helper = document.querySelector(
           '.xterm-helper-textarea'
         ) as HTMLTextAreaElement | null

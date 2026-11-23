@@ -1,7 +1,5 @@
 import { useEffect, useState, type RefObject } from 'react'
-import { useAppStore } from '@/store'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
-import { setCycleView } from '../cycle-view-state'
 import { openAcceptanceSource } from '../version-cycle/open-acceptance-source'
 import type { usePlanningMaterial } from './use-planning-material'
 import { usePriorCarryovers } from './use-prior-carryovers'
@@ -26,7 +24,7 @@ export function usePlanningPriorReview({
   const { scope, worktreeId } = context
   const { edit: editMaterial } = material
   const plan = material.draft?.document
-  const startVersion = context.version ?? context.boundVersion
+  const startVersion = context.version
   const prior = usePriorCarryovers(
     scope,
     worktreeId,
@@ -100,8 +98,7 @@ export function usePlanningPriorReview({
             () => currentSelection.current === selectionKey
           )
         } else {
-          setCycleView('acceptance')
-          useAppStore.getState().openArtifactsPage()
+          throw new Error('当前计划还没有可读取的验收依据。')
         }
       } finally {
         setOpeningSource(false)

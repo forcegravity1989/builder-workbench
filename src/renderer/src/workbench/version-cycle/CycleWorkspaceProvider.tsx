@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
@@ -5,11 +6,10 @@ import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../../shared/workbench/version-workspace-prepare'
 import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
-import { startCycleAutomation } from './start-cycle-automation'
+import { startCycleSession } from './start-cycle-session'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
 import { getActiveCycleSession } from './native-session'
-import { useWorkflowVersion } from './use-workflow-version'
 import { useCycleAutomationDraft } from './use-cycle-automation-draft'
 import { useEnsureCycleAutomation } from './ensure-cycle-automation'
 import { useCycleWorkspaceWorkflow } from './cycle-workspace-view'
@@ -26,7 +26,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const { worktree, scope, error, syncing, materialRefresh, updateCode, readonlyBrowse } =
-    useCycleWorkspaceTarget(workflow, setNotice)
+    useCycleWorkspaceTarget(workflow)
   const fixedId = worktree?.id ?? null
   const agent = useMetricsSetupAgent(fixedId)
   const session = useAppStore(useShallow((state) => getActiveCycleSession(state, scope, fixedId)))
@@ -54,7 +54,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         : null,
     [scope, fixedId, owner]
   )
-  const version = useWorkflowVersion(materialPort)
+  const version = flowBinding?.version ?? null
   const taskPort = useMemo(() => nativeTaskPort(), [])
   const archivePort = useMemo(() => nativeArchivePrPort(owner), [owner])
   const releasePort = useMemo(() => nativeReleaseStatusPort(owner), [owner])
@@ -64,7 +64,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     workflow: workflow ?? 'plan',
     agent,
     onNotice: setNotice,
-    version: flowBinding?.version ?? null
+    version
   })
   const configure = useCycleAutomationDraft({
     cycleScope: scope,
@@ -72,20 +72,20 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     workflow: workflow ?? 'plan',
     existingId: automation.automationId,
     creationKey: automation.creationKey,
-    onError: setNotice
+    onError: (error) => notifyWorkbenchError('无法打开自动化配置', error, '检查项目工作区后重试。')
   })
   const start = useCallback(
-    async (oneShot?: string) => {
+    async (selectedVersion?: string | null) => {
       setBusy(true)
       try {
-        if (!scope || !fixedId || !automation.automationId) {
-          throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
+        if (!scope || !fixedId) {
+          throw new Error('流程工作区尚未就绪，请稍后重试。')
         }
         if (!agent) {
           throw new Error('会话工具尚未就绪，请先在设置中配置默认智能体。')
         }
-        await startCycleAutomation(scope, fixedId, automation.automationId, agent, oneShot)
-        toast.message('已打开本次运行的会话。')
+        await startCycleSession(scope, fixedId, agent, selectedVersion ?? version)
+        toast.message('已打开会话，补充后发送。')
         setNotice(null)
         return true
       } catch (reason) {
@@ -96,13 +96,13 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             return false
           }
         }
-        setNotice(reason instanceof Error ? reason.message : String(reason))
+        notifyWorkbenchError('无法打开工作会话', reason, '检查会话工具和工作区后重试。')
         return false
       } finally {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId, agent]
+    [scope, fixedId, agent, version]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {
@@ -126,15 +126,13 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               worktreeId: fixedId,
               session,
               worktreeInstanceId: worktree?.instanceId ?? null,
-              version: version.version,
-              boundVersion: flowBinding?.version ?? null,
+              version: version,
               branch: worktree?.branch ? branchName(worktree.branch) || null : null,
-              selectVersion: version.selectVersion,
               materialPort,
               taskPort,
               archivePort,
               releasePort,
-              error: error ?? version.error,
+              error,
               syncing,
               materialRefresh,
               updateCode
@@ -154,10 +152,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       worktree?.branch,
       worktree?.instanceId,
       session,
-      version.version,
-      flowBinding,
-      version.selectVersion,
-      version.error,
+      version,
       materialPort,
       taskPort,
       archivePort,

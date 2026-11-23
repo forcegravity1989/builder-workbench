@@ -22,6 +22,7 @@ import {
 } from '../../../../shared/crash-reporting'
 import type { GitHubViewer } from '../../../../shared/github/pull-request-types'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   CRASH_REPORT_SUBMIT_FAILURE_TOAST_ID,
   getCrashReportCopySubmissionFailure,
@@ -44,8 +45,19 @@ function getDialogTitle(report: CrashReportRecord | null): string {
   if (!report) {
     return 'Report a crash'
   }
-  return report && isReactErrorBoundaryReport(report)
-    ? 'Orca hit a recoverable UI error'
+  if (isReactErrorBoundaryReport(report)) {
+    return isWorkbenchShell()
+      ? translate(
+          'auto.components.crash.report.CrashReportDialog.workbenchUiErrorTitle',
+          'Workbench hit a recoverable UI error'
+        )
+      : 'Orca hit a recoverable UI error'
+  }
+  return isWorkbenchShell()
+    ? translate(
+        'auto.components.crash.report.CrashReportDialog.workbenchClosedTitle',
+        'Workbench closed unexpectedly'
+      )
     : 'Orca closed unexpectedly'
 }
 
@@ -62,8 +74,14 @@ function getNotesPlaceholder(report: CrashReportRecord | null): string {
   if (!report) {
     return 'Optional: what happened?'
   }
-  return report && isReactErrorBoundaryReport(report)
-    ? 'Optional: what were you doing before this UI error?'
+  if (report && isReactErrorBoundaryReport(report)) {
+    return 'Optional: what were you doing before this UI error?'
+  }
+  return isWorkbenchShell()
+    ? translate(
+        'auto.components.crash.report.CrashReportDialog.workbenchNotesPlaceholder',
+        'Optional: what were you doing before Workbench closed?'
+      )
     : 'Optional: what were you doing before Orca closed?'
 }
 
@@ -249,7 +267,15 @@ export function CrashReportDialogSurface({
                 <div className="font-medium text-foreground">{formatSummary(report)}</div>
                 <div className="mt-1 text-muted-foreground">
                   {new Date(report.createdAt).toLocaleString()} · {report.platform} {report.arch} ·
-                  {translate('auto.components.crash.report.CrashReportDialog.835037edc9', 'Orca')}{' '}
+                  {isWorkbenchShell()
+                    ? translate(
+                        'auto.components.crash.report.CrashReportDialog.workbenchBrand',
+                        'Workbench'
+                      )
+                    : translate(
+                        'auto.components.crash.report.CrashReportDialog.835037edc9',
+                        'Orca'
+                      )}{' '}
                   {report.appVersion}
                 </div>
               </div>

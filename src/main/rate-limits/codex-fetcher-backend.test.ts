@@ -2,25 +2,50 @@ import { join } from 'node:path'
 import { cancelTrackingResponse } from '../lib/unread-response-body.test-fixtures'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { childSpawnMock, readFileMock, ptySpawnMock } = vi.hoisted(() => ({
-  childSpawnMock: vi.fn(),
-  readFileMock: vi.fn(),
-  ptySpawnMock: vi.fn()
-}))
+const { childSpawnMock, readFileMock, ptySpawnMock, backfillPendingMock, backfillRecoveryMock } =
+  vi.hoisted(() => ({
+    childSpawnMock: vi.fn(),
+    readFileMock: vi.fn(),
+    ptySpawnMock: vi.fn(),
+    backfillPendingMock: vi.fn(() => false),
+    backfillRecoveryMock: vi.fn(() => Promise.resolve(null))
+  }))
 
 vi.mock('node:child_process', () => ({ spawn: childSpawnMock }))
 vi.mock('node:fs/promises', () => ({ readFile: readFileMock }))
 vi.mock('node-pty', () => ({ spawn: ptySpawnMock }))
+vi.mock('../codex/codex-state-db', () => ({
+  isCodexStateDbBackfillPending: backfillPendingMock
+}))
+vi.mock('../codex/codex-state-db-backfill-recovery', () => ({
+  startCodexStateDbBackfillRecoveryInBackground: backfillRecoveryMock
+}))
 vi.mock('./codex-auth-presence', () => ({
   probeCodexAuthPresence: vi.fn(async () => 'present')
 }))
 
 import { consumeCodexRateLimitResetCredit, fetchCodexRateLimits } from './codex-fetcher'
 
+const AUTH = JSON.stringify({
+  tokens: { access_token: 'scoped-token', account_id: 'scoped-account' }
+})
+
+function backendUsageResponse(): Response {
+  return Response.json({
+    plan_type: 'plus',
+    rate_limit: {
+      primary_window: { used_percent: 12, limit_window_seconds: 18_000 },
+      secondary_window: { used_percent: 34, limit_window_seconds: 604_800 }
+    },
+    rate_limit_reset_credits: { available_count: 0 }
+  })
+}
+
 describe('Codex backend rate-limit requests', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    backfillPendingMock.mockReturnValue(false)
     vi.stubGlobal('fetch', vi.fn())
   })
 
@@ -28,6 +53,108 @@ describe('Codex backend rate-limit requests', () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
+  })
+
+  it('reads HTTP with the requested account after host RPC fails without opening a PTY', async () => {
+    const order: string[] = []
+    readFileMock.mockResolvedValue(AUTH)
+    childSpawnMock.mockImplementation(() => {
+      order.push('rpc')
+      throw new Error('rpc unavailable')
+    })
+    vi.mocked(fetch).mockImplementation(async () => {
+      order.push('http')
+      return backendUsageResponse()
+    })
+
+    await expect(
+      fetchCodexRateLimits({ codexHomePath: '/inactive/codex-home' })
+    ).resolves.toMatchObject({
+      status: 'ok',
+      session: { usedPercent: 12 },
+      weekly: { usedPercent: 34 }
+    })
+    expect(order).toEqual(['rpc', 'http'])
+    expect(readFileMock).toHaveBeenCalledWith(join('/inactive/codex-home', 'auth.json'), 'utf8')
+    expect(fetch).toHaveBeenCalledWith(
+      'https://chatgpt.com/backend-api/wham/usage',
+      expect.objectContaining({
+        credentials: 'omit',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer scoped-token',
+          'ChatGPT-Account-Id': 'scoped-account'
+        })
+      })
+    )
+    expect(ptySpawnMock).not.toHaveBeenCalled()
+  })
+
+  it('preserves the RPC diagnostic when HTTP has no usable data', async () => {
+    readFileMock.mockResolvedValue(AUTH)
+    childSpawnMock.mockImplementation(() => {
+      throw new Error('specific RPC failure')
+    })
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 503 }))
+
+    await expect(fetchCodexRateLimits()).resolves.toMatchObject({
+      status: 'error',
+      error: 'specific RPC failure'
+    })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(ptySpawnMock).not.toHaveBeenCalled()
+  })
+
+  it('tries WSL HTTP once before RPC and retains its failure without another HTTP attempt', async () => {
+    const order: string[] = []
+    readFileMock.mockResolvedValue(AUTH)
+    vi.mocked(fetch).mockImplementation(async () => {
+      order.push('http')
+      return new Response(null, { status: 503 })
+    })
+    childSpawnMock.mockImplementation(() => {
+      order.push('rpc')
+      throw new Error('WSL RPC failure')
+    })
+
+    await expect(
+      fetchCodexRateLimits({ codexHomePath: '\\\\wsl.localhost\\Ubuntu\\home\\alice\\.codex' })
+    ).resolves.toMatchObject({ error: 'WSL RPC failure' })
+    expect(order).toEqual(['http', 'rpc'])
+    expect(ptySpawnMock).not.toHaveBeenCalled()
+  })
+
+  it('reads HTTP during backfill without claiming the state database', async () => {
+    readFileMock.mockResolvedValue(AUTH)
+    backfillPendingMock.mockReturnValue(true)
+    vi.mocked(fetch).mockResolvedValue(backendUsageResponse())
+
+    await expect(fetchCodexRateLimits({ codexHomePath: '/backfill/home' })).resolves.toMatchObject({
+      status: 'ok',
+      session: { usedPercent: 12 }
+    })
+    expect(backfillRecoveryMock).toHaveBeenCalledWith('/backfill/home')
+    expect(childSpawnMock).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(ptySpawnMock).not.toHaveBeenCalled()
+  })
+
+  it('preserves cancellation that arrives during HTTP fallback', async () => {
+    const controller = new AbortController()
+    readFileMock.mockResolvedValue(AUTH)
+    childSpawnMock.mockImplementation(() => {
+      throw new Error('rpc unavailable')
+    })
+    vi.mocked(fetch).mockImplementation(async () => {
+      controller.abort()
+      return backendUsageResponse()
+    })
+
+    await expect(fetchCodexRateLimits({ signal: controller.signal })).resolves.toMatchObject({
+      status: 'error',
+      error: 'Rate-limit fetch aborted'
+    })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(ptySpawnMock).not.toHaveBeenCalled()
   })
 
   it('uses the official backend usage contract without spawning Codex', async () => {

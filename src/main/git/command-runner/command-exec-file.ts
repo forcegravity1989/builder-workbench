@@ -44,7 +44,8 @@ export async function commandExecFileAsync(
       maxBuffer: execOptions.maxBuffer,
       timeout: execOptions.timeout,
       env: execOptions.env,
-      signal: execOptions.signal
+      signal: execOptions.signal,
+      stdin: execOptions.stdin
     })
     return { stdout: stdout as string, stderr: stderr as string }
   } catch (error) {

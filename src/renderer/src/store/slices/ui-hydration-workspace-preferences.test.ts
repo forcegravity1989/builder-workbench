@@ -139,7 +139,9 @@ describe('createUISlice hydratePersistedUI', () => {
       'kimi',
       'minimax',
       'antigravity',
-      'grok'
+      'grok',
+      'cursor',
+      'quick-links'
     ])
     expect(setUI).toHaveBeenCalledWith({
       statusBarItems: [
@@ -149,13 +151,17 @@ describe('createUISlice hydratePersistedUI', () => {
         'kimi',
         'minimax',
         'antigravity',
-        'grok'
+        'grok',
+        'cursor',
+        'quick-links'
       ],
       _portsStatusBarDefaultAdded: true,
       _kimiStatusBarDefaultAdded: true,
       _minimaxStatusBarDefaultAdded: true,
       _antigravityStatusBarDefaultAdded: true,
-      _grokStatusBarDefaultAdded: true
+      _grokStatusBarDefaultAdded: true,
+      _cursorStatusBarDefaultAdded: true,
+      _quickLinksStatusBarDefaultAdded: true
     })
   })
 
@@ -171,7 +177,9 @@ describe('createUISlice hydratePersistedUI', () => {
         _kimiStatusBarDefaultAdded: true,
         _minimaxStatusBarDefaultAdded: true,
         _antigravityStatusBarDefaultAdded: true,
-        _grokStatusBarDefaultAdded: true
+        _grokStatusBarDefaultAdded: true,
+        _cursorStatusBarDefaultAdded: true,
+        _quickLinksStatusBarDefaultAdded: true
       })
     )
 

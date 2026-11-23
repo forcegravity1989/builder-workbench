@@ -38,7 +38,9 @@ export function ProviderHostScopeControl({
               { value0: labelPrefix, value1: scope.label }
             )}
           </span>
-          <div className="mt-0.5 text-muted-foreground">{scope.description}</div>
+          {scope.description && (
+            <div className="mt-0.5 text-muted-foreground">{scope.description}</div>
+          )}
         </div>
         {showChangeHostAction ? (
           <Button

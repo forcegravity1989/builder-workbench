@@ -20,6 +20,7 @@ vi.mock('@/lib/github-work-item-source-lookup', () => ({
 vi.mock('@/lib/codehub-api', () => ({ codehubApi: { viewTask: mocks.viewTask } }))
 
 import { createTaskPort } from './task-port'
+import { createTaskReferenceReader } from './task-reference-reader'
 
 const githubRepo = {
   id: 'repo-gh',
@@ -144,6 +145,38 @@ describe('createTaskPort reads', () => {
     expect(fresh?.kind === 'ready' && fresh.task.state).toBe('closed')
     expect(mocks.lookupGitHub).toHaveBeenCalledTimes(2)
     expect(port.cached?.(scope, [goalRef])?.[0]?.reference).toEqual(goalRef)
+
+    const releases: (() => void)[] = []
+    const lookup = vi.fn(({ number }: { number: number }) =>
+      number === 108
+        ? Promise.resolve({ ...ghItem, number })
+        : new Promise<typeof ghItem>((resolve) => {
+            releases.push(() => resolve({ ...ghItem, number }))
+          })
+    )
+    const reader = createTaskReferenceReader(makeDeps({ lookupGitHubWorkItem: lookup }))
+    const references = Array.from({ length: 8 }, (_, index) => ({
+      ...ghReference,
+      number: 101 + index
+    }))
+    const controller = new AbortController()
+    const optional = reader
+      .read(scope, references, false, controller.signal)
+      .catch((error) => error.name)
+    const shared = reader.read(scope, [references[7]!])
+    const queuedRefresh = reader
+      .read(scope, [references[0]!], true, controller.signal)
+      .catch((error) => error.name)
+    expect(lookup).toHaveBeenCalledTimes(6)
+    controller.abort()
+    releases.forEach((release) => release())
+    expect(await optional).toBe('AbortError')
+    expect(await queuedRefresh).toBe('AbortError')
+    expect((await shared)[0]?.kind).toBe('github')
+    expect(lookup.mock.calls.map(([args]) => args.number)).toEqual([
+      101, 102, 103, 104, 105, 106, 108
+    ])
+    expect(reader.cached(scope, [references[6]!])).toBeNull()
   })
 
   it('splits more than 200 references and only supplements a failed native query', async () => {
@@ -166,23 +199,26 @@ describe('createTaskPort reads', () => {
     expect(reads.every((read) => read.kind === 'ready')).toBe(true)
   })
 
-  it('isolates runtime sources and keeps environment reads off local GitHub batching', async () => {
+  it('reads version tasks locally by remote identity, including remote plan sources', async () => {
     const other = { ...githubRepo, id: 'repo-remote', executionHostId: 'runtime:builder' } as Repo
-    const batch = vi.fn()
-    mocks.lookupGitHub.mockResolvedValue(ghItem)
+    const remoteBatch = vi.fn().mockResolvedValue({ items: [ghItem] })
     const port = createTaskPort(
-      makeDeps({ repos: () => [githubRepo, other], lookupGitHubWorkItems: batch })
+      makeDeps({ repos: () => [githubRepo, other], lookupGitHubWorkItems: remoteBatch })
     )
     const remote = { ...scope, repoId: other.id, hostId: 'runtime:builder' as const }
-    await port.listVersion(remote, [ghReference])
-    expect(batch).not.toHaveBeenCalled()
-    expect(mocks.lookupGitHub).toHaveBeenCalledWith(
-      expect.objectContaining({
-        repoId: other.id,
-        sourceContext: expect.objectContaining({ hostId: 'runtime:builder' })
-      })
-    )
-    expect(port.cached?.(scope, [ghReference])).toBeNull()
+    const [read] = await port.listVersion(remote, [ghReference])
+    expect(read?.kind).toBe('ready')
+    expect(remoteBatch).toHaveBeenCalledWith({
+      host: null,
+      owner: 'acme',
+      repo: 'repo',
+      numbers: [95]
+    })
+    expect(mocks.lookupGitHub).not.toHaveBeenCalled()
+    // 同一远端项目的本机行与远端行共用一份任务缓存，不因来源拆分。
+    expect(port.cached?.(scope, [ghReference])?.[0]?.kind).toBe('ready')
+
+    const batch = vi.fn()
     const enterprise = {
       ...githubRepo,
       id: 'repo-ghes',
@@ -208,7 +244,7 @@ describe('createTaskPort reads', () => {
         })
       })
     )
-    let fork = {
+    const fork = {
       ...githubRepo,
       upstream: { owner: 'parent', repo: 'repo' },
       issueSourcePreference: 'origin' as const
@@ -232,10 +268,6 @@ describe('createTaskPort reads', () => {
         lookupGitHubWorkItems: batch
       })
     ).listVersion(scope, [ghReference])
-    expect(batch).not.toHaveBeenCalled()
-    fork = { ...fork, issueSourcePreference: 'upstream' }
-    expect(forkPort.cached?.(scope, [ghReference])).toBeNull()
-    await forkPort.listVersion(scope, [ghReference])
     expect(batch).not.toHaveBeenCalled()
   })
 
@@ -274,7 +306,7 @@ describe('createTaskPort reads', () => {
     expect(mocks.viewTask).toHaveBeenNthCalledWith(2, expect.objectContaining({ kind: 'mr' }))
   })
 
-  it('reports both codehub read failures when issue and mr both fail', async () => {
+  it('reports both codehub read failures and unwired providers honestly instead of guessing', async () => {
     mocks.viewTask
       .mockRejectedValueOnce(new Error('issue boom'))
       .mockRejectedValueOnce(new Error('mr boom'))
@@ -284,13 +316,11 @@ describe('createTaskPort reads', () => {
       expect(read.error).toContain('issue boom')
       expect(read.error).toContain('mr boom')
     }
-  })
 
-  it('reports an unwired provider honestly instead of guessing', async () => {
-    const [read] = await createTaskPort(makeDeps()).listVersion(scope, [
+    const [unwired] = await createTaskPort(makeDeps()).listVersion(scope, [
       { provider: 'gitlab', repository: 'github.com/acme/repo', number: 1 }
     ])
-    expect(read).toEqual({
+    expect(unwired).toEqual({
       kind: 'unavailable',
       reference: { provider: 'gitlab', repository: 'github.com/acme/repo', number: 1 },
       error: 'provider gitlab 尚未接入 Workbench 任务读取',

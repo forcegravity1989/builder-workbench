@@ -3,7 +3,7 @@ import { ClaudeIcon } from '@/components/status-bar/icons'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import {
-  BROWSER_PROMPT_TEXT,
+  getBrowserPromptText,
   browserPhaseAtLeast,
   type BrowserVisualPhase
 } from './browser-animated-visual-phase'
@@ -25,7 +25,7 @@ function terminalEntries(): readonly PhasedTerminalEntry[] {
   return [
     {
       id: 'change-prompt',
-      entry: { kind: 'prompt', text: BROWSER_PROMPT_TEXT },
+      entry: { kind: 'prompt', text: getBrowserPromptText() },
       minPhase: 'working'
     },
     { id: 'working', entry: { kind: 'working' }, minPhase: 'working' },
@@ -54,7 +54,10 @@ function terminalEntries(): readonly PhasedTerminalEntry[] {
       id: 'verify-prompt',
       entry: {
         kind: 'prompt',
-        text: 'Let me click Try free to verify it still works.'
+        text: translate(
+          'guidance.demo.verifyBrowser',
+          'Let me click Try free to verify it still works.'
+        )
       },
       minPhase: 'verify-intent'
     },
@@ -65,7 +68,11 @@ function terminalEntries(): readonly PhasedTerminalEntry[] {
     },
     {
       id: 'screenshot',
-      entry: { kind: 'tool-muted', tool: 'screenshot', muted: '(capturing page)' },
+      entry: {
+        kind: 'tool-muted',
+        tool: 'screenshot',
+        muted: translate('guidance.demo.capturingPage', '(capturing page)')
+      },
       minPhase: 'screenshot-line'
     },
     {

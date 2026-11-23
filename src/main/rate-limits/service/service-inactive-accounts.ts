@@ -143,10 +143,8 @@ export abstract class RateLimitServiceInactiveAccounts extends RateLimitServiceP
         this.pushToRenderer()
         try {
           // Why: point fetchCodexRateLimits at the managed home directly, avoiding materializing credentials into the shared runtime location.
-          // Why: no PTY fallback — the switcher preview shouldn't spawn hidden PTYs per account (can crash ConPTY on Windows); RPC-only is enough.
           const fresh = await fetchCodexRateLimits({
             codexHomePath: home.managedHomePath,
-            allowPtyFallback: false,
             signal
           })
           if (

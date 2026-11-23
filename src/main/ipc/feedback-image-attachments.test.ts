@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_FEEDBACK_IMAGE_BYTES,
   MAX_FEEDBACK_IMAGE_COUNT,
-  appendFeedbackImagesToFormData,
-  feedbackImageFilename,
   isSupportedFeedbackImageContentType,
   validateFeedbackImages
 } from './feedback-image-attachments'
@@ -32,34 +30,9 @@ describe('isSupportedFeedbackImageContentType', () => {
   )
 })
 
-describe('feedbackImageFilename', () => {
-  it.each([
-    ['image/png', 'feedback-image-1.png'],
-    ['image/jpeg', 'feedback-image-1.jpg'],
-    ['image/webp', 'feedback-image-1.webp'],
-    ['image/gif', 'feedback-image-1.gif']
-  ])('names a %s attachment %s', (contentType, expected) => {
-    expect(feedbackImageFilename(0, contentType)).toBe(expected)
-  })
-
-  it('numbers attachments from one', () => {
-    expect(feedbackImageFilename(3, 'image/png')).toBe('feedback-image-4.png')
-  })
-})
-
-describe('appendFeedbackImagesToFormData', () => {
-  it('frames only the exact typed-array view', async () => {
-    const backing = new Uint8Array([0, 1, 2, 3])
-    const view = backing.subarray(1, 3)
-    const formData = new FormData()
-
-    appendFeedbackImagesToFormData(formData, [{ contentType: 'image/png', data: view }])
-
-    const blob = formData.get('feedbackImage')
-    expect(blob).toBeInstanceOf(Blob)
-    expect(new Uint8Array(await (blob as Blob).arrayBuffer())).toEqual(new Uint8Array([1, 2]))
-  })
-})
+// Why (BW #553): the feedbackImageFilename / appendFeedbackImagesToFormData
+// cases were removed with the HTTP multipart transport — the WeLink sink
+// writes attachments to disk and derives extensions from the same allow-list.
 
 describe('validateFeedbackImages', () => {
   it('accepts a full batch of supported images', () => {

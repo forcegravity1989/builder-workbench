@@ -291,16 +291,26 @@ export function IntegrationsStep(): React.JSX.Element {
         <div className="mt-4 rounded-xl border border-border bg-muted/10 px-5 py-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-[14px] font-medium text-foreground/70">
-              {translate(
-                'auto.components.onboarding.IntegrationsStep.3a3e360289',
-                'More task sources'
-              )}
+              {isShell
+                ? translate(
+                    'auto.components.onboarding.IntegrationsStep.bw_setup_later',
+                    'Set up later'
+                  )
+                : translate(
+                    'auto.components.onboarding.IntegrationsStep.3a3e360289',
+                    'More task sources'
+                  )}
             </span>
             <span className="text-[13px] leading-relaxed text-muted-foreground">
-              {translate(
-                'auto.components.onboarding.IntegrationsStep.277f30eb34',
-                'Linear, GitLab, Bitbucket, Azure DevOps, Gitea, and Jira live in Settings > Integrations.'
-              )}
+              {isShell
+                ? translate(
+                    'auto.components.onboarding.IntegrationsStep.bw_setup_later_description',
+                    'You can connect or retry GitHub and CodeHub in Settings → Integrations.'
+                  )
+                : translate(
+                    'auto.components.onboarding.IntegrationsStep.277f30eb34',
+                    'Linear, GitLab, Bitbucket, Azure DevOps, Gitea, and Jira live in Settings > Integrations.'
+                  )}
             </span>
           </div>
         </div>

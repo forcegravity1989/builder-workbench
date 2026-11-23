@@ -1,8 +1,11 @@
+import { ErrorDetails } from '../error-feedback'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
+import { toRuntimeExecutionHostId } from '../../../../shared/execution-host'
+import type { NativeWorkspaceScope } from './native-workspace'
 import { nativeWorkspaceScope } from './native-workspace'
 import { BoardActionButton } from '../board-ui'
 import type { FixedAcceptanceBrowse } from '../cycle-view-state'
@@ -23,6 +26,7 @@ export function VersionReadonlyMaterialView({
   workflow: VersionWorkflow
   version: string
   fixedAcceptance?: FixedAcceptanceBrowse
+  source?: NativeWorkspaceScope
 }): React.JSX.Element {
   return fixedAcceptance ? (
     <FixedAcceptanceMaterialView
@@ -60,11 +64,14 @@ function FixedAcceptanceMaterialView({ view }: { view: FixedAcceptanceBrowse }):
         只读回看 {view.source.version} · 验收 · 固定来源 {shortCommit(view.source.sourceCommit)}
       </p>
       {notice ? (
-        <p role="status" className="vc-notice">
-          {notice}
-        </p>
+        <ErrorDetails
+          className="vc-notice"
+          summary="版本材料操作未完成 · 查看详情"
+          detail={notice}
+        />
       ) : null}
       <ReadonlyMaterialSections
+        scope={view.scope}
         state={{
           kind: 'acceptance',
           document: view.acceptance,
@@ -78,18 +85,19 @@ function FixedAcceptanceMaterialView({ view }: { view: FixedAcceptanceBrowse }):
 
 function CatalogReadonlyMaterialView({
   workflow,
-  version
+  version,
+  source
 }: {
   workflow: VersionWorkflow
   version: string
+  source?: NativeWorkspaceScope
 }): React.JSX.Element {
-  const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const trees = useAppStore((s) => (repoId ? s.worktreesByRepo[repoId] : undefined))
-  const home = useMemo(
-    () => trees?.find((tree) => tree.isMainWorktree) ?? trees?.[0] ?? null,
-    [trees]
-  )
-  const catalog = useVersionCatalogForRepo(repoId)
+  const repoId = useAppStore((s) => source?.repoId ?? s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const hostId = source?.runtimeOwnerEnvironmentId
+    ? toRuntimeExecutionHostId(source.runtimeOwnerEnvironmentId)
+    : source?.hostId
+  const catalog = useVersionCatalogForRepo(repoId, hostId, 0, Boolean(source))
+  const home = catalog.home
   const entry = useMemo(
     () => catalog.catalog?.entries.find((item) => item.version === version) ?? null,
     [catalog.catalog, version]
@@ -112,14 +120,17 @@ function CatalogReadonlyMaterialView({
         // 目录装载中不落判「无材料」（未成立的否定断言）；就绪后本 effect 重跑再判。
         return
       }
-      setState({
-        kind: 'missing',
-        message: catalogError
-          ? `版本目录读取失败：${catalogError}`
-          : workflow === 'plan'
-            ? `主干没有 ${version} 的已提交计划材料（版本可能从未归档）。`
-            : `主干没有 ${version} 的已提交验收材料（验收可能从未归档）。`
-      })
+      setState(
+        catalogError
+          ? { kind: 'error', summary: '版本目录读取失败 · 查看详情', detail: catalogError }
+          : {
+              kind: 'missing',
+              message:
+                workflow === 'plan'
+                  ? `主干没有 ${version} 的已提交计划材料（版本可能从未归档）。`
+                  : `主干没有 ${version} 的已提交验收材料（验收可能从未归档）。`
+            }
+      )
       return
     }
     void (async () => {
@@ -166,8 +177,9 @@ function CatalogReadonlyMaterialView({
       } catch (reason) {
         if (!cancelled) {
           setState({
-            kind: 'missing',
-            message: `主干材料读取失败：${reason instanceof Error ? reason.message : String(reason)}`
+            kind: 'error',
+            summary: '主干材料读取失败 · 查看详情',
+            detail: reason
           })
         }
       }
@@ -193,7 +205,10 @@ function CatalogReadonlyMaterialView({
           : ''}
         。编辑或发起会话请先在版本行「初始化工作区」。
       </p>
-      <ReadonlyMaterialSections state={state} />
+      <ReadonlyMaterialSections
+        state={state}
+        scope={catalog.scope ? { ...catalog.scope, workflow } : null}
+      />
     </div>
   )
 }

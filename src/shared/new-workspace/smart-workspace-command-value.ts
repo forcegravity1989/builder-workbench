@@ -2,6 +2,7 @@ export type SmartWorkspaceCommandRowKind =
   | 'use-name'
   | 'create-branch'
   | 'github'
+  | 'codehub'
   | 'gitlab'
   | 'branch'
   | 'linear'
@@ -44,6 +45,11 @@ export function resolveSmartWorkspaceCommandValue({
     const githubRow = rows.find((row) => row.kind === 'github')
     if (githubRow) {
       return githubRow.value
+    }
+  } else if (sourceIntent === 'codehub') {
+    const codehubRow = rows.find((row) => row.kind === 'codehub')
+    if (codehubRow) {
+      return codehubRow.value
     }
   } else if (sourceIntent === 'gitlab') {
     const gitlabRow = rows.find((row) => row.kind === 'gitlab')

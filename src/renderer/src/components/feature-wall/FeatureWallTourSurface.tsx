@@ -31,6 +31,16 @@ import { getFeatureWallActiveStepCopy } from './feature-wall-active-step-copy'
 import { getScreenSubmitModifierLabel } from '@/lib/screen-submit-shortcut'
 import { useFeatureWallTourKeyboardShortcut } from './use-feature-wall-tour-keyboard-shortcut'
 import { useFeatureWallTourRailKeydown } from './use-feature-wall-tour-rail-keydown'
+import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { BwExploreLayout } from '@/workbench/explore/BwExploreLayout'
+import type { ExploreDemo } from '@/workbench/explore/bw-explore-catalog'
+import {
+  localizeAgentsStep,
+  localizeWorkbenchStep,
+  localizeReviewStep,
+  localizeFeatureWallWorkflow
+} from './feature-wall-tour-localized-copy'
 
 type FeatureWallTourSurfaceProps = {
   isOpen: boolean
@@ -41,6 +51,7 @@ type FeatureWallTourSurfaceProps = {
   doneLabel?: string
   footerText?: string | null
   enableKeyboardShortcut?: boolean
+  workbenchCatalog?: boolean
   compactRail?: boolean
   detachedFooter?: boolean
   leadingFooterContent?: ReactNode
@@ -53,9 +64,15 @@ export function FeatureWallTourSurface({
   onDone,
   className,
   panelClassName,
-  doneLabel = 'Done',
-  footerText = 'Reopen any time from Help > Explore Orca.',
+  doneLabel = translate('guidance.done', 'Done'),
+  footerText = isWorkbenchShell()
+    ? translate(
+        'guidance.exploreFooter',
+        'Reopen any time from the bottom question mark > Explore BW.'
+      )
+    : translate('guidance.tourFooter', 'Reopen any time from Help > Explore Orca.'),
   enableKeyboardShortcut = true,
+  workbenchCatalog = false,
   compactRail = false,
   detachedFooter = false,
   leadingFooterContent,
@@ -81,12 +98,12 @@ export function FeatureWallTourSurface({
       ),
     [selectedId]
   )
-  const selected = FEATURE_WALL_WORKFLOWS[selectedIndex]
+  const selected = localizeFeatureWallWorkflow(FEATURE_WALL_WORKFLOWS[selectedIndex])
   const taskSourcePresentation = useFeatureWallTaskSourcePresentation(isOpen, selected)
   const selectedPresentation = taskSourcePresentation.workflow
-  const agentsSteps = useMemo(() => getAgentsSteps(), [])
-  const workbenchSteps = useMemo(() => getWorkbenchSteps(), [])
-  const reviewSteps = useMemo(() => getReviewSteps(), [])
+  const agentsSteps = getAgentsSteps().map(localizeAgentsStep)
+  const workbenchSteps = getWorkbenchSteps().map(localizeWorkbenchStep)
+  const reviewSteps = getReviewSteps().map(localizeReviewStep)
   const [agentsStepId, setAgentsStepId] = useState<AgentsStepId>(
     () => agentsSteps[0]?.id ?? 'statuses'
   )
@@ -184,22 +201,24 @@ export function FeatureWallTourSurface({
   }, [isOpen, source])
 
   const handleSelect = useCallback(
-    (workflow: FeatureWallWorkflow): void => {
+    (workflow: FeatureWallWorkflow, demo?: ExploreDemo): void => {
       markWorkflowVisited(workflow.id)
       if (workflow.id === selectedId) {
         return
       }
       setSelectedId(workflow.id)
       if (workflow.id === 'agents-orchestration') {
-        const nextStepId = agentsSteps[0]?.id ?? 'statuses'
+        const nextStepId =
+          demo?.workflow === 'agents-orchestration' ? demo.step : (agentsSteps[0]?.id ?? 'statuses')
         markAgentStepVisited(nextStepId)
         setAgentsStepId(nextStepId)
       } else if (workflow.id === 'workbench') {
-        const nextStepId = workbenchSteps[0]?.id ?? 'terminal'
+        const nextStepId =
+          demo?.workflow === 'workbench' ? demo.step : (workbenchSteps[0]?.id ?? 'terminal')
         markWorkbenchStepVisited(nextStepId)
         setWorkbenchStepId(nextStepId)
       } else if (workflow.id === 'review') {
-        const nextStepId = reviewSteps[0]?.id ?? 'notes'
+        const nextStepId = demo?.workflow === 'review' ? demo.step : (reviewSteps[0]?.id ?? 'notes')
         markReviewStepVisited(nextStepId)
         setReviewStepId(nextStepId)
       }
@@ -276,7 +295,8 @@ export function FeatureWallTourSurface({
         : workbenchStepIndex < workbenchSteps.length - 1)) ||
     (selected.id === 'review' &&
       (reviewStepIndex < 0 ? reviewSteps.length > 0 : reviewStepIndex < reviewSteps.length - 1))
-  const continueLabel = isLastWorkflow && !hasNextSubStep ? doneLabel : 'Continue'
+  const continueLabel =
+    isLastWorkflow && !hasNextSubStep ? doneLabel : translate('guidance.continue', 'Continue')
   const handleContinue = useCallback((): void => {
     markWorkflowVisited(selected.id)
     if (selected.id === 'agents-orchestration') {
@@ -354,12 +374,36 @@ export function FeatureWallTourSurface({
 
   useFeatureWallTourKeyboardShortcut({
     isOpen,
-    enabled: enableKeyboardShortcut,
+    enabled: enableKeyboardShortcut && !workbenchCatalog,
     onContinue: handleContinue
   })
 
   if (!isOpen) {
     return null
+  }
+
+  function selectDemo(demo: ExploreDemo): void {
+    if (demo.workflow !== selected.id) {
+      const workflow = FEATURE_WALL_WORKFLOWS.find((item) => item.id === demo.workflow)
+      if (workflow) {
+        handleSelect(workflow, demo)
+      }
+      return
+    }
+    switch (demo.workflow) {
+      case 'workspaces':
+      case 'tasks':
+        return
+      case 'agents-orchestration':
+        handleSelectAgentsStep(demo.step)
+        break
+      case 'workbench':
+        handleSelectWorkbenchStep(demo.step)
+        break
+      case 'review':
+        handleSelectReviewStep(demo.step)
+        break
+    }
   }
 
   const showGif = !prefersReducedMotion && gifUrl !== null
@@ -410,6 +454,18 @@ export function FeatureWallTourSurface({
       footerText={footerText}
       continueButton={continueButton}
       leadingFooterContent={leadingFooterContent}
+      renderLayout={
+        workbenchCatalog
+          ? (preview) => (
+              <BwExploreLayout
+                demo={preview}
+                onSelectDemo={selectDemo}
+                footerText={footerText}
+                onClose={() => void onDone()}
+              />
+            )
+          : undefined
+      }
     />
   )
 }

@@ -88,13 +88,15 @@ export class OrcaRuntimeWithResolveBrowserNetworkExecutionHostForWorktree extend
   }
 
   protected async resolveTerminalWorkspaceLaunchScope(
-    selector: string
+    selector: string,
+    caller?: string
   ): Promise<TerminalWorkspaceLaunchScope> {
-    return (await this.resolveTerminalWorkspaceLaunchTarget(selector)).scope
+    return (await this.resolveTerminalWorkspaceLaunchTarget(selector, caller)).scope
   }
 
   protected async resolveTerminalWorkspaceLaunchTarget(
-    selector: string
+    selector: string,
+    caller?: string
   ): Promise<ResolvedTerminalWorkspaceLaunchTarget> {
     const floatingTerminalSelector =
       selector === FLOATING_TERMINAL_WORKTREE_ID ||
@@ -124,7 +126,10 @@ export class OrcaRuntimeWithResolveBrowserNetworkExecutionHostForWorktree extend
     const workspaceSelector = selector.startsWith('id:') ? selector.slice(3) : selector
     const parsed = parseWorkspaceKey(workspaceSelector)
     const worktreeSelector = parsed?.type === 'worktree' ? `id:${parsed.worktreeId}` : selector
-    const worktree = await this.resolveWorktreeSelector(worktreeSelector)
+    const worktree = await this.resolveWorktreeSelector(
+      worktreeSelector,
+      caller ?? 'terminal-launch'
+    )
     // Why: `getRepo(id)` is host-blind and the same repo id can exist on local, SSH and runtime
     // hosts. Reading `connectionId` off an arbitrary row reports "local" for a remote worktree and
     // spawns its PTY on the client with the remote cwd (#11163). Loss of a usable answer is

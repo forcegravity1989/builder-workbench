@@ -51,7 +51,7 @@ export function disposeStructuredTerminalSession({
   target: RuntimeClientTarget
   reason: TerminalTabCloseReason
 }): void {
-  if (reason === 'pty-exit') {
+  if (reason !== 'user') {
     return
   }
   const structuredSessionId = structuredTerminalSessionId(unifiedTabs, terminalTabId)

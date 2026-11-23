@@ -1,4 +1,5 @@
-import type { DeviceEntry, DeviceRegistry, DeviceScope } from '../device-registry'
+import { effectiveRuntimeAccessMode, type DeviceEntry, type DeviceRegistry, type DeviceScope } from '../device-registry'
+import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../shared/runtime-session-contracts'
 import type { E2EEKeypair } from '../e2ee-keypair'
 import type { MobileSocketWiring } from '../rpc/mobile-socket-wiring'
 import type {
@@ -151,7 +152,10 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       deviceToken: device.token,
       publicKeyB64,
       pairedDeviceId: device.deviceId,
-      scope: 'runtime'
+      scope: 'runtime',
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
+        : {})
     })
     return {
       pairingUrl,
@@ -169,9 +173,12 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     name?: string
     rotate?: boolean
     scope?: DeviceScope
+    avatar?: string
     // Why: STA-2370 — recorded on the grant so a "This computer only" client reconnecting cannot make the
     // next launch bind every interface. Defaults to network reach, which is what every other caller means.
     reach?: RuntimePairingReach
+    accessMode?: RuntimeAccessMode
+    teamBinding?: RuntimeTeamBinding
   }):
     | PairingOfferUnavailable
     | {
@@ -206,12 +213,19 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     const endpoint = advertised.endpoint
     const deviceName = args.name ?? `CLI ${new Date().toLocaleDateString()}`
     const scope = args.scope ?? 'runtime'
+    if (args.accessMode === 'team-read' && scope !== 'runtime') {
+      return pairingUnavailable(
+        'invalid_access_mode',
+        'Team-read pairing requires a runtime scope.'
+      )
+    }
     let device: DeviceEntry
     try {
       const reach = args.reach ?? 'network'
+      const accessMode = args.accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')
       device = args.rotate
-        ? this.deviceRegistry.rotatePendingDevice(deviceName, scope, reach)
-        : this.deviceRegistry.getOrCreatePendingDevice(deviceName, scope, reach)
+        ? this.deviceRegistry.rotatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding, args.avatar)
+        : this.deviceRegistry.getOrCreatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding, args.avatar)
     } catch (error) {
       console.error('[runtime] Failed to persist pairing credential:', error)
       return pairingUnavailable('device_registry_unavailable', DEVICE_REGISTRY_UNAVAILABLE_GUIDANCE)
@@ -222,7 +236,10 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       deviceToken: device.token,
       publicKeyB64,
       pairedDeviceId: device.deviceId,
-      scope
+      scope,
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
+        : {})
     })
     return {
       available: true,

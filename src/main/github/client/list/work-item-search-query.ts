@@ -48,7 +48,7 @@ export function buildSearchQueryString(
 }
 
 export function quoteGitHubSearchValue(value: string): string {
-  return /[\s"]/.test(value) ? `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"` : value
+  return /[\s"']/.test(value) ? `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"` : value
 }
 
 export function defaultOpenWorkItemQuery(): ParsedTaskQuery {

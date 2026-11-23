@@ -159,32 +159,48 @@ function launchAgentInNewTabInternal(
     agentEnv,
     sessionOptions: resolveInitialNativeChatSessionOptions(store.settings, initialViewModeOptions)
   }
-  const { startupPlan, pasteDraftAfterLaunch, submitPastedPrompt } = planLaunchAgentStartupPrompt({
-    base: startupPlanBase,
-    prompt: trimmedPrompt,
-    promptDelivery,
-    isFollowupPath
-  })
+  const buildLegacyStartup = () =>
+    planLaunchAgentStartupPrompt({
+      base: startupPlanBase,
+      prompt: trimmedPrompt,
+      promptDelivery,
+      isFollowupPath
+    })
+  const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(store, worktreeId)
+  const pairedRuntime = isWebRuntimeSessionActive(runtimeEnvironmentId)
+  // Host launches use host defaults; this plan only describes the caller's prompt delivery.
+  const { startupPlan, pasteDraftAfterLaunch, submitPastedPrompt } = pairedRuntime
+    ? planLaunchAgentStartupPrompt({
+        base: {
+          agent,
+          cmdOverrides: {},
+          agentArgs: null,
+          platform: launchPlatform ?? 'linux',
+          isRemote: true
+        },
+        prompt: trimmedPrompt,
+        promptDelivery,
+        isFollowupPath
+      })
+    : buildLegacyStartup()
   let promptDeliveryResult: Promise<{ delivered: boolean; failureNotified: boolean }> | undefined
 
   if (!startupPlan) {
     return null
   }
 
-  const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(store, worktreeId)
-  if (isWebRuntimeSessionActive(runtimeEnvironmentId)) {
+  if (pairedRuntime) {
     const webHostDelivery = launchAgentInWebHostTab({
       agent,
       worktreeId,
       environmentId: runtimeEnvironmentId,
       groupId,
       cwd: initialCwd,
-      startupPlan,
+      buildLegacyStartup,
       prompt: trimmedPrompt,
       promptDelivery,
-      pastePromptAfterReady: pasteDraftAfterLaunch,
-      submitPastedPrompt,
       agentArgs,
+      launchPlatform,
       // Why: omission means terminal locally, but would let a paired host apply
       // its own default; send the client's resolved terminal choice explicitly.
       viewMode: initialViewModeProps.viewMode ?? 'terminal',

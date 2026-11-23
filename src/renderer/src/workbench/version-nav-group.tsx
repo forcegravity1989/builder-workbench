@@ -1,11 +1,20 @@
 import { goalOrdinal } from './version-labels'
 import React from 'react'
-import { ChevronDown, ChevronRight, FolderPlus, LoaderCircle, PackageCheck, X } from 'lucide-react'
+import { FolderPlus, LoaderCircle, PackageCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  SIDEBAR_GROUP_FIXED_CHEVRON_CLASS,
+  SidebarGroupChevron
+} from '@/components/sidebar/ProjectHeaderActions'
+import { WORKTREE_SECTION_HEADER_PADDING_LEFT } from '@/components/sidebar/worktree-list/rows/indentation'
+import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
-import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
+import {
+  hasUnmergedPlanDraft,
+  type VersionCatalogEntry
+} from '../../../shared/workbench/version-catalog'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import {
@@ -31,6 +40,9 @@ type VersionNavGroupProps = {
   /** 本版「初始化工作区」正在执行（版本行图标转 spinner）。 */
   initializing: boolean
   worktrees: readonly Worktree[]
+  goalWorktrees: readonly Worktree[]
+  initializationTrees: readonly Worktree[]
+  canInitialize: boolean
   /** 当前点亮的流程（'plan'|'acceptance'），null=无。 */
   activeWorkflow: VersionWorkflow | null
   activeTasks: boolean
@@ -53,6 +65,9 @@ export function VersionNavGroup({
   busy,
   initializing,
   worktrees,
+  goalWorktrees,
+  initializationTrees,
+  canInitialize,
   activeWorkflow,
   activeTasks,
   activeOverview,
@@ -71,23 +86,31 @@ export function VersionNavGroup({
   // 两树齐→按钮消失，不出现「点不了」的怪状态。判定与 WorkflowRow 同源
   // （findVersionFlowWorktrees，只认绑定不认分支字符串）。
   const flowTreesComplete =
-    findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'plan' }).length > 0 &&
-    findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'acceptance' }).length >
-      0
+    findVersionFlowWorktrees(initializationTrees, { version: entry.version, workflow: 'plan' })
+      .length > 0 &&
+    findVersionFlowWorktrees(initializationTrees, {
+      version: entry.version,
+      workflow: 'acceptance'
+    }).length > 0
   const goalIds = new Set(entry.goals.map((goal) => goal.goalId))
+  const planChoice = entry.problems.find((problem) => problem.code === 'plan-source-ambiguous')
   // 材料暂不可读或目标已移除时，登记中的绑定树仍有原生入口。
+  const eligibleGoalTrees = new Set(goalWorktrees)
   const ungroupedTrees = worktrees.filter((tree) => {
     const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
     return (
       !tree.isArchived &&
       binding?.version === entry.version &&
       (binding.workflow === 'goal' || binding.workflow === 'issue') &&
-      (!binding.goalId || !goalIds.has(binding.goalId))
+      (!eligibleGoalTrees.has(tree) || !binding.goalId || !goalIds.has(binding.goalId))
     )
   })
   return (
     <div className="wb-version-group min-w-0">
-      <div className="flex min-w-0 items-center gap-0.5 pr-0.5">
+      <div
+        className="relative flex h-7 min-w-0 items-center gap-0.5 pr-[26px]"
+        style={{ paddingLeft: WORKTREE_SECTION_HEADER_PADDING_LEFT }}
+      >
         <button
           type="button"
           onClick={onToggle}
@@ -97,15 +120,10 @@ export function VersionNavGroup({
             retired ? '无存活工作区绑定（已清理或未准备）；材料可回看' : '在制（有存活绑定工作区）'
           }
           className={cn(
-            'flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1 py-1 text-left text-[13px] tracking-tight transition-colors hover:bg-worktree-sidebar-foreground/8',
+            'flex h-full min-w-0 flex-1 items-center gap-1.5 rounded-md text-left text-[13px] leading-none transition-colors hover:bg-worktree-sidebar-foreground/8',
             browsed ? 'text-worktree-sidebar-foreground' : 'text-worktree-sidebar-foreground/70'
           )}
         >
-          {expanded ? (
-            <ChevronDown className="size-3.5 shrink-0 text-worktree-sidebar-foreground/45" />
-          ) : (
-            <ChevronRight className="size-3.5 shrink-0 text-worktree-sidebar-foreground/45" />
-          )}
           <PackageCheck
             className={cn(
               'size-4 shrink-0',
@@ -122,8 +140,19 @@ export function VersionNavGroup({
               历史
             </span>
           ) : null}
+          {entry.mergeStatus === 'merged' && hasUnmergedPlanDraft(entry) ? (
+            <span
+              className="shrink-0 rounded-full border border-worktree-sidebar-foreground/15 px-1.5 text-[9.5px] text-worktree-sidebar-foreground/55"
+              title="已合入版本有未合入草稿"
+            >
+              草稿
+            </span>
+          ) : null}
+          <span className={SIDEBAR_GROUP_FIXED_CHEVRON_CLASS} data-workbench-version-chevron="">
+            <SidebarGroupChevron expanded={expanded} />
+          </span>
         </button>
-        {flowTreesComplete ? null : (
+        {!canInitialize || flowTreesComplete ? null : (
           <Button
             type="button"
             variant="ghost"
@@ -132,7 +161,7 @@ export function VersionNavGroup({
             title="初始化工作区（创建本版计划与验收工作区）"
             disabled={busy}
             onClick={onInitialize}
-            className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
+            className="size-5 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
           >
             {initializing ? (
               <LoaderCircle className="size-3.5 animate-spin" />
@@ -148,13 +177,16 @@ export function VersionNavGroup({
           aria-label={`清理 ${entry.version} 工作树`}
           title={`清理 ${entry.version} 工作树（勾选后进入 Orca 删除确认）`}
           onClick={onCleanup}
-          className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
+          className="size-5 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
         >
           <X className="size-3.5" />
         </Button>
       </div>
       {expanded ? (
-        <div className="ml-[13px] flex flex-col gap-0.5 border-l border-worktree-sidebar-foreground/10 pl-1.5">
+        <div
+          className="ml-[13px] flex flex-col border-l border-worktree-sidebar-foreground/10 pl-1.5"
+          style={{ rowGap: WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP }}
+        >
           <OverviewRow active={activeOverview} onOpenOverview={onOverview} />
           <WorkflowRow
             version={entry.version}
@@ -173,7 +205,7 @@ export function VersionNavGroup({
                 version={entry.version}
                 label={label}
                 title={goal.title}
-                goalTrees={goalDirectoryTrees(worktrees, entry.version, goal.goalId)}
+                goalTrees={goalDirectoryTrees(goalWorktrees, entry.version, goal.goalId)}
                 busy={busy}
                 active={activeGoalId === goal.goalId}
                 onOpenTasks={() => onOpenTasks({ goalId: goal.goalId, label })}
@@ -187,9 +219,9 @@ export function VersionNavGroup({
             )
           })}
           <BoundTreeRows trees={ungroupedTrees} sectionKey={`version:${entry.version}:ungrouped`} />
-          {entry.goals.length === 0 && ungroupedTrees.length === 0 ? (
+          {planChoice || (entry.goals.length === 0 && ungroupedTrees.length === 0) ? (
             <p className="px-1 py-0.5 text-[10.5px] text-worktree-sidebar-foreground/40">
-              目标来自本版计划
+              {planChoice?.message ?? '目标来自本版计划'}
             </p>
           ) : null}
           <WorkflowRow

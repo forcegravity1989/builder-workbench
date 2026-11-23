@@ -41,7 +41,7 @@ describe('Project Group header drag DOM source', () => {
     // or drop row-level handle attrs that arm drag from indent/padding.
     const source = readWorktreeListSource()
     const headerBlockStart = source.indexOf('data-repo-header-id={projectIdForHeader}')
-    const headerBlockEnd = source.indexOf('<ProjectHeaderActions>', headerBlockStart)
+    const headerBlockEnd = source.indexOf('<ProjectHeaderActions', headerBlockStart)
     expect(headerBlockStart).toBeGreaterThan(-1)
     expect(headerBlockEnd).toBeGreaterThan(headerBlockStart)
     const headerBlock = source.slice(headerBlockStart, headerBlockEnd)

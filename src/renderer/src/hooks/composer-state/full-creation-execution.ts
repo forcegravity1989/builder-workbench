@@ -40,7 +40,7 @@ import { queueWorkspaceActivationTerminalFocus } from '@/lib/workspace-activatio
 import { useAppStore } from '@/store'
 import { planAgentSessionLaunch } from '@/lib/agent-session-launch-plan'
 import { settleFullCreationStructuredLaunch } from './full-creation-structured-launch'
-import { finalizeFullCreation } from './full-creation-finalization'
+import { finalizeFullCreation, stopFullCreationForChangedHost } from './full-creation-finalization'
 import { buildFullCreationIssueCommand } from './full-creation-issue-command'
 import { buildFullCreationStartup } from './full-creation-startup'
 import { resolveWorkbenchCreationBinding } from '../../../../shared/workbench/creation-context'
@@ -106,6 +106,7 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
         createDisplayName,
         pendingFirstAgentMessageRename,
         startupPlan,
+        agentLaunchOwner,
         shouldSeedInitialAgentStatus,
         composerTelemetry,
         backendStartup
@@ -179,6 +180,7 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
         undefined,
         submitCompareBaseRef,
         {
+          ...(agentLaunchOwner ? { agentLaunchOwner } : {}),
           linkedWorkItem: toFolderWorkspaceLinkedTask(submitLinkedWorkItem),
           linkedTaskSourceContext: taskSourceContext,
           nameWasGenerated,
@@ -193,6 +195,10 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
       )
 
       const worktree = result.worktree
+      const completion = { setSidebarOpen, persistDraft, clearNewWorkspaceDraft, onCreated }
+      if (stopFullCreationForChangedHost(agentLaunchOwner, completion)) {
+        return
+      }
 
       // G2 (BW): mirror of the quick/background path — attribution is written at
       // the true creation result (instanceId-fenced), never at modal close.
@@ -210,6 +216,10 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
 
       await applyWorktreeMeta(worktree.id, trimmedNote ? { comment: trimmedNote } : {})
 
+      if (stopFullCreationForChangedHost(agentLaunchOwner, completion)) {
+        return
+      }
+
       const issueCommand = buildFullCreationIssueCommand({
         shouldRun: submitShouldRunIssueAutomation && issueCommandTrustDecision === 'run',
         template: confirmedIssueCommandTemplate,
@@ -225,6 +235,7 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
       }
 
       const startup = buildFullCreationStartup({
+        agentLaunchOwner,
         startupPlan,
         backendSpawnedStartup,
         agent: tuiAgent,
@@ -244,14 +255,16 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
         ...(structuredLaunch ? { providesInitialSurface: true } : {})
       })
 
-      const settlement = await settleFullCreationStructuredLaunch({
-        plan: launchPlan,
-        agent: tuiAgent,
-        worktreeId: worktree.id,
-        startup,
-        pendingFirstAgentMessageRename,
-        applyWorktreeMeta
-      })
+      const settlement = structuredLaunch
+        ? await settleFullCreationStructuredLaunch({
+            plan: launchPlan,
+            agent: tuiAgent,
+            worktreeId: worktree.id,
+            startup,
+            pendingFirstAgentMessageRename,
+            applyWorktreeMeta
+          })
+        : null
 
       // Why: both leave the workspace revealed and the composer text intact; the launch layer has
       // already toasted a failure, and an unknown outcome reconciles on the next click.
@@ -285,10 +298,7 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
       }
 
       finalizeFullCreation({
-        setSidebarOpen,
-        persistDraft,
-        clearNewWorkspaceDraft,
-        onCreated,
+        ...completion,
         structuredLaunchAccepted,
         worktreeId: worktree.id,
         activation,

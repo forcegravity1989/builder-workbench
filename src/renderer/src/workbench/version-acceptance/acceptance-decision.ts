@@ -1,9 +1,22 @@
 import type {
   AcceptanceMaterial,
-  PlanningMaterial
+  PlanningMaterial,
+  VersionTaskReference
 } from '../../../../shared/workbench/version-material'
-import { emptyGoalResult, upsertGoalResult, type GoalResult } from './acceptance-model'
-import { goalTaskEvidence } from './acceptance-task-evidence'
+import type { CycleTaskRead } from '../version-cycle/ports'
+import { issueKey } from './acceptance-issue-annotations'
+import {
+  candidateReferenceIdentity,
+  emptyGoalResult,
+  planReferenceIdentity,
+  upsertGoalResult,
+  type GoalResult
+} from './acceptance-model'
+import {
+  captureTaskSnapshot,
+  goalTaskEvidence,
+  replaceGoalTaskEvidence
+} from './acceptance-task-evidence'
 
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -28,7 +41,8 @@ function stableValue(value: unknown): unknown {
 function goalEvidenceText(
   document: AcceptanceMaterial,
   plan: PlanningMaterial,
-  goalId: string
+  goalId: string,
+  references: readonly VersionTaskReference[] | null
 ): string {
   const goal = plan.goals.find((item) => item.goalId === goalId)
   if (!goal) {
@@ -36,26 +50,40 @@ function goalEvidenceText(
   }
   const { decision: _decision, ...evidence } =
     document.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
+  const projectArtifact = (artifact: AcceptanceMaterial['preparedArtifacts'][number]) => ({
+    artifactId: artifact.artifactId,
+    kind: artifact.kind,
+    location: artifact.location,
+    candidateRef: candidateReferenceIdentity(artifact.candidateRef),
+    generatedAt: artifact.generatedAt,
+    command: artifact.command,
+    executionRoot: artifact.executionRoot,
+    checksum: artifact.checksum
+  })
   const candidatePackages = document.preparedArtifacts
     .filter((item) => item.kind === 'package')
     .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
+    .map(projectArtifact)
   const artifacts = document.preparedArtifacts
     .filter((item) => item.kind !== 'package')
     .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
-  const tasks = goalTaskEvidence(document, plan, goalId).map((item) => ({
-    ...item,
-    snapshots: item.snapshots.map(stableValue).sort((a, b) => {
-      const left = JSON.stringify(a)
-      const right = JSON.stringify(b)
-      return left < right ? -1 : left > right ? 1 : 0
-    })
-  }))
+    .map(projectArtifact)
+  const tasks =
+    references &&
+    goalTaskEvidence(document, references, goalId).map((item) => ({
+      ...item,
+      snapshots: item.snapshots.map(stableValue).sort((a, b) => {
+        const left = JSON.stringify(a)
+        const right = JSON.stringify(b)
+        return left < right ? -1 : left > right ? 1 : 0
+      })
+    }))
   return JSON.stringify(
     stableValue({
       version: document.version,
       cycleId: document.cycleId,
-      planRef: document.planRef,
-      candidateRef: document.candidateRef ?? null,
+      planRef: planReferenceIdentity(document.planRef),
+      candidateRef: candidateReferenceIdentity(document.candidateRef),
       demoEnv: document.demoEnv ?? null,
       candidatePackages,
       goal,
@@ -69,11 +97,12 @@ function goalEvidenceText(
 export async function goalEvidenceRevision(
   document: AcceptanceMaterial,
   plan: PlanningMaterial,
-  goalId: string
+  goalId: string,
+  references: readonly VersionTaskReference[] | null
 ): Promise<string> {
   const hash = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(goalEvidenceText(document, plan, goalId))
+    new TextEncoder().encode(goalEvidenceText(document, plan, goalId, references))
   )
   return `sha256:${Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
 }
@@ -87,6 +116,8 @@ export async function recordHumanDecision(input: {
   document: AcceptanceMaterial
   plan: PlanningMaterial
   goalId: string
+  references: readonly VersionTaskReference[] | null
+  reads: CycleTaskRead[]
   outcome: NonNullable<GoalResult['decision']>['outcome']
   source: string
   reason: string
@@ -98,6 +129,24 @@ export async function recordHumanDecision(input: {
   const result =
     input.document.results.find((item) => item.goalId === input.goalId) ??
     emptyGoalResult(input.goalId)
+  const reads = new Map(input.reads.map((read) => [issueKey(read.reference), read]))
+  const goalReads = input.references
+    ?.filter((reference) => reference.goalId === input.goalId)
+    .map(
+      (reference): CycleTaskRead =>
+        reads.get(issueKey(reference)) ?? {
+          kind: 'unavailable',
+          reference,
+          readAt: input.recordedAt,
+          error: '判定时 Issue 状态未读到'
+        }
+    )
+  const taskSnapshot = replaceGoalTaskEvidence(
+    input.document.taskSnapshot,
+    input.goalId,
+    goalReads ? captureTaskSnapshot(goalReads) : undefined
+  )
+  const evidence = { ...input.document, taskSnapshot }
   const next = {
     ...result,
     decision: {
@@ -105,11 +154,16 @@ export async function recordHumanDecision(input: {
       source: input.source.trim(),
       reason: input.reason,
       recordedAt: input.recordedAt,
-      materialRevision: await goalEvidenceRevision(input.document, input.plan, input.goalId)
+      materialRevision: await goalEvidenceRevision(
+        evidence,
+        input.plan,
+        input.goalId,
+        input.references
+      )
     }
   }
   return {
-    ...input.document,
+    ...evidence,
     results: upsertGoalResult(input.document.results, next)
   }
 }

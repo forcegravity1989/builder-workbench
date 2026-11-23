@@ -1,5 +1,10 @@
+import { WORKBENCH_REVIEW_NOTIFICATION_METHODS } from './workbench-review-notifications'
+import { WORKBENCH_PROTOTYPE_REVIEW_METHODS } from './workbench-prototype-review-notifications'
+import { WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS } from './workbench-prototype-review-annotations'
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
+import { WORKBENCH_SHARE_METHODS } from './workbench-share'
+import { WORKBENCH_SKILL_METHODS } from './workbench-skills'
 import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
 import { WORKBENCH_VERSION_BINDING_METHODS } from './workbench-version-binding'
 import { WORKBENCH_VERSION_WORKSPACE_METHODS } from './workbench-version-workspace'
@@ -11,6 +16,7 @@ import { WORKBENCH_RELEASE_METHODS } from './workbench-release'
 import { WORKBENCH_CHARTER_METHODS } from './workbench-charter'
 import { WORKBENCH_MILESTONE_METHODS } from './workbench-milestones'
 import { WORKBENCH_TRUNK_METHODS } from './workbench-trunk'
+import { WORKBENCH_REPO_REMOVAL_METHODS } from './workbench-repo-removal'
 import { AI_VAULT_METHODS } from './ai-vault'
 import { AUTOMATION_METHODS } from './automations'
 import { REPO_METHODS } from './repo'
@@ -56,14 +62,18 @@ import { PAIRING_METHODS } from './pairing'
 import { UPDATER_METHODS } from './updater'
 import { AGENT_SESSION_METHODS } from './agent-session'
 import { STRUCTURED_AGENT_SESSION_METHODS } from './structured-agent-session'
-import { ARTIFACT_METHODS } from './artifacts'
 import { AGENT_HOOK_METHODS } from './agent-hooks'
 
 // Why: a flat manifest keeps registration order explicit and provides one
 // grep-point for "what methods does the RPC server expose?" — useful when
 // auditing the security boundary or wiring new CLI commands.
 export const ALL_RPC_METHODS = [
+  ...WORKBENCH_REVIEW_NOTIFICATION_METHODS,
+  ...WORKBENCH_PROTOTYPE_REVIEW_METHODS,
+  ...WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS,
   ...WORKBENCH_MATERIAL_METHODS,
+  ...WORKBENCH_SHARE_METHODS,
+  ...WORKBENCH_SKILL_METHODS,
   ...WORKBENCH_HISTORY_METHODS,
   ...WORKBENCH_VERSION_BINDING_METHODS,
   ...WORKBENCH_VERSION_WORKSPACE_METHODS,
@@ -75,10 +85,10 @@ export const ALL_RPC_METHODS = [
   ...WORKBENCH_CHARTER_METHODS,
   ...WORKBENCH_MILESTONE_METHODS,
   ...WORKBENCH_TRUNK_METHODS,
+  ...WORKBENCH_REPO_REMOVAL_METHODS,
   ...STATUS_METHODS,
   ...AGENT_HOOK_METHODS,
   ...AI_VAULT_METHODS,
-  ...ARTIFACT_METHODS,
   ...AUTOMATION_METHODS,
   ...REPO_METHODS,
   ...WORKTREE_METHODS,

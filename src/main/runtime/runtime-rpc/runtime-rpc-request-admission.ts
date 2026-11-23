@@ -1,4 +1,4 @@
-import type { RuntimeMetadata } from '../../../shared/runtime-bootstrap'
+import type { RuntimeMetadata, RuntimeTransportMetadata } from '../../../shared/runtime-bootstrap'
 import { writeRuntimeMetadata } from '../runtime-metadata'
 import type { RpcMessageContext } from '../rpc/transport'
 import type { RpcRequest, RpcResponse } from '../rpc/core'
@@ -139,14 +139,17 @@ export class RuntimeRpcRequestAdmission extends RuntimeRpcBinaryRouting {
     return errorResponse(id, { runtimeId: this.runtime.getRuntimeId() }, code, message)
   }
 
-  protected writeMetadata(): void {
+  protected writeMetadata(
+    transports: RuntimeTransportMetadata[] = this.transports,
+    canPublish?: () => Promise<boolean>
+  ): Promise<boolean> {
     const metadata: RuntimeMetadata = {
       runtimeId: this.runtime.getRuntimeId(),
       pid: this.pid,
-      transports: this.transports,
+      transports,
       authToken: this.authToken,
       startedAt: this.runtime.getStartedAt()
     }
-    writeRuntimeMetadata(this.userDataPath, metadata)
+    return writeRuntimeMetadata(this.userDataPath, metadata, canPublish)
   }
 }

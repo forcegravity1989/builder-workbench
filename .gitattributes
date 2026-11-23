@@ -14,6 +14,9 @@
 # own pin — verify:skill-bundle-manifest fails loudly on the resulting drift.
 /skills/**/*.md text eol=lf
 /src/cli/bundled-skill-guides.ts text eol=lf
+# Recent Design vendor sources carry exact SHA-256 provenance; preserve upstream bytes.
+/.bw/skills/recent-design/** -text
+/.claude/skills/recent-design/*.md text eol=lf
 # Bundled plugin trees are byte-hashed; CRLF checkout would break the pinned hash.
 /resources/plugins/** text eol=lf
 # Relay assets are copied verbatim into the bundle and hashed byte-for-byte into
@@ -52,3 +55,6 @@
 # Generated method->params catalog: compared byte-for-byte by
 # verify:rpc-params-catalog, so a CRLF checkout would fail the gate.
 /src/shared/rpc-contract/rpc-params-catalog.generated.ts linguist-generated=true text eol=lf
+/src/shared/workbench/skill-package.json linguist-generated=true text eol=lf
+/docs/05-features/pr-review-notify/prototype/preview.js linguist-generated=true
+/docs/05-features/pr-review-notify/prototype/preview.css linguist-generated=true

@@ -13,9 +13,9 @@ const {
   showMessageBoxMock,
   openPathMock,
   collectDiagnosticBundleMock,
-  deleteDiagnosticBundleMock,
+  deleteWelinkBundleMock,
   getDiagnosticsStatusMock,
-  uploadDiagnosticBundleMock
+  submitWelinkBundleMock
 } = vi.hoisted(() => ({
   handleMock: vi.fn(),
   mkdirSyncMock: vi.fn(),
@@ -24,9 +24,9 @@ const {
   showMessageBoxMock: vi.fn(),
   openPathMock: vi.fn(),
   collectDiagnosticBundleMock: vi.fn(),
-  deleteDiagnosticBundleMock: vi.fn(),
+  deleteWelinkBundleMock: vi.fn(),
   getDiagnosticsStatusMock: vi.fn(),
-  uploadDiagnosticBundleMock: vi.fn()
+  submitWelinkBundleMock: vi.fn()
 }))
 
 vi.mock('node:fs', async () => {
@@ -48,9 +48,14 @@ vi.mock('electron', () => ({
 
 vi.mock('../observability', () => ({
   collectDiagnosticBundle: collectDiagnosticBundleMock,
-  deleteDiagnosticBundle: deleteDiagnosticBundleMock,
-  getDiagnosticsStatus: getDiagnosticsStatusMock,
-  uploadDiagnosticBundle: uploadDiagnosticBundleMock
+  getDiagnosticsStatus: getDiagnosticsStatusMock
+}))
+
+// BW #553: upload/delete ride the WeLink group-space sink; the IPC contract
+// (ticketId / thrown user-facing messages) is what these cases pin.
+vi.mock('../workbench/reporting/report-submission', () => ({
+  submitWelinkDiagnosticsBundle: submitWelinkBundleMock,
+  deleteWelinkDiagnosticsBundle: deleteWelinkBundleMock
 }))
 
 import { registerDiagnosticsHandlers } from './diagnostics'
@@ -87,12 +92,10 @@ describe('diagnostics IPC handlers', () => {
     openPathMock.mockReset()
     openPathMock.mockResolvedValue('')
     collectDiagnosticBundleMock.mockReset()
-    deleteDiagnosticBundleMock.mockReset()
+    deleteWelinkBundleMock.mockReset()
     getDiagnosticsStatusMock.mockReset()
-    uploadDiagnosticBundleMock.mockReset()
+    submitWelinkBundleMock.mockReset()
     delete (globalThis as { ORCA_BUILD_IDENTITY?: unknown }).ORCA_BUILD_IDENTITY
-    delete (globalThis as { ORCA_DIAGNOSTICS_TOKEN_URL?: unknown }).ORCA_DIAGNOSTICS_TOKEN_URL
-    process.env.ORCA_DIAGNOSTICS_TOKEN_URL = 'https://diagnostics.example.com/diagnostics/token'
     getDiagnosticsStatusMock.mockReturnValue({
       localFileEnabled: true,
       bundleEnabled: true,
@@ -101,8 +104,12 @@ describe('diagnostics IPC handlers', () => {
     })
     collectDiagnosticBundleMock.mockReturnValue(makeBundle())
     readFileSyncMock.mockReturnValue(makeBundle().payload)
-    uploadDiagnosticBundleMock.mockResolvedValue({ ticketId: 'ticketabcdefghijklmnop' })
-    deleteDiagnosticBundleMock.mockResolvedValue(undefined)
+    submitWelinkBundleMock.mockImplementation(
+      async (_payload: string, bundleSubmissionId: string) => ({
+        ticketId: bundleSubmissionId
+      })
+    )
+    deleteWelinkBundleMock.mockResolvedValue(undefined)
     registerDiagnosticsHandlers()
     captureHandlers()
   })
@@ -110,7 +117,7 @@ describe('diagnostics IPC handlers', () => {
   it('rejects upload without a main-collected bundle preview', async () => {
     const upload = handlers.get('diagnostics:uploadBundle')!
     await expect(upload({}, 'rendererMintedBundleId')).rejects.toThrow(/expired/)
-    expect(uploadDiagnosticBundleMock).not.toHaveBeenCalled()
+    expect(submitWelinkBundleMock).not.toHaveBeenCalled()
   })
 
   it('uploads only the payload retained by main after collection', async () => {
@@ -126,42 +133,11 @@ describe('diagnostics IPC handlers', () => {
 
     await collect({}, 30)
     await openPreview({}, bundle.bundleSubmissionId)
-    await upload({}, bundle.bundleSubmissionId)
-
-    expect(uploadDiagnosticBundleMock).toHaveBeenCalledWith({
-      tokenEndpoint: 'https://diagnostics.example.com/diagnostics/token',
-      payload: bundle.payload,
-      bundleSubmissionId: bundle.bundleSubmissionId
+    await expect(upload({}, bundle.bundleSubmissionId)).resolves.toEqual({
+      ticketId: bundle.bundleSubmissionId
     })
-  })
 
-  it('pins official builds to the compile-time diagnostics endpoint', async () => {
-    const bundle = makeBundle({
-      bundleSubmissionId: 'bundleabcdefghijklmnop',
-      payload: '{"type":"bundle-header"}\n{"safe":true}\n'
-    })
-    const globalOverrides = globalThis as {
-      ORCA_BUILD_IDENTITY?: 'stable'
-      ORCA_DIAGNOSTICS_TOKEN_URL?: string
-    }
-    globalOverrides.ORCA_BUILD_IDENTITY = 'stable'
-    globalOverrides.ORCA_DIAGNOSTICS_TOKEN_URL = 'https://official.example.com/diagnostics/token'
-    process.env.ORCA_DIAGNOSTICS_TOKEN_URL = 'https://attacker.example.com/diagnostics/token'
-    collectDiagnosticBundleMock.mockReturnValue(bundle)
-    readFileSyncMock.mockReturnValue(bundle.payload)
-    const collect = handlers.get('diagnostics:collectBundle')!
-    const openPreview = handlers.get('diagnostics:openBundlePreview')!
-    const upload = handlers.get('diagnostics:uploadBundle')!
-
-    await collect({}, 30)
-    await openPreview({}, bundle.bundleSubmissionId)
-    await upload({}, bundle.bundleSubmissionId)
-
-    expect(uploadDiagnosticBundleMock).toHaveBeenCalledWith({
-      tokenEndpoint: 'https://official.example.com/diagnostics/token',
-      payload: bundle.payload,
-      bundleSubmissionId: bundle.bundleSubmissionId
-    })
+    expect(submitWelinkBundleMock).toHaveBeenCalledWith(bundle.payload, bundle.bundleSubmissionId)
   })
 
   it('returns a quiet cancellation when the user declines upload confirmation', async () => {
@@ -176,7 +152,7 @@ describe('diagnostics IPC handlers', () => {
     await openPreview({}, bundle.bundleSubmissionId)
     await expect(upload({}, bundle.bundleSubmissionId)).resolves.toEqual({ canceled: true })
     expect(showMessageBoxMock).toHaveBeenCalledTimes(1)
-    expect(uploadDiagnosticBundleMock).not.toHaveBeenCalled()
+    expect(submitWelinkBundleMock).not.toHaveBeenCalled()
   })
 
   it('rechecks the retained preview after upload confirmation', async () => {
@@ -195,7 +171,7 @@ describe('diagnostics IPC handlers', () => {
     await openPreview({}, bundle.bundleSubmissionId)
     await expect(upload({}, bundle.bundleSubmissionId)).rejects.toThrow(/expired/)
 
-    expect(uploadDiagnosticBundleMock).not.toHaveBeenCalled()
+    expect(submitWelinkBundleMock).not.toHaveBeenCalled()
   })
 
   it('ignores edited preview file contents and uploads the retained original payload', async () => {
@@ -214,8 +190,9 @@ describe('diagnostics IPC handlers', () => {
     await upload({}, bundle.bundleSubmissionId)
 
     expect(readFileSync).not.toHaveBeenCalled()
-    expect(uploadDiagnosticBundleMock).toHaveBeenCalledWith(
-      expect.objectContaining({ payload: '{"original":true}\n' })
+    expect(submitWelinkBundleMock).toHaveBeenCalledWith(
+      '{"original":true}\n',
+      bundle.bundleSubmissionId
     )
   })
 
@@ -241,7 +218,7 @@ describe('diagnostics IPC handlers', () => {
 
     await collect({}, 30)
     await expect(upload({}, bundle.bundleSubmissionId)).rejects.toThrow(/open.*review file/)
-    expect(uploadDiagnosticBundleMock).not.toHaveBeenCalled()
+    expect(submitWelinkBundleMock).not.toHaveBeenCalled()
   })
 
   it('discards retained bundle previews on request', async () => {
@@ -332,9 +309,6 @@ describe('diagnostics IPC handlers', () => {
   it('registers and handles bundle deletion by ticket ID', async () => {
     const deleteBundle = handlers.get('diagnostics:deleteBundle')!
     await deleteBundle({}, 'ticketabcdefghijklmnop')
-    expect(deleteDiagnosticBundleMock).toHaveBeenCalledWith({
-      tokenEndpoint: 'https://diagnostics.example.com/diagnostics/token',
-      ticketId: 'ticketabcdefghijklmnop'
-    })
+    expect(deleteWelinkBundleMock).toHaveBeenCalledWith('ticketabcdefghijklmnop')
   })
 })

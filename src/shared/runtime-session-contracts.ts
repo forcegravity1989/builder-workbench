@@ -25,6 +25,13 @@ export const HEADLESS_RUNTIME_WINDOW_ID = 0
 
 export type DeviceScope = 'mobile' | 'runtime'
 
+export type RuntimeAccessMode = 'full' | 'team-read'
+
+export type RuntimeTeamBinding = {
+  teamGroupId: string
+  memberId: string
+}
+
 export type RuntimeTerminalDriverState =
   | { kind: 'idle' }
   | { kind: 'desktop' }
@@ -216,6 +223,12 @@ export type RuntimeSessionTabCloseReason = 'user' | 'pty-exit' | 'cleanup'
  * such a frame as evidence a tab was closed.
  */
 export const UNPUBLISHED_WORKTREE_PUBLICATION_EPOCH = 'none'
+
+export function isHeadlessBuiltSessionTabsPublication(publicationEpoch: string): boolean {
+  return (
+    publicationEpoch.startsWith('headless:') || publicationEpoch.startsWith('headless-hydrated:')
+  )
+}
 
 export type RuntimeMobileSessionTabsSnapshot = {
   worktree: string

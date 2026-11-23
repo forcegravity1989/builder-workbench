@@ -12,28 +12,31 @@ const monthAt = (value, offset = 0) => {
   return date.getTime()
 }
 const recordedMonths = (plan) =>
-  plan.months.filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month)).map((m) => m.month)
-export function latestMonth(plan) {
-  return (
-    [
-      ...plan.versions.filter((v) => Number.isFinite(at(v.start))).map((v) => v.start.slice(0, 7)),
-      ...recordedMonths(plan)
-    ]
-      .sort()
-      .at(-1) || currentDay.slice(0, 7)
-  )
-}
-export function calendarFor(plan) {
-  const focus = latestMonth(plan)
+  [
+    ...plan.months,
+    ...(plan.milestones || []).map((m) => ({ month: m.date?.slice(0, 7) || m.month }))
+  ]
+    .filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month))
+    .map((m) => m.month)
+export function calendarFor(plan, focusDate = currentDay) {
+  const focus = focusDate.slice(0, 7)
+  const spans = plan.features.flatMap((f) => f.deliveries.flatMap((d) => d.stages))
   const dated = plan.versions.filter((v) => Number.isFinite(at(v.start)) && v.start <= v.end)
   const start = monday(
     Math.min(
       monthAt(focus, -1),
       ...dated.map((v) => at(v.start)),
+      ...spans.map((s) => s.start * dayMs),
       ...recordedMonths(plan).map((month) => monthAt(month))
     )
   )
-  const end = Math.max(monthAt(focus, 2) - dayMs, ...dated.map((v) => at(v.end))) + 7 * dayMs
+  const end =
+    Math.max(
+      monthAt(focus, 2) - dayMs,
+      ...dated.map((v) => at(v.end)),
+      ...spans.map((s) => s.end * dayMs)
+    ) +
+    7 * dayMs
   const weeks = []
   for (let value = start; value <= end; value += 7 * dayMs) {
     weeks.push({ id: `week-${iso(value)}`, start: iso(value), end: iso(value + 4 * dayMs) })
@@ -81,29 +84,11 @@ export function planWeek(plan, week, name) {
     next = `${prefix}${patch}`
   }
   const version = { ...week, name: next }
-  const month = week.start.slice(0, 7)
   return {
     version,
     plan: {
       ...plan,
-      versions: [...plan.versions, version],
-      months: plan.months.some((m) => m.month === month)
-        ? plan.months
-        : [...plan.months, { month, outcome: '' }]
+      versions: [...plan.versions, version]
     }
-  }
-}
-
-export function availableWeek(plan, from) {
-  let start = monday(at(from))
-  for (;;) {
-    const week = { id: `week-${iso(start)}`, start: iso(start), end: iso(start + 4 * dayMs) }
-    const locked = plan.versions.find(
-      (v) => v.started && v.start <= week.end && v.end >= week.start
-    )
-    if (!locked) {
-      return week
-    }
-    start = monday(at(locked.end)) + 7 * dayMs
   }
 }

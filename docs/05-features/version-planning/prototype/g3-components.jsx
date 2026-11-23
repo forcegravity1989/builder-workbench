@@ -18,7 +18,8 @@ const {
   ChartNoAxesCombined,
   RefreshCw,
   GitBranch,
-  CalendarClock
+  CalendarClock,
+  CircleHelp
 } = window.BWPrototypeDependencies
 import {
   metricCatalog,
@@ -57,7 +58,8 @@ export function Icon({ name, size = 16 }) {
       metric: ChartNoAxesCombined,
       refresh: RefreshCw,
       branch: GitBranch,
-      automation: CalendarClock
+      automation: CalendarClock,
+      help: CircleHelp
     }[name] || Target
   return <Component size={size} aria-hidden="true" />
 }
@@ -502,6 +504,74 @@ export function GoalRow({
         </div>
       )}
     </article>
+  )
+}
+// 未归类 Issue 收件箱（#588 原型示意）：有本版标签、但标题解析不出目标的 Issue 落在
+// 这里。默认折叠成一行，数量为 0 整块隐藏——日常几乎不占位、不变丑；只在需要归位时
+// 点开。刻意用虚线淡色、不像目标卡，明确它是「待归位收件箱」而非目标。不做拖拽/一键
+// 分配：只给一句改标题的提示，让计划助手代改或人自行补标题即可（等真实反馈再升级）。
+export function UnclassifiedLane({ rows, version }) {
+  const [open, setOpen] = useState(false)
+  const [tip, setTip] = useState(null)
+  if (!rows.length) {
+    return null
+  }
+  const showTip = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    setTip({
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - 288)),
+      top: rect.bottom + 6
+    })
+  }
+  return (
+    <div className={`g3-unclassified ${open ? 'open' : ''}`}>
+      <div className="g3-unclassified-head">
+        <button
+          className="g3-unclassified-toggle"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-label={`${open ? '收起' : '展开'}未归类 Issue`}
+        >
+          <Icon name={open ? 'down' : 'right'} size={14} />
+          <strong>未归类 Issue</strong>
+          <span className="g3-unclassified-count">{rows.length}</span>
+        </button>
+        {/* 说明不进常驻 UI：挂在标题旁的信息图标上，悬浮/聚焦显示，沿用 IconButton 的
+            g3-tooltip 样式与行为（Orca 一致）。 */}
+        <span
+          className="g3-unclassified-help"
+          role="img"
+          aria-label="未归类 Issue 说明"
+          tabIndex={0}
+          onMouseEnter={showTip}
+          onFocus={showTip}
+          onMouseLeave={() => setTip(null)}
+          onBlur={() => setTip(null)}
+        >
+          <Icon name="help" size={14} />
+          {tip && (
+            <span className="g3-tooltip" aria-hidden="true" style={tip}>
+              本版已纳入、但标题未标注目标的 Issue；改标题补【{version}|目标】即可归位。
+            </span>
+          )}
+        </span>
+      </div>
+      {open && (
+        <div className="g3-tasks">
+          {rows.map((item) => (
+            <div className="g3-task" key={item.number}>
+              <a href={item.url} target="_blank" rel="noreferrer">
+                <span className="g3-id">#{item.number}</span>
+                {item.title || '标题未读到'}
+              </a>
+              <span className="g3-task-state">
+                {item.state === 'CLOSED' ? '已关闭' : item.state === 'OPEN' ? '开放' : '状态未知'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 // 纪要空态骨架卡（2026-10-22 真机反馈轮定结构；第八轮减注释密度）：没有纪要或

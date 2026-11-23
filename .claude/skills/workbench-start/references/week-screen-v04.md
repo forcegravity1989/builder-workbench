@@ -6,4 +6,4 @@
 
 当前开发读取目标树的 [version-planning spec](../../../../docs/05-features/version-planning/spec.md)、STATUS、对应实现与真实读写链路；本篇不复述现行方案。历史 HTML、旧深链、人员分工或 Rust 成绩不决定当前实现，也不证明六环通过。
 
-原型示例、当周真实结果、价值衡量与测试证据的使用边界按当前 spec 和 [交付约定](delivery-contract.md) 判断。历史来源不要求恢复旧 KPI 表或计划 Issue，也不新增发布、群发、合入或后续迁移授权。
+原型示例、当周真实结果、价值衡量与测试证据的使用边界按当前 spec 和 [交付约定](../../../../docs/development.md) 判断。历史来源不要求恢复旧 KPI 表或计划 Issue，也不新增发布、群发、合入或后续迁移授权。

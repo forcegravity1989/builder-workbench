@@ -7,6 +7,7 @@ import { useTargetChangeActions } from './target-change-actions'
 import { useProjectTargetActions } from './project-target-actions'
 import { useBranchStartPointActions } from './branch-start-point-actions'
 import { useGitHubProviderSelection } from './github-provider-selection'
+import { useCodeHubProviderSelection } from './codehub-provider-selection'
 import { useGitLabProviderSelection } from './gitlab-provider-selection'
 import { useWorkItemSourceActions } from './work-item-source-actions'
 import { useIssueSourceActions } from './issue-source-actions'
@@ -188,6 +189,28 @@ export function useComposerSourceState(
     smartGitHubPrStartPointSelectionRef:
       target.asyncComposerState.smartGitHubPrStartPointSelectionRef
   })
+  const codehubProviderSelection = useCodeHubProviderSelection({
+    branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
+    lastAutoNameRef: target.asyncComposerState.lastAutoNameRef,
+    name: target.sourceContextState.name,
+    selectedRepoCodeHubSourceContext: target.sourceContextState.selectedRepoCodeHubSourceContext,
+    smartGitHubPrStartPointSelectionRef:
+      target.asyncComposerState.smartGitHubPrStartPointSelectionRef,
+    setBaseBranch: target.workspaceIdentityState.setBaseBranch,
+    setBranchNameOverride: target.workspaceIdentityState.setBranchNameOverride,
+    setBranchNameOverridePreservesNameEdits:
+      target.workspaceIdentityState.setBranchNameOverridePreservesNameEdits,
+    setCompareBaseRef: target.workspaceIdentityState.setCompareBaseRef,
+    setForkPushWarning: target.workspaceIdentityState.setForkPushWarning,
+    setLinkedGitLabIssue: target.workspaceIdentityState.setLinkedGitLabIssue,
+    setLinkedGitLabMR: target.workspaceIdentityState.setLinkedGitLabMR,
+    setLinkedIssue: target.workspaceIdentityState.setLinkedIssue,
+    setLinkedPR: target.workspaceIdentityState.setLinkedPR,
+    setLinkedTaskSourceContext: target.sourceContextState.setLinkedTaskSourceContext,
+    setLinkedWorkItem: target.sourceContextState.setLinkedWorkItem,
+    setName: target.sourceContextState.setName,
+    setPushTarget: target.workspaceIdentityState.setPushTarget
+  })
   const gitlabProviderSelection = useGitLabProviderSelection({
     applyLinkedGitLabWorkItem: sourceIdentityActions.applyLinkedGitLabWorkItem,
     branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
@@ -286,6 +309,7 @@ export function useComposerSourceState(
     projectTargetActions,
     branchStartPointActions,
     githubProviderSelection,
+    codehubProviderSelection,
     gitlabProviderSelection,
     workItemSourceActions,
     issueSourceActions,

@@ -1,40 +1,30 @@
-import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { useRef, useState, type RefObject, type PointerEvent, type KeyboardEvent } from 'react'
+import { toast } from 'sonner'
 import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
-import {
-  datedMilestoneVersions,
-  materializeMilestoneWeek,
-  milestoneDay,
-  milestoneWeekAt
-} from '../../../shared/workbench/milestone-calendar'
 import {
   adjustMilestoneDelivery,
   adjustMilestoneVersion,
   milestoneLaneConflict,
-  plannedDay,
+  orderMilestoneDeliveries,
   type MilestoneDragMode
 } from '../../../shared/workbench/milestone-sdlc'
+import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 
 export const MILESTONE_DAY_WIDTH = 36
 export const MILESTONE_LABEL_WIDTH = 220
 export type MilestoneGesture =
-  | { kind: 'version'; id: string; mode: 'move' }
-  | {
-      kind: 'delivery'
-      id: string
-      deliveryId: string
-      stage: number
-      mode: MilestoneDragMode
-    }
+  | { kind: 'version'; id: string; mode: MilestoneDragMode }
+  | { kind: 'delivery'; id: string; deliveryId: string; mode: MilestoneDragMode }
+
 export function useMilestoneGesture(
   draft: MilestoneDraft,
   enabled: boolean,
-  started: Set<string>,
   viewport: RefObject<HTMLDivElement | null>,
-  apply: (draft: MilestoneDraft) => void
+  commit: (draft: MilestoneDraft) => void,
+  touch: (id: string) => void
 ) {
   const [preview, setPreview] = useState<MilestoneDraft | null>(null)
-  const [warning, setWarning] = useState('')
+  const warning = useRef('')
   const gesture = useRef<{
     operation: MilestoneGesture
     base: MilestoneDraft
@@ -42,79 +32,63 @@ export function useMilestoneGesture(
     x: number
     left: number
   } | null>(null)
-  function changed(base: MilestoneDraft, g: MilestoneGesture, delta: number) {
-    if (g.kind === 'version') {
-      return started.has(g.id) ? base : adjustMilestoneVersion(base, g.id, delta)
-    }
-    const delivery = base.material.features
-      .find((f) => f.id === g.id)
-      ?.deliveries.find((d) => d.id === g.deliveryId)
-    if (!delivery?.stages.length || started.has(delivery.version.cycleId)) {
+  function apply(next: MilestoneDraft) {
+    commit({
+      ...next,
+      material: {
+        ...next.material,
+        features: next.material.features.map((f) => ({
+          ...f,
+          deliveries: orderMilestoneDeliveries(f.deliveries)
+        }))
+      }
+    })
+  }
+  function checked(
+    base: MilestoneDraft,
+    operation: MilestoneGesture,
+    delta: number
+  ): MilestoneDraft | null {
+    if (!delta) {
+      warning.current = ''
       return base
     }
-    let next = base
-    let target
-    if (g.mode === 'move' && delta) {
-      const day = plannedDay(delivery.stages[0].start) + delta
-      const candidates = datedMilestoneVersions(base).filter(
-        (v) => milestoneDay(v.timeWindow!.start) <= day && day < milestoneDay(v.timeWindow!.end) + 1
-      )
-      const own = candidates.find((v) => v.cycleId === delivery.version.cycleId)
-      if (!own && candidates.length > 1) {
-        return base
-      }
-      target = own ?? candidates[0]
-      if (!target) {
-        const used = materializeMilestoneWeek(base, milestoneWeekAt(day), crypto.randomUUID())
-        next = used.draft
-        target = used.version
-      }
-      if (started.has(target.cycleId)) {
-        return base
-      }
-    }
-    return adjustMilestoneDelivery(next, g.id, g.deliveryId, g.mode, g.stage, delta, target)
+    const candidate =
+      operation.kind === 'version'
+        ? adjustMilestoneVersion(base, operation.id, operation.mode, delta)
+        : adjustMilestoneDelivery(base, operation.id, operation.deliveryId, operation.mode, delta)
+    const conflict =
+      candidate === base
+        ? '请保留有效日期范围，版本至少一天、特性至少半天'
+        : operation.kind === 'version'
+          ? settleMilestoneWindows(base, candidate).conflict
+          : milestoneLaneConflict(candidate)
+            ? '同一特性的安排不能重叠'
+            : undefined
+    warning.current = conflict ?? ''
+    return conflict ? null : candidate
   }
   function begin(event: PointerEvent, operation: MilestoneGesture) {
-    if (!enabled || event.button !== 0 || !viewport.current) {
+    const area = viewport.current
+    if (!enabled || event.button !== 0 || !area) {
       return
     }
     event.preventDefault()
     event.stopPropagation()
-    setWarning('')
+    warning.current = ''
+    if (operation.kind === 'delivery') {
+      touch(operation.id)
+    }
     gesture.current = {
       operation,
       base: draft,
       next: draft,
       x: event.clientX,
-      left: viewport.current.scrollLeft
+      left: area.scrollLeft
     }
     event.currentTarget.setPointerCapture(event.pointerId)
   }
-  function stepFor(operation: MilestoneGesture) {
-    const delivery =
-      operation.kind === 'delivery' &&
-      draft.material.features
-        .find((f) => f.id === operation.id)
-        ?.deliveries.find((d) => d.id === operation.deliveryId)
-    return operation.kind === 'version' || (delivery && delivery.stages[0]?.phase === 'Maintain')
-      ? 1
-      : 0.5
-  }
-  function checked(base: MilestoneDraft, operation: MilestoneGesture, delta: number) {
-    const settled = settleMilestoneWindows(base, changed(base, operation, delta), started)
-    if (settled.conflict) {
-      setWarning(settled.conflict)
-      return null
-    }
-    const next = settled.draft
-    if (milestoneLaneConflict(next)) {
-      setWarning('同一泳道不能重叠')
-      return null
-    }
-    setWarning('')
-    return next
-  }
+  const stepFor = (operation: MilestoneGesture) => (operation.kind === 'version' ? 1 : 0.5)
   function move(event: PointerEvent) {
     const g = gesture.current,
       area = viewport.current
@@ -131,7 +105,7 @@ export function useMilestoneGesture(
     const delta =
       Math.round((event.clientX - g.x + area.scrollLeft - g.left) / MILESTONE_DAY_WIDTH / step) *
       step
-    g.next = checked(g.base, g.operation, delta) ?? g.next
+    g.next = checked(g.base, g.operation, delta) ?? (g.operation.mode === 'move' ? g.base : g.next)
     setPreview(g.next)
     return true
   }
@@ -139,10 +113,15 @@ export function useMilestoneGesture(
     const current = gesture.current
     gesture.current = null
     setPreview(null)
-    if (cancel && current) {
-      setWarning('')
+    if (!current) {
+      return
     }
-    if (current && !cancel && enabled) {
+    if (cancel) {
+      warning.current = ''
+    } else if (warning.current) {
+      toast.error(warning.current)
+    }
+    if (current && !cancel && enabled && current.next !== current.base) {
       apply(current.next)
     }
   }
@@ -151,24 +130,33 @@ export function useMilestoneGesture(
       return
     }
     event.preventDefault()
-    const delta = (event.key === 'ArrowLeft' ? -1 : 1) * stepFor(operation)
-    const next = checked(draft, operation, delta)
-    if (next) {
+    if (operation.kind === 'delivery') {
+      touch(operation.id)
+    }
+    const next = checked(
+      draft,
+      operation,
+      (event.key === 'ArrowLeft' ? -1 : 1) * stepFor(operation)
+    )
+    if (next && next !== draft) {
       apply(next)
     }
+    if (warning.current) {
+      toast.error(warning.current)
+    }
   }
-  const hasFirstDelivery = (id: string) =>
-    draft.material.features.some((f) =>
-      f.deliveries.some((d) => d.version.cycleId === id && d.stages[0]?.phase === 'Plan')
-    )
+  function shiftViewport(delta: number) {
+    if (gesture.current) {
+      gesture.current.left += delta
+    }
+  }
   return {
     preview,
-    warning,
     begin,
     move,
     finish,
     keyboard,
-    hasFirstDelivery,
+    shiftViewport,
     active: () => !!gesture.current
   }
 }

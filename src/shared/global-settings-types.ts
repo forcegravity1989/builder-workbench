@@ -236,18 +236,12 @@ export type GlobalSettings = {
   showTasksButton: boolean
   /** Only toggles the sidebar shortcut; Automations stay reachable from Settings/View menu. */
   showAutomationsButton?: boolean
-  /** Deprecated: Artifacts are always available. Use showArtifactsButton for sidebar visibility. */
-  artifactsEnabled?: boolean
-  /** Capability gate for agent-driven publishing; off until granted, enforced in main, not just the UI. */
-  artifactSharingEnabled?: boolean
   /** Capability gate for agent/CLI skill publishing; manual reviewed publishing remains available. */
   agentSkillSharingEnabled?: boolean
   /** How deep dispatched workers may nest. 1 = workers cannot dispatch sub-workers.
    *  Renderer-writable only: omitted from the SettingsUpdate RPC schema so a worker
    *  cannot raise its own cap via `orca settings update`. */
   nestedWorkerMaxDepth?: number
-  /** Only toggles the sidebar shortcut; Artifacts stay reachable from Settings. */
-  showArtifactsButton?: boolean
   /** Only toggles the sidebar shortcut; Skills stay reachable from Settings. */
   showSkillsButton?: boolean
   /** Pinned workspaces show in one sidebar location by default; opt in to also show them in their natural groups. */
@@ -342,8 +336,6 @@ export type GlobalSettings = {
   skipCloseTerminalWithRunningProcessConfirm: boolean
   /** Why: deleting an automation also deletes its run history; keep this skip separate from worktree deletion. */
   skipDeleteAutomationConfirm: boolean
-  /** Why: deleting an artifact breaks a public link others may already hold; keep this skip separate from local deletions. */
-  skipDeleteArtifactConfirm: boolean
   /** Why: a Codex rate-limit reset spends a scarce credit on the live account; keep this skip separate from local confirmations. */
   skipCodexRateLimitResetConfirm: boolean
   /** Default preset in the new-workspace GitHub task view. */
@@ -457,6 +449,8 @@ export type GlobalSettings = {
   agentHibernationIdleMs?: number
   /** Experimental: opt-in preview of the updated worktree-card layout and metadata behavior. */
   experimentalNewWorktreeCardStyle?: boolean
+  /** Local desktop preferences keyed by Orca project identity; absent flags are off. */
+  workbenchOverviewByProject?: Record<string, { sdlc?: boolean; ai?: boolean }>
   /** Experimental: per-workspace on-demand environment recipes and setup surface. */
   experimentalEphemeralVms?: boolean
   /** Compact worktree cards: hide the metadata row when title and branch say the same thing. */
@@ -483,6 +477,8 @@ export type GlobalSettings = {
     installId: string
     /** Cohort marker: true for pre-existing profiles (gates the opt-in banner), false for fresh installs. */
     existedBeforeTelemetryRelease: boolean
+    /** Preserves explicit choices after BW's one-time default-off migration. */
+    workbenchDefaultOffApplied?: boolean
   }
   /** One-shot cohort marker for the tab-switch keybinding swap. 'pending' =
    *  pre-existing install (seed pins old chords, then flips to 'done'); 'done' = fresh install. */

@@ -641,3 +641,79 @@ describe('remote_outbound_budget_close schema', () => {
     ).toBe(false)
   })
 })
+
+describe('BW feature-usage events (#687)', () => {
+  it('bw_assistant_request_sent accepts only known action and screen enums', () => {
+    expect(
+      eventSchemas.bw_assistant_request_sent.safeParse({
+        action_id: 'deploy',
+        screen: 'acceptance'
+      }).success
+    ).toBe(true)
+    expect(
+      eventSchemas.bw_assistant_request_sent.safeParse({
+        action_id: 'send-annotations',
+        screen: 'plan'
+      }).success
+    ).toBe(true)
+    expect(
+      eventSchemas.bw_assistant_request_sent.safeParse({
+        action_id: 'made_up_action',
+        screen: 'plan'
+      }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.bw_assistant_request_sent.safeParse({
+        action_id: 'deploy',
+        screen: 'wall'
+      }).success
+    ).toBe(false)
+  })
+
+  it('rejects prompt text on the wire via .strict()', () => {
+    expect(
+      eventSchemas.bw_assistant_request_sent.safeParse({
+        action_id: 'deploy',
+        screen: 'plan',
+        prompt: '部署 https://internal.example/secret'
+      }).success
+    ).toBe(false)
+  })
+
+  it('bw_package_build accepts launch outcomes and rejects pipeline names', () => {
+    for (const outcome of ['launched', 'failed'] as const) {
+      expect(eventSchemas.bw_package_build.safeParse({ outcome }).success).toBe(true)
+    }
+    expect(eventSchemas.bw_package_build.safeParse({ outcome: 'cancelled' }).success).toBe(false)
+    expect(
+      eventSchemas.bw_package_build.safeParse({ outcome: 'launched', pipeline: 'gtsllm-dfx' })
+        .success
+    ).toBe(false)
+  })
+
+  it('bw_version_created carries an empty payload and rejects version names', () => {
+    expect(eventSchemas.bw_version_created.safeParse({}).success).toBe(true)
+    expect(eventSchemas.bw_version_created.safeParse({ version: 'v0.9' }).success).toBe(false)
+  })
+
+  it('bw_task_start accepts every outcome × source pair and rejects unknown or free-text values', () => {
+    for (const outcome of ['opened', 'choice-opened', 'composer-opened', 'unavailable'] as const) {
+      for (const source of ['task-screen', 'task-dialog', 'plan-board'] as const) {
+        expect(eventSchemas.bw_task_start.safeParse({ outcome, source }).success).toBe(true)
+      }
+    }
+    expect(
+      eventSchemas.bw_task_start.safeParse({ outcome: 'started', source: 'plan-board' }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.bw_task_start.safeParse({ outcome: 'opened', source: 'sidebar' }).success
+    ).toBe(false)
+    expect(
+      eventSchemas.bw_task_start.safeParse({
+        outcome: 'opened',
+        source: 'plan-board',
+        issue_title: '#687 修复遥测'
+      }).success
+    ).toBe(false)
+  })
+})

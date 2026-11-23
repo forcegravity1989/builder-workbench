@@ -1,6 +1,8 @@
+import { getRuntimeEnvironmentCapabilityIncarnation } from './runtime-environment-capability-evidence'
+import { recordRuntimeEnvironmentUsage } from './runtime-environment-usage-record'
 import { getPreferredPairingOffer } from '../../shared/runtime-environments'
 import { ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES } from '../../shared/protocol-version'
-import { resolveEnvironment, markEnvironmentUsed } from '../../shared/runtime-environment-store'
+import { resolveEnvironment } from '../../shared/runtime-environment-store'
 import { isOrchestrationMutation } from '../../shared/orchestration-rpc-contract'
 import type {
   RuntimeOrchestrationEnvelope,
@@ -21,7 +23,7 @@ import {
 import { attachRemoteControlDiagnostics } from './runtime-environment-status-diagnostics'
 
 import { isRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-manual-disconnect'
-import { runtimeEnvironmentRevisionFailure } from './runtime-environment-revision-guard'
+import { runtimeEnvironmentRevisionFailure, runtimeEnvironmentChangedFailure } from './runtime-environment-revision-guard'
 import { withTailscaleHintForResponse } from './runtime-environment-tailscale-response'
 import { resetSharedControlSupport } from './runtime-environment-shared-control-support'
 import {
@@ -52,10 +54,14 @@ export async function getRuntimeEnvironmentStatus(
       }
     }
   }
+  const incarnation = getRuntimeEnvironmentCapabilityIncarnation(environment.id)
   const response = await getRuntimeEnvironmentStatusOwner(userDataPath, environment.id).refresh({
     timeoutMs,
     ...options
   })
+  if (getRuntimeEnvironmentCapabilityIncarnation(environment.id) !== incarnation) {
+    return runtimeEnvironmentChangedFailure(environment, 'status.get', true)
+  }
   return attachRemoteControlDiagnostics(
     withTailscaleHintForResponse(response, getPreferredPairingOffer(environment).endpoint),
     environment.id
@@ -117,7 +123,7 @@ export async function callRuntimeEnvironment(
             options?.signal,
             ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
           )
-          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response)
+          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.deviceToken)
           return response
         }
         if (shouldUseCachedRequestConnection(method)) {
@@ -129,7 +135,7 @@ export async function callRuntimeEnvironment(
             effectiveTimeoutMs,
             options?.signal
           )
-          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response)
+          markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.deviceToken)
           return response
         }
         if (shouldRouteCallBySupport(method)) {
@@ -140,6 +146,7 @@ export async function callRuntimeEnvironment(
             params,
             timeoutMs: effectiveTimeoutMs,
             expectedPairingRevision: expectedEnvironmentPairingRevision,
+            expectedRuntimeId: options?.expectedEnvironmentRuntimeId,
             envelope: sharedControlEnvelope,
             signal: options?.signal
           })
@@ -155,7 +162,7 @@ export async function callRuntimeEnvironment(
           options?.signal,
           ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
         )
-        markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response)
+        markEnvironmentUsedFromResponse(userDataPath, currentEnvironment.id, response, pairing.deviceToken)
         return response
       },
       options?.signal
@@ -184,7 +191,8 @@ export async function subscribeRuntimeEnvironment(
     ) => void
     onClose: () => void
   },
-  isCurrent: () => boolean = () => true
+  isCurrent: () => boolean = () => true,
+  signal?: AbortSignal
 ): Promise<RemoteRuntimeSubscription> {
   const environment = resolveEnvironment(userDataPath, selector)
   const pairing = getPreferredPairingOffer(environment)
@@ -195,7 +203,10 @@ export async function subscribeRuntimeEnvironment(
       return
     }
     markedUsed = true
-    markEnvironmentUsed(userDataPath, environment.id, { runtimeId })
+    recordRuntimeEnvironmentUsage(userDataPath, environment.id, {
+      runtimeId,
+      pairingDeviceToken: pairing.deviceToken
+    })
   }
   const callbacksWithMarkUsed = {
     onResponse: (response: RuntimeRpcResponse<unknown>) => {
@@ -228,7 +239,8 @@ export async function subscribeRuntimeEnvironment(
         params,
         timeoutMs: effectiveTimeoutMs,
         callbacks,
-        isCurrent
+        isCurrent,
+        signal
       })
     }
     return await subscribeRemoteRuntimeRequest(
@@ -237,7 +249,7 @@ export async function subscribeRuntimeEnvironment(
       params,
       effectiveTimeoutMs,
       callbacksWithMarkUsed,
-      { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES }
+      { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES, signal }
     )
   } catch (error) {
     if (error instanceof Error) {
@@ -250,10 +262,14 @@ export async function subscribeRuntimeEnvironment(
 function markEnvironmentUsedFromResponse(
   userDataPath: string,
   environmentId: string,
-  response: RuntimeRpcResponse<unknown>
+  response: RuntimeRpcResponse<unknown>,
+  pairingDeviceToken: string
 ): void {
   if (response.ok === true) {
-    markEnvironmentUsed(userDataPath, environmentId, { runtimeId: response._meta.runtimeId })
+    recordRuntimeEnvironmentUsage(userDataPath, environmentId, {
+      runtimeId: response._meta.runtimeId,
+      pairingDeviceToken
+    })
   }
 }
 

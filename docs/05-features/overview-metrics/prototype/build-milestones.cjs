@@ -50,6 +50,7 @@ esbuild
   .build({
     entryPoints: [path.join(__dirname, 'milestones.jsx')],
     bundle: true,
+    nodePaths: (process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean),
     write: false,
     format: 'iife',
     platform: 'browser',

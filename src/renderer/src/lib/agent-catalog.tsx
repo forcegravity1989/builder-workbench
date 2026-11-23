@@ -115,6 +115,13 @@ export const getAgentCatalog = createLocalizedCatalog((): AgentCatalogEntry[] =>
     homepageUrl: 'https://docs.trae.cn/cli_get-started-with-trae-cli'
   },
   {
+    id: 'dsh',
+    label: translate('auto.lib.agent.catalog.dsh_label', 'DeepSeek Harness'),
+    cmd: 'dsh-tui',
+    searchAliases: ['deepseek', 'dsh', 'dst', 'deepseek harness'],
+    homepageUrl: 'https://github.com/deepseek-ai/deepseek-harness'
+  },
+  {
     id: 'pi',
     label: translate('auto.lib.agent.catalog.302934c5d9', 'Pi'),
     cmd: 'pi',

@@ -174,7 +174,7 @@ export class OrcaRuntimeWithPersistHeadlessTerminalTitle extends OrcaRuntimeWith
     localGitOptions?: { wslDistro?: string }
   }> {
     const store = this.requireStore()
-    const worktree = await this.resolveWorktreeSelector(worktreeSelector)
+    const worktree = await this.resolveWorktreeSelector(worktreeSelector, 'git-target')
     const routing = resolveWorktreeHostRouting(store.getRepos(), worktree)
     if (routing.kind === 'ambiguous') {
       throw new Error('worktree_execution_host_unresolved')
@@ -193,7 +193,10 @@ export class OrcaRuntimeWithPersistHeadlessTerminalTitle extends OrcaRuntimeWith
   // Why: same defect as `resolveRuntimeGitTarget` above, in ~30 filesystem dispatches. `getRepo(id)`
   // is host-blind and never read `worktree.hostId`, and the `connectionId` it returned spelled
   // "runtime host", "unresolved" and "genuinely local" all as `undefined` (#11163).
-  protected async resolveRuntimeFileTarget(worktreeSelector: string): Promise<{
+  protected async resolveRuntimeFileTarget(
+    worktreeSelector: string,
+    caller?: string
+  ): Promise<{
     worktree: ResolvedWorktree
     executionHostId: ExecutionHostId
   }> {
@@ -210,7 +213,7 @@ export class OrcaRuntimeWithPersistHeadlessTerminalTitle extends OrcaRuntimeWith
     }
 
     const store = this.requireStore()
-    const worktree = await this.resolveWorktreeSelector(worktreeSelector)
+    const worktree = await this.resolveWorktreeSelector(worktreeSelector, caller ?? 'file-target')
     const routing = resolveWorktreeHostRouting(store.getRepos(), worktree)
     if (routing.kind === 'ambiguous') {
       throw new Error('worktree_execution_host_unresolved')

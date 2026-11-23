@@ -16,6 +16,7 @@ import type { MemorySnapshot, StatsSummary } from '../../shared/process-stats-ty
 import { collectMemorySnapshot } from '../memory/collector'
 import type { PersistedUIState } from '../../shared/persisted-ui-state-types'
 import type { FeatureInteractionId } from '../../shared/feature-interactions'
+import type { AgentLaunchSettingsMutation } from '../../shared/agent-launch-settings'
 import type { RuntimeClientSettingsUpdate } from './runtime-client-settings'
 import type { TerminalQuickCommand } from '../../shared/terminal-quick-command-types'
 import type { TerminalQuickCommandMutation } from '../../shared/terminal-quick-commands'
@@ -195,6 +196,14 @@ export class OrcaRuntimeWithPtyForegroundProcessReads extends OrcaRuntimeWithSta
       throw new Error('runtime_unavailable')
     }
     return this.store.recordFeatureInteraction(id)
+  }
+
+  getClientAgentLaunchSettings() {
+    return this.clientSettings.getAgentLaunch()
+  }
+
+  mutateClientAgentLaunchSettings(mutation: AgentLaunchSettingsMutation) {
+    return this.clientSettings.mutateAgentLaunch(mutation)
   }
 
   getClientSettings() {

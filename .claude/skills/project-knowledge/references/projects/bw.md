@@ -12,14 +12,14 @@
 
 ## 四类职责与实际落点
 
-沿用一套 BW 产品知识，加按需 Orca 工程参考；下表是编辑路由，不重新设计知识库 UI 分类，也不声明这些文件已全部被模型加载。
+按任务选择下列入口。跨工作树使用本 Skill 时，读取目标树中同一仓库相对路径的文件。
 
 | 职责 | 目标仓中的入口 | 编辑与验证边界 |
 |---|---|---|
-| BW 产品知识 | README、CONTEXT、docs/README；docs/01-principles、architecture、06-module、实际在用的 05-features | 原则慢变；产品目标、规格、当前实现和验证各有来源，不能用旧代码推翻已认可意图 |
-| Orca 工程参考 | ref/upstream.md 及按需主题 | 解释执行核工程边界；核对对应源码/协议与上游版本，不复制为第二套 BW 产品规格 |
-| 本仓开发方法 | AGENTS、CLAUDE 导入、.claude/skills/workbench-start 与 project-knowledge；当前构建/测试/CI | AGENTS 是开发规矩，Skill 是执行方法；本包不自动接入桌面或向外分发 |
-| 产品分发资产 | standard/README.md 与其实际系统提示词、references、skills | 供被管项目使用；文件存在、实际派发/加载、模型遵守分开验证。改开发方法不顺带改 standard |
+| BW 产品知识 | [docs 地图](../../../../../docs/README.md)定位知识文档，[特性矩阵](../../../../../docs/05-features/README.md)定位用户结果、归属和证据 | 原则慢变；产品目标、规格、当前实现和验证各有来源，不能用旧代码推翻已认可意图 |
+| Orca 工程参考 | [Orca 上游对照](../../../../../ref/upstream.md)及按需主题 | 解释执行核工程边界；核对对应源码/协议与上游版本，不复制为第二套 BW 产品规格 |
+| 本仓开发规范与方法 | [AGENTS](../../../../../AGENTS.md) 直达独立的[开发规范](../../../../../docs/development.md)；Skills 承载执行方法 | 项目义务从 AGENTS 进入；workbench-start 展开执行步骤，不以调用 Skill 为生效条件。本包不自动接入桌面或向外分发 |
+| 产品分发资产 | [standard 维护入口](../../../../../standard/README.md)中的目录职责、Skill 写作与加载规范 | 供被管项目使用；文件存在、实际派发/加载、模型遵守分开验证。改开发方法不顺带改 standard |
 
 视觉知识按 `docs/04-design-system/` 和 `docs/hifi/` 的现行约定读取。受保护或归别人负责的区域只报告本次影响，不擅改；全景扫描可读不等于拥有编辑权限。
 
@@ -29,9 +29,7 @@
 
 职责与格式尚未对齐的治理，按 [评审流程](../review-workflow.md) 提供 HTML 决策报告。用户已经明确批准的范围直接实施；不要重做相同审批。原文头部、原则 01 与 AGENTS 决定正文可写什么，Skill 类型契约只是候选写法。
 
-目标分支的删除决定按真实计划/PR 与工作树核对。已批准退役的 `docs/02-adr/`、`docs/03-guide/`、`docs/metrics.md` 或特性目录不因旧链接、扫描清单和历史方法而恢复，也不为保留空目录造占位文件。有价值且仍适用的内容先找现有正本，职责扩展按已有授权处理；历史从固定 Git 提交追溯，不复制一套新归档。
-
-`docs/05-features/` 中保留的 `reviewer-agent/`、`version-planning/` 只是可定位的材料，不证明六环齐全、平台迁移完成或产品特性全集已确定。不要从旧 main（`archive/main-pre-orca`）搬旧矩阵、旧绿灯或过去的 STATUS；实际处理某特性时再按目标分支原则 02 补链。
+清理或迁回内容时，以目标树的文档地图和 Git 记录核对现行归属，保留有用知识。特性按矩阵进入对应规格与 STATUS，证据须对应目标分支和实际验证范围。
 
 迁移时在现有 spec/STATUS/PR 分开记录：
 
@@ -42,7 +40,7 @@
 | 当前验证 | 同平台/版本/环境的用例与执行证据 | 未运行环节、其他版本或价值效果通过 |
 | 历史证据 | 固定来源分支/提交、旧报告及当时平台 | Electron 已通过；旧目录必须带回 |
 
-迁移中的旅程、边界和验收取舍交回 [workbench-start](../../../workbench-start/SKILL.md)；知识整理只同步已确定部分，不提前启动迁移实现。周一屏旧 HTML 方案仅按需追溯 [历史参考](../../../workbench-start/references/week-screen-v04.md)，不能覆盖当前原生三屏。
+迁移中的旅程、边界、验收取舍和开发前对齐按 [原则 02](../../../../../docs/01-principles/02-working-backwards.md) 执行，工作步骤由 [workbench-start](../../../workbench-start/SKILL.md) 展开；知识整理只同步已确定部分，不提前启动迁移实现。周一屏旧 HTML 方案仅按需追溯 [历史参考](../../../workbench-start/references/week-screen-v04.md)，不能覆盖当前原生三屏。
 
 ## 扫描与交接
 

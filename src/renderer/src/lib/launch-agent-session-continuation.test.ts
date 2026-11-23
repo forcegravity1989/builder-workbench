@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as WorktreeRuntimeOwner from '@/lib/worktree-runtime-owner'
 
 const launchAgentInNewTab = vi.hoisted(() => vi.fn())
 const connectionId = vi.hoisted(() => ({ value: null as string | null }))
@@ -6,6 +7,8 @@ const runtimeEnvironmentId = vi.hoisted(() => ({ value: null as string | null })
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }))
 const store = vi.hoisted(() => ({
   settings: { disabledTuiAgents: [] as string[] },
+  worktreesByRepo: { 'repo-1': [{ id: 'wt-1', repoId: 'repo-1', hostId: 'local' }] },
+  repos: [{ id: 'repo-1' }],
   ensureDetectedAgents: vi.fn(async () => ['claude', 'codex']),
   ensureRemoteDetectedAgents: vi.fn(async () => ['claude', 'codex']),
   ensureRuntimeDetectedAgents: vi.fn(async () => ['claude', 'codex'])
@@ -19,7 +22,8 @@ vi.mock('@/lib/agent-catalog', () => ({
 vi.mock('@/lib/connection-context', () => ({
   getConnectionIdFromState: () => connectionId.value
 }))
-vi.mock('@/lib/worktree-runtime-owner', () => ({
+vi.mock('@/lib/worktree-runtime-owner', async (importOriginal) => ({
+  ...(await importOriginal<typeof WorktreeRuntimeOwner>()),
   getRuntimeEnvironmentIdForWorktree: () => runtimeEnvironmentId.value
 }))
 vi.mock('sonner', () => ({ toast }))

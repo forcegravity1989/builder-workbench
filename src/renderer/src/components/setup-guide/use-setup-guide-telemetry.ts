@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
-  FEATURE_WALL_SETUP_STEP_IDS,
+  getFeatureWallSetupStepIds,
   getFirstIncompleteFeatureWallSetupStepId,
   getFeatureWallSetupSteps,
   type FeatureWallSetupStepId
@@ -14,6 +14,7 @@ import {
   trackSetupGuideOpened,
   trackSetupGuideStepCompleted
 } from '@/lib/feature-education-telemetry'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type SetupGuideTelemetrySession = {
   source: SetupGuideSource
@@ -37,16 +38,20 @@ export function useSetupGuideOpenCloseTelemetry(args: {
   progress: FeatureWallSetupProgress
   activeStepId: FeatureWallSetupStepId | null
 }): void {
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(), [])
+  const workbenchShell = isWorkbenchShell()
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(workbenchShell), [workbenchShell])
   const sessionRef = useRef<SetupGuideTelemetrySession | null>(null)
   const snapshotRef = useRef<SetupGuideTelemetrySnapshot>({
     completedCount: 0,
-    totalSteps: FEATURE_WALL_SETUP_STEP_IDS.length,
+    totalSteps: setupSteps.length,
     activeStepId: 'none'
   })
 
-  const completedCount = countCompletedSetupSteps(args.progress.stepDone)
-  const firstIncompleteStepId = getSetupGuideTelemetryFirstIncompleteStepId(args.progress)
+  const completedCount = countCompletedSetupSteps(args.progress.stepDone, workbenchShell)
+  const firstIncompleteStepId = getSetupGuideTelemetryFirstIncompleteStepId(
+    args.progress,
+    workbenchShell
+  )
 
   snapshotRef.current = {
     completedCount,
@@ -102,17 +107,20 @@ export function useSetupGuideOpenCloseTelemetry(args: {
 }
 
 export function getSetupGuideTelemetryFirstIncompleteStepId(
-  progress: FeatureWallSetupProgress
+  progress: FeatureWallSetupProgress,
+  workbenchShell = false
 ): FeatureWallSetupStepId | 'none' {
-  return countCompletedSetupSteps(progress.stepDone) >= FEATURE_WALL_SETUP_STEP_IDS.length
+  return countCompletedSetupSteps(progress.stepDone, workbenchShell) >=
+    getFeatureWallSetupStepIds(workbenchShell).length
     ? 'none'
-    : getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    : getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, workbenchShell)
 }
 
 export function useSetupGuideStepCompletionTelemetry(args: {
   progress: FeatureWallSetupProgress
   setupGuideVisible: boolean
 }): void {
+  const workbenchShell = isWorkbenchShell()
   const stateRef = useRef<SetupGuideStepCompletionTelemetryState | null>(null)
   if (!stateRef.current) {
     stateRef.current = createSetupGuideStepCompletionTelemetryState()
@@ -122,9 +130,10 @@ export function useSetupGuideStepCompletionTelemetry(args: {
     recordSetupGuideStepCompletionTelemetry({
       state: stateRef.current!,
       progress: args.progress,
-      setupGuideVisible: args.setupGuideVisible
+      setupGuideVisible: args.setupGuideVisible,
+      workbenchShell
     })
-  }, [args.progress, args.progress.stepDone, args.setupGuideVisible])
+  }, [args.progress, args.progress.stepDone, args.setupGuideVisible, workbenchShell])
 }
 
 export function createSetupGuideStepCompletionTelemetryState(): SetupGuideStepCompletionTelemetryState {
@@ -138,6 +147,7 @@ export function recordSetupGuideStepCompletionTelemetry(args: {
   state: SetupGuideStepCompletionTelemetryState
   progress: FeatureWallSetupProgress
   setupGuideVisible: boolean
+  workbenchShell?: boolean
 }): void {
   if (!args.state.emitted) {
     args.state.emitted = readEmittedSetupGuideStepIds()
@@ -148,12 +158,13 @@ export function recordSetupGuideStepCompletionTelemetry(args: {
   if (!previousDone || !args.setupGuideVisible) {
     // Why: hidden async refresh can flip already-complete setup state from false
     // to true; only visible guide actions are attributable enough to event.
-    persistCompletedSetupGuideStepBaselines(args.progress.stepDone, emitted)
+    persistCompletedSetupGuideStepBaselines(args.progress.stepDone, emitted, args.workbenchShell)
     return
   }
 
-  const completedCount = countCompletedSetupSteps(args.progress.stepDone)
-  for (const stepId of FEATURE_WALL_SETUP_STEP_IDS) {
+  const completedCount = countCompletedSetupSteps(args.progress.stepDone, args.workbenchShell)
+  const stepIds = getFeatureWallSetupStepIds(args.workbenchShell)
+  for (const stepId of stepIds) {
     if (!args.progress.stepDone[stepId] || previousDone[stepId] || emitted.has(stepId)) {
       continue
     }
@@ -162,21 +173,25 @@ export function recordSetupGuideStepCompletionTelemetry(args: {
     trackSetupGuideStepCompleted({
       stepId,
       completedCount,
-      totalSteps: FEATURE_WALL_SETUP_STEP_IDS.length,
+      totalSteps: stepIds.length,
       setupGuideVisible: args.setupGuideVisible
     })
   }
 }
 
-function countCompletedSetupSteps(done: Record<FeatureWallSetupStepId, boolean>): number {
-  return FEATURE_WALL_SETUP_STEP_IDS.filter((stepId) => done[stepId]).length
+function countCompletedSetupSteps(
+  done: Record<FeatureWallSetupStepId, boolean>,
+  workbenchShell = false
+): number {
+  return getFeatureWallSetupStepIds(workbenchShell).filter((stepId) => done[stepId]).length
 }
 
 function persistCompletedSetupGuideStepBaselines(
   done: Record<FeatureWallSetupStepId, boolean>,
-  emitted: Set<FeatureWallSetupStepId>
+  emitted: Set<FeatureWallSetupStepId>,
+  workbenchShell = false
 ): void {
-  for (const stepId of FEATURE_WALL_SETUP_STEP_IDS) {
+  for (const stepId of getFeatureWallSetupStepIds(workbenchShell)) {
     if (!done[stepId] || emitted.has(stepId)) {
       continue
     }

@@ -1,8 +1,8 @@
 import { z } from 'zod'
+import { materialObject } from './version-material-common'
 
 /** Planning dates, inclusive; never inferred from releases or Git timestamps. */
-export const VersionTimeWindowSchema = z
-  .strictObject({
+export const VersionTimeWindowSchema = materialObject({
     start: z.iso.date(),
     end: z.iso.date()
   })

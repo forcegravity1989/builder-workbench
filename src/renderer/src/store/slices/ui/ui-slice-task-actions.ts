@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
 import { findPrevLiveNonTaskStackHistoryIndex } from '../worktree-nav-history'
 import { hasFeatureInteraction } from '../../../../../shared/feature-interactions'
@@ -132,7 +133,12 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
       const resolvedMode = state.taskResumeState?.githubMode ?? 'items'
       // Why: a BW workbench scope materializes its own reference-driven list; the
       // unscoped query prefetch would warm a cache the scoped view never reads.
-      if (resolvedSource === 'github' && resolvedMode === 'items' && !data.workbenchTaskScope) {
+      if (
+        !isWorkbenchShell() &&
+        resolvedSource === 'github' &&
+        resolvedMode === 'items' &&
+        !data.workbenchTaskScope
+      ) {
         const eligibleRepos = state.repos.filter((repo) => isGitRepoKind(repo) && repo.path)
         const selectedRepos = (() => {
           const preferred = data.preselectedRepoId
