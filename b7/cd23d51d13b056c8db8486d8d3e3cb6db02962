@@ -1,0 +1,14 @@
+.bw/planning/v1.1/acceptance.json
+  h_a7e858313fdba5 659,666-667,683-684,686,688-689,692,699,716-717,719,721,724-725,732,749-752,754-755,758,765-766,782-785,790,822,853,866,885,892-898,900-908,913-919,940-941,946,951-954,958
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "b7cd23d51d13b056c8db8486d8d3e3cb6db02962",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
