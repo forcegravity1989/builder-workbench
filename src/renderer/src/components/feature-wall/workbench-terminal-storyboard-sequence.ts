@@ -1,9 +1,9 @@
 import {
   WORKBENCH_CLAUDE_COMMAND,
   WORKBENCH_CODEX_COMMAND,
-  WORKBENCH_CODEX_PROMPT,
+  getWorkbenchCodexPrompt,
   WORKBENCH_RESPONSE_WIDTHS,
-  WORKBENCH_REVIEW_PROMPT,
+  getWorkbenchReviewPrompt,
   type WorkbenchAnimatedVisualVariant,
   type WorkbenchAnimationPhase,
   type WorkbenchCursorTarget,
@@ -151,7 +151,7 @@ export async function runWorkbenchTerminalStoryboardSequence(
       return
     }
 
-    const taskPrompt = isTwoAgentsChecklist ? WORKBENCH_CODEX_PROMPT : WORKBENCH_REVIEW_PROMPT
+    const taskPrompt = isTwoAgentsChecklist ? getWorkbenchCodexPrompt() : getWorkbenchReviewPrompt()
     if (await typeIntoRightPane(controls, taskPrompt, PROMPT_PER_CHAR_MS)) {
       return
     }

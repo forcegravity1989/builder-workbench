@@ -4,6 +4,7 @@ import { useTeamMembers, useTeamLabels, useTeamStates } from '@/hooks/useIssueMe
 import { useTaskCreationDraftRetention } from '@/components/use-task-creation-draft-retention'
 import type { LinearProjectSummary } from '../../../shared/linear/project-types'
 import { linearListProjects } from '@/runtime/runtime-linear-project-client'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useContextualTour } from '@/components/contextual-tours/use-contextual-tour'
 import { writeNewLinearIssueDraft, writeNewLinearProjectDraft } from './task-page-draft-storage'
 export function useTaskPageLinearCreationState(model: TaskPageJiraListProjectionModel) {
@@ -165,7 +166,8 @@ export function useTaskPageLinearCreationState(model: TaskPageJiraListProjection
   const [jiraConnectOpen, setJiraConnectOpen] = useState(false)
   useContextualTour(
     'tasks',
-    !dialogWorkItem &&
+    !isWorkbenchShell() &&
+      !dialogWorkItem &&
       !gitlabDialogItem &&
       !selectedLinearIssue &&
       !newIssueOpen &&

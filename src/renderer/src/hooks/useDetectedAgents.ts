@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useAppStore } from '@/store'
+import { runtimeHostContactForEntry } from '../../../shared/runtime-host-contact'
 import type { TuiAgent } from '../../../shared/tui-agent'
 
 export type UseDetectedAgentsResult = {
@@ -73,6 +74,28 @@ export function useDetectedAgents(
       : targetKind === 'runtime' && targetId
         ? `runtime:${targetId}`
         : null
+
+  // A re-pair clears cached inventory; retained surfaces must observe its new revision.
+  const pairingRevision = useAppStore((s) => {
+    if (targetKind !== 'runtime' || !targetId) {
+      return undefined
+    }
+    const environment = s.runtimeEnvironments.find((entry) => entry.id === targetId)
+    return environment ? (environment.pairingRevision ?? environment.createdAt) : undefined
+  })
+  // Retry a failed probe when this host answers again, without changing session identity.
+  const runtimeContactEpoch = useAppStore((s) => {
+    if (targetKind !== 'runtime' || !targetId) {
+      return null
+    }
+    const entry = s.runtimeStatusByEnvironmentId.get(targetId)
+    if (!entry) {
+      return null
+    }
+    return runtimeHostContactForEntry(entry).verdict === 'live'
+      ? `${entry.connectionGeneration ?? 0}:${entry.hostContactEpoch ?? 0}`
+      : 'down'
+  })
 
   const detectedIds = useAppStore((s) => {
     if (isUnknown) {
@@ -178,6 +201,8 @@ export function useDetectedAgents(
     targetKind,
     targetId,
     remoteTargetKey,
+    pairingRevision,
+    runtimeContactEpoch,
     detectedIds,
     localWorktreeId,
     localContextKey

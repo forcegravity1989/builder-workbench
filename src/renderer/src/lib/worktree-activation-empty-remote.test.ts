@@ -4,6 +4,7 @@ import { getDefaultSettings } from '../../../shared/constants'
 import type { Worktree } from '../../../shared/worktree/types'
 import { resetWebRuntimeWakeTerminalRespawnForTests } from '@/runtime/web-runtime-wake-terminal-respawn'
 import { resetWebSessionTabsSnapshotFreshnessForTests } from '@/runtime/web-session-tabs-sync'
+import { replaceRuntimeEnvironmentRevisions } from '@/runtime/runtime-environment-revision'
 import { useAppStore } from '@/store'
 import { ensureWebRuntimeWorktreeTerminalAfterWake } from './web-runtime-worktree-terminal-after-wake'
 import { toast } from 'sonner'
@@ -21,6 +22,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   resetWebSessionTabsSnapshotFreshnessForTests()
   resetWebRuntimeWakeTerminalRespawnForTests()
+  replaceRuntimeEnvironmentRevisions([])
   useAppStore.setState(initialAppStoreState, true)
 })
 
@@ -52,6 +54,14 @@ function makeWorktree(): Worktree {
 describe('empty remote worktree activation', () => {
   it('creates a host terminal when waking an empty remote workspace', async () => {
     const worktree = makeWorktree()
+    const agentLaunchOwner = {
+      environmentId: 'web-runtime-1',
+      pairingRevision: 7,
+      runtimeId: 'runtime-instance-1'
+    }
+    replaceRuntimeEnvironmentRevisions([
+      { id: agentLaunchOwner.environmentId, createdAt: 1, pairingRevision: 7 }
+    ])
     const callRuntimeEnvironment = vi.fn().mockResolvedValueOnce({
       ok: true,
       result: {
@@ -90,6 +100,22 @@ describe('empty remote worktree activation', () => {
         }
       ],
       worktreesByRepo: { 'repo-1': [worktree] },
+      runtimeStatusByEnvironmentId: new Map([
+        [
+          agentLaunchOwner.environmentId,
+          {
+            checkedAt: 1,
+            status: {
+              runtimeId: agentLaunchOwner.runtimeId,
+              rendererGraphEpoch: 1,
+              graphStatus: 'ready',
+              authoritativeWindowId: null,
+              liveTabCount: 0,
+              liveLeafCount: 0
+            }
+          }
+        ]
+      ]),
       tabsByWorktree: {},
       ptyIdsByTabId: {},
       settings: {
@@ -102,7 +128,9 @@ describe('empty remote worktree activation', () => {
       }))
     })
 
-    ensureWebRuntimeWorktreeTerminalAfterWake(worktree.id)
+    ensureWebRuntimeWorktreeTerminalAfterWake(worktree.id, {
+      startup: { command: 'codex', agentLaunchOwner }
+    })
     await vi.waitFor(() => {
       expect(callRuntimeEnvironment).toHaveBeenCalled()
     })
@@ -111,8 +139,11 @@ describe('empty remote worktree activation', () => {
       expect.objectContaining({
         selector: 'web-runtime-1',
         method: 'session.tabs.createTerminal',
+        expectedEnvironmentPairingRevision: agentLaunchOwner.pairingRevision,
+        expectedEnvironmentRuntimeId: agentLaunchOwner.runtimeId,
         params: expect.objectContaining({
           worktree: `id:${worktree.id}`,
+          command: 'codex',
           activate: false,
           select: true,
           navigation: 'caller'

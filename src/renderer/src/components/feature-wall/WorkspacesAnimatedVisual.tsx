@@ -1,3 +1,4 @@
+import { translate } from '@/i18n/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import type { JSX } from 'react'
 import { AgentStateDot } from '@/components/AgentStateDot'
@@ -13,9 +14,27 @@ type WorkspaceMock = {
 }
 
 const WORKSPACES: readonly WorkspaceMock[] = [
-  { id: 'a', name: 'set up orca.yaml', agents: ['claude'] },
-  { id: 'b', name: 'fix login race condition', agents: ['claude', 'opencode', 'codex'] },
-  { id: 'c', name: 'speed up CI pipeline', agents: ['claude', 'codex'] }
+  {
+    id: 'a',
+    get name() {
+      return translate('guidance.demo.workspaceSetup', 'set up orca.yaml')
+    },
+    agents: ['claude']
+  },
+  {
+    id: 'b',
+    get name() {
+      return translate('guidance.demo.workspaceLogin', 'fix login race condition')
+    },
+    agents: ['claude', 'opencode', 'codex']
+  },
+  {
+    id: 'c',
+    get name() {
+      return translate('guidance.demo.workspaceCi', 'speed up CI pipeline')
+    },
+    agents: ['claude', 'codex']
+  }
 ]
 
 const SELECTED_ID = WORKSPACES[0].id

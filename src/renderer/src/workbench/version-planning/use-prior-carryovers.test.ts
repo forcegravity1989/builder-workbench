@@ -1,8 +1,5 @@
 import { expect, it } from 'vitest'
-import type {
-  AcceptanceMaterial,
-  PlanningMaterial
-} from '../../../../shared/workbench/version-material'
+import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import { derivePriorCarryovers } from './use-prior-carryovers'
 
 const revision = `sha256:${'a'.repeat(64)}`
@@ -12,20 +9,6 @@ const reference = (number: number, goalId: string) => ({
   number,
   goalId
 })
-
-function plan(): PlanningMaterial {
-  return {
-    schema_version: 3,
-    version: 'v1',
-    cycleId: 'cycle',
-    summary: { progress: '', risks: '' },
-    goals: [
-      { goalId: 'g1', title: '目标一', metricTargets: [] },
-      { goalId: 'g2', title: '目标二', metricTargets: [] }
-    ],
-    tasks: [reference(331, 'g1'), reference(339, 'g1'), reference(341, 'g2')]
-  }
-}
 
 function acceptance(overrides: Partial<AcceptanceMaterial> = {}): AcceptanceMaterial {
   return {
@@ -49,7 +32,7 @@ it('maps carry marks and confirmed minutes followups to the two prior-review row
   // Absent optional fields read as empty rows — no inference, no free-text parsing.
   // issueMarksRecorded=false is the Unknown signal: the acceptance never marked,
   // so the prior row must not assert "no carryover" (iron rule).
-  expect(derivePriorCarryovers(acceptance(), plan())).toEqual({
+  expect(derivePriorCarryovers(acceptance())).toEqual({
     issues: [],
     directives: [],
     issueMarksRecorded: false,
@@ -108,17 +91,18 @@ it('maps carry marks and confirmed minutes followups to the two prior-review row
       confirmedAt: '2026-10-19T00:00:00Z'
     }
   })
-  const carryovers = derivePriorCarryovers(document, plan())
+  const carryovers = derivePriorCarryovers(document)
   expect(carryovers.issues.map((item) => [item.number, item.title])).toEqual([
     [331, '遗留任务标题'],
     [339, null],
-    // A mark with no plan-side reference for the goal is not associated and stays out.
-    [341, null]
+    [341, null],
+    [999, null]
   ])
   expect(carryovers.issues.map((item) => item.key)).toEqual([
     'github:github.com/acme/app:331',
-    'github:github.com/acme/app:339',
-    'github:github.com/acme/app:341'
+    '339',
+    'github:github.com/acme/app:341',
+    'github:github.com/acme/app:999'
   ])
   expect(carryovers.issues[0]?.task?.title).toBe('遗留任务标题')
   expect(carryovers.issues[1]?.task).toBeNull()
@@ -137,8 +121,8 @@ it('maps carry marks and confirmed minutes followups to the two prior-review row
     )
   }
   // Frozen closed facts exclude a mark from carryover; missing facts do not erase human marks.
-  expect(derivePriorCarryovers(closedSnapshot, plan()).issues.map((item) => item.number)).toEqual([
-    339, 341
+  expect(derivePriorCarryovers(closedSnapshot).issues.map((item) => item.number)).toEqual([
+    339, 341, 999
   ])
   expect(closedSnapshot.results[0]?.issueMarks?.['github:github.com/acme/app:331']?.carry).toBe(
     true
@@ -150,10 +134,8 @@ it('reads no meeting carryover from an unconfirmed minutes draft', () => {
   // An unconfirmed section is not a meeting outcome: a draft the assistant wrote
   // must not become the next plan's 会议遗留 before a human confirms it.
   expect(
-    derivePriorCarryovers(
-      acceptance({ minutes: { consensus: [], followups, confirmed: false } }),
-      plan()
-    ).directives
+    derivePriorCarryovers(acceptance({ minutes: { consensus: [], followups, confirmed: false } }))
+      .directives
   ).toEqual([])
   // Confirming is what releases them, in stored order with positional labels.
   expect(
@@ -165,8 +147,7 @@ it('reads no meeting carryover from an unconfirmed minutes draft', () => {
           confirmed: true,
           confirmedAt: '2026-10-19T00:00:00Z'
         }
-      }),
-      plan()
+      })
     ).directives
   ).toEqual([
     { label: 'M1', text: '未确认的草稿不流入下版' },
@@ -214,22 +195,19 @@ it('reads no meeting carryover from an unconfirmed minutes draft', () => {
       }
     ]
   })
-  expect(derivePriorCarryovers(legacy, plan()).directives).toEqual([
+  expect(derivePriorCarryovers(legacy).directives).toEqual([
     { label: 'M1', text: '旧格式里已确认纳入下版' }
   ])
   // Once the version has confirmed minutes, the minutes win over the legacy list.
   expect(
-    derivePriorCarryovers(
-      {
-        ...legacy,
-        minutes: {
-          consensus: [],
-          followups: [{ id: 'f1', text: '纪要里的遗留' }],
-          confirmed: true,
-          confirmedAt: '2026-10-19T00:00:00Z'
-        }
-      },
-      plan()
-    ).directives
+    derivePriorCarryovers({
+      ...legacy,
+      minutes: {
+        consensus: [],
+        followups: [{ id: 'f1', text: '纪要里的遗留' }],
+        confirmed: true,
+        confirmedAt: '2026-10-19T00:00:00Z'
+      }
+    }).directives
   ).toEqual([{ label: 'M1', text: '纪要里的遗留' }])
 })

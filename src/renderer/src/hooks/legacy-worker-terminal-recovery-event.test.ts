@@ -19,6 +19,7 @@ describe('legacy worker terminal recovery events', () => {
       detail: {
         tabId: 'legacy-worker',
         leafId: LEAF_ID,
+        lastPaneCloseReason: 'cleanup',
         preservePty: true,
         retireSurface: true,
         expectedPtyId: 'pty-legacy'
@@ -75,6 +76,7 @@ describe('legacy worker terminal recovery events', () => {
       rollbackLegacyWorkerTerminalSurfaceInStore(store as never, {
         tabId: 'legacy-worker',
         leafId: LEAF_ID,
+        lastPaneCloseReason: 'cleanup',
         preservePty: true,
         expectedPtyId: 'pty-legacy'
       })
@@ -118,6 +120,7 @@ describe('legacy worker terminal recovery events', () => {
       rollbackLegacyWorkerTerminalSurfaceInStore(store as never, {
         tabId: 'legacy-worker',
         leafId: LEAF_ID,
+        lastPaneCloseReason: 'cleanup',
         preservePty: true,
         expectedPtyId: 'pty-legacy'
       })

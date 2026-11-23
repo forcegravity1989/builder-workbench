@@ -1,3 +1,5 @@
+import { ErrorDetails } from '../error-feedback'
+import { archiveStateLabel } from '../../../../shared/workbench/archive-state-label'
 import { ArrowUpRight, GitPullRequest } from 'lucide-react'
 import type { Ref } from 'react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
@@ -27,16 +29,7 @@ export function PlanningArchiveCard({
   onOpenPr(): void
   sectionRef: Ref<HTMLElement>
 }) {
-  const statusLabel =
-    loading || !status
-      ? '正在读取归档 PR 状态…'
-      : status.state === 'merged'
-        ? '已合入'
-        : status.state === 'open'
-          ? '待合入'
-          : status.state === 'closed'
-            ? '已关闭'
-            : '状态未知'
+  const statusLabel = loading || !status ? '正在读取归档 PR 状态…' : archiveStateLabel(status)
   return (
     <section id="archive" className="g3-archive" ref={sectionRef} aria-label="归档 PR">
       <GitPullRequest size={20} aria-hidden="true" />
@@ -59,7 +52,7 @@ export function PlanningArchiveCard({
             ? 'Leader 在 Orca 原生 PR 页再次审核计划，合入后归档。'
             : reachedArchive
               ? '已进入归档阶段；PR 链接未记录。'
-              : '未创建 · 由计划助手在原生会话中发起，Leader 在 Orca 原生 PR 页再审。'}
+              : '尚未记录归档 PR。在计划会话中发起归档，再请队友评审合入。'}
         </p>
       </div>
       {archivePr && (
@@ -67,14 +60,16 @@ export function PlanningArchiveCard({
           <ArrowUpRight size={16} aria-hidden="true" />
         </BoardIconButton>
       )}
-      {archivePr && (
-        <span
-          className="g3-archive-status"
-          title={status?.state === 'unknown' ? status.reason : undefined}
-        >
-          {statusLabel}
-        </span>
-      )}
+      {archivePr &&
+        (status?.state === 'unknown' && status.reason ? (
+          <ErrorDetails
+            className="g3-archive-status"
+            summary={statusLabel}
+            detail={status.reason}
+          />
+        ) : (
+          <span className="g3-archive-status">{statusLabel}</span>
+        ))}
     </section>
   )
 }

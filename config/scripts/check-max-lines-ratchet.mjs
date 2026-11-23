@@ -11,10 +11,13 @@ import { pathToFileURL } from 'node:url'
 // max-lines` comment or a per-file `max-lines` bump in mobile/.oxlintrc.json. This
 // check freezes the set of files currently allowed to do that (the baseline) and
 // fails CI when a NEW bypass appears — the existing over-limit files are
-// grandfathered; new ones must split instead. The baseline may only shrink.
+// grandfathered; new code must fit the configured budget. The baseline may only shrink.
 
 const BASELINE_PATH = 'config/max-lines-baseline.txt'
 const MOBILE_CONFIG_PATH = 'mobile/.oxlintrc.json'
+const lintConfig = JSON.parse(
+  fs.readFileSync(new URL('../../.oxlintrc.json', import.meta.url), 'utf8')
+)
 // These two files legitimately contain the directive text as data (regex, fixtures),
 // so scanning them would self-flag. The ratchet does not police itself.
 const SELF_FILES = new Set([
@@ -22,18 +25,19 @@ const SELF_FILES = new Set([
   'config/scripts/check-max-lines-ratchet.test.mjs'
 ])
 
-// Default max-lines budgets from .oxlintrc.json (counted lines).
+// Read the existing extension/test overrides; .oxlintrc.json owns the budgets.
 export function defaultLimitForPath(p) {
-  if (/\.(test|spec)\.(ts|tsx)$/.test(p)) {
-    return 800
+  const relativePath = p.replaceAll('\\', '/')
+  const rule = lintConfig.overrides.findLast(
+    (override) =>
+      override.rules?.['max-lines'] !== undefined &&
+      override.files.some((glob) => path.posix.matchesGlob(relativePath, glob))
+  )?.rules['max-lines']
+  const max = rule?.[1]?.max
+  if (!Number.isInteger(max) || max <= 0) {
+    throw new Error(`Missing max-lines budget for ${p} in .oxlintrc.json`)
   }
-  if (p.endsWith('.tsx')) {
-    return 400
-  }
-  if (p.endsWith('.mjs')) {
-    return 600
-  }
-  return 300
+  return max
 }
 
 // True if the source contains an eslint/oxlint disable directive listing `max-lines`
@@ -144,16 +148,14 @@ function printAddedFailure(added) {
     console.error(`    • ${target}\n        ↳ ${how}`)
   }
   console.error('')
-  console.error('  Orca caps file size (300 .ts / 400 .tsx / 600 .mjs / 800 test — non-blank,')
   console.error(
-    '  non-comment lines). Existing oversized files are grandfathered; NEW ones are not.'
+    '  File-size budgets are defined in .oxlintrc.json (excluding blank lines and comments).'
   )
+  console.error('  Existing bypasses are grandfathered; the baseline may only shrink.')
   console.error('')
-  console.error('  ✅  Fix it: SPLIT the file into focused modules — do NOT suppress the rule.')
-  console.error('      See AGENTS.md → "Lint Rules: Do Not Disable Max Lines".')
-  console.error('')
-  console.error('  (If you are intentionally, with reviewer sign-off, adding an unavoidable')
-  console.error(`   exception, add the exact line(s) above to ${BASELINE_PATH}.)`)
+  console.error('  ✅  Remove redundant code or split at clear responsibility boundaries.')
+  console.error('      Avoid mechanical extraction just to meet a count; do not add suppressions.')
+  console.error('      See AGENTS.md → "构建、运行与验证" and .oxlintrc.json.')
   console.error('')
 }
 
@@ -215,7 +217,8 @@ function writeBaseline(root, entries) {
   const header = [
     '# Files/globs currently allowed to exceed the oxlint `max-lines` budget.',
     '# This is a RATCHET: the list may only SHRINK. Do NOT add entries to get CI green —',
-    '# split the oversized file instead (AGENTS.md → "Do Not Disable Max Lines").',
+    '# remove redundant code or split at clear responsibility boundaries; avoid mechanical extraction.',
+    '# Budgets: .oxlintrc.json. Guidance: AGENTS.md → "构建、运行与验证".',
     '# Regenerate/prune: pnpm check:max-lines-ratchet --prune   (removes stale entries only)',
     ''
   ].join('\n')
@@ -244,7 +247,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     )
     if (newlyAdded.length > 0) {
       console.error(
-        `::error::--prune does not add entries; ${newlyAdded.length} new bypass(es) remain — split those files.`
+        `::error::--prune does not add entries; ${newlyAdded.length} new bypass(es) remain — remove redundancy or split by responsibility.`
       )
       process.exit(1)
     }

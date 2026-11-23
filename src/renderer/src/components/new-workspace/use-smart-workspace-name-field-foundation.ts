@@ -4,6 +4,8 @@ import { useAppStore } from '@/store'
 import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-preflight-context'
 import { getRepoOwnerRoutedSettings } from '@/lib/repo-runtime-owner'
 import { buildTaskSourceContextFromRepo } from '../../../../shared/task-source-context'
+import { getRepoTaskSourceContext } from '@/components/task-page-source-context'
+import { isCodeHubGitRemote } from '../../../../shared/codehub'
 import type {
   NormalizedSmartWorkspaceNameFieldProps,
   RepoBackedSearchTarget
@@ -97,6 +99,17 @@ export function useSmartWorkspaceNameFieldFoundation(
         : null,
     [selectedRepo]
   )
+  // Why: CodeHub identity lives on the repo git remote, not a project-host setup;
+  // the explicit override lets a caller pin an already-resolved source.
+  const codehubSourceContext = useMemo(
+    () =>
+      props.codehubSourceContext !== undefined
+        ? props.codehubSourceContext
+        : selectedRepo
+          ? getRepoTaskSourceContext(selectedRepo, 'codehub')
+          : null,
+    [props.codehubSourceContext, selectedRepo]
+  )
   const repoBackedSearchTargets = useMemo<RepoBackedSearchTarget[]>(
     () =>
       (repoBackedSearchRepos.length > 0
@@ -104,26 +117,49 @@ export function useSmartWorkspaceNameFieldFoundation(
         : selectedRepo
           ? [selectedRepo]
           : []
-      ).map((repo) => ({
-        repo,
-        githubSourceContext:
-          repo.id === selectedRepo?.id && githubSourceContext?.provider === 'github'
-            ? githubSourceContext
-            : buildTaskSourceContextFromRepo({
-                provider: 'github',
-                projectId: repo.id,
-                repo
-              }),
-        gitlabSourceContext:
-          repo.id === selectedRepo?.id && gitlabSourceContext?.provider === 'gitlab'
-            ? gitlabSourceContext
-            : buildTaskSourceContextFromRepo({
-                provider: 'gitlab',
-                projectId: repo.id,
-                repo
-              })
-      })),
-    [githubSourceContext, gitlabSourceContext, repoBackedSearchRepos, selectedRepo]
+      ).map((repo) => {
+        // Why: resolve the repo's own platform from its git remote identity only
+        // (no network probe). Unknown/other remotes get neither GitHub nor CodeHub,
+        // so an unconfigured project never accidentally queries GitHub.
+        const isCodehubRepo = isCodeHubGitRemote(repo.gitRemoteIdentity)
+        const isGithubRepo =
+          !isCodehubRepo &&
+          /github\.com/i.test(
+            repo.gitRemoteIdentity?.remoteUrl ?? repo.gitRemoteIdentity?.canonicalKey ?? ''
+          )
+        return {
+          repo,
+          githubSourceContext: isGithubRepo
+            ? repo.id === selectedRepo?.id && githubSourceContext?.provider === 'github'
+              ? githubSourceContext
+              : buildTaskSourceContextFromRepo({
+                  provider: 'github',
+                  projectId: repo.id,
+                  repo
+                })
+            : null,
+          codehubSourceContext: isCodehubRepo
+            ? repo.id === selectedRepo?.id && codehubSourceContext
+              ? codehubSourceContext
+              : getRepoTaskSourceContext(repo, 'codehub')
+            : null,
+          gitlabSourceContext:
+            repo.id === selectedRepo?.id && gitlabSourceContext?.provider === 'gitlab'
+              ? gitlabSourceContext
+              : buildTaskSourceContextFromRepo({
+                  provider: 'gitlab',
+                  projectId: repo.id,
+                  repo
+                })
+        }
+      }),
+    [
+      codehubSourceContext,
+      githubSourceContext,
+      gitlabSourceContext,
+      repoBackedSearchRepos,
+      selectedRepo
+    ]
   )
   const linearSourceContext = useMemo(
     () =>
@@ -189,6 +225,7 @@ export function useSmartWorkspaceNameFieldFoundation(
     selectedRepo,
     selectedRepoOwnerSettings,
     githubSourceContext,
+    codehubSourceContext,
     repoBackedSearchTargets,
     linearSourceContext,
     jiraConnectionStatus,

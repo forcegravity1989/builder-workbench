@@ -5,39 +5,64 @@
 import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from './settings-search-keywords'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
+import { isWorkbenchShell } from '../../workbench/is-workbench-shell'
 
 export const getPrivacyPaneSearchEntries = createLocalizedCatalog(() => [
   {
     title: translate('auto.components.settings.privacy.search.5c508bad41', 'Privacy & Telemetry'),
-    description: translate(
-      'auto.components.settings.privacy.search.aa3b794c17',
-      'Anonymous product usage data, diagnostics, and telemetry controls.'
-    ),
+    description: isWorkbenchShell()
+      ? translate(
+          'auto.components.settings.PrivacyPane.workbenchSectionDescription',
+          'Usage data, diagnostics, and telemetry controls.'
+        )
+      : translate(
+          'auto.components.settings.privacy.search.aa3b794c17',
+          'Anonymous product usage data, diagnostics, and telemetry controls.'
+        ),
     keywords: [
       ...translateSearchKeyword('auto.components.settings.privacy.search.10124159f1', 'privacy'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.77d3180def', 'telemetry'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.4104f6f0f3', 'analytics'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.79c319948b', 'usage'),
-      ...translateSearchKeyword('auto.components.settings.privacy.search.b021b9cb81', 'anonymous'),
+      ...(isWorkbenchShell()
+        ? ['WeLink']
+        : translateSearchKeyword(
+            'auto.components.settings.privacy.search.b021b9cb81',
+            'anonymous'
+          )),
       ...translateSearchKeyword('auto.components.settings.privacy.search.3922051573', 'data'),
-      ...translateSearchKeyword('auto.components.settings.privacy.search.2b5a5c312f', 'posthog'),
+      ...(isWorkbenchShell()
+        ? []
+        : translateSearchKeyword('auto.components.settings.privacy.search.2b5a5c312f', 'posthog')),
       ...translateSearchKeyword('auto.components.settings.privacy.search.27a27b2f63', 'opt out'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.4d4bb76bf4', 'opt in')
     ]
   },
   {
-    title: translate(
-      'auto.components.settings.privacy.search.57b283461a',
-      'Share Anonymous Usage Data'
-    ),
-    description: translate(
-      'auto.components.settings.privacy.search.b707cc3981',
-      'Help improve Orca by sending anonymous feature-usage events.'
-    ),
+    title: isWorkbenchShell()
+      ? translate('auto.components.settings.PrivacyPane.workbenchLabel', 'Share usage data')
+      : translate(
+          'auto.components.settings.privacy.search.57b283461a',
+          'Share Anonymous Usage Data'
+        ),
+    description: isWorkbenchShell()
+      ? translate(
+          'auto.components.settings.PrivacyPane.workbenchDescription',
+          'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.'
+        )
+      : translate(
+          'auto.components.settings.privacy.search.b707cc3981',
+          'Help improve Orca by sending anonymous feature-usage events.'
+        ),
     keywords: [
       ...translateSearchKeyword('auto.components.settings.privacy.search.77d3180def', 'telemetry'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.79c319948b', 'usage'),
-      ...translateSearchKeyword('auto.components.settings.privacy.search.b021b9cb81', 'anonymous'),
+      ...(isWorkbenchShell()
+        ? ['WeLink']
+        : translateSearchKeyword(
+            'auto.components.settings.privacy.search.b021b9cb81',
+            'anonymous'
+          )),
       ...translateSearchKeyword('auto.components.settings.privacy.search.4d4bb76bf4', 'opt in'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.27a27b2f63', 'opt out'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.ead1deded2', 'share')

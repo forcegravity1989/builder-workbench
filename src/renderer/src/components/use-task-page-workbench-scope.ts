@@ -23,6 +23,7 @@ import {
 } from '@/workbench/task-scope-projection'
 import { useAppStore } from '@/store'
 import { useTaskScopeViewers } from '@/workbench/use-task-scope-viewers'
+import { useWorkbenchScreenUsage } from '@/workbench/workbench-screen-usage'
 
 /** Only a selected goal materializes references; a version uses native queries. */
 export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataModel) {
@@ -44,6 +45,9 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setCodehubError
   } = model
   const { entry, scope } = useTaskPageWorkbenchEntry(model)
+  // Why: the version-scoped task screen is a BW surface (#687) — count entry
+  // once per scope activation, not per goal/version switch inside the screen.
+  useWorkbenchScreenUsage('workbench-version-tasks', scope !== null)
   const goalScope = scope?.goalId ? scope : null
   const goalIssueView =
     model.taskSource === 'codehub'
@@ -56,7 +60,12 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
       return null
     }
     try {
-      return requireVersionTaskScopeHome(pageData.preselectedRepoId, { repos, activeRepoId })
+      return requireVersionTaskScopeHome(
+        pageData.preselectedRepoId,
+        { repos, activeRepoId },
+        goalScope.homeHostId,
+        goalScope.runtimeOwnerEnvironmentId
+      )
     } catch {
       return null
     }
@@ -114,7 +123,14 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setCodehubLoading(!result)
     void (async () => {
       try {
-        const target = home ?? requireVersionTaskScopeHome(pageData.preselectedRepoId)
+        const target =
+          home ??
+          requireVersionTaskScopeHome(
+            pageData.preselectedRepoId,
+            undefined,
+            goalScope.homeHostId,
+            goalScope.runtimeOwnerEnvironmentId
+          )
         const loaded = await loadWorkbenchTaskScope(goalScope, target, force)
         if (cancelled) {
           return
@@ -160,7 +176,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     workItemsInvalidationNonce
   ])
 
-  const selectedRepoKey = [...model.repoSelection].sort().join('|')
+  const selectedRepoKey = [...model.selectedScopeRepoIds].sort().join('|')
   const codehubGoalQuery = buildCodeHubGoalQuery(model)
   const goalViewers = useTaskScopeViewers(model, result, !!goalScope && goalIssueView)
   const { filterProblem } = resolveWorkbenchTaskScopeFilters({
@@ -175,7 +191,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     }
     const { githubPages, codehubItems } = projectWorkbenchTaskScope({
       result,
-      selectedRepoIds: model.repoSelection,
+      selectedRepoIds: model.selectedScopeRepoIds,
       githubIssueView: model.activeGithubTaskKind !== 'prs',
       githubQuery: model.appliedTaskSearch,
       viewerLogins: goalViewers.logins,

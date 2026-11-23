@@ -30,9 +30,7 @@ export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthor
       target: { repoPath: target.repoPath, worktreePath: target.worktreePath },
       operation,
       request,
-      // 绑定围栏随请求下发（远端同一口径核对分支/版本）；无绑定树不带字段，
-      // 旧对端窄执行器行为不变（strict schema 只在携带新字段时才可能拒绝）。
-      ...(binding ? { binding } : {})
+      binding
     })) as VersionMaterialResult<T>
     if (!result.ok) {
       if (result.error.code === 'revision-conflict') {

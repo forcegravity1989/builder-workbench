@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../../../shared/workbench/repo-removal'
 import type { SshRepoReadoption } from '../../../../shared/ssh-types'
 import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
 import type {
@@ -25,6 +26,7 @@ import type {
   FolderWorkspacePathStatusRequest
 } from '../../../../shared/folder-workspace-path-status'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { AgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
 
 export const ERROR_TOAST_DURATION = 60_000
 
@@ -49,6 +51,7 @@ export type RepoUpdate = Partial<
     | 'worktreeVisibilitySourcePreferences'
     | 'projectGroupId'
     | 'projectGroupOrder'
+    | 'projectVisibility'
   >
 > & {
   externalWorktreeVisibility?: Repo['externalWorktreeVisibility'] | null
@@ -99,12 +102,15 @@ export type FolderWorkspacePathStatusCacheEntry = {
 
 export type DeleteProjectGroupWithContainedProjectsOptions = {
   removeContainedProjects: boolean
+  confirmedProjectKeys?: readonly string[]
+  expectedEnvironmentPairingRevision?: number
   // hostId disambiguates which host's group row to delete when the id exists on multiple hosts.
   hostId?: ExecutionHostId
 }
 
 export type AllHostCatalogFetchOptions = {
   remoteHosts?: 'include' | 'skip'
+  onRepoCatalogError?: (hostId: ExecutionHostId) => void
 }
 
 export type ProjectRemovalFailure = {
@@ -121,11 +127,12 @@ export type DeleteProjectGroupWithContainedProjectsResult =
       failedProjectRemovals: ProjectRemovalFailure[]
     }
   | {
-      status: 'missing-group' | 'group-delete-failed'
+      status: 'missing-group' | 'group-delete-failed' | 'group-members-changed'
       groupId: string
       requestedProjectIds: string[]
       removedProjectIds: []
       failedProjectRemovals: []
+      error?: string
     }
 
 export type FolderWorkspacePathStatusRouteOptions = { runtimeEnvironmentId?: string | null }
@@ -134,6 +141,8 @@ export type AddRepoPathOptions = {
   runtimeEnvironmentId?: string | null
   /** Overrides the host's basename naming for the new project. */
   displayName?: string
+  /** Originating modal for the first project added from the Workbench wall. */
+  projectWallModal?: Record<string, unknown>
 }
 
 export type RuntimeCatalogFetchOptions = { runtimeEnvironmentId?: string | null }
@@ -193,7 +202,10 @@ export type RepoSlice = {
     runtimeEnvironmentId?: string | null
     mode: 'group' | 'separate'
   }) => Promise<ProjectGroupImportResult | null>
-  createProjectGroup: (name: string) => Promise<ProjectGroup | null>
+  createProjectGroup: (
+    name: string,
+    options?: { hostId?: ExecutionHostId }
+  ) => Promise<ProjectGroup | null>
   createFolderWorkspace: (
     args: {
       projectGroupId: string
@@ -205,7 +217,9 @@ export type RepoSlice = {
       createdWithAgent?: FolderWorkspace['createdWithAgent']
       pendingFirstAgentMessageRename?: boolean
     },
-    options?: FolderWorkspacePathStatusRouteOptions
+    options?: FolderWorkspacePathStatusRouteOptions & {
+      agentLaunchOwner?: AgentLaunchSettingsOwner
+    }
   ) => Promise<FolderWorkspace | null>
   getFolderWorkspacePathStatusCacheKey: (
     request: FolderWorkspacePathStatusRequest,
@@ -234,7 +248,16 @@ export type RepoSlice = {
     updates: Partial<Pick<ProjectGroup, 'name' | 'isCollapsed' | 'tabOrder' | 'color'>>,
     options?: { hostId?: ExecutionHostId }
   ) => Promise<boolean>
-  deleteProjectGroup: (groupId: string, options?: { hostId?: ExecutionHostId }) => Promise<boolean>
+  deleteProjectGroup: (
+    groupId: string,
+    options?: {
+      hostId?: ExecutionHostId
+      expectedEnvironmentPairingRevision?: number
+      expectedEnvironmentRuntimeId?: string
+      confirmedMembers?: readonly ConfirmedRepoRegistration[]
+      onMembersChanged?: () => void
+    }
+  ) => Promise<boolean>
   deleteProjectGroupWithContainedProjects: (
     groupId: string,
     options: DeleteProjectGroupWithContainedProjectsOptions
@@ -242,13 +265,19 @@ export type RepoSlice = {
   moveProjectToGroup: (
     projectId: string,
     groupId: string | null,
-    order?: number
+    order?: number,
+    options?: { hostId?: ExecutionHostId }
   ) => Promise<boolean>
   // options.hostId disambiguates which host's row to remove when the id exists on multiple hosts; else the focused host is assumed.
   // options.errorFeedback defaults to 'silent' so bulk/background callers keep their own aggregate reporting.
   removeProject: (
     projectId: string,
-    options?: { hostId?: ExecutionHostId; errorFeedback?: 'toast' | 'silent' }
+    options?: {
+      hostId?: ExecutionHostId
+      expectedRegistration?: Pick<Repo, 'path' | 'addedAt' | 'pairedRegistration'>
+      expectedEnvironmentRuntimeId?: string
+      errorFeedback?: 'toast' | 'silent'
+    }
   ) => Promise<void>
   updateProject: (projectId: string, updates: ProjectUpdate) => Promise<boolean>
   // options.hostId targets a specific host's row + RPC target when the id exists on multiple hosts; else the focused host is assumed.

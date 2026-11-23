@@ -1,0 +1,57 @@
+.g3-unclassified {
+  margin-top: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg, 10px);
+  background: var(--card);
+  padding: 14px 20px 8px;
+}
+.g3-unclassified-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.g3-unclassified-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.g3-unclassified-toggle strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.g3-unclassified-count {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 7px;
+}
+.g3-unclassified-help {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted-foreground);
+  cursor: help;
+}
+.g3-unclassified.open .g3-unclassified-head {
+  padding-bottom: 8px;
+}
+
+.version-unclassified-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+}
+.version-unclassified-row .g3-id {
+  margin-right: 8px;
+}
+.version-unclassified-state {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}

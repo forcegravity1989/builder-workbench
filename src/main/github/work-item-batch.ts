@@ -3,6 +3,8 @@ import type {
   WorkItemsBatchEntry,
   WorkItemsBatchResult
 } from '../../shared/github/work-item-batch-types'
+import { isGitHubHostAuthenticatedForGlobalCli } from './github-enterprise-repository'
+import { isDefaultGitHubHost } from '../../shared/github/repository-identity-key'
 import { ghExecFileAsync, acquire, release } from './gh-utils'
 import { mapIssueWorkItem, mapPullRequestWorkItem } from './client/map/work-item'
 
@@ -114,6 +116,9 @@ export async function getWorkItemsBatch(input: {
       error: `任务数 ${numbers.length} 超单次读取上限（${MAX_NUMBERS_PER_CALL}），请拆分读取`
     }
   }
+  if (host && !isDefaultGitHubHost(host) && !(await isGitHubHostAuthenticatedForGlobalCli(host))) {
+    return { items: [], error: 'GitHub repository host is unavailable in the local gh account' }
+  }
   const ownerRepo: GitHubOwnerRepo = {
     owner,
     repo,
@@ -127,7 +132,8 @@ export async function getWorkItemsBatch(input: {
       const query = buildWorkItemsBatchQuery(owner, repo, chunk)
       const { stdout } = await ghExecFileAsync([
         'api',
-        ...(host && host !== 'github.com' ? ['--hostname', host] : []),
+        '--hostname',
+        host ?? 'github.com',
         'graphql',
         '-f',
         `query=${query}`

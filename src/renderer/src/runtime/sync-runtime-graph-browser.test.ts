@@ -135,6 +135,22 @@ describe('browser mobile session sync', () => {
         isActive: true
       }
     ])
+    const mirrored = {
+      ...state,
+      browserPagesByWorkspace: {
+        'browser-1': state.browserPagesByWorkspace['browser-1']!.map((page) => ({
+          ...page,
+          browserRuntimeEnvironmentId: 'remote-host'
+        }))
+      }
+    }
+    expect(buildMobileSessionTabSnapshots(mirrored)[0]?.tabs).toEqual([])
+    expect(
+      buildMobileSessionTabSnapshots({ ...mirrored, unifiedTabsByWorktree: {} })[0]?.tabs
+    ).toEqual([])
+    expect(buildMobileSessionTabSnapshots(state)[0]?.tabs[0]).toMatchObject({
+      browserPageId: 'page-1'
+    })
   })
 
   it('does not resurrect a stale workspace failure after the active page clears it', () => {

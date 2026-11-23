@@ -7,7 +7,10 @@ import {
 } from './mirrored-browser-tabs'
 import { buildMirroredEditorTabs } from './tab-builders'
 import { buildMirroredAgentTabs, isReadyBrowserTab, isReadyEditorTab } from './terminal-surfaces'
-import { hostSnapshotAffirmsClientHostedPages } from '../host-session-snapshot-authority'
+import {
+  hostSnapshotAffirmsClientHostedPages,
+  hostSnapshotAffirmsEditorContents
+} from '../host-session-snapshot-authority'
 import type { prepareWebSessionTabsSnapshotBase } from './apply-preparation-base'
 import type { OpenFile } from '../../store/slices/editor'
 import {
@@ -105,6 +108,7 @@ export function prepareWebSessionTabsSnapshotBrowser(
       : null
   const readyEditorTabs = reconcilesNonAgentTabs ? snapshot.tabs.filter(isReadyEditorTab) : []
   const worktreeOpenFiles = webSessionOpenFilesForWorktree(state, worktreeId, batchContext)
+  const hasLocalDraft = (fileId: string): boolean => state.editorDrafts?.[fileId] !== undefined
   const mirroredEditorTabs = buildMirroredEditorTabs(
     snapshot,
     environmentId,
@@ -113,7 +117,8 @@ export function prepareWebSessionTabsSnapshotBrowser(
     hostGroupIdByTabId,
     targetGroupId,
     mirroredTerminalTabEntries.length + mirroredBrowserTabs.length,
-    now
+    now,
+    hasLocalDraft
   )
   const mirroredAgentTabs = buildMirroredAgentTabs(
     snapshot,
@@ -125,14 +130,17 @@ export function prepareWebSessionTabsSnapshotBrowser(
   )
   const mirroredEditorFileIds = new Set(mirroredEditorTabs.map((entry) => entry.file.id))
   const mirroredEditorHostTabIds = new Set(mirroredEditorTabs.map((entry) => entry.hostTabId))
+  const canRemoveMirroredFiles =
+    reconcilesNonAgentTabs && hostSnapshotAffirmsEditorContents(snapshot)
   const removedEditorFileIds = new Set(
-    (reconcilesNonAgentTabs ? worktreeOpenFiles : [])
+    (canRemoveMirroredFiles ? worktreeOpenFiles : [])
       .filter(
         (file) =>
           file.runtimeEnvironmentId === environmentId &&
           (file.mode === 'edit' || file.mode === 'markdown-preview') &&
-          // Why: only cull host-mirrored tabs; locally opened files have no host counterpart, so their omission isn't a close signal.
           file.mirroredFromRuntimeSession === true &&
+          // A host close cannot discard an unsaved buffer on this client.
+          !(file.isDirty && hasLocalDraft(file.id)) &&
           !mirroredEditorFileIds.has(file.id)
       )
       .map((file) => file.id)

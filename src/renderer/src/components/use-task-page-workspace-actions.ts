@@ -11,7 +11,7 @@ import { translate } from '@/i18n/i18n'
 import {
   getGitHubWorkItemWorkspaceSeed,
   getGitLabWorkItemWorkspaceSeed,
-  getTaskPageRepoSourceContext
+  getRepoTaskSourceContext
 } from './task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
@@ -21,6 +21,7 @@ import {
   resolveScopedComposerAdditions
 } from '@/workbench/scoped-task-workspace'
 import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
+import { track } from '@/lib/telemetry'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
   // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
@@ -52,7 +53,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       openModal('new-workspace-composer', {
         linkedWorkItem,
         initialGitHubWorkItem: item,
-        taskSourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github'),
+        taskSourceContext: getRepoTaskSourceContext(repoMap.get(item.repoId), 'github'),
         prefilledName: getGitHubWorkItemWorkspaceSeed(item),
         initialRepoId: item.repoId,
         enableIssueAutomation: item.type === 'issue',
@@ -86,7 +87,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           worktrees,
           provider: 'github',
           number: item.number,
-          sourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github'),
+          sourceContext: getRepoTaskSourceContext(repoMap.get(item.repoId), 'github'),
           repoId: item.repoId
         })
         if (scoped) {
@@ -95,6 +96,11 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
             choiceTitle: `#${item.number} ${item.title}`,
             onUnavailable: notifyScopedWorkspaceUnavailable
           })
+          // Why: scoped dispatch is the BW start path (#687) — 'none' falls
+          // through to the composer via handleUseWorkItem below.
+          if (outcome !== 'none') {
+            track('bw_task_start', { outcome, source: 'task-screen' })
+          }
           if (outcome === 'opened') {
             useAppStore.getState().recordFeatureInteraction('github-tasks')
             return
@@ -102,6 +108,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           if (outcome !== 'none') {
             return
           }
+          track('bw_task_start', { outcome: 'composer-opened', source: 'task-screen' })
           handleUseWorkItem(item)
           return
         }
@@ -151,7 +158,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       }
       openModal('new-workspace-composer', {
         linkedWorkItem,
-        taskSourceContext: getTaskPageRepoSourceContext(
+        taskSourceContext: getRepoTaskSourceContext(
           repoMap.get(item.repoId),
           'gitlab',
           item.projectRef
@@ -172,10 +179,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   )
   const codeHubSourceContextFor = useCallback(
     (item: CodeHubTaskItem) =>
-      getTaskPageRepoSourceContext(
-        item.repoId ? (repoMap.get(item.repoId) ?? null) : null,
-        'codehub'
-      ),
+      getRepoTaskSourceContext(item.repoId ? (repoMap.get(item.repoId) ?? null) : null, 'codehub'),
     [repoMap]
   )
   const openComposerForCodeHubItem = useCallback(
@@ -228,8 +232,10 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
             onUnavailable: notifyScopedWorkspaceUnavailable
           })
           if (outcome !== 'none') {
+            track('bw_task_start', { outcome, source: 'task-screen' })
             return
           }
+          track('bw_task_start', { outcome: 'composer-opened', source: 'task-screen' })
         }
       }
       openComposerForCodeHubItem(item)

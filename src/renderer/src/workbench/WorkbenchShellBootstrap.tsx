@@ -14,8 +14,6 @@ export function WorkbenchShellBootstrap(): null {
     // settings.theme drives the shell; forcing light here stranded dark (#354).
 
     const state = useAppStore.getState()
-    // Why: Workbench nav lives in the left sidebar; a collapsed rail
-    // leaves Overview/Plan/Tasks/KB unreachable.
     if (!state.sidebarOpen) {
       state.setSidebarOpen(true)
     }

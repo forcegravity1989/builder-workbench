@@ -123,7 +123,13 @@ describe('AgentSettingsDialog', () => {
     const { localWslAvailable, runtimeEnvironmentCall } = installCapabilityTransports()
 
     await act(async () => {
-      root.render(createElement(AgentSettingsDialog, { open: true, onOpenChange: vi.fn() }))
+      root.render(
+        createElement(AgentSettingsDialog, {
+          open: true,
+          onOpenChange: vi.fn(),
+          runtimeEnvironmentId: 'composer-linux'
+        })
+      )
       await Promise.resolve()
       await Promise.resolve()
     })
@@ -131,6 +137,7 @@ describe('AgentSettingsDialog', () => {
     expect(localWslAvailable).toHaveBeenCalledTimes(1)
     expect(runtimeEnvironmentCall).not.toHaveBeenCalled()
     expect(testState.agentsPaneProps).toMatchObject({
+      settings: { activeRuntimeEnvironmentId: 'composer-linux' },
       wslSupportedPlatform: true,
       wslAvailable: true,
       wslDistros: ['Ubuntu'],

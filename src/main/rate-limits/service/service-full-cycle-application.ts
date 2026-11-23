@@ -1,5 +1,8 @@
 import { RateLimitServiceFullCyclePreparation } from './service-full-cycle-preparation'
 import { deriveAntigravityRateLimits } from '../antigravity-usage-mirror'
+import { settleSiblingProviderResult } from './service-sibling-provider-result'
+import { readCursorAuthSession } from '../cursor-auth'
+import { cursorAuthProvenance, previousCursorUsageForAccount } from '../cursor-usage-account-policy'
 import type { ProviderRateLimits } from './service-types'
 
 export abstract class RateLimitServiceFullCycleApplication extends RateLimitServiceFullCyclePreparation {
@@ -34,7 +37,8 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
         kimiResult,
         miniMaxResult
       ],
-      grokResultPromise
+      grokResultPromise,
+      cursorResultPromise
     } = prepared
     if (signal.aborted) {
       return
@@ -191,25 +195,41 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
         : this.state.minimax
     })
 
-    const grokResult = await grokResultPromise
+    const [grokSettled, cursorSettled] = await Promise.all([grokResultPromise, cursorResultPromise])
     if (signal.aborted) {
       return
     }
-    const grok =
-      grokResult.status === 'fulfilled'
-        ? grokResult.value
-        : ({
-            provider: 'grok',
-            session: null,
-            weekly: null,
-            updatedAt: Date.now(),
-            error: grokResult.reason instanceof Error ? grokResult.reason.message : 'Unknown error',
-            status: 'error'
-          } satisfies ProviderRateLimits)
+    const grok = settleSiblingProviderResult('grok', grokSettled)
+    let cursor = settleSiblingProviderResult('cursor', cursorSettled)
+    // Cursor changes its login outside BW; recheck after the network await.
+    const latestCursorAuth = await readCursorAuthSession()
+    if (signal.aborted) {
+      return
+    }
+    this.cursorAuthConfigured = latestCursorAuth.status === 'ok'
+    const currentAccount = cursorAuthProvenance(latestCursorAuth)
+    if (currentAccount !== (cursor.usageMetadata?.authProvenance ?? null)) {
+      cursor = {
+        provider: 'cursor',
+        session: null,
+        weekly: null,
+        updatedAt: Date.now(),
+        status: 'error',
+        error: 'Cursor sign-in changed — refresh usage',
+        usageMetadata: { failureKind: 'usage-unavailable' }
+      }
+    }
     this.trackActiveFailureStreak('grok', grok)
+    this.trackActiveFailureStreak('cursor', cursor)
     this.updateState({
       ...this.state,
-      grok: this.applyStalePolicy(grok, previousState.grok)
+      grok: this.applyStalePolicy(grok, previousState.grok),
+      cursor: this.applyStalePolicy(
+        cursor,
+        cursor.usageMetadata?.failureKind === 'stale-token'
+          ? null
+          : previousCursorUsageForAccount(cursor.usageMetadata?.authProvenance, previousState.cursor)
+      )
     })
   }
 }

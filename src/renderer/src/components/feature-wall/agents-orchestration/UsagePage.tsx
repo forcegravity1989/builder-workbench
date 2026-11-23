@@ -78,8 +78,12 @@ function Popover(props: {
 }): JSX.Element {
   const { expanded, targeted, swapped, pulseKey } = props
   // Why: bars show % used (consumption), matching the live status-bar meter.
-  const sessionPctText = swapped ? '0% used' : '96% used'
-  const sessionResetText = swapped ? 'Resets in 5h' : 'Resets in 47m'
+  const sessionPctText = translate('guidance.demo.percentUsed', '{{percent}}% used', {
+    percent: swapped ? 0 : 96
+  })
+  const sessionResetText = swapped
+    ? translate('guidance.demo.resetsHours', 'Resets in {{hours}}h', { hours: 5 })
+    : translate('guidance.demo.resetsMinutes', 'Resets in {{minutes}}m', { minutes: 47 })
   const sessionFillWidth = swapped ? '0%' : '96%'
   const weeklyFillWidth = '38%'
 
@@ -301,7 +305,9 @@ function BottomBar(props: { swapped: boolean }): JSX.Element {
   // Why: match live status-bar consumption meters (% used), same as the popover.
   const codexFillWidth = props.swapped ? '0%' : '96%'
   const codexFillColor = props.swapped ? 'rgb(34 197 94)' : 'rgb(239 68 68)'
-  const codexMeta = props.swapped ? '0% used 5h · 4% used wk' : '96% used 47m'
+  const codexMeta = props.swapped
+    ? translate('guidance.demo.switchedUsage', '0% used 5h · 4% used wk')
+    : translate('guidance.demo.currentUsage', '96% used 47m')
   return (
     <div
       className="absolute bottom-[22px] left-1/2 flex -translate-x-1/2 items-center gap-3.5 rounded-lg border border-border bg-muted/60 px-3.5 py-1.5 text-[11px] shadow-[0_1px_2px_rgba(24,24,27,0.04)]"

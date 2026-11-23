@@ -78,7 +78,7 @@ export function buildWorkItemListRequest(args: {
         '120s',
         `search/issues?q=${encodeURIComponent(searchParts.join(' '))}&sort=created&order=desc&per_page=${limit}&page=${page}`,
         '--jq',
-        '.items'
+        'if .incomplete_results then error("GitHub search results incomplete") else .items end'
       ],
       offset: 0
     }

@@ -21,6 +21,8 @@ import { initialAgentTabViewModeProps } from '@/lib/native-chat-initial-view-mod
 import { isNativeChatTranscriptLocalReadable } from '@/lib/native-chat-transcript-readability'
 import { getConnectionId } from '@/lib/connection-context'
 import { toast } from 'sonner'
+import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
+import { showClientCreationActionError } from '@/lib/client-creation-action-error'
 
 export function ensureWebRuntimeWorktreeTerminalAfterWake(
   worktreeId: string,
@@ -37,6 +39,13 @@ export function ensureWebRuntimeWorktreeTerminalAfterWake(
       ? (opts.runtimeEnvironmentId ?? null)
       : getRuntimeEnvironmentIdForWorktree(state, worktreeId)
   if (!runtimeEnvironmentId || !isWebRuntimeSessionActive(runtimeEnvironmentId)) {
+    return
+  }
+  const agentLaunchOwner = opts?.startup?.agentLaunchOwner
+  try {
+    assertHostAgentStartupOwner(agentLaunchOwner, runtimeEnvironmentId)
+  } catch (error) {
+    showClientCreationActionError(error)
     return
   }
 
@@ -93,6 +102,9 @@ export function ensureWebRuntimeWorktreeTerminalAfterWake(
   void createWebRuntimeSessionTerminal({
     worktreeId,
     environmentId: runtimeEnvironmentId,
+    ...(agentLaunchOwner
+      ? { expectedEnvironmentRuntimeId: agentLaunchOwner.runtimeId }
+      : {}),
     ...viewModeProps,
     ...(startup
       ? {

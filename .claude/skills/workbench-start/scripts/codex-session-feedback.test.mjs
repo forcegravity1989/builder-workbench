@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createExtractor, assertCurrentSnapshot } from './codex-session-feedback.mjs'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
+import os from 'node:os'
+import path from 'node:path'
+import { createExtractor, extractFiles, assertCurrentSnapshot } from './codex-session-feedback.mjs'
 import { summarizeFeedback, renderComment } from './workflow-feedback-report.mjs'
 
 const completed = (id, type, text) => ({
@@ -11,7 +15,7 @@ const completed = (id, type, text) => ({
   }
 })
 
-test('report rejects a stale human-input snapshot after review while ignoring tool-only progress', () => {
+test('report rejects new inputs, questions and changed cited evidence, allowing unrelated model progress', () => {
   const snapshot = {
     session: { id: 'one' },
     issues: [],
@@ -32,6 +36,39 @@ test('report rejects a stale human-input snapshot after review while ignoring to
     /重新 extract/
   )
   assert.throws(() => assertCurrentSnapshot(snapshot, { ...snapshot, issues: ['gap'] }), /覆盖变化/)
+  assert.throws(
+    () =>
+      assertCurrentSnapshot(snapshot, {
+        ...snapshot,
+        messages: [...snapshot.messages, { id: 'q1', role: 'question', text: '新问题' }]
+      }),
+    /提问/
+  )
+  const cited = {
+    ...snapshot,
+    messages: [
+      ...snapshot.messages,
+      { id: 'q1', role: 'assistant', text: '自然语言提问' },
+      { id: 'a1', role: 'assistant', text: '完成交付' }
+    ]
+  }
+  const evidence = { firstDeliveryId: 'a1', modelEvents: [{ messageId: 'q1' }] }
+  for (const id of ['q1', 'a1']) {
+    assert.throws(
+      () =>
+        assertCurrentSnapshot(
+          cited,
+          {
+            ...cited,
+            messages: cited.messages.map((item) =>
+              item.id === id ? { ...item, text: '已修改' } : item
+            )
+          },
+          evidence
+        ),
+      /引用证据/
+    )
+  }
 })
 
 test('completion messages exclude injected instructions and mirrored response messages, retaining repeated sends', () => {
@@ -80,6 +117,84 @@ test('completion messages exclude injected instructions and mirrored response me
     ['u1', 'u2', 'u3']
   )
   assert.deepEqual(parser.finish().issues, [])
+})
+
+test('multiple input files retain AskUser semantics and source mirrors without dropping repeated human sends', async (t) => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'bw-feedback-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const first = path.join(dir, 'first.jsonl')
+  const second = path.join(dir, 'second.jsonl')
+  const out = path.join(dir, 'extract.json')
+  const meta = { type: 'session_meta', payload: { id: 'same-session' } }
+  const at = (row, second) => ({ ...row, timestamp: `2026-11-10T00:00:0${second}.000Z` })
+  const question = completed('q1', 'AgentMessage', '采用已有方案吗？')
+  question.payload.item.questions = [{ title: '采用已有方案吗？', options: ['是', '否'] }]
+  question.payload.item.phase = 'final_answer'
+  const firstRows = [
+    meta,
+    at(completed('u1', 'UserMessage', '处理需求'), 1),
+    at(
+      {
+        type: 'response_item',
+        payload: {
+          type: 'function_call',
+          name: 'request_user_input_async',
+          call_id: 'q1',
+          arguments: JSON.stringify({ questions: question.payload.item.questions })
+        }
+      },
+      2
+    ),
+    at(question, 3)
+  ]
+  const secondRows = [
+    meta,
+    at(question, 3),
+    at(completed('u2', 'UserMessage', '处理需求'), 4),
+    at(completed('a1', 'AgentMessage', '已完成交付'), 5)
+  ]
+  const writeRows = (file, rows) =>
+    writeFile(file, rows.map((row) => JSON.stringify(row)).join('\n'))
+  await writeRows(first, firstRows)
+  await writeRows(second, secondRows)
+  execFileSync(process.execPath, [
+    path.join(import.meta.dirname, 'codex-session-feedback.mjs'),
+    'extract',
+    '--input',
+    first,
+    '--input',
+    second,
+    '--input',
+    first,
+    '--out',
+    out
+  ])
+  const result = JSON.parse(await readFile(out, 'utf8'))
+  assert.deepEqual(
+    result.messages.map((item) => item.id),
+    ['u1', 'q1', 'u2', 'a1']
+  )
+  assert.equal(result.messages[1].role, 'question')
+  assert.equal(result.messages[1].text, '采用已有方案吗？')
+  assert.equal(result.messages[1].mirrors.length, 2)
+  assert.equal(result.sources.length, 2)
+  assert.deepEqual(result.issues, [])
+  assert.equal((await extractFiles([first])).source.file, first)
+  await writeRows(second, [{ ...meta, payload: { id: 'other-session' } }, ...secondRows.slice(1)])
+  await assert.rejects(extractFiles([first, second]), /同一会话/)
+
+  const parser = createExtractor('first.jsonl')
+  for (const file of ['first.jsonl', 'second.jsonl']) {
+    if (file !== 'first.jsonl') {
+      parser.startSource(file)
+    }
+    parser.consume(meta)
+    parser.consume({
+      type: 'event_msg',
+      payload: { type: 'user_message', message: '无 ID 的真实输入' }
+    })
+  }
+  assert.equal(new Set(parser.finish().messages.map((item) => item.id)).size, 2)
 })
 
 const messages = [
@@ -157,12 +272,29 @@ test('unknown coverage cannot become zero and pending reviews cannot become succ
   assert.equal(result.metrics.askUserRounds, null)
   assert.equal(result.metrics.initialExtraInput, null)
   assert.equal(result.metrics.reworkOccurred, null)
+  assert.equal(result.observed.validationGuidanceBatches, 1)
   assert.throws(() => summarizeFeedback({ messages, issues: ['截断'] }, annotations()), /缺口/)
   pending.userEvents = []
   const unannotated = summarizeFeedback({ messages, issues: [] }, pending)
   assert.equal(unannotated.rawHumanMessages, 4)
   assert.equal(unannotated.annotatedHumanMessages, 0)
   assert.equal(unannotated.normalizedHumanEvents, null)
+})
+
+test('unfinished work shows observed annotated counts without declaring complete process metrics', () => {
+  const pending = annotations()
+  pending.firstDeliveryId = null
+  pending.coverage = {}
+  pending.userEvents = pending.userEvents.slice(0, 3)
+  pending.modelEvents = [{ messageId: 'a1', tags: ['ask_user'], summary: '对齐方案' }]
+  pending.review = { verdict: 'pending', evidenceIds: [] }
+  const result = summarizeFeedback({ messages: messages.slice(0, 4), issues: [] }, pending)
+  assert.equal(result.observed.askUserRounds, 1)
+  assert.equal(result.observed.preDeliveryInterventions, 1)
+  assert.equal(result.metrics.askUserRounds, null)
+  assert.equal(result.metrics.preDeliveryInterventions, null)
+  assert.ok(renderComment(result).includes('已观察 1 轮；完整口径未知'))
+  assert.ok(renderComment(result).includes('尚未完成交付'))
 })
 
 test('annotations cannot invent evidence, omit user inputs, or count the same rework batch twice', () => {
@@ -172,6 +304,23 @@ test('annotations cannot invent evidence, omit user inputs, or count the same re
   const omitted = annotations()
   omitted.userEvents.pop()
   assert.throws(() => summarizeFeedback({ messages, issues: [] }, omitted), /逐条核对/)
+  const missingQuestion = annotations()
+  for (const events of [[], [{ messageId: 'a1', tags: [], summary: '未分类问题' }]]) {
+    missingQuestion.modelEvents = events
+    assert.throws(
+      () =>
+        summarizeFeedback(
+          {
+            messages: messages.map((item) =>
+              item.id === 'a1' ? { ...item, role: 'question' } : item
+            ),
+            issues: []
+          },
+          missingQuestion
+        ),
+      /逐条标注结构化提问/
+    )
+  }
   const duplicate = annotations()
   duplicate.reDeliveries = [
     { messageId: 'a3', requestId: 'u4' },

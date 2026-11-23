@@ -14,7 +14,7 @@ import { runtimeHostConnectionStateForEntry } from '@/runtime/runtime-host-conne
 vi.mock('sonner', () => ({ toast: { warning: vi.fn(), dismiss: vi.fn() } }))
 vi.mock('@/runtime/restored-client-hosted-browser-host-attach', () => ({
   ensureBrowserClientHostsForRestoredPages: vi.fn(),
-  ensureBrowserClientHostForRestartedRuntime: vi.fn()
+  ensureBrowserClientHostOnRuntimeContact: vi.fn()
 }))
 vi.mock('@/runtime/client-hosted-browser-close-intent-replay', () => ({
   replayClientHostedBrowserCloseIntents: vi.fn()

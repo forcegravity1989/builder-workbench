@@ -19,7 +19,7 @@ type BrowserToolbarMenuProps = {
   browserPageId: string
   viewportPresetId: BrowserViewportPresetId | null
   onDestroyWebview: () => void
-  isActive: boolean
+  ownsBrowserTour: boolean
 }
 
 export function BrowserToolbarMenu({
@@ -28,7 +28,7 @@ export function BrowserToolbarMenu({
   browserPageId,
   viewportPresetId,
   onDestroyWebview,
-  isActive
+  ownsBrowserTour
 }: BrowserToolbarMenuProps): React.JSX.Element {
   const browserSessionProfiles = useAppStore((s) => s.browserSessionProfiles)
   const detectedBrowsers = useAppStore((s) => s.detectedBrowsers)
@@ -50,7 +50,7 @@ export function BrowserToolbarMenu({
     persistedUIReady,
     browserImportHintHidden
   })
-  const shouldForceMenuOpen = browserCookieTourStepActive && isActive && !importHintVisible
+  const shouldForceMenuOpen = browserCookieTourStepActive && ownsBrowserTour && !importHintVisible
 
   const applyViewportPreset = (nextId: BrowserViewportPresetId | null): void => {
     setBrowserPageViewportPreset(browserPageId, nextId)

@@ -3,74 +3,45 @@ import {
   MilestoneFeatureSchema,
   MilestoneNodeSchema,
   upgradeMilestoneMaterial,
-  MilestoneDeliverySchema,
   ScheduledVersionSchema
 } from '../../../shared/workbench/project-milestones'
-import type { Session } from './milestone-planning-session'
+import { MilestoneRecoveryRecordSchema } from '../../../shared/workbench/milestone-recovery'
 
 // Recovery accepts unfinished fields; submission still validates the business material schema.
 const draftSchema = z.strictObject({
   material: z.preprocess(
     upgradeMilestoneMaterial,
     z.strictObject({
-      schema_version: z.literal(3),
+      schema_version: z.literal(4),
       milestones: z.array(MilestoneNodeSchema).max(2000),
       features: z.array(
         MilestoneFeatureSchema.extend({
           title: z.string(),
-          owner: z.string(),
-          deliveries: z.array(
-            MilestoneDeliverySchema.extend({
-              version: z.strictObject({ version: z.string(), cycleId: z.string().min(1) })
-            })
-          )
+          owner: z.string()
         })
       )
     })
   ),
   versions: z.array(ScheduledVersionSchema.extend({ version: z.string() }))
 })
-export const milestoneRecoverySchema = z.strictObject({
+const milestoneRecoverySchema = z.object({
   schema_version: z.literal(1),
   draft: draftSchema,
-  baseline: draftSchema,
-  expectedFormal: z.string().min(1),
-  expectedProposal: z.string().nullable(),
-  editing: z.boolean(),
-  month: z
-    .string()
-    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
-    .optional(),
-  scrollX: z.number().finite().nonnegative().nullable(),
-  scrollY: z.number().finite().nonnegative(),
-  pageY: z.number().finite().nonnegative(),
-  retry: z.boolean(),
-  submitError: z.string().optional()
+  baseline: draftSchema
 })
-export function milestoneRecoveryPayload(value: Session): string {
-  const {
-    draft,
-    baseline,
-    expectedFormal,
-    expectedProposal,
-    editing,
-    scrollX,
-    scrollY,
-    pageY,
-    retry,
-    submitError
-  } = value
-  return JSON.stringify({
-    schema_version: 1,
-    draft,
-    baseline,
-    expectedFormal,
-    expectedProposal,
-    editing,
-    scrollX,
-    scrollY,
-    pageY,
-    retry,
-    submitError
-  })
+export type LegacyMilestoneDraft = z.infer<typeof milestoneRecoverySchema> & { revision: string }
+
+export async function readLegacyMilestoneDraft(
+  key: string
+): Promise<LegacyMilestoneDraft | undefined> {
+  const { payload, revision } = MilestoneRecoveryRecordSchema.parse(
+    await window.api.milestoneRecovery.read(key)
+  )
+  if (!payload || !revision || localStorage.getItem(`bw:milestone-restored:${key}`) === revision) {
+    return undefined
+  }
+  const record = milestoneRecoverySchema.parse(JSON.parse(payload))
+  return JSON.stringify(record.draft) === JSON.stringify(record.baseline)
+    ? undefined
+    : { ...record, revision }
 }

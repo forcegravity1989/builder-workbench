@@ -1,5 +1,4 @@
 import React from 'react'
-import { ChevronDown } from 'lucide-react'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { cn } from '@/lib/utils'
 import type { AppState } from '@/store/types'
@@ -15,12 +14,20 @@ import type {
   WorkspaceStatusDefinition
 } from '../../../../../../shared/worktree/types'
 import type { GroupHeaderRow, WorktreeGroupBy } from '../grouping/row-types'
-import { PINNED_GROUP_KEY } from '../grouping/group-keys'
+import { ALL_GROUP_KEY, PINNED_GROUP_KEY } from '../grouping/group-keys'
 import { getWorkspaceStatusFromGroupKey } from '../../workspace-status'
 import { getVirtualRowTransform } from '../viewport/virtual-rows'
 import { resolveProjectGroupHeaderColor } from '../../project-header-color'
 import { getRepoHeaderCreateState } from '../../repo-header-create-state'
-import { ProjectHeaderActions } from '../../ProjectHeaderActions'
+import {
+  ProjectHeaderActions,
+  SIDEBAR_GROUP_CHEVRON_SLOT_CLASS,
+  SIDEBAR_GROUP_FIXED_CHEVRON_CLASS,
+  SidebarGroupChevron
+} from '../../ProjectHeaderActions'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import SidebarWorkspaceOptionsMenu from '@/components/sidebar/SidebarWorkspaceOptionsMenu'
+import { NewWorkspaceButton } from '@/components/sidebar/sidebar-header-actions'
 import {
   getProjectGroupHeaderPaddingLeft,
   WORKTREE_SECTION_HEADER_PADDING_LEFT
@@ -117,7 +124,6 @@ export function renderWorktreeSectionHeaderRow(args: {
       ? headerDrag.projectGroupHeaderBucketByGroupId.get(projectGroupIdForHeader)
       : undefined
   const isDraggableRepoHeader = Boolean(
-    !row.partialPresentation &&
     headerDrag.canReorderRepoHeaders &&
     isRepoHeader &&
     projectIdForHeader &&
@@ -125,7 +131,6 @@ export function renderWorktreeSectionHeaderRow(args: {
     (headerDrag.sidebarRepoHeaderIdsByBucket.get(repoHeaderBucketKey)?.length ?? 0) > 1
   )
   const isDraggableProjectGroupHeader = Boolean(
-    !row.partialPresentation &&
     headerDrag.canReorderProjectGroupHeaders &&
     projectGroupIdForHeader &&
     projectGroupHeaderBucketKey &&
@@ -145,6 +150,10 @@ export function renderWorktreeSectionHeaderRow(args: {
       ? getWorkspaceStatusFromGroupKey(row.key, ctx.workspaceStatuses)
       : null
   const isPinnedHeader = row.key === PINNED_GROUP_KEY
+  const isAllHeader = row.key === ALL_GROUP_KEY
+  // Why: in the Workbench shell the flat "All" group is the 工作区 section header,
+  // so it shares the guide chevron + section actions with 已固定/版本.
+  const workbenchSectionHeader = isWorkbenchShell() && (isPinnedHeader || isAllHeader)
   const repoHeaderColor = resolveProjectGroupHeaderColor({
     groupBy: ctx.groupBy,
     headerKey: row.key,
@@ -177,7 +186,31 @@ export function renderWorktreeSectionHeaderRow(args: {
   // Why: repo/project/status/pinned share compact section chrome; flat "All" stays a simple label.
   const showHeaderCollapseAffordance =
     row.count > 0 &&
-    (isRepoHeader || isProjectGroupHeader || headerWorkspaceStatus !== null || isPinnedHeader)
+    (isRepoHeader ||
+      isProjectGroupHeader ||
+      headerWorkspaceStatus !== null ||
+      isPinnedHeader ||
+      (isWorkbenchShell() && isAllHeader))
+  const fixedChevron =
+    isWorkbenchShell() && showHeaderCollapseAffordance && (isRepoHeader || isProjectGroupHeader)
+  const collapseAffordance =
+    showHeaderCollapseAffordance && !workbenchSectionHeader ? (
+      <div
+        className={
+          fixedChevron ? SIDEBAR_GROUP_FIXED_CHEVRON_CLASS : SIDEBAR_GROUP_CHEVRON_SLOT_CLASS
+        }
+        data-repo-header-collapse-affordance=""
+        aria-hidden
+        onPointerDown={handleRepoHeaderCollapseAffordancePointerDown}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          ctx.toggleGroupWithScrollAnchor(row.key)
+        }}
+      >
+        <SidebarGroupChevron expanded={!isHeaderCollapsed} />
+      </div>
+    ) : null
   return (
     <div
       key={vItem.key}
@@ -204,7 +237,7 @@ export function renderWorktreeSectionHeaderRow(args: {
       style={isActiveStickyHeader ? undefined : { transform: getVirtualRowTransform(vItem.start) }}
     >
       <div
-        id={getWorktreeOptionId(row.presentationKey ?? row.key)}
+        id={getWorktreeOptionId(row.key)}
         data-sidebar-original-row-key={row.key}
         role="button"
         tabIndex={0}
@@ -236,6 +269,7 @@ export function renderWorktreeSectionHeaderRow(args: {
           // Why: no row-level grab — only the title surface below shows the hand;
           // actions use cursor-pointer so … / + never look reorderable.
           'group relative flex h-7 w-full items-center gap-1.5 pr-2 text-left transition-all',
+          fixedChevron && 'pr-[26px]',
           !(isDraggableRepoHeader || isDraggableProjectGroupHeader) && 'cursor-pointer',
           ctx.highlightedRevealRowKey === row.key &&
             'rounded-md bg-worktree-sidebar-accent ring-1 ring-worktree-sidebar-ring/50',
@@ -336,6 +370,11 @@ export function renderWorktreeSectionHeaderRow(args: {
               <div className="min-w-0 truncate text-[13px] font-semibold leading-none">
                 {row.label}
               </div>
+              {workbenchSectionHeader ? (
+                <span className="flex shrink-0 items-center text-muted-foreground/60" aria-hidden>
+                  <SidebarGroupChevron expanded={!isHeaderCollapsed} />
+                </span>
+              ) : null}
               <RepoForkIndicator upstream={row.repo?.upstream} />
               <FolderPathStatusIndicator status={projectGroupPathStatus} />
               {isRepoHeader ? <RepoScanUnavailableIndicator repo={row.repo!} /> : null}
@@ -343,24 +382,23 @@ export function renderWorktreeSectionHeaderRow(args: {
           </div>
         </div>
 
-        <ProjectHeaderActions>
-          {showHeaderCollapseAffordance ? (
-            <div
-              className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
-              data-repo-header-collapse-affordance=""
-              aria-hidden
-              onPointerDown={handleRepoHeaderCollapseAffordancePointerDown}
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                ctx.toggleGroupWithScrollAnchor(row.key)
-              }}
-            >
-              <ChevronDown
-                className={cn('size-3.5 transition-transform', isHeaderCollapsed && '-rotate-90')}
-              />
-            </div>
-          ) : null}
+        {isWorkbenchShell() && isAllHeader ? (
+          // Why stop propagation: these actions live inside the clickable row
+          // header; without it, clicking 选项/新建工作区 would also toggle the
+          // 工作区 collapse. Keyboard too, so Enter on the button doesn't collapse.
+          <div
+            className="flex shrink-0 items-center gap-1"
+            data-workbench-workspace-actions=""
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <SidebarWorkspaceOptionsMenu />
+            <NewWorkspaceButton preserveWorkspaceBoardOpen={false} />
+          </div>
+        ) : null}
+
+        <ProjectHeaderActions className={fixedChevron ? 'can-hover:right-[26px]' : undefined}>
+          {fixedChevron ? null : collapseAffordance}
 
           {isProjectGroupHeader && !row.repo && projectGroupIdForHeader ? (
             <ProjectGroupHeaderMenu
@@ -400,6 +438,7 @@ export function renderWorktreeSectionHeaderRow(args: {
             />
           ) : null}
         </ProjectHeaderActions>
+        {fixedChevron ? collapseAffordance : null}
       </div>
     </div>
   )

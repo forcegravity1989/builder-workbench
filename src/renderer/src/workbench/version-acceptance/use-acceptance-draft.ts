@@ -1,3 +1,4 @@
+import { isWorkspaceGoneError, logWorkbenchError, workspaceGoneMessage } from '../error-feedback'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
 import {
@@ -33,7 +34,12 @@ export function useAcceptanceDraft(
     let current = true
     void controller.refresh().catch((reason) => {
       if (current) {
-        setRecoveryError(String(reason))
+        logWorkbenchError('验收材料读取失败', reason)
+        // A gone scope cannot be fixed by refreshing: say what happened instead of inviting a
+        // retry loop against a deleted worktree (#727).
+        setRecoveryError(
+          isWorkspaceGoneError(reason) ? workspaceGoneMessage() : '验收材料读取失败，可刷新重试。'
+        )
       }
     })
     return () => {
@@ -105,7 +111,8 @@ export function useAcceptanceDraft(
       })
       .catch((reason) => {
         if (current && request === recovery.request) {
-          setRecoveryError(String(reason))
+          logWorkbenchError('宿主验收草稿读取失败', reason)
+          setRecoveryError('宿主验收草稿读取失败，可重新读取。')
         }
       })
     return () => {
@@ -153,9 +160,6 @@ export function useAcceptanceDraft(
           dirty: false
         })
       }
-    },
-    cancelAutomaticRead() {
-      recovery.request++
     },
     clear() {
       recovery.request++

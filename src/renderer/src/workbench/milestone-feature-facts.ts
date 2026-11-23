@@ -1,9 +1,9 @@
+import { acceptedIssueEvidence } from './version-acceptance/acceptance-task-evidence'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../shared/workbench/version-material'
 import type {
-  MilestoneDelivery,
   MilestoneFeature,
   MilestoneMaterial,
   MilestonePhase
@@ -39,7 +39,6 @@ export function milestoneMaterialFacts(materials: VersionOverviewMaterials) {
   const hasContent =
     document &&
     (document.goals.length ||
-      document.tasks.length ||
       document.minutes ||
       document.workflow ||
       document.summary.progress.trim() ||
@@ -77,7 +76,7 @@ export function milestoneIssueSnapshot(
   return snapshot?.kind === 'ready' ? snapshot : undefined
 }
 
-/** Verified archive identities survive live renames, label removal and provider outages. */
+/** Recorded acceptance identities remain usable when live provider metadata changes. */
 export function milestoneIssueFacts(
   plan: MilestoneVersionFacts['plan'],
   acceptance: MilestoneVersionFacts['acceptance'],
@@ -85,7 +84,15 @@ export function milestoneIssueFacts(
 ) {
   const features: MilestoneFeatureIdentity[] = []
   const identityFailures: CycleTaskReference[] = []
-  for (const reference of plan?.tasks ?? []) {
+  const references = [
+    ...new Map(
+      [
+        ...(plan?.tasks ?? []),
+        ...(acceptance?.taskSnapshot?.map((item) => item.reference) ?? [])
+      ].map((reference) => [taskKey(reference), reference])
+    ).values()
+  ]
+  for (const reference of references) {
     const snapshot = milestoneIssueSnapshot(reference, acceptance)
     const live = reads.find((read) => taskKey(read.reference) === taskKey(reference))
     const root = snapshot
@@ -111,7 +118,7 @@ const featureNames = (feature: MilestoneFeatureIdentity) =>
 const isMainFeature = (feature: MilestoneFeatureIdentity) =>
   feature.root.labels?.includes('特性') === true
 
-/** Membership comes from this fixed plan, never the Issue's current goal or its child tasks. */
+/** The main Issue must have a current association to a known goal in this version. */
 export function milestoneFeatureGoal(facts: MilestoneVersionFacts, featureKey: string) {
   const plan = facts.plan
   if (!plan || (facts.failed && !facts.stale && !facts.identityFailures)) {
@@ -139,6 +146,21 @@ export function milestoneFeatureGoal(facts: MilestoneVersionFacts, featureKey: s
   return roots.length === 1 && taskKey(roots[0]!.root.reference) === featureKey ? goalId : undefined
 }
 
+export function milestoneAcceptedFeatureGoal(facts: MilestoneVersionFacts, featureKey: string) {
+  if (
+    !facts.plan ||
+    !facts.formalPlan ||
+    !facts.acceptance?.taskSnapshot ||
+    (facts.failed && !facts.stale && !facts.identityFailures)
+  ) {
+    return undefined
+  }
+  const acceptance = { ...facts.acceptance, taskSnapshot: acceptedIssueEvidence(facts.acceptance) }
+  const plan = { ...facts.plan, tasks: acceptance.taskSnapshot.map((item) => item.reference) }
+  const recorded = milestoneIssueFacts(plan, acceptance, [])
+  return milestoneFeatureGoal({ ...facts, plan, ...recorded }, featureKey)
+}
+
 /** Full trimmed names associate a roadmap row; provider/repository/number carries its history. */
 export function resolveMilestoneFeature(
   row: MilestoneFeature,
@@ -156,7 +178,8 @@ export function resolveMilestoneFeature(
         name &&
         isMainFeature(feature) &&
         featureNames(feature).some((title) => title.includes(name)) &&
-        read.plan!.tasks.some((task) => taskKey(task) === taskKey(feature.root.reference))
+        (read.plan!.tasks.some((task) => taskKey(task) === taskKey(feature.root.reference)) ||
+          Boolean(milestoneIssueSnapshot(feature.root.reference, read.acceptance)))
       ) {
         candidates.set(taskKey(feature.root.reference), feature)
       }
@@ -176,61 +199,43 @@ export function resolveMilestoneFeature(
     : { note: '特性匹配不唯一' }
 }
 
-export function matchMilestoneFeature(
-  delivery: MilestoneDelivery,
-  facts: MilestoneVersionFacts | undefined,
-  material: MilestoneMaterial
-): MilestoneFeatureIdentity | undefined {
-  if (!facts?.plan || milestoneVersionKey(facts.plan) !== milestoneVersionKey(delivery.version)) {
-    return undefined
-  }
-  const rows = material.features.filter((row) =>
-    row.deliveries.some((item) => item.id === delivery.id)
-  )
-  if (rows.length !== 1) {
-    return undefined
-  }
-  const matched = resolveMilestoneFeature(rows[0]!, material, [facts]).feature
-  return matched && milestoneFeatureGoal(facts, taskKey(matched.root.reference))
-    ? matched
-    : undefined
-}
-
 export type PlannedStageHours = Partial<Record<MilestonePhase, number>>
 
-/** A unique name and planned main Issue supply the existing overview's planned stage widths. */
+/** Clip macro planning to the adopted version; formal membership still comes from its fixed plan. */
 export function milestoneStageHours(
   material: MilestoneMaterial | undefined,
   facts: MilestoneVersionFacts,
   feature: FeatureData
 ): PlannedStageHours {
-  if (!material) {
+  if (!material || !facts.formalPlan || !facts.plan?.timeWindow) {
     return {}
   }
-  const matches = material.features.flatMap((row) =>
-    row.deliveries.flatMap((delivery, index) => {
-      const matched = matchMilestoneFeature(delivery, facts, material)
-      return matched && taskKey(matched.root.reference) === taskKey(feature.root.reference)
-        ? [{ row, delivery, index }]
-        : []
-    })
-  )
-  if (matches.length !== 1) {
+  const key = taskKey(feature.root.reference)
+  if (!milestoneFeatureGoal(facts, key)) {
     return {}
   }
-  const { row, delivery, index } = matches[0]!
-  const stages = [...delivery.stages]
-  if (!stages.some((stage) => stage.phase === 'Maintain')) {
-    const next = row.deliveries
-      .slice(index + 1)
-      .find((item) => item.stages.some((stage) => stage.phase === 'Maintain'))
-    stages.push(...(next?.stages.filter((stage) => stage.phase === 'Maintain') ?? []))
+  const rows = material.features.filter((row) => {
+    const matched = resolveMilestoneFeature(row, material, [facts]).feature
+    return matched && taskKey(matched.root.reference) === key
+  })
+  if (rows.length !== 1) {
+    return {}
   }
+  const start = plannedDay(`${facts.plan.timeWindow.start}T00:00`),
+    end = plannedDay(`${facts.plan.timeWindow.end}T00:00`) + 1
   const result: PlannedStageHours = {}
-  for (const stage of stages) {
-    const hours = (plannedDay(stage.end) - plannedDay(stage.start)) * 24
+  for (const delivery of rows[0].deliveries) {
+    if (!delivery.timeWindow) {
+      continue
+    }
+    const hours =
+      Math.max(
+        0,
+        Math.min(end, plannedDay(delivery.timeWindow.end)) -
+          Math.max(start, plannedDay(delivery.timeWindow.start))
+      ) * 24
     if (Number.isFinite(hours) && hours > 0) {
-      result[stage.phase] = hours
+      result[delivery.phase] = (result[delivery.phase] ?? 0) + hours
     }
   }
   return result

@@ -2,6 +2,7 @@ import { expect, vi } from 'vitest'
 import { createCompatibleRuntimeStatusResponseIfNeeded } from '@/runtime/runtime-compatibility-test-fixture'
 import { clearRuntimeCompatibilityCacheForTests } from '@/runtime/runtime-rpc-client'
 import { resetRemoteRuntimeTerminalMultiplexersForTests } from '@/runtime/remote-runtime-terminal-multiplexer'
+import type { RuntimeEnvironmentStatus } from '@/store/slices/runtime-status-types'
 
 type TestMock = ReturnType<typeof vi.fn>
 
@@ -40,6 +41,7 @@ export type AgentBackgroundSessionTestState = {
   terminalLayoutsByTabId: Record<string, { ptyIdsByLeafId?: Record<string, string | undefined> }>
   ptyIdsByTabId: Record<string, string[]>
   sshConnectionStates: Map<string, { status: string }>
+  runtimeStatusByEnvironmentId: Map<string, RuntimeEnvironmentStatus>
   transientClearedAgentStatusConnectionIds: Record<string, true>
   allWorktrees: () => { id: string; repoId: string; path: string }[]
   getKnownWorktreeById: (worktreeId: string) => { id: string; path: string } | undefined
@@ -105,6 +107,7 @@ export function createAgentBackgroundSessionTestState(mocks: {
     >,
     ptyIdsByTabId: {} as Record<string, string[]>,
     sshConnectionStates: new Map<string, { status: string }>(),
+    runtimeStatusByEnvironmentId: new Map<string, RuntimeEnvironmentStatus>(),
     transientClearedAgentStatusConnectionIds: {} as Record<string, true>,
     allWorktrees: () => state.worktreesByRepo['repo-1'],
     getKnownWorktreeById: (worktreeId: string) =>
@@ -151,6 +154,7 @@ export function resetAgentBackgroundSessionTestState(state: AgentBackgroundSessi
   state.terminalLayoutsByTabId = {}
   state.ptyIdsByTabId = {}
   state.sshConnectionStates = new Map()
+  state.runtimeStatusByEnvironmentId = new Map()
   state.transientClearedAgentStatusConnectionIds = {}
   // Why: restored here so a test that stubs folder-workspace lookup cannot leak it forward.
   state.getKnownWorktreeById = (worktreeId: string) =>
@@ -231,7 +235,9 @@ export function resetAgentBackgroundSessionTestHarness(args: {
   args.runtimeTransportCall.mockImplementation(
     (request) =>
       createCompatibleRuntimeStatusResponseIfNeeded(request) ??
-      (args.runtimeCall as unknown as (value: unknown) => unknown)(request)
+      (request.method === 'settings.get'
+        ? { ok: true, result: { settings: args.state.settings } }
+        : (args.runtimeCall as unknown as (value: unknown) => unknown)(request))
   )
   resetAgentBackgroundSessionTestState(args.state)
   // Why: production reserves the tab id before the spawn; honoring options.id mirrors createTab's adoption contract.

@@ -49,3 +49,25 @@ export function automationHostFilterForEntry(
 export function automationHostSearchText(entry: AutomationHostCatalogEntry): string {
   return `${entry.authorityLabel} ${entry.label}`.toLocaleLowerCase()
 }
+
+/**
+ * Narrows grouped entries to those whose authority or host label contains the
+ * query (case-insensitive). Groups left with no matches are dropped so a search
+ * never shows an empty authority header; a blank query returns every group
+ * unchanged so the picker shows everything by default.
+ */
+export function filterAutomationHostGroupsByQuery(
+  groups: readonly AutomationHostPickerGroup[],
+  query: string
+): AutomationHostPickerGroup[] {
+  const normalized = query.trim().toLocaleLowerCase()
+  if (!normalized) {
+    return [...groups]
+  }
+  return groups
+    .map((group) => ({
+      ...group,
+      entries: group.entries.filter((entry) => automationHostSearchText(entry).includes(normalized))
+    }))
+    .filter((group) => group.entries.length > 0)
+}

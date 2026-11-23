@@ -11,15 +11,19 @@ export const CHARTER_BRANCH = 'bw/project'
 
 export type ProjectCharter = {
   name: string
+  owner?: string
   kind: string
   brief: string
   benchmark: string
-  /** UI「目标方向」；仓文件字段名 opportunity */
+  /** UI「愿景」；仓文件字段名 opportunity */
   opportunity: string
+  /** WeLink project group ID stored as [chat].group_id. */
+  groupId?: string
 }
 
 export const EMPTY_CHARTER: ProjectCharter = {
   name: '',
+  owner: '',
   kind: '',
   brief: '',
   benchmark: '',
@@ -38,7 +42,7 @@ function quote(value: string): string {
   return JSON.stringify(value)
 }
 
-/** Minimal TOML top-level string fields (ignores [chat] tables). */
+/** Read the charter fields and the project group used by the acceptance workflow. */
 export function parseProjectToml(raw: string): ProjectCharter {
   const out: ProjectCharter = { ...EMPTY_CHARTER }
   const source = parse(raw)
@@ -52,24 +56,30 @@ export function parseProjectToml(raw: string): ProjectCharter {
     }
     out[field] = value
   }
+  const chat = source.chat
+  if (chat && typeof chat === 'object' && 'group_id' in chat && typeof chat.group_id === 'string') {
+    out.groupId = chat.group_id
+  }
   return out
 }
 
 export function renderProjectToml(file: ProjectCharter): string {
   return [
     `name = ${quote(file.name)}`,
+    `owner = ${quote(file.owner ?? '')}`,
     `kind = ${quote(file.kind)}`,
     `brief = ${quote(file.brief)}`,
     `benchmark = ${quote(file.benchmark)}`,
     `opportunity = ${quote(file.opportunity)}`,
     '',
-    '# 项目群没配。配了就在这里加一段 [chat]。',
+    ...(file.groupId?.trim() ? ['[chat]', `group_id = ${quote(file.groupId.trim())}`] : []),
     ''
   ].join('\n')
 }
 
 const CHARTER_FIELD_KEYS: readonly { field: keyof ProjectCharter; keys: readonly string[] }[] = [
   { field: 'name', keys: ['name'] },
+  { field: 'owner', keys: ['owner'] },
   { field: 'kind', keys: ['kind'] },
   { field: 'brief', keys: ['brief'] },
   { field: 'benchmark', keys: ['benchmark'] },
@@ -106,7 +116,7 @@ export function fillBlankCharterInToml(
   }
   const filled: string[] = []
   for (const { field, keys } of CHARTER_FIELD_KEYS) {
-    const wanted = intent[field].trim()
+    const wanted = (intent[field] ?? '').trim()
     if (!wanted) {
       continue
     }

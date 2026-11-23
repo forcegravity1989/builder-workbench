@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>团队多人协作 · 操作旅程</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css">
+    <style>
+      body { margin: 0; }
+      .review-frame { width: min(100%, 1450px); margin: 0 auto; padding: 18px clamp(10px, 2vw, 28px) 34px; }
+      .review-header { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+      .review-header h1 { font-size: 19px; margin: 0 0 3px; }
+      .review-header p, .field-note, small { color: var(--muted-foreground); }
+      .review-header p, .references, .field-note, small { font-size: 12px; }
+      .review-header p { margin: 0; }
+      .review-header .input { width: auto; }
+      .row { display: flex; align-items: center; gap: 7px; }
+      .between { justify-content: space-between; }
+      .wrap { flex-wrap: wrap; }
+      .references { color: var(--muted-foreground); margin-top: 14px; }
+      .references a { text-decoration: underline; text-underline-offset: 2px; }
+      .preview { position: relative; }
+      .window { position: relative; border: 1px solid var(--worktree-sidebar-border); border-radius: var(--radius-lg); background: var(--background); overflow: hidden; }
+      .window h1 { margin: 0; font-size: 22px; line-height: 1.3; }
+      .window h2, .window h3 { margin: 0; font-size: 15px; line-height: 1.4; }
+      .window h2 small, .window p, .dialog-form p { margin: 6px 0; }
+      .titlebar { display: flex; justify-content: space-between; align-items: center; height: 36px; color: var(--muted-foreground); font-size: 12px; background: var(--worktree-sidebar); border-bottom: 1px solid var(--worktree-sidebar-border); padding-left: 6px; }
+      .window-controls { gap: 0; }
+      .title-logo { width: 16px; height: 16px; object-fit: contain; margin: 0 4px; }
+      .quiet-icon { cursor: default; }
+      .desktop, .left-body { display: flex; min-width: 0; }
+      .desktop { min-height: 548px; }
+      .left-workspace { display: flex; flex-direction: column; flex: none; }
+      .left-body, .main-pane { flex: 1; min-width: 0; }
+      .icon-button { display: inline-grid; width: 32px; height: 32px; place-items: center; flex: none; padding: 0; border: 0; background: transparent; color: var(--muted-foreground); border-radius: var(--radius-sm); cursor: pointer; }
+      button.icon-button:hover, .icon-button.selected { background: var(--accent); color: var(--foreground); }
+      .icon-button:disabled { opacity: 0.4; cursor: default; }
+      .icon-button[data-permission-hint] { opacity: 0.65; }
+      .icon-button[data-permission-hint]:hover, .icon-button[data-permission-hint]:focus-visible { opacity: 1; }
+      .icon-button:focus-visible, .pcard-host:focus-visible, .pcard-name:focus-visible, .notice-item:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+      .proposed { color: var(--foreground); }
+      .rail { position: relative; width: 64px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; border-right: 1px solid var(--worktree-sidebar-border); background: var(--worktree-sidebar); padding: 10px 0; }
+      .rail .icon-button { width: 40px; height: 40px; border-radius: 9px; }
+      .rail .icon-button svg { width: 18px; height: 18px; }
+      .rail > .icon-button:first-child { width: 36px; height: 36px; background: var(--foreground); color: var(--background); }
+      .rail > .icon-button:first-child svg { width: 16px; height: 16px; }
+      .rail-group, .rail-bottom { display: grid; justify-items: center; gap: 4px; width: 100%; }
+      .rail-group { border-top: 1px solid var(--worktree-sidebar-border); padding-top: 6px; }
+      .rail-bottom { margin-top: auto; gap: 0; }
+      .remote-host-popover { position: absolute; left: calc(100% + 8px); bottom: 10px; z-index: 6; width: min(300px, calc(100vw - 86px)); padding: 10px; color: var(--foreground); background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-dialog); }
+      .remote-host-popover header { padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+      .remote-host-popover footer { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--border); }
+      .remote-host-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 2px; }
+      .remote-host-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+      .remote-host-main span:last-child { display: grid; gap: 2px; min-width: 0; }
+      .remote-host-main strong, .remote-host-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .remote-host-dot { width: 7px; height: 7px; flex: none; border: 1px solid var(--muted-foreground); border-radius: 50%; }
+      .remote-host-dot.is-connected { border-color: var(--status-success); background: var(--status-success); }
+      .wall-layout { display: flex; min-height: 548px; }
+      .wall { min-width: 0; flex: 1; padding: 24px; }
+      .wall-heading { gap: 10px; flex-wrap: wrap; }
+      .wall-heading small { margin-left: 6px; font-weight: 400; }
+      .wall-actions, .pcard-actions { display: flex; align-items: center; gap: 2px; }
+      .wall-filters { margin: 12px 0 26px; flex-wrap: wrap; }
+      .wall-filters > .input { width: 190px; }
+      .options { flex-wrap: wrap; padding: 4px; color: var(--muted-foreground); font-size: 12px; }
+      .options > span { padding: 4px 6px; }
+      .options > span:first-child { background: var(--muted); border-radius: var(--radius-sm); color: var(--foreground); }
+      .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); margin-top: 10px; gap: 14px; }
+      .pcard { border: 1px solid var(--border); border-radius: 12px; background: var(--card); min-width: 0; }
+      .pcard-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; padding: 16px 16px 8px; }
+      .pcard-name, .pcard-host, .notice-item { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+      .pcard-name { min-width: 90px; flex: 1; font-size: 15px; font-weight: 600; }
+      .pcard-actions .icon-button { width: 27px; height: 28px; }
+      .pcard-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 0 16px 14px; min-height: 36px; color: var(--muted-foreground); font-size: 11px; }
+      .pcard-owner strong { color: var(--foreground); font-weight: 500; }
+      .pcard-source, .field-note { display: inline-flex; align-items: center; gap: 5px; }
+      .pcard-host:hover { color: var(--foreground); }
+      .pcard-owner { display: inline-flex; align-items: baseline; gap: 6px; }
+      .pcard-muted { color: var(--muted-foreground); }
+      .pcard-source-dot.is-offline { background: transparent; border: 1px solid var(--muted-foreground); }
+      .source-access { color: var(--foreground); background: var(--muted); padding: 1px 4px; border-radius: var(--radius-sm); }
+      .pcard-source-dot, .tree-dot { width: 5px; height: 5px; border-radius: 50%; flex: none; background: var(--status-success); }
+      .pcard-delivery { margin: 0 16px; padding: 14px 0; min-height: 104px; border-top: 1px solid var(--border); font-size: 12px; }
+      .pcard-version { color: var(--muted-foreground); font-size: 11px; }
+      .pcard-delivery ul { margin: 8px 0 0; padding-left: 16px; line-height: 1.65; }
+      .pcard-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
+      .pcard-stages b { display: block; color: var(--foreground); margin-top: 3px; font-weight: 500; }
+      .empty-wall { display: grid; place-items: center; text-align: center; gap: 7px; padding: 112px 10px 36px; color: var(--muted-foreground); }
+      .empty-wall h2 { font-size: 19px; color: var(--foreground); }
+      .project-settings { width: min(400px, 43%); flex: none; padding: 19px 16px; border-left: 1px solid var(--border); }
+      .project-settings > header { margin-bottom: 14px; }
+      .project-settings > header h2 { font-size: 18px; }
+      .settings-type, .muted-frame { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; }
+      .settings-type label { font-size: 13px; }
+      .settings-type .input { margin-top: 6px; }
+      .muted-frame dl { display: grid; grid-template-columns: minmax(64px, 28%) 1fr; gap: 6px 9px; font-size: 12px; }
+      .muted-frame dt { color: var(--muted-foreground); }
+      .muted-frame dd { margin: 0; }
+      .overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; z-index: 4; background: color-mix(in srgb, var(--foreground) 27%, transparent); }
+      .surface-dialog, dialog.dialog { width: min(560px, 100%); min-width: 0; max-height: calc(100% - 12px); overflow: auto; color: var(--foreground); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-dialog); }
+      .surface-dialog.compact, dialog.dialog { width: min(448px, 100%); }
+      dialog.dialog { max-width: calc(100% - 24px); margin: auto; }
+      dialog.dialog:not([open]) { display: none; }
+      dialog.dialog::backdrop { background: color-mix(in srgb, var(--foreground) 28%, transparent); }
+      .surface-dialog h2, .dialog-form h2 { font-size: 18px; margin: 0; }
+      .dialog-form .field, .pair-form .field { display: grid; gap: 5px; margin-top: 10px; }
+      .grant-row small { display: block; }
+      .team-group { margin-top: 12px; }
+      .table-scroll { overflow: auto; margin-top: 6px; }
+      .table { min-width: 330px; }
+      .check-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
+      .worktree-sidebar, .settings-nav { width: clamp(175px, 20vw, 280px); flex: none; background: var(--worktree-sidebar); border-right: 1px solid var(--worktree-sidebar-border); padding: 10px; }
+      .project-header { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+      .project-header small { display: block; }
+      .project-avatar { display: grid; place-items: center; width: 28px; height: 28px; background: var(--foreground); color: var(--background); border-radius: var(--radius); }
+      .sidebar-heading, .quiet-tree { display: flex; align-items: center; gap: 6px; padding: 5px 8px; font-size: 12px; color: var(--muted-foreground); }
+      .sidebar-heading svg, .menu svg { width: 14px; height: 14px; }
+      .workspace-row { position: relative; border-radius: var(--radius); padding: 3px 7px 6px; background: var(--worktree-sidebar-accent); }
+      .workspace-row strong { min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+      .workspace-row .icon-button { margin-left: auto; width: 26px; height: 26px; }
+      .workspace-row small { padding-left: 12px; }
+      .menu { position: absolute; top: 30px; left: 25px; z-index: 3; width: 190px; display: grid; padding: 5px; color: var(--foreground); background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-dialog); }
+      .menu > span, .menu > small { padding: 5px 7px; display: flex; align-items: center; gap: 6px; font-size: 12px; }
+      .menu .btn { justify-content: flex-start; }
+      .menu hr { width: 100%; border: 0; border-top: 1px solid var(--border); }
+      .workspace-tabs { display: flex; justify-content: space-between; min-height: 36px; padding: 2px 8px; border-bottom: 1px solid var(--border); }
+      .workspace-tabs .row { flex-wrap: wrap; }
+      .readonly, .permission-hint { display: inline-flex; gap: 5px; align-items: center; background: var(--muted); border-radius: var(--radius-sm); padding: 4px 7px; font-size: 12px; }
+      .session-preview { padding: 28px clamp(12px, 5vw, 74px); }
+      .session-preview pre { white-space: pre-wrap; }
+      .quiet-lines { display: grid; gap: 9px; margin: 22px 0; max-width: 68ch; }
+      .quiet-lines i { display: block; height: 7px; border-radius: 4px; background: var(--muted); }
+      .quiet-lines i:nth-child(2) { width: 90%; }
+      .quiet-lines i:nth-child(3) { width: 70%; }
+      .recipient-list { padding: 9px; border: 1px solid var(--border); border-radius: var(--radius); }
+      .recipient-list label { padding: 9px 4px 2px; display: flex; align-items: center; gap: 8px; }
+      .recipient-list label[hidden] { display: none; }
+      .review-trigger, .review-popover { position: absolute; right: 14px; z-index: 2; border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow-dialog); border-radius: var(--radius); }
+      .review-trigger { bottom: 13px; }
+      .count { position: absolute; top: -6px; right: -5px; background: var(--foreground); color: var(--background); border-radius: 99px; min-width: 14px; text-align: center; font-size: 10px; }
+      .review-popover { bottom: 54px; width: min(320px, calc(100% - 28px)); padding: 10px; }
+      .review-popover h3 { margin: 7px 0; font-size: 13px; }
+      .notice-item { display: grid; width: 100%; gap: 5px; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; font-size: 12px; }
+      .notice-item:hover { background: var(--muted); }
+      .task-layout { display: grid; grid-template-columns: minmax(175px, 28%) 1fr; min-height: 100%; }
+      .task-list, .task-detail { padding: 20px; }
+      .task-list { border-right: 1px solid var(--border); }
+      .task-detail > .row, .task-list h2 { margin-bottom: 10px; }
+      .settings-nav > .btn { width: 100%; justify-content: flex-start; }
+      .settings-search { display: flex; align-items: center; gap: 5px; margin: 12px 3px; padding: 6px 8px; background: var(--background); border-radius: var(--radius-sm); color: var(--muted-foreground); font-size: 12px; }
+      .settings-main { flex: 1; min-width: 0; max-width: 896px; margin: 0 auto; padding: 24px; }
+      .settings-main h1 { margin-bottom: 12px; }
+      .server-workflows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 11px; }
+      .server-workflows button { min-width: 0; white-space: normal; border: 1px solid var(--border); }
+      .share-intent { margin: 0 0 12px; padding: 0; border: 0; }
+      .share-intent legend { margin-bottom: 7px; font-size: 13px; font-weight: 600; }
+      .share-intent .server-workflows { margin-bottom: 0; }
+      .share-intent .server-workflows label { display: grid; grid-template-columns: auto 1fr; gap: 3px 7px; min-width: 0; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; }
+      .share-intent .server-workflows label:has(input:checked) { border-color: var(--ring); box-shadow: 0 0 0 1px var(--ring); }
+      .share-intent .server-workflows small { grid-column: 2; }
+      .share-address-row { align-items: flex-end; }
+      .share-address-row .field { flex: 1; margin: 0; }
+      .share-address-row > .icon-button { margin-bottom: 2px; }
+      .permission-hint { width: 100%; padding: 7px; }
+      .permission-hint svg { flex: none; }
+      .demo-link { margin-top: 8px; }
+      .grant-row { padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+      .grant-row + .grant-row { margin-top: 5px; }
+      .grant-toolbar { margin-bottom: 6px; padding: 2px 0; color: var(--muted-foreground); font-size: 12px; }
+      .grant-select { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; }
+      .audit-pane .table { min-width: 445px; }
+      .audit-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 10px 0; }
+      .audit-filters > .field { flex: 1 1 110px; margin: 0; }
+      .audit-filters > .audit-search { flex-basis: 170px; }
+      .audit-filters .input { width: 100%; min-width: 0; }
+      .proto-status:empty { display: none; }
+      .proto-status { position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%); z-index: 5; margin: 0; padding: 6px 10px; background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; pointer-events: none; }
+      @media (max-width: 760px) {
+        .rail { width: 43px; }
+        .rail .icon-button { width: 31px; height: 34px; }
+        .wall { padding: 12px; }
+        .wall-layout:has(.project-settings) > .wall { display: none; }
+        .project-settings { width: 100%; }
+        .worktree-sidebar { width: 130px; padding: 5px; }
+        .settings-nav { width: 115px; padding: 5px; }
+        .settings-nav .btn { white-space: normal; justify-content: flex-start; }
+        .settings-main, .task-list, .task-detail { padding: 10px; }
+        .server-workflows { grid-template-columns: 1fr; }
+        .task-layout { grid-template-columns: 1fr; }
+      }
+      .team-directory { width: min(920px, 100%); display: flex; flex-direction: column; overflow: hidden; }
+      .team-bind-dialog { width: min(520px, 100%); }
+      .team-directory > header, .directory-footer { flex: none; }
+      .directory-scroll { min-height: 0; max-height: 58vh; overflow: auto; padding: 0 3px; }
+      .directory-footer { padding-top: 8px; border-top: 1px solid var(--border); }
+      @media (min-width: 761px) { .window[data-screen="wall"]:has(.team-directory) .desktop { min-height: 548px; } }
+      .team-directory .members-table { min-width: 760px; table-layout: fixed; }
+      .team-directory .members-table th:nth-child(1) { width: 190px; }
+      .team-directory .members-table th:nth-child(2) { width: auto; }
+      .directory-links { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
+      .directory-links > div:first-child { display: grid; gap: 2px; }
+      .directory-links strong, .directory-links small { display: block; }
+      .directory-links .row { align-items: center; gap: 8px; }
+      .directory-id-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .directory-id-field { display: grid; min-width: 0; gap: 4px; flex: 1; }
+      .directory-id-field small { color: var(--muted-foreground); }
+      .directory-tip { color: var(--muted-foreground); }
+      .team-avatar { width: 32px; height: 32px; object-fit: cover; border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--border); }
+      .member-person { gap: 10px; }
+      .member-person strong { display: block; font-size: 13px; }
+      .member-role { display: block; margin-top: 2px; }
+      .member-number { display: block; overflow-wrap: anywhere; }
+      .host-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+      .host-cell small { width: 100%; }
+      .host-cell > .row small { width: auto; }
+      .host-cell > .row.wrap { width: 100%; gap: 6px; }
+      .member-address { flex: 1 1 180px; min-width: 0; }
+      .host-actions { display: inline-flex; flex: none; gap: 4px; }
+      .directory-project-head, .directory-footer { margin-top: 14px; }
+      .directory-projects { min-width: 610px; }
+      .directory-projects td:first-child { max-width: 230px; }
+      .catalog-json { overflow: auto; max-height: 55vh; font-size: 12px; }
+      .participants { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius); }
+      .participants > legend { padding: 0 4px; }
+      .pcard-host:disabled { cursor: default; opacity: 0.8; }
+      .team-wall-label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+      .walkthrough { margin: 0 0 10px; font-size: 12px; }
+      .walkthrough li { margin-bottom: 5px; }
+    </style>
+    <script src="prototype/journey.js" defer></script>
+  </head>
+  <body>
+    <main class="review-frame">
+      <header class="review-header">
+        <div><h1>团队多人协作</h1><p><em>原型注释：</em>屏内是目标界面。未绑定的桌面看不到神盾局；群号 <code>938583054774198541</code>。绑定时通过 welink-cli 用当前 WeLink 身份匹配成员、头像和主机。项目墙沿用当前 BW 墙卡；登记项目只决定它是否是团队项目，成员项目墙上的实际来源仍由各主机提供。主机地址登记后会自动出现在成员的连接目标里，连接保持断开。</p></div>
+        <div class="row wrap">
+          <label for="actor">模拟桌面</label>
+          <select id="actor" class="input">
+            <option value="lead">韩岚 · 群主（本机无仓）</option>
+            <option value="lin">林安 · Builder</option>
+            <option value="chen">陈远 · Builder</option>
+          </select>
+          <button class="btn btn-ghost" data-action="reset">从头开始</button>
+          <button class="btn btn-ghost" data-action="sample">载入双主机样例</button>
+          <button class="btn btn-ghost" data-action="reopen">重新打开 BW</button>
+          <button class="btn btn-ghost" data-action="theme">明暗</button>
+        </div>
+      </header>
+      <details class="walkthrough">
+        <summary>原型注释：操作路线</summary>
+        <ol>
+          <li>「从头开始」。韩岚首次先输入群 ID；如果没有已登记的群空间目录，再在弹窗中补填群空间 ID。绑定后本机记住这组绑定，重新打开 BW 可直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
+          <li>林安绑定同一群号。项目墙保留当前 BW 的「添加项目」入口，团队设置也提供「登记项目」。登记星图服务后，项目身份写入群空间。</li>
+          <li>陈远绑定该群后，BW 根据已登记的 repoId 和各主机项目墙上的实际来源合并成一张现有样式的项目卡。他不需要重复登记星图服务，「交付看板」仍是他的个人项目。</li>
+          <li>在团队设置的本机地址栏点击「一键生成并填入」；已有 Orca 配置时按钮变为「一键填入」。群成员随后自动看到地址和连接目标，连接默认保持断开，建立连接后默认只读。</li>
+          <li>项目卡保留现有 BW 的主机状态；未连接来源只显示离线状态。需要连接时，从左下角「管理远程主机」进入 Orca 远程服务器设置，建立连接后再回到项目卡查看。</li>
+          <li>陈远在自己的 Orca 共享访问列表中勾选林安等已连接设备，一次授予完全访问。未选设备仍只读；完全访问后可在该项目下新建会话或新建工作树。访问日志只由被访问主机持有人筛选查看，超过 14 天自动清理。</li>
+        </ol>
+      </details>
+      <div class="preview"><div id="surface"></div><p class="proto-status" id="status" role="status" aria-live="polite"></p></div>
+      <details class="references">
+        <summary>原型注释：复用位置与演示范围</summary>
+        <p>页头动作沿用 <a href="../../../src/renderer/src/workbench/WorkbenchIconButton.tsx">WorkbenchIconButton</a> 和现有 Lucide 图标。团队设置采用同尺寸的 UsersRound 图标，放在<a href="../../../src/renderer/src/workbench/ProjectWallPage.tsx">项目墙原远程主机操作入口</a>的位置。项目卡片复用当前 ProjectWallCard 的布局和操作，不增加团队专用卡片动作。原“批量导入主机”的页头入口改为同位置的 UsersRound“团队设置”入口。</p>
+        <p>窗口、墙卡右栏、评审入口与远程设置分别对应 <a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/ProjectSettingsRail.tsx">ProjectSettingsRail</a>、<a href="../../../src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx">发送评审</a>及<a href="../../../src/renderer/src/components/settings/RuntimeEnvironmentsPane.tsx">远程 Orca 服务器</a>。浅化的是这条旅程周边的原生内容。</p>
+        <p>样例在浏览器内模拟按群号查群、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。群空间跳转目标等待实际内网接口提供，不使用虚构地址。团队地址、连接和授权复用 Orca 原生共享主机设置；访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">共享服务器访问</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，存于主机的 <code>userData/logs/orca-shared-host/</code> 并按 14 天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
+      </details>
+    </main>
+    <dialog id="dialog" class="dialog" aria-labelledby="dialog-title"></dialog>
+  </body>
+</html>

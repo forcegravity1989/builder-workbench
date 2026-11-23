@@ -3,11 +3,12 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import type { AddRepoExistingWorkspaceSource } from '../../../../shared/telemetry-events'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo, RepoCloneProgress } from '../../../../shared/repo-types'
 import { getCloneDestinationAutoFill } from './clone-defaults'
 import type { AddRepoDialogStep } from './add-repo-dialog-types'
 import { translate } from '@/i18n/i18n'
 import { extractIpcErrorMessage } from '@/lib/ipc-error'
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { upsertAddedRepoWithProjectHostSetup } from './add-repo-store-upsert'
 import { worktreeRefreshOptions } from './add-repo-runtime-owner'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
@@ -37,7 +38,7 @@ export function useAddRepoCloneFlow({
   cloneUrl: string
   cloneDestination: string
   cloneError: string | null
-  cloneProgress: { phase: string; percent: number } | null
+  cloneProgress: RepoCloneProgress | null
   isCloning: boolean
   setCloneUrl: Dispatch<SetStateAction<string>>
   setCloneDestination: Dispatch<SetStateAction<string>>
@@ -50,9 +51,8 @@ export function useAddRepoCloneFlow({
   const [cloneDestination, setCloneDestination] = useState('')
   const [isCloning, setIsCloning] = useState(false)
   const [cloneError, setCloneError] = useState<string | null>(null)
-  const [cloneProgress, setCloneProgress] = useState<{ phase: string; percent: number } | null>(
-    null
-  )
+  const [cloneProgress, setCloneProgress] = useState<RepoCloneProgress | null>(null)
+  const cloneProgressIdRef = useRef<string | undefined>(undefined)
   const hostToken = `${activeRuntimeEnvironmentId?.trim() ?? ''}:${sshTargetId?.trim() ?? ''}`
   const hostTokenRef = useRef(hostToken)
   hostTokenRef.current = hostToken
@@ -66,7 +66,11 @@ export function useAddRepoCloneFlow({
     if (!isCloning) {
       return
     }
-    return window.api.repos.onCloneProgress(setCloneProgress)
+    return window.api.repos.onCloneProgress((progress) => {
+      if (progress.progressId === cloneProgressIdRef.current) {
+        setCloneProgress((current) => (current?.percent === null ? current : progress))
+      }
+    })
   }, [isCloning])
 
   const cloneDestinationAutoFill = getCloneDestinationAutoFill({
@@ -132,6 +136,10 @@ export function useAddRepoCloneFlow({
             ...useAppStore.getState().settings,
             activeRuntimeEnvironmentId: null
           })
+      // Why: a cancelled local attempt may still report progress during a retry.
+      const progressId =
+        !sshTargetId?.trim() && target.kind !== 'environment' ? createBrowserUuid() : undefined
+      cloneProgressIdRef.current = progressId
       const repo = sshTargetId?.trim()
         ? await window.api.repos.cloneRemote({
             connectionId: sshTargetId.trim(),
@@ -152,11 +160,13 @@ export function useAddRepoCloneFlow({
             ).repo
           : ((await window.api.repos.clone({
               url: trimmedUrl,
-              destination: cloneDestination.trim()
+              destination: cloneDestination.trim(),
+              progressId
             })) as Repo)
       if (gen !== cloneGenRef.current || requestHostToken !== hostTokenRef.current) {
         return
       }
+      setCloneProgress({ phase: 'importing', percent: null })
       const { repo: ownedRepo } = upsertAddedRepoWithProjectHostSetup(repo, {
         runtimeEnvironmentId: activeRuntimeEnvironmentId,
         sshConnectionId: sshTargetId

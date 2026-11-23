@@ -13,7 +13,7 @@ import {
   type FeatureData
 } from './feature-model'
 
-import { applyVersionEvidence, type OverviewVersionPlan } from './version-evidence'
+import { applyVersionEvidence } from './version-evidence'
 import { readVersionEvidence } from './read-version-evidence'
 import { mapLimit, readFeatureEvidence } from './read-feature-evidence'
 import { featureHistoryScopes } from './feature-history-scope'
@@ -128,21 +128,20 @@ export async function readOverviewFeatures(
     archive: current?.archive,
     confirmation: planSource === 'committed' ? current?.confirmation : undefined
   })
-  // Failed materials may still have catalog references, but cannot supply verified goal scope.
-  const relationEntries: OverviewVersionPlan[] = [
-    ...entries,
-    ...(catalog.catalog?.entries ?? [])
-      .filter((entry) => !entries.some((read) => read.version === entry.version))
-      .map((entry) => ({
-        version: entry.version,
-        tasks: entry.tasks,
-        goals: [],
-        source:
-          entry.material.plan || entry.material.acceptance
-            ? ('committed' as const)
-            : ('draft' as const)
-      }))
-  ]
+  const acceptedReferences = new Map(
+    versionEvidence.records.map((record) => [record.version, record.plan.tasks])
+  )
+  const relationEntries = entries.map((entry) => ({
+    ...entry,
+    tasks: [
+      ...new Map(
+        [...entry.tasks, ...(acceptedReferences.get(entry.version) ?? [])].map((task) => [
+          taskKey(task),
+          task
+        ])
+      ).values()
+    ]
+  }))
   const cutoff = historical ? before : undefined
   const discovery = featureHistoryScopes(relationEntries, roots, version, reads, cutoff)
   await readTasks(discovery.candidates.filter((ref) => !failures.has(taskKey(ref))))

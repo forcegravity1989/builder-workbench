@@ -10,10 +10,19 @@ import {
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import {
+  repoMatchesRemovalRegistration,
+  selectRepoRemovalHostLabel
+} from '@/store/repos/repo-removal-registration'
+import type { Repo } from '../../../../shared/repo-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   getRepoExecutionHostId,
+  getSshTargetIdForExecutionHost,
   isRuntimeOwnedSshTargetId,
-  type ExecutionHostId
+  normalizeExecutionHostId,
+  parseExecutionHostId
 } from '../../../../shared/execution-host'
 
 // Why: interpolated into the sentence so locales control where the name sits;
@@ -29,7 +38,23 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   const isOpen = activeModal === 'confirm-remove-folder'
   const repoId = typeof modalData.repoId === 'string' ? modalData.repoId : ''
   const displayName = typeof modalData.displayName === 'string' ? modalData.displayName : ''
-  const hostId = typeof modalData.hostId === 'string' ? (modalData.hostId as ExecutionHostId) : null
+  const hostId = normalizeExecutionHostId(
+    typeof modalData.hostId === 'string' ? modalData.hostId : null
+  )
+  const workbench = isWorkbenchShell()
+  const selectedRepo = useAppStore((s) =>
+    hostId ? findRepoForHost(s.repos, repoId, { hostId }) : null
+  )
+  const confirmed = modalData.projectRemovalRegistration as Repo | null | undefined
+  const confirmedRepo = confirmed ?? selectedRepo
+  const hostLabel = useAppStore((s) =>
+    workbench && confirmedRepo ? selectRepoRemovalHostLabel(s, confirmedRepo) : null
+  )
+  const targetUnavailable =
+    workbench &&
+    (!selectedRepo ||
+      confirmed === null ||
+      Boolean(confirmed && !repoMatchesRemovalRegistration(selectedRepo, confirmed)))
 
   // Why: for an SSH project the files live on the remote host's disk, not the
   // user's — "still on your disk" would be misleading. Name the host (using the
@@ -37,9 +62,11 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   // and that re-adding that host recovers it.
   const sshConnectionId = useAppStore(
     (s) =>
+      (workbench && hostId ? getSshTargetIdForExecutionHost(hostId) : null) ??
       s.repos
         .find((repo) => repo.id === repoId && (!hostId || getRepoExecutionHostId(repo) === hostId))
-        ?.connectionId?.trim() ?? null
+        ?.connectionId?.trim() ??
+      null
   )
   const sshHostLabel = useAppStore((s) => {
     if (!sshConnectionId) {
@@ -55,34 +82,42 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   // Why: fragment concatenation around the styled name cannot be reordered by
   // SOV locales (#9294). Translate one full sentence with the name as a
   // sentinel token, then split on it to re-apply the inline emphasis.
-  const description = isRuntimeOwnedSshTargetId(sshConnectionId)
-    ? translate(
-        'auto.components.sidebar.RemoveFolderDialog.removeDescriptionVmRecipe',
-        'This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted.',
-        { name: NAME_TOKEN }
-      )
-    : sshHostLabel
+  const description =
+    workbench && parseExecutionHostId(hostId)?.kind === 'runtime'
       ? translate(
-          'auto.components.sidebar.RemoveFolderDialog.removeDescriptionSsh',
-          'This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.',
-          { name: NAME_TOKEN, host: sshHostLabel }
-        )
-      : translate(
-          'auto.components.sidebar.RemoveFolderDialog.removeDescriptionLocal',
-          'This only removes {{name}} from Orca. It is still on your disk.',
+          'auto.components.sidebar.RemoveFolderDialog.removeDescriptionRuntime',
+          'Remove the registration for {{name}} on this host. Its files stay on that host.',
           { name: NAME_TOKEN }
         )
+      : isRuntimeOwnedSshTargetId(sshConnectionId)
+        ? translate(
+            'auto.components.sidebar.RemoveFolderDialog.removeDescriptionVmRecipe',
+            'This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted.',
+            { name: NAME_TOKEN }
+          )
+        : sshHostLabel
+          ? translate(
+              'auto.components.sidebar.RemoveFolderDialog.removeDescriptionSsh',
+              'This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.',
+              { name: NAME_TOKEN, host: sshHostLabel }
+            )
+          : translate(
+              'auto.components.sidebar.RemoveFolderDialog.removeDescriptionLocal',
+              'This only removes {{name}} from Orca. It is still on your disk.',
+              { name: NAME_TOKEN }
+            )
   const [descriptionBeforeName, descriptionAfterName] = description.split(NAME_TOKEN)
 
   const handleConfirm = useCallback(() => {
-    if (repoId) {
+    if (repoId && !targetUnavailable) {
       void removeProject(repoId, {
         ...(hostId ? { hostId } : {}),
+        ...(confirmed ? { expectedRegistration: confirmed } : {}),
         errorFeedback: 'toast'
       })
     }
     closeModal()
-  }, [closeModal, hostId, removeProject, repoId])
+  }, [closeModal, confirmed, hostId, removeProject, repoId, targetUnavailable])
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -101,16 +136,30 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
             {translate('auto.components.sidebar.RemoveFolderDialog.b79b39d865', 'Remove Project')}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            {descriptionBeforeName}
-            <span className="break-all font-medium text-foreground">{displayName}</span>
-            {descriptionAfterName}
+            {targetUnavailable ? (
+              translate(
+                'auto.components.sidebar.RemoveFolderDialog.registrationUnavailable',
+                'This project registration is no longer available. Check the project list.'
+              )
+            ) : (
+              <>
+                {descriptionBeforeName}
+                <span className="break-all font-medium text-foreground">{displayName}</span>
+                {descriptionAfterName}
+              </>
+            )}
+            {workbench && selectedRepo && hostLabel && (
+              <span className="mt-2 block break-all font-medium text-foreground">
+                {hostLabel} · {confirmed?.path ?? selectedRepo.path}
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {translate('auto.components.sidebar.RemoveFolderDialog.d36883e046', 'Cancel')}
           </Button>
-          <Button variant="destructive" onClick={handleConfirm}>
+          <Button variant="destructive" onClick={handleConfirm} disabled={targetUnavailable}>
             {translate('auto.components.sidebar.RemoveFolderDialog.4dc5b5065b', 'Remove')}
           </Button>
         </DialogFooter>

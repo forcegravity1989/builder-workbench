@@ -4,6 +4,11 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { BrowserAnnotationSendMenuContent } from './BrowserAnnotationSendMenuContent'
 
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenuCheckboxItem: 'checkbox',
+  DropdownMenuSeparator: 'hr'
+}))
+
 type ReactElementLike = {
   type: unknown
   props: Record<string, unknown>
@@ -79,6 +84,8 @@ describe('BrowserAnnotationSendMenuContent', () => {
         worktreeId="wt-1"
         groupId="group-1"
         prompt="browser annotation prompt"
+        includePageDetails={false}
+        onIncludePageDetailsChange={vi.fn()}
         onPromptDelivered={onPromptDelivered}
       />
     )

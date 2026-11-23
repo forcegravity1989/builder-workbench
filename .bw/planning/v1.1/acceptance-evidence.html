@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v1.1 验收证据报告</title>
+<style>
+  body { font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; max-width: 1180px; margin: 20px auto; padding: 0 18px; color: #1f2328; background: #fff; font-size: 14px; line-height: 1.6; }
+  h1 { font-size: 21px; margin: 0 0 10px; }
+  h2 { font-size: 16px; margin: 26px 0 6px; border-bottom: 1px solid #d0d7de; padding-bottom: 4px; }
+  h3 { font-size: 14.5px; margin: 0 0 6px; }
+  .strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .strip span { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 14px; padding: 2px 12px; font-size: 12.5px; color: #424a53; }
+  .howto { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 8px 14px; margin: 10px 0 4px; font-size: 13px; }
+  .owner { color: #8b949e; font-size: 12px; font-weight: 400; margin-left: 8px; }
+  .crit { background: #f6f8fa; border-left: 3px solid #0969da; padding: 6px 12px; margin: 8px 0; font-size: 13px; }
+  .crit ol { margin: 4px 0 4px 20px; padding: 0; }
+  .card { border: 1px solid #d0d7de; border-radius: 10px; padding: 10px 14px 12px; margin: 12px 0; }
+  .pill { font-size: 12px; border-radius: 12px; padding: 1px 10px; background: #eaeef2; color: #424a53; font-weight: 600; }
+  .desc { background: #ddf4ff; border-radius: 6px; padding: 4px 10px; margin: 6px 0; font-size: 13px; }
+  .meta { font-size: 12.5px; color: #57606a; margin: 4px 0; }
+  .meta b { color: #1f2328; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
+  th, td { border: 1px solid #d0d7de; padding: 4px 6px; vertical-align: top; }
+  th { background: #f6f8fa; text-align: left; }
+  img { max-width: 100%; border: 1px solid #d0d7de; border-radius: 6px; }
+  .manual { font-size: 13px; color: #1a7f37; background: #dafbe1; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
+  .pending { font-size: 13px; color: #9a6700; background: #fff8c5; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
+  .gap { font-size: 13px; color: #cf222e; background: #ffebe9; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
+  .mut { color: #57606a; font-size: 12.5px; }
+  code { background: #f6f8fa; padding: 0 4px; border-radius: 4px; font-size: 12px; }
+  a { color: #0969da; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<h1>v1.1 验收证据报告</h1>
+<div class="strip">
+  <span>候选 未固定（验收材料尚无 candidateRef）</span>
+  <span>包 未出包</span>
+  <span>演示环境 未部署</span>
+  <span>生成 2026-11-20 14:58 · 归档时点修订 17:50</span>
+</div>
+<div class="howto">
+  按目标核对每条任务的已有证据。待核对项不阻塞查看；本报告不替代人在验收屏作出的目标结论。
+</div>
+<div class="howto">
+  <b>目标结论现状（验收材料读回）</b>：G3 已由人于 2026-11-20 在验收界面确认达成（decision: met）；G1、G2 尚未判定（无 decision）；会议纪要未确认（minutes.confirmed=false）。
+</div>
+
+<h2>目标 G1：团队多人协作——定义团队成员、项目可见范围与共享主机授权<span class="owner">负责人 yuzhup</span></h2>
+<div class="crit">
+  <b>计划验收判据（原文）</b>
+  <ol>
+    <li>完成特性原型与意图规格入库</li>
+    <li>关键旅程真壳走通：团队/项目群绑定可读回、评审不依赖整机共享可送达并处理</li>
+  </ol>
+  <b>指标目标值（原文）</b>：无
+</div>
+<table>
+  <tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对 / 已确认缺口</th></tr>
+  <tr><td>判据 1：原型与意图规格入库</td><td>#342</td><td>PR #709 已合入（特性目录 + 生产链路代码）；本机 welink-cli 实测与 CI 留痕</td><td>待核对 P1</td></tr>
+  <tr><td>判据 2：团队/项目群绑定可读回</td><td>#342、#552</td><td>PR #709 交付绑定表单与成员读回链路；真实群空间读写未验；#552 已被人关闭（2026-11-20，无关闭评论），#342 仍 OPEN</td><td>待核对 P1</td></tr>
+  <tr><td>判据 2：评审不依赖整机共享可送达并处理</td><td>#480、#576</td><td>#480 仅底座 PR #592 合入，已被人关闭（2026-11-20，无关闭评论；特性本体零执行记录）；#576 无交付仍 OPEN</td><td>待核对 P2、P3</td></tr>
+</table>
+
+<article class="card" id="issue-342">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/342">#342</a> 【v1.1|G1】团队多人协作：定义团队成员、项目可见范围与共享主机授权 <span class="pill">OPEN</span></h3>
+  <p class="desc">兑现 G1 判据 1/2：团队多人协作特性的原型与意图规格入库并把成员/群绑定接入生产链路；看 PR #709 的特性目录、本机实测记录与检视评论。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/709">PR #709</a>（MERGED，2026-11-20 05:04Z，mergeCommit <code>985cdcd</code>）合入 <code>docs/05-features/team-collaboration/</code>（intent.md / spec.md / prototype.html / prototype/journey.js / welink-cli-spike.md / STATUS.md）及约 50 个实现文件（team-collaboration IPC、runtime-rpc-team-read-policy、runtime-access-audit、team-directory-client 等）。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #709 评论区（4 轮独立检视 2026-11-18～11-20；welink-cli 本机实测记录 11-19）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>welink-cli 真实群空间只读实测</td>
+      <td>folder-list / node-search 对真实群空间可读回</td>
+      <td>通过：群空间 20065474 退出码 0，stdout JSON 正常</td>
+      <td>证据形态：本机 CLI 实测记录（PR #709 评论 2026-11-19）· welink-cli 1.0.18</td>
+      <td>本机终端执行 welink-cli</td>
+    </tr>
+    <tr>
+      <td>Workbench CI</td>
+      <td>最终 head 检查通过</td>
+      <td>通过：两次 success（2026-11-20 03:45Z / 05:04Z，head <code>1fd8c48</code>）</td>
+      <td>证据形态：CI 流水线 · GitHub Actions</td>
+      <td>PR #709 Checks</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #709 评论区各轮检视记录（git diff --check、node --check 静态通过）。</p>
+  <p class="meta"><b>门禁</b>：Workbench CI success ×2。</p>
+  <p class="meta"><b>未验范围</b>：真实 WeLink 群空间读写、两台物理主机、宿主重启读回、内网项目聚合均未验（特性 STATUS.md 自述「尚未用真实群空间和双主机验收」）；无 E2E DOM 断言、无截图。</p>
+  <p class="manual"><b>人工核对</b>：4 轮独立 subagent 检视（自标「不是主验证」）；尚无人的主验证评论。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P1">待核对 P1 · 证据现状：真实群空间读写、双主机、重启读回、内网聚合未验，无真壳截图 · 已有其他证据：welink-cli 本机实测 + Workbench CI success ×2 + 4 轮检视 · <b>处置</b>：待核对，建议内网双机补验或会上实机演示</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-480">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/480">#480</a> 【v1.1|G1】评审不依赖整机共享：评审通知可送达并处理 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现 G1 判据 2「评审不依赖整机共享可送达并处理」；共享主机底座已合入，评审通知特性本体未交付；2026-11-20 被人关闭（COMPLETED，无关闭评论）。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/592">PR #592</a>（MERGED，2026-11-08，<code>b90c743</code>）合入共享主机配对/恢复/远端 Agent 配置同步（底座）；评审通知送达特性本体未交付；Issue 于 2026-11-20T09:17Z 被人关闭（COMPLETED，无关闭评论）。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #592 CI 记录。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>共享主机协议回归</td>
+      <td>全量测试通过</td>
+      <td>通过：180 个测试文件 1542 用例</td>
+      <td>证据形态：CI 流水线 · <a href="https://github.com/forcegravity1989/builder-workbench/actions/runs/42457995462">runs/42457995462</a></td>
+      <td>远端 CI</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #592 Checks 页。</p>
+  <p class="meta"><b>门禁</b>：远端 CI 全绿（Lint / Typecheck / BW 与原生协议 / 桌面构建 / Windows Codex / 浏览器批注 / 共享主机 / Linux smoke）。</p>
+  <p class="meta"><b>未验范围</b>：本单三条验收（评审通知收到、BW 内读回处理留痕、真壳杀进程重启一致）零执行记录；真实双机未验证。</p>
+  <p class="manual"><b>人工核对</b>：三名独立 reviewer 交叉静态复核（PR #592）。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P2">待核对 P2 · 证据现状：评审通知特性本体零执行记录，仅底座合入；Issue 已被人关闭（2026-11-20，COMPLETED，无关闭评论）· 已有其他证据：底座 PR #592 远端 CI 全绿（1542 用例）+ 三人交叉复核 · <b>处置</b>：待核对——关闭口径未留评论，特性本体是否改期/纳入下版由人说明</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+<article class="card" id="issue-552">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/552">#552</a> 【v1.1|G1】团队/项目群绑定可读回 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现 G1 判据 2「团队/项目群绑定可读回」；能力承载在主单 PR #709 名下，本单无直接交付；2026-11-20 被人关闭（COMPLETED，无关闭评论）。</p>
+  <p class="meta"><b>交付依据</b>：无本单直接 PR；<a href="https://github.com/forcegravity1989/builder-workbench/pull/709">PR #709</a>（MERGED，<code>985cdcd</code>）交付团队设置 WeLink 群 ID + 群空间 ID 绑定表单、成员读回（query-group-member）、<code>BW/team.json</code> OneBox 读写。</p>
+  <p class="meta"><b>验证报告出处</b>：同 #342（PR #709 评论区）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>绑定表单</td>
+      <td>群号 + 空间 ID 同屏必填，按已核实 CLI 事实修正</td>
+      <td>已实现（代码合入）</td>
+      <td>证据形态：PR #709 代码与检视记录</td>
+      <td>桌面设置入口</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：同 #342。</p>
+  <p class="meta"><b>门禁</b>：同 #709（Workbench CI success ×2）。</p>
+  <p class="meta"><b>未验范围</b>：本单四条验收（团队群绑定、成员显示、协作动作按群送达、变更后独立读回）均无执行记录；真实群空间读写与真实成员核验未验。</p>
+  <p class="manual"><b>人工核对</b>：无针对本单的验证评论；Issue 于 2026-11-20T09:17Z 被人关闭（COMPLETED，无关闭评论）。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li><a href="#pending-P1">待核对 P1</a> · 与 #342 共享真壳走通缺口（#552 已关闭，#342 仍 OPEN，缺口主体未变）· <b>处置</b>：待核对</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-576">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/576">#576</a> 【v1.1|G1】共享主机内双人实时批注 <span class="pill">OPEN</span></h3>
+  <p class="desc">G1 判据 2 相关的共享主机内双人实时批注；无任何交付落点。</p>
+  <p class="meta"><b>交付依据</b>：无。<a href="https://github.com/forcegravity1989/builder-workbench/pull/579">PR #579</a>（MERGED，2026-11-08，<code>7a3b818</code>）明言「多人实时互见/共同批注继续由 #576 跟踪，本 PR 未实现」，仅交付原生批注折叠/贴图/反馈同步。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #579 CI（与本单能力无直接关系）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr><td>无（本单无实现）</td><td>—</td><td>开发侧未留</td><td>无对应验证件</td><td>—</td></tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：无。</p>
+  <p class="meta"><b>门禁</b>：不适用。</p>
+  <p class="meta"><b>未验范围</b>：双人实时批注三条验收（A/B 实时互见、并发提交可区分、刷新/断线重连一致）零执行记录；无原型、设计或代码落点。</p>
+  <p class="manual"><b>人工核对</b>：无。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P3">待核对 P3 · 证据现状：无原型/设计/代码落点，三条验收零记录 · 已有其他证据：无（#579 明言未实现） · <b>处置</b>：待核对，建议人决定纳入下版或补设计</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<h2>目标 G2：会议协作——打通各旅程会议与会议过程把控<span class="owner">负责人 kanadead</span></h2>
+<div class="crit">
+  <b>计划验收判据（原文）</b>
+  <ol>
+    <li>覆盖计划/原型/PR/验收旅程会议环节 + 优先深度绑定内部 WeLink 视频会议 + 原型入库</li>
+    <li>原型评审会议旅程落地</li>
+  </ol>
+  <b>指标目标值（原文）</b>：无
+</div>
+<table>
+  <tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对 / 已确认缺口</th></tr>
+  <tr><td>判据 1：WeLink 绑定与原型入库</td><td>#159、#447</td><td>PR #719 合入（meeting 帮助）；原型 PR #743 未合入 main</td><td>待核对 P4</td></tr>
+  <tr><td>判据 2：原型评审会议旅程落地</td><td>#527</td><td>仅 #743 原型模拟，真壳端到端未实现</td><td>待核对 P5</td></tr>
+</table>
+
+<article class="card" id="issue-159">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/159">#159</a> 【v1.1|G2】会议工作台：打通各旅程会议与过程把控 <span class="pill">OPEN</span></h3>
+  <p class="desc">兑现 G2 判据 1：会议工作台覆盖各旅程会议环节、深度绑定 WeLink；原型承载在 PR #743（未合入）。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/719">PR #719</a>（MERGED，2026-11-19，<code>663a03e</code>）合入 welink-cli meeting 帮助与 eMeeting 页面记录（docs/10-reference/）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/743">PR #743</a>（OPEN）承载 <code>docs/05-features/meeting-loop/</code>（intent / spec / prototype），未合入 main。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #743 主验证报告（yuzhup，2026-11-19）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>原型 DOM 烟测</td>
+      <td>项目入口→提示词→预约→到点伴飞→切回项目会话→批注→散会写回</td>
+      <td>通过（无头 Chrome 加载 + DOM 交互）</td>
+      <td>证据形态：PR #743 主验证评论</td>
+      <td>无头 Chrome</td>
+    </tr>
+    <tr>
+      <td>原型静态检查</td>
+      <td>HTML 49 个 ID 无重复、相对链接存在</td>
+      <td>通过</td>
+      <td>证据形态：node --check + 静态核对</td>
+      <td>PR #743</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #743 主验证报告。</p>
+  <p class="meta"><b>门禁</b>：#743 自述未运行本机 CI / 远端 CI。</p>
+  <p class="meta"><b>未验范围</b>：#743 未合入，原型/意图/规格未入 main；Windows 真壳、真实 WeLink 会议窗口未打开；三条待定（覆盖哪些会 / 纪要住哪 / 翻红挂什么）标注「进入 build 前需对齐」。</p>
+  <p class="manual"><b>人工核对</b>：#743 主验证报告（yuzhup 2026-11-19）「通过原型交付」；13 版设计迭代留痕（Issue 评论 2026-09-10～20）。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P4">待核对 P4 · 证据现状：原型 PR #743 未合入 main，intent/spec/原型未入库 · 已有其他证据：#743 主验证报告通过（无头 Chrome DOM 烟测）· <b>处置</b>：待核对，建议合入后重新聚合或会上说明</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-447">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/447">#447</a> 【v1.1|G2】会议协作原型入库 <span class="pill">OPEN</span></h3>
+  <p class="desc">兑现 G2 判据 1「原型入库」：intent / spec / 原型入库由 PR #743 承载，未合入。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/743">PR #743</a>（OPEN）承载 meeting-loop intent / spec / 原型；origin/main 已核实无 meeting-loop 目录，入库未完成。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #743 主验证报告。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>原型关键交互</td>
+      <td>会议工作台/项目入口/预约/WeLink 群通知模拟/伴飞/批注/写回可点</td>
+      <td>通过</td>
+      <td>证据形态：PR #743 主验证评论</td>
+      <td>无头 Chrome</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #743 主验证报告。</p>
+  <p class="meta"><b>门禁</b>：同 #743（未运行）。</p>
+  <p class="meta"><b>未验范围</b>：入库未完成；验收标准「人可基于原型与规格评审通过」无人的确认记录；无真壳 / E2E。</p>
+  <p class="manual"><b>人工核对</b>：无。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li><a href="#pending-P4">待核对 P4</a> · 与 #159 共享入库缺口 · <b>处置</b>：待核对</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-527">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/527">#527</a> 【v1.1|G2】原型评审会议旅程落地 <span class="pill">OPEN</span></h3>
+  <p class="desc">兑现 G2 判据 2「原型评审会议旅程落地」；仅有原型模拟，真壳端到端未实现。</p>
+  <p class="meta"><b>交付依据</b>：无交付 PR；旅程仅有 PR #743 中的可交互原型模拟。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #743 主验证报告（原型级旅程：预约、WeLink 群通知、到点伴飞、批注、散会写回）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr><td>无真壳用例</td><td>—</td><td>开发侧未留</td><td>无对应验证件</td><td>—</td></tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：无。</p>
+  <p class="meta"><b>门禁</b>：不适用。</p>
+  <p class="meta"><b>未验范围</b>：本单四条验收全部未执行（无真壳走通、无杀进程重启读数一致）；真实 WeLink 视频会议绑定未验证。</p>
+  <p class="manual"><b>人工核对</b>：无针对本单的验证评论。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P5">待核对 P5 · 证据现状：真壳端到端未实现，四条验收零执行 · 已有其他证据：#743 原型级模拟通过 · <b>处置</b>：待核对，建议人决定改期或调整验收口径</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+<h2>目标 G3：运营运维——v1.0 稳定运营<span class="owner">负责人 yuzhup</span></h2>
+<div class="crit">
+  <b>计划验收判据（原文）</b>
+  <ol>
+    <li>及时清理 v1.0 版本问题，发 4 个 v1.0 补丁版本</li>
+    <li>完成对外宣传规划与第一篇对外宣传文章（不落代码仓）</li>
+    <li>遥测真正接入能统计用户主要用什么功能</li>
+  </ol>
+  <b>指标目标值（原文）</b>：无
+</div>
+<table>
+  <tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对 / 已确认缺口</th></tr>
+  <tr><td>判据 1a：清理 v1.0 问题</td><td>#493 #554 #603 #641 #650 #651 #654 #672 #678 #686 #690 #699 #707 #716 #717 #721 #727 #731（18 张）</td><td>15 张已关闭且多数有合入 PR 与验证留痕；3 张 OPEN（#686 #690 #717）</td><td>待核对 P9–P11、P14</td></tr>
+  <tr><td>判据 1b：发 4 个补丁版本</td><td>版本级（GitHub Releases）</td><td>v1.0.1（2026-11-17）、v1.0.2（2026-11-20）共 2 个，判据要求 4 个</td><td>待核对 P6</td></tr>
+  <tr><td>判据 2：外宣规划与第一篇文章</td><td>版本级（不落代码仓）</td><td>仓内 27 个计划 Issue 中无外宣单，无仓内证据</td><td>待核对 P7</td></tr>
+  <tr><td>判据 3：遥测真正接入</td><td>#687</td><td>PR #732 已合入，两层遥测 + 9 屏真壳验证，已闭环</td><td>无</td></tr>
+</table>
+<p class="meta">版本级证据（GitHub Releases 读回，2026-11-20）：v1.0.1（2026-11-17，exe 164,551,304 字节，sha256 <code>d65880da…</code>）；v1.0.2（2026-11-20，exe 164,565,996 字节，sha256 <code>ddee7d04…</code>）。</p>
+
+<article class="card" id="issue-493">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/493">#493</a> 【v1.1|G3】减少桌面与 Web 客户端公共前端资源重复打包 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">调研并减少重复打包；方案 A 曾实现为 PR #751，经人决定关闭本单：原始诉求（资源去重）与真实意图（减小安装包下载体积）偏离，方向判定为错误。</p>
+  <p class="meta"><b>交付依据</b>：无合入件——<a href="https://github.com/forcegravity1989/builder-workbench/pull/751">PR #751</a> 曾实现方案 A（删除 out/web 投影链）并本机打包实测通过（主验证结论「通过、具备交付条件」），但经人决定关闭不合入、实现随分支删除。关闭评论（2026-11-20T07:47Z）：实测确认删除投影仅降磁盘占用（app.asar 96.5→52.3 MiB），对安装包下载体积收益仅 ~5MB（LZMA 压缩物理上限）；减小安装包由已合入的 #510 承担（174.88→158.84 MiB）；近重复投影由压缩器吸收，不再独立跟踪。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #751 主验证评论（2026-11-20）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>打包产物</td>
+      <td>app.asar 缩减、out/web 条目清零</td>
+      <td>通过：app.asar 52.3MiB、asar 内 out/web 0 条目</td>
+      <td>证据形态：本机 Windows 实测打包 exe 读数 · PR #751 主验证评论</td>
+      <td>本机打包</td>
+    </tr>
+    <tr>
+      <td>反事实对照</td>
+      <td>与 Issue 报告量级吻合</td>
+      <td>旧投影脚本产出 out/web 44.2MiB；前端资源 ≈87.5MiB→43.4MiB</td>
+      <td>证据形态：读数对比 · 主验证评论</td>
+      <td>本机</td>
+    </tr>
+    <tr>
+      <td>serve 实测</td>
+      <td>配对页面资源可访问</td>
+      <td>通过：pairing.webClientUrl 页面/JS/CSS/editor.worker curl 五项全 200</td>
+      <td>证据形态：HTTP 读数 · 主验证评论</td>
+      <td>打包 exe serve</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #751 主验证评论。</p>
+  <p class="meta"><b>门禁</b>：bundled-web-client-root.test.ts 4/4、oxlint/typecheck exit 0、ratchet OK；全量 vitest 1143 failed 与 origin/main 同口径分诊为预置环境失败。</p>
+  <p class="meta"><b>未验范围</b>：PR #751 已废弃不合入（远程 CI 无记录）；配对浏览器 e2e 相关未验范围随 PR 关闭不再追补。</p>
+  <p class="manual"><b>人工核对</b>：独立 subagent 六项判据审查无代码 BUG、plan 9 项全落实、7 项发现均已处置；2026-11-20 经人决定关闭（COMPLETED），关闭评论留痕处置口径。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P12">待核对 P12 · 证据现状：本单已被人决定关闭（诉求方向判定错误），PR #751 废弃不合入 · 已有其他证据：本机打包实测 + 主验证「通过」+ 独立审查（历史留痕）+ 关闭评论实测读数 · <b>处置</b>：已闭环——关闭即处理结果，减小安装包由已合入 #510 承担</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-554">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/554">#554</a> 【v1.1|G3】手动断开的远程主机更新/重启后保持断开 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #718 合入持久化语义，真壳重启读回闭环。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/718">PR #718</a>（MERGED，2026-11-19 03:17Z，<code>91b2b57</code>）。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #718 验证评论（真壳 CDP + 磁盘读回）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>断开持久化全链路</td>
+      <td>disconnect 后杀进程重起仍保持断开，显式 connect 解除</td>
+      <td>闭环：磁盘 reconnectOnLaunch=false → 重起仍 false → getStatus 返回 "manually disconnected" 门消息 → connect 解除</td>
+      <td>证据形态：真壳 CDP + 磁盘读回记录 · PR #718 验证评论</td>
+      <td>dev 壳 + taskkill</td>
+    </tr>
+    <tr>
+      <td>单测</td>
+      <td>相关套件通过</td>
+      <td>通过：IPC pairing 20/20、Web runtime-environment 19/19、9 套件 46/46</td>
+      <td>证据形态：vitest 读数</td>
+      <td>本机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #718 验证评论。</p>
+  <p class="meta"><b>门禁</b>：typecheck/oxlint 全绿、ratchet 220 基线；独立检视两轮（复跑 39/39、70/70；19 文件 105 passed / 1 skipped）。</p>
+  <p class="meta"><b>未验范围</b>：真壳验证在开发机执行、检视机无法独立复核；Web 端真实浏览器 reload 未验（单测模拟）；ai-vault 直调路径绕过断开门为预存在缺口。</p>
+  <p class="manual"><b>人工核对</b>：人确认验证完成并授权关闭（Issue 关闭评论 2026-11-19）。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-603">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/603">#603</a> 【v1.1|G3】跨主机项目显示/隐式切换主机问题 <span class="pill">CLOSED / NOT_PLANNED</span></h3>
+  <p class="desc">诉求重新框定为 #641 并由 PR #642 交付，人确认按 NOT_PLANNED 关闭。</p>
+  <p class="meta"><b>交付依据</b>：非本单直接交付——Issue 评论（2026-11-19）：两条原期望与 #641 已授权方案抵触不做，一条范围外；<a href="https://github.com/forcegravity1989/builder-workbench/pull/625">PR #625</a>（MERGED，2026-11-12，<code>d78352b</code>）含中间补修「已固定跟随当前项目」。</p>
+  <p class="meta"><b>验证报告出处</b>：Issue 关闭评论；PR #625 CI。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>快捷键用例</td><td>12 项通过</td>
+      <td>通过 12/12</td>
+      <td>证据形态：vitest · PR #625</td>
+      <td>本机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #625 Checks。</p>
+  <p class="meta"><b>门禁</b>：PR #625 CI 五项通过（含远端 Electron smoke）。</p>
+  <p class="meta"><b>未验范围</b>：验收须按 #641/#642 实际交付口径核对；#625 交付行为与后来 #642 方案的关系未在评论中显式说明。</p>
+  <p class="manual"><b>人工核对</b>：人确认关闭（NOT_PLANNED）；yuzhup 复核「版本最终验证无问题」；用户确认免真机验证。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-641">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/641">#641</a> 【v1.1|G3】各加载入口点击时确定「主机+项目」来源 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #642 合入三类来源规则，任务类固定本机。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/642">PR #642</a>（MERGED，2026-11-13，<code>5921f86</code>）；后续 commit <code>143f433</code>（2026-11-15 在 main）补跨主机任务仓库来源。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #642 主验证评论（入口 × 实现判据四行对照表）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>来源规则</td>
+      <td>工作区/项目版本页/任务检视/单项目和组移除四入口来源正确</td>
+      <td>通过：远端 CI + 判据对照表</td>
+      <td>证据形态：PR #642 主验证评论</td>
+      <td>BW 各入口</td>
+    </tr>
+    <tr>
+      <td>双机验证</td>
+      <td>两 Electron 真壳 + host B：点 B worktree → 任务屏读本机副本对照</td>
+      <td>通过（#570 留档，方案后被 #642 取代）</td>
+      <td>证据形态：PR #570 验证记录</td>
+      <td>双壳双机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #642 主验证评论。</p>
+  <p class="meta"><b>门禁</b>：远端 CI 通过；#571 任务屏逻辑身份去重 vitest 400/400。</p>
+  <p class="meta"><b>未验范围</b>：#570 双机验证针对被取代的窄修方案代码（<code>ea6f793</code>），非 #642 合入代码本身（间接证据）；真实双机与实际账号 PR/MR 写入待验。</p>
+  <p class="manual"><b>人工核对</b>：yuzhup 独立检视发现 4 处修正（P1×3、P2×1）收敛后授权合入；人确认关闭。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-650">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/650">#650</a> 【v1.1|G3】端口面板旁「常用链接」快捷区 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #681 合入，人真壳补验后关闭。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/681">PR #681</a>（MERGED，2026-11-17，<code>5fe5579</code>）——状态栏入口 + <code>.bw/quick-links.json</code> 持久化 + 内置浏览器打开。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #681 body（截图）；Issue 关闭评论（2026-11-19）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>真机截图</td>
+      <td>状态栏入口可见</td>
+      <td>留证</td>
+      <td>截图 screenshot-status-entry-500x200.png（分支 blob 链接，分支删除后失效）</td>
+      <td>Electron dev 壳</td>
+    </tr>
+    <tr>
+      <td>单测</td>
+      <td>ui-hydration 全绿</td>
+      <td>通过（含 quick-links 默认项断言）</td>
+      <td>证据形态：vitest 读数</td>
+      <td>本机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #681 Checks。</p>
+  <p class="meta"><b>门禁</b>：tsc×2 / oxlint / 4 verify 脚本 / max-lines ratchet 全 EXIT 0；CI lint/typecheck/tests/build 通过。</p>
+  <p class="meta"><b>未验范围</b>：PR 评论区无独立检视记录；截图为分支 blob 链接非 user-attachments（分支删除后失效）。</p>
+  <p class="manual"><b>人工核对</b>：人真壳验证通过（Issue 关闭评论 2026-11-19），PR 合入时声明的未验项（真壳人工走查）已由人补验。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P15">待核对 P15 · 证据现状：#650/#653/#654 检视留痕薄弱（PR 评论区无独立检视记录；#653 真壳走查未做；#650 截图为分支 blob 链接）· 已有其他证据：人真壳补验 / CI 全绿 · <b>处置</b>：待核对，建议人确认接受或补走查</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-651">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/651">#651</a> 【v1.1|G3】自动化页主机筛选分组/搜索 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #652 合入、修复成立；2026-11-20 人实机复验确认筛选分组能力在位后再次关闭，孤儿处置语义另立 #754 探讨。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/652">PR #652</a>（MERGED，2026-11-17，<code>42c988a</code>）——按授权方分组 + 搜索 + 按 builder 默认折叠；2026-11-19 以 COMPLETED 关闭，2026-11-20T02:21Z 被重开（无原因评论），2026-11-20T08:53Z 经人实机复验（1.0.2-rc.20261119.1，本机 7 个授权方）确认筛选与分组能力在位后再次关闭；桶内条目处置语义按人决定另立 <a href="https://github.com/forcegravity1989/builder-workbench/issues/754">#754</a> 探讨。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #652；关闭检视评论（确认修复成立、期望 5 项逐条 ✓）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>折叠态</td>
+      <td>9 个 SSH IP 零泄漏</td>
+      <td>通过</td>
+      <td>证据形态：隔离 workbench-dev 真壳 DOM 断言（4 授权方 + 9 SSH 假数据）</td>
+      <td>dev 壳</td>
+    </tr>
+    <tr>
+      <td>搜索</td>
+      <td>141.61.105.101 收敛为 1 组并自动展开</td>
+      <td>通过</td>
+      <td>证据形态：同上</td>
+      <td>dev 壳</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #652 Checks。</p>
+  <p class="meta"><b>门禁</b>：CI 6 项全绿（含 Workbench Electron smoke）；automations 全量 836 单测 + 新增 2 例通过；typecheck/oxlint/oxfmt/本地化四项通过。</p>
+  <p class="meta"><b>未验范围</b>：重开原因未留评论（再次关闭评论未回溯说明）；真壳验证用假数据而非真实多主机 fixture；关闭检视列出的 3 条已知边界留作后续。</p>
+  <p class="manual"><b>人工核对</b>：关闭检视评论独立复核确认修复成立（2026-11-19）；2026-11-20 人实机复验确认能力在位并再次关闭（COMPLETED，关闭评论留痕）。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P8">待核对 P8 · 证据现状：重开原因未留评论，但 Issue 已经人实机复验后再次关闭，处置语义另立 #754 · 已有其他证据：PR #652 合入 + 关闭检视确认修复成立 + CI 全绿 + 人实机复验 · <b>处置</b>：已闭环——重开疑问随再次关闭落地，处置语义由 #754 跟踪（验收材料 followups 第 1 条，纪要未确认）</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+<article class="card" id="issue-654">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/654">#654</a> 【v1.1|G3】HTML 小眼睛预览改主工作区打开 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #674 合入，Playwright 真实点击因果证明。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/674">PR #674</a>（MERGED，2026-11-16，<code>f26f2b1</code>）——三处入口改调 openFileInBrowserTab，删除侧边分栏逻辑，六语言文案改「预览」。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #674 因果证明评论（2026-11-17）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>因果证明</td>
+      <td>点击后在主工作区打开预览标签，无右侧分栏</td>
+      <td>通过：点击前 browserTabTotal=0/previewTabs=0 → 点击后恰好新增 1 个预览标签、activeTabType=browser、groupCount=1 无右侧分栏</td>
+      <td>证据形态：Playwright 真实点击（isTrusted=true）+ 前后读数闭环 · PR #674 评论</td>
+      <td>全新 profile 独立 dev 实例</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #674 评论。</p>
+  <p class="meta"><b>门禁</b>：typecheck EXIT 0、oxlint EXIT 0、vitest 5 文件 50 passed。</p>
+  <p class="meta"><b>未验范围</b>：两条 Playwright E2E（paired-remote-html-preview-local-render / paired-preview-address-bar-convergence）仍断言旧 'Open Preview to the Side'，未随 PR rebaseline（origin/main 已核实）；真壳截图未取得（node-gyp 工具链失败，以 DOM 断言替代）。</p>
+  <p class="manual"><b>人工核对</b>：由 forcegravity1989 于 2026-11-17 关闭 COMPLETED；Issue 无评论。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P13">待核对 P13 · 证据现状：两条 E2E 未 rebaseline，main 上仍断言旧文案 · 已有其他证据：Playwright 因果证明 + 50 用例通过 · <b>处置</b>：待核对，建议补 rebaseline 小单</li></ul>
+    <ul><li><a href="#pending-P15">待核对 P15</a> · 检视留痕薄弱 · <b>处置</b>：待核对</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-672">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/672">#672</a> 【v1.1|G3】自动更新一键到最新版 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #693 合入，Windows 真壳前后对照 + 三张截图。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/693">PR #693</a>（MERGED，2026-11-17，<code>0103111</code>）——稳定通道遇最新版 not-ready 不再回退 lastGoodTag，改为后台等待重试。</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/672#issuecomment-6936113400">PR #693 验证评论 issuecomment-6936113400</a>。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>修复前对照</td>
+      <td>复现旧版回退提示</td>
+      <td>复现：v0.9.1 官方旧包基线，清单 404 弹 0.9.2 旧版提示</td>
+      <td><a href="https://github.com/forcegravity1989/builder-workbench/blob/bdb53ba7/docs/09-assets/screenshots/before-older-offer.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/bdb53ba7/docs/09-assets/screenshots/before-older-offer.png" alt="修复前对照截图" width="360"></a><br><code>bdb53ba7</code> before-older-offer.png</td>
+      <td>Windows 真壳独立 profile</td>
+    </tr>
+    <tr>
+      <td>修复后（延迟等待）</td>
+      <td>404 不弹窗</td>
+      <td>通过</td>
+      <td><a href="https://github.com/forcegravity1989/builder-workbench/blob/bdb53ba7/docs/09-assets/screenshots/after-deferred.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/bdb53ba7/docs/09-assets/screenshots/after-deferred.png" alt="修复后延迟等待截图" width="360"></a><br><code>bdb53ba7</code> after-deferred.png</td>
+      <td>Windows 真壳</td>
+    </tr>
+    <tr>
+      <td>修复后（直接提示最新版）</td>
+      <td>清单恢复后同进程直接提示 1.0.0</td>
+      <td>通过</td>
+      <td><a href="https://github.com/forcegravity1989/builder-workbench/blob/bdb53ba7/docs/09-assets/screenshots/after-direct-offer.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/bdb53ba7/docs/09-assets/screenshots/after-direct-offer.png" alt="修复后直接提示截图" width="360"></a><br><code>bdb53ba7</code> after-direct-offer.png</td>
+      <td>Windows 真壳</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #693 验证评论。</p>
+  <p class="meta"><b>门禁</b>：67 个更新与续传相关测试通过；独立检视确认改动集中无阻塞。</p>
+  <p class="meta"><b>未验范围</b>：「跨越的版本数」展示未实现（changelog 卡为 null）；0.9.1→1.0.0 完整下载安装未在本轮真壳复验（定向测试覆盖）；RC 预发布通道仍有 lastGoodTag 回退（明确边界）。</p>
+  <p class="manual"><b>人工核对</b>：Issue 关闭评论逐项对照原单期望（一次跳最新 ✓、断点续传 ✓、不退回 ✓）；独立复验读回 idle → available 1.0.0。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-678">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/678">#678</a> 【v1.1|G3】会议转写 title-after-pick 必败修复 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #689 合入，真壳 E2E 两场会议 + SHA-256 独立读回。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/689">PR #689</a>（MERGED，2026-11-20 06:49Z，<code>41b0b3f</code>）——单场跳过标题校验、多场内容指纹防串场。</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/678#issuecomment-6917119162">PR #689 主验证评论 issuecomment-6917119162</a>。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>单场会议 B9FA20DB</td>
+      <td>title-after-pick 取回转写</td>
+      <td>通过：修复前轮询 30s 必败 → 修复后 1/1 取回 17,663 字符 / 978 行</td>
+      <td>证据形态：真壳 E2E + SHA-256 独立读回 · 主验证评论</td>
+      <td>Windows 真壳</td>
+    </tr>
+    <tr>
+      <td>多场回归 5DAB2173</td>
+      <td>多场互不串场</td>
+      <td>通过：2/2 取回 58,828 + 72,946 字符，三场均含 HH:MM 时间戳、complete=true</td>
+      <td>证据形态：同上</td>
+      <td>Windows 真壳</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #689 主验证评论。</p>
+  <p class="meta"><b>门禁</b>：vitest src/cli/workbench-meeting 4/4（含新增 2 例）、tsc 通过、oxlint 0 发现、skill package check 通过、ratchet 220 基线。</p>
+  <p class="meta"><b>未验范围</b>：rebase 后未在真壳重跑 E2E（涉改文件字节级一致，按内容等价迁移）；「多场清单只 pick 一场且标题为会议主题」无切换判据（已知边界）。</p>
+  <p class="manual"><b>人工核对</b>：独立检视首轮 subagent 5 项已处置 + 专家检视补齐复核，六项判据无阻断；Issue 关闭（03:15Z）早于 PR 合入（06:49Z）。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-686">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/686">#686</a> 【v1.1|G3】探索示例项目改看板类 + 引导动画来源标识 <span class="pill">OPEN</span></h3>
+  <p class="desc">判据 1 范围内问题；未开工。</p>
+  <p class="meta"><b>交付依据</b>：无（Issue 仍 OPEN，无任何评论）。</p>
+  <p class="meta"><b>验证报告出处</b>：无。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr><td>无（未开工）</td><td>—</td><td>开发侧未留</td><td>无对应验证件</td><td>—</td></tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：无。</p>
+  <p class="meta"><b>门禁</b>：不适用。</p>
+  <p class="meta"><b>未验范围</b>：全部——无实现 PR、无验证证据、无处理评论。</p>
+  <p class="manual"><b>人工核对</b>：无。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P9">待核对 P9 · 证据现状：未开工，无实现无评论 · 已有其他证据：无 · <b>处置</b>：待核对，建议人决定纳入下版或关闭</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-687">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/687">#687</a> 【v1.1|G3】遥测真正接入能统计用户主要用什么功能 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现 G3 判据 3「遥测真正接入」；PR #732 合入两层遥测，9 屏真壳验证。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/732">PR #732</a>（MERGED，2026-11-20 01:18Z，<code>e44ece54</code>）——Tier 1 曝光层 9 屏 hook + Tier 2 结果层 4 事件（bw_assistant_request_sent / bw_package_build / bw_version_created / bw_task_start），属性全枚举 zod .strict()。</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/687#issuecomment-7002214708">主验证评论 issuecomment-7002214708</a>（结论「通过」）；yuzhup 复核 <a href="https://github.com/forcegravity1989/builder-workbench/issues/687#issuecomment-7008567122">issuecomment-7008567122</a>。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>9 屏真壳验证</td>
+      <td>曝光计数递增且重启读回一致</td>
+      <td>通过：versions 7→8、plan/acceptance/milestones/version-overview/version-tasks 各 1→2；reload 后 main 侧独立读回一致</td>
+      <td>证据形态：状态文件权威读回（renderer→IPC→main→磁盘→hydration 全链路）· 主验证评论</td>
+      <td>合并 main 后基线真壳</td>
+    </tr>
+    <tr>
+      <td>P1-1 事件捕获</td>
+      <td>bw_task_start 事件可捕获</td>
+      <td>捕获：{outcome:'composer-opened', source:'task-dialog'}</td>
+      <td>证据形态：主进程 inspector 断点日志</td>
+      <td>真壳</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #732 主验证评论。</p>
+  <p class="meta"><b>门禁</b>：typecheck exit 0、oxlint 零发现、max-lines-ratchet 过；telemetry-events + feature-interactions 64 用例过；vitest-count-ratchet 220=基线。</p>
+  <p class="meta"><b>未验范围</b>：三条 Tier 2 活路径未验（需真实助手会话 / CloudDragon 流水线 / 真实建版本，PR 如实标注）；CI verify job 两次 35 分钟超时取消（判为 runner 环境问题）；无生产端读回样例（口径上由独立服务离线分析）。</p>
+  <p class="manual"><b>人工核对</b>：口径经人确认（issuecomment-6998140166 + issuecomment-7011381312 人逐条表态）；yuzhup 复核 4 项 P1 均处置；kanadead 关闭。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-690">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/690">#690</a> 【v1.1|G3】自建分享服务客户端+服务端 <span class="pill">OPEN</span></h3>
+  <p class="desc">兑现判据 1 问题清理；服务端 PR #682 已合入，客户端 PR #691 未合入。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/682">PR #682</a> 服务端（MERGED，2026-11-20 06:48Z，<code>25b5744</code>，services/bw-share）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/691">PR #691</a> 客户端（OPEN，head <code>ebaf1b3</code>）。</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/690#issuecomment-7032515743">#682 yuzhup 复检 issuecomment-7032515743</a>；<a href="https://github.com/forcegravity1989/builder-workbench/issues/690#issuecomment-6978565586">#691 主验证评论 issuecomment-6978565586</a>。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>服务端部署实例</td>
+      <td>健康检查/登记/新建/读取/覆盖/删除/404 往返</td>
+      <td>通过（部署实例 7.192.170.220 已刷新 rebase 后代码）</td>
+      <td>证据形态：服务端 58 例测试全绿 + 部署往返记录</td>
+      <td>部署机</td>
+    </tr>
+    <tr>
+      <td>客户端协议</td>
+      <td>A04–A12 用例通过</td>
+      <td>通过：开发机 CLI+curl；检视机独立复现 10 例（并发分享仅 1 次创建、令牌失配有出口、注册表满 503）</td>
+      <td>证据形态：#691 主验证评论</td>
+      <td>CLI+curl</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：#682 / #691 验证评论。</p>
+  <p class="meta"><b>门禁</b>：#682 服务端 58 例全绿、远端 CI 全绿；#691 CI 六项全绿。</p>
+  <p class="meta"><b>未验范围</b>：客户端 #691 未合入；真壳截图四件套、A09 杀进程重开读回、真实内网他人机器与非 BW 浏览器打开、旅程走查未验；intent/spec/原型人工认可未取得；#682 侧 nginx/TLS、Linux 并发、断电持久性未验。</p>
+  <p class="manual"><b>人工核对</b>：yuzhup 最终复检（2026-11-20 06:42）：代码问题已修、真壳分享和设置列表开发机实测恢复、建议待 #682 合入后合并。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P10">待核对 P10 · 证据现状：客户端 PR #691 未合入，真壳截图/杀进程读回/真实他人机器未验 · 已有其他证据：服务端 #682 合入 + 部署实例往返 + 客户端协议级验证 · <b>处置</b>：待核对，建议合入 #691 后重新聚合</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-699">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/699">#699</a> 【v1.1|G3】「待我评审」手动删除 + 合入后自动移除 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #723 合入，真壳 CDP 11/11 + 检视机复跑 18/18。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/723">PR #723</a>（MERGED，2026-11-19 07:31Z，<code>fe3fa0d</code>）——workbench.review.dismiss RPC + 收件箱对账。</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/699#issuecomment-6998672235">PR #723 检视报告 issuecomment-6998672235</a>（设计意图人确认记录）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>T1 手动删除全链路</td>
+      <td>删除 → reload 不复现 → kill 进程重启读回</td>
+      <td>11/11 PASS（本机）+ 检视机复跑 18/18 PASS</td>
+      <td><a href="https://github.com/forcegravity1989/builder-workbench/blob/3f79bae9/docs/09-assets/screenshots/t1-01-dismiss-entry.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/3f79bae9/docs/09-assets/screenshots/t1-01-dismiss-entry.png" alt="删除入口截图" width="360"></a><br><a href="https://github.com/forcegravity1989/builder-workbench/blob/3f79bae9/docs/09-assets/screenshots/t1-05-restart-readback.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/3f79bae9/docs/09-assets/screenshots/t1-05-restart-readback.png" alt="重启读回截图" width="360"></a><br><code>3f79bae9</code> t1-01…t1-05.jpg（5 张，此处内嵌 2 张关键帧）</td>
+      <td>真壳 CDP</td>
+    </tr>
+    <tr>
+      <td>T2 自动移除</td>
+      <td>真实已合入 PR 读回后自动移除</td>
+      <td>PASS：真实已合入 PR #703 读回后自动移除</td>
+      <td>证据形态：真壳 CDP 记录 · 检视报告</td>
+      <td>真壳</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #723 检视报告。</p>
+  <p class="meta"><b>门禁</b>：typecheck/oxlint/oxfmt/RPC 目录/max-lines 过；定向 12 例过；vitest 计数 8 轮恒 220=基线。</p>
+  <p class="meta"><b>未验范围</b>：真实两主机完整往返未双机实证（删除不影响发送方由代码路径保证）。</p>
+  <p class="manual"><b>人工核对</b>：设计意图人确认（手动删除+自动移除、不建归档区、角标为两类总数）；kanadead 关闭。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+<article class="card" id="issue-707">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/707">#707</a> 【v1.1|G3】总览首开里程碑/记分牌等待读数 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #708 合入，隔离场景验证 + 性能读数。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/708">PR #708</a>（MERGED，2026-11-17 11:37Z，<code>e48ea28</code>）——优先显示主干正式里程碑、记分板逐项回显已完成周读数。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #708 验证记录（截图 4 张 @ <code>4902eea6</code>）；Issue 关闭评论。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>挂起依赖场景</td>
+      <td>正式里程碑与已完成读数可见</td>
+      <td>通过</td>
+      <td><a href="https://github.com/forcegravity1989/builder-workbench/blob/4902eea6/docs/09-assets/screenshots/baseline-overview-pending-reads.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/4902eea6/docs/09-assets/screenshots/baseline-overview-pending-reads.png" alt="基线总览截图" width="360"></a><br><a href="https://github.com/forcegravity1989/builder-workbench/blob/4902eea6/docs/09-assets/screenshots/candidate-overview-pending-reads.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/4902eea6/docs/09-assets/screenshots/candidate-overview-pending-reads.png" alt="候选总览截图" width="360"></a><br><code>4902eea6</code> baseline-overview… / candidate-overview… / candidate-scoreboard…pending / settled.jpg（4 张，此处内嵌 2 张）</td>
+      <td>Windows Electron 隔离场景</td>
+    </tr>
+    <tr>
+      <td>性能读数</td>
+      <td>读取提速</td>
+      <td>同仓同提交读取 5 次中位数 1.11s→0.39s；CodeHub 样本 4 条评审命令串行中位数 ≈1.54s</td>
+      <td>证据形态：读数留痕 · PR 验证记录</td>
+      <td>本机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #708 验证记录。</p>
+  <p class="meta"><b>门禁</b>：本地 lint-staged/lint/typecheck 过；220 用例 219 过（1 例范围外 EBUSY）；GitHub 6 项检查全过（<a href="https://github.com/forcegravity1989/builder-workbench/actions/runs/44052097104">runs/44052097104</a>）。</p>
+  <p class="meta"><b>未验范围</b>：真实 CodeHub 项目整页提速待实测（未在用户项目上运行候选版）。</p>
+  <p class="manual"><b>人工核对</b>：「经人体感验证基本符合要求，按人工确认关闭」（Issue 评论）；独立检视发现预览抢占滚动恢复与变基遗漏接线已修复。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-716">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/716">#716</a> 【v1.1|G3】默认「Complete 链接」被当 PowerShell 命令执行 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #724 合入（不再合成默认命令），验证口径为远端 CI。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/724">PR #724</a>（MERGED，2026-11-18 15:08Z，<code>bb0274d</code>，"Closes #716" 自动关闭）——无自定义可执行命令时不再合成 Complete &lt;Issue 链接&gt; 终端命令。</p>
+  <p class="meta"><b>验证报告出处</b>：无（PR 零评论；验证口径为远端 CI）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>源边界回归断言</td>
+      <td>快速路径不合成默认模板</td>
+      <td>覆盖</td>
+      <td>证据形态：回归断言（PR 内）</td>
+      <td>单测</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #724 Checks。</p>
+  <p class="meta"><b>门禁</b>：远端 GitHub Actions CI 全部必需检查通过（PR 正文明言远端 CI 为验证路径）。</p>
+  <p class="meta"><b>未验范围</b>：无本地测试/门禁记录（PR 明言 "No local CI was run or used as acceptance evidence"）；未读到 Windows PowerShell 实机复验「报错消失」记录；无截图、无独立检视评论、无 workflow 指标评论。</p>
+  <p class="manual"><b>人工核对</b>：yuzhup 交付并关闭（2026-11-18）。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P14">待核对 P14 · 证据现状：无本地测试/实机复验/检视评论，证据最薄 · 已有其他证据：远端 CI 全绿 + 回归断言 · <b>处置</b>：待核对，建议人确认接受或补实机复验</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-717">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/717">#717</a> 【v1.1|G3】版本「进入主干时间」排序错误 + 旧验收材料 planRef 判别值不兼容 <span class="pill">OPEN</span></h3>
+  <p class="desc">兑现判据 1 问题清理；两项根因已修（#725/#745 合入），Issue 仍 OPEN。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/725">PR #725</a>（MERGED，2026-11-18 16:07Z，<code>0ce285b</code>）修根因 1（版本目录拆 merged/unmerged/unknown 三态排序）；<a href="https://github.com/forcegravity1989/builder-workbench/pull/745">PR #745</a>（MERGED，2026-11-20 01:20Z，<code>47b1339</code>）修根因 2（材料未知扩展字段宽容读回）。</p>
+  <p class="meta"><b>验证报告出处</b>：#725 yuzhup 验证回执；#745 yuzhup Verification 评论。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>版本排序</td>
+      <td>已合入版本按 data.json 真实新增提交时间排序</td>
+      <td>远端 CI 全过（含 Electron smoke）</td>
+      <td>证据形态：PR #725 验证回执</td>
+      <td>远端 CI</td>
+    </tr>
+    <tr>
+      <td>planRef 兼容</td>
+      <td>旧 planRef 判别值宽容读回</td>
+      <td>远端检查全绿（含 count ratchet、Electron smoke）</td>
+      <td>证据形态：PR #745 Verification 评论</td>
+      <td>远端 CI</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：#725 / #745 验证评论。</p>
+  <p class="meta"><b>门禁</b>：两 PR 均远端 CI/检查全绿；#745 独立 GPT-6.2 Astra 审阅无 blocker/P1/P2。</p>
+  <p class="meta"><b>未验范围</b>：Issue 未关闭——yuzhup 评论（2026-11-18）补充的跨主机证据（plan 工作树 createdAt 常缺失、缺失被当 -Infinity 沉底）未见对应修复交付；两 PR 均无本机测试/真壳记录、无截图（验证口径为远端 CI+独立审阅）；#745 自留边界「fixed-plan-reference 失败在历史特性证据路径仍需桌面场景覆盖」。</p>
+  <p class="manual"><b>人工核对</b>：yuzhup 独立审阅修正「计划材料读取失败误判为未合入」（#725）。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-P11">待核对 P11 · 证据现状：Issue 未关，跨主机 createdAt 缺失未见修复交付 · 已有其他证据：两根因修复 #725/#745 已合入 + 远端 CI 全绿 + 独立审阅 · <b>处置</b>：待核对，建议补修或人确认关闭口径</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-721">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/721">#721</a> 【v1.1|G3】Windows 长正文 Issue 创建 ENAMETOOLONG <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #726 合入（stdin 传正文），60,000 字符实测。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/726">PR #726</a>（MERGED，2026-11-19 02:02Z，<code>05bbb36</code>）——GitHub 改 gh api --input -、CodeHub 改 --body-file -。</p>
+  <p class="meta"><b>验证报告出处</b>：<a href="https://github.com/forcegravity1989/builder-workbench/issues/721#issuecomment-6997110633">主验证报告 issuecomment-6997110633</a>。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>长正文创建</td>
+      <td>超长正文可创建</td>
+      <td>通过：60,000 字符 / 140,000 UTF-8 字节中文/emoji 正文在 Windows 任务区实际创建成功</td>
+      <td>证据形态：主验证报告（真实 gh 长参数形状复现 ENAMETOOLONG、--input - 可启动；exe/.cmd 包装器逐字读回一致）</td>
+      <td>Windows Node v26.4.0</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #726 主验证报告。</p>
+  <p class="meta"><b>门禁</b>：完整 lint、全项目 typecheck、lint-staged、max-lines-ratchet 过；定向回归 126 项过（86+4+36）；叠层计数 220=基线；远端 CI 全绿（<a href="https://github.com/forcegravity1989/builder-workbench/actions/runs/44439134285">runs/44439134285</a>）。</p>
+  <p class="meta"><b>未验范围</b>：PR 自述「尚未完成加载本次源码的真实 Workbench 界面与远端创建验收」（交付时为草稿；合入后 Issue 评论补人工验证，远端创建验收未在 PR 内记录）；无截图。</p>
+  <p class="manual"><b>人工核对</b>：「已在 Windows 任务区实际创建长正文 Issue 验证成功，由人确认关闭」；两个独立子代理检视（协议复验 25 项过 + 10 文件静态检视）未发现新增逻辑错误。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-727">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/727">#727</a> 【v1.1|G3】旧 Claude 会话 selector_not_found <span class="pill">CLOSED / NOT_PLANNED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；PR #730 合入完整修复叠层（诊断+翻译+停摆），人按 NOT_PLANNED 关闭。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/730">PR #730</a>（MERGED，2026-11-19 15:03Z，<code>3ef53bd</code>）——① miss 事实记录下沉（runtime.worktree-selector-miss span + caller 标签）② BW 边界翻译为 workspace-gone + 中文指引 ③ 版本屏轮询 gone 族停摆 + 反馈去裸协议码；#737/#738 内容收拢并入 #730。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #730 主验证评论 + 最终验证（yuzhup，head <code>e04596a</code>）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>死 selector 矩阵</td>
+      <td>应用内删除工作树→死 selector 五通道，四条通道留下带 caller 标签的 miss span</td>
+      <td>通过</td>
+      <td><a href="https://github.com/forcegravity1989/builder-workbench/blob/b5b2b1025/docs/09-assets/screenshots/b1-board-live.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/b5b2b1025/docs/09-assets/screenshots/b1-board-live.png" alt="板面存活态截图" width="360"></a><br><a href="https://github.com/forcegravity1989/builder-workbench/blob/b5b2b1025/docs/09-assets/screenshots/b2-board-degraded.png"><img src="https://raw.githubusercontent.com/forcegravity1989/builder-workbench/b5b2b1025/docs/09-assets/screenshots/b2-board-degraded.png" alt="板面降级态截图" width="360"></a><br><code>b5b2b1025</code> b1-board-live / b2-board-degraded.png</td>
+      <td>隔离 profile + CDP 真壳</td>
+    </tr>
+    <tr>
+      <td>miss 用例</td>
+      <td>单测通过</td>
+      <td>通过：6/6；邻近套件 48/48 与 16/16</td>
+      <td>证据形态：vitest 读数</td>
+      <td>本机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #730 主验证评论。</p>
+  <p class="meta"><b>门禁</b>：typecheck 0、lint-staged 过；vitest 计数 220=基线（EBUSY 以 CI 为准）；远端门禁全过（含 Electron smoke）。</p>
+  <p class="meta"><b>未验范围</b>：SSH/remote 删除无法本机证明时保持 UNKNOWN，无真实 SSH/remote 删除判定证据；Issue 关闭为 NOT_PLANNED 且无关闭说明评论（处理口径只能从 PR 侧读）。</p>
+  <p class="manual"><b>人工核对</b>：yuzhup 最终验证：独立专家 subagent 六判据复核，两项协议/范围修正已处理。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<article class="card" id="issue-731">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/731">#731</a> 【v1.1|G3】他人创建的当前版本被折叠为「历史」等三现象 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">兑现判据 1 问题清理；定性为基线陈旧（人决定不修），指导切主检出。</p>
+  <p class="meta"><b>交付依据</b>：无代码交付（人决定不修）——Issue 正文 2026-11-19 复核修订：三现象同源于本机主检出停在过时 WIP 分支；问题 1 定性设计内行为（撤案）、问题 3 为问题 2 连锁（撤案）；处置：不钉定基线、不加合并兜底，指导切回主干分支。</p>
+  <p class="meta"><b>验证报告出处</b>：Issue 正文「验证」节 + <a href="https://github.com/forcegravity1989/builder-workbench/issues/731#issuecomment-7004279582">结论评论 issuecomment-7004279582</a>。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>本机验证</td>
+      <td>主检出切回 main 后三现象消失</td>
+      <td>通过：v1.1 恢复在制展开、目标 G1/G2/G3 可见、绑定树各归其位</td>
+      <td>证据形态：Issue 正文验证节（绑定数据核实自本机 orca-data.json）</td>
+      <td>本机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：Issue 正文。</p>
+  <p class="meta"><b>门禁</b>：不适用（定性处理单）。</p>
+  <p class="meta"><b>未验范围</b>：无 PR/测试/截图（定性处理单）；基线陈旧时界面失真静默呈现被列为接受的代价。</p>
+  <p class="manual"><b>人工核对</b>：人决定定性不修；结论评论留痕。</p>
+  <div class="pending"><b>待核对</b>：无</div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<h2>未归类成员</h2>
+<p class="mut">以下 Issue 带 <code>bw:plan:v1.1</code> 标签，但标题目标段不匹配本版任何目标且 taskSnapshot 无 goalId，按规范单列。</p>
+<article class="card" id="issue-653">
+  <h3><a href="https://github.com/forcegravity1989/builder-workbench/issues/653">#653</a> 【v1.0|G3】hover 常驻三快捷按钮 <span class="pill">CLOSED / COMPLETED</span></h3>
+  <p class="desc">标题目标段为 v1.0，列为未归类成员；hover 常驻固定/睡眠/删除按钮已由 PR #656 合入。</p>
+  <p class="meta"><b>交付依据</b>：<a href="https://github.com/forcegravity1989/builder-workbench/pull/656">PR #656</a>（MERGED，2026-11-16 07:08Z，<code>8da6f43</code>）——hover/键盘聚焦浮现固定/睡眠/删除，与右键菜单同源，移除 Alt 门槛。</p>
+  <p class="meta"><b>验证报告出处</b>：PR #656 CI 记录（2026-11-13）。</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>单测改写</td>
+      <td>8 个 Alt 用例改写为 6 个 hover 常驻用例</td>
+      <td>通过：vitest 2 文件 51 用例全通过</td>
+      <td>证据形态：vitest 读数</td>
+      <td>本机</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：PR #656 Checks。</p>
+  <p class="meta"><b>门禁</b>：oxlint 通过、tsc exit 0、count ratchet 220 基线；CI 全绿（6 项）。</p>
+  <p class="meta"><b>未验范围</b>：真壳 Electron UI 走查未做（PR 自述 electron.exe 缺失）；Issue 无评论、无人工走查留痕；sidebar 4 个既有失败用例（与本改动无关、基线复现）。</p>
+  <p class="manual"><b>人工核对</b>：由 forcegravity1989 于 2026-11-17 关闭 COMPLETED（无评论留痕）。</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li><a href="#pending-P15">待核对 P15</a> · 真壳走查未做、检视留痕薄弱 · <b>处置</b>：待核对</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：无</div>
+</article>
+
+<h2>已确认缺口汇总</h2>
+<ol>
+  <li><b>已关闭无合入件</b>：无</li>
+  <li><b>未合入</b>：无（PR #743 / #691 未合入已列入待核对 P4 / P10，尚待人决定处置；PR #751 随 #493 关闭废弃不合入，见 P12）</li>
+  <li><b>无读数 / 不可核对</b>：无</li>
+</ol>
+<h2>待核对事项汇总</h2>
+<p class="mut">以下事项记录各待核对项的最新处置状态，可在会前或会上继续核对。</p>
+<ol>
+  <li><a href="#pending-P1">待核对 P1</a>：G1 真壳走通缺口——真实 WeLink 群空间读写、双主机、重启读回、内网聚合未验（#342 仍 OPEN；#552 已被人关闭，无关闭评论）；已有 welink-cli 本机实测 + CI；建议内网双机补验或会上实机演示。</li>
+  <li><a href="#pending-P2">待核对 P2</a>：#480 评审通知特性本体零执行记录，仅底座 PR #592 合入；Issue 已被人关闭（2026-11-20，无关闭评论），特性本体是否改期/纳入下版由人说明。</li>
+  <li><a href="#pending-P3">待核对 P3</a>：#576 双人实时批注无原型/设计/代码落点；建议人决定纳入下版或补设计。</li>
+  <li><a href="#pending-P4">待核对 P4</a>：G2 原型入库未完成——PR #743 未合入 main（#159、#447）；已有 #743 主验证报告；建议合入后重新聚合或会上说明。</li>
+  <li><a href="#pending-P5">待核对 P5</a>：#527 原型评审会议旅程真壳端到端未实现；建议人决定改期或调整验收口径。</li>
+  <li>待核对 P6（版本级，无 Issue 卡片）：G3 补丁版本现有 v1.0.1 / v1.0.2 共 2 个，判据要求 4 个；建议会后再发或人确认口径。</li>
+  <li>待核对 P7（版本级，无 Issue 卡片）：G3 外宣规划与第一篇文章不落代码仓，仓内无证据；建议人提供文章/规划链接或会上说明。</li>
+  <li><a href="#pending-P8">待核对 P8</a>：#651 曾被重开且无原因评论；2026-11-20 人实机复验确认筛选分组能力在位后再次关闭，处置语义另立 #754（验收材料 followups 第 1 条，纪要未确认）；已闭环。</li>
+  <li><a href="#pending-P9">待核对 P9</a>：#686 未开工，无实现无评论；建议人决定纳入下版或关闭。</li>
+  <li><a href="#pending-P10">待核对 P10</a>：#690 客户端 PR #691 未合入，真壳截图/杀进程读回/真实他人机器未验；建议合入后重新聚合。</li>
+  <li><a href="#pending-P11">待核对 P11</a>：#717 两根因已修但 Issue 未关，跨主机 createdAt 缺失未见修复交付；建议补修或人确认关闭口径。</li>
+  <li><a href="#pending-P12">待核对 P12</a>：#493 经人决定关闭（诉求方向判定错误：去重只降磁盘不降包体积），PR #751 废弃不合入；减小安装包由已合入 #510 承担；已闭环。</li>
+  <li><a href="#pending-P13">待核对 P13</a>：#654 两条 Playwright E2E 未 rebaseline，main 上仍断言旧文案；建议补 rebaseline 小单。</li>
+  <li><a href="#pending-P14">待核对 P14</a>：#716 无本地测试/实机复验/检视评论（证据最薄）；建议人确认接受或补实机复验。</li>
+  <li><a href="#pending-P15">待核对 P15</a>：#650 / #653 / #654 检视留痕薄弱（PR 评论区无独立检视记录；#653 真壳走查未做；#650 截图为分支 blob 链接）；建议人确认接受或补走查。</li>
+</ol>
+<p class="mut">来源：各 Issue/PR/MR 已留下的验收件。Issue 状态以平台原生为正本：gh 归档时点读回（2026-11-21 08:25 本地，提交前全量复核）27 项中 8 open / 19 closed（此前 2026-11-20 17:45 本地读回曾误计为 7 open / 20 closed，系 gh 分页漏读旧 Issue #159，本次全量读回修正）；报告初稿（14:58 读回为 12 open / 15 closed）生成后 #493、#480、#552、#651 相继被人关闭，相关卡片已按各关闭记录更新；验收材料 taskSnapshot 刷新于 16:01（9 open / 18 closed），其后 #651 关闭，快照与归档时点差异为正常时序漂移。报告生成 2026-11-20 14:58，归档时点修订 17:50，提交前复核修订 2026-11-21 08:25。</p>
+</body>
+</html>

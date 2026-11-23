@@ -48,6 +48,7 @@ export function useWorktreeSidebarHeaderDrag(args: {
   rows: HostSectionRow[]
   renderRows: readonly RenderRow[]
   firstHeaderIndex: number
+  measuredRowStarts?: readonly number[]
   allRepoIds: string[]
   repoMap: Map<string, Repo>
   projectGroups: readonly ProjectGroup[]
@@ -195,20 +196,29 @@ export function useWorktreeSidebarHeaderDrag(args: {
       getRepoHeaderSectionEndByRepoId({
         rows: renderRows,
         firstHeaderIndex,
+        measuredRowStarts: args.measuredRowStarts,
         sidebarRepoHeaderIdsByBucket,
         repoHeaderBucketByRepoId
       }),
-    [firstHeaderIndex, renderRows, repoHeaderBucketByRepoId, sidebarRepoHeaderIdsByBucket]
+    [
+      args.measuredRowStarts,
+      firstHeaderIndex,
+      renderRows,
+      repoHeaderBucketByRepoId,
+      sidebarRepoHeaderIdsByBucket
+    ]
   )
   const projectGroupHeaderSectionEndByGroupId = useMemo(
     () =>
       getProjectGroupHeaderSectionEndByGroupId({
         rows: renderRows,
         firstHeaderIndex,
+        measuredRowStarts: args.measuredRowStarts,
         sidebarProjectGroupHeaderIdsByBucket,
         projectGroupHeaderBucketByGroupId
       }),
     [
+      args.measuredRowStarts,
       firstHeaderIndex,
       projectGroupHeaderBucketByGroupId,
       renderRows,

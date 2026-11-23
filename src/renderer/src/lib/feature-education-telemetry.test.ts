@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { eventSchemas, type EventName } from '../../../shared/telemetry-events'
 import {
   getSetupGuideStepSection,
   persistEmittedSetupGuideStepId,
   readEmittedSetupGuideStepIds,
   trackContextualTourOutcome,
   trackSetupGuideClosed,
+  trackSetupGuideOpened,
   trackSetupGuideStepCompleted,
   trackTerminalPaneSplit
 } from './feature-education-telemetry'
@@ -81,23 +83,54 @@ describe('feature education telemetry helpers', () => {
       total_steps: 8,
       active_step_id: 'notifications'
     })
+    for (const totalSteps of [7, 8]) {
+      trackSetupGuideOpened({
+        source: 'help_menu',
+        initialCompletedCount: 99,
+        totalSteps,
+        firstIncompleteStepId: 'none'
+      })
+      expectTrackedFeatureEducationTelemetry('setup_guide_opened', {
+        source: 'help_menu',
+        initial_completed_count: totalSteps,
+        total_steps: totalSteps,
+        first_incomplete_step_id: 'none'
+      })
+      trackSetupGuideClosed({
+        source: 'help_menu',
+        outcome: 'dismissed',
+        initialCompletedCount: 99,
+        finalCompletedCount: 2,
+        totalSteps,
+        activeStepId: 'notifications'
+      })
+      expectTrackedFeatureEducationTelemetry('setup_guide_closed', {
+        source: 'help_menu',
+        outcome: 'dismissed',
+        initial_completed_count: totalSteps,
+        final_completed_count: totalSteps,
+        total_steps: totalSteps,
+        active_step_id: 'notifications'
+      })
+    }
   })
 
   it('tracks setup guide step completion with bounded section and count fields', () => {
-    trackSetupGuideStepCompleted({
-      stepId: 'two-worktrees',
-      completedCount: 99,
-      totalSteps: 8,
-      setupGuideVisible: true
-    })
-
-    expectTrackedFeatureEducationTelemetry('setup_guide_step_completed', {
-      step_id: 'two-worktrees',
-      section_id: 'parallel-work',
-      completed_count: 8,
-      total_steps: 8,
-      setup_guide_visible: true
-    })
+    for (const totalSteps of [7, 8]) {
+      trackSetupGuideStepCompleted({
+        stepId: 'two-worktrees',
+        completedCount: 99,
+        totalSteps,
+        setupGuideVisible: true
+      })
+      expectTrackedFeatureEducationTelemetry('setup_guide_step_completed', {
+        step_id: 'two-worktrees',
+        section_id: 'parallel-work',
+        completed_count: totalSteps,
+        total_steps: totalSteps,
+        setup_guide_visible: true
+      })
+    }
     expect(getSetupGuideStepSection('browser')).toBe('parallel-work')
     expect(getSetupGuideStepSection('notifications')).toBe('setup')
   })
@@ -165,10 +198,11 @@ describe('feature education telemetry helpers', () => {
 })
 
 function expectTrackedFeatureEducationTelemetry(
-  name: string,
+  name: EventName,
   props: Record<string, unknown>
 ): void {
   expect(trackMock).toHaveBeenCalledWith(name, props)
+  expect(eventSchemas[name].safeParse(props).success).toBe(true)
 }
 
 function createMemoryStorage(): Storage {

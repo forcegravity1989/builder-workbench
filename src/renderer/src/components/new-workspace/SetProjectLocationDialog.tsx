@@ -107,6 +107,10 @@ function SetProjectLocationDialogBody({
   const [setupKind, setSetupKind] = useState<RepoKind>(projectKind)
   const [cloneUrl, setCloneUrl] = useState(defaultCloneUrl)
   const [cloneDestination, setCloneDestination] = useState('')
+  // Why: the local clone destination is prefilled from the project-location
+  // default below. A ref (not state) records a user edit so the async default
+  // never overwrites a path the user already typed or picked.
+  const cloneDestinationTouched = useRef(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Why: an SSH clone is unbounded and the dialog stays dismissable while it
   // runs. Without this, a clone the user backed out of minutes ago still fires
@@ -131,6 +135,30 @@ function SetProjectLocationDialogBody({
     existing: { value: setupPath, set: setSetupPath },
     clone: { value: cloneDestination, set: setCloneDestination }
   }
+
+  // Why: default the clone destination to the same project location that
+  // "Create new project" uses, so cloning onto the local host does not start
+  // from an empty path every time. Remote hosts resolve their own home, so the
+  // field stays empty there.
+  useEffect(() => {
+    if (remoteHost !== null) {
+      return
+    }
+    let cancelled = false
+    void window.api.repos
+      .getDefaultCreateProjectParent()
+      .then((parent) => {
+        if (!cancelled && parent && !cloneDestinationTouched.current) {
+          setCloneDestination((current) => (current === '' ? parent : current))
+        }
+      })
+      .catch(() => {
+        // Keep the field empty if the local host cannot provide a default.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [remoteHost])
 
   const browsing = view === 'browse' && remoteHost !== null
   useEffect(() => {
@@ -281,7 +309,10 @@ function SetProjectLocationDialogBody({
           isSubmitting={isSubmitting}
           onBack={() => setView('choose')}
           onCloneUrlChange={setCloneUrl}
-          onCloneDestinationChange={setCloneDestination}
+          onCloneDestinationChange={(value) => {
+            cloneDestinationTouched.current = true
+            setCloneDestination(value)
+          }}
           onBrowse={() => openHostBrowser('clone')}
           onSubmit={() => void handleCloneSubmit()}
         />

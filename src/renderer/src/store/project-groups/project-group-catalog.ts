@@ -5,6 +5,7 @@ import { getRuntimeTargetHostId } from '../runtime-target-host'
 import { projectGroupWithFetchedOwner } from './project-group-owner-stamping'
 import { mergeByIdentity, unchangedMergeSource } from '../catalog-identity'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
+import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
 
 export type FetchedProjectGroupCatalog = {
   projectGroups: ProjectGroup[]
@@ -38,17 +39,22 @@ function mergeFetchedProjectGroupsForHost(
 export async function fetchProjectGroupCatalogForTarget(
   target: RuntimeClientTarget
 ): Promise<FetchedProjectGroupCatalog> {
+  const pairingRevision =
+    target.kind === 'environment' ? getRuntimeEnvironmentRevision(target.environmentId) : undefined
   const fetchedGroups =
     target.kind === 'local'
       ? await window.api.projectGroups.list()
       : (
           await callRuntimeRpc<{ groups: ProjectGroup[] }>(target, 'projectGroup.list', undefined, {
             timeoutMs: 15_000,
-            reuseRecentCompatibilityFailure: true
+            reuseRecentCompatibilityFailure: true,
+            expectedEnvironmentPairingRevision: pairingRevision
           })
         ).groups
   return {
-    projectGroups: fetchedGroups.map((group) => projectGroupWithFetchedOwner(group, target)),
+    projectGroups: fetchedGroups.map((group) =>
+      projectGroupWithFetchedOwner(group, target, pairingRevision)
+    ),
     hostId: getRuntimeTargetHostId(target)
   }
 }

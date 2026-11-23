@@ -1,4 +1,6 @@
 import { NOTE_TARGETS } from './review-animated-visual-shared'
+import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Why: terminal-phase logic for the Notes panel lives here so the imperative
 // loop in ReviewNotesAnimatedVisual stays under the per-file lint cap. The
@@ -61,7 +63,10 @@ export async function runTerminalPhase(ctx: TerminalPhaseContext): Promise<void>
   }
   const startEl = term.querySelector<HTMLDivElement>('[data-term-line-start]')
   if (startEl) {
-    startEl.innerHTML = '<span class="ravs-term-muted">● Claude Code session started</span>'
+    const text = document.createElement('span')
+    text.className = 'ravs-term-muted'
+    text.textContent = translate('guidance.demo.sessionStarted', '● Claude Code session started')
+    startEl.replaceChildren(text)
   }
   await wait(520)
   if (isCancelled()) {
@@ -69,7 +74,17 @@ export async function runTerminalPhase(ctx: TerminalPhaseContext): Promise<void>
   }
   const loadedEl = term.querySelector<HTMLDivElement>('[data-term-line-loaded]')
   if (loadedEl) {
-    loadedEl.innerHTML = `<span class="ravs-term-check">✓</span><span class="ravs-term-muted">Loaded ${NOTE_TARGETS.length} review notes from Orca</span>`
+    const check = document.createElement('span')
+    check.className = 'ravs-term-check'
+    check.textContent = '✓'
+    const text = document.createElement('span')
+    text.className = 'ravs-term-muted'
+    text.textContent = translate(
+      'guidance.demo.notesLoaded',
+      'Loaded {{total}} review notes from {{product}}',
+      { total: NOTE_TARGETS.length, product: isWorkbenchShell() ? 'BW' : 'Orca' }
+    )
+    loadedEl.replaceChildren(check, text)
   }
   await wait(520)
   if (isCancelled()) {
@@ -93,7 +108,12 @@ export async function runTerminalPhase(ctx: TerminalPhaseContext): Promise<void>
     tail.innerHTML =
       '<span class="ravs-term-spinner" aria-hidden="true"></span><span class="ravs-term-muted" data-term-tail-text></span>'
   }
-  await typeInto(ctx, '[data-term-tail-text]', 'Fixing both issues...', 14)
+  await typeInto(
+    ctx,
+    '[data-term-tail-text]',
+    translate('guidance.demo.fixing', 'Fixing both issues...'),
+    14
+  )
   if (isCancelled()) {
     return
   }

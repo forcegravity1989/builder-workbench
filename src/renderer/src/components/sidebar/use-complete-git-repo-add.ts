@@ -21,12 +21,14 @@ type CompleteGitRepoAddOptions = {
     source: AddRepoExistingWorkspaceSource,
     executionHostId?: ExecutionHostId
   ) => Promise<void>
+  stayOnProjectWall?: boolean
 }
 
 export function useCompleteGitRepoAdd({
   closeModal,
   setHideDefaultBranchWorkspace,
-  finishProjectAdd
+  finishProjectAdd,
+  stayOnProjectWall
 }: CompleteGitRepoAddOptions): (
   repoId: string,
   source: AddRepoExistingWorkspaceSource,
@@ -73,9 +75,10 @@ export function useCompleteGitRepoAdd({
         source,
         executionHostId,
         closeModal,
-        setHideDefaultBranchWorkspace
+        setHideDefaultBranchWorkspace,
+        ...(stayOnProjectWall ? { activateDefaultCheckout: false } : {})
       })
     },
-    [closeModal, finishProjectAdd, setHideDefaultBranchWorkspace]
+    [closeModal, finishProjectAdd, setHideDefaultBranchWorkspace, stayOnProjectWall]
   )
 }

@@ -1,3 +1,5 @@
+import { WorkbenchBrowserHelp } from '@/workbench/WorkbenchDeliveryHelp'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { translate } from '@/i18n/i18n'
@@ -30,6 +32,7 @@ export function BrowserPageToolbar({
   sessionProfileId,
   viewportPresetId,
   isActive,
+  ownsBrowserTour,
   canGoBack,
   canGoForward,
   convertedFrom,
@@ -68,6 +71,7 @@ export function BrowserPageToolbar({
   sessionProfileId: string | null
   viewportPresetId: BrowserViewportPresetId | null
   isActive: boolean
+  ownsBrowserTour: boolean
   canGoBack: boolean
   canGoForward: boolean
   /** Set on a page the address bar converted; Back returns across it once guest history runs out. */
@@ -104,7 +108,7 @@ export function BrowserPageToolbar({
 }): React.JSX.Element {
   return (
     <BrowserChromeToolbar
-      showTourAnchors
+      showTourAnchors={ownsBrowserTour}
       controls={{
         canGoBack: canGoBack || Boolean(convertedFrom),
         canGoForward: canGoForward || Boolean(convertedTo),
@@ -161,7 +165,9 @@ export function BrowserPageToolbar({
           onHardReload={() => runReloadTrigger('hard-reload')}
         />
       }
-      importControl={<BrowserImportHintButton profileId={sessionProfileId} />}
+      importControl={
+        <BrowserImportHintButton profileId={sessionProfileId} showTourAnchor={ownsBrowserTour} />
+      }
       elementTools={{
         activeIntent: grab.state !== 'idle' ? grabIntent : null,
         onStartIntent: startGrabIntent,
@@ -205,14 +211,17 @@ export function BrowserPageToolbar({
         disabled: !externalUrl
       }}
       overflowMenu={
-        <BrowserToolbarMenu
-          currentProfileId={sessionProfileId}
-          workspaceId={workspaceId}
-          browserPageId={browserPageId}
-          viewportPresetId={viewportPresetId}
-          onDestroyWebview={() => destroyPersistentWebview(browserPageId)}
-          isActive={isActive}
-        />
+        <>
+          <BrowserToolbarMenu
+            currentProfileId={sessionProfileId}
+            workspaceId={workspaceId}
+            browserPageId={browserPageId}
+            viewportPresetId={viewportPresetId}
+            onDestroyWebview={() => destroyPersistentWebview(browserPageId)}
+            ownsBrowserTour={ownsBrowserTour}
+          />
+          {isWorkbenchShell() && <WorkbenchBrowserHelp ready={!isBlankTab && !markupIsActive} />}
+        </>
       }
     />
   )

@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
+import { publishVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import {
   getVisibleWorktreeIds,
   getVisibleWorktreeShortcutTargets,
@@ -11,7 +12,9 @@ import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
 import type { ProjectGroup } from '../../../../shared/project-group-types'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
+import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualified-identity'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
+import { PINNED_GROUP_KEY } from './worktree-list/grouping/group-keys'
 
 const initialState = useAppStore.getInitialState()
 
@@ -114,6 +117,8 @@ function seedStore(worktrees: Worktree[], overrides: Partial<AppState> = {}): vo
 
 describe('closed-sidebar Cmd+1-9 ordering (#9497)', () => {
   afterEach(() => {
+    vi.unstubAllEnvs()
+    publishVersionSidebarProjection({ repoId: null, worktreeIdentities: new Set() })
     setVisibleWorktreeIds(null)
     setVisibleWorktreeShortcutTargets(null)
     useAppStore.setState(initialState, true)
@@ -296,5 +301,50 @@ describe('closed-sidebar Cmd+1-9 ordering (#9497)', () => {
     expect(getVisibleWorktreeShortcutTargets()).toEqual([
       { id: 'repo1::/same', executionHostId: 'local' }
     ])
+  })
+
+  it('keeps shortcuts within the current BW project across hosts', () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    const gitRemoteIdentity = {
+      canonicalKey: 'github.com/acme/app',
+      remoteName: 'origin',
+      remoteUrl: 'https://github.com/acme/app.git'
+    }
+    const local = makeWorktree('wt-local', { hostId: 'local', isPinned: true, sortOrder: 2 })
+    const remote = makeWorktree('wt-remote', {
+      repoId: 'repo-ssh',
+      hostId: 'ssh:box',
+      isPinned: true,
+      sortOrder: 1
+    })
+    const bound = makeWorktree('wt-bound', { hostId: 'local' })
+    const other = makeWorktree('wt-other', { repoId: 'repo-other', isPinned: true, sortOrder: 3 })
+    seedStore([], {
+      activeRepoId: 'repo1',
+      filterRepoIds: ['repo-other'],
+      repos: [
+        makeRepo('repo1', { gitRemoteIdentity }),
+        makeRepo('repo-ssh', { gitRemoteIdentity, connectionId: 'box' }),
+        makeRepo('repo-other')
+      ],
+      worktreesByRepo: { repo1: [local, bound], 'repo-ssh': [remote], 'repo-other': [other] }
+    })
+
+    expect(getVisibleWorktreeIds()).toEqual([local.id, remote.id, bound.id])
+    publishVersionSidebarProjection({
+      repoId: 'repo1',
+      worktreeIdentities: new Set([local, bound].map(getWorktreeHostIdentity))
+    })
+    expect(getVisibleWorktreeShortcutTargets()).toEqual([
+      { id: local.id, executionHostId: 'local' },
+      { id: remote.id, executionHostId: 'ssh:box' }
+    ])
+
+    useAppStore.setState({
+      settings: { showPinnedWorktreesInGroups: true } as AppState['settings'],
+      collapsedGroups: new Set([PINNED_GROUP_KEY])
+    })
+    expect(getVisibleWorktreeIds()).toEqual([remote.id])
+    expect(useAppStore.getState().filterRepoIds).toEqual(['repo-other'])
   })
 })

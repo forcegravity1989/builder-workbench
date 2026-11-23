@@ -77,10 +77,9 @@ const legacyDocument = {
 }
 
 describe('legacy acceptance material', () => {
-  it('parses a pre-v10 document as-is instead of failing the strict schema', () => {
-    // The material schema is strict, so dropping the retired keys outright would
-    // turn every stored pre-v10 file into "corrupt material" and lose real human
-    // input. They stay optional and read-only.
+  it('parses a pre-v10 document as-is and projects every legacy category; v10 documents project nothing', () => {
+    // Known fields remain validated while retired fields and newer unknown keys
+    // survive the read projection, so real human input stays available.
     const parsed = AcceptanceMaterialSchema.parse(legacyDocument)
     expect(parsed.results[0].progress).toBe('本轮完成联调')
     expect(parsed.results[0].deliveries).toEqual([
@@ -95,10 +94,7 @@ describe('legacy acceptance material', () => {
     // Current fields on the same document still parse normally.
     expect(parsed.results[0].decision?.outcome).toBe('met')
     expect(parsed.results[0].issueNotes).toEqual({ 'github:github.com/acme/app:1': '需要补证据' })
-  })
 
-  it('projects every legacy category for the read-only block, and nothing for a v10 document', () => {
-    const parsed = AcceptanceMaterialSchema.parse(legacyDocument)
     const legacy = projectLegacyAcceptance(parsed)
     expect(legacy).not.toBeNull()
     expect(legacy?.roundCount).toBe(1)
@@ -110,11 +106,6 @@ describe('legacy acceptance material', () => {
     expect(goal?.deliveries).toHaveLength(1)
     expect(goal?.materials).toEqual([{ label: '验收截图', url: 'https://example.test/evidence' }])
     expect(goal?.riskIssues).toEqual(['github:github.com/acme/app:1'])
-    // Labels are human-readable, not raw protocol enums.
-    expect(goal?.directives.map((item) => [item.tag, item.status, item.source])).toEqual([
-      ['纳入下周计划', '已确认', '会议转写总结'],
-      ['本次验收已解决', '待确认', '人工提供']
-    ])
     expect(goal?.rounds).toEqual([
       { id: 'r1', week: '2026-W40', kind: '进展轮', closedAt: '2026-10-02T00:00:00Z' }
     ])

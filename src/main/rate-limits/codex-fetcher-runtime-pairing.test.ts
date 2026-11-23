@@ -75,13 +75,13 @@ describe('codex rate-limit spawn runtime pairing', () => {
     const rpcChild = makeRpcChild()
     childSpawnMock.mockReturnValue(rpcChild)
 
-    const resultPromise = fetchCodexRateLimits({ allowPtyFallback: false })
+    const resultPromise = fetchCodexRateLimits()
     await vi.advanceTimersByTimeAsync(0)
 
     const spawnEnv = childSpawnMock.mock.calls[0]?.[2]?.env as NodeJS.ProcessEnv
     // Guards the argument choice: pairing spawnCmd (cmd.exe on win32) rather than
     // the resolved CLI silently reverts the ABI fix (stablyai/orca#10932).
-    expect(spawnEnv.PATH?.split(delimiter)[0]).toBe(bin)
+    expect((spawnEnv.Path ?? spawnEnv.PATH)?.split(delimiter)[0]).toBe(bin)
 
     rpcChild.emit('close')
     await resultPromise
@@ -99,7 +99,7 @@ describe('codex rate-limit spawn runtime pairing', () => {
       const rpcChild = makeRpcChild()
       childSpawnMock.mockReturnValue(rpcChild)
 
-      const resultPromise = fetchCodexRateLimits({ allowPtyFallback: false })
+      const resultPromise = fetchCodexRateLimits()
       await vi.advanceTimersByTimeAsync(0)
 
       const spawnCommand = childSpawnMock.mock.calls[0]?.[0] as string
@@ -121,11 +121,11 @@ describe('codex rate-limit spawn runtime pairing', () => {
     const rpcChild = makeRpcChild()
     childSpawnMock.mockReturnValue(rpcChild)
 
-    const resultPromise = fetchCodexRateLimits({ allowPtyFallback: false })
+    const resultPromise = fetchCodexRateLimits()
     await vi.advanceTimersByTimeAsync(0)
 
     const spawnEnv = childSpawnMock.mock.calls[0]?.[2]?.env as NodeJS.ProcessEnv
-    expect(spawnEnv.PATH).toBe(process.env.PATH)
+    expect(spawnEnv.Path ?? spawnEnv.PATH).toBe(process.env.Path ?? process.env.PATH)
 
     rpcChild.emit('close')
     await resultPromise

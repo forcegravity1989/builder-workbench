@@ -1,5 +1,5 @@
-import { codehubApi } from '@/lib/codehub-api'
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
@@ -23,8 +23,24 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const { codehubDetailItem, setCodehubDetailItem, handleUseCodeHubItem, setCodehubRefreshNonce } =
     model
   const item = codehubDetailItem
+  const sourceContext = model.pageData?.openCodeHubSourceContext
+  // 详情与写操作同样固定本机：来源行只提供项目身份。
+  const host = item?.host
+  const project = item?.project
+  const taskRepository = useMemo(() => ({ host, project }), [host, project])
+  const api = useMemo(
+    () => createTaskPageCodeHubApi(sourceContext, taskRepository),
+    [sourceContext, taskRepository]
+  )
   const key = item
-    ? getCodehubDetailCacheKey({ repoId: item.repoId, kind: item.type, iid: item.iid })
+    ? getCodehubDetailCacheKey({
+        sourceContext,
+        repoPath: item.repoPath,
+        repoId: item.repoId,
+        kind: item.type,
+        iid: item.iid,
+        taskRepository
+      })
     : ''
   // Why: cache writes replace entry identity (delete+set), so Map.get is a stable snapshot for useSyncExternalStore.
   const entry = useSyncExternalStore(
@@ -42,7 +58,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const [labelDraft, setLabelDraft] = useState<string[]>([])
   const [savingLabels, setSavingLabels] = useState(false)
   const [stateBusy, setStateBusy] = useState(false)
-  const { checks, files, mrExtrasLoading, reloadMrExtras } = useCodeHubMrExtras(item)
+  const { checks, files, mrExtrasLoading, reloadMrExtras } = useCodeHubMrExtras(item, sourceContext)
   // Data lanes read from the shared SWR cache: a reopen paints cached data
   // instantly while ensureCodehubDetailFresh reconciles in the background.
   const detail: CodeHubTaskDetail | null = entry?.detail ?? null
@@ -61,12 +77,14 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     setEditingLabels(false)
     setTab('conversation')
     void ensureCodehubDetailFresh({
+      sourceContext,
       repoPath: item.repoPath,
       repoId: item.repoId,
       kind: item.type,
-      iid: item.iid
+      iid: item.iid,
+      taskRepository
     })
-  }, [item])
+  }, [item, sourceContext, taskRepository])
 
   const reloadDetail = useCallback((): void => {
     if (!item?.repoPath) {
@@ -74,13 +92,15 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     }
     invalidateCodehubDetailCache(key)
     void ensureCodehubDetailFresh({
+      sourceContext,
       repoPath: item.repoPath,
       repoId: item.repoId,
       kind: item.type,
-      iid: item.iid
+      iid: item.iid,
+      taskRepository
     })
     setCodehubRefreshNonce((nonce) => nonce + 1)
-  }, [item, key, setCodehubRefreshNonce])
+  }, [item, key, setCodehubRefreshNonce, sourceContext, taskRepository])
 
   // Comment threads and the files tab write fetched rows back through this
   // instead of local state (same callers as before the cache existed).
@@ -104,7 +124,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     if (!item?.repoPath) {
       return Promise.resolve(false)
     }
-    return codehubApi
+    return api
       .createComment({
         repoPath: item.repoPath,
         repoId: item.repoId,
@@ -149,7 +169,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       return
     }
     setSavingTitle(true)
-    void codehubApi
+    void api
       .updateIssueTitle({
         repoPath: item.repoPath,
         repoId: item.repoId,
@@ -182,7 +202,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       return
     }
     setSavingLabels(true)
-    void codehubApi
+    void api
       .updateIssueLabels({
         repoPath: item.repoPath,
         repoId: item.repoId,
@@ -211,7 +231,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       return
     }
     setStateBusy(true)
-    void codehubApi
+    void api
       .setIssueState({
         repoPath: item.repoPath,
         repoId: item.repoId,
@@ -249,6 +269,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       : translate('auto.components.TaskPage.dfc0c79bd8', 'Issues')
   const projectLabel = item.project ?? ''
   return {
+    api,
     item,
     detail,
     comments,

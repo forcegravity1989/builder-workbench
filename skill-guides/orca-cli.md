@@ -186,18 +186,31 @@ Terminal rules:
 
 ## Artifacts
 
-Artifacts publish HTML or Markdown files through the signed-in Orca account. Anyone can view
-the share URL; creating, listing, updating, and deleting need the active profile signed in.
+Artifacts publish HTML or Markdown files as links on a self-hosted share service.
+**Sharing is zero-config:** the service address is built into the app, this computer
+enrolls itself on its first share, and no Orca account is involved. There is no publish
+switch and nothing for a human to enable first.
 
-**Publishing is off by default and only a human can turn it on.** `share` and `update` need a
-device-wide capability the user grants in the desktop app under Settings → Artifacts ("Allow
-publishing public artifact links"). It applies to every caller on the device, agent or human.
-There is no CLI or RPC way to grant it. `list`, `unshare`, and `delete` are never gated, so old
-links stay auditable and revocable.
+`share` publishes a file and prints its URL; sharing the same file again publishes new
+content over the same link (`update` is the same operation). `list` reports every link
+this computer created with its id, URL, last update and expiry — `expires: never` means the
+service is configured to keep links, otherwise it drops them once that date passes.
+`unshare` deletes by file path and `delete` by the id from `list`. A link holds the content as of the moment it was shared — a snapshot,
+not a live view — and anyone who can reach the share service over the network can open
+it, so treat every published file as public within that reach. Deleting a link makes it
+stop working immediately.
 
-A denied share fails with `artifact_sharing_disabled` before any upload. Do not retry; the
-answer will not change until a human acts. Tell the user to turn the setting on and re-run, or
-deliver the file locally if they decline.
+Sharing runs on the desktop app on this computer; the commands cannot be retargeted to
+another runtime. The CLI transport limit is 800 KB per command: a larger file is rejected
+before upload, so do not retry or trim it to fit — open the file in Workbench and use
+Share as artifact instead. Other failures carry a stable error code and message. A
+transient one (`network`, `rate-limited`, `busy`) may be retried; report a persistent
+failure to the user instead of looping. Three codes are not transient: `enrollment-full`
+and `registry-unavailable` mean an administrator has to act on the share server, and
+`stale-record` on a delete means this computer's row is already gone while the public link
+may still exist — say so instead of reporting the link as deleted or retrying. Users review
+and delete the links this computer created under Settings → Artifacts ("Files you've
+shared").
 
 The `artifacts` commands, and the separate default-off permission for publishing installed skills, are in `references/publishing.md`. Load it before publishing either kind of link; a skill folder can hold scripts, configuration, or credentials.
 

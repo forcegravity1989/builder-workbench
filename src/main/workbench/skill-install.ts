@@ -83,13 +83,18 @@ export async function prepareWorkbenchSkill(
         : await runtime.installSharedSkillBundleRequest(request, signal)
     )
     const skill = result.skills.find((item) => item.skillId === input.topic)
+    if (skill?.conflict) {
+      throw new Error(
+        `已保留现有「${input.topic}」Skill。请在原生技能管理中核对这个版本并处理安装冲突，再回来重试。`
+      )
+    }
     if (
       result.status !== 'complete' ||
       !skill?.canonicalPath ||
       !['installed', 'updated', 'unchanged'].includes(skill.status)
     ) {
       throw new Error(
-        `流程 Skill 未就绪，请在原生技能管理中核对安装或本地修改：${skill?.failure?.code ?? result.status}`
+        `流程 Skill 安装未完成（${skill?.failure?.code ?? result.status}）。请在原生技能管理中核对安装后重试。`
       )
     }
     const skillRoot =

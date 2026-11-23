@@ -66,7 +66,9 @@ export function buildWorktreeCardPresentation(card: WorktreeCardController) {
     canUnlinkReview,
     handleUnlinkReview,
     detailsHoverControl,
-    showDeleteQuickAction
+    showDeleteQuickAction,
+    isDeleting,
+    titleRenaming
   } = card
 
   // Why: pinned trees mix repos, so the repo icon shows regardless of groupBy's hideRepoBadge.
@@ -109,7 +111,12 @@ export function buildWorktreeCardPresentation(card: WorktreeCardController) {
   const hasMetaRow = compactCards
     ? hasMetadataBadge || cacheStartedAt != null
     : hasDetailedMetaRowContent
-  const showHeaderActions = showTitleRowPrimary || showDeleteQuickAction
+  // Why: the persistent right slot only carries the main-worktree star; the
+  // pin/sleep/delete trio is an in-flow slot revealed on hover (see header).
+  const showHeaderActions = showTitleRowPrimary
+  // Why: hover quick actions are available on every card except affiliate lists
+  // and while the row is mid-delete or mid-rename.
+  const showHoverQuickActions = !affiliateListMode && !isDeleting && !titleRenaming
   // Why: normalize the title once so title/branch de-dupe and identity-only hover eligibility stay in sync.
   const trimmedVisibleCardTitle = visibleCardTitle.trim()
   const showBranchIdentityHover = newCardStyle
@@ -277,6 +284,7 @@ export function buildWorktreeCardPresentation(card: WorktreeCardController) {
     showTitleRowIndicators,
     hasMetaRow,
     showHeaderActions,
+    showHoverQuickActions,
     showDeleteQuickAction,
     hoverBranchName,
     hoverWorkspaceTitle,

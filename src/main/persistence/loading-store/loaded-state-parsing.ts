@@ -5,6 +5,10 @@ import { normalizeKagiSessionLink } from '../../../shared/browser-url'
 import type { PersistedState } from '../../../shared/persisted-state-types'
 import type { SshPtyConsumerRecovery } from '../../../shared/ssh-types'
 import { getDefaultPersistedState } from '../../../shared/constants'
+import {
+  isWorkbenchProduct,
+  WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
+} from '../../startup/workbench-product'
 import { pruneLocalTerminalScrollbackBuffers } from '../../../shared/workspace-session-terminal-buffers'
 import { pruneWorkspaceSessionBrowserHistory } from '../../../shared/workspace-session-browser-history'
 import { clearMissingProjectGroupMemberships } from '../../../shared/project-groups'
@@ -196,6 +200,17 @@ export class LoadedStateParsingOperations {
 
     if (result === null) {
       result = getDefaultPersistedState(homedir())
+      // Existing profiles, including failed backup recovery, keep Orca's settings policy.
+      if (
+        !fileExistedOnLoad &&
+        process.platform === 'win32' &&
+        isWorkbenchProduct() &&
+        !hasStateBackup(dataFile) &&
+        existsSync('D:\\')
+      ) {
+        result.settings.workspaceDir = WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
+        this.runtime.loadNeedsSave = true
+      }
     }
 
     const workspaceSession = pruneWorkspaceSessionBrowserHistory(

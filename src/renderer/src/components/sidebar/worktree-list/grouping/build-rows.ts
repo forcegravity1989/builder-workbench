@@ -11,6 +11,8 @@ import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { getCyclicProjectedWorktreeLineageIds } from '../../worktree-lineage-projection'
 import { ALL_GROUP_KEY, ALL_GROUP_META } from './group-keys'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { FolderGit2 } from 'lucide-react'
 import { appendOrderedGroups } from './group-sections'
 import type { SectionAppendContext } from './group-sections'
 import {
@@ -70,7 +72,13 @@ export function buildRows(
   folderWorkspaces: readonly FolderWorkspace[] = [],
   hostLabelById?: ReadonlyMap<string, string>,
   defaultHostId: ExecutionHostId = LOCAL_EXECUTION_HOST_ID,
-  pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings)
+  pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings),
+  /**
+   * Trees kept out of their natural group but still eligible for the Pinned
+   * section. Why (#500): BW's version sidebar owns its bound trees and hides
+   * them from the project list; pinning one must still surface it under 已固定.
+   */
+  pinnedOnlyIdentities: ReadonlySet<string> = new Set<string>()
 ): Row[] {
   const result: Row[] = []
   const projectIndex = buildProjectGroupingIndex(projectGrouping)
@@ -101,10 +109,16 @@ export function buildRows(
     ? getPinnedSectionWorktrees(worktrees, lineageById, worktreeMap)
     : worktrees.filter((worktree) => worktree.isPinned)
   const pinnedSectionIds = new Set(pinnedSectionWorktrees.map(getWorktreeHostIdentity))
+  const naturalSourceWorktrees =
+    pinnedOnlyIdentities.size === 0
+      ? worktrees
+      : worktrees.filter((worktree) => !pinnedOnlyIdentities.has(getWorktreeHostIdentity(worktree)))
   const naturalWorktrees =
     pinnedDisplayPolicy === 'duplicate-in-groups'
-      ? worktrees
-      : worktrees.filter((worktree) => !pinnedSectionIds.has(getWorktreeHostIdentity(worktree)))
+      ? naturalSourceWorktrees
+      : naturalSourceWorktrees.filter(
+          (worktree) => !pinnedSectionIds.has(getWorktreeHostIdentity(worktree))
+        )
   // Why the full set: under the default pinned policy a pinned worktree exists
   // only in the Pinned section, and its host is part of whether the sidebar is
   // mixed at all. Scoping to naturalWorktrees left pinned remotes unlabelled.
@@ -158,10 +172,10 @@ export function buildRows(
       result.push({
         type: 'header',
         key: ALL_GROUP_KEY,
-        label: ALL_GROUP_META.label,
+        label: isWorkbenchShell() ? '工作区' : ALL_GROUP_META.label,
         count: naturalWorktrees.length + renderableFolderWorkspaces.length,
         tone: ALL_GROUP_META.tone,
-        icon: ALL_GROUP_META.icon,
+        icon: isWorkbenchShell() ? FolderGit2 : ALL_GROUP_META.icon,
         hostWorktreeCounts: getLaneHostWorktreeCounts(
           naturalWorktrees,
           renderableFolderWorkspaces,

@@ -58,12 +58,12 @@ export function withRuntimeStatusOwners<T extends Record<string, Mock>>(transpor
   }
 }
 
-export function pairingCode(endpoint = 'ws://127.0.0.1:6768'): string {
+export function pairingCode(endpoint = 'ws://127.0.0.1:6768', hostKeyByte = 1): string {
   return encodePairingOffer({
     v: 2,
     endpoint,
     deviceToken: 'device-token',
-    publicKeyB64: Buffer.from(new Uint8Array(32).fill(1)).toString('base64')
+    publicKeyB64: Buffer.from(new Uint8Array(32).fill(hostKeyByte)).toString('base64')
   })
 }
 

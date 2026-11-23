@@ -528,7 +528,9 @@ describe('staged background worktree creation', () => {
     })
 
     expect(started).toBe(true)
-    await flushAsyncWorktreeCreation()
+    await vi.waitFor(() => {
+      expect(store.removePendingWorktreeCreation).toHaveBeenCalledWith('creation-1', { cleanupVm: false })
+    })
     expect(activateAndRevealWorktree).not.toHaveBeenCalled()
     expect(ensureWorktreeHasInitialTerminal).toHaveBeenCalledWith(
       store,
@@ -540,9 +542,6 @@ describe('staged background worktree creation', () => {
       { activateCreatedTabs: false, backendStartupTerminalSpawned: true }
     )
     expect(queueWorkspaceActivationTerminalFocus).not.toHaveBeenCalled()
-    expect(store.removePendingWorktreeCreation).toHaveBeenCalledWith('creation-1', {
-      cleanupVm: false
-    })
   })
 
   it('reveals a backend-owned startup after the user switches workspaces', async () => {

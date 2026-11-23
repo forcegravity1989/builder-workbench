@@ -141,7 +141,8 @@
         "resourceUsageToggleDescription": "Show the Resource Manager. Click it for CPU, memory, sessions, daemon controls, and workspace disk scans.",
         "portsToggleDescription": "Show live workspace ports. Click it for workspace-scoped ports and external listeners.",
         "antigravityToggleDescription": "Show Antigravity subscription usage for the active workspace.",
-        "grokToggleDescription": "Show Grok subscription credit usage when signed in via Grok CLI."
+        "grokToggleDescription": "Show Grok subscription credit usage when signed in via Grok CLI.",
+        "cursorToggleDescription": "Show Cursor plan usage when signed in through cursor-agent or Cursor IDE."
       },
       "menuBarIcon": {
         "title": "Show Menu Bar Icon",
@@ -183,6 +184,24 @@
         "heading": "Remote browsing",
         "headingDescription": "Where remote workspace pages render, and where their network traffic leaves from."
       }
+    },
+    "agents": {
+      "detectionFailed": "Couldn’t detect agents on this host.",
+      "environmentName": "Environment variable name",
+      "environmentValue": "Value for {{name}}",
+      "hostDefaults": "Defaults for agents launched on this host.",
+      "loading": "Loading agent settings…",
+      "newEnvironment": "Value",
+      "readFailed": "Couldn’t read agent settings. Check the host connection and try again.",
+      "refresh": "Refresh",
+      "removeEnvironment": "Remove",
+      "save": "Save",
+      "savedEnvironment": "Saved value · enter to replace",
+      "saveFailed": "Couldn’t save agent settings. Check the host connection and try again.",
+      "updateHost": "Update this server to edit its agent launch settings."
+    },
+    "servers": {
+      "accessRevoked": "This client no longer has access. Use a new pairing link from this server to reconnect."
     }
   },
   "menu": {
@@ -273,6 +292,25 @@
     }
   },
   "auto": {
+    "workbench": {
+      "quickLinks": {
+        "add": "Add",
+        "cancel": "Cancel",
+        "copied": "Copied {{url}}",
+        "copy": "Copy",
+        "corrupt": "Quick links file could not be read; existing file was left untouched.",
+        "delete": "Delete",
+        "edit": "Edit",
+        "empty": "No quick links yet. Click Add to create one.",
+        "namePlaceholder": "Name",
+        "save": "Save",
+        "saveFailed": "Failed to save quick links",
+        "title": "Quick Links",
+        "tooltip": "Quick Links — {{count}}",
+        "trigger": "Quick Links, {{count}}",
+        "urlPlaceholder": "https://example.com"
+      }
+    },
     "App": {
       "221a95ba38": "Retry onboarding or close it and continue in the app.",
       "f02d37278a": "Onboarding hit an error.",
@@ -340,7 +378,8 @@
         "loopbackPairingBlocked": "This access link points back to this device.",
         "remotePairingUnreachable": "Cannot reach Orca at {{endpoint}}.",
         "remotePairingInvalidDetails": "This access link contains invalid connection details.",
-        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again."
+        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again.",
+        "remotePairingRepairUnavailable": "Re-pairing is not available in the browser. Pair this browser with the server again."
       },
       "web": {
         "preload": {
@@ -582,6 +621,7 @@
           "a5fc0cb622": "OpenClaude",
           "bf53f09bf8": "Claude Agent Teams",
           "0708ed89f1": "Claude",
+          "dsh_label": "DeepSeek Harness",
           "fc80296033": "Devin",
           "da41abbdd4": "Ante",
           "060d152fb5": "Trae",
@@ -597,7 +637,7 @@
               "8d6eedf97e": "Failed to register the Orca CLI in PATH.",
               "0f116999f1": "Restart your shell or add the Orca CLI directory to PATH before setup.",
               "15cbedc3e3": "Install the Orca CLI before running agent skill setup.",
-              "windowsPathUnknown": "Orca could not check your Windows user PATH",
+              "windowsPathUnknown": "Could not check your Windows user PATH",
               "refreshCliRegistration": "Refresh CLI registration status and try again."
             }
           }
@@ -2374,8 +2414,11 @@
         "09a55c39b5": "Installing...",
         "ea2a41adbe": "You're on the latest version.",
         "ba5ffc949c": "Checking for updates...",
-        "2c2d3e03ca": "Try Again",
+        "2c2d3e03ca": "Retry and Restart to Update",
         "4cf109845a": "Update Error",
+        "sessionSaveFailed": "Session State Could Not Be Saved",
+        "sessionSaveFailedNextStep": "The update is downloaded, but session state could not be saved before quitting. Retrying will run the save checks again, then restart to install the update if they pass.",
+        "installFailedNextStep": "Could not restart to install the downloaded update. Try again to restart and install it.",
         "6b0085010d": "Re-check",
         "48565a32bc": "Retry Download",
         "933c6fdf5b": "Enable & Restart",
@@ -3232,6 +3275,7 @@
             "openWithDefaultApp": "Open with default app",
             "switchTerminal": "Switch terminal",
             "openTaskTerminal": "Open task terminal",
+            "openInTask": "Open in Task",
             "systemBrowser": "System Browser",
             "orcaBrowser": "Orca Browser",
             "terminalLinkSettings": "Terminal link settings",
@@ -3732,6 +3776,7 @@
           },
           "StatusBar": {
             "9659e38343": "Ports",
+            "quickLinks": "Quick Links",
             "d1e1a7a6bf": "Resource Manager",
             "24ac89df1a": "Remote Hosts",
             "5e59007df4": "Kimi Usage",
@@ -3791,7 +3836,8 @@
             "grokUsageMenu": "Grok Usage",
             "floatingTerminalNewActivity": "{{label}}, new activity",
             "codexSignInSuccess": "Signed in to Codex",
-            "codexSignInError": "Codex sign-in failed. Please try again."
+            "codexSignInError": "Codex sign-in failed. Please try again.",
+            "cursorUsageMenu": "Cursor Usage"
           },
           "StatusBarUsageEmptyCta": {
             "828c764a79": "Connect an account",
@@ -3976,6 +4022,13 @@
                 "label": "Sign-in expired",
                 "apiKey": "MiniMax API key expired. Replace it in Settings.",
                 "cookie": "MiniMax session cookie expired. Replace it in Settings."
+              }
+            },
+            "cursor": {
+              "plan": "Plan",
+              "expired": {
+                "label": "Sign-in expired",
+                "message": "Sign in with Cursor IDE or run cursor-agent login on the computer running Workbench, then retry usage."
               }
             }
           },
@@ -5151,6 +5204,8 @@
           "3e64e8a70d": "Connection failed",
           "32a7256d85": "Clone",
           "69f5b5380d": "Cloning...",
+          "finishingClone": "Finishing clone…",
+          "importingProject": "Importing project…",
           "cloneOnHostDescription": "Enter the Git URL and choose where to clone it on {{value0}}.",
           "cloneParentFolder": "Parent folder",
           "remoteCloneParentPlaceholder": "/home/user/projects"
@@ -5247,7 +5302,9 @@
           "591f330288": "Delete Project Group",
           "2c14ce677a": "Deleting...",
           "0e0e6764af": "Contained projects",
-          "ad407c2d55": "more",
+          "groupHost": "Group host: {{host}}",
+          "groupUnavailable": "The selected group is no longer available. Check the project list.",
+          "vmCleanup": "For a VM project, its recipe determines whether the environment and files are permanently deleted.",
           "removeContainedProjectSingular": "Remove 1 contained project",
           "removeContainedProjectPlural": "Remove {{value0}} contained projects",
           "eeabb8e8e4": "Remove {{value0}} contained {{value1}} from Orca",
@@ -5275,6 +5332,9 @@
           "b79b39d865": "Remove Project",
           "removeDescriptionSsh": "This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.",
           "removeDescriptionLocal": "This only removes {{name}} from Orca. It is still on your disk.",
+          "removeDescriptionRuntime": "Remove the registration for {{name}} on this host. Its files stay on that host.",
+          "registrationUnavailable": "This project registration is no longer available. Check the project list.",
+          "updatePairedHost": "Update Workbench on the paired host before removing a project registration.",
           "removeDescriptionVmRecipe": "This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted."
         },
         "ScrollToCurrentWorkspaceToolbarButton": {
@@ -5334,7 +5394,10 @@
           "69969ba364": "Sending…",
           "imageReadFailed": "Could not read the attached images. Try attaching them again.",
           "attachWhileSending": "Wait for the current feedback to finish sending before attaching more images.",
-          "imagesNotDelivered": "Feedback sent, but image delivery could not be confirmed."
+          "imagesNotDelivered": "Feedback sent, but image delivery could not be confirmed.",
+          "workbenchDescription": "Share what's working, what's broken, or what Workbench should do next. Reports are uploaded to the BW user group's WeLink space using your current WeLink account.",
+          "omitGitHubIdentity": "Do not include GitHub account information",
+          "withoutGitHubIdentity": "Your feedback will not include GitHub account information."
         },
         "SidebarFilter": {
           "e3b3898218": "Add project",
@@ -5377,7 +5440,6 @@
           "0ccba862b8": "Open GitHub tasks",
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
-          "artifacts": "Artifacts",
           "skills": "Skills"
         },
         "SidebarRepositoryFilterSection": {
@@ -5706,6 +5768,7 @@
           "bd37a57ac8": "Create workspace for {{value0}}",
           "b667b59632": "Some projects could not be removed from Orca",
           "f94466bc39": "{{value0}} of {{value1}} contained project{{value2}} remained after deleting the group.",
+          "groupDeleteMembersChanged": "Group membership changed. Review the project list and confirm again.",
           "groupDeleteFailed": "Failed to delete group",
           "groupDeleteFailedDesc": "Something went wrong while deleting the group. No projects were removed.",
           "groupRenameFailed": "Failed to rename group",
@@ -7248,9 +7311,6 @@
           "0e9fc0eadc": "Workspace Directory",
           "e2955d9ccb": "Configure where new workspaces are created.",
           "7511097c5d": "Workspace",
-          "31e300af1c": "Ask Before Deleting Artifacts",
-          "fb29a73a17": "Show a confirmation dialog before deleting a shared artifact and breaking its public link.",
-          "bf46474e33": "Show a confirmation before deleting a shared artifact. Anyone holding its public link loses access.",
           "externalWorktrees": "External worktrees",
           "externalWorktreesDescription": "Choose whether worktrees created outside Orca appear by default.",
           "show": "Show",
@@ -7437,8 +7497,8 @@
           "f7eb5f0b24": "Not installed",
           "codeHostGroupTitle": "Code hosting",
           "codeHostGroupDescription": "CLIs for tasks, pull requests, merge requests, and review status.",
-          "imGroupTitle": "Project group",
-          "imGroupDescription": "CLIs for posting version and acceptance updates to the project group.",
+          "imGroupTitle": "Reports and diagnostics",
+          "imGroupDescription": "Send reports and diagnostic files to the BW user-group space.",
           "buildGroupTitle": "Build",
           "buildGroupDescription": "CLIs for pipeline execution and package builds."
         },
@@ -7637,7 +7697,6 @@
           "nestedWorkerDepthDescription": "How many generations of dispatched workers may spawn their own workers. 1 keeps the agent tree flat: a coordinator dispatches workers, and those workers do not dispatch."
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "Enables agents to hand off context and coordinate work through Orca.",
           "2777ff0fdc": "Orchestration skill"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -7691,6 +7750,9 @@
           "fe904ac984": "Share anonymous usage data",
           "77410e0566": "Privacy policy",
           "8bfdd23a88": "Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.",
+          "workbenchDescription": "Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.",
+          "workbenchLabel": "Share usage data",
+          "workbenchSectionDescription": "Usage data, diagnostics, and telemetry controls.",
           "afec8b03be": "ci"
         },
         "QuickCommandsList": {
@@ -7863,6 +7925,7 @@
           "c7ef4415de": "Display Name",
           "b0a0c14a1c": "Project-specific display details for the sidebar and tabs.",
           "removeProjectAllHosts": "Remove this project from Orca on all configured hosts.",
+          "removeProjectSelectedHost": "Remove this project registration from the selected host.",
           "0909e5d650": "Remove Project",
           "ee5a290616": "Opened as folder. Git features are unavailable for this workspace.",
           "323debba71": "Type:",
@@ -7989,7 +8052,18 @@
           "27cf8507ad": "Refresh shared access",
           "f031182867": "Shared Server Access",
           "df142657a5": "Not used yet",
-          "b18d1764ef": "Last used {{value0}}"
+          "b18d1764ef": "Last used {{value0}}",
+          "selectedCount": "{{value0}} selected",
+          "selectReadonly": "Select connected read-only devices",
+          "grantFullAccess": "Grant full access",
+          "selectForFullAccess": "Select {{value0}} for full access",
+          "teamReadonly": "Team read-only",
+          "fullAccess": "Full access",
+          "connected": " · Connected",
+          "confirmTitle": "Grant full access?",
+          "confirmDescription": "The selected devices will be able to create worktrees, start sessions, send input, and run commands on this host.",
+          "cancel": "Cancel",
+          "confirmGrant": "Grant full access"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "Remove {{value0}}",
@@ -8088,7 +8162,8 @@
           "troubleshootStepRegenerate": "Generate a new access link and use only the newest link here.",
           "troubleshootTunnel": "Using an SSH local forward? Return to Connect to a host, paste the loopback link, then enable “I am using an SSH tunnel” under Advanced.",
           "cloudVmWorkflow": "Cloud VM",
-          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines"
+          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines",
+          "serverAlreadyPaired": "This server is already paired as {{value0}}; updated its connection."
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "Copy {{value0}}"
@@ -8141,7 +8216,13 @@
           "noExternalAddress": "No address for another device was found. Connect this computer to a LAN or Tailscale, refresh, or choose Custom address.",
           "staleAddress": "The connection address changed. Generate a new link for {{address}}.",
           "customInvalid": "Enter a valid host, host:port, IPv6 address, or ws(s):// URL.",
-          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link."
+          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link.",
+          "fullAccessGranted": "Full access granted.",
+          "fullAccessGrantedCount": "Full access granted to {{value0}} devices.",
+          "fullAccessGrantFailed": "Failed to grant full access.",
+          "failedToLoadAccessLog": "Failed to load access log.",
+          "clearConfirm": "Clear this host's shared access log?",
+          "clearFailed": "Failed to clear shared access log."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",
@@ -8874,7 +8955,18 @@
             "b2c4e7f1a8": "endpoint",
             "3a9b6d2c4e": "api key",
             "5d8f1a3b7c": "china",
-            "7e2a4b8c1d": "overseas"
+            "7e2a4b8c1d": "overseas",
+            "cursor": {
+              "title": "Cursor Usage",
+              "description": "Plan usage read from the Cursor sign-in already on this computer (cursor-agent login).",
+              "kw": {
+                "cursor": "cursor",
+                "usage": "usage",
+                "spend": "spend",
+                "rateLimit": "rate limit",
+                "statusBar": "status bar"
+              }
+            }
           }
         },
         "advanced": {
@@ -9122,6 +9214,13 @@
               "close": "close",
               "notification": "notification area",
               "background": "background"
+            },
+            "cursor": {
+              "title": "Cursor Usage",
+              "description": "Show Cursor plan usage from the Cursor sign-in on this computer.",
+              "kw": {
+                "cursor": "cursor"
+              }
             }
           }
         },
@@ -9771,7 +9870,7 @@
             "codehubKeyword": "codehub",
             "codehubCliKeyword": "codehub-cli",
             "welinkTitle": "WeLink Integration",
-            "welinkDescription": "welink-cli presence and login for project group notifications.",
+            "welinkDescription": "welink-cli installation and login for reports and diagnostics in the BW user-group space.",
             "welinkKeyword": "welink",
             "welinkCliKeyword": "welink-cli",
             "cloudbuildTitle": "CloudBuild Integration",
@@ -10553,7 +10652,7 @@
           "a42f6fbdd8": "Keeps this computer and display awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "modeTitle": "Keep computer awake",
           "modeDescriptionWindows": "Choose On, Agent, or Off. Agent mode stays awake while agents are working; lid-close behavior follows this device's power settings.",
-          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy."
+          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. The app also asks this device to stay awake when the lid is closed, subject to its power policy."
         },
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
@@ -10592,13 +10691,13 @@
                   "statusNotAuthenticated": "Not authenticated",
                   "codehubDescription": "Issues and merge requests via the",
                   "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
-                  "codehubMissing": "codehub-cli is not on PATH.",
+                  "codehubMissing": "codehub-cli is not on PATH. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
                   "codehubInstallButton": "Install CodeHub CLI",
                   "codehubNotAuthenticated": "codehub-cli is installed but not authenticated.",
                   "codehubAuthLoginCommand": "codehub-cli auth login --all",
-                  "welinkDescription": "Project group notifications via the",
+                  "welinkDescription": "Reports and diagnostics via the",
                   "welinkUnavailable": "welink-cli status is not available in this runtime yet.",
-                  "welinkMissing": "Install welink-cli to enable project group notifications.",
+                  "welinkMissing": "Install welink-cli to send reports and diagnostic files to the BW user-group space. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
                   "welinkNotAuthenticated": "welink-cli is installed but not authenticated.",
                   "welinkInstallButton": "Install WeLink CLI",
                   "welinkAuthLoginCommand": "welink-cli auth login",
@@ -10671,8 +10770,8 @@
                 "cards": {
                   "793a06e899": "Re-check",
                   "1a9475dace": "Learn more",
-                  "19fb419c12": "Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.",
-                  "60708f23da": "only when Orca cannot derive the API URL from the remote.",
+                  "19fb419c12": "Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.",
+                  "60708f23da": "only when {{product}} cannot derive the API URL from the remote.",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "for private repositories, and set",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -10681,8 +10780,8 @@
                   "05863d2599": "Pull requests and commit statuses via the Gitea REST API.",
                   "52f75876be": "Pull requests and commit statuses for detected repositories",
                   "0b5242f8a2": "{{value0}} · Pull requests and commit statuses",
-                  "40f678df73": "Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.",
-                  "7bd345e3f6": "only when Orca cannot derive the API base URL from the git remote.",
+                  "40f678df73": "Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.",
+                  "7bd345e3f6": "only when {{product}} cannot derive the API base URL from the git remote.",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": ". Set",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -10693,7 +10792,7 @@
                   "0eb50d5593": "Pull requests and build statuses via Azure DevOps REST API tokens.",
                   "54636c65d4": "Pull requests and build statuses for detected Azure Repos",
                   "ea204f5e03": "{{value0}} · Pull requests and build statuses",
-                  "6154b02093": "Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart Orca if environment variables changed.",
+                  "6154b02093": "Bitbucket credentials are configured but could not authenticate. Check the token and repository permissions, then restart {{product}} if environment variables changed.",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "and",
@@ -11501,7 +11600,9 @@
           "networkConnection": "Network connection",
           "notAttempted": "Not attempted",
           "saveFailed": "Could not save the host",
-          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again."
+          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again.",
+          "differentServer": "This link is for a different server",
+          "differentServerHelp": "This pairing link is for a different server. Create the link on the server you are re-pairing."
         },
         "CloudVmSetupGuide": {
           "title": "Create a Cloud VM",
@@ -11550,13 +11651,6 @@
           "title": "macOS permission grants aren’t reaching terminals"
         },
         "artifacts": {
-          "enable": "Enable Artifacts",
-          "enableDescription": "Add Artifacts to the sidebar so you can open and delete shared files.",
-          "account": "Orca account",
-          "connected": "Connected",
-          "signInRequired": "Sign in is required to upload and manage artifacts.",
-          "signingIn": "Signing in…",
-          "signIn": "Sign in to Orca",
           "title": "Artifacts",
           "description": "Share HTML and Markdown files with your team and manage their public links.",
           "howToTitle": "How to use Artifacts",
@@ -11565,32 +11659,25 @@
           "shareStepDescription": "Open an HTML or Markdown file and select Share as artifact, or ask an agent to share it.",
           "linkStepTitle": "Copy the public link",
           "linkStepDescription": "After publishing, copy the link and send it to your team.",
-          "manageStepTitle": "Manage it in Orca",
-          "manageStepDescription": "Open Artifacts from the sidebar to preview or remove links.",
-          "openArtifacts": "Open Artifacts",
-          "openArtifactsDescription": "View and delete links shared through your account.",
-          "showButton": "Show Artifacts Button",
-          "showButtonDescription": "Show the Artifacts shortcut in the sidebar.",
-          "openArtifactsDescriptionV2": "Preview, copy, and manage links shared through your account.",
-          "signInTitle": "Sign in to share artifacts",
-          "signInDescription": "Use your Orca account to upload artifacts and manage their public links.",
-          "signInAgain": "Sign in again",
-          "enableStepTitle": "Enable artifact sharing",
-          "enableStepWebDescription": "Open Settings → Artifacts in the Orca desktop app on the host device and enable publishing.",
-          "enableStepDescription": "Turn on “Allow publishing public artifact links” above.",
-          "allowPublishing": "Allow publishing public artifact links",
-          "allowPublishingWebDescription": "Desktop only. Open Settings → Artifacts on the host device to change this setting.",
-          "allowPublishingDescription": "Publish HTML and Markdown files as links anyone with the URL can open. Existing links remain until you delete them from Artifacts.",
-          "howToDescriptionDisabled": "Enable artifact sharing above to publish HTML or Markdown files as public links.",
-          "allowPublishingSearchDescription": "Allow Orca to publish HTML and Markdown files as public links.",
+          "manageStepTitle": "Update or remove the link",
           "keywordArtifacts": "artifacts",
           "keywordShare": "share",
-          "keywordPublish": "publish",
-          "keywordPublic": "public",
-          "keywordPermission": "permission",
-          "keywordHtml": "HTML",
-          "keywordMarkdown": "Markdown",
-          "keywordUpload": "upload"
+          "manageStepDescriptionV2": "Reopen the same file and use Share as artifact to publish new content over the same link.",
+          "sharedLinksTitle": "Files you've shared",
+          "sharedLinksDescription": "Links this computer created. Deleting a link makes it stop working immediately.",
+          "keywordLink": "link",
+          "keywordDelete": "delete",
+          "sharedLinksWebDescription": "Desktop only. Open Settings → Artifacts on the host device to see and delete your shared links.",
+          "sharedLinksLoadFailed": "Could not load your shared files.",
+          "sharedLinksDeleteTitle": "Delete this shared link?",
+          "sharedLinksDeleteDescription": "The link stops working for everyone immediately. Share the file again to create a new one.",
+          "sharedLinksDeleteConfirm": "Delete",
+          "sharedLinksLoading": "Loading…",
+          "sharedLinksEmpty": "No shared files yet. Open an HTML or Markdown file and choose Share as artifact.",
+          "sharedLinksDeleting": "Deleting…",
+          "sharedLinksDelete": "Delete",
+          "sharedLinksRetry": "Try again",
+          "sharedLinksDeleteFailed": "Could not delete this shared link."
         },
         "orcaAccount": {
           "connected": "Connected",
@@ -11732,9 +11819,9 @@
               "authModeToken": "Access token",
               "authModeBasic": "Email & API token",
               "disconnect": "Disconnect Bitbucket",
-              "envManaged": "Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in Orca.",
+              "envManaged": "Configured via environment variables. Unset the ORCA_BITBUCKET_* variables to manage this credential in {{product}}.",
               "storedAuthFailed": "The saved Bitbucket credential could not authenticate. Edit it, or check that the token still has pull request access.",
-              "storedCredential": "Saved in Orca on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.",
+              "storedCredential": "Saved in {{product}} on this machine. ORCA_BITBUCKET_* environment variables take precedence when set.",
               "notConfigured": "Connect a Bitbucket Cloud account with an Atlassian API token or an access token. ORCA_BITBUCKET_* environment variables work too and take precedence.",
               "disconnectFailed": "Could not remove the saved Bitbucket credential.",
               "statusLoadFailed": "Could not check for a saved Bitbucket credential.",
@@ -11773,6 +11860,57 @@
           "targetDescription": "Higher values increase contrast where possible. Background colors stay unchanged.",
           "subtle": "Subtle",
           "strong": "Strong"
+        },
+        "RuntimeRepairDialog": {
+          "descriptionShareComputer": "{{name}} no longer accepts this computer. On {{name}}, open Settings → Remote Orca Servers → Share this computer, create a link for another Orca, then paste it here.",
+          "failed": "Re-pair failed",
+          "submit": "Re-pair",
+          "success": "Re-paired with {{name}}",
+          "title": "Re-pair {{name}}"
+        },
+        "CursorAccountsSection": {
+          "source": {
+            "keychain": "macOS Keychain (cursor-agent)",
+            "cli": "Cursor CLI auth file",
+            "desktop": "Cursor IDE"
+          },
+          "title": "Cursor",
+          "subtitle": "Shows your Cursor plan usage from the sign-in already on this computer. Workbench only reads it — it never changes your Cursor login.",
+          "dashboardLink": "Cursor dashboard",
+          "loading": "Loading…",
+          "signedIn": "Signed in",
+          "signedInFrom": "Signed in. Workbench reads the session stored in {{source}}.",
+          "signedInGeneric": "Signed in. Workbench reads the Cursor session stored on this computer.",
+          "expired": "Sign-in expired — run cursor-agent login on the computer running Workbench, then click Refresh usage.",
+          "signedOut": "No Cursor sign-in found on this computer",
+          "signedOutHelp": "Sign in with Cursor IDE, or run cursor-agent login in a terminal, then click Refresh usage here.",
+          "refreshUsage": "Refresh usage",
+          "usageTitle": "Plan usage",
+          "usageDescription": "Cursor bills two pools that reset with your billing cycle, plus on-demand spend once they run out.",
+          "planTotal": "Plan",
+          "resets": "Resets {{when}}",
+          "staleUsage": "Last known usage — the latest refresh failed: {{reason}}",
+          "usageLabel": "Usage",
+          "unknownUsage": "Current usage is unavailable. Refresh usage to try again."
+        },
+        "RuntimeAccessAuditLog": {
+          "title": "Shared host access log",
+          "description": "Request metadata · last 14 days",
+          "refresh": "Refresh shared host access log",
+          "action": "Filter log action",
+          "allActions": "All actions",
+          "result": "Filter log result",
+          "allResults": "All results",
+          "allowed": "Allowed",
+          "denied": "Denied",
+          "error": "Error",
+          "time": "Filter log time",
+          "lastDay": "Last 24 hours",
+          "lastWeek": "Last 7 days",
+          "lastTwoWeeks": "Last 14 days",
+          "search": "Search device or action",
+          "empty": "No matching access records.",
+          "clear": "Clear log"
         }
       },
       "right": {
@@ -13362,6 +13500,8 @@
         "IntegrationsStep": {
           "277f30eb34": "Linear, GitLab, Bitbucket, Azure DevOps, Gitea, and Jira live in Settings > Integrations.",
           "3a3e360289": "More task sources",
+          "bw_setup_later": "Set up later",
+          "bw_setup_later_description": "You can connect or retry GitHub and CodeHub in Settings → Integrations.",
           "80e3ce0bc9": "Re-check",
           "04ef416712": "Add Linear access",
           "dd9c186a8b": "Add workspace access",
@@ -13560,6 +13700,12 @@
             "370a1faf67": "Open in browser",
             "2c69728c2a": "Open link in browser",
             "6f07a18604": "Name",
+            "codehubMode": "CodeHub",
+            "codehubEmpty": "No matching CodeHub issues.",
+            "codehubEmptyStart": "Start typing to search CodeHub issues.",
+            "codehubLoadFailed": "Couldn’t load CodeHub issues. Check sign-in or permissions, then retry.",
+            "codehubRetry": "Retry",
+            "codehubMoreResults": "Showing the first results. Narrow your keywords to see more.",
             "2e4c7c95fe": "Branch",
             "2cfc6be192": "GitLab",
             "7a47af0565": "Linear",
@@ -13601,7 +13747,8 @@
             "jiraMode": "Jira",
             "jiraSelectBindFailed": "Couldn’t link this Jira issue. Pick the matching site or reconnect Jira, then try again.",
             "emoji": "Emoji",
-            "loadingLinearIssue": "Loading Linear issue…"
+            "loadingLinearIssue": "Loading Linear issue…",
+            "searchCodeHub": "Search CodeHub issues"
           },
           "ProjectCombobox": {
             "empty": "No projects match your search.",
@@ -13699,9 +13846,9 @@
             "b8dc9dd8a2": "Installed",
             "1b51644c2d": "Let agents control the desktop, moving the cursor, clicking, and typing in any app.",
             "362a07517d": "Computer Use",
-            "5e8fe5a72d": "Give agents direct access to Orca's browser so they can test pages, capture screenshots, and act on what they see.",
+            "5e8fe5a72d": "Give agents direct access to {{product}}'s browser so they can test pages, capture screenshots, and act on what they see.",
             "e638da007a": "Agent Browser Use",
-            "c61c91e642": "Let agents coordinate through Orca to keep large, multi-step tasks moving to completion.",
+            "c61c91e642": "Let agents coordinate through {{product}} to keep large, multi-step tasks moving to completion.",
             "ac07f8887f": "Agent Orchestration",
             "e9eb197e12": "Opened Computer Use permissions",
             "3a59452a67": "Skill command copied and inserted below for review.",
@@ -13744,7 +13891,7 @@
             "f39be6ca14": "/signup"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "Enables agents to navigate and verify pages in Orca's browser.",
+            "cbc45022d4": "Enables agents to navigate and verify pages in {{product}}'s browser.",
             "d5bb1cd4ba": "Browser Use skill"
           },
           "ComputerUseAnimatedVisual": {
@@ -13804,13 +13951,14 @@
             "13294d3405": "Done"
           },
           "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "Add a git project first, then configure the setup script for that repository.",
+            "486c2f4d8d": "Select a Git project first, then configure its setup script here.",
+            "target_project": "Target project: {{project}}",
             "00078a6134": "View in settings",
             "14327073cc": "Save",
             "88469e926b": "Setup script",
-            "5c5b65044e": "pnpm install",
+            "5c5b65044e": "Example: pnpm install",
             "a7463915b6": "Failed to save setup script",
-            "6299297dac": "Setup script saved",
+            "6299297dac": "Setup script saved for {{project}}",
             "f0bbf7da77": "Try it out",
             "522cce9e33": "Add project"
           },
@@ -13930,8 +14078,8 @@
                     "copy": {
                       "ec0a363633": "Multi-task",
                       "62bac8f43c": "Work in 2 different worktrees at once. Each one is isolated (even in the same project). Perfect for working on 2 features at once.",
-                      "908898c3ee": "Use Orca's browser",
-                      "43781563c3": "Browse your web app without leaving Orca. Grab any element and send its exact source and styles to an agent with one click.",
+                      "908898c3ee": "Use {{product}}'s browser",
+                      "43781563c3": "Browse your web app without leaving {{product}}. Grab any element and send its exact source and styles to an agent with one click.",
                       "29aa2c2077": "Turn on notifications",
                       "71bd9a8c95": "Know the moment an agent finishes, needs attention, or gets blocked.",
                       "46db810da8": "Choose your default agent",
@@ -13943,7 +14091,7 @@
                       "eddc532e58": "Automate workspace setup",
                       "56049b74c2": "Run install and setup commands automatically so every new worktree is ready for agents.",
                       "2cf795433b": "Start work in multiple repos",
-                      "42525ba8a4": "Bring your key repos into Orca so you can start agent work without hunting for folders."
+                      "42525ba8a4": "Bring your key repos into {{product}} so you can start agent work without hunting for folders."
                     }
                   }
                 }
@@ -14068,16 +14216,19 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "connected for tasks",
-            "33b650af52": "Connect where your team tracks work. Orca starts workspaces with the issue title, link, and context already attached.",
+            "33b650af52": "Connect where your team tracks work. {{product}} starts workspaces with the issue title, link, and context already attached.",
             "5b3577a492": "connected for review status",
             "list_end": ", and ",
             "list_pair": " and ",
             "list_mid": ", ",
             "code_host_tasks_summary": "issues available as tasks · add Linear or Jira if your team plans work there",
+            "bw_code_host_description": "Connect either provider to use tasks and see code review status.",
             "code_host_tasks_caption": "Your code host's issues also work as tasks.",
             "review_step_title": "See PR status while agents work",
-            "review_step_description": "Connect a review provider so Orca can show PR or MR status, checks, and reviews.",
-            "task_step_title": "Start agents on your tasks without leaving Orca"
+            "review_step_description": "Connect a review provider so {{product}} can show PR or MR status, checks, and reviews.",
+            "task_step_title": "Start agents on your tasks without leaving {{product}}",
+            "reports_title": "Reports and diagnostics (optional)",
+            "reports_description": "Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations."
           },
           "connect": {
             "integration": {
@@ -14404,7 +14555,7 @@
           "6c4f1a8d2e": "Check details are unavailable."
         },
         "EditorPanelHeader": {
-          "fb8331694e": "Open Preview to the Side",
+          "fb8331694e": "Preview",
           "4157f3cbf3": "Open Markdown Preview",
           "269ce4842b": "Copy Relative Path",
           "7c08a1f990": "Copy Path",
@@ -15039,7 +15190,11 @@
             "b2e36f53a1": "Failed to send crash report. Diagnostic ticket {{value0}} was uploaded but not linked.",
             "ead6fc0510": "No automatic crash report was captured. You can still send details and include recent diagnostic logs when available.",
             "b082f27490": "Attach recent diagnostic logs",
-            "e59f0b9427": "Sends a capped redacted log bundle with the report."
+            "e59f0b9427": "Sends a capped redacted log bundle with the report.",
+            "workbenchUiErrorTitle": "Workbench hit a recoverable UI error",
+            "workbenchClosedTitle": "Workbench closed unexpectedly",
+            "workbenchNotesPlaceholder": "Optional: what were you doing before Workbench closed?",
+            "workbenchBrand": "Workbench"
           },
           "submit": {
             "notice": {
@@ -15073,7 +15228,6 @@
             "complete": "Done"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "of",
             "dcd6e6b03e": "Step {{value0}} of {{value1}}"
           },
           "contextual": {
@@ -15081,6 +15235,20 @@
               "overlay": {
                 "measurement": {
                   "38b3155418": "Next",
+                  "tasks": {
+                    "source": {
+                      "title": "Choose the work source",
+                      "body": "Choose the project or work source. If none is available, check your connections in Settings."
+                    },
+                    "filter": {
+                      "title": "Filter to the work you need",
+                      "body": "Use presets and search to narrow issues, reviews, merge requests, or tasks."
+                    },
+                    "start": {
+                      "title": "Start from work items",
+                      "body": "Use Start or Open on a task, issue, review, or merge request to bring its context into a workspace."
+                    }
+                  },
                   "automations": {
                     "intro": {
                       "title": "What is an automation?",
@@ -15290,7 +15458,16 @@
             "756bfc25c9": "Open",
             "09a9489aa5": "Show",
             "2a4c4b8e1f": "Copy",
-            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Open Preview to the Side\" on the file instead."
+            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead.",
+            "prototypeReview": {
+              "pageTitle": "Prototype review page",
+              "addAnnotation": "Add page annotation",
+              "annotationPlaceholder": "Enter annotation",
+              "submitAnnotation": "Submit annotation",
+              "annotateElements": "Annotate page elements",
+              "onlyReviewPages": "Only prototype review pages support annotations",
+              "exitAnnotationMode": "Exit annotation mode"
+            }
           },
           "BrowserToolbarMenu": {
             "429ef481f9": "Cancel",
@@ -15367,8 +15544,9 @@
                     "c16f932cb3": "Save",
                     "024467ceac": "Cancel",
                     "449d2c2629": "Annotation intent",
-                    "collapse": "Collapse annotations",
-                    "expand": "Expand annotations"
+                    "38d320108c": "Collapse annotations",
+                    "9f209891a7": "Expand annotations",
+                    "includePageDetails": "Include page details"
                   }
                 }
               }
@@ -15838,7 +16016,9 @@
         },
         "hostPicker": {
           "allHosts": "All hosts",
-          "loadingHost": "Loading host…"
+          "loadingHost": "Loading host…",
+          "searchHosts": "Search hosts...",
+          "noHostsMatch": "No hosts match your search."
         },
         "ownerConflict": {
           "dismiss": "Dismiss"
@@ -16049,14 +16229,6 @@
           "8490e5d36a": "Confirm",
           "56f5c60e0c": "Cancel",
           "92bac3217e": "Don't ask again"
-        },
-        "skip": {
-          "saved": "We'll skip this confirmation next time.",
-          "savedDescription": "You can change this in Settings.",
-          "openSettings": "Open Settings",
-          "preference": {
-            "0b0cb6e3f9": "Could not save the confirmation preference."
-          }
         }
       },
       "jira": {
@@ -16487,120 +16659,56 @@
         "streamCapabilityUnsupported": "The selected runtime does not support remote browser streaming."
       },
       "artifacts": {
-        "ArtifactsPage": {
-          "signInAgain": "Sign in to Orca again to load artifacts.",
-          "loadFailed": "Could not load artifacts.",
-          "deleteTitle": "Delete artifact?",
-          "deleteDescription": "“{{name}}” will no longer be available at its public link.",
-          "delete": "Delete",
-          "deleteFailed": "Could not delete the artifact.",
-          "title": "Artifacts",
-          "refresh": "Refresh",
-          "signInHeading": "Sign in to Orca",
-          "signInCopy": "Sign in to view and manage artifacts shared through your account.",
-          "signingIn": "Signing in…",
-          "signIn": "Sign in to Orca",
-          "empty": "No shared artifacts",
-          "emptyCopy": "Open an HTML or Markdown file and select Share as artifact, or ask your agent to share it.",
-          "openArtifact": "Open artifact",
-          "deleteArtifact": "Delete artifact",
-          "moreAvailable": "More artifacts are available",
-          "moreAvailableCopy": "Load the next page to continue.",
-          "loadMoreFailed": "Could not load more artifacts.",
-          "publishingOff": "Publishing is turned off",
-          "publishingOffCopy": "Nothing on this device can create a public artifact link yet. Allow publishing in Settings → Artifacts, then share from an open HTML or Markdown file or ask your agent.",
-          "openArtifactsSettings": "Open Settings → Artifacts",
-          "retry": "Retry",
-          "reconnectHeading": "Sign in to Orca again",
-          "reconnectCopy": "Sign in again to view and manage the artifacts shared through your account.",
-          "signInAgainAction": "Sign in again",
-          "unconfiguredCopy": "Orca account sign-in is not configured on this machine yet.",
-          "openAccountSettings": "Open account settings"
-        },
         "copySuccess": "Artifact link copied",
         "copyFailed": "Could not copy artifact link",
-        "copyLink": "Copy link",
-        "openInBrowser": "Open in browser",
-        "preview": "Artifact preview",
-        "previewUnavailable": "Preview unavailable",
-        "previewUnavailableDescription": "Open this artifact in your browser to view it.",
-        "actions": "Artifact actions",
-        "ArtifactActions": {
-          "more": "More artifact actions"
-        },
-        "ArtifactCollection": {
-          "loadMore": "Load more",
-          "noMatches": "No matches"
-        },
-        "ArtifactDetailHeader": {
-          "publicLink": "Anyone with this link can view it",
-          "close": "Close"
-        },
-        "updatedAt": "Updated {{when}}",
-        "updatedRecently": "recently",
-        "expiryUnknown": "Expiry unknown",
-        "expired": "Link expired",
-        "expires": "Link expires {{when}}",
         "ArtifactPublishButton": {
           "a4a49da6af": "Share as artifact",
           "confirmTitle": "Share as artifact",
           "confirmDescription": "This publishes the current file at a link anyone with the URL can view.",
-          "accountTitle": "Orca account",
-          "accountDescription": "Sign in to create and manage this link.",
-          "signingIn": "Signing in…",
-          "signInAgain": "Sign in again",
-          "signIn": "Sign in",
-          "publishingOffTitle": "Artifact sharing is off",
-          "publishingOffDescription": "Learn about public links and enable sharing in Settings.",
-          "openSettings": "Open Artifacts settings",
           "sharing": "Sharing…",
           "sharePublicLink": "Generate link",
           "publishedDescription": "Anyone with this link can view the shared file.",
           "checkingLink": "Checking for an existing link…",
           "checkFailed": "Could not check for an existing link.",
-          "tryAgain": "Try again"
+          "tryAgain": "Try again",
+          "webOnly": "Desktop only. Open this file on the host device to share it.",
+          "removeFailed": "Could not remove the link."
         },
         "artifact-publish-flow": {
-          "9a078a0c65": "Artifact sharing is unavailable",
-          "bba20daa6d": "Sign in to Orca and try again.",
           "54b1805328": "Could not share artifact",
           "430019efd0": "Artifact shared",
           "2fc727c831": "Artifact updated",
-          "5cb4f5ec36": "Copy link",
           "fbb5018602": "This file is empty.",
-          "6112db5a1c": "This artifact is too large to share.",
+          "6112db5a1c": "This file exceeds the 10 MiB share limit.",
           "e2ed5acd8c": "Orca couldn't read this file. Open it from a workspace and try again.",
           "6d475e9b25": "Only local HTML and Markdown files can be shared as artifacts.",
-          "29a406be09": "Artifacts must contain text."
+          "29a406be09": "Artifacts must contain text.",
+          "shareFailed": "Could not share artifact",
+          "unauthorizedDescription": "The share server rejected this device. Try sharing again.",
+          "forbiddenDescription": "This device can no longer update the link. Share the file again to create a new one.",
+          "tooLargeDescription": "This artifact exceeds the 10 MiB share limit.",
+          "rateLimitedDescription": "Too many uploads. Try again in a minute.",
+          "busyDescription": "The share server is busy. Try again shortly.",
+          "notFoundDescription": "The shared link no longer exists on the server.",
+          "unsupportedDescription": "The share server only accepts HTML content.",
+          "networkDescription": "Could not reach the share server. Check your network connection.",
+          "fileTooLarge": "File is too large to share",
+          "tooLargeWithSize": "This file is {{size}}; the share limit is 10 MiB.",
+          "staleRecordDescription": "This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server.",
+          "enrollmentFullDescription": "The share server has no room left for new devices. An administrator has to clear its device list before sharing works again.",
+          "registryUnavailableDescription": "The share server cannot read its device list and is refusing new shares. An administrator has to restore it on the server.",
+          "recordsUnreadableDescription": "Your share history on this computer could not be read, so this list may be incomplete. Existing links may still work; sharing a file again creates a new link.",
+          "unknownDescription": "Something went wrong while sharing. The details are in the app logs."
         },
         "ArtifactPublishedLinkPanel": {
           "copyLink": "Copy link",
           "openLink": "Open link",
           "updating": "Updating…",
-          "update": "Update shared content"
-        },
-        "ArtifactDetailDrawer": {
-          "description": "Preview and manage this shared artifact."
-        },
-        "ArtifactListSearchField": {
-          "label": "Search artifacts",
-          "placeholder": "Search...",
-          "clear": "Clear search"
-        },
-        "ArtifactListTableHeader": {
-          "name": "Name",
-          "type": "Type",
-          "size": "Size",
-          "updated": "Updated",
-          "expires": "Expires",
-          "actions": "Actions"
-        },
-        "ArtifactsPageSkeleton": {
-          "loading": "Loading artifacts"
-        },
-        "expiredCompact": "Expired",
-        "typeMarkdown": "Markdown",
-        "typeHtml": "HTML"
+          "update": "Update shared content",
+          "removeConfirm": "Remove this link? Anyone holding it will lose access.",
+          "remove": "Remove link",
+          "cancelRemove": "Cancel"
+        }
       },
       "BrowserCookieImportMachineNotice": {
         "clientLabel": "Browsers on this device",
@@ -16649,6 +16757,13 @@
         "3d8e5f1b9c": "Share skills behind an unlisted link and install them on any machine you use.",
         "7e1a9c4d2f": "Signing in…",
         "c5b3e8a17d": "Sign in to Orca"
+      },
+      "web": {
+        "preloadApi": {
+          "cursorAccounts": {
+            "hostOnly": "Cursor sign-in details are only readable on the computer running Workbench."
+          }
+        }
       }
     },
     "i18n": {
@@ -17640,5 +17755,446 @@
   },
   "brand": {
     "workbench": "Workbench"
+  },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
+      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
+      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
+      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
+      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
+      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
+      "nameTaken": "A server named \"{{name}}\" already exists.",
+      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
+      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
+      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
+    }
+  },
+  "guidance": {
+    "acceptance": {
+      "evidence": {
+        "title": "Check the evidence",
+        "body": "Start this version’s acceptance and open the evidence report. Keep missing evidence visible for follow-up."
+      },
+      "decision": {
+        "title": "Decide each goal",
+        "body": "Open the goal and compare the fixed criteria with the evidence. Record your decision and any next step."
+      },
+      "minutes": {
+        "title": "Confirm the minutes",
+        "body": "Record the agreement and how to follow up. Read the minutes before confirming them."
+      },
+      "archive": {
+        "title": "Submit for archiving",
+        "body": "Ask the acceptance assistant to prepare an archive PR. Review its sources and decisions before merging."
+      },
+      "readback": {
+        "title": "Read the archived result",
+        "body": "Once the archive is merged and project code is up to date, refresh the version overview and check the decision and PR."
+      }
+    },
+    "delivery": {
+      "find": {
+        "title": "Find the goal’s tasks",
+        "action": "Check the version on the project wall and open the goal’s issues."
+      },
+      "work": {
+        "title": "Work in parallel",
+        "action": "Start each issue in its own workspace. Switch sessions and return to the same work."
+      },
+      "browser": {
+        "title": "Review a prototype",
+        "action": "For new interactions, open the prototype, annotate an element, and choose the session that should receive the feedback."
+      },
+      "prepare": {
+        "title": "Verify and prepare a PR",
+        "action": "Inspect the diff, run the project’s checks, and review the pull request form."
+      },
+      "review": {
+        "title": "Review and revise",
+        "action": "Open the same PR, read checks, comment on a line, and verify the author’s new revision."
+      },
+      "readback": {
+        "title": "Confirm and check progress",
+        "action": "Confirm the merge, close the completed sample issue, and reread the goal and version counts."
+      },
+      "inbox": {
+        "title": "Open a review request",
+        "action": "Open the existing sample request. If the project is temporarily unavailable, reconnect to its host and open it again."
+      },
+      "notify": {
+        "title": "Request a review",
+        "action": "With a PR open, choose connected hosts. A reviewer can also open the PR directly."
+      }
+    },
+    "outcomes": {
+      "facts": {
+        "title": "Check delivery",
+        "body": "Open the version overview. Check its goals and the recorded acceptance decision."
+      },
+      "read": {
+        "title": "Read the metrics",
+        "body": "In the project overview, select a scoreboard tab. Compare the recent reading with the plan’s target and check which week it covers."
+      },
+      "recovery": {
+        "title": "Handle missing readings",
+        "body": "Refresh to collect again. If the source needs work, use Configure metrics to open a draft session. You can keep working without readings."
+      },
+      "followup": {
+        "title": "Plan the follow-up",
+        "body": "Decide what to investigate or improve, then record it in the next plan or an existing task."
+      },
+      "scoreboardHelp": "Scoreboard guide",
+      "scoreboardUnavailable": "Open a Git project overview to use the scoreboard guide."
+    },
+    "planning": {
+      "taskHelp": "Task help",
+      "version": {
+        "title": "Choose the version",
+        "body": "Start the plan and review any carryovers. The first version has no prior results."
+      },
+      "goals": {
+        "title": "Define goals and criteria",
+        "body": "Write the outcome and how the team will check it. Edits save as a draft."
+      },
+      "tasks": {
+        "title": "Link work to goals",
+        "body": "Check existing issues with the planning assistant and confirm the tasks to include."
+      },
+      "review": {
+        "title": "Review and archive",
+        "body": "Annotate the plan, confirm the notes if used, then archive through a reviewed PR."
+      },
+      "start": {
+        "title": "Start an issue",
+        "body": "Start an issue from the plan. Open its existing workspace or create one with the issue prefilled."
+      }
+    },
+    "direction": {
+      "wall": {
+        "title": "Find the project",
+        "body": "Open the project overview from the project wall."
+      },
+      "card": {
+        "title": "Agree on the direction",
+        "body": "Edit the vision and check the review summary."
+      },
+      "draft": {
+        "title": "Plan milestone outcomes",
+        "body": "Add an outcome and adjust its schedule."
+      },
+      "review": {
+        "title": "Review and update",
+        "body": "After review and merge, update the formal schedule."
+      },
+      "nextRound": "Adjust the next cycle",
+      "throughout": "Throughout each cycle",
+      "start": "Start",
+      "result": "Result",
+      "steps": "Journey steps",
+      "pause": "Pause",
+      "resume": "Resume",
+      "playSequence": "Play in order",
+      "playClip": "Play clip",
+      "followAlong": "Try it in BW",
+      "restart": "Replay",
+      "sample": "Sample project"
+    },
+    "catalog": {
+      "feature": {
+        "workspace": {
+          "title": "Workspace",
+          "summary": "Keep each task in an isolated workspace."
+        },
+        "tasks": {
+          "title": "Task management",
+          "summary": "Find a task, start work, and return to its results."
+        },
+        "agent-status": {
+          "title": "Agent status",
+          "summary": "See which agents are running, waiting, or blocked."
+        },
+        "orchestration": {
+          "title": "Agent orchestration",
+          "summary": "Coordinate agents across workspaces."
+        },
+        "usage": {
+          "title": "Account usage",
+          "summary": "Check usage and limits for your account."
+        },
+        "terminal": {
+          "title": "Terminal and sessions",
+          "summary": "Work in terminal splits and return to an existing session."
+        },
+        "editor": {
+          "title": "Editor",
+          "summary": "Open and edit files while you work."
+        },
+        "browser": {
+          "title": "Browser and annotations",
+          "summary": "Open a page or prototype and bring focused feedback back to the work."
+        },
+        "review": {
+          "title": "Diffs and review",
+          "summary": "Inspect changes, leave feedback, and continue the work."
+        },
+        "pr-checks": {
+          "title": "PR checks",
+          "summary": "Check the status and comments on a pull request."
+        },
+        "ship": {
+          "title": "Commits and delivery",
+          "summary": "Have AI prepare a commit and pull request for your review."
+        },
+        "workspace-board": {
+          "title": "Workspace board",
+          "summary": "Check workspace status and switch back to active work."
+        },
+        "automation": {
+          "title": "Automation",
+          "summary": "Create, enable, and run an automation."
+        },
+        "quick-jump": {
+          "title": "Quick jump",
+          "summary": "Find and open a workspace or session."
+        },
+        "milestones": {
+          "title": "Project milestones",
+          "summary": "Plan milestone outcomes and compare them with actual delivery."
+        },
+        "project-wall": {
+          "title": "Project wall",
+          "summary": "Find the project that needs your attention."
+        },
+        "project-intake": {
+          "title": "Add a project",
+          "summary": "Add a project and continue working, then provide background as needed."
+        },
+        "project-overview": {
+          "title": "Project overview",
+          "summary": "Review project direction, milestones, and actual results."
+        },
+        "version-planning": {
+          "title": "Version planning",
+          "summary": "Decide what to deliver, how to accept it, and which tasks to start."
+        },
+        "version-navigation": {
+          "title": "Version and session navigation",
+          "summary": "Find the workspace and session associated with a version or goal."
+        },
+        "review-notifications": {
+          "title": "Review notifications and shared hosts",
+          "summary": "Connect to a shared host when needed, request review, and open the PR from the notification."
+        },
+        "version-acceptance": {
+          "title": "Version acceptance",
+          "summary": "Check evidence against goals, confirm the result, and archive it."
+        },
+        "version-overview": {
+          "title": "Version overview",
+          "summary": "See this version’s goals, tasks, and acceptance results."
+        },
+        "metrics": {
+          "title": "Metrics setup and collection",
+          "summary": "Define how to measure results and find readings or reasons they are missing."
+        },
+        "internal-integrations": {
+          "title": "CodeHub / WeLink",
+          "summary": "Set up connections in Getting Started and use them for tasks and collaboration."
+        }
+      },
+      "labels": {
+        "journeys": "Work journeys",
+        "features": "Features",
+        "types": "Explore categories",
+        "preparing": "Content in preparation",
+        "building": "In development",
+        "related": "Related features"
+      },
+      "group": {
+        "projects": "Project wall and intake",
+        "overview": "Project overview",
+        "planning": "Version planning and navigation",
+        "execution": "Tasks and execution",
+        "browser": "Integrated browser",
+        "review": "Review and collaboration",
+        "acceptance": "Acceptance and version facts",
+        "automation": "Automation",
+        "agents": "Agent orchestration"
+      },
+      "journey": {
+        "direction": {
+          "title": "Agree on direction",
+          "summary": "Agree on what the project should accomplish and plan its milestones.",
+          "start": "An added project and an idea",
+          "result": "Shared direction and a milestone schedule"
+        },
+        "commitments": {
+          "title": "Plan a version",
+          "summary": "Use past results and new requirements to agree on goals, tasks, and acceptance criteria.",
+          "start": "Project direction and new requirements",
+          "result": "A reviewed version plan"
+        },
+        "delivery": {
+          "title": "Build and deliver",
+          "summary": "Start from an issue, validate the change, review it with a teammate, and merge the PR.",
+          "start": "An issue to work on",
+          "result": "A verified and merged change"
+        },
+        "acceptance": {
+          "title": "Verify outcomes",
+          "summary": "Check evidence against the goals and record the outcome and next actions.",
+          "start": "Version commitments and delivery evidence",
+          "result": "An archived acceptance decision"
+        },
+        "outcomes": {
+          "title": "Review results",
+          "summary": "Review progress and outcomes, identify gaps, and decide what to change.",
+          "start": "Delivery results and actual readings",
+          "result": "A decision for the next cycle"
+        },
+        "maintenance": {
+          "title": "Maintain the project",
+          "summary": "Review architecture and technical debt, then decide what to address or defer.",
+          "start": "Knowledge or technical debt to address",
+          "result": "A verified maintenance outcome"
+        },
+        "reuse": {
+          "title": "Reuse what works",
+          "summary": "Capture a method that worked and verify it on the next similar task.",
+          "start": "A proven way of working",
+          "result": "A method the team can reuse"
+        }
+      }
+    },
+    "tour": {
+      "workspaces": {
+        "title": "Workspaces",
+        "description": "{{product}} splits each task into an isolated workspace so agents can run in parallel."
+      },
+      "tasks": {
+        "title": "Tasks",
+        "description": "Start work directly from GitHub or Linear."
+      },
+      "agents": {
+        "title": "Agents",
+        "description": "Run several agents at once, track their progress, and let automation drive {{product}} when it helps."
+      },
+      "workbench": {
+        "title": "Workbench",
+        "description": "Bring your terminal setup into {{product}}, then split panes to keep servers, tests, logs, and agents running side by side."
+      },
+      "review": {
+        "title": "Code Review",
+        "description": "Review what changed, leave focused feedback, and send it back to the agent."
+      },
+      "statuses": {
+        "name": "Visibility",
+        "title": "Agent Visibility",
+        "description": "Know which agents are working, waiting, live, or blocked."
+      },
+      "orchestration": {
+        "title": "Orchestration",
+        "description": "Enable agents to manage and coordinate {{product}} workspaces to execute larger tasks."
+      },
+      "usage": {
+        "title": "Usage",
+        "description": "Watch your usage and rate limits across every connected account, so you know when to switch."
+      },
+      "terminal": {
+        "title": "Terminal",
+        "description": "Keep your agents, tests, and dev logs visible at once."
+      },
+      "editor": {
+        "title": "Editor",
+        "description": "Use our Notion-style markdown editor to write notes without leaving {{product}}."
+      },
+      "browser": {
+        "title": "Browser",
+        "description": "Run your app in the integrated browser, send selected UI elements to agents, and let your agents interact with your webpage."
+      },
+      "notes": {
+        "name": "Notes",
+        "title": "Notes & diffs",
+        "description": "Send focused review notes to an agent."
+      },
+      "pr": {
+        "title": "PR checks",
+        "subtitle": "PR checks & comments",
+        "description": "See PR status in the Checks tab."
+      },
+      "ship": {
+        "title": "Ship with AI",
+        "description": "Let AI prepare commit and PR drafts for you."
+      }
+    },
+    "explore": "Explore BW",
+    "exploreDescription": "Browse work journeys and feature demonstrations in BW.",
+    "experiences": "Try the capabilities",
+    "addProjectFirst": "First add a project you'd like to work on.",
+    "done": "Done",
+    "exploreFooter": "Reopen any time from the bottom question mark > Explore BW.",
+    "tourFooter": "Reopen any time from Help > Explore Orca.",
+    "continue": "Continue",
+    "demo": {
+      "sessionStarted": "● Claude Code session started",
+      "notesLoaded": "Loaded {{total}} review notes from {{product}}",
+      "fixing": "Fixing both issues...",
+      "addingColumn": "Adding the email_verified column…",
+      "wiringMiddleware": "Wiring withSession middleware…",
+      "firstPrReady": "PR 1/2 ready",
+      "secondPrReady": "PR 2/2 ready",
+      "splitAuth": "Splitting auth rewrite into 2 PRs…",
+      "tableMigration": "Writing the users table migration…",
+      "sketchMiddleware": "Sketching withSession middleware…",
+      "percentUsed": "{{percent}}% used",
+      "resetsHours": "Resets in {{hours}}h",
+      "resetsMinutes": "Resets in {{minutes}}m",
+      "switchedUsage": "0% used 5h · 4% used wk",
+      "currentUsage": "96% used 47m",
+      "browserPrompt": "Make Starter card stand out",
+      "verifyBrowser": "Let me click Try free to verify it still works.",
+      "capturingPage": "(capturing page)",
+      "checks": "Checks",
+      "checksShortcut": "Checks ({{shortcut}})",
+      "rendersMetrics": "› renders metrics",
+      "updatesAvatar": "› updates avatar",
+      "exportsCsv": "› exports CSV",
+      "togglesDark": "› toggles dark mode",
+      "reviewPrompt": "review src/auth for missing error handling",
+      "checkoutPrompt": "fix failing checkout test",
+      "workspaceSetup": "set up orca.yaml",
+      "workspaceLogin": "fix login race condition",
+      "workspaceCi": "speed up CI pipeline"
+    },
+    "setupProgress": "Getting Started with BW, {{done}} of {{total}} complete.",
+    "progress": "{{done}} of {{total}} complete",
+    "gettingStarted": "Getting Started with BW",
+    "initialSetupFailed": "Could not open initial setup. Please try again.",
+    "initialSetup": "Initial Setup",
+    "setupDescription": "Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.",
+    "restarting": "Restarting BW…",
+    "restartFailed": "Couldn't restart BW.",
+    "reportCrash": "Report Crash",
+    "about": "About BW",
+    "restart": "Restart BW",
+    "orchestrationSetupDescription": "Enables agents to hand off context and coordinate work through {{product}}.",
+    "thinking": {
+      "none": "None",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Max"
+    },
+    "cliPrerequisite": "Before opening setup, {{product}} may show a system prompt to register the Orca CLI command on PATH.",
+    "providerRemoteCredentials": "This remote server owns the provider credentials and account checks. Edit credentials in the advanced settings for that server.",
+    "providerLocalAccount": "Local desktop",
+    "closeSetupGuide": "Close setup guide",
+    "setupGuideClosed": "Setup guide closed",
+    "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
+    "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
+    "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."
   }
 }

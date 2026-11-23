@@ -1,3 +1,5 @@
+import { sendSupportRoutedCallOnRuntime } from './runtime-environment-runtime-pinned-send'
+import { recordRuntimeEnvironmentUsage } from './runtime-environment-usage-record'
 import { waitForPromiseWithSignal } from '../../shared/abort-signal-reason'
 import type { PairingOffer } from '../../shared/pairing'
 import type {
@@ -6,7 +8,7 @@ import type {
 } from '../../shared/runtime-rpc-envelope'
 import type { KnownRuntimeEnvironment } from '../../shared/runtime-environments'
 import { getPreferredPairingOffer } from '../../shared/runtime-environments'
-import { markEnvironmentUsed, resolveEnvironment } from '../../shared/runtime-environment-store'
+import { resolveEnvironment } from '../../shared/runtime-environment-store'
 import { ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES } from '../../shared/protocol-version'
 import {
   subscribeRemoteRuntimeRequest,
@@ -17,7 +19,7 @@ import {
   isRuntimeEnvironmentCapabilityOutcomeCurrent,
   type RuntimeEnvironmentCapabilityOutcome
 } from './runtime-environment-capability-evidence'
-import { runtimeEnvironmentRevisionFailure } from './runtime-environment-revision-guard'
+import { runtimeEnvironmentRevisionFailure, runtimeEnvironmentChangedFailure } from './runtime-environment-revision-guard'
 import { supportsSharedControl } from './runtime-environment-shared-control-support'
 import {
   sendRemoteRuntimeRequestAbortable,
@@ -70,6 +72,7 @@ export function executeSupportRoutedCall(args: {
   params: unknown
   timeoutMs: number
   expectedPairingRevision?: number
+  expectedRuntimeId?: string
   envelope?: RuntimeOrchestrationEnvelope
   signal?: AbortSignal
 }): Promise<RuntimeRpcResponse<unknown>> {
@@ -79,9 +82,12 @@ export function executeSupportRoutedCall(args: {
     method: args.method,
     timeoutMs: args.timeoutMs,
     expectedPairingRevision: args.expectedPairingRevision,
+    expectedRuntimeId: args.expectedRuntimeId,
     signal: args.signal,
     supported: (route) =>
-      sendRemoteRuntimeSharedControlRequestAbortable(
+      args.expectedRuntimeId !== undefined
+        ? sendSupportRoutedCallOnRuntime(route, args, args.expectedRuntimeId, 'shared')
+        : sendRemoteRuntimeSharedControlRequestAbortable(
         route.environment.id,
         route.pairing,
         args.method,
@@ -91,7 +97,9 @@ export function executeSupportRoutedCall(args: {
         args.signal
       ),
     unsupported: (route) =>
-      sendRemoteRuntimeRequestAbortable(
+      args.expectedRuntimeId !== undefined
+        ? sendSupportRoutedCallOnRuntime(route, args, args.expectedRuntimeId, 'one-shot')
+        : sendRemoteRuntimeRequestAbortable(
         route.pairing,
         args.method,
         args.params,
@@ -102,7 +110,7 @@ export function executeSupportRoutedCall(args: {
       ),
     markUsed: (environmentId, response) => {
       if (response.ok) {
-        markEnvironmentUsed(args.userDataPath, environmentId, {
+        recordRuntimeEnvironmentUsage(args.userDataPath, environmentId, {
           runtimeId: response._meta.runtimeId
         })
       }
@@ -118,6 +126,7 @@ export async function subscribeSupportRoutedRuntimeEnvironment(args: {
   timeoutMs: number
   callbacks: SubscriptionCallbacks
   isCurrent: () => boolean
+  signal?: AbortSignal
 }): Promise<RemoteRuntimeSubscription> {
   let markedUsed = false
   let supportOutcome: SupportRoute['outcome'] | null = null
@@ -137,6 +146,7 @@ export async function subscribeSupportRoutedRuntimeEnvironment(args: {
     environment: args.environment,
     timeoutMs: args.timeoutMs,
     isCurrent: args.isCurrent,
+    signal: args.signal,
     supported: (route) => {
       supportOutcome = route.outcome
       return subscribeRemoteRuntimeSharedControlRequest(
@@ -145,7 +155,8 @@ export async function subscribeSupportRoutedRuntimeEnvironment(args: {
         args.method,
         args.params,
         args.timeoutMs,
-        callbacks
+        callbacks,
+        args.signal
       )
     },
     unsupported: (route) => {
@@ -156,7 +167,7 @@ export async function subscribeSupportRoutedRuntimeEnvironment(args: {
         args.params,
         args.timeoutMs,
         callbacks,
-        { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES }
+        { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES, signal: args.signal }
       )
     }
   })
@@ -169,6 +180,7 @@ export async function routeRuntimeEnvironmentCallBySupport(args: {
   method: string
   timeoutMs: number
   expectedPairingRevision?: number
+  expectedRuntimeId?: string
   signal?: AbortSignal
   supported: (route: SupportRoute) => Promise<RuntimeRpcResponse<unknown>>
   unsupported: (route: SupportRoute) => Promise<RuntimeRpcResponse<unknown>>
@@ -179,7 +191,8 @@ export async function routeRuntimeEnvironmentCallBySupport(args: {
     const revisionFailure = runtimeEnvironmentRevisionFailure(
       environment,
       args.expectedPairingRevision,
-      args.method
+      args.method,
+      args.expectedRuntimeId
     )
     if (revisionFailure) {
       return revisionFailure
@@ -212,15 +225,14 @@ export async function routeRuntimeEnvironmentSubscriptionBySupport<TSubscription
   environment: KnownRuntimeEnvironment
   timeoutMs: number
   isCurrent: () => boolean
+  signal?: AbortSignal
   supported: (route: SupportRoute) => Promise<TSubscription>
   unsupported: (route: SupportRoute) => Promise<TSubscription>
 }): Promise<{ subscription: TSubscription; outcome: SupportRoute['outcome'] }> {
   const pairing = getPreferredPairingOffer(args.environment)
-  const outcome = await supportsSharedControl(
-    args.userDataPath,
-    args.environment,
-    pairing,
-    args.timeoutMs
+  const outcome = await waitForPromiseWithSignal(
+    supportsSharedControl(args.userDataPath, args.environment, pairing, args.timeoutMs),
+    args.signal
   )
   if (
     outcome.kind === 'stale_incarnation' ||
@@ -236,21 +248,6 @@ export async function routeRuntimeEnvironmentSubscriptionBySupport<TSubscription
   return { subscription, outcome }
 }
 
-function runtimeEnvironmentChangedFailure(
-  environment: KnownRuntimeEnvironment,
-  method: string
-): RuntimeRpcResponse<never> {
-  return {
-    id: method,
-    ok: false,
-    error: {
-      code: 'runtime_environment_changed',
-      message: 'Runtime environment pairing changed; refresh and try again'
-    },
-    _meta: { runtimeId: environment.runtimeId }
-  }
-}
-
 function subscriptionCallbacks(
   args: Pick<
     Parameters<typeof subscribeSupportRoutedRuntimeEnvironment>[0],
@@ -262,7 +259,8 @@ function subscriptionCallbacks(
   return {
     onResponse: (response: RuntimeRpcResponse<unknown>) => {
       if (response.ok && shouldMarkUsed()) {
-        markEnvironmentUsed(args.userDataPath, args.environment.id, {
+        recordRuntimeEnvironmentUsage(args.userDataPath, args.environment.id, {
+          pairingDeviceToken: pairing.deviceToken,
           runtimeId: response._meta.runtimeId
         })
       }

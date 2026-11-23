@@ -256,6 +256,7 @@ export function TaskPageCodeHubDetail({
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek bg-background">
             <CodeHubIssueProperties
+              api={detailState.api}
               closed={closed}
               stateBusy={stateBusy}
               setIssueState={setIssueState}

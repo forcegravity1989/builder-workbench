@@ -3,6 +3,7 @@ import type { StatsSummary } from '../../../shared/process-stats-types'
 import { createWebE2EApi } from './preload-api/web-e2e-api'
 import {
   createAccountsApi,
+  createCursorAccountsApi,
   createGrokAccountsApi,
   createMiniMaxCredentialsApi
 } from './preload-api/web-agent-accounts-api'
@@ -28,6 +29,7 @@ import { createWebKeybindingsApi } from './preload-api/web-keybindings-api'
 import { createMacosTccPromptsApi } from './preload-api/web-macos-tcc-api'
 import { createEmptyMemorySnapshot } from './preload-api/web-memory-api'
 import { createWebMobileApi } from './preload-api/web-mobile-api'
+import { createWebTeamCollaborationApi } from './preload-api/web-team-collaboration-api'
 import { createWebNativeChatApi } from './preload-api/web-native-chat-api'
 import { createNotificationsApi } from './preload-api/web-notifications-api'
 import { createWebOnboardingApi } from './preload-api/web-onboarding-api'
@@ -87,10 +89,7 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     gl: createGitLabApi(),
     codehub: createRuntimeNamespaceApi('codehub'),
     milestoneRecovery: {
-      read: async () => ({ revision: null, payload: null }),
-      write: async () => {
-        throw new Error('浏览器端尚不支持本机草案恢复，请提交成功后再退出')
-      }
+      read: async () => ({ revision: null, payload: null })
     },
     hostedReview: createRuntimeNamespaceApi('hostedReview'),
     linear: createRuntimeNamespaceApi('linear'),
@@ -113,6 +112,7 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     rateLimits: createRateLimitsApi(),
     minimaxCredentials: createMiniMaxCredentialsApi(),
     grokAccounts: createGrokAccountsApi(),
+    cursorAccounts: createCursorAccountsApi(),
     codexAccounts: createAccountsApi(),
     claudeAccounts: createAccountsApi(),
     cli: createCliApi(),
@@ -140,6 +140,7 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     },
     ...createWebAgentStatusApi(),
     ...createWebMobileApi(),
+    ...createWebTeamCollaborationApi(),
     ...createWebTelemetryApi()
   }
 }

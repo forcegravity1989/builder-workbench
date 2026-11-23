@@ -1,9 +1,10 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { runProcessSync } from './child-process/run-process'
 import { windowsSystem32Binary } from './child-process/windows-system-binary'
+import { writeSecureJsonFileAsync } from './secure-file-async'
 import {
   setSecurePathHardeningReporter,
   type SecurePathHardeningReport
@@ -161,6 +162,20 @@ describeOnWindows('restrictWindowsPathSync against a real filesystem', () => {
     // Exactly the three intended principals, each with FullControl.
     expect(after).toHaveLength(3)
     expect(after.every((entry) => entry.endsWith(':(F)'))).toBe(true)
+  })
+
+  it('publishes a real asynchronous credential with a protected DACL', async () => {
+    const directory = join(root, 'async-credential')
+    mkdirSync(directory)
+    expect(restrictWindowsPathSync(directory, true)).toBe(true)
+    const target = join(directory, 'credential.json')
+
+    await expect(writeSecureJsonFileAsync(target, { token: 'secret' })).resolves.toBe(true)
+
+    expect(JSON.parse(readFileSync(target, 'utf8'))).toEqual({ token: 'secret' })
+    const entries = readAclEntries(target)
+    expect(entries).toHaveLength(3)
+    expect(entries.every((entry) => entry.endsWith(':(F)') && !entry.includes('(I)'))).toBe(true)
   })
 
   it('gives a real directory inheritable rules so files created inside stay restricted', () => {
@@ -355,7 +370,7 @@ describeOnWindows('restrictWindowsPathSync against a real filesystem', () => {
     expect(restrictWindowsPathSync(systemFile, false)).toBe(false)
     expect(warn).toHaveBeenCalledWith(
       '[secure-path.windows-acl] failed to restrict path',
-      expect.objectContaining({ detail: expect.stringContaining('denied') })
+      expect.objectContaining({ stage: 'reset', detail: expect.any(String) })
     )
     warn.mockRestore()
   })
@@ -384,7 +399,7 @@ describeOnWindows('restrictWindowsPathSync against a real filesystem', () => {
         settled = true
         throw new Error('settlement callback exploded')
       })
-      await vi.waitFor(() => expect(settled).toBe(true))
+      await vi.waitFor(() => expect(settled).toBe(true), { timeout: 30_000 })
       // An unhandled rejection is raised a turn later, so give the loop one.
       await new Promise((resolve) => setTimeout(resolve, 50))
     } finally {

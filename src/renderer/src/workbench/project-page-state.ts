@@ -1,28 +1,30 @@
+import type { VersionMaterialSelection } from './version-material-selection'
 import { useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-
-export type ProjectOnboardOptions = {
-  attachToGroupId?: string
-  seedName?: string
-  attachLabel?: string
-}
-
-export type CharterEditOptions = {
-  repoId: string
-  seedName?: string
-}
+import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
+import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
+import type { Repo } from '../../../shared/repo-types'
+import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
+import { requestVersionSidebarFocus } from './version-sidebar-state'
+import { beginProjectWallVisit } from './wall-refresh'
 
 /** G2（P6）：版本总览页选项——按项目注册行与版本打开，只读派生，无第二份存储。 */
 export type VersionOverviewOptions = {
   milestoneOrigin?: { feature: string }
   repoId: string
+  /** 点击时解析出的来源主机：版本总览只读这台主机上的登记与材料。 */
+  hostId: ExecutionHostId
   version: string
+  workflow?: 'plan' | 'acceptance'
+  selection?: VersionMaterialSelection
 }
 
+type ProjectSource = Pick<VersionOverviewOptions, 'repoId' | 'hostId'>
 type ProjectPage =
-  | { kind: 'wall'; configureRepoId?: string }
-  | { kind: 'onboard'; options: ProjectOnboardOptions }
+  | { kind: 'wall' }
+  | { kind: 'project-overview' | 'knowledge'; options: ProjectSource | null }
   | { kind: 'version-overview'; options: VersionOverviewOptions }
+  | { kind: 'cycle'; options: { scope: NativeWorkspaceScope; version: string } }
   | null
 
 let projectPage: ProjectPage = null
@@ -37,24 +39,58 @@ function setProjectPage(page: ProjectPage): void {
 
 export function openProjectWall(): void {
   useAppStore.getState().openActivityPage()
+  if (projectPage?.kind !== 'wall') {
+    beginProjectWallVisit()
+  }
   setProjectPage({ kind: 'wall' })
 }
 
-export function openProjectOnboard(options: ProjectOnboardOptions = {}): void {
-  useAppStore.getState().openActivityPage()
-  setProjectPage({ kind: 'onboard', options: { ...options } })
+export function openAddProject(): void {
+  const state = useAppStore.getState()
+  if (projectPage?.kind === 'wall' && state.repos.length === 0) {
+    state.openModal('add-repo', { stayOnProjectWall: true })
+    return
+  }
+  state.openModal('add-repo')
 }
 
-/** 名片补录/编辑入口(spec 规则 2):复用 bw/project 固定树与 PR 流。 */
-export function openCharterEdit(options: CharterEditOptions): void {
+function projectSource(repo: Repo | null): ProjectSource | null {
+  return repo ? { repoId: repo.id, hostId: getRepoExecutionHostId(repo) } : null
+}
+
+export function openProjectOverview(repo?: Repo): void {
+  const state = useAppStore.getState()
+  const current = repo ?? currentProjectRepo(state)
+  const source = current && resolveProjectSource(state, current)
+  openProjectOverviewSource(source)
+}
+
+/** Keep the source already used to display a wall card. */
+export function openProjectOverviewSource(source: Repo | null): void {
   useAppStore.getState().openActivityPage()
-  setProjectPage({ kind: 'wall', configureRepoId: options.repoId })
+  setProjectPage({ kind: 'project-overview', options: projectSource(source) })
+  if (source) {
+    requestVersionSidebarFocus(source.id)
+  }
+}
+
+export function openKnowledgePage(): void {
+  const state = useAppStore.getState()
+  const current = currentProjectRepo(state)
+  const source = current && resolveProjectSource(state, current, true)
+  state.openSpacePage()
+  setProjectPage({ kind: 'knowledge', options: projectSource(source) })
 }
 
 /** G2（P6）：版本总览（表格周报风格，只读派生自 Git 材料与登记）。 */
 export function openVersionOverview(options: VersionOverviewOptions): void {
   useAppStore.getState().openActivityPage()
   setProjectPage({ kind: 'version-overview', options: { ...options } })
+}
+
+export function openCycleProject(scope: NativeWorkspaceScope, version: string): void {
+  useAppStore.getState().openArtifactsPage()
+  setProjectPage({ kind: 'cycle', options: { scope, version } })
 }
 
 export function closeProjectPage(): void {
@@ -75,13 +111,15 @@ useAppStore.subscribe((state, previous) => {
   }
 })
 
+export function getProjectPage(): ProjectPage {
+  return projectPage
+}
+
 export function useProjectPage(): ProjectPage {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-    () => projectPage,
-    () => null
-  )
+  return useSyncExternalStore(subscribeProjectPage, getProjectPage, () => null)
+}
+
+export function subscribeProjectPage(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
 }

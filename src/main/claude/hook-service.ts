@@ -116,7 +116,8 @@ export class ClaudeHookService {
       getManagedScriptPath(this.options.settings),
       getManagedScript('local', {
         skipWhenDevinImportsClaude: this.options.agent === 'claude',
-        skipWhenGrokImportsClaude: this.options.agent === 'claude'
+        skipWhenGrokImportsClaude: this.options.agent === 'claude',
+        skipWhenCursorImportsClaude: this.options.agent === 'claude'
       })
     )
     // Why: no agent gate — the statusline script only ever exists for claude, so presence is the gate.
@@ -151,7 +152,8 @@ export class ClaudeHookService {
       scriptPath,
       getManagedScript('local', {
         skipWhenDevinImportsClaude: this.options.agent === 'claude',
-        skipWhenGrokImportsClaude: this.options.agent === 'claude'
+        skipWhenGrokImportsClaude: this.options.agent === 'claude',
+        skipWhenCursorImportsClaude: this.options.agent === 'claude'
       })
     )
     // Why: the statusline usage feed is Claude-only — OpenClaude data would be misattributed to the Claude provider.
@@ -225,7 +227,8 @@ export class ClaudeHookService {
         remoteScriptPath,
         getManagedScript('posix', {
           skipWhenDevinImportsClaude: this.options.agent === 'claude',
-          skipWhenGrokImportsClaude: this.options.agent === 'claude'
+          skipWhenGrokImportsClaude: this.options.agent === 'claude',
+          skipWhenCursorImportsClaude: this.options.agent === 'claude'
         })
       )
       // Why: no statusline install here — this path serves SSH remotes and WSL guests, whose relay hook

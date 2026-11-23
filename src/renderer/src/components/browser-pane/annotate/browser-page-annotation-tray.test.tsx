@@ -85,6 +85,8 @@ function renderTray(): {
         worktreeId="wt-1"
         activeGroupId={undefined}
         browserAnnotationsPrompt="prompt"
+        includePageDetails={false}
+        handleIncludePageDetailsChange={vi.fn()}
         handleBrowserAnnotationsSentToAgent={vi.fn()}
         handleCopyBrowserAnnotations={vi.fn()}
         browserAnnotationsCopied={false}
@@ -122,7 +124,8 @@ describe('BrowserPageAnnotationTray edit mode', () => {
     expect(handleUpdateBrowserAnnotation).toHaveBeenCalledWith(
       'annotation-1',
       'Updated comment',
-      'question'
+      'question',
+      []
     )
   })
 

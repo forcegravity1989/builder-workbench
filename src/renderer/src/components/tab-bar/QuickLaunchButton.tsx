@@ -17,6 +17,7 @@ import {
 } from '../../../../shared/tui-agent-selection'
 import { translate } from '@/i18n/i18n'
 import { useStructuredAgentLaunchStatus } from '@/lib/structured-agent-session-launch'
+import { useHostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
 
 export type QuickLaunchAgentMenuItemsProps = {
   worktreeId: string
@@ -111,10 +112,9 @@ function QuickLaunchAgentMenuItemsInner({
   // resolution as the rest of the tab bar.
   const agentDetectionTarget = useAgentDetectionTargetForWorktree(worktreeId)
   const { detectedIds } = useDetectedAgents(agentDetectionTarget)
-  const defaultAgent = useAppStore((s) => s.settings?.defaultTuiAgent)
-  const disabledAgents = useAppStore(
-    (s) => s.settings?.disabledTuiAgents ?? DEFAULT_DISABLED_TUI_AGENTS
-  )
+  const preferences = useHostAgentLaunchPreferences(agentDetectionTarget)
+  const defaultAgent = preferences.defaultTuiAgent
+  const disabledAgents = preferences.disabledTuiAgents ?? DEFAULT_DISABLED_TUI_AGENTS
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const newAgentShortcut = useOptionalShortcutLabel('tab.newAgent')
@@ -185,7 +185,8 @@ function QuickLaunchAgentMenuItemsInner({
   )
 
   const enabledDetectedIds = detectedIds ? filterEnabledTuiAgents(detectedIds, disabledAgents) : []
-  const agents = detectedIds ? orderAgents(defaultAgent, enabledDetectedIds) : []
+  const agents =
+    preferences.isAvailable && detectedIds ? orderAgents(defaultAgent, enabledDetectedIds) : []
 
   return (
     <>
@@ -194,12 +195,19 @@ function QuickLaunchAgentMenuItemsInner({
           disabled
           className="gap-2 rounded-[7px] px-2 py-1.5 text-[12px] leading-5 text-muted-foreground"
         >
-          {detectedIds && detectedIds.length > 0
-            ? translate('auto.components.tab.bar.QuickLaunchButton.8dea9b5cdf', 'No enabled agents')
-            : translate(
-                'auto.components.tab.bar.QuickLaunchButton.e518f544b1',
-                'No agents detected'
-              )}
+          {preferences.isLoading
+            ? translate('settings.agents.loading', 'Loading agent settings…')
+            : !preferences.isAvailable
+              ? translate(
+                  'settings.agents.readFailed',
+                  'Couldn’t read agent settings. Check the host connection and try again.'
+                )
+              : detectedIds && detectedIds.length > 0
+                ? translate('auto.components.tab.bar.QuickLaunchButton.8dea9b5cdf', 'No enabled agents')
+                : translate(
+                    'auto.components.tab.bar.QuickLaunchButton.e518f544b1',
+                    'No agents detected'
+                  )}
         </DropdownMenuItem>
       ) : null}
       {agents.map((agent) => {

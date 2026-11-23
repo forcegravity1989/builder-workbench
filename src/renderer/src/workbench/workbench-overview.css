@@ -71,19 +71,6 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
-.wb-ov .status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--color-neutral-600);
-  font-size: 12px;
-}
-.wb-ov .status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-neutral-400);
-}
 .wb-ov .detail-grid {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -99,9 +86,6 @@
 .wb-ov .detail-v {
   font-size: 13px;
   overflow-wrap: anywhere;
-}
-.wb-ov .mono {
-  font-family: var(--font-mono);
 }
 .wb-ov .wb-muted {
   color: var(--color-neutral-600);

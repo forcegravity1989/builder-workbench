@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import type { RepoSlug } from '@/lib/github-links'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import type { GitLabWorkItem } from '../../../../shared/gitlab-types'
+import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { JiraIssue } from '../../../../shared/jira-types'
 import type { LinearIssue } from '../../../../shared/linear/issue-types'
 import type { BaseRefSearchResult } from '../../../../shared/repo-types'
@@ -15,6 +16,10 @@ export function useSmartWorkspaceNameFieldState(textOnly: boolean, value: string
   const [open, setOpen] = useState(false)
   const [debouncedQuery, setDebouncedQuery] = useState(value)
   const [githubItems, setGithubItems] = useState<GitHubWorkItem[]>([])
+  const [codehubItems, setCodehubItems] = useState<CodeHubTaskItem[]>([])
+  const [codehubHasMore, setCodehubHasMore] = useState(false)
+  const [codehubError, setCodehubError] = useState<string | null>(null)
+  const [codehubRefreshNonce, setCodehubRefreshNonce] = useState(0)
   const [gitlabItems, setGitlabItems] = useState<GitLabWorkItem[]>([])
   const [branches, setBranches] = useState<BaseRefSearchResult[]>([])
   const [branchResultsSource, setBranchResultsSource] = useState<{
@@ -24,6 +29,7 @@ export function useSmartWorkspaceNameFieldState(textOnly: boolean, value: string
   const [linearIssues, setLinearIssues] = useState<LinearIssue[]>([])
   const [jiraIssues, setJiraIssues] = useState<JiraIssue[]>([])
   const [githubLoading, setGithubLoading] = useState(false)
+  const [codehubLoading, setCodehubLoading] = useState(false)
   const [gitlabLoading, setGitlabLoading] = useState(false)
   const [branchesLoading, setBranchesLoading] = useState(false)
   const [linearLoading, setLinearLoading] = useState(false)
@@ -56,6 +62,14 @@ export function useSmartWorkspaceNameFieldState(textOnly: boolean, value: string
     setDebouncedQuery,
     githubItems,
     setGithubItems,
+    codehubItems,
+    setCodehubItems,
+    codehubHasMore,
+    setCodehubHasMore,
+    codehubError,
+    setCodehubError,
+    codehubRefreshNonce,
+    setCodehubRefreshNonce,
     gitlabItems,
     setGitlabItems,
     branches,
@@ -68,6 +82,8 @@ export function useSmartWorkspaceNameFieldState(textOnly: boolean, value: string
     setJiraIssues,
     githubLoading,
     setGithubLoading,
+    codehubLoading,
+    setCodehubLoading,
     gitlabLoading,
     setGitlabLoading,
     branchesLoading,

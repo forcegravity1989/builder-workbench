@@ -1,19 +1,32 @@
-import { useCallback, useEffect, useId, useState, type ReactElement } from 'react'
+import { ErrorDetails } from './error-feedback'
+import { useCallback, useEffect, useId, useRef, useState, type ReactElement } from 'react'
 import { useAppStore } from '@/store'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { ReviewNotesSendMenuContent } from '@/components/editor/ReviewNotesSendMenuContent'
 import { preventAgentSendTargetOutsideDismiss } from '@/components/browser-pane/annotate/prevent-agent-send-target-outside-dismiss'
 import { revealPlanChat } from './plan-column-resize'
+import { track } from '@/lib/telemetry'
+import type {
+  BwAssistantRequestActionId,
+  BwAssistantRequestScreen
+} from '../../../shared/telemetry-events'
 // Owns .g3-send-preview; imported here so the preview is styled on every board
 // that uses this menu, not only where board-ui happens to be loaded first.
 import './board-ui.css'
 
 /** Object-level action prop: wraps the caller's trigger button in the send menu. */
-export type SendActionWrap = (prompt: string, label: string, button: ReactElement) => ReactElement
+export type SendActionWrap = (
+  prompt: string,
+  label: string,
+  button: ReactElement,
+  actionId: BwAssistantRequestActionId,
+  preparePrompt?: () => Promise<string>
+) => ReactElement
 
 /** Plan board is the original consumer; the acceptance board passes its own. */
 const DEFAULT_ASSISTANT = '计划助手'
@@ -26,47 +39,48 @@ const DEFAULT_ASSISTANT = '计划助手'
 export function usePlanSendAction(
   worktreeId: string | null,
   onSentNotice: (message: string) => void,
+  screen: BwAssistantRequestScreen,
   assistant = DEFAULT_ASSISTANT
 ): SendActionWrap {
   return useCallback(
-    (prompt, label, button) => (
+    (prompt, label, button, actionId, preparePrompt) => (
       <PlanSendMenu
         worktreeId={worktreeId}
         prompt={prompt}
+        preparePrompt={preparePrompt}
         label={label}
         assistant={assistant}
+        actionId={actionId}
+        screen={screen}
         onSent={() => onSentNotice(`${label}已发送给${assistant} · 在会话栏查看进展`)}
       >
         {button}
       </PlanSendMenu>
     ),
-    [worktreeId, onSentNotice, assistant]
+    [worktreeId, onSentNotice, screen, assistant]
   )
 }
 
-/**
- * Object-level board actions (break down Issues, organize minutes, start
- * archiving, release, send board annotations) reuse the Orca native agent-send
- * chain — the same one browser annotations use — but complete it: #399 only
- * triggered the sidebar target-mode highlight and never rendered the picker, so
- * clicks dead-ended. This wraps the action button in the native dropdown:
- * instruction preview (BW wrapper layer; the native menu shows no pending text),
- * then the native「发送至」running-session list and「新建智能体」quick launch.
- * Opening also reveals the chat column. Shared by both cycle boards; `assistant`
- * only names the receiving AI role in the preview line.
- */
+/** Board requests share Orca's running-session picker and new-agent launcher. */
 export function PlanSendMenu({
   worktreeId,
   prompt,
+  preparePrompt,
   label,
   assistant = DEFAULT_ASSISTANT,
+  actionId,
+  screen,
   onSent,
   children
 }: {
   worktreeId: string | null
   prompt: string
+  preparePrompt?: () => Promise<string>
   label: string
   assistant?: string
+  actionId: BwAssistantRequestActionId
+  /** Plan/acceptance identity for usage telemetry; absent = not a cycle-board request. */
+  screen?: BwAssistantRequestScreen
   onSent?(): void
   children: ReactElement
 }) {
@@ -79,17 +93,34 @@ export function PlanSendMenu({
   const instance = useId()
   const id = `bw-plan-send:${instance}:${label}:${worktreeId ?? 'none'}`
   const [menuOpen, setMenuOpen] = useState(false)
+  const [preparedPrompt, setPreparedPrompt] = useState<string | null>(null)
+  const [prepareError, setPrepareError] = useState('')
+  const preparation = useRef({ generation: 0 })
+  // Why: telemetry counts real delivery only — a click that never reaches an
+  // assistant session (menu closed, target cancelled) is not a request sent.
+  // Without a screen identity the send is not a plan/acceptance cycle-board
+  // request and emits no usage event.
+  const onDelivered = useCallback(() => {
+    onSent?.()
+    if (screen) {
+      track('bw_assistant_request_sent', { action_id: actionId, screen })
+    }
+  }, [onSent, actionId, screen])
   // Why: mirror NotesSendMenu — when the store's target mode leaves this id
   // (sent from the sidebar, or taken over by another source), the local menu
   // must collapse too instead of lingering.
   const targetModeMine = useAppStore((state) => state.agentSendPopoverTargetMode?.id === id)
   useEffect(() => {
-    if (!targetModeMine && menuOpen) {
+    if (!targetModeMine && menuOpen && preparedPrompt !== null) {
       setMenuOpen(false)
     }
-  }, [targetModeMine, menuOpen])
+  }, [targetModeMine, menuOpen, preparedPrompt])
   useEffect(() => {
-    return () => close(id)
+    const pending = preparation.current
+    return () => {
+      pending.generation++
+      close(id)
+    }
   }, [id, close])
   if (!worktreeId) {
     return children
@@ -99,21 +130,36 @@ export function PlanSendMenu({
       modal={false}
       open={menuOpen}
       onOpenChange={(next) => {
+        const request = ++preparation.current.generation
         setMenuOpen(next)
+        setPreparedPrompt(null)
+        setPrepareError('')
+        close(id)
         if (next) {
-          // The action also reveals the chat column, matching the approved design.
           revealPlanChat()
-          open({
-            id,
-            worktreeId,
-            source: 'browser-annotations',
-            prompt,
-            label,
-            launchSource: 'notes_send',
-            onPromptDelivered: onSent
-          })
-        } else {
-          close(id)
+          void (async () => {
+            try {
+              const resolved = preparePrompt ? await preparePrompt() : prompt
+              // Closing or replacing the menu must not activate a late send target.
+              if (request !== preparation.current.generation) {
+                return
+              }
+              setPreparedPrompt(resolved)
+              open({
+                id,
+                worktreeId,
+                source: 'browser-annotations',
+                prompt: resolved,
+                label,
+                launchSource: 'notes_send',
+                onPromptDelivered: onDelivered
+              })
+            } catch (reason) {
+              if (request === preparation.current.generation) {
+                setPrepareError(reason instanceof Error ? reason.message : String(reason))
+              }
+            }
+          })()
         }
       }}
     >
@@ -130,16 +176,25 @@ export function PlanSendMenu({
           </small>
           <p>{prompt}</p>
         </div>
-        <ReviewNotesSendMenuContent
-          worktreeId={worktreeId}
-          groupId={worktreeId}
-          prompt={prompt}
-          // Why: keep plan-action delivery semantics stable even if the shared
-          // review-notes menu defaults change later.
-          promptDelivery="submit-after-ready"
-          launchSource="notes_send"
-          onPromptDelivered={onSent}
-        />
+        {prepareError ? (
+          <div className="max-w-sm px-2 py-1.5 text-sm" role="alert">
+            <ErrorDetails
+              summary="请求准备失败，可重新打开菜单重试 · 查看详情"
+              detail={prepareError}
+            />
+          </div>
+        ) : preparedPrompt === null ? (
+          <DropdownMenuItem disabled>正在准备发送…</DropdownMenuItem>
+        ) : (
+          <ReviewNotesSendMenuContent
+            worktreeId={worktreeId}
+            groupId={worktreeId}
+            prompt={preparedPrompt}
+            promptDelivery="submit-after-ready"
+            launchSource="notes_send"
+            onPromptDelivered={onDelivered}
+          />
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

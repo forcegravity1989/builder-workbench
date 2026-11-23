@@ -3,6 +3,7 @@ import { gitReadOptionsForWorktree, type GitRuntimeOptions } from '../git/git-ru
 import { DEFAULT_GIT_MAX_BUFFER } from '../git/command-runner/git-exec-options'
 import { extractExecError } from '../git/exec-error'
 import { HistorySourceError } from './version-history-snapshot'
+import { planEntryLogArgs, versionHistoryLogArgs } from './version-history-log'
 
 const SHA = '(?:[a-f0-9]{40}|[a-f0-9]{64})'
 const MATERIAL_PATH = String.raw`\.bw\/planning\/(?!\.+$)[^/\0]+\/(?:data|acceptance)\.json`
@@ -31,22 +32,15 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
       ) {
         return
       }
-      const logArgvPrefix = [
-        'log',
-        '-z',
-        '--full-history',
-        '--diff-merges=first-parent',
-        '--format=%H%x00%cI',
-        '--name-only',
-        '--diff-filter=AM',
-        '--no-renames'
-      ]
+      const commit = args.at(-3) ?? ''
+      const allowed =
+        args[2] === '--no-merges'
+          ? planEntryLogArgs(commit, args[3] === '--min-parents=1')
+          : versionHistoryLogArgs(commit)
       if (
-        args.length !== logArgvPrefix.length + 3 ||
-        logArgvPrefix.some((token, index) => args[index] !== token) ||
-        !new RegExp(`^${SHA}$`).test(args[logArgvPrefix.length]) ||
-        args[logArgvPrefix.length + 1] !== '--' ||
-        args[logArgvPrefix.length + 2] !== '.bw/planning'
+        !new RegExp(`^${SHA}$`).test(commit) ||
+        args.length !== allowed.length ||
+        allowed.some((token, index) => args[index] !== token)
       ) {
         invalid()
       }
@@ -77,8 +71,7 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
       return
     }
     case 'rev-parse': {
-      // Own-branch reads pin the cycle worktree HEAD; no other rev is accepted.
-      if (args.length !== 2 || args[1] !== 'HEAD') {
+      if (args.length !== 2 || (args[1] !== 'HEAD' && args[1] !== '--is-shallow-repository')) {
         invalid()
       }
       return
@@ -142,7 +135,8 @@ export async function runReadOnlyHistoryGit(
     assertReadOnlyHistoryGitArgs(args)
     const { stdout } = await gitExecFileAsyncBuffer([...args], {
       ...gitReadOptionsForWorktree(repoPath, options),
-      maxBuffer: DEFAULT_GIT_MAX_BUFFER
+      maxBuffer: DEFAULT_GIT_MAX_BUFFER,
+      timeout: args[0] === 'log' && args[2] === '--no-merges' ? 5_000 : undefined
     })
     return { ok: true, stdout }
   } catch (error) {

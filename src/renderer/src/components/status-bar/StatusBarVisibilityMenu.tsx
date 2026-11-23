@@ -1,4 +1,4 @@
-import { Activity, Plug, Server } from 'lucide-react'
+import { Activity, Link, Plug, Server } from 'lucide-react'
 import React from 'react'
 import {
   DropdownMenu,
@@ -134,6 +134,16 @@ export function StatusBarVisibilityMenu({
           </DropdownMenuCheckboxItem>
         )}
         <DropdownMenuCheckboxItem
+          checked={statusBarItems.includes('cursor')}
+          onCheckedChange={() => {
+            recordFeatureInteraction('usage-tracking')
+            toggleStatusBarItem('cursor')
+          }}
+        >
+          <AgentIcon agent="cursor" size={14} />
+          {translate('auto.components.status.bar.StatusBar.cursorUsageMenu', 'Cursor Usage')}
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
           checked={statusBarItems.includes('ssh')}
           onCheckedChange={() => {
             recordFeatureInteraction('ssh')
@@ -162,6 +172,16 @@ export function StatusBarVisibilityMenu({
         >
           <Plug className="size-3.5" />
           {translate('auto.components.status.bar.StatusBar.9659e38343', 'Ports')}
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={statusBarItems.includes('quick-links')}
+          onCheckedChange={() => {
+            recordFeatureInteraction('quick-links')
+            toggleStatusBarItem('quick-links')
+          }}
+        >
+          <Link className="size-3.5" />
+          {translate('auto.components.status.bar.StatusBar.quickLinks', 'Quick Links')}
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,3 +1,4 @@
+import { useVersionMembership } from './version-cycle/use-version-membership'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ScheduledVersion } from '../../../shared/workbench/project-milestones'
 import type { VersionCatalogState } from './use-version-catalog'
@@ -111,18 +112,30 @@ function VersionReader({
   receive(key: string, facts: MilestoneVersionFacts): void
 }) {
   const materials = useVersionOverviewMaterials({ catalog, version: version.version, refreshToken })
-  const { plan, formalPlan, acceptance } = milestoneMaterialFacts(materials)
+  const { plan: document, formalPlan, acceptance } = milestoneMaterialFacts(materials)
+  const membership = useVersionMembership(catalog.scope, document)
+  const plan = useMemo(
+    () => (document ? { ...document, tasks: membership.references ?? [] } : null),
+    [document, membership.references]
+  )
+  const refreshMembership = membership.refresh
+  useEffect(() => {
+    if (refreshToken > 0) {
+      void refreshMembership()
+    }
+  }, [refreshToken, refreshMembership])
   const issues = useMilestoneIssues(catalog, formalPlan ? plan : null, acceptance, refreshToken)
   const materialFailed = Boolean(
     materials.problems?.length ||
     materials.plan.kind === 'error' ||
     materials.acceptance.kind === 'error'
   )
-  const failed = materialFailed || issues.failed
+  const failed = materialFailed || issues.failed || Boolean(membership.error)
   const loading = Boolean(
     materials.refreshing ||
     materials.plan.kind === 'loading' ||
     materials.acceptance.kind === 'loading' ||
+    membership.busy ||
     issues.loading
   )
   const stale = (!materialFailed || materials.stale === true) && !issues.failed && failed

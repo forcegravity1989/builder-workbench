@@ -62,9 +62,11 @@ export type StatusBarItem =
   | 'kimi'
   | 'minimax'
   | 'grok'
+  | 'cursor'
   | 'ssh'
   | 'resource-usage'
   | 'ports'
+  | 'quick-links'
 export type FloatingTerminalTriggerLocation = 'floating-button' | 'status-bar'
 
 export type TaskResumeState = {

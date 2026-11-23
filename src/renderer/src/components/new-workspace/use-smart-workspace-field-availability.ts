@@ -29,6 +29,8 @@ export function useSmartWorkspaceFieldAvailability({
   props: NormalizedSmartWorkspaceNameFieldProps
   state: FieldState
   repoBackedSearchTargets: {
+    codehubSourceContext?: { hostId?: ExecutionHostId | null } | null
+    githubSourceContext?: { hostId?: ExecutionHostId | null } | null
     gitlabSourceContext: { hostId?: ExecutionHostId | null } | null
   }[]
   preflightStatus: { glab?: { installed?: boolean } } | null
@@ -54,9 +56,12 @@ export function useSmartWorkspaceFieldAvailability({
     setMode,
     setOpen,
     setGithubItems,
+    setCodehubItems,
+    setCodehubHasMore,
     setGitlabItems,
     setBranches,
     setGithubLoading,
+    setCodehubLoading,
     setGitlabLoading,
     setBranchesLoading,
     setBranchResultsSource,
@@ -81,21 +86,40 @@ export function useSmartWorkspaceFieldAvailability({
       sourceHostId: target.gitlabSourceContext?.hostId
     })
   )
-  const availableTaskProviders = useMemo(
-    () =>
-      filterAvailableTaskProviders(['github', 'gitlab', 'linear'], {
-        gitlabInstalled: gitlabSourceAvailable,
-        linearConnected: linearStatus.connected === true
-      }),
-    [gitlabSourceAvailable, linearStatus.connected]
+  // Why: a CodeHub repo occupies the provider slot exactly like GitHub; only one
+  // platform tab is shown so CodeHub work never queries GitHub (and vice versa).
+  // Why: independent per-platform availability — a folder can hold GitHub and
+  // CodeHub repos; unknown remotes count as neither and never query GitHub.
+  const githubSourceAvailable = repoBackedSearchTargets.some((target) =>
+    Boolean(target.githubSourceContext)
   )
+  const codehubSourceAvailable = repoBackedSearchTargets.some((target) =>
+    Boolean(target.codehubSourceContext)
+  )
+  const availableTaskProviders = useMemo(() => {
+    const providers: ('github' | 'gitlab' | 'linear' | 'codehub')[] = []
+    if (githubSourceAvailable) {
+      providers.push('github')
+    }
+    providers.push('gitlab', 'linear')
+    if (codehubSourceAvailable) {
+      providers.push('codehub')
+    }
+    return filterAvailableTaskProviders(providers, {
+      gitlabInstalled: gitlabSourceAvailable,
+      linearConnected: linearStatus.connected === true
+    })
+  }, [codehubSourceAvailable, githubSourceAvailable, gitlabSourceAvailable, linearStatus.connected])
   const linearAvailable = availableTaskProviders.includes('linear')
   const availableModes = getSmartWorkspaceNameModes().filter((item) => {
     if (textOnly) {
       return item.id === 'text'
     }
     if (item.id === 'github') {
-      return !repoBackedSourcesDisabled
+      return !repoBackedSourcesDisabled && githubSourceAvailable
+    }
+    if (item.id === 'codehub') {
+      return !repoBackedSourcesDisabled && codehubSourceAvailable
     }
     if (item.id === 'gitlab') {
       return gitlabSourceAvailable
@@ -125,9 +149,12 @@ export function useSmartWorkspaceFieldAvailability({
       return
     }
     setGithubItems([])
+    setCodehubItems([])
+    setCodehubHasMore(false)
     setGitlabItems([])
     setBranches([])
     setGithubLoading(false)
+    setCodehubLoading(false)
     setGitlabLoading(false)
     setBranchesLoading(false)
     setBranchResultsSource(null)
@@ -137,6 +164,9 @@ export function useSmartWorkspaceFieldAvailability({
     setBranches,
     setBranchesLoading,
     setBranchResultsSource,
+    setCodehubHasMore,
+    setCodehubItems,
+    setCodehubLoading,
     setCrossRepoPrompt,
     setGithubItems,
     setGithubLoading,
@@ -210,12 +240,15 @@ export function useSmartWorkspaceFieldAvailability({
     }
     setOpen(false)
     setGithubItems([])
+    setCodehubItems([])
+    setCodehubHasMore(false)
     setGitlabItems([])
     setBranches([])
     setBranchResultsSource(null)
     setLinearIssues([])
     setJiraIssues([])
     setGithubLoading(false)
+    setCodehubLoading(false)
     setGitlabLoading(false)
     setBranchesLoading(false)
     setLinearLoading(false)
@@ -227,6 +260,9 @@ export function useSmartWorkspaceFieldAvailability({
     setBranches,
     setBranchesLoading,
     setBranchResultsSource,
+    setCodehubHasMore,
+    setCodehubItems,
+    setCodehubLoading,
     setCommandValue,
     setCrossRepoPrompt,
     setGithubItems,
@@ -246,6 +282,8 @@ export function useSmartWorkspaceFieldAvailability({
   }, [setDebouncedQuery, value])
 
   return {
+    codehubSourceAvailable,
+    githubSourceAvailable,
     gitlabSourceAvailable,
     linearAvailable,
     availableModes,

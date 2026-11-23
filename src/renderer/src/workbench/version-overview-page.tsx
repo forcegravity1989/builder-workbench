@@ -1,4 +1,8 @@
-import { useState } from 'react'
+import { toast } from 'sonner'
+import { versionTreeKey } from './version-material-selection'
+import { ErrorDetails } from './error-feedback'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { useEffect, useRef, useState } from 'react'
 import { CalendarDays, ClipboardCheck, ListTodo, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -7,6 +11,7 @@ import { useVersionCatalogForRepo } from './use-version-catalog'
 import type { VersionOverviewMaterials } from './version-overview-materials'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import { openVersionOverview, type VersionOverviewOptions } from './project-page-state'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { PlanningMaterial } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard } from './version-overview/feature-card'
@@ -27,43 +32,62 @@ import {
   overviewProjectId
 } from './version-overview/overview-experiments'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
+import { versionWorkflowProgress } from './version-workflow-progress'
+import { WorkbenchVersionResultHelp } from './WorkbenchScreenGuide'
+import { useWorkbenchScreenUsage } from './workbench-screen-usage'
 import './version-overview/overview.css'
 
-function ArchiveTime({
+function WorkflowProgress({
   kind,
   materials
 }: {
   kind: 'plan' | 'acceptance'
   materials: VersionOverviewMaterials
 }) {
-  const status = materials.prStatuses[kind]
-  const document = materials[kind]
-  const reference = document.kind === 'ready' ? document.document.workflow?.archivePr : null
-  const label = kind === 'plan' ? '计划 PR 合入' : '验收 PR 合入'
+  const { label, archive } = versionWorkflowProgress(materials[kind], materials.prStatuses[kind])
+  const status = archive?.status
   const at = status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined
-  const missing =
-    document.kind === 'error' || status?.state === 'unknown'
-      ? '未知'
-      : document.kind === 'loading' || (reference && !status)
-        ? '读取中'
-        : status && status.state !== 'merged'
-          ? '未合入'
-          : '未记录'
+  const url = status?.url
   return (
-    <span title={status?.state === 'unknown' ? status.reason : '北京时间 UTC+08:00'}>
-      {label} · {at ? <time dateTime={at}>{timeLabel(at)}</time> : missing}
-      {status && 'url' in status && status.url && (
-        <button className="bwo-link ml-1" onClick={() => openEvidenceUrl(status.url!)}>
-          #{reference?.number} ↗
-        </button>
+    <div
+      data-contextual-tour-target={
+        kind === 'acceptance' ? 'workbench-version-overview-progress' : undefined
+      }
+    >
+      {kind === 'plan' ? '计划' : '验收'} · {label}
+      {archive && (
+        <>
+          {' · '}
+          {status?.state === 'unknown' && status.reason ? (
+            <ErrorDetails className="inline-block" summary={archive.label} detail={status.reason} />
+          ) : (
+            <span>{archive.label}</span>
+          )}
+          {at && (
+            <time className="ml-1" dateTime={at} title="北京时间 UTC+08:00">
+              {timeLabel(at)}
+            </time>
+          )}
+          {url && (
+            <button className="bwo-link ml-1" onClick={() => openEvidenceUrl(url)}>
+              #{archive.reference.number} ↗
+            </button>
+          )}
+        </>
       )}
-    </span>
+    </div>
   )
 }
 
 export function VersionOverviewPage({ options }: { options: VersionOverviewOptions }) {
-  const { repoId, version } = options
-  const catalog = useVersionCatalogForRepo(repoId)
+  useWorkbenchScreenUsage('workbench-version-overview', true)
+  const { repoId, hostId, version } = options
+  const catalog = useVersionCatalogForRepo(repoId, hostId, 0, true)
+  const selectedTree = options.selection
+    ? catalog.worktrees.find(
+        (tree) => !tree.isArchived && versionTreeKey(tree) === options.selection?.treeKey
+      )
+    : null
   const [refreshToken, setRefreshToken] = useState(0)
   const [focus, setFocus] = useState<string | null>(null)
   const projectId = useAppStore((state) => overviewProjectId(state, repoId))
@@ -73,14 +97,20 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const aiEnabled = useAppStore((state) =>
     overviewExperimentEnabled(state.settings, projectId, 'ai')
   )
-  const { materials, features } = useVersionFacts(catalog, version, refreshToken, sdlcEnabled)
+  const { materials, features, membership, projectedPlan } = useVersionFacts(
+    catalog,
+    version,
+    refreshToken,
+    sdlcEnabled,
+    options.selection
+  )
   const milestoneSource = useMilestoneSource(catalog, refreshToken, sdlcEnabled)
   const { plan, acceptance } = materials
   const planDocument = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
   const taskReads = useCycleTaskReads({
     scope: catalog.scope ? { ...catalog.scope, workflow: 'plan' } : null,
-    tasks: planDocument?.tasks,
+    tasks: membership.references ?? undefined,
     taskPort: nativeTaskPort()
   })
   const taskReadAt = taskReads.reads
@@ -94,18 +124,48 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       plan.source === 'draft' &&
       planDocument &&
       !planDocument.goals.length &&
-      !planDocument.tasks.length &&
       !planDocument.workflow &&
       !planDocument.minutes &&
       !planDocument.summary.progress.trim() &&
       !planDocument.summary.risks.trim()
     )
   const entry = catalog.catalog?.entries.find((e) => e.version === version) ?? null
+  const sourceLabel = hostId === LOCAL_EXECUTION_HOST_ID ? '本机' : '当前主机'
+  const versionMissing =
+    !catalog.loading &&
+    !catalog.error &&
+    !entry &&
+    plan.kind === 'missing' &&
+    acceptance.kind === 'missing'
   const projectName = useAppStore(
-    (state) => state.repos.find((repo) => repo.id === repoId)?.displayName ?? '项目'
+    (state) => findRepoForHost(state.repos, repoId, { hostId })?.displayName ?? '项目'
   )
-  const workflow = (kind: 'plan' | 'acceptance') =>
-    navigateVersionWorkflow({ catalog, version, workflow: kind, projectKey: repoId })
+  const workflow = (kind: 'plan' | 'acceptance') => {
+    if (options.selection && !selectedTree) {
+      toast.error('所选工作区已变化，请从版本侧栏重新选择。')
+      return
+    }
+    navigateVersionWorkflow({
+      catalog,
+      version,
+      workflow: kind,
+      projectKey: repoId,
+      worktrees: selectedTree && options.selection?.workflow === kind ? [selectedTree] : undefined
+    })
+  }
+  const handledWorkflow = useRef<VersionOverviewOptions | null>(null)
+  useEffect(() => {
+    if (
+      !options.workflow ||
+      handledWorkflow.current === options ||
+      (!catalog.materialReady && !entry?.workspaces.length) ||
+      !entry
+    ) {
+      return
+    }
+    handledWorkflow.current = options
+    navigateVersionWorkflow({ catalog, version, workflow: options.workflow, projectKey: repoId })
+  }, [catalog, entry, options, repoId, version])
   const tasks = (goal?: { goalId: string; label: string; references: PlanningMaterial['tasks'] }) =>
     void openVersionTasks({ catalog, version, entry, goal })
   const materialErrors = [
@@ -117,6 +177,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const planningFailed = Boolean(milestoneSource.error || milestoneSource.formal?.problems.length)
   const milestoneFacts: MilestoneVersionFacts = {
     ...milestoneMaterialFacts(materials),
+    plan: projectedPlan,
     features: features.features.map((feature) => {
       const current = catalog.scope
         ? nativeTaskReferenceReader.cached(catalog.scope, [feature.root.reference])?.[0]
@@ -148,7 +209,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               ? '计划草稿'
               : '版本中'
   const refresh = () => {
-    void taskReads.refresh()
+    void membership.refresh().then(() => taskReads.refresh())
     setRefreshToken((n) => n + 1)
     catalog.reload()
   }
@@ -169,12 +230,24 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               label: '刷新来源',
               Icon: RefreshCw,
               action: refresh,
-              busy: features.loading || taskReads.busy || catalog.loading || materials.refreshing
+              target: 'workbench-version-overview-refresh',
+              busy:
+                features.loading ||
+                membership.busy ||
+                taskReads.busy ||
+                catalog.loading ||
+                materials.refreshing
             }
-          ].map(({ label, Icon, action, busy }) => (
+          ].map(({ label, Icon, action, busy, target }) => (
             <Tooltip key={label}>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" aria-label={label} onClick={action}>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={label}
+                  data-contextual-tour-target={target}
+                  onClick={action}
+                >
                   <Icon className={busy ? 'animate-spin' : undefined} />
                 </Button>
               </TooltipTrigger>
@@ -182,6 +255,10 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             </Tooltip>
           ))}
         </div>
+        <WorkbenchVersionResultHelp
+          screen="workbench-version-overview"
+          enabled={plan.kind !== 'loading' && acceptance.kind !== 'loading'}
+        />
       </header>
       <div className="bwo-meta">
         <span>
@@ -194,17 +271,17 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             )
           ].join('、') || '未记录'}
         </span>
-        <ArchiveTime kind="plan" materials={materials} />
-        <ArchiveTime kind="acceptance" materials={materials} />
+        <WorkflowProgress kind="plan" materials={materials} />
+        <WorkflowProgress kind="acceptance" materials={materials} />
       </div>
-      {materialErrors.map((error) => (
-        <p className="mb-4 text-sm text-destructive" role="alert" key={error}>
-          {error}{' '}
+      {materialErrors.length > 0 && (
+        <div className="mb-4 text-sm text-destructive" role="status">
+          <ErrorDetails summary="版本材料读取失败 · 查看详情" detail={materialErrors.join('\n')} />
           <button className="bwo-link" onClick={refresh}>
             重试
           </button>
-        </p>
-      ))}
+        </div>
+      )}
       {materialErrors.length > 0 && materials.readAt && (
         <p className="bwo-muted">可读内容保留至上次来源快照：{timeLabel(materials.readAt)}</p>
       )}
@@ -213,14 +290,23 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           正在读取版本材料…
         </p>
       )}
-      {planUnstarted && (
+      {versionMissing && (
+        <div className="bwo-empty">
+          <h2>{sourceLabel}未同步该版本</h2>
+          <p className="bwo-muted">
+            {sourceLabel}已登记该项目，但没有这个版本的工作区或材料；不会改用其他主机的结果。
+          </p>
+        </div>
+      )}
+      {planUnstarted && !versionMissing && (
         <div className="bwo-empty">
           <h2>先明确这一版要交付什么</h2>
           <Button onClick={() => workflow('plan')}>开始制定版本计划</Button>
         </div>
       )}
       {planDocument?.goals.map((goal, index) => {
-        const references = planDocument.tasks.filter((task) => task.goalId === goal.goalId)
+        const references =
+          membership.references?.filter((task) => task.goalId === goal.goalId) ?? []
         const grouped = features.features.filter((feature) =>
           feature.members.some((member) => member.reference.goalId === goal.goalId)
         )
@@ -234,6 +320,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 <span>负责人 · {goal.owner || '未记录'}</span>
                 <button
                   className="bwo-link"
+                  disabled={!membership.references}
                   onClick={() =>
                     tasks({
                       goalId: goal.goalId,
@@ -242,12 +329,21 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                     })
                   }
                 >
-                  目标任务 · {references.length} 项 ·{' '}
-                  {unfinishedTaskLabel(references, taskReads.reads)} ↗
+                  {membership.references ? (
+                    <>
+                      目标任务 · {references.length} 项 ·{' '}
+                      {unfinishedTaskLabel(references, taskReads.reads)} ↗
+                    </>
+                  ) : (
+                    '目标任务 · 未知'
+                  )}
                 </button>
               </div>
               <button
                 className="bwo-badge"
+                data-contextual-tour-target={
+                  index === 0 ? 'workbench-version-overview-decision' : undefined
+                }
                 onClick={() => workflow('acceptance')}
                 title={result?.decision?.reason ?? result?.note ?? '打开本版验收记录'}
               >
@@ -284,7 +380,12 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                     historical={acceptance.kind === 'ready' && acceptance.source === 'committed'}
                     onVersion={(next, id) => {
                       setFocus(id)
-                      openVersionOverview({ repoId, version: next })
+                      openVersionOverview({
+                        repoId,
+                        hostId,
+                        version: next,
+                        milestoneOrigin: options.milestoneOrigin
+                      })
                     }}
                   />
                 </div>
@@ -295,9 +396,9 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           </section>
         )
       })}
-      {planDocument && planDocument.tasks.some((task) => !task.goalId) && (
+      {membership.references?.some((task) => !task.goalId) && (
         <p className="bwo-muted py-4">
-          未关联目标 · {planDocument.tasks.filter((task) => !task.goalId).length} 项{' '}
+          未关联目标 · {membership.references.filter((task) => !task.goalId).length} 项{' '}
           <button className="bwo-link" onClick={() => tasks()}>
             查看版本任务 ↗
           </button>
@@ -314,12 +415,14 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       {sdlcEnabled && features.stale && features.readAt && (
         <p className="bwo-muted">特性来源刷新失败，保留上次快照：{timeLabel(features.readAt)}</p>
       )}
-      {taskReads.error && (
-        <p className="bwo-muted" role="alert">
-          任务状态刷新失败：{taskReads.error}
-        </p>
+      {(membership.error || taskReads.error) && (
+        <ErrorDetails
+          className="bwo-muted"
+          summary="版本任务读取失败 · 查看详情"
+          detail={membership.error ?? taskReads.error}
+        />
       )}
-      {planDocument && planDocument.tasks.length > 0 && (
+      {Boolean(membership.references?.length) && (
         <p className="bwo-muted">
           未完成数按当前任务状态统计，目标是否达成以人工验收为准。
           {taskReads.busy
@@ -332,7 +435,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       {aiEnabled && (
         <WorkflowProductivity
           catalog={catalog}
-          plan={planDocument}
+          plan={projectedPlan}
           version={version}
           revision={plan.kind === 'ready' ? (plan.sourceCommit ?? plan.revision) : undefined}
           planState={plan.kind}

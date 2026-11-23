@@ -38,7 +38,7 @@ type OnboardingFlowActionsArgs = {
   settings: GlobalSettings | null
   persistCurrentStep: () => Promise<PersistCurrentStepResult>
   closeWith: CloseWith
-  openModal: (modal: 'add-repo') => void
+  openFirstProjectSetup: () => void
   getNextStepIndex: (index: number) => number
   onOnboardingChange: (state: OnboardingState) => void
   stepIndex: number
@@ -60,7 +60,7 @@ export function useOnboardingFlowActions({
   settings,
   persistCurrentStep,
   closeWith,
-  openModal,
+  openFirstProjectSetup,
   getNextStepIndex,
   onOnboardingChange,
   stepIndex,
@@ -125,7 +125,7 @@ export function useOnboardingFlowActions({
             )
             const closed = await closeWith('completed', ONBOARDING_FINAL_STEP, 'add_project_modal')
             if (closed) {
-              openModal('add-repo')
+              openFirstProjectSetup()
             }
             return
           }
@@ -161,7 +161,7 @@ export function useOnboardingFlowActions({
       currentStep.stepNumber,
       getNextStepIndex,
       onOnboardingChange,
-      openModal,
+      openFirstProjectSetup,
       persistCurrentStep,
       stepIndex,
       trackCurrentStepCompleted,
@@ -224,7 +224,7 @@ export function useOnboardingFlowActions({
           })
         )
       }
-      openModal('add-repo')
+      openFirstProjectSetup()
     } finally {
       setBusyLabel(null)
     }
@@ -235,7 +235,7 @@ export function useOnboardingFlowActions({
     currentStep.id,
     currentStep.stepNumber,
     currentStep.valueKind,
-    openModal,
+    openFirstProjectSetup,
     selectedAgent,
     settings,
     trackTaskSourcesSnapshot,

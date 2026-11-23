@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import type { PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
@@ -18,7 +19,9 @@ export function AcceptanceBoard(props: AcceptanceBoardProps) {
       <div className="acc-empty-screen">
         <h1>版本验收</h1>
         <p>打开验收工作区，再明确版本与计划来源。</p>
-        {context.error && <p role="alert">{context.error}</p>}
+        {context.error && (
+          <ErrorDetails summary="验收工作区未就绪 · 查看详情" detail={context.error} />
+        )}
       </div>
     )
   }

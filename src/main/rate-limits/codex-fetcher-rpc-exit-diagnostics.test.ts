@@ -24,6 +24,12 @@ vi.mock('node-pty', () => ({
   spawn: ptySpawnMock
 }))
 
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn(async () => {
+    throw new Error('no auth fixture')
+  })
+}))
+
 vi.mock('./codex-auth-presence', () => ({
   probeCodexAuthPresence: vi.fn(() => 'present')
 }))
@@ -53,7 +59,7 @@ let stubPath: string
 function runStub(stderr: string, exitCode: number): Promise<{ error: string | null }> {
   process.env.ORCA_STUB_CODEX_STDERR = stderr
   process.env.ORCA_STUB_CODEX_EXIT_CODE = String(exitCode)
-  return fetchCodexRateLimits({ allowPtyFallback: false })
+  return fetchCodexRateLimits()
 }
 
 describe('Codex RPC exit diagnostics', () => {

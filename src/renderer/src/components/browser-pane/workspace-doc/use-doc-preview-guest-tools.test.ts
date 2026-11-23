@@ -18,7 +18,6 @@ const calls = vi.hoisted(() => ({
 vi.mock('@/components/browser-pane/annotate/use-browser-page-annotation-send', () => ({
   useBrowserPageAnnotationSend: (args: { browserTabId: string }) => {
     calls.annotationSend.push({ browserTabId: args.browserTabId })
-    return { browserAnnotations: [], setBrowserAnnotationTrayOpen: () => undefined }
   }
 }))
 

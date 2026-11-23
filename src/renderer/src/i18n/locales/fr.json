@@ -2955,6 +2955,7 @@
             "openWithDefaultApp": "Ouvrir avec l'application par défaut",
             "switchTerminal": "Changer de terminal",
             "openTaskTerminal": "Ouvrir le terminal de tâches",
+            "openInTask": "Ouvrir dans la tâche",
             "systemBrowser": "Navigateur système",
             "orcaBrowser": "Navigateur Orca",
             "terminalLinkSettings": "Paramètres des liens du terminal",
@@ -4828,6 +4829,8 @@
           "3e64e8a70d": "Échec de la connexion",
           "32a7256d85": "Cloner",
           "69f5b5380d": "Clonage...",
+          "finishingClone": "Finalisation du clonage…",
+          "importingProject": "Importation du projet…",
           "cloneOnHostDescription": "Saisissez l'URL Git et choisissez où le cloner sur {{value0}}.",
           "cloneParentFolder": "Dossier parent",
           "remoteCloneParentPlaceholder": "/home/user/projects"
@@ -4924,7 +4927,6 @@
           "591f330288": "Supprimer le groupe de projets",
           "2c14ce677a": "Suppression...",
           "0e0e6764af": "Projets contenus",
-          "ad407c2d55": "de plus",
           "removeContainedProjectSingular": "Retirer 1 projet contenu",
           "removeContainedProjectPlural": "Retirer {{value0}} projets contenus",
           "eeabb8e8e4": "Retirer {{value0}} {{value1}} d'Orca",
@@ -5051,7 +5053,6 @@
           "0ccba862b8": "Ouvrir les tâches GitHub",
           "fee535205b": "Tâches",
           "d599269755": "Masquer de la barre latérale",
-          "artifacts": "Artefacts",
           "skills": "Skills"
         },
         "SidebarRepositoryFilterSection": {
@@ -6877,9 +6878,6 @@
           "0e9fc0eadc": "Dossier des espaces de travail",
           "e2955d9ccb": "Configure où sont créés les nouveaux espaces de travail.",
           "7511097c5d": "Espace de travail",
-          "31e300af1c": "Confirmer avant de supprimer les artefacts",
-          "fb29a73a17": "Afficher une boîte de dialogue de confirmation avant de supprimer un artefact partagé et de rompre son lien public.",
-          "bf46474e33": "Demander confirmation avant de supprimer un artefact partagé. Quiconque détient son lien public perd l'accès.",
           "externalWorktrees": "Worktrees externes",
           "externalWorktreesDescription": "Choisissez si les worktrees créés en dehors d'Orca apparaissent par défaut.",
           "show": "Afficher",
@@ -7253,7 +7251,6 @@
           "191ac34567": "Orchestration d'agents"
         },
         "OrchestrationSetupCard": {
-          "e7d2a5146c": "Permet aux agents de transmettre le contexte et de coordonner le travail via Orca.",
           "2777ff0fdc": "Skill d'orchestration"
         },
         "OrchestrationSkillAgentCoverage": {
@@ -10092,8 +10089,8 @@
                 "cards": {
                   "793a06e899": "Revérifier",
                   "1a9475dace": "En savoir plus",
-                  "19fb419c12": "Les identifiants Gitea sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
-                  "60708f23da": "uniquement quand Orca ne peut pas déduire l'URL de l'API depuis le remote.",
+                  "19fb419c12": "Les identifiants Gitea sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
+                  "60708f23da": "uniquement quand {{product}} ne peut pas déduire l'URL de l'API depuis le remote.",
                   "709057ad91": "ORCA_GITEA_API_BASE_URL",
                   "6da9dfa5de": "pour les dépôts privés, et définissez",
                   "6d5c2a3005": "ORCA_GITEA_TOKEN",
@@ -10102,8 +10099,8 @@
                   "05863d2599": "Pull requests et statuts de commits via l'API REST Gitea.",
                   "52f75876be": "Pull requests et statuts de commits pour les dépôts détectés",
                   "0b5242f8a2": "{{value0}} · Pull requests et statuts de commits",
-                  "40f678df73": "Les identifiants Azure DevOps sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
-                  "7bd345e3f6": "uniquement quand Orca ne peut pas déduire l'URL de base de l'API depuis le remote git.",
+                  "40f678df73": "Les identifiants Azure DevOps sont configurés mais l'authentification a échoué. Vérifiez le token, l'URL de base de l'API et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
+                  "7bd345e3f6": "uniquement quand {{product}} ne peut pas déduire l'URL de base de l'API depuis le remote git.",
                   "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "b8a10b07c1": ". Définissez",
                   "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
@@ -10114,7 +10111,7 @@
                   "0eb50d5593": "Pull requests et statuts de builds via des tokens de l'API REST Azure DevOps.",
                   "54636c65d4": "Pull requests et statuts de builds pour les Azure Repos détectés",
                   "ea204f5e03": "{{value0}} · Pull requests et statuts de builds",
-                  "6154b02093": "Les identifiants Bitbucket sont configurés mais l'authentification a échoué. Vérifiez le token et les permissions du dépôt, puis redémarrez Orca si les variables d'environnement ont changé.",
+                  "6154b02093": "Les identifiants Bitbucket sont configurés mais l'authentification a échoué. Vérifiez le token et les permissions du dépôt, puis redémarrez {{product}} si les variables d'environnement ont changé.",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
                   "fc71a0e7aa": "et",
@@ -10953,13 +10950,6 @@
           "title": "Les autorisations macOS n'arrivent pas aux terminaux"
         },
         "artifacts": {
-          "enable": "Activer Artifacts",
-          "enableDescription": "Ajouter Artifacts à la barre latérale pour ouvrir et supprimer les fichiers partagés.",
-          "account": "Compte Orca",
-          "connected": "Connecté",
-          "signInRequired": "La connexion est requise pour téléverser et gérer les artifacts.",
-          "signingIn": "Connexion…",
-          "signIn": "Se connecter à Orca",
           "title": "Artefacts",
           "description": "Partagez des fichiers HTML et Markdown avec votre équipe et gérez leurs liens publics.",
           "howToTitle": "Comment utiliser Artifacts",
@@ -10968,24 +10958,7 @@
           "shareStepDescription": "Ouvrez un fichier HTML ou Markdown et sélectionnez Partager comme artifact, ou demandez à un agent de le partager.",
           "linkStepTitle": "Copier le lien public",
           "linkStepDescription": "Après publication, copiez le lien et envoyez-le à votre équipe.",
-          "manageStepTitle": "Gérer dans Orca",
-          "manageStepDescription": "Ouvrez Artifacts depuis la barre latérale pour prévisualiser ou supprimer des liens.",
-          "openArtifacts": "Ouvrir Artifacts",
-          "openArtifactsDescription": "Consultez et supprimez les liens partagés via votre compte.",
-          "showButton": "Afficher le bouton Artifacts",
-          "showButtonDescription": "Afficher le raccourci Artifacts dans la barre latérale.",
-          "openArtifactsDescriptionV2": "Prévisualisez, copiez et gérez les liens partagés via votre compte.",
-          "signInTitle": "Se connecter pour partager des artifacts",
-          "signInDescription": "Utilisez votre compte Orca pour téléverser des artifacts et gérer leurs liens publics.",
-          "signInAgain": "Se reconnecter",
-          "enableStepTitle": "Activer le partage d'artifacts",
-          "enableStepWebDescription": "Ouvrez Paramètres → Artifacts dans l'app Orca de bureau sur l'appareil hôte et activez la publication.",
-          "enableStepDescription": "Activez « Autoriser la publication de liens d'artifacts publics » ci-dessus.",
-          "allowPublishing": "Autoriser la publication de liens d'artifacts publics",
-          "allowPublishingWebDescription": "Bureau uniquement. Ouvrez Paramètres → Artifacts sur l'appareil hôte pour modifier ce paramètre.",
-          "allowPublishingDescription": "Publiez des fichiers HTML et Markdown sous forme de liens ouvrables par quiconque possède l'URL. Les liens existants demeurent jusqu'à leur suppression dans Artifacts.",
-          "howToDescriptionDisabled": "Activez le partage d'artifacts ci-dessus pour publier des fichiers HTML ou Markdown sous forme de liens publics.",
-          "allowPublishingSearchDescription": "Autoriser Orca à publier des fichiers HTML et Markdown sous forme de liens publics."
+          "manageStepTitle": "Mettre à jour ou supprimer le lien"
         },
         "orcaAccount": {
           "connected": "Connecté",
@@ -11110,9 +11083,9 @@
               "authModeToken": "Token d'accès",
               "authModeBasic": "E-mail & token API",
               "disconnect": "Déconnecter Bitbucket",
-              "envManaged": "Configuré via des variables d'environnement. Désactivez les variables ORCA_BITBUCKET_* pour gérer cet identifiant dans Orca.",
+              "envManaged": "Configuré via des variables d'environnement. Désactivez les variables ORCA_BITBUCKET_* pour gérer cet identifiant dans {{product}}.",
               "storedAuthFailed": "L'identifiant Bitbucket enregistré n'a pas réussi à s'authentifier. Modifiez-le ou vérifiez que le token garde l'accès aux pull requests.",
-              "storedCredential": "Enregistré dans Orca sur cette machine. Les variables d'environnement ORCA_BITBUCKET_* ont priorité quand elles sont définies.",
+              "storedCredential": "Enregistré dans {{product}} sur cette machine. Les variables d'environnement ORCA_BITBUCKET_* ont priorité quand elles sont définies.",
               "notConfigured": "Connectez un compte Bitbucket Cloud avec un token API Atlassian ou un token d'accès. Les variables d'environnement ORCA_BITBUCKET_* marchent aussi et ont priorité.",
               "disconnectFailed": "Impossible de supprimer l'identifiant Bitbucket enregistré."
             }
@@ -13031,9 +13004,9 @@
             "b8dc9dd8a2": "Installés",
             "1b51644c2d": "Laissez les agents contrôler le bureau : déplacer le curseur, cliquer et taper dans n'importe quelle application.",
             "362a07517d": "Computer Use",
-            "5e8fe5a72d": "Donnez aux agents un accès direct au navigateur d'Orca pour tester des pages, capturer des captures d'écran et agir sur ce qu'ils voient.",
+            "5e8fe5a72d": "Donnez aux agents un accès direct au navigateur d'{{product}} pour tester des pages, capturer des captures d'écran et agir sur ce qu'ils voient.",
             "e638da007a": "Agent Browser Use",
-            "c61c91e642": "Laissez les agents se coordonner via Orca pour faire avancer jusqu'au bout les grandes tâches en plusieurs étapes.",
+            "c61c91e642": "Laissez les agents se coordonner via {{product}} pour faire avancer jusqu'au bout les grandes tâches en plusieurs étapes.",
             "ac07f8887f": "Orchestration d'agents",
             "e9eb197e12": "Autorisations Computer Use ouvertes",
             "3a59452a67": "Commande de skill copiée et insérée ci-dessous pour vérification.",
@@ -13076,7 +13049,7 @@
             "f39be6ca14": "/signup"
           },
           "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'Orca.",
+            "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'{{product}}.",
             "d5bb1cd4ba": "Skill Browser Use"
           },
           "ComputerUseAnimatedVisual": {
@@ -13136,13 +13109,13 @@
             "13294d3405": "Terminé"
           },
           "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "Ajoutez d'abord un projet git, puis configurez le script de setup de ce dépôt.",
+            "486c2f4d8d": "Sélectionnez d'abord un projet Git, puis configurez ici son script de préparation.",
             "00078a6134": "Voir dans les réglages",
             "14327073cc": "Enregistrer",
             "88469e926b": "Script de setup",
-            "5c5b65044e": "pnpm install",
+            "5c5b65044e": "Exemple : pnpm install",
             "a7463915b6": "Échec de l'enregistrement du script de setup",
-            "6299297dac": "Script de setup enregistré",
+            "6299297dac": "Script de préparation enregistré pour {{project}}",
             "f0bbf7da77": "Essayez",
             "522cce9e33": "Ajouter un projet"
           },
@@ -13375,7 +13348,7 @@
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "connecté pour les tâches",
-            "33b650af52": "Connectez l'outil où votre équipe suit son travail. Orca démarre les espaces de travail avec le titre de l'issue, le lien et le contexte déjà rattachés.",
+            "33b650af52": "Connectez l'outil où votre équipe suit son travail. {{product}} démarre les espaces de travail avec le titre de l'issue, le lien et le contexte déjà rattachés.",
             "5b3577a492": "connecté pour le statut de revue",
             "list_end": ", et ",
             "list_pair": " et ",
@@ -13383,8 +13356,8 @@
             "code_host_tasks_summary": "issues disponibles comme tâches · ajoutez Linear ou Jira si votre équipe y planifie son travail",
             "code_host_tasks_caption": "Les issues de votre hébergeur de code servent aussi de tâches.",
             "review_step_title": "Voyez le statut des PR pendant que les agents travaillent",
-            "review_step_description": "Connectez un fournisseur de revue pour qu'Orca affiche le statut des PR ou MR, les vérifications et les revues.",
-            "task_step_title": "Lancez des agents sur vos tâches sans quitter Orca"
+            "review_step_description": "Connectez un fournisseur de revue pour qu'{{product}} affiche le statut des PR ou MR, les vérifications et les revues.",
+            "task_step_title": "Lancez des agents sur vos tâches sans quitter {{product}}"
           },
           "connect": {
             "integration": {
@@ -13706,7 +13679,7 @@
           "6c4f1a8d2e": "Les détails de la vérification sont indisponibles."
         },
         "EditorPanelHeader": {
-          "fb8331694e": "Ouvrir l'aperçu sur le côté",
+          "fb8331694e": "Aperçu",
           "4157f3cbf3": "Ouvrir l'aperçu Markdown",
           "269ce4842b": "Copier le chemin relatif",
           "7c08a1f990": "Copier le chemin",
@@ -14328,7 +14301,6 @@
             "complete": "Terminé"
           },
           "ContextualTourProgressDots": {
-            "7734cb8ad3": "sur",
             "dcd6e6b03e": "Étape {{value0}} sur {{value1}}"
           },
           "contextual": {
@@ -14594,8 +14566,9 @@
               "page": {
                 "annotation": {
                   "tray": {
-                    "collapse": "Réduire les annotations",
-                    "expand": "Développer les annotations"
+                    "38d320108c": "Réduire les annotations",
+                    "9f209891a7": "Développer les annotations",
+                    "includePageDetails": "Inclure les détails de la page"
                   }
                 }
               }
@@ -15097,14 +15070,6 @@
           "8490e5d36a": "Confirmer",
           "56f5c60e0c": "Annuler",
           "92bac3217e": "Ne plus demander"
-        },
-        "skip": {
-          "saved": "Cette confirmation sera ignorée la prochaine fois.",
-          "savedDescription": "Vous pouvez changer cela dans les paramètres.",
-          "openSettings": "Ouvrir les paramètres",
-          "preference": {
-            "0b0cb6e3f9": "Impossible d'enregistrer la préférence de confirmation."
-          }
         }
       },
       "jira": {
@@ -15418,72 +15383,12 @@
         "streamCapabilityUnsupported": "Le runtime sélectionné ne prend pas en charge le streaming du navigateur distant."
       },
       "artifacts": {
-        "ArtifactsPage": {
-          "signInAgain": "Reconnectez-vous à Orca pour charger les artifacts.",
-          "loadFailed": "Impossible de charger les artifacts.",
-          "deleteTitle": "Supprimer l'artifact ?",
-          "deleteDescription": "« {{name}} » ne sera plus disponible via son lien public.",
-          "delete": "Supprimer",
-          "deleteFailed": "Impossible de supprimer l'artifact.",
-          "title": "Artefacts",
-          "refresh": "Actualiser",
-          "signInHeading": "Se connecter à Orca",
-          "signInCopy": "Connectez-vous pour voir et gérer les artifacts partagés via votre compte.",
-          "signingIn": "Connexion…",
-          "signIn": "Se connecter à Orca",
-          "empty": "Aucun artifact partagé",
-          "emptyCopy": "Ouvrez un fichier HTML ou Markdown et choisissez Partager comme artifact, ou demandez à votre agent de le partager.",
-          "openArtifact": "Ouvrir l'artifact",
-          "deleteArtifact": "Supprimer l'artifact",
-          "moreAvailable": "Davantage d'artifacts sont disponibles",
-          "moreAvailableCopy": "Chargez la page suivante pour continuer.",
-          "loadMoreFailed": "Impossible de charger davantage d'artifacts.",
-          "publishingOff": "La publication est désactivée",
-          "publishingOffCopy": "Rien sur cet appareil ne peut encore créer de lien d'artifact public. Autorisez la publication dans Paramètres → Artifacts, puis partagez depuis un fichier HTML ou Markdown ouvert, ou demandez à votre agent.",
-          "openArtifactsSettings": "Ouvrir Paramètres → Artifacts",
-          "retry": "Réessayer",
-          "reconnectHeading": "Se reconnecter à Orca",
-          "reconnectCopy": "Reconnectez-vous pour voir et gérer les artifacts partagés via votre compte.",
-          "signInAgainAction": "Se reconnecter",
-          "unconfiguredCopy": "La connexion au compte Orca n'est pas encore configurée sur cette machine.",
-          "openAccountSettings": "Ouvrir les paramètres du compte"
-        },
         "copySuccess": "Lien de l'artifact copié",
         "copyFailed": "Impossible de copier le lien de l'artifact",
-        "copyLink": "Copier le lien",
-        "openInBrowser": "Ouvrir dans le navigateur",
-        "preview": "Aperçu de l'artifact",
-        "previewUnavailable": "Aperçu indisponible",
-        "previewUnavailableDescription": "Ouvrez cet artifact dans votre navigateur pour le consulter.",
-        "actions": "Actions de l'artifact",
-        "ArtifactActions": {
-          "more": "Plus d'actions sur l'artifact"
-        },
-        "ArtifactCollection": {
-          "loadMore": "Charger plus",
-          "noMatches": "Aucun résultat"
-        },
-        "ArtifactDetailHeader": {
-          "publicLink": "Toute personne disposant de ce lien peut le consulter",
-          "close": "Fermer"
-        },
-        "updatedAt": "Mis à jour {{when}}",
-        "updatedRecently": "récemment",
-        "expiryUnknown": "Expiration inconnue",
-        "expired": "Lien expiré",
-        "expires": "Le lien expire {{when}}",
         "ArtifactPublishButton": {
           "a4a49da6af": "Partager comme artifact",
           "confirmTitle": "Partager comme artifact",
           "confirmDescription": "Ceci publie le fichier actuel à un lien consultable par toute personne disposant de l'URL.",
-          "accountTitle": "Compte Orca",
-          "accountDescription": "Connectez-vous pour créer et gérer ce lien.",
-          "signingIn": "Connexion…",
-          "signInAgain": "Se reconnecter",
-          "signIn": "Se connecter",
-          "publishingOffTitle": "Le partage d'artifacts est désactivé",
-          "publishingOffDescription": "Découvrez les liens publics et activez le partage dans les paramètres.",
-          "openSettings": "Ouvrir les paramètres Artifacts",
           "sharing": "Partage…",
           "sharePublicLink": "Partager le lien public",
           "publishedDescription": "Toute personne disposant de ce lien peut consulter le fichier partagé.",
@@ -15492,14 +15397,11 @@
           "tryAgain": "Réessayer"
         },
         "artifact-publish-flow": {
-          "9a078a0c65": "Le partage d'artifacts est indisponible",
-          "bba20daa6d": "Connectez-vous à Orca puis réessayez.",
           "54b1805328": "Impossible de partager l'artifact",
           "430019efd0": "Artifact partagé",
           "2fc727c831": "Artifact mis à jour",
-          "5cb4f5ec36": "Copier le lien",
           "fbb5018602": "Ce fichier est vide.",
-          "6112db5a1c": "Les artifacts partagés depuis Orca doivent peser moins de 800 Ko.",
+          "6112db5a1c": "Ce fichier dépasse la limite de partage de 10 Mio.",
           "e2ed5acd8c": "Orca n'a pas pu lire ce fichier. Ouvrez-le depuis un espace de travail et réessayez.",
           "6d475e9b25": "Seuls les fichiers HTML et Markdown locaux peuvent être partagés comme artifacts.",
           "29a406be09": "Les artifacts doivent contenir du texte."
@@ -15509,29 +15411,7 @@
           "openLink": "Ouvrir le lien",
           "updating": "Mise à jour…",
           "update": "Mettre à jour le contenu partagé"
-        },
-        "ArtifactDetailDrawer": {
-          "description": "Prévisualisez et gérez cet artifact partagé."
-        },
-        "ArtifactListSearchField": {
-          "label": "Rechercher des artifacts",
-          "placeholder": "Rechercher...",
-          "clear": "Effacer la recherche"
-        },
-        "ArtifactListTableHeader": {
-          "name": "Nom",
-          "type": "Tapez",
-          "size": "Taille",
-          "updated": "Mis à jour",
-          "expires": "Expiration",
-          "actions": "Actions"
-        },
-        "ArtifactsPageSkeleton": {
-          "loading": "Chargement des artifacts"
-        },
-        "expiredCompact": "Expiré",
-        "typeMarkdown": "Markdown",
-        "typeHtml": "HTML"
+        }
       }
     },
     "i18n": {

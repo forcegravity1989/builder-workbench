@@ -3,107 +3,51 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { expect, it } from 'vitest'
-import { writeMilestoneFiles } from './milestone-write-files'
-import { createMilestoneRecoveryStore } from './milestone-recovery'
+import { readMilestoneDocument, saveMilestoneDocument } from './milestone-document'
 import { readMilestoneSnapshot } from './milestone-snapshot'
 import { milestoneDraft } from '../../shared/workbench/project-milestones'
 
-it('preserves conflicting or unsafe milestone materials and client recovery snapshots', async () => {
+it('saves working input and refuses to overwrite a changed or unsafe document', async () => {
   const root = await mkdtemp(join(tmpdir(), 'bw-milestone-cas-'))
   try {
-    const versionDir = join(root, '.bw', 'planning', 'v1')
-    await mkdir(versionDir, { recursive: true })
-    const project = '.bw/milestones.json',
-      version = '.bw/planning/v1/data.json'
-    await writeFile(join(root, project), 'project-old\n')
-    await writeFile(join(root, version), 'version-old\n')
-    const contents = new Map([
-      [project, 'project-old\n'],
-      [version, 'version-old\n']
-    ])
-    const writes = new Map([
-      [project, 'project-new\n'],
-      [version, 'version-new\n']
-    ])
-    let committed = false
-    await expect(
-      writeMilestoneFiles({
-        root,
-        contents,
-        writes,
-        removals: [],
-        recheck: async () => {
-          await writeFile(join(root, version), 'another-editor\n')
-        },
-        commit: async () => {
-          committed = true
-        }
-      })
-    ).rejects.toThrow('文件已变化')
-    expect(await readFile(join(root, project), 'utf8')).toBe('project-old\n')
-    expect(await readFile(join(root, version), 'utf8')).toBe('another-editor\n')
-    expect(committed).toBe(false)
-    expect(await readdir(versionDir)).not.toContain('data.json.lock')
-    await writeFile(join(root, version), 'version-old\n')
-    await writeMilestoneFiles({
+    const project = '.bw/milestones.json'
+    const input = {
+      schema_version: 4 as const,
+      milestones: [{ id: 'launch', date: '2026-11-01', outcome: '' }],
+      features: [{ id: 'first', title: '', owner: '', deliveries: [] }]
+    }
+    expect(await readMilestoneDocument(root)).toEqual({ revision: null, material: null })
+    const first = await saveMilestoneDocument(
       root,
-      contents,
-      writes,
-      removals: [],
-      recheck: async () => {},
-      commit: async () => {
-        expect(await readFile(join(root, version), 'utf8')).toBe('version-new\n')
-        expect(await readdir(versionDir)).toContain('data.json.lock')
-        committed = true
-      }
-    })
-    expect(committed).toBe(true)
-    expect(await readFile(join(root, project), 'utf8')).toBe('project-new\n')
-    expect(await readdir(versionDir)).not.toContain('data.json.lock')
-    await mkdir(join(root, '.bw', 'planning', 'v2', 'data.json'), { recursive: true })
+      { expectedRevision: null, material: input },
+      async () => {}
+    )
+    expect(await readMilestoneDocument(root)).toEqual(first)
+    const external = { ...input, features: [{ ...input.features[0], title: '另一处的安排' }] }
+    await writeFile(join(root, project), JSON.stringify(external))
     await expect(
-      writeMilestoneFiles({
+      saveMilestoneDocument(
         root,
-        contents: new Map(),
-        writes: new Map([['.bw/planning/v2/data.json', '{}']]),
-        removals: [],
-        recheck: async () => {},
-        commit: async () => {}
-      })
-    ).rejects.toThrow('not a regular file')
-    const recoveryDirectory = join(root, 'profile', 'milestone-drafts')
-    const recovery = createMilestoneRecoveryStore(() => recoveryDirectory)
-    expect(await recovery.read('project')).toEqual({ revision: null, payload: null })
-    const recoveryWrites = await Promise.allSettled([
-      recovery.write({ key: 'project', expectedRevision: null, payload: 'unfinished input' }),
-      recovery.write({ key: 'project', expectedRevision: null, payload: 'stale window' })
-    ])
-    expect(recoveryWrites[0].status).toBe('fulfilled')
-    expect(recoveryWrites[1].status).toBe('rejected')
-    const restarted = createMilestoneRecoveryStore(() => recoveryDirectory)
-    const saved = await restarted.read('project')
-    expect(saved.payload).toBe('unfinished input')
+        { expectedRevision: first.revision, material: input },
+        async () => {}
+      )
+    ).rejects.toMatchObject({ code: 'revision-conflict' })
+    expect(JSON.parse(await readFile(join(root, project), 'utf8'))).toEqual(external)
+    const current = await readMilestoneDocument(root)
     await expect(
-      restarted.write({
-        key: 'project',
-        expectedRevision: saved.revision,
-        payload: '\0'.repeat(4 * 1024 * 1024)
-      })
-    ).rejects.toThrow('大小限制')
-    expect(await restarted.read('project')).toEqual(saved)
-    const cleared = await restarted.write({
-      key: 'project',
-      expectedRevision: saved.revision,
-      payload: null
-    })
-    expect(cleared.revision).not.toBe(saved.revision)
-    await expect(
-      recovery.write({ key: 'project', expectedRevision: null, payload: 'stale empty window' })
-    ).rejects.toThrow('另一窗口')
-    const [recoveryFile] = await readdir(recoveryDirectory)
-    await writeFile(join(recoveryDirectory, recoveryFile), 'broken')
-    await expect(restarted.read('project')).rejects.toThrow()
-    expect(await readFile(join(recoveryDirectory, recoveryFile), 'utf8')).toBe('broken')
+      saveMilestoneDocument(
+        root,
+        { expectedRevision: current.revision, material: input },
+        async () => {
+          throw new Error('worktree changed')
+        }
+      )
+    ).rejects.toThrow('worktree changed')
+    expect(await readMilestoneDocument(root)).toEqual(current)
+    const unsafe = join(root, 'unsafe')
+    await mkdir(join(unsafe, '.bw/milestones.json'), { recursive: true })
+    await expect(readMilestoneDocument(unsafe)).rejects.toMatchObject({ code: 'unsafe-path' })
+
     const repo = join(root, 'version-identity-history')
     const planPath = join(repo, '.bw/planning/v1')
     await mkdir(planPath, { recursive: true })
@@ -191,8 +135,44 @@ it('preserves conflicting or unsafe milestone materials and client recovery snap
     expect(planned.plans.get('current')?.timeWindow).toEqual(actualWindow)
     expect(planned.snapshot.material.features[0].deliveries[0]).not.toHaveProperty('goalId')
     expect(planned.snapshot.material.features[0].deliveries[0]).not.toHaveProperty('goalSlot')
+    expect(planned.snapshot.material.features[0].deliveries[0]).toEqual({
+      id: 'delivery',
+      phase: 'Build'
+    })
+    expect(planned.snapshot.material.schema_version).toBe(4)
     expect(milestoneDraft(planned.snapshot).material).not.toHaveProperty('versionPlans')
+    const roadmap = {
+      ...planned.snapshot.material,
+      versionPlans: [
+        { version: 'v1', cycleId: 'current', timeWindow: plannedWindow },
+        { version: 'v3', cycleId: 'schedule-only', timeWindow: plannedWindow }
+      ]
+    }
+    await writeFile(join(repo, project), JSON.stringify(roadmap))
+    const scheduledHead = commit()
+    const scheduled = await readMilestoneSnapshot(repo, scheduledHead, {}, new Set())
+    expect(scheduled.snapshot.problems).toEqual([])
+    expect(scheduled.snapshot.versions.find((v) => v.version === 'v3')).toEqual({
+      ...roadmap.versionPlans[1],
+      started: false
+    })
+    expect(scheduled.registeredVersions.map((v) => v.version)).toContain('v3')
+    expect(scheduled.plans.has('schedule-only')).toBe(false)
+    expect(await readdir(join(repo, '.bw/planning'))).not.toContain('v3')
+    const active = await readMilestoneSnapshot(repo, scheduledHead, {}, new Set(['v3']))
+    expect(active.snapshot.versions.find((v) => v.version === 'v3')?.started).toBe(true)
+    await writeFile(
+      join(repo, project),
+      JSON.stringify({
+        ...roadmap,
+        versionPlans: [{ version: 'v1', cycleId: 'different', timeWindow: plannedWindow }]
+      })
+    )
+    expect((await readMilestoneSnapshot(repo, commit(), {}, new Set())).snapshot.problems).toEqual([
+      'v1：里程碑规划与版本计划身份不一致，请核对材料'
+    ])
   } finally {
-    await rm(root, { recursive: true, force: true })
+    // Why maxRetries: Windows git handle release lags, so the first rmdir can hit transient EBUSY.
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 })

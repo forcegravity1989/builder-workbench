@@ -38,7 +38,8 @@ export function useRemoteRepo(
     inProgress: boolean,
     scanId: string | null
   ) => void,
-  onNestedScanResult?: (scan: NestedRepoScanResult | null, attemptId: string) => void
+  onNestedScanResult?: (scan: NestedRepoScanResult | null, attemptId: string) => void,
+  projectWallModal?: Record<string, unknown>
 ) {
   const [sshTargets, setSshTargets] = useState<(SshTarget & { state?: SshConnectionState })[]>([])
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null)
@@ -215,13 +216,18 @@ export function useRemoteRepo(
     } catch (err) {
       const message = extractIpcErrorMessage(err, String(err))
       if (message.includes('Not a valid git repository')) {
+        const state = useAppStore.getState()
+        if (projectWallModal && state.modalData !== projectWallModal) {
+          return
+        }
         // Why: match the local add-project flow — show confirmation dialog so
         // users understand git features will be unavailable, rather than
         // silently adding as a folder.
         closeModal()
-        useAppStore.getState().openModal('confirm-non-git-folder', {
+        state.openModal('confirm-non-git-folder', {
           folderPath: trimmedRemotePath,
-          connectionId: selectedTargetId
+          connectionId: selectedTargetId,
+          ...(projectWallModal ? { stayOnProjectWall: true } : {})
         })
         return
       }
@@ -243,6 +249,7 @@ export function useRemoteRepo(
     fetchWorktrees,
     mountedRef,
     closeModal,
+    projectWallModal,
     onGitRepoReady
   ])
 

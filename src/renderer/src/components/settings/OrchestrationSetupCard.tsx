@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import {
-  AGENT_SKILL_CLI_PREREQUISITE_NOTICE,
+  getAgentSkillCliPrerequisiteNotice,
   ensureOrcaCliAvailableForAgentSkillTerminal
 } from '@/lib/agent-skill-cli-prerequisite'
 import {
@@ -18,6 +18,7 @@ import {
 } from './CliSkillRuntimeSetup'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function OrchestrationSetupCard(props: {
   compact?: boolean
@@ -47,8 +48,9 @@ export function OrchestrationSetupCard(props: {
         'Orchestration skill'
       )}
       description={translate(
-        'auto.components.settings.OrchestrationSetupCard.e7d2a5146c',
-        'Enables agents to hand off context and coordinate work through Orca.'
+        'guidance.orchestrationSetupDescription',
+        'Enables agents to hand off context and coordinate work through {{product}}.',
+        { product: isWorkbenchShell() ? 'BW' : 'Orca' }
       )}
       command={installCommand}
       installedCommand={updateCommand}
@@ -62,7 +64,7 @@ export function OrchestrationSetupCard(props: {
       error={activeSkillRuntime.installDisabledReason ?? skill.error}
       installDisabled={Boolean(activeSkillRuntime.installDisabledReason)}
       terminalHeightPx={terminalHeightPx}
-      preInstallNotice={AGENT_SKILL_CLI_PREREQUISITE_NOTICE}
+      preInstallNotice={getAgentSkillCliPrerequisiteNotice()}
       getPrerequisiteStatus={() =>
         activeSkillRuntime.agentRuntime?.runtime === 'wsl'
           ? window.api.cli.getWslInstallStatus(

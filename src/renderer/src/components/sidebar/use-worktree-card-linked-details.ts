@@ -11,7 +11,6 @@ import {
   coerceWorktreeCardVisibleTitle,
   getWorktreeCardTitleDisplay
 } from './worktree-card-title-display'
-import { useWorkspaceDeleteModifierPressed } from './workspace-delete-quick-action'
 import type { WorktreeCardProps } from './worktree-card-model'
 import type { useWorktreeCardFoundation } from './use-worktree-card-foundation'
 import type { useWorktreeCardReviewDetails } from './use-worktree-card-review-details'
@@ -134,7 +133,6 @@ export function useWorktreeCardLinkedDetails({
   const deleteLabel = isQueuedForDeletion
     ? translate('auto.components.sidebar.WorktreeCard.ef18787206', 'Queued for deletion')
     : translate('auto.components.sidebar.WorktreeCard.691ccfd622', 'Deleting…')
-  const deleteModifierPressed = useWorkspaceDeleteModifierPressed()
 
   return {
     issueDisplay,
@@ -144,7 +142,6 @@ export function useWorktreeCardLinkedDetails({
     visibleCardTitle,
     isDeleting,
     isQueuedForDeletion,
-    deleteLabel,
-    deleteModifierPressed
+    deleteLabel
   }
 }

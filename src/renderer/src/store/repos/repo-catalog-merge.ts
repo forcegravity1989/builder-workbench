@@ -1,3 +1,5 @@
+import { dropWorktreeRowsOfDroppedRepos } from './dropped-repo-worktree-rows'
+import { getRepoHostIdentity } from '../slices/repo-host-identity'
 import type { AppState } from '../types'
 import type { SshRepoReadoption } from '../../../../shared/ssh-types'
 import type { ProjectHostSetup } from '../../../../shared/project-types'
@@ -11,6 +13,7 @@ import type { getActiveRuntimeTarget } from '../../runtime/runtime-rpc-client'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { RepoSlice } from './repo-state'
 import { repoWithFetchedOwner } from './owner-routing'
+import { getRuntimeEnvironmentRevision } from '../../runtime/runtime-environment-revision'
 import { getRuntimeTargetHostId } from '../runtime-target-host'
 import { fetchProjectHostSetupCompatibility } from '../projects/project-host-routing'
 import { mergeFetchedReposForHost } from './repo-catalog-identity'
@@ -23,25 +26,32 @@ export type FetchedRepoCatalog = {
   repos: readonly Repo[]
   projectHostSetupCompatibility: ProjectHostSetupProjection
   hostId: ReturnType<typeof getRuntimeTargetHostId>
+  /** Repo registrations present when this catalog was requested. */
+  reposAtRequest: readonly Repo[]
 }
 
 export async function fetchRepoCatalogForTarget(
-  target: ReturnType<typeof getActiveRuntimeTarget>
+  target: ReturnType<typeof getActiveRuntimeTarget>,
+  reposAtRequest: readonly Repo[]
 ): Promise<FetchedRepoCatalog> {
+  const pairingRevision =
+    target.kind === 'environment' ? getRuntimeEnvironmentRevision(target.environmentId) : undefined
   const fetchedRepos =
     target.kind === 'local'
       ? await window.api.repos.list()
       : (
           await callRuntimeRpc<{ repos: Repo[] }>(target, 'repo.list', undefined, {
             timeoutMs: 15_000,
-            reuseRecentCompatibilityFailure: true
+            reuseRecentCompatibilityFailure: true,
+            expectedEnvironmentPairingRevision: pairingRevision
           })
         ).repos
-  const repos = fetchedRepos.map((repo) => repoWithFetchedOwner(repo, target))
+  const repos = fetchedRepos.map((repo) => repoWithFetchedOwner(repo, target, pairingRevision))
   return {
     repos,
     projectHostSetupCompatibility: await fetchProjectHostSetupCompatibility(target, repos),
-    hostId: getRuntimeTargetHostId(target)
+    hostId: getRuntimeTargetHostId(target),
+    reposAtRequest
   }
 }
 
@@ -53,7 +63,12 @@ export function mergeFetchedRepoCatalog(
   projectHostSetupCompatibility: ProjectHostSetupProjection
   hostId: ReturnType<typeof getRuntimeTargetHostId>
 } {
-  const repos = mergeFetchedReposForHost(currentRepos, catalog.repos, catalog.hostId)
+  const repos = mergeFetchedReposForHost(
+    currentRepos,
+    catalog.repos,
+    catalog.hostId,
+    catalog.reposAtRequest
+  )
   return {
     repos,
     projectHostSetupCompatibility: catalog.projectHostSetupCompatibility,
@@ -118,6 +133,26 @@ export function reconcileReadoptedSshWorktreeState(
     detectedWorktreesByRepo,
     sortEpoch: worktreesByRepo === state.worktreesByRepo ? state.sortEpoch : state.sortEpoch + 1
   }
+}
+
+/** The worktree rows a fetched catalog leaves: re-adopted SSH rows moved, dropped repos' rows gone. */
+export function reconcileFetchedCatalogWorktreeState(
+  state: Pick<
+    AppState,
+    | 'repos'
+    | 'pendingSshRepoReadoptions'
+    | 'worktreesByRepo'
+    | 'detectedWorktreesByRepo'
+    | 'sortEpoch'
+  >,
+  catalog: Pick<FetchedRepoCatalog, 'reposAtRequest'>,
+  nextRepos: readonly Repo[]
+): Pick<AppState, 'worktreesByRepo' | 'detectedWorktreesByRepo' | 'sortEpoch'> {
+  const readopted = reconcileReadoptedSshWorktreeState(state, state.pendingSshRepoReadoptions)
+  // Why: a catalog requested before an add may omit it; that add's rows are not this answer's to drop.
+  const requested = new Set(catalog.reposAtRequest.map(getRepoHostIdentity))
+  const previous = state.repos.filter((repo) => requested.has(getRepoHostIdentity(repo)))
+  return dropWorktreeRowsOfDroppedRepos(readopted, previous, nextRepos)
 }
 
 export function projectCompatibilityForReconciledRepos(

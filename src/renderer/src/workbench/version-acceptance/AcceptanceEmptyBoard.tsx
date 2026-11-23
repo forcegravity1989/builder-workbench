@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { AcceptanceHeader } from './AcceptanceSections'
@@ -9,7 +10,6 @@ export function AcceptanceEmptyBoard({
   board,
   context,
   entry,
-  unreadable,
   state,
   chatCollapsed,
   onStarted,
@@ -19,26 +19,21 @@ export function AcceptanceEmptyBoard({
   board: ReturnType<typeof useAcceptanceBoard>
   context: VersionCycleContext
   entry: CycleEntry
-  unreadable: string[]
   state: string
   chatCollapsed: boolean
   onStarted(): void
   onSessionToggle(): void
   onRefresh(): void
 }) {
-  const version = context.version ?? context.boundVersion
+  const version = context.version
   return (
     <main className="acc-board" lang="zh">
       <AcceptanceHeader
-        currentVersion={board.version}
-        versions={[...new Set([...board.versions, ...(board.version ? [board.version] : [])])]}
-        unreadable={unreadable}
-        boundVersion={context.boundVersion}
-        disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
+        boundVersion={context.version}
+        disabled={!context.materialPort || Boolean(context.syncing)}
         state={state}
         sessionCollapsed={chatCollapsed}
         onSessionToggle={onSessionToggle}
-        onSelect={(version) => void board.loadVersion(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={onRefresh}
       />
@@ -46,7 +41,8 @@ export function AcceptanceEmptyBoard({
         <p>版本验收尚未开始</p>
         <button
           type="button"
-          disabled={entry.busy || board.busy || Boolean(context.syncing)}
+          data-contextual-tour-target="workbench-acceptance-start"
+          disabled={entry.busy || Boolean(context.syncing)}
           onClick={async () => {
             const opened = await entry.start(version)
             if (opened) {
@@ -57,9 +53,16 @@ export function AcceptanceEmptyBoard({
           {entry.busy ? '正在打开会话…' : '开始验收'}
         </button>
       </div>
-      {(entry.notice || context.error) && (
+      {context.error && (
+        <ErrorDetails
+          className="acc-notice"
+          summary="无法打开验收工作区 · 查看详情"
+          detail={context.error}
+        />
+      )}
+      {entry.notice && (
         <p className="acc-notice" role="status">
-          {context.error ?? entry.notice}
+          {entry.notice}
         </p>
       )}
       <AcceptanceNotices
@@ -68,7 +71,6 @@ export function AcceptanceEmptyBoard({
         recoveryText={board.recoveryText}
         draft={board.draft}
         controller={board.controller}
-        busy={board.busy}
         setError={board.setError}
         onRetrySave={() => void board.retrySave()}
         onRemoteDeleted={board.useRemoteDeletion}

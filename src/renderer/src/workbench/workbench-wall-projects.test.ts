@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { ProjectGroup } from '../../../shared/project-group-types'
 import type { Repo } from '../../../shared/repo-types'
-import type { Worktree } from '../../../shared/worktree/types'
-import { buildWallProjects, countWallProjectWorktrees } from './workbench-wall-projects'
+import {
+  buildWallProjects,
+  isWallRowVisible,
+  wallProjectVisibility,
+  wallProjectVersionRows
+} from './workbench-wall-projects'
 
 function repo(partial: Partial<Repo> & Pick<Repo, 'id' | 'path' | 'displayName'>): Repo {
   return {
@@ -35,20 +39,7 @@ function appIdentity(): Repo['gitRemoteIdentity'] {
   }
 }
 
-function worktree(partial: { id: string; repoId: string; hostId?: string }): Worktree {
-  return { ...(partial as object), isMainWorktree: false } as unknown as Worktree
-}
-
 describe('buildWallProjects', () => {
-  it('keeps ungrouped repos as solo cards', () => {
-    const projects = buildWallProjects([repo({ id: 'a', path: '/a', displayName: 'Alpha' })], [])
-    expect(projects).toHaveLength(1)
-    expect(projects[0].key).toBe('solo:row:local::a')
-    expect(projects[0].repoIds).toEqual(['a'])
-    expect(projects[0].hostIds).toEqual(['local'])
-    expect(projects[0].slots[0].localRepoId).toBe('a')
-  })
-
   it('aggregates group members into one wall project', () => {
     const g = group({ id: 'g1', name: 'Platform', tabOrder: 1 })
     const projects = buildWallProjects(
@@ -78,11 +69,16 @@ describe('buildWallProjects', () => {
       [g]
     )
     expect(projects).toHaveLength(2)
-    const platform = projects.find((p) => p.key === 'group:g1')
+    const platform = projects.find((p) => p.key === 'group:local::g1')
     expect(platform?.name).toBe('Platform')
     expect(platform?.repoIds).toEqual(['a', 'b'])
     expect(platform?.slots).toHaveLength(2)
-    expect(projects.find((p) => p.key === 'solo:row:local::c')?.name).toBe('Solo')
+    // 未分组的仓保留为独立卡片。
+    const solo = projects.find((p) => p.key === 'solo:row:local::c')
+    expect(solo?.name).toBe('Solo')
+    expect(solo?.repoIds).toEqual(['c'])
+    expect(solo?.hostIds).toEqual(['local'])
+    expect(solo?.slots[0].localRepoId).toBe('c')
   })
 
   it('merges the same remote identity across paired hosts into one card', () => {
@@ -144,26 +140,62 @@ describe('buildWallProjects', () => {
     expect(projects[0].slots).toHaveLength(1)
   })
 
-  it('counts worktrees once per host-qualified identity across the project rows', () => {
-    const local = repo({ id: 'a', path: '/a', displayName: 'app' })
-    const remote = repo({
-      id: 'r1',
-      path: '/remote/a',
-      displayName: 'app',
-      executionHostId: 'runtime:env1'
+  it('filters personal runtime sources before merging and keeps local classification independent', () => {
+    const own = repo({
+      id: 'app',
+      path: '/app',
+      displayName: 'App',
+      gitRemoteIdentity: appIdentity()
     })
-    const worktreesByRepo: Record<string, Worktree[]> = {
-      a: [
-        worktree({ id: 'a::/a', repoId: 'a', hostId: 'local' }),
-        worktree({ id: 'a::/a/.bw/worktrees/project', repoId: 'a', hostId: 'local' })
-      ],
-      r1: [
-        worktree({ id: 'r1::/remote/a', repoId: 'r1', hostId: 'runtime:env1' }),
-        // 同一工作树重复返回不重复计数。
-        worktree({ id: 'r1::/remote/a', repoId: 'r1', hostId: 'runtime:env1' })
+    const privateCopy = repo({ ...own, executionHostId: 'runtime:e1' })
+    const sharedCopy = repo({ ...own, executionHostId: 'runtime:e2', projectVisibility: 'team' })
+    const [project] = buildWallProjects([own, privateCopy, sharedCopy].filter(isWallRowVisible), [])
+    expect(project.hostIds).toEqual(['local', 'runtime:e2'])
+    expect(wallProjectVisibility(project)).toBe('personal')
+    expect(isWallRowVisible(repo({ ...own, connectionId: 'ssh1' }))).toBe(true)
+    expect(buildWallProjects([privateCopy].filter(isWallRowVisible), [])).toEqual([])
+  })
+
+  it('qualifies native group ids by owner and excludes upstream-only forks from version readings', () => {
+    const local = repo({
+      id: 'a',
+      path: '/a',
+      displayName: 'A',
+      projectGroupId: 'g',
+      gitRemoteIdentity: appIdentity()
+    })
+    const remote = repo({
+      id: 'a',
+      path: '/remote/a',
+      displayName: 'B',
+      projectGroupId: 'g',
+      executionHostId: 'runtime:e1'
+    })
+    const projects = buildWallProjects(
+      [local, remote],
+      [
+        group({ id: 'g', name: 'Local' }),
+        group({ id: 'g', name: 'Remote', executionHostId: 'runtime:e1' })
       ]
-    }
-    expect(countWallProjectWorktrees([local, remote], worktreesByRepo)).toBe(3)
-    expect(countWallProjectWorktrees([local], worktreesByRepo)).toBe(2)
+    )
+    expect(projects.map((item) => item.key).sort()).toEqual([
+      'group:local::g',
+      'group:runtime:e1::g'
+    ])
+    const upstream = { owner: 'acme', repo: 'app' }
+    const fork = repo({
+      id: 'fork',
+      path: '/fork',
+      displayName: 'Fork',
+      upstream,
+      gitRemoteIdentity: {
+        ...appIdentity()!,
+        canonicalKey: 'github.com/me/app',
+        remoteUrl: 'https://github.com/me/app.git'
+      }
+    })
+    const [merged] = buildWallProjects([{ ...local, upstream }, fork], [])
+    expect(merged.rows).toHaveLength(2)
+    expect(wallProjectVersionRows(merged).map((row) => row.id)).toEqual(['a'])
   })
 })

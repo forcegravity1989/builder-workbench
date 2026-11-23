@@ -1,4 +1,6 @@
+import { runtimeEnvironmentChangedFailure } from './runtime-environment-revision-guard'
 import { BrowserWindow } from 'electron'
+import type { RuntimeStatus } from '../../shared/runtime-types'
 import { sendRemoteRuntimeRequest } from '../../shared/remote-runtime-client'
 import {
   ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES,
@@ -8,7 +10,7 @@ import {
   getPreferredPairingOffer,
   type KnownRuntimeEnvironment
 } from '../../shared/runtime-environments'
-import { markEnvironmentUsed } from '../../shared/runtime-environment-store'
+import { recordRuntimeEnvironmentUsage } from './runtime-environment-usage-record'
 import { RuntimeHostStatusOwner } from '../../shared/runtime-host-status-owner'
 import {
   RUNTIME_HOST_STATUS_CHANNEL,
@@ -16,6 +18,7 @@ import {
 } from '../../shared/runtime-host-status'
 import {
   applyRuntimeEnvironmentCapabilityVerdict,
+  getRuntimeEnvironmentCapabilityIncarnation,
   getAcceptedRuntimeEnvironmentCapabilityOutcome,
   captureRuntimeEnvironmentCapabilityEvidence
 } from './runtime-environment-capability-evidence'
@@ -36,13 +39,14 @@ export function createRuntimeEnvironmentStatusOwner(
   return new RuntimeHostStatusOwner({
     environmentId: environment.id,
     pairingRevision: environment.pairingRevision ?? environment.createdAt,
-    request: (signal) => {
+    request: async (signal) => {
+      const incarnation = getRuntimeEnvironmentCapabilityIncarnation(environment.id)
       evidence = captureRuntimeEnvironmentCapabilityEvidence(environment.id, pairing)
-      return transport.isReady() &&
-        getAcceptedRuntimeEnvironmentCapabilityOutcome(environment.id, pairing, null)?.kind ===
-          'supported'
+      const response = await (transport.isReady() &&
+      getAcceptedRuntimeEnvironmentCapabilityOutcome(environment.id, pairing, null)?.kind ===
+        'supported'
         ? transport.request(signal)
-        : sendRemoteRuntimeRequest(
+        : sendRemoteRuntimeRequest<RuntimeStatus>(
             pairing,
             'status.get',
             undefined,
@@ -50,7 +54,10 @@ export function createRuntimeEnvironmentStatusOwner(
             undefined,
             signal,
             ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
-          )
+          ))
+      return getRuntimeEnvironmentCapabilityIncarnation(environment.id) === incarnation
+        ? response
+        : runtimeEnvironmentChangedFailure(environment, 'status.get', true)
     },
     verified: (response, active) => {
       const capable =
@@ -61,9 +68,10 @@ export function createRuntimeEnvironmentStatusOwner(
         runtimeId: response._meta.runtimeId
       })
       if (accepted && active && !isRuntimeEnvironmentManuallyDisconnected(environment.id)) {
-        markEnvironmentUsed(userDataPath, environment.id, {
+        recordRuntimeEnvironmentUsage(userDataPath, environment.id, {
           runtimeId: response._meta.runtimeId,
-          pairedDeviceId: response.result.pairedDeviceId
+          pairedDeviceId: response.result.pairedDeviceId,
+          pairingDeviceToken: pairing.deviceToken
         })
         if (capable) {
           transport.establish()

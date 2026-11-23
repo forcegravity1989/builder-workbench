@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { BoardIconButton } from '../board-ui'
 import { PlanSendMenu } from '../plan-send-menu'
+import type { BwAssistantRequestScreen } from '../../../../shared/telemetry-events'
 import { boardAnnotationsSendPrompt } from './annotation-markdown'
 import type { BoardAnnotation } from './types'
 import './annotations.css'
@@ -91,6 +92,7 @@ export function AnnotationPanel({
   annotating,
   worktreeId,
   assistant = '计划助手',
+  screen,
   onClose,
   onUpdate,
   onRemove,
@@ -105,6 +107,8 @@ export function AnnotationPanel({
   worktreeId: string | null
   /** Receiving AI role named in the send button; each cycle board has its own. */
   assistant?: string
+  /** Cycle-board identity for send telemetry; non-cycle panels (指标配置) omit it. */
+  screen?: BwAssistantRequestScreen
   onClose(): void
   onUpdate(id: string, text: string): void
   onRemove(id: string): void
@@ -112,7 +116,7 @@ export function AnnotationPanel({
   /** Writes via the Orca IPC clipboard channel; resolves once written. */
   onCopy(): Promise<void>
   /** Surfaces a failed copy honestly instead of swallowing it. */
-  onCopyError?(message: string): void
+  onCopyError?(error: unknown): void
   onSent?(): void
   /** Sends straight to one session. When set, the button does not open a picker. */
   onSendDirect?(): Promise<boolean>
@@ -164,8 +168,7 @@ export function AnnotationPanel({
           onClick={() => {
             void onCopy().then(
               () => setCopied(true),
-              (reason: unknown) =>
-                onCopyError?.(reason instanceof Error ? reason.message : String(reason))
+              (reason: unknown) => onCopyError?.(reason)
             )
           }}
         >
@@ -199,6 +202,8 @@ export function AnnotationPanel({
             prompt={boardAnnotationsSendPrompt(annotations)}
             label="板面批注"
             assistant={assistant}
+            actionId="send-annotations"
+            screen={screen}
             onSent={onSent}
           >
             <button type="button" className="primary" disabled={!annotations.length}>

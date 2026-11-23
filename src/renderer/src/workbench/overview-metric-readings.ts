@@ -9,6 +9,12 @@ export type OverviewReadResult = {
   map: Record<string, MetricReading | null>
   problems: string[]
 }
+type ReportReading = (key: string, reading: MetricReading | null, problem?: string) => void
+
+function needsCollection(reading: MetricReading | null | undefined): boolean {
+  return reading?.status === 'unknown' && reading.reason.code === 'not-collected'
+}
+
 /**
  * North star keeps its single-week current window; zone definitions are read over
  * the chart span for the selected granularity through the same read RPC — the
@@ -32,6 +38,7 @@ export async function readAllMetricReadings(args: {
   catalog: MetricCatalog
   granularity?: ZoneGranularity
   now?: string
+  onReading?: ReportReading
 }): Promise<OverviewReadResult> {
   const { scope, catalog } = args
   const granularity = args.granularity ?? 'week'
@@ -39,6 +46,7 @@ export async function readAllMetricReadings(args: {
   const problems: string[] = []
   const entries = await Promise.all(
     catalog.definitions.map(async (def) => {
+      let problem: string | undefined
       const reading = await metrics
         .read({
           scope,
@@ -46,12 +54,15 @@ export async function readAllMetricReadings(args: {
           window: windowFor({ def, catalog, granularity, now: args.now })
         })
         .catch((reason) => {
-          problems.push(
-            `${def.name} 读数：${reason instanceof Error ? reason.message : String(reason)}`
-          )
+          problem = `${def.name} 读数：${reason instanceof Error ? reason.message : String(reason)}`
+          problems.push(problem)
           return null
         })
-      return [def.ref.definitionHash, reading] as const
+      const key = def.ref.definitionHash
+      if (!needsCollection(reading)) {
+        args.onReading?.(key, reading, problem)
+      }
+      return [key, reading] as const
     })
   )
   const map = Object.fromEntries(entries)
@@ -69,24 +80,22 @@ export async function refreshMetricReadings(args: {
   previous?: OverviewReadResult
   onlyMissing?: boolean
   sharedNorth?: MetricReading | null
+  onReading?: ReportReading
 }): Promise<OverviewReadResult> {
   const { scope, catalog } = args
   const granularity = args.granularity ?? 'week'
   const metrics = nativeMetricsPort(args.owner)
-  const problems: string[] = []
   const map: OverviewReadResult['map'] = {}
   // Each script owns an isolated checkout; serialize to bound disk and memory pressure.
   for (const def of catalog.definitions) {
-    const previous = args.previous?.map[def.ref.definitionHash]
+    const key = def.ref.definitionHash
+    const previous = args.previous?.map[key]
     if (def.role === 'north_star' && args.sharedNorth !== undefined) {
-      map[def.ref.definitionHash] = args.sharedNorth
+      map[key] = args.sharedNorth
       continue
     }
-    if (
-      args.onlyMissing &&
-      !(previous?.status === 'unknown' && previous.reason.code === 'not-collected')
-    ) {
-      map[def.ref.definitionHash] = previous ?? null
+    if (args.onlyMissing && !needsCollection(previous)) {
+      map[key] = previous ?? null
       continue
     }
     try {
@@ -95,7 +104,7 @@ export async function refreshMetricReadings(args: {
         ref: def.ref,
         window: windowFor({ def, catalog, granularity, now: args.now })
       })
-      map[def.ref.definitionHash] =
+      map[key] =
         reading.status === 'ready'
           ? reading
           : {
@@ -104,19 +113,19 @@ export async function refreshMetricReadings(args: {
                 reading.previous ?? (previous?.status === 'ready' ? previous : previous?.previous)
             }
     } catch (reason) {
-      const message = `刷新 ${def.name}：${reason instanceof Error ? reason.message : String(reason)}`
-      problems.push(message)
-      map[def.ref.definitionHash] = {
+      const message = reason instanceof Error ? reason.message : String(reason)
+      map[key] = {
         status: 'error',
         reason: { code: 'collection-failed', message },
         previous: previous?.status === 'ready' ? previous : previous?.previous
       }
     }
+    args.onReading?.(key, map[key])
   }
   const north = catalog.definitions.find((item) => item.role === 'north_star')
   return {
     north: north ? (map[north.ref.definitionHash] ?? null) : null,
     map,
-    problems: [...(args.onlyMissing ? (args.previous?.problems ?? []) : []), ...problems]
+    problems: args.onlyMissing ? (args.previous?.problems ?? []) : []
   }
 }

@@ -40,6 +40,12 @@ describe('settings setup guide progress', () => {
       total: FEATURE_WALL_SETUP_STEPS.length,
       firstIncompleteStepId: 'agent-capabilities'
     })
+    expect(getSettingsSetupGuideProgress({ ready: true, stepDone }, true)).toEqual({
+      ready: true,
+      doneCount: 4,
+      total: 7,
+      firstIncompleteStepId: 'setup-script'
+    })
   })
 
   it('does not mark Settings complete for fresh users when only the browser step is incomplete', () => {
@@ -65,6 +71,17 @@ describe('settings setup guide progress', () => {
       ready: true,
       doneCount: FEATURE_WALL_SETUP_STEPS.length,
       total: FEATURE_WALL_SETUP_STEPS.length,
+      firstIncompleteStepId: null
+    })
+    expect(
+      getSettingsSetupGuideProgress(
+        { ready: true, stepDone: { ...stepDone, 'agent-capabilities': false } },
+        true
+      )
+    ).toEqual({
+      ready: true,
+      doneCount: 7,
+      total: 7,
       firstIncompleteStepId: null
     })
   })

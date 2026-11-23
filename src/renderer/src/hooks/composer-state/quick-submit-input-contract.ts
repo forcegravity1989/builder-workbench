@@ -1,5 +1,38 @@
 import type { ComposerModel } from './composer-model'
 
+export type QuickCreationExecutionInput = Pick<
+  ComposerModel,
+  | 'clearNewWorkspaceDraft'
+  | 'createMultiple'
+  | 'effectivePresetId'
+  | 'ephemeralVmRecipes'
+  | 'ephemeralVmsEnabled'
+  | 'isSubmissionCancelled'
+  | 'linkedGitLabIssue'
+  | 'linkedGitLabMR'
+  | 'normalizedSparseDirectories'
+  | 'onCreated'
+  | 'parentWorktreeId'
+  | 'persistDraft'
+  | 'persistSetupAgentStartupPolicy'
+  | 'prepareQuickSubmit'
+  | 'resetForNextCreate'
+  | 'resolvedInitialWorkspaceStatus'
+  | 'selectedEphemeralVmRecipeId'
+  | 'selectedRepoAgentLaunchPlatform'
+  | 'selectedRepoExecutionHostId'
+  | 'selectedRepoIsGit'
+  | 'selectedRepoIsRemote'
+  | 'selectedRepoSettings'
+  | 'selectedRepoStartupShell'
+  | 'selectedWorkspaceTarget'
+  | 'settings'
+  | 'sparseEnabled'
+  | 'taskSourceContext'
+  | 'telemetrySource'
+  | 'workbenchCreation'
+>
+
 export type QuickSubmitPreparationInput = Pick<
   ComposerModel,
   | 'branchAutoNameRef'

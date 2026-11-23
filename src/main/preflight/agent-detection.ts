@@ -62,7 +62,9 @@ export type PreflightStatus = {
   // carried presence.
   codehub?: { installed: boolean; authenticated: boolean }
   // Why: BW #323 — welink-cli presence + auth read from `welink-cli auth status`.
-  welink?: { installed: boolean; authenticated: boolean }
+  // wslDistro (BW #553): where the CLI was probed, so the reporting upload
+  // client routes exec through the same WSL target instead of re-detecting.
+  welink?: { installed: boolean; authenticated: boolean; wslDistro?: string }
   // Why: BW #366 — cloudbuild's cb presence + auth read from `cb auth status`.
   cloudbuild?: { installed: boolean; authenticated: boolean }
   bitbucket?: { configured: boolean; authenticated: boolean; account: string | null }
@@ -395,7 +397,11 @@ async function executePreflightCheck(
     gh: { installed: ghProbe.installed, authenticated: ghAuthenticated },
     glab: { installed: glabProbe.installed, authenticated: glabAuthenticated },
     codehub: { installed: bwProbes.codehub.installed, authenticated: bwAuths.codehub },
-    welink: { installed: bwProbes.welink.installed, authenticated: bwAuths.welink },
+    welink: {
+      installed: bwProbes.welink.installed,
+      authenticated: bwAuths.welink,
+      ...(bwProbes.welink.wslTarget?.distro ? { wslDistro: bwProbes.welink.wslTarget.distro } : {})
+    },
     cloudbuild: { installed: bwProbes.cloudbuild.installed, authenticated: bwAuths.cloudbuild },
     bitbucket,
     azureDevOps,

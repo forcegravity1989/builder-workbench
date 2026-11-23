@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../shared/workbench/repo-removal'
 import type { ExecutionHostId } from '../../shared/execution-host'
 import type {
   HostRepoCatalogSnapshot,
@@ -22,7 +23,12 @@ import type {
   ProjectHostSetupUpdateResult,
   ProjectUpdateArgs
 } from '../../shared/project-types'
-import type { BaseRefDefaultResult, BaseRefSearchResult, Repo } from '../../shared/repo-types'
+import type {
+  BaseRefDefaultResult,
+  BaseRefSearchResult,
+  Repo,
+  RepoCloneProgress
+} from '../../shared/repo-types'
 
 export type RepositoryApi = {
   list: () => Promise<Repo[]>
@@ -35,7 +41,11 @@ export type RepositoryApi = {
   }) => Promise<{ repo: Repo } | { error: string }>
   remove: (args: { repoId: string }) => Promise<void>
   // Forget a project on one execution host only, leaving the same repo id on other hosts intact.
-  removeForHost: (args: { repoId: string; hostId: string }) => Promise<void>
+  removeForHost: (args: {
+    repoId: string
+    hostId: string
+    expected?: { path: string; addedAt: number }
+  }) => Promise<void>
   reorder: (args: { orderedIds: string[] }) => Promise<{ status: 'applied' | 'rejected' }>
   reorderForHost: (args: {
     orderedIds: string[]
@@ -63,6 +73,7 @@ export type RepositoryApi = {
         | 'worktreeVisibilitySourcePreferences'
         | 'projectGroupId'
         | 'projectGroupOrder'
+        | 'projectVisibility'
         | 'forkSyncMode'
       >
     > & {
@@ -75,7 +86,7 @@ export type RepositoryApi = {
   pickFolder: () => Promise<string | null>
   pickFolders: () => Promise<string[]>
   pickDirectory: () => Promise<string | null>
-  clone: (args: { url: string; destination: string }) => Promise<Repo>
+  clone: (args: { url: string; destination: string; progressId?: string }) => Promise<Repo>
   cloneRemote: (args: { connectionId: string; url: string; destination: string }) => Promise<Repo>
   createRemote: (args: {
     connectionId: string
@@ -99,7 +110,7 @@ export type RepositoryApi = {
   }) => Promise<{ repo: Repo } | { error: string }>
   isGitAvailable: () => Promise<boolean>
   getDefaultCreateProjectParent: () => Promise<string>
-  onCloneProgress: (callback: (data: { phase: string; percent: number }) => void) => () => void
+  onCloneProgress: (callback: (data: RepoCloneProgress) => void) => () => void
   getGitUsername: (args: { repoId: string }) => Promise<string>
   getBaseRefDefault: (args: {
     repoId: string
@@ -143,7 +154,10 @@ export type ProjectGroupsApi = {
     groupId: string
     updates: Partial<Pick<ProjectGroup, 'name' | 'isCollapsed' | 'tabOrder' | 'color'>>
   }) => Promise<ProjectGroup | null>
-  delete: (args: { groupId: string }) => Promise<boolean>
+  delete: (args: {
+    groupId: string
+    members?: readonly ConfirmedRepoRegistration[]
+  }) => Promise<boolean>
   moveProject: (args: {
     projectId: string
     groupId: string | null

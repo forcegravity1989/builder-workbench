@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest'
 // the census: activation callers that open their own surface (editor, browser, diff, agent tab)
 // must appear here, and adding or removing an opt-out anywhere must update this list.
 const SURFACE_PROVIDING_CALLERS = [
+  'src/renderer/src/components/automations/automation-run-workspace-action.ts',
   'src/renderer/src/components/editor/check-annotation-open.ts',
   'src/renderer/src/components/feature-wall/FeatureWallBrowserAction.tsx',
   'src/renderer/src/components/sidebar/folder-workspace-composer-submit.ts',

@@ -1,5 +1,5 @@
 import { MessageSquarePlus } from 'lucide-react'
-import { useMemo, useState, type MouseEvent } from 'react'
+import { useMemo, useState, type MouseEvent, type Ref } from 'react'
 import { AnnotationPanel } from './annotations/AnnotationPanel'
 import { AnnotationPopover } from './annotations/AnnotationPopover'
 import {
@@ -9,13 +9,20 @@ import {
 import { annotationRefFromElement } from './annotations/types'
 import { useBoardAnnotations } from './annotations/use-board-annotations'
 import { BoardActionButton } from './board-ui'
+import { notifyWorkbenchError } from './error-feedback'
+import { MetricProblemsPanel } from './metric-problems-panel'
 import { OverviewRefresh } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
-import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
+import type {
+  MetricCatalog,
+  MetricDefinition,
+  MetricReading
+} from '../../../shared/workbench/metrics'
 import type { PlanningMaterial } from '../../../shared/workbench/version-planning-material'
 import { buildScoreboardScenes, type ScoreboardScene } from './overview-scoreboard-model'
 import { zoneBucketLabels, zoneChartRange } from './overview-zone-series'
 import { Measure, measureView, metricNote, scoreboardVerdict } from './scoreboard-measure'
+import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { sendScoreboardNotes } from './send-scoreboard-notes'
 
 /** 记分牌走势固定为周窗口。 */
@@ -24,7 +31,9 @@ export const SCOREBOARD_GRANULARITY = 'week' as const
 export function OverviewScoreboard({
   catalog,
   readings,
+  problems,
   busy,
+  pendingReadings,
   onRefresh,
   anchor,
   identity,
@@ -32,11 +41,16 @@ export function OverviewScoreboard({
   version,
   setupBusy,
   onSetup,
-  worktreeId
+  worktreeId,
+  baseScope,
+  guideHeaderRef,
+  guideReady = false
 }: {
   catalog: MetricCatalog | null
   readings: Record<string, MetricReading | null>
+  problems: string[]
   busy: boolean
+  pendingReadings: ReadonlySet<string> | null
   onRefresh(): void
   anchor?: string
   identity: string
@@ -45,6 +59,9 @@ export function OverviewScoreboard({
   setupBusy: boolean
   onSetup(): void
   worktreeId: string | null
+  baseScope: NativeWorkspaceScope | null
+  guideHeaderRef?: Ref<HTMLElement>
+  guideReady?: boolean
 }) {
   const notes = useBoardAnnotations(`scoreboard:${identity}:${version ?? ''}`)
   const [noteNotice, setNoteNotice] = useState<string | null>(null)
@@ -54,13 +71,18 @@ export function OverviewScoreboard({
   const timezone = catalog?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
   const range = zoneChartRange(SCOREBOARD_GRANULARITY, timezone, anchor)
   const labels = zoneBucketLabels(range)
+  const viewFor = (def: MetricDefinition) =>
+    measureView(
+      def,
+      readings,
+      labels,
+      range,
+      timezone,
+      pendingReadings?.has(def.ref.definitionHash) ?? busy
+    )
   const views = (scene: ScoreboardScene) => ({
-    lagging: scene.lagging
-      ? measureView(scene.lagging, readings, labels, range, timezone, busy)
-      : null,
-    leading: scene.leading
-      ? measureView(scene.leading, readings, labels, range, timezone, busy)
-      : null
+    lagging: scene.lagging ? viewFor(scene.lagging) : null,
+    leading: scene.leading ? viewFor(scene.leading) : null
   })
   const tabVerdict = (scene: ScoreboardScene): 'met' | 'unmet' | 'unknown' | null => {
     const focus = scene.focus
@@ -70,7 +92,7 @@ export function OverviewScoreboard({
     if (!focus || !def) {
       return null
     }
-    const measured = measureView(def, readings, labels, range, timezone, busy)
+    const measured = viewFor(def)
     return scoreboardVerdict(def, focus.target, measured)
   }
   const focused = scenes.filter((scene) => scene.focus)
@@ -122,8 +144,14 @@ export function OverviewScoreboard({
       id="scoreboard"
       aria-label="记分牌"
     >
-      <header className="wb-ov-section-head">
-        <h2>记分牌</h2>
+      <header
+        className="wb-ov-section-head"
+        ref={guideHeaderRef}
+        data-workbench-scoreboard-guide={guideHeaderRef ? '' : undefined}
+      >
+        <h2 data-contextual-tour-target={guideReady ? 'workbench-scoreboard-title' : undefined}>
+          记分牌
+        </h2>
         {catalog?.draft && <span className="wb-sb-draft">草稿</span>}
         <div className="wb-ov-tools">
           <BoardActionButton
@@ -141,12 +169,27 @@ export function OverviewScoreboard({
             className="wb-btn wb-btn-secondary wb-btn-sm"
             disabled={setupBusy}
             onClick={onSetup}
+            data-contextual-tour-target={guideReady ? 'workbench-scoreboard-setup' : undefined}
           >
             <MessageSquarePlus size={14} aria-hidden="true" /> 配置指标
           </button>
-          <OverviewRefresh label="刷新" busy={busy} onClick={onRefresh} />
+          <OverviewRefresh
+            label="刷新"
+            busy={busy}
+            onClick={onRefresh}
+            tourTarget={guideReady ? 'workbench-scoreboard-refresh' : undefined}
+          />
         </div>
       </header>
+      <MetricProblemsPanel
+        className="wb-sb-annot-notice"
+        summary={
+          catalog?.problems.some((problem) => problem.code === 'history-required')
+            ? '采集脚本需要更新 · 查看详情'
+            : '部分指标读取或采集失败 · 查看详情'
+        }
+        problems={problems}
+      />
       {noteNotice && (
         <p className="wb-sb-annot-notice" role="status">
           {noteNotice}
@@ -219,9 +262,12 @@ export function OverviewScoreboard({
               formatBoardAnnotationsAsMarkdown(notes.annotations)
             )
           }}
-          onCopyError={(message) => setNoteNotice(`复制批注失败：${message}`)}
+          onCopyError={(error) => notifyWorkbenchError('复制批注失败', error, '可重新复制。')}
           onSendDirect={async () => {
-            const result = await sendScoreboardNotes(boardAnnotationsSendPrompt(notes.annotations))
+            const result = await sendScoreboardNotes(
+              baseScope,
+              boardAnnotationsSendPrompt(notes.annotations)
+            )
             if (!result.ok) {
               setNoteNotice(result.message)
               return false

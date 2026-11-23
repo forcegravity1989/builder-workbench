@@ -1,3 +1,4 @@
+import { ErrorDetails } from '../error-feedback'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
 
@@ -14,7 +15,6 @@ export function AcceptanceNotices({
   recoveryText,
   draft,
   controller,
-  busy,
   setError,
   onRetrySave,
   onRemoteDeleted
@@ -24,17 +24,23 @@ export function AcceptanceNotices({
   recoveryText: string | null
   draft: MaterialDraft<AcceptanceMaterial> | null
   controller: MaterialDraftController<AcceptanceMaterial>
-  busy: boolean
   setError(message: string): void
   onRetrySave(): void
   onRemoteDeleted(): void
 }) {
   return (
     <>
-      {(error || recoveryError || draft?.error) && (
-        <p role="alert" className="va-error">
-          {error ?? recoveryError ?? draft?.error}
+      {recoveryError && (
+        <p className="va-error" role="status">
+          {recoveryError}
         </p>
+      )}
+      {(error || draft?.error) && (
+        <ErrorDetails
+          className="va-error"
+          summary="验收操作未完成 · 查看详情"
+          detail={error ?? draft?.error}
+        />
       )}
       {draft?.notice && (
         <p role="status" className="acc-notice">
@@ -84,7 +90,6 @@ export function AcceptanceNotices({
               </button>
               <button
                 className="wb-btn wb-btn-sm"
-                disabled={busy}
                 onClick={() => {
                   if (draft.remote) {
                     controller.useMerged(draft.document, draft.remote.revision)
@@ -118,7 +123,7 @@ export function AcceptanceNotices({
         </details>
       )}
       {draft?.error && draft.remote === undefined && (
-        <button className="wb-btn wb-btn-sm" disabled={busy} onClick={onRetrySave}>
+        <button className="wb-btn wb-btn-sm" onClick={onRetrySave}>
           重试保存
         </button>
       )}

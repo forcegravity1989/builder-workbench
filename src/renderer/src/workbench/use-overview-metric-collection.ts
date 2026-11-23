@@ -13,11 +13,12 @@ import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 const cache = createSnapshotCache(() => ({
   catalog: null as MetricCatalog | null,
   readings: {} as Partial<Record<ZoneGranularity, OverviewReadResult>>,
+  pendingReadings: null as ReadonlySet<string> | null,
   anchor: new Date().toISOString(),
   loaded: false,
   busy: false,
   refreshing: false,
-  problems: [] as string[]
+  catalogError: null as string | null
 }))
 
 export function useOverviewMetricCollection(args: {
@@ -63,15 +64,15 @@ export function useOverviewMetricCollection(args: {
               handedOff = true
               entry.pending = null
               load('reload')
-            } else if ((catalog.draft ?? null) !== (current?.draft ?? null)) {
+            } else if (entry.read().catalogError || catalog.draft !== current?.draft) {
               entry.publish({
                 ...entry.read(),
                 catalog,
-                problems: catalog.problems.map(metricProblemText)
+                catalogError: null
               })
             }
           } catch (error) {
-            entry.publish({ ...entry.read(), problems: [`指标读取失败：${String(error)}`] })
+            entry.publish({ ...entry.read(), catalogError: `指标读取失败：${String(error)}` })
           } finally {
             if (!handedOff) {
               entry.pending = null
@@ -87,27 +88,62 @@ export function useOverviewMetricCollection(args: {
       }
       const owner = baseScope.runtimeOwnerEnvironmentId
       const now = new Date().toISOString()
-      entry.publish({ ...entry.read(), busy: true, refreshing: mode === 'recollect' })
+      entry.publish({
+        ...entry.read(),
+        busy: true,
+        refreshing: mode === 'recollect',
+        pendingReadings: null
+      })
       entry.pending = (async () => {
         try {
           const catalog = await nativeMetricsPort(owner).list(scope)
-          const problems = catalog.problems.map(metricProblemText)
           const readings: Partial<Record<ZoneGranularity, OverviewReadResult>> = {}
           const oldReadings = entry.read().readings
           const order: ZoneGranularity[] = [granularity, granularity === 'day' ? 'week' : 'day']
+          const pendingReadings = new Set(catalog.definitions.map((def) => def.ref.definitionHash))
+          const northKey = catalog.definitions.find((def) => def.role === 'north_star')?.ref
+            .definitionHash
+          const publish = (pending = entry.read().pendingReadings) => {
+            entry.publish({
+              ...entry.read(),
+              catalog,
+              readings: { ...oldReadings, ...readings },
+              pendingReadings: pending,
+              anchor: now,
+              catalogError: null
+            })
+          }
+          const reportReading = (
+            key: string,
+            value: OverviewReadResult['map'][string],
+            problem?: string
+          ) => {
+            const partial = readings[granularity]
+            readings[granularity] = {
+              map: { ...partial?.map, [key]: value },
+              north: key === northKey ? value : (partial?.north ?? null),
+              problems: [...(partial?.problems ?? []), ...(problem ? [problem] : [])]
+            }
+            pendingReadings.delete(key)
+            publish(new Set(pendingReadings))
+          }
+          if (mode === 'initial') {
+            publish(new Set(pendingReadings))
+          }
           for (const grain of order) {
-            const request = { scope, owner, catalog, granularity: grain, now }
+            const request = {
+              scope,
+              owner,
+              catalog,
+              granularity: grain,
+              now,
+              onReading: mode === 'initial' && grain === granularity ? reportReading : undefined
+            }
             const previous =
               mode === 'recollect' ? oldReadings[grain] : await readAllMetricReadings(request)
             if (mode !== 'recollect') {
               readings[grain] = previous
-              entry.publish({
-                ...entry.read(),
-                catalog,
-                readings: { ...oldReadings, ...readings },
-                anchor: now,
-                problems
-              })
+              publish()
             }
             readings[grain] = await refreshMetricReadings({
               ...request,
@@ -115,16 +151,14 @@ export function useOverviewMetricCollection(args: {
               onlyMissing: mode !== 'recollect',
               sharedNorth: grain === order[1] ? readings[order[0]]?.north : undefined
             })
-            entry.publish({
-              ...entry.read(),
-              catalog,
-              readings: { ...oldReadings, ...readings },
-              anchor: now,
-              problems
-            })
+            publish()
           }
         } catch (error) {
-          entry.publish({ ...entry.read(), problems: [`指标读取失败：${String(error)}`] })
+          entry.publish({
+            ...entry.read(),
+            pendingReadings: null,
+            catalogError: `指标读取失败：${String(error)}`
+          })
         } finally {
           entry.pending = null
           entry.publish({ ...entry.read(), loaded: true, busy: false, refreshing: false })
@@ -158,11 +192,11 @@ export function useOverviewMetricCollection(args: {
             load('reload')
             return
           }
-          if ((catalog.draft ?? null) !== (current?.draft ?? null)) {
+          if (entry.read().catalogError || catalog.draft !== current?.draft) {
             entry.publish({
               ...entry.read(),
               catalog,
-              problems: catalog.problems.map(metricProblemText)
+              catalogError: null
             })
           }
         })
@@ -177,7 +211,20 @@ export function useOverviewMetricCollection(args: {
   return {
     ...snapshot,
     zoneReadings: reading?.map ?? {},
-    problems: [...snapshot.problems, ...(reading?.problems ?? [])],
+    problems: [
+      ...(snapshot.catalogError ? [snapshot.catalogError] : []),
+      ...(snapshot.catalog?.problems.map(metricProblemText) ?? []),
+      ...(reading?.problems ?? []),
+      ...Object.entries(reading?.map ?? {}).flatMap(([key, result]) => {
+        if (result?.status !== 'error') {
+          return []
+        }
+        const definition = snapshot.catalog?.definitions.find(
+          (item) => item.ref.definitionHash === key
+        )
+        return [metricProblemText({ ...result.reason, name: definition?.name })]
+      })
+    ],
     reloadCatalog: () => load('reload'),
     refreshReadings: () => load('recollect')
   }

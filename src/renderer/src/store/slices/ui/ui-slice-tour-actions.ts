@@ -6,7 +6,10 @@ import {
   getNextVisibleContextualTourStepIndex,
   getPreviousVisibleContextualTourStepIndex
 } from '../../../components/contextual-tours/contextual-tour-gate'
-import { hasFeatureInteraction } from '../../../../../shared/feature-interactions'
+import {
+  hasFeatureInteraction,
+  isFeatureInteractionId
+} from '../../../../../shared/feature-interactions'
 
 export function createUiTourActions(set: UISliceSet, get: UISliceGet): Partial<UISlice> {
   return {
@@ -81,7 +84,7 @@ export function createUiTourActions(set: UISliceSet, get: UISliceGet): Partial<U
           activeContextualTourWasFeaturePreviouslyInteracted:
             wasFeaturePreviouslyInteracted ??
             navigationSnapshot ??
-            hasFeatureInteraction(s.featureInteractions, id),
+            (isFeatureInteractionId(id) && hasFeatureInteraction(s.featureInteractions, id)),
           contextualTourNavigationInteractionSnapshot: remainingNavigationSnapshot,
           activeContextualTourSuppressed: false,
           contextualTourShownThisSession: true,

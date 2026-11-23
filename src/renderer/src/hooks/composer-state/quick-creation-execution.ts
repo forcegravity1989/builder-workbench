@@ -1,37 +1,4 @@
-import type { ComposerModel } from './composer-model'
-
-type QuickCreationExecutionInput = Pick<
-  ComposerModel,
-  | 'clearNewWorkspaceDraft'
-  | 'createMultiple'
-  | 'effectivePresetId'
-  | 'ephemeralVmRecipes'
-  | 'ephemeralVmsEnabled'
-  | 'isSubmissionCancelled'
-  | 'linkedGitLabIssue'
-  | 'linkedGitLabMR'
-  | 'normalizedSparseDirectories'
-  | 'onCreated'
-  | 'parentWorktreeId'
-  | 'persistDraft'
-  | 'persistSetupAgentStartupPolicy'
-  | 'prepareQuickSubmit'
-  | 'resetForNextCreate'
-  | 'resolvedInitialWorkspaceStatus'
-  | 'selectedEphemeralVmRecipeId'
-  | 'selectedRepoAgentLaunchPlatform'
-  | 'selectedRepoExecutionHostId'
-  | 'selectedRepoIsGit'
-  | 'selectedRepoIsRemote'
-  | 'selectedRepoSettings'
-  | 'selectedRepoStartupShell'
-  | 'selectedWorkspaceTarget'
-  | 'settings'
-  | 'sparseEnabled'
-  | 'taskSourceContext'
-  | 'telemetrySource'
-  | 'workbenchCreation'
->
+import type { QuickCreationExecutionInput } from './quick-submit-input-contract'
 
 import { useCallback } from 'react'
 import type { Repo } from '../../../../shared/repo-types'
@@ -43,12 +10,14 @@ import { ensureHooksConfirmed } from '@/lib/ensure-hooks-confirmed'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { runBackgroundWorktreeCreation } from '@/lib/worktree-creation-flow'
 import { translate } from '@/i18n/i18n'
-import { resolveQuickCreateLinkedWorkItemPrompt } from '@/lib/linked-work-item-context'
 import { resolveWorkbenchCreationBinding } from '../../../../shared/workbench/creation-context'
-import { buildQuickComposerStartup } from './quick-startup-plan'
+import {
+  prepareQuickComposerStartup,
+  resolveQuickComposerAgentLaunchRoute
+} from './quick-startup-plan'
 import { buildQuickCreationRequest } from './quick-creation-request'
 import type { PendingSmartGitHubSubmitResolution } from './source-selection-decisions'
-import { planAgentSessionLaunch } from '@/lib/agent-session-launch-plan'
+import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
 
 export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
   const {
@@ -124,19 +93,19 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
         trimmedNote
       } = prepared
 
-      const promptLinkedWorkItem = agent === null ? null : submitLinkedWorkItem
-
-      const { prompt: quickPrompt, draftPrompt: quickDraftPrompt } =
-        resolveQuickCreateLinkedWorkItemPrompt(promptLinkedWorkItem, trimmedNote)
-
       const {
         startupPlan,
         backendStartup,
-        telemetry: quickTelemetry
-      } = buildQuickComposerStartup({
+        telemetry: quickTelemetry,
+        agentLaunchOwner,
+        quickPrompt,
+        quickDraftPrompt
+      } = await prepareQuickComposerStartup({
+        runtimeEnvironmentId: selectedRepoSettings?.activeRuntimeEnvironmentId,
+        usesEphemeralVm: ephemeralVmsEnabled && Boolean(selectedEphemeralVmRecipeId),
         agent,
-        prompt: quickPrompt,
-        draftPrompt: quickDraftPrompt,
+        linkedWorkItem: submitLinkedWorkItem,
+        note: trimmedNote,
         settings,
         repoConnectionId: selectedRepo.connectionId,
         platform: selectedRepoAgentLaunchPlatform,
@@ -144,6 +113,9 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
         isRemote: selectedRepoIsRemote,
         telemetrySource
       })
+      if (isSubmissionCancelled()) {
+        return
+      }
 
       const startupPolicySettlement = await settleComposerSubmit(
         persistSetupAgentStartupPolicy(),
@@ -199,21 +171,18 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
 
       const promptDelivery = quickDraftPrompt ? 'draft' : 'auto-submit'
       // Why: the verdict is persisted on the request as data and re-entered once the worktree exists.
-      const agentLaunchRoute = agent
-        ? planAgentSessionLaunch(useAppStore.getState(), {
-            agent,
-            workspace: {
-              kind: selectedRepoIsGit ? 'git-worktree' : 'folder',
-              repoId,
-              executionHostId: ephemeralVmRecipe
-                ? 'runtime:pending-ephemeral-vm'
-                : (workspaceRunContext?.hostId ?? selectedRepoExecutionHostId ?? undefined)
-            },
-            prompt: quickDraftPrompt ?? quickPrompt,
-            promptDelivery,
-            initialSessionOptions: startupPlan?.sessionOptions
-          }).route
-        : 'terminal-tui'
+      const agentLaunchRoute = resolveQuickComposerAgentLaunchRoute(agent, {
+        workspace: {
+          kind: selectedRepoIsGit ? 'git-worktree' : 'folder',
+          repoId,
+          executionHostId: ephemeralVmRecipe
+            ? 'runtime:pending-ephemeral-vm'
+            : (workspaceRunContext?.hostId ?? selectedRepoExecutionHostId ?? undefined)
+        },
+        prompt: quickDraftPrompt ?? quickPrompt,
+        promptDelivery,
+        initialSessionOptions: startupPlan?.sessionOptions
+      })
       const structuredLaunch = agentLaunchRoute === 'structured-native-chat'
 
       const request = buildQuickCreationRequest({
@@ -255,6 +224,7 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
         pendingFirstAgentMessageRename,
         note: trimmedNote,
         startupPlan,
+        agentLaunchOwner,
         quickPrompt,
         launchDraftPrompt: quickDraftPrompt,
         promptDelivery,
@@ -271,6 +241,7 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
       if (isSubmissionCancelled()) {
         return
       }
+      assertHostAgentStartupOwner(agentLaunchOwner)
 
       if (persistDraft) {
         clearNewWorkspaceDraft()
