@@ -1,0 +1,51 @@
+docs/05-features/overview-metrics/spec.md
+  s_ffa24ae27b253d::t_11f2c9ebcc955b 67
+src/renderer/src/workbench/milestone-review-button.tsx
+  s_ffa24ae27b253d::t_d9737b6435cff3 82,86-96
+  s_ffa24ae27b253d::t_98de980dd7b9ab 2,15,29,33-39,69-72,75-76,79-81,97-100,109,118,120-121
+  s_ffa24ae27b253d::t_c926c01bd7a6c6 62-68
+  h_1dcaf127381c33 56-60
+src/renderer/src/workbench/use-milestone-planning.ts
+  s_ffa24ae27b253d::t_761b0ba4269ec2 176,180
+  s_ffa24ae27b253d::t_9b0329cf514f8c 143
+  s_ffa24ae27b253d::t_a9d9cccc847854 189
+  s_ffa24ae27b253d::t_deebb9ac3702ad 309,312-321,326,331
+  s_ffa24ae27b253d::t_00635644857cbf 100-108
+  s_ffa24ae27b253d::t_48fc622aae65e7 60,67-70,310-311
+  s_ffa24ae27b253d::t_f686c9a02fc483 62
+  s_ffa24ae27b253d::t_1506280fca54d4 145-151
+  s_ffa24ae27b253d::t_cba541a459ed9c 276-280
+src/renderer/src/workbench/project-milestones.tsx
+  s_ffa24ae27b253d::t_f8ab4d5201f67f 373
+  s_ffa24ae27b253d::t_d6569ccbdf2fec 6
+  s_ffa24ae27b253d::t_ac32eaf1432e0a 400
+  s_ffa24ae27b253d::t_307d9d9ea8ea0e 371-372,375-386
+  s_ffa24ae27b253d::t_88c197781eb683 163,165,167,169-170,172,174
+  s_ffa24ae27b253d::t_d3ce2cb6286a43 161-162
+  s_ffa24ae27b253d::t_7b0e4664654be7 164
+  s_ffa24ae27b253d::t_9efee7a6397405 166
+  s_ffa24ae27b253d::t_8605fdc7228097 168
+  s_ffa24ae27b253d::t_da60a66c78cdd5 171
+  s_ffa24ae27b253d::t_599cf57efbfc0a 173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "3264ac7fca03d7c494cb7e06829b52e8dcf11726",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_ffa24ae27b253d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "51d6170b-adb5-4cbe-852c-58ff67dc4e26",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
