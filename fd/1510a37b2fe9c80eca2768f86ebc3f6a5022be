@@ -1,0 +1,22 @@
+src/main/w3-account/w3-account-service.test.ts
+  s_c7277b997ba253::t_855ae22a77ae7d 86
+  s_c7277b997ba253::t_54356cc4ff298f 121
+src/main/w3-account/w3-account-config.test.ts
+  s_c7277b997ba253::t_59eb04e5fdac43 13-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "fd1510a37b2fe9c80eca2768f86ebc3f6a5022be",
+  "prompts": {},
+  "sessions": {
+    "s_c7277b997ba253": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af69acd2-d360-4f0b-aaa5-8909ad4d0a8d",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

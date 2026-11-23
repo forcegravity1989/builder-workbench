@@ -1,0 +1,188 @@
+.github/workflows/pr.yml
+  h_d0d195a8c70989 220-222
+config/vitest-count-baseline.txt
+  h_d0d195a8c70989 5
+docs/04-design-system/guidance.md
+  h_d0d195a8c70989 103,113
+docs/04-design-system/guidelines.md
+  h_d0d195a8c70989 188,190
+docs/05-features/README.md
+  h_d0d195a8c70989 25
+docs/05-features/team-collaboration/STATUS.md
+  h_d0d195a8c70989 1,3,5-11
+docs/05-features/team-collaboration/intent.md
+  h_d0d195a8c70989 1-33
+docs/05-features/team-collaboration/prototype.html
+  h_d0d195a8c70989 1-247
+docs/05-features/team-collaboration/prototype/journey.js
+  h_d0d195a8c70989 1-1510
+docs/05-features/team-collaboration/spec.md
+  h_d0d195a8c70989 1-105
+docs/05-features/team-collaboration/welink-cli-spike.md
+  h_d0d195a8c70989 1-47
+docs/development.md
+  h_d0d195a8c70989 46
+docs/hifi/README.md
+  h_d0d195a8c70989 3,52
+services/bw-share/.env.example
+  h_d0d195a8c70989 1-34
+services/bw-share/.gitignore
+  h_d0d195a8c70989 1-3
+services/bw-share/deploy/bw-share.service
+  h_d0d195a8c70989 1-39
+services/bw-share/deploy/nginx.conf.example
+  h_d0d195a8c70989 1-50
+services/bw-share/package.json
+  h_d0d195a8c70989 1-14
+services/bw-share/src/client-tokens.mjs
+  h_d0d195a8c70989 1-164
+services/bw-share/src/config.mjs
+  h_d0d195a8c70989 1-132
+services/bw-share/src/errors.mjs
+  h_d0d195a8c70989 1-24
+services/bw-share/src/http.mjs
+  h_d0d195a8c70989 1-493
+services/bw-share/src/main.mjs
+  h_d0d195a8c70989 1-92
+services/bw-share/src/payload.mjs
+  h_d0d195a8c70989 1-70
+services/bw-share/src/store.mjs
+  h_d0d195a8c70989 1-448
+services/bw-share/src/tokens.mjs
+  h_d0d195a8c70989 1-38
+services/bw-share/test/config.test.mjs
+  h_d0d195a8c70989 1-51
+services/bw-share/test/helpers.mjs
+  h_d0d195a8c70989 1-97
+services/bw-share/test/http.test.mjs
+  h_d0d195a8c70989 1-644
+services/bw-share/test/payload.test.mjs
+  h_d0d195a8c70989 1-77
+services/bw-share/test/store.test.mjs
+  h_d0d195a8c70989 1-292
+src/cli/handlers/monica-meeting.ts
+  h_d0d195a8c70989 10-11,175,190-229,262-281,311
+src/cli/monica-meeting/protocol.test.ts
+  h_d0d195a8c70989 7-13,44-60
+src/cli/monica-meeting/protocol.ts
+  h_d0d195a8c70989 40-79
+src/main/ipc/mobile.ts
+  h_d0d195a8c70989 2-6,10-11,48-54,161-170,209-211,259,265-275,277-303,306-327
+src/main/ipc/register-core-handlers/register-core-handlers.test.ts
+  h_d0d195a8c70989 144-146
+src/main/ipc/register-core-handlers/register-core-handlers.ts
+  h_d0d195a8c70989 22,169
+src/main/ipc/team-collaboration.ts
+  h_d0d195a8c70989 1-102
+src/main/monica/reporting/welink-onebox-client.ts
+  h_d0d195a8c70989 110,126-208,291-313,317,319,358,361,372
+src/main/monica/reporting/welink-report-config.test.ts
+  h_d0d195a8c70989 9,11
+src/main/monica/team-collaboration/team-directory-client.ts
+  h_d0d195a8c70989 1-298
+src/main/observability/runtime-access-audit.test.ts
+  h_d0d195a8c70989 1-48
+src/main/observability/runtime-access-audit.ts
+  h_d0d195a8c70989 1-123
+src/main/runtime/device-registry.ts
+  h_d0d195a8c70989 13,37-38,44-53,92-94,96-103,110-112,121-126,144-146,148-157,165-171,195-197,199-216,235-263,420-425
+src/main/runtime/rpc/core.ts
+  h_d0d195a8c70989 13-16,80-81
+src/main/runtime/rpc/dispatcher-stream-options.ts
+  h_d0d195a8c70989 4-7,15-16
+src/main/runtime/rpc/dispatcher.ts
+  h_d0d195a8c70989 101-103
+src/main/runtime/rpc/mobile-socket-wiring.ts
+  h_d0d195a8c70989 125-134
+src/main/runtime/rpc/rpc-streaming-dispatcher.ts
+  h_d0d195a8c70989 114-115,169-170
+src/main/runtime/runtime-rpc/runtime-rpc-pairing-types.ts
+  h_d0d195a8c70989 69
+src/main/runtime/runtime-rpc/runtime-rpc-pairing.ts
+  h_d0d195a8c70989 1-10,163-169,190-191,226-231,235,237-250,261-267
+src/main/runtime/runtime-rpc/runtime-rpc-state.ts
+  h_d0d195a8c70989 31,62,138,141-144
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  h_d0d195a8c70989 1-29
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  h_d0d195a8c70989 1-186
+src/main/runtime/runtime-rpc/runtime-rpc-websocket-dispatch.ts
+  h_d0d195a8c70989 10,14,89-106,123-156,190-191
+src/preload/api-types.ts
+  h_d0d195a8c70989 40,160
+src/preload/api/mobile-api.ts
+  h_d0d195a8c70989 4,9-11,63-64,68,92-98
+src/preload/api/mobile-bridge.ts
+  h_d0d195a8c70989 5,9-11,58-59,61-65,89-99
+src/preload/api/team-collaboration-api.ts
+  h_d0d195a8c70989 1-10
+src/preload/api/team-collaboration-bridge.ts
+  h_d0d195a8c70989 1-10
+src/preload/index.ts
+  h_d0d195a8c70989 88,191
+src/renderer/src/components/settings/RuntimeAccessAuditLog.tsx
+  h_d0d195a8c70989 1-218
+src/renderer/src/components/settings/RuntimeAccessGrantList.tsx
+  h_d0d195a8c70989 1-2,5-13,32,35,44,46-47,49-74,118-150,154,160-170,200-216,260-293
+src/renderer/src/components/settings/RuntimePairingUrlGenerator.tsx
+  h_d0d195a8c70989 4-8,12,28-30,55-61,124-156,219-222,238-240,349-392,508,511-524
+src/renderer/src/components/settings/runtime-pairing-link-state.ts
+  h_d0d195a8c70989 7-10,26-27
+src/renderer/src/i18n/locales/en.json
+  h_d0d195a8c70989 8059-8070,8223-8227,11911-11928
+src/renderer/src/monica/ProjectWallPage.tsx
+  h_d0d195a8c70989 3,19,36,107,117-120,311
+src/renderer/src/monica/TeamSettingsDialog.tsx
+  h_d0d195a8c70989 1-472
+src/renderer/src/monica/builder-hosts-import.test.ts
+  h_d0d195a8c70989 67
+src/renderer/src/monica/overview-metric-readings.test.ts
+  h_d0d195a8c70989 95
+src/renderer/src/monica/overview-zone-series.test.ts
+  h_d0d195a8c70989 93
+src/renderer/src/monica/version-acceptance/acceptance-model.test.ts
+  h_d0d195a8c70989 67,100
+src/renderer/src/monica/version-cycle/current-cycle-workspace.test.ts
+  h_d0d195a8c70989 35,38,41
+src/renderer/src/monica/version-cycle/ensure-cycle-automation.test.ts
+  h_d0d195a8c70989 131,191,199
+src/renderer/src/monica/version-overview/feature-model.test.ts
+  h_d0d195a8c70989 319-325,340,442-443,446,452,454-455,474-475,477,479,481,490,516-517,535-536,768
+src/renderer/src/web/preload-api/web-mobile-api.ts
+  h_d0d195a8c70989 18-19
+src/renderer/src/web/preload-api/web-team-collaboration-api.ts
+  h_d0d195a8c70989 1-14
+src/renderer/src/web/web-preload-api-composition.test.ts
+  h_d0d195a8c70989 78
+src/renderer/src/web/web-preload-api.ts
+  h_d0d195a8c70989 32,143
+src/shared/mobile-relay-pairing-offer.ts
+  h_d0d195a8c70989 80-86,108-114
+src/shared/monica/skill-package.json
+  h_d0d195a8c70989 4-6,9
+src/shared/runtime-access-grants.ts
+  h_d0d195a8c70989 2,9-26
+src/shared/runtime-session-contracts.ts
+  h_d0d195a8c70989 28-34
+src/shared/runtime-types.ts
+  h_d0d195a8c70989 114,118
+src/shared/team-directory.ts
+  h_d0d195a8c70989 1-24
+standard/references/meeting-transcript.md
+  h_d0d195a8c70989 22
+tests/e2e/AGENTS.md
+  h_d0d195a8c70989 25-26,58
+tests/e2e/helpers/monica-project-settings.ts
+  h_d0d195a8c70989 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "4937ba46c47c1e11b216882d13acd77821743cfa",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

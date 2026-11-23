@@ -1,0 +1,19 @@
+src/renderer/src/workbench/WallSourceAvatarGroup.tsx
+  s_1fcb41ef984e01::t_dbd15453949e90 176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "2aeefefff531f3942e1d392be56add575b3ee5a3",
+  "prompts": {},
+  "sessions": {
+    "s_1fcb41ef984e01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f93905d-ebd5-46d2-af46-e81161c37d0e",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
