@@ -10,5 +10,8 @@ export type TeamCollaborationApi = {
     groupId: string
     spaceId: string
   }) => Promise<{ added: number; updated: number }>
-  writeDirectory: (directory: TeamDirectory) => Promise<{ fileId: string }>
+  writeDirectory: (
+    directory: TeamDirectory,
+    baseFileId?: string | null
+  ) => Promise<{ fileId: string }>
 }

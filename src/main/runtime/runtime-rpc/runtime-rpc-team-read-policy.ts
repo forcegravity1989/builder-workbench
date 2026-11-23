@@ -117,7 +117,6 @@ const TEAM_READ_ALLOWED_METHODS = new Set([
   'workbench.prototypeReview.identity',
   'workbench.prototypeReview.inbox',
   'workbench.prototypeReview.receive',
-  'workbench.prototypeReview.dismiss',
   'workbench.prototypeReview.annotations.list',
   'workbench.prototypeReview.annotations.add',
   'workbench.prototypeReview.annotations.delete',
@@ -250,7 +249,10 @@ const AUDITED_TEAM_READ_METHODS = new Set([
   'workbench.review.receive',
   'workbench.prototypeReview.receive',
   'workbench.prototypeReview.annotations.add',
-  'workbench.prototypeReview.annotations.delete'
+  'workbench.prototypeReview.annotations.delete',
+  // Watching a host's browser page is something its owner should be able to see afterwards.
+  'browser.screencast',
+  'browser.screenshot'
 ])
 
 export function isRoutineReadRuntimeMethod(method: string): boolean {
@@ -267,5 +269,5 @@ export function teamReadDenialReason(
   if (!TEAM_READ_DENIED_METHODS.has(method) && isReadMethod(method)) {
     return null
   }
-  return `Method '${method}' requires full access`
+  return '这台主机只授予了只读访问：可以查看，不能创建、修改或发送输入。请让主机持有人在“共享此主机”中授予完全访问。'
 }

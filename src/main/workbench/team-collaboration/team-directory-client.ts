@@ -291,13 +291,17 @@ export async function readTeamDirectory(args: {
   groupId: string
   spaceId: string
 }): Promise<TeamDirectoryReadResult> {
-  const [members, currentMemberId, saved] = await Promise.all([
+  const [members, rawMemberId, saved] = await Promise.all([
     queryGroupMembers(args.route, args.groupId).then((rows) =>
       withMemberProfiles(args.route, rows)
     ),
     queryCurrentMemberId(args.route),
     readSavedDirectory(args.route, args.groupId, args.spaceId)
   ])
+  // `auth status` and the member list may differ in letter case; the UI compares exactly.
+  const currentMemberId =
+    members.find((member) => member.member_id.toLowerCase() === rawMemberId?.toLowerCase())
+      ?.member_id ?? rawMemberId
   if (!saved) {
     return {
       directory: {
@@ -387,6 +391,8 @@ function mergeMembers(
 export async function writeTeamDirectory(args: {
   route: WelinkRoute
   directory: TeamDirectory
+  /** The team.json the draft was read from; `null` means no file existed. Omit to skip the check. */
+  baseFileId?: string | null
 }): Promise<{ fileId: string }> {
   const root = await mkdtemp(join(tmpdir(), 'bw-team-directory-write-'))
   const path = join(root, 'team.json')
@@ -394,6 +400,14 @@ export async function writeTeamDirectory(args: {
     await writeFile(path, `${JSON.stringify(args.directory, null, 2)}\n`, 'utf8')
     const folderId = await resolveTeamFolder(args.route, args.directory.team_space_id)
     const previous = await findTeamDirectoryFile(args.route, args.directory.team_space_id)
+    // The cached read can be minutes old; another member's save replaces team.json, and writing the
+    // draft over it would silently drop their change.
+    if (args.baseFileId !== undefined && (previous?.id ?? null) !== args.baseFileId) {
+      teamFileCache.delete(args.directory.team_space_id)
+      throw new Error(
+        '团队目录刚被其他成员更新，你的修改没有保存。请关闭并重新打开团队设置，核对最新内容后再操作。'
+      )
+    }
     const fileId = await uploadOneboxFile(args.route, args.directory.team_space_id, folderId, path)
     teamFileCache.delete(args.directory.team_space_id)
     if (previous && previous.id !== fileId) {

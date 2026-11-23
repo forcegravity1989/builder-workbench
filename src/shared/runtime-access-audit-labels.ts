@@ -5,6 +5,11 @@ const EXACT_LABELS: Record<string, string> = {
   'access.revoke': '撤销访问',
   'workbench.review.receive': '接收评审通知',
   'workbench.review.comments': '读取评审评论',
+  'workbench.prototypeReview.receive': '接收原型评审通知',
+  'workbench.prototypeReview.annotations.add': '添加原型批注',
+  'workbench.prototypeReview.annotations.delete': '删除原型批注',
+  'browser.screencast': '观看浏览器页面',
+  'browser.screenshot': '截取浏览器页面',
   'repo.list': '读取项目目录',
   'projectGroup.list': '读取项目分组',
   'project.list': '读取项目',
@@ -59,17 +64,17 @@ const EXACT_LABELS: Record<string, string> = {
   'github.project.viewTable': '读取 GitHub 项目表格'
 }
 
-// Operations that change host state share one label per family, so a denied write attempt reads as
-// "操作终端" instead of a raw method name.
+// Families without an exact label share one neutral label, so a denied write and a failed read
+// on the same family read the same and neither is mislabelled as a change.
 const FAMILY_LABELS: Record<string, string> = {
-  agentSession: '操作 Agent 会话',
-  orchestration: '调度 Agent 任务',
-  terminal: '操作终端',
-  files: '修改文件',
-  worktree: '修改工作树',
-  git: '修改 Git 仓库',
-  browser: '操作浏览器',
-  computer: '操作本机桌面'
+  agentSession: 'Agent 会话操作',
+  orchestration: 'Agent 任务调度',
+  terminal: '终端操作',
+  files: '文件操作',
+  worktree: '工作树操作',
+  git: 'Git 操作',
+  browser: '浏览器操作',
+  computer: '本机桌面操作'
 }
 
 const OTHER_KEY = 'other'

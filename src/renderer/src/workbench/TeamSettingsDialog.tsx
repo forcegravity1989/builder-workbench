@@ -28,7 +28,11 @@ type TeamSettingsDialogProps = {
 }
 
 // Last directory read in this renderer session, shown immediately on reopen while a fresh read runs.
-let directorySnapshot: { directory: TeamDirectory; currentMemberId: string | null } | null = null
+let directorySnapshot: {
+  directory: TeamDirectory
+  fileId: string | null
+  currentMemberId: string | null
+} | null = null
 
 export function TeamSettingsDialog({
   open,
@@ -50,6 +54,8 @@ export function TeamSettingsDialog({
   const updateRepo = useAppStore((state) => state.updateRepo)
   const directoryRef = useRef<TeamDirectory | null>(null)
   const directoryBaseRef = useRef<string | null>(null)
+  // The team.json the visible draft was read from; saving refuses to overwrite a newer one.
+  const directoryFileIdRef = useRef<string | null | undefined>(undefined)
 
   useEffect(() => {
     directoryRef.current = directory
@@ -90,13 +96,18 @@ export function TeamSettingsDialog({
         groupId: nextGroupId,
         spaceId: nextSpaceId
       })
-      directorySnapshot = { directory: result.directory, currentMemberId: result.currentMemberId }
+      directorySnapshot = {
+        directory: result.directory,
+        fileId: result.fileId,
+        currentMemberId: result.currentMemberId
+      }
       const editedLocally =
         directoryRef.current !== null &&
         JSON.stringify(directoryRef.current) !== directoryBaseRef.current
       if (!editedLocally) {
         setDirectory(result.directory)
         setDirectoryBase(JSON.stringify(result.directory))
+        directoryFileIdRef.current = result.fileId
       }
       setCurrentMemberId(result.currentMemberId)
       setGroupId(result.directory.team_group_id)
@@ -123,10 +134,13 @@ export function TeamSettingsDialog({
       ) {
         setDirectory(directorySnapshot.directory)
         setDirectoryBase(JSON.stringify(directorySnapshot.directory))
+        directoryFileIdRef.current = directorySnapshot.fileId
         setCurrentMemberId(directorySnapshot.currentMemberId)
       }
-      void loadDirectory(binding.groupId, binding.spaceId)
-      void syncTeamHosts().catch(() => undefined)
+      // Sequential: both read the same OneBox files, which throttles back-to-back calls.
+      void loadDirectory(binding.groupId, binding.spaceId).then(() =>
+        syncTeamHosts().catch(() => undefined)
+      )
     }
     // The loader is intentionally stable for this open-session bootstrap; rerunning
     // it for every renderer callback would issue duplicate OneBox reads.
@@ -172,7 +186,12 @@ export function TeamSettingsDialog({
     setSaving(true)
     setError(null)
     try {
-      await window.api.teamCollaboration.writeDirectory(directory)
+      const written = await window.api.teamCollaboration.writeDirectory(
+        directory,
+        directoryFileIdRef.current
+      )
+      directoryFileIdRef.current = written.fileId
+      setDirectoryBase(JSON.stringify(directory))
       rememberTeamBinding(directory.team_group_id, directory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '同步团队目录失败。')
@@ -256,7 +275,11 @@ export function TeamSettingsDialog({
         }
     try {
       if (!alreadyRegistered) {
-        await window.api.teamCollaboration.writeDirectory(nextDirectory)
+        const written = await window.api.teamCollaboration.writeDirectory(
+          nextDirectory,
+          directoryFileIdRef.current
+        )
+        directoryFileIdRef.current = written.fileId
       }
       const updated = await updateRepo(
         repo.id,

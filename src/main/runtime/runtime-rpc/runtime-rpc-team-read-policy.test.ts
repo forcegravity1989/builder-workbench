@@ -14,7 +14,7 @@ describe('team-read RPC policy', () => {
       'browser.eval',
       'browser.reload'
     ]) {
-      expect(teamReadDenialReason('team-read', method)).toContain('requires full access')
+      expect(teamReadDenialReason('team-read', method)).toContain('授予完全访问')
     }
   })
 
@@ -38,7 +38,7 @@ describe('team-read RPC policy', () => {
       expect(teamReadDenialReason('team-read', method)).toBeNull()
     }
     expect(teamReadDenialReason('team-read', 'git.conflictOperation')).toBeNull()
-    expect(teamReadDenialReason('team-read', 'future.mutate')).toContain('requires full access')
+    expect(teamReadDenialReason('team-read', 'future.mutate')).toContain('授予完全访问')
     expect(teamReadDenialReason('full', 'terminal.send')).toBeNull()
     expect(teamReadDenialReason(undefined, 'terminal.send')).toBeNull()
   })
@@ -48,7 +48,11 @@ describe('team-read RPC policy', () => {
     expect(isRoutineReadRuntimeMethod('terminal.resolvePane')).toBe(true)
     expect(isRoutineReadRuntimeMethod('workbench.review.receive')).toBe(false)
     expect(isRoutineReadRuntimeMethod('workbench.prototypeReview.annotations.add')).toBe(false)
-    expect(isRoutineReadRuntimeMethod('browser.screencast')).toBe(true)
+    expect(isRoutineReadRuntimeMethod('browser.screencast')).toBe(false)
+    expect(isRoutineReadRuntimeMethod('browser.tabList')).toBe(true)
+    expect(teamReadDenialReason('team-read', 'workbench.prototypeReview.dismiss')).toContain(
+      '授予完全访问'
+    )
     expect(isRoutineReadRuntimeMethod('terminal.send')).toBe(false)
   })
 })

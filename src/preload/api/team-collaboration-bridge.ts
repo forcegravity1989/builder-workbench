@@ -7,6 +7,6 @@ export const teamCollaborationApi = {
     ipcRenderer.invoke('teamCollaboration:readDirectory', args),
   syncHosts: (args: { groupId: string; spaceId: string }) =>
     ipcRenderer.invoke('teamCollaboration:syncHosts', args),
-  writeDirectory: (directory: TeamDirectory) =>
-    ipcRenderer.invoke('teamCollaboration:writeDirectory', directory)
+  writeDirectory: (directory: TeamDirectory, baseFileId?: string | null) =>
+    ipcRenderer.invoke('teamCollaboration:writeDirectory', directory, baseFileId)
 } satisfies PreloadApi['teamCollaboration']

@@ -5,8 +5,10 @@ import { findEnvironmentWithHostKey } from '../../../shared/runtime-environment-
 import {
   addOrUpdateEnvironmentFromPairingCode,
   listEnvironments,
+  removeEnvironment,
   setEnvironmentReconnectOnLaunch
 } from '../../../shared/runtime-environment-store'
+import { RuntimeEnvironmentStoreError } from '../../../shared/runtime-environment-store-records'
 import type { TeamDirectoryMember } from '../../../shared/team-directory'
 
 export type TeamHostSyncResult = { added: number; updated: number }
@@ -30,8 +32,13 @@ function readManagedIds(userDataPath: string): Set<string> {
         ? parsed.environmentIds.filter((id): id is string => typeof id === 'string')
         : []
     )
-  } catch {
-    return new Set()
+  } catch (error) {
+    // A missing file means nothing was synced yet. An unreadable one must stop the sync, otherwise
+    // the next write would drop the ids of hosts already saved.
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return new Set()
+    }
+    throw error
   }
 }
 
@@ -40,7 +47,9 @@ function writeManagedIds(userDataPath: string, ids: Set<string>): void {
 }
 
 function isNameTaken(error: unknown): boolean {
-  return error instanceof Error && /already exists/i.test(error.message)
+  return (
+    error instanceof RuntimeEnvironmentStoreError && error.pairingFailure?.errorCode === 'nameTaken'
+  )
 }
 
 /**
@@ -70,9 +79,17 @@ export async function syncTeamHosts(
     try {
       if (!existing) {
         const { environment } = saveHost(deps, name, host, host.orca_endpoint)
-        setEnvironmentReconnectOnLaunch(deps.userDataPath, environment.id, false)
-        deps.holdDisconnected(environment.id)
-        managed.add(environment.id)
+        try {
+          setEnvironmentReconnectOnLaunch(deps.userDataPath, environment.id, false)
+          deps.holdDisconnected(environment.id)
+          managed.add(environment.id)
+          writeManagedIds(deps.userDataPath, managed)
+        } catch (error) {
+          // A host that cannot be held disconnected would connect on launch, so it is not kept.
+          managed.delete(environment.id)
+          removeEnvironment(deps.userDataPath, environment.id)
+          throw error
+        }
         result.added += 1
         continue
       }
@@ -96,9 +113,6 @@ export async function syncTeamHosts(
     } catch {
       // One unusable link must not block the other members' hosts, and it is retried next sync.
     }
-  }
-  if (result.added > 0) {
-    writeManagedIds(deps.userDataPath, managed)
   }
   return result
 }

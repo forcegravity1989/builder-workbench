@@ -109,11 +109,15 @@ export function registerTeamCollaborationHandlers(): void {
     }
   )
 
-  ipcMain.handle('teamCollaboration:writeDirectory', async (_event, directory: TeamDirectory) => {
-    const safeDirectory = requireDirectory(directory)
-    return writeTeamDirectory({
-      route: await resolveWelinkRoute(),
-      directory: safeDirectory
-    })
-  })
+  ipcMain.handle(
+    'teamCollaboration:writeDirectory',
+    async (_event, directory: TeamDirectory, baseFileId?: string | null) => {
+      const safeDirectory = requireDirectory(directory)
+      return writeTeamDirectory({
+        route: await resolveWelinkRoute(),
+        directory: safeDirectory,
+        ...(typeof baseFileId === 'string' || baseFileId === null ? { baseFileId } : {})
+      })
+    }
+  )
 }

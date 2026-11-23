@@ -17,7 +17,9 @@ export function TeamHostRefreshMenuItem(): React.JSX.Element | null {
           : '团队主机已是最新。'
       )
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : '刷新团队主机失败。')
+      // The IPC wrapper text ("Error invoking remote method") is internal; keep it out of the toast.
+      console.error('[team] refresh hosts failed', cause)
+      toast.error('刷新团队主机失败：请确认已登录 WeLink 且网络可用，然后重试。')
     }
   }
   return <DropdownMenuItem onSelect={() => void refresh()}>刷新团队主机</DropdownMenuItem>
