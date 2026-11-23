@@ -1,0 +1,22 @@
+src/main/ipc/w3-account-ipc.ts
+  s_c7277b997ba253::t_2072e0c31c60da 227-248,253-256,263-266
+  s_c7277b997ba253::t_c3c0e27a9e8a3c 12
+src/main/ipc/w3-account-ipc.test.ts
+  s_c7277b997ba253::t_5ee87291f24b7d 1-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "6cbbff8dfabe1edee7137406bb3752da0814f1a1",
+  "prompts": {},
+  "sessions": {
+    "s_c7277b997ba253": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "af69acd2-d360-4f0b-aaa5-8909ad4d0a8d",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
