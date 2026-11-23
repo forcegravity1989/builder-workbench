@@ -656,40 +656,7 @@
         "bw:plan:v1.1"
       ],
       "assignee": "forcegravity1989",
-      "readAt": "2026-11-20T09:20:48.348Z"
-    },
-    {
-      "kind": "ready",
-      "reference": {
-        "provider": "github",
-        "repository": "github.com/forcegravity1989/builder-workbench",
-        "number": 342,
-        "goalId": "G1"
-      },
-      "source": {
-        "kind": "task-source",
-        "provider": "github",
-        "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
-        "projectHostSetupId": "bda978d4-c896-46bf-bd58-bad3fa292538",
-        "repoId": "bda978d4-c896-46bf-bd58-bad3fa292538",
-        "providerIdentity": {
-          "provider": "github",
-          "owner": "forcegravity1989",
-          "repo": "builder-workbench"
-        },
-        "accountLabel": null
-      },
-      "iid": 342,
-      "title": "【v1.1|G1】【团队多人协作】定义团队成员、项目可见范围与共享主机授权",
-      "state": "open",
-      "url": "https://github.com/forcegravity1989/builder-workbench/issues/342",
-      "labels": [
-        "Feature",
-        "特性",
-        "bw:plan:v1.1"
-      ],
-      "readAt": "2026-11-20T09:20:48.325Z"
+      "readAt": "2026-11-23T01:29:02.738Z"
     },
     {
       "kind": "ready",
@@ -722,39 +689,7 @@
         "bw:category:prototype",
         "bw:plan:v1.1"
       ],
-      "readAt": "2026-11-20T09:20:48.360Z"
-    },
-    {
-      "kind": "ready",
-      "reference": {
-        "provider": "github",
-        "repository": "github.com/forcegravity1989/builder-workbench",
-        "number": 480,
-        "goalId": "G1"
-      },
-      "source": {
-        "kind": "task-source",
-        "provider": "github",
-        "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
-        "projectHostSetupId": "bda978d4-c896-46bf-bd58-bad3fa292538",
-        "repoId": "bda978d4-c896-46bf-bd58-bad3fa292538",
-        "providerIdentity": {
-          "provider": "github",
-          "owner": "forcegravity1989",
-          "repo": "builder-workbench"
-        },
-        "accountLabel": null
-      },
-      "iid": 480,
-      "title": "【v1.1|G1】【团队多人协作】【特性#342】PR 评审在「不完全共享主机」下也能收到评审通知",
-      "state": "closed",
-      "url": "https://github.com/forcegravity1989/builder-workbench/issues/480",
-      "labels": [
-        "enhancement",
-        "bw:plan:v1.1"
-      ],
-      "readAt": "2026-11-20T09:20:48.457Z"
+      "readAt": "2026-11-23T01:29:02.992Z"
     },
     {
       "kind": "ready",
@@ -787,7 +722,72 @@
         "bw:plan:v1.1"
       ],
       "assignee": "kanadead",
-      "readAt": "2026-11-20T09:20:49.499Z"
+      "readAt": "2026-11-23T01:29:04.977Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 342,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "bda978d4-c896-46bf-bd58-bad3fa292538",
+        "repoId": "bda978d4-c896-46bf-bd58-bad3fa292538",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 342,
+      "title": "【v1.1|G1】【团队多人协作】定义团队成员、项目可见范围与共享主机授权",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/342",
+      "labels": [
+        "Feature",
+        "特性",
+        "bw:plan:v1.1"
+      ],
+      "readAt": "2026-11-23T01:29:01.660Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 480,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "bda978d4-c896-46bf-bd58-bad3fa292538",
+        "repoId": "bda978d4-c896-46bf-bd58-bad3fa292538",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 480,
+      "title": "【v1.1|G1】【团队多人协作】【特性#342】PR 评审在「不完全共享主机」下也能收到评审通知",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/480",
+      "labels": [
+        "enhancement",
+        "bw:plan:v1.1"
+      ],
+      "readAt": "2026-11-23T01:29:04.667Z"
     },
     {
       "kind": "ready",
@@ -819,7 +819,7 @@
         "Feature",
         "bw:plan:v1.1"
       ],
-      "readAt": "2026-11-20T09:20:49.530Z"
+      "readAt": "2026-11-23T01:29:04.171Z"
     },
     {
       "kind": "ready",
@@ -850,7 +850,7 @@
       "labels": [
         "bw:plan:v1.1"
       ],
-      "readAt": "2026-11-20T09:20:50.648Z"
+      "readAt": "2026-11-23T01:29:06.825Z"
     },
     {
       "kind": "ready",
@@ -863,7 +863,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:568f5cc1-64f6-4ce5-9706-eaa9384227f8",
         "projectHostSetupId": "bda978d4-c896-46bf-bd58-bad3fa292538",
         "repoId": "bda978d4-c896-46bf-bd58-bad3fa292538",
         "providerIdentity": {
@@ -882,19 +882,41 @@
         "bw:plan:v1.1"
       ],
       "assignee": "forcegravity1989",
-      "readAt": "2026-11-20T09:20:51.804Z"
+      "readAt": "2026-11-23T01:39:33.097Z"
     }
   ],
   "results": [
     {
       "goalId": "G1",
       "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-11-23T01:34:19.056Z",
+        "materialRevision": "sha256:e7392c698cc0075441ed44bc8240f80698e13fb2feb5fae14227099bbaf47e41",
+        "reason": ""
+      },
       "note": "",
-      "nextStep": ""
+      "nextStep": "",
+      "issueNotes": {
+        "github:github.com/forcegravity1989/builder-workbench:342": "验证依赖内网，延迟一天到11月23号晚上发布。"
+      },
+      "issueMarks": {
+        "github:github.com/forcegravity1989/builder-workbench:342": {
+          "carry": true
+        }
+      }
     },
     {
       "goalId": "G2",
       "readings": [],
+      "decision": {
+        "outcome": "not-met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-11-23T01:29:23.635Z",
+        "materialRevision": "sha256:9a598db09d9c2ff8a1a4a400b3ad0bb7f94339a59c8e7c838887a3fcee2c4bac",
+        "reason": ""
+      },
       "note": "",
       "nextStep": ""
     },
@@ -915,20 +937,25 @@
   ],
   "minutes": {
     "consensus": [
-      "G3 · 目标达成"
+      "G3 · 目标达成",
+      "G1 · 内网验证充分后在11月23号跟随V1.1版本发布（延期一个工作日）"
     ],
     "followups": [
       {
         "id": "4c86dc22-ef9c-4979-b0a1-914f67076972",
-        "text": "G3 · 用issue#754跟踪issue#651发现的Unassigned legacy automations问题"
+        "text": "G3 · issue#651部分遗留"
       },
       {
         "id": "b5fe2cec-ae6c-4385-9ff7-b23139c7f069",
         "text": "G3 · 工件功能添加远程批注能力"
+      },
+      {
+        "id": "124c4a56-3ca2-4138-bb72-976d7fac3fc9",
+        "text": "G2 · 高保真评审未通过，遗留做能力最小集，确保会议功能便捷易用"
       }
     ],
     "confirmed": false,
-    "updatedAt": "2026-11-20T08:58:17.814Z"
+    "updatedAt": "2026-11-23T01:51:04.761Z"
   },
   "workflow": {
     "stage": "archive",
