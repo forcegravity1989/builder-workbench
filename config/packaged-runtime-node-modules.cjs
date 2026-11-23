@@ -21,6 +21,11 @@ const PACKAGED_RUNTIME_PACKAGE_ROOTS = [
   'electron-updater',
   'i18next',
   'jsonc-parser',
+  // Why: the tsc-compiled CLI renders Markdown to HTML for `orca artifacts share`;
+  // marked is dependency-free, so the single package copy is the whole runtime need.
+  // It is declared in dependencies, not devDependencies: the packaged CLI imports it at runtime,
+  // so a pruned or prod-only install must still carry it.
+  'marked',
   'node-pty',
   // Why: main-process CloudDragon session dynamically imports it at runtime
   // (channel:'chrome', no bundled browsers), so the packaged app needs the copy.

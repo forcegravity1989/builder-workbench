@@ -49,7 +49,8 @@ async function queryGroupMembers(route: WelinkRoute, groupId: string): Promise<T
     return [{
       member_id: memberId,
       name: typeof value.name === 'string' ? value.name : memberId,
-      avatar: typeof value.avatar === 'string' ? value.avatar : undefined,
+      ...(typeof value.avatar === 'string' ? { avatar: value.avatar } : {}),
+      ...(typeof memberType === 'string' ? { member_type: memberType } : {}),
       identity_source: 'welink-cli' as const
     }]
   })
@@ -139,6 +140,7 @@ function normalizeMembers(value: unknown): TeamDirectoryMember[] {
       member_id: member.member_id,
       ...(typeof member.name === 'string' ? { name: member.name } : {}),
       ...(typeof member.avatar === 'string' ? { avatar: member.avatar } : {}),
+      ...(typeof member.member_type === 'string' ? { member_type: member.member_type } : {}),
       ...(typeof member.host_id === 'string' ? { host_id: member.host_id } : {}),
       identity_source: 'welink-cli' as const,
       ...(typeof member.orca_endpoint === 'string' ? { orca_endpoint: member.orca_endpoint } : {})
@@ -155,15 +157,13 @@ function normalizeProjects(value: unknown): TeamDirectory['projects'] {
       return []
     }
     const project = candidate as Record<string, unknown>
-    if (typeof project.repo_id !== 'string' || !Array.isArray(project.sources)) {
+    if (typeof project.repo_id !== 'string') {
       return []
     }
-    const sources = project.sources.filter((source): source is string => typeof source === 'string')
     return [{
       repo_id: project.repo_id,
       ...(typeof project.name === 'string' ? { name: project.name } : {}),
-      ...(typeof project.repository === 'string' ? { repository: project.repository } : {}),
-      sources
+      ...(typeof project.repository === 'string' ? { repository: project.repository } : {})
     }]
   })
 }
