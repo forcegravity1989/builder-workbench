@@ -39,7 +39,7 @@
       .icon-button[data-permission-hint]:hover, .icon-button[data-permission-hint]:focus-visible { opacity: 1; }
       .icon-button:focus-visible, .pcard-host:focus-visible, .pcard-name:focus-visible, .notice-item:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
       .proposed { color: var(--foreground); }
-      .rail { width: 64px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; border-right: 1px solid var(--worktree-sidebar-border); background: var(--worktree-sidebar); padding: 10px 0; }
+      .rail { position: relative; width: 64px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; border-right: 1px solid var(--worktree-sidebar-border); background: var(--worktree-sidebar); padding: 10px 0; }
       .rail .icon-button { width: 40px; height: 40px; border-radius: 9px; }
       .rail .icon-button svg { width: 18px; height: 18px; }
       .rail > .icon-button:first-child { width: 36px; height: 36px; background: var(--foreground); color: var(--background); }
@@ -47,6 +47,15 @@
       .rail-group, .rail-bottom { display: grid; justify-items: center; gap: 4px; width: 100%; }
       .rail-group { border-top: 1px solid var(--worktree-sidebar-border); padding-top: 6px; }
       .rail-bottom { margin-top: auto; gap: 0; }
+      .remote-host-popover { position: absolute; left: calc(100% + 8px); bottom: 10px; z-index: 6; width: min(300px, calc(100vw - 86px)); padding: 10px; color: var(--foreground); background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-dialog); }
+      .remote-host-popover header { padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+      .remote-host-popover footer { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--border); }
+      .remote-host-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 2px; }
+      .remote-host-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+      .remote-host-main span:last-child { display: grid; gap: 2px; min-width: 0; }
+      .remote-host-main strong, .remote-host-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .remote-host-dot { width: 7px; height: 7px; flex: none; border: 1px solid var(--muted-foreground); border-radius: 50%; }
+      .remote-host-dot.is-connected { border-color: var(--status-success); background: var(--status-success); }
       .wall-layout { display: flex; min-height: 548px; }
       .wall { min-width: 0; flex: 1; padding: 24px; }
       .wall-heading { gap: 10px; flex-wrap: wrap; }
@@ -144,6 +153,15 @@
       .settings-main h1 { margin-bottom: 12px; }
       .server-workflows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 11px; }
       .server-workflows button { min-width: 0; white-space: normal; border: 1px solid var(--border); }
+      .share-intent { margin: 0 0 12px; padding: 0; border: 0; }
+      .share-intent legend { margin-bottom: 7px; font-size: 13px; font-weight: 600; }
+      .share-intent .server-workflows { margin-bottom: 0; }
+      .share-intent .server-workflows label { display: grid; grid-template-columns: auto 1fr; gap: 3px 7px; min-width: 0; padding: 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; }
+      .share-intent .server-workflows label:has(input:checked) { border-color: var(--ring); box-shadow: 0 0 0 1px var(--ring); }
+      .share-intent .server-workflows small { grid-column: 2; }
+      .share-address-row { align-items: flex-end; }
+      .share-address-row .field { flex: 1; margin: 0; }
+      .share-address-row > .icon-button { margin-bottom: 2px; }
       .permission-hint { width: 100%; padding: 7px; }
       .permission-hint svg { flex: none; }
       .demo-link { margin-top: 8px; }
@@ -171,12 +189,15 @@
         .server-workflows { grid-template-columns: 1fr; }
         .task-layout { grid-template-columns: 1fr; }
       }
-      .team-directory { width: min(760px, 100%); display: flex; flex-direction: column; overflow: hidden; }
+      .team-directory { width: min(920px, 100%); display: flex; flex-direction: column; overflow: hidden; }
+      .team-bind-dialog { width: min(520px, 100%); }
       .team-directory > header, .directory-footer { flex: none; }
       .directory-scroll { min-height: 0; max-height: 58vh; overflow: auto; padding: 0 3px; }
       .directory-footer { padding-top: 8px; border-top: 1px solid var(--border); }
       @media (min-width: 761px) { .window[data-screen="wall"]:has(.team-directory) .desktop { min-height: 548px; } }
-      .team-directory .members-table { min-width: 460px; }
+      .team-directory .members-table { min-width: 760px; table-layout: fixed; }
+      .team-directory .members-table th:nth-child(1) { width: 190px; }
+      .team-directory .members-table th:nth-child(2) { width: auto; }
       .directory-links { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
       .directory-links > div:first-child { display: grid; gap: 2px; }
       .directory-links strong, .directory-links small { display: block; }
@@ -185,7 +206,10 @@
       .directory-id-field { display: grid; min-width: 0; gap: 4px; flex: 1; }
       .directory-id-field small { color: var(--muted-foreground); }
       .directory-tip { color: var(--muted-foreground); }
-      .team-avatar { width: 26px; height: 26px; background: var(--muted); color: var(--foreground); font-size: 12px; }
+      .team-avatar { width: 32px; height: 32px; object-fit: cover; border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--border); }
+      .member-person { gap: 10px; }
+      .member-person strong { display: block; font-size: 13px; }
+      .member-role { display: block; margin-top: 2px; }
       .member-number { display: block; overflow-wrap: anywhere; }
       .host-cell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
       .host-cell small { width: 100%; }
@@ -209,7 +233,7 @@
   <body>
     <main class="review-frame">
       <header class="review-header">
-        <div><h1>团队多人协作</h1><p><em>原型注释：</em>屏内是目标界面。未绑定的桌面看不到神盾局；群号 <code>938583054774198541</code>。绑定时通过 welink-cli 用当前 WeLink 身份匹配主机和群成员。项目墙沿用当前 BW 墙卡。绑定群组只建立成员、主机和群空间关系，项目登记后才按 repoId 合并成员来源。主机地址登记后会自动出现在成员的连接目标里，连接保持断开。</p></div>
+        <div><h1>团队多人协作</h1><p><em>原型注释：</em>屏内是目标界面。未绑定的桌面看不到神盾局；群号 <code>938583054774198541</code>。绑定时通过 welink-cli 用当前 WeLink 身份匹配成员、头像和主机。项目墙沿用当前 BW 墙卡；登记项目只决定它是否是团队项目，成员项目墙上的实际来源仍由各主机提供。主机地址登记后会自动出现在成员的连接目标里，连接保持断开。</p></div>
         <div class="row wrap">
           <label for="actor">模拟桌面</label>
           <select id="actor" class="input">
@@ -226,9 +250,9 @@
       <details class="walkthrough">
         <summary>原型注释：操作路线</summary>
         <ol>
-          <li>「从头开始」。韩岚首次绑定时同时输入群 ID 和群空间 ID；本机记住这组绑定后，重新打开 BW 可直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
+          <li>「从头开始」。韩岚首次先输入群 ID；如果没有已登记的群空间目录，再在弹窗中补填群空间 ID。绑定后本机记住这组绑定，重新打开 BW 可直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
           <li>林安绑定同一群号。项目墙保留当前 BW 的「添加项目」入口，团队设置也提供「登记项目」。登记星图服务后，项目身份写入群空间。</li>
-          <li>陈远绑定该群后，BW 根据同一个 repoId 把成员项目墙上的「星图服务」来源合并成一张现有样式的项目卡。他不需要重复添加星图服务，「交付看板」仍是他的个人项目。</li>
+          <li>陈远绑定该群后，BW 根据已登记的 repoId 和各主机项目墙上的实际来源合并成一张现有样式的项目卡。他不需要重复登记星图服务，「交付看板」仍是他的个人项目。</li>
           <li>在团队设置的本机地址栏点击「一键生成并填入」；已有 Orca 配置时按钮变为「一键填入」。群成员随后自动看到地址和连接目标，连接默认保持断开，建立连接后默认只读。</li>
           <li>项目卡保留现有 BW 的主机状态；未连接来源只显示离线状态。需要连接时，从左下角「管理远程主机」进入 Orca 远程服务器设置，建立连接后再回到项目卡查看。</li>
           <li>陈远在自己的 Orca 共享访问列表中勾选林安等已连接设备，一次授予完全访问。未选设备仍只读；完全访问后可在该项目下新建会话或新建工作树。访问日志只由被访问主机持有人筛选查看，超过 14 天自动清理。</li>

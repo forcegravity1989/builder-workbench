@@ -26,7 +26,10 @@ export function RemoteBrowserPageToolbar({
   isActive,
   onBack,
   onForward,
-  onReload
+  onReload,
+  annotationMode,
+  annotationAvailable,
+  onToggleAnnotation
 }: {
   runtimeEnvironmentId: string
   addressBarValue: string
@@ -45,6 +48,9 @@ export function RemoteBrowserPageToolbar({
   onBack: () => void
   onForward: () => void
   onReload: () => void
+  annotationMode: boolean
+  annotationAvailable: boolean
+  onToggleAnnotation: () => void
 }): React.JSX.Element {
   return (
     <BrowserNavigationControlRow
@@ -109,24 +115,36 @@ export function RemoteBrowserPageToolbar({
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7 opacity-50"
-            aria-disabled="true"
+            className={`h-7 w-7 ${annotationMode ? 'bg-accent text-foreground' : ''}`}
+            aria-pressed={annotationMode}
             aria-label={translate(
-              'auto.components.browser.pane.BrowserPane.deb5293610',
-              'Browser annotations unavailable in remote runtime'
+              'auto.components.browser.pane.BrowserPane.prototypeReview.annotateElements',
+              'Annotate page elements'
             )}
-            onClick={(event) => {
-              event.preventDefault()
-            }}
+            disabled={!annotationAvailable}
+            title={
+              annotationAvailable
+                ? undefined
+                : translate(
+                    'auto.components.browser.pane.BrowserPane.prototypeReview.onlyReviewPages',
+                    'Only prototype review pages support annotations'
+                  )
+            }
+            onClick={onToggleAnnotation}
           >
             <MessageSquarePlus className="size-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom" sideOffset={4}>
-          {translate(
-            'auto.components.browser.pane.BrowserPane.8b7e6d1f5a',
-            'Browser annotations are only available in local browser tabs.'
-          )}
+          {annotationMode
+            ? translate(
+                'auto.components.browser.pane.BrowserPane.prototypeReview.exitAnnotationMode',
+                'Exit annotation mode'
+              )
+            : translate(
+                'auto.components.browser.pane.BrowserPane.prototypeReview.annotateElements',
+                'Annotate page elements'
+              )}
         </TooltipContent>
       </Tooltip>
       <MarkupDrawButton

@@ -25,6 +25,7 @@ export type { DeviceScope }
 export type DeviceEntry = {
   deviceId: string
   name: string
+  avatar?: string
   token: string
   scope: DeviceScope
   pairedAt: number
@@ -89,7 +90,8 @@ export class DeviceRegistry {
     scope: DeviceScope = 'mobile',
     pairingReach: RuntimePairingReach = 'network',
     accessMode: RuntimeAccessMode = 'full',
-    teamBinding?: RuntimeTeamBinding
+    teamBinding?: RuntimeTeamBinding,
+    avatar?: string
   ): DeviceEntry {
     return this.createAndPersistDevice(
       this.devices,
@@ -97,7 +99,8 @@ export class DeviceRegistry {
       scope,
       pairingReach,
       accessMode,
-      teamBinding
+      teamBinding,
+      avatar
     )
   }
 
@@ -107,11 +110,13 @@ export class DeviceRegistry {
     scope: DeviceScope,
     pairingReach: RuntimePairingReach,
     accessMode: RuntimeAccessMode,
-    teamBinding?: RuntimeTeamBinding
+    teamBinding?: RuntimeTeamBinding,
+    avatar?: string
   ): DeviceEntry {
     const entry: DeviceEntry = {
       deviceId: randomUUID(),
       name,
+      ...(avatar ? { avatar } : {}),
       token: randomBytes(24).toString('hex'),
       scope,
       pairedAt: Date.now(),
@@ -141,7 +146,8 @@ export class DeviceRegistry {
     scope: DeviceScope = 'mobile',
     pairingReach: RuntimePairingReach = 'network',
     accessMode?: RuntimeAccessMode,
-    teamBinding?: RuntimeTeamBinding
+    teamBinding?: RuntimeTeamBinding,
+    avatar?: string
   ): DeviceEntry {
     const existing = this.devices.find(
       (d) =>
@@ -153,18 +159,36 @@ export class DeviceRegistry {
             d.teamBinding?.memberId === teamBinding?.memberId))
     )
     if (existing) {
+      const hasMetadataChange =
+        existing.name !== name || (avatar !== undefined && existing.avatar !== avatar)
+      const refreshed = hasMetadataChange
+        ? (() => {
+            const updated: DeviceEntry = {
+              ...existing,
+              name,
+              ...(avatar !== undefined ? { avatar } : {})
+            }
+            const nextDevices = this.devices.map((device) =>
+              device.deviceId === existing.deviceId ? updated : device
+            )
+            this.save(nextDevices)
+            this.devices = nextDevices
+            return updated
+          })()
+        : existing
       // Why: the same pending token can be re-advertised at a broader reach; widen it but never narrow it,
       // or a link already handed out for off-host use would stop being served after the next launch.
-      return pairingReach === 'network' && existing.pairingReach === 'this-computer'
-        ? this.setPairingReach(existing, 'network')
-        : existing
+      return pairingReach === 'network' && refreshed.pairingReach === 'this-computer'
+        ? this.setPairingReach(refreshed, 'network')
+        : refreshed
     }
     return this.addDevice(
       name,
       scope,
       pairingReach,
       accessMode ?? (scope === 'runtime' ? 'team-read' : 'full'),
-      teamBinding
+      teamBinding,
+      avatar
     )
   }
 
@@ -191,7 +215,8 @@ export class DeviceRegistry {
     scope: DeviceScope = 'mobile',
     pairingReach: RuntimePairingReach = 'network',
     accessMode?: RuntimeAccessMode,
-    teamBinding?: RuntimeTeamBinding
+    teamBinding?: RuntimeTeamBinding,
+    avatar?: string
   ): DeviceEntry {
     const retainedDevices = this.devices.filter(
       (d) =>
@@ -208,7 +233,8 @@ export class DeviceRegistry {
       scope,
       pairingReach,
       accessMode ?? (scope === 'runtime' ? 'team-read' : 'full'),
-      teamBinding
+      teamBinding,
+      avatar
     )
   }
 
@@ -247,8 +273,7 @@ export class DeviceRegistry {
         return device
       }
       if (accessMode === 'full') {
-        const { accessMode: _accessMode, teamBinding: _teamBinding, ...rest } = device
-        return device.scope === 'runtime' ? { ...rest, accessMode: 'full' as const } : rest
+        return device.scope === 'runtime' ? { ...device, accessMode: 'full' as const } : device
       }
       return { ...device, accessMode, teamBinding }
     })
@@ -413,8 +438,11 @@ export class DeviceRegistry {
         // Why: registries written before this field existed only ever held network-reach grants (phones and
         // LAN links), so a missing value must keep binding every interface on reconnect.
         pairingReach: device.pairingReach === 'this-computer' ? 'this-computer' : 'network',
-        ...(device.accessMode === 'team-read'
-          ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
+        ...(device.accessMode === 'team-read' || device.accessMode === 'full'
+          ? {
+              accessMode: device.accessMode,
+              ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+            }
           : {}),
         // Why: a malformed row must degrade to "no background push", never fail the load
         // and strand every paired device.

@@ -57,6 +57,8 @@ export const mobileApi = {
     reach?: RuntimePairingReach
     accessMode?: RuntimeAccessMode
     teamBinding?: RuntimeTeamBinding
+    name?: string
+    avatar?: string
   }): Promise<
     | {
         available: false
@@ -96,6 +98,8 @@ export const mobileApi = {
     search?: string
   }): Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }> =>
     ipcRenderer.invoke('mobile:listRuntimeAccessAudit', args),
+  clearRuntimeAccessAudit: (): Promise<{ cleared: boolean }> =>
+    ipcRenderer.invoke('mobile:clearRuntimeAccessAudit'),
 
   revokeRuntimeAccess: (args: { deviceId: string }): Promise<{ revoked: boolean }> =>
     ipcRenderer.invoke('mobile:revokeRuntimeAccess', args),

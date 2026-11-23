@@ -154,6 +154,37 @@ export function RuntimePairingUrlGenerator({
     }
   }, [auditAction, auditResult, auditSearch, auditSinceDays, mountedRef])
 
+  const clearRuntimeAccessAudit = useCallback(async (): Promise<void> => {
+    if (
+      runtimeAccessAudit.length === 0 ||
+      !window.confirm(
+        translate(
+          'auto.components.settings.RuntimePairingUrlGenerator.clearConfirm',
+          'Clear this host\'s shared access log?'
+        )
+      )
+    ) {
+      return
+    }
+    try {
+      const result = await window.api.mobile.clearRuntimeAccessAudit()
+      if (result.cleared && mountedRef.current) {
+        setRuntimeAccessAudit([])
+      }
+    } catch (error) {
+      if (mountedRef.current) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : translate(
+                'auto.components.settings.RuntimePairingUrlGenerator.clearFailed',
+                'Failed to clear shared access log.'
+              )
+        )
+      }
+    }
+  }, [mountedRef, runtimeAccessAudit.length])
+
   const loadNetworkInterfaces = useCallback(
     async (options: { showToastOnError?: boolean } = {}): Promise<void> => {
       const loadId = networkInterfaceLoadIdRef.current + 1
@@ -522,6 +553,7 @@ export function RuntimePairingUrlGenerator({
         onSinceDaysChange={setAuditSinceDays}
         onSearchChange={setAuditSearch}
         onRefresh={() => void loadRuntimeAccessAudit()}
+        onClear={() => void clearRuntimeAccessAudit()}
       />
     </div>
   )
