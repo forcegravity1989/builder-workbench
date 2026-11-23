@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Builder Workbench · W3 Account 账户页原型</title>
+  <link rel="stylesheet" href="../../04-design-system/styles.css">
+  <style>
+    body { max-width: 1040px; margin: 0 auto; padding: 0 20px 56px; }
+    [hidden] { display: none !important; }
+
+    /* 评审演示控件（非产品设置） */
+    .demo { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 14px; margin: 0 -20px 14px; border-bottom: 1px solid var(--color-divider); background: var(--color-card); font-size: 12px; }
+    .demo strong { font-weight: 600; }
+    .demo-note { margin-left: auto; color: var(--muted-foreground); font-size: 11px; }
+    .industry { margin: 0 0 14px; padding: 8px 12px; border: 1px dashed var(--color-divider); border-radius: var(--radius-sm); color: var(--muted-foreground); font-size: 11px; }
+    .industry b { color: var(--color-text); }
+
+    /* 设置壳：左导航 + 内容 */
+    .shell { display: grid; grid-template-columns: 208px 1fr; gap: 0; border: 1px solid var(--color-divider); border-radius: 12px; overflow: hidden; background: var(--color-card); min-height: 460px; }
+    .shell .sidebar { border-right: 1px solid var(--color-divider); padding: 14px 10px; background: color-mix(in srgb, var(--color-card) 92%, var(--color-neutral-100)); }
+    .sidebar-section { padding: 4px 8px; color: var(--muted-foreground); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+    .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 7px; font-size: 12px; color: var(--color-text); cursor: default; }
+    .sidebar-item:hover { background: var(--color-neutral-100); }
+    .sidebar-item[aria-current='page'] { background: var(--color-neutral-100); font-weight: 600; }
+    .pane { padding: 0; }
+    .pane-head { padding: 16px 22px; border-bottom: 1px solid var(--color-divider); }
+    .pane-head h2 { margin: 0; font-size: 15px; }
+    .pane-head p { margin: 3px 0 0; color: var(--muted-foreground); font-size: 12px; }
+    .pane-body { display: grid; place-items: center; padding: 48px 24px; min-height: 380px; }
+
+    /* 欢迎卡片 */
+    .welcome { width: 100%; max-width: 420px; text-align: center; }
+    .welcome .emoji { font-size: 26px; }
+    .welcome h3 { margin: 8px 0 6px; font-size: 20px; font-weight: 650; }
+    .welcome p { margin: 0 0 22px; color: var(--muted-foreground); font-size: 13px; line-height: 1.6; }
+    .w3-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; height: 40px; padding: 0 20px; border: 1px solid var(--color-divider); border-radius: 999px; background: var(--color-card); color: var(--color-text); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .w3-btn:hover { background: var(--color-neutral-100); }
+    .w3-btn:disabled { opacity: .7; cursor: default; }
+    .w3-btn .spin { width: 14px; height: 14px; border: 2px solid var(--color-divider); border-top-color: var(--color-text); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fineprint { margin-top: 20px; color: var(--muted-foreground); font-size: 11px; }
+
+    /* 登录完成态 */
+    .account { width: 100%; max-width: 440px; }
+    .acct-top { display: flex; align-items: center; gap: 14px; }
+    .acct-avatar { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--color-neutral-100); color: var(--color-text); font-size: 16px; font-weight: 600; }
+    .acct-name { font-size: 15px; font-weight: 600; }
+    .acct-sub { color: var(--muted-foreground); font-size: 12px; margin-top: 2px; }
+    .acct-top .spacer { flex: 1; }
+    .linkbtn { border: none; background: none; color: var(--muted-foreground); font-size: 12px; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+    .linkbtn:hover { color: var(--color-text); background: var(--color-neutral-100); }
+
+    /* 失败态 */
+    .fail { width: 100%; max-width: 420px; text-align: center; }
+    .fail h3 { margin: 0 0 6px; font-size: 17px; }
+    .fail p { margin: 0 0 18px; color: var(--muted-foreground); font-size: 12px; }
+    .errbox { margin: 0 0 18px; padding: 10px 12px; border: 1px solid var(--color-divider); border-radius: 8px; background: color-mix(in srgb, var(--color-card) 90%, var(--color-neutral-100)); text-align: left; font-size: 12px; color: var(--muted-foreground); }
+
+    /* 退出确认弹窗 */
+    .backdrop { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(0,0,0,.42); }
+    .confirm { width: min(400px, calc(100vw - 40px)); padding: 20px; border-radius: 12px; background: var(--color-card); box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    .confirm h4 { margin: 0 0 8px; font-size: 14px; }
+    .confirm p { margin: 0 0 6px; font-size: 12px; color: var(--muted-foreground); }
+    .confirm .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+    .note { margin: 16px 0 0; padding: 8px 10px; border-left: 2px solid var(--color-divider); color: var(--muted-foreground); font-size: 11px; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<div class="demo">
+  <strong>原型 · W3 Account</strong>
+  <span class="seg" id="phases">
+    <label class="seg-opt"><input type="radio" name="phase" value="signed-out" checked><span>未登录</span></label>
+    <label class="seg-opt"><input type="radio" name="phase" value="login-opened"><span>登录页已打开</span></label>
+    <label class="seg-opt"><input type="radio" name="phase" value="trusted"><span>登录完成(可信身份)</span></label>
+    <label class="seg-opt"><input type="radio" name="phase" value="no-profile"><span>登录完成(未获取资料)</span></label>
+    <label class="seg-opt"><input type="radio" name="phase" value="failed"><span>失败</span></label>
+    <label class="seg-opt"><input type="radio" name="phase" value="logout"><span>退出确认</span></label>
+  </span>
+  <span class="demo-note">演示控件，非产品设置 · 不联网</span>
+</div>
+
+<div class="industry">
+  <b>业界参考：</b>常见企业应用/浏览器的「账户页」单按钮 SSO 登录与「欢迎回来」欢迎卡（如 Google、Microsoft 账户登录页的单主按钮布局）。本原型只表达目标交互，颜色与组件来自 BW 设计系统；不使用任何厂商商标或外链图像。
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-section">设置</div>
+    <div class="sidebar-item">通用</div>
+    <div class="sidebar-section" style="margin-top:8px">账户与连接</div>
+    <div class="sidebar-item" aria-current="page">👤 W3 Account</div>
+    <div class="sidebar-item">浏览器</div>
+    <div class="sidebar-item">集成</div>
+  </nav>
+
+  <div class="pane">
+    <div class="pane-head">
+      <h2>W3 Account</h2>
+      <p>使用企业 W3 账户登录（内置会话网页登录 + W3 账号接口取身份）。</p>
+    </div>
+    <div class="pane-body">
+
+      <!-- 未登录 -->
+      <div class="welcome" data-phase="signed-out">
+        <div class="emoji">👋</div>
+        <h3>欢迎回来</h3>
+        <p>使用你的 W3 账户登录。</p>
+        <button class="w3-btn" onclick="setPhase('login-opened')">使用华为 W3 登录</button>
+        <p class="fineprint">无需输入账号密码 · 是否免密取决于 W3 会话与企业策略</p>
+      </div>
+
+      <!-- 登录页已打开（未登录完成） -->
+      <div class="welcome" data-phase="login-opened" hidden>
+        <div class="emoji">🌐</div>
+        <h3>W3 登录窗口已打开</h3>
+        <p>已在 Orca 登录窗口打开 W3 门户（专用会话分区）。<br><strong>本页只表示登录窗口已打开，不代表已登录完成。</strong></p>
+        <button class="w3-btn" disabled><span class="spin"></span>等待在 W3 页面完成登录…</button>
+        <p class="fineprint">只有 W3 账号接口返回 200 且能解析出工号/账号才算登录完成（未登录返回 421，继续等待）；打开窗口 / 加载成功 / Cookie 存在 都不算。</p>
+      </div>
+
+      <!-- 登录完成（可信身份） -->
+      <div class="account" data-phase="trusted" hidden>
+        <div class="acct-top">
+          <div class="acct-avatar">占</div>
+          <div>
+            <div class="acct-name">示例用户（占位）</div>
+            <div class="acct-sub">工号：000000（占位）</div>
+          </div>
+          <span class="spacer"></span>
+          <button class="linkbtn" onclick="setPhase('logout')">退出登录</button>
+        </div>
+        <p class="note">原型注释：姓名 / 工号仅为占位，只有 W3 账号接口返回可解析身份后才展示（`displayName` 优先取 `cn=` 中文名）；主进程只取 `display_name`/`employee_no` 两项，其余字段不回传界面。</p>
+      </div>
+
+      <!-- 登录完成（官方成功但未获取用户资料） -->
+      <div class="account" data-phase="no-profile" hidden>
+        <div class="acct-top">
+          <div class="acct-avatar">✓</div>
+          <div>
+            <div class="acct-name">登录完成（未获取用户资料）</div>
+            <div class="acct-sub">W3 账号接口 200 · 未返回用户资料</div>
+          </div>
+          <span class="spacer"></span>
+          <button class="linkbtn" onclick="setPhase('logout')">退出登录</button>
+        </div>
+        <p class="note">原型注释：官方成功但缺用户资料时，只显示「登录完成（未获取用户资料）」，不显示、不猜测姓名或工号。</p>
+      </div>
+
+      <!-- 失败 -->
+      <div class="fail" data-phase="failed" hidden>
+        <h3>登录未完成</h3>
+        <div class="errbox">未能完成 W3 登录：未配置（URL 非法，请联系管理员）、打开失败 / 超时 / 取消、W3 会话未完成登录（接口 4xx/5xx）或已登录但未读取到有效资料（200 解析失败）。</div>
+        <button class="w3-btn" onclick="setPhase('login-opened')">重试</button>
+        <p class="note" style="text-align:left">原型注释：登录页/账号接口地址与超时均由 env 配置（`ORCA_W3_LOGIN_URL` / `ORCA_W3_ACCOUNT_API_URL` / `ORCA_W3_LOGIN_TIMEOUT_MS`，默认 w3.huawei.com）；URL 非法时不打开空白外网、不猜地址；不需要 OAuth client_id/PKCE。</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 退出确认 -->
+<div class="backdrop" data-phase="logout" hidden>
+  <div class="confirm">
+    <h4>退出 W3 Account？</h4>
+    <p>关闭登录窗口（若在）、清除 W3 专用会话（partition）全部存储与本地身份；内网站点可能需要重新登录。</p>
+    <p>仅本机生效，不承诺全局 W3 退出，不影响其它会话。</p>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="setPhase('trusted')">取消</button>
+      <button class="btn btn-danger" onclick="setPhase('signed-out')">退出登录</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setPhase(name) {
+    document.querySelectorAll('[data-phase]').forEach(function (el) {
+      el.hidden = el.getAttribute('data-phase') !== name;
+    });
+    document.querySelectorAll('#phases input[name="phase"]').forEach(function (r) {
+      r.checked = r.value === name;
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  document.querySelectorAll('#phases input[name="phase"]').forEach(function (r) {
+    r.addEventListener('change', function () { if (r.checked) setPhase(r.value); });
+  });
+</script>
+
+</body>
+</html>

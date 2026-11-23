@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orca W3 Account 图文验收报告</title>
+<style>
+  :root{
+    --bg:#f5f8fc; --card:#ffffff; --text:#1b2430; --muted:#5b6b7c;
+    --border:#e3e9f1; --border-strong:#cfd8e3;
+    --blue:#2563eb; --blue-soft:#eaf1ff;
+    --green:#0f9d6b; --green-soft:#e7f7f0;
+    --orange:#d97706; --orange-soft:#fff3e0;
+    --red:#dc2626; --red-soft:#fdecec;
+    --gray-soft:#eef2f7;
+    --radius:14px; --radius-sm:9px;
+    --shadow:0 1px 2px rgba(16,35,60,.05),0 6px 20px rgba(16,35,60,.06);
+    --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC","Segoe UI",Roboto,sans-serif;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono","Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--text);font-family:var(--font);
+    font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px 90px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.86em;background:var(--gray-soft);
+    border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:#33445a;word-break:break-word}
+  h1,h2,h3,h4{line-height:1.3;color:var(--text)}
+
+  /* top nav */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);
+    backdrop-filter:saturate(160%) blur(8px);border-bottom:1px solid var(--border)}
+  .nav-inner{max-width:1120px;margin:0 auto;padding:9px 22px;display:flex;
+    flex-wrap:wrap;align-items:center;gap:8px 14px}
+  .nav-title{font-weight:700;font-size:13px;letter-spacing:.02em;color:var(--text);margin-right:6px}
+  .nav a{font-size:12.5px;color:var(--muted);padding:3px 7px;border-radius:6px;white-space:nowrap}
+  .nav a:hover{background:var(--blue-soft);color:var(--blue);text-decoration:none}
+  .nav .print-btn{margin-left:auto;font:inherit;font-size:12.5px;font-weight:600;
+    color:#fff;background:var(--blue);border:none;border-radius:8px;padding:6px 14px;cursor:pointer}
+  .nav .print-btn:hover{background:#1d4fd8}
+
+  /* header */
+  header.hero{padding:40px 0 10px}
+  .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+    color:var(--blue);background:var(--blue-soft);border:1px solid #d6e2ff;border-radius:999px;
+    padding:4px 12px;margin-bottom:14px}
+  h1{font-size:30px;margin:0 0 10px;letter-spacing:-.01em}
+  .subtitle{color:var(--muted);font-size:14px;margin:0 0 20px;max-width:820px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 10px;margin-bottom:6px}
+  .meta .chip{font-size:12px;color:var(--muted);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:5px 10px}
+  .meta .chip b{color:var(--text);font-weight:600}
+
+  /* conclusion banner */
+  .conclusion{display:flex;gap:16px;align-items:flex-start;margin:22px 0 8px;
+    background:linear-gradient(180deg,#fffdf7,#fff9ed);border:1px solid #f4d9a6;
+    border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+  .conclusion .ic{flex:none;width:40px;height:40px;border-radius:10px;background:var(--orange-soft);
+    display:grid;place-items:center;color:var(--orange);font-size:20px}
+  .conclusion h3{margin:0 0 4px;font-size:16px;color:#8a5a08}
+  .conclusion p{margin:0;font-size:13.5px;color:#6b5220;line-height:1.65}
+  .conclusion b{color:#7a4c02}
+
+  /* section */
+  section{margin-top:34px;scroll-margin-top:64px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+  .sec-num{flex:none;width:28px;height:28px;border-radius:8px;background:var(--blue);
+    color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center}
+  .sec-head h2{margin:0;font-size:21px}
+  .sec-head .sec-desc{color:var(--muted);font-size:13px;margin-left:auto}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px 22px}
+  .card + .card{margin-top:16px}
+  p.lead{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+
+  /* status cards */
+  .status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:6px}
+  .status-card{border-radius:var(--radius);padding:16px 18px;border:1px solid var(--border);
+    background:var(--card);box-shadow:var(--shadow);border-top-width:4px}
+  .status-card.passed{border-top-color:var(--green)}
+  .status-card.blocked{border-top-color:var(--orange)}
+  .status-card.nottested{border-top-color:var(--blue)}
+  .status-card .st-label{display:inline-flex;align-items:center;gap:7px;font-size:12px;
+    font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+  .status-card.passed .st-label{color:var(--green)}
+  .status-card.blocked .st-label{color:var(--orange)}
+  .status-card.nottested .st-label{color:var(--blue)}
+  .status-card .dot{width:9px;height:9px;border-radius:50%}
+  .status-card.passed .dot{background:var(--green)}
+  .status-card.blocked .dot{background:var(--orange)}
+  .status-card.nottested .dot{background:var(--blue)}
+  .status-card .st-num{font-size:26px;font-weight:750;margin:8px 0 2px}
+  .status-card .st-desc{font-size:12.5px;color:var(--muted);line-height:1.55}
+
+  /* badges */
+  .badge{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;
+    padding:2px 9px;border:1px solid transparent;white-space:nowrap}
+  .b-pass{background:var(--green-soft);color:#0a7a52;border-color:#c5ecdb}
+  .b-block{background:var(--orange-soft);color:#9a5a06;border-color:#f4dcae}
+  .b-not{background:var(--blue-soft);color:#1f4fd0;border-color:#d3e0ff}
+  .b-warn{background:var(--red-soft);color:#b32020;border-color:#f7caca}
+
+  /* tables */
+  .table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);
+    background:var(--card);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;min-width:720px;font-size:13px}
+  thead th{background:var(--gray-soft);color:#33445a;text-align:left;font-weight:700;
+    font-size:12px;letter-spacing:.02em;padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top;color:#2a3648}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafcff}
+  td .path{font-family:var(--mono);font-size:11.5px;color:var(--muted);word-break:break-all}
+
+  /* figures */
+  figure{margin:0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden}
+  .fig-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:13px 18px;
+    border-bottom:1px solid var(--border);background:#fbfcfe}
+  .fig-top .fig-title{font-weight:700;font-size:14px}
+  .disclaimer{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
+    color:#9a5a06;background:var(--orange-soft);border:1px solid #f4dcae;border-radius:999px;padding:3px 10px}
+  .disclaimer.demo{color:#1f4fd0;background:var(--blue-soft);border-color:#d3e0ff}
+  .fig-body{padding:14px 16px}
+  .fig-body svg{display:block;width:100%;height:auto}
+  figcaption{padding:10px 18px 14px;font-size:12.5px;color:var(--muted);line-height:1.6}
+  figcaption b{color:var(--text)}
+
+  /* small state chips */
+  .mini-states{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:2px 0}
+  .mini{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#fbfcfe}
+  .mini .mh{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .mini .mb{font-size:11.5px;color:var(--muted)}
+  .mini .spin{width:12px;height:12px;border:2px solid var(--border-strong);border-top-color:var(--blue);
+    border-radius:50%;display:inline-block;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .mini.warn{border-left:3px solid var(--red)}
+  .mini.neutral{border-left:3px solid var(--muted)}
+
+  /* fixed issues list */
+  .fix-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .fix{display:flex;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:10px;background:var(--card)}
+  .fix .fix-ic{flex:none;width:24px;height:24px;border-radius:7px;background:var(--green-soft);
+    color:var(--green);display:grid;place-items:center;font-weight:700;font-size:13px;margin-top:1px}
+  .fix h4{margin:0 0 3px;font-size:13.5px}
+  .fix p{margin:0;font-size:12px;color:var(--muted);line-height:1.55}
+
+  /* checklist */
+  .checklist{display:flex;flex-direction:column;gap:2px}
+  .check-row{display:grid;grid-template-columns:26px 1.4fr 1fr 0.8fr;gap:10px;align-items:center;
+    padding:11px 12px;border-bottom:1px solid var(--border);font-size:13px}
+  .check-row:last-child{border-bottom:none}
+  .check-row.head{background:var(--gray-soft);font-weight:700;font-size:12px;color:#33445a;
+    border-radius:9px;border-bottom:none}
+  .cbox{width:17px;height:17px;border:1.6px solid var(--border-strong);border-radius:4px;background:#fff;display:inline-block}
+  .check-row .exp{color:var(--muted);font-size:12.5px}
+  .check-row .act{color:var(--orange);font-weight:600;font-size:12.5px}
+  .check-note{font-size:12px;color:var(--muted);margin-top:10px}
+
+  /* config */
+  .cfg{background:#0f1a2b;color:#d6e2f2;border-radius:var(--radius);padding:16px 18px;
+    font-family:var(--mono);font-size:12.5px;overflow-x:auto;border:1px solid #1e2c42}
+  .cfg .k{color:#7fd4a8}.cfg .c{color:#7c8ba1}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;margin:0}
+  .kv dt{color:var(--muted);font-weight:600}
+  .kv dd{margin:0;color:#2a3648}
+  .deliver-list{list-style:none;padding:0;margin:0}
+  .deliver-list li{padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+  .deliver-list li:last-child{border-bottom:none}
+  .deliver-list .lnk{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+  .note{font-size:12.5px;color:var(--muted);background:var(--gray-soft);border:1px solid var(--border);
+    border-left:3px solid var(--border-strong);border-radius:8px;padding:10px 14px;margin:14px 0 0}
+  .note b{color:var(--text)}
+  .foot{border-top:1px solid var(--border);margin-top:40px;padding-top:18px;color:var(--muted);font-size:12px}
+  .foot p{margin:4px 0}
+
+  @media (max-width:820px){
+    .status-grid,.mini-states,.fix-list{grid-template-columns:1fr}
+    .check-row{grid-template-columns:24px 1fr;row-gap:4px}
+    .check-row .exp,.check-row .act{grid-column:2}
+    .check-row.head{display:none}
+    h1{font-size:24px}
+    .nav-title{display:none}
+  }
+
+  /* print / A4 */
+  @media print{
+    @page{size:A4;margin:14mm}
+    body{background:#fff;font-size:11.5px}
+    .nav{display:none!important}
+    .wrap{max-width:none;padding:0}
+    section{margin-top:18px;break-inside:avoid}
+    .card,.fig,.table-scroll,.conclusion,.status-card{box-shadow:none;break-inside:avoid}
+    figure{break-inside:avoid}
+    a{color:#1b2430;text-decoration:none}
+    a[href^="http"]::after{content:" (" attr(href) ")";font-size:.85em;color:#666}
+    .table-scroll{overflow:visible}
+    table{min-width:0;font-size:9.5px}
+    thead{display:table-header-group}
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-inner">
+    <span class="nav-title">W3 Account 验收</span>
+    <a href="#summary">摘要</a>
+    <a href="#compare">图文对照</a>
+    <a href="#flow">登录流程</a>
+    <a href="#matrix">测试证据</a>
+    <a href="#fixed">已修复</a>
+    <a href="#pending">待验清单</a>
+    <a href="#deliver">部署与索引</a>
+    <button class="print-btn" type="button" onclick="window.print()">打印 / 保存 PDF</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="eyebrow">图文验收报告 · 静态交付物（非上线）</span>
+  <h1>Orca W3 Account 图文验收报告</h1>
+  <p class="subtitle">账户页由 <b>Orca Account</b> 改为 <b>W3 Account</b>（内网 W3 登录入口）后的验收情况。本报告为可离线打开的静态 HTML，图片均为根据当前实现重绘的 SVG 示意图，<b>不是 Electron 实测截图</b>。</p>
+  <div class="meta">
+    <span class="chip">报告日期 <b>2026-11-19</b></span>
+    <span class="chip">分支 <b>feat/w3-browser-session-design</b></span>
+    <span class="chip">特性 <b>docs/05-features/w3-account</b></span>
+    <span class="chip">验证环境 <b>Node 24.22.3 / pnpm 12.0.0（独立）</b></span>
+  </div>
+</header>
+
+<div class="conclusion">
+  <div class="ic">!</div>
+  <div>
+    <h3>结论：代码与局部检查通过，完整运行验收未完成（有条件通过 / 待验）</h3>
+    <p>TypeScript（3 个项目）、受影响单测（12 文件 / 152 测试）、改动源文件 oxlint、以及仓内门禁脚本在独立 Node 环境实跑通过；但<b>原生依赖安装与 native 检查被 Windows 环境阻塞</b>，完整 <code>pnpm test</code> / <code>pnpm lint</code>、真实 Electron 壳、真实 W3 / OMD 登录、免密与同会话内网免登<b>均未验证</b>。本报告不代表已上线、可发布或功能已交付。</p>
+  </div>
+</div>
+
+<div class="note">
+  <b>阅读须知：</b>本报告未内嵌测试日志、终端输出或截图；所有「通过 / 阻塞 / 未测」结论来自已记录的 <a href="STATUS.md">STATUS.md</a> 与实现 plan。页面中的 UI 与流程图<b>均为本地 SVG / CSS 重绘</b>，成功状态为<b>演示数据</b>，不可作为实际验收证据；其中不包含任何真实内网地址、Cookie 或 token 值。
+</div>
+
+<!-- ============ 1 摘要 ============ -->
+<section id="summary">
+  <div class="sec-head">
+    <div class="sec-num">1</div>
+    <h2>摘要与验收范围</h2>
+    <span class="sec-desc">三类状态分开呈现</span>
+  </div>
+
+  <div class="status-grid">
+    <div class="status-card passed">
+      <span class="st-label"><span class="dot"></span>Passed</span>
+      <div class="st-num">4 类</div>
+      <div class="st-desc">TypeScript 3 项目、单测 12 文件 / 152 测试、改动源 oxlint、仓内局部门禁脚本（含最终通过的 localization catalog）。</div>
+    </div>
+    <div class="status-card blocked">
+      <span class="st-label"><span class="dot"></span>Blocked</span>
+      <div class="st-num">3 类</div>
+      <div class="st-desc">原生依赖安装两次 exit 1、native check exit 1、完整 pnpm test 前置门禁未过。属本机环境阻塞，非 W3 功能结论。</div>
+    </div>
+    <div class="status-card nottested">
+      <span class="st-label"><span class="dot"></span>Not tested</span>
+      <div class="st-num">9 项</div>
+      <div class="st-desc">真实 Electron 启动、单按钮登录、免密、过期、重启恢复、direct browser、常用站 SSO、退出、client 隔离。</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <p class="lead" style="margin-bottom:10px">范围与边界（据 <a href="spec.md">spec.md</a> / <a href="STATUS.md">STATUS.md</a>）</p>
+    <ul style="margin:0;padding-left:20px;font-size:13.5px;color:#2a3648;line-height:1.75">
+      <li>把设置里的 <b>Orca Account</b> 页替换为 <b>W3 Account</b> 页，沿用原导航位置与渲染骨架，只改标题、图标语义与页面内容；不新增工具栏入口、不提供分区 / 会话管理 UI。</li>
+      <li>复用现有 <b>OMDashboard（OMD）W3 后端</b>：一次登录同时得到 OMD 可信身份（<code>/auth/me</code>）与内置浏览器同 session 的会话 Cookie（<code>omd_session</code>）。</li>
+      <li>仅当 <code>/auth/me</code> 返回 <code>sso_enabled:true</code> 且会话有效才算登录完成；dev 旁路 <code>sso_enabled:false</code> 不计登录完成。</li>
+      <li>界面只取 <code>display_name</code> / <code>employee_no</code> 两项，token / Cookie 与其它字段不进渲染器、不落日志。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 2 图文前后对照 ============ -->
+<section id="compare">
+  <div class="sec-head">
+    <div class="sec-num">2</div>
+    <h2>改版对照：Orca Account → W3 Account</h2>
+    <span class="sec-desc">旧页为参考重绘，非真实截图</span>
+  </div>
+
+  <figure>
+    <div class="fig-top">
+      <span class="fig-title">图 1 · 账户页改版前后对照</span>
+      <span class="disclaimer">根据当前实现重绘 / 非 Electron 实测截图</span>
+    </div>
+    <div class="fig-body">
+      <svg viewBox="0 0 940 470" role="img" aria-labelledby="fig1t fig1d" xmlns="http://www.w3.org/2000/svg">
+        <title id="fig1t">Orca Account 旧页面与新 W3 Account 页面对照示意</title>
+        <desc id="fig1d">左侧为旧 Orca Account 页参考重绘（云功能推广），右侧为新 W3 Account 欢迎卡（单按钮），中间箭头表示改版。</desc>
+        <defs>
+          <marker id="ar1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#2563eb"/>
+          </marker>
+        </defs>
+
+        <!-- LEFT PANEL -->
+        <g>
+          <rect x="14" y="16" width="410" height="438" rx="12" fill="#ffffff" stroke="#e3e9f1"/>
+          <rect x="14" y="16" width="410" height="40" rx="12" fill="#f3f6fb"/>
+          <rect x="14" y="44" width="410" height="12" fill="#f3f6fb"/>
+          <text x="34" y="42" font-size="13" font-weight="700" fill="#33445a" font-family="sans-serif">旧 · Orca Account（参考重绘）</text>
+          <text x="34" y="80" font-size="12" fill="#5b6b7c" font-family="sans-serif">设置 → Orca Account</text>
+
+          <!-- card -->
+          <rect x="40" y="98" width="358" height="150" rx="10" fill="#fbfcfe" stroke="#e3e9f1"/>
+          <text x="62" y="130" font-size="13" font-weight="600" fill="#1b2430" font-family="sans-serif">Orca 账户</text>
+          <text x="62" y="154" font-size="12" fill="#5b6b7c" font-family="sans-serif">未连接 Orca 云账户</text>
+          <rect x="62" y="172" width="150" height="34" rx="17" fill="#ffffff" stroke="#cfd8e3"/>
+          <text x="86" y="194" font-size="12" fill="#33445a" font-family="sans-serif">Sign in to Orca</text>
+          <text x="62" y="230" font-size="11" fill="#8a97a8" font-family="sans-serif">桌面 OAuth PKCE · 系统浏览器 + loopback</text>
+
+          <!-- cloud promotion block (removed) -->
+          <rect x="40" y="262" width="358" height="150" rx="10" fill="#fff7f7" stroke="#f3cccc" stroke-dasharray="5 4"/>
+          <text x="62" y="288" font-size="12" font-weight="700" fill="#b32020" font-family="sans-serif">云功能推广（本次移除）</text>
+          <text x="62" y="312" font-size="12" fill="#7c5a5a" font-family="sans-serif">· Artifact sharing</text>
+          <text x="62" y="336" font-size="12" fill="#7c5a5a" font-family="sans-serif">· Orca Relay</text>
+          <text x="62" y="360" font-size="12" fill="#7c5a5a" font-family="sans-serif">· Skill sharing</text>
+          <rect x="62" y="378" width="120" height="22" rx="6" fill="#fdecec"/>
+          <text x="74" y="393" font-size="10.5" fill="#b32020" font-family="sans-serif">推广语义已删除</text>
+          <text x="40" y="440" font-size="10.5" fill="#8a97a8" font-family="sans-serif">仅回云身份，不写浏览器 Cookie，不适合内网 W3</text>
+        </g>
+
+        <!-- ARROW -->
+        <g>
+          <line x1="430" y1="235" x2="500" y2="235" stroke="#2563eb" stroke-width="2.5" marker-end="url(#ar1)"/>
+          <text x="465" y="222" font-size="11" font-weight="700" fill="#2563eb" text-anchor="middle" font-family="sans-serif">改版</text>
+        </g>
+
+        <!-- RIGHT PANEL -->
+        <g>
+          <rect x="516" y="16" width="410" height="438" rx="12" fill="#ffffff" stroke="#e3e9f1"/>
+          <rect x="516" y="16" width="410" height="40" rx="12" fill="#eef7f2"/>
+          <rect x="516" y="44" width="410" height="12" fill="#eef7f2"/>
+          <text x="536" y="42" font-size="13" font-weight="700" fill="#0a7a52" font-family="sans-serif">新 · W3 Account（据实现重绘）</text>
+          <text x="536" y="80" font-size="12" fill="#5b6b7c" font-family="sans-serif">设置 → W3 Account</text>
+
+          <rect x="542" y="98" width="358" height="316" rx="10" fill="#fbfcfe" stroke="#e3e9f1"/>
+          <!-- welcome card -->
+          <text x="721" y="150" font-size="26" text-anchor="middle" font-family="sans-serif">👋</text>
+          <text x="721" y="184" font-size="17" font-weight="700" fill="#1b2430" text-anchor="middle" font-family="sans-serif">欢迎回来</text>
+          <text x="721" y="210" font-size="12" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">使用你的 W3 账户登录。</text>
+          <text x="721" y="229" font-size="12" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">之后在内置浏览器访问内网，会复用本次登录。</text>
+          <!-- single button -->
+          <rect x="611" y="252" width="220" height="42" rx="21" fill="#2563eb"/>
+          <text x="721" y="278" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle" font-family="sans-serif">使用华为 W3 登录</text>
+          <text x="721" y="318" font-size="11" fill="#8a97a8" text-anchor="middle" font-family="sans-serif">无需输入账号密码 · 免密取决于 W3 会话与企业策略</text>
+          <text x="721" y="382" font-size="10.5" fill="#8a97a8" text-anchor="middle" font-family="sans-serif">无账号 / 密码输入 · 无其它入口 · 无会话分区 UI</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><b>对照要点：</b>左侧旧页按 <code>OrcaAccountSettingsPane</code> 结构参考重绘（含 <code>Sign in to Orca</code> 与云功能推广），<b>非真实截图</b>；右侧新页为单按钮欢迎卡。改版移除了 Artifact sharing / Orca Relay / Skill sharing 的云功能推广，因为 W3 登录<b>不授权</b> Orca 云。</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 3 登录流程 ============ -->
+<section id="flow">
+  <div class="sec-head">
+    <div class="sec-num">3</div>
+    <h2>账户状态与登录流程</h2>
+    <span class="sec-desc">状态示意 + 会话流程图</span>
+  </div>
+
+  <figure>
+    <div class="fig-top">
+      <span class="fig-title">图 2 · W3 未登录 / 已认证账户状态</span>
+      <span class="disclaimer">根据当前实现重绘 / 非 Electron 实测截图</span>
+      <span class="disclaimer demo">成功态为演示数据</span>
+    </div>
+    <div class="fig-body">
+      <svg viewBox="0 0 900 330" role="img" aria-labelledby="fig2t fig2d" xmlns="http://www.w3.org/2000/svg">
+        <title id="fig2t">W3 Account 未登录欢迎卡与已认证账户卡示意</title>
+        <desc id="fig2d">左为未登录欢迎卡：欢迎回来加唯一按钮使用华为 W3 登录；右为已认证卡：示例姓名与工号（演示数据）加退出登录。</desc>
+
+        <!-- Left: signed out -->
+        <rect x="14" y="16" width="424" height="298" rx="12" fill="#ffffff" stroke="#e3e9f1"/>
+        <rect x="14" y="16" width="424" height="38" rx="12" fill="#eaf1ff"/>
+        <rect x="14" y="42" width="424" height="12" fill="#eaf1ff"/>
+        <text x="34" y="40" font-size="12.5" font-weight="700" fill="#1f4fd0" font-family="sans-serif">状态 A · 未登录</text>
+
+        <text x="226" y="98" font-size="26" text-anchor="middle" font-family="sans-serif">👋</text>
+        <text x="226" y="132" font-size="18" font-weight="700" fill="#1b2430" text-anchor="middle" font-family="sans-serif">欢迎回来</text>
+        <text x="226" y="158" font-size="12" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">使用你的 W3 账户登录。</text>
+        <rect x="116" y="182" width="220" height="40" rx="20" fill="#2563eb"/>
+        <text x="226" y="207" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle" font-family="sans-serif">使用华为 W3 登录</text>
+        <text x="226" y="246" font-size="11" fill="#8a97a8" text-anchor="middle" font-family="sans-serif">唯一按钮 · 无账号密码输入</text>
+        <rect x="150" y="266" width="152" height="22" rx="6" fill="#eef2f7"/>
+        <text x="226" y="281" font-size="10.5" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">是否免密取决于企业策略</text>
+
+        <!-- Right: authenticated -->
+        <rect x="462" y="16" width="424" height="298" rx="12" fill="#ffffff" stroke="#e3e9f1"/>
+        <rect x="462" y="16" width="424" height="38" rx="12" fill="#eef7f2"/>
+        <rect x="462" y="42" width="424" height="12" fill="#eef7f2"/>
+        <text x="482" y="40" font-size="12.5" font-weight="700" fill="#0a7a52" font-family="sans-serif">状态 B · 登录完成（可信身份）</text>
+
+        <circle cx="514" cy="108" r="26" fill="#e7f7f0"/>
+        <text x="514" y="114" font-size="16" font-weight="700" fill="#0a7a52" text-anchor="middle" font-family="sans-serif">示</text>
+        <text x="556" y="100" font-size="15" font-weight="700" fill="#1b2430" font-family="sans-serif">示例姓名（演示数据）</text>
+        <text x="556" y="122" font-size="12" fill="#5b6b7c" font-family="sans-serif">工号：EXAMPLE-0001（演示数据）</text>
+        <rect x="760" y="88" width="108" height="30" rx="8" fill="#ffffff" stroke="#cfd8e3"/>
+        <text x="814" y="108" font-size="12" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">退出登录</text>
+
+        <rect x="482" y="156" width="386" height="120" rx="9" fill="#f5f8fc" stroke="#e3e9f1"/>
+        <text x="496" y="180" font-size="11.5" fill="#5b6b7c" font-family="sans-serif">仅当 OMD /auth/me 返回 sso_enabled:true 且会话有效时进入；</text>
+        <text x="496" y="199" font-size="11.5" fill="#5b6b7c" font-family="sans-serif">渲染器只接收 display_name / employee_no 两项白名单字段。</text>
+        <text x="496" y="218" font-size="11.5" fill="#5b6b7c" font-family="sans-serif">官方成功但缺资料时显示「登录完成（未获取用户资料）」，</text>
+        <text x="496" y="237" font-size="11.5" fill="#5b6b7c" font-family="sans-serif">不显示、不猜测姓名或工号。</text>
+        <text x="496" y="262" font-size="10.5" fill="#b32020" font-family="sans-serif">注：上述姓名 / 工号均为演示数据，非实际身份。</text>
+      </svg>
+    </div>
+    <figcaption><b>状态说明：</b>未登录为居中欢迎卡「欢迎回来 👋」+ 唯一按钮「使用华为 W3 登录」；登录完成后展示姓名 / 工号与次要「退出登录」。右侧姓名与工号<b>为演示数据</b>，仅表示界面字段位置，不是任何实际身份。</figcaption>
+  </figure>
+
+  <figure style="margin-top:16px">
+    <div class="fig-top">
+      <span class="fig-title">图 3 · 内置浏览器登录 / 同会话内网复用流程</span>
+      <span class="disclaimer">流程示意 / Cookie 与 token 仅概念、无值、无真实地址</span>
+    </div>
+    <div class="fig-body">
+      <svg viewBox="0 0 900 560" role="img" aria-labelledby="fig3t fig3d" xmlns="http://www.w3.org/2000/svg">
+        <title id="fig3t">内置浏览器专用 session 经 OMD W3 登录并与内网复用同一 session 的流程</title>
+        <desc id="fig3d">从 Orca 内置浏览器专用 session 出发，经 OMD /auth/w3/redirect 到 W3 授权、OMD 回调下发会话 Cookie，再由主进程用同 session 请求 /auth/me 取得白名单身份，最终同 session 内网浏览复用登录。</desc>
+        <defs>
+          <marker id="ar3" markerWidth="10" markerHeight="10" refX="7" refY="3.2" orient="auto">
+            <path d="M0,0 L7,3.2 L0,6.4 Z" fill="#2563eb"/>
+          </marker>
+        </defs>
+
+        <!-- Node 1 -->
+        <rect x="250" y="16" width="400" height="58" rx="10" fill="#eaf1ff" stroke="#cfdcff"/>
+        <text x="450" y="40" font-size="13" font-weight="700" fill="#1f4fd0" text-anchor="middle" font-family="sans-serif">Orca 内置浏览器 · 专用持久 session（隐藏实现）</text>
+        <text x="450" y="60" font-size="11" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">按 Orca profile 稳定映射；internal 隐藏</text>
+
+        <line x1="450" y1="74" x2="450" y2="104" stroke="#2563eb" stroke-width="2.4" marker-end="url(#ar3)"/>
+
+        <!-- Node 2 -->
+        <rect x="250" y="106" width="400" height="52" rx="10" fill="#ffffff" stroke="#e3e9f1"/>
+        <text x="450" y="128" font-size="12.5" font-weight="700" fill="#1b2430" text-anchor="middle" font-family="sans-serif">OMD /auth/w3/redirect（部署配置 origin，可带 next=）</text>
+        <text x="450" y="147" font-size="11" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">handle_w3_redirect 生成 state 后跳转 W3 授权</text>
+
+        <line x1="450" y1="158" x2="450" y2="188" stroke="#2563eb" stroke-width="2.4" marker-end="url(#ar3)"/>
+
+        <!-- Node 3 -->
+        <rect x="250" y="190" width="400" height="46" rx="10" fill="#ffffff" stroke="#e3e9f1"/>
+        <text x="450" y="211" font-size="12.5" font-weight="700" fill="#1b2430" text-anchor="middle" font-family="sans-serif">W3 授权页 · 用户完成登录（是否免密取决于企业策略）</text>
+        <text x="450" y="228" font-size="11" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">这是企业 SSO 页面</text>
+
+        <line x1="450" y1="236" x2="450" y2="266" stroke="#2563eb" stroke-width="2.4" marker-end="url(#ar3)"/>
+
+        <!-- Node 4 -->
+        <rect x="250" y="268" width="400" height="66" rx="10" fill="#fff8ee" stroke="#f4d9a6"/>
+        <text x="450" y="290" font-size="12.5" font-weight="700" fill="#8a5a08" text-anchor="middle" font-family="sans-serif">OMD 回调 /auth/callback（服务端换 token）</text>
+        <text x="450" y="308" font-size="11" fill="#7a5a20" text-anchor="middle" font-family="sans-serif">Set-Cookie &lt;cfg.cookie_name&gt;（如 omd_session）落到本 session</text>
+        <text x="450" y="325" font-size="10.5" fill="#b32020" text-anchor="middle" font-family="sans-serif">Cookie / token 仅概念示意，无值；client_secret 不进客户端</text>
+
+        <line x1="450" y1="334" x2="450" y2="364" stroke="#2563eb" stroke-width="2.4" marker-end="url(#ar3)"/>
+
+        <!-- Node 5 -->
+        <rect x="250" y="366" width="400" height="58" rx="10" fill="#eef7f2" stroke="#c5ecdb"/>
+        <text x="450" y="389" font-size="12.5" font-weight="700" fill="#0a7a52" text-anchor="middle" font-family="sans-serif">主进程用同 session 请求 /auth/me</text>
+        <text x="450" y="408" font-size="11" fill="#2f6b53" text-anchor="middle" font-family="sans-serif">要求 sso_enabled:true + 有效会话；dev 旁路 sso_enabled:false 不计登录</text>
+
+        <!-- split arrows -->
+        <line x1="360" y1="424" x2="360" y2="462" stroke="#2563eb" stroke-width="2.4" marker-end="url(#ar3)"/>
+        <line x1="540" y1="424" x2="540" y2="462" stroke="#2563eb" stroke-width="2.4" marker-end="url(#ar3)"/>
+
+        <!-- Node 6a identity -->
+        <rect x="140" y="464" width="270" height="72" rx="10" fill="#ffffff" stroke="#cfdcff"/>
+        <text x="275" y="488" font-size="12.5" font-weight="700" fill="#1f4fd0" text-anchor="middle" font-family="sans-serif">白名单身份 → 渲染器</text>
+        <text x="275" y="508" font-size="11" fill="#5b6b7c" text-anchor="middle" font-family="sans-serif">仅 display_name / employee_no</text>
+        <text x="275" y="525" font-size="10.5" fill="#8a97a8" text-anchor="middle" font-family="sans-serif">其余字段、token、debug 不回传</text>
+
+        <!-- Node 6b reuse -->
+        <rect x="490" y="464" width="270" height="72" rx="10" fill="#eef7f2" stroke="#c5ecdb"/>
+        <text x="625" y="488" font-size="12.5" font-weight="700" fill="#0a7a52" text-anchor="middle" font-family="sans-serif">同 session 内网浏览复用</text>
+        <text x="625" y="508" font-size="11" fill="#2f6b53" text-anchor="middle" font-family="sans-serif">普通本机 tab 默认走该 session</text>
+        <text x="625" y="525" font-size="10.5" fill="#8a97a8" text-anchor="middle" font-family="sans-serif">remote / ssh / 显式隔离 profile 不覆盖</text>
+      </svg>
+    </div>
+    <figcaption><b>关键判定：</b>「打开登录页 / 页面加载成功 / Cookie 存在 / 访问过内网站点」都<b>不算</b>登录完成，唯一依据是 OMD <code>/auth/me</code> 在 <code>sso_enabled:true</code> 且会话有效时的可信返回。W3 登录<b>不授权</b> Orca 云（Artifacts / Relay / Skill）；<code>omd_session</code> 是 OMD 自有会话 Cookie，不是 W3 SSO Cookie。图中 Cookie / token 为概念示意，无值，不含真实地址。</figcaption>
+  </figure>
+
+  <div class="card" style="margin-top:16px">
+    <p class="lead" style="margin-bottom:12px">登录中 / 失败 / 退出 的小状态（据实现重绘，非交互演示）</p>
+    <div class="mini-states">
+      <div class="mini">
+        <div class="mh"><span class="spin"></span> 登录页已打开</div>
+        <div class="mb">已点登录、打开 W3 页；「等待在 W3 页面完成登录…」，不可重复触发。打开页面不代表已登录完成。</div>
+      </div>
+      <div class="mini warn">
+        <div class="mh" style="color:#b32020">登录未完成（失败）</div>
+        <div class="mb">给出简短原因（未配置 / SSO 未启用 / 不受信来源 / 超时 / 打开失败）+「重试」；不留半成品态。</div>
+      </div>
+      <div class="mini neutral">
+        <div class="mh">退出确认</div>
+        <div class="mb">「退出 W3 账户？」确认后退出本账户专用会话，不影响其它会话；失败保持登录态可重试。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 测试证据矩阵 ============ -->
+<section id="matrix">
+  <div class="sec-head">
+    <div class="sec-num">4</div>
+    <h2>测试证据矩阵</h2>
+    <span class="sec-desc">命令 / 环境 / 结果 / 边界分开</span>
+  </div>
+  <p class="lead">下表如实区分<b>已通过</b>、<b>环境阻塞</b>与<b>未运行</b>；未执行项一律标为未测，不写成功。环境为独立 Node 24.22.3 / pnpm 12.0.0（localization 纯 JS 检查在 host Node 26 运行）。</p>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>检查项</th><th>命令 / 方式</th><th>环境</th><th>结果</th><th>边界说明</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>TypeScript（3 项目）</td>
+          <td><span class="path">node config/scripts/run-typecheck-projects-in-parallel.mjs</span></td>
+          <td>Node 24.22.3</td>
+          <td><span class="badge b-pass">Passed 3/3</span></td>
+          <td>node / cli / web 三 tsc 项目</td>
+        </tr>
+        <tr>
+          <td>受影响单元测试</td>
+          <td><span class="path">node node_modules/vitest/vitest.mjs run --config config/vitest.config.ts &lt;12 affected files&gt;</span></td>
+          <td>Node 24.22.3</td>
+          <td><span class="badge b-pass">Passed 12 文件 / 152 测试</span></td>
+          <td>运行时绕过 <code>ensure-native-runtime</code> 前置门禁，<b>不能等同完整 pnpm test</b></td>
+        </tr>
+        <tr>
+          <td>改动源文件 oxlint</td>
+          <td>oxlint（changed source）</td>
+          <td>Node 24.22.3</td>
+          <td><span class="badge b-pass">Passed</span></td>
+          <td>仅改动源文件，非全仓</td>
+        </tr>
+        <tr>
+          <td>仓内门禁脚本组</td>
+          <td>max-lines / readme / catalog / extraction / coverage</td>
+          <td>Node 24 / 26</td>
+          <td><span class="badge b-pass">Passed</span></td>
+          <td>extraction 仅 report-only</td>
+        </tr>
+        <tr>
+          <td>localization catalog（最终）</td>
+          <td>locale sync / check JS（3 checks）</td>
+          <td>host Node 26（纯 JS）</td>
+          <td><span class="badge b-pass">最终 Passed</span></td>
+          <td>一度 FAIL：旧 <code>orcaAccount</code> 死命名空间 27 keys；删除 en/fr/ko 旧 orphan 后通过。不混作 Node 24 整链证据</td>
+        </tr>
+        <tr>
+          <td>原生依赖安装</td>
+          <td><span class="path">pnpm install --frozen-lockfile</span></td>
+          <td>Windows</td>
+          <td><span class="badge b-block">Blocked（exit 1 ×2）</span></td>
+          <td>windows-process-tree MSBuild <code>process_worker.cc: C1083 Invalid argument</code></td>
+        </tr>
+        <tr>
+          <td>native 运行时检查</td>
+          <td><span class="path">ensure-native-runtime --check-only</span></td>
+          <td>Windows</td>
+          <td><span class="badge b-block">Blocked（exit 1）</span></td>
+          <td>缺 patched node-pty job API 与 <code>windows_process_tree.node</code></td>
+        </tr>
+        <tr>
+          <td>完整 pnpm test</td>
+          <td><span class="path">pnpm test</span></td>
+          <td>Windows</td>
+          <td><span class="badge b-block">Blocked</span></td>
+          <td>前置门禁未过（依赖 install / native），未真正执行</td>
+        </tr>
+        <tr>
+          <td>完整 pnpm lint</td>
+          <td><span class="path">pnpm run lint</span></td>
+          <td>—</td>
+          <td><span class="badge b-not">Not run</span></td>
+          <td>全量 lint 未跑</td>
+        </tr>
+        <tr>
+          <td>真实运行验收</td>
+          <td>Electron 壳 / 真实 W3 / OMD / 内网</td>
+          <td>—</td>
+          <td><span class="badge b-not">Not tested</span></td>
+          <td>无真实截图、无真机；无实际 W3 免密与跨内网 Cookie 免登验证</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><b>解读：</b>原生安装与 native 检查失败属<b>本次 Windows 环境阻塞</b>，<b>不是</b> W3 功能通过的证据，也<b>不是</b>功能失败结论。局部通过（typecheck / 单测 / 改动 lint / 门禁脚本）只能说明「代码与局部检查」这一层，不能外推到真实登录与部署。</div>
+</section>
+
+<!-- ============ 5 已修复问题 ============ -->
+<section id="fixed">
+  <div class="sec-head">
+    <div class="sec-num">5</div>
+    <h2>已修复问题（代码层，含单测覆盖）</h2>
+    <span class="sec-desc">来自实现与 review</span>
+  </div>
+  <div class="fix-list">
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>generation 迟发请求竞态</h4><p>所有异步操作绑定 generation + Orca profile id，旧 poller / 迟发响应不能覆盖新状态或劫持新登录。</p></div></div>
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>启动 / profile 恢复</h4><p><code>use-w3-account-bootstrap</code> 先经 <code>/auth/me</code> 校验再复用会话，避免用陈旧身份直接恢复。</p></div></div>
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>污染隔离</h4><p>专用持久 profile 按 profile id 稳定映射（不按 label），internal 隐藏，从不覆盖 remote / ssh / 显式隔离 profile。</p></div></div>
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>open-fail poller</h4><p>受控轮询 + <code>redirect:'manual'</code> + <code>credentials:'include'</code> + bounded timeout；打开失败 / 超时正确终止轮询并回到失败态。</p></div></div>
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>退出清理</h4><p>退出清 cookies / storage，并关闭绑定被退役身份的 W3 专用 tabs，避免残留页继续显示已退出身份。</p></div></div>
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>非法 sessionStorage</h4><p>session store 读取容错：损坏 / 非法状态降级为重建专用 session，绝不以陈旧身份认证。</p></div></div>
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>localization 孤儿命名空间</h4><p>删除 en / fr / ko 中退役的 <code>auto.components.settings.orcaAccount.*</code> 死文案（27 keys），修复 runtime catalog 门禁。</p></div></div>
+    <div class="fix"><div class="fix-ic">✓</div><div><h4>dev 旁路拒绝</h4><p>identity 解析要求 <code>sso_enabled === true</code> 且有效 uid；<code>sso_enabled:false</code> 的 dev / mock 返回不计登录完成。</p></div></div>
+  </div>
+</section>
+
+<!-- ============ 6 待验清单 ============ -->
+<section id="pending">
+  <div class="sec-head">
+    <div class="sec-num">6</div>
+    <h2>待验清单（真实环境，尚未执行）</h2>
+    <span class="sec-desc">可直接打印勾选</span>
+  </div>
+  <p class="lead">以下用例需真实 Electron 壳 + 真实 W3 / OMD 地址与内网网络，当前<b>全部未执行</b>。expected 为设计期望；actual 均记为「未执行」，不得回填成功。</p>
+
+  <div class="card" style="padding:14px 16px">
+    <div class="checklist">
+      <div class="check-row head"><span></span><span>用例</span><span>Expected（设计期望）</span><span>Actual</span></div>
+      <div class="check-row"><span class="cbox"></span><span>真实 Electron 启动</span><span class="exp">应用正常启动，账户页显示 W3 Account</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>单按钮「使用华为 W3 登录」</span><span class="exp">仅一个主按钮，无账号密码输入</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>W3 已有登录态免密</span><span class="exp">已有 W3 会话时无需再次输入凭据</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>会话过期（expired）</span><span class="exp">过期后判为未登录 / 失败，可重试</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>重启后恢复（restart）</span><span class="exp">重启后经 /auth/me 校验再复用专用 session</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>direct browser 打开</span><span class="exp">普通本机 tab 默认走专用 session</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>常用站点 SSO 免登</span><span class="exp">同 session 访问内网站点免登（依赖官方跳转）</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>退出登录（logout）</span><span class="exp">确认退出，清 cookies/storage 并关闭专用 tabs</span><span class="act">未执行</span></div>
+      <div class="check-row"><span class="cbox"></span><span>client / tab 隔离</span><span class="exp">隔离后的 client / tab 不被默认复用污染</span><span class="act">未执行</span></div>
+    </div>
+    <div class="check-note">说明：不声明全部 client / tab 实测保持隔离；自然 Cookie domain 限制与免密企业策略需按部署实际核验，本页不铺满限制 UI。</div>
+  </div>
+</section>
+
+<!-- ============ 7 部署配置与交付索引 ============ -->
+<section id="deliver">
+  <div class="sec-head">
+    <div class="sec-num">7</div>
+    <h2>部署配置与交付索引</h2>
+    <span class="sec-desc">占位配置 · 相对链接</span>
+  </div>
+
+  <div class="card">
+    <p class="lead" style="margin-bottom:10px">部署配置（占位，不含真实内网域）</p>
+    <div class="cfg">
+      <span class="c"># 客户端只读部署 origin；真实值待部署方提供</span><br>
+      <span class="k">ORCA_W3_OMD_ORIGIN</span>=https://omd.example.test
+    </div>
+    <ul style="margin:12px 0 0;padding-left:20px;font-size:13px;color:#2a3648;line-height:1.75">
+      <li>OMD 侧应启用<b>真实 W3 SSO</b>，并保证 <code>/auth/w3/redirect</code>、<code>/auth/callback</code>、<code>/auth/me</code>、<code>/auth/logout</code> 可用。</li>
+      <li>Cookie <code>secure</code> / HTTPS 策略<b>照原服务配置</b>由部署方决定；客户端<b>不含 client_secret</b>。</li>
+      <li>登录路径固定为 OMD 契约：<code>/auth/w3/redirect</code>、<code>/auth/me</code>、<code>/auth/logout</code>；<code>next</code> 仅接受内部单 <code>/</code> 路径。</li>
+    </ul>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <p class="lead" style="margin-bottom:8px">交付物与源码索引（相对链接，浏览器可直接点击）</p>
+    <ul class="deliver-list">
+      <li><a href="STATUS.md">STATUS.md</a><span class="lnk">docs/05-features/w3-account/STATUS.md</span> — 链状态与验证边界</li>
+      <li><a href="spec.md">spec.md</a><span class="lnk">docs/05-features/w3-account/spec.md</span> — 目标行为与验收点</li>
+      <li><a href="prototype.html">prototype.html</a><span class="lnk">docs/05-features/w3-account/prototype.html</span> — 可点样张</li>
+      <li><a href="intent.md">intent.md</a><span class="lnk">docs/05-features/w3-account/intent.md</span> — 意图</li>
+      <li><a href="../../../src/renderer/src/components/settings/W3AccountSettingsPane.tsx">W3AccountSettingsPane.tsx</a><span class="lnk">src/renderer/src/components/settings/</span> — 页面渲染</li>
+      <li><a href="../../../src/main/w3-account/w3-account-service.ts">w3-account-service.ts</a><span class="lnk">src/main/w3-account/</span> — 登录编排 / 轮询 / generation</li>
+      <li><a href="../../../src/main/w3-account/w3-account-identity.ts">w3-account-identity.ts</a><span class="lnk">src/main/w3-account/</span> — /auth/me 白名单解析</li>
+      <li><a href="../../../src/main/w3-account/w3-account-session-store.ts">w3-account-session-store.ts</a><span class="lnk">src/main/w3-account/</span> — 专用 session 映射</li>
+      <li><a href="../../../src/main/w3-account/w3-account-url.ts">w3-account-url.ts</a><span class="lnk">src/main/w3-account/</span> — 登录 URL / safe_next</li>
+      <li><a href="../../../src/main/w3-account/w3-account-config.ts">w3-account-config.ts</a><span class="lnk">src/main/w3-account/</span> — 契约路径常量</li>
+      <li><a href="../../../src/main/ipc/w3-account-ipc.ts">w3-account-ipc.ts</a><span class="lnk">src/main/ipc/</span> — IPC 通道</li>
+      <li><a href="../../../src/renderer/src/app-shell/use-w3-account-bootstrap.ts">use-w3-account-bootstrap.ts</a><span class="lnk">src/renderer/src/app-shell/</span> — 启动恢复 / 退出清理</li>
+      <li><a href="../../../src/renderer/src/lib/w3-local-browser-default.ts">w3-local-browser-default.ts</a><span class="lnk">src/renderer/src/lib/</span> — 本机默认复用</li>
+      <li><a href="../../../src/shared/w3-account.ts">w3-account.ts</a><span class="lnk">src/shared/</span> — 共享类型</li>
+    </ul>
+    <div class="note" style="margin-top:14px">
+      <b>Issue：</b><a href="https://github.com/forcegravity1989/builder-workbench/issues/729" target="_blank" rel="noopener noreferrer">forcegravity1989/builder-workbench#729</a>（仅为链接，点击才联网；本页不发起任何网络请求）。
+    </div>
+  </div>
+</section>
+
+<div class="foot">
+  <p>本报告为离线静态 HTML 交付物：不含外部图片 / 脚本 / 字体 / CDN；图形均为本地内嵌 SVG / CSS 重绘；「打印 / 保存 PDF」按钮仅在用户点击时调用 <code>window.print()</code>，不联网。</p>
+  <p>结论依据：已记录的 STATUS / 实现 plan（未内嵌测试日志或截图）。UI 图非 Electron 实测截图，成功态为演示数据，不可作为实际验收证据。本报告不表示已上线、已部署或功能已交付。</p>
+  <p>报告日期：2026-11-19 · 分支 feat/w3-browser-session-design</p>
+</div>
+
+</div>
+</body>
+</html>

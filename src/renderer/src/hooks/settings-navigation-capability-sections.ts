@@ -128,10 +128,10 @@ export function buildSetupSettingsSections({
       ? [
           {
             id: 'orca-account',
-            title: translate('auto.components.settings.orcaAccount.title', 'Orca Account'),
+            title: translate('auto.components.settings.w3Account.title', 'W3 Account'),
             description: translate(
-              'auto.components.settings.orcaAccount.description',
-              'Sign in to extend Orca with cloud features, including Artifacts and Orca Relay.'
+              'auto.components.settings.w3Account.description',
+              'Sign in with your W3 account.'
             ),
             icon: CircleUserRound,
             searchEntries: getOrcaAccountSettingsSearchEntries(),

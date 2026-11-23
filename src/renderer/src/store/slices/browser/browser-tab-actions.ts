@@ -16,6 +16,8 @@ import {
   findWorkspace
 } from '../browser-page-records'
 import { getBrowserSessionProfileHostId } from './browser-host-state'
+import { getW3LocalBrowserDefaultProfileId } from '@/lib/w3-local-browser-default'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
 import { admitBrowserPageMount } from '@/components/browser-pane/host-guest/browser-page-mount-admission'
 
@@ -53,16 +55,20 @@ export function createBrowserTabActions(
         admitBrowserPageMount(page.id)
       }
       // Why: with no explicit profile, inherit the user's default so a Settings preference applies to new tabs.
+      // A validated W3 sign-in overrides that default for ordinary *local* tabs only.
+      const profileHostId = getBrowserSessionProfileHostId(
+        get(),
+        worktreeId,
+        options?.browserRuntimeEnvironmentId
+      )
+      const w3LocalDefault =
+        profileHostId === LOCAL_EXECUTION_HOST_ID ? getW3LocalBrowserDefaultProfileId() : null
       const sessionProfileId =
         options?.sessionProfileId !== undefined
           ? options.sessionProfileId
-          : (get().defaultBrowserSessionProfileIdByHostId[
-              getBrowserSessionProfileHostId(
-                get(),
-                worktreeId,
-                options?.browserRuntimeEnvironmentId
-              )
-            ] ?? get().defaultBrowserSessionProfileId)
+          : (w3LocalDefault ??
+            get().defaultBrowserSessionProfileIdByHostId[profileHostId] ??
+            get().defaultBrowserSessionProfileId)
       const browserTab = buildWorkspaceFromPage(
         workspaceId,
         worktreeId,

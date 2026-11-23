@@ -18,6 +18,7 @@ import {
 import { resolveWorktreeOperationRoute } from './worktree-operation-route'
 import { getExecutionHostIdForWorktree } from './worktree-runtime-owner'
 import { resolveSshWorkspaceBrowserRouteEligibility } from './ssh-workspace-browser-route-eligibility'
+import { getW3LocalBrowserDefaultProfileId } from './w3-local-browser-default'
 
 export type WorkspaceBrowserTabIntent = { kind: 'url' } | { kind: 'search'; engine: SearchEngine }
 
@@ -191,6 +192,7 @@ function createClientBrowserTab(
       browserRuntimeEnvironmentId: null,
       focusAddressBar: false,
       sessionProfileId:
+        (hostId === LOCAL_EXECUTION_HOST_ID ? getW3LocalBrowserDefaultProfileId() : null) ??
         state.defaultBrowserSessionProfileIdByHostId[hostId] ??
         state.defaultBrowserSessionProfileId,
       targetGroupId: request.targetGroupId,

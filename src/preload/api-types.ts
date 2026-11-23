@@ -40,6 +40,7 @@ import type { MobileApi } from './api/mobile-api'
 import type { NativeChatApi } from './api/native-chat-api'
 import type { OnboardingApi, StarNagApi } from './api/onboarding-api'
 import type { OrcaProfileApi } from './api/orca-profile-api'
+import type { W3AccountApi } from './api/w3-account-api'
 import type {
   ComputerUsePermissionsApi,
   DeveloperPermissionsApi,
@@ -72,6 +73,7 @@ type Merged<T> = { [K in keyof T]: T[K] }
 export type PreloadApi = {
   app: AppApi
   orcaProfiles: OrcaProfileApi
+  w3Account: W3AccountApi
   platform: PlatformApi
   e2e: E2EApi
   repos: RepositoryApi
@@ -161,6 +163,7 @@ export type PreloadApi = {
 
 export type { ClaudeUsageApi, CodexUsageApi, OpenCodeUsageApi } from './api/agent-usage-api'
 export type { AiVaultApi } from './api/ai-vault-api'
+export type { W3AccountApi } from './api/w3-account-api'
 export type { AutomationsApi, ExternalAutomationManagerResult } from './api/automation-api'
 export type { AppApi } from './api/app-api'
 export type { BrowserApi, DetectedBrowserInfo, DetectedBrowserProfileInfo } from './api/browser-api'
