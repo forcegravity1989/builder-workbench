@@ -131,7 +131,16 @@ export async function downloadOneboxFile(
 ): Promise<string> {
   await runWelinkCli(
     route,
-    ['onebox', 'file-download', '--space-id', spaceId, '--file-id', fileId, '--output', outputDirectory],
+    [
+      'onebox',
+      'file-download',
+      '--space-id',
+      spaceId,
+      '--file-id',
+      fileId,
+      '--output',
+      outputDirectory
+    ],
     WELINK_UPLOAD_TIMEOUT_MS
   )
   return outputDirectory
@@ -144,7 +153,17 @@ export async function findOneboxFile(
 ): Promise<OneboxNode | null> {
   const { stdout } = await runWelinkCli(
     route,
-    ['onebox', 'node-search', '--space-id', spaceId, '--name', name, '--exact-search', '--file-type', 'file'],
+    [
+      'onebox',
+      'node-search',
+      '--space-id',
+      spaceId,
+      '--name',
+      name,
+      '--exact-search',
+      '--file-type',
+      'file'
+    ],
     WELINK_METADATA_TIMEOUT_MS
   )
   const parsed = parseFirstJsonObject(stdout)
@@ -294,7 +313,8 @@ export function parseFileListing(json: Record<string, unknown> | null): OneboxNo
 export async function listFolder(
   route: WelinkRoute,
   spaceId: string,
-  parentId: string
+  parentId: string,
+  stopWhen?: (found: { folders: OneboxNode[]; files: OneboxNode[] }) => boolean
 ): Promise<{ folders: OneboxNode[]; files: OneboxNode[] }> {
   const folders: OneboxNode[] = []
   const files: OneboxNode[] = []
@@ -338,7 +358,7 @@ export async function listFolder(
     folders.push(...parseFolderListing(parsed).folders)
     files.push(...parseFileListing(parsed))
     offset += limit
-    if (offset >= totalCount) {
+    if (offset >= totalCount || stopWhen?.({ folders, files })) {
       return { folders, files }
     }
     if (parsed.folders.length + parsed.files.length === 0) {

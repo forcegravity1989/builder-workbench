@@ -97,31 +97,47 @@ function parseContactProfiles(stdout: string): Map<string, MemberProfile> {
       ...(typeof value.chineseName === 'string' && value.chineseName
         ? { name: value.chineseName }
         : {}),
-      ...(typeof avatar === 'string' && avatar ? { avatar } : {})
+      ...(typeof avatar === 'string' && avatar ? { avatar: toDirectAvatarUrl(avatar) } : {})
     })
   }
   return profiles
 }
 
+// The wecontact avatar URL only redirects to the w3 face service, and the renderer's image loader
+// does not follow that redirect, so point at the final service directly.
+function toDirectAvatarUrl(url: string): string {
+  const match = /\/avatar\/(\d+)\/(\d+)/.exec(url)
+  return match
+    ? `http://w3.huawei.com/w3lab/rest/yellowpage/face/${match[1]}/${match[2]}?from=WE&method=getStream`
+    : url
+}
+
+const PROFILE_CACHE_TTL_MS = 10 * 60_000
+const profileCache = new Map<string, { profile: MemberProfile; expiresAt: number }>()
+
 async function withMemberProfiles(
   route: WelinkRoute,
   members: TeamDirectoryMember[]
 ): Promise<TeamDirectoryMember[]> {
-  const profiles = new Map<string, MemberProfile>()
-  for (let index = 0; index < members.length; index += CONTACT_DETAIL_BATCH) {
-    const accounts = members
-      .slice(index, index + CONTACT_DETAIL_BATCH)
-      .map((member) => member.member_id)
+  const now = Date.now()
+  const missing = members
+    .map((member) => member.member_id)
+    .filter((account) => (profileCache.get(account.toLowerCase())?.expiresAt ?? 0) <= now)
+  for (let index = 0; index < missing.length; index += CONTACT_DETAIL_BATCH) {
+    const accounts = missing.slice(index, index + CONTACT_DETAIL_BATCH)
     try {
       const { stdout } = await runWelinkCli(route, ['contact', 'detail', ...accounts], 30_000)
       for (const [account, profile] of parseContactProfiles(stdout)) {
-        profiles.set(account, profile)
+        profileCache.set(account, { profile, expiresAt: now + PROFILE_CACHE_TTL_MS })
       }
     } catch {
       // Names and avatars are display-only; membership must still load without them.
     }
   }
-  return members.map((member) => ({ ...member, ...profiles.get(member.member_id.toLowerCase()) }))
+  return members.map((member) => ({
+    ...member,
+    ...profileCache.get(member.member_id.toLowerCase())?.profile
+  }))
 }
 
 function parseJsonPayload(stdout: string): unknown {
@@ -241,22 +257,30 @@ function normalizeProjects(value: unknown): TeamDirectory['projects'] {
 }
 
 async function resolveTeamFolder(route: WelinkRoute, spaceId: string): Promise<string> {
-  const listing = await listFolder(route, spaceId, '0')
+  const listing = await listFolder(route, spaceId, '0', hasTeamFolder)
   const existing = listing.folders.find((folder) => folder.name === 'BW')
   return existing?.id ?? createFolder(route, spaceId, '0', 'BW')
+}
+
+function hasTeamFolder(found: { folders: { name: string }[] }): boolean {
+  return found.folders.some((folder) => folder.name === 'BW')
+}
+
+function hasTeamFile(found: { files: { name: string }[] }): boolean {
+  return found.files.some((file) => file.name === 'team.json')
 }
 
 async function findTeamDirectoryFile(
   route: WelinkRoute,
   spaceId: string
 ): Promise<{ id: string; name: string } | null> {
-  const root = await listFolder(route, spaceId, '0')
+  const root = await listFolder(route, spaceId, '0', hasTeamFolder)
   const folder = root.folders.find((entry) => entry.name === 'BW')
   if (!folder) {
     return null
   }
   return (
-    (await listFolder(route, spaceId, folder.id)).files.find(
+    (await listFolder(route, spaceId, folder.id, hasTeamFile)).files.find(
       (entry) => entry.name === 'team.json'
     ) ?? null
   )
@@ -267,14 +291,14 @@ export async function readTeamDirectory(args: {
   groupId: string
   spaceId: string
 }): Promise<TeamDirectoryReadResult> {
-  const [members, currentMemberId] = await Promise.all([
+  const [members, currentMemberId, saved] = await Promise.all([
     queryGroupMembers(args.route, args.groupId).then((rows) =>
       withMemberProfiles(args.route, rows)
     ),
-    queryCurrentMemberId(args.route)
+    queryCurrentMemberId(args.route),
+    readSavedDirectory(args.route, args.groupId, args.spaceId)
   ])
-  const node = await findTeamDirectoryFile(args.route, args.spaceId)
-  if (!node) {
+  if (!saved) {
     return {
       directory: {
         schema_version: 1,
@@ -288,19 +312,53 @@ export async function readTeamDirectory(args: {
       currentMemberId
     }
   }
+  saved.directory.hosts = mergeMembers(members, saved.directory.hosts)
+  return { directory: saved.directory, fileId: saved.fileId, currentMemberId }
+}
+
+// OneBox throttles back-to-back calls and answers with a multi-second retry wait, so a read that
+// already located team.json goes straight to the download for a few minutes.
+const TEAM_FILE_CACHE_TTL_MS = 5 * 60_000
+const teamFileCache = new Map<string, { fileId: string; expiresAt: number }>()
+
+async function readSavedDirectory(
+  route: WelinkRoute,
+  groupId: string,
+  spaceId: string
+): Promise<{ directory: TeamDirectory; fileId: string } | null> {
+  const cached = teamFileCache.get(spaceId)
+  if (cached && cached.expiresAt > Date.now()) {
+    try {
+      return await downloadDirectory(route, groupId, spaceId, cached.fileId)
+    } catch {
+      teamFileCache.delete(spaceId)
+    }
+  }
+  const node = await findTeamDirectoryFile(route, spaceId)
+  if (!node) {
+    teamFileCache.delete(spaceId)
+    return null
+  }
+  const saved = await downloadDirectory(route, groupId, spaceId, node.id)
+  teamFileCache.set(spaceId, { fileId: node.id, expiresAt: Date.now() + TEAM_FILE_CACHE_TTL_MS })
+  return saved
+}
+
+async function downloadDirectory(
+  route: WelinkRoute,
+  groupId: string,
+  spaceId: string,
+  fileId: string
+): Promise<{ directory: TeamDirectory; fileId: string }> {
+  const node = { id: fileId }
   const root = await mkdtemp(join(tmpdir(), 'bw-team-directory-'))
   try {
-    await downloadOneboxFile(args.route, args.spaceId, node.id, root)
+    await downloadOneboxFile(route, spaceId, node.id, root)
     const candidates = ['team.json', join(root, 'team.json')]
     for (const candidate of candidates) {
       try {
-        const directory = parseDirectory(
-          await readFile(candidate, 'utf8'),
-          args.groupId,
-          args.spaceId
-        )
-        directory.hosts = mergeMembers(members, directory.hosts)
-        return { directory, fileId: node.id, currentMemberId }
+        const directory = parseDirectory(await readFile(candidate, 'utf8'), groupId, spaceId)
+        return { directory, fileId: node.id }
       } catch {
         // The CLI may create a directory named after the file id; inspect below.
       }
@@ -308,13 +366,8 @@ export async function readTeamDirectory(args: {
     const files = await readdir(root)
     for (const file of files) {
       if (file.endsWith('.json')) {
-        const directory = parseDirectory(
-          await readFile(join(root, file), 'utf8'),
-          args.groupId,
-          args.spaceId
-        )
-        directory.hosts = mergeMembers(members, directory.hosts)
-        return { directory, fileId: node.id, currentMemberId }
+        const directory = parseDirectory(await readFile(join(root, file), 'utf8'), groupId, spaceId)
+        return { directory, fileId: node.id }
       }
     }
     throw new Error('team.json download did not produce a JSON file')
@@ -342,9 +395,14 @@ export async function writeTeamDirectory(args: {
     const folderId = await resolveTeamFolder(args.route, args.directory.team_space_id)
     const previous = await findTeamDirectoryFile(args.route, args.directory.team_space_id)
     const fileId = await uploadOneboxFile(args.route, args.directory.team_space_id, folderId, path)
+    teamFileCache.delete(args.directory.team_space_id)
     if (previous && previous.id !== fileId) {
       await removeReportFile(args.route, args.directory.team_space_id, previous.id)
     }
+    teamFileCache.set(args.directory.team_space_id, {
+      fileId,
+      expiresAt: Date.now() + TEAM_FILE_CACHE_TTL_MS
+    })
     return { fileId }
   } finally {
     await rm(root, { recursive: true, force: true })

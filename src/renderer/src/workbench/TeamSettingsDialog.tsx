@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LoaderCircle, Plus, Save, UsersRound, X } from 'lucide-react'
 import type { TeamDirectory } from '../../../shared/team-directory'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,9 @@ type TeamSettingsDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
+
+// Last directory read in this renderer session, shown immediately on reopen while a fresh read runs.
+let directorySnapshot: { directory: TeamDirectory; currentMemberId: string | null } | null = null
 
 const TEAM_GROUP_STORAGE_KEY = 'bw:team-group-id'
 const TEAM_SPACE_STORAGE_KEY = 'bw:team-space-id'
@@ -67,14 +70,13 @@ export function TeamSettingsDialog({
   const [error, setError] = useState<string | null>(null)
   const repos = useAppStore((state) => state.repos)
   const updateRepo = useAppStore((state) => state.updateRepo)
-  const openSettingsPage = useAppStore((state) => state.openSettingsPage)
-  const openSettingsTarget = useAppStore((state) => state.openSettingsTarget)
+  const directoryRef = useRef<TeamDirectory | null>(null)
+  const directoryBaseRef = useRef<string | null>(null)
 
-  const openSharingSettings = (): void => {
-    onOpenChange(false)
-    openSettingsTarget({ pane: 'servers', repoId: null })
-    openSettingsPage()
-  }
+  useEffect(() => {
+    directoryRef.current = directory
+    directoryBaseRef.current = directoryBase
+  }, [directory, directoryBase])
 
   useEffect(() => {
     if (!open) {
@@ -110,8 +112,14 @@ export function TeamSettingsDialog({
         groupId: nextGroupId,
         spaceId: nextSpaceId
       })
-      setDirectory(result.directory)
-      setDirectoryBase(JSON.stringify(result.directory))
+      directorySnapshot = { directory: result.directory, currentMemberId: result.currentMemberId }
+      const editedLocally =
+        directoryRef.current !== null &&
+        JSON.stringify(directoryRef.current) !== directoryBaseRef.current
+      if (!editedLocally) {
+        setDirectory(result.directory)
+        setDirectoryBase(JSON.stringify(result.directory))
+      }
       setCurrentMemberId(result.currentMemberId)
       setGroupId(result.directory.team_group_id)
       setSpaceId(result.directory.team_space_id)
@@ -131,6 +139,14 @@ export function TeamSettingsDialog({
     setGroupId(binding.groupId)
     setSpaceId(binding.spaceId)
     if (binding.groupId && binding.spaceId) {
+      if (
+        directorySnapshot?.directory.team_group_id === binding.groupId &&
+        directorySnapshot.directory.team_space_id === binding.spaceId
+      ) {
+        setDirectory(directorySnapshot.directory)
+        setDirectoryBase(JSON.stringify(directorySnapshot.directory))
+        setCurrentMemberId(directorySnapshot.currentMemberId)
+      }
       void loadDirectory(binding.groupId, binding.spaceId)
     }
     // The loader is intentionally stable for this open-session bootstrap; rerunning
@@ -191,9 +207,6 @@ export function TeamSettingsDialog({
     if (!directory?.team_group_id || currentMemberId !== memberId || !host) {
       return
     }
-    if (host.orca_endpoint) {
-      return
-    }
     setGeneratingHostId(memberId)
     setError(null)
     try {
@@ -217,7 +230,7 @@ export function TeamSettingsDialog({
               ...current,
               hosts: current.hosts.map((host) =>
                 host.member_id === memberId
-                  ? { ...host, host_id: result.deviceId, orca_endpoint: result.endpoint }
+                  ? { ...host, host_id: result.deviceId, orca_endpoint: result.pairingUrl }
                   : host
               )
             }
@@ -294,13 +307,18 @@ export function TeamSettingsDialog({
           repo.projectVisibility !== 'team'
       )
     : []
+  const savedBinding = rememberedBinding()
+  const checkingBinding =
+    !directory && !error && Boolean(savedBinding.groupId && savedBinding.spaceId)
+  const showSpinner = !directory && (loading || checkingBinding)
+  const showDirectoryChrome = Boolean(directory) || checkingBinding
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className={directory ? 'gap-3 sm:max-w-[920px]' : 'sm:max-w-[520px]'}
+        className={showDirectoryChrome ? 'gap-3 sm:max-w-[920px]' : 'sm:max-w-[520px]'}
       >
-        {directory ? (
+        {showDirectoryChrome ? (
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UsersRound className="size-4" /> 团队设置
@@ -311,14 +329,13 @@ export function TeamSettingsDialog({
           </DialogHeader>
         ) : (
           <DialogHeader>
-            <small className="text-xs text-muted-foreground">团队资产</small>
             <DialogTitle>连接团队</DialogTitle>
             <DialogDescription className="sr-only">
               填写群 ID 和群空间 ID 绑定团队。
             </DialogDescription>
           </DialogHeader>
         )}
-        {!directory && loading ? (
+        {showSpinner ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             <LoaderCircle className="size-5 animate-spin" aria-label="正在读取团队目录" />
           </div>
@@ -411,7 +428,6 @@ export function TeamSettingsDialog({
                   )
                 }}
                 onGenerateHostAddress={(memberId) => void generateHostAddress(memberId)}
-                onOpenSharingSettings={openSharingSettings}
               />
               <section className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">

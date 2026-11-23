@@ -598,7 +598,7 @@
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="连接团队"><header class="row between"><div><small>团队资产</small><h2>连接团队</h2></div>${close}</header><form id="team-lookup"><div class="directory-id-grid"><label class="field"><span>WeLink 群 ID</span><input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field"><span>群空间 ID</span><input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="连接团队"><header class="row between"><h2>连接团队</h2>${close}</header><form id="team-lookup"><div class="directory-id-grid"><label class="field"><span>WeLink 群 ID</span><input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field"><span>群空间 ID</span><input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = ['lead', 'lin', 'chen']
@@ -608,10 +608,7 @@
         const fill = id === actor.value && writable
           ? iconButton('Link2', endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share')
           : ''
-        const settings = id === actor.value && writable
-          ? iconButton('Settings', '共享与授权', 'open-sharing-settings')
-          : ''
-        return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row between"><strong>${hostLabel(id)}</strong></div><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}${settings}</span></div></div></td></tr>`
+        return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}</span></div></div></td></tr>`
       })
       .join('')
 
@@ -1119,13 +1116,6 @@
         window.open(value, '_blank', 'noopener')
       }
       notify(`已打开 WeLink 群空间${value ? ` · ${value}` : ''}`)
-    },
-    'open-sharing-settings': () => {
-      const desktop = current()
-      desktop.server = true
-      desktop.workflow = 'share'
-      desktop.selectedAccessVisitors = []
-      show('settings')
     },
     'fill-own-share': () => {
       const draft = current().directoryDraft

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link2, LoaderCircle, RefreshCw, Settings } from 'lucide-react'
+import { Link2, LoaderCircle, RefreshCw } from 'lucide-react'
 import type { TeamDirectoryMember } from '../../../shared/team-directory'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,6 @@ type TeamSettingsMembersProps = {
   onRefresh: () => void
   onEndpointChange: (memberId: string, endpoint: string) => void
   onGenerateHostAddress: (memberId: string) => void
-  onOpenSharingSettings: () => void
 }
 
 function isLeaderMember(member: TeamDirectoryMember): boolean {
@@ -47,8 +46,7 @@ export function TeamSettingsMembers({
   generatingHostId,
   onRefresh,
   onEndpointChange,
-  onGenerateHostAddress,
-  onOpenSharingSettings
+  onGenerateHostAddress
 }: TeamSettingsMembersProps): React.JSX.Element {
   const orderedHosts = [...hosts].sort(
     (a, b) => Number(isLeaderMember(b)) - Number(isLeaderMember(a))
@@ -97,8 +95,7 @@ export function TeamSettingsMembers({
                       </div>
                     </td>
                     <td className="px-2 py-2.5 align-top">
-                      <div className="space-y-1.5" title={host.host_id ?? undefined}>
-                        <div className="text-[13px] font-semibold">{displayName}</div>
+                      <div title={host.host_id ?? undefined}>
                         <div className="flex items-center gap-1.5">
                           <Input
                             className="min-w-0 flex-1"
@@ -136,20 +133,6 @@ export function TeamSettingsMembers({
                                 <TooltipContent>
                                   {host.orca_endpoint ? '一键填入' : '一键生成并填入'}
                                 </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={onOpenSharingSettings}
-                                    aria-label="共享与授权"
-                                  >
-                                    <Settings className="size-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>共享与授权</TooltipContent>
                               </Tooltip>
                             </span>
                           ) : null}
