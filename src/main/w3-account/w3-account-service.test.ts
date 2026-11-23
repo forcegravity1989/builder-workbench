@@ -83,7 +83,7 @@ function makeDeps(overrides: Partial<{ fetchResults: FetchResult[]; now: () => n
         entry.fn()
         count += 1
         for (let i = 0; i < 6; i += 1) {
-          await null
+          await Promise.resolve()
         }
         if (count > 50) {
           break
@@ -118,7 +118,7 @@ function makeDeps(overrides: Partial<{ fetchResults: FetchResult[]; now: () => n
     fetchState,
     broadcastState,
     clearStorage,
-    last: () => broadcastState[broadcastState.length - 1] ?? null
+    last: () => broadcastState.at(-1) ?? null
   }
 }
 

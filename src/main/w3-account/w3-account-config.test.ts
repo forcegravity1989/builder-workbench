@@ -10,10 +10,10 @@ import {
 
 // Keep the surrounding env clean so the feature never accidentally activates.
 const {
-  ORCA_W3_LOGIN_URL,
-  ORCA_W3_ACCOUNT_API_URL,
-  ORCA_W3_LOCALE,
-  ORCA_W3_LOGIN_TIMEOUT_MS,
+  ORCA_W3_LOGIN_URL: _loginUrl,
+  ORCA_W3_ACCOUNT_API_URL: _accountApiUrl,
+  ORCA_W3_LOCALE: _locale,
+  ORCA_W3_LOGIN_TIMEOUT_MS: _timeoutMs,
   ...rest
 } = process.env
 
