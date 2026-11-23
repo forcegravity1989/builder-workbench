@@ -1,14 +1,13 @@
 # 项目总览规格：阶段成果、持续排期与记分牌
 
-> 给设计、实现和验收者读取；本文管项目总览的可观察行为。价值见 [intent](intent.md)，现行指标接口见 [design](design.md)，认可与证据见 [STATUS](STATUS.md)。行为或认可边界变化时更新；不在此单方面定义 #334 的持久化协议。
+> **维护约定**：给设计、实现和验收者读取。本文只管项目总览与指标的当前可观察行为。价值见 [intent](intent.md)，实现接口见 [design](design.md)，证据与缺口见 [STATUS](STATUS.md)。行为或认可边界变化时改对应主题，不记录开发流水或被替代方案。
 >
-> **评审状态**：里程碑按 #590 的最新意图与批注收敛，原型已获人工确认；关键逻辑已确认并进入实现，运行证据独立记录。记分牌行为沿用。已替代的里程碑方案从正文删除，历史查 Git；实现及真实验证以 STATUS 和交付 PR 为准。
+> **Explore BW**：本特性归入 W05「用真实效果保持方向」。项目里程碑、项目总览和指标配置分别对应 F18、F21、F28，完整跨特性旅程由探索规格维护。
 
 ## 原型入口与来源
 
 [项目里程碑原型](prototype.html?review=684)沿用原壳、日期旗帜、特性泳道与设计系统。可编辑来源为 [页面](prototype/milestones.jsx)、[日轴](prototype/milestones-timeline.jsx)、[节点](prototype/milestones-roadmap.jsx)、[排期计算](prototype/milestones-sdlc.js)、[样例](prototype/milestones-data.js)、[面板](prototype/milestones-panels.jsx)、[日历](prototype/milestones-calendar.js)与[样式](prototype/milestones.css)。运行 `node docs/05-features/overview-metrics/prototype/build-milestones.cjs` 重建，追加 `--check` 核对生成物。
 
-模拟今天为 2026-11-06；特性、人员、排期、Issue 与验收结论都是评审样例。浏览器模拟工作树保存、更新和评审，保留本地样例及视口。评审弹窗为原型示意，正式界面沿用改动浮层与提供方链接。[计划屏](../version-planning/planning-journey-prototype.html?review=551)和[验收屏](../version-acceptance/acceptance-journey-prototype.html?review=551)沿用原控件，静态页面不共享业务状态。[日期差异样例](prototype.html?review=590&example=dates)单独保存草案。
 
 ## 里程碑与版本联动
 
@@ -83,7 +82,7 @@ Build 用蓝色、Maintain 用暖黄色并保留文字和维护底线，避免�
 
 匹配沿现有规则：主 Issue 带精确“特性”标签、标题包含完整去首尾空白的里程碑名称；不做简称或相似度猜测。唯一匹配后以完整 `provider + repository + number` 查后续版本，一个目标最多一个特性、同特性在同版归到一个目标，多执行 Issue 不重复计数。跨版复用同一主单，不按维护轮次重建。无候选或多候选保留规划并提示材料核对。
 
-验收只消费 `planRef` 固定计划、已合入归档与人工 `results[].decision.outcome`，不从当前编辑计划、Issue 关闭、PR 数或日期推断。确认特性改名时同步主单标题与里程碑名称，保留稳定身份和历史；普通目标改名不触发同步。完整步骤见[计划助手与里程碑衔接](../version-planning/spec.md#计划助手与里程碑衔接)。
+验收只消费 `planRef` 固定计划、已合入归档与人工 `results[].decision.outcome`，不从当前编辑计划、Issue 关闭、PR 数或日期推断。确认特性改名时同步主单标题与里程碑名称，保留稳定身份和历史；普通目标改名不触发同步。完整步骤见[计划助手与对象动作](../version-planning/spec.md#计划助手与对象动作)。
 
 里程碑预期版本日期与首日 Plan 正式采用周期独立；没有里程碑仍能正常制定版本。仅预排的版本保留在里程碑，不生成空计划、不进入侧栏版本区，也不成为项目墙或总览自动选择的版本。用户从既有「新建版本」入口使用同一名称开始计划时，沿用预排身份与初始日期；主动新建但尚未填写目标的版本正常显示。预排版本的进入提示说明需先开始计划，合入排期本身不等于已经开始。旧空占位需按项目一次性核对并经 PR 清理，升级本身不自动删除；已有计划、验收和固定历史引用保留。相关成员升级后再提交新排期结构。
 
@@ -122,9 +121,8 @@ Build 用蓝色、Maintain 用暖黄色并保留文字和维护底线，避免�
 | MF09 | Build / Maintain 在浅深色及长条裁切下可辨；添加图标形状不同、有独立边框与简洁提示，特性 × 可见                                                                          |
 | MF10 | 旧材料身份与日期保留；新预排不生成空计划，旧占位一次性清理后不进入版本区或成为墙/总览默认版，主动开始计划沿用身份并正常显示；版本总览无跨版时长重复计算，未知历史不补造 |
 
-旅程覆盖：连续规划 → 首日计划纳入 → 本版未完成后延长 Build → 人工验收合入 → 隔一段时间再次维护并正式纳入 → 回看历史 → 重启独立读回。规格认可、静态原型验证与 Electron/真实模型/provider 证据分别记录。
+旅程覆盖：连续规划 → 首日计划纳入 → 本版未完成后延长 Build → 人工验收合入 → 隔一段时间再次维护并正式纳入 → 回看历史 → 重启独立读回。该链路属于 W05 的阶段安排和效果回看子链，正式结果仍由版本计划与验收承接。规格、原型和真实运行证据分别记录。
 
-**SDLC 设计备注**：曾考虑细分 Plan、Design、Build、Test、Deploy，以保留开发过程信息；宏观排期采用 Build / Maintain，细阶段留待确有过程分析需求时再设计。
 
 ## 已有指标能力与认可范围
 
@@ -204,6 +202,15 @@ Build 用蓝色、Maintain 用暖黄色并保留文字和维护底线，避免�
 
 MJ01：普通项目 → 配置指标新会话 → 确认口径并实现历史脚本 → 试采/评审合入 → 回总览「更新代码」读目录并看日/周历史 → 计划引用 → 验收选择指标和刷新 → 归档证据 → 重启独立复算。MJ02 覆盖来源无历史能力、失败修复、真实零、定义/脚本更新、旧 baseline 留存和跨项目隔离。首用周记录采集/口径卡点及数据辅助决策的案例，先建立基线。
 
+## 证据入口
+
+本特性沿三类测试用例登记，E2E可以同时承担验收点和 W05 主旅程。登记字段固定为旅程 ID、所属特性、文件与测试标题、执行项目、真实环境、独立读回方式和当前状态。
+
+| 层级 | 当前入口 | 证据与边界 |
+| --- | --- | --- |
+| TDD | `src/main/workbench/metrics/*.test.ts`、`src/shared/workbench/metrics.test.ts`、`src/renderer/src/workbench/overview-*.test.ts` | 只看护指标协议、窗口/来源语义和记分牌配对等核心逻辑。UI 外观和交互由 E2E 与真壳验收。 |
+| 验收点 E2E | W05；`tests/e2e/workbench/acceptance/version-overview.spec.ts`，标题 `BW version overview: real sources, version identity and process restart`；执行项目 `electron-headless` | 真实 Electron fixture；通过 `tests/playwright.overview.config.ts` 显式运行，使用操作者提供的 GitHub 只读认证，不属于默认 PR CI。通过总览、版本材料和配置指标入口，独立读回绑定工作树材料与 renderer 重载。指标真实采集、外部来源和配置会话完整旅程仍是部分。 |
+| 用户旅程 E2E | W05；复用同一文件和测试标题 | 该条 E2E覆盖从版本材料回看进入总览的子链，不另建第二条业务 E2E。配置指标、试采、评审合入、验收采用和重启独立复算仍待真实环境。 |
 ## 布局约束
 
 1280 与 1920 两种窗口宽度下内容铺满 Orca 内容槽，不横向溢出。记分牌结果与引领左右并排，更窄时上下排列；场景页签过多时横向滚动。里程碑时间轴在自身区域横向滚动，特性标签固定；不在总览铺开计划/验收全文。页面本身允许纵向滚动。原型读数不是实时采集，真实 Electron 与脚本证据在实施后补齐。

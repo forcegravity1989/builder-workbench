@@ -217,6 +217,9 @@ jobs:
       - name: Test Issue association calculation
         run: node --test .github/scripts/pr-issue-audit.test.mjs
 
+      - name: Test share service
+        run: node --test "services/bw-share/test/*.test.mjs"
+
       - name: Lint
         run: pnpm run lint
 
@@ -259,6 +262,14 @@ jobs:
           src/renderer/src/store/slices/repos-cross-host-project-collisions.test.ts
           src/renderer/src/store/slices/repos-host-identity-routing.test.ts
           src/shared/git-remote-identity.test.ts
+          src/shared/task-item-link.test.ts
+          src/renderer/src/lib/http-link-destinations.test.ts
+          src/renderer/src/lib/http-link-routing.test.ts
+          src/renderer/src/lib/http-link-modifier-routing.test.ts
+          src/renderer/src/components/native-chat/native-chat-web-link-actions.test.ts
+          src/renderer/src/components/terminal-pane/terminal-link-action-routing.test.ts
+          src/renderer/src/components/terminal-pane/terminal-link-osc-url-routing.test.ts
+          src/renderer/src/components/terminal-pane/terminal-url-link-hit-testing.test.ts
 
       - name: Test native usage protocols and account integration
         run: >-
@@ -291,7 +302,7 @@ jobs:
         run: pnpm run build:desktop
 
   e2e:
-    name: Workbench Electron smoke
+    name: Workbench Electron PR E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: verify
@@ -319,14 +330,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
 
-      - name: Run Workbench smoke
+      - name: Run Workbench PR E2E allowlist
         run: xvfb-run --auto-servernum pnpm run test:e2e:workbench
 
       # Preserve successful journey screenshots as well as failure diagnostics.
-      - name: Upload Workbench smoke evidence
+      - name: Upload Workbench PR E2E evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: workbench-smoke-test-results
+          name: workbench-pr-e2e-results
           path: test-results/
           if-no-files-found: ignore

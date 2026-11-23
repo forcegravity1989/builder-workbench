@@ -1,0 +1,1413 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>产物分享 · 分享入口与清理列表高保真原型</title>
+    <!--
+  产物分享特性可点原型（单文件、无构建，浏览器直接打开；离线可用，不发真实请求）。
+  行为正本 ../spec.md，价值 ../intent.md，链状态 ../STATUS.md。
+  界面对齐 PR #691 检视返工后的现行实现：
+  ArtifactPublishButton / ArtifactPublishedLinkPanel / ArtifactsSettingsPane /
+  ArtifactsSharedLinksSection；含检视返工落地的 stale-record 出口（更新 / 重新分享自动新建链接；
+  移除即删本机记录、弹层当场回到未分享并如实报错）、records-unreadable 的本地化失败文案 + Try again、
+  移除进行中态、远程来源行标签、Web 客户端提示与 enrollment-full / registry-unavailable 不可重试错误。
+  文案逐字取 src/renderer/src/i18n/locales/en.json 的
+  auto.components.artifacts.* 与 auto.components.settings.artifacts.* 英文值，不自创。
+  数据与链接地址均为示意（真实服务地址编译内置于客户端）。原型不表示能力已交付。
+  图标为 lucide（ISC）同名图标的内联副本，与产品 lucide-react 一致。
+-->
+    <link rel="stylesheet" href="../../../04-design-system/styles.css" />
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        background: var(--color-bg);
+        padding-bottom: 72px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      main {
+        max-width: 1020px;
+        margin: 0 auto;
+        padding: 16px 20px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* ── 原型演示工具条（不属产品 UI） ── */
+      .demo-bar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 20px;
+        border-bottom: 1px solid var(--color-divider);
+        background: var(--color-card);
+        font-size: 12px;
+      }
+      .demo-bar strong {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text);
+      }
+      .demo-bar .group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted-foreground);
+      }
+      .demo-bar select {
+        height: 24px;
+        padding: 0 6px;
+        border: 1px solid var(--color-divider);
+        border-radius: var(--radius-sm);
+        background: var(--color-card);
+        color: var(--color-text);
+        font-size: 12px;
+        font-family: inherit;
+      }
+      .demo-note {
+        margin-left: auto;
+        max-width: 460px;
+        text-align: right;
+        color: var(--muted-foreground);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      /* ── 原型注释与复用标注 ── */
+      .proto-note {
+        font-size: 12px;
+        line-height: 1.7;
+        font-style: italic;
+        color: var(--muted-foreground);
+        margin: 0;
+      }
+      .proto-note a {
+        color: inherit;
+      }
+      .reuse-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      a.tag {
+        text-decoration: none;
+        color: inherit;
+      }
+      a.tag:hover {
+        text-decoration: underline;
+      }
+      .demo-note a {
+        color: inherit;
+      }
+      .surface {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .state-note {
+        min-height: 0;
+      }
+
+      /* ── 浏览器标签工具栏（示意，复用原生） ── */
+      .browser-shell,
+      .editor-shell,
+      .settings-shell {
+        border: 1px solid var(--color-divider);
+        border-radius: var(--radius-lg);
+        background: var(--color-card);
+        overflow: visible;
+      }
+      .bt-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--color-divider);
+      }
+      .addr {
+        flex: 1;
+        min-width: 0;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        border: 1px solid var(--color-divider);
+        border-radius: var(--radius-md);
+        background: var(--background);
+        color: var(--muted-foreground);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .spacer {
+        flex: 1;
+      }
+      .page-sketch {
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 170px;
+        background: var(--background);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      }
+      .sk-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--color-text);
+      }
+      .sk-line {
+        height: 10px;
+        border-radius: 4px;
+        background: color-mix(in srgb, var(--color-text) 8%, transparent);
+      }
+
+      /* ── 编辑器页头（示意，复用原生） ── */
+      .ed-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--color-divider);
+      }
+      .ed-file {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        color: var(--color-text);
+      }
+      .ed-body {
+        padding: 16px 20px;
+        min-height: 170px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.9;
+        color: var(--muted-foreground);
+        background: var(--background);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        white-space: pre-wrap;
+      }
+
+      /* ── 分享弹层（复用 Orca Popover 原语形态，w-80 = 320px） ── */
+      .share-anchor {
+        position: relative;
+        display: inline-flex;
+      }
+      .btn.on {
+        background: color-mix(in srgb, var(--color-text) 8%, transparent);
+        color: var(--color-text);
+      }
+      .i24 {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+      }
+      .i24 svg {
+        width: 14px;
+        height: 14px;
+      }
+      .pop {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        width: 320px;
+        z-index: 40;
+        text-align: left;
+        background: var(--popover);
+        color: var(--popover-foreground);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-floating);
+      }
+      .pop-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+      }
+      .pop-head h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+        color: inherit;
+      }
+      .pop-desc {
+        margin: 4px 0 0;
+        font-size: 12px;
+        line-height: 20px;
+        color: var(--muted-foreground);
+      }
+      .pop-body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .pop-note {
+        margin: 0;
+        font-size: 12px;
+        line-height: 20px;
+        color: var(--muted-foreground);
+      }
+      .linkrow {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        min-width: 0;
+      }
+      .linkrow .url {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted-foreground);
+      }
+      .linkrow .btn {
+        color: var(--muted-foreground);
+      }
+      .linkrow .btn:hover {
+        color: var(--foreground);
+      }
+      .rm {
+        color: var(--muted-foreground);
+      }
+      .rm:hover {
+        color: var(--destructive);
+      }
+      .confirm-box {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid color-mix(in srgb, var(--destructive) 40%, transparent);
+        border-radius: var(--radius-md);
+        background: color-mix(in srgb, var(--destructive) 5%, transparent);
+      }
+      .confirm-box p {
+        margin: 0;
+        font-size: 12px;
+        line-height: 20px;
+      }
+      .confirm-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .spin {
+        animation: pp-spin 1s linear infinite;
+        transform-origin: center;
+      }
+      @keyframes pp-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── 设置 → Artifacts（骨架复用原生，仅画本特性面板） ── */
+      .settings-shell {
+        overflow: hidden;
+      }
+      .pane-head {
+        padding: 18px 24px 14px;
+      }
+      .crumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--muted-foreground);
+        margin-bottom: 10px;
+      }
+      .pane-head h2 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 0;
+        color: var(--color-text);
+      }
+      .pane-head .desc {
+        margin: 4px 0 0;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted-foreground);
+      }
+      .pane-section {
+        padding: 20px 24px;
+        border-top: 1px solid var(--border);
+      }
+      .sec-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--color-text);
+      }
+      .sec-desc {
+        margin: 4px 0 0;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted-foreground);
+      }
+      .sec-note {
+        margin: 12px 0 0;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted-foreground);
+      }
+      .sec-error {
+        margin: 12px 0 0;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--destructive);
+      }
+      .errbox {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .errbox .sec-error {
+        margin: 0;
+      }
+      .steps {
+        list-style: none;
+        counter-reset: none;
+        margin: 16px 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .step {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .step-num {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+        background: color-mix(in srgb, var(--muted) 30%, transparent);
+        color: var(--muted-foreground);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .step-title {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-text);
+      }
+      .step-desc {
+        margin: 2px 0 0;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted-foreground);
+      }
+      .rows {
+        margin-top: 12px;
+        border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+      }
+      .srow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+      }
+      .srow-main {
+        flex: 1;
+        min-width: 0;
+      }
+      .srow-label {
+        margin: 0;
+        font-size: 14px;
+        color: var(--color-text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .srow-url {
+        display: block;
+        font-size: 12px;
+        color: var(--muted-foreground);
+        text-decoration: none;
+        text-underline-offset: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .srow-url:hover {
+        text-decoration: underline;
+      }
+      .del-text {
+        color: var(--destructive);
+      }
+      .del-text:hover {
+        color: var(--destructive);
+      }
+      .h24 {
+        height: 24px;
+        padding: 0 8px;
+        font-size: 12px;
+      }
+      /* 让确认对话框盖过演示工具条（产品里模态在所有内容之上） */
+      .dialog-backdrop {
+        z-index: 70;
+      }
+
+      /* ── toast（按产品 sonner 皮肤形态：popover 底、浮动阴影，非 .toast 反色） ── */
+      .toaster {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 60;
+        width: min(356px, calc(100vw - 32px));
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .toast-card {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--popover);
+        color: var(--popover-foreground);
+        box-shadow: var(--shadow-floating);
+        font-size: 14px;
+      }
+      .toast-card > svg {
+        flex: none;
+        margin-top: 2px;
+      }
+      .toast-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .toast-title {
+        line-height: 1.35;
+        font-weight: 500;
+      }
+      .toast-desc {
+        font-size: 14px;
+        line-height: 1.45;
+        color: color-mix(in srgb, var(--popover-foreground) 80%, transparent);
+      }
+      .toast-close {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--popover);
+        color: var(--popover-foreground);
+        cursor: pointer;
+        padding: 0;
+      }
+      .toast-close:hover {
+        background: var(--accent);
+      }
+      .t-success {
+        color: var(--color-success-deep);
+      }
+      .t-error {
+        color: var(--destructive);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="demo-bar">
+      <strong>原型演示工具（非产品 UI）</strong>
+      <label class="group"
+        >界面
+        <select id="surface-select">
+          <option value="browser">分享弹层 · 浏览器标签工具栏</option>
+          <option value="editor">分享弹层 · 编辑器页头</option>
+          <option value="settings">设置 → Artifacts</option>
+        </select>
+      </label>
+      <label class="group"
+        >状态
+        <select id="stage-select"></select>
+      </label>
+      <button type="button" class="btn btn-secondary" id="theme-toggle">暗色</button>
+      <span class="demo-note"
+        >业界参考：「生成公开链接 + 复制 / 打开 / 更新 / 撤销」面板沿用
+        <a href="https://www.notion.com/help" target="_blank" rel="noreferrer">Notion Help Center</a>
+        所述 Share-to-web 一类公开链接惯例；本实现直接复用 Orca 既有
+        <a href="../../../../src/renderer/src/components/artifacts/ArtifactPublishedLinkPanel.tsx"
+          >链接面板组件</a
+        >
+        与
+        <a href="../../../../src/renderer/src/components/ui/popover.tsx">Popover</a> /
+        <a href="../../../../src/renderer/src/components/ui/button.tsx">Button</a>
+        原语（spec「承载与复用」）。</span
+      >
+    </div>
+
+    <main>
+      <p class="proto-note">
+        原型注释：产物分享特性可点原型，行为正本见 <a href="../spec.md">spec</a>，价值见
+        <a href="../intent.md">intent</a>，链状态见 <a href="../STATUS.md">STATUS</a>。界面与文案对齐 PR #691
+        检视返工后的现行实现（英文文案逐字取自 i18n 真实值）；数据与链接地址均为示意，不发真实请求，不表示能力已交付。
+      </p>
+
+      <!-- ═══ 界面 1：浏览器标签工具栏的分享弹层 ═══ -->
+      <section class="surface" id="surface-browser">
+        <div class="reuse-tags">
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/browser-pane/assemble-chrome/browser-chrome-toolbar.tsx">复用：浏览器标签工具栏（Orca 原生，示意未重画）</a>
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/artifacts/ArtifactPublishedLinkPanel.tsx">复用：Share as artifact 按钮、Popover 与链接面板（既有）</a>
+          <span class="tag tag-outline">本轮变化：主机端链路改为团队自管分享服务，零配置</span>
+        </div>
+        <div class="browser-shell">
+          <div class="bt-row">
+            <button type="button" class="btn btn-ghost btn-icon" title="Back（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-icon" title="Forward（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-icon" title="Reload（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            </button>
+            <div class="addr" title="file:///C:/Users/dev/reports/q3-review.html">file:///C:/Users/dev/reports/q3-review.html</div>
+            <button type="button" class="btn btn-ghost btn-icon" title="Grab page element（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-icon" title="Annotate page element（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M12 8v6"/><path d="M9 11h6"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-icon" title="Markup（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.707 21.293a1 1 0 0 1-1.414 0l-1.586-1.586a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l1.586 1.586a1 1 0 0 1 0 1.414z"/><path d="m18 13-1.375-6.874a1 1 0 0 0-.746-.776L3.235 2.028a1 1 0 0 0-1.207 1.207L5.35 15.879a1 1 0 0 0 .776.746L13 18"/><path d="m2.3 2.3 7.286 7.286"/></svg>
+            </button>
+            <span class="share-anchor" data-anchor="browser">
+              <button type="button" class="btn btn-ghost btn-icon on" id="share-trigger-browser" title="Share as artifact" aria-expanded="true" aria-haspopup="dialog">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+              </button>
+              <!-- 弹层由脚本渲染到此处 -->
+            </span>
+            <button type="button" class="btn btn-ghost btn-icon" title="Open browser devtools（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 9-3 3 3 3"/><path d="m14 15 3-3-3-3"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-icon" title="Open in default browser（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+            </button>
+          </div>
+          <div class="page-sketch">
+            <h2 class="sk-title">Q3 Review Report（本地 HTML 预览 · 示意内容）</h2>
+            <div class="sk-line" style="width: 94%"></div>
+            <div class="sk-line" style="width: 88%"></div>
+            <div class="sk-line" style="width: 91%"></div>
+            <div class="sk-line" style="width: 62%"></div>
+            <div class="sk-line" style="width: 85%"></div>
+            <div class="sk-line" style="width: 40%"></div>
+          </div>
+        </div>
+        <p class="proto-note state-note" id="note-browser"></p>
+      </section>
+
+      <!-- ═══ 界面 2：编辑器页头的分享弹层（Markdown 文件） ═══ -->
+      <section class="surface" id="surface-editor" hidden>
+        <div class="reuse-tags">
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/editor/EditorPanelHeader.tsx">复用：编辑器页头（Orca 原生，示意未重画）</a>
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/artifacts/ArtifactPublishButton.tsx">复用：同一 Share as artifact 弹层组件</a>
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/artifacts/markdown-share-html.ts">本轮变化：Markdown 渲染为独立 HTML 文档后上传，扩展名改 .html</a>
+        </div>
+        <div class="editor-shell">
+          <div class="ed-head">
+            <span class="ed-file">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+              v0.7-release-notes.md
+            </span>
+            <span class="spacer"></span>
+            <button type="button" class="btn btn-ghost i24" title="Table of Contents（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h13"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="M3 10a2 2 0 0 0 2 2h3"/><path d="M3 5v12a2 2 0 0 0 2 2h3"/></svg>
+            </button>
+            <span class="share-anchor" data-anchor="editor">
+              <button type="button" class="btn btn-ghost i24 on" id="share-trigger-editor" title="Share as artifact" aria-expanded="true" aria-haspopup="dialog">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+              </button>
+              <!-- 弹层由脚本渲染到此处 -->
+            </span>
+            <button type="button" class="btn btn-ghost i24" title="Markdown actions（原生，示意）" tabindex="-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+            </button>
+          </div>
+          <div class="ed-body"># v0.7 Release Notes
+
+## 修复
+- 分享入口改走团队自管服务，首次分享自动登记设备
+
+## 变更
+- 移除 Orca 云端 Artifacts 管理页与账号 / 发布开关</div>
+        </div>
+        <p class="proto-note state-note" id="note-editor"></p>
+      </section>
+
+      <!-- ═══ 界面 3：设置 → Artifacts ═══ -->
+      <section class="surface" id="surface-settings" hidden>
+        <div class="reuse-tags">
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/settings/Settings.tsx">复用：原生设置窗口与导航（未重画，只画本面板）</a>
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/confirmation-dialog.tsx">复用：原生确认对话框（删除二次确认）</a>
+          <a class="tag tag-outline" href="../../../../src/renderer/src/components/settings/ArtifactsSharedLinksSection.tsx">本轮新增：「Files you've shared」清理列表</a>
+          <span class="tag tag-outline">本轮移除：Orca 云端 Artifacts 管理页与账号 / 发布开关</span>
+        </div>
+        <div class="settings-shell">
+          <div class="pane-head">
+            <div class="crumb">设置 → Artifacts <span class="tag tag-outline">复用：原生设置壳</span></div>
+            <h2>Artifacts</h2>
+            <p class="desc">Share HTML and Markdown files with your team and manage their public links.</p>
+          </div>
+          <div id="pane-content"><!-- 按状态由脚本渲染 --></div>
+        </div>
+        <p class="proto-note state-note" id="note-settings"></p>
+      </section>
+    </main>
+
+    <div class="toaster" id="toaster"></div>
+    <div id="dialog-root"></div>
+
+    <script>
+      'use strict'
+      /* ── 示意数据 ── */
+      var LINK_URL = 'http://bw-share.internal.example/s/9kQ2mXvB7pL4wRtZcYd3Hg'
+      var LINK_URL_2 = 'http://bw-share.internal.example/s/T4mPqX8nRvB2wLdY7cKsZa'
+      // stale-record 出口演示：自动新建后换到的新链接
+      var LINK_URL_NEW = 'http://bw-share.internal.example/s/Nw7QrT2vXpL5mKcY8dZsBh'
+      // 远程运行时来源行（["editor", env, host, path] 元组键）
+      var LINK_URL_R = 'http://bw-share.internal.example/s/Rt5YhN9wQpL2vXcB7mKdZe'
+      var ROWS = [
+        {
+          key: 'C:\\Users\\dev\\reports\\q3-review.html',
+          label: 'q3-review.html',
+          url: LINK_URL
+        },
+        {
+          key: 'C:\\Users\\dev\\projects\\workbench\\v0.7-acceptance-report.md',
+          label: 'v0.7-acceptance-report.md',
+          url: LINK_URL_2
+        },
+        {
+          key: '["editor","env-1","host-2","/home/dev/notes/notes.md"]',
+          label: 'notes.md · host-2 · env-1',
+          url: LINK_URL_R,
+          stale: true
+        }
+      ]
+
+      /* ── 文案逐字取自 en.json（auto.components.artifacts.* / auto.components.settings.artifacts.*） ── */
+      var T = {
+        popTitle: 'Share as artifact',
+        descConfirm: 'This publishes the current file at a link anyone with the URL can view.',
+        descPublished: 'Anyone with this link can view the shared file.',
+        generate: 'Generate link',
+        sharing: 'Sharing…',
+        checkFailed: 'Could not check for an existing link.',
+        tryAgain: 'Try again',
+        copyLink: 'Copy link',
+        copySuccess: 'Artifact link copied',
+        openLink: 'Open link',
+        update: 'Update shared content',
+        updating: 'Updating…',
+        remove: 'Remove link',
+        removeConfirm: 'Remove this link? Anyone holding it will lose access.',
+        cancel: 'Cancel',
+        toastShared: 'Artifact shared',
+        toastUpdated: 'Artifact updated',
+        toastTooLargeTitle: 'File is too large to share',
+        toastTooLargeDesc: 'This file is 12.4 MiB; the share limit is 10 MiB.',
+        toastFailedTitle: 'Could not share artifact',
+        toastNetworkDesc: 'Could not reach the share server. Check your network connection.',
+        toastStaleRecordDesc:
+          'This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server.',
+        removeFailedTitle: 'Could not remove the link.',
+        deleteFailedTitle: 'Could not delete this shared link.',
+        enrollmentFullDesc:
+          'The share server has no room left for new devices. An administrator has to clear its device list before sharing works again.',
+        registryUnavailableDesc:
+          'The share server cannot read its device list and is refusing new shares. An administrator has to restore it on the server.',
+        webOnlyPop: 'Desktop only. Open this file on the host device to share it.',
+        recordsUnreadableDesc:
+          'Your share history on this computer could not be read, so this list may be incomplete. Existing links may still work; sharing a file again creates a new link.',
+        howToTitle: 'How to use Artifacts',
+        howToDesc:
+          'Publish HTML or Markdown files as public links, then share them with your team.',
+        step1Title: 'Choose a file to share',
+        step1Desc:
+          'Open an HTML or Markdown file and select Share as artifact, or ask an agent to share it.',
+        step2Title: 'Copy the public link',
+        step2Desc: 'After publishing, copy the link and send it to your team.',
+        step3Title: 'Update or remove the link',
+        step3Desc:
+          'Reopen the same file and use Share as artifact to publish new content over the same link.',
+        linksTitle: "Files you've shared",
+        linksDesc:
+          'Links this computer created. Deleting a link makes it stop working immediately.',
+        linksEmpty:
+          'No shared files yet. Open an HTML or Markdown file and choose Share as artifact.',
+        linksLoadFailed: 'Could not load your shared files.',
+        loading: 'Loading…',
+        linksWebDesc:
+          'Desktop only. Open Settings → Artifacts on the host device to see and delete your shared links.',
+        linksDelete: 'Delete',
+        dlgTitle: 'Delete this shared link?',
+        dlgDesc:
+          'The link stops working for everyone immediately. Share the file again to create a new one.',
+        dlgConfirm: 'Delete'
+      }
+
+      /* ── lucide 图标内联副本 ── */
+      function svg(paths, size) {
+        var s = size || 16
+        return (
+          '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s +
+          '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          paths + '</svg>'
+        )
+      }
+      var ICON = {
+        share: svg('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>', 14),
+        copy: svg('<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>', 14),
+        check: svg('<path d="M20 6 9 17l-5-5"/>', 14),
+        external: svg('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>', 14),
+        refresh: svg('<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>', 14),
+        trash: svg('<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>', 14),
+        loader: svg('<path d="M21 12a9 9 0 1 1-6.219-8.56"/>', 14),
+        circleCheck: svg('<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>', 16),
+        circleX: svg('<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>', 16),
+        x: svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 12)
+      }
+
+      /* ── 状态机 ── */
+      var STAGES = {
+        browser: [
+          ['generate', '未分享 · Generate link'],
+          ['link', '已有链接 · 复制 / 打开 / 更新 / 移除'],
+          ['too-large', '错误 · 文件超过 10 MiB'],
+          ['network', '错误 · 分享服务不可达'],
+          ['enrollment-full', '错误 · 服务端设备登记已满（不可重试）'],
+          ['registry-unavailable', '错误 · 服务端设备注册表不可用（不可重试）'],
+          ['stale-record', '本机记录的编辑令牌被服务端拒绝（stale-record）'],
+          ['check-failed', '错误 · 本机记录查询失败（重试）'],
+          ['web', 'Web / 远程客户端提示']
+        ],
+        editor: null,
+        settings: [
+          ['list', '列表有数据（含删除二次确认）'],
+          ['empty', '空态'],
+          ['load-error', '读取本机记录失败（主机原因 + 重试）'],
+          ['load-error-generic', '通用读取失败（对照）'],
+          ['web', 'Web / 远程客户端提示']
+        ]
+      }
+      STAGES.editor = STAGES.browser
+
+      var NOTES = {
+        popover: {
+          generate:
+            '原型注释：分享服务地址与设备登记密钥编译内置；首次点「Generate link」自动完成设备登记并生成链接，用户零配置。本原型不发真实请求，点击为成功路径演示。',
+          link:
+            '原型注释：链接从本机分享记录读回，不请求 Orca 账号。复制、在浏览器打开、更新内容、Remove link（行内二次确认）即本面板全部真实交互；示例地址不可点。',
+          'too-large':
+            '原型注释：10 MiB 上限在上传前于本地校验（零网络调用）；服务端 413 复用同一文案，均给出实际大小与上限。',
+          network:
+            '原型注释：此态演示首次分享不可达；若文件已分享，弹层仍显示本机记录的链接，仅更新时如实报错（spec「事实读回与失败」）。',
+          'enrollment-full':
+            '原型注释：服务端设备列表已满、无法登记新设备，属不可重试错误——需管理员在服务端清理设备列表后才能分享。',
+          'registry-unavailable':
+            '原型注释：服务端读不到自己的设备列表并拒绝新分享，属不可重试错误——需管理员在服务端恢复。',
+          'stale-record':
+            '原型注释：编辑令牌被服务端拒绝的出口——更新 / 重新分享自动丢弃本机记录并新建链接（正常分享成功）；Remove 移除本机记录、弹层当场回到未分享，并如实报错：原链接可能仍存在、需运维在服务端删除。',
+          'check-failed':
+            '原型注释：弹层每次打开都按文件来源键查询本机记录；查询失败提供「Try again」，恢复后才显示 Generate link 或链接面板。',
+          web:
+            '原型注释：Web / 远程客户端的弹层不查询主机记录，直接提示在主机端打开文件分享；发布、读链接、删除 RPC 在主机端直接拒绝。'
+        },
+        settings: {
+          list:
+            '原型注释：列表只读本机 records.json，删除走与弹层「Remove link」相同的主机端链路。notes.md · host-2 · env-1 行是远程运行时来源（标签由 ["editor", env, host, path] 元组键生成，tooltip 为完整来源键；SSH 来源为「文件名 · SSH 目标」）；对该行点 Delete 演示 stale-record 出口（行消失 + 如实报错），其余行演示正常删除成功。',
+          empty:
+            '原型注释：空态引导打开 HTML / Markdown 文件使用「Share as artifact」。',
+          'load-error':
+            '原型注释：记录文件读不出来时主机隔离为 records.json.corrupt-<时间戳> 并返回 records-unreadable，页面显示本地化文案 + Try again，不当成空列表；任一次记录写入成功（如重新分享）后同一会话即可恢复，中文诊断（含隔离文件名）只进 console。弹层按无记录处理，重新分享会建新链接。',
+          'load-error-generic':
+            '原型注释：对照态——主机没有给出具体原因（如 RPC 桥失败）时，显示通用失败文案，同样带 Try again。',
+          web:
+            '原型注释：Web / 远程客户端不读主机本机记录；页面显示「在主机端打开」提示而非空列表。'
+        }
+      }
+
+      var state = {
+        surface: 'browser',
+        st: 'generate',
+        pop: 'generate', // generate | link | confirm | failed | web
+        busy: null, // 'sharing' | 'updating' | null
+        copied: false,
+        toast: null,
+        url: LINK_URL, // 弹层面板当前显示的链接（stale-record 换新链接后变化）
+        rows: ROWS.slice(),
+        confirmRow: null,
+        settingsReloading: false // 设置页 Try again 的 Loading… 瞬间
+      }
+
+      var surfaceSelect = document.getElementById('surface-select')
+      var stageSelect = document.getElementById('stage-select')
+      var toaster = document.getElementById('toaster')
+      var dialogRoot = document.getElementById('dialog-root')
+
+      function esc(text) {
+        return String(text)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+      }
+
+      function isPopoverSurface() {
+        return state.surface === 'browser' || state.surface === 'editor'
+      }
+
+      function enterStage(st) {
+        if (busyTimer !== null) {
+          window.clearTimeout(busyTimer)
+          busyTimer = null
+        }
+        if (copiedTimer !== null) {
+          window.clearTimeout(copiedTimer)
+          copiedTimer = null
+        }
+        state.st = st
+        state.busy = null
+        state.copied = false
+        state.confirmRow = null
+        state.settingsReloading = false
+        if (retryTimer !== null) {
+          window.clearTimeout(retryTimer)
+          retryTimer = null
+        }
+        if (st === 'list') state.rows = ROWS.slice()
+        if (isPopoverSurface()) {
+          state.url = LINK_URL
+          if (st === 'generate') {
+            state.pop = 'generate'
+            state.toast = null
+          } else if (st === 'link') {
+            state.pop = 'link'
+            state.toast = null
+          } else if (st === 'too-large') {
+            state.pop = 'generate'
+            state.toast = { kind: 'error', title: T.toastTooLargeTitle, desc: T.toastTooLargeDesc }
+          } else if (st === 'network') {
+            state.pop = 'generate'
+            state.toast = { kind: 'error', title: T.toastFailedTitle, desc: T.toastNetworkDesc }
+          } else if (st === 'enrollment-full') {
+            state.pop = 'generate'
+            state.toast = { kind: 'error', title: T.toastFailedTitle, desc: T.enrollmentFullDesc }
+          } else if (st === 'registry-unavailable') {
+            state.pop = 'generate'
+            state.toast = { kind: 'error', title: T.toastFailedTitle, desc: T.registryUnavailableDesc }
+          } else if (st === 'stale-record') {
+            // 打开弹层时本机记录仍在，面板与普通链接态无异；被拒只在更新 / 删除时显形
+            state.pop = 'link'
+            state.toast = null
+          } else if (st === 'check-failed') {
+            state.pop = 'failed'
+            state.toast = null
+          } else if (st === 'web') {
+            state.pop = 'web'
+            state.toast = null
+          }
+        }
+        render()
+      }
+
+      function syncStageSelect() {
+        var current = state.st
+        if (isPopoverSurface()) {
+          if (
+            state.pop === 'link' &&
+            (current === 'generate' || current === 'check-failed' || current === 'stale-record')
+          ) {
+            current = 'link'
+          }
+          if (state.pop === 'generate' && (current === 'link' || current === 'stale-record')) {
+            current = 'generate'
+          }
+        }
+        state.st = current
+        stageSelect.value = current
+      }
+
+      /* ── 弹层渲染 ── */
+      function linkRowHTML() {
+        var copyIcon = state.copied ? ICON.check : ICON.copy
+        var copyTitle = state.copied ? T.copySuccess : T.copyLink
+        return (
+          '<div class="linkrow">' +
+          '<p class="url" title="' + esc(state.url) + '">' + esc(state.url) + '</p>' +
+          '<button type="button" class="btn btn-ghost btn-icon i24" data-action="copy" title="' + esc(copyTitle) + '" aria-label="' + esc(copyTitle) + '">' + copyIcon + '</button>' +
+          '<button type="button" class="btn btn-ghost btn-icon i24" data-action="open" title="' + esc(T.openLink) + '" aria-label="' + esc(T.openLink) + '">' + ICON.external + '</button>' +
+          '</div>'
+        )
+      }
+
+      function updateButtonHTML() {
+        if (state.busy === 'updating') {
+          return (
+            '<button type="button" class="btn btn-secondary btn-block" disabled>' +
+            '<span class="spin" style="display:inline-flex">' + ICON.loader + '</span> ' + esc(T.updating) + '</button>'
+          )
+        }
+        if (state.busy === 'removing') {
+          return (
+            '<button type="button" class="btn btn-secondary btn-block" disabled>' +
+            ICON.refresh + ' ' + esc(T.update) + '</button>'
+          )
+        }
+        return (
+          '<button type="button" class="btn btn-secondary btn-block" data-action="update">' +
+          ICON.refresh + ' ' + esc(T.update) + '</button>'
+        )
+      }
+
+      function popBodyHTML() {
+        if (state.pop === 'web') {
+          return '<p class="pop-note">' + esc(T.webOnlyPop) + '</p>'
+        }
+        if (state.pop === 'failed') {
+          return (
+            '<p class="pop-note">' + esc(T.checkFailed) + '</p>' +
+            '<button type="button" class="btn btn-secondary btn-block" data-action="try-again">' + esc(T.tryAgain) + '</button>'
+          )
+        }
+        if (state.pop === 'generate') {
+          if (state.busy === 'sharing') {
+            return (
+              '<button type="button" class="btn btn-primary btn-block" disabled>' +
+              '<span class="spin" style="display:inline-flex">' + ICON.loader + '</span> ' + esc(T.sharing) + '</button>'
+            )
+          }
+          return (
+            '<button type="button" class="btn btn-primary btn-block" data-action="generate">' +
+            ICON.share + ' ' + esc(T.generate) + '</button>'
+          )
+        }
+        // link / confirm
+        var tail
+        if (state.pop === 'confirm') {
+          // 移除进行中：确认框保持展开，Remove 转 spinner，两颗按钮都禁用，直到 removing 结束才收起
+          var removing = state.busy === 'removing'
+          var rmBtn = removing
+            ? '<button type="button" class="btn btn-danger" disabled><span class="spin" style="display:inline-flex">' + ICON.loader + '</span> ' + esc(T.remove) + '</button>'
+            : '<button type="button" class="btn btn-danger" data-action="remove-confirm">' + ICON.trash + ' ' + esc(T.remove) + '</button>'
+          var cancelBtn = removing
+            ? '<button type="button" class="btn btn-ghost" disabled>' + esc(T.cancel) + '</button>'
+            : '<button type="button" class="btn btn-ghost" data-action="remove-cancel">' + esc(T.cancel) + '</button>'
+          tail =
+            '<div class="confirm-box">' +
+            '<p>' + esc(T.removeConfirm) + '</p>' +
+            '<div class="confirm-actions">' + rmBtn + cancelBtn + '</div></div>'
+        } else {
+          tail =
+            '<button type="button" class="btn btn-ghost btn-block rm" data-action="remove-ask">' +
+            ICON.trash + ' ' + esc(T.remove) + '</button>'
+        }
+        return linkRowHTML() + updateButtonHTML() + tail
+      }
+
+      function popHTML() {
+        var published = state.pop === 'link' || state.pop === 'confirm'
+        var desc = published ? T.descPublished : T.descConfirm
+        return (
+          '<div class="pop" role="dialog" aria-label="' + esc(T.popTitle) + '">' +
+          '<div class="pop-head"><h3>' + esc(T.popTitle) + '</h3><p class="pop-desc">' + esc(desc) + '</p></div>' +
+          '<div class="pop-body">' + popBodyHTML() + '</div>' +
+          '</div>'
+        )
+      }
+
+      /* ── toast 渲染 ── */
+      function toastHTML() {
+        if (!state.toast) return ''
+        var icon =
+          state.toast.kind === 'success'
+            ? '<span class="t-success" style="display:inline-flex">' + ICON.circleCheck + '</span>'
+            : '<span class="t-error" style="display:inline-flex">' + ICON.circleX + '</span>'
+        return (
+          '<div class="toast-card" role="status">' + icon +
+          '<div class="toast-content"><div class="toast-title">' + esc(state.toast.title) + '</div>' +
+          (state.toast.desc ? '<div class="toast-desc">' + esc(state.toast.desc) + '</div>' : '') +
+          '</div>' +
+          '<button type="button" class="toast-close" data-action="toast-close" title="Close" aria-label="Close">' + ICON.x + '</button>' +
+          '</div>'
+        )
+      }
+
+      /* ── 设置面板渲染 ── */
+      function howToHTML() {
+        var steps = [
+          [T.step1Title, T.step1Desc],
+          [T.step2Title, T.step2Desc],
+          [T.step3Title, T.step3Desc]
+        ]
+        var items = steps
+          .map(function (step, index) {
+            return (
+              '<li class="step"><span class="step-num">' + (index + 1) + '</span>' +
+              '<div><p class="step-title">' + esc(step[0]) + '</p>' +
+              '<p class="step-desc">' + esc(step[1]) + '</p></div></li>'
+            )
+          })
+          .join('')
+        return (
+          '<section class="pane-section">' +
+          '<h3 class="sec-title">' + esc(T.howToTitle) + '</h3>' +
+          '<p class="sec-desc">' + esc(T.howToDesc) + '</p>' +
+          '<ol class="steps">' + items + '</ol>' +
+          '</section>'
+        )
+      }
+
+      function settingsStateHTML() {
+        if (state.st === 'web') {
+          return (
+            '<section class="pane-section">' +
+            '<h3 class="sec-title">' + esc(T.linksTitle) + '</h3>' +
+            '<p class="sec-note">' + esc(T.linksWebDesc) + '</p>' +
+            '</section>'
+          )
+        }
+        var body
+        if (state.st === 'empty') {
+          body = '<p class="sec-note">' + esc(T.linksEmpty) + '</p>'
+        } else if (state.st === 'load-error' || state.st === 'load-error-generic') {
+          if (state.settingsReloading) {
+            body = '<p class="sec-note">' + esc(T.loading) + '</p>'
+          } else {
+            var message = state.st === 'load-error' ? T.recordsUnreadableDesc : T.linksLoadFailed
+            body =
+              '<div class="errbox"><p class="sec-error">' + esc(message) + '</p>' +
+              '<button type="button" class="btn btn-secondary h24" data-action="settings-retry">' + esc(T.tryAgain) + '</button></div>'
+          }
+        } else {
+          body = state.rows.length
+            ? '<div class="rows">' +
+              state.rows
+                .map(function (row) {
+                  return (
+                    '<div class="srow"><div class="srow-main">' +
+                    '<p class="srow-label" title="' + esc(row.key) + '">' + esc(row.label) + '</p>' +
+                    '<a class="srow-url" href="#" title="' + esc(row.url) + '" data-action="noop">' + esc(row.url) + '</a>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-ghost h24 del-text" data-action="row-delete" data-key="' + esc(row.key) + '">' + esc(T.linksDelete) + '</button>' +
+                    '</div>'
+                  )
+                })
+                .join('') +
+              '</div>'
+            : '<p class="sec-note">' + esc(T.linksEmpty) + '</p>'
+        }
+        return (
+          '<section class="pane-section">' +
+          '<h3 class="sec-title">' + esc(T.linksTitle) + '</h3>' +
+          '<p class="sec-desc">' + esc(T.linksDesc) + '</p>' +
+          body +
+          '</section>'
+        )
+      }
+
+      function dialogHTML() {
+        if (state.confirmRow === null) return ''
+        return (
+          '<div class="dialog-backdrop" data-action="dialog-cancel">' +
+          '<div class="dialog" role="dialog" aria-modal="true" aria-label="' + esc(T.dlgTitle) + '">' +
+          '<h3 class="dialog-title">' + esc(T.dlgTitle) + '</h3>' +
+          '<p class="dialog-body">' + esc(T.dlgDesc) + '</p>' +
+          '<div class="dialog-actions">' +
+          '<button type="button" class="btn btn-secondary" data-action="dialog-cancel">' + esc(T.cancel) + '</button>' +
+          '<button type="button" class="btn btn-danger" data-action="dialog-confirm">' + esc(T.dlgConfirm) + '</button>' +
+          '</div></div></div>'
+        )
+      }
+
+      /* ── 总渲染 ── */
+      function render() {
+        document.getElementById('surface-browser').hidden = state.surface !== 'browser'
+        document.getElementById('surface-editor').hidden = state.surface !== 'editor'
+        document.getElementById('surface-settings').hidden = state.surface !== 'settings'
+
+        var anchors = document.querySelectorAll('.share-anchor')
+        for (var i = 0; i < anchors.length; i++) {
+          anchors[i].querySelector('.pop-slot')?.remove()
+          if (isPopoverSurface() && anchors[i].dataset.anchor === state.surface) {
+            var slot = document.createElement('div')
+            slot.className = 'pop-slot'
+            slot.style.display = 'contents'
+            slot.innerHTML = popHTML()
+            anchors[i].appendChild(slot)
+          }
+        }
+
+        document.getElementById('pane-content').innerHTML =
+          state.surface === 'settings' ? howToHTML() + settingsStateHTML() : ''
+
+        toaster.innerHTML = toastHTML()
+        dialogRoot.innerHTML = dialogHTML()
+
+        var noteIds = { browser: 'note-browser', editor: 'note-editor', settings: 'note-settings' }
+        var noteMap = state.surface === 'settings' ? NOTES.settings : NOTES.popover
+        for (var key in noteIds) {
+          document.getElementById(noteIds[key]).textContent =
+            state.surface === key ? noteMap[state.st] || '' : ''
+        }
+      }
+
+      /* ── 交互 ── */
+      var busyTimer = null
+      var copiedTimer = null
+      var toastTimer = null
+      var retryTimer = null
+
+      function later(ms, fn) {
+        return window.setTimeout(fn, ms)
+      }
+
+      function showToast(toast, autoHide) {
+        state.toast = toast
+        if (toastTimer !== null) window.clearTimeout(toastTimer)
+        toastTimer = autoHide
+          ? later(4000, function () {
+              toastTimer = null
+              if (state.toast === toast) {
+                state.toast = null
+                render()
+              }
+            })
+          : null
+        render()
+      }
+
+      document.addEventListener('click', function (event) {
+        var target = event.target.closest('[data-action]')
+        if (!target) return
+        var action = target.dataset.action
+        event.preventDefault()
+
+        if (action === 'generate') {
+          if (state.st === 'too-large') {
+            showToast({ kind: 'error', title: T.toastTooLargeTitle, desc: T.toastTooLargeDesc }, false)
+            return
+          }
+          if (state.st === 'network') {
+            showToast({ kind: 'error', title: T.toastFailedTitle, desc: T.toastNetworkDesc }, false)
+            return
+          }
+          if (state.st === 'enrollment-full') {
+            showToast({ kind: 'error', title: T.toastFailedTitle, desc: T.enrollmentFullDesc }, false)
+            return
+          }
+          if (state.st === 'registry-unavailable') {
+            showToast({ kind: 'error', title: T.toastFailedTitle, desc: T.registryUnavailableDesc }, false)
+            return
+          }
+          state.busy = 'sharing'
+          render()
+          if (busyTimer !== null) window.clearTimeout(busyTimer)
+          busyTimer = later(900, function () {
+            busyTimer = null
+            state.busy = null
+            state.pop = 'link'
+            syncStageSelect()
+            showToast({ kind: 'success', title: T.toastShared }, true)
+          })
+          return
+        }
+        if (action === 'update') {
+          var staleUpdate = state.st === 'stale-record'
+          state.busy = 'updating'
+          render()
+          if (busyTimer !== null) window.clearTimeout(busyTimer)
+          busyTimer = later(900, function () {
+            busyTimer = null
+            state.busy = null
+            if (staleUpdate) {
+              // 服务端拒绝本机编辑令牌：主机丢弃旧记录并新建链接，用户看到正常分享成功（created）
+              state.url = LINK_URL_NEW
+              state.pop = 'link'
+              state.st = 'link'
+              syncStageSelect()
+              showToast({ kind: 'success', title: T.toastShared }, true)
+              return
+            }
+            showToast({ kind: 'success', title: T.toastUpdated }, true)
+          })
+          return
+        }
+        if (action === 'remove-ask') {
+          state.pop = 'confirm'
+          render()
+          return
+        }
+        if (action === 'remove-cancel') {
+          state.pop = 'link'
+          render()
+          return
+        }
+        if (action === 'remove-confirm') {
+          if (state.busy === 'removing') return
+          var staleRemove = state.st === 'stale-record'
+          state.busy = 'removing'
+          render()
+          if (busyTimer !== null) window.clearTimeout(busyTimer)
+          busyTimer = later(900, function () {
+            busyTimer = null
+            state.busy = null
+            // 成功与 stale-record 都当场回到未分享；stale-record 另弹如实报错（标题为移除失败专用）
+            state.pop = 'generate'
+            state.st = 'generate'
+            state.url = LINK_URL
+            syncStageSelect()
+            if (staleRemove) {
+              showToast({ kind: 'error', title: T.removeFailedTitle, desc: T.toastStaleRecordDesc }, false)
+              return
+            }
+            state.toast = null
+            render()
+          })
+          return
+        }
+        if (action === 'copy') {
+          state.copied = true
+          render()
+          if (copiedTimer !== null) window.clearTimeout(copiedTimer)
+          copiedTimer = later(1500, function () {
+            copiedTimer = null
+            state.copied = false
+            render()
+          })
+          return
+        }
+        if (action === 'try-again') {
+          state.pop = 'generate'
+          state.st = 'generate'
+          syncStageSelect()
+          render()
+          return
+        }
+        if (action === 'toast-close') {
+          state.toast = null
+          if (toastTimer !== null) window.clearTimeout(toastTimer)
+          toastTimer = null
+          render()
+          return
+        }
+        if (action === 'settings-retry') {
+          // 真实组件 reloadToken++ 重新加载；尚无一次记录写入成功时，同一会话内重试仍报同一错误
+          state.settingsReloading = true
+          render()
+          if (retryTimer !== null) window.clearTimeout(retryTimer)
+          retryTimer = later(700, function () {
+            retryTimer = null
+            state.settingsReloading = false
+            render()
+          })
+          return
+        }
+        if (action === 'row-delete') {
+          state.confirmRow = target.dataset.key
+          render()
+          return
+        }
+        if (action === 'dialog-cancel') {
+          state.confirmRow = null
+          render()
+          return
+        }
+        if (action === 'dialog-confirm') {
+          var doomed = null
+          state.rows.forEach(function (row) {
+            if (row.key === state.confirmRow) doomed = row
+          })
+          state.rows = state.rows.filter(function (row) {
+            return row.key !== state.confirmRow
+          })
+          state.confirmRow = null
+          if (state.rows.length === 0) state.st = 'empty'
+          syncStageSelect()
+          if (doomed && doomed.stale) {
+            // stale-record：主机已移除本机记录（行消失），toast 用删除失败专用标题 + 如实说明
+            showToast({ kind: 'error', title: T.deleteFailedTitle, desc: T.toastStaleRecordDesc }, false)
+            return
+          }
+          render()
+          return
+        }
+        /* open / noop：示例地址不发请求 */
+      })
+
+      surfaceSelect.addEventListener('change', function () {
+        state.surface = surfaceSelect.value
+        state.toast = null
+        buildStageOptions()
+        enterStage(STAGES[state.surface][0][0])
+      })
+
+      stageSelect.addEventListener('change', function () {
+        enterStage(stageSelect.value)
+      })
+
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var root = document.documentElement
+        var dark = root.getAttribute('data-theme') === 'dark'
+        root.setAttribute('data-theme', dark ? 'light' : 'dark')
+        this.textContent = dark ? '暗色' : '亮色'
+      })
+
+      function buildStageOptions() {
+        var stages = STAGES[state.surface]
+        stageSelect.innerHTML = stages
+          .map(function (pair) {
+            return '<option value="' + pair[0] + '">' + esc(pair[1]) + '</option>'
+          })
+          .join('')
+      }
+
+      buildStageOptions()
+      enterStage('generate')
+    </script>
+  </body>
+</html>

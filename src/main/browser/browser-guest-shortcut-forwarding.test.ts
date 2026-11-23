@@ -545,6 +545,21 @@ describe('setupGuestShortcutForwarding', () => {
     expect(rendererSendMock).toHaveBeenNthCalledWith(6, 'ui:zoomBrowserPage', 'in')
   })
 
+  it.each([
+    { input: { code: 'F5', key: 'F5', meta: false, control: false }, forwards: true },
+    { input: { type: 'keyUp', code: 'F5', key: 'F5' }, forwards: false },
+    { input: { code: 'F5', key: 'F5', shift: true }, forwards: false },
+    { input: { code: 'F5', key: 'F5', alt: true }, forwards: false },
+    { input: { code: 'F5', key: 'F5' }, forwards: false }
+  ])('forwards browser reload from focused guest pages (%#)', ({ input, forwards }) => {
+    const guest = makeGuest()
+    setupGuestShortcutForwarding({ browserTabId, guest, resolveRenderer: () => makeRenderer() })
+    triggerBeforeInput(input)
+    expect(
+      rendererSendMock.mock.calls.some(([channel]) => channel === 'ui:reloadBrowserPage')
+    ).toBe(forwards)
+  })
+
   it('forwards browser history shortcuts from focused guest pages', () => {
     setupGuestShortcutForwarding({
       browserTabId,

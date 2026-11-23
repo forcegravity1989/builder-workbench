@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { Plus, LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { track } from '@/lib/telemetry'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -96,6 +97,8 @@ export function NewVersionDialog({
       catalog.reload()
       const failed = prepareFailed(result)
       if (!failed) {
+        // 结果层埋点（#687）：版本工作区完整创建成功才计数；版本名不上报。
+        track('bw_version_created', {})
         const planStep = result.steps.find((step) => step.workflow === 'plan')
         setBrowsedVersion(projectKey, version)
         onCreated(version)

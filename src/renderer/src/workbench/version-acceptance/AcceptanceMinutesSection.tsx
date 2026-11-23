@@ -141,7 +141,8 @@ export function AcceptanceMinutesSection({
             '整理纪要请求',
             <BoardActionButton>
               <BrainCircuit size={14} aria-hidden="true" /> 整理纪要
-            </BoardActionButton>
+            </BoardActionButton>,
+            'organize-minutes'
           )}
         </span>
       </div>
@@ -399,7 +400,8 @@ function MinutesCard({
               }
             >
               <BrainCircuit size={14} aria-hidden="true" /> 同步会议纪要
-            </BoardActionButton>
+            </BoardActionButton>,
+            'sync-minutes'
           )}
           <span className="acc-muted">
             归档前逐条写明落实结果或跟进 Issue，由助手核对、人在 PR 中确认。

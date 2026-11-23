@@ -45,11 +45,70 @@ describe('CodeHub native repository routing', () => {
     }
   })
 
-  it('preserves the native WSL execution choice for reads and writes', async () => {
+  it('preserves native WSL reads and validates task links through the registered clone identity', async () => {
     await service().viewTask({ ...args, kind: 'issue', iid: 1 })
     await service().setIssueState({ ...args, iid: 1, state: 'open' })
     for (const [, execution] of run.mock.calls) {
       expect(execution).toEqual({ cwd: repo.path, wslDistro: 'Ubuntu' })
+    }
+    for (const kind of ['issue', 'mr'] as const) {
+      run.mockClear()
+      const expectedUrl = `https://codehub.example.com/team/project/${kind === 'mr' ? 'merge_requests' : 'issues'}/1`
+      run.mockImplementation(async (command: string[]) =>
+        JSON.stringify(
+          command[0] === 'project'
+            ? {
+                web_url: 'https://codehub.example.com/team/project',
+                http_url_to_repo: repo.gitRemoteIdentity!.remoteUrl,
+                path_with_namespace: 'team/project'
+              }
+            : { iid: 1, title: 'Task', web_url: expectedUrl }
+        )
+      )
+      expect(await service().viewTask({ ...args, kind, iid: 1, expectedUrl })).toMatchObject({
+        iid: 1,
+        url: expectedUrl
+      })
+      expect(run).toHaveBeenCalledTimes(2)
+      expect(run.mock.lastCall).toEqual([
+        [kind, 'view', '1', '-p', 'team/project', '-H', 'codehub-g.huawei.com', '-f', 'json'],
+        { cwd: repo.path, wslDistro: 'Ubuntu' }
+      ])
+      run.mockClear()
+      await expect(
+        service().viewTask({
+          ...args,
+          kind,
+          iid: 1,
+          expectedUrl: expectedUrl.replace('team/', 'other/')
+        })
+      ).rejects.toThrow('登记项目')
+      expect(run).not.toHaveBeenCalled()
+      await expect(
+        service().viewTask({
+          ...args,
+          kind,
+          iid: 1,
+          expectedUrl: expectedUrl.replace('codehub.example.com', 'codehub-other.example.com')
+        })
+      ).rejects.toThrow('网页来源')
+      expect(run).toHaveBeenCalledTimes(1)
+      run.mockResolvedValue(
+        JSON.stringify({
+          iid: 2,
+          web_url: expectedUrl
+            .replace('codehub.example.com', 'codehub-g.huawei.com')
+            .replace('/1', '/2')
+        })
+      )
+      await expect(
+        service().viewTask({
+          ...args,
+          kind,
+          iid: 1,
+          expectedUrl: expectedUrl.replace('codehub.example.com', 'codehub-g.huawei.com')
+        })
+      ).rejects.toThrow('编号')
     }
   })
 

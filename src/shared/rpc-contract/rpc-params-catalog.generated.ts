@@ -61,7 +61,6 @@ import {
   AiVaultPrepareSessionResumeParams,
   AiVaultSessionTitlesParams
 } from './ai-vault-params'
-import { ArtifactsDeleteParams, ListOptions, SourceRequest, WriteRequest } from './artifacts-params'
 import {
   AutomationCreate,
   AutomationId,
@@ -577,7 +576,7 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
-import { ReviewRequestSchema } from '../workbench/pr-review-request'
+import { ReviewDismissSchema, ReviewRequestSchema } from '../workbench/pr-review-request'
 import {
   MilestoneDiscardRequestSchema,
   MilestoneReadRequestSchema,
@@ -585,8 +584,18 @@ import {
   MilestoneSubmitRequestSchema,
   MilestoneWorkingRequestSchema
 } from '../workbench/project-milestones'
+import {
+  PrototypeReviewAnnotationAddSchema,
+  PrototypeReviewAnnotationDeleteSchema,
+  PrototypeReviewAnnotationListSchema
+} from '../workbench/prototype-review-annotation'
+import {
+  PrototypeReviewDismissSchema,
+  PrototypeReviewRequestSchema
+} from '../workbench/prototype-review-request'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
 import { WorkbenchGroupRemoval, WorkbenchRepoRemoval } from '../workbench/repo-removal'
+import { ShareListSchema, SharePublishSchema, ShareSourceSchema } from '../workbench/share'
 import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
@@ -655,13 +664,6 @@ export const RPC_PARAMS_BY_METHOD = {
   'aiVault.resolveSessionTitles': AiVaultSessionTitlesParams,
   'aiVault.searchSessions': AiVaultSearchRequestSchema,
   'aiVault.searchStatus': AiVaultSearchStatusRequestSchema,
-  'artifacts.delete': ArtifactsDeleteParams,
-  'artifacts.getPublishedLink': SourceRequest,
-  'artifacts.list': ListOptions,
-  'artifacts.publish': WriteRequest,
-  'artifacts.share': WriteRequest,
-  'artifacts.unshare': SourceRequest,
-  'artifacts.update': WriteRequest,
   'automation.create': AutomationCreate,
   'automation.delete': AutomationId,
   'automation.list': AutomationList,
@@ -1262,13 +1264,25 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
+  'workbench.prototypeReview.annotations.add': PrototypeReviewAnnotationAddSchema,
+  'workbench.prototypeReview.annotations.delete': PrototypeReviewAnnotationDeleteSchema,
+  'workbench.prototypeReview.annotations.list': PrototypeReviewAnnotationListSchema,
+  'workbench.prototypeReview.dismiss': PrototypeReviewDismissSchema,
+  'workbench.prototypeReview.identity': null,
+  'workbench.prototypeReview.inbox': null,
+  'workbench.prototypeReview.receive': PrototypeReviewRequestSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
   'workbench.repo.deleteGroup': WorkbenchGroupRemoval,
   'workbench.repo.removeRegistration': WorkbenchRepoRemoval,
   'workbench.review.comments': PullRequest,
+  'workbench.review.dismiss': ReviewDismissSchema,
   'workbench.review.identity': null,
   'workbench.review.inbox': null,
   'workbench.review.receive': ReviewRequestSchema,
+  'workbench.share.getLink': ShareSourceSchema,
+  'workbench.share.list': ShareListSchema,
+  'workbench.share.publish': SharePublishSchema,
+  'workbench.share.remove': ShareSourceSchema,
   'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,

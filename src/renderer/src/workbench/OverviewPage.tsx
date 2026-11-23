@@ -26,6 +26,7 @@ import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { ProjectCard } from './overview-project-card'
 import { useWorkbenchScreenGuide, WorkbenchOverviewHelp } from './WorkbenchScreenGuide'
+import { useWorkbenchScreenUsage } from './workbench-screen-usage'
 import { ErrorDetails, notifyWorkbenchError } from './error-feedback'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
@@ -216,6 +217,10 @@ export function OverviewPage(): React.JSX.Element {
     scoreboardAvailable && !settingsOpen && !refreshing,
     visibleScoreboard === dataIdentity && scoreboardGuideReady
   )
+  // Why: counting waits only on the screen being the user's surface; guide readiness
+  // mixes in transient data states that must not gate usage counting.
+  useWorkbenchScreenUsage('workbench-overview', Boolean(activeRepo))
+  useWorkbenchScreenUsage('workbench-scoreboard', scoreboardAvailable && visibleScoreboard !== null)
   useEffect(() => {
     const header = scoreboardHeader.current
     if (!scoreboardAvailable || !header) {

@@ -21,6 +21,7 @@ import {
   resolveScopedComposerAdditions
 } from '@/workbench/scoped-task-workspace'
 import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
+import { track } from '@/lib/telemetry'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
   // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
@@ -95,6 +96,11 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
             choiceTitle: `#${item.number} ${item.title}`,
             onUnavailable: notifyScopedWorkspaceUnavailable
           })
+          // Why: scoped dispatch is the BW start path (#687) — 'none' falls
+          // through to the composer via handleUseWorkItem below.
+          if (outcome !== 'none') {
+            track('bw_task_start', { outcome, source: 'task-screen' })
+          }
           if (outcome === 'opened') {
             useAppStore.getState().recordFeatureInteraction('github-tasks')
             return
@@ -102,6 +108,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           if (outcome !== 'none') {
             return
           }
+          track('bw_task_start', { outcome: 'composer-opened', source: 'task-screen' })
           handleUseWorkItem(item)
           return
         }
@@ -225,8 +232,10 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
             onUnavailable: notifyScopedWorkspaceUnavailable
           })
           if (outcome !== 'none') {
+            track('bw_task_start', { outcome, source: 'task-screen' })
             return
           }
+          track('bw_task_start', { outcome: 'composer-opened', source: 'task-screen' })
         }
       }
       openComposerForCodeHubItem(item)

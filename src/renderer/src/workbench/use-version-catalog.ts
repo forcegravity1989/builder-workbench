@@ -190,20 +190,29 @@ export function useVersionCatalogForRepo(
   const catalog = useMemo(() => {
     const registered = mergeVersionCatalog({
       committed: { records: [], problems: [] },
+      historyAvailable: currentLoad?.history?.ready ?? false,
       workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, scope?.projectId)
     })
-    const bindingsByVersion = new Map(registered.map((entry) => [entry.version, entry.workspaces]))
+    const registeredByVersion = new Map(registered.map((entry) => [entry.version, entry]))
     const entries = new Map<string, (typeof registered)[number]>()
     for (const entry of currentLoad?.entries ?? []) {
-      const bindings = bindingsByVersion.get(entry.version) ?? []
+      const registeredEntry = registeredByVersion.get(entry.version)
+      const bindings = registeredEntry?.workspaces ?? []
       const enteredAt = planOrder.times?.[entry.version]
+      const hasPlanReadProblem = entry.problems.some((problem) => problem.workflow === 'plan')
       entries.set(entry.version, {
         ...entry,
+        mergeStatus: entry.material.plan
+          ? 'merged'
+          : hasPlanReadProblem
+            ? 'unknown'
+            : (registeredEntry?.mergeStatus ?? entry.mergeStatus),
         planEnteredAt: entry.material.plan
           ? Number.isFinite(enteredAt)
             ? enteredAt
             : null
           : entry.planEnteredAt,
+        planStartedAt: registeredEntry?.planStartedAt ?? entry.planStartedAt,
         workspaces: bindings,
         state: bindings.length > 0 ? 'working' : 'retired'
       })

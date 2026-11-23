@@ -82,6 +82,38 @@ export function recordSentReview(
     )
   }
 }
+export function reconcileIncomingRequests(
+  state: ReviewNotificationsState,
+  requests: readonly ReviewIncomingRequest[]
+): ReviewNotificationsState {
+  // The runtime inbox is the only durable copy of incoming notes. A note removed
+  // there (dismissal, auto-cleanup, another window) must also leave this state.
+  const present = new Set(requests.map((request) => reviewNoteId(request.repo, request.prNumber)))
+  let next = state
+  const incoming = state.incoming.filter((note) => present.has(note.id))
+  if (incoming.length !== state.incoming.length) {
+    next = { ...state, incoming }
+  }
+  for (const request of requests) {
+    next = applyIncomingRequest(next, request)
+  }
+  return next
+}
+
+export function removeIncomingNote(
+  state: ReviewNotificationsState,
+  id: string
+): ReviewNotificationsState {
+  const incoming = state.incoming.filter((note) => note.id !== id)
+  return incoming.length === state.incoming.length ? state : { ...state, incoming }
+}
+
+export function isIncomingReviewCompleted(readback: ReviewReadback | null): boolean {
+  return (
+    readback?.merged === true || readback?.prState === 'merged' || readback?.prState === 'closed'
+  )
+}
+
 export function deleteOutgoingNote(
   state: ReviewNotificationsState,
   id: string

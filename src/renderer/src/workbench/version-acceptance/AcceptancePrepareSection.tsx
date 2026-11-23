@@ -120,7 +120,8 @@ export function AcceptancePrepareSection({
               title={latest ? '向验收助手会话注入部署请求' : '尚无制品包；先出包'}
             >
               <BrainCircuit size={14} aria-hidden="true" /> 部署
-            </BoardActionButton>
+            </BoardActionButton>,
+            'deploy'
           )}
         </div>
 
@@ -172,7 +173,8 @@ export function AcceptancePrepareSection({
               title={meeting ? '已预订；改期或取消在会话中说明' : '向验收助手会话注入预订会议请求'}
             >
               <BrainCircuit size={14} aria-hidden="true" /> 预订会议
-            </BoardActionButton>
+            </BoardActionButton>,
+            'book-meeting'
           )}
         </div>
 
@@ -221,6 +223,7 @@ export function AcceptanceEvidenceReportRow({
         <BoardActionButton title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件">
           <BrainCircuit size={14} aria-hidden="true" /> 聚合
         </BoardActionButton>,
+        'aggregate-report',
         prepareReportPrompt
       )}
       {!report && (

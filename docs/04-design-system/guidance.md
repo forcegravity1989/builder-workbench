@@ -71,7 +71,7 @@ G08/G09 保留在入门的“能力体验”里，与探索共用内容，位置
 
 W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库，以及已有的 AI 工作流、开发规范、Skill 和定时能力，还需形成用户可实际使用的治理与复用闭环。已有资产、入口或本机做法不等于这两条产品旅程已可用；本期不安排它们的完整引导与传播。工程部署及 SDLC 统计也不纳入本期新增引导与素材；版本总览的基础事实、衡量产品效果的指标仍在核心旅程范围内。
 
-功能行的本期选择为 **16 项重点、8 项随屏处理、5 项暂缓**。“本期安排与核对点”记录采用范围，不是执行进度；重点项按实际界面分组走查，随屏项在所指入口核对并保留各格证据，不因合并讲解而丢失检查点。暂缓项保留已有内容，未选中路径不新增专项教程；F26 工程部署和 F27 中的 SDLC 按本期排除范围处理。共享主机的连接、配对、项目可访问性与断连恢复归 F24，浏览器协作 F08 复用；F13 暂缓不免除协作路径实际依赖的连接检查。
+功能行的本期选择为 **16 项重点、9 项随屏处理、5 项暂缓**。“本期安排与核对点”记录采用范围，不是执行进度；重点项按实际界面分组走查，随屏项在所指入口核对并保留各格证据，不因合并讲解而丢失检查点。暂缓项保留已有内容，未选中路径不新增专项教程；F26 工程部署和 F27 中的 SDLC 按本期排除范围处理。共享主机的连接、配对、项目可访问性与断连恢复归 F24，浏览器协作 F08 复用；F13 暂缓不免除协作路径实际依赖的连接检查。
 
 | 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 屏内帮助 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|---|
@@ -83,11 +83,11 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 工作 | W06 让项目持续可维护（建设中）：审视项目知识、架构与技术债 → 决定处理或暂缓 → 执行并验证 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 工作 | W07 把跑通的做法变成下次少操心（建设中）：总结真实工作 → 沉淀可复用做法 → 在下次同类任务复用并检验 | 建设中；本期不安排完整引导与传播 | ☐ | — | — | — | — | — |
 | 功能 | F01 创建工作区、隔离并行任务 | 重点：创建、隔离、切换与继续工作 | [✅ 工作区演示][explore-copy]；[✅ 样例独立开工和切换][delivery-content] | ☐ | [待验：workspace-creation][tours] | — | ☐ | — |
-| 功能 | F02 [任务管理](../05-features/codehub/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ 既有 GitHub/Linear 片段][explore-copy]；[待验：W02 关联任务与开工片段][planning-content]；[✅ 样例目标任务与状态回看][delivery-content] | [✅ 任务页帮助中文重播：来源、筛选、从任务开工][screen-guide] | [待验：首次触发、完成与持久读回][tours] | — | 复用 W02；CLI 参考见 F29 | — |
+| 功能 | F02 [任务管理](../05-features/task-management/spec.md) | 重点：找任务、开工及结果回看；核对本机账号的 [任务来源](../architecture.md#页面读取来源) | [✅ 既有 GitHub/Linear 片段][explore-copy]；[待验：W02 关联任务与开工片段][planning-content]；[✅ 样例目标任务与状态回看][delivery-content] | [✅ 任务页帮助中文重播：来源、筛选、从任务开工][screen-guide]；[待验：链接菜单的内部任务动作、浏览器备用及失败恢复](../05-features/task-management/spec.md#用户旅程) | [待验：首次触发、完成与持久读回][tours] | — | 复用 W02；CLI 参考见 F29 | — |
 | 功能 | F03 智能体运行状态 | 随屏 → F01/F06：运行、等待、受阻状态及继续操作 | [✅ 状态演示][explore-copy]；[✅ 样例工作区状态][delivery-content] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F04 智能体编排 | 暂缓专项；保留已有编排演示 | [✅ 编排演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F05 账号用量 | 随屏 → F06：账号身份、用量/额度、未知或受限时的下一步 | [✅ 用量演示][explore-copy] | ☐ | ☐ | — | ☐ | — |
-| 功能 | F06 终端、分屏与智能体会话 | 重点：终端、分屏、智能体会话及上下文恢复 | [✅ 终端演示][explore-copy]；[✅ 样例切换并返回原会话][delivery-content] | ☐ | [待验：workspace-agent-sessions][tours] | — | ☐ | — |
+| 功能 | F06 终端、分屏与智能体会话 | 重点：终端、分屏、智能体会话及上下文恢复；链接直达与返回复用 F02 | [✅ 终端演示][explore-copy]；[✅ 样例切换并返回原会话][delivery-content] | 复用 F02 的链接动作与失败恢复；其余 ☐ | [待验：workspace-agent-sessions][tours] | — | ☐ | — |
 | 功能 | F07 编辑器 | 随屏 → F06/F09：打开、编辑与核对文件改动 | [✅ 编辑器演示][explore-copy]；[✅ 样例返修差异][delivery-content] | ☐ | ☐ | — | ☐ | — |
 | 功能 | F08 内置浏览器、抓取与批注 | 重点：页面、抓取与批注；协作时复用 F24 的共享主机连接核对 | [✅ 浏览器演示][explore-copy]；[✅ 样例原型批注和会话入口][delivery-content] | [✅ Windows 浏览器帮助重播、空白页提示、添加和展开回看批注][delivery-help]；[✅ Windows 双标签重播、切离取消与关闭后台页][delivery-browser-recheck] | [待验：browser][tours] | — | ☐ | — |
 | 功能 | F09 评审意见与代码差异 | 重点：检查改动、留意见与继续处理；承接 F10/F11 | [✅ 差异/意见演示][explore-copy]；[✅ 样例文件评论与返修][delivery-content] | [✅ Windows 筛选展开后重播与真实差异打开][delivery-help] | [✅ Windows 首次出现、跳过及重启读回][delivery-help] | — | ☐ | — |
@@ -100,17 +100,18 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F16 快捷跳转 | 随屏 → F01/F23：唤起、查找、跳转及常驻回看 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | 暂缓专项；保留既有语音入口与提示 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
 | 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、工作树保存、提交评审和项目材料更新；规划态标题列新增、特性行内追加维护；W02 复用排期参考 | [✅ 编排与评审局部动画][direction-content] | [总览页头帮助 → 里程碑引导][screen-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ Windows 排期、工作树同步、冲突保留和重启读回][direction-guide]；远端评审成功及合入待验 | 复用 W01 |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)；墙卡仅显示材料阶段，归档状态在悬停提示及版本总览查看；同仓已授权主机合并版本目录，对端来源随版本显示（#671）；按侧栏的[版本排序](../05-features/version-workspace/spec.md#版本排序)取首项；未 clone、真实双机与断线重连分别取证（#658） | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)；墙卡仅显示材料阶段，归档状态在悬停提示及版本总览查看；同仓已授权主机合并版本目录，对端来源随版本显示（#671）；[G1 一项目多主机与团队绑定设计](../05-features/team-collaboration/spec.md)待评审；按侧栏的[版本排序](../05-features/version-workspace/spec.md#版本排序)取首项；未 clone、真实双机与断线重连分别取证（#658） | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
 | 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工与[读取来源](../architecture.md#页面读取来源)；名片直接编辑及本地保存 | [✅ 与 W01 共用名片动画][direction-content] | [总览页头帮助 → 项目名片引导][screen-guide]；里程碑见 F18；记分牌见 F28 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：在本版目标标题栏添加目标，填写验收条件，关联任务、批注与归档 | [✅ 共用 W02 片段及跟做入口；评审片段含对象批注][planning-content] | [✅ 计划页头最右侧帮助；已有材料时指向目标、批注、归档][screen-guide] | [✅ 首步、跳过与主进程读回][tours]；新进程持久读回及其他弹窗协调待验 | — | 复用 W02，已验样例批注添加与编号回看 | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话；[版本排序](../05-features/version-workspace/spec.md#版本排序)沿用既有引导入口；和项目墙共用同仓版本目录；多工作区用原生主机标识及既有选择入口（#671），失败重试待真实双机验证（#658） | [待验：与 W02 共用选版和开工片段][planning-content]；[✅ 样例目标目录和工作区][delivery-content] | [✅ 版本侧栏帮助打开引导][screen-guide] | [待验：侧栏首次出现及跳过读回][tours] | — | 复用 W02 | — |
-| 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视 | [✅ Windows 样例选主机、项目暂不可访问及打开已有通知][delivery-content]；真实送达待验 | ☐ | ☐ | — | ☐ | — |
+| 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视；待我评审手动删除与合入/关闭读回后自动移除（#699），删除入口真壳核对见[检视评论][review-inbox-cleanup] | [✅ Windows 样例选主机、项目暂不可访问及打开已有通知][delivery-content]；真实送达与双机往返待验 | ☐ | ☐ | — | ☐ | — |
 | 功能 | F25 [版本验收](../05-features/version-acceptance/spec.md) | 重点：核验证据、人的结论及归档 | [复用 W04 验收片段][acceptance-content] | [✅ 验收页头问号重播][screen-guide] | [✅ Windows 首次出现、跳过与新进程读回][tours] | — | 复用 W04 | — |
 | 功能 | F26 [工程部署](../05-features/version-acceptance/spec.md) | 暂缓：本期不新增工程部署引导与素材 | ☐ | ☐ | ☐ | — | ☐ | — |
 | 功能 | F27 [版本总览与可选 SDLC 统计](../05-features/version-overview/spec.md) | 重点（基础）：[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)、目标、任务、验收事实与[版本未同步提示](../05-features/version-overview/spec.md#来源历史与缓存)；SDLC 本期不新增引导与素材 | [复用 W04 读回片段][acceptance-content] | [✅ 版本总览页头问号重播][screen-guide] | [✅ Windows 首次出现、跳过与新进程读回][tours] | — | 复用 W04 | — |
 | 功能 | F28 [指标配置与采集](../05-features/overview-metrics/spec.md) | 重点：指标口径、配置、采集及缺数据/失败后的继续路径。旧脚本提示从记分牌继续配置或刷新，详情按需展开 | [✅ 复用 W05 读数与恢复样例][outcomes-content] | [✅ 总览页头问号重播、探索跟做][screen-guide] | [✅ Windows 首次滚入、三步及跳过读回][tours] | — | ☐ | — |
-| 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F22/F24/F25：核对 CodeHub/WeLink 登录和使用；W02 核对任务与归档来源 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；复用 W02 登录恢复 | — |
+| 功能 | F29 [内部集成：CodeHub / WeLink](../05-features/connectors/spec.md) | 随屏 → G05/F02/F22/F24/F25：核对 CodeHub/WeLink 登录和使用；W02 核对任务与归档来源；[G1 WeLink 群空间文件权限反馈](../05-features/team-collaboration/spec.md)待评审 | ☐ | ☐ | ☐ | — | [待验：CodeHub CLI 参考](../03-guide/codehub-cli.md)；复用 W02 登录恢复 | — |
+| 功能 | F30 [产物分享](../05-features/artifact-sharing/spec.md) | 随屏 → F08：分享本地 HTML/Markdown、重复分享覆盖同一链接、在设置 → Artifacts 清理已分享文件 | ☐ | ☐ | ☐ | — | ☐ | — |
 
 [操作引导][tours]归到功能行“首次进入”。现有原生自动引导受新用户资格、已看或已用记录和控件状态限制。F18、F19、F21 [复用原生操作引导][screen-guide]，里程碑在进入规划时自动出现，总览在项目名片可用时自动出现。首次自动触发、跳过保存、屏内重播及缺前提恢复均按实际入口分别取证。工作区看板 F12 与项目墙 F19 分别核对。
 
@@ -165,6 +166,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 [delivery-content]: ../../src/renderer/src/workbench/explore/DeliveryWalkthrough.tsx
 [delivery-help]: ../../src/renderer/src/workbench/WorkbenchDeliveryHelp.tsx
 [delivery-browser-recheck]: https://github.com/forcegravity1989/builder-workbench/pull/669#issuecomment-6895397151
+[review-inbox-cleanup]: https://github.com/forcegravity1989/builder-workbench/pull/723#issuecomment-6998672235
 [delivery-guide]: ../03-guide/issue-delivery/README.md
 
 [outcomes-content]: ../../src/renderer/src/workbench/explore/OutcomesWalkthrough.tsx

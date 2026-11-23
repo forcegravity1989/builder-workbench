@@ -18,7 +18,7 @@
 | 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
 | 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
 | 本仓开发、测试、检视与 PR 交付 | 设计或调整测试、开展独立检视、编写 PR 正文与验证评论前，完整读取 [开发规范](docs/development.md)。本仓会话均适用，不以是否调用起手 Skill 为条件。特性确认、历史兼容取舍与自主交付边界直接读 [02 §3.2](docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收)。 |
-| 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
+| BW 自身研发会话 | 直接修改本仓代码、文档或测试并交付 BW 自身 PR 的会话，先读取 [workbench-start](.claude/skills/workbench-start/SKILL.md)，再按其起手、验证与交付步骤执行；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。开发规范仍以本表上一行指向的 [docs/development.md](docs/development.md) 为正本。Workbench 发起的被管项目执行会话沿产品提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill。 |
 | 提单或维护 BW 自身 Issue | 创建、改写或关联前，完整读取[通用 Issue 规范](standard/references/issue-state.md)和[BW 特性矩阵](docs/05-features/README.md)，按主要用户结果选主归属。纳入版本计划时再执行[计划 Skill](standard/skills/week-planning/SKILL.md)的纳入要求。 |
 | 特性级变更 | 从[特性矩阵](docs/05-features/README.md)定位所属旅程，对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，原型后的最终对齐按 §3.2，之后生成仓外实现 plan 并自主交付。大风险仍按原则处理。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链。做/改原型先读 [设计系统 guidelines「HTML 原型与文档页」](docs/04-design-system/guidelines.md#html-原型与文档页) 与 [高保真三原则](docs/hifi/README.md) |
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则挂 Issue 直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
@@ -26,6 +26,7 @@
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
 | 新增或改变用户可见入口、操作路径或结果，或走查旅程、修改引导、制作指南与传播素材 | 完整读取[引导与旅程规范及矩阵](docs/04-design-system/guidance.md)，定位受影响的旅程与功能行，按[开发规范的验收依据](docs/development.md#验收依据)处理本次引导。逐条整改使用 [journey-review](.claude/skills/journey-review/SKILL.md) |
 | 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
+| 使用 Recent Design 的界面、动效与前端研发技能 | 从 [recent-design](.claude/skills/recent-design/SKILL.md) 进入，按 [.bw 技能清单](.bw/skills/recent-design/README.md) 选取并完整读取正文；BW 设计系统、特性依据与开发规范优先。不自动分发到 `standard/`。 |
 | 周期复核 Orca/BW 边界 | 读 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md)；先读当前 BW 正本，再核对 Orca 公开版本；只把人采纳的稳定变化写回对应正本 |
 | 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范。合入记录见 [ref/upstream.md](ref/upstream.md) |
 

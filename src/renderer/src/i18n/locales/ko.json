@@ -14215,13 +14215,6 @@
         "needsActionChip": "{{value0}}개 조치 필요",
         "unresolvedChip": "{{value0}}개 미해결"
       },
-      "artifacts": {
-        "ArtifactsPage": {
-          "deleteTitle": "아티팩트를 삭제할까요?",
-          "deleteDescription": "“{{name}}”은(는) 공개 링크에서 더 이상 사용할 수 없습니다.",
-          "delete": "삭제"
-        }
-      },
       "ComposerParentWorktreePicker": {
         "label": "상위 워크트리",
         "noParent": "상위 워크트리 없음",

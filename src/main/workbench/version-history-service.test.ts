@@ -32,6 +32,12 @@ const plan: PlanningMaterial = {
 }
 const digest = (raw: Buffer) => `sha256:${createHash('sha256').update(raw).digest('hex')}`
 const git = (args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' })
+const gitWithEnv = (args: string[], environment: NodeJS.ProcessEnv) =>
+  execFileSync('git', args, {
+    cwd: root,
+    stdio: 'pipe',
+    env: { ...process.env, ...environment }
+  })
 const commit = (message: string, path = '.bw/planning/v1/data.json') => {
   git(['add', path])
   git(['commit', '-m', message])
@@ -193,17 +199,18 @@ afterAll(() => {
     if (dirname(target) !== resolve(tmpdir()) || !basename(target).startsWith('bw-history-')) {
       throw new Error('Unexpected test repository location')
     }
-    rmSync(target, { recursive: true, force: true })
+    // Why maxRetries: Windows git handle release lags, so the first rmdir can hit transient EPERM/EBUSY.
+    rmSync(target, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 })
 
-function service(cycleHead?: string) {
+function service(cycleHead?: string, baselineCommit = adoptedCommit) {
   return createVersionHistoryService({
     async git(_scope, args) {
       return git(args)
     },
     async baseline() {
-      return { ref: 'adopted', commit: adoptedCommit }
+      return { ref: 'adopted', commit: baselineCommit }
     },
     async worktreeHead() {
       return cycleHead ?? git(['rev-parse', 'HEAD']).toString().trim()
@@ -338,8 +345,8 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks', 
     'spanning-weeks'
   ])
   // Rounds are retired with the cross-week scenario: VersionHistorySource no
-  // longer declares round metadata, and stored material that still has rounds
-  // reads through the strip-on-read projection instead of failing strict parse.
+  // longer declares round metadata, while stored legacy fields remain readable
+  // through the passthrough material schema.
   const collapsed = await port.list({
     scope,
     source: 'cycle',
@@ -544,4 +551,34 @@ it('reads a committed plan from a cycle branch HEAD that diverged from the adopt
   } finally {
     git(['switch', 'adopted'])
   }
+
+{
+  const baselineBefore = adoptedCommit
+  const planPath = '.bw/planning/v1.7/data.json'
+  const sideAddedAt = '2026-11-16T12:08:27Z'
+  git(['switch', '-c', 'side-added-version', baselineBefore])
+  mkdirSync(join(root, '.bw/planning/v1.7'), { recursive: true })
+  writeFileSync(
+    join(root, planPath),
+    JSON.stringify({ ...plan, version: 'v1.7', cycleId: 'side-added-cycle' })
+  )
+  git(['add', planPath])
+  gitWithEnv(['commit', '-m', 'add side-branch version'], {
+    GIT_AUTHOR_DATE: sideAddedAt,
+    GIT_COMMITTER_DATE: sideAddedAt
+  })
+  const sideAddedCommit = git(['rev-parse', 'HEAD']).toString().trim()
+  git(['switch', 'adopted'])
+  git(['merge', '--no-ff', 'side-added-version', '-m', 'adopt side-branch version'])
+  const mergedBaseline = git(['rev-parse', 'HEAD']).toString().trim()
+
+  const entryTimes = await service(undefined, mergedBaseline).listPlanEntryTimes({
+    scope,
+    baselineCommit: mergedBaseline
+  })
+  expect(entryTimes['v1.7']).toBe(Date.parse(sideAddedAt))
+  expect(entryTimes['v1.7']).toBe(
+    Date.parse(git(['show', '-s', '--format=%cI', sideAddedCommit]).toString().trim())
+  )
+}
 })

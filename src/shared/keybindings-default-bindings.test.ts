@@ -26,6 +26,20 @@ describe('keybindings', () => {
     }
   )
 
+  it.each(['darwin', 'linux', 'win32'] as const)(
+    'binds browser reload to F5 in addition to Mod+R on %s',
+    (platform) => {
+      expect(getEffectiveKeybindingsForAction('browser.reload', platform)).toEqual(['Mod+R', 'F5'])
+      expect(
+        keybindingMatchesAction(
+          'browser.reload',
+          { key: 'F5', code: 'F5', meta: false, control: false, alt: false, shift: false },
+          platform
+        )
+      ).toBe(true)
+    }
+  )
+
   it('matches macOS Option+Z through its composed key', () => {
     expect(
       keybindingMatchesAction(

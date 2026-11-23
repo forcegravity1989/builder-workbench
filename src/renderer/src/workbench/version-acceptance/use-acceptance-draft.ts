@@ -1,4 +1,4 @@
-import { logWorkbenchError } from '../error-feedback'
+import { isWorkspaceGoneError, logWorkbenchError, workspaceGoneMessage } from '../error-feedback'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
 import {
@@ -35,7 +35,11 @@ export function useAcceptanceDraft(
     void controller.refresh().catch((reason) => {
       if (current) {
         logWorkbenchError('验收材料读取失败', reason)
-        setRecoveryError('验收材料读取失败，可刷新重试。')
+        // A gone scope cannot be fixed by refreshing: say what happened instead of inviting a
+        // retry loop against a deleted worktree (#727).
+        setRecoveryError(
+          isWorkspaceGoneError(reason) ? workspaceGoneMessage() : '验收材料读取失败，可刷新重试。'
+        )
       }
     })
     return () => {

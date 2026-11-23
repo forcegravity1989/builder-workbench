@@ -34,7 +34,7 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
       }
       const commit = args.at(-3) ?? ''
       const allowed =
-        args[2] === '--first-parent'
+        args[2] === '--no-merges'
           ? planEntryLogArgs(commit, args[3] === '--min-parents=1')
           : versionHistoryLogArgs(commit)
       if (
@@ -136,7 +136,7 @@ export async function runReadOnlyHistoryGit(
     const { stdout } = await gitExecFileAsyncBuffer([...args], {
       ...gitReadOptionsForWorktree(repoPath, options),
       maxBuffer: DEFAULT_GIT_MAX_BUFFER,
-      timeout: args[0] === 'log' && args[2] === '--first-parent' ? 5_000 : undefined
+      timeout: args[0] === 'log' && args[2] === '--no-merges' ? 5_000 : undefined
     })
     return { ok: true, stdout }
   } catch (error) {

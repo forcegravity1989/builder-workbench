@@ -28,6 +28,7 @@ import type {
   PairingOfferUnavailable
 } from './runtime-rpc-pairing-types'
 import { DEFAULT_WS_PORT } from './runtime-rpc-pairing-types'
+import { RuntimeAccessAudit } from '../../observability/runtime-access-audit'
 
 export class RuntimeRpcState {
   protected readonly runtime: OrcaRuntimeService
@@ -58,6 +59,7 @@ export class RuntimeRpcState {
   protected readonly specializedLongPollCap: number
   protected readonly relayRevokeOutbox: RelayRevokeOutbox
   protected readonly pushUnregisterOutbox: PushUnregisterOutbox
+  protected readonly runtimeAccessAudit: RuntimeAccessAudit
   protected deviceRegistry: DeviceRegistry | null = null
   protected e2eeKeypair: E2EEKeypair | null = null
   protected pairingInitializationFailure: PairingOfferUnavailable | null = null
@@ -133,6 +135,11 @@ export class RuntimeRpcState {
     this.specializedLongPollCap = Math.max(1, Math.floor(longPollCap * SPECIALIZED_LONG_POLL_SHARE))
     this.relayRevokeOutbox = new RelayRevokeOutbox(userDataPath)
     this.pushUnregisterOutbox = new PushUnregisterOutbox(userDataPath)
+    this.runtimeAccessAudit = new RuntimeAccessAudit(userDataPath)
     this.runtime.configureNotificationDismissalStore(userDataPath)
+  }
+
+  getRuntimeAccessAudit(): RuntimeAccessAudit {
+    return this.runtimeAccessAudit
   }
 }

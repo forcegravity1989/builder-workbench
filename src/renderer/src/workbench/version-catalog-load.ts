@@ -244,6 +244,7 @@ export async function loadVersionCatalog(args: {
 
   const entries = mergeVersionCatalog({
     committed,
+    historyAvailable: !historyUnavailable,
     drafts,
     goalsByVersion,
     workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, args.projectId)

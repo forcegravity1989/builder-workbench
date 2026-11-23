@@ -191,26 +191,43 @@ export function OutgoingReviewItem({
 export function IncomingReviewItem({
   note,
   missingProject,
-  onOpen
+  onOpen,
+  onDismiss
 }: {
   note: ReviewIncomingNote
   missingProject: boolean
   onOpen: () => void
+  onDismiss: () => void
 }): React.JSX.Element {
   const readbackError = missingProject ? '暂时无法访问该项目' : note.readbackError
   const state = note.readback?.prState ?? (note.readback?.merged ? 'merged' : null)
   return (
-    <div className="border-b border-border/50 pb-2.5 last:border-b-0 last:pb-0">
+    <div className="flex flex-col gap-1.5 border-b border-border/50 pb-2.5 last:border-b-0 last:pb-0">
+      <div className="flex min-h-6 items-center justify-between gap-2">
+        <button
+          type="button"
+          className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground hover:text-foreground"
+          onClick={onOpen}
+          title="打开评审详情"
+        >
+          <GitPullRequest className="size-3 shrink-0" />
+          {isCodeHubHost(note.repo.host) ? 'MR' : 'PR'} #{note.prNumber}
+        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <MetadataActionIcon label="打开评审详情" onClick={onOpen}>
+            <ExternalLink className="size-3" />
+          </MetadataActionIcon>
+          <MetadataActionIcon label="删除这条评审通知" onClick={onDismiss}>
+            <Trash2 className="size-3" />
+          </MetadataActionIcon>
+        </div>
+      </div>
       <button
         type="button"
         className="group flex w-full flex-col gap-1.5 text-left"
         onClick={onOpen}
         title="打开评审详情"
       >
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
-          <GitPullRequest className="size-3 shrink-0" />
-          {isCodeHubHost(note.repo.host) ? 'MR' : 'PR'} #{note.prNumber}
-        </span>
         <span className="text-[13px] font-semibold leading-snug break-words text-foreground group-hover:text-primary">
           {note.title}
         </span>

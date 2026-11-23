@@ -19,6 +19,7 @@ import { registerLinearHandlers } from '../linear'
 import { registerJiraHandlers } from '../jira'
 import { registerBitbucketHandlers } from '../bitbucket'
 import { registerFeedbackHandlers } from '../feedback'
+import { registerTeamCollaborationHandlers } from '../team-collaboration'
 import { registerCrashReportingHandlers } from '../crash-reporting'
 import { registerExportHandlers } from '../export'
 import { registerStatsHandlers } from '../stats'
@@ -166,6 +167,7 @@ export function registerCoreHandlers(
   registerJiraHandlers()
   registerBitbucketHandlers()
   registerFeedbackHandlers()
+  registerTeamCollaborationHandlers()
   if (crashReports) {
     registerCrashReportingHandlers(crashReports)
   }

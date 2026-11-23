@@ -20,10 +20,11 @@ export function planEntryLogArgs(commit: string, shallow: boolean): string[] {
   return [
     'log',
     '-z',
-    '--first-parent',
+    // Read the commit that actually added data.json. A first-parent merge diff
+    // attributes a side-branch addition to the merge commit instead.
+    '--no-merges',
     // A shallow boundary looks like an addition when diffed against an empty tree.
     shallow ? '--min-parents=1' : '--root',
-    '--diff-merges=first-parent',
     '--format=%H%x00%cI',
     '--name-only',
     '--diff-filter=A',

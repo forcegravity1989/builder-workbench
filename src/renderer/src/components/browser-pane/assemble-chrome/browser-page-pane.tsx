@@ -45,6 +45,7 @@ import { useBrowserPageWebviewPartition } from '../host-guest/use-browser-page-w
 import { useBrowserPageWebviewUrlSync } from '../navigate/use-browser-page-webview-url-sync'
 import { useBrowserPageZoomFeedback } from '../host-guest/use-browser-page-zoom-feedback'
 import { useBrowserPageViewportScrollReporting } from '../host-guest/use-browser-page-viewport-scroll-reporting'
+import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
 
 function BrowserContextualTour() {
   useContextualTour('browser', true)
@@ -180,6 +181,10 @@ export function BrowserPagePane({
   const markup = useBrowserPageMarkupCapture(webviewRef)
   const grabAnnotations = useBrowserPageGrabAnnotations({
     browserTabId: browserTab.id,
+    worktreeId,
+    documentKey: canonicalPrototypeReviewDocumentKey(
+      browserTab.docLocation?.filePath ?? browserTab.url
+    ),
     isActive,
     grab,
     containerRef,

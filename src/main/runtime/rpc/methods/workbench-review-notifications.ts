@@ -1,8 +1,15 @@
 import { hostname, userInfo } from 'node:os'
 import { PullRequest } from '../../../../shared/rpc-contract/github-pull-request-params'
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
-import { ReviewRequestSchema } from '../../../../shared/workbench/pr-review-request'
-import { readReviewInbox, receiveReviewRequest } from '../../../workbench/review-inbox'
+import {
+  ReviewDismissSchema,
+  ReviewRequestSchema
+} from '../../../../shared/workbench/pr-review-request'
+import {
+  dismissReviewRequest,
+  readReviewInbox,
+  receiveReviewRequest
+} from '../../../workbench/review-inbox'
 
 export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
   defineWorkbenchMethod({
@@ -39,5 +46,12 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
     name: 'workbench.review.inbox',
     params: null,
     handler: () => readReviewInbox()
+  }),
+  defineWorkbenchMethod({
+    name: 'workbench.review.dismiss',
+    params: ReviewDismissSchema,
+    handler: async ({ repo, prNumber, seenReceivedAt }) => ({
+      dismissed: await dismissReviewRequest(repo, prNumber, seenReceivedAt)
+    })
   })
 ]

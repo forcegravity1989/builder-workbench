@@ -190,11 +190,16 @@ describe('commandExecFileAsync Windows command shims', () => {
   it('removes listeners after successful Windows .cmd shim executions', async () => {
     await withPlatform('win32', async () => {
       const command = createMockChildProcess(1234)
+      const input = '中文正文🙂\n'.repeat(6000)
+      const stdin = Object.assign(new EventEmitter(), { end: vi.fn() })
+      Object.assign(command, { stdin })
       spawnMock.mockReturnValue(command)
 
       const promise = commandExecFileAsync('C:\\tools\\pnpm.cmd', ['--version'], {
-        cwd: 'C:\\repo'
+        cwd: 'C:\\repo',
+        stdin: input
       })
+      expect(stdin.end).toHaveBeenCalledWith(input)
       command.stdout.emit('data', Buffer.from('9.1.0\n'))
       command.stderr.emit('data', Buffer.from('notice\n'))
       command.emit('close', 0)

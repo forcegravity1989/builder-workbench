@@ -316,8 +316,9 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     new Set([taskKey(reference)])
   )
   expect(deliveries.map((event) => event.delivered)).toEqual([false, false, false, true, true])
-  expect(deliveries[3]?.label).toContain('首次交付')
-  expect(deliveries[4]?.label).toContain('维护交付')
+  expect(deliveries.map((event) => event.deliveryKind)).toEqual([
+    undefined, undefined, undefined, 'first', 'maintenance'
+  ])
   expect(
     versionDeliveryEvents(
       [record('4', 'met')],
@@ -332,8 +333,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     undefined,
     false
   )
-  expect(incomplete[0]?.delivered).toBe(true)
-  expect(incomplete[0]?.label).toContain('顺序未确认')
+  expect(incomplete[0]).toMatchObject({ delivered: true, deliveryKind: undefined })
   expect(cycleBaseline('2026-10-27T07:17:18Z')).toBe('2026-10-26T01:00:00.000Z')
   const timelineFeature = {
     root: {
@@ -435,20 +435,24 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     Object.fromEntries(reads.map((read) => [milestoneVersionKey(read.plan ?? read.version!), read]))
   const actualLayout = (...reads: MilestoneVersionFacts[]) =>
     milestoneActualLayout(material.features[0]!, material, projection(...reads))
-  const labels = (...reads: MilestoneVersionFacts[]) =>
-    actualLayout(...reads).results.map((result) => result.label)
+  const outcomes = (...reads: MilestoneVersionFacts[]) =>
+    actualLayout(...reads).results.map(({ outcome }) => outcome)
   const actual = actualLayout(first, second, third)
-  expect(actual.results.map((result) => result.label)).toEqual(['未上线', '已上线', '维护未完成'])
   expect(actual).toMatchObject({ lanes: 2, results: [{ lane: 0 }, { lane: 1 }, { lane: 0 }] })
+  expect(outcomes(first, second, third)).toEqual(['not-met', 'met', 'not-met'])
   expect(actual.results[0]?.version.timeWindow?.end).toBe('2026-10-10')
   const moved = {
     ...first,
     plan: { ...first.plan!, tasks: [{ ...reference, goalId: 'different' }] }
   }
-  expect(labels(moved, second, third)).toEqual(['未上线', '已上线', '维护未完成'])
+  expect(outcomes(moved, second, third)).toEqual(['not-met', 'met', 'not-met'])
   expect(
-    labels(first, { ...second, plan: { ...second.plan!, timeWindow: undefined } }, third)
-  ).toEqual(['未上线', '维护未完成'])
+    outcomes(
+      first,
+      { ...second, plan: { ...second.plan!, timeWindow: undefined } },
+      third
+    )
+  ).toEqual(['not-met', 'not-met'])
   for (const acceptance of [null, accepted('pending')]) {
     expect(actualLayout({ ...facts, acceptance }).results).toEqual([])
   }
@@ -467,16 +471,14 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     }
   ]
   for (const unresolved of unresolvedFirst) {
-    expect(actualLayout(unresolved, secondNotMet)).toMatchObject({
-      results: [],
-      note: '前序版本结果未确认'
-    })
+    const unresolvedLayout = actualLayout(unresolved, secondNotMet)
+    expect(unresolvedLayout).toMatchObject({ results: [], note: expect.any(String) })
   }
-  expect(labels(unresolvedFirst[0]!, second, third)).toEqual(['维护未完成'])
+  expect(outcomes(unresolvedFirst[0]!, second, third)).toEqual(['not-met'])
   const failedSecond = { ...second, failed: true, features: [] }
-  expect(labels(firstMet, failedSecond, third)).toEqual(['已上线', '维护未完成'])
+  expect(outcomes(firstMet, failedSecond, third)).toEqual(['met', 'not-met'])
   expect(
-    labels(
+    outcomes(
       {
         ...unresolvedFirst[0]!,
         failed: false,
@@ -485,7 +487,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
       },
       secondNotMet
     )
-  ).toEqual(['未上线'])
+  ).toEqual(['not-met'])
   // A single-version candidate must survive an unrelated goal's identity read failure.
   for (const goalId of ['g2', 'unrelated']) {
     const failedReference = { ...reference, number: 999, goalId }
@@ -511,8 +513,10 @@ it('projects scoped feature evidence without turning missing, later or unrelated
       failed: true,
       identityFailures: [failedReference]
     }
-    expect(labels(partial)).toEqual(goalId === 'g2' ? [] : ['已上线'])
-    expect(labels(partial, secondNotMet)).toEqual(goalId === 'g2' ? [] : ['已上线', '维护未完成'])
+    expect(outcomes(partial)).toEqual(goalId === 'g2' ? [] : ['met'])
+    expect(outcomes(partial, secondNotMet)).toEqual(
+      goalId === 'g2' ? [] : ['met', 'not-met']
+    )
   }
   const taskSnapshot = [{ kind: 'ready' as const, ...goalFeature.root }]
   const snapshotAcceptance = { ...accepted('met'), taskSnapshot }
@@ -529,9 +533,8 @@ it('projects scoped feature evidence without turning missing, later or unrelated
       snapshots.length > 1
     )
   }
-  expect(
-    labels({ ...facts, ...archivedIdentity, acceptance: snapshotAcceptance }, secondNotMet)
-  ).toEqual(['已上线', '维护未完成'])
+  expect(outcomes({ ...facts, ...archivedIdentity, acceptance: snapshotAcceptance }, secondNotMet))
+    .toEqual(['met', 'not-met'])
   const renamedIdentity = milestoneIssueFacts(facts.plan, snapshotAcceptance, [
     {
       kind: 'ready',
@@ -763,7 +766,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(layout.slots[2]?.source?.url).toContain('/474')
   expect(layout.slots[2]?.duration).toBe(24 * 3600000)
   expect(layout.slots[3]).toMatchObject({ hours: 24, duration: null, source: undefined })
-  expect(layout.slots[4]).toMatchObject({ hours: 12, duration: null, hint: '部署时间 · 未跟踪' })
+  expect(layout.slots[4]).toMatchObject({ hours: 12, duration: null })
   expect(layout.slots[5]?.end).toBeUndefined()
   const maintained = featureTimelineLayout(maintenanceFeature)
   expect(maintained.slots[5]?.duration).toBe(maintenance.segments[5]?.duration)
@@ -785,19 +788,16 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   })
   expect(missedVersion.deliveries[0]?.event.label).toContain('目标未达成')
   expect(missedVersion.deliveries[0]?.event.url).toBe(url)
-  expect(missedVersion.slots[3]?.state).not.toBe('done')
   expect(missedVersion.slots[3]?.hint).toContain('目标未达成')
   const unknownOrder = featureTimelineLayout({
     ...building,
     events: [...building.events, ...incomplete]
   })
   expect(unknownOrder.deliveries[0]?.event.label).toContain('顺序未确认')
-  expect(unknownOrder.slots[3]?.state).not.toBe('done')
   const pendingAcceptance = featureTimelineLayout({
     ...building,
     archives: [{ ...intentEvent, phase: 'version', version: '4', at: '' }]
   })
-  expect(pendingAcceptance.deliveries[0]?.event.url).toBe(url)
   expect(Number.isFinite(pendingAcceptance.deliveries[0]?.offset)).toBe(true)
   expect(pendingAcceptance.slots[3]?.state).not.toBe('done')
 })

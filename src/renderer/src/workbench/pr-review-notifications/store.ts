@@ -8,10 +8,12 @@ import {
   type ReviewSendResult
 } from '../../../../shared/workbench/pr-review-request'
 import {
-  applyIncomingRequest,
   applyReviewReadback,
   deleteOutgoingNote,
+  isIncomingReviewCompleted,
+  reconcileIncomingRequests,
   recordSentReview,
+  removeIncomingNote,
   reviewNoteId,
   reviewReadbackKey,
   EMPTY_REVIEW_NOTIFICATIONS,
@@ -21,7 +23,12 @@ import {
 } from './model'
 import { findRegisteredReviewRepo, readReviewTracking } from './review-target'
 import { readStoredReviewNotifications, writeStoredReviewNotifications } from './storage'
-import { deliverReviewRequest, readReviewInbox, readReviewSender } from './transport'
+import {
+  deliverReviewRequest,
+  dismissReviewInbox,
+  readReviewInbox,
+  readReviewSender
+} from './transport'
 
 let state: ReviewNotificationsState = EMPTY_REVIEW_NOTIFICATIONS
 let storageError: string | null = null
@@ -34,6 +41,9 @@ const listeners = new Set<() => void>()
 const lastRefreshAt = new Map<string, number>()
 const inFlightRefresh = new Set<string>()
 const sending = new Set<string>()
+// Invalidates an inbox read that started before a dismissal, so a stale snapshot
+// cannot re-add the note the user just removed.
+let inboxGeneration = 0
 
 function setState(next: ReviewNotificationsState, persist = false): void {
   if (next === state) {
@@ -141,6 +151,17 @@ export function deleteReviewNotification(id: string): void {
   }
 }
 
+async function dismissIncoming(note: ReviewIncomingNote): Promise<void> {
+  inboxGeneration += 1
+  await dismissReviewInbox(note.repo, note.prNumber, note.receivedAt)
+  setState(removeIncomingNote(state, note.id))
+}
+export function dismissIncomingReview(note: ReviewIncomingNote): void {
+  void dismissIncoming(note).catch((error) => {
+    notifyWorkbenchError('无法删除评审通知', error, '可稍后重试。')
+  })
+}
+
 async function refreshNoteReadback(
   note: ReviewIncomingNote | ReviewOutgoingNote,
   direction: 'incoming' | 'outgoing',
@@ -163,6 +184,17 @@ async function refreshNoteReadback(
     }
     const readback = await readReviewTracking(repo, note.repo, note.prNumber, note.sentAt)
     setState(applyReviewReadback(state, direction, key, readback, null))
+    const current = state.incoming.find((item) => item.id === note.id)
+    if (
+      direction === 'incoming' &&
+      current &&
+      reviewReadbackKey(current) === key &&
+      isIncomingReviewCompleted(current.readback)
+    ) {
+      // Completed reviews leave the inbox on their own; a failed write keeps the
+      // note and stays retryable through the manual action.
+      await dismissIncoming(current).catch(() => undefined)
+    }
   } catch (error) {
     setState(
       applyReviewReadback(
@@ -199,22 +231,22 @@ export function installReviewNotificationListeners(
       return
     }
     reading = true
+    const generation = inboxGeneration
     try {
       const requests = await readReviewInbox()
-      if (stopped) {
+      if (stopped || generation !== inboxGeneration) {
         return
       }
       onError(storageError)
-      for (const request of requests) {
-        const next = applyIncomingRequest(state, request)
-        if (next === state) {
-          continue
-        }
-        setState(next)
-        const note = state.incoming.find(
-          (item) => item.id === reviewNoteId(request.repo, request.prNumber)
-        )
-        if (note) {
+      const previous = state
+      const next = reconcileIncomingRequests(previous, requests)
+      if (next === previous) {
+        return
+      }
+      setState(next)
+      for (const note of next.incoming) {
+        const before = previous.incoming.find((item) => item.id === note.id)
+        if (!before || before.cycleId !== note.cycleId || before.round !== note.round) {
           void refreshIncomingReview(note, { force: true })
         }
       }

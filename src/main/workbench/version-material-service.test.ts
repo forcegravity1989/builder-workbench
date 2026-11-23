@@ -142,7 +142,9 @@ describe('native version material service', () => {
   afterEach(async () => {
     setSshActiveMultiplexerResolver(null)
     // This test owns the freshly created temporary root, including both linked worktrees.
-    await rm(directory, { recursive: true, force: true })
+    // Why maxRetries: on Windows, git can hold handles briefly after commit/worktree ops,
+    // making the first rmdir attempt fail with a transient EBUSY.
+    await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
   it('reads only the bound version and keeps scheduled initialization create-only', async () => {

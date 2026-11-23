@@ -19,6 +19,7 @@ import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
 import { BoardIconButton } from '../board-ui'
 import { replayWorkbenchGuide, useWorkbenchScreenGuide } from '../WorkbenchScreenGuide'
+import { useWorkbenchScreenUsage } from '../workbench-screen-usage'
 import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
@@ -116,7 +117,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const sendNotice = useCallback((message: string) => updateView({ notice: message }), [updateView])
   // Object-level actions wrap their trigger button in the native send menu
   // (instruction preview + session picker); see plan-send-menu.tsx.
-  const wrapSend = usePlanSendAction(worktreeId, sendNotice)
+  const wrapSend = usePlanSendAction(worktreeId, sendNotice, 'plan')
   const viewMemory = usePlanningViewMemory(plan ? selectionKey : null, content)
   const currentSelection = useRef(selectionKey)
   currentSelection.current = selectionKey
@@ -188,6 +189,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     (!started || Boolean(plan)) &&
     !annotations.annotating
   useWorkbenchScreenGuide('workbench-plan', guideReady)
+  useWorkbenchScreenUsage('workbench-plan', true)
   const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
   // Why: same gate as the header entry button below — the chord must not exist
   // on surfaces where the button does not render.

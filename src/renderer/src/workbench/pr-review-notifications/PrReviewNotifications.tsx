@@ -10,18 +10,29 @@ import {
   refreshOutgoingReview,
   getReviewNotifications,
   useReviewNotifications,
-  deleteReviewNotification
+  deleteReviewNotification,
+  dismissIncomingReview
 } from './store'
 import { openReviewSendDialog } from './send-dialog-store'
 import { ReviewSendDialogHost } from './ReviewSendDialogHost'
+import {
+  deletePrototypeReviewNotification,
+  dismissIncomingPrototypeReview,
+  installPrototypeReviewNotificationListeners,
+  refreshPrototypeReviewNotifications,
+  usePrototypeReviewNotifications
+} from './prototype-store'
+import { openPrototypeReviewPage } from './prototype-review-target'
 
 export function PrReviewNotifications(): React.JSX.Element {
   const notifications = useReviewNotifications()
+  const prototypeNotifications = usePrototypeReviewNotifications()
   const repos = useAppStore((state) => state.repos)
   const previousRepos = useRef(repos)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => installReviewNotificationListeners(setError), [])
+  useEffect(() => installPrototypeReviewNotificationListeners(setError), [])
   useEffect(() => {
     const previous = previousRepos.current
     previousRepos.current = repos
@@ -38,7 +49,11 @@ export function PrReviewNotifications(): React.JSX.Element {
   }, [repos])
   const refresh = useCallback((force = false) => {
     setRefreshing(true)
-    void Promise.all([refreshAllIncomingReviews({ force }), refreshAllOutgoingReviews({ force })])
+    void Promise.all([
+      refreshAllIncomingReviews({ force }),
+      refreshAllOutgoingReviews({ force }),
+      refreshPrototypeReviewNotifications()
+    ])
       .catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)))
       .finally(() => setRefreshing(false))
   }, [])
@@ -57,10 +72,22 @@ export function PrReviewNotifications(): React.JSX.Element {
         onError={setError}
         onOpen={openReviewPr}
         onDelete={deleteReviewNotification}
+        onDismissIncoming={dismissIncomingReview}
         onResend={async (note) => {
           openReviewSendDialog(note)
         }}
         missingProject={(note) => !findRegisteredReviewRepo(note.repo, repos)}
+        prototypeNotifications={prototypeNotifications}
+        onOpenPrototype={async (note) => {
+          setError(null)
+          try {
+            await openPrototypeReviewPage(note.page)
+          } catch (error) {
+            setError(error instanceof Error ? error.message : String(error))
+          }
+        }}
+        onDeletePrototype={deletePrototypeReviewNotification}
+        onDismissPrototype={dismissIncomingPrototypeReview}
       />
       <ReviewSendDialogHost />
     </>

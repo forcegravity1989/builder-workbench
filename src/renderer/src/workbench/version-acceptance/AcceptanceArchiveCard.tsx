@@ -140,7 +140,8 @@ export function AcceptanceArchiveCard({
             '归档请求',
             <BoardActionButton title="让验收助手核对材料并发起归档">
               <Archive size={14} aria-hidden="true" /> 发起归档
-            </BoardActionButton>
+            </BoardActionButton>,
+            'archive-pr'
           )}
           {archivePr && (
             <BoardIconButton label="打开原生 PR 页" disabled={opening} onClick={onOpenPr}>
@@ -175,7 +176,8 @@ export function AcceptanceArchiveCard({
           '发布请求',
           <BoardActionButton title="发布请求注入验收助手会话;预检与授权在会话中完成">
             <Rocket size={14} aria-hidden="true" /> 发布
-          </BoardActionButton>
+          </BoardActionButton>,
+          'release'
         )}
       </div>
     </section>

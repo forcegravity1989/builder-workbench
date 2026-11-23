@@ -20,7 +20,8 @@ const ignore = () => {}
 const passthrough: Parameters<typeof AcceptanceArchiveCard>[0]['onSendAction'] = (
   _request,
   _label,
-  button
+  button,
+  _actionId
 ) => button
 const version = 'v0.2'
 const repository = 'example.invalid/book-exchange'

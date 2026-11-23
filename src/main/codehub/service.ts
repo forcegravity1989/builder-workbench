@@ -11,6 +11,8 @@ import { readCodeHubBranchReview } from './mr-branch-review'
 import { listCodeHubProjectLabels, listCodeHubProjectMembers } from './repo-reads'
 import { listCodeHubTasks } from './work-items'
 import { getCodeHubViewer } from './viewer'
+import { resolveCodeHubWebIdentity } from './web-identity'
+import { parseTaskItemLink, taskItemLinkIdentityKey } from '../../shared/task-item-link'
 import {
   assignCodeHubIssue,
   closeCodeHubMr,
@@ -138,7 +140,37 @@ export function createCodeHubService(deps: {
       return readCodeHubMrChanges({ ...args, ...(await context(args)) })
     },
     async viewTask(args) {
-      return viewCodeHubTask({ ...args, ...(await context(args)) })
+      const target = await context(args)
+      if (!args.expectedUrl) {
+        return viewCodeHubTask({ ...args, ...target })
+      }
+      const expected = parseTaskItemLink(args.expectedUrl)
+      if (
+        !expected ||
+        expected.provider !== 'codehub' ||
+        expected.repository.toLowerCase() !== target.remote.project.toLowerCase() ||
+        expected.kind !== args.kind ||
+        expected.number !== args.iid
+      ) {
+        throw new Error('CodeHub 任务链接与登记项目或请求条目不一致')
+      }
+      const remote = await resolveCodeHubWebIdentity(
+        target.remote,
+        args.expectedUrl,
+        target.execOptions
+      )
+      const detail = await viewCodeHubTask({ ...args, ...target, remote })
+      const returned = detail.url ? parseTaskItemLink(detail.url) : null
+      if (
+        !returned ||
+        returned.provider !== expected.provider ||
+        returned.kind !== expected.kind ||
+        returned.number !== expected.number ||
+        taskItemLinkIdentityKey(returned) !== taskItemLinkIdentityKey(expected)
+      ) {
+        throw new Error('CodeHub 返回的任务与链接来源不一致')
+      }
+      return detail
     },
     async listComments(args) {
       return listCodeHubComments({ ...args, ...(await context(args)) })

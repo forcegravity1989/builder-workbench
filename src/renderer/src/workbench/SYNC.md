@@ -50,6 +50,17 @@ $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run
 
 打试用包仍用：`pnpm run build:mac:workbench`（签名 / 分发 / CDP smoke 前再打）。
 
+### Windows 原生构建前置（新工作区 / 首次 setup）
+
+Windows 上 `pnpm install` 会就地编译原生模块（`@orca/windows-registry`、`@vscode/windows-process-tree`、`node-pty`）。编译失败会让整个 setup 中断（`ERR_PNPM_EXECUTOR_LIFECYCLE_SCRIPT_FAILED`），首次或新工作区需先具备：
+
+- **Node 24**：以 `package.json` 的 `engines` 为准，与 CI 一致。
+- **Visual Studio 2022「生成工具」含"使用 C++ 的桌面开发"工作负载**（MSVC v143 + Windows SDK）。只装 LLVM/核心组件会在 `node-gyp rebuild` 报 `missing any VC++ toolset`。补装（管理员）：
+  `vs_installer.exe modify --installPath "<VS BuildTools 目录>" --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet --norestart`
+- **内网头文件镜像**：node-gyp 需下载 Node/Electron 编译头文件；直连 `nodejs.org`/`electronjs.org` 常被证书吊销检查拦截（`unable to verify the first certificate`）。在 `~/.npmrc` 增加 `disturl=https://repo.huaweicloud.com/nodejs`，或设用户环境变量 `npm_config_disturl`；并确认 `~/.electron-gyp/<electron 版本>` 已有对应头文件。
+
+**长路径（MAX_PATH 260）**：原生编译的中间产物 `.obj/.pdb` 受 260 字符限制。工作区绝对路径较长（如 `.bw/worktrees/<repo>/<中文任务名>` 叠加深层 `.pnpm/`）时，`@vscode/windows-process-tree` 的 obj 路径可达 261+，报 `C1083: 无法打开编译器生成的文件 ""`。即使 `LongPathsEnabled=1`，MSVC 的 CL 任务仍可能失败；`subst` 短盘符会被 `realpath` 还原而无效。规避：把仓库安装到较短路径（如 `C:\bw`）、工作区目录名短且用 ASCII，确保 `.obj/.pdb` 绝对路径 < 260。验证：`native/windows-registry/build/Release/*.node` 生成，`node config/scripts/rebuild-native-deps.mjs` 输出 `Native modules already load in Electron`。
+
 ## 品牌与开关
 
 正式标志源为 `resources/icon-source/workbench.png`。运行 `pnpm run build:icons` 从同一原图生成界面/运行时 PNG、Windows 多尺寸 ICO 和 macOS ICNS（只需 Node 与仓内依赖，不依赖 Xcode）。`node config/scripts/generate-workbench-icons.mjs --check` 校验生成物。开发与生产使用同一标志；旧的水彩/蓝色 Orca 偏好归一为默认标志，macOS 启动时清除旧 Finder 自定义图标以使用包内标志。macOS 菜单栏使用同源 18px / 36px 原色图（不作模板着色），注意提示叠加在原图上，开发实例以 `DEV` 文字区分。

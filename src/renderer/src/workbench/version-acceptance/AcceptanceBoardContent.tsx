@@ -71,7 +71,7 @@ export function AcceptanceBoardContent({
   // on surfaces where the button does not render (empty board, no fixed plan).
   useAnnotationModeShortcut(Boolean(plan && document), annotations.toggleMode)
   const [notice, setNotice] = useState('')
-  const sendAction = usePlanSendAction(worktreeId, setNotice, '验收助手')
+  const sendAction = usePlanSendAction(worktreeId, setNotice, 'acceptance', '验收助手')
   const prepareReportPrompt = async () =>
     (
       await resolveWorkbenchPromptAssets(
@@ -383,6 +383,7 @@ export function AcceptanceBoardContent({
             annotating={annotations.annotating}
             worktreeId={worktreeId}
             assistant="验收助手"
+            screen="acceptance"
             onClose={annotations.closePanel}
             onUpdate={annotations.update}
             onRemove={annotations.remove}

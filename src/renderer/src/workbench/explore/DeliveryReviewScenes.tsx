@@ -322,7 +322,12 @@ export function DeliveryReceiveReviewDemo({ time }: { time: number }) {
     <div className="direction-demo-focus space-y-3 text-sm">
       <h4 className="font-semibold">待我评审</h4>
       <div data-delivery-action="open-notification">
-        <IncomingReviewItem note={inboxReview} missingProject={!connected} onOpen={ignore} />
+        <IncomingReviewItem
+          note={inboxReview}
+          missingProject={!connected}
+          onOpen={ignore}
+          onDismiss={ignore}
+        />
       </div>
       {!connected && (
         <>

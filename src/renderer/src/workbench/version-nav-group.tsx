@@ -11,7 +11,10 @@ import { WORKTREE_SECTION_HEADER_PADDING_LEFT } from '@/components/sidebar/workt
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
-import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
+import {
+  hasUnmergedPlanDraft,
+  type VersionCatalogEntry
+} from '../../../shared/workbench/version-catalog'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import {
@@ -135,6 +138,14 @@ export function VersionNavGroup({
           {retired ? (
             <span className="shrink-0 rounded-full border border-worktree-sidebar-foreground/15 px-1.5 text-[9.5px] text-worktree-sidebar-foreground/45">
               历史
+            </span>
+          ) : null}
+          {entry.mergeStatus === 'merged' && hasUnmergedPlanDraft(entry) ? (
+            <span
+              className="shrink-0 rounded-full border border-worktree-sidebar-foreground/15 px-1.5 text-[9.5px] text-worktree-sidebar-foreground/55"
+              title="已合入版本有未合入草稿"
+            >
+              草稿
             </span>
           ) : null}
           <span className={SIDEBAR_GROUP_FIXED_CHEVRON_CLASS} data-workbench-version-chevron="">

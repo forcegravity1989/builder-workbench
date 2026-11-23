@@ -41,6 +41,9 @@ export function RowIcon({ row }: { row: RowEntry }): React.JSX.Element {
       <CircleDot className="size-3.5 shrink-0 text-muted-foreground" />
     )
   }
+  if (row.kind === 'codehub') {
+    return <CircleDot className="size-3.5 shrink-0 text-muted-foreground" />
+  }
   if (row.kind === 'gitlab') {
     // Why: GitMerge keeps merge requests visually distinct from PRs and branches.
     return row.item.type === 'mr' ? (
@@ -69,7 +72,7 @@ export function SelectionIcon({
   if (kind === 'gitlab-mr') {
     return <GitMerge className="size-3.5 shrink-0 text-muted-foreground" />
   }
-  if (kind === 'github-issue' || kind === 'gitlab-issue') {
+  if (kind === 'github-issue' || kind === 'gitlab-issue' || kind === 'codehub-issue') {
     return <CircleDot className="size-3.5 shrink-0 text-muted-foreground" />
   }
   if (kind === 'branch') {
@@ -121,6 +124,13 @@ export function RowLabel({
     return (
       <span className="min-w-0 truncate">
         <span className="font-medium text-foreground">#{row.item.number}</span> {row.item.title}
+      </span>
+    )
+  }
+  if (row.kind === 'codehub') {
+    return (
+      <span className="min-w-0 truncate">
+        <span className="font-medium text-foreground">#{row.item.iid}</span> {row.item.title}
       </span>
     )
   }

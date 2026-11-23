@@ -4,6 +4,7 @@ import { VersionTimeWindowSchema } from './version-time-window'
 import {
   Id,
   Identity,
+  materialObject,
   PlanningProgressSourceSchema,
   VersionGoalSchema,
   VersionTaskReferenceSchema
@@ -16,11 +17,10 @@ import {
  * Stored closure marks remain protected for existing materials; the current
  * UI records a followup's resolution or tracking Issue in its text.
  */
-export const PlanMeetingMinutesSchema = z
-  .strictObject({
+export const PlanMeetingMinutesSchema = materialObject({
     consensus: z.array(z.string()),
     followups: z.array(
-      z.strictObject({
+      materialObject({
         id: Id,
         text: z.string(),
         closed: z.boolean()
@@ -44,11 +44,10 @@ export const PlanMeetingMinutesSchema = z
 
 export type PlanMeetingMinutes = z.infer<typeof PlanMeetingMinutesSchema>
 
-export const PlanningMaterialSchema = z
-  .strictObject({
+export const PlanningMaterialSchema = materialObject({
     ...Identity,
     timeWindow: VersionTimeWindowSchema.optional(),
-    summary: z.strictObject({
+    summary: materialObject({
       progress: z.string(),
       risks: z.string(),
       progressSource: PlanningProgressSourceSchema.optional()
@@ -64,6 +63,24 @@ export const PlanningMaterialSchema = z
     const ids = new Set(document.goals.map((goal) => goal.goalId))
     if (ids.size !== document.goals.length) {
       context.addIssue({ code: 'custom', message: 'Goal ids must be unique', path: ['goals'] })
+    }
+    for (const field of [
+      'planRef',
+      'candidateRef',
+      'preparedArtifacts',
+      'demoEnv',
+      'meeting',
+      'preparationReview',
+      'taskSnapshot',
+      'results'
+    ]) {
+      if (Object.hasOwn(document, field)) {
+        context.addIssue({
+          code: 'custom',
+          message: `Planning material cannot carry acceptance field ${field}`,
+          path: [field]
+        })
+      }
     }
   })
 
