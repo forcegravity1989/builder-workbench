@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LoaderCircle, Plus, RefreshCw, Save, UsersRound, X } from 'lucide-react'
+import { LoaderCircle, Plus, Save, UsersRound, X } from 'lucide-react'
 import type { TeamDirectory } from '../../../shared/team-directory'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,42 +26,33 @@ type TeamSettingsDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
-const TEAM_SPACE_STORAGE_KEY = 'bw:team-space-id:'
 const TEAM_GROUP_STORAGE_KEY = 'bw:team-group-id'
+const TEAM_SPACE_STORAGE_KEY = 'bw:team-space-id'
 
-function rememberedGroupId(): string {
+function rememberedBinding(): { groupId: string; spaceId: string } {
   try {
-    return window.localStorage.getItem(TEAM_GROUP_STORAGE_KEY) ?? ''
+    return {
+      groupId: window.localStorage.getItem(TEAM_GROUP_STORAGE_KEY) ?? '',
+      spaceId: window.localStorage.getItem(TEAM_SPACE_STORAGE_KEY) ?? ''
+    }
   } catch {
-    return ''
+    return { groupId: '', spaceId: '' }
   }
 }
 
-function rememberGroupId(groupId: string): void {
+function rememberBinding(groupId: string, spaceId: string): void {
   try {
     window.localStorage.setItem(TEAM_GROUP_STORAGE_KEY, groupId)
+    window.localStorage.setItem(TEAM_SPACE_STORAGE_KEY, spaceId)
   } catch {
     // The directory remains authoritative when browser storage is unavailable.
   }
 }
 
-function rememberedSpaceId(groupId: string): string {
-  try {
-    return window.localStorage.getItem(`${TEAM_SPACE_STORAGE_KEY}${groupId}`) ?? ''
-  } catch {
-    return ''
-  }
-}
-
-function rememberSpaceId(groupId: string, spaceId: string): void {
-  try {
-    window.localStorage.setItem(`${TEAM_SPACE_STORAGE_KEY}${groupId}`, spaceId)
-  } catch {
-    // The directory remains authoritative when browser storage is unavailable.
-  }
-}
-
-export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogProps): React.JSX.Element {
+export function TeamSettingsDialog({
+  open,
+  onOpenChange
+}: TeamSettingsDialogProps): React.JSX.Element {
   const [groupId, setGroupId] = useState('')
   const [spaceId, setSpaceId] = useState('')
   const [directory, setDirectory] = useState<TeamDirectory | null>(null)
@@ -72,7 +63,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   const [generatingHostId, setGeneratingHostId] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [projectRegisterOpen, setProjectRegisterOpen] = useState(false)
-  const [spaceIdRequired, setSpaceIdRequired] = useState(false)
+  const [filePreviewOpen, setFilePreviewOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const repos = useAppStore((state) => state.repos)
   const updateRepo = useAppStore((state) => state.updateRepo)
@@ -92,28 +83,14 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setCurrentMemberId(null)
       setSelectedProjectId('')
       setProjectRegisterOpen(false)
-      setSpaceIdRequired(false)
+      setFilePreviewOpen(false)
       setError(null)
     }
   }, [open])
 
   const enterTeam = (): void => {
     setError(null)
-    const nextGroupId = groupId.trim()
-    const nextSpaceId = spaceId.trim() || rememberedSpaceId(nextGroupId)
-    if (!nextGroupId) {
-      setError('请填写群 ID。')
-      return
-    }
-    if (!nextSpaceId) {
-      setSpaceIdRequired(true)
-      return
-    }
-    setSpaceIdRequired(false)
-    setGroupId(nextGroupId)
-    setSpaceId(nextSpaceId)
-    rememberGroupId(nextGroupId)
-    void loadDirectory(nextGroupId, nextSpaceId)
+    void loadDirectory(groupId, spaceId)
   }
 
   async function loadDirectory(
@@ -138,12 +115,8 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setCurrentMemberId(result.currentMemberId)
       setGroupId(result.directory.team_group_id)
       setSpaceId(result.directory.team_space_id)
-      rememberGroupId(result.directory.team_group_id)
-      rememberSpaceId(result.directory.team_group_id, result.directory.team_space_id)
+      rememberBinding(result.directory.team_group_id, result.directory.team_space_id)
     } catch (cause) {
-      if (!directory) {
-        setSpaceIdRequired(true)
-      }
       setError(cause instanceof Error ? cause.message : '读取团队目录失败。')
     } finally {
       setLoading(false)
@@ -154,15 +127,11 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     if (!open || directory) {
       return
     }
-    const rememberedGroup = rememberedGroupId()
-    if (!rememberedGroup) {
-      return
-    }
-    const rememberedSpace = rememberedSpaceId(rememberedGroup)
-    setGroupId(rememberedGroup)
-    setSpaceId(rememberedSpace)
-    if (rememberedSpace) {
-      void loadDirectory(rememberedGroup, rememberedSpace)
+    const binding = rememberedBinding()
+    setGroupId(binding.groupId)
+    setSpaceId(binding.spaceId)
+    if (binding.groupId && binding.spaceId) {
+      void loadDirectory(binding.groupId, binding.spaceId)
     }
     // The loader is intentionally stable for this open-session bootstrap; rerunning
     // it for every renderer callback would issue duplicate OneBox reads.
@@ -170,7 +139,14 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   }, [open, directory])
 
   useEffect(() => {
-    if (!open || !directory || !directoryBase || saving || generatingHostId || projectRegisterOpen) {
+    if (
+      !open ||
+      !directory ||
+      !directoryBase ||
+      saving ||
+      generatingHostId ||
+      projectRegisterOpen
+    ) {
       return
     }
     if (JSON.stringify(directory) !== directoryBase) {
@@ -182,7 +158,16 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     return () => window.clearInterval(timer)
     // A directory refresh must not interrupt an in-progress local edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, directory, directoryBase, saving, generatingHostId, projectRegisterOpen, groupId, spaceId])
+  }, [
+    open,
+    directory,
+    directoryBase,
+    saving,
+    generatingHostId,
+    projectRegisterOpen,
+    groupId,
+    spaceId
+  ])
 
   const saveDirectory = async (): Promise<void> => {
     if (!directory || !directory.team_group_id || !directory.team_space_id) {
@@ -193,8 +178,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     setError(null)
     try {
       await window.api.teamCollaboration.writeDirectory(directory)
-      rememberGroupId(directory.team_group_id)
-      rememberSpaceId(directory.team_group_id, directory.team_space_id)
+      rememberBinding(directory.team_group_id, directory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '同步团队目录失败。')
     } finally {
@@ -294,8 +278,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setDirectoryBase(JSON.stringify(nextDirectory))
       setSelectedProjectId('')
       setProjectRegisterOpen(false)
-      rememberGroupId(nextDirectory.team_group_id)
-      rememberSpaceId(nextDirectory.team_group_id, nextDirectory.team_space_id)
+      rememberBinding(nextDirectory.team_group_id, nextDirectory.team_space_id)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登记团队项目失败。')
     } finally {
@@ -313,180 +296,250 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     : []
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UsersRound className="size-4" /> 团队设置
-          </DialogTitle>
-          <DialogDescription>
-            从 WeLink 群目录进入团队成员、主机和项目。
-          </DialogDescription>
-        </DialogHeader>
-        {!directory ? (
+      <DialogContent
+        showCloseButton={false}
+        className={directory ? 'gap-3 sm:max-w-[920px]' : 'sm:max-w-[520px]'}
+      >
+        {directory ? (
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UsersRound className="size-4" /> 团队设置
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              团队成员、主机和项目，来自 WeLink 群目录。
+            </DialogDescription>
+          </DialogHeader>
+        ) : (
+          <DialogHeader>
+            <small className="text-xs text-muted-foreground">团队资产</small>
+            <DialogTitle>连接团队</DialogTitle>
+            <DialogDescription className="sr-only">
+              填写群 ID 和群空间 ID 绑定团队。
+            </DialogDescription>
+          </DialogHeader>
+        )}
+        {!directory && loading ? (
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <LoaderCircle className="size-5 animate-spin" aria-label="正在读取团队目录" />
+          </div>
+        ) : !directory ? (
           <div className="space-y-3">
-            <label className="space-y-1 text-sm">
-              <span>WeLink 群 ID</span>
-              <Input
-                value={groupId}
-                onChange={(event) => {
-                  const nextGroupId = event.target.value
-                  setGroupId(nextGroupId)
-                  setSpaceId(rememberedSpaceId(nextGroupId.trim()))
-                }}
-                inputMode="numeric"
-              />
-            </label>
-            {spaceIdRequired ? (
-              <label className="space-y-1 text-sm">
-                <span>群空间 ID</span>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="grid min-w-0 gap-1">
+                <small className="text-xs text-muted-foreground">WeLink 群 ID</small>
+                <Input
+                  value={groupId}
+                  onChange={(event) => setGroupId(event.target.value)}
+                  inputMode="numeric"
+                  autoFocus
+                />
+              </label>
+              <label className="grid min-w-0 gap-1">
+                <small className="text-xs text-muted-foreground">群空间 ID</small>
                 <Input
                   value={spaceId}
                   onChange={(event) => setSpaceId(event.target.value)}
                   inputMode="numeric"
-                  autoFocus
                 />
-                <span className="text-xs text-muted-foreground">
-                  首次使用需要提供群空间 ID；目录已有配置的成员无需重复填写。
-                </span>
               </label>
-            ) : null}
-            <Button
-              type="button"
-              onClick={enterTeam}
-              disabled={!groupId.trim() || (spaceIdRequired && !spaceId.trim()) || loading}
-            >
-              {loading ? <LoaderCircle className="size-3.5 animate-spin" /> : <UsersRound className="size-3.5" />}
-              {spaceIdRequired ? '绑定团队' : '读取团队'}
-            </Button>
+            </div>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={enterTeam}
+                disabled={!groupId.trim() || !spaceId.trim() || loading}
+              >
+                {loading ? (
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                ) : (
+                  <UsersRound className="size-3.5" />
+                )}
+                绑定团队
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="max-h-[65vh] space-y-4 overflow-y-auto scrollbar-sleek pr-1">
-            <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/60 p-3">
-              <label className="space-y-1 text-sm">
-                <span>团队群 ID</span>
-                <Input
-                  value={groupId}
-                  onChange={(event) => {
-                    setGroupId(event.target.value)
-                    setDirectory((current) => (current ? { ...current, team_group_id: event.target.value } : current))
-                  }}
-                  inputMode="numeric"
-                />
-              </label>
-              <label className="space-y-1 text-sm">
-                <span>群空间 ID</span>
-                <Input
-                  value={spaceId}
-                  onChange={(event) => {
-                    setSpaceId(event.target.value)
-                    setDirectory((current) => (current ? { ...current, team_space_id: event.target.value } : current))
-                  }}
-                  inputMode="numeric"
-                />
-              </label>
-            </div>
-            <TeamSettingsMembers
-              hosts={directory.hosts}
-              currentMemberId={currentMemberId}
-              loading={loading}
-              generatingHostId={generatingHostId}
-              onRefresh={() => void loadDirectory()}
-              onEndpointChange={(memberId, endpoint) => {
-                setDirectory((current) =>
-                  current
-                    ? {
-                        ...current,
-                        hosts: current.hosts.map((candidate) =>
-                          candidate.member_id === memberId
-                            ? { ...candidate, orca_endpoint: endpoint || undefined }
-                            : candidate
-                        )
-                      }
-                    : current
-                )
-              }}
-              onGenerateHostAddress={(memberId) => void generateHostAddress(memberId)}
-              onOpenSharingSettings={openSharingSettings}
-            />
-            <div className="rounded-lg border border-border/60">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
-                <div>
-                  <div className="text-sm font-medium">团队项目</div>
-                  <p className="text-xs text-muted-foreground">先登记项目，再按项目身份合并各成员项目墙来源。</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {projectRegisterOpen ? (
-                    <>
-                      <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                        <SelectTrigger className="h-8 w-56 text-xs" aria-label="选择本机项目">
-                          <SelectValue placeholder="选择本机项目" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableProjects.map((repo) => (
-                            <SelectItem key={repo.id} value={repo.id}>
-                              {repo.displayName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setProjectRegisterOpen(false)}>
-                        取消
-                      </Button>
-                    </>
-                  ) : (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setProjectRegisterOpen(true)}>
-                      <Plus className="size-3.5" />
-                      登记项目
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => void loadDirectory()}
-                    disabled={loading}
-                    aria-label="刷新团队项目"
-                  >
-                    <RefreshCw className={loading ? 'size-3.5 animate-spin' : 'size-3.5'} />
-                  </Button>
-                  {projectRegisterOpen ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => void registerProject()}
-                      disabled={!selectedProjectId || saving || !currentMemberId}
-                    >
-                      {saving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
-                      添加
-                    </Button>
-                  ) : null}
-                </div>
+          <>
+            <div className="max-h-[58vh] space-y-3 overflow-y-auto scrollbar-sleek px-0.5">
+              <div className="grid grid-cols-2 gap-3 rounded-md border border-border px-2.5 py-2">
+                <label className="grid min-w-0 gap-1">
+                  <small className="text-xs text-muted-foreground">团队群 ID</small>
+                  <Input
+                    value={groupId}
+                    onChange={(event) => {
+                      setGroupId(event.target.value)
+                      setDirectory((current) =>
+                        current ? { ...current, team_group_id: event.target.value } : current
+                      )
+                    }}
+                    inputMode="numeric"
+                  />
+                </label>
+                <label className="grid min-w-0 gap-1">
+                  <small className="text-xs text-muted-foreground">群空间 ID</small>
+                  <Input
+                    value={spaceId}
+                    onChange={(event) => {
+                      setSpaceId(event.target.value)
+                      setDirectory((current) =>
+                        current ? { ...current, team_space_id: event.target.value } : current
+                      )
+                    }}
+                    inputMode="numeric"
+                  />
+                </label>
               </div>
-              {directory.projects.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-muted-foreground">还没有登记团队项目。</p>
-              ) : (
-                directory.projects.map((project) => (
-                  <div key={project.repo_id} className="flex items-start justify-between gap-3 border-b border-border/40 px-3 py-2 text-sm last:border-b-0">
-                    <div className="min-w-0">
-                      <div className="font-medium">{project.name ?? project.repo_id}</div>
-                      <div className="truncate text-xs text-muted-foreground">{project.repository ?? project.repo_id}</div>
-                    </div>
+              <TeamSettingsMembers
+                hosts={directory.hosts}
+                currentMemberId={currentMemberId}
+                loading={loading}
+                generatingHostId={generatingHostId}
+                onRefresh={() => void loadDirectory()}
+                onEndpointChange={(memberId, endpoint) => {
+                  setDirectory((current) =>
+                    current
+                      ? {
+                          ...current,
+                          hosts: current.hosts.map((candidate) =>
+                            candidate.member_id === memberId
+                              ? { ...candidate, orca_endpoint: endpoint || undefined }
+                              : candidate
+                          )
+                        }
+                      : current
+                  )
+                }}
+                onGenerateHostAddress={(memberId) => void generateHostAddress(memberId)}
+                onOpenSharingSettings={openSharingSettings}
+              />
+              <section className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-medium">团队项目</h3>
+                  <div className="flex items-center gap-2">
+                    {projectRegisterOpen ? (
+                      <>
+                        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                          <SelectTrigger className="h-8 w-56 text-xs" aria-label="选择本机项目">
+                            <SelectValue placeholder="选择本机项目" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableProjects.map((repo) => (
+                              <SelectItem key={repo.id} value={repo.id}>
+                                {repo.displayName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setProjectRegisterOpen(false)}
+                        >
+                          取消
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => void registerProject()}
+                          disabled={!selectedProjectId || saving || !currentMemberId}
+                        >
+                          {saving ? (
+                            <LoaderCircle className="size-3.5 animate-spin" />
+                          ) : (
+                            <Plus className="size-3.5" />
+                          )}
+                          添加
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setProjectRegisterOpen(true)}
+                      >
+                        <Plus className="size-3.5" />
+                        登记项目
+                      </Button>
+                    )}
                   </div>
-                ))
-              )}
+                </div>
+                {directory.projects.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">群空间还没有登记团队项目。</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-fixed text-sm" aria-label="团队项目目录">
+                      <thead className="border-b border-border text-left text-xs text-muted-foreground">
+                        <tr>
+                          <th className="px-2 py-2 font-medium">团队项目</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {directory.projects.map((project) => (
+                          <tr
+                            key={project.repo_id}
+                            className="border-b border-border/60 last:border-b-0"
+                          >
+                            <td className="px-2 py-2.5">
+                              <div className="text-[13px] font-semibold">
+                                {project.name ?? project.repo_id}
+                              </div>
+                              <div className="mt-0.5 break-all text-xs text-muted-foreground">
+                                {project.repository ?? project.repo_id}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+              {error ? <p className="text-sm text-destructive">{error}</p> : null}
             </div>
-            <div className="flex items-center justify-end border-t border-border/60 pt-3">
-              <Button type="button" onClick={() => void saveDirectory()} disabled={saving || !spaceId.trim()}>
-                {saving ? <LoaderCircle className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <Button type="button" variant="ghost" onClick={() => setFilePreviewOpen(true)}>
+                查看群空间文件
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void saveDirectory()}
+                disabled={saving || !spaceId.trim()}
+              >
+                {saving ? (
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                ) : (
+                  <Save className="size-3.5" />
+                )}
                 保存到群空间
               </Button>
             </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          </div>
+            <Dialog open={filePreviewOpen} onOpenChange={setFilePreviewOpen}>
+              <DialogContent className="sm:max-w-[560px]">
+                <DialogHeader>
+                  <DialogTitle>BW/team.json</DialogTitle>
+                  <DialogDescription className="sr-only">
+                    当前团队目录将写入群空间的内容。
+                  </DialogDescription>
+                </DialogHeader>
+                <pre className="max-h-[50vh] overflow-auto scrollbar-sleek rounded-md bg-muted p-3 text-xs">
+                  {JSON.stringify(directory, null, 2)}
+                </pre>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
-        {error && !directory ? <p className="text-sm text-destructive">{error}</p> : null}
-        <Button type="button" variant="ghost" size="icon-sm" className="absolute top-4 right-4" onClick={() => onOpenChange(false)} aria-label="关闭团队设置">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute top-4 right-4"
+          onClick={() => onOpenChange(false)}
+          aria-label="关闭团队设置"
+        >
           <X className="size-4" />
         </Button>
       </DialogContent>

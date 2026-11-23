@@ -20,19 +20,30 @@ export type TeamDirectoryReadResult = {
   currentMemberId: string | null
 }
 
-async function queryGroupMembers(route: WelinkRoute, groupId: string): Promise<TeamDirectoryMember[]> {
-  const { stdout } = await runWelinkCli(route, ['im', 'query-group-member', '--group-id', groupId], 30_000)
+async function queryGroupMembers(
+  route: WelinkRoute,
+  groupId: string
+): Promise<TeamDirectoryMember[]> {
+  const { stdout } = await runWelinkCli(
+    route,
+    ['im', 'query-group-member', '--group-id', groupId],
+    30_000
+  )
   const parsed = parseJsonPayload(stdout)
   if (!parsed) {
     throw new Error('query-group-member returned no JSON payload')
   }
   const rows = Array.isArray(parsed)
     ? parsed
-    : parsed && typeof parsed === 'object' && Array.isArray((parsed as { members?: unknown }).members)
+    : parsed &&
+        typeof parsed === 'object' &&
+        Array.isArray((parsed as { members?: unknown }).members)
       ? (parsed as { members: unknown[] }).members
-      : parsed && typeof parsed === 'object' && Array.isArray((parsed as { respData?: unknown }).respData)
+      : parsed &&
+          typeof parsed === 'object' &&
+          Array.isArray((parsed as { respData?: unknown }).respData)
         ? (parsed as { respData: unknown[] }).respData
-      : null
+        : null
   if (!rows) {
     throw new Error('query-group-member returned an invalid members payload')
   }
@@ -43,17 +54,74 @@ async function queryGroupMembers(route: WelinkRoute, groupId: string): Promise<T
     const value = row as Record<string, unknown>
     const memberId = value.memberAccount ?? value.welinkId ?? value.member_id
     const memberType = value.memberType
-    if (typeof memberId !== 'string' || ['TYPE_AGENT_ASSISTANT', 'TYPE_ASSISTANT'].includes(String(memberType))) {
+    if (
+      typeof memberId !== 'string' ||
+      ['TYPE_AGENT_ASSISTANT', 'TYPE_ASSISTANT'].includes(String(memberType))
+    ) {
       return []
     }
-    return [{
-      member_id: memberId,
-      name: typeof value.name === 'string' ? value.name : memberId,
-      ...(typeof value.avatar === 'string' ? { avatar: value.avatar } : {}),
-      ...(typeof memberType === 'string' ? { member_type: memberType } : {}),
-      identity_source: 'welink-cli' as const
-    }]
+    return [
+      {
+        member_id: memberId,
+        ...(typeof value.name === 'string' ? { name: value.name } : {}),
+        ...(typeof value.avatar === 'string' ? { avatar: value.avatar } : {}),
+        ...(typeof memberType === 'string' ? { member_type: memberType } : {}),
+        identity_source: 'welink-cli' as const
+      }
+    ]
   })
+}
+
+const CONTACT_DETAIL_BATCH = 30
+
+type MemberProfile = { name?: string; avatar?: string }
+
+function parseContactProfiles(stdout: string): Map<string, MemberProfile> {
+  const profiles = new Map<string, MemberProfile>()
+  const parsed = parseJsonPayload(stdout)
+  const users = parsed && typeof parsed === 'object' ? (parsed as { users?: unknown }).users : null
+  if (!Array.isArray(users)) {
+    return profiles
+  }
+  for (const user of users) {
+    if (!user || typeof user !== 'object') {
+      continue
+    }
+    const value = user as Record<string, unknown>
+    const account = value.personAccount ?? value.w3Account
+    if (typeof account !== 'string' || !account) {
+      continue
+    }
+    const avatar = (value.avatar as { custom?: unknown } | undefined)?.custom
+    profiles.set(account.toLowerCase(), {
+      ...(typeof value.chineseName === 'string' && value.chineseName
+        ? { name: value.chineseName }
+        : {}),
+      ...(typeof avatar === 'string' && avatar ? { avatar } : {})
+    })
+  }
+  return profiles
+}
+
+async function withMemberProfiles(
+  route: WelinkRoute,
+  members: TeamDirectoryMember[]
+): Promise<TeamDirectoryMember[]> {
+  const profiles = new Map<string, MemberProfile>()
+  for (let index = 0; index < members.length; index += CONTACT_DETAIL_BATCH) {
+    const accounts = members
+      .slice(index, index + CONTACT_DETAIL_BATCH)
+      .map((member) => member.member_id)
+    try {
+      const { stdout } = await runWelinkCli(route, ['contact', 'detail', ...accounts], 30_000)
+      for (const [account, profile] of parseContactProfiles(stdout)) {
+        profiles.set(account, profile)
+      }
+    } catch {
+      // Names and avatars are display-only; membership must still load without them.
+    }
+  }
+  return members.map((member) => ({ ...member, ...profiles.get(member.member_id.toLowerCase()) }))
 }
 
 function parseJsonPayload(stdout: string): unknown {
@@ -136,15 +204,17 @@ function normalizeMembers(value: unknown): TeamDirectoryMember[] {
     if (typeof member.member_id !== 'string' || member.member_id.length === 0) {
       return []
     }
-    return [{
-      member_id: member.member_id,
-      ...(typeof member.name === 'string' ? { name: member.name } : {}),
-      ...(typeof member.avatar === 'string' ? { avatar: member.avatar } : {}),
-      ...(typeof member.member_type === 'string' ? { member_type: member.member_type } : {}),
-      ...(typeof member.host_id === 'string' ? { host_id: member.host_id } : {}),
-      identity_source: 'welink-cli' as const,
-      ...(typeof member.orca_endpoint === 'string' ? { orca_endpoint: member.orca_endpoint } : {})
-    }]
+    return [
+      {
+        member_id: member.member_id,
+        ...(typeof member.name === 'string' ? { name: member.name } : {}),
+        ...(typeof member.avatar === 'string' ? { avatar: member.avatar } : {}),
+        ...(typeof member.member_type === 'string' ? { member_type: member.member_type } : {}),
+        ...(typeof member.host_id === 'string' ? { host_id: member.host_id } : {}),
+        identity_source: 'welink-cli' as const,
+        ...(typeof member.orca_endpoint === 'string' ? { orca_endpoint: member.orca_endpoint } : {})
+      }
+    ]
   })
 }
 
@@ -160,11 +230,13 @@ function normalizeProjects(value: unknown): TeamDirectory['projects'] {
     if (typeof project.repo_id !== 'string') {
       return []
     }
-    return [{
-      repo_id: project.repo_id,
-      ...(typeof project.name === 'string' ? { name: project.name } : {}),
-      ...(typeof project.repository === 'string' ? { repository: project.repository } : {})
-    }]
+    return [
+      {
+        repo_id: project.repo_id,
+        ...(typeof project.name === 'string' ? { name: project.name } : {}),
+        ...(typeof project.repository === 'string' ? { repository: project.repository } : {})
+      }
+    ]
   })
 }
 
@@ -196,7 +268,9 @@ export async function readTeamDirectory(args: {
   spaceId: string
 }): Promise<TeamDirectoryReadResult> {
   const [members, currentMemberId] = await Promise.all([
-    queryGroupMembers(args.route, args.groupId),
+    queryGroupMembers(args.route, args.groupId).then((rows) =>
+      withMemberProfiles(args.route, rows)
+    ),
     queryCurrentMemberId(args.route)
   ])
   const node = await findTeamDirectoryFile(args.route, args.spaceId)
@@ -220,7 +294,11 @@ export async function readTeamDirectory(args: {
     const candidates = ['team.json', join(root, 'team.json')]
     for (const candidate of candidates) {
       try {
-        const directory = parseDirectory(await readFile(candidate, 'utf8'), args.groupId, args.spaceId)
+        const directory = parseDirectory(
+          await readFile(candidate, 'utf8'),
+          args.groupId,
+          args.spaceId
+        )
         directory.hosts = mergeMembers(members, directory.hosts)
         return { directory, fileId: node.id, currentMemberId }
       } catch {

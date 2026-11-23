@@ -169,7 +169,6 @@
           screen: 'wall',
           directoryDraft: null,
           directoryBase: 'null',
-          spaceRequired: false,
           source: person === 'lead' ? 'lin' : person,
           panel: '',
           prior: 'wall',
@@ -599,11 +598,7 @@
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      const desktop = current()
-      const spaceField = desktop.spaceRequired
-        ? `<label class="field"><span>群空间 ID</span><input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required><small class="field-note">首次绑定或目录还没有 team.json 时填写。</small></label>`
-        : ''
-      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="连接团队"><header class="row between"><div><small>团队资产</small><h2>连接团队</h2></div>${close}</header><p class="field-note">先输入 WeLink 群 ID。若找不到已登记的群空间，再在这里补填群空间 ID。</p><form id="team-lookup"><div class="directory-id-grid"><label class="field"><span>WeLink 群 ID</span><input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label>${spaceField}</div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">${desktop.spaceRequired ? '绑定团队' : '读取团队'}</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="连接团队"><header class="row between"><div><small>团队资产</small><h2>连接团队</h2></div>${close}</header><form id="team-lookup"><div class="directory-id-grid"><label class="field"><span>WeLink 群 ID</span><input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field"><span>群空间 ID</span><input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = ['lead', 'lin', 'chen']
@@ -1439,16 +1434,10 @@
         notify(`样例只支持群号 ${demoGroup}`)
         return
       }
-      if (!data.get('space')) {
-        current().spaceRequired = true
-        render()
-        return
-      }
       if (data.get('space') !== demoSpaceId) {
         notify(`样例只支持群空间 ${demoSpaceId}`)
         return
       }
-      current().spaceRequired = false
       state.bound[actor.value] = true
       state.directory = syncDirectory(
         state.directory?.team_group_id === data.get('group')
