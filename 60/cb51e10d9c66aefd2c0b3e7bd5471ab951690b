@@ -1,0 +1,22 @@
+src/main/ipc/mobile.test.ts
+  s_02ab5765848c38::t_36f477a37c8b2c 712,714-717,727-729
+  s_02ab5765848c38::t_0b6d25c2e6e347 735
+src/main/ipc/mobile.ts
+  s_02ab5765848c38::t_9d3942c1292240 352-373,379-380,388-389
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "60cb51e10d9c66aefd2c0b3e7bd5471ab951690b",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
