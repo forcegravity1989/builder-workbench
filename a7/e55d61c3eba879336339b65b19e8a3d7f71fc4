@@ -1,0 +1,14 @@
+.bw/planning/v1.2/data.json
+  h_a7e858313fdba5 1-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "a7e55d61c3eba879336339b65b19e8a3d7f71fc4",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
