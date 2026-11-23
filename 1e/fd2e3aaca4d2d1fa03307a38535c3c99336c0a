@@ -1,0 +1,46 @@
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_e1f6f8170286d8 17,41,54
+  s_02ab5765848c38::t_5998c7ee55f0cc 51-53,55
+src/main/workbench/team-collaboration/team-directory-client.ts
+  s_02ab5765848c38::t_205d44df447eef 394-395,403-410
+  s_02ab5765848c38::t_eb7db63fb24317 294,301-304
+src/main/ipc/team-collaboration.ts
+  s_02ab5765848c38::t_3228d929763ef5 119
+  s_02ab5765848c38::t_dc079da37c971e 112-118,120-122
+src/main/workbench/team-collaboration/team-host-sync.ts
+  s_02ab5765848c38::t_c1f92101e16fe0 8,11
+  s_02ab5765848c38::t_8e9eca3d23a736 82-92
+  s_02ab5765848c38::t_e788e137db593e 35-41,50-52
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_d995334d27e5a3 252-255
+  s_02ab5765848c38::t_824f45dfe58e1a 272
+src/renderer/src/workbench/TeamSettingsDialog.tsx
+  s_02ab5765848c38::t_2613500bc25c40 140-143,192
+  s_02ab5765848c38::t_f64107fbb118f3 189-191
+  s_02ab5765848c38::t_c72cb1d64b9b56 193-194
+  s_02ab5765848c38::t_f2f845e7b60ab7 31-35,57-58,99-103,110,137,278-282
+src/preload/api/team-collaboration-api.ts
+  s_02ab5765848c38::t_a96763640ed0fb 13-16
+src/preload/api/team-collaboration-bridge.ts
+  s_02ab5765848c38::t_a1fff2d31594c0 10-11
+src/renderer/src/workbench/TeamHostRefreshMenuItem.tsx
+  s_02ab5765848c38::t_6cfa609367eae7 20-22
+src/shared/runtime-access-audit-labels.ts
+  s_02ab5765848c38::t_04a7f3651f8773 8-12,67-68,70-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "1efd2e3aaca4d2d1fa03307a38535c3c99336c0a",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
