@@ -1,0 +1,72 @@
+docs/05-features/team-collaboration/welink-cli-spike.md
+  s_02ab5765848c38::t_0c23d46828a407 44
+  s_02ab5765848c38::t_a6518b91180a66 22
+docs/05-features/team-collaboration/prototype/journey.js
+  s_02ab5765848c38::t_7a8d42dbe4b32b 601
+docs/05-features/team-collaboration/intent.md
+  s_02ab5765848c38::t_7739bef1e98606 13
+docs/05-features/team-collaboration/prototype.html
+  s_02ab5765848c38::t_83792de72a5d34 253
+docs/05-features/team-collaboration/design.md
+  s_02ab5765848c38::t_5da46db73e47bb 7
+  s_02ab5765848c38::t_6e13c9de769aa3 9
+src/renderer/src/workbench/TeamSettingsDialog.tsx
+  s_02ab5765848c38::t_60af5aa3f3d545 30,32,34-37,39,43,46
+  s_02ab5765848c38::t_5af68a521b1eb4 66
+  s_02ab5765848c38::t_27d4abbadeeafe 349
+  s_02ab5765848c38::t_a139b03851f4be 319-323
+  s_02ab5765848c38::t_6d88777da17424 356
+  s_02ab5765848c38::t_9022c577c7fa41 181
+  s_02ab5765848c38::t_c3aa91b2c6bcdf 2
+  s_02ab5765848c38::t_1236b518353f69 86
+  s_02ab5765848c38::t_9b345991b4328a 118
+  s_02ab5765848c38::t_785112c8cfef0b 299-311,313-315,346-348,350,352,354,357-465,467-468,470-497,499-501,503-516,520-525,527-533,535-540
+  s_02ab5765848c38::t_547118279aa5d9 526
+  s_02ab5765848c38::t_3af2d7d280d9a9 130-134
+  s_02ab5765848c38::t_f0b575f24c69ee 281
+  s_02ab5765848c38::t_db6e4fd3ad0b0f 93
+  s_02ab5765848c38::t_7e27afc314caa6 325-329,332,334,337-338,341
+  h_1dcaf127381c33 316-318
+  s_02ab5765848c38::t_66bed9b537b930 324
+  s_02ab5765848c38::t_3ffba26c32198e 351
+  s_02ab5765848c38::t_2ee43f118b4d15 353
+  s_02ab5765848c38::t_1d13843505ca11 355
+  s_02ab5765848c38::t_205b33c04b84fb 541-542
+  s_02ab5765848c38::t_e7f9ba54a37a17 52-55,142-149,161-170
+src/main/workbench/team-collaboration/team-directory-client.ts
+  s_02ab5765848c38::t_39bb4d716bc02f 23-31,38-40,42-44,46,57-60,63-71,75-99,101-126,207-217,233-239,297-301
+  s_02ab5765848c38::t_66c298ebf7cf2a 100
+  s_02ab5765848c38::t_290aacb2f313f1 271-273
+docs/05-features/team-collaboration/STATUS.md
+  s_02ab5765848c38::t_8ab449f4aa5358 10
+src/renderer/src/workbench/TeamSettingsMembers.tsx
+  s_02ab5765848c38::t_8051afc4aa8a48 1-2,19-42,53-55,57-58,60-69,71-72,75-76,78-79,83-94,97-161,166
+docs/05-features/team-collaboration/spec.md
+  s_02ab5765848c38::t_13adcb261cb5c3 34
+  s_02ab5765848c38::t_5368bbbc524677 79
+  s_02ab5765848c38::t_c9ba6deda0c7ae 61
+  s_02ab5765848c38::t_64511401a39102 25
+  s_02ab5765848c38::t_3299e170a0e9cf 48
+  s_02ab5765848c38::t_c9cbd6d7cde05c 103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "81ad3b3526e21dc814acdb38b3c616cdd380ae28",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
