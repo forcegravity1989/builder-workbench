@@ -9,6 +9,7 @@ import {
 import { ensureActiveOrcaProfile } from '../orca-profiles/profile-index-store'
 import { browserSessionRegistry } from '../browser/browser-session-registry'
 import { isDashboardPopoutRenderer } from '../window/dashboard-popout-window'
+import { isTrustedBrowserRenderer } from './browser-renderer-trust'
 import { getW3AccountConfig, type W3AccountConfig } from '../w3-account/w3-account-config'
 import { ensureW3SessionProfile } from '../w3-account/w3-account-session-store'
 import {
@@ -223,21 +224,46 @@ export function registerW3AccountHandlers(): void {
   ipcMain.removeHandler('w3Account:signOut')
   ipcMain.removeHandler('w3Account:openWeb')
 
-  ipcMain.handle('w3Account:status', (): Promise<W3AccountStatus> => getService().getStatus())
-  ipcMain.handle('w3Account:start', (): Promise<W3StartLoginResult> => getService().startLogin())
-  ipcMain.handle('w3Account:cancel', async (): Promise<W3AccountStatus> => {
+  // Why: the W3 IPC is pull-based, and dashboard popouts share the same preload
+  // (so they can reach window.api.w3Account). The push channel (broadcast) already
+  // excludes popouts; the pull handlers must enforce the same invariant, or a
+  // popout could read the identity or drive login/sign-out/openWeb. Only the
+  // trusted main app window may cross this boundary; everyone else gets a safe,
+  // identity-free default and no side effects.
+  ipcMain.handle('w3Account:status', async (event): Promise<W3AccountStatus> => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { state: 'signed-out' }
+    }
+    return getService().getStatus()
+  })
+  ipcMain.handle('w3Account:start', async (event): Promise<W3StartLoginResult> => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { status: { state: 'signed-out' } }
+    }
+    return getService().startLogin()
+  })
+  ipcMain.handle('w3Account:cancel', async (event): Promise<W3AccountStatus> => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { state: 'signed-out' }
+    }
     const status = await getService().cancelLogin()
     broadcast(status)
     return status
   })
-  ipcMain.handle('w3Account:signOut', async (): Promise<W3AccountStatus> => {
+  ipcMain.handle('w3Account:signOut', async (event): Promise<W3AccountStatus> => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { state: 'signed-out' }
+    }
     const status = await getService().signOut()
     broadcast(status)
     return status
   })
   ipcMain.handle(
     'w3Account:openWeb',
-    async (_event, request?: W3OpenWebRequest): Promise<W3OpenWebResult> => {
+    async (event, request?: W3OpenWebRequest): Promise<W3OpenWebResult> => {
+      if (!isTrustedBrowserRenderer(event.sender)) {
+        return { ok: false, reason: 'not-signed-in' }
+      }
       const target = await getService().resolveOpenWebTarget(request?.url)
       if (!target.ok) {
         return { ok: false, reason: target.reason }
