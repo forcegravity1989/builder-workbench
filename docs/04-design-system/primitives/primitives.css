@@ -1,9 +1,6 @@
-/* Workbench — static renditions of the Orca primitives in src/renderer/src/components/ui/*, for previews and prototypes.
-   Each rule translates the primitive's Tailwind classes 1:1 and targets the same
-   data-slot / data-variant / data-size / data-state attributes the React
-   components render, so markup copied from the app styles the same way.
-   .is-hover / .is-focus / .is-highlighted stand in for :hover, :focus-visible and
-   Radix's data-highlighted so previews can show those states statically. */
+/* Static component previews; runtime behavior and props belong to
+   src/renderer/src/components/ui/. These styles do not implement Radix behavior.
+   .is-hover / .is-focus / .is-highlighted expose visual states for comparison. */
 
 *,
 *::before,
@@ -541,6 +538,7 @@ select {
   opacity: 0.5;
   color: currentColor;
 }
+[data-slot='select-trigger']:focus-visible,
 [data-slot='select-trigger'].is-focus {
   border-color: var(--ring);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
@@ -552,10 +550,28 @@ select {
 :is([data-theme='dark'], .dark) [data-slot='select-trigger'].is-hover {
   background: color-mix(in oklab, var(--input) 50%, transparent);
 }
+[data-slot='select-trigger']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+[data-slot='select-trigger'][aria-invalid='true'] {
+  border-color: var(--destructive);
+}
+[data-slot='select-trigger'][aria-invalid='true']:focus-visible,
+[data-slot='select-trigger'][aria-invalid='true'].is-focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 20%, transparent);
+}
+:is([data-theme='dark'], .dark) [data-slot='select-trigger'][aria-invalid='true']:focus-visible,
+:is([data-theme='dark'], .dark) [data-slot='select-trigger'][aria-invalid='true'].is-focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 40%, transparent);
+}
 [data-slot='select-content'] {
   position: relative;
+  z-index: 70;
   min-width: 128px;
-  overflow: hidden;
+  max-height: var(--radix-select-content-available-height, none);
+  overflow-x: hidden;
+  overflow-y: auto;
   border-radius: var(--radius-md);
   border: 1px solid rgba(0, 0, 0, 0.14);
   background: rgba(255, 255, 255, 0.82);
@@ -587,9 +603,15 @@ select {
   user-select: none;
   outline: none;
 }
+[data-slot='select-item']:focus,
+[data-slot='select-item'][data-highlighted],
 [data-slot='select-item'].is-highlighted {
   background: var(--accent);
   color: var(--accent-foreground);
+}
+[data-slot='select-item'][data-disabled] {
+  pointer-events: none;
+  opacity: 0.5;
 }
 [data-slot='select-item'] .select-check {
   position: absolute;
@@ -692,7 +714,7 @@ select {
   background: transparent;
   box-shadow: none;
 }
-[data-theme='dark']
+:is([data-theme='dark'], .dark)
   [data-slot='tabs-list'][data-variant='line']
   [data-slot='tabs-trigger'][data-state='active'] {
   border-color: transparent;
@@ -718,6 +740,34 @@ select {
   border-color: var(--ring);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
   outline: 1px solid var(--ring);
+}
+
+[data-slot='tabs'][data-orientation='vertical'] {
+  flex-direction: row;
+}
+[data-slot='tabs'][data-orientation='vertical'] [data-slot='tabs-list'] {
+  height: fit-content;
+  flex-direction: column;
+}
+[data-slot='tabs'][data-orientation='vertical'] [data-slot='tabs-trigger'] {
+  width: 100%;
+  justify-content: flex-start;
+}
+[data-slot='tabs'][data-orientation='vertical'] [data-slot='tabs-trigger']::after {
+  left: auto;
+  right: -4px;
+  top: 0;
+  bottom: 0;
+  height: auto;
+  width: 2px;
+}
+[data-slot='tabs-trigger']:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+[data-slot='tabs-content'] {
+  flex: 1;
+  outline: none;
 }
 
 /* ── Card ───────────────────────────────────────────── */
