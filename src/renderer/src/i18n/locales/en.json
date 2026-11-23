@@ -8137,8 +8137,6 @@
           "connect": "Connect",
           "advanced": "Advanced",
           "serverDetails": "Server details",
-          "advertiseThisApp": "Advertise this app as a server",
-          "advertiseThisAppHelp": "Create access links for browsers, mobile clients, or another Orca client to connect back to this running app.",
           "runtimeReachable": "{{value0}} is reachable.",
           "updateAvailableOne": "1 update available",
           "updatesAvailable": "{{value0}} updates available",

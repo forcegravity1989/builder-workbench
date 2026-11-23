@@ -6865,8 +6865,6 @@
           "connect": "接続",
           "advanced": "詳細設定",
           "serverDetails": "サーバーの詳細",
-          "advertiseThisApp": "このアプリをサーバーとして公開",
-          "advertiseThisAppHelp": "ブラウザ、モバイルクライアント、または別の Orca クライアントがこの実行中のアプリへ接続できるように、アクセスリンクを作成します。",
           "runtimeReachable": "{{value0}} に到達できます。",
           "updateAvailableOne": "1 件の更新があります",
           "updatesAvailable": "{{value0}} 件の更新があります",

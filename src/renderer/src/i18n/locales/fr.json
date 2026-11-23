@@ -7671,8 +7671,6 @@
           "connect": "Se connecter",
           "advanced": "Avancé",
           "serverDetails": "Détails du serveur",
-          "advertiseThisApp": "Annoncer cette app comme serveur",
-          "advertiseThisAppHelp": "Créez des liens d'accès pour que des navigateurs, des clients mobiles ou un autre client Orca se connectent à cette app en cours d'exécution.",
           "runtimeReachable": "{{value0}} est joignable.",
           "updateAvailableOne": "1 mise à jour disponible",
           "updatesAvailable": "{{value0}} mises à jour disponibles",

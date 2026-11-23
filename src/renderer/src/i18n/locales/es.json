@@ -6843,8 +6843,6 @@
           "connect": "Conectar",
           "advanced": "Avanzado",
           "serverDetails": "Detalles del servidor",
-          "advertiseThisApp": "Anunciar esta app como servidor",
-          "advertiseThisAppHelp": "Crea enlaces de acceso para que navegadores, clientes móviles u otro cliente de Orca se conecten a esta app en ejecución.",
           "runtimeReachable": "{{value0}} está accesible.",
           "updateAvailableOne": "1 update available",
           "updatesAvailable": "{{value0}} updates available",
