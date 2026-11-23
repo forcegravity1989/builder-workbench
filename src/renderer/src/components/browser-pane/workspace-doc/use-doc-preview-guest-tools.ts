@@ -55,6 +55,8 @@ export function useDocPreviewGuestTools({
   const annotationSend = useBrowserPageAnnotationSend({ browserTabId: previewId, worktreeId })
   const grabAnnotations = useBrowserPageGrabAnnotations({
     browserTabId: previewId,
+    worktreeId,
+    documentKey: grantId ?? 'about:blank',
     toolTargetId,
     isActive: toolsReady,
     grab,
