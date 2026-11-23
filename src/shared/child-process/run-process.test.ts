@@ -89,13 +89,37 @@ describe('runProcessSync', () => {
     expect(result.code === 0 && result.signal === null).toBe(false)
   })
 
-  it('captures stdout and the exit code without throwing on failure', () => {
+  it('captures stdout, round-trips stdin, and decodes binary output without throwing', () => {
     const result = runProcessSync({
       program: process.execPath,
       args: ['-e', 'process.stdout.write("hi"); process.exit(3)']
     })
     expect(result.stdout).toBe('hi')
     expect(result.code).toBe(3)
+
+    // A string stdin is UTF-8 encoded before it reaches spawnSync, so a Unicode
+    // payload survives the round trip instead of throwing ERR_UNKNOWN_ENCODING.
+    const unicode = runProcessSync({
+      program: process.execPath,
+      args: ['-e', 'process.stdin.pipe(process.stdout)'],
+      input: 'café 日本語 😀'
+    })
+    expect(unicode.stdout).toBe('café 日本語 😀')
+
+    // Buffer stdin is passed through byte-for-byte, even non-UTF-8 bytes.
+    const buffered = runProcessSync({
+      program: process.execPath,
+      args: ['-e', 'process.stdin.pipe(process.stdout)'],
+      input: Buffer.from([0x41, 0x00, 0xff, 0x42])
+    })
+    expect(buffered.stdout).toBe('A\u0000�B')
+
+    // Binary stdout is captured as bytes and decoded as UTF-8, not dropped.
+    const binary = runProcessSync({
+      program: process.execPath,
+      args: ['-e', 'process.stdout.write(Buffer.from([0x68, 0x69, 0xff]))']
+    })
+    expect(binary.stdout).toBe('hi�')
   })
 })
 

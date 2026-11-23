@@ -7,6 +7,34 @@ import {
 } from './electron-home-isolation'
 import { closeElectronAppForE2E, forceQuitElectronAppForE2E } from './electron-process-shutdown'
 import { getWorkbenchElectronLaunchArgs } from './workbench-launch-args'
+import { installOverviewMembershipFixture } from './workbench-version-overview-fixture'
+
+export async function openVersionOverview(
+  page: Page,
+  version: string,
+  afterBackgroundReload = false
+) {
+  await page.getByRole('button', { name: '版本工作区', exact: true }).click({
+    force: afterBackgroundReload
+  })
+  const group = page.locator('.wb-version-group', {
+    has: page.getByRole('button', { name: `${version} 展开或收起`, exact: true })
+  })
+  const overview = group.getByRole('button', { name: '总览', exact: true })
+  const toggle = group.getByRole('button', { name: `${version} 展开或收起`, exact: true })
+  await expect(toggle).toBeVisible()
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click({ force: afterBackgroundReload })
+  }
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(overview).toBeVisible()
+  await expect(overview).toBeEnabled()
+  // A background reload has no animation frames for Playwright's stability check.
+  await overview.click({ force: afterBackgroundReload })
+  await expect(
+    page.getByRole('heading', { name: `${version} 版本总览`, exact: true })
+  ).toBeVisible()
+}
 
 export async function enableProjectStats(page: Page, info: TestInfo, issueState: string) {
   const board = page.locator('.bwo-page')
@@ -116,20 +144,10 @@ export async function verifyOverviewRestart(previous: ElectronApplication, info:
       isolation
     )
     expect(restarted.process().pid).not.toBe(previousPid)
+    await installOverviewMembershipFixture(restarted)
     const page = await restarted.firstWindow({ timeout: 120_000 })
-    await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })
-    const group = page.locator('.wb-version-group', {
-      has: page.getByRole('button', { name: 'v0.334 展开或收起', exact: true })
-    })
-    const overview = group.getByRole('button', { name: '总览', exact: true })
-    const toggle = group.getByRole('button', { name: 'v0.334 展开或收起', exact: true })
-    await expect(toggle).toBeVisible()
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-      await toggle.click({ force: true })
-    }
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    await overview.click({ force: true })
-    await expect(page.getByRole('heading', { name: 'v0.334 版本总览', exact: true })).toBeVisible()
+    await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 120_000 })
+    await openVersionOverview(page, 'v0.334', true)
     await expect(
       page.getByRole('heading', { name: '当前目标 · 版本总览开发', exact: true })
     ).toBeVisible()

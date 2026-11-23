@@ -1,11 +1,14 @@
 import type { MobileRelayStatusDetail } from '../../shared/mobile-relay-status'
 import type { MobilePairingConnectionMode } from '../../shared/mobile-pairing-connection-mode'
 import type { RuntimePairingReach } from '../../shared/runtime-pairing-reach'
+import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../shared/runtime-session-contracts'
 import type { MobileRelayMintFailure } from '../../shared/mobile-relay-mint-failure'
 import type {
   RuntimePairingLinkReference,
   RuntimePairingLink,
-  RuntimeAccessGrant
+  RuntimeAccessGrant,
+  RuntimeAccessAuditEntry,
+  RuntimeAccessAuditResult
 } from '../../shared/runtime-access-grants'
 
 export type MobileApi = {
@@ -57,10 +60,14 @@ export type MobileApi = {
     address?: string
     rotate?: boolean
     reach?: RuntimePairingReach
+    accessMode?: RuntimeAccessMode
+    teamBinding?: RuntimeTeamBinding
+    name?: string
+    avatar?: string
   }) => Promise<
     | {
         available: false
-        reason?: 'network_exposure_failed'
+        reason?: 'network_exposure_failed' | 'invalid_access_mode'
         guidance?: string
       }
     | {
@@ -84,6 +91,14 @@ export type MobileApi = {
   }>
   revokeDevice: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
   listRuntimeAccessGrants: () => Promise<{ grants: RuntimeAccessGrant[] }>
+  grantRuntimeFullAccess: (args: { deviceIds: string[] }) => Promise<{ granted: string[] }>
+  listRuntimeAccessAudit: (args?: {
+    action?: string
+    result?: RuntimeAccessAuditResult
+    since?: number
+    search?: string
+  }) => Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }>
+  clearRuntimeAccessAudit: () => Promise<{ cleared: boolean }>
   revokeRuntimeAccess: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
   isWebSocketReady: () => Promise<{ ready: boolean; endpoint: string | null }>
   getRelayStatus: () => Promise<MobileRelayStatusDetail>

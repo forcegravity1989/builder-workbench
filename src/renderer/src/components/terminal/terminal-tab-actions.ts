@@ -33,6 +33,11 @@ import {
 import { closeLocalTerminalTabState } from './close-local-terminal-tab-state'
 import { getTerminalIncarnationHandle } from './terminal-close-incarnation'
 import {
+  terminalTabCloseStoreReason,
+  terminalTabCloseWireReason,
+  type TerminalTabCloseIntent
+} from './terminal-tab-close-intent'
+import {
   getWorktreeTerminalTabIds,
   resolveTerminalCloseTarget,
   validatePrecomputedTerminalCloseState,
@@ -43,14 +48,9 @@ export { closeOtherTerminalTabs, closeTerminalTabsToRight } from './terminal-tab
 
 export function closeTerminalTab(
   tabId: string,
-  options?: {
+  options: {
     force?: boolean
     rejectPinned?: boolean
-    reason?: TerminalTabCloseReason
-    /** Close reason sent to the host only. Unlike `reason`, it does not skip
-     *  local guards (pinned confirmation keys off `reason === 'pty-exit'`),
-     *  so lifecycle echoes that still need those guards can tag the wire. */
-    hostCloseReason?: TerminalTabCloseReason
     /** PTY whose lifecycle event initiated the host close. */
     lifecyclePtyId?: string
     /** Set by callers that must never raise a modal (bulk closes, CLI/RPC, lifecycle
@@ -64,8 +64,14 @@ export function closeTerminalTab(
     precomputedCloseState?: PrecomputedTerminalCloseState
     onClosed?: () => void
     onCancel?: () => void
-  }
+  } & (
+    | { reason: TerminalTabCloseIntent; hostCloseReason?: never }
+    /** Host-only lifecycle evidence retains the local pinned-tab guard. */
+    | { reason?: never; hostCloseReason: TerminalTabCloseReason }
+  )
 ): void {
+  const intent = options.reason ?? options.hostCloseReason
+  const storeReason = terminalTabCloseStoreReason(intent)
   const state = useAppStore.getState()
   const precomputedCloseState = validatePrecomputedTerminalCloseState(
     tabId,
@@ -74,11 +80,10 @@ export function closeTerminalTab(
   )
   const target = resolveTerminalCloseTarget(state, tabId, precomputedCloseState)
   if (!target) {
-    const closeReason = options?.reason ?? options?.hostCloseReason ?? 'user'
-    if (closeReason !== 'pty-exit') {
+    if (storeReason !== 'pty-exit') {
       // Why: late explicit cleanup must still revoke tab-scoped resume authority after PTY exit removed the row.
       state.closeTab(tabId, {
-        reason: closeReason,
+        reason: storeReason,
         ...(options?.localPtyTeardownOwnedExternally
           ? { localPtyTeardownOwnedExternally: true }
           : {}),
@@ -146,7 +151,7 @@ export function closeTerminalTab(
   )
   if (
     structuredSessionId &&
-    options?.reason !== 'pty-exit' &&
+    storeReason === 'user' &&
     options?.structuredSessionCloseConfirmed !== true
   ) {
     const target = runtimeEnvironmentId
@@ -179,7 +184,7 @@ export function closeTerminalTab(
     return
   }
   const retireStructuredSession = (): void => {
-    const closeReason = options?.reason ?? options?.hostCloseReason ?? 'user'
+    const closeReason = storeReason
     const target = runtimeEnvironmentId
       ? ({ kind: 'environment', environmentId: runtimeEnvironmentId } as const)
       : ({ kind: 'local' } as const)
@@ -213,7 +218,7 @@ export function closeTerminalTab(
         worktreeId: owningWorktreeId,
         tabId: terminalTabId
       }) ?? toHostSessionTabId(terminalTabId)
-    const wireReason = options?.reason ?? options?.hostCloseReason ?? 'user'
+    const wireReason = terminalTabCloseWireReason(intent)
     const lifecycleTerminalHandle =
       wireReason === 'user'
         ? null
@@ -225,7 +230,7 @@ export function closeTerminalTab(
     // Why: prune local mirrors immediately so close feels responsive while the
     // host session snapshot catches up.
     closeLocalTerminalTabState(terminalTabId, {
-      reason: options?.reason,
+      reason: options.reason === undefined ? undefined : storeReason,
       ...(options?.captureRecentlyClosed !== undefined
         ? { captureRecentlyClosed: options.captureRecentlyClosed }
         : {}),
@@ -284,7 +289,7 @@ export function closeTerminalTab(
   }
 
   closeLocalTerminalTabState(terminalTabId, {
-    reason: options?.reason,
+    reason: storeReason,
     ...(options?.captureRecentlyClosed !== undefined
       ? { captureRecentlyClosed: options.captureRecentlyClosed }
       : {}),

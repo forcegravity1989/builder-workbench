@@ -43,10 +43,9 @@ const { join, resolve } = require('node:path')
  * socket. The relay passes no such option (`src/relay/pty-handler.ts`), so it takes the
  * `!useConptyDll` branch -- the one this asset and the desktop patch both edit.
  *
- * THE DESKTOP IS NOT ENTIRELY OFF THAT BRANCH. Two desktop sites omit the option and so run it
- * too: the hidden rate-limit probes in `src/main/rate-limits/claude-pty.ts` and
- * `codex-pty-rate-limit-probe.ts`. Both recur -- their fetchers poll -- and both tear down through
- * `kill()`, so this hunk is live on the desktop, just never for a pane a user can see. Do not
+ * THE DESKTOP IS NOT ENTIRELY OFF THAT BRANCH. The hidden rate-limit probe in
+ * `src/main/rate-limits/claude-pty.ts` omits the option and so runs it too. Its fetcher polls and
+ * tears down through `kill()`, so this hunk is live on the desktop, just never for a pane a user can see. Do not
  * restate this as "the desktop never executes that branch": that sentence stood here for two
  * revisions and is false.
  *

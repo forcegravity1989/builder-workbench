@@ -14,6 +14,7 @@ export type DraftPasteReadySignal =
   | 'codex-composer-prompt'
   | 'render-cursor-after-bracketed-paste'
   | 'grok-composer-prompt'
+  | 'dsh-composer-prompt'
 
 export type TuiAgentDetectionRuntime = NodeJS.Platform | 'wsl'
 
@@ -102,6 +103,17 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     draftPasteReadySignal: 'codex-composer-prompt',
     draftPasteReadyTimeoutMs: 20_000,
     submitRetryDelayMs: 1200
+  },
+  dsh: {
+    detectCmd: 'dsh-tui',
+    detectCmdAliases: ['dst'],
+    detectRequiredCommands: ['dsh'],
+    // A bare first launch opens the session browser, which cannot receive the task.
+    launchCmd: 'dsh-tui . --backend=dsh',
+    expectedProcess: 'dsh',
+    promptInjectionMode: 'stdin-after-start',
+    // The whale intro keeps repainting behind the ready composer.
+    draftPasteReadySignal: 'dsh-composer-prompt'
   },
   autohand: {
     detectCmd: 'autohand',

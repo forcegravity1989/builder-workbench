@@ -31,6 +31,8 @@ export const KnownRuntimeEnvironmentSchema = z.object({
   runtimeId: z.string().min(1).nullable(),
   source: RuntimeEnvironmentSourceSchema.optional(),
   connectionDependency: z.literal('ssh-tunnel').optional(),
+  /** Undefined means reconnect at launch; false keeps this host disconnected across restarts until an explicit Connect. */
+  reconnectOnLaunch: z.boolean().optional(),
   endpoints: z.array(RuntimeAccessEndpointSchema).min(1),
   preferredEndpointId: z.string().min(1)
 })
@@ -39,6 +41,8 @@ export type KnownRuntimeEnvironment = z.infer<typeof KnownRuntimeEnvironmentSche
 
 export type PublicKnownRuntimeEnvironment = Omit<KnownRuntimeEnvironment, 'endpoints'> & {
   endpoints: PublicRuntimeAccessEndpoint[]
+  /** Digest of the persistent host key, for proving same-host pairing rotations. */
+  hostKeyFingerprint?: string
 }
 
 export function redactRuntimeEnvironment(

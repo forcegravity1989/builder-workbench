@@ -28,6 +28,30 @@ async function inspectPath(path: string, directory: boolean): Promise<boolean> {
   }
 }
 
+export async function resolveMilestoneDocumentPath(root: string, create = false): Promise<string> {
+  if (!isAbsolute(root)) {
+    throw new VersionDocumentError(
+      'unsafe-path',
+      'The registered workspace must have an absolute path'
+    )
+  }
+  const directory = join(await realpath(root), '.bw')
+  if (!(await inspectPath(directory, true)) && create) {
+    try {
+      await mkdir(directory)
+    } catch (error) {
+      if (!isMissingFile(error)) {
+        throw error
+      }
+    }
+    await inspectPath(directory, true)
+  }
+  const file = join(directory, 'milestones.json')
+  await inspectPath(file, false)
+  await inspectPath(`${file}.lock`, true)
+  return file
+}
+
 /** No directories are created when listing or reading materials. */
 export async function resolveVersionPlanningRoot(
   trustedWorkspacePath: string,

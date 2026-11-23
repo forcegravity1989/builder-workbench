@@ -14,6 +14,7 @@ import { getSmartWorkspaceNameFieldCopy } from './smart-workspace-name-field-cop
 import { useSmartWorkspaceNameFieldActions } from './use-smart-workspace-name-field-actions'
 import { useSmartWorkspaceNameFieldFoundation } from './use-smart-workspace-name-field-foundation'
 import { useSmartWorkspaceGithubSearch } from './use-smart-workspace-github-search'
+import { useSmartWorkspaceCodeHubSearch } from './use-smart-workspace-codehub-search'
 import { useSmartWorkspaceGitlabSearch } from './use-smart-workspace-gitlab-search'
 import { useSmartWorkspaceNameFieldPresentation } from './use-smart-workspace-name-field-presentation'
 import { useSmartWorkspaceSecondarySearches } from './use-smart-workspace-secondary-searches'
@@ -71,11 +72,21 @@ export function useSmartWorkspaceNameFieldController({
   const shouldQueryGithub =
     sourceQueryWithinLimit &&
     !repoBackedSourcesDisabled &&
+    foundation.githubSourceAvailable &&
     !foundation.jiraSource.intent &&
     !linearUrlIntentOwnsInput &&
     !textOnly &&
     foundation.repoBackedSearchTargets.length > 0 &&
     (foundation.mode === 'smart' || foundation.mode === 'github')
+  const shouldQueryCodehub =
+    sourceQueryWithinLimit &&
+    !repoBackedSourcesDisabled &&
+    !foundation.jiraSource.intent &&
+    !linearUrlIntentOwnsInput &&
+    !textOnly &&
+    foundation.codehubSourceAvailable &&
+    foundation.repoBackedSearchTargets.length > 0 &&
+    (foundation.mode === 'smart' || foundation.mode === 'codehub')
   const shouldQueryLinear =
     linearQueryWithinLimit &&
     !foundation.jiraSource.intent &&
@@ -97,6 +108,11 @@ export function useSmartWorkspaceNameFieldController({
     foundation,
     sourceQueryWithinLimit,
     shouldQueryGithub
+  })
+  useSmartWorkspaceCodeHubSearch({
+    foundation,
+    sourceQueryWithinLimit,
+    shouldQueryCodehub
   })
   useSmartWorkspaceSecondarySearches({
     foundation,

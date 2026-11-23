@@ -5,7 +5,7 @@ import { getWorktreeIdsWithLiveAgent } from '@/lib/worktree-activity-state'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
-import { computeVisibleWorktrees } from '../../visible-worktrees'
+import { computeVisibleWorktrees, type VisibleWorktreeOptions } from '../../visible-worktrees'
 import {
   EMPTY_PAIRED_DEVICE_IDS_BY_ENVIRONMENT,
   getPairedDeviceIdsByEnvironment
@@ -71,11 +71,11 @@ export function useVisibleSidebarWorktrees(args: {
     !showSleepingWorkspaces ? getVisibleWorktreeBrowserActivityTabs(s.browserTabsByWorktree) : null
   )
 
-  const recomputedVisibleWorktrees = useMemo(() => {
+  const filterOptions = useMemo<VisibleWorktreeOptions>(() => {
     // Keyed on the epoch, not `agentStatusNow`: two bumps in one millisecond
     // share a sample, so the timestamp alone would not re-key this memo.
     void agentStatusEpoch
-    return computeVisibleWorktrees(worktreesByRepo, sortedIds, {
+    return {
       filterRepoIds,
       showSleepingWorkspaces,
       tabsByWorktree,
@@ -104,7 +104,7 @@ export function useVisibleSidebarWorktrees(args: {
       forcedVisibleWorktreeIds: args.agentSendTargetWorktreeId
         ? [args.agentSendTargetWorktreeId]
         : undefined
-    })
+    }
   }, [
     args.agentSendTargetWorktreeId,
     agentStatusEpoch,
@@ -124,15 +124,17 @@ export function useVisibleSidebarWorktrees(args: {
     tabsByWorktree,
     ptyIdsByTabId,
     browserTabsByWorktree,
-    sortedIds,
     worktreeLineageById,
-    worktreesByRepo,
     pairedDeviceIdsByEnvironment
   ])
+  const recomputedVisibleWorktrees = useMemo(
+    () => computeVisibleWorktrees(worktreesByRepo, sortedIds, filterOptions),
+    [worktreesByRepo, sortedIds, filterOptions]
+  )
   // Why: agentStatusEpoch bumps recompute this memo even when membership and
   // order are unchanged; keeping the previous identity stops the whole
   // rows/sectionRows/renderedWorktrees chain from churning per epoch.
   const visibleWorktrees = useReusedArrayIdentity(recomputedVisibleWorktrees)
 
-  return { visibleWorktrees, pairedDeviceIdsByEnvironment }
+  return { visibleWorktrees, pairedDeviceIdsByEnvironment, filterOptions }
 }

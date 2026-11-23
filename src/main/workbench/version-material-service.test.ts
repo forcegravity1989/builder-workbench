@@ -35,11 +35,52 @@ const scope = { repoId: 'repo', worktreeId: 'plan', hostId: 'local', workflow: '
 const git = (cwd: string, ...args: string[]) =>
   execFileSync('git', args, { cwd, stdio: 'pipe' }).toString().trim()
 
+async function checkScheduledInitialization(
+  service: Pick<ReturnType<typeof createService>, 'initializeEmptyPlan' | 'read'>,
+  owner: typeof scope,
+  root: string
+) {
+  const timeWindow = { start: '2026-11-16', end: '2026-11-20' }
+  await mkdir(join(root, '.bw'))
+  const milestonePath = join(root, '.bw/milestones.json')
+  const request = { version: 'v2', cycleId: 'new-random-identity', expectedBranch: 'bw/v2/plan' }
+  await writeFile(milestonePath, '{broken')
+  await expect(service.initializeEmptyPlan(owner, request)).rejects.toThrow('里程碑材料无法读取')
+  expect(await service.read({ ...owner, version: 'v2' })).toBeNull()
+  await writeFile(
+    milestonePath,
+    JSON.stringify({
+      schema_version: 4,
+      milestones: [],
+      features: [],
+      versionPlans: [{ version: 'v2', cycleId: 'scheduled-identity', timeWindow }]
+    })
+  )
+  expect((await service.initializeEmptyPlan(owner, request)).created).toBe(true)
+  const existing = await service.read({ ...owner, version: 'v2' })
+  expect(existing?.document).toMatchObject({
+    version: 'v2',
+    cycleId: 'scheduled-identity',
+    timeWindow,
+    goals: [],
+    tasks: []
+  })
+  await writeFile(milestonePath, '{broken')
+  expect((await service.initializeEmptyPlan(owner, request)).created).toBe(false)
+  expect(await service.read({ ...owner, version: 'v2' })).toEqual(existing)
+  await expect(
+    service.initializeEmptyPlan(owner, { ...request, version: 'v3' })
+  ).rejects.toMatchObject({
+    code: 'cross-version'
+  })
+}
+
 describe('native version material service', () => {
   let directory: string
   let repo: string
   let planning: string
   let acceptance: string
+  let scheduled: string
   let host: VersionMaterialHost
 
   beforeEach(async () => {
@@ -47,6 +88,7 @@ describe('native version material service', () => {
     repo = join(directory, 'repo')
     planning = join(directory, 'plan')
     acceptance = join(directory, 'acceptance')
+    scheduled = join(directory, 'scheduled')
     await mkdir(repo)
     git(repo, 'init')
     git(
@@ -60,8 +102,9 @@ describe('native version material service', () => {
       '-m',
       'fixture'
     )
-    git(repo, 'worktree', 'add', '-b', 'bw/week-plan', planning)
-    git(repo, 'worktree', 'add', '-b', 'bw/week-acceptance', acceptance)
+    git(repo, 'worktree', 'add', '-b', 'bw/v0.5/plan', planning)
+    git(repo, 'worktree', 'add', '-b', 'bw/v0.5/acceptance', acceptance)
+    git(repo, 'worktree', 'add', '-b', 'bw/v2/plan', scheduled)
     host = {
       listRepos: () => [{ id: 'repo', path: repo, kind: 'git' }],
       listWorktrees: async () => [
@@ -71,7 +114,8 @@ describe('native version material service', () => {
           path: planning,
           hostId: 'local',
           isArchived: false,
-          isMainWorktree: false
+          isMainWorktree: false,
+          workbenchVersionBinding: { schema: 1, version: 'v0.5', workflow: 'plan' }
         },
         {
           id: 'acceptance',
@@ -79,7 +123,17 @@ describe('native version material service', () => {
           path: acceptance,
           hostId: 'local',
           isArchived: false,
-          isMainWorktree: false
+          isMainWorktree: false,
+          workbenchVersionBinding: { schema: 1, version: 'v0.5', workflow: 'acceptance' }
+        },
+        {
+          id: 'scheduled',
+          repoId: 'repo',
+          path: scheduled,
+          hostId: 'local',
+          isArchived: false,
+          isMainWorktree: false,
+          workbenchVersionBinding: { schema: 1, version: 'v2', workflow: 'plan' }
         }
       ]
     }
@@ -88,10 +142,12 @@ describe('native version material service', () => {
   afterEach(async () => {
     setSshActiveMultiplexerResolver(null)
     // This test owns the freshly created temporary root, including both linked worktrees.
-    await rm(directory, { recursive: true, force: true })
+    // Why maxRetries: on Windows, git can hold handles briefly after commit/worktree ops,
+    // making the first rmdir attempt fail with a transient EBUSY.
+    await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   })
 
-  it('does not create or choose a version; separates branches and exposes legacy/broken candidates', async () => {
+  it('reads only the bound version and keeps scheduled initialization create-only', async () => {
     const service = createVersionMaterialService(host)
     expect(await service.list(scope)).toEqual([])
     expect(await service.read({ ...scope, version: 'v0.5' })).toBeNull()
@@ -138,8 +194,6 @@ describe('native version material service', () => {
       await writeFile(join(path, 'data.json'), contents)
     }
     expect((await service.list(scope)).map(({ version, state }) => ({ version, state }))).toEqual([
-      { version: 'v0.3', state: 'invalid' },
-      { version: 'v0.4', state: 'migration-required' },
       { version: 'v0.5', state: 'ready' }
     ])
     expect(await createVersionMaterialService(host).read({ ...scope, version: 'v0.5' })).toEqual(
@@ -148,6 +202,7 @@ describe('native version material service', () => {
     expect(await readFile(join(planning, '.bw/planning/v0.4/data.json'), 'utf8')).toBe(
       '{"schema_version":2}'
     )
+    await checkScheduledInitialization(service, { ...scope, worktreeId: 'scheduled' }, scheduled)
   })
 
   it('registers a prepared artifact in one command: real file only, candidate reused, rerun replaces', async () => {
@@ -243,7 +298,7 @@ describe('native version material service', () => {
       code: 'invalid-scope'
     })
     await expect(save(undefined, { worktreeId: 'acceptance' })).rejects.toMatchObject({
-      code: 'wrong-branch'
+      code: 'invalid-scope'
     })
     const repos = host.listRepos()
     const trees = await host.listWorktrees(scope)
@@ -258,9 +313,22 @@ describe('native version material service', () => {
         })
       )
     ).rejects.toMatchObject({ code: 'invalid-scope' })
+    const legacy = join(directory, 'legacy-plan')
+    git(repo, 'worktree', 'add', '-b', 'bw/week-plan', legacy)
+    const legacyHost = {
+      ...host,
+      listWorktrees: async () => [{ ...trees[0], path: legacy, workbenchVersionBinding: null }]
+    }
+    await expect(createVersionMaterialService(legacyHost).list(scope)).rejects.toMatchObject({
+      code: 'invalid-scope'
+    })
+    await expect(save(createVersionMaterialService(legacyHost))).rejects.toMatchObject({
+      code: 'invalid-scope'
+    })
+    expect(await readdir(legacy)).toEqual(['.git'])
     const foreign = join(directory, 'foreign')
     await mkdir(foreign)
-    git(foreign, 'init', '-b', 'bw/week-plan')
+    git(foreign, 'init', '-b', 'bw/v0.5/plan')
     await expect(
       save(
         createVersionMaterialService({
@@ -475,6 +543,11 @@ describe('native version material service', () => {
     await expect(
       remote.save({ ...remoteScope, version: 'v0.5', expectedRevision: null, document: plan })
     ).rejects.toMatchObject({ code: 'revision-conflict', currentRevision: saved.revision })
+    await checkScheduledInitialization(
+      remote,
+      { ...remoteScope, worktreeId: 'scheduled' },
+      scheduled
+    )
     git(planning, 'checkout', '--detach')
     await expect(
       remote.save({

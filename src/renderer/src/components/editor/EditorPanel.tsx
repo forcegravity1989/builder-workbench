@@ -2,7 +2,8 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { getConnectionId } from '@/lib/connection-context'
 import { detectLanguage } from '@/lib/language-detect'
-import { canShowWorkspaceFileBrowserAction, openFilePreviewToSide } from '@/lib/file-preview'
+import { toast } from 'sonner'
+import { canShowWorkspaceFileBrowserAction, openFileInBrowserTab } from '@/lib/file-preview'
 import { getEditorHeaderCopyState } from './editor-header'
 import { isLocalPathOpenBlocked, showLocalPathOpenBlockedToast } from '@/lib/local-path-open-guard'
 import { settingsForRuntimeOwner } from '@/runtime/runtime-rpc-client'
@@ -220,19 +221,18 @@ function EditorPanelInner({
     canOpenWorkspaceFileBrowser
   })
 
-  const handleOpenPreviewToSide = (): void => {
-    const state = useAppStore.getState()
-    const sourceGroupId = activeViewStateId
-      ? ((state.unifiedTabsByWorktree[activeFile.worktreeId] ?? []).find(
-          (t) => t.id === activeViewStateId
-        )?.groupId ?? null)
-      : null
-    openFilePreviewToSide({
-      language: model.resolvedLanguage,
+  // Why: the eye renders the HTML preview in the current work area's group rather than a new
+  // side split. It reuses the same preview pipeline (local file:// browser tab, or orca-preview
+  // doc-preview for remote/paired) — only the placement changes, so no security/render protocol
+  // is touched. The preview opens activated, turning the main area into the rendered page.
+  const handleOpenPreview = (): void => {
+    const plan = openFileInBrowserTab({
       filePath: activeFile.filePath,
-      worktreeId: activeFile.worktreeId,
-      sourceGroupId
+      worktreeId: activeFile.worktreeId
     })
+    if (plan.status === 'unsupported') {
+      toast.error(plan.message)
+    }
   }
   const handleOpenDiffTargetFile = (preferredMarkdownViewMode?: 'rich'): void => {
     if (!model.openFileState.canOpen) {
@@ -355,7 +355,7 @@ function EditorPanelInner({
         disableRenameBrowse={disableRenameBrowse}
         onCopyPath={() => void handleCopyPath()}
         onOpenDiffTargetFile={handleOpenDiffTargetFile}
-        onOpenPreviewToSide={handleOpenPreviewToSide}
+        onOpenPreviewToSide={handleOpenPreview}
         onOpenMarkdownPreview={handleOpenMarkdownPreview}
         onOpenContainingFolder={handleOpenContainingFolder}
         onToggleSideBySide={() => setSideBySide((prev) => !prev)}

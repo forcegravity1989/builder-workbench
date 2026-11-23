@@ -11,7 +11,7 @@ export type WorkbenchPromptScope = Omit<CycleScope, 'workflow'> & {
   version?: string | null
 }
 
-export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) {
+export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope, request?: string) {
   const worktree = useAppStore
     .getState()
     .allWorktrees()
@@ -31,11 +31,17 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
     throw new Error('原生工作树不可用，无法准备流程 Skill')
   }
   const binding = normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
-  if (binding && scope.version && binding.version !== scope.version) {
-    throw new Error('当前版本与流程工作树绑定不一致，请重新打开对应版本')
+  if (scope.workflow !== 'metrics-refresh') {
+    const workflow = scope.workflow === 'week-planning' ? 'plan' : 'acceptance'
+    if (
+      !binding ||
+      binding.workflow !== workflow ||
+      (scope.version && binding.version !== scope.version)
+    ) {
+      throw new Error('请从版本侧栏打开对应版本的流程工作区。')
+    }
   }
-  const version = binding?.version ?? scope.version
-  const target = version ? ` ${version} 的版本` : '本版'
+  const target = binding ? ` ${binding.version} 的版本` : ''
   const task =
     scope.workflow === 'metrics-refresh'
       ? '和我配置项目指标'
@@ -43,7 +49,7 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
         ? `和我制定${target}计划`
         : `和我开展${target}验收`
   const skillPath = await installWorkbenchSkill(scope, scope.worktreeId, scope.workflow)
-  return { prompt: `完整读取并使用「${skillPath}」中的 Skill，${task}。` }
+  return { prompt: `完整读取并使用「${skillPath}」中的 Skill，${request ?? task}。` }
 }
 
 export async function buildCyclePrompt(

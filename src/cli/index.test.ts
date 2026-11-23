@@ -263,14 +263,14 @@ describe('artifact runtime routing', () => {
     vi.stubEnv('ORCA_ENVIRONMENT', 'remote-environment')
     vi.stubEnv('ORCA_PAIRING_CODE', 'remote-pairing-code')
     vi.spyOn(console, 'log').mockImplementation(() => undefined)
-    callMock.mockResolvedValue(okFixture('artifact-list', { status: 'ok', value: [] }))
+    callMock.mockResolvedValue(okFixture('artifact-list', { ok: true, value: [] }))
     runtimeClientConstructorMock.mockClear()
 
     await main(['artifacts', 'list', '--json'], '/folder-workspace')
 
     expect(process.exitCode).not.toBe(1)
     expect(runtimeClientConstructorMock).toHaveBeenCalledWith(null, null)
-    expect(callMock).toHaveBeenCalledWith('artifacts.list', {})
+    expect(callMock).toHaveBeenCalledWith('workbench.share.list', {})
   })
 })
 

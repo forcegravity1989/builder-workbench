@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+import { notifyWorkbenchError } from '../error-feedback'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { TrunkUpdateResult } from '../../../../shared/workbench/trunk-update'
 import { callMetricRuntime } from '../metric-runtime-rpc'
@@ -10,13 +12,15 @@ const pending = new Map<string, Promise<TrunkUpdateResult>>()
  */
 export function updateTrunkCode(
   scope: MetricScope,
-  runtimeOwnerEnvironmentId?: string
+  runtimeOwnerEnvironmentId?: string,
+  expectedBranch?: string
 ): Promise<TrunkUpdateResult> {
   const key = JSON.stringify([
     scope.repoId,
     scope.worktreeId,
     scope.hostId,
-    runtimeOwnerEnvironmentId
+    runtimeOwnerEnvironmentId,
+    expectedBranch
   ])
   const running = pending.get(key)
   if (running) {
@@ -26,10 +30,9 @@ export function updateTrunkCode(
     scope,
     runtimeOwnerEnvironmentId,
     'workbench.trunk.update',
-    (ownerScope) => ({ scope: ownerScope }),
-    // The main-side chain bounds each step (fetch 60s, guard reads 30s each,
-    // native fast-forward 60s); the RPC budget must outlast the worst case so
-    // the renderer never reports failure while main is still working.
+    (ownerScope) => ({ scope: ownerScope, ...(expectedBranch ? { expectedBranch } : {}) }),
+    // The owner Git service has a four-minute budget. Leave time for RPC routing
+    // and process termination before the renderer reports a timeout.
     300_000
   )
   pending.set(key, request)
@@ -47,9 +50,20 @@ export function trunkUpdateNotice(result: TrunkUpdateResult): string {
   if (result.updated) {
     if (result.pulled > 0) {
       const head = result.commit ? ` @ ${result.commit.slice(0, 12)}` : ''
-      return `已更新到 ${result.ref ?? '主干'}${head}（拉入 ${result.pulled} 个提交）`
+      const target = result.ref ?? '主干'
+      return result.merged
+        ? `已合并远端更新到 ${target}${head}（拉入 ${result.pulled} 个提交）`
+        : `已更新到 ${target}${head}（拉入 ${result.pulled} 个提交）`
     }
     return '已是最新'
   }
   return result.reason ?? '代码未更新，原因未知'
+}
+
+export function notifyTrunkUpdate(result: TrunkUpdateResult): void {
+  if (result.updated) {
+    toast.message(trunkUpdateNotice(result))
+  } else {
+    notifyWorkbenchError('代码未更新', result.reason, '核对项目仓库后重试。')
+  }
 }

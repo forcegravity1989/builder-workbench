@@ -8,7 +8,6 @@ import { isRuntimeEnvironmentRemovalBlocked } from './runtime-environment-host-d
 import type { RuntimeHostAccessFailure } from './RuntimeHostAccessForm'
 
 type RuntimeEnvironmentMutationActionParams = {
-  environments: PublicKnownRuntimeEnvironment[]
   settings: GlobalSettings
   allowLocalRuntime: boolean
   mountedRef: MutableRefObject<boolean>
@@ -21,7 +20,6 @@ type RuntimeEnvironmentMutationActionParams = {
 }
 
 export function useRuntimeEnvironmentMutationActions({
-  environments,
   settings,
   allowLocalRuntime,
   mountedRef,
@@ -58,19 +56,6 @@ export function useRuntimeEnvironmentMutationActions({
       )
       return
     }
-    const duplicate = environments.find(
-      (environment) => environment.name.trim().toLowerCase() === trimmedName.toLowerCase()
-    )
-    if (duplicate) {
-      toast.error(
-        translate(
-          'auto.components.settings.RuntimeEnvironmentsPane.5ef712f407',
-          'A server named "{{value0}}" already exists.',
-          { value0: duplicate.name }
-        )
-      )
-      return
-    }
     setAddServerFailure(null)
     setIsSaving(true)
     try {
@@ -81,7 +66,7 @@ export function useRuntimeEnvironmentMutationActions({
       })
       if (!result.ok) {
         if (mountedRef.current) {
-          setAddServerFailure({ kind: result.kind, message: result.message })
+          setAddServerFailure(result)
         }
         return
       }
@@ -93,14 +78,23 @@ export function useRuntimeEnvironmentMutationActions({
         environmentId: result.environment.id,
         runtimeStatus: result.runtimeStatus
       })
+      if (result.updatedExisting && mountedRef.current) {
+        toast.success(
+          translate(
+            'auto.components.settings.RuntimeEnvironmentsPane.serverAlreadyPaired',
+            'This server is already paired as {{value0}}; updated its connection.',
+            { value0: result.environment.name }
+          )
+        )
+      }
       if (!allowLocalRuntime) {
         const connected = await connectEnvironment(result.environment)
-        if (!connected) {
+        if (!connected && !result.updatedExisting) {
           await window.api.runtimeEnvironments.remove({ selector: result.environment.id })
           await loadEnvironments()
           return
         }
-      } else {
+      } else if (!result.updatedExisting) {
         if (mountedRef.current) {
           toast.success(
             translate(

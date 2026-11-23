@@ -107,6 +107,37 @@ describe('browser milestone legacy setup guide progress', () => {
 
     expect(getSetupGuideBrowserMilestoneAwareProgress(original, false)).toBe(original)
   })
+
+  it('keeps BW integration progress live for legacy-complete profiles', () => {
+    const original = makeProgress()
+    expect(getSetupGuideBrowserMilestoneAwareProgress(original, true, true)).toMatchObject({
+      stepDone: { browser: true, 'task-sources': false, 'agent-capabilities': false },
+      coreDoneCount: 6,
+      coreTotal: 7
+    })
+    expect(getSetupGuideBrowserMilestoneAwareProgress(original, true, false)).toMatchObject({
+      stepDone: { browser: true, 'task-sources': true },
+      coreDoneCount: FEATURE_WALL_SETUP_STEPS.length
+    })
+    expect(
+      getSetupGuideBrowserMilestoneAwareProgress(
+        { ...original, stepDone: { ...original.stepDone, 'task-sources': true } },
+        true,
+        true
+      )
+    ).toMatchObject({
+      stepDone: { 'task-sources': true, 'agent-capabilities': false },
+      coreDoneCount: 7,
+      coreTotal: 7
+    })
+    expect(
+      shouldMarkBrowserMilestoneLegacyComplete({
+        stepDone: { ...makePreBrowserDoneStepState(), 'agent-capabilities': false },
+        historicalSplitTerminalDone: true,
+        setupGuideSidebarDismissed: false
+      })
+    ).toBe(false)
+  })
 })
 
 describe('getComputerUsePermissionSetupState', () => {
@@ -159,6 +190,17 @@ describe('getSetupGuideProgressReady', () => {
   }
 
   it('waits for every setup-guide skill discovery scan to settle', () => {
+    expect(
+      getSetupGuideProgressReady({
+        ...readyInput,
+        agentCapabilitiesIncluded: false,
+        browserUseSkillDiscoveryLoading: true,
+        computerUseSkillDiscoveryLoading: true,
+        orchestrationSkillDiscoveryLoading: true,
+        computerUseSkillInstalled: true,
+        computerUsePermissionStatusChecked: false
+      })
+    ).toBe(true)
     expect(
       getSetupGuideProgressReady({
         ...readyInput,

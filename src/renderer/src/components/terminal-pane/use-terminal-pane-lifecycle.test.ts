@@ -34,6 +34,7 @@ describe('applyTerminalPaneCloseRequest', () => {
     expect(
       applyTerminalPaneCloseRequest({
         detail: {
+          lastPaneCloseReason: 'requested',
           tabId: 'legacy-worker',
           leafId: '11111111-1111-4111-8111-111111111111',
           preservePty: true
@@ -49,6 +50,31 @@ describe('applyTerminalPaneCloseRequest', () => {
     expect(closeTabPreservingPty).not.toHaveBeenCalled()
   })
 
+  it("closes a tab through its last pane with the requester's reason, never an implied user close", () => {
+    // A withdrawn launch pane closing the tab must not reach a paired host as the user's close (#37245).
+    const closeTab = vi.fn()
+    const manager = {
+      getPanes: vi.fn(() => [{ id: 1 }]),
+      getNumericIdForLeaf: vi.fn(() => 1),
+      closePane: vi.fn(),
+      detachPaneForExternalMove: vi.fn(() => true),
+      retirePanePreservingPty: vi.fn(() => true)
+    }
+
+    applyTerminalPaneCloseRequest({
+      detail: {
+        lastPaneCloseReason: 'cleanup',
+        tabId: 'launch-tab',
+        leafId: '11111111-1111-4111-8111-111111111111'
+      },
+      manager,
+      closeTab,
+      closeTabPreservingPty: vi.fn()
+    })
+
+    expect(closeTab).toHaveBeenCalledWith('cleanup')
+  })
+
   it('uses non-destructive tab close semantics for the last rolled-back pane', () => {
     const closeTab = vi.fn()
     const closeTabPreservingPty = vi.fn()
@@ -56,6 +82,7 @@ describe('applyTerminalPaneCloseRequest', () => {
     expect(
       applyTerminalPaneCloseRequest({
         detail: {
+          lastPaneCloseReason: 'cleanup',
           tabId: 'legacy-worker',
           paneRuntimeId: 1,
           preservePty: true
@@ -89,6 +116,7 @@ describe('applyTerminalPaneCloseRequest', () => {
     expect(
       applyTerminalPaneCloseRequest({
         detail: {
+          lastPaneCloseReason: 'requested',
           tabId: 'legacy-worker',
           leafId: '11111111-1111-4111-8111-111111111111',
           preservePty: true,
@@ -116,6 +144,7 @@ describe('applyTerminalPaneCloseRequest', () => {
     expect(
       applyTerminalPaneCloseRequest({
         detail: {
+          lastPaneCloseReason: 'requested',
           tabId: 'legacy-worker',
           leafId: '11111111-1111-4111-8111-111111111111',
           preservePty: true,

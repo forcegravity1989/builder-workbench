@@ -9,7 +9,8 @@ import { isWebRuntimeUnauthorizedError } from '../web-runtime-client-error'
 import {
   createStoredWebRuntimeEnvironment,
   redactStoredWebRuntimeEnvironment,
-  saveStoredWebRuntimeEnvironment
+  saveStoredWebRuntimeEnvironment,
+  updateStoredEnvironmentReconnectOnLaunch
 } from '../web-runtime-environment'
 import { translate } from '@/i18n/i18n'
 import { translateHostAccessLinkError } from '@/lib/remote-pairing-copy'
@@ -163,6 +164,15 @@ export function createRuntimeEnvironmentsApi(): NonNullable<
         runtimeStatus
       }
     },
+    // Why: the browser keeps a single paired server; pairing it again replaces that one.
+    repairFromPairingCode: async () => ({
+      ok: false,
+      kind: 'environment-save-failed',
+      message: translate(
+        'auto.web.webPreloadApi.remotePairingRepairUnavailable',
+        'Re-pairing is not available in the browser. Pair this browser with the server again.'
+      )
+    }),
     resolve: async ({ selector }) =>
       redactStoredWebRuntimeEnvironment(resolveEnvironment(selector)),
     remove: async ({ selector }) => {
@@ -176,14 +186,28 @@ export function createRuntimeEnvironmentsApi(): NonNullable<
     disconnect: async ({ selector }) => {
       const environment = resolveEnvironment(selector)
       if (webRuntimeState.activeEnvironment?.id === environment.id) {
+        // Why persist first: the saved hold keeps this server down across browser reloads.
+        const disconnected = updateStoredEnvironmentReconnectOnLaunch(environment, false)
+        webRuntimeState.activeEnvironment = disconnected
         manuallyDisconnectedEnvironmentIds.add(environment.id)
         disconnectActiveRuntimeEnvironment()
+        return { disconnected: redactStoredWebRuntimeEnvironment(disconnected) }
       }
       return { disconnected: redactStoredWebRuntimeEnvironment(environment) }
     },
     connect: ({ selector, timeoutMs }) => {
       const environment = resolveEnvironment(selector)
       manuallyDisconnectedEnvironmentIds.delete(environment.id)
+      // Why best-effort: an explicit Connect must reach the server even if storage is unavailable.
+      try {
+        webRuntimeState.activeEnvironment = updateStoredEnvironmentReconnectOnLaunch(
+          environment,
+          undefined
+        )
+      } catch (error) {
+        // The in-session hold is already lifted; only the saved preference stays stale.
+        console.warn('[runtime-environments] failed to clear saved reconnect preference:', error)
+      }
       closeActiveRuntimeClients()
       return callEnvironmentEnvelope<RuntimeStatus>(
         environment.id,

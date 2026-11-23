@@ -50,7 +50,7 @@ export function useTerminalBulkCloseActions(controller: TerminalCloseController)
           unifiedTab?.contentType === 'terminal' &&
           isWebRuntimeSessionActive(getActiveWorktreeRuntimeEnvironmentId(activeWorktreeId))
         ) {
-          closeTerminalTab(unifiedTab.entityId, { skipRunningProcessConfirm: true })
+          closeTerminalTab(unifiedTab.entityId, { reason: 'user', skipRunningProcessConfirm: true })
           continue
         }
         if ((state.tabsByWorktree[activeWorktreeId] ?? []).some((tab) => tab.id === id)) {

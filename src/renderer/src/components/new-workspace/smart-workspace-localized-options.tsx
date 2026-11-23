@@ -1,5 +1,5 @@
 import type React from 'react'
-import { CaseSensitive, GitBranch, Github, Gitlab, Sparkles } from 'lucide-react'
+import { CaseSensitive, Code, GitBranch, Github, Gitlab, Sparkles } from 'lucide-react'
 
 import { JiraIcon } from '@/components/icons/JiraIcon'
 import { translate } from '@/i18n/i18n'
@@ -56,6 +56,14 @@ export function getSmartWorkspaceNameModes(): SmartWorkspaceNameModeOption[] {
         'GitHub'
       ),
       Icon: Github
+    },
+    {
+      id: 'codehub',
+      label: translate(
+        'auto.components.new.workspace.SmartWorkspaceNameField.codehubMode',
+        'CodeHub'
+      ),
+      Icon: Code
     },
     {
       id: 'linear',

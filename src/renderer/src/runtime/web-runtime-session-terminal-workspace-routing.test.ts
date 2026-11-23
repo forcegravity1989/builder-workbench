@@ -169,7 +169,7 @@ describe('web-runtime-session terminal workspace routing', () => {
       activate: true
     })
 
-    expect(outcome).toEqual({ status: 'created' })
+    expect(outcome).toEqual({ status: 'created', hostTabId: 'host-tab-1' })
     expect(runtimeCall.mock.calls[0][0]).toMatchObject({
       selector: ENVIRONMENT_ID,
       method: 'session.tabs.createTerminal'
@@ -225,7 +225,7 @@ describe('web-runtime-session terminal workspace routing', () => {
       activate: true
     })
 
-    expect(outcome).toEqual({ status: 'created' })
+    expect(outcome).toEqual({ status: 'created', hostTabId: 'host-tab-1' })
     expect(mocks.setActiveWorktree.mock.calls).toEqual([[WORKTREE_ID, RUNTIME_EXECUTION_HOST_ID]])
     expect(selection.activeWorkspaceExecutionHostId).toBe(RUNTIME_EXECUTION_HOST_ID)
   })

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 export function MilestoneField({
   value,
   label,
@@ -7,6 +7,9 @@ export function MilestoneField({
   onChange,
   onCommit,
   autoFocus = false,
+  required = false,
+  validationAttempt = false,
+  maxLength,
   placeholder = label
 }: {
   value: string
@@ -16,14 +19,22 @@ export function MilestoneField({
   onChange(value: string): void
   onCommit?(value: string, previousValue: string): void
   autoFocus?: boolean
+  required?: boolean
+  validationAttempt?: boolean
+  maxLength?: number
   placeholder?: string
 }) {
+  const [touched, setTouched] = useState(false)
+  const invalid = required && !value.trim() && (touched || validationAttempt)
   const entered = useRef(value)
   const cancelled = useRef(false)
   const Field = multiline ? 'textarea' : 'input'
   return editable ? (
     <Field
-      maxLength={multiline ? 200 : undefined}
+      maxLength={maxLength ?? (multiline ? 200 : undefined)}
+      aria-invalid={invalid || undefined}
+      data-required={required || undefined}
+      data-empty={!value.trim() || undefined}
       rows={multiline ? 2 : undefined}
       autoFocus={autoFocus}
       aria-label={label}
@@ -35,6 +46,7 @@ export function MilestoneField({
       }}
       onChange={(e) => onChange(e.target.value)}
       onBlur={(e) => {
+        setTouched(true)
         if (!cancelled.current) {
           if (onCommit) {
             onCommit(e.target.value.trim(), entered.current)
@@ -64,4 +76,16 @@ export function MilestoneField({
   ) : (
     <span>{value || '—'}</span>
   )
+}
+
+export function focusMissingMilestoneField(root: HTMLElement | null) {
+  requestAnimationFrame(() => {
+    const field = [
+      ...(root?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+        '[data-required="true"]'
+      ) ?? [])
+    ].find((el) => !el.value.trim())
+    field?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    field?.focus({ preventScroll: true })
+  })
 }

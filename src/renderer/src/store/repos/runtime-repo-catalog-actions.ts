@@ -19,7 +19,7 @@ import {
   filterSetupsForPrunedRepoRows,
   mergeFetchedRepoCatalog,
   projectCompatibilityForReconciledRepos,
-  reconcileReadoptedSshWorktreeState,
+  reconcileFetchedCatalogWorktreeState,
   reconcileSupersededSshRepos
 } from './repo-catalog-merge'
 import { getRuntimeTargetHostId } from '../runtime-target-host'
@@ -49,7 +49,7 @@ export function createRuntimeRepoCatalogActions(
       claimRepoCatalogGeneration(get, targetHostId, catalogGeneration)
       try {
         const [catalog, visibilitySnapshot] = await Promise.all([
-          fetchRepoCatalogForTarget(target),
+          fetchRepoCatalogForTarget(target, get().repos),
           readRuntimeWorktreeVisibilitySnapshot(environmentId)
         ])
         const visibilityDefaults = visibilitySnapshot.defaults
@@ -135,7 +135,7 @@ export function createRuntimeRepoCatalogActions(
                 : {}
               : {}),
             pendingSshRepoReadoptions: reconciliation.pendingReadoptions,
-            ...reconcileReadoptedSshWorktreeState(s, s.pendingSshRepoReadoptions),
+            ...reconcileFetchedCatalogWorktreeState(s, catalog, finalizedRepos),
             ...mergedProjectCompatibility,
             activeRepoId:
               s.activeRepoId && validRepoIds.has(s.activeRepoId) ? s.activeRepoId : null,

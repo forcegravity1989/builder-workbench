@@ -42,8 +42,8 @@ export async function fetchIssueWorkItem(
     return mapIssueWorkItem(item)
   }
 
-  if (connectionId) {
-    // Why: SSH-backed gh has no repository cwd. A bare lookup could honor the
+  if (connectionId || localGitOptions.taskRepository) {
+    // Why: checkout-independent calls have no repository cwd. A bare lookup could honor the
     // local process GH_REPO/GH_HOST and return an unrelated repository item.
     return null
   }

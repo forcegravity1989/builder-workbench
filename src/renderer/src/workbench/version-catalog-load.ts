@@ -5,13 +5,11 @@ import {
 } from '../../../shared/workbench/version-material'
 import {
   collectVersionCatalogWorkspaces,
-  compareMaterialVersions,
   mergeVersionCatalog,
   versionCatalogCacheKey,
   type VersionCatalogDraftSource,
   type VersionCatalogEntry,
-  type VersionCatalogGoalRef,
-  type VersionCatalogTaskRef
+  type VersionCatalogGoalRef
 } from '../../../shared/workbench/version-catalog'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
@@ -28,26 +26,15 @@ import {
 type DraftDerivation = {
   draft: VersionCatalogDraftSource
   goals: VersionCatalogGoalRef[]
-  tasks: VersionCatalogTaskRef[]
 }
 
-/** 已提交计划的目录投影：目标＋任务引用（补绑定 Issue 用途的人选引用来源）。 */
+/** 已提交计划的目标目录。 */
 type CommittedPlanProjection = {
   goals: VersionCatalogGoalRef[]
-  tasks: VersionCatalogTaskRef[]
 }
 
 function projectPlanGoals(goals: PlanningMaterial['goals']): VersionCatalogGoalRef[] {
   return goals.map((goal) => ({ goalId: goal.goalId, title: goal.title }))
-}
-
-function projectPlanTasks(tasks: PlanningMaterial['tasks']): VersionCatalogTaskRef[] {
-  return tasks.map((task) => ({
-    provider: task.provider,
-    repository: task.repository,
-    number: task.number,
-    ...(task.goalId ? { goalId: task.goalId } : {})
-  }))
 }
 
 /**
@@ -70,8 +57,7 @@ function deriveFromSavedPlan(
   }
   return {
     draft: { version, cycleId: parsed.data.cycleId, revision },
-    goals: projectPlanGoals(parsed.data.goals),
-    tasks: projectPlanTasks(parsed.data.tasks)
+    goals: projectPlanGoals(parsed.data.goals)
   }
 }
 
@@ -80,8 +66,7 @@ export type VersionCatalogPlanTree = {
   instanceId?: string
   repoId?: string
   ownerError?: string
-  /** 绑定限定的版本（已绑定计划树）；null=旧固定树（无绑定限定，列全部可读版本）。 */
-  version: string | null
+  version: string
   /** 树自身的执行宿主与归属 runtime（配对宿主树按 owner 路由，不假定与主树同宿主）。 */
   hostId?: string | null
   runtimeOwnerEnvironmentId?: string | null
@@ -95,13 +80,12 @@ export type VersionCatalogLoad = {
   problems: VersionCatalogProblem[]
   /** Provenance for failure retention in this view; never persisted or used as a cache policy. */
   goalSources?: Record<string, CatalogGoalSource>
-  history?: { key: string; ready: boolean; error: string | null }
+  history?: { key: string; ready: boolean; error: string | null; baselineCommit?: string }
 }
 
 /**
- * 装载一个项目的版本目录（P1b，P3a 扩展）：主干已提交材料 ∪ 本机与共享可见
- * 宿主的存活绑定；草稿目录、目标与任务引用从已保存计划派生（旧固定树与各版
- * 绑定计划树并列入口）；有已提交材料但没有草稿派生目标的版本，从已提交计划
+ * 装载所选来源的版本目录：主干已提交材料 ∪ 存活绑定；草稿目录、目标与任务
+ * 引用从已绑定计划树的已保存计划派生；有已提交材料但没有草稿派生目标的版本，从已提交计划
  * 派生目标与任务引用（只读回看，不要求树存在）。已清理版本随材料仍入列
  * （retired 收起）。读取失败如实进 problems（调用方显示未知与原因），不装绿。
  */
@@ -156,10 +140,18 @@ export async function loadVersionCatalog(args: {
 
   const drafts: VersionCatalogDraftSource[] = []
   const goalsByVersion = new Map<string, VersionCatalogGoalRef[]>()
-  const tasksByVersion = new Map<string, VersionCatalogTaskRef[]>()
   const goalSources: Record<string, CatalogGoalSource> = Object.create(null)
-  const unavailableDraftTrees = new Set<string>()
-  for (const planTree of args.planTrees ?? []) {
+  // null means the tree could not be listed; otherwise only these versions failed.
+  const unavailableDrafts = new Map<string, Set<string> | null>()
+  const planTrees = args.planTrees ?? []
+  const planCounts = new Map<string, number>()
+  for (const { version } of planTrees) {
+    planCounts.set(version, (planCounts.get(version) ?? 0) + 1)
+  }
+  for (const planTree of planTrees) {
+    if (planCounts.get(planTree.version) !== 1) {
+      continue
+    }
     // 单个计划树读取失败不拖垮整个目录：其余来源照实返回，失败进 problem 通道。
     try {
       if (planTree.ownerError) {
@@ -178,59 +170,71 @@ export async function loadVersionCatalog(args: {
       )
       const candidates = await materialPort.list()
       for (const candidate of candidates) {
-        if (candidate.state !== 'ready') {
+        if (candidate.version !== planTree.version) {
           continue
         }
-        // 绑定树只派生自己绑定的版本（main 侧授权同样拒绝跨版；客户端先滤，
-        // 避免无谓读取）。旧固定树（version null）保持全量列举的旧上下文。
-        if (planTree.version !== null && candidate.version !== planTree.version) {
-          continue
-        }
-        const snapshot = await materialPort.read(candidate.version)
-        if (!snapshot) {
-          continue
-        }
-        const key = versionCatalogCacheKey({
-          hostId: planTree.hostId ?? scope.hostId,
-          runtimeOwnerEnvironmentId: planTree.hostId
-            ? planTree.runtimeOwnerEnvironmentId
-            : scope.runtimeOwnerEnvironmentId,
-          projectId: scope.projectId,
-          repoId: planTree.repoId ?? scope.repoId,
-          version: candidate.version,
-          revision: snapshot.revision
-        })
-        let derivation = draftDerivations.get(key)
-        if (!derivation) {
-          const derived = deriveFromSavedPlan(
-            snapshot.document,
-            candidate.version,
-            snapshot.revision
-          )
-          if (!derived) {
-            continue
+        try {
+          if (candidate.state !== 'ready') {
+            throw new Error(
+              candidate.error ?? `版本 ${candidate.version} 的计划材料不可读（${candidate.state}）`
+            )
           }
-          derivation = derived
-          draftDerivations.set(key, derivation)
-        }
-        const existing = goalsByVersion.get(candidate.version)
-        if (!existing) {
-          drafts.push(derivation.draft)
-          goalsByVersion.set(candidate.version, derivation.goals)
-          tasksByVersion.set(candidate.version, derivation.tasks)
-          goalSources[candidate.version] = {
-            kind: 'draft',
-            treeKey: draftCatalogTreeKey(scope, planTree),
-            draft: derivation.draft
+          const snapshot = await materialPort.read(candidate.version)
+          if (!snapshot) {
+            throw new Error(`版本 ${candidate.version} 的计划材料已变化，请刷新重试。`)
+          }
+          const key = versionCatalogCacheKey({
+            hostId: planTree.hostId ?? scope.hostId,
+            runtimeOwnerEnvironmentId: planTree.hostId
+              ? planTree.runtimeOwnerEnvironmentId
+              : scope.runtimeOwnerEnvironmentId,
+            projectId: scope.projectId,
+            repoId: planTree.repoId ?? scope.repoId,
+            version: candidate.version,
+            revision: snapshot.revision
+          })
+          let derivation = draftDerivations.get(key)
+          if (!derivation) {
+            const derived = deriveFromSavedPlan(
+              snapshot.document,
+              candidate.version,
+              snapshot.revision
+            )
+            if (!derived) {
+              throw new Error(`版本 ${candidate.version} 的计划材料格式无效。`)
+            }
+            derivation = derived
+            draftDerivations.set(key, derivation)
+          }
+          const existing = goalsByVersion.get(candidate.version)
+          if (!existing) {
+            drafts.push(derivation.draft)
+            goalsByVersion.set(candidate.version, derivation.goals)
+            goalSources[candidate.version] = {
+              kind: 'draft',
+              treeKey: draftCatalogTreeKey(scope, planTree),
+              draft: derivation.draft
+            }
+          }
+        } catch (reason) {
+          const treeKey = draftCatalogTreeKey(scope, planTree)
+          const failedVersions = unavailableDrafts.get(treeKey) ?? new Set<string>()
+          failedVersions.add(candidate.version)
+          unavailableDrafts.set(treeKey, failedVersions)
+          if (!isVersionHostDisconnected(planTree)) {
+            problems.push({
+              code: 'draft-source-unavailable',
+              message: reason instanceof Error ? reason.message : String(reason)
+            })
           }
         }
       }
     } catch (reason) {
-      unavailableDraftTrees.add(draftCatalogTreeKey(scope, planTree))
+      unavailableDrafts.set(draftCatalogTreeKey(scope, planTree), null)
       if (!isVersionHostDisconnected(planTree)) {
         problems.push({
           code: 'draft-source-unavailable',
-          message: `计划树${planTree.version ? ` ${planTree.version}` : '（旧固定树）'}草稿读取失败：${
+          message: `版本 ${planTree.version} 的计划草稿读取失败：${
             reason instanceof Error ? reason.message : String(reason)
           }`
         })
@@ -240,9 +244,9 @@ export async function loadVersionCatalog(args: {
 
   const entries = mergeVersionCatalog({
     committed,
+    historyAvailable: !historyUnavailable,
     drafts,
     goalsByVersion,
-    tasksByVersion,
     workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, args.projectId)
   })
 
@@ -252,14 +256,20 @@ export async function loadVersionCatalog(args: {
     previousSources: previousLoad?.goalSources,
     goalSources,
     availableDraftVersions: new Set(goalsByVersion.keys()),
-    unavailableDraftTrees,
+    unavailableDrafts,
     historyKey,
     retainHistory: sameHistory && historyUnavailable
   })
 
-  // 已提交回看：有已提交计划材料但没有草稿派生目标的版本（旧版本/已清理
-  // 版本，树不存在或不可读），从固定提交读回目标与任务引用目录——只读回看不要求树。
   for (const entry of entries) {
+    if ((planCounts.get(entry.version) ?? 0) > 1) {
+      entry.problems.push({
+        workflow: 'plan',
+        code: 'plan-source-ambiguous',
+        message: '有多个计划工作区。点「计划」选择要打开的工作区。'
+      })
+    }
+    // 已提交计划可从固定提交读回目标，历史回看不要求绑定树。
     const planRef = entry.material.plan
     if (!planRef || entry.goals.length > 0 || historyUnavailable) {
       continue
@@ -275,7 +285,6 @@ export async function loadVersionCatalog(args: {
     const cached = committedPlansCache.get(key)
     if (cached) {
       entry.goals = [...cached.goals]
-      entry.tasks = [...cached.tasks]
       goalSources[entry.version] = {
         kind: 'committed',
         key: committedCatalogGoalKey(historyKey, entry.version, planRef)
@@ -294,13 +303,11 @@ export async function loadVersionCatalog(args: {
         }
       })
       const projection: CommittedPlanProjection = {
-        goals: projectPlanGoals(plan.document.goals),
-        tasks: projectPlanTasks(plan.document.tasks)
+        goals: projectPlanGoals(plan.document.goals)
       }
       committedPlansCache.set(key, projection)
       // 拷贝入 entry：缓存数组与目录条目不共享引用（防下游突变污染缓存）。
       entry.goals = [...projection.goals]
-      entry.tasks = [...projection.tasks]
       goalSources[entry.version] = {
         kind: 'committed',
         key: committedCatalogGoalKey(historyKey, entry.version, planRef)
@@ -314,7 +321,6 @@ export async function loadVersionCatalog(args: {
         previousSource.key === committedCatalogGoalKey(historyKey, entry.version, planRef)
       ) {
         entry.goals = [...previous.goals]
-        entry.tasks = [...previous.tasks]
         goalSources[entry.version] = previousSource
       }
       if (!isVersionHostDisconnected(scope)) {
@@ -328,11 +334,17 @@ export async function loadVersionCatalog(args: {
     }
   }
 
-  entries.sort((a, b) => compareMaterialVersions(a.version, b.version))
   return {
     entries,
     problems,
     goalSources,
-    history: { key: historyKey, ready: !historyUnavailable, error: historyError }
+    history: {
+      key: historyKey,
+      ready: !historyUnavailable,
+      error: historyError,
+      baselineCommit:
+        committed.baselineCommit ??
+        (sameHistory ? previousLoad?.history?.baselineCommit : undefined)
+    }
   }
 }

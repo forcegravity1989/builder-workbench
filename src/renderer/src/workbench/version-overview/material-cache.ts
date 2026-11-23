@@ -8,6 +8,7 @@ export function materialSourceInputs(
   trees: readonly Pick<
     Worktree,
     | 'id'
+    | 'instanceId'
     | 'repoId'
     | 'hostId'
     | 'runtimeOwnerEnvironmentId'
@@ -23,12 +24,19 @@ export function materialSourceInputs(
     return !tree.isArchived &&
       binding?.version === version &&
       ['plan', 'acceptance'].includes(binding.workflow)
-      ? [[tree.id, tree.repoId, tree.hostId, tree.runtimeOwnerEnvironmentId, binding]]
+      ? [
+          [
+            tree.id,
+            tree.instanceId,
+            tree.repoId,
+            tree.hostId,
+            tree.runtimeOwnerEnvironmentId,
+            binding
+          ]
+        ]
       : []
   })
-  const plans = formal
-    ? []
-    : planTrees.filter((tree) => tree.version === version || tree.version === null)
+  const plans = formal ? [] : planTrees.filter((tree) => tree.version === version)
   return JSON.stringify([
     plans.map((tree) => JSON.stringify(tree)).sort(),
     workflows.map((tree) => JSON.stringify(tree)).sort()

@@ -9,12 +9,14 @@ export function InlineField({
   autoFocus = false,
   className = '',
   required = true,
+  forceInvalid = false,
   multiline = false,
   maxLength
 }) {
   const Field = multiline ? 'textarea' : 'input'
   const started = useRef(value)
   const cancelled = useRef(false)
+  const [touched, setTouched] = useState(false)
   return (
     <Field
       rows={multiline ? 2 : undefined}
@@ -24,13 +26,15 @@ export function InlineField({
       placeholder={placeholder}
       value={value}
       autoFocus={autoFocus}
-      aria-invalid={required && !value.trim()}
+      data-required={required || undefined}
+      aria-invalid={required && !value.trim() && (touched || forceInvalid)}
       onFocus={() => {
         started.current = value
         cancelled.current = false
       }}
       onInput={(e) => change(e.currentTarget.value)}
       onBlur={(e) => {
+        setTouched(true)
         if (!cancelled.current) {
           if (commit) {
             commit(e.currentTarget.value.trim(), started.current)

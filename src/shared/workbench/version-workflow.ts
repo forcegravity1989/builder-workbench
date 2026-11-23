@@ -1,13 +1,12 @@
 import { z } from 'zod'
+import { materialObject } from './version-material-common'
 
 /**
  * SOP stage track for the plan/acceptance cycle screens. The session model
  * records the last completed stage in the material via the CLI; it calibrates
- * session recovery and automation. Boards render no lamp and derive no
- * completion from it (lamps are retired — plan since G3, acceptance since v10);
- * the sole UI consumption is the archive cards' 「已进入归档阶段」 status line
- * when stage==='archive' and no PR link is recorded. Absent state means not
- * started.
+ * session recovery and automation. The project wall and version overview
+ * display the recorded progress. Board navigation and human decisions are
+ * independent of the stored stage.
  */
 export const PLAN_WORKFLOW_STAGES = [
   'preparation',
@@ -22,7 +21,7 @@ export type PlanWorkflowStage = (typeof PLAN_WORKFLOW_STAGES)[number]
 export type AcceptanceWorkflowStage = (typeof ACCEPTANCE_WORKFLOW_STAGES)[number]
 
 /** PR/MR reference recorded by the model when the archive stage opens a review. */
-export const WorkflowArchivePrSchema = z.strictObject({
+export const WorkflowArchivePrSchema = materialObject({
   provider: z.string().min(1),
   repository: z.string().min(1),
   number: z.number().int().positive()
@@ -35,17 +34,25 @@ export type WorkflowArchivePr = z.infer<typeof WorkflowArchivePrSchema>
  * and assets are provider-computed on every read and never stored here; the
  * Git tag and the provider Release page stay the source of truth.
  */
-export const WorkflowReleaseRefSchema = z.strictObject({
+export const WorkflowReleaseRefSchema = materialObject({
   tag: z.string().min(1)
 })
 export type WorkflowReleaseRef = z.infer<typeof WorkflowReleaseRefSchema>
 
-export const PlanWorkflowStateSchema = z.strictObject({
+export const PlanWorkflowStateSchema = materialObject({
   stage: z.enum(PLAN_WORKFLOW_STAGES),
   updatedAt: z.iso.datetime({ offset: true }),
   archivePr: WorkflowArchivePrSchema.optional()
+}).superRefine((workflow, context) => {
+  if (Object.hasOwn(workflow, 'release')) {
+    context.addIssue({
+      code: 'custom',
+      message: 'Plan workflow cannot carry acceptance release metadata',
+      path: ['release']
+    })
+  }
 })
-export const AcceptanceWorkflowStateSchema = z.strictObject({
+export const AcceptanceWorkflowStateSchema = materialObject({
   stage: z.enum(ACCEPTANCE_WORKFLOW_STAGES),
   updatedAt: z.iso.datetime({ offset: true }),
   archivePr: WorkflowArchivePrSchema.optional(),

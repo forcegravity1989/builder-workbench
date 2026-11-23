@@ -26,6 +26,7 @@ import { useAppStore } from '@/store'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { getProviderRuntimeContextKey } from '@/lib/provider-runtime-context'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 import { getLocalizedFeatureWallSetupChecklistCopy } from './feature-wall-setup-checklist-localized-copy'
 
@@ -55,6 +56,7 @@ function SetupStepRow(props: {
   return (
     <button
       type="button"
+      data-setup-guide-step={step.id}
       onClick={onSelect}
       aria-current={active ? 'step' : undefined}
       className={cn(
@@ -228,6 +230,7 @@ function NotificationAction(): React.JSX.Element {
 }
 
 function TaskSourcesAction(): React.JSX.Element {
+  const workbenchShell = isWorkbenchShell()
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
   const checkJiraConnection = useAppStore((s) => s.checkJiraConnection)
   const checkLinearConnection = useAppStore((s) => s.checkLinearConnection)
@@ -236,13 +239,16 @@ function TaskSourcesAction(): React.JSX.Element {
 
   useEffect(() => {
     void refreshPreflightStatus()
-    void checkJiraConnection()
-    void checkLinearConnection()
+    if (!workbenchShell) {
+      void checkJiraConnection()
+      void checkLinearConnection()
+    }
   }, [
     refreshPreflightStatus,
     checkJiraConnection,
     checkLinearConnection,
-    providerRuntimeContextKey
+    providerRuntimeContextKey,
+    workbenchShell
   ])
 
   return (
@@ -264,8 +270,8 @@ export function FeatureWallSetupChecklist(
     activeStep?.id === 'two-worktrees' ||
     activeStep?.id === 'browser' ||
     activeStep?.id === 'add-two-repos'
-  const setupSteps = getFeatureWallSetupStepsForSection('setup')
-  const parallelWorkSteps = getFeatureWallSetupStepsForSection('parallel-work')
+  const setupSteps = getFeatureWallSetupStepsForSection('setup', isWorkbenchShell())
+  const parallelWorkSteps = getFeatureWallSetupStepsForSection('parallel-work', isWorkbenchShell())
   const visualBreakpoint = isEmbedded ? 'xl' : 'sm'
   const visualGridClass =
     visualBreakpoint === 'xl'
@@ -302,10 +308,14 @@ export function FeatureWallSetupChecklist(
           layout={layout}
         />
         <SetupSection
-          title={translate(
-            'auto.components.feature.wall.FeatureWallSetupChecklist.713cc529a5',
-            'Milestones'
-          )}
+          title={
+            isWorkbenchShell()
+              ? translate('guidance.experiences', 'Try the capabilities')
+              : translate(
+                  'auto.components.feature.wall.FeatureWallSetupChecklist.713cc529a5',
+                  'Milestones'
+                )
+          }
           steps={parallelWorkSteps}
           startOrdinal={setupSteps.length + 1}
           activeStepId={activeStep?.id ?? null}

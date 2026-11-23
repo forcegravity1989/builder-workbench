@@ -18,6 +18,7 @@ export function canKeepImportedWorktreesHidden(
 type NoticeRowFrameProps = {
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
+
   className?: string
   children: React.ReactNode
 }
@@ -26,6 +27,7 @@ type NoticeRowFrameProps = {
 function NoticeRowFrame({
   vItem,
   measureVirtualRowElement,
+
   className = 'absolute left-0 right-0 top-0',
   children
 }: NoticeRowFrameProps): React.JSX.Element {
@@ -49,6 +51,7 @@ export function renderImportedWorktreesVirtualRow(args: {
   row: Extract<Row, { type: 'imported-worktrees-card' }>
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
+
   actionState: ImportedWorktreeCardActionState | undefined
   onShow: (projectId: string) => void
   onKeepHidden: (projectId: string) => void
@@ -83,6 +86,7 @@ export function renderNewExternalWorktreesInboxVirtualRow(args: {
   row: Extract<Row, { type: 'new-external-worktrees-inbox' }>
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
+
   actionState: NewExternalWorktreesInboxActionState | undefined
   onReview: (repo: Extract<Row, { type: 'new-external-worktrees-inbox' }>['repo']) => void
   onSuppress: (projectId: string) => void

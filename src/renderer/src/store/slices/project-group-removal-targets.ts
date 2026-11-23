@@ -3,49 +3,45 @@ import type { Repo } from '../../../../shared/repo-types'
 import { getProjectGroupSubtreeIds } from '../../../../shared/project-groups'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
 import { catalogOwnsHost, getProjectGroupHostId } from './project-group-owner-routing'
+import { getRepoHostIdentity } from './repo-host-identity'
 
 export type ProjectGroupRemovalTargets = {
-  groupExists: boolean
+  ownerHostId: ExecutionHostId | null
   deletedGroupIds: Set<string>
-  projectIds: string[]
+  projects: Repo[]
+}
+
+export function projectGroupRemovalKeys(projects: readonly Repo[]): string[] {
+  return projects
+    .map((repo) =>
+      JSON.stringify([getRepoHostIdentity(repo), repo.path, repo.addedAt, repo.pairedRegistration])
+    )
+    .sort()
 }
 
 export function selectProjectGroupRemovalTargets(
   projectGroups: readonly ProjectGroup[],
   repos: readonly Repo[],
   groupId: string,
-  // Why: ids repeat across hosts; without an owner host the caller would target another host's rows.
   hostId?: ExecutionHostId | null
 ): ProjectGroupRemovalTargets {
-  const ownsRowHost = (rowHostId: string): boolean =>
-    hostId ? catalogOwnsHost(hostId, rowHostId) : true
-  const ownerGroups = hostId
-    ? projectGroups.filter((group) => ownsRowHost(getProjectGroupHostId(group)))
-    : projectGroups
-  const groupExists = ownerGroups.some((group) => group.id === groupId)
-  if (!groupExists) {
-    return {
-      groupExists: false,
-      deletedGroupIds: new Set(),
-      projectIds: []
-    }
+  const roots = projectGroups.filter(
+    (group) => group.id === groupId && (!hostId || getProjectGroupHostId(group) === hostId)
+  )
+  if (roots.length !== 1) {
+    return { ownerHostId: null, deletedGroupIds: new Set(), projects: [] }
   }
 
+  const ownerHostId = getProjectGroupHostId(roots[0])
+  const ownsRowHost = (rowHostId: ExecutionHostId) => catalogOwnsHost(ownerHostId, rowHostId)
+  const ownerGroups = projectGroups.filter((group) => ownsRowHost(getProjectGroupHostId(group)))
   const deletedGroupIds = getProjectGroupSubtreeIds(ownerGroups, groupId)
-  const projectIds: string[] = []
-  for (const repo of repos) {
-    if (
+  const projects = repos.filter(
+    (repo) =>
+      !repo.inheritedProjectGroup &&
       repo.projectGroupId &&
       deletedGroupIds.has(repo.projectGroupId) &&
       ownsRowHost(getRepoExecutionHostId(repo))
-    ) {
-      projectIds.push(repo.id)
-    }
-  }
-
-  return {
-    groupExists: true,
-    deletedGroupIds,
-    projectIds
-  }
+  )
+  return { ownerHostId, deletedGroupIds, projects }
 }

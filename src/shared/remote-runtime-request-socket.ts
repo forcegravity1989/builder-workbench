@@ -183,7 +183,10 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
     }
 
     try {
-      ws = new WebSocket(pairing.endpoint, { maxPayload: REMOTE_RUNTIME_MAX_WEBSOCKET_FRAME_BYTES })
+      ws = new WebSocket(
+        pairing.endpoint,
+        remoteRuntimeConnectOptions({ maxPayload: REMOTE_RUNTIME_MAX_WEBSOCKET_FRAME_BYTES })
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       finishError(
@@ -201,11 +204,11 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
       )
     }
 
-    function onError(): void {
+    function onError(error: Error): void {
       finishError(
         new RemoteRuntimeClientError(
           'remote_runtime_unavailable',
-          'Could not connect to the remote Orca runtime.',
+          remoteRuntimeConnectFailureMessage(error, pairing.endpoint),
           { pairingStage: router.pairingStage }
         )
       )
@@ -249,3 +252,7 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
     ws.on('message', onMessage)
   }).finally(() => releaseRemoteRuntimePreparedRequest(pendingRequest))
 }
+import {
+  remoteRuntimeConnectOptions,
+  remoteRuntimeConnectFailureMessage
+} from './remote-runtime-connect-bound'

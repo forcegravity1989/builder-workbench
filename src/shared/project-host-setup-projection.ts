@@ -154,10 +154,11 @@ function isGitHubRemoteHost(host: string): boolean {
 function projectProviderIdentity(
   host: string,
   owner: string,
-  repo: string
+  repo: string,
+  allowUnclassifiedHost = false
 ): ProjectProviderIdentity | null {
   const normalizedHost = normalizeGitHubRemoteHost(host)
-  if (!isGitHubRemoteHost(normalizedHost)) {
+  if (!allowUnclassifiedHost && !isGitHubRemoteHost(normalizedHost)) {
     return null
   }
   return {
@@ -192,14 +193,17 @@ function parseGitHubCanonicalKey(canonicalKey: string | undefined): ProjectProvi
   return path ? projectProviderIdentity(host, path.owner, path.repo) : null
 }
 
-function parseGitHubRemoteUrl(remoteUrl: string | undefined): ProjectProviderIdentity | null {
+export function parseGitHubRemoteUrl(
+  remoteUrl: string | undefined,
+  allowUnclassifiedHost = false
+): ProjectProviderIdentity | null {
   const trimmed = remoteUrl?.trim()
   if (!trimmed) {
     return null
   }
   const sshMatch = trimmed.match(/^git@([^:]+):([^/]+)\/([^/]+?)(?:\.git)?$/i)
   if (sshMatch?.[1] && sshMatch[2] && sshMatch[3]) {
-    return projectProviderIdentity(sshMatch[1], sshMatch[2], sshMatch[3])
+    return projectProviderIdentity(sshMatch[1], sshMatch[2], sshMatch[3], allowUnclassifiedHost)
   }
   try {
     const url = new URL(trimmed)
@@ -212,7 +216,7 @@ function parseGitHubRemoteUrl(remoteUrl: string | undefined): ProjectProviderIde
     }
     // HTTP ports identify the API endpoint; SSH/git ports are transport-only.
     const host = url.protocol === 'http:' || url.protocol === 'https:' ? url.host : url.hostname
-    return projectProviderIdentity(host, path.owner, path.repo)
+    return projectProviderIdentity(host, path.owner, path.repo, allowUnclassifiedHost)
   } catch {
     return null
   }

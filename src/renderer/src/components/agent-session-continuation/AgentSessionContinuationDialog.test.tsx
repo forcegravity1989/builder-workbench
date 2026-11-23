@@ -12,7 +12,17 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/store', () => ({
-  useAppStore: (selector: (state: unknown) => unknown) => selector({ settings: mocks.settings })
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({
+      settings: mocks.settings,
+      worktreesByRepo: {
+        'repo-1': [
+          { id: 'wt-1', repoId: 'repo-1', hostId: 'local' },
+          { id: 'wt-2', repoId: 'repo-1', hostId: 'local' }
+        ]
+      },
+      repos: [{ id: 'repo-1' }]
+    })
 }))
 vi.mock('@/lib/launch-agent-session-continuation', () => ({
   detectAgentSessionContinuationAgents: mocks.detectAgents,

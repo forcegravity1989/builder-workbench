@@ -18,7 +18,7 @@
 |---|---|---|
 | BW 产品知识 | [docs 地图](../../../../../docs/README.md)定位知识文档，[特性矩阵](../../../../../docs/05-features/README.md)定位用户结果、归属和证据 | 原则慢变；产品目标、规格、当前实现和验证各有来源，不能用旧代码推翻已认可意图 |
 | Orca 工程参考 | [Orca 上游对照](../../../../../ref/upstream.md)及按需主题 | 解释执行核工程边界；核对对应源码/协议与上游版本，不复制为第二套 BW 产品规格 |
-| 本仓开发方法 | [AGENTS](../../../../../AGENTS.md) 中对应任务的读取与交付约定 | AGENTS 是开发规矩，Skill 是执行方法；本包不自动接入桌面或向外分发 |
+| 本仓开发规范与方法 | [AGENTS](../../../../../AGENTS.md) 直达独立的[开发规范](../../../../../docs/development.md)；Skills 承载执行方法 | 项目义务从 AGENTS 进入；workbench-start 展开执行步骤，不以调用 Skill 为生效条件。本包不自动接入桌面或向外分发 |
 | 产品分发资产 | [standard 维护入口](../../../../../standard/README.md)中的目录职责、Skill 写作与加载规范 | 供被管项目使用；文件存在、实际派发/加载、模型遵守分开验证。改开发方法不顺带改 standard |
 
 视觉知识按 `docs/04-design-system/` 和 `docs/hifi/` 的现行约定读取。受保护或归别人负责的区域只报告本次影响，不擅改；全景扫描可读不等于拥有编辑权限。
@@ -40,7 +40,7 @@
 | 当前验证 | 同平台/版本/环境的用例与执行证据 | 未运行环节、其他版本或价值效果通过 |
 | 历史证据 | 固定来源分支/提交、旧报告及当时平台 | Electron 已通过；旧目录必须带回 |
 
-迁移中的旅程、边界和验收取舍交回 [workbench-start](../../../workbench-start/SKILL.md)；知识整理只同步已确定部分，不提前启动迁移实现。周一屏旧 HTML 方案仅按需追溯 [历史参考](../../../workbench-start/references/week-screen-v04.md)，不能覆盖当前原生三屏。
+迁移中的旅程、边界、验收取舍和开发前对齐按 [原则 02](../../../../../docs/01-principles/02-working-backwards.md) 执行，工作步骤由 [workbench-start](../../../workbench-start/SKILL.md) 展开；知识整理只同步已确定部分，不提前启动迁移实现。周一屏旧 HTML 方案仅按需追溯 [历史参考](../../../workbench-start/references/week-screen-v04.md)，不能覆盖当前原生三屏。
 
 ## 扫描与交接
 

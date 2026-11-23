@@ -29,7 +29,14 @@ const mocks = vi.hoisted(() => {
         hostId?: ExecutionHostId
       }
     >(),
-    repos: [] as { id: string; displayName: string; connectionId?: string }[],
+    repos: [] as {
+      id: string
+      displayName: string
+      connectionId?: string
+      executionHostId?: ExecutionHostId
+      path?: string
+      pairedRegistration?: { hostId: ExecutionHostId }
+    }[],
     worktreeLineageById: {},
     allWorktrees: () => Array.from(state.worktreeMap.values()),
     clearWorktreeDeleteState: vi.fn((worktreeId: string) => {
@@ -603,6 +610,27 @@ describe('delete worktree flow', () => {
       displayName: 'provisioned orca',
       hostId: 'ssh:runtime-ssh-one'
     })
+  })
+
+  it('rejects a paired primary workspace when the catalog has its same-id SSH sibling', () => {
+    vi.stubEnv('VITE_WORKBENCH_SHELL', '1')
+    setWorktrees([{ id: 'main', hostId: 'runtime:peer', isMainWorktree: true }])
+    mocks.state.repos = [
+      {
+        id: 'repo-1',
+        displayName: 'SSH sibling',
+        executionHostId: 'runtime:peer',
+        path: '/workspaces/main',
+        pairedRegistration: { hostId: 'ssh:child' }
+      }
+    ]
+
+    try {
+      runWorktreeDelete('main')
+      expect(mocks.state.openModal).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('can force confirmation for a single eligible delete', () => {

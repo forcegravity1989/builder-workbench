@@ -70,10 +70,11 @@ export type AgentCatalogRowProps = {
   envOverride: Record<string, string>
   onSetDefault: () => void
   onSetEnabled: (enabled: boolean) => void
-  onSaveOverride: (value: string) => void
-  onSaveArgs: (value: string) => void
+  onSaveOverride: (value: string) => void | Promise<void>
+  onSaveArgs: (value: string) => void | Promise<void>
   onSaveEnv: (value: Record<string, string>) => void
   sessionSourceHome?: AgentSessionSourceHomeControl
+  environmentEditor?: React.ReactNode
 }
 
 export function AgentCatalogRow({
@@ -94,7 +95,8 @@ export function AgentCatalogRow({
   onSaveOverride,
   onSaveArgs,
   onSaveEnv,
-  sessionSourceHome
+  sessionSourceHome,
+  environmentEditor
 }: AgentCatalogRowProps): React.JSX.Element {
   const envSummary = stringifyAgentDefaultEnvDraft(envOverride)
   const defaultEnvSummary = stringifyAgentDefaultEnvDraft(defaultEnv)
@@ -216,7 +218,7 @@ export function AgentCatalogRow({
               onSaveArgs={onSaveArgs}
             />
           </div>
-          {(defaultEnvSummary || envSummary) && (
+          {environmentEditor ? <div className="mt-2">{environmentEditor}</div> : (defaultEnvSummary || envSummary) && (
             <div className="mt-2">
               <AgentDefaultEnvInput
                 key={`${agentId}:${envSummary}`}

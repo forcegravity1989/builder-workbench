@@ -327,7 +327,11 @@ export function runProcessSync(spec: ProcessSpec): ProcessResult {
   const resolved = resolveSpawn(spec, process.platform)
   const result = nodeSpawnSync(resolved.file, [...resolved.args], {
     ...resolved.options,
-    input: spec.input,
+    // Why encode a string input ourselves: `encoding: 'buffer'` below makes
+    // spawnSync decode a string `input` with that name, which is not a text
+    // encoding, so the child never starts (ERR_UNKNOWN_ENCODING). Passing bytes
+    // sidesteps it and leaves the Buffer stdout/stderr contract untouched.
+    input: typeof spec.input === 'string' ? Buffer.from(spec.input, 'utf8') : spec.input,
     timeout: spec.timeoutMs === null ? undefined : (spec.timeoutMs ?? DEFAULT_PROCESS_TIMEOUT_MS),
     maxBuffer: spec.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
     encoding: 'buffer'

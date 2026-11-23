@@ -106,7 +106,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         agent: 'codex',
         activate: true
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-2' })
 
     expect(runtimeCall).toHaveBeenNthCalledWith(1, {
       selector: ENVIRONMENT_ID,
@@ -185,7 +185,7 @@ describe('createWebRuntimeSessionTerminal', () => {
           agent,
           activate: false
         })
-      ).resolves.toEqual({ status: 'created' })
+      ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-2::leaf-2' })
 
       expect(reorderUnifiedTabs).toHaveBeenCalledExactlyOnceWith(
         'client-group',
@@ -245,7 +245,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         activate: true,
         selectWorktree: false
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-2::leaf-1' })
 
     expect(setStateResults).not.toContainEqual({ activeWorktreeId: WORKTREE_ID })
   })
@@ -288,7 +288,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         launchAgent: 'codex',
         targetGroupId: 'group-left'
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'legacy-tab-1' })
 
     expect(runtimeCall).toHaveBeenNthCalledWith(2, {
       selector: ENVIRONMENT_ID,
@@ -356,7 +356,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         },
         providerSession: { key: 'session_id', id: 'session-1' }
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'legacy-tab-1' })
 
     expect(runtimeCall).toHaveBeenNthCalledWith(2, {
       selector: ENVIRONMENT_ID,
@@ -433,7 +433,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         },
         providerSession: { key: 'session_id', id: 'session-1' }
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'legacy-tab-1' })
 
     expect(methods).toEqual(['status.get', 'session.tabs.createTerminal', 'session.tabs.list'])
     expect(runtimeCall.mock.calls[1]?.[0]).toMatchObject({

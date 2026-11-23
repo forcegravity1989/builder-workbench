@@ -32,6 +32,42 @@ export type ContextualTourOverlayMeasurementResult =
 // not shift localized copy onto a neighbour. Thunks keep translate() out of
 // module scope so the lookup resolves in the language active at render time.
 const LOCALIZED_STEP_COPY: Record<string, { title: () => string; body: () => string }> = {
+  'tasks-source': {
+    title: () =>
+      translate(
+        'auto.components.contextual.tours.contextual.tour.overlay.measurement.tasks.source.title',
+        'Choose the work source'
+      ),
+    body: () =>
+      translate(
+        'auto.components.contextual.tours.contextual.tour.overlay.measurement.tasks.source.body',
+        'Choose the project or work source. If none is available, check your connections in Settings.'
+      )
+  },
+  'tasks-filter': {
+    title: () =>
+      translate(
+        'auto.components.contextual.tours.contextual.tour.overlay.measurement.tasks.filter.title',
+        'Filter to the work you need'
+      ),
+    body: () =>
+      translate(
+        'auto.components.contextual.tours.contextual.tour.overlay.measurement.tasks.filter.body',
+        'Use presets and search to narrow issues, reviews, merge requests, or tasks.'
+      )
+  },
+  'tasks-start': {
+    title: () =>
+      translate(
+        'auto.components.contextual.tours.contextual.tour.overlay.measurement.tasks.start.title',
+        'Start from work items'
+      ),
+    body: () =>
+      translate(
+        'auto.components.contextual.tours.contextual.tour.overlay.measurement.tasks.start.body',
+        'Use Start or Open on a task, issue, review, or merge request to bring its context into a workspace.'
+      )
+  },
   'automations-intro': {
     title: () =>
       translate(

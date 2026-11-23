@@ -7,6 +7,7 @@ import { LOCAL_EXECUTION_HOST_ID } from '../../../../../../shared/execution-host
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { makeRepo, makeWorktree } from '../../../worktree-jump-palette-test-fixtures'
 import { useVisibleSidebarWorktrees } from './use-visible-worktrees'
+import { computeVisibleWorktrees } from '../../visible-worktrees'
 import type * as visibleWorktreesModule from '../../visible-worktrees'
 
 const computeVisibleWorktreesCalls = { count: 0 }
@@ -70,7 +71,7 @@ describe('useVisibleSidebarWorktrees', () => {
     ])
   })
 
-  it('does not expand one host-filtered collision into both rows', () => {
+  it('shares host filtering with catalog candidates outside the session projection', () => {
     const local = makeWorktree('shared', 'Local workspace', { hostId: 'local' })
     const ssh = makeWorktree('shared', 'SSH workspace', { hostId: 'ssh:box' })
     const repo = makeRepo()
@@ -101,6 +102,16 @@ describe('useVisibleSidebarWorktrees', () => {
 
     expect(result.current.visibleWorktrees.map(getWorktreeHostIdentity)).toEqual([
       getWorktreeHostIdentity(ssh)
+    ])
+    const detected = makeWorktree('detected', 'Detected workspace', { hostId: 'ssh:box' })
+    const catalogRows = computeVisibleWorktrees(
+      { [repo.id]: [local, ssh, detected] },
+      [local.id, ssh.id],
+      result.current.filterOptions
+    )
+    expect(catalogRows.map(getWorktreeHostIdentity)).toEqual([
+      getWorktreeHostIdentity(ssh),
+      getWorktreeHostIdentity(detected)
     ])
   })
   it('does not rescan every worktree when a settings write leaves the focused host unchanged', () => {

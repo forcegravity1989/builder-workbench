@@ -1,3 +1,5 @@
+import { ErrorDetails } from '../error-feedback'
+import { archiveStateLabel } from '../../../../shared/workbench/archive-state-label'
 import { Archive, ArrowUpRight, GitPullRequest, Rocket } from 'lucide-react'
 import type { Ref } from 'react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
@@ -56,16 +58,7 @@ export function AcceptanceArchiveCard({
   version: string
   sectionRef: Ref<HTMLElement>
 }) {
-  const statusLabel =
-    loading || !status
-      ? '正在读取归档 PR 状态…'
-      : status.state === 'merged'
-        ? '已合入'
-        : status.state === 'open'
-          ? '待合入'
-          : status.state === 'closed'
-            ? '已关闭'
-            : '状态未知'
+  const statusLabel = loading || !status ? '正在读取归档 PR 状态…' : archiveStateLabel(status)
   // 未发布不配说明文字:chip 已表达状态,授权口径归按钮提示与会话,板面不重复。
   const releaseLabel = !release
     ? '未发布'
@@ -147,7 +140,8 @@ export function AcceptanceArchiveCard({
             '归档请求',
             <BoardActionButton title="让验收助手核对材料并发起归档">
               <Archive size={14} aria-hidden="true" /> 发起归档
-            </BoardActionButton>
+            </BoardActionButton>,
+            'archive-pr'
           )}
           {archivePr && (
             <BoardIconButton label="打开原生 PR 页" disabled={opening} onClick={onOpenPr}>
@@ -155,34 +149,35 @@ export function AcceptanceArchiveCard({
             </BoardIconButton>
           )}
         </span>
-        {archivePr && (
-          <span
-            className="acc-archive-status"
-            title={status?.state === 'unknown' ? status.reason : undefined}
-          >
-            {statusLabel}
-          </span>
-        )}
+        {archivePr &&
+          (status?.state === 'unknown' && status.reason ? (
+            <ErrorDetails
+              className="acc-archive-status"
+              summary={statusLabel}
+              detail={status.reason}
+            />
+          ) : (
+            <span className="acc-archive-status">{statusLabel}</span>
+          ))}
       </div>
       <div className="acc-release">
         <div>
           <h3>
             发版本
-            <span
-              className="acc-release-status"
-              title={releaseStatus?.state === 'unknown' ? releaseStatus.reason : undefined}
-            >
-              {releaseLabel}
-            </span>
+            <span className="acc-release-status">{releaseLabel}</span>
           </h3>
           {releaseDetail}
+          {releaseStatus?.state === 'unknown' && releaseStatus.reason && (
+            <ErrorDetails detail={releaseStatus.reason} />
+          )}
         </div>
         {onSendAction(
           `发布 ${version || '本版'}：先在会话中完成预检并报告，经我明确授权后再执行`,
           '发布请求',
           <BoardActionButton title="发布请求注入验收助手会话;预检与授权在会话中完成">
             <Rocket size={14} aria-hidden="true" /> 发布
-          </BoardActionButton>
+          </BoardActionButton>,
+          'release'
         )}
       </div>
     </section>

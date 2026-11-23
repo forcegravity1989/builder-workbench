@@ -26,9 +26,12 @@ export type GitHubRepoContext = {
   connectionId?: string | null
   wslDistro?: string
   admissionTier?: GitAdmissionTier
+  taskRepository?: GitHubOwnerRepo
 }
 
 export type LocalGitExecOptions = {
+  taskRepository?: GitHubOwnerRepo
+  taskRemoteCandidates?: { origin?: GitHubOwnerRepo; upstream?: GitHubOwnerRepo }
   wslDistro?: string
   admissionTier?: GitAdmissionTier
 }
@@ -45,6 +48,7 @@ export function githubRepoContext(
   return {
     repoPath,
     connectionId: connectionId ?? null,
+    ...(localGitOptions.taskRepository ? { taskRepository: localGitOptions.taskRepository } : {}),
     ...(localGitOptions.wslDistro ? { wslDistro: localGitOptions.wslDistro } : {}),
     ...(localGitOptions.admissionTier ? { admissionTier: localGitOptions.admissionTier } : {})
   }
@@ -56,7 +60,7 @@ export function ghRepoExecOptions(context: GitHubRepoContext): {
   wslDistro?: string
   admissionTier?: GitAdmissionTier
 } {
-  return context.connectionId
+  return context.connectionId || context.taskRepository
     ? {}
     : {
         cwd: context.repoPath,

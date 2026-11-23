@@ -11,6 +11,13 @@ it('keeps the workflow section optional and rejects stages outside the workflow'
     tasks: []
   }
   expect(PlanningMaterialSchema.safeParse(plan).success).toBe(true)
+  const futurePlan = PlanningMaterialSchema.parse({
+    ...plan,
+    futureField: { source: 'new-reader' },
+    summary: { ...plan.summary, futureSummaryField: 'kept' }
+  })
+  expect((futurePlan as Record<string, unknown>).futureField).toEqual({ source: 'new-reader' })
+  expect((futurePlan.summary as Record<string, unknown>).futureSummaryField).toBe('kept')
   expect(
     PlanningMaterialSchema.safeParse({
       ...plan,
@@ -44,13 +51,35 @@ it('keeps the workflow section optional and rejects stages outside the workflow'
         version: 'v1',
         cycleId: 'plan-cycle',
         revision: `sha256:${'a'.repeat(64)}`,
-        sourceCommit: '1'.repeat(40)
+        sourceCommit: '1'.repeat(40),
+        sourceMetadata: { provider: 'new-reader' }
       },
       preparedArtifacts: [],
       results: [],
+      futureField: true,
       workflow: { stage: 'showcase', updatedAt: '2026-10-13T08:00:00Z' }
     }).success
   ).toBe(true)
+  const futureAcceptance = AcceptanceMaterialSchema.parse({
+    schema_version: 3,
+    version: 'v1',
+    cycleId: 'cycle',
+    planRef: {
+      kind: 'committed',
+      version: 'v1',
+      cycleId: 'plan-cycle',
+      revision: `sha256:${'a'.repeat(64)}`,
+      sourceCommit: '1'.repeat(40),
+      sourceMetadata: { provider: 'new-reader' }
+    },
+    preparedArtifacts: [],
+    results: [],
+    futureField: true
+  })
+  expect((futureAcceptance as Record<string, unknown>).futureField).toBe(true)
+  expect((futureAcceptance.planRef as Record<string, unknown>).sourceMetadata).toEqual({
+    provider: 'new-reader'
+  })
   // #462: the acceptance workflow carries the release read-back key (tag only);
   // plan material has no release row, so the reference stays acceptance-only.
   expect(

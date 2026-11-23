@@ -27,6 +27,8 @@ export function BrowserPageChromeBanners({
   worktreeId,
   activeGroupId,
   browserAnnotationsPrompt,
+  includePageDetails,
+  handleIncludePageDetailsChange,
   handleBrowserAnnotationsSentToAgent,
   handleCopyBrowserAnnotations,
   browserAnnotationsCopied,
@@ -43,6 +45,8 @@ export function BrowserPageChromeBanners({
   handleAnnotationBannerSendOpenChange: (open: boolean) => void
   worktreeId: string
   activeGroupId: string | undefined
+  includePageDetails: boolean
+  handleIncludePageDetailsChange: (include: boolean) => void
   browserAnnotationsPrompt: string
   handleBrowserAnnotationsSentToAgent: () => void
   handleCopyBrowserAnnotations: () => void
@@ -154,6 +158,8 @@ export function BrowserPageChromeBanners({
                     worktreeId={worktreeId}
                     groupId={activeGroupId ?? worktreeId}
                     prompt={browserAnnotationsPrompt}
+                    includePageDetails={includePageDetails}
+                    onIncludePageDetailsChange={handleIncludePageDetailsChange}
                     onPromptDelivered={handleBrowserAnnotationsSentToAgent}
                   />
                 </DropdownMenuContent>

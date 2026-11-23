@@ -1,11 +1,15 @@
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import {
+  getProjectIdForProviderIdentity,
   getProjectIdentityKey,
   hasProjectRemoteIdentity,
   isProjectRemoteIdentityPending
 } from '../../../shared/project-host-setup-projection'
 import { isGitRepoKind } from '../../../shared/repo-kind'
 import type { Repo } from '../../../shared/repo-types'
+import { versionRepoIdentity } from '../../../shared/workbench/version-repo-identity'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { getTaskPageRepoSourceContext } from './task-page-source-context'
 
 export type TaskProjectPickerGroup = {
   projectKey: string
@@ -89,6 +93,14 @@ export function normalizeTaskRepoSelection(
 }
 
 export function getTaskRepoProjectKey(repo: Repo): string {
+  if (isWorkbenchShell()) {
+    const identity = getTaskPageRepoSourceContext(repo, 'github')?.providerIdentity
+    if (identity?.provider === 'github') {
+      return getProjectIdForProviderIdentity(identity)
+    }
+    const origin = versionRepoIdentity(repo)
+    return origin ? `git:${origin}` : `repo:${repo.id}`
+  }
   return getProjectIdentityKey(repo)
 }
 

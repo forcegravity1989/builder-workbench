@@ -135,6 +135,7 @@ export async function getPRMergeBlocker(
     // Why: conflict summaries shell out to local git; skip for SSH repos until that helper routes through the SSH provider.
     if (
       connectionId ||
+      localGitOptions.taskRepository ||
       pr.mergeable !== 'CONFLICTING' ||
       !pr.baseRefName ||
       !pr.baseRefOid ||

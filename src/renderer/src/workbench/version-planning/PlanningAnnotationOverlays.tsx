@@ -1,3 +1,4 @@
+import { notifyWorkbenchError } from '../error-feedback'
 import { AnnotationPanel } from '../annotations/AnnotationPanel'
 import { AnnotationPopover } from '../annotations/AnnotationPopover'
 import { formatBoardAnnotationsAsMarkdown } from '../annotations/annotation-markdown'
@@ -27,6 +28,7 @@ export function PlanningAnnotationOverlays({
           annotations={annotations.numbered}
           annotating={annotations.annotating}
           worktreeId={worktreeId}
+          screen="plan"
           onClose={annotations.closePanel}
           onUpdate={annotations.update}
           onRemove={annotations.remove}
@@ -36,7 +38,7 @@ export function PlanningAnnotationOverlays({
               formatBoardAnnotationsAsMarkdown(annotations.annotations)
             )
           }}
-          onCopyError={(message) => onSentNotice(`复制板面批注失败：${message}`)}
+          onCopyError={(error) => notifyWorkbenchError('复制板面批注失败', error, '可重新复制。')}
           onSent={() => {
             // Why: onPromptDelivered only fires on a delivered send, so clearing here
             // never drops notes on failure/Esc (option A, 2026-10-22). The receipt must

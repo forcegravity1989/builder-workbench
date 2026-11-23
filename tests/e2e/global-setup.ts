@@ -39,10 +39,10 @@ export default function globalSetup(): void {
     // Why: --mode e2e is the build-time signal that exposes window.__store;
     // the explicit env var keeps older local overrides working too.
     // Why the Workbench triple: this playwright config only serves the
-    // Workbench smoke lane, and the shell is build-time baked —
+    // Workbench PR E2E lane, and the shell is build-time baked —
     // isWorkbenchShell() reads import.meta.env.VITE_WORKBENCH_SHELL, which
     // electron.vite.config.ts derives from these vars in the build process
-    // env. Without them the build yields a plain Orca renderer and the smoke
+    // env. Without them the build yields a plain Orca renderer and the Workbench tests
     // never sees [data-workbench-nav]. Setting them here (not per-shell in
     // package.json) keeps Windows cmd, POSIX shells and CI on one source.
     console.error('[e2e] Building Electron app with electron-vite build --mode e2e...')

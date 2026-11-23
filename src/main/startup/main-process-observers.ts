@@ -6,6 +6,8 @@ import { registerSystemResumeBroadcast } from '../system-resume-broadcast'
 import { agentHookServer } from '../agent-hooks/server'
 import { installHookStatusSessionTabsRepublish } from '../agent-hooks/hook-status-session-tabs-republish'
 import { initTelemetry, track } from '../telemetry/client'
+import { isWorkbenchProduct } from './workbench-product'
+import { installWorkbenchTelemetryTransport } from '../workbench/reporting/telemetry-bootstrap'
 import { setCodexTrustGrantTelemetry } from '../codex/codex-trust-grant-telemetry'
 import { initObservability } from '../observability'
 import { recordDurableCrashBreadcrumb } from '../crash-reporting/durable-crash-breadcrumb'
@@ -54,7 +56,11 @@ export function initializeMainProcessObservers(): void {
     unsubscribeStatusFreshness()
     uninstallHookStatusRepublish()
   }
-  // Why: telemetry must init before any IPC handler/renderer can call track(); it's a no-op in dev and while TELEMETRY_ENABLED is false, so it's safe early.
+  // Consent defaults and the BW destination must be set before native telemetry starts.
+  if (isWorkbenchProduct()) {
+    installWorkbenchTelemetryTransport(store)
+  }
+  // Initialize before IPC handlers and renderers can call track().
   initTelemetry(store)
   // Why: the breadcrumb alone never leaves the machine — it rides crash reports, and a hang is not
   // a crash (the app is force-quit, so no report is ever generated). Without this the incidence

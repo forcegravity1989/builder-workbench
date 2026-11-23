@@ -133,6 +133,7 @@ export async function ghExecFileAsync(
           timeout: timeoutMs,
           env: nonInteractiveGhEnv(options.env),
           signal: options.signal,
+          stdin: options.stdin,
           onDeadlineKill: () => logHostedCliDeadlineKill('gh', resolved.binary, args, timeoutMs)
         },
         resolved.termination
@@ -152,7 +153,7 @@ export async function ghExecFileAsync(
         !options.wslDistro &&
         isHostCommandMissing(err, 'gh')
       ) {
-        const wslResolved = resolveDefaultWslCli('gh', args)
+        const wslResolved = await resolveDefaultWslCli('gh', args, options.signal)
         if (wslResolved) {
           // Why: WSL-only Windows installs have no host gh.exe, and global calls (rate_limit/auth) carry no cwd to route by.
           resolved = wslResolved

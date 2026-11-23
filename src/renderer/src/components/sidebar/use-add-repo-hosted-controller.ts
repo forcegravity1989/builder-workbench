@@ -25,18 +25,34 @@ export function useAddRepoHostedController(hosted: AddRepoDialogHostedController
   closeForFolderHandoff: () => void
   finishProjectAdd: ((repoId: string) => Promise<void>) | undefined
   handleOpenSshSettings: () => void
+  projectWallModal: Record<string, unknown> | undefined
 } {
   const storeCloseModal = useAppStore((s) => s.closeModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const hostedOnOpenChange = hosted?.onOpenChange
   const hostedOnProjectAdded = hosted?.onProjectAdded
+  const projectWallModal = useAppStore((s) =>
+    !hosted && s.activeModal === 'add-repo' && s.modalData.stayOnProjectWall === true
+      ? s.modalData
+      : undefined
+  )
   // Why: hosted mode (nested inside the workspace composer) must close only
   // this dialog, never the composer modal that lives in the activeModal slot.
-  const closeModal = useMemo(
-    () => (hostedOnOpenChange ? () => hostedOnOpenChange(false) : storeCloseModal),
-    [hostedOnOpenChange, storeCloseModal]
-  )
+  const closeModal = useMemo(() => {
+    if (hostedOnOpenChange) {
+      return () => hostedOnOpenChange(false)
+    }
+    if (projectWallModal) {
+      // Why: an add that finishes after dismissal must not close a new modal.
+      return () => {
+        if (useAppStore.getState().modalData === projectWallModal) {
+          storeCloseModal()
+        }
+      }
+    }
+    return storeCloseModal
+  }, [hostedOnOpenChange, projectWallModal, storeCloseModal])
   const finishProjectAdd = useMemo(
     () =>
       hostedOnOpenChange && hostedOnProjectAdded
@@ -55,8 +71,8 @@ export function useAddRepoHostedController(hosted: AddRepoDialogHostedController
             hostedOnOpenChange(false)
             storeCloseModal()
           }
-        : storeCloseModal,
-    [hostedOnOpenChange, storeCloseModal]
+        : closeModal,
+    [closeModal, hostedOnOpenChange, storeCloseModal]
   )
   const handleOpenSshSettings = useCallback((): void => {
     closeModal()
@@ -68,5 +84,11 @@ export function useAddRepoHostedController(hosted: AddRepoDialogHostedController
     openSettingsTarget({ pane: 'ssh', repoId: null, sectionId: 'ssh' })
     openSettingsPage()
   }, [closeModal, hostedOnOpenChange, openSettingsPage, openSettingsTarget, storeCloseModal])
-  return { closeModal, closeForFolderHandoff, finishProjectAdd, handleOpenSshSettings }
+  return {
+    closeModal,
+    closeForFolderHandoff,
+    finishProjectAdd,
+    handleOpenSshSettings,
+    projectWallModal
+  }
 }

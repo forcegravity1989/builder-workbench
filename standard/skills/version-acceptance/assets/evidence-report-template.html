@@ -1,0 +1,105 @@
+<!-- 验收证据报告模板：生成前完整读取 references/evidence-aggregation.md。
+     本文只承载呈现槽位；生成、登记和核对顺序由该 reference 维护。
+     替换全部占位并正确转义文本/属性，保存为 .bw/planning/{{版本}}/acceptance-evidence.html。
+     URL 使用实际平台读回值；没有 URL 时移除链接/图片标签，保留事实及待核对说明。
+     按目标与基本用例复制相应区块，无适用内容的槽位写「无」。 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{版本}} 验收证据报告</title>
+<style>
+  body { font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; max-width: 1180px; margin: 20px auto; padding: 0 18px; color: #1f2328; background: #fff; font-size: 14px; line-height: 1.6; }
+  h1 { font-size: 21px; margin: 0 0 10px; }
+  h2 { font-size: 16px; margin: 26px 0 6px; border-bottom: 1px solid #d0d7de; padding-bottom: 4px; }
+  h3 { font-size: 14.5px; margin: 0 0 6px; }
+  .strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .strip span { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 14px; padding: 2px 12px; font-size: 12.5px; color: #424a53; }
+  .howto { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 8px 14px; margin: 10px 0 4px; font-size: 13px; }
+  .owner { color: #8b949e; font-size: 12px; font-weight: 400; margin-left: 8px; }
+  .crit { background: #f6f8fa; border-left: 3px solid #0969da; padding: 6px 12px; margin: 8px 0; font-size: 13px; }
+  .crit ol { margin: 4px 0 4px 20px; padding: 0; }
+  .card { border: 1px solid #d0d7de; border-radius: 10px; padding: 10px 14px 12px; margin: 12px 0; }
+  .pill { font-size: 12px; border-radius: 12px; padding: 1px 10px; background: #eaeef2; color: #424a53; font-weight: 600; }
+  .desc { background: #ddf4ff; border-radius: 6px; padding: 4px 10px; margin: 6px 0; font-size: 13px; }
+  .meta { font-size: 12.5px; color: #57606a; margin: 4px 0; }
+  .meta b { color: #1f2328; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
+  th, td { border: 1px solid #d0d7de; padding: 4px 6px; vertical-align: top; }
+  th { background: #f6f8fa; text-align: left; }
+  img { max-width: 100%; border: 1px solid #d0d7de; border-radius: 6px; }
+  .manual { font-size: 13px; color: #1a7f37; background: #dafbe1; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
+  .pending { font-size: 13px; color: #9a6700; background: #fff8c5; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
+  .gap { font-size: 13px; color: #cf222e; background: #ffebe9; border-radius: 6px; padding: 3px 10px; margin: 5px 0; }
+  .mut { color: #57606a; font-size: 12.5px; }
+  code { background: #f6f8fa; padding: 0 4px; border-radius: 4px; font-size: 12px; }
+  a { color: #0969da; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<h1>{{版本}} 验收证据报告</h1>
+<div class="strip">
+  <span>候选 <a href="{{候选提交 URL}}"><code>{{短 SHA}}</code></a></span>
+  <span>包 {{包版本与校验值，或「无包要求」}}</span>
+  <span>演示环境 {{演示入口或「未部署」}}</span>
+  <span>生成 {{时间}}</span>
+</div>
+<div class="howto">
+  按目标核对每条任务的已有证据。待核对项不阻塞查看；本报告不替代人在验收屏作出的目标结论。
+</div>
+
+<h2>目标 {{目标编号}}：{{目标句}}<span class="owner">负责人 {{负责人}}</span></h2>
+<div class="crit">
+  <b>计划验收判据（原文）</b>
+  <ol><li>{{判据原文}}</li></ol>
+  <b>指标目标值（原文）</b>：{{目标与完成线；计划没配指标写「无」}}
+</div>
+<table>
+  <tr><th>计划判据</th><th>计划内 Issue</th><th>证据落点</th><th>待核对 / 已确认缺口</th></tr>
+  <tr><td>{{判据摘要}}</td><td>{{Issue 编号}}</td><td>{{证据或「无对应验证件」}}</td><td>{{待核对编号、已确认缺口或「无」}}</td></tr>
+</table>
+
+<article class="card" id="issue-{{Issue 编号}}">
+  <h3><a href="{{Issue URL}}">#{{Issue 编号}}</a> {{标题}} <span class="pill">{{原生状态}}</span></h3>
+  <p class="desc">{{兑现哪条承诺、怎么验、看哪里，一句话说明}}</p>
+  <p class="meta"><b>交付依据</b>：{{合入 PR/MR 的实际平台直链及提交；无开发项写 Issue 处理依据；需要实现却无合入件时列待核对}}</p>
+  <p class="meta"><b>验证报告出处</b>：{{PR/MR 或 Issue 评论直链；没有写「无」}}</p>
+  <table>
+    <tr><th>基本用例</th><th>期望结果</th><th>实际结果</th><th>证据</th><th>执行路径</th></tr>
+    <tr>
+      <td>{{用例名}}</td><td>{{期望结果}}</td><td>{{实际结果；开发侧没留写「开发侧未留」}}</td>
+      <td><a href="{{已固定版本的原图 URL 或 shots/相对路径}}"><img src="{{已固定版本的原图 URL 或 shots/相对路径}}" alt="{{用例名}}截图" width="360"></a><br><code>{{证据提交 SHA}}</code> {{文件名}}</td>
+      <td>{{执行路径}}</td>
+    </tr>
+    <tr>
+      <td>{{用例名}}</td><td>{{期望结果}}</td><td>{{实际结果}}</td>
+      <td>{{证据形态：日志、读数、单测、流水线或平台读回}} · {{实数、口径与来源链接}}</td>
+      <td>{{执行路径或采集入口}}</td>
+    </tr>
+  </table>
+  <p class="meta"><b>其余用例与门禁细节</b>：{{原验证报告直链}}</p>
+  <p class="meta"><b>门禁</b>：{{流水线链接与实数；没跑写未跑}}</p>
+  <p class="meta"><b>未验范围</b>：{{未验项；没有写「无」}}</p>
+  <p class="manual"><b>人工核对</b>：{{谁、何时、核对什么及来源；未留实物如实说明；没有写「无」}}</p>
+  <div class="pending">
+    <b>待核对</b>（报告已可查看，处置与结论由人决定）：
+    <ul><li id="pending-{{待核对编号}}">待核对 {{待核对编号}} · 证据现状：{{缺什么}} · 已有其他证据：{{证据或「无」}} · <b>处置</b>：{{待核对，或人的决定与来源}}</li></ul>
+  </div>
+  <div class="gap"><b>已确认缺口</b>：{{人确认后的缺口与来源；没有写「无」}}</div>
+</article>
+
+<!-- 按「目标 → Issue」复制区块；同一 Issue 只出现一次，跨目标关联使用锚点。 -->
+<h2>已确认缺口汇总</h2>
+<ol>
+  <li><b>已关闭无合入件</b>：{{人确认后的条目；没有写「无」}}</li>
+  <li><b>未合入</b>：{{人确认后的条目；没有写「无」}}</li>
+  <li><b>无读数 / 不可核对</b>：{{人确认后的条目；没有写「无」}}</li>
+</ol>
+<h2>待核对事项汇总</h2>
+<p class="mut">以下事项尚待人决定处置，可在会前或会上继续核对。</p>
+<ol><li><a href="#pending-{{待核对编号}}">待核对 {{待核对编号}}</a>：{{待决事项与处置建议；没有写「无」}}</li></ol>
+<p class="mut">来源：各 Issue/PR/MR 已留下的验收件。平台读回时间 {{时间}}；报告生成 {{时间}}。</p>
+</body>
+</html>

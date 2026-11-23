@@ -7,9 +7,12 @@ import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
 import { applyCodeHubIssueState } from './issue-state'
 import { readCodeHubMrChanges, readCodeHubMrChecks } from './mr-reads'
+import { readCodeHubBranchReview } from './mr-branch-review'
 import { listCodeHubProjectLabels, listCodeHubProjectMembers } from './repo-reads'
 import { listCodeHubTasks } from './work-items'
 import { getCodeHubViewer } from './viewer'
+import { resolveCodeHubWebIdentity } from './web-identity'
+import { parseTaskItemLink, taskItemLinkIdentityKey } from '../../shared/task-item-link'
 import {
   assignCodeHubIssue,
   closeCodeHubMr,
@@ -25,22 +28,50 @@ import {
 export function createCodeHubService(deps: {
   resolveRepo: (args: CodeHubRepoArgs) => Repo | Promise<Repo>
   localGitOptions: (repo: Repo) => { wslDistro?: string }
+  allowRemoteIdentity?: boolean
 }): CodeHubApi {
+  function registeredRemote(repo: Repo) {
+    return (
+      parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
+      parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
+    )
+  }
   async function context(args: CodeHubRepoArgs) {
+    if (args.remoteUrl && deps.allowRemoteIdentity) {
+      const remote = parseCodeHubRemote(args.remoteUrl)
+      if (!remote) {
+        throw new Error('Unrecognized CodeHub service host')
+      }
+      if (!/^(?:[A-Za-z0-9-]+[.])*huawei[.]com(?::[0-9]+)?$/i.test(remote.host)) {
+        const repo = await deps.resolveRepo(args)
+        const known = registeredRemote(repo)
+        if (
+          resolve(repo.path) !== resolve(args.repoPath) ||
+          known?.host !== remote.host ||
+          known.project !== remote.project
+        ) {
+          throw new Error('CodeHub project identity does not match the registered repository')
+        }
+      }
+      if (
+        remote.project
+          .split('/')
+          .some((part) => !part || part === '.' || part === '..' || /[?#\\\s]/.test(part))
+      ) {
+        throw new Error('Invalid CodeHub project identity')
+      }
+      return { remote, execOptions: {} }
+    }
     const repo = await deps.resolveRepo(args)
     if (resolve(repo.path) !== resolve(args.repoPath)) {
       throw new Error('Repository path does not match the registered repository')
     }
     // The native registry owns the selected remote; another configured remote
     // must not silently replace the project the Tasks page displays.
-    const identity = repo.gitRemoteIdentity
-    const remote =
-      parseCodeHubRemote(identity?.remoteUrl) ?? parseCodeHubRemote(identity?.canonicalKey)
+    const remote = registeredRemote(repo)
     if (!remote) {
       throw new Error('Repository remote is not CodeHub')
     }
-    // Like gh/glab, hosted API calls run on the owning runtime. An SSH repo's
-    // filesystem path is not a local cwd; WSL projects use the native runner.
     const execOptions: CodeHubExecOptions = getRepoSshConnectionId(repo)
       ? {}
       : { cwd: repo.path, ...deps.localGitOptions(repo) }
@@ -48,6 +79,9 @@ export function createCodeHubService(deps: {
   }
 
   return {
+    async mrForBranch(args) {
+      return readCodeHubBranchReview({ ...args, ...(await context(args)), states: ['opened'] })
+    },
     async viewer(args) {
       return getCodeHubViewer(await context(args))
     },
@@ -106,7 +140,37 @@ export function createCodeHubService(deps: {
       return readCodeHubMrChanges({ ...args, ...(await context(args)) })
     },
     async viewTask(args) {
-      return viewCodeHubTask({ ...args, ...(await context(args)) })
+      const target = await context(args)
+      if (!args.expectedUrl) {
+        return viewCodeHubTask({ ...args, ...target })
+      }
+      const expected = parseTaskItemLink(args.expectedUrl)
+      if (
+        !expected ||
+        expected.provider !== 'codehub' ||
+        expected.repository.toLowerCase() !== target.remote.project.toLowerCase() ||
+        expected.kind !== args.kind ||
+        expected.number !== args.iid
+      ) {
+        throw new Error('CodeHub 任务链接与登记项目或请求条目不一致')
+      }
+      const remote = await resolveCodeHubWebIdentity(
+        target.remote,
+        args.expectedUrl,
+        target.execOptions
+      )
+      const detail = await viewCodeHubTask({ ...args, ...target, remote })
+      const returned = detail.url ? parseTaskItemLink(detail.url) : null
+      if (
+        !returned ||
+        returned.provider !== expected.provider ||
+        returned.kind !== expected.kind ||
+        returned.number !== expected.number ||
+        taskItemLinkIdentityKey(returned) !== taskItemLinkIdentityKey(expected)
+      ) {
+        throw new Error('CodeHub 返回的任务与链接来源不一致')
+      }
+      return detail
     },
     async listComments(args) {
       return listCodeHubComments({ ...args, ...(await context(args)) })

@@ -186,24 +186,22 @@ export function parseFloatingTerminalTriggerPosition(
   }
 }
 
-export function readPersistedFloatingTerminalTriggerPosition(): FloatingTerminalTriggerCommittedPosition | null {
+export function readPersistedFloatingTerminalTriggerPosition(
+  storageKey = FLOATING_TERMINAL_TRIGGER_POSITION_STORAGE_KEY
+): FloatingTerminalTriggerCommittedPosition | null {
   try {
-    return parseFloatingTerminalTriggerPosition(
-      getWindowStorage()?.getItem(FLOATING_TERMINAL_TRIGGER_POSITION_STORAGE_KEY) ?? null
-    )
+    return parseFloatingTerminalTriggerPosition(getWindowStorage()?.getItem(storageKey) ?? null)
   } catch {
     return null
   }
 }
 
 export function persistFloatingTerminalTriggerPosition(
-  position: FloatingTerminalTriggerCommittedPosition
+  position: FloatingTerminalTriggerCommittedPosition,
+  storageKey = FLOATING_TERMINAL_TRIGGER_POSITION_STORAGE_KEY
 ): void {
   try {
-    getWindowStorage()?.setItem(
-      FLOATING_TERMINAL_TRIGGER_POSITION_STORAGE_KEY,
-      JSON.stringify(position)
-    )
+    getWindowStorage()?.setItem(storageKey, JSON.stringify(position))
   } catch {
     // localStorage may be unavailable; the floating launcher remains session-local.
   }

@@ -8,6 +8,7 @@ import { SidebarSettingsHelpMenu } from './SidebarSettingsHelpMenu'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { hasFeatureInteraction } from '../../../../shared/feature-interactions'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const WORKSPACE_BOARD_MOVED_HINT_STORAGE_KEY = 'orca.workspaceBoardMovedHintSeen.v1'
 const WORKSPACE_BOARD_MOVED_HINT_DURATION_MS = 12000
@@ -73,7 +74,9 @@ const SidebarToolbar = React.memo(function SidebarToolbar({
     <div className="mt-auto shrink-0">
       <div className="flex items-center justify-between border-t border-worktree-sidebar-border px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-1">
-          <SidebarSettingsHelpMenu />
+          {/* Why (#475): BW moves settings/help to the rail foot; the panel keeps
+              only the two native icon actions on the right. */}
+          {isWorkbenchShell() ? null : <SidebarSettingsHelpMenu />}
         </div>
         <div className="flex items-center gap-1">
           <ScrollToCurrentWorkspaceToolbarButton />

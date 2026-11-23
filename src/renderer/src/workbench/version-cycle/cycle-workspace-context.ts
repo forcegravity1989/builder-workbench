@@ -3,7 +3,13 @@ import type { VersionWorkflow } from '../../../../shared/workbench/version-docum
 import type { VersionCycleContext } from './cycle-context'
 import type { FixedAcceptanceBrowse } from '../cycle-view-state'
 
-export type ReadonlyCycleBrowse = { version: string; fixedAcceptance?: FixedAcceptanceBrowse }
+import type { NativeWorkspaceScope } from './native-workspace'
+
+export type ReadonlyCycleBrowse = {
+  version: string
+  fixedAcceptance?: FixedAcceptanceBrowse
+  source?: NativeWorkspaceScope
+}
 
 export type CycleWorkspace = {
   workflow: VersionWorkflow

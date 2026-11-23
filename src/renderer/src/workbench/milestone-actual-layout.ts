@@ -4,11 +4,11 @@ import type {
   MilestoneMaterial,
   ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
-import { milestoneCalendar, milestoneDay } from '../../../shared/workbench/milestone-calendar'
+import { milestoneDay } from '../../../shared/workbench/milestone-calendar'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { taskKey } from './version-overview/feature-model'
 import {
-  milestoneFeatureGoal,
+  milestoneAcceptedFeatureGoal,
   milestoneVersionKey,
   resolveMilestoneFeature,
   type MilestoneVersionFacts
@@ -48,7 +48,7 @@ function milestoneResultVersions(
   return milestoneActualVersions(facts).filter((version) => {
     const read = facts[milestoneVersionKey(version)]!
     return [...keys].some((key) => {
-      const goalId = milestoneFeatureGoal(read, key)
+      const goalId = milestoneAcceptedFeatureGoal(read, key)
       return (
         goalId &&
         hasOutcome(
@@ -124,11 +124,15 @@ export function milestoneActualLayout(
       failed ||= read.failed
       continue
     }
-    // A fixed plan that excludes this main Issue cannot affect its delivery history.
-    if (!read.plan.tasks.some((task) => taskKey(task) === featureKey)) {
+    const goalId = milestoneAcceptedFeatureGoal(read, featureKey)
+    if (
+      !goalId &&
+      !read.failed &&
+      !read.plan.tasks.some((task) => taskKey(task) === featureKey) &&
+      !read.acceptance?.taskSnapshot?.some((item) => taskKey(item.reference) === featureKey)
+    ) {
       continue
     }
-    const goalId = read.formalPlan ? milestoneFeatureGoal(read, featureKey) : undefined
     if (!goalId) {
       priorUnknown ||= !delivered
       incomplete = true
@@ -199,14 +203,4 @@ export function milestoneVisibleActualVersions(
     keys.add(milestoneVersionKey(version))
   }
   return milestoneActualVersions(facts).filter((version) => keys.has(milestoneVersionKey(version)))
-}
-
-/** Expand only the calendar, never the saved roadmap or version windows. */
-export function milestoneActualCalendar(
-  draft: MilestoneDraft,
-  facts: Record<string, MilestoneVersionFacts>,
-  versions = milestoneVisibleActualVersions(draft, facts),
-  location?: { date?: string; offset?: number }
-) {
-  return milestoneCalendar(draft, undefined, versions, location)
 }

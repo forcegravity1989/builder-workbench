@@ -83,19 +83,6 @@
 .acc-breadcrumb > span {
   margin: 0 8px;
 }
-.acc-version-select {
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font-size: 12px;
-  padding: 0 2px;
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-}
-.acc-version-select:hover:not(:disabled) {
-  color: var(--color-text);
-  background: var(--accent);
-}
 /* G2（#383）：绑定验收树的只读回显——版本由绑定决定，屏内不切换；
    度量与计划屏 g3-version-bound 一致。 */
 .acc-breadcrumb > span.acc-version-bound {

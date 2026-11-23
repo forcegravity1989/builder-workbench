@@ -71,7 +71,7 @@ export class RuntimeGitHubReviewQueryCommands {
     repoSelector: string,
     prNumber: number,
     prRepo?: GitHubOwnerRepo | null,
-    options?: { noCache?: boolean }
+    options?: { noCache?: boolean; requireCompleteThreads?: boolean }
   ): Promise<Awaited<ReturnType<typeof getPRComments>>> {
     const repo = await this.deps.resolveRepo(repoSelector)
     return getPRComments(

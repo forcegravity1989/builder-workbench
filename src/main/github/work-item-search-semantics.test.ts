@@ -102,7 +102,7 @@ it('falls back with the original numbered query when GraphQL is unavailable', as
     'github.com',
     `search/issues?q=${encodeURIComponent(api.expectedSearch)}&sort=created&order=desc&per_page=24&page=3`,
     '--jq',
-    '.items'
+    'if .incomplete_results then error("GitHub search results incomplete") else .items end'
   ])
 })
 

@@ -1,4 +1,4 @@
-import { ghExecFileAsync } from '../github/gh-utils'
+import { bwGhExecFileAsync } from './workbench-exec-observability'
 import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
 import { listCodeHubComments } from '../codehub/comments'
 import type { WorkflowCommentsRequest } from '../../shared/workbench/workflow-comments'
@@ -48,7 +48,7 @@ export async function readWorkflowComments(
   }
   noteRepositoryRateLimitSpend(owner, 'core', 1, options)
   const { stdout } = await withOverviewReadPermit(() =>
-    ghExecFileAsync(
+    bwGhExecFileAsync(
       [
         'api',
         '--paginate',

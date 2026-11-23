@@ -13,7 +13,8 @@ import {
   WSL_CODEX_AVAILABILITY_TIMEOUT_MS
 } from './wsl-codex-command'
 
-const LOGIN_TIMEOUT_MS = 120_000
+// Allow copied-link sign-ins to finish across browsers and password managers.
+const LOGIN_TIMEOUT_MS = 180_000
 const MAX_LOGIN_OUTPUT_CHARS = 4_000
 const WINDOWS_LOGIN_AUTH_POLL_INTERVAL_MS = 500
 const WINDOWS_LOGIN_POST_AUTH_EXIT_GRACE_MS = 5_000

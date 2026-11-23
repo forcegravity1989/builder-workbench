@@ -30,6 +30,7 @@ export type ComposerCardSourceProps = Pick<
   | 'linkDirectLoading'
   | 'normalizedLinkQuery'
   | 'tuiAgent'
+  | 'agentLaunchPreferences'
   | 'detectedAgentIds'
   | 'advancedOpen'
   | 'projectError'
@@ -68,6 +69,7 @@ export type ComposerCardActionProps = {
   onBranchNameOverrideChange: ComposerModel['handleBranchNameOverrideChange']
   onParentWorktreeIdChange: ComposerModel['setParentWorktreeId']
   onSmartGitHubItemSelect: ComposerModel['handleSmartGitHubItemSelect']
+  onSmartCodeHubIssueSelect?: ComposerModel['handleSmartCodeHubIssueSelect']
   onSmartGitLabItemSelect: ComposerModel['handleSmartGitLabItemSelect']
   onSmartBranchSelect: ComposerModel['handleSmartBranchSelect']
   onSmartNameModeChange?: ComposerModel['setSmartNameMode']
@@ -75,6 +77,7 @@ export type ComposerCardActionProps = {
   onSmartJiraIssueSelect: ComposerModel['handleSmartJiraIssueSelect']
   onOpenJiraSettings: ComposerModel['handleOpenJiraSettings']
   smartNameGitHubSourceContext?: ComposerModel['selectedRepoGitHubSourceContext']
+  smartNameCodeHubSourceContext?: ComposerModel['selectedRepoCodeHubSourceContext']
   smartNameJiraSourceContext?: ComposerModel['smartNameJiraSourceContext']
   onBaseBranchMrSelect?: ComposerModel['handleBaseBranchMrSelect']
   onClearSmartNameSelection: ComposerModel['handleClearSmartNameSelection']

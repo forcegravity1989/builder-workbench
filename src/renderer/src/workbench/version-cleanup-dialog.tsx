@@ -1,3 +1,11 @@
+import { getAllWorktreesFromState, getWorktreeOnHostFromState } from '@/store/selectors'
+import { nativeWorkspaceScope } from './version-cycle/native-workspace'
+import { versionTreeKey } from './version-material-selection'
+import {
+  parseExecutionHostId,
+  toRuntimeExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host'
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -12,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type {
@@ -49,13 +56,29 @@ function workflowLabel(entry: VersionCatalogEntry, workspace: VersionCatalogWork
   return workflow === 'issue' ? ISSUE_TREE_LABEL : WORKFLOW_TREE_LABELS[workflow]
 }
 
-/**
- * 登记归属判定的折叠语义：hostId null≡本机。与正牌宿主限定身份（未限定行独立
- * 成桶、不折进任何宿主）刻意不同——本机默认勾选与目录树匹配都以 null 为本机；
- * 行键在此判定下仍单射。
- */
-function hostKey(hostId: string | null | undefined): string {
-  return hostId ?? LOCAL_EXECUTION_HOST_ID
+function nativeDeleteTarget(tree: Worktree): boolean {
+  if (!tree.instanceId || tree.isMainWorktree) {
+    return false
+  }
+  const execution = parseExecutionHostId(tree.hostId)
+  if (
+    tree.runtimeOwnerEnvironmentId &&
+    (execution?.kind !== 'runtime' || execution.environmentId !== tree.runtimeOwnerEnvironmentId)
+  ) {
+    // The native confirmation serializes the execution host, not a separate relay owner.
+    return false
+  }
+  const state = useAppStore.getState()
+  const rows = getAllWorktreesFromState(state).filter(
+    (row) => row.id === tree.id && (!tree.hostId || row.hostId === tree.hostId)
+  )
+  // Orca's delete request accepts host + instance. If two transport owners share that
+  // host key, its native confirmation cannot distinguish them; keep the row read-only.
+  return (
+    rows.length === 1 &&
+    versionTreeKey(rows[0]) === versionTreeKey(tree) &&
+    getWorktreeOnHostFromState(state, tree.id, tree.hostId) === rows[0]
+  )
 }
 
 function SessionCount({ worktreeId }: { worktreeId: string }): React.JSX.Element {
@@ -77,6 +100,7 @@ export function VersionCleanupDialog({
   onClose(): void
 }): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
+  const registered = useAppStore((s) => s.worktreesByRepo)
   const deleteStateByWorktreeId = useAppStore((s) => s.deleteStateByWorktreeId)
   const gitStatusByWorktree = useAppStore((s) => s.gitStatusByWorktree)
   const repoMap = useMemo(
@@ -92,19 +116,38 @@ export function VersionCleanupDialog({
   const rows = useMemo(
     () =>
       (entry?.workspaces ?? []).map((workspace) => {
-        const tree =
-          worktrees.find(
-            (item) =>
-              item.id === workspace.worktreeId && hostKey(item.hostId) === hostKey(workspace.hostId)
-          ) ?? null
+        const matches = worktrees.filter(
+          (tree) =>
+            tree.id === workspace.worktreeId &&
+            (tree.hostId ?? null) === workspace.hostId &&
+            (tree.runtimeOwnerEnvironmentId ?? null) === workspace.runtimeOwnerEnvironmentId &&
+            (tree.instanceId ?? null) === workspace.instanceId
+        )
+        const tree = matches.length === 1 ? matches[0] : null
+        let hostId: string | null = null
+        let local = false
+        try {
+          const scope = tree && nativeWorkspaceScope(tree)
+          if (scope) {
+            hostId = scope.runtimeOwnerEnvironmentId
+              ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+              : scope.hostId
+            local = hostId === LOCAL_EXECUTION_HOST_ID
+          }
+        } catch {
+          // Unknown ownership cannot authorize deletion.
+        }
         return {
-          key: `${hostKey(workspace.hostId)}::${workspace.worktreeId}`,
+          key: tree ? versionTreeKey(tree) : JSON.stringify(workspace),
           workspace,
-          tree,
-          local: hostKey(workspace.hostId) === LOCAL_EXECUTION_HOST_ID
+          hostId,
+          local,
+          tree: tree && hostId && nativeDeleteTarget(tree) ? tree : null
         }
       }),
-    [entry, worktrees]
+    // Native deletion eligibility is rechecked whenever registered worktrees or owners change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entry, worktrees, registered, repos]
   )
   const deleteTargets = useMemo(
     () => rows.filter((row) => row.tree !== null).map((row) => row.tree as Worktree),
@@ -175,6 +218,10 @@ export function VersionCleanupDialog({
     const targets = rows
       .filter((row) => checked.has(row.key) && row.tree !== null)
       .map((row) => row.tree as Worktree)
+    if (targets.some((target) => !nativeDeleteTarget(target))) {
+      toast.error('工作区归属或实例已变化，请刷新清单后重选。')
+      return
+    }
     if (targets.length === 0) {
       return
     }
@@ -214,9 +261,9 @@ export function VersionCleanupDialog({
                 (row.tree.branch ? branchName(row.tree.branch) : '') ||
                 row.tree.id
               : row.workspace.worktreeId
-            const ownerLabel = row.local
-              ? '本机'
-              : (hostLabelById.get(hostKey(row.workspace.hostId)) ?? hostKey(row.workspace.hostId))
+            const ownerLabel = row.hostId
+              ? (hostLabelById.get(row.hostId) ?? row.hostId)
+              : '主机未知'
             // Why: 缺键=预检未回读（他宿主离线/水合失败），与「已水合且干净」不可混同；
             // 没数据就是 Unknown，不能呈现否定断言（四铁律信号口径，检视 F6 修正）。
             const dirty = row.tree
@@ -243,7 +290,7 @@ export function VersionCleanupDialog({
                     {ownerLabel}
                     {row.local ? '' : ' · 在其归属主机删除'}
                     {row.tree === null
-                      ? ' · 登记缺失（不可勾选）'
+                      ? ' · 登记或归属无法确认（不可勾选）'
                       : dirty === undefined
                         ? ' · 预检未回读'
                         : dirty > 0

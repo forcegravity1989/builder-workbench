@@ -27,6 +27,12 @@ import type { PinnedWorktreeDisplayPolicy, WorktreeGroupBy } from '../grouping/r
 export const EMPTY_PROJECT_GROUPS: readonly ProjectGroup[] = []
 export type VirtualizedWorktreeViewportProps = {
   rows: HostSectionRow[]
+  /**
+   * Content rendered above the virtual rows inside the same scroll container
+   * (#475: the BW second column shares one scrollbar between 已固定/版本 and the
+   * Orca project list). The virtualizer offsets by its measured height.
+   */
+  afterPinnedContent?: React.ReactNode
   activeWorktreeId: string | null
   activeWorkspaceExecutionHostId: ExecutionHostId | null
   currentWorktreeId: string | null

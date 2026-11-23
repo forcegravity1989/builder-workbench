@@ -58,6 +58,11 @@ import {
   REMOTE_RUNTIME_AUTO_RECOVERY_TIMEOUT_MS,
   RemoteRuntimePtyRecoveryState
 } from './remote-runtime-pty-recovery-state'
+import {
+  isRuntimeEnvironmentPairingChangedError,
+  refreshRuntimeEnvironmentsAfterPairingChange
+} from '@/runtime/runtime-environment-pairing-refresh'
+import { registerRemoteRuntimePtyControlReadyReviver } from './remote-runtime-pty-control-ready-revivers'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import {
   createAgentSessionCreateOperation,
@@ -81,7 +86,10 @@ import {
   ptyReplayHandlers,
   ptyShutdownLifecycleHandlers
 } from './pty-shutdown-data-suspension'
-import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
+import {
+  getRuntimeEnvironmentRevision,
+  resolveContinuedRuntimeEnvironmentRevision
+} from '@/runtime/runtime-environment-revision'
 
 const REMOTE_TERMINAL_INPUT_FLUSH_MS = 8
 const REMOTE_TERMINAL_VIEWPORT_FLUSH_MS = 33
@@ -124,6 +132,14 @@ type RemoteAgentSessionLaunchResult =
 
 function isRemoteTerminalStaleMessage(message: string): boolean {
   return message.includes('terminal_handle_stale')
+}
+
+// A stale pairing is refused before dispatch; retry its binding after refreshing credentials.
+function isRecoverablePaneBindingError(error: unknown): boolean {
+  return (
+    isRecoverableRemoteRuntimeConnectionError(toRemoteRuntimeClientErrorLike(error)) ||
+    isRuntimeEnvironmentPairingChangedError(error)
+  )
 }
 
 function isRemoteTerminalGoneMessage(message: string): boolean {
@@ -183,7 +199,15 @@ export function createRemoteRuntimePtyTransport(
   let authoritativeHostPlatform: NodeJS.Platform | null = null
   let authoritativePtyIncarnationId: string | null = null
   let currentRuntimeEnvironmentId = runtimeEnvironmentId
-  const runtimeEnvironmentPairingRevision = getRuntimeEnvironmentRevision(runtimeEnvironmentId)
+  // Follow a re-pair only with proof that its saved host key still names the original machine.
+  let paneRevision = resolveContinuedRuntimeEnvironmentRevision(
+    runtimeEnvironmentId,
+    getRuntimeEnvironmentRevision(runtimeEnvironmentId)
+  )
+  function currentPaneRevision(): number | undefined {
+    paneRevision = resolveContinuedRuntimeEnvironmentRevision(runtimeEnvironmentId, paneRevision)
+    return paneRevision
+  }
   let multiplexedStream: RemoteRuntimeMultiplexedTerminal | null = null
   let multiplexedStreamHandle: string | null = null
   let desiredOutputPaused = false
@@ -247,7 +271,27 @@ export function createRemoteRuntimePtyTransport(
     })
   }
 
+  let unregisterControlReadyReviver: (() => void) | null = null
+  // Register only while recovering; idle/destroyed panes cannot remain retained by the registry.
+  function syncControlReadyReviver(): void {
+    const wantsRevival = recovery.isActive || recovery.currentPhase === 'disconnected'
+    if (wantsRevival && !unregisterControlReadyReviver) {
+      unregisterControlReadyReviver = registerRemoteRuntimePtyControlReadyReviver(
+        runtimeEnvironmentId,
+        () => {
+          if (destroyed) {
+            return false
+          }
+          return recovery.retryNow() || (transport.retryRecovery?.() ?? false)
+        }
+      )
+    } else if (!wantsRevival && unregisterControlReadyReviver) {
+      unregisterControlReadyReviver()
+      unregisterControlReadyReviver = null
+    }
+  }
   const recovery = new RemoteRuntimePtyRecoveryState(() => {
+    syncControlReadyReviver()
     if (recovery.currentPhase === 'disposed') {
       clearPublishedHandleWait()
     }
@@ -742,7 +786,7 @@ export function createRemoteRuntimePtyTransport(
         return hostHandle
       } catch (error) {
         if (
-          !isRecoverableRemoteRuntimeConnectionError(toRemoteRuntimeClientErrorLike(error)) ||
+          !isRecoverablePaneBindingError(error) ||
           !isCurrent()
         ) {
           throw error
@@ -1017,14 +1061,20 @@ export function createRemoteRuntimePtyTransport(
     params?: unknown,
     timeoutMs = 15_000
   ): Promise<TResult> {
-    const response = await window.api.runtimeEnvironments.call({
-      selector: environmentId,
-      method,
-      params,
-      timeoutMs,
-      expectedEnvironmentPairingRevision: runtimeEnvironmentPairingRevision
-    })
-    return unwrapRuntimeRpcResult(response as RuntimeRpcResponse<TResult>)
+    try {
+      const response = await window.api.runtimeEnvironments.call({
+        selector: environmentId,
+        method,
+        params,
+        timeoutMs,
+        expectedEnvironmentPairingRevision: currentPaneRevision()
+      })
+      return unwrapRuntimeRpcResult(response as RuntimeRpcResponse<TResult>)
+    } catch (error) {
+      // The caller's retry must read the new revision instead of racing the catalog refresh.
+      await refreshRuntimeEnvironmentsAfterPairingChange(error)
+      throw error
+    }
   }
 
   async function callRuntime<TResult>(
@@ -1694,7 +1744,7 @@ export function createRemoteRuntimePtyTransport(
       scheduleCapacityPressureRetry()
       return
     }
-    if (isRecoverableRemoteRuntimeConnectionError(clientError)) {
+    if (isRecoverablePaneBindingError(error)) {
       // Why: a partition is attachment state, not a terminal failure; keep the red error surface for actionable fatal errors.
       scheduleResubscribeAfterTransportClose()
       return
@@ -1716,7 +1766,7 @@ export function createRemoteRuntimePtyTransport(
       closeMultiplexedStream()
     }
     clearPendingViewportClaim()
-    if (!isRecoverableRemoteRuntimeConnectionError(toRemoteRuntimeClientErrorLike(error))) {
+    if (!isRecoverablePaneBindingError(error)) {
       return false
     }
     if (recovery.currentPhase === 'disconnected') {
@@ -1884,8 +1934,7 @@ export function createRemoteRuntimePtyTransport(
       .catch((error) => {
         if (!destroyed && connected && handle && recovery.isCurrent(recoveryEpoch)) {
           clearPendingViewportClaim()
-          const clientError = toRemoteRuntimeClientErrorLike(error)
-          if (isRecoverableRemoteRuntimeConnectionError(clientError)) {
+          if (isRecoverablePaneBindingError(error)) {
             retryScheduled = recovery.schedule(recoveryEpoch, (nextEpoch) => {
               const currentReplacementPolicy = handle
                 ? getRecoveryReplacementPolicy(handle)
@@ -2330,7 +2379,7 @@ export function createRemoteRuntimePtyTransport(
           })
           // Snapshot parity must not delay attachment to a terminal the host already created.
           void refreshWebRuntimeSessionTabsSnapshot(createEnvironmentId, worktreeId, {
-            expectedEnvironmentPairingRevision: runtimeEnvironmentPairingRevision,
+            expectedEnvironmentPairingRevision: currentPaneRevision(),
             acceptCurrentSnapshot: true,
             confirmAgentSessionHandoff: {
               provisionalTabId: tabId,
@@ -2392,9 +2441,7 @@ export function createRemoteRuntimePtyTransport(
           if (isRemoteTerminalGoneMessage(message)) {
             recovery.cancel()
             handleRemoteTerminalError(error)
-          } else if (
-            isRecoverableRemoteRuntimeConnectionError(toRemoteRuntimeClientErrorLike(error))
-          ) {
+          } else if (isRecoverablePaneBindingError(error)) {
             scheduleConnectRetryAfterRecoverableFailure()
           } else {
             recovery.cancel()

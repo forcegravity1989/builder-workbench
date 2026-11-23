@@ -24,7 +24,8 @@ vi.mock('@/lib/worktree-initial-terminal-seeding', () => ({
   ensureWorktreeHasInitialTerminal: mocks.ensureWorktreeHasInitialTerminal
 }))
 vi.mock('@/lib/worktree-creation-completion', () => ({
-  completeWorktreeCreation: mocks.completeWorktreeCreation
+  completeWorktreeCreation: mocks.completeWorktreeCreation,
+  stopWorktreeCreationForChangedHost: () => false
 }))
 vi.mock('@/lib/web-runtime-worktree-terminal-after-wake', () => ({
   ensureWebRuntimeWorktreeTerminalAfterWake: mocks.ensureWebRuntimeWorktreeTerminalAfterWake

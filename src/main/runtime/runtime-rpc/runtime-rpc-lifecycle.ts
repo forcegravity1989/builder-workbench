@@ -8,6 +8,7 @@ import type { DeviceRegistry } from '../device-registry'
 import type { E2EEKeypair } from '../e2ee-keypair'
 import { UnpairedDeviceAuthThrottle } from '../rpc/unpaired-device-auth-throttle'
 import { MobileSocketWiring } from '../rpc/mobile-socket-wiring'
+import { effectiveRuntimeAccessMode } from '../device-registry'
 import { RuntimeRpcWebSocketDispatch } from './runtime-rpc-websocket-dispatch'
 import {
   formatWsEndpoint,
@@ -21,6 +22,16 @@ import {
 
 export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
   async start(): Promise<void> {
+    if (this.stopping) {
+      return
+    }
+    this.startupPromise ??= this.startOnce().finally(() => {
+      this.startupPromise = null
+    })
+    return this.startupPromise
+  }
+
+  private async startOnce(): Promise<void> {
     if (this.activeTransports.length > 0) {
       return
     }
@@ -74,7 +85,7 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
     if (this.enableWebSocket) {
       // Why: land any deferred lastSeen write before a replacement registry reads the same file.
       this.deviceRegistry?.flushPendingLastSeen()
-      const pairingIdentity = this.initializePairingIdentity()
+      const pairingIdentity = await this.initializePairingIdentity()
       if (!pairingIdentity.ok) {
         this.deviceRegistry = null
         this.e2eeKeypair = null
@@ -105,32 +116,22 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
       }
     }
 
-    // Why: set in-memory transport state before writing metadata so the bootstrap file has the real endpoint/token pair.
-    this.activeTransports = activeTransports
-    this.transports = transportsMeta
-
     try {
-      this.writeMetadata()
+      await this.writeMetadata(transportsMeta)
     } catch (error) {
       // Why: a runtime that can't publish metadata is invisible to the CLI — close transports rather than run undiscoverable.
-      this.activeTransports = []
-      this.transports = []
       await Promise.all(activeTransports.map((t) => t.stop().catch(() => {}))).catch(() => {})
       throw error
     }
 
+    this.activeTransports = activeTransports
+    this.transports = transportsMeta
     this.metadataOwnershipWatch = watchRuntimeMetadataOwnership({
       userDataPath: this.userDataPath,
       ownedPid: this.pid,
       ownedRuntimeId: this.runtime.getRuntimeId(),
       pollIntervalMs: this.metadataOwnershipPollMs,
-      republish: () => {
-        // Why: never advertise endpoints we already tore down.
-        if (this.activeTransports.length === 0) {
-          return
-        }
-        this.writeMetadata()
-      },
+      republish: (canPublish) => this.writeMetadata(this.transports, canPublish),
       onReclaim: (previous) => {
         console.warn(
           `[runtime] Reclaimed orca-runtime.json from a dead runtime (pid ${previous?.pid ?? 'none'}); republished pid ${this.pid}.`
@@ -226,7 +227,7 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         )
       },
       onBinary: (socket, bytes) => this.handleWebSocketBinaryMessage(bytes, socket.ws),
-      onReady: () => {
+      onReady: (socket) => {
         // Why: first authenticated mobile/remote client (direct WS and
         // cloud relay both attach here) starts path-candidate tracking.
         // Activation is a local-host concern: candidate buffers live on the
@@ -234,6 +235,20 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         // legitimately lack this method (its own server activates it).
         this.runtime.activateRecentPtyPathCandidateTracking?.()
         this.mobileRelayPairingProvider?.onDemandStateChanged?.()
+        const device = deviceRegistry.getDevice(socket.device.deviceId)
+        if (device?.scope === 'runtime') {
+          this.getRuntimeAccessAudit().record({
+            at: Date.now(),
+            deviceId: device.deviceId,
+            deviceName: device.name,
+            accessMode: effectiveRuntimeAccessMode(device),
+            ...(device.teamBinding
+              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              : undefined),
+            method: 'connection.open',
+            result: 'allowed'
+          })
+        }
       },
       onClose: (socket, hasOtherConnections) => {
         if (!socket) {
@@ -246,6 +261,20 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         this.binaryMessageRouter.deleteConnection(socket.connectionId)
         if (!hasOtherConnections) {
           this.runtime.onClientDisconnected(socket.device.deviceToken)
+        }
+        const device = deviceRegistry.getDevice(socket.device.deviceId)
+        if (device?.scope === 'runtime' && !hasOtherConnections) {
+          this.getRuntimeAccessAudit().record({
+            at: Date.now(),
+            deviceId: device.deviceId,
+            deviceName: device.name,
+            accessMode: effectiveRuntimeAccessMode(device),
+            ...(device.teamBinding
+              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              : undefined),
+            method: 'connection.close',
+            result: 'allowed'
+          })
         }
       },
       // Why: relay attempts are authorized upstream; only direct failures should prompt local re-pairing.

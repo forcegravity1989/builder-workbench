@@ -15,6 +15,7 @@ export function useAddRepoNestedReviewController({
   fetchWorktrees,
   importNestedRepos,
   onGitRepoReady,
+  projectWallModal,
   setIsAdding,
   setStep,
   reviewRuntimeEnvironmentId
@@ -41,6 +42,7 @@ export function useAddRepoNestedReviewController({
     source: AddRepoExistingWorkspaceSource,
     executionHostId?: ExecutionHostId
   ) => Promise<void>
+  projectWallModal?: Record<string, unknown>
   setIsAdding: (isAdding: boolean) => void
   setStep: Dispatch<SetStateAction<AddRepoDialogStep>>
 }): ReturnType<typeof useAddRepoNestedReviewState> &
@@ -67,6 +69,7 @@ export function useAddRepoNestedReviewController({
     fetchWorktrees,
     importNestedRepos,
     onGitRepoReady,
+    projectWallModal,
     setIsAdding,
     nestedAttemptId: review.nestedAttemptId,
     nestedScan: review.nestedScan,

@@ -181,7 +181,6 @@
         "closeAsDuplicateSubmit": "Close duplicate",
         "closeAsNotPlannedDescription": "Won't fix, can't repro, stale",
         "codehubAssign": "Assign",
-        "codehubAssigned": "Assignee updated",
         "codehubAutoMerge": "Merge when the pipeline succeeds",
         "codehubAutoMergeButton": "Auto-merge",
         "codehubChecks": "Pipelines",
@@ -226,16 +225,6 @@
         },
         "ActivityScopeFilterControls": {
           "hiddenCount": "{{value0}} hidden"
-        }
-      },
-      "artifacts": {
-        "ArtifactsPage": {
-          "openArtifact": "Open artifact",
-          "signInCopy": "Sign in to view and manage artifacts shared through your account.",
-          "signInHeading": "Sign in to Orca"
-        },
-        "artifact-publish-flow": {
-          "5cb4f5ec36": "Copy link"
         }
       },
       "automations": {
@@ -337,6 +326,7 @@
             "5f66313863": "annotation",
             "8aec5bc044": "idle",
             "8b6fab9ffa": "Save",
+            "8b7e6d1f5a": "Browser annotations are only available in local browser tabs.",
             "93be92f8d1": "Copy Address",
             "a3508d7e6e": "{{value0}} annotation{{value1}} ready. Select another element or copy all feedback.",
             "a5dcd0fd1d": "confirming",
@@ -345,6 +335,7 @@
             "c8bc7f1f9e": "requested",
             "da68d35f7b": "Open failed page in default browser",
             "db325a7eeb": "Can't reach {{value0}}",
+            "deb5293610": "Browser annotations unavailable in remote runtime",
             "e72dfa268a": "annotate",
             "e7ca5a098c": "success"
           },
@@ -1372,11 +1363,15 @@
           "ccb07dd027": "Saved",
           "e57dde9d93": "Unsaved changes"
         },
+        "RuntimeAccessAuditLog": {
+          "clear": "Clear log"
+        },
         "RuntimeEnvironmentsPane": {
           "163671f7b5": "Run",
           "1826bd0608": "Saved Servers",
           "54ebacc600": "Server name",
           "55fcc964cd": "on the server and paste the printed pairing URL.",
+          "5ef712f407": "A server named \"{{value0}}\" already exists.",
           "7b5986c8df": "Saved {{value0}}. Use Active Server to switch when ready.",
           "8cf8790697": "Saved servers route this browser through a paired Orca runtime.",
           "960e901ae4": "orca serve --pairing-address <host>",
@@ -1487,7 +1482,7 @@
           "95d3031db2": "Keeps this computer and display awake while agents are working. Lid-close behavior follows this device's power settings.",
           "a42f6fbdd8": "Keeps this computer and display awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "e5995ce268": "Keep computer awake while agents are working",
-          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. Orca also asks this device to stay awake when the lid is closed, subject to its power policy.",
+          "modeDescriptionDefault": "Choose On, Agent, or Off. Agent mode stays awake while agents are working. The app also asks this device to stay awake when the lid is closed, subject to its power policy.",
           "modeDescriptionWindows": "Choose On, Agent, or Off. Agent mode stays awake while agents are working; lid-close behavior follows this device's power settings.",
           "modeTitle": "Keep computer awake"
         },
@@ -1542,14 +1537,6 @@
             "f412abbba5": "claude",
             "ff8de8a2ad": "display"
           }
-        },
-        "artifacts": {
-          "account": "Orca account",
-          "connected": "Connected",
-          "enable": "Enable Artifacts",
-          "enableDescription": "Add Artifacts to the sidebar so you can open and delete shared files.",
-          "openArtifactsDescription": "View and delete links shared through your account.",
-          "signInRequired": "Sign in is required to upload and manage artifacts."
         },
         "auto": {
           "rename": {
@@ -2738,6 +2725,24 @@
       "board": "Dashboard",
       "label": "Dashboard view",
       "map": "Agent Map"
+    }
+  },
+  "guidance": {
+    "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command.",
+    "cliRegistrationTitle": "Register the Orca CLI on PATH to continue."
+  },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
+      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
+      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
+      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
+      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
+      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
+      "nameTaken": "A server named \"{{name}}\" already exists.",
+      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
+      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
+      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
     }
   },
   "runtimeRpc": {

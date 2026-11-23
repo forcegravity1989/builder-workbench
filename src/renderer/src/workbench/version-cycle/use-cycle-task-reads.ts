@@ -139,6 +139,10 @@ export function useCycleTaskReads(args: {
       return
     }
     const requestedKey = key
+    const current = latest.current
+    if (keyFor(current.scope, current.tasks, current.taskPort) !== requestedKey) {
+      return
+    }
     await startRead(entry, true)
     // 在途切版本守卫：旧版本的强制读数不得喂给新版本的快照（同旧组件守卫，
     // 读数落点本身已按条目键控，这里只挡 onFreshReads）。

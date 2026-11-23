@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
-import { codehubApi } from '@/lib/codehub-api'
 import { PRFilesCombinedDiffBody } from '@/components/github-item-dialog/inspect-pull-request/pr-files-combined-diff-body'
 import { getCombinedDiffBranchEntriesInTreeOrder } from '@/components/editor/combined-diff/browse-files/combined-diff-file-tree-filter'
 import { useCombinedDiffSectionIndexMap } from '@/components/editor/combined-diff/resolve-changes/use-combined-diff-section-index-map'
@@ -259,7 +258,7 @@ function CodeHubFilesSections({
         return false
       }
       const realStartLine = startLine != null ? realLines?.[startLine - 1] : undefined
-      return codehubApi
+      return state.api
         .createComment({
           repoPath,
           repoId: item.repoId,
@@ -271,7 +270,7 @@ function CodeHubFilesSections({
           startLine: realStartLine != null && realStartLine !== realLine ? realStartLine : null
         })
         .then(async () => {
-          const rows = await codehubApi.listComments({
+          const rows = await state.api.listComments({
             repoPath,
             repoId: item.repoId,
             kind: item.type,
@@ -288,7 +287,7 @@ function CodeHubFilesSections({
           return false
         })
     },
-    [item, patchByPath, setComments]
+    [item, patchByPath, setComments, state.api]
   )
 
   return (

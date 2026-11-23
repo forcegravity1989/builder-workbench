@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { getConnectionIdFromState } from '@/lib/connection-context'
 import { useAppStore } from '@/store'
+import { useContextualTour } from '@/components/contextual-tours/use-contextual-tour'
 import { useShortcutLabel } from '@/hooks/useShortcutLabel'
 import { ORCA_BROWSER_BLANK_URL } from '../../../../../shared/constants'
 import type { BrowserPage as BrowserPageState } from '../../../../../shared/browser-workspace-types'
@@ -44,6 +45,12 @@ import { useBrowserPageWebviewPartition } from '../host-guest/use-browser-page-w
 import { useBrowserPageWebviewUrlSync } from '../navigate/use-browser-page-webview-url-sync'
 import { useBrowserPageZoomFeedback } from '../host-guest/use-browser-page-zoom-feedback'
 import { useBrowserPageViewportScrollReporting } from '../host-guest/use-browser-page-viewport-scroll-reporting'
+import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
+
+function BrowserContextualTour() {
+  useContextualTour('browser', true)
+  return null
+}
 
 export function BrowserPagePane({
   browserTab,
@@ -174,6 +181,10 @@ export function BrowserPagePane({
   const markup = useBrowserPageMarkupCapture(webviewRef)
   const grabAnnotations = useBrowserPageGrabAnnotations({
     browserTabId: browserTab.id,
+    worktreeId,
+    documentKey: canonicalPrototypeReviewDocumentKey(
+      browserTab.docLocation?.filePath ?? browserTab.url
+    ),
     isActive,
     grab,
     containerRef,
@@ -181,8 +192,7 @@ export function BrowserPagePane({
     trackingScroller: pageViewport?.scroller ?? null,
     webviewRef,
     setBrowserOverlayViewport,
-    browserAnnotationsLength: annotationSend.browserAnnotations.length,
-    setBrowserAnnotationTrayOpen: annotationSend.setBrowserAnnotationTrayOpen
+    browserAnnotationsLength: annotationSend.browserAnnotations.length
   })
   const nav = useBrowserPageNavigationDownloads({
     browserTabId: browserTab.id,
@@ -224,7 +234,7 @@ export function BrowserPagePane({
     onUpdatePageState,
     onSetUrl,
     setAddressBarValue: nav.setAddressBarValue,
-    setPendingAnnotationPayload: grabAnnotations.setPendingAnnotationPayload,
+    cancelPendingBrowserCapture: grabAnnotations.cancelPendingBrowserCapture,
     setBrowserOverlayViewport,
     setFindOpen,
     focusAddressBarNow,
@@ -302,6 +312,7 @@ export function BrowserPagePane({
   const failedNavigationUrl = browserTab.loadError?.validatedUrl ?? currentBrowserUrl
   const failureExternalUrl = normalizeExternalBrowserUrl(failedNavigationUrl)
   const showFailureOverlay = Boolean(browserTab.loadError) && !isBlankTab
+  const ownsBrowserTour = isActive && chromeShortcutScope === 'focused'
   const browserZoomIndicatorState = getBrowserPageZoomIndicatorState({
     feedbackVisible: zoom.browserZoomFeedbackVisible,
     isDefaultZoom: zoom.browserZoomPercent === zoom.browserDefaultZoomPercent
@@ -340,6 +351,8 @@ export function BrowserPagePane({
       inert={!isActive}
       aria-hidden={!isActive}
     >
+      {/* Retained background pages must not suppress the foreground page's guide. */}
+      {ownsBrowserTour && <BrowserContextualTour />}
       {/* IPC-driven context menu in a Portal so position:fixed escapes ancestor transform/backdrop-filter containing blocks. */}
       <BrowserPageContextMenu
         browserPageId={browserTab.id}
@@ -356,6 +369,7 @@ export function BrowserPagePane({
         worktreeId={worktreeId}
         sessionProfileId={sessionProfileId}
         isActive={isActive}
+        ownsBrowserTour={ownsBrowserTour}
         webviewRef={webviewRef}
         addressBarInputRef={addressBarInputRef}
         dismissAddressBarSuggestionsRef={dismissAddressBarSuggestionsRef}

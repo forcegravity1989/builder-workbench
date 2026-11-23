@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
-import { EyeOff } from 'lucide-react'
+import { useEffect, useMemo, useState, type JSX } from 'react'
+import { EyeOff, X } from 'lucide-react'
 import {
-  FEATURE_WALL_SETUP_STEP_IDS,
+  getFeatureWallSetupStepIds,
   getFirstIncompleteFeatureWallSetupStepId,
   getFeatureWallSetupSteps
 } from '../../../../shared/feature-wall-setup-steps'
@@ -21,6 +21,9 @@ import { SetupGuideProgressRing } from './SetupGuideProgressRing'
 import { useSetupGuideProgress } from './use-setup-guide-progress'
 import { useSetupGuideOpenCloseTelemetry } from './use-setup-guide-telemetry'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { showOnboardingFromRenderer } from '../onboarding/show-onboarding-event'
+import { toast } from 'sonner'
 
 const SETUP_GUIDE_CLOSE_LINGER_MS = 300
 
@@ -50,9 +53,11 @@ function SetupGuideModalContent({
   lingering: boolean
 }): JSX.Element {
   const modalData = useAppStore((s) => s.modalData)
+  const isBW = isWorkbenchShell()
+  const [openingInitialSetup, setOpeningInitialSetup] = useState(false)
   const closeModal = useAppStore((s) => s.closeModal)
   const setSetupGuideSidebarDismissed = useAppStore((s) => s.setSetupGuideSidebarDismissed)
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(), [])
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(isBW), [isBW])
   const [userSelectedStep, setUserSelectedStep] = useState(false)
   const [orchestrationSkillInstalled, setOrchestrationSkillInstalled] = useState(false)
   const [browserUseSkillInstalled, setBrowserUseSkillInstalled] = useState(false)
@@ -65,9 +70,9 @@ function SetupGuideModalContent({
     browserUseSkillInstalled
   )
   const [activeStepId, setActiveStepId] = useState<FeatureWallSetupStepId>(() =>
-    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, isBW)
   )
-  const requestedStepId = isFeatureWallSetupStepId(modalData.setupStepId)
+  const requestedStepId = isFeatureWallSetupStepId(modalData.setupStepId, isBW)
     ? modalData.setupStepId
     : null
   const telemetrySource =
@@ -101,8 +106,8 @@ function SetupGuideModalContent({
     if (!open || userSelectedStep || requestedStepId !== null) {
       return
     }
-    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone))
-  }, [open, progress.stepDone, requestedStepId, userSelectedStep])
+    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, isBW))
+  }, [isBW, open, progress.stepDone, requestedStepId, userSelectedStep])
 
   useEffect(() => {
     if (
@@ -114,11 +119,14 @@ function SetupGuideModalContent({
     ) {
       return
     }
-    const nextUnfinishedCoreStepId = getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    const nextUnfinishedCoreStepId = getFirstIncompleteFeatureWallSetupStepId(
+      progress.stepDone,
+      isBW
+    )
     if (nextUnfinishedCoreStepId !== activeStep.id) {
       setActiveStepId(nextUnfinishedCoreStepId)
     }
-  }, [activeStep, open, progress.stepDone, requestedStepId, userSelectedStep])
+  }, [activeStep, isBW, open, progress.stepDone, requestedStepId, userSelectedStep])
 
   const handleSelectStep = (id: FeatureWallSetupStepId): void => {
     setUserSelectedStep(true)
@@ -131,15 +139,34 @@ function SetupGuideModalContent({
     }
   }
 
-  const handleHideFromSidebar = useCallback((): void => {
-    setSetupGuideSidebarDismissed(true)
-  }, [setSetupGuideSidebarDismissed])
+  const guideActionLabel = isBW
+    ? translate('guidance.closeSetupGuide', 'Close setup guide')
+    : translate(
+        'auto.components.setup.guide.SetupGuideModal.f3b5ffb2a6',
+        'Hide checklist from sidebar'
+      )
+  const GuideActionIcon = isBW ? X : EyeOff
+
+  const handleGuideAction = (): void => {
+    if (!isBW) {
+      setSetupGuideSidebarDismissed(true)
+      return
+    }
+    closeModal()
+    toast.success(translate('guidance.setupGuideClosed', 'Setup guide closed'), {
+      description: translate(
+        'guidance.setupGuideReopen',
+        'You can reopen it from Help → Getting Started with BW.'
+      )
+    })
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="grid h-[min(780px,calc(100vh-2rem))] w-[min(1080px,calc(100vw-2rem))] max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 p-0 sm:max-w-none"
         tabIndex={-1}
+        showCloseButton={!isBW}
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -147,30 +174,35 @@ function SetupGuideModalContent({
               type="button"
               variant="ghost"
               size="icon-xs"
-              aria-label={translate(
-                'auto.components.setup.guide.SetupGuideModal.f3b5ffb2a6',
-                'Hide checklist from sidebar'
-              )}
-              onClick={handleHideFromSidebar}
-              className="absolute right-10 top-3.5 text-muted-foreground"
+              aria-label={guideActionLabel}
+              onClick={handleGuideAction}
+              className={
+                isBW
+                  ? 'absolute right-3 top-3 text-muted-foreground'
+                  : 'absolute right-10 top-3.5 text-muted-foreground'
+              }
             >
-              <EyeOff className="size-4" />
+              <GuideActionIcon className="size-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top" sideOffset={4}>
-            {translate(
-              'auto.components.setup.guide.SetupGuideModal.28cf59fcb4',
-              'This will hide the checklist from the sidebar'
-            )}
+            {isBW
+              ? guideActionLabel
+              : translate(
+                  'auto.components.setup.guide.SetupGuideModal.28cf59fcb4',
+                  'This will hide the checklist from the sidebar'
+                )}
           </TooltipContent>
         </Tooltip>
         <DialogHeader className="gap-1 border-b border-border px-7 py-4">
           <div className="flex items-center gap-2">
             <DialogTitle className="text-lg">
-              {translate(
-                'auto.components.setup.guide.SetupGuideModal.48a9e5ef2d',
-                'Getting started'
-              )}
+              {isBW
+                ? translate('guidance.gettingStarted', 'Getting Started with BW')
+                : translate(
+                    'auto.components.setup.guide.SetupGuideModal.48a9e5ef2d',
+                    'Getting started'
+                  )}
             </DialogTitle>
             <SetupGuideProgressRing
               done={progress.coreDoneCount}
@@ -178,12 +210,43 @@ function SetupGuideModalContent({
               className="text-green-600 dark:text-green-300"
               sizeClassName="size-5"
             />
+            {isBW ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={openingInitialSetup}
+                onClick={async () => {
+                  setOpeningInitialSetup(true)
+                  try {
+                    await showOnboardingFromRenderer()
+                    closeModal()
+                  } catch {
+                    toast.error(
+                      translate(
+                        'guidance.initialSetupFailed',
+                        'Could not open initial setup. Please try again.'
+                      )
+                    )
+                  } finally {
+                    setOpeningInitialSetup(false)
+                  }
+                }}
+              >
+                {translate('guidance.initialSetup', 'Initial Setup')}
+              </Button>
+            ) : null}
           </div>
           <DialogDescription className="text-sm text-muted-foreground">
-            {translate(
-              'auto.components.setup.guide.SetupGuideModal.3598a3ca0c',
-              'Finish the core workflows that make Orca useful for parallel agent work.'
-            )}
+            {isBW
+              ? translate(
+                  'guidance.setupDescription',
+                  'Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.'
+                )
+              : translate(
+                  'auto.components.setup.guide.SetupGuideModal.3598a3ca0c',
+                  'Finish the core workflows that make Orca useful for parallel agent work.'
+                )}
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 overflow-hidden px-7 py-6">
@@ -200,9 +263,12 @@ function SetupGuideModalContent({
   )
 }
 
-function isFeatureWallSetupStepId(value: unknown): value is FeatureWallSetupStepId {
+function isFeatureWallSetupStepId(
+  value: unknown,
+  workbenchShell: boolean
+): value is FeatureWallSetupStepId {
   return (
     typeof value === 'string' &&
-    FEATURE_WALL_SETUP_STEP_IDS.includes(value as FeatureWallSetupStepId)
+    getFeatureWallSetupStepIds(workbenchShell).includes(value as FeatureWallSetupStepId)
   )
 }

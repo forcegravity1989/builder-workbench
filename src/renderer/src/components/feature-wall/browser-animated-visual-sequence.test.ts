@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  BROWSER_PROMPT_TEXT,
+  getBrowserPromptText,
   browserPhaseAtLeast,
   isBrowserSplitPhase,
   type BrowserVisualPhase
@@ -76,7 +76,7 @@ describe('browser animated visual sequence', () => {
     ])
     expect(typedChars).toEqual([
       0,
-      ...Array.from({ length: BROWSER_PROMPT_TEXT.length }, (_, index) => index + 1)
+      ...Array.from({ length: getBrowserPromptText().length }, (_, index) => index + 1)
     ])
     expect(targets).toEqual([
       ['newtab-button', undefined, undefined],

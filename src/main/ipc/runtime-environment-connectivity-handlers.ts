@@ -1,9 +1,13 @@
+import { registerRuntimeEnvironmentRepairHandler } from './runtime-environment-repair-handler'
+import { publishVerifiedPairing } from './runtime-environment-verified-pairing-publish'
+import { publicRuntimeEnvironmentWithHostKey } from './runtime-environment-host-key'
 import { ipcMain } from 'electron'
 import {
   addEnvironmentFromPairingCode,
   listEnvironments,
   removeEnvironment,
-  resolveEnvironment
+  resolveEnvironment,
+  setEnvironmentReconnectOnLaunch
 } from '../../shared/runtime-environment-store'
 import {
   redactRuntimeEnvironment,
@@ -26,6 +30,7 @@ import {
 } from './runtime-environment-request-connections'
 import {
   clearRuntimeEnvironmentManualDisconnect,
+  hydrateRuntimeEnvironmentManualDisconnects,
   isRuntimeEnvironmentManuallyDisconnected,
   markRuntimeEnvironmentManuallyDisconnected,
   RUNTIME_MANUALLY_DISCONNECTED_MESSAGE
@@ -62,11 +67,15 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
   getUserDataPath,
   invalidateTransport
 }: ConnectivityHandlerOptions): void {
+  // Why first: the startup activation loop runs right after registration, so saved holds must
+  // exist before anything can probe or dial a host that the user left disconnected.
+  hydrateRuntimeEnvironmentManualDisconnects(getUserDataPath())
+  registerRuntimeEnvironmentRepairHandler({ getUserDataPath, invalidateTransport })
   ipcMain.handle('runtimeEnvironments:getStatusSnapshots', () =>
     getRuntimeEnvironmentStatusSnapshots()
   )
   ipcMain.handle('runtimeEnvironments:list', () =>
-    listEnvironments(getUserDataPath()).map(redactRuntimeEnvironment)
+    listEnvironments(getUserDataPath()).map(publicRuntimeEnvironmentWithHostKey)
   )
   ipcMain.handle(
     'runtimeEnvironments:addFromPairingCode',
@@ -84,13 +93,11 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
     async (_event, args: { name: string; pairingCode: string; allowLoopback?: boolean }) => {
       const result = await verifyAndAddRuntimeEnvironmentFromPairingCode(getUserDataPath(), args)
       if (result.ok) {
-        clearRuntimeEnvironmentManualDisconnect(result.environment.id)
-        getRuntimeEnvironmentStatusOwner(getUserDataPath(), result.environment.id).acceptVerified({
-          id: 'status.get',
-          ok: true,
-          result: result.runtimeStatus,
-          _meta: { runtimeId: result.runtimeStatus.runtimeId }
-        })
+        await publishVerifiedPairing(
+          getUserDataPath(),
+          result,
+          result.updatedExisting ? { invalidateTransport } : null
+        )
       }
       return result
     }
@@ -129,6 +136,9 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
     'runtimeEnvironments:disconnect',
     (_event, args: { selector: string }): { disconnected: PublicKnownRuntimeEnvironment } => {
       const environment = resolveEnvironment(getUserDataPath(), args.selector)
+      // Why persist before tearing down: the saved hold is the promise that this host stays down
+      // after a restart, so a failed write must surface instead of reporting a successful disconnect.
+      setEnvironmentReconnectOnLaunch(getUserDataPath(), environment.id, false)
       markRuntimeEnvironmentManuallyDisconnected(environment.id)
       invalidateTransport(environment.id)
       closeLegacySelectorTransport(args.selector, environment.id)
@@ -145,6 +155,13 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
     ): Promise<RuntimeRpcResponse<RuntimeStatus>> => {
       const environment = resolveEnvironment(getUserDataPath(), args.selector)
       clearRuntimeEnvironmentManualDisconnect(environment.id)
+      // Why best-effort: an explicit Connect is the user's current intent, so a failed preference
+      // write must not block reaching the host; the stale hold only matters at the next launch.
+      try {
+        setEnvironmentReconnectOnLaunch(getUserDataPath(), environment.id, undefined)
+      } catch (error) {
+        console.warn('[runtime-environments] failed to clear saved reconnect preference:', error)
+      }
       return getRuntimeEnvironmentStatus(getUserDataPath(), environment.id, args.timeoutMs, {
         reconnect: true
       })

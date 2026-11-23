@@ -1,5 +1,11 @@
+import {
+  agentLaunchSettingsMutationUpdates,
+  projectAgentLaunchSettings,
+  type AgentLaunchSettings,
+  type AgentLaunchSettingsMutation
+} from '../../shared/agent-launch-settings'
+import { agentLaunchSettingsRollbackUpdates } from './agent-launch-settings-rollback'
 import { getAppEnvironment } from '../../shared/app-environment'
-import { isArtifactSharingEnabled } from '../../shared/artifact-sharing-gate'
 import { isAgentSkillSharingEnabled } from '../../shared/agent-skill-sharing-gate'
 import { applyPRBotAuthorOverride } from '../../shared/pr-bot-author-overrides'
 import { TASK_PROVIDERS } from '../../shared/task-providers'
@@ -43,7 +49,6 @@ export type RuntimeClientSettings = Pick<
   | 'minimaxUsageModels'
   | 'minimaxEndpoint'
   | 'prBotAuthorOverrides'
-  | 'artifactSharingEnabled'
   | 'worktreeVisibilityDefaults'
   | 'agentSkillSharingEnabled'
 > & {
@@ -78,6 +83,7 @@ export type RuntimeClientSettingsUpdate = Pick<
 >
 
 export class RuntimeClientSettingsController {
+  private agentLaunchMutationTail: Promise<unknown> = Promise.resolve()
   private reconciliationGeneration = 0
   private reconciliationTail: Promise<void> = Promise.resolve()
 
@@ -118,7 +124,6 @@ export class RuntimeClientSettingsController {
       minimaxUsageModels: settings.minimaxUsageModels ?? 'general',
       minimaxEndpoint: settings.minimaxEndpoint ?? 'overseas',
       prBotAuthorOverrides: settings.prBotAuthorOverrides ?? [],
-      artifactSharingEnabled: isArtifactSharingEnabled(settings),
       worktreeVisibilityDefaults: settings.worktreeVisibilityDefaults ?? { external: 'hide' },
       agentSkillSharingEnabled: isAgentSkillSharingEnabled(settings),
       hostSettingOverrides: Object.fromEntries(
@@ -149,6 +154,56 @@ export class RuntimeClientSettingsController {
       await this.reconcileManagedAgentHooks()
     }
     return this.get()
+  }
+
+  getAgentLaunch(): AgentLaunchSettings {
+    if (!this.store?.getSettings) {
+      throw new Error('runtime_unavailable')
+    }
+    return projectAgentLaunchSettings(this.store.getSettings())
+  }
+
+  mutateAgentLaunch(mutation: AgentLaunchSettingsMutation): Promise<AgentLaunchSettings> {
+    const write = this.agentLaunchMutationTail
+      .catch(() => {})
+      .then(async () => {
+        const store = this.store
+        if (!store?.getSettings || !store.updateSettings || !store.flushPendingOrThrowAsync) {
+          throw new Error('runtime_unavailable')
+        }
+        const before = store.getSettings()
+        const updates = agentLaunchSettingsMutationUpdates(before, mutation, process.platform)
+        store.updateSettings(updates, { notifyListeners: true })
+        const applied = store.getSettings()
+        try {
+          await store.flushPendingOrThrowAsync({ drainToStableGeneration: false })
+        } catch (error) {
+          const rollback = agentLaunchSettingsRollbackUpdates(
+            before,
+            applied,
+            store.getSettings(),
+            updates
+          )
+          if (Object.keys(rollback).length > 0) {
+            store.updateSettings(rollback, { notifyListeners: true })
+          }
+          throw error
+        }
+        if (
+          updates.disabledTuiAgents !== undefined &&
+          !haveSameDisabledTuiAgents(before.disabledTuiAgents, applied.disabledTuiAgents)
+        ) {
+          void this.reconcileManagedAgentHooks().catch((error) => {
+            console.error(
+              '[agent-hooks] Failed to reconcile managed hooks after saving launch settings:',
+              error
+            )
+          })
+        }
+        return projectAgentLaunchSettings(applied)
+      })
+    this.agentLaunchMutationTail = write
+    return write
   }
 
   getTerminalQuickCommands(): TerminalQuickCommand[] {

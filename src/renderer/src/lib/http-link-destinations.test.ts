@@ -51,6 +51,14 @@ describe('buildHttpLinkActions', () => {
     expect(opened).toEqual(['orca', 'system'])
   })
 
+  it('labels the task destination consistently with the browser rows', () => {
+    const actions = buildHttpLinkActions({ primary: 'task', alternate: 'system' }, () => {})
+    expect(actions.primary.label).toBe('Open in Task')
+    expect(actions.primary.task).toBe(true)
+    expect(actions.primary.external).toBe(false)
+    expect(actions.alternate?.label).toBe('System Browser')
+  })
+
   it('omits the alternate row when only one destination is offered', () => {
     const actions = buildHttpLinkActions({ primary: 'system' }, () => {})
     expect(actions.alternate).toBeUndefined()

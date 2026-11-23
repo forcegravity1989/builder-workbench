@@ -27,6 +27,7 @@ import {
   filterSetupsForPrunedRepoRows,
   mergeFetchedRepoCatalog,
   projectCompatibilityForReconciledRepos,
+  reconcileFetchedCatalogWorktreeState,
   reconcileReadoptedSshWorktreeState,
   reconcileSupersededSshRepos
 } from './repo-catalog-merge'
@@ -105,7 +106,7 @@ export function createRepoCatalogActions(
       const targetHostId = getRuntimeTargetHostId(target)
       claimRepoCatalogGeneration(get, targetHostId, generation)
       try {
-        const catalog = await fetchRepoCatalogForTarget(target)
+        const catalog = await fetchRepoCatalogForTarget(target, get().repos)
         // A newer same-host fetch superseded us while we awaited — drop this stale result.
         if (!isLatestRepoCatalogGeneration(get, targetHostId, generation)) {
           return
@@ -145,7 +146,7 @@ export function createRepoCatalogActions(
           return {
             repos: prunedRepos,
             pendingSshRepoReadoptions: reconciliation.pendingReadoptions,
-            ...reconcileReadoptedSshWorktreeState(s, s.pendingSshRepoReadoptions),
+            ...reconcileFetchedCatalogWorktreeState(s, catalog, prunedRepos),
             ...mergedProjectCompatibility,
             ...(arrayElementsUnchanged(prunedRepos, s.repos)
               ? {}

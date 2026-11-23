@@ -30,6 +30,7 @@ import { ProviderLetterBadge, ProviderSegment } from './StatusBarProviderSegment
 import { useStatusBarController } from './use-status-bar-controller'
 import { StatusBarVisibilityMenu } from './StatusBarVisibilityMenu'
 import { isPairedWebClientWindow } from '@/lib/desktop-window-chrome'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const PetStatusSegment = lazyWithRetry(() =>
   import('./PetStatusSegment').then((module) => ({ default: module.PetStatusSegment }))
@@ -41,6 +42,11 @@ const ResourceUsageStatusSegment = lazyWithRetry(() =>
 )
 const PortsStatusSegment = lazyWithRetry(() =>
   import('./PortsStatusSegment').then((module) => ({ default: module.PortsStatusSegment }))
+)
+const QuickLinksStatusSegment = lazyWithRetry(() =>
+  import('@/workbench/quick-links/QuickLinksStatusSegment').then((module) => ({
+    default: module.QuickLinksStatusSegment
+  }))
 )
 const SshStatusSegment = lazyWithRetry(() =>
   import('./SshStatusSegment').then((module) => ({ default: module.SshStatusSegment }))
@@ -82,6 +88,7 @@ export function StatusBarSurface({
     showFloatingTerminalToggle,
     showFloatingWorkspaceAttentionDot,
     showPorts,
+    showQuickLinks,
     showResourceUsage,
     showSsh,
     statusBarUsageMode,
@@ -253,7 +260,12 @@ export function StatusBarSurface({
             <ResourceUsageStatusSegment compact={compact} iconOnly={iconOnly} />
           ) : null}
           {showPorts ? <PortsStatusSegment compact={compact} iconOnly={iconOnly} /> : null}
-          {showSsh ? <SshStatusSegment compact={compact} iconOnly={iconOnly} /> : null}
+          {showQuickLinks ? (
+            <QuickLinksStatusSegment compact={compact} iconOnly={iconOnly} />
+          ) : null}
+          {showSsh && !isWorkbenchShell() ? (
+            <SshStatusSegment compact={compact} iconOnly={iconOnly} />
+          ) : null}
         </React.Suspense>
         {showFloatingTerminalToggle && (
           <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">

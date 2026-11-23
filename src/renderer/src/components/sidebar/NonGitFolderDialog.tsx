@@ -54,6 +54,10 @@ const NonGitFolderDialog = React.memo(function NonGitFolderDialog() {
         )
 
   const handleConfirm = useCallback(() => {
+    const projectWallModal = modalData.stayOnProjectWall === true ? modalData : undefined
+    if (projectWallModal && useAppStore.getState().modalData !== projectWallModal) {
+      return
+    }
     if (connectionId && folderPath) {
       void (async () => {
         try {
@@ -84,7 +88,7 @@ const NonGitFolderDialog = React.memo(function NonGitFolderDialog() {
             .worktreesByRepo[repo.id]?.find(
               (worktree) => worktree.hostId === ownerOptions.executionHostId
             )
-          if (folderWorktree) {
+          if (folderWorktree && !projectWallModal) {
             const onboarding = await window.api.onboarding.get().catch(() => null)
             // Why: SSH users can hit this dialog from Add Project after
             // dismissing onboarding, bypassing the local addNonGitFolder path.
@@ -117,11 +121,20 @@ const NonGitFolderDialog = React.memo(function NonGitFolderDialog() {
     } else if (folderPath) {
       void addNonGitFolder(folderPath, {
         runtimeEnvironmentId: runtimeEnvironmentId || null,
-        ...(displayName ? { displayName } : {})
+        ...(displayName ? { displayName } : {}),
+        ...(projectWallModal ? { projectWallModal } : {})
       })
     }
     closeModal()
-  }, [addNonGitFolder, closeModal, displayName, folderPath, connectionId, runtimeEnvironmentId])
+  }, [
+    addNonGitFolder,
+    closeModal,
+    displayName,
+    folderPath,
+    connectionId,
+    modalData,
+    runtimeEnvironmentId
+  ])
 
   const handleOpenChange = useCallback(
     (open: boolean) => {

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { useState } from 'react'
-import { Flag, Plus, X } from 'lucide-react'
+import { createLucideIcon, Flag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -16,6 +16,10 @@ import {
 } from './use-milestone-gesture'
 
 const civilDate = z.iso.date()
+const FlagPlus = createLucideIcon('flag-plus', [
+  ['path', { d: 'M3.5 21V4.7 M3.5 5c5.1-4.1 8.6 4 14 0v8.3c-5.5 4-8.9-4.1-14 0', key: 'flag' }],
+  ['path', { d: 'M15.5 19h7 M19 15.5v7', key: 'plus' }]
+])
 
 type Actions = {
   enabled: boolean
@@ -32,6 +36,7 @@ function Caption({
     <div className="wb-ml-node-editor">
       <MilestoneField
         multiline
+        required
         editable
         value={node.outcome}
         label={`${node.date ?? node.month} 里程碑成果`}
@@ -181,21 +186,23 @@ export function MilestoneNavigation({
   return (
     <div className="wb-ml-roadmap" style={{ width: width + labelWidth }} aria-label="关键里程碑">
       <div className="wb-ml-label">
-        <strong>关键里程碑</strong>
+        <div className="wb-ml-label-title">
+          <strong>关键里程碑</strong>
+          {actions.enabled && (
+            <MilestoneIconButton
+              className="wb-ml-cell-add"
+              label="添加里程碑"
+              data-contextual-tour-target="milestone-start"
+              onClick={() => {
+                setNewDate(visibleDate())
+                setOutcome('')
+              }}
+            >
+              <FlagPlus className="size-4" aria-hidden="true" />
+            </MilestoneIconButton>
+          )}
+        </div>
         {groups.has('') && <NodeGroup nodes={groups.get('')!} {...actions} />}
-        {actions.enabled && (
-          <MilestoneIconButton
-            className="wb-ml-cell-add"
-            label="添加里程碑"
-            data-contextual-tour-target="milestone-start"
-            onClick={() => {
-              setNewDate(visibleDate())
-              setOutcome('')
-            }}
-          >
-            <Plus size={16} />
-          </MilestoneIconButton>
-        )}
       </div>
       <div className="wb-ml-node-axis" style={{ width }}>
         {dates.map((date, i) => {
@@ -231,10 +238,13 @@ export function MilestoneNavigation({
           <DialogHeader>
             <DialogTitle>添加里程碑</DialogTitle>
           </DialogHeader>
-          <form
-            className="grid gap-4"
-            onSubmit={(e) => {
-              e.preventDefault()
+          <MilestoneNodeForm
+            date={newDate ?? ''}
+            outcome={outcome}
+            setDate={setNewDate}
+            setOutcome={setOutcome}
+            cancel={() => setNewDate(null)}
+            submit={() => {
               if (
                 !newDate ||
                 !civilDate.safeParse(newDate).success ||
@@ -246,38 +256,64 @@ export function MilestoneNavigation({
               add({ id: crypto.randomUUID(), date: newDate, outcome: outcome.trim() })
               setNewDate(null)
             }}
-          >
-            <label>
-              日期
-              <Input
-                type="date"
-                max="9999-12-31"
-                required
-                value={newDate ?? ''}
-                onChange={(e) => setNewDate(e.target.value)}
-              />
-            </label>
-            <label>
-              预期成果
-              <Textarea
-                required
-                maxLength={200}
-                value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
-              />
-            </label>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setNewDate(null)}>
-                取消
-              </Button>
-              <Button type="submit" disabled={!newDate || !outcome.trim()}>
-                添加
-              </Button>
-            </div>
-          </form>
+          />
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export function MilestoneNodeForm({
+  date,
+  outcome,
+  setDate,
+  setOutcome,
+  cancel,
+  submit
+}: {
+  date: string
+  outcome: string
+  setDate(value: string): void
+  setOutcome(value: string): void
+  cancel(): void
+  submit(): void
+}) {
+  return (
+    <form
+      className="grid gap-4"
+      onSubmit={(event) => {
+        event.preventDefault()
+        submit()
+      }}
+    >
+      <label>
+        日期
+        <Input
+          type="date"
+          max="9999-12-31"
+          required
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+      </label>
+      <label>
+        预期成果
+        <Textarea
+          required
+          maxLength={200}
+          value={outcome}
+          onChange={(e) => setOutcome(e.target.value)}
+        />
+      </label>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={cancel}>
+          取消
+        </Button>
+        <Button type="submit" disabled={!date || !outcome.trim()}>
+          添加
+        </Button>
+      </div>
+    </form>
   )
 }
 

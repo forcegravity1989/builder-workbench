@@ -9,6 +9,10 @@ import { isTuiAgentEnabled } from '../../../shared/tui-agent-selection'
 import type { LaunchSource } from '../../../shared/telemetry-events'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import { translate } from '@/i18n/i18n'
+import { ensureAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
+import { getAgentDetectionTargetKeyForWorktree } from '@/hooks/useAgentDetectionTarget'
+import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
+import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
 
 type LaunchAgentSessionContinuationArgs = {
   agent: TuiAgent
@@ -34,9 +38,26 @@ export async function detectAgentSessionContinuationAgents(
 }
 
 async function ensureAgentAvailable(agent: TuiAgent, worktreeId: string): Promise<boolean> {
-  const state = useAppStore.getState()
   const label = getAgentLabel(agent)
-  if (!isTuiAgentEnabled(agent, state.settings?.disabledTuiAgents)) {
+  const preferences = await ensureAgentLaunchPreferences(worktreeId).catch((error: unknown) => {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return null
+    }
+    throw error
+  })
+  if (!preferences) {
+    return false
+  }
+  if (!preferences.isAvailable) {
+    toast.error(
+      translate(
+        'settings.agents.readFailed',
+        'Couldn’t read agent settings. Check the host connection and try again.'
+      )
+    )
+    return false
+  }
+  if (!isTuiAgentEnabled(agent, preferences.disabledTuiAgents)) {
     toast.error(
       translate(
         'components.agentSessionContinuation.agentDisabled',
@@ -77,12 +98,45 @@ export async function launchAgentSessionContinuation({
   initialCwd,
   launchSource
 }: LaunchAgentSessionContinuationArgs): Promise<boolean> {
+  const state = useAppStore.getState()
+  const ownerKey = getAgentDetectionTargetKeyForWorktree(state, worktreeId)
+  if (ownerKey === undefined) {
+    return false
+  }
+  const environmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
+  const owner = environmentId
+    ? {
+        environmentId,
+        pairingRevision: getRuntimeEnvironmentRevision(environmentId),
+        runtimeId: state.runtimeStatusByEnvironmentId.get(environmentId)?.status?.runtimeId
+      }
+    : undefined
+  const isCurrentOwner = (): boolean => {
+    if (getAgentDetectionTargetKeyForWorktree(useAppStore.getState(), worktreeId) !== ownerKey) {
+      return false
+    }
+    try {
+      assertHostAgentStartupOwner(owner)
+      return true
+    } catch {
+      return false
+    }
+  }
+  if (owner && (owner.pairingRevision === undefined || !owner.runtimeId)) {
+    return false
+  }
   if (!(await ensureAgentAvailable(agent, worktreeId))) {
+    return false
+  }
+  if (!isCurrentOwner()) {
     return false
   }
 
   const connectionId = getConnectionIdFromState(useAppStore.getState(), worktreeId)
   await preflightAgentTrust({ agent, workspacePath, connectionId })
+  if (!isCurrentOwner()) {
+    return false
+  }
 
   const label = getAgentLabel(agent)
   const result = launchAgentInNewTab({

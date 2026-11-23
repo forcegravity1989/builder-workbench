@@ -4,6 +4,7 @@ import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { nativePackagePipelinePort } from '../package-pipeline-port'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { AcceptanceBoard } from './AcceptanceBoard'
+import { useWorkbenchScreenUsage } from '../workbench-screen-usage'
 
 /**
  * The native cycle shell supplies its real session and adapters at the navigation
@@ -20,5 +21,6 @@ export function AcceptancePage({
   const owner = context.scope?.runtimeOwnerEnvironmentId
   const history = useMemo(() => nativeVersionHistoryPort(owner), [owner])
   const packages = useMemo(() => nativePackagePipelinePort(owner), [owner])
+  useWorkbenchScreenUsage('workbench-acceptance', true)
   return <AcceptanceBoard context={context} history={history} packages={packages} entry={entry} />
 }

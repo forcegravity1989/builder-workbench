@@ -12,6 +12,7 @@ export type LinkActionRequest = {
   kind: LinkActionKind
   primary: LinkAction
   alternate?: LinkAction
+  additional?: LinkAction
   /** Hands focus back to the surface that owned the click (terminal, chat transcript). */
   restoreFocus: () => void
 }

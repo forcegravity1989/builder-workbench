@@ -54,7 +54,7 @@ describe('builder hosts import manifest', () => {
     const parsed = parseBuilderHostsFile(
       manifest([
         { name: 'Builder 01', address: accessLink('wss://orca.example.com/runtime') },
-        { name: 'Builder 01', address: accessLink('wss://orca2.example.com/runtime') },
+        { name: '"builder 01"', address: accessLink('wss://orca2.example.com/runtime') },
         { name: 'No Address' },
         { name: 'Loopback', address: accessLink('ws://127.0.0.1:6768') }
       ])
@@ -64,12 +64,10 @@ describe('builder hosts import manifest', () => {
       return
     }
     expect(parsed.hosts[0].issue).toBeNull()
-    expect(parsed.hosts[1].issue).toContain('重复')
-    expect(parsed.hosts[2].issue).toContain('缺配对地址')
-    expect(parsed.hosts[3].issue).toContain('loopback')
+    expect(parsed.hosts.slice(1).every((host) => host.issue !== null)).toBe(true)
   })
 
-  it('plans already-paired names as skip so re-importing the same file is idempotent', () => {
+  it('leaves valid names to native host-key verification for add or re-pair', () => {
     const parsed = parseBuilderHostsFile(
       manifest([
         { name: 'Builder 01', address: accessLink('wss://orca.example.com/runtime') },
@@ -81,7 +79,7 @@ describe('builder hosts import manifest', () => {
     if (!parsed.ok) {
       return
     }
-    const plan = planBuilderHostImports(parsed.hosts, ['Builder 01'])
-    expect(plan.map((entry) => entry.action)).toEqual(['skip-paired', 'import', 'invalid'])
+    const plan = planBuilderHostImports(parsed.hosts)
+    expect(plan.map((entry) => entry.action)).toEqual(['import', 'import', 'invalid'])
   })
 })

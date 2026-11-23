@@ -5,6 +5,7 @@ import {
 } from '../updater-prerelease-feed'
 import { isMissingUpdateManifestFailure, isPrereleaseVersion } from '../updater-fallback'
 import { MAIN_RELEASE_REPO } from '../../shared/release-channel'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import type { CheckFailureSource } from './updater-state'
 import type { UpdateCheckVariant } from './updater-types'
 import { ReleaseFeedPreflightError } from './updater-state'
@@ -159,7 +160,8 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
     }
     if (releaseTagsResult.state === 'not-ready') {
       this.clearPrereleaseFallbackContext()
-      if (releaseTagsResult.lastGoodTag) {
+      // Workbench stable waits for the newest release so users only have to install once.
+      if (releaseTagsResult.lastGoodTag && (includePrerelease || !isWorkbenchProduct())) {
         // Why: during a publish window the newest tag is unsafe; a verified last-good concrete feed lets electron-updater emit a real result.
         const url = getReleaseDownloadUrl(releaseTagsResult.lastGoodTag)
         console.info(

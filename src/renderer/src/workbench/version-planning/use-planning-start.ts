@@ -15,13 +15,12 @@ export function usePlanningStart({
   material: ReturnType<typeof usePlanningMaterial>
 }) {
   const plan = material.draft?.document
-  const startVersion = context.version ?? context.boundVersion
+  const startVersion = context.version
   const startKey = cycleStartedViewKey({ ...context, version: startVersion })
   const [startedKey, setStartedKey] = useState<string | undefined>(undefined)
   const hasContent = Boolean(
     plan &&
     (plan.goals.length ||
-      plan.tasks.length ||
       plan.minutes ||
       plan.workflow ||
       plan.summary.progress.trim() ||

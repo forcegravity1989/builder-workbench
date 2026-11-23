@@ -4,7 +4,7 @@ import type { ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import type { Store } from '../../persistence'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo, RepoCloneProgress } from '../../../shared/repo-types'
 import { isFolderRepo } from '../../../shared/repo-kind'
 import { DEFAULT_REPO_BADGE_COLOR } from '../../../shared/constants'
 import { getGitCloneFailureMessage } from '../../../shared/git-clone-failure-message'
@@ -44,11 +44,27 @@ let nextCloneGeneration = 1
 const latestCloneGenerationByPath = new Map<string, number>()
 const pendingAbortCleanupByPath = new Map<string, Promise<void>>()
 
-function emitCloneProgressFromText(mainWindow: BrowserWindow, text: string): void {
+function emitCloneProgress(mainWindow: BrowserWindow, progress: RepoCloneProgress): void {
+  if (mainWindow.isDestroyed()) {
+    return
+  }
+  try {
+    mainWindow.webContents.send('repos:clone-progress', progress)
+  } catch {
+    // Why: a renderer reload must not interrupt clone registration.
+  }
+}
+
+function emitCloneProgressFromText(
+  mainWindow: BrowserWindow,
+  text: string,
+  progressId: string
+): void {
   for (const line of text.split(/[\r\n]+/)) {
     const match = line.match(/^([\w\s]+):\s+(\d+)%/)
-    if (match && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('repos:clone-progress', {
+    if (match) {
+      emitCloneProgress(mainWindow, {
+        progressId,
         phase: match[1].trim(),
         percent: Number.parseInt(match[2], 10)
       })
@@ -115,7 +131,10 @@ export function registerRepoCloneHandlers(mainWindow: BrowserWindow, store: Stor
 
   ipcMain.handle(
     'repos:clone',
-    async (_event, args: { url: string; destination: string }): Promise<Repo> => {
+    async (
+      _event,
+      args: { url: string; destination: string; progressId?: string }
+    ): Promise<Repo> => {
       // Why: derive the repo folder name from the URL's last segment, matching default git clone behavior.
       const clonePath = deriveValidatedClonePath(args)
       const clonePathKey = getClonePathComparisonKey(clonePath)
@@ -183,7 +202,9 @@ export function registerRepoCloneHandlers(mainWindow: BrowserWindow, store: Stor
             stderrTail = (stderrTail + text).slice(-4096)
 
             // Why: git progress lines use \r to overwrite in-place; parse fragments the same as SSH clone.
-            emitCloneProgressFromText(mainWindow, text)
+            if (args.progressId) {
+              emitCloneProgressFromText(mainWindow, text, args.progressId)
+            }
           })
 
           const finishClone = async (
@@ -235,6 +256,13 @@ export function registerRepoCloneHandlers(mainWindow: BrowserWindow, store: Stor
         })
 
         try {
+          if (args.progressId) {
+            emitCloneProgress(mainWindow, {
+              phase: 'importing',
+              percent: null,
+              progressId: args.progressId
+            })
+          }
           // Why: check after clone (path didn't exist before); reuse+upgrade a folder repo clone landed into instead of duplicating.
           const existing = store
             .getRepos()

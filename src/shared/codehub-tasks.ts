@@ -56,7 +56,8 @@ export type CodeHubComment = {
   // MR notes carry `from_robot`; issue comments do not (always false there).
   isBot: boolean
   // MR review threads can be resolved; issue comment data has no such field.
-  isResolved: boolean
+  isResolved?: boolean
+  isSystem?: boolean
   // Line-level review comments carry the file position; MR-level notes do
   // not (both null).
   path: string | null

@@ -55,7 +55,8 @@ export class RemoteRuntimeCompatGate {
         this.noteVerifiedStatus(response.result)
         if (this.environmentSelector) {
           markEnvironmentUsed(this.userDataPath, this.environmentSelector, {
-            runtimeId: response._meta.runtimeId
+            runtimeId: response._meta.runtimeId,
+            pairingDeviceToken: args.pairing.deviceToken
           })
         }
       },

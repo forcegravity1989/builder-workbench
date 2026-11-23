@@ -2,6 +2,13 @@ import { z } from 'zod'
 import { TaskSourceContextSchema } from '../task-source-context-schema'
 import { normalizeExecutionHostId } from '../execution-host'
 import { validatePlanningVersion } from './version-document'
+
+type MaterialSchemaFields = Record<string, z.ZodTypeAny>
+
+/** Material objects keep unknown fields at runtime while exposing known fields to TypeScript. */
+export const materialObject = <T extends MaterialSchemaFields>(materialFields: T) =>
+  z.object(materialFields).passthrough() as z.ZodObject<T>
+
 export const Id = z.string().trim().min(1)
 export const MaterialVersion = z.string().superRefine((value, context) => {
   try {
@@ -13,13 +20,13 @@ export const MaterialVersion = z.string().superRefine((value, context) => {
 export const MaterialRevision = z.string().regex(/^sha256:[a-f0-9]{64}$/)
 export const SourceCommit = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/)
 
-export const MetricReferenceSchema = z.strictObject({
+export const MetricReferenceSchema = materialObject({
   name: Id,
   definitionHash: Id,
   configurationCommit: SourceCommit
 })
 
-export const MetricReadingEvidenceSchema = z.strictObject({
+export const MetricReadingEvidenceSchema = materialObject({
   ref: MetricReferenceSchema,
   value: z.union([z.number().finite(), z.string()]),
   unit: z.string(),
@@ -27,9 +34,8 @@ export const MetricReadingEvidenceSchema = z.strictObject({
   source: Id,
   collectorRevision: Id,
   observation: z.discriminatedUnion('kind', [
-    z.strictObject({ kind: z.literal('instant'), observedAt: z.iso.datetime({ offset: true }) }),
-    z
-      .strictObject({
+    materialObject({ kind: z.literal('instant'), observedAt: z.iso.datetime({ offset: true }) }),
+    materialObject({
         kind: z.literal('window'),
         start: z.iso.datetime({ offset: true }),
         end: z.iso.datetime({ offset: true }),
@@ -40,7 +46,7 @@ export const MetricReadingEvidenceSchema = z.strictObject({
   ])
 })
 
-export const VersionGoalSchema = z.strictObject({
+export const VersionGoalSchema = materialObject({
   goalId: Id,
   title: z.string(),
   deliverable: z.string().optional(),
@@ -48,7 +54,7 @@ export const VersionGoalSchema = z.strictObject({
   deadline: z.string().optional(),
   owner: z.string().optional(),
   metricTargets: z.array(
-    z.strictObject({
+    materialObject({
       ref: MetricReferenceSchema,
       target: z.string(),
       baseline: MetricReadingEvidenceSchema.optional()
@@ -56,12 +62,12 @@ export const VersionGoalSchema = z.strictObject({
   )
 })
 
-export const VersionTaskReferenceSchema = z.strictObject({
-  provider: Id,
-  repository: Id,
-  number: z.number().int().positive(),
-  goalId: Id.optional()
-})
+export const VersionTaskReferenceSchema = materialObject({
+    provider: Id,
+    repository: Id,
+    number: z.number().int().positive(),
+    goalId: Id.optional()
+  })
 
 // Require an explicit host before native normalization; absence is not the local host.
 const TaskSnapshotSource = z
@@ -75,7 +81,7 @@ const TaskSnapshotSource = z
   .transform((value, context) => {
     const result = TaskSourceContextSchema.safeParse(value)
     if (result.success) {
-      return result.data
+      return { ...value, ...result.data }
     }
     for (const issue of result.error.issues) {
       context.addIssue({ ...issue })
@@ -85,7 +91,7 @@ const TaskSnapshotSource = z
 
 export const VersionTaskSnapshotSchema = z
   .discriminatedUnion('kind', [
-    z.strictObject({
+    materialObject({
       kind: z.literal('ready'),
       reference: VersionTaskReferenceSchema,
       source: TaskSnapshotSource,
@@ -97,7 +103,7 @@ export const VersionTaskSnapshotSchema = z
       assignee: z.string().optional(),
       readAt: z.iso.datetime({ offset: true })
     }),
-    z.strictObject({
+    materialObject({
       kind: z.literal('unavailable'),
       reference: VersionTaskReferenceSchema,
       source: TaskSnapshotSource.optional(),
@@ -129,7 +135,7 @@ export const Identity = {
 }
 
 /** Fixed acceptance material explicitly chosen as the source of planning progress. */
-export const PlanningProgressSourceSchema = z.strictObject({
+export const PlanningProgressSourceSchema = materialObject({
   version: MaterialVersion,
   cycleId: Id,
   sourceCommit: SourceCommit,
@@ -138,14 +144,14 @@ export const PlanningProgressSourceSchema = z.strictObject({
 export type PlanningProgressSource = z.infer<typeof PlanningProgressSourceSchema>
 
 export const PlanReferenceSchema = z.discriminatedUnion('kind', [
-  z.strictObject({
+  materialObject({
     kind: z.literal('committed'),
     version: MaterialVersion,
     cycleId: Id,
     revision: MaterialRevision,
     sourceCommit: SourceCommit
   }),
-  z.strictObject({
+  materialObject({
     kind: z.literal('draft'),
     version: MaterialVersion,
     cycleId: Id,
@@ -155,13 +161,13 @@ export const PlanReferenceSchema = z.discriminatedUnion('kind', [
   })
 ])
 
-export const CandidateReferenceSchema = z.strictObject({
+export const CandidateReferenceSchema = materialObject({
   repository: Id,
   version: MaterialVersion,
   commit: SourceCommit
 })
 
-export const Artifact = z.strictObject({
+export const Artifact = materialObject({
   artifactId: Id,
   kind: z.enum(['delivery', 'package', 'verification', 'showcase']),
   location: Id,
@@ -173,7 +179,7 @@ export const Artifact = z.strictObject({
 })
 
 /** A cited human decision is evidence to verify, not permission for an agent to mark work Done. */
-export const HumanDecision = z.strictObject({
+export const HumanDecision = materialObject({
   outcome: z.enum(['met', 'not-met', 'pending']),
   source: Id,
   recordedAt: z.iso.datetime({ offset: true }),
@@ -187,7 +193,7 @@ export const HumanDecision = z.strictObject({
  * or renders it — but it stays optional so material recorded before the retirement
  * still parses and can be shown read-only. Nothing may set it again.
  */
-export const AcceptanceIssueMarksSchema = z.strictObject({
+export const AcceptanceIssueMarksSchema = materialObject({
   carry: z.boolean().optional(),
   risk: z.boolean().optional()
 })
@@ -205,34 +211,32 @@ export const safeMaterialUrl = (value: string): boolean => {
  * ===== Legacy acceptance shapes (pre-v10, read-only) =====
  *
  * v10 retired per-goal deliveries and material links, the human progress field,
- * weekly rounds and meeting directives. The material schema is strict, so simply
- * dropping these would make every stored document written before the retirement
- * fail to parse — real human input would become unreadable rather than retired.
- * They stay optional and read-only instead: no v10 surface writes them, the board
- * shows them in one labelled legacy block, and converting a file on disk still
- * goes through the session migration path with human confirmation.
+ * weekly rounds and meeting directives. Known fields keep their identity and
+ * value checks while unknown fields pass through the read/write round trip.
+ * Retired fields stay optional and read-only: no v10 surface writes them, the
+ * board shows them in one labelled legacy block, and converting a file on disk
+ * still goes through the session migration path with human confirmation.
  */
 
-export const AcceptanceMaterialLinkSchema = z.strictObject({
+export const AcceptanceMaterialLinkSchema = materialObject({
   label: z.string(),
   url: z.string().trim().min(1).refine(safeMaterialUrl, 'Material links must use http(s)')
 })
 
-const LegacyRoundGoalSnapshotSchema = z.strictObject({
+const LegacyRoundGoalSnapshotSchema = materialObject({
   goalId: Id,
   decision: z.string(),
   progress: z.string(),
   next: z.string().optional()
 })
 
-const LegacyRoundSnapshotSchema = z.strictObject({
+const LegacyRoundSnapshotSchema = materialObject({
   goals: z.array(LegacyRoundGoalSnapshotSchema),
   issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema),
   issueNotes: z.record(z.string(), z.string())
 })
 
-export const LegacyAcceptanceRoundSchema = z
-  .strictObject({
+export const LegacyAcceptanceRoundSchema = materialObject({
     id: Id,
     week: Id,
     kind: z.enum(['progress', 'final']),
@@ -256,7 +260,7 @@ export const LegacyAcceptanceRoundSchema = z
     }
   })
 
-export const LegacyAcceptanceDirectiveSchema = z.strictObject({
+export const LegacyAcceptanceDirectiveSchema = materialObject({
   id: Id,
   text: z.string(),
   tag: z.enum(['resolved-this-acceptance', 'next-week-plan', 'record-remaining']),

@@ -22,6 +22,10 @@ import { planAgentSessionLaunch } from '@/lib/agent-session-launch-plan'
 import { getNewWorkspaceProjectGroupHostId } from '@/lib/new-workspace-project-options'
 import { useAppStore } from '@/store'
 import {
+  assertHostAgentStartupOwner,
+  type PreparedHostAgentStartup
+} from '@/lib/host-agent-startup-inputs'
+import {
   buildFolderWorkspaceLinkedStartupPlan,
   getFolderWorkspaceAgentLaunchPlatform,
   resolveFolderWorkspaceLaunchDraft
@@ -60,6 +64,7 @@ type SubmitFolderWorkspaceCreateParams = {
   isRemote?: boolean
   launchSource?: LaunchSource
   runtimeEnvironmentId?: string | null
+  hostStartup?: PreparedHostAgentStartup
   createFolderWorkspace: (input: FolderWorkspaceCreateInput) => Promise<FolderWorkspace | null>
   onOpenChange: (open: boolean) => void
 }
@@ -80,6 +85,7 @@ export async function submitFolderWorkspaceCreate({
   terminalWindowsShell,
   launchSource = 'sidebar',
   runtimeEnvironmentId = null,
+  hostStartup,
   createFolderWorkspace,
   onOpenChange
 }: SubmitFolderWorkspaceCreateParams): Promise<boolean> {
@@ -89,25 +95,28 @@ export async function submitFolderWorkspaceCreate({
     nameIsAutoManaged && linkedName
       ? linkedName
       : name.trim() || linkedName || `${projectGroup.name} workspace`
-  const launchPlatform = getFolderWorkspaceAgentLaunchPlatform(projectGroup)
+  const launchPlatform =
+    hostStartup?.inputs.platform ?? getFolderWorkspaceAgentLaunchPlatform(projectGroup)
   // Why: an SSH folder group runs the plain `orca` relay shim, so the Linux-only
   // `orca-ide` rename must not be applied for remote launches.
-  const launchIsRemote = Boolean(projectGroup.connectionId)
-  const launchShell = resolveLocalWindowsAgentStartupShell({
-    platform: launchPlatform,
-    isRemote: launchIsRemote,
-    terminalWindowsShell
-  })
+  const launchIsRemote = hostStartup?.inputs.isRemote ?? Boolean(projectGroup.connectionId)
+  const launchShell =
+    hostStartup?.inputs.shell ??
+    resolveLocalWindowsAgentStartupShell({
+      platform: launchPlatform,
+      isRemote: launchIsRemote,
+      terminalWindowsShell
+    })
   const startupPlan =
     quickAgent && linkedWorkItem
       ? buildFolderWorkspaceLinkedStartupPlan({
           agent: quickAgent,
           linkedWorkItem,
           note,
-          agentCmdOverrides,
-          agentArgs,
-          agentEnv,
-          sessionOptions,
+          agentCmdOverrides: hostStartup?.inputs.cmdOverrides ?? agentCmdOverrides,
+          agentArgs: hostStartup ? hostStartup.inputs.agentArgs : agentArgs,
+          agentEnv: hostStartup ? hostStartup.inputs.agentEnv : agentEnv,
+          sessionOptions: hostStartup?.hostOwned ? undefined : sessionOptions,
           platform: launchPlatform,
           shell: launchShell,
           isRemote: launchIsRemote
@@ -116,10 +125,10 @@ export async function submitFolderWorkspaceCreate({
         ? buildAgentStartupPlan({
             agent: quickAgent,
             prompt: note,
-            cmdOverrides: agentCmdOverrides ?? {},
-            agentArgs,
-            agentEnv,
-            sessionOptions,
+            cmdOverrides: hostStartup?.inputs.cmdOverrides ?? agentCmdOverrides ?? {},
+            agentArgs: hostStartup ? hostStartup.inputs.agentArgs : agentArgs,
+            agentEnv: hostStartup ? hostStartup.inputs.agentEnv : agentEnv,
+            sessionOptions: hostStartup?.hostOwned ? undefined : sessionOptions,
             platform: launchPlatform,
             shell: launchShell,
             isRemote: launchIsRemote,
@@ -154,6 +163,7 @@ export async function submitFolderWorkspaceCreate({
     Boolean(quickAgent) &&
     note.trim().length > 0
 
+  assertHostAgentStartupOwner(hostStartup?.owner, runtimeEnvironmentId ?? '')
   const workspace = await createFolderWorkspace({
     projectGroupId: projectGroup.id,
     name: workspaceName,
@@ -168,13 +178,6 @@ export async function submitFolderWorkspaceCreate({
   if (!workspace) {
     return false
   }
-  if (!structuredLaunch) {
-    await preflightAgentTrust({
-      agent: quickAgent,
-      workspacePath: workspace.folderPath,
-      connectionId: workspace.connectionId ?? projectGroup.connectionId
-    })
-  }
   if (startupPlan && !startupPlan.launchToken) {
     // Why: delayed delivery must target the exact pane spawned from this queued
     // startup, so both halves share one renderer-session token.
@@ -184,6 +187,7 @@ export async function submitFolderWorkspaceCreate({
   const startup =
     quickAgent && startupPlan
       ? {
+          ...(hostStartup?.owner ? { agentLaunchOwner: hostStartup.owner } : {}),
           command: startupPlan.launchCommand,
           ...(startupPlan.env ? { env: startupPlan.env } : {}),
           launchConfig: startupPlan.launchConfig,
@@ -206,6 +210,15 @@ export async function submitFolderWorkspaceCreate({
       : undefined
   onOpenChange(false)
   try {
+    assertHostAgentStartupOwner(hostStartup?.owner, runtimeEnvironmentId ?? '')
+    if (!structuredLaunch) {
+      await preflightAgentTrust({
+        agent: quickAgent,
+        workspacePath: workspace.folderPath,
+        connectionId: workspace.connectionId ?? projectGroup.connectionId
+      })
+      assertHostAgentStartupOwner(hostStartup?.owner, runtimeEnvironmentId ?? '')
+    }
     let activation = activateAndRevealFolderWorkspace(workspace.id, {
       agent: quickAgent,
       ...(!structuredLaunch && startup ? { startup } : {}),

@@ -61,6 +61,12 @@ const DRAFT_PASTE_READY_SIGNALS: Record<DraftPasteReadySignal, DraftPasteReadySi
     // the main-process caller drops the draft when readiness never resolves.
     quietAnchor: DECSET_BRACKETED_PASTE
   },
+  'dsh-composer-prompt': {
+    markerAnchor: DECSET_ALT_SCREEN,
+    markerAnchorEnd: DECRST_ALT_SCREEN,
+    marker: GROK_COMPOSER_PROMPT,
+    quietAnchor: DECSET_BRACKETED_PASTE
+  },
   'render-quiet-after-bracketed-paste': {
     markerAnchor: null,
     markerAnchorEnd: null,

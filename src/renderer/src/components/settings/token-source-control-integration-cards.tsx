@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { ExternalLink, GitPullRequestArrow } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IntegrationCardDetails, IntegrationCardShell } from './integration-card-shell'
@@ -87,13 +88,15 @@ export function AzureDevOpsIntegrationCard(): React.JSX.Element {
                 </span>{' '}
                 {translate(
                   'auto.components.settings.token.source.control.integration.cards.7bd345e3f6',
-                  'only when Orca cannot derive the API base URL from the git remote.'
+                  'only when {{product}} cannot derive the API base URL from the git remote.',
+                  { product: isWorkbenchShell() ? 'BW' : 'Orca' }
                 )}
               </>
             ) : (
               translate(
                 'auto.components.settings.token.source.control.integration.cards.40f678df73',
-                'Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.'
+                'Azure DevOps credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.',
+                { product: isWorkbenchShell() ? 'BW' : 'Orca' }
               )
             )}
           </p>
@@ -201,13 +204,15 @@ export function GiteaIntegrationCard(): React.JSX.Element {
                 </span>{' '}
                 {translate(
                   'auto.components.settings.token.source.control.integration.cards.60708f23da',
-                  'only when Orca cannot derive the API URL from the remote.'
+                  'only when {{product}} cannot derive the API URL from the remote.',
+                  { product: isWorkbenchShell() ? 'BW' : 'Orca' }
                 )}
               </>
             ) : (
               translate(
                 'auto.components.settings.token.source.control.integration.cards.19fb419c12',
-                'Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart Orca if environment variables changed.'
+                'Gitea credentials are configured but could not authenticate. Check the token, API base URL, and repository permissions, then restart {{product}} if environment variables changed.',
+                { product: isWorkbenchShell() ? 'BW' : 'Orca' }
               )
             )}
           </p>

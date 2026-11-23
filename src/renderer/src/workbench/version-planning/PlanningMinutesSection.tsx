@@ -57,7 +57,7 @@ export function PlanningMinutesSection({
         </h2>
         {plan && minutes ? (
           <span className="g3-title-actions">
-            {onSendAction(minutesRequestPrompt, '整理纪要请求', organizeButton)}
+            {onSendAction(minutesRequestPrompt, '整理纪要请求', organizeButton, 'organize-minutes')}
           </span>
         ) : null}
       </div>
@@ -66,7 +66,12 @@ export function PlanningMinutesSection({
       ) : (
         <MinutesSkeleton
           planMissing={!plan}
-          action={onSendAction(minutesRequestPrompt, '整理纪要请求', organizeButton)}
+          action={onSendAction(
+            minutesRequestPrompt,
+            '整理纪要请求',
+            organizeButton,
+            'organize-minutes'
+          )}
         />
       )}
     </section>

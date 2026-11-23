@@ -30,15 +30,8 @@ export async function ensureBrowserClientHostsForRestoredPages(
   }
 }
 
-/**
- * Re-claims hosting duty after the runtime process restarted under a new id.
- *
- * The guests are still alive in this desktop's webviews, but the runtime that placed them is gone
- * and the replacement knows nothing about them. Preparing again drives the host registry down its
- * `replaceAuthority` path, which keeps the guests and re-attaches with a page inventory the new
- * runtime can adopt. Without this nothing observes the id change and the rows are simply lost.
- */
-export async function ensureBrowserClientHostForRestartedRuntime(
+/** Reclaim hosting on restart or contact return. An expired browser-host lease needs a fresh attach even when the runtime id is unchanged. */
+export async function ensureBrowserClientHostOnRuntimeContact(
   state: RestoredBrowserHandleSource,
   environmentId: string
 ): Promise<void> {

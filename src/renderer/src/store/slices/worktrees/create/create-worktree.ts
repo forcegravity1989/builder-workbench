@@ -14,6 +14,7 @@ import {
 } from '../../../../runtime/runtime-rpc-client'
 import { WORKTREE_LINKED_WORK_ITEM_CONTEXT_RUNTIME_CAPABILITY } from '../../../../../../shared/protocol-version'
 import { showLocalBaseRefUpdateSuggestionToast } from '@/components/sidebar/local-base-ref-suggestion-toast'
+import { assertAgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-owner'
 import { requestWorktreeBaseFallbackNotice } from '@/components/worktree-base-fallback-notice'
 import { showLocalBaseRefRefreshToast } from './local-base-ref-refresh-toast'
 import { settingsForRepoOwner } from '../listing/worktree-owner-settings'
@@ -44,6 +45,7 @@ async function runCreateAttempt(
   attempt: WorktreeCreateAttempt,
   target: RuntimeTarget
 ): Promise<CreateAttemptOutcome> {
+  const owner = request.options?.agentLaunchOwner
   const provisionedRoot = request.options?.provisionedRoot
   const create = async (
     parentWorkspace: WorktreeCreateAttempt['parentWorkspace']
@@ -62,7 +64,15 @@ async function runCreateAttempt(
             target,
             'worktree.create',
             buildRuntimeWorktreeCreateParams(request, { ...attempt, parentWorkspace }),
-            { timeoutMs: 10 * 60_000 }
+            {
+              timeoutMs: 10 * 60_000,
+              ...(owner
+                ? {
+                    expectedEnvironmentPairingRevision: owner.pairingRevision,
+                    expectedEnvironmentRuntimeId: owner.runtimeId
+                  }
+                : {})
+            }
           )
   try {
     return { result: await create(attempt.parentWorkspace), droppedParent: false }
@@ -186,6 +196,11 @@ export function createCreateWorktree(
       }
       for (let attempt = 0; attempt < CLIENT_WORKTREE_CREATE_MAX_ATTEMPTS; attempt += 1) {
         try {
+          assertAgentLaunchSettingsOwner(
+            get(),
+            options?.agentLaunchOwner,
+            target.kind === 'environment' ? target.environmentId : ''
+          )
           const outcome = await runCreateAttempt(
             request,
             {

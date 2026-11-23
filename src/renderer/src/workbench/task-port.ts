@@ -1,6 +1,8 @@
+import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import type { AppState } from '@/store/types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import type { WorkItemsBatchResult } from '../../../shared/github/work-item-batch-types'
+import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
@@ -11,7 +13,9 @@ import {
   type TaskReferenceReader
 } from './task-reference-reader'
 import {
+  knownGitHubIssueSource,
   requireSourceContext,
+  gitHubIdentityForTaskReference,
   resolveReferenceRepo,
   viewCodeHubTaskByIid
 } from './task-reference-repo'
@@ -40,11 +44,13 @@ export type TaskPortDeps = {
     repoId: string
     sourceContext?: TaskSourceContext | null
     number: number
+    issueSource?: GitHubOwnerRepo
   }): Promise<Omit<GitHubWorkItem, 'repoId'> | null>
   viewCodeHubTask(args: {
     repoPath: string
     repoId?: string
     kind: 'issue' | 'mr'
+    sourceContext?: TaskSourceContext | null
     iid: number
   }): Promise<CodeHubTaskDetail>
   openTaskPage: AppState['openTaskPage']
@@ -83,12 +89,22 @@ async function openDetail(
     returnToPreviousView: true
   }
   if (task.reference.provider === 'github') {
-    const sourceContext = requireSourceContext(repo, 'github')
+    const source = getTaskPageRepoSourceContext(repo, 'github')
+    const identity = gitHubIdentityForTaskReference(repo, task.reference.repository)
+    const sourceContext =
+      source?.localTaskAccount && identity
+        ? {
+            ...source,
+            taskRemoteCandidates: undefined,
+            providerIdentity: { provider: 'github' as const, ...identity }
+          }
+        : source
     const item = await deps.lookupGitHubWorkItem({
       repoPath: repo.path,
       repoId: repo.id,
       sourceContext,
-      number: task.iid
+      number: task.iid,
+      issueSource: knownGitHubIssueSource(repo, task.reference.repository)
     })
     if (!item) {
       throw new Error(`GitHub 未返回编号 ${task.iid} 的工作项，无法打开详情`)
@@ -105,7 +121,7 @@ async function openDetail(
     return
   }
   if (task.reference.provider === 'codehub') {
-    const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, task.iid)
+    const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, task.reference)
     const item = codeHubTaskItemFromDetail({ detail, kind, repo, fallbackUrl: task.url })
     deps.openTaskPage(
       {

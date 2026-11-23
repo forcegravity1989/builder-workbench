@@ -8,19 +8,20 @@
 import { randomUUID } from 'node:crypto'
 import { arch as osArch, platform as osPlatform, release as osRelease } from 'node:os'
 import { getAppEnvironment } from '../../shared/app-environment'
-import { PostHog } from 'posthog-node'
+import { PostHog, type PostHogOptions } from 'posthog-node'
 import type { CommonProps, EventName, EventProps, OptInVia } from '../../shared/telemetry-events'
 import type { Store } from '../persistence'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { consumeBurstToken, resetBurstCapsForSession } from './burst-cap'
 import { getCohortAtEmit } from './cohort-classifier'
 import { resolveConsent, type ConsentState } from './consent'
 import { commonPropsSchema, validate } from './validator'
 
-// Compile-time feature flag, independent of the build-identity gate — both must be satisfied to transmit.
+// Compile-time kill switch for both native and injected transports.
 // NOTE: config/scripts/verify-telemetry-constants.mjs greps `const TELEMETRY_ENABLED = true|false`; keep that shape or update its regex.
 const TELEMETRY_ENABLED = true
 
-// Eligible to transmit only if CI injected BOTH build-identity and write key; either alone fails closed, with no runtime env-var override (dev/contributor builds get `null`).
+// Native PostHog transmission requires both CI-injected identity and key, with no runtime override.
 // The `globalThis` reads are for vitest, which skips electron-vite's `define` pass — resolving to `IS_OFFICIAL_BUILD === false` there.
 const BUILD_IDENTITY: 'stable' | 'rc' | null =
   typeof ORCA_BUILD_IDENTITY !== 'undefined'
@@ -43,12 +44,45 @@ let shuttingDown = false
 let storeRef: Store | null = null
 
 const OPT_OUT_CAPTURE_ENQUEUE_TIMEOUT_MS = 1_000
+const SHUTDOWN_BUDGET_MS = 2_000
 
 // Test-only transport-gate override (`_enableTransportForTests`) so tests exercise the full pipeline without a real CI build.
 let testTransportEnabled = false
 
 // First-launch `app_opened` gate: no events transmit until the banner resolves; keep mark+emit atomic.
 let appOpenedTrackedThisSession = false
+
+// The bootstrap injects BW's destination without importing the workbench layer here.
+export type TelemetryTransportFetchResponse = {
+  status: number
+  text: () => Promise<string>
+  json: () => Promise<unknown>
+}
+
+export type TelemetryTransport = {
+  /** Acknowledge buffered batches with 2xx; the transport owns upload retries. */
+  fetch: (
+    url: string,
+    options: { method: string; headers: Record<string, string>; body?: string | Blob }
+  ) => Promise<TelemetryTransportFetchResponse>
+  /** Final flush within the native client's remaining quit budget. */
+  shutdown?: (remainingMs: number) => Promise<void>
+}
+
+let workbenchTransport: TelemetryTransport | null = null
+
+/** BW bootstrap hook — call before `initTelemetry` (see `TelemetryTransport`). */
+export function setWorkbenchTelemetryTransport(transport: TelemetryTransport): void {
+  workbenchTransport = transport
+}
+
+export function _resetWorkbenchTelemetryTransportForTests(): void {
+  workbenchTransport = null
+}
+
+// Placeholder only: the BW transport never touches the network, but the SDK
+// constructor requires a non-empty key.
+const WORKBENCH_TRANSPORT_WRITE_KEY = 'workbench-welink-transport'
 
 function buildCommonProps(installId: string, sid: string, channel: 'stable' | 'rc'): CommonProps {
   // Don't truncate here; the validator's `.max(64)` is authoritative, so an over-long string drops rather than being silently masked.
@@ -71,10 +105,41 @@ export function initTelemetry(store: Store): void {
   // Reset per session: the "no app_opened until banner resolution" invariant is per-launch, not per-install.
   appOpenedTrackedThisSession = false
 
-  if (!TELEMETRY_ENABLED || !IS_OFFICIAL_BUILD) {
+  if (!TELEMETRY_ENABLED) {
+    return
+  }
+  // BW must never fall through to the official PostHog transport.
+  if (isWorkbenchProduct()) {
+    const bwTransport = workbenchTransport
+    if (!bwTransport) {
+      return
+    }
+    initTelemetryTransport(store, {
+      channel: 'stable', // BW builds inject no ORCA_BUILD_IDENTITY; the sink is not channel-routed.
+      writeKey: WORKBENCH_TRANSPORT_WRITE_KEY,
+      fetch: bwTransport.fetch
+    })
     return
   }
 
+  if (!IS_OFFICIAL_BUILD) {
+    return
+  }
+  initTelemetryTransport(store, {
+    // Non-null here: `IS_OFFICIAL_BUILD` gated this branch to the `'stable' | 'rc'` arm.
+    channel: BUILD_IDENTITY as 'stable' | 'rc',
+    writeKey: WRITE_KEY as string
+  })
+}
+
+function initTelemetryTransport(
+  store: Store,
+  opts: {
+    channel: 'stable' | 'rc'
+    writeKey: string
+    fetch?: PostHogOptions['fetch']
+  }
+): void {
   const settings = store.getSettings()
   const installId = settings.telemetry?.installId
   if (!installId) {
@@ -84,12 +149,7 @@ export function initTelemetry(store: Store): void {
   }
 
   sessionId = randomUUID()
-  commonProps = buildCommonProps(
-    installId,
-    sessionId,
-    // Non-null here: `IS_OFFICIAL_BUILD` gated this branch to the `'stable' | 'rc'` arm.
-    BUILD_IDENTITY as 'stable' | 'rc'
-  )
+  commonProps = buildCommonProps(installId, sessionId, opts.channel)
 
   // Fail-closed: a bad `install_id` (e.g. empty from a migration bug) would collapse all events into one distinct_id.
   // Validated once here (not per `track()`): `commonProps` is a session-lifetime singleton that can't drift.
@@ -100,14 +160,15 @@ export function initTelemetry(store: Store): void {
     return
   }
 
-  posthog = new PostHog(WRITE_KEY as string, {
+  posthog = new PostHog(opts.writeKey, {
     host: 'https://us.i.posthog.com',
     flushAt: 20,
     flushInterval: 10_000,
     // Strip SDK-auto GeoIP / client-IP enrichment; our wire is exactly CommonProps ∪ EventProps ∪ a small allow-list.
     disableGeoip: true,
     // Bumped from the default 1000 (drops oldest-first past cap) to 5000 to tolerate long-offline sessions.
-    maxQueueSize: 5000
+    maxQueueSize: 5000,
+    ...(opts.fetch ? { fetch: opts.fetch } : {})
   })
 
   if (shouldOptOutSdkAtInit(resolveConsent(settings))) {
@@ -160,9 +221,11 @@ function waitForCaptureEnqueue(client: PostHog, event: EventName, uuid: string):
   })
 }
 
-// No-op in contributor / non-official builds; only official stable/rc builds (CI-injected `ORCA_BUILD_IDENTITY` + `ORCA_POSTHOG_WRITE_KEY`) transmit.
+// Native builds require official credentials; BW requires its injected transport.
 export function track<N extends EventName>(name: N, props: EventProps<N>): void {
-  if (!testTransportEnabled && (!IS_OFFICIAL_BUILD || !TELEMETRY_ENABLED)) {
+  const transportAllowed =
+    TELEMETRY_ENABLED && (isWorkbenchProduct() ? workbenchTransport !== null : IS_OFFICIAL_BUILD)
+  if (!testTransportEnabled && !transportAllowed) {
     return
   }
 
@@ -298,16 +361,23 @@ export function trackAppOpenedOnce(): void {
 export async function shutdownTelemetry(): Promise<void> {
   // Set the gate before flush so late IPC-arrived tracks drop instead of enqueuing mid-flush.
   shuttingDown = true
+  const deadline = Date.now() + SHUTDOWN_BUDGET_MS
   const instance = posthog
-  if (!instance) {
-    return
+  if (instance) {
+    try {
+      await instance.shutdown(SHUTDOWN_BUDGET_MS)
+    } catch (err) {
+      // Telemetry must never crash the app on quit. Swallow.
+      console.warn('[telemetry] shutdown error (ignored):', err)
+    }
   }
-  try {
-    // Bounded flush caps at 2s, so quit delay rises by at most that.
-    await instance.shutdown(2_000)
-  } catch (err) {
-    // Telemetry must never crash the app on quit. Swallow.
-    console.warn('[telemetry] shutdown error (ignored):', err)
+  // SDK buffering and the destination share one quit deadline.
+  if (workbenchTransport?.shutdown) {
+    try {
+      await workbenchTransport.shutdown(Math.max(0, deadline - Date.now()))
+    } catch (err) {
+      console.warn('[telemetry] workbench transport shutdown error (ignored):', err)
+    }
   }
 }
 

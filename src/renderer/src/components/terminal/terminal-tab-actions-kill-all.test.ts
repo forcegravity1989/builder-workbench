@@ -82,10 +82,10 @@ describe('closeTerminalTab kill-all routing', () => {
       })
     )
 
-    closeTerminalTab('terminal-1', { force: true })
+    closeTerminalTab('terminal-1', { reason: 'user', force: true })
 
     expect(requestPinnedTabCloseConfirm).not.toHaveBeenCalled()
-    expect(closeTab).toHaveBeenCalledWith('terminal-1', { reason: undefined })
+    expect(closeTab).toHaveBeenCalledWith('terminal-1', { reason: 'user' })
     expect(closeUnifiedTab).not.toHaveBeenCalled()
   })
 
@@ -95,9 +95,9 @@ describe('closeTerminalTab kill-all routing', () => {
     })
     getStateMock.mockReturnValue(state)
 
-    closeTerminalTab('terminal-1', { force: true })
+    closeTerminalTab('terminal-1', { reason: 'user', force: true })
 
-    expect(state.closeTab).toHaveBeenCalledWith('terminal-1')
+    expect(state.closeTab).toHaveBeenCalledWith('terminal-1', { reason: 'user' })
     expect(state.setActiveFile).toHaveBeenCalledWith('editor-1')
     expect(state.setActiveTabType).toHaveBeenCalledWith('editor')
     expect(state.closeFile).not.toHaveBeenCalled()
@@ -112,7 +112,7 @@ describe('closeTerminalTab kill-all routing', () => {
     })
     getStateMock.mockReturnValue(state)
 
-    closeTerminalTab('terminal-1', { force: true })
+    closeTerminalTab('terminal-1', { reason: 'user', force: true })
 
     expect(state.setActiveBrowserTab).toHaveBeenCalledWith('browser-1')
     expect(state.setActiveTabType).toHaveBeenCalledWith('browser')
@@ -125,7 +125,7 @@ describe('closeTerminalTab kill-all routing', () => {
     const state = baseState()
     getStateMock.mockReturnValue(state)
 
-    closeTerminalTab('terminal-1', { force: true })
+    closeTerminalTab('terminal-1', { reason: 'user', force: true })
 
     expect(state.setActiveWorktree).toHaveBeenCalledWith(null)
     expect(state.setActiveFile).not.toHaveBeenCalled()

@@ -7,10 +7,7 @@ import { launchWorkItemDirect } from '@/lib/launch-work-item-direct'
 import { getLocalProjectExecutionRuntimeContext } from '@/lib/local-preflight-context'
 import { CLIENT_PLATFORM } from '@/lib/new-workspace'
 import { planAgentCliArgsSuffix } from '@/lib/tui-agent-startup'
-import {
-  pickSourceControlLaunchAgent,
-  readSourceControlLaunchRecipeAgentId
-} from '@/lib/source-control-launch-agent-selection'
+import { readSourceControlLaunchRecipeAgentId } from '@/lib/source-control-launch-agent-selection'
 import { resolveSourceControlLaunchPlatform } from '@/lib/source-control-launch-platform'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { useAppStore } from '@/store'
@@ -19,12 +16,17 @@ import {
   DEFAULT_SOURCE_CONTROL_ACTION_COMMAND_TEMPLATES,
   renderSourceControlActionCommandTemplate
 } from '../../../shared/source-control-ai-actions'
-import { isTuiAgentEnabled } from '../../../shared/tui-agent-selection'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import type { TuiAgent } from '../../../shared/tui-agent'
 import type { WorkspaceSource as WorkspaceCreateTelemetrySource } from '../../../shared/workspace-source'
 import type { LaunchSource } from '../../../shared/telemetry-events'
 import { translate } from '@/i18n/i18n'
+import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
+import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
+import { lastVerifiedRuntimeStatus } from '../../../shared/runtime-host-status'
+import { getAgentDetectionTargetKeyForWorktree } from '@/hooks/useAgentDetectionTarget'
+import { showClientCreationActionError } from '@/lib/client-creation-action-error'
+import { pickExistingWorktreeAgent, resolveSavedAgentOverride } from './fix-checks-agent-selection'
 
 type StartFixChecksAgentArgs = {
   repoId: string
@@ -35,83 +37,6 @@ type StartFixChecksAgentArgs = {
   launchSource: LaunchSource
   telemetrySource?: WorkspaceCreateTelemetrySource
   openModalFallback?: () => void
-}
-
-type SavedAgentOverrideResult =
-  | { kind: 'agent'; agent: TuiAgent }
-  | { kind: 'launch-default' }
-  | { kind: 'blocked' }
-
-async function detectAgentsForConnection(
-  connectionId: string | null | undefined
-): Promise<TuiAgent[]> {
-  const store = useAppStore.getState()
-  return typeof connectionId === 'string'
-    ? await store.ensureRemoteDetectedAgents(connectionId)
-    : await store.ensureDetectedAgents()
-}
-
-function isAgentAvailable(agent: TuiAgent, detectedAgents: TuiAgent[]): boolean {
-  return (
-    detectedAgents.includes(agent) &&
-    isTuiAgentEnabled(agent, useAppStore.getState().settings?.disabledTuiAgents)
-  )
-}
-
-async function resolveSavedAgentOverride(
-  savedAgent: TuiAgent | null | undefined,
-  connectionId: string | null | undefined
-): Promise<SavedAgentOverrideResult> {
-  if (!savedAgent) {
-    return { kind: 'launch-default' }
-  }
-  const detectedAgents = await detectAgentsForConnection(connectionId)
-  if (!isAgentAvailable(savedAgent, detectedAgents)) {
-    toast.error(
-      translate(
-        'auto.lib.fix.checks.agent.launch.4c7f783a7a',
-        'Saved checks agent is not available on this workspace host.'
-      )
-    )
-    return { kind: 'blocked' }
-  }
-  return { kind: 'agent', agent: savedAgent }
-}
-
-async function pickExistingWorktreeAgent(
-  worktreeId: string,
-  savedAgent: TuiAgent | null | undefined,
-  repoConnectionId: string | null | undefined
-): Promise<TuiAgent | null> {
-  const connectionId = getConnectionId(worktreeId) ?? repoConnectionId ?? null
-  const detectedAgents = await detectAgentsForConnection(connectionId)
-  if (savedAgent) {
-    if (isAgentAvailable(savedAgent, detectedAgents)) {
-      return savedAgent
-    }
-    toast.error(
-      translate(
-        'auto.lib.fix.checks.agent.launch.4c7f783a7a',
-        'Saved checks agent is not available on this workspace host.'
-      )
-    )
-    return null
-  }
-  const settings = useAppStore.getState().settings
-  const agent = pickSourceControlLaunchAgent({
-    defaultAgent: settings?.defaultTuiAgent,
-    detectedAgents,
-    disabledAgents: settings?.disabledTuiAgents
-  })
-  if (!agent) {
-    toast.error(
-      translate(
-        'auto.lib.fix.checks.agent.launch.2ebf794906',
-        'No enabled AI agent was detected on this workspace host.'
-      )
-    )
-  }
-  return agent
 }
 
 export async function startFixChecksAgent(args: StartFixChecksAgentArgs): Promise<boolean> {
@@ -142,6 +67,39 @@ export async function startFixChecksAgent(args: StartFixChecksAgentArgs): Promis
       ? null
       : findGithubPrWorkspaceAttachment(store.allWorktrees(), args.repoId, args.item.number)
   const targetWorktreeId = args.worktreeId ?? attachedWorkspace?.id ?? null
+  const getOwnerKey = (): string | undefined => {
+    const current = useAppStore.getState()
+    const currentRepo = current.repos.find((candidate) => candidate.id === args.repoId)
+    const route = targetWorktreeId
+      ? getAgentDetectionTargetKeyForWorktree(current, targetWorktreeId)
+      : currentRepo
+        ? getRepoExecutionHostId(currentRepo)
+        : undefined
+    if (
+      route === undefined ||
+      (targetWorktreeId &&
+        !current.allWorktrees().some((worktree) => worktree.id === targetWorktreeId))
+    ) {
+      return undefined
+    }
+    const host = parseExecutionHostId(route)
+    const environmentId = targetWorktreeId
+      ? getRuntimeEnvironmentIdForWorktree(current, targetWorktreeId)
+      : host?.kind === 'runtime'
+        ? host.environmentId
+        : null
+    return JSON.stringify([
+      route,
+      environmentId && getRuntimeEnvironmentRevision(environmentId),
+      environmentId && current.runtimeStatusByEnvironmentId.get(environmentId)?.status?.runtimeId
+    ])
+  }
+  const ownerKey = getOwnerKey()
+  const assertOwner = (): void => {
+    if (ownerKey === undefined || getOwnerKey() !== ownerKey) {
+      throw new DOMException('Agent launch cancelled', 'AbortError')
+    }
+  }
   if (targetWorktreeId) {
     const targetWorktree = store.allWorktrees().find((worktree) => worktree.id === targetWorktreeId)
     if (!targetWorktree) {
@@ -157,18 +115,30 @@ export async function startFixChecksAgent(args: StartFixChecksAgentArgs): Promis
     const agent = await pickExistingWorktreeAgent(
       targetWorktreeId,
       savedAgentId,
-      repo?.connectionId
-    )
-    if (!agent) {
+      repo?.connectionId,
+      assertOwner
+    ).catch((error: unknown) => {
+      showClientCreationActionError(error)
+      return null
+    })
+    if (!agent || ownerKey === undefined || getOwnerKey() !== ownerKey) {
       return false
     }
-    const launchPlatform = resolveSourceControlLaunchPlatform({
-      connectionId: targetConnectionId,
-      worktreePath: targetWorktree.path,
-      projectRuntime: targetConnectionId
-        ? undefined
-        : getLocalProjectExecutionRuntimeContext(store, targetWorktreeId, CLIENT_PLATFORM)
-    })
+    const environmentId = getRuntimeEnvironmentIdForWorktree(
+      useAppStore.getState(),
+      targetWorktreeId
+    )
+    const launchPlatform = environmentId
+      ? lastVerifiedRuntimeStatus(
+          useAppStore.getState().runtimeStatusByEnvironmentId.get(environmentId)
+        )?.hostPlatform
+      : resolveSourceControlLaunchPlatform({
+          connectionId: targetConnectionId,
+          worktreePath: targetWorktree.path,
+          projectRuntime: targetConnectionId
+            ? undefined
+            : getLocalProjectExecutionRuntimeContext(store, targetWorktreeId, CLIENT_PLATFORM)
+        })
     if (!launchPlatform) {
       toast.error(
         translate(
@@ -231,8 +201,18 @@ export async function startFixChecksAgent(args: StartFixChecksAgentArgs): Promis
     return false
   }
 
-  const agentOverride = await resolveSavedAgentOverride(savedAgentId, repo?.connectionId)
-  if (agentOverride.kind === 'blocked') {
+  const agentOverride = await resolveSavedAgentOverride(savedAgentId, repo, assertOwner).catch(
+    (error: unknown) => {
+      showClientCreationActionError(error)
+      return null
+    }
+  )
+  if (
+    !agentOverride ||
+    agentOverride.kind === 'blocked' ||
+    ownerKey === undefined ||
+    getOwnerKey() !== ownerKey
+  ) {
     return false
   }
 

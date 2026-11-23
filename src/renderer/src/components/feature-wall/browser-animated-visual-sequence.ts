@@ -1,4 +1,4 @@
-import { BROWSER_PROMPT_TEXT, type BrowserVisualPhase } from './browser-animated-visual-phase'
+import { getBrowserPromptText, type BrowserVisualPhase } from './browser-animated-visual-phase'
 
 const PRE_INTRO_MS = 600
 const NEWTAB_APPROACH_MS = 700
@@ -115,7 +115,7 @@ export async function runBrowserVisualSequence(
     if (await pause(controls, ANNOTATE_OPEN_MS)) {
       return
     }
-    for (let i = 1; i <= BROWSER_PROMPT_TEXT.length; i += 1) {
+    for (let i = 1; i <= getBrowserPromptText().length; i += 1) {
       if (controls.isCancelled()) {
         return
       }

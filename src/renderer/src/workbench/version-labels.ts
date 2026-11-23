@@ -46,7 +46,7 @@ export const DECISION_LABELS = { met: '达成', 'not-met': '未达', pending: '�
  * （ISSUE_STATES_WEB_UNAVAILABLE 同口径）。
  */
 export const GLOBAL_TASKS_ENTRY_TITLE = '全部任务（含未入计划）'
-export const VERSION_TASKS_ENTRY_TITLE = '本版任务（计划材料引用）'
+export const VERSION_TASKS_ENTRY_TITLE = '本版任务（按版本标签）'
 
 /** 提交 SHA 的短显示。 */
 export function shortCommit(commit: string): string {

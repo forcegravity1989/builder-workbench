@@ -4,8 +4,7 @@ import {
   canShowWorkspaceFileBrowserAction,
   convertBrowserPageToWorkspaceDoc,
   getWorkspaceFileBrowserOpenTarget,
-  openFileInBrowserTab,
-  openFilePreviewToSide
+  openFileInBrowserTab
 } from './file-preview'
 import { folderWorkspaceKey } from '../../../shared/workspace-scope'
 
@@ -204,37 +203,6 @@ describe('openFileInBrowserTab', () => {
     expect(mocks.createBrowserTab).not.toHaveBeenCalled()
   })
 
-  // The other half of the same switch: a preview opened to the side belongs beside the source, so
-  // reusing one must not move the reader off what they are working in.
-  it('leaves the reader in place when a side preview reuses an open document', () => {
-    mocks.connectionId = 'ssh-1'
-    mocks.browserTabsByWorktree = {
-      'wt-1': [
-        {
-          id: 'browser-9',
-          docLocation: {
-            kind: 'workspace-doc',
-            worktreeId: 'wt-1',
-            filePath: '/home/alice/report.html'
-          }
-        }
-      ]
-    }
-    mocks.unifiedTabsByWorktree = {
-      'wt-1': [{ id: 'tab-doc', contentType: 'browser', entityId: 'browser-9', groupId: 'group-1' }]
-    }
-
-    openFilePreviewToSide({
-      language: 'html',
-      filePath: '/home/alice/report.html',
-      worktreeId: 'wt-1',
-      sourceGroupId: 'group-1'
-    })
-
-    expect(mocks.activateTab).not.toHaveBeenCalled()
-    expect(mocks.focusGroup).not.toHaveBeenCalled()
-  })
-
   it('opens a second document in its own tab', () => {
     mocks.connectionId = 'ssh-1'
     mocks.browserTabsByWorktree = {
@@ -268,93 +236,6 @@ describe('openFileInBrowserTab', () => {
     )
   })
 
-  it('previews a paired runtime whose managed browser is unavailable', () => {
-    mocks.environmentId = 'runtime-1'
-    mocks.browserAvailability = { state: 'hidden', reason: 'streaming unavailable' }
-
-    openFilePreviewToSide({
-      language: 'html',
-      filePath: '/srv/repo/example.html',
-      worktreeId: 'wt-1',
-      sourceGroupId: 'group-1'
-    })
-
-    expect(mocks.toastError).not.toHaveBeenCalled()
-    expect(mocks.createBrowserTab).toHaveBeenCalledOnce()
-  })
-
-  // Why the unfocused split: the preview opens in the background, and a host snapshot reads an
-  // activated empty group as a terminal pane.
-  it('creates paired-runtime side previews in an unfocused right-hand split', () => {
-    mocks.environmentId = 'runtime-1'
-    mocks.browserAvailability = { state: 'enabled', provider: 'paired-runtime' }
-
-    openFilePreviewToSide({
-      language: 'html',
-      filePath: '/srv/repo/example.html',
-      worktreeId: 'wt-1',
-      sourceGroupId: 'group-1'
-    })
-
-    expect(mocks.createEmptySplitGroup).toHaveBeenCalledWith('wt-1', 'group-1', 'right', {
-      activate: false
-    })
-    expect(mocks.createBrowserTab).toHaveBeenCalledWith(
-      ...docPreviewCall('/srv/repo/example.html', { targetGroupId: 'group-2' })
-    )
-  })
-
-  it('creates local side previews in an activated right-hand split', () => {
-    openFilePreviewToSide({
-      language: 'html',
-      filePath: '/tmp/example.html',
-      worktreeId: 'wt-1',
-      sourceGroupId: 'group-1'
-    })
-
-    expect(mocks.createEmptySplitGroup).toHaveBeenCalledWith('wt-1', 'group-1', 'right')
-    expect(mocks.createBrowserTab).toHaveBeenCalledWith('wt-1', 'file:///tmp/example.html', {
-      title: 'example.html',
-      targetGroupId: 'group-2',
-      activate: true
-    })
-  })
-
-  it('rejects a local workspace whose managed browser is unavailable before creating a split', () => {
-    mocks.browserAvailability = { state: 'hidden', reason: 'browser unavailable' }
-
-    openFilePreviewToSide({
-      language: 'html',
-      filePath: '/tmp/example.html',
-      worktreeId: 'wt-1',
-      sourceGroupId: 'group-1'
-    })
-
-    expect(mocks.toastError).toHaveBeenCalledWith('browser unavailable')
-    expect(mocks.createEmptySplitGroup).not.toHaveBeenCalled()
-    expect(mocks.createBrowserTab).not.toHaveBeenCalled()
-  })
-
-  // Why: the host's files.read is worktree-scoped, so this path would otherwise 404 inside the
-  // preview with nothing naming the boundary the user hit.
-  it('names the worktree boundary for a paired document outside the workspace', () => {
-    mocks.environmentId = 'runtime-1'
-    mocks.browserAvailability = { state: 'enabled', provider: 'paired-runtime' }
-
-    openFilePreviewToSide({
-      language: 'html',
-      filePath: '/tmp/agent-scratch/report.html',
-      worktreeId: 'wt-1',
-      sourceGroupId: 'group-1'
-    })
-
-    expect(mocks.toastError).toHaveBeenCalledWith(
-      "Files outside the workspace can't be previewed on a paired server yet."
-    )
-    expect(mocks.createEmptySplitGroup).not.toHaveBeenCalled()
-    expect(mocks.createBrowserTab).not.toHaveBeenCalled()
-  })
-
   it('keeps previewing an SSH document outside the worktree root', () => {
     mocks.connectionId = 'ssh-1'
 
@@ -368,17 +249,6 @@ describe('openFileInBrowserTab', () => {
     expect(mocks.toastError).not.toHaveBeenCalled()
   })
 
-  it('ignores languages that have no preview surface', () => {
-    openFilePreviewToSide({
-      language: 'typescript',
-      filePath: '/tmp/example.ts',
-      worktreeId: 'wt-1',
-      sourceGroupId: 'group-1'
-    })
-
-    expect(mocks.createEmptySplitGroup).not.toHaveBeenCalled()
-    expect(mocks.createBrowserTab).not.toHaveBeenCalled()
-  })
 })
 
 describe('canShowWorkspaceFileBrowserAction', () => {

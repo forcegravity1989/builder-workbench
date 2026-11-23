@@ -47,6 +47,14 @@ vi.mock('./grok-fetcher', () => ({
   fetchGrokRateLimits: vi.fn()
 }))
 
+vi.mock('./cursor-fetcher', () => ({
+  fetchCursorRateLimits: vi.fn()
+}))
+
+vi.mock('./cursor-auth', () => ({
+  readCursorAuthSession: vi.fn()
+}))
+
 vi.mock('./grok-auth', () => ({
   readGrokAuthSession: vi.fn(() => ({ status: 'missing' }))
 }))
@@ -132,7 +140,6 @@ describe('RateLimitService', () => {
     expect(fetchCodexRateLimits).toHaveBeenCalledWith(
       expect.objectContaining({
         codexHomePath: wslCodexHome,
-        allowPtyFallback: false,
         signal: expect.any(AbortSignal)
       })
     )
@@ -195,21 +202,27 @@ describe('RateLimitService', () => {
     }
   })
 
-  it('allows usage-panel Fable supplements for inactive Claude account previews', async () => {
-    const service = new RateLimitService()
-    const account = { id: 'account-1', managedAuthPath: '/tmp/account-1/auth' }
-    service.setInactiveClaudeAccountsResolver(() => [account])
-    vi.mocked(fetchManagedAccountUsage).mockResolvedValueOnce(okProvider('claude', 33, Date.now()))
+  it('allows usage-panel Fable supplements for inactive Claude previews on Linux', async () => {
+    const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'linux' })
+    try {
+      const service = new RateLimitService()
+      const account = { id: 'account-1', managedAuthPath: '/tmp/account-1/auth' }
+      service.setInactiveClaudeAccountsResolver(() => [account])
+      vi.mocked(fetchManagedAccountUsage).mockResolvedValueOnce(okProvider('claude', 33, Date.now()))
 
-    await service.fetchInactiveClaudeAccountsOnOpen()
+      await service.fetchInactiveClaudeAccountsOnOpen()
 
-    expect(fetchManagedAccountUsage).toHaveBeenCalledWith(
-      account,
-      expect.objectContaining({
-        allowUsagePanelSupplement: true,
-        signal: expect.any(AbortSignal)
-      })
-    )
+      expect(fetchManagedAccountUsage).toHaveBeenCalledWith(
+        account,
+        expect.objectContaining({
+          allowUsagePanelSupplement: true,
+          signal: expect.any(AbortSignal)
+        })
+      )
+    } finally {
+      Object.defineProperty(process, 'platform', originalPlatform)
+    }
   })
 
   it('does not start overlapping inactive Claude preview fetches', async () => {

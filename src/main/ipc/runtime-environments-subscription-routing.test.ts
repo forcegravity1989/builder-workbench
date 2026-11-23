@@ -178,7 +178,10 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       { pageId: 'page-1' },
       15_000,
       expect.any(Object),
-      { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES }
+      {
+        clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES,
+        signal: expect.any(AbortSignal)
+      }
     )
     expect(subscribeRemoteRuntimeRequestMock).toHaveBeenCalledWith(
       expect.any(Object),
@@ -186,7 +189,10 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       { client: { id: 'client-1' } },
       15_000,
       expect.any(Object),
-      { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES }
+      {
+        clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES,
+        signal: expect.any(AbortSignal)
+      }
     )
     expect(subscribeRemoteRuntimeSharedControlRequestMock).not.toHaveBeenCalled()
   })
@@ -239,7 +245,8 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       'session.tabs.subscribeAll',
       undefined,
       15_000,
-      expect.any(Object)
+      expect.any(Object),
+      expect.any(AbortSignal)
     )
     expect(subscribeRemoteRuntimeRequestMock).not.toHaveBeenCalled()
   })
@@ -368,7 +375,10 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       undefined,
       15_000,
       expect.any(Object),
-      { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES }
+      {
+        clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES,
+        signal: expect.any(AbortSignal)
+      }
     )
     expect(subscribeRemoteRuntimeSharedControlRequestMock).not.toHaveBeenCalled()
   })

@@ -1,6 +1,8 @@
 # Artifact and skill publishing commands
 
-The publish gate and its recovery are in the guide body. This is the command surface behind it.
+Artifact sharing has no publish gate; its boundaries are in the guide body. The
+skill-sharing permission is default-off and described in its section below. This is the
+command surface for both.
 
 ## Artifacts
 
@@ -8,26 +10,25 @@ The publish gate and its recovery are in the guide body. This is the command sur
 ORCA artifacts share <file> --json
 ORCA artifacts update <file> --json
 ORCA artifacts unshare <file> --json
-ORCA artifacts list [--cursor <cursor>] --json
+ORCA artifacts list --json
 ORCA artifacts delete <id> --json
 ```
 
 - `share`, `update`, and `unshare` accept `.html`, `.htm`, `.md`, and `.markdown` files.
-- `share` saves the returned edit token in the active Orca profile and never includes it
-  in CLI output. `update` and `unshare` look up that record by the resolved local file
-  path, so use the same path and Orca profile that originally shared the file.
-- `list` returns one page of artifacts owned by the signed-in account. If JSON output has
-  `nextCursor`, pass it back with `--cursor <cursor>`. `delete <id>` deletes an account-owned
-  artifact by the id returned from `list`; it does not need the original local file or its
-  edit-token record.
+  Markdown is rendered into a standalone HTML document before upload and published
+  through the same host-side link record as the editor's Share as artifact button.
+- Sharing runs on the desktop app on this computer and stores links on the self-hosted
+  share service. Edit tokens stay on the host and never appear in CLI output.
+- `share` creates a link; sharing the same file again publishes new content over the same
+  link (`update` is the same operation). The resolved file path identifies the link, so use
+  the same path that originally shared the file.
+- `list` returns every link this computer created: file path, id, updated time, and URL.
+  `unshare <file>` deletes by file path; `delete <id>` deletes by the id from `list`.
+  Deleting a link makes it stop working immediately.
 - Relative HTML assets are not uploaded. Share a self-contained HTML file or use absolute
   asset URLs.
-- If an upload exceeds the CLI transport limit, use the browser upload page as directed
-  by the error.
-- For local or staging development, `--api-url <url>` overrides the artifact service;
-  `ORCA_ARTIFACTS_API_URL` provides the same override for the session.
-- `ORCA_CLOUD_AUTH_TOKEN` is a development-only authentication override. Prefer the active
-  Orca profile's normal PropelAuth session and never expose the token in logs or agent output.
+- The CLI transport limit is 800 KB per command. For larger files (the service accepts up
+  to 10 MiB), open the file in Workbench and use Share as artifact.
 
 ## Skill sharing
 

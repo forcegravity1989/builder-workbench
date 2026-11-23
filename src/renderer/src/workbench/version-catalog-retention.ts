@@ -39,7 +39,7 @@ export function retainUnavailableCatalogSources({
   previousSources,
   goalSources,
   availableDraftVersions,
-  unavailableDraftTrees,
+  unavailableDrafts,
   historyKey,
   retainHistory
 }: {
@@ -48,14 +48,17 @@ export function retainUnavailableCatalogSources({
   previousSources: Record<string, CatalogGoalSource> | undefined
   goalSources: Record<string, CatalogGoalSource>
   availableDraftVersions: ReadonlySet<string>
-  unavailableDraftTrees: ReadonlySet<string>
+  unavailableDrafts: ReadonlyMap<string, ReadonlySet<string> | null>
   historyKey: string
   retainHistory: boolean
 }): void {
   for (const previous of previousEntries) {
     const previousSource = previousSources?.[previous.version]
+    const unavailable =
+      previousSource?.kind === 'draft' ? unavailableDrafts.get(previousSource.treeKey) : undefined
     const keepDraft =
-      previousSource?.kind === 'draft' && unavailableDraftTrees.has(previousSource.treeKey)
+      previousSource?.kind === 'draft' &&
+      (unavailable === null || unavailable?.has(previous.version))
         ? previousSource.draft
         : null
     const keepMaterial =
@@ -65,10 +68,10 @@ export function retainUnavailableCatalogSources({
     if (!entry && (keepMaterial || keepDraft)) {
       entry = {
         version: previous.version,
+        mergeStatus: 'unknown',
         material: {},
         problems: [],
         goals: [],
-        tasks: [],
         workspaces: [],
         state: 'retired'
       }
@@ -80,6 +83,16 @@ export function retainUnavailableCatalogSources({
     if (keepMaterial) {
       entry.material = { ...previous.material }
       entry.problems = [...previous.problems]
+      entry.planEnteredAt = previous.planEnteredAt
+    }
+    if (entry.mergeStatus === 'unknown' && (keepMaterial || keepDraft)) {
+      entry.mergeStatus = previous.mergeStatus ?? 'unknown'
+    }
+    if (
+      (entry.planStartedAt === undefined || entry.planStartedAt === null) &&
+      previous.planStartedAt !== undefined
+    ) {
+      entry.planStartedAt = previous.planStartedAt
     }
     if (keepDraft && !entry.draft) {
       entry.draft = { cycleId: keepDraft.cycleId, revision: keepDraft.revision }
@@ -91,7 +104,6 @@ export function retainUnavailableCatalogSources({
       previousSource.key === committedCatalogGoalKey(historyKey, entry.version, entry.material.plan)
     if (!availableDraftVersions.has(entry.version) && (keepDraft || keepCommittedGoals)) {
       entry.goals = [...previous.goals]
-      entry.tasks = [...previous.tasks]
       goalSources[entry.version] = previousSource!
     }
   }

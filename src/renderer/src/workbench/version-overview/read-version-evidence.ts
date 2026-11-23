@@ -1,3 +1,5 @@
+import { acceptedIssueEvidence } from '../version-acceptance/acceptance-task-evidence'
+import { readVersionMembership } from '../version-cycle/version-membership'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
@@ -27,16 +29,17 @@ export async function readVersionEvidence(
   const records: VersionEvidence[] = [],
     plans: OverviewVersionPlan[] = [],
     problems: VersionEvidenceProblem[] = []
-  if (!catalog.scope || !catalog.home) {
+  const membershipScope = catalog.scope
+  if (!membershipScope || !catalog.home) {
     throw new Error('版本工作区未就绪')
   }
   const scope = {
-    repoId: catalog.scope.repoId,
+    repoId: membershipScope.repoId,
     worktreeId: catalog.home.id,
-    hostId: catalog.scope.hostId
+    hostId: membershipScope.hostId
   }
-  const history = nativeVersionHistoryPort(catalog.scope.runtimeOwnerEnvironmentId)
-  const archive = nativeArchivePrPort(catalog.scope.runtimeOwnerEnvironmentId)
+  const history = nativeVersionHistoryPort(membershipScope.runtimeOwnerEnvironmentId)
+  const archive = nativeArchivePrPort(membershipScope.runtimeOwnerEnvironmentId)
   const reads = new Map<string, Promise<ArchivePrStatusResult>>()
   async function readArchive(document: PlanningMaterial | AcceptanceMaterial) {
     signal?.throwIfAborted()
@@ -87,9 +90,13 @@ export async function readVersionEvidence(
   async function addPlan(
     document: PlanningMaterial,
     source: 'committed' | 'draft' = 'committed',
-    taskSnapshot?: AcceptanceMaterial['taskSnapshot']
+    taskSnapshot?: AcceptanceMaterial['taskSnapshot'],
+    references?: PlanningMaterial['tasks']
   ) {
-    const status = await readArchive(document)
+    const [status, tasks] = await Promise.all([
+      readArchive(document),
+      references ?? readVersionMembership(membershipScope!, document, force)
+    ])
     const confirmation =
       status?.state === 'merged' && validTime(status.mergedAt)
         ? {
@@ -105,13 +112,14 @@ export async function readVersionEvidence(
         : undefined
     plans.push({
       version: document.version,
-      tasks: document.tasks,
+      tasks,
       goals: document.goals,
       source,
       taskSnapshot,
       confirmation,
       archive: archiveEvent(document, status, 'plan')
     })
+    return tasks
   }
   const entries = catalog.catalog?.entries ?? []
   await mapLimit(
@@ -121,7 +129,12 @@ export async function readVersionEvidence(
         const ref = entry.material.acceptance
         if (!ref) {
           if (workingPlan?.document.version === entry.version) {
-            await addPlan(workingPlan.document, workingPlan.source)
+            await addPlan(
+              workingPlan.document,
+              workingPlan.source,
+              undefined,
+              workingPlan.document.tasks
+            )
           } else if (entry.material.plan) {
             const fixed = await history.readPlan({
               scope,
@@ -137,7 +150,7 @@ export async function readVersionEvidence(
           } else if (entry.draft) {
             plans.push({
               version: entry.version,
-              tasks: entry.tasks,
+              tasks: await readVersionMembership(membershipScope, entry, force),
               goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
               source: 'draft'
             })
@@ -155,11 +168,21 @@ export async function readVersionEvidence(
         signal?.throwIfAborted()
         const acceptance = read.document as AcceptanceMaterial
         const plan = await history.readPlan({ scope, planRef: acceptance.planRef })
-        await addPlan(plan.document, 'committed', acceptance.taskSnapshot)
+        const current =
+          workingPlan?.document.version === entry.version ? workingPlan.document.tasks : undefined
+        await addPlan(plan.document, 'committed', acceptance.taskSnapshot, current).catch(
+          (error) => {
+            problems.push({
+              version: entry.version,
+              message: `版本 Issue 读取失败：${error instanceof Error ? error.message : String(error)}`
+            })
+          }
+        )
+        const tasks = acceptedIssueEvidence(acceptance).map((item) => item.reference)
         const status = await readArchive(acceptance)
         records.push({
           version: entry.version,
-          plan: plan.document,
+          plan: { ...plan.document, tasks },
           acceptance,
           at:
             status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined,
@@ -182,7 +205,7 @@ export async function readVersionEvidence(
   plans.sort((a, b) => (order.get(a.version) ?? Infinity) - (order.get(b.version) ?? Infinity))
   records.sort((a, b) => (order.get(a.version) ?? Infinity) - (order.get(b.version) ?? Infinity))
   if (workingPlan && !plans.some((entry) => entry.version === workingPlan.document.version)) {
-    await addPlan(workingPlan.document, workingPlan.source)
+    await addPlan(workingPlan.document, workingPlan.source, undefined, workingPlan.document.tasks)
   }
   return { records, plans, problems }
 }

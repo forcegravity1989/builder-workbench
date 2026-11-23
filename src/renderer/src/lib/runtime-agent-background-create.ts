@@ -14,6 +14,8 @@ import { runRemoteAgentSessionLaunch } from '@/runtime/remote-agent-session-laun
 
 export async function createRuntimeAgentBackgroundTerminal(args: {
   environmentId: string
+  expectedEnvironmentPairingRevision?: number
+  expectedEnvironmentRuntimeId?: string
   worktreeId: string
   tabId: string
   leafId: string
@@ -52,7 +54,11 @@ export async function createRuntimeAgentBackgroundTerminal(args: {
             },
             clientOperationId
           ),
-          { timeoutMs: 15_000 }
+          {
+            timeoutMs: 15_000,
+            expectedEnvironmentPairingRevision: args.expectedEnvironmentPairingRevision,
+            expectedEnvironmentRuntimeId: args.expectedEnvironmentRuntimeId
+          }
         )
       ),
     legacy: ({ skipCompatibilityCheck }) =>
@@ -74,7 +80,12 @@ export async function createRuntimeAgentBackgroundTerminal(args: {
           leafId: args.leafId,
           presentation: 'background'
         },
-        { timeoutMs: 15_000, skipCompatibilityCheck }
+        {
+          timeoutMs: 15_000,
+          skipCompatibilityCheck,
+          expectedEnvironmentPairingRevision: args.expectedEnvironmentPairingRevision,
+          expectedEnvironmentRuntimeId: args.expectedEnvironmentRuntimeId
+        }
       )
   })
 }

@@ -1,3 +1,5 @@
+import { createElement } from 'react'
+import { ErrorDetails } from './error-feedback'
 import { toast } from 'sonner'
 import type { Worktree } from '../../../shared/worktree/types'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
@@ -54,20 +56,20 @@ export async function writeWorkbenchCreationBinding(
         binding
       )
     } catch (reason) {
-      const message = reason instanceof Error ? reason.message : String(reason)
-      toast.error(
-        `工作树 ${label} 已创建，但版本绑定未写入：${message}。树已保留、不会重复创建${
-          retry ? '（重试仍未成功，可在原生项目核对后处理该树）' : ''
-        }`,
-        {
-          action: {
-            label: '重试写绑定',
-            onClick: () => {
-              void attempt(true)
-            }
+      toast.error(`工作树 ${label} 已创建，版本绑定未写入`, {
+        description: createElement(
+          'div',
+          null,
+          retry ? '仍可在原生项目核对并补写绑定。' : '可重试绑定，已有工作树会复用。',
+          createElement(ErrorDetails, { detail: reason })
+        ),
+        action: {
+          label: '重试写绑定',
+          onClick: () => {
+            void attempt(true)
           }
         }
-      )
+      })
     }
   }
   await attempt(false)

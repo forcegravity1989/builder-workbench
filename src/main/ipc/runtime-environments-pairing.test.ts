@@ -80,6 +80,10 @@ vi.mock('./runtime-environment-request-connections', async () => {
 })
 
 import { registerRuntimeEnvironmentHandlers } from './runtime-environments'
+import {
+  isRuntimeEnvironmentManuallyDisconnected,
+  resetRuntimeEnvironmentManualDisconnects
+} from './runtime-environment-manual-disconnect'
 import { channelHandlerLookup, pairingCode } from './runtime-environments-ipc-test-harness'
 
 const handler = channelHandlerLookup(handleMock)
@@ -134,6 +138,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
 
   afterEach(() => {
     resetRuntimeEnvironmentStatusOwners()
+    resetRuntimeEnvironmentManualDisconnects()
     rmSync(userDataPath, { recursive: true, force: true })
   })
 
@@ -141,6 +146,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
     registerRuntimeEnvironmentHandlers(store as never)
 
     expect(handleMock.mock.calls.map((call) => call[0])).toEqual([
+      'runtimeEnvironments:repairFromPairingCode',
       'runtimeEnvironments:getStatusSnapshots',
       'runtimeEnvironments:list',
       'runtimeEnvironments:addFromPairingCode',
@@ -169,6 +175,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       'runtimeEnvironments:list',
       'runtimeEnvironments:addFromPairingCode',
       'runtimeEnvironments:verifyAndAddFromPairingCode',
+      'runtimeEnvironments:repairFromPairingCode',
       'runtimeEnvironments:resolve',
       'runtimeEnvironments:remove',
       'runtimeEnvironments:disconnect',
@@ -413,7 +420,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
     await expect(
       verifyAndAdd(null, {
         name: 'desk',
-        pairingCode: pairingCode('ws://100.76.32.125:6768')
+        pairingCode: pairingCode('ws://100.76.32.125:6768', 2)
       })
     ).resolves.toMatchObject({
       ok: false,
@@ -467,6 +474,11 @@ describe('registerRuntimeEnvironmentHandlers', () => {
 
     expect(closeRemoteRuntimeRequestConnectionMock).toHaveBeenCalledWith(added.environment.id)
     expect(closeRemoteRuntimeRequestConnectionMock).toHaveBeenCalledWith('desk')
+    // The hold outlives the session: a restart must not dial this host again.
+    expect(environmentStore.listEnvironments(userDataPath)[0]).toMatchObject({
+      id: added.environment.id,
+      reconnectOnLaunch: false
+    })
 
     const list = handler<undefined, { id: string; name: string }[]>('runtimeEnvironments:list')
     expect(await list(null, undefined)).toMatchObject([{ id: added.environment.id, name: 'desk' }])
@@ -514,6 +526,35 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       { environmentId: added.environment.id, verification: 'verified' }
     ])
     expect((await getSnapshots(null, undefined))[0].retired).not.toBe(true)
+    // An explicit Connect is the only thing that lifts the saved hold.
+    expect('reconnectOnLaunch' in environmentStore.listEnvironments(userDataPath)[0]!).toBe(false)
+  })
+
+  it('restores a saved manual-disconnect hold before the startup activation loop runs', async () => {
+    registerRuntimeEnvironmentHandlers(store as never)
+    const add = handler<{ name: string; pairingCode: string }, { environment: { id: string } }>(
+      'runtimeEnvironments:addFromPairingCode'
+    )
+    const added = await add(null, { name: 'desk', pairingCode: pairingCode() })
+    const disconnect = handler<{ selector: string }, unknown>('runtimeEnvironments:disconnect')
+    await disconnect(null, { selector: added.environment.id })
+
+    // Simulate a restart: forget the in-memory hold and register from disk alone.
+    resetRuntimeEnvironmentManualDisconnects()
+    handleMock.mockReset()
+    sendRemoteRuntimeRequestMock.mockClear()
+    registerRuntimeEnvironmentHandlers(store as never)
+
+    expect(isRuntimeEnvironmentManuallyDisconnected(added.environment.id)).toBe(true)
+    // The startup activation loop dials through the status owner's request path.
+    expect(sendRemoteRuntimeRequestMock).not.toHaveBeenCalled()
+    const getStatus = handler<{ selector: string }, { ok: boolean; error?: { code: string } }>(
+      'runtimeEnvironments:getStatus'
+    )
+    await expect(getStatus(null, { selector: added.environment.id })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'runtime_manually_disconnected' }
+    })
   })
 
   it('marks environments owned by ephemeral VM runtimes in the public list', async () => {

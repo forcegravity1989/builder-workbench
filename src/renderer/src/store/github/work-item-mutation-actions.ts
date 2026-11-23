@@ -11,6 +11,7 @@ import type { CacheEntry } from './cache-model'
 import { evictRepoCacheEntries, repoCacheKeyPrefixes } from './cache-identity'
 import { ERROR_TOAST_DURATION } from './cache-policy'
 import { clearInflightWorkItemsForRepo } from './request-coordination'
+import { matchesTaskPageWorkItemRepository } from '@/components/task-page-work-item-signatures'
 
 export const createWorkItemMutationActions = (
   set: Parameters<StateCreator<AppState>>[0],
@@ -20,13 +21,26 @@ export const createWorkItemMutationActions = (
     set((s) => {
       const nextCache = { ...s.workItemsCache }
       let changed = false
-      const sourceScope =
-        options?.sourceContext?.provider === 'github'
-          ? getTaskSourceCacheScope(options.sourceContext)
+      const context = options?.sourceContext
+      const sourceScope = context?.provider === 'github' ? getTaskSourceCacheScope(context) : null
+      const repository =
+        context?.localTaskAccount && context.providerIdentity?.provider === 'github'
+          ? context.providerIdentity
           : null
+      // List cache keys use the project preference; a row can be from the other
+      // remote. Keep the same desktop account/project scope and check the row.
+      const projectScope = repository ? sourceScope?.split(':').slice(0, -2).join(':') : null
       for (const key of Object.keys(nextCache)) {
-        // Why: don't patch another host/account's visually identical issue/PR cache entry.
-        if (sourceScope && key !== sourceScope && !key.startsWith(`${sourceScope}::`)) {
+        const sameDesktopProject =
+          projectScope &&
+          key.startsWith(`${projectScope}:`) &&
+          /^[^:]*:desktop-account::/.test(key.slice(projectScope.length + 1))
+        if (
+          sourceScope &&
+          !sameDesktopProject &&
+          key !== sourceScope &&
+          !key.startsWith(`${sourceScope}::`)
+        ) {
           continue
         }
         const entry = nextCache[key]
@@ -35,7 +49,10 @@ export const createWorkItemMutationActions = (
         }
         // Why: issue/PR ids are only unique within a repo; cross-repo views can share `pr:42`.
         const idx = entry.data.findIndex(
-          (item) => item.id === itemId && (!repoId || item.repoId === repoId)
+          (item) =>
+            item.id === itemId &&
+            (!repoId || item.repoId === repoId) &&
+            (!repository || matchesTaskPageWorkItemRepository(item, repository))
         )
         if (idx === -1) {
           continue
