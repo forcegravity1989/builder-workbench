@@ -173,6 +173,7 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     name?: string
     rotate?: boolean
     scope?: DeviceScope
+    avatar?: string
     // Why: STA-2370 — recorded on the grant so a "This computer only" client reconnecting cannot make the
     // next launch bind every interface. Defaults to network reach, which is what every other caller means.
     reach?: RuntimePairingReach
@@ -223,8 +224,8 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       const reach = args.reach ?? 'network'
       const accessMode = args.accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')
       device = args.rotate
-        ? this.deviceRegistry.rotatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding)
-        : this.deviceRegistry.getOrCreatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding)
+        ? this.deviceRegistry.rotatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding, args.avatar)
+        : this.deviceRegistry.getOrCreatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding, args.avatar)
     } catch (error) {
       console.error('[runtime] Failed to persist pairing credential:', error)
       return pairingUnavailable('device_registry_unavailable', DEVICE_REGISTRY_UNAVAILABLE_GUIDANCE)

@@ -2,6 +2,7 @@ export type TeamDirectoryMember = {
   member_id: string
   name?: string
   avatar?: string
+  member_type?: string
   host_id?: string
   identity_source: 'welink-cli'
   orca_endpoint?: string
@@ -11,7 +12,6 @@ export type TeamDirectoryProject = {
   repo_id: string
   name?: string
   repository?: string
-  sources: string[]
 }
 
 export type TeamDirectory = {

@@ -4,37 +4,16 @@ import { translateSearchKeyword } from './settings-search-keywords'
 
 export const getArtifactsSettingsSearchEntries = createLocalizedCatalog(() => [
   {
-    title: translate(
-      'auto.components.settings.artifacts.allowPublishing',
-      'Allow publishing public artifact links'
-    ),
+    title: translate('auto.components.settings.artifacts.sharedLinksTitle', "Files you've shared"),
     description: translate(
-      'auto.components.settings.artifacts.allowPublishingSearchDescription',
-      'Allow Orca to publish HTML and Markdown files as public links.'
+      'auto.components.settings.artifacts.sharedLinksDescription',
+      'Links this computer created. Deleting a link makes it stop working immediately.'
     ),
     keywords: [
       ...translateSearchKeyword('auto.components.settings.artifacts.keywordArtifacts', 'artifacts'),
       ...translateSearchKeyword('auto.components.settings.artifacts.keywordShare', 'share'),
-      ...translateSearchKeyword('auto.components.settings.artifacts.keywordPublish', 'publish'),
-      ...translateSearchKeyword('auto.components.settings.artifacts.keywordPublic', 'public'),
-      ...translateSearchKeyword(
-        'auto.components.settings.artifacts.keywordPermission',
-        'permission'
-      )
-    ]
-  },
-  {
-    title: translate('auto.components.settings.artifacts.showButton', 'Show Artifacts Button'),
-    description: translate(
-      'auto.components.settings.artifacts.showButtonDescription',
-      'Show the Artifacts shortcut in the sidebar.'
-    ),
-    keywords: [
-      ...translateSearchKeyword('auto.components.settings.artifacts.keywordArtifacts', 'artifacts'),
-      ...translateSearchKeyword('auto.components.settings.artifacts.keywordShare', 'share'),
-      ...translateSearchKeyword('auto.components.settings.artifacts.keywordHtml', 'HTML'),
-      ...translateSearchKeyword('auto.components.settings.artifacts.keywordMarkdown', 'Markdown'),
-      ...translateSearchKeyword('auto.components.settings.artifacts.keywordUpload', 'upload')
+      ...translateSearchKeyword('auto.components.settings.artifacts.keywordLink', 'link'),
+      ...translateSearchKeyword('auto.components.settings.artifacts.keywordDelete', 'delete')
     ]
   }
 ])

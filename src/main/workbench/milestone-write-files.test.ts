@@ -172,6 +172,7 @@ it('saves working input and refuses to overwrite a changed or unsafe document', 
       'v1：里程碑规划与版本计划身份不一致，请核对材料'
     ])
   } finally {
-    await rm(root, { recursive: true, force: true })
+    // Why maxRetries: Windows git handle release lags, so the first rmdir can hit transient EBUSY.
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
   }
 })

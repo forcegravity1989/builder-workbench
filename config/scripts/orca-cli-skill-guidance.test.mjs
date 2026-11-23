@@ -158,21 +158,59 @@ describe('orca CLI skill guidance', () => {
     expect(skill).not.toContain('live_sk_')
   })
 
-  // Publishing defaults to off, so an agent that follows the unconditional share workflow
-  // just loops on denials. The guide has to teach the opt-in and the recovery.
-  it('teaches the artifact publish opt-in and its recovery path', () => {
+  // Artifact sharing is zero-config on a self-hosted service, so an agent that still believes
+  // in a publish gate would send the user to a setting that no longer exists, and an agent that
+  // ignores the CLI transport limit would loop retries on an oversized file. The distributed
+  // guide has to teach the real boundaries and their next steps.
+  it('teaches zero-config artifact sharing and its failure boundaries', () => {
     // Normalized so the assertions survive reflowing the guide's prose.
     const skill = readSkill().replace(/\s+/gu, ' ')
 
-    expect(skill).toContain('**Publishing is off by default and only a human can turn it on.**')
+    // Zero config: no account, no toggle, no human step before the first share.
+    expect(skill).toContain('the service address is built into the app')
+    expect(skill).toContain('enrolls itself on its first share')
+    expect(skill).toContain('no Orca account is involved')
+    expect(skill).toContain('There is no publish switch and nothing for a human to enable first')
+    // Same-file identity and the two delete surfaces agents must not confuse.
+    expect(skill).toContain('`update` is the same operation')
+    expect(skill).toContain('`unshare` deletes by file path and `delete` by the id from `list`')
+    // `list` is where an agent reads a link's lifetime, including the "kept forever" case.
+    expect(skill).toContain('with its id, URL, last update and expiry')
+    expect(skill).toContain('expires: never')
+    // Host-only surface, snapshot semantics, and network-reach publicity.
+    expect(skill).toContain('desktop app on this computer')
+    expect(skill).toContain('a snapshot, not a live view')
+    // The transport limit points to the page flow; retrying cannot shrink the file.
+    expect(skill).toContain('800 KB per command')
+    expect(skill).toContain('do not retry or trim it to fit')
+    expect(skill).toContain('Share as artifact instead')
+    expect(skill).toContain('may be retried;')
+    // Revocation and cleanup stay reachable for the user.
     expect(skill).toContain('Settings → Artifacts')
-    expect(skill).toContain('Allow publishing public artifact links')
-    expect(skill).toContain('artifact_sharing_disabled')
-    expect(skill).toContain('There is no CLI or RPC way to grant it')
-    expect(skill).toContain('Do not retry')
-    // The gate is device-wide, and revocation surfaces stay reachable.
-    expect(skill).toContain('every caller on the device, agent or human')
-    expect(skill).toContain('`list`, `unshare`, and `delete` are never gated')
+    expect(skill).toContain(`"Files you've shared"`)
+    // The removed cloud gate must not creep back into the distributed guide.
+    expect(skill).not.toContain('artifact_sharing_disabled')
+    expect(skill).not.toContain('Allow publishing public artifact links')
+    expect(skill).not.toContain('Publishing is off by default')
+    expect(skill).not.toContain('signed-in Orca account')
+    // The command reference ships in the same bundle. `signed-in Orca account` is excluded here on
+    // purpose: its skill-sharing section still describes the retained Orca cloud permission.
+    const reference = readSkill(
+      join(projectDir, 'skill-guides', 'orca-cli', 'references', 'publishing.md')
+    ).replace(/\s+/gu, ' ')
+    for (const removed of [
+      'artifact_sharing_disabled',
+      'Allow publishing public artifact links',
+      'Publishing is off by default',
+      'The publish gate and its recovery are in the guide body'
+    ]) {
+      expect(reference).not.toContain(removed)
+    }
+    // The list surface the guide promises, and the codes it tells an agent not to retry.
+    expect(reference).toContain('800 KB')
+    expect(skill).toContain('expires: never')
+    expect(skill).toContain('`enrollment-full`')
+    expect(skill).toContain('`stale-record`')
   })
 })
 
