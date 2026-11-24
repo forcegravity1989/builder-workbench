@@ -87,6 +87,19 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         ? (this.deviceRegistry?.getDevice(authenticatedSocket.device.deviceId) ?? tokenDevice)
         : tokenDevice
     if (!device) {
+      // Why: a revoked or forged credential still got through the encrypted handshake, which is worth
+      // the host owner seeing; no device matched, so the entry carries no member. The audit's
+      // 60-second de-duplication keeps a retrying client from flooding the log.
+      this.getRuntimeAccessAudit().record({
+        at: Date.now(),
+        deviceId: 'unknown',
+        accessMode: 'team-read',
+        method: 'connection.auth',
+        result: 'denied',
+        requestId: request.id,
+        errorCode: 'unauthorized',
+        errorMessage: 'Invalid device token'
+      })
       reply(JSON.stringify(this.buildError(request.id, 'unauthorized', 'Invalid device token')))
       return
     }
@@ -251,7 +264,16 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
           this.registerBinaryStreamHandler(
             connectionId,
             streamId,
-            teamReadTerminalStreamHandler(accessMode, handler)
+            teamReadTerminalStreamHandler(() => {
+              // Why: the host can switch a member between read-only and full access while their
+              // terminal is open, and the switch must apply to that terminal at once.
+              const latest = this.deviceRegistry?.getDevice(device.deviceId)
+              if (latest) {
+                return effectiveRuntimeAccessMode(latest)
+              }
+              // A device that vanished from the registry is revoked; do not keep its old level.
+              return this.deviceRegistry ? 'team-read' : accessMode
+            }, handler)
           ),
         registerBinaryMessageHandler: (handler) =>
           this.registerBinaryMessageHandler(connectionId, handler)

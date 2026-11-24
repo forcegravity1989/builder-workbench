@@ -173,14 +173,9 @@ export const AUDITED_TEAM_READ_METHODS = new Set([
   'workbench.prototypeReview.receive',
   'workbench.prototypeReview.annotations.add',
   'workbench.prototypeReview.annotations.delete',
-  // Recomputes metrics from the host's data without writing any source of truth; members need it to
-  // see current numbers, so it is allowed and logged.
-  'workbench.metrics.refresh',
   // Driving a page on the host's browser is something its owner should be able to see afterwards.
-  // Pointer movement, scrolling and single key presses are left out because they arrive in bursts.
-  'browser.screencast',
-  'browser.screenshot',
-  'browser.fullScreenshot',
+  // Pointer movement, scrolling, single key presses and the screen stream itself are left out
+  // because they arrive in bursts.
   'browser.goto',
   'browser.openUrl',
   'browser.reload',
@@ -194,10 +189,6 @@ export const AUDITED_TEAM_READ_METHODS = new Set([
   'browser.fill',
   'browser.select',
   'browser.tabCreate',
-  // Starting element picking and capturing a page image are the visible actions; the wait and cancel
-  // calls around them are plumbing and stay out of the log.
-  'browser.grab.setMode',
-  'browser.grab.screenshot',
   // Actions that run or change things on the host. Plain reads stay out of the log.
   'browser.eval',
   'browser.exec',
@@ -208,9 +199,37 @@ export const AUDITED_TEAM_READ_METHODS = new Set([
   'terminal.createAgentSession',
   'terminal.ensureAgentSession',
   'terminal.close',
+  'terminal.closeTab',
+  'terminal.closeAll',
+  'terminal.stop',
+  'terminal.stopExact',
+  'terminal.rename',
+  'terminal.clearBuffer',
+  'agentSession.cancel',
+  'agentSession.close',
+  'agentSession.rewind',
+  'agentSession.setOption',
+  'agentSession.requestHandoff',
   'session.tabs.createTerminal',
   'session.tabs.close',
   'worktree.sleep',
+  'worktree.set',
+  // Host-level configuration and installs: they change what later sessions can do on this machine.
+  'settings.mutateAgentLaunch',
+  'settings.updateTerminalQuickCommands',
+  'skills.install',
+  'skills.installBundle',
+  'skills.delete',
+  'skills.removeInstall',
+  'skills.share',
+  'automation.create',
+  'automation.update',
+  'automation.delete',
+  'automation.runNow',
+  'workbench.package.launch',
+  'workbench.share.publish',
+  'workbench.share.remove',
+  'workbench.versionBinding.set',
   'workbench.skills.prepare',
   'workbench.materials.save',
   'workbench.milestones.save',
@@ -336,14 +355,14 @@ const TEAM_READ_DROPPED_TERMINAL_OPCODES = new Set<TerminalStreamOpcode>([
 ])
 
 export function teamReadTerminalStreamHandler(
-  accessMode: RuntimeAccessMode | undefined,
+  currentAccessMode: () => RuntimeAccessMode | undefined,
   handler: (frame: TerminalStreamFrame) => void
 ): (frame: TerminalStreamFrame) => void {
-  if (accessMode !== 'team-read') {
-    return handler
-  }
   return (frame) => {
-    if (!TEAM_READ_DROPPED_TERMINAL_OPCODES.has(frame.opcode)) {
+    if (
+      currentAccessMode() !== 'team-read' ||
+      !TEAM_READ_DROPPED_TERMINAL_OPCODES.has(frame.opcode)
+    ) {
       handler(frame)
     }
   }

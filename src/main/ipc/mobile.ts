@@ -303,39 +303,53 @@ export function registerMobileHandlers(
     }
   })
 
-  ipcMain.handle('mobile:grantRuntimeFullAccess', (_event, args: { deviceIds: string[] }) => {
-    const registry = rpcServer.getDeviceRegistry()
-    if (!registry || !Array.isArray(args?.deviceIds)) {
-      return { granted: [] as string[] }
-    }
-    const granted: string[] = []
-    for (const deviceId of new Set(args.deviceIds)) {
-      const device = registry.getDevice(deviceId)
+  // Switches one member between read-only and full access. The change applies to their next request
+  // and to terminals they already have open.
+  ipcMain.handle(
+    'mobile:setRuntimeAccessMode',
+    (_event, args: { deviceId: string; accessMode: RuntimeAccessMode }) => {
+      const registry = rpcServer.getDeviceRegistry()
+      const device = registry?.getDevice(args?.deviceId)
       if (
-        device?.scope === 'runtime' &&
-        effectiveRuntimeAccessMode(device) === 'team-read' &&
-        rpcServer.getMobileSocketWiring?.()?.isDeviceConnected(device.deviceId) === true &&
-        registry.setAccessMode(device.deviceId, 'full')
+        !registry ||
+        !device ||
+        device.scope !== 'runtime' ||
+        (args.accessMode !== 'full' && args.accessMode !== 'team-read')
       ) {
-        granted.push(device.deviceId)
-        rpcServer.getRuntimeAccessAudit?.()?.record({
-          at: Date.now(),
-          deviceId: device.deviceId,
-          deviceName: device.name,
-          accessMode: 'full',
-          ...(device.teamBinding
-            ? {
-                teamGroupId: device.teamBinding.teamGroupId,
-                memberId: device.teamBinding.memberId
-              }
-            : undefined),
-          method: 'access.grant.full',
-          result: 'allowed'
-        })
+        return { accessMode: null }
       }
+      const current = effectiveRuntimeAccessMode(device)
+      if (current === args.accessMode) {
+        return { accessMode: current }
+      }
+      // Full access is only given to someone who is connected right now, so the host sees who it is
+      // handing it to; going back to read-only needs a team record to return to.
+      const changed =
+        args.accessMode === 'full'
+          ? rpcServer.getMobileSocketWiring?.()?.isDeviceConnected(device.deviceId) === true &&
+            registry.setAccessMode(device.deviceId, 'full')
+          : device.teamBinding !== undefined &&
+            registry.setAccessMode(device.deviceId, 'team-read', device.teamBinding)
+      if (!changed) {
+        return { accessMode: current }
+      }
+      rpcServer.getRuntimeAccessAudit?.()?.record({
+        at: Date.now(),
+        deviceId: device.deviceId,
+        deviceName: device.name,
+        accessMode: args.accessMode,
+        ...(device.teamBinding
+          ? {
+              teamGroupId: device.teamBinding.teamGroupId,
+              memberId: device.teamBinding.memberId
+            }
+          : undefined),
+        method: args.accessMode === 'full' ? 'access.grant.full' : 'access.restore.readonly',
+        result: 'allowed'
+      })
+      return { accessMode: args.accessMode }
     }
-    return { granted }
-  })
+  )
 
   ipcMain.handle(
     'mobile:listRuntimeAccessAudit',

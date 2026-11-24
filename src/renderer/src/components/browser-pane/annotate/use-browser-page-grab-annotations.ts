@@ -10,12 +10,6 @@ import {
 } from 'react'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import {
-  resolveBrowserAnnotationHostRoute,
-  type BrowserAnnotationHostRouter
-} from './browser-annotation-host-route'
-import { hasPrototypeReviewPage } from '@/workbench/pr-review-notifications/prototype-store'
 import type {
   BrowserAnnotationIntent,
   BrowserGrabPayload
@@ -50,8 +44,6 @@ const annotationAddedGrabToastMessage = (): string =>
 
 export function useBrowserPageGrabAnnotations({
   browserTabId,
-  worktreeId,
-  documentKey,
   toolTargetId = browserTabId,
   isActive,
   grab,
@@ -60,13 +52,10 @@ export function useBrowserPageGrabAnnotations({
   trackingScroller,
   webviewRef,
   setBrowserOverlayViewport,
-  browserAnnotationsLength,
-  hostRoute
+  browserAnnotationsLength
 }: {
   /** Scopes the stored annotations. Stable for the life of the surface. */
   browserTabId: string
-  worktreeId: string
-  documentKey: string
   /**
    * The id main resolves to a guest. Defaults to the annotation scope, which is the same string
    * for a browser page — a preview re-mints this on recovery, and its annotations must not be
@@ -81,8 +70,6 @@ export function useBrowserPageGrabAnnotations({
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   setBrowserOverlayViewport: Dispatch<SetStateAction<BrowserOverlayViewport>>
   browserAnnotationsLength: number
-  /** Mirrors new annotations to the host that owns a page streamed from elsewhere. */
-  hostRoute?: BrowserAnnotationHostRouter
 }): {
   grabIntent: GrabIntent
   startGrabIntent: (nextIntent: GrabIntent) => void
@@ -283,9 +270,8 @@ export function useBrowserPageGrabAnnotations({
       if (!payload) {
         return
       }
-      const annotationId = createBrowserAnnotationId()
       addBrowserPageAnnotation({
-        id: annotationId,
+        id: createBrowserAnnotationId(),
         browserPageId: browserTabId,
         comment,
         intent,
@@ -294,43 +280,13 @@ export function useBrowserPageGrabAnnotations({
         payload: createBrowserAnnotationPayload(payload),
         ...(imagePaths.length > 0 ? { imagePaths } : {})
       })
-      const hostMirrorRoute =
-        hostRoute || hasPrototypeReviewPage(browserTabId)
-          ? resolveBrowserAnnotationHostRoute(hostRoute, worktreeId, browserTabId)
-          : null
-      if (hostMirrorRoute) {
-        void callRuntimeRpc(
-          hostMirrorRoute.target,
-          'workbench.prototypeReview.annotations.add',
-          {
-            worktree: hostMirrorRoute.worktree,
-            page: hostMirrorRoute.page,
-            id: annotationId,
-            documentKey,
-            comment,
-            x: payload.target.rectPage.x,
-            y: payload.target.rectPage.y,
-            label: payload.target.textSnippet || undefined
-          },
-          { timeoutMs: 15_000, suppressFeatureInteraction: true }
-        ).catch(() => undefined)
-      }
       recordFeatureInteraction('browser-annotations')
       pendingAnnotationPayloadRef.current = null
       setPendingAnnotationPayload(null)
       showGrabToast(annotationAddedGrabToastMessage(), 'success', payload)
       grab.rearm()
     },
-    [
-      addBrowserPageAnnotation,
-      browserTabId,
-      documentKey,
-      grab,
-      hostRoute,
-      recordFeatureInteraction,
-      showGrabToast,
-      worktreeId
-    ]
+    [addBrowserPageAnnotation, browserTabId, grab, recordFeatureInteraction, showGrabToast]
   )
 
   const handleCancelPendingBrowserAnnotation = useCallback((): void => {

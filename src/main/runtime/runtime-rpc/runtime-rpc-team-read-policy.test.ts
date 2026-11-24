@@ -82,8 +82,7 @@ describe('team-read RPC policy', () => {
       'settings.update',
       'browser.eval',
       'browser.exec',
-      'browser.goto',
-      'browser.grab.setMode'
+      'browser.goto'
     ]) {
       expect(teamReadDenialReason('team-read', method)).toBeNull()
     }
@@ -140,17 +139,35 @@ describe('team-read RPC policy', () => {
     const handler = (frame: { opcode: number }): void => {
       frames.push(frame.opcode)
     }
-    const readOnlyHandler = teamReadTerminalStreamHandler('team-read', handler as never)
-    for (const opcode of [
+    let mode: 'team-read' | 'full' = 'team-read'
+    const streamHandler = teamReadTerminalStreamHandler(() => mode, handler as never)
+    const send = (): void => {
+      for (const opcode of [
+        TerminalStreamOpcode.Input,
+        TerminalStreamOpcode.Resize,
+        TerminalStreamOpcode.ClaimViewport,
+        TerminalStreamOpcode.Ack
+      ]) {
+        streamHandler({ opcode, payload: new Uint8Array() } as never)
+      }
+    }
+    send()
+    expect(frames).toEqual([TerminalStreamOpcode.Ack])
+
+    // The host switches the member to full access while the terminal is open, then back.
+    frames.length = 0
+    mode = 'full'
+    send()
+    expect(frames).toEqual([
       TerminalStreamOpcode.Input,
       TerminalStreamOpcode.Resize,
       TerminalStreamOpcode.ClaimViewport,
       TerminalStreamOpcode.Ack
-    ]) {
-      readOnlyHandler({ opcode, payload: new Uint8Array() } as never)
-    }
+    ])
+    frames.length = 0
+    mode = 'team-read'
+    send()
     expect(frames).toEqual([TerminalStreamOpcode.Ack])
-    expect(teamReadTerminalStreamHandler('full', handler as never)).toBe(handler)
   })
 
   it('logs actions that run or change things on the host, and hides routine reads', () => {
@@ -160,7 +177,9 @@ describe('team-read RPC policy', () => {
       'project.list',
       'terminal.read',
       'terminal.multiplex',
-      'browser.mouseMove'
+      'browser.mouseMove',
+      'browser.screencast',
+      'workbench.metrics.refresh'
     ]) {
       expect(isRoutineReadRuntimeMethod(method)).toBe(true)
     }
@@ -170,10 +189,12 @@ describe('team-read RPC policy', () => {
       'settings.update',
       'terminal.createAgentSession',
       'session.tabs.close',
-      'browser.grab.setMode',
-      'browser.grab.screenshot',
       'workbench.review.receive',
-      'workbench.prototypeReview.annotations.add'
+      'workbench.prototypeReview.annotations.add',
+      'terminal.stop',
+      'agentSession.cancel',
+      'skills.install',
+      'automation.runNow'
     ]) {
       expect(isRoutineReadRuntimeMethod(method)).toBe(false)
     }

@@ -91,8 +91,11 @@ export const mobileApi = {
 
   listRuntimeAccessGrants: () => ipcRenderer.invoke('mobile:listRuntimeAccessGrants'),
 
-  grantRuntimeFullAccess: (args: { deviceIds: string[] }): Promise<{ granted: string[] }> =>
-    ipcRenderer.invoke('mobile:grantRuntimeFullAccess', args),
+  setRuntimeAccessMode: (args: {
+    deviceId: string
+    accessMode: 'team-read' | 'full'
+  }): Promise<{ accessMode: 'team-read' | 'full' | null }> =>
+    ipcRenderer.invoke('mobile:setRuntimeAccessMode', args),
 
   listRuntimeAccessAudit: (args?: {
     action?: string

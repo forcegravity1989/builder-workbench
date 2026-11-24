@@ -18,6 +18,7 @@ const calls = vi.hoisted(() => ({
 vi.mock('@/components/browser-pane/annotate/use-browser-page-annotation-send', () => ({
   useBrowserPageAnnotationSend: (args: { browserTabId: string }) => {
     calls.annotationSend.push({ browserTabId: args.browserTabId })
+    return { browserAnnotations: [] }
   }
 }))
 
@@ -62,6 +63,7 @@ function Harness({ grantId }: { grantId: string | null }): null {
   useDocPreviewGuestTools({
     previewId: PREVIEW_ID,
     worktreeId: 'wt-1',
+    filePath: '/repo/doc.html',
     grantId,
     webviewRef: webviewRef as never,
     containerRef: containerRef as never,
@@ -95,20 +97,27 @@ afterEach(() => {
 })
 
 describe('useDocPreviewGuestTools ids', () => {
-  it('scopes annotations and tools to the browser page the document is open in', () => {
+  it('names the browser page for annotations and tools, and nothing before a grant exists', () => {
+    // Why an empty target and not the page id: before a grant exists no guest has committed to
+    // this page, so naming it would park every tool request in the registration wait for a
+    // document the reader may never get.
+    render(null)
+    expect(calls.grabMode.at(-1)).toBe('')
+    expect(calls.grabAnnotations.at(-1)?.toolTargetId).toBe('')
+    expect(calls.viewportBridge).toHaveLength(0)
+    calls.grabAnnotations.length = 0
+
     render(FIRST_GRANT)
 
     expect(calls.annotationSend.at(-1)?.browserTabId).toBe(PREVIEW_ID)
     expect(calls.grabAnnotations.at(-1)?.browserTabId).toBe(PREVIEW_ID)
     expect(calls.grabAnnotations.at(-1)?.toolTargetId).toBe(PREVIEW_ID)
     expect(calls.grabMode.at(-1)).toBe(PREVIEW_ID)
-  })
 
-  // Why a re-mint is still worth a test with one id: main re-points the page at the replacement
-  // guest, so the surface the reader is looking at must keep the same name through it. A hook that
-  // rebuilt its target from the grant would orphan annotations under an id nothing reads again.
-  it('keeps naming the same surface across a re-mint', () => {
-    render(FIRST_GRANT)
+    // Why a re-mint is still worth checking with one id: main re-points the page at the
+    // replacement guest, so the surface the reader is looking at must keep the same name through
+    // it. A hook that rebuilt its target from the grant would orphan annotations under an id
+    // nothing reads again.
     render(SECOND_GRANT)
 
     expect(new Set(calls.annotationSend.map((call) => call.browserTabId))).toEqual(
@@ -118,16 +127,5 @@ describe('useDocPreviewGuestTools ids', () => {
       new Set([PREVIEW_ID])
     )
     expect(calls.viewportBridge.at(-1)?.toolTargetId).toBe(PREVIEW_ID)
-  })
-
-  // Why an empty target and not the page id: before a grant exists no guest has committed to this
-  // page, so naming it would park every tool request in the registration wait for a document the
-  // reader may never get.
-  it('names no tool target before a grant exists', () => {
-    render(null)
-
-    expect(calls.grabMode.at(-1)).toBe('')
-    expect(calls.grabAnnotations.at(-1)?.toolTargetId).toBe('')
-    expect(calls.viewportBridge).toHaveLength(0)
   })
 })

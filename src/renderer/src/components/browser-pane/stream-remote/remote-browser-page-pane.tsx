@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { BROWSER_CERTIFICATE_TRUST_RUNTIME_CAPABILITY } from '../../../../../shared/protocol-version'
 import type { BrowserPage as BrowserPageState } from '../../../../../shared/browser-workspace-types'
@@ -36,17 +36,6 @@ import {
 } from './remote-browser-page-context-menu'
 import { RemoteBrowserPageToolbar } from './remote-browser-page-toolbar'
 import { RemoteBrowserPageViewport } from './remote-browser-page-viewport'
-import { useRemoteBrowserGrabApi } from './use-remote-browser-grab-api'
-import { useRemoteBrowserGrabHover } from './use-remote-browser-grab-hover'
-import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
-import { useShortcutLabel } from '@/hooks/useShortcutLabel'
-import { BrowserGuestAnnotateOverlays } from '../annotate/browser-guest-annotate-overlays'
-import type { BrowserAnnotationHostRoute } from '../annotate/browser-annotation-host-route'
-import { useBrowserPageAnnotationSend } from '../annotate/use-browser-page-annotation-send'
-import { useBrowserPageGrabAnnotations } from '../annotate/use-browser-page-grab-annotations'
-import { useGrabMode } from '../annotate/useGrabMode'
-import type { BrowserChromeElementTools } from '../assemble-chrome/browser-chrome-toolbar'
-import type { BrowserOverlayViewport } from '../describe-page/browser-annotation-geometry'
 
 export function RemoteBrowserPagePane({
   browserTab,
@@ -294,26 +283,6 @@ export function RemoteBrowserPagePane({
     setPaneNotice
   })
 
-  // Why: element picking runs on the host's page, so it is driven by RPC to that host while the
-  // overlay it draws arrives in the screencast like the rest of the page.
-  const grabApi = useRemoteBrowserGrabApi({
-    runtimeTarget,
-    runtimeWorktree,
-    remotePageId: lifecycle.tokens.remotePage
-  })
-  const grab = useGrabMode(browserTab.id, grabApi)
-  const grabArmed = grab.state === 'armed' || grab.state === 'awaiting'
-  const handleRemotePointerMove = useRemoteBrowserGrabHover({
-    active: grabArmed,
-    getRemoteImagePoint,
-    runtimeTarget,
-    lifecycle,
-    runtimeWorktree,
-    enqueueRemoteInput,
-    createRemoteOperationToken,
-    isCurrentRemoteOperationToken
-  })
-
   useRemoteBrowserPageWheel({
     busy,
     imageRef,
@@ -372,68 +341,6 @@ export function RemoteBrowserPagePane({
     onDeliver: deliverMarkupToClipboard
   })
 
-  // Why a router and not fixed values: the host-side page id only exists once the stream is up, and
-  // it must not change identity per render or the annotation sync would restart each time.
-  const hostRouteInputs = useRef({ runtimeTarget, runtimeWorktree, lifecycle })
-  hostRouteInputs.current = { runtimeTarget, runtimeWorktree, lifecycle }
-  const hostRoute = useCallback((): BrowserAnnotationHostRoute | null => {
-    const {
-      runtimeTarget: getTarget,
-      runtimeWorktree: worktree,
-      lifecycle: stream
-    } = hostRouteInputs.current
-    const target = getTarget()
-    const page = stream.tokens.remotePage
-    return target && page ? { target, worktree, page } : null
-  }, [])
-  const annotationSend = useBrowserPageAnnotationSend({
-    browserTabId: browserTab.id,
-    worktreeId,
-    hostRoute,
-    syncWithHost: isActive
-  })
-  // Why a permanently empty ref: the guest is not a webview in this window, so overlays measure
-  // from the viewport container alone.
-  const webviewRef = useRef<Electron.WebviewTag | null>(null)
-  const [browserOverlayViewport, setBrowserOverlayViewport] = useState<BrowserOverlayViewport>({
-    scrollX: 0,
-    scrollY: 0,
-    version: 0
-  })
-  const grabAnnotations = useBrowserPageGrabAnnotations({
-    browserTabId: browserTab.id,
-    worktreeId,
-    documentKey: canonicalPrototypeReviewDocumentKey(
-      browserTab.docLocation?.filePath ?? browserTab.url
-    ),
-    isActive,
-    grab,
-    containerRef: remoteViewportRef,
-    webviewRef,
-    setBrowserOverlayViewport,
-    browserAnnotationsLength: annotationSend.browserAnnotations.length,
-    hostRoute
-  })
-  const grabElementShortcut = useShortcutLabel('browser.grabElement')
-  const elementTools = useMemo<BrowserChromeElementTools>(
-    () => ({
-      activeIntent: grab.state !== 'idle' ? grabAnnotations.grabIntent : null,
-      onStartIntent: grabAnnotations.startGrabIntent,
-      disabled: frameUrl === null || markup.isActive,
-      grabShortcutLabel: grabElementShortcut,
-      annotationCount: annotationSend.browserAnnotations.length
-    }),
-    [
-      annotationSend.browserAnnotations.length,
-      frameUrl,
-      grab.state,
-      grabAnnotations.grabIntent,
-      grabAnnotations.startGrabIntent,
-      grabElementShortcut,
-      markup.isActive
-    ]
-  )
-
   return (
     // The testid scopes E2E queries to this pane: a workspace can hold more than one browser pane,
     // and controls like the address bar are otherwise ambiguous across them.
@@ -487,7 +394,6 @@ export function RemoteBrowserPagePane({
         onBack={() => void runRemoteNavigation('browser.back')}
         onForward={() => void runRemoteNavigation('browser.forward')}
         onReload={() => void runRemoteNavigation('browser.reload')}
-        elementTools={elementTools}
       />
       <RemoteBrowserPageViewport
         remoteViewportRef={remoteViewportRef}
@@ -495,6 +401,7 @@ export function RemoteBrowserPagePane({
         frameUrl={frameUrl}
         frameMetadata={frameMetadata}
         busy={busy}
+        markup={markup}
         browserTab={browserTab}
         remoteError={remoteError}
         streamStatus={streamStatus}
@@ -510,22 +417,8 @@ export function RemoteBrowserPagePane({
         onReconnect={reconnectRemoteStream}
         handleRemotePointerDown={handleRemotePointerDown}
         handleRemotePointerUp={handleRemotePointerUp}
-        handleRemotePointerMove={handleRemotePointerMove}
         handleRemoteContextMenu={handleRemoteContextMenu}
         handleRemoteScreenshotKeyDown={handleRemoteScreenshotKeyDown}
-        grabArmed={grabArmed}
-        overlays={
-          <BrowserGuestAnnotateOverlays
-            markup={markup}
-            grab={grab}
-            annotationSend={annotationSend}
-            grabAnnotations={grabAnnotations}
-            containerRef={remoteViewportRef}
-            webviewRef={webviewRef}
-            browserOverlayViewport={browserOverlayViewport}
-            worktreeId={worktreeId}
-          />
-        }
       />
     </div>
   )

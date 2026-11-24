@@ -15,6 +15,8 @@ import {
 } from '../../../../../shared/browser-url'
 import type { BrowserScreencastFrameMetadata } from '../../../../../shared/browser-screencast-protocol'
 import { getRemoteBrowserFrameStyle } from './remote-browser-frame-style'
+import { MarkupOverlay } from '../annotate/MarkupOverlay'
+import type { MarkupModeController } from '../annotate/useMarkupMode'
 import { BrowserLoadFailureOverlay } from '../navigate/browser-load-failure-overlay'
 import { ReopenBrowserPageOnServerButton } from '../ReopenBrowserPageOnServerButton'
 import { toDisplayUrl } from '../describe-page/browser-page-url-display'
@@ -31,6 +33,7 @@ export function RemoteBrowserPageViewport({
   frameUrl,
   frameMetadata,
   busy,
+  markup,
   browserTab,
   remoteError,
   streamStatus,
@@ -47,16 +50,14 @@ export function RemoteBrowserPageViewport({
   handleRemotePointerDown,
   handleRemotePointerUp,
   handleRemoteContextMenu,
-  handleRemotePointerMove,
-  handleRemoteScreenshotKeyDown,
-  grabArmed,
-  overlays
+  handleRemoteScreenshotKeyDown
 }: {
   remoteViewportRef: React.RefObject<HTMLDivElement | null>
   imageRef: React.RefObject<HTMLImageElement | null>
   frameUrl: string | null
   frameMetadata: BrowserScreencastFrameMetadata | null
   busy: boolean
+  markup: MarkupModeController
   browserTab: BrowserPageState
   remoteError: string | null
   streamStatus: RemoteBrowserStreamStatus
@@ -73,12 +74,7 @@ export function RemoteBrowserPageViewport({
   handleRemotePointerDown: (event: React.PointerEvent<HTMLImageElement>) => void
   handleRemotePointerUp: (event: React.PointerEvent<HTMLImageElement>) => void
   handleRemoteContextMenu: (event: React.MouseEvent<HTMLImageElement>) => void
-  handleRemotePointerMove: (event: React.PointerEvent<HTMLImageElement>) => void
   handleRemoteScreenshotKeyDown: (event: React.KeyboardEvent<HTMLImageElement>) => void
-  /** The element picker is armed, so the pointer is aiming rather than browsing. */
-  grabArmed: boolean
-  /** The annotate and markup layers painted over the page. */
-  overlays: React.ReactNode
 }): React.JSX.Element {
   const remoteFrameStyle = useMemo(() => getRemoteBrowserFrameStyle(frameMetadata), [frameMetadata])
   const remoteFailureUrl = browserTab.loadError?.validatedUrl ?? browserTab.url
@@ -94,6 +90,14 @@ export function RemoteBrowserPageViewport({
       tabIndex={-1}
       className="relative min-h-0 flex-1 overflow-hidden bg-background"
     >
+      {markup.isActive && markup.baseImage ? (
+        <MarkupOverlay
+          baseImage={markup.baseImage}
+          busy={markup.state === 'composing'}
+          onComplete={(input) => void markup.complete(input)}
+          onCancel={markup.cancel}
+        />
+      ) : null}
       {frameUrl ? (
         <img
           data-testid="remote-browser-frame"
@@ -102,10 +106,9 @@ export function RemoteBrowserPageViewport({
           alt=""
           tabIndex={0}
           style={remoteFrameStyle}
-          className={`absolute top-0 left-0 max-w-none bg-white outline-none ${grabArmed ? 'cursor-crosshair' : 'cursor-default'}`}
+          className="absolute top-0 left-0 max-w-none cursor-default bg-white outline-none"
           onPointerDown={handleRemotePointerDown}
           onPointerUp={handleRemotePointerUp}
-          onPointerMove={handleRemotePointerMove}
           onContextMenu={handleRemoteContextMenu}
           onKeyDown={handleRemoteScreenshotKeyDown}
           draggable={false}
@@ -138,7 +141,6 @@ export function RemoteBrowserPageViewport({
           </div>
         </div>
       )}
-      {overlays}
       {showRemoteFailureOverlay && browserTab.loadError ? (
         <BrowserLoadFailureOverlay
           loadError={browserTab.loadError}

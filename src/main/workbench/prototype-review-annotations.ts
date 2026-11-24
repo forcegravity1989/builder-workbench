@@ -9,15 +9,14 @@ import {
 } from '../../shared/workbench/prototype-review-annotation'
 
 const AnnotationListSchema = z.array(PrototypeReviewAnnotationSchema)
+// Why: any connected member may submit, so one document's notes are bounded.
+const MAX_ANNOTATIONS_PER_DOCUMENT = 200
+// Notes are kept per document, so every reviewer's submissions for one file read back together.
 const annotations = new Map<string, PrototypeReviewAnnotation[]>()
 let loaded = false
 let writes: Promise<unknown> = Promise.resolve()
 const annotationsPath = () =>
-  join(getCanonicalUserDataPath(), 'workbench-prototype-review-annotations.json')
-
-function key(pageId: string, documentKey: string): string {
-  return `${pageId}:${documentKey}`
-}
+  join(getCanonicalUserDataPath(), 'workbench-prototype-review-annotations-v2.json')
 
 async function loadAnnotations(): Promise<void> {
   if (loaded) {
@@ -27,8 +26,10 @@ async function loadAnnotations(): Promise<void> {
   try {
     const stored = AnnotationListSchema.parse(JSON.parse(await readFile(annotationsPath(), 'utf8')))
     for (const annotation of stored) {
-      const entryKey = key(annotation.pageId, annotation.documentKey)
-      annotations.set(entryKey, [...(annotations.get(entryKey) ?? []), annotation])
+      annotations.set(annotation.documentKey, [
+        ...(annotations.get(annotation.documentKey) ?? []),
+        annotation
+      ])
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
@@ -50,40 +51,42 @@ function persistAnnotations(): Promise<void> {
 }
 
 export async function readPrototypeReviewAnnotations(
-  pageId: string,
   documentKey: string
 ): Promise<PrototypeReviewAnnotation[]> {
   await loadAnnotations()
-  return AnnotationListSchema.parse(annotations.get(key(pageId, documentKey)) ?? [])
+  return AnnotationListSchema.parse(annotations.get(documentKey) ?? [])
 }
 
 export async function addPrototypeReviewAnnotation(
   annotation: PrototypeReviewAnnotation
 ): Promise<PrototypeReviewAnnotation> {
   await loadAnnotations()
-  const entryKey = key(annotation.pageId, annotation.documentKey)
-  const current = annotations.get(entryKey) ?? []
+  const current = annotations.get(annotation.documentKey) ?? []
+  if (
+    current.length >= MAX_ANNOTATIONS_PER_DOCUMENT &&
+    !current.some((item) => item.id === annotation.id)
+  ) {
+    throw new Error('该文档的批注已达上限')
+  }
   const next = current.some((item) => item.id === annotation.id)
     ? current.map((item) => (item.id === annotation.id ? annotation : item))
     : [...current, annotation]
-  annotations.set(entryKey, next)
+  annotations.set(annotation.documentKey, next)
   await persistAnnotations()
   return annotation
 }
 
 export async function deletePrototypeReviewAnnotation(
-  pageId: string,
   documentKey: string,
   annotationId: string
 ): Promise<boolean> {
   await loadAnnotations()
-  const entryKey = key(pageId, documentKey)
-  const current = annotations.get(entryKey) ?? []
+  const current = annotations.get(documentKey) ?? []
   const next = current.filter((annotation) => annotation.id !== annotationId)
   if (next.length === current.length) {
     return false
   }
-  annotations.set(entryKey, next)
+  annotations.set(documentKey, next)
   await persistAnnotations()
   return true
 }

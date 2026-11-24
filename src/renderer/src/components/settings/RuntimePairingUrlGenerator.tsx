@@ -52,7 +52,7 @@ export function RuntimePairingUrlGenerator({
   const [isLoadingAccessGrants, setIsLoadingAccessGrants] = useState(false)
   const [refreshingNetworkInterfaces, setRefreshingNetworkInterfaces] = useState(false)
   const [revokingGrantId, setRevokingGrantId] = useState<string | null>(null)
-  const [grantingFullAccess, setGrantingFullAccess] = useState(false)
+  const [changingAccessGrantId, setChangingAccessGrantId] = useState<string | null>(null)
   const [runtimeAccessAudit, setRuntimeAccessAudit] = useState<RuntimeAccessAuditEntry[]>([])
   const [isLoadingAudit, setIsLoadingAudit] = useState(false)
   const [auditResult, setAuditResult] = useState<RuntimeAccessAuditResult | 'all'>('all')
@@ -377,50 +377,57 @@ export function RuntimePairingUrlGenerator({
     }
   }
 
-  const grantRuntimeFullAccess = async (grants: RuntimeAccessGrant[]): Promise<boolean> => {
-    if (grants.length === 0) {
-      return false
-    }
-    setGrantingFullAccess(true)
+  const changeRuntimeAccessMode = async (
+    grant: RuntimeAccessGrant,
+    accessMode: 'team-read' | 'full'
+  ): Promise<void> => {
+    setChangingAccessGrantId(grant.deviceId)
     try {
-      const result = await window.api.mobile.grantRuntimeFullAccess({
-        deviceIds: grants.map((grant) => grant.deviceId)
+      const result = await window.api.mobile.setRuntimeAccessMode({
+        deviceId: grant.deviceId,
+        accessMode
       })
       await loadRuntimeAccessGrants()
-      if (mountedRef.current) {
-        toast.success(
-          result.granted.length === 1
-            ? translate(
-                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGranted',
-                'Full access granted.'
-              )
-            : translate(
-                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantedCount',
-                'Full access granted to {{value0}} devices.',
-                { value0: result.granted.length }
-              )
-        )
+      if (!mountedRef.current) {
+        return
       }
-      return result.granted.length === grants.length
+      if (result.accessMode !== accessMode) {
+        toast.error(
+          translate(
+            'auto.components.settings.RuntimePairingUrlGenerator.accessModeChangeFailed',
+            'Failed to change access.'
+          )
+        )
+        return
+      }
+      toast.success(
+        accessMode === 'full'
+          ? translate(
+              'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGranted',
+              'Full access granted.'
+            )
+          : translate(
+              'auto.components.settings.RuntimePairingUrlGenerator.readOnlyRestored',
+              'Read-only access restored.'
+            )
+      )
     } catch (error) {
       if (mountedRef.current) {
         toast.error(
           error instanceof Error
             ? error.message
             : translate(
-                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantFailed',
-                'Failed to grant full access.'
+                'auto.components.settings.RuntimePairingUrlGenerator.accessModeChangeFailed',
+                'Failed to change access.'
               )
         )
       }
-      return false
     } finally {
       if (mountedRef.current) {
-        setGrantingFullAccess(false)
+        setChangingAccessGrantId(null)
       }
     }
   }
-
   const copyGeneratedUrl = async (target: 'web' | 'pairing', value: string): Promise<void> => {
     try {
       await window.api.ui.writeClipboardText(value)
@@ -570,11 +577,11 @@ export function RuntimePairingUrlGenerator({
         currentGrantId={runtimePairingDeviceId}
         isLoading={isLoadingAccessGrants}
         revokingGrantId={revokingGrantId}
-        grantingFullAccess={grantingFullAccess}
+        changingAccessGrantId={changingAccessGrantId}
         onRefresh={() => void loadRuntimeAccessGrants({ showToastOnError: true })}
         onRevoke={(grant) => void revokeRuntimeAccess(grant)}
         onCopyLink={(grant) => void copyGrantLink(grant)}
-        onGrantFullAccess={grantRuntimeFullAccess}
+        onChangeAccessMode={(grant, accessMode) => void changeRuntimeAccessMode(grant, accessMode)}
       />
       <RuntimeAccessAuditLog
         entries={runtimeAccessAudit}

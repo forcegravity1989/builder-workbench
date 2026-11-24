@@ -45,7 +45,6 @@ import { useBrowserPageWebviewPartition } from '../host-guest/use-browser-page-w
 import { useBrowserPageWebviewUrlSync } from '../navigate/use-browser-page-webview-url-sync'
 import { useBrowserPageZoomFeedback } from '../host-guest/use-browser-page-zoom-feedback'
 import { useBrowserPageViewportScrollReporting } from '../host-guest/use-browser-page-viewport-scroll-reporting'
-import { canonicalPrototypeReviewDocumentKey } from '../../../../../shared/workbench/prototype-review-annotation'
 
 function BrowserContextualTour() {
   useContextualTour('browser', true)
@@ -175,19 +174,12 @@ export function BrowserPagePane({
   })
   const annotationSend = useBrowserPageAnnotationSend({
     browserTabId: browserTab.id,
-    worktreeId,
-    // Why: a member of a shared host may annotate this page from their side; the host's record is
-    // the only place that annotation reaches this window.
-    syncWithHost: isActive
+    worktreeId
   })
   const grab = useGrabMode(browserTab.id)
   const markup = useBrowserPageMarkupCapture(webviewRef)
   const grabAnnotations = useBrowserPageGrabAnnotations({
     browserTabId: browserTab.id,
-    worktreeId,
-    documentKey: canonicalPrototypeReviewDocumentKey(
-      browserTab.docLocation?.filePath ?? browserTab.url
-    ),
     isActive,
     grab,
     containerRef,

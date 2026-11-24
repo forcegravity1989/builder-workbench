@@ -9,6 +9,7 @@ import { DocPreviewAddressEdit } from './doc-preview-address-edit'
 import type { DocPreviewDocumentIdentity } from './doc-preview-document-identity'
 import type { DocPreviewHistory } from './doc-preview-webview-history'
 import { DocPreviewOverflowMenu } from './doc-preview-overflow-menu'
+import { PrototypeReviewInviteButton } from '@/workbench/pr-review-notifications/PrototypeReviewInviteButton'
 
 /**
  * Binds the shared browser chrome to a workspace document: the address bar becomes a read-only
@@ -97,6 +98,9 @@ export function DocPreviewToolbar({
         // be the one who spends it.
         canShowDiscoveryHint: false
       }}
+      shareControl={
+        <PrototypeReviewInviteButton worktreeId={worktreeId} filePath={identity.absolutePath} />
+      }
       viewSource={{
         onSelect: onOpenSource,
         label: translate(

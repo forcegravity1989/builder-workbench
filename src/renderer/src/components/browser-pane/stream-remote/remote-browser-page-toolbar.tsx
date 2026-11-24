@@ -1,15 +1,13 @@
-import { Loader2, RefreshCw } from 'lucide-react'
+import { Loader2, MessageSquarePlus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import {
-  BrowserChromeToolbar,
-  type BrowserChromeElementTools
-} from '../assemble-chrome/browser-chrome-toolbar'
+import { BrowserNavigationControlRow } from '../assemble-chrome/browser-navigation-control-row'
 import BrowserAddressBar from '../assemble-chrome/BrowserAddressBar'
 import type { BrowserAddressBarEditSessionBinding } from '../assemble-chrome/use-browser-address-bar-edit-session'
 import type { BrowserPageDocLocation } from '../../../../../shared/browser-workspace-types'
 import { RemoteRuntimeEgressIndicator } from '../assemble-chrome/browser-egress-indicator'
+import { MarkupDrawButton } from '../annotate/MarkupDrawButton'
 import type { MarkupModeController } from '../annotate/useMarkupMode'
 
 export function RemoteBrowserPageToolbar({
@@ -24,7 +22,6 @@ export function RemoteBrowserPageToolbar({
   busy,
   loading,
   markup,
-  elementTools,
   frameUrl,
   isActive,
   onBack,
@@ -43,7 +40,6 @@ export function RemoteBrowserPageToolbar({
   busy: boolean
   loading: boolean
   markup: MarkupModeController
-  elementTools: BrowserChromeElementTools
   frameUrl: string | null
   isActive: boolean
   onBack: () => void
@@ -51,7 +47,7 @@ export function RemoteBrowserPageToolbar({
   onReload: () => void
 }): React.JSX.Element {
   return (
-    <BrowserChromeToolbar
+    <BrowserNavigationControlRow
       controls={{
         // Why: remote pages report no history depth, so the arrows stay live and a
         // dead-end back/forward RPC is simply a no-op on the host.
@@ -107,17 +103,39 @@ export function RemoteBrowserPageToolbar({
           </TooltipContent>
         </Tooltip>
       }
-      elementTools={elementTools}
-      markup={{
-        active: markup.isActive,
-        disabled: !frameUrl || elementTools.activeIntent !== null,
-        onToggle: () => (markup.isActive ? markup.cancel() : void markup.start()),
-        canShowDiscoveryHint: isActive
-      }}
-      // Why null: view-source and open-in-default-browser act on a local page; this one lives on the host.
-      viewSource={null}
-      openExternal={null}
-      showTourAnchors
-    />
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 opacity-50"
+            aria-disabled="true"
+            aria-label={translate(
+              'auto.components.browser.pane.BrowserPane.deb5293610',
+              'Browser annotations unavailable in remote runtime'
+            )}
+            onClick={(event) => {
+              event.preventDefault()
+            }}
+          >
+            <MessageSquarePlus className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" sideOffset={4}>
+          {translate(
+            'auto.components.browser.pane.BrowserPane.8b7e6d1f5a',
+            'Browser annotations are only available in local browser tabs.'
+          )}
+        </TooltipContent>
+      </Tooltip>
+      <MarkupDrawButton
+        onClick={() => (markup.isActive ? markup.cancel() : void markup.start())}
+        disabled={!frameUrl}
+        active={markup.isActive}
+        surfaceActive={isActive}
+        className="h-7 w-7"
+      />
+    </BrowserNavigationControlRow>
   )
 }

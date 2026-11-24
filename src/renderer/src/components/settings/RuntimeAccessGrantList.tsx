@@ -1,16 +1,8 @@
-import { Copy, Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
+import { Copy, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { RuntimeAccessGrant } from '../../../../shared/runtime-access-grants'
 import { Button } from '../ui/button'
-import { Checkbox } from '../ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '../ui/dialog'
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { translate } from '@/i18n/i18n'
 
@@ -48,11 +40,12 @@ type RuntimeAccessGrantListProps = {
   currentGrantId: string | null
   isLoading: boolean
   revokingGrantId: string | null
-  grantingFullAccess: boolean
+  /** The member whose access is being switched, so only that row waits. */
+  changingAccessGrantId: string | null
   onRefresh: () => void
   onRevoke: (grant: RuntimeAccessGrant) => void
   onCopyLink: (grant: RuntimeAccessGrant) => void
-  onGrantFullAccess: (grants: RuntimeAccessGrant[]) => Promise<boolean>
+  onChangeAccessMode: (grant: RuntimeAccessGrant, accessMode: 'team-read' | 'full') => void
 }
 
 export function RuntimeAccessGrantList({
@@ -61,14 +54,12 @@ export function RuntimeAccessGrantList({
   currentGrantId,
   isLoading,
   revokingGrantId,
-  grantingFullAccess,
+  changingAccessGrantId,
   onRefresh,
   onRevoke,
   onCopyLink,
-  onGrantFullAccess
+  onChangeAccessMode
 }: RuntimeAccessGrantListProps): React.JSX.Element {
-  const [selectedGrantIds, setSelectedGrantIds] = useState<string[]>([])
-  const [confirmOpen, setConfirmOpen] = useState(false)
   // A shared team link has one record per connected member, so the list is always split into who
   // connected and the links themselves (a leaked link can still be revoked as a whole). The tabs stay
   // in place when one side is empty so the view never changes shape.
@@ -77,31 +68,6 @@ export function RuntimeAccessGrantList({
     () => grants.filter((grant) => (grant.parentDeviceId !== undefined) === (view === 'members')),
     [grants, view]
   )
-  const selectableGrants = useMemo(
-    () =>
-      visibleGrants.filter((grant) => grant.accessMode === 'team-read' && grant.connected === true),
-    [visibleGrants]
-  )
-  const selectedGrants = selectableGrants.filter((grant) =>
-    selectedGrantIds.includes(grant.deviceId)
-  )
-
-  const toggleGrant = (deviceId: string): void => {
-    setSelectedGrantIds((current) =>
-      current.includes(deviceId)
-        ? current.filter((candidate) => candidate !== deviceId)
-        : [...current, deviceId]
-    )
-  }
-
-  const grantFullAccess = async (): Promise<void> => {
-    const granted = await onGrantFullAccess(selectedGrants)
-    if (granted) {
-      setSelectedGrantIds([])
-      setConfirmOpen(false)
-    }
-  }
-
   return (
     <div className={className}>
       <div className="mb-2 flex items-center justify-between gap-3">
@@ -163,61 +129,15 @@ export function RuntimeAccessGrantList({
         </p>
       ) : (
         <div className="space-y-2">
-          {selectableGrants.length > 0 ? (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2">
-              <div className="text-muted-foreground text-xs">
-                {selectedGrants.length > 0
-                  ? translate(
-                      'auto.components.settings.RuntimeAccessGrantList.selectedCount',
-                      '{{value0}} selected',
-                      { value0: selectedGrants.length }
-                    )
-                  : translate(
-                      'auto.components.settings.RuntimeAccessGrantList.selectReadonly',
-                      'Select connected read-only devices'
-                    )}
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={selectedGrants.length === 0 || grantingFullAccess}
-                onClick={() => setConfirmOpen(true)}
-              >
-                {grantingFullAccess ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ShieldCheck className="size-3.5" />
-                )}
-                {translate(
-                  'auto.components.settings.RuntimeAccessGrantList.grantFullAccess',
-                  'Grant full access'
-                )}
-              </Button>
-            </div>
-          ) : null}
           {visibleGrants.map((grant) => {
             const isCurrent = currentGrantId === grant.deviceId
             const isRevoking = revokingGrantId === grant.deviceId
-            const canGrantFullAccess = grant.accessMode === 'team-read' && grant.connected === true
+            const isMember = grant.parentDeviceId !== undefined
             return (
               <div
                 key={grant.deviceId}
                 className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2"
               >
-                {canGrantFullAccess ? (
-                  <Checkbox
-                    checked={selectedGrantIds.includes(grant.deviceId)}
-                    onCheckedChange={() => toggleGrant(grant.deviceId)}
-                    aria-label={translate(
-                      'auto.components.settings.RuntimeAccessGrantList.selectForFullAccess',
-                      'Select {{value0}} for full access',
-                      { value0: grant.name }
-                    )}
-                  />
-                ) : (
-                  <div className="size-4 shrink-0" aria-hidden="true" />
-                )}
                 <GrantAvatar grant={grant} />
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex min-w-0 items-center gap-2">
@@ -232,16 +152,20 @@ export function RuntimeAccessGrantList({
                     ) : null}
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {grant.accessMode === 'team-read'
-                      ? translate(
-                          'auto.components.settings.RuntimeAccessGrantList.teamReadonly',
-                          'Team read-only'
-                        )
-                      : translate(
-                          'auto.components.settings.RuntimeAccessGrantList.fullAccess',
-                          'Full access'
-                        )}
-                    {' · '}
+                    {isMember ? null : (
+                      <>
+                        {grant.accessMode === 'team-read'
+                          ? translate(
+                              'auto.components.settings.RuntimeAccessGrantList.teamReadonly',
+                              'Team read-only'
+                            )
+                          : translate(
+                              'auto.components.settings.RuntimeAccessGrantList.fullAccess',
+                              'Full access'
+                            )}
+                        {' · '}
+                      </>
+                    )}
                     {grant.connected === true
                       ? translate(
                           'auto.components.settings.RuntimeAccessGrantList.connected',
@@ -259,6 +183,49 @@ export function RuntimeAccessGrantList({
                           )}
                   </div>
                 </div>
+                {isMember ? (
+                  <ToggleGroup
+                    type="single"
+                    size="sm"
+                    variant="outline"
+                    value={grant.accessMode}
+                    disabled={changingAccessGrantId === grant.deviceId}
+                    onValueChange={(value) => {
+                      if (value === 'team-read' || value === 'full') {
+                        if (value !== grant.accessMode) {
+                          onChangeAccessMode(grant, value)
+                        }
+                      }
+                    }}
+                    className="ml-auto shrink-0"
+                    aria-label={grant.name}
+                  >
+                    <ToggleGroupItem value="team-read" className="px-2 text-xs">
+                      {translate(
+                        'auto.components.settings.RuntimeAccessGrantList.accessReadOnly',
+                        'Read-only'
+                      )}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="full"
+                      className="px-2 text-xs"
+                      disabled={grant.accessMode === 'team-read' && grant.connected !== true}
+                      title={
+                        grant.accessMode === 'team-read' && grant.connected !== true
+                          ? translate(
+                              'auto.components.settings.RuntimeAccessGrantList.fullAccessNeedsConnection',
+                              'Full access can only be given to a connected member.'
+                            )
+                          : undefined
+                      }
+                    >
+                      {translate(
+                        'auto.components.settings.RuntimeAccessGrantList.fullAccess',
+                        'Full access'
+                      )}
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                ) : null}
                 {grant.parentDeviceId === undefined ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -327,40 +294,6 @@ export function RuntimeAccessGrantList({
           )}
         </p>
       ) : null}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {translate(
-                'auto.components.settings.RuntimeAccessGrantList.confirmTitle',
-                'Grant full access?'
-              )}
-            </DialogTitle>
-            <DialogDescription>
-              {translate(
-                'auto.components.settings.RuntimeAccessGrantList.confirmDescription',
-                'The selected devices will be able to create worktrees, start sessions, send input, and run commands on this host.'
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
-              {translate('auto.components.settings.RuntimeAccessGrantList.cancel', 'Cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void grantFullAccess()}
-              disabled={grantingFullAccess}
-            >
-              {grantingFullAccess ? <Loader2 className="size-3.5 animate-spin" /> : null}
-              {translate(
-                'auto.components.settings.RuntimeAccessGrantList.confirmGrant',
-                'Grant full access'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
