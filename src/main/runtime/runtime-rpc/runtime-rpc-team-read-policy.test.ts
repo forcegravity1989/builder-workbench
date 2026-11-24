@@ -117,6 +117,7 @@ describe('team-read RPC policy', () => {
       'orchestration.send',
       'orchestration.check',
       'skills.previewInstall',
+      'files.browseServerDir',
       'terminal.send',
       'session.tabs.createTerminal',
       'repo.add',

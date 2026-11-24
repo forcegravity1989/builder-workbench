@@ -97,6 +97,8 @@ const TEAM_READ_DENIED_METHODS = new Set([
   'terminal.stopExact',
   'terminal.updateViewport',
   // Worktrees, projects and files
+  // Lists any directory on the host, not only the shared project.
+  'files.browseServerDir',
   'files.commitUpload',
   'files.copy',
   'files.createDir',
