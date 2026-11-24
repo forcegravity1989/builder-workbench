@@ -9,4 +9,4 @@ Single choice from a short, known list.
 - Trigger sizes `default` 36px, `sm` 32px. The list uses the shared translucent menu recipe (82% white / 72% black, 14% border, dual shadow, 40px backdrop blur), the same as DropdownMenu.
 
 ## The consumer provides
-`value`, `onValueChange`, `SelectItem`s with text; optional `SelectLabel` and `SelectSeparator` for groups.
+`value`, `onValueChange`, `SelectItem`s with text; optional `SelectLabel` and `SelectSeparator` for groups. Disabled and invalid states must reflect the actual form state. The HTML preview shows appearance only; opening, selection, keyboard navigation, focus return and popup placement come from the React/Radix component. Read its source for the complete props contract.

@@ -1,4 +1,5 @@
 import { MilestoneReviewNav } from './milestone-review-nav.jsx'
+import { CURRENT_BW_SHELL as shellMeta } from '../../prototype-shell-meta.js'
 import { AddMilestone, MilestoneGuide } from './milestones-roadmap.jsx'
 import { Timeline } from './milestones-timeline.jsx'
 import {
@@ -429,8 +430,11 @@ function App() {
         <div className="ml-workspace">
           <header className="ml-topbar">
             <span>
-              Builders’ Workbench <span>›</span>项目总览
+              {shellMeta.projectName} <span>›</span>项目总览
             </span>
+            <small className="ml-shell-meta" title="当前壳元数据与示例数据分离">
+              壳：{shellMeta.productName} · 内容：版本与里程碑示例快照
+            </small>
             <div className="ml-actions">
               <label className="ml-scene-label">
                 原型场景

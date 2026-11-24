@@ -19,5 +19,15 @@
     <button data-slot="tabs-trigger" data-state="inactive"><svg class="lucide lucide-globe" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>Browser</button>
   </div>
 </div>
+<div class="pv-col">
+  <div data-slot="tabs" data-orientation="vertical">
+    <div data-slot="tabs-list" data-variant="line" aria-label="Vertical appearance sample">
+      <button data-slot="tabs-trigger" data-state="active">Changes</button>
+      <button data-slot="tabs-trigger" data-state="inactive">History</button>
+      <button data-slot="tabs-trigger" data-state="inactive" disabled>Unavailable</button>
+    </div>
+    <div data-slot="tabs-content">Vertical line tabs · static appearance sample</div>
+  </div>
+</div>
 </body>
 </html>

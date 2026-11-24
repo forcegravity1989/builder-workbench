@@ -22,7 +22,7 @@ export function usePlanningPriorReview({
   onAct: (operation: () => Promise<unknown>) => Promise<void>
 }) {
   const { scope, worktreeId } = context
-  const { edit: editMaterial } = material
+  const { edit: editMaterial, liveDraft } = material
   const plan = material.draft?.document
   const startVersion = context.version
   const prior = usePriorCarryovers(
@@ -65,12 +65,27 @@ export function usePlanningPriorReview({
       !disabled &&
       canAdoptSource
     ) {
+      // The closure guards above can be stale: a same-commit re-select clears
+      // the controller before this effect runs. Re-check the live draft with
+      // the same conditions as canAdoptSource, or skip this round — the
+      // re-read's next commit retries naturally (#767).
+      const live = liveDraft()
+      if (
+        !live ||
+        live.document.version !== plan.version ||
+        live.document.summary.progressSource ||
+        live.dirty ||
+        live.error ||
+        live.remote !== undefined
+      ) {
+        return
+      }
       editMaterial({
-        ...plan,
-        summary: { ...plan.summary, progressSource: resolvedSource }
+        ...live.document,
+        summary: { ...live.document.summary, progressSource: resolvedSource }
       })
     }
-  }, [plan, startVersion, resolvedSource, disabled, canAdoptSource, editMaterial])
+  }, [plan, startVersion, resolvedSource, disabled, canAdoptSource, editMaterial, liveDraft])
 
   const [openingSource, setOpeningSource] = useState(false)
   const openAcceptance = () =>

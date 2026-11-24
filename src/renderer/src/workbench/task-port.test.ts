@@ -21,6 +21,7 @@ vi.mock('@/lib/codehub-api', () => ({ codehubApi: { viewTask: mocks.viewTask } }
 
 import { createTaskPort } from './task-port'
 import { createTaskReferenceReader } from './task-reference-reader'
+import { gitHubIdentityForTaskReference, resolveReferenceRepo } from './task-reference-repo'
 
 const githubRepo = {
   id: 'repo-gh',
@@ -120,6 +121,16 @@ describe('createTaskPort reads', () => {
     })
     expect(mocks.lookupGitHub).toHaveBeenCalledWith(
       expect.objectContaining({ repoPath: '/repos/bw', repoId: 'repo-gh', number: 95 })
+    )
+
+    // gh 原生裸 owner/repo 记录（无 host）同样解析到已登记仓库。
+    const [bare] = await createTaskPort(makeDeps()).listVersion(scope, [
+      { ...ghReference, repository: 'acme/repo' }
+    ])
+    expect(bare?.kind).toBe('ready')
+    expect(bare?.kind === 'ready' && bare.task.source.repoId).toBe('repo-gh')
+    expect(gitHubIdentityForTaskReference(githubRepo, 'acme/repo')).toEqual(
+      expect.objectContaining({ provider: 'github', owner: 'acme', repo: 'repo' })
     )
   })
 
@@ -244,6 +255,14 @@ describe('createTaskPort reads', () => {
         })
       })
     )
+    // 裸 owner/repo 默认 github.com（与归档状态探针的默认一致），不按 tail 配到企业 host。
+    expect(
+      resolveReferenceRepo(
+        makeDeps({ repos: () => [enterprise] }),
+        { ...scope, repoId: enterprise.id },
+        { ...ghReference, repository: 'acme/repo' }
+      )
+    ).toBeNull()
     const fork = {
       ...githubRepo,
       upstream: { owner: 'parent', repo: 'repo' },
