@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 export function MilestoneReviewButton({
   busy,
@@ -12,7 +12,7 @@ export function MilestoneReviewButton({
   reviewUrl,
   openReview,
   changes,
-  reviewInput,
+  blockedReason,
   secondary = false,
   submit
 }: {
@@ -26,11 +26,17 @@ export function MilestoneReviewButton({
   reviewUrl?: string
   openReview?(): void
   changes: string[]
-  reviewInput: object
+  blockedReason?: string
   secondary?: boolean
   submit(): void
 }) {
-  const [reviewed, setReviewed] = useState<object | null>(null)
+  const [open, setOpen] = useState(false)
+  const submittable = dirty || retry
+  useEffect(() => {
+    if (!submittable) {
+      setOpen(false)
+    }
+  }, [submittable])
   const viewReview =
     openReview ??
     (() => {
@@ -47,38 +53,51 @@ export function MilestoneReviewButton({
     )
   }
   if (!dirty && !retry && (hasReview || canViewReview)) {
+    const reason = !canViewReview
+      ? '评审链接尚未读到，请重试读取'
+      : busy
+        ? blockedReason
+        : undefined
     return (
-      <Button
-        size="xs"
-        variant={secondary ? 'outline' : 'default'}
-        data-contextual-tour-target="milestone-submit"
-        disabled={busy || !canViewReview}
-        title={!canViewReview ? '评审链接尚未读到，请重试读取' : undefined}
-        onClick={viewReview}
-      >
-        查看评审
-      </Button>
-    )
-  }
-  return (
-    <Popover
-      open={reviewed === reviewInput}
-      onOpenChange={(open) => {
-        if (!open || validate()) {
-          setReviewed(open ? reviewInput : null)
-        }
-      }}
-    >
-      <PopoverTrigger asChild>
+      <span className="inline-flex" title={busy || !canViewReview ? reason : undefined}>
         <Button
           size="xs"
           variant={secondary ? 'outline' : 'default'}
           data-contextual-tour-target="milestone-submit"
-          disabled={!canViewReview && (busy || conflict || (!dirty && !retry))}
+          disabled={busy || !canViewReview}
+          onClick={viewReview}
         >
-          {retry ? '重试提交' : hasReview ? '更新评审' : '提交评审'}
+          查看评审
         </Button>
-      </PopoverTrigger>
+      </span>
+    )
+  }
+  const triggerDisabled = !canViewReview && (busy || conflict || !submittable)
+  const confirmDisabled = busy || conflict || !submittable
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (!next || validate()) {
+          setOpen(next)
+        }
+      }}
+    >
+      <span
+        className="inline-flex"
+        title={triggerDisabled ? (blockedReason ?? '没有可提交的改动') : undefined}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            size="xs"
+            variant={secondary ? 'outline' : 'default'}
+            data-contextual-tour-target="milestone-submit"
+            disabled={triggerDisabled}
+          >
+            {retry ? '重试提交' : hasReview ? '更新评审' : '提交评审'}
+          </Button>
+        </PopoverTrigger>
+      </span>
       <PopoverContent className="wb-ml-review" align="end">
         <strong>本次改动</strong>
         <ul>
@@ -87,6 +106,7 @@ export function MilestoneReviewButton({
           ))}
         </ul>
         {retry && <p>重试推送已提交内容并创建评审。</p>}
+        {confirmDisabled && blockedReason && <p role="status">{blockedReason}</p>}
         {canViewReview && (
           <Button variant="ghost" size="xs" onClick={viewReview}>
             查看评审
@@ -95,10 +115,10 @@ export function MilestoneReviewButton({
         <Button
           size="xs"
           className="bg-foreground text-background hover:bg-foreground/90"
-          disabled={busy || conflict || (!dirty && !retry)}
+          disabled={confirmDisabled}
           onClick={() => {
-            if (reviewed === reviewInput && validate()) {
-              setReviewed(null)
+            if (validate()) {
+              setOpen(false)
               submit()
             }
           }}

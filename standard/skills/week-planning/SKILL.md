@@ -2,7 +2,7 @@
 name: week-planning
 description: Use when 在 BW 计划屏协助用户制定、评审和归档版本计划，或对应 Orca 周期运行启动。验收已有版本使用 version-acceptance。
 metadata:
-  version: 0.8.4
+  version: 0.8.5
 ---
 
 # 版本计划
@@ -27,7 +27,7 @@ metadata:
 | `goals`       | 版本目标成形并写入 goals                                                           |
 | `breakdown`   | Issue 创建/更新完成，版本标签与标题目标段已写定                                    |
 | `review`      | 用户在会话中明确确认评审通过后                                                     |
-| `archive`     | 提交归档 PR 之前；PR 开出后把 provider/repository/number 写入 `workflow.archivePr` |
+| `archive`     | 提交归档 PR 之前；PR 开出后把 provider/repository/number 写入 `workflow.archivePr`，repository 记 `<host>/<owner>/<repo>` |
 
 恢复会话时先校准：按材料实际进度把 stage 补写到真实到达的阶段，再继续。评审必须由用户明确表达确认才写 `review`，不因改过目标就代人记录。内容实质调整使后续阶段失效时，把 stage 回退到实际阶段。PR 是否合入由界面按 `archivePr` 读 provider 显示，合入依人的授权，stage 不代表已合入。
 

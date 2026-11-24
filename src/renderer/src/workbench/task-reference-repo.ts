@@ -54,6 +54,16 @@ export function knownGitHubIssueSource(
   return known?.repository === repository ? known.source : undefined
 }
 
+/** Bare owner/repo is gh's native record form; default it to github.com like the archive status probe does. */
+function gitHubReferenceKey(repository: string): string {
+  const normalized = normalizeGitRemoteUrl(repository)
+  if (normalized) {
+    return normalized
+  }
+  const bare = repository.trim().replace(/\.git$/i, '')
+  return /^[^/\\:\s]+\/[^/\\:\s]+$/.test(bare) ? `github.com/${bare}` : repository
+}
+
 function exactIdentityMatch(repo: Repo, repository: string): boolean {
   const identity = repo.gitRemoteIdentity
   const candidates = [
@@ -111,7 +121,10 @@ export function resolveReferenceRepo(
   scope: TaskReadHome,
   reference: CycleTaskReference
 ): Repo | null {
-  const wanted = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
+  const wanted =
+    reference.provider === 'github'
+      ? gitHubReferenceKey(reference.repository)
+      : (normalizeGitRemoteUrl(reference.repository) ?? reference.repository)
   const matches = deps
     .repos()
     .filter((repo) => repo.path && repoMatchesReference(repo, { ...reference, repository: wanted }))
@@ -129,12 +142,12 @@ export function gitHubIdentityForTaskReference(
   repo: Repo,
   repository: string
 ): GitHubOwnerRepo | undefined {
-  const known = knownGitHubIssueSource(repo, repository)
+  const key = gitHubReferenceKey(repository)
+  const known = knownGitHubIssueSource(repo, repository) ?? knownGitHubIssueSource(repo, key)
   if (known) {
     return known
   }
   const remote = repo.gitRemoteIdentity
-  const key = normalizeGitRemoteUrl(repository) ?? repository
   if (remote?.originUrl && normalizeGitRemoteUrl(remote.originUrl) === key) {
     return parseGitHubRemoteUrl(remote.originUrl, true) ?? undefined
   }

@@ -10,4 +10,4 @@ Switch between sibling views of one surface. Two looks: `default` (segmented, on
 - Inactive text `foreground` at 60% (dark: `muted-foreground`); hover to `foreground`.
 
 ## The consumer provides
-`value` / `onValueChange`, one `TabsTrigger` per view (text, optional 16px icon), matching `TabsContent`. `orientation="vertical"` stacks the list.
+`value` / `onValueChange`, one `TabsTrigger` per view (text, optional 16px icon), matching `TabsContent`. `orientation="vertical"` stacks the list and places content beside it; `line` uses a right-side indicator in this orientation. The HTML preview shows appearance only; use the React component for focus, keyboard navigation and panel switching.

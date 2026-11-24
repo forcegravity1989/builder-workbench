@@ -3,7 +3,14 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline'
 import path from 'node:path'
-import { feedbackSchema, summarizeFeedback, renderComment } from './workflow-feedback-report.mjs'
+import {
+  feedbackSchema,
+  summarizeFeedback,
+  renderComment,
+  assertCurrentSnapshot
+} from './workflow-feedback-report.mjs'
+
+export { assertCurrentSnapshot }
 
 function contentText(content) {
   if (typeof content === 'string') {
@@ -233,28 +240,6 @@ export async function extractFiles(inputs) {
     }
   }
   return extractor.finish()
-}
-
-export function assertCurrentSnapshot(snapshot, current, annotations = {}) {
-  const evidenceIds = new Set([
-    annotations.firstDeliveryId,
-    ...(annotations.modelEvents ?? []).map((item) => item.messageId),
-    ...(annotations.review?.evidenceIds ?? []),
-    ...(annotations.reDeliveries ?? []).flatMap((item) => [item.messageId, item.requestId])
-  ])
-  const evidence = (value) =>
-    value.messages
-      .filter((item) => ['user', 'question'].includes(item.role) || evidenceIds.has(item.id))
-      .map(({ id, role, text }) => [id, role, text])
-  if (
-    snapshot.session.id !== current.session.id ||
-    JSON.stringify(evidence(snapshot)) !== JSON.stringify(evidence(current)) ||
-    JSON.stringify(snapshot.issues) !== JSON.stringify(current.issues)
-  ) {
-    throw new Error(
-      '原始会话已有新输入、提问、引用证据或覆盖变化；重新 extract、更新标注并重算，不能沿用旧表追加说明'
-    )
-  }
 }
 
 async function save(output, value, inputs) {

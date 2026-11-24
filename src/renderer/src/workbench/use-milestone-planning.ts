@@ -57,14 +57,17 @@ export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken:
   const generation = useRef(0)
 
   const reload = useCallback(
-    async (useFile = false) => {
+    async (useFile = false, background = false) => {
       const target = current.current.scope
-      if (!target || current.current.key !== key) {
+      if (!target || current.current.key !== key || (background && operations.has(key))) {
         return
       }
       const ticket = ++generation.current
       const active = () => ticket === generation.current && current.current.key === key
-      setReading(true)
+      const started = background ? sessions.get(key) : undefined
+      if (!started) {
+        setReading(true)
+      }
       setError(null)
       try {
         const full = readMilestones(target)
@@ -92,6 +95,15 @@ export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken:
         }
         const previous = sessions.get(key)
         if (previous?.saving || (useFile && !data.project?.working)) {
+          return
+        }
+        if (
+          started &&
+          (operations.has(key) ||
+            previous?.draft !== started.draft ||
+            previous?.saved !== started.saved ||
+            previous?.revision !== started.revision)
+        ) {
           return
         }
         const next = fromMaterial(
@@ -128,11 +140,15 @@ export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken:
 
   useEffect(() => {
     setUpdateError(null)
-    void reload()
-    return () => {
-      generation.current++
-    }
+    void reload(false, true)
   }, [reload, refreshToken])
+  useEffect(
+    () => () => {
+      // 换项目或离开时作废进行中的读取。刷新令牌只触发再读，不提前作废。
+      generation.current++
+    },
+    [key]
+  )
 
   const projectId = state?.data.project?.worktreeId
   useEffect(() => {
@@ -157,11 +173,11 @@ export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken:
           (!before.data.project?.working ||
             (!before.fileChanged && file.revision !== before.revision))
         ) {
-          await reload()
+          await reload(false, true)
         }
       } catch {
         if (!disposed && sessions.get(key) === before && !before.data.project?.workingError) {
-          await reload()
+          await reload(false, true)
         }
       } finally {
         checking = false
@@ -170,7 +186,7 @@ export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken:
     const timer = setInterval(() => void check(), 5000)
     const focus = () => {
       if (!operations.has(key) && !sessions.get(key)?.saving) {
-        void reload()
+        void reload(false, true)
       }
     }
     window.addEventListener('focus', focus)
@@ -257,7 +273,11 @@ export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken:
     kind: 'prepare' | 'submit' | 'update',
     run: (project: MilestoneScope) => Promise<void> | void
   ) => {
-    if (!scope || !sessions.has(key) || reading || operations.has(key)) {
+    if (!scope || !sessions.has(key)) {
+      return
+    }
+    if (reading || operations.has(key)) {
+      toast('正在读取或处理项目材料，请稍后再试。', { id: 'milestone-busy' })
       return
     }
     operations.set(key, kind)
@@ -286,21 +306,29 @@ export function useMilestonePlanning(scope: MilestoneScope | null, refreshToken:
   const submit = () =>
     act('submit', async (project) => {
       const s = sessions.get(key)
-      if (
-        !s ||
-        s.fileChanged ||
-        s.data.review.queryFailed ||
-        (!changed(s) && !s.retry && !s.data.project?.pendingReview) ||
-        milestoneProblems(s.draft, s.baseline).length
-      ) {
+      if (!s) {
+        return
+      }
+      const problems = milestoneProblems(s.draft, s.baseline)
+      const rejected = s.fileChanged
+        ? '里程碑文件已被改动，请先复制修改或载入文件后再提交。'
+        : s.data.review.queryFailed
+          ? '评审状态未读到，请先重试读取后再提交。'
+          : !changed(s) && !s.retry && !s.data.project?.pendingReview
+            ? '没有可提交的改动。'
+            : problems[0]
+      if (rejected) {
+        toast.error(rejected)
         return
       }
       patch({ submitError: undefined })
       if (!(await flush(key, project))) {
+        toast.error('里程碑未能保存，未提交。')
         return
       }
       const revision = sessions.get(key)?.revision
       if (!revision) {
+        toast.error('里程碑文件版本未读到，未提交。请重试读取后再提交。')
         return
       }
       const { outcome } = await submitMilestones(project, revision)
