@@ -1,4 +1,12 @@
-import { useEffect, useId, useState, type ReactNode, type RefObject } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject
+} from 'react'
 import { Button } from '@/components/ui/button'
 import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -59,11 +67,25 @@ export function VersionSidebarPreview({
   // A reveal request scrolls its exact row via the version-tree consumer; re-running this
   // effect on request/consume would jump to the header mid-scroll and cancel that reveal.
   const activeRevealKey = activeOlderVersion ? `${activeOlderVersion}:${activeContextKey}` : null
+  // #762: expanding a collapsed 版本 section remounts this preview mid-reveal. Read the
+  // latest request via ref (not a dep) so the mount-effect header scroll is suppressed while
+  // a request is active — otherwise it cancels the consumer's smooth row scroll on the
+  // whole-section-collapsed + overflow combo. Keeping it out of deps avoids re-running on
+  // request/consume (the coupling removed above).
+  const forceRevealRef = useRef(forceReveal)
+  useLayoutEffect(() => {
+    forceRevealRef.current = forceReveal
+  })
   useEffect(() => {
-    if (!activeOlderVersion) {
+    if (!activeOlderVersion || forceRevealRef.current) {
       return
     }
     const frame = requestAnimationFrame(() => {
+      // Re-check at fire time: a request may arrive in the frame between this effect
+      // running and the rAF callback, and must still suppress the competing header scroll.
+      if (forceRevealRef.current) {
+        return
+      }
       versionElements.current
         .get(activeOlderVersion)
         ?.querySelector('button')
