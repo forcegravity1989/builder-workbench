@@ -281,6 +281,22 @@ export function teamReadRequestParams(
   return { ...(params && typeof params === 'object' ? params : {}), ...forced }
 }
 
+// Starting a session is allowed, but a prompt handed over at start is the same as sending a message
+// to the agent, so it is refused. Starting without a prompt goes through.
+const TEAM_READ_PROMPT_METHODS = new Set([
+  'terminal.createAgentSession',
+  'terminal.ensureAgentSession',
+  'agentSession.create'
+])
+const TEAM_READ_PROMPT_DENIAL_MESSAGE =
+  '这台主机只授予了只读访问：不能向 Agent 发送提示词，可以不带提示词启动会话。请让主机持有人在“共享此主机”中授予完全访问。'
+
+function hasPrompt(prompt: unknown): boolean {
+  return typeof prompt === 'string'
+    ? prompt.trim().length > 0
+    : prompt !== undefined && prompt !== null
+}
+
 const TEAM_READ_URL_METHODS = new Set(['browser.goto', 'browser.openUrl', 'browser.tabCreate'])
 
 // Shared pages may open web addresses only. A local file address would let a member read files
@@ -294,6 +310,9 @@ export function teamReadParamsDenialReason(
     return null
   }
   const fields = params && typeof params === 'object' ? (params as Record<string, unknown>) : {}
+  if (TEAM_READ_PROMPT_METHODS.has(method) && hasPrompt(fields.prompt)) {
+    return TEAM_READ_PROMPT_DENIAL_MESSAGE
+  }
   if (!TEAM_READ_URL_METHODS.has(method)) {
     return null
   }

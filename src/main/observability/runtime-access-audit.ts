@@ -38,10 +38,22 @@ export class RuntimeAccessAudit {
 
   record(entry: RuntimeAccessAuditEntry): void {
     if (entry.result !== 'allowed') {
-      const key = `${entry.deviceId}|${entry.method}|${entry.result}|${entry.errorCode ?? ''}`
+      const key = [
+        entry.deviceId,
+        entry.method,
+        entry.result,
+        entry.errorCode ?? '',
+        entry.errorMessage ?? ''
+      ].join('|')
       const last = this.lastRepeatableAt.get(key)
-      if (last !== undefined && entry.at - last < REPEAT_WINDOW_MS) {
+      // A clock that moved backwards makes an old stamp stale, not recent.
+      if (last !== undefined && last <= entry.at && entry.at - last < REPEAT_WINDOW_MS) {
         return
+      }
+      for (const [staleKey, at] of this.lastRepeatableAt) {
+        if (at > entry.at || entry.at - at >= REPEAT_WINDOW_MS) {
+          this.lastRepeatableAt.delete(staleKey)
+        }
       }
       this.lastRepeatableAt.set(key, entry.at)
     }

@@ -52,6 +52,28 @@ describe('RuntimeAccessAudit', () => {
     expect(entries.filter((e) => e.method === 'worktree.sleep')).toHaveLength(2)
   })
 
+  it('does not merge failures with different causes, devices or results', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'orca-shared-host-audit-causes-'))
+    const audit = new RuntimeAccessAudit(root)
+    const base = {
+      at: Date.now(),
+      deviceId: 'device-1',
+      accessMode: 'team-read' as const,
+      method: 'terminal.create',
+      result: 'error' as const,
+      errorCode: 'runtime_error'
+    }
+    audit.record({ ...base, errorMessage: 'spawn_failed' })
+    audit.record({ ...base, errorMessage: 'bad_cwd' })
+    audit.record({ ...base, errorMessage: 'bad_cwd', deviceId: 'device-2' })
+    audit.record({ ...base, errorMessage: 'bad_cwd', result: 'denied' })
+    audit.record({ ...base, errorMessage: 'bad_cwd', at: base.at + 1_000 })
+    audit.record({ ...base, errorMessage: 'bad_cwd', at: base.at - 120_000 })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    const entries = await audit.list()
+    expect(entries).toHaveLength(5)
+  })
+
   it('removes files older than the 14-day retention window', async () => {
     const root = await mkdtemp(join(tmpdir(), 'orca-shared-host-audit-retention-'))
     const audit = new RuntimeAccessAudit(root)

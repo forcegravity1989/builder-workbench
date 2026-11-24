@@ -120,6 +120,21 @@ describe('team-read RPC policy', () => {
     ).toBeNull()
   })
 
+  it('lets a member start a session but not hand it a prompt', () => {
+    for (const method of [
+      'terminal.createAgentSession',
+      'terminal.ensureAgentSession',
+      'agentSession.create'
+    ]) {
+      expect(teamReadParamsDenialReason('team-read', method, { prompt: '请改代码' })).toContain(
+        '提示词'
+      )
+      expect(teamReadParamsDenialReason('team-read', method, { prompt: '   ' })).toBeNull()
+      expect(teamReadParamsDenialReason('team-read', method, {})).toBeNull()
+      expect(teamReadParamsDenialReason('full', method, { prompt: '请改代码' })).toBeNull()
+    }
+  })
+
   it('keeps terminal output flowing but drops a member keystrokes and window claims', () => {
     const frames: number[] = []
     const handler = (frame: { opcode: number }): void => {
