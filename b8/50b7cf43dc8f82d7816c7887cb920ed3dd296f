@@ -1,0 +1,24 @@
+.claude/skills/workbench-start/scripts/cursor-session-feedback.mjs
+  s_ffa24ae27b253d::t_cd4e1fca70eaee 102-106
+  s_ffa24ae27b253d::t_7ec841f81a1cfa 100-101,107-109
+.claude/skills/workbench-start/references/cursor.md
+  s_ffa24ae27b253d::t_48820ebcdecbe9 16
+.claude/skills/workbench-start/scripts/cursor-session-feedback.test.mjs
+  s_ffa24ae27b253d::t_a0b9fcd51adc3d 118-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "b850b7cf43dc8f82d7816c7887cb920ed3dd296f",
+  "prompts": {},
+  "sessions": {
+    "s_ffa24ae27b253d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "51d6170b-adb5-4cbe-852c-58ff67dc4e26",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
