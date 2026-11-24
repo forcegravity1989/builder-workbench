@@ -111,13 +111,24 @@ export function SshStatusSegment({
         snapshot: statusEntry?.snapshot,
         status: statusEntry?.status ?? null,
         active: settings?.activeRuntimeEnvironmentId === environment.id,
-        remoteControl: statusEntry?.remoteControl ?? statusEntry?.status?.remoteControl ?? null
+        remoteControl: statusEntry?.remoteControl ?? statusEntry?.status?.remoteControl ?? null,
+        // Hosts added disconnected (team hosts) wait for the user to connect them.
+        heldDisconnected: environment.reconnectOnLaunch === false
       }
     })
-  const runtimeHostRows = runtimeHosts.map((host) => ({
-    ...host,
-    state: runtimeHostConnectionStateForEntry(runtimeStatusByEnvironmentId.get(host.id))
-  }))
+  const runtimeHostRows = runtimeHosts.map((host) => {
+    const entry = runtimeStatusByEnvironmentId.get(host.id)
+    // Why: a held host has no connection attempt yet, so "checking" would never resolve.
+    const notAttempted =
+      host.heldDisconnected &&
+      !entry?.status &&
+      entry?.snapshot?.transport !== 'connecting' &&
+      entry?.snapshot?.transport !== 'ready'
+    return {
+      ...host,
+      state: notAttempted ? ('disconnected' as const) : runtimeHostConnectionStateForEntry(entry)
+    }
+  })
   // Available remote servers are online even when they are not the active runtime.
   // Keep host health separate from the advanced active-server selection.
   const connectedRuntimeHosts = runtimeHostRows.filter((host) =>

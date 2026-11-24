@@ -1,5 +1,13 @@
-import { effectiveRuntimeAccessMode, type DeviceEntry, type DeviceRegistry, type DeviceScope } from '../device-registry'
-import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../shared/runtime-session-contracts'
+import {
+  effectiveRuntimeAccessMode,
+  type DeviceEntry,
+  type DeviceRegistry,
+  type DeviceScope
+} from '../device-registry'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../shared/runtime-session-contracts'
 import type { E2EEKeypair } from '../e2ee-keypair'
 import type { MobileSocketWiring } from '../rpc/mobile-socket-wiring'
 import type {
@@ -118,6 +126,15 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       return false
     }
     this.runtime.forgetClientNavigationState(deviceId)
+    if (device.parentDeviceId !== undefined) {
+      // A member record shares the link's token, so only that member's sockets are closed.
+      this.mobileSocketWiring?.terminateMemberConnections(deviceId)
+      return true
+    }
+    // Revoking the shared link also drops the member records created under it.
+    for (const member of this.deviceRegistry.removeMemberDevices(deviceId)) {
+      this.runtime.forgetClientNavigationState(member.deviceId)
+    }
     this.mobileSocketWiring?.terminateDeviceConnections(device.token)
     return true
   }
@@ -154,7 +171,10 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       pairedDeviceId: device.deviceId,
       scope: 'runtime',
       ...(effectiveRuntimeAccessMode(device) === 'team-read'
-        ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
+        ? {
+            accessMode: 'team-read' as const,
+            ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+          }
         : {})
     })
     return {
@@ -224,8 +244,22 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       const reach = args.reach ?? 'network'
       const accessMode = args.accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')
       device = args.rotate
-        ? this.deviceRegistry.rotatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding, args.avatar)
-        : this.deviceRegistry.getOrCreatePendingDevice(deviceName, scope, reach, accessMode, args.teamBinding, args.avatar)
+        ? this.deviceRegistry.rotatePendingDevice(
+            deviceName,
+            scope,
+            reach,
+            accessMode,
+            args.teamBinding,
+            args.avatar
+          )
+        : this.deviceRegistry.getOrCreatePendingDevice(
+            deviceName,
+            scope,
+            reach,
+            accessMode,
+            args.teamBinding,
+            args.avatar
+          )
     } catch (error) {
       console.error('[runtime] Failed to persist pairing credential:', error)
       return pairingUnavailable('device_registry_unavailable', DEVICE_REGISTRY_UNAVAILABLE_GUIDANCE)
@@ -238,7 +272,10 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       pairedDeviceId: device.deviceId,
       scope,
       ...(effectiveRuntimeAccessMode(device) === 'team-read'
-        ? { accessMode: 'team-read' as const, ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}) }
+        ? {
+            accessMode: 'team-read' as const,
+            ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+          }
         : {})
     })
     return {

@@ -7,6 +7,9 @@ import type {
   RuntimeAccessGrant
 } from '../../../../shared/runtime-access-grants'
 import { useRuntimePairingLinkRecall } from './use-runtime-pairing-link-recall'
+import { Check, Copy } from 'lucide-react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { RuntimeAccessGrantList } from './RuntimeAccessGrantList'
 import { RuntimeAccessAuditLog } from './RuntimeAccessAuditLog'
@@ -160,7 +163,7 @@ export function RuntimePairingUrlGenerator({
       !window.confirm(
         translate(
           'auto.components.settings.RuntimePairingUrlGenerator.clearConfirm',
-          'Clear this host\'s shared access log?'
+          "Clear this host's shared access log?"
         )
       )
     ) {
@@ -528,6 +531,39 @@ export function RuntimePairingUrlGenerator({
           onGenerate={() => void generateRuntimePairingUrl()}
           onCopy={(target, value) => void copyGeneratedUrl(target, value)}
         />
+      ) : null}
+
+      {!showGeneratorForm && runtimePairingUrl ? (
+        <div className="space-y-1.5">
+          <Label htmlFor="runtime-share-access-link">
+            {translate(
+              'auto.components.settings.RuntimePairingUrlGenerator.accessLink',
+              'Access link'
+            )}
+          </Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="runtime-share-access-link"
+              readOnly
+              value={runtimePairingUrl}
+              className="h-8 font-mono text-xs"
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void copyGeneratedUrl('pairing', runtimePairingUrl)}
+            >
+              {copiedTarget === 'pairing' ? (
+                <Check className="size-3.5" />
+              ) : (
+                <Copy className="size-3.5" />
+              )}
+              {translate('auto.components.settings.RuntimePairingUrlGenerator.copyLink', 'Copy')}
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       <RuntimeAccessGrantList

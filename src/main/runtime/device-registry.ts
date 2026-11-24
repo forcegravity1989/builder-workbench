@@ -13,6 +13,7 @@ import {
 import type { DeviceScope, RuntimeAccessMode, RuntimeTeamBinding } from '../../shared/runtime-types'
 import { DEVICE_REGISTRY_FILENAME } from './mobile-pairing-files'
 import type { RelayDeviceBinding } from './relay/relay-revoke-outbox'
+import type { RemoteRuntimeCallerIdentity } from '../../shared/remote-runtime-caller-identity'
 import type { MobilePairingConnectionMode } from '../../shared/mobile-pairing-connection-mode'
 import type { RuntimePairingReach } from '../../shared/runtime-pairing-reach'
 import {
@@ -37,13 +38,19 @@ export type DeviceEntry = {
   pairingReach?: RuntimePairingReach
   accessMode?: RuntimeAccessMode
   teamBinding?: RuntimeTeamBinding
+  // Why: a team link is one credential shared by every member, so each member who connects through it
+  // gets their own record under the link. The record carries the member's name and full-access
+  // grant, and its random token is never handed out; members authenticate with the link's token.
+  parentDeviceId?: string
   // Why: survives a desktop restart so the host can keep pushing without the phone
   // re-registering. Absent on every registry written before background push existed.
   pushRegistration?: MobilePushRegistration
 }
 
 /** Runtime links are read-only by default; full access is an explicit host-owner upgrade. */
-export function effectiveRuntimeAccessMode(device: Pick<DeviceEntry, 'scope' | 'accessMode'>): RuntimeAccessMode {
+export function effectiveRuntimeAccessMode(
+  device: Pick<DeviceEntry, 'scope' | 'accessMode'>
+): RuntimeAccessMode {
   if (device.scope !== 'runtime') {
     return 'full'
   }
@@ -72,6 +79,8 @@ function validRelayBinding(value: unknown, deviceId: string): RelayDeviceBinding
 // Why: a lastSeen refresh is pure bookkeeping, so coalesce reconnect bursts into one write instead of
 // paying a secure-file rewrite (two synchronous PowerShell ACL spawns on Windows) per connection.
 const LAST_SEEN_FLUSH_DELAY_MS = 250
+// A team has dozens of members; the cap only stops one leaked link from filling the registry.
+const MAX_MEMBER_DEVICES_PER_LINK = 200
 
 export class DeviceRegistry {
   private readonly registryPath: string
@@ -153,7 +162,8 @@ export class DeviceRegistry {
       (d) =>
         d.lastSeenAt === 0 &&
         d.scope === scope &&
-        effectiveRuntimeAccessMode(d) === (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) &&
+        effectiveRuntimeAccessMode(d) ===
+          (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) &&
         ((accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) !== 'team-read' ||
           (d.teamBinding?.teamGroupId === teamBinding?.teamGroupId &&
             d.teamBinding?.memberId === teamBinding?.memberId))
@@ -222,7 +232,8 @@ export class DeviceRegistry {
       (d) =>
         d.lastSeenAt !== 0 ||
         d.scope !== scope ||
-        effectiveRuntimeAccessMode(d) !== (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) ||
+        effectiveRuntimeAccessMode(d) !==
+          (accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) ||
         ((accessMode ?? (scope === 'runtime' ? 'team-read' : 'full')) === 'team-read' &&
           (d.teamBinding?.teamGroupId !== teamBinding?.teamGroupId ||
             d.teamBinding?.memberId !== teamBinding?.memberId))
@@ -280,6 +291,98 @@ export class DeviceRegistry {
     this.save(next)
     this.devices = next
     return true
+  }
+
+  /**
+   * Returns the per-member record for a member connecting through a shared team link, creating it on
+   * first contact. Links that are not read-only team links resolve to themselves, and so does any
+   * connection whose record cannot be created (limit reached or registry not writable), which keeps
+   * it read-only under the link rather than failing the handshake.
+   */
+  resolveMemberDevice(parent: DeviceEntry, identity: RemoteRuntimeCallerIdentity): DeviceEntry {
+    try {
+      return this.findOrCreateMemberDevice(parent, identity)
+    } catch {
+      return parent
+    }
+  }
+
+  /** Removes every member record created under a shared link with one registry write. */
+  removeMemberDevices(parentDeviceId: string): DeviceEntry[] {
+    const removed = this.devices.filter((device) => device.parentDeviceId === parentDeviceId)
+    if (removed.length === 0) {
+      return []
+    }
+    const nextDevices = this.devices.filter((device) => device.parentDeviceId !== parentDeviceId)
+    this.save(nextDevices)
+    this.devices = nextDevices
+    return removed
+  }
+
+  private findOrCreateMemberDevice(
+    parent: DeviceEntry,
+    identity: RemoteRuntimeCallerIdentity
+  ): DeviceEntry {
+    if (
+      parent.scope !== 'runtime' ||
+      parent.parentDeviceId !== undefined ||
+      !parent.teamBinding ||
+      effectiveRuntimeAccessMode(parent) !== 'team-read'
+    ) {
+      return parent
+    }
+    const teamGroupId = parent.teamBinding.teamGroupId
+    const memberKey = identity.memberId.toLowerCase()
+    const existing = this.devices.find(
+      (device) =>
+        device.parentDeviceId !== undefined &&
+        device.teamBinding?.teamGroupId === teamGroupId &&
+        device.teamBinding.memberId.toLowerCase() === memberKey
+    )
+    if (existing) {
+      if (
+        existing.name === identity.name &&
+        existing.parentDeviceId === parent.deviceId &&
+        (identity.avatar === undefined || existing.avatar === identity.avatar)
+      ) {
+        return existing
+      }
+      const updated: DeviceEntry = {
+        ...existing,
+        name: identity.name,
+        parentDeviceId: parent.deviceId,
+        ...(identity.avatar ? { avatar: identity.avatar } : {})
+      }
+      const nextDevices = this.devices.map((device) =>
+        device.deviceId === existing.deviceId ? updated : device
+      )
+      this.save(nextDevices)
+      this.devices = nextDevices
+      return updated
+    }
+    const linkMemberCount = this.devices.filter(
+      (device) => device.parentDeviceId === parent.deviceId
+    ).length
+    if (linkMemberCount >= MAX_MEMBER_DEVICES_PER_LINK) {
+      return parent
+    }
+    const entry: DeviceEntry = {
+      deviceId: randomUUID(),
+      name: identity.name,
+      ...(identity.avatar ? { avatar: identity.avatar } : {}),
+      token: randomBytes(24).toString('hex'),
+      scope: 'runtime',
+      pairedAt: Date.now(),
+      lastSeenAt: Date.now(),
+      pairingReach: parent.pairingReach ?? 'network',
+      accessMode: 'team-read',
+      teamBinding: { teamGroupId, memberId: identity.memberId },
+      parentDeviceId: parent.deviceId
+    }
+    const nextDevices = [...this.devices, entry]
+    this.save(nextDevices)
+    this.devices = nextDevices
+    return entry
   }
 
   getPendingDevice(scope: DeviceScope = 'mobile'): DeviceEntry | null {
@@ -443,6 +546,9 @@ export class DeviceRegistry {
               accessMode: device.accessMode,
               ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
             }
+          : {}),
+        ...(typeof device.parentDeviceId === 'string'
+          ? { parentDeviceId: device.parentDeviceId }
           : {}),
         // Why: a malformed row must degrade to "no background push", never fail the load
         // and strand every paired device.

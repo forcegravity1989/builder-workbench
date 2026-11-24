@@ -50,7 +50,8 @@ function toRuntimeAccessGrant(device: DeviceEntry): RuntimeAccessGrant {
     ...(effectiveRuntimeAccessMode(device) === 'team-read'
       ? { accessMode: 'team-read' as const }
       : { accessMode: 'full' as const }),
-    ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+    ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}),
+    ...(device.parentDeviceId !== undefined ? { parentDeviceId: device.parentDeviceId } : {})
   }
 }
 

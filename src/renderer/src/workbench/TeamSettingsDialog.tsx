@@ -19,8 +19,15 @@ import {
 } from '@/components/ui/select'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { cacheGeneratedRuntimePairingLink } from '@/components/settings/runtime-pairing-link-state'
+import { parsePairingCode } from '../../../shared/pairing'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
-import { rememberedTeamBinding, rememberTeamBinding, syncTeamHosts } from './team-hosts'
+import {
+  forgetTeamBinding,
+  rememberedTeamBinding,
+  rememberTeamBinding,
+  syncTeamHosts
+} from './team-hosts'
 
 type TeamSettingsDialogProps = {
   open: boolean
@@ -178,6 +185,28 @@ export function TeamSettingsDialog({
     spaceId
   ])
 
+  // Binding the wrong group is recoverable: forget it here, then enter the right group's IDs.
+  // Hosts already saved from the old team stay in the remote host list until removed there.
+  const unbindTeam = (): void => {
+    if (
+      !window.confirm(
+        '解除绑定后，这台电脑不再同步这个群的主机和项目。已保存的远程主机会保留，确定解除吗？'
+      )
+    ) {
+      return
+    }
+    forgetTeamBinding()
+    directorySnapshot = null
+    directoryFileIdRef.current = undefined
+    setDirectory(null)
+    setDirectoryBase(null)
+    setCurrentMemberId(null)
+    setGroupId('')
+    setSpaceId('')
+    setSelectedProjectId('')
+    setError(null)
+  }
+
   const saveDirectory = async (): Promise<void> => {
     if (!directory || !directory.team_group_id || !directory.team_space_id) {
       setError('请填写群 ID 和群空间 ID。')
@@ -216,11 +245,23 @@ export function TeamSettingsDialog({
         reach: 'network',
         accessMode: 'team-read',
         teamBinding: { teamGroupId: directory.team_group_id, memberId },
-        name: host.name ?? memberId,
+        // Members connect under their own names; this name only labels the link until they do.
+        name: `${host.name ?? memberId}的团队共享链接`,
         ...(host.avatar ? { avatar: host.avatar } : {})
       })
       if (!result.available) {
         throw new Error(result.guidance ?? '当前主机无法生成 Orca 共享地址。')
+      }
+      // The “共享此主机” page recalls the link from this reference, so the full link stays visible.
+      const offer = parsePairingCode(result.pairingUrl)
+      if (offer) {
+        cacheGeneratedRuntimePairingLink({
+          address: offer.endpoint,
+          intent: 'another',
+          pairingUrl: result.pairingUrl,
+          webClientUrl: result.webClientUrl,
+          deviceId: result.deviceId
+        })
       }
       setDirectory((current) =>
         current
@@ -519,9 +560,14 @@ export function TeamSettingsDialog({
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
             </div>
             <div className="flex items-center justify-between border-t border-border pt-2">
-              <Button type="button" variant="ghost" onClick={() => setFilePreviewOpen(true)}>
-                查看群空间文件
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button type="button" variant="ghost" onClick={() => setFilePreviewOpen(true)}>
+                  查看群空间文件
+                </Button>
+                <Button type="button" variant="ghost" onClick={unbindTeam} disabled={saving}>
+                  解除绑定
+                </Button>
+              </div>
               <Button
                 type="button"
                 onClick={() => void saveDirectory()}

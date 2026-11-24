@@ -27,7 +27,7 @@ export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
     params: PrototypeReviewAnnotationAddSchema,
     handler: async (
       { id, worktree, page, documentKey, comment, x, y, label, hostName },
-      { runtime, authenticatedCallerFingerprint, pairedDeviceId }
+      { runtime, authenticatedCallerFingerprint, pairedDeviceId, pairedDeviceName }
     ) => {
       await runtime.browserTabShow({ worktree, page })
       return addPrototypeReviewAnnotation({
@@ -38,7 +38,14 @@ export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
         x,
         y,
         ...(label ? { label } : {}),
-        author: pairedDeviceId ?? authenticatedCallerFingerprint ?? 'local',
+        // Why: annotations are shown by whoever wrote them, so a remote reviewer is named by the
+        // member the host recorded, not by the host's own name or an opaque device id.
+        author: (
+          pairedDeviceName ??
+          pairedDeviceId ??
+          authenticatedCallerFingerprint ??
+          'local'
+        ).slice(0, 100),
         host: hostName ?? (pairedDeviceId ? '共享主机' : '当前主机'),
         createdAt: new Date().toISOString()
       })

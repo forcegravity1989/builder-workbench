@@ -10,6 +10,8 @@ export type RuntimeAccessGrant = {
   accessMode?: RuntimeAccessMode
   teamBinding?: RuntimeTeamBinding
   connected?: boolean
+  /** Set on a per-member record; names the shared team link the member connected through. */
+  parentDeviceId?: string
 }
 
 export type RuntimeAccessAuditResult = 'allowed' | 'denied' | 'error'

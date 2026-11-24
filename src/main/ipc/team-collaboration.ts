@@ -6,6 +6,10 @@ import {
   type TeamDirectory
 } from '../workbench/team-collaboration/team-directory-client'
 import { syncTeamHosts } from '../workbench/team-collaboration/team-host-sync'
+import {
+  loadTeamIdentity,
+  rememberTeamIdentity
+} from '../workbench/team-collaboration/team-identity'
 import { markRuntimeEnvironmentManuallyDisconnected } from './runtime-environment-manual-disconnect'
 import { invalidateRuntimeEnvironmentTransport } from './runtime-environments'
 
@@ -82,12 +86,19 @@ function requireDirectory(value: unknown): TeamDirectory {
 }
 
 export function registerTeamCollaborationHandlers(): void {
+  loadTeamIdentity(app.getPath('userData'))
   ipcMain.handle(
     'teamCollaboration:readDirectory',
     async (_event, args: { groupId: string; spaceId: string }) => {
       const groupId = requireId(args?.groupId, 'groupId')
       const spaceId = requireId(args?.spaceId, 'spaceId')
-      return readTeamDirectory({ route: await resolveWelinkRoute(), groupId, spaceId })
+      const result = await readTeamDirectory({
+        route: await resolveWelinkRoute(),
+        groupId,
+        spaceId
+      })
+      rememberTeamIdentity(app.getPath('userData'), result.directory.hosts, result.currentMemberId)
+      return result
     }
   )
 
@@ -101,6 +112,7 @@ export function registerTeamCollaborationHandlers(): void {
         groupId,
         spaceId
       })
+      rememberTeamIdentity(app.getPath('userData'), directory.hosts, currentMemberId)
       return syncTeamHosts(directory.hosts, currentMemberId, {
         userDataPath: app.getPath('userData'),
         holdDisconnected: markRuntimeEnvironmentManuallyDisconnected,

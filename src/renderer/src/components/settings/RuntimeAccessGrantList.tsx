@@ -67,6 +67,13 @@ export function RuntimeAccessGrantList({
 }: RuntimeAccessGrantListProps): React.JSX.Element {
   const [selectedGrantIds, setSelectedGrantIds] = useState<string[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
+  // A shared team link has one record per connected member. Once members exist the list splits into
+  // who connected and the link itself, so a leaked link can still be revoked as a whole.
+  const [view, setView] = useState<'members' | 'links'>('members')
+  const hasMemberRecords = grants.some((grant) => grant.parentDeviceId !== undefined)
+  const visibleGrants = hasMemberRecords
+    ? grants.filter((grant) => (grant.parentDeviceId !== undefined) === (view === 'members'))
+    : grants
   const selectableGrants = useMemo(
     () => grants.filter((grant) => grant.accessMode === 'team-read' && grant.connected === true),
     [grants]
@@ -122,6 +129,27 @@ export function RuntimeAccessGrantList({
         </Tooltip>
       </div>
 
+      {hasMemberRecords ? (
+        <div className="mb-2 flex items-center gap-1">
+          {(['members', 'links'] as const).map((candidate) => (
+            <Button
+              key={candidate}
+              type="button"
+              size="xs"
+              variant={view === candidate ? 'secondary' : 'ghost'}
+              onClick={() => setView(candidate)}
+            >
+              {candidate === 'members'
+                ? translate(
+                    'auto.components.settings.RuntimeAccessGrantList.viewMembers',
+                    'Members'
+                  )
+                : translate('auto.components.settings.RuntimeAccessGrantList.viewLinks', 'Links')}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+
       {grants.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           {translate(
@@ -164,7 +192,7 @@ export function RuntimeAccessGrantList({
               </Button>
             </div>
           ) : null}
-          {grants.map((grant) => {
+          {visibleGrants.map((grant) => {
             const isCurrent = currentGrantId === grant.deviceId
             const isRevoking = revokingGrantId === grant.deviceId
             const canGrantFullAccess = grant.accessMode === 'team-read' && grant.connected === true

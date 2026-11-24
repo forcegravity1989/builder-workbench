@@ -23,6 +23,15 @@ export function rememberTeamBinding(groupId: string, spaceId: string): void {
   }
 }
 
+export function forgetTeamBinding(): void {
+  try {
+    window.localStorage.removeItem(TEAM_GROUP_STORAGE_KEY)
+    window.localStorage.removeItem(TEAM_SPACE_STORAGE_KEY)
+  } catch {
+    // Without browser storage there is no remembered binding to forget.
+  }
+}
+
 export function hasTeamBinding(): boolean {
   const binding = rememberedTeamBinding()
   return Boolean(binding.groupId && binding.spaceId)

@@ -11,7 +11,14 @@ import { effectiveRuntimeAccessMode, type DeviceScope } from '../device-registry
 import { RuntimeRpcRequestAdmission } from './runtime-rpc-request-admission'
 import { classifyRuntimeLongPoll } from './runtime-rpc-long-poll'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
-import { isRoutineReadRuntimeMethod, teamReadDenialReason } from './runtime-rpc-team-read-policy'
+import {
+  isQuietTeamReadDenial,
+  isRoutineReadRuntimeMethod,
+  teamReadDenialReason,
+  teamReadParamsDenialReason,
+  teamReadRequestParams,
+  teamReadTerminalStreamHandler
+} from './runtime-rpc-team-read-policy'
 
 // Why: status.get has no per-connection context in the dispatcher, so stamp the scope here at the transport boundary.
 function injectDeviceScope(response: string, scope: DeviceScope): string {
@@ -69,7 +76,15 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       reply(JSON.stringify(this.buildError(request.id, 'unauthorized', 'Missing device token')))
       return
     }
-    const device = this.deviceRegistry?.validateToken(token)
+    const tokenDevice = this.deviceRegistry?.validateToken(token)
+    // Why: a shared team link resolves to the member record chosen at authentication; every later
+    // check (access mode, audit, grants) belongs to that member rather than the shared link.
+    const device =
+      tokenDevice &&
+      authenticatedSocket &&
+      authenticatedSocket.device.deviceId !== tokenDevice.deviceId
+        ? (this.deviceRegistry?.getDevice(authenticatedSocket.device.deviceId) ?? tokenDevice)
+        : tokenDevice
     if (!device) {
       reply(JSON.stringify(this.buildError(request.id, 'unauthorized', 'Invalid device token')))
       return
@@ -87,22 +102,30 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       return
     }
     const accessMode = effectiveRuntimeAccessMode(device)
-    const teamReadDenial = teamReadDenialReason(accessMode, request.method)
+    const teamReadDenial =
+      teamReadDenialReason(accessMode, request.method) ??
+      teamReadParamsDenialReason(accessMode, request.method, request.params)
     if (teamReadDenial) {
-      this.getRuntimeAccessAudit().record({
-        at: Date.now(),
-        deviceId: device.deviceId,
-        deviceName: device.name,
-        accessMode,
-        ...(device.teamBinding
-          ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
-          : undefined),
-        method: request.method,
-        result: 'denied',
-        requestId: request.id
-      })
+      if (!isQuietTeamReadDenial(request.method)) {
+        this.getRuntimeAccessAudit().record({
+          at: Date.now(),
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          accessMode,
+          ...(device.teamBinding
+            ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+            : undefined),
+          method: request.method,
+          result: 'denied',
+          requestId: request.id
+        })
+      }
       reply(JSON.stringify(this.buildError(request.id, 'forbidden', teamReadDenial)))
       return
+    }
+    const teamReadParams = teamReadRequestParams(accessMode, request.method, request.params)
+    if (teamReadParams !== request.params) {
+      request = { ...request, params: teamReadParams }
     }
 
     // Why: bind deviceToken to this socket so ws.on('close') knows which mobile client disconnected.
@@ -148,7 +171,10 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
             deviceName: device.name,
             accessMode,
             ...(device.teamBinding
-              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              ? {
+                  teamGroupId: device.teamBinding.teamGroupId,
+                  memberId: device.teamBinding.memberId
+                }
               : undefined),
             method: request.method,
             result,
@@ -192,6 +218,7 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         connectionId,
         clientId: token,
         pairedDeviceId: device.deviceId,
+        pairedDeviceName: device.name,
         accessMode,
         teamBinding: device.teamBinding,
         // Why: gates the mobile-only payload diet so full-screen web/desktop clients aren't truncated.
@@ -207,7 +234,11 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         signal: abortRegistration?.signal,
         sendBinary,
         registerBinaryStreamHandler: (streamId, handler) =>
-          this.registerBinaryStreamHandler(connectionId, streamId, handler),
+          this.registerBinaryStreamHandler(
+            connectionId,
+            streamId,
+            teamReadTerminalStreamHandler(accessMode, handler)
+          ),
         registerBinaryMessageHandler: (handler) =>
           this.registerBinaryMessageHandler(connectionId, handler)
       })
