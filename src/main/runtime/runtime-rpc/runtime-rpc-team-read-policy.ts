@@ -67,8 +67,8 @@ const TEAM_READ_DENIED_METHODS = new Set([
   'orchestration.workerStart',
   'orchestration.workerStop',
   'orchestration.workerTerminalUserInput',
-  // Terminals and session tabs. Activating a tab can start its process on the host.
-  'session.tabs.activate',
+  // Terminals and session tabs. Opening an existing tab (session.tabs.activate) is how a member
+  // views the owner's sessions, so it stays allowed.
   'session.tabs.close',
   'session.tabs.closeLifecycle',
   'session.tabs.createTerminal',
@@ -404,7 +404,6 @@ export function teamReadDenialReason(
 // layout, add a terminal, store the label). They are refused, but the member did not choose them, so
 // the refusals stay out of the access log.
 const TEAM_READ_QUIET_DENIAL_METHODS = new Set([
-  'session.tabs.activate',
   'session.tabs.createTerminal',
   'session.tabs.updatePaneLayout',
   'worktree.set',
@@ -422,6 +421,7 @@ export function isQuietTeamReadDenial(method: string): boolean {
 // A member opening one of the owner's worktrees or pages must not move the owner's own window along.
 const TEAM_READ_FORCED_PARAMS: Record<string, Record<string, unknown>> = {
   'worktree.activate': { notifyClients: false, navigation: 'caller' },
+  'session.tabs.activate': { notifyClients: false, navigation: 'caller' },
   'browser.tabCreate': { navigation: 'caller' }
 }
 

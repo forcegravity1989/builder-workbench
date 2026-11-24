@@ -159,6 +159,7 @@ describe('team-read RPC policy', () => {
       'terminal.read',
       'agentSession.history',
       'worktree.activate',
+      'session.tabs.activate',
       'browser.tabList',
       'browser.tabShow',
       'browser.screencast',
@@ -178,6 +179,11 @@ describe('team-read RPC policy', () => {
     // A worktree opened by a member must not navigate the owner's own window.
     expect(teamReadRequestParams('team-read', 'worktree.activate', { worktree: 'id:1' })).toEqual({
       worktree: 'id:1',
+      notifyClients: false,
+      navigation: 'caller'
+    })
+    expect(teamReadRequestParams('team-read', 'session.tabs.activate', { tabId: 't1' })).toEqual({
+      tabId: 't1',
       notifyClients: false,
       navigation: 'caller'
     })
