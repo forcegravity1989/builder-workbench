@@ -34,10 +34,16 @@ export function isValidGitRepo(repoPath: string): boolean {
 }
 
 export function createSeededTestRepo(options: { publishPath?: boolean } = {}): string {
-  // Why: realpathSync so the seeded path matches the store's repo.path on
-  // macOS, where os.tmpdir() (/var/...) symlinks to /private/var/... and the
-  // app canonicalizes repo.path via `git rev-parse --show-toplevel` on add.
-  const testRepoDir = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'workbench-e2e-repo-')))
+  // Why: realpathSync.native so the seeded path matches the store's repo.path,
+  // which the app canonicalizes via `git rev-parse --show-toplevel` on add.
+  // Two hosts need it: macOS, where os.tmpdir() (/var/...) symlinks to
+  // /private/var/..., and Windows, where os.tmpdir() can return an 8.3 short
+  // path (here C:\Users\A30030~1\...). Only the .native form expands 8.3 —
+  // plain realpathSync resolves symlinks but leaves the short name intact, so
+  // the fixture and the store would never compare equal (#781).
+  const testRepoDir = realpathSync.native(
+    mkdtempSync(path.join(os.tmpdir(), 'workbench-e2e-repo-'))
+  )
 
   execSync('git init', { cwd: testRepoDir, stdio: 'pipe' })
   execSync('git config user.email "e2e@test.local"', { cwd: testRepoDir, stdio: 'pipe' })
