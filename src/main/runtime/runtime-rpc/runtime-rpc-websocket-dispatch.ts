@@ -14,7 +14,7 @@ import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowli
 import {
   isExpectedTeamReadError,
   isQuietTeamReadDenial,
-  isRoutineReadRuntimeMethod,
+  isRoutineReadRuntimeRequest,
   teamReadDenialReason,
   teamReadParamsDenialReason,
   teamReadRequestParams,
@@ -187,7 +187,7 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         // by retaining denied/error requests and explicit writes while leaving routine successful
         // reads out.
         if (
-          !(isRoutineReadRuntimeMethod(request.method) && result === 'allowed') &&
+          !(isRoutineReadRuntimeRequest(request.method, request.params) && result === 'allowed') &&
           !isExpectedTeamReadError(request.method, errorMessage)
         ) {
           this.getRuntimeAccessAudit().record({

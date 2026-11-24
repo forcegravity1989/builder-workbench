@@ -1,4 +1,5 @@
 import { normalizeBrowserNavigationUrl } from '../../../shared/browser-url'
+import { REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION } from '../../../shared/remote-browser-viewport-probe'
 import type { RuntimeAccessMode } from '../../../shared/runtime-session-contracts'
 import {
   TerminalStreamOpcode,
@@ -24,7 +25,8 @@ export const TEAM_READ_DENIED_METHODS = new Set([
   'orchestration.send',
   'orchestration.workerTerminalUserInput',
   'terminal.send',
-  // Reading files outside the shared project
+  // Reading files outside the shared project (browser.upload names host file paths)
+  'browser.upload',
   'files.browseServerDir',
   'skills.previewInstall',
   // Writing back to code hosts and trackers under the host owner's accounts
@@ -249,6 +251,16 @@ function isDeniedForTeamRead(method: string): boolean {
 
 export function isRoutineReadRuntimeMethod(method: string): boolean {
   return !AUDITED_TEAM_READ_METHODS.has(method) && !isDeniedForTeamRead(method)
+}
+
+// A shared page viewer measures the page with one fixed script on every resize. That is a read, not
+// "running a script on the host", so it stays out of the log while other scripts are recorded.
+export function isRoutineReadRuntimeRequest(method: string, params: unknown): boolean {
+  if (method === 'browser.eval') {
+    const expression = (params as { expression?: unknown } | null | undefined)?.expression
+    return expression === REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION
+  }
+  return isRoutineReadRuntimeMethod(method)
 }
 
 export function teamReadDenialReason(

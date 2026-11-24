@@ -128,6 +128,8 @@ describe('review inbox and reviewer note stores', () => {
     expect(await notes.deletePrototypeReviewAnnotation('D:/repo/one.html', 'a')).toBe(false)
     expect(await idsOf('D:/repo/one.html')).toEqual(['b'])
     expect(await idsOf('D:/repo/two.html')).toEqual(['c'])
+    // The same Windows file reached through another spelling reads the same notes.
+    expect(await idsOf('d:\\repo\\TWO.html')).toEqual(['c'])
 
     // A screenshot never travels between machines, and a note the owner's tray cannot place on the
     // page is refused rather than stored.

@@ -1,5 +1,7 @@
 import { UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { getRelativePathInsideRoot } from '@/lib/path'
+import { useAppStore } from '@/store'
 import { isWorkbenchShell } from '../is-workbench-shell'
 import { prototypeReviewPageFor } from './prototype-review-target'
 import { openPrototypeReviewSendDialog } from './send-dialog-store'
@@ -12,7 +14,13 @@ export function PrototypeReviewInviteButton({
   worktreeId: string
   filePath: string
 }): React.JSX.Element | null {
-  if (!isWorkbenchShell()) {
+  // Why: a reviewer can only open a file inside the shared worktree, so an invite for any other file
+  // would fail on their side with no way for the owner to see why.
+  const insideWorktree = useAppStore((state) => {
+    const root = state.getKnownWorktreeById(worktreeId)?.path
+    return root ? getRelativePathInsideRoot(filePath, root) !== null : true
+  })
+  if (!isWorkbenchShell() || !insideWorktree) {
     return null
   }
   const label = '邀请评审'

@@ -5,6 +5,7 @@ import {
   isExpectedTeamReadError,
   isQuietTeamReadDenial,
   isRoutineReadRuntimeMethod,
+  isRoutineReadRuntimeRequest,
   teamReadDenialReason,
   teamReadParamsDenialReason,
   teamReadRequestParams,
@@ -14,6 +15,7 @@ import {
   RPC_METHODS_WITHOUT_SHARED_PARAMS,
   RPC_PARAMS_BY_METHOD
 } from '../../../shared/rpc-contract/rpc-params-catalog.generated'
+import { REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION } from '../../../shared/remote-browser-viewport-probe'
 import { TerminalStreamOpcode } from '../../../shared/terminal-stream-protocol'
 
 describe('team-read RPC policy', () => {
@@ -44,6 +46,7 @@ describe('team-read RPC policy', () => {
       'git.generateCommitMessage',
       // Reading files outside the shared project
       'files.browseServerDir',
+      'browser.upload',
       'skills.previewInstall',
       // Writing back under the host owner's accounts
       'github.mergePR',
@@ -206,5 +209,15 @@ describe('team-read RPC policy', () => {
     ]) {
       expect(isRoutineReadRuntimeMethod(method)).toBe(false)
     }
+    // The viewer's fixed size probe is a read; any other page script is still logged.
+    expect(
+      isRoutineReadRuntimeRequest('browser.eval', {
+        expression: REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION
+      })
+    ).toBe(true)
+    expect(isRoutineReadRuntimeRequest('browser.eval', { expression: 'document.title' })).toBe(
+      false
+    )
+    expect(isRoutineReadRuntimeRequest('project.list', undefined)).toBe(true)
   })
 })
