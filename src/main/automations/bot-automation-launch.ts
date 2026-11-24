@@ -40,7 +40,7 @@ type BotAutomationLaunch = (args: {
 
 export type BotAutomationLauncher = {
   launch: BotAutomationLaunch
-  recover: (run: AutomationRun) => Promise<BotAutomationCompletion>
+  recover: (run: AutomationRun) => Promise<BotAutomationCompletion & { chatSessionId?: string }>
 }
 
 export function createBotAutomationLauncher(runtime: OrcaRuntimeService): BotAutomationLauncher {
@@ -120,7 +120,9 @@ export function createBotAutomationLauncher(runtime: OrcaRuntimeService): BotAut
       const initial = sent.value.submission
       const settled =
         initial.dispatchState === 'pending'
-          ? await host.waitForSendSettlement(sessionId, sent.value.clientMessageId)
+          ? await host
+              .waitForSendSettlement(sessionId, sent.value.clientMessageId)
+              .catch(() => undefined)
           : undefined
       const submitted = settled?.value.submission ?? initial
       if (submitted.dispatchState !== 'accepted' || !submitted.providerItemId) {
@@ -159,26 +161,31 @@ export function createBotAutomationLauncher(runtime: OrcaRuntimeService): BotAut
   return {
     launch,
     async recover(run) {
-      if (!run.chatSessionId || !run.chatOperationId) {
+      if (!run.chatOperationId) {
         return unknownBotRun()
       }
+      const chatSessionId = run.chatSessionId ?? run.id
       const host = await requireBotAutomationHost(runtime)
-      await host.restoreReadableSessions([run.chatSessionId])
-      if (!host.hasSession(run.chatSessionId)) {
+      await host.revealSession(chatSessionId)
+      if (!host.hasSession(chatSessionId)) {
         return unknownBotRun()
       }
-      const snapshot = host.journalSnapshot(run.chatSessionId)
+      const snapshot = host.journalSnapshot(chatSessionId)
       const submit = snapshot.submissions.find(
         (item) => item.clientMessageId === run.chatOperationId
       )
       if (submit?.dispatchState === 'rejected') {
         return {
+          chatSessionId,
           status: 'dispatch_failed',
           error: submit.reason ?? 'The Bot refused the scheduled prompt.'
         }
       }
       const itemId = submit?.dispatchState === 'accepted' ? submit.providerItemId : null
-      return (itemId && botAutomationOutcome(snapshot.items, itemId)) || unknownBotRun()
+      return {
+        ...((itemId && botAutomationOutcome(snapshot.items, itemId)) || unknownBotRun()),
+        chatSessionId
+      }
     }
   }
 }

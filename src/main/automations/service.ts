@@ -342,7 +342,6 @@ export class AutomationService {
     this.runs.updateRun({
       runId: run.id,
       status: 'dispatching',
-      chatSessionId: run.id,
       chatOperationId: operationId,
       error: null
     })
