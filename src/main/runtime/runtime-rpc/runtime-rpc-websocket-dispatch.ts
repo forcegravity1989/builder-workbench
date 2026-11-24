@@ -12,6 +12,7 @@ import { RuntimeRpcRequestAdmission } from './runtime-rpc-request-admission'
 import { classifyRuntimeLongPoll } from './runtime-rpc-long-poll'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
 import {
+  isExpectedTeamReadError,
   isQuietTeamReadDenial,
   isRoutineReadRuntimeMethod,
   teamReadDenialReason,
@@ -172,7 +173,10 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         // Project walls and sidebars hydrate repeatedly for both access modes. Keep the audit useful
         // by retaining denied/error requests and explicit writes while leaving routine successful
         // reads out.
-        if (!(isRoutineReadRuntimeMethod(request.method) && result === 'allowed')) {
+        if (
+          !(isRoutineReadRuntimeMethod(request.method) && result === 'allowed') &&
+          !isExpectedTeamReadError(request.method, errorMessage)
+        ) {
           this.getRuntimeAccessAudit().record({
             at: Date.now(),
             deviceId: device.deviceId,

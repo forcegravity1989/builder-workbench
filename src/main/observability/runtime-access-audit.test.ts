@@ -21,8 +21,35 @@ describe('RuntimeAccessAudit', () => {
     const entries = await audit.list({ result: 'allowed', search: 'Builder' })
     expect(entries).toHaveLength(1)
     expect(entries[0]?.method).toBe('worktree.list')
-    const contents = await readFile(join(audit.getDirectory(), `${new Date().toISOString().slice(0, 10)}.ndjson`), 'utf8')
+    const contents = await readFile(
+      join(audit.getDirectory(), `${new Date().toISOString().slice(0, 10)}.ndjson`),
+      'utf8'
+    )
     expect(contents).not.toContain('shell')
+  })
+
+  it('keeps one line for a burst of the same refusal and logs it again after the window', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'orca-shared-host-audit-repeat-'))
+    const audit = new RuntimeAccessAudit(root)
+    const base = {
+      deviceId: 'device-1',
+      accessMode: 'team-read' as const,
+      method: 'terminal.send',
+      result: 'denied' as const
+    }
+    const now = Date.now()
+    audit.record({ ...base, at: now })
+    audit.record({ ...base, at: now + 5_000 })
+    audit.record({ ...base, at: now + 30_000 })
+    audit.record({ ...base, method: 'files.write', at: now + 31_000 })
+    audit.record({ ...base, at: now + 61_000 })
+    audit.record({ ...base, result: 'allowed', method: 'worktree.sleep', at: now + 1 })
+    audit.record({ ...base, result: 'allowed', method: 'worktree.sleep', at: now + 2 })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    const entries = await audit.list()
+    expect(entries.filter((e) => e.method === 'terminal.send')).toHaveLength(2)
+    expect(entries.filter((e) => e.method === 'files.write')).toHaveLength(1)
+    expect(entries.filter((e) => e.method === 'worktree.sleep')).toHaveLength(2)
   })
 
   it('removes files older than the 14-day retention window', async () => {

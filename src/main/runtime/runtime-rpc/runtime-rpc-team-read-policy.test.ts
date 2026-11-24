@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   AUDITED_TEAM_READ_METHODS,
   TEAM_READ_DENIED_METHODS,
+  isExpectedTeamReadError,
   isQuietTeamReadDenial,
   isRoutineReadRuntimeMethod,
   teamReadDenialReason,
@@ -16,6 +17,14 @@ import {
 import { TerminalStreamOpcode } from '../../../shared/terminal-stream-protocol'
 
 describe('team-read RPC policy', () => {
+  it('treats only the fixed terminal existence checks as expected errors', () => {
+    expect(isExpectedTeamReadError('terminal.resolvePane', 'terminal_not_found')).toBe(true)
+    expect(isExpectedTeamReadError('terminal.list', 'terminal_liveness_unavailable')).toBe(true)
+    expect(isExpectedTeamReadError('terminal.resolvePane', 'something_else')).toBe(false)
+    expect(isExpectedTeamReadError('terminal.create', 'terminal_not_found')).toBe(false)
+    expect(isExpectedTeamReadError('terminal.list', undefined)).toBe(false)
+  })
+
   it('only lists methods that exist, so a rename cannot silently turn a rule off', () => {
     const known = new Set([
       ...Object.keys(RPC_PARAMS_BY_METHOD),

@@ -246,6 +246,18 @@ export function teamReadDenialReason(
 // the member did not choose it, so the refusal stays out of the access log.
 const TEAM_READ_QUIET_DENIAL_METHODS = new Set(['browser.clientHost.attach'])
 
+// The member's client checks whether the host's terminals still exist when it connects or opens a
+// session; a terminal that is gone answers with these fixed errors. Nothing was attempted, so they
+// are not audit material.
+const EXPECTED_ERRORS: Record<string, string> = {
+  'terminal.resolvePane': 'terminal_not_found',
+  'terminal.list': 'terminal_liveness_unavailable'
+}
+
+export function isExpectedTeamReadError(method: string, errorMessage: string | undefined): boolean {
+  return errorMessage !== undefined && EXPECTED_ERRORS[method] === errorMessage
+}
+
 export function isQuietTeamReadDenial(method: string): boolean {
   return TEAM_READ_QUIET_DENIAL_METHODS.has(method)
 }
