@@ -6768,11 +6768,9 @@
           "8b82879581": "Cualquier persona con una concesión activa puede conectarse hasta que la revoques. Revocar el acceso compartido desconecta a los clientes activos inmediatamente.",
           "68ec21309f": "Revocar acceso",
           "6f6d5188ed": "Revocar {{value0}}",
-          "87b16cd11d": "Creado ",
           "434e4a6af6": "Enlace actual",
           "fd83b94095": "Aún no hay acceso compartido al servidor.",
           "27cf8507ad": "Actualizar acceso compartido",
-          "f031182867": "Acceso compartido al servidor",
           "df142657a5": "Aún no se ha usado",
           "b18d1764ef": "Usado por última vez {{value0}}"
         },

@@ -7596,11 +7596,9 @@
           "8b82879581": "Toute personne disposant d'une autorisation active peut se connecter jusqu'à sa révocation. Révoquer l'accès partagé déconnecte immédiatement les clients actifs.",
           "68ec21309f": "Révoquer l'accès",
           "6f6d5188ed": "Révoquer {{value0}}",
-          "87b16cd11d": "Créé",
           "434e4a6af6": "Lien actuel",
           "fd83b94095": "Aucun accès serveur partagé pour le moment.",
           "27cf8507ad": "Actualiser l'accès partagé",
-          "f031182867": "Accès serveur partagé",
           "df142657a5": "Pas encore utilisé",
           "b18d1764ef": "Dernière utilisation {{value0}}"
         },

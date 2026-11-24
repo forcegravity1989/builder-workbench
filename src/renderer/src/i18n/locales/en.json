@@ -8046,11 +8046,9 @@
           "8b82879581": "Anyone with an active grant can connect until you revoke it. Revoking shared access disconnects active clients immediately.",
           "68ec21309f": "Revoke access",
           "6f6d5188ed": "Revoke {{value0}}",
-          "87b16cd11d": "Created",
           "434e4a6af6": "Current link",
           "fd83b94095": "No shared server access yet.",
           "27cf8507ad": "Refresh shared access",
-          "f031182867": "Shared Server Access",
           "df142657a5": "Not used yet",
           "b18d1764ef": "Last used {{value0}}",
           "teamReadonly": "Team read-only",
@@ -8221,8 +8219,6 @@
           "failedToLoadAccessLog": "Failed to load access log.",
           "clearConfirm": "Clear this host's shared access log?",
           "clearFailed": "Failed to clear shared access log.",
-          "accessLink": "Access link",
-          "copyLink": "Copy",
           "linkNotRecorded": "This link was created before its address was recorded. Generate a new link to copy it."
         },
         "Settings": {
@@ -15459,10 +15455,7 @@
             "756bfc25c9": "Open",
             "09a9489aa5": "Show",
             "2a4c4b8e1f": "Copy",
-            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead.",
-            "prototypeReview": {
-              "pageTitle": "Prototype review page"
-            }
+            "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead."
           },
           "BrowserToolbarMenu": {
             "429ef481f9": "Cancel",

@@ -8,7 +8,7 @@
 
 | 能力 | 复用落点 | 约束 |
 | --- | --- | --- |
-| 发送入口与主机选择 | `src/renderer/src/workbench/pr-review-notifications/` 的发送弹窗和 transport；原型评审入口是 HTML 预览工具栏的「邀请评审」图标按钮（`BrowserChromeToolbar` 的 `shareControl` 槽，`PrototypeReviewInviteButton`） | 原型评审只新增事件类型；不改 PR/MR 请求和 provider 路由；工作树菜单只保留 PR 评审 |
+| 发送入口与主机选择 | `src/renderer/src/workbench/pr-review-notifications/` 的发送弹窗和 transport；原型评审入口是持有人本机内置浏览器页签（本地 `.html` 文件走 `file://` 页签，不是文档预览）工具栏的「邀请评审」图标按钮（`browser-page-toolbar` 的 `shareControl` 槽，与「发布」并排，`PrototypeReviewInviteButton`）；持有人页签通过 `reviewDocumentPath` 读回成员提交的批注 | 原型评审只新增事件类型；不改 PR/MR 请求和 provider 路由；工作树菜单只保留 PR 评审 |
 | 浮动通知 | `PrReviewNotificationsView`、`PrReviewNotificationItems` 的浮窗、计数、分区、删除和刷新 | 事件增加「PR 评审 / 原型评审」二级页签；每页保留「我发出的评审 / 待我评审」；原型通知按用途显示「邀请你评审 / 提交了 N 条批注」 |
 | 源文档定位 | 通知携带发起主机、工作树和 HTML 文件绝对路径；点击后用 `openFileInBrowserTab` 在接收方自己的预览里打开（远程工作树经宿主读文件） | 不共享、不挂接对方的浏览器页签，也不按收件人的本地项目重新定位 |
 | 浏览器批注 | Orca HTML 预览的工具栏、选元素、确认卡片与批注托盘，完全在各自本机运行 | 成员批注托盘的发送按钮换成「提交给 {主机名}」，成员没有发给模型的入口；持有人侧沿用原生「发送给模型」 |
@@ -33,4 +33,4 @@
 
 ## 原型关系
 
-[prototype/index.html](prototype/index.html) 复用当前 BW 工作区壳和真实 PR 通知结构，其中原型评审演示「预览工具栏邀请评审 → 成员本机批注 → 提交给持有人 → 持有人读回」。原型与实现仍未经过 Electron 和双主机验收。
+[prototype/index.html](prototype/index.html) 复用当前 BW 工作区壳和真实 PR 通知结构，其中原型评审演示「浏览器页签工具栏邀请评审 → 成员本机批注 → 提交给持有人 → 持有人读回」。原型与实现仍未经过 Electron 和双主机验收。

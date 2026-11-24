@@ -379,7 +379,7 @@ function Preview(): React.JSX.Element {
                   </div>
                   <h1 className="text-lg font-semibold">评审与发布</h1>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    当前会话沿用 BW 工作区；原型评审在各自的 HTML 预览里完成，不接管对方的页签。
+                    当前会话沿用 BW 工作区；原型评审在各自的页签里完成，不接管对方的页签。
                   </p>
                 </div>
               ) : !documentOpen ? (
@@ -395,7 +395,7 @@ function Preview(): React.JSX.Element {
                         <p className="text-xs text-muted-foreground">
                           {viewingCopy
                             ? `${owner.name} 的文档 · 在你的预览里批注，不影响对方`
-                            : '本机 HTML 预览'}
+                            : '本机浏览器页签 · 本地 HTML'}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">

@@ -172,9 +172,17 @@ export function BrowserPagePane({
     addressBarInputRef,
     guestFocus
   })
+  // Why: synchronous webview URL access blocks render; navigation handlers update this cache before their store writes can re-render the pane.
+  const liveBrowserUrl = getLiveBrowserUrl(browserTab.id) ?? browserTab.url
+  const currentBrowserUrl = toDisplayUrl(liveBrowserUrl)
+  const shareableArtifactFile =
+    workspaceConnectionId === null ? getShareableBrowserArtifactFile(currentBrowserUrl) : null
   const annotationSend = useBrowserPageAnnotationSend({
     browserTabId: browserTab.id,
-    worktreeId
+    worktreeId,
+    // Why: a local HTML file opened here is the host's own copy of a reviewed document, so
+    // reviewers' submitted notes land in this tab.
+    reviewDocumentPath: shareableArtifactFile?.filePath ?? null
   })
   const grab = useGrabMode(browserTab.id)
   const markup = useBrowserPageMarkupCapture(webviewRef)
@@ -298,12 +306,7 @@ export function BrowserPagePane({
 
   // Why: a blank tab reads as 'about:blank' or the resolved data: URL, so match both to keep the "New Browser Tab" overlay visible.
   const isBlankTab = browserTab.url === 'about:blank' || browserTab.url === ORCA_BROWSER_BLANK_URL
-  // Why: synchronous webview URL access blocks render; navigation handlers update this cache before their store writes can re-render the pane.
-  const liveBrowserUrl = getLiveBrowserUrl(browserTab.id) ?? browserTab.url
   const externalUrl = getOpenableExternalUrl(liveBrowserUrl)
-  const currentBrowserUrl = toDisplayUrl(liveBrowserUrl)
-  const shareableArtifactFile =
-    workspaceConnectionId === null ? getShareableBrowserArtifactFile(currentBrowserUrl) : null
   const failedNavigationUrl = browserTab.loadError?.validatedUrl ?? currentBrowserUrl
   const failureExternalUrl = normalizeExternalBrowserUrl(failedNavigationUrl)
   const showFailureOverlay = Boolean(browserTab.loadError) && !isBlankTab
