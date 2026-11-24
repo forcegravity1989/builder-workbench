@@ -1,4 +1,4 @@
-import { Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
+import { Copy, Loader2, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { RuntimeAccessGrant } from '../../../../shared/runtime-access-grants'
 import { Button } from '../ui/button'
@@ -51,6 +51,7 @@ type RuntimeAccessGrantListProps = {
   grantingFullAccess: boolean
   onRefresh: () => void
   onRevoke: (grant: RuntimeAccessGrant) => void
+  onCopyLink: (grant: RuntimeAccessGrant) => void
   onGrantFullAccess: (grants: RuntimeAccessGrant[]) => Promise<boolean>
 }
 
@@ -63,6 +64,7 @@ export function RuntimeAccessGrantList({
   grantingFullAccess,
   onRefresh,
   onRevoke,
+  onCopyLink,
   onGrantFullAccess
 }: RuntimeAccessGrantListProps): React.JSX.Element {
   const [selectedGrantIds, setSelectedGrantIds] = useState<string[]>([])
@@ -255,6 +257,32 @@ export function RuntimeAccessGrantList({
                           )}
                   </div>
                 </div>
+                {grant.parentDeviceId === undefined ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => onCopyLink(grant)}
+                        aria-label={translate(
+                          'auto.components.settings.RuntimeAccessGrantList.copyLink',
+                          'Copy link for {{value0}}',
+                          { value0: grant.name }
+                        )}
+                      >
+                        <Copy className="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={4}>
+                      {translate(
+                        'auto.components.settings.RuntimeAccessGrantList.copyLinkTooltip',
+                        'Copy link'
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

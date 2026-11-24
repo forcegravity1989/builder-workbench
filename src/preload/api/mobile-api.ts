@@ -81,6 +81,7 @@ export type MobileApi = {
   restoreRuntimePairingUrl: (
     reference: RuntimePairingLinkReference
   ) => Promise<RuntimePairingLink | null>
+  getRuntimeAccessLinkUrl: (args: { deviceId: string }) => Promise<{ pairingUrl: string | null }>
   listDevices: () => Promise<{
     devices: {
       deviceId: string

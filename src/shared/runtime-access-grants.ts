@@ -12,6 +12,8 @@ export type RuntimeAccessGrant = {
   connected?: boolean
   /** Set on a per-member record; names the shared team link the member connected through. */
   parentDeviceId?: string
+  /** The link's address was recorded when it was created, so its pairing link can be copied again. */
+  canCopyLink?: boolean
 }
 
 export type RuntimeAccessAuditResult = 'allowed' | 'denied' | 'error'
@@ -27,6 +29,8 @@ export type RuntimeAccessAuditEntry = {
   result: RuntimeAccessAuditResult
   requestId?: string
   durationMs?: number
+  /** The RPC error code (never the message) for a refused or failed request, to tell causes apart. */
+  errorCode?: string
 }
 
 // Only public link metadata is retained by the renderer. Credentials stay in DeviceRegistry.

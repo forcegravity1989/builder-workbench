@@ -51,7 +51,10 @@ function toRuntimeAccessGrant(device: DeviceEntry): RuntimeAccessGrant {
       ? { accessMode: 'team-read' as const }
       : { accessMode: 'full' as const }),
     ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}),
-    ...(device.parentDeviceId !== undefined ? { parentDeviceId: device.parentDeviceId } : {})
+    ...(device.parentDeviceId !== undefined ? { parentDeviceId: device.parentDeviceId } : {}),
+    ...(device.pairingEndpoint && device.parentDeviceId === undefined
+      ? { canCopyLink: true }
+      : {})
   }
 }
 
@@ -234,6 +237,11 @@ export function registerMobileHandlers(
       }
     }
   )
+
+  ipcMain.handle('mobile:getRuntimeAccessLinkUrl', (_event, args: { deviceId: string }) => ({
+    pairingUrl:
+      typeof args?.deviceId === 'string' ? rpcServer.getRuntimeAccessLinkUrl(args.deviceId) : null
+  }))
 
   ipcMain.handle('mobile:restoreRuntimePairingUrl', (_event, reference: unknown) =>
     rpcServer.restoreRuntimePairingUrl(reference)

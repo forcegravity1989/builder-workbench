@@ -3,7 +3,9 @@ import {
   RPC_METHODS_WITHOUT_SHARED_PARAMS,
   RPC_PARAMS_BY_METHOD
 } from '../../../shared/rpc-contract/rpc-params-catalog.generated'
+import { REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION } from '../../../shared/remote-browser-viewport-probe'
 import {
+  isQuietTeamReadDenial,
   isRoutineReadRuntimeMethod,
   teamReadDenialReason,
   teamReadParamsDenialReason,
@@ -124,7 +126,6 @@ describe('team-read RPC policy', () => {
       'computer.click',
       'computer.listApps',
       'emulator.exec',
-      'browser.eval',
       'browser.exec',
       'browser.upload',
       'browser.cookie.get',
@@ -196,6 +197,16 @@ describe('team-read RPC policy', () => {
     ]) {
       expect(teamReadParamsDenialReason('team-read', 'browser.goto', { url })).toContain('本地文件')
     }
+    // The viewer's own viewport probe is the only page script a member may run.
+    expect(
+      teamReadParamsDenialReason('team-read', 'browser.eval', {
+        expression: REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION
+      })
+    ).toBeNull()
+    expect(
+      teamReadParamsDenialReason('team-read', 'browser.eval', { expression: 'document.cookie' })
+    ).toContain('授予完全访问')
+    expect(isQuietTeamReadDenial('worktree.teardownMissingTerminals')).toBe(true)
     expect(
       teamReadParamsDenialReason('team-read', 'browser.tabCreate', { url: 'https://a.test' })
     ).toBeNull()

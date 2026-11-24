@@ -1,4 +1,5 @@
 import { normalizeBrowserNavigationUrl } from '../../../shared/browser-url'
+import { REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION } from '../../../shared/remote-browser-viewport-probe'
 import type { RuntimeAccessMode } from '../../../shared/runtime-session-contracts'
 import {
   TerminalStreamOpcode,
@@ -302,7 +303,6 @@ const TEAM_READ_DENIED_METHODS = new Set([
   'browser.cookie.get',
   'browser.cookie.set',
   'browser.download',
-  'browser.eval',
   'browser.exec',
   'browser.geolocation',
   'browser.intercept.disable',
@@ -370,6 +370,9 @@ const AUDITED_TEAM_READ_METHODS = new Set([
   'browser.tabCreate'
 ])
 
+const TEAM_READ_DENIAL_MESSAGE =
+  '这台主机只授予了只读访问：可以查看，不能创建、修改或发送输入。请让主机持有人在“共享此主机”中授予完全访问。'
+
 function isDeniedForTeamRead(method: string): boolean {
   return (
     TEAM_READ_DENIED_METHODS.has(method) ||
@@ -388,7 +391,7 @@ export function teamReadDenialReason(
   if (accessMode !== 'team-read' || !isDeniedForTeamRead(method)) {
     return null
   }
-  return '这台主机只授予了只读访问：可以查看，不能创建、修改或发送输入。请让主机持有人在“共享此主机”中授予完全访问。'
+  return TEAM_READ_DENIAL_MESSAGE
 }
 
 // A member's interface fires these on its own when they open a worktree (select a tab, restore a
@@ -398,7 +401,10 @@ const TEAM_READ_QUIET_DENIAL_METHODS = new Set([
   'session.tabs.activate',
   'session.tabs.createTerminal',
   'session.tabs.updatePaneLayout',
-  'worktree.set'
+  'worktree.set',
+  'worktree.teardownMissingTerminals',
+  // Attached by the member's browser on its own to host pages for the owner's sessions.
+  'browser.clientHost.attach'
 ])
 
 export function isQuietTeamReadDenial(method: string): boolean {
@@ -432,10 +438,19 @@ export function teamReadParamsDenialReason(
   method: string,
   params: unknown
 ): string | null {
-  if (accessMode !== 'team-read' || !TEAM_READ_URL_METHODS.has(method)) {
+  if (accessMode !== 'team-read') {
     return null
   }
-  const url = params && typeof params === 'object' ? (params as { url?: unknown }).url : undefined
+  const fields = params && typeof params === 'object' ? (params as Record<string, unknown>) : {}
+  if (method === 'browser.eval') {
+    return fields.expression === REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION
+      ? null
+      : TEAM_READ_DENIAL_MESSAGE
+  }
+  if (!TEAM_READ_URL_METHODS.has(method)) {
+    return null
+  }
+  const url = fields.url
   if (typeof url !== 'string') {
     return null
   }

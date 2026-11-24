@@ -8066,7 +8066,9 @@
           "confirmGrant": "Grant full access",
           "title": "Shared links",
           "viewMembers": "Members",
-          "viewLinks": "Links"
+          "viewLinks": "Links",
+          "copyLink": "Copy link for {{value0}}",
+          "copyLinkTooltip": "Copy link"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "Remove {{value0}}",
@@ -8225,7 +8227,8 @@
           "clearConfirm": "Clear this host's shared access log?",
           "clearFailed": "Failed to clear shared access log.",
           "accessLink": "Access link",
-          "copyLink": "Copy"
+          "copyLink": "Copy",
+          "linkNotRecorded": "This link was created before its address was recorded. Generate a new link to copy it."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",

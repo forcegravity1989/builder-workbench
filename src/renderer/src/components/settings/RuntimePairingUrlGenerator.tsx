@@ -7,9 +7,6 @@ import type {
   RuntimeAccessGrant
 } from '../../../../shared/runtime-access-grants'
 import { useRuntimePairingLinkRecall } from './use-runtime-pairing-link-recall'
-import { Check, Copy } from 'lucide-react'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { RuntimeAccessGrantList } from './RuntimeAccessGrantList'
 import { RuntimeAccessAuditLog } from './RuntimeAccessAuditLog'
@@ -462,6 +459,40 @@ export function RuntimePairingUrlGenerator({
     }
   }
 
+  // A link listed under shared access can be copied again later, not only right after generating it.
+  const copyGrantLink = async (grant: RuntimeAccessGrant): Promise<void> => {
+    try {
+      const { pairingUrl } = await window.api.mobile.getRuntimeAccessLinkUrl({
+        deviceId: grant.deviceId
+      })
+      if (!pairingUrl) {
+        toast.error(
+          translate(
+            'auto.components.settings.RuntimePairingUrlGenerator.linkNotRecorded',
+            'This link was created before its address was recorded. Generate a new link to copy it.'
+          )
+        )
+        return
+      }
+      await window.api.ui.writeClipboardText(pairingUrl)
+      toast.success(
+        translate(
+          'auto.components.settings.RuntimePairingUrlGenerator.df0aa45a86',
+          'Copied pairing URL.'
+        )
+      )
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : translate(
+              'auto.components.settings.RuntimePairingUrlGenerator.d6c081adf4',
+              'Failed to copy URL.'
+            )
+      )
+    }
+  }
+
   const containerClassName = framed
     ? 'space-y-3 rounded-lg border border-border/50 bg-muted/25 p-3'
     : 'space-y-4'
@@ -533,39 +564,6 @@ export function RuntimePairingUrlGenerator({
         />
       ) : null}
 
-      {!showGeneratorForm && runtimePairingUrl ? (
-        <div className="space-y-1.5">
-          <Label htmlFor="runtime-share-access-link">
-            {translate(
-              'auto.components.settings.RuntimePairingUrlGenerator.accessLink',
-              'Access link'
-            )}
-          </Label>
-          <div className="flex items-center gap-2">
-            <Input
-              id="runtime-share-access-link"
-              readOnly
-              value={runtimePairingUrl}
-              className="h-8 font-mono text-xs"
-              onFocus={(event) => event.currentTarget.select()}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => void copyGeneratedUrl('pairing', runtimePairingUrl)}
-            >
-              {copiedTarget === 'pairing' ? (
-                <Check className="size-3.5" />
-              ) : (
-                <Copy className="size-3.5" />
-              )}
-              {translate('auto.components.settings.RuntimePairingUrlGenerator.copyLink', 'Copy')}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
       <RuntimeAccessGrantList
         className={sharedAccessClassName}
         grants={runtimeAccessGrants}
@@ -575,6 +573,7 @@ export function RuntimePairingUrlGenerator({
         grantingFullAccess={grantingFullAccess}
         onRefresh={() => void loadRuntimeAccessGrants({ showToastOnError: true })}
         onRevoke={(grant) => void revokeRuntimeAccess(grant)}
+        onCopyLink={(grant) => void copyGrantLink(grant)}
         onGrantFullAccess={grantRuntimeFullAccess}
       />
       <RuntimeAccessAuditLog

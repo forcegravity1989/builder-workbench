@@ -42,6 +42,9 @@ export type DeviceEntry = {
   // gets their own record under the link. The record carries the member's name and full-access
   // grant, and its random token is never handed out; members authenticate with the link's token.
   parentDeviceId?: string
+  // Why: the address the owner advertised when the link was created, so the link can be copied again
+  // later from the shared list. Absent on links created before this was recorded.
+  pairingEndpoint?: string
   // Why: survives a desktop restart so the host can keep pushing without the phone
   // re-registering. Absent on every registry written before background push existed.
   pushRegistration?: MobilePushRegistration
@@ -305,6 +308,18 @@ export class DeviceRegistry {
     } catch {
       return parent
     }
+  }
+
+  setPairingEndpoint(deviceId: string, pairingEndpoint: string): boolean {
+    if (!this.devices.some((device) => device.deviceId === deviceId)) {
+      return false
+    }
+    const nextDevices = this.devices.map((device) =>
+      device.deviceId === deviceId ? { ...device, pairingEndpoint } : device
+    )
+    this.save(nextDevices)
+    this.devices = nextDevices
+    return true
   }
 
   /** Removes every member record created under a shared link with one registry write. */

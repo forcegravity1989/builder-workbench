@@ -12,6 +12,7 @@ export function createWebMobileApi(): Partial<PreloadApi> {
       openWindowsNetworkSettings: () => Promise.resolve(false),
       getRuntimePairingUrl: () => Promise.resolve({ available: false }),
       restoreRuntimePairingUrl: () => Promise.resolve(null),
+      getRuntimeAccessLinkUrl: () => Promise.resolve({ pairingUrl: null }),
       listDevices: () => Promise.resolve({ devices: [] }),
       revokeDevice: () => Promise.resolve({ revoked: false }),
       listRuntimeAccessGrants: () => Promise.resolve({ grants: [] }),

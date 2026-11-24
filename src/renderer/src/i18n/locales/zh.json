@@ -6904,7 +6904,9 @@
           "confirmGrant": "授予完全访问",
           "title": "我分享出去的链接",
           "viewMembers": "成员",
-          "viewLinks": "链接"
+          "viewLinks": "链接",
+          "copyLink": "复制 {{value0}} 的链接",
+          "copyLinkTooltip": "复制链接"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "删除 {{value0}}",
@@ -7059,7 +7061,8 @@
           "clearConfirm": "要清理这台主机的共享访问日志吗？",
           "clearFailed": "清理共享访问日志失败。",
           "accessLink": "访问链接",
-          "copyLink": "复制"
+          "copyLink": "复制",
+          "linkNotRecorded": "这条链接生成时没有记录地址，无法再次复制。请重新生成一条链接。"
         },
         "Settings": {
           "3bf149e873": "项目设置 > {{value0}}",

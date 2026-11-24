@@ -151,12 +151,16 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       if (!auditRecorded) {
         auditRecorded = true
         let result: 'allowed' | 'denied' | 'error' = 'error'
+        let errorCode: string | undefined
         try {
           const parsed = JSON.parse(scopedResponse) as RpcResponse
           if (parsed.ok === true) {
             result = 'allowed'
-          } else if (parsed.error.code === 'forbidden' || parsed.error.code === 'unauthorized') {
-            result = 'denied'
+          } else {
+            errorCode = typeof parsed.error.code === 'string' ? parsed.error.code : undefined
+            if (parsed.error.code === 'forbidden' || parsed.error.code === 'unauthorized') {
+              result = 'denied'
+            }
           }
         } catch {
           // Keep the error result when a handler emitted a malformed frame.
@@ -179,7 +183,8 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
             method: request.method,
             result,
             requestId: request.id,
-            durationMs: Date.now() - auditStartedAt
+            durationMs: Date.now() - auditStartedAt,
+            ...(errorCode ? { errorCode } : {})
           })
         }
       }

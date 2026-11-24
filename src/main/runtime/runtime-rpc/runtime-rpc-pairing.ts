@@ -188,6 +188,34 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     }
   }
 
+  /** The pairing link of a shared link record, for copying it again; null when it was not recorded. */
+  getRuntimeAccessLinkUrl(deviceId: string): string | null {
+    const device = this.deviceRegistry?.getDevice(deviceId)
+    const publicKeyB64 = this.getE2EEPublicKey()
+    if (
+      device?.scope !== 'runtime' ||
+      device.parentDeviceId !== undefined ||
+      !device.pairingEndpoint ||
+      !publicKeyB64
+    ) {
+      return null
+    }
+    return encodePairingOffer({
+      v: PAIRING_OFFER_VERSION,
+      endpoint: device.pairingEndpoint,
+      deviceToken: device.token,
+      publicKeyB64,
+      pairedDeviceId: device.deviceId,
+      scope: 'runtime',
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? {
+            accessMode: 'team-read' as const,
+            ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+          }
+        : {})
+    })
+  }
+
   createPairingOffer(args: {
     address?: string | null
     name?: string
@@ -263,6 +291,14 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     } catch (error) {
       console.error('[runtime] Failed to persist pairing credential:', error)
       return pairingUnavailable('device_registry_unavailable', DEVICE_REGISTRY_UNAVAILABLE_GUIDANCE)
+    }
+    if (scope === 'runtime') {
+      try {
+        this.deviceRegistry.setPairingEndpoint(device.deviceId, endpoint)
+      } catch (error) {
+        // The link still works; only copying it again later from the shared list is unavailable.
+        console.error('[runtime] Failed to record the link address:', error)
+      }
     }
     const pairingUrl = encodePairingOffer({
       v: PAIRING_OFFER_VERSION,

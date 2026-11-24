@@ -79,6 +79,9 @@ export const mobileApi = {
   ): Promise<RuntimePairingLink | null> =>
     ipcRenderer.invoke('mobile:restoreRuntimePairingUrl', reference),
 
+  getRuntimeAccessLinkUrl: (args: { deviceId: string }): Promise<{ pairingUrl: string | null }> =>
+    ipcRenderer.invoke('mobile:getRuntimeAccessLinkUrl', args),
+
   listDevices: (): Promise<{
     devices: { deviceId: string; name: string; pairedAt: number; lastSeenAt: number }[]
   }> => ipcRenderer.invoke('mobile:listDevices'),
