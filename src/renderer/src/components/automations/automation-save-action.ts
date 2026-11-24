@@ -26,23 +26,18 @@ export function createAutomationSaveAction(context: AutomationSaveContext) {
     } = local
     const isHermesSave =
       editingAutomationId === null && (createTarget === 'hermes' || editingExternalTarget !== null)
+    const botScheduleId = draft.isBotSchedule ? editingAutomationId : null
     const { hour, minute } = parseDraftTime(draft.time)
+    if (botScheduleId && (!draft.name.trim() || !draft.prompt.trim())) {
+      toast.error(translate('bots.schedule-edit-invalid', 'Enter a name and a prompt.'))
+      return
+    }
     if (
-      !draft.projectId ||
-      ((draft.workspaceMode === 'existing' || isHermesSave) && !draft.workspaceId) ||
-      !draft.prompt.trim()
+      !botScheduleId &&
+      (!draft.projectId ||
+        ((draft.workspaceMode === 'existing' || isHermesSave) && !draft.workspaceId) ||
+        !draft.prompt.trim())
     ) {
-      if (draft.isBotSchedule && editingAutomationId && draft.name.trim() && draft.prompt.trim()) {
-        setIsSaving(true)
-        try {
-          await saveBotSchedule(context, editingAutomationId)
-        } catch (error) {
-          toast.error(error instanceof Error ? error.message : String(error))
-        } finally {
-          setIsSaving(false)
-        }
-        return
-      }
       toast.error(
         translate(
           'auto.components.automations.AutomationsPage.2430fecf53',
@@ -51,7 +46,7 @@ export function createAutomationSaveAction(context: AutomationSaveContext) {
       )
       return
     }
-    if (draft.scheduleWarning) {
+    if (!botScheduleId && draft.scheduleWarning) {
       toast.error(
         translate(
           'auto.components.automations.AutomationsPage.64bdb2304f',
@@ -64,6 +59,7 @@ export function createAutomationSaveAction(context: AutomationSaveContext) {
       ? isValidAutomationCronSchedule
       : isValidAutomationSchedule
     if (
+      !botScheduleId &&
       draft.preset === 'custom' &&
       !acceptsAutomationDraftSchedule({
         customSchedule: draft.customSchedule,
@@ -94,6 +90,10 @@ export function createAutomationSaveAction(context: AutomationSaveContext) {
     }
     setIsSaving(true)
     try {
+      if (botScheduleId) {
+        await saveBotSchedule(context, botScheduleId)
+        return
+      }
       const selectedWorkspaceExists =
         draft.workspaceMode !== 'existing' ||
         destinationForm.dialogWorktrees.some((worktree) => worktree.id === draft.workspaceId)

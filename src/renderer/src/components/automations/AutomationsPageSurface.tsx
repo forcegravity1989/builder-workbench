@@ -286,16 +286,18 @@ export function AutomationsPageSurface({
           }
           selectedRepoDefaultBaseRef={presentation.selectedRepo?.worktreeBaseRef ?? null}
           selectedWorkspaceName={
-            selected?.workspaceMode === 'new_per_run'
-              ? translate(
-                  'auto.components.automations.AutomationsPage.cd8397cc32',
-                  'New workspace each run'
-                )
-              : (presentation.selectedWorktree?.displayName ??
-                translate(
-                  'auto.components.automations.AutomationsPage.missingWorkspace',
-                  'Missing workspace'
-                ))
+            selected?.bot
+              ? translate('bots.schedule-bot-home', 'Bot Home')
+              : selected?.workspaceMode === 'new_per_run'
+                ? translate(
+                    'auto.components.automations.AutomationsPage.cd8397cc32',
+                    'New workspace each run'
+                  )
+                : (presentation.selectedWorktree?.displayName ??
+                  translate(
+                    'auto.components.automations.AutomationsPage.missingWorkspace',
+                    'Missing workspace'
+                  ))
           }
           hostLabelById={presentation.hostLabelById}
           selectedRunNowAvailability={presentation.selectedRunNowAvailability}

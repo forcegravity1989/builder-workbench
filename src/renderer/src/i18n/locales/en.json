@@ -144,6 +144,7 @@
     "schedule-bot-home": "Bot Home",
     "schedule-create": "Create schedule",
     "schedule-invalid": "Enter a name, a prompt, and a future start time.",
+    "schedule-edit-invalid": "Enter a name and a prompt.",
     "schedule-saved": "Schedule saved in Automations.",
     "schedule-open": "Open Bot Chat",
     "schedule-run-chat": "This run opened in Bot Chat."

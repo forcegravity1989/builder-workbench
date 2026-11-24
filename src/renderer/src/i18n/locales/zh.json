@@ -37,6 +37,7 @@
     "schedule-bot-home": "Bot 主目录",
     "schedule-create": "创建日程",
     "schedule-invalid": "请填写名称、提示词和未来的开始时间。",
+    "schedule-edit-invalid": "请填写名称和提示词。",
     "schedule-saved": "已保存，可在自动化中查看。",
     "schedule-open": "打开 Bot Chat",
     "schedule-run-chat": "本次运行在 Bot Chat 中打开。"
