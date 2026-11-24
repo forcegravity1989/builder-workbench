@@ -33,6 +33,17 @@ export function isValidShareId(id) {
 }
 
 /**
+ * Annotations live next to the share they belong to and die with it: `removeFiles` deletes this
+ * path together with the content and meta, so no orphan annotation file can outlive its share.
+ *
+ * @param {string} dataDir
+ * @param {string} id
+ */
+export function annotationFilePath(dataDir, id) {
+  return path.join(dataDir, `${id}.annotations.json`)
+}
+
+/**
  * @param {{ dataDir: string, retentionDays: number, log?: (line: string) => void }} options
  */
 export function createShareStore({ dataDir, retentionDays, log = () => {} }) {
@@ -215,6 +226,16 @@ export function createShareStore({ dataDir, retentionDays, log = () => {} }) {
         await removeIfOlderThan(path.join(dataDir, name), staleTempBefore)
         continue
       }
+      if (name.endsWith('.annotations.json')) {
+        // An annotations file can outlive its share only through the tiny window where a share
+        // removal races an annotation write (the stores serialize per file, not across files).
+        // Sweep takes such orphans along; a live share keeps its annotations.
+        const id = name.slice(0, -'.annotations.json'.length)
+        if (isValidShareId(id) && !(await readMeta(id))) {
+          await fs.rm(path.join(dataDir, name), { force: true })
+        }
+        continue
+      }
       if (!name.endsWith('.json')) {
         continue
       }
@@ -297,6 +318,7 @@ export function createShareStore({ dataDir, retentionDays, log = () => {} }) {
   async function removeFiles(id) {
     await fs.rm(contentPath(id), { force: true })
     await fs.rm(metaPath(id), { force: true })
+    await fs.rm(annotationFilePath(dataDir, id), { force: true })
   }
 
   /**
@@ -327,7 +349,22 @@ export function createShareStore({ dataDir, retentionDays, log = () => {} }) {
     }
   }
 
-  return { init, create, update, remove, read, open, sweep }
+  /**
+   * Public meta lookup for routes that authenticate without streaming content: annotation routes
+   * check the share still exists (and is unexpired) before touching the annotation file.
+   *
+   * @param {string} id
+   * @returns {Promise<ShareMeta | null>}
+   */
+  async function meta(id) {
+    const found = await readMeta(id)
+    if (!found || isExpired(found)) {
+      return null
+    }
+    return found
+  }
+
+  return { init, create, update, remove, read, open, sweep, meta }
 }
 
 /**
