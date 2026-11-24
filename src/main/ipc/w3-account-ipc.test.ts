@@ -37,7 +37,9 @@ describe('w3 account IPC sender trust', () => {
     setTrustedBrowserRendererWebContentsId(999)
   })
 
-  function handlerFor(channel: string): (event: { sender: Electron.WebContents }, ...args: unknown[]) => unknown {
+  function handlerFor(
+    channel: string
+  ): (event: { sender: Electron.WebContents }, ...args: unknown[]) => unknown {
     return handleMock.mock.calls.find(([c]) => c === channel)?.[1] as never
   }
 
@@ -57,10 +59,13 @@ describe('w3 account IPC sender trust', () => {
     })
   })
 
-  it('refuses login / cancel / sign-out from an untrusted sender', async () => {
+  it('refuses login / sync / cancel / sign-out from an untrusted sender', async () => {
     registerW3AccountHandlers()
     await expect(handlerFor('w3Account:start')({ sender: untrustedSender() })).resolves.toEqual({
       status: { state: 'signed-out' }
+    })
+    await expect(handlerFor('w3Account:sync')({ sender: untrustedSender() })).resolves.toEqual({
+      state: 'signed-out'
     })
     await expect(handlerFor('w3Account:cancel')({ sender: untrustedSender() })).resolves.toEqual({
       state: 'signed-out'

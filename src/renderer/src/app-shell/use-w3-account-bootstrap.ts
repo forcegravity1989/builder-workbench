@@ -6,12 +6,16 @@ import { setW3LocalBrowserDefaultProfileId } from '@/lib/w3-local-browser-defaul
 // Why: app-level (not page-level) thin mount. On startup / profile restore the
 // main process validates the W3 session against the trusted account API before
 // this runs, so the local default is only ever set from a confirmed identity.
-// On sign-out the default is dropped and tabs that hold the retired session
-// are closed. Remote/ssh hosts, explicit profiles, doc previews and client
-// routes never pick this default up (see w3-local-browser-default).
+// When startup reports signed-out, the session bridge runs ONCE automatically
+// (passwordless, zero user action); after that the user drives it from the
+// settings pane. On sign-out the default is dropped and tabs that hold the
+// retired session are closed. Remote/ssh hosts, explicit profiles, doc
+// previews and client routes never pick this default up (see
+// w3-local-browser-default).
 export function useW3AccountBootstrap(): void {
   const previousStateRef = useRef<W3AccountStatus['state'] | null>(null)
   const signedInProfileRef = useRef<string | null>(null)
+  const autoSyncDoneRef = useRef(false)
 
   useEffect(() => {
     let disposed = false
@@ -36,8 +40,16 @@ export function useW3AccountBootstrap(): void {
     void window.api.w3Account
       .status()
       .then((status) => {
-        if (!disposed) {
-          apply(status)
+        if (disposed) {
+          return
+        }
+        apply(status)
+        // Why startup-only: the first trusted check says signed-out, so try the
+        // passwordless bridge once. Later signed-out answers (user sign-out,
+        // failed sync) must NOT silently relaunch Chrome — the user decides.
+        if (status.state === 'signed-out' && !autoSyncDoneRef.current) {
+          autoSyncDoneRef.current = true
+          void window.api.w3Account.sync().catch(() => {})
         }
       })
       .catch(() => {})

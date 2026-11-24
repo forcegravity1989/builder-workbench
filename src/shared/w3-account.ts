@@ -14,17 +14,23 @@ export type W3FailureReason =
   | 'cancelled'
   | 'login-failed'
   | 'account-parse-failed'
+  | 'sync-failed'
 
 /**
  * Renderer-visible account state. A "signed-in" state is only produced from a
  * successful W3 account-API response (HTTP 200 + parseable employeeNumber/uid)
  * in the dedicated browser session; page load, URL and cookie presence never
  * produce it (HTTP 421 = "No login user found." = still signed out).
+ * "sync-pending" = the system-browser session bridge is running (headless
+ * controlled Chrome completes SPES passwordless login, then its cookies are
+ * transplanted into the dedicated partition and re-validated by the same
+ * account API before anything is reported as signed in).
  */
 export type W3AccountStatus =
   | { state: 'unconfigured' }
   | { state: 'signed-out' }
   | { state: 'login-pending'; sessionProfileId: string }
+  | { state: 'sync-pending'; sessionProfileId: string }
   | { state: 'signed-in'; sessionProfileId: string; identity: W3Identity | null }
   | { state: 'failed'; reason: W3FailureReason }
 

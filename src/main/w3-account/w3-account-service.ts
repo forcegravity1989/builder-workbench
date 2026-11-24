@@ -15,11 +15,13 @@ import type {
   W3Identity,
   W3StartLoginResult
 } from '../../shared/w3-account'
+import { parseW3AccountResponse, type W3AccountPollResult } from './w3-account-identity'
 import {
-  parseW3AccountResponse,
-  type W3AccountPollResult
-} from './w3-account-identity'
-import { isAllowedW3ShortcutUrl, type W3AccountConfig, type W3AccountConfigResult } from './w3-account-config'
+  isAllowedW3ShortcutUrl,
+  type W3AccountConfig,
+  type W3AccountConfigResult
+} from './w3-account-config'
+import type { W3SessionBridgeResult } from './w3-session-bridge'
 
 export type W3FetchResponse = {
   status: number
@@ -50,13 +52,13 @@ export type W3Scheduler = {
 export type W3AccountServiceDeps = {
   getConfig: () => W3AccountConfigResult
   getActiveProfileId: () => string
-  ensureSessionProfile: (
-    orcaProfileId: string
-  ) => Promise<{ profileId: string; partition: string }>
+  ensureSessionProfile: (orcaProfileId: string) => Promise<{ profileId: string; partition: string }>
   /** Same-session fetch (cookies included) against the account API. */
   fetch: (partition: string, url: string, init: W3FetchInit) => Promise<W3FetchResponse>
   clearDedicatedStorage: (partition: string) => Promise<void>
   openLoginWindow: (config: W3AccountConfig, sessionProfileId: string) => W3LoginWindowHandle
+  /** Harvest a passwordless SSO session from the controlled system Chrome and transplant it. */
+  syncSession: (partition: string, signal: AbortSignal) => Promise<W3SessionBridgeResult>
   broadcast: (status: W3AccountStatus) => void
   now?: () => number
   scheduler?: W3Scheduler
@@ -78,6 +80,14 @@ type Poller = {
   window: W3LoginWindowHandle
 }
 
+type Sync = {
+  generation: number
+  orcaProfileId: string
+  sessionProfileId: string
+  partition: string
+  abort: AbortController
+}
+
 const DEFAULT_INTERVAL_MS = 2000
 const DEFAULT_FETCH_TIMEOUT_MS = 8000
 
@@ -97,10 +107,14 @@ export class W3AccountService {
   private readonly intervalMs: number
   private readonly fetchTimeoutMs: number
   private poller: Poller | null = null
+  private sync: Sync | null = null
   private generation = 0
   /** Last confirmed signed-in identity, so start() can short-circuit (no 2nd window). */
-  private signedIn: { orcaProfileId: string; sessionProfileId: string; identity: W3Identity | null } | null =
-    null
+  private signedIn: {
+    orcaProfileId: string
+    sessionProfileId: string
+    identity: W3Identity | null
+  } | null = null
 
   constructor(deps: W3AccountServiceDeps) {
     this.deps = deps
@@ -117,6 +131,9 @@ export class W3AccountService {
   private statusNow(orcaProfileId: string): W3AccountStatus {
     if (this.poller?.running && this.poller.orcaProfileId === orcaProfileId) {
       return { state: 'login-pending', sessionProfileId: this.poller.sessionProfileId }
+    }
+    if (this.sync && this.sync.orcaProfileId === orcaProfileId) {
+      return { state: 'sync-pending', sessionProfileId: this.sync.sessionProfileId }
     }
     return { state: 'signed-out' }
   }
@@ -138,10 +155,18 @@ export class W3AccountService {
       this.cancelPoller()
       this.generation += 1
     }
+    if (this.sync && this.sync.orcaProfileId !== orcaProfileId) {
+      this.cancelSync()
+      this.generation += 1
+    }
     if (this.poller?.running && this.poller.orcaProfileId === orcaProfileId) {
       // In-flight login is not a confirmed sign-in; drop any stale cache.
       this.signedIn = null
       return { state: 'login-pending', sessionProfileId: this.poller.sessionProfileId }
+    }
+    if (this.sync && this.sync.orcaProfileId === orcaProfileId) {
+      this.signedIn = null
+      return { state: 'sync-pending', sessionProfileId: this.sync.sessionProfileId }
     }
     const generation = this.generation
     let handle: { profileId: string; partition: string }
@@ -159,7 +184,11 @@ export class W3AccountService {
       return this.statusNow(this.deps.getActiveProfileId())
     }
     if (result.state === 'authenticated') {
-      this.signedIn = { orcaProfileId, sessionProfileId: handle.profileId, identity: result.identity }
+      this.signedIn = {
+        orcaProfileId,
+        sessionProfileId: handle.profileId,
+        identity: result.identity
+      }
       return { state: 'signed-in', sessionProfileId: handle.profileId, identity: result.identity }
     }
     // 421 / other answers / network: no trusted identity right now.
@@ -218,6 +247,12 @@ export class W3AccountService {
         }
       }
     }
+    // Why cancel an in-flight bridge: the user explicitly chose the manual
+    // fallback, so the background harvest must stop and not resurrect state.
+    if (this.sync) {
+      this.cancelSync()
+      this.generation += 1
+    }
     // Why: if this profile is already signed in (confirmed by a prior status
     // check), don't open a second login window — just return the current state.
     if (this.signedIn && this.signedIn.orcaProfileId === orcaProfileId) {
@@ -268,9 +303,132 @@ export class W3AccountService {
     return { status }
   }
 
+  /**
+   * Begin the session bridge: harvest a passwordless SSO session from the
+   * controlled system Chrome into the dedicated partition, then confirm it
+   * with the same trusted account API. Returns immediately with
+   * sync-pending; the outcome arrives via broadcast. The manual login window
+   * stays available as the fallback path when this fails.
+   */
+  async syncFromSystemBrowser(): Promise<W3AccountStatus> {
+    const config = this.deps.getConfig()
+    if (!config.configured) {
+      return { state: 'unconfigured' }
+    }
+    const orcaProfileId = this.deps.getActiveProfileId()
+    if (this.poller) {
+      if (this.poller.orcaProfileId !== orcaProfileId) {
+        this.cancelPoller()
+        this.generation += 1
+      } else {
+        return { state: 'login-pending', sessionProfileId: this.poller.sessionProfileId }
+      }
+    }
+    if (this.sync) {
+      if (this.sync.orcaProfileId !== orcaProfileId) {
+        this.cancelSync()
+        this.generation += 1
+      } else {
+        return { state: 'sync-pending', sessionProfileId: this.sync.sessionProfileId }
+      }
+    }
+    if (this.signedIn && this.signedIn.orcaProfileId === orcaProfileId) {
+      return {
+        state: 'signed-in',
+        sessionProfileId: this.signedIn.sessionProfileId,
+        identity: this.signedIn.identity
+      }
+    }
+    const generation = ++this.generation
+    let handle: { profileId: string; partition: string }
+    try {
+      handle = await this.deps.ensureSessionProfile(orcaProfileId)
+    } catch {
+      // Why sync-failed, not open-failed: the bridge path never opens a
+      // login window, so "cannot open the W3 login window" would mislead.
+      return failure('sync-failed')
+    }
+    if (this.generation !== generation) {
+      return this.statusNow(this.deps.getActiveProfileId())
+    }
+    const sync: Sync = {
+      generation,
+      orcaProfileId,
+      sessionProfileId: handle.profileId,
+      partition: handle.partition,
+      abort: new AbortController()
+    }
+    this.sync = sync
+    const status: W3AccountStatus = { state: 'sync-pending', sessionProfileId: handle.profileId }
+    this.deps.broadcast(status)
+    void this.runSync(config, sync)
+    return status
+  }
+
+  private async runSync(config: W3AccountConfig, sync: Sync): Promise<void> {
+    let result: W3SessionBridgeResult
+    try {
+      result = await this.deps.syncSession(sync.partition, sync.abort.signal)
+    } catch {
+      result = { ok: false, reason: 'cookie-read-failed' }
+    }
+    if (this.sync !== sync || sync.generation !== this.generation) {
+      // Why clear: a superseded sync must not leave this.sync dangling —
+      // every later status answer would otherwise report sync-pending.
+      if (this.sync === sync) {
+        this.sync = null
+      }
+      return
+    }
+    if (!result.ok) {
+      this.sync = null
+      this.generation += 1
+      // Why one line: the six harvest failure modes collapse into
+      // sync-failed for the UI, so this is the only place field diagnosis
+      // can start from. Never logs cookie values — reason codes only.
+      console.warn(`[w3-account] session bridge failed: ${result.reason}`)
+      this.deps.broadcast(failure('sync-failed'))
+      return
+    }
+    // Why the account API after the transplant: cookie presence never counts
+    // as a login — the bridge only moves a session, the trusted API confirms it.
+    const identity = await this.checkIdentity(config, sync.partition)
+    if (this.sync !== sync || sync.generation !== this.generation) {
+      if (this.sync === sync) {
+        this.sync = null
+      }
+      return
+    }
+    this.sync = null
+    this.generation += 1
+    if (identity.state === 'authenticated') {
+      this.signedIn = {
+        orcaProfileId: sync.orcaProfileId,
+        sessionProfileId: sync.sessionProfileId,
+        identity: identity.identity
+      }
+      this.deps.broadcast({
+        state: 'signed-in',
+        sessionProfileId: sync.sessionProfileId,
+        identity: identity.identity
+      })
+      return
+    }
+    this.deps.broadcast(failure('sync-failed'))
+  }
+
+  private cancelSync(): void {
+    if (!this.sync) {
+      return
+    }
+    this.sync.abort.abort()
+    this.sync = null
+  }
+
   /** Cancel an in-flight login (user action / config change). Closes the window. */
   async cancelLogin(): Promise<W3AccountStatus> {
     this.cancelPoller()
+    this.cancelSync()
     this.generation += 1
     this.signedIn = null
     return this.statusNow(this.deps.getActiveProfileId())
@@ -283,6 +441,10 @@ export class W3AccountService {
    */
   async signOut(): Promise<W3AccountStatus> {
     this.cancelPoller()
+    // Why cancel the bridge too: an in-flight sync would keep writing
+    // cookies into the partition this call is about to clear, silently
+    // resurrecting the sign-out on its next account-API hit.
+    this.cancelSync()
     this.signedIn = null
     const generation = ++this.generation
     const orcaProfileId = this.deps.getActiveProfileId()
@@ -306,9 +468,10 @@ export class W3AccountService {
     return { state: 'signed-out' }
   }
 
-  /** Tear down the poller/window and invalidate in-flight work (exit). */
+  /** Tear down the poller/sync/window and invalidate in-flight work (exit). */
   dispose(): void {
     this.cancelPoller()
+    this.cancelSync()
     this.generation += 1
     this.signedIn = null
   }
@@ -329,7 +492,10 @@ export class W3AccountService {
     this.poller = null
   }
 
-  private async checkIdentity(config: W3AccountConfig, partition: string): Promise<W3AccountPollResult> {
+  private async checkIdentity(
+    config: W3AccountConfig,
+    partition: string
+  ): Promise<W3AccountPollResult> {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.fetchTimeoutMs)
     let response: W3FetchResponse
@@ -420,7 +586,9 @@ export class W3AccountService {
     if (result.state === 'login-failed' || result.state === 'parse-failed') {
       this.cancelPoller()
       this.generation += 1
-      this.deps.broadcast(failure(result.state === 'parse-failed' ? 'account-parse-failed' : 'login-failed'))
+      this.deps.broadcast(
+        failure(result.state === 'parse-failed' ? 'account-parse-failed' : 'login-failed')
+      )
       return
     }
     // 421 (not logged in yet) or transient network: keep waiting.

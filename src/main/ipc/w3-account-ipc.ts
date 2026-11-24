@@ -1,4 +1,9 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron'
+import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   W3_ACCOUNT_STATUS_CHANGED_CHANNEL,
   type W3AccountStatus,
@@ -18,6 +23,14 @@ import {
   type W3FetchResponse,
   type W3LoginWindowHandle
 } from '../w3-account/w3-account-service'
+import {
+  syncW3SessionFromSystemBrowser,
+  type W3SessionBridgeResult
+} from '../w3-account/w3-session-bridge'
+import {
+  collectW3SessionCookiesFromSystemChrome,
+  type W3CdpSocket
+} from '../w3-account/w3-system-chrome-session-source'
 
 // Why: the status carries identity (name/employee no). Only the main app window
 // may receive it — never dashboard popouts or the W3 login window itself.
@@ -47,9 +60,14 @@ let exitHookInstalled = false
 let loginWindow: BrowserWindow | null = null
 // Why: a set, not a single ref — the user may open several verification pages.
 const webWindows = new Set<BrowserWindow>()
+// The live harvest Chrome, so will-quit can kill it synchronously — the
+// collect() cleanup runs on the microtask queue and may never get a turn.
+let liveHarvestChrome: { kill(): void } | null = null
 
 function isW3LoginWindow(contents: Electron.WebContents): boolean {
-  return loginWindow !== null && !loginWindow.isDestroyed() && contents.id === loginWindow.webContents.id
+  return (
+    loginWindow !== null && !loginWindow.isDestroyed() && contents.id === loginWindow.webContents.id
+  )
 }
 
 function isW3WebWindow(contents: Electron.WebContents): boolean {
@@ -166,6 +184,103 @@ function closeAllW3WebWindows(): void {
   webWindows.clear()
 }
 
+/** Real binding of the session bridge: controlled system Chrome → W3 partition. */
+function syncSessionFromSystemChrome(
+  partition: string,
+  signal: AbortSignal
+): Promise<W3SessionBridgeResult> {
+  const sess = session.fromPartition(partition)
+  return syncW3SessionFromSystemBrowser({
+    collect: (collectSignal) =>
+      collectW3SessionCookiesFromSystemChrome({
+        spawnChrome: (chromePath, args) => {
+          // Why windowsHide + an error listener: a failed spawn (bad override
+          // path, Chrome uninstalled mid-session) emits 'error' asynchronously —
+          // without a listener Node rethrows it as an uncaughtException and
+          // takes down the main process. The harvest reports launch-failed.
+          const child = spawn(chromePath, args, { stdio: 'ignore', windowsHide: true })
+          let spawnError = false
+          child.on('error', () => {
+            spawnError = true
+          })
+          const handle = {
+            kill: () => {
+              try {
+                child.kill()
+              } catch {
+                // Already gone.
+              }
+            },
+            hasSpawnError: () => spawnError
+          }
+          liveHarvestChrome = handle
+          return handle
+        },
+        fileExists: (path) => existsSync(path),
+        mkdtemp: (prefix) => mkdtemp(join(tmpdir(), prefix)),
+        readFileText: (path) => readFile(path, 'utf-8'),
+        removeDir: (path) => rm(path, { recursive: true, force: true }),
+        fetchJson: async (url) => {
+          const response = await fetch(url)
+          return response.json()
+        },
+        connectWebSocket: (url, connectSignal) => {
+          const ws = new WebSocket(url)
+          const wrapper: W3CdpSocket = {
+            send: (data) => ws.send(data),
+            close: () => ws.close(),
+            onmessage: null,
+            onclose: null,
+            onerror: null
+          }
+          ws.onmessage = (event) => wrapper.onmessage?.(event)
+          ws.onclose = () => wrapper.onclose?.()
+          ws.onerror = () => wrapper.onerror?.()
+          // Why await open: a CONNECTING socket throws on send, which the
+          // harvest would misreport as cookie-read-failed.
+          return new Promise<W3CdpSocket>((resolve, reject) => {
+            ws.onopen = () => resolve(wrapper)
+            ws.onerror = () => reject(new Error('cdp-connect-failed'))
+            // Why wire abort: a socket stuck in CONNECTING would otherwise
+            // hang the harvest forever — closing it settles this promise and
+            // lets the caller's raced timeout / cancel path win.
+            connectSignal?.addEventListener(
+              'abort',
+              () => {
+                try {
+                  ws.close()
+                } catch {
+                  // Already closed.
+                }
+                reject(new DOMException('aborted', 'AbortError'))
+              },
+              { once: true }
+            )
+          })
+        },
+        sleep: (ms, sleepSignal) =>
+          new Promise<void>((resolve, reject) => {
+            const onAbort = (): void => {
+              clearTimeout(timer)
+              reject(new DOMException('aborted', 'AbortError'))
+            }
+            const timer = setTimeout(() => {
+              sleepSignal?.removeEventListener('abort', onAbort)
+              resolve()
+            }, ms)
+            sleepSignal?.addEventListener('abort', onAbort, { once: true })
+          }),
+        now: () => Date.now(),
+        signal: collectSignal
+      }),
+    setCookie: async (details) => {
+      await sess.cookies.set(details)
+    },
+    now: () => Date.now(),
+    signal
+  })
+}
+
 function getService(): W3AccountService {
   if (!service) {
     service = new W3AccountService({
@@ -179,6 +294,7 @@ function getService(): W3AccountService {
           registry: browserSessionRegistry
         })
       },
+      syncSession: (partition, signal) => syncSessionFromSystemChrome(partition, signal),
       // Why: the SAME Electron session the login window uses, so the W3 login
       // cookies are visible to the account-API poll.
       fetch: async (partition, url, init: W3FetchInit): Promise<W3FetchResponse> => {
@@ -209,6 +325,11 @@ function getService(): W3AccountService {
       app.on('will-quit', () => {
         closeW3LoginWindow()
         closeAllW3WebWindows()
+        // Why a synchronous kill here: dispose() only aborts, and the
+        // collect() finally-block cleanup may never run before the process
+        // exits — that would leave a headless Chrome behind.
+        liveHarvestChrome?.kill()
+        liveHarvestChrome = null
         service?.dispose()
         service = null
       })
@@ -220,6 +341,7 @@ function getService(): W3AccountService {
 export function registerW3AccountHandlers(): void {
   ipcMain.removeHandler('w3Account:status')
   ipcMain.removeHandler('w3Account:start')
+  ipcMain.removeHandler('w3Account:sync')
   ipcMain.removeHandler('w3Account:cancel')
   ipcMain.removeHandler('w3Account:signOut')
   ipcMain.removeHandler('w3Account:openWeb')
@@ -241,6 +363,14 @@ export function registerW3AccountHandlers(): void {
       return { status: { state: 'signed-out' } }
     }
     return getService().startLogin()
+  })
+  ipcMain.handle('w3Account:sync', async (event): Promise<W3AccountStatus> => {
+    if (!isTrustedBrowserRenderer(event.sender)) {
+      return { state: 'signed-out' }
+    }
+    // Why no broadcast here: syncFromSystemBrowser broadcasts sync-pending and
+    // the resolved outcome itself; the return value only answers this caller.
+    return getService().syncFromSystemBrowser()
   })
   ipcMain.handle('w3Account:cancel', async (event): Promise<W3AccountStatus> => {
     if (!isTrustedBrowserRenderer(event.sender)) {

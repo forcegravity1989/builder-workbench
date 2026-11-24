@@ -57,7 +57,11 @@ function parseLoginTimeoutMs(raw: string | undefined): number {
     return W3_DEFAULT_LOGIN_TIMEOUT_MS
   }
   const value = Number(raw)
-  if (!Number.isFinite(value) || value < W3_MIN_LOGIN_TIMEOUT_MS || value > W3_MAX_LOGIN_TIMEOUT_MS) {
+  if (
+    !Number.isFinite(value) ||
+    value < W3_MIN_LOGIN_TIMEOUT_MS ||
+    value > W3_MAX_LOGIN_TIMEOUT_MS
+  ) {
     return W3_DEFAULT_LOGIN_TIMEOUT_MS
   }
   return Math.round(value)

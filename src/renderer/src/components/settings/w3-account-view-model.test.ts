@@ -13,6 +13,9 @@ describe('toW3AccountView', () => {
     expect(toW3AccountView({ state: 'login-pending', sessionProfileId: 'sp1' })).toEqual({
       kind: 'login-pending'
     })
+    expect(toW3AccountView({ state: 'sync-pending', sessionProfileId: 'sp1' })).toEqual({
+      kind: 'sync-pending'
+    })
   })
 
   it('maps signed-in with identity', () => {
@@ -38,7 +41,8 @@ describe('toW3AccountView', () => {
       { state: 'failed', reason: 'login-failed' },
       { state: 'failed', reason: 'account-parse-failed' },
       { state: 'failed', reason: 'cancelled' },
-      { state: 'failed', reason: 'open-failed' }
+      { state: 'failed', reason: 'open-failed' },
+      { state: 'failed', reason: 'sync-failed' }
     ]
     expect(toW3AccountView(reasons[0])).toEqual({ kind: 'failed', reason: 'not-configured' })
     expect(toW3AccountView(reasons[1])).toEqual({ kind: 'failed', reason: 'timeout' })
@@ -46,5 +50,6 @@ describe('toW3AccountView', () => {
     expect(toW3AccountView(reasons[3])).toEqual({ kind: 'failed', reason: 'account-parse-failed' })
     expect(toW3AccountView(reasons[4])).toEqual({ kind: 'failed', reason: 'cancelled' })
     expect(toW3AccountView(reasons[5])).toEqual({ kind: 'failed', reason: 'open-failed' })
+    expect(toW3AccountView(reasons[6])).toEqual({ kind: 'failed', reason: 'sync-failed' })
   })
 })

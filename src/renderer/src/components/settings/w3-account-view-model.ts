@@ -9,6 +9,7 @@ export type W3AccountView =
   | { kind: 'unconfigured' }
   | { kind: 'signed-out' }
   | { kind: 'login-pending' }
+  | { kind: 'sync-pending' }
   | { kind: 'signed-in'; hasIdentity: boolean; displayName: string; employeeNo: string }
   | { kind: 'failed'; reason: W3FailureReason }
 
@@ -23,6 +24,8 @@ export function toW3AccountView(status: W3AccountStatus | null): W3AccountView {
       return { kind: 'signed-out' }
     case 'login-pending':
       return { kind: 'login-pending' }
+    case 'sync-pending':
+      return { kind: 'sync-pending' }
     case 'failed':
       return { kind: 'failed', reason: status.reason }
     case 'signed-in':

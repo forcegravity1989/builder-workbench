@@ -9,6 +9,7 @@ import {
   Loader2,
   LogIn,
   LogOut,
+  RefreshCw,
   ShieldCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -57,16 +58,25 @@ function failureMessage(reason: Extract<W3AccountView, { kind: 'failed' }>['reas
         'auto.components.settings.w3Account.failedOpen',
         'Could not open the W3 login window.'
       )
+    case 'sync-failed':
+      return translate(
+        'auto.components.settings.w3Account.failedSync',
+        'Could not reuse the sign-in from the system browser. Retry, or sign in manually below.'
+      )
   }
 }
 
 function CardShell({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-xs">{children}</div>
-  )
+  return <div className="rounded-xl border border-border bg-card p-6 shadow-xs">{children}</div>
 }
 
-function WelcomeCard({ onStart }: { onStart: () => void }): React.JSX.Element {
+function WelcomeCard({
+  onSync,
+  onStart
+}: {
+  onSync: () => void
+  onStart: () => void
+}): React.JSX.Element {
   return (
     <div className="mx-auto w-full max-w-[520px]">
       <CardShell>
@@ -83,14 +93,67 @@ function WelcomeCard({ onStart }: { onStart: () => void }): React.JSX.Element {
               'Use your W3 account to sign in. Internal sites in the built-in browser will reuse this sign-in.'
             )}
           </p>
-          <Button type="button" size="lg" className="mt-6 min-w-[240px]" onClick={onStart}>
-            <LogIn className="size-4" />
-            {translate('auto.components.settings.w3Account.signInButton', 'Sign in with Huawei W3')}
+          <Button type="button" size="lg" className="mt-6 min-w-[240px]" onClick={onSync}>
+            <RefreshCw className="size-4" />
+            {translate(
+              'auto.components.settings.w3Account.syncButton',
+              'Reuse sign-in from system browser'
+            )}
           </Button>
+          <div className="mt-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onStart}>
+              <LogIn className="size-4" />
+              {translate(
+                'auto.components.settings.w3Account.signInButton',
+                'Sign in with Huawei W3'
+              )}
+            </Button>
+          </div>
           <p className="mt-4 text-xs text-muted-foreground">
             {translate(
               'auto.components.settings.w3Account.welcomeFineprint',
               'No password needed. Whether it is passwordless depends on your W3 session and company policy.'
+            )}
+          </p>
+        </div>
+      </CardShell>
+    </div>
+  )
+}
+
+function SyncPendingCard({ onCancel }: { onCancel: () => void }): React.JSX.Element {
+  return (
+    <div className="mx-auto w-full max-w-[520px]">
+      <CardShell>
+        <div className="flex flex-col items-center text-center">
+          <div className="grid size-14 place-items-center rounded-2xl bg-muted text-muted-foreground">
+            <Loader2 className="size-7 animate-spin" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold">
+            {translate(
+              'auto.components.settings.w3Account.syncPendingHeading',
+              'Reusing sign-in from system browser…'
+            )}
+          </h3>
+          <p className="mt-2 max-w-[380px] text-sm leading-6 text-muted-foreground">
+            {translate(
+              'auto.components.settings.w3Account.syncPendingBody',
+              'A temporary system browser session completes the passwordless sign-in for you. No action needed.'
+            )}
+          </p>
+          <Button type="button" size="lg" className="mt-6 min-w-[240px]" disabled>
+            <Loader2 className="size-4 animate-spin" />
+            {translate('auto.components.settings.w3Account.syncPendingButton', 'Syncing…')}
+          </Button>
+          <div className="mt-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+              {translate('auto.components.settings.w3Account.syncPendingCancel', 'Cancel sync')}
+            </Button>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {translate(
+              'auto.components.settings.w3Account.syncPendingFineprint',
+              'Sign-in completes when the W3 account API confirms a valid identity; this page updates automatically.'
             )}
           </p>
         </div>
@@ -128,10 +191,7 @@ function LoginPendingCard({ onCancel }: { onCancel: () => void }): React.JSX.Ele
           </Button>
           <div className="mt-2">
             <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-              {translate(
-                'auto.components.settings.w3Account.loginPendingCancel',
-                'Cancel sign-in'
-              )}
+              {translate('auto.components.settings.w3Account.loginPendingCancel', 'Cancel sign-in')}
             </Button>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
@@ -184,12 +244,18 @@ function SignedInCard({
         )
       } else {
         setError(
-          translate('auto.components.settings.w3Account.openWebFailed', 'Could not open the W3 window.')
+          translate(
+            'auto.components.settings.w3Account.openWebFailed',
+            'Could not open the W3 window.'
+          )
         )
       }
     } catch {
       setError(
-        translate('auto.components.settings.w3Account.openWebFailed', 'Could not open the W3 window.')
+        translate(
+          'auto.components.settings.w3Account.openWebFailed',
+          'Could not open the W3 window.'
+        )
       )
     } finally {
       setOpening(false)
@@ -226,13 +292,7 @@ function SignedInCard({
                   )}
             </p>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="shrink-0"
-            onClick={onSignOut}
-          >
+          <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={onSignOut}>
             <LogOut className="size-4" />
             {translate('auto.components.settings.w3Account.signOut', 'Sign out')}
           </Button>
@@ -284,10 +344,12 @@ function SignedInCard({
 
 function FailedCard({
   reason,
-  onRetry
+  onRetry,
+  onStartManual
 }: {
   reason: Extract<W3AccountView, { kind: 'failed' }>['reason']
   onRetry: () => void
+  onStartManual: () => void
 }): React.JSX.Element {
   return (
     <div className="mx-auto w-full max-w-[520px]">
@@ -302,14 +364,19 @@ function FailedCard({
           <div className="mt-3 w-full rounded-lg border border-border bg-muted/40 p-3 text-left text-xs leading-5 text-muted-foreground">
             {failureMessage(reason)}
           </div>
-          <Button
-            type="button"
-            size="lg"
-            className="mt-5 min-w-[240px]"
-            onClick={onRetry}
-          >
+          <Button type="button" size="lg" className="mt-5 min-w-[240px]" onClick={onRetry}>
+            <RefreshCw className="size-4" />
             {translate('auto.components.settings.w3Account.retry', 'Retry')}
           </Button>
+          <div className="mt-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onStartManual}>
+              <LogIn className="size-4" />
+              {translate(
+                'auto.components.settings.w3Account.signInButton',
+                'Sign in with Huawei W3'
+              )}
+            </Button>
+          </div>
         </div>
       </CardShell>
     </div>
@@ -340,7 +407,7 @@ function UnconfiguredCard(): React.JSX.Element {
 }
 
 export function W3AccountSettingsPane(): React.JSX.Element {
-  const { status, start, cancel, signOut, openWeb } = useW3AccountStatus()
+  const { status, start, sync, cancel, signOut, openWeb } = useW3AccountStatus()
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const view = toW3AccountView(status)
@@ -364,10 +431,11 @@ export function W3AccountSettingsPane(): React.JSX.Element {
           </p>
         ) : null}
         {view.kind === 'unconfigured' ? <UnconfiguredCard /> : null}
-        {view.kind === 'signed-out' ? <WelcomeCard onStart={() => void start()} /> : null}
-        {view.kind === 'login-pending' ? (
-          <LoginPendingCard onCancel={() => void cancel()} />
+        {view.kind === 'signed-out' ? (
+          <WelcomeCard onSync={() => void sync()} onStart={() => void start()} />
         ) : null}
+        {view.kind === 'login-pending' ? <LoginPendingCard onCancel={() => void cancel()} /> : null}
+        {view.kind === 'sync-pending' ? <SyncPendingCard onCancel={() => void cancel()} /> : null}
         {view.kind === 'signed-in' ? (
           <SignedInCard
             hasIdentity={view.hasIdentity}
@@ -378,7 +446,11 @@ export function W3AccountSettingsPane(): React.JSX.Element {
           />
         ) : null}
         {view.kind === 'failed' ? (
-          <FailedCard reason={view.reason} onRetry={() => void start()} />
+          <FailedCard
+            reason={view.reason}
+            onRetry={() => void sync()}
+            onStartManual={() => void start()}
+          />
         ) : null}
       </div>
 

@@ -4,6 +4,8 @@ import type { W3AccountStatus, W3OpenWebResult } from '../../../../shared/w3-acc
 export type W3AccountController = {
   status: W3AccountStatus | null
   start: () => Promise<void>
+  /** Primary path: harvest the SSO session from the system browser (no user action). */
+  sync: () => Promise<void>
   retry: () => Promise<void>
   cancel: () => Promise<void>
   signOut: () => Promise<void>
@@ -45,6 +47,10 @@ export function useW3AccountStatus(): W3AccountController {
     setStatus(result.status)
   }, [])
 
+  const sync = useCallback(async (): Promise<void> => {
+    setStatus(await window.api.w3Account.sync())
+  }, [])
+
   const cancel = useCallback(async (): Promise<void> => {
     setStatus(await window.api.w3Account.cancel())
   }, [])
@@ -58,5 +64,5 @@ export function useW3AccountStatus(): W3AccountController {
     []
   )
 
-  return { status, start, retry: start, cancel, signOut, openWeb }
+  return { status, start, sync, retry: sync, cancel, signOut, openWeb }
 }

@@ -10,6 +10,8 @@ import {
 export type W3AccountApi = {
   status: () => Promise<W3AccountStatus>
   start: () => Promise<W3StartLoginResult>
+  /** Harvest a passwordless SSO session from the system browser into the W3 partition. */
+  sync: () => Promise<W3AccountStatus>
   cancel: () => Promise<W3AccountStatus>
   signOut: () => Promise<W3AccountStatus>
   /** Open the W3 home shortcut inside the signed-in W3 session (same partition). */
@@ -21,6 +23,7 @@ export type W3AccountApi = {
 export const w3AccountApi = {
   status: () => ipcRenderer.invoke('w3Account:status'),
   start: () => ipcRenderer.invoke('w3Account:start'),
+  sync: () => ipcRenderer.invoke('w3Account:sync'),
   cancel: () => ipcRenderer.invoke('w3Account:cancel'),
   signOut: () => ipcRenderer.invoke('w3Account:signOut'),
   openWeb: (request) => ipcRenderer.invoke('w3Account:openWeb', request),

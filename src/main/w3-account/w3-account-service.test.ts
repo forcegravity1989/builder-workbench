@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { W3AccountStatus } from '../../shared/w3-account'
 import { getW3AccountConfig, type W3AccountConfig } from './w3-account-config'
+import type { W3SessionBridgeResult } from './w3-session-bridge'
 import {
   W3AccountService,
   type W3FetchResponse,
@@ -9,10 +10,14 @@ import {
 
 type Entry = { fn: () => void; ms: number; cleared: boolean }
 type FetchResult = W3FetchResponse | Error
+type SyncResult = W3SessionBridgeResult | Error
 
 const CONFIG: W3AccountConfig = getW3AccountConfig({}) as W3AccountConfig
 
-function ok(body: unknown, url = 'https://w3.huawei.com/next/service/rest/my/w3account/v1/account/zh'): W3FetchResponse {
+function ok(
+  body: unknown,
+  url = 'https://w3.huawei.com/next/service/rest/my/w3account/v1/account/zh'
+): W3FetchResponse {
   return {
     status: 200,
     url,
@@ -25,7 +30,13 @@ function status(status: number, body = ''): W3FetchResponse {
 const NOT_LOGGED_IN = (): W3FetchResponse => status(421, 'No login user found.')
 const VALID = { employeeNumber: '111222', uid: 'u1', displayName: ['cn=张三', 'en=zhangsan'] }
 
-function makeDeps(overrides: Partial<{ fetchResults: FetchResult[]; now: () => number }> = {}) {
+function makeDeps(
+  overrides: Partial<{
+    fetchResults: FetchResult[]
+    syncResults: SyncResult[]
+    now: () => number
+  }> = {}
+) {
   const fetchResults: FetchResult[] = overrides.fetchResults ?? []
   const fetchState = {
     count: 0,
@@ -42,6 +53,33 @@ function makeDeps(overrides: Partial<{ fetchResults: FetchResult[]; now: () => n
         throw next
       }
       return next
+    }
+  }
+  const syncResults: SyncResult[] = overrides.syncResults ?? []
+  const syncState = {
+    count: 0,
+    abortedCount: 0,
+    lastPartition: '',
+    /** Never resolves until the test aborts it — mirrors the real Chrome harvest. */
+    sync: async (partition: string, signal: AbortSignal): Promise<W3SessionBridgeResult> => {
+      syncState.lastPartition = partition
+      const next = syncResults[Math.min(syncState.count, syncResults.length - 1)]
+      syncState.count += 1
+      if (next instanceof Error) {
+        throw next
+      }
+      return await new Promise<W3SessionBridgeResult>((resolve, reject) => {
+        if (next === undefined) {
+          // No scripted result: park until aborted (cancel test path).
+          signal.addEventListener('abort', () => {
+            syncState.abortedCount += 1
+            reject(new DOMException('aborted', 'AbortError'))
+          })
+          return
+        }
+        // Scripted result: resolve after a microtask so callers can observe sync-pending.
+        setTimeout(() => resolve(next), 0)
+      })
     }
   }
   type TestWindow = W3LoginWindowHandle & { closed: boolean; closeCount: number }
@@ -102,6 +140,7 @@ function makeDeps(overrides: Partial<{ fetchResults: FetchResult[]; now: () => n
       clearStorage.push(partition)
     },
     openLoginWindow,
+    syncSession: syncState.sync,
     broadcast: (s) => {
       broadcastState.push(s)
     },
@@ -116,6 +155,7 @@ function makeDeps(overrides: Partial<{ fetchResults: FetchResult[]; now: () => n
     openLoginWindow,
     windows,
     fetchState,
+    syncState,
     broadcastState,
     clearStorage,
     last: () => broadcastState.at(-1) ?? null
@@ -133,6 +173,9 @@ describe('W3AccountService (web login + account API)', () => {
       clearDedicatedStorage: async () => {},
       openLoginWindow: () => {
         throw new Error('must not open')
+      },
+      syncSession: async () => {
+        throw new Error('must not sync')
       },
       broadcast: () => {}
     })
@@ -202,10 +245,14 @@ describe('W3AccountService (web login + account API)', () => {
     const fastService = new W3AccountService({
       getConfig: () => fast,
       getActiveProfileId: () => 'orca-1',
-      ensureSessionProfile: async () => ({ profileId: 'w3-sess-1', partition: 'persist:w3-sess-1' }),
+      ensureSessionProfile: async () => ({
+        profileId: 'w3-sess-1',
+        partition: 'persist:w3-sess-1'
+      }),
       fetch: h.fetchState.fetch,
       clearDedicatedStorage: async () => {},
       openLoginWindow: h.openLoginWindow,
+      syncSession: h.syncState.sync,
       broadcast: (s) => h.broadcastState.push(s),
       now,
       scheduler: h.scheduler,
@@ -312,5 +359,64 @@ describe('W3AccountService (web login + account API)', () => {
     })
     // Why: a login window must NOT be opened when already signed in.
     expect(h.windows.length).toBe(0)
+  })
+})
+
+describe('W3AccountService (session bridge from system browser)', () => {
+  it('bridge success + account API 200 broadcasts sync-pending then signed-in', async () => {
+    // Why both scripted: the bridge moves cookies, ONLY the account API confirms.
+    const h = makeDeps({
+      syncResults: [{ ok: true, imported: 20, failed: 0 }],
+      fetchResults: [ok(VALID)]
+    })
+    expect(await h.service.syncFromSystemBrowser()).toEqual({
+      state: 'sync-pending',
+      sessionProfileId: 'w3-sess-1'
+    })
+    // The harvest must target the dedicated partition.
+    expect(h.syncState.lastPartition).toBe('persist:w3-sess-1')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(h.broadcastState).toEqual([
+      { state: 'sync-pending', sessionProfileId: 'w3-sess-1' },
+      {
+        state: 'signed-in',
+        sessionProfileId: 'w3-sess-1',
+        identity: { displayName: '张三', employeeNo: '111222' }
+      }
+    ])
+    // No login window is ever opened on the bridge path.
+    expect(h.windows.length).toBe(0)
+  })
+
+  it('bridge failure or an unconfirmed session broadcasts sync-failed, never signed-in', async () => {
+    // Harvest failure: the account API is not even consulted.
+    const failed = makeDeps({ syncResults: [{ ok: false, reason: 'chrome-not-found' }] })
+    expect((await failed.service.syncFromSystemBrowser()).state).toBe('sync-pending')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(failed.last()).toEqual({ state: 'failed', reason: 'sync-failed' })
+    expect(failed.fetchState.count).toBe(0)
+
+    // Why the second harness: the bridge may import cookies yet the session may
+    // still be invalid — a 421 from the account API must broadcast
+    // sync-failed; cookie presence alone never counts as a login.
+    const unconfirmed = makeDeps({
+      syncResults: [{ ok: true, imported: 25, failed: 0 }],
+      fetchResults: [NOT_LOGGED_IN()]
+    })
+    await unconfirmed.service.syncFromSystemBrowser()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(unconfirmed.last()).toEqual({ state: 'failed', reason: 'sync-failed' })
+  })
+
+  it('cancel aborts an in-flight bridge and a late result never broadcasts', async () => {
+    // No scripted sync result: the fake harvest parks until aborted.
+    const h = makeDeps({ syncResults: [] })
+    expect((await h.service.syncFromSystemBrowser()).state).toBe('sync-pending')
+    const status = await h.service.cancelLogin()
+    expect(status).toEqual({ state: 'signed-out' })
+    expect(h.syncState.abortedCount).toBe(1)
+    // Give the parked harvest's rejection a chance to (wrongly) broadcast.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(h.broadcastState).toEqual([{ state: 'sync-pending', sessionProfileId: 'w3-sess-1' }])
   })
 })
