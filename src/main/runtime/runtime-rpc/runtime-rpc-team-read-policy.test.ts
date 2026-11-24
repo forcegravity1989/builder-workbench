@@ -217,6 +217,10 @@ describe('team-read RPC policy', () => {
     expect(isQuietTeamReadDenial('worktree.teardownMissingTerminals')).toBe(true)
     expect(isQuietTeamReadDenial('worktree.prefetchCreateBase')).toBe(true)
     expect(isQuietTeamReadDenial('worktree.create')).toBe(false)
+    expect(isQuietTeamReadDenial('terminal.updateViewport')).toBe(true)
+    // The stream itself must stay open, since its input frames are dropped one by one.
+    expect(teamReadDenialReason('team-read', 'terminal.multiplex')).toBeNull()
+    expect(teamReadDenialReason('team-read', 'terminal.updateViewport')).not.toBeNull()
     expect(
       teamReadParamsDenialReason('team-read', 'browser.tabCreate', { url: 'https://a.test' })
     ).toBeNull()

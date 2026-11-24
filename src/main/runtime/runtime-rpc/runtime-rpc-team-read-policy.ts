@@ -84,7 +84,6 @@ const TEAM_READ_DENIED_METHODS = new Set([
   'terminal.createAgentSession',
   'terminal.ensureAgentSession',
   'terminal.focus',
-  'terminal.multiplex',
   'terminal.recoverPane',
   'terminal.rename',
   'terminal.resizeForClient',
@@ -404,6 +403,14 @@ export function teamReadDenialReason(
 // layout, add a terminal, store the label). They are refused, but the member did not choose them, so
 // the refusals stay out of the access log.
 const TEAM_READ_QUIET_DENIAL_METHODS = new Set([
+  // Window size and focus reports a member's terminal view sends on its own. The terminal stream
+  // (terminal.multiplex) is open to members; these would resize or refocus the owner's terminal.
+  'terminal.updateViewport',
+  'terminal.resizeForClient',
+  'terminal.restoreFit',
+  'terminal.setAutoRestoreFit',
+  'terminal.setDisplayMode',
+  'terminal.focus',
   'session.tabs.createTerminal',
   'session.tabs.updatePaneLayout',
   'worktree.set',
