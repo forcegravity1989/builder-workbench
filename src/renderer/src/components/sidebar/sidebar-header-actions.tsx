@@ -102,9 +102,10 @@ export function SidebarHeaderActions({
           <AddProjectButton preserveWorkspaceBoardOpen />
         </>
       )}
-      {/* Why ＋ stays out: #703 moved create onto the project and 工作区 section
-          headers, and #769 restores ☰ only. Status/PR grouping renders neither
-          header, so those modes still have no create entry — a separate decision. */}
+      {/* Why ＋ stays out: create sits next to its object, on the project and 工作区
+          section headers. Status/PR grouping renders neither header; version-workspace
+          spec.md records that sidebar gap as an open question, not as a reason to
+          mount a second create button up here. */}
       {isWorkbenchShell() ? null : <NewWorkspaceButton preserveWorkspaceBoardOpen />}
     </div>
   )
