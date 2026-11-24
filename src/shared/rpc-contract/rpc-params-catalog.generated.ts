@@ -71,6 +71,7 @@ import {
 } from './automation-params'
 import { CertificateProceed } from './browser-core-params'
 import { MouseClick } from './browser-extras-params'
+import { BrowserGrabAwait, BrowserGrabScreenshot, BrowserGrabSetMode } from './browser-grab-params'
 import {
   Check,
   ClipboardWrite,
@@ -705,6 +706,10 @@ export const RPC_PARAMS_BY_METHOD = {
   'browser.geolocation': Geolocation,
   'browser.get': Get,
   'browser.goto': Goto,
+  'browser.grab.await': BrowserGrabAwait,
+  'browser.grab.cancel': BrowserTarget,
+  'browser.grab.screenshot': BrowserGrabScreenshot,
+  'browser.grab.setMode': BrowserGrabSetMode,
   'browser.highlight': Highlight,
   'browser.hover': Element,
   'browser.intercept.disable': BrowserTarget,

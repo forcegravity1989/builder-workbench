@@ -71,6 +71,8 @@ const EXACT_LABELS: Record<string, string> = {
   'browser.fill': '在浏览器页面填写',
   'browser.select': '在浏览器页面选择',
   'browser.tabCreate': '新建浏览器标签页',
+  'browser.grab.setMode': '选取页面元素',
+  'browser.grab.screenshot': '截取所选元素',
   'browser.tabClose': '关闭浏览器标签页',
   'session.tabs.activate': '切换会话标签页',
   'session.tabs.createTerminal': '新建会话终端',

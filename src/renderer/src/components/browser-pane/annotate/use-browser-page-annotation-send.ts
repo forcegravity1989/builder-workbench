@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
+import {
+  resolveBrowserAnnotationHostRoute,
+  type BrowserAnnotationHostRouter
+} from './browser-annotation-host-route'
 import { translate } from '@/i18n/i18n'
 import type {
   BrowserAnnotationIntent,
@@ -83,10 +86,19 @@ function createBrowserPageAnnotationFromPrototype(
 
 export function useBrowserPageAnnotationSend({
   browserTabId,
-  worktreeId
+  worktreeId,
+  hostRoute,
+  syncWithHost = false
 }: {
   browserTabId: string
   worktreeId: string
+  /** Where this page's annotations are mirrored when it is not a page on this machine. */
+  hostRoute?: BrowserAnnotationHostRouter
+  /**
+   * Mirror with the host even when no prototype review points at this page, so annotations a
+   * teammate leaves on a shared page show up here and ours show up there.
+   */
+  syncWithHost?: boolean
 }): {
   browserAnnotations: BrowserPageAnnotation[]
   browserAnnotationsPrompt: string
@@ -124,6 +136,7 @@ export function useBrowserPageAnnotationSend({
   const prototypeReviewActive =
     prototypeReviewState.outgoing.some((note) => note.page.browserPageId === browserTabId) ||
     prototypeReviewState.incoming.some((note) => note.page.browserPageId === browserTabId)
+  const hostSyncEnabled = prototypeReviewActive || syncWithHost
   const activeGroupId = useAppStore((s) => s.activeGroupIdByWorktree[worktreeId])
   const browserAnnotationsRef = useRef(browserAnnotations)
   const [browserAnnotationsCopied, setBrowserAnnotationsCopied] = useState(false)
@@ -150,16 +163,20 @@ export function useBrowserPageAnnotationSend({
   const addBrowserPageAnnotation = useAppStore((s) => s.addBrowserPageAnnotation)
 
   useEffect(() => {
-    if (!prototypeReviewActive) {
+    if (!hostSyncEnabled) {
       return
     }
     let stopped = false
     const syncRemoteAnnotations = async (): Promise<void> => {
       try {
+        const route = resolveBrowserAnnotationHostRoute(hostRoute, worktreeId, browserTabId)
+        if (!route) {
+          return
+        }
         const remote = await callRuntimeRpc<PrototypeReviewAnnotation[]>(
-          { kind: 'local' },
+          route.target,
           'workbench.prototypeReview.annotations.list',
-          { worktree: toRuntimeWorktreeSelector(worktreeId), page: browserTabId, documentKey },
+          { worktree: route.worktree, page: route.page, documentKey },
           { timeoutMs: 15_000, suppressFeatureInteraction: true }
         )
         if (stopped) {
@@ -190,6 +207,14 @@ export function useBrowserPageAnnotationSend({
             createBrowserPageAnnotationFromPrototype(annotation, browserTabId)
           )
         }
+        // Why: a delete or clear on the other side must reach this one; only copies that
+        // came from the host store are dropped, never annotations still being mirrored.
+        const remoteIds = new Set(remote.map((annotation) => annotation.id))
+        for (const local of useAppStore.getState().browserAnnotationsByPageId[browserTabId] ?? []) {
+          if (local.payload.target.tagName === 'prototype-review' && !remoteIds.has(local.id)) {
+            deleteBrowserPageAnnotation(browserTabId, local.id)
+          }
+        }
       } catch {
         // A page without prototype-review annotations, or a temporarily unavailable runtime, is normal.
       }
@@ -203,8 +228,10 @@ export function useBrowserPageAnnotationSend({
   }, [
     addBrowserPageAnnotation,
     browserTabId,
+    deleteBrowserPageAnnotation,
     documentKey,
-    prototypeReviewActive,
+    hostRoute,
+    hostSyncEnabled,
     updateBrowserPageAnnotation,
     worktreeId
   ])
@@ -334,8 +361,30 @@ export function useBrowserPageAnnotationSend({
     clearTimeout(annotationCopyTimerRef.current)
     setBrowserAnnotationsCopied(false)
     void recordFeatureInteraction('browser-annotations')
+    const route = hostSyncEnabled
+      ? resolveBrowserAnnotationHostRoute(hostRoute, worktreeId, browserTabId)
+      : null
+    if (route) {
+      // Why: the host poll re-adds anything the host still holds, so Clear must remove it there too.
+      for (const annotation of browserAnnotationsRef.current) {
+        void callRuntimeRpc(
+          route.target,
+          'workbench.prototypeReview.annotations.delete',
+          { pageId: route.page, documentKey, annotationId: annotation.id },
+          { timeoutMs: 15_000, suppressFeatureInteraction: true }
+        ).catch(() => undefined)
+      }
+    }
     clearBrowserPageAnnotations(browserTabId)
-  }, [browserTabId, clearBrowserPageAnnotations, recordFeatureInteraction])
+  }, [
+    browserTabId,
+    clearBrowserPageAnnotations,
+    documentKey,
+    hostRoute,
+    hostSyncEnabled,
+    recordFeatureInteraction,
+    worktreeId
+  ])
 
   const handleDeleteBrowserAnnotation = useCallback(
     (annotationId: string): void => {
@@ -344,15 +393,25 @@ export function useBrowserPageAnnotationSend({
         setBrowserAnnotationsCopied(false)
       }
       deleteBrowserPageAnnotation(browserTabId, annotationId)
-      void callRuntimeRpc(
-        { kind: 'local' },
-        'workbench.prototypeReview.annotations.delete',
-        { pageId: browserTabId, documentKey, annotationId },
-        { timeoutMs: 15_000, suppressFeatureInteraction: true }
-      ).catch(() => undefined)
+      const route = resolveBrowserAnnotationHostRoute(hostRoute, worktreeId, browserTabId)
+      if (route) {
+        void callRuntimeRpc(
+          route.target,
+          'workbench.prototypeReview.annotations.delete',
+          { pageId: route.page, documentKey, annotationId },
+          { timeoutMs: 15_000, suppressFeatureInteraction: true }
+        ).catch(() => undefined)
+      }
       void recordFeatureInteraction('browser-annotations')
     },
-    [browserTabId, deleteBrowserPageAnnotation, documentKey, recordFeatureInteraction]
+    [
+      browserTabId,
+      deleteBrowserPageAnnotation,
+      documentKey,
+      hostRoute,
+      recordFeatureInteraction,
+      worktreeId
+    ]
   )
 
   const handleUpdateBrowserAnnotation = useCallback(
@@ -363,15 +422,16 @@ export function useBrowserPageAnnotationSend({
       imagePaths: string[]
     ): void => {
       updateBrowserPageAnnotation(browserTabId, annotationId, { comment, intent, imagePaths })
-      if (prototypeReviewActive) {
+      if (hostSyncEnabled) {
         const annotation = browserAnnotationsRef.current.find((item) => item.id === annotationId)
-        if (annotation) {
+        const route = resolveBrowserAnnotationHostRoute(hostRoute, worktreeId, browserTabId)
+        if (annotation && route) {
           void callRuntimeRpc(
-            { kind: 'local' },
+            route.target,
             'workbench.prototypeReview.annotations.add',
             {
-              worktree: toRuntimeWorktreeSelector(worktreeId),
-              page: browserTabId,
+              worktree: route.worktree,
+              page: route.page,
               id: annotationId,
               documentKey,
               comment,
@@ -388,7 +448,8 @@ export function useBrowserPageAnnotationSend({
     [
       browserTabId,
       documentKey,
-      prototypeReviewActive,
+      hostRoute,
+      hostSyncEnabled,
       recordFeatureInteraction,
       updateBrowserPageAnnotation,
       worktreeId

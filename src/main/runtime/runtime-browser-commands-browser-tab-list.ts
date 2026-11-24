@@ -1,5 +1,5 @@
 // @ts-nocheck -- mechanically split class members.
-import { RuntimeBrowserCommandsWithBrowserScreencast } from './runtime-browser-commands-browser-screencast'
+import { RuntimeBrowserCommandsWithBrowserGrab } from './runtime-browser-commands-browser-grab'
 import type {
   BrowserCheckResult,
   BrowserDragResult,
@@ -18,7 +18,7 @@ import { browserCertificateTrustController, browserManager } from '../browser/br
 import { BrowserError } from '../browser/browser-error'
 import { publishSwitchedBrowserSessionTab } from './browser-tab-create-publication'
 
-export class RuntimeBrowserCommandsWithBrowserTabList extends RuntimeBrowserCommandsWithBrowserScreencast {
+export class RuntimeBrowserCommandsWithBrowserTabList extends RuntimeBrowserCommandsWithBrowserGrab {
   async browserTabList(params: { worktree?: string }): Promise<BrowserTabListResult> {
     const workspaceId = params.worktree
       ? (await this.host.resolveBrowserWorkspace(params.worktree)).id

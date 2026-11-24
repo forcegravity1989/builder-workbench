@@ -15,8 +15,6 @@ import {
 } from '../../../../../shared/browser-url'
 import type { BrowserScreencastFrameMetadata } from '../../../../../shared/browser-screencast-protocol'
 import { getRemoteBrowserFrameStyle } from './remote-browser-frame-style'
-import { MarkupOverlay } from '../annotate/MarkupOverlay'
-import type { MarkupModeController } from '../annotate/useMarkupMode'
 import { BrowserLoadFailureOverlay } from '../navigate/browser-load-failure-overlay'
 import { ReopenBrowserPageOnServerButton } from '../ReopenBrowserPageOnServerButton'
 import { toDisplayUrl } from '../describe-page/browser-page-url-display'
@@ -26,7 +24,6 @@ import {
 } from './remote-browser-stream-status'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import type { RemoteBrowserRuntimeTarget } from './remote-browser-page-input-model'
-import type { PrototypeReviewAnnotation } from '../../../../../shared/workbench/prototype-review-annotation'
 
 export function RemoteBrowserPageViewport({
   remoteViewportRef,
@@ -34,7 +31,6 @@ export function RemoteBrowserPageViewport({
   frameUrl,
   frameMetadata,
   busy,
-  markup,
   browserTab,
   remoteError,
   streamStatus,
@@ -51,16 +47,16 @@ export function RemoteBrowserPageViewport({
   handleRemotePointerDown,
   handleRemotePointerUp,
   handleRemoteContextMenu,
+  handleRemotePointerMove,
   handleRemoteScreenshotKeyDown,
-  annotationMode,
-  annotations
+  grabArmed,
+  overlays
 }: {
   remoteViewportRef: React.RefObject<HTMLDivElement | null>
   imageRef: React.RefObject<HTMLImageElement | null>
   frameUrl: string | null
   frameMetadata: BrowserScreencastFrameMetadata | null
   busy: boolean
-  markup: MarkupModeController
   browserTab: BrowserPageState
   remoteError: string | null
   streamStatus: RemoteBrowserStreamStatus
@@ -77,9 +73,12 @@ export function RemoteBrowserPageViewport({
   handleRemotePointerDown: (event: React.PointerEvent<HTMLImageElement>) => void
   handleRemotePointerUp: (event: React.PointerEvent<HTMLImageElement>) => void
   handleRemoteContextMenu: (event: React.MouseEvent<HTMLImageElement>) => void
+  handleRemotePointerMove: (event: React.PointerEvent<HTMLImageElement>) => void
   handleRemoteScreenshotKeyDown: (event: React.KeyboardEvent<HTMLImageElement>) => void
-  annotationMode: boolean
-  annotations: PrototypeReviewAnnotation[]
+  /** The element picker is armed, so the pointer is aiming rather than browsing. */
+  grabArmed: boolean
+  /** The annotate and markup layers painted over the page. */
+  overlays: React.ReactNode
 }): React.JSX.Element {
   const remoteFrameStyle = useMemo(() => getRemoteBrowserFrameStyle(frameMetadata), [frameMetadata])
   const remoteFailureUrl = browserTab.loadError?.validatedUrl ?? browserTab.url
@@ -95,59 +94,22 @@ export function RemoteBrowserPageViewport({
       tabIndex={-1}
       className="relative min-h-0 flex-1 overflow-hidden bg-background"
     >
-      {markup.isActive && markup.baseImage ? (
-        <MarkupOverlay
-          baseImage={markup.baseImage}
-          busy={markup.state === 'composing'}
-          onComplete={(input) => void markup.complete(input)}
-          onCancel={markup.cancel}
-        />
-      ) : null}
       {frameUrl ? (
-        <>
-          <img
-            data-testid="remote-browser-frame"
-            ref={imageRef}
-            src={frameUrl}
-            alt=""
-            tabIndex={0}
-            style={remoteFrameStyle}
-            className="absolute top-0 left-0 max-w-none cursor-default bg-white outline-none"
-            onPointerDown={
-              annotationMode ? (event) => event.preventDefault() : handleRemotePointerDown
-            }
-            onPointerUp={handleRemotePointerUp}
-            onContextMenu={handleRemoteContextMenu}
-            onKeyDown={handleRemoteScreenshotKeyDown}
-            draggable={false}
-          />
-          {annotations.map((annotation) => (
-            <div
-              key={annotation.id}
-              className="pointer-events-none absolute z-20 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500 text-center text-[10px] font-semibold leading-5 text-white shadow"
-              style={{
-                left: `${Math.max(0, Math.min(100, (annotation.x / (frameMetadata?.deviceWidth || 1)) * 100))}%`,
-                top: `${Math.max(0, Math.min(100, (annotation.y / (frameMetadata?.deviceHeight || 1)) * 100))}%`
-              }}
-              title={`${annotation.host}：${annotation.comment}`}
-            >
-              •
-            </div>
-          ))}
-          {annotations.length ? (
-            <div className="absolute top-2 right-2 z-30 max-w-64 space-y-1 rounded-md border bg-popover/95 p-2 text-[11px] shadow">
-              {annotations.map((annotation) => (
-                <div
-                  key={`summary-${annotation.id}`}
-                  className="border-b border-border/60 pb-1 last:border-b-0 last:pb-0"
-                >
-                  <div className="font-medium">{annotation.host}</div>
-                  <div className="text-muted-foreground">{annotation.comment}</div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </>
+        <img
+          data-testid="remote-browser-frame"
+          ref={imageRef}
+          src={frameUrl}
+          alt=""
+          tabIndex={0}
+          style={remoteFrameStyle}
+          className={`absolute top-0 left-0 max-w-none bg-white outline-none ${grabArmed ? 'cursor-crosshair' : 'cursor-default'}`}
+          onPointerDown={handleRemotePointerDown}
+          onPointerUp={handleRemotePointerUp}
+          onPointerMove={handleRemotePointerMove}
+          onContextMenu={handleRemoteContextMenu}
+          onKeyDown={handleRemoteScreenshotKeyDown}
+          draggable={false}
+        />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
           <div className="flex max-w-sm flex-col items-center gap-2">
@@ -176,6 +138,7 @@ export function RemoteBrowserPageViewport({
           </div>
         </div>
       )}
+      {overlays}
       {showRemoteFailureOverlay && browserTab.loadError ? (
         <BrowserLoadFailureOverlay
           loadError={browserTab.loadError}

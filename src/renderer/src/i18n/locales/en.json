@@ -15467,13 +15467,7 @@
             "2a4c4b8e1f": "Copy",
             "fileUrlUnsupported": "This browser tab cannot open local files. Use \"Preview\" on the file instead.",
             "prototypeReview": {
-              "pageTitle": "Prototype review page",
-              "addAnnotation": "Add page annotation",
-              "annotationPlaceholder": "Enter annotation",
-              "submitAnnotation": "Submit annotation",
-              "annotateElements": "Annotate page elements",
-              "onlyReviewPages": "Only prototype review pages support annotations",
-              "exitAnnotationMode": "Exit annotation mode"
+              "pageTitle": "Prototype review page"
             }
           },
           "BrowserToolbarMenu": {

@@ -369,7 +369,11 @@ const AUDITED_TEAM_READ_METHODS = new Set([
   'browser.type',
   'browser.fill',
   'browser.select',
-  'browser.tabCreate'
+  'browser.tabCreate',
+  // Starting element picking and capturing a page image are the visible actions; the wait and cancel
+  // calls around them are plumbing and stay out of the log.
+  'browser.grab.setMode',
+  'browser.grab.screenshot'
 ])
 
 const TEAM_READ_DENIAL_MESSAGE =

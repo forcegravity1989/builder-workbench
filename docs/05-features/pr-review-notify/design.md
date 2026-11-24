@@ -11,7 +11,7 @@
 | 发送入口与主机选择 | `src/renderer/src/workbench/pr-review-notifications/` 的发送菜单、弹窗和 transport | 原型评审只新增事件类型；不改 PR/MR 请求和 provider 路由 |
 | 浮动通知 | `PrReviewNotificationsView`、`PrReviewNotificationItems` 的浮窗、计数、分区、删除和刷新 | 事件增加「PR 评审 / 原型评审」二级页签；每页保留「我发出的评审 / 待我评审」 |
 | 源工作区定位 | 现有 worktree、session tab、browser page identity 与 runtime target | 事件始终指向发起人主机 A；不按收件人的本地项目重新定位 |
-| 浏览器批注 | Orca browser toolbar 的入口语义；共享页签使用专用 RPC 与远程 marker/摘要浮层 | 共享页签没有远程 DOM，首期只支持元素与文字，不传截图附件；本地页继续使用 Orca 批注托盘 |
+| 浏览器批注 | Orca browser toolbar、选元素、确认卡片与批注托盘；共享页签把 `setGrabMode / awaitGrabSelection / cancelGrab / captureSelectionScreenshot` 接到宿主 `browser.grab.*` RPC，并把悬停位置转发给宿主页内选取层 | 共享页签没有远程 DOM，选取层画在宿主页上，随画面流回；成员与宿主同时选取时互相可见，不加互斥；页面标记停在采集时的位置，不随滚动；发送给模型按钮不特殊处理，仍受只读策略约束 |
 | 刷新保留 | PR #711 引入的同文档 retention 判断 | 同文档刷新保留，换文档清空；远程同步和重连需单独验证 |
 
 发送弹窗中可共享的是主机多选、逐主机结果和发送状态；PR 的 provider 请求字段与原型评审的源页签字段保持两套 payload，不能用 PR 编号或仓库身份充当原型评审身份。
@@ -21,7 +21,7 @@
 - PR/MR 通知继续使用现有 provider 请求模型、状态读回和本机存档。
 - 原型评审使用独立事件记录，至少包含事件身份、发送/接收主机、源工作树、会话、浏览器页签和页面文档身份；不把原型事件伪装成 PR/MR。
 - 批注的权威状态位于源主机 A 的共享页签，并持久化到源主机用户数据。renderer 通过专用 RPC 定时读回变更；添加者身份来自已配对 RPC 上下文，展示层同时显示成员和来源主机。
-- 本地 Orca 批注同步只在该页签已有原型评审发送或接收记录后开启；普通浏览器批注不会写入原型评审存档。
+- 成员在共享页签添加的批注同时写入宿主这份存档；宿主打开该页签时每 5 秒读回，成员的批注出现在宿主原生批注托盘里。非共享页签、未打开的页签不读回；宿主只看到批注的点位与文字，不含成员侧的元素细节。普通本地浏览器批注不会写入原型评审存档。
 - 跨主机只传元素定位、文字、优先级和时间等批注字段。现有本地 `imagePaths` 不进入原型事件，截图粘贴留待后续能力评估。
 
 ## 权限与失败
@@ -33,4 +33,4 @@
 
 ## 原型关系
 
-[prototype/index.html](prototype/index.html) 复用当前 BW 工作区壳和真实 PR 通知结构，只演示新增的原型评审入口、源主机跳转、共享页签批注按钮和批注来源显示。真实 `RemoteBrowserPageToolbar` 已接上线专用批注 RPC；原型与实现仍未经过 Electron 和双主机验收。
+[prototype/index.html](prototype/index.html) 复用当前 BW 工作区壳和真实 PR 通知结构，只演示新增的原型评审入口、源主机跳转、共享页签批注按钮和批注来源显示；其中的点位批注画面早于现实现，真实共享页签已改为复用 Orca 原生工具栏与批注卡片。原型与实现仍未经过 Electron 和双主机验收。

@@ -175,7 +175,10 @@ export function BrowserPagePane({
   })
   const annotationSend = useBrowserPageAnnotationSend({
     browserTabId: browserTab.id,
-    worktreeId
+    worktreeId,
+    // Why: a member of a shared host may annotate this page from their side; the host's record is
+    // the only place that annotation reaches this window.
+    syncWithHost: isActive
   })
   const grab = useGrabMode(browserTab.id)
   const markup = useBrowserPageMarkupCapture(webviewRef)
