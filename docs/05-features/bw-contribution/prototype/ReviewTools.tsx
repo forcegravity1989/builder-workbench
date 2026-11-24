@@ -15,7 +15,6 @@ type ReviewToolsProps = {
   grabResult: string
   onScenarioChange: (scenario: ScenarioId) => void
   onExternalIntake: () => void
-  onActivateGrab: () => void
   onAdvance: () => void
   onFailureChange: (enabled: boolean) => void
   onToggleTheme: () => void
@@ -34,7 +33,6 @@ export function ReviewTools({
   grabResult,
   onScenarioChange,
   onExternalIntake,
-  onActivateGrab,
   onAdvance,
   onFailureChange,
   onToggleTheme,
@@ -74,11 +72,6 @@ export function ReviewTools({
         {which === 'C' && (
           <Button variant="outline" data-testid="external-intake" onClick={onExternalIntake}>
             模拟维护者从 WeLink 接报
-          </Button>
-        )}
-        {which !== 'C' && (
-          <Button variant="outline" onClick={onActivateGrab} data-testid="dev-react-grab">
-            开发模式：原生元素采集
           </Button>
         )}
         {grabStatus && (
@@ -132,8 +125,8 @@ export function ReviewTools({
             : feedbackOpen
               ? 'BW 原生反馈表单'
               : 'BW 导航、原生会话消息和输入框'}
-          。<strong>拟补：</strong>标题栏反馈入口、现场转交、专用收集目录与 Skill、Issue 到 Worker
-          的自动衔接。
+          。<strong>拟补：</strong>会话标签行反馈入口、现场转交、专用收集目录与 Skill、Issue 到
+          Worker 的自动衔接。
         </p>
         {grabResult && (
           <details className="text-sm">
@@ -145,29 +138,30 @@ export function ReviewTools({
         <p>
           原型演示止于阅读 Worker
           返回的交付记录。所见会话、Issue、工作区与证据均为演示数据。打开开发实例进行同路径复验是规格中的待验证目标。React
-          Grab
-          已确认原库激活，复制结果尚未通过自动检查，仍待人工/真壳验证。此页局部挂载真实组件，不代表完整
-          Electron 外壳验收。
+          Grab 已在浏览器完成元素选择、带回和草稿保留；正式版与 Electron
+          真壳仍待验证。此页局部挂载真实组件，不代表完整 Electron 外壳验收。
           <a className="underline" href="dist/component-manifest.json">
             组件来源与哈希
           </a>
         </p>
         <p>
           实际导入
-          WorkbenchRail、TitlebarMainStrip、SidebarFeedbackDialog、NewWorkspaceComposerCard（内含
+          WorkbenchRail、RightSidebarToggle、WindowControls、TerminalTabLeadingIcon、SidebarFeedbackDialog、NewWorkspaceComposerCard（内含
           ProjectCombobox、RunTargetCombobox）、NativeChatMessageRow 和
           NativeChatComposerField。原工作与收集均使用原生聊天行和输入框。上方场景与后台推进仅供评审。标题栏下的回看动作是拟补的会话切换。Rail
-          的其他页面导航不在本次演示范围；工作区承载框架、数据、API 与验收均为隔离演示。
+          的其他页面导航不在本次演示范围；标签框架、加号与快捷命令为按现有结构的禁用定位参照，右侧栏和窗控仅展示位置，不操作系统窗口；工作区承载框架、数据、API
+          与验收均为隔离演示。
         </p>
         <p>
-          现有反馈发往 WeLink。拟补工作区标题栏「反馈 BW」与提交后异步分流、本机自动登记非 Git
+          现有反馈发往 WeLink。拟补工作区会话标签行「反馈 BW」与提交后异步分流、本机自动登记非 Git
           收集目录、收集会话 Skill。A 在已有配置和授权时由模型组织原生 Issue
           关联开工，再按精确工作区 ID 派工，这段自动衔接仍为目标；B/C
           在配置缺失时由处理者确认工作区。结构化会话不在 Floating 面板运行。远端 Worker
-          用终端，本原型展示派工回执。开发模式评审按钮实际加载 React
+          用终端，本原型展示派工回执。表单里的选取动作实际加载 React
           Grab，仅定位本原型的真实元素，有源码时一并复制。正式版无 React
-          Grab，原生附件可继续使用，正式版元素采集是待评审目标。工作区标题栏操作区的「反馈
-          BW」是本稿拟新增的位置，直接打开现有反馈表单并适配投递文案。已有帮助入口仍显示 WeLink。
+          Grab，原生附件可继续使用，正式版元素采集是待评审目标。工作区会话标签行操作区的「反馈
+          BW」是本稿拟新增的位置，复用现有反馈表单；元素采集衔接与改投收集会话为拟新增。原型构建只向原表单插入采集槽位，不改产品源码。已有帮助入口仍显示
+          WeLink。
         </p>
         <h2 className="mt-3 font-semibold">当前场景的运行位置</h2>
         {Object.entries(evidence.scenarios?.[which] || {})

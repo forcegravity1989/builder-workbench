@@ -71,6 +71,16 @@ async function build() {
     plugins: [{
       name: 'prototype-only-store',
       setup(build) {
+        build.onLoad({ filter: /SidebarFeedbackDialog\.tsx$/ }, request => {
+          const original = fs.readFileSync(request.path, 'utf8')
+          const anchor = '</DialogHeader>'
+          if (!original.includes(anchor)) throw new Error('Feedback dialog extension anchor changed')
+          const slot = path.join(__dirname, 'FeedbackCapture.tsx').split(path.sep).join('/')
+          return {
+            contents: `import { FeedbackCaptureSlot } from ${JSON.stringify(slot)};\n` + original.replace(anchor, `${anchor}<FeedbackCaptureSlot />`),
+            loader: 'tsx', resolveDir: path.dirname(request.path)
+          }
+        })
         build.onResolve({ filter: /store/ }, request => {
           if (
             request.path === '@/store' ||
@@ -93,7 +103,7 @@ async function build() {
   const candidates = new Set()
   const inputs = []
   const visibleComponents = new Set([
-    'WorkbenchRail.tsx', 'TitlebarMainStrip.tsx', 'SidebarFeedbackDialog.tsx',
+    'WorkbenchRail.tsx', 'TitlebarMainStrip.tsx', 'WindowControls.tsx', 'TerminalTabLeadingIcon.tsx', 'SidebarFeedbackDialog.tsx',
     'NewWorkspaceComposerCard.tsx', 'NativeChatMessageRow.tsx', 'NativeChatComposerField.tsx'
   ])
   for (const file of Object.keys(result.metafile.inputs)) {
@@ -118,7 +128,7 @@ async function build() {
   fs.writeFileSync(path.join(output, 'preview.css'), compiler.build([...candidates]))
   fs.copyFileSync(path.join(renderer, 'workbench/workbench-tokens.css'), path.join(output, 'workbench-tokens.css'))
   fs.copyFileSync(from.resolve('react-grab/styles.css'), path.join(output, 'react-grab.css'))
-  fs.writeFileSync(path.join(output, 'component-manifest.json'), JSON.stringify({ inputs }, null, 2) + '\n')
+  fs.writeFileSync(path.join(output, 'component-manifest.json'), JSON.stringify({ inputs, adaptations: ['SidebarFeedbackDialog: prototype-only FeedbackCaptureSlot after DialogHeader; original source remains unchanged', 'Workspace chrome: native leaf controls with static disabled tab/command positioning context'] }, null, 2) + '\n')
 }
 
 build().catch(error => {
