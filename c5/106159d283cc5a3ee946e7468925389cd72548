@@ -1,0 +1,30 @@
+src/shared/runtime-access-audit-labels.ts
+  s_02ab5765848c38::t_8843c8bbc02b53 31-34
+docs/06-module/README.md
+  s_02ab5765848c38::t_59349038ee5ab0 11
+docs/06-module/团队共享访问策略.md
+  s_02ab5765848c38::t_00470dc4110b47 1-53
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_0451209a20ed35 212-213
+docs/05-features/team-collaboration/design.md
+  s_02ab5765848c38::t_4aca6b4c28268d 40
+  s_02ab5765848c38::t_fab7f2806c278c 30
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_1684fe7efa8fc5 408-409
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "c5106159d283cc5a3ee946e7468925389cd72548",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
