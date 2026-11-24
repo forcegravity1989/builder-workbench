@@ -6,7 +6,7 @@ import type { BrowserPageAnnotation } from '../../../../shared/browser-grab-type
 import type { PrototypeReviewAnnotation } from '../../../../shared/workbench/prototype-review-annotation'
 import { isWorkbenchShell } from '../is-workbench-shell'
 import { notifyWorkbenchError } from '../error-feedback'
-import { prototypeReviewPageFor } from './prototype-review-target'
+import { hostNameForWorktree, prototypeReviewPageFor } from './prototype-review-target'
 import { sendPrototypeReview, usePrototypeReviewNotifications } from './prototype-store'
 import { listConnectedReviewTargets } from './transport'
 
@@ -78,7 +78,7 @@ export function usePrototypeReviewAnnotations({
     enabled ? (getRuntimeEnvironmentIdForWorktree(state, worktreeId) ?? null) : null
   )
   const hostName = useAppStore((state) =>
-    enabled ? (state.getKnownWorktreeById(worktreeId)?.hostId ?? '主机') : '主机'
+    enabled ? hostNameForWorktree(state, worktreeId) : '主机'
   )
   const annotations = useAppStore((state) => state.browserAnnotationsByPageId[browserTabId])
   const [submittedSignature, setSubmittedSignature] = useState<string | null>(null)

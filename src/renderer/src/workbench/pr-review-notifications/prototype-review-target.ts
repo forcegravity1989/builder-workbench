@@ -8,16 +8,27 @@ import { selectWebRuntimeSessionBrowserWorktree } from '@/runtime/web-runtime-se
 import { basename } from '@/lib/path'
 import type { PrototypeReviewPageRef } from '../../../../shared/workbench/prototype-review-request'
 
+/** The name this client knows the worktree's host by: the saved connection name, never the raw host id. */
+export function hostNameForWorktree(
+  state: ReturnType<typeof useAppStore.getState>,
+  worktreeId: string
+): string {
+  const environmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
+  if (!environmentId) {
+    return '当前主机'
+  }
+  return state.runtimeEnvironments.find((item) => item.id === environmentId)?.name.trim() || '主机'
+}
+
 /** The review reference for an HTML document in a worktree, as seen from this client. */
 export function prototypeReviewPageFor(
   worktreeId: string,
   filePath: string
 ): PrototypeReviewPageRef {
   const state = useAppStore.getState()
-  const worktree = state.getKnownWorktreeById(worktreeId)
   return {
     sourceEnvironmentId: getRuntimeEnvironmentIdForWorktree(state, worktreeId) ?? 'local',
-    sourceHostName: worktree?.hostId ?? '当前主机',
+    sourceHostName: hostNameForWorktree(state, worktreeId),
     worktreeId,
     documentKey: filePath,
     title: basename(filePath) || filePath
