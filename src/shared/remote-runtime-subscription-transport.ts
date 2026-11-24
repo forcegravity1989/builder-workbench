@@ -1,4 +1,7 @@
-import { remoteRuntimeConnectOptions, remoteRuntimeConnectFailureMessage } from './remote-runtime-connect-bound'
+import {
+  remoteRuntimeConnectOptions,
+  remoteRuntimeConnectFailureMessage
+} from './remote-runtime-connect-bound'
 import { randomUUID } from 'node:crypto'
 import { throwIfSignalAborted, abortSignalReason } from './abort-signal-reason'
 import WebSocket from 'ws'
@@ -21,6 +24,7 @@ import {
   serializeRemoteRuntimePayload,
   serializeRemoteRuntimeRpcRequest
 } from './remote-runtime-memory-limits'
+import { remoteRuntimeAuthCallerFields } from './remote-runtime-caller-identity'
 import { remoteRuntimeClientCapabilities } from './remote-runtime-client-capabilities'
 import { RemoteRuntimeSubscriptionFrameRouter } from './remote-runtime-subscription-frame-router'
 import { RemoteRuntimeSubscriptionOutbound } from './remote-runtime-subscription-outbound'
@@ -55,7 +59,8 @@ export async function subscribeRemoteRuntimeTransport<TResult>(
   const serializedAuth = serializeRemoteRuntimePayload({
     type: 'e2ee_auth',
     deviceToken: pairing.deviceToken,
-    clientCapabilities: remoteRuntimeClientCapabilities(options?.clientCapabilities)
+    clientCapabilities: remoteRuntimeClientCapabilities(options?.clientCapabilities),
+    ...remoteRuntimeAuthCallerFields()
   })
   return await new Promise((resolve, reject) => {
     const keyPair = generateKeyPair()

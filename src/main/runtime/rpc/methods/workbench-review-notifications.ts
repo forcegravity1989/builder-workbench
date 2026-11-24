@@ -1,4 +1,5 @@
 import { hostname, userInfo } from 'node:os'
+import { getRemoteRuntimeCallerIdentity } from '../../../../shared/remote-runtime-caller-identity'
 import { PullRequest } from '../../../../shared/rpc-contract/github-pull-request-params'
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
@@ -28,7 +29,11 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.review.identity',
     params: null,
-    handler: () => ({ sender: `${userInfo().username}@${hostname()}`.slice(0, 100) })
+    handler: () => ({
+      sender: (
+        getRemoteRuntimeCallerIdentity()?.name ?? `${userInfo().username}@${hostname()}`
+      ).slice(0, 100)
+    })
   }),
   defineWorkbenchMethod({
     name: 'workbench.review.receive',

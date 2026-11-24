@@ -6,5 +6,12 @@ export type TeamCollaborationApi = {
     fileId: string | null
     currentMemberId: string | null
   }>
-  writeDirectory: (directory: TeamDirectory) => Promise<{ fileId: string }>
+  syncHosts: (args: {
+    groupId: string
+    spaceId: string
+  }) => Promise<{ added: number; updated: number }>
+  writeDirectory: (
+    directory: TeamDirectory,
+    baseFileId?: string | null
+  ) => Promise<{ fileId: string }>
 }

@@ -2,6 +2,7 @@ import { WorkbenchBrowserHelp } from '@/workbench/WorkbenchDeliveryHelp'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
+import { PrototypeReviewInviteButton } from '@/workbench/pr-review-notifications/PrototypeReviewInviteButton'
 import { translate } from '@/i18n/i18n'
 import type { BrowserReloadTrigger } from '../navigate/browser-reload-action'
 import BrowserAddressBar from './BrowserAddressBar'
@@ -183,11 +184,17 @@ export function BrowserPageToolbar({
       }}
       shareControl={
         shareableArtifactFile ? (
-          <ArtifactPublishButton
-            sourceKey={shareableArtifactFile.filePath}
-            className="h-7 w-7"
-            createRequest={() => readBrowserHtmlArtifactRequest(currentBrowserUrl)}
-          />
+          <>
+            <PrototypeReviewInviteButton
+              worktreeId={worktreeId}
+              filePath={shareableArtifactFile.filePath}
+            />
+            <ArtifactPublishButton
+              sourceKey={shareableArtifactFile.filePath}
+              className="h-7 w-7"
+              createRequest={() => readBrowserHtmlArtifactRequest(currentBrowserUrl)}
+            />
+          </>
         ) : null
       }
       viewSource={{
