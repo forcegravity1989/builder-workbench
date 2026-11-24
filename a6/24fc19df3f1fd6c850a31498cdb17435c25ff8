@@ -1,0 +1,30 @@
+src/main/runtime/runtime-rpc/runtime-access-socket-tracker.ts
+  s_02ab5765848c38::t_4fc9d7e61650eb 1-29
+src/main/runtime/runtime-rpc/runtime-access-socket-tracker.test.ts
+  s_02ab5765848c38::t_7b7be4bafe3852 1-26
+src/main/runtime/runtime-rpc/runtime-rpc-lifecycle.ts
+  s_02ab5765848c38::t_60abf7ae7eccd8 247
+  s_02ab5765848c38::t_4c8229ee5f0b3d 277-280
+  s_02ab5765848c38::t_fdaf0215216626 281
+  s_02ab5765848c38::t_379ce8ecbd2c0e 23-24
+  s_02ab5765848c38::t_75722e8a068f7d 26
+  s_02ab5765848c38::t_f3970e621d8a57 243-246
+  s_02ab5765848c38::t_d92f94120b7673 27
+  s_02ab5765848c38::t_efb0da87e51d7d 254-257,288-291
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "a624fc19df3f1fd6c850a31498cdb17435c25ff8",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

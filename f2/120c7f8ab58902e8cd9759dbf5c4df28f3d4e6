@@ -1,0 +1,97 @@
+src/renderer/src/components/browser-pane/annotate/use-browser-page-grab-annotations.ts
+  s_02ab5765848c38::t_726178f9a112ef 14-17,63-64,84-85,297-301,303,306-307,329
+src/main/runtime/runtime-edge-command-controller.ts
+  s_02ab5765848c38::t_ee9d1d6b17ff83 43-46
+src/shared/runtime-access-audit-labels.ts
+  s_02ab5765848c38::t_029450c8a36da2 75
+  s_02ab5765848c38::t_a93f5e4cb7f4a6 74
+src/main/runtime/runtime-browser-commands-browser-grab.ts
+  s_02ab5765848c38::t_48556827b26771 1-28,31-32,46-74
+  s_02ab5765848c38::t_52cbf49e034ff3 29-30,33-45
+src/shared/rpc-contract/browser-grab-params.ts
+  s_02ab5765848c38::t_6fe30425ca3e89 1-21
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_687e3e22f610ce 261
+  s_02ab5765848c38::t_edd0dcac2f65e9 259-260,262-263
+src/renderer/src/components/browser-pane/annotate/useGrabMode.ts
+  s_02ab5765848c38::t_410083f459b923 100-101,115,128-129,148,164,199,204,244
+  s_02ab5765848c38::t_e94b1822d2138e 194
+  s_02ab5765848c38::t_04cae25890301e 214
+  s_02ab5765848c38::t_d6f15429e5dc22 15-18
+  s_02ab5765848c38::t_9d9ed1a6a2ae3b 73-75
+  s_02ab5765848c38::t_f6314b42c39e37 19
+  s_02ab5765848c38::t_7e4a7bea91b087 76-78
+  s_02ab5765848c38::t_530f0f5e472477 106,256
+src/renderer/src/components/browser-pane/annotate/browser-annotation-host-route.ts
+  s_02ab5765848c38::t_ce9593c9b132de 1-34
+src/renderer/src/components/browser-pane/stream-remote/use-remote-browser-grab-hover.ts
+  s_02ab5765848c38::t_0947f9f46d4b49 1,3-4,7-19,21,23-25,27-31,33,35-44,47,49-51,54-83,86-91,93,95-97,100-101,104-105,107
+docs/05-features/pr-review-notify/design.md
+  s_02ab5765848c38::t_00013245a6fe9e 14
+  s_02ab5765848c38::t_c86e2e745de6d1 24
+  s_02ab5765848c38::t_9afb51f08a7a6e 36
+src/renderer/src/components/browser-pane/stream-remote/use-remote-browser-grab-api.test.ts
+  s_02ab5765848c38::t_e3544857e14343 1-22,26-70
+  h_1dcaf127381c33 23-25
+  s_02ab5765848c38::t_ac7f613d67ff2f 71-72
+src/main/runtime/rpc/methods/browser-grab.ts
+  s_02ab5765848c38::t_3bc9f081005b97 1-17,19-30
+  s_02ab5765848c38::t_debd78a3993547 18
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_7ebb44dc05328b 372
+  s_02ab5765848c38::t_da8794db6ca9bb 373-376
+src/main/runtime/runtime-browser-commands-browser-tab-list.ts
+  s_02ab5765848c38::t_3672fdcc6f2a98 21
+  s_02ab5765848c38::t_f5adf3b7bf29bd 2
+src/main/runtime/rpc/methods/index.ts
+  s_02ab5765848c38::t_61c75b5ded0dc0 28
+  s_02ab5765848c38::t_086d19ac27ad83 101
+src/renderer/src/components/browser-pane/stream-remote/use-remote-browser-grab-api.ts
+  s_02ab5765848c38::t_8ef73f6f224825 1-98
+src/renderer/src/components/browser-pane/stream-remote/remote-browser-page-toolbar.tsx
+  s_02ab5765848c38::t_ee7e96ae40bf73 1,5-8,27,32,46,54,110-119,121
+  s_02ab5765848c38::t_e6849dd6b0cb2e 120
+docs/05-features/pr-review-notify/spec.md
+  s_02ab5765848c38::t_0d0065b12cb6cb 23
+docs/06-module/团队共享访问策略.md
+  s_02ab5765848c38::t_7882eb35370439 18
+  s_02ab5765848c38::t_50797dc9d1cf16 35
+src/renderer/src/components/browser-pane/annotate/use-browser-page-annotation-send.ts
+  s_02ab5765848c38::t_fff79d18aa16a8 4-7,89-91,95-101,139,166,172-175,177,179,233-234,379,396-404,407-414,425,427-428,430,433-434,451-452
+  s_02ab5765848c38::t_b13b0344a14186 210-212,215-217
+  s_02ab5765848c38::t_d41e4a20da0bab 364-377,380-387
+  s_02ab5765848c38::t_0bc82f46d31c97 231
+  s_02ab5765848c38::t_709af5834490dc 213-214
+src/renderer/src/components/browser-pane/stream-remote/remote-browser-page-viewport.tsx
+  s_02ab5765848c38::t_ee412c20aeb39f 50,52-53,76,78-81,98-112
+  s_02ab5765848c38::t_4a30048eefeabd 141
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-pane.tsx
+  s_02ab5765848c38::t_50fca1a092b917 178-181
+src/renderer/src/components/browser-pane/stream-remote/remote-browser-page-pane.tsx
+  s_02ab5765848c38::t_c1582df2354f81 1,39-40,42-49,297-299,302-314,375-436,490,511-513,516-526,528-529
+src/renderer/src/i18n/locales/en.json
+  s_02ab5765848c38::t_75ce1580aa717d 15470
+src/shared/rpc-contract/rpc-params-catalog.generated.ts
+  s_02ab5765848c38::t_9f1fb12dcb149a 74,709-712
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "f2120c7f8ab58902e8cd9759dbf5c4df28f3d4e6",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

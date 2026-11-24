@@ -1,0 +1,54 @@
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-pane.tsx
+  s_02ab5765848c38::t_cae513b17dd320 175-179,182-185
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-toolbar.tsx
+  s_02ab5765848c38::t_c96b45dfacca1d 5
+  s_02ab5765848c38::t_02a50ca894569f 196-197
+  s_02ab5765848c38::t_4b3471e6ddabb4 187-195
+src/main/workbench/review-inbox.test.ts
+  s_02ab5765848c38::t_658970c9a29a20 81-82
+  s_02ab5765848c38::t_c2dd65df33403b 118-147
+  s_02ab5765848c38::t_2ddbd5793971dd 6-9
+  s_02ab5765848c38::t_7a9a9b11d40fa2 38-64
+src/renderer/src/components/browser-pane/assemble-chrome/BrowserPane.render-ipc.test.ts
+  s_02ab5765848c38::t_91f0fa03418faa 15-15
+  h_1dcaf127381c33 11-14
+docs/05-features/pr-review-notify/STATUS.md
+  s_02ab5765848c38::t_8932e2f1dc74ae 7
+docs/05-features/pr-review-notify/design.md
+  s_02ab5765848c38::t_22896740d3d6db 11,36
+docs/05-features/pr-review-notify/intent.md
+  s_02ab5765848c38::t_7ac86d0582afed 9
+docs/05-features/pr-review-notify/prototype/README.md
+  s_02ab5765848c38::t_d1421ee386cdfb 5
+docs/05-features/pr-review-notify/prototype/preview.js
+  s_02ab5765848c38::t_9a134a43718e5d 69
+docs/05-features/pr-review-notify/prototype/preview.tsx
+  s_02ab5765848c38::t_746d44372b2de0 382,398
+docs/05-features/pr-review-notify/spec.md
+  s_02ab5765848c38::t_75e10e77ec32c7 21
+docs/05-features/team-collaboration/spec.md
+  s_02ab5765848c38::t_dc03419ec343bd 14,30,95
+src/renderer/src/i18n/locales/en.json
+  s_02ab5765848c38::t_d04ac9db40f29a 15458
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "758ac086f23a9eeac534ad994c30d62f938eb330",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

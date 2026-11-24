@@ -1,0 +1,25 @@
+docs/05-features/team-collaboration/design.md
+  s_9a53ade5fda438::t_8f9a4b32bacc3a 25,46
+docs/05-features/team-collaboration/prototype.html
+  s_9a53ade5fda438::t_5929ba82f6e6c8 264
+docs/05-features/team-collaboration/prototype/journey.js
+  s_9a53ade5fda438::t_893053c3cf1067 1003
+docs/05-features/team-collaboration/spec.md
+  s_9a53ade5fda438::t_9a045df3afdc5c 13,29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "d442274e876ef2d4661a0798030604f007da6e60",
+  "prompts": {},
+  "sessions": {
+    "s_9a53ade5fda438": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "s_9a53ade5fda438",
+        "model": "unknown"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

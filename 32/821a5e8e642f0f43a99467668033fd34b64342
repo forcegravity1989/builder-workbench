@@ -1,0 +1,183 @@
+src/shared/remote-runtime-subscription-transport.ts
+  s_02ab5765848c38::t_62a203d12fbd37 62-63
+  s_02ab5765848c38::t_61c1e5a2fb8afd 27
+  s_02ab5765848c38::t_1828949a1d2b4f 1-4
+src/main/runtime/rpc/mobile-socket-wiring.ts
+  s_02ab5765848c38::t_bcdd327055b793 135-146
+  s_02ab5765848c38::t_73584c8ccb4c68 173,183-184,188-188
+  h_1dcaf127381c33 185-187
+src/shared/remote-runtime-request-socket.ts
+  s_02ab5765848c38::t_f08a0e23673c3a 13
+  s_02ab5765848c38::t_0aab1438f20344 64-65
+src/renderer/src/components/settings/RuntimePairingUrlGenerator.tsx
+  s_02ab5765848c38::t_2f5a1d7681a7b1 10-12
+  s_02ab5765848c38::t_e8b2c5a27fb7ef 536-557,559,561,563-567
+  s_02ab5765848c38::t_dce63363a1a748 535
+  s_02ab5765848c38::t_e97dd964d65b77 558
+  s_02ab5765848c38::t_57ae4a36f05c18 560
+  s_02ab5765848c38::t_13481a55555b4e 562
+  s_02ab5765848c38::t_d49591762f9077 166
+src/main/runtime/runtime-rpc/runtime-rpc-websocket-dispatch.ts
+  s_02ab5765848c38::t_7ac284978eeed1 14,16-17,21
+  s_02ab5765848c38::t_4757d4dbd614a1 79-87,174-177
+  s_02ab5765848c38::t_f1bfa364720334 18-20
+  s_02ab5765848c38::t_c405cfba3585a0 15
+  s_02ab5765848c38::t_bd9dd4b4fca7c0 126-129
+  s_02ab5765848c38::t_ceb69fbff86c76 221
+  s_02ab5765848c38::t_b2b14a811ac18f 237-241
+  s_02ab5765848c38::t_4a5ff29e895cad 105-107
+  s_02ab5765848c38::t_3c8a652f9da7e1 111-122
+  s_02ab5765848c38::t_309116b061d799 109-110
+src/main/workbench/team-collaboration/team-identity.ts
+  s_02ab5765848c38::t_fdb57f24b2414a 1-51
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_5d791df9cefada 2-8,12,15-18,42-91,121-125,127-131,137,139-157,161-167,171,174-182,224-229,231-235,238,240-242,246
+  s_02ab5765848c38::t_01ab5e34d5764b 119
+  s_02ab5765848c38::t_d1fa2008469676 19-41
+  s_02ab5765848c38::t_cac78f17336a7b 118
+  s_02ab5765848c38::t_66f0a5d2f02630 183-223
+  s_02ab5765848c38::t_0224579c2dd1e6 9-11,13
+  s_02ab5765848c38::t_122a089a646163 92-110
+  s_02ab5765848c38::t_b8eb25364b5076 230
+  s_02ab5765848c38::t_2d4193044a3805 14
+src/shared/remote-runtime-request-connection.ts
+  s_02ab5765848c38::t_06daa7748d364f 241-242
+  s_02ab5765848c38::t_ff8504b1506c3f 35
+src/main/ipc/mobile.ts
+  s_02ab5765848c38::t_9c8cbd2501a549 53-54
+src/main/runtime/rpc/methods/workbench-review-notifications.ts
+  s_02ab5765848c38::t_165ba6cfbd1374 32-32,36-36
+  s_02ab5765848c38::t_bf1fda684b2895 2
+  h_1dcaf127381c33 33-35
+src/main/runtime/device-registry.ts
+  s_02ab5765848c38::t_dc7843b5f88982 298-325,383-384,386
+  s_02ab5765848c38::t_d0b87f72c573bd 82-83
+  s_02ab5765848c38::t_3b3467b06b87c5 332-333,362-368,381
+  s_02ab5765848c38::t_812bc09daf9db3 550-552
+  s_02ab5765848c38::t_ba829b7837ae04 296-297
+  s_02ab5765848c38::t_de245f8051391a 326-331
+  s_02ab5765848c38::t_80fd366aee84bd 334-336,359-361
+  s_02ab5765848c38::t_c317a11b1a031b 369-371,378-380
+  s_02ab5765848c38::t_e382ff321902f4 382
+  s_02ab5765848c38::t_e730cea452cd47 385
+  s_02ab5765848c38::t_7681ea656539c0 387
+  s_02ab5765848c38::t_ac8ae0172c9805 16,41-44,51-53,165-166,235-236,337-358,372-377
+src/renderer/src/components/status-bar/SshStatusSegment.tsx
+  s_02ab5765848c38::t_0f8d2bda9adeab 114-116,119-131
+docs/05-features/team-collaboration/design.md
+  s_02ab5765848c38::t_f0039986e6f715 30,32-33,36
+  s_02ab5765848c38::t_48d4c93f306872 34-35
+  s_02ab5765848c38::t_349196883b4dd8 53
+  s_02ab5765848c38::t_8c658d3e1b4859 44
+src/main/runtime/rpc/core.ts
+  s_02ab5765848c38::t_b73b71606158a8 80-81
+  s_02ab5765848c38::t_101348d4180b05 13-16
+src/shared/runtime-access-grants.ts
+  s_02ab5765848c38::t_674209504598a9 13-14
+src/renderer/src/components/settings/RuntimeAccessGrantList.tsx
+  s_02ab5765848c38::t_1e2b351a882ba7 70-76
+  s_02ab5765848c38::t_783b799e126d6f 132-152
+  s_02ab5765848c38::t_9548649f335599 195
+src/main/runtime/rpc/e2ee-channel.ts
+  s_02ab5765848c38::t_361d6cf429bf77 32-35
+  s_02ab5765848c38::t_1b32eb76bddb8b 56
+  s_02ab5765848c38::t_7148a67818fed9 21
+src/main/runtime/runtime-rpc/runtime-rpc-pairing.ts
+  s_02ab5765848c38::t_aaa172149e2cd9 1-10,129-134,137
+  s_02ab5765848c38::t_2ee5f9c1190cf2 135-136
+  s_02ab5765848c38::t_4ed465dc11b26e 174-177,247-262,275-278
+docs/05-features/team-collaboration/spec.md
+  s_02ab5765848c38::t_18d2a294976c71 28
+  s_02ab5765848c38::t_8cbf511c89a102 71
+src/main/runtime/rpc/methods/workbench-prototype-review-annotations.ts
+  s_02ab5765848c38::t_138f560a562efa 30
+  s_02ab5765848c38::t_68235d577bf086 41
+  s_02ab5765848c38::t_5d5ae00996db59 42-44
+  s_02ab5765848c38::t_e70d20cc063ec7 45-48
+src/main/runtime/rpc/rpc-streaming-dispatcher.ts
+  s_02ab5765848c38::t_b73e91d9a668a9 170
+  s_02ab5765848c38::t_e492d2b4eb629e 114
+src/main/runtime/rpc/dispatcher-stream-options.ts
+  s_02ab5765848c38::t_38ca26ada0d325 15
+  s_02ab5765848c38::t_3725e3f2489b4e 4-7
+src/main/runtime/rpc/mobile-e2ee-auth-validation.ts
+  s_02ab5765848c38::t_eff74494346433 36
+  s_02ab5765848c38::t_6f86b44c06f585 4-7,13
+  s_02ab5765848c38::t_469005e6015883 53-56
+src/main/ipc/team-collaboration.ts
+  s_02ab5765848c38::t_dcb318cae20c20 9-12
+  s_02ab5765848c38::t_cca22f0075c495 89
+  h_1dcaf127381c33 95-97
+  s_02ab5765848c38::t_586dfd91f9b4f9 98-101,115
+docs/05-features/team-collaboration/intent.md
+  s_02ab5765848c38::t_e4637755e57ad5 15
+  s_02ab5765848c38::t_8e5e665bab6421 18
+src/shared/remote-runtime-shared-control-frame-handler.ts
+  s_02ab5765848c38::t_aaf7017c6bd400 4
+  s_02ab5765848c38::t_a684c6f918cd1c 43-44
+src/main/runtime/rpc/dispatcher.ts
+  s_02ab5765848c38::t_c1554e841d95ed 102
+src/shared/runtime-access-audit-labels.ts
+  s_02ab5765848c38::t_6548cf901bdcf3 141-166
+  s_02ab5765848c38::t_d6649163a792b2 56-75
+src/renderer/src/workbench/team-hosts.ts
+  s_02ab5765848c38::t_d86a91c363b546 26-34
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_acfb73803b130e 260-261
+  s_02ab5765848c38::t_7b091835f8c58c 1,3-6
+  s_02ab5765848c38::t_9fd5f4338acad0 392-405
+  s_02ab5765848c38::t_fbec671d95115f 8-13,15-19,23-25,28,30-42,46,52-53,59,69-78,82-84,86-88,91-97,99,107-137,140,142-149,152-153,155-159,161-259,262-302,304-328,330,333-341,343-345,351-352,354-368,371-377,379,386,389-391,411-416,419-420
+  s_02ab5765848c38::t_6de44305881d13 44
+  s_02ab5765848c38::t_87ea779b9d0a83 406-410,417-418,421-433,436-465
+  s_02ab5765848c38::t_5ef269d5d26b9f 466
+docs/05-features/pr-review-notify/design.md
+  s_02ab5765848c38::t_794bf02b8d483b 29
+src/shared/remote-runtime-caller-identity.ts
+  s_02ab5765848c38::t_f6fa7b2d94227b 13
+  s_02ab5765848c38::t_8483c983c9ad1b 1-12,15-19,25-28,34-54
+  s_02ab5765848c38::t_67f3062b02ab07 21-23
+  s_02ab5765848c38::t_9d44bd4db67802 14
+  s_02ab5765848c38::t_ddd65a7b6e669e 20
+  s_02ab5765848c38::t_3c4f2da1e8aeac 24
+  s_02ab5765848c38::t_52e475e71bc203 29-33
+src/renderer/src/workbench/TeamSettingsDialog.tsx
+  s_02ab5765848c38::t_ca97f3e649ec2e 255-263
+  s_02ab5765848c38::t_3ab976704f82c9 188-191,195-207
+  s_02ab5765848c38::t_76462af87fdc79 22-23
+  s_02ab5765848c38::t_3a1aad6ea5a470 563-568
+  s_02ab5765848c38::t_b4d5dbde0e8f77 25-30
+  h_1dcaf127381c33 192-194
+  s_02ab5765848c38::t_bbb5f49036402d 208-209
+  s_02ab5765848c38::t_d4af175c497981 264-265
+  s_02ab5765848c38::t_862b10eeb23f91 569-570
+  s_02ab5765848c38::t_c243befa723db5 248-249
+src/main/runtime/rpc/methods/workbench-prototype-review-notifications.ts
+  s_02ab5765848c38::t_4f1fc3eeb19719 2
+  s_02ab5765848c38::t_6210d0059464b2 18-18,22-22
+  h_1dcaf127381c33 19-21
+src/renderer/src/i18n/locales/en.json
+  s_02ab5765848c38::t_bb27125f303a58 8067-8069,8226-8228
+src/renderer/src/i18n/locales/zh.json
+  s_02ab5765848c38::t_8d68760b6ec31a 6905-6907,7060-7062
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "32821a5e8e642f0f43a99467668033fd34b64342",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
