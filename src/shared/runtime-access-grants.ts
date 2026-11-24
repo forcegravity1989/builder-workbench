@@ -29,8 +29,10 @@ export type RuntimeAccessAuditEntry = {
   result: RuntimeAccessAuditResult
   requestId?: string
   durationMs?: number
-  /** The RPC error code (never the message) for a refused or failed request, to tell causes apart. */
+  /** The RPC error code for a refused or failed request, to tell causes apart. */
   errorCode?: string
+  /** The host's error text for a failed request, cut short; request parameters are never logged. */
+  errorMessage?: string
 }
 
 // Only public link metadata is retained by the renderer. Credentials stay in DeviceRegistry.

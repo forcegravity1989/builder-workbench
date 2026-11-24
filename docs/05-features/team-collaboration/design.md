@@ -27,8 +27,7 @@
 
 ## 权限边界
 
-`team-read` 使用「默认放行 + 明确拒绝清单」。原先的纯读 allowlist 漏登了数百个读取方法（项目墙、侧栏、评审详情等后台读取被整片误拒），所以改为只拦会让成员驱动宿主或触达团队项目之外内容的方法。判定原则、界面动作分类、日志规则、新增方法的登记步骤和已知差距统一维护在[团队共享访问策略](../../06-module/团队共享访问策略.md)，本文不重复。清单与测试同在 `runtime-rpc-team-read-policy.ts` 和对应测试。拒绝方法本身是否有副作用要按调用链核对（例如读取时会消费邮箱消息的 `orchestration.check` 也在清单里）。
-
+`team-read` 使用「默认放行 + 明确拒绝清单」。原先的纯读 allowlist 漏登了数百个读取方法（项目墙、侧栏、评审详情等后台读取被整片误拒），所以改为只在发送输入、读项目之外文件、写回外部系统、改项目文件和工作树四类动作的核心入口拒绝。判定原则、界面动作分类、日志规则、新增方法的登记步骤和已知差距统一维护在[团队共享访问策略](../../06-module/团队共享访问策略.md)，本文不重复。清单与测试同在 `runtime-rpc-team-read-policy.ts` 和对应测试。
 成员身份由客户端在加密握手里自报（成员 ID、姓名、头像），宿主在同一条团队链接下为每位成员建一条设备记录（`parentDeviceId` 指向链接，每条链接最多 200 条）。授权级别只读宿主记录，客户端不能自报权限；但身份不防冒充，持链接的人冒用已被授予完全访问成员的 ID 会得到该成员的访问级别，这是团队内信任的已接受取舍。
 
 整机完全访问沿原生设备登记。主机持有人在共享访问列表的授权操作区多选已连接的只读设备，确认后逐设备写入 `full`；未选设备、未连接设备和其他项目都不受影响。项目和工作树不再细分权限，团队项目统一只读。
@@ -46,7 +45,7 @@
 | 团队目录 | `src/main/team-directory-client.ts`、`src/main/ipc/team-collaboration.ts`、`src/renderer/src/workbench/TeamSettingsDialog.tsx` | 群成员/群主读回、`BW/team.json` 读写、登记即标为团队项目、地址一键填入 |
 | 项目聚合 | `ProjectWallPage`、项目来源与仓库身份读取 | 以 `repoId` 聚合团队来源，保留现有卡片和未连接状态 |
 | Orca 连接 | `SshStatusSegment`、`RuntimePairingUrlGenerator`、`DeviceRegistry` | 默认 `team-read`，共享访问列表按成员显示，保留来源身份 |
-| 只读路由 | `runtime-rpc-team-read-policy.ts`、WebSocket dispatch | 默认放行、明确拒绝写入类，新增方法由测试强制决定 |
+| 只读路由 | `runtime-rpc-team-read-policy.ts`、WebSocket dispatch | 默认放行，只拒绝四类动作的核心入口 |
 | 日志 | `runtime-access-audit.ts`、`RuntimeAccessAuditLog.tsx` | 14 天轮转、筛选/清理、抑制成功常规读取 |
 
 原型 [prototype.html](prototype.html) 只表达上述入口、状态和旅程；不另造生产组件或协议。生产实现必须回查原生组件与本设计，不能把原型中的示例头像、地址或目录数据当作真实事实。

@@ -152,6 +152,7 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         auditRecorded = true
         let result: 'allowed' | 'denied' | 'error' = 'error'
         let errorCode: string | undefined
+        let errorMessage: string | undefined
         try {
           const parsed = JSON.parse(scopedResponse) as RpcResponse
           if (parsed.ok === true) {
@@ -160,6 +161,9 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
             errorCode = typeof parsed.error.code === 'string' ? parsed.error.code : undefined
             if (parsed.error.code === 'forbidden' || parsed.error.code === 'unauthorized') {
               result = 'denied'
+            } else if (typeof parsed.error.message === 'string') {
+              // Why: a bare error code cannot tell a refusal from a host-side failure.
+              errorMessage = parsed.error.message.slice(0, 200)
             }
           }
         } catch {
@@ -184,7 +188,8 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
             result,
             requestId: request.id,
             durationMs: Date.now() - auditStartedAt,
-            ...(errorCode ? { errorCode } : {})
+            ...(errorCode ? { errorCode } : {}),
+            ...(errorMessage ? { errorMessage } : {})
           })
         }
       }
