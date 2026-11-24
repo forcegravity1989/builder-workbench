@@ -1,0 +1,60 @@
+src/renderer/src/components/settings/w3-account-view-model.ts
+  s_d45810414e7f4e::t_5ab7e799c97f97 12,27-28
+src/main/w3-account/w3-account-config.ts
+  s_d45810414e7f4e::t_e351d2b4d55198 60-64
+src/main/w3-account/w3-session-bridge.test.ts
+  s_d45810414e7f4e::t_835d75e90b3a5d 1-123
+docs/05-features/w3-account/STATUS.md
+  h_a7e858313fdba5 3,9-14,18-24
+src/renderer/src/i18n/locales/en.json
+  s_d45810414e7f4e::t_5e2c636f4aef3d 11693,11722-11727
+src/main/w3-account/w3-system-chrome-session-source.ts
+  s_d45810414e7f4e::t_f70d5da53e416d 1-373
+src/main/w3-account/w3-account-service.test.ts
+  s_d45810414e7f4e::t_7a46a8b2733f8a 4,13,17-20,33-39,58-84,143,158,177-179,248-251,255,364-422
+src/preload/api/w3-account-api.ts
+  s_d45810414e7f4e::t_7d09bc5dc9a169 13-14,26
+src/main/ipc/w3-account-ipc.ts
+  s_d45810414e7f4e::t_87491a158e07b2 2-6,26-33,63-65,68-70,187-283,297,328-332,344,367-374
+src/main/w3-account/w3-account-service.ts
+  s_d45810414e7f4e::t_8b718e0535ce76 18,20-24,55,60-61,83-90,110,113-117,135-137,158-161,167-170,187-191,250-255,306-427,431,444-447,471,474,495-498,589-591
+src/main/ipc/w3-account-ipc.test.ts
+  s_d45810414e7f4e::t_6b0ddfd920e58a 40-42,62,67-69
+src/renderer/src/components/settings/w3-account-view-model.test.ts
+  s_d45810414e7f4e::t_ec59d720c2134d 16-18,44-45,53
+src/renderer/src/i18n/locales/zh.json
+  s_d45810414e7f4e::t_f6f72645340c7f 5432,5461-5466
+src/shared/w3-account.ts
+  s_d45810414e7f4e::t_16bd9e8a77d4e8 17,24-27,33
+src/renderer/src/components/settings/use-w3-account-status.ts
+  s_d45810414e7f4e::t_b548b5a93d0f67 7-8,50-53,67
+src/main/w3-account/w3-session-bridge.ts
+  s_d45810414e7f4e::t_97a61e309c2ca6 1-160
+src/renderer/src/components/settings/W3AccountSettingsPane.tsx
+  s_d45810414e7f4e::t_66aa5de098e686 12,61-65,70,73-79,96-101,103-111,124-164,194,247-250,255-258,295,347-348,352,367-368,371-379,410,434-435,437-438,449-453
+docs/05-features/w3-account/spec.md
+  h_a7e858313fdba5 3,9,24,26-29,46-53,62-64,67,80-83,97-105,107,114-115,120
+src/renderer/src/app-shell/use-w3-account-bootstrap.ts
+  s_d45810414e7f4e::t_fddc5ecd72e585 9-14,18,43-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "fd33cf388475ed904673e02f88b055227537f574",
+  "prompts": {},
+  "humans": {
+    "h_a7e858313fdba5": {
+      "author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  },
+  "sessions": {
+    "s_d45810414e7f4e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06563665-6818-4725-bc40-efe1caee3b96",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}
