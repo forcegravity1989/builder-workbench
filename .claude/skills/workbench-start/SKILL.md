@@ -10,7 +10,7 @@ description: >-
   Also use for reviewing real Issue sessions to improve this development workflow.
   Load historical week-screen context only when tracing its earlier decisions.
 metadata:
-  version: 0.4.14-pilot
+  version: 0.4.16-pilot
 ---
 
 # workbench-start — Workbench 开发与交付
@@ -37,7 +37,7 @@ metadata:
 
 ## 3. 分流：按意图与影响
 
-开始特性设计或制作原型前，读取并执行 [原则 02 §3.2](../../../docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收) 的设计依据与确认要求；做/改原型时按 [设计系统 guidelines「HTML 原型与文档页」](../../../docs/04-design-system/guidelines.md#html-原型与文档页) 呈现（原型注释、业界参考、阶段切换、复用标注、控件与文案）。
+开始特性设计或制作原型前，完整读取并执行 [原则 02 §3.2](../../../docs/01-principles/02-working-backwards.md#32-spec-结构用户怎样完成怎样验收) 的设计依据与确认要求；做/改、盘点或清理原型时先从[特性矩阵](../../../docs/05-features/README.md)行内原型链接或对应 `spec.md` 确认当前入口和归属，再按 [设计系统 guidelines「HTML 原型与文档页」](../../../docs/04-design-system/guidelines.md#html-原型与文档页) 呈现。
 
 涉及用户可见入口、操作路径或结果变化时，设计前完整读取[引导与旅程规范及矩阵](../../../docs/04-design-system/guidance.md)，定位受影响行，按[开发规范的验收依据](../../../docs/development.md#验收依据)明确本次引导。
 
@@ -76,7 +76,7 @@ metadata:
 
 ## 6. 从真实开发反馈改方法
 
-交付收尾完整读取 [真实任务反馈](references/workflow-feedback.md)，从原始会话提取、逐条标注，用脚本生成指标评论，再读回评论和 PR 标题前缀。Codex 按 [执行参考](references/codex.md#会话反哺) 运行脚本。人审或返工发生变化时重算并原位更新评论。反哺候选在当次任务按该规范对齐，经人确认后修回原件，每周观察实际效果。
+交付收尾完整读取 [真实任务反馈](references/workflow-feedback.md)，从原始会话提取、逐条标注，用脚本生成指标评论，再读回评论和 PR 标题前缀。Codex 与 Claude 分别按 [Codex 执行参考](references/codex.md#会话反哺)与 [Claude 执行参考](references/claude.md#会话反哺)运行脚本。人审或返工发生变化时重算并原位更新评论。反哺候选在当次任务按该规范对齐，经人确认后修回原件，每周观察实际效果。
 
 修改方法沿第 1 节写作约定及上述反哺规范执行，按已确认的归属与范围写回原件。
 

@@ -265,6 +265,22 @@ export function usePlanningMaterial(
     onSaved: list
   })
 
+  const edit = useCallback(
+    (document: PlanningMaterial) => {
+      const currentDocument = controller?.value?.document
+      if (!currentDocument || currentDocument.version !== document.version) {
+        setError('计划材料已变化，输入未覆盖新材料，请重新核对。')
+        return
+      }
+      controller.edit(document)
+    },
+    [controller]
+  )
+  const refresh = useCallback(() => controller?.refresh(), [controller])
+  // Effect-time guards must read the live controller value: a same-commit
+  // re-select clears it after the render closure was captured (#767).
+  const liveDraft = useCallback(() => controller?.value ?? null, [controller])
+
   return {
     versions,
     draft,
@@ -273,8 +289,9 @@ export function usePlanningMaterial(
     select,
     clear,
     list,
-    edit: (document: PlanningMaterial) => controller?.edit(document),
-    refresh: () => controller?.refresh(),
+    edit,
+    refresh,
+    liveDraft,
     save: saving.save,
     flush: saving.flush,
     useRemote: () => {

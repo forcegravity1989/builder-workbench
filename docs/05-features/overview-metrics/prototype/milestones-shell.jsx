@@ -1,5 +1,6 @@
 import { fixedVersions } from './milestones-data.js'
 import { historyPlans } from './milestones-history.js'
+import { CURRENT_BW_SHELL as shellMeta } from '../../prototype-shell-meta.js'
 const {
   // eslint-disable-next-line no-unused-vars
   React,
@@ -18,13 +19,13 @@ export function Sidebar({ empty, onVersion, onInfo, onHome, versions = fixedVers
     <aside className="ml-sidebar" aria-label="项目导航">
       <div className="ml-brand">
         <span className="ml-logo">W</span>
-        <strong>Workbench</strong>
+        <strong>{shellMeta.productName}</strong>
       </div>
       <button className="ml-nav" onClick={() => onInfo('项目墙', '原型注释: 复用当前项目墙入口。')}>
         <LayoutDashboard size={16} />
         项目墙
       </button>
-      <div className="ml-project-name">Builders’ Workbench</div>
+      <div className="ml-project-name">{shellMeta.projectName}</div>
       <button
         className="ml-nav"
         onClick={() => onInfo('任务', '原型注释: 复用原生任务列表，原型不读写 Issue。')}
@@ -119,7 +120,7 @@ export function ProjectContext() {
       </div>
       <div className="ml-context">
         <section className="ml-card">
-          <h2>Builders’ Workbench</h2>
+          <h2>{shellMeta.projectName}</h2>
           <dl>
             <dt>项目负责人</dt>
             <dd>—</dd>
