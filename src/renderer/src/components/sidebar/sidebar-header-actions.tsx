@@ -92,17 +92,19 @@ export function SidebarHeaderActions({
       {/* Why both hidden in the agents view: it lists activity, not projects. */}
       {agentsViewActive ? null : (
         <>
-          {/* Why: in the Workbench shell 选项/新建工作区 sink to the 工作区 section
-              header, so the top bar keeps only project identity + activity + 添加项目. */}
-          {isWorkbenchShell() ? null : (
-            <SidebarWorkspaceOptionsMenu
-              preserveWorkspaceBoardOpen
-              onMenuOpenChange={onWorkspaceBoardMenuOpenChange}
-            />
-          )}
+          {/* Why ☰ stays here: it is the only mount of the group-by toggle and the
+              filter badge, and section headers only render for some grouping modes
+              and data states (#769). spec.md requires one toolbar at the column top. */}
+          <SidebarWorkspaceOptionsMenu
+            preserveWorkspaceBoardOpen
+            onMenuOpenChange={onWorkspaceBoardMenuOpenChange}
+          />
           <AddProjectButton preserveWorkspaceBoardOpen />
         </>
       )}
+      {/* Why ＋ stays out: #703 moved create onto the project and 工作区 section
+          headers, and #769 restores ☰ only. Status/PR grouping renders neither
+          header, so those modes still have no create entry — a separate decision. */}
       {isWorkbenchShell() ? null : <NewWorkspaceButton preserveWorkspaceBoardOpen />}
     </div>
   )
