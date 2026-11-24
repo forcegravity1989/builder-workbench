@@ -1,0 +1,208 @@
+src/renderer/src/components/browser-pane/workspace-doc/use-doc-preview-guest-tools.test.ts
+  s_02ab5765848c38::t_a2362ce09fee54 117-120
+  s_02ab5765848c38::t_067e09e9f36ef9 66
+  s_02ab5765848c38::t_dd99ad0087ea3b 21
+  s_02ab5765848c38::t_14e0352c58a92a 100-109
+src/renderer/src/workbench/pr-review-notifications/PrototypeReviewInviteButton.tsx
+  s_02ab5765848c38::t_07bb57664fd05a 1-31
+docs/05-features/team-collaboration/spec.md
+  s_02ab5765848c38::t_80b36e5a90e5bf 74
+  s_02ab5765848c38::t_4c294f281b5945 71
+  s_02ab5765848c38::t_d8fd3ca508ce86 13-14
+  s_02ab5765848c38::t_90aa4e691c14a0 29
+  s_02ab5765848c38::t_e22bd7b0f14a26 95
+  s_02ab5765848c38::t_a7462363b81acc 30
+  s_02ab5765848c38::t_36173ef25eb315 101
+  s_02ab5765848c38::t_3cf4734eff2c8c 72
+  s_02ab5765848c38::t_aa550f14b5e762 20
+  s_02ab5765848c38::t_4edbff22a2b1c9 91
+src/shared/browser-grab-types.ts
+  s_02ab5765848c38::t_116677f0ba6c03 171-172
+src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.tsx
+  s_02ab5765848c38::t_a056bc53d3ac83 154-156,194,358
+  s_02ab5765848c38::t_0809680d4ef783 34-35
+  s_02ab5765848c38::t_c9e56c677d5024 51-52,54-55
+  s_02ab5765848c38::t_81a7512fb65933 354-357
+  h_1dcaf127381c33 157-160,162-193
+src/renderer/src/components/browser-pane/workspace-doc/doc-preview-toolbar.tsx
+  s_02ab5765848c38::t_b09b116be10655 12
+  s_02ab5765848c38::t_cee65998add234 101-103
+src/renderer/src/components/browser-pane/annotate/browser-guest-annotate-overlays.tsx
+  s_02ab5765848c38::t_68f68b61b5cf0b 81-82
+  s_02ab5765848c38::t_a3dc2ffb047aa8 129
+src/main/runtime/runtime-rpc/runtime-rpc-websocket-dispatch.ts
+  s_02ab5765848c38::t_3d821979bbd1a9 271-275
+  s_02ab5765848c38::t_efe63239f416f8 267-270,276
+  s_02ab5765848c38::t_755898eca120f3 90-102
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_b8378692e0aad3 177-178,202-212,216-232,362-365
+  s_02ab5765848c38::t_a37de92ce6179e 358
+src/preload/api/mobile-bridge.ts
+  s_02ab5765848c38::t_22f059ff8fdc77 94-98
+src/renderer/src/workbench/pr-review-notifications/use-prototype-review-annotations.ts
+  s_02ab5765848c38::t_d07d294fa16053 1
+  s_02ab5765848c38::t_c559fe41f788ab 280
+  s_02ab5765848c38::t_9f62f7c2f10def 256-273,275-275,277-279
+  s_02ab5765848c38::t_644b799927ba86 2-3,5-59,62-64,66-69,71-88,93-102,104-114,117-118,121-126,130-146,148-157,160-173,175-179,183-188,192-199,203-215,220,222-255,274,281
+  s_02ab5765848c38::t_e2e8cc4e521e50 4
+  s_02ab5765848c38::t_fce97c8adc5f46 103
+  h_1dcaf127381c33 89-91,119,127,180-181,189-191,202,216-218,276
+  s_02ab5765848c38::t_dec1888161c17b 282-284
+  s_02ab5765848c38::t_8b0ecd62307a77 285-290
+src/renderer/src/workbench/WorkbenchSendReviewMenuItems.tsx
+  s_02ab5765848c38::t_fb1f48e823ac33 28
+  s_02ab5765848c38::t_a17f2f3cfa92da 226-236
+src/renderer/src/components/browser-pane/workspace-doc/HtmlDocPreview.tsx
+  s_02ab5765848c38::t_f56220ece13ddb 133
+src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx
+  s_02ab5765848c38::t_e3e05e3720643e 56
+  s_02ab5765848c38::t_eed45154175c21 43
+src/renderer/src/workbench/pr-review-notifications/PrototypeReviewSubmitButton.tsx
+  s_02ab5765848c38::t_a0b82c20d2c507 1-40
+src/shared/workbench/prototype-review-annotation.ts
+  s_02ab5765848c38::t_4e3fbbe26c98ba 2,4-8,11-13,17-24,29-35,38-47,49-55
+  s_02ab5765848c38::t_0bcd35a7e61c9c 56
+  h_1dcaf127381c33 9-10,14-16,25-28,36-37
+  s_02ab5765848c38::t_1eea9b611c5bf7 63-64,67-72,76
+src/main/runtime/rpc/methods/workbench-prototype-review-annotations.ts
+  s_02ab5765848c38::t_dfd572a39c9f3e 17,22-27,30-37,46-47
+src/renderer/src/workbench/pr-review-notifications/PrReviewNotificationsView.tsx
+  s_02ab5765848c38::t_999788d1de86cb 31
+  s_02ab5765848c38::t_96204beb3dc0dc 288,301
+  h_1dcaf127381c33 258-259
+src/renderer/src/workbench/pr-review-notifications/ReviewSendDialogHost.tsx
+  s_02ab5765848c38::t_846b856261d3c0 35-40
+src/main/workbench/prototype-review-annotations.ts
+  s_02ab5765848c38::t_c7043de3145500 14,19,29-32,57,64-64,70-70,74,84,89
+  h_1dcaf127381c33 65-69
+  s_02ab5765848c38::t_9412ecf65610ca 12-13
+src/renderer/src/web/preload-api/web-mobile-api.ts
+  s_02ab5765848c38::t_44691b02e5590b 19
+src/main/workbench/prototype-review-annotations.test.ts
+  s_02ab5765848c38::t_d318869ee921d4 88-94
+  s_02ab5765848c38::t_59edb85d900451 71,73
+  s_02ab5765848c38::t_b0e48621a1e034 23-28
+  s_02ab5765848c38::t_7dc5a9818379c4 1-8,10-13,15-19,21-22,29-31,34-46,48-50,52-53,56-59,61-70,74-87
+docs/06-module/团队共享访问策略.md
+  s_02ab5765848c38::t_a841446d269f76 35
+  s_02ab5765848c38::t_1def2c872e1ae8 34
+  s_02ab5765848c38::t_6c2f224ae76608 29
+src/renderer/src/components/settings/RuntimeAccessGrantList.tsx
+  s_02ab5765848c38::t_03d1223e9c816e 155-168
+  s_02ab5765848c38::t_da2b974138225f 43-44,48
+  s_02ab5765848c38::t_b7661cea58c8d6 57,61
+  s_02ab5765848c38::t_b5545611c872a6 135
+  s_02ab5765848c38::t_d9197f5c71164c 186-228
+  s_02ab5765848c38::t_0094d03e9b2e98 1,5
+src/shared/workbench/prototype-review-request.ts
+  s_02ab5765848c38::t_08eb9bca240f10 4,11,17-20,23-25,53
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_bf70b5e10c6d1d 85
+  s_02ab5765848c38::t_d2bc775e973a5e 142-161,166-169
+  h_1dcaf127381c33 194
+  s_02ab5765848c38::t_0f826eea6e898b 180-182,193,195-197
+src/main/ipc/mobile.test.ts
+  s_02ab5765848c38::t_40b2f09674ccd0 732-733,740-745
+  s_02ab5765848c38::t_d42abc2746112f 746-777
+  h_1dcaf127381c33 734-739
+docs/05-features/team-collaboration/design.md
+  s_02ab5765848c38::t_d606f8f005fb10 25
+  s_02ab5765848c38::t_c23b7648cab868 34
+src/shared/runtime-access-audit-labels.ts
+  s_02ab5765848c38::t_602fd9e943a1d2 83-84
+  s_02ab5765848c38::t_6b929d2fda2708 6
+  s_02ab5765848c38::t_b8378692e0aad3 4,26-28,47-68
+docs/05-features/team-collaboration/STATUS.md
+  s_02ab5765848c38::t_d69dad5d08ae85 6
+  s_02ab5765848c38::t_d899627f5c99c5 8
+src/renderer/src/components/browser-pane/annotate/use-browser-page-annotation-send.ts
+  s_02ab5765848c38::t_80dbe369a150ca 11-13,18,22-23,25-26
+  s_02ab5765848c38::t_66491d008ae281 205,207
+  s_02ab5765848c38::t_0c60561b8535d4 74,76-78
+  s_02ab5765848c38::t_a24761a9ad0b99 215,217,219
+  s_02ab5765848c38::t_82cbbdc07300c7 230-232,234,236,240
+  s_02ab5765848c38::t_162706a6a40bf3 188,195,204
+src/renderer/src/components/settings/RuntimePairingUrlGenerator.tsx
+  s_02ab5765848c38::t_cd9a4f33456c8b 55,380-384,386-388,391-399,401,403-413,420-421,427,580,584
+docs/05-features/pr-review-notify/design.md
+  s_02ab5765848c38::t_4b3de652c0a10d 3,11-15,17,22-25,29-32,36
+src/preload/api/mobile-api.ts
+  s_02ab5765848c38::t_a5d62979234a9d 95-98
+src/renderer/src/workbench/pr-review-notifications/prototype-review-target.ts
+  s_02ab5765848c38::t_a9adb46b9288b5 2-4,8,11-26,28-29,31-39,42,46-56,58-60
+src/renderer/src/workbench/pr-review-notifications/prototype-store.ts
+  s_02ab5765848c38::t_6f607a6e316fd5 6
+  s_02ab5765848c38::t_0458e6185e98c4 70-73,76-77,80
+  s_02ab5765848c38::t_209f154a70764b 131-135
+  s_02ab5765848c38::t_dbe91e8a00b2bd 95-100,103-104
+src/renderer/src/components/browser-pane/annotate/browser-annotation-output.ts
+  s_02ab5765848c38::t_656f2687fcf918 202-204
+src/renderer/src/workbench/pr-review-notifications/prototype-model.ts
+  s_02ab5765848c38::t_6599ff7c240b3b 4
+  s_02ab5765848c38::t_c5d09ff50c7406 36-45
+src/renderer/src/components/browser-pane/workspace-doc/use-doc-preview-guest-tools.ts
+  s_02ab5765848c38::t_be775e9d00eed5 22,30
+  s_02ab5765848c38::t_c66c6a0fe7cbdf 57,60-61
+  s_02ab5765848c38::t_9432de76451458 62-63
+docs/05-features/team-collaboration/intent.md
+  s_02ab5765848c38::t_d6be5e7b3e75e5 17
+  s_02ab5765848c38::t_12cb5a974cdd19 15
+  s_02ab5765848c38::t_3fe7aa29bc8541 19
+  s_02ab5765848c38::t_b41114c510824e 23
+  s_02ab5765848c38::t_bec0b84d619bc6 29
+  s_02ab5765848c38::t_6992cf3675a7e4 18
+src/renderer/src/workbench/pr-review-notifications/prototype-storage.ts
+  s_02ab5765848c38::t_3aa47d790af044 9
+src/main/workbench/prototype-review-inbox.ts
+  s_02ab5765848c38::t_72ef20b30f6a9c 8
+  s_02ab5765848c38::t_76ef0471080ca9 14,30,48,68,70
+src/main/ipc/mobile.ts
+  s_02ab5765848c38::t_c354bb1998cb94 306-312,314-317,319-323,325-350,352
+src/main/runtime/runtime-browser-commands-browser-tab-list.ts
+  s_02ab5765848c38::t_763a4f1ce939ab 2,21
+src/renderer/src/components/browser-pane/annotate/use-browser-page-grab-annotations.ts
+  s_02ab5765848c38::t_4dd0d57d41a406 55,274,289
+src/renderer/src/components/browser-pane/annotate/useGrabMode.ts
+  s_02ab5765848c38::t_98ba118f3f9234 68,90-91,96,105,118-119,138,154,184,189,194,204,234,246
+src/renderer/src/components/browser-pane/assemble-chrome/browser-page-pane.tsx
+  s_02ab5765848c38::t_21fb7479c36198 177
+src/renderer/src/components/browser-pane/stream-remote/remote-browser-page-pane.tsx
+  s_02ab5765848c38::t_7885ae8466839f 1,404
+src/renderer/src/components/browser-pane/stream-remote/remote-browser-page-toolbar.tsx
+  s_02ab5765848c38::t_700ddee51afc61 1,5,10,50,106-139
+src/renderer/src/components/browser-pane/stream-remote/remote-browser-page-viewport.tsx
+  s_02ab5765848c38::t_5b8d8eea8f0884 18-19,36,53,60,93-100,109
+docs/05-features/pr-review-notify/STATUS.md
+  s_02ab5765848c38::t_8c5cad484e0091 7
+docs/05-features/pr-review-notify/intent.md
+  s_02ab5765848c38::t_93326f183095f1 9
+docs/05-features/pr-review-notify/prototype/README.md
+  s_02ab5765848c38::t_17c4902094e7f9 5
+docs/05-features/pr-review-notify/spec.md
+  s_02ab5765848c38::t_ea0e1e2c4347b8 19,21,23
+src/renderer/src/i18n/locales/en.json
+  s_02ab5765848c38::t_f40487c7f4e194 8058-8059,8219-8220
+src/renderer/src/i18n/locales/zh.json
+  s_02ab5765848c38::t_028ebd30c0b482 6896-6897,7053-7054
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "24dbc501d69cb8ab940381390a6ef1ad76cfaf13",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
