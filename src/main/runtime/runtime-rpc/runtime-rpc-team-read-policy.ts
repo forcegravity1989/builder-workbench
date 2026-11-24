@@ -10,7 +10,7 @@ import {
 // project, writing back to code hosts and trackers under the owner's accounts, and changing project
 // files, Git or worktrees. Each action is denied at its core entry only; the steps behind it need
 // no entry because the interface never reaches them. Every other method is allowed.
-const TEAM_READ_DENIED_METHODS = new Set([
+export const TEAM_READ_DENIED_METHODS = new Set([
   // Sending input or messages to a terminal, an agent or a model
   'agentSession.conversationCommand',
   'agentSession.respondToApproval',
@@ -143,8 +143,10 @@ const TEAM_READ_DENIED_METHODS = new Set([
   'repo.rm',
   'repo.saveSparsePreset',
   'repo.setBaseRef',
+  'repo.reorder',
   'repo.update',
   'workbench.fixedWorkspace.ensure',
+  'workbench.trunk.update',
   'workbench.repo.deleteGroup',
   'workbench.repo.removeRegistration',
   'workbench.versionWorkspace.prepare',
@@ -166,7 +168,7 @@ const TEAM_READ_DENIED_PREFIXES = [
 // Allowed methods whose successful calls are worth a log line. Routine reads (sidebars, plan screen,
 // PR status, settings, session and terminal output) stay out of the log; the log keeps denials,
 // failures, connections, grants and these actions.
-const AUDITED_TEAM_READ_METHODS = new Set([
+export const AUDITED_TEAM_READ_METHODS = new Set([
   'workbench.review.receive',
   'workbench.prototypeReview.receive',
   'workbench.prototypeReview.annotations.add',
@@ -202,6 +204,7 @@ const AUDITED_TEAM_READ_METHODS = new Set([
   'settings.update',
   'updater.install',
   'terminal.create',
+  'agentSession.create',
   'terminal.createAgentSession',
   'terminal.ensureAgentSession',
   'terminal.close',

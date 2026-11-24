@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUDITED_TEAM_READ_METHODS,
+  TEAM_READ_DENIED_METHODS,
   isQuietTeamReadDenial,
   isRoutineReadRuntimeMethod,
   teamReadDenialReason,
@@ -7,9 +9,22 @@ import {
   teamReadRequestParams,
   teamReadTerminalStreamHandler
 } from './runtime-rpc-team-read-policy'
+import {
+  RPC_METHODS_WITHOUT_SHARED_PARAMS,
+  RPC_PARAMS_BY_METHOD
+} from '../../../shared/rpc-contract/rpc-params-catalog.generated'
 import { TerminalStreamOpcode } from '../../../shared/terminal-stream-protocol'
 
 describe('team-read RPC policy', () => {
+  it('only lists methods that exist, so a rename cannot silently turn a rule off', () => {
+    const known = new Set([
+      ...Object.keys(RPC_PARAMS_BY_METHOD),
+      ...RPC_METHODS_WITHOUT_SHARED_PARAMS
+    ])
+    expect([...TEAM_READ_DENIED_METHODS].filter((m) => !known.has(m))).toEqual([])
+    expect([...AUDITED_TEAM_READ_METHODS].filter((m) => !known.has(m))).toEqual([])
+  })
+
   it('denies each blocked action at its core entry', () => {
     for (const method of [
       // Sending input or messages to a terminal, an agent or a model
