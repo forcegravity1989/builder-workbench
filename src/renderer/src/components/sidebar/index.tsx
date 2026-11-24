@@ -19,6 +19,7 @@ import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { SidebarBotsSection } from '@/components/bots/SidebarBotsSection'
 
 // Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
 // previews, thread derivation); users on the workspace view should not load or render any of it.
@@ -212,7 +213,10 @@ function Sidebar({
                   </ActivityThreadCollapseContext.Provider>
                 </React.Suspense>
               ) : (
-                worktreeList
+                <>
+                  <SidebarBotsSection onOpenBot={closeWorkspaceBoard} />
+                  {worktreeList}
+                </>
               )}
 
               <div className="relative shrink-0">

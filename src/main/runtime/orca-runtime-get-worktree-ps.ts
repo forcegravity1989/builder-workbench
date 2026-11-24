@@ -29,6 +29,10 @@ import { resolveStartupShell, tokenizeStartupCommand } from '../../shared/tui-ag
 import { resolveCodexStructuredAppServerArgs } from '../codex/codex-structured-app-server-args'
 import type { StructuredAgentSessionHandoffTransport } from '../native-chat/agent-session-wire/structured-agent-session-handoff-types'
 import { hostname } from 'node:os'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { getAppEnvironment } from '../../shared/app-environment'
+import { restoreStructuredWorkerIdentities } from './structured-worker-identity'
 import { claudeStructuredAuthPolicyForSettings } from '../claude-accounts/claude-structured-auth-policy'
 import { probeAgentSessionProcessIdentity } from './agent-session-process-identity-probe'
 import { structuredAgentSessionTabId } from '../../shared/structured-agent-session-projection'
@@ -145,6 +149,12 @@ export class OrcaRuntimeWithGetWorktreePs extends OrcaRuntimeWithStructuredAgent
    * should never open the record store.
    */
   async ensureStructuredAgentSessionHost(): Promise<void> {
+    if (
+      this._orchestrationDb ||
+      existsSync(join(getAppEnvironment().getPath('userData'), 'orchestration.db'))
+    ) {
+      restoreStructuredWorkerIdentities(this.getOrchestrationDb())
+    }
     await installStructuredAgentSessionHost({
       stateDirectory: getProfileUserDataPath(),
       hostId: LOCAL_EXECUTION_HOST_ID,
@@ -165,6 +175,7 @@ export class OrcaRuntimeWithGetWorktreePs extends OrcaRuntimeWithStructuredAgent
       // Structured chat has no agent CLI hooks, so this projection is what the first-work
       // workspace rename listens to instead of `agentStatus:set`.
       onSessionStatusChanged: (summary, options) => {
+        this.notifyStructuredSessionJournalActivity(summary.sessionId)
         void maybeAutoRenameWorkspaceOnFirstStructuredTurn(
           summary,
           options,

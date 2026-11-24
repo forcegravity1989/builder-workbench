@@ -10,6 +10,11 @@ import { encodeRunListCursor, decodeRunListCursor } from '../run-list-cursor'
 import type { RunListPage } from '../run-list-page'
 import type { OrchestrationDb } from '../orchestration-db'
 import { RUN_COLUMN_LIST } from '../row-column-lists'
+import {
+  formatOrcaSessionAddress,
+  type OrcaSessionId
+} from '../../../../../shared/agent-session/identity/orca-session-address'
+import { currentRunCoordinatorOrcaSessionId } from './run-coordinator-orca-session'
 
 export type LegacyAdoptedMailboxOwner = {
   runId: string
@@ -21,6 +26,10 @@ const RUN_BY_ID_SQL = `SELECT ${RUN_COLUMN_LIST} FROM runs WHERE id = ?`
 const RUNS_BOUND_TO_PANE_SQL = `SELECT ${RUN_COLUMN_LIST} FROM runs
          WHERE coordinator_pane_key IS NOT NULL AND legacy = 0
            AND ${RUN_PANE_KEY_MATCH_SUFFIX_SQL} = ?
+         ORDER BY rowid`
+const RUNS_BOUND_TO_SESSION_SQL = `SELECT ${RUN_COLUMN_LIST} FROM runs
+         WHERE coordinator_orca_session_id = ? AND legacy = 0
+           AND coordinator_orca_session_id_generation = consumer_generation
          ORDER BY rowid`
 
 export function getRun(this: OrchestrationDb, id: string): RunRow | undefined {
@@ -107,6 +116,14 @@ export function getCurrentRunForPane(this: OrchestrationDb, paneKey: string): Ru
   return run ? exposeRunTimestamps(run) : undefined
 }
 
+export function getCurrentRunForOrcaSession(
+  this: OrchestrationDb,
+  sessionId: OrcaSessionId
+): RunRow | undefined {
+  const run = this.db.prepare(RUNS_BOUND_TO_SESSION_SQL).get(sessionId) as RunRow | undefined
+  return run ? exposeRunTimestamps(run) : undefined
+}
+
 // Why: the indexed suffix only narrows candidates; isEquivalentPaneKey still decides, so
 // reminted tab halves keep matching and unparseable keys keep requiring an exact match.
 export function runsBoundToPane(this: OrchestrationDb, paneKey: string): RunRow[] {
@@ -127,21 +144,38 @@ export function unbindOtherRunsForPane(
   paneKey: string,
   exceptRunId?: string
 ): void {
-  for (const run of this.runsBoundToPane(paneKey)) {
+  unbindRuns(this, this.runsBoundToPane(paneKey), exceptRunId)
+}
+
+export function unbindOtherRunsForOrcaSession(
+  this: OrchestrationDb,
+  sessionId: OrcaSessionId,
+  exceptRunId?: string
+): void {
+  const bound = this.db.prepare(RUNS_BOUND_TO_SESSION_SQL).all(sessionId) as RunRow[]
+  unbindRuns(this, bound, exceptRunId)
+}
+
+function unbindRuns(db: OrchestrationDb, runs: readonly RunRow[], exceptRunId?: string): void {
+  for (const run of runs) {
     if (run.id !== exceptRunId) {
-      if (run.coordinator_handle) {
-        this.routeAllUnreadDirectMessagesToRunMailbox(run.id, run.coordinator_handle)
+      const sessionId = currentRunCoordinatorOrcaSessionId(run)
+      const address =
+        run.coordinator_handle ?? (sessionId ? formatOrcaSessionAddress(sessionId) : null)
+      if (address) {
+        db.routeAllUnreadDirectMessagesToRunMailbox(run.id, address)
       }
-      this.db
+      db.db
         .prepare(
           `UPDATE runs
            SET coordinator_handle = NULL, coordinator_pane_key = NULL,
+               coordinator_orca_session_id = NULL, coordinator_orca_session_id_generation = NULL,
                consumer_generation = consumer_generation + 1,
                updated_at = datetime('now')
            WHERE id = ?`
         )
         .run(run.id)
-      this.fenceUnacknowledgedMailboxDeliveries(`run:${run.id}`)
+      db.fenceUnacknowledgedMailboxDeliveries(`run:${run.id}`)
     }
   }
 }
@@ -158,9 +192,11 @@ export type RunLookupMethods = {
   getRunMailboxOwnerIdsForHandle: typeof getRunMailboxOwnerIdsForHandle
   listRuns: typeof listRuns
   getCurrentRunForPane: typeof getCurrentRunForPane
+  getCurrentRunForOrcaSession: typeof getCurrentRunForOrcaSession
   runsBoundToPane: typeof runsBoundToPane
   getRunRaw: typeof getRunRaw
   unbindOtherRunsForPane: typeof unbindOtherRunsForPane
+  unbindOtherRunsForOrcaSession: typeof unbindOtherRunsForOrcaSession
   requireRun: typeof requireRun
 }
 
@@ -171,9 +207,11 @@ export function attachRunLookup(ctor: { prototype: object }): void {
     getRunMailboxOwnerIdsForHandle,
     listRuns,
     getCurrentRunForPane,
+    getCurrentRunForOrcaSession,
     runsBoundToPane,
     getRunRaw,
     unbindOtherRunsForPane,
+    unbindOtherRunsForOrcaSession,
     requireRun
   })
 }

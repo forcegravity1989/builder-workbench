@@ -244,7 +244,14 @@ export async function sendStructuredWorkerPreamble(args: {
   if (!result.ok) {
     throw new Error(`The dispatch preamble was refused: ${result.refusal.message}`)
   }
-  const submission = result.value.submission
+  const { clientMessageId, submission: initialSubmission } = result.value
+  const settled =
+    initialSubmission.dispatchState === 'pending'
+      ? await args.host
+          .waitForSendSettlement(args.sessionId, clientMessageId)
+          .catch(() => undefined)
+      : undefined
+  const submission = settled?.value.submission ?? initialSubmission
   if (submission.dispatchState === 'accepted') {
     return
   }

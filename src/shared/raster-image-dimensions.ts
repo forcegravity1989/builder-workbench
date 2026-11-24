@@ -73,7 +73,7 @@ function positiveDimensions(width: number, height: number): RasterImageDimension
     : null
 }
 
-function readPngDimensions(bytes: Uint8Array): RasterImageDimensions | null {
+export function readPngDimensions(bytes: Uint8Array): RasterImageDimensions | null {
   if (
     !matchesBytes(bytes, 0, PNG_SIGNATURE) ||
     !hasBytes(bytes, 8, 16) ||

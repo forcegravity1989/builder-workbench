@@ -2,6 +2,7 @@ import type { OrchestrationCompatibilityEvidence } from '../../../../../../share
 import { orchestrationSkillRecoveryData } from '../../../../../../shared/orchestration-rpc-contract'
 import { OrchestrationError } from '../../../../orchestration/orchestration-error'
 import type { RunRow } from '../../../../orchestration/types'
+import type { OrchestrationSessionCaller } from '../../../orchestration/callers/orchestration-session-caller'
 import type {
   OrcaRuntimeService,
   OrchestrationCompatibilityCallerAuthority
@@ -15,6 +16,7 @@ export type RunScopeParams = {
   legacyCoordinatorRunId?: string
   // Why: the caller's declared handle is a user param; this is the attested one to check it against.
   callerEvidence?: OrchestrationCompatibilityEvidence
+  sessionCaller?: OrchestrationSessionCaller
 }
 
 // Why: declared handles select mutable Run bindings, so attested callers may only name themselves.
@@ -89,6 +91,24 @@ export function resolveRunScope(runtime: OrcaRuntimeService, params: RunScopePar
 
   if (!params.requireCurrentConsumer && explicit) {
     return explicit
+  }
+  if (params.sessionCaller) {
+    const current = db.getCurrentRunForOrcaSession(params.sessionCaller.sessionId)
+    if (explicit && current?.id !== explicit.id) {
+      throw new OrchestrationError(
+        'consumer_fenced',
+        `This Orca session is no longer bound to Run ${explicit.id}.`,
+        { effectsApplied: false }
+      )
+    }
+    if (!current) {
+      throw new OrchestrationError(
+        'run_required',
+        'No Run is bound to this Orca session. Use orchestration run-create first.',
+        orchestrationSkillRecoveryData()
+      )
+    }
+    return current
   }
   if (!params.callerTerminalHandle) {
     throw new OrchestrationError(

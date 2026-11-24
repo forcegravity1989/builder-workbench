@@ -1,4 +1,5 @@
 import type { TerminalExitCause } from '../../../shared/terminal-exit-cause'
+import type { OrcaSessionId } from '../../../shared/agent-session/identity/orca-session-address'
 export const MESSAGE_TYPES = [
   'status',
   'dispatch',
@@ -46,6 +47,8 @@ export type RunRow = {
   home_database: string
   coordinator_handle: string | null
   coordinator_pane_key: string | null
+  coordinator_orca_session_id?: OrcaSessionId | null
+  coordinator_orca_session_id_generation?: number | null
   consumer_generation: number
   legacy: number
   created_at: string
@@ -168,6 +171,7 @@ export type LegacyWorkerTerminalRecoveryRow = {
   contract_version: number
   assignee_handle: string | null
   assignee_pane_key: string | null
+  assignee_orca_session_id?: OrcaSessionId | null
   process_incarnation: string | null
   worker_state: WorkerDispatchState
   worktree_id: string | null
@@ -287,6 +291,7 @@ export type DispatchContextRow = {
   /** Creator identity; equal to the assignee means a self-dispatch, which adds no nesting depth. */
   creator_handle: string | null
   creator_pane_key: string | null
+  creator_orca_session_id?: OrcaSessionId | null
   host_scope: string | null
   status: DispatchStatus
   failure_count: number

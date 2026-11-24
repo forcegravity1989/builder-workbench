@@ -51,6 +51,7 @@ export function validateFederatedWorkerStartPlacement(
 export function prepareLocalWorkerStart(args: {
   params: WorkerStartInput
   createsWorktree: boolean
+  allowGeneratedName?: boolean
   runtime: OrcaRuntimeService
 }): { agent: TuiAgent | undefined; launch: WorkerStartLaunch } {
   const { params, createsWorktree, runtime } = args
@@ -67,7 +68,7 @@ export function prepareLocalWorkerStart(args: {
       '--terminal cannot combine with new-worktree creation.'
     )
   }
-  if (createsWorktree && !params.name) {
+  if (createsWorktree && !params.name && !args.allowGeneratedName) {
     throw new OrchestrationError('invalid_argument', 'New worktrees require --name.')
   }
   if (!createsWorktree && (params.name || params.repo || params.baseBranch || params.setup)) {

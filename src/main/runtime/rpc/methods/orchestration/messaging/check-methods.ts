@@ -20,6 +20,7 @@ export const ORCHESTRATION_CHECK_METHODS = [
       params,
       {
         orchestrationCompatibilityEvidence,
+        orchestrationSessionCaller,
         runtime,
         signal,
         legacyCoordinatorRunId,
@@ -32,9 +33,11 @@ export const ORCHESTRATION_CHECK_METHODS = [
       const typeFilter = parseMessageTypes(params.types)
 
       // Why: a live runtime handle is authoritative; pane metadata is only the restart fallback.
-      const paneKey = runtime.getTerminalPaneKey(handle) ?? params.terminalPaneKey
+      const paneKey = orchestrationSessionCaller
+        ? undefined
+        : (runtime.getTerminalPaneKey(handle) ?? params.terminalPaneKey)
       const boundRun = paneKey ? db.getCurrentRunForPane(paneKey) : undefined
-      if (params.run || boundRun) {
+      if (orchestrationSessionCaller || params.run || boundRun) {
         return checkRunMailbox({
           params,
           runtime,
@@ -46,6 +49,7 @@ export const ORCHESTRATION_CHECK_METHODS = [
           legacyCoordinatorRunId,
           revalidateLegacyCoordinator,
           orchestrationCompatibilityEvidence,
+          orchestrationSessionCaller,
           recordMutationReceipt
         })
       }

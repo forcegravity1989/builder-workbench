@@ -23,6 +23,7 @@ export async function checkRunMailbox(args: {
   legacyCoordinatorRunId: string | undefined
   revalidateLegacyCoordinator: (() => string) | undefined
   orchestrationCompatibilityEvidence: RpcContext['orchestrationCompatibilityEvidence']
+  orchestrationSessionCaller?: RpcContext['orchestrationSessionCaller']
   recordMutationReceipt: ((receipt: unknown) => void) | undefined
 }): Promise<unknown> {
   const {
@@ -36,6 +37,7 @@ export async function checkRunMailbox(args: {
     legacyCoordinatorRunId,
     revalidateLegacyCoordinator,
     orchestrationCompatibilityEvidence,
+    orchestrationSessionCaller,
     recordMutationReceipt
   } = args
   const routeDirectSnapshot = async (
@@ -54,7 +56,8 @@ export async function checkRunMailbox(args: {
     callerPaneKey: paneKey,
     requireCurrentConsumer: true,
     legacyCoordinatorRunId,
-    callerEvidence: orchestrationCompatibilityEvidence
+    callerEvidence: orchestrationCompatibilityEvidence,
+    sessionCaller: orchestrationSessionCaller
   })
   const generation = run.consumer_generation
   const address = `run:${run.id}`
@@ -75,7 +78,8 @@ export async function checkRunMailbox(args: {
     callerPaneKey: paneKey,
     requireCurrentConsumer: true,
     legacyCoordinatorRunId,
-    callerEvidence: orchestrationCompatibilityEvidence
+    callerEvidence: orchestrationCompatibilityEvidence,
+    sessionCaller: orchestrationSessionCaller
   })
   if (currentRun.consumer_generation !== generation) {
     throw new OrchestrationError(

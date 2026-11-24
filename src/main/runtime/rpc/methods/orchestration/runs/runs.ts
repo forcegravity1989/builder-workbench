@@ -14,13 +14,31 @@ export const ORCHESTRATION_RUN_METHODS = [
   defineMethod({
     name: 'orchestration.runCreate',
     params: RunCreateParams,
-    handler: (params, { orchestrationCompatibilityEvidence, runtime }) => {
+    handler: (
+      params,
+      { orchestrationCompatibilityEvidence, orchestrationSessionCaller, runtime }
+    ) => {
+      const db = runtime.getOrchestrationDb()
+      if (orchestrationSessionCaller) {
+        const sessionId = orchestrationSessionCaller.sessionId
+        const priorRun = db.getCurrentRunForOrcaSession(sessionId)
+        const run = db.createRun({
+          objective: params.objective,
+          coordinatorHandle: null,
+          coordinatorPaneKey: null,
+          coordinatorOrcaSessionId: sessionId
+        })
+        runtime.cancelMessageWaiters(params.from)
+        if (priorRun) {
+          runtime.cancelMessageWaiters(`run:${priorRun.id}`)
+        }
+        return { run: exposeRun(run) }
+      }
       const paneKey = resolveOrchestrationCaller(runtime, {
         callerTerminalHandle: params.from,
         callerEvidence: orchestrationCompatibilityEvidence,
         requireStablePane: true
       })
-      const db = runtime.getOrchestrationDb()
       const priorRun = db.getCurrentRunForPane(paneKey)
       const run = db.createRun({
         objective: params.objective,
@@ -43,9 +61,37 @@ export const ORCHESTRATION_RUN_METHODS = [
         runtime,
         legacyCoordinatorAuthority,
         orchestrationCompatibilityEvidence,
+        orchestrationSessionCaller,
         orchestrationCompatibilityCallerAuthority: callerAuthority
       }
     ) => {
+      if (orchestrationSessionCaller) {
+        if (params.takeoverLegacy) {
+          throw new OrchestrationError(
+            'legacy_read_only',
+            'Legacy takeover requires a live coordinator terminal.',
+            { effectsApplied: false }
+          )
+        }
+        const db = runtime.getOrchestrationDb()
+        const sessionId = orchestrationSessionCaller.sessionId
+        const priorRun = db.getCurrentRunForOrcaSession(sessionId)
+        const run = db.bindRunForOrcaSession(params.id, sessionId)
+        if (!run) {
+          throw new OrchestrationError(
+            'run_not_found',
+            `Run ${params.id} was not found or requires a terminal coordinator.`
+          )
+        }
+        if (priorRun?.id !== run.id) {
+          runtime.cancelMessageWaiters(`run:${run.id}`)
+          if (priorRun) {
+            runtime.cancelMessageWaiters(`run:${priorRun.id}`)
+          }
+          runtime.deliverPendingMessagesForHandle(`run:${run.id}`)
+        }
+        return { run: exposeRun(run) }
+      }
       const paneKey = resolveOrchestrationCaller(runtime, {
         callerTerminalHandle: params.from,
         callerEvidence: orchestrationCompatibilityEvidence,
@@ -90,7 +136,16 @@ export const ORCHESTRATION_RUN_METHODS = [
   defineMethod({
     name: 'orchestration.runCurrent',
     params: RunCurrentParams,
-    handler: (params, { orchestrationCompatibilityEvidence, runtime }) => {
+    handler: (
+      params,
+      { orchestrationCompatibilityEvidence, orchestrationSessionCaller, runtime }
+    ) => {
+      if (orchestrationSessionCaller) {
+        const run = runtime
+          .getOrchestrationDb()
+          .getCurrentRunForOrcaSession(orchestrationSessionCaller.sessionId)
+        return { run: run ? exposeRun(run) : null }
+      }
       const paneKey = resolveOrchestrationCaller(runtime, {
         callerTerminalHandle: params.from,
         callerEvidence: orchestrationCompatibilityEvidence,

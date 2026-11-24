@@ -11,10 +11,14 @@ import {
 } from '../../../shared/orchestration-check-output'
 import { callOrchestrationMutation } from './mutation-request'
 import { resolveOrchestrationTerminalHandle } from './terminal-identity'
+import { injectedSessionAddress } from '../../../shared/agent-session/identity/agent-session-caller-env'
 
 export const ORCHESTRATION_INBOX_HANDLERS: Record<string, CommandHandler> = {
   'orchestration reply': async ({ flags, client, cwd, json }) => {
-    const from = await resolveOrchestrationTerminalHandle(flags, cwd, client, 'from')
+    const from =
+      getOptionalStringFlag(flags, 'from') ??
+      injectedSessionAddress(process.env) ??
+      (await resolveOrchestrationTerminalHandle(flags, cwd, client, 'from'))
     const result = await callOrchestrationMutation<{ message: { id: string } }>(
       client,
       flags,

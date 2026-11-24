@@ -7,6 +7,9 @@ import { recognizeAgentProcess } from '../../shared/agent-process-recognition'
 import { agentSessionPtyWriteGate } from './agent-session-pty-write-gate'
 import { resolveStructuredWorkerAuthority } from './structured-worker-authority'
 import { structuredWorkerIdentities } from './structured-worker-identity'
+import { currentRunCoordinatorOrcaSessionId } from './orchestration/db/runs/run-coordinator-orca-session'
+import { latestOrchestrationSession } from './orchestration/session-lineage'
+import { getStructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-registry'
 import { isSettledNativeOwner } from './orchestration/structured-session-pointer-delivery'
 import type { StructuredPointerTarget } from './orchestration/structured-mailbox-pointer-delivery'
 import {
@@ -233,7 +236,19 @@ export class OrcaRuntimeWithGetPtyRecordForPaneKey extends OrcaRuntimeWithPruneM
   protected resolveStructuredCoordinatorMailboxTarget(
     runId: string
   ): StructuredPointerTarget | null {
-    const coordinator = this._orchestrationDb?.getRun?.(runId)?.coordinator_handle
+    const run = this._orchestrationDb?.getRun?.(runId)
+    if (!run) {
+      return null
+    }
+    const sessionId = currentRunCoordinatorOrcaSessionId(run)
+    if (sessionId) {
+      const store = getStructuredAgentSessionHost()?.deps.store
+      const root = store?.getRecord(sessionId)
+      const current =
+        root && store ? latestOrchestrationSession(root, (id) => store.getRecord(id)) : null
+      return { sessionId: current?.sessionId ?? sessionId, dispatchId: null }
+    }
+    const coordinator = run.coordinator_handle
     if (!coordinator) {
       return null
     }

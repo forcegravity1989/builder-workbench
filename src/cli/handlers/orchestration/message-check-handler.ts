@@ -13,6 +13,7 @@ import { startCheckKeepalive } from './check-keepalive'
 import { callOrchestrationMutation } from './mutation-request'
 import { getOptionalPositiveIntegerValueFlag } from './numeric-flags'
 import { flushOrchestrationStdout, resolveCompatibilityCliCommand } from './runtime-compatibility'
+import { injectedSessionAddress } from '../../../shared/agent-session/identity/agent-session-caller-env'
 import { resolveOrchestrationTerminalHandle } from './terminal-identity'
 
 type CheckResult = {
@@ -40,7 +41,10 @@ export const ORCHESTRATION_CHECK_HANDLER: Record<string, CommandHandler> = {
     }
     const timeoutMs = getOptionalPositiveIntegerValueFlag(flags, 'timeout-ms')
     const explicitTerminal = getOptionalStringFlag(flags, 'terminal')
-    const terminal = await resolveOrchestrationTerminalHandle(flags, cwd, client, 'terminal')
+    const terminal =
+      explicitTerminal ??
+      injectedSessionAddress(process.env) ??
+      (await resolveOrchestrationTerminalHandle(flags, cwd, client, 'terminal'))
     const stopKeepalive = wait ? startCheckKeepalive(timeoutMs) : null
     let result: Awaited<ReturnType<typeof client.call<CheckResult>>>
     try {

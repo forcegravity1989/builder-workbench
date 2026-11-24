@@ -40,6 +40,7 @@ export function createStartingWorkerDispatch(
     }
     /** Who is dispatching, for nesting depth. Required so a new caller must decide. */
     creator: DispatchCreator
+    creatorOrcaSessionId?: string
     maxDepth: number
   }
 ): { dispatch: DispatchContextRow; worker: WorkerDispatchRow; task: TaskRow } {
@@ -143,6 +144,7 @@ export function createStartingWorkerDispatch(
       depth: this.resolveChildDispatchDepth(params.creator, params.maxDepth),
       retryOfDispatchId: params.retryOf ?? null,
       creatorDispatchId,
+      creatorOrcaSessionId: params.creatorOrcaSessionId,
       ...recordedCreatorIdentity(params.creator)
     })
     this.db

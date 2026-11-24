@@ -88,10 +88,10 @@ describe('structured mailbox pointer host', () => {
     const send = vi.fn(
       async (_caller: { callerKey: string }, _payload: { retryUnknown?: boolean }) => ({
         ok: true,
-        value: { submission: { dispatchState } }
+        value: { clientMessageId: 'c1', submission: { dispatchState } }
       })
     )
-    hostRef.current = { send }
+    hostRef.current = { send, waitForSendSettlement: async () => undefined }
     await expect(
       createStructuredMailboxPointerHost().send({
         sessionId: 's1',

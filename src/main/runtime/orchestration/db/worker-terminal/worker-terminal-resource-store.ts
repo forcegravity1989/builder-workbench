@@ -123,6 +123,20 @@ export function getWorkerTerminalResourceByHandle(
     .get(terminalHandle) as WorkerTerminalResourceRow | undefined
 }
 
+export function listActiveStructuredWorkerResources(
+  this: OrchestrationDb
+): WorkerTerminalResourceRow[] {
+  return this.db
+    .prepare(
+      `SELECT r.* FROM worker_terminal_resources r
+     JOIN dispatch_contexts d ON d.id = r.owner_dispatch_id
+     WHERE r.ownership_state = 'owned' AND r.release_state = 'not_requested'
+       AND r.process_incarnation LIKE 'structured:%'
+       AND d.status IN ('pending', 'dispatched')`
+    )
+    .all() as WorkerTerminalResourceRow[]
+}
+
 export function getWorkerTerminalResourceFormerlyOwnedBy(
   this: OrchestrationDb,
   dispatchId: string
@@ -238,6 +252,7 @@ export type WorkerTerminalResourceStoreMethods = {
   createWorkerTerminalResourceStatement: typeof createWorkerTerminalResourceStatement
   getWorkerTerminalResource: typeof getWorkerTerminalResource
   getWorkerTerminalResourceByHandle: typeof getWorkerTerminalResourceByHandle
+  listActiveStructuredWorkerResources: typeof listActiveStructuredWorkerResources
   getWorkerTerminalResourceByOwner: typeof getWorkerTerminalResourceByOwner
   getWorkerTerminalResourceFormerlyOwnedBy: typeof getWorkerTerminalResourceFormerlyOwnedBy
   recordWorkerTerminalRecoveryAttempt: typeof recordWorkerTerminalRecoveryAttempt
@@ -251,6 +266,7 @@ export function attachWorkerTerminalResourceStore(ctor: { prototype: object }): 
     createWorkerTerminalResourceStatement,
     getWorkerTerminalResource,
     getWorkerTerminalResourceByHandle,
+    listActiveStructuredWorkerResources,
     getWorkerTerminalResourceByOwner,
     getWorkerTerminalResourceFormerlyOwnedBy,
     recordWorkerTerminalRecoveryAttempt,

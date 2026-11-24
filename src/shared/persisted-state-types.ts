@@ -1,4 +1,5 @@
 import type { ExecutionHostId } from './execution-host'
+import type { Bot } from './bot-types'
 import type {
   RemovedSshTargetTombstone,
   SshPtyConsumerRecovery,
@@ -54,6 +55,9 @@ export type PersistedState = {
   projectHostSetups: ProjectHostSetup[]
   projectGroups: ProjectGroup[]
   folderWorkspaces: FolderWorkspace[]
+  bots?: Bot[]
+  botsNewerAgents?: Bot[]
+  botOrder?: string[]
   /** Folder-workspace review notes, keyed by FolderWorkspace.id. Top-level, NOT nested in
    *  folderWorkspaces[]: normalizeFolderWorkspaces rebuilds each record field-by-field, so an
    *  older build drops nested fields, while unknown top-level keys round-trip untouched.

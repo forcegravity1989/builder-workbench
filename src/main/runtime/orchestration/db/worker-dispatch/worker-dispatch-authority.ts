@@ -10,6 +10,7 @@ export function prepareStartingWorkerAuthority(
     handle: string
     paneKey: string
     processIncarnation: string
+    assigneeOrcaSessionId?: string
     launchTokenHash?: string
     worktreeId: string
     effects: unknown[]
@@ -54,6 +55,7 @@ export function prepareStartingWorkerAuthority(
       .prepare(
         `UPDATE dispatch_contexts
          SET assignee_handle = ?, assignee_pane_key = ?, process_incarnation = ?,
+             assignee_orca_session_id = ?,
              host_scope = ?,
              capability_hash = ?, launch_token_hash = COALESCE(launch_token_hash, ?),
              capability_revoked_at = NULL,
@@ -64,6 +66,7 @@ export function prepareStartingWorkerAuthority(
         params.handle,
         params.paneKey,
         params.processIncarnation,
+        params.assigneeOrcaSessionId ?? null,
         params.hostScope ?? null,
         hashDispatchCapability(capability),
         params.launchTokenHash ?? null,

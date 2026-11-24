@@ -3,6 +3,7 @@ import { getOptionalStringFlag } from '../../flags'
 import { RuntimeClientError } from '../../runtime-client'
 import { getTerminalHandle } from '../../selectors'
 import { isStructuredSessionWithoutIdentity } from '../../../shared/structured-session-marker'
+import { injectedSessionAddress } from '../../../shared/agent-session/identity/agent-session-caller-env'
 
 export async function resolveOrchestrationTerminalHandle(
   flags: Map<string, string | boolean>,
@@ -164,8 +165,13 @@ function getClientErrorMessage(err: unknown): string | undefined {
 export async function resolveCoordinatorTerminalHandle(
   flags: Map<string, string | boolean>,
   cwd: string,
-  client: RuntimeClient
+  client: RuntimeClient,
+  options: { allowOrcaSession?: boolean } = {}
 ): Promise<string> {
+  const session = options.allowOrcaSession ? injectedSessionAddress(process.env) : null
+  if (session && !getOptionalStringFlag(flags, 'from')) {
+    return session
+  }
   return await resolveOrchestrationTerminalHandle(flags, cwd, client, 'from', {
     validateEnvHandle: true
   })

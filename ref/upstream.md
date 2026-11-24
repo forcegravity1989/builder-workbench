@@ -29,6 +29,8 @@
 
 BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
 
+原生 Bot Home、Chat 和会话编排定向采用 [Orca v1.4.272](https://github.com/stablyai/orca/releases/tag/v1.4.272) 的 `6272306c5a5a59ed1c6b604896610bfadde180cc`（BW [#778](https://github.com/forcegravity1989/builder-workbench/issues/778)）。Chat 以 Orca 会话创建和恢复 Run，邮箱继续由原生编排投递，worker 沿现有工作树和监督机制启动。编排数据库 v42 保存会话绑定和代际，终端仍沿 pane 身份运行。Bot 管理沿现有桌面和全授权配对入口访问宿主。
+
 共享主机按上述固定 SHA 定向采用原生网络配对、同主机重新配对、连接与握手时限、唤醒探测、订阅取消与恢复、终端关闭意图、仓库目录清理及远端 Agent 启动配置。稳定版发布身份不等于功能已去除实验标记：上游 Remote Orca Servers 仍标为 Beta。文件继续放在 BW 已采用的原生目录，不随新版整仓目录重排。
 
 远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。现有快捷键、标签菜单、Dashboard、工作区创建与 BW 草稿入口共用宿主偏好和身份约束；新工作区准备宿主命令时读取失败则停止，已准备的命令随原配对版本和宿主实例约束发送。已有标签启动的旧宿主 legacy 分支保留原兼容启动，读取不到宿主 recipe 的降级仍不能保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。

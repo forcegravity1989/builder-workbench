@@ -32,6 +32,7 @@ import type { SshProfileOperations } from './ssh-profile-operations'
 import type { RetiredWorktreeNamePersistence } from './retired-worktree-name-persistence'
 import type { SshLeaseRecoveryOperations } from './ssh-lease-recovery-operations'
 import type { WriteFlushBarrierOperations } from './write-flush-barriers'
+import type { BotPersistence } from './bot-state/bot-persistence'
 
 export type StoreOptions = StoreRuntimeOptions
 export type PtyBindingSourceExpectation = {
@@ -110,6 +111,7 @@ export interface Store
     WriteSchedulingOperations,
     PrimaryStateWriteOperations,
     ProjectCollectionOperations,
+    BotPersistence,
     RepoLifecycleOperations,
     MobileTabSelectionPersistence,
     SparsePresetPersistence,

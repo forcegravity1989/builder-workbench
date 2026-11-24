@@ -11,7 +11,9 @@ import { resolveCoordinatorTerminalHandle } from './terminal-identity'
 
 export const ORCHESTRATION_RUN_HANDLERS: Record<string, CommandHandler> = {
   'orchestration run-create': async ({ flags, client, cwd, json }) => {
-    const from = await resolveCoordinatorTerminalHandle(flags, cwd, client)
+    const from = await resolveCoordinatorTerminalHandle(flags, cwd, client, {
+      allowOrcaSession: true
+    })
     const result = await callOrchestrationMutation<{
       run: { id: string; objective: string; consumer_generation: number }
     }>(client, flags, 'orchestration.runCreate', {
@@ -22,7 +24,9 @@ export const ORCHESTRATION_RUN_HANDLERS: Record<string, CommandHandler> = {
   },
 
   'orchestration run-use': async ({ flags, client, cwd, json }) => {
-    const from = await resolveCoordinatorTerminalHandle(flags, cwd, client)
+    const from = await resolveCoordinatorTerminalHandle(flags, cwd, client, {
+      allowOrcaSession: true
+    })
     const result = await callOrchestrationMutation<{
       run: { id: string; objective: string; consumer_generation: number }
     }>(client, flags, 'orchestration.runUse', {
@@ -34,7 +38,9 @@ export const ORCHESTRATION_RUN_HANDLERS: Record<string, CommandHandler> = {
   },
 
   'orchestration run-current': async ({ flags, client, cwd, json }) => {
-    const from = await resolveCoordinatorTerminalHandle(flags, cwd, client)
+    const from = await resolveCoordinatorTerminalHandle(flags, cwd, client, {
+      allowOrcaSession: true
+    })
     const result = await client.call<{
       run: { id: string; objective: string } | null
     }>('orchestration.runCurrent', { from })

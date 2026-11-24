@@ -1,13 +1,30 @@
 import type { OrcaRuntimeService } from '../orca-runtime'
+import { ORCA_SESSION_ADDRESS_PREFIX } from '../../../shared/agent-session/identity/orca-session-address-prefix'
 import type { RpcContext, RpcMethod, RpcRequest } from './core'
 import { routeDispatcherClientHostedBrowserRpc } from './dispatcher-client-browser-routing'
 import { needsLocalCallerFingerprint } from './dispatcher-caller-fingerprint'
-import type { OrchestrationLegacyCompatibility } from './orchestration-legacy-compatibility'
+import type {
+  LegacyCompatibilityRoute,
+  OrchestrationLegacyCompatibility
+} from './orchestration-legacy-compatibility'
 import type {
   DurableMutationInvocation,
   OrchestrationMutationExecutor
 } from './orchestration-mutation-executor'
 import { recordRuntimeFeatureInteraction } from './runtime-feature-interaction'
+import { resolveOrchestrationSessionCaller } from './orchestration/callers/orchestration-session-caller'
+
+const SESSION_CALLER_PARAMS: Partial<Record<string, string>> = {
+  'orchestration.runCreate': 'from',
+  'orchestration.runCurrent': 'from',
+  'orchestration.runUse': 'from',
+  'orchestration.workerStart': 'from',
+  'orchestration.check': 'terminal',
+  'orchestration.reply': 'from',
+  'orchestration.taskCreate': 'callerTerminalHandle',
+  'orchestration.taskList': 'callerTerminalHandle',
+  'orchestration.taskUpdate': 'callerTerminalHandle'
+}
 
 type DispatcherUnaryMethodInvocation = {
   runtime: OrcaRuntimeService
@@ -44,7 +61,26 @@ export async function invokeDispatcherUnaryMethod({
     return clientHostedBrowser.result
   }
 
-  const compatibility = await legacyOrchestration.tryHandle(request, params, context.signal)
+  const callerParam = SESSION_CALLER_PARAMS[request.method]
+  const declaredAddress =
+    callerParam && params !== null && typeof params === 'object'
+      ? (params as Record<string, unknown>)[callerParam]
+      : undefined
+  const sessionCaller =
+    request.orchestrationCompatibilityEvidence?.agentSessionId !== undefined &&
+    typeof declaredAddress === 'string' &&
+    declaredAddress.startsWith(ORCA_SESSION_ADDRESS_PREFIX)
+      ? await resolveOrchestrationSessionCaller(
+          {
+            ...context,
+            orchestrationCompatibilityEvidence: request.orchestrationCompatibilityEvidence
+          },
+          declaredAddress
+        )
+      : null
+  const compatibility: LegacyCompatibilityRoute = sessionCaller
+    ? { handled: false }
+    : await legacyOrchestration.tryHandle(request, params, context.signal)
   if (compatibility.handled) {
     return compatibility.result
   }
@@ -54,6 +90,7 @@ export async function invokeDispatcherUnaryMethod({
     compatibility.legacyCoordinatorAuthority
   )
   const authenticatedCallerFingerprint =
+    (sessionCaller ? `orca-session:${sessionCaller.sessionId}` : undefined) ??
     context.authenticatedCallerFingerprint ??
     legacyCoordinator?.mutationCallerFingerprint ??
     (needsLocalCallerFingerprint(request, effectiveParams)
@@ -63,6 +100,7 @@ export async function invokeDispatcherUnaryMethod({
     const legacyCoordinatorRunId = legacyCoordinator?.revalidate()
     return method.handler(effectiveParams, {
       ...context,
+      orchestrationSessionCaller: sessionCaller ?? undefined,
       authenticatedCallerFingerprint:
         mutation?.identity.callerFingerprint ?? authenticatedCallerFingerprint,
       recordMutationReceipt: mutation?.recordReceipt,

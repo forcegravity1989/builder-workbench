@@ -27,6 +27,7 @@ export const ORCHESTRATION_MESSAGE_METHODS = [
       params,
       {
         orchestrationCompatibilityEvidence,
+        orchestrationSessionCaller,
         runtime,
         legacyCoordinatorRunId,
         recordMutationReceipt,
@@ -73,7 +74,8 @@ export const ORCHESTRATION_MESSAGE_METHODS = [
           callerTerminalHandle: params.from,
           requireCurrentConsumer: true,
           legacyCoordinatorRunId,
-          callerEvidence: orchestrationCompatibilityEvidence
+          callerEvidence: orchestrationCompatibilityEvidence,
+          sessionCaller: orchestrationSessionCaller
         })
         const answered = db.answerQuestion({
           messageId: question.message_id,
@@ -144,7 +146,15 @@ export const ORCHESTRATION_MESSAGE_METHODS = [
   defineMethod({
     name: 'orchestration.taskCreate',
     params: TaskCreateParams,
-    handler: (params, { orchestrationCompatibilityEvidence, runtime, legacyCoordinatorRunId }) => {
+    handler: (
+      params,
+      {
+        orchestrationCompatibilityEvidence,
+        orchestrationSessionCaller,
+        runtime,
+        legacyCoordinatorRunId
+      }
+    ) => {
       const db = runtime.getOrchestrationDb()
       const deps = params.deps ? parseOrchestrationTaskDepsFlag(params.deps) : undefined
       const run = resolveRunScope(runtime, {
@@ -152,7 +162,8 @@ export const ORCHESTRATION_MESSAGE_METHODS = [
         callerTerminalHandle: params.callerTerminalHandle,
         requireCurrentConsumer: true,
         legacyCoordinatorRunId,
-        callerEvidence: orchestrationCompatibilityEvidence
+        callerEvidence: orchestrationCompatibilityEvidence,
+        sessionCaller: orchestrationSessionCaller
       })
       const creatorAuthority = params.callerTerminalHandle
         ? runtime.getOrchestrationDispatchAuthority(params.callerTerminalHandle)
@@ -180,7 +191,15 @@ export const ORCHESTRATION_MESSAGE_METHODS = [
   defineMethod({
     name: 'orchestration.taskList',
     params: TaskListParams,
-    handler: (params, { orchestrationCompatibilityEvidence, runtime, legacyCoordinatorRunId }) => {
+    handler: (
+      params,
+      {
+        orchestrationCompatibilityEvidence,
+        orchestrationSessionCaller,
+        runtime,
+        legacyCoordinatorRunId
+      }
+    ) => {
       const db = runtime.getOrchestrationDb()
       const explicitRun = params.run ? db.getRun(params.run) : undefined
       const run =
@@ -191,7 +210,8 @@ export const ORCHESTRATION_MESSAGE_METHODS = [
               callerTerminalHandle: params.callerTerminalHandle,
               requireCurrentConsumer: params.run === undefined,
               legacyCoordinatorRunId,
-              callerEvidence: orchestrationCompatibilityEvidence
+              callerEvidence: orchestrationCompatibilityEvidence,
+              sessionCaller: orchestrationSessionCaller
             })
       // Why: listTasksWithDispatch adds assignee_handle + dispatch_id (NULL for non-dispatched), so legacy-shape consumers are unaffected.
       const joined = db.listTasksWithDispatch({
@@ -218,14 +238,23 @@ export const ORCHESTRATION_MESSAGE_METHODS = [
   defineMethod({
     name: 'orchestration.taskUpdate',
     params: TaskUpdateParams,
-    handler: (params, { orchestrationCompatibilityEvidence, runtime, legacyCoordinatorRunId }) => {
+    handler: (
+      params,
+      {
+        orchestrationCompatibilityEvidence,
+        orchestrationSessionCaller,
+        runtime,
+        legacyCoordinatorRunId
+      }
+    ) => {
       const db = runtime.getOrchestrationDb()
       const run = resolveRunScope(runtime, {
         runId: params.run,
         callerTerminalHandle: params.callerTerminalHandle,
         requireCurrentConsumer: true,
         legacyCoordinatorRunId,
-        callerEvidence: orchestrationCompatibilityEvidence
+        callerEvidence: orchestrationCompatibilityEvidence,
+        sessionCaller: orchestrationSessionCaller
       })
       const existing = db.getTask(params.id)
       if (!existing || existing.run_id !== run.id) {

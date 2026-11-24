@@ -10,7 +10,11 @@ import type {
 } from '../../../shared/mobile-relay-credential-contract'
 import type { RuntimeCapability } from '../../../shared/protocol-version'
 import type { OrchestrationCompatibilityEvidence } from '../../../shared/orchestration-compatibility-evidence'
-import type { RuntimeAccessMode, RuntimeTeamBinding } from '../../../shared/runtime-session-contracts'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../shared/runtime-session-contracts'
+import type { OrchestrationSessionCaller } from './orchestration/callers/orchestration-session-caller'
 
 export type PairingRpcContext = {
   getEndpoints(params: PairingGetEndpointsParams): Promise<PairingGetEndpointsResult>
@@ -101,6 +105,7 @@ export type RpcContext = {
   replayedMutationReceipt?: unknown
   // Why: Run-scoped handlers must compare declared handles with request attestation.
   orchestrationCompatibilityEvidence?: OrchestrationCompatibilityEvidence
+  orchestrationSessionCaller?: OrchestrationSessionCaller
   // Why: only the compatibility authority router can set this trusted scope; user params cannot bypass Run consumer binding.
   legacyCoordinatorRunId?: string
   legacyCoordinatorAuthority?: LegacyCoordinatorAuthorityProof

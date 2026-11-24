@@ -26,6 +26,7 @@ import {
 } from './normalize-loaded-state-collections'
 import { normalizeRetiredNameRegistryMap } from './retired-name-registry-normalization'
 import { hydrateWorktreeMetaAliasProjection } from './worktree-meta-alias-projection'
+import { normalizeSavedBots } from './bot-state/bot-persistence'
 
 export function normalizeLoadedProfileState(
   parsed: PersistedState,
@@ -38,10 +39,12 @@ export function normalizeLoadedProfileState(
   const projectCatalog = normalizeLoadedProjectCatalog(parsed, markNeedsSave)
   // Ordered: the host partitions drop the global fields this slice already owns.
   const workspaceSession = normalizeLoadedLocalSession(parsed, defaults, markNeedsSave)
+  const { bots, botsNewerAgents, botOrder, ...parsedProfile } = parsed
 
   return {
     ...defaults,
-    ...parsed,
+    ...parsedProfile,
+    ...normalizeSavedBots({ bots, botsNewerAgents, botOrder }),
     featureInteractionTelemetryBuckets: normalizeFeatureInteractionTelemetryBuckets(
       parsed.featureInteractionTelemetryBuckets
     ),

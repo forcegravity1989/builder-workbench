@@ -66,7 +66,7 @@ export const ORCHESTRATION_WORKER_LAUNCH_HANDLER: Record<string, CommandHandler>
       retryOf: getOptionalStringFlag(flags, 'retry-of'),
       timeoutMs: getOptionalPositiveIntegerValueFlag(flags, 'timeout-ms'),
       run: getOptionalStringFlag(flags, 'run'),
-      from: await resolveCoordinatorTerminalHandle(flags, cwd, client),
+      from: await resolveCoordinatorTerminalHandle(flags, cwd, client, { allowOrcaSession: true }),
       devMode: isDevCliInvocation()
     })
     if (result.result.state !== 'ready') {

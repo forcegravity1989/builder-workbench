@@ -224,10 +224,15 @@ describe('structured worker session hold', () => {
 })
 
 describe('structured worker dispatch preamble', () => {
-  function hostWithSubmission(submission: Record<string, unknown>) {
+  function hostWithSubmission(
+    submission: Record<string, unknown>,
+    settlement?: Record<string, unknown>
+  ) {
     return {
       deps: { store: { getRecord: () => ({ lease: { runtimeFence: 7 } }) } },
-      send: async () => ({ ok: true, value: { clientMessageId: 'c1', submission } })
+      send: async () => ({ ok: true, value: { clientMessageId: 'c1', submission } }),
+      waitForSendSettlement: async () =>
+        settlement ? { value: { clientMessageId: 'c1', submission: settlement } } : undefined
     } as never
   }
 
@@ -237,6 +242,9 @@ describe('structured worker dispatch preamble', () => {
   it('reports the preamble delivered only on an accepted submission', async () => {
     await expect(
       send(hostWithSubmission({ dispatchState: 'accepted', reason: null }))
+    ).resolves.toBeUndefined()
+    await expect(
+      send(hostWithSubmission({ dispatchState: 'pending' }, { dispatchState: 'accepted' }))
     ).resolves.toBeUndefined()
   })
 

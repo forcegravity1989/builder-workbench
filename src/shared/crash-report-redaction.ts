@@ -34,6 +34,27 @@ const PATH_PATTERNS = [
   /%(?:USERPROFILE|APPDATA|LOCALAPPDATA|HOMEDRIVE|HOMEPATH)%[^\s"'`<>)]*/gi
 ]
 
+/** Whether text holds a token, key or credentialed URL these patterns would redact. */
+export function containsSecretLike(value: string): boolean {
+  return [...SECRET_PATTERNS, CREDENTIAL_URL_PATTERN].some((pattern) =>
+    new RegExp(pattern.source, pattern.flags.replace('g', '')).test(value)
+  )
+}
+
+/** `value` with tokens, keys, credentialed URLs and `password=`-style assignments redacted, and
+ *  nothing else touched. */
+export function redactSecretLike(value: string): string {
+  let redacted = value.replace(CREDENTIAL_URL_PATTERN, '[redacted-credential]@')
+  redacted = redacted.replace(
+    SECRET_ASSIGNMENT_PATTERN,
+    (_match, key: string) => `${key}=[redacted]`
+  )
+  for (const pattern of SECRET_PATTERNS) {
+    redacted = redacted.replace(pattern, '[redacted-secret]')
+  }
+  return redacted
+}
+
 export function sanitizeCrashReportString(
   value: string,
   maxLength = MAX_STRING_DETAIL_LENGTH
@@ -42,13 +63,7 @@ export function sanitizeCrashReportString(
   for (const pattern of PATH_PATTERNS) {
     sanitized = sanitized.replace(pattern, '[redacted-path]')
   }
-  sanitized = sanitized.replace(CREDENTIAL_URL_PATTERN, '[redacted-credential]@')
-  sanitized = sanitized.replace(SECRET_ASSIGNMENT_PATTERN, (_match, key: string) => {
-    return `${key}=[redacted]`
-  })
-  for (const pattern of SECRET_PATTERNS) {
-    sanitized = sanitized.replace(pattern, '[redacted-secret]')
-  }
+  sanitized = redactSecretLike(sanitized)
   return sanitized.length > maxLength ? `${sanitized.slice(0, maxLength)}...` : sanitized
 }
 

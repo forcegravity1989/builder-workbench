@@ -17,7 +17,9 @@ const TASK_STATUS_VALUES = [
 
 export const ORCHESTRATION_TASK_HANDLERS: Record<string, CommandHandler> = {
   'orchestration task-create': async ({ flags, client, cwd, json }) => {
-    const callerTerminalHandle = await resolveCoordinatorTerminalHandle(flags, cwd, client)
+    const callerTerminalHandle = await resolveCoordinatorTerminalHandle(flags, cwd, client, {
+      allowOrcaSession: true
+    })
     const result = await callOrchestrationMutation<{ task: { id: string; status: string } }>(
       client,
       flags,
@@ -40,7 +42,7 @@ export const ORCHESTRATION_TASK_HANDLERS: Record<string, CommandHandler> = {
     const run = getOptionalStringFlag(flags, 'run')
     const callerTerminalHandle = run
       ? undefined
-      : await resolveCoordinatorTerminalHandle(flags, cwd, client)
+      : await resolveCoordinatorTerminalHandle(flags, cwd, client, { allowOrcaSession: true })
     const result = await client.call<{
       tasks: {
         id: string
@@ -106,7 +108,9 @@ export const ORCHESTRATION_TASK_HANDLERS: Record<string, CommandHandler> = {
         status,
         result: getOptionalStringFlag(flags, 'result'),
         run: getOptionalStringFlag(flags, 'run'),
-        callerTerminalHandle: await resolveCoordinatorTerminalHandle(flags, cwd, client)
+        callerTerminalHandle: await resolveCoordinatorTerminalHandle(flags, cwd, client, {
+          allowOrcaSession: true
+        })
       }
     )
     printResult(result, json, (r) => `Updated ${r.task.id} -> ${r.task.status}`)

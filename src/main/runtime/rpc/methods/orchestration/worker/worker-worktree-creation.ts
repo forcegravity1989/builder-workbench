@@ -9,18 +9,66 @@
 
 import type { AgentLaunchPreferences } from '../../../../../../shared/agent-session-host-authority'
 import type { TuiAgent } from '../../../../../../shared/tui-agent'
+import { folderWorkspaceKey, parseWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import type { WorkspaceKey } from '../../../../../../shared/folder-workspace-types'
+import {
+  selectSuggestedCreatureName,
+  suggestionPathBasename
+} from '../../../../../../shared/worktree-name-suggestion'
 import type { OrcaRuntimeService } from '../../../../orca-runtime'
 import type { OrchestrationDb } from '../../../../orchestration/db'
+import { OrchestrationError } from '../../../../orchestration/orchestration-error'
 import type { WorkerEffect, WorkerSetupReceipt } from './worker-topology'
+
+export type WorkerWorktreeCreationTarget = {
+  repoSelector: string
+  parentWorktreeId?: string
+  parentFolderWorkspace?: WorkspaceKey
+}
+
+export async function resolveWorkerWorktreeCreationTarget({
+  runtime,
+  requestedWorktree,
+  repo,
+  callerWorktreeId
+}: {
+  runtime: Pick<OrcaRuntimeService, 'showManagedWorktree'>
+  requestedWorktree: string
+  repo?: string
+  callerWorktreeId: string
+}): Promise<WorkerWorktreeCreationTarget> {
+  if (requestedWorktree === 'new-top-level' && repo) {
+    return { repoSelector: repo }
+  }
+  const caller = parseWorkspaceKey(callerWorktreeId)
+  if (caller?.type === 'folder') {
+    if (!repo) {
+      throw new OrchestrationError(
+        'invalid_argument',
+        'A worker started from a folder workspace needs --repo to create a worktree.'
+      )
+    }
+    return {
+      repoSelector: repo,
+      ...(requestedWorktree === 'new-child'
+        ? { parentFolderWorkspace: folderWorkspaceKey(caller.folderWorkspaceId) }
+        : {})
+    }
+  }
+  const worktree = await runtime.showManagedWorktree(`id:${callerWorktreeId}`)
+  return {
+    repoSelector: repo ?? worktree.repoId,
+    ...(requestedWorktree === 'new-child' ? { parentWorktreeId: worktree.id } : {})
+  }
+}
 
 export async function createWorkerWorktree(args: {
   runtime: OrcaRuntimeService
   db: OrchestrationDb
   dispatchId: string
   requestedWorktree: string
-  coordinatorWorktree: Awaited<ReturnType<OrcaRuntimeService['showManagedWorktree']>>
+  target: WorkerWorktreeCreationTarget
   params: {
-    repo?: string
     name?: string
     baseBranch?: string
     displayName?: string
@@ -42,12 +90,13 @@ export async function createWorkerWorktree(args: {
   terminalHandle: string | undefined
   setupReceipt: WorkerSetupReceipt
 }> {
-  const { runtime, db, dispatchId, requestedWorktree, coordinatorWorktree, params, effects } = args
+  const { runtime, db, dispatchId, requestedWorktree, target, params, effects } = args
   const setupDecision = params.setup ?? 'run'
+  const workspaceName = await resolveWorkerWorktreeName(runtime, target.repoSelector, params.name)
   db.recordWorkerStage({ dispatchId, stage: 'worktree_creating', effects })
   const created = await runtime.createManagedWorktree({
-    repoSelector: params.repo ?? coordinatorWorktree.repoId,
-    name: params.name as string,
+    repoSelector: target.repoSelector,
+    ...workspaceName,
     baseBranch: params.baseBranch,
     displayName: params.displayName,
     ...(params.displayName !== undefined ? { displayNameKind: 'user' as const } : {}),
@@ -66,7 +115,8 @@ export async function createWorkerWorktree(args: {
       : {}),
     activate: false,
     lineage: {
-      parentWorktree: requestedWorktree === 'new-child' ? coordinatorWorktree.id : undefined,
+      parentWorktree: target.parentWorktreeId,
+      parentWorkspace: target.parentFolderWorkspace,
       noParent: requestedWorktree === 'new-top-level',
       callerTerminalHandle: params.from
     }
@@ -135,5 +185,29 @@ export async function createWorkerWorktree(args: {
     worktree: created.worktree as Awaited<ReturnType<OrcaRuntimeService['showManagedWorktree']>>,
     terminalHandle,
     setupReceipt
+  }
+}
+
+async function resolveWorkerWorktreeName(
+  runtime: OrcaRuntimeService,
+  repoSelector: string,
+  name: string | undefined
+): Promise<{ name: string; nameWasGenerated?: true }> {
+  if (name) {
+    return { name }
+  }
+  const [listed, retired] = await Promise.all([
+    runtime.listManagedWorktrees(undefined, Number.MAX_SAFE_INTEGER),
+    runtime.listRetiredWorktreeNames(repoSelector)
+  ])
+  const paths = listed.worktrees.map((worktree) => suggestionPathBasename(worktree.path))
+  const nameWasGenerated = true
+  return {
+    name: selectSuggestedCreatureName(
+      [...paths, ...Object.values(retired.retiredNamesByRepo).flat()],
+      undefined,
+      Math.max(0, ...Object.values(retired.retiredNameTiersByRepo))
+    ),
+    nameWasGenerated
   }
 }

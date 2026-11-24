@@ -26,13 +26,15 @@ import {
 } from '../../shared/structured-agent-session-projection'
 import { isTerminalLeafId, makePaneKey, parsePaneKey } from '../../shared/stable-pane-id'
 import {
+  isStructuredWorkerHandle,
+  STRUCTURED_WORKER_HANDLE_PREFIX
+} from '../../shared/orchestration/workers/structured-worker-handle'
+import {
   parseWorkerTerminalHostScope,
   type WorkerTerminalHostScope
 } from './orchestration/worker-terminal-process-liveness'
+import type { OrchestrationDb } from './orchestration/db'
 
-// Deliberately not `term_`: `issueHandle` revalidates the renderer graph epoch against the
-// renderer-driven leaves map, so a main-minted `term_` leaf evaporates on the next window reload.
-const STRUCTURED_WORKER_HANDLE_PREFIX = 'structworker_'
 const STRUCTURED_WORKER_INCARNATION_PREFIX = 'structured:'
 
 export type StructuredWorkerIdentity = {
@@ -46,9 +48,7 @@ export type StructuredWorkerIdentity = {
   hostScope: WorkerTerminalHostScope
 }
 
-export function isStructuredWorkerHandle(handle: string | null | undefined): boolean {
-  return typeof handle === 'string' && handle.startsWith(STRUCTURED_WORKER_HANDLE_PREFIX)
-}
+export { isStructuredWorkerHandle }
 
 export function mintStructuredWorkerHandle(): string {
   return `${STRUCTURED_WORKER_HANDLE_PREFIX}${randomUUID()}`
@@ -220,3 +220,17 @@ export class StructuredWorkerIdentityRegistry {
 }
 
 export const structuredWorkerIdentities = new StructuredWorkerIdentityRegistry()
+
+const hydratedOrchestrationDbs = new WeakSet<OrchestrationDb>()
+
+export function restoreStructuredWorkerIdentities(db: OrchestrationDb): void {
+  if (hydratedOrchestrationDbs.has(db)) {
+    return
+  }
+  for (const row of db.listActiveStructuredWorkerResources()) {
+    if (!structuredWorkerIdentities.get(row.terminal_handle)) {
+      structuredWorkerIdentities.rehydrate(row)
+    }
+  }
+  hydratedOrchestrationDbs.add(db)
+}

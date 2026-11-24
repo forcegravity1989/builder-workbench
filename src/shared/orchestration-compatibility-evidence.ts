@@ -1,3 +1,5 @@
+import { readInjectedAgentSessionId } from './agent-session/identity/agent-session-caller-env'
+
 const MAX_EVIDENCE_FIELD_LENGTH = 4_096
 
 export const ORCHESTRATION_COMPATIBILITY_HOST_KIND_ENV =
@@ -22,6 +24,7 @@ export type OrchestrationCompatibilityHostStamp =
     }
 
 export type OrchestrationCompatibilityEvidence = {
+  agentSessionId?: string
   terminalHandle?: string
   paneKey?: string
   launchToken?: string
@@ -48,13 +51,15 @@ export function readOrchestrationCompatibilityEvidence(
   env: Readonly<Record<string, string | undefined>>
 ): OrchestrationCompatibilityEvidence | undefined {
   const terminalHandle = boundedValue(env.ORCA_TERMINAL_HANDLE)
+  const agentSessionId = boundedValue(readInjectedAgentSessionId(env))
   const paneKey = boundedValue(env.ORCA_PANE_KEY)
   const launchToken = boundedValue(env.ORCA_AGENT_LAUNCH_TOKEN)
   const host = readHostStamp(env)
-  if (!terminalHandle && !paneKey && !launchToken && !host) {
+  if (!terminalHandle && !paneKey && !launchToken && !host && !agentSessionId) {
     return undefined
   }
   return {
+    ...(agentSessionId ? { agentSessionId } : {}),
     ...(terminalHandle ? { terminalHandle } : {}),
     ...(paneKey ? { paneKey } : {}),
     ...(launchToken ? { launchToken } : {}),

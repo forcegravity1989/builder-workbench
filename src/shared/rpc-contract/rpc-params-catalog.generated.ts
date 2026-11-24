@@ -69,6 +69,7 @@ import {
   AutomationRuns,
   AutomationUpdate
 } from './automation-params'
+import { BotChat, BotCreate, BotMemoryEdit, BotMemoryForget, BotUpdate } from './bots-params'
 import { CertificateProceed } from './browser-core-params'
 import { MouseClick } from './browser-extras-params'
 import {
@@ -671,6 +672,13 @@ export const RPC_PARAMS_BY_METHOD = {
   'automation.runs': AutomationRuns,
   'automation.show': AutomationId,
   'automation.update': AutomationUpdate,
+  'bots.chat.open': BotChat,
+  'bots.create': BotCreate,
+  'bots.list': null,
+  'bots.memory.edit': BotMemoryEdit,
+  'bots.memory.forget': BotMemoryForget,
+  'bots.memory.list': BotChat,
+  'bots.update': BotUpdate,
   'browser.back': BrowserTarget,
   'browser.capture.start': BrowserTarget,
   'browser.capture.stop': BrowserTarget,

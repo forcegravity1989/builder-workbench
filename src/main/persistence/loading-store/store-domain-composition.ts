@@ -1,5 +1,6 @@
 import type { StoreRuntimeState } from './store-runtime-state'
 import type { Store } from './store'
+import { BotPersistence, installBotPersistenceContext } from './bot-state/bot-persistence'
 import { LoadedStateAdaptationOperations } from './loaded-state-adaptation'
 import { BackupRecoveryRotationOperations } from './backup-recovery-rotation'
 import { LoadedCohortMigrationOperations } from './loaded-cohort-migrations'
@@ -75,6 +76,7 @@ export type StoreDomains = {
   scheduling: WriteSchedulingOperations
   flushBarriers: WriteFlushBarrierOperations
   preferences: ProfilePreferences
+  bots: BotPersistence
   repos: RepoLifecycleOperations
   bindingRecovery: TerminalBindingRecoveryOperations
   sessions: SessionHostPartitionOperations
@@ -93,6 +95,7 @@ export type StoreDomains = {
 export const STORE_DOMAIN_OPERATION_CLASSES = [
   WriteSchedulingOperations,
   PrimaryStateWriteOperations,
+  BotPersistence,
   ProjectCollectionOperations,
   RepoLifecycleOperations,
   MobileTabSelectionPersistence,
@@ -111,6 +114,7 @@ export const STORE_DOMAIN_OPERATION_CLASSES = [
 
 export function installStoreDomainContexts(target: Store, domains: StoreDomains): void {
   installWriteSchedulingOperationsContext(target, domains.scheduling)
+  installBotPersistenceContext(target, domains.bots)
   installPrimaryStateWriteOperationsContext(target, domains.writes)
   installProjectCollectionOperationsContext(target, domains.projects)
   installRepoLifecycleOperationsContext(target, domains.repos)
@@ -138,6 +142,7 @@ export function createStoreDomains(runtime: StoreRuntimeState): StoreDomains {
   const scheduling = new WriteSchedulingOperations(runtime, writes)
   const flushBarriers = new WriteFlushBarrierOperations(runtime, writes)
   const preferences = new ProfilePreferences(runtime, scheduling)
+  const bots = new BotPersistence(runtime, scheduling)
   const repos = new RepoLifecycleOperations(runtime, scheduling)
   const bindingRecovery = new TerminalBindingRecoveryOperations(runtime)
   const sessions = new SessionHostPartitionOperations(runtime, scheduling, bindingRecovery)
@@ -171,6 +176,7 @@ export function createStoreDomains(runtime: StoreRuntimeState): StoreDomains {
     scheduling,
     flushBarriers,
     preferences,
+    bots,
     repos,
     bindingRecovery,
     sessions,

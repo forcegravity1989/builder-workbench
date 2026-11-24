@@ -7,6 +7,26 @@
       "webDescription": "重试 Web 客户端或重新连接到配对的运行时。"
     }
   },
+  "bots": {
+    "sidebar": "Bot",
+    "edit": "编辑 Bot",
+    "new": "新建 Bot",
+    "runs-on": "运行主机 · {{host}}",
+    "name": "名称",
+    "agent": "智能体",
+    "agent-missing": "请在此主机上配置 Claude Code 或 Codex。",
+    "chat-disabled": "请在此主机的设置中开启结构化 Chat。",
+    "purpose": "职责",
+    "cancel": "取消",
+    "save": "保存",
+    "create": "创建 Bot",
+    "this-computer": "此电脑",
+    "memory": "记忆",
+    "memory-edit": "编辑",
+    "memory-forget": "忘记",
+    "memory-fact": "记忆内容",
+    "memory-add": "添加记忆"
+  },
   "githubChecks": {
     "retrying": "正在重试..."
   },

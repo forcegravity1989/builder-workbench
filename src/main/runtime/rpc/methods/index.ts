@@ -19,6 +19,7 @@ import { WORKBENCH_TRUNK_METHODS } from './workbench-trunk'
 import { WORKBENCH_REPO_REMOVAL_METHODS } from './workbench-repo-removal'
 import { AI_VAULT_METHODS } from './ai-vault'
 import { AUTOMATION_METHODS } from './automations'
+import { BOT_METHODS } from './bots'
 import { REPO_METHODS } from './repo'
 import { WORKTREE_METHODS } from './worktree'
 import { TERMINAL_METHODS } from './terminal'
@@ -90,6 +91,7 @@ export const ALL_RPC_METHODS = [
   ...AGENT_HOOK_METHODS,
   ...AI_VAULT_METHODS,
   ...AUTOMATION_METHODS,
+  ...BOT_METHODS,
   ...REPO_METHODS,
   ...WORKTREE_METHODS,
   ...AGENT_SESSION_METHODS,

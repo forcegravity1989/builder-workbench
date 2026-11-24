@@ -114,6 +114,26 @@
       "openAnyway": "Open anyway"
     }
   },
+  "bots": {
+    "sidebar": "Bots",
+    "edit": "Edit bot",
+    "new": "New bot",
+    "runs-on": "Runs on {{host}}",
+    "name": "Name",
+    "agent": "Agent",
+    "agent-missing": "Set up Claude Code or Codex on this host.",
+    "chat-disabled": "Enable structured Chat in Settings on this host.",
+    "purpose": "Purpose",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create bot",
+    "this-computer": "This computer",
+    "memory": "Memory",
+    "memory-edit": "Edit",
+    "memory-forget": "Forget",
+    "memory-fact": "Memory fact",
+    "memory-add": "Add fact"
+  },
   "githubChecks": {
     "retrying": "Retrying…"
   },

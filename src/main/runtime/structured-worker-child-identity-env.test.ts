@@ -57,23 +57,21 @@ afterEach(() => {
 })
 
 describe('structuredWorkerChildIdentityEnv', () => {
-  it('marks an ordinary chat session as having NO identity, and grants it nothing', () => {
-    // The marker names nothing — no handle, no pane key, no session id, no token — so it cannot be
-    // replayed or impersonated, and it does not reach the hook, agent-row or mobile-projection
-    // pipelines a pane key would. Its only job is to let the CLI REFUSE instead of guessing: this
-    // session has no pane, so every implicit-terminal guess resolved to a sibling, and a
-    // destructive `check` then consumed that sibling's mail.
+  it('gives an ordinary chat its own session address and preserves the no-pane marker', () => {
     pinPlatform('linux')
     installFakeAppEnvironment({ isPackaged: () => true, getPath: () => USER_DATA })
     const childEnv = { PATH: '/usr/bin' }
     const env = structuredWorkerChildIdentityEnv(SESSION_ID, childEnv)
-    expect(env).toEqual({ PATH: '/usr/bin', ORCA_STRUCTURED_SESSION: '1' })
+    expect(env).toMatchObject({
+      PATH: `${SHIM_DIR}:/usr/bin`,
+      ORCA_STRUCTURED_SESSION: '1',
+      ORCA_AGENT_SESSION_ID: SESSION_ID,
+      ORCA_USER_DATA_PATH: USER_DATA
+    })
     expect(env.ORCA_TERMINAL_HANDLE).toBeUndefined()
     expect(env.ORCA_PANE_KEY).toBeUndefined()
     expect(env.ORCA_CLI_COMMAND).toBeUndefined()
-    // Still no CLI reachability granted, so packaged builds keep today's exposure.
     expect(childEnv.PATH).toBe('/usr/bin')
-    expect(shim.ensureLinuxTerminalOrcaCliShimDir).not.toHaveBeenCalled()
   })
 
   it('gives a packaged-Linux worker the bare-orca shim its ORCA_CLI_COMMAND assumes', () => {

@@ -1,6 +1,9 @@
 import { installRuntimeLinearCommandSurface } from './runtime-linear-command-surface'
 import { OrcaRuntimeWithResolveWaiter } from './orca-runtime-resolve-waiter'
 import type { RuntimeCommandSurfaceHost } from './orca-runtime-core'
+import { BotController } from '../bots/bot-controller'
+import { botsRootFolder, localBotHomeFilesystem } from '../bots/bot-home'
+import { deleteAutomationsOfBot } from '../bots/bot-automations-removal'
 import { nativeFixedWorkspaceService } from '../workbench/fixed-workspace-runtime'
 import type {
   FixedWorkspaceEnsureRequest,
@@ -8,6 +11,19 @@ import type {
 } from '../../shared/workbench/fixed-workspace'
 
 class OrcaRuntimeService extends OrcaRuntimeWithResolveWaiter {
+  readonly bots = new BotController({
+    getStore: () => this.store,
+    notifyBotsWritten: () => this.notifyReposChanged(),
+    createFolderWorkspace: (input) => this.projectGroups.createFolderWorkspace(input),
+    deleteFolderWorkspace: (id) => this.projectGroups.deleteFolderWorkspace(id),
+    deleteBotAutomations: (botId) =>
+      deleteAutomationsOfBot(this.store?.listAutomations?.() ?? [], botId, async (automationId) =>
+        this.deleteAutomation(automationId)
+      ),
+    botsRoot: () => botsRootFolder(),
+    filesystem: localBotHomeFilesystem
+  })
+
   ensureWorkbenchFixedWorkspace(
     request: FixedWorkspaceEnsureRequest
   ): Promise<FixedWorkspaceEnsureResult> {

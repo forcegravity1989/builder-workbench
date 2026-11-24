@@ -3,6 +3,52 @@ import { OrchestrationError } from '../../orchestration-error'
 import { LEGACY_CONTRACT_VERSION } from '../contract-constants'
 import { isEquivalentPaneKey } from '../pane-key-match'
 import type { OrchestrationDb } from '../orchestration-db'
+import {
+  formatOrcaSessionAddress,
+  type OrcaSessionId
+} from '../../../../../shared/agent-session/identity/orca-session-address'
+import { currentRunCoordinatorOrcaSessionId } from './run-coordinator-orca-session'
+
+export function bindRunForOrcaSession(
+  this: OrchestrationDb,
+  runId: string,
+  sessionId: OrcaSessionId
+): RunRow | undefined {
+  this.db.exec('BEGIN IMMEDIATE')
+  try {
+    const run = this.getRunRaw(runId)
+    if (!run || run.legacy === 1 || this.getLegacyAdoption()?.adopted_run_id === runId) {
+      this.db.exec('ROLLBACK')
+      return undefined
+    }
+    const previousSessionId = currentRunCoordinatorOrcaSessionId(run)
+    if (previousSessionId !== sessionId) {
+      this.unbindOtherRunsForOrcaSession(sessionId)
+      const address = formatOrcaSessionAddress(sessionId)
+      this.rememberRunCoordinatorHandle(runId, address)
+      this.routeAllUnreadDirectMessagesToRunMailbox(runId, address)
+      if (run.coordinator_handle) {
+        this.rememberRunCoordinatorHandle(runId, run.coordinator_handle)
+        this.routeAllUnreadDirectMessagesToRunMailbox(runId, run.coordinator_handle)
+      }
+      this.db
+        .prepare(
+          `UPDATE runs SET coordinator_handle = NULL, coordinator_pane_key = NULL,
+             coordinator_orca_session_id = ?,
+             coordinator_orca_session_id_generation = consumer_generation + 1,
+             consumer_generation = consumer_generation + 1, updated_at = datetime('now')
+           WHERE id = ?`
+        )
+        .run(sessionId, runId)
+      this.fenceUnacknowledgedMailboxDeliveries(`run:${runId}`)
+    }
+    this.db.exec('COMMIT')
+  } catch (error) {
+    this.db.exec('ROLLBACK')
+    throw error
+  }
+  return this.getRun(runId)
+}
 
 export function bindRun(
   this: OrchestrationDb,
@@ -157,10 +203,12 @@ export function bindRun(
 
 export type RunBindingMethods = {
   bindRun: typeof bindRun
+  bindRunForOrcaSession: typeof bindRunForOrcaSession
 }
 
 export function attachRunBinding(ctor: { prototype: object }): void {
   Object.assign(ctor.prototype, {
-    bindRun
+    bindRun,
+    bindRunForOrcaSession
   })
 }

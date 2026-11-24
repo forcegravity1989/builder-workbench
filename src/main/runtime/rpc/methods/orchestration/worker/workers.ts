@@ -20,7 +20,12 @@ export const ORCHESTRATION_WORKER_START_METHODS = [
     params: WorkerStartParams,
     handler: async (
       params,
-      { runtime, orchestrationMutation, orchestrationCompatibilityEvidence }
+      {
+        runtime,
+        orchestrationMutation,
+        orchestrationCompatibilityEvidence,
+        orchestrationSessionCaller
+      }
     ) => {
       if (!isWorkerStartTimeoutWithinTimerLimit(params.timeoutMs)) {
         throw new OrchestrationError(
@@ -30,22 +35,38 @@ export const ORCHESTRATION_WORKER_START_METHODS = [
       }
       const readinessTimeoutMs = resolveWorkerStartReadinessTimeoutMs(params.timeoutMs)
       const db = runtime.getOrchestrationDb()
-      const coordinatorPane = resolveOrchestrationCaller(runtime, {
-        callerTerminalHandle: params.from,
-        callerEvidence: orchestrationCompatibilityEvidence
-      })
-      const run = coordinatorPane ? db.getCurrentRunForPane(coordinatorPane) : undefined
-      if (!run || (params.run && params.run !== run.id)) {
+      const coordinatorPane = orchestrationSessionCaller
+        ? null
+        : resolveOrchestrationCaller(runtime, {
+            callerTerminalHandle: params.from,
+            callerEvidence: orchestrationCompatibilityEvidence
+          })
+      const run = orchestrationSessionCaller
+        ? db.getCurrentRunForOrcaSession(orchestrationSessionCaller.sessionId)
+        : coordinatorPane
+          ? db.getCurrentRunForPane(coordinatorPane)
+          : undefined
+      const canBindRun =
+        orchestrationSessionCaller !== undefined &&
+        !params.run &&
+        !params.task &&
+        !params.parent &&
+        !params.deps &&
+        !params.retryOf &&
+        !params.on
+      if ((params.run && params.run !== run?.id) || (!run && !canBindRun)) {
         throw new OrchestrationError(
           'consumer_fenced',
-          'worker-start requires the coordinator terminal currently bound to the Task Run.'
+          orchestrationSessionCaller
+            ? 'worker-start requires this Chat to be bound to the requested Run.'
+            : 'worker-start requires the coordinator terminal currently bound to the Task Run.'
         )
       }
       const existingTask = params.task ? db.getTask(params.task) : undefined
-      if (params.task && (!existingTask || existingTask.run_id !== run.id)) {
+      if (params.task && (!existingTask || existingTask.run_id !== run?.id)) {
         throw new OrchestrationError(
           'task_not_found',
-          `Task ${params.task} was not found in Run ${run.id}.`
+          `Task ${params.task} was not found in the current Run.`
         )
       }
       await assertWorkerStartTaskSpecWithinPromptBudget(params.spec ?? existingTask!.spec)
@@ -53,7 +74,7 @@ export const ORCHESTRATION_WORKER_START_METHODS = [
         params,
         settings: readWorkerStartModeSettings(runtime)
       })
-      if (params.on) {
+      if (params.on && run) {
         // A remote worker is always a terminal agent; the mode receipt rides along so the
         // coordinator still learns why its structured default did not apply.
         const receipt = await startFederatedWorker({
@@ -70,8 +91,26 @@ export const ORCHESTRATION_WORKER_START_METHODS = [
         params: { ...params, timeoutMs: readinessTimeoutMs },
         runtime,
         db,
-        run,
+        run:
+          run ??
+          (() => {
+            const sessionId = orchestrationSessionCaller?.sessionId
+            if (!sessionId || !params.spec) {
+              throw new OrchestrationError('run_required', 'No Run is bound.')
+            }
+            return (
+              db.getCurrentRunForOrcaSession(sessionId) ??
+              db.createRun({
+                objective: params.taskTitle ?? params.spec,
+                coordinatorHandle: null,
+                coordinatorPaneKey: null,
+                coordinatorOrcaSessionId: sessionId
+              })
+            )
+          }),
         coordinatorPane,
+        coordinatorWorkspaceId: orchestrationSessionCaller?.workspaceId,
+        coordinatorOrcaSessionId: orchestrationSessionCaller?.sessionId,
         existingTask,
         orchestrationMutation,
         mode
