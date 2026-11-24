@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
 import type { VersionCycleContext } from './cycle-context'

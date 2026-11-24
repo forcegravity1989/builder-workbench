@@ -1,5 +1,5 @@
 import { bwGhExecFileAsync } from './workbench-exec-observability'
-import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
+import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/api/rate-limit'
 import { listCodeHubComments } from '../codehub/comments'
 import type { WorkflowCommentsRequest } from '../../shared/workbench/workflow-comments'
 import type {

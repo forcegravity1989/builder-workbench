@@ -1,6 +1,6 @@
 import { orcaSessionAddressSql } from '../orca-session-address-sql'
 import type { OrcaSessionId } from '../../../../../shared/agent-session/identity/orca-session-address'
-import type { RunRow } from '../../types'
+import type { RunRow } from '../orchestration-records'
 
 type RunCoordinatorOrcaSessionFields = Pick<
   RunRow,
@@ -12,7 +12,7 @@ export function currentRunCoordinatorOrcaSessionId(
   run: RunCoordinatorOrcaSessionFields
 ): OrcaSessionId | null {
   return run.coordinator_orca_session_id_generation === run.consumer_generation
-    ? (run.coordinator_orca_session_id ?? null)
+    ? run.coordinator_orca_session_id
     : null
 }
 

@@ -1,7 +1,10 @@
 // A new bot, proposed before it exists: by a template or by a bot's
 // `orca bot create --offer` card. The prefilled New bot dialog edits one, and bots.create makes it.
 import * as z from 'zod'
-import type { AgentJournalItemBody, AgentJournalStatusItem } from '../agent-session-journal-types'
+import type {
+  AgentJournalItemBody,
+  AgentJournalPlainStatusItem
+} from '../agent-session/journal/agent-session-journal-types'
 import type { BotCreateParams } from '../rpc-contract/bots-params'
 import { isBotMascotId, mascotAvatar } from '../bot-avatar'
 import { type Bot, type BotAgent, BotNameSchema } from '../bot-types'
@@ -192,7 +195,7 @@ export function botCreateOfferText(offer: BotCreateOffer, botName: string): stri
 export function botCreateOfferBody(
   offer: BotCreateOffer,
   botName: string
-): AgentJournalStatusItem & { botCreateOffer: BotCreateOffer } {
+): AgentJournalPlainStatusItem & { botCreateOffer: BotCreateOffer } {
   return {
     kind: 'status',
     text: botCreateOfferText(offer, botName),

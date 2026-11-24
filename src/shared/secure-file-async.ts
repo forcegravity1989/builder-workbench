@@ -1,8 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { chmod, mkdir, open, rename, rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { bestEffortFsyncDirectorySync, hardenSecureDirectoryOnce } from './secure-file'
-import { restrictWindowsPath } from './secure-path-windows-acl'
+import { bestEffortFsyncDirectory } from './secure-storage/secure-file-async-write'
+import {
+  restrictWindowsDirectory,
+  restrictWindowsFile
+} from './secure-storage/secure-path-windows-acl'
 
 const pendingWrites = new Map<string, Promise<boolean | undefined>>()
 
@@ -31,7 +34,7 @@ export function writeSecureJsonFileAsync(
 
 async function restrictFile(path: string): Promise<boolean> {
   if (process.platform === 'win32') {
-    return restrictWindowsPath(path, false)
+    return restrictWindowsFile(path)
   }
   await chmod(path, 0o600)
   return true
@@ -46,7 +49,7 @@ async function writeSecureFile(
   const directory = dirname(targetPath)
   await mkdir(directory, { recursive: true, mode: 0o700 })
   if (process.platform === 'win32') {
-    hardenSecureDirectoryOnce(directory)
+    void restrictWindowsDirectory(directory)
   } else {
     await chmod(directory, 0o700)
   }
@@ -74,7 +77,7 @@ async function writeSecureFile(
     await rename(staged, targetPath)
     const publishedRestricted = await restrictFile(targetPath)
     if (options.durable) {
-      bestEffortFsyncDirectorySync(directory)
+      await bestEffortFsyncDirectory(directory)
     }
     return stagedRestricted && publishedRestricted
   } catch (error) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseTaskQuery } from '../task-query'
+import { parseTaskQuery } from '../work-items/task-query'
 import {
   matchesWorkbenchTaskQuery,
   hasUnsupportedWorkbenchTaskSearch,

@@ -1,7 +1,7 @@
-import { botTidyUp, patchTidyUp, TIDY_UP_EVERY_CHOICES } from '../bots/bot-tidy-up-settings'
+import { botTidyUp, patchTidyUp, TIDY_UP_EVERY_CHOICES } from '../bots/bot-tidy-up'
 import * as z from 'zod'
-import { BOT_IMPORT_REPLY_MAX, BotImportFromSchema } from '../bots/bot-import-record'
-import { AGENT_CHAT_PERMISSION_MODES } from '../agent-chat-permission-mode'
+import { BOT_IMPORT_REPLY_MAX, BotImportFromSchema } from '../bots/bot-import'
+import { AGENT_CHAT_PERMISSION_MODES } from '../agent-launch/permissions/agent-chat-permission-mode'
 import {
   BOT_AGENTS,
   BOT_MAX_CONNECTOR_WORKSPACES,
@@ -29,11 +29,7 @@ import { botMembersFullError, planBotMemberAdds } from '../bots/bot-member-capac
 import { HANDED_WORKSPACES_MAX, HandedWorkspaceSchema } from '../bots/bot-made-for-workspaces'
 import { BotProposalSchema, BotProposalSeedSchema } from '../bots/bot-proposal'
 import { BotTakeOverSchema } from '../bots/bot-take-over'
-import {
-  BotLookAroundSchema,
-  botLookAround,
-  patchLookAround
-} from '../bots/bot-look-around-settings'
+import { BotLookAroundSchema, botLookAround, patchLookAround } from '../bots/bot-look-around'
 import { BotLaunchSchema } from '../bots/bot-launch'
 import {
   BOT_OFFER_ALREADY_ANSWERED,
@@ -42,7 +38,7 @@ import {
 } from '../bots/bot-offer-answers'
 import { type BotCancelledWait, withBotCancelledWait } from '../bots/bot-cancelled-waits'
 import { OptionalBoolean, OptionalString, requiredString } from './rpc-param-primitives'
-import { ACCESS_REQUEST_TOKEN_PATTERN } from '../connector-client-limits'
+import { ACCESS_REQUEST_TOKEN_PATTERN } from '../connector-bot-access-contract'
 
 /** Why a bots.* call refused. */
 export const BOT_ERROR_CODES = [

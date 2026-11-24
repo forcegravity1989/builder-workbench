@@ -5,12 +5,26 @@ import { Input } from '@/components/ui/input'
 import { ChevronRight, ListFilter } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { MultiSelectList } from '@/components/github/PRFilterPickers'
-import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
+import { createTaskPageCodeHubApi, getCodeHubRepoSourceContext } from '@/lib/codehub-api'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
-import { getTaskPageRepoSourceContext } from '../../task-page-source-context'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import type { Repo } from '../../../../../shared/repository/repo-types'
+import type { CodeHubListTasksArgs } from '../../../../../shared/codehub-api'
 
-export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActionsModel }) {
+export type CodeHubFilterModel = {
+  codehubView: 'issues' | 'mrs'
+  codehubState: CodeHubListTasksArgs['state']
+  setCodehubState: (state: NonNullable<CodeHubListTasksArgs['state']>) => void
+  setCodehubPreset: (preset: 'open' | 'mine' | 'review') => void
+  codehubAuthor: string
+  setCodehubAuthor: (author: string) => void
+  codehubAssignee: string
+  setCodehubAssignee: (assignee: string) => void
+  codehubLabels: string[]
+  setCodehubLabels: (labels: string[]) => void
+  selectedRepos: readonly Repo[]
+}
+
+export function CodeHubFilterPopover({ model }: { model: CodeHubFilterModel }) {
   const {
     codehubView,
     codehubState,
@@ -41,7 +55,7 @@ export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActions
     let stale = false
     setLabelsLoading(true)
     setLabelsError(null)
-    createTaskPageCodeHubApi(getTaskPageRepoSourceContext(codehubRepo, 'codehub'))
+    createTaskPageCodeHubApi(getCodeHubRepoSourceContext(codehubRepo))
       .listLabels({ repoPath: codehubRepo.path, repoId: codehubRepo.id })
       .then((names) => {
         if (!stale) {

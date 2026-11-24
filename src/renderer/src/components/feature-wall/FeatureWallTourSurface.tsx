@@ -1,46 +1,39 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { JSX, ReactNode } from 'react'
+import { useTranslate } from '@/i18n/use-translate'
 import {
   DEFAULT_FEATURE_WALL_WORKFLOW_ID,
   FEATURE_WALL_WORKFLOWS,
   getFeatureWallMediaTile,
   type FeatureWallWorkflow,
   type FeatureWallWorkflowId
-} from '../../../../shared/feature-wall-workflows'
-import { getAgentsSteps, type AgentsStepId } from '../../../../shared/agents-orchestration-steps'
-import { getWorkbenchSteps, type WorkbenchStepId } from '../../../../shared/workbench-steps'
-import { getReviewSteps, type ReviewStepId } from '../../../../shared/review-steps'
-import type { FeatureWallOpenSourceTelemetry } from '../../../../shared/telemetry-events'
-import type { FeatureWallTourDepthSummary } from '../../../../shared/feature-wall-tour-depth'
-import { track } from '@/lib/telemetry'
-import { useAppStore } from '@/store'
-import { ORCA_CLI_SKILL_NAME, ORCHESTRATION_SKILL_NAME } from '@/lib/agent-feature-install-commands'
+} from '../../../../shared/feature-education/explore/feature-wall-workflows'
+import { getAgentsSteps } from '../../../../shared/feature-education/explore/agents-orchestration-steps'
+import type { AgentsStepId } from '../../../../shared/feature-education/explore/agents-orchestration-steps'
+import { getWorkbenchSteps } from '../../../../shared/feature-education/explore/workbench-steps'
+import type { WorkbenchStepId } from '../../../../shared/feature-education/explore/workbench-steps'
+import { getReviewSteps } from '../../../../shared/feature-education/explore/review-steps'
+import type { ReviewStepId } from '../../../../shared/feature-education/explore/review-steps'
+import type { FeatureWallOpenSourceTelemetry } from '../../../../shared/telemetry/schemas/telemetry-property-schemas'
+import type { FeatureWallTourDepthSummary } from '../../../../shared/feature-education/explore/feature-wall-tour-depth'
+import { track } from '@/diagnostics/telemetry/telemetry'
+import { useAppStore } from '@/store/index'
+import { useFeatureWallTourSkills } from './tour/use-feature-wall-tour-skills'
+import { useActiveProjectSkillRuntime } from '@/hooks/skills/runtime/useActiveProjectSkillRuntime'
+import { usePrefersReducedMotion } from '../../hooks/theme/usePrefersReducedMotion'
+import { toFeatureWallAssetUrl, useFeatureWallAssetBaseUrl } from './tour/feature-wall-assets'
+import { useFeatureWallTaskSourcePresentation } from './setup/integrations/use-feature-wall-task-source-presentation'
+import { useFeatureWallCompletion } from './completion/use-feature-wall-completion'
+import { useFeatureWallTourTelemetry } from './tour/use-feature-wall-tour-telemetry'
+import { FeatureWallContinueButton } from './tour/FeatureWallContinueButton'
+import { FeatureWallTourPanel } from './tour/FeatureWallTourPanel'
 import {
-  GLOBAL_AGENT_SKILL_SOURCE_KINDS,
-  useInstalledAgentSkill
-} from '@/hooks/useInstalledAgentSkills'
-import { useActiveProjectSkillRuntime } from '@/hooks/useActiveProjectSkillRuntime'
-import { usePrefersReducedMotion } from './feature-wall-modal-helpers'
-import { toFeatureWallAssetUrl, useFeatureWallAssetBaseUrl } from './feature-wall-assets'
-import { useFeatureWallTaskSourcePresentation } from './use-feature-wall-task-source-presentation'
-import { useFeatureWallCompletion } from './use-feature-wall-completion'
-import { useFeatureWallTourTelemetry } from './use-feature-wall-tour-telemetry'
-import { FeatureWallContinueButton } from './FeatureWallContinueButton'
-import { FeatureWallTourPanel } from './FeatureWallTourPanel'
-import { getFeatureWallActiveStepCopy } from './feature-wall-active-step-copy'
-import { getScreenSubmitModifierLabel } from '@/lib/screen-submit-shortcut'
-import { useFeatureWallTourKeyboardShortcut } from './use-feature-wall-tour-keyboard-shortcut'
-import { useFeatureWallTourRailKeydown } from './use-feature-wall-tour-rail-keydown'
-import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { BwExploreLayout } from '@/workbench/explore/BwExploreLayout'
-import type { ExploreDemo } from '@/workbench/explore/bw-explore-catalog'
-import {
-  localizeAgentsStep,
-  localizeWorkbenchStep,
-  localizeReviewStep,
-  localizeFeatureWallWorkflow
-} from './feature-wall-tour-localized-copy'
+  getFeatureWallActiveStepCopy,
+  tourContinueLabel
+} from './tour/feature-wall-active-step-copy'
+import { getScreenSubmitModifierLabel } from '@/lib/keyboard/screen-submit-shortcut'
+import { useFeatureWallTourKeyboardShortcut } from './tour/use-feature-wall-tour-keyboard-shortcut'
+import { useFeatureWallTourRailKeydown } from './tour/use-feature-wall-tour-rail-keydown'
 
 type FeatureWallTourSurfaceProps = {
   isOpen: boolean
@@ -51,7 +44,6 @@ type FeatureWallTourSurfaceProps = {
   doneLabel?: string
   footerText?: string | null
   enableKeyboardShortcut?: boolean
-  workbenchCatalog?: boolean
   compactRail?: boolean
   detachedFooter?: boolean
   leadingFooterContent?: ReactNode
@@ -64,20 +56,25 @@ export function FeatureWallTourSurface({
   onDone,
   className,
   panelClassName,
-  doneLabel = translate('guidance.done', 'Done'),
-  footerText = isWorkbenchShell()
-    ? translate(
-        'guidance.exploreFooter',
-        'Reopen any time from the bottom question mark > Explore BW.'
-      )
-    : translate('guidance.tourFooter', 'Reopen any time from Help > Explore Orca.'),
+  doneLabel: doneLabelOverride,
+  footerText: footerTextOverride,
   enableKeyboardShortcut = true,
-  workbenchCatalog = false,
   compactRail = false,
   detachedFooter = false,
   leadingFooterContent,
   onTourDepthSummaryChange
 }: FeatureWallTourSurfaceProps): JSX.Element | null {
+  const t = useTranslate()
+  const doneLabel =
+    doneLabelOverride ?? t('auto.components.feature.wall.FeatureWallTourSurface.done', 'Done')
+  // An explicit null hides the footer, so only an omitted prop falls back.
+  const footerText =
+    footerTextOverride === undefined
+      ? t(
+          'auto.components.feature.wall.FeatureWallTourSurface.reopenHint',
+          'Reopen any time from Help > Explore Orca.'
+        )
+      : footerTextOverride
   const settings = useAppStore((s) => s.settings)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeSkillRuntime = useActiveProjectSkillRuntime()
@@ -98,12 +95,11 @@ export function FeatureWallTourSurface({
       ),
     [selectedId]
   )
-  const selected = localizeFeatureWallWorkflow(FEATURE_WALL_WORKFLOWS[selectedIndex])
+  const selected = FEATURE_WALL_WORKFLOWS[selectedIndex]
   const taskSourcePresentation = useFeatureWallTaskSourcePresentation(isOpen, selected)
-  const selectedPresentation = taskSourcePresentation.workflow
-  const agentsSteps = getAgentsSteps().map(localizeAgentsStep)
-  const workbenchSteps = getWorkbenchSteps().map(localizeWorkbenchStep)
-  const reviewSteps = getReviewSteps().map(localizeReviewStep)
+  const agentsSteps = useMemo(() => getAgentsSteps(), [])
+  const workbenchSteps = useMemo(() => getWorkbenchSteps(), [])
+  const reviewSteps = useMemo(() => getReviewSteps(), [])
   const [agentsStepId, setAgentsStepId] = useState<AgentsStepId>(
     () => agentsSteps[0]?.id ?? 'statuses'
   )
@@ -123,19 +119,11 @@ export function FeatureWallTourSurface({
       setReviewStepId(reviewSteps[0]?.id ?? 'notes')
     }
   }
-  // Why: the feature-wall completion model owns skill-completion state, so read
-  // installed skills here instead of asking child setup cards to notify upward
-  // from passive Effects.
-  const orchestrationSkill = useInstalledAgentSkill(ORCHESTRATION_SKILL_NAME, {
-    enabled: isOpen,
-    discoveryTarget: activeSkillRuntime.discoveryTarget,
-    sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
-  })
-  const browserUseSkill = useInstalledAgentSkill(ORCA_CLI_SKILL_NAME, {
-    enabled: isOpen,
-    discoveryTarget: activeSkillRuntime.discoveryTarget,
-    sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
-  })
+  // Read skills in the completion owner instead of reporting upward from child passive effects.
+  const { orchestrationSkill, browserUseSkill } = useFeatureWallTourSkills(
+    isOpen,
+    activeSkillRuntime.discoveryTarget
+  )
   const completion = useFeatureWallCompletion(
     isOpen,
     taskSourcePresentation.hasConnectedTaskSource,
@@ -193,32 +181,29 @@ export function FeatureWallTourSurface({
           tile_id: defaultTile.id,
           source
         })
-        // Keep the legacy hover/focus event firing too for analytics
-        // continuity until dashboards are migrated to feature_selected.
+        // Preserve legacy analytics until dashboards migrate to feature_selected.
         track('feature_wall_tile_focused', { tile_id: defaultTile.id })
       }
     }
   }, [isOpen, source])
 
   const handleSelect = useCallback(
-    (workflow: FeatureWallWorkflow, demo?: ExploreDemo): void => {
+    (workflow: FeatureWallWorkflow): void => {
       markWorkflowVisited(workflow.id)
       if (workflow.id === selectedId) {
         return
       }
       setSelectedId(workflow.id)
       if (workflow.id === 'agents-orchestration') {
-        const nextStepId =
-          demo?.workflow === 'agents-orchestration' ? demo.step : (agentsSteps[0]?.id ?? 'statuses')
+        const nextStepId = agentsSteps[0]?.id ?? 'statuses'
         markAgentStepVisited(nextStepId)
         setAgentsStepId(nextStepId)
       } else if (workflow.id === 'workbench') {
-        const nextStepId =
-          demo?.workflow === 'workbench' ? demo.step : (workbenchSteps[0]?.id ?? 'terminal')
+        const nextStepId = workbenchSteps[0]?.id ?? 'terminal'
         markWorkbenchStepVisited(nextStepId)
         setWorkbenchStepId(nextStepId)
       } else if (workflow.id === 'review') {
-        const nextStepId = demo?.workflow === 'review' ? demo.step : (reviewSteps[0]?.id ?? 'notes')
+        const nextStepId = reviewSteps[0]?.id ?? 'notes'
         markReviewStepVisited(nextStepId)
         setReviewStepId(nextStepId)
       }
@@ -295,8 +280,7 @@ export function FeatureWallTourSurface({
         : workbenchStepIndex < workbenchSteps.length - 1)) ||
     (selected.id === 'review' &&
       (reviewStepIndex < 0 ? reviewSteps.length > 0 : reviewStepIndex < reviewSteps.length - 1))
-  const continueLabel =
-    isLastWorkflow && !hasNextSubStep ? doneLabel : translate('guidance.continue', 'Continue')
+  const continueLabel = tourContinueLabel(isLastWorkflow && !hasNextSubStep, doneLabel, t)
   const handleContinue = useCallback((): void => {
     markWorkflowVisited(selected.id)
     if (selected.id === 'agents-orchestration') {
@@ -374,7 +358,7 @@ export function FeatureWallTourSurface({
 
   useFeatureWallTourKeyboardShortcut({
     isOpen,
-    enabled: enableKeyboardShortcut && !workbenchCatalog,
+    enabled: enableKeyboardShortcut,
     onContinue: handleContinue
   })
 
@@ -382,33 +366,8 @@ export function FeatureWallTourSurface({
     return null
   }
 
-  function selectDemo(demo: ExploreDemo): void {
-    if (demo.workflow !== selected.id) {
-      const workflow = FEATURE_WALL_WORKFLOWS.find((item) => item.id === demo.workflow)
-      if (workflow) {
-        handleSelect(workflow, demo)
-      }
-      return
-    }
-    switch (demo.workflow) {
-      case 'workspaces':
-      case 'tasks':
-        return
-      case 'agents-orchestration':
-        handleSelectAgentsStep(demo.step)
-        break
-      case 'workbench':
-        handleSelectWorkbenchStep(demo.step)
-        break
-      case 'review':
-        handleSelectReviewStep(demo.step)
-        break
-    }
-  }
-
   const showGif = !prefersReducedMotion && gifUrl !== null
   const previewTitleId = `${reactId}-feature-wall-preview-${selected.id}`
-  const description = activeStepCopy?.description ?? selectedPresentation.lede
   const continueButton = (
     <FeatureWallContinueButton
       label={continueLabel}
@@ -427,7 +386,6 @@ export function FeatureWallTourSurface({
       previewPanelId={previewPanelId}
       previewTitleId={previewTitleId}
       selected={selected}
-      description={description}
       activeStepCopy={activeStepCopy}
       completion={completion}
       railRefs={railRefs}
@@ -454,18 +412,6 @@ export function FeatureWallTourSurface({
       footerText={footerText}
       continueButton={continueButton}
       leadingFooterContent={leadingFooterContent}
-      renderLayout={
-        workbenchCatalog
-          ? (preview) => (
-              <BwExploreLayout
-                demo={preview}
-                onSelectDemo={selectDemo}
-                footerText={footerText}
-                onClose={() => void onDone()}
-              />
-            )
-          : undefined
-      }
     />
   )
 }

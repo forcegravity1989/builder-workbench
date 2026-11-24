@@ -1,156 +1,214 @@
-import { useEffect, useState } from 'react'
-import { useAppStore } from '@/store'
-import type { AgentDetectionTarget } from '@/hooks/useDetectedAgents'
+import { useAppViewExternalStore } from '@/store/retained-views/app-state-view'
+import { useCallback, useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import type { GlobalSettings } from '../../../../shared/settings/global-settings-types'
+import { parseExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { lastVerifiedRuntimeStatus } from '../../../../shared/remote-runtime/host-status/runtime-host-status'
+import type { AppState } from '@/store/types'
+import { readRuntimeStatuses } from '@/store/slices/runtime-status/views/runtime-status-owner'
 import {
-  getAgentDetectionTargetKeyForWorktree,
-  parseAgentDetectionTargetKey
-} from '@/hooks/useAgentDetectionTarget'
-import { getRuntimeEnvironmentRevision } from '../runtime-environment-revision'
+  resolveAgentLaunchOwner,
+  type ProspectiveWorkspace
+} from '@/lib/agent-session/launch/routing/agent-launch-route-input'
+import { workspaceKindForWorktreeId } from '../../../../shared/agent-launch/contracts/workspace-launch-kind'
+import { getRuntimeEnvironmentRevision } from '@/runtime/rpc/environment-revisions/runtime-environment-revision'
 import {
-  readHostAgentStartupSettings,
-  subscribeHostAgentLaunchSettings,
-  type AgentLaunchSettingsOwner,
-  type HostAgentStartupSettings
-} from './agent-launch-settings-transport'
+  type AgentLaunchPreferences,
+  type Snapshot,
+  current,
+  resource,
+  acquire,
+  snapshotKey,
+  cachedSnapshot,
+  effectiveAgentLaunchPreferences,
+  isInheritedAgentLaunchPreferences
+} from './host-agent-launch-preferences-resource'
 
-type Preferences = Pick<HostAgentStartupSettings, 'defaultTuiAgent' | 'disabledTuiAgents'> & {
-  isAvailable: boolean
-}
-export type HostAgentLaunchPreferences = Preferences & {
-  isLoading: boolean
-  owner: AgentLaunchSettingsOwner | null
-}
-const UNKNOWN: Preferences = { defaultTuiAgent: null, disabledTuiAgents: [], isAvailable: false }
+const cancelled = (): DOMException => new DOMException('Agent preferences cancelled', 'AbortError')
 
-export async function readHostAgentLaunchPreferences(
-  owner: AgentLaunchSettingsOwner,
-  signal?: AbortSignal
-): Promise<Preferences> {
-  if (
-    owner.pairingRevision === undefined ||
-    !owner.runtimeId ||
-    useAppStore.getState().runtimeStatusByEnvironmentId.get(owner.environmentId)?.status?.runtimeId !==
-      owner.runtimeId
-  ) {
-    return UNKNOWN
+function preferencesForWorkspace(state: AppState, workspace: ProspectiveWorkspace) {
+  const desktop: AgentLaunchPreferences = {
+    defaultTuiAgent: state.settings?.defaultTuiAgent,
+    disabledTuiAgents: state.settings?.disabledTuiAgents,
+    ...(state.settings?.agentLaunchChoices !== undefined
+      ? { agentLaunchChoices: state.settings.agentLaunchChoices }
+      : {})
   }
-  const settings = await readHostAgentStartupSettings(owner, signal).catch((error: unknown) => {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw error
-    }
-    return null
-  })
-  const status = useAppStore.getState().runtimeStatusByEnvironmentId.get(owner.environmentId)?.status
-  if (
-    getRuntimeEnvironmentRevision(owner.environmentId) !== owner.pairingRevision ||
-    (owner.runtimeId && status?.runtimeId !== owner.runtimeId)
-  ) {
-    throw new DOMException('Agent settings owner changed', 'AbortError')
-  }
-  return settings
-    ? {
-        defaultTuiAgent: settings.defaultTuiAgent,
-        disabledTuiAgents: settings.disabledTuiAgents,
-        isAvailable: true
-      }
-    : UNKNOWN
-}
-
-export async function ensureAgentLaunchPreferences(worktreeId: string): Promise<Preferences> {
-  const state = useAppStore.getState()
-  const target = parseAgentDetectionTargetKey(getAgentDetectionTargetKeyForWorktree(state, worktreeId))
-  if (target?.kind !== 'runtime') {
-    return {
-      defaultTuiAgent: state.settings?.defaultTuiAgent,
-      disabledTuiAgents: state.settings?.disabledTuiAgents,
-      isAvailable: target !== undefined && state.settings !== null
-    }
-  }
-  const status = state.runtimeStatusByEnvironmentId.get(target.environmentId)?.status
-  return readHostAgentLaunchPreferences({
-    environmentId: target.environmentId,
-    pairingRevision: getRuntimeEnvironmentRevision(target.environmentId),
-    runtimeId: status?.runtimeId
-  })
-}
-
-export function useHostAgentLaunchPreferences(
-  target: AgentDetectionTarget | undefined
-): HostAgentLaunchPreferences {
-  const environmentId = target?.kind === 'runtime' ? target.environmentId : null
-  const localDefault = useAppStore((state) => state.settings?.defaultTuiAgent)
-  const localDisabled = useAppStore((state) => state.settings?.disabledTuiAgents)
-  const localAvailable = useAppStore((state) => state.settings !== null)
-  const revision = useAppStore((state) => {
-    if (!environmentId) {
-      return undefined
-    }
-    const environment = state.runtimeEnvironments.find((entry) => entry.id === environmentId)
-    return environment ? environment.pairingRevision ?? environment.createdAt : undefined
-  })
-  const runtimeId = useAppStore((state) =>
-    environmentId
-      ? state.runtimeStatusByEnvironmentId.get(environmentId)?.status?.runtimeId
-      : undefined
-  )
-  const contact = useAppStore((state) =>
-    environmentId
-      ? state.runtimeStatusByEnvironmentId.get(environmentId)?.hostContactEpoch
-      : undefined
-  )
-  const ownerVerified = revision !== undefined && runtimeId !== undefined
-  const key = JSON.stringify([environmentId, revision, runtimeId, contact])
-  const [snapshot, setSnapshot] = useState<{
-    key: string
-    preferences: Preferences
-  } | null>(null)
-  useEffect(() => {
-    if (!environmentId || !ownerVerified) {
-      return
-    }
-    let controller = new AbortController()
-    const refresh = (): void => {
-      controller.abort()
-      controller = new AbortController()
-      const current = controller
-      void readHostAgentLaunchPreferences(
-        { environmentId, pairingRevision: revision, runtimeId },
-        current.signal
-      ).then(
-        (preferences) => {
-          if (!current.signal.aborted) {
-            setSnapshot({ key, preferences })
-          }
-        },
-        () => {
-          if (!current.signal.aborted) {
-            setSnapshot({ key, preferences: UNKNOWN })
-          }
+  const host = parseExecutionHostId(resolveAgentLaunchOwner(state, workspace).executionHostId)
+  const owner =
+    host?.kind === 'runtime'
+      ? {
+          environmentId: host.environmentId,
+          pairingRevision: getRuntimeEnvironmentRevision(host.environmentId),
+          runtimeId: lastVerifiedRuntimeStatus(readRuntimeStatuses().get(host.environmentId))
+            ?.runtimeId
         }
+      : null
+  return { desktop, owner }
+}
+
+/** The current owner model map shares the existing availability fallback. */
+export function readAgentLaunchPreferencesForWorkspace(
+  state: AppState,
+  workspace: ProspectiveWorkspace
+): AgentLaunchPreferences {
+  const { desktop, owner } = preferencesForWorkspace(state, workspace)
+  const snapshot = owner
+    ? cachedSnapshot(
+        owner.environmentId,
+        snapshotKey(owner.environmentId, owner.pairingRevision, owner.runtimeId)
       )
+    : null
+  return effectiveAgentLaunchPreferences(owner, desktop, snapshot)
+}
+
+export function readAgentLaunchPreferencesForWorktree(
+  state: AppState,
+  worktreeId: string
+): AgentLaunchPreferences {
+  return readAgentLaunchPreferencesForWorkspace(state, {
+    kind: workspaceKindForWorktreeId(worktreeId),
+    worktreeId
+  })
+}
+
+export async function ensureAgentLaunchPreferences(
+  state: AppState,
+  workspace: ProspectiveWorkspace,
+  signal?: AbortSignal
+): Promise<AgentLaunchPreferences> {
+  if (signal?.aborted) {
+    throw cancelled()
+  }
+  const { desktop, owner } = preferencesForWorkspace(state, workspace)
+  if (!owner) {
+    return desktop
+  }
+  const entry = resource(owner)
+  const { promise, resolve, reject } = Promise.withResolvers<Snapshot>()
+  const listener = (): void => {
+    if (signal?.aborted || !current(entry)) {
+      reject(cancelled())
+    } else if (entry.snapshot !== null) {
+      resolve(entry.snapshot)
     }
-    refresh()
-    const unsubscribe = subscribeHostAgentLaunchSettings((owner) => {
-      if (owner.environmentId === environmentId) {
-        refresh()
-      }
-    })
-    return () => {
-      controller.abort()
-      unsubscribe()
+  }
+  const release = acquire(entry, listener, false)
+  signal?.addEventListener('abort', listener, { once: true })
+  try {
+    listener()
+    const snapshot = await promise
+    if (signal?.aborted || !current(entry)) {
+      throw cancelled()
     }
-  }, [environmentId, revision, runtimeId, ownerVerified, key])
-  return environmentId
-    ? {
-        ...(ownerVerified && snapshot?.key === key ? snapshot.preferences : UNKNOWN),
-        isLoading: ownerVerified && snapshot?.key !== key,
-        owner: { environmentId, pairingRevision: revision, runtimeId }
-      }
-    : {
-        defaultTuiAgent: localDefault,
-        disabledTuiAgents: localDisabled,
-        isAvailable: target !== undefined && localAvailable,
-        isLoading: target === undefined,
-        owner: null
-      }
+    return effectiveAgentLaunchPreferences(owner, desktop, snapshot)
+  } finally {
+    signal?.removeEventListener('abort', listener)
+    release()
+  }
+}
+
+// Takes the whole subscription so contact/open stay inputs; React Compiler keys a callback on the fields it reads.
+function subscribeHostPreferences(
+  subscription: {
+    environmentId: string | undefined
+    pairingRevision: number | undefined
+    runtimeId: string | null | undefined
+    active: boolean
+  },
+  listener: () => void
+): () => void {
+  if (!subscription.environmentId || !subscription.active) {
+    return () => {}
+  }
+  return acquire(
+    resource({
+      environmentId: subscription.environmentId,
+      pairingRevision: subscription.pairingRevision,
+      runtimeId: subscription.runtimeId ?? undefined
+    }),
+    listener,
+    true
+  )
+}
+
+export function useHostAgentMenuSettings(
+  owner: {
+    executionHostId: string
+    pairingRevision: number | undefined
+    runtimeId: string | null | undefined
+    contact: string
+  } | null,
+  desktopSettings: GlobalSettings | null,
+  active: boolean,
+  open: boolean
+) {
+  const host = parseExecutionHostId(owner?.executionHostId)
+  const environmentId = host?.kind === 'runtime' ? host.environmentId : undefined
+  const { pairingRevision, runtimeId, contact } = owner ?? {}
+  // Contact and reopen changes renew the subscription, not the resource identity.
+  const subscription = useMemo(
+    () => ({ environmentId, pairingRevision, runtimeId, contact, active, open }),
+    [environmentId, pairingRevision, runtimeId, contact, active, open]
+  )
+  const key = snapshotKey(environmentId, pairingRevision, runtimeId)
+  const effectiveSnapshot = useShallow(() => {
+    const snapshot = cachedSnapshot(environmentId, key)
+    const preferences = effectiveAgentLaunchPreferences(
+      environmentId ? { environmentId, pairingRevision, runtimeId: runtimeId ?? undefined } : null,
+      {
+        defaultTuiAgent: desktopSettings?.defaultTuiAgent,
+        disabledTuiAgents: desktopSettings?.disabledTuiAgents,
+        agentLaunchChoices: desktopSettings?.agentLaunchChoices
+      },
+      snapshot
+    )
+    return [
+      preferences.defaultTuiAgent,
+      preferences.disabledTuiAgents,
+      preferences.agentLaunchChoices,
+      preferences.agentDefaultArgs,
+      preferences.agentPermissionDefault,
+      preferences.agentPermissionOverrides,
+      snapshot === null,
+      isInheritedAgentLaunchPreferences(preferences)
+    ] as const
+  })
+  const [
+    defaultTuiAgent,
+    disabledTuiAgents,
+    agentLaunchChoices,
+    agentDefaultArgs,
+    agentPermissionDefault,
+    agentPermissionOverrides,
+    pending,
+    inherited
+  ] = useAppViewExternalStore(
+    useCallback(
+      (listener: () => void) => subscribeHostPreferences(subscription, listener),
+      [subscription]
+    ),
+    () => effectiveSnapshot(undefined),
+    () => effectiveSnapshot(undefined)
+  )
+  if (!environmentId) {
+    return { settings: desktopSettings, pending: false, inherited: false }
+  }
+  return {
+    pending,
+    inherited,
+    settings: {
+      ...desktopSettings,
+      defaultTuiAgent,
+      disabledTuiAgents,
+      agentLaunchChoices,
+      agentDefaultArgs,
+      agentPermissionDefault,
+      agentPermissionOverrides,
+      agentCmdOverrides: {},
+      agentDefaultEnv: {},
+      nativeChatSessionOptions: {},
+      nativeChatPermissionMode: undefined
+    }
+  }
 }

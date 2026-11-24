@@ -10,17 +10,17 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
-import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import type { CodeHubTaskRow } from '../../use-task-page-codehub-loading'
 
 export function CodeHubIssueListStatus({
   item,
   onChanged
 }: {
-  item: CodeHubTaskItem
+  item: CodeHubTaskRow
   onChanged: () => void
 }): React.JSX.Element {
   const [busy, setBusy] = useState(false)
@@ -33,7 +33,7 @@ export function CodeHubIssueListStatus({
           return
         }
         setBusy(true)
-        void createTaskPageCodeHubApi(null, { host: item.host, project: item.project })
+        void createTaskPageCodeHubApi(item.sourceContext, { host: item.host, project: item.project })
           .setIssueState({
             repoPath: item.repoPath,
             repoId: item.repoId,

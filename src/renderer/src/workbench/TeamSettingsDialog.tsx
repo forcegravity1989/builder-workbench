@@ -18,7 +18,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
 
 type TeamSettingsDialogProps = {
@@ -69,7 +69,6 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   const [currentMemberId, setCurrentMemberId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [generatingHostId, setGeneratingHostId] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [projectRegisterOpen, setProjectRegisterOpen] = useState(false)
   const [spaceIdRequired, setSpaceIdRequired] = useState(false)
@@ -170,7 +169,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
   }, [open, directory])
 
   useEffect(() => {
-    if (!open || !directory || !directoryBase || saving || generatingHostId || projectRegisterOpen) {
+    if (!open || !directory || !directoryBase || saving || projectRegisterOpen) {
       return
     }
     if (JSON.stringify(directory) !== directoryBase) {
@@ -182,7 +181,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
     return () => window.clearInterval(timer)
     // A directory refresh must not interrupt an in-progress local edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, directory, directoryBase, saving, generatingHostId, projectRegisterOpen, groupId, spaceId])
+  }, [open, directory, directoryBase, saving, projectRegisterOpen, groupId, spaceId])
 
   const saveDirectory = async (): Promise<void> => {
     if (!directory || !directory.team_group_id || !directory.team_space_id) {
@@ -199,50 +198,6 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
       setError(cause instanceof Error ? cause.message : '同步团队目录失败。')
     } finally {
       setSaving(false)
-    }
-  }
-
-  const generateHostAddress = async (memberId: string): Promise<void> => {
-    const host = directory?.hosts.find((candidate) => candidate.member_id === memberId)
-    if (!directory?.team_group_id || currentMemberId !== memberId || !host) {
-      return
-    }
-    if (host.orca_endpoint) {
-      return
-    }
-    setGeneratingHostId(memberId)
-    setError(null)
-    try {
-      const result = await window.api.mobile.getRuntimePairingUrl({
-        // A fresh team-read link is the only link this host can safely mint.
-        // The link is written to the team directory; this host must never
-        // verify its own pairing code as a remote environment.
-        rotate: false,
-        reach: 'network',
-        accessMode: 'team-read',
-        teamBinding: { teamGroupId: directory.team_group_id, memberId },
-        name: host.name ?? memberId,
-        ...(host.avatar ? { avatar: host.avatar } : {})
-      })
-      if (!result.available) {
-        throw new Error(result.guidance ?? '当前主机无法生成 Orca 共享地址。')
-      }
-      setDirectory((current) =>
-        current
-          ? {
-              ...current,
-              hosts: current.hosts.map((host) =>
-                host.member_id === memberId
-                  ? { ...host, host_id: result.deviceId, orca_endpoint: result.endpoint }
-                  : host
-              )
-            }
-          : current
-      )
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '生成 Orca 共享地址失败。')
-    } finally {
-      setGeneratingHostId(null)
     }
   }
 
@@ -389,7 +344,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
               hosts={directory.hosts}
               currentMemberId={currentMemberId}
               loading={loading}
-              generatingHostId={generatingHostId}
+
               onRefresh={() => void loadDirectory()}
               onEndpointChange={(memberId, endpoint) => {
                 setDirectory((current) =>
@@ -405,7 +360,7 @@ export function TeamSettingsDialog({ open, onOpenChange }: TeamSettingsDialogPro
                     : current
                 )
               }}
-              onGenerateHostAddress={(memberId) => void generateHostAddress(memberId)}
+
               onOpenSharingSettings={openSharingSettings}
             />
             <div className="rounded-lg border border-border/60">

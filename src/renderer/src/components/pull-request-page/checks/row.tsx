@@ -1,12 +1,17 @@
 import React from 'react'
 import { ChevronDown, CircleDashed } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { CHECK_COLOR, CHECK_ICON } from '@/components/right-sidebar/checks-panel/check-presentation'
-import { getCheckConclusion } from '@/components/pr-check-counts'
+import { cn } from '@/lib/class-names'
+import { SpinnerFrame } from '@/components/ui/LoadingSpinner'
+import {
+  CHECK_COLOR,
+  CHECK_ICON
+} from '@/components/right-sidebar/checks-panel/presentation/check-presentation'
+import { getCheckConclusion } from '@/components/github/pr-check-counts'
 import { getCheckDetailsKey, getCheckStatusLabel } from '@/components/github/pr-check-presentation'
-import type { CheckDetailsLoadState } from '@/components/github-checks-tab-state'
-import type { PRCheckDetail } from '../../../../../shared/github/check-types'
+import type { CheckDetailsLoadState } from '@/components/github/github-checks-tab-state'
+import type { PRCheckDetail } from '../../../../../shared/github/checks/check-types'
 import { CheckDetailsPanel } from './details'
+import { useTranslate } from '@/i18n/use-translate'
 
 export function CheckRow({
   check,
@@ -14,8 +19,7 @@ export function CheckRow({
   expanded,
   detailsState,
   onToggle,
-  onRetryDetails,
-  openUrlLabel
+  onRetryDetails
 }: {
   check: PRCheckDetail
   variant: 'compact' | 'page'
@@ -23,12 +27,12 @@ export function CheckRow({
   detailsState: CheckDetailsLoadState | undefined
   onToggle: (check: PRCheckDetail) => void
   onRetryDetails: (check: PRCheckDetail, key: string) => void
-  openUrlLabel?: string
 }): React.JSX.Element {
+  const t = useTranslate()
   const conclusion = getCheckConclusion(check)
   const Icon = CHECK_ICON[conclusion] ?? CircleDashed
   const color = CHECK_COLOR[conclusion] ?? 'text-muted-foreground'
-  const statusLabel = getCheckStatusLabel(check)
+  const statusLabel = getCheckStatusLabel(check, t)
   const key = getCheckDetailsKey(check)
   return (
     <div key={key} className="min-w-0">
@@ -47,19 +51,18 @@ export function CheckRow({
             !expanded && '-rotate-90'
           )}
         />
-        <Icon
-          className={cn('size-3.5 shrink-0', color, conclusion === 'pending' && 'animate-spin')}
-        />
+        {conclusion === 'pending' ? (
+          <SpinnerFrame>
+            <Icon className={cn('block size-3.5', color)} />
+          </SpinnerFrame>
+        ) : (
+          <Icon className={cn('size-3.5 shrink-0', color)} />
+        )}
         <span className="min-w-0 flex-1 truncate text-[12px] text-foreground">{check.name}</span>
         <span className="shrink-0 text-[11px] text-muted-foreground">{statusLabel}</span>
       </button>
       {expanded && (
-        <CheckDetailsPanel
-          check={check}
-          state={detailsState}
-          onRetry={onRetryDetails}
-          openUrlLabel={openUrlLabel}
-        />
+        <CheckDetailsPanel check={check} state={detailsState} onRetry={onRetryDetails} />
       )}
     </div>
   )

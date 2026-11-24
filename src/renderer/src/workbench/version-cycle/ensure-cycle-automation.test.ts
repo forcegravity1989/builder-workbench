@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import type { Automation } from '../../../../shared/automations-types'
-import type { ProjectHostSetup } from '../../../../shared/project-types'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Automation } from '../../../../shared/automations/automation-definition'
+import type { ProjectHostSetup } from '../../../../shared/project/project-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { CycleScope } from './ports'
 
 const test = vi.hoisted(() => ({

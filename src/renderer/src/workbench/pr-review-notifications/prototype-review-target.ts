@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store'
-import { refreshWebRuntimeSessionTabsSnapshot } from '@/runtime/web-runtime-session'
-import { isWebRuntimeSessionActive } from '@/runtime/web-runtime-session-environment'
-import { selectWebRuntimeSessionBrowserWorktree } from '@/runtime/web-runtime-session-workspace-selection'
+import { refreshWebRuntimeSessionTabsSnapshot } from '@/runtime/web-session-tabs-sync/inventory/web-runtime-session-snapshot'
+import { isWebRuntimeSessionActive } from '@/runtime/web-session-tabs-sync/identity/web-runtime-session-environment'
+import { selectWebRuntimeSessionBrowserWorktree } from '@/runtime/web-session-tabs-sync/workspace-selection/web-runtime-session-workspace-selection'
 import type { PrototypeReviewPageRef } from '../../../../shared/workbench/prototype-review-request'
 
 async function resolveEnvironmentId(page: PrototypeReviewPageRef): Promise<string> {

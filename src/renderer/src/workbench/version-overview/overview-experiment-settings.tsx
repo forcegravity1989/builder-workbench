@@ -2,13 +2,12 @@ import { ErrorDetails } from '../error-feedback'
 import { useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useProjectPage } from '../project-page-state'
-import { getProjectHostSetupProjectionFromState } from '@/store/project-host-setup-selector'
-import { SearchableSetting } from '@/components/settings/SearchableSetting'
+import { getProjectHostSetupProjectionFromState } from '@/store/projects/project-host-setup-selector'
+import { SearchableSetting } from '@/components/settings/section-layout/SearchableSetting'
 import {
-  SettingsRow,
   SettingsSubsectionHeader,
-  SettingsSwitch
-} from '@/components/settings/SettingsFormControls'
+  SettingsSwitchRow
+} from '@/components/settings/form-controls/SettingsFormControls'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -111,23 +110,15 @@ export function OverviewExperimentSettings() {
           </div>
           <div className="divide-y divide-border border-t border-border">
             {overviewExperimentEntries.map((entry) => (
-              <SettingsRow
+              <SettingsSwitchRow
                 key={entry.key}
                 label={entry.title}
                 description={entry.description}
-                control={
-                  <SettingsSwitch
-                    checked={overviewExperimentEnabled(settings, project?.id, entry.key)}
-                    disabled={!settings || !project || busy}
-                    ariaLabel={entry.title}
-                    onChange={() => {
-                      void save(
-                        entry.key,
-                        !overviewExperimentEnabled(settings, project?.id, entry.key)
-                      )
-                    }}
-                  />
-                }
+                checked={overviewExperimentEnabled(settings, project?.id, entry.key)}
+                disabled={!settings || !project || busy}
+                onChange={() => {
+                  void save(entry.key, !overviewExperimentEnabled(settings, project?.id, entry.key))
+                }}
               />
             ))}
           </div>

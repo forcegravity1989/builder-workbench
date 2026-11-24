@@ -1,6 +1,0 @@
-[
-  {
-    "pathPrefix": "src/renderer/src/workbench/",
-    "reason": "BW 叠层 UI 是中文优先产品面，不走 Orca i18n 抽取；2026-09-26 用户决策（PR #272 遗留项，选项 a）加目录级豁免，先例为 config/oxlint-dead-classes.json 对 workbench 子树的规则关闭。BW 国际化时移除本豁免并补本地化。"
-  }
-]

@@ -24,12 +24,12 @@ type CodeHubProviderSelectionInput = Pick<
 
 import { useCallback } from 'react'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
-import type { TaskSourceContext } from '../../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../../shared/work-items/task-source-context'
 import {
   getLinkedWorkItemSuggestedName,
-  getLinkedWorkItemWorkspaceName,
-  type LinkedWorkItemSummary
-} from '@/lib/new-workspace'
+  getLinkedWorkItemWorkspaceName
+} from '../../../../shared/workspace/naming/workspace-name'
+import type { LinkedWorkItemSummary } from '@/lib/workspace/creation/new-workspace'
 import { shouldApplyWorkspaceSourceAutoName } from '../../../../shared/new-workspace/workspace-source'
 
 // Why: CodeHub links an issue through the generic linkedWorkItem + task-source

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type * as PreflightCommandExec from '../../ipc/preflight-command-exec'
+import type * as PreflightCommandExec from '../../ipc/preflight/preflight-command-exec'
 import {
   classifyWelinkErrorText,
   ensureReportFolder,

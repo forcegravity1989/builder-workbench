@@ -15,8 +15,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import type { Repo } from '../../../shared/repo-types'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSourceTag } from './ProjectSourceTag'
 import type { ProjectCharter } from './project-charter'

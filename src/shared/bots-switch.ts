@@ -1,5 +1,5 @@
 // Settings › Bots › Enable bots: on unless turned off, so a profile saved before the setting has bots.
-import type { GlobalSettings } from './global-settings-types'
+import type { GlobalSettings } from './settings/global-settings-types'
 
 export const BOTS_DISABLED_CODE = 'bots_disabled'
 

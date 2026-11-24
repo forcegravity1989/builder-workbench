@@ -149,7 +149,7 @@ jobs:
           src/main/codex/codex-structured-launch-resolution.test.ts
           src/main/codex/codex-session-index-heal.test.ts
           src/main/codex/codex-daemon-socket-path-guard.test.ts
-          src/main/codex/codex-config-mirror.test.ts
+          src/main/codex-accounts/codex-config-mirror.test.ts
           src/main/codex/config-settings-promotion.test.ts
           src/main/codex/config-sync-stall.test.ts
           src/main/codex-accounts/codex-config-mirror.test.ts
@@ -161,7 +161,7 @@ jobs:
           src/main/codex-accounts/service-account-add-login.test.ts
           src/main/codex-accounts/service-reset-credit-home-ownership.test.ts
           src/main/codex-accounts/service-wsl-accounts.test.ts
-          src/main/codex-accounts/service.test.ts
+          src/main/codehub/service.test.ts
           src/main/ssh/relay-socket-path-limit.test.ts
           src/main/codex-accounts/codex-credential-absence-grace.test.ts
           src/main/codex-accounts/codex-windows-interactive-login.test.ts
@@ -172,16 +172,16 @@ jobs:
       - name: Test runtime bootstrap, credential permissions and WSL fallback
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/shared/secure-file.test.ts
+          src/shared/secure-storage/secure-file.test.ts
           src/shared/secure-file-async.test.ts
-          src/shared/secure-path-windows-acl.win32.test.ts
-          src/main/runtime/mobile-pairing-userdata-path.test.ts
+          src/shared/secure-storage/secure-path-windows-acl.win32.test.ts
+          src/main/runtime/rpc/server/pairing/mobile-pairing-userdata-path.test.ts
           src/main/runtime/rpc/mobile-auth-acl-critical-path.test.ts
           src/main/runtime/runtime-metadata.test.ts
           src/main/runtime/runtime-metadata-ownership-watch.test.ts
           src/main/runtime/runtime-rpc-metadata-lifecycle.test.ts
           src/main/runtime/runtime-rpc-websocket-bind-host.test.ts
-          src/main/runtime/unreadable-secret-store-preservation.win32.test.ts
+          src/main/runtime/rpc/server/pairing/unreadable-secret-store-preservation.win32.test.ts
           src/main/git/runner-wsl-gh-fallback.test.ts
           src/main/gitlab/gitlab-known-host-probe-wsl-fallback.test.ts
 
@@ -285,18 +285,11 @@ jobs:
       - name: Test Cursor hook and continuation protocols
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/main/cursor
-          src/main/claude/hook-service.test.ts
-          src/main/agent-hooks/windows-powershell-hook-launcher.test.ts
-          src/main/agent-hooks/installer-utils.test.ts
-          src/main/ai-vault/session-scanner-cursor-chat-meta.test.ts
-          src/shared/agent-session-option-catalog.test.ts
-          src/shared/agent-session-option-catalog-grok.test.ts
-          src/shared/tui-agent-startup-session-options.test.ts
-          src/shared/agent-session-resume.test.ts
-          src/shared/agent-resume-argv-drop.test.ts
-          src/shared/agent-resume-launch-command.test.ts
-          src/renderer/src/runtime/agent-resume-host-authority-capability.test.ts
+          src/main/agent-hooks/installation
+          src/main/agent-hooks/server/testing
+          src/main/ai-vault/scanners/cursor
+          src/main/rate-limits/cursor-
+          src/main/codex/history/resume
 
       - name: Build desktop application
         run: pnpm run build:desktop

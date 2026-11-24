@@ -15,8 +15,11 @@ import {
   type BotMemoryHistoryRow,
   BotMemoryHistoryRowSchema
 } from '../../shared/bots/bot-memory-history'
-import { redactSecretLike } from '../../shared/crash-report-redaction'
-import { writeSecureFile } from '../../shared/secure-file'
+import { redactSecretLike } from '../../shared/crash-reporting/crash-report-redaction'
+import {
+  removeStaleOwnerOnlyStaging,
+  writeOwnerOnlyFileDurable
+} from '../filesystem/owner-only-durable-file-write'
 import { getProfileUserDataPath } from '../orca-profiles/profile-storage-paths'
 
 /** At most this many rows a bot, newest kept. */
@@ -83,7 +86,7 @@ export function botMemoryHistoryFiles(
         await rm(path(botId), { force: true })
         return
       }
-      writeSecureFile(path(botId), text, { durable: true })
+      await writeOwnerOnlyFileDurable(path(botId), text)
     },
     bots: async () => {
       let names: string[]
@@ -94,11 +97,12 @@ export function botMemoryHistoryFiles(
       }
       // Asked once a process: also takes what a quit cut off mid-write staged, but never this process's.
       const ownTemp = `${FILE_SUFFIX}.${process.pid}.`
-      await Promise.all(
-        names
+      await Promise.all([
+        ...names
           .filter((name) => STAGED_FILE.test(name) && !name.includes(ownTemp))
-          .map((name) => rm(join(folder(), name), { force: true }).catch(() => {}))
-      )
+          .map((name) => rm(join(folder(), name), { force: true }).catch(() => {})),
+        removeStaleOwnerOnlyStaging(folder())
+      ])
       return names
         .filter((name) => name.endsWith(FILE_SUFFIX))
         .map((name) => decodeURIComponent(name.slice(0, -FILE_SUFFIX.length)))

@@ -1,41 +1,23 @@
-import {
-  normalizePersistedBots,
-  splitBotsByOlderBuildSupport,
-  type Bot
-} from '../../../../shared/bot-types'
-import type { PersistedState } from '../../../../shared/persisted-state-types'
+import { splitBotsByOlderBuildSupport, type Bot } from '../../../../shared/bot-types'
 import {
   isImmutableBotSnapshot,
   markImmutableBotSnapshot,
   orderBotsBySavedOrder
 } from '../../../../shared/bots/bot-lookup-index'
 import type { StoreRuntimeState } from '../store-runtime-state'
-import { scheduleSave, type WriteSchedulingOperations } from '../write-scheduling'
+import type { WriteSchedulingOperations } from '../profile-writing/write-scheduling'
+import { scheduleSave } from '../profile-writing/write-scheduling'
+import { revokeAgentSessionPublicationFences } from '../../../runtime/agent-session/agent-session-publication-fence'
 
 type BotRuntime = Pick<StoreRuntimeState, 'state'>
-type SavedBots = Pick<PersistedState, 'bots' | 'botsNewerAgents' | 'botOrder'>
 
-export function normalizeSavedBots({ bots, botsNewerAgents, botOrder }: SavedBots): SavedBots {
-  if (bots === undefined && botsNewerAgents === undefined) {
-    return {}
-  }
-  const valid = normalizePersistedBots([
-    ...(Array.isArray(bots) ? bots : []),
-    ...(Array.isArray(botsNewerAgents) ? botsNewerAgents : [])
-  ])
-  const order = Array.isArray(botOrder) ? botOrder.filter((id) => typeof id === 'string') : []
-  const ordered = orderBotsBySavedOrder(valid, order)
-  const { readable, newer } = splitBotsByOlderBuildSupport(ordered)
-  return {
-    bots: markImmutableBotSnapshot(readable),
-    ...(newer.length > 0
-      ? {
-          botsNewerAgents: markImmutableBotSnapshot(newer),
-          botOrder: markImmutableBotSnapshot(ordered.map((bot) => bot.id))
-        }
-      : {})
-  }
-}
+/** The profile domains a bot write changes. */
+const BOT_SAVE_DOMAINS = [
+  'bots',
+  'botsNewerAgents',
+  'botOrder',
+  'botsPermissionDefaultMigrated'
+] as const
 
 type CachedBots = {
   bots: readonly Bot[] | undefined
@@ -174,14 +156,16 @@ export class BotPersistence {
 
   /** Replaces by id in place, or appends: the cloud's older hello takes the first bots in this order. */
   saveBot(bot: Bot): void {
-    const { scheduling } = this[botPersistenceContext]
+    revokeAgentSessionPublicationFences([JSON.stringify(['bot', bot.id])])
+    const { runtime, scheduling } = this[botPersistenceContext]
     const bots = this.getBots()
     this.setBots(
       bots.some((entry) => entry.id === bot.id)
         ? bots.map((entry) => (entry.id === bot.id ? bot : entry))
         : [...bots, bot]
     )
-    scheduleSave(scheduling)
+    runtime.state.botsPermissionDefaultMigrated = true
+    scheduleSave(scheduling, BOT_SAVE_DOMAINS)
   }
 
   removeBot(bot: Pick<Bot, 'id' | 'hostId'>): boolean {
@@ -191,14 +175,9 @@ export class BotPersistence {
     if (remaining.length === bots.length) {
       return false
     }
+    revokeAgentSessionPublicationFences([JSON.stringify(['bot', bot.id])])
     this.setBots(remaining)
-    scheduleSave(scheduling)
+    scheduleSave(scheduling, BOT_SAVE_DOMAINS)
     return true
   }
-}
-
-export function installBotPersistenceContext(target: BotPersistence, source: BotPersistence): void {
-  Object.defineProperty(target, botPersistenceContext, {
-    value: source[botPersistenceContext]
-  })
 }

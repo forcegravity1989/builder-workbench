@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import type { BrowserEvalResult, BrowserTabShowResult } from '../../shared/runtime-types'
-import type { CommandHandler, HandlerContext } from '../dispatch'
-import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
-import { getBrowserWorktreeSelector } from '../selectors'
-import { RuntimeClientError } from '../runtime/types'
+import type { BrowserEvalResult, BrowserTabShowResult } from '../../shared/browser/runtime/runtime-browser-contracts'
+import type { CommandHandler, HandlerContext } from '../dispatch/dispatch'
+import { getOptionalStringFlag, getRequiredStringFlag } from '../arguments/flags'
+import { getBrowserWorktreeSelector } from '../workspace-selection/workspace-selector'
+import { RuntimeClientError } from '../runtime/connection/types'
 import { meetingPageExpression } from '../workbench-meeting/page'
 import {
   MeetingRecordingSchema,

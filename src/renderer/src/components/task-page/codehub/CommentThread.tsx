@@ -4,16 +4,16 @@ import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ExternalLink, MessageSquarePlus, Trash2 } from 'lucide-react'
-import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
+import CommentMarkdown from '@/components/comment-markdown/CommentMarkdown'
 import { CommentReplyForm } from '@/components/github-item-dialog/discuss-item/comment-reply-form'
 import {
   PR_COMMENT_OPEN_AUTHOR_CLASS,
   PR_COMMENT_RESOLVED_AUTHOR_CLASS,
   PR_COMMENT_RESOLVED_CONTAINER_CLASS
-} from '@/lib/pr-comment-resolution-classes'
-import type { PRCommentAudienceFilter } from '../../../../../shared/pr-comment-audience'
-import { cn } from '@/lib/utils'
-import { formatRelativeTime } from '../../task-page-source-context'
+} from '@/lib/source-control/review/comments/pr-comment-resolution-classes'
+import type { PRCommentAudienceFilter } from '../../../../../shared/source-control/review-comments/pr-comment-audience'
+import { cn } from '@/lib/class-names'
+import { formatRelativeTime } from '../task-page-source-context'
 import type { CodeHubComment } from '../../../../../shared/codehub-tasks'
 import type { CodeHubDetailState } from './use-codehub-detail'
 

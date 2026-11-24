@@ -16,12 +16,12 @@
 | 项               | 本次核对结果                                                       |
 | ---------------- | ------------------------------------------------------------------ |
 | Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                  |
-| 智能体 / 共享主机对照版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
-| 发布时间         | 2026-11-06 06:31:44 UTC                                           |
-| 发布锚点         | `a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7`                         |
-| 本次核对日期     | 2026-11-09                                                        |
-| BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
-| 本次核对范围     | DSH、Cursor、Codex 六维同步索引及共享主机；网页批注采用 v250 并补 v251 导航截图取消；非整仓升级 |
+| 执行核基线 | [v1.4.272](https://github.com/stablyai/orca/releases/tag/v1.4.272) |
+| 发布标签时间 | 2026-11-23 12:03:15 UTC |
+| 发布锚点 | `6272306c5a5a59ed1c6b604896610bfadde180cc` |
+| 本次核对日期 | 2026-11-24 |
+| BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15 |
+| 本次核对范围 | [#778](https://github.com/forcegravity1989/builder-workbench/issues/778) 的执行核、原生 Bot 界面、连接器和跨主机群组，以及迁回的 BW 入口 |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
@@ -29,13 +29,9 @@
 
 BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
 
-原生 Bot Home、Chat 和会话编排定向采用 [Orca v1.4.272](https://github.com/stablyai/orca/releases/tag/v1.4.272) 的 `6272306c5a5a59ed1c6b604896610bfadde180cc`（BW [#778](https://github.com/forcegravity1989/builder-workbench/issues/778)）。Chat 以 Orca 会话创建和恢复 Run，邮箱继续由原生编排投递，worker 沿现有工作树和监督机制启动。编排数据库 v42 保存会话绑定和代际，终端仍沿 pane 身份运行。Bot 管理沿现有桌面和全授权配对入口访问宿主。Bot 定时共用现有 Automation 服务，每次触发使用独立的 Bot Chat，运行历史按该次发送的会话与操作身份读回结果。
+[#778](https://github.com/forcegravity1989/builder-workbench/issues/778) 使用 v1.4.272 执行核，迁回 Workbench 导航、项目与版本工作区、材料以及现有内部集成的入口。Bot Home、Chat、待处理事项、工作派发、自动化、连接器和跨主机群组使用同一提交的原生实现。连接器继续沿上游账号和服务，内部账号、WeLink 和 CodeHub 沿 BW 现有集成。
 
-共享主机按上述固定 SHA 定向采用原生网络配对、同主机重新配对、连接与握手时限、唤醒探测、订阅取消与恢复、终端关闭意图、仓库目录清理及远端 Agent 启动配置。稳定版发布身份不等于功能已去除实验标记：上游 Remote Orca Servers 仍标为 Beta。文件继续放在 BW 已采用的原生目录，不随新版整仓目录重排。
-
-远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。现有快捷键、标签菜单、Dashboard、工作区创建与 BW 草稿入口共用宿主偏好和身份约束；新工作区准备宿主命令时读取失败则停止，已准备的命令随原配对版本和宿主实例约束发送。已有标签启动的旧宿主 legacy 分支保留原兼容启动，读取不到宿主 recipe 的降级仍不能保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。
-
-managed server 自动部署、SSH → managed server、WSL 生命周期、process-host 重构、Mobile 产品及无关 UI 不随本轮迁入。现有 SSH/CLI/结构化会话路由和 BW 材料执行器保持其已有边界；原生来源、必要接口适配与 BW 自有修正分别在 PR 中说明。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
+配对协作以 Orca 共享地址为入口，材料由工作树所属的本机或配对宿主读写。旧直连 SSH 项目的材料通道与尚未上线的旧团队只读邀请无需迁移。Orca 原生普通 SSH 工作区仍沿上游入口。
 
 ### 0.3 上游目录定位
 

@@ -1,24 +1,17 @@
 import type Database from '../../../sqlite/sync-database'
 import { DISPATCH_PANE_KEY_MATCH_SUFFIX_SQL } from './pane-key-match'
+import type { OrcaSessionId } from '../../../../shared/agent-session/identity/orca-session-address'
+import type { DispatchCreatorTurnSource } from './dispatch-depth'
 
-/**
- * The only place that inserts rows representing a live supervised worker.
- *
- * Why centralized: nesting depth must be stamped on every such row, and three
- * separate modules used to own their own INSERT. A boundary test forbids these
- * statements anywhere else, so a new spawn path cannot skip the stamp.
- *
- * Transaction-neutral on purpose — each caller keeps its own BEGIN IMMEDIATE or
- * SAVEPOINT, mutation-receipt write, and companion inserts.
- */
+/** Centralize live-worker inserts to enforce depth; callers retain transactions, receipts and companion writes. */
 
 export const DISPATCH_CONTEXT_CLAIM_SQL = `INSERT INTO dispatch_contexts (
   id, run_id, task_id, contract_version, launch_token_hash,
-  assignee_handle, assignee_pane_key, process_incarnation,
-  creator_dispatch_id, creator_handle, creator_pane_key,
-  status, failure_count, depth, dispatched_at
+  assignee_handle, assignee_pane_key, assignee_orca_session_id, process_incarnation,
+  creator_dispatch_id, creator_handle, creator_pane_key, creator_orca_session_id,
+  creator_turn_source, status, failure_count, depth, dispatched_at
 )
-SELECT ?, run_id, id, ?, ?, ?, ?, ?, ?, ?, ?, 'dispatched', ?, ?, datetime('now')
+SELECT ?, run_id, id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dispatched', ?, ?, datetime('now')
 FROM tasks
 WHERE id = ? AND status = 'ready'
   AND NOT EXISTS (
@@ -46,14 +39,15 @@ WHERE id = ? AND status = 'ready'
 const STARTING_DISPATCH_CONTEXT_SQL = `INSERT INTO dispatch_contexts (
    id, run_id, task_id, contract_version, launch_token_hash, retry_of_dispatch_id,
    creator_dispatch_id, creator_handle, creator_pane_key, creator_orca_session_id,
-   depth, status, dispatched_at
- ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))`
+   creator_turn_source, depth, status, failure_count, dispatched_at, follow_up_of_dispatch_id,
+   origin_ref, for_message_id, chat_lineage
+ ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'), ?, ?, ?, ?)`
 
 const REMOTE_DISPATCH_ATTACHMENT_SQL = `INSERT INTO remote_dispatch_attachments (
    dispatch_id, home_run_id, task_id, home_peer_fingerprint, protocol_version, runtime_epoch, depth
  ) VALUES (?, ?, ?, ?, ?, ?, ?)`
 
-/** Last line of defence: a row that reached here unstamped would read as a root. */
+/** Missing depth would turn a worker into an apparent root. */
 function assertStampedDepth(depth: number): void {
   if (!Number.isInteger(depth) || depth < 1) {
     throw new Error(
@@ -71,10 +65,13 @@ export function claimDispatchContextRow(
     launchTokenHash: string | null
     assigneeHandle: string
     assigneePaneKey: string | null
+    assigneeOrcaSessionId?: OrcaSessionId | null
     processIncarnation: string | null
     creatorDispatchId?: string | null
     creatorHandle?: string | null
     creatorPaneKey?: string | null
+    creatorOrcaSessionId?: OrcaSessionId | null
+    creatorTurnSource?: DispatchCreatorTurnSource | null
     priorFailures: number
     depth: number
     taskId: string
@@ -90,10 +87,13 @@ export function claimDispatchContextRow(
       params.launchTokenHash,
       params.assigneeHandle,
       params.assigneePaneKey,
+      params.assigneeOrcaSessionId ?? null,
       params.processIncarnation,
       params.creatorDispatchId ?? null,
       params.creatorHandle ?? null,
       params.creatorPaneKey ?? null,
+      params.creatorOrcaSessionId ?? null,
+      params.creatorTurnSource ?? null,
       params.priorFailures,
       params.depth,
       params.taskId,
@@ -119,7 +119,13 @@ export function insertStartingDispatchContextRow(
     creatorDispatchId?: string | null
     creatorHandle?: string | null
     creatorPaneKey?: string | null
-    creatorOrcaSessionId?: string
+    creatorOrcaSessionId?: OrcaSessionId | null
+    creatorTurnSource?: DispatchCreatorTurnSource | null
+    priorFailures: number
+    followUpOfDispatchId?: string | null
+    originRef?: string | null
+    forMessageId?: string | null
+    chatLineage?: boolean
   }
 ): void {
   assertStampedDepth(params.depth)
@@ -134,7 +140,13 @@ export function insertStartingDispatchContextRow(
     params.creatorHandle ?? null,
     params.creatorPaneKey ?? null,
     params.creatorOrcaSessionId ?? null,
-    params.depth
+    params.creatorTurnSource ?? null,
+    params.depth,
+    params.priorFailures,
+    params.followUpOfDispatchId ?? null,
+    params.originRef ?? null,
+    params.forMessageId ?? null,
+    params.chatLineage ? 1 : null
   )
 }
 
@@ -148,7 +160,7 @@ export function insertRemoteDispatchAttachmentRow(
     homePeerFingerprint: string
     protocolVersion: number
     runtimeEpoch: string
-    /** Propagated from the Run home, not computed here; absent (old client) = 1. */
+    /** Home-computed depth; old clients default to 1. */
     depth: number
   }
 ): void {

@@ -1,4 +1,4 @@
-import type { PRCheckDetail } from './github/check-types'
+import type { PRCheckDetail } from './github/checks/check-types'
 import type { GitHubPRFile } from './github/pull-request-types'
 
 // A CodeHub MR file row from `mr changes`, mapped onto the GitHub PR file shape

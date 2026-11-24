@@ -2,17 +2,15 @@
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
-import { getAppEnvironment } from '../../shared/app-environment'
+import { getAppEnvironment } from '../../shared/app-lifecycle/app-environment'
 import { BOT_MEMORY_SEED_INTRO } from '../../shared/bot-memory-lines'
-import { BOT_HOME_FOLDER_PATTERN, type Bot } from '../../shared/bot-types'
+import type { Bot } from '../../shared/bot-types'
 import { starterSoul } from '../../shared/bot-soul'
-import { normalizeRuntimePathForComparison } from '../../shared/cross-platform-path'
+import { normalizeRuntimePathForComparison } from '../../shared/file-access/cross-platform-path'
 import { errnoCodeOrUnknown } from '../../shared/errors/errno-code'
-import type { ProjectGroup } from '../../shared/project-group-types'
-import {
-  recoverInterruptedGuardedFileOperation,
-  writeFileAtomicallyIfUnchanged
-} from '../codex-accounts/fs-utils'
+import type { ProjectGroup } from '../../shared/project/groups/project-group-types'
+import { getDiskBaselineSignature } from '../../shared/file-write/disk-baseline-signature'
+import { writeLocalTextFileWithDiskPrecondition } from '../filesystem/local-file-io/local-disk-write-precondition'
 import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data-path'
 
 /** The disk a bot home lives on; only this computer's today, an SSH/WSL adapter later. */
@@ -37,10 +35,7 @@ export type BotHomeFilesystem = {
 }
 
 export const localBotHomeFilesystem: BotHomeFilesystem = {
-  readText: async (path) => {
-    recoverInterruptedGuardedFileOperation(path)
-    return readFile(path, 'utf8').catch(() => null)
-  },
+  readText: (path) => readFile(path, 'utf8').catch(() => null),
   readBytes: (path) => readFile(path).catch(() => null),
   listNames: (path) => readdir(path).catch(() => []),
   statFile: (path) =>
@@ -50,7 +45,6 @@ export const localBotHomeFilesystem: BotHomeFilesystem = {
     ),
   writeBytes: (path, bytes) => writeFile(path, bytes),
   writeText: async (path, text, options) => {
-    recoverInterruptedGuardedFileOperation(path)
     try {
       await writeFile(path, text, options?.exclusive ? { flag: 'wx' } : undefined)
       return true
@@ -62,7 +56,11 @@ export const localBotHomeFilesystem: BotHomeFilesystem = {
     }
   },
   replaceText: async (path, expected, text) =>
-    writeFileAtomicallyIfUnchanged(path, expected, text, { mode: 0o600 }),
+    (
+      await writeLocalTextFileWithDiskPrecondition(path, text, {
+        expectedSignature: getDiskBaselineSignature(expected)
+      })
+    ).ok,
   reserveDirectory: async (path) => {
     await mkdir(dirname(path), { recursive: true })
     try {
@@ -139,9 +137,6 @@ export function botHomeFolder(
   bot: Pick<Bot, 'folder'>,
   botsRoot: string = botsRootFolder()
 ): string {
-  if (!BOT_HOME_FOLDER_PATTERN.test(bot.folder)) {
-    throw new Error('bot_folder_invalid')
-  }
   return join(botsRoot, bot.folder)
 }
 
@@ -157,9 +152,9 @@ export function generatedBotHomeFiles(bot: Bot): BotHomeFile[] {
         '',
         `You are ${bot.name}, a bot that runs in Orca. This folder is your home.`,
         '',
-        '- Read SOUL.md and MEMORY.md before working. SOUL.md says who you are and how you work. Change it only when your owner asks.',
+        '- SOUL.md says who you are and how you work. Change it only when your owner asks.',
         '- MEMORY.md is your memory: one line per fact, details in memory/<topic>.md.',
-        '- Keep it current: date new lines, never store secrets. Your owner can review and remove facts in the Bot editor.',
+        '- Keep it current: date new lines, never store secrets. Remove or replace a line with `orca bot memory forget --fact "<its words>"`; a line taken out any other way is put back.',
         '',
         'Orca writes this file, CLAUDE.md and bot.json; edits to them are replaced.',
         ''

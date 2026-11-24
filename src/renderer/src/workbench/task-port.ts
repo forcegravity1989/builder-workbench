@@ -1,11 +1,11 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import type { AppState } from '@/store/types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import type { WorkItemsBatchResult } from '../../../shared/github/work-item-batch-types'
-import type { GitHubOwnerRepo } from '../../../shared/github/pull-request-types'
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import type { Repo } from '../../../shared/repo-types'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { GitHubOwnerRepo } from '../../../shared/github/pull-requests/pull-request-types'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
+import type { Repo } from '../../../shared/repository/repo-types'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import {
   createTaskReferenceReader,

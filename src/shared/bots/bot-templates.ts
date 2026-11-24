@@ -1,10 +1,10 @@
 // The built-in bot templates. A template is a bot package that ships with Orca: SOUL.md seed fields, its
 // skills, connectors, schedules (made turned off) and event automations (offered in its first chat). It
 // is copied once into the new bot; later catalog changes never touch existing bots.
-import type { AutomationEventSource } from '../automation-event-kinds'
+import type { AutomationEventSource } from '../automation-event-triggers'
 import type { BotMascotId } from '../bot-avatar'
 import { BOT_CREATED_KICKOFF } from '../bot-created-kickoff'
-import type { BotPackageConnector } from './bot-package-connectors'
+import type { BotPackageConnector } from './bot-package'
 import { BOT_SHARED_SETUP_FILE } from './bot-shared-from'
 import { BOT_TEMPLATES_CODING } from './bot-template-catalog/coding'
 import { BOT_TEMPLATES_OPS, BOT_TEMPLATES_PERSONAL } from './bot-template-catalog/ops-personal'

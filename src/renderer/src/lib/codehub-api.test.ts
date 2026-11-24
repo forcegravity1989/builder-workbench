@@ -1,5 +1,4 @@
-import type * as RuntimeClientTarget from '@/runtime/runtime-client-target'
-import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 import { beforeEach, expect, it, vi } from 'vitest'
 const { state, rpc, local } = vi.hoisted(() => ({
   state: {
@@ -19,10 +18,7 @@ const { state, rpc, local } = vi.hoisted(() => ({
 }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => state } }))
 vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => state.workbench }))
-vi.mock('@/runtime/runtime-rpc-client', async () => ({
-  ...(await vi.importActual<typeof RuntimeClientTarget>('@/runtime/runtime-client-target')),
-  callRuntimeRpc: rpc
-}))
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({ callRuntimeRpc: rpc }))
 import { codehubApi, createCodeHubApi, createTaskPageCodeHubApi } from './codehub-api'
 const sourceContext: TaskSourceContext = {
   kind: 'task-source',

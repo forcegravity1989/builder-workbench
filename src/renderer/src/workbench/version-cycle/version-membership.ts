@@ -1,14 +1,14 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import { useAppStore } from '@/store'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import {
   getGitHubRepoSourceSettings,
   getGitHubWorkItemRequestContext,
   listGitHubWorkItemsForRepo
-} from '@/store/github/work-item-routing'
+} from '@/store/github/work-items/work-item-routing'
 import { isCodeHubGitRemote } from '../../../../shared/codehub'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
-import type { Repo } from '../../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import {
   seedWorkbenchTaskQuery,
   workbenchVersionTaskLabel

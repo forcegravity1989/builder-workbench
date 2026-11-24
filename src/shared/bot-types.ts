@@ -1,12 +1,13 @@
 import * as z from 'zod'
-import { BotImportedFromSchema } from './bots/bot-import-record'
+import { BotImportedFromSchema } from './bots/bot-import'
 import { BotSharedFromSchema } from './bots/bot-shared-from'
-import { AGENT_CHAT_PERMISSION_MODES } from './agent-chat-permission-mode'
-import { optionalConnectorAvatarUrl } from './connector-avatar-url'
-import { LOCAL_EXECUTION_HOST_ID } from './execution-host'
-import { BotLookAroundSchema } from './bots/bot-look-around-settings'
+import { AGENT_CHAT_PERMISSION_MODES } from './agent-launch/permissions/agent-chat-permission-mode'
+import { optionalConnectorAvatarUrl } from './connector-message-asker'
+import type { NativeChatAgent } from './agent-launch/permissions/agent-chat-permission-support'
+import { LOCAL_EXECUTION_HOST_ID } from './execution-host/execution-host'
+import { BotLookAroundSchema } from './bots/bot-look-around'
 import { BotLaunchSchema } from './bots/bot-launch'
-import { BotTidyUpSchema } from './bots/bot-tidy-up-settings'
+import { BotTidyUpSchema } from './bots/bot-tidy-up'
 import { BotOfferAnswerSchema } from './bots/bot-offer-answers'
 import { BotCancelledWaitSchema } from './bots/bot-cancelled-waits'
 import { BotAvatarColorSchema } from './bots/bot-avatar-color'
@@ -40,9 +41,7 @@ export const BOT_AGENTS = [
   'cline',
   'devin',
   'codebuddy'
-] as const
-
-export const BOT_HOME_FOLDER_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+] as const satisfies readonly Exclude<NativeChatAgent, (typeof BOT_HELD_BACK_AGENTS)[number]>[]
 
 /** Agents the previous release's bot schema reads; it drops bots on any other agent when it loads. */
 const BOT_AGENTS_OLDER_BUILDS_READ: ReadonlySet<string> = new Set([
@@ -171,7 +170,7 @@ export const BotSchema = z.object({
   /** v1 bots live on this computer; SSH and WSL hosts come later. */
   hostId: z.literal(LOCAL_EXECUTION_HOST_ID),
   /** The home's name in ~/.orca/bots, reserved at create; never a path, so it cannot point outside. */
-  folder: z.string().regex(BOT_HOME_FOLDER_PATTERN),
+  folder: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   /** The bot's home folder workspace, in the hidden Bots project group. */
   folderWorkspaceId: z.string().min(1),
   agent: z.enum(BOT_AGENTS),

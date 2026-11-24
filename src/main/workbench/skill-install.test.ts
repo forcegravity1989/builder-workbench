@@ -3,24 +3,17 @@ import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
-import { SkillUploadSessionService } from '../skills/skill-upload-session-service'
-import { executeSkillBundleInstallRequest } from '../skills/skill-bundle-install-request-service'
+import { SkillUploadSessionService } from '../skills/runtime-upload/skill-upload-session-service'
+import { executeSkillBundleInstallRequest } from '../skills/install/skill-bundle-install-request'
 import {
   SkillBundleInstallRequestSchema,
   type SkillBundleInstallRequest
-} from '../../shared/skill-bundle-install-contract'
-import {
-  SkillUploadBeginRequestSchema,
-  SkillUploadChunkRequestSchema,
-  SkillUploadCommitRequestSchema
-} from '../../shared/skill-upload-session-contract'
+} from '../../shared/skills/installation/skill-bundle-install-contract'
 import type {
   SkillUploadBeginRequest,
   SkillUploadChunkRequest
-} from '../../shared/skill-upload-session-contract'
+} from '../../shared/skills/sharing/skill-upload-session-contract'
 
-const relay = vi.hoisted(() => ({ request: vi.fn() }))
-vi.mock('../ssh/ssh-target-registry', () => ({ getActiveMultiplexer: () => relay }))
 vi.mock('./workspace-resolver', () => ({
   nativeWorkbenchWorkspaceHost: (runtime: unknown) => runtime,
   createWorkbenchWorkspaceResolver: () => ({
@@ -120,32 +113,13 @@ it('preserves a locally edited Skill instead of replacing it during launch', asy
   expect(await readFile(skillPath, 'utf8')).toContain('User change')
 })
 
-it('uploads and installs through the owning SSH host, never the desktop staging service', async () => {
-  const { runtime, uploads, install } = await fixture()
-  relay.request.mockImplementation(async (method: string, params: Record<string, unknown>) => {
-    if (method === 'skills.beginUpload') {
-      return uploads.begin(SkillUploadBeginRequestSchema.parse(params))
-    }
-    if (method === 'skills.uploadChunk') {
-      return uploads.append(SkillUploadChunkRequestSchema.parse(params))
-    }
-    if (method === 'skills.commitUpload') {
-      return uploads.commit(SkillUploadCommitRequestSchema.parse(params).uploadId)
-    }
-    if (method === 'skills.cancelUpload') {
-      return uploads.cancel(SkillUploadCommitRequestSchema.parse(params).uploadId)
-    }
-    if (method === 'skills.installBundle') {
-      return install(SkillBundleInstallRequestSchema.parse(params.request))
-    }
-    throw new Error(method)
-  })
-  const result = await prepareWorkbenchSkill(runtime as unknown as OrcaRuntimeService, {
-    ...scope,
-    hostId: 'ssh:server',
-    topic: 'metrics-refresh'
-  })
-  expect(await readFile(result.skillPath, 'utf8')).toContain('指标')
+it('requires an Orca host before installing a workflow skill for a direct SSH project', async () => {
+  const { runtime } = await fixture()
+  await expect(
+    prepareWorkbenchSkill(runtime as unknown as OrcaRuntimeService, {
+      ...scope, hostId: 'ssh:server', topic: 'metrics-refresh'
+    })
+  ).rejects.toThrow('Orca 共享主机')
   expect(runtime.beginSkillUpload).not.toHaveBeenCalled()
   expect(runtime.installSharedSkillBundleRequest).not.toHaveBeenCalled()
 })

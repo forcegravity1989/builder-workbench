@@ -1,10 +1,10 @@
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
-import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
-import { sortWorkItemsByNumber } from '../../../shared/work-items'
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host/execution-host'
+import { normalizeGitRemoteUrl } from '../../../shared/git/remotes/git-remote-identity'
+import { sortWorkItemsByNumber } from '../../../shared/work-items/work-item-order'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import {
   WorkbenchTaskScopeSchema,
   type WorkbenchTaskScope

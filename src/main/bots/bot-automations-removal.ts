@@ -1,4 +1,4 @@
-import type { Automation } from '../../shared/automations-types'
+import type { Automation } from '../../shared/automations/automation-definition'
 
 /** Deletes each automation that runs as the bot, through the runtime's own automation delete. */
 export async function deleteAutomationsOfBot(

@@ -29,8 +29,8 @@ import {
   readPrototypeReviewSender
 } from './prototype-transport'
 import type { PrototypeReviewSendResult } from './prototype-transport'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { toRuntimeWorktreeSelector } from '@/runtime/runtime-worktree-selector'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import { toRuntimeWorktreeSelector } from '@/runtime/rpc/targets/runtime-worktree-selector'
 import { canonicalPrototypeReviewDocumentKey } from '../../../../shared/workbench/prototype-review-annotation'
 import { useAppStore } from '@/store'
 

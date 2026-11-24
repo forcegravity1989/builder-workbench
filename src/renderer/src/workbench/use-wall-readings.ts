@@ -1,13 +1,13 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/store'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { resolveProjectSource } from './project-source-resolution'
 import { useProjectVersionCatalog, versionCatalogErrors } from './project-version-catalog'
 import { readWallReadings } from './wall-readings-load'
 import type { WallCardReadings } from './wall-card-readings'
 import { versionCatalogSourceKey, versionCatalogFingerprint } from './version-catalog-source'
 import { wallReadRevision, type useWallRefresh } from './wall-refresh'
-import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { PrioritySemaphore } from '../../../shared/concurrency/priority-semaphore'
 import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
 const progressReads = new PrioritySemaphore(3)

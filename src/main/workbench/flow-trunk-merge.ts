@@ -1,19 +1,17 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
+import { resolveWorktreeHostPath } from '../../shared/git/metadata/git-metadata-path'
 import { SourceCommit } from '../../shared/workbench/version-material'
 import {
   createWorktreePreparationLockReason,
   WORKTREE_CREATE_PREPARATION_DIRECTORY
-} from '../../shared/worktree/create-preparation'
-import { extractExecError } from '../git/exec-error'
-import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/git-runtime-options'
-import { gitExecFileAsync } from '../git/runner'
-import {
-  discardPreparedWorktree,
-  prepareWorktreeCreateCheckout
-} from '../git/worktree-create-preparation'
+} from '../../shared/worktree/creation/create-preparation'
+import { extractExecError } from '../git/command-runner/process-capture/exec-error'
+import { gitOptionsForWorktree, type GitRuntimeOptions } from '../git/command-runner/git-runtime-options'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { discardPreparedWorktree } from '../git/worktrees/creation/worktree-preparation-discard'
+import { prepareWorktreeCreateCheckout } from '../git/worktrees/creation/worktree-create-preparation'
 import { TRUNK_SYNC_TIMEOUT_MS, type FetchedTrunkSource } from './trunk-sync'
 
 export type FlowMergeContext = {

@@ -1,5 +1,5 @@
 // A bot's picture: one of Orca's mascots, an uploaded image kept in its home, or (from before mascots) an emoji.
-import { readPngDimensions } from './raster-image-dimensions'
+import { readPngDimensions } from './file-preview/raster-image-dimensions'
 
 /** The mascots Orca ships, as `mascot:<id>` avatars; ids are never renamed, since bots store them. */
 export const BOT_MASCOT_IDS = [

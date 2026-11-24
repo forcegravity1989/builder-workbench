@@ -1,6 +1,6 @@
-import { selectExecutionHostDisplayLabel } from '@/lib/execution-host-display-label'
+import { selectExecutionHostDisplayLabel } from '@/runtime/hosts/display/execution-host-display-label'
 import { useAppStore } from '@/store'
-import type { ExecutionHostId } from '../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { ErrorDetails } from './error-feedback'
 
 export function VersionCatalogSourceProblem({

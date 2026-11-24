@@ -1,10 +1,10 @@
 import { useAppStore } from '@/store'
-import { sendNotesToActiveAgentSession } from '@/lib/active-agent-note-send'
-import { deriveNotesSendAgentTargets } from '@/lib/notes-send-agent-targets'
-import type { ActiveAgentNotesSendStatus } from '@/lib/active-agent-note-send-result'
+import { sendNotesToActiveAgentSession } from '@/lib/agent-session/messaging/terminal/active-agent-note-send'
+import { deriveNotesSendAgentTargets } from '@/lib/agent-session/messaging/notes-send-agent-targets'
+import type { ActiveAgentNotesSendStatus } from '@/lib/agent-session/messaging/terminal/active-agent-note-send-result'
 import { findNamedWorktree, type NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
 import { METRICS_BRANCH } from './version-cycle/metrics-setup'
 
 /** The metrics workspace session: its active tab when that tab can take input, otherwise the only eligible one. */

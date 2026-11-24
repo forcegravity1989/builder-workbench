@@ -1,5 +1,7 @@
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
-import { rewindHistoryIndexPastView } from '../worktree-nav-history'
+import { rewindHistoryIndexPastView } from './workspace-navigation-history'
+import { isAutomationsHistoryEntry } from './automations-page-location'
+import { appendAutomationsPageEntry } from './automations-page-history'
 
 export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<UISlice> {
   return {
@@ -19,21 +21,36 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
     pendingAutomationRunNavigation: null,
     setPendingAutomationRunNavigation: (navigation) =>
       set({ pendingAutomationRunNavigation: navigation }),
-    pendingAutomationEditorRequest: null,
-    consumeAutomationEditorRequest: (request) => {
-      if (get().pendingAutomationEditorRequest === request) {
-        set({ pendingAutomationEditorRequest: null })
+    automationsPageLocationRequest: null,
+    setAutomationsPageLocationRequest: (location) =>
+      set({ automationsPageLocationRequest: location }),
+    recordAutomationsPageVisit: (location) => {
+      // Why: replaying an entry must not record it again and truncate the forward stack.
+      if (get().isNavigatingHistory) {
+        set({ automationsPageNextVisitMode: 'push' })
+        return
       }
+      set((state) => ({
+        ...appendAutomationsPageEntry(state, location, state.automationsPageNextVisitMode),
+        automationsPageNextVisitMode: 'push'
+      }))
     },
-    openAutomationEditor: (request) => {
-      get().openAutomationsPage()
-      set({ pendingAutomationEditorRequest: { ...request } })
-    },
+    automationsPageNextVisitMode: 'push',
+    setAutomationsPageNextVisitMode: (mode) => set({ automationsPageNextVisitMode: mode }),
+    automationsPageFocusTitleOnOpen: false,
+    setAutomationsPageFocusTitleOnOpen: (value) => set({ automationsPageFocusTitleOnOpen: value }),
     openAutomationsPage: () => {
-      get().recordViewVisit('automations')
+      const state = get()
+      // Why: an open page already recorded its sub-page; a second sentinel would be a dead Back step.
+      if (
+        state.activeView !== 'automations' ||
+        !isAutomationsHistoryEntry(state.worktreeNavHistory[state.worktreeNavHistoryIndex])
+      ) {
+        state.recordViewVisit('automations')
+      }
+      set({ automationsPageNextVisitMode: 'push', automationsPageFocusTitleOnOpen: true })
       set((state) => ({
         activeView: 'automations',
-        pendingAutomationEditorRequest: null,
         previousViewBeforeAutomations:
           state.activeView === 'automations'
             ? state.previousViewBeforeAutomations
@@ -43,10 +60,15 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
     closeAutomationsPage: () =>
       set((state) => ({
         activeView: state.previousViewBeforeAutomations,
-        worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'automations')
+        worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'automations'),
+        automationsPageNextVisitMode: 'push'
       })),
     openSpacePage: () => {
       get().recordFeatureInteraction?.('workspace-cleanup')
+      if (typeof window !== 'undefined' && window.api?.workspaceSpace?.openWindow) {
+        void window.api.workspaceSpace.openWindow()
+        return
+      }
       set((state) => ({
         activeView: 'space',
         previousViewBeforeSpace:
@@ -70,6 +92,8 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
         activeView: state.previousViewBeforeSkills,
         worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'skills')
       })),
+    botTemplateSelected: null,
+    selectBotTemplate: (templateId) => set({ botTemplateSelected: templateId }),
     openSkillShare: (shareId) => {
       get().recordViewVisit('skills')
       set((state) => ({
@@ -102,6 +126,16 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
       set((state) => ({
         activeView: state.previousViewBeforeArtifacts,
         worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'artifacts')
+      })),
+    openMobilePage: () =>
+      set((state) => ({
+        activeView: 'mobile',
+        previousViewBeforeMobile:
+          state.activeView === 'mobile' ? state.previousViewBeforeMobile : state.activeView
+      })),
+    closeMobilePage: () =>
+      set((state) => ({
+        activeView: state.previousViewBeforeMobile
       })),
     setNewWorkspaceDraft: (draft) => set({ newWorkspaceDraft: draft }),
     clearNewWorkspaceDraft: () => set({ newWorkspaceDraft: null })

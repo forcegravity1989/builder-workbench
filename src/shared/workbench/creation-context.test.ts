@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import type { TaskSourceContext } from '../task-source-context'
+import type { TaskSourceContext } from '../work-items/task-source-context'
 import { resolveWorkbenchCreationBinding } from './creation-context'
 
 /**

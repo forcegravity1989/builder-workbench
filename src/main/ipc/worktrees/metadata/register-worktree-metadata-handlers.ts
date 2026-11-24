@@ -1,23 +1,32 @@
 import { ipcMain } from 'electron'
 import type { WorktreeMeta } from '../../../../shared/worktree/meta-types'
-import { displayNameUpdatePinsLabel } from '../../../../shared/worktree/display-name-provenance'
-import { parseExecutionHostId } from '../../../../shared/execution-host'
-import { stripOrcaProvenanceMetaUpdates } from '../../../worktree-removal-safety'
+import type { DiffCommentBaseMutation } from '../../../../shared/file-review/diff-comment-mutation'
+import { displayNameUpdatePinsLabel } from '../../../../shared/worktree/metadata/display-name-provenance'
+import { parseExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { stripOrcaProvenanceMetaUpdates } from '../../../workspaces/removal/worktree-removal-safety'
 import { getRepoIdFromWorktreeId } from '../../../../shared/worktree/id'
-import type {
-  ListDesktopLineageForHostArgs,
-  HostLineageSnapshot
-} from '../../../../shared/host-lineage-contract'
-import { notifyWorktreesChanged } from '../../worktree-remote'
-import { parseWorktreeId } from '../../worktree-logic'
-import { planWorktreeSortOrderUpdates } from '../../../../shared/worktree/sort-order-update'
-import { readBranchRenameFailureOutputForDisplay } from '../../../agent-hooks/branch-rename-failure-output'
 import {
-  normalizeLinkedWorkItemFields,
-  normalizeWorkbenchVersionBindingField
-} from '../ipc-context-schemas'
-import { listDesktopLineageForHost } from './host-lineage-listing'
+  isWorkspaceKey,
+  worktreeWorkspaceKey
+} from '../../../../shared/workspace/identity/workspace-scope'
+import { notifyWorktreesChanged } from '../worktree-remote'
+import { parseWorktreeId } from '../paths/worktree-logic'
+import {
+  writeWorktreeSortOrder,
+  type WorktreeSortOrderRequest
+} from '../../../persistence/worktree-sort-order-write'
+import { readBranchRenameFailureOutputForDisplay } from '../../../agent-hooks/first-work/branch-rename-failure-output'
+import { normalizeLinkedWorkItemFields } from '../ipc-context-schemas'
+import { isRemovedFolderWorkspaceInstance } from '../../../workspaces/catalog/folder-workspace-meta-presence'
+import { resolveWorktreeMetaOwner } from '../../../persistence/host-qualified-worktree-meta'
+import { hostWorktreeTarget } from '../../../../shared/worktree/host-qualified-identity'
 import type { WorktreeIpcContext } from '../worktree-ipc-context'
+import {
+  isWslMoveSourceHost,
+  isWslMoveWorkspaceBlocked,
+  shouldDropWslMoveProjectUpdate,
+  wslMoveProjectRefForWorkspace
+} from '../../../persistence/moving-wsl-projects/quiescence/wsl-move-scope-guard'
 
 export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): void {
   const { mainWindow, store, runtime } = context
@@ -28,7 +37,7 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       args: {
         worktreeId: string
         executionHostId?: string
-        updates: Partial<WorktreeMeta>
+        updates: Partial<WorktreeMeta> & DiffCommentBaseMutation
       }
     ) => {
       const executionHostId =
@@ -38,38 +47,42 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       if (args.executionHostId !== undefined && !executionHostId) {
         throw new Error('Invalid execution host identity.')
       }
-      const validatedUpdates = normalizeWorkbenchVersionBindingField(
-        normalizeLinkedWorkItemFields(args.updates)
-      )
-      // G2 P3a 收口（P1 延后项，最终检视 H-1 收窄）：仅绑定字段按「显式 undefined=
-      // 保留旧值」剥除（其契约由 normalizeWorkbenchVersionBindingField 承担）；其余键
-      // 保持原生本地 IPC 线约——present-but-undefined 在 spread 中清除字段
-      // （baseRef/pushTarget 两条原生清除链依赖该信号，见 worktree-meta-update-application
-      // 头注；全局剥除会使清除静默失效、重开后旧值复活，违反重开前后一致铁律）。
-      const definedUpdates: Partial<WorktreeMeta> = { ...validatedUpdates }
       if (
-        'workbenchVersionBinding' in definedUpdates &&
-        definedUpdates.workbenchVersionBinding === undefined
+        isWslMoveSourceHost(executionHostId) &&
+        shouldDropWslMoveProjectUpdate(
+          store,
+          wslMoveProjectRefForWorkspace(args.worktreeId),
+          args.updates
+        )
       ) {
-        delete definedUpdates.workbenchVersionBinding
+        return null
       }
+      const validatedUpdates = normalizeLinkedWorkItemFields(args.updates)
       const updates =
-        definedUpdates.displayName !== undefined
+        validatedUpdates.displayName !== undefined
           ? {
-              ...definedUpdates,
-              // The host persists provenance; do not rely on renderer-authored metadata.
-              displayNameIsPinned: displayNameUpdatePinsLabel(definedUpdates.displayName),
+              ...validatedUpdates,
+              // Persist label provenance on the host rather than trusting renderer metadata.
+              displayNameIsPinned: displayNameUpdatePinsLabel(validatedUpdates.displayName),
               pendingFirstAgentMessageRename: false,
               firstAgentMessageRenameError: null
             }
-          : definedUpdates
+          : validatedUpdates
       const sanitizedUpdates = stripOrcaProvenanceMetaUpdates(updates)
-      const meta = executionHostId
-        ? store.setWorktreeMetaForHost(args.worktreeId, executionHostId, sanitizedUpdates)
-        : store.setWorktreeMeta(args.worktreeId, sanitizedUpdates)
-      // Do NOT notify here: renderer already applied this optimistically; a notification would re-sort the sidebar (bug PR #209).
+      // Late terminal activity must not resurrect a removed folder instance (#22712).
+      if (isRemovedFolderWorkspaceInstance(store, args.worktreeId, executionHostId)) {
+        return null
+      }
+      const target = executionHostId
+        ? hostWorktreeTarget({ id: args.worktreeId, hostId: executionHostId })
+        : resolveWorktreeMetaOwner(store, args.worktreeId)
+      if (!target) {
+        return null
+      }
+      const meta = store.setWorktreeMeta(target, sanitizedUpdates)
+      // Local optimistic state is current; notifying it would re-sort the sidebar (#209).
       if (args.updates.displayName !== undefined) {
-        // Why: remote clients have no optimistic rename and stopped polling titles, so push a remote-only invalidation; gate on displayName so per-click isUnread updates stay event-free.
+        // Remote clients need rename pushes; per-click unread changes must remain event-free.
         runtime.notifyWorktreesChangedForRemoteClients(getRepoIdFromWorktreeId(args.worktreeId))
       }
       return meta
@@ -77,47 +90,58 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
   )
 
   ipcMain.handle('worktrees:listLineage', async () => {
-    await runtime.hydrateInferredWorktreeLineage()
     return {
       lineage: store.getAllWorktreeLineage(),
-      workspaceLineage: store.getAllWorkspaceLineage()
+      workspaceLineage: store.getAllWorkspaceLineage(),
+      crossStoreLineage: store.getAllCrossStoreWorkspaceLineage(),
+      installationId: await runtime.readStoreInstallationId()
     }
   })
 
   ipcMain.handle(
-    'worktrees:listLineageForHost',
-    (_event, args: ListDesktopLineageForHostArgs): Promise<HostLineageSnapshot> =>
-      listDesktopLineageForHost(store, runtime, args)
-  )
-
-  ipcMain.handle(
     'worktrees:updateLineage',
-    async (_event, args: { worktreeId: string; parentWorktreeId?: string; noParent?: boolean }) => {
+    async (
+      _event,
+      args: {
+        worktreeId: string
+        parentWorktreeId?: string
+        noParent?: boolean
+        ifParentWorkspace?: string
+      }
+    ) => {
+      const condition =
+        typeof args.ifParentWorkspace === 'string'
+          ? { ifParentWorkspace: args.ifParentWorkspace }
+          : {}
       await runtime.updateManagedWorktreeMeta(args.worktreeId, {
         lineage:
           args.noParent === true
-            ? { noParent: true }
+            ? { noParent: true, ...condition }
             : args.parentWorktreeId
-              ? { parentWorktree: `id:${args.parentWorktreeId}` }
+              ? { parentWorktree: `id:${args.parentWorktreeId}`, ...condition }
               : undefined
       })
-      notifyWorktreesChanged(mainWindow, parseWorktreeId(args.worktreeId).repoId)
-      return store.getWorktreeLineage(args.worktreeId) ?? null
+      // A folder workspace has no repo; the runtime already announced its folder change.
+      if (!isWorkspaceKey(args.worktreeId)) {
+        notifyWorktreesChanged(mainWindow, parseWorktreeId(args.worktreeId).repoId)
+      }
+      return {
+        lineage: store.getWorktreeLineage(args.worktreeId) ?? null,
+        workspaceLineage: store.getWorkspaceLineage(worktreeWorkspaceKey(args.worktreeId)) ?? null
+      }
     }
   )
 
-  ipcMain.handle('worktrees:persistSortOrder', (_event, args: { orderedIds: string[] }) => {
+  ipcMain.handle('worktrees:persistSortOrder', (_event, args: WorktreeSortOrderRequest) => {
     if (!Array.isArray(args?.orderedIds) || args.orderedIds.length === 0) {
       return
     }
-    const updates = planWorktreeSortOrderUpdates(
-      args.orderedIds,
-      (worktreeId) => store.getWorktreeMeta(worktreeId),
+    writeWorktreeSortOrder(
+      store,
+      args,
+      (worktreeId) => isWslMoveWorkspaceBlocked(store, worktreeId),
       Date.now()
     )
-    for (const update of updates) {
-      store.setWorktreeMeta(update.worktreeId, { sortOrder: update.sortOrder })
-    }
   })
 
   ipcMain.handle(

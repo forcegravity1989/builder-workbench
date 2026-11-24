@@ -1,5 +1,5 @@
 // The bots on this computer, each homed in a folder workspace of the hidden Bots project group.
-import { BOT_IMPORT_REPLY_FILE } from '../../shared/bots/bot-import-record'
+import { BOT_IMPORT_REPLY_FILE } from '../../shared/bots/bot-import'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import {
@@ -10,7 +10,7 @@ import {
 } from '../../shared/bot-avatar'
 import { type Bot, botFolderName } from '../../shared/bot-types'
 import { assertBotNameFree, freeBotName } from './bot-free-name'
-import { BotsDisabledError, isBotsEnabled } from '../../shared/bots-switch'
+import { areHostBotsEnabled, assertHostBotsEnabled } from './bot-team-policy'
 import { type BotRosterEntry, botRosterFields, soulSpecialty } from '../../shared/bot-roster'
 import {
   applyBotUpdates,
@@ -18,16 +18,17 @@ import {
   type BotDeleteParams,
   type BotHostUpdates
 } from '../../shared/rpc-contract/bots-params'
-import type { RuntimeStore } from '../runtime/runtime-store-contract'
+import type { RuntimeStore } from '../runtime/construction/runtime-store-contract'
 import { proposalSoul } from '../../shared/bots/bot-proposal'
 import { botTemplate } from '../../shared/bots/bot-templates'
 import { templateBotFolderName } from '../../shared/bots/bot-template-view'
 import { botOfferCreation } from './bot-offer-creation'
-import { assertBotOwnsHome, botHomeFolder, writeBotHome } from './bot-home'
+import { assertBotOwnsHome, type BotHomeFilesystem, botHomeFolder, writeBotHome } from './bot-home'
 import { type BotMemoryRecord, hostBotMemoryRecord } from './bot-memory-record'
 import { stampBotLinkOwners } from '../../shared/bot-link-owners'
-import { makeBotsHome, type BotHomeDependencies } from './bot-home-workspace'
+import { makeBotsHome } from './bot-home-workspace'
 import { newBotRecord } from './bot-new-record'
+import type { FolderWorkspace } from '../../shared/folder-workspaces/folder-workspace-types'
 
 /** Where a new bot came from, kept on its record. */
 export type BotOrigin = Partial<Pick<Bot, 'sharedFrom' | 'templateId'>>
@@ -64,11 +65,18 @@ function isBotStore(store: RuntimeStore | null): store is RuntimeStore & BotStor
   )
 }
 
-export type BotControllerDependencies = BotHomeDependencies & {
+export type BotControllerDependencies = {
   getStore: () => RuntimeStore | null
   /** A bot record was saved or removed; `catalogChanged` when its home workspace was added, renamed
    *  or removed with it, which the project catalog also announces. */
   notifyBotsWritten: (catalogChanged: boolean) => void
+  /** The project-group controller's own create, so path checks match any folder workspace's. */
+  createFolderWorkspace: (input: {
+    projectGroupId: string
+    name: string
+    folderPath: string
+    createdWithAgent: Bot['agent']
+  }) => Promise<FolderWorkspace>
   /** Ends the work held in the workspace (terminals, agent status) before it is forgotten. */
   deleteFolderWorkspace: (folderWorkspaceId: string) => Promise<unknown>
   /** Removes the automations that run as the bot, as their own delete does. */
@@ -77,6 +85,8 @@ export type BotControllerDependencies = BotHomeDependencies & {
   botAgentChanged?: (bot: Bot) => void
   /** Takes the bot out of every group room, as removing it from each would. */
   leaveBotGroups?: (botId: string) => Promise<void>
+  botsRoot: () => string
+  filesystem: BotHomeFilesystem
   /** The Orca account signed in now, recorded on the links a bot gets. */
   accountUserId?: () => string | null
   /** Drops what this host keeps for a bot outside its record (its Look around), once it is deleted. */
@@ -96,13 +106,11 @@ export class BotController {
 
   /** Off, bots take no conversations or runs, and nothing creates or opens one; their homes stay. */
   enabled(): boolean {
-    return isBotsEnabled(this.deps.getStore()?.getSettings())
+    return areHostBotsEnabled(this.deps.getStore()?.getSettings())
   }
 
   assertEnabled(): void {
-    if (!this.enabled()) {
-      throw new BotsDisabledError()
-    }
+    assertHostBotsEnabled(this.deps.getStore()?.getSettings())
   }
 
   list(): Bot[] {
@@ -110,10 +118,11 @@ export class BotController {
   }
 
   /** The list with what a client needs to draw it as this host's own sidebar does. */
-  listing(): { bots: Bot[]; botsEnabled: boolean } {
+  listing(): { bots: Bot[]; botsEnabled: boolean; hideBotCreatedWorkspaces: boolean } {
     return {
       bots: this.list(),
-      botsEnabled: this.enabled()
+      botsEnabled: this.enabled(),
+      hideBotCreatedWorkspaces: this.deps.getStore()?.getUI?.().hideBotCreatedWorkspaces !== false
     }
   }
 
@@ -168,21 +177,21 @@ export class BotController {
         templateBotFolderName(name, botTemplate(origin.templateId), input.templateNameShown),
         name,
         draft.agent,
-        async (path, folder) => {
-          await writeBotHome(
+        (path, folder) =>
+          writeBotHome(
             this.deps.filesystem,
             path,
             { ...draft, folder, folderWorkspaceId: '' },
             input.seed ? proposalSoul(name, input.seed) : undefined
           )
-          // The old bot's reply is read as data by the import, never sent as a turn.
-          const reply = input.importFrom?.reply?.trim()
-          if (reply) {
-            await this.deps.filesystem.makeDirectory(join(path, 'import'))
-            await this.deps.filesystem.writeText(join(path, BOT_IMPORT_REPLY_FILE), `${reply}\n`)
-          }
-        }
       ))
+    }
+    const reply = input.importFrom?.reply?.trim()
+    if (reply) {
+      // The old bot's own words: read as data by the import, never sent as a turn.
+      const home = botHomeFolder(bot, this.deps.botsRoot())
+      await this.deps.filesystem.makeDirectory(join(home, 'import'))
+      await this.deps.filesystem.writeText(join(home, BOT_IMPORT_REPLY_FILE), `${reply}\n`)
     }
     return bot
   }
@@ -210,7 +219,6 @@ export class BotController {
         store.updateFolderWorkspace(bot.folderWorkspaceId, { name: next.name })
       }
       store.saveBot(next)
-      await persistNow(store)
       this.deps.notifyBotsWritten(next.name !== bot.name)
       if (next.agent !== bot.agent) {
         this.deps.botAgentChanged?.(next)
@@ -234,7 +242,6 @@ export class BotController {
       await this.deps.filesystem.writeBytes(join(folderPath, BOT_AVATAR_FILE), png)
       await writeBotHome(this.deps.filesystem, folderPath, next)
       store.saveBot(next)
-      await persistNow(store)
       this.deps.notifyBotsWritten(false)
       return next
     })
@@ -258,7 +265,6 @@ export class BotController {
       const bot = this.requireBot(store, botId)
       const next: Bot = { ...bot, chatSessionId, updatedAt: Date.now() }
       store.saveBot(next)
-      await persistNow(store)
       this.deps.notifyBotsWritten(false)
       return next
     })

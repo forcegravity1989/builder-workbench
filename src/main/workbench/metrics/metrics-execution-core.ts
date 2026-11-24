@@ -1,24 +1,22 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile } from 'node:fs/promises'
 import { posix, win32 } from 'node:path'
-import { gitExecFileAsync } from '../../git/runner'
-import { readGitBlobAtOidPath } from '../../git/source-control/git-blob-read'
-import {
-  discardPreparedWorktree,
-  prepareWorktreeCreateCheckout
-} from '../../git/worktree-create-preparation'
-import { runWslProcess } from '../../wsl/wsl-runner'
-import { runProcess } from '../../../shared/child-process/run-process'
+import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
+import { readGitBlobAtOidPath } from '../../git/source-control/diffs/git-blob-read'
+import { discardPreparedWorktree } from '../../git/worktrees/creation/worktree-preparation-discard'
+import { prepareWorktreeCreateCheckout } from '../../git/worktrees/creation/worktree-create-preparation'
+import { runWslProcess } from '../../wsl/execution/wsl-runner'
+import { runProcess } from '@orca/process-host'
 import { withSpan } from '../../observability/tracer'
 import { collectorInterpreterLabel } from '../workbench-exec-observability'
 import { traceStderrTail } from '../workbench-trace-details'
-import { isWindowsAbsolutePathLike } from '../../../shared/cross-platform-path'
-import { toLinuxPath } from '../../../shared/wsl-paths'
+import { isWindowsAbsolutePathLike } from '../../../shared/file-access/cross-platform-path'
+import { toLinuxPath } from '../../../shared/file-access/wsl-paths'
 import {
   WORKTREE_CREATE_PREPARATION_DIRECTORY,
   createWorktreePreparationLockReason
-} from '../../../shared/worktree/create-preparation'
-import type { GitWorktreeExecOptions } from '../../git/worktree-operation-options'
+} from '../../../shared/worktree/creation/create-preparation'
+import type { GitWorktreeExecOptions } from '../../git/worktrees/worktree-operation-options'
 import { MetricCollectorError } from './collector-output'
 import { resolveTrunkBaseline } from '../trunk-baseline'
 

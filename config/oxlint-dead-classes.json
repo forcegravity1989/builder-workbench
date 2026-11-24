@@ -30,8 +30,8 @@
           "error",
           {
             "allow": [
-              "agent-map-*",
               "comment-md-*",
+              "bt-*",
               "compact-agent-*",
               "feature-wall-*",
               "is-*",
@@ -59,18 +59,11 @@
               "scrollbar-sleek-lg",
               "scrollbar-sleek-parent",
               "toaster",
-              "vc-*",
               "worktree-sidebar-scrollbar",
               "xterm-*"
             ]
           }
         ]
-      }
-    },
-    {
-      "files": ["**/src/renderer/src/workbench/**/*.tsx"],
-      "rules": {
-        "shadcn/no-unknown-classes": "off"
       }
     },
     {

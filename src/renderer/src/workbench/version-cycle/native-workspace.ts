@@ -1,15 +1,16 @@
 import { useAppStore } from '@/store'
 import { withRepoHostOwnership } from '@/store/slices/worktrees/listing/worktree-host-ownership'
-import { assertRuntimeEnvironmentCapability, callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { resolveExactWorktreeRoute, routeForOwner } from '@/lib/worktree-owner-route'
-import { branchName } from '@/lib/git-utils'
+import { assertRuntimeEnvironmentCapability } from '@/runtime/rpc/compatibility/runtime-capability-proof'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import { resolveExactWorktreeRoute, routeForOwner } from '@/lib/workspace/ownership/worktree-owner-route'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,
   toRuntimeExecutionHostId
-} from '../../../../shared/execution-host'
+} from '../../../../shared/execution-host/execution-host'
 import type { Worktree } from '../../../../shared/worktree/types'
-import { WORKBENCH_FIXED_WORKSPACE_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
+import { WORKBENCH_FIXED_WORKSPACE_RUNTIME_CAPABILITY } from '../../../../shared/remote-runtime/protocol/worktree-runtime-capabilities'
 import {
   fixedWorkspaceDefinition,
   fixedWorkspaceRequestForBranch,

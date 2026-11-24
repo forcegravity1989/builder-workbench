@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { branchName } from '@/lib/git-utils'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { METRICS_BRANCH } from './version-cycle/metrics-setup'
 

@@ -1,6 +1,6 @@
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import { taskPageWorkItemKey } from '@/components/task-page-work-item-signatures'
-import { withQualifier } from '../../../shared/task-query'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
+import { taskPageWorkItemKey } from '@/components/task-page/task-page-work-item-signatures'
+import { withQualifier } from '../../../shared/work-items/task-query'
 import {
   matchesWorkbenchTaskQuery,
   hasUnsupportedWorkbenchTaskSearch,

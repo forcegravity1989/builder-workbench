@@ -1,18 +1,15 @@
 import * as z from 'zod'
 import { readAgentSessionExecutionOptions } from '../agent-session/options/protocol/agent-session-execution-options'
-import { narrowStructuredLaunchSeedOptions } from '../native-chat-session-option-defaults'
-import { encodeStructuredAgentSessionOptionValue } from '../structured-agent-session-option-codec'
+import { OptionKey } from '../rpc-contract/agent-launch/agent-launch-settings-params'
+import { parseStructuredLaunchSeedOptions } from '../native-chat/input/session-options/native-chat-session-option-defaults'
+import { AGENT_CHAT_PERMISSION_MODE_OPTION_ID } from '../agent-launch/permissions/agent-chat-permission-mode'
+import { encodeStructuredAgentSessionOptionValue } from '../agent-session/options/selection/structured-agent-session-option-codec'
 
 const ChoiceValue = z
   .string()
   .min(1)
   .max(512)
   .refine((value) => !value.includes('\0'))
-
-const OptionKey = ChoiceValue.refine(
-  (key) =>
-    !['__proto__', 'constructor', 'prototype', 'agentId', 'model', 'permissionMode'].includes(key)
-)
 
 /** The model and session options (effort, fast mode…) the owner picked for the bot's agent; each of its
  *  new chats starts on them. Absent, its chats start on the native chat defaults. Belongs to `agent`:
@@ -43,10 +40,12 @@ export type BotLaunch = z.infer<typeof BotLaunchSchema>
 export function botLaunchSeedOptions(
   launch: (Pick<BotLaunch, 'model'> & { options?: Readonly<Record<string, string>> }) | undefined
 ): Record<string, string> | undefined {
-  return narrowStructuredLaunchSeedOptions({
-    ...launch?.options,
-    ...(launch?.model ? { model: launch.model } : {})
-  })
+  const { [AGENT_CHAT_PERMISSION_MODE_OPTION_ID]: _permission, ...seed } =
+    parseStructuredLaunchSeedOptions({
+      ...launch?.options,
+      ...(launch?.model ? { model: launch.model } : {})
+    }) ?? {}
+  return Object.keys(seed).length ? seed : undefined
 }
 
 /** What a bot keeps from the agent picker: only the seedable choices made, so everything else

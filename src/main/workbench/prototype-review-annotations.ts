@@ -2,7 +2,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data-path'
-import { writePluginFileAtomically } from '../plugins/plugin-atomic-file-write'
+import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
 import {
   PrototypeReviewAnnotationSchema,
   type PrototypeReviewAnnotation

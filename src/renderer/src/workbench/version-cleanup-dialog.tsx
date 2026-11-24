@@ -1,15 +1,17 @@
-import { getAllWorktreesFromState, getWorktreeOnHostFromState } from '@/store/selectors'
+import { getIndexedAllWorktrees } from '@/store/slices/worktrees/listing/worktree-catalog-index'
+import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
+import { getWorktreeOnHostFromState } from '@/store/workspaces/selection/worktree-on-host-selector'
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { versionTreeKey } from './version-material-selection'
 import {
   parseExecutionHostId,
   toRuntimeExecutionHostId,
   LOCAL_EXECUTION_HOST_ID
-} from '../../../shared/execution-host'
+} from '../../../shared/execution-host/execution-host'
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -26,13 +28,13 @@ import type {
   VersionCatalogEntry,
   VersionCatalogWorkspace
 } from '../../../shared/workbench/version-catalog'
-import { runWorktreeBatchDelete } from '@/components/sidebar/delete-worktree-flow'
-import { toWorktreeDeleteIdentities } from '@/components/sidebar/worktree-delete-request'
-import { useSidebarHostScopeOptions } from '@/components/sidebar/use-sidebar-host-scope-options'
-import { useDeleteWorktreeStatusHydration } from '@/components/sidebar/use-delete-worktree-status-hydration'
-import { getDeleteWorktreeDirtyChangeCounts } from '@/components/sidebar/delete-worktree-dirty-change-counts'
-import { useWorktreeAgentRows } from '@/components/sidebar/useWorktreeAgentRows'
-import { branchName } from '@/lib/git-utils'
+import { runWorktreeBatchDelete } from '@/components/sidebar/workspace-actions/deletion/delete-worktree-flow'
+import { toWorktreeDeleteIdentities } from '@/components/sidebar/workspace-actions/deletion/worktree-delete-request'
+import { useSidebarHostScopeOptions } from '@/components/sidebar/worktree-list/controls/use-sidebar-host-scope-options'
+import { useDeleteWorktreeStatusHydration } from '@/components/sidebar/workspace-actions/deletion/use-delete-worktree-status-hydration'
+import { getDeleteWorktreeDirtyChangeCounts } from '@/components/sidebar/workspace-actions/deletion/delete-worktree-dirty-change-counts'
+import { useWorktreeAgentRows } from '@/components/sidebar/workspace-card/activity/useWorktreeAgentRows'
+import { branchName } from '@/lib/source-control/branches/branch-name'
 import { probeVersionAutomations } from './version-cleanup-automations'
 import { ISSUE_TREE_LABEL, WORKFLOW_TREE_LABELS, goalTreeLabel } from './version-labels'
 
@@ -69,7 +71,7 @@ function nativeDeleteTarget(tree: Worktree): boolean {
     return false
   }
   const state = useAppStore.getState()
-  const rows = getAllWorktreesFromState(state).filter(
+  const rows = getIndexedAllWorktrees(selectWorktreesByRepo(state)).filter(
     (row) => row.id === tree.id && (!tree.hostId || row.hostId === tree.hostId)
   )
   // Orca's delete request accepts host + instance. If two transport owners share that

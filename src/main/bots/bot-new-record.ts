@@ -2,8 +2,8 @@
 import { randomUUID } from 'node:crypto'
 import { randomMascotAvatar } from '../../shared/bot-avatar'
 import type { Bot } from '../../shared/bot-types'
-import type { BotImportedFrom } from '../../shared/bots/bot-import-record'
-import { LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host'
+import type { BotImportedFrom } from '../../shared/bots/bot-import'
+import { LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host/execution-host'
 import type { BotCreateParams } from '../../shared/rpc-contract/bots-params'
 
 /** What a new bot keeps of the import it was made by; the reply itself goes in its home. */

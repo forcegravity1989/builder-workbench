@@ -1,10 +1,10 @@
-import type { RunRow } from '../../../../orchestration/types'
-import { currentRunCoordinatorOrcaSessionId } from '../../../../orchestration/db/runs/run-coordinator-orca-session'
+import type { RunRow } from '../../../../orchestration/db/orchestration-records'
 
-// Why: home_database and coordinator_pane_key are runtime routing state; no caller reads them.
+// Hide routing-only home_database/coordinator_pane_key and the unread coordinator session id; adding it later changes the wire contract.
 const INTERNAL_RUN_COLUMNS = [
   'home_database',
   'coordinator_pane_key',
+  'coordinator_orca_session_id',
   'coordinator_orca_session_id_generation'
 ] as const
 
@@ -14,9 +14,6 @@ export function exposeRun(run: RunRow): RunReceipt {
   const exposed: Partial<RunRow> = { ...run }
   for (const column of INTERNAL_RUN_COLUMNS) {
     delete exposed[column]
-  }
-  if (!currentRunCoordinatorOrcaSessionId(run)) {
-    delete exposed.coordinator_orca_session_id
   }
   return exposed as RunReceipt
 }

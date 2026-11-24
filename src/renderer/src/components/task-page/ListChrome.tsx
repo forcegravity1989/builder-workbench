@@ -1,40 +1,21 @@
 import { TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
-import { useEffect } from 'react'
-import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
-import { cn } from '@/lib/utils'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import type { TaskPageComposerActionsModel } from './use-task-page-composer-actions'
+import { cn } from '@/lib/class-names'
 import { TaskPageSourceBar } from './SourceBar'
 import { AlertCircle } from 'lucide-react'
-import { WorkbenchTaskHelp } from '@/workbench/WorkbenchScreenGuide'
-import { TaskPageGitHubModeControls } from './github/ModeControls'
+import { TaskPageGitHubModeControls } from './github/listing/ModeControls'
 import { TaskPageProviderFilters } from './ProviderFilters'
 export function TaskPageListChrome({
   model
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
-  const {
-    taskSourceAvailabilityNotice,
-    taskPageListChromeHidden,
-    newIssueOpen,
-    githubMode,
-    setGithubMode,
-    setTaskResumeState
-  } = model
-  const workbench = isWorkbenchShell()
-  // Why: Projects is hidden in the shell, so a resumed project mode would show a view with no way back.
-  useEffect(() => {
-    if (!workbench || githubMode !== 'project') {
-      return
-    }
-    setGithubMode('items')
-    setTaskResumeState({ githubMode: 'items' })
-  }, [githubMode, setGithubMode, setTaskResumeState, workbench])
+  const { taskSourceAvailabilityNotice, taskPageListChromeHidden } = model
   return (
     <div className={cn('flex-none flex flex-col gap-2', taskPageListChromeHidden && 'hidden')}>
       <section className="flex flex-col gap-2">
         <div className="flex flex-col gap-2">
-          {workbench ? null : <TaskPageSourceBar model={model} />}
+          <TaskPageSourceBar model={model} />
 
           {taskSourceAvailabilityNotice ? (
             <div
@@ -47,21 +28,9 @@ export function TaskPageListChrome({
             </div>
           ) : null}
 
-          {workbench ? null : <TaskPageGitHubModeControls model={model} />}
+          <TaskPageGitHubModeControls model={model} />
 
-          {workbench ? (
-            <div
-              className="flex min-w-0 items-start gap-2"
-              data-contextual-tour-target="tasks-source-filters"
-            >
-              <div className="min-w-0 flex-1">
-                <TaskPageProviderFilters model={model} />
-              </div>
-              <WorkbenchTaskHelp enabled={!taskPageListChromeHidden && !newIssueOpen} />
-            </div>
-          ) : (
-            <TaskPageProviderFilters model={model} />
-          )}
+          <TaskPageProviderFilters model={model} />
           <TaskPageScopeHeader model={model} />
         </div>
       </section>

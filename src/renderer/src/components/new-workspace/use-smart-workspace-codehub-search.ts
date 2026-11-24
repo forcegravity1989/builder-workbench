@@ -1,10 +1,23 @@
 import { useEffect } from 'react'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
-import { RESULT_LIMIT } from './smart-workspace-name-field-model'
-import type { useSmartWorkspaceNameFieldFoundation } from './use-smart-workspace-name-field-foundation'
+import { RESULT_LIMIT } from './name-field/smart-workspace-name-field-model'
+import type { TaskSourceContext } from '../../../../shared/work-items/task-source-context'
 
-type Foundation = ReturnType<typeof useSmartWorkspaceNameFieldFoundation>
+type CodeHubSearchInput = {
+  debouncedQuery: string
+  disabled?: boolean
+  onCodeHubIssueSelect?: (item: CodeHubTaskItem) => void
+  repoBackedSearchTargets: readonly {
+    repo: { id: string; path: string }
+    codehubSourceContext: TaskSourceContext | null
+  }[]
+  setCodehubItems: (items: CodeHubTaskItem[]) => void
+  setCodehubHasMore: (hasMore: boolean) => void
+  setCodehubError: (error: string | null) => void
+  setCodehubLoading: (loading: boolean) => void
+  codehubRefreshNonce: number
+}
 
 // Why: the composer only links CodeHub issues (no MR/PR tab). Search reuses the
 // existing codehub listTasks RPC and its owner/local host routing.
@@ -13,7 +26,7 @@ export function useSmartWorkspaceCodeHubSearch({
   sourceQueryWithinLimit,
   shouldQueryCodehub
 }: {
-  foundation: Foundation
+  foundation: CodeHubSearchInput
   sourceQueryWithinLimit: boolean
   shouldQueryCodehub: boolean
 }): void {

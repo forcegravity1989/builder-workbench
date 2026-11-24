@@ -1,5 +1,5 @@
 import type { Bot } from '../bot-types'
-import { folderWorkspaceKey, parseWorkspaceKey } from '../workspace-scope'
+import { folderWorkspaceKey, parseWorkspaceKey } from '../workspace/identity/workspace-scope'
 
 const immutableBotSnapshots = new WeakSet<object>()
 

@@ -9,18 +9,21 @@ import { readOverviewPull } from '../../../workbench/overview-pull'
 export const WORKBENCH_ARCHIVE_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.archive.prStatus',
+    permission: 'workspace',
     params: ArchivePrStatusRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => readArchivePrStatus(runtime, params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.overview.pull',
+    permission: 'workspace',
     params: WorkflowCommentsRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => readOverviewPull(runtime, params))
   }),
   defineWorkbenchMethod({
     name: 'workbench.workflow.comments',
+    permission: 'workspace',
     params: WorkflowCommentsRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => readWorkflowComments(runtime, params))

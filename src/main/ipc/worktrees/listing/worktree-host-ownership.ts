@@ -1,12 +1,12 @@
 import type { Store } from '../../../persistence/loading-store/store'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,
   toSshExecutionHostId,
   LOCAL_EXECUTION_HOST_ID
-} from '../../../../shared/execution-host'
-import type { ExecutionHostId } from '../../../../shared/execution-host'
+} from '../../../../shared/execution-host/execution-host'
+import type { ExecutionHostId } from '../../../../shared/execution-host/execution-host'
 
 export function hasConflictingStoredWorktreeOwner(
   store: Store,
@@ -26,9 +26,7 @@ export type RepoOwnershipEvidence =
   | { status: 'malformed' }
   | { status: 'contradictory' }
 
-export function resolveRepoOwnershipEvidence(
-  repo: Pick<Repo, 'connectionId' | 'executionHostId'>
-): RepoOwnershipEvidence {
+export function resolveRepoOwnershipEvidence(repo: Repo): RepoOwnershipEvidence {
   const hasExplicitHost = repo.executionHostId !== null && repo.executionHostId !== undefined
   const explicitHost = hasExplicitHost ? parseExecutionHostId(repo.executionHostId) : null
   if (hasExplicitHost && !explicitHost) {

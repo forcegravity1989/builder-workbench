@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { BrowserChromeToolbar } from '@/components/browser-pane/assemble-chrome/browser-chrome-toolbar'
+import { BrowserChromeToolbar } from '@/components/browser-pane/assemble-chrome/toolbar/browser-chrome-toolbar'
 import { bookingIssue, ignore } from './DeliveryTaskScenes'
 
 const prototypeAddress = 'http://localhost:3000/booking'

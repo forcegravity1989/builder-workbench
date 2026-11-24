@@ -1,7 +1,7 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/github-work-item-source-lookup'
+import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/work-items/github/github-work-item-source-lookup'
 import { useAppStore } from '@/store'
 import {
   findTaskItemLinkRepo,
@@ -10,7 +10,7 @@ import {
   type TaskItemLink
 } from '../../../shared/task-item-link'
 import { parseCodeHubRemote } from '../../../shared/codehub'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host/execution-host'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 
 export async function openWorkbenchTaskItemLink(

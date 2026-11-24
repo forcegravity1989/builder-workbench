@@ -9,7 +9,7 @@ import {
   linearMembersOf,
   type BotMember
 } from '../bot-types'
-import { CONNECTOR_CLIENT_LIMITS } from '../connector-client-limits'
+import { CONNECTOR_CLIENT_LIMITS } from '../connectors/connector-cloud-contract'
 
 const BotMembersFullSchema = z.object({
   /** `bot`: the bot's own limit; `workspace`: one Linear workspace's or GitHub installation's. */

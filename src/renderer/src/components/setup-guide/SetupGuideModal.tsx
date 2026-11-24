@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState, type JSX } from 'react'
-import { EyeOff, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type JSX } from 'react'
 import {
-  getFeatureWallSetupStepIds,
+  FEATURE_WALL_SETUP_STEP_IDS,
   getFirstIncompleteFeatureWallSetupStepId,
   getFeatureWallSetupSteps
-} from '../../../../shared/feature-wall-setup-steps'
-import type { FeatureWallSetupStepId } from '../../../../shared/feature-wall-setup-steps'
+} from '../../../../shared/feature-education/explore/feature-wall-setup-steps'
+import type { FeatureWallSetupStepId } from '../../../../shared/feature-education/explore/feature-wall-setup-steps'
 import {
   Dialog,
   DialogContent,
@@ -14,16 +13,11 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useAppStore } from '@/store'
-import { FeatureWallSetupChecklist } from '../feature-wall/FeatureWallSetupChecklist'
-import { SetupGuideProgressRing } from './SetupGuideProgressRing'
+import { useAppStore } from '@/store/index'
+import { FeatureWallSetupChecklist } from '../feature-wall/setup/FeatureWallSetupChecklist'
 import { useSetupGuideProgress } from './use-setup-guide-progress'
 import { useSetupGuideOpenCloseTelemetry } from './use-setup-guide-telemetry'
-import { translate } from '@/i18n/i18n'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { showOnboardingFromRenderer } from '../onboarding/show-onboarding-event'
-import { toast } from 'sonner'
+import { useTranslate } from '@/i18n/use-translate'
 
 const SETUP_GUIDE_CLOSE_LINGER_MS = 300
 
@@ -52,17 +46,15 @@ function SetupGuideModalContent({
   open: boolean
   lingering: boolean
 }): JSX.Element {
+  const t = useTranslate()
   const modalData = useAppStore((s) => s.modalData)
-  const isBW = isWorkbenchShell()
-  const [openingInitialSetup, setOpeningInitialSetup] = useState(false)
   const closeModal = useAppStore((s) => s.closeModal)
   const setSetupGuideSidebarDismissed = useAppStore((s) => s.setSetupGuideSidebarDismissed)
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(isBW), [isBW])
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(), [])
   const [userSelectedStep, setUserSelectedStep] = useState(false)
   const [orchestrationSkillInstalled, setOrchestrationSkillInstalled] = useState(false)
   const [browserUseSkillInstalled, setBrowserUseSkillInstalled] = useState(false)
-  // Why: keep progress inputs live through the close-animation linger; dropping
-  // them mid-fade flips completed rows back to "not done yet" on screen.
+  // Keep progress inputs live through the closing fade so completed rows cannot flash incomplete.
   const progressInputsActive = open || lingering
   const progress = useSetupGuideProgress(
     progressInputsActive,
@@ -70,9 +62,9 @@ function SetupGuideModalContent({
     browserUseSkillInstalled
   )
   const [activeStepId, setActiveStepId] = useState<FeatureWallSetupStepId>(() =>
-    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, isBW)
+    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
   )
-  const requestedStepId = isFeatureWallSetupStepId(modalData.setupStepId, isBW)
+  const requestedStepId = isFeatureWallSetupStepId(modalData.setupStepId)
     ? modalData.setupStepId
     : null
   const telemetrySource =
@@ -106,8 +98,8 @@ function SetupGuideModalContent({
     if (!open || userSelectedStep || requestedStepId !== null) {
       return
     }
-    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, isBW))
-  }, [isBW, open, progress.stepDone, requestedStepId, userSelectedStep])
+    setActiveStepId(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone))
+  }, [open, progress.stepDone, requestedStepId, userSelectedStep])
 
   useEffect(() => {
     if (
@@ -119,14 +111,11 @@ function SetupGuideModalContent({
     ) {
       return
     }
-    const nextUnfinishedCoreStepId = getFirstIncompleteFeatureWallSetupStepId(
-      progress.stepDone,
-      isBW
-    )
+    const nextUnfinishedCoreStepId = getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
     if (nextUnfinishedCoreStepId !== activeStep.id) {
       setActiveStepId(nextUnfinishedCoreStepId)
     }
-  }, [activeStep, isBW, open, progress.stepDone, requestedStepId, userSelectedStep])
+  }, [activeStep, open, progress.stepDone, requestedStepId, userSelectedStep])
 
   const handleSelectStep = (id: FeatureWallSetupStepId): void => {
     setUserSelectedStep(true)
@@ -139,114 +128,35 @@ function SetupGuideModalContent({
     }
   }
 
-  const guideActionLabel = isBW
-    ? translate('guidance.closeSetupGuide', 'Close setup guide')
-    : translate(
-        'auto.components.setup.guide.SetupGuideModal.f3b5ffb2a6',
-        'Hide checklist from sidebar'
-      )
-  const GuideActionIcon = isBW ? X : EyeOff
-
-  const handleGuideAction = (): void => {
-    if (!isBW) {
-      setSetupGuideSidebarDismissed(true)
-      return
-    }
-    closeModal()
-    toast.success(translate('guidance.setupGuideClosed', 'Setup guide closed'), {
-      description: translate(
-        'guidance.setupGuideReopen',
-        'You can reopen it from Help → Getting Started with BW.'
-      )
-    })
-  }
+  const handleHideFromSidebar = useCallback((): void => {
+    setSetupGuideSidebarDismissed(true)
+  }, [setSetupGuideSidebarDismissed])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="grid h-[min(780px,calc(100vh-2rem))] w-[min(1080px,calc(100vw-2rem))] max-w-none grid-rows-[auto_minmax(0,1fr)] gap-0 p-0 sm:max-w-none"
         tabIndex={-1}
-        showCloseButton={!isBW}
       >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label={guideActionLabel}
-              onClick={handleGuideAction}
-              className={
-                isBW
-                  ? 'absolute right-3 top-3 text-muted-foreground'
-                  : 'absolute right-10 top-3.5 text-muted-foreground'
-              }
-            >
-              <GuideActionIcon className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={4}>
-            {isBW
-              ? guideActionLabel
-              : translate(
-                  'auto.components.setup.guide.SetupGuideModal.28cf59fcb4',
-                  'This will hide the checklist from the sidebar'
-                )}
-          </TooltipContent>
-        </Tooltip>
+        {/* Label Hide separately from Close; small layouts retain the sidebar’s hide control. */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          onClick={handleHideFromSidebar}
+          className="absolute right-11 top-3.5 hidden sm:inline-flex"
+        >
+          {t('auto.components.setup.guide.SetupGuideModal.f3b5ffb2a6', 'Hide checklist')}
+        </Button>
         <DialogHeader className="gap-1 border-b border-border px-7 py-4">
-          <div className="flex items-center gap-2">
-            <DialogTitle className="text-lg">
-              {isBW
-                ? translate('guidance.gettingStarted', 'Getting Started with BW')
-                : translate(
-                    'auto.components.setup.guide.SetupGuideModal.48a9e5ef2d',
-                    'Getting started'
-                  )}
-            </DialogTitle>
-            <SetupGuideProgressRing
-              done={progress.coreDoneCount}
-              total={progress.coreTotal}
-              className="text-green-600 dark:text-green-300"
-              sizeClassName="size-5"
-            />
-            {isBW ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={openingInitialSetup}
-                onClick={async () => {
-                  setOpeningInitialSetup(true)
-                  try {
-                    await showOnboardingFromRenderer()
-                    closeModal()
-                  } catch {
-                    toast.error(
-                      translate(
-                        'guidance.initialSetupFailed',
-                        'Could not open initial setup. Please try again.'
-                      )
-                    )
-                  } finally {
-                    setOpeningInitialSetup(false)
-                  }
-                }}
-              >
-                {translate('guidance.initialSetup', 'Initial Setup')}
-              </Button>
-            ) : null}
-          </div>
+          <DialogTitle className="text-lg">
+            {t('auto.components.setup.guide.SetupGuideModal.48a9e5ef2d', 'Getting started')}
+          </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {isBW
-              ? translate(
-                  'guidance.setupDescription',
-                  'Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.'
-                )
-              : translate(
-                  'auto.components.setup.guide.SetupGuideModal.3598a3ca0c',
-                  'Finish the core workflows that make Orca useful for parallel agent work.'
-                )}
+            {t(
+              'auto.components.setup.guide.SetupGuideModal.3598a3ca0c',
+              'Finish the core workflows that make Orca useful for parallel agent work.'
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 overflow-hidden px-7 py-6">
@@ -263,12 +173,9 @@ function SetupGuideModalContent({
   )
 }
 
-function isFeatureWallSetupStepId(
-  value: unknown,
-  workbenchShell: boolean
-): value is FeatureWallSetupStepId {
+function isFeatureWallSetupStepId(value: unknown): value is FeatureWallSetupStepId {
   return (
     typeof value === 'string' &&
-    getFeatureWallSetupStepIds(workbenchShell).includes(value as FeatureWallSetupStepId)
+    FEATURE_WALL_SETUP_STEP_IDS.includes(value as FeatureWallSetupStepId)
   )
 }

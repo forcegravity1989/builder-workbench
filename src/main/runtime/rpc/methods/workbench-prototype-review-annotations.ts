@@ -14,6 +14,7 @@ import {
 export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.list',
+    permission: 'workspace',
     params: PrototypeReviewAnnotationListSchema,
     handler: async ({ worktree, page, documentKey }, { runtime }) => {
       // Resolve the page through the runtime before returning state so a stale notification cannot
@@ -24,6 +25,7 @@ export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.add',
+    permission: 'workspace',
     params: PrototypeReviewAnnotationAddSchema,
     handler: async (
       { id, worktree, page, documentKey, comment, x, y, label, hostName },
@@ -46,6 +48,7 @@ export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
   }),
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.delete',
+    permission: 'workspace',
     params: PrototypeReviewAnnotationDeleteSchema,
     handler: async ({ pageId, documentKey, annotationId }) => ({
       deleted: await deletePrototypeReviewAnnotation(pageId, documentKey, annotationId)

@@ -1,9 +1,9 @@
 import {
   execCommandInWslOrThrow,
-  execLocalPreflightCommandOrThrow,
-  shellQuote
-} from '../../ipc/preflight-command-exec'
-import { toLinuxPath } from '../../../shared/wsl-paths'
+  execLocalPreflightCommandOrThrow
+} from '../../ipc/preflight/preflight-command-exec'
+import { quotePosixShell as shellQuote } from '../../../shared/shell/launch/shell-argument-quoting'
+import { toLinuxPath } from '../../../shared/file-access/wsl-paths'
 import { WORKBENCH_REPORT_FOLDER_NAME } from './welink-report-config'
 
 export type WelinkRoute = {

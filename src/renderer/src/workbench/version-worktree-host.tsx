@@ -1,14 +1,14 @@
 import React from 'react'
 import { ServerOff } from 'lucide-react'
 import { useAppStore } from '@/store'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
-import NoticeHostGlyph from '@/components/sidebar/NoticeHostGlyph'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
+import NoticeHostGlyph from '@/components/sidebar/worktree-list/rows/NoticeHostGlyph'
 import {
   isDisconnectedRuntimeHostState,
   runtimeHostConnectionStateForEntry
-} from '@/runtime/runtime-host-connection-state'
-import { parseExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
+} from '@/runtime/hosts/connections/runtime-host-connection-state'
+import { parseExecutionHostId, toRuntimeExecutionHostId } from '../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import { closeProjectPage } from './project-page-state'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'

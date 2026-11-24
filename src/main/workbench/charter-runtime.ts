@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { getRepoExecutionHostId, getRepoSshConnectionId } from '../../shared/execution-host'
-import type { Repo } from '../../shared/repo-types'
+import { getRepoExecutionHostId, getRepoSshConnectionId } from '../../shared/execution-host/execution-host'
+import type { Repo } from '../../shared/repository/repo-types'
 import {
   execMessage,
   probeRemoteCharter,
@@ -25,9 +25,9 @@ import type {
   CharterSubmitOutcome,
   CharterSubmitRequest
 } from '../../shared/workbench/charter'
-import { gitExecFileAsync } from '../git/runner'
-import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
-import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
+import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
+import { readGitBlobAtOidPath } from '../git/source-control/diffs/git-blob-read'
+import { probeGitRemoteIdentity } from '../workspaces/catalog/repo-git-remote-identity'
 import { lookupOpenCharterPr, readCharterStatus } from './charter-pr-status'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import {

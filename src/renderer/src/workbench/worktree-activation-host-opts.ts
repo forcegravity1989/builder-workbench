@@ -1,5 +1,5 @@
 import type { Worktree } from '../../../shared/worktree/types'
-import { toRuntimeExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
+import { toRuntimeExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host/execution-host'
 
 /**
  * 宿主限定激活选项（STA-4343：同 repoId::path 的 id 可跨宿主重复，激活须带

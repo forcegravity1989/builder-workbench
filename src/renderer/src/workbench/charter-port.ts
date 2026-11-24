@@ -2,8 +2,8 @@ import {
   getRepoExecutionHostId,
   getRepoSshConnectionId,
   parseExecutionHostId
-} from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
+} from '../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type {
   CharterIntent,
   CharterReadResult,
@@ -12,8 +12,9 @@ import type {
   CharterSubmitOutcome
 } from '../../../shared/workbench/charter'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
-import { routeForOwner } from '../lib/worktree-owner-route'
-import { callRuntimeRpc, type RuntimeClientTarget } from '../runtime/runtime-rpc-client'
+import { routeForOwner } from '../lib/workspace/ownership/worktree-owner-route'
+import { callRuntimeRpc } from '../runtime/rpc/calls/runtime-rpc-call'
+import { type RuntimeClientTarget } from '../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import { callMetricRuntime } from './metric-runtime-rpc'
 import { readProjectCharter } from './project-charter'
 

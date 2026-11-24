@@ -9,9 +9,9 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
-import { branchName } from '@/lib/git-utils'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { getWorktreeAttachmentLabel } from '@/lib/workspace/display/worktree-attachment-label'
+import { branchName } from '@/lib/source-control/branches/branch-name'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host/execution-host'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import {
   chooseWorkbenchWorkspace,

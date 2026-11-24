@@ -63,3 +63,6 @@ export function isBwCliInstallId(value: unknown): value is BwCliInstallId {
 export function formatBwCliInstallCommandLines(cli: BwCliInstallId): string[] {
   return BW_CLI_INSTALL_COMMANDS[cli].map((argv) => argv.join(' '))
 }
+export type BwCliPreflightFields = Partial<
+  Record<'codehub' | 'welink' | 'cloudbuild', { installed: boolean; authenticated: boolean }>
+>

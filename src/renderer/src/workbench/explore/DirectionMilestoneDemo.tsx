@@ -170,7 +170,6 @@ export function DirectionMilestoneDemo({ time, review }: { time: number; review:
               hasReview={pending}
               openReview={pending ? ignore : undefined}
               changes={changes}
-              reviewInput={draft}
               submit={ignore}
             />
           )}

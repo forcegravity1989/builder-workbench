@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
-import { track } from '@/lib/telemetry'
-import { getLinkedWorkItemWorkspaceName } from '../../../shared/workspace-name'
+import { track } from '@/diagnostics/telemetry/telemetry'
+import { getLinkedWorkItemWorkspaceName } from '../../../shared/workspace/naming/workspace-name'
 import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import {
   findVersionTaskWorktrees,

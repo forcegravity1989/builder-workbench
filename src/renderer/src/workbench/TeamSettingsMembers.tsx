@@ -1,4 +1,4 @@
-import { CircleHelp, Link2, LoaderCircle, RefreshCw, Settings } from 'lucide-react'
+import { CircleHelp, RefreshCw, Settings } from 'lucide-react'
 import type { TeamDirectoryMember } from '../../../shared/team-directory'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,10 +8,8 @@ type TeamSettingsMembersProps = {
   hosts: TeamDirectoryMember[]
   currentMemberId: string | null
   loading: boolean
-  generatingHostId: string | null
   onRefresh: () => void
   onEndpointChange: (memberId: string, endpoint: string) => void
-  onGenerateHostAddress: (memberId: string) => void
   onOpenSharingSettings: () => void
 }
 
@@ -19,10 +17,8 @@ export function TeamSettingsMembers({
   hosts,
   currentMemberId,
   loading,
-  generatingHostId,
   onRefresh,
   onEndpointChange,
-  onGenerateHostAddress,
   onOpenSharingSettings
 }: TeamSettingsMembersProps): React.JSX.Element {
   return (
@@ -110,31 +106,6 @@ export function TeamSettingsMembers({
                             />
                             {isCurrent ? (
                               <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon-sm"
-                                      onClick={() => onGenerateHostAddress(host.member_id)}
-                                      disabled={generatingHostId !== null}
-                                      aria-label={
-                                        host.orca_endpoint
-                                          ? '一键填入 Orca 地址'
-                                          : '一键生成并填入 Orca 地址'
-                                      }
-                                    >
-                                      {generatingHostId === host.member_id ? (
-                                        <LoaderCircle className="size-3.5 animate-spin" />
-                                      ) : (
-                                        <Link2 className="size-3.5" />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {host.orca_endpoint ? '一键填入' : '一键生成并填入'}
-                                  </TooltipContent>
-                                </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button

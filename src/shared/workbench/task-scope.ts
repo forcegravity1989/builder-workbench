@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { normalizeExecutionHostId, type ExecutionHostId } from '../execution-host'
+import { normalizeExecutionHostId, type ExecutionHostId } from '../execution-host/execution-host'
 import { Id, MaterialVersion, VersionTaskReferenceSchema } from './version-material-common'
 import {
   type ParsedTaskQuery,
@@ -7,7 +7,7 @@ import {
   tokenizeSearchQuery,
   tokenizeSearchQueryWithRaw,
   withQualifier
-} from '../task-query'
+} from '../work-items/task-query'
 
 /** Goal projection owns @me; native optimistic membership must not substitute the local viewer. */
 export function workbenchGoalMutationQuery(

@@ -1,294 +1,291 @@
 import type {
-  AgentJournalMessageItem,
-  AgentJournalRenderItem
-} from '../../shared/agent-session-journal-types'
-import { readAgentJournalTurn } from '../../shared/agent-session-turn-record'
-import { combineAutomationRunPrompt } from '../../shared/automation-run-prompt'
-import type {
   Automation,
-  AutomationRun,
-  AutomationRunOutputSnapshot
-} from '../../shared/automations-types'
-import { folderWorkspaceKey } from '../../shared/workspace-scope'
-import { botLaunchSeedOptions } from '../../shared/bots/bot-launch'
-import type { StructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-host'
-import { getStructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-registry'
-import type { OrcaRuntimeService } from '../runtime/orca-runtime'
+  AutomationBotResultsTo
+} from '../../shared/automations/automation-definition'
+import type { AutomationRun } from '../../shared/automations/history/automation-run'
+import { automationRunMemoryLabel } from '../bots/bot-turn-source'
+import { LINEAR_ISSUE_KEY_PATTERN } from '../../shared/connector-bot-linear-contract'
+import type { LinkableChat } from '../external-conversations/external-conversation-chat-delivery'
+import type { ConversationKey } from '../external-conversations/external-conversation-types'
+import type { Bot } from '../../shared/bot-types'
+import { OWNER_ACTS_FOR } from '../../shared/bots/bot-acts-for'
+import type { BotConversationActsFor } from '../runtime/orchestration/db/bot-requests/bot-conversation-acts-for-store'
+import type { AutomationBotLauncher } from './launch/automation-launch'
+import type { BotRunCompletion, BotRunResult } from '../bots/bot-run-results'
+import type { BotRunSend, BotTurnWatch } from '../bots/bot-run-turn-watch'
 import {
-  mintAgentSessionOperationId,
-  structuredPointerPayloadFingerprint
-} from '../runtime/orchestration/structured-pointer-operation-id'
-import { createStructuredAgentSessionForWorktree } from '../runtime/rpc/methods/structured-agent-session-create'
-import { createHeadlessAutomationOutputSnapshotBuffer } from './headless-dispatch'
+  automationDeadlinePrompt,
+  automationEventAsker,
+  automationRunPrompt
+} from './automation-event-prompt'
+import { captureAutomationRunMessage } from './automation-run-message-capture'
+import type { BotRunFields } from '../bots/bot-chat-session'
+import type { AgentJournalAutomationRunNotStartedItem } from '../../shared/agent-journal-orca-card-items'
+import { BotSessionRefusedError } from '../bots/bot-session-refused-error'
 
-type BotAutomationCompletion =
-  | { status: 'completed'; outputSnapshot: AutomationRunOutputSnapshot | null }
-  | { status: 'dispatch_failed'; error: string }
-  | { status: 'dispatch_unknown'; error: string }
-
-type BotAutomationLaunch = (args: {
-  automation: Automation
-  run: AutomationRun
-  oneShotPrompt?: string
-  operationId: string
-}) => Promise<{
-  sessionId: string
-  workspaceId: string
-  workspaceDisplayName: string
-  completion: Promise<BotAutomationCompletion>
-}>
-
-export type BotAutomationLauncher = {
-  launch: BotAutomationLaunch
-  recover: (run: AutomationRun) => Promise<BotAutomationCompletion & { chatSessionId?: string }>
+/** Where a bot run's prompt goes; each resolves to the structured session and message that took it. */
+export type BotAutomationSessions = {
+  /** A new conversation in the bot's home, opened by the text; `sessionId` when the caller names it first. */
+  startConversation(
+    bot: Bot,
+    input: {
+      text: string
+      title: string
+      sessionId?: string
+      run?: BotRunFields
+      /** Admission after session preparation, right before its opening message; throws to refuse. */
+      beforeFirstMessage?: () => void | Promise<void>
+      /** Asked synchronously right before delivery can start; false withdraws the message. */
+      beforeDelivery?: () => boolean
+      /** Recorded before the conversation starts. */
+      actsFor: BotConversationActsFor
+    }
+  ): Promise<BotRunSend>
+  /** One of the bot's chats by its id from `orca bot chats`; when it is gone, the bot's Chat with
+   *  `homeIfGone`, else refused. */
+  sendToBotChat(
+    bot: Bot,
+    chatId: string,
+    text: string,
+    run?: BotRunFields,
+    homeIfGone?: boolean
+  ): Promise<BotRunSend>
+  /** A chat of the bot's by its session, behind its running turn. */
+  sendToSession(bot: Bot, sessionId: string, text: string, run?: BotRunFields): Promise<BotRunSend>
+  /** Stops the agent of a finished run's own conversation now, unless someone watches it or it owes
+   *  work; replying later resumes it. Never rejects. */
+  release(sessionId: string): Promise<void>
+  /** The bot's Chat, created on first use. */
+  sendToChat(bot: Bot, text: string, run?: BotRunFields): Promise<BotRunSend>
 }
 
-export function createBotAutomationLauncher(runtime: OrcaRuntimeService): BotAutomationLauncher {
-  const launch: BotAutomationLaunch = async ({ automation, run, oneShotPrompt, operationId }) => {
-    runtime.bots.assertEnabled()
-    const target = automation.bot
-    const bot = runtime.bots.list().find((entry) => entry.id === target?.botId)
-    if (
-      !bot ||
-      bot.paused ||
-      !target ||
-      target.runsIn !== 'new' ||
-      target.resultsTo !== 'none' ||
-      target.chat
-    ) {
-      throw new Error('The Bot is unavailable for this automation.')
+/** How a bot run ends: watch its turn from before the prompt is sent, then deliver its result. */
+export type BotRunResults = {
+  watch(): Promise<BotTurnWatch>
+  deliver(result: BotRunResult): Promise<BotRunCompletion>
+  /** Its session refused the prompt or couldn't open, so no turn began. With `notStarted`, the chat
+   *  the run was meant for (else the bot's Chat) shows the card. */
+  couldNotStart(
+    bot: Bot,
+    automation: Pick<Automation, 'name'>,
+    notStarted?: { destination: BotRunChat; card: AgentJournalAutomationRunNotStartedItem }
+  ): void
+}
+
+/** The chat a run's prompt goes to: a session, one of the bot's chats by id, or its Chat (also where a
+ *  run's new conversation is reported when it never opened). */
+export type BotRunChat =
+  | { kind: 'session'; sessionId: string }
+  | { kind: 'bot-chat'; chatId: string }
+  | { kind: 'chat' }
+
+// Shown word for word; bounded like the chat's other recorded errors.
+const MAX_NOT_STARTED_ERROR_LENGTH = 2000
+
+function notStartedError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.slice(0, MAX_NOT_STARTED_ERROR_LENGTH)
+}
+
+/** Links a run's chat to the cloud conversation its event came in; false when it couldn't. */
+export type BotRunThreads = {
+  adopt(conversation: ConversationKey, chat: LinkableChat, text: string): boolean
+  /** The chat linked here to a thread's owning conversation; 'gone' once that chat was deleted,
+   *  null when no chat here answers it. */
+  ownerChat?(conversation: ConversationKey): Promise<LinkableChat | 'gone' | null>
+  /** Tells the cloud a conversation's chat is gone, so its thread is free. */
+  release?(conversation: ConversationKey): void
+}
+
+/** Where a run that answers in its event's thread goes: into the chat that owns the thread, its own
+ *  chat that takes the thread, or a chat that leaves the thread alone and posts its result there. */
+type ThreadRoute =
+  | { kind: 'owner'; conversation: ConversationKey; chat: LinkableChat }
+  | { kind: 'take' }
+  | { kind: 'post'; conversation: ConversationKey }
+
+async function threadRoute(
+  threads: BotRunThreads | undefined,
+  run: Pick<AutomationRun, 'event' | 'trigger'>,
+  runsIn: 'new' | 'chat'
+): Promise<ThreadRoute> {
+  const { event } = run
+  if (run.trigger !== 'event' || !event?.conversation) {
+    return { kind: 'take' }
+  }
+  // The Chat or a chosen chat answers many threads, so a run there never takes this one.
+  if (runsIn === 'chat') {
+    return { kind: 'post', conversation: event.conversation }
+  }
+  const owner = event.threadOwner && (await threads?.ownerChat?.(event.threadOwner.conversation))
+  if (!event.threadOwner || !owner) {
+    return { kind: 'take' }
+  }
+  if (owner === 'gone') {
+    threads?.release?.(event.threadOwner.conversation)
+    return { kind: 'take' }
+  }
+  return { kind: 'owner', conversation: event.threadOwner.conversation, chat: owner }
+}
+
+/**
+ * Where a run that answers in the event's thread sends its result. A linked Slack or GitHub thread
+ * posts the final message itself; a Linear issue takes it as the bot's comment. Run now replays the
+ * last event for its prompt only, so it, and an event the cloud bound to no thread, keeps the result
+ * in its own conversation.
+ */
+function threadResults(
+  threads: BotRunThreads | undefined,
+  run: Pick<AutomationRun, 'event' | 'trigger'>,
+  chat: LinkableChat,
+  title: string
+): AutomationBotResultsTo {
+  const { event } = run
+  if (run.trigger === 'manual') {
+    return 'none'
+  }
+  if (event?.source === 'linear' && event.subject && LINEAR_ISSUE_KEY_PATTERN.test(event.subject)) {
+    return { linearIssue: event.subject }
+  }
+  return event?.conversation && threads?.adopt(event.conversation, chat, title) ? 'thread' : 'none'
+}
+
+/** An event run meant for its thread that got none: no thread on the event, or an older cloud. */
+export function missedItsThread(
+  automation: Pick<Automation, 'bot'>,
+  run: Pick<AutomationRun, 'trigger'>,
+  resultsTo: AutomationBotResultsTo
+): boolean {
+  return resultsTo === 'none' && automation.bot?.resultsTo === 'thread' && run.trigger === 'event'
+}
+
+/** The run completes when the turn its prompt started ends, after its result is delivered. */
+export function createBotAutomationDispatcher(
+  sessions: BotAutomationSessions,
+  results: BotRunResults,
+  threads?: BotRunThreads
+): AutomationBotLauncher {
+  return async ({ automation, run, target }) => {
+    const turns = await results.watch()
+    const asker = run.event ? automationEventAsker(run.event, target.bot.members) : null
+    const text =
+      automation.once?.by !== undefined && run.trigger === 'scheduled'
+        ? automationDeadlinePrompt(
+            automation.prompt,
+            automation.once.by,
+            Boolean(automation.on?.length)
+          )
+        : automationRunPrompt(automation.prompt, run.event, asker)
+    const automationRun = captureAutomationRunMessage(automation, run, text, asker)
+    const fields: BotRunFields = {
+      memorySource: automationRunMemoryLabel(automation.name, run.event),
+      ...(run.triggeredBy ? { triggeredBy: run.triggeredBy } : {}),
+      ...(automationRun ? { automationRun } : {})
     }
-    if (bot.permissionMode || (bot.agent !== 'claude' && bot.agent !== 'codex')) {
-      throw new Error('This host cannot run the saved Bot agent configuration in Chat.')
-    }
-    const workspaceId = folderWorkspaceKey(bot.folderWorkspaceId)
-    const sessionId = run.id
-    const host = await requireBotAutomationHost(runtime)
-    const opened = await createStructuredAgentSessionForWorktree({
-      runtime,
-      ensureHost: async () => host,
-      caller: { callerKey: `trusted-local:bot-automation:${automation.id}` },
-      envelope: {
-        sessionId,
-        clientOperationId: mintAgentSessionOperationId(Date.now()),
-        expectedRuntimeFence: null,
-        payloadFingerprint: ''
-      },
-      worktree: `id:${workspaceId}`,
-      agent: bot.agent,
-      options: botLaunchSeedOptions(bot.launch),
-      activate: false
-    })
-    if (!opened.ok) {
-      throw new Error(opened.refusal.message)
-    }
-    const holderId = `bot:automation:${run.id}`
-    await host.hold(sessionId, holderId)
+    const { runsIn } = target
+    const chosenChat = automation.bot?.chat?.sessionId
+    const saved = automation.bot?.resultsTo ?? 'chat'
+    const route: ThreadRoute =
+      saved === 'thread' ? await threadRoute(threads, run, runsIn) : { kind: 'take' }
+    // A new conversation that never opened has no chat to show why: the bot's Chat does.
+    const destination: BotRunChat =
+      route.kind === 'owner'
+        ? { kind: 'session', sessionId: route.chat.sessionId }
+        : runsIn === 'chat' && chosenChat
+          ? { kind: 'bot-chat', chatId: chosenChat }
+          : { kind: 'chat' }
+    let send: BotRunSend
     try {
-      const runtimeFence = host.deps.store.getRecord(sessionId)?.lease.runtimeFence
-      if (runtimeFence === undefined) {
-        throw new Error('The Bot Chat has no live session.')
-      }
-      const body: AgentJournalMessageItem = {
-        kind: 'message',
-        role: 'user',
-        blocks: [
-          { type: 'text', text: combineAutomationRunPrompt(automation.prompt, oneShotPrompt) }
-        ]
-      }
-      const sent = await host.send(
-        { callerKey: `trusted-local:bot-automation:${automation.id}` },
-        {
-          envelope: {
-            sessionId,
-            clientOperationId: operationId,
-            expectedRuntimeFence: runtimeFence,
-            payloadFingerprint: structuredPointerPayloadFingerprint(sessionId, body)
-          },
-          body
+      send =
+        destination.kind === 'session'
+          ? await sessions.sendToSession(target.bot, destination.sessionId, text, fields)
+          : destination.kind === 'bot-chat'
+            ? await sessions.sendToBotChat(
+                target.bot,
+                destination.chatId,
+                text,
+                fields,
+                automation.bot?.chat?.homeIfGone
+              )
+            : runsIn === 'chat'
+              ? await sessions.sendToChat(target.bot, text, fields)
+              : await sessions.startConversation(target.bot, {
+                  text,
+                  title: run.title,
+                  run: fields,
+                  actsFor: {
+                    // Its owner: the event is content, whoever made the automation.
+                    actsFor: [...OWNER_ACTS_FOR],
+                    ...(run.triggeredBy ? { triggeredBy: run.triggeredBy } : {})
+                  }
+                })
+    } catch (error) {
+      turns.dispose()
+      results.couldNotStart(
+        target.bot,
+        automation,
+        automationRun && {
+          destination,
+          card: {
+            kind: 'automation-run-not-started',
+            run: automationRun,
+            actsFor: [...OWNER_ACTS_FOR],
+            error: notStartedError(error),
+            ...(error instanceof BotSessionRefusedError ? { refusal: error.data.refusal } : {}),
+            text,
+            at: Date.now()
+          }
         }
       )
-      if (!sent.ok) {
-        host.release(sessionId, holderId)
-        return {
-          sessionId,
-          workspaceId,
-          workspaceDisplayName: bot.name,
-          completion: Promise.resolve(unknownBotRun(sent.refusal.message))
-        }
-      }
-      const initial = sent.value.submission
-      const settled =
-        initial.dispatchState === 'pending'
-          ? await host
-              .waitForSendSettlement(sessionId, sent.value.clientMessageId)
-              .catch(() => undefined)
-          : undefined
-      const submitted = settled?.value.submission ?? initial
-      if (submitted.dispatchState !== 'accepted' || !submitted.providerItemId) {
-        host.release(sessionId, holderId)
-        return {
-          sessionId,
-          workspaceId,
-          workspaceDisplayName: bot.name,
-          completion: Promise.resolve(
-            submitted.dispatchState === 'rejected'
-              ? {
-                  status: 'dispatch_failed',
-                  error: submitted.reason ?? 'The Bot refused the scheduled prompt.'
-                }
-              : unknownBotRun()
-          )
-        }
-      }
-      const completion = watchBotAutomationTurn(
-        host,
-        sessionId,
-        submitted.providerItemId,
-        run.id
-      ).finally(() => host.release(sessionId, holderId))
-      return {
-        sessionId,
-        workspaceId,
-        workspaceDisplayName: bot.name,
-        completion
-      }
-    } catch (error) {
-      host.release(sessionId, holderId)
       throw error
     }
-  }
-  return {
-    launch,
-    async recover(run) {
-      if (!run.chatOperationId) {
-        return unknownBotRun()
-      }
-      const chatSessionId = run.chatSessionId ?? run.id
-      const host = await requireBotAutomationHost(runtime)
-      await host.revealSession(chatSessionId)
-      if (!host.hasSession(chatSessionId)) {
-        return unknownBotRun()
-      }
-      const snapshot = host.journalSnapshot(chatSessionId)
-      const submit = snapshot.submissions.find(
-        (item) => item.clientMessageId === run.chatOperationId
-      )
-      if (submit?.dispatchState === 'rejected') {
-        return {
-          chatSessionId,
-          status: 'dispatch_failed',
-          error: submit.reason ?? 'The Bot refused the scheduled prompt.'
-        }
-      }
-      const itemId = submit?.dispatchState === 'accepted' ? submit.providerItemId : null
-      return {
-        ...((itemId && botAutomationOutcome(snapshot.items, itemId)) || unknownBotRun()),
-        chatSessionId
-      }
+    // A run in the owning chat waits behind its running turn, so its result is posted through the
+    // owning conversation, never by marking a turn that may be another's.
+    const resultsTo =
+      route.kind === 'owner' || route.kind === 'post'
+        ? 'thread'
+        : saved === 'thread'
+          ? threadResults(
+              threads,
+              run,
+              {
+                worktreeId: target.workspaceId,
+                sessionId: send.sessionId,
+                agent: target.bot.agent,
+                bot: { kind: 'bot', botId: target.bot.id }
+              },
+              run.title
+            )
+          : saved
+    return {
+      sessionKind: 'chat',
+      workspaceId: target.workspaceId,
+      workspaceDisplayName: target.bot.name,
+      terminalSessionId: null,
+      chatSessionId: send.sessionId,
+      completion: turns
+        .next(send)
+        .then((ended) =>
+          results.deliver({
+            automation,
+            run,
+            bot: target.bot,
+            target: {
+              runsIn,
+              resultsTo,
+              letBotReact: automation.bot?.letBotReact === true,
+              ...(route.kind === 'take' ? {} : { threadPost: route.conversation })
+            },
+            sessionId: send.sessionId,
+            ended
+          })
+        )
+        .finally(() => {
+          // Only a conversation the run started is its own to release.
+          if (route.kind === 'take' && runsIn === 'new') {
+            void sessions.release(send.sessionId)
+          }
+        })
     }
   }
-}
-
-async function requireBotAutomationHost(
-  runtime: OrcaRuntimeService
-): Promise<StructuredAgentSessionHost> {
-  await runtime.ensureStructuredAgentSessionHost()
-  const host = getStructuredAgentSessionHost()
-  if (!host) {
-    throw new Error('The Bot Chat host could not be opened.')
-  }
-  return host
-}
-
-function unknownBotRun(
-  error = 'The run outcome could not be confirmed. Open the original Chat to see what was recorded.'
-): BotAutomationCompletion {
-  return {
-    status: 'dispatch_unknown',
-    error
-  }
-}
-
-function botAutomationOutcome(
-  items: readonly AgentJournalRenderItem[],
-  providerItemId: string
-): BotAutomationCompletion | undefined {
-  const turn = items
-    .map((item) => readAgentJournalTurn(item.body))
-    .find((item) => item?.userItemId === providerItemId)
-  if (!turn || turn.state === 'running') {
-    return undefined
-  }
-  if (turn.state === 'unverifiable') {
-    return unknownBotRun()
-  }
-  if (turn.state !== 'completed') {
-    return { status: 'dispatch_failed', error: 'The scheduled Bot turn did not finish.' }
-  }
-  const user = items.find((item) => item.itemId === providerItemId)
-  const output = createHeadlessAutomationOutputSnapshotBuffer()
-  for (const item of items) {
-    // Claude can acknowledge a submission without appending a separate user echo.
-    const afterPrompt = user
-      ? item.sequence > user.sequence
-      : turn.startedAt !== undefined && item.observedAt >= turn.startedAt
-    if (!afterPrompt || (turn.completedAt !== undefined && item.observedAt > turn.completedAt)) {
-      continue
-    }
-    if (item.body.kind !== 'message') {
-      continue
-    }
-    if (item.body.role === 'user') {
-      break
-    }
-    if (item.body.role === 'assistant') {
-      for (const block of item.body.blocks) {
-        if (block.type === 'text') {
-          output.append(`${block.text}\n`)
-        }
-      }
-    }
-  }
-  return { status: 'completed', outputSnapshot: output.snapshot() }
-}
-
-const BOT_AUTOMATION_OBSERVATION_TIMEOUT_MS = 30 * 60 * 1000
-
-function watchBotAutomationTurn(
-  host: StructuredAgentSessionHost,
-  sessionId: string,
-  providerItemId: string,
-  runId: string
-): Promise<BotAutomationCompletion> {
-  return new Promise((resolve, reject) => {
-    const finish = (result: BotAutomationCompletion) => {
-      clearTimeout(timer)
-      unsubscribe()
-      resolve(result)
-    }
-    const check = () => {
-      try {
-        const { items } = host.journalSnapshot(sessionId)
-        const result = botAutomationOutcome(items, providerItemId)
-        if (result) {
-          finish(result)
-        }
-      } catch (error) {
-        clearTimeout(timer)
-        unsubscribe()
-        reject(error)
-      }
-    }
-    const timer = setTimeout(() => {
-      finish(unknownBotRun())
-    }, BOT_AUTOMATION_OBSERVATION_TIMEOUT_MS)
-    timer.unref()
-    const unsubscribe = host.subscribe({
-      id: `bot:automation:${runId}`,
-      sessionId,
-      emit: () => queueMicrotask(check)
-    })
-    check()
-  })
 }

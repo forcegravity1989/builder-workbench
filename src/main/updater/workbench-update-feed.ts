@@ -2,7 +2,7 @@ import { app, net } from 'electron'
 import { join } from 'node:path'
 import { isWorkbenchProduct } from '../startup/workbench-product'
 import type { ElectronAutoUpdater } from '../electron-updater-loader'
-import { WORKBENCH_RELEASE_REPO } from '../../shared/release-channel'
+import { WORKBENCH_RELEASE_REPO } from '../../shared/updater/release-channel'
 import { startRecoverableUpdateFeed } from './recoverable-update-feed'
 
 let activeFeed: {

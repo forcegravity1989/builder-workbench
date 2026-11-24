@@ -1,7 +1,7 @@
-import { gitExecFileAsyncBuffer } from '../git/runner'
-import { gitReadOptionsForWorktree, type GitRuntimeOptions } from '../git/git-runtime-options'
+import { gitExecFileAsyncBuffer } from '../git/command-runner/git-exec-file'
+import { gitReadOptionsForWorktree, type GitRuntimeOptions } from '../git/command-runner/git-runtime-options'
 import { DEFAULT_GIT_MAX_BUFFER } from '../git/command-runner/git-exec-options'
-import { extractExecError } from '../git/exec-error'
+import { extractExecError } from '../git/command-runner/process-capture/exec-error'
 import { HistorySourceError } from './version-history-snapshot'
 import { planEntryLogArgs, versionHistoryLogArgs } from './version-history-log'
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
 import type { CycleTaskReference } from './version-cycle/ports'
 import type { TaskPortDeps } from './task-port'
 

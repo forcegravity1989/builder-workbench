@@ -1,11 +1,11 @@
 import { createVersionMaterialPort } from '../../../shared/workbench/version-material-client'
-import { normalizeExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
+import { normalizeExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type {
   VersionMaterialScope,
   VersionMaterialResult
 } from '../../../shared/workbench/version-material-request'
-import { callRuntimeRpc } from '../runtime/runtime-rpc-client'
-import { routeForOwner } from '../lib/worktree-owner-route'
+import { callRuntimeRpc } from '../runtime/rpc/calls/runtime-rpc-call'
+import { routeForOwner } from '../lib/workspace/ownership/worktree-owner-route'
 
 /** The selected native worktree supplies both its filesystem host and optional paired runtime. */
 export function nativeVersionMaterialPort(

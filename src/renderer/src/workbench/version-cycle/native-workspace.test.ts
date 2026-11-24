@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualified-identity'
-import { toRuntimeExecutionHostId } from '../../../../shared/execution-host'
+import { toRuntimeExecutionHostId } from '../../../../shared/execution-host/execution-host'
 
 const test = vi.hoisted(() => ({ state: {} as Record<string, unknown>, rpc: vi.fn() }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => test.state } }))

@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store'
-import { runtimeHostConnectionStateForEntry } from '@/runtime/runtime-host-connection-state'
-import {
-  getEnvironmentSshTargetConnectionGeneration,
-  selectRuntimeAwareSshStatus
-} from '@/store/slices/runtime-environment-ssh'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
-import type { Repo } from '../../../shared/repo-types'
+import { runtimeHostConnectionStateForEntry } from '@/runtime/hosts/connections/runtime-host-connection-state'
+import { getEnvironmentSshTargetConnectionGeneration } from '@/store/slices/ssh/runtime-environment-ssh'
+import { selectRuntimeAwareSshStatus } from '@/store/slices/ssh/runtime-environment-ssh-selectors'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../shared/repository/repo-types'
 import { versionCatalogSourceKey, versionCatalogSshTargetId } from './version-catalog-source'
-import { PrioritySemaphore } from '../../../shared/priority-semaphore'
+import { PrioritySemaphore } from '../../../shared/concurrency/priority-semaphore'
 
 const discoveryReads = new PrioritySemaphore(8)
 

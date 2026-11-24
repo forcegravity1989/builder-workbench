@@ -3,23 +3,23 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { ReviewSendMenuItem } from './pr-review-notifications/ReviewSendMenuItem'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { FilePenLine } from 'lucide-react'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import {
   getGitHubRuntimeRepoId,
   getGitHubSourceRuntimeTarget
-} from '@/lib/github-source-runtime-context'
-import { normalizeGitHubPRForBranchOutcome } from '../../../shared/github/pull-request-for-branch-outcome'
-import type { PRRefreshOutcome } from '../../../shared/github/pull-request-refresh-types'
-import type { PRInfo } from '../../../shared/github/pull-request-types'
+} from '@/lib/work-items/github/github-source-runtime-context'
+import { normalizeGitHubPRForBranchOutcome } from '../../../shared/github/pull-requests/refresh/pull-request-for-branch-outcome'
+import type { PRRefreshOutcome } from '../../../shared/github/pull-requests/refresh/pull-request-refresh-types'
+import type { PRInfo } from '../../../shared/github/pull-requests/pull-request-types'
 import { useAppStore } from '@/store'
-import { parseGitHubIssueOrPRLink } from '../../../shared/github/links'
-import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/github-work-item-source-lookup'
+import { parseGitHubIssueOrPRLink } from '../../../shared/github/repositories/links'
+import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/work-items/github/github-work-item-source-lookup'
 import {
   createRepoRowExecutionHostLookup,
   resolveWorktreeExecutionHost
-} from '../../../shared/worktree-execution-host-resolution'
-import { githubRepoIdentityKey } from '../../../shared/github/repository-identity-key'
-import type { Repo } from '../../../shared/repo-types'
+} from '../../../shared/execution-host/worktree-execution-host-resolution'
+import { githubRepoIdentityKey } from '../../../shared/github/repositories/repository-identity-key'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import {
   reviewRepoIdentity,

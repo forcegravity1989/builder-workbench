@@ -1,9 +1,8 @@
-import { parseWslPath } from '../wsl'
-import { acquire, release, ghRepoExecOptions, githubRepoContext } from '../github/gh-utils'
-import {
-  githubHostExecOptions,
-  resolveGitHubApiRepositoryCandidates
-} from '../github/github-api-repository'
+import { parseWslPath } from '../wsl/filesystem/unc-path-access'
+import { acquire, release } from '../github/execution/github-operation-slots'
+import { ghRepoExecOptions, githubRepoContext } from '../github/repositories/github-repository-identity'
+import { resolveGitHubApiRepositoryCandidates } from '../github/repositories/github-api-repository'
+import { githubHostExecOptions } from '../github/repositories/github-repository-host'
 import { isCodeHubGitRemote, parseCodeHubRemote } from '../../shared/codehub'
 import { githubRepositoryMatches } from './archive-pr-status'
 import { createWorkbenchRepoResolver, nativeWorkbenchWorkspaceHost } from './workspace-resolver'

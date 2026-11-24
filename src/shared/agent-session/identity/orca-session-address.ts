@@ -1,4 +1,4 @@
-import { isAgentSessionId } from '../../agent-session-record'
+import { isAgentSessionId } from '../lifecycle/agent-session-record'
 import { isTerminalHandle } from '../../terminal/terminal-handle-prefix'
 import { ORCA_SESSION_ADDRESS_PREFIX } from './orca-session-address-prefix'
 
