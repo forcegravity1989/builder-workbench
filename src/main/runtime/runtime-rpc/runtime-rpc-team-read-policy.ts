@@ -405,6 +405,8 @@ const TEAM_READ_QUIET_DENIAL_METHODS = new Set([
   'session.tabs.updatePaneLayout',
   'worktree.set',
   'worktree.teardownMissingTerminals',
+  // Fired in the background when the member opens the new-worktree dialog, before any choice.
+  'worktree.prefetchCreateBase',
   // Attached by the member's browser on its own to host pages for the owner's sessions.
   'browser.clientHost.attach'
 ])

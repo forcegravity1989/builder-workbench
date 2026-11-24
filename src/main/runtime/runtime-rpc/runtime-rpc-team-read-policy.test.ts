@@ -209,6 +209,8 @@ describe('team-read RPC policy', () => {
       teamReadParamsDenialReason('team-read', 'browser.eval', { expression: 'document.cookie' })
     ).toContain('授予完全访问')
     expect(isQuietTeamReadDenial('worktree.teardownMissingTerminals')).toBe(true)
+    expect(isQuietTeamReadDenial('worktree.prefetchCreateBase')).toBe(true)
+    expect(isQuietTeamReadDenial('worktree.create')).toBe(false)
     expect(
       teamReadParamsDenialReason('team-read', 'browser.tabCreate', { url: 'https://a.test' })
     ).toBeNull()
