@@ -1000,7 +1000,7 @@
     return `<section class="muted-frame"><h2>共享此 Orca 主机</h2>
       <p class="permission-hint">${icon('Lock')}团队主机连上后默认只读。</p>
       ${form}</section>
-      <section class="muted-frame"><header class="row between"><h3>共享服务器访问</h3>${iconButton('RefreshCw', '刷新共享访问', 'refresh')}</header>${nativeGrantRows(owner)}</section>
+      <section class="muted-frame"><header class="row between"><h3>我分享出去的链接</h3>${iconButton('RefreshCw', '刷新共享访问', 'refresh')}</header>${nativeGrantRows(owner)}</section>
       ${auditPane()}`
   }
 

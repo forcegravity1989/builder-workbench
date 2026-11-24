@@ -22,7 +22,7 @@
 
 - 远程主机入口复用 `SshStatusSegment` 的 `MonitorSmartphone` 图标、popover、连接/断开动作和「管理远程主机」设置入口。团队目录只提供地址和人类可读的成员信息，不另造连接协议。
 - 连接和配对复用 `RuntimePairingUrlGenerator`、`RuntimeAccessGrantList`、`DeviceRegistry`、WebSocket RPC 和原生设备凭据。团队地址生成使用 `scope: runtime`、`accessMode: team-read` 和 `teamBinding`；已有 Orca 地址直接填入目录，缺少地址时从同一入口生成并填入。任何入口生成的链接如果没有显式命名，都由主进程用当前 WeLink 身份（已记住的团队成员，否则 `welink-cli` 现查姓名与头像）命名，只有 welink-cli 不可用时才退回「Runtime 日期」。共享列表固定分「成员 / 链接」两个页签，一侧为空时显示空态，不改变视图形状；每条链接行可复制完整地址（地址在生成时记录，旧链接需重新生成）。
-- 共享访问列表的授权操作区只展示已建立连接的 `team-read` 设备。成员行内使用「只读 | 完全访问」ToggleGroup；成员姓名和头像来自 WeLink 目录，是主要识别。稳定 `deviceId` 仍作为权限和撤销键，放在辅助信息或诊断字段，不以姓名做权限键。
+- 共享访问列表按成员逐行展示（含完全访问与当前未连接的成员）。成员行内使用「只读 | 完全访问」ToggleGroup；成员姓名和头像来自 WeLink 目录，是主要识别。稳定 `deviceId` 仍作为权限和撤销键，放在辅助信息或诊断字段，不以姓名做权限键。
 - 设备登记必须保留原始 `teamBinding`（或不可变的同等来源字段）。升级为 `full` 只改变有效访问级别，不能丢掉成员身份，否则重启后无法显示“哪位成员连接了本机”或审计授权对象。非团队 Orca 设备继续使用原生设备名。
 
 ## 权限边界
@@ -43,7 +43,7 @@
 
 | 能力 | 现有落点 | G1 适配 |
 | --- | --- | --- |
-| 团队目录 | `src/main/team-directory-client.ts`、`src/main/ipc/team-collaboration.ts`、`src/renderer/src/workbench/TeamSettingsDialog.tsx` | 群成员/群主读回、`BW/team.json` 读写、登记即标为团队项目、地址一键填入 |
+| 团队目录 | `src/main/workbench/team-collaboration/team-directory-client.ts`、`src/main/ipc/team-collaboration.ts`、`src/renderer/src/workbench/TeamSettingsDialog.tsx` | 群成员/群主读回、`BW/team.json` 读写、登记即标为团队项目、地址一键填入 |
 | 项目聚合 | `ProjectWallPage`、项目来源与仓库身份读取 | 以 `repoId` 聚合团队来源，保留现有卡片和未连接状态 |
 | Orca 连接 | `SshStatusSegment`、`RuntimePairingUrlGenerator`、`DeviceRegistry` | 默认 `team-read`，共享访问列表按成员显示，保留来源身份 |
 | 只读路由 | `runtime-rpc-team-read-policy.ts`、WebSocket dispatch | 默认放行，只拒绝四类动作的核心入口 |
