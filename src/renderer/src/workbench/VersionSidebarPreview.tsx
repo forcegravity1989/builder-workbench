@@ -55,19 +55,22 @@ export function VersionSidebarPreview({
     })
   }
 
-  const scrollTargetVersion = forcedOlderVersion?.version ?? activeOlderVersion ?? null
+  // The header auto-scroll stays driven by active-version selection (native semantics).
+  // A reveal request scrolls its exact row via the version-tree consumer; re-running this
+  // effect on request/consume would jump to the header mid-scroll and cancel that reveal.
+  const activeRevealKey = activeOlderVersion ? `${activeOlderVersion}:${activeContextKey}` : null
   useEffect(() => {
-    if (!scrollTargetVersion) {
+    if (!activeOlderVersion) {
       return
     }
     const frame = requestAnimationFrame(() => {
       versionElements.current
-        .get(scrollTargetVersion)
+        .get(activeOlderVersion)
         ?.querySelector('button')
         ?.scrollIntoView({ block: 'nearest' })
     })
     return () => cancelAnimationFrame(frame)
-  }, [scrollTargetVersion, revealKey, repoId, versionElements])
+  }, [activeOlderVersion, activeRevealKey, repoId, versionElements])
 
   const showMore = overflow.expanded
   const moreVersionCount = entries.length - PREVIEW_LIMIT
