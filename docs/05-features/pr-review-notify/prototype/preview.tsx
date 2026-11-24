@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster, toast } from 'sonner'
 import {
   ArrowLeft,
   ArrowRight,
   ChevronDown,
+  CircleCheck,
   Crosshair,
-  FilePenLine,
   FolderGit2,
   LayoutGrid,
   Lock,
@@ -17,6 +17,7 @@ import {
   Server,
   Settings2,
   Terminal,
+  UserPlus,
   UsersRound
 } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -24,7 +25,6 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { ReviewSendDialog } from '@/workbench/pr-review-notifications/ReviewSendDialog'
@@ -32,7 +32,8 @@ import { ReviewSendMenuItem } from '@/workbench/pr-review-notifications/ReviewSe
 import {
   ReviewNotificationPanel,
   type Host,
-  type PrototypeEvent
+  type Note,
+  type PrototypeReviewItem
 } from './review-notification-panel'
 import type {
   ReviewPeerTarget,
@@ -40,51 +41,57 @@ import type {
 } from '../../../../src/shared/workbench/pr-review-request'
 import { i18n } from '@/i18n/i18n'
 
-const hosts: Host[] = [
-  {
-    id: 'host-linan',
-    name: '林安的主机',
-    worktree: 'issue-184-export',
-    member: '林安',
-    shared: true
-  },
-  {
-    id: 'host-hanlan',
-    name: '韩岚的主机',
-    worktree: 'issue-201-review',
-    member: '韩岚',
-    shared: false
-  },
-  {
-    id: 'host-chenyuan',
-    name: '陈远的主机',
-    worktree: 'issue-192-import',
-    member: '陈远',
-    shared: true
-  }
-]
-const targets: ReviewPeerTarget[] = hosts.map((host) => ({
+const owner: Host = {
+  id: 'host-linan',
+  name: '林安的主机',
+  worktree: 'issue-184-export',
+  member: '林安',
+  shared: true
+}
+const reviewer: Host = {
+  id: 'host-hanlan',
+  name: '韩岚的主机',
+  worktree: 'issue-201-review',
+  member: '韩岚',
+  shared: false
+}
+const chenyuan: Host = {
+  id: 'host-chenyuan',
+  name: '陈远的主机',
+  worktree: 'issue-192-import',
+  member: '陈远',
+  shared: true
+}
+const targets: ReviewPeerTarget[] = [owner, reviewer, chenyuan].map((host) => ({
   environmentId: host.id,
   name: host.name,
   pairingRevision: 1
 }))
+const DOCUMENT = 'prototype.html'
+const treeRows = [
+  { label: '星图服务', detail: owner.worktree, icon: FolderGit2 },
+  { label: 'v1.1', detail: '版本工作区', icon: FolderGit2 },
+  { label: '评审与发布', detail: '当前会话', icon: Terminal }
+]
+
+type Side = 'owner' | 'reviewer'
 
 function Preview(): React.JSX.Element {
-  const [activeHostId, setActiveHostId] = useState('host-hanlan')
+  // The switch stands in for sitting at the owner's machine or the read-only reviewer's.
+  const [side, setSide] = useState<Side>('owner')
   const [activeTab, setActiveTab] = useState<'session' | 'browser'>('browser')
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notificationTab, setNotificationTab] = useState<'pr' | 'prototype'>('pr')
-  const [prototypeEvent, setPrototypeEvent] = useState<PrototypeEvent>({
-    revision: '原型修订 3',
-    sessionId: 'shared-review-tab-1',
-    source: hosts[0],
-    notes: [],
-    sentToModel: false
-  })
-  const [prototypeNotification, setPrototypeNotification] = useState(false)
   const [prEvent, setPrEvent] = useState(true)
   const [prOutgoing, setPrOutgoing] = useState(true)
-  const [prototypeOutgoing, setPrototypeOutgoing] = useState(false)
+  const [invited, setInvited] = useState(false)
+  const [inviteDismissed, setInviteDismissed] = useState({ owner: false, reviewer: false })
+  const [reviewerOpened, setReviewerOpened] = useState(false)
+  const [draftNotes, setDraftNotes] = useState<Note[]>([])
+  const [hostNotes, setHostNotes] = useState<Note[]>([])
+  const [submittedCount, setSubmittedCount] = useState(0)
+  const [submitDismissed, setSubmitDismissed] = useState({ owner: false, reviewer: false })
+  const [sentToModel, setSentToModel] = useState(false)
   const [annotationMode, setAnnotationMode] = useState(false)
   const [annotationTarget, setAnnotationTarget] = useState<string | null>(null)
   const [annotationText, setAnnotationText] = useState('')
@@ -92,13 +99,58 @@ function Preview(): React.JSX.Element {
   const [draft, setDraft] = useState<ReviewSendInput | null>(null)
   const [selectedTargets, setSelectedTargets] = useState<ReviewPeerTarget[]>(targets)
 
-  const activeHost = hosts.find((host) => host.id === activeHostId) ?? hosts[0]
-  const sourceHost = prototypeEvent?.source ?? hosts[0]
-  const reviewerHost = hosts.find((host) => host.id === 'host-hanlan') ?? hosts[1]
-  const inSharedReview = activeHost.shared
-  const canAnnotate = inSharedReview
+  const me = side === 'owner' ? owner : reviewer
+  const viewingCopy = side !== 'owner'
+  const documentOpen = side === 'owner' || reviewerOpened
+  const notes = side === 'owner' ? hostNotes : draftNotes
+  const submitted = submittedCount > 0 && submittedCount === draftNotes.length
+
+  const prototypeOutgoing: PrototypeReviewItem[] =
+    side === 'owner'
+      ? invited && !inviteDismissed.owner
+        ? [
+            {
+              id: 'invite',
+              title: `邀请评审 · ${DOCUMENT}`,
+              tags: ['原型', '已送达'],
+              meta: `星图服务 · 发送于刚刚 · ${reviewer.name}`
+            }
+          ]
+        : []
+      : submittedCount > 0 && !submitDismissed.reviewer
+        ? [
+            {
+              id: 'submit',
+              title: `已提交 ${submittedCount} 条批注 · ${DOCUMENT}`,
+              tags: ['原型', '已送达'],
+              meta: `星图服务 · 发送于刚刚 · ${owner.name}`
+            }
+          ]
+        : []
+  const prototypeIncoming: PrototypeReviewItem[] =
+    side === 'owner'
+      ? submittedCount > 0 && !submitDismissed.owner
+        ? [
+            {
+              id: 'submit',
+              title: `${reviewer.member}提交了 ${submittedCount} 条批注`,
+              tags: ['原型评审', `${submittedCount} 条批注`],
+              meta: `星图服务 · ${DOCUMENT} · ${reviewer.member} · 刚刚`
+            }
+          ]
+        : []
+      : invited && !inviteDismissed.reviewer
+        ? [
+            {
+              id: 'invite',
+              title: `${owner.member}邀请你评审 · ${DOCUMENT}`,
+              tags: ['原型评审', '点击直接打开'],
+              meta: `星图服务 · ${owner.name} · 刚刚`
+            }
+          ]
+        : []
   const notificationCount =
-    Number(prEvent) + Number(prOutgoing) + Number(prototypeNotification) + Number(prototypeOutgoing)
+    Number(prEvent) + Number(prOutgoing) + prototypeOutgoing.length + prototypeIncoming.length
 
   const openSend = (kind: 'pr' | 'prototype'): void => {
     setSendKind(kind)
@@ -106,7 +158,7 @@ function Preview(): React.JSX.Element {
     setDraft({
       repo: { host: 'github.com', path: 'example/workbench-demo' },
       prNumber: 383,
-      title: kind === 'prototype' ? '原型评审 · 原型修订 3' : '通知：打通评审旅程',
+      title: kind === 'prototype' ? `邀请评审 · ${DOCUMENT}` : '通知：打通评审旅程',
       sourceBranch: 'feature/review',
       targetBranch: 'main'
     })
@@ -117,10 +169,10 @@ function Preview(): React.JSX.Element {
       return
     }
     if (sendKind === 'prototype') {
-      setPrototypeNotification(true)
-      setPrototypeOutgoing(true)
+      setInvited(true)
+      setInviteDismissed({ owner: false, reviewer: false })
       setDraft(null)
-      toast.success('原型评审通知已送达')
+      toast.success('评审邀请已送达 1 台主机')
       return
     }
     setPrEvent(true)
@@ -129,11 +181,23 @@ function Preview(): React.JSX.Element {
     toast.success('PR 评审通知已送达')
   }
 
-  const jumpToPrototype = (): void => {
-    setActiveHostId(prototypeEvent.source.id)
+  const openPrototype = (): void => {
     setActiveTab('browser')
     setNotificationsOpen(false)
-    toast.success(`已跳转到${prototypeEvent.source.name} · ${prototypeEvent.source.worktree}`)
+    if (side === 'reviewer') {
+      setReviewerOpened(true)
+      toast.success(`已在你的预览中打开 ${owner.name} 的 ${DOCUMENT}`)
+    } else {
+      toast.success(`已打开 ${DOCUMENT}`)
+    }
+  }
+
+  const dismissPrototype = (id: string): void => {
+    if (id === 'invite') {
+      setInviteDismissed((current) => ({ ...current, [side]: true }))
+    } else if (id === 'submit') {
+      setSubmitDismissed((current) => ({ ...current, [side]: true }))
+    }
   }
 
   const addAnnotation = (): void => {
@@ -145,26 +209,32 @@ function Preview(): React.JSX.Element {
       id: crypto.randomUUID(),
       target: annotationTarget,
       text,
-      member: reviewerHost.member,
-      host: reviewerHost.name
+      member: me.member,
+      host: me.name
     }
-    setPrototypeEvent((current) =>
-      current ? { ...current, notes: [...current.notes, next] } : current
-    )
+    if (side === 'owner') {
+      setHostNotes((current) => [...current, next])
+    } else {
+      setDraftNotes((current) => [...current, next])
+    }
     setAnnotationTarget(null)
     setAnnotationText('')
     setAnnotationMode(false)
-    toast.success('批注已写入同一评审页签')
+    toast.success('批注已记在当前预览')
   }
 
-  const treeRows = useMemo(
-    () => [
-      { label: '星图服务', detail: activeHost.worktree, icon: FolderGit2 },
-      { label: 'v1.1', detail: '版本工作区', icon: FolderGit2 },
-      { label: '评审与发布', detail: '当前会话', icon: Terminal }
-    ],
-    [activeHost.worktree]
-  )
+  const submitToHost = (): void => {
+    if (draftNotes.length === 0) {
+      return
+    }
+    setHostNotes((current) => [
+      ...current.filter((note) => note.member !== reviewer.member),
+      ...draftNotes
+    ])
+    setSubmittedCount(draftNotes.length)
+    setSubmitDismissed({ owner: false, reviewer: false })
+    toast.success(`已提交 ${draftNotes.length} 条批注并通知 ${owner.name}`)
+  }
 
   return (
     <TooltipProvider>
@@ -178,21 +248,18 @@ function Preview(): React.JSX.Element {
           <span className="text-muted-foreground">/</span>
           <span>星图服务</span>
           <div className="ml-auto flex items-center gap-2">
-            <span className="text-muted-foreground">当前查看主机</span>
+            <span className="text-muted-foreground">当前坐在</span>
             <select
-              className="input h-7 w-44"
-              value={activeHost.id}
-              onChange={(event) => setActiveHostId(event.target.value)}
+              className="input h-7 w-52"
+              value={side}
+              onChange={(event) => setSide(event.target.value as Side)}
             >
-              {hosts.map((host) => (
-                <option key={host.id} value={host.id}>
-                  {host.name}
-                </option>
-              ))}
+              <option value="owner">{owner.name}（文档所有者）</option>
+              <option value="reviewer">{reviewer.name}（只读成员）</option>
             </select>
             <span className="rounded bg-muted px-2 py-1 text-muted-foreground">
               <Server className="mr-1 inline size-3" />
-              {activeHost.worktree}
+              {owner.worktree}
             </span>
             <Button size="icon-xs" variant="ghost" title="设置">
               <Settings2 className="size-3.5" />
@@ -221,7 +288,7 @@ function Preview(): React.JSX.Element {
               <div className="text-xs text-muted-foreground">当前项目</div>
               <strong>星图服务</strong>
               <div className="mt-1 text-[11px] text-muted-foreground">
-                {activeHost.name} · 只读查看
+                {viewingCopy ? `${owner.name} · 只读查看` : '本机'}
               </div>
             </div>
             <div className="flex-1 p-2 text-xs">
@@ -250,10 +317,6 @@ function Preview(): React.JSX.Element {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <ReviewSendMenuItem disabled={false} onSend={() => openSend('pr')} />
-                  <DropdownMenuItem onSelect={() => openSend('prototype')}>
-                    <FilePenLine className="size-3.5" />
-                    原型评审…
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -278,12 +341,16 @@ function Preview(): React.JSX.Element {
                 </Button>
               </div>
               <div className="min-w-0 flex-1 rounded border bg-muted px-3 py-1.5 font-mono text-[11px] text-muted-foreground">
-                workbench://星图服务/{activeHost.worktree}/prototype
+                {documentOpen
+                  ? `file://${owner.worktree}/${DOCUMENT}${viewingCopy ? ' · 只读副本' : ''}`
+                  : '未打开文档'}
               </div>
-              <span className="rounded bg-muted px-2 py-1 text-[11px] text-muted-foreground">
-                <Lock className="mr-1 inline size-3" />
-                只读
-              </span>
+              {viewingCopy ? (
+                <span className="rounded bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+                  <Lock className="mr-1 inline size-3" />
+                  只读
+                </span>
+              ) : null}
             </div>
             <div className="flex h-9 items-center gap-1 border-b px-3">
               <Button
@@ -300,39 +367,50 @@ function Preview(): React.JSX.Element {
                 onClick={() => setActiveTab('browser')}
               >
                 <LayoutGrid className="mr-1 size-3" />
-                浏览器
+                预览
               </Button>
-              {inSharedReview ? (
-                <span className="ml-2 text-[11px] text-muted-foreground">
-                  共享页签：{prototypeEvent?.sessionId} · 2 人
-                </span>
-              ) : null}
             </div>
             <div className="min-h-0 flex-1 overflow-auto bg-muted/20 p-4">
               {activeTab === 'session' ? (
                 <div className="mx-auto max-w-3xl rounded-lg border bg-card p-6">
                   <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
                     <Terminal className="size-4" />
-                    {activeHost.name} · {activeHost.worktree}
+                    {me.name}
                   </div>
                   <h1 className="text-lg font-semibold">评审与发布</h1>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    当前会话沿用 BW 工作区；从通知进入原型评审后，浏览器页签固定在同一主机和工作树。
+                    当前会话沿用 BW 工作区；原型评审在各自的 HTML 预览里完成，不接管对方的页签。
                   </p>
+                </div>
+              ) : !documentOpen ? (
+                <div className="mx-auto max-w-3xl rounded-lg border bg-card p-6 text-sm text-muted-foreground">
+                  还没有打开评审文档。点击右下角的评审通知，会直接在你自己的预览里打开它。
                 </div>
               ) : (
                 <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
                   <section className="rounded-lg border bg-card p-4">
                     <div className="mb-3 flex items-center justify-between">
                       <div>
-                        <strong>共享浏览器</strong>
+                        <strong>{DOCUMENT}</strong>
                         <p className="text-xs text-muted-foreground">
-                          {inSharedReview
-                            ? `${activeHost.name} · 共享只读主机 · 批注按钮按目标状态启用`
-                            : `${activeHost.name} · 本机页签`}
+                          {viewingCopy
+                            ? `${owner.name} 的文档 · 在你的预览里批注，不影响对方`
+                            : '本机 HTML 预览'}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
+                        {side === 'owner' ? (
+                          <Button
+                            size="icon"
+                            className="h-7 w-7"
+                            variant="ghost"
+                            title="邀请评审"
+                            aria-label="邀请评审"
+                            onClick={() => openSend('prototype')}
+                          >
+                            <UserPlus className="size-4" />
+                          </Button>
+                        ) : null}
                         <Button
                           size="icon"
                           className="h-8 w-8"
@@ -344,15 +422,14 @@ function Preview(): React.JSX.Element {
                         <Button
                           size="icon"
                           className="relative h-8 w-8"
-                          variant={canAnnotate && annotationMode ? 'default' : 'ghost'}
-                          disabled={!canAnnotate}
-                          title={canAnnotate ? '批注页面元素' : '共享浏览器批注不可用'}
+                          variant={annotationMode ? 'default' : 'ghost'}
+                          title="批注页面元素"
                           onClick={() => setAnnotationMode((value) => !value)}
                         >
                           <MessageSquarePlus className="size-4" />
-                          {prototypeEvent?.notes.length ? (
+                          {notes.length ? (
                             <span className="absolute ml-5 -mt-5 min-w-3 rounded-full bg-primary px-1 text-[9px] text-primary-foreground">
-                              {prototypeEvent.notes.length}
+                              {notes.length}
                             </span>
                           ) : null}
                         </Button>
@@ -366,7 +443,7 @@ function Preview(): React.JSX.Element {
                         <span className="text-xs text-muted-foreground">原型内容 · 示例快照</span>
                         <h2 className="mt-2 text-xl font-semibold">这里是原型页面内容</h2>
                         <p className="mt-2 text-sm text-muted-foreground">
-                          原型内容弱化展示；本评审关注工作区、主机、浏览器页签和批注入口。
+                          原型内容弱化展示；本评审关注入口、通知和批注的去向。
                         </p>
                         <Button
                           size="xs"
@@ -413,7 +490,7 @@ function Preview(): React.JSX.Element {
                     {annotationTarget ? (
                       <div className="mt-3 rounded border bg-background p-3">
                         <div className="text-xs font-medium">
-                          批注「{annotationTarget}」 · {reviewerHost.name}
+                          批注「{annotationTarget}」 · {me.member}
                         </div>
                         <textarea
                           className="input mt-2 min-h-20 w-full"
@@ -434,7 +511,7 @@ function Preview(): React.JSX.Element {
                             disabled={!annotationText.trim()}
                             onClick={addAnnotation}
                           >
-                            提交批注
+                            添加批注
                           </Button>
                         </div>
                       </div>
@@ -442,44 +519,55 @@ function Preview(): React.JSX.Element {
                   </section>
                   <aside className="rounded-lg border bg-card p-3">
                     <div className="flex items-center justify-between">
-                      <strong className="text-sm">评审批注</strong>
-                      <span className="text-xs text-muted-foreground">
-                        {prototypeEvent?.notes.length ?? 0} 条
-                      </span>
+                      <strong className="text-sm">批注</strong>
+                      <span className="text-xs text-muted-foreground">{notes.length} 条</span>
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      同一浏览器页签汇总，批注显示成员和来源主机。
+                      {side === 'owner'
+                        ? '成员提交的批注会出现在这里，并显示提交人。'
+                        : '这些批注只在你的预览里，提交后才会交给对方。'}
                     </p>
                     <div className="mt-3 space-y-2">
-                      {prototypeEvent?.notes.length ? (
-                        prototypeEvent.notes.map((note) => (
+                      {notes.length ? (
+                        notes.map((note) => (
                           <div key={note.id} className="rounded border p-2 text-xs">
                             <strong>{note.target}</strong>
                             <p className="mt-1">{note.text}</p>
-                            <small className="text-muted-foreground">
-                              {note.member} · {note.host}
-                            </small>
+                            <small className="text-muted-foreground">{note.member}</small>
                           </div>
                         ))
                       ) : (
                         <p className="text-xs text-muted-foreground">暂无批注</p>
                       )}
                     </div>
-                    {prototypeEvent && activeHost.id === sourceHost.id ? (
+                    {side === 'owner' ? (
                       <Button
                         className="mt-4 w-full"
                         size="sm"
-                        disabled={!prototypeEvent.notes.length || prototypeEvent.sentToModel}
+                        disabled={!hostNotes.length || sentToModel}
                         onClick={() => {
-                          setPrototypeEvent((current) =>
-                            current ? { ...current, sentToModel: true } : current
-                          )
-                          toast.success('批注已发送给发起人的工作模型')
+                          setSentToModel(true)
+                          toast.success('批注已发送给我的工作模型')
                         }}
                       >
-                        {prototypeEvent.sentToModel ? '已发送给工作模型' : '发送给我的工作模型'}
+                        {sentToModel ? '已发送给工作模型' : '发送给模型'}
                       </Button>
-                    ) : null}
+                    ) : (
+                      <Button
+                        className="mt-4 w-full"
+                        size="sm"
+                        disabled={!draftNotes.length || submitted}
+                        title={`把这些批注交给 ${owner.name}，并通知对方`}
+                        onClick={submitToHost}
+                      >
+                        {submitted ? (
+                          <CircleCheck className="mr-1.5 size-3.5" />
+                        ) : (
+                          <Send className="mr-1.5 size-3.5" />
+                        )}
+                        {submitted ? `已提交给 ${owner.name}` : `提交给 ${owner.name}`}
+                      </Button>
+                    )}
                   </aside>
                 </div>
               )}
@@ -497,11 +585,9 @@ function Preview(): React.JSX.Element {
           prEvent={prEvent}
           setPrEvent={setPrEvent}
           prototypeOutgoing={prototypeOutgoing}
-          setPrototypeOutgoing={setPrototypeOutgoing}
-          prototypeNotification={prototypeNotification}
-          setPrototypeNotification={setPrototypeNotification}
-          prototypeEvent={prototypeEvent}
-          jumpToPrototype={jumpToPrototype}
+          prototypeIncoming={prototypeIncoming}
+          dismissPrototype={dismissPrototype}
+          openPrototype={openPrototype}
         />
       </div>
       {draft ? (

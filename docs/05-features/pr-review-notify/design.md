@@ -33,4 +33,4 @@
 
 ## 原型关系
 
-[prototype/index.html](prototype/index.html) 复用当前 BW 工作区壳和真实 PR 通知结构，其中原型评审的入口与批注画面早于现实现（工作树菜单入口、共享页签点位批注），与现行的「预览工具栏邀请评审 → 成员本机批注 → 提交给持有人」不一致，待人确认后刷新。原型与实现仍未经过 Electron 和双主机验收。
+[prototype/index.html](prototype/index.html) 复用当前 BW 工作区壳和真实 PR 通知结构，其中原型评审演示「预览工具栏邀请评审 → 成员本机批注 → 提交给持有人 → 持有人读回」。原型与实现仍未经过 Electron 和双主机验收。

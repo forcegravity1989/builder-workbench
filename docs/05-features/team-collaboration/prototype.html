@@ -167,8 +167,6 @@
       .demo-link { margin-top: 8px; }
       .grant-row { padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
       .grant-row + .grant-row { margin-top: 5px; }
-      .grant-toolbar { margin-bottom: 6px; padding: 2px 0; color: var(--muted-foreground); font-size: 12px; }
-      .grant-select { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; }
       .audit-pane .table { min-width: 445px; }
       .audit-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 10px 0; }
       .audit-filters > .field { flex: 1 1 110px; margin: 0; }
@@ -255,7 +253,7 @@
           <li>陈远绑定该群后，BW 根据已登记的 repoId 和各主机项目墙上的实际来源合并成一张现有样式的项目卡。他不需要重复登记星图服务，「交付看板」仍是他的个人项目。</li>
           <li>在团队设置的本机地址栏点击「一键生成并填入」；已有 Orca 配置时按钮变为「一键填入」。群成员随后自动看到地址和连接目标，连接默认保持断开，建立连接后默认只读。</li>
           <li>项目卡保留现有 BW 的主机状态；未连接来源只显示离线状态。需要连接时，从左下角「管理远程主机」进入 Orca 远程服务器设置，建立连接后再回到项目卡查看。</li>
-          <li>陈远在自己的 Orca 共享访问列表中勾选林安等已连接设备，一次授予完全访问。未选设备仍只读；完全访问后可在该项目下新建会话或新建工作树。访问日志只由被访问主机持有人筛选查看，超过 14 天自动清理。</li>
+          <li>陈远在自己的 Orca 共享访问列表里，直接用林安行内的「只读 | 完全访问」切换，点击即生效，无需勾选或确认；切回只读随时可用，其他成员不受影响。完全访问后可在该项目下新建会话或新建工作树。访问日志只由被访问主机持有人筛选查看，记下授予与恢复只读，超过 14 天自动清理。</li>
         </ol>
       </details>
       <div class="preview"><div id="surface"></div><p class="proto-status" id="status" role="status" aria-live="polite"></p></div>
