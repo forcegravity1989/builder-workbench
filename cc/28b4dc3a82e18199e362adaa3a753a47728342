@@ -1,0 +1,45 @@
+src/main/runtime/runtime-rpc/runtime-rpc-websocket-dispatch.ts
+  s_02ab5765848c38::t_e858a0bd6d6f91 190
+  s_02ab5765848c38::t_24d14b9af1d9f0 17
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_b2b57fe7109693 2
+  s_02ab5765848c38::t_69fd28f17ede37 256-265
+  s_02ab5765848c38::t_b6c83e2d1df9e3 28-29
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_e863fecc446eab 212-217
+  h_1dcaf127381c33 218-219
+  s_02ab5765848c38::t_755cc29e7f98e4 8,18,49,220-221
+src/shared/remote-browser-viewport-probe.ts
+  s_02ab5765848c38::t_185950fd0e82ee 2-3
+src/main/workbench/review-inbox.test.ts
+  s_02ab5765848c38::t_ef54070f52b177 131-132
+docs/05-features/team-collaboration/intent.md
+  s_02ab5765848c38::t_7c86e10f8b0a1b 19
+docs/06-module/团队共享访问策略.md
+  s_02ab5765848c38::t_f1497518ca06c4 22
+src/main/workbench/prototype-review-annotations.ts
+  s_02ab5765848c38::t_19e05ec37f633f 14-22,38-39,64,71-75,85,95-96,101
+src/renderer/src/workbench/pr-review-notifications/PrototypeReviewInviteButton.tsx
+  s_02ab5765848c38::t_e5e65cf72d1725 3-4,17-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "cc28b4dc3a82e18199e362adaa3a753a47728342",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
