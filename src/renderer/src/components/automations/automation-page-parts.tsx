@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { translate } from '@/i18n/i18n'
 import type { AutomationRun } from '../../../../shared/automations-types'
 
 export function formatAutomationDateTime(value: number | null | undefined): string {
@@ -59,7 +60,7 @@ export function getAutomationRunStatusVariant(
   if (status === 'dispatched' || status === 'completed') {
     return 'secondary'
   }
-  if (status.startsWith('skipped')) {
+  if (status.startsWith('skipped') || status === 'dispatch_unknown') {
     return 'outline'
   }
   if (status === 'dispatch_failed') {
@@ -88,6 +89,8 @@ export function getAutomationRunStatusLabel(status: AutomationRun['status']): st
       return 'Needs credentials'
     case 'dispatch_failed':
       return 'Failed'
+    case 'dispatch_unknown':
+      return translate('bots.schedule-result-unknown', 'Outcome unknown')
   }
 }
 

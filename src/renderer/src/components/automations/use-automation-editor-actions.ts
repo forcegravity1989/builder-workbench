@@ -134,7 +134,10 @@ export function useAutomationEditorActions({
       initialDestination ? { projectId: latest.projectId, destination: initialDestination } : null
     )
     setEditingHostStableKey(initialDestination?.entry.stableKey ?? null)
-    const nextDraft = buildAutomationEditDraft(latest)
+    const nextDraft = {
+      ...buildAutomationEditDraft(latest),
+      ...(latest.bot ? { isBotSchedule: true as const } : {})
+    }
     setDraft(nextDraft)
     setDraftAtOpen(nextDraft)
     setCreateOpen(true)

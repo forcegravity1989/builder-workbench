@@ -18,6 +18,9 @@ import { runAutomationNowFenced } from '../automations/refused-manual-run'
 import { paginateAutomationRuns } from '../../shared/automation-run-cursor'
 import { hasRuntimeAutomationUpdateValue } from './runtime-automation-update-value'
 import { assertAutomationRunContextMatchesTarget } from './runtime-automation-run-context'
+import { folderWorkspaceKey } from '../../shared/workspace-scope'
+import { isBotsEnabled } from '../../shared/bots-switch'
+import { buildAutomationRrule } from '../../shared/automation-schedule-occurrences'
 
 export type RuntimeAutomationCreateInput = Omit<
   AutomationCreateInput,
@@ -108,6 +111,61 @@ export class RuntimeAutomationController {
     if (!this.store?.createAutomation) {
       throw new Error('runtime_unavailable')
     }
+    if (input.bot) {
+      const bot = this.store.getBots?.().find((candidate) => candidate.id === input.bot?.botId)
+      if (
+        !isBotsEnabled(this.store.getSettings()) ||
+        this.store.getSettings()?.experimentalStructuredNativeChat !== true ||
+        !bot ||
+        (bot.agent !== 'claude' && bot.agent !== 'codex')
+      ) {
+        throw new Error('Select an available Bot with structured Chat on this host.')
+      }
+      if (
+        input.repo ||
+        input.workspace ||
+        input.precheck ||
+        input.runContext ||
+        input.sourceContext ||
+        input.workspaceMode ||
+        input.baseBranch ||
+        input.setupDecision ||
+        input.reuseSession
+      ) {
+        throw new Error('A Bot automation uses the Bot Home as its workspace.')
+      }
+      if (input.bot.runsIn !== 'new' || input.bot.resultsTo !== 'none' || input.bot.chat) {
+        throw new Error('This host runs each Bot schedule in a new Chat.')
+      }
+      if (!/^FREQ=DAILY;BYHOUR=\d{1,2};BYMINUTE=\d{1,2}$/.test(input.rrule)) {
+        throw new Error('This host supports daily Bot schedules.')
+      }
+      const firstRun = new Date(input.dtstart)
+      return this.store.createAutomation(
+        {
+          creationKey: input.creationKey,
+          name: input.name,
+          prompt: input.prompt,
+          agentId: bot.agent,
+          bot: input.bot,
+          projectId: '',
+          workspaceMode: 'existing',
+          workspaceId: folderWorkspaceKey(bot.folderWorkspaceId),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          rrule: buildAutomationRrule({
+            preset: 'daily',
+            hour: firstRun.getHours(),
+            minute: firstRun.getMinutes()
+          }),
+          dtstart: input.dtstart,
+          enabled: input.enabled,
+          missedRunGraceMinutes: input.missedRunGraceMinutes
+        },
+        (destination ?? input.destination)
+          ? { destination: destination ?? input.destination }
+          : undefined
+      )
+    }
     const target = await this.resolveTarget(input)
     assertAutomationRunContextMatchesTarget(input.runContext, target.repo)
     if (input.reuseSession && target.workspaceMode !== 'existing') {
@@ -149,6 +207,17 @@ export class RuntimeAutomationController {
       throw new Error('runtime_unavailable')
     }
     const current = this.show(id)
+    if (current.bot) {
+      if (
+        options?.destination ||
+        Object.keys(updates).some(
+          (key) => !['name', 'prompt', 'enabled', 'missedRunGraceMinutes'].includes(key)
+        )
+      ) {
+        throw new Error('Manage the Bot schedule on its existing host.')
+      }
+      return this.store.updateAutomation(id, updates, options)
+    }
     const patch: AutomationUpdateInput = {}
     this.copyPatchValues(updates, patch)
     const targetChanged =

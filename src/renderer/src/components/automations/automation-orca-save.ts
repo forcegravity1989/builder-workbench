@@ -25,6 +25,33 @@ import {
 } from './automation-orca-save-operations'
 import type { AutomationSaveContext } from './automation-save-context'
 
+export async function saveBotSchedule(
+  context: AutomationSaveContext,
+  automationId: string
+): Promise<void> {
+  const { local, destination, pageRefresh } = context
+  const { draft, editingRowKey } = local
+  const saved = await saveExistingAutomation(
+    context,
+    automationId,
+    local.automations.find((entry) => entry.id === automationId && entry.bot) ?? null,
+    { name: draft.name.trim(), prompt: draft.prompt.trim() },
+    undefined,
+    destination.automationHostTarget,
+    editingRowKey
+  )
+  if (!saved.ok) {
+    local.setEditorNotice(saved.notice)
+    return
+  }
+  destination.invalidateRowHost(editingRowKey, 'definition')
+  local.setCreateOpen(false)
+  await pageRefresh.refresh()
+  toast.success(
+    translate('auto.components.automations.AutomationsPage.244727e655', 'Automation updated.')
+  )
+}
+
 /** Saves an Orca automation, including destination validation and host moves. */
 export async function saveOrcaAutomation(
   context: AutomationSaveContext,

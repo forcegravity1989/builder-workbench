@@ -152,9 +152,10 @@ export function AutomationListLocalRow({
     automationHostTarget: hostTargetFor(row),
     sourceHostAvailability: automationSourceHostAvailabilityByRowKey.get(row.key)
   })
-  const projectLabel =
-    automationRepo?.displayName ??
-    translate('auto.components.automations.AutomationsPage.13118faadf', 'Unknown project')
+  const projectLabel = automation.bot
+    ? translate('bots.schedule-bot-home', 'Bot Home')
+    : (automationRepo?.displayName ??
+      translate('auto.components.automations.AutomationsPage.13118faadf', 'Unknown project'))
   const scheduleLabel = formatUiAutomationSchedule(automation.rrule)
   const nextRunLabel = automation.enabled
     ? formatAutomationDateTimeWithRelative(automation.nextRunAt, relativeNow)

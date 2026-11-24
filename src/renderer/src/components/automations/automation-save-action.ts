@@ -8,7 +8,7 @@ import { translate } from '@/i18n/i18n'
 import { acceptsAutomationDraftSchedule } from './automation-schedule-input-gate'
 import { parseDraftTime } from './automation-draft-model'
 import { saveHermesAutomation } from './automation-hermes-save'
-import { saveOrcaAutomation } from './automation-orca-save'
+import { saveBotSchedule, saveOrcaAutomation } from './automation-orca-save'
 import type { AutomationSaveContext } from './automation-save-context'
 
 /** Validates editor input then delegates the provider-specific save transaction. */
@@ -32,6 +32,17 @@ export function createAutomationSaveAction(context: AutomationSaveContext) {
       ((draft.workspaceMode === 'existing' || isHermesSave) && !draft.workspaceId) ||
       !draft.prompt.trim()
     ) {
+      if (draft.isBotSchedule && editingAutomationId && draft.name.trim() && draft.prompt.trim()) {
+        setIsSaving(true)
+        try {
+          await saveBotSchedule(context, editingAutomationId)
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : String(error))
+        } finally {
+          setIsSaving(false)
+        }
+        return
+      }
       toast.error(
         translate(
           'auto.components.automations.AutomationsPage.2430fecf53',

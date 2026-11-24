@@ -1,4 +1,5 @@
 import { AutomationService } from '../automations/service'
+import { createBotAutomationLauncher } from '../automations/bot-automation-launch'
 import { createHeadlessAutomationOutputSnapshotBuffer } from '../automations/headless-dispatch'
 import { buildHeadlessAutomationWorktreeCreateArgs } from '../automations/headless-workspace-create'
 import { createRuntimeAutomationRunTerminalObserver } from '../automations/runtime-terminal-run-observer'
@@ -14,6 +15,7 @@ export function initializeMainProcessAutomations(): AutomationService {
     throw new Error('Runtime and usage stores must be initialized before automations')
   }
   const service = new AutomationService(store, {
+    botLauncher: createBotAutomationLauncher(runtime),
     claudeUsage,
     codexUsage,
     terminalObserver: createRuntimeAutomationRunTerminalObserver(runtime),

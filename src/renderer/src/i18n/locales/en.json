@@ -134,7 +134,19 @@
     "memory-edit": "Edit",
     "memory-forget": "Forget",
     "memory-fact": "Memory fact",
-    "memory-add": "Add fact"
+    "memory-add": "Add fact",
+    "schedule": "Schedule a run",
+    "schedule-name": "Schedule name",
+    "schedule-prompt": "Prompt",
+    "schedule-start": "Start time",
+    "schedule-daily": "Repeats daily in the Bot host’s time zone.",
+    "schedule-result-unknown": "Outcome unknown",
+    "schedule-bot-home": "Bot Home",
+    "schedule-create": "Create schedule",
+    "schedule-invalid": "Enter a name, a prompt, and a future start time.",
+    "schedule-saved": "Schedule saved in Automations.",
+    "schedule-open": "Open Bot Chat",
+    "schedule-run-chat": "This run opened in Bot Chat."
   },
   "githubChecks": {
     "retrying": "Retrying…"

@@ -70,6 +70,14 @@ export function getAutomationTargetAvailability({
   automationHostTarget,
   sourceHostAvailability
 }: AutomationTargetAvailabilityArgs): AutomationTargetAvailability {
+  if (automation.bot) {
+    return automationHostTarget?.kind === 'environment'
+      ? getRuntimeAutomationAvailability(
+          automationHostTarget.environmentId,
+          runtimeStatusByEnvironmentId
+        )
+      : { canRunNow: true, reason: 'available', message: null }
+  }
   if (!repo) {
     return unavailable('missing-project', 'The target project is no longer available.')
   }

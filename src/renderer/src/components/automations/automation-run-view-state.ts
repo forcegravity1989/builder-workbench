@@ -1,6 +1,12 @@
 import type { Automation, AutomationRun } from '../../../../shared/automations-types'
+import { translate } from '@/i18n/i18n'
 
-export type AutomationRunViewAvailability = 'terminal' | 'workspace' | 'snapshot' | 'metadata'
+export type AutomationRunViewAvailability =
+  | 'chat'
+  | 'terminal'
+  | 'workspace'
+  | 'snapshot'
+  | 'metadata'
 
 export type AutomationRunViewState = {
   availability: AutomationRunViewAvailability
@@ -57,6 +63,14 @@ export function getAutomationRunViewState({
   workspaceExists: boolean
   terminalTargetExists: boolean
 }): AutomationRunViewState {
+  if (run.sessionKind === 'agent-session' && run.workspaceId && run.chatSessionId) {
+    return {
+      availability: 'chat',
+      actionLabel: translate('bots.schedule-open', 'Open Bot Chat'),
+      statusLabel: translate('bots.schedule-run-chat', 'This run opened in Bot Chat.'),
+      canOpen: true
+    }
+  }
   const hasTerminalIdentity = Boolean(run.terminalPaneKey && run.terminalPtyId)
   if (run.workspaceId && workspaceExists && terminalTargetExists) {
     return {

@@ -27,7 +27,19 @@
     "memory-edit": "编辑",
     "memory-forget": "忘记",
     "memory-fact": "记忆内容",
-    "memory-add": "添加记忆"
+    "memory-add": "添加记忆",
+    "schedule": "安排定时运行",
+    "schedule-name": "日程名称",
+    "schedule-prompt": "提示词",
+    "schedule-start": "开始时间",
+    "schedule-daily": "按 Bot 执行主机的时区每天运行。",
+    "schedule-result-unknown": "结果未知",
+    "schedule-bot-home": "Bot 主目录",
+    "schedule-create": "创建日程",
+    "schedule-invalid": "请填写名称、提示词和未来的开始时间。",
+    "schedule-saved": "已保存，可在自动化中查看。",
+    "schedule-open": "打开 Bot Chat",
+    "schedule-run-chat": "本次运行在 Bot Chat 中打开。"
   },
   "githubChecks": {
     "retrying": "正在重试..."

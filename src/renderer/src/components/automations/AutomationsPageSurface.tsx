@@ -276,8 +276,13 @@ export function AutomationsPageSurface({
           relativeNow={relativeNow}
           externalActionKey={externalActionKey}
           selectedRepoDisplayName={
-            presentation.selectedRepo?.displayName ??
-            translate('auto.components.automations.AutomationsPage.13118faadf', 'Unknown project')
+            selected?.bot
+              ? translate('bots.schedule-bot-home', 'Bot Home')
+              : (presentation.selectedRepo?.displayName ??
+                translate(
+                  'auto.components.automations.AutomationsPage.13118faadf',
+                  'Unknown project'
+                ))
           }
           selectedRepoDefaultBaseRef={presentation.selectedRepo?.worktreeBaseRef ?? null}
           selectedWorkspaceName={

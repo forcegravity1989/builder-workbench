@@ -3,6 +3,7 @@ import type { ExecutionHostId } from '../../../../shared/execution-host'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { activateAiVaultStructuredSession } from '@/lib/activate-ai-vault-structured-session'
 import { useAppStore } from '@/store'
 import {
   buildAutomationRunOpenLayout,
@@ -45,6 +46,13 @@ export function createAutomationRunWorkspaceAction({ store, list }: AutomationsP
   const { repoForRow, worktreeForRow } = store
   const { selectedRow } = list
   return function openRunWorkspace(run: AutomationRun): void {
+    if (run.sessionKind === 'agent-session' && run.chatSessionId && run.workspaceId) {
+      useAppStore.getState().setActiveView('terminal')
+      void activateAiVaultStructuredSession({
+        structuredSession: { sessionId: run.chatSessionId, workspaceId: run.workspaceId }
+      })
+      return
+    }
     const runWorktree =
       run.workspaceId && selectedRow
         ? (worktreeForRow(selectedRow, repoForRow(selectedRow), run.workspaceId) ?? null)

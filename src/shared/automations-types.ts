@@ -17,6 +17,7 @@ export type AutomationRunStatus =
   | 'skipped_unavailable'
   | 'skipped_needs_interactive_auth'
   | 'dispatch_failed'
+  | 'dispatch_unknown'
 export type AutomationRunTrigger = 'scheduled' | 'manual'
 
 /** Statuses a run can never leave; only these are safe to evict from history. */
@@ -24,6 +25,7 @@ export function isFinalAutomationRunStatus(status: AutomationRunStatus): boolean
   return (
     status === 'completed' ||
     status === 'dispatch_failed' ||
+    status === 'dispatch_unknown' ||
     status === 'skipped_precheck' ||
     status === 'skipped_missed' ||
     status === 'skipped_unavailable' ||
@@ -147,8 +149,9 @@ export type AutomationRun = {
   /** Why: run history must remain understandable after the backing workspace
    *  is deleted and its live metadata is gone. */
   workspaceDisplayName?: string | null
-  sessionKind: 'terminal'
+  sessionKind: 'terminal' | 'agent-session'
   chatSessionId: string | null
+  chatOperationId?: string
   terminalSessionId: string | null
   /** Why: a terminal tab can later point at a different pane/PTY. Automation
    *  run reopening must target the pane that actually executed the run. */
@@ -179,6 +182,7 @@ export type AutomationRunsPage = {
 }
 
 export type AutomationCreateInput = {
+  bot?: AutomationBotTarget
   /** Optional idempotency key; repeated creates return the original record. */
   creationKey?: string
   name: string
@@ -236,6 +240,8 @@ export type AutomationDispatchRequest = {
 export type AutomationDispatchResult = {
   runId: string
   status: AutomationRunStatus
+  chatSessionId?: string | null
+  chatOperationId?: string
   workspaceId?: string | null
   workspaceDisplayName?: string | null
   terminalSessionId?: string | null

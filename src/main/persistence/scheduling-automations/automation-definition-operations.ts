@@ -63,11 +63,13 @@ export function createAutomation(
   const now = Date.now()
   const workspaceId = input.workspaceMode === 'existing' ? (input.workspaceId ?? null) : null
   const workspaceSshPin = automationWorkspaceSshPin(operations.state, workspaceId)
-  const executionTarget = deriveAutomationExecutionTargetForCreate({
-    repo,
-    sshTargetGeneration: sshTargetGenerationForConnection(operations.state, repo?.connectionId),
-    workspaceSshPin
-  })
+  const executionTarget = input.bot
+    ? ({ executionTargetType: 'local', executionTargetId: 'local' } as const)
+    : deriveAutomationExecutionTargetForCreate({
+        repo,
+        sshTargetGeneration: sshTargetGenerationForConnection(operations.state, repo?.connectionId),
+        workspaceSshPin
+      })
   if (options?.destination) {
     const context = automationProjectionContext(
       operations.state,
@@ -81,6 +83,7 @@ export function createAutomation(
   const contexts = getAutomationContextsForRepo(repo, operations.state.projectHostSetups ?? [])
   const automation: Automation = {
     id: randomUUID(),
+    ...(input.bot ? { bot: input.bot } : {}),
     ...(input.creationKey ? { creationKey: input.creationKey } : {}),
     name: input.name.trim() || 'Untitled automation',
     prompt: input.prompt,

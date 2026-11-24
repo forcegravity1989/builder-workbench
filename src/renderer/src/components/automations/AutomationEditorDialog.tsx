@@ -36,6 +36,7 @@ export const AUTOMATION_EDITOR_SEGMENTED_ITEM_CLASS =
 
 export type AutomationDraft = {
   creationKey?: string
+  isBotSchedule?: true
   name: string
   prompt: string
   agentId: TuiAgent
@@ -193,28 +194,30 @@ export function AutomationEditorDialog({
             onDraftChange={onDraftChange}
             onDismiss={() => onOpenChange(false)}
           />
-          <AutomationEditorSettingsSidebar
-            destination={destination}
-            isHermesTarget={isHermesTarget}
-            isHermesCreate={isHermesCreate}
-            repos={repos}
-            projectHostSetups={projectHostSetups}
-            automationYamlHooksByRepoKey={automationYamlHooksByRepoKey}
-            getAutomationHooksCacheKey={getAutomationHooksCacheKey}
-            repoMap={repoMap}
-            worktrees={worktrees}
-            settings={settings}
-            draft={draft}
-            visibleAgents={visibleAgents}
-            pickerTriggerClassName={AUTOMATION_EDITOR_PICKER_TRIGGER_CLASS}
-            segmentedGroupClassName={AUTOMATION_EDITOR_SEGMENTED_GROUP_CLASS}
-            segmentedItemClassName={AUTOMATION_EDITOR_SEGMENTED_ITEM_CLASS}
-            onProjectChange={onProjectChange}
-            getRepoHostLabel={getRepoHostLabel}
-            allowAddProject={allowAddProject}
-            onDraftChange={onDraftChange}
-            onSetupDecisionTouched={onSetupDecisionTouched}
-          />
+          {draft.isBotSchedule ? null : (
+            <AutomationEditorSettingsSidebar
+              destination={destination}
+              isHermesTarget={isHermesTarget}
+              isHermesCreate={isHermesCreate}
+              repos={repos}
+              projectHostSetups={projectHostSetups}
+              automationYamlHooksByRepoKey={automationYamlHooksByRepoKey}
+              getAutomationHooksCacheKey={getAutomationHooksCacheKey}
+              repoMap={repoMap}
+              worktrees={worktrees}
+              settings={settings}
+              draft={draft}
+              visibleAgents={visibleAgents}
+              pickerTriggerClassName={AUTOMATION_EDITOR_PICKER_TRIGGER_CLASS}
+              segmentedGroupClassName={AUTOMATION_EDITOR_SEGMENTED_GROUP_CLASS}
+              segmentedItemClassName={AUTOMATION_EDITOR_SEGMENTED_ITEM_CLASS}
+              onProjectChange={onProjectChange}
+              getRepoHostLabel={getRepoHostLabel}
+              allowAddProject={allowAddProject}
+              onDraftChange={onDraftChange}
+              onSetupDecisionTouched={onSetupDecisionTouched}
+            />
+          )}
         </div>
 
         <AutomationOwnerConflictNotice
@@ -230,7 +233,7 @@ export function AutomationEditorDialog({
           isHermesCreate={isHermesCreate}
           isSaving={isSaving}
           canSave={canSave}
-          hasProjects={repos.length > 0}
+          hasProjects={Boolean(draft.isBotSchedule) || repos.length > 0}
           onOpenChange={onOpenChange}
           onSave={onSave}
         />

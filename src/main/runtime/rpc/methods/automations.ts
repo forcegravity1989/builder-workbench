@@ -1,6 +1,7 @@
 import { AUTOMATION_OWNER_FENCING_RUNTIME_CAPABILITY } from '../../../../shared/protocol-version'
 import type { AutomationOwnerPrecondition } from '../../../../shared/automation-owner-precondition'
 import { defineMethod, type RpcContext } from '../core'
+import { requireBotOwner } from './bots-memory'
 import {
   AutomationCreate,
   AutomationId,
@@ -15,15 +16,20 @@ function mutationOwner(
   expectedOwner: AutomationOwnerPrecondition | undefined,
   context: RpcContext
 ): AutomationOwnerPrecondition | undefined {
-  if (
+  const owner =
     expectedOwner ||
     context.clientCapabilities === undefined ||
     context.clientCapabilities.includes(AUTOMATION_OWNER_FENCING_RUNTIME_CAPABILITY)
+      ? expectedOwner
+      : (context.runtime.automationOwnerPrecondition(id) ?? undefined)
+  if (
+    context.pairedDeviceId !== undefined &&
+    context.accessMode !== 'full' &&
+    context.runtime.showAutomation(id, owner).bot
   ) {
-    return expectedOwner
+    requireBotOwner(context)
   }
-  // Legacy clients cannot echo owner metadata, so snapshot it at the RPC boundary.
-  return context.runtime.automationOwnerPrecondition(id) ?? undefined
+  return owner
 }
 
 export const AUTOMATION_METHODS = [
@@ -48,9 +54,12 @@ export const AUTOMATION_METHODS = [
   defineMethod({
     name: 'automation.create',
     params: AutomationCreate,
-    handler: async (params, { runtime }) => ({
-      automation: await runtime.createAutomation(params)
-    })
+    handler: async (params, context) => {
+      if (params.bot) {
+        requireBotOwner(context)
+      }
+      return { automation: await context.runtime.createAutomation(params) }
+    }
   }),
   defineMethod({
     name: 'automation.update',

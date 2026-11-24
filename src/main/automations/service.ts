@@ -18,6 +18,8 @@ import { runAutomationPrecheck } from './precheck-runner'
 import { resolveAutomationRunTarget, type AutomationRunTargetResult } from './run-target-resolution'
 import { writeAutomationRunUsage } from './run-usage-collection'
 import type { HeadlessAutomationDispatcher } from './headless-dispatch'
+import type { BotAutomationLauncher } from './bot-automation-launch'
+import { mintAgentSessionOperationId } from '../runtime/orchestration/structured-pointer-operation-id'
 import { clearAutomationDispatchTokens, createAutomationDispatchToken } from './dispatch-tokens'
 import { runHeadlessAutomationDispatch } from './headless-dispatch-runner'
 import {
@@ -53,6 +55,7 @@ export class AutomationService {
   private readonly codexUsage: CodexUsageStore | null
   private readonly allowRemoteHostScheduling: boolean
   private readonly headlessDispatcher: HeadlessAutomationDispatcher | null
+  private readonly botLauncher: BotAutomationLauncher | null
   private readonly publish: PublishAutomationsChanged | null
   private readonly runs: AutomationRunWriter
   private readonly completionWatcher: AutomationRunCompletionWatcher | null
@@ -69,6 +72,7 @@ export class AutomationService {
       codexUsage?: CodexUsageStore
       allowRemoteHostScheduling?: boolean
       headlessDispatcher?: HeadlessAutomationDispatcher
+      botLauncher?: BotAutomationLauncher
       terminalObserver?: AutomationRunTerminalObserver
       onAutomationsChanged?: PublishAutomationsChanged
     } = {}
@@ -79,6 +83,7 @@ export class AutomationService {
     this.codexUsage = opts.codexUsage ?? null
     this.allowRemoteHostScheduling = opts.allowRemoteHostScheduling ?? false
     this.headlessDispatcher = opts.headlessDispatcher ?? null
+    this.botLauncher = opts.botLauncher ?? null
     this.publish = opts.onAutomationsChanged ?? null
     this.runs = createAutomationRunWriter(store, this.publish)
     this.completionWatcher = opts.terminalObserver
@@ -117,7 +122,32 @@ export class AutomationService {
     this.timer = setInterval(() => {
       void this.evaluateDueRuns()
     }, this.tickMs)
-    this.completionWatcher?.reconcileRetainedRuns(this.store.listAutomationRuns())
+    const retainedRuns =
+      this.completionWatcher || this.botLauncher ? this.store.listAutomationRuns() : []
+    this.completionWatcher?.reconcileRetainedRuns(
+      retainedRuns.filter((run) => run.sessionKind !== 'agent-session')
+    )
+    const launcher = this.botLauncher
+    if (launcher) {
+      for (const run of retainedRuns) {
+        if (run.sessionKind === 'agent-session' && !isFinalAutomationRunStatus(run.status)) {
+          void launcher
+            .recover(run)
+            .then(
+              (result) => this.runs.updateRun({ runId: run.id, ...result }),
+              (error: unknown) =>
+                this.runs.updateRun({
+                  runId: run.id,
+                  status: 'dispatch_unknown',
+                  error: error instanceof Error ? error.message : String(error)
+                })
+            )
+            .catch((error: unknown) =>
+              console.warn('[automations] could not recover the Bot turn', error)
+            )
+        }
+      }
+    }
     reportAutomationScheduleDrift(this.store.listAutomations())
     // Why: headless serve never gets a renderer-ready IPC, but due runs still
     // need the same startup catch-up pass desktop gets after renderer attach.
@@ -144,6 +174,9 @@ export class AutomationService {
       throw new Error('Automation not found.')
     }
     const run = this.runs.createRun(automation, Date.now(), 'manual')
+    if (automation.bot) {
+      return this.dispatchBotRun(automation, run, oneShotPrompt)
+    }
     const target = this.resolveTarget(automation)
     return await this.requestDispatch(automation, run, target, oneShotPrompt)
   }
@@ -259,6 +292,19 @@ export class AutomationService {
       this.store.advanceAutomationNextRun(automation.id, now)
       return
     }
+    if (automation.bot) {
+      const existing = this.store
+        .listAutomationRuns(automation.id)
+        .some((run) => run.trigger === 'scheduled' && run.scheduledFor === scheduledFor)
+      const run = existing ? null : this.runs.createRun(automation, scheduledFor)
+      this.store.advanceAutomationNextRun(automation.id, now)
+      if (run) {
+        void this.dispatchBotRun(automation, run).catch((error: unknown) =>
+          console.warn('[automations] could not dispatch the Bot turn', error)
+        )
+      }
+      return
+    }
 
     // Resolved before the run exists: a refusal repeats every occurrence, and a
     // */5 automation would otherwise write ~288 identical rows a day — past
@@ -278,6 +324,59 @@ export class AutomationService {
     return resolveAutomationRunTarget(this.store, automation, {
       allowRemoteHostScheduling: this.allowRemoteHostScheduling
     })
+  }
+
+  private async dispatchBotRun(
+    automation: Automation,
+    run: AutomationRun,
+    oneShotPrompt?: string
+  ): Promise<AutomationRun> {
+    if (!this.botLauncher) {
+      return this.runs.updateRun({
+        runId: run.id,
+        status: 'skipped_unavailable',
+        error: 'The host cannot launch Bot Chat automations.'
+      })
+    }
+    const operationId = mintAgentSessionOperationId(Date.now())
+    this.runs.updateRun({
+      runId: run.id,
+      status: 'dispatching',
+      chatSessionId: run.id,
+      chatOperationId: operationId,
+      error: null
+    })
+    try {
+      await this.store.flushPendingOrThrowAsync({ drainToStableGeneration: false })
+      const launch = await this.botLauncher.launch({ automation, run, oneShotPrompt, operationId })
+      const result = {
+        runId: run.id,
+        chatSessionId: launch.sessionId,
+        workspaceId: launch.workspaceId,
+        workspaceDisplayName: launch.workspaceDisplayName
+      }
+      const dispatched = this.runs.updateRun({ ...result, status: 'dispatched', error: null })
+      void launch.completion
+        .then(
+          (completion) => this.runs.updateRun({ ...result, ...completion }),
+          (error: unknown) =>
+            this.runs.updateRun({
+              ...result,
+              status: 'dispatch_unknown',
+              error: error instanceof Error ? error.message : String(error)
+            })
+        )
+        .catch((error: unknown) =>
+          console.warn('[automations] could not record the Bot turn', error)
+        )
+      return dispatched
+    } catch (error) {
+      return this.runs.updateRun({
+        runId: run.id,
+        status: 'dispatch_failed',
+        error: error instanceof Error ? error.message : String(error)
+      })
+    }
   }
 
   private canDispatchToRenderer(): boolean {

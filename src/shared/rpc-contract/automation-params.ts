@@ -210,6 +210,14 @@ export const AutomationCreate = z.object({
   prompt: requiredString('Missing automation prompt'),
   precheck: AutomationPrecheck,
   agentId: TuiAgent,
+  bot: z
+    .object({
+      botId: requiredString('Missing Bot id'),
+      runsIn: z.literal('new'),
+      resultsTo: z.literal('none')
+    })
+    .strict()
+    .optional(),
   runContext: WorkspaceRunContext,
   sourceContext: TaskSourceContext,
   repo: OptionalString,

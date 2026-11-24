@@ -160,6 +160,9 @@ export function projectAutomationSelector(
   if (automation.executionTargetType !== 'local') {
     return orphan(AUTOMATION_ORPHAN_ISSUES.malformed)
   }
+  if (automation.bot) {
+    return { kind: 'self' }
+  }
   const workspaceHost = context.workspaceHost?.(automation) ?? { kind: 'unpinned' }
   if (workspaceHost.kind === 'ambiguous') {
     return orphan(AUTOMATION_ORPHAN_ISSUES.workspaceHostAmbiguous)

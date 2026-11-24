@@ -5,7 +5,6 @@ import type {
 import { agentJournalItemKey } from '../../shared/agent-session-journal-item-key'
 import { agentJournalTurnBody } from '../../shared/agent-session-turn-record'
 import type { StructuredAgentSessionAppendOptions } from '../native-chat/agent-session-wire/structured-agent-session-event-sink'
-import { claudeText } from './claude-structured-item-translation'
 
 export type ClaudeCurrentTurn = {
   sessionId: string
@@ -23,16 +22,13 @@ export type ClaudeTurnEnd = {
   durationMs?: number
 }
 
-/** A result the SDK reports as aborted is the user's stop, not the model's end. */
 export function claudeTurnEndForResult(
   message: Record<string, unknown>,
   completedAt: number
 ): ClaudeTurnEnd {
-  const reason = message.is_error === true ? claudeText(message.terminal_reason) : null
   const durationMs = message.duration_ms
   return {
-    state:
-      reason === 'aborted_streaming' || reason === 'aborted_tools' ? 'interrupted' : 'completed',
+    state: message.is_error === true ? 'interrupted' : 'completed',
     completedAt,
     ...(typeof durationMs === 'number' && Number.isFinite(durationMs) && durationMs >= 0
       ? { durationMs }

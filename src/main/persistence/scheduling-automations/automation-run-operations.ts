@@ -93,7 +93,7 @@ export function createAutomationRun(
     trigger,
     workspaceId: automation.workspaceId,
     workspaceDisplayName: operations.getWorkspaceDisplayName(automation.workspaceId),
-    sessionKind: 'terminal',
+    sessionKind: automation.bot ? 'agent-session' : 'terminal',
     chatSessionId: null,
     terminalSessionId: null,
     terminalPaneKey: null,
@@ -173,6 +173,9 @@ export function updateAutomationRun(
   const updated: AutomationRun = {
     ...current,
     status: result.status,
+    chatSessionId:
+      result.chatSessionId === undefined ? current.chatSessionId : result.chatSessionId,
+    ...(result.chatOperationId ? { chatOperationId: result.chatOperationId } : {}),
     workspaceId,
     workspaceDisplayName:
       workspaceDisplayName ??

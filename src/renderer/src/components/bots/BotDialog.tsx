@@ -15,6 +15,7 @@ import { translate } from '@/i18n/i18n'
 import { callRuntimeRpc, type RuntimeClientTarget } from '@/runtime/runtime-rpc-client'
 import { BOT_NAME_MAX_LENGTH, type Bot } from '../../../../shared/bot-types'
 import { BotMemoryEditor } from './BotMemoryEditor'
+import { BotScheduleEditor } from './BotScheduleEditor'
 
 const NATIVE_CHAT_AGENTS = ['claude', 'codex'] as const
 
@@ -90,7 +91,7 @@ export function BotDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
-      <DialogContent>
+      <DialogContent className="scrollbar-sleek max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {bot ? translate('bots.edit', 'Edit bot') : translate('bots.new', 'New bot')}
@@ -155,6 +156,9 @@ export function BotDialog({
               />
             </div>
           )}
+          {bot && (bot.agent === 'claude' || bot.agent === 'codex') ? (
+            <BotScheduleEditor bot={bot} target={target} />
+          ) : null}
           {error ? (
             <p role="alert" className="text-sm text-destructive">
               {error}
