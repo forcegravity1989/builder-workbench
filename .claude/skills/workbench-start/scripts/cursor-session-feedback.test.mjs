@@ -115,6 +115,27 @@ test('fragments in one session folder merge, and other sessions or subagents are
   await assert.rejects(extractFiles([child]), /子 agent/)
 })
 
+test('a user row with no body stays a gap and blocks full coverage when other input exists', () => {
+  const parser = createExtractor('session.jsonl')
+  parser.consume(user('处理需求'))
+  parser.consume({ role: 'user' })
+  parser.consume({ role: 'user', message: { content: [] } })
+  const result = parser.finish()
+  assert.equal(result.messages.filter((message) => message.role === 'user').length, 1)
+  assert.equal(result.issues.length, 2)
+  assert.ok(result.issues.every((issue) => /用户正文缺失/.test(issue)))
+  assert.throws(
+    () =>
+      summarizeFeedback(result, {
+        issueUrl: 'https://github.com/o/r/issues/1',
+        prUrl: 'https://github.com/o/r/pull/2',
+        coverage: { initialInput: true },
+        userEvents: [{ messageId: result.messages[0].id, tags: [], summary: '开工' }]
+      }),
+    /缺口/
+  )
+})
+
 test('text outside the user query is a gap and blocks full coverage', () => {
   const parser = createExtractor('session.jsonl')
   parser.consume(user('start', '旁边还有一段来源不明的文字\n'))

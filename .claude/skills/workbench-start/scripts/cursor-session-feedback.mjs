@@ -97,7 +97,16 @@ export function createExtractor(source) {
           .match(/<timestamp>([\s\S]*?)<\/timestamp>/)?.[1]
           ?.trim() ?? null
       if (row.role === 'user') {
-        const raw = contentText(row.message?.content)
+        const content = row.message?.content
+        const raw = contentText(content)
+        if (
+          content == null ||
+          (Array.isArray(content) && content.length === 0) ||
+          !raw.trim()
+        ) {
+          issues.push(`第 ${lines} 行用户正文缺失，未当人工输入`)
+          return
+        }
         const query = raw.match(/<user_query>([\s\S]*?)<\/user_query>/)?.[1]?.trim() ?? ''
         const leftover = raw
           .replace(/<timestamp>[\s\S]*?<\/timestamp>/g, '')

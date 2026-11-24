@@ -13,7 +13,7 @@ node .claude/skills/workbench-start/scripts/cursor-session-feedback.mjs extract 
 node .claude/skills/workbench-start/scripts/cursor-session-feedback.mjs schema
 ```
 
-提取只把 `<user_query>` 里的人话当用户消息。后台任务结束时注入的 “Briefly inform the user about the task result” 跟进、只有时间戳的空行、工具回显和子 agent 记录都不算新的人工输入。查询标签之外还剩下来源不明的正文时保留缺口，不当作人工输入。模型 `AskQuestion` 工具调用保留为提问身份（`question`），助手文本为 `assistant`，纯工具调用不计消息。同一会话多片段按文件顺序拼接，真实重复发送留给模型判断。正文不可读、损坏或截断保留缺口，不能生成零值。
+提取只把 `<user_query>` 里的人话当用户消息。后台任务结束时注入的 “Briefly inform the user about the task result” 跟进、只有时间戳的空行、工具回显和子 agent 记录都不算新的人工输入。查询标签之外还剩下来源不明的正文时保留缺口，不当作人工输入。用户行缺少 `message` 或正文时也记缺口，避免还有其他有效输入时被报成完整覆盖；只有时间戳、系统通知或后台任务跟进的空轮次不记缺口。模型 `AskQuestion` 工具调用保留为提问身份（`question`），助手文本为 `assistant`，纯工具调用不计消息。同一会话多片段按文件顺序拼接，真实重复发送留给模型判断。正文不可读、损坏或截断保留缺口，不能生成零值。
 
 按 `schema` 逐条标注原始消息，引用首次完成交付、人审和重新交付的证据。完整覆盖须有本次开工消息，并核对提取出的全部用户输入。结合上下文判断语义，由脚本生成指标评论；计数、校验与评论渲染复用与 Codex 相同的 `workflow-feedback-report.mjs`，仅提取入口与来源标注（`来源：Cursor`）不同。原始记录有缺口，或现有脚本无法划清本次交付范围时，相应指标保留未知。Cursor 的宿主权限批准不形成可提取的转录消息，权限计数只覆盖模型结构化提问（如 `AskQuestion`）；转录中的 0 轮不代表没有发生权限批准，须在缺口或反哺中说明，不能当作已核对的零。沙箱自动审核无需人工回答时不计。
 
