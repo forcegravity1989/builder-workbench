@@ -347,11 +347,10 @@ export function teamReadParamsDenialReason(
 }
 
 // A terminal stream carries the member's keystrokes and window size back to the host. Read-only
-// members still receive output, but their input and size claims are dropped.
+// members still receive output and report their window size so the view fits and scrolls like the
+// host's; only keystrokes are dropped.
 const TEAM_READ_DROPPED_TERMINAL_OPCODES = new Set<TerminalStreamOpcode>([
-  TerminalStreamOpcode.Input,
-  TerminalStreamOpcode.Resize,
-  TerminalStreamOpcode.ClaimViewport
+  TerminalStreamOpcode.Input
 ])
 
 export function teamReadTerminalStreamHandler(

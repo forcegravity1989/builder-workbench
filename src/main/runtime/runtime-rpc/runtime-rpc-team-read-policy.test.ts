@@ -134,7 +134,7 @@ describe('team-read RPC policy', () => {
     }
   })
 
-  it('keeps terminal output flowing but drops a member keystrokes and window claims', () => {
+  it('keeps terminal output and window size flowing but drops a member keystrokes', () => {
     const frames: number[] = []
     const handler = (frame: { opcode: number }): void => {
       frames.push(frame.opcode)
@@ -152,7 +152,11 @@ describe('team-read RPC policy', () => {
       }
     }
     send()
-    expect(frames).toEqual([TerminalStreamOpcode.Ack])
+    expect(frames).toEqual([
+      TerminalStreamOpcode.Resize,
+      TerminalStreamOpcode.ClaimViewport,
+      TerminalStreamOpcode.Ack
+    ])
 
     // The host switches the member to full access while the terminal is open, then back.
     frames.length = 0
@@ -167,7 +171,11 @@ describe('team-read RPC policy', () => {
     frames.length = 0
     mode = 'team-read'
     send()
-    expect(frames).toEqual([TerminalStreamOpcode.Ack])
+    expect(frames).toEqual([
+      TerminalStreamOpcode.Resize,
+      TerminalStreamOpcode.ClaimViewport,
+      TerminalStreamOpcode.Ack
+    ])
   })
 
   it('logs actions that run or change things on the host, and hides routine reads', () => {
