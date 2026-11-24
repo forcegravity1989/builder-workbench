@@ -1,22 +1,216 @@
 <!doctype html>
-<html lang="zh-CN">
-<meta charset="utf-8">
-<title>任务链接直达 · 交互原型</title>
-<style>
-body{margin:32px auto;max-width:900px;padding:0 20px;background:#101114;color:#ededf0;font:15px system-ui}button,a{color:inherit}button{background:#202228;border:1px solid #383b44;border-radius:6px;padding:10px 14px;cursor:pointer}button:hover{background:#30333b}.menu{padding:8px;border:1px solid #383b44;border-radius:8px;max-width:420px}.menu button{display:block;width:100%;border:0;text-align:left}code{display:block;padding:10px;overflow-wrap:anywhere;color:#b5b7c0}small{color:#adb0ba}.hidden{display:none}.detail{border:1px solid #383b44;border-radius:8px;padding:20px}select{background:#202228;color:inherit;padding:8px;border-radius:6px}h1{font-size:22px}
-</style>
-<h1>从任务链接打开既有详情</h1>
-<p><small>导航交互原型，不是运行证据；详情仅表示现有页面的复用，未设计新管理动作。</small></p>
-<section id="conversation">
-<p>已交付到 <a href="#" id="link">PR #652</a>。请核对交付结果。</p>
-<label>示例 <select id="target"><option value="pr">GitHub PR</option><option value="issue">GitHub Issue</option><option value="mr">CodeHub MR</option><option value="unknown">未登记仓库</option></select></label>
-<div class="menu hidden" id="menu"><code id="url"></code><button id="open">☷ 在任务中打开 <small>Ctrl／Cmd + Click</small></button><button class="browser">↗ System Browser <small>Shift + Ctrl／Cmd + Click</small></button><button class="browser">◎ Orca Browser</button></div>
-<p id="message" role="status"></p>
-</section>
-<section id="detail" class="detail hidden"><button id="back">← 返回原会话</button><h2 id="title"></h2><p>复用已有原生详情：标题、正文、评论；PR／MR 沿已有检查项和文件变更页面。</p><small>读取走本机 gh／codehub-cli。本次点击只导航，不评论、不关闭、不合入。</small></section>
-<script>
-const $=id=>document.getElementById(id);const samples={pr:['https://github.com/forcegravity1989/builder-workbench/pull/652','PR #652'],issue:['https://github.com/forcegravity1989/builder-workbench/issues/651','Issue #651'],mr:['https://open.codehub.huawei.com/example/project/merge_requests/3','MR !3'],unknown:['https://github.com/example/not-registered/issues/1','Issue #1']};
-function open(){if($('target').value==='unknown'){$('message').textContent='未在已登记项目中找到此仓库。请先添加项目，或重新点击链接选择浏览器。';$('menu').classList.add('hidden');return}$('title').textContent=samples[$('target').value][1];$('conversation').classList.add('hidden');$('detail').classList.remove('hidden')}
-$('link').onclick=e=>{e.preventDefault();$('url').textContent=samples[$('target').value][0];if(e.ctrlKey||e.metaKey){if(e.shiftKey){$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。'}else open();return}$('menu').classList.toggle('hidden')};$('open').onclick=open;$('back').onclick=()=>{$('detail').classList.add('hidden');$('conversation').classList.remove('hidden');$('menu').classList.add('hidden')};document.querySelectorAll('.browser').forEach(button=>button.onclick=()=>{$('message').textContent='示意：显式浏览器打开保留原链接，不进入任务详情。';$('menu').classList.add('hidden')});$('target').onchange=()=>{$('link').textContent=samples[$('target').value][1];$('menu').classList.add('hidden');$('message').textContent=''};
-</script>
+<html lang="zh" data-skin="ds" data-theme="claude">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>任务管理 · 原型评审</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="../../../src/renderer/src/workbench/workbench-tokens.css" />
+    <link rel="stylesheet" href="prototype.css" />
+  </head>
+  <body>
+    <header class="review">
+      <div>
+        <strong>任务管理</strong><span>任务导航 → 全局任务屏</span><span>待评审 · GitHub 样板</span
+        ><span>全部为演示数据</span><a href="intent.md">意图</a><a href="spec.md">规格</a
+        ><a href="STATUS.md">状态</a>
+      </div>
+      <div>
+        <label
+          >旅程
+          <select id="journey">
+            <option value="list">查找任务 → 查看 → 返回</option>
+            <option value="create">新建 Issue</option>
+          </select></label
+        ><label
+          >场景
+          <select id="scenario">
+            <option value="normal">正常</option>
+            <option value="empty">无任务</option>
+            <option value="error">读取失败</option>
+          </select></label
+        ><button id="references">参考来源</button
+        ><label
+          >样式
+          <select id="theme">
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select></label
+        ><button id="reset">重置</button><button id="evidence">依据与边界</button>
+      </div>
+    </header>
+    <div class="window">
+      <div class="titlebar">Workbench <span>builder-workbench</span></div>
+      <div class="layout">
+        <aside class="rail" aria-label="原型注释：只读导航定位">
+          <span data-icon="wall" title="项目墙"></span>
+          <hr />
+          <span data-icon="package" title="版本工作区"></span
+          ><span data-icon="overview" title="项目总览"></span
+          ><span data-icon="list" class="selected" title="任务"></span
+          ><span data-icon="clock" title="自动化"></span
+          ><span data-icon="book" title="知识库"></span><i></i
+          ><span data-icon="server" title="管理远程主机"></span
+          ><span data-icon="settings" title="设置与帮助"></span>
+        </aside>
+        <main id="canvas">
+          <section id="list">
+            <div class="toolbar">
+              <div class="group">
+                <button data-kind="issue" class="active">议题</button
+                ><button data-kind="pr">PR</button
+                ><button id="projects">builder-workbench <span aria-hidden="true">⌄</span></button>
+              </div>
+              <a
+                class="external"
+                href="https://github.com/forcegravity1989/builder-workbench"
+                target="_blank"
+                rel="noopener"
+                aria-label="在 GitHub 打开项目"
+                data-tip="在 GitHub 打开项目"
+                >↗</a
+              >
+              <div class="group" id="presets"></div>
+              <button id="filters">筛选条件</button
+              ><input
+                id="search"
+                type="search"
+                aria-label="搜索任务"
+                placeholder="搜索 GitHub Issue…"
+              /><button
+                id="new"
+                aria-label="新建 GitHub Issue"
+                data-tip="新建 GitHub Issue"
+                data-icon="plus"
+              ></button
+              ><button
+                id="refresh"
+                aria-label="刷新任务"
+                data-tip="刷新任务"
+                data-icon="refresh"
+              ></button>
+            </div>
+            <button id="screenHelp" class="screen-help" aria-label="任务屏帮助">?</button>
+            <div id="filterSummary"></div>
+            <div class="table-wrap">
+              <table>
+                <thead id="head"></thead>
+                <tbody id="rows"></tbody>
+              </table>
+              <div id="notice" role="status"></div>
+            </div>
+            <nav class="pagination" aria-label="分页">
+              <button id="prev">上一页</button><span id="page"></span
+              ><button id="next">下一页</button>
+            </nav>
+          </section>
+          <section id="detail" hidden>
+            <div class="detail-nav">
+              <button id="back">← 返回列表</button><span id="identity"></span>
+            </div>
+            <div class="detail-title">
+              <h1 id="detailTitle"></h1>
+              <span id="detailState" class="badge"></span>
+            </div>
+            <div id="tabs" class="tabs"></div>
+            <article id="body"></article>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div id="projectDialog" class="picker" popover>
+      <form>
+        <h2>选择项目</h2>
+        <input
+          id="projectSearch"
+          type="search"
+          placeholder="搜索项目…"
+          aria-label="搜索项目"
+        /><small>本机</small>
+        <label
+          ><input
+            type="checkbox"
+            name="repo"
+            value="builder-workbench"
+            checked
+          />builder-workbench</label
+        ><label><input type="checkbox" name="repo" value="demo-service" />demo-service</label>
+        <footer>
+          <button type="button" data-dismiss="projectDialog">取消</button
+          ><button id="applyProjects" type="button">应用</button>
+        </footer>
+      </form>
+    </div>
+    <div id="filterDialog" class="picker" popover></div>
+    <dialog id="createDialog">
+      <form id="createForm">
+        <h2>新建 Issue</h2>
+        <label
+          >项目<select id="createRepo">
+            <option>builder-workbench</option>
+            <option>demo-service</option>
+          </select></label
+        ><label>标题<input id="createTitle" required /></label
+        ><label>正文<textarea id="createBody" rows="6"></textarea></label>
+        <p id="createError" role="alert"></p>
+        <footer>
+          <button id="cancelCreate" type="button">取消</button
+          ><button type="submit">创建 Issue</button>
+        </footer>
+      </form>
+    </dialog>
+    <dialog id="evidenceDialog">
+      <h2>原型注释：依据与验证边界</h2>
+      <p>
+        源码基线：PR #748 · 359526b58f。当前为静态转写，未加载真实 React 组件。复用设计系统
+        基础 CSS 与当前 BW 的 workbench-tokens.css 主题覆盖；列表结构依据 TaskPage 的 GitHub 分支。无新增产品功能。
+      </p>
+      <p>
+        全局任务屏只有
+        Rail，只有版本范围任务才显示对象侧栏。本样板不展示版本侧栏，不复制版本管理特性。
+      </p>
+      <ul>
+        <li>
+          <a href="../../../src/renderer/src/workbench/workbench-object-context.ts">侧栏显示条件</a>
+        </li>
+        <li>
+          <a href="../../../src/renderer/src/components/task-page/github/Filters.tsx">工具栏</a> ·
+          <a href="../../../src/renderer/src/components/task-page/github/ModeControls.tsx"
+            >模式和项目选择</a
+          >
+        </li>
+        <li>
+          <a href="../../../src/renderer/src/components/task-page/github/List.tsx">列表</a> ·
+          <a href="../../../src/renderer/src/components/task-page/github/Rows.tsx">行结构</a>
+        </li>
+      </ul>
+      <p>
+        原型注释：只覆盖 GitHub 列表、筛选、新建和详情读回样例。详情按 Issue header/body 与
+        top-columns
+        结构转写，视觉仍待真实运行对照；本页未模拟远端评论写入、评审、合入、工作区创建、CodeHub
+        或版本范围。全部操作只修改内存，重置恢复演示数据。
+      </p>
+      <p>
+        原型注释：搜索框仅支持标题、编号与仓库文字检索，未模拟 GitHub 查询语法；真实 BW 会显示
+        is:issue is:open 等预设查询。 业界参考：沿用当前 BW / Orca 实现，无新增外部参考。CLI
+        登录、远端读写与真实 Electron 行为未由本原型验证。
+      </p>
+      <form method="dialog"><button>关闭</button></form>
+    </dialog>
+    <dialog id="helpDialog">
+      <h2>任务</h2>
+      <p>先选择项目，再选择议题或 PR。使用预设和筛选缩小范围，点击标题查看详情。</p>
+      <p>从行尾开始工作区，或打开已关联工作区。返回列表保留原来的筛选和分页。</p>
+      <form method="dialog"><button>关闭</button></form>
+    </dialog>
+    <div id="rowMenu" class="picker" popover></div>
+    <dialog id="handoff">
+      <h2>原型注释：进入工作区</h2>
+      <p id="handoffText"></p>
+      <p>工作区属于版本会话管理；这里沿用其当前原型，不在任务管理中重画。</p>
+      <a href="../version-workspace/prototype.html">打开工作区当前原型</a>
+      <form method="dialog"><button>返回任务</button></form>
+    </dialog>
+    <script src="prototype.js"></script>
+  </body>
 </html>
