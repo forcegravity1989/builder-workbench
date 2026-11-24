@@ -16,10 +16,7 @@ import { callRuntimeRpc, type RuntimeClientTarget } from '@/runtime/runtime-rpc-
 import { BOT_NAME_MAX_LENGTH, type Bot } from '../../../../shared/bot-types'
 import { BotMemoryEditor } from './BotMemoryEditor'
 
-const NATIVE_CHAT_AGENTS = [
-  { id: 'claude', label: 'Claude Code' },
-  { id: 'codex', label: 'Codex' }
-] as const
+const NATIVE_CHAT_AGENTS = ['claude', 'codex'] as const
 
 export function BotDialog({
   target,
@@ -42,8 +39,8 @@ export function BotDialog({
   const [saving, setSaving] = useState(false)
   const savePending = useRef(false)
   const [error, setError] = useState<string | null>(null)
-  const agents = NATIVE_CHAT_AGENTS.filter((entry) => installed?.includes(entry.id))
-  const chosen = agents.find((entry) => entry.id === agent)?.id ?? bot?.agent ?? agents[0]?.id
+  const agents = NATIVE_CHAT_AGENTS.filter((entry) => installed?.includes(entry))
+  const chosen = agents.find((entry) => entry === agent) ?? bot?.agent ?? agents[0]
 
   useEffect(() => {
     let current = true
@@ -128,12 +125,14 @@ export function BotDialog({
               disabled={!chosen}
               onChange={(event) => setAgent(event.currentTarget.value)}
             >
-              {bot && !agents.some((entry) => entry.id === bot.agent) ? (
+              {bot && !agents.some((entry) => entry === bot.agent) ? (
                 <option value={bot.agent}>{bot.agent}</option>
               ) : null}
               {agents.map((entry) => (
-                <option value={entry.id} key={entry.id}>
-                  {entry.label}
+                <option value={entry} key={entry}>
+                  {entry === 'claude'
+                    ? translate('bots.agent-claude', 'Claude Code')
+                    : translate('bots.agent-codex', 'Codex')}
                 </option>
               ))}
             </select>

@@ -121,6 +121,8 @@
     "runs-on": "Runs on {{host}}",
     "name": "Name",
     "agent": "Agent",
+    "agent-claude": "Claude Code",
+    "agent-codex": "Codex",
     "agent-missing": "Set up Claude Code or Codex on this host.",
     "chat-disabled": "Enable structured Chat in Settings on this host.",
     "purpose": "Purpose",

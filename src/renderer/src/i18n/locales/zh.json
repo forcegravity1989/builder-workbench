@@ -14,6 +14,8 @@
     "runs-on": "运行主机 · {{host}}",
     "name": "名称",
     "agent": "智能体",
+    "agent-claude": "Claude Code",
+    "agent-codex": "Codex",
     "agent-missing": "请在此主机上配置 Claude Code 或 Codex。",
     "chat-disabled": "请在此主机的设置中开启结构化 Chat。",
     "purpose": "职责",
