@@ -96,6 +96,10 @@ runs:
           git -C "$GITHUB_WORKSPACE" diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml
         fi
 
+    - name: Build workspace packages
+      shell: bash
+      run: node config/scripts/workspace-package-build/build-workspace-packages.mjs
+
     - name: Resolve Electron package cache
       id: electron-package-cache
       if: inputs.native-runtime == 'electron' || inputs.cache-electron-package == 'true'
