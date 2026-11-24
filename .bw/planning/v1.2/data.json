@@ -1,0 +1,47 @@
+{
+  "schema_version": 3,
+  "version": "v1.2",
+  "cycleId": "a9d0f078-d712-4ef0-b013-7c389570b2e3",
+  "timeWindow": {
+    "start": "2026-11-23",
+    "end": "2026-11-27"
+  },
+  "summary": {
+    "progress": "",
+    "risks": "",
+    "progressSource": {
+      "version": "v1.1",
+      "cycleId": "587ee2c7-f478-4f76-99be-8ee223836d98",
+      "sourceCommit": "416ea7fb012cb566f8be7c1ae16cecfa3a3e4c6b",
+      "revision": "sha256:4273fe9b20a98dda2c6559f54c469a4c3c25b8895ef366d13c53797507c0cd40"
+    }
+  },
+  "goals": [
+    {
+      "goalId": "G1",
+      "title": "【会议协作】完成会议能力最小集，各旅程会议环节便捷易用",
+      "acceptance": "1. 会议能力最小集完成并通过高保真评审：计划/原型/PR/验收等旅程的会议环节便捷易用，深度绑定内部 WeLink 视频会议。\n2. 原型与意图/规格入库，原型评审会议旅程落地。",
+      "owner": "kanadead",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G2",
+      "title": "【团队多人协作】v1.1 发布后观测真实使用，处理反馈问题，维持稳定",
+      "acceptance": "1. v1.1 发布（含团队多人协作）读回成功。\n2. 收集组内真实使用反馈，观测问题有处理结果或跟进 Issue。",
+      "owner": "yuzhup",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G3",
+      "title": "【运营赋能】组内成员用 BW 管理自己的项目，遇到小 bug 能快速自行修复",
+      "acceptance": "1. 组内成员用 BW 真实管理自己的项目：纳入项目、走计划/任务旅程。\n2. 组内自行修 bug 的路径可用（环境搭建、Issue/PR 贡献流程），本周小 bug 有快速处理案例。",
+      "owner": "kanadead",
+      "metricTargets": []
+    }
+  ],
+  "tasks": [],
+  "workflow": {
+    "stage": "goals",
+    "updatedAt": "2026-11-23T06:45:00.000Z"
+  }
+}
