@@ -87,6 +87,7 @@ function HostBotsSection({
         ) {
           return
         }
+        useAppStore.getState().setActiveView('terminal')
         await activateAiVaultStructuredSession({
           structuredSession: { sessionId, workspaceId: folderWorkspaceKey(bot.folderWorkspaceId) }
         })

@@ -110,11 +110,10 @@ export class BotController {
   }
 
   /** The list with what a client needs to draw it as this host's own sidebar does. */
-  listing(): { bots: Bot[]; botsEnabled: boolean; hideBotCreatedWorkspaces: boolean } {
+  listing(): { bots: Bot[]; botsEnabled: boolean } {
     return {
       bots: this.list(),
-      botsEnabled: this.enabled(),
-      hideBotCreatedWorkspaces: this.deps.getStore()?.getUI?.().hideBotCreatedWorkspaces !== false
+      botsEnabled: this.enabled()
     }
   }
 

@@ -171,7 +171,6 @@ export type LegacyWorkerTerminalRecoveryRow = {
   contract_version: number
   assignee_handle: string | null
   assignee_pane_key: string | null
-  assignee_orca_session_id?: OrcaSessionId | null
   process_incarnation: string | null
   worker_state: WorkerDispatchState
   worktree_id: string | null
@@ -282,6 +281,7 @@ export type DispatchContextRow = {
   launch_token_hash: string | null
   assignee_handle: string | null
   assignee_pane_key: string | null
+  assignee_orca_session_id?: OrcaSessionId | null
   capability_hash: string | null
   process_incarnation: string | null
   capability_revoked_at: string | null
