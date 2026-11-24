@@ -6906,7 +6906,8 @@
           "viewMembers": "成员",
           "viewLinks": "链接",
           "copyLink": "复制 {{value0}} 的链接",
-          "copyLinkTooltip": "复制链接"
+          "copyLinkTooltip": "复制链接",
+          "noMembers": "暂无成员连接"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "删除 {{value0}}",

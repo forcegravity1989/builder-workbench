@@ -140,6 +140,24 @@ async function withMemberProfiles(
   }))
 }
 
+/** The signed-in WeLink user's account, display name and avatar; null when welink-cli is unusable. */
+export async function resolveCurrentWelinkProfile(
+  route: WelinkRoute
+): Promise<{ memberId: string; name: string; avatar?: string } | null> {
+  const memberId = await queryCurrentMemberId(route)
+  if (!memberId) {
+    return null
+  }
+  const [member] = await withMemberProfiles(route, [
+    { member_id: memberId, identity_source: 'welink-cli' }
+  ])
+  return {
+    memberId,
+    name: member?.name ?? memberId,
+    ...(member?.avatar ? { avatar: member.avatar } : {})
+  }
+}
+
 function parseJsonPayload(stdout: string): unknown {
   try {
     return JSON.parse(stdout) as unknown

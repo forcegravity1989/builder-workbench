@@ -1,11 +1,14 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  getRemoteRuntimeCallerIdentity,
   parseRemoteRuntimeCallerIdentity,
   setRemoteRuntimeCallerIdentity,
   type RemoteRuntimeCallerIdentity
 } from '../../../shared/remote-runtime-caller-identity'
 import type { TeamDirectoryMember } from '../../../shared/team-directory'
+import { resolveWelinkRoute } from '../reporting/report-submission'
+import { resolveCurrentWelinkProfile } from './team-directory-client'
 
 const IDENTITY_FILE = 'workbench-team-identity.json'
 
@@ -16,6 +19,25 @@ export function loadTeamIdentity(userDataPath: string): void {
     setRemoteRuntimeCallerIdentity(parseRemoteRuntimeCallerIdentity(parsed))
   } catch {
     // No saved identity yet; connections stay anonymous until the directory is read.
+  }
+}
+
+/**
+ * Who a link generated on this host is labelled with: the remembered team member, otherwise the
+ * signed-in WeLink user. Null when neither is available, so the caller keeps its generic label.
+ */
+export async function resolveHostLinkIdentity(): Promise<{ name: string; avatar?: string } | null> {
+  const remembered = getRemoteRuntimeCallerIdentity()
+  if (remembered) {
+    return { name: remembered.name, ...(remembered.avatar ? { avatar: remembered.avatar } : {}) }
+  }
+  try {
+    const profile = await resolveCurrentWelinkProfile(await resolveWelinkRoute())
+    return profile
+      ? { name: profile.name, ...(profile.avatar ? { avatar: profile.avatar } : {}) }
+      : null
+  } catch {
+    return null
   }
 }
 

@@ -69,16 +69,18 @@ export function RuntimeAccessGrantList({
 }: RuntimeAccessGrantListProps): React.JSX.Element {
   const [selectedGrantIds, setSelectedGrantIds] = useState<string[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
-  // A shared team link has one record per connected member. Once members exist the list splits into
-  // who connected and the link itself, so a leaked link can still be revoked as a whole.
+  // A shared team link has one record per connected member, so the list is always split into who
+  // connected and the links themselves (a leaked link can still be revoked as a whole). The tabs stay
+  // in place when one side is empty so the view never changes shape.
   const [view, setView] = useState<'members' | 'links'>('members')
-  const hasMemberRecords = grants.some((grant) => grant.parentDeviceId !== undefined)
-  const visibleGrants = hasMemberRecords
-    ? grants.filter((grant) => (grant.parentDeviceId !== undefined) === (view === 'members'))
-    : grants
+  const visibleGrants = useMemo(
+    () => grants.filter((grant) => (grant.parentDeviceId !== undefined) === (view === 'members')),
+    [grants, view]
+  )
   const selectableGrants = useMemo(
-    () => grants.filter((grant) => grant.accessMode === 'team-read' && grant.connected === true),
-    [grants]
+    () =>
+      visibleGrants.filter((grant) => grant.accessMode === 'team-read' && grant.connected === true),
+    [visibleGrants]
   )
   const selectedGrants = selectableGrants.filter((grant) =>
     selectedGrantIds.includes(grant.deviceId)
@@ -131,33 +133,33 @@ export function RuntimeAccessGrantList({
         </Tooltip>
       </div>
 
-      {hasMemberRecords ? (
-        <div className="mb-2 flex items-center gap-1">
-          {(['members', 'links'] as const).map((candidate) => (
-            <Button
-              key={candidate}
-              type="button"
-              size="xs"
-              variant={view === candidate ? 'secondary' : 'ghost'}
-              onClick={() => setView(candidate)}
-            >
-              {candidate === 'members'
-                ? translate(
-                    'auto.components.settings.RuntimeAccessGrantList.viewMembers',
-                    'Members'
-                  )
-                : translate('auto.components.settings.RuntimeAccessGrantList.viewLinks', 'Links')}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+      <div className="mb-2 flex items-center gap-1">
+        {(['members', 'links'] as const).map((candidate) => (
+          <Button
+            key={candidate}
+            type="button"
+            size="xs"
+            variant={view === candidate ? 'secondary' : 'ghost'}
+            onClick={() => setView(candidate)}
+          >
+            {candidate === 'members'
+              ? translate('auto.components.settings.RuntimeAccessGrantList.viewMembers', 'Members')
+              : translate('auto.components.settings.RuntimeAccessGrantList.viewLinks', 'Links')}
+          </Button>
+        ))}
+      </div>
 
-      {grants.length === 0 ? (
+      {visibleGrants.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          {translate(
-            'auto.components.settings.RuntimeAccessGrantList.fd83b94095',
-            'No shared server access yet.'
-          )}
+          {view === 'members'
+            ? translate(
+                'auto.components.settings.RuntimeAccessGrantList.noMembers',
+                'No one has connected yet.'
+              )
+            : translate(
+                'auto.components.settings.RuntimeAccessGrantList.fd83b94095',
+                'No shared server access yet.'
+              )}
         </p>
       ) : (
         <div className="space-y-2">

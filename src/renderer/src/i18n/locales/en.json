@@ -8068,7 +8068,8 @@
           "viewMembers": "Members",
           "viewLinks": "Links",
           "copyLink": "Copy link for {{value0}}",
-          "copyLinkTooltip": "Copy link"
+          "copyLinkTooltip": "Copy link",
+          "noMembers": "No one has connected yet."
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "Remove {{value0}}",
