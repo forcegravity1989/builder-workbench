@@ -2,7 +2,11 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
-import { revealElementInScrollContainer } from '@/components/sidebar/worktree-sidebar-reveal'
+import {
+  isElementRevealedInScrollContainer,
+  revealElementInScrollContainer
+} from '@/components/sidebar/worktree-sidebar-reveal'
+import { REVEAL_SCROLL_SETTLE_TIMEOUT_MS } from '@/components/sidebar/worktree-sidebar-reveal-scroll-settle'
 import { useSidebarRevealHighlight } from '@/components/sidebar/worktree-list/navigation/use-reveal-highlight'
 import { MAX_REVEAL_RETRIES } from '@/components/sidebar/worktree-list/navigation/pending-reveal-inputs'
 import { getWorktreeLineageGroupKey } from '@/components/sidebar/worktree-list/grouping/group-keys'
@@ -114,26 +118,69 @@ export function useVersionTreeWorktreeReveal(args: VersionTreeWorktreeRevealArgs
     }
 
     let cancelled = false
+    const queryRow = (): HTMLElement | null =>
+      document.querySelector<HTMLElement>(
+        `[data-workbench-version-section] [data-worktree-host-identity="${CSS.escape(request.worktreeIdentity)}"]`
+      )
+    const finish = (): void => {
+      const rowKey = queryRow()?.dataset.worktreeRowKey
+      if (rowKey) {
+        flashRevealedRow(rowKey)
+      }
+      retryRef.current = null
+      consumeVersionTreeWorktreeReveal(request.sequence)
+    }
+    // Why: 滚动命令被接受不等于行已落在视口。版本节整体收起后重挂载，内容行较高时
+    // remount 测量会触发原生虚拟化列表的测量滚动校正（resizeItem→applyScrollAdjustment），
+    // 该校正不受 reveal-settle 守卫抑制，可在 smooth 滚动落地后抢写 scrollTop、把目标行
+    // 推出视口。故落地后复核行确在视口；若被抢走，待滚动停稳即瞬时重发并重新置守卫，
+    // 直到行稳定留在视口（沿原生 settle 超时兜底），不在滚动命令被接受时即消费请求。
+    const verifyRevealLanded = (): void => {
+      const startedAt = window.performance.now()
+      let prevScrollTop: number | null = null
+      const verify = (): void => {
+        if (cancelled) {
+          return
+        }
+        const row = queryRow()
+        const api = scrollApiRef.current
+        const container = api?.scrollRef.current ?? null
+        if (!row || !container) {
+          schedulePendingRevealFrame(attempt)
+          return
+        }
+        if (isElementRevealedInScrollContainer(container, row)) {
+          finish()
+          return
+        }
+        if (window.performance.now() - startedAt > REVEAL_SCROLL_SETTLE_TIMEOUT_MS) {
+          finish()
+          return
+        }
+        const top = container.scrollTop
+        const settled = prevScrollTop !== null && Math.abs(top - prevScrollTop) < 1
+        prevScrollTop = top
+        if (!settled) {
+          // smooth 滚动仍在动画中：等其停稳，避免重发打断动画。
+          schedulePendingRevealFrame(verify)
+          return
+        }
+        revealElementInScrollContainer(container, row, 'auto', api?.markRevealScroll)
+        prevScrollTop = null
+        schedulePendingRevealFrame(verify)
+      }
+      schedulePendingRevealFrame(verify)
+    }
     const attempt = (): void => {
       if (cancelled) {
         return
       }
-      const row = document.querySelector<HTMLElement>(
-        `[data-workbench-version-section] [data-worktree-host-identity="${CSS.escape(request.worktreeIdentity)}"]`
-      )
+      const row = queryRow()
       const api = scrollApiRef.current
       const container = api?.scrollRef.current ?? null
-      const finish = (): void => {
-        const rowKey = row?.dataset.worktreeRowKey
-        if (rowKey) {
-          flashRevealedRow(rowKey)
-        }
-        retryRef.current = null
-        consumeVersionTreeWorktreeReveal(request.sequence)
-      }
       if (row && container) {
         if (revealElementInScrollContainer(container, row, 'smooth', api?.markRevealScroll)) {
-          finish()
+          verifyRevealLanded()
           return
         }
       } else if (row) {
