@@ -277,7 +277,6 @@ const TEAM_READ_DENIED_METHODS = new Set([
   'workbench.materials.addArtifact',
   'workbench.materials.migrate',
   'workbench.materials.save',
-  'workbench.metrics.refresh',
   'workbench.milestones.discard',
   'workbench.milestones.save',
   'workbench.milestones.submit',
@@ -350,6 +349,9 @@ const AUDITED_TEAM_READ_METHODS = new Set([
   'workbench.prototypeReview.receive',
   'workbench.prototypeReview.annotations.add',
   'workbench.prototypeReview.annotations.delete',
+  // Recomputes metrics from the host's data without writing any source of truth; members need it to
+  // see current numbers, so it is allowed and logged.
+  'workbench.metrics.refresh',
   // Driving a page on the host's browser is something its owner should be able to see afterwards.
   // Pointer movement, scrolling and single key presses are left out because they arrive in bursts.
   'browser.screencast',

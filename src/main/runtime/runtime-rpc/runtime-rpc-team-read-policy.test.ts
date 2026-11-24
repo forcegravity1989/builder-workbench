@@ -49,6 +49,7 @@ const WRITE_LOOKING_BUT_ALLOWED = new Set([
   'workbench.prototypeReview.receive',
   'workbench.prototypeReview.annotations.add',
   'workbench.prototypeReview.annotations.delete',
+  'workbench.metrics.refresh',
   'worktree.activate',
   'git.discoverCommitMessageModels',
   'notifications.subscribe',
@@ -145,6 +146,7 @@ describe('team-read RPC policy', () => {
       'workbench.history.readPlan',
       'workbench.materials.read',
       'workbench.metrics.list',
+      'workbench.metrics.refresh',
       'hostedReview.forBranch',
       'github.issue',
       'aiVault.resolveSessionTitles',
@@ -253,6 +255,7 @@ describe('team-read RPC policy', () => {
     expect(isRoutineReadRuntimeMethod('aiVault.resolveSessionTitles')).toBe(true)
     expect(isRoutineReadRuntimeMethod('browser.mouseMove')).toBe(true)
     expect(isRoutineReadRuntimeMethod('workbench.review.receive')).toBe(false)
+    expect(isRoutineReadRuntimeMethod('workbench.metrics.refresh')).toBe(false)
     expect(isRoutineReadRuntimeMethod('workbench.prototypeReview.annotations.add')).toBe(false)
     expect(isRoutineReadRuntimeMethod('browser.screencast')).toBe(false)
     expect(isRoutineReadRuntimeMethod('browser.goto')).toBe(false)
