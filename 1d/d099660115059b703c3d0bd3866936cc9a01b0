@@ -1,0 +1,36 @@
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_54e392ed4cf793 146,149
+  s_02ab5765848c38::t_a638b540552340 13,171
+  s_02ab5765848c38::t_f34bd5a319761a 207
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_a638b540552340 3-4,12-15,19-19,24-24
+  h_1dcaf127381c33 20-23
+  s_02ab5765848c38::t_3d2ae6ff22cd13 25-27
+docs/05-features/team-collaboration/design.md
+  s_02ab5765848c38::t_18658d60087c1b 31
+docs/06-module/团队共享访问策略.md
+  s_02ab5765848c38::t_e3b46e12404294 34-35,49,52
+src/shared/runtime-access-audit-labels.ts
+  s_02ab5765848c38::t_ceb88aecf052d1 79-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "1dd099660115059b703c3d0bd3866936cc9a01b0",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
