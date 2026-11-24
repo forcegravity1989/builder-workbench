@@ -1189,11 +1189,6 @@ function App() {
         label="添加项目"
         onClick={() => setModal({ type: 'native-tool', title: '添加项目' })}
       />
-      <Button
-        icon={Plus}
-        label="新建工作区"
-        onClick={() => setModal({ type: 'composer', kind: 'native' })}
-      />
     </div>
   )
   const moduleNavs475 = (
@@ -1641,7 +1636,8 @@ function App() {
               只在原生项目与已固定中出现。
             </li>
             <li>
-              拖宽侧栏并滚动到底；原生的活动、工作区选项、添加项目、新建工作区始终留在顶部，树列表共用单一滚动区。
+              拖宽侧栏并滚动到底；原生的活动、工作区选项、添加项目始终留在顶部，树列表共用单一滚动区。新建工作区在各项目区块头的
+              ＋，不在顶栏。
             </li>
           </ol>
           <label>

@@ -332,13 +332,20 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
       state.worktreesByRepo[id]?.some((tree) => tree.id === state.activeWorktreeId)
     )
   }, folderId)
-  // Why: the real Workbench sidebar uses flat grouping (groupBy='none'), where the
-  // native "All" group is relabeled 工作区 and heads the workspaces region. The
-  // fresh e2e profile defaults to groupBy='repo', so switch to flat to mirror what
-  // the product actually renders before asserting the 工作区 section header.
+  // #769: the default grouping is 'repo', where no 工作区 section header exists, so
+  // ☰ must be reachable from the fixed top bar rather than from a section header.
+  await expect.poll(() => page.evaluate(() => window.__store?.getState().groupBy)).toBe('repo')
+  const topBarOptions = page.locator(
+    '[data-sidebar-header-actions] button:has(svg.lucide-sliders-horizontal)'
+  )
+  await expect(topBarOptions).toHaveCount(1)
+  // Why switch to flat: the 工作区 section header (native "All", relabeled) only renders
+  // in flat mode. Assert it there, and assert ☰ stays single-mounted at the column top.
   await page.evaluate(() => window.__store!.getState().setGroupBy('none'))
   const workspacesHeader = page.locator('[data-sidebar-original-row-key="all"]')
   await expect(workspacesHeader).toContainText('工作区')
+  await expect(workspacesHeader.locator('button:has(svg.lucide-sliders-horizontal)')).toHaveCount(0)
+  await expect(topBarOptions).toHaveCount(1)
   // A folder project has no version workflow: no 版本 section and no 新建版本 action.
   await expect(page.locator('[data-workbench-versions]')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '新建版本', exact: true })).toHaveCount(0)
