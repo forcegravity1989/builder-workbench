@@ -1,5 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type { Page, TestInfo } from '@playwright/test'
@@ -9,7 +17,14 @@ import { test } from './workbench-app'
 export const projectSettingsTest = test.extend({
   minimumSeededWorktreeCount: 1,
   seededRepoPath: async ({ registerPostElectronShutdownCleanup }, provideFixture) => {
-    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'bw-config-e2e-'))
+    // Why realpathSync.native: the app registers a git repo's path from
+    // `git rev-parse --show-toplevel`, so the lookup below only matches if this
+    // fixture spells its own root the same way. os.tmpdir() can return an 8.3
+    // short path (here C:\Users\A30030~1\...), which git expands. Only the
+    // .native form expands it too — plain realpathSync resolves symlinks but
+    // leaves the short name intact, so the lookup never matches (#781). On
+    // macOS the same call resolves /var → /private/var.
+    const fixtureRoot = realpathSync.native(mkdtempSync(path.join(os.tmpdir(), 'bw-config-e2e-')))
     const repoPath = path.join(fixtureRoot, 'app')
     mkdirSync(repoPath)
     mkdirSync(path.join(fixtureRoot, 'notes'))
