@@ -1,0 +1,26 @@
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_bc6b405d692a42 70-71
+  s_02ab5765848c38::t_d13e33cb4400b7 424
+docs/06-module/团队共享访问策略.md
+  s_02ab5765848c38::t_0c07986b7bac5f 17
+  s_02ab5765848c38::t_dbebe25276ed2e 19
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_a2a894ea5d47e0 162
+  s_02ab5765848c38::t_69ea02025396b8 185-189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "b18fa732f8e03deb0fe12527210536b2948bf4af",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
