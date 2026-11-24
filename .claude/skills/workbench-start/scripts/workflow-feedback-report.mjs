@@ -185,6 +185,7 @@ export function summarizeFeedback(transcript, annotations) {
     issueUrl: annotations.issueUrl,
     prUrl: annotations.prUrl,
     session: transcript.session,
+    sourceLabel: transcript.sourceLabel ?? 'Codex',
     sessionTitle: annotations.sessionTitle,
     workflowVersion: annotations.workflowVersion ?? 'unknown',
     coverage,
@@ -245,6 +246,28 @@ export function summarizeFeedback(transcript, annotations) {
   }
 }
 
+export function assertCurrentSnapshot(snapshot, current, annotations = {}) {
+  const evidenceIds = new Set([
+    annotations.firstDeliveryId,
+    ...(annotations.modelEvents ?? []).map((item) => item.messageId),
+    ...(annotations.review?.evidenceIds ?? []),
+    ...(annotations.reDeliveries ?? []).flatMap((item) => [item.messageId, item.requestId])
+  ])
+  const evidence = (value) =>
+    value.messages
+      .filter((item) => ['user', 'question'].includes(item.role) || evidenceIds.has(item.id))
+      .map(({ id, role, text }) => [id, role, text])
+  if (
+    snapshot.session.id !== current.session.id ||
+    JSON.stringify(evidence(snapshot)) !== JSON.stringify(evidence(current)) ||
+    JSON.stringify(snapshot.issues) !== JSON.stringify(current.issues)
+  ) {
+    throw new Error(
+      '原始会话已有新输入、提问、引用证据或覆盖变化；重新 extract、更新标注并重算，不能沿用旧表追加说明'
+    )
+  }
+}
+
 function escape(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -289,6 +312,6 @@ ${report.userInputs.length ? report.userInputs.map((event) => `- ${escape(event.
 
 **反哺去向：** ${report.findings.length ? report.findings.map(escape).join('；') : '暂无已核对建议。'}
 
-来源：Codex 原始会话提取、模型逐条标注、脚本校验计数及实际人审证据。初始输入 / 交付前过程 / 人审覆盖：${report.coverage.initialInput === true ? '完整' : '未知'} / ${report.coverage.preDelivery === true ? '完整' : '未知'} / ${report.coverage.review === true ? '已核对' : '未知'}。原文与消息定位留在本地提取和标注产物中。${report.issues.length ? ` 缺口：${report.issues.map(escape).join('；')}` : ''}
+来源：${escape(report.sourceLabel ?? 'Codex')} 原始会话提取、模型逐条标注、脚本校验计数及实际人审证据。初始输入 / 交付前过程 / 人审覆盖：${report.coverage.initialInput === true ? '完整' : '未知'} / ${report.coverage.preDelivery === true ? '完整' : '未知'} / ${report.coverage.review === true ? '已核对' : '未知'}。原文与消息定位留在本地提取和标注产物中。${report.issues.length ? ` 缺口：${report.issues.map(escape).join('；')}` : ''}
 `
 }
