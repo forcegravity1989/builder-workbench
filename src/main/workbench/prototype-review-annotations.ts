@@ -22,27 +22,29 @@ function keyOf(documentKey: string): string {
 }
 // Notes are kept per document, so every reviewer's submissions for one file read back together.
 const annotations = new Map<string, PrototypeReviewAnnotation[]>()
-let loaded = false
+let loading: Promise<void> | undefined
 let writes: Promise<unknown> = Promise.resolve()
 const annotationsPath = () =>
   join(getCanonicalUserDataPath(), 'workbench-prototype-review-annotations-v2.json')
 
-async function loadAnnotations(): Promise<void> {
-  if (loaded) {
-    return
-  }
-  loaded = true
-  try {
-    const stored = AnnotationListSchema.parse(JSON.parse(await readFile(annotationsPath(), 'utf8')))
-    for (const annotation of stored) {
-      const key = keyOf(annotation.documentKey)
-      annotations.set(key, [...(annotations.get(key) ?? []), annotation])
+function loadAnnotations(): Promise<void> {
+  loading ??= (async () => {
+    try {
+      const stored = AnnotationListSchema.parse(JSON.parse(await readFile(annotationsPath(), 'utf8')))
+      for (const annotation of stored) {
+        const key = keyOf(annotation.documentKey)
+        annotations.set(key, [...(annotations.get(key) ?? []), annotation])
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error
+      }
     }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error
-    }
-  }
+  })().catch((error: unknown) => {
+    loading = undefined
+    throw error
+  })
+  return loading
 }
 
 function persistAnnotations(): Promise<void> {
@@ -98,7 +100,11 @@ export async function deletePrototypeReviewAnnotation(
   if (next.length === current.length) {
     return false
   }
-  annotations.set(key, next)
+  if (next.length === 0) {
+    annotations.delete(key)
+  } else {
+    annotations.set(key, next)
+  }
   await persistAnnotations()
   return true
 }

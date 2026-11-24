@@ -115,6 +115,7 @@ export function usePrototypeReviewAnnotations({
       return
     }
     let stopped = false
+    let failureReported = false
     const pull = async (): Promise<void> => {
       const startedAt = localChangeRef.current
       try {
@@ -127,6 +128,7 @@ export function usePrototypeReviewAnnotations({
         if (stopped || startedAt !== localChangeRef.current) {
           return
         }
+        failureReported = false
         const store = useAppStore.getState()
         const local = store.browserAnnotationsByPageId[browserTabId] ?? []
         const localById = new Map(local.map((item) => [item.id, item]))
@@ -153,8 +155,15 @@ export function usePrototypeReviewAnnotations({
             store.deleteBrowserPageAnnotation(browserTabId, item.id)
           }
         }
-      } catch {
-        // The owner's host being busy for one poll is normal; the next one catches up.
+      } catch (error) {
+        if (!stopped && reviewIsLive && !failureReported) {
+          failureReported = true
+          notifyWorkbenchError(
+            '无法读回评审批注',
+            error,
+            '当前批注可能不完整，已有批注仍保留；连接恢复后会自动重试。'
+          )
+        }
       }
     }
     void pull()

@@ -19,7 +19,7 @@
 | 按文件名找 | `welink-cli onebox node-search --space-id <空间> --name "team.json" --exact-search --file-type file` | help。可加 `--with-path` |
 | 下载 | `welink-cli onebox file-download --space-id <空间> --file-id <文件> --output <目录>` | help |
 | 文件信息 | `welink-cli onebox file-info --space-id <空间> --file-id <文件>` | help |
-| 成员中文名和头像 | `welink-cli contact detail <工号> [<工号> ...]` | 本机 1.0.18 实测：`users[].personAccount` 对应群成员账号，`chineseName` 是姓名，`avatar.custom` 是 120px 头像地址；群成员接口本身不含姓名。头像地址为 `http`，经 301 跳转后返回 `image/jpeg`，`https` 直连在本机因证书主机名不符失败，因此保持原地址。取证见 [#479 评论](https://github.com/forcegravity1989/builder-workbench/issues/479) |
+| 成员中文名和头像 | `welink-cli contact detail <工号> [<工号> ...]` | 本机 1.0.18 实测：`users[].personAccount` 对应群成员账号，`chineseName` 是姓名，`avatar.custom` 是 120px 头像地址；群成员接口本身不含姓名。头像地址为 `http`，经 301 跳转后返回 `image/jpeg`，`https` 直连在本机因证书主机名不符失败，该探测结果不代表渲染端直接使用原地址；当前实现对匹配地址转换为 w3 face 直连。取证见 [#479 评论](https://github.com/forcegravity1989/builder-workbench/issues/479) |
 
 上报现用的空间是代码里的固定 `WELINK_REPORT_SPACE_ID`，不是团队群空间。落地团队目录时不要复用那个空间。
 

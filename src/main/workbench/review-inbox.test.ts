@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ReviewIncomingRequest } from '../../shared/workbench/pr-review-request'
@@ -147,5 +147,25 @@ describe('review inbox and reviewer note stores', () => {
       false
     )
     expect(accepts({ ...notePayload, target: { tagName: 'button', selector: '#buy' } })).toBe(false)
+
+    const notesPath = join(dir, 'workbench-prototype-review-annotations-v2.json')
+    writeFileSync(notesPath, '{invalid')
+    vi.resetModules()
+    const freshNotes = await import('./prototype-review-annotations')
+    await expect(freshNotes.readPrototypeReviewAnnotations('D:/repo/0.html')).rejects.toThrow()
+    await expect(freshNotes.readPrototypeReviewAnnotations('D:/repo/0.html')).rejects.toThrow()
+    writeFileSync(
+      notesPath,
+      JSON.stringify(
+        Array.from({ length: 500 }, (_, index) => note(`${index}`, `D:/repo/${index}.html`))
+      )
+    )
+    await expect(
+      freshNotes.addPrototypeReviewAnnotation(note('new', 'D:/repo/new.html'))
+    ).rejects.toThrow('批注的文档数已达上限')
+    await freshNotes.deletePrototypeReviewAnnotation('D:/repo/0.html', '0')
+    await expect(
+      freshNotes.addPrototypeReviewAnnotation(note('new', 'D:/repo/new.html'))
+    ).resolves.toMatchObject({ id: 'new' })
   })
 })
