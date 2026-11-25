@@ -48,6 +48,7 @@ function DialogContent({
   children,
   overlayClassName,
   showCloseButton = true,
+  onPointerDownOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   overlayClassName?: string
@@ -71,6 +72,14 @@ function DialogContent({
           className
         )}
         {...props}
+        onPointerDownOutside={(event) => {
+          onPointerDownOutside?.(event)
+          const target = event.detail.originalEvent.target
+          // A notification action must not dismiss the modal and discard its draft.
+          if (target instanceof Element && target.closest('[data-sonner-toaster]')) {
+            event.preventDefault()
+          }
+        }}
       >
         {children}
         {showCloseButton && (
