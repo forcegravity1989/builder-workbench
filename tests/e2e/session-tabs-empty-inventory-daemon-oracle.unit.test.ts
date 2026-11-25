@@ -10,7 +10,7 @@ vi.mock('../../src/renderer/src/store', () => ({
   }
 }))
 
-import { clearRuntimeEnvironmentConnectionGenerationsForTests } from '../../src/main/runtime/hosts/runtime-status'
+import { clearRuntimeEnvironmentConnectionGenerations } from '../../src/renderer/src/store/slices/runtime-status/runtime-status-connection-generation'
 import {
   hasHostSessionMirrorHydrated,
   parkUntilHostSessionMirrorHydrates,
@@ -18,7 +18,7 @@ import {
 } from '../../src/renderer/src/runtime/web-session-tabs-sync/hydration/host-session-mirror-hydration'
 import { clearHostLiveTerminalProbesForTests } from '../../src/renderer/src/runtime/hosted-terminals/inventory/host-live-terminal-probe'
 import { replaceRuntimeEnvironmentRevisions } from '../../src/renderer/src/runtime/rpc/environment-revisions/runtime-environment-revision'
-import { applyWebSessionTabsStorePatch } from '../../src/renderer/src/runtime/web-session-tabs-sync'
+import { applyWebSessionTabsStorePatch } from '../../src/renderer/src/runtime/web-session-tabs-sync/snapshots/store-patch'
 
 const ENVIRONMENT_ID = 'env-live-unpublished'
 const WORKTREE = 'repo1::/path/wt1'
@@ -52,7 +52,7 @@ function createWriterSubprocess(pid: number): WriterSubprocess {
 describe('unpublished empty inventory daemon oracle', () => {
   beforeEach(() => {
     resetHostSessionMirrorHydrationForTests()
-    clearRuntimeEnvironmentConnectionGenerationsForTests()
+    clearRuntimeEnvironmentConnectionGenerations()
     clearHostLiveTerminalProbesForTests()
     replaceRuntimeEnvironmentRevisions([])
   })

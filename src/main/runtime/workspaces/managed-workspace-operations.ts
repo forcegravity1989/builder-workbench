@@ -130,7 +130,8 @@ export abstract class OrcaRuntimeWithListManagedWorktrees extends RuntimeWorkspa
   ) {
     const worktree = await this.resolveWorkspaceSelector(worktreeSelector, {
       requiredHostId,
-      matchFolders: options.matchFolders
+      matchFolders: options.matchFolders,
+      diagnosticCaller: 'showManagedWorktree'
     })
     const childKey = worktreeWorkspaceKey(worktree.id)
     const crossStoreLineage = this.store?.getCrossStoreWorkspaceLineage?.(childKey)
@@ -179,7 +180,8 @@ export abstract class OrcaRuntimeWithListManagedWorktrees extends RuntimeWorkspa
       worktreeSelector,
       requiredHostId,
       true,
-      reads
+      reads,
+      'showManagedTerminalWorkspace'
     )
     if (!target.managedWorktree) {
       throw new Error('selector_not_found')
@@ -191,7 +193,8 @@ export abstract class OrcaRuntimeWithListManagedWorktrees extends RuntimeWorkspa
     worktreeSelector: string,
     requiredHostId?: ExecutionHostId,
     checkPath = true,
-    reads?: ScopedWorktreeReads
+    reads?: ScopedWorktreeReads,
+    diagnosticCaller?: string
   ) {
     const key = worktreeSelector.startsWith('id:') ? worktreeSelector.slice(3) : worktreeSelector
     const scope = parseWorkspaceKey(key)
@@ -205,12 +208,12 @@ export abstract class OrcaRuntimeWithListManagedWorktrees extends RuntimeWorkspa
         ? await this.showManagedWorktree(worktreeSelector, requiredHostId)
         : reads && gitSelector !== null
           ? // The Git row the launch target would resolve, through the batch's reads; a miss throws as there.
-            await this.resolveGitWorktreeSelector(gitSelector, undefined, reads)
+            await this.resolveGitWorktreeSelector(gitSelector, undefined, reads, diagnosticCaller)
           : undefined
     return this.resolveTerminalWorkspaceLaunchTarget(
       worktreeSelector,
       undefined,
-      {},
+      { diagnosticCaller },
       resolved,
       folder ?? undefined,
       checkPath

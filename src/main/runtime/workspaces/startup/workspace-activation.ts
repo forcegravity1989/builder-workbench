@@ -65,7 +65,12 @@ export abstract class OrcaRuntimeWithActivateManagedWorktree extends OrcaRuntime
     sleepingAgentWake: 'requested' | 'unsupported-headless' | 'not-applicable'
   }> {
     this.assertGraphReady()
-    const worktree = await this.resolveGitWorktreeSelector(worktreeSelector)
+    const worktree = await this.resolveGitWorktreeSelector(
+      worktreeSelector,
+      undefined,
+      undefined,
+      'activateManagedWorktree'
+    )
     const repo = this.store?.getRepo(worktree.repoId)
     if (!repo) {
       throw new Error('repo_not_found')

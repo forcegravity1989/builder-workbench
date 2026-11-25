@@ -2,10 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { _resetTracerForTests, setActiveSink, type TracerSink } from '../observability/tracer'
+import { setActiveSink, type TracerSink } from '../observability/tracer'
 import { listWorktreesStrict } from '../git/worktree'
 import { OrcaRuntimeService } from './orca-runtime'
-import { makeStore } from './runtime-rpc-worktree-store-fixtures'
+import { makeStore } from './worktree-selector-miss.test-fixture'
 
 vi.mock('../git/worktree', () => ({
   listWorktrees: vi.fn().mockResolvedValue([]),
@@ -52,7 +52,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  _resetTracerForTests()
+  setActiveSink(null)
 })
 
 describe('showManagedWorktree selector misses', () => {
@@ -142,7 +142,8 @@ describe('showManagedWorktree selector misses', () => {
     const runtime = new OrcaRuntimeService(store as never)
 
     await expect(runtime.showManagedWorktree(`id:${missingId}`, 'local')).rejects.toMatchObject({
-      code: 'workspace-gone'
+      message: 'selector_not_found',
+      worktreeGoneEvidence: true
     })
     const attributes = missAttributes()!
     expect(attributes['repo.host']).toBeNull()
@@ -174,7 +175,12 @@ describe('showManagedWorktree selector misses', () => {
     const missingId = `repo-1::${missingWorktreePath()}`
     const internals = runtime as never as {
       resolveRuntimeFileTarget(selector: string): Promise<unknown>
-      resolveWorktreeSelector(selector: string, caller?: string): Promise<unknown>
+      resolveGitWorktreeSelector(
+        selector: string,
+        hostId?: string,
+        reads?: unknown,
+        caller?: string
+      ): Promise<unknown>
     }
 
     // Why these two: before the choke point they threw selector_not_found without any trace
@@ -183,7 +189,7 @@ describe('showManagedWorktree selector misses', () => {
       'selector_not_found'
     )
     await expect(
-      internals.resolveWorktreeSelector(`id:${missingId}`, 'test-caller')
+      internals.resolveGitWorktreeSelector(`id:${missingId}`, undefined, undefined, 'test-caller')
     ).rejects.toThrow('selector_not_found')
 
     const records = missRecords()

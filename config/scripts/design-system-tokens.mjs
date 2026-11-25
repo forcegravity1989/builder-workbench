@@ -210,7 +210,8 @@ if (process.argv.includes('--write')) {
 }
 const errors = driftErrors()
 // Whitespace-insensitive: the commit hook reflows tokens.css with oxfmt.
-const squash = (text) => text.replace(/\s+/g, ' ').trim()
+const squash = (text) =>
+  text.replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').trim()
 if (
   !process.argv.includes('--write') &&
   (!fs.existsSync(CSS_OUT) || squash(fs.readFileSync(CSS_OUT, 'utf8')) !== squash(css))

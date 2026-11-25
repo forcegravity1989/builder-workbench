@@ -26,7 +26,8 @@ import {
   createRepoRowExecutionHostLookup,
   type RepoRowExecutionHostLookup
 } from '../../../shared/execution-host/worktree-execution-host-resolution'
-import { RuntimeProjectLaunchContext } from './startup/runtime-project-launch-context'
+import { RuntimeWorktreeSelectorDiagnostics } from './worktree-selector-diagnostics'
+import { isSelectorNotFound, isNonMissSelector } from '../worktree-selector-miss'
 import { folderIdOfSelector } from '../../../shared/workspace/identity/workspace-scope'
 import {
   folderCandidate,
@@ -38,7 +39,7 @@ import {
   type WorkspaceSelectorOptions,
   WORKSPACE_SELECTOR_NOT_FOUND
 } from './catalog/workspace-selector-candidates'
-export abstract class RuntimeWorkspaceSelectors extends RuntimeProjectLaunchContext {
+export abstract class RuntimeWorkspaceSelectors extends RuntimeWorktreeSelectorDiagnostics {
   protected abstract hasFreshResolvedWorktreeCache(
     ...args: Parameters<RuntimeWorkspaceCatalog['hasFreshResolvedWorktreeCache']>
   ): ReturnType<RuntimeWorkspaceCatalog['hasFreshResolvedWorktreeCache']>
@@ -56,24 +57,47 @@ export abstract class RuntimeWorkspaceSelectors extends RuntimeProjectLaunchCont
     selector: string,
     requiredHostId?: ExecutionHostId,
     /** One batch's owner-repo reads, shared by its lookups. */
-    reads?: ScopedWorktreeReads
+    reads?: ScopedWorktreeReads,
+    caller: string | null = null
   ): Promise<ResolvedWorktree> {
-    const explicitWorktreeId = this.getValidatedExplicitWorktreeIdSelector(selector)
-    // Only id selectors name a repo; scoping other selectors would hide fleet-wide ambiguity.
-    if (explicitWorktreeId && !this.hasFreshResolvedWorktreeCache()) {
-      const scoped = await (reads
-        ? this.resolveExplicitWorktreeIdScoped(explicitWorktreeId, requiredHostId, reads)
-        : requiredHostId === undefined
-          ? this.resolveExplicitWorktreeIdScoped(explicitWorktreeId)
-          : this.resolveExplicitWorktreeIdScoped(explicitWorktreeId, requiredHostId))
-      if (scoped) {
-        return scoped
+    const cacheFreshAtRequest = this.hasFreshResolvedWorktreeCache()
+    try {
+      const explicitWorktreeId = this.getValidatedExplicitWorktreeIdSelector(selector)
+      // Only id selectors name a repo; scoping other selectors would hide fleet-wide ambiguity.
+      if (explicitWorktreeId && !this.hasFreshResolvedWorktreeCache()) {
+        const scoped = await (reads
+          ? this.resolveExplicitWorktreeIdScoped(explicitWorktreeId, requiredHostId, reads)
+          : requiredHostId === undefined
+            ? this.resolveExplicitWorktreeIdScoped(explicitWorktreeId)
+            : this.resolveExplicitWorktreeIdScoped(explicitWorktreeId, requiredHostId))
+        if (scoped) {
+          return scoped
+        }
       }
+      const worktrees = (await this.listResolvedWorktrees()).filter(
+        (row) => requiredHostId === undefined || row.hostId === requiredHostId
+      )
+      return this.matchWorktreeSelector(selector, worktrees, explicitWorktreeId, requiredHostId)
+    } catch (error) {
+      if (isSelectorNotFound(error) && !isNonMissSelector(selector)) {
+        this.emitWorktreeSelectorMiss(
+          selector,
+          requiredHostId ? 'host-scoped' : 'resolver',
+          requiredHostId ?? null,
+          cacheFreshAtRequest,
+          error,
+          caller
+        )
+        if (
+          caller === 'showManagedWorktree' &&
+          requiredHostId &&
+          this.isConfirmedLocalWorktreeGone(selector, requiredHostId)
+        ) {
+          throw Object.assign(new Error('selector_not_found'), { worktreeGoneEvidence: true })
+        }
+      }
+      throw error
     }
-    const worktrees = (await this.listResolvedWorktrees()).filter(
-      (row) => requiredHostId === undefined || row.hostId === requiredHostId
-    )
-    return this.matchWorktreeSelector(selector, worktrees, explicitWorktreeId, requiredHostId)
   }
 
   protected matchWorktreeSelector(
@@ -195,7 +219,12 @@ export abstract class RuntimeWorkspaceSelectors extends RuntimeProjectLaunchCont
     if (folderId === undefined && !options.matchFolders) {
       return {
         kind: 'worktree',
-        worktree: await this.resolveGitWorktreeSelector(selector, requiredHostId)
+        worktree: await this.resolveGitWorktreeSelector(
+          selector,
+          requiredHostId,
+          undefined,
+          options.diagnosticCaller
+        )
       }
     }
     const catalog = folderCatalogOf(this.store)
@@ -217,7 +246,12 @@ export abstract class RuntimeWorkspaceSelectors extends RuntimeProjectLaunchCont
     if (folders.length === 0) {
       return {
         kind: 'worktree',
-        worktree: await this.resolveGitWorktreeSelector(selector, requiredHostId)
+        worktree: await this.resolveGitWorktreeSelector(
+          selector,
+          requiredHostId,
+          undefined,
+          options.diagnosticCaller
+        )
       }
     }
     const worktrees = this.matchWorktreeCandidates(

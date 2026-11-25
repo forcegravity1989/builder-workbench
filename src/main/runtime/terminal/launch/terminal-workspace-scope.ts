@@ -137,7 +137,7 @@ export abstract class OrcaRuntimeWithResolveBrowserNetworkExecutionHostForWorktr
   async resolveTerminalWorkspaceLaunchScope(
     selector: string,
     createdWorktree?: Worktree,
-    options: { wslUserAct?: boolean; readOnly?: boolean } = {},
+    options: { wslUserAct?: boolean; readOnly?: boolean; diagnosticCaller?: string } = {},
     resolvedWorktree?: ResolvedWorktree,
     resolvedFolder?: FolderWorkspace
   ): Promise<TerminalWorkspaceLaunchScope> {
@@ -155,7 +155,7 @@ export abstract class OrcaRuntimeWithResolveBrowserNetworkExecutionHostForWorktr
   protected async resolveTerminalWorkspaceLaunchTarget(
     selector: string,
     createdWorktree?: Worktree,
-    options: { wslUserAct?: boolean; readOnly?: boolean } = {},
+    options: { wslUserAct?: boolean; readOnly?: boolean; diagnosticCaller?: string } = {},
     resolvedWorktree?: ResolvedWorktree,
     resolvedFolder?: FolderWorkspace,
     checkPath = true
@@ -192,7 +192,12 @@ export abstract class OrcaRuntimeWithResolveBrowserNetworkExecutionHostForWorktr
     const worktree =
       resolvedWorktree ??
       resolveCreatedWorktreeTerminalTarget(this.store, selector, createdWorktree) ??
-      (await this.resolveGitWorktreeSelector(worktreeSelector))
+      (await this.resolveGitWorktreeSelector(
+        worktreeSelector,
+        undefined,
+        undefined,
+        options.diagnosticCaller
+      ))
     // Repo ids are host-blind; resolve the worktree owner or refuse as unresolved rather than spawn locally with a remote cwd (#11163).
     const resolution = resolveWorktreeLaunchHost(this.store?.getRepos() ?? [], worktree)
     if (resolution.kind === 'ambiguous') {

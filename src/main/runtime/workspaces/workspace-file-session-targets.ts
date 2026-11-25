@@ -44,7 +44,12 @@ export abstract class RuntimeWorkspaceFileTargets extends RuntimeMarkdownTabOper
     localGitOptions?: { wslDistro?: string }
   }> {
     const store = this.requireStore()
-    const worktree = await this.resolveGitWorktreeSelector(worktreeSelector)
+    const worktree = await this.resolveGitWorktreeSelector(
+      worktreeSelector,
+      undefined,
+      undefined,
+      'file-target'
+    )
     const routing = resolveWorktreeHostRouting(store.getRepos(), worktree)
     if (routing.kind === 'ambiguous') {
       throw new Error('worktree_execution_host_unresolved')
@@ -84,7 +89,7 @@ export abstract class RuntimeWorkspaceFileTargets extends RuntimeMarkdownTabOper
     }
 
     return this.runtimeFileTargetForWorktree(
-      await this.resolveGitWorktreeSelector(worktreeSelector)
+      await this.resolveGitWorktreeSelector(worktreeSelector, undefined, undefined, 'file-target')
     )
   }
 

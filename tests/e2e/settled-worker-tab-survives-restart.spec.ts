@@ -5,7 +5,7 @@ import {
   getDaemonSocketPath,
   getDaemonTokenPath
 } from '../../src/main/daemon/launch/daemon-spawner'
-import { DEFAULT_LOCAL_ORCA_PROFILE_ID } from '../../src/shared/orca-profiles'
+import { DEFAULT_LOCAL_ORCA_PROFILE_ID } from '../../src/shared/orca-profiles/orca-profiles'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
 import { test, expect } from './helpers/orca-app'
 import { TEST_REPO_PATH_FILE } from './global-setup'
