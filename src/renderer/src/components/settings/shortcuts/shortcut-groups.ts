@@ -1,3 +1,5 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import {
   KEYBINDING_DEFINITIONS,
   agentTabActionId
@@ -33,7 +35,10 @@ export function groupDefinitions(
   )
   const groups = new Map<string, KeybindingDefinition[]>()
   for (const definition of [...KEYBINDING_DEFINITIONS, ...additionalDefinitions]) {
-    if (hiddenAgentActionIds.has(definition.id)) {
+    if (
+      hiddenAgentActionIds.has(definition.id) ||
+      (definition.id === 'workbench.annotate' && (!isWorkbenchShell() || isWebClientLocation()))
+    ) {
       continue
     }
     const localized = localizeKeybindingDefinition(definition)

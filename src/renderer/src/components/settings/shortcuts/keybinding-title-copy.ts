@@ -158,6 +158,7 @@ const STATIC_TITLE_COPY = {
     translate('keybindings.title.terminalSplitRight', 'Split terminal right'),
   'terminal.splitDown': () =>
     translate('keybindings.title.terminalSplitDown', 'Split terminal down'),
+  'workbench.annotate': () => 'Annotate Workbench',
   'workbench.toggleAnnotationMode': () => 'Toggle Board Annotation Mode',
   'terminal.switchInputSource': () =>
     translate(

@@ -50,7 +50,6 @@ import type { Repo } from '../../../../../shared/repository/repo-types'
 import type { SettingsNavigationBuildOptions } from './settings-navigation-build-options'
 
 // Share Settings/Cmd+J visibility without Settings pane UI imports; an architecture test enforces this boundary.
-// Share Settings/Cmd+J visibility without Settings pane UI imports; an architecture test enforces this boundary.
 
 export function buildSettingsNavigationMetadata(
   {
@@ -59,6 +58,7 @@ export function buildSettingsNavigationMetadata(
     isLocalWindowsHost = isWindows,
     isWindowsTerminalHost = isWindows,
     isWebClient,
+    showWorkbenchOrcaAccount = false,
     botsEnabled = true,
     hostQueuesMessages = false,
     typedChatPermissions = false,
@@ -76,6 +76,7 @@ export function buildSettingsNavigationMetadata(
     isLocalWindowsHost?: boolean
     isWindowsTerminalHost?: boolean
     isWebClient: boolean
+    showWorkbenchOrcaAccount?: boolean
     botsEnabled?: boolean
     hostQueuesMessages?: boolean
     typedChatPermissions?: boolean
@@ -113,6 +114,7 @@ export function buildSettingsNavigationMetadata(
     isLocalWindowsHost,
     isWindowsTerminalHost,
     isWebClient,
+    showWorkbenchOrcaAccount,
     botsEnabled,
     hostQueuesMessages,
     typedChatPermissions,

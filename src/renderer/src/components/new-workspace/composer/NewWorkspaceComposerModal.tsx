@@ -142,7 +142,7 @@ function QuickTabBody({
     initialName: modalData.prefilledName ?? '',
     // Quick create ignores legacy prompt-prefill payloads.
     initialPrompt: '',
-    initialNote: modalData.recovery?.note,
+    initialNote: modalData.recovery?.note ?? modalData.initialNote,
     initialLinkedWorkItem: modalData.linkedWorkItem ?? null,
     initialGitHubWorkItem: modalData.initialGitHubWorkItem ?? null,
     initialTaskSourceContext: modalData.taskSourceContext ?? null,

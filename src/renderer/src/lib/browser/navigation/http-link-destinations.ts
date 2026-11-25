@@ -1,6 +1,12 @@
 import { showOpenInGroupRefusedToast } from '@/components/terminal-pane/links/files/terminal-file-open-in-group-toast'
 import { beginLinkOpenRequest } from '../../links/link-open-request'
 import { translate } from '@/i18n/i18n'
+import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/workspace/identity/floating-workspace-id'
+import {
+  isWorkbenchRepairIssue,
+  openWorkbenchTaskItemLink,
+  workbenchTaskItemLink
+} from '@/workbench/task-item-link-routing'
 import {
   openHttpLink,
   captureHttpLinkIntent,
@@ -57,6 +63,7 @@ export type HttpLinkActionDestinations = {
 }
 
 export type HttpLinkAction = {
+  task?: boolean
   external?: boolean
   label: string
   run: () => void | Promise<void>
@@ -124,7 +131,8 @@ export function buildHttpLinkActions(
       : t('auto.components.terminal.pane.TerminalLinkActionPopover.openLink', 'Open link'),
     run: () => open(primaryDestination)
   }
-  const secondaryActions =
+  const secondaryActions: HttpLinkAction[] = []
+  if (
     source &&
     (destinations?.primary === 'orca' || destinations?.alternate === 'orca') &&
     canHttpLinkOpenInSourceGroup(
@@ -133,23 +141,40 @@ export function buildHttpLinkActions(
       source.url,
       source.sourceOwner
     )
-      ? [
-          {
-            label: t(
-              'auto.components.terminal.pane.TerminalLinkActionPopover.openInNewTab',
-              'Open in new tab'
-            ),
-            run: source.openInSourceGroup
-          }
-        ]
-      : undefined
+  ) {
+    secondaryActions.push({
+      label: t(
+        'auto.components.terminal.pane.TerminalLinkActionPopover.openInNewTab',
+        'Open in new tab'
+      ),
+      run: source.openInSourceGroup
+    })
+  }
+  if (source?.url && workbenchTaskItemLink(source.url)) {
+    const url = source.url
+    secondaryActions.push({
+      task: true,
+      label: t(
+        'auto.components.terminal.pane.TerminalLinkActionPopover.openInTask',
+        'Open in Task'
+      ),
+      run: () => openWorkbenchTaskItemLink(url)
+    })
+    if (source.worktreeId === FLOATING_TERMINAL_WORKTREE_ID && isWorkbenchRepairIssue(url)) {
+      secondaryActions.push({
+        task: true,
+        label: t('workbench.improvement.startRepair', 'Start repair'),
+        run: () => openWorkbenchTaskItemLink(url, 'repair')
+      })
+    }
+  }
   const alternateDestination = destinations?.alternate
   if (!alternateDestination) {
-    return { primary, ...(secondaryActions ? { secondaryActions } : {}) }
+    return { primary, ...(secondaryActions.length > 0 ? { secondaryActions } : {}) }
   }
   return {
     primary,
-    ...(secondaryActions ? { secondaryActions } : {}),
+    ...(secondaryActions.length > 0 ? { secondaryActions } : {}),
     alternate: {
       external: alternateDestination === 'system',
       label: httpLinkDestinationLabel(alternateDestination, t),

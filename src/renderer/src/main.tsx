@@ -21,6 +21,7 @@ import { installTypingLatencyDiagnostic } from './diagnostics/typing-latency/dia
 import { installFocusedHostGestureWake } from './runtime/rpc/calls/focused-host-gesture-wake'
 import { installAppKeyboardRouter } from './lib/keyboard/app-keyboard-router'
 import { shouldEnableReactGrab } from './diagnostics/react-commits/react-grab-dev-gate'
+import { isWorkbenchShell } from './workbench/is-workbench-shell'
 import { I18nProvider } from './i18n/I18nProvider'
 import { useTranslate } from './i18n/use-translate'
 import { getOrCreateRendererRoot } from './app-shell/startup/react-renderer-root'
@@ -59,8 +60,14 @@ if (
     enableFlag: import.meta.env.VITE_ENABLE_REACT_GRAB
   })
 ) {
-  void import('react-grab').then(({ init }) => init())
-  void import('react-grab/styles.css')
+  if (isWorkbenchShell()) {
+    void import('./workbench/improvement/annotation')
+      .then(({ prepareImprovementAnnotation }) => prepareImprovementAnnotation())
+      .catch((error: unknown) => console.warn('[react-grab] Initialization failed:', error))
+  } else {
+    void import('react-grab').then(({ init }) => init())
+    void import('react-grab/styles.css')
+  }
 }
 
 applyWindowMaterialToDocument()

@@ -5,8 +5,26 @@ import { pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
 
 const root = path.resolve(import.meta.dirname, '../..')
-const topics = ['week-planning', 'version-acceptance', 'metrics-refresh']
-const output = path.join(root, 'src/shared/workbench/skill-package.json')
+const workflowTopics = ['week-planning', 'version-acceptance', 'metrics-refresh']
+const featureMatrix = path.join(root, 'docs/05-features/README.md')
+const feedbackScripts = [
+  'codex-session-feedback.mjs',
+  'claude-session-feedback.mjs',
+  'cursor-session-feedback.mjs',
+  'workflow-feedback-report.mjs'
+]
+const packages = [
+  {
+    id: 'workbench-workflows',
+    topics: workflowTopics.map((id) => ({ id, source: `standard/skills/${id}` })),
+    output: 'skill-package.json'
+  },
+  {
+    id: 'workbench-improvement',
+    topics: [{ id: 'improve-workbench', source: '.claude/skills/improve-workbench' }],
+    output: 'improvement-skill-package.json'
+  }
+]
 
 async function files(directory, prefix = '') {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -25,7 +43,8 @@ async function files(directory, prefix = '') {
   return result
 }
 
-async function main() {
+async function generatePackage({ id, topics, output: fileName }) {
+  const output = path.join(root, 'src/shared/workbench', fileName)
   const cache = path.join(root, '.bw/runtime/skill-package-build')
   await mkdir(cache, { recursive: true })
   const work = await mkdtemp(path.join(cache, 'build-'))
@@ -35,13 +54,21 @@ async function main() {
   try {
     const hash = createHash('sha256')
     const sources = []
-    for (const topic of topics) {
-      const sourceRoot = path.join(root, 'standard/skills', topic)
+    for (const { id: topic, source } of topics) {
+      const sourceRoot = path.join(root, source)
       const projectedRoot = path.join(work, topic)
       const pending = (await files(sourceRoot)).map((relative) => ({
         source: path.join(sourceRoot, relative),
         destination: relative
       }))
+      if (topic === 'improve-workbench') {
+        for (const script of feedbackScripts) {
+          pending.push({
+            source: path.join(root, '.claude/skills/workbench-start/scripts', script),
+            destination: `scripts/${script}`
+          })
+        }
+      }
       const seen = new Set()
       for (const item of pending) {
         if (seen.has(item.destination)) {
@@ -58,6 +85,12 @@ async function main() {
               }
               const [file, anchor] = target.split('#')
               const resolved = path.resolve(path.dirname(item.source), file)
+              if (item.source === featureMatrix && resolved.startsWith(root + path.sep)) {
+                // The matrix is the local classification reference. Detailed specs stay in the
+                // owning repository instead of pulling the whole documentation graph into the pack.
+                const sourcePath = path.relative(root, resolved).split(path.sep).join('/')
+                return `[${label}](https://github.com/forcegravity1989/builder-workbench/blob/main/${sourcePath}${anchor ? `#${anchor}` : ''})`
+              }
               let destination
               const own = path.relative(sourceRoot, resolved)
               if (!own.startsWith('..') && !path.isAbsolute(own)) {
@@ -66,6 +99,8 @@ async function main() {
                 destination = `references/shared/${path.basename(resolved)}`
               } else if (resolved === path.join(root, 'standard/templates/metrics.toml.tmpl')) {
                 destination = 'assets/metrics.toml.tmpl'
+              } else if (topic === 'improve-workbench' && resolved === featureMatrix) {
+                destination = 'references/bw-feature-matrix.md'
               } else {
                 throw new Error(`Dependency escapes Skill: ${item.source} -> ${target}`)
               }
@@ -105,9 +140,9 @@ async function main() {
     const bundle = await createSkillBundleArchive({
       sources,
       archivePath,
-      packageId: 'workbench-workflows',
+      packageId: id,
       versionId: hash.digest('hex'),
-      bundleName: 'workbench-workflows',
+      bundleName: id,
       createdAt: '1970-01-01T00:00:00.000Z'
     })
     const content = `${JSON.stringify(
@@ -137,4 +172,6 @@ async function main() {
   }
 }
 
-await main()
+for (const definition of packages) {
+  await generatePackage(definition)
+}

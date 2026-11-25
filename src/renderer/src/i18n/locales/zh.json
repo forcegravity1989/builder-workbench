@@ -4666,6 +4666,7 @@
             "switchTerminal": "切换终端",
             "openTaskTerminal": "打开任务终端",
             "systemBrowser": "系统浏览器",
+            "openInTask": "在任务中打开",
             "orcaBrowser": "Orca 浏览器",
             "terminalLinkSettings": "终端链接设置",
             "copyLink": "复制链接",
@@ -30664,6 +30665,11 @@
           "result": "团队可复用的做法"
         }
       }
+    }
+  },
+  "workbench": {
+    "improvement": {
+      "startRepair": "开始修复"
     }
   }
 }

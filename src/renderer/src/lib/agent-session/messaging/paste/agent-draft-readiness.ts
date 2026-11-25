@@ -2,6 +2,7 @@ import type { DraftPasteReadySignal } from '../../../../../../shared/agent-launc
 import { subscribeToPtyData } from '@/components/terminal-pane/pty-transport/delivery/pty-data-sidecar-subscriptions'
 import { replayPreHandlerPtyData } from '@/components/terminal-pane/pty-transport/delivery/pty-pre-handler-buffer'
 import { isRemoteRuntimePtyId } from '../../../../../../shared/remote-runtime/remote-runtime-pty-id'
+import { parseAppSshPtyId } from '../../../../../../shared/remote-runtime/ssh/ssh-pty-id'
 import { subscribeToRuntimeTerminalData } from '@/runtime/hosted-terminals/streams/runtime-terminal-data-subscription'
 import { createDraftPasteReadyScanner } from '../../../../../../shared/agent-launch/startup/readiness/draft-paste-ready-scanner'
 
@@ -47,6 +48,9 @@ export function waitForAgentDraftInputReady(
     }
 
     const observeData = (data: string): void => {
+      if (settled) {
+        return
+      }
       const { ready, armQuietTimer: shouldArm, readyAfterMs } = scanner.observe(data)
       if (ready) {
         finish(true)
@@ -74,9 +78,24 @@ export function waitForAgentDraftInputReady(
         })
         .catch(() => finish(false))
     } else {
-      unsubscribe = subscribeToPtyData(ptyId, observeData)
+      let sawLiveData = false
+      unsubscribe = subscribeToPtyData(ptyId, (data) => {
+        sawLiveData = true
+        observeData(data)
+      })
       // Replay early buffered Codex output to this observer without consuming xterm’s primary copy.
       replayPreHandlerPtyData(ptyId, observeData)
+      if (!settled && !parseAppSshPtyId(ptyId)) {
+        // A retry may start after the composer has painted. Prefer newer bytes from the live stream.
+        void window.api?.pty
+          ?.getMainBufferSnapshot?.(ptyId, { scrollbackRows: 0 })
+          .then((snapshot) => {
+            if (!sawLiveData && snapshot?.data && snapshot.terminalOwner !== 'shell') {
+              observeData(snapshot.data)
+            }
+          })
+          .catch(() => {})
+      }
     }
 
     if (!settled) {

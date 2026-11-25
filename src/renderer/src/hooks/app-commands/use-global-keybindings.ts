@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { toast } from 'sonner'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import { translate } from '@/i18n/i18n'
 import { canShowRightSidebarForView } from '@/components/right-sidebar/visibility/right-sidebar-visibility'
 import { getSelectedTextForFileSearch } from '../../lib/files/search/file-search-selection'
@@ -194,6 +196,15 @@ export function useGlobalKeybindings(args: {
       ) {
         input.preventDefault()
         runBuiltInOrReplacement('floatingWorkspace.maximize', openFloatingWorkspaceMaximized)
+        return
+      }
+
+      if (isWorkbenchShell() && !isWebClientLocation() && matchShortcut('workbench.annotate')) {
+        input.preventDefault()
+        notifyTerminalCapture('workbench.annotate')
+        void import('@/workbench/improvement/annotation')
+          .then((module) => module.toggleImprovementAnnotation())
+          .catch((error: unknown) => console.error('Failed to toggle Workbench annotation', error))
         return
       }
 

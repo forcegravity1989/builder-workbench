@@ -1,4 +1,5 @@
 // definitions.ts concatenates core-1..4 in palette order; slices follow line limits, so thematic regrouping would reorder commands.
+import { UPDATE_PRODUCT_NAME } from '../updater/release-channel'
 import type { KeybindingDefinition } from './types'
 import { platformBindings } from './definitions-support'
 
@@ -31,6 +32,14 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     searchKeywords: ['shortcut', 'reload', 'refresh', 'force'],
     defaultBindings: platformBindings(['Mod+Shift+R']),
     conflictGroup: 'menu'
+  },
+  {
+    id: 'workbench.annotate',
+    title: 'Annotate Workbench',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['workbench', 'annotation', 'feedback', '批注', '改进助手'],
+    defaultBindings: platformBindings(UPDATE_PRODUCT_NAME === 'Workbench' ? ['Mod+Alt+B'] : [])
   },
   {
     id: 'worktree.palette',

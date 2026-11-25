@@ -5233,6 +5233,7 @@
             "switchTerminal": "Switch terminal",
             "openTaskTerminal": "Open task terminal",
             "systemBrowser": "System Browser",
+            "openInTask": "Open in Task",
             "orcaBrowser": "Orca Browser",
             "terminalLinkSettings": "Terminal link settings",
             "copyLink": "Copy link",
@@ -21080,6 +21081,9 @@
       }
     },
     "workbench": {
+      "improvement": {
+        "startRepair": "Start repair"
+      },
       "quickLinks": {
         "add": "Add",
         "cancel": "Cancel",
@@ -27367,6 +27371,9 @@
         "lede": "Run several agents at once, track their progress, and let automation drive Orca when it helps."
       },
       "workbench": {
+        "improvement": {
+          "startRepair": "Start repair"
+        },
         "title": "Workbench",
         "lede": "Bring your terminal setup into Orca, then split panes to keep servers, tests, logs, and agents running side by side."
       },
@@ -31492,6 +31499,9 @@
     }
   },
   "workbench": {
+    "improvement": {
+      "startRepair": "Start repair"
+    },
     "projectRemoval": {
       "registrationChanged": "The project registration changed. Close this dialog and confirm removal again."
     }

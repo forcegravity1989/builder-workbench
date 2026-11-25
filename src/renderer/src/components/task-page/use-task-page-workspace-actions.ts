@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import type { GitHubWorkItem } from '../../../../shared/github/work-items/work-item-types'
 import type { GitLabWorkItem } from '../../../../shared/gitlab/gitlab-types'
 import type { LinkedWorkItemSummary } from '@/lib/workspace/creation/new-workspace'
+import { githubWorkItemWorkspaceComposerData } from './task-page-github-workspace-composer'
 import { useAppStore } from '@/store'
 import {
   matchScopedTaskWorkspaces,
@@ -16,10 +17,7 @@ import { findGithubWorkItemWorkspaceAttachment } from '@/lib/work-items/github/g
 import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import {
-  getGitHubWorkItemWorkspaceSeed,
-  getGitLabWorkItemWorkspaceSeed
-} from './task-page-source-context'
+import { getGitLabWorkItemWorkspaceSeed } from './task-page-source-context'
 import { getTaskPageRepoSourceContext } from '../../lib/work-items/task-repo-source-context'
 type TaskPageWorkspaceActionsInput = Pick<TaskPageSearchActionsModel, 'repos' | 'openModal'> &
   Partial<Pick<TaskPageSearchActionsModel, 'workbenchScope' | 'repoMap'>>
@@ -30,18 +28,6 @@ export function useTaskPageWorkspaceActions<Model extends TaskPageWorkspaceActio
   const { repos, openModal, workbenchScope = null, repoMap } = model
   const openComposerForItem = useCallback(
     (item: GitHubWorkItem): void => {
-      const linkedWorkItem: LinkedWorkItemSummary = {
-        provider: 'github',
-        type: item.type,
-        number: item.number,
-        title: item.title,
-        url: item.url,
-        ...(item.repoId
-          ? {
-              repoId: item.repoId
-            }
-          : {})
-      }
       const repo = getWorkItemRepo(repos, item)
       const sourceContext = getTaskPageRepoSourceContext(repo, 'github')
       const scopedAdditions =
@@ -53,9 +39,7 @@ export function useTaskPageWorkspaceActions<Model extends TaskPageWorkspaceActio
             })
           : {}
       openModal('new-workspace-composer', {
-        linkedWorkItem,
-        initialGitHubWorkItem: item,
-        taskSourceContext: sourceContext,
+        ...githubWorkItemWorkspaceComposerData(item, sourceContext),
         ...(workbenchScope && sourceContext
           ? {
               initialWorkspaceTarget: {
@@ -65,10 +49,6 @@ export function useTaskPageWorkspaceActions<Model extends TaskPageWorkspaceActio
               }
             }
           : {}),
-        prefilledName: getGitHubWorkItemWorkspaceSeed(item),
-        initialRepoId: item.repoId,
-        enableIssueAutomation: item.type === 'issue',
-        telemetrySource: 'sidebar',
         ...scopedAdditions
       })
     },

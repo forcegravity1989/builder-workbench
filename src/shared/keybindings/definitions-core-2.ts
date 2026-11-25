@@ -1,3 +1,4 @@
+import { UPDATE_PRODUCT_NAME } from '../updater/release-channel'
 import type { KeybindingDefinition } from './types'
 import { platformBindings } from './definitions-support'
 
@@ -112,7 +113,7 @@ export const KEYBINDING_DEFINITION_CORE_2: readonly KeybindingDefinition[] = [
     searchKeywords: ['shortcut', 'tab', 'browser', 'new', 'split', 'right', 'side', 'pane'],
     // Why: macOS only — Ctrl+Alt+letter is AltGr text input on Windows/Linux.
     defaultBindings: {
-      darwin: ['Mod+Alt+B'],
+      darwin: UPDATE_PRODUCT_NAME === 'Workbench' ? [] : ['Mod+Alt+B'],
       linux: [],
       win32: []
     }

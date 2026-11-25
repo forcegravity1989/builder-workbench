@@ -18,19 +18,24 @@ import {
   nativeWorkbenchWorkspaceHost
 } from './workspace-resolver'
 import bundle from '../../shared/workbench/skill-package.json'
+import improvementBundle from '../../shared/workbench/improvement-skill-package.json'
 
 export async function prepareWorkbenchSkill(
   runtime: OrcaRuntimeService,
   input: z.infer<typeof WorkbenchSkillPrepareRequest>,
   signal?: AbortSignal
 ): Promise<{ skillPath: string }> {
-  const resolved = await createWorkbenchWorkspaceResolver(
-    nativeWorkbenchWorkspaceHost(runtime)
-  ).resolve(input)
-  if (parseExecutionHostId(resolved.target.hostId)?.kind !== 'local') {
+  const improvement = input.topic === 'improve-workbench'
+  const resolved = improvement
+    ? undefined
+    : await createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime)).resolve(input)
+  if (resolved && parseExecutionHostId(resolved.target.hostId)?.kind !== 'local') {
     throw new Error('请通过 Orca 共享主机连接项目所在电脑后准备流程 Skill')
   }
-  const projectRuntime = runtime.resolveProjectRuntimeForWorktree(input.worktreeId)
+  const archive = improvement ? improvementBundle : bundle
+  const projectRuntime = improvement
+    ? undefined
+    : runtime.resolveProjectRuntimeForWorktree(input.worktreeId)
   if (projectRuntime?.status === 'repair-required') {
     throw new Error('请先修复项目执行环境，再准备流程 Skill')
   }
@@ -39,10 +44,10 @@ export async function prepareWorkbenchSkill(
       ? { scope: 'global', executionTarget: { kind: 'wsl', distro: projectRuntime.runtime.distro } }
       : { scope: 'global', executionTarget: { kind: 'host' } }
   const upload = SkillUploadBeginResultSchema.parse(
-    await runtime.beginSkillUpload({ package: bundle.package })
+    await runtime.beginSkillUpload({ package: archive.package })
   )
   try {
-    const bytes = Buffer.from(bundle.archiveBase64, 'base64')
+    const bytes = Buffer.from(archive.archiveBase64, 'base64')
     const chunkBytes = Math.min(upload.chunkBytes, SKILL_UPLOAD_CHUNK_MAX_BYTES)
     if (upload.acknowledgedOffset > bytes.length) {
       throw new Error('技能包上传偏移无效')
@@ -57,11 +62,11 @@ export async function prepareWorkbenchSkill(
       await runtime.appendSkillUploadChunk(chunk)
     }
     await runtime.commitSkillUpload(upload.uploadId)
-    await resolved.reauthorize()
+    await resolved?.reauthorize()
     signal?.throwIfAborted()
     const request: SkillBundleInstallRequest = {
       operationId: randomUUID(),
-      package: bundle.package,
+      package: archive.package,
       selectedSkillIds: [input.topic],
       ingress: { kind: 'staged-upload', uploadId: upload.uploadId },
       destination,
