@@ -1,6 +1,7 @@
 import { parseAuthenticatedFrame, parseReadyFrame } from './remote-runtime-request-frames'
 import type { RemoteRuntimeClientError } from './remote-runtime-client-error'
 import type { RuntimeCapability } from './protocol-version'
+import { remoteRuntimeAuthCallerFields } from './remote-runtime-caller-identity'
 import { dispatchSharedControlFrame } from './remote-runtime-shared-control-frame-dispatch'
 import { parseSharedControlFrame } from './remote-runtime-shared-control-protocol'
 import type { SharedControlRetiredRequestIds } from './remote-runtime-shared-control-retired-request-ids'
@@ -39,7 +40,8 @@ export function handleSharedControlTextFrame(args: {
     args.sendEncrypted({
       type: 'e2ee_auth',
       deviceToken: args.deviceToken,
-      clientCapabilities: args.clientCapabilities
+      clientCapabilities: args.clientCapabilities,
+      ...remoteRuntimeAuthCallerFields()
     })
     return
   }

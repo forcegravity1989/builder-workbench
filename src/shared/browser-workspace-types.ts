@@ -160,6 +160,10 @@ export type BrowserSessionUserAgentMode = 'clean' | 'native'
 
 export type BrowserSessionProfileCreateOptions = {
   userAgentMode?: BrowserSessionUserAgentMode
+  // Why: internal profiles (e.g. the W3 account session) back a feature but are
+  // hidden from the user's session-profile list; they remain resolvable by the
+  // registry allowlist and must never be user-selectable/deletable via the UI.
+  internal?: boolean
 }
 
 export type BrowserSessionProfileSource = {
@@ -184,6 +188,7 @@ export type BrowserSessionProfile = {
   label: string
   source: BrowserSessionProfileSource | null
   userAgentMode?: BrowserSessionUserAgentMode
+  internal?: boolean
 }
 
 export type BrowserCookieImportSummary = {

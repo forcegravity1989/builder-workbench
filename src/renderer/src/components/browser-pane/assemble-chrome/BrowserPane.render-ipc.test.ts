@@ -8,8 +8,11 @@ describe('BrowserPagePane render IPC boundary', () => {
       fileURLToPath(new URL('./browser-page-pane.tsx', import.meta.url)),
       'utf8'
     )
-    const start = source.indexOf('const isBlankTab =', source.indexOf('function BrowserPagePane'))
-    const end = source.indexOf('useEffect(() => {', start)
+    const start = source.indexOf(
+      'const liveBrowserUrl =',
+      source.indexOf('function BrowserPagePane')
+    )
+    const end = source.indexOf('const annotationSend =', start)
     const renderUrlDerivation = source.slice(start, end)
 
     expect(renderUrlDerivation).toContain('getLiveBrowserUrl(browserTab.id)')

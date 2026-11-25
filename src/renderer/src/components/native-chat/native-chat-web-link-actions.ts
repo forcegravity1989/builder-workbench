@@ -8,6 +8,7 @@ import {
   buildHttpLinkActions,
   httpLinkActionDestinationsForUrl,
   openRoutedHttpLink,
+  workbenchRepairLinkAction,
   type HttpLinkActionDestinations,
   type HttpLinkDestination
 } from '@/lib/http-link-destinations'
@@ -69,7 +70,8 @@ export function handleNativeChatWebLink(
     destination: url,
     kind: 'url',
     restoreFocus: deps.restoreFocus,
-    ...buildHttpLinkActions(destinations, open)
+    ...buildHttpLinkActions(destinations, open),
+    ...workbenchRepairLinkAction(url, deps.worktreeId)
   })
   return true
 }

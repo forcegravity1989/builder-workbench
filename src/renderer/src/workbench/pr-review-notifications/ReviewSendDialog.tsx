@@ -40,7 +40,7 @@ export function ReviewSendDialog({
   const unavailable = selected.filter((target) => !availableKeys.has(reviewPeerKey(target)))
   const description =
     request.kind === 'prototype'
-      ? `共享页签 · ${request.page.sourceHostName} · ${request.page.title}`
+      ? `${request.page.title} · ${request.page.sourceHostName}`
       : `${request.request.repo.path} #${request.request.prNumber} · ${request.request.title}`
   return (
     <Dialog
@@ -53,7 +53,7 @@ export function ReviewSendDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>发送评审</DialogTitle>
+          <DialogTitle>{request.kind === 'prototype' ? '邀请评审' : '发送评审'}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-between text-xs text-muted-foreground">

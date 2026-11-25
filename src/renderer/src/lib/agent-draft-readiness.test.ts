@@ -31,11 +31,16 @@ describe('waitForAgentDraftInputReady', () => {
     clearPreHandlerPtyState(PTY_ID)
     testState.observer = null
     testState.unsubscribe.mockReset()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
   })
 
-  it('observes buffered startup bytes without consuming the primary drain', async () => {
+  it('preserves buffered startup bytes and detects a silent composer from the current frame', async () => {
     vi.useFakeTimers()
+    const getMainBufferSnapshot = vi.fn().mockResolvedValue({
+      data: DECSET_BRACKETED_PASTE + CODEX_COMPOSER
+    })
+    vi.stubGlobal('api', { pty: { getMainBufferSnapshot } })
     bufferPreHandlerPtyData(PTY_ID, CODEX_COMPOSER)
     bufferPreHandlerPtyData(PTY_ID, DECSET_BRACKETED_PASTE)
     const primary = vi.fn()
@@ -50,6 +55,14 @@ describe('waitForAgentDraftInputReady', () => {
       [CODEX_COMPOSER, undefined],
       [DECSET_BRACKETED_PASTE, undefined]
     ])
+    expect(getMainBufferSnapshot).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+
+    await expect(
+      waitForAgentDraftInputReady(PTY_ID, 20_000, 'codex-composer-prompt', {})
+    ).resolves.toBe(true)
+    expect(getMainBufferSnapshot).toHaveBeenCalledExactlyOnceWith(PTY_ID, { scrollbackRows: 0 })
+    expect(testState.unsubscribe).toHaveBeenCalledTimes(2)
     expect(vi.getTimerCount()).toBe(0)
   })
 })

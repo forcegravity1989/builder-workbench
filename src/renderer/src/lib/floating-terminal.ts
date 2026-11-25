@@ -1,4 +1,5 @@
 export const TOGGLE_FLOATING_TERMINAL_EVENT = 'orca-toggle-floating-terminal'
+export const OPEN_FLOATING_WORKSPACE_EVENT = 'orca-open-floating-workspace'
 
 // Why: maximize/restore lives in the panel's own keydown handler, but that
 // handler is unmounted while the panel is closed. When Cmd+Opt+Shift+A is

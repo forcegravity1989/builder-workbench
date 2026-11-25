@@ -16,6 +16,8 @@ import {
   findWorkspace
 } from '../browser-page-records'
 import { getBrowserSessionProfileHostId } from './browser-host-state'
+import { getW3LocalBrowserDefault } from '@/lib/w3-local-browser-default'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
 import { admitBrowserPageMount } from '@/components/browser-pane/host-guest/browser-page-mount-admission'
 
@@ -53,23 +55,40 @@ export function createBrowserTabActions(
         admitBrowserPageMount(page.id)
       }
       // Why: with no explicit profile, inherit the user's default so a Settings preference applies to new tabs.
+      // A validated W3 sign-in overrides that default for ordinary *local* tabs only.
+      const profileHostId = getBrowserSessionProfileHostId(
+        get(),
+        worktreeId,
+        options?.browserRuntimeEnvironmentId
+      )
+      const w3LocalDefault =
+        !options?.docLocation && profileHostId === LOCAL_EXECUTION_HOST_ID
+          ? getW3LocalBrowserDefault()
+          : null
       const sessionProfileId =
         options?.sessionProfileId !== undefined
           ? options.sessionProfileId
-          : (get().defaultBrowserSessionProfileIdByHostId[
-              getBrowserSessionProfileHostId(
-                get(),
-                worktreeId,
-                options?.browserRuntimeEnvironmentId
-              )
-            ] ?? get().defaultBrowserSessionProfileId)
+          : (w3LocalDefault?.sessionProfileId ??
+            get().defaultBrowserSessionProfileIdByHostId[profileHostId] ??
+            get().defaultBrowserSessionProfileId)
+      // Why the W3 partition rides along only with the W3 default: the W3
+      // profile is internal (absent from the renderer's profile list), so its
+      // tabs must carry the partition itself or they silently fall back to
+      // the default partition and never see the W3 cookies. An explicitly
+      // chosen profile keeps resolving its partition through the list.
+      const sessionPartition =
+        options?.sessionPartition !== undefined
+          ? options.sessionPartition
+          : options?.sessionProfileId === undefined
+            ? (w3LocalDefault?.sessionPartition ?? null)
+            : null
       const browserTab = buildWorkspaceFromPage(
         workspaceId,
         worktreeId,
         page,
         [page.id],
         sessionProfileId,
-        options?.sessionPartition
+        sessionPartition
       )
 
       set((s) => {
