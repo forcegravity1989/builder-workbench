@@ -1,0 +1,56 @@
+docs/05-features/w3-account/intent.md
+  s_d45810414e7f4e::t_87fd4e1185fdf1 3,11,18-20,26-30,36-38,43,48-51
+docs/05-features/w3-account/prototype.html
+  s_d45810414e7f4e::t_94c3b655d90901 40-43,80-81,91,107,115-118,121-131,171-174
+docs/05-features/w3-account/spec.md
+  s_d45810414e7f4e::t_816e454180fb33 13
+src/main/ipc/w3-account-ipc.ts
+  s_d45810414e7f4e::t_3a019e3424175f 20-21
+src/main/w3-account/w3-account-identity.ts
+  s_d45810414e7f4e::t_9318411004cd72 9,23-103
+src/main/w3-account/w3-account-service.test.ts
+  s_d45810414e7f4e::t_5a6e9c074da7fc 4,6,35,138-140,200,237,301-304,312,316-341,357,393,420
+src/main/w3-account/w3-account-service.ts
+  s_d45810414e7f4e::t_48216cb641eb2b 18-22,105,172-177,185-191,264,341,398-403,416,422,450-453,468,476,536-541,551,557
+src/renderer/src/app-shell/use-w3-account-bootstrap.ts
+  s_d45810414e7f4e::t_3881ce818bad50 4,29-38,41
+src/renderer/src/components/settings/W3AccountSettingsPane.tsx
+  s_d45810414e7f4e::t_05c9436f5a81cc 66-70,359-362,371-379,386-388,390-400,472-475
+src/renderer/src/components/settings/w3-account-view-model.test.ts
+  s_d45810414e7f4e::t_e08723b758c25f 26,34-39,51-52,61
+src/renderer/src/i18n/locales/en.json
+  s_d45810414e7f4e::t_cbcffc7055f249 11690,11694,11715
+src/renderer/src/i18n/locales/zh.json
+  s_d45810414e7f4e::t_cba762ed522228 5429,5433,5454
+src/renderer/src/lib/w3-local-browser-default.ts
+  s_d45810414e7f4e::t_9c039db58b9b54 5-16,18-19,22-23
+src/renderer/src/lib/workspace-browser-tab-open.ts
+  s_d45810414e7f4e::t_1032645978da96 21,189-192,199,202
+src/renderer/src/store/slices/browser/browser-tab-actions.ts
+  s_d45810414e7f4e::t_50a54ed6021825 19,65,69,72-82,89
+src/shared/w3-account.ts
+  s_d45810414e7f4e::t_d3c64c650b2a14 18,29-33,40-45
+docs/05-features/w3-account/STATUS.md
+  h_d0d195a8c70989 3,10-14,20-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "90550c0f0c1d8f785ee5887dc2d364b4d3c32ffe",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_d45810414e7f4e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06563665-6818-4725-bc40-efe1caee3b96",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

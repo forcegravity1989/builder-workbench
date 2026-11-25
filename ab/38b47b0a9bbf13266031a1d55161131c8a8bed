@@ -1,0 +1,19 @@
+docs/06-module/团队共享访问策略.md
+  s_5e76dac28cd897::t_df97a47ca2bab5 17,43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "ab38b47b0a9bbf13266031a1d55161131c8a8bed",
+  "prompts": {},
+  "sessions": {
+    "s_5e76dac28cd897": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "s_5e76dac28cd897",
+        "model": "unknown"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

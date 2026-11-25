@@ -1,0 +1,21 @@
+src/renderer/src/workbench/task-port.test.ts
+  s_00b31d97ac33ac::t_2d34a9de9b0a6d 272-291
+src/renderer/src/workbench/task-reference-repo.ts
+  s_00b31d97ac33ac::t_4ba983e5f37ac8 71-89,119-120,149-150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "c1aa456712866936d9cc2272e006011c56be64d7",
+  "prompts": {},
+  "sessions": {
+    "s_00b31d97ac33ac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fffb1277-0168-4db3-8e03-5da8b379d86a",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

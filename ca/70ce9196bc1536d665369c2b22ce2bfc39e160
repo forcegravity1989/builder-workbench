@@ -1,0 +1,50 @@
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.ts
+  s_02ab5765848c38::t_1dde4731df6770 211-215
+  s_02ab5765848c38::t_8af7f8362f0944 208-210
+  s_02ab5765848c38::t_7c4fd73a1cb179 8-12,14,27,29-30,93-146,151-153,198-207,242-244
+docs/05-features/team-collaboration/intent.md
+  s_02ab5765848c38::t_4ed0768802e692 15
+src/main/runtime/runtime-rpc/runtime-rpc-websocket-dispatch.ts
+  s_02ab5765848c38::t_8f119f79dae83d 155
+  s_02ab5765848c38::t_015db5fc074631 191-192
+  s_02ab5765848c38::t_dbbdc86ee564ea 164-166
+docs/05-features/team-collaboration/design.md
+  s_02ab5765848c38::t_e62071e948ff56 48
+  s_02ab5765848c38::t_1b690119b53804 30
+docs/05-features/team-collaboration/spec.md
+  s_02ab5765848c38::t_f26cd33576f513 80
+  s_02ab5765848c38::t_54104de6a9141e 28
+  s_02ab5765848c38::t_12c969e1f370d0 71
+src/main/runtime/runtime-rpc/runtime-rpc-team-read-policy.test.ts
+  s_02ab5765848c38::t_fd2d52312562d8 13,15-17,19-21,23-31,33,35,41,46-50,52-60,62,68-70,97,99,117-119,126-136
+  h_1dcaf127381c33 120-125
+  s_02ab5765848c38::t_ef2d478d904c9a 137-139
+  s_02ab5765848c38::t_9e0617cd27155a 140
+src/shared/runtime-access-grants.ts
+  s_02ab5765848c38::t_e8e58c28e0aa15 32,34-35
+docs/06-module/团队共享访问策略.md
+  s_02ab5765848c38::t_1e743b4267cf84 34
+  s_02ab5765848c38::t_aa88fd593c3513 35
+  s_02ab5765848c38::t_93c73573055ec5 13,15-17,19-24,26,28,43-44,46,54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "ca70ce9196bc1536d665369c2b22ce2bfc39e160",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+src/shared/workbench/skill-package.json
+  s_00b31d97ac33ac::t_d7ebd7ea2ad7f6 4-7,9
+standard/references/version-records.md
+  s_00b31d97ac33ac::t_b469a4c57cd259 69
+standard/skills/version-acceptance/SKILL.md
+  s_00b31d97ac33ac::t_6f933685e2fd9a 38
+standard/skills/week-planning/SKILL.md
+  s_00b31d97ac33ac::t_cdc30f22ee724f 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "4a3d73f78a9e854922745c1bfb8c6ae2e619c657",
+  "prompts": {},
+  "sessions": {
+    "s_00b31d97ac33ac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fffb1277-0168-4db3-8e03-5da8b379d86a",
+        "model": "unknown"
+      },
+      "human_author": "andi (E) <a30030291@china.huawei.com>"
+    }
+  }
+}

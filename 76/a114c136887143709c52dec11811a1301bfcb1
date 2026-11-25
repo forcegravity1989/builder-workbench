@@ -1,0 +1,46 @@
+src/main/workbench/team-collaboration/team-directory-client.ts
+  s_02ab5765848c38::t_9ad0da043e274d 143-160
+src/main/startup/main-process-runtime-launch.ts
+  s_02ab5765848c38::t_adb1ff8d50fe6b 98
+  s_02ab5765848c38::t_bc5da55e194f0a 11
+src/main/ipc/mobile.ts
+  s_02ab5765848c38::t_188f4e199a9230 207,210-211
+  s_02ab5765848c38::t_94c669039c613f 55,70-71
+  s_02ab5765848c38::t_36ef8923029e16 222-223
+  s_02ab5765848c38::t_1a19bb5b6a3518 228-229
+  s_02ab5765848c38::t_d6f19cc385ccb6 214-221
+  s_02ab5765848c38::t_f8392926ce3e71 212-213,224,301,306-334,337-338
+src/renderer/src/components/settings/RuntimeAccessGrantList.tsx
+  s_02ab5765848c38::t_e1af80d7c21290 72-74,76-79,81-83
+  s_02ab5765848c38::t_180ec0a3c90dfe 136
+  s_02ab5765848c38::t_e0ea56b20d2651 154-162
+  s_02ab5765848c38::t_f52eb3e270fcea 152
+  s_02ab5765848c38::t_2d474d052322fe 137-139
+  s_02ab5765848c38::t_29567052cb66fa 140-150
+docs/05-features/team-collaboration/design.md
+  s_02ab5765848c38::t_ea61a84c556ea3 24
+src/main/workbench/team-collaboration/team-identity.ts
+  s_02ab5765848c38::t_ecbf461e2418e4 26-43
+  s_02ab5765848c38::t_a8547a12cb75d0 4,10-11
+  s_02ab5765848c38::t_818079b6f8b774 25
+src/renderer/src/i18n/locales/en.json
+  s_02ab5765848c38::t_5dc8e6cebf296b 8071-8072
+src/renderer/src/i18n/locales/zh.json
+  s_02ab5765848c38::t_e4906523570e79 6909-6910
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "76a114c136887143709c52dec11811a1301bfcb1",
+  "prompts": {},
+  "sessions": {
+    "s_02ab5765848c38": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "86b392e1-311f-4992-b1e5-9535bee709ff",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

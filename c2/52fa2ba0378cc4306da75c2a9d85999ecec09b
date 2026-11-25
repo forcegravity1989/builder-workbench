@@ -1,0 +1,38 @@
+.claude/skills/workbench-start/scripts/cursor-session-feedback.test.mjs
+  s_ffa24ae27b253d::t_6326c5f5fc2dbc 1-37,41-42,48-149,155-161
+  h_1dcaf127381c33 38-40,43-47,150-154
+  s_ffa24ae27b253d::t_b156c09d63488f 162-164
+  s_ffa24ae27b253d::t_8a0f4628b14629 165-171
+.claude/skills/workbench-start/references/workflow-feedback.md
+  s_ffa24ae27b253d::t_a00887f716f2df 17
+.claude/skills/workbench-start/SKILL.md
+  s_ffa24ae27b253d::t_37056586cd06f3 79
+.claude/skills/workbench-start/references/cursor.md
+  s_ffa24ae27b253d::t_4fb431c9a6cdb0 1-38
+.claude/skills/workbench-start/scripts/cursor-session-feedback.mjs
+  s_ffa24ae27b253d::t_ca71944f0a0205 67
+  s_ffa24ae27b253d::t_4f85852e017170 1-66,68-94,99-265
+  h_1dcaf127381c33 95-98
+  s_ffa24ae27b253d::t_1c1090c89d1053 266-268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "c252fa2ba0378cc4306da75c2a9d85999ecec09b",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_ffa24ae27b253d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "51d6170b-adb5-4cbe-852c-58ff67dc4e26",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
