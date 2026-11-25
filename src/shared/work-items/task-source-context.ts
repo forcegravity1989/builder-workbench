@@ -16,7 +16,7 @@ import {
 } from './task-provider-identity'
 import type { GlobalSettings } from '../settings/global-settings-types'
 import type { Repo } from '../repository/repo-types'
-import type { GitHubOwnerRepo } from '../github/pull-requests/pull-request-types'
+import type { GitHubRepositoryIdentity as GitHubOwnerRepo } from '../github/repositories/repository-identity'
 
 export type TaskSourceContext = {
   kind: 'task-source'

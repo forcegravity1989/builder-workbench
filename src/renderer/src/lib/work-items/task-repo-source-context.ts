@@ -47,7 +47,10 @@ export function getTaskPageRepoSourceContext(
   const upstream = remote?.remoteName === 'upstream' ? primary : null
   const origin =
     remote?.remoteName === 'upstream'
-      ? parseGitHubRemoteUrl(remote.originUrl, source.providerIdentity?.provider === 'github')
+      ? parseGitHubRemoteUrl(
+          remote.originUrl ?? undefined,
+          source.providerIdentity?.provider === 'github'
+        )
       : primary
   return {
     ...source,

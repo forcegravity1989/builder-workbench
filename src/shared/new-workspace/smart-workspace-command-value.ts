@@ -3,6 +3,7 @@ export type SmartWorkspaceCommandRowKind =
   | 'create-branch'
   | 'github'
   | 'gitlab'
+  | 'codehub'
   | 'branch'
   | 'linear'
   | 'jira'

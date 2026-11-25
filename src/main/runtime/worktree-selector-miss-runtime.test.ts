@@ -159,6 +159,7 @@ describe('showManagedWorktree selector misses', () => {
     ])
     const runtime = new OrcaRuntimeService(makeStore() as never)
 
+    runtime.invalidateWorktreeCatalog('repo-1')
     await runtime.showManagedWorktree('id:repo-1::/tmp/worktree-a')
     await expect(runtime.showManagedWorktree('branch:dup')).rejects.toThrow('selector_ambiguous')
     await expect(runtime.showManagedWorktree('global-floating-terminal')).rejects.toThrow(
