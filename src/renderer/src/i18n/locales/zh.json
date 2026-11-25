@@ -5418,6 +5418,60 @@
         }
       },
       "settings": {
+        "w3Account": {
+          "cancel": "取消",
+          "checking": "正在检查账户状态…",
+          "description": "使用 W3 账户登录。",
+          "employeeNoLabel": "工号",
+          "failedAccountParse": "W3 已登录，但未能读取有效资料，请重试。",
+          "failedCancelled": "登录已取消。",
+          "failedHeading": "登录未完成",
+          "failedHeadingSignOut": "退出未完成",
+          "failedLogin": "W3 会话未完成登录，请重试。",
+          "failedNotConfigured": "登录尚未配置，请联系管理员。",
+          "failedOpen": "无法打开 W3 登录窗口。",
+          "failedSignOut": "W3 会话清理未完成，仍处于登录状态。请重试退出。",
+          "failedSync": "无法从系统浏览器复用登录。请重试，或使用下方手动登录。",
+          "failedTimeout": "登录超时，请重试。",
+          "keywordAccount": "账户",
+          "keywordHuawei": "华为",
+          "keywordLogin": "登录",
+          "keywordLogout": "退出",
+          "keywordSignIn": "登录",
+          "keywordSignOut": "退出",
+          "keywordW3": "w3",
+          "loginPendingBody": "请在 Orca 的 W3 登录窗口中完成登录。打开窗口不代表已登录。",
+          "loginPendingButton": "等待在 W3 页面完成登录…",
+          "loginPendingCancel": "取消登录",
+          "loginPendingFineprint": "W3 账号接口确认有效身份后即为登录完成，本页面会自动更新。",
+          "loginPendingHeading": "W3 登录窗口已打开",
+          "openW3Home": "打开 W3 首页",
+          "openW3HomeDescription": "w3.huawei.com · 使用当前 W3 身份在内置浏览器中免登访问",
+          "openWebFailed": "无法打开 W3 窗口。",
+          "openWebNotSignedIn": "请先登录 W3。",
+          "openWebOpened": "已打开 W3 窗口。",
+          "retry": "重试",
+          "retrySignOut": "重试退出",
+          "searchAccount": "W3 账户",
+          "searchDescription": "使用 W3 登录或退出。",
+          "signInButton": "使用华为 W3 登录",
+          "signOut": "退出登录",
+          "signOutConfirmBody": "将退出内置浏览器使用的 W3 会话，内网站点可能需要重新登录。",
+          "signOutConfirmTitle": "退出 W3 账户？",
+          "signedInBadge": "已登录",
+          "signedInNoProfile": "登录完成（未获取用户资料）",
+          "signedInNoProfileDetail": "W3 登录已成功，但未能读取用户资料。",
+          "syncButton": "从系统浏览器复用登录",
+          "syncPendingBody": "将启动一个临时系统浏览器会话为你完成免密登录，无需任何操作。",
+          "syncPendingButton": "正在同步…",
+          "syncPendingCancel": "取消同步",
+          "syncPendingFineprint": "W3 账号接口确认有效身份后即为登录完成，本页面会自动更新。",
+          "syncPendingHeading": "正在从系统浏览器复用登录…",
+          "title": "W3 账户",
+          "welcomeBody": "使用你的 W3 账户登录。内置浏览器中的内网站点将复用此登录。",
+          "welcomeFineprint": "无需输入账号密码。是否免密取决于 W3 会话与企业策略。",
+          "welcomeHeading": "欢迎回来"
+        },
         "AccountsPane": {
           "c2d2751587": "删除账户",
           "dbb9626ed1": "取消",
@@ -15400,5 +15454,10 @@
     "setupGuideReopen": "可从「帮助 → BW 入门」重新打开。",
     "cliRegistrationTitle": "请将 Orca CLI 注册到 PATH 后继续。",
     "cliRegistrationDescription": "请允许系统授权，让能力配置可以使用 Orca CLI 命令。"
+  },
+  "workbench": {
+    "improvement": {
+      "startRepair": "开始修复"
+    }
   }
 }

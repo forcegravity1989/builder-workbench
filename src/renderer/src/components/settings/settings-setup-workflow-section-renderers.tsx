@@ -2,7 +2,7 @@ import { ArtifactsSettingsPane } from './ArtifactsSettingsPane'
 import { AutomationsSettingsPane } from './AutomationsSettingsPane'
 import { GeneralPane } from './GeneralPane'
 import { IntegrationsPane } from './IntegrationsPane'
-import { OrcaAccountSettingsPane } from './OrcaAccountSettingsPane'
+import { W3AccountSettingsPane } from './W3AccountSettingsPane'
 import { SettingsSetupGuidePane } from './SettingsSetupGuidePane'
 import { ShareSkillsSettingsPane } from './ShareSkillsSettingsPane'
 import { SettingsSection } from './SettingsSection'
@@ -16,14 +16,14 @@ export function renderOrcaAccountSettingsSection(
   return model.showDesktopOnlySettings ? (
     <SettingsSection
       id="orca-account"
-      title={translate('auto.components.settings.orcaAccount.title', 'Orca Account')}
+      title={translate('auto.components.settings.w3Account.title', 'W3 Account')}
       description={translate(
-        'auto.components.settings.orcaAccount.description',
-        'Sign in to extend Orca with cloud features, including Artifacts and Orca Relay.'
+        'auto.components.settings.w3Account.description',
+        'Sign in with your W3 account.'
       )}
       searchEntries={navigation.getSectionSearchEntries('orca-account')}
     >
-      {view.isSectionMounted('orca-account') ? <OrcaAccountSettingsPane /> : null}
+      {view.isSectionMounted('orca-account') ? <W3AccountSettingsPane /> : null}
     </SettingsSection>
   ) : null
 }

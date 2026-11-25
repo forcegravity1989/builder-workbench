@@ -31,6 +31,14 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     conflictGroup: 'menu'
   },
   {
+    id: 'workbench.annotate',
+    title: 'Annotate Workbench',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['workbench', 'annotation', 'feedback', '批注', '改进助手'],
+    defaultBindings: platformBindings(['Mod+Alt+B'])
+  },
+  {
     id: 'worktree.palette',
     title: 'Switch worktree',
     group: 'Global',
