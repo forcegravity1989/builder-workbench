@@ -50,6 +50,7 @@ import { initializeBrowserExtensionSupport } from '../browser/extensions/browser
 import { logStartupMilestone } from './diagnostics/startup-diagnostics'
 import { writeHttp1CompatibilityMarker } from './network-compatibility/http1-compatibility-marker'
 import { mainProcessState as state } from './main-process-state'
+import { isWorkbenchProduct } from './workbench-product'
 import { createStoreNativeSettingsProjection } from '../core-desktop/native-settings-projection'
 import { followNativeSettingChanges } from './native-setting-subscriptions'
 import { updateGpuAccelerationAboutPanel } from './gpu-recovery/gpu-lifecycle'
@@ -166,7 +167,7 @@ export async function initializeReadyFoundation(): Promise<void> {
     databaseFile: profile.stateDatabaseFile,
     profileId: profile.profile.id,
     runtime: 'desktop',
-    initializeHomeWorkspace: !state.isServeMode,
+    initializeHomeWorkspace: !state.isServeMode && !isWorkbenchProduct(),
     storageAuthority: state.isServeMode ? 'runtime' : 'desktop',
     onPersistenceFailure: reportProfileStateWriteFailure,
     onPersistenceSaveDelayChanged: reportProfileStateSaveDelay

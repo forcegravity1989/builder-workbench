@@ -276,7 +276,9 @@ export function ContextualTourOverlay(): JSX.Element | null {
       activeTourHasUndoneAction ||
       // A step change keeps the previous step's renderState until the new step measures.
       renderedStepIndexRef.current !== activeStepIndex ||
-      markedTourIdRef.current === activeTourId
+      markedTourIdRef.current === activeTourId ||
+      getContextualTour(activeTourId).markSeenOn === 'dismiss' ||
+      (activeTourId === 'tasks' && activeTourSource === 'workbench_tasks_visible')
     ) {
       return
     }
@@ -288,6 +290,7 @@ export function ContextualTourOverlay(): JSX.Element | null {
     activeStepIndex,
     activeTourHasUndoneAction,
     activeTourId,
+    activeTourSource,
     markContextualToursSeen,
     renderState
   ])

@@ -43,7 +43,7 @@ type OnboardingFlowActionsArgs = {
   persistCurrentStep: () => Promise<PersistCurrentStepResult>
   selectedWorkspaceId: string | null
   closeWith: CloseWith
-  openModal: (modal: 'add-repo') => void
+  openFirstProjectSetup: () => void
   getNextStepIndex: (index: number) => number
   onOnboardingChange: (state: OnboardingState) => void
   stepIndex: number
@@ -67,7 +67,7 @@ export function useOnboardingFlowActions({
   persistCurrentStep,
   selectedWorkspaceId: worktreeId,
   closeWith,
-  openModal,
+  openFirstProjectSetup,
   getNextStepIndex,
   onOnboardingChange,
   stepIndex,
@@ -126,13 +126,13 @@ export function useOnboardingFlowActions({
     ): Promise<boolean> => {
       const closed = await closeWith('completed', ONBOARDING_FINAL_STEP, path)
       if (closed && !worktreeId && path === 'add_project_modal') {
-        openModal('add-repo')
+        openFirstProjectSetup()
       } else if (closed && worktreeId) {
         await launchOnboardingCompletionAgent(worktreeId, agent, workspaceExecutionHostId)
       }
       return closed
     },
-    [closeWith, openModal, worktreeId]
+    [closeWith, openFirstProjectSetup, worktreeId]
   )
 
   const next = useCallback(

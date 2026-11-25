@@ -34,7 +34,7 @@ import { getMeasurableContextualTourTarget } from './contextual-tour-gate'
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-const SKIP_BUTTON_SELECTOR = '[data-contextual-tour-dismiss]'
+const SKIP_BUTTON_SELECTOR = 'button[data-contextual-tour-skip]'
 
 export type ActiveTourRenderState = {
   rect: DOMRect
@@ -195,6 +195,7 @@ export function ContextualTourOverlaySurface({
           variant="ghost"
           size="icon-xs"
           data-contextual-tour-dismiss=""
+          data-contextual-tour-skip
           aria-label={
             renderState.isLastStep
               ? t(
