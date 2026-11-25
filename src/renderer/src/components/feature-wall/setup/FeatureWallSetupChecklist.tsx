@@ -5,6 +5,7 @@ import type {
   FeatureWallSetupStepId
 } from '../../../../../shared/feature-education/explore/feature-wall-setup-steps'
 import { getFeatureWallSetupStepsForSection } from '../../../../../shared/feature-education/explore/feature-wall-setup-steps'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { cn } from '@/lib/class-names'
 import { useScrollEdgeFades } from '@/lib/list-interaction/use-scroll-edge-fades'
 import type { FeatureWallSetupProgress } from './feature-wall-setup-progress'
@@ -263,6 +264,7 @@ function NotificationAction(): React.JSX.Element {
 }
 
 function TaskSourcesAction(): React.JSX.Element {
+  const workbenchShell = isWorkbenchShell()
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
   const checkJiraConnection = useAppStore((s) => s.checkJiraConnection)
   const checkLinearConnection = useAppStore((s) => s.checkLinearConnection)
@@ -271,13 +273,16 @@ function TaskSourcesAction(): React.JSX.Element {
 
   useEffect(() => {
     void refreshPreflightStatus()
-    void checkJiraConnection()
-    void checkLinearConnection()
+    if (!workbenchShell) {
+      void checkJiraConnection()
+      void checkLinearConnection()
+    }
   }, [
     refreshPreflightStatus,
     checkJiraConnection,
     checkLinearConnection,
-    providerRuntimeContextKey
+    providerRuntimeContextKey,
+    workbenchShell
   ])
 
   return (
@@ -291,6 +296,7 @@ export function FeatureWallSetupChecklist(
   props: FeatureWallSetupChecklistProps
 ): React.JSX.Element {
   const t = useTranslate()
+  const workbenchShell = isWorkbenchShell()
   const { activeStep, progress, onSelectStep, layout = 'modal' } = props
   const isEmbedded = layout === 'embedded'
   const activeDone = activeStep ? progress.stepDone[activeStep.id] : false
@@ -299,8 +305,8 @@ export function FeatureWallSetupChecklist(
     activeStep?.id === 'two-worktrees' ||
     activeStep?.id === 'browser' ||
     activeStep?.id === 'add-two-repos'
-  const setupSteps = getFeatureWallSetupStepsForSection('setup')
-  const parallelWorkSteps = getFeatureWallSetupStepsForSection('parallel-work')
+  const setupSteps = getFeatureWallSetupStepsForSection('setup', workbenchShell)
+  const parallelWorkSteps = getFeatureWallSetupStepsForSection('parallel-work', workbenchShell)
   const visualBreakpoint = isEmbedded ? 'xl' : 'sm'
   const panelFades = useScrollEdgeFades<HTMLDivElement>()
   const visualGridClass =
@@ -333,10 +339,11 @@ export function FeatureWallSetupChecklist(
           onSelectStep={onSelectStep}
         />
         <SetupSection
-          title={t(
-            'auto.components.feature.wall.FeatureWallSetupChecklist.713cc529a5',
-            'Milestones'
-          )}
+          title={
+            workbenchShell
+              ? t('guidance.experiences', 'Try the capabilities')
+              : t('auto.components.feature.wall.FeatureWallSetupChecklist.713cc529a5', 'Milestones')
+          }
           steps={parallelWorkSteps}
           startOrdinal={setupSteps.length + 1}
           activeStepId={activeStep?.id ?? null}

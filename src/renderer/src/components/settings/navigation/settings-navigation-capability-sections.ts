@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import { getAccountsPaneSearchEntries } from '@/components/settings/accounts/accounts-search'
 import { getAgentsPaneSearchEntries } from '@/components/settings/agents/agents-search'
@@ -196,10 +197,15 @@ export function buildSetupSettingsSections(
     {
       id: 'integrations',
       title: t('auto.hooks.useSettingsNavigationMetadata.2b043783ef', 'Integrations'),
-      description: t(
-        'auto.hooks.useSettingsNavigationMetadata.33a5e1d597',
-        'Connect GitHub, GitLab, Linear, and source-hosting services.'
-      ),
+      description: isWorkbenchShell()
+        ? t(
+            'settings.integrations.workbenchDescription',
+            'Connect GitHub and CodeHub for tasks and reviews, WeLink for reports, and CloudBuild for builds.'
+          )
+        : t(
+            'auto.hooks.useSettingsNavigationMetadata.33a5e1d597',
+            'Connect GitHub, GitLab, Linear, and source-hosting services.'
+          ),
       icon: Blocks,
       searchEntries: getIntegrationsPaneSearchEntries(),
       group: 'setup'

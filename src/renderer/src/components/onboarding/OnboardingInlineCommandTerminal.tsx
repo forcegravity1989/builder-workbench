@@ -319,7 +319,7 @@ export function OnboardingInlineCommandTerminal({
               worktreeId={worktreeId}
               cwd={cwd}
               isActive
-              isVisible
+              isVisible={entered}
               showSplitButton={false}
               onPtyExit={() => {
                 onTerminalExit?.()

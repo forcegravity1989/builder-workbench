@@ -15,6 +15,7 @@ import { PrivacyDiagnosticsSection } from './PrivacyDiagnosticsSection'
 import { PRIVACY_SETTING_ANCHORS } from './privacy-search'
 import { useTranslate } from '@/i18n/use-translate'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { SettingsGroup } from '../section-layout/SettingsGroup'
 
 export type EnvBlockedReason = 'do_not_track' | 'orca_disabled' | 'ci'
@@ -76,6 +77,10 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
 
   const blocked = computeBlockedReason(consent)
   const toggleChecked = settings.telemetry?.optedIn === true
+  const workbench = isWorkbenchShell()
+  const telemetryLabel = workbench
+    ? t('auto.components.settings.PrivacyPane.workbenchLabel', 'Share usage data')
+    : t('auto.components.settings.PrivacyPane.fe904ac984', 'Share anonymous usage data')
 
   const handleToggle = async (): Promise<void> => {
     if (blocked || inFlight) {
@@ -102,30 +107,34 @@ export function PrivacyPane({ settings }: PrivacyPaneProps): React.JSX.Element {
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <ShieldCheck className="size-4" />
-            <Label>
-              {t('auto.components.settings.PrivacyPane.fe904ac984', 'Share anonymous usage data')}
-            </Label>
+            <Label>{telemetryLabel}</Label>
           </div>
           <p className="text-xs text-muted-foreground">
-            {t(
-              'auto.components.settings.PrivacyPane.8bfdd23a88',
-              'Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.'
-            )}{' '}
-            <button
-              type="button"
-              className="underline underline-offset-2 hover:text-foreground"
-              onClick={(event) => openAppHttpLink(PRIVACY_URL, { event })}
-            >
-              {t('auto.components.settings.PrivacyPane.77410e0566', 'Privacy policy')}
-            </button>
+            {workbench ? (
+              t(
+                'auto.components.settings.PrivacyPane.workbenchDescription',
+                'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.'
+              )
+            ) : (
+              <>
+                {t(
+                  'auto.components.settings.PrivacyPane.8bfdd23a88',
+                  'Help us figure out what to build next. Orca sends anonymous counts of which features you use and where things break.'
+                )}{' '}
+                <button
+                  type="button"
+                  className="underline underline-offset-2 hover:text-foreground"
+                  onClick={(event) => openAppHttpLink(PRIVACY_URL, { event })}
+                >
+                  {t('auto.components.settings.PrivacyPane.77410e0566', 'Privacy policy')}
+                </button>
+              </>
+            )}
           </p>
         </div>
         <Switch
           checked={toggleChecked}
-          aria-label={t(
-            'auto.components.settings.PrivacyPane.fe904ac984',
-            'Share anonymous usage data'
-          )}
+          aria-label={telemetryLabel}
           aria-describedby={blocked ? PRIVACY_PANE_BLOCKED_HELPER_ID : undefined}
           disabled={blocked !== null || inFlight}
           onCheckedChange={() => void handleToggle()}

@@ -8,6 +8,8 @@ import { useAppStore } from '@/store/index'
 import type { BrowserReloadTrigger } from '../navigate/browser-reload-action'
 import BrowserAddressBar from './address-bar/BrowserAddressBar'
 import { BrowserChromeToolbar } from './toolbar/browser-chrome-toolbar'
+import { WorkbenchBrowserHelp } from '@/workbench/WorkbenchDeliveryHelp'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { BrowserPasswordSaveButton } from '../passwords/BrowserPasswordSaveButton'
 import { BrowserReloadControl } from './toolbar/browser-reload-control'
 import { BrowserToolbarMenu } from './toolbar/BrowserToolbarMenu'
@@ -147,11 +149,17 @@ export function BrowserPageToolbar({
       isActive && state.activeTabType === 'browser' && state.activeBrowserTabId === workspaceId
   )
   useBrowserExtensionsTour(extensionDiscoveryTarget, extensionToolbar !== null)
+  const workbenchShell = isWorkbenchShell()
 
   return (
     <BrowserChromeToolbar
       closeTabOwner={{ worktreeId, browserPageId }}
-      showTourAnchors
+      showTourAnchors={!workbenchShell || extensionDiscoveryTarget}
+      helpControl={
+        workbenchShell && extensionDiscoveryTarget ? (
+          <WorkbenchBrowserHelp ready={!isBlankTab && !markupIsActive} />
+        ) : null
+      }
       controls={{
         canGoBack: canGoBack || Boolean(convertedFrom),
         canGoForward: canGoForward || Boolean(convertedTo),

@@ -1,7 +1,7 @@
 import type { FeatureInteractionState } from '../../../../../shared/feature-education/interactions/feature-interactions'
 import { hasFeatureInteraction } from '../../../../../shared/feature-education/interactions/feature-interactions'
 import {
-  FEATURE_WALL_SETUP_STEPS,
+  getFeatureWallSetupSteps,
   type FeatureWallSetupStepId
 } from '../../../../../shared/feature-education/explore/feature-wall-setup-steps'
 import type { GlobalSettings } from '../../../../../shared/settings/global-settings-types'
@@ -10,6 +10,7 @@ import { selectWorktreesByRepo } from '../../../store/workspaces/catalog/workspa
 
 export type FeatureWallSetupProgressInput = {
   ready?: boolean
+  workbenchShell?: boolean
   settings: GlobalSettings | null
   featureInteractions: FeatureInteractionState
   hasConnectedTaskSource: boolean
@@ -73,7 +74,7 @@ export function hasCompletedPreBrowserSetup(input: FeatureWallSetupProgressInput
     hasFeatureInteraction(input.featureInteractions, 'terminal-pane-split') &&
     countAvailableNonMainWorktrees(selectWorktreesByRepo(input)) >= 1 &&
     input.hasConnectedTaskSource &&
-    setupGuideAgentCapabilitiesDone(input) &&
+    (input.workbenchShell || setupGuideAgentCapabilitiesDone(input)) &&
     input.hasSetupScript
   )
 }
@@ -101,11 +102,12 @@ export function getFeatureWallSetupProgress(
     'agent-capabilities': setupGuideAgentCapabilitiesDone(input),
     'setup-script': input.hasSetupScript
   }
+  const setupSteps = getFeatureWallSetupSteps(input.workbenchShell)
   return {
     ready: input.ready ?? true,
     stepDone,
-    coreDoneCount: FEATURE_WALL_SETUP_STEPS.filter((step) => stepDone[step.id]).length,
-    coreTotal: FEATURE_WALL_SETUP_STEPS.length
+    coreDoneCount: setupSteps.filter((step) => stepDone[step.id]).length,
+    coreTotal: setupSteps.length
   }
 }
 

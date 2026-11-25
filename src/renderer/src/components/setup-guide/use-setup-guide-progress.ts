@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store/index'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useOrcaTeamFeatureBlocked } from '@/lib/orca-team-policy'
 import { ORCA_CLOUD_TEAM_POLICY_FLAGS } from '../../../../shared/orca-profiles/orca-cloud-team-policy'
 import { isGitRepoKind } from '../../../../shared/repository/repo-kind'
@@ -20,7 +21,10 @@ import {
 import { useOnboardingSkillRuntime } from '@/hooks/skills/runtime/use-onboarding-skill-runtime'
 import { getSetupGuideProgressSnapshot } from '../feature-wall/setup/feature-wall-setup-progress'
 import type { FeatureWallSetupProgress } from '../feature-wall/setup/feature-wall-setup-progress'
-import { deriveIntegrationConnectionStatus } from '../feature-wall/setup/integrations/use-integration-connection-status'
+import {
+  deriveIntegrationConnectionStatus,
+  deriveWorkbenchSetupIntegrationStatus
+} from '../feature-wall/setup/integrations/use-integration-connection-status'
 import { useSetupGuideBrowserMilestoneProgress } from './setup-guide-browser-milestone-progress'
 import {
   getComputerUsePermissionSetupState,
@@ -43,6 +47,7 @@ export function useSetupGuideProgress(
   orchestrationSkillInstalled: boolean,
   browserUseSkillInstalled: boolean
 ): FeatureWallSetupProgress {
+  const workbenchShell = isWorkbenchShell()
   const settings = useAppStore((s) => s.settings)
   const featureInteractions = useAppStore((s) => s.featureInteractions)
   const worktreesByRepo = useAppStore((s) => selectWorktreesByRepo(s))
@@ -77,7 +82,7 @@ export function useSetupGuideProgress(
   const [computerUseUnavailable, setComputerUseUnavailable] = useState(false)
   const computerUseBlocked = useOrcaTeamFeatureBlocked(ORCA_CLOUD_TEAM_POLICY_FLAGS.computerUse)
   const skillOptions = {
-    enabled: shouldRefreshCoreState && activeSkillRuntime.enabled,
+    enabled: shouldRefreshCoreState && !workbenchShell && activeSkillRuntime.enabled,
     discoveryTarget: activeSkillRuntime.discoveryTarget,
     runtimeTarget: activeSkillRuntime.discoveryRuntimeTarget,
     agent: activeSkillRuntime.agent,
@@ -106,10 +111,10 @@ export function useSetupGuideProgress(
     if (!preflightStatusCurrent || !preflightStatusChecked) {
       void refreshPreflightStatus()
     }
-    if (!linearStatusCurrent || !linearStatusChecked) {
+    if (!workbenchShell && (!linearStatusCurrent || !linearStatusChecked)) {
       void checkLinearConnection()
     }
-    if (!jiraStatusCurrent || !jiraStatusChecked) {
+    if (!workbenchShell && (!jiraStatusCurrent || !jiraStatusChecked)) {
       void checkJiraConnection()
     }
   }, [
@@ -127,7 +132,8 @@ export function useSetupGuideProgress(
     preflightStatusChecked,
     providerRuntimeContextKey,
     refreshPreflightStatus,
-    shouldRefreshCoreState
+    shouldRefreshCoreState,
+    workbenchShell
   ])
 
   const orderedGitRepos = useMemo(() => {
@@ -202,7 +208,7 @@ export function useSetupGuideProgress(
   }, [])
 
   const shouldReadComputerUsePermissions =
-    shouldRefreshCoreState && !computerUseBlocked && computerUseSkillInstalled
+    shouldRefreshCoreState && !workbenchShell && !computerUseBlocked && computerUseSkillInstalled
   useEffect(() => {
     if (!shouldReadComputerUsePermissions) {
       // Unavailable steps must clear stale permission state before readiness is derived.
@@ -234,7 +240,7 @@ export function useSetupGuideProgress(
     }
   }, [readComputerUsePermissions, shouldReadComputerUsePermissions])
 
-  const taskSourceStatus = deriveIntegrationConnectionStatus({
+  const connectionFacts = {
     preflightStatus,
     preflightStatusChecked,
     preflightStatusContextKey,
@@ -248,7 +254,10 @@ export function useSetupGuideProgress(
     jiraStatusChecked,
     jiraStatusContextKey,
     providerRuntimeContextKey
-  })
+  }
+  const taskSourceStatus = workbenchShell
+    ? deriveWorkbenchSetupIntegrationStatus(connectionFacts)
+    : deriveIntegrationConnectionStatus(connectionFacts)
   const hasConnectedTaskSource = taskSourceStatus.trackerConnected
   const gitRepoCount = orderedGitRepos.length
   const currentSetupScriptProbe = getCurrentSetupScriptProbeState(
@@ -262,11 +271,12 @@ export function useSetupGuideProgress(
     preflightStatusChecked: !taskSourceStatus.checking,
     linearStatusChecked: true,
     jiraStatusChecked: true,
-    browserUseSkillDiscoveryLoading: detectedBrowserUseSkillLoading,
-    computerUseSkillDiscoveryLoading: !computerUseBlocked && computerUseSkillLoading,
-    orchestrationSkillDiscoveryLoading: detectedOrchestrationSkillLoading,
+    browserUseSkillDiscoveryLoading: !workbenchShell && detectedBrowserUseSkillLoading,
+    computerUseSkillDiscoveryLoading:
+      !workbenchShell && !computerUseBlocked && computerUseSkillLoading,
+    orchestrationSkillDiscoveryLoading: !workbenchShell && detectedOrchestrationSkillLoading,
     setupScriptProbeReady: currentSetupScriptProbe.ready,
-    computerUseSkillInstalled: !computerUseBlocked && computerUseSkillInstalled,
+    computerUseSkillInstalled: !workbenchShell && !computerUseBlocked && computerUseSkillInstalled,
     computerUsePermissionStatusChecked:
       shouldReadComputerUsePermissions && computerUsePermissionStatusChecked
   })
@@ -275,6 +285,7 @@ export function useSetupGuideProgress(
     () =>
       getSetupGuideProgressSnapshot({
         ready,
+        workbenchShell,
         settings,
         featureInteractions,
         hasConnectedTaskSource,
@@ -310,6 +321,7 @@ export function useSetupGuideProgress(
       currentSetupScriptProbe.hasSetupScript,
       orchestrationSkillInstalled,
       settings,
+      workbenchShell,
       worktreesByRepo
     ]
   )

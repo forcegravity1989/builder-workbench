@@ -1,3 +1,5 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { OverviewExperimentSettings } from '@/workbench/version-overview/overview-experiment-settings'
 import type { GlobalSettings } from '../../../../../shared/settings/global-settings-types'
 import { Label } from '../../ui/label'
 import { Switch } from '../../ui/switch'
@@ -39,6 +41,7 @@ export function ExperimentalPane({
   hiddenExperimentalUnlocked = false
 }: ExperimentalPaneProps): React.JSX.Element {
   const t = useTranslate()
+  const workbench = isWorkbenchShell()
   const searchQuery = useAppStore((s) => s.settingsSearchQuery)
   const showPet = matchesSettingsSearch(searchQuery, [getExperimentalSearchEntry().pet])
   const showAgentDashboard = matchesSettingsSearch(searchQuery, [
@@ -66,7 +69,22 @@ export function ExperimentalPane({
 
   return (
     <div className="space-y-8">
-      <SettingsGroup>
+      {workbench ? <OverviewExperimentSettings /> : null}
+      <SettingsGroup
+        title={
+          workbench
+            ? t('auto.components.settings.ExperimentalPane.globalScopeTitle', 'Global settings')
+            : undefined
+        }
+        description={
+          workbench
+            ? t(
+                'auto.components.settings.ExperimentalPane.globalScopeDescription',
+                'These settings apply to all projects on this device.'
+              )
+            : undefined
+        }
+      >
         {showAgentDashboard ? (
           <AgentDashboardExperimentalSetting settings={settings} updateSettings={updateSettings} />
         ) : null}

@@ -13,7 +13,15 @@ import { resolveSshWorkspaceForget } from './ssh-workspace-forget-resolution'
 import { resolveWorktreeOperationRouteForHost } from '@/lib/workspace/ownership/worktree-operation-route'
 import { isPairedWebClientWindow } from '@/app-shell/chrome/desktop-window-chrome'
 import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
-import { getWorktreeExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
+import {
+  getRepoExecutionHostId,
+  getWorktreeExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID,
+  parseExecutionHostId
+} from '../../../../../../shared/execution-host/execution-host'
+import { normalizeRuntimePathForComparison } from '../../../../../../shared/file-access/cross-platform-path'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { worktreeActivationHostOpts } from '@/workbench/worktree-activation-host-opts'
 import {
   resolveWorktreeBatchDeleteTargets,
   toWorktreeDeleteIdentities,
@@ -41,16 +49,37 @@ export function runWorktreeDelete(worktreeId: string, options: WorktreeDeleteOpt
     return
   }
   if (target.isMainWorktree) {
+    const workbench = isWorkbenchShell()
+    const targetHostId = workbench
+      ? worktreeActivationHostOpts(target)?.executionHostId
+      : target.hostId
     const repo = findRepoForHost(state.repos, target.repoId, {
-      hostId: target.hostId,
+      hostId: targetHostId,
       settings: state.settings
     })
+    if (workbench) {
+      const physicalHost = parseExecutionHostId(target.hostId)
+      const pairedOwner = parseExecutionHostId(targetHostId)?.kind === 'runtime'
+      const logicalHostId = physicalHost?.kind === 'ssh' ? physicalHost.id : LOCAL_EXECUTION_HOST_ID
+      if (
+        !repo ||
+        normalizeRuntimePathForComparison(repo.path) !==
+          normalizeRuntimePathForComparison(target.path) ||
+        (pairedOwner && repo.pairedRegistration?.hostId !== logicalHostId)
+      ) {
+        showWorkspaceListChangedToast()
+        return
+      }
+    }
     // Git cannot remove primary checkouts; offer project removal while retaining files on disk.
     state.openModal('confirm-remove-folder', {
       projectRemovalRegistration: repo ?? null,
       repoId: target.repoId,
       displayName: repo?.displayName ?? target.displayName,
-      hostId: getWorktreeExecutionHostId(target, repo ?? undefined)
+      hostId:
+        workbench && repo
+          ? getRepoExecutionHostId(repo)
+          : getWorktreeExecutionHostId(target, repo ?? undefined)
     })
     return
   }

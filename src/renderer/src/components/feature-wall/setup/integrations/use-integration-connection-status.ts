@@ -67,6 +67,7 @@ type TokenReviewStatus = {
 type ProviderStatusFacts = {
   preflightStatus: {
     gh?: CliStatus
+    codehub?: CliStatus
     glab?: CliStatus
     bitbucket?: BitbucketStatus
     azureDevOps?: TokenReviewStatus
@@ -128,17 +129,38 @@ function isGiteaReviewConfigured(status: TokenReviewStatus | undefined): boolean
   return true
 }
 
-export function deriveIntegrationConnectionStatus(
-  facts: ProviderStatusFacts
-): IntegrationConnectionStatus {
+function getPreflightConnectionFacts(facts: ProviderStatusFacts) {
   const preflightCurrent = facts.preflightStatusContextKey === facts.expectedPreflightContextKey
   const reviewChecking =
     facts.preflightStatusLoading || !facts.preflightStatusChecked || !preflightCurrent
   const reviewReadyForConnection = !reviewChecking && facts.preflightStatusError === null
-  const githubConnected =
+  return {
+    reviewChecking,
+    reviewReadyForConnection,
+    githubConnected:
+      reviewReadyForConnection &&
+      facts.preflightStatus?.gh?.installed === true &&
+      facts.preflightStatus.gh.authenticated === true
+  }
+}
+
+export function deriveWorkbenchSetupIntegrationStatus(
+  facts: ProviderStatusFacts
+): Pick<IntegrationConnectionStatus, 'trackerConnected' | 'checking'> {
+  const { reviewChecking, reviewReadyForConnection, githubConnected } =
+    getPreflightConnectionFacts(facts)
+  const codehubConnected =
     reviewReadyForConnection &&
-    facts.preflightStatus?.gh?.installed === true &&
-    facts.preflightStatus.gh.authenticated === true
+    facts.preflightStatus?.codehub?.installed === true &&
+    facts.preflightStatus.codehub.authenticated === true
+  return { trackerConnected: githubConnected || codehubConnected, checking: reviewChecking }
+}
+
+export function deriveIntegrationConnectionStatus(
+  facts: ProviderStatusFacts
+): IntegrationConnectionStatus {
+  const { reviewChecking, reviewReadyForConnection, githubConnected } =
+    getPreflightConnectionFacts(facts)
   const gitlabConnected =
     reviewReadyForConnection &&
     facts.preflightStatus?.glab?.installed === true &&

@@ -5,6 +5,7 @@ import {
 } from '../../../../../../shared/workspace-view/workspace-row-filters'
 import { resolveVisibleWorkspaceHostIds } from '../../../../../../shared/workspace-view/workspace-host-visibility'
 import type { AppState } from '../../../../store/types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type {
   ExecutionHostId,
   ExecutionHostScope
@@ -23,6 +24,8 @@ export type SidebarFilterState = {
   visibleWorkspaceHostIds?: readonly ExecutionHostId[] | null
   workspaceHostScope?: ExecutionHostScope
 }
+
+const NO_SELECTED_PROJECTS: string[] = []
 
 export function sidebarWorkspaceRowFilters(state: SidebarFilterState): WorkspaceRowFilters {
   return {
@@ -47,7 +50,7 @@ export function selectSidebarFilterState(
 ): Pick<AppState, keyof SidebarFilterState> {
   return {
     showSleepingWorkspaces: state.showSleepingWorkspaces,
-    filterRepoIds: state.filterRepoIds,
+    filterRepoIds: isWorkbenchShell() ? NO_SELECTED_PROJECTS : state.filterRepoIds,
     hideDefaultBranchWorkspace: state.hideDefaultBranchWorkspace,
     hideAutomationGeneratedWorkspaces: state.hideAutomationGeneratedWorkspaces,
     hideCliCreatedWorkspaces: state.hideCliCreatedWorkspaces,

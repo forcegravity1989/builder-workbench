@@ -1,4 +1,5 @@
 import { Suspense, type JSX } from 'react'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { TopLevelView } from '../../../../shared/ui-chrome/ui-chrome-types'
 import { lazyWithRetry as lazy } from '@/app-shell/startup/lazy-with-retry'
 import { CodexSharedSettingsNoticeCard } from '../../components/terminal-pane/provider-notices/codex-settings/CodexSharedSettingsNoticeCard'
@@ -55,9 +56,11 @@ export function AppNotificationCards({
           <UnexpectedSignoutCard />
         </OverlayBoundary>
       </Suspense>
-      <OverlayBoundary boundaryId="overlay.star-nag" resetKey={activeView}>
-        <StarNagCard />
-      </OverlayBoundary>
+      {isWorkbenchShell() ? null : (
+        <OverlayBoundary boundaryId="overlay.star-nag" resetKey={activeView}>
+          <StarNagCard />
+        </OverlayBoundary>
+      )}
       <OverlayBoundary boundaryId="overlay.codex-shared-settings-notice" resetKey={activeView}>
         <CodexSharedSettingsNoticeCard />
       </OverlayBoundary>

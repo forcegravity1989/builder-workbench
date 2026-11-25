@@ -37,6 +37,9 @@
     "refreshingDetails": "正在刷新检查详情…"
   },
   "settings": {
+    "integrations": {
+      "workbenchDescription": "连接 GitHub 和 CodeHub 处理任务与评审，连接 WeLink 提交报告，连接 CloudBuild 执行构建。"
+    },
     "chat": {
       "permissionsAgentsLink": "设置 → 智能体",
       "permissionsTitle": "新聊天的权限",
@@ -6643,6 +6646,9 @@
           "notImportedHint": "这些设置在 Orca 中没有对应项，不会被保存"
         },
         "SidebarFeedbackDialog": {
+          "withoutGitHubIdentity": "反馈中不会附带 GitHub 账号信息。",
+          "omitGitHubIdentity": "不附带 GitHub 账号信息",
+          "workbenchDescription": "分享使用体验、遇到的问题或对 Workbench 的建议。反馈会使用你当前的 WeLink 账号上传到 BW 用户群的群空间。",
           "8bf619e4cf": "取消",
           "8de03e23c5": "仅提交您输入的反馈，或连接\"gh\"以包含 GitHub 身份",
           "d20439c560": "检查 GitHub 身份...",
@@ -8410,6 +8416,8 @@
           "515baa0f5c": "屏幕录制"
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "全局设置",
+          "globalScopeDescription": "以下设置适用于本机所有项目。",
           "a20d5ea365": "在终端响铃或代理完成事件后保持窗格级突出显示可见，直到您与该窗格交互，我们在调整信号时进行实验",
           "ec897e8d89": "终端关注",
           "88b7613afb": "终端响铃和代理完成事件的持久窗格突出显示",
@@ -8951,6 +8959,9 @@
           "a2b3505c77": "已创建查看文件"
         },
         "PrivacyPane": {
+          "workbenchSectionDescription": "使用数据、诊断和遥测控制。",
+          "workbenchDescription": "默认关闭。开启后，功能使用和错误计数会使用当前 WeLink 账号上传到固定的 BW 用户群空间，群空间可能显示上传者。",
+          "workbenchLabel": "共享使用数据",
           "36e0e2e63b": "环境变量，取消设置并重新启动以重新启用",
           "79a0f3c16c": "遥测被禁用",
           "e3970bbbf5": "由于设置了 CI 环境变量，遥测被禁用，取消设置并重新启动",
@@ -9112,6 +9123,7 @@
           "removeProjectAllHosts": "在所有已配置的主机上从 Orca 中移除该项目",
           "removeProjectCheckout": "从 Orca 中移除此仓库副本，此项目的其他副本将保留",
           "removeProjectKeepCheckouts": "从 Orca 中移除该项目，拥有独立设置的仓库副本将保留",
+          "removeProjectSelectedHost": "从选中的主机移除此项目。",
           "ee5a290616": "作为文件夹打开，Git 功能对此工作区不可用",
           "323debba71": "类型：",
           "499a437335": "身份",
@@ -10938,6 +10950,18 @@
         },
         "integrations": {
           "search": {
+            "codehubTitle": "CodeHub 集成",
+            "codehubDescription": "安装并登录 codehub-cli，读取议题和合并请求。",
+            "codehubKeyword": "codehub",
+            "codehubCliKeyword": "codehub-cli",
+            "welinkTitle": "WeLink 集成",
+            "welinkKeyword": "welink",
+            "welinkCliKeyword": "welink-cli",
+            "cloudbuildTitle": "CloudBuild 集成",
+            "cloudbuildDescription": "安装并登录 cb，运行流水线和构建软件包。",
+            "cloudbuildKeyword": "cloudbuild",
+            "cloudbuildCbKeyword": "cb",
+            "welinkDescription": "安装并登录 welink-cli，用于向 BW 用户群空间发送报告和诊断文件。",
             "a626990bd2": "断开",
             "3c3d3d8ffa": "连接",
             "faa0b5a0d9": "API密钥",
@@ -30274,6 +30298,22 @@
     }
   },
   "guidance": {
+    "experiences": "能力体验",
+    "gettingStarted": "BW 入门",
+    "initialSetup": "初始设置",
+    "initialSetupFailed": "无法打开初始设置，请重试。",
+    "setupDescription": "准备使用环境，并按需配置你要用的能力。未完成全部清单也可以开始工作。",
+    "closeSetupGuide": "关闭入门",
+    "setupGuideClosed": "已关闭入门",
+    "setupGuideReopen": "可从「帮助 → BW 入门」重新打开。",
+    "selectSetupScriptProject": "请先选择一个 Git 项目，再为该项目配置准备脚本。",
+    "setupScriptProject": "目标项目：{{project}}",
+    "explore": "探索 BW",
+    "exploreDescription": "浏览 BW 的工作旅程与功能演示。",
+    "exploreFooter": "可随时从底部问号 → 探索 BW 重看。",
+    "restart": "重启 BW",
+    "restarting": "正在重启 BW…",
+    "restartFailed": "无法重启 BW。",
     "acceptance": {
       "evidence": {
         "title": "开始验收，核对证据",

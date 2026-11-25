@@ -1,4 +1,6 @@
 import { ImeInput } from '@/lib/text-input/ime/ime-text-field'
+import { WorkbenchSourceControlHelp } from '@/workbench/WorkbenchDeliveryHelp'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Search, X } from 'lucide-react'
@@ -159,10 +161,15 @@ export function SourceControlHeaderToolbar({
     />
   ) : null
 
+  const workbenchShell = isWorkbenchShell()
+  const help = workbenchShell ? <WorkbenchSourceControlHelp /> : null
   const filterToggle = (
     <button
       type="button"
       data-testid="source-control-filter-toggle"
+      data-contextual-tour-target={
+        workbenchShell && !filterExpanded ? 'workbench-source-control-filter' : undefined
+      }
       className={cn(
         'relative inline-flex shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
         embedded ? 'size-6' : 'size-7',
@@ -188,6 +195,9 @@ export function SourceControlHeaderToolbar({
         <ImeInput
           ref={filterInputRef}
           data-testid="source-control-filter-input"
+          data-contextual-tour-target={
+            workbenchShell ? 'workbench-source-control-filter' : undefined
+          }
           type="text"
           value={filterQuery}
           onChange={(event) => onFilterQueryChange(event.target.value)}
@@ -251,6 +261,7 @@ export function SourceControlHeaderToolbar({
               <>
                 {filterToggle}
                 {renderOverflowMenu(overflowProps)}
+                {help}
               </>,
               actionsSlot
             )
@@ -291,6 +302,7 @@ export function SourceControlHeaderToolbar({
         ) : (
           filterRow
         )}
+        {help}
       </div>
 
       {showBranchContext ? <div className="mt-1">{branchContextRow()}</div> : null}

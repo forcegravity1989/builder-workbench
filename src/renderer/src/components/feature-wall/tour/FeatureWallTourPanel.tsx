@@ -65,12 +65,57 @@ export function FeatureWallTourPanel(props: {
   footerText: string | null
   continueButton: ReactNode
   leadingFooterContent?: ReactNode
+  renderLayout?: (preview: ReactNode) => JSX.Element
 }): JSX.Element {
   const t = useTranslate()
   // Keep the page anchor fixed while individual visuals change size.
   const contentStageClassName = 'mx-auto w-full max-w-[940px]'
   const workflowCopy = getLocalizedFeatureWallWorkflowCopy(props.selected.id)
   const previewTitle = props.activeStepCopy?.title ?? workflowCopy.title
+  const preview = (
+    <>
+      <div className={cn(contentStageClassName, 'px-8 pb-3 pt-6 text-center')}>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <h3
+            id={props.previewTitleId}
+            className="text-2xl font-semibold leading-tight tracking-tight"
+          >
+            {previewTitle}
+          </h3>
+          {props.activeStepCopy?.optional ? (
+            <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {t('auto.components.feature.wall.FeatureWallTourPanel.af7d622f6f', 'Optional')}
+            </span>
+          ) : null}
+        </div>
+        <p className="mx-auto mt-3 max-w-[56ch] text-sm leading-relaxed text-muted-foreground">
+          {props.activeStepCopy?.description ?? workflowCopy.lede}
+        </p>
+      </div>
+
+      <div className={contentStageClassName}>
+        <FeatureWallBody
+          selected={props.selected}
+          posterUrl={props.posterUrl}
+          gifUrl={props.gifUrl}
+          showGif={props.showGif}
+          prefersReducedMotion={props.prefersReducedMotion}
+          source={props.source}
+          agentsActiveStep={props.agentsActiveStep}
+          workbenchActiveStep={props.workbenchActiveStep}
+          reviewActiveStep={props.reviewActiveStep}
+          orchestrationSkill={props.orchestrationSkill}
+          browserUseSkill={props.browserUseSkill}
+          onUsageAccountStateChange={props.completion.refreshUsageAccountState}
+          settings={props.settings}
+          updateSettings={props.updateSettings}
+        />
+      </div>
+    </>
+  )
+  if (props.renderLayout) {
+    return props.renderLayout(preview)
+  }
   const panel = (
     <div
       className={cn(
@@ -116,43 +161,7 @@ export function FeatureWallTourPanel(props: {
           className="scrollbar-sleek grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-y-auto"
           aria-labelledby={props.previewTitleId}
         >
-          <div className={cn(contentStageClassName, 'px-8 pb-3 pt-6 text-center')}>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <h3
-                id={props.previewTitleId}
-                className="text-2xl font-semibold leading-tight tracking-tight"
-              >
-                {previewTitle}
-              </h3>
-              {props.activeStepCopy?.optional ? (
-                <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  {t('auto.components.feature.wall.FeatureWallTourPanel.af7d622f6f', 'Optional')}
-                </span>
-              ) : null}
-            </div>
-            <p className="mx-auto mt-3 max-w-[56ch] text-sm leading-relaxed text-muted-foreground">
-              {props.activeStepCopy?.description ?? workflowCopy.lede}
-            </p>
-          </div>
-
-          <div className={contentStageClassName}>
-            <FeatureWallBody
-              selected={props.selected}
-              posterUrl={props.posterUrl}
-              gifUrl={props.gifUrl}
-              showGif={props.showGif}
-              prefersReducedMotion={props.prefersReducedMotion}
-              source={props.source}
-              agentsActiveStep={props.agentsActiveStep}
-              workbenchActiveStep={props.workbenchActiveStep}
-              reviewActiveStep={props.reviewActiveStep}
-              orchestrationSkill={props.orchestrationSkill}
-              browserUseSkill={props.browserUseSkill}
-              onUsageAccountStateChange={props.completion.refreshUsageAccountState}
-              settings={props.settings}
-              updateSettings={props.updateSettings}
-            />
-          </div>
+          {preview}
         </section>
       </div>
 

@@ -39,6 +39,7 @@ import { HideBotCreatedFilterRow } from '@/components/bots/HideBotCreatedFilterR
 import { withoutHiddenRepos } from '../../../../../../shared/project/catalog/hidden-projects'
 import { selectDrawsNewWorktreeCards } from '@/store/appearance/worktree-card-style'
 import { trackWorktreeCardStyleChanged } from '../../workspace-card/template/worktree-card-style-telemetry'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function useWorkspaceOptionsFilterBadge(): {
   hasAnyFilter: boolean
@@ -254,7 +255,7 @@ export function WorkspaceOptionsMenuItems({
     hideWorkspacesFromOtherDevices,
     newCardStyle,
     hasRemoteHosts: shouldShowHostScopeControls(hostOptions),
-    projectCount: repoCount,
+    projectCount: isWorkbenchShell() ? 0 : repoCount,
     mayHaveServerHosts: !runtimeEnvironmentCatalogHydrated || runtimeEnvironmentCount > 0
   })
 

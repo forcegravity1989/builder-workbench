@@ -66,6 +66,7 @@ type RepositoryPaneProps = {
     options?: { hostId?: ExecutionHostId }
   ) => void | Promise<boolean>
   removeProject: () => void
+  usesHostRemovalConfirmation?: boolean
   project?: Project | null
   selectedProjectSetupId?: string
   settingsSelectionKey?: string
@@ -93,6 +94,7 @@ export function RepositoryPane({
   mayNeedUpdate,
   updateRepo,
   removeProject,
+  usesHostRemovalConfirmation,
   project = null,
   selectedProjectSetupId,
   settingsSelectionKey,
@@ -416,6 +418,7 @@ export function RepositoryPane({
         searchEntry={removeProjectEntry}
         forceVisible={forceFullPaneForRepoMatch}
         removeProject={removeProject}
+        usesHostRemovalConfirmation={usesHostRemovalConfirmation}
       />
     ) : null
   ].filter(Boolean)

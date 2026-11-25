@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from '../search/settings-search-keywords'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
@@ -9,6 +10,9 @@ import {
 // Provider rows carry these ids so search results can scroll to and highlight them.
 export const INTEGRATION_SETTING_TARGET_IDS = {
   github: 'integrations-github',
+  codehub: 'integrations-codehub',
+  welink: 'integrations-welink',
+  cloudbuild: 'integrations-cloudbuild',
   gitlab: 'integrations-gitlab',
   bitbucket: 'integrations-bitbucket',
   azuredevops: 'integrations-azure-devops',
@@ -17,7 +21,96 @@ export const INTEGRATION_SETTING_TARGET_IDS = {
   linear: LINEAR_INTEGRATION_SECTION_ID
 } as const
 
-export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
+const getWorkbenchIntegrationsSearchEntries = createLocalizedCatalog(() => [
+  {
+    targetSectionId: INTEGRATION_SETTING_TARGET_IDS.codehub,
+    title: translate(
+      'auto.components.settings.integrations.search.codehubTitle',
+      'CodeHub Integration'
+    ),
+    description: translate(
+      'auto.components.settings.integrations.search.codehubDescription',
+      'codehub-cli presence and login for issues and merge requests.'
+    ),
+    keywords: [
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.codehubKeyword',
+        'codehub'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.codehubCliKeyword',
+        'codehub-cli'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.c450244ad7',
+        'integration'
+      )
+    ]
+  },
+  {
+    targetSectionId: INTEGRATION_SETTING_TARGET_IDS.welink,
+    title: translate(
+      'auto.components.settings.integrations.search.welinkTitle',
+      'WeLink Integration'
+    ),
+    description: translate(
+      'auto.components.settings.integrations.search.welinkDescription',
+      'welink-cli installation and login for reports and diagnostics in the BW user-group space.'
+    ),
+    keywords: [
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.welinkKeyword',
+        'welink'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.welinkCliKeyword',
+        'welink-cli'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.c450244ad7',
+        'integration'
+      )
+    ]
+  },
+  {
+    targetSectionId: INTEGRATION_SETTING_TARGET_IDS.cloudbuild,
+    title: translate(
+      'auto.components.settings.integrations.search.cloudbuildTitle',
+      'CloudBuild Integration'
+    ),
+    description: translate(
+      'auto.components.settings.integrations.search.cloudbuildDescription',
+      'cb presence and login for pipelines and package builds.'
+    ),
+    keywords: [
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.cloudbuildKeyword',
+        'cloudbuild'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.cloudbuildCbKeyword',
+        'cb'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.c450244ad7',
+        'integration'
+      )
+    ]
+  }
+])
+
+export function getIntegrationsPaneSearchEntries() {
+  const native = getNativeIntegrationsSearchEntries()
+  if (!isWorkbenchShell()) {
+    return native
+  }
+  return [
+    ...native.filter((entry) => entry.targetSectionId === INTEGRATION_SETTING_TARGET_IDS.github),
+    ...getWorkbenchIntegrationsSearchEntries()
+  ]
+}
+
+const getNativeIntegrationsSearchEntries = createLocalizedCatalog(() => [
   {
     targetSectionId: INTEGRATION_SETTING_TARGET_IDS.github,
     title: translate(

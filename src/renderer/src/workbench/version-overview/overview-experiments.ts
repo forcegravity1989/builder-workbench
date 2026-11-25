@@ -2,6 +2,8 @@ import type { GlobalSettings } from '../../../../shared/settings/global-settings
 import type { AppState } from '@/store/types'
 import { getProjectHostSetupProjectionFromState } from '@/store/projects/project-host-setup-selector'
 
+export const WORKBENCH_OVERVIEW_EXPERIMENTS_SETTINGS_ID = 'workbench-overview-experiments'
+
 export const overviewExperimentEntries = [
   {
     key: 'sdlc',

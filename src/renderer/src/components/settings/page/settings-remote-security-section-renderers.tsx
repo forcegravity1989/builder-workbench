@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { DeveloperPermissionsPane } from '../developer-permissions/DeveloperPermissionsPane'
 import { PrivacyPane } from '../privacy/PrivacyPane'
 import { RuntimeEnvironmentsPane } from '../runtime-environments/catalog/RuntimeEnvironmentsPane'
@@ -100,10 +101,17 @@ export function renderPrivacySettingsSection(
     <SettingsSection
       id="privacy"
       title={t('auto.components.settings.Settings.742ca66ea6', 'Privacy & telemetry')}
-      description={t(
-        'auto.components.settings.Settings.c1b43dc4e2',
-        'Anonymous usage data and telemetry controls.'
-      )}
+      description={
+        isWorkbenchShell()
+          ? t(
+              'auto.components.settings.PrivacyPane.workbenchSectionDescription',
+              'Usage data, diagnostics, and telemetry controls.'
+            )
+          : t(
+              'auto.components.settings.Settings.c1b43dc4e2',
+              'Anonymous usage data and telemetry controls.'
+            )
+      }
       searchEntries={navigation.getSectionSearchEntries('privacy')}
     >
       {view.isSectionMounted('privacy') ? <PrivacyPane settings={model.settings} /> : null}

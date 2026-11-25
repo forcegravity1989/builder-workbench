@@ -9,10 +9,12 @@ import {
 } from '@/components/ui/dialog'
 import { useAppStore } from '@/store/index'
 import { FeatureWallTourSurface } from './FeatureWallTourSurface'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useTranslate } from '@/i18n/use-translate'
 
 export default function FeatureWallModal(): JSX.Element | null {
   const t = useTranslate()
+  const workbenchCatalog = isWorkbenchShell()
   const activeModal = useAppStore((s) => s.activeModal)
   const modalData = useAppStore((s) => s.modalData)
   const closeModal = useAppStore((s) => s.closeModal)
@@ -37,18 +39,30 @@ export default function FeatureWallModal(): JSX.Element | null {
       >
         <DialogHeader className="gap-1 border-b border-border px-7 py-4">
           <DialogTitle className="text-lg">
-            {t('auto.components.feature.wall.FeatureWallModal.3567e147c8', 'Get to know Orca')}
+            {workbenchCatalog
+              ? t('guidance.explore', 'Explore BW')
+              : t('auto.components.feature.wall.FeatureWallModal.3567e147c8', 'Get to know Orca')}
           </DialogTitle>
           {/* Provide Radix’s accessible description without duplicating visible tour copy. */}
           <DialogDescription className="sr-only">
-            {t(
-              'auto.components.feature.wall.FeatureWallModal.33dca8bbbe',
-              'A short, workflow-by-workflow tour of Orca.'
-            )}
+            {workbenchCatalog
+              ? t(
+                  'guidance.exploreDescription',
+                  'Browse work journeys and feature demonstrations in BW.'
+                )
+              : t(
+                  'auto.components.feature.wall.FeatureWallModal.33dca8bbbe',
+                  'A short, workflow-by-workflow tour of Orca.'
+                )}
           </DialogDescription>
         </DialogHeader>
 
-        <FeatureWallTourSurface isOpen={isOpen} source={source} onDone={closeModal} />
+        <FeatureWallTourSurface
+          isOpen={isOpen}
+          source={source}
+          onDone={closeModal}
+          workbenchCatalog={workbenchCatalog}
+        />
       </DialogContent>
     </Dialog>
   )

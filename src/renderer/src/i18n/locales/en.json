@@ -665,6 +665,9 @@
     "refreshingDetails": "Refreshing check details…"
   },
   "settings": {
+    "integrations": {
+      "workbenchDescription": "Connect GitHub and CodeHub for tasks and reviews, WeLink for reports, and CloudBuild for builds."
+    },
     "chat": {
       "permissionsAgentsLink": "Settings → Agents",
       "permissionsTitle": "Permissions for new chats",
@@ -7503,6 +7506,9 @@
           "notImportedHint": "These settings have no Orca equivalent and won't be saved."
         },
         "SidebarFeedbackDialog": {
+          "withoutGitHubIdentity": "Your feedback will not include GitHub account information.",
+          "omitGitHubIdentity": "Do not include GitHub account information",
+          "workbenchDescription": "Share what's working, what's broken, or what Workbench should do next. Reports are uploaded to the BW user group's WeLink space using your current WeLink account.",
           "8bf619e4cf": "Cancel",
           "8de03e23c5": "Submit with your typed feedback only, or connect `gh` to include GitHub identity.",
           "d20439c560": "Checking GitHub identity…",
@@ -9271,6 +9277,8 @@
           "515baa0f5c": "Screen recording"
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Global settings",
+          "globalScopeDescription": "These settings apply to all projects on this device.",
           "a20d5ea365": "Keeps a pane-level highlight visible after terminal bell or agent-completion events until you interact with that pane. Experimental while we tune the signal.",
           "ec897e8d89": "Terminal attention",
           "88b7613afb": "Persistent pane highlight for terminal bell and agent-completion events.",
@@ -9857,6 +9865,9 @@
           "a2b3505c77": "Review file created"
         },
         "PrivacyPane": {
+          "workbenchSectionDescription": "Usage data, diagnostics, and telemetry controls.",
+          "workbenchDescription": "Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.",
+          "workbenchLabel": "Share usage data",
           "36e0e2e63b": "environment variable. Unset it and restart to re-enable.",
           "79a0f3c16c": "Telemetry is disabled by the",
           "e3970bbbf5": "Telemetry is disabled because a CI environment variable is set. Unset it and restart.",
@@ -10024,6 +10035,7 @@
           "removeProjectAllHosts": "Remove this project from Orca on all configured hosts.",
           "removeProjectCheckout": "Remove this checkout from Orca. Other checkouts of this project stay.",
           "removeProjectKeepCheckouts": "Remove this project from Orca. Checkouts that have their own settings stay.",
+          "removeProjectSelectedHost": "Remove this project from the selected host.",
           "ee5a290616": "Opened as folder. Git features are unavailable for this workspace.",
           "323debba71": "Type:",
           "availableHostsDescription": "Hosts where this project is set up.",
@@ -11860,6 +11872,18 @@
         },
         "integrations": {
           "search": {
+            "cloudbuildCbKeyword": "cb",
+            "cloudbuildKeyword": "cloudbuild",
+            "cloudbuildDescription": "cb presence and login for pipelines and package builds.",
+            "cloudbuildTitle": "CloudBuild Integration",
+            "welinkCliKeyword": "welink-cli",
+            "welinkKeyword": "welink",
+            "welinkDescription": "welink-cli installation and login for reports and diagnostics in the BW user-group space.",
+            "welinkTitle": "WeLink Integration",
+            "codehubCliKeyword": "codehub-cli",
+            "codehubKeyword": "codehub",
+            "codehubDescription": "codehub-cli presence and login for issues and merge requests.",
+            "codehubTitle": "CodeHub Integration",
             "a626990bd2": "disconnect",
             "3c3d3d8ffa": "connect",
             "faa0b5a0d9": "api key",
@@ -31099,6 +31123,22 @@
     "reset": "Reset tab order"
   },
   "guidance": {
+    "experiences": "Try the capabilities",
+    "gettingStarted": "Getting Started with BW",
+    "initialSetup": "Initial Setup",
+    "initialSetupFailed": "Could not open initial setup. Please try again.",
+    "setupDescription": "Prepare your environment and configure the capabilities you need. You can start working without completing the entire checklist.",
+    "closeSetupGuide": "Close setup guide",
+    "setupGuideClosed": "Setup guide closed",
+    "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
+    "selectSetupScriptProject": "Select a Git project first, then configure its setup script here.",
+    "setupScriptProject": "Target project: {{project}}",
+    "explore": "Explore BW",
+    "exploreDescription": "Browse work journeys and feature demonstrations in BW.",
+    "exploreFooter": "Reopen any time from the bottom question mark > Explore BW.",
+    "restart": "Restart BW",
+    "restarting": "Restarting BW…",
+    "restartFailed": "Couldn't restart BW.",
     "acceptance": {
       "archive": {
         "body": "Ask the acceptance assistant to prepare an archive PR. Review its sources and decisions before merging.",

@@ -2,6 +2,7 @@ import { DiscordIcon } from '../../icons/DiscordIcon'
 import React, { useState } from 'react'
 import {
   BookOpen,
+  Compass,
   ExternalLink,
   Github,
   Keyboard,
@@ -27,6 +28,8 @@ import {
   getUpdateCheckHint
 } from '@/app-shell/updates/update-check-click-options'
 import { openHelpLink } from './help-link-open'
+import { WORKBENCH_HELP_LINKS } from '@/workbench/help-links'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Keep feedback off the boot graph; menu warming and selection share the same lazy module entry.
 const loadSidebarFeedbackDialog = (): Promise<typeof SidebarFeedbackDialogModule> =>
@@ -86,6 +89,7 @@ export type HelpMenuController = {
 
 export function useHelpMenuController(milestones: SetupMilestones | null): HelpMenuController {
   const t = useTranslate()
+  const isBW = isWorkbenchShell()
   const openModal = useAppStore((s) => s.openModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
@@ -126,12 +130,21 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
       return
     }
     setIsRestartingOrca(true)
-    toast.info(t('auto.components.sidebar.SidebarSettingsHelpMenu.5161eef55d', 'Restarting Orca…'))
+    toast.info(
+      isBW
+        ? t('guidance.restarting', 'Restarting BW…')
+        : t('auto.components.sidebar.SidebarSettingsHelpMenu.5161eef55d', 'Restarting Orca…')
+    )
     void window.api.app.restart().catch((error) => {
       if (mountedRef.current) {
         setIsRestartingOrca(false)
         toast.error(
-          t('auto.components.sidebar.SidebarSettingsHelpMenu.4e8f5710d3', "Couldn't restart Orca."),
+          isBW
+            ? t('guidance.restartFailed', "Couldn't restart BW.")
+            : t(
+                'auto.components.sidebar.SidebarSettingsHelpMenu.4e8f5710d3',
+                "Couldn't restart Orca."
+              ),
           {
             description: error instanceof Error ? error.message : undefined
           }
@@ -167,6 +180,19 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
   return {
     items: (
       <>
+        {isBW ? (
+          <>
+            <DropdownMenuItem onSelect={openMilestones}>
+              <School className="size-3.5" />
+              {t('guidance.gettingStarted', 'Getting Started with BW')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => openModal('feature-wall', { source: 'help_menu' })}>
+              <Compass className="size-3.5" />
+              {t('guidance.explore', 'Explore BW')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         <DropdownMenuItem onSelect={openShortcutsSettings}>
           <Keyboard className="size-3.5" />
           {t('auto.components.sidebar.SidebarSettingsHelpMenu.e565171a7c', 'Keyboard Shortcuts')}
@@ -176,7 +202,7 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
           <MessageSquareText className="size-3.5" />
           {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
         </DropdownMenuItem>
-        {milestones ? (
+        {!isBW && milestones ? (
           <DropdownMenuItem onSelect={openMilestones}>
             <img
               src={logo}
@@ -193,41 +219,47 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
             />
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem
-          className="whitespace-nowrap"
-          onClick={handleShowOnboarding}
-          onSelect={handleShowOnboarding}
-        >
-          <School className="size-3.5" />
-          {t('auto.components.sidebar.SidebarSettingsHelpMenu.b7e4d2a19c', 'Onboarding')}
-        </DropdownMenuItem>
+        {!isBW ? (
+          <DropdownMenuItem
+            className="whitespace-nowrap"
+            onClick={handleShowOnboarding}
+            onSelect={handleShowOnboarding}
+          >
+            <School className="size-3.5" />
+            {t('auto.components.sidebar.SidebarSettingsHelpMenu.b7e4d2a19c', 'Onboarding')}
+          </DropdownMenuItem>
+        ) : null}
         <ExternalMenuItem
           label={t('auto.components.sidebar.SidebarSettingsHelpMenu.cdc87f897e', 'Docs')}
-          url={DOCS_URL}
+          url={isBW ? WORKBENCH_HELP_LINKS.docs : DOCS_URL}
           icon={<BookOpen className="size-3.5" />}
         />
         <ExternalMenuItem
           label={t('auto.components.sidebar.SidebarSettingsHelpMenu.5f83d86d92', 'Changelog')}
-          url={CHANGELOG_URL}
+          url={isBW ? WORKBENCH_HELP_LINKS.changelog : CHANGELOG_URL}
           icon={<ScrollText className="size-3.5" />}
         />
         <DropdownMenuSeparator />
-        <ExternalMenuItem
-          label={t('auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a', 'GitHub')}
-          url={GITHUB_URL}
-          icon={<Github className="size-3.5" />}
-        />
-        <DropdownMenuItem onSelect={() => openHelpLink(DISCORD_URL)}>
-          <DiscordIcon className="size-3.5" />
-          {t('auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b', 'Discord')}
-          <ExternalLink className="ml-auto size-3 text-muted-foreground" />
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => openHelpLink(X_URL)}>
-          <XIcon />
-          {t('auto.components.sidebar.SidebarSettingsHelpMenu.c4f8e1b72a', 'X')}
-          <ExternalLink className="ml-auto size-3 text-muted-foreground" />
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
+        {!isBW ? (
+          <>
+            <ExternalMenuItem
+              label={t('auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a', 'GitHub')}
+              url={GITHUB_URL}
+              icon={<Github className="size-3.5" />}
+            />
+            <DropdownMenuItem onSelect={() => openHelpLink(DISCORD_URL)}>
+              <DiscordIcon className="size-3.5" />
+              {t('auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b', 'Discord')}
+              <ExternalLink className="ml-auto size-3 text-muted-foreground" />
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => openHelpLink(X_URL)}>
+              <XIcon />
+              {t('auto.components.sidebar.SidebarSettingsHelpMenu.c4f8e1b72a', 'X')}
+              <ExternalLink className="ml-auto size-3 text-muted-foreground" />
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         <DropdownMenuItem
           disabled={updateStatus.state === 'checking' || updateStatus.state === 'downloading'}
           onPointerDown={handleCheckForUpdatesPointerDown}
@@ -244,7 +276,9 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={handleRestartOrca} disabled={isRestartingOrca}>
           <RotateCw className="size-3.5" />
-          {t('auto.components.sidebar.SidebarSettingsHelpMenu.ad3d3ed7f1', 'Restart Orca')}
+          {isBW
+            ? t('guidance.restart', 'Restart BW')
+            : t('auto.components.sidebar.SidebarSettingsHelpMenu.ad3d3ed7f1', 'Restart Orca')}
         </DropdownMenuItem>
       </>
     ),

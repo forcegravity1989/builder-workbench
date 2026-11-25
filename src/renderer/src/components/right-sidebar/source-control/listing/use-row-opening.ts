@@ -4,6 +4,7 @@ import {
   useSourceControlScope
 } from '../panel/worktree-scope'
 import { useCallback, useMemo } from 'react'
+import { finishSourceControlGuide } from '@/workbench/WorkbenchDeliveryHelp'
 import { detectLanguage } from '../../../../../../shared/editor-language/editor-language-detect'
 import { openUncommittedEntry } from './open-uncommitted-entry'
 import { useAppStore } from '@/store'
@@ -111,6 +112,7 @@ export function useSourceControlRowOpening({
         executionHostId,
         runtimeEnvironmentId
       })
+      finishSourceControlGuide()
     },
     [
       placementWorkspaceId,
@@ -149,6 +151,7 @@ export function useSourceControlRowOpening({
             runtimeEnvironmentId
           }
         )
+      finishSourceControlGuide()
     },
     [
       placementWorkspaceId,

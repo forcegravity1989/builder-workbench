@@ -5,6 +5,7 @@ import {
 } from '../bw-cli-integration-cards'
 import { GitHubIntegrationCard } from '../../integrations/source-control/cli-source-control-integration-cards'
 import { useTranslate } from '@/i18n/use-translate'
+import { INTEGRATION_SETTING_TARGET_IDS } from './integrations-search'
 
 export function WorkbenchIntegrationsPane(): React.JSX.Element {
   const t = useTranslate()
@@ -23,8 +24,12 @@ export function WorkbenchIntegrationsPane(): React.JSX.Element {
           </p>
         </div>
         <div className="space-y-3">
-          <GitHubIntegrationCard />
-          <CodeHubIntegrationCard />
+          <div id={INTEGRATION_SETTING_TARGET_IDS.github} data-settings-row="">
+            <GitHubIntegrationCard />
+          </div>
+          <div id={INTEGRATION_SETTING_TARGET_IDS.codehub} data-settings-row="">
+            <CodeHubIntegrationCard />
+          </div>
         </div>
       </section>
 
@@ -41,7 +46,9 @@ export function WorkbenchIntegrationsPane(): React.JSX.Element {
           </p>
         </div>
         <div className="space-y-3">
-          <WeLinkIntegrationCard />
+          <div id={INTEGRATION_SETTING_TARGET_IDS.welink} data-settings-row="">
+            <WeLinkIntegrationCard />
+          </div>
         </div>
       </section>
 
@@ -58,7 +65,9 @@ export function WorkbenchIntegrationsPane(): React.JSX.Element {
           </p>
         </div>
         <div className="space-y-3">
-          <CloudBuildIntegrationCard />
+          <div id={INTEGRATION_SETTING_TARGET_IDS.cloudbuild} data-settings-row="">
+            <CloudBuildIntegrationCard />
+          </div>
         </div>
       </section>
     </div>

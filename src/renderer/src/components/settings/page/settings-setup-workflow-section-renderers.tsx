@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useAppStore } from '@/store'
 import { SharedLinksSettingsPane } from '../bots/SharedLinksSettingsPane'
 import { SessionHistorySettingsPane } from '../session-history/SessionHistorySettingsPane'
@@ -140,10 +141,17 @@ export function renderIntegrationsSettingsSection(
     <SettingsSection
       id="integrations"
       title={t('auto.components.settings.Settings.c9ca101a3b', 'Integrations')}
-      description={t(
-        'auto.components.settings.Settings.b07041697f',
-        'Connect GitHub, GitLab, Linear, and source-hosting services.'
-      )}
+      description={
+        isWorkbenchShell()
+          ? t(
+              'settings.integrations.workbenchDescription',
+              'Connect GitHub and CodeHub for tasks and reviews, WeLink for reports, and CloudBuild for builds.'
+            )
+          : t(
+              'auto.components.settings.Settings.b07041697f',
+              'Connect GitHub, GitLab, Linear, and source-hosting services.'
+            )
+      }
       searchEntries={navigation.getSectionSearchEntries('integrations')}
     >
       {view.isSectionMounted('integrations') ? <IntegrationsPane /> : null}

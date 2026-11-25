@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select'
 import { useAppStore } from '@/store'
 import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
-import { cacheGeneratedRuntimePairingLink } from '@/components/settings/runtime-environments/pairing/runtime-pairing-link-state'
+import { cacheGeneratedRuntimePairingLink } from '@/components/settings/runtime-pairing-link-state'
 import { parsePairingCode } from '../../../shared/remote-runtime/pairing/pairing'
 import { TeamSettingsMembers } from './TeamSettingsMembers'
 import {
@@ -257,10 +257,10 @@ export function TeamSettingsDialog({
       if (offer) {
         cacheGeneratedRuntimePairingLink({
           address: offer.endpoint,
+          intent: 'another',
           pairingUrl: result.pairingUrl,
           webClientUrl: result.webClientUrl,
-          deviceId: result.deviceId,
-          expiresAt: result.expiresAt
+          deviceId: result.deviceId
         })
       }
       setDirectory((current) =>

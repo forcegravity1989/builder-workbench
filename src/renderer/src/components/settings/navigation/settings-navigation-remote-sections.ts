@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { projectGroupHookOwner } from '../../../../../shared/workspace-setup/hooks/workspace-hook-owner'
 import { getRepositoryGitHooksSearchEntries } from '@/components/settings/repository/hooks/repository-git-hooks-search-entries'
 import { getAdvancedPaneSearchEntries } from '@/components/settings/advanced/advanced-search'
@@ -82,10 +83,15 @@ export function buildRemoteSettingsSections(
     {
       id: 'privacy',
       title: t('auto.hooks.useSettingsNavigationMetadata.3618579df6', 'Privacy & Telemetry'),
-      description: t(
-        'auto.hooks.useSettingsNavigationMetadata.8400cfe1c1',
-        'Anonymous usage data and telemetry controls.'
-      ),
+      description: isWorkbenchShell()
+        ? t(
+            'auto.components.settings.PrivacyPane.workbenchSectionDescription',
+            'Usage data, diagnostics, and telemetry controls.'
+          )
+        : t(
+            'auto.hooks.useSettingsNavigationMetadata.8400cfe1c1',
+            'Anonymous usage data and telemetry controls.'
+          ),
       icon: Lock,
       searchEntries: getPrivacyPaneSearchEntries(),
       group: 'security'

@@ -34,6 +34,8 @@ import {
 import { getScreenSubmitModifierLabel } from '@/lib/keyboard/screen-submit-shortcut'
 import { useFeatureWallTourKeyboardShortcut } from './tour/use-feature-wall-tour-keyboard-shortcut'
 import { useFeatureWallTourRailKeydown } from './tour/use-feature-wall-tour-rail-keydown'
+import { BwExploreLayout } from '@/workbench/explore/BwExploreLayout'
+import type { ExploreDemo } from '@/workbench/explore/bw-explore-catalog'
 
 type FeatureWallTourSurfaceProps = {
   isOpen: boolean
@@ -44,6 +46,7 @@ type FeatureWallTourSurfaceProps = {
   doneLabel?: string
   footerText?: string | null
   enableKeyboardShortcut?: boolean
+  workbenchCatalog?: boolean
   compactRail?: boolean
   detachedFooter?: boolean
   leadingFooterContent?: ReactNode
@@ -59,6 +62,7 @@ export function FeatureWallTourSurface({
   doneLabel: doneLabelOverride,
   footerText: footerTextOverride,
   enableKeyboardShortcut = true,
+  workbenchCatalog = false,
   compactRail = false,
   detachedFooter = false,
   leadingFooterContent,
@@ -70,10 +74,12 @@ export function FeatureWallTourSurface({
   // An explicit null hides the footer, so only an omitted prop falls back.
   const footerText =
     footerTextOverride === undefined
-      ? t(
-          'auto.components.feature.wall.FeatureWallTourSurface.reopenHint',
-          'Reopen any time from Help > Explore Orca.'
-        )
+      ? workbenchCatalog
+        ? t('guidance.exploreFooter', 'Reopen any time from the bottom question mark > Explore BW.')
+        : t(
+            'auto.components.feature.wall.FeatureWallTourSurface.reopenHint',
+            'Reopen any time from Help > Explore Orca.'
+          )
       : footerTextOverride
   const settings = useAppStore((s) => s.settings)
   const updateSettings = useAppStore((s) => s.updateSettings)
@@ -188,22 +194,24 @@ export function FeatureWallTourSurface({
   }, [isOpen, source])
 
   const handleSelect = useCallback(
-    (workflow: FeatureWallWorkflow): void => {
+    (workflow: FeatureWallWorkflow, demo?: ExploreDemo): void => {
       markWorkflowVisited(workflow.id)
       if (workflow.id === selectedId) {
         return
       }
       setSelectedId(workflow.id)
       if (workflow.id === 'agents-orchestration') {
-        const nextStepId = agentsSteps[0]?.id ?? 'statuses'
+        const nextStepId =
+          demo?.workflow === 'agents-orchestration' ? demo.step : (agentsSteps[0]?.id ?? 'statuses')
         markAgentStepVisited(nextStepId)
         setAgentsStepId(nextStepId)
       } else if (workflow.id === 'workbench') {
-        const nextStepId = workbenchSteps[0]?.id ?? 'terminal'
+        const nextStepId =
+          demo?.workflow === 'workbench' ? demo.step : (workbenchSteps[0]?.id ?? 'terminal')
         markWorkbenchStepVisited(nextStepId)
         setWorkbenchStepId(nextStepId)
       } else if (workflow.id === 'review') {
-        const nextStepId = reviewSteps[0]?.id ?? 'notes'
+        const nextStepId = demo?.workflow === 'review' ? demo.step : (reviewSteps[0]?.id ?? 'notes')
         markReviewStepVisited(nextStepId)
         setReviewStepId(nextStepId)
       }
@@ -358,12 +366,36 @@ export function FeatureWallTourSurface({
 
   useFeatureWallTourKeyboardShortcut({
     isOpen,
-    enabled: enableKeyboardShortcut,
+    enabled: enableKeyboardShortcut && !workbenchCatalog,
     onContinue: handleContinue
   })
 
   if (!isOpen) {
     return null
+  }
+
+  function selectDemo(demo: ExploreDemo): void {
+    if (demo.workflow !== selected.id) {
+      const workflow = FEATURE_WALL_WORKFLOWS.find((item) => item.id === demo.workflow)
+      if (workflow) {
+        handleSelect(workflow, demo)
+      }
+      return
+    }
+    switch (demo.workflow) {
+      case 'agents-orchestration':
+        handleSelectAgentsStep(demo.step)
+        break
+      case 'workbench':
+        handleSelectWorkbenchStep(demo.step)
+        break
+      case 'review':
+        handleSelectReviewStep(demo.step)
+        break
+      case 'workspaces':
+      case 'tasks':
+        break
+    }
   }
 
   const showGif = !prefersReducedMotion && gifUrl !== null
@@ -412,6 +444,18 @@ export function FeatureWallTourSurface({
       footerText={footerText}
       continueButton={continueButton}
       leadingFooterContent={leadingFooterContent}
+      renderLayout={
+        workbenchCatalog
+          ? (preview) => (
+              <BwExploreLayout
+                demo={preview}
+                onSelectDemo={selectDemo}
+                footerText={footerText}
+                onClose={() => void onDone()}
+              />
+            )
+          : undefined
+      }
     />
   )
 }

@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { RuntimeAccessAudit } from '../../../observability/runtime-access-audit'
+import { isWorkbenchProduct } from '../../../startup/workbench-product'
 import type { RuntimeTransportMetadata } from '../../../../shared/remote-runtime/bootstrap/runtime-bootstrap'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { RpcDispatcher } from '../dispatcher'
@@ -159,10 +160,15 @@ export class RuntimeRpcState {
     methods
   }: OrcaRuntimeRpcServerOptions) {
     this.runtime = runtime
-    this.dispatcher = new RpcDispatcher({ runtime, methods: methods ?? ALL_RPC_METHODS })
+    const registeredMethods =
+      methods ??
+      (isWorkbenchProduct()
+        ? ALL_RPC_METHODS.filter(({ name }) => !name.startsWith('artifacts.'))
+        : ALL_RPC_METHODS)
+    this.dispatcher = new RpcDispatcher({ runtime, methods: registeredMethods })
     // By declaration, so every subscription, current or future, is classified the same way.
     this.streamingMethods = new Set(
-      eraseRpcMethods(methods ?? ALL_RPC_METHODS)
+      eraseRpcMethods(registeredMethods)
         .filter(isStreamingMethod)
         .map((method) => method.name)
     )

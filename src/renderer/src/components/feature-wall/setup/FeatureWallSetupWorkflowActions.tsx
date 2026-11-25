@@ -4,6 +4,11 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/store/index'
+import { useActiveRepo } from '@/store/repos/use-repository-catalog'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { selectExecutionHostDisplayLabel } from '@/runtime/hosts/display/execution-host-display-label'
+import { getRepoExecutionHostId } from '../../../../../shared/execution-host/execution-host'
+import { getRepoHostIdentity } from '../../../../../shared/repository/repo-host-identity'
 import { useAllWorktrees } from '@/store/slices/worktrees/listing/use-worktree-catalog'
 import { getDefaultRepoHookSettings } from '../../../../../shared/workspace-setup/repo-hook-settings-defaults'
 import { isGitRepoKind } from '../../../../../shared/repository/repo-kind'
@@ -94,22 +99,46 @@ export function WorkspacesAction(props: { done: boolean }): React.JSX.Element | 
 }
 
 export function SetupScriptAction(): React.JSX.Element {
-  const t = useTranslate()
+  const workbenchShell = isWorkbenchShell()
+  const activeRepo = useActiveRepo()
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId)
+  const repo = workbenchShell ? activeRepo : getSetupGuideGitRepo(repos, activeRepoId)
+  const gitRepo = repo && isGitRepoKind(repo) ? repo : null
+  return (
+    <SetupScriptEditor
+      key={gitRepo ? getRepoHostIdentity(gitRepo) : undefined}
+      repo={gitRepo}
+      workbenchShell={workbenchShell}
+    />
+  )
+}
+
+function SetupScriptEditor({
+  repo,
+  workbenchShell
+}: {
+  repo: Repo | null
+  workbenchShell: boolean
+}): React.JSX.Element {
+  const t = useTranslate()
   const closeModal = useAppStore((s) => s.closeModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const setSettingsSearchQuery = useAppStore((s) => s.setSettingsSearchQuery)
   const updateRepo = useAppStore((s) => s.updateRepo)
-  const repo = getSetupGuideGitRepo(repos, activeRepoId)
+  const hostId = repo ? getRepoExecutionHostId(repo) : null
+  const hostLabel = useAppStore((s) =>
+    workbenchShell && hostId ? selectExecutionHostDisplayLabel(s, hostId, { t }) : null
+  )
   const canConfigure = repo !== null
-  const [setupScript, setSetupScript] = useState('pnpm install')
+  const fallbackScript = workbenchShell ? '' : 'pnpm install'
+  const [setupScript, setSetupScript] = useState(fallbackScript)
 
   const [seededFromRepo, setSeededFromRepo] = useState<typeof repo | undefined>(undefined)
   if (seededFromRepo !== repo) {
     setSeededFromRepo(repo)
-    setSetupScript(repo?.hookSettings?.scripts?.setup?.trim() || 'pnpm install')
+    setSetupScript(repo?.hookSettings?.scripts?.setup?.trim() || fallbackScript)
   }
 
   const openLocalCommandSettings = useCallback(() => {
@@ -120,14 +149,23 @@ export function SetupScriptAction(): React.JSX.Element {
     openSettingsTarget({
       pane: 'repo',
       repoId: repo.id,
+      ...(workbenchShell && hostId ? { hostId } : {}),
       sectionId: getRepositoryLocalCommandsSectionId(repo.id)
     })
     closeModal()
     openSettingsPage()
-  }, [closeModal, openSettingsPage, openSettingsTarget, repo, setSettingsSearchQuery])
+  }, [
+    closeModal,
+    hostId,
+    openSettingsPage,
+    openSettingsTarget,
+    repo,
+    setSettingsSearchQuery,
+    workbenchShell
+  ])
 
   const handleSaveSetupScript = useCallback(async () => {
-    if (!repo || !isGitRepoKind(repo)) {
+    if (!repo || !isGitRepoKind(repo) || (workbenchShell && !setupScript.trim())) {
       return
     }
     const current = repo.hookSettings
@@ -144,7 +182,11 @@ export function SetupScriptAction(): React.JSX.Element {
         setup: setupScript.trim()
       }
     }
-    const updated = await updateRepo(repo.id, { hookSettings: nextHookSettings })
+    const updated = await updateRepo(
+      repo.id,
+      { hookSettings: nextHookSettings },
+      workbenchShell && hostId ? { hostId } : undefined
+    )
     if (updated) {
       toast.success(
         translate(
@@ -160,25 +202,41 @@ export function SetupScriptAction(): React.JSX.Element {
         )
       )
     }
-  }, [repo, setupScript, updateRepo])
+  }, [hostId, repo, setupScript, updateRepo, workbenchShell])
 
   // Why: disabled inputs with the prerequisite in fine print read as broken; lead with the fix.
   if (!canConfigure) {
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          {t(
-            'auto.components.feature.wall.FeatureWallSetupWorkflowActions.486c2f4d8d',
-            'Add a git project first, then configure the setup script for that repository.'
-          )}
+          {workbenchShell
+            ? t(
+                'guidance.selectSetupScriptProject',
+                'Select a Git project first, then configure its setup script here.'
+              )
+            : t(
+                'auto.components.feature.wall.FeatureWallSetupWorkflowActions.486c2f4d8d',
+                'Add a git project first, then configure the setup script for that repository.'
+              )}
         </p>
-        <AddReposAction />
+        {workbenchShell ? null : <AddReposAction />}
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
+      {workbenchShell ? (
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            {t('guidance.setupScriptProject', 'Target project: {{project}}', {
+              project: repo.displayName
+            })}
+          </p>
+          <p className="text-xs text-muted-foreground">{hostLabel}</p>
+          <p className="break-all font-mono text-xs text-muted-foreground">{repo.path}</p>
+        </div>
+      ) : null}
       <div className="grid max-w-2xl gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <Input
           value={setupScript}

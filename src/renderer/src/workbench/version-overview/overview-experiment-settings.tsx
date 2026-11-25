@@ -18,6 +18,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import {
+  WORKBENCH_OVERVIEW_EXPERIMENTS_SETTINGS_ID,
   overviewExperimentEnabled,
   overviewExperimentEntries,
   overviewProjectId
@@ -63,7 +64,7 @@ export function OverviewExperimentSettings() {
       description={`版本总览统计 ${overviewExperimentEntries.map((entry) => entry.title).join(' ')}`}
       keywords={overviewExperimentEntries.flatMap((entry) => [...entry.keywords])}
       className="space-y-3 py-2"
-      id="workbench-overview-experiments"
+      id={WORKBENCH_OVERVIEW_EXPERIMENTS_SETTINGS_ID}
     >
       <SettingsSubsectionHeader title="按项目设置" />
       <Card

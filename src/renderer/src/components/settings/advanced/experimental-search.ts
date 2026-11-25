@@ -1,3 +1,8 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import {
+  WORKBENCH_OVERVIEW_EXPERIMENTS_SETTINGS_ID,
+  overviewExperimentEntries
+} from '@/workbench/version-overview/overview-experiments'
 import type { SettingsSearchEntry } from '../search/settings-search'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { translate } from '@/i18n/i18n'
@@ -223,6 +228,14 @@ export const getExperimentalSearchEntry = createLocalizedCatalog(
 
 export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
   (): SettingsSearchEntry[] => [
+    ...(isWorkbenchShell()
+      ? overviewExperimentEntries.map((entry) => ({
+          title: entry.title,
+          description: entry.description,
+          keywords: [...entry.keywords],
+          targetSectionId: WORKBENCH_OVERVIEW_EXPERIMENTS_SETTINGS_ID
+        }))
+      : []),
     ...Object.entries(getExperimentalSearchEntry()).flatMap(([key, entry]) =>
       key === 'sharedCodexServers' && !sharedCodexServersSettingAvailable() ? [] : [entry]
     ),

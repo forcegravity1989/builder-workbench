@@ -6,9 +6,11 @@ import {
 import type { FeatureWallSetupStepId } from '../../../../../shared/feature-education/explore/feature-wall-setup-steps'
 import { FeatureWallSetupChecklist } from '../../feature-wall/setup/FeatureWallSetupChecklist'
 import { useSetupGuideProgress } from '../../setup-guide/use-setup-guide-progress'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function SettingsSetupGuidePane(): React.JSX.Element {
-  const setupSteps = useMemo(() => getFeatureWallSetupSteps(), [])
+  const workbenchShell = isWorkbenchShell()
+  const setupSteps = useMemo(() => getFeatureWallSetupSteps(workbenchShell), [workbenchShell])
   const [orchestrationSkillInstalled, setOrchestrationSkillInstalled] = useState(false)
   const [browserUseSkillInstalled, setBrowserUseSkillInstalled] = useState(false)
   const progress = useSetupGuideProgress(
@@ -19,7 +21,8 @@ export function SettingsSetupGuidePane(): React.JSX.Element {
   const [userSelectedStepId, setUserSelectedStepId] = useState<FeatureWallSetupStepId | null>(null)
   // Follow the first unfinished step until the user picks one.
   const activeStepId =
-    userSelectedStepId ?? getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)
+    userSelectedStepId ??
+    getFirstIncompleteFeatureWallSetupStepId(progress.stepDone, workbenchShell)
   const activeStep = setupSteps.find((step) => step.id === activeStepId) ?? setupSteps[0] ?? null
 
   const handleSelectStep = (id: FeatureWallSetupStepId): void => {

@@ -123,7 +123,8 @@ export function RepositoryRemoveProjectSection({
   removalScope,
   searchEntry,
   forceVisible,
-  removeProject
+  removeProject,
+  usesHostRemovalConfirmation = false
 }: {
   repo: Repo
   setups: readonly ProjectHostSetup[]
@@ -131,6 +132,7 @@ export function RepositoryRemoveProjectSection({
   searchEntry: SettingsSearchEntry
   forceVisible: boolean
   removeProject: () => void
+  usesHostRemovalConfirmation?: boolean
 }): React.JSX.Element {
   const t = useTranslate()
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -162,7 +164,12 @@ export function RepositoryRemoveProjectSection({
   )
   const groups = useMemo(() => groupSetupsByHost(setups, hostLabels), [setups, hostLabels])
   const hostCount = new Set(setups.map((setup) => setup.hostId)).size
-  const description = getRemoveProjectDescription(removalScope, t)
+  const description = usesHostRemovalConfirmation
+    ? t(
+        'auto.components.settings.RepositoryPane.removeProjectSelectedHost',
+        'Remove this project from the selected host.'
+      )
+    : getRemoveProjectDescription(removalScope, t)
 
   const filesNote = removesRecipeVm
     ? t(
@@ -217,6 +224,10 @@ export function RepositoryRemoveProjectSection({
             variant="outline"
             size="sm"
             onClick={() => {
+              if (usesHostRemovalConfirmation) {
+                removeProject()
+                return
+              }
               setOpenTerminalCount(countSetupTerminalTabs(useAppStore.getState(), setups))
               setDialogOpen(true)
             }}

@@ -15,12 +15,15 @@ import {
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import type { SettingsRenderContext } from './settings-render-context'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { useAppStore } from '@/store'
 
 export function renderProjectSettingsSections(
   context: SettingsRenderContext,
   t: Translate = translate
 ): React.ReactNode {
   const { model, navigation, terminal, view, interactions } = context
+  const workbench = isWorkbenchShell()
   return (
     <>
       {model.hookSettingsGroups.map((group) => {
@@ -63,6 +66,7 @@ export function renderProjectSettingsSections(
           return null
         }
         const repoHostIdentity = getRepoHostIdentity(repo)
+        const repoHostId = getRepoExecutionHostId(repo)
         const repoHooksState = model.repoHooksMap[repoHostIdentity]
         const project = navigation.projectByRepoId.get(repo.id) ?? settingsProject.project
 
@@ -90,7 +94,19 @@ export function renderProjectSettingsSections(
                 hooksInspectionReady={Boolean(repoHooksState)}
                 mayNeedUpdate={repoHooksState?.mayNeedUpdate ?? false}
                 updateRepo={model.updateRepo}
-                removeProject={() => void model.removeProjectAllHosts(settingsProject.setups)}
+                removeProject={() => {
+                  if (workbench) {
+                    useAppStore.getState().openModal('confirm-remove-folder', {
+                      repoId: repo.id,
+                      displayName: repo.displayName,
+                      hostId: repoHostId,
+                      projectRemovalRegistration: repo
+                    })
+                  } else {
+                    void model.removeProjectAllHosts(settingsProject.setups)
+                  }
+                }}
+                usesHostRemovalConfirmation={workbench}
                 project={project}
                 selectedProjectSetupId={hostSelection.setupId}
                 settingsSelectionKey={settingsProject.selectionKey}
@@ -100,7 +116,13 @@ export function renderProjectSettingsSections(
                     : undefined
                 }
                 removalScope={getSettingsProjectRemovalScope(settingsProject)}
-                removalSetups={settingsProject.setups}
+                removalSetups={
+                  workbench
+                    ? settingsProject.setups.filter(
+                        (setup) => setup.hostId === repoHostId && setup.repoId === repo.id
+                      )
+                    : settingsProject.setups
+                }
                 isLocalWindowsProject={
                   getRepoExecutionHostId(repo) === LOCAL_EXECUTION_HOST_ID &&
                   terminal.isWindowsTerminalHost

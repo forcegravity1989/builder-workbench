@@ -133,7 +133,9 @@ export function useSidebarWorktreeFilters() {
       repo,
       targetHostId: getRevealTargetHostId(state, worktree, repo)
     }
-    for (const key of activeWorkspaceRowFilterKeys(sidebarWorkspaceRowFilters(state))) {
+    for (const key of activeWorkspaceRowFilterKeys(
+      sidebarWorkspaceRowFilters(selectSidebarFilterState(state))
+    )) {
       REVEAL_WORKSPACE[key](context)
     }
   }, [])

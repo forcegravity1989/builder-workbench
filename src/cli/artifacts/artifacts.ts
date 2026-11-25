@@ -1,27 +1,20 @@
 import { basename, extname, resolve } from 'node:path'
-import type {
-  ArtifactCloudOperation,
-  ArtifactCloudOptions,
-  ArtifactListPage,
-  ArtifactListItem,
-  ArtifactWriteRequest
-} from '../../shared/artifacts/artifacts'
 import { ARTIFACT_CLI_MAX_RPC_BYTES } from '../../shared/artifacts/artifacts'
 import {
   parseRemoteArtifactInput,
   REMOTE_ARTIFACT_INPUT_ENV
 } from '../../shared/artifacts/artifact-cli-bridge'
 import { readArtifactFileWithinLimit } from '../../shared/artifacts/artifact-file-read'
-import {
-  ARTIFACT_SHARING_DISABLED_CODE,
-  ARTIFACT_SHARING_DISABLED_MESSAGE,
-  ARTIFACT_SHARING_DISABLED_NEXT_STEPS
-} from '../../shared/artifacts/artifact-sharing-gate'
+import type { ShareListEntry, SharePublishResult, ShareResult } from '../../shared/workbench/share'
+import { wrapShareDocument } from '../../shared/workbench/share-html'
 import type { CommandHandler, HandlerContext } from '../dispatch/dispatch'
 import { rejectRemoteSelectionFlags } from '../dispatch/remote-selection-flag-rejection'
 import { RuntimeClientError } from '../runtime/connection/types'
-import { formatArtifactListPage, formatArtifactShared } from './artifact-format'
+import { formatSharedLinkList, formatSharedLinkResult } from './artifact-format'
 import { printResult } from '../output/command-result-output'
+
+const TOO_LARGE_MESSAGE =
+  'Artifact is too large for the CLI transport (limit 800 KB). Open the file in Workbench and use Share as artifact instead.'
 
 function stringFlag(ctx: HandlerContext, name: string): string | undefined {
   const value = ctx.flags.get(name)
@@ -36,23 +29,14 @@ function requireStringFlag(ctx: HandlerContext, name: string): string {
   return value
 }
 
-function cloudOptions(ctx: HandlerContext): ArtifactCloudOptions {
-  const apiUrl = stringFlag(ctx, 'api-url') ?? process.env.ORCA_ARTIFACTS_API_URL?.trim()
-  const authToken = process.env.ORCA_CLOUD_AUTH_TOKEN?.trim()
-  return {
-    ...(apiUrl ? { apiUrl } : {}),
-    ...(authToken ? { authToken } : {})
-  }
-}
-
 function rejectArtifactRemoteSelectionFlags(ctx: HandlerContext): void {
   rejectRemoteSelectionFlags(
     ctx.flags,
-    'artifact commands; artifacts use the signed-in desktop account.'
+    'artifact commands; sharing uses the desktop app on this computer.'
   )
 }
 
-function artifactContentType(path: string): ArtifactWriteRequest['contentType'] | null {
+function artifactContentType(path: string): 'text/html' | 'text/markdown' | null {
   const extension = extname(path).toLowerCase()
   return ['.html', '.htm'].includes(extension)
     ? 'text/html'
@@ -68,44 +52,30 @@ async function readStdinWithinLimit(maxBytes: number): Promise<string> {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk))
     bytes += buffer.length
     if (bytes > maxBytes) {
-      throw new RuntimeClientError(
-        'invalid_argument',
-        'Artifact is too large for the Orca CLI transport. Use the browser upload page instead.'
-      )
+      throw new RuntimeClientError('invalid_argument', TOO_LARGE_MESSAGE)
     }
     chunks.push(buffer)
   }
   return Buffer.concat(chunks).toString('utf8')
 }
 
-// Check before reading a large body; only explicit false denies, preserving older-host compatibility.
-async function preflightPublishCapability(ctx: HandlerContext): Promise<void> {
-  let enabled: unknown
-  try {
-    const response = await ctx.client.call<{
-      settings?: { artifactSharingEnabled?: boolean }
-    }>('settings.get')
-    enabled = response.result?.settings?.artifactSharingEnabled
-  } catch {
-    return
-  }
-  if (enabled === false) {
-    throw new RuntimeClientError(
-      ARTIFACT_SHARING_DISABLED_CODE,
-      ARTIFACT_SHARING_DISABLED_MESSAGE,
-      { nextSteps: [...ARTIFACT_SHARING_DISABLED_NEXT_STEPS] }
-    )
-  }
-}
+type PreparedShareRequest = { sourceKey: string; content: string; fileName: string }
 
-async function readArtifactRequest(ctx: HandlerContext): Promise<ArtifactWriteRequest> {
+/**
+ * Mirrors the Share as artifact button: Markdown is rendered into a standalone HTML document
+ * because the share service stores HTML only. Records are keyed by source key, so repeating a
+ * command overwrites that same link — but only within this surface: the editor keys a remote file
+ * by an `["ssh", target, path]` tuple, so one remote file shared from both keeps two links.
+ * `marked` is ESM-only and this CLI is emitted as CommonJS, hence the dynamic import.
+ */
+async function readShareRequest(ctx: HandlerContext): Promise<PreparedShareRequest> {
   const remoteInput = parseRemoteArtifactInput(process.env[REMOTE_ARTIFACT_INPUT_ENV])
   const sourceKey = remoteInput?.sourceKey ?? resolve(ctx.cwd, requireStringFlag(ctx, 'file'))
+  const fileName = remoteInput?.fileName ?? basename(sourceKey)
   const contentType = remoteInput?.contentType ?? artifactContentType(sourceKey)
   if (!contentType) {
     throw new RuntimeClientError('invalid_argument', 'Artifacts must be HTML or Markdown files.')
   }
-  await preflightPublishCapability(ctx)
   const localRead = remoteInput
     ? null
     : await readArtifactFileWithinLimit(sourceKey, ARTIFACT_CLI_MAX_RPC_BYTES)
@@ -116,95 +86,89 @@ async function readArtifactRequest(ctx: HandlerContext): Promise<ArtifactWriteRe
     )
   }
   if (localRead?.status === 'too-large') {
-    throw new RuntimeClientError(
-      'invalid_argument',
-      'Artifact is too large for the Orca CLI transport. Use the browser upload page instead.'
-    )
+    throw new RuntimeClientError('invalid_argument', TOO_LARGE_MESSAGE)
   }
-  const content = remoteInput
+  const raw = remoteInput
     ? await readStdinWithinLimit(ARTIFACT_CLI_MAX_RPC_BYTES)
     : localRead?.status === 'ok'
       ? localRead.content
       : ''
-  if (!content) {
+  if (!raw) {
     throw new RuntimeClientError('invalid_argument', 'Artifact file is empty.')
   }
-  const request: ArtifactWriteRequest = {
+  const markdown = contentType === 'text/markdown'
+  const title = markdown ? fileName.replace(/\.(md|markdown|mdx)$/i, '') : fileName
+  let content = raw
+  if (markdown) {
+    const { marked } = await import('marked')
+    content = wrapShareDocument(marked.parse(raw, { async: false }), title)
+  }
+  const request: PreparedShareRequest = {
     sourceKey,
     content,
-    contentType,
-    fileName: remoteInput?.fileName ?? basename(sourceKey),
-    ...cloudOptions(ctx)
+    fileName: markdown ? `${title}.html` : fileName
   }
   if (Buffer.byteLength(JSON.stringify(request), 'utf8') > ARTIFACT_CLI_MAX_RPC_BYTES) {
-    throw new RuntimeClientError(
-      'invalid_argument',
-      'Artifact is too large for the Orca CLI transport. Use the browser upload page instead.'
-    )
+    throw new RuntimeClientError('invalid_argument', TOO_LARGE_MESSAGE)
   }
   return request
 }
 
-function requireOperation<T>(operation: ArtifactCloudOperation<T>): T {
-  if (operation.status === 'ok') {
-    return operation.value
+/** Share failures arrive as data, not transport errors; surface the stable code and message. */
+function unwrapShareResult<T>(result: ShareResult<T>): T {
+  if (result.ok) {
+    return result.value
   }
-  if (operation.status === 'reconnect-required') {
-    throw new RuntimeClientError('authentication_required', 'Sign in to Orca and try again.')
-  }
-  throw new RuntimeClientError('authentication_unconfigured', operation.message)
+  throw new RuntimeClientError(result.error.code, result.error.message)
+}
+
+async function shareArtifact(ctx: HandlerContext): Promise<void> {
+  rejectArtifactRemoteSelectionFlags(ctx)
+  const response = await ctx.client.call<ShareResult<SharePublishResult>>(
+    'workbench.share.publish',
+    await readShareRequest(ctx)
+  )
+  const value = unwrapShareResult(response.result)
+  printResult({ ...response, result: value }, ctx.json, formatSharedLinkResult)
 }
 
 export const ARTIFACT_HANDLERS: Record<string, CommandHandler> = {
   'artifacts list': async (ctx) => {
     rejectArtifactRemoteSelectionFlags(ctx)
-    const cursor = stringFlag(ctx, 'cursor')
-    const response = await ctx.client.call<ArtifactCloudOperation<ArtifactListPage>>(
-      'artifacts.list',
-      {
-        ...cloudOptions(ctx),
-        ...(cursor ? { cursor } : {})
-      }
+    const response = await ctx.client.call<ShareResult<ShareListEntry[]>>(
+      'workbench.share.list',
+      {}
     )
-    const value = requireOperation(response.result)
-    printResult({ ...response, result: value }, ctx.json, formatArtifactListPage)
+    const value = unwrapShareResult(response.result)
+    printResult({ ...response, result: value }, ctx.json, formatSharedLinkList)
   },
-  'artifacts share': async (ctx) => {
-    rejectArtifactRemoteSelectionFlags(ctx)
-    const response = await ctx.client.call<ArtifactCloudOperation<ArtifactListItem>>(
-      'artifacts.share',
-      await readArtifactRequest(ctx)
-    )
-    const value = requireOperation(response.result)
-    printResult({ ...response, result: value }, ctx.json, formatArtifactShared)
-  },
-  'artifacts update': async (ctx) => {
-    rejectArtifactRemoteSelectionFlags(ctx)
-    const response = await ctx.client.call<ArtifactCloudOperation<ArtifactListItem>>(
-      'artifacts.update',
-      await readArtifactRequest(ctx)
-    )
-    const value = requireOperation(response.result)
-    printResult({ ...response, result: value }, ctx.json, formatArtifactShared)
-  },
+  'artifacts share': shareArtifact,
+  'artifacts update': shareArtifact,
   'artifacts unshare': async (ctx) => {
     rejectArtifactRemoteSelectionFlags(ctx)
     const remoteInput = parseRemoteArtifactInput(process.env[REMOTE_ARTIFACT_INPUT_ENV])
     const sourceKey = remoteInput?.sourceKey ?? resolve(ctx.cwd, requireStringFlag(ctx, 'file'))
-    const response = await ctx.client.call<ArtifactCloudOperation<void>>('artifacts.unshare', {
-      sourceKey,
-      ...cloudOptions(ctx)
+    const response = await ctx.client.call<ShareResult<null>>('workbench.share.remove', {
+      sourceKey
     })
-    requireOperation(response.result)
+    unwrapShareResult(response.result)
     printResult({ ...response, result: { deleted: true } }, ctx.json, () => 'Artifact deleted.')
   },
   'artifacts delete': async (ctx) => {
     rejectArtifactRemoteSelectionFlags(ctx)
-    const response = await ctx.client.call<ArtifactCloudOperation<void>>('artifacts.delete', {
-      id: requireStringFlag(ctx, 'id'),
-      ...cloudOptions(ctx)
+    const id = requireStringFlag(ctx, 'id')
+    const listed = await ctx.client.call<ShareResult<ShareListEntry[]>>('workbench.share.list', {})
+    const entry = unwrapShareResult(listed.result).find((item) => item.id === id)
+    if (!entry) {
+      throw new RuntimeClientError(
+        'not_found',
+        `No link shared from this computer has id "${id}". Run \`orca artifacts list\` to see current ids.`
+      )
+    }
+    const response = await ctx.client.call<ShareResult<null>>('workbench.share.remove', {
+      sourceKey: entry.sourceKey
     })
-    requireOperation(response.result)
-    printResult({ ...response, result: { deleted: true } }, ctx.json, () => 'Artifact deleted.')
+    unwrapShareResult(response.result)
+    printResult({ ...response, result: { deleted: true, id } }, ctx.json, () => 'Artifact deleted.')
   }
 }

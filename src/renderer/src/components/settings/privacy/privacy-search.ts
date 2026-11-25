@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { translate } from '@/i18n/i18n'
 import { translateSearchKeyword } from '../search/settings-search-keywords'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
@@ -12,35 +13,60 @@ export const getPrivacyPaneSearchEntries = createLocalizedCatalog(() => [
   {
     targetSectionId: PRIVACY_SETTING_ANCHORS.overview,
     title: translate('auto.components.settings.privacy.search.a966af0840', 'Privacy & telemetry'),
-    description: translate(
-      'auto.components.settings.privacy.search.aa3b794c17',
-      'Anonymous product usage data, diagnostics, and telemetry controls.'
-    ),
+    description: isWorkbenchShell()
+      ? translate(
+          'auto.components.settings.PrivacyPane.workbenchSectionDescription',
+          'Usage data, diagnostics, and telemetry controls.'
+        )
+      : translate(
+          'auto.components.settings.privacy.search.aa3b794c17',
+          'Anonymous product usage data, diagnostics, and telemetry controls.'
+        ),
     keywords: [
       ...translateSearchKeyword('auto.components.settings.privacy.search.10124159f1', 'privacy'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.77d3180def', 'telemetry'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.4104f6f0f3', 'analytics'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.79c319948b', 'usage'),
-      ...translateSearchKeyword('auto.components.settings.privacy.search.b021b9cb81', 'anonymous'),
+      ...(isWorkbenchShell()
+        ? ['WeLink']
+        : translateSearchKeyword(
+            'auto.components.settings.privacy.search.b021b9cb81',
+            'anonymous'
+          )),
       ...translateSearchKeyword('auto.components.settings.privacy.search.3922051573', 'data'),
-      ...translateSearchKeyword('auto.components.settings.privacy.search.2b5a5c312f', 'posthog'),
+      ...(isWorkbenchShell()
+        ? []
+        : translateSearchKeyword('auto.components.settings.privacy.search.2b5a5c312f', 'posthog')),
       ...translateSearchKeyword('auto.components.settings.privacy.search.27a27b2f63', 'opt out'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.4d4bb76bf4', 'opt in')
     ]
   },
   {
-    title: translate(
-      'auto.components.settings.privacy.search.6776226be7',
-      'Share anonymous usage data'
-    ),
-    description: translate(
-      'auto.components.settings.privacy.search.b707cc3981',
-      'Help improve Orca by sending anonymous feature-usage events.'
-    ),
+    targetSectionId: PRIVACY_SETTING_ANCHORS.usageData,
+    title: isWorkbenchShell()
+      ? translate('auto.components.settings.PrivacyPane.workbenchLabel', 'Share usage data')
+      : translate(
+          'auto.components.settings.privacy.search.6776226be7',
+          'Share anonymous usage data'
+        ),
+    description: isWorkbenchShell()
+      ? translate(
+          'auto.components.settings.PrivacyPane.workbenchDescription',
+          'Off by default. When enabled, feature usage and error counts are uploaded with your current WeLink account to the fixed BW user group space. The space may show the uploader.'
+        )
+      : translate(
+          'auto.components.settings.privacy.search.b707cc3981',
+          'Help improve Orca by sending anonymous feature-usage events.'
+        ),
     keywords: [
       ...translateSearchKeyword('auto.components.settings.privacy.search.77d3180def', 'telemetry'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.79c319948b', 'usage'),
-      ...translateSearchKeyword('auto.components.settings.privacy.search.b021b9cb81', 'anonymous'),
+      ...(isWorkbenchShell()
+        ? ['WeLink']
+        : translateSearchKeyword(
+            'auto.components.settings.privacy.search.b021b9cb81',
+            'anonymous'
+          )),
       ...translateSearchKeyword('auto.components.settings.privacy.search.4d4bb76bf4', 'opt in'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.27a27b2f63', 'opt out'),
       ...translateSearchKeyword('auto.components.settings.privacy.search.ead1deded2', 'share')

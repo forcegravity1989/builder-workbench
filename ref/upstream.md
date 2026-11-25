@@ -13,29 +13,30 @@
 
 ### 0.1 上游版本锚点
 
-| 项               | 本次核对结果                                                                                                                             |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                                                                                        |
-| 执行核基线       | [v1.4.272](https://github.com/stablyai/orca/releases/tag/v1.4.272)                                                                       |
-| 发布标签时间     | 2026-11-23 12:03:15 UTC                                                                                                                  |
-| 发布锚点         | `6272306c5a5a59ed1c6b604896610bfadde180cc`                                                                                               |
-| 本次核对日期     | 2026-11-25                                                                                                                               |
-| BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15                                                                                   |
-| 本次核对范围     | [#778](https://github.com/forcegravity1989/builder-workbench/issues/778) 的执行核、原生 Bot 界面、连接器和跨主机群组，以及迁回的 BW 入口 |
+| 项               | 本次核对结果                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                                                                                         |
+| 已采用基线       | 执行核和原生桌面组件均以 [v1.4.272](https://github.com/stablyai/orca/releases/tag/v1.4.272) 为基线                                        |
+| 已采用标签时间   | 2026-11-23 12:03:15 UTC                                                                                                                   |
+| 已采用源码锚点   | `6272306c5a5a59ed1c6b604896610bfadde180cc`                                                                                                |
+| 官方最新发布     | 截至本次核对为 [v1.4.274](https://github.com/stablyai/orca/releases/tag/v1.4.274)，2026-11-24 22:52:16 UTC；尚未同步                      |
+| 本次核对日期     | 2026-11-25                                                                                                                                |
+| BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15                                                                                    |
+| 本次核对范围     | [#778](https://github.com/forcegravity1989/builder-workbench/issues/778) 的执行核、桌面组件、原生 Bot、连接器、跨主机群组及迁回的 BW 入口 |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
 ### 0.2 与 BW 边界直接相关的能力
 
-BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
+执行核负责会话、调度、终端进程、Git 工作树、宿主路由和 Agent provider。原生桌面组件提供 Chat、终端界面、TaskPage、Automations、Explorer/SC/Diff 和 Bots。BW 复用两层实现，由 BW 叠层定义自己的导航、项目和版本工作区。
 
-[#778](https://github.com/forcegravity1989/builder-workbench/issues/778) 使用 v1.4.272 执行核，迁回 Workbench 导航、项目与版本工作区、材料以及现有内部集成的入口。Bot Home、Chat、待处理事项、工作派发、自动化、连接器和跨主机群组使用同一提交的原生实现。连接器继续沿上游账号和服务，内部账号、WeLink 和 CodeHub 沿 BW 现有集成。
+[#778](https://github.com/forcegravity1989/builder-workbench/issues/778) 以 v1.4.272 为桌面与执行基线，迁回 Workbench 导航、项目与版本工作区、材料以及现有内部集成的入口。Bot Home、Chat、待处理事项、工作派发、自动化、连接器和跨主机群组使用同一提交的原生实现。连接器继续沿上游账号和服务，内部账号、WeLink 和 CodeHub 沿 BW 现有集成。实际走查范围见 [PR #785 验证记录](https://github.com/forcegravity1989/builder-workbench/pull/785#issuecomment-7134631514)。
 
 配对协作以 Orca 共享地址为入口，材料由工作树所属的本机或配对宿主读写。旧直连 SSH 项目的材料通道与尚未上线的旧团队只读邀请无需迁移。Orca 原生普通 SSH 工作区仍沿上游入口。
 
 BW 主干的团队主机同步、成员只读访问、权限调整和访问日志沿现有实现接入新版宿主接口。团队身份由带团队访问标记的链接传递，共享设置继续挂载 BW 原组件。
 
-执行核提供会话、调度、终端、Git 工作树和宿主路由。应用采用 v1.4.272 原生组件基线，BW 壳、版本工作区布局和版本流程仍由 BW 叠层定义。Agent Dashboard 随新版采用原生会话看板。旧独立窗口地图的右键启动入口不再迁回，Agent 从所属工作区启动。
+Agent Dashboard 随新版采用原生会话看板。旧独立窗口地图的右键启动入口随新版移除，Agent 从所属工作区启动。
 
 ### 0.3 上游目录定位
 
@@ -51,7 +52,7 @@ BW 主干的团队主机同步、成员只读访问、权限调整和访问日�
 
 维护对象为 Claude、Cursor、DSH、GitHub Copilot、Codex、OpenCode。按智能体及实际依赖同步，不能按目录覆盖；共享主机的宿主设置链已由 #592 更新，但不代表所有智能体的进程、模型、账号与统计框架都已升级。
 
-本表记录 v251 阶段的专项核对边界，核对日期为 2026-11-09；源码对照与验证证据见各行 PR。v1.4.272 整体执行核同步已改变公共依赖，本表的“未迁”不能作为新版代码缺少该能力的依据；新版六维能力尚未逐项验收。**采用**指当时已接入的指定行为；**保留**指沿用 BW 已有实现；**未迁**指当时固定上游有而未采用；**上游无**指固定版本没有相应原生 provider；**未专项核对**不代表无能力或已经对齐。
+本表记录 v251 阶段的专项核对边界，核对日期为 2026-11-09；源码对照与验证证据见各行 PR。v1.4.272 的桌面与执行基线更新已改变公共依赖，本表的“未迁”不能作为新版代码缺少该能力的依据；新版六维能力尚未逐项验收。**采用**指当时已接入的指定行为；**保留**指沿用 BW 已有实现；**未迁**指当时固定上游有而未采用；**上游无**指固定版本没有相应原生 provider；**未专项核对**不代表无能力或已经对齐。
 
 | 智能体 / 已合入依据                                                                 | 启动与交互                                                                                                                                                                                                | 账号、服务商与模型                                                                            | 会话管理                                                                                | 套餐额度                                                                                        | Token 与费用统计                                                                                              | 执行环境                                                                                           |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -92,11 +93,11 @@ Codex 托管目录的套接字修复单独核对于 2026-11-13，来源为 Orca 
 ```bash
 git fetch origin main
 git remote get-url orca-upstream
-git fetch orca-upstream tag v1.4.251
-git rev-parse 'v1.4.251^{commit}'
+git fetch orca-upstream tag v1.4.272
+git rev-parse 'v1.4.272^{commit}'
 ```
 
-此 tag 仅示范本轮固定对照，下一轮须明确自己的目标 tag/SHA。取证后按 §0.4–0.5 的模块及必要依赖移植，不默认执行整支 merge，也不把 fetch 当作同步完成。日常 BW 任务不因本篇而检查上游。旧 Rust main 只做定向迁移和重新决策，不整支合并。
+每轮先固定目标 tag/SHA。定向同步按 §0.4–0.5 选择模块及必要依赖。桌面基线升级同时检查执行核、原生桌面组件和 §2.3 的 BW 挂载，核对完成后更新已采用版本。日常 BW 任务不因本篇而检查上游。旧 Rust main 只做定向迁移和重新决策，不整支合并。
 
 ## 2. BW 相对 Orca 的稳定边界记录
 
@@ -105,19 +106,20 @@ git rev-parse 'v1.4.251^{commit}'
 - **Orca Mobile 产品已删除**：`mobile/` Expo 客户端、桌面 Mobile 产品页、Mobile 导航和对应 CI 不应在同步时恢复。
 - **配对协议能力仍保留**：`src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator、relay/pairing 等活体协议不等同于 Mobile 产品，不因删除产品页一起删除。
 - **产品文档正本已替换**：仓根 `AGENTS.md`、`README.md`、`CONTEXT.md`、`CLAUDE.md` 与 `docs/` 是 BW 正本；上游工程参考进入 `ref/`，不覆盖 BW 产品文档。
-- **Orca 云端 Artifacts 分享已删除**：`artifacts.*` 七方法 RPC、`ArtifactCloudService`、`RuntimeArtifactController`、`artifact-sharing-gate`、`profile-artifact-cloud-cleanup`、云端 `ArtifactsPage` 及配套开关（`artifactsEnabled`/`artifactSharingEnabled`/`showArtifactsButton`/`skipDeleteArtifactConfirm`）不应在同步时恢复。产物分享改走自建 `services/bw-share`，见 [artifact-sharing](../docs/05-features/artifact-sharing/spec.md)。保留项：`activeView==='artifacts'` 与 `openArtifactsPage`（Workbench 项目页画布，非云端页）、`artifact-cloud-config.ts`（skill 云分享仍用）、`agentSkillSharingEnabled`/`AGENT_SKILL_*` 错误码（skill 分享是保留功能）、publish 流组件与 `FILE_TERMINAL_ARTIFACT_METHODS`。
+- **BW 产物分享沿用自管服务**。浏览器、编辑器、设置与 [CLI](../src/cli/artifacts/artifacts.ts) 通过 `workbench.share.*` 访问 `services/bw-share`。同步时核对 BW 壳的 `artifacts` 槽只承载 BW 项目画布，BW 运行时停用 Orca 云端产物分享 RPC。原生技能分享、终端本地产物及 Bot 文件附件各自沿现行入口。见 [产物分享规格](../docs/05-features/artifact-sharing/spec.md)。
 - **上游对外文档站不作为 BW 产品站**：`docs/site/`、README 多语言/营销素材和专项工程笔记不自动恢复；需要时从 Git 历史追溯来源。
 - **上报出口统一为 WeLink 群空间**：反馈、崩溃报告、诊断包和用户开启后的产品遥测共用 `src/main/workbench/reporting/` 的 welink-cli onebox 客户端。反馈与诊断保留原生入口、附件降级和确认流程；原 onorca.dev HTTP 上传链及 `ORCA_DIAGNOSTICS_TOKEN_URL` 配置已删除。遥测默认关闭、仅在设置开启，原生 consent、burst cap、validator 与 SDK 队列保留，由 BW bootstrap 注入 posthog-node 自定义 fetch，汇入独立遥测目录。同步时吸收原生管线语义，保留传输注入和默认关闭边界，不恢复 onorca.dev 或 PostHog 网络发送，也不另建上报出口。
 
 ### 2.2 目录和挂载边界
 
-| 层级                  | BW 落点                                                                             | 同步取舍                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Orca 原生执行核       | TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime | 原生优先；不大段改写，不复制会话、任务、工作树、连接或调度内核             |
-| BW UI 叠层            | `src/renderer/src/workbench/`                                                       | 保留 BW 导航和业务板；与原生界面冲突时人工处理                             |
-| BW 业务契约与事务     | `src/shared/workbench/`、`src/main/workbench/`                                      | 业务落在 BW 自有模块，不塞进 Orca 工作树、连接和调度类                     |
-| 宿主适配与 relay 组合 | `src/relay/workbench/`、原生 RPC/CLI 注册入口                                       | 复用原生身份、路由和窄执行器，只登记 BW 入口                               |
-| 产品分发规范          | `standard/`                                                                         | 是给被管项目的规范正源，不与 `.claude/skills/` 或 Orca 根级 Skill 目录合并 |
+| 层级                  | BW 落点                                                                     | 同步取舍                                                                   |
+| --------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Orca 执行核           | `src/main` runtime、会话与调度、terminal/PTY、worktree、宿主路由与 provider | 复用原生执行能力，按 §2.3 保留 BW 的接口与宿主适配                         |
+| Orca 原生桌面组件     | Chat、TaskPage、Automations、终端界面、Explorer/SC/Diff、Bots               | 复用原生组件，按 §2.3 接回 BW 的产品入口与交互                             |
+| BW UI 叠层            | `src/renderer/src/workbench/`                                               | 保留 BW 导航和业务板；与原生界面冲突时人工处理                             |
+| BW 业务契约与事务     | `src/shared/workbench/`、`src/main/workbench/`                              | 业务落在 BW 自有模块，不塞进 Orca 工作树、连接和调度类                     |
+| 宿主适配与 relay 组合 | `src/relay/workbench/`、原生 RPC/CLI 注册入口                               | 复用原生身份、路由和窄执行器，只登记 BW 入口                               |
+| 产品分发规范          | `standard/`                                                                 | 是给被管项目的规范正源，不与 `.claude/skills/` 或 Orca 根级 Skill 目录合并 |
 
 实现位置和运行入口的细节见 [SYNC](../src/renderer/src/workbench/SYNC.md)；当前产品能力见 [architecture](../docs/architecture.md)。
 
@@ -125,9 +127,12 @@ git rev-parse 'v1.4.251^{commit}'
 
 - Windows Workbench 的首次配置在 D 盘存在时预设原生 `workspaceDir`，仅挂在 `loaded-state-parsing.ts` 的无配置、无备份分支；路径正源为 `workbench-product.ts` 的 `WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR`，原生新建项目默认解析器识别该预设并使用兄弟 `projects`，避免工作树嵌入主仓。产品行为见[项目纳入规格](../docs/05-features/project-intake/spec.md#数据归属)。上游同步保留首次加载限定，不改成启动时覆盖已有设置。
 
-只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
+每项按用户场景记录 Orca 提供的能力、BW 保留的差异、源码挂载位置和升级时的验收依据。产品规格与验证结果沿原入口查阅。
 
-- BW 引导沿用原生首次设置和入门清单；底部帮助菜单提供「BW 入门」「探索 BW」，在入门里可重开初始设置（[PR #610](https://github.com/forcegravity1989/builder-workbench/pull/610)）。同步 `SetupGuideModal` 和 feature-wall 时保留 BW 的连接集成分流：各复用一张 GitHub 和 CodeHub 卡，当前环境任一登录即可完成任务与评审来源设置，WeLink 报告为可选，CloudBuild 在设置页；Orca 继续使用原生分步入口。保留 BW 当前项目的准备脚本目标；BW 入门撤下「启用 Orca CLI」，可见步骤、进度、默认选中与遥测共用七项定义，清单不主动探测 CLI、Skills 和桌面权限。原生 Orca 清单、设置中的 CLI 管理和按需能力配置保留。首次设置完成或跳至项目设置时，无项目的 BW 从项目墙打开原生 `AddRepoDialog`；首次添加弹窗及从空墙重开的弹窗保留注册与刷新，取消或添加成功都留墙，由用户点项目卡进入工作区。常规添加保持原生工作区交接。同步 onboarding 与原生添加链时保留这一分流，见[引导矩阵](../docs/04-design-system/guidance.md)、[项目纳入规格](../docs/05-features/project-intake/spec.md)与 [PR #628](https://github.com/forcegravity1989/builder-workbench/pull/628)。
+- **左侧导航与工作区侧栏**。BW 壳由 [AppWorkspaceShell](../src/renderer/src/app-shell/AppWorkspaceShell.tsx) 挂载 [WorkbenchRail](../src/renderer/src/workbench/WorkbenchRail.tsx)，保留 BW 图标、导航和主机状态入口。[WorktreeSidebar](../src/renderer/src/app-shell/WorktreeSidebar.tsx) 将 [WorkbenchSidebarNav](../src/renderer/src/workbench/WorkbenchSidebarNav.tsx) 接入原生侧栏。[Sidebar](../src/renderer/src/components/sidebar/index.tsx) 在 BW 壳把原生 Bots 放在工作区块上方，工作区列表模式下工作区块不可折叠。[WorktreeList](../src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx) 复用原生列表，在已固定之后、项目工作区之前插入 BW 版本区。上游升级时按「Bots → 已固定 → 版本 → 项目」核对顺序，同时确认空主机状态下图标和入口仍可见，以及版本区下的新建、计划和验收入口仍可用。版本行为见 [版本工作区设计](../docs/05-features/version-workspace/design.md)。
+- **BW 侧栏筛选与项目移除**。BW 侧栏按宿主和原有工作区条件筛选，项目筛选控件及旧项目筛选值在 BW 壳内停用。项目墙、设置和主工作树的「移除项目」沿所选宿主的登记打开确认，核对宿主、路径和登记身份后只移除该登记。配对同名项目须核对工作树的逻辑宿主。见 [筛选入口](../src/renderer/src/components/sidebar/worktree-list/controls/workspace-options-menu-items.tsx)、[设置入口](../src/renderer/src/components/settings/page/settings-project-section-renderer.tsx)和[主工作树移除](../src/renderer/src/components/sidebar/workspace-actions/deletion/delete-worktree-flow.ts)。
+
+- **底部帮助与首次设置**。BW 沿用原生首次设置和入门清单。[帮助菜单](../src/renderer/src/components/sidebar/chrome/help-menu-controller.tsx)提供「BW 入门」「探索 BW」，在入门里可重开初始设置（[PR #610](https://github.com/forcegravity1989/builder-workbench/pull/610)）。同步 [SetupGuideModal](../src/renderer/src/components/setup-guide/SetupGuideModal.tsx) 和 feature-wall 时保留 BW 的连接集成分流：各复用一张 GitHub 和 CodeHub 卡，当前环境任一登录即可完成任务与评审来源设置，WeLink 报告为可选，CloudBuild 在设置页；Orca 继续使用原生分步入口。保留 BW 当前项目的准备脚本目标；BW 入门撤下「启用 Orca CLI」，可见步骤、进度、默认选中与遥测共用七项定义，清单不主动探测 Orca CLI、Skills 和桌面权限。原生 Orca 清单、设置中的 CLI 管理和按需能力配置保留。首次设置完成或跳至项目设置时，无项目的 BW 从项目墙打开原生 `AddRepoDialog`；首次添加弹窗及从空墙重开的弹窗保留注册与刷新，取消或添加成功都留墙，由用户点项目卡进入工作区。常规添加保持原生工作区交接。同步 onboarding 与原生添加链时保留这一分流，见[引导矩阵](../docs/04-design-system/guidance.md)、[项目纳入规格](../docs/05-features/project-intake/spec.md)与 [PR #628](https://github.com/forcegravity1989/builder-workbench/pull/628)。
 - W03 构建交付在 BW 探索目录复用 W01/W02 播放器。同步浏览器页工具栏、源代码管理页头、差异打开和 contextual tours 时保留 BW 帮助入口及「在界面中跟做」接线。浏览器引导及其工具栏锚点随当前聚焦的本地页面挂载，已保留的后台页不能取消前台引导；离开当前页面时沿原生机制取消。探索跟做在弹窗关闭后定位可操作的浏览器。源代码管理问号在筛选展开时也可回看，打开差异完成本次引导。引导指向现有控件，样例不改变工作树、GitHub、批注或评审通知协议。见 [探索规格](../docs/05-features/explore-workbench/spec.md#w03-构建交付)。
 - 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。共享主机恢复复核另按上述 v1.4.251 补入导航取消未完成截图及旧快照回写的约束，仍沿用本仓文档失效时清除批注的行为；不因此迁入批注留存改造或远程实时批注。
 - `automation.runNow` 的可选 `oneShotPrompt` 和 `automation.run-now-one-shot-prompt.v1` 能力门控。主进程在 `src/main/automations/dispatch/automation-dispatch-request.ts` 准备本轮启动提示，终端与 Chat 共用该入口。已保存的自动化提示继续由原生自动化定义维护。
@@ -155,7 +160,7 @@ git rev-parse 'v1.4.251^{commit}'
 - 设置→集成页按 BW #323 收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 报告与诊断 / 构建三组；CloudBuild 为 #366 增补，2026-10-19）：六张隐藏卡的组件、状态推导与词条保留在仓（人拍板 2026-10-16），但 `IntegrationsPane` 渲染名单与 `integrations-search` 目录是 BW 口径；preflight 增加 `welink-cli` / `cb` 探测与 codehub / welink / cb 的 `auth status` 读回（`PreflightStatus.welink` / `cloudbuild`、`codehub.authenticated`），welink 读回把 EXPIRED 判未登录（人拍板 2026-10-16，BW 口径），cb 存活探测用 `version` 子命令（`--version` 是未知旗标）、登录判定按输出标记（`Token Expires` 行且不带 `(expired)` 后缀，退出码恒 0 不可信，BW 口径照 welink EXPIRED 拍板），探测经 `command-path-resolver.ts` 的 `resolveCommandOnLocalPath` 解析真实文件、`.cmd` / `.bat` 经 `cmd.exe` 执行（`preflight-command-exec.ts`，修 npm 全局 CLI 装完仍报未安装的 Windows 盲区，BW 口径）。各卡登录按钮在卡内展开上游 `OnboardingInlineCommandTerminal` 内嵌终端（粘贴命令不回车、人按回车，OSC 133;D 感知命令结束自动复查；2026-10-19 人拍板，远端范围不给按钮）；该上游组件内 `TerminalPane` 改传 `isVisible={entered}`（BW 口径，2026-10-19 真壳白屏修复：组件在 0fr 展开动画容器内挂载终端，恒真 isVisible 使 WebGL 渲染器在无盒状态下解析 PTY 输出、展开时模型 diff 跳过预展开单元格导致画布空白；改随 `entered` 挂起渲染、动画完成翻可见走 TerminalPane 既有的 reveal-repaint 链从缓冲重绘，上游合并保留该传参）；codehub / welink 安装由应用后台执行各自自包含 npm 命令（含内网 registry 与 `--strict-ssl=false`，人确认 2026-10-16，不动机器 npm 配置，不占会话栏），cloudbuild 为**两步**（`npm config set @hw-cloudbuild:registry <内网源>` → `npm install -g @hw-cloudbuild/cloudbuild-cli`，人指定 2026-10-19，会写机器 npm 配置、不带 `--strict-ssl=false`，runner 按序执行、任一步失败即中止）；gh 安装保持外链。CodeHub / WeLink / CloudBuild 卡片共用一个 `BwCliIntegrationCard` 骨架（每卡为文案 / 探测字段 / 登录命令的薄配置），与本机范围判定因上游文件 max-lines 预算拆入 BW 自有新文件（`bw-cli-integration-cards.tsx`、`use-local-cli-scope.ts`，经 barrel 导出），codehub / welink / cloudbuild auth 读回与 BW 三 CLI 探测编排（`probeBwClis` / `readBwCliAuths`，回调注入探测函数避免循环依赖）在 `bw-cli-auth-status.ts`、安装链路（`bw-cli-install-commands.ts`、`bw-cli-install.ts`、preload `bw-cli-install-api.ts` / `cli-install-bridge.ts`、渲染端 `cli-install-action.ts`）同为 BW 自有文件（主进程模块由 agent-detection / register-core-handlers 直接引入，不经 renderer barrel）。上游合并保留该渲染名单、探测字段与 shim 路由、登录内嵌终端分支与 welink EXPIRED / cb 过期标记语义，不恢复六卡渲染，也不把 BW 卡合回上游卡模块。
 - BW 板面批注快捷键 `workbench.toggleAnnotationMode`（#444，2026-10-29）：注册表 seam 是 `shared/keybindings/types.ts` 的 `KeybindingScope` 新值 `'workbench'` 与 `KeybindingActionId` 新成员，加 `definitions-core-2.ts` 一条定义（默认 Alt+A、`conflictGroup: 'global'`）；渲染层零 native 改动——监听器为板面本地安装（仿 `editor.addReviewNote` 先例，入口不可用即不挂载），不进 `createAppCommandHandlers` Map、不进 `use-global-keybindings`、不进主进程 webview 白名单。上游合并保留这两个 union 扩点与定义条目即可，BW 计划/验收两板的快捷键随定义存在而存在。
 
-- 探索 BW 的目录布局（[#634](https://github.com/forcegravity1989/builder-workbench/issues/634)）从底部帮助进入原生 `FeatureWallModal`，按 BW 壳条件接入 `workbench/explore/`。同步 feature-wall 时保留该条件入口及 `FeatureWallTourSurface` 的已有演示直选、`FeatureWallTourPanel` 的内容复用点。目录、状态与 W01 局部动画在 BW 侧。动画重用 BW 的项目墙卡、名片字段和里程碑界面，使用内存样例；W02 与 W01 共用探索播放器，计划与任务片段使用隔离样例。W04 复用同一播放器及验收控件，样例回调不触发真实会话或归档。W05 复用同一播放器与记分牌读数控件，以隔离样例呈现效果和后续计划。记分牌操作引导由记分牌标题栏可见性门控，手动重播沿总览帮助菜单定位记分牌，保持在 BW 层。原有 Orca 演示、配置卡与访问记录沿用现有机制。任务页 BW 壳复用原生 tasks 引导并提供就地重播。同步 contextual tour 时保留 BW 项目墙、项目总览、里程碑、版本计划、版本侧栏、版本验收、版本总览和记分牌的 ID、目标及退出后记录策略（`markSeenOn`），其他 Orca 引导沿现有首次可见后记录。同步原生 `ContextualTourOverlaySurface` 时保留退出按钮的 `data-contextual-tour-skip`，Escape 通过该属性触发原生退出，避免依赖本地化的无障碍名称；已打开的原生菜单、选择器及其他浮层优先接收 Escape。
+- **探索 BW 与屏内引导**。探索目录（[#634](https://github.com/forcegravity1989/builder-workbench/issues/634)）从底部帮助进入原生 [FeatureWallModal](../src/renderer/src/components/feature-wall/FeatureWallModal.tsx)，按 BW 壳条件接入 [探索目录](../src/renderer/src/workbench/explore/bw-explore-catalog.ts)。同步 feature-wall 时保留该条件入口及 `FeatureWallTourSurface` 的已有演示直选、`FeatureWallTourPanel` 的内容复用点。目录、状态与 W01 局部动画在 BW 侧。动画重用 BW 的项目墙卡、名片字段和里程碑界面，使用内存样例；W02 与 W01 共用探索播放器，计划与任务片段使用隔离样例。W04 复用同一播放器及验收控件，样例回调不触发真实会话或归档。W05 复用同一播放器与记分牌读数控件，以隔离样例呈现效果和后续计划。记分牌操作引导由记分牌标题栏可见性门控，手动重播沿总览帮助菜单定位记分牌，保持在 BW 层。原有 Orca 演示、配置卡与访问记录沿用现有机制。任务页 BW 壳复用原生 tasks 引导并提供就地重播。同步 [屏内引导](../src/shared/feature-education/contextual-tours/workbench-contextual-tours.ts)时保留 BW 项目墙、项目总览、里程碑、版本计划、版本侧栏、版本验收、版本总览和记分牌的 ID、目标及退出后记录策略（`markSeenOn`），其他 Orca 引导沿现有首次可见后记录。同步原生 `ContextualTourOverlaySurface` 时保留退出按钮的 `data-contextual-tour-skip`，Escape 通过该属性触发原生退出，避免依赖本地化的无障碍名称；已打开的原生菜单、选择器及其他浮层优先接收 Escape。
 - 状态栏「常用链接」入口（#650，2026-11-13）：BW 在 `StatusBarSurface` 的 `PortsStatusSegment` 旁最小挂载自有 `QuickLinksStatusSegment`（`src/renderer/src/workbench/quick-links/`），并登记 `StatusBarItem` 新项 `'quick-links'`（`shared/ui-chrome/ui-chrome-types.ts` 与 RPC `client-ui/client-ui-params.ts` 枚举、`shared/status-bar/status-bar-defaults.ts` 默认项、`use-status-bar-controller.ts` 的 `showQuickLinks`、`StatusBarVisibilityMenu` 开关、profile 加载的一次性 flag `_quickLinksStatusBarDefaultAdded`（`main/persistence/loading-store/profile-loading/loaded-state-parsing.ts`）、`feature-interaction-catalog` 的 `quick-links`）。上游合并须保留该挂载位与枚举项，否则入口被静默丢弃；组件本体在 BW 自有目录，持久化走既有 `window.api.fs` 读写项目 `.bw/quick-links.json`，不改 Orca 端口/服务链。
 
 - BW 诊断上传继续由 `main/telemetry/client.ts` 的 transport 挂载到 `main/workbench/reporting/welink-telemetry-sink.ts`，不能随原生 PostHog SDK 升级回到 Orca 服务。接收 SDK 的 string、Blob 和 Uint8Array 请求体，共用现有压缩批次与退出排空协议；WeLink CLI 执行保留所选宿主的 WSL 环境和超时设置。
@@ -201,6 +206,8 @@ CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也
 ## 3. 同步取舍
 
 按智能体或用户旅程模块定期比较固定上游版本，同一批可以一个 PR 分多个 commit，也可拆 PR；共享依赖只保留一处实现，并检查全部消费者。每次同步覆盖更新 §0 对应行的采用范围、上游版本/SHA、BW PR 和核对日期；未重新核对的智能体保留原状态与日期。
+
+升级桌面基线时，以 BW main 和升级前的固定 Orca 版本定位 BW 对原生文件的改动，再沿新版的实际挂载和调用链逐项回看 §2.3。即使 BW 组件仍在仓内，也要确认入口能到达、参数和宿主仍正确。界面按使用者的点击路径核对，数据或分享协议核对最终写入位置，由对应 PR 留下新版证据。
 
 原生差异分为上游已一致、原生代码移植、必要基线适配、BW 产品挂载/保留修正、上游有而本次未迁、固定上游无及未核对。上游已覆盖 BW 修正时，核对同一用户行为及其看护后删除被替代实现，不留双路径；每个保留改造在 PR 指明人可理解的场景、代码落点、看护用例或未验项。当前稳定边界写回本篇，逐文件对照、测试结果与取舍过程留在 PR，不新增常驻流水。
 

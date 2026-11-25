@@ -45,6 +45,7 @@ export function BrowserChromeToolbar({
   markup,
   notes,
   shareControl,
+  helpControl,
   overflowMenu,
   closeTabOwner,
   showTourAnchors = false
@@ -66,6 +67,7 @@ export function BrowserChromeToolbar({
   notes?: BrowserChromeNoteActions | null
   /** Share beside a document chip, which can't hold a nested button the way the address field does. */
   shareControl?: React.ReactNode
+  helpControl?: React.ReactNode
   overflowMenu: (props: BrowserChromeOverflowMenuProps) => React.ReactNode
   /** The page whose tab the toolbar X closes in a floating split, where the panel's one tab row may be showing another split. */
   closeTabOwner: { worktreeId: string; browserPageId: string }
@@ -128,6 +130,7 @@ export function BrowserChromeToolbar({
           annotateToolItems: <BrowserAnnotateToolMenuItems tools={elementTools} markup={markup} />
         })}
       </span>
+      {helpControl}
       {closeTab ? (
         <>
           <span className="mx-0.5 h-4 w-px shrink-0 bg-border" aria-hidden />
