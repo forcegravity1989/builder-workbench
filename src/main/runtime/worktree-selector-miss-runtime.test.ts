@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setActiveSink, type TracerSink } from '../observability/tracer'
-import { listWorktreesStrict } from '../git/worktree'
+import { listWorktreesSharedStrictAllowingTrueEmpty } from '../git/worktrees/catalog/worktree-scan-cache'
 import { OrcaRuntimeService } from './orca-runtime'
 import { makeStore } from './worktree-selector-miss.test-fixture'
 
-vi.mock('../git/worktree', () => ({
-  listWorktrees: vi.fn().mockResolvedValue([]),
-  listWorktreesStrict: vi.fn().mockResolvedValue([])
+vi.mock(import('../git/worktrees/catalog/worktree-scan-cache'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  listWorktreesSharedStrictAllowingTrueEmpty: vi.fn().mockResolvedValue([])
 }))
 
 type CapturedSink = TracerSink & { records: Record<string, unknown>[] }
@@ -35,7 +35,7 @@ function worktree(path: string, branch: string) {
 }
 
 beforeEach(() => {
-  vi.mocked(listWorktreesStrict).mockResolvedValue([])
+  vi.mocked(listWorktreesSharedStrictAllowingTrueEmpty).mockResolvedValue([])
   sink = {
     records: [],
     push(record) {
@@ -69,9 +69,10 @@ describe('showManagedWorktree selector misses', () => {
   it('keeps a host-scoped miss unknown when the path still exists', async () => {
     const runtime = new OrcaRuntimeService(makeStore() as never)
 
-    await expect(runtime.showManagedWorktree('id:repo-1::/tmp', 'local')).rejects.toThrow(
-      'selector_not_found'
-    )
+    const existingId = `repo-1::${tmpdir()}`
+    const result = runtime.showManagedWorktree(`id:${existingId}`, 'local')
+    await expect(result).rejects.toThrow('selector_not_found')
+    await expect(result).rejects.not.toHaveProperty('worktreeGoneEvidence')
   })
 
   it('records the selector and repo facts when an explicit worktree id does not resolve', async () => {
@@ -152,7 +153,7 @@ describe('showManagedWorktree selector misses', () => {
   })
 
   it('does not record a miss when the selector resolves, is ambiguous, or is rejected by contract', async () => {
-    vi.mocked(listWorktreesStrict).mockResolvedValueOnce([
+    vi.mocked(listWorktreesSharedStrictAllowingTrueEmpty).mockResolvedValue([
       worktree('/tmp/worktree-a', 'dup'),
       worktree('/tmp/worktree-b', 'dup')
     ])

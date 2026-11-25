@@ -288,7 +288,8 @@ export abstract class RuntimeConstructionServices extends RuntimeAgentStatusRead
   protected abstract resolveGitWorktreeSelector(
     selector: string,
     requiredHostId?: ExecutionHostId,
-    reads?: ScopedWorktreeReads
+    reads?: ScopedWorktreeReads,
+    diagnosticCaller?: string | null
   ): Promise<ResolvedWorktree>
   protected abstract resolveWorkspaceSelector(...args: Calls.SelectorArgs): Calls.SelectorResult
   protected abstract resolveWorkspaceCandidate(...args: Calls.SelectorArgs): Calls.CandidateResult
