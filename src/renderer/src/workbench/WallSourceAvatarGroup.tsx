@@ -12,6 +12,7 @@ export type WallAvatarSource = {
   id: string
   label: string
   online: boolean | null
+  avatar?: string
   onOpen(): void
 }
 
@@ -19,6 +20,14 @@ const AVATAR_SIZE = 26
 const AVATAR_GAP = 20
 const STEP_DELAY = 70
 const MOVE_DURATION = 280
+
+function SourceAvatar({ source }: { source: WallAvatarSource }) {
+  const [failed, setFailed] = useState(false)
+  if (source.avatar && !failed) {
+    return <img src={source.avatar} alt="" onError={() => setFailed(true)} />
+  }
+  return <CircleUserRound size={22} />
+}
 
 export function WallSourceAvatarGroup({ sources }: { sources: readonly WallAvatarSource[] }) {
   const root = useRef<HTMLDivElement>(null)
@@ -163,7 +172,7 @@ export function WallSourceAvatarGroup({ sources }: { sources: readonly WallAvata
                 aria-expanded={expanded}
                 onClick={toggle}
               >
-                <CircleUserRound size={22} />
+                <SourceAvatar source={source} />
                 <span
                   className={`pcard-source-dot${source.online === true ? ' is-online' : source.online === false ? ' is-offline' : ''}`}
                   aria-hidden="true"

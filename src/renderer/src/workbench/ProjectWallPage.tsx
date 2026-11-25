@@ -16,6 +16,7 @@ import { continueProjectWork } from './continue-project-work'
 import { isWallRowVisible, wallProjectVisibility } from './workbench-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
 import { useWallCharters } from './use-wall-charters'
+import { useTeamMemberAvatars } from './use-team-member-avatars'
 import { TeamSettingsDialog } from './TeamSettingsDialog'
 import type { WallCardMode, WallCardView } from './ProjectWallCard'
 import { LiveProjectWallCard, type WallReadStatus } from './LiveProjectWallCard'
@@ -48,6 +49,7 @@ export function ProjectWallPage() {
   const hasProjects = repos.some(isWallRowVisible)
   const projects = useWallProjects({ location, type })
   const charters = useWallCharters(projects, refresh)
+  const { avatarByName, localAvatar } = useTeamMemberAvatars(teamSettingsOpen)
   const [readStatuses, setReadStatuses] = useState<Record<string, WallReadStatus>>({})
   const onReadStatus = useCallback((key: string, status: WallReadStatus | null) => {
     setReadStatuses((current) => {
@@ -65,17 +67,23 @@ export function ProjectWallPage() {
   const readingsRefreshing = Object.values(readStatuses).some((status) => status.refreshing)
   const cards: WallCardView[] = projects.map((project) => {
     const charter = charters.values[project.key] ?? null
+    const owner = charter?.owner?.trim()
     return {
       project,
       primaryRepo: project.rows[0],
       charter,
+      ownerAvatar: owner ? avatarByName.get(owner) : undefined,
       displayName: project.group?.name || charter?.name?.trim() || project.name,
       readings: { kind: 'loading' },
-      hostTags: project.hostIds.map((hostId) => ({
-        ...buildWallHostFact(hostId, environments, statuses, sshLabels),
-        hostId,
-        isLocal: hostId === 'local'
-      }))
+      hostTags: project.hostIds.map((hostId) => {
+        const fact = buildWallHostFact(hostId, environments, statuses, sshLabels)
+        return {
+          ...fact,
+          hostId,
+          isLocal: hostId === 'local',
+          avatar: hostId === 'local' ? localAvatar : avatarByName.get(fact.label)
+        }
+      })
     }
   })
   const selectedCard = cards.find((card) => card.project.key === selected)

@@ -1,5 +1,5 @@
 import { ErrorDetails } from './error-feedback'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   AlertCircle,
   CircleUserRound,
@@ -33,14 +33,23 @@ export type CardHostTag = {
   label: string
   online: boolean | null
   isLocal: boolean
+  avatar?: string
 }
 export type WallCardView = {
   project: WallProject
   displayName: string
   charter: ProjectCharter | null
+  ownerAvatar?: string
   readings: WallCardReadings
   hostTags: CardHostTag[]
   primaryRepo: Repo
+}
+function OwnerAvatar({ avatar }: { avatar?: string }) {
+  const [failed, setFailed] = useState(false)
+  if (avatar && !failed) {
+    return <img src={avatar} alt="" onError={() => setFailed(true)} />
+  }
+  return <CircleUserRound size={22} />
 }
 function WorkflowProgress({ progress }: { progress: VersionWorkflowProgress }) {
   const { archive, label } = progress
@@ -177,7 +186,7 @@ export function ProjectWallCard({
               aria-label="项目负责人"
               title={`项目负责人：${card.charter?.owner?.trim() || '未设置'}`}
             >
-              <CircleUserRound size={22} />
+              <OwnerAvatar avatar={card.ownerAvatar} />
             </button>
           </PopoverTrigger>
           <PopoverContent className="p-3" align="start">
@@ -192,6 +201,7 @@ export function ProjectWallCard({
             id: tag.hostId,
             label: tag.label,
             online: tag.online,
+            avatar: tag.avatar,
             onOpen: () =>
               onOpen(project.rows.find((row) => getRepoExecutionHostId(row) === tag.hostId))
           }))}
