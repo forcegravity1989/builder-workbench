@@ -132,6 +132,18 @@ export class MobileSocketWiring {
     return false
   }
 
+  /** Closes only the sockets of one member record that shares a team link's token with other members. */
+  terminateMemberConnections(deviceId: string): number {
+    let terminated = 0
+    for (const socket of this.authenticatedSockets.values()) {
+      if (socket.device.deviceId === deviceId) {
+        socket.ws.close(4001, 'Access revoked')
+        terminated += 1
+      }
+    }
+    return terminated
+  }
+
   terminateDeviceConnections(deviceToken: string): number {
     let terminated = 0
     for (const transport of this.transports) {
@@ -158,7 +170,7 @@ export class MobileSocketWiring {
             : { transport: 'direct' },
         requireV2: metadata.transport === 'relay',
         outboundMemoryBudget: this.outboundMemoryBudget,
-        resolveAuthenticatedDevice: (token) => {
+        resolveAuthenticatedDevice: (token, caller) => {
           const device = this.deviceRegistry.validateToken(token)
           if (!device) {
             return null
@@ -168,7 +180,12 @@ export class MobileSocketWiring {
           if (metadata.transport === 'relay' && metadata.relayDeviceId !== device.deviceId) {
             return null
           }
-          return toAuthenticatedDevice(device)
+          // Why: a shared team link authenticates with one token, but the member who used it is the
+          // identity the access log, grants and annotations must show.
+          const effective = caller
+            ? this.deviceRegistry.resolveMemberDevice(device, caller)
+            : device
+          return { ...toAuthenticatedDevice(device), deviceId: effective.deviceId }
         },
         onReady: (channel, device) => {
           const socket = {

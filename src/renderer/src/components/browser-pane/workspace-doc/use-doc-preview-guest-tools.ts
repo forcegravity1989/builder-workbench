@@ -19,6 +19,7 @@ import type { BrowserChromeElementTools } from '@/components/browser-pane/assemb
 export function useDocPreviewGuestTools({
   previewId,
   worktreeId,
+  filePath,
   grantId,
   webviewRef,
   containerRef,
@@ -26,6 +27,7 @@ export function useDocPreviewGuestTools({
 }: {
   previewId: string
   worktreeId: string
+  filePath: string
   grantId: string | null
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   containerRef: MutableRefObject<HTMLDivElement | null>
@@ -52,11 +54,13 @@ export function useDocPreviewGuestTools({
   const grabElementShortcut = useShortcutLabel('browser.grabElement')
   const grab = useGrabMode(toolTargetId)
   const markup = useBrowserPageMarkupCapture(webviewRef)
-  const annotationSend = useBrowserPageAnnotationSend({ browserTabId: previewId, worktreeId })
-  const grabAnnotations = useBrowserPageGrabAnnotations({
+  const annotationSend = useBrowserPageAnnotationSend({
     browserTabId: previewId,
     worktreeId,
-    documentKey: grantId ?? 'about:blank',
+    reviewDocumentPath: filePath
+  })
+  const grabAnnotations = useBrowserPageGrabAnnotations({
+    browserTabId: previewId,
     toolTargetId,
     isActive: toolsReady,
     grab,

@@ -32,6 +32,7 @@ const {
   registerAiVaultHandlersMock,
   registerAiVaultSearchHandlersMock,
   registerOrcaProfileHandlersMock,
+  registerW3AccountHandlersMock,
   registerCodexAccountHandlersMock,
   registerAgentHookHandlersMock,
   registerAgentTrustHandlersMock,
@@ -101,6 +102,7 @@ const {
   registerAiVaultHandlersMock: vi.fn(),
   registerAiVaultSearchHandlersMock: vi.fn(),
   registerOrcaProfileHandlersMock: vi.fn(),
+  registerW3AccountHandlersMock: vi.fn(),
   registerCodexAccountHandlersMock: vi.fn(),
   registerAgentHookHandlersMock: vi.fn(),
   registerAgentTrustHandlersMock: vi.fn(),
@@ -325,6 +327,10 @@ vi.mock('../ai-vault-search', () => ({
 
 vi.mock('../orca-profiles', () => ({
   registerOrcaProfileHandlers: registerOrcaProfileHandlersMock
+}))
+
+vi.mock('../w3-account-ipc', () => ({
+  registerW3AccountHandlers: registerW3AccountHandlersMock
 }))
 
 vi.mock('../codex-accounts', () => ({
@@ -572,6 +578,7 @@ describe('registerCoreHandlers', () => {
     expect(registerLocalhostWorktreeLabelHandlersMock).toHaveBeenCalledWith(store)
     expect(registerTelemetryHandlersMock).toHaveBeenCalledWith(store)
     expect(registerOrcaProfileHandlersMock).toHaveBeenCalledWith(store, { onBeforeRelaunch })
+    expect(registerW3AccountHandlersMock).toHaveBeenCalled()
     expect(registerSessionHandlersMock).toHaveBeenCalledWith(store)
     expect(registerUIHandlersMock).toHaveBeenCalledWith(store, {
       isDashboardPopoutRenderer: isDashboardPopoutRendererMock

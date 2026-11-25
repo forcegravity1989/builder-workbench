@@ -9,7 +9,6 @@ import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import {
-  getGitHubWorkItemWorkspaceSeed,
   getGitLabWorkItemWorkspaceSeed,
   getRepoTaskSourceContext
 } from './task-page-source-context'
@@ -22,6 +21,7 @@ import {
 } from '@/workbench/scoped-task-workspace'
 import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
 import { track } from '@/lib/telemetry'
+import { githubWorkItemWorkspaceComposerData } from './task-page-github-workspace-composer'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
   // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
@@ -38,26 +38,11 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   )
   const openComposerForItem = useCallback(
     (item: GitHubWorkItem): void => {
-      const linkedWorkItem: LinkedWorkItemSummary = {
-        provider: 'github',
-        type: item.type,
-        number: item.number,
-        title: item.title,
-        url: item.url,
-        ...(item.repoId
-          ? {
-              repoId: item.repoId
-            }
-          : {})
-      }
       openModal('new-workspace-composer', {
-        linkedWorkItem,
-        initialGitHubWorkItem: item,
-        taskSourceContext: getRepoTaskSourceContext(repoMap.get(item.repoId), 'github'),
-        prefilledName: getGitHubWorkItemWorkspaceSeed(item),
-        initialRepoId: item.repoId,
-        enableIssueAutomation: item.type === 'issue',
-        telemetrySource: 'sidebar',
+        ...githubWorkItemWorkspaceComposerData(
+          item,
+          getRepoTaskSourceContext(repoMap.get(item.repoId), 'github')
+        ),
         ...scopedComposerAdditions({
           repoId: item.repoId,
           type: item.type,

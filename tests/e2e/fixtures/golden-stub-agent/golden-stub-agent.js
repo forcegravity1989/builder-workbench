@@ -118,6 +118,7 @@ if (process.stdin.isTTY) {
   process.stdin.setRawMode(true)
 }
 process.stdin.setEncoding('utf8')
+process.stdout.on('resize', render)
 process.stdin.on('data', (chunk) => {
   pendingInput += typeof chunk === 'string' ? chunk : chunk.toString()
   consumeInput()

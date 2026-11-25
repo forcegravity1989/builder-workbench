@@ -5,6 +5,7 @@ import { IconAction as Button } from './g2-icon-action.jsx'
 import { DesignReferences } from './g2-design-references.jsx'
 import { useBindingDemo } from './g2-binding-demo.jsx'
 import { TaskPreview } from './g2-task-preview.jsx'
+import { CURRENT_BW_SHELL as shellMeta } from '../../prototype-shell-meta.js'
 
 const {
   // React is used by the shared JSX build factory.
@@ -1034,8 +1035,8 @@ function App() {
             className="prototype-board-link"
             href={
               screen === 'plan'
-                ? '../version-planning/planning-journey-prototype.html'
-                : '../version-acceptance/acceptance-journey-prototype.html'
+                ? '../version-planning/prototype.html'
+                : '../version-acceptance/prototype.html'
             }
           >
             查看本轮{labels[screen]}屏高保真 →
@@ -1187,11 +1188,6 @@ function App() {
         icon={(props) => <NativeToolIcon kind="add" {...props} />}
         label="添加项目"
         onClick={() => setModal({ type: 'native-tool', title: '添加项目' })}
-      />
-      <Button
-        icon={Plus}
-        label="新建工作区"
-        onClick={() => setModal({ type: 'composer', kind: 'native' })}
       />
     </div>
   )
@@ -1390,6 +1386,7 @@ function App() {
         <span>
           {is475 ? '分区布局与更多版本 · 交互原型' : '既有能力纠偏 · 数据与操作仅在本页演示'}
         </span>
+        <span title={shellMeta.source}>壳：{shellMeta.productName} · 内容：示例快照</span>
         <div className="review-actions" aria-label="原型评审工具">
           {is475 && (
             <button onClick={() => setModal({ type: 'review-523' })}>操作旅程与已知差异</button>
@@ -1447,7 +1444,7 @@ function App() {
             <>
               <div className="app-header">
                 <span className="brand-mark">B</span>
-                <strong>Workbench</strong>
+                <strong>{shellMeta.productName}</strong>
                 <small>⌘ K</small>
               </div>
               <Nav
@@ -1639,7 +1636,8 @@ function App() {
               只在原生项目与已固定中出现。
             </li>
             <li>
-              拖宽侧栏并滚动到底；原生的活动、工作区选项、添加项目、新建工作区始终留在顶部，树列表共用单一滚动区。
+              拖宽侧栏并滚动到底；原生的活动、工作区选项、添加项目始终留在顶部，树列表共用单一滚动区。新建工作区在各项目区块头的
+              ＋，不在顶栏。
             </li>
           </ol>
           <label>

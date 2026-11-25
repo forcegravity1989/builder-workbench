@@ -28,6 +28,7 @@ export type PluginKeybindingActionId = `plugin:${string}`
 export type KeybindingActionId =
   | 'worktree.quickOpen'
   | 'worktree.palette'
+  | 'workbench.annotate'
   | 'worktree.navigateUp'
   | 'worktree.navigateDown'
   | 'app.settings'
