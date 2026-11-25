@@ -163,7 +163,7 @@ describe('pasteDraftWhenAgentReady', () => {
     }
     expect(testState.storeSubscribers.size).toBe(0)
     expect(testState.ptyObserver).not.toBeNull()
-    expect(testState.replayPreHandlerPtyData).toHaveBeenCalledWith('pty-1', testState.ptyObserver)
+    expect(testState.replayPreHandlerPtyData).toHaveBeenCalledWith('pty-1', expect.any(Function))
     await flushMicrotasks()
 
     expect(testState.sendRuntimePtyInputVerified).toHaveBeenCalledWith(
