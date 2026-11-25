@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type SetStateAction } from 'react'
 import {
   TOGGLE_FLOATING_TERMINAL_EVENT,
+  OPEN_FLOATING_WORKSPACE_EVENT,
   requestFloatingTerminalOpenMaximized
 } from '@/lib/floating-terminal'
 import { createFloatingWorkspaceTourInteractionSnapshot } from '@/lib/floating-workspace-tour-interaction-snapshot'
@@ -118,7 +119,14 @@ export function useFloatingWorkspacePanel() {
       }
     }
     window.addEventListener(TOGGLE_FLOATING_TERMINAL_EVENT, toggleFloatingTerminal)
-    return () => window.removeEventListener(TOGGLE_FLOATING_TERMINAL_EVENT, toggleFloatingTerminal)
+    const openFloating = (): void => {
+      setOpenWithFocus(true)
+    }
+    window.addEventListener(OPEN_FLOATING_WORKSPACE_EVENT, openFloating)
+    return () => {
+      window.removeEventListener(TOGGLE_FLOATING_TERMINAL_EVENT, toggleFloatingTerminal)
+      window.removeEventListener(OPEN_FLOATING_WORKSPACE_EVENT, openFloating)
+    }
   }, [enabled, setOpenWithFocus])
 
   useEffect(() => {

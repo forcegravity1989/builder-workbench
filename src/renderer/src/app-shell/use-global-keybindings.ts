@@ -19,6 +19,7 @@ import {
   selectedExplorerFolderRelativePath
 } from '../components/right-sidebar/file-search-include-pattern'
 import { usePluginCommands } from '@/store/plugin-panels'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useAppStore } from '../store'
 import {
   keybindingMatchesAction,
@@ -184,6 +185,15 @@ export function useGlobalKeybindings(args: {
       ) {
         input.preventDefault()
         openFloatingWorkspaceMaximized()
+        return
+      }
+
+      if (isWorkbenchShell() && matchShortcut('workbench.annotate')) {
+        input.preventDefault()
+        notifyTerminalCapture('workbench.annotate')
+        void import('@/workbench/improvement/annotation')
+          .then((module) => module.toggleImprovementAnnotation())
+          .catch((error: unknown) => console.error('Failed to toggle Workbench annotation', error))
         return
       }
 

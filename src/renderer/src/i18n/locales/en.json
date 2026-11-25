@@ -18209,5 +18209,10 @@
     "setupGuideReopen": "You can reopen it from Help → Getting Started with BW.",
     "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
     "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command."
+  },
+  "workbench": {
+    "improvement": {
+      "startRepair": "Start repair"
+    }
   }
 }

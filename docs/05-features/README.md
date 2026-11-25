@@ -40,5 +40,5 @@ W01–W05 的具体定义、归属和证据分别回到 [探索 BW 规格](explo
 | 主归属    | 适用范围                                                                                                                             |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | 产品基础  | 跨旅程的通用产品体验，包括没有对应特性的 Orca 原生改造。原生改动若服务某一已有特性，直接归该特性。[探索 BW 布局](explore-workbench/spec.md)及[原型](explore-workbench/prototype.html)维护探索目录的布局和交互，内容覆盖仍归引导矩阵；[W3 Account（账户页改为内网 W3 登录）](w3-account/spec.md)（草案，待确认）维护账户页的 W3 登录入口与登录态复用。 |
-| 研发保障  | BW 团队自身的开发、验证、上游升级与发布，包括 [开发检视规范](../development.md#独立检视)和 [BW 出包发布](workbench-release/STATUS.md)。 |
+| 研发保障  | BW 团队自身的开发、验证、上游升级与发布，包括 [开发检视规范](../development.md#独立检视)、[BW 出包发布](workbench-release/STATUS.md)和贡献 BW 的[意图](bw-contribution/intent.md)、[规格](bw-contribution/spec.md)、[局部体验稿](bw-contribution/prototype/index.html)及[认可与证据](bw-contribution/STATUS.md)（待评审）。 |
 | 待定/预研 | 用户、独立结果或验收方式尚未明确的研究，如 AI 资产管理。专题结论明确后按用户结果定归属。                                             |
