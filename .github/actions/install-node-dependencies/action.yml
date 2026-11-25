@@ -96,6 +96,10 @@ runs:
           git -C "$GITHUB_WORKSPACE" diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml
         fi
 
+    - name: Prepare pinned Bun executable
+      shell: bash
+      run: node node_modules/bun/install.js
+
     - name: Build workspace packages
       shell: bash
       run: node config/scripts/workspace-package-build/build-workspace-packages.mjs

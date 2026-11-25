@@ -90,7 +90,7 @@ async function main() {
     // Native creation verifies the complete file set, stages it and creates the standard archive.
     const builder = path.join(work, 'native-bundle.mjs')
     await build({
-      entryPoints: [path.join(root, 'src/main/skills/skill-bundle-creation.ts')],
+      entryPoints: [path.join(root, 'src/main/skills/bundle-archive/skill-bundle-creation.ts')],
       outfile: builder,
       bundle: true,
       platform: 'node',

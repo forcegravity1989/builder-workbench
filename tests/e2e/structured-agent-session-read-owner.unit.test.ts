@@ -7,20 +7,20 @@ import type {
   AgentSessionHistoryResult,
   AgentSessionStatusSummary,
   AgentSessionSubscribeEvent
-} from '../../src/shared/agent-session-wire'
-import type { AgentJournalCursor } from '../../src/shared/agent-session-journal-types'
+} from '../../src/shared/agent-session/agent-session-wire'
+import type { AgentJournalCursor } from '../../src/shared/agent-session/journal/agent-session-journal-types'
 import {
   EMPTY_STRUCTURED_AGENT_SESSION,
   reduceStructuredAgentSession
-} from '../../src/shared/structured-agent-session-reducer'
+} from '../../src/shared/agent-session/view/live-read/structured-agent-session-reducer'
 import {
   hasUnansweredStructuredAgentSessionDispatch,
   projectStructuredAgentSessionStatus
-} from '../../src/shared/structured-agent-session-projection'
-import { createTrackedJournalOpener } from '../../src/main/native-chat/agent-session-journal/journal-store-test-open'
-import { readAgentSessionHistory } from '../../src/main/native-chat/agent-session-wire/agent-session-history-page'
-import { AgentSessionSubscribers } from '../../src/main/native-chat/agent-session-wire/structured-agent-session-subscribers'
-import { StructuredAgentSessionStatusFeed } from '../../src/main/native-chat/agent-session-wire/structured-agent-session-status-feed'
+} from '../../src/shared/agent-session/view/structured-agent-session-projection'
+import { createTrackedJournalOpener } from '../../src/main/native-chat/agent-session-journal/store-lifecycle/journal-host-database-test-support'
+import { readAgentSessionHistory } from '../../src/main/native-chat/agent-session-wire/publication/history/agent-session-history-page'
+import { AgentSessionSubscribers } from '../../src/main/native-chat/agent-session-wire/publication/subscribers/structured-agent-session-subscribers'
+import { StructuredAgentSessionStatusFeed } from '../../src/main/native-chat/agent-session-wire/observations/structured-agent-session-status-feed'
 
 const mocks = vi.hoisted(() => ({ call: vi.fn(), subscribe: vi.fn() }))
 vi.mock('@/runtime/structured-agent-session-client', () => ({
@@ -31,7 +31,7 @@ vi.mock('@/runtime/structured-agent-session-client', () => ({
 import {
   getStructuredAgentSessionReadOwner,
   resetStructuredAgentSessionReadOwnersForTests
-} from '../../src/renderer/src/components/native-chat/structured-agent-session-read-owner'
+} from '../../src/renderer/src/components/native-chat/session/structured/read/structured-agent-session-read-owner'
 
 const SESSION = 'cursor-body-regression'
 const target = { kind: 'local' } as const
