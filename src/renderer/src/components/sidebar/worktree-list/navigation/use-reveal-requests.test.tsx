@@ -15,6 +15,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 const state = vi.hoisted(() => ({
   setGroupBy: vi.fn(),
+  setSidebarBody: vi.fn(),
   pendingRevealSidebarRow: null,
   revealSidebarRow: vi.fn(),
   revealWorktreeInSidebar: vi.fn(),
@@ -90,7 +91,9 @@ beforeEach(() => {
     worktrees: [worktree],
     folderWorkspaces: [],
     hasFilters: true,
-    clearFilters: vi.fn()
+    clearFilters: vi.fn(),
+    filteredWorktrees: [],
+    worktreeLineageById: {}
   }
 })
 

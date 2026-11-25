@@ -24,6 +24,7 @@ import { useAppChromeLayout } from './app-shell/use-app-chrome-layout'
 import { useAppSessionPersistence } from './app-shell/use-app-session-persistence'
 import { useAppShellServices } from './app-shell/use-app-shell-services'
 import { useAppStartupHydration } from './app-shell/use-app-startup-hydration'
+import { useW3AccountBootstrap } from './app-shell/use-w3-account-bootstrap'
 import { useDocumentAppearance } from './app-shell/use-document-appearance'
 import { useFloatingWorkspacePanel } from './app-shell/use-floating-workspace-panel'
 import { useGlobalKeybindings } from './app-shell/use-global-keybindings'
@@ -45,6 +46,7 @@ function App(): React.JSX.Element {
     floatingPanelVisible: floatingWorkspace.enabled && floatingWorkspace.open
   })
   useAppStartupHydration(onboardingGate.applyStartupOnboardingState)
+  useW3AccountBootstrap()
   useAppSessionPersistence()
   useRuntimeGraphSync()
   usePersistedUIWriter()

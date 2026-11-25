@@ -52,7 +52,7 @@ export function RuntimePairingUrlGenerator({
   const [isLoadingAccessGrants, setIsLoadingAccessGrants] = useState(false)
   const [refreshingNetworkInterfaces, setRefreshingNetworkInterfaces] = useState(false)
   const [revokingGrantId, setRevokingGrantId] = useState<string | null>(null)
-  const [grantingFullAccess, setGrantingFullAccess] = useState(false)
+  const [changingAccessGrantId, setChangingAccessGrantId] = useState<string | null>(null)
   const [runtimeAccessAudit, setRuntimeAccessAudit] = useState<RuntimeAccessAuditEntry[]>([])
   const [isLoadingAudit, setIsLoadingAudit] = useState(false)
   const [auditResult, setAuditResult] = useState<RuntimeAccessAuditResult | 'all'>('all')
@@ -160,7 +160,7 @@ export function RuntimePairingUrlGenerator({
       !window.confirm(
         translate(
           'auto.components.settings.RuntimePairingUrlGenerator.clearConfirm',
-          'Clear this host\'s shared access log?'
+          "Clear this host's shared access log?"
         )
       )
     ) {
@@ -377,50 +377,57 @@ export function RuntimePairingUrlGenerator({
     }
   }
 
-  const grantRuntimeFullAccess = async (grants: RuntimeAccessGrant[]): Promise<boolean> => {
-    if (grants.length === 0) {
-      return false
-    }
-    setGrantingFullAccess(true)
+  const changeRuntimeAccessMode = async (
+    grant: RuntimeAccessGrant,
+    accessMode: 'team-read' | 'full'
+  ): Promise<void> => {
+    setChangingAccessGrantId(grant.deviceId)
     try {
-      const result = await window.api.mobile.grantRuntimeFullAccess({
-        deviceIds: grants.map((grant) => grant.deviceId)
+      const result = await window.api.mobile.setRuntimeAccessMode({
+        deviceId: grant.deviceId,
+        accessMode
       })
       await loadRuntimeAccessGrants()
-      if (mountedRef.current) {
-        toast.success(
-          result.granted.length === 1
-            ? translate(
-                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGranted',
-                'Full access granted.'
-              )
-            : translate(
-                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantedCount',
-                'Full access granted to {{value0}} devices.',
-                { value0: result.granted.length }
-              )
-        )
+      if (!mountedRef.current) {
+        return
       }
-      return result.granted.length === grants.length
+      if (result.accessMode !== accessMode) {
+        toast.error(
+          translate(
+            'auto.components.settings.RuntimePairingUrlGenerator.accessModeChangeFailed',
+            'Failed to change access.'
+          )
+        )
+        return
+      }
+      toast.success(
+        accessMode === 'full'
+          ? translate(
+              'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGranted',
+              'Full access granted.'
+            )
+          : translate(
+              'auto.components.settings.RuntimePairingUrlGenerator.readOnlyRestored',
+              'Read-only access restored.'
+            )
+      )
     } catch (error) {
       if (mountedRef.current) {
         toast.error(
           error instanceof Error
             ? error.message
             : translate(
-                'auto.components.settings.RuntimePairingUrlGenerator.fullAccessGrantFailed',
-                'Failed to grant full access.'
+                'auto.components.settings.RuntimePairingUrlGenerator.accessModeChangeFailed',
+                'Failed to change access.'
               )
         )
       }
-      return false
     } finally {
       if (mountedRef.current) {
-        setGrantingFullAccess(false)
+        setChangingAccessGrantId(null)
       }
     }
   }
-
   const copyGeneratedUrl = async (target: 'web' | 'pairing', value: string): Promise<void> => {
     try {
       await window.api.ui.writeClipboardText(value)
@@ -456,6 +463,40 @@ export function RuntimePairingUrlGenerator({
               )
         )
       }
+    }
+  }
+
+  // A link listed under shared access can be copied again later, not only right after generating it.
+  const copyGrantLink = async (grant: RuntimeAccessGrant): Promise<void> => {
+    try {
+      const { pairingUrl } = await window.api.mobile.getRuntimeAccessLinkUrl({
+        deviceId: grant.deviceId
+      })
+      if (!pairingUrl) {
+        toast.error(
+          translate(
+            'auto.components.settings.RuntimePairingUrlGenerator.linkNotRecorded',
+            'This link was created before its address was recorded. Generate a new link to copy it.'
+          )
+        )
+        return
+      }
+      await window.api.ui.writeClipboardText(pairingUrl)
+      toast.success(
+        translate(
+          'auto.components.settings.RuntimePairingUrlGenerator.df0aa45a86',
+          'Copied pairing URL.'
+        )
+      )
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : translate(
+              'auto.components.settings.RuntimePairingUrlGenerator.d6c081adf4',
+              'Failed to copy URL.'
+            )
+      )
     }
   }
 
@@ -536,10 +577,11 @@ export function RuntimePairingUrlGenerator({
         currentGrantId={runtimePairingDeviceId}
         isLoading={isLoadingAccessGrants}
         revokingGrantId={revokingGrantId}
-        grantingFullAccess={grantingFullAccess}
+        changingAccessGrantId={changingAccessGrantId}
         onRefresh={() => void loadRuntimeAccessGrants({ showToastOnError: true })}
         onRevoke={(grant) => void revokeRuntimeAccess(grant)}
-        onGrantFullAccess={grantRuntimeFullAccess}
+        onCopyLink={(grant) => void copyGrantLink(grant)}
+        onChangeAccessMode={(grant, accessMode) => void changeRuntimeAccessMode(grant, accessMode)}
       />
       <RuntimeAccessAuditLog
         entries={runtimeAccessAudit}

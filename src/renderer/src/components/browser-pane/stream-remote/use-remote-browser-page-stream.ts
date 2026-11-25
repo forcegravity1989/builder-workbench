@@ -3,6 +3,7 @@ import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 
 import { decodeBrowserScreencastFrame } from '../../../../../shared/browser-screencast-protocol'
 import type { BrowserScreencastFrameMetadata } from '../../../../../shared/browser-screencast-protocol'
+import { REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION } from '../../../../../shared/remote-browser-viewport-probe'
 import type { BrowserTabInfo } from '../../../../../shared/runtime-types'
 import type { RemoteBrowserStreamLifecycle } from './remote-browser-stream-lifecycle'
 import type {
@@ -151,7 +152,7 @@ export function useRemoteBrowserPageStream({
           {
             worktree: runtimeWorktree,
             page: pageId,
-            expression: 'JSON.stringify({ width: window.innerWidth, height: window.innerHeight })'
+            expression: REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION
           },
           { timeoutMs: 15_000, suppressFeatureInteraction: true }
         )
