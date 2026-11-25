@@ -1,0 +1,34 @@
+docs/05-features/project-intake/spec.md
+  s_b33c968b7cc172::t_1c3ba99a586888 39
+src/renderer/src/workbench/ProjectWallCard.tsx
+  s_b33c968b7cc172::t_9ecc4edfa57b0d 2,36,42,47-53,189,204
+src/renderer/src/workbench/ProjectWallPage.tsx
+  s_b33c968b7cc172::t_8639022d99eed3 19,52,70,75,78-86
+src/renderer/src/workbench/WallSourceAvatarGroup.tsx
+  s_b33c968b7cc172::t_15748213c9f038 15,24-31,175
+src/renderer/src/workbench/workbench-wall.css
+  s_b33c968b7cc172::t_9bdea8a1e14a35 159-166
+src/renderer/src/workbench/use-team-member-avatars.ts
+  h_d0d195a8c70989 1-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "1d0eec9c9ba2c3221f81a9bef7801d3bec2a55fb",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_b33c968b7cc172": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "659ff28e-b1f5-4ab1-8294-7a404c24dfe4",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
