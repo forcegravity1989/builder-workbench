@@ -39,8 +39,9 @@ if (
     enableFlag: import.meta.env.VITE_ENABLE_REACT_GRAB
   })
 ) {
-  void import('react-grab').then(({ init }) => init())
-  void import('react-grab/styles.css')
+  void import('./workbench/improvement/annotation')
+    .then(({ prepareImprovementAnnotation }) => prepareImprovementAnnotation())
+    .catch((error) => console.warn('[react-grab] Initialization failed:', error))
 }
 
 applyDocumentTheme('system', { disableTransitions: false })

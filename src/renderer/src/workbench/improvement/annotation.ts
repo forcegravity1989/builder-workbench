@@ -4,15 +4,29 @@ import type { ReactGrabAPI } from 'react-grab'
 
 let ready: Promise<ReactGrabAPI> | null = null
 
+export function prepareImprovementAnnotation(): Promise<ReactGrabAPI> {
+  return (ready ??= initialize().catch((error) => {
+    ready = null
+    throw error
+  }))
+}
+
+function setToolbarVisible(api: ReactGrabAPI, visible: boolean): void {
+  api.registerPlugin({
+    name: 'bw-improvement-toolbar',
+    theme: { toolbar: { enabled: visible } }
+  })
+}
+
 export async function toggleImprovementAnnotation(): Promise<void> {
   try {
-    const api = await (ready ??= initialize().catch((error) => {
-      ready = null
-      throw error
-    }))
+    const api = await prepareImprovementAnnotation()
     if (api.isActive()) {
       api.deactivate()
+      setToolbarVisible(api, false)
     } else {
+      setToolbarVisible(api, true)
+      api.setToolbarState({ collapsed: false })
       api.comment()
     }
   } catch (error) {
@@ -28,7 +42,21 @@ async function initialize(): Promise<ReactGrabAPI> {
     freezeReactUpdates: false,
     ...(!import.meta.env.DEV ? { activationKey: () => false } : {})
   })
-  api.setToolbarState({ collapsed: false, enabled: true })
+  setToolbarVisible(api, false)
+  api.registerPlugin({
+    name: 'bw-improvement-activation',
+    hooks: { onActivate: () => setToolbarVisible(api, true) }
+  })
+  window.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key === 'Escape' && !api.getState().isPromptMode) {
+        api.deactivate()
+        setToolbarVisible(api, false)
+      }
+    },
+    true
+  )
   attachHandoff(api)
   return api
 }
@@ -104,6 +132,7 @@ function attachHandoff(api: ReactGrabAPI): void {
       button.disabled = true
     }
     api.deactivate()
+    setToolbarVisible(api, false)
     try {
       await openImprovementAssistant(content)
       for (const entry of batch) {
