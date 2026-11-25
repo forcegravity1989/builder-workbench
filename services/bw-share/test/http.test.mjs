@@ -61,7 +61,7 @@ test('create, view, update and delete round-trip', async (t) => {
   assert.ok(body.editToken)
   assert.ok(body.expiresAt)
 
-  const view = await fetch(body.url)
+  const view = await fetch(`${body.url}/raw`)
   assert.equal(view.status, 200)
   assert.match(view.headers.get('content-type') ?? '', /^text\/html/)
   assert.equal(view.headers.get('content-security-policy'), SHARE_PAGE_CSP)
@@ -74,7 +74,7 @@ test('create, view, update and delete round-trip', async (t) => {
     { 'x-edit-token': body.editToken }
   )
   assert.equal(updated.status, 200)
-  assert.equal(await (await fetch(body.url)).text(), '<p>v2</p>')
+  assert.equal(await (await fetch(`${body.url}/raw`)).text(), '<p>v2</p>')
 
   const removed = await fetch(`${server.base}/api/shares/${body.id}`, {
     method: 'DELETE',
@@ -82,7 +82,7 @@ test('create, view, update and delete round-trip', async (t) => {
   })
   assert.equal(removed.status, 204)
   assert.equal(await removed.text(), '')
-  assert.equal((await fetch(body.url)).status, 404)
+  assert.equal((await fetch(`${body.url}/raw`)).status, 404)
 })
 
 test('upload token gates writes when configured', async (t) => {
@@ -167,7 +167,7 @@ test('edit token is required and checked for update and delete', async (t) => {
   assert.equal(wrongDelete.status, 403)
 
   // A failed write must not have changed the share.
-  assert.equal(await (await fetch(created.url)).text(), HTML)
+  assert.equal(await (await fetch(`${created.url}/raw`)).text(), HTML)
 })
 
 test('unknown ids and routes are not found', async (t) => {
@@ -186,7 +186,7 @@ test('HEAD returns headers without a body', async (t) => {
   const created = await json(
     await writeRequest(`${server.base}/api/shares`, { content: HTML, fileName: 'report.html' })
   )
-  const response = await fetch(created.url, { method: 'HEAD' })
+  const response = await fetch(`${created.url}/raw`, { method: 'HEAD' })
   assert.equal(response.status, 200)
   assert.equal(response.headers.get('content-length'), String(Buffer.byteLength(HTML)))
   assert.equal(await response.text(), '')
@@ -355,7 +355,7 @@ test('a served read releases the file so the next update succeeds', async (t) =>
   const created = await json(
     await writeRequest(`${server.base}/api/shares`, { content: HTML, fileName: 'r.html' })
   )
-  assert.equal(await (await fetch(created.url)).text(), HTML)
+  assert.equal(await (await fetch(`${created.url}/raw`)).text(), HTML)
 
   const updated = await updateRequest(
     `${server.base}/api/shares/${created.id}`,
@@ -363,7 +363,7 @@ test('a served read releases the file so the next update succeeds', async (t) =>
     { 'x-edit-token': created.editToken }
   )
   assert.equal(updated.status, 200)
-  assert.equal(await (await fetch(created.url)).text(), '<p>v2</p>')
+  assert.equal(await (await fetch(`${created.url}/raw`)).text(), '<p>v2</p>')
 })
 
 test('viewing while updating never answers 500 and never misstates content-length', async (t) => {
@@ -377,7 +377,7 @@ test('viewing while updating never answers 500 and never misstates content-lengt
   for (let round = 0; round < 12; round += 1) {
     const content = round % 2 === 0 ? '<p>small</p>' : large
     const [view, updated] = await Promise.all([
-      fetch(created.url),
+      fetch(`${created.url}/raw`),
       updateRequest(
         `${server.base}/api/shares/${created.id}`,
         { content, fileName: 'r.html' },
@@ -505,7 +505,7 @@ test('a damaged registry still serves shares and still honours a static token', 
 
   // Reading needs no registry: colleagues keep being able to open the link. The link is fetched
   // from the restarted server, which listens on a new port.
-  const view = await fetch(`${server.base}/s/${created.id}`)
+  const view = await fetch(`${server.base}/s/${created.id}/raw`)
   assert.equal(view.status, 200)
   assert.equal(await view.text(), HTML)
 
@@ -575,7 +575,7 @@ test('a viewer who leaves mid-download does not hold the file against the next u
   // without an explicit destroy the handle survives until GC and, on Windows, the next update of
   // this share spends its whole rename retry budget and answers 503.
   const controller = new AbortController()
-  const view = await fetch(created.url, { signal: controller.signal })
+  const view = await fetch(`${created.url}/raw`, { signal: controller.signal })
   const reader = view.body.getReader()
   await reader.read()
   controller.abort()
@@ -593,7 +593,7 @@ test('a viewer who leaves mid-download does not hold the file against the next u
     200,
     `update after an aborted read answered ${updated.status}: ${body}`
   )
-  assert.equal(await (await fetch(created.url)).text(), '<p>v2</p>')
+  assert.equal(await (await fetch(`${created.url}/raw`)).text(), '<p>v2</p>')
 })
 
 test('a registry with some unusable entries keeps the usable ones and stays closed', async (t) => {
