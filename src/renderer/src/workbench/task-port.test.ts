@@ -14,10 +14,7 @@ const mocks = vi.hoisted(() => ({
   viewTask: vi.fn()
 }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.storeState } }))
-vi.mock('@/lib/github-work-item-source-lookup', () => ({
-  lookupGitHubWorkItemForSource: mocks.lookupGitHub
-}))
-vi.mock('@/lib/codehub-api', () => ({ codehubApi: { viewTask: mocks.viewTask } }))
+vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => true }))
 
 import { createTaskPort } from './task-port'
 import { createTaskReferenceReader } from './task-reference-reader'
