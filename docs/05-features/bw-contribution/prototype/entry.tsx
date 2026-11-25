@@ -150,53 +150,97 @@ function App() {
   const [context, setContext] = useState('')
   const [filtered, setFiltered] = useState(false)
   const collecting = useRef(false)
+  const [active, setActive] = useState(false)
   const [workspaceOpen, setWorkspaceOpen] = useState(false)
   const [receipt, setReceipt] = useState<{ location: string; note: string } | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
   const [captureError, setCaptureError] = useState(false)
-  const shortcut = /Mac/.test(navigator.userAgent) ? '⌘C' : 'Ctrl+C'
+  const shortcut = /Mac/.test(navigator.userAgent) ? '⌘⌥B' : 'Ctrl+Alt+B'
 
   useEffect(() => {
     const api = getGlobalApi() ?? init()
     api.setOptions({ freezeReactUpdates: false })
-    api.registerPlugin({
-      name: 'bw-improvement-assistant',
-      actions: [
-        {
-          id: 'send-to-bw-improvement-assistant',
-          label: '交给改进助手',
-          onAction: (selection) => {
-            if (!selection.enterPromptMode) {
-              setCaptureError(true)
-              return
-            }
-            collecting.current = true
-            setCaptureError(false)
-            selection.enterPromptMode()
-          }
-        }
-      ],
-      hooks: {
-        onDeactivate: () => {
-          collecting.current = false
-        },
-        onCopySuccess: (_elements, content) => {
-          if (collecting.current) {
-            collecting.current = false
-            setContext(content)
-            setReceipt(null)
-            setPanelOpen(true)
-          }
-        },
-        onAfterCopy: (_elements, success) => {
-          if (collecting.current && !success) {
-            collecting.current = false
-            setCaptureError(true)
+    api.setToolbarState({ enabled: true, collapsed: false })
+    const onShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.altKey && event.code === 'KeyB') {
+        event.preventDefault()
+        if (!event.repeat) {
+          if (api.isActive()) {
+            api.deactivate()
+          } else {
+            api.comment()
           }
         }
       }
+    }
+    document.addEventListener('keydown', onShortcut)
+    const onCopy = (event: ClipboardEvent) => {
+      if (!collecting.current) {
+        return
+      }
+      collecting.current = false
+      const content = event.clipboardData?.getData('text/plain')
+      queueMicrotask(() => {
+        if (!content) {
+          setCaptureError(true)
+          return
+        }
+        setContext(content)
+        setReceipt(null)
+        setPanelOpen(true)
+        api.deactivate()
+      })
+    }
+    window.addEventListener('copy', onCopy)
+    let sendButton: HTMLButtonElement | null = null
+    const attachButton = () => {
+      const overlay = document.querySelector('[data-react-grab]')?.shadowRoot
+      const toolbar = overlay?.querySelector('[data-react-grab-toolbar]')
+      if (!toolbar || sendButton?.isConnected) {
+        return
+      }
+      sendButton = document.createElement('button')
+      sendButton.textContent = '交给改进助手'
+      sendButton.title = '将已保存的批注与元素信息交给改进助手'
+      sendButton.setAttribute('data-react-grab-ignore-events', '')
+      sendButton.setAttribute('data-bw-send-improvement', '')
+      sendButton.style.cssText =
+        'position:absolute;left:calc(100% + 4px);top:0;font:12px system-ui;white-space:nowrap;border:1px solid #ddd;background:white;color:#222;padding:6px 9px;cursor:pointer;border-radius:6px;box-shadow:0 1px 3px #0002'
+      sendButton.onclick = () => {
+        const copy = overlay?.querySelector<HTMLButtonElement>('[data-react-grab-toolbar-copy-all]')
+        const comments = overlay?.querySelector('[data-react-grab-toolbar-comments]')
+        if (!copy || !comments?.getAttribute('aria-label')?.includes('items')) {
+          setCaptureError(true)
+          return
+        }
+        collecting.current = true
+        setCaptureError(false)
+        try {
+          copy.click()
+        } finally {
+          if (collecting.current) {
+            setCaptureError(true)
+          }
+          collecting.current = false
+        }
+      }
+      toolbar.appendChild(sendButton)
+    }
+    const timer = window.setInterval(attachButton, 200)
+    api.registerPlugin({
+      name: 'bw-improvement-assistant',
+      hooks: {
+        onActivate: () => setActive(true),
+        onDeactivate: () => setActive(false)
+      }
     })
-    return () => api.unregisterPlugin('bw-improvement-assistant')
+    return () => {
+      window.clearInterval(timer)
+      sendButton?.remove()
+      window.removeEventListener('copy', onCopy)
+      document.removeEventListener('keydown', onShortcut)
+      api.unregisterPlugin('bw-improvement-assistant')
+    }
   }, [])
 
   return (
@@ -217,7 +261,7 @@ function App() {
           </p>
           <p>
             React Grab
-            是开发态工具。本页演示独立会话片段，生产会话载体见规格。未启动模型、连接宿主或创建工作树。
+            是开发态工具。浮窗新增按钮为本页局部适配，通过原生复制事件取得批注，不读取系统剪贴板。唤醒按钮供体验用，快捷键为目标提案。未启动模型、连接宿主或创建工作树。
           </p>
           <a href="dist/component-manifest.json">组件来源与哈希</a>
         </details>
@@ -226,9 +270,22 @@ function App() {
         <section>
           <h1 className="text-lg font-semibold">交给改进助手</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            将指针移到下面的控件，按住 {shortcut} 进入 React
-            Grab。在目标上点右键，选择「交给改进助手」，用原生批注输入一句话。
+            点「开启批注」或按 {shortcut}。点选/框选下方控件，写批注并按 Enter
+            保存；最后点批注浮窗里、复制旁的「交给改进助手」。Esc 退出。
           </p>
+          <Button
+            className="mt-3 mr-3"
+            onClick={() => {
+              const api = getGlobalApi()
+              if (api?.isActive()) {
+                api.deactivate()
+              } else {
+                api?.comment()
+              }
+            }}
+          >
+            {active ? '退出批注' : '开启批注'}
+          </Button>
           <Button
             className="mt-3"
             variant="outline"
@@ -237,7 +294,9 @@ function App() {
           >
             {filtered ? '清除筛选' : '筛选任务'}
           </Button>
-          {captureError && <p role="alert">选取未成功，可重新打开 React Grab。</p>}
+          {captureError && (
+            <p role="alert">请先点选/框选对象，输入批注并按 Enter 保存，再交给助手。</p>
+          )}
           {!panelOpen && context && (
             <Button variant="ghost" className="ml-2" onClick={() => setPanelOpen(true)}>
               回到改进会话

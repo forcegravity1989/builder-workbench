@@ -156,7 +156,7 @@ async function build() {
     `${JSON.stringify(
       {
         inputs,
-        adaptations: ['React Grab context-menu action; native session and workspace fixtures']
+        adaptations: ['React Grab adjacent toolbar button and copy event; native session and workspace fixtures']
       },
       null,
       2
