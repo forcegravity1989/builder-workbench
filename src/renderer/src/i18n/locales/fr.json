@@ -10956,28 +10956,6 @@
           "linkStepDescription": "Après publication, copiez le lien et envoyez-le à votre équipe.",
           "manageStepTitle": "Mettre à jour ou supprimer le lien"
         },
-        "orcaAccount": {
-          "connected": "Connecté",
-          "reconnectRequired": "Votre session a expiré. Reconnectez-vous pour utiliser les fonctions cloud.",
-          "unavailable": "La connexion Orca n'est pas disponible dans ce build.",
-          "signedOut": "Connectez-vous pour étendre Orca avec des fonctions cloud, dont Artifacts et Orca Relay.",
-          "checking": "Vérification de l'état du compte…",
-          "account": "Compte Orca",
-          "signOut": "Se déconnecter",
-          "signingIn": "Connexion…",
-          "signInAgain": "Se reconnecter",
-          "signIn": "Se connecter à Orca",
-          "title": "Compte Orca",
-          "description": "Connectez-vous pour étendre Orca avec les fonctionnalités cloud, dont Artifacts et Orca Relay.",
-          "searchDescription": "Connectez-vous ou déconnectez-vous du compte utilisé par Artifacts et Orca Relay.",
-          "benefitsTitle": "Inclus avec votre compte",
-          "artifactsTitle": "Partage d'artifacts",
-          "artifactsDescription": "Publiez des fichiers HTML et Markdown, puis gérez chaque lien partagé depuis Orca.",
-          "relayTitle": "Orca Relay",
-          "relayDescription": "Connectez Orca Mobile à ce poste via réseau mobile ou n'importe quel Wi-Fi.",
-          "skillsTitle": "Partage de skills",
-          "skillsDescription": "Partagez une skill ou tout un ensemble derrière un lien non répertorié, et installez-les sur toutes les machines que vous utilisez."
-        },
         "automations": {
           "showButton": "Afficher le bouton Automatisations",
           "showButtonDescription": "Afficher le raccourci Automations dans la barre latérale.",
