@@ -217,7 +217,11 @@ function syncSessionFromSystemChrome(
         readFileText: (path) => readFile(path, 'utf-8'),
         removeDir: (path) => rm(path, { recursive: true, force: true }),
         fetchJson: async (url) => {
-          const response = await fetch(url)
+          const timeout = AbortSignal.timeout(5000)
+          const requestSignal = collectSignal
+            ? AbortSignal.any([collectSignal, timeout])
+            : timeout
+          const response = await fetch(url, { signal: requestSignal })
           return response.json()
         },
         connectWebSocket: (url, connectSignal) => {

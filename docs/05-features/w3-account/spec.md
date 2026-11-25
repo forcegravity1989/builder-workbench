@@ -102,9 +102,9 @@
 5b. **验证入口**：已登录卡片仅提供「打开 W3 首页」固定快捷方式（旁注 `w3.huawei.com`，不做通用 URL 输入）；`w3Account:openWeb` 无入参、默认打开 w3 首页/配置受信域、未登录拒绝、已登录用同一 partition 打开强化验证窗口（可多次）；普通浏览器标签仍需工作区（验证窗口不替代工作区标签）。
 6. 页面**不把 W3 会话传给 Orca cloud / Artifacts / Relay**，不出现这些云功能推广，也不声称 W3 登录授权它们。
 7. 界面与日志无凭据明文；无外部浏览器 Cookie 导入（桥接读取的是受控临时 Chrome profile 中由 SPES 免密产生的 cookie，非用户浏览器数据）；登录窗口无 Node/preload、sandbox+contextIsolation；账号接口仅受信域；TLS/证书保留现有确认。
-8. **真机已验证（2026-11-24，Windows 内网真机）**：启动自动桥接零操作 → 账号接口确认真实身份（姓名/工号）→ openWeb 以专用会话打开 W3 首页 → 重启后免桥接 ~10s 恢复登录（7 天 TTL 生效）。
+8. **证据与边界**：当前运行证据统一见 [STATUS](STATUS.md)及其链接的 PR 主验证评论。内网助手报告的人工检查与独立复验分别记录，不能据源码或自动检查宣称真实登录已通过。
 
-**测试与人工验收**：核心逻辑纯函数已立单测（账号接口 421/200/4xx/解析失败判定、`cn=`/`en=` 规范化、白名单字段、受信域 URL 拒绝、120s 超时常量、取消/关窗清理、signOut 只清专用 partition、迟发请求不复活；桥接 cookie 映射协议：族过滤/host-only 域处理/session TTL/persistent 过期保留/SameSite secure 门、桥接编排：失败透传/导入计数/仅族 cookie 落地；桥接服务：成功→signed-in、失败→sync-failed 不假成功、取消中止在途桥接）。真机人工验收已过（见验收点 8）。
+**测试与人工验收**：单测仅覆盖配置与受信 URL、账号身份响应、持久分区隔离与读回、Cookie 移植、IPC 发送方权限五项数据契约；其余登录、取消、退出和超时行为沿上述真实环境判据验证。文档预览不采用 W3 默认会话，退出 W3 后应保持预览打开。
 
 ## 取舍与待决问题
 
@@ -117,4 +117,4 @@
 
 **待决 / 待真实验证**：
 
-1. feature id / 目录名 `w3-account`（已定）。2. 账号接口字段结构（`employeeNumber`/`uid`/`displayName` 数组）**真机已验证**（真实身份返回）。3. SPES 免密桥接、账号接口、openWeb、重启恢复**真机已验证**（Windows 内网真机，2026-11-24）；macOS 路径待验。4. 成功页只取 `displayName`（`cn=` 规范化）/`employeeNumber` 两项。5. 内网复用已按薄挂载实现（本机 local 默认），常规内置浏览器标签的真实效果待验（需工作区内创建标签）。6. UI 是否彻底移除 Orca 云登录入口（后端模块保留）。
+1. feature id / 目录名 `w3-account`（已定）。2. 账号接口字段结构（`employeeNumber`/`uid`/`displayName` 数组）**真机已验证**（真实身份返回）。3. SPES 免密桥接、账号接口、openWeb、重启恢复**真机已验证**（Windows 内网真机，2026-11-24）；macOS 路径待验。4. 成功页只取 `displayName`（`cn=` 规范化）/`employeeNumber` 两项。5. 内网复用已按薄挂载实现（本机 local 默认），普通标签证据及独立复验边界见 STATUS。6. UI 是否彻底移除 Orca 云登录入口（后端模块保留）。

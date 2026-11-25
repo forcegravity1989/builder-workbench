@@ -52,34 +52,18 @@ describe('w3 account IPC sender trust', () => {
     } as Electron.WebContents
   }
 
-  it('returns an identity-free status to an untrusted sender', async () => {
+  it('denies every W3 channel to an untrusted sender without identity or side effects', async () => {
     registerW3AccountHandlers()
-    await expect(handlerFor('w3Account:status')({ sender: untrustedSender() })).resolves.toEqual({
-      state: 'signed-out'
-    })
-  })
-
-  it('refuses login / sync / cancel / sign-out from an untrusted sender', async () => {
-    registerW3AccountHandlers()
-    await expect(handlerFor('w3Account:start')({ sender: untrustedSender() })).resolves.toEqual({
-      status: { state: 'signed-out' }
-    })
-    await expect(handlerFor('w3Account:sync')({ sender: untrustedSender() })).resolves.toEqual({
-      state: 'signed-out'
-    })
-    await expect(handlerFor('w3Account:cancel')({ sender: untrustedSender() })).resolves.toEqual({
-      state: 'signed-out'
-    })
-    await expect(handlerFor('w3Account:signOut')({ sender: untrustedSender() })).resolves.toEqual({
-      state: 'signed-out'
-    })
-  })
-
-  it('refuses openWeb from an untrusted sender', async () => {
-    registerW3AccountHandlers()
-    await expect(handlerFor('w3Account:openWeb')({ sender: untrustedSender() })).resolves.toEqual({
-      ok: false,
-      reason: 'not-signed-in'
-    })
+    const responses = {
+      'w3Account:status': { state: 'signed-out' },
+      'w3Account:start': { status: { state: 'signed-out' } },
+      'w3Account:sync': { state: 'signed-out' },
+      'w3Account:cancel': { state: 'signed-out' },
+      'w3Account:signOut': { state: 'signed-out' },
+      'w3Account:openWeb': { ok: false, reason: 'not-signed-in' }
+    }
+    for (const [channel, response] of Object.entries(responses)) {
+      await expect(handlerFor(channel)({ sender: untrustedSender() })).resolves.toEqual(response)
+    }
   })
 })
