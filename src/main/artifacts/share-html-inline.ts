@@ -70,7 +70,7 @@ async function inlineHtml(content: string, baseDir: string): Promise<string> {
         edits.push({
           start,
           end: start + match[0].length,
-          text: `${styleOpen}${processed}</style>`
+          text: `${styleOpen}${escapeStyleText(processed)}</style>`
         })
       }
     }
@@ -99,11 +99,10 @@ async function inlineLinkTag(tag: string, baseDir: string): Promise<string | nul
   }
   const processed = await inlineCss(css, dirname(path), 0, new Set([path]))
   const media = attrs.get('media')
-  return `<style${media ? ` media="${escapeAttr(media)}"` : ''}>${processed}</style>`
+  return `<style${media ? ` media="${escapeAttr(media)}"` : ''}>${escapeStyleText(processed)}</style>`
 }
 
-// Only relative paths without a scheme, drive letter or leading slash: anything else is either
-// already absolute (http(s), data) or outside the shared file's own directory tree.
+// Only relative references are read from disk; schemes, drive letters and leading slashes stay.
 function relativeLocalPath(raw: string): string | null {
   const trimmed = raw.trim()
   if (!trimmed || trimmed.startsWith('#')) {
@@ -174,20 +173,12 @@ async function inlineImport(
   if (depth >= MAX_IMPORT_DEPTH) {
     return null
   }
-  const urlMatch = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*?))\s*\)/i.exec(body)
-  let href: string | undefined
-  let media: string
-  if (urlMatch) {
-    href = urlMatch[1] ?? urlMatch[2] ?? urlMatch[3]
-    media = body.slice((urlMatch.index ?? 0) + urlMatch[0].length).trim()
-  } else {
-    const strMatch = /^\s*(?:"([^"]*)"|'([^']*)')\s*([\s\S]*)$/.exec(body)
-    if (!strMatch) {
-      return null
-    }
-    href = strMatch[1] ?? strMatch[2]
-    media = (strMatch[3] ?? '').trim()
+  const reference =
+    /^\s*(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*?))\s*\)|"([^"]*)"|'([^']*)')/i.exec(body)
+  if (!reference) {
+    return null
   }
+  const href = reference[1] ?? reference[2] ?? reference[3] ?? reference[4] ?? reference[5]
   const rel = relativeLocalPath(href ?? '')
   if (!rel || extname(rel).toLowerCase() !== '.css') {
     return null
@@ -204,7 +195,9 @@ async function inlineImport(
   const processed = await inlineCss(css, dirname(path), depth + 1, seen)
   // A file imported through two branches (diamond) must inline in both; only cycles are skipped.
   seen.delete(path)
-  return media ? `@media ${media} {\n${processed}\n}` : processed
+  // Preserve import ordering and layer/supports/media grammar; only the resource URL changes.
+  const data = Buffer.from(processed).toString('base64')
+  return `@import url("data:text/css;base64,${data}")${body.slice(reference[0].length)};`
 }
 
 async function inlineUrlAsset(raw: string, cssDir: string): Promise<string | null> {
@@ -220,7 +213,8 @@ async function inlineUrlAsset(raw: string, cssDir: string): Promise<string | nul
   if (bytes === null) {
     return null
   }
-  return `data:${mime};base64,${bytes.toString('base64')}`
+  const fragment = raw.trim().includes('#') ? raw.trim().slice(raw.trim().indexOf('#')) : ''
+  return `data:${mime};base64,${bytes.toString('base64')}${fragment}`
 }
 
 async function readResourceText(path: string): Promise<string | null> {
@@ -257,4 +251,9 @@ function applyEdits(content: string, edits: Edit[]): string {
 
 function escapeAttr(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;')
+}
+
+function escapeStyleText(css: string): string {
+  // HTML raw-text parsing recognizes end tags even inside CSS strings and comments.
+  return css.replace(/<\/style/gi, (match) => `\\3c ${match.slice(1)}`)
 }

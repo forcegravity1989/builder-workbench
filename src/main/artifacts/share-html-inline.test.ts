@@ -75,14 +75,14 @@ describe('inlineLocalHtmlAssets', () => {
 
     // The local stylesheet link became a <style> carrying the whole @import chain.
     expect(out).toContain('<style media="screen">')
-    expect(out).toContain('--bw-border: #d0d7de')
+    const imports = importedStyles(out)
+    expect(imports[0]).toContain('--bw-border: #d0d7de')
     expect(out).toContain('.card { border: 1px solid var(--bw-border); }')
-    expect(out).toContain('@media print {')
-    expect(out).toContain('.card { color: red; }')
-    expect(out).not.toContain('@import')
+    expect(out).toContain(' print;')
+    expect(imports[1]).toContain('.card { color: red; }')
     // Only the one local stylesheet link was replaced; comment, script, https and icon links stay.
     expect((out.match(/<link/g) ?? []).length).toBe(4)
-    expect(out).toContain(`data:font/woff2;base64,${fontBytes.toString('base64')}`)
+    expect(imports[0]).toContain(`data:font/woff2;base64,${fontBytes.toString('base64')}`)
     expect(out).toContain(`data:image/png;base64,${pngBytes.toString('base64')}`)
     expect(out).toContain('<!-- <link rel="stylesheet" href="../ds/styles.css"> -->')
     expect(out).toContain(`const markup = '<link rel="stylesheet" href="../ds/styles.css">';`)
@@ -93,6 +93,19 @@ describe('inlineLocalHtmlAssets', () => {
     expect(out).toContain('content: "url(../img/fake.png)"')
     expect(out).toContain('url("https://cdn.example.com/y.png")')
     expect(out).toContain('<div class="card">hi</div>')
+
+    await put('ds/literal.css', '.literal::after{content:"</StYlE>"}.card{color:red}')
+    await put('img/sprite.svg', '<svg xmlns="http://www.w3.org/2000/svg"><view id="check"/></svg>')
+    const edge = await inlineLocalHtmlAssets(
+      '<link rel="stylesheet" href="../ds/literal.css"><style>@import "../ds/print.css" layer(theme) supports(display: grid) screen; .icon{background:url(../img/sprite.svg#check)}</style><div id="tail">tail</div>',
+      page
+    )
+    expect(edge).toContain('layer(theme) supports(display: grid) screen;')
+    expect(importedStyles(edge)[0]).toBe('.card { color: red; }')
+    expect(edge).toContain('#check)')
+    expect(edge).toContain('content:"\\3c /StYlE>"')
+    expect((edge.match(/<\/style/gi) ?? []).length).toBe(2)
+    expect(edge).toContain('<div id="tail">tail</div>')
   })
 
   it('degrades per resource and skips remote keys, cycles, non-whitelisted and absolute references', async () => {
@@ -137,8 +150,9 @@ describe('inlineLocalHtmlAssets', () => {
       const cyc = await put('cyc/page.html', cycHtml)
       const cycOut = await inlineLocalHtmlAssets(cycHtml, cyc)
       expect(cycOut).toContain('.a{color:blue}')
-      expect(cycOut).toContain('.b{color:red}')
-      expect((cycOut.match(/@import/g) ?? []).length).toBe(1)
+      const [b] = importedStyles(cycOut)
+      expect(b).toContain('.b{color:red}')
+      expect(b).toContain('@import "a.css";')
 
       // Absolute paths, drive letters, fragments and data URIs are never read from disk.
       for (const href of ['/etc/x.css', 'C:\\x\\y.css', '#frag', '//cdn.example.com/x.css']) {
@@ -260,4 +274,10 @@ function shareFetch(): {
     return new Response(null, { status: 204 })
   })
   return { calls, impl }
+}
+
+function importedStyles(content: string): string[] {
+  return [...content.matchAll(/data:text\/css;base64,([A-Za-z0-9+/=]+)/g)].map((match) =>
+    Buffer.from(match[1]!, 'base64').toString('utf8')
+  )
 }
