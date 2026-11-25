@@ -281,6 +281,7 @@ export async function executeMetricCollection(input: {
   const { repoPath, execOptions = {} } = input
   const pathOps = pathOpsFor(repoPath)
   const preparationId = `${process.pid}-${randomUUID()}`
+  const lockReason = createWorktreePreparationLockReason(preparationId)
   const checkoutPath = pathOps.join(
     input.checkoutRoot,
     WORKTREE_CREATE_PREPARATION_DIRECTORY,
@@ -296,7 +297,7 @@ export async function executeMetricCollection(input: {
     repoPath,
     checkoutPath,
     input.configurationCommit,
-    createWorktreePreparationLockReason(preparationId),
+    lockReason,
     execOptions
   )
   let outcome: MetricProcessOutcome
@@ -374,7 +375,7 @@ export async function executeMetricCollection(input: {
       { kind: 'client' }
     )
   } finally {
-    await discardPreparedWorktree(repoPath, checkoutPath, execOptions).catch(() => {
+    await discardPreparedWorktree(repoPath, checkoutPath, execOptions, lockReason).catch(() => {
       // The preparation lock reason keeps the stranded tree recognizable to the
       // native stale-preparation cleanup; the run outcome stays the primary fact.
     })
