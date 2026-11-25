@@ -18,6 +18,7 @@ import {
 import { resolveWorktreeOperationRoute } from './worktree-operation-route'
 import { getExecutionHostIdForWorktree } from './worktree-runtime-owner'
 import { resolveSshWorkspaceBrowserRouteEligibility } from './ssh-workspace-browser-route-eligibility'
+import { getW3LocalBrowserDefault } from './w3-local-browser-default'
 
 export type WorkspaceBrowserTabIntent = { kind: 'url' } | { kind: 'search'; engine: SearchEngine }
 
@@ -185,14 +186,20 @@ function createClientBrowserTab(
   hostId: ExecutionHostId,
   presentation: { error: string; title: string }
 ): void {
+  // Why the partition rides along: the W3 profile is internal (absent from
+  // the renderer's profile list), so a tab holding only its profile id would
+  // fall back to the default partition and never see the W3 cookies.
+  const w3LocalDefault = hostId === LOCAL_EXECUTION_HOST_ID ? getW3LocalBrowserDefault() : null
   try {
     state.createBrowserTab(request.workspaceId, request.url, {
       activate: request.focusOnCreate !== false,
       browserRuntimeEnvironmentId: null,
       focusAddressBar: false,
       sessionProfileId:
+        w3LocalDefault?.sessionProfileId ??
         state.defaultBrowserSessionProfileIdByHostId[hostId] ??
         state.defaultBrowserSessionProfileId,
+      sessionPartition: w3LocalDefault?.sessionPartition ?? undefined,
       targetGroupId: request.targetGroupId,
       title: presentation.title
     })

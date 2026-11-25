@@ -4,19 +4,19 @@ import { translateSearchKeyword } from './settings-search-keywords'
 
 export const getOrcaAccountSettingsSearchEntries = createLocalizedCatalog(() => [
   {
-    title: translate('auto.components.settings.orcaAccount.account', 'Orca account'),
+    title: translate('auto.components.settings.w3Account.searchAccount', 'W3 account'),
     description: translate(
-      'auto.components.settings.orcaAccount.searchDescription',
-      'Sign in or out of the account used by Artifacts and Orca Relay.'
+      'auto.components.settings.w3Account.searchDescription',
+      'Sign in with W3 or sign out.'
     ),
     keywords: [
-      ...translateSearchKeyword('auto.components.settings.orcaAccount.keywordAccount', 'account'),
-      ...translateSearchKeyword('auto.components.settings.orcaAccount.keywordLogin', 'login'),
-      ...translateSearchKeyword('auto.components.settings.orcaAccount.keywordLogout', 'logout'),
-      ...translateSearchKeyword('auto.components.settings.orcaAccount.keywordSignIn', 'sign in'),
-      ...translateSearchKeyword('auto.components.settings.orcaAccount.keywordSignOut', 'sign out'),
-      ...translateSearchKeyword('auto.components.settings.orcaAccount.keywordRelay', 'relay'),
-      ...translateSearchKeyword('auto.components.settings.orcaAccount.keywordCloud', 'cloud')
+      ...translateSearchKeyword('auto.components.settings.w3Account.keywordW3', 'w3'),
+      ...translateSearchKeyword('auto.components.settings.w3Account.keywordAccount', 'account'),
+      ...translateSearchKeyword('auto.components.settings.w3Account.keywordLogin', 'login'),
+      ...translateSearchKeyword('auto.components.settings.w3Account.keywordLogout', 'logout'),
+      ...translateSearchKeyword('auto.components.settings.w3Account.keywordSignIn', 'sign in'),
+      ...translateSearchKeyword('auto.components.settings.w3Account.keywordSignOut', 'sign out'),
+      ...translateSearchKeyword('auto.components.settings.w3Account.keywordHuawei', 'huawei')
     ]
   }
 ])
