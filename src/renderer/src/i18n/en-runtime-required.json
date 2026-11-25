@@ -63,8 +63,6 @@
   "auto": {
     "components": {
       "GitHubItemDialog": {
-        "0ab4664a8b": "Start workspace",
-        "0caac1a18f": "Start workspace",
         "filesViewed_one": "{{viewed}} / {{count}} file viewed",
         "filesViewed_other": "{{viewed}} / {{count}} files viewed",
         "reactionCount_one": "{{count}} {{reaction}} reaction",
@@ -113,7 +111,6 @@
       "TaskPage": {
         "changedFileCount_one": "{{count}} file",
         "changedFileCount_other": "{{count}} files",
-        "codehubDuplicateOf": "#",
         "labelCount_one": "{{count}} label",
         "labelCount_other": "{{count}} labels",
         "memberCount_one": "{{count}} member",

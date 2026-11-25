@@ -2025,8 +2025,7 @@
         "dropPartiallyAttached_one": "{{count}} 個のアイテムのうち {{failureCount}} 個を添付できませんでした。",
         "dropPartiallyAttached_other": "{{count}} 個のアイテムのうち {{failureCount}} 個を添付できませんでした。",
         "dropPartiallyAttached": "{{count}} 個のアイテムのうち {{failureCount}} 個を添付できませんでした。",
-        "folderSetupSupportCheckFailed": "このホストがフォルダーのセットアップスクリプトを実行するかどうかを確認できませんでした。もう一度お試しください。",
-        "7eb3f44ff7": "選択した Agent は無効です。作成する前に、有効な Agent を選択してください。"
+        "folderSetupSupportCheckFailed": "このホストがフォルダーのセットアップスクリプトを実行するかどうかを確認できませんでした。もう一度お試しください。"
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "ドロップされたファイルのアップロードに失敗しました。",

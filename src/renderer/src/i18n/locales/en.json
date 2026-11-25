@@ -3105,8 +3105,7 @@
         "dropPartiallyAttached_one": "{{failureCount}} of {{count}} item could not be attached.",
         "dropPartiallyAttached_other": "{{failureCount}} of {{count}} items could not be attached.",
         "dropPartiallyAttached": "{{failureCount}} of {{count}} items could not be attached.",
-        "folderSetupSupportCheckFailed": "Couldn't confirm whether this host runs folder setup scripts. Try again.",
-        "7eb3f44ff7": "Selected agent is disabled. Choose an enabled agent before creating."
+        "folderSetupSupportCheckFailed": "Couldn't confirm whether this host runs folder setup scripts. Try again."
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "Failed to upload dropped files.",

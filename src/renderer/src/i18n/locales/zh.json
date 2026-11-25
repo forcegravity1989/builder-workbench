@@ -2445,8 +2445,7 @@
         "dropPartiallyAttached": "{{count}} 项中有 {{failureCount}} 项无法附加",
         "githubLinkUnresolvedForProject": "无法加载 {{repository}}#{{number}}，请确认它存在、你有权访问，并且它属于所选项目的 origin 或 upstream 仓库",
         "githubItemUnresolved": "创建工作区前无法解析该 GitHub 事项",
-        "folderSetupSupportCheckFailed": "无法确认此主机是否运行文件夹设置脚本，请重试",
-        "7eb3f44ff7": "所选智能体已禁用。创建之前选择启用的智能体。"
+        "folderSetupSupportCheckFailed": "无法确认此主机是否运行文件夹设置脚本，请重试"
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "无法上传删除的文件",

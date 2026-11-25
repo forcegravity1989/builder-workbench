@@ -210,18 +210,6 @@ export function main(root = process.cwd()) {
     console.error(
       `::error::vitest count ratchet: suite is not green (${s.failed} failed case(s)) — fix failures first; a red suite cannot certify the count.`
     )
-    for (const file of report.testResults ?? []) {
-      if (file.message) {
-        console.error(`${file.name}: ${file.message}`)
-      }
-      for (const test of file.assertionResults ?? []) {
-        if (test.status === 'failed') {
-          console.error(
-            `${file.name}: ${test.fullName}\n${(test.failureMessages ?? []).join('\n')}`
-          )
-        }
-      }
-    }
     return 1
   }
   const verdict = compare(s.total, baseline)

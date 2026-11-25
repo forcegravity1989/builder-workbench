@@ -1845,8 +1845,7 @@
         "dropPartiallyAttached_one": "Impossible de joindre l'élément {{failureCount}} de {{count}}.",
         "dropPartiallyAttached_other": "Impossible de joindre {{failureCount}} des {{count}} éléments.",
         "dropPartiallyAttached_many": "Impossible de joindre {{failureCount}} des {{count}} éléments.",
-        "dropPartiallyAttached": "Impossible de joindre {{failureCount}} des {{count}} éléments.",
-        "7eb3f44ff7": "L'agent sélectionné est désactivé. Choisissez un agent activé avant de créer."
+        "dropPartiallyAttached": "Impossible de joindre {{failureCount}} des {{count}} éléments."
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "Échec de l'envoi des fichiers déposés.",
