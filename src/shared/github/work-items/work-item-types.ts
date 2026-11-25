@@ -25,6 +25,7 @@ export type GitHubWorkItem = {
   url: string
   labels: string[]
   updatedAt: string
+  mergedAt?: string | null
   author: string | null
   // Use API avatars for GHE logins absent on github.com (#8784). gh-pr-view omits them; UI falls back through login URL to initials.
   authorAvatarUrl?: string

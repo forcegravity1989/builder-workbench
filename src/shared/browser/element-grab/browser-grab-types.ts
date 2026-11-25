@@ -159,8 +159,6 @@ export type BrowserPageAnnotation = {
   /** Who wrote a note a reviewer handed over; absent for notes made in this tab. */
   author?: string
   payload: BrowserAnnotationPayload
-  /** Pasted images, saved on the worktree's host like a terminal image paste. */
-  imagePaths?: string[]
 }
 
 // Payload budgets are enforced in guest and main.

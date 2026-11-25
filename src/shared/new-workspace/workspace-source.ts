@@ -1,3 +1,4 @@
+import { isCodeHubUrl } from '../codehub'
 import { getLinearOrganizationUrlKeyFromIssueUrl } from '../linear/links'
 import { branchRefLabel } from '../git/refs/branch-ref-label'
 import type { WorkspaceLinkedItem as FolderWorkspaceLinkedTask } from '../worktree/types'
@@ -47,6 +48,7 @@ export type WorkspaceSourceSelectionKind =
   | 'github-issue'
   | 'gitlab-mr'
   | 'gitlab-issue'
+  | 'codehub-issue'
   | 'branch'
   | 'linear'
   | 'jira'
@@ -88,6 +90,9 @@ export function getWorkspaceSourceProvider(item: WorkspaceSourceItemLike): Works
   }
   if (item.jiraIdentifier || isJiraIssueUrl(item.url)) {
     return 'jira'
+  }
+  if (isCodeHubUrl(item.url)) {
+    return 'codehub'
   }
   if (item.type === 'mr' || isGitLabIssueUrl(item.url)) {
     return 'gitlab'
@@ -204,9 +209,11 @@ export function buildWorkspaceSourceSelection(args: {
           ? linkedWorkItem.type === 'mr'
             ? 'gitlab-mr'
             : 'gitlab-issue'
-          : linkedWorkItem.type === 'pr'
-            ? 'github-pr'
-            : 'github-issue'
+          : provider === 'codehub'
+            ? 'codehub-issue'
+            : linkedWorkItem.type === 'pr'
+              ? 'github-pr'
+              : 'github-issue'
   return {
     kind,
     label:

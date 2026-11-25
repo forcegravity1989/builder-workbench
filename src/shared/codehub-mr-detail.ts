@@ -1,5 +1,5 @@
 import type { PRCheckDetail } from './github/checks/check-types'
-import type { GitHubPRFile } from './github/pull-request-types'
+import type { GitHubPRFile } from './github/pull-requests/pull-request-types'
 
 // A CodeHub MR file row from `mr changes`, mapped onto the GitHub PR file shape
 // the Files tab renders, with the raw unified-diff hunks carried alongside.

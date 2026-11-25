@@ -1,9 +1,12 @@
+import { stripCredentialsFromMessage } from './git-remote-error'
 import { isUnresolvedSshHostAlias } from './git-remote-host-alias'
 
 export type GitRemoteIdentity = {
   canonicalKey: string
   remoteName: string
   remoteUrl: string
+  /** The checkout's origin when the preferred registration remote is upstream. */
+  originUrl?: string | null
 }
 
 export type GitRemoteKeyParts = {
@@ -116,8 +119,8 @@ function primaryRemoteSortKey(entry: GitRemoteEntry): number {
   return 2
 }
 
-function networkRemotesInPrimaryOrder(stdout: string) {
-  return parseGitRemoteVerboseOutput(stdout)
+function networkRemotesInPrimaryOrder(entries: GitRemoteEntry[]) {
+  return entries
     .map((entry) => ({
       ...entry,
       canonicalKey: normalizeGitRemoteUrl(entry.url)
@@ -130,18 +133,25 @@ function networkRemotesInPrimaryOrder(stdout: string) {
 }
 
 export function deriveGitRemoteIdentity(stdout: string): GitRemoteIdentity | null {
-  const selected = networkRemotesInPrimaryOrder(stdout)[0]
+  const remotes = parseGitRemoteVerboseOutput(stdout)
+  const selected = networkRemotesInPrimaryOrder(remotes)[0]
+  const origin = remotes.find((entry) => entry.name === 'origin')?.url
   return selected
     ? {
         canonicalKey: selected.canonicalKey,
         remoteName: selected.name,
-        remoteUrl: selected.url
+        remoteUrl: selected.url,
+        ...(selected.name === 'upstream'
+          ? { originUrl: origin ? stripCredentialsFromMessage(origin) : null }
+          : {})
       }
     : null
 }
 
 /** The remote that plays origin's role when origin is missing or a local path, picked as project identity picks it. */
 export function deriveOriginStandInRemoteName(stdout: string): string | null {
-  const selected = networkRemotesInPrimaryOrder(stdout).find((entry) => entry.name !== 'upstream')
+  const selected = networkRemotesInPrimaryOrder(parseGitRemoteVerboseOutput(stdout)).find(
+    (entry) => entry.name !== 'upstream'
+  )
   return selected && selected.name !== 'origin' ? selected.name : null
 }

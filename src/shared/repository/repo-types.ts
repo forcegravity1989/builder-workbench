@@ -45,6 +45,8 @@ export type Repo = {
   id: string
   path: string
   displayName: string
+  /** BW wall visibility, stored on this host's registration; absent means personal. */
+  projectVisibility?: 'personal' | 'team'
   badgeColor: string
   repoIcon?: RepoIcon | null
   /** Fork parent; same-name forks use its avatar, renamed forks keep their own. Absent means non-fork or unresolved. */
@@ -63,6 +65,8 @@ export type Repo = {
   connectionId?: string | null
   /** Runtime-host repos otherwise resemble local repos (connectionId: null); retain their explicit execution owner. */
   executionHostId?: 'local' | `ssh:${string}` | `runtime:${string}` | null
+  /** Renderer evidence from the paired catalog before it projects the transport host. */
+  pairedRegistration?: { hostId: NonNullable<Repo['executionHostId']>; pairingRevision?: number }
   /** Absent means auto; writers omit on creation for persisted-record compatibility. */
   issueSourcePreference?: IssueSourcePreference
   /** Host-owned Jira project default; users can override it in each composer. */

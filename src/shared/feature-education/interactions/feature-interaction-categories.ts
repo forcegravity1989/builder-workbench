@@ -29,6 +29,7 @@ export const FEATURE_INTERACTION_CATEGORY_BY_ID = {
   'workbench-scoreboard': 'workspace',
   'workbench-version-overview': 'workspace',
   'workbench-version-tasks': 'workspace',
+  'workbench-source-control': 'source_control',
   'quick-links': 'resource_management',
   'workspace-board': 'workspace',
   'workspace-agent-sessions': 'workspace',

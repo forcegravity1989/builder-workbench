@@ -37,6 +37,8 @@ describe('native task entry filters', () => {
     const mine = parseTaskQuery('assignee:@me author:alice state:open label:bug')
     expect(workbenchGoalMutationQuery(mine, true)).toEqual({ ...mine, assignee: null })
     expect(workbenchGoalMutationQuery(mine, false)).toBe(mine)
+    const multipleAuthors = parseTaskQuery('author:alice author:@me')
+    expect(workbenchGoalMutationQuery(multipleAuthors, true).authors).toEqual([])
   })
 
   it('filters the complete goal set using native Issue qualifiers and never infers PR membership', () => {
@@ -55,6 +57,8 @@ describe('native task entry filters', () => {
         .map((item) => item.number)
     ).toEqual([66])
     expect(items.filter((item) => matchesWorkbenchTaskQuery(item, query, null))).toEqual([])
+    expect(matchesWorkbenchTaskQuery(items[65], 'author:other author:@me', 'alice')).toBe(true)
+    expect(matchesWorkbenchTaskQuery(items[65], 'author:other author:@me', 'bob')).toBe(false)
     expect(matchesWorkbenchTaskQuery(items[65], 'assignee:@me state:all', 'bob')).toBe(true)
     expect(
       matchesWorkbenchTaskQuery({ ...items[65], assignees: [] }, 'assignee:@me state:all', 'bob')

@@ -8,6 +8,7 @@ export type FeatureInteractionId =
   | 'workbench-scoreboard'
   | 'workbench-version-overview'
   | 'workbench-version-tasks'
+  | 'workbench-source-control'
   | 'quick-links'
   | 'workspace-board'
   | 'workspace-agent-sessions'
@@ -83,6 +84,7 @@ export const FEATURE_INTERACTIONS = [
   { id: 'workbench-scoreboard', interaction: 'project scoreboard viewed' },
   { id: 'workbench-version-overview', interaction: 'version overview opened' },
   { id: 'workbench-version-tasks', interaction: 'version task screen entered' },
+  { id: 'workbench-source-control', interaction: 'source-control walkthrough completed' },
   { id: 'quick-links', interaction: 'quick link added, edited, opened, or removed' },
   { id: 'workspace-board', interaction: 'workspace board opened' },
   {
