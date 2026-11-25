@@ -5,10 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { SkillUploadSessionService } from '../skills/runtime-upload/skill-upload-session-service'
 import { executeSkillBundleInstallRequest } from '../skills/install/skill-bundle-install-request'
-import {
-  SkillBundleInstallRequestSchema,
-  type SkillBundleInstallRequest
-} from '../../shared/skills/installation/skill-bundle-install-contract'
+import type { SkillBundleInstallRequest } from '../../shared/skills/installation/skill-bundle-install-contract'
 import type {
   SkillUploadBeginRequest,
   SkillUploadChunkRequest
@@ -117,7 +114,9 @@ it('requires an Orca host before installing a workflow skill for a direct SSH pr
   const { runtime } = await fixture()
   await expect(
     prepareWorkbenchSkill(runtime as unknown as OrcaRuntimeService, {
-      ...scope, hostId: 'ssh:server', topic: 'metrics-refresh'
+      ...scope,
+      hostId: 'ssh:server',
+      topic: 'metrics-refresh'
     })
   ).rejects.toThrow('Orca 共享主机')
   expect(runtime.beginSkillUpload).not.toHaveBeenCalled()

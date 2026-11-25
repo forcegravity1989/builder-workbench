@@ -176,13 +176,23 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
   )
   const commitTaskSearch = useCallback(
     (value: string): void => {
+      if (model.workbenchScopeActive) {
+        setAppliedTaskSearch(value.trim())
+        return
+      }
       const scoped = scopeGitHubTaskSearch(value, activeGithubTaskKind)
       if (scoped !== appliedTaskSearch) {
         setTasksFiltering(true)
       }
       setAppliedTaskSearch(scoped)
     },
-    [activeGithubTaskKind, appliedTaskSearch, setTasksFiltering, setAppliedTaskSearch]
+    [
+      activeGithubTaskKind,
+      appliedTaskSearch,
+      model.workbenchScopeActive,
+      setTasksFiltering,
+      setAppliedTaskSearch
+    ]
   )
   useGitHubTaskSearchCommit({
     enabled: taskResumeApplied,

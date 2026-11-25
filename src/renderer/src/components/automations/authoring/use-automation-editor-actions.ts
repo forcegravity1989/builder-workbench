@@ -1,4 +1,6 @@
 import { useCallback } from 'react'
+import { hostStableKey } from '../../../../../shared/automations/ownership/automation-owner-key'
+import type { AutomationEditorRequest } from '../automation-editor-request'
 import { toRuntimeExecutionHostId } from '../../../../../shared/execution-host/execution-host'
 import { useAppStore } from '@/store/index'
 import { buildAutomationEditDraft } from './automation-edit-draft'
@@ -46,9 +48,14 @@ export function useAutomationEditorActions({
   const { destinationForProject, editHostResolution, editDestinationControl, editHostEntries } =
     destinationForm
 
-  const openCreateDialog = (template?: AutomationTemplate): void => {
+  const openCreateDialog = (
+    template?: AutomationTemplate,
+    request?: Extract<AutomationEditorRequest, { kind: 'create' }>
+  ): void => {
     editRequestRef.current += 1
-    const target = getDefaultTarget()
+    const target = request?.draft ?? getDefaultTarget()
+    local.setCreateHostStableKey(request ? hostStableKey(request.host) : null)
+    setEditingRowKey(null)
     setEditingAutomationId(null)
     setEditingDestination(null)
     setEditingHostStableKey(null)
@@ -86,8 +93,9 @@ export function useAutomationEditorActions({
           missedRunGraceMinutes: template.missedRunGraceMinutes ?? baseDraft.missedRunGraceMinutes
         }
       : baseDraft
-    setDraft(nextDraft)
-    setDraftAtOpen(nextDraft)
+    const seededDraft = request ? { ...nextDraft, ...request.draft } : nextDraft
+    setDraft(seededDraft)
+    setDraftAtOpen(seededDraft)
     setTargetEdited(false)
     setCreateOpen(true)
   }
@@ -97,6 +105,7 @@ export function useAutomationEditorActions({
     row: AutomationListRow,
     { headless = false }: { headless?: boolean } = {}
   ): Promise<boolean> => {
+    local.setCreateHostStableKey(null)
     const requestId = (editRequestRef.current += 1)
     const automationId = row.automation.id
     const reread = await dispatchAutomationReread(

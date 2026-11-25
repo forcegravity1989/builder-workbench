@@ -71,6 +71,7 @@ export function useAutomationsPageLocalState(store: AutomationsPageStoreState) {
     projectId: string
     destination: AutomationCreateDestination
   } | null>(null)
+  const [createHostStableKey, setCreateHostStableKey] = useState<string | null>(null)
   const [editingHostStableKey, setEditingHostStableKey] = useState<string | null>(null)
   const moveCreationKeysRef = useRef(new Map<string, string>())
   const [relativeNow, setRelativeNow] = useState(() => Date.now())
@@ -200,6 +201,8 @@ export function useAutomationsPageLocalState(store: AutomationsPageStoreState) {
     setEditingDestination,
     editingHostStableKey,
     setEditingHostStableKey,
+    createHostStableKey,
+    setCreateHostStableKey,
     moveCreationKeysRef,
     relativeNow,
     setRelativeNow,

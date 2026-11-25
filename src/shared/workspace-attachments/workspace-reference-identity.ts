@@ -3,6 +3,8 @@ import { parseLinearIssueInput, parseLinearIssueUrlIntent } from '../linear/link
 import { getTaskSourceCacheScope } from '../work-items/task-source-context'
 import type { WorkspaceAttachment } from '../worktree/types'
 import { getPublicForgeProviderForHost } from '../git/remotes/public-forge-host'
+import { codeHubMergeRequestUrl, isCodeHubHost, parseCodeHubRemote } from '../codehub'
+import { parseTaskItemLink } from '../task-item-link'
 
 export type WorkspaceReferenceQuery =
   | { kind: 'url'; identity: string }
@@ -20,6 +22,9 @@ const PUBLIC_REFERENCE_HOSTS = new Set([
 ])
 
 function referenceHostProvider(host: string): WorkspaceAttachment['provider'] | undefined {
+  if (isCodeHubHost(host)) {
+    return 'codehub'
+  }
   if (host === 'linear.app') {
     return 'linear'
   }
@@ -31,6 +36,7 @@ function referenceHostProvider(host: string): WorkspaceAttachment['provider'] | 
 const CASE_INSENSITIVE_PATH_PROVIDERS: ReadonlySet<WorkspaceAttachment['provider']> = new Set([
   'github',
   'gitlab',
+  'codehub',
   'gitea'
 ])
 
@@ -88,6 +94,21 @@ function parseReferenceRoute(
   url: URL,
   providerHint?: WorkspaceAttachment['provider']
 ): WorkspaceAttachment {
+  if (providerHint === 'codehub') {
+    const link = parseTaskItemLink(url.href)
+    if (!link || link.provider !== 'codehub' || link.kind === 'pr') {
+      throw new Error('Expected a CodeHub issue or merge request URL.')
+    }
+    const projectPath = link.repository.split('/').map(encodeURIComponent).join('/')
+    const route = link.kind === 'issue' ? 'issues' : 'merge_requests'
+    return numberedReference(
+      url,
+      'codehub',
+      link.kind,
+      `/${projectPath}/${route}`,
+      String(link.number)
+    )
+  }
   const linear = parseLinearIssueUrlIntent(url.href)
   if (linear) {
     url.pathname = `/${linear.organizationUrlKey.toLowerCase()}/issue/${linear.identifier}`
@@ -194,6 +215,28 @@ function externalUrl(item: WorkspaceAttachment): string | undefined {
       return identity.webUrl
         ? `${identity.webUrl.replace(/\/+$/, '')}/-/${item.type === 'mr' ? 'merge_requests' : 'issues'}/${item.number}`
         : undefined
+    case 'codehub': {
+      if (
+        !identity.host ||
+        !identity.project ||
+        !Number.isSafeInteger(item.number) ||
+        item.number <= 0
+      ) {
+        return undefined
+      }
+      const host = identity.host.trim().toLowerCase()
+      const projectPath = identity.project.split('/').map(encodeURIComponent).join('/')
+      const remote = parseCodeHubRemote(`https://${host}/${projectPath}`)
+      if (!remote || remote.host !== host) {
+        return undefined
+      }
+      if (item.type === 'mr') {
+        return codeHubMergeRequestUrl(remote, item.number)
+      }
+      return item.type === 'issue'
+        ? `https://${remote.host}/${remote.project.split('/').map(encodeURIComponent).join('/')}/issues/${item.number}`
+        : undefined
+    }
     case 'jira':
       return identity.siteUrl && identifier
         ? `${identity.siteUrl.replace(/\/+$/, '')}/browse/${identifier}`

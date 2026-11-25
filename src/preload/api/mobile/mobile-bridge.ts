@@ -1,7 +1,6 @@
 import type {
   RuntimePairingLinkReference,
   RuntimePairingLink,
-  RuntimeAccessGrant,
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult
 } from '../../../shared/remote-runtime/host-catalog/runtime-access-grants'

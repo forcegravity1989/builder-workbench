@@ -39,7 +39,9 @@ export async function cleanupOwnedEphemeralVmRuntime(
     ? WorkbenchRepoRemoval.parse(expectedRegistration)
     : undefined
   const assertRegistration = (): void => {
-    if (!expected) return
+    if (!expected) {
+      return
+    }
     const currentRuntime = listEphemeralVmRuntimes(userDataPath).find(
       (entry) => entry.id === runtimeId
     )

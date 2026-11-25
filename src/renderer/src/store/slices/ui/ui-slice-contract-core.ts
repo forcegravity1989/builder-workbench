@@ -1,3 +1,4 @@
+import type { AutomationEditorRequest } from '@/components/automations/automation-editor-request'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type { WorkbenchTaskScope } from '../../../../../shared/workbench/task-scope'
 import type {
@@ -217,6 +218,9 @@ export type UISliceCore = {
   setAutomationsPageFocusTitleOnOpen: (value: boolean) => void
   automationsPageNextVisitMode: AutomationsPageVisitMode
   setAutomationsPageNextVisitMode: (mode: AutomationsPageVisitMode) => void
+  pendingAutomationEditorRequest: AutomationEditorRequest | null
+  consumeAutomationEditorRequest: (request: AutomationEditorRequest) => void
+  openAutomationEditor: (request: AutomationEditorRequest) => void
   openAutomationsPage: () => void
   closeAutomationsPage: () => void
   openSpacePage: () => void

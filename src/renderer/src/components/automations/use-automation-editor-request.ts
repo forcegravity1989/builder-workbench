@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { hostStableKey } from '../../../../shared/automation-owner-key'
-import { automationHostFilterStableKey } from '../../../../shared/automation-host-filter'
+import { hostStableKey } from '../../../../shared/automations/ownership/automation-owner-key'
+import { automationHostFilterStableKey } from '../../../../shared/automations/ownership/automation-host-filter'
 import { translate } from '@/i18n/i18n'
 import type { AutomationEditorRequest } from './automation-editor-request'
-import type { AutomationEditorActions } from './use-automation-editor-actions'
-import type { AutomationsPageListState } from './use-automations-page-list-state'
+import type { AutomationEditorActions } from './authoring/use-automation-editor-actions'
+import type { AutomationsPageListState } from './listing/use-automations-page-list-state'
 import type { AutomationsPageLocalState } from './use-automations-page-local-state'
 import type { AutomationsPageStoreState } from './use-automations-page-store-state'
 
@@ -15,10 +15,13 @@ export function useAutomationEditorRequest({
   list,
   actions
 }: {
-  store: AutomationsPageStoreState
-  local: AutomationsPageLocalState
-  list: AutomationsPageListState
-  actions: AutomationEditorActions
+  store: Pick<
+    AutomationsPageStoreState,
+    'pendingAutomationEditorRequest' | 'consumeAutomationEditorRequest' | 'automationHostFilter'
+  >
+  local: Pick<AutomationsPageLocalState, 'createOpen'>
+  list: Pick<AutomationsPageListState, 'hostCatalog'>
+  actions: Pick<AutomationEditorActions, 'openCreateDialog' | 'openEditDialog'>
 }): void {
   const consumed = useRef<AutomationEditorRequest | null>(null)
   const request = store.pendingAutomationEditorRequest

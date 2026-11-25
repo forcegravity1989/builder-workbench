@@ -41,6 +41,9 @@ export function useAutomationsPageStoreState() {
   const updateSettings = useAppStore((s) => s.updateSettings)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
+  const automationHostFilter = useAppStore((s) => s.automationHostFilter)
+  const pendingAutomationEditorRequest = useAppStore((s) => s.pendingAutomationEditorRequest)
+  const consumeAutomationEditorRequest = useAppStore((s) => s.consumeAutomationEditorRequest)
   const closeAutomationsPage = useAppStore((s) => s.closeAutomationsPage)
   const activeModal = useAppStore((s) => s.activeModal)
   const sshConnectionStates = useAppStore((s) => s.sshConnectionStates)
@@ -95,6 +98,9 @@ export function useAutomationsPageStoreState() {
     updateSettings,
     openSettingsPage,
     openSettingsTarget,
+    automationHostFilter,
+    pendingAutomationEditorRequest,
+    consumeAutomationEditorRequest,
     closeAutomationsPage,
     activeModal,
     sshConnectionStates,

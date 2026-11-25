@@ -3655,8 +3655,8 @@
       },
       "UpdateCard": {
         "68b235d264": "重启即可更新",
-        "6714206e5a": "Orca v{{value0}} 已下载，准备好后请重新启动",
-        "93794ea932": "Orca v{{value0}} 正在下载",
+        "6714206e5a": "{{productName}} v{{value0}} 已下载，准备好后请重新启动",
+        "93794ea932": "{{productName}} v{{value0}} 正在下载",
         "8acbdd3961": "最小化到状态栏",
         "17412483da": "准备安装",
         "47126bcf57": "手动下载",
@@ -3667,7 +3667,7 @@
         "ec8fe71cfc": "更新",
         "44324ef542": "发行说明",
         "fdd4a364fa": "会话不会被中断",
-        "05ad78a6d1": "Orca v{{value0}} 已准备就绪",
+        "05ad78a6d1": "{{productName}} v{{value0}} 已准备就绪",
         "318d3b4bc7": "关闭更新",
         "9abc59f814": "可用更新",
         "aad383aecc": "发行说明",
@@ -3695,7 +3695,7 @@
         "b1e390250d": "无法完成本地构建切换",
         "d29740d175": "无法使用所选的构建",
         "37d45c9ec1": "选择其他构建",
-        "7f1a4c9e02": "Orca 由系统包管理器安装，请通过该包管理器更新——Orca 无法自行安装此版本",
+        "7f1a4c9e02": "{{productName}} 由系统包管理器安装，请通过该包管理器更新——{{productName}} 无法自行安装此版本",
         "compatibilityModeFailed": "无法启用兼容模式。{{message}}",
         "moreSinceLastUpdate": "自上次更新以来另有 +{{count}} 个版本",
         "downloadingPercent": "下载中... {{percent}}%",
@@ -5126,10 +5126,10 @@
             "2201df6987": "更新失败 — 点击查看详情",
             "8533c12c3c": "更新失败",
             "962404f68e": "更新准备安装，单击以展开",
-            "248ee5d8ef": "Orca v{{value0}} 正在下载... {{value1}}%",
+            "248ee5d8ef": "{{productName}} v{{value0}} 正在下载... {{value1}}%",
             "57a29c3b0e": "更新准备就绪",
             "fd1d3b3a1d": "更新下载，{{value0}}%，单击以展开",
-            "9d13213a56": "Orca v{{value0}} 已准备好安装"
+            "9d13213a56": "{{productName}} v{{value0}} 已准备好安装"
           },
           "WorkspaceSpaceCompactPanel": {
             "a471aa9c24": "已更新",

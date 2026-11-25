@@ -59,6 +59,7 @@ export function useAutomationsPageDestinationForm({
   } = store
   const {
     createOpen,
+    createHostStableKey,
     editingAutomationId,
     editingRowKey,
     editingHostStableKey,
@@ -231,7 +232,7 @@ export function useAutomationsPageDestinationForm({
 
   // Clear projects stranded by destination changes so defaults can select one the chosen host owns.
   useEffect(() => {
-    if (!createOpen || editingAutomationId !== null) {
+    if (!createOpen || editingAutomationId !== null || createHostStableKey) {
       return
     }
     setDraft((current) =>
@@ -239,7 +240,7 @@ export function useAutomationsPageDestinationForm({
         ? current
         : { ...current, projectId: '', workspaceId: '', baseBranch: '' }
     )
-  }, [createOpen, editingAutomationId, editorProjects, setDraft])
+  }, [createOpen, editingAutomationId, editorProjects, setDraft, createHostStableKey])
 
   const dialogWorktrees = useMemo(() => {
     const candidates = worktreesByRepo[draft.projectId] ?? []

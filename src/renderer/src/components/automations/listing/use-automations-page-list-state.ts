@@ -40,7 +40,10 @@ export function useAutomationsPageListState({
   store,
   local
 }: {
-  store: Pick<AutomationsPageStoreState, 'repoMap' | 'worktreeMap' | 'selectedId' | 'setSelectedId'>
+  store: Pick<
+    AutomationsPageStoreState,
+    'repoMap' | 'worktreeMap' | 'selectedId' | 'setSelectedId' | 'pendingAutomationEditorRequest'
+  >
   local: Pick<
     AutomationsPageLocalState,
     | 'automations'
@@ -75,7 +78,12 @@ export function useAutomationsPageListState({
     setSelectedRowKey,
     setRunHistoryAcquisitionToken
   } = local
-  const hostCatalog = useAutomationHostCatalog({ failedAuthorityKeys })
+  const requestHost = store.pendingAutomationEditorRequest?.host
+  const referencedStableKeys = useMemo(
+    () => (requestHost ? [hostStableKey(requestHost)] : []),
+    [requestHost]
+  )
+  const hostCatalog = useAutomationHostCatalog({ failedAuthorityKeys, referencedStableKeys })
   const externalScopeEntries = useMemo(
     () => externalAutomationScopeEntries(hostCatalog.entries, hostCatalog.resolution),
     [hostCatalog.entries, hostCatalog.resolution]

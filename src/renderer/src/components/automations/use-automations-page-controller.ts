@@ -4,6 +4,7 @@ import { createAutomationRunActions } from './runs/automation-run-actions'
 import { createAutomationRunWorkspaceAction } from './runs/automation-run-workspace-action'
 import { createAutomationSaveAction } from './authoring/automation-save-action'
 import { useAutomationDraftEffects } from './authoring/use-automation-draft-effects'
+import { useAutomationEditorRequest } from './use-automation-editor-request'
 import { useAutomationEditorActions } from './authoring/use-automation-editor-actions'
 import { useAutomationMigrateAction } from './authoring/use-automation-migrate-action'
 import { useAutomationRunPageState } from './runs/use-automation-run-page-state'
@@ -72,6 +73,7 @@ export function useAutomationsPageController() {
     destination,
     destinationForm
   })
+  useAutomationEditorRequest({ store, local, list, actions: editorActions })
   const saveContext = { store, local, list, setup, destination, destinationForm, pageRefresh }
   const saveAutomation = createAutomationSaveAction(saveContext)
   const migrateAction = useAutomationMigrateAction(saveContext, editorActions)

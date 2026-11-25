@@ -96,7 +96,7 @@ export function useTaskPageWorkspaceActions<Model extends TaskPageWorkspaceActio
         if (match) {
           const outcome = dispatchScopedWorktrees({
             candidates: match.candidates,
-            choiceTitle: '#' + item.number + ' ' + item.title,
+            choiceTitle: `#${item.number} ${item.title}`,
             onUnavailable: notifyScopedWorkspaceUnavailable
           })
           track('bw_task_start', {

@@ -24,6 +24,7 @@ import {
   type UpdateInstallTrigger
 } from './updater-state'
 import { UpdaterCheckState } from './updater-check-state'
+import { setRecoverableReleaseFeed } from '../workbench-update-feed'
 import { releaseServeSupervisorPark } from './serve-supervisor-install-park'
 import {
   managesUpdates,
@@ -43,13 +44,20 @@ export abstract class UpdaterInstallSupport extends UpdaterCheckState {
     }
   }
 
-  protected pinTeamApprovedReleaseFeed(
+  protected async pinTeamApprovedReleaseFeed(
     url: string,
     policy: TeamUpdatePolicy | undefined,
-    tags: readonly string[]
-  ): void {
+    tags: readonly string[],
+    attemptId: number
+  ): Promise<'ready' | 'not-available'> {
+    const pinned = await setRecoverableReleaseFeed(this.getAutoUpdater(), url, () =>
+      this.isActiveUpdateCheckAttempt(attemptId)
+    )
+    if (!pinned || !this.isActiveUpdateCheckAttempt(attemptId)) {
+      return 'not-available'
+    }
     this.teamUpdateApproval = { policy, tags }
-    this.getAutoUpdater().setFeedURL({ provider: 'generic', url })
+    return 'ready'
   }
 
   protected allowsCurrentTeamUpdate(version: string): boolean {

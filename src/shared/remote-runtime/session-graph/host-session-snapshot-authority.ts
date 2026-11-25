@@ -26,6 +26,18 @@ export function hostSnapshotAffirmsWorktreeContents(snapshot: SnapshotPublicatio
   )
 }
 
+/** Renderer rescue, structured sessions and headless runs can publish without an editor inventory. */
+export function hostSnapshotAffirmsEditorContents(snapshot: SnapshotPublication): boolean {
+  const epoch = snapshot.publicationEpoch
+  return (
+    hostSnapshotAffirmsWorktreeContents(snapshot) &&
+    !epoch?.startsWith('headless:') &&
+    !epoch?.startsWith('headless-hydrated:') &&
+    !epoch?.startsWith('renderer-rescue:') &&
+    !epoch?.startsWith('structured:')
+  )
+}
+
 /** Browser authority is narrower than worktree authority: real restarted-runtime frames can omit pages clients still hold. clientHostedPagesUnreconciled withholds that verdict until bounded host reconciliation completes. */
 export function hostSnapshotAffirmsClientHostedPages(
   snapshot: ClientHostedPagePublication

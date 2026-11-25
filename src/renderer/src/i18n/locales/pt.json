@@ -3633,10 +3633,10 @@
             "2201df6987": "Falha na atualização — clique para ver os detalhes",
             "8533c12c3c": "Falha na atualização",
             "962404f68e": "Atualização pronta para instalar. Clique para expandir.",
-            "248ee5d8ef": "Orca v{{value0}} baixando… {{value1}}%",
+            "248ee5d8ef": "{{productName}} v{{value0}} baixando… {{value1}}%",
             "57a29c3b0e": "Atualização pronta",
             "fd1d3b3a1d": "Atualização baixando, {{value0}} por cento. Clique para expandir.",
-            "9d13213a56": "Orca v{{value0}} pronto para instalar"
+            "9d13213a56": "{{productName}} v{{value0}} pronto para instalar"
           },
           "WorkspaceSpaceCompactPanel": {
             "a471aa9c24": "Atualizado",
@@ -18922,8 +18922,8 @@
       },
       "UpdateCard": {
         "68b235d264": "Reiniciar para Atualizar",
-        "6714206e5a": "O Orca v{{value0}} foi baixado. Reinicie quando estiver pronto.",
-        "93794ea932": "O Orca v{{value0}} está sendo baixado.",
+        "6714206e5a": "O {{productName}} v{{value0}} foi baixado. Reinicie quando estiver pronto.",
+        "93794ea932": "O {{productName}} v{{value0}} está sendo baixado.",
         "8acbdd3961": "Minimizar para a barra de status",
         "17412483da": "Pronto para Instalar",
         "47126bcf57": "Baixar Manualmente",
@@ -18934,7 +18934,7 @@
         "ec8fe71cfc": "Atualizar",
         "44324ef542": "Notas da versão",
         "fdd4a364fa": "As sessões não serão interrompidas.",
-        "05ad78a6d1": "O Orca v{{value0}} está pronto.",
+        "05ad78a6d1": "O {{productName}} v{{value0}} está pronto.",
         "318d3b4bc7": "Descartar atualização",
         "9abc59f814": "Atualização Disponível",
         "aad383aecc": "Notas da versão",
@@ -18962,7 +18962,7 @@
         "b1e390250d": "Não foi possível completar a mudança de build local.",
         "d29740d175": "O build selecionado não pôde ser usado.",
         "37d45c9ec1": "Escolher Outro Build",
-        "7f1a4c9e02": "O gerenciador de pacotes do seu sistema instalou o Orca, então atualize-o por lá — o Orca não pode instalar este release por si mesmo.",
+        "7f1a4c9e02": "O gerenciador de pacotes do seu sistema instalou o {{productName}}, então atualize-o por lá — o {{productName}} não pode instalar este release por si mesmo.",
         "compatibilityModeFailed": "Não foi possível ativar o modo de compatibilidade. {{message}}",
         "moreSinceLastUpdate": "+{{count}} a mais desde sua última atualização",
         "downloadingPercent": "Baixando... {{percent}}%",

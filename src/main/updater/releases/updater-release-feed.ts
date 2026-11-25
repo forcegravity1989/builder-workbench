@@ -1,4 +1,6 @@
 import { app } from 'electron'
+import { isWorkbenchProduct } from '../../startup/workbench-product'
+import { setRecoverableReleaseFeed } from '../workbench-update-feed'
 import {
   fetchLatestStableReleaseTag,
   fetchNewerReleaseTagsWithReadiness
@@ -174,20 +176,23 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
       console.info(
         `[updater] release feed pinned: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
       )
-      this.pinTeamApprovedReleaseFeed(url, team, releaseTagsResult.tags)
-      return 'ready'
+      return this.pinTeamApprovedReleaseFeed(url, team, releaseTagsResult.tags, attemptId)
     }
     if (releaseTagsResult.state === 'not-ready') {
       this.clearPrereleaseFallbackContext()
-      if (releaseTagsResult.lastGoodTag) {
+      if (releaseTagsResult.lastGoodTag && (includePrerelease || !isWorkbenchProduct())) {
         // While the newest tag publishes, a verified last-good feed lets electron-updater emit a real result.
         const url = getReleaseDownloadUrl(releaseTagsResult.lastGoodTag)
         console.info(
           `[updater] release feed pinned to last-good: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
         )
         this.publishingWindowLastGoodCheck = { lastGoodTag: releaseTagsResult.lastGoodTag }
-        this.pinTeamApprovedReleaseFeed(url, team, [releaseTagsResult.lastGoodTag])
-        return 'ready'
+        return this.pinTeamApprovedReleaseFeed(
+          url,
+          team,
+          [releaseTagsResult.lastGoodTag],
+          attemptId
+        )
       }
       this.clearPublishingWindowLastGoodCheck()
       console.info(
@@ -249,8 +254,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
     }
     const url = getReleaseDownloadUrl(stableTag)
     console.info(`[updater] stable fallback feed pinned: current=${currentVersion} → ${url}`)
-    this.pinTeamApprovedReleaseFeed(url, team, [stableTag])
-    return 'ready'
+    return this.pinTeamApprovedReleaseFeed(url, team, [stableTag], attemptId)
   }
 
   protected retryPrereleaseFallbackAfterMissingManifest(
@@ -285,14 +289,20 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
       `[updater] prerelease manifest missing for ${primaryTag}; retrying once against ${url}`
     )
     const autoUpdater = this.getAutoUpdater()
-    autoUpdater.setFeedURL({ provider: 'generic', url })
     this.userInitiatedCheck = Boolean(userInitiated)
     this.backgroundCheckLaunchPending = !userInitiated
     this.armUpdateCheckStallTimer(attemptId)
-    this.markUpdateCheckLaunched(attemptId)
-    void autoUpdater
-      .checkForUpdates()
-      .then(() => this.handleSettledUpdateCheckPromise(attemptId))
+    void setRecoverableReleaseFeed(autoUpdater, url, () =>
+      this.isActiveUpdateCheckAttempt(attemptId)
+    )
+      .then(async (pinned) => {
+        if (!pinned || !this.isActiveUpdateCheckAttempt(attemptId)) {
+          return
+        }
+        this.markUpdateCheckLaunched(attemptId)
+        await autoUpdater.checkForUpdates()
+        this.handleSettledUpdateCheckPromise(attemptId)
+      })
       .catch((err) => {
         if (!this.isActiveUpdateCheckAttempt(attemptId)) {
           return

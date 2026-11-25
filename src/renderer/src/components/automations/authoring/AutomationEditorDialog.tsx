@@ -47,6 +47,7 @@ export const AUTOMATION_EDITOR_PICKER_TRIGGER_CLASS =
   'border-input bg-input/30 shadow-xs hover:bg-accent/60 dark:bg-input/30 dark:hover:bg-input/50'
 
 export type AutomationDraft = {
+  creationKey?: string
   name: string
   prompt: string
   agentId: TuiAgent

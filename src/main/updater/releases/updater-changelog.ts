@@ -1,4 +1,5 @@
 import { net } from 'electron'
+import { isWorkbenchProduct } from '../../startup/workbench-product'
 import type { ChangelogData } from '../../../shared/updater/update-status-types'
 import { compareVersions } from './updater-fallback'
 
@@ -29,6 +30,9 @@ export async function fetchChangelog(
   incomingVersion: string,
   localVersion: string
 ): Promise<ChangelogData | null> {
+  if (isWorkbenchProduct()) {
+    return null
+  }
   const res = await net.fetch('https://orca.dev/whats-new/changelog.json', {
     signal: AbortSignal.timeout(5000)
   })

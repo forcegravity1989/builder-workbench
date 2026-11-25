@@ -41,7 +41,9 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     (change: PRFilterChange): void => {
       // Round-trip through parseTaskQuery so dropdown patches preserve other filters and free text.
       const next = patchGitHubTaskQuery(
-        scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind),
+        workbenchScope?.goalId && !taskSearchInput.trim()
+          ? ''
+          : scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind),
         change
       )
       // Why: a query equal to a saved PR preset is applied as that preset, or restore, prefetch keys and the phone see an unknown string.
@@ -54,8 +56,10 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
         setTaskResumeState({ githubItemsPreset: preset, githubItemsQuery: query })
       }
       // Why: a filter change replaces every row's meaning; show the load skeleton so stale rows don't read as if the filter did nothing.
-      setTasksFiltering(true)
-      setTaskRefreshNonce((current) => current + 1)
+      if (!workbenchScope?.goalId) {
+        setTasksFiltering(true)
+        setTaskRefreshNonce((current) => current + 1)
+      }
     },
     [
       activeGithubTaskKind,
@@ -80,8 +84,10 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     if (!workbenchScope) {
       setTaskResumeState({ githubItemsPreset: null, githubItemsQuery: scoped })
     }
-    setTasksFiltering(true)
-    setTaskRefreshNonce((current) => current + 1)
+    if (!workbenchScope?.goalId) {
+      setTasksFiltering(true)
+      setTaskRefreshNonce((current) => current + 1)
+    }
   }, [
     activeGithubTaskKind,
     workbenchScope,
@@ -136,8 +142,10 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
       if (!workbenchScope) {
         setTaskResumeState({ githubItemsPreset: preset, githubItemsQuery: query })
       }
-      setTasksFiltering(true)
-      setTaskRefreshNonce((current) => current + 1)
+      if (!workbenchScope?.goalId) {
+        setTasksFiltering(true)
+        setTaskRefreshNonce((current) => current + 1)
+      }
     },
     [
       workbenchScope,
@@ -151,8 +159,26 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     ]
   )
   const handleResetGithubTaskSearch = useCallback((): void => {
-    handleSelectGithubTaskKind(activeGithubTaskKind)
-  }, [activeGithubTaskKind, handleSelectGithubTaskKind])
+    if (!workbenchScope) {
+      handleSelectGithubTaskKind(activeGithubTaskKind)
+      return
+    }
+    const goalIssues = workbenchScope.goalId && activeGithubTaskKind === 'issues'
+    const preset = getDefaultPresetForGitHubTaskKind(activeGithubTaskKind)
+    const query = goalIssues
+      ? ''
+      : seedWorkbenchTaskQuery(getTaskPresetQuery(preset), workbenchScope)
+    setTaskSearchInput(query)
+    setAppliedTaskSearch(query)
+    setActiveTaskPreset(goalIssues ? null : preset)
+  }, [
+    activeGithubTaskKind,
+    handleSelectGithubTaskKind,
+    setActiveTaskPreset,
+    setAppliedTaskSearch,
+    setTaskSearchInput,
+    workbenchScope
+  ])
   const handleTaskSearchKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>): void => {
       if (event.key === 'Enter') {

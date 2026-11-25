@@ -110,6 +110,7 @@ export function useAutomationsPageDestinationState({
     open: createOpen && editingAutomationId === null,
     catalog: hostCatalog.catalog,
     entries: hostCatalog.entries,
+    initialStableKey: local.createHostStableKey,
     filterStableKey: hostCatalog.resolution.entry?.stableKey ?? null,
     activeWorkspaceStableKey: activeWorkspaceHostStableKey,
     repoTables,

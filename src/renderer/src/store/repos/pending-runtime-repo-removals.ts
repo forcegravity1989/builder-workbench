@@ -135,11 +135,9 @@ export function replayPendingRuntimeRepoRemovals(
         continue
       }
       try {
-        if (expectedRegistration) {
-          await removeOnHost(repoId, expectedRegistration)
-        } else {
-          await removeOnHost(repoId)
-        }
+        await (expectedRegistration
+          ? removeOnHost(repoId, expectedRegistration)
+          : removeOnHost(repoId))
       } catch (error) {
         if (isRuntimeHostUnreachableError(error)) {
           return 'unreachable'

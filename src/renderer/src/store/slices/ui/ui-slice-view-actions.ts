@@ -39,6 +39,16 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
     setAutomationsPageNextVisitMode: (mode) => set({ automationsPageNextVisitMode: mode }),
     automationsPageFocusTitleOnOpen: false,
     setAutomationsPageFocusTitleOnOpen: (value) => set({ automationsPageFocusTitleOnOpen: value }),
+    pendingAutomationEditorRequest: null,
+    consumeAutomationEditorRequest: (request) => {
+      if (get().pendingAutomationEditorRequest === request) {
+        set({ pendingAutomationEditorRequest: null })
+      }
+    },
+    openAutomationEditor: (request) => {
+      get().openAutomationsPage()
+      set({ pendingAutomationEditorRequest: { ...request } })
+    },
     openAutomationsPage: () => {
       const state = get()
       // Why: an open page already recorded its sub-page; a second sentinel would be a dead Back step.
@@ -51,6 +61,7 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
       set({ automationsPageNextVisitMode: 'push', automationsPageFocusTitleOnOpen: true })
       set((state) => ({
         activeView: 'automations',
+        pendingAutomationEditorRequest: null,
         previousViewBeforeAutomations:
           state.activeView === 'automations'
             ? state.previousViewBeforeAutomations

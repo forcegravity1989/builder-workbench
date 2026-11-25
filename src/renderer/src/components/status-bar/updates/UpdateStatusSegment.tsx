@@ -2,6 +2,7 @@ import React from 'react'
 import { AlertCircle, CheckCircle2, Clock3, Download, Loader2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '../../../store/index'
+import { UPDATE_PRODUCT_NAME } from '../../../../../shared/updater/release-channel'
 import { useTranslate } from '@/i18n/use-translate'
 import { getUpdateInstallBlockGuidance } from '../../maintenance/update-card/update-install-block-guidance'
 
@@ -28,8 +29,8 @@ export function UpdateStatusSegment(): React.JSX.Element | null {
         label: `${pct}%`,
         tooltip: t(
           'auto.components.status.bar.UpdateStatusSegment.248ee5d8ef',
-          'Orca v{{value0}} downloading… {{value1}}%',
-          { value0: status.version, value1: pct }
+          '{{productName}} v{{value0}} downloading… {{value1}}%',
+          { productName: UPDATE_PRODUCT_NAME, value0: status.version, value1: pct }
         ),
         ariaLabel: t(
           'auto.components.status.bar.UpdateStatusSegment.fd1d3b3a1d',
@@ -73,8 +74,8 @@ export function UpdateStatusSegment(): React.JSX.Element | null {
         label: t('auto.components.status.bar.UpdateStatusSegment.57a29c3b0e', 'Update ready'),
         tooltip: t(
           'auto.components.status.bar.UpdateStatusSegment.9d13213a56',
-          'Orca v{{value0}} ready to install',
-          { value0: readyVersion }
+          '{{productName}} v{{value0}} ready to install',
+          { productName: UPDATE_PRODUCT_NAME, value0: readyVersion }
         ),
         ariaLabel: t(
           'auto.components.status.bar.UpdateStatusSegment.962404f68e',

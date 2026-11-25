@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { getProviderIdentityLabel } from '@/components/task-provider-identity-label'
 import type { Translate } from '@/i18n/use-translate'
 import { getExecutionHostLabel } from '../../../../../shared/execution-host/execution-host'
 import type { TaskSourceContext } from '../../../../../shared/work-items/task-source-context'
@@ -52,6 +53,8 @@ function getProviderLabel(provider: TaskSourceContext['provider']): string {
       return 'GitHub'
     case 'gitlab':
       return 'GitLab'
+    case 'codehub':
+      return 'CodeHub'
     case 'linear':
       return 'Linear'
     case 'jira':
@@ -60,20 +63,7 @@ function getProviderLabel(provider: TaskSourceContext['provider']): string {
 }
 
 function getSourceIdentityLabel(sourceContext: TaskSourceContext): string | null {
-  const identity = sourceContext.providerIdentity
-  if (identity) {
-    switch (identity.provider) {
-      case 'github':
-        return `${identity.owner}/${identity.repo}`
-      case 'gitlab':
-        return identity.namespace && identity.project
-          ? `${identity.namespace}/${identity.project}`
-          : (identity.projectId ?? null)
-      case 'linear':
-        return identity.workspaceName ?? identity.workspaceId ?? null
-      case 'jira':
-        return identity.siteUrl ?? identity.siteId ?? null
-    }
-  }
-  return sourceContext.accountLabel ?? sourceContext.repoId ?? null
+  return sourceContext.providerIdentity
+    ? getProviderIdentityLabel(sourceContext.providerIdentity)
+    : (sourceContext.accountLabel ?? sourceContext.repoId ?? null)
 }

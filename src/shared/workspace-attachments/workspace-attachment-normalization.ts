@@ -24,6 +24,7 @@ export function normalizeWorkspaceAttachment(value: unknown): WorkspaceAttachmen
   if (
     provider !== 'github' &&
     provider !== 'gitlab' &&
+    provider !== 'codehub' &&
     provider !== 'linear' &&
     provider !== 'jira' &&
     provider !== 'bitbucket' &&
@@ -39,7 +40,10 @@ export function normalizeWorkspaceAttachment(value: unknown): WorkspaceAttachmen
   if ((provider === 'linear' || provider === 'jira') && type !== 'issue') {
     return null
   }
-  if (type === 'mr' && provider !== 'gitlab') {
+  if (type === 'mr' && provider !== 'gitlab' && provider !== 'codehub') {
+    return null
+  }
+  if (provider === 'codehub' && type === 'pr') {
     return null
   }
   if (typeof raw.number !== 'number' || !Number.isSafeInteger(raw.number) || raw.number < 0) {

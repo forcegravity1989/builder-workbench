@@ -1,5 +1,4 @@
 import { compareAppVersions, isValidAppVersion } from '../app-lifecycle/identity/app-version'
-export const WORKBENCH_RELEASE_REPO = 'forcegravity1989/builder-workbench'
 
 export type ReleaseChannel = 'stable' | 'rc' | 'hourly' | 'daily' | 'adhoc'
 
@@ -19,11 +18,44 @@ export const RELEASE_CHANNEL_LABELS: Readonly<Record<ReleaseChannel, string>> = 
   adhoc: 'Adhoc'
 }
 
-/** Keep dev tags out of the 10-entry main releases feed, where hourlies would evict stable/RC updates. */
-export const HOURLY_RELEASE_REPO = 'stablyai/orca-hourly'
-export const DAILY_RELEASE_REPO = 'stablyai/orca-daily'
-export const ADHOC_RELEASE_REPO = 'stablyai/orca-adhoc'
-export const MAIN_RELEASE_REPO = 'stablyai/orca'
+/** Compile-time flag from electron.vite `define` (main and renderer bundles). */
+declare const WORKBENCH_SHELL: string | undefined
+declare const ORCA_WORKBENCH_SHELL: boolean | undefined
+
+export const WORKBENCH_RELEASE_REPO = 'forcegravity1989/builder-workbench'
+
+/** Same identity sources as main/startup/workbench-product.ts, duplicated here
+ *  because shared code cannot import from main and this module is evaluated in
+ *  the renderer bundle too (update card / settings link straight into it). */
+function isWorkbenchUpdateIdentity(): boolean {
+  if (
+    typeof process !== 'undefined' &&
+    (process.env?.ORCA_PRODUCT_NAME === 'Workbench' || process.env?.WORKBENCH_SHELL === '1')
+  ) {
+    return true
+  }
+  // oxlint-disable-next-line unicorn/no-typeof-undefined -- The flag is absent outside renderer builds.
+  if (typeof ORCA_WORKBENCH_SHELL !== 'undefined' && ORCA_WORKBENCH_SHELL) {
+    return true
+  }
+  // The build constant is absent in plain Node entry points and source-level tests.
+  // oxlint-disable-next-line unicorn/no-typeof-undefined
+  return typeof WORKBENCH_SHELL !== 'undefined' && WORKBENCH_SHELL === '1'
+}
+
+const workbenchUpdateIdentity = isWorkbenchUpdateIdentity()
+export const UPDATE_PRODUCT_NAME = workbenchUpdateIdentity ? 'Workbench' : 'Orca'
+
+export const HOURLY_RELEASE_REPO = workbenchUpdateIdentity
+  ? WORKBENCH_RELEASE_REPO
+  : 'stablyai/orca-hourly'
+export const DAILY_RELEASE_REPO = workbenchUpdateIdentity
+  ? WORKBENCH_RELEASE_REPO
+  : 'stablyai/orca-daily'
+export const ADHOC_RELEASE_REPO = workbenchUpdateIdentity
+  ? WORKBENCH_RELEASE_REPO
+  : 'stablyai/orca-adhoc'
+export const MAIN_RELEASE_REPO = workbenchUpdateIdentity ? WORKBENCH_RELEASE_REPO : 'stablyai/orca'
 
 /** The dev channels, each published to its own repo rather than the main one. */
 const DEDICATED_REPO_CHANNELS = ['hourly', 'daily', 'adhoc'] as const

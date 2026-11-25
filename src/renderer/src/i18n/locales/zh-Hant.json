@@ -3260,8 +3260,8 @@
       },
       "UpdateCard": {
         "68b235d264": "重新啟動即可更新",
-        "6714206e5a": "Orca v{{value0}} 已下載。準備好後請重新啟動。",
-        "93794ea932": "Orca v{{value0}} 正在下載。",
+        "6714206e5a": "{{productName}} v{{value0}} 已下載。準備好後請重新啟動。",
+        "93794ea932": "{{productName}} v{{value0}} 正在下載。",
         "8acbdd3961": "最小化到狀態列",
         "17412483da": "準備安裝",
         "47126bcf57": "手動下載",
@@ -3272,7 +3272,7 @@
         "ec8fe71cfc": "更新",
         "44324ef542": "發行說明",
         "fdd4a364fa": "工作階段不會被中斷。",
-        "05ad78a6d1": "Orca v{{value0}} 已準備就緒。",
+        "05ad78a6d1": "{{productName}} v{{value0}} 已準備就緒。",
         "318d3b4bc7": "關閉更新",
         "9abc59f814": "可用更新",
         "aad383aecc": "發行說明",
@@ -3300,7 +3300,7 @@
         "b1e390250d": "無法完成本機建置切換。",
         "d29740d175": "無法使用所選的建置。",
         "37d45c9ec1": "選擇其他建置",
-        "7f1a4c9e02": "您的系統套件管理員安裝了 Orca，因此請從那裡更新它 — Orca 本身無法安裝此版本。",
+        "7f1a4c9e02": "您的系統套件管理員安裝了 {{productName}}，因此請從那裡更新它 — {{productName}} 本身無法安裝此版本。",
         "compatibilityModeFailed": "無法啟用相容模式。{{message}}",
         "moreSinceLastUpdate": "自上次更新以來另有 +{{count}} 個版本",
         "downloadingPercent": "下載中... {{percent}}%",
@@ -4684,10 +4684,10 @@
             "2201df6987": "更新失敗——點選檢視詳情",
             "8533c12c3c": "更新失敗",
             "962404f68e": "更新已準備好安裝。按一下以展開。",
-            "248ee5d8ef": "Orca v{{value0}} 正在下載... {{value1}}%",
+            "248ee5d8ef": "{{productName}} v{{value0}} 正在下載... {{value1}}%",
             "57a29c3b0e": "更新準備就緒",
             "fd1d3b3a1d": "更新下載，{{value0}}%。按一下以展開。",
-            "9d13213a56": "Orca v{{value0}} 已準備好安裝"
+            "9d13213a56": "{{productName}} v{{value0}} 已準備好安裝"
           },
           "WorkspaceSpaceCompactPanel": {
             "a471aa9c24": "已更新",

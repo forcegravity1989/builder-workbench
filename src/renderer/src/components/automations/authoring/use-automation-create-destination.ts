@@ -44,6 +44,7 @@ export type AutomationCreateDestinationInput = {
   /** Non-null only when the list is filtered to one concrete host. */
   filterStableKey: string | null
   activeWorkspaceStableKey: string | null
+  initialStableKey?: string | null
   repoTables: AutomationAuthorityRepoTables
   projects: readonly Repo[]
 }
@@ -85,22 +86,27 @@ export function useAutomationCreateDestination(
     entries,
     filterStableKey,
     activeWorkspaceStableKey,
+    initialStableKey,
     repoTables,
     projects
   } = input
   const [captured, setCaptured] = useState<AutomationCreateDestination | null>(null)
+  const [selectedStableKey, setSelectedStableKey] = useState<string | null>(null)
   const [reason, setReason] = useState<AutomationCreateDestinationChoiceReason>('unselected')
 
   // Reset capture during render under change guards so a prior dialog’s owner never paints and updates converge.
-  if (!open && (captured !== null || reason !== 'unselected')) {
+  if (!open && (captured !== null || reason !== 'unselected' || selectedStableKey !== null)) {
+    setSelectedStableKey(null)
     setCaptured(null)
     setReason('unselected')
   }
   if (open && !captured) {
     // Keep resolving until the first capture so late hydration can supply the intended host.
-    const entry =
-      preselectAutomationCreateHost(entries, filterStableKey, activeWorkspaceStableKey) ??
-      soleAutomationCreateHost(entries, catalog.hydration)
+    const explicitKey = selectedStableKey ?? initialStableKey
+    const entry = explicitKey
+      ? entries.find((candidate) => candidate.stableKey === explicitKey)
+      : (preselectAutomationCreateHost(entries, filterStableKey, activeWorkspaceStableKey) ??
+        soleAutomationCreateHost(entries, catalog.hydration))
     const resolved = resolveAutomationCreateDestination(entry)
     if (resolved.status === 'ready') {
       setCaptured(resolved)
@@ -111,6 +117,7 @@ export function useAutomationCreateDestination(
 
   const onSelect = useCallback(
     (stableKey: string) => {
+      setSelectedStableKey(stableKey)
       const resolved = resolveAutomationCreateDestination(
         entries.find((entry) => entry.stableKey === stableKey)
       )

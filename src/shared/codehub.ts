@@ -1,5 +1,5 @@
 import type { GitHubIssueCloseReason } from './work-items/issue-mutation-types'
-import type { GitRemoteIdentity } from './git-remote-identity'
+import type { GitRemoteIdentity } from './git/remotes/git-remote-identity'
 
 export type CodeHubRemote = {
   host: string

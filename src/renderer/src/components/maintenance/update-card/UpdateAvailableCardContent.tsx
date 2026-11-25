@@ -8,6 +8,8 @@ function isAnimatedGif(url: string | undefined): boolean {
   return typeof url === 'string' && url.toLowerCase().endsWith('.gif')
 }
 
+import { UPDATE_PRODUCT_NAME } from '../../../../../shared/updater/release-channel'
+
 /** A package manager owns this install: the release is real but Orca can never apply it here. */
 function ExternallyManagedNote(): React.JSX.Element {
   const t = useTranslate()
@@ -15,7 +17,8 @@ function ExternallyManagedNote(): React.JSX.Element {
     <p className="text-xs leading-relaxed text-muted-foreground">
       {t(
         'auto.components.UpdateCard.7f1a4c9e02',
-        'Your system package manager installed Orca, so update it from there — Orca cannot install this release itself.'
+        'Your system package manager installed {{productName}}, so update it from there — {{productName}} cannot install this release itself.',
+        { productName: UPDATE_PRODUCT_NAME }
       )}
     </p>
   )
@@ -149,7 +152,8 @@ export function UpdateAvailableSimpleContent({
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        {t('auto.components.UpdateCard.05ad78a6d1', 'Orca v{{value0}} is ready.', {
+        {t('auto.components.UpdateCard.05ad78a6d1', '{{productName}} v{{value0}} is ready.', {
+          productName: UPDATE_PRODUCT_NAME,
           value0: version
         })}
       </p>

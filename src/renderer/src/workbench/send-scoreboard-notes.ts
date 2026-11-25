@@ -32,12 +32,18 @@ export function scoreboardSendFailure(status: Exclude<ActiveAgentNotesSendStatus
       return '指标配置会话还不能接收，等它空闲后再发送。'
     case 'permission':
       return '指标配置会话正在等批准，批准后再发送。'
+    case 'approval-unseen':
+      return '暂时无法确认指标配置会话是否在等批准，请查看会话后再发送。'
+    case 'host-update-required':
+      return '请先更新指标配置会话所在的主机，再发送批注。'
     case 'status-unavailable':
       return '读不到指标配置会话的状态，稍后再发送。'
     case 'not-writable':
       return '指标配置会话没有收下批注。'
     case 'partial-submit-failed':
       return '批注可能已经贴进指标配置会话，但没有提交成功。'
+    case 'unconfirmed':
+      return '批注已发送，但尚未确认会话是否收到，请先查看会话。'
   }
 }
 

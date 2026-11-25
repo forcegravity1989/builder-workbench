@@ -343,7 +343,7 @@ export function BrowserPageAnnotationTray({
                         <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                           <span>
                             {annotation.author
-                              ? annotation.author + ' · ' + annotation.intent
+                              ? `${annotation.author} · ${annotation.intent}`
                               : annotation.intent}
                           </span>
                           {annotation.imagePaths?.length ? (

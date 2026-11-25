@@ -3082,8 +3082,8 @@
       },
       "UpdateCard": {
         "68b235d264": "Redémarrer pour mettre à jour",
-        "6714206e5a": "Orca v{{value0}} est téléchargée. Redémarrez quand vous êtes prêt.",
-        "93794ea932": "Orca v{{value0}} est en cours de téléchargement.",
+        "6714206e5a": "{{productName}} v{{value0}} est téléchargée. Redémarrez quand vous êtes prêt.",
+        "93794ea932": "{{productName}} v{{value0}} est en cours de téléchargement.",
         "8acbdd3961": "Réduire dans la barre d'état",
         "17412483da": "Prêt à installer",
         "47126bcf57": "Télécharger manuellement",
@@ -3094,7 +3094,7 @@
         "ec8fe71cfc": "Mettre à jour",
         "44324ef542": "Notes de version",
         "fdd4a364fa": "Les sessions ne seront pas interrompues.",
-        "05ad78a6d1": "Orca v{{value0}} est prête.",
+        "05ad78a6d1": "{{productName}} v{{value0}} est prête.",
         "318d3b4bc7": "Ignorer la mise à jour",
         "9abc59f814": "Mise à jour disponible",
         "aad383aecc": "Notes de version",
@@ -3122,7 +3122,7 @@
         "b1e390250d": "Impossible de finaliser le basculement vers le build local.",
         "d29740d175": "Le build sélectionné n'a pas pu être utilisé.",
         "37d45c9ec1": "Choisir un autre build",
-        "7f1a4c9e02": "Votre gestionnaire de packages système a installé Orca, alors mettez-le à jour à partir de là – Orca ne peut pas installer cette version lui-même.",
+        "7f1a4c9e02": "Votre gestionnaire de packages système a installé {{productName}}, alors mettez-le à jour à partir de là – {{productName}} ne peut pas installer cette version lui-même.",
         "compatibilityModeFailed": "Impossible d’activer le mode de compatibilité. {{message}}",
         "moreSinceLastUpdate": "+{{count}} de plus depuis votre dernière mise à jour",
         "downloadingPercent": "Téléchargement... {{percent}} %",
@@ -4547,10 +4547,10 @@
             "2201df6987": "Échec de la mise à jour — cliquez pour voir les détails",
             "8533c12c3c": "Échec de la mise à jour",
             "962404f68e": "Mise à jour prête à installer. Cliquez pour déplier.",
-            "248ee5d8ef": "Téléchargement d'Orca v{{value0}}… {{value1}} %",
+            "248ee5d8ef": "Téléchargement d'{{productName}} v{{value0}}… {{value1}} %",
             "57a29c3b0e": "Mise à jour prête",
             "fd1d3b3a1d": "Téléchargement de la mise à jour, {{value0}} pour cent. Cliquez pour déplier.",
-            "9d13213a56": "Orca v{{value0}} prête à installer"
+            "9d13213a56": "{{productName}} v{{value0}} prête à installer"
           },
           "WorkspaceSpaceCompactPanel": {
             "a471aa9c24": "Mis à jour",

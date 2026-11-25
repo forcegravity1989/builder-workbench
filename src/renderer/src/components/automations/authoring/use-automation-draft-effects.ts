@@ -26,6 +26,7 @@ export function useAutomationDraftEffects({
     draft,
     setDraft,
     createOpen,
+    createHostStableKey,
     editingAutomationId,
     targetEdited,
     setupDecisionPolicyDefaultRef,
@@ -44,7 +45,7 @@ export function useAutomationDraftEffects({
   const runsAsBot = draft.bot !== null
   useEffect(() => {
     // A bot target has no project; the bot brings its own folder.
-    if (!draft.projectId && !runsAsBot && editingAutomationId === null) {
+    if (!draft.projectId && !runsAsBot && editingAutomationId === null && !createHostStableKey) {
       const target = getDefaultTarget()
       if (!target.projectId) {
         return
@@ -55,7 +56,14 @@ export function useAutomationDraftEffects({
         workspaceId: target.workspaceId
       }))
     }
-  }, [draft.projectId, editingAutomationId, getDefaultTarget, runsAsBot, setDraft])
+  }, [
+    draft.projectId,
+    editingAutomationId,
+    getDefaultTarget,
+    runsAsBot,
+    setDraft,
+    createHostStableKey
+  ])
   useEffect(() => {
     if (
       !draft.projectId ||
@@ -65,7 +73,7 @@ export function useAutomationDraftEffects({
       return
     }
     const defaultWorktree = getDefaultWorktree(dialogWorktrees)
-    if (!draft.workspaceId && defaultWorktree) {
+    if (!draft.workspaceId && defaultWorktree && !createHostStableKey) {
       setDraft((current) => ({ ...current, workspaceId: defaultWorktree.id }))
     }
   }, [
@@ -73,6 +81,7 @@ export function useAutomationDraftEffects({
     draft.projectId,
     draft.workspaceId,
     draft.workspaceMode,
+    createHostStableKey,
     editingAutomationId,
     targetEdited,
     setDraft

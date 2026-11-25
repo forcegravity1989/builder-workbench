@@ -1,7 +1,7 @@
 import { app, net } from 'electron'
 import { join } from 'node:path'
 import { isWorkbenchProduct } from '../startup/workbench-product'
-import type { ElectronAutoUpdater } from '../electron-updater-loader'
+import type { ElectronAutoUpdater } from './electron-updater-loader'
 import { WORKBENCH_RELEASE_REPO } from '../../shared/updater/release-channel'
 import { startRecoverableUpdateFeed } from './recoverable-update-feed'
 
@@ -13,15 +13,19 @@ let quitCleanupRegistered = false
 
 export async function setRecoverableReleaseFeed(
   updater: ElectronAutoUpdater,
-  upstream: string
-): Promise<void> {
+  upstream: string,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  if (!isCurrent()) {
+    return false
+  }
   if (
     process.platform !== 'win32' ||
     !isWorkbenchProduct() ||
     !upstream.startsWith(`https://github.com/${WORKBENCH_RELEASE_REPO}/releases/`)
   ) {
     updater.setFeedURL({ provider: 'generic', url: upstream })
-    return
+    return true
   }
   if (!quitCleanupRegistered) {
     quitCleanupRegistered = true
@@ -43,7 +47,12 @@ export async function setRecoverableReleaseFeed(
       }
     })
   }
-  const feed = await activeFeed.promise
+  const candidate = activeFeed
+  const feed = await candidate.promise
+  if (!isCurrent() || activeFeed !== candidate) {
+    return false
+  }
   updater.disableDifferentialDownload = true
   updater.setFeedURL({ provider: 'generic', url: feed.url })
+  return true
 }

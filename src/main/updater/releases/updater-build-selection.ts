@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { setRecoverableReleaseFeed } from '../workbench-update-feed'
 import {
   getVersionChannel,
   hasDedicatedReleaseRepo,
@@ -157,9 +158,14 @@ export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
       updater.disableDifferentialDownload = true
       updater.allowPrerelease = true
       console.info(`[updater] pinned to ${channel} build ${target.tag} → ${target.feedUrl}`)
-      updater.setFeedURL({ provider: 'generic', url: target.feedUrl })
-      this.availableReleaseUrl = target.feedUrl
       const attemptId = this.beginUpdateCheckAttempt()
+      const pinned = await setRecoverableReleaseFeed(updater, target.feedUrl, () =>
+        this.isActiveUpdateCheckAttempt(attemptId)
+      )
+      if (!pinned || !this.isActiveUpdateCheckAttempt(attemptId)) {
+        return
+      }
+      this.availableReleaseUrl = target.feedUrl
       this.markUpdateCheckLaunched(attemptId)
       await updater.checkForUpdates()
       this.handleSettledUpdateCheckPromise(attemptId)

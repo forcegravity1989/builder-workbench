@@ -5,11 +5,15 @@ import { toRuntimeExecutionHostId } from '../../../../shared/execution-host/exec
 
 const test = vi.hoisted(() => ({ state: {} as Record<string, unknown>, rpc: vi.fn() }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => test.state } }))
-vi.mock('@/runtime/runtime-rpc-client', () => ({
-  callRuntimeRpc: test.rpc,
+vi.mock('@/runtime/rpc/calls/runtime-rpc-call', () => ({
+  callRuntimeRpc: test.rpc
+}))
+vi.mock('@/runtime/rpc/compatibility/runtime-capability-proof', () => ({
   assertRuntimeEnvironmentCapability: vi.fn()
 }))
-vi.mock('@/lib/worktree-activation', () => ({ activateAndRevealWorktree: vi.fn() }))
+vi.mock('@/lib/workspace/activation/worktree-activation', () => ({
+  activateAndRevealWorktree: vi.fn()
+}))
 vi.mock('../project-page-state', () => ({ closeProjectPage: vi.fn() }))
 import { ensureNamedWorktree, findNamedWorktree, nativeWorkspaceScope } from './native-workspace'
 import { cycleRuntimeTarget, cycleScopeForWorktree } from './native-cycle-workspace'

@@ -160,8 +160,10 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Install Node dependencies
+        id: install
         uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: node
@@ -187,12 +189,15 @@ jobs:
         run: pnpm run lint
 
       - name: Typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm run typecheck
 
       - name: Test Workbench contracts and count ratchet
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm run check:vitest-count-ratchet
 
       - name: Test native reporting and repository integration code
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/persistence-workspace-default.test.ts
@@ -214,6 +219,7 @@ jobs:
           src/renderer/src/components/terminal-pane/links
 
       - name: Test native usage protocols and account integration
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/rate-limits
@@ -222,7 +228,19 @@ jobs:
           src/renderer/src/components/status-bar/accounts
           src/renderer/src/lib/workspace/ownership/visible-account-surface.test.ts
 
+      - name: Test restored automation and update contracts
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/shared/automation-run-prompt.test.ts
+          src/renderer/src/components/automations/AutomationsPage.editor-request.test.tsx
+          src/renderer/src/store/slices/ui-automation-editor.test.ts
+          src/main/updater/recoverable-update-feed.test.ts
+          src/main/updater/resumable-update-download.test.ts
+          src/main/updater/releases/updater-release-policy.test.ts
+
       - name: Test Cursor hook and continuation protocols
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/agent-hooks/installation
@@ -232,6 +250,7 @@ jobs:
           src/main/codex/history/resume
 
       - name: Build desktop application
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm run build:desktop
 
   e2e:
