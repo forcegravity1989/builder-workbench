@@ -17,12 +17,8 @@ import { isDashboardPopoutRenderer } from '../window/dashboard-popout-window'
 import { isTrustedBrowserRenderer } from './browser-renderer-trust'
 import { getW3AccountConfig, type W3AccountConfig } from '../w3-account/w3-account-config'
 import { ensureW3SessionProfile } from '../w3-account/w3-account-session-store'
-import {
-  W3AccountService,
-  type W3FetchInit,
-  type W3FetchResponse,
-  type W3LoginWindowHandle
-} from '../w3-account/w3-account-service'
+import type { W3FetchInit, W3FetchResponse } from '../w3-account/w3-account-identity'
+import { W3AccountService, type W3LoginWindowHandle } from '../w3-account/w3-account-service'
 import {
   syncW3SessionFromSystemBrowser,
   type W3SessionBridgeResult

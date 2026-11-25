@@ -23,6 +23,7 @@ describe('toW3AccountView', () => {
       toW3AccountView({
         state: 'signed-in',
         sessionProfileId: 'sp1',
+        sessionPartition: 'persist:w3',
         identity: { displayName: 'Ada', employeeNo: 'E1' }
       })
     ).toEqual({ kind: 'signed-in', hasIdentity: true, displayName: 'Ada', employeeNo: 'E1' })
@@ -30,7 +31,12 @@ describe('toW3AccountView', () => {
 
   it('maps signed-in without profile info', () => {
     expect(
-      toW3AccountView({ state: 'signed-in', sessionProfileId: 'sp1', identity: null })
+      toW3AccountView({
+        state: 'signed-in',
+        sessionProfileId: 'sp1',
+        sessionPartition: 'persist:w3',
+        identity: null
+      })
     ).toEqual({ kind: 'signed-in', hasIdentity: false, displayName: '', employeeNo: '' })
   })
 
@@ -42,7 +48,8 @@ describe('toW3AccountView', () => {
       { state: 'failed', reason: 'account-parse-failed' },
       { state: 'failed', reason: 'cancelled' },
       { state: 'failed', reason: 'open-failed' },
-      { state: 'failed', reason: 'sync-failed' }
+      { state: 'failed', reason: 'sync-failed' },
+      { state: 'failed', reason: 'sign-out-failed' }
     ]
     expect(toW3AccountView(reasons[0])).toEqual({ kind: 'failed', reason: 'not-configured' })
     expect(toW3AccountView(reasons[1])).toEqual({ kind: 'failed', reason: 'timeout' })
@@ -51,5 +58,6 @@ describe('toW3AccountView', () => {
     expect(toW3AccountView(reasons[4])).toEqual({ kind: 'failed', reason: 'cancelled' })
     expect(toW3AccountView(reasons[5])).toEqual({ kind: 'failed', reason: 'open-failed' })
     expect(toW3AccountView(reasons[6])).toEqual({ kind: 'failed', reason: 'sync-failed' })
+    expect(toW3AccountView(reasons[7])).toEqual({ kind: 'failed', reason: 'sign-out-failed' })
   })
 })

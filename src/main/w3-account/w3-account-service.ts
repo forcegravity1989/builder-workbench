@@ -15,28 +15,17 @@ import type {
   W3Identity,
   W3StartLoginResult
 } from '../../shared/w3-account'
-import { parseW3AccountResponse, type W3AccountPollResult } from './w3-account-identity'
+import {
+  checkW3AccountIdentity,
+  type W3FetchInit,
+  type W3FetchResponse
+} from './w3-account-identity'
 import {
   isAllowedW3ShortcutUrl,
   type W3AccountConfig,
   type W3AccountConfigResult
 } from './w3-account-config'
 import type { W3SessionBridgeResult } from './w3-session-bridge'
-
-export type W3FetchResponse = {
-  status: number
-  url?: string
-  /** True when the request failed at the network level (transient). */
-  networkError?: boolean
-  text: () => Promise<string>
-}
-
-export type W3FetchInit = {
-  method?: string
-  redirect?: 'manual'
-  credentials?: 'include'
-  signal?: AbortSignal
-}
 
 /** Minimal surface of the W3 login BrowserWindow the service needs. */
 export type W3LoginWindowHandle = {
@@ -113,6 +102,7 @@ export class W3AccountService {
   private signedIn: {
     orcaProfileId: string
     sessionProfileId: string
+    partition: string
     identity: W3Identity | null
   } | null = null
 
@@ -179,7 +169,12 @@ export class W3AccountService {
     if (this.generation !== generation) {
       return this.statusNow(this.deps.getActiveProfileId())
     }
-    const result = await this.checkIdentity(config, handle.partition)
+    const result = await checkW3AccountIdentity(
+      this.deps.fetch,
+      config,
+      handle.partition,
+      this.fetchTimeoutMs
+    )
     if (this.generation !== generation) {
       return this.statusNow(this.deps.getActiveProfileId())
     }
@@ -187,9 +182,15 @@ export class W3AccountService {
       this.signedIn = {
         orcaProfileId,
         sessionProfileId: handle.profileId,
+        partition: handle.partition,
         identity: result.identity
       }
-      return { state: 'signed-in', sessionProfileId: handle.profileId, identity: result.identity }
+      return {
+        state: 'signed-in',
+        sessionProfileId: handle.profileId,
+        sessionPartition: handle.partition,
+        identity: result.identity
+      }
     }
     // 421 / other answers / network: no trusted identity right now.
     this.signedIn = null
@@ -260,6 +261,7 @@ export class W3AccountService {
         status: {
           state: 'signed-in',
           sessionProfileId: this.signedIn.sessionProfileId,
+          sessionPartition: this.signedIn.partition,
           identity: this.signedIn.identity
         }
       }
@@ -336,6 +338,7 @@ export class W3AccountService {
       return {
         state: 'signed-in',
         sessionProfileId: this.signedIn.sessionProfileId,
+        sessionPartition: this.signedIn.partition,
         identity: this.signedIn.identity
       }
     }
@@ -392,7 +395,12 @@ export class W3AccountService {
     }
     // Why the account API after the transplant: cookie presence never counts
     // as a login — the bridge only moves a session, the trusted API confirms it.
-    const identity = await this.checkIdentity(config, sync.partition)
+    const identity = await checkW3AccountIdentity(
+      this.deps.fetch,
+      config,
+      sync.partition,
+      this.fetchTimeoutMs
+    )
     if (this.sync !== sync || sync.generation !== this.generation) {
       if (this.sync === sync) {
         this.sync = null
@@ -405,11 +413,13 @@ export class W3AccountService {
       this.signedIn = {
         orcaProfileId: sync.orcaProfileId,
         sessionProfileId: sync.sessionProfileId,
+        partition: sync.partition,
         identity: identity.identity
       }
       this.deps.broadcast({
         state: 'signed-in',
         sessionProfileId: sync.sessionProfileId,
+        sessionPartition: sync.partition,
         identity: identity.identity
       })
       return
@@ -437,7 +447,10 @@ export class W3AccountService {
   /**
    * Sign out: stop polling, close the login window, and clear only the
    * dedicated W3 partition's local storage (cookies + web storage). Never
-   * touches the default/other profile sessions.
+   * touches the default/other profile sessions. Cleanup failure is reported
+   * as a retryable failure — never as a successful sign-out, or the UI would
+   * claim the user is signed out while the session (and its cookies) is
+   * still alive.
    */
   async signOut(): Promise<W3AccountStatus> {
     this.cancelPoller()
@@ -452,7 +465,7 @@ export class W3AccountService {
     try {
       handle = await this.deps.ensureSessionProfile(orcaProfileId)
     } catch {
-      return { state: 'signed-out' }
+      return failure('sign-out-failed')
     }
     if (this.generation !== generation) {
       return this.statusNow(this.deps.getActiveProfileId())
@@ -460,7 +473,7 @@ export class W3AccountService {
     try {
       await this.deps.clearDedicatedStorage(handle.partition)
     } catch {
-      // Best-effort; the UI returns to signed-out either way.
+      return failure('sign-out-failed')
     }
     if (this.generation !== generation) {
       return this.statusNow(this.deps.getActiveProfileId())
@@ -492,47 +505,6 @@ export class W3AccountService {
     this.poller = null
   }
 
-  private async checkIdentity(
-    config: W3AccountConfig,
-    partition: string
-  ): Promise<W3AccountPollResult> {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), this.fetchTimeoutMs)
-    let response: W3FetchResponse
-    try {
-      response = await this.deps.fetch(partition, config.accountApiUrl, {
-        redirect: 'manual',
-        credentials: 'include',
-        signal: controller.signal
-      })
-    } catch {
-      return { state: 'unauthenticated' }
-    } finally {
-      clearTimeout(timer)
-    }
-    if (response.networkError || response.status === 0) {
-      // Why: a transient network blip is not a login failure — keep waiting
-      // (the bounded total timeout still applies).
-      return { state: 'unauthenticated' }
-    }
-    // Why: even with redirect:'manual', guard against a followed/misrouted
-    // final URL so identity is only ever trusted from the configured origin.
-    if (
-      typeof response.url === 'string' &&
-      response.url &&
-      new URL(response.url).origin !== config.accountApiOrigin
-    ) {
-      return { state: 'login-failed' }
-    }
-    let body = ''
-    try {
-      body = await response.text()
-    } catch {
-      body = ''
-    }
-    return parseW3AccountResponse(response.status, body)
-  }
-
   private scheduleTick(config: W3AccountConfig, poller: Poller): void {
     if (this.poller !== poller || !poller.running) {
       return
@@ -561,7 +533,12 @@ export class W3AccountService {
       this.deps.broadcast(failure('timeout'))
       return
     }
-    const result = await this.checkIdentity(config, poller.partition)
+    const result = await checkW3AccountIdentity(
+      this.deps.fetch,
+      config,
+      poller.partition,
+      this.fetchTimeoutMs
+    )
     // Re-check after the await: the poller may have been cancelled/replaced
     // while the request was in flight.
     if (this.poller !== poller || !poller.running || poller.generation !== this.generation) {
@@ -571,11 +548,13 @@ export class W3AccountService {
       const status: W3AccountStatus = {
         state: 'signed-in',
         sessionProfileId: poller.sessionProfileId,
+        sessionPartition: poller.partition,
         identity: result.identity
       }
       this.signedIn = {
         orcaProfileId: poller.orcaProfileId,
         sessionProfileId: poller.sessionProfileId,
+        partition: poller.partition,
         identity: result.identity
       }
       this.cancelPoller() // closes the login window

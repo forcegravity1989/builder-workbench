@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '@/store'
 import type { W3AccountStatus } from '../../../shared/w3-account'
-import { setW3LocalBrowserDefaultProfileId } from '@/lib/w3-local-browser-default'
+import { setW3LocalBrowserDefault } from '@/lib/w3-local-browser-default'
 
 // Why: app-level (not page-level) thin mount. On startup / profile restore the
 // main process validates the W3 session against the trusted account API before
@@ -26,10 +26,19 @@ export function useW3AccountBootstrap(): void {
       }
       if (status.state === 'signed-in') {
         signedInProfileRef.current = status.sessionProfileId
-        setW3LocalBrowserDefaultProfileId(status.sessionProfileId)
+        setW3LocalBrowserDefault({
+          sessionProfileId: status.sessionProfileId,
+          sessionPartition: status.sessionPartition
+        })
+      } else if (status.state === 'failed' && status.reason === 'sign-out-failed') {
+        // Why keep everything: the sign-out cleanup failed, so the dedicated
+        // session (and its cookies) is still alive. Dropping the local default
+        // or closing W3 tabs here would pretend the sign-out succeeded while
+        // the user is still signed in; they can retry the sign-out.
+        return
       } else {
         if (previousStateRef.current === 'signed-in') {
-          setW3LocalBrowserDefaultProfileId(null)
+          setW3LocalBrowserDefault(null)
           closeW3BrowserTabs(signedInProfileRef.current)
         }
         signedInProfileRef.current = null

@@ -63,6 +63,11 @@ function failureMessage(reason: Extract<W3AccountView, { kind: 'failed' }>['reas
         'auto.components.settings.w3Account.failedSync',
         'Could not reuse the sign-in from the system browser. Retry, or sign in manually below.'
       )
+    case 'sign-out-failed':
+      return translate(
+        'auto.components.settings.w3Account.failedSignOut',
+        'Could not clear the W3 session. You are still signed in. Try signing out again.'
+      )
   }
 }
 
@@ -351,6 +356,10 @@ function FailedCard({
   onRetry: () => void
   onStartManual: () => void
 }): React.JSX.Element {
+  // Why reason-aware: a failed sign-out is not a failed sign-in — the user is
+  // still signed in, so neither the heading nor the manual sign-in fallback
+  // of the sign-in failure card fits.
+  const isSignOutFailure = reason === 'sign-out-failed'
   return (
     <div className="mx-auto w-full max-w-[520px]">
       <CardShell>
@@ -359,24 +368,36 @@ function FailedCard({
             <AlertCircle className="size-7" />
           </div>
           <h3 className="mt-4 text-lg font-semibold">
-            {translate('auto.components.settings.w3Account.failedHeading', 'Sign-in not completed')}
+            {isSignOutFailure
+              ? translate(
+                  'auto.components.settings.w3Account.failedHeadingSignOut',
+                  'Sign-out not completed'
+                )
+              : translate(
+                  'auto.components.settings.w3Account.failedHeading',
+                  'Sign-in not completed'
+                )}
           </h3>
           <div className="mt-3 w-full rounded-lg border border-border bg-muted/40 p-3 text-left text-xs leading-5 text-muted-foreground">
             {failureMessage(reason)}
           </div>
           <Button type="button" size="lg" className="mt-5 min-w-[240px]" onClick={onRetry}>
             <RefreshCw className="size-4" />
-            {translate('auto.components.settings.w3Account.retry', 'Retry')}
+            {isSignOutFailure
+              ? translate('auto.components.settings.w3Account.retrySignOut', 'Retry sign out')
+              : translate('auto.components.settings.w3Account.retry', 'Retry')}
           </Button>
-          <div className="mt-2">
-            <Button type="button" variant="ghost" size="sm" onClick={onStartManual}>
-              <LogIn className="size-4" />
-              {translate(
-                'auto.components.settings.w3Account.signInButton',
-                'Sign in with Huawei W3'
-              )}
-            </Button>
-          </div>
+          {isSignOutFailure ? null : (
+            <div className="mt-2">
+              <Button type="button" variant="ghost" size="sm" onClick={onStartManual}>
+                <LogIn className="size-4" />
+                {translate(
+                  'auto.components.settings.w3Account.signInButton',
+                  'Sign in with Huawei W3'
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </CardShell>
     </div>
@@ -448,7 +469,10 @@ export function W3AccountSettingsPane(): React.JSX.Element {
         {view.kind === 'failed' ? (
           <FailedCard
             reason={view.reason}
-            onRetry={() => void sync()}
+            // Why the split: a sign-out failure must retry the sign-out;
+            // retrying the session bridge would just re-confirm the session
+            // the user is trying to end.
+            onRetry={() => (view.reason === 'sign-out-failed' ? void signOut() : void sync())}
             onStartManual={() => void start()}
           />
         ) : null}

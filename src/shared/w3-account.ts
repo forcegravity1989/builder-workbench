@@ -15,6 +15,7 @@ export type W3FailureReason =
   | 'login-failed'
   | 'account-parse-failed'
   | 'sync-failed'
+  | 'sign-out-failed'
 
 /**
  * Renderer-visible account state. A "signed-in" state is only produced from a
@@ -25,13 +26,23 @@ export type W3FailureReason =
  * controlled Chrome completes SPES passwordless login, then its cookies are
  * transplanted into the dedicated partition and re-validated by the same
  * account API before anything is reported as signed in).
+ *
+ * `sessionPartition` on signed-in is the dedicated partition itself. The W3
+ * profile is internal (hidden from the renderer's profile list), so the
+ * renderer cannot resolve it from the profile id — ordinary local tabs reuse
+ * the W3 session only by mounting this partition directly.
  */
 export type W3AccountStatus =
   | { state: 'unconfigured' }
   | { state: 'signed-out' }
   | { state: 'login-pending'; sessionProfileId: string }
   | { state: 'sync-pending'; sessionProfileId: string }
-  | { state: 'signed-in'; sessionProfileId: string; identity: W3Identity | null }
+  | {
+      state: 'signed-in'
+      sessionProfileId: string
+      sessionPartition: string
+      identity: W3Identity | null
+    }
   | { state: 'failed'; reason: W3FailureReason }
 
 /** Result of a login request. Main opens the W3 login window itself. */

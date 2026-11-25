@@ -37,6 +37,10 @@
     .w3-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; height: 40px; padding: 0 20px; border: 1px solid var(--color-divider); border-radius: 999px; background: var(--color-card); color: var(--color-text); font-size: 13px; font-weight: 600; cursor: pointer; }
     .w3-btn:hover { background: var(--color-neutral-100); }
     .w3-btn:disabled { opacity: .7; cursor: default; }
+    .w3-btn.primary { border-color: var(--color-accent); background: var(--color-accent); color: #fff; }
+    .w3-btn.primary:hover { background: color-mix(in srgb, var(--color-accent) 88%, #000); }
+    .w3-btn.ghost { min-width: 0; height: 32px; font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
+    .w3-btn.ghost:hover { color: var(--color-text); background: var(--color-neutral-100); }
     .w3-btn .spin { width: 14px; height: 14px; border: 2px solid var(--color-divider); border-top-color: var(--color-text); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .fineprint { margin-top: 20px; color: var(--muted-foreground); font-size: 11px; }
@@ -73,7 +77,8 @@
   <strong>原型 · W3 Account</strong>
   <span class="seg" id="phases">
     <label class="seg-opt"><input type="radio" name="phase" value="signed-out" checked><span>未登录</span></label>
-    <label class="seg-opt"><input type="radio" name="phase" value="login-opened"><span>登录页已打开</span></label>
+    <label class="seg-opt"><input type="radio" name="phase" value="sync-pending"><span>桥接中</span></label>
+    <label class="seg-opt"><input type="radio" name="phase" value="login-opened"><span>登录页已打开(兜底)</span></label>
     <label class="seg-opt"><input type="radio" name="phase" value="trusted"><span>登录完成(可信身份)</span></label>
     <label class="seg-opt"><input type="radio" name="phase" value="no-profile"><span>登录完成(未获取资料)</span></label>
     <label class="seg-opt"><input type="radio" name="phase" value="failed"><span>失败</span></label>
@@ -83,7 +88,7 @@
 </div>
 
 <div class="industry">
-  <b>业界参考：</b>常见企业应用/浏览器的「账户页」单按钮 SSO 登录与「欢迎回来」欢迎卡（如 Google、Microsoft 账户登录页的单主按钮布局）。本原型只表达目标交互，颜色与组件来自 BW 设计系统；不使用任何厂商商标或外链图像。
+  <b>业界参考：</b>常见企业应用的「账户页」主按钮 SSO 登录 + 次按钮备用入口与「欢迎回来」欢迎卡（如 Google、Microsoft 账户登录页的主按钮 + 备用方式布局）。本原型只表达目标交互，颜色与组件来自 BW 设计系统；不使用任何厂商商标或外链图像。
 </div>
 
 <div class="shell">
@@ -99,7 +104,7 @@
   <div class="pane">
     <div class="pane-head">
       <h2>W3 Account</h2>
-      <p>使用企业 W3 账户登录（内置会话网页登录 + W3 账号接口取身份）。</p>
+      <p>使用企业 W3 账户登录（会话桥接主路径 + 手动网页登录兜底，身份取自 W3 账号接口）。</p>
     </div>
     <div class="pane-body">
 
@@ -107,12 +112,23 @@
       <div class="welcome" data-phase="signed-out">
         <div class="emoji">👋</div>
         <h3>欢迎回来</h3>
-        <p>使用你的 W3 账户登录。</p>
-        <button class="w3-btn" onclick="setPhase('login-opened')">使用华为 W3 登录</button>
-        <p class="fineprint">无需输入账号密码 · 是否免密取决于 W3 会话与企业策略</p>
+        <p>使用你的 W3 账户登录。内置浏览器访问内网站点会复用本次登录。</p>
+        <button class="w3-btn primary" onclick="setPhase('sync-pending')">从系统浏览器复用登录</button>
+        <div><button class="w3-btn ghost" onclick="setPhase('login-opened')">使用华为 W3 登录</button></div>
+        <p class="fineprint">主按钮免密零操作 · 次按钮为手动兜底 · 无需输入账号密码</p>
       </div>
 
-      <!-- 登录页已打开（未登录完成） -->
+      <!-- 桥接中（主路径：后台 headless 系统 Chrome 免密） -->
+      <div class="welcome" data-phase="sync-pending" hidden>
+        <div class="emoji">🔄</div>
+        <h3>正在从系统浏览器复用登录</h3>
+        <p>后台临时系统浏览器会话为你完成免密登录，无需任何操作。</p>
+        <button class="w3-btn primary" disabled><span class="spin"></span>复用中…</button>
+        <div><button class="w3-btn ghost" onclick="setPhase('signed-out')">取消</button></div>
+        <p class="fineprint">登录完成以 W3 账号接口返回 200 且能解析出工号/账号为准；本页自动更新。</p>
+      </div>
+
+      <!-- 登录页已打开（兜底路径，未登录完成） -->
       <div class="welcome" data-phase="login-opened" hidden>
         <div class="emoji">🌐</div>
         <h3>W3 登录窗口已打开</h3>
@@ -152,9 +168,10 @@
       <!-- 失败 -->
       <div class="fail" data-phase="failed" hidden>
         <h3>登录未完成</h3>
-        <div class="errbox">未能完成 W3 登录：未配置（URL 非法，请联系管理员）、打开失败 / 超时 / 取消、W3 会话未完成登录（接口 4xx/5xx）或已登录但未读取到有效资料（200 解析失败）。</div>
-        <button class="w3-btn" onclick="setPhase('login-opened')">重试</button>
-        <p class="note" style="text-align:left">原型注释：登录页/账号接口地址与超时均由 env 配置（`ORCA_W3_LOGIN_URL` / `ORCA_W3_ACCOUNT_API_URL` / `ORCA_W3_LOGIN_TIMEOUT_MS`，默认 w3.huawei.com）；URL 非法时不打开空白外网、不猜地址；不需要 OAuth client_id/PKCE。</p>
+        <div class="errbox">未能完成 W3 登录：未配置（URL 非法，请联系管理员）、桥接失败（找不到系统 Chrome / SPES 免密未完成 / 无法读取登录信息）、打开失败 / 超时 / 取消、W3 会话未完成登录（接口 4xx/5xx）或已登录但未读取到有效资料（200 解析失败）。</div>
+        <button class="w3-btn primary" onclick="setPhase('sync-pending')">重试</button>
+        <div><button class="w3-btn ghost" onclick="setPhase('login-opened')">使用华为 W3 登录</button></div>
+        <p class="note" style="text-align:left">原型注释：重试即再走一次会话桥接；次按钮为手动登录兜底。登录页/账号接口地址与超时均由 env 配置（`ORCA_W3_LOGIN_URL` / `ORCA_W3_ACCOUNT_API_URL` / `ORCA_W3_LOGIN_TIMEOUT_MS` / `ORCA_W3_SYSTEM_CHROME_PATH`，默认 w3.huawei.com）；URL 非法时不打开空白外网、不猜地址；不需要 OAuth client_id/PKCE。</p>
       </div>
 
     </div>

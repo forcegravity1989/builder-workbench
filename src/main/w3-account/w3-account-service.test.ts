@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { W3AccountStatus } from '../../shared/w3-account'
 import { getW3AccountConfig, type W3AccountConfig } from './w3-account-config'
+import type { W3FetchResponse } from './w3-account-identity'
 import type { W3SessionBridgeResult } from './w3-session-bridge'
-import {
-  W3AccountService,
-  type W3FetchResponse,
-  type W3LoginWindowHandle
-} from './w3-account-service'
+import { W3AccountService, type W3LoginWindowHandle } from './w3-account-service'
 
 type Entry = { fn: () => void; ms: number; cleared: boolean }
 type FetchResult = W3FetchResponse | Error
@@ -35,6 +32,7 @@ function makeDeps(
     fetchResults: FetchResult[]
     syncResults: SyncResult[]
     now: () => number
+    clearStorageError: Error
   }> = {}
 ) {
   const fetchResults: FetchResult[] = overrides.fetchResults ?? []
@@ -137,6 +135,9 @@ function makeDeps(
     ensureSessionProfile: async () => ({ profileId: 'w3-sess-1', partition: 'persist:w3-sess-1' }),
     fetch: fetchState.fetch,
     clearDedicatedStorage: async (partition) => {
+      if (overrides.clearStorageError) {
+        throw overrides.clearStorageError
+      }
       clearStorage.push(partition)
     },
     openLoginWindow,
@@ -196,6 +197,7 @@ describe('W3AccountService (web login + account API)', () => {
     expect(h.last()).toEqual({
       state: 'signed-in',
       sessionProfileId: 'w3-sess-1',
+      sessionPartition: 'persist:w3-sess-1',
       identity: { displayName: '张三', employeeNo: '111222' }
     })
     expect(h.windows[0].closeCount).toBe(1)
@@ -232,6 +234,7 @@ describe('W3AccountService (web login + account API)', () => {
     expect(h.last()).toEqual({
       state: 'signed-in',
       sessionProfileId: 'w3-sess-1',
+      sessionPartition: 'persist:w3-sess-1',
       identity: { displayName: '张三', employeeNo: '111222' }
     })
   })
@@ -295,6 +298,10 @@ describe('W3AccountService (web login + account API)', () => {
     const status = await h.service.signOut()
     expect(status).toEqual({ state: 'signed-out' })
     expect(h.clearStorage).toEqual(['persist:w3-sess-1'])
+    // Why a failing cleanup must not report success: the session (and its
+    // cookies) would survive while the UI claims the user is signed out.
+    const failing = makeDeps({ clearStorageError: new Error('locked') })
+    expect(await failing.service.signOut()).toEqual({ state: 'failed', reason: 'sign-out-failed' })
   })
 
   it('getStatus restores a live session (200) and reports signed-out on 421', async () => {
@@ -302,9 +309,36 @@ describe('W3AccountService (web login + account API)', () => {
     expect(await h.service.getStatus()).toEqual({
       state: 'signed-in',
       sessionProfileId: 'w3-sess-1',
+      sessionPartition: 'persist:w3-sess-1',
       identity: { displayName: '张三', employeeNo: '111222' }
     })
     expect(await h.service.getStatus()).toEqual({ state: 'signed-out' })
+    // Why the stalled-body harness: the per-request timeout must cover the
+    // body read too — a response that returns headers and then stalls must
+    // not hang the startup check (or a poll tick) forever.
+    const stalled = new W3AccountService({
+      getConfig: () => CONFIG,
+      getActiveProfileId: () => 'orca-1',
+      ensureSessionProfile: async () => ({
+        profileId: 'w3-sess-1',
+        partition: 'persist:w3-sess-1'
+      }),
+      fetch: async () => ({
+        status: 200,
+        url: 'https://w3.huawei.com/api',
+        text: () => new Promise<string>(() => {})
+      }),
+      clearDedicatedStorage: async () => {},
+      openLoginWindow: () => {
+        throw new Error('must not open')
+      },
+      syncSession: async () => {
+        throw new Error('must not sync')
+      },
+      broadcast: () => {},
+      fetchTimeoutMs: 15
+    })
+    expect(await stalled.getStatus()).toEqual({ state: 'signed-out' })
   })
 
   it('a superseded startLogin cannot overwrite a newer poller', async () => {
@@ -320,6 +354,7 @@ describe('W3AccountService (web login + account API)', () => {
     expect(h.last()).toEqual({
       state: 'signed-in',
       sessionProfileId: 'w3-sess-1',
+      sessionPartition: 'persist:w3-sess-1',
       identity: { displayName: '张三', employeeNo: '111222' }
     })
   })
@@ -355,6 +390,7 @@ describe('W3AccountService (web login + account API)', () => {
     expect(result.status).toEqual({
       state: 'signed-in',
       sessionProfileId: 'w3-sess-1',
+      sessionPartition: 'persist:w3-sess-1',
       identity: { displayName: '张三', employeeNo: '111222' }
     })
     // Why: a login window must NOT be opened when already signed in.
@@ -381,6 +417,7 @@ describe('W3AccountService (session bridge from system browser)', () => {
       {
         state: 'signed-in',
         sessionProfileId: 'w3-sess-1',
+        sessionPartition: 'persist:w3-sess-1',
         identity: { displayName: '张三', employeeNo: '111222' }
       }
     ])
