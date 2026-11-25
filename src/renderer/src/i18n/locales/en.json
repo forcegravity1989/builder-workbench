@@ -21081,9 +21081,6 @@
       }
     },
     "workbench": {
-      "improvement": {
-        "startRepair": "Start repair"
-      },
       "quickLinks": {
         "add": "Add",
         "cancel": "Cancel",
@@ -27371,9 +27368,6 @@
         "lede": "Run several agents at once, track their progress, and let automation drive Orca when it helps."
       },
       "workbench": {
-        "improvement": {
-          "startRepair": "Start repair"
-        },
         "title": "Workbench",
         "lede": "Bring your terminal setup into Orca, then split panes to keep servers, tests, logs, and agents running side by side."
       },
