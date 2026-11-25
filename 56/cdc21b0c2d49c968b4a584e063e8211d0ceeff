@@ -1,0 +1,28 @@
+docs/05-features/project-intake/spec.md
+  s_b33c968b7cc172::t_e795b624f3c7e6 39
+src/renderer/src/workbench/use-team-member-avatars.ts
+  s_b33c968b7cc172::t_ab29c65174e5d3 18-20
+src/renderer/src/workbench/ProjectWallPage.tsx
+  h_d0d195a8c70989 52-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "56cdc21b0c2d49c968b4a584e063e8211d0ceeff",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_b33c968b7cc172": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "659ff28e-b1f5-4ab1-8294-7a404c24dfe4",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
