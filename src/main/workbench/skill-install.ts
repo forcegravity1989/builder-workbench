@@ -19,23 +19,27 @@ import {
 } from './workspace-resolver'
 import { getActiveMultiplexer } from '../ssh/ssh-target-registry'
 import bundle from '../../shared/workbench/skill-package.json'
+import improvementBundle from '../../shared/workbench/improvement-skill-package.json'
 
 export async function prepareWorkbenchSkill(
   runtime: OrcaRuntimeService,
   input: z.infer<typeof WorkbenchSkillPrepareRequest>,
   signal?: AbortSignal
 ): Promise<{ skillPath: string }> {
-  const resolved = await createWorkbenchWorkspaceResolver(
-    nativeWorkbenchWorkspaceHost(runtime)
-  ).resolve(input)
-  const host = parseExecutionHostId(resolved.target.hostId)
+  const resolved =
+    input.topic === 'improve-workbench'
+      ? undefined
+      : await createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime)).resolve(input)
+  const archive = input.topic === 'improve-workbench' ? improvementBundle : bundle
+  const host = resolved ? parseExecutionHostId(resolved.target.hostId) : undefined
   const ssh = host?.kind === 'ssh' ? getActiveMultiplexer(host.targetId) : null
   if (host?.kind === 'ssh' && !ssh) {
     throw new Error('工作树所属 SSH 宿主未连接')
   }
-  const projectRuntime = ssh
-    ? undefined
-    : runtime.resolveProjectRuntimeForWorktree(input.worktreeId)
+  const projectRuntime =
+    ssh || input.topic === 'improve-workbench'
+      ? undefined
+      : runtime.resolveProjectRuntimeForWorktree(input.worktreeId)
   if (projectRuntime?.status === 'repair-required') {
     throw new Error('请先修复项目执行环境，再准备流程 Skill')
   }
@@ -45,11 +49,11 @@ export async function prepareWorkbenchSkill(
       : { scope: 'global', executionTarget: { kind: 'host' } }
   const upload = SkillUploadBeginResultSchema.parse(
     ssh
-      ? await ssh.request('skills.beginUpload', { package: bundle.package })
-      : await runtime.beginSkillUpload({ package: bundle.package })
+      ? await ssh.request('skills.beginUpload', { package: archive.package })
+      : await runtime.beginSkillUpload({ package: archive.package })
   )
   try {
-    const bytes = Buffer.from(bundle.archiveBase64, 'base64')
+    const bytes = Buffer.from(archive.archiveBase64, 'base64')
     const chunkBytes = Math.min(upload.chunkBytes, SKILL_UPLOAD_CHUNK_MAX_BYTES)
     if (upload.acknowledgedOffset > bytes.length) {
       throw new Error('技能包上传偏移无效')
@@ -66,11 +70,11 @@ export async function prepareWorkbenchSkill(
     await (ssh
       ? ssh.request('skills.commitUpload', { uploadId: upload.uploadId })
       : runtime.commitSkillUpload(upload.uploadId))
-    await resolved.reauthorize()
+    await resolved?.reauthorize()
     signal?.throwIfAborted()
     const request: SkillBundleInstallRequest = {
       operationId: randomUUID(),
-      package: bundle.package,
+      package: archive.package,
       selectedSkillIds: [input.topic],
       ingress: { kind: 'staged-upload', uploadId: upload.uploadId },
       destination,

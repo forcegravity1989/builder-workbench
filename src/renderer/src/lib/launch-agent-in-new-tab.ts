@@ -311,9 +311,8 @@ function launchAgentInNewTabInternal(
       }
       return { delivered, failureNotified: !delivered && timeoutNotice.wasNotified() }
     })
-    if (promptDelivery === 'submit-after-ready') {
-      promptDeliveryResult = deliveryPromise
-    } else {
+    promptDeliveryResult = deliveryPromise
+    if (promptDelivery !== 'submit-after-ready') {
       void deliveryPromise.catch((error) =>
         console.error('Prompt delivery failed after launch', error)
       )

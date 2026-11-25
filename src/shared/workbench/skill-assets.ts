@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const WorkbenchSkillPrepareRequest = z
+const WorkbenchWorkspaceSkillPrepareRequest = z
   .object({
     repoId: z.string().min(1),
     worktreeId: z.string().min(1),
@@ -8,5 +8,10 @@ export const WorkbenchSkillPrepareRequest = z
     topic: z.enum(['week-planning', 'version-acceptance', 'metrics-refresh'])
   })
   .strict()
+
+export const WorkbenchSkillPrepareRequest = z.discriminatedUnion('topic', [
+  WorkbenchWorkspaceSkillPrepareRequest,
+  z.object({ topic: z.literal('improve-workbench') }).strict()
+])
 
 export type WorkbenchSkillTopic = 'week-planning' | 'version-acceptance' | 'metrics-refresh'

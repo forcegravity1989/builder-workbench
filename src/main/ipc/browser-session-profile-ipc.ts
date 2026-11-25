@@ -29,7 +29,9 @@ export function registerBrowserSessionProfileHandlers(): void {
     if (!isTrustedBrowserRenderer(event.sender)) {
       return []
     }
-    return browserSessionRegistry.listProfiles()
+    // Why: internal profiles back features (e.g. W3 account) and are deliberately
+    // not user-manageable; hide them from the session-profile picker.
+    return browserSessionRegistry.listProfiles().filter((profile) => !profile.internal)
   })
 
   ipcMain.handle(

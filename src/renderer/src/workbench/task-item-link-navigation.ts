@@ -1,7 +1,12 @@
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { githubWorkItemWorkspaceComposerData } from '@/components/task-page-github-workspace-composer'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/github-work-item-source-lookup'
+import {
+  findIndexedRepoOwner,
+  findIndexedRepoOwnerForHost
+} from '@/lib/worktree-runtime-owner-index'
 import { useAppStore } from '@/store'
 import {
   findTaskItemLinkRepo,
@@ -10,13 +15,18 @@ import {
   type TaskItemLink
 } from '../../../shared/task-item-link'
 import { parseCodeHubRemote } from '../../../shared/codehub'
+import { githubRepoIdentityKey } from '../../../shared/github/repository-identity-key'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
+import { notifyScopedWorkspaceUnavailable } from './scoped-task-workspace'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
+import { dispatchScopedWorktrees } from './version-workspace-choice-state'
 
 export async function openWorkbenchTaskItemLink(
   url: string,
   link: TaskItemLink,
-  isCurrent: () => boolean
+  isCurrent: () => boolean,
+  disposition: 'details' | 'repair' = 'details'
 ): Promise<void> {
   if (link.provider === 'codehub') {
     const candidates = useAppStore.getState().repos.filter((repo) => {
@@ -111,6 +121,39 @@ export async function openWorkbenchTaskItemLink(
     return
   }
   assertReturnedTaskLink(link, item?.url, item?.number, item?.type)
+  if (disposition === 'repair') {
+    const state = useAppStore.getState()
+    const matchingRepos = state.repos.filter((candidate) => findTaskItemLinkRepo(link, [candidate]))
+    const outcome = dispatchScopedWorktrees({
+      candidates: state.allWorktrees().flatMap((tree) => {
+        const identity = tree.linkedTaskSourceContext?.providerIdentity
+        if (
+          tree.linkedIssue !== link.number ||
+          tree.isArchived ||
+          (identity &&
+            (identity.provider !== 'github' ||
+              githubRepoIdentityKey(identity) !== taskItemLinkIdentityKey(link)))
+        ) {
+          return []
+        }
+        const host = worktreeActivationHostOpts(tree)?.executionHostId
+        const owner = host ? null : findIndexedRepoOwner(state.repos, tree.repoId)
+        const ownerHost = host ?? (owner ? getRepoExecutionHostId(owner) : null)
+        return ownerHost && findIndexedRepoOwnerForHost(matchingRepos, tree.repoId, ownerHost)
+          ? [{ ...tree, hostId: ownerHost }]
+          : []
+      }),
+      choiceTitle: `#${item!.number} ${item!.title}`,
+      onUnavailable: notifyScopedWorkspaceUnavailable
+    })
+    if (outcome === 'none') {
+      state.openModal('new-workspace-composer', {
+        ...githubWorkItemWorkspaceComposerData(item!, sourceContext),
+        initialNote: `拉取最新代码，按项目 workbench-start 处理 Issue ${item!.url}。`
+      })
+    }
+    return
+  }
   useAppStore.getState().openTaskPage(
     {
       taskSource: 'github',

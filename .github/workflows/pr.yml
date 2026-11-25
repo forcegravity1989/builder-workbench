@@ -275,6 +275,8 @@ jobs:
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/rate-limits
+          src/main/w3-account
+          src/main/ipc/w3-account-ipc.test.ts
           src/main/claude-accounts/keychain.test.ts
           src/main/ipc/register-core-handlers/register-core-handlers.test.ts
           src/shared/rate-limit-types.test.ts
