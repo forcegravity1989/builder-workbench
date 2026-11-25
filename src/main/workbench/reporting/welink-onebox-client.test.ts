@@ -13,7 +13,7 @@ import {
 
 const { execLocalMock } = vi.hoisted(() => ({ execLocalMock: vi.fn() }))
 
-vi.mock('../../ipc/preflight-command-exec', async (importOriginal) => {
+vi.mock('../../ipc/preflight/preflight-command-exec', async (importOriginal) => {
   const actual = await importOriginal<typeof PreflightCommandExec>()
   return { ...actual, execLocalPreflightCommandOrThrow: execLocalMock }
 })

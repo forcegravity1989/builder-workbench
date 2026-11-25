@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { applyScrubSafeAgentEnvAliases } from '../../shared/agent-hook-scrub-safe-env'
-import { recognizeAgentProcessFromCommandLine } from '../../shared/agent-process-recognition'
-import { extractAgentProviderSession, getAgentResumeArgv } from '../../shared/agent-session-resume'
-import { createDraftPasteReadyScanner } from '../../shared/draft-paste-ready-scanner'
+import { applyScrubSafeAgentEnvAliases } from '../../shared/agent-hook-listener/transport/agent-hook-scrub-safe-env'
+import { recognizeAgentProcessFromCommandLine } from '../../shared/agent-status/process/agent-process-recognition'
+import { extractAgentProviderSession, getAgentResumeArgv } from '../../shared/agent-session/lifecycle/agent-session-resume'
+import { createDraftPasteReadyScanner } from '../../shared/agent-launch/startup/readiness/draft-paste-ready-scanner'
 import { createHookListenerState } from '../../shared/agent-hook-listener/listener-state'
-import { normalizeDshEvent } from '../../shared/agent-hook-listener/providers/dsh-events'
-import { buildAgentResumeStartupPlan, buildAgentStartupPlan } from '../../shared/tui-agent-startup'
+import { normalizeDshEvent } from '../../shared/agent-hook-listener/providers/dsh/dsh-events'
+import { buildAgentResumeStartupPlan, buildAgentStartupPlan } from '../../shared/agent-launch/startup/tui-agent-startup'
 import { applyManagedDshPatch, removeManagedDshPatch } from './dsh-home-patch'
-import { getAgentLabel, isClaudeAgent, isGeminiTerminalTitle } from '../../shared/agent-detection'
-import { collectAgentTitleEvidence } from '../../shared/agent-title-evidence'
+import {
+  getAgentLabel,
+  isClaudeAgent,
+  isGeminiTerminalTitle
+} from '../../shared/agent-status/title/terminal-title-agent-type'
+import { collectAgentTitleEvidence } from '../../shared/agent-status/title/agent-title-evidence'
 
 describe('DSH launch and provider contracts', () => {
   it('selects the workspace and keeps the first task out of the command line', () => {

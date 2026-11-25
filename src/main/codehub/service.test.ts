@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Repo } from '../../shared/repo-types'
+import type { Repo } from '../../shared/repository/repo-types'
 
 const { run } = vi.hoisted(() => ({ run: vi.fn() }))
 vi.mock('./cli', () => ({ runCodeHubCli: run }))
