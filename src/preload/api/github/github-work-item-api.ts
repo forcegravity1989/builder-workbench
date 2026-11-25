@@ -1,3 +1,5 @@
+import type { IssueStatesBatchResult } from '../../../shared/github/issue-state-types'
+import type { WorkItemsBatchResult } from '../../../shared/github/work-item-batch-types'
 import type { GhAccountBinding } from '../../../shared/github/accounts/account-binding'
 import type {
   GetProjectViewTableResult,
@@ -61,6 +63,18 @@ export type GithubWorkItemApi = {
     number: number
     ownerRepo?: GitHubOwnerRepo
   }) => Promise<IssueInfo | null>
+  issueStates: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }) => Promise<IssueStatesBatchResult>
+  workItemsBatch: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }) => Promise<WorkItemsBatchResult>
   workItem: (args: {
     repoPath: string
     repoId?: string

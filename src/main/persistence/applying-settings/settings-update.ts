@@ -61,6 +61,17 @@ export function updateSettings(
   options: { notifyListeners?: boolean; originWebContentsId?: number } = {}
 ): GlobalSettings {
   const sanitizedUpdates = normalizeWorkspaceDirSetting(stripRetiredGlobalSettings(updates))
+  if (updates.workbenchOverviewByProject) {
+    const current = operations.state.settings.workbenchOverviewByProject ?? {}
+    sanitizedUpdates.workbenchOverviewByProject = { ...current }
+    for (const [projectId, flags] of Object.entries(updates.workbenchOverviewByProject)) {
+      sanitizedUpdates.workbenchOverviewByProject[projectId] = {
+        ...current[projectId],
+        ...(typeof flags?.sdlc === 'boolean' ? { sdlc: flags.sdlc } : {}),
+        ...(typeof flags?.ai === 'boolean' ? { ai: flags.ai } : {})
+      }
+    }
+  }
   const linkBehavior = updates.terminalLinkClickBehavior
   if (linkBehavior === 'actions' || linkBehavior === 'open' || linkBehavior === 'none') {
     // Loaded defaults are ambiguous; synchronize the legacy switch only on an explicit write.

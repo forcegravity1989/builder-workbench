@@ -35,7 +35,13 @@ function makeTransportSpy(): TransportSpy {
     fetch: async (url, options) => {
       const body = options.body
       const bodyBytes =
-        typeof body === 'string' ? body.length : body ? (await body.arrayBuffer()).byteLength : 0
+        typeof body === 'string'
+          ? body.length
+          : body instanceof Uint8Array
+            ? body.byteLength
+            : body
+              ? (await body.arrayBuffer()).byteLength
+              : 0
       calls.push({ url, bodyBytes })
       return {
         status: 200,

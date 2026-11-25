@@ -1,3 +1,5 @@
+import { getIssueStatesBatch } from '../../github/issue-state-batch'
+import { getWorkItemsBatch } from '../../github/work-item-batch'
 import type { GhAccountBinding } from '../../../shared/github/accounts/account-binding'
 import { OptionalGhAccountExpectation } from '../../../shared/rpc-contract/github/github-repo-target-params'
 import { ipcMain } from 'electron'
@@ -145,6 +147,30 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
         { wake: args.wakeWslDistro === true }
       )
     }
+  )
+
+  ipcMain.handle(
+    'gh:issueStates',
+    (_event, args: { owner: string; repo: string; host?: string | null; numbers: number[] }) =>
+      getIssueStatesBatch({
+        owner: String(args.owner ?? ''),
+        repo: String(args.repo ?? ''),
+        host: args.host == null ? null : String(args.host),
+        numbers: Array.isArray(args.numbers) ? args.numbers : []
+      })
+  )
+
+  // 平台侧批量读取（同 gh:issueStates 口径）：任务屏范围装载按仓一次读回整行
+  // 字段（#436 伴飞裁定 CF-6b），只认 owner/repo 与本机 gh 登录态。
+  ipcMain.handle(
+    'gh:workItemsBatch',
+    (_event, args: { owner: string; repo: string; host?: string | null; numbers: number[] }) =>
+      getWorkItemsBatch({
+        owner: String(args.owner ?? ''),
+        repo: String(args.repo ?? ''),
+        host: args.host == null ? null : String(args.host),
+        numbers: Array.isArray(args.numbers) ? args.numbers : []
+      })
   )
 
   ipcMain.handle('gh:workItem', (_event, args: WorkItemArgs) => {

@@ -1,11 +1,12 @@
-import type { GitHubOwnerRepo } from '../../shared/github/pull-request-types'
+import type { GitHubOwnerRepo } from '../../shared/github/pull-requests/pull-request-types'
 import type {
   WorkItemsBatchEntry,
   WorkItemsBatchResult
 } from '../../shared/github/work-item-batch-types'
-import { isGitHubHostAuthenticatedForGlobalCli } from './github-enterprise-repository'
-import { isDefaultGitHubHost } from '../../shared/github/repository-identity-key'
-import { ghExecFileAsync, acquire, release } from './gh-utils'
+import { isGitHubHostAuthenticatedForGlobalCli } from './repositories/github-enterprise-repository'
+import { isDefaultGitHubHost } from '../../shared/github/repositories/repository-identity-key'
+import { ghExecFileAsync } from '../git/command-runner/hosted-cli/gh-exec-file'
+import { acquire, release } from './execution/github-operation-slots'
 import { mapIssueWorkItem, mapPullRequestWorkItem } from './client/map/work-item'
 
 export type { WorkItemsBatchEntry, WorkItemsBatchResult }

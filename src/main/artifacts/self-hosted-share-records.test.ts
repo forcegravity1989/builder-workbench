@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { restrictWindowsPath } from '../../shared/secure-path-windows-acl'
+import { restrictWindowsPath } from '../../shared/secure-storage/secure-path-windows-acl'
 import { createShareRecordStore } from './self-hosted-share-records'
 
 const record = (id: string, updatedAt: string) => ({
@@ -13,7 +13,7 @@ const record = (id: string, updatedAt: string) => ({
   updatedAt
 })
 
-vi.mock('../../shared/secure-path-windows-acl', () => ({
+vi.mock('../../shared/secure-storage/secure-path-windows-acl', () => ({
   restrictWindowsPath: vi.fn(async () => true),
   restrictWindowsPathSync: vi.fn(() => true),
   bestEffortRestrictWindowsPath: vi.fn(),

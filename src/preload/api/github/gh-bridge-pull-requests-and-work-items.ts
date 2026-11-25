@@ -1,3 +1,5 @@
+import type { IssueStatesBatchResult } from '../../../shared/github/issue-state-types'
+import type { WorkItemsBatchResult } from '../../../shared/github/work-item-batch-types'
 import type { GhAccountBinding } from '../../../shared/github/accounts/account-binding'
 import { ipcRenderer } from 'electron'
 import type { GitHubReactionContent } from '../../../shared/github/comments/comment-types'
@@ -58,6 +60,18 @@ export const ghPullRequestsAndWorkItemsApi = {
     number: number
     ownerRepo?: GitHubOwnerRepo
   }) => ipcRenderer.invoke('gh:issue', args),
+  issueStates: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }): Promise<IssueStatesBatchResult> => ipcRenderer.invoke('gh:issueStates', args),
+  workItemsBatch: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }): Promise<WorkItemsBatchResult> => ipcRenderer.invoke('gh:workItemsBatch', args),
   workItem: (args: {
     repoPath: string
     repoId?: string | null

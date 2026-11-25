@@ -1,3 +1,5 @@
+import { readCursorAuthSession } from '../providers/cursor/cursor-auth'
+import { cursorAuthProvenance, previousCursorUsageForAccount } from '../cursor-usage-account-policy'
 import { RateLimitServiceFullCyclePreparation } from './service-full-cycle-preparation'
 import { isZcodeUsageCredentialCurrent } from '../providers/zcode/zcode-usage-credentials'
 import {
@@ -226,7 +228,26 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
       return
     }
     const grok = settleSiblingProviderResult('grok', grokSettled)
-    const cursor = settleSiblingProviderResult('cursor', cursorSettled)
+    let cursor = settleSiblingProviderResult('cursor', cursorSettled)
+    // Cursor changes its login outside BW; recheck after the network await.
+    const latestCursorAuth = await readCursorAuthSession()
+    if (signal.aborted) {
+      return
+    }
+    this.cursorAuthConfigured = latestCursorAuth.status === 'ok'
+    const currentAccount = cursorAuthProvenance(latestCursorAuth)
+    if (currentAccount !== (cursor.usageMetadata?.authProvenance ?? null)) {
+      cursor = {
+        provider: 'cursor',
+        session: null,
+        weekly: null,
+        updatedAt: Date.now(),
+        status: 'error',
+        error: 'Cursor sign-in changed — refresh usage',
+        usageMetadata: { failureKind: 'usage-unavailable' }
+      }
+    }
+
     const settledZcode = settleSiblingProviderResult('zcode', zcodeSettled)
     const zcode = isZcodeUsageCredentialCurrent(settledZcode)
       ? settledZcode
@@ -241,8 +262,6 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
     const shouldApplyZcode = zcodeGeneration === this.zcodeFetchGeneration
     const antigravity = settleSiblingProviderResult('antigravity', antigravitySettled)
     const shouldApplyAntigravity = antigravityGeneration === this.antigravityFetchGeneration
-    // Discard Cursor stale usage only for a known account change; unidentified transient failures retain their last reading.
-    const cursorAccountChanged = hasKnownProvenanceChange(previousState.cursor, cursor)
     const previousZcodeAccount = previousState.zcode?.usageMetadata?.authProvenance
     const zcodeAccount = zcode.usageMetadata?.authProvenance
     const sameZcodeAccount =
@@ -260,7 +279,15 @@ export abstract class RateLimitServiceFullCycleApplication extends RateLimitServ
     this.updateState({
       ...this.state,
       grok: this.applyStalePolicy(grok, previousState.grok),
-      cursor: cursorAccountChanged ? cursor : this.applyStalePolicy(cursor, previousState.cursor),
+      cursor: this.applyStalePolicy(
+        cursor,
+        cursor.usageMetadata?.failureKind === 'stale-token'
+          ? null
+          : previousCursorUsageForAccount(
+              cursor.usageMetadata?.authProvenance,
+              previousState.cursor
+            )
+      ),
       zcode: !shouldApplyZcode
         ? this.state.zcode
         : zcodeConfigChanged

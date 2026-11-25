@@ -16,7 +16,11 @@ export async function readBwCliStatuses(
   const auth = await readBwCliAuths(probes)
   return {
     codehub: { installed: probes.codehub.installed, authenticated: auth.codehub },
-    welink: { installed: probes.welink.installed, authenticated: auth.welink },
+    welink: {
+      installed: probes.welink.installed,
+      authenticated: auth.welink,
+      ...(probes.welink.wslTarget?.distro ? { wslDistro: probes.welink.wslTarget.distro } : {})
+    },
     cloudbuild: { installed: probes.cloudbuild.installed, authenticated: auth.cloudbuild }
   }
 }

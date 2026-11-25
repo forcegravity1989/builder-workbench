@@ -66,7 +66,7 @@ export type TelemetryTransportFetchResponse = {
 export type TelemetryTransport = {
   fetch: (
     url: string,
-    options: { method: string; headers: Record<string, string>; body?: string | Blob }
+    options: Parameters<PostHog['fetch']>[1]
   ) => Promise<TelemetryTransportFetchResponse>
   shutdown?: (remainingMs: number) => Promise<void>
 }

@@ -1,3 +1,4 @@
+import { stripCredentialsFromMessage } from '../../../shared/git/remotes/git-remote-error'
 import type { RepoProjectHostSetupMethod } from '../../../shared/project/project-types'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { editorFormatterSchema } from '../../../shared/editor/formatting/editor-formatter'
@@ -49,13 +50,24 @@ export function sanitizeGitRemoteIdentity(value: unknown): GitRemoteIdentity | n
     canonicalKey?: unknown
     remoteName?: unknown
     remoteUrl?: unknown
+    originUrl?: unknown
   }
   const canonicalKey =
     typeof candidate.canonicalKey === 'string' ? candidate.canonicalKey.trim() : ''
   const remoteName = typeof candidate.remoteName === 'string' ? candidate.remoteName.trim() : ''
   const remoteUrl = typeof candidate.remoteUrl === 'string' ? candidate.remoteUrl.trim() : ''
+  const originUrl =
+    typeof candidate.originUrl === 'string' ? candidate.originUrl.trim() : candidate.originUrl
   return canonicalKey && remoteName && remoteUrl
-    ? { canonicalKey, remoteName, remoteUrl }
+    ? {
+        canonicalKey,
+        remoteName,
+        remoteUrl,
+        ...(typeof originUrl === 'string' && originUrl
+          ? { originUrl: stripCredentialsFromMessage(originUrl) }
+          : {}),
+        ...(originUrl === null ? { originUrl } : {})
+      }
     : undefined
 }
 
@@ -74,6 +86,7 @@ export function sanitizeRepoUpdatesForPersistence<
     Pick<
       Repo,
       | 'badgeColor'
+      | 'projectVisibility'
       | 'editorFormatter'
       | 'repoIcon'
       | 'upstream'
@@ -92,6 +105,13 @@ export function sanitizeRepoUpdatesForPersistence<
   }
 >(updates: T): T {
   const sanitized = { ...updates }
+  if (
+    'projectVisibility' in sanitized &&
+    sanitized.projectVisibility !== 'personal' &&
+    sanitized.projectVisibility !== 'team'
+  ) {
+    delete sanitized.projectVisibility
+  }
   if ('editorFormatter' in sanitized && sanitized.editorFormatter !== undefined) {
     sanitized.editorFormatter = editorFormatterSchema.parse(sanitized.editorFormatter)
   }

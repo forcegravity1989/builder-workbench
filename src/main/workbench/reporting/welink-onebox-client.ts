@@ -117,7 +117,7 @@ export async function runWelinkCli(
       const command = ['welink-cli', ...args].map((part) => shellQuote(part)).join(' ')
       return await execCommandInWslOrThrow({ distro: route.wslDistro }, command, timeoutMs)
     }
-    return await execLocalPreflightCommandOrThrow('welink-cli', args, timeoutMs)
+    return await execLocalPreflightCommandOrThrow('welink-cli', args, { timeoutMs })
   } catch (error) {
     throw toWelinkReportError(error)
   }

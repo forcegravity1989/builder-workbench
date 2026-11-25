@@ -334,7 +334,7 @@ export async function executeMetricCollection(input: {
               code: mapped.code,
               signal: null,
               timedOut: mapped.timedOut,
-              outputTruncated: mapped.outputTruncated
+              outputTruncated: mapped.outputTruncated === true
             }))
           : await runProcess({
               program: input.run[0],

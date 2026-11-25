@@ -44,6 +44,7 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
             Repo,
             | 'displayName'
             | 'badgeColor'
+            | 'projectVisibility'
             | 'repoIcon'
             | 'upstream'
             | 'hookSettings'

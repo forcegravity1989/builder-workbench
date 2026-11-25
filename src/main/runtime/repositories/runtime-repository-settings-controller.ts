@@ -41,6 +41,7 @@ type RepositoryUpdates = Partial<
     Repo,
     | 'displayName'
     | 'badgeColor'
+    | 'projectVisibility'
     | 'repoIcon'
     | 'upstream'
     | 'hookSettings'

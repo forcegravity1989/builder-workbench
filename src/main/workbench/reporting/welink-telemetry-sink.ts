@@ -5,7 +5,7 @@ import { gunzipSync } from 'node:zlib'
 import { randomBytes } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { TelemetryTransportFetchResponse } from '../../telemetry/client'
+import type { TelemetryTransportFetchResponse, TelemetryTransport } from '../../telemetry/client'
 import { withSpan } from '../../observability/tracer'
 import { resolveWelinkReportConfig, WORKBENCH_TELEMETRY_FOLDER_NAME } from './welink-report-config'
 import { ensureReportFolder, uploadReportFile, WelinkReportError } from './welink-onebox-client'
@@ -212,15 +212,18 @@ export async function shutdownTelemetryTransport(remainingMs: number): Promise<v
   }
 }
 
-async function readRequestBody(body: string | Blob | undefined): Promise<string> {
+async function readRequestBody(
+  body: Parameters<TelemetryTransport['fetch']>[1]['body']
+): Promise<string> {
   // A rejected fetch can leave the SDK retrying after shutdown; malformed bodies are dropped.
   try {
     if (typeof body === 'string') {
       return body
     }
-    if (body && typeof body.text === 'function') {
-      const raw = Buffer.from(await body.arrayBuffer())
-      // posthog-node sends gzip Blob bodies; plain JSON remains valid.
+    if (body) {
+      const raw =
+        body instanceof Uint8Array ? Buffer.from(body) : Buffer.from(await body.arrayBuffer())
+      // posthog-node sends compressed bodies; plain JSON remains valid.
       try {
         return gunzipSync(raw).toString('utf8')
       } catch {

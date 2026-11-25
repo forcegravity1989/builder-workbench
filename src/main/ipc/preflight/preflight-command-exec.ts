@@ -94,11 +94,12 @@ export async function execLocalPreflightCommandOrThrow(
 // Unreachable distros and absent commands both reject; see docs/reference/wsl-probe-failure-semantics.md.
 export async function execCommandInWslOrThrow(
   target: WslPreflightTarget,
-  command: string
+  command: string,
+  timeoutMs = PREFLIGHT_COMMAND_TIMEOUT_MS
 ): Promise<PreflightCommandResult> {
-  const commandPromise = runPreflightCommandInWsl(target, command, PREFLIGHT_COMMAND_TIMEOUT_MS)
+  const commandPromise = runPreflightCommandInWsl(target, command, timeoutMs)
   // Diagnostic label only; runPreflightCommandInWsl owns process invocation.
-  return withPreflightTimeout('wsl command', commandPromise)
+  return withPreflightTimeout('wsl command', commandPromise, timeoutMs)
 }
 
 const PREFLIGHT_LOCAL_PROBE_LIMIT = 4

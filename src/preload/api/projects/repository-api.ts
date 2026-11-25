@@ -65,6 +65,7 @@ export type RepositoryApi = {
         Repo,
         | 'displayName'
         | 'badgeColor'
+        | 'projectVisibility'
         | 'repoIcon'
         | 'upstream'
         | 'hookSettings'

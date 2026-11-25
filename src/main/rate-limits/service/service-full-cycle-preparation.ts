@@ -1,3 +1,4 @@
+import { cursorAuthProvenance, previousCursorUsageForAccount } from '../cursor-usage-account-policy'
 import { fetchActiveClaudeRateLimits } from '../providers/claude/claude-active-usage-fetch'
 import { fetchCodexRateLimits } from '../providers/codex/codex-fetcher'
 import { fetchGeminiRateLimits } from '../providers/gemini/gemini-usage-fetcher'
@@ -160,7 +161,18 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
     // Async Keychain/worker DB reads must not delay other providers.
     const cursorResultPromise = readCursorAuthSession()
       .then((authReadResult) => {
+        if (signal.aborted) {
+          throw new Error('Cursor usage refresh cancelled')
+        }
         this.cursorAuthConfigured = authReadResult.status === 'ok'
+        const previous = previousCursorUsageForAccount(
+          cursorAuthProvenance(authReadResult),
+          this.state.cursor
+        )
+        this.updateState({ ...this.state, cursor: previous })
+        if (!options?.force && this.isRetryAfterActive(previous)) {
+          return previous as ProviderRateLimits
+        }
         return fetchCursorRateLimits({ signal, authReadResult })
       })
       .then(

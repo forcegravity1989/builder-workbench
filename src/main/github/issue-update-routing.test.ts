@@ -1,4 +1,4 @@
-import type * as GhUtils from './gh-utils'
+import type * as GhUtils from '../git/command-runner/hosted-cli/gh-exec-file'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
@@ -7,12 +7,12 @@ import { join } from 'node:path'
 import { expect, it, vi } from 'vitest'
 
 const { gh, codehub } = vi.hoisted(() => ({ gh: vi.fn(), codehub: vi.fn() }))
-vi.mock('./gh-utils', async (load) => ({
+vi.mock('../git/command-runner/hosted-cli/gh-exec-file', async (load) => ({
   ...(await load<typeof GhUtils>()),
   ghExecFileAsync: gh
 }))
 vi.mock('../codehub/issue-state', () => ({ applyCodeHubIssueState: codehub }))
-import { updateIssue } from './issue-update'
+import { updateIssue } from './issues/issue-update'
 
 it('keeps GitHub state and body on the GitHub upstream when origin is a CodeHub mirror', async () => {
   const repo = mkdtempSync(join(tmpdir(), 'orca-forge-routing-'))
