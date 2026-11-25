@@ -46,7 +46,7 @@ async function prepareDraft(content: string): Promise<void> {
         agent: failed.agent,
         content: failed.prompt,
         submit: false,
-        forcePaste: false
+        forcePaste: true
       })
       if (!delivered) {
         throw new Error('智能体输入尚未就绪，材料仍保留，请稍后重试。')
@@ -76,6 +76,7 @@ async function prepareDraft(content: string): Promise<void> {
     worktreeId: FLOATING_TERMINAL_WORKTREE_ID,
     prompt,
     promptDelivery: 'draft',
+    deliverDraftByPaste: true,
     activate: false,
     quickCommandLabel: '改进 BW',
     onPromptDelivered: () =>

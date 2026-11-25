@@ -49,6 +49,7 @@ export async function launchAgentInWebHostTab(args: {
   buildLegacyStartup: () => LaunchAgentStartupPromptPlan
   prompt: string
   promptDelivery: 'auto-submit' | 'draft' | 'submit-after-ready'
+  deliverDraftByPaste?: boolean
   agentArgs?: string | null
   launchPlatform?: NodeJS.Platform
   viewMode?: Tab['viewMode']
@@ -64,6 +65,7 @@ export async function launchAgentInWebHostTab(args: {
     buildLegacyStartup,
     prompt,
     promptDelivery,
+    deliverDraftByPaste,
     agentArgs,
     viewMode,
     onPromptDelivered
@@ -87,7 +89,8 @@ export async function launchAgentInWebHostTab(args: {
     },
     prompt,
     promptDelivery,
-    isFollowupPath: TUI_AGENT_CONFIG[agent].promptInjectionMode === 'stdin-after-start'
+    isFollowupPath: TUI_AGENT_CONFIG[agent].promptInjectionMode === 'stdin-after-start',
+    deliverDraftByPaste
   })
   const structuredPromptDelivery: AgentPromptDelivery =
     promptDelivery === 'draft' ? 'draft' : 'auto-submit'
@@ -152,7 +155,8 @@ export async function launchAgentInWebHostTab(args: {
           },
           prompt,
           promptDelivery,
-          isFollowupPath: TUI_AGENT_CONFIG[agent].promptInjectionMode === 'stdin-after-start'
+          isFollowupPath: TUI_AGENT_CONFIG[agent].promptInjectionMode === 'stdin-after-start',
+          deliverDraftByPaste
         })
       } else {
         // Older hosts may not expose settings; preserve their existing launch recipe.
