@@ -226,6 +226,12 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      - name: Test share client protocols
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/artifacts/share-html-inline.test.ts
+          src/main/artifacts/self-hosted-share-service.test.ts
+
       - name: Test Workbench contracts and count ratchet
         run: pnpm run check:vitest-count-ratchet
 
