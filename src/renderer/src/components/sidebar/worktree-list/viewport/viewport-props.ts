@@ -38,6 +38,8 @@ export type VirtualizedWorktreeViewportProps = {
   currentWorktreeId: string | null
   groupBy: WorktreeGroupBy
   pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy
+  /** Version-bound pinned trees (#500/#762): reveal must expand Pinned under both policies. */
+  versionBoundPinnedIdentities?: ReadonlySet<string>
   projectOrderBy: ProjectOrderBy
   toggleGroup: (key: string) => void
   collapsedGroups: Set<string>

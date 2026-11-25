@@ -9,6 +9,7 @@ import type { WorkspaceStatusDefinition, Worktree } from '../../../../../../shar
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { getWorktreeExecutionHostId } from '../../../../../../shared/execution-host'
+import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import type { RenderRow } from '../listing/render-row'
 import { getWorktreeLineageGroupKey } from '../grouping/group-keys'
 import type { ProjectGroupingModel } from '../grouping/project-grouping'
@@ -39,6 +40,8 @@ export type PendingSidebarRevealArgs = {
   toggleGroup: (key: string) => void
   groupBy: WorktreeGroupBy
   pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy
+  /** Version-bound pinned trees (#500): Pinned is their only native home under both policies. */
+  pinnedOnlyIdentities?: ReadonlySet<string>
   defaultHostId: ExecutionHostId
   prCache: AppState['prCache'] | null
   workspaceStatuses: readonly WorkspaceStatusDefinition[]
@@ -115,13 +118,14 @@ export function expandGroupsForWorktreeReveal(
   }
 
   const groupKeys =
-    args.pinnedDisplayPolicy === 'single-location' &&
     isPinnedSectionWorktree(
       targetWorktree,
       args.worktrees,
       args.worktreeLineageById,
       args.worktreeMap
-    )
+    ) &&
+    (args.pinnedDisplayPolicy === 'single-location' ||
+      args.pinnedOnlyIdentities?.has(getWorktreeHostIdentity(targetWorktree)))
       ? getPinnedWorktreeRevealCollapsedGroupKeys({
           worktree: targetWorktree,
           collapsedGroups: args.collapsedGroups,

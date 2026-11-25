@@ -20,7 +20,11 @@ import {
   sweepOrphanedRuntimeSockets
 } from './runtime-rpc-socket-metadata'
 
+import { RuntimeAccessSocketTracker } from './runtime-access-socket-tracker'
+
 export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
+  private readonly runtimeAccessSockets = new RuntimeAccessSocketTracker()
+
   async start(): Promise<void> {
     if (this.stopping) {
       return
@@ -236,14 +240,21 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         this.runtime.activateRecentPtyPathCandidateTracking?.()
         this.mobileRelayPairingProvider?.onDemandStateChanged?.()
         const device = deviceRegistry.getDevice(socket.device.deviceId)
-        if (device?.scope === 'runtime') {
+        const isFirstSocket = this.runtimeAccessSockets.open(
+          socket.device.deviceId,
+          socket.connectionId
+        )
+        if (device?.scope === 'runtime' && isFirstSocket) {
           this.getRuntimeAccessAudit().record({
             at: Date.now(),
             deviceId: device.deviceId,
             deviceName: device.name,
             accessMode: effectiveRuntimeAccessMode(device),
             ...(device.teamBinding
-              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              ? {
+                  teamGroupId: device.teamBinding.teamGroupId,
+                  memberId: device.teamBinding.memberId
+                }
               : undefined),
             method: 'connection.open',
             result: 'allowed'
@@ -263,14 +274,21 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
           this.runtime.onClientDisconnected(socket.device.deviceToken)
         }
         const device = deviceRegistry.getDevice(socket.device.deviceId)
-        if (device?.scope === 'runtime' && !hasOtherConnections) {
+        const wasLastSocket = this.runtimeAccessSockets.close(
+          socket.device.deviceId,
+          socket.connectionId
+        )
+        if (device?.scope === 'runtime' && wasLastSocket) {
           this.getRuntimeAccessAudit().record({
             at: Date.now(),
             deviceId: device.deviceId,
             deviceName: device.name,
             accessMode: effectiveRuntimeAccessMode(device),
             ...(device.teamBinding
-              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              ? {
+                  teamGroupId: device.teamBinding.teamGroupId,
+                  memberId: device.teamBinding.memberId
+                }
               : undefined),
             method: 'connection.close',
             result: 'allowed'
