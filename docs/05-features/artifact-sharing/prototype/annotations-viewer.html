@@ -12,7 +12,7 @@
   批注面板与批注 API 同源；被分享内容保持 opaque 沙箱，够不到批注 API 与服务端 origin。
   原型以同文档内容区演示元素选择与高亮交互——file:// 下浏览器禁止父页访问 iframe 文档，
   真实实现的沙箱 iframe 与 postMessage 桥见 spec「分享页批注」。
-  交互对齐 spec：添加批注 → 选择模式 → 点击内容元素 → 提交；点击列表项高亮元素；
+  交互对齐 spec：添加批注 → 填写文字 → 按需选择元素 → 提交；点击列表项高亮元素；
   selector 失效在列表标注「元素已变化」（真实实现加载/刷新即主动探测）；作者凭本机删除令牌删自己的批注；轮询 30 秒可见。
   界面文案已随实现定稿（viewer 纯中文，不进 BW i18n；先例：服务端 404 页中英双语）。
   数据与链接地址均为示意。原型不表示能力已交付。
@@ -251,7 +251,7 @@
         border-left: 2px solid var(--color-accent);
       }
 
-      /* ── 添加批注表单（选择模式激活时出现） ── */
+      /* ── 添加批注表单 ── */
       .annotation-form {
         border-top: 1px solid var(--color-divider);
         padding: 10px 14px;
@@ -363,11 +363,12 @@
           <div class="annotation-list" id="note-list"></div>
           <div class="annotation-form" id="note-form" hidden>
             <div class="form-target" id="form-target">
-              <span class="hint">点击右侧内容中的元素以定位批注</span>
+              <span class="hint">未选择元素，将作为页面级批注</span>
             </div>
             <textarea class="input" id="note-text" placeholder="批注内容（上限 2000 字）"></textarea>
             <div class="form-error" id="form-error" hidden></div>
             <div class="form-actions">
+              <button class="btn btn-ghost btn-sm" id="pick-note-btn" type="button">选择元素</button>
               <button class="btn btn-ghost btn-sm" id="cancel-note-btn" type="button">取消</button>
               <button class="btn btn-primary btn-sm" id="submit-note-btn" type="button">提交</button>
             </div>
@@ -414,6 +415,7 @@
       const frame = document.getElementById('content-frame')
       const list = document.getElementById('note-list')
       const form = document.getElementById('note-form')
+      const pickBtn = document.getElementById('pick-note-btn')
       const formTarget = document.getElementById('form-target')
       const noteText = document.getElementById('note-text')
       const formError = document.getElementById('form-error')
@@ -529,7 +531,6 @@
 
       function renderContent() {
         frame.innerHTML = demoContentHtml()
-        bindFrameEvents()
       }
 
       function bindFrameEvents() {
@@ -548,9 +549,8 @@
           e.preventDefault()
           e.stopPropagation()
           if (e.target === frame) return
+          setPicking(false)
           selectedEl = e.target
-          clearHover()
-          frame.querySelectorAll('.demo-highlight').forEach((el) => el.classList.remove('demo-highlight'))
           selectedEl.classList.add('demo-highlight')
           formTarget.innerHTML = ''
           const tag = document.createElement('span')
@@ -583,7 +583,7 @@
         if (notes.length === 0) {
           const empty = document.createElement('div')
           empty.className = 'annotation-empty'
-          empty.textContent = '还没有批注。点击「添加批注」选中页面元素后提交。'
+          empty.textContent = '还没有批注。点击「添加批注」写下意见。'
           list.appendChild(empty)
           return
         }
@@ -652,32 +652,30 @@
         list.scrollTop = list.scrollHeight
       }
 
-      function startSelecting() {
-        if (stage === 'full') {
-          showError('批注已满（500 条上限），无法继续添加。')
-          return
-        }
-        selecting = true
+      function setPicking(active) {
+        selecting = active
         selectedEl = null
-        document.getElementById('viewer').classList.add('selecting')
+        document.getElementById('viewer').classList.toggle('selecting', active)
+        pickBtn.textContent = active ? '点击内容中的元素…' : '选择元素'
+        formTarget.textContent = active ? '请点击分享内容中的元素（Esc 取消）' : '未选择元素，将作为页面级批注'
+        clearHover()
+        frame.querySelectorAll('.demo-highlight').forEach((el) => el.classList.remove('demo-highlight'))
+      }
+
+      function openForm() {
         form.hidden = false
-        formTarget.innerHTML = ''
-        const hint = document.createElement('span')
-        hint.className = 'hint'
-        hint.textContent = '点击右侧内容中的元素以定位批注（Esc 取消；不选元素直接提交则为页面级批注）'
-        formTarget.appendChild(hint)
+        addBtn.disabled = true
         noteText.value = ''
+        setPicking(false)
         hideError()
         noteText.focus()
       }
 
-      function stopSelecting() {
-        selecting = false
-        selectedEl = null
-        document.getElementById('viewer').classList.remove('selecting')
+      function closeForm() {
+        setPicking(false)
+        addBtn.disabled = false
         form.hidden = true
-        clearHover()
-        frame.querySelectorAll('.demo-highlight').forEach((el) => el.classList.remove('demo-highlight'))
+        noteText.value = ''
       }
 
       function showError(msg) {
@@ -719,7 +717,7 @@
         }
         notes.push(note)
         renderList()
-        stopSelecting()
+        closeForm()
       }
 
       /** 简化 selector 生成演示：id 优先，其次 tag + nth-child 链（真实实现含文本摘要辅助匹配）。 */
@@ -738,21 +736,22 @@
 
       function applyStage(next) {
         stage = next
-        stopSelecting()
+        closeForm()
         STAGES[stage]()
         renderContent()
         renderList()
         if (stage === 'rate-limited') {
-          // 该阶段演示：直接进入选择模式，提交时被限流拒绝
-          startSelecting()
+          openForm()
         }
       }
 
-      addBtn.addEventListener('click', startSelecting)
-      document.getElementById('cancel-note-btn').addEventListener('click', stopSelecting)
+      bindFrameEvents()
+      addBtn.addEventListener('click', openForm)
+      pickBtn.addEventListener('click', () => setPicking(!selecting))
+      document.getElementById('cancel-note-btn').addEventListener('click', closeForm)
       document.getElementById('submit-note-btn').addEventListener('click', submitNote)
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && selecting) stopSelecting()
+        if (e.key === 'Escape' && selecting) setPicking(false)
       })
       stageSelect.addEventListener('change', () => applyStage(stageSelect.value))
       peerNoteBtn.addEventListener('click', () => {
