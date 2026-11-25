@@ -172,6 +172,7 @@ export type DeleteProjectGroupWithContainedProjectsResult =
 export type FolderWorkspacePathStatusRouteOptions = { runtimeEnvironmentId: string | null }
 
 export type AddRepoPathOptions = {
+  projectWallModal?: Record<string, unknown>
   runtimeEnvironmentId?: string | null
   /** Overrides the host's basename naming for the new project. */
   displayName?: string

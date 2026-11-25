@@ -26,16 +26,31 @@ export function useAddRepoHostedController(hosted: AddRepoDialogHostedController
   /** Close the composer too when folder/non-Git outcomes navigate outside project selection. */
   closeForFolderHandoff: () => void
   finishProjectAdd: CompleteGitRepoAdd | undefined
+  projectWallModal: Record<string, unknown> | undefined
 } {
   const storeCloseModal = useAppStore((s) => s.closeModal)
+  const projectWallModal = useAppStore((s) =>
+    !hosted && s.activeModal === 'add-repo' && s.modalData.stayOnProjectWall === true
+      ? s.modalData
+      : undefined
+  )
   const hostedOnOpenChange = hosted?.onOpenChange
   const hostedOnProjectAdded = hosted?.onProjectAdded
   const hostedOnProjectGroupImported = hosted?.onProjectGroupImported
   // Closing nested Add Project must leave its parent composer modal open.
-  const closeModal = useMemo(
-    () => (hostedOnOpenChange ? () => hostedOnOpenChange(false) : storeCloseModal),
-    [hostedOnOpenChange, storeCloseModal]
-  )
+  const closeModal = useMemo(() => {
+    if (hostedOnOpenChange) {
+      return () => hostedOnOpenChange(false)
+    }
+    if (projectWallModal) {
+      return () => {
+        if (useAppStore.getState().modalData === projectWallModal) {
+          storeCloseModal()
+        }
+      }
+    }
+    return storeCloseModal
+  }, [hostedOnOpenChange, projectWallModal, storeCloseModal])
   const finishProjectAdd = useMemo<CompleteGitRepoAdd | undefined>(
     () =>
       hostedOnOpenChange && hostedOnProjectAdded
@@ -60,8 +75,8 @@ export function useAddRepoHostedController(hosted: AddRepoDialogHostedController
             hostedOnOpenChange(false)
             storeCloseModal()
           }
-        : storeCloseModal,
-    [hostedOnOpenChange, storeCloseModal]
+        : closeModal,
+    [closeModal, hostedOnOpenChange, storeCloseModal]
   )
-  return { closeModal, closeForFolderHandoff, finishProjectAdd }
+  return { closeModal, closeForFolderHandoff, finishProjectAdd, projectWallModal }
 }

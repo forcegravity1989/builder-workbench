@@ -12,12 +12,14 @@ type FolderAddListener = (added: Promise<Repo | null>) => void
  */
 export function confirmNonGitFolderAdd(
   openModal: AppState['openModal'],
-  folderPath: string
+  folderPath: string,
+  stayOnProjectWall = false
 ): Promise<Repo | null> {
   return new Promise<Repo | null>((resolve) => {
     const onFolderAdd: FolderAddListener = (added) => resolve(added)
     openModal('confirm-non-git-folder', {
       folderPath,
+      ...(stayOnProjectWall ? { stayOnProjectWall: true } : {}),
       [FOLDER_ADD_KEY]: onFolderAdd,
       // A resolve adopted from the confirm's add wins; closing after confirm leaves it pending.
       [MODAL_DISMISSED_KEY]: () => resolve(null)

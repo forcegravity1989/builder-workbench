@@ -135,12 +135,14 @@ export async function openProjectDefaultCheckout({
   repoId,
   source,
   selectedPath,
-  executionHostId
+  executionHostId,
+  activateDefaultCheckout = true
 }: {
   repoId: string
   source: AddRepoDefaultCheckoutHandoffSource
   selectedPath?: string
   executionHostId?: ExecutionHostId
+  activateDefaultCheckout?: boolean
 }): Promise<void> {
   let defaultCheckout = getProjectDefaultCheckout(
     getProjectWorktreesForHost(
@@ -155,7 +157,7 @@ export async function openProjectDefaultCheckout({
     reason = detectedDefaultCheckout.reason
   }
 
-  if (defaultCheckout) {
+  if (defaultCheckout && activateDefaultCheckout) {
     track('add_repo_default_checkout_handoff', {
       source,
       result: 'opened_default_checkout',
@@ -176,7 +178,9 @@ export async function openProjectDefaultCheckout({
     result: 'revealed_project',
     reason
   })
-  finalizeImportedRepoAfterSkip(useAppStore.getState(), repoId)
+  if (activateDefaultCheckout) {
+    finalizeImportedRepoAfterSkip(useAppStore.getState(), repoId)
+  }
 }
 
 export async function finishProjectAddWithDefaultCheckout({
@@ -184,13 +188,15 @@ export async function finishProjectAddWithDefaultCheckout({
   source,
   selectedPath,
   closeModal,
-  executionHostId
+  executionHostId,
+  activateDefaultCheckout = true
 }: {
   repoId: string
   source: AddRepoDefaultCheckoutHandoffSource
   selectedPath?: string
   closeModal: () => void
   executionHostId?: ExecutionHostId
+  activateDefaultCheckout?: boolean
 }): Promise<void> {
   await markOnboardingProjectAdded('addedRepo')
   closeModal()
@@ -198,6 +204,7 @@ export async function finishProjectAddWithDefaultCheckout({
     repoId,
     source,
     selectedPath,
-    executionHostId
+    executionHostId,
+    activateDefaultCheckout
   })
 }

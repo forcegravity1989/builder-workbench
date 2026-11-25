@@ -28,7 +28,8 @@ export function useRemoteRepo(
   closeModal: () => void,
   onGitRepoReady: (repoId: string, executionHostId?: ExecutionHostId) => void | Promise<void>,
   /** A paired server: its own SSH hosts are listed, browsed and added by that server only. */
-  serverEnvironmentId: string | null
+  serverEnvironmentId: string | null,
+  projectWallModal?: Record<string, unknown>
 ) {
   const [sshTargets, setSshTargets] = useState<RemoteRepoTarget[]>([])
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null)
@@ -155,11 +156,16 @@ export function useRemoteRepo(
       const message = extractIpcErrorMessage(err, String(err))
       if (message.includes('Not a valid git repository')) {
         // Match local adds: confirm non-git feature limits before handing off to a folder workspace.
+        const state = useAppStore.getState()
+        if (projectWallModal && state.modalData !== projectWallModal) {
+          return
+        }
         closeModal()
-        useAppStore.getState().openModal('confirm-non-git-folder', {
+        state.openModal('confirm-non-git-folder', {
           folderPath: trimmedRemotePath,
           connectionId: selectedTargetId,
-          runtimeEnvironmentId: serverEnvironmentId
+          runtimeEnvironmentId: serverEnvironmentId,
+          ...(projectWallModal ? { stayOnProjectWall: true } : {})
         })
         return
       }
@@ -178,7 +184,8 @@ export function useRemoteRepo(
     fetchWorktrees,
     mountedRef,
     closeModal,
-    onGitRepoReady
+    onGitRepoReady,
+    projectWallModal
   ])
 
   return {

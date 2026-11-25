@@ -143,9 +143,7 @@ export function renderWorktreeSectionHeaderRow(
   const headerVisual = getSidebarHeaderVisual(row.icon, ctx.workspaceStatuses, t)
   const label = translateWorkspaceStatusHeaderLabel(
     headerWorkspaceStatus,
-    isWorkbenchAllHeader
-      ? (t?.('dashboard.sidebar.workspaces', 'Workspaces') ?? 'Workspaces')
-      : (row.label ?? headerVisual.label ?? '')
+    isWorkbenchAllHeader ? '工作区' : (row.label ?? headerVisual.label ?? '')
   )
   const hostContext =
     ctx.groupBy === 'repo' ? ctx.projectHeaderHostContexts?.get(row.key) : undefined
@@ -204,6 +202,7 @@ export function renderWorktreeSectionHeaderRow(
       <ProjectHeaderHostTooltip label={label} context={hostContext}>
         <div
           id={getWorktreeOptionId(row.key)}
+          data-sidebar-original-row-key={row.key}
           role="button"
           tabIndex={0}
           aria-label={hostContext ? `${label} — ${hostContext.label}` : undefined}

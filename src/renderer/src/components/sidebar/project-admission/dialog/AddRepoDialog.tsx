@@ -39,13 +39,15 @@ export default React.memo(function AddRepoDialog({ hosted }: AddRepoDialogProps)
   const repos = useAppStore((s) => s.repos)
   const fetchWorktrees = useAppStore((s) => s.fetchWorktrees)
   const settings = useAppStore((s) => s.settings)
-  const { closeModal, closeForFolderHandoff, finishProjectAdd } = useAddRepoHostedController(hosted)
+  const { closeModal, closeForFolderHandoff, finishProjectAdd, projectWallModal } =
+    useAddRepoHostedController(hosted)
   const [step, setStep] = useAddRepoEntryStepState(isOpen, modalPaths.entryRequest)
   const [isAdding, setIsAdding] = useState(false)
   const [addProjectBusyLabel, setAddProjectBusyLabel] = useState<string | null>(null)
   const completeGitRepoAdd = useCompleteGitRepoAdd({
     closeModal,
-    finishProjectAdd
+    finishProjectAdd,
+    stayOnProjectWall: projectWallModal !== undefined
   })
   const hostSelection = useAddRepoHostSelection({
     isOpen,
@@ -76,6 +78,7 @@ export default React.memo(function AddRepoDialog({ hosted }: AddRepoDialogProps)
     resetNestedImportFlow,
     trackNestedBackAction
   } = useAddRepoNestedReviewController({
+    projectWallModal,
     reviewRuntimeEnvironmentId: selectedRuntimeEnvironmentId,
     cancelNestedRepoScan,
     closeModal: closeForFolderHandoff,
@@ -105,7 +108,8 @@ export default React.memo(function AddRepoDialog({ hosted }: AddRepoDialogProps)
     // Only the non-git confirmation handoff closes this remote flow.
     closeForFolderHandoff,
     (repoId, executionHostId) => completeGitRepoAdd(repoId, 'ssh_remote_path', executionHostId),
-    selectedRuntimeEnvironmentId
+    selectedRuntimeEnvironmentId,
+    projectWallModal
   )
   const {
     createName,
@@ -123,6 +127,7 @@ export default React.memo(function AddRepoDialog({ hosted }: AddRepoDialogProps)
     closeForFolderHandoff,
     (repoId, executionHostId) => completeGitRepoAdd(repoId, 'create_project', executionHostId),
     {
+      stayOnProjectWall: projectWallModal !== undefined,
       hostId: hostSelection.selectedHostId,
       runtimeEnvironmentId: selectedRuntimeEnvironmentId,
       onWindowsDriveRefusal: (refusal) => windowsDrive.showRefusal(refusal, 'create')
@@ -172,6 +177,7 @@ export default React.memo(function AddRepoDialog({ hosted }: AddRepoDialogProps)
     isOpen,
     droppedLocalPath: modalPaths.droppedLocalPath,
     pickedLocalPaths: modalPaths.pickedLocalPaths,
+    projectWallModal,
     onPickedPathsUnsettled: closeModal,
     activeRuntimeEnvironmentId: selectedRuntimeEnvironmentId,
     addRepoPath,
@@ -196,6 +202,7 @@ export default React.memo(function AddRepoDialog({ hosted }: AddRepoDialogProps)
   } = useAddRepoServerPathFlow({
     addRepoPath,
     addNonGitFolder,
+    projectWallModal,
     activeRuntimeEnvironmentId: selectedRuntimeEnvironmentId,
     closeModal: closeForFolderHandoff,
     fetchWorktrees,

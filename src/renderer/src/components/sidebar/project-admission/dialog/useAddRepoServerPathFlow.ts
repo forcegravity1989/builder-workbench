@@ -38,6 +38,7 @@ type ShowNestedRepoReview = (args: {
 export function useAddRepoServerPathFlow({
   addRepoPath,
   addNonGitFolder,
+  projectWallModal,
   activeRuntimeEnvironmentId,
   closeModal,
   fetchWorktrees,
@@ -56,6 +57,7 @@ export function useAddRepoServerPathFlow({
     options?: AddRepoPathOptions
   ) => Promise<Repo | null>
   addNonGitFolder: (path: string, options?: AddRepoPathOptions) => Promise<Repo | null>
+  projectWallModal?: Record<string, unknown>
   activeRuntimeEnvironmentId: string | null
   closeModal: () => void
   fetchWorktrees: (repoId: string, options?: WorktreeFetchOptions) => Promise<unknown>
@@ -190,7 +192,8 @@ export function useAddRepoServerPathFlow({
         )
         const options = {
           runtimeEnvironmentId: activeRuntimeEnvironmentId,
-          onWindowsDriveRefusal
+          onWindowsDriveRefusal,
+          ...(projectWallModal ? { projectWallModal } : {})
         }
         const repo =
           kind === 'folder'
@@ -228,6 +231,7 @@ export function useAddRepoServerPathFlow({
       getNestedRepoRuntimeKind,
       onGitRepoReady,
       onWindowsDriveRefusal,
+      projectWallModal,
       scanNestedRepos,
       serverPath,
       setActiveNestedScanId,

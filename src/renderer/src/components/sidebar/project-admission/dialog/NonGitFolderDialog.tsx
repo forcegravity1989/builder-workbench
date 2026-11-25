@@ -68,6 +68,7 @@ const NonGitFolderDialog = React.memo(function NonGitFolderDialog() {
   const runtimeEnvironments = useAppStore((s) => s.runtimeEnvironments)
 
   const isOpen = activeModal === 'confirm-non-git-folder'
+  const stayOnProjectWall = modalData.stayOnProjectWall === true
   const folderPath = typeof modalData.folderPath === 'string' ? modalData.folderPath : ''
   const connectionId = typeof modalData.connectionId === 'string' ? modalData.connectionId : ''
   const runtimeEnvironmentId =
@@ -109,7 +110,7 @@ const NonGitFolderDialog = React.memo(function NonGitFolderDialog() {
           const folderWorktree = selectWorktreesByRepo(useAppStore.getState())[repo.id]?.find(
             (worktree) => worktree.hostId === ownerOptions.executionHostId
           )
-          if (folderWorktree) {
+          if (folderWorktree && !stayOnProjectWall) {
             // SSH adds can bypass addNonGitFolder after onboarding dismissal; resolve the default agent here too.
             const launch = await resolveDismissedOnboardingFolderAgentLaunch({
               worktreeId: folderWorktree.id,
@@ -142,6 +143,7 @@ const NonGitFolderDialog = React.memo(function NonGitFolderDialog() {
         modalData,
         addNonGitFolder(folderPath, {
           runtimeEnvironmentId: runtimeEnvironmentId || null,
+          ...(stayOnProjectWall ? { projectWallModal: modalData } : {}),
           ...(displayName ? { displayName } : {})
         })
       )
@@ -154,7 +156,8 @@ const NonGitFolderDialog = React.memo(function NonGitFolderDialog() {
     folderPath,
     connectionId,
     runtimeEnvironmentId,
-    modalData
+    modalData,
+    stayOnProjectWall
   ])
 
   const handleOpenChange = useCallback(

@@ -18,6 +18,7 @@ export async function completeNestedFolderOpen(args: {
   /** User-entered project name; falls back to the host's basename naming when absent. */
   displayName?: string
   closeModal: () => void
+  projectWallModal?: Record<string, unknown>
   /** Settles the add that opened this review; must run before close resets it with null. */
   reportProject: (added: Repo) => void
   setIsAdding: (value: boolean) => void
@@ -27,17 +28,22 @@ export async function completeNestedFolderOpen(args: {
   try {
     const state = useAppStore.getState()
     if (args.connectionId) {
+      if (args.projectWallModal && state.modalData !== args.projectWallModal) {
+        return
+      }
       args.closeModal()
       state.openModal('confirm-non-git-folder', {
         folderPath: args.scan.selectedPath,
         connectionId: args.connectionId,
         runtimeEnvironmentId: args.owner,
+        ...(args.projectWallModal ? { stayOnProjectWall: true } : {}),
         ...(args.displayName ? { displayName: args.displayName } : {})
       })
       return
     }
     const repo = await state.addNonGitFolder(args.scan.selectedPath, {
       runtimeEnvironmentId: args.owner ?? null,
+      ...(args.projectWallModal ? { projectWallModal: args.projectWallModal } : {}),
       ...(args.displayName ? { displayName: args.displayName } : {})
     })
     if (args.generation !== args.currentGeneration()) {

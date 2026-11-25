@@ -24,11 +24,13 @@ type CompleteGitRepoAddOptions = {
   closeModal: () => void
   /** Hosted Add Project keeps the composer open and selects the project after normal telemetry. */
   finishProjectAdd?: CompleteGitRepoAdd
+  stayOnProjectWall?: boolean
 }
 
 export function useCompleteGitRepoAdd({
   closeModal,
-  finishProjectAdd
+  finishProjectAdd,
+  stayOnProjectWall
 }: CompleteGitRepoAddOptions): CompleteGitRepoAdd {
   const detectedTelemetryTrackedRef = useRef<Set<string>>(new Set())
 
@@ -71,9 +73,10 @@ export function useCompleteGitRepoAdd({
         repoId,
         source,
         executionHostId,
-        closeModal
+        closeModal,
+        ...(stayOnProjectWall ? { activateDefaultCheckout: false } : {})
       })
     },
-    [closeModal, finishProjectAdd]
+    [closeModal, finishProjectAdd, stayOnProjectWall]
   )
 }

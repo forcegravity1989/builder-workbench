@@ -37,6 +37,7 @@ export function useAddRepoNestedImportFlow({
   nestedRuntimeEnvironmentId,
   activeRuntimeEnvironmentId,
   closeModal,
+  projectWallModal,
   fetchWorktrees,
   importNestedRepos,
   getNestedRepoRuntimeKind,
@@ -54,6 +55,7 @@ export function useAddRepoNestedImportFlow({
   nestedRuntimeEnvironmentId: string | null
   activeRuntimeEnvironmentId: string | null | undefined
   closeModal: () => void
+  projectWallModal?: Record<string, unknown>
   fetchWorktrees: (repoId: string, options?: WorktreeFetchOptions) => Promise<unknown>
   importNestedRepos: (args: {
     parentPath: string
@@ -274,6 +276,7 @@ export function useAddRepoNestedImportFlow({
       owner: nestedRuntimeEnvironmentId,
       ...(displayName ? { displayName } : {}),
       closeModal,
+      projectWallModal,
       reportProject: (repo) => takeNestedProjectReporter()?.({ repo }),
       setIsAdding
     })
@@ -288,6 +291,7 @@ export function useAddRepoNestedImportFlow({
     nestedScan,
     nestedSelectedPaths.size,
     setIsAdding,
+    projectWallModal,
     takeNestedProjectReporter
   ])
   return {

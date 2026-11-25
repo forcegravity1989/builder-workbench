@@ -11,6 +11,7 @@ export function useAddRepoNestedReviewController({
   activeRuntimeEnvironmentId,
   cancelNestedRepoScan,
   closeModal,
+  projectWallModal,
   fetchWorktrees,
   importNestedRepos,
   onGitRepoReady,
@@ -25,6 +26,7 @@ export function useAddRepoNestedReviewController({
     options: { runtimeEnvironmentId: string | null }
   ) => Promise<unknown>
   closeModal: () => void
+  projectWallModal?: Record<string, unknown>
   fetchWorktrees: (repoId: string, options?: WorktreeFetchOptions) => Promise<unknown>
   importNestedRepos: (args: {
     parentPath: string
@@ -58,6 +60,7 @@ export function useAddRepoNestedReviewController({
   const imports = useAddRepoNestedImportFlow({
     activeRuntimeEnvironmentId,
     closeModal,
+    projectWallModal,
     fetchWorktrees,
     importNestedRepos,
     onGitRepoReady,

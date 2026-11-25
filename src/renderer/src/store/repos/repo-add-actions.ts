@@ -99,9 +99,13 @@ export function createRepoAddActions(
             }
           }
           // Why: folder mode is a capability downgrade (no worktrees/SCM/PRs/checks), so confirm via dialog rather than silently falling back.
-          const { openModal } = get()
+          const { openModal, modalData } = get()
+          if (options?.projectWallModal && options.projectWallModal !== modalData) {
+            return null
+          }
           openModal('confirm-non-git-folder', {
             folderPath: path,
+            ...(options?.projectWallModal ? { stayOnProjectWall: true } : {}),
             ...(displayName ? { displayName } : {}),
             ...(target.kind === 'environment' ? { runtimeEnvironmentId: target.environmentId } : {})
           })
@@ -211,7 +215,7 @@ export function createRepoAddActions(
         const folderWorktree = selectWorktreesByRepo(get())[repo.id]?.find(
           (worktree) => executionHostId === undefined || worktree.hostId === executionHostId
         )
-        if (folderWorktree) {
+        if (folderWorktree && !options?.projectWallModal) {
           // Why: lazy-import to avoid a circular module load (the launch graph imports the store root).
           const {
             resolveDismissedOnboardingFolderAgentLaunch,

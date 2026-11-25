@@ -9,6 +9,7 @@ import {
 import type { AddRepoExistingWorkspaceSource } from '../../../../../../shared/telemetry/schemas/telemetry-property-schemas'
 import type { WorktreeFetchOptions } from '@/store/slices/worktrees/listing/worktree-fetch-options'
 import type { RepoSlice } from '@/store/repos/repo-state'
+import { useAppStore } from '@/store/index'
 import type { AppState } from '@/store/types'
 import type { ShowNestedRepoReviewArgs } from '../nested-import/useAddRepoNestedReviewState'
 import { createNestedRepoScanId } from './add-repo-dialog-types'
@@ -32,6 +33,7 @@ export function useAddRepoLocalFolderFlow({
   isOpen,
   droppedLocalPath,
   pickedLocalPaths = null,
+  projectWallModal,
   onPickedPathsUnsettled,
   activeRuntimeEnvironmentId,
   addRepoPath,
@@ -50,6 +52,7 @@ export function useAddRepoLocalFolderFlow({
   isOpen: boolean
   droppedLocalPath: string
   pickedLocalPaths?: readonly string[] | null
+  projectWallModal?: Record<string, unknown>
   /** Close a suppressed start dialog when pre-picked paths finish without opening nested review or another modal. */
   onPickedPathsUnsettled?: () => void
   activeRuntimeEnvironmentId: string | null | undefined
@@ -172,13 +175,17 @@ export function useAddRepoLocalFolderFlow({
           return { status: 'paused', projectAdded }
         }
         if (scan?.selectedPathKind === 'non_git_folder') {
+          if (projectWallModal && useAppStore.getState().modalData !== projectWallModal) {
+            return { status: 'cancelled' }
+          }
           closeModal()
-          const folder = confirmNonGitFolderAdd(openModal, path)
+          const folder = confirmNonGitFolderAdd(openModal, path, projectWallModal !== undefined)
           return { status: 'paused', projectAdded: folder.then((repo) => (repo ? { repo } : null)) }
         }
         setAddProjectBusyLabel(addRepoBusyLabels.openingProject())
         const repo = await addRepoPath(path, undefined, {
-          runtimeEnvironmentId: activeRuntimeEnvironmentId ?? null
+          runtimeEnvironmentId: activeRuntimeEnvironmentId ?? null,
+          ...(projectWallModal ? { projectWallModal } : {})
         })
         if (gen !== localAddGenRef.current) {
           return { status: 'cancelled' }
@@ -216,6 +223,7 @@ export function useAddRepoLocalFolderFlow({
       fetchWorktrees,
       onGitRepoReady,
       openModal,
+      projectWallModal,
       scanNestedRepos,
       setActiveNestedScanId,
       setAddProjectBusyLabel,
