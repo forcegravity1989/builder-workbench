@@ -19,7 +19,7 @@
 | 按文件名找 | `welink-cli onebox node-search --space-id <空间> --name "team.json" --exact-search --file-type file` | help。可加 `--with-path` |
 | 下载 | `welink-cli onebox file-download --space-id <空间> --file-id <文件> --output <目录>` | help |
 | 文件信息 | `welink-cli onebox file-info --space-id <空间> --file-id <文件>` | help |
-| 人的详情 | `welink-cli contact detail <welinkId> ...` | help。头像字段未在本次核对输出里确认 |
+| 成员中文名和头像 | `welink-cli contact detail <工号> [<工号> ...]` | 本机 1.0.18 实测：`users[].personAccount` 对应群成员账号，`chineseName` 是姓名，`avatar.custom` 是 120px 头像地址；群成员接口本身不含姓名。头像地址为 `http`，经 301 跳转后返回 `image/jpeg`，`https` 直连在本机因证书主机名不符失败，该探测结果不代表渲染端直接使用原地址；当前实现对匹配地址转换为 w3 face 直连。取证见 [#479 评论](https://github.com/forcegravity1989/builder-workbench/issues/479) |
 
 上报现用的空间是代码里的固定 `WELINK_REPORT_SPACE_ID`，不是团队群空间。落地团队目录时不要复用那个空间。
 
@@ -41,7 +41,7 @@
 |---|---|
 | 不给群号，列出当前用户加入的全部分组 | `search group` 要关键字。`im query-recent-conversation` 只是最近会话。没有「我的群列表」 |
 | 群号换成群空间 ID | `onebox` 的命令都要 `--space-id`。`user-info` 只给个人空间。help 里没有「由群号取群空间」 |
-| 群名、头像随群号一次读回 | 成员命令给成员；群资料命令未在 help 里见到。`contact detail` 是否含头像未跑 |
+| 群名随群号一次读回 | 成员命令给成员；群资料命令未在 help 里见到。成员姓名和头像用 `contact detail` 补 |
 | 同一文件的并发版本 | 现有上传按 File ID 识别；冲突检测要用内部接口再对一次 |
 
 因此：本机尚未绑定团队时，不能从 CLI 登录态猜该看哪个群。人指定一次群号并记住之后，才能按上表读目录。多个群都有目录时要列出来让人选。

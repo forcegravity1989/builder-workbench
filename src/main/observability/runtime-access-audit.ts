@@ -4,8 +4,13 @@ import type {
   RuntimeAccessAuditEntry,
   RuntimeAccessAuditResult
 } from '../../shared/runtime-access-grants'
+import {
+  runtimeAccessAuditActionKey,
+  runtimeAccessAuditActionLabel
+} from '../../shared/runtime-access-audit-labels'
 
 export const RUNTIME_ACCESS_AUDIT_RETENTION_DAYS = 14
+const REPEAT_WINDOW_MS = 60_000
 
 export type RuntimeAccessAuditFilter = {
   action?: string
@@ -27,7 +32,31 @@ export class RuntimeAccessAudit {
     return this.directory
   }
 
+  // Refusals and failures often arrive in bursts from one attempt (a member typing sends one per
+  // keystroke). One line per device, action and cause within the window is enough for an audit.
+  private readonly lastRepeatableAt = new Map<string, number>()
+
   record(entry: RuntimeAccessAuditEntry): void {
+    if (entry.result !== 'allowed') {
+      const key = [
+        entry.deviceId,
+        entry.method,
+        entry.result,
+        entry.errorCode ?? '',
+        entry.errorMessage ?? ''
+      ].join('|')
+      const last = this.lastRepeatableAt.get(key)
+      // A clock that moved backwards makes an old stamp stale, not recent.
+      if (last !== undefined && last <= entry.at && entry.at - last < REPEAT_WINDOW_MS) {
+        return
+      }
+      for (const [staleKey, at] of this.lastRepeatableAt) {
+        if (at > entry.at || entry.at - at >= REPEAT_WINDOW_MS) {
+          this.lastRepeatableAt.delete(staleKey)
+        }
+      }
+      this.lastRepeatableAt.set(key, entry.at)
+    }
     const day = new Date(entry.at).toISOString().slice(0, 10)
     void mkdir(this.directory, { recursive: true })
       .then(() => appendFile(join(this.directory, `${day}.ndjson`), `${JSON.stringify(entry)}\n`))
@@ -39,7 +68,9 @@ export class RuntimeAccessAudit {
     await this.prune()
     let files: string[]
     try {
-      files = (await readdir(this.directory)).filter((file) => /^\d{4}-\d{2}-\d{2}\.ndjson$/.test(file))
+      files = (await readdir(this.directory)).filter((file) =>
+        /^\d{4}-\d{2}-\d{2}\.ndjson$/.test(file)
+      )
     } catch {
       return []
     }
@@ -112,8 +143,11 @@ export class RuntimeAccessAudit {
   }
 }
 
-function matchesAuditFilter(entry: RuntimeAccessAuditEntry, filter: RuntimeAccessAuditFilter): boolean {
-  if (filter.action && entry.method !== filter.action) {
+function matchesAuditFilter(
+  entry: RuntimeAccessAuditEntry,
+  filter: RuntimeAccessAuditFilter
+): boolean {
+  if (filter.action && runtimeAccessAuditActionKey(entry.method) !== filter.action) {
     return false
   }
   if (filter.result && entry.result !== filter.result) {
@@ -123,7 +157,7 @@ function matchesAuditFilter(entry: RuntimeAccessAuditEntry, filter: RuntimeAcces
     return false
   }
   if (filter.search) {
-    const haystack = `${entry.deviceId} ${entry.deviceName ?? ''} ${entry.method} ${entry.memberId ?? ''}`
+    const haystack = `${entry.deviceId} ${entry.deviceName ?? ''} ${entry.method} ${runtimeAccessAuditActionLabel(runtimeAccessAuditActionKey(entry.method))} ${entry.memberId ?? ''}`
     if (!haystack.toLowerCase().includes(filter.search.toLowerCase())) {
       return false
     }

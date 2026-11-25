@@ -40,16 +40,23 @@ export type VersionTreeDisplayInput = {
   sortNow: number
 }
 const VersionTreeDisplayContext = createContext<
-  (VersionTreeDisplayInput & { visibleIdentities: ReadonlySet<string> }) | null
+  | (VersionTreeDisplayInput & {
+      visibleIdentities: ReadonlySet<string>
+      highlightedRevealRowKey: string | null
+    })
+  | null
 >(null)
 
 export function VersionTreeDisplayProvider({
   value,
   trees,
+  highlightedRevealRowKey = null,
   children
 }: {
   value: VersionTreeDisplayInput
   trees: readonly Worktree[]
+  /** #762 reveal flash, owned by the version-nav consumer and lent to native rows. */
+  highlightedRevealRowKey?: string | null
   children: React.ReactNode
 }): React.JSX.Element {
   const display = useMemo(() => {
@@ -64,8 +71,12 @@ export function VersionTreeDisplayProvider({
       value.sortedIds,
       value.filterOptions
     )
-    return { ...value, visibleIdentities: new Set(visibleTrees.map(getWorktreeHostIdentity)) }
-  }, [value, trees])
+    return {
+      ...value,
+      visibleIdentities: new Set(visibleTrees.map(getWorktreeHostIdentity)),
+      highlightedRevealRowKey
+    }
+  }, [value, trees, highlightedRevealRowKey])
   return (
     <VersionTreeDisplayContext.Provider value={display}>
       {children}
@@ -197,7 +208,7 @@ export function VersionNativeTrees({
     activeWorktreeId,
     activeWorkspaceExecutionHostId: activeHostId,
     currentWorktreeId: activeWorktreeId,
-    highlightedRevealRowKey: null,
+    highlightedRevealRowKey: nativeDisplay.highlightedRevealRowKey,
     selectedWorktreeIds: EMPTY_SET,
     selectedWorktrees: [],
     getActiveSurfaceVariant: () => 'primary',

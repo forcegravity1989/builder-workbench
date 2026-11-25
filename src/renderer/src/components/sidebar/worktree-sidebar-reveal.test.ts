@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { revealElementInScrollContainer } from './worktree-sidebar-reveal'
+import {
+  isElementRevealedInScrollContainer,
+  revealElementInScrollContainer
+} from './worktree-sidebar-reveal'
 
 function makeContainer(scrollTop: number, clientHeight: number) {
   const scrollTo = vi.fn()
@@ -51,5 +54,28 @@ describe('revealElementInScrollContainer', () => {
     expect(revealed).toBe(true)
     expect(scrollTo).not.toHaveBeenCalled()
     expect(onScrollIssued).not.toHaveBeenCalled()
+  })
+})
+
+describe('isElementRevealedInScrollContainer', () => {
+  it('is true when the element sits inside the viewport below the top inset', () => {
+    const { container } = makeContainer(0, 673)
+    expect(isElementRevealedInScrollContainer(container, makeElement(200, 260))).toBe(true)
+  })
+
+  it('is false when a scroll correction pushed the element below the fold', () => {
+    const { container } = makeContainer(0, 673)
+    expect(isElementRevealedInScrollContainer(container, makeElement(1005, 1060))).toBe(false)
+  })
+
+  it('is false when the element is scrolled above the top inset', () => {
+    const { container } = makeContainer(0, 673)
+    expect(isElementRevealedInScrollContainer(container, makeElement(10, 30))).toBe(false)
+  })
+
+  it('is false when the element is not inside the container', () => {
+    const { container } = makeContainer(0, 673)
+    ;(container as unknown as { contains: () => boolean }).contains = () => false
+    expect(isElementRevealedInScrollContainer(container, makeElement(200, 260))).toBe(false)
   })
 })
