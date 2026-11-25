@@ -62,7 +62,9 @@ export function createBrowserTabActions(
         options?.browserRuntimeEnvironmentId
       )
       const w3LocalDefault =
-        profileHostId === LOCAL_EXECUTION_HOST_ID ? getW3LocalBrowserDefault() : null
+        !options?.docLocation && profileHostId === LOCAL_EXECUTION_HOST_ID
+          ? getW3LocalBrowserDefault()
+          : null
       const sessionProfileId =
         options?.sessionProfileId !== undefined
           ? options.sessionProfileId

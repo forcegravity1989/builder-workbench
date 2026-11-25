@@ -12,12 +12,12 @@
 
 ## 价值与依据
 
-核心收益：**把账户入口对齐企业 W3 身份，页面极简（单按钮），登录态在本机持久化并可在重启后恢复。**
+核心收益：**把账户入口对齐企业 W3 身份，页面保留一个主动作与手动兜底，登录态在本机持久化并可在重启后恢复。**
 
 - 复用 Orca 现有账户页骨架与登录状态位，只替换语义与 UI 文案；专用 persist session 分区复用内置浏览器的会话 profile 基础设施。
 - 依据：用户明确要求（整体替换 Orca Account、无账号密码）并确认**会话桥接主路径 + 手动网页登录兜底 + W3 账号接口取身份**（弃 OAuth/PKCE/client_id）。原立项 Issue #729 保留但不更新。
 - **身份效果已真机验证**：账号接口真实字段、SPES 免密、重启恢复均已在 Windows 内网真机验证（2026-11-24）。
-- **内置浏览器内网复用**：登录所用专用 partition 即本机常规内置浏览器新标签的默认 profile（薄挂载，仅 local host；profile 仍 `internal` 隐藏不可删）——已实现，真实效果待工作区内建标签复验。
+- **内置浏览器内网复用**：登录所用专用 partition 即本机常规内置浏览器新标签的默认 profile（薄挂载，仅 local host；profile 仍 `internal` 隐藏不可删）——已实现，Windows 普通标签复用与退出已由内网助手报告真机复验；证据边界见 STATUS。
 
 ## 目标体验
 
@@ -29,7 +29,7 @@
 4. **失败**：显示简短原因（未配置 / 打开失败 / 超时 / 取消 / 登录未完成 / 身份解析失败 / 桥接失败 / 退出未完成）+「重试」（登录失败重试即再走一次桥接；退出失败重试即再退出）。
 5. **退出**：点小次要入口弹确认，确认后才退出；退出关闭登录窗口（若在）、清除专用 partition 全部存储与本地身份，不承诺全局 W3 退出；清理失败时**不假报成功**，保持登录态并允许重试退出。
 
-页面不再出现 Orca 云功能（Artifact/Relay/Skill）推广。内置浏览器内网免登复用为**未完成项**（见 spec），UI 不得宣称已生效。
+页面不再出现 Orca 云功能（Artifact/Relay/Skill）推广。内网登录仅复用于本机普通网页标签，文档预览不绑定 W3 会话，退出不关闭无关预览。
 
 ## 范围与边界
 
@@ -48,5 +48,5 @@
 2. **部署配置**——`ORCA_W3_LOGIN_URL`/`ORCA_W3_ACCOUNT_API_URL`/`ORCA_W3_LOCALE`/`ORCA_W3_LOGIN_TIMEOUT_MS`/`ORCA_W3_SYSTEM_CHROME_PATH`（均有默认值）；URL 非法（非 http(s)/无 host/userinfo）时 UI 显示「登录尚未配置，请联系管理员」。
 3. **账号接口真实字段/网络**——字段结构（`employeeNumber`/`uid`/`displayName` 数组）来自 W3 `init.js` 源码阅读；421 未登录与真实 200 返回均**真机已验证**。
 4. **成功页字段**——`display_name`（`cn=` 规范化）/`employee_no` 取自 W3 账号接口；官方成功但无可信资料时显示「登录完成（未获取用户资料）」。
-5. **内置浏览器内网复用**——已按薄挂载实现（登录 partition 即本机 local 常规新标签默认 profile，`internal` 隐藏不可删；显式 profile/remote/ssh/doc-preview 不套用）；真实效果待工作区内建标签复验。
+5. **内置浏览器内网复用**——已按薄挂载实现（登录 partition 即本机 local 常规新标签默认 profile，`internal` 隐藏不可删；显式 profile/remote/ssh/doc-preview 不套用）；Windows 普通标签复用与退出已由内网助手报告真机复验；证据边界见 STATUS。
 6. **后台云登录入口**——后端云模块暂不删；是否在 UI 上彻底移除 Orca 云登录入口，待确认。

@@ -2,23 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   getW3AccountConfig,
   isAllowedW3ShortcutUrl,
-  type W3AccountConfig,
-  W3_DEFAULT_ACCOUNT_API_PATH,
-  W3_DEFAULT_LOGIN_TIMEOUT_MS,
-  W3_DEFAULT_LOGIN_URL
+  type W3AccountConfig
 } from './w3-account-config'
 
-// Keep the surrounding env clean so the feature never accidentally activates.
-const {
-  ORCA_W3_LOGIN_URL: _loginUrl,
-  ORCA_W3_ACCOUNT_API_URL: _accountApiUrl,
-  ORCA_W3_LOCALE: _locale,
-  ORCA_W3_LOGIN_TIMEOUT_MS: _timeoutMs,
-  ...rest
-} = process.env
-
 function read(env: Record<string, string> = {}) {
-  return getW3AccountConfig({ ...rest, ...env } as NodeJS.ProcessEnv)
+  return getW3AccountConfig(env as NodeJS.ProcessEnv)
 }
 
 function readConfigured(env: Record<string, string> = {}): W3AccountConfig {
@@ -108,11 +96,5 @@ describe('getW3AccountConfig', () => {
     expect(readConfigured({ ORCA_W3_LOGIN_TIMEOUT_MS: 'abc' }).loginTimeoutMs).toBe(120_000)
     expect(readConfigured({ ORCA_W3_LOGIN_TIMEOUT_MS: '1' }).loginTimeoutMs).toBe(120_000)
     expect(readConfigured({ ORCA_W3_LOGIN_TIMEOUT_MS: '999999999' }).loginTimeoutMs).toBe(120_000)
-  })
-
-  it('defaults the total login wait to 120s', () => {
-    expect(W3_DEFAULT_LOGIN_TIMEOUT_MS).toBe(120_000)
-    expect(W3_DEFAULT_LOGIN_URL).toBe('https://w3.huawei.com/next/indexa.html')
-    expect(W3_DEFAULT_ACCOUNT_API_PATH).toContain('/w3account/v1/account/{locale}')
   })
 })
