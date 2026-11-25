@@ -397,7 +397,9 @@
 
 [data-sonner-toaster] {
   font-family: var(--font-sans);
-  z-index: 40 !important;
+  /* Modal failures must stay visible and interactive above Dialog's z-50 overlay. */
+  z-index: 60 !important;
+  pointer-events: auto;
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled='true'] {
