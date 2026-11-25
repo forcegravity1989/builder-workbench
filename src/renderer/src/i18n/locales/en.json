@@ -7449,6 +7449,7 @@
           "b79b39d865": "Remove Project",
           "removeDescriptionSsh": "This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.",
           "removeDescriptionLocal": "This only removes {{name}} from Orca. It is still on your disk.",
+          "removeDescriptionRuntime": "Remove the registration for {{name}} on this host. Its files stay on that host.",
           "removeDescriptionVmRecipe": "This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted.",
           "linkedWorkspaceWarning_one": "{{count}} workspace in this project will also be removed from Orca.",
           "linkedWorkspaceWarning_other": "{{count}} workspaces in this project will also be removed from Orca.",

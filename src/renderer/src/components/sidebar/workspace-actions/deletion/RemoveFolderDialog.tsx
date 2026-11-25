@@ -11,15 +11,19 @@ import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   getRepoExecutionHostId,
   isRuntimeOwnedSshTargetId,
-  normalizeExecutionHostId
+  normalizeExecutionHostId,
+  parseExecutionHostId
 } from '../../../../../../shared/execution-host/execution-host'
+import { selectExecutionHostDisplayLabel } from '@/runtime/hosts/display/execution-host-display-label'
 import { countOpenRepoTerminalTabs } from '@/store/repos/repo-removal'
 import { worktreeBelongsToHost, repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
 import { repoMatchesRemovalRegistration } from '@/store/repos/repo-removal-registration'
 import type { RepoRegistrationSnapshot } from '../../../../../../shared/workbench/repo-removal'
+import type { Repo } from '../../../../../../shared/repository/repo-types'
 import { getRecipeVmSshTargetForHost } from '@/runtime/ephemeral-vm/recipe-vm-managed-host'
 import { RemovalUnsavedFilesNotice } from './RemovalUnsavedFilesNotice'
 import { confirmUnsavedDiscard } from '@/store/slices/worktrees/teardown/removed-workspace-unsaved-files'
@@ -41,12 +45,13 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   const removeProject = useAppStore((s) => s.removeProject)
 
   const isOpen = activeModal === 'confirm-remove-folder'
+  const workbench = isWorkbenchShell()
   const repoId = typeof modalData.repoId === 'string' ? modalData.repoId : ''
   const displayName = typeof modalData.displayName === 'string' ? modalData.displayName : ''
   const hostId =
     typeof modalData.hostId === 'string' ? normalizeExecutionHostId(modalData.hostId) : null
   const registration = modalData.projectRemovalRegistration as
-    | RepoRegistrationSnapshot
+    | (RepoRegistrationSnapshot & Pick<Repo, 'pairedRegistration'>)
     | null
     | undefined
   const confirmed = useMemo(
@@ -56,10 +61,31 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
   const selectedRegistration = useAppStore((s) =>
     hostId ? s.repos.find((repo) => repoMatchesHostIdentity(repo, repoId, hostId)) : undefined
   )
+  const host = parseExecutionHostId(hostId)
+  const hostLabel = useAppStore((s) => {
+    if (!workbench || !hostId) {
+      return null
+    }
+    const label = selectExecutionHostDisplayLabel(s, hostId, { t })
+    const pairedHostId = (registration ?? selectedRegistration)?.pairedRegistration?.hostId
+    return host?.kind === 'runtime' &&
+      pairedHostId &&
+      parseExecutionHostId(pairedHostId)?.kind === 'ssh'
+      ? `${label} / ${selectExecutionHostDisplayLabel(s, pairedHostId, { sshEnvironmentId: host.environmentId, t })}`
+      : label
+  })
   const registrationChanged =
     registration === null ||
+    (workbench && !selectedRegistration) ||
     (confirmed !== undefined &&
-      (!selectedRegistration || !repoMatchesRemovalRegistration(selectedRegistration, confirmed)))
+      (!selectedRegistration ||
+        !repoMatchesRemovalRegistration(selectedRegistration, confirmed))) ||
+    (workbench &&
+      registration !== undefined &&
+      (registration.pairedRegistration?.hostId !==
+        selectedRegistration?.pairedRegistration?.hostId ||
+        registration.pairedRegistration?.pairingRevision !==
+          selectedRegistration?.pairedRegistration?.pairingRevision))
 
   // Remote files remain on the named host’s disk; ghost-host labels explain where recovery is possible.
   const sshConnectionId = useAppStore(
@@ -144,17 +170,23 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
           'This removes {{name}} from Orca. Its VM recipe determines whether the environment and its files are permanently deleted.',
           { name: NAME_TOKEN }
         )
-      : sshHostLabel
+      : workbench && host?.kind === 'runtime'
         ? t(
-            'auto.components.sidebar.RemoveFolderDialog.removeDescriptionSsh',
-            'This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.',
-            { name: NAME_TOKEN, host: sshHostLabel }
-          )
-        : t(
-            'auto.components.sidebar.RemoveFolderDialog.removeDescriptionLocal',
-            'This only removes {{name}} from Orca. It is still on your disk.',
+            'auto.components.sidebar.RemoveFolderDialog.removeDescriptionRuntime',
+            'Remove the registration for {{name}} on this host. Its files stay on that host.',
             { name: NAME_TOKEN }
           )
+        : sshHostLabel
+          ? t(
+              'auto.components.sidebar.RemoveFolderDialog.removeDescriptionSsh',
+              'This only removes {{name}} from Orca. Its files stay on {{host}} — re-add that SSH host to recover it.',
+              { name: NAME_TOKEN, host: sshHostLabel }
+            )
+          : t(
+              'auto.components.sidebar.RemoveFolderDialog.removeDescriptionLocal',
+              'This only removes {{name}} from Orca. It is still on your disk.',
+              { name: NAME_TOKEN }
+            )
   const [descriptionBeforeName, descriptionAfterName] = description.split(NAME_TOKEN)
 
   const handleConfirm = useCallback(() => {
@@ -193,6 +225,11 @@ const RemoveFolderDialog = React.memo(function RemoveFolderDialog() {
             {descriptionBeforeName}
             <span className="break-all font-medium text-foreground">{displayName}</span>
             {descriptionAfterName}
+            {hostLabel && selectedRegistration ? (
+              <span className="mt-2 block break-all font-medium text-foreground">
+                {hostLabel} · {confirmed?.path ?? selectedRegistration.path}
+              </span>
+            ) : null}
           </DialogDescription>
           {registrationChanged ? (
             <p className="text-xs text-destructive">

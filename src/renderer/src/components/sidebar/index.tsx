@@ -9,6 +9,7 @@ import {
   type Modifier
 } from '@dnd-kit/core'
 import { useAppStore } from '@/store/index'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
 import SidebarHeader from './chrome/SidebarHeader'
@@ -379,7 +380,9 @@ function Sidebar({
       {/* Render dialogs outside the sidebar to avoid clipping; mount each flow only while its modal is active. */}
       <React.Suspense fallback={null}>
         {activeModal === 'edit-meta' ? <WorktreeMetaDialog /> : null}
-        {activeModal === 'confirm-remove-folder' ? <RemoveFolderDialog /> : null}
+        {!isWorkbenchShell() && activeModal === 'confirm-remove-folder' ? (
+          <RemoveFolderDialog />
+        ) : null}
         {activeModal === 'confirm-sleep-twin' ? <SleepTwinWorkspaceDialog /> : null}
         {activeModal === 'worktree-visibility' ? <WorktreeVisibilityDialog /> : null}
         {activeModal === 'confirm-orca-yaml-hooks' ? <OrcaYamlTrustDialog /> : null}

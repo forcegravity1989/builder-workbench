@@ -131,5 +131,6 @@ for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
 process.stdout.write('\x1b[?1049h')
 if (codexDraftMode) {
   process.stdout.write('\x1b[?2004h')
+  process.stdout.on('resize', render)
 }
 render()

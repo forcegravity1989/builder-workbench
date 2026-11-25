@@ -6,6 +6,7 @@ import { memo, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { lazyWithRetry as lazy } from '@/app-shell/startup/lazy-with-retry'
 import { useTranslate } from '@/i18n/use-translate'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import NewWorkspaceComposerModal from '../components/new-workspace/composer/NewWorkspaceComposerModal'
 import { CrashReportDialog } from '../components/crash-report/CrashReportDialog'
@@ -75,6 +76,9 @@ const NativeChatAccountUsageDialog = lazy(
 )
 const DeleteWorktreeDialog = lazy(
   () => import('../components/sidebar/workspace-actions/deletion/DeleteWorktreeDialog')
+)
+const RemoveFolderDialog = lazy(
+  () => import('../components/sidebar/workspace-actions/deletion/RemoveFolderDialog')
 )
 const PreservedBranchBatchReviewModal = lazy(
   () => import('../components/sidebar/workspace-actions/deletion/PreservedBranchBatchReviewModal')
@@ -306,23 +310,33 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
       <OverlayBoundary boundaryId="overlay.native-chat-resume-on-restart" resetKey={activeView}>
         <NativeChatResumeToasts />
       </OverlayBoundary>
-      <OverlayBoundary boundaryId="overlay.star-nag-toast" resetKey={activeView}>
-        <StarNagToastHost />
-      </OverlayBoundary>
-      <StarNagAgentValueMomentObserver />
+      {isWorkbenchShell() ? null : (
+        <>
+          <OverlayBoundary boundaryId="overlay.star-nag-toast" resetKey={activeView}>
+            <StarNagToastHost />
+          </OverlayBoundary>
+          <StarNagAgentValueMomentObserver />
+        </>
+      )}
       <LanguagePackDiscoveryHost
         onboardingKnown={onboardingGate.onboarding !== null}
         onboardingVisible={onboardingGate.shouldRender}
       />
       <PluginInstallTrustDialogHost />
-      {/* Mount once per session; the internal gate selects pre-telemetry users (telemetry-plan.md §First-launch experience). */}
-      <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
-        <TelemetryFirstLaunchSurface />
-      </OverlayBoundary>
+      {isWorkbenchShell() ? null : (
+        <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
+          <TelemetryFirstLaunchSurface />
+        </OverlayBoundary>
+      )}
       <OverlayBoundary boundaryId="overlay.zoom" resetKey={activeView}>
         <ZoomOverlay />
       </OverlayBoundary>
       <Suspense fallback={null}>
+        {isWorkbenchShell() && activeModal === 'confirm-remove-folder' ? (
+          <ModalBoundary boundaryId="modal.remove-project" resetKey>
+            <RemoveFolderDialog />
+          </ModalBoundary>
+        ) : null}
         {activeModal === 'delete-worktree' ? (
           <ModalBoundary boundaryId="modal.delete-worktree" resetKey>
             <DeleteWorktreeDialog />
