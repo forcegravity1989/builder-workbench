@@ -17,6 +17,15 @@ export async function resolveGitHubWorkItemLinkRepository(
   connectionId?: string | null,
   localGitOptions?: LocalGitExecOptions
 ): Promise<GitHubRepositoryIdentity | null> {
+  if (
+    localGitOptions?.taskRepository &&
+    githubRepoIdentityKey({
+      ...repository,
+      host: repository.host ?? localGitOptions.taskRepository.host
+    }) !== githubRepoIdentityKey(localGitOptions.taskRepository)
+  ) {
+    return null
+  }
   const requestedHost = repository.host?.trim().toLowerCase()
   const requestedRepository = requestedHost
     ? { ...repository, host: requestedHost }

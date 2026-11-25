@@ -1,3 +1,4 @@
+import type { LocalGitExecOptions } from '../../github/repositories/github-repository-identity'
 import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'
 import type { IssueSourcePreference } from '../../../shared/repository/repo-types'
 
@@ -13,10 +14,6 @@ type RegisteredRepoContext = {
   path: string
   connectionId?: string | null
   issueSourcePreference?: IssueSourcePreference
-}
-
-type LocalGitExecOptions = {
-  wslDistro?: string
 }
 
 // Reject invalid item numbers; unknown types fall back to issue-then-PR probing.

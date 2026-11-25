@@ -70,7 +70,7 @@ export async function fetchIssueWorkItem(
     return mapIssueWorkItem(item)
   }
 
-  if (connectionId) {
+  if (connectionId || localGitOptions.taskRepository) {
     // SSH-backed gh has no local cwd; ambient GH_REPO/GH_HOST could identify unrelated work.
     return null
   }

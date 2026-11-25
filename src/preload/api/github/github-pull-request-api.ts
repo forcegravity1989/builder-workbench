@@ -28,7 +28,11 @@ import type { GitHubRepoSelectorArgs } from './github-work-item-api'
 
 export type GithubPullRequestApi = {
   viewer: () => Promise<GitHubViewer | null>
-  repoViewer: (args: { repoPath: string; repoId: string }) => Promise<GitHubViewer | null>
+  repoViewer: (args: {
+    repoPath: string
+    repoId: string
+    sourceContext?: TaskSourceContext | null
+  }) => Promise<GitHubViewer | null>
   repoSlug: (args: {
     repoPath: string
     repoId?: string

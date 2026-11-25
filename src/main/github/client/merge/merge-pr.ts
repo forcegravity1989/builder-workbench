@@ -150,6 +150,7 @@ export async function getPRMergeBlocker(
     // Conflict derivation uses local Git and cannot inspect SSH-backed repositories.
     if (
       connectionId ||
+      localGitOptions.taskRepository ||
       pr.mergeable !== 'CONFLICTING' ||
       !pr.baseRefName ||
       !pr.baseRefOid ||

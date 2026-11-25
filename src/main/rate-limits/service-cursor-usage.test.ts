@@ -112,7 +112,7 @@ describe('Cursor account ownership across usage refreshes', () => {
     vi.mocked(fetchCursorRateLimits).mockResolvedValue(reading(accountA))
     const service = new RateLimitService()
     await service.refresh()
-    expect(service.getState().cursor?.session?.usedPercent).toBe(80)
+    expect((await service.getState()).cursor?.session?.usedPercent).toBe(80)
 
     const started = deferred<void>()
     const pending = deferred<ProviderRateLimits>()
@@ -126,13 +126,13 @@ describe('Cursor account ownership across usage refreshes', () => {
     pending.resolve(reading(accountA))
     await refresh
 
-    expect(service.getState().cursor).toMatchObject({
+    expect((await service.getState()).cursor).toMatchObject({
       status: 'error',
       session: null,
       weekly: null
     })
-    expect(service.getState().cursor?.monthly).toBeUndefined()
-    expect(service.getState().cursorAuthConfigured).toBe(true)
+    expect((await service.getState()).cursor?.monthly).toBeUndefined()
+    expect((await service.getState()).cursorAuthConfigured).toBe(true)
   })
 
   it('clears the last reading when the Cursor login is removed', async () => {
@@ -141,14 +141,17 @@ describe('Cursor account ownership across usage refreshes', () => {
     vi.mocked(fetchCursorRateLimits).mockResolvedValue(reading(auth))
     const service = new RateLimitService()
     await service.refresh()
-    expect(service.getState().cursor?.session?.usedPercent).toBe(80)
+    expect((await service.getState()).cursor?.session?.usedPercent).toBe(80)
 
     vi.mocked(readCursorAuthSession).mockResolvedValue({ status: 'missing' })
     vi.mocked(fetchCursorRateLimits).mockResolvedValue(await unavailable('cursor')())
     await service.refresh()
 
-    expect(service.getState().cursorAuthConfigured).toBe(false)
-    expect(service.getState().cursor).toMatchObject({ status: 'unavailable', session: null })
-    expect(service.getState().cursor?.buckets).toBeUndefined()
+    expect((await service.getState()).cursorAuthConfigured).toBe(false)
+    expect((await service.getState()).cursor).toMatchObject({
+      status: 'unavailable',
+      session: null
+    })
+    expect((await service.getState()).cursor?.buckets).toBeUndefined()
   })
 })

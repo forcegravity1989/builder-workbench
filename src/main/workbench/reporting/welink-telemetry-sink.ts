@@ -251,7 +251,7 @@ function okResponse(): TelemetryTransportFetchResponse {
  */
 export async function transportFetch(
   url: string,
-  options: { method: string; headers: Record<string, string>; body?: string | Blob }
+  options: Parameters<TelemetryTransport['fetch']>[1]
 ): Promise<TelemetryTransportFetchResponse> {
   if (!stopped && options.method === 'POST' && url.includes('/batch')) {
     const events = parsePostHogBatchText(await readRequestBody(options.body))

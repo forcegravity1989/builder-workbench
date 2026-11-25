@@ -1,3 +1,9 @@
+import { isValidGitHubApiRepository } from './github-api-repository-validation'
+import {
+  githubRepoIdentityKey,
+  isDefaultGitHubHost
+} from '../../../shared/github/repositories/repository-identity-key'
+import { normalizeGitHubRemoteHost } from '../../../shared/git/remotes/git-remote-host-alias'
 import {
   withGitHubRepoExecution,
   getOwnerRepoForRemote,
@@ -9,11 +15,15 @@ import { shouldProbeGitRemote } from '../../git/remotes/remote-name-listing'
 import { resolveOriginWithStandIn } from '../../git/remotes/origin-stand-in-remote'
 
 import {
+  isGitHubHostAuthenticatedForGlobalCli,
   getEnterpriseGitHubRepoSlug,
   getEnterpriseGitHubRepoSlugForRemote,
   getEnterpriseGitHubRepoSlugForRemoteUrl
 } from './github-enterprise-repository'
-import { classifyGitHubOwnerRepoFromRemoteUrl } from './github-ssh-host-alias-resolution'
+import {
+  classifyGitHubOwnerRepoFromRemoteUrl,
+  resolveSshConfigHostname
+} from './github-ssh-host-alias-resolution'
 import {
   githubApiRepositoryProbeCacheKey,
   resolveGitHubApiRepositoryProbe
@@ -53,6 +63,33 @@ export async function getGitHubApiRepositoryForRemote(
   localGitOptions: LocalGitExecOptions = {},
   probeOptions: GitHubRemoteIdentityProbeOptions = {}
 ): Promise<GitHubApiRepository | null> {
+  const taskRepository = localGitOptions.taskRepository
+  if (taskRepository) {
+    const candidate = localGitOptions.taskRemoteCandidates
+      ? remoteName === 'origin'
+        ? localGitOptions.taskRemoteCandidates.origin
+        : remoteName === 'upstream'
+          ? localGitOptions.taskRemoteCandidates.upstream
+          : null
+      : remoteName === 'origin'
+        ? taskRepository
+        : null
+    if (!candidate || !isValidGitHubApiRepository(candidate)) {
+      return null
+    }
+    let host = candidate.host ?? 'github.com'
+    if (/^[a-z0-9][a-z0-9_-]*$/i.test(host)) {
+      const { hostname } = await resolveSshConfigHostname(host)
+      host = normalizeGitHubRemoteHost(hostname ?? host)
+    }
+    if (!isDefaultGitHubHost(host) && !(await isGitHubHostAuthenticatedForGlobalCli(host))) {
+      if (githubRepoIdentityKey(candidate) === githubRepoIdentityKey(taskRepository)) {
+        throw new Error('GitHub repository host is unavailable in the local gh account')
+      }
+      return null
+    }
+    return { ...candidate, host }
+  }
   return withGitHubRepoExecution(repoPath, connectionId, localGitOptions, async () => {
     // Why: skip remotes the listing says are absent; origin stays unconditional so its absence is definitive.
     if (

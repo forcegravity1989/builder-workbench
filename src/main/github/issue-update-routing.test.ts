@@ -32,9 +32,29 @@ it('keeps GitHub state and body on the GitHub upstream when origin is a CodeHub 
       expect.objectContaining({ host: 'github.com' })
     )
     expect(gh).toHaveBeenCalledWith(
-      ['api', '-X', 'PATCH', 'repos/acme/project/issues/12', '--raw-field', 'body=Reviewed'],
+      ['api', '-X', 'PATCH', 'repos/acme/project/issues/12', '--input', '-'],
+      expect.objectContaining({ host: 'github.com', stdin: JSON.stringify({ body: 'Reviewed' }) })
+    )
+    gh.mockClear()
+    expect(
+      await updateIssue(
+        '/unavailable/remote/checkout',
+        22,
+        { state: 'closed' },
+        null,
+        {
+          taskRepository: { host: 'github.com', owner: 'team', repo: 'remote-project' }
+        },
+        'origin'
+      )
+    ).toEqual({ ok: true })
+    expect(gh).toHaveBeenCalledTimes(1)
+    expect(gh).toHaveBeenLastCalledWith(
+      ['issue', 'close', '22', '--repo', 'team/remote-project'],
       expect.objectContaining({ host: 'github.com' })
     )
+    expect(gh.mock.calls[0]?.[1]).not.toHaveProperty('cwd')
+    expect(gh.mock.calls[0]?.[1]).not.toHaveProperty('wslDistro')
   } finally {
     // The parallel origin probe may still hold a Windows cwd handle after the
     // upstream result wins; allow it to close before removing the fixture.

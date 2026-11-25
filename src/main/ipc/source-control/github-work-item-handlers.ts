@@ -100,6 +100,7 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
       args: {
         repoPath: string
         repoId?: string
+        sourceContext?: TaskSourceContext | null
         limit?: number
         query?: string
         page?: number
@@ -131,7 +132,7 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
 
   ipcMain.handle(
     'gh:countWorkItems',
-    (_event, args: { repoPath: string; query?: string; wakeWslDistro?: boolean }) => {
+    (_event, args: GitHubRepoScopedArgs & { query?: string; wakeWslDistro?: boolean }) => {
       const repo = assertRegisteredGitHubRepo(args, store)
       return readGitHubRepoUnlessWslStopped(
         store,
@@ -184,6 +185,8 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
       _event,
       args: {
         repoPath: string
+        repoId?: string
+        sourceContext?: TaskSourceContext | null
         owner: string
         repo: string
         host?: string

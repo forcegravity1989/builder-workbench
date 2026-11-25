@@ -120,12 +120,14 @@ export type GithubWorkItemApi = {
   countWorkItems: (args: {
     repoPath: string
     repoId?: string
+    sourceContext?: TaskSourceContext | null
     query?: string
     wakeWslDistro?: boolean
   }) => Promise<number>
   listWorkItems: (args: {
     repoPath: string
     repoId?: string
+    sourceContext?: TaskSourceContext | null
     limit?: number
     query?: string
     page?: number

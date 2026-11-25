@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { restrictWindowsPath } from '../../shared/secure-storage/secure-path-windows-acl'
+import { restrictWindowsFile } from '../../shared/secure-storage/secure-path-windows-acl'
 import { createShareRecordStore } from './self-hosted-share-records'
 
 const record = (id: string, updatedAt: string) => ({
@@ -14,9 +14,9 @@ const record = (id: string, updatedAt: string) => ({
 })
 
 vi.mock('../../shared/secure-storage/secure-path-windows-acl', () => ({
-  restrictWindowsPath: vi.fn(async () => true),
+  restrictWindowsFile: vi.fn(async () => true),
   restrictWindowsPathSync: vi.fn(() => true),
-  bestEffortRestrictWindowsPath: vi.fn(),
+  restrictWindowsDirectory: vi.fn(async () => true),
   resetSecureFileWindowsUserSidForTests: vi.fn()
 }))
 
@@ -61,7 +61,7 @@ describe('createShareRecordStore', () => {
       // Windows ignores the 0o600 creation mode, so the ACL restriction is the real guard. The
       // primitive has its own tests; here the contract is that the store asks for it on the
       // published path, which is what the shipping platform needs asserted.
-      expect(vi.mocked(restrictWindowsPath)).toHaveBeenCalledWith(file, false)
+      expect(vi.mocked(restrictWindowsFile)).toHaveBeenCalledWith(file)
     } else {
       expect((await stat(file)).mode & 0o777).toBe(0o600)
     }

@@ -22,6 +22,7 @@ export type GitHubRepoContext = {
   connectionId?: string | null
   wslDistro?: string
   admissionTier?: GitAdmissionTier
+  taskRepository?: OwnerRepo
   /** SSH keeps the binding even when cwd is omitted from gh options. */
   ghAccount?: GhAccountBinding
   /** Captured authority; a known unbound project also overrides caller account input. */
@@ -29,6 +30,8 @@ export type GitHubRepoContext = {
 }
 
 export type LocalGitExecOptions = {
+  taskRepository?: OwnerRepo
+  taskRemoteCandidates?: { origin?: OwnerRepo; upstream?: OwnerRepo }
   wslDistro?: string
   admissionTier?: GitAdmissionTier
   ghAccount?: GhAccountBinding
@@ -80,6 +83,7 @@ export function githubRepoContext(
   const context = {
     repoPath,
     connectionId: connectionId ?? null,
+    ...(localGitOptions.taskRepository ? { taskRepository: localGitOptions.taskRepository } : {}),
     ...(localGitOptions.wslDistro ? { wslDistro: localGitOptions.wslDistro } : {}),
     ...(localGitOptions.admissionTier ? { admissionTier: localGitOptions.admissionTier } : {}),
     ...(localGitOptions.ghAccount ? { ghAccount: localGitOptions.ghAccount } : {})
@@ -92,7 +96,7 @@ export function githubRepoContext(
     scope.wslDistro === context.wslDistro
       ? scope
       : null
-  const project = pinned ? null : resolveGitHubProjectAccount(context)
+  const project = pinned || context.taskRepository ? null : resolveGitHubProjectAccount(context)
   const account = pinned ?? project ?? context
   const binding = account.ghAccount ? Object.freeze({ ...account.ghAccount }) : undefined
   return Object.freeze({
@@ -110,7 +114,7 @@ export function ghRepoExecOptions(context: GitHubRepoContext): {
   ghAccount?: GhAccountBinding
 } {
   const account = context.ghAccount ? { ghAccount: context.ghAccount } : {}
-  return context.connectionId
+  return context.connectionId || context.taskRepository
     ? { ...account }
     : {
         cwd: context.repoPath,

@@ -5,6 +5,8 @@ import { REMOTE_URL_PROBE_TIMEOUT_MS } from './remote-git-probe-timeout'
 import { gitExecFileAsync } from '../command-runner/git-exec-file'
 
 export type RemoteNameListingGitOptions = {
+  taskRepository?: object
+  taskRemoteCandidates?: { upstream?: object }
   wslDistro?: string
   admissionTier?: GitAdmissionTier
 }
@@ -74,6 +76,9 @@ export async function listCachedRemoteNames(
   connectionId?: string | null,
   localGitOptions: RemoteNameListingGitOptions = {}
 ): Promise<string[] | null> {
+  if (localGitOptions.taskRepository) {
+    return localGitOptions.taskRemoteCandidates?.upstream ? ['origin', 'upstream'] : ['origin']
+  }
   if (connectionId) {
     return null
   }

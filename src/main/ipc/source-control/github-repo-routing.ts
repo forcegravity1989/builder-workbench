@@ -1,3 +1,7 @@
+import type { LocalGitExecOptions } from '../../github/repositories/github-repository-identity'
+import { githubRepoIdentityKey } from '../../../shared/github/repositories/repository-identity-key'
+import { isValidGitHubApiRepository } from '../../github/repositories/github-api-repository-validation'
+import { isWorkbenchProduct } from '../../startup/workbench-product'
 import { resolve } from 'node:path'
 import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type {
@@ -11,10 +15,7 @@ import {
   type PRRefreshValidationDenialReason
 } from '../../github/pull-requests/refresh/pr-refresh-validation-backoff'
 import type { Store } from '../../persistence/loading-store/store'
-import {
-  getLocalProjectGhExecOptions,
-  type LocalProjectGhExecOptions
-} from '../../workspaces/execution-host/project-runtime-git-options'
+import { getLocalProjectGhExecOptions } from '../../workspaces/execution-host/project-runtime-git-options'
 import {
   guardWslUncPathAccess,
   WslDistroStoppedError
@@ -26,6 +27,8 @@ export type GitHubRepoScopedArgs = {
   repoOwnerExecutionHostId?: string
   sourceContext?: TaskSourceContext | null
 }
+
+type GitHubRequestRepo = Repo & Pick<LocalGitExecOptions, 'taskRepository' | 'taskRemoteCandidates'>
 
 type RegisteredRepoValidationResult =
   | { kind: 'ok'; repo: Repo }
@@ -126,7 +129,41 @@ function assertRegisteredRepo(query: RegisteredRepoQuery, store: Store): Repo {
 export function assertRegisteredGitHubRepo(
   args: string | GitHubRepoScopedArgs,
   store: Store
-): Repo {
+): GitHubRequestRepo {
+  if (typeof args !== 'string' && args.sourceContext?.localTaskAccount && isWorkbenchProduct()) {
+    const identity = args.sourceContext.providerIdentity
+    if (identity?.provider !== 'github' || !isValidGitHubApiRepository(identity)) {
+      throw new Error('GitHub repository identity is unavailable')
+    }
+    const requested = args.sourceContext.taskRemoteCandidates
+    const candidates = requested && {
+      origin:
+        requested.origin && isValidGitHubApiRepository(requested.origin)
+          ? requested.origin
+          : undefined,
+      upstream:
+        requested.upstream && isValidGitHubApiRepository(requested.upstream)
+          ? requested.upstream
+          : undefined
+    }
+    const prefersUpstream =
+      candidates?.upstream &&
+      githubRepoIdentityKey(candidates.upstream) === githubRepoIdentityKey(identity)
+    return {
+      id: args.repoId ?? args.sourceContext.repoId ?? '',
+      path: '',
+      displayName: identity.repo,
+      addedAt: 0,
+      badgeColor: '',
+      issueSourcePreference: prefersUpstream ? 'upstream' : 'origin',
+      taskRemoteCandidates: candidates,
+      taskRepository: {
+        owner: identity.owner,
+        repo: identity.repo,
+        host: identity.host ?? 'github.com'
+      }
+    }
+  }
   return assertRegisteredRepo(registeredRepoQuery(args), store)
 }
 
@@ -155,8 +192,13 @@ export function getGitHubRepoConnectionId(repo: Repo): string | null {
 
 export function getGitHubLocalGitOptionArgs(
   store: Store,
-  repo: Repo
-): [] | [LocalProjectGhExecOptions] {
+  repo: GitHubRequestRepo
+): [] | [LocalGitExecOptions] {
+  if (repo.taskRepository) {
+    return [
+      { taskRepository: repo.taskRepository, taskRemoteCandidates: repo.taskRemoteCandidates }
+    ]
+  }
   const localGitOptions = getLocalProjectGhExecOptions(store, repo)
   return Object.keys(localGitOptions).length > 0 ? [localGitOptions] : []
 }
@@ -168,10 +210,13 @@ export function getGitHubLocalGitOptionArgs(
  */
 export async function readGitHubRepoUnlessWslStopped<T>(
   store: Store,
-  repo: Repo,
+  repo: GitHubRequestRepo,
   read: () => Promise<T>,
   options: { wake?: boolean; retryStartsIt?: boolean } = {}
 ): Promise<T> {
+  if (repo.taskRepository) {
+    return read()
+  }
   try {
     return await guardWslUncPathAccess(repo.path, read, {
       wake: options.wake,
