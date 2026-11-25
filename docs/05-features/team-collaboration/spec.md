@@ -16,7 +16,7 @@
 ### 现行界面复用
 
 - 项目墙继续使用 [ProjectWallPage](../../../src/renderer/src/workbench/ProjectWallPage.tsx)、[ProjectWallCard](../../../src/renderer/src/workbench/ProjectWallCard.tsx) 和现有 `ProjectSourceTag`。离线来源仍是状态标签并禁用点击；连接动作来自 [SshStatusSegment](../../../src/renderer/src/components/status-bar/SshStatusSegment.tsx) 的「管理远程主机」。
-- 团队设置是项目墙页头原「批量导入主机」位置的团队图标入口。弹窗只负责群目录、项目登记、地址输入/一键生成填入和同步群空间。
+- 团队设置是项目墙页头原「批量导入主机」位置的团队图标入口。弹窗只负责群目录、项目登记、地址输入/一键生成填入和同步群空间。读取、保存、登记项目和生成主机地址失败时复用 Orca 全局轻量通知，摘要说明结果和重试路径，技术原因放可展开详情，不把错误放在长列表底部。目录读取失败不继续发起主机同步；弹窗不自动轮询，限流后由成员稍后手动重试，已有目录与本次未保存的修改保留。
 - 远程连接、配对、撤销、授权列表和成员行级别切换复用 [RuntimeEnvironmentsPane](../../../src/renderer/src/components/settings/RuntimeEnvironmentsPane.tsx)、[RuntimePairingUrlGenerator](../../../src/renderer/src/components/settings/RuntimePairingUrlGenerator.tsx) 和 [RuntimeAccessGrantList](../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx) 的 Orca 原生样式与调用链。
 - 评审沿用 [WorktreeContextMenuView](../../../src/renderer/src/components/sidebar/WorktreeContextMenuView.tsx)、[ReviewSendDialog](../../../src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx) 和原生 PR 详情。G1 不新建团队专用评审系统。
 
