@@ -116,6 +116,7 @@ export async function lookupGitHubWorkItemForSource(
       : await window.api.gh.workItem({
           repoPath: args.repoPath,
           repoId: args.repoId,
+          ...(args.sourceContext?.localTaskAccount ? { sourceContext: args.sourceContext } : {}),
           number: args.number,
           type: args.type
         })
@@ -230,18 +231,21 @@ export async function lookupGitHubWorkItemDetailsForSource(
     args.type === 'pr'
       ? capturePRCheckContract(
           statusReader((await import('@/store/index')).useAppStore),
-          args.target ?? getGitHubSourceRuntimeTarget(sourceContext),
+          sourceContext?.localTaskAccount
+            ? { kind: 'local' }
+            : (args.target ?? getGitHubSourceRuntimeTarget(sourceContext)),
           sourceContext
         )
       : null
   let result: GitHubWorkItemDetails | null
   try {
     result = await callGitHubTargetOperation<GitHubWorkItemDetails | null>({
-      target:
-        args.target ??
-        (runtimeHost
-          ? { kind: 'environment', environmentId: runtimeHost.environmentId }
-          : { kind: 'local' }),
+      target: sourceContext?.localTaskAccount
+        ? { kind: 'local' }
+        : (args.target ??
+          (runtimeHost
+            ? { kind: 'environment', environmentId: runtimeHost.environmentId }
+            : { kind: 'local' })),
       ownerRepo: args.ownerRepo,
       expectedGhAccount: args.expectedGhAccount,
       canonical: args.canonical ?? false,

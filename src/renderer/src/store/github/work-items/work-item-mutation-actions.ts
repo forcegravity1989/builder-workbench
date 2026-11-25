@@ -40,14 +40,30 @@ export const createWorkItemMutationActions = (
     set((s) => {
       const nextCache = { ...s.workItemsCache }
       let changed = false
-      const sourceScope =
-        options?.sourceContext?.provider === 'github'
-          ? getTaskSourceCacheScope(options.sourceContext)
+      const source = options?.sourceContext
+      const sourceScope = source?.provider === 'github' ? getTaskSourceCacheScope(source) : null
+      const ownerRepo =
+        options?.ownerRepo ??
+        (source?.localTaskAccount && source.providerIdentity?.provider === 'github'
+          ? source.providerIdentity
+          : null)
+      const repositoryKey = ownerRepo ? githubRepoIdentityKey(ownerRepo) : null
+      const desktopProjectScope =
+        source?.localTaskAccount && repositoryKey
+          ? sourceScope?.split(':').slice(0, 5).join(':')
           : null
-      const repositoryKey = options?.ownerRepo ? githubRepoIdentityKey(options.ownerRepo) : null
       for (const key of Object.keys(nextCache)) {
         // Why: don't patch another host/account's visually identical issue/PR cache entry.
-        if (sourceScope && key !== sourceScope && !key.startsWith(`${sourceScope}::`)) {
+        const sameDesktopProject =
+          desktopProjectScope &&
+          key.startsWith(`${desktopProjectScope}:`) &&
+          /^[^:]*:desktop-account(?:::|:[^:]+::)/.test(key.slice(desktopProjectScope.length + 1))
+        if (
+          sourceScope &&
+          !sameDesktopProject &&
+          key !== sourceScope &&
+          !key.startsWith(`${sourceScope}::`)
+        ) {
           continue
         }
         const entry = nextCache[key]

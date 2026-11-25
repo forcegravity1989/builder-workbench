@@ -29,7 +29,8 @@ export function githubTaskBinding(repo: Repo): string {
     repo.projectHostSetupMethod,
     repo.issueSourcePreference,
     repo.gitRemoteIdentity?.canonicalKey,
-    repo.gitRemoteIdentity?.remoteUrl
+    repo.gitRemoteIdentity?.remoteUrl,
+    repo.gitRemoteIdentity?.originUrl
   ])
 }
 
@@ -49,11 +50,14 @@ export function captureGitHubTaskObservation(
     source ?? buildTaskSourceContextFromRepo({ provider: 'github', projectId: repo.id, repo })!
   const legacy = buildTaskSourceContextFromRepo({ provider: 'github', projectId: repo.id, repo })
   const ordinary = getTaskPageRepoSourceContext(repo, 'github')
-  const sources = areTaskSourceContextsEqual(context, legacy)
-    ? [context, ordinary]
-    : areTaskSourceContextsEqual(context, ordinary)
-      ? [context, legacy]
-      : [context]
+  const sources =
+    ordinary?.localTaskAccount || context.localTaskAccount
+      ? [context]
+      : areTaskSourceContextsEqual(context, legacy)
+        ? [context, ordinary]
+        : areTaskSourceContextsEqual(context, ordinary)
+          ? [context, legacy]
+          : [context]
   return {
     repoId: repo.id,
     hostId,

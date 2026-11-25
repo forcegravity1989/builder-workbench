@@ -86,8 +86,8 @@ export function DeliveryBrowserDemo({ time }: { time: number }) {
               onToggle: ignore,
               canShowDiscoveryHint: false
             }}
-            viewSource={null}
-            openExternal={null}
+            overflowMenu={() => null}
+            closeTabOwner={{ worktreeId: 'delivery-demo', browserPageId: 'booking-demo' }}
           />
           {loaded && (
             <div className="grid gap-2 bg-muted/30 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

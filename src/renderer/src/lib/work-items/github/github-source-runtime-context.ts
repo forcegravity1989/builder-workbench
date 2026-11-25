@@ -25,7 +25,7 @@ export type GitHubRuntimeHost = Extract<ParsedExecutionHost, { kind: 'runtime' }
 export function getGitHubSourceRuntimeHost(
   sourceContext: TaskSourceContext | null | undefined
 ): GitHubRuntimeHost | null {
-  if (sourceContext?.provider !== 'github') {
+  if (sourceContext?.provider !== 'github' || sourceContext.localTaskAccount) {
     return null
   }
   const parsedHost = parseExecutionHostId(sourceContext.hostId)
@@ -35,7 +35,9 @@ export function getGitHubSourceRuntimeHost(
 export function getGitHubSourceRuntimeTarget(
   sourceContext: TaskSourceContext | null | undefined
 ): RuntimeClientTarget {
-  return taskSourceRuntimeTarget(sourceContext?.provider === 'github' ? sourceContext : null)
+  return taskSourceRuntimeTarget(
+    sourceContext?.provider === 'github' && !sourceContext.localTaskAccount ? sourceContext : null
+  )
 }
 
 // Repo owners govern PR actions; runtime source overrides, local/absent source cannot downgrade. Only unqualified twins fall back to focused runtime (#6957, #7623).
@@ -46,6 +48,9 @@ export function getGitHubRepoRoutingTarget(
   /** The host of the row the caller is showing; picks between twins without a github source. */
   hostId?: ExecutionHostId | null
 ): RuntimeClientTarget {
+  if (sourceContext?.localTaskAccount) {
+    return { kind: 'local' }
+  }
   const sourceHost = getGitHubSourceRuntimeHost(sourceContext)
   if (sourceHost) {
     return runtimeTargetForOwnerEnvironment(sourceHost.environmentId)
@@ -110,12 +115,14 @@ export function resolveGitHubRepoOperationOwner(
           repoId
         )
       : null
-  const target = sourceHost
-    ? runtimeTargetForOwnerEnvironment(sourceHost.environmentId)
-    : (args.target ??
-      (rowOwner
-        ? runtimeTargetForOwnerEnvironment(rowOwner.environmentId)
-        : getGitHubRepoRoutingTarget(state, repoId, args.sourceContext)))
+  const target: RuntimeClientTarget = args.sourceContext?.localTaskAccount
+    ? { kind: 'local' }
+    : sourceHost
+      ? runtimeTargetForOwnerEnvironment(sourceHost.environmentId)
+      : (args.target ??
+        (rowOwner
+          ? runtimeTargetForOwnerEnvironment(rowOwner.environmentId)
+          : getGitHubRepoRoutingTarget(state, repoId, args.sourceContext)))
   const hostId =
     target.kind === 'environment' ? toRuntimeExecutionHostId(target.environmentId) : null
   let repo: Repo | null = null

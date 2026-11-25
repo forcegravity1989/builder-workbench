@@ -16,6 +16,7 @@ import {
 } from './task-provider-identity'
 import type { GlobalSettings } from '../settings/global-settings-types'
 import type { Repo } from '../repository/repo-types'
+import type { GitHubOwnerRepo } from '../github/pull-requests/pull-request-types'
 
 export type TaskSourceContext = {
   kind: 'task-source'
@@ -27,6 +28,7 @@ export type TaskSourceContext = {
   providerIdentity?: TaskProviderIdentity | null
   accountLabel?: string | null
   localTaskAccount?: true
+  taskRemoteCandidates?: { origin?: GitHubOwnerRepo; upstream?: GitHubOwnerRepo }
 }
 
 export type WorkspaceRunContext = {
@@ -54,6 +56,10 @@ export function normalizeTaskSourceContext(
   if (!provider) {
     return null
   }
+  const taskRemoteCandidates =
+    input.localTaskAccount === true && provider === 'github'
+      ? normalizeTaskRemoteCandidates(input.taskRemoteCandidates)
+      : undefined
   return {
     kind: 'task-source',
     provider,
@@ -63,8 +69,34 @@ export function normalizeTaskSourceContext(
     repoId: normalizeNonEmptyString(input.repoId),
     providerIdentity: normalizeTaskProviderIdentity(provider, input.providerIdentity),
     accountLabel: normalizeNonEmptyString(input.accountLabel),
-    ...(input.localTaskAccount === true ? { localTaskAccount: true } : {})
+    ...(input.localTaskAccount === true && provider === 'github' ? { localTaskAccount: true } : {}),
+    ...(taskRemoteCandidates ? { taskRemoteCandidates } : {})
   }
+}
+
+function normalizeTaskRemoteCandidates(value: unknown): TaskSourceContext['taskRemoteCandidates'] {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+  const candidates = value as Record<string, unknown>
+  const origin = normalizeTaskRemoteCandidate(candidates.origin)
+  const upstream = normalizeTaskRemoteCandidate(candidates.upstream)
+  return origin || upstream
+    ? { ...(origin ? { origin } : {}), ...(upstream ? { upstream } : {}) }
+    : undefined
+}
+
+function normalizeTaskRemoteCandidate(value: unknown): GitHubOwnerRepo | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const candidate = { ...value, provider: 'github' }
+  const identity = normalizeTaskProviderIdentity('github', candidate)
+  if (identity?.provider !== 'github') {
+    return null
+  }
+  const { owner, repo, host } = identity
+  return { owner, repo, ...(host ? { host } : {}) }
 }
 
 export function normalizeStoredTaskSourceContext(value: unknown): TaskSourceContext | null {
@@ -131,7 +163,20 @@ export function areTaskSourceContextsEqual(
     (a.projectHostSetupId ?? null) === (b.projectHostSetupId ?? null) &&
     (a.repoId ?? null) === (b.repoId ?? null) &&
     (a.accountLabel ?? null) === (b.accountLabel ?? null) &&
+    a.localTaskAccount === b.localTaskAccount &&
+    sameTaskRemoteCandidate(a.taskRemoteCandidates?.origin, b.taskRemoteCandidates?.origin) &&
+    sameTaskRemoteCandidate(a.taskRemoteCandidates?.upstream, b.taskRemoteCandidates?.upstream) &&
     areTaskProviderIdentitiesEqual(a.providerIdentity, b.providerIdentity)
+  )
+}
+
+function sameTaskRemoteCandidate(
+  a: GitHubOwnerRepo | undefined,
+  b: GitHubOwnerRepo | undefined
+): boolean {
+  return areTaskProviderIdentitiesEqual(
+    a ? { provider: 'github', ...a } : undefined,
+    b ? { provider: 'github', ...b } : undefined
   )
 }
 
@@ -164,6 +209,7 @@ export function getTaskSourceCacheScope(
     providerIdentity?: TaskProviderIdentity | null
     repoId?: string | null
     accountLabel?: string | null
+    localTaskAccount?: true
   }
 ): string {
   return [
@@ -173,6 +219,7 @@ export function getTaskSourceCacheScope(
     context.projectHostSetupId ?? '',
     context.repoId ?? '',
     taskProviderIdentityCachePart(context.providerIdentity),
+    ...(context.localTaskAccount ? ['desktop-account'] : []),
     ...(context.accountLabel?.trim() ? [context.accountLabel.trim()] : [])
   ]
     .map(encodeCachePart)
@@ -188,7 +235,10 @@ export function taskSourceCacheScopeHostId(scope: string): ExecutionHostId | nul
   const parts = scope.split(':')
   const whole =
     parts.length === TASK_SOURCE_CACHE_SCOPE_FIXED_PARTS ||
-    (parts.length === TASK_SOURCE_CACHE_SCOPE_FIXED_PARTS + 1 && parts.at(-1) !== '')
+    (parts.length === TASK_SOURCE_CACHE_SCOPE_FIXED_PARTS + 1 && parts.at(-1) !== '') ||
+    (parts.length === TASK_SOURCE_CACHE_SCOPE_FIXED_PARTS + 2 &&
+      parts[TASK_SOURCE_CACHE_SCOPE_FIXED_PARTS] === 'desktop-account' &&
+      parts.at(-1) !== '')
   const [provider, encodedHostId] = parts
   if (!whole || !normalizeTaskProvider(provider) || !encodedHostId) {
     return null

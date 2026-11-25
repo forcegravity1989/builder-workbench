@@ -4,8 +4,16 @@ import {
   normalizeTaskSourceContext,
   type TaskSourceContext
 } from '../../../../shared/work-items/task-source-context'
-import { projectHostSetupProjectionFromRepos } from '../../../../shared/project/host-setup/project-host-setup-projection'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import {
+  getGitRemoteProviderIdentity,
+  parseGitHubRemoteUrl,
+  projectHostSetupProjectionFromRepos
+} from '../../../../shared/project/host-setup/project-host-setup-projection'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host/execution-host'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 export function getTaskPageRepoSourceContext(
   repo: Repo | null | undefined,
   provider: 'github' | 'gitlab',
@@ -23,7 +31,7 @@ export function getTaskPageRepoSourceContext(
       : provider === 'gitlab' && gitlabProjectRef
         ? buildGitLabProviderIdentity(gitlabProjectRef)
         : null
-  return normalizeTaskSourceContext({
+  const source = normalizeTaskSourceContext({
     provider,
     projectId: setup?.projectId ?? project?.id ?? repo.id,
     hostId: setup?.hostId ?? getRepoExecutionHostId(repo),
@@ -31,6 +39,26 @@ export function getTaskPageRepoSourceContext(
     repoId: repo.id,
     providerIdentity
   })
+  if (!source || provider !== 'github' || !isWorkbenchShell()) {
+    return source
+  }
+  const remote = repo.gitRemoteIdentity
+  const primary = getGitRemoteProviderIdentity(repo)
+  const upstream = remote?.remoteName === 'upstream' ? primary : null
+  const origin =
+    remote?.remoteName === 'upstream'
+      ? parseGitHubRemoteUrl(remote.originUrl, source.providerIdentity?.provider === 'github')
+      : primary
+  return {
+    ...source,
+    hostId: LOCAL_EXECUTION_HOST_ID,
+    localTaskAccount: true,
+    taskRemoteCandidates: upstream ? { ...(origin ? { origin } : {}), upstream } : undefined,
+    providerIdentity:
+      repo.issueSourcePreference === 'origin' && remote?.remoteName === 'upstream'
+        ? origin
+        : (upstream ?? origin ?? source.providerIdentity)
+  }
 }
 export function buildGitLabProviderIdentity(projectRef: GitLabProjectRef) {
   const pathParts = projectRef.path

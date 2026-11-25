@@ -144,7 +144,9 @@ function buildParentPrChecksRow(
     reviewUrl: review?.url ?? fallbackDisplay?.url ?? null,
     reviewState: review?.state ?? fallbackDisplay?.state ?? null,
     reviewStatus: review?.status ?? fallbackDisplay?.status ?? null,
-    provider: review?.provider ?? fallbackDisplay?.provider ?? null,
+    provider:
+      review?.provider ??
+      (fallbackDisplay?.provider === 'codehub' ? null : (fallbackDisplay?.provider ?? null)),
     githubRepository: review?.provider === 'github' ? (review.githubRepository ?? null) : null,
     summary: getRowSummary(status, review, detailNames),
     detailNames,

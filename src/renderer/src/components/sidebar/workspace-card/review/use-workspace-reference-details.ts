@@ -32,7 +32,7 @@ export function useWorkspaceReferenceDetails(
     () =>
       getWorkspaceAttachments(workspace).map((item) => ({
         ...getWorkspaceReferenceRequest(item, workspace, repo, runtimeVersion),
-        knownProvider: review?.state ? review.provider : undefined
+        knownProvider: review?.state && review.provider !== 'codehub' ? review.provider : undefined
       })),
     [workspace, repo, runtimeVersion, review?.state, review?.provider]
   )
@@ -57,7 +57,7 @@ export function useWorkspaceReferenceDetails(
   const matching = requests.filter(
     (request) =>
       matchWorkspaceReferenceReview(request.item, review) &&
-      canReadWorkspaceReferenceReview(request, review?.provider)
+      canReadWorkspaceReferenceReview(request, request.knownProvider)
   )
   return Object.fromEntries(
     requests.map((request) => {

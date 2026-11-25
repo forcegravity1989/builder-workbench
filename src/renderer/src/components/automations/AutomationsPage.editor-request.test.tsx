@@ -85,10 +85,10 @@ function setUp(
     selectHost
   } as unknown as RequestInput['list']['hostCatalog']
   const hook = renderHook(
-    ({ createOpen } = { createOpen: options?.open ?? false }) =>
+    (props: { createOpen: boolean } | undefined) =>
       useAutomationEditorRequest({
         store,
-        local: { createOpen },
+        local: { createOpen: props?.createOpen ?? options?.open ?? false },
         list: { hostCatalog },
         actions: { openCreateDialog, openEditDialog }
       }),

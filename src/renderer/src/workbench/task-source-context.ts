@@ -5,6 +5,7 @@ import {
 } from '@/lib/work-items/github/github-source-runtime-context'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { getCodeHubRepoSourceContext } from '@/lib/codehub-api'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host/execution-host'
 import type { GitHubViewer } from '../../../shared/github/pull-requests/pull-request-types'
 import { parseGitHubIssueOrPRLink } from '../../../shared/github/repositories/links'
@@ -26,16 +27,23 @@ export function getTaskPageGitHubItemSource(
   item: Pick<GitHubWorkItem, 'type' | 'number' | 'url' | 'prRepo'>,
   previous?: TaskSourceContext | null
 ): TaskSourceContext | null {
-  const source = getTaskPageRepoSourceContext(repo, 'github') ?? previous
+  const context = getTaskPageRepoSourceContext(repo, 'github')
+  if (!isWorkbenchShell()) {
+    return previous ?? context
+  }
+  const source = context ?? previous
   if (!source) {
     return null
   }
   const fromUrl = parseGitHubIssueOrPRLink(item.url ?? '')?.slug
-  const identity = item.prRepo ? { ...item.prRepo, host: item.prRepo.host ?? fromUrl?.host } : fromUrl
+  const identity = item.prRepo
+    ? { ...item.prRepo, host: item.prRepo.host ?? fromUrl?.host }
+    : fromUrl
   return {
     ...source,
     hostId: LOCAL_EXECUTION_HOST_ID,
     localTaskAccount: true,
+    taskRemoteCandidates: undefined,
     providerIdentity: identity
       ? { provider: 'github', ...identity }
       : (previous?.providerIdentity ?? source.providerIdentity)
@@ -53,8 +61,14 @@ export async function lookupGitHubViewerForSource(args: {
   const target = getGitHubSourceRuntimeTarget(args.sourceContext)
   return target.kind === 'environment'
     ? callRuntimeRpc<GitHubViewer | null>(
-        target, 'github.repoViewer', { repo: getGitHubRuntimeRepoId(args.sourceContext, args.repoId) },
+        target,
+        'github.repoViewer',
+        { repo: getGitHubRuntimeRepoId(args.sourceContext, args.repoId) },
         { timeoutMs: 30_000 }
       )
-    : window.api.gh.repoViewer({ repoPath: args.repoPath, repoId: args.repoId })
+    : window.api.gh.repoViewer({
+        repoPath: args.repoPath,
+        repoId: args.repoId,
+        sourceContext: args.sourceContext
+      })
 }

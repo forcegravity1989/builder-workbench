@@ -9,6 +9,7 @@ import { createTaskPageDialogWorkItemReader } from '@/components/task-page/task-
 import { useTaskPageWorkItemsCacheSelection } from './cache/use-task-page-work-items-cache-selection'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-items/work-item-types'
 import type { GitLabWorkItem } from '../../../../../shared/gitlab/gitlab-types'
+import { getTaskPageGitHubItemSource } from '@/workbench/task-source-context'
 import { getTaskPageRepoSourceContext } from '../../../lib/work-items/task-repo-source-context'
 import { startGitHubListScrollRestore } from './listing/task-page-github-list-scroll-restore'
 
@@ -143,9 +144,13 @@ export function useTaskPageGitHubDetail<Model extends TaskPageGitHubDetailInput>
       pageData.openGitHubWorkItem.repoId === dialogWorkItem.repoId &&
       pageData.openGitHubWorkItem.repoHostId === dialogWorkItem.repoHostId
     ) {
-      return pageData.openGitHubSourceContext
+      return getTaskPageGitHubItemSource(
+        dialogRepo,
+        dialogWorkItem,
+        pageData.openGitHubSourceContext
+      )
     }
-    return getTaskPageRepoSourceContext(dialogRepo, 'github')
+    return getTaskPageGitHubItemSource(dialogRepo, dialogWorkItem)
   }, [dialogRepo, dialogWorkItem, pageData.openGitHubSourceContext, pageData.openGitHubWorkItem])
   const gitlabDialogRepo = useMemo(
     () =>
@@ -208,10 +213,7 @@ export function useTaskPageGitHubDetail<Model extends TaskPageGitHubDetailInput>
           preselectedRepoId: scope ? state.taskPageData.preselectedRepoId : item.repoId,
           ...(scope ? { workbenchTaskScope: scope } : {}),
           openGitHubWorkItem: item,
-          openGitHubSourceContext: getTaskPageRepoSourceContext(
-            getWorkItemRepo(repos, item),
-            'github'
-          ),
+          openGitHubSourceContext: getTaskPageGitHubItemSource(getWorkItemRepo(repos, item), item),
           openGitHubInitialTab: initialTab
         },
         {

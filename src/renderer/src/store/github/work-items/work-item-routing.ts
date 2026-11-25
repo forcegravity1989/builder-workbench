@@ -32,6 +32,7 @@ export type GitHubWorkItemRequestContext = {
   repoId: string
   repoPath: string
   target: GitHubWorkItemRequestTarget
+  sourceContext?: TaskSourceContext
 }
 
 export type GitHubWorkItemRequestTarget =
@@ -76,6 +77,9 @@ function settingsForGitHubTaskSource(
   repo: Pick<Repo, 'id'> | undefined,
   sourceContext: TaskSourceContext
 ): RuntimeFocusSettings {
+  if (sourceContext.localTaskAccount) {
+    return withActiveRuntimeEnvironmentId(state.settings, null)
+  }
   const sourceHost = parseExecutionHostId(sourceContext.hostId)
   return withActiveRuntimeEnvironmentId(
     state.settings,
@@ -92,6 +96,10 @@ export function findGitHubWorkItemRepo(
   repoPath: string,
   source?: TaskSourceContext | null
 ): Repo | undefined {
+  if (source?.localTaskAccount) {
+    const rows = state.repos?.filter((repo) => repo.id === repoId && repo.path === repoPath)
+    return rows?.length === 1 ? rows[0] : undefined
+  }
   return source?.provider === 'github'
     ? getGitHubRepoLookupIndex(state.repos).findOnHost(source.hostId, repoId, repoPath)
     : findRepoForGitHubOwner(state, repoId, repoPath)
@@ -119,6 +127,9 @@ export function getGitHubWorkItemSourceHostId(
   repo: Pick<Repo, 'connectionId' | 'executionHostId'> | undefined,
   sourceContext?: TaskSourceContext | null
 ): ExecutionHostId | undefined {
+  if (sourceContext?.localTaskAccount && repo) {
+    return getRepoExecutionHostId(repo)
+  }
   if (sourceContext?.provider === 'github') {
     return sourceContext.hostId
   }
@@ -132,6 +143,10 @@ export function getGitHubWorkItemRowHostId(
   repoPath: string,
   sourceContext?: TaskSourceContext | null
 ): ExecutionHostId | undefined {
+  if (sourceContext?.localTaskAccount) {
+    const owner = findGitHubWorkItemRepo(state, repoId, repoPath, sourceContext)
+    return owner ? getRepoExecutionHostId(owner) : undefined
+  }
   const sourceHostId = sourceContext?.provider === 'github' ? sourceContext.hostId : undefined
   const rows = state.repos?.filter((entry) => entry.id === repoId) ?? []
   // Why not by id alone: a twin would resolve to whichever row is listed first.
@@ -169,6 +184,9 @@ export function getGitHubSourceTarget(
   repo: Pick<Repo, 'id' | 'connectionId' | 'executionHostId'> | undefined,
   sourceContext?: TaskSourceContext | null
 ): RuntimeClientTarget {
+  if (sourceContext?.localTaskAccount) {
+    return { kind: 'local' }
+  }
   if (sourceContext?.provider === 'github') {
     const sourceHost = parseExecutionHostId(sourceContext.hostId)
     return runtimeTargetForOwnerEnvironment(
@@ -189,6 +207,9 @@ export function getGitHubWorkItemRequestContext(
   repoPath: string,
   sourceContext?: TaskSourceContext | null
 ): GitHubWorkItemRequestContext {
+  if (sourceContext?.localTaskAccount) {
+    return { repoId, repoPath, target: { kind: 'local' }, sourceContext }
+  }
   if (sourceContext?.provider === 'github') {
     const parsedHost = parseExecutionHostId(sourceContext.hostId)
     if (parsedHost?.kind === 'runtime') {
@@ -236,6 +257,7 @@ export function listGitHubWorkItemsForRepo(
   return window.api.gh.listWorkItems({
     repoPath: context.repoPath,
     repoId: context.repoId,
+    ...(context.sourceContext ? { sourceContext: context.sourceContext } : {}),
     ...args
   })
 }
@@ -259,6 +281,7 @@ export function countGitHubWorkItemsForRepo(
   return window.api.gh.countWorkItems({
     repoPath: context.repoPath,
     repoId: context.repoId,
+    ...(context.sourceContext ? { sourceContext: context.sourceContext } : {}),
     ...args
   })
 }

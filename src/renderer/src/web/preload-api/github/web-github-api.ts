@@ -13,6 +13,7 @@ import { GITHUB_WEB_RPC_METHODS, type WebGitHubRuntimeMethod } from './web-githu
 import { mapRepoPathArg } from '@/runtime/source-control/forge/runtime-repo-selector-params'
 import { callRuntimeResult, getRemoteRuntimeStatus } from '../../runtime/client/web-runtime-calls'
 import { noopUnsubscribe } from '../web-storage'
+import { ISSUE_STATES_WEB_UNAVAILABLE } from '../../../../../shared/github/issue-state-types'
 import { WORK_ITEMS_BATCH_WEB_UNAVAILABLE } from '../../../../../shared/github/work-item-batch-types'
 
 export type WebGitHubApi = NonNullable<PreloadApi['gh']>
@@ -24,6 +25,7 @@ export function createGitHubApi(): WebGitHubApi {
     callRuntimeResult<Result>(method, mapRepoPathArg(args))
   const githubApi = {
     viewer: () => Promise.resolve(null),
+    issueStates: () => Promise.resolve({ items: [], error: ISSUE_STATES_WEB_UNAVAILABLE }),
     workItemsBatch: () => Promise.resolve({ items: [], error: WORK_ITEMS_BATCH_WEB_UNAVAILABLE }),
     repoViewer: (args) =>
       route<WebGitHubResult<'repoViewer'>>(GITHUB_WEB_RPC_METHODS.repoViewer, args),

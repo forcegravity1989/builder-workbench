@@ -53,6 +53,7 @@ export type WebGitHubRouteKey =
   | 'updateIssueTypeBySlug'
 
 export type WebGitHubRuntimeMethod =
+  | 'github.repoViewer'
   | 'github.repoSlug'
   | 'github.repoUpstream'
   | 'github.prForBranch'
