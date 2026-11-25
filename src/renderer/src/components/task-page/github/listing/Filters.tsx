@@ -20,6 +20,7 @@ import IssueSourceIndicator from '@/components/github/IssueSourceIndicator'
 import IssueSourceSelector, { issueSourceChipClass } from '@/components/github/IssueSourceSelector'
 import RepoBadgeLabel from '@/components/repo/RepoBadgeLabel'
 import { repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
+import { seedWorkbenchTaskQuery } from '../../../../../../shared/workbench/task-scope'
 import { deriveGitHubTaskPreset } from './task-page-preset-highlight'
 import {
   deriveGitHubPRStateChip,
@@ -173,15 +174,16 @@ export function TaskPageGitHubFilters({
               label={option.label}
               active={highlightedPreset === option.id}
               onSelect={() => {
-                const query = option.query
+                const query = seedWorkbenchTaskQuery(option.query, model.workbenchScope)
                 setTaskSearchInput(query)
                 setAppliedTaskSearch(query)
                 setActiveTaskPreset(option.id)
-                setTaskResumeState({
-                  githubItemsPreset: option.id,
-                  githubItemsQuery: query
-                })
-                setTaskRefreshNonce((current) => current + 1)
+                if (!model.workbenchScope) {
+                  setTaskResumeState({ githubItemsPreset: option.id, githubItemsQuery: query })
+                }
+                if (!model.workbenchScopeActive) {
+                  setTaskRefreshNonce((current) => current + 1)
+                }
               }}
               onSetDefault={() => handleSetDefaultTaskPreset(option.id)}
             />

@@ -71,6 +71,7 @@ export type StatusBarItem =
   | 'ssh'
   | 'resource-usage'
   | 'ports'
+  | 'quick-links'
   | 'git-blame'
 export type FloatingTerminalTriggerLocation = 'floating-button' | 'status-bar'
 

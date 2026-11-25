@@ -12,6 +12,7 @@ export type KeybindingScope =
   | 'chat'
   | 'settings'
   | 'botItem'
+  | 'workbench'
 
 export type KeybindingContext = 'app' | 'terminal' | 'browser'
 
@@ -38,6 +39,7 @@ export type KeybindingActionId =
   | 'workspace.rename'
   | 'workspace.delete'
   | 'workspace.openBoard'
+  | 'workbench.toggleAnnotationMode'
   | 'workspace.selectByIndex'
   | 'voice.dictation'
   | 'view.tasks'

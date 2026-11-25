@@ -1,4 +1,4 @@
-import { Activity, GitCommitHorizontal, Plug, Server } from 'lucide-react'
+import { Activity, GitCommitHorizontal, Link, Plug, Server } from 'lucide-react'
 import React from 'react'
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import {
 } from '../accounts/provider-icons'
 import { useTranslate } from '@/i18n/use-translate'
 import { isStatusBarItemAvailable } from './status-bar-agent-gating'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { StatusBarController } from './use-status-bar-controller'
 
 export function StatusBarVisibilityMenu({
@@ -201,6 +202,18 @@ export function StatusBarVisibilityMenu({
           <Plug className="size-3.5" />
           {t('auto.components.status.bar.StatusBar.9659e38343', 'Ports')}
         </DropdownMenuCheckboxItem>
+        {isWorkbenchShell() ? (
+          <DropdownMenuCheckboxItem
+            checked={statusBarItems.includes('quick-links')}
+            onCheckedChange={() => {
+              recordFeatureInteraction('quick-links')
+              toggleStatusBarItem('quick-links')
+            }}
+          >
+            <Link className="size-3.5" />
+            {t('auto.components.status.bar.StatusBar.quickLinks', 'Quick Links')}
+          </DropdownMenuCheckboxItem>
+        ) : null}
         <DropdownMenuCheckboxItem
           checked={statusBarItems.includes('git-blame')}
           onCheckedChange={() => toggleStatusBarItem('git-blame')}

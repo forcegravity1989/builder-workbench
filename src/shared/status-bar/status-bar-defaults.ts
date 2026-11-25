@@ -16,12 +16,14 @@ export const DEFAULT_STATUS_BAR_ITEMS: StatusBarItem[] = [
   'ssh',
   'resource-usage',
   'ports',
+  'quick-links',
   'git-blame'
 ]
 
 /** One-time additions for profiles saved before the item joined the default list. */
 const DEFAULT_ON_STATUS_BAR_ITEMS = [
   ['_portsStatusBarDefaultAdded', 'ports'],
+  ['_quickLinksStatusBarDefaultAdded', 'quick-links'],
   ['_kimiStatusBarDefaultAdded', 'kimi'],
   ['_minimaxStatusBarDefaultAdded', 'minimax'],
   ['_antigravityStatusBarDefaultAdded', 'antigravity'],

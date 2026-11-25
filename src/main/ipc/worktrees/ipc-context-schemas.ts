@@ -9,6 +9,7 @@ import type { ListDetectedWorktreesArgs } from '../../../shared/worktree/catalog
 import { WorkspaceLinkedItemSchema } from '../../../shared/workspace-attachments/workspace-linked-item-schema'
 import { WorkspaceAttachmentsSchema } from '../../../shared/workspace-attachments/workspace-attachment-schema'
 import { TaskSourceContextSchema } from '../../../shared/work-items/task-source-context-schema'
+import { WorkbenchVersionBindingSchema } from '../../../shared/workbench/version-binding'
 import { isWorkspaceLinkedItemSourceContextMatch } from '../../../shared/workspace-attachments/workspace-linked-item-source-context'
 
 export type CreateWorktreeArgsWithSystemProvenance = CreateWorktreeArgs & {
@@ -34,6 +35,23 @@ export type DetectedWorktreeRequestArgs = { repoId: string } | ListDetectedWorkt
 
 export const NullableWorkspaceLinkedItemSchema = WorkspaceLinkedItemSchema.nullable()
 export const NullableTaskSourceContextSchema = TaskSourceContextSchema.nullable()
+
+const NullableWorkbenchVersionBindingSchema = WorkbenchVersionBindingSchema.nullable()
+
+export function normalizeWorkbenchVersionBindingField<
+  T extends { workbenchVersionBinding?: unknown }
+>(input: T): T {
+  const updates = { ...input }
+  // An explicit undefined preserves this binding. Other metadata fields retain their own semantics.
+  if (updates.workbenchVersionBinding === undefined) {
+    delete updates.workbenchVersionBinding
+  } else {
+    updates.workbenchVersionBinding = NullableWorkbenchVersionBindingSchema.parse(
+      updates.workbenchVersionBinding
+    )
+  }
+  return updates
+}
 
 export function normalizeLinkedWorkItemFields<
   T extends {

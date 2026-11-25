@@ -122,6 +122,10 @@ function agentForSyntheticTitle(text: string): TerminalAgent | null {
 function collectVendorMarkers(segments: readonly string[]): TerminalAgent[] {
   const markers = new Set<TerminalAgent>()
   for (const segment of segments) {
+    if (isDshTerminalTitle(segment)) {
+      markers.add('dsh')
+      continue
+    }
     // Only a leading identity-position sigil counts; the same glyph inside task text is decoration.
     if (GEMINI_GLYPHS.some((glyph) => segment.startsWith(glyph))) {
       markers.add('gemini')

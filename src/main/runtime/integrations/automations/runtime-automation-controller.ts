@@ -286,13 +286,18 @@ export class RuntimeAutomationController {
     return { removed: true, id }
   }
 
-  async runNow(id: string, expectedOwner?: AutomationOwnerPrecondition): Promise<AutomationRun> {
+  async runNow(
+    id: string,
+    expectedOwner?: AutomationOwnerPrecondition,
+    oneShotPrompt?: string
+  ): Promise<AutomationRun> {
     if (!this.service) {
       throw new Error('runtime_unavailable')
     }
     return await runAutomationNowFenced({
       automationId: id,
       service: this.service,
+      oneShotPrompt,
       fence: () => this.assertOwner(id, expectedOwner, 'execute')
     })
   }

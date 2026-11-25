@@ -18,6 +18,7 @@ function SplitNode({
   hasSplitGroups,
   tabStrip,
   markdownAnnotationsEnabled,
+  reserveClosedExplorerToggleSpace,
   touchesTopEdge,
   touchesRightEdge,
   touchesLeftEdge,
@@ -36,6 +37,7 @@ function SplitNode({
   hasSplitGroups: boolean
   tabStrip: TabGroupPanelTabStrip
   markdownAnnotationsEnabled: boolean
+  reserveClosedExplorerToggleSpace: boolean
   touchesTopEdge: boolean
   touchesRightEdge: boolean
   touchesLeftEdge: boolean
@@ -66,7 +68,10 @@ function SplitNode({
         suppressLeftBorder={suppressLeftBorder}
         suppressRightBorder={suppressRightBorder}
         suppressBottomBorder={suppressBottomBorder}
-        reserveClosedExplorerToggleSpace={touchesTopEdge && touchesRightEdge}
+        hostsBotChrome={touchesTopEdge && touchesRightEdge}
+        reserveClosedExplorerToggleSpace={
+          reserveClosedExplorerToggleSpace && touchesTopEdge && touchesRightEdge
+        }
         reserveCollapsedSidebarHeaderSpace={touchesTopEdge && touchesLeftEdge}
         isTabDragActive={isTabDragActive}
         hoveredTabInsertion={
@@ -94,6 +99,7 @@ function SplitNode({
           hasSplitGroups={hasSplitGroups}
           tabStrip={tabStrip}
           markdownAnnotationsEnabled={markdownAnnotationsEnabled}
+          reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
           touchesTopEdge={touchesTopEdge}
           touchesRightEdge={isHorizontal ? false : touchesRightEdge}
           touchesLeftEdge={touchesLeftEdge}
@@ -128,6 +134,7 @@ function SplitNode({
           hasSplitGroups={hasSplitGroups}
           tabStrip={tabStrip}
           markdownAnnotationsEnabled={markdownAnnotationsEnabled}
+          reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
           touchesTopEdge={isHorizontal ? touchesTopEdge : false}
           touchesRightEdge={touchesRightEdge}
           touchesLeftEdge={isHorizontal ? false : touchesLeftEdge}
@@ -153,6 +160,7 @@ export function TabGroupSplitNodeTree({
   hoveredTabInsertion,
   tabStrip = 'attached',
   markdownAnnotationsEnabled = true,
+  reserveClosedExplorerToggleSpace = true,
   rootTouchesBottomEdge = false
 }: {
   layout: TabGroupLayoutNode
@@ -164,6 +172,7 @@ export function TabGroupSplitNodeTree({
   tabStrip?: TabGroupPanelTabStrip
   /** Off for scratch workspaces (the floating panel) whose markdown is not a review surface. */
   markdownAnnotationsEnabled?: boolean
+  reserveClosedExplorerToggleSpace?: boolean
   /** True when the host's own chrome bounds the tree's bottom edge (no border-b to paint). */
   rootTouchesBottomEdge?: boolean
 }): React.JSX.Element {
@@ -177,6 +186,7 @@ export function TabGroupSplitNodeTree({
       hasSplitGroups={layout.type === 'split'}
       tabStrip={tabStrip}
       markdownAnnotationsEnabled={markdownAnnotationsEnabled}
+      reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
       touchesTopEdge={true}
       touchesRightEdge={true}
       touchesLeftEdge={true}

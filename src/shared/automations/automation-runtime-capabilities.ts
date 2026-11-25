@@ -20,7 +20,12 @@ export const AUTOMATION_SURFACE_RUNTIME_CAPABILITY = 'automations.surface.v1' as
 
 export const AUTOMATION_LAUNCH_SETUP_RUNTIME_CAPABILITY = 'automations.launch-setup.v1' as const
 
+// Older hosts discard runNow's oneShotPrompt and would launch without it.
+export const AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY =
+  'automation.run-now-one-shot-prompt.v1' as const
+
 export const AUTOMATION_RUNTIME_CAPABILITIES = [
+  AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY,
   AUTOMATION_LAUNCH_SETUP_RUNTIME_CAPABILITY,
   AUTOMATION_SURFACE_RUNTIME_CAPABILITY,
   AUTOMATION_LIST_HOST_SCOPE_RUNTIME_CAPABILITY,

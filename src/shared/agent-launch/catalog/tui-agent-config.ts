@@ -309,7 +309,7 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     detectCmdAliases: ['dst'],
     detectRequiredCommands: ['dsh'],
     // A first bare launch opens the session browser instead of the composer.
-    launchCmd: 'dsh-tui .',
+    launchCmd: 'dsh-tui . --backend=dsh',
     expectedProcess: 'dsh',
     promptInjectionMode: 'stdin-after-start',
     // The whale intro keeps repainting behind the ready composer.

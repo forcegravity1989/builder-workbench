@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { encodePairingOffer, PAIRING_OFFER_VERSION } from '../../../shared/remote-runtime/pairing/pairing'
+import { encodePairingOffer } from '../../../shared/remote-runtime/pairing/pairing'
+import { PAIRING_OFFER_VERSION } from '../../../shared/remote-runtime/pairing/mobile-relay-pairing-offer'
 import {
   builderHostsTemplate,
   parseBuilderHostsFile,

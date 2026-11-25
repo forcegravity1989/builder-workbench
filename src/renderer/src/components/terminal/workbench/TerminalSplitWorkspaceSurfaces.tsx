@@ -4,9 +4,11 @@ import { selectParkedEquivalentMountTabIds } from '../workspace-mounting/startup
 import type { TerminalController } from './use-terminal-controller'
 
 export function TerminalSplitWorkspaceSurfaces({
-  controller
+  controller,
+  reserveClosedExplorerToggleSpace
 }: {
   controller: TerminalController
+  reserveClosedExplorerToggleSpace: boolean
 }): React.JSX.Element | null {
   const {
     activationDeferredMountTabIdsByWorktreeRef,
@@ -63,6 +65,7 @@ export function TerminalSplitWorkspaceSurfaces({
               layout={layout}
               focusedGroupId={activeGroupIdByWorktree[workspace.id]}
               isVisible={isVisible}
+              reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
               shouldMeasureHiddenWorktree={shouldMeasureHiddenWorktree}
               prewarmStage={
                 shouldMeasureHiddenWorktree

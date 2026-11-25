@@ -7,7 +7,7 @@ import {
 } from '../../../shared/automations/ownership/automation-owner-conflict'
 
 type RefusableAutomationService = {
-  runNow: (automationId: string) => Promise<AutomationRun>
+  runNow: (automationId: string, oneShotPrompt?: string) => Promise<AutomationRun>
   recordRefusedRun: (automationId: string) => void | Promise<void>
 }
 
@@ -15,6 +15,7 @@ export async function runAutomationNowFenced(input: {
   fence: () => void
   service: RefusableAutomationService
   automationId: string
+  oneShotPrompt?: string
 }): Promise<AutomationRun> {
   try {
     input.fence()
@@ -27,5 +28,5 @@ export async function runAutomationNowFenced(input: {
     }
     throw error
   }
-  return await input.service.runNow(input.automationId)
+  return await input.service.runNow(input.automationId, input.oneShotPrompt)
 }

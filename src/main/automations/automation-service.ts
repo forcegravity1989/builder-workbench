@@ -146,7 +146,7 @@ export class AutomationService {
     this.timer = null
   }
 
-  async runNow(automationId: string): Promise<AutomationRun> {
+  async runNow(automationId: string, oneShotPrompt?: string): Promise<AutomationRun> {
     const generation = this.dispatchGeneration
     const listed = this.store.listAutomations().find((entry) => entry.id === automationId)
     if (!listed) {
@@ -157,7 +157,7 @@ export class AutomationService {
     const event = latestAutomationEvent(this.store, automation)
     const run = await this.runs.createRun(automation, Date.now(), 'manual', event)
     // The saved pending row is the acknowledgement; the lane owns execution behind earlier launches.
-    this.launchInLane(automation, run, target, generation)
+    this.launchInLane(automation, run, target, generation, { oneShotPrompt })
     return run
   }
 
@@ -167,12 +167,12 @@ export class AutomationService {
     run: AutomationRun,
     target: AutomationRunTargetResult,
     generation: number,
-    afterCreate?: () => Promise<unknown>
+    options?: { afterCreate?: () => Promise<unknown>; oneShotPrompt?: string }
   ): void {
     void (async () => {
       // A blocked lane must not defer the schedule advance.
-      await afterCreate?.()
-      await this.requestDispatch(automation, run, target, generation)
+      await options?.afterCreate?.()
+      await this.requestDispatch(automation, run, target, generation, options?.oneShotPrompt)
     })()
       .catch((error: unknown) => this.recordFailedLaunch(run, generation, error))
       .catch((writeError: unknown) =>
@@ -280,7 +280,7 @@ export class AutomationService {
       dispatch: (automation, run, target) =>
         this.requestDispatch(automation, run, target, generation),
       launch: (automation, run, target, afterCreate) =>
-        this.launchInLane(automation, run, target, generation, afterCreate),
+        this.launchInLane(automation, run, target, generation, { afterCreate }),
       once: this.once
     }
   }
@@ -305,7 +305,8 @@ export class AutomationService {
     automation: Automation,
     run: AutomationRun,
     target: AutomationRunTargetResult,
-    generation: number
+    generation: number,
+    oneShotPrompt?: string
   ): Promise<AutomationRun> {
     return this.runInAutomationLane(automation.id, () =>
       requestAutomationDispatch(
@@ -325,7 +326,8 @@ export class AutomationService {
         },
         automation,
         run,
-        target
+        target,
+        oneShotPrompt
       )
     )
   }

@@ -10,6 +10,8 @@ import type { TaskViewPresetId } from '../../../../shared/ui-chrome/ui-chrome-ty
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import type { GitHubTaskKind } from '@/components/task-page/task-page-localized-options'
+import { parseTaskQuery, serializeTaskQuery } from '../../../../shared/work-items/task-query'
+import { seedWorkbenchTaskQuery } from '../../../../shared/workbench/task-scope'
 import { getTaskPresetQuery } from '../../../../shared/work-items/task-preset-query'
 import { shouldSuppressEnterSubmit } from '@/lib/workspace/creation/new-workspace-enter-guard'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/keyboard/app-keyboard-router'
@@ -32,6 +34,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     newLinearProjectOpen,
     newLinearIssueOpen,
     activeGithubTaskKind,
+    workbenchScope,
     newJiraIssueOpen
   } = model
   const applyPRFilterChange = useCallback(
@@ -47,16 +50,16 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
       setTaskSearchInput(query)
       setAppliedTaskSearch(query)
       setActiveTaskPreset(preset)
-      setTaskResumeState({
-        githubItemsPreset: preset,
-        githubItemsQuery: query
-      })
+      if (!workbenchScope) {
+        setTaskResumeState({ githubItemsPreset: preset, githubItemsQuery: query })
+      }
       // Why: a filter change replaces every row's meaning; show the load skeleton so stale rows don't read as if the filter did nothing.
       setTasksFiltering(true)
       setTaskRefreshNonce((current) => current + 1)
     },
     [
       activeGithubTaskKind,
+      workbenchScope,
       setTaskResumeState,
       taskSearchInput,
       setActiveTaskPreset,
@@ -67,18 +70,21 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     ]
   )
   const handleApplyTaskSearch = useCallback((): void => {
-    const scoped = scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
+    const scoped =
+      workbenchScope?.goalId && !taskSearchInput.trim()
+        ? ''
+        : scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
     setTaskSearchInput(scoped)
     setAppliedTaskSearch(scoped)
     setActiveTaskPreset(null)
-    setTaskResumeState({
-      githubItemsPreset: null,
-      githubItemsQuery: scoped
-    })
+    if (!workbenchScope) {
+      setTaskResumeState({ githubItemsPreset: null, githubItemsQuery: scoped })
+    }
     setTasksFiltering(true)
     setTaskRefreshNonce((current) => current + 1)
   }, [
     activeGithubTaskKind,
+    workbenchScope,
     setTaskResumeState,
     taskSearchInput,
     setTasksFiltering,
@@ -110,18 +116,32 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   const handleSelectGithubTaskKind = useCallback(
     (kind: GitHubTaskKind): void => {
       const preset = getDefaultPresetForGitHubTaskKind(kind)
-      const query = getTaskPresetQuery(preset)
+      let query = getTaskPresetQuery(preset)
+      if (workbenchScope) {
+        const parsed = parseTaskQuery(taskSearchInput)
+        parsed.scope = kind === 'prs' ? 'pr' : 'issue'
+        if (kind === 'issues') {
+          parsed.draft = false
+          parsed.reviewRequested = null
+          parsed.reviewedBy = null
+          if (parsed.state === 'merged') {
+            parsed.state = 'open'
+          }
+        }
+        query = seedWorkbenchTaskQuery(serializeTaskQuery(parsed), workbenchScope)
+      }
       setTaskSearchInput(query)
       setAppliedTaskSearch(query)
-      setActiveTaskPreset(preset)
-      setTaskResumeState({
-        githubItemsPreset: preset,
-        githubItemsQuery: query
-      })
+      setActiveTaskPreset(workbenchScope ? null : preset)
+      if (!workbenchScope) {
+        setTaskResumeState({ githubItemsPreset: preset, githubItemsQuery: query })
+      }
       setTasksFiltering(true)
       setTaskRefreshNonce((current) => current + 1)
     },
     [
+      workbenchScope,
+      taskSearchInput,
       setTaskResumeState,
       setActiveTaskPreset,
       setTasksFiltering,

@@ -190,7 +190,8 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
     value: taskSearchInput
   })
   useEffect(() => {
-    if (!taskResumeApplied) {
+    // Scoped searches are view-local and must not change the next plain Tasks visit.
+    if (!taskResumeApplied || model.workbenchScope) {
       return
     }
     if (!githubSearchPersistReadyRef.current) {
@@ -205,6 +206,7 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
   }, [
     activeTaskPreset,
     appliedTaskSearch,
+    model.workbenchScope,
     setTaskResumeState,
     taskResumeApplied,
     githubSearchPersistReadyRef

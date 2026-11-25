@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { applyScrubSafeAgentEnvAliases } from '../../shared/agent-hook-listener/transport/agent-hook-scrub-safe-env'
 import { recognizeAgentProcessFromCommandLine } from '../../shared/agent-status/process/agent-process-recognition'
-import { extractAgentProviderSession, getAgentResumeArgv } from '../../shared/agent-session/lifecycle/agent-session-resume'
+import { extractAgentProviderSession } from '../../shared/agent-session/lifecycle/agent-session-resume'
+import { getAgentResumeArgv } from '../../shared/agent-launch/startup/agent-resume-argv'
 import { createDraftPasteReadyScanner } from '../../shared/agent-launch/startup/readiness/draft-paste-ready-scanner'
 import { createHookListenerState } from '../../shared/agent-hook-listener/listener-state'
 import { normalizeDshEvent } from '../../shared/agent-hook-listener/providers/dsh/dsh-events'
-import { buildAgentResumeStartupPlan, buildAgentStartupPlan } from '../../shared/agent-launch/startup/tui-agent-startup'
+import { buildAgentStartupPlan } from '../../shared/agent-launch/startup/tui-agent-startup'
+import { buildAgentResumeStartupPlan } from '../../shared/agent-launch/startup/tui-agent-resume-startup'
 import { applyManagedDshPatch, removeManagedDshPatch } from './dsh-home-patch'
 import {
   getAgentLabel,
@@ -30,7 +32,12 @@ describe('DSH launch and provider contracts', () => {
   })
 
   it('distinguishes DSH profiles from launcher workspace arguments', () => {
-    for (const command of ['dsh web', 'dsh headless task', 'dsh --profile=sdk', 'dsh plugin list']) {
+    for (const command of [
+      'dsh web',
+      'dsh headless task',
+      'dsh --profile=sdk',
+      'dsh plugin list'
+    ]) {
       expect(recognizeAgentProcessFromCommandLine(command)).toBeNull()
     }
     for (const command of [
@@ -81,7 +88,12 @@ describe('DSH launch and provider contracts', () => {
   it('resumes only the hook-reported DSH id on the DSH backend', () => {
     const session = extractAgentProviderSession('dsh', { session_id: 's1', transcript_path: '' })
     expect(session).toEqual({ key: 'session_id', id: 's1' })
-    expect(getAgentResumeArgv('dsh', session!)).toEqual(['dsh-tui', '--backend=dsh', '--resume', 's1'])
+    expect(getAgentResumeArgv('dsh', session!)).toEqual([
+      'dsh-tui',
+      '--backend=dsh',
+      '--resume',
+      's1'
+    ])
     for (const platform of ['darwin', 'linux', 'win32'] as const) {
       const plan = buildAgentResumeStartupPlan({
         agent: 'dsh',
@@ -110,11 +122,13 @@ describe('DSH launch and provider contracts', () => {
 
   it('preserves user patch rows across install and removal, including orphan markers', () => {
     const user =
-      "# >>> orca-managed-dsh-hooks (managed by Orca; do not edit) >>>\n- id: user-row\n  config: {}\n"
+      '# >>> orca-managed-dsh-hooks (managed by Orca; do not edit) >>>\n- id: user-row\n  config: {}\n'
     const installed = applyManagedDshPatch(user, "C:/owner's home/dsh-hooks.json")!
     expect(installed).toContain("configPath: 'C:/owner''s home/dsh-hooks.json'")
     expect(removeManagedDshPatch(installed).text).toBe(user)
-    expect(removeManagedDshPatch(applyManagedDshPatch('[]\n', '/tmp/hooks.json')!).text).toBe('[]\n')
+    expect(removeManagedDshPatch(applyManagedDshPatch('[]\n', '/tmp/hooks.json')!).text).toBe(
+      '[]\n'
+    )
     expect(applyManagedDshPatch('[{id: user}]\n', '/tmp/hooks.json')).toBeNull()
   })
 })

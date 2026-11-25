@@ -321,7 +321,7 @@ function AppWorkspaceContent(props: AppWorkspaceShellProps): React.JSX.Element {
                               'Terminal, browser, or editor rendering failed in this workspace. Retry to remount it.'
                             )}
                           >
-                            <Terminal />
+                            <Terminal reserveClosedExplorerToggleSpace={!cycle && !metricsBoard} />
                           </RecoverableRenderErrorBoundary>
                         </Suspense>
                       </TerminalWorkbenchContainer>

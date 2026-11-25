@@ -16,7 +16,10 @@ import {
   type WorktreeSortOrderRequest
 } from '../../../persistence/worktree-sort-order-write'
 import { readBranchRenameFailureOutputForDisplay } from '../../../agent-hooks/first-work/branch-rename-failure-output'
-import { normalizeLinkedWorkItemFields } from '../ipc-context-schemas'
+import {
+  normalizeLinkedWorkItemFields,
+  normalizeWorkbenchVersionBindingField
+} from '../ipc-context-schemas'
 import { isRemovedFolderWorkspaceInstance } from '../../../workspaces/catalog/folder-workspace-meta-presence'
 import { resolveWorktreeMetaOwner } from '../../../persistence/host-qualified-worktree-meta'
 import { hostWorktreeTarget } from '../../../../shared/worktree/host-qualified-identity'
@@ -57,7 +60,9 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       ) {
         return null
       }
-      const validatedUpdates = normalizeLinkedWorkItemFields(args.updates)
+      const validatedUpdates = normalizeWorkbenchVersionBindingField(
+        normalizeLinkedWorkItemFields(args.updates)
+      )
       const updates =
         validatedUpdates.displayName !== undefined
           ? {

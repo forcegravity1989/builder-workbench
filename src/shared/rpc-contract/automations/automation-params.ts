@@ -181,6 +181,15 @@ export const AutomationId = z.object({
   expectedOwner: ExpectedOwner
 })
 
+export const MAX_AUTOMATION_ONE_SHOT_PROMPT_CHARS = 32_000
+
+export const AutomationRunNow = AutomationId.extend({
+  oneShotPrompt: OptionalPlainString.refine(
+    (value) => value === undefined || value.length <= MAX_AUTOMATION_ONE_SHOT_PROMPT_CHARS,
+    { message: 'One-shot prompt is too large' }
+  )
+})
+
 export const AutomationRuns = z.object({
   automationId: OptionalString,
   expectedOwner: ExpectedOwner,

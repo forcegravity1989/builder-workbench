@@ -150,6 +150,7 @@ export type PersistedUIState = {
   _workspaceStatusesDefaultVisualsMigrated?: boolean
   /** One-shot migration flag for adding the default-on Ports status item. */
   _portsStatusBarDefaultAdded?: boolean
+  _quickLinksStatusBarDefaultAdded?: boolean
   /** One-shot migration flag for adding the default-on Kimi status item. */
   _kimiStatusBarDefaultAdded?: boolean
   /** One-shot migration flag for adding the default-on MiniMax status item. */

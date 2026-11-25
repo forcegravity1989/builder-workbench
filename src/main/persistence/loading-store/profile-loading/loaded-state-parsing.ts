@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { normalizeProxyUrl } from '../../../../shared/network/network-proxy'
 import { normalizeKagiSessionLink } from '../../../../shared/browser/navigation/browser-url'
@@ -9,6 +10,10 @@ import { pruneLocalTerminalScrollbackBuffers } from '../../../../shared/workspac
 import { pruneWorkspaceSessionBrowserHistory } from '../../../../shared/workspace-session/workspace-session-browser-history'
 import { clearMissingProjectGroupMemberships } from '../../../../shared/project/groups/project-groups'
 import { migrateWorkspaceSessionTerminalScrollbackSnapshots } from '../../../pty/scrollback/terminal-scrollback-snapshots'
+import {
+  isWorkbenchProduct,
+  WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
+} from '../../../startup/workbench-product'
 import { logStartupMilestone } from '../../../startup/diagnostics/startup-diagnostics'
 import {
   PROTECTED_SECRET_SLOT,
@@ -198,6 +203,11 @@ export class LoadedStateParsingOperations {
 
     if (result === null) {
       result = this.cohorts.migrateCohortSeeds(getDefaultPersistedState(homedir()), false)
+      // The authority has already resolved any existing profile or retained recovery evidence.
+      if (process.platform === 'win32' && isWorkbenchProduct() && existsSync('D:\\')) {
+        result.settings.workspaceDir = WORKBENCH_DEFAULT_WINDOWS_WORKSPACE_DIR
+        this.runtime.loadNeedsSave = true
+      }
     }
 
     const workspaceSession = pruneWorkspaceSessionBrowserHistory(

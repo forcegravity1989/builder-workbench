@@ -173,10 +173,11 @@ export abstract class OrcaRuntimeWithAutomationApiOperations extends OrcaRuntime
 
   runAutomationNow(
     id: string,
-    expectedOwner?: AutomationOwnerPrecondition
+    expectedOwner?: AutomationOwnerPrecondition,
+    oneShotPrompt?: string
   ): Promise<AutomationRun> {
     return this.automation.withExternalProbePriority(() =>
-      this.automation.runNow(id, expectedOwner)
+      this.automation.runNow(id, expectedOwner, oneShotPrompt)
     )
   }
 

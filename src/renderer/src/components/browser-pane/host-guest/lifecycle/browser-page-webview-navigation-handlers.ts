@@ -104,12 +104,25 @@ export function createBrowserPageWebviewNavigationHandlers({
     if (!isPageDocumentNavigationStart(event) || !event.url) {
       return
     }
-    // Same-URL reloads replace the document too; in-place updates are judged once they commit.
-    invalidateBrowserAnnotationDocumentRef.current()
-    setBrowserOverlayViewport(INITIAL_BROWSER_OVERLAY_VIEWPORT)
-    const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     const browserStartedUrl = redactKagiSessionToken(event.url)
     const startedUrl = normalizeBrowserNavigationUrl(browserStartedUrl) ?? browserStartedUrl
+    let committedUrl = cachedBrowserGuestMetadata(webview)?.url ?? null
+    if (committedUrl === null) {
+      try {
+        committedUrl = webview.getURL() || null
+      } catch {
+        // An unattached guest has no committed document to retain.
+      }
+    }
+    const committedDocument = committedUrl ? redactKagiSessionToken(committedUrl) : null
+    const normalizedCommittedDocument = committedDocument
+      ? (normalizeBrowserNavigationUrl(committedDocument) ?? committedDocument)
+      : null
+    if (normalizedCommittedDocument?.split('#')[0] !== startedUrl.split('#')[0]) {
+      invalidateBrowserAnnotationDocumentRef.current()
+    }
+    setBrowserOverlayViewport(INITIAL_BROWSER_OVERLAY_VIEWPORT)
+    const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     if (pendingRecoveryNavigation?.targetUrl === startedUrl) {
       pendingRecoveryNavigation.started = true
     }

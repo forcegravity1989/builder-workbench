@@ -69,6 +69,7 @@ export const StatusBarItem = z.enum([
   'ssh',
   'resource-usage',
   'ports',
+  'quick-links',
   'git-blame'
 ])
 
@@ -207,6 +208,7 @@ export const UiUpdateFields = z
     _workspaceStatusesDefaultVisualsMigrated: z.boolean().optional(),
     statusBarItems: z.array(StatusBarItem).optional(),
     _portsStatusBarDefaultAdded: z.boolean().optional(),
+    _quickLinksStatusBarDefaultAdded: z.boolean().optional(),
     _kimiStatusBarDefaultAdded: z.boolean().optional(),
     _minimaxStatusBarDefaultAdded: z.boolean().optional(),
     _antigravityStatusBarDefaultAdded: z.boolean().optional(),

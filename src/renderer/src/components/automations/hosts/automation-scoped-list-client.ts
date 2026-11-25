@@ -35,6 +35,7 @@ import {
   prepareAutomationLaunchSetup,
   assertOwnerFencingSupported,
   assertAutomationCreateIdempotencySupported,
+  assertAutomationRunOneShotPromptSupported,
   AutomationHostScopeUnsupportedError,
   REQUEST_TIMEOUT_MS
 } from './automation-capability-probe'
@@ -297,13 +298,18 @@ export async function listOrphanAutomationRunsPage(
 
 export async function runAutomationNowForOwner(
   owner: AutomationOwnerRef,
-  id: string
+  id: string,
+  oneShotPrompt?: string
 ): Promise<AutomationRun> {
   await assertOwnerFencingSupported(owner.authority)
+  if (oneShotPrompt) {
+    await assertAutomationRunOneShotPromptSupported(owner.authority)
+  }
   const expectedOwner = ownerPrecondition(owner)
   const result = await callAuthority<{ run: AutomationRun }>(owner.authority, 'automation.runNow', {
     id,
-    expectedOwner
+    expectedOwner,
+    ...(oneShotPrompt ? { oneShotPrompt } : {})
   })
   return result.run
 }

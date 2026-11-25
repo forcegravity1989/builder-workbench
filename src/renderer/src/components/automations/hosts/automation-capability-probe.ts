@@ -8,6 +8,7 @@ import {
   AUTOMATION_OWNER_FENCING_RUNTIME_CAPABILITY,
   AUTOMATION_OWNER_FENCING_UPDATE_REQUIRED_MESSAGE,
   AUTOMATION_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
+  AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY,
   AUTOMATION_EXTRA_AGENT_ARGS_RUNTIME_CAPABILITY
 } from '../../../../../shared/automations/automation-runtime-capabilities'
 import { getRuntimeEnvironmentStatus } from '@/runtime/rpc/compatibility/runtime-compatibility-probe'
@@ -150,6 +151,17 @@ export async function assertAutomationCreateIdempotencySupported(
       'auto.components.automations.capabilityProbe.createIdempotencyUpdateRequired',
       'Moving automations to this host requires a newer Orca server. Update the HUB and try again.'
     )
+  )
+}
+
+export async function assertAutomationRunOneShotPromptSupported(
+  authority: AutomationAuthorityRef
+): Promise<void> {
+  await assertAuthorityCapability(
+    authority,
+    AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY,
+    'Carrying one-shot run context requires a newer Orca server. Update the HUB and try again.',
+    { cacheConfirmation: false }
   )
 }
 

@@ -8,12 +8,14 @@ export default function TabGroupSplitLayout({
   layout,
   worktreeId,
   focusedGroupId,
-  isWorktreeActive
+  isWorktreeActive,
+  reserveClosedExplorerToggleSpace = true
 }: {
   layout: TabGroupLayoutNode
   worktreeId: string
   focusedGroupId?: string
   isWorktreeActive: boolean
+  reserveClosedExplorerToggleSpace?: boolean
 }): React.JSX.Element {
   return (
     <WorkspaceTabDragLayer worktreeId={worktreeId} enabled={isWorktreeActive}>
@@ -33,6 +35,7 @@ export default function TabGroupSplitLayout({
               worktreeId={worktreeId}
               focusedGroupId={focusedGroupId}
               isWorktreeActive={isWorktreeActive}
+              reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
               isTabDragActive={isTabDragActive}
               hoveredTabInsertion={hoveredTabInsertion}
             />

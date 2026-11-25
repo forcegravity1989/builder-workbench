@@ -54,6 +54,7 @@ export default function TabGroupPanel({
   suppressLeftBorder = false,
   suppressRightBorder = false,
   suppressBottomBorder = false,
+  hostsBotChrome,
   reserveClosedExplorerToggleSpace,
   reserveCollapsedSidebarHeaderSpace,
   isTabDragActive = false,
@@ -73,6 +74,7 @@ export default function TabGroupPanel({
   suppressLeftBorder?: boolean
   suppressRightBorder?: boolean
   suppressBottomBorder?: boolean
+  hostsBotChrome: boolean
   reserveClosedExplorerToggleSpace: boolean
   reserveCollapsedSidebarHeaderSpace: boolean
   isTabDragActive?: boolean
@@ -83,8 +85,7 @@ export default function TabGroupPanel({
   const sidebarOpen = useAppStore((state) => state.sidebarOpen)
   const reserveRightTitlebarSpace = reserveClosedExplorerToggleSpace && !rightSidebarOpen
   const model = useTabGroupWorkspaceModel({ groupId, worktreeId })
-  // A bot's page chrome sits in the top-right strip, the one that spacing flag marks, so splits show it once.
-  const bot = useBotForWorkspace(reserveClosedExplorerToggleSpace ? worktreeId : null)
+  const bot = useBotForWorkspace(hostsBotChrome ? worktreeId : null)
   const quickCommandsSlotRef = useRef<HTMLDivElement>(null)
   const {
     activeTab,

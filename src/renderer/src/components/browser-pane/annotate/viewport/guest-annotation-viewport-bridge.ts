@@ -2,6 +2,7 @@ import type {
   BrowserGrabPayload,
   BrowserPageAnnotation
 } from '../../../../../../shared/browser/element-grab/browser-grab-types'
+import { browserAnnotationMarkerSelector } from '../../../../../../shared/browser/annotations/browser-annotation-viewport-bridge'
 import { browserAnnotationMatchesPageUrl } from './browser-annotation-page-url'
 import {
   ipcBrowserGuestToolsTransport,
@@ -40,7 +41,8 @@ export function syncGuestAnnotationViewportBridge({
             index,
             isFixed: annotation.payload.target.isFixed === true,
             rectPage: annotation.payload.target.rectPage,
-            rectViewport: annotation.payload.target.rectViewport
+            rectViewport: annotation.payload.target.rectViewport,
+            selector: browserAnnotationMarkerSelector(annotation.payload.target.selector)
           }
         ]
   )

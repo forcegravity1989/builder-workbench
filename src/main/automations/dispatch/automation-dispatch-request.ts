@@ -1,5 +1,6 @@
 import { failedPrecheckResult, runAutomationPrecheck } from './precheck-runner'
 import { isDeepStrictEqual } from 'node:util'
+import { combineAutomationRunPrompt } from '../../../shared/automation-run-prompt'
 import type { Automation } from '../../../shared/automations/automation-definition'
 import type {
   AutomationRun,
@@ -78,7 +79,8 @@ export async function requestAutomationDispatch(
   ctx: DispatchContext,
   automation: Automation,
   run: AutomationRun,
-  expectedTarget: AutomationRunTargetResult
+  expectedTarget: AutomationRunTargetResult,
+  oneShotPrompt?: string
 ): Promise<AutomationRun> {
   const expectedDefinition = structuredClone(definition(automation))
   const expectedDestination = expectedTarget.ok ? destination(expectedTarget) : undefined
@@ -219,7 +221,13 @@ export async function requestAutomationDispatch(
             'The automation destination changed before this run could launch.'
           )
         }
-        return dispatcher({ ...request, target: latestTarget })
+        const prompt = combineAutomationRunPrompt(request.automation.prompt, oneShotPrompt)
+        // The launcher copy never becomes the saved definition or participates in its version fence.
+        const launchAutomation =
+          prompt === request.automation.prompt
+            ? request.automation
+            : { ...request.automation, prompt }
+        return dispatcher({ ...request, automation: launchAutomation, target: latestTarget })
       }
     })
   if ('bot' in target) {

@@ -174,6 +174,7 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
   const showSsh = statusBarItems.includes('ssh')
   const showResourceUsage = statusBarItems.includes('resource-usage')
   const showPorts = statusBarItems.includes('ports')
+  const showQuickLinks = statusBarItems.includes('quick-links')
   const showGitBlame = statusBarItems.includes('git-blame')
   const showFloatingTerminalToggle =
     floatingTerminalEnabled && floatingTerminalTriggerLocation === 'status-bar'
@@ -299,6 +300,7 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     showFloatingWorkspaceAttentionDot,
     showGitBlame,
     showPorts,
+    showQuickLinks,
     showResourceUsage,
     showSsh,
     statusBarItems,

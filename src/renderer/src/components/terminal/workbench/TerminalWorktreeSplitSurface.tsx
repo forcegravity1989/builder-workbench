@@ -19,6 +19,7 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
   layout,
   focusedGroupId,
   isVisible,
+  reserveClosedExplorerToggleSpace,
   shouldMeasureHiddenWorktree,
   prewarmStage,
   shouldColdParkTerminalPanes,
@@ -32,6 +33,7 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
   layout: TabGroupLayoutNode
   focusedGroupId?: string
   isVisible: boolean
+  reserveClosedExplorerToggleSpace: boolean
   shouldMeasureHiddenWorktree: boolean
   /** Hover intent: mount, then lay out, then render the revealable terminals while hidden. */
   prewarmStage: TerminalPrewarmStage | null
@@ -67,6 +69,7 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
         worktreeId={worktreeId}
         focusedGroupId={focusedGroupId}
         isWorktreeActive={isVisible}
+        reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
       />
       <WorkspacePaneOverlayLayers
         worktreeId={worktreeId}

@@ -66,23 +66,42 @@ export function CodeHubTaskPage(): React.JSX.Element {
   const [codehubItems, setCodehubItems] = useState<CodeHubTaskRow[]>([])
   const [codehubLoading, setCodehubLoading] = useState(false)
   const [codehubError, setCodehubError] = useState<string | null>(null)
-  const { codehubHasMore, codehubScopeMissing } = useTaskPageCodeHubLoading({
-    selectedRepos,
-    taskSource: detail.codehubDetailItem ? 'codehub-detail' : 'codehub',
-    codehubView,
-    codehubState,
-    codehubPreset,
-    codehubQuery,
-    codehubAuthor,
-    codehubAssignee,
-    codehubLabels,
-    codehubRefreshNonce,
-    setCodehubItems,
-    setCodehubLoading,
-    setCodehubError,
-    pageData,
-    scopeRepoId: pageData.preselectedRepoId
-  })
+  const scopeEntryKey = scope
+    ? JSON.stringify([scope.version, scope.goalId, pageData.preselectedRepoId])
+    : ''
+  useEffect(() => {
+    if (!scope?.goalId) {
+      return
+    }
+    selection.setRepoSelection(selection.resolvedInitialSelection)
+    setCodehubView('issues')
+    setCodehubState('all')
+    setCodehubPreset('open')
+    setCodehubQuery('')
+    setCodehubAuthor('')
+    setCodehubAssignee('')
+    setCodehubLabels([])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeEntryKey])
+  const { codehubHasMore, codehubScopeMissing, codehubScopeReadyCount } = useTaskPageCodeHubLoading(
+    {
+      selectedRepos,
+      taskSource: detail.codehubDetailItem ? 'codehub-detail' : 'codehub',
+      codehubView,
+      codehubState,
+      codehubPreset,
+      codehubQuery,
+      codehubAuthor,
+      codehubAssignee,
+      codehubLabels,
+      codehubRefreshNonce,
+      setCodehubItems,
+      setCodehubLoading,
+      setCodehubError,
+      pageData,
+      scopeRepoId: pageData.preselectedRepoId
+    }
+  )
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent): void {
@@ -152,7 +171,7 @@ export function CodeHubTaskPage(): React.JSX.Element {
         scoped &&
         dispatchScopedWorktrees({
           candidates: scoped.candidates,
-          choiceTitle: '#' + item.iid + ' ' + item.title,
+          choiceTitle: `#${item.iid} ${item.title}`,
           onUnavailable: notifyScopedWorkspaceUnavailable
         }) !== 'none'
       ) {
@@ -213,7 +232,7 @@ export function CodeHubTaskPage(): React.JSX.Element {
     workbenchScopeActive: !!scope?.goalId,
     workbenchScopeLoading: codehubLoading,
     workbenchScopeMissing: codehubScopeMissing,
-    workbenchScopeReadyCount: codehubItems.length,
+    workbenchScopeReadyCount: codehubScopeReadyCount,
     workbenchScopeError: codehubError,
     clearWorkbenchVersion: clearWorkbenchProject,
     clearWorkbenchGoal
@@ -261,7 +280,10 @@ export function CodeHubTaskPage(): React.JSX.Element {
                     openTaskPage({ taskSource: source.id }, { recordTasksInteraction: false })
                     void updateSettings({ defaultTaskSource: source.id }).catch(() => {
                       toast.error(
-                        t('auto.components.TaskPage.609532fae7', 'Failed to save default task source.')
+                        t(
+                          'auto.components.TaskPage.609532fae7',
+                          'Failed to save default task source.'
+                        )
                       )
                     })
                   }}
@@ -288,8 +310,9 @@ export function CodeHubTaskPage(): React.JSX.Element {
                   const host = parseExecutionHostId(hostId)
                   if (host?.kind === 'runtime') {
                     return (
-                      selection.runtimeEnvironments.find((environment) => environment.id === host.environmentId)?.name ??
-                      getExecutionHostLabel(hostId)
+                      selection.runtimeEnvironments.find(
+                        (environment) => environment.id === host.environmentId
+                      )?.name ?? getExecutionHostLabel(hostId)
                     )
                   }
                   return getExecutionHostLabel(hostId)

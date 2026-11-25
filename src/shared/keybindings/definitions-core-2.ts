@@ -3,6 +3,16 @@ import { platformBindings } from './definitions-support'
 
 export const KEYBINDING_DEFINITION_CORE_2: readonly KeybindingDefinition[] = [
   {
+    id: 'workbench.toggleAnnotationMode',
+    title: 'Toggle Board Annotation Mode',
+    group: 'Workbench',
+    scope: 'workbench',
+    // Why: board-local listener, not a native handler; conflictGroup 'global' makes Settings warn when a user rebind shadows global chords.
+    conflictGroup: 'global',
+    searchKeywords: ['shortcut', 'annotation', '批注', 'board', 'toggle', 'review', 'note'],
+    defaultBindings: platformBindings(['Alt+A'])
+  },
+  {
     id: 'floatingWorkspace.minimize',
     title: 'Minimize Floating Workspace Panel',
     group: 'Global',

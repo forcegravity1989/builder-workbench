@@ -23,6 +23,13 @@ import { StatusBarVisibilityMenu } from './composition/StatusBarVisibilityMenu'
 import { isPairedWebClientWindow } from '@/app-shell/chrome/desktop-window-chrome'
 import { GitBlameStatusSegment } from './GitBlameStatusSegment'
 
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+
+const QuickLinksStatusSegment = lazyWithRetry(() =>
+  import('@/workbench/quick-links/QuickLinksStatusSegment').then((module) => ({
+    default: module.QuickLinksStatusSegment
+  }))
+)
 const PetStatusSegment = lazyWithRetry(() =>
   import('./PetStatusSegment').then((module) => ({ default: module.PetStatusSegment }))
 )
@@ -78,6 +85,7 @@ export function StatusBarSurface({
     showFloatingWorkspaceAttentionDot,
     showGitBlame,
     showPorts,
+    showQuickLinks,
     showResourceUsage,
     showSsh
   } = controller
@@ -124,6 +132,9 @@ export function StatusBarSurface({
             {petEnabled ? <PetStatusSegment /> : null}
             {showResourceUsage ? <ResourceUsageStatusSegment /> : null}
             {showPorts ? <PortsStatusSegment /> : null}
+            {showQuickLinks && isWorkbenchShell() ? (
+              <QuickLinksStatusSegment iconOnly={false} />
+            ) : null}
             {showSsh ? <SshStatusSegment /> : null}
           </React.Suspense>
           {showFloatingTerminalToggle && (
