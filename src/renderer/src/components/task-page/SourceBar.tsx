@@ -91,10 +91,7 @@ export function TaskPageSourceBar({
                 openTaskPage({ taskSource: source.id }, { recordTasksInteraction: false })
                 void updateSettings({ defaultTaskSource: source.id }).catch(() => {
                   toast.error(
-                    t(
-                      'auto.components.TaskPage.609532fae7',
-                      'Failed to save default task source.'
-                    )
+                    t('auto.components.TaskPage.609532fae7', 'Failed to save default task source.')
                   )
                 })
               }}
@@ -104,10 +101,12 @@ export function TaskPageSourceBar({
         {isWorkbenchShell() ? (
           <TaskPageSourceChip
             id="codehub"
-            label="CodeHub"
+            label={t('auto.components.TaskPage.codehubProvider', 'CodeHub')}
             Icon={GitPullRequest}
             active={false}
-            onSelect={() => openTaskPage({ taskSource: 'codehub' }, { recordTasksInteraction: false })}
+            onSelect={() =>
+              openTaskPage({ taskSource: 'codehub' }, { recordTasksInteraction: false })
+            }
           />
         ) : null}
         <div

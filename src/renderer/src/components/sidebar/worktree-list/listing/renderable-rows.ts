@@ -24,12 +24,7 @@ export function buildRenderableRows(
   const pinned = rows[0]?.type === 'header' && rows[0].key === PINNED_GROUP_KEY
   const end = pinned
     ? rows.findIndex(
-        (row, index) =>
-          index > 0 &&
-          !(
-            (row.type === 'item' && isPinnedWorktreeRow(row)) ||
-            (row.type === 'imported-worktrees-card' && row.placement === 'pinned-fallback')
-          )
+        (row, index) => index > 0 && !(row.type === 'item' && isPinnedWorktreeRow(row))
       )
     : 0
   const index = end === -1 ? rows.length : end

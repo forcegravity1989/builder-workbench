@@ -4,6 +4,7 @@ import type { ProjectGroup } from '../../../../shared/project/groups/project-gro
 import type { ProjectHostSetup } from '../../../../shared/project/project-types'
 import type { Repo } from '../../../../shared/repository/repo-types'
 import {
+  getRepoExecutionHostId,
   LOCAL_EXECUTION_HOST_ID,
   toSshExecutionHostId,
   type ExecutionHostId
@@ -16,7 +17,10 @@ import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host
 import type { WorktreeSortOrderUpdate } from '../../../../shared/worktree/metadata/sort-order-update'
 import { getRuntimeTargetHostId } from '../../runtime/rpc/targets/runtime-client-target'
 
-export type FetchedRepo = { kind: 'repo'; row: Repo }
+import { getRuntimeEnvironmentRevision } from '@/runtime/rpc/environment-revisions/runtime-environment-revision'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+
+export type FetchedRepo = { kind: 'repo'; row: Repo; observedPairingRevision?: number }
 export type FetchedProjectGroup = { kind: 'projectGroup'; row: ProjectGroup }
 export type FetchedProjectHostSetup = { kind: 'projectHostSetup'; row: ProjectHostSetup }
 export type FetchedFolderWorkspace = {
@@ -80,8 +84,20 @@ export function adoptFromEndpoint(
   fetched: FetchedRow
 ): Repo | ProjectGroup | ProjectHostSetup | FolderWorkspace | OwnedWorktreeEvent | ExecutionHostId {
   switch (fetched.kind) {
-    case 'repo':
-      return adoptEndpointRepo(target, fetched.row)
+    case 'repo': {
+      const repo = adoptEndpointRepo(target, fetched.row)
+      return target.kind === 'environment' && isWorkbenchShell()
+        ? {
+            ...repo,
+            pairedRegistration: {
+              hostId: getRepoExecutionHostId(fetched.row),
+              pairingRevision:
+                fetched.observedPairingRevision ??
+                getRuntimeEnvironmentRevision(target.environmentId)
+            }
+          }
+        : repo
+    }
     case 'projectGroup':
       return adoptProjectGroup(target, fetched.row)
     case 'projectHostSetup':

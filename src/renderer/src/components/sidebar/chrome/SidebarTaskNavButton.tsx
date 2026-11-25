@@ -182,7 +182,7 @@ export function SidebarTaskNavButton({
     return (
       <button
         type="button"
-        aria-label="任务"
+        aria-label={t('worktreeJumpPalette.tasksHeader', 'Tasks')}
         title={GLOBAL_TASKS_ENTRY_TITLE}
         aria-current={tasksActive ? 'page' : undefined}
         data-contextual-tour-target="sidebar-tasks"

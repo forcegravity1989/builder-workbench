@@ -1,4 +1,5 @@
 export type WebGitHubRouteKey =
+  | 'repoViewer'
   | 'repoSlug'
   | 'repoUpstream'
   | 'prForBranch'
@@ -105,6 +106,7 @@ export type WebGitHubRuntimeMethod =
   | 'github.project.updateIssueTypeBySlug'
 
 export const GITHUB_WEB_RPC_METHODS = {
+  repoViewer: 'github.repoViewer',
   repoSlug: 'github.repoSlug',
   repoUpstream: 'github.repoUpstream',
   prForBranch: 'github.prForBranch',

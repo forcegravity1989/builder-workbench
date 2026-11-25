@@ -41,7 +41,7 @@ export function useTaskScopeViewers(
           (value) => value.trim().toLowerCase() === '@me'
         )
       : model.taskSource === 'github' &&
-        [query.author, query.assignee].some((value) => value?.toLowerCase() === '@me')
+        [...query.authors, query.assignee].some((value) => value?.toLowerCase() === '@me')
   const requests = new Map<
     string,
     {

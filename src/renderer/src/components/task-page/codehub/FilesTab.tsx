@@ -311,7 +311,6 @@ function CodeHubFilesSections({
       virtualizer={virtualizer}
       sections={sections}
       isDark={isDark}
-      settings={settings}
       sectionHeights={sectionHeights}
       inlineReviewComments={inlineReviewComments}
       loadSection={noOp}

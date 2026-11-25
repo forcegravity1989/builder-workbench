@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Repo } from '../../../../shared/repo-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { DetectedWorktreeListResult } from '../../../../shared/worktree/types'
-import { toRuntimeExecutionHostId } from '../../../../shared/execution-host'
+import { toRuntimeExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import {
   createCompatibleRuntimeStatusResponseIfNeeded,
   type RuntimeEnvironmentCallRequest
-} from '../../runtime/runtime-compatibility-test-fixture'
-import { clearRuntimeCompatibilityCacheForTests } from '../../runtime/runtime-rpc-client'
-import { createTestStore, makeWorktree, seedStore } from '../slices/store-test-helpers'
+} from '../../runtime/rpc/testing/runtime-compatibility-test-fixture'
+import { clearRuntimeCompatibilityCache } from '../../runtime/rpc/compatibility/runtime-compatibility-cache'
+import { createTestStore, makeWorktree, seedStore } from '../testing/app-store-test-fixture'
 
 const SERVER = toRuntimeExecutionHostId('env-1')
 
@@ -43,7 +43,7 @@ const call = vi.fn(async (args: RuntimeEnvironmentCallRequest) => {
 
 describe('a fetched catalog that drops a repo registration', () => {
   beforeEach(() => {
-    clearRuntimeCompatibilityCacheForTests()
+    clearRuntimeCompatibilityCache()
     call.mockClear()
     repoListGate = null
     vi.stubGlobal('window', {
@@ -137,7 +137,12 @@ describe('a fetched catalog that drops a repo registration', () => {
     resolve()
     await fetching
 
-    expect(store.getState().repos.map((repo) => repo.id).sort()).toEqual(['added', 'kept'])
+    expect(
+      store
+        .getState()
+        .repos.map((repo) => repo.id)
+        .sort()
+    ).toEqual(['added', 'kept'])
     expect(store.getState().worktreesByRepo.removed).toEqual([])
     expect(store.getState().worktreesByRepo.added?.map((worktree) => worktree.id)).toEqual([
       'added::/srv/added'

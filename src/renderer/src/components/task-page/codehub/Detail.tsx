@@ -234,7 +234,7 @@ export function TaskPageCodeHubDetail({
                 onClick={() => handleUseCodeHubItem(item)}
               >
                 {translate(
-                  'auto.components.GitHubItemDialog.0ab4664a8b',
+                  'auto.components.TaskPage.codehubStartWorkspaceFromIssue',
                   'Start workspace from issue'
                 )}
                 <ArrowRight className="size-3.5" />
@@ -349,12 +349,12 @@ export function TaskPageCodeHubDetail({
                 className="gap-1.5 whitespace-nowrap"
                 onClick={() => handleUseCodeHubItem(item)}
                 aria-label={translate(
-                  'auto.components.GitHubItemDialog.0caac1a18f',
+                  'auto.components.TaskPage.codehubStartWorkspaceFromPr',
                   'Start workspace from PR'
                 )}
               >
                 {translate(
-                  'auto.components.GitHubItemDialog.0caac1a18f',
+                  'auto.components.TaskPage.codehubStartWorkspaceFromPr',
                   'Start workspace from PR'
                 )}
                 <ArrowRight className="size-3.5" />

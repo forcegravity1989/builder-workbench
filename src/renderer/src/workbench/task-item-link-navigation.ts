@@ -1,4 +1,4 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
+import { getRepoTaskSourceContext } from './task-source-context'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/work-items/github/github-work-item-source-lookup'
@@ -10,7 +10,10 @@ import {
   type TaskItemLink
 } from '../../../shared/task-item-link'
 import { parseCodeHubRemote } from '../../../shared/codehub'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host/execution-host'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host/execution-host'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 
 export async function openWorkbenchTaskItemLink(
@@ -35,7 +38,7 @@ export async function openWorkbenchTaskItemLink(
       if (!isCurrent()) {
         return
       }
-      const source = getTaskPageRepoSourceContext(repo, 'codehub')
+      const source = getRepoTaskSourceContext(repo, 'codehub')
       if (!source) {
         continue
       }
@@ -87,7 +90,7 @@ export async function openWorkbenchTaskItemLink(
       `未在已登记项目中找到 ${link.host}/${link.repository}。请先添加项目，或选择浏览器打开。`
     )
   }
-  const source = getTaskPageRepoSourceContext(repo, link.provider)
+  const source = getRepoTaskSourceContext(repo, link.provider)
   if (!source) {
     throw new Error('无法解析任务来源。请刷新项目后重试。')
   }

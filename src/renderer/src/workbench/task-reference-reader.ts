@@ -93,7 +93,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       repo && reference.provider === 'github'
         ? gitHubIdentityForTaskReference(repo, reference.repository)
         : undefined
-    const source =
+    const source: TaskSourceContext | null =
       context && issueSource && isWorkbenchShell()
         ? {
             ...context,

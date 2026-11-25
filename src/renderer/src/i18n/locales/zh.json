@@ -3635,7 +3635,11 @@
         "codehubAddLabel": "添加标签…",
         "codehubLabelsSaved": "标签已更新",
         "codehubNoMembers": "未找到项目成员。",
-        "ghLabelsUpdateFailed": "更新标签失败。"
+        "ghLabelsUpdateFailed": "更新标签失败。",
+        "codehubStartWorkspaceFromIssue": "从 Issue 启动工作区",
+        "codehubStartWorkspaceFromPr": "从 PR 启动工作区",
+        "codehubDuplicateOfLabel": "重复的 Issue 编号",
+        "codehubProvider": "CodeHub"
       },
       "Terminal": {
         "73768427cf": "关闭",

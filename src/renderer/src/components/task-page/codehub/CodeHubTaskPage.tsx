@@ -291,7 +291,7 @@ export function CodeHubTaskPage(): React.JSX.Element {
               ))}
               <TaskPageSourceChip
                 id="codehub"
-                label="CodeHub"
+                label={t('auto.components.TaskPage.codehubProvider', 'CodeHub')}
                 Icon={GitPullRequest}
                 active
                 onSelect={() => {}}

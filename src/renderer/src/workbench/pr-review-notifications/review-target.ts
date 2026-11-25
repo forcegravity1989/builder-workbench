@@ -2,7 +2,7 @@ import { notifyWorkbenchError } from '../error-feedback'
 import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import { parseGitHubIssueOrPRLink } from '../../../../shared/github/repositories/links'
 import { githubRepoIdentityKey } from '../../../../shared/github/repositories/repository-identity-key'
-import type { GitHubOwnerRepo } from '../../../../shared/github/pull-requests/pull-request-types'
+import type { GitHubRepositoryIdentity as GitHubOwnerRepo } from '../../../../shared/github/repositories/repository-identity'
 import type { TaskSourceContext } from '../../../../shared/work-items/task-source-context'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -13,7 +13,10 @@ import {
 } from '@/lib/work-items/github/github-source-runtime-context'
 import type { PRComment } from '../../../../shared/github/comments/comment-types'
 import { lookupGitHubWorkItemByOwnerRepoForSource } from '@/lib/work-items/github/github-work-item-source-lookup'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host/execution-host'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../../shared/repository/repo-types'
 import { isCodeHubGitRemote } from '../../../../shared/codehub'
 import { openCodeHubReview, readCodeHubReviewTracking } from './codehub-review'

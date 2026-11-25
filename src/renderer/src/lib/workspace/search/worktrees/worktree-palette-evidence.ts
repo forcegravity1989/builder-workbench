@@ -41,7 +41,7 @@ export function getPaletteSupportingAccessibilityLabel(kind: PaletteSupportingKi
 }
 
 export type WorktreePaletteReviewSource = {
-  provider: HostedReviewInfo['provider']
+  provider: HostedReviewInfo['provider'] | 'codehub'
   number: number
   title?: string
 }
@@ -165,7 +165,7 @@ export function buildWorktreeReviewEvidence(
   if (!review || !Number.isFinite(review.number)) {
     return null
   }
-  const isMergeRequest = review.provider === 'gitlab'
+  const isMergeRequest = review.provider === 'gitlab' || review.provider === 'codehub'
   const sigil = isMergeRequest ? '!' : '#'
   const kind = isMergeRequest ? 'mr' : 'pr'
   return composePaletteEvidence({
@@ -236,7 +236,7 @@ export function buildWorktreeAttachmentEvidence(
       title: item.title
     })
   }
-  if (item.provider === 'github' || item.provider === 'gitlab') {
+  if (item.provider === 'github' || item.provider === 'gitlab' || item.provider === 'codehub') {
     return buildWorktreeIssueEvidence(item)
   }
   const identifier = item.identifier ?? item.linearIdentifier ?? item.jiraIdentifier ?? ''

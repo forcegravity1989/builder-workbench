@@ -1,5 +1,7 @@
 import { useAppStore } from '@/store'
-import { sendNotesToActiveAgentSession } from '@/lib/agent-session/messaging/terminal/active-agent-note-send'
+import { sendMessageToAgent } from '@/lib/agent-session/messaging/agent-message-send'
+import { getStructuredChatTabNames } from '@/runtime/native-chat/naming/structured-chat-name-observation'
+import type { NotesSendAgentTarget } from '@/lib/agent-session/messaging/notes-send-agent-targets'
 import { deriveNotesSendAgentTargets } from '@/lib/agent-session/messaging/notes-send-agent-targets'
 import type { ActiveAgentNotesSendStatus } from '@/lib/agent-session/messaging/terminal/active-agent-note-send-result'
 import { findNamedWorktree, type NativeWorkspaceScope } from './version-cycle/native-workspace'
@@ -8,9 +10,9 @@ import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-a
 import { METRICS_BRANCH } from './version-cycle/metrics-setup'
 
 /** The metrics workspace session: its active tab when that tab can take input, otherwise the only eligible one. */
-export function metricsSessionTarget(worktreeId: string): { tabId: string; leafId: string } | null {
+export function metricsSessionTarget(worktreeId: string): NotesSendAgentTarget | null {
   const state = useAppStore.getState()
-  const targets = deriveNotesSendAgentTargets(state, worktreeId)
+  const targets = deriveNotesSendAgentTargets(state, worktreeId, getStructuredChatTabNames())
   const eligible = targets.filter((target) => target.status === 'eligible')
   const choices = eligible.length ? eligible : targets
   if (!choices.length) {
@@ -18,7 +20,7 @@ export function metricsSessionTarget(worktreeId: string): { tabId: string; leafI
   }
   const activeTab = state.activeTabIdByWorktree[worktreeId]
   const target = choices.find((item) => item.tabId === activeTab) ?? choices[0]
-  return { tabId: target.tabId, leafId: target.leafId }
+  return target
 }
 
 export function scoreboardSendFailure(status: Exclude<ActiveAgentNotesSendStatus, 'sent'>): string {
@@ -62,10 +64,10 @@ export async function sendScoreboardNotes(
     return { ok: false, message: scoreboardSendFailure('no-active-terminal') }
   }
   state.setActiveTab(target.tabId)
-  const result = await sendNotesToActiveAgentSession({
+  const result = await sendMessageToAgent({
     worktreeId,
     prompt,
-    noteTarget: target
+    target: target.messageTarget
   })
   if (result.status === 'sent') {
     return { ok: true }

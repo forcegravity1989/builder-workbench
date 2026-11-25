@@ -33,7 +33,10 @@ export function CodeHubIssueListStatus({
           return
         }
         setBusy(true)
-        void createTaskPageCodeHubApi(item.sourceContext, { host: item.host, project: item.project })
+        void createTaskPageCodeHubApi(item.sourceContext, {
+          host: item.host,
+          project: item.project
+        })
           .setIssueState({
             repoPath: item.repoPath,
             repoId: item.repoId,
@@ -158,7 +161,7 @@ export function CodeHubIssueStatusMenu({
                 autoFocus
                 placeholder={translate('auto.components.TaskPage.codehubDuplicateOf', '#')}
                 aria-label={translate(
-                  'auto.components.TaskPage.codehubDuplicateOf',
+                  'auto.components.TaskPage.codehubDuplicateOfLabel',
                   'Duplicate of issue number'
                 )}
                 className="h-8 w-20 rounded-md border border-border/60 bg-background px-2 text-xs"

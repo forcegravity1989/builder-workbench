@@ -4354,7 +4354,11 @@
         "codehubSearchIssues": "Search CodeHub issues",
         "codehubSearchMrs": "Search CodeHub PRs",
         "codehubTitleSaved": "Title updated",
-        "ghLabelsUpdateFailed": "Failed to update labels."
+        "ghLabelsUpdateFailed": "Failed to update labels.",
+        "codehubStartWorkspaceFromIssue": "Start workspace from issue",
+        "codehubStartWorkspaceFromPr": "Start workspace from PR",
+        "codehubDuplicateOfLabel": "Duplicate of issue number",
+        "codehubProvider": "CodeHub"
       },
       "Terminal": {
         "73768427cf": "Close",

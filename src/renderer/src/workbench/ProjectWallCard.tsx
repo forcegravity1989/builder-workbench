@@ -116,7 +116,7 @@ export function ProjectWallCard({
     if (slot?.href) {
       void window.api.shell.openUrl(slot.href)
     } else if (getRepoExecutionHostId(slot.repo) === 'local') {
-      void window.api.shell.openPath(slot.repo.path)
+      void window.api.shell.openPath(slot.repo.path, 'local')
     }
   }
   return (

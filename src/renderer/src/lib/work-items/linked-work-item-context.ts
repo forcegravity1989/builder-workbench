@@ -1,7 +1,7 @@
-import type { TaskProvider } from '../../../../shared/work-items/task-providers'
+import type { TaskSourceProvider } from '../../../../shared/work-items/task-provider-identity'
 
 export type LinkedWorkItemContext = {
-  provider: TaskProvider
+  provider: TaskSourceProvider
   version: 1
   renderedText: string
 }
@@ -57,7 +57,7 @@ function formatDraftContextBlock(value: string): string {
 }
 
 export type LinearLaunchContextArgs = {
-  provider?: TaskProvider
+  provider?: TaskSourceProvider
   identifier: string | undefined
   title?: string
   url?: string
@@ -66,7 +66,7 @@ export type LinearLaunchContextArgs = {
 function isLinearWorkItemReference(
   args:
     | {
-        provider?: TaskProvider
+        provider?: TaskSourceProvider
         linearIdentifier?: string
         linkedContext?: LinkedWorkItemContext
       }
@@ -147,7 +147,7 @@ function capLinkedContextSourceLines(args: { sourceLines: string; fixedChars: nu
 }
 
 export function getLaunchableWorkItemDraftContent(args: {
-  provider?: TaskProvider
+  provider?: TaskSourceProvider
   pasteContent?: string
   url: string
   title?: string
@@ -173,7 +173,7 @@ export function resolveQuickCreateLinkedWorkItemPrompt(
   linkedWorkItem:
     | (Pick<
         {
-          provider?: TaskProvider
+          provider?: TaskSourceProvider
           number: number
           url: string
           title?: string

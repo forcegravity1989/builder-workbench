@@ -23,7 +23,10 @@ import type { WorkspaceHostScope } from '../../../../../shared/ui-chrome/ui-chro
 import type { WorkspaceSource as WorkspaceCreateTelemetrySource } from '../../../../../shared/workspace/creation/workspace-source'
 import type { WorkspaceCreationTargetHint } from '@/lib/workspace/creation/project-host-workspace-target'
 
+import type { WorkbenchCreationContext } from '../../../../../shared/workbench/creation-context'
+
 export type ComposerTargetStoreModel = {
+  workbenchCreation?: WorkbenchCreationContext
   initialRepoId: string | undefined
   initialEphemeralVmRecipeId: string | undefined
   initialName: string

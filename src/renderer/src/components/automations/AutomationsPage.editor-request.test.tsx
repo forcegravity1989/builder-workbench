@@ -43,7 +43,7 @@ const desktop: StableAutomationHostRef = {
   authority: { kind: 'desktop' },
   selector: { kind: 'self' }
 }
-const createRequest: AutomationEditorRequest = {
+const createRequest: Extract<AutomationEditorRequest, { kind: 'create' }> = {
   kind: 'create',
   host: runtime,
   draft: {
@@ -83,9 +83,9 @@ function setUp(
     rows: { rows: options?.rows ?? [], answered: !options?.loading },
     resolution: { status: options?.loading ? 'loading' : 'ready' },
     selectHost
-  } as RequestInput['list']['hostCatalog']
+  } as unknown as RequestInput['list']['hostCatalog']
   const hook = renderHook(
-    ({ createOpen }) =>
+    ({ createOpen } = { createOpen: options?.open ?? false }) =>
       useAutomationEditorRequest({
         store,
         local: { createOpen },

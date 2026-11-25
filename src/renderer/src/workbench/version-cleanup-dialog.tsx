@@ -105,6 +105,7 @@ export function VersionCleanupDialog({
   const registered = useAppStore((s) => s.worktreesByRepo)
   const deleteStateByWorktreeId = useAppStore((s) => s.deleteStateByWorktreeId)
   const gitStatusByWorktree = useAppStore((s) => s.gitStatusByWorktree)
+  const gitStatusReadErrorByWorktree = useAppStore((s) => s.gitStatusReadErrorByWorktree)
   const repoMap = useMemo(
     () => new Map(repos.map((repo) => [repo.id, repo] as [string, Repo])),
     [repos]
@@ -168,6 +169,7 @@ export function VersionCleanupDialog({
         deleteTargets,
         deleteStateByWorktreeId,
         gitStatusByWorktree,
+        gitStatusReadErrorByWorktree,
         gitStatusByWorktreeIdentity,
         repoMap
       }),
@@ -175,6 +177,7 @@ export function VersionCleanupDialog({
       deleteTargets,
       deleteStateByWorktreeId,
       gitStatusByWorktree,
+      gitStatusReadErrorByWorktree,
       gitStatusByWorktreeIdentity,
       repoMap
     ]

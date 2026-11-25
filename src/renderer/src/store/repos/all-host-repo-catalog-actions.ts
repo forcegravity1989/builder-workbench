@@ -170,6 +170,9 @@ export function createAllHostRepoCatalogActions(
       } catch (err) {
         failed = true
         localCatalogOutcome = { status: 'rejected', reason: err }
+        if (isCurrent(localFence)) {
+          options?.onRepoCatalogError?.()
+        }
         console.error('Failed to fetch local repos for all-host load:', err)
       }
       // Why: startup hydration needs the newest local catalog, not unreachable remote hosts.
@@ -223,6 +226,9 @@ export function createAllHostRepoCatalogActions(
             }
           } else {
             failed = true
+            if (isCurrent(fence)) {
+              options?.onRepoCatalogError?.()
+            }
             console.warn(
               `Skipped repos for runtime environment ${target.environmentId}:`,
               catalogResult.error

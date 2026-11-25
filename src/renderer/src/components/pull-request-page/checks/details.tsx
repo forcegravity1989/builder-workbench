@@ -18,11 +18,13 @@ import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
 export function CheckDetailsPanel({
   check,
   state,
-  onRetry
+  onRetry,
+  openUrlLabel
 }: {
   check: PRCheckDetail
   state: CheckDetailsLoadState | undefined
   onRetry: (check: PRCheckDetail, key: string) => void
+  openUrlLabel?: string
 }): React.JSX.Element {
   const t = useTranslate()
   const intlLocale = useIntlLocale()
@@ -234,7 +236,7 @@ export function CheckDetailsPanel({
                 className="h-7 gap-1 px-2 text-[11px]"
                 onClick={(event) => openAppHttpLink(openUrl, { event })}
               >
-                {t('auto.components.PullRequestPage.1b14d0a69c', 'Open in GitHub')}
+                {openUrlLabel ?? t('auto.components.PullRequestPage.1b14d0a69c', 'Open in GitHub')}
                 <ExternalLink className="size-3" />
               </Button>
             </div>

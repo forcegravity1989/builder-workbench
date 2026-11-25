@@ -5,7 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ChecksTabLayouts } from '@/components/pull-request-page/checks/layouts'
 import { CheckRow } from '@/components/pull-request-page/checks/row'
-import { CHECK_COLOR, CHECK_ICON } from '@/components/right-sidebar/checks-panel/presentation/check-presentation'
+import {
+  CHECK_COLOR,
+  CHECK_ICON
+} from '@/components/right-sidebar/checks-panel/presentation/check-presentation'
 import { getCheckCounts, getChecksSummaryLabel } from '@/components/github/pr-check-counts'
 import { getCheckDetailsKey } from '@/components/github/pr-check-presentation'
 import { sortChecksBySeverity } from '../../../../../shared/source-control/checks/pr-check-severity-order'
@@ -65,6 +68,7 @@ export function CodeHubChecksTab({ state }: { state: CodeHubDetailState }): Reac
   return (
     <ChecksTabLayouts
       loading={mrExtrasLoading}
+      summaryPending={mrExtrasLoading && checks === null}
       listLength={list.length}
       variant="page"
       compactHeader={<div />}

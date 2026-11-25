@@ -1,5 +1,5 @@
 import { findRepoForHost } from '@/store/repos/repo-host-identity'
-import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
+import { getRepoTaskSourceContext } from '../task-source-context'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { createTaskPageCodeHubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemForSource } from '@/lib/work-items/github/github-work-item-source-lookup'
@@ -58,7 +58,7 @@ export async function openArchivePrPage(
   }
   const options = { recordTasksInteraction: false, returnToPreviousView: true }
   if (archivePr.provider === 'github') {
-    const context = getTaskPageRepoSourceContext(repo, 'github')
+    const context = getRepoTaskSourceContext(repo, 'github')
     const identity = gitHubIdentityForTaskReference(repo, archivePr.repository)
     const sourceContext =
       context?.localTaskAccount && identity
@@ -93,7 +93,7 @@ export async function openArchivePrPage(
     return
   }
   if (archivePr.provider === 'codehub') {
-    const sourceContext = getTaskPageRepoSourceContext(repo, 'codehub')
+    const sourceContext = getRepoTaskSourceContext(repo, 'codehub')
     if (!sourceContext) {
       throw new Error('无法解析 codehub 任务来源上下文')
     }

@@ -67,42 +67,42 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
             workbenchTaskScope: data.workbenchTaskScope
           }
         : data.openGitHubWorkItem
-        ? ({
-            kind: 'task-detail',
-            source: 'github',
-            workItem: data.openGitHubWorkItem,
-            sourceContext: data.openGitHubSourceContext,
-            initialTab: data.openGitHubInitialTab,
-            workbenchTaskScope: data.workbenchTaskScope,
-            scopeRepoId: data.workbenchTaskScope ? data.preselectedRepoId : undefined
-          } as const)
-        : data.openGitLabWorkItem
           ? ({
               kind: 'task-detail',
-              source: 'gitlab',
-              workItem: data.openGitLabWorkItem,
-              sourceContext: data.openGitLabSourceContext
+              source: 'github',
+              workItem: data.openGitHubWorkItem,
+              sourceContext: data.openGitHubSourceContext,
+              initialTab: data.openGitHubInitialTab,
+              workbenchTaskScope: data.workbenchTaskScope,
+              scopeRepoId: data.workbenchTaskScope ? data.preselectedRepoId : undefined
             } as const)
-          : data.openLinearIssue
+          : data.openGitLabWorkItem
             ? ({
                 kind: 'task-detail',
-                source: 'linear',
-                issue: data.openLinearIssue,
-                sourceContext: data.openLinearSourceContext
+                source: 'gitlab',
+                workItem: data.openGitLabWorkItem,
+                sourceContext: data.openGitLabSourceContext
               } as const)
-            : data.openJiraIssue
+            : data.openLinearIssue
               ? ({
                   kind: 'task-detail',
-                  source: 'jira',
-                  issue: data.openJiraIssue,
-                  sourceContext: data.openJiraSourceContext
+                  source: 'linear',
+                  issue: data.openLinearIssue,
+                  sourceContext: data.openLinearSourceContext
                 } as const)
-              : null
+              : data.openJiraIssue
+                ? ({
+                    kind: 'task-detail',
+                    source: 'jira',
+                    issue: data.openJiraIssue,
+                    sourceContext: data.openJiraSourceContext
+                  } as const)
+                : null
       const currentEntry = get().worktreeNavHistory[get().worktreeNavHistoryIndex]
       const currentIsTaskStack =
         currentEntry === 'tasks' ||
         (typeof currentEntry === 'object' && currentEntry.kind === 'task-detail')
-      if (!detailEntry || !currentIsTaskStack) {
+      if (!detailEntry || (!currentIsTaskStack && !options.returnToPreviousView)) {
         get().recordViewVisit('tasks')
       }
       if (detailEntry) {

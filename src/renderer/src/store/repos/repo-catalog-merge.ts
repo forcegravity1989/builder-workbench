@@ -23,6 +23,8 @@ import { dropWorktreeRowsOfDroppedRepos } from './dropped-repo-worktree-rows'
 import { getRepoHostIdentity } from '../../../../shared/repository/repo-host-identity'
 import { withoutPendingRuntimeRepoRemovals } from './pending-runtime-repo-removals'
 
+import { getRuntimeEnvironmentRevision } from '@/runtime/rpc/environment-revisions/runtime-environment-revision'
+
 export type FetchedRepoCatalog = {
   repos: readonly Repo[]
   projectHostSetupCompatibility: ProjectHostSetupProjection
@@ -39,6 +41,8 @@ export async function fetchRepoCatalogForTarget(
   sourceOwner?: AppState['githubSourceCollections']
 ): Promise<FetchedRepoCatalog> {
   const sourceWrites = sourceOwner?.catalogSnapshot()
+  const pairingRevision =
+    target.kind === 'environment' ? getRuntimeEnvironmentRevision(target.environmentId) : undefined
   const fetchedRepos =
     target.kind === 'local'
       ? await window.api.repos.list()
@@ -48,7 +52,9 @@ export async function fetchRepoCatalogForTarget(
             reuseRecentCompatibilityFailure: true
           })
         ).repos
-  const repos = fetchedRepos.map((repo) => adoptFromEndpoint(target, { kind: 'repo', row: repo }))
+  const repos = fetchedRepos.map((repo) =>
+    adoptFromEndpoint(target, { kind: 'repo', row: repo, observedPairingRevision: pairingRevision })
+  )
   return {
     repos,
     projectHostSetupCompatibility: await fetchProjectHostSetupCompatibility(target, repos),

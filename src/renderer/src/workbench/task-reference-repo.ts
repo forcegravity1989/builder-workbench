@@ -8,7 +8,7 @@ import {
   toRuntimeExecutionHostId
 } from '../../../shared/execution-host/execution-host'
 import { parseGitHubRemoteUrl } from '../../../shared/project/host-setup/project-host-setup-projection'
-import type { GitHubOwnerRepo } from '../../../shared/github/pull-requests/pull-request-types'
+import type { GitHubRepositoryIdentity as GitHubOwnerRepo } from '../../../shared/github/repositories/repository-identity'
 import type { Repo } from '../../../shared/repository/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import type { TaskSourceContext } from '../../../shared/work-items/task-source-context'

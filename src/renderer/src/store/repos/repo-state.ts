@@ -73,6 +73,7 @@ export type RepoUpdate = Partial<
     | 'customWorktreeVisibilitySources'
     | 'worktreeVisibilitySourcePreferences'
     | 'projectGroupId'
+    | 'projectVisibility'
   >
 > & {
   projectGroupOrder?: number | null
@@ -143,6 +144,7 @@ export type AllHostCatalogFetchOptions = {
 
 export type AllHostRepoCatalogFetchOptions = AllHostCatalogFetchOptions & {
   onHostLoaded?: (hostId: ExecutionHostId) => Promise<void>
+  onRepoCatalogError?: () => void
 }
 
 export type ProjectRemovalFailure = {

@@ -1,3 +1,4 @@
+import { useRepoMap } from '@/store/repos/use-repository-catalog'
 import { useAppStore } from '@/store'
 import { getRepoOwnerWorktreeVisibilityDefaults } from '@/store/slices/worktrees/listing/worktree-visibility-defaults-by-host'
 import { openHeaderCreateComposer } from '@/components/sidebar/worktree-list/rows/header-create-workspace-target'
@@ -14,7 +15,8 @@ export function useWallNativeProjectActions(guard: (action: () => void) => void)
   const projectGroups = useAppStore((s) => s.projectGroups)
   const settings = useAppStore((s) => s.settings)
   const defaults = useAppStore((s) => s.worktreeVisibilityDefaultsByHost)
-  const dialogs = useProjectGroupDialogs({ repos, projectGroups })
+  const repoMap = useRepoMap()
+  const dialogs = useProjectGroupDialogs({ repos, repoMap, projectGroups })
   const settingsFor = (repo: Repo, sectionId?: string) =>
     guard(() => {
       const store = useAppStore.getState()

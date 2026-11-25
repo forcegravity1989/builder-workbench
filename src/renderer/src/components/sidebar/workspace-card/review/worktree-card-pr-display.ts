@@ -33,7 +33,7 @@ type LinkedReviewNumbers = {
 export type WorktreeCardPrDisplay =
   | HostedReviewInfo
   | {
-      provider: LinkedReviewMetadataProvider
+      provider: LinkedReviewMetadataProvider | 'codehub'
       number: number
       title: string
       state?: HostedReviewInfo['state']

@@ -59,7 +59,6 @@ export function DeliveryBrowserDemo({ time }: { time: number }) {
             controls={{
               canGoBack: false,
               canGoForward: false,
-              loading: false,
               goBack: ignore,
               goForward: ignore,
               reload: ignore,
