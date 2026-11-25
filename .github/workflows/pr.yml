@@ -39,42 +39,34 @@ jobs:
       - name: Test shared host pairing, transport and subscription contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/shared/remote-runtime/e2ee
-          src/shared/remote-runtime/host-store
-          src/shared/remote-runtime/session-graph
-          src/main/ipc/runtime-environments
-          src/main/runtime/rpc/server/pairing
-          src/main/runtime/rpc/mobile/e2ee
+          src/main/ipc/runtime-environments/requests/runtime-environment-idle-stop-resume.test.ts
+          src/cli/runtime/connection/transport-framing.test.ts
+          src/main/runtime/rpc/mobile/e2ee/remote-runtime-client-framing.integration.test.ts
+          src/main/runtime/rpc/server/pairing/pairing-ticket-exchange.test.ts
           src/main/runtime/rpc/server/runtime-rpc-team-read-policy.test.ts
-          src/main/runtime/mobile-cloud-relay/testing
-          src/cli/runtime/connection
-          src/renderer/src/web/pairing
           src/renderer/src/workbench/builder-hosts-import.test.ts
+          src/shared/remote-runtime/e2ee/mobile-e2ee-v2-framing.test.ts
+          src/shared/remote-runtime/e2ee/node/mobile-e2ee-v2-node-key-schedule.test.ts
+          src/shared/remote-runtime/host-store/runtime-environment-store-unreadable-records.test.ts
+          src/shared/remote-runtime/session-graph/session-tabs-tab-delta.test.ts
       - name: Test shared host recovery, launch and close contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/main/runtime/session-graph
-          src/main/runtime/worktree-selector-miss
-          src/main/runtime/workspaces/catalog
-          src/main/runtime/workspaces/creation
-          src/main/runtime/workspaces/lifecycle
-          src/main/runtime/workspaces/removal
-          src/main/runtime/terminal/launch
-          src/main/runtime/terminal/lifecycle
-          src/main/runtime/orchestration/workers/restart-resume
-          src/main/workspaces/catalog
-          src/main/workspaces/removal
-          src/renderer/src/runtime/web-session-tabs-sync
-          src/renderer/src/runtime/hosted-terminals
-          src/renderer/src/components/terminal-pane/pty-transport
-          src/renderer/src/components/terminal-pane/snapshots
-          src/renderer/src/lib/workspace/ownership
-          src/renderer/src/components/sidebar/worktree-list/navigation
-          src/renderer/src/components/sidebar/workspace-actions/deletion
-          src/renderer/src/store/slices/workspace-cleanup
+          src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts
+          src/renderer/src/runtime/web-session-tabs-sync-editor-restart.test.ts
+          src/main/runtime/session-graph/renderer-status-replica.test.ts
+          src/main/runtime/workspaces/catalog/scoped-worktree-row-resolution.test.ts
+          src/main/runtime/workspaces/creation/runtime-branch-reuse-real-git.test.ts
+          src/main/runtime/workspaces/lifecycle/workspace-lifecycle-queue.test.ts
+          src/main/runtime/workspaces/removal/runtime-local-worktree-removal-identity.test.ts
+          src/main/runtime/worktree-selector-miss-runtime.test.ts
+          src/main/runtime/worktree-selector-miss.test.ts
+          src/main/workspaces/catalog/repo-worktree-catalog-owner.test.ts
+          src/renderer/src/components/terminal-pane/pty-transport/remote-runtime/remote-runtime-pty-transport-input-replay.test.ts
+          src/renderer/src/runtime/hosted-terminals/streams/remote-runtime-terminal-frame-drop-resync.test.ts
+          src/renderer/src/workbench/project-source-resolution.test.ts
           src/renderer/src/workbench/version-cycle/native-session.test.ts
           src/renderer/src/workbench/version-cycle/native-workspace.test.ts
-          src/renderer/src/workbench/project-source-resolution.test.ts
 
   browser-annotations:
     name: Browser annotation contracts
@@ -89,14 +81,9 @@ jobs:
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/shared/browser-annotation-viewport-bridge.test.ts
-          src/main/browser/client-hosts/lifecycle
-          src/main/browser/guest-lifecycle/prompts
-          src/renderer/src/components/browser-pane/assemble-chrome
-          src/renderer/src/components/browser-pane/host-guest
-          src/renderer/src/components/browser-pane/stream-remote
-          src/renderer/src/components/browser-pane/workspace-doc
-          src/renderer/src/components/terminal-pane/input/paste
-          src/renderer/src/workbench/pr-review-notifications
+          src/main/browser/client-hosts/lifecycle/paired-runtime-browser-client-host-registry.test.ts
+          src/renderer/src/components/browser-pane/assemble-chrome/BrowserPane.render-ipc.test.ts
+          src/renderer/src/components/browser-pane/host-guest/browser-page-annotation-retention.test.ts
 
   codex-windows:
     name: Windows Codex protocol and lifecycle
@@ -124,17 +111,16 @@ jobs:
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/codex/codex-daemon-socket-path-guard.test.ts
-          src/main/codex/app-server/codex-app-server-client.test.ts
-          src/main/codex/app-server/shared-servers/codex-shared-server-pool.test.ts
-          src/main/codex/structured
-          src/main/codex/configuration
-          src/main/codex/history/resume
           src/main/codex-accounts/codex-config-mirror.test.ts
-          src/main/codex-accounts/runtime-home
-          src/main/codex-accounts/managed-homes
-          src/main/daemon/providers/lifecycle
-          src/main/native-chat/agent-session-wire/recovery
-          src/main/providers/shell-launch/windows
+          src/main/codehub/service.test.ts
+          src/main/codex-accounts/managed-homes/host-codex-managed-home-ownership.test.ts
+          src/main/codex-accounts/runtime-home/credentials/runtime-home-system-default-snapshot.test.ts
+          src/main/codex-accounts/runtime-home/legacy-host/legacy-shared-auth-migration.test.ts
+          src/main/codex/app-server/codex-app-server-client.test.ts
+          src/main/codex/app-server/shared-servers/codex-shared-server-close.performance.test.ts
+          src/main/codex/app-server/shared-servers/codex-shared-server-pool.test.ts
+          src/main/codex/history/resume/codex-session-resume-home.test.ts
+          src/main/native-chat/agent-session-wire/recovery/structured-agent-session-usage-limit-relaunch.test.ts
 
       - name: Test runtime bootstrap, credential permissions and WSL fallback
         run: >-
@@ -144,12 +130,10 @@ jobs:
           src/shared/secure-storage/secure-path-windows-acl.win32.test.ts
           src/main/runtime/rpc/server/pairing/mobile-pairing-userdata-path.test.ts
           src/main/runtime/rpc/server/pairing/unreadable-secret-store-preservation.win32.test.ts
-          src/main/runtime/host-instance-identity.test.ts
+          src/main/cli/wsl/wsl-cli-powershell-boundary.test.ts
           src/main/ipc/mobile-runtime-bind-host.test.ts
-          src/main/wsl/host-lifecycle
-          src/main/wsl/orcad
-          src/main/git/worktrees/removal/windows-worktree-authorization.test.ts
-          src/main/codehub/service.test.ts
+          src/main/runtime/host-instance-identity.test.ts
+          src/main/runtime/terminal/launch/wsl-host-agent-terminal-launch.test.ts
 
   verify:
     name: lint, typecheck, tests, build
@@ -174,12 +158,12 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/main/dsh
-          src/shared/agent-session/lifecycle/resume
-          src/main/agent-hooks/installation
-          src/main/agent-hooks/server/testing/presence
-          src/main/agent-hooks/server/testing/replay
-          src/main/agent-hooks/server/testing/persistence
+          src/main/dsh/dsh-integration.test.ts
+          src/main/dsh/dsh-hook-packages.test.ts
+          src/main/agent-hooks/installation/testing/installer-contract.test.ts
+          src/main/agent-hooks/server/testing/persistence/server-last-status-migration.test.ts
+          src/main/agent-hooks/server/testing/presence/server-marked-exit-overlap.test.ts
+          src/main/dsh/dsh-home-patch.test.ts
 
       - name: Test Issue association calculation
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
@@ -206,53 +190,77 @@ jobs:
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/persistence-workspace-default.test.ts
-          src/main/persistence/tracking-repos
-          src/main/workspaces/catalog
           src/main/observability/bundle.test.ts
-          src/main/telemetry
-          src/main/codehub
-          src/main/github/client/fetch/authenticated-viewer.test.ts
-          src/main/workbench/reporting
+          src/main/telemetry/client-workbench-transport.test.ts
+          src/main/telemetry/consent.test.ts
+          src/main/telemetry/picker-accept-rollup.test.ts
+          src/main/codehub/comments.test.ts
+          src/main/codehub/issue-state.test.ts
+          src/main/codehub/mr-reads.test.ts
+          src/main/codehub/mutations.test.ts
+          src/main/codehub/repo-reads.test.ts
+          src/main/codehub/service.test.ts
+          src/main/codehub/work-items.test.ts
           src/renderer/src/lib/codehub-api.test.ts
-          src/renderer/src/components/task-page/codehub
-          src/renderer/src/components/use-task-page-codehub-loading.test.tsx
+          src/renderer/src/components/task-page/codehub/codehub-detail-cache.test.ts
+          src/renderer/src/components/task-page/codehub/controls.test.tsx
+          src/shared/task-item-link.test.ts
+          src/cli/handlers/workbench-materials.test.ts
+          src/main/github/client/fetch/authenticated-viewer.test.ts
+          src/main/workspaces/catalog/worktree-identity-persistence.test.ts
           src/renderer/src/workbench/project-source-resolution.test.ts
           src/renderer/src/workbench/workbench-wall-projects.test.ts
-          src/shared/task-item-link.test.ts
-          src/shared/git/remotes
-          src/shared/terminal/links
-          src/renderer/src/components/terminal-pane/links
 
       - name: Test native usage protocols and account integration
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/main/rate-limits
-          src/main/claude-accounts
-          src/renderer/src/components/status-bar/usage
-          src/renderer/src/components/status-bar/accounts
+          src/main/rate-limits/cursor-auth.test.ts
+          src/main/rate-limits/cursor-usage-protocol.test.ts
+          src/main/rate-limits/providers/antigravity/antigravity-usage-fetcher.test.ts
+          src/main/rate-limits/providers/opencode-go/opencode-go-usage-api.test.ts
+          src/main/rate-limits/service-cursor-usage.test.ts
+          src/main/rate-limits/service/service-activation-refresh.test.ts
+          src/main/codex/structured/catalog/codex-usage-limits.test.ts
+          src/renderer/src/components/status-bar/usage/use-owner-usage-rate-limits.test.tsx
           src/renderer/src/lib/workspace/ownership/visible-account-surface.test.ts
 
       - name: Test restored automation and update contracts
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/shared/automation-run-prompt.test.ts
+          src/main/updater/recoverable-update-feed.test.ts
+          src/main/updater/releases/updater-release-policy.test.ts
+          src/main/updater/resumable-update-download.test.ts
           src/renderer/src/components/automations/AutomationsPage.editor-request.test.tsx
           src/renderer/src/store/slices/ui-automation-editor.test.ts
-          src/main/updater/recoverable-update-feed.test.ts
-          src/main/updater/resumable-update-download.test.ts
-          src/main/updater/releases/updater-release-policy.test.ts
+          src/shared/automation-run-prompt.test.ts
 
       - name: Test Cursor hook and continuation protocols
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/main/agent-hooks/installation
-          src/main/agent-hooks/server/testing
-          src/main/ai-vault/scanners/cursor
-          src/main/rate-limits/cursor-
-          src/main/codex/history/resume
+          src/main/agent-hooks/installation/testing/installer-contract.test.ts
+          src/main/ai-vault/scanners/cursor/session-scanner-cursor-acp-sessions.test.ts
+          src/main/codex/history/resume/codex-session-resume-home.test.ts
+          src/main/codex/hooks/installation/windows-hook-command.test.ts
+          src/main/rate-limits/cursor-auth.test.ts
+          src/main/rate-limits/cursor-usage-protocol.test.ts
+
+      - name: Test native Bot requests, groups, connectors and automation
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/bots/bot-home.test.ts
+          src/main/bots/bot-request-settlement.test.ts
+          src/main/bots/bot-group-follow-up-mail.test.ts
+          src/main/bots/tool-oauth/bot-tool-oauth.test.ts
+          src/main/runtime/rpc/methods/bots-items-worker-origin.test.ts
+          src/main/runtime/rpc/methods/bots-items-waiting-compat.test.ts
+          src/main/runtime/rpc/methods/orchestration/federation/paired-server-asks.test.ts
+          src/main/automations/bot-trigger-people.test.ts
+          src/renderer/src/components/bots/paired-server-asks.test.tsx
+          src/renderer/src/components/bots/items/use-bot-item-question-steps.test.tsx
 
       - name: Build desktop application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
