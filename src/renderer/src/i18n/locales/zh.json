@@ -15373,5 +15373,10 @@
     "setupGuideReopen": "可从「帮助 → BW 入门」重新打开。",
     "cliRegistrationTitle": "请将 Orca CLI 注册到 PATH 后继续。",
     "cliRegistrationDescription": "请允许系统授权，让能力配置可以使用 Orca CLI 命令。"
+  },
+  "workbench": {
+    "improvement": {
+      "startRepair": "开始修复"
+    }
   }
 }

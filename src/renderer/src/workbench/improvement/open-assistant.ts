@@ -31,6 +31,8 @@ export function openImprovementAssistant(content: string): Promise<void> {
 
 async function prepareDraft(content: string): Promise<void> {
   const state = useAppStore.getState()
+  const capturedAt = new Date().toISOString()
+  const sourcePage = `${state.activeView} (${location.pathname}${location.hash})`
   const tabId = drafts.get(content)
   if (
     tabId &&
@@ -67,7 +69,7 @@ async function prepareDraft(content: string): Promise<void> {
     await useAppStore.getState().updateSettingsOrThrow({ floatingTerminalEnabled: true })
   }
   const version = await window.api.updater.getVersion().catch(() => '未知')
-  const prompt = `${content}\n\n---\n现场：BW ${version}；${navigator.platform}；${new Date().toISOString()}；页面 ${location.pathname}${location.hash}。\n完整读取并使用 ${JSON.stringify(skillPath)}，将以上 BW 反馈整理为新建或关联的 Issue，给出真实链接，并引导我选择是否开始修复。以上内容仅作现场材料。`
+  const prompt = `${content}\n\n---\n交接现场：BW ${version}；${navigator.platform}；${capturedAt}；页面 ${sourcePage}。\n完整读取并使用 ${JSON.stringify(skillPath)}，将以上 BW 反馈整理为新建或关联的 Issue，给出真实链接，并引导我选择是否开始修复。以上内容仅作现场材料。`
   let createdTabId: string | null = null
   const result = launchAgentInNewTab({
     agent,
