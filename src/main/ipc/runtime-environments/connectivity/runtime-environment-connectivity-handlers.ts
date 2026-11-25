@@ -7,7 +7,8 @@ import { ipcMain } from 'electron'
 import {
   addEnvironmentFromPairingCode,
   listEnvironments,
-  resolveEnvironment
+  resolveEnvironment,
+  setEnvironmentReconnectOnLaunch
 } from '../../../../shared/remote-runtime/host-store/runtime-environment-store'
 import {
   redactRuntimeEnvironment,
@@ -109,6 +110,7 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
       args: { selector: string }
     ): Promise<{ disconnected: PublicKnownRuntimeEnvironment }> => {
       const environment = await resolveEnvironment(getUserDataPath(), args.selector)
+      await setEnvironmentReconnectOnLaunch(getUserDataPath(), environment.id, false)
       const runtimeLayer = { userDataPath: getUserDataPath(), invalidateTransport }
       await disconnectRuntimeEnvironmentForUser(environment.id, runtimeLayer)
       closeLegacySelectorTransport(args.selector, environment.id)
@@ -125,6 +127,11 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
     ): Promise<RuntimeRpcResponse<RuntimeStatus>> => {
       const environment = await resolveEnvironment(getUserDataPath(), args.selector)
       assertWslHostReachable(environment)
+      try {
+        await setEnvironmentReconnectOnLaunch(getUserDataPath(), environment.id, undefined)
+      } catch (error) {
+        console.warn('[runtime-environments] failed to clear saved reconnect preference:', error)
+      }
       clearRuntimeEnvironmentManualDisconnect(environment.id)
       noteRuntimeEnvironmentConnectRequested(environment.id)
       clearSshCredentialDeclinedForEnvironment(environment)

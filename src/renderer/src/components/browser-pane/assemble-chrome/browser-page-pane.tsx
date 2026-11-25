@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { cn } from '@/lib/class-names'
 import '@/lib/workspace/ownership/connection-context'
 import { useAppStore } from '@/store/index'
+import { getKnownExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import '../../../../../shared/orca-profiles/constants'
 import { ORCA_BROWSER_BLANK_URL } from '../../../../../shared/browser/browser-blank-page'
 import { normalizeExternalBrowserUrl } from '../../../../../shared/browser/navigation/browser-url'
@@ -147,6 +148,15 @@ export function BrowserPagePane({
     guestFocus,
     inputLocked
   })
+  // Why: synchronous webview URL access blocks render; navigation handlers update this cache before their store writes can re-render the pane.
+  const liveBrowserUrl = getLiveBrowserUrl(browserTab.id) ?? browserTab.url
+  const externalUrl = getOpenableExternalUrl(liveBrowserUrl)
+  const currentBrowserUrl = toDisplayUrl(liveBrowserUrl)
+  // A file: page in this webview is always this machine's file, even in an SSH workspace.
+  const shareableArtifactFile = getShareableBrowserArtifactFile(currentBrowserUrl)
+  const isLocalDocumentWorkspace = useAppStore(
+    (state) => getKnownExecutionHostIdForWorktree(state, worktreeId) === 'local'
+  )
   const markup = useBrowserPageMarkupCapture(webviewRef)
   // Why: a blank tab reads as 'about:blank' or the resolved data: URL, so match both to keep the "New Browser Tab" overlay visible.
   const isBlankTab = browserTab.url === 'about:blank' || browserTab.url === ORCA_BROWSER_BLANK_URL
@@ -170,6 +180,7 @@ export function BrowserPagePane({
     trackingContainer: pageViewport?.container ?? null,
     trackingScroller: pageViewport?.scroller ?? null,
     currentDocumentUrl: browserTab.url,
+    reviewDocumentPath: isLocalDocumentWorkspace ? (shareableArtifactFile?.filePath ?? null) : null,
     shortcuts: { workspaceId, chromeShortcutScope }
   })
   const nav = useBrowserPageNavigationDownloads({
@@ -265,12 +276,6 @@ export function BrowserPagePane({
     reloadWebviewOrRecoverGuest: reload.reloadWebviewOrRecoverGuest
   })
 
-  // Why: synchronous webview URL access blocks render; navigation handlers update this cache before their store writes can re-render the pane.
-  const liveBrowserUrl = getLiveBrowserUrl(browserTab.id) ?? browserTab.url
-  const externalUrl = getOpenableExternalUrl(liveBrowserUrl)
-  const currentBrowserUrl = toDisplayUrl(liveBrowserUrl)
-  // A file: page in this webview is always this machine's file, even in an SSH workspace.
-  const shareableArtifactFile = getShareableBrowserArtifactFile(currentBrowserUrl)
   const failedNavigationUrl = browserTab.loadError?.validatedUrl ?? currentBrowserUrl
   const failureExternalUrl = normalizeExternalBrowserUrl(failedNavigationUrl)
   const showFailureOverlay = Boolean(browserTab.loadError) && !isBlankTab

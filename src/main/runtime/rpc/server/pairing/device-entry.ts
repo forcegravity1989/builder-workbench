@@ -1,4 +1,8 @@
-import type { DeviceScope } from '../../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import type {
+  DeviceScope,
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import type { MobilePairingConnectionMode } from '../../../../../shared/remote-runtime/pairing/mobile-pairing-connection-mode'
 import type { MobilePushRegistration } from '../../../../../shared/notifications/mobile-push-contract'
 import type { RuntimePairingReach } from '../../../../../shared/remote-runtime/pairing/runtime-pairing-reach'
@@ -19,6 +23,10 @@ export type PairedDeviceAccountLookup = (
 export type DeviceEntry = {
   deviceId: string
   name: string
+  avatar?: string
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
+  pairingEndpoint?: string
   // Keyed rows have no bearer, so older builds cannot authenticate them.
   token?: string
   scope: DeviceScope
@@ -71,6 +79,9 @@ export type DeviceEntry = {
 }
 
 export type PendingOfferOptions = {
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
+  avatar?: string
   // Desktop UI only; absent keeps headless offers valid until scanned.
   offerTtlMs?: number
   createdByDeviceId?: string
@@ -129,6 +140,7 @@ export type AuthenticatedPrincipalBinding = {
   deviceId: string
   credentialRevision: number
   deviceToken?: string
+  teamLinkPrincipal?: { deviceId: string; credentialRevision: number }
 }
 
 export function isStillAuthenticated(
@@ -190,9 +202,31 @@ export function findPrincipalDevice(
   principal: AuthenticatedPrincipalBinding
 ): DeviceEntry | null {
   const device = devices.find((d) => d.deviceId === principal.deviceId)
+  if (device && principal.teamLinkPrincipal) {
+    const parent = devices.find((row) => row.deviceId === principal.teamLinkPrincipal?.deviceId)
+    return parent &&
+      device.parentDeviceId === parent.deviceId &&
+      device.scope === 'runtime' &&
+      device.teamBinding?.teamGroupId === parent.teamBinding?.teamGroupId &&
+      (device.credentialRevision ?? 0) === principal.credentialRevision &&
+      isStillAuthenticated(parent, {
+        ...principal.teamLinkPrincipal,
+        deviceToken: principal.deviceToken
+      })
+      ? withPairedParent(device, devices)
+      : null
+  }
   return device && isStillAuthenticated(device, principal)
     ? withPairedParent(device, devices)
     : null
+}
+
+export function effectiveRuntimeAccessMode(
+  device: Pick<DeviceEntry, 'scope' | 'accessMode' | 'teamBinding'>
+): RuntimeAccessMode {
+  return device.scope === 'runtime'
+    ? (device.accessMode ?? (device.teamBinding ? 'team-read' : 'full'))
+    : 'full'
 }
 
 export function mobilePairingConnectionModeOf(

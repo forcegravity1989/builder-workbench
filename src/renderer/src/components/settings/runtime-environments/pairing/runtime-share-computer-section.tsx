@@ -16,6 +16,8 @@ import {
 } from '../../../ui/dialog'
 import { MachineNameField } from '../../../machine-identity/MachineNameField'
 import { RuntimePairingUrlGenerator } from './RuntimePairingUrlGenerator'
+import { RuntimePairingUrlGenerator as WorkbenchRuntimePairingUrlGenerator } from '../../RuntimePairingUrlGenerator'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { usePublishedMachineName } from '../../../machine-identity/use-published-machine-name'
 import { runtimePairingLinkCache } from './runtime-pairing-link-state'
 
@@ -128,22 +130,31 @@ export function RuntimeShareComputerSection(): React.JSX.Element {
             {t('auto.components.settings.serverList.shareTitle', 'Share this computer')}
           </DialogTitle>
           <DialogDescription>
-            {t(
-              'auto.components.settings.serverList.shareDialogDescriptionRuns',
-              'Anyone with the link can run commands as you on this computer until you revoke it.'
-            )}
+            {isWorkbenchShell()
+              ? t(
+                  'auto.components.settings.RuntimePairingUrlGenerator.ff80904fc4',
+                  'Create a revocable access grant for browser or desktop clients.'
+                )
+              : t(
+                  'auto.components.settings.serverList.shareDialogDescriptionRuns',
+                  'Anyone with the link can run commands as you on this computer until you revoke it.'
+                )}
           </DialogDescription>
         </DialogHeader>
         {activeLinksLabel ? (
           <p className="text-xs text-muted-foreground">{activeLinksLabel}</p>
         ) : null}
-        <RuntimePairingUrlGenerator
-          framed={false}
-          showHeader={false}
-          runtimeAccessGrants={runtimeAccessGrants ?? null}
-          loadRuntimeAccessGrants={loadRuntimeAccessGrants}
-          onAccessGrantRevoked={handleAccessGrantRevoked}
-        />
+        {isWorkbenchShell() ? (
+          <WorkbenchRuntimePairingUrlGenerator framed={false} showHeader={false} />
+        ) : (
+          <RuntimePairingUrlGenerator
+            framed={false}
+            showHeader={false}
+            runtimeAccessGrants={runtimeAccessGrants ?? null}
+            loadRuntimeAccessGrants={loadRuntimeAccessGrants}
+            onAccessGrantRevoked={handleAccessGrantRevoked}
+          />
+        )}
         {runtimeAccessGrants === null ? (
           <div className="flex items-center justify-between gap-2">
             <p role="status" className="text-xs text-muted-foreground">

@@ -17,6 +17,8 @@ import { translate } from '@/i18n/i18n'
 export type StoredWebRuntimeEnvironment = Omit<PublicKnownRuntimeEnvironment, 'endpoints'> & {
   /** Ids minted by re-pairs before re-pairing kept the id; read-only, never extended. */
   compatibleEnvironmentIds?: string[]
+  accessMode?: WebPairingOffer['accessMode']
+  teamBinding?: WebPairingOffer['teamBinding']
   /** The server's descriptor pinned at pairing; see classifyRuntimeHostRePair. */
   hostDescriptor?: RuntimeHostDescriptor
   /** Paired where no key can be persisted: kept in memory only, never in localStorage. */
@@ -162,6 +164,8 @@ export function createStoredWebRuntimeEnvironment(args: {
     lastUsedAt: null,
     runtimeId: null,
     ...(args.offer.pairedDeviceId ? { pairedDeviceId: args.offer.pairedDeviceId } : {}),
+    ...(args.offer.accessMode ? { accessMode: args.offer.accessMode } : {}),
+    ...(args.offer.teamBinding ? { teamBinding: args.offer.teamBinding } : {}),
     ...(args.connectionDependency ? { connectionDependency: args.connectionDependency } : {}),
     ...(compatibleEnvironmentIds.length > 0 ? { compatibleEnvironmentIds } : {}),
     ...(pin ? { hostDescriptor: pin } : {}),
@@ -212,7 +216,8 @@ export function getPreferredWebRuntimeConnection(
     endpoint: endpoint.endpoint,
     deviceToken: endpoint.deviceToken,
     publicKeyB64: endpoint.publicKeyB64,
-    pairedDeviceId: environment.pairedDeviceId
+    pairedDeviceId: environment.pairedDeviceId,
+    accessMode: environment.accessMode
   })
 }
 

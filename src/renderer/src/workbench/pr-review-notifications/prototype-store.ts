@@ -3,8 +3,7 @@ import { toast } from 'sonner'
 import { notifyWorkbenchError } from '../error-feedback'
 import {
   PrototypeReviewRequestSchema,
-  type PrototypeReviewPageRef,
-  type PrototypeReviewRequest
+  type PrototypeReviewPageRef
 } from '../../../../shared/workbench/prototype-review-request'
 import type { ReviewPeerTarget } from '../../../../shared/workbench/pr-review-request'
 import {
@@ -29,10 +28,6 @@ import {
   readPrototypeReviewSender
 } from './prototype-transport'
 import type { PrototypeReviewSendResult } from './prototype-transport'
-import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
-import { toRuntimeWorktreeSelector } from '@/runtime/rpc/targets/runtime-worktree-selector'
-import { canonicalPrototypeReviewDocumentKey } from '../../../../shared/workbench/prototype-review-annotation'
-import { useAppStore } from '@/store'
 
 let state: PrototypeReviewState = EMPTY_PROTOTYPE_REVIEW_STATE
 let storageError: string | null = null
@@ -62,12 +57,6 @@ function setState(next: PrototypeReviewState, persist = false): void {
 }
 
 export const getPrototypeReviewNotifications = (): PrototypeReviewState => state
-export function hasPrototypeReviewPage(browserPageId: string): boolean {
-  return (
-    state.outgoing.some((note) => note.page.browserPageId === browserPageId) ||
-    state.incoming.some((note) => note.page.browserPageId === browserPageId)
-  )
-}
 export function subscribePrototypeReviewNotifications(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
@@ -79,12 +68,17 @@ export function usePrototypeReviewNotifications(): PrototypeReviewState {
   )
 }
 
+export type PrototypeReviewSendOptions =
+  | { purpose: 'invite' }
+  | { purpose: 'submitted'; annotationCount: number }
+
 export async function sendPrototypeReview(
   page: PrototypeReviewPageRef,
-  targets: ReviewPeerTarget[]
+  targets: ReviewPeerTarget[],
+  options: PrototypeReviewSendOptions = { purpose: 'invite' }
 ): Promise<PrototypeReviewSendResult> {
   const draft = PrototypeReviewRequestSchema.pick({ page: true }).parse({ page })
-  const id = `${page.sourceEnvironmentId}:${page.browserPageId}`
+  const id = `${page.sourceEnvironmentId}:${page.documentKey}:${options.purpose}`
   if (sending.has(id)) {
     throw new Error('这条原型评审通知正在发送')
   }
@@ -99,9 +93,16 @@ export async function sendPrototypeReview(
     const { sender } = await readPrototypeReviewSender()
     const enrichedPage = await enrichPrototypeReviewPage(page)
     const sentAt = new Date().toISOString()
-    const previous = state.outgoing.find((note) => note.page.browserPageId === page.browserPageId)
+    const previous = state.outgoing.find(
+      (note) =>
+        note.purpose === options.purpose &&
+        note.page.sourceEnvironmentId === page.sourceEnvironmentId &&
+        note.page.documentKey === page.documentKey
+    )
     const request = PrototypeReviewRequestSchema.parse({
       event: 'prototype-review',
+      purpose: options.purpose,
+      ...(options.purpose === 'submitted' ? { annotationCount: options.annotationCount } : {}),
       page: { ...draft.page, ...enrichedPage },
       sender,
       sentAt,
@@ -119,7 +120,6 @@ export async function sendPrototypeReview(
     const result = await deliverPrototypeReviewRequest(request, targets)
     if (result.results.some((entry) => entry.ok)) {
       setState(recordSentPrototypeReview(state, request, result.results), true)
-      await mirrorExistingLocalAnnotations(request.page)
     }
     const failed = result.results.filter((entry) => !entry.ok)
     if (failed.length) {
@@ -129,36 +129,16 @@ export async function sendPrototypeReview(
         '检查未送达主机的连接后重试。'
       )
     } else {
-      toast.success(`原型评审通知已送达 ${result.results.length} 台主机`)
+      toast.success(
+        options.purpose === 'submitted'
+          ? `已提交 ${options.annotationCount} 条批注并通知 ${result.results[0]?.name ?? '对方'}`
+          : `评审邀请已送达 ${result.results.length} 台主机`
+      )
     }
     return result
   } finally {
     sending.delete(id)
   }
-}
-
-async function mirrorExistingLocalAnnotations(page: PrototypeReviewRequest['page']): Promise<void> {
-  const annotations = useAppStore.getState().browserAnnotationsByPageId[page.browserPageId] ?? []
-  const documentKey = canonicalPrototypeReviewDocumentKey(page.documentKey)
-  await Promise.all(
-    annotations.map((annotation) =>
-      callRuntimeRpc(
-        { kind: 'local' },
-        'workbench.prototypeReview.annotations.add',
-        {
-          worktree: toRuntimeWorktreeSelector(page.worktreeId),
-          page: page.browserPageId,
-          id: annotation.id,
-          documentKey,
-          comment: annotation.comment,
-          x: annotation.payload.target.rectPage.x,
-          y: annotation.payload.target.rectPage.y,
-          label: annotation.payload.target.textSnippet || undefined
-        },
-        { timeoutMs: 15_000, suppressFeatureInteraction: true }
-      ).catch(() => undefined)
-    )
-  )
 }
 
 export function deletePrototypeReviewNotification(id: string): void {

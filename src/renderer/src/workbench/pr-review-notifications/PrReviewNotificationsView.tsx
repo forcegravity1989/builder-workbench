@@ -28,7 +28,7 @@ import type {
   PrototypeReviewOutgoingNote,
   PrototypeReviewState
 } from './prototype-model'
-import { prototypeReviewNotificationCount } from './prototype-model'
+import { prototypeReviewNotificationCount, prototypeReviewPurposeText } from './prototype-model'
 
 export function PrReviewNotificationsView({
   notifications,
@@ -255,7 +255,8 @@ export function PrReviewNotificationsView({
                           </Button>
                         </div>
                         <div className="mt-1 text-[11px] text-muted-foreground">
-                          {note.page.sourceHostName} · {note.page.worktreeId}
+                          {prototypeReviewPurposeText(note, 'outgoing')} ·{' '}
+                          {note.page.sourceHostName}
                         </div>
                       </div>
                     ))
@@ -284,7 +285,7 @@ export function PrReviewNotificationsView({
                             onClick={() => void onOpenPrototype(note)}
                           >
                             <FilePenLine className="size-3 shrink-0" />
-                            {note.page.sourceHostName} · {note.page.title}
+                            {note.sender} · {note.page.title}
                           </button>
                           <Button
                             type="button"
@@ -297,7 +298,7 @@ export function PrReviewNotificationsView({
                           </Button>
                         </div>
                         <div className="mt-1 text-[11px] text-muted-foreground">
-                          源工作树：{note.page.worktreeId} · 共享页签
+                          {prototypeReviewPurposeText(note, 'incoming')}
                         </div>
                       </div>
                     ))

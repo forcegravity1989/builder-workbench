@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../../shared/workbench/repo-removal'
 import type { OrcaHooks } from '../../../shared/workspace-setup/orca-yaml-hook-types'
 import type { PublicKnownRuntimeEnvironment } from '../../../shared/remote-runtime/host-catalog/runtime-environments'
 import type { EphemeralVmRecipeDoctorResult } from '../../../shared/remote-runtime/ephemeral-vm-recipes/ephemeral-vm-recipes'
@@ -77,7 +78,10 @@ export type EphemeralVmApi = {
   suspendWorkspace: (args: { workspaceId: string }) => Promise<EphemeralVmWorkspaceLifecycleResult>
   /** Fires after any runtime record write; re-list to read the new lifecycle status. */
   onRuntimesChanged: (callback: () => void) => () => void
-  cleanup: (args: { runtimeId: string }) => Promise<EphemeralVmRuntimeRecord>
+  cleanup: (args: {
+    runtimeId: string
+    expectedRegistration?: ConfirmedRepoRegistration
+  }) => Promise<EphemeralVmRuntimeRecord>
   stopCleanup: (args: { runtimeId: string }) => Promise<EphemeralVmRuntimeRecord>
   /** Drops an interrupted write-ahead record that never received a recipe result. */
   forgetRuntime: (args: { runtimeId: string }) => Promise<void>

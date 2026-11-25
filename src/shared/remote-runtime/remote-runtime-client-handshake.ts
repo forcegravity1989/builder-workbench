@@ -1,11 +1,14 @@
-import type { PairedE2EEClientHandshake } from './e2ee/paired-e2ee-client-handshake'
+import type {
+  PairedE2EEAuthCredential,
+  PairedE2EEClientHandshake
+} from './e2ee/paired-e2ee-client-handshake'
 
 export type RemoteRuntimeHandshakeState = 'awaiting_ready' | 'awaiting_authenticated' | 'ready'
 
 // Async auth sealing may outlive socket close/replacement; recheck stillAwaiting before send and route sealing errors to fail.
 export async function sendRemoteRuntimeTokenAuth(args: {
   handshake: PairedE2EEClientHandshake
-  deviceToken: string
+  credential: PairedE2EEAuthCredential
   clientCapabilities: readonly string[]
   stillAwaiting: () => boolean
   send: (frame: string) => void
@@ -13,10 +16,9 @@ export async function sendRemoteRuntimeTokenAuth(args: {
 }): Promise<void> {
   let frame: string
   try {
-    frame = await args.handshake.sealAuth(
-      { kind: 'token', deviceToken: args.deviceToken },
-      { clientCapabilities: args.clientCapabilities }
-    )
+    frame = await args.handshake.sealAuth(args.credential, {
+      clientCapabilities: args.clientCapabilities
+    })
   } catch (error) {
     args.fail(error)
     return

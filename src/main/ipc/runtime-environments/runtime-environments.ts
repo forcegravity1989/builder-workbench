@@ -16,7 +16,10 @@ import {
   registerRuntimeEnvironmentConnectivityHandlers,
   registerRuntimeEnvironmentPassiveHandlers
 } from './connectivity/runtime-environment-connectivity-handlers'
-import { isRuntimeEnvironmentManuallyDisconnected } from './connectivity/runtime-environment-manual-disconnect'
+import {
+  hydrateRuntimeEnvironmentManualDisconnects,
+  isRuntimeEnvironmentManuallyDisconnected
+} from './connectivity/runtime-environment-manual-disconnect'
 import {
   closeRemoteRuntimeRequestConnection,
   getRuntimeEnvironmentStatusOwner
@@ -126,6 +129,7 @@ export async function invalidateRuntimeEnvironmentTransport(environmentId: strin
 /** CLI update/rollback re-pairing needs a new status owner to publish the saved revision to renderers. */
 async function reactivateRuntimeEnvironmentStatus(environmentId: string): Promise<void> {
   const userDataPath = getUserDataPath()
+  await hydrateRuntimeEnvironmentManualDisconnects(userDataPath)
   if (
     isRuntimeEnvironmentManuallyDisconnected(environmentId) ||
     !(await listEnvironments(userDataPath)).some(
@@ -144,6 +148,7 @@ export async function registerRuntimeEnvironmentHandlers(
   store: Store,
   hostInitialization?: Promise<void>
 ): Promise<void> {
+  await hydrateRuntimeEnvironmentManualDisconnects(getUserDataPath())
   stopPreferenceWatch?.()
   stopPreferenceWatch = watchRuntimeEnvironmentPreference(store, getUserDataPath(), async () => {
     // CLI and recipe removals skip the Settings path; drop their session partitions here too.

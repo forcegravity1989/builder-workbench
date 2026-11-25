@@ -13,7 +13,7 @@ type OfferConnectionFields = Pick<
   PairingOffer,
   'endpoint' | 'deviceToken' | 'publicKeyB64' | 'pairedDeviceId'
 > &
-  Partial<Pick<PairingOffer, 'v' | 'scope'>>
+  Partial<Pick<PairingOffer, 'v' | 'scope' | 'accessMode'>>
 
 export function pairedRuntimeConnectionFromOffer(
   offer: OfferConnectionFields
@@ -21,7 +21,11 @@ export function pairedRuntimeConnectionFromOffer(
   return {
     endpoint: offer.endpoint,
     hostPublicKeyB64: offer.publicKeyB64,
-    credential: { kind: 'token', deviceToken: offer.deviceToken },
+    credential: {
+      kind: 'token',
+      deviceToken: offer.deviceToken,
+      ...(offer.accessMode === 'team-read' ? { teamLink: true } : {})
+    },
     ...(offer.pairedDeviceId ? { pairedDeviceId: offer.pairedDeviceId } : {})
   }
 }

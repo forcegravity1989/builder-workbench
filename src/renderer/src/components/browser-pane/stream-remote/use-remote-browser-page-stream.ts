@@ -4,6 +4,7 @@ import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import { decodeBrowserScreencastFrame } from '../../../../../shared/browser/screencast/browser-screencast-protocol'
 import type { BrowserScreencastFrameMetadata } from '../../../../../shared/browser/screencast/browser-screencast-protocol'
 import type { BrowserTabInfo } from '../../../../../shared/browser/runtime/runtime-browser-contracts'
+import { REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION } from '../../../../../shared/remote-browser-viewport-probe'
 import type { RemoteBrowserStreamLifecycle } from './remote-browser-stream-lifecycle'
 import {
   areRemoteViewportSizesNear,
@@ -147,7 +148,7 @@ export function useRemoteBrowserPageStream({
           {
             worktree: runtimeWorktree,
             page: pageId,
-            expression: 'JSON.stringify({ width: window.innerWidth, height: window.innerHeight })'
+            expression: REMOTE_BROWSER_VIEWPORT_PROBE_EXPRESSION
           },
           { timeoutMs: 15_000, suppressFeatureInteraction: true }
         )

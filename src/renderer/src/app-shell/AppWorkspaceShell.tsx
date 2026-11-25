@@ -22,6 +22,7 @@ import type { AppChromeLayout } from './chrome/use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from '../components/floating-terminal/workspace/use-floating-workspace-panel'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
 import { MilestoneVersionOrigin } from '../workbench/milestone-version-origin'
+import { TeamHostSyncOnStart } from '../workbench/TeamHostSyncOnStart'
 import { useProjectPage } from '../workbench/project-page-state'
 import { PrReviewNotifications } from '../workbench/pr-review-notifications/PrReviewNotifications'
 import { CycleWorkspaceProvider } from '../workbench/version-cycle/CycleWorkspaceProvider'
@@ -196,6 +197,7 @@ export function AppWorkspaceShell(props: AppWorkspaceShellProps): React.JSX.Elem
       <WorkbenchWorkspaceChoiceDialog />
       <WorkbenchVersionBindingDialog />
       <PrReviewNotifications />
+      <TeamHostSyncOnStart />
     </CycleWorkspaceProvider>
   )
 }

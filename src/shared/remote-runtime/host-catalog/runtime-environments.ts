@@ -90,6 +90,8 @@ export const PersistedRuntimeEnvironmentSchema = z.object({
   updatedAt: z.number().finite(),
   pairingRevision: z.number().finite().optional(),
   pairedDeviceId: z.string().min(1).optional(),
+  accessMode: z.enum(['full', 'team-read']).optional(),
+  reconnectOnLaunch: z.boolean().optional(),
   lastUsedAt: z.number().finite().nullable(),
   runtimeId: z.string().min(1).nullable(),
   source: RuntimeEnvironmentSourceSchema.optional(),
@@ -206,6 +208,7 @@ export function createEnvironmentFromPairingOffer(args: {
     updatedAt: args.now,
     pairingRevision: args.now,
     ...(args.offer.pairedDeviceId ? { pairedDeviceId: args.offer.pairedDeviceId } : {}),
+    ...(args.offer.accessMode ? { accessMode: args.offer.accessMode } : {}),
     lastUsedAt: null,
     runtimeId: args.runtimeId ?? null,
     ...(args.source ? { source: args.source } : {}),
@@ -274,7 +277,7 @@ export function isListedRemoteServer(
 
 type PreferredEndpointSource = Pick<
   KnownRuntimeEnvironment,
-  'name' | 'endpoints' | 'preferredEndpointId' | 'pairedDeviceId'
+  'name' | 'endpoints' | 'preferredEndpointId' | 'pairedDeviceId' | 'accessMode'
 >
 
 export function preferredEndpoint(environment: PreferredEndpointSource) {
@@ -295,7 +298,8 @@ export function getPreferredPairedRuntimeConnection(
     endpoint: endpoint.endpoint,
     deviceToken: endpoint.deviceToken,
     publicKeyB64: endpoint.publicKeyB64,
-    pairedDeviceId: environment.pairedDeviceId
+    pairedDeviceId: environment.pairedDeviceId,
+    accessMode: environment.accessMode
   })
 }
 
@@ -306,7 +310,8 @@ export function getPreferredPairingOffer(environment: PreferredEndpointSource): 
     endpoint: endpoint.endpoint,
     deviceToken: endpoint.deviceToken,
     publicKeyB64: endpoint.publicKeyB64,
-    ...(environment.pairedDeviceId ? { pairedDeviceId: environment.pairedDeviceId } : {})
+    ...(environment.pairedDeviceId ? { pairedDeviceId: environment.pairedDeviceId } : {}),
+    ...(environment.accessMode ? { accessMode: environment.accessMode } : {})
   }
 }
 

@@ -1,8 +1,6 @@
 import { logWorkbenchError } from './error-feedback'
 import React, { useEffect, useMemo, useState } from 'react'
 import { ReviewSendMenuItem } from './pr-review-notifications/ReviewSendMenuItem'
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { FilePenLine } from 'lucide-react'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import {
   getGitHubRuntimeRepoId,
@@ -27,16 +25,10 @@ import {
 } from '../../../shared/workbench/pr-review-request'
 import { requireSourceContext } from './task-reference-repo'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { canonicalPrototypeReviewDocumentKey } from '../../../shared/workbench/prototype-review-annotation'
-import {
-  openPrototypeReviewSendDialog,
-  openReviewSendDialog
-} from './pr-review-notifications/send-dialog-store'
+import { openReviewSendDialog } from './pr-review-notifications/send-dialog-store'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { resolveCodeHubReviewTarget } from './pr-review-notifications/codehub-review'
-import { useShallow } from 'zustand/react/shallow'
-
 type ReviewTarget = {
   repo: ReviewRepoIdentity
   prNumber: number
@@ -181,33 +173,6 @@ export function WorkbenchSendReviewMenuItems({
     })
     return owner.kind === 'resolved' ? owner.owner : null
   }, [repos, worktree.repoId, executionHostId])
-  const prototypePage = useAppStore(
-    useShallow((state) => {
-      const workspaces = state.browserTabsByWorktree[worktree.id] ?? []
-      const activeId = state.activeBrowserTabIdByWorktree[worktree.id]
-      const workspace = workspaces.find((tab) => tab.id === activeId) ?? workspaces[0]
-      const pageId = workspace?.activePageId ?? workspace?.pageIds?.[0]
-      const page = pageId
-        ? (state.browserPagesByWorkspace[workspace.id] ?? []).find((item) => item.id === pageId)
-        : null
-      const sourceEnvironmentId =
-        page?.browserRuntimeEnvironmentId ?? worktree.runtimeOwnerEnvironmentId ?? 'local'
-      if (!page) {
-        return null
-      }
-      return {
-        sourceEnvironmentId,
-        sourceHostName: worktree.hostId ?? '当前主机',
-        worktreeId: worktree.id,
-        sessionId: workspace.id,
-        browserPageId: page.id,
-        documentKey: canonicalPrototypeReviewDocumentKey(
-          page.docLocation?.filePath || page.url || 'about:blank'
-        ),
-        title: page.title || '共享浏览器页签'
-      }
-    })
-  )
   const [targetState, setTargetState] = useState<TargetState>({ status: 'checking' })
   const worktreeBranch = worktree.branch
   const worktreeHead = worktree.head
@@ -258,29 +223,16 @@ export function WorkbenchSendReviewMenuItems({
   }
 
   return (
-    <>
-      <ReviewSendMenuItem
-        disabled={disabled || targetState.status !== 'ready'}
-        reason={
-          targetState.status === 'checking'
-            ? '正在确认关联 PR…'
-            : targetState.status === 'blocked'
-              ? targetState.reason
-              : undefined
-        }
-        onSend={sendReview}
-      />
-      <DropdownMenuItem
-        disabled={disabled || !prototypePage}
-        onSelect={() => {
-          if (prototypePage) {
-            openPrototypeReviewSendDialog(prototypePage)
-          }
-        }}
-      >
-        <FilePenLine className="size-3.5" />
-        原型评审…
-      </DropdownMenuItem>
-    </>
+    <ReviewSendMenuItem
+      disabled={disabled || targetState.status !== 'ready'}
+      reason={
+        targetState.status === 'checking'
+          ? '正在确认关联 PR…'
+          : targetState.status === 'blocked'
+            ? targetState.reason
+            : undefined
+      }
+      onSend={sendReview}
+    />
   )
 }

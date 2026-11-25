@@ -119,3 +119,16 @@ export async function markEnvironmentUsed(
 export { resolveEnvironmentFromStore } from './runtime-environment-selection'
 export type { AddEnvironmentArgs } from './runtime-environment-store-operations'
 export type { AddEnvironmentOutcome } from './runtime-environment-store-operations'
+
+export async function setEnvironmentReconnectOnLaunch(
+  ...args: Parameters<typeof core.setEnvironmentReconnectOnLaunch>
+): Promise<ReturnType<typeof core.setEnvironmentReconnectOnLaunch>> {
+  const reply = await submitEnvironmentStoreCommand({
+    operation: 'setEnvironmentReconnectOnLaunch',
+    args
+  })
+  if (reply.operation !== 'setEnvironmentReconnectOnLaunch') {
+    throw new Error('Unexpected environment store response')
+  }
+  return reply.value
+}

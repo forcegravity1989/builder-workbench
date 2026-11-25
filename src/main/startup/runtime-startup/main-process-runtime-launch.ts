@@ -11,6 +11,7 @@ import { resolveServePinnedBindHost } from '../serve-launch/serve-pinned-bind-ho
 import { isOrcadSidecarLaunch } from '../../window/activation/foreground-activation-policy'
 import type { MainWindowOpenOptions } from '../../window/main-window/main-window-contracts'
 import { registerMobileHandlers } from '../../ipc/mobile'
+import { resolveHostLinkIdentity } from '../../workbench/team-collaboration/team-identity'
 import { createRuntimeEnvironmentMobileRelayHosts } from '../../ipc/runtime-environments/mobile-relay/runtime-environment-mobile-relay-hosts'
 import { registerHeadlessPtyRuntime } from '../../ipc/pty/register-headless-runtime'
 import { publishHeadlessRuntimeGraph } from '../../runtime/session-graph/headless-runtime-graph'
@@ -116,6 +117,7 @@ function installRuntimeRpc(
   runtime.setAgentSenderPeerKey(() => runtimeRpc.getE2EEPublicKey())
   runtimeRpc.setMobileDesktopRelayHosts(createRuntimeEnvironmentMobileRelayHosts())
   registerMobileHandlers(runtimeRpc, {
+    resolveLinkOwnerIdentity: resolveHostLinkIdentity,
     getRelayStatus: getDesktopRelayStatus,
     consumePendingUnpairedDeviceAuthFailure: (webContentsId) => {
       if (

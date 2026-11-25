@@ -94,6 +94,11 @@ export async function requestMobilePairingOffer(
   return { ...offer, endpoint: ip ? offer.endpoint : null }
 }
 
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+
 export async function requestRuntimePairingOffer(
   server: PairingOfferServer,
   args: {
@@ -101,6 +106,10 @@ export async function requestRuntimePairingOffer(
     rotate?: boolean
     reach?: RuntimePairingReach
     grants?: readonly RuntimeDeviceGrant[]
+    name?: string
+    avatar?: string
+    accessMode?: RuntimeAccessMode
+    teamBinding?: RuntimeTeamBinding
     offerTtlMs?: number
     createdByDeviceId?: string
   },
@@ -127,7 +136,10 @@ export async function requestRuntimePairingOffer(
   return server.createPairingOffer({
     address: ip,
     rotate: args.rotate,
-    name: `Runtime ${new Date().toLocaleDateString()}`,
+    name: args.name ?? `Runtime ${new Date().toLocaleDateString()}`,
+    avatar: args.avatar,
+    accessMode: args.accessMode,
+    teamBinding: args.teamBinding,
     scope: 'runtime',
     // Persist local reach so local authentication cannot expose the next launch to the LAN.
     reach: thisComputerOnly ? 'this-computer' : 'network',

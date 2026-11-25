@@ -75,6 +75,10 @@ export function createPairingOfferSchema(now: () => number = () => Date.now()) {
       publicKeyB64: z.string().min(1).max(PAIRING_PUBLIC_KEY_MAX_CHARACTERS),
       pairedDeviceId: z.string().min(1).max(128).optional(),
       scope: PairingScopeSchema.optional(),
+      accessMode: z.enum(['full', 'team-read']).optional(),
+      teamBinding: z
+        .object({ teamGroupId: z.string().min(1).max(256), memberId: z.string().min(1).max(256) })
+        .optional(),
       relay: relaySchema.optional(),
       // Why catch: a descriptor this build cannot read is dropped, never a reason to refuse pairing.
       hostDescriptor: RuntimeHostDescriptorSchema.optional().catch(undefined)

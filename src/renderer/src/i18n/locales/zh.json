@@ -9206,7 +9206,18 @@
           "noActiveLinks": "没有有效链接",
           "createdAt": "创建于 {{value0}}",
           "revoke": "撤销",
-          "legacyEncryption": "上次使用的是旧版加密。请在使用此链接的设备上更新 Orca。"
+          "legacyEncryption": "上次使用的是旧版加密。请在使用此链接的设备上更新 Orca。",
+          "teamReadonly": "团队只读",
+          "fullAccess": "完全访问",
+          "accessReadOnly": "只读",
+          "fullAccessNeedsConnection": "成员在线时才能授予完全访问。",
+          "connected": "已连接",
+          "title": "我分享出去的链接",
+          "viewMembers": "成员",
+          "viewLinks": "链接",
+          "copyLink": "复制 {{value0}} 的链接",
+          "copyLinkTooltip": "复制链接",
+          "noMembers": "暂无成员连接"
         },
         "RuntimeEnvironmentsPane": {
           "af53761f31": "取消",
@@ -9260,7 +9271,11 @@
           "removeDefaultServerBlocked": "此服务器是新项目的默认主机，移除前请在“新项目打开位置”中选择其他主机",
           "serverReplaced": "{{value0}} 不是此计算机配对的 Orca 服务器：Orca 正以其他 SSH 用户连接主机，或者其服务器已重新安装。请在此处打开 ⋯ 菜单并选择“遗忘…”，然后连接 SSH 主机以配对当前服务器。",
           "6f303a89a3": "切换服务器",
-          "4ae8a4a381": "删除服务器"
+          "4ae8a4a381": "删除服务器",
+          "84b9b2be05": "生成可撤销的访问链接，团队成员的 BW 用它连接这台主机。",
+          "6e1280ca55": "访问链接",
+          "54dee18f5c": "隐藏表单",
+          "connectToRemoteServersHelp": "添加其他主机后，可在此连接或断开。"
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "复制 {{value0}}"
@@ -9273,7 +9288,7 @@
           "360c548cf3": "刷新连接地址",
           "de77eb1b65": "连接地址",
           "ff80904fc4": "为浏览器或桌面客户端创建可撤销的访问授权",
-          "f8500e134a": "分享此 Orca 服务器",
+          "f8500e134a": "共享此主机",
           "d6c081adf4": "复制 URL 失败",
           "df0aa45a86": "复制的配对 URL",
           "13704d635e": "复制的 Web 客户端 URL",
@@ -9311,7 +9326,12 @@
           "accessLinkHelp": "将其粘贴到另一个 Orca 的“添加服务器”中",
           "staleAddressCreate": "连接地址已更改，请为 {{address}} 创建新链接",
           "linkExpired": "链接已过期",
-          "unusedLinkExpires": "未使用的链接将于 {{time}} 过期"
+          "unusedLinkExpires": "未使用的链接将于 {{time}} 过期",
+          "849825e829": "复制后，粘贴到另一台主机的“连接到主机”中。",
+          "2e5c4e3c93": "配对链接",
+          "readOnlyRestored": "已恢复只读。",
+          "accessModeChangeFailed": "无法修改权限。",
+          "linkNotRecorded": "这条链接生成时没有记录地址，无法再次复制。请重新生成一条链接。"
         },
         "Settings": {
           "3bf149e873": "项目设置 > {{value0}}",
@@ -14090,6 +14110,25 @@
           "cancel": "取消",
           "confirm": "移除",
           "unknownHost": "未知主机"
+        },
+        "RuntimeAccessAuditLog": {
+          "title": "共享主机访问日志",
+          "description": "请求记录 · 最近 14 天",
+          "refresh": "刷新共享主机访问日志",
+          "clear": "清理日志",
+          "action": "按操作筛选",
+          "allActions": "全部操作",
+          "result": "按结果筛选",
+          "allResults": "全部结果",
+          "allowed": "已允许",
+          "denied": "已拒绝",
+          "error": "出错",
+          "time": "按时间筛选",
+          "lastDay": "最近 24 小时",
+          "lastWeek": "最近 7 天",
+          "lastTwoWeeks": "最近 14 天",
+          "search": "搜索设备或操作",
+          "empty": "没有符合条件的访问记录。"
         }
       },
       "right": {

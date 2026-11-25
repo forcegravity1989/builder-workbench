@@ -1,3 +1,7 @@
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import type { DeclareOrcaAccountParams } from '../../../shared/remote-runtime/pairing/paired-desktop-account-contract'
 import type { RuntimeClientCapabilities } from './callers/runtime-client-capabilities'
 import type { ZodError, ZodType } from 'zod'
@@ -146,6 +150,10 @@ export type RpcContext = {
   caller?: RpcCallerIdentity
   // Set only by the in-process plugin host: the plugin a call acts for, kept as provenance.
   plugin?: { key: string; name: string; assertActive?: () => void }
+  /** Display name of the paired device; for a team link this is the member who connected. */
+  pairedDeviceName?: string
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
   // Only phones receive truncated payloads; undefined in-process callers remain unclipped.
   clientKind?: 'mobile' | 'runtime'
   /** What the transport proved this caller may do; absent means this host's owner. */

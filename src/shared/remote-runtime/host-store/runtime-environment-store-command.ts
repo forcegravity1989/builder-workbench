@@ -13,6 +13,11 @@ export function executeEnvironmentStoreCommand(
   command: EnvironmentStoreCommand
 ): EnvironmentStoreSuccess {
   switch (command.operation) {
+    case 'setEnvironmentReconnectOnLaunch':
+      return {
+        operation: command.operation,
+        value: core0.setEnvironmentReconnectOnLaunch(...command.args)
+      }
     case 'listEnvironments':
       return { operation: command.operation, value: core0.listEnvironments(...command.args) }
     case 'addEnvironmentFromPairingCode':

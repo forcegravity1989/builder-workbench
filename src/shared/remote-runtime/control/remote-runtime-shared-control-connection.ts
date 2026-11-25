@@ -202,6 +202,7 @@ export class RemoteRuntimeSharedControlConnection {
       getHandshake: () => this.handshake,
       environmentId: this.options.environmentId,
       deviceToken: this.connection.credential.deviceToken,
+      teamLink: this.connection.credential.teamLink,
       pendingRequests: this.pendingRequests,
       subscriptions: this.subscriptions,
       retiredRequestIds: this.retiredRequestIds,

@@ -1,3 +1,4 @@
+import type { PrototypeReviewSubmit } from '@/workbench/pr-review-notifications/use-prototype-review-annotations'
 import type { RuntimeBrowserClientPlacement } from '../../../../../shared/browser/client-hosting/runtime-browser-placement'
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from 'react'
 import type {
@@ -116,6 +117,7 @@ export type BrowserPageFailLoadEvent = {
 }
 
 export type BrowserPageAnnotationTrayProps = {
+  submitToHost?: PrototypeReviewSubmit | null
   browserAnnotations: BrowserPageAnnotation[]
   currentUrl?: string
   annotationTraySendOpen: boolean

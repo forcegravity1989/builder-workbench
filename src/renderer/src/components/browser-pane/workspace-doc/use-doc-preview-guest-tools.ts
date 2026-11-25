@@ -6,6 +6,7 @@ import { useBrowserGuestAnnotateTools } from '@/components/browser-pane/annotate
 export function useDocPreviewGuestTools({
   previewId,
   worktreeId,
+  filePath,
   grantId,
   webviewRef,
   containerRef,
@@ -13,6 +14,7 @@ export function useDocPreviewGuestTools({
 }: {
   previewId: string
   worktreeId: string
+  filePath: string
   grantId: string | null
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   containerRef: MutableRefObject<HTMLDivElement | null>
@@ -24,6 +26,7 @@ export function useDocPreviewGuestTools({
     // No tool target exists before the first grant commits; do not queue requests for a page without a document.
     toolTargetId: grantId === null ? '' : previewId,
     worktreeId,
+    reviewDocumentPath: filePath,
     isActive: toolsReady,
     // Nothing has painted on a loading or failed preview, so there is no element to pick.
     toolsDisabled: !toolsReady,

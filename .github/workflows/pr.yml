@@ -32,65 +32,48 @@ jobs:
       - uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: node
+      # The old flat test paths were replaced by suites around their current owners.
+      # Legacy direct-SSH relay-only fixtures have no paired-host equivalent.
       # Exercise the native network owners as well as the BW overlay suites below.
       # Fixtures cannot establish two-machine Windows acceptance or account access.
       - name: Test shared host pairing, transport and subscription contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/shared/remote-runtime-
-          src/shared/runtime-environment-store.test.ts
-          src/shared/runtime-client-export-parity.test.ts
-          src/main/ipc/runtime-environment
-          src/main/runtime/runtime-remove-project-host-scope.test.ts
-          src/cli/runtime/environments.test.ts
+          src/shared/remote-runtime/e2ee
+          src/shared/remote-runtime/host-store
+          src/shared/remote-runtime/session-graph
+          src/main/ipc/runtime-environments
+          src/main/runtime/rpc/server/pairing
+          src/main/runtime/rpc/mobile/e2ee
+          src/main/runtime/rpc/server/runtime-rpc-team-read-policy.test.ts
+          src/main/runtime/mobile-cloud-relay/testing
+          src/cli/runtime/connection
+          src/renderer/src/web/pairing
+          src/renderer/src/workbench/builder-hosts-import.test.ts
       - name: Test shared host recovery, launch and close contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts
-          src/renderer/src/store/slices/runtime-status
-          src/renderer/src/runtime/host-session-mirror-
-          src/renderer/src/runtime/restored-client-hosted-browser-host-restart-attach.test.ts
-          src/renderer/src/runtime/sync-runtime-graph-browser.test.ts
-          src/renderer/src/runtime/use-runtime-session-mirror-environment-key.test.ts
-          src/renderer/src/runtime/web-runtime-session-terminal-
-          src/renderer/src/runtime/web-session-tabs-sync-
-          src/renderer/src/components/terminal-pane/remote-runtime-pty-transport-
-          src/renderer/src/components/terminal-pane/use-terminal-pane-lifecycle.test.ts
-          src/renderer/src/components/terminal/terminal-tab-
-          src/renderer/src/components/terminal/terminal-close-confirm-keyboard-vs-mouse.test.ts
-          src/renderer/src/components/terminal-workspace-keydown.test.ts
-          src/renderer/src/components/settings/AgentsPane.test.tsx
-          src/renderer/src/components/agent/AgentSettingsDialog.test.tsx
-          src/renderer/src/components/agent-session-continuation/AgentSessionContinuationDialog.test.tsx
-          src/renderer/src/components/tab-bar/QuickLaunchButton.test.ts
-          src/renderer/src/components/tab-bar/TabBar.windows-shell-remote-runtime.test.ts
-          src/renderer/src/hooks/legacy-worker-terminal-recovery-event.test.ts
-          src/renderer/src/lib/launch-agent-
-          src/renderer/src/lib/runtime-session-mirror-targets.test.ts
-          src/renderer/src/hooks/composer-state
-          src/renderer/src/hooks/useComposerState
-          src/renderer/src/components/NewWorkspaceComposerCard
-          src/renderer/src/components/sidebar/folder-workspace-composer-submit.test.ts
-          src/renderer/src/components/sidebar/rendered-sidebar-worktree-order.test.ts
-          src/renderer/src/lib/fix-checks-agent-launch.test.ts
-          src/renderer/src/lib/worktree-creation-flow
-          src/renderer/src/lib/worktree-activation
-          src/renderer/src/lib/worktree-creation-agent-seeding.test.ts
-          src/renderer/src/lib/worktree-creation-structured-session.test.ts
-          src/renderer/src/lib/pending-worktree-creation.test.ts
-          src/renderer/src/components/dashboard/launch-dashboard-agent.test.ts
-          src/renderer/src/components/dashboard/dashboard-worktree-launch-options.test.ts
-          src/renderer/src/components/dashboard/build-dashboard-snapshot
-          src/renderer/src/components/dashboard/useLiveDashboardSnapshot.test.ts
-          src/renderer/src/components/dashboard/useDashboardPopoutBridge.test.tsx
-          src/renderer/src/store/slices/worktrees-remote-runtime-create.test.ts
-          src/renderer/src/store/slices/repos-project-groups.test.ts
-          src/renderer/src/store/slices/repos-project-groups-delete.test.ts
-          src/renderer/src/store/slices/repos-project-groups-owner-routing.test.ts
-          src/renderer/src/store/slices/project-group-removal-targets.test.ts
-          src/renderer/src/components/sidebar/ProjectGroupDeleteDialog.test.tsx
-          src/renderer/src/components/sidebar/delete-worktree-flow.test.ts
-          src/renderer/src/components/sidebar/worktree-list/rows/use-project-group-dialogs-owner-host.test.tsx
+          src/main/runtime/session-graph
+          src/main/runtime/workspaces/catalog
+          src/main/runtime/workspaces/creation
+          src/main/runtime/workspaces/lifecycle
+          src/main/runtime/workspaces/removal
+          src/main/runtime/terminal/launch
+          src/main/runtime/terminal/lifecycle
+          src/main/runtime/orchestration/workers/restart-resume
+          src/main/workspaces/catalog
+          src/main/workspaces/removal
+          src/renderer/src/runtime/web-session-tabs-sync
+          src/renderer/src/runtime/hosted-terminals
+          src/renderer/src/components/terminal-pane/pty-transport
+          src/renderer/src/components/terminal-pane/snapshots
+          src/renderer/src/lib/workspace/ownership
+          src/renderer/src/components/sidebar/worktree-list/navigation
+          src/renderer/src/components/sidebar/workspace-actions/deletion
+          src/renderer/src/store/slices/workspace-cleanup
+          src/renderer/src/workbench/version-cycle/native-session.test.ts
+          src/renderer/src/workbench/version-cycle/native-workspace.test.ts
+          src/renderer/src/workbench/project-source-resolution.test.ts
 
   browser-annotations:
     name: Browser annotation contracts
@@ -105,17 +88,14 @@ jobs:
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/shared/browser-annotation-viewport-bridge.test.ts
-          src/renderer/src/components/browser-pane/annotate/browser-annotation-output.test.ts
-          src/renderer/src/components/browser-pane/annotate/useGrabMode.test.ts
-          src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx
-          src/renderer/src/components/browser-pane/annotate/BrowserAnnotationSendMenuContent.test.tsx
-          src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts
-          src/renderer/src/components/browser-pane/describe-page/browser-annotation-geometry.test.ts
-          src/renderer/src/store/slices/browser.test.ts
-          src/renderer/src/lib/app-menu-paste.test.ts
-          src/renderer/src/components/native-chat/use-native-chat-composer-paste.test.tsx
-          src/renderer/src/components/native-chat/use-native-chat-composer-attachments.test.tsx
-          src/main/browser/browser-manager-annotation-bridge.test.ts
+          src/main/browser/client-hosts/lifecycle
+          src/main/browser/guest-lifecycle/prompts
+          src/renderer/src/components/browser-pane/assemble-chrome
+          src/renderer/src/components/browser-pane/host-guest
+          src/renderer/src/components/browser-pane/stream-remote
+          src/renderer/src/components/browser-pane/workspace-doc
+          src/renderer/src/components/terminal-pane/input/paste
+          src/renderer/src/workbench/pr-review-notifications
 
   codex-windows:
     name: Windows Codex protocol and lifecycle
@@ -142,32 +122,18 @@ jobs:
       - name: Test Codex transport and session lifecycle
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/main/codex/codex-app-server-connection.test.ts
-          src/main/codex/codex-app-server-process-teardown.test.ts
-          src/main/codex/codex-structured-session-close.test.ts
-          src/main/codex/codex-structured-session-cancel.test.ts
-          src/main/codex/codex-structured-launch-resolution.test.ts
-          src/main/codex/codex-session-index-heal.test.ts
           src/main/codex/codex-daemon-socket-path-guard.test.ts
+          src/main/codex/app-server/codex-app-server-client.test.ts
+          src/main/codex/app-server/shared-servers/codex-shared-server-pool.test.ts
+          src/main/codex/structured
+          src/main/codex/configuration
+          src/main/codex/history/resume
           src/main/codex-accounts/codex-config-mirror.test.ts
-          src/main/codex/config-settings-promotion.test.ts
-          src/main/codex/config-sync-stall.test.ts
-          src/main/codex-accounts/codex-config-mirror.test.ts
-          src/main/codex-accounts/legacy-shared-config-compatibility.test.ts
-          src/main/codex-accounts/runtime-home-managed-auth-recovery.test.ts
-          src/main/codex-accounts/runtime-home-real-home-lane-routing.test.ts
-          src/main/codex-accounts/runtime-home-retained-auth-provenance.test.ts
-          src/main/codex-accounts/runtime-home-system-resource-materialization.test.ts
-          src/main/codex-accounts/service-account-add-login.test.ts
-          src/main/codex-accounts/service-reset-credit-home-ownership.test.ts
-          src/main/codex-accounts/service-wsl-accounts.test.ts
-          src/main/codehub/service.test.ts
-          src/main/ssh/relay-socket-path-limit.test.ts
-          src/main/codex-accounts/codex-credential-absence-grace.test.ts
-          src/main/codex-accounts/codex-windows-interactive-login.test.ts
-          src/main/codex-accounts/service-login-process-teardown.test.ts
-          src/main/rate-limits/codex-
-          src/main/rate-limits/service-inactive-account-previews.test.ts
+          src/main/codex-accounts/runtime-home
+          src/main/codex-accounts/managed-homes
+          src/main/daemon/providers/lifecycle
+          src/main/native-chat/agent-session-wire/recovery
+          src/main/providers/shell-launch/windows
 
       - name: Test runtime bootstrap, credential permissions and WSL fallback
         run: >-
@@ -176,14 +142,13 @@ jobs:
           src/shared/secure-file-async.test.ts
           src/shared/secure-storage/secure-path-windows-acl.win32.test.ts
           src/main/runtime/rpc/server/pairing/mobile-pairing-userdata-path.test.ts
-          src/main/runtime/rpc/mobile-auth-acl-critical-path.test.ts
-          src/main/runtime/runtime-metadata.test.ts
-          src/main/runtime/runtime-metadata-ownership-watch.test.ts
-          src/main/runtime/runtime-rpc-metadata-lifecycle.test.ts
-          src/main/runtime/runtime-rpc-websocket-bind-host.test.ts
           src/main/runtime/rpc/server/pairing/unreadable-secret-store-preservation.win32.test.ts
-          src/main/git/runner-wsl-gh-fallback.test.ts
-          src/main/gitlab/gitlab-known-host-probe-wsl-fallback.test.ts
+          src/main/runtime/host-instance-identity.test.ts
+          src/main/ipc/mobile-runtime-bind-host.test.ts
+          src/main/wsl/host-lifecycle
+          src/main/wsl/orcad
+          src/main/git/worktrees/removal/windows-worktree-authorization.test.ts
+          src/main/codehub/service.test.ts
 
   verify:
     name: lint, typecheck, tests, build
@@ -205,14 +170,12 @@ jobs:
       - name: Test DSH CLI integration contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/main/dsh/dsh-integration.test.ts
-          src/main/dsh/dsh-hook-packages.test.ts
-          src/shared/agent-process-recognition.test.ts
-          src/shared/agent-session-resume.test.ts
-          src/shared/tui-agent-startup.test.ts
-          src/main/agent-hooks/managed-hook-script-refresh.test.ts
-          src/main/agent-hooks/managed-hook-command-contract.test.ts
-          src/main/agent-hooks/server-retired-pane-new-turn.test.ts
+          src/main/dsh
+          src/shared/agent-session/lifecycle/resume
+          src/main/agent-hooks/installation
+          src/main/agent-hooks/server/testing/presence
+          src/main/agent-hooks/server/testing/replay
+          src/main/agent-hooks/server/testing/persistence
 
       - name: Test Issue association calculation
         run: node --test .github/scripts/pr-issue-audit.test.mjs
@@ -233,54 +196,31 @@ jobs:
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/persistence-workspace-default.test.ts
-          src/main/ipc/repos
-          src/main/persistence-remote-session-startup.test.ts
-          src/main/persistence-repo-lifecycle.test.ts
-          src/main/ipc/feedback.test.ts
-          src/main/ipc/feedback-image-attachments.test.ts
-          src/main/ipc/diagnostics.test.ts
-          src/main/ipc/telemetry.test.ts
-          src/main/ipc/preflight-command-exec.test.ts
-          src/main/ipc/preflight-host-cli-status.test.ts
+          src/main/persistence/tracking-repos
+          src/main/workspaces/catalog
           src/main/observability/bundle.test.ts
-          src/main/observability/architecture.test.ts
           src/main/telemetry
           src/main/codehub
-          src/preload/api/platform-bridge.test.ts
+          src/main/github/client/fetch/authenticated-viewer.test.ts
+          src/main/workbench/reporting
           src/renderer/src/lib/codehub-api.test.ts
-          src/renderer/src/components/task-page-cache-selectors.test.ts
-          src/renderer/src/store/slices/github-work-item-cache-identity.test.ts
           src/renderer/src/components/task-page/codehub
-          src/renderer/src/components/feature-wall/use-integration-connection-status.test.ts
-          src/renderer/src/components/feature-wall/feature-wall-setup-progress.test.ts
-          src/renderer/src/components/setup-guide/use-setup-guide-progress.test.ts
-          src/renderer/src/components/setup-guide/use-setup-guide-telemetry.test.ts
-          src/renderer/src/lib/feature-education-telemetry.test.ts
-          src/shared/telemetry-events-feature-education.test.ts
-          src/renderer/src/components/settings/settings-setup-guide-progress.test.ts
-          src/renderer/src/components/sidebar/RemoveFolderDialog.test.tsx
-          src/renderer/src/store/slices/repos-cross-host-project-collisions.test.ts
-          src/renderer/src/store/slices/repos-host-identity-routing.test.ts
-          src/shared/git-remote-identity.test.ts
+          src/renderer/src/components/use-task-page-codehub-loading.test.tsx
+          src/renderer/src/workbench/project-source-resolution.test.ts
+          src/renderer/src/workbench/workbench-wall-projects.test.ts
           src/shared/task-item-link.test.ts
-          src/renderer/src/lib/http-link-destinations.test.ts
-          src/renderer/src/lib/http-link-routing.test.ts
-          src/renderer/src/lib/http-link-modifier-routing.test.ts
-          src/renderer/src/components/native-chat/native-chat-web-link-actions.test.ts
-          src/renderer/src/components/terminal-pane/terminal-link-action-routing.test.ts
-          src/renderer/src/components/terminal-pane/terminal-link-osc-url-routing.test.ts
-          src/renderer/src/components/terminal-pane/terminal-url-link-hit-testing.test.ts
+          src/shared/git/remotes
+          src/shared/terminal/links
+          src/renderer/src/components/terminal-pane/links
 
       - name: Test native usage protocols and account integration
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/rate-limits
-          src/main/claude-accounts/keychain.test.ts
-          src/main/ipc/register-core-handlers/register-core-handlers.test.ts
-          src/shared/rate-limit-types.test.ts
-          src/renderer/src/components/status-bar/status-bar-provider-visibility.test.ts
-          src/renderer/src/store/slices/ui-hydration-workspace-preferences.test.ts
-          src/renderer/src/web/web-preload-api-composition.test.ts
+          src/main/claude-accounts
+          src/renderer/src/components/status-bar/usage
+          src/renderer/src/components/status-bar/accounts
+          src/renderer/src/lib/workspace/ownership/visible-account-surface.test.ts
 
       - name: Test Cursor hook and continuation protocols
         run: >-

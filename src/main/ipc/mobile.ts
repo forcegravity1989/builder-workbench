@@ -1,9 +1,21 @@
 import { usesLegacyE2EE } from '../runtime/rpc/server/pairing/device-sighting'
 import { app, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
-import type { RuntimeAccessGrant } from '../../shared/remote-runtime/host-catalog/runtime-access-grants'
+import type {
+  RuntimeAccessAuditEntry,
+  RuntimeAccessAuditResult,
+  RuntimeAccessGrant
+} from '../../shared/remote-runtime/host-catalog/runtime-access-grants'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import type { MobilePairingConnectionMode } from '../../shared/remote-runtime/pairing/mobile-pairing-connection-mode'
 import type { RuntimePairingReach } from '../../shared/remote-runtime/pairing/runtime-pairing-reach'
-import { isPairedMobileDevice, type DeviceEntry } from '../runtime/rpc/server/pairing/device-entry'
+import {
+  effectiveRuntimeAccessMode,
+  isPairedMobileDevice,
+  type DeviceEntry
+} from '../runtime/rpc/server/pairing/device-entry'
 import {
   requestMobilePairingOffer,
   requestRuntimePairingOffer
@@ -39,10 +51,17 @@ function toRuntimeAccessGrant(
   return {
     deviceId: device.deviceId,
     name: device.name,
+    ...(device.avatar ? { avatar: device.avatar } : {}),
     createdAt: device.pairedAt,
     lastSeenAt: device.lastSeenAt > 0 ? device.lastSeenAt : null,
     usesLegacyEncryption: usesLegacyE2EE(device),
-    ...(usesOlderPairingMethod(device, devices) ? { olderPairingMethod: true as const } : {})
+    ...(usesOlderPairingMethod(device, devices) ? { olderPairingMethod: true as const } : {}),
+    ...(effectiveRuntimeAccessMode(device) === 'team-read'
+      ? { accessMode: 'team-read' as const }
+      : { accessMode: 'full' as const }),
+    ...(device.teamBinding ? { teamBinding: device.teamBinding } : {}),
+    ...(device.parentDeviceId !== undefined ? { parentDeviceId: device.parentDeviceId } : {}),
+    ...(device.pairingEndpoint && device.parentDeviceId === undefined ? { canCopyLink: true } : {})
   }
 }
 
@@ -53,6 +72,8 @@ export type MobileHandlerDependencies = {
   consumePendingUnpairedDeviceAuthFailure?: (webContentsId: number) => boolean
   encodePairingQr?: (pairingUrl: string) => Promise<MobilePairingQrResult>
   getDefaultRouteInterfaceNames?: DefaultRouteInterfaceLookup
+  /** Labels a generated link with its owner when the caller did not name it. */
+  resolveLinkOwnerIdentity?: () => Promise<{ name: string; avatar?: string } | null>
 }
 
 export function registerMobileHandlers(
@@ -125,14 +146,52 @@ export function registerMobileHandlers(
 
   ipcMain.handle(
     'mobile:getRuntimePairingUrl',
-    async (_event, args?: { address?: string; rotate?: boolean; reach?: RuntimePairingReach }) => {
+    async (
+      _event,
+      args?: {
+        address?: string
+        rotate?: boolean
+        reach?: RuntimePairingReach
+        accessMode?: RuntimeAccessMode
+        teamBinding?: RuntimeTeamBinding
+        name?: string
+        avatar?: string
+      }
+    ) => {
+      const callerName =
+        typeof args?.name === 'string' && args.name.trim().length > 0 && args.name.length <= 256
+          ? args.name.trim()
+          : null
+      const namedByCaller = callerName !== null
+      // A link nobody named is labelled with its owner (the signed-in WeLink user), so every
+      // entry point shows the same identity; the date label is only the fallback.
+      let owner: { name: string; avatar?: string } | null = null
+      if (!namedByCaller && dependencies.resolveLinkOwnerIdentity) {
+        try {
+          owner = await dependencies.resolveLinkOwnerIdentity()
+        } catch {
+          owner = null
+        }
+      }
+      const ownerName = owner === null ? undefined : owner.name
+      const displayName = callerName ?? ownerName ?? `Runtime ${new Date().toLocaleDateString()}`
+      const callerAvatar =
+        typeof args?.avatar === 'string' && args.avatar.length > 0 && args.avatar.length <= 4096
+          ? args.avatar
+          : undefined
+      const ownerAvatar = namedByCaller || owner === null ? undefined : owner.avatar
+      const displayAvatar = callerAvatar ?? ownerAvatar
       const offer = await requestRuntimePairingOffer(
         rpcServer,
         {
           address: args?.address,
           rotate: args?.rotate,
           reach: args?.reach,
-          offerTtlMs: RUNTIME_PAIRING_OFFER_TTL_MS
+          name: displayName,
+          avatar: displayAvatar,
+          accessMode: args?.accessMode,
+          teamBinding: args?.teamBinding,
+          offerTtlMs: args?.accessMode === 'team-read' ? undefined : RUNTIME_PAIRING_OFFER_TTL_MS
         },
         getDefaultRouteInterfaceNames
       )
@@ -152,6 +211,15 @@ export function registerMobileHandlers(
         expiresAt: offer.offerExpiresAt
       }
     }
+  )
+
+  ipcMain.handle('mobile:getRuntimeAccessLinkUrl', (_event, args: { deviceId: string }) => ({
+    pairingUrl:
+      typeof args?.deviceId === 'string' ? rpcServer.getRuntimeAccessLinkUrl(args.deviceId) : null
+  }))
+
+  ipcMain.handle('mobile:restoreRuntimePairingUrl', (_event, reference: unknown) =>
+    rpcServer.restoreRuntimePairingUrl(reference)
   )
 
   ipcMain.handle('mobile:listDevices', () => {
@@ -177,22 +245,129 @@ export function registerMobileHandlers(
     if (!registry) {
       return { grants: [] }
     }
+    const socketWiring = rpcServer.getMobileSocketWiring?.()
     // Runtime links are bearer credentials immediately, so unconnected grants must remain revocable.
     const all = registry.listDevices({ fresh: true })
     return {
       grants: all
         .filter((d) => d.scope === 'runtime')
         .sort((a, b) => b.pairedAt - a.pairedAt)
-        .map((d) => toRuntimeAccessGrant(d, all))
+        .map((device) => ({
+          ...toRuntimeAccessGrant(device, all),
+          ...(socketWiring ? { connected: socketWiring.isDeviceConnected(device.deviceId) } : {})
+        }))
     }
   })
+
+  // Switches one member between read-only and full access. The change applies to their next request
+  // and to terminals they already have open.
+  ipcMain.handle(
+    'mobile:setRuntimeAccessMode',
+    (_event, args: { deviceId: string; accessMode: RuntimeAccessMode }) => {
+      const registry = rpcServer.getDeviceRegistry()
+      const device = registry?.getDevice(args?.deviceId)
+      if (
+        !registry ||
+        !device ||
+        device.scope !== 'runtime' ||
+        (args.accessMode !== 'full' && args.accessMode !== 'team-read')
+      ) {
+        return { accessMode: null }
+      }
+      const current = effectiveRuntimeAccessMode(device)
+      if (current === args.accessMode) {
+        return { accessMode: current }
+      }
+      // Full access is only given to someone who is connected right now, so the host sees who it is
+      // handing it to; going back to read-only needs a team record to return to.
+      const changed =
+        args.accessMode === 'full'
+          ? device.parentDeviceId !== undefined &&
+            rpcServer.getMobileSocketWiring?.()?.isDeviceConnected(device.deviceId) === true &&
+            registry.setAccessMode(device.deviceId, 'full')
+          : device.teamBinding !== undefined &&
+            registry.setAccessMode(device.deviceId, 'team-read', device.teamBinding)
+      if (!changed) {
+        return { accessMode: current }
+      }
+      rpcServer.getRuntimeAccessAudit?.()?.record({
+        at: Date.now(),
+        deviceId: device.deviceId,
+        deviceName: device.name,
+        accessMode: args.accessMode,
+        ...(device.teamBinding
+          ? {
+              teamGroupId: device.teamBinding.teamGroupId,
+              memberId: device.teamBinding.memberId
+            }
+          : undefined),
+        method: args.accessMode === 'full' ? 'access.grant.full' : 'access.restore.readonly',
+        result: 'allowed'
+      })
+      return { accessMode: args.accessMode }
+    }
+  )
+
+  ipcMain.handle(
+    'mobile:listRuntimeAccessAudit',
+    async (
+      _event,
+      args?: {
+        action?: string
+        result?: RuntimeAccessAuditResult
+        since?: number
+        search?: string
+      }
+    ): Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }> => {
+      const audit = rpcServer.getRuntimeAccessAudit?.()
+      if (!audit) {
+        return { entries: [], directory: '' }
+      }
+      return {
+        entries: await audit.list(args),
+        directory: audit.getDirectory()
+      }
+    }
+  )
+
+  ipcMain.handle('mobile:clearRuntimeAccessAudit', async () => {
+    const audit = rpcServer.getRuntimeAccessAudit?.()
+    if (!audit) {
+      return { cleared: false }
+    }
+    await audit.clear()
+    return { cleared: true }
+  })
+
+  // Revoking a shared-host link is an authorization change the owner reviews in the access log.
+  // The device is read before revoking and the entry is written only if the revoke took effect.
+  const auditRevocation = (deviceId: string): ((revoked: boolean) => boolean) => {
+    const device = rpcServer.getDeviceRegistry()?.getDevice(deviceId)
+    return (revoked) => {
+      if (revoked && device?.scope === 'runtime') {
+        rpcServer.getRuntimeAccessAudit?.()?.record({
+          at: Date.now(),
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          accessMode: effectiveRuntimeAccessMode(device),
+          ...(device.teamBinding
+            ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+            : undefined),
+          method: 'access.revoke',
+          result: 'allowed'
+        })
+      }
+      return revoked
+    }
+  }
 
   ipcMain.handle('mobile:revokeDevice', async (_event, args: { deviceId: string }) => {
     const registry = rpcServer.getDeviceRegistry()
     if (!registry) {
       return { revoked: false }
     }
-    return { revoked: await rpcServer.revokeMobileDevice(args.deviceId) }
+    const audit = auditRevocation(args.deviceId)
+    return { revoked: audit(await rpcServer.revokeMobileDevice(args.deviceId)) }
   })
 
   ipcMain.handle('mobile:revokeRuntimeAccess', (_event, args: { deviceId: string }) => {
@@ -200,7 +375,8 @@ export function registerMobileHandlers(
     if (!registry) {
       return { revoked: false }
     }
-    return { revoked: rpcServer.revokeRuntimeAccess(args.deviceId) }
+    const audit = auditRevocation(args.deviceId)
+    return { revoked: audit(rpcServer.revokeRuntimeAccess(args.deviceId)) }
   })
 
   ipcMain.handle('mobile:getWindowsFirewallStatus', (_event, args?: { address?: string }) => {

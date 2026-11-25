@@ -56,6 +56,7 @@ export type ProvisionEphemeralVmRuntimeResult =
     }
 
 export type CleanupEphemeralVmRuntimeArgs = {
+  beforeCleanup?: () => void
   userDataPath: string
   repoPath: string
   recipe: OrcaVmRecipe
@@ -144,6 +145,7 @@ export function cleanupEphemeralVmRuntime(
 async function cleanupEphemeralVmRuntimeOnce(
   args: CleanupEphemeralVmRuntimeArgs
 ): Promise<CleanupEphemeralVmRuntimeResult> {
+  args.beforeCleanup?.()
   const existing = listEphemeralVmRuntimes(args.userDataPath).find(
     (entry) => entry.id === args.runtimeId
   )

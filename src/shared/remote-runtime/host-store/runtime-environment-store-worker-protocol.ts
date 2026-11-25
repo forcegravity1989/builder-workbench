@@ -9,6 +9,10 @@ import type * as core5 from './runtime-environment-store-records'
 import type * as core6 from './wsl-host-deployment-store'
 
 export type EnvironmentStoreCommand =
+  | {
+      operation: 'setEnvironmentReconnectOnLaunch'
+      args: Parameters<typeof core0.setEnvironmentReconnectOnLaunch>
+    }
   | { operation: 'listEnvironments'; args: Parameters<typeof core0.listEnvironments> }
   | {
       operation: 'addEnvironmentFromPairingCode'
@@ -96,6 +100,10 @@ export type EnvironmentStoreCommand =
     }
   | { operation: 'readWslHostDeployments'; args: Parameters<typeof core6.readWslHostDeployments> }
 export type EnvironmentStoreSuccess =
+  | {
+      operation: 'setEnvironmentReconnectOnLaunch'
+      value: ReturnType<typeof core0.setEnvironmentReconnectOnLaunch>
+    }
   | { operation: 'listEnvironments'; value: ReturnType<typeof core0.listEnvironments> }
   | {
       operation: 'addEnvironmentFromPairingCode'

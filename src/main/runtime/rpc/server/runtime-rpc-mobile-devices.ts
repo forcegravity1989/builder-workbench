@@ -127,7 +127,11 @@ export class RuntimeRpcMobileDevices extends RuntimeRpcRequestAdmission {
       connectionId === undefined ? undefined : this.declaredDesktopClients.instanceOf(connectionId)
     const registry = this.deviceRegistry
     const parent = registry?.getDevice(parentDeviceId)
-    if (!registry || parent?.scope !== 'runtime') {
+    if (
+      !registry ||
+      parent?.scope !== 'runtime' ||
+      registry.getAccessMode(parentDeviceId) === 'team-read'
+    ) {
       throw new Error('delegated_device_parent_unavailable')
     }
     const wanted = new Set(phones.map((phone) => phone.phoneKey))

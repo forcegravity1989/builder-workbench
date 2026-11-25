@@ -80,6 +80,24 @@ export function normalizeLoadedDeviceRow(device: unknown): DeviceEntry | null {
     ...device,
     deviceId: device.deviceId,
     name: typeof device.name === 'string' ? device.name : '',
+    accessMode:
+      device.accessMode === 'team-read' || device.accessMode === 'full'
+        ? device.accessMode
+        : undefined,
+    avatar:
+      typeof device.avatar === 'string' && device.avatar.length <= 4096 ? device.avatar : undefined,
+    pairingEndpoint:
+      typeof device.pairingEndpoint === 'string' && device.pairingEndpoint.length <= 4096
+        ? device.pairingEndpoint
+        : undefined,
+    teamBinding:
+      isRecord(device.teamBinding) &&
+      typeof device.teamBinding.teamGroupId === 'string' &&
+      device.teamBinding.teamGroupId.length > 0 &&
+      typeof device.teamBinding.memberId === 'string' &&
+      device.teamBinding.memberId.length > 0
+        ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+        : undefined,
     // Why: a non-string bearer can never match, so the row stays listed but inert.
     token: typeof device.token === 'string' ? device.token : undefined,
     pairedAt: device.pairedAt,

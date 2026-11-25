@@ -1,7 +1,15 @@
 import type { RuntimeDeviceGrant } from '../callers/rpc-method-permission'
+import {
+  RuntimePairingLinkReferenceSchema,
+  type RuntimePairingLink
+} from '../../../../shared/remote-runtime/host-catalog/runtime-access-grants'
 import type { DeviceRegistry } from './pairing/device-registry'
-import type { DeviceScope } from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
-import type { TokenDeviceEntry } from './pairing/device-entry'
+import type {
+  DeviceScope,
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import { effectiveRuntimeAccessMode, type TokenDeviceEntry } from './pairing/device-entry'
 import type { E2EEKeypair } from './pairing/e2ee-keypair'
 import type { MobileSocketWiring } from '../mobile/mobile-socket-wiring'
 import type {
@@ -182,9 +190,85 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     return ws?.endpoint ?? null
   }
 
+  restoreRuntimePairingUrl(reference: unknown): RuntimePairingLink | null {
+    const parsed = RuntimePairingLinkReferenceSchema.safeParse(reference)
+    if (!parsed.success) {
+      return null
+    }
+    if (!this.deviceRegistry || !this.e2eeKeypair) {
+      throw new Error('Runtime pairing identity is not ready.')
+    }
+    const saved = parsed.data
+    const device = this.deviceRegistry?.getDevice(saved.deviceId)
+    const publicKeyB64 = this.getE2EEPublicKey()
+    if (device?.scope !== 'runtime' || !device.token || publicKeyB64 !== saved.publicKeyB64) {
+      return null
+    }
+    const resolved = resolveAdvertisedPairingEndpoint('ws://127.0.0.1', saved.endpoint)
+    if (!resolved.ok || resolved.endpoint !== saved.endpoint) {
+      return null
+    }
+    // Restore the issued endpoint verbatim; recall must not mint a grant or claim connectivity.
+    const pairingUrl = encodePairingOffer({
+      v: PAIRING_OFFER_VERSION,
+      endpoint: saved.endpoint,
+      deviceToken: device.token,
+      publicKeyB64,
+      pairedDeviceId: device.deviceId,
+      scope: 'runtime',
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? {
+            accessMode: 'team-read' as const,
+            ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+          }
+        : {})
+    })
+    return {
+      pairingUrl,
+      endpoint: saved.endpoint,
+      deviceId: device.deviceId,
+      webClientUrl:
+        this.webClientRoot && saved.webClientAvailable
+          ? createWebClientUrl(saved.endpoint, pairingUrl)
+          : null
+    }
+  }
+
+  /** The pairing link of a shared link record, for copying it again; null when it was not recorded. */
+  getRuntimeAccessLinkUrl(deviceId: string): string | null {
+    const device = this.deviceRegistry?.getDevice(deviceId)
+    const publicKeyB64 = this.getE2EEPublicKey()
+    if (
+      device?.scope !== 'runtime' ||
+      device.parentDeviceId !== undefined ||
+      !device.token ||
+      !device.pairingEndpoint ||
+      !publicKeyB64
+    ) {
+      return null
+    }
+    return encodePairingOffer({
+      v: PAIRING_OFFER_VERSION,
+      endpoint: device.pairingEndpoint,
+      deviceToken: device.token,
+      publicKeyB64,
+      pairedDeviceId: device.deviceId,
+      scope: 'runtime',
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? {
+            accessMode: 'team-read' as const,
+            ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+          }
+        : {})
+    })
+  }
+
   createPairingOffer(args: {
     address?: string | null
     name?: string
+    avatar?: string
+    accessMode?: RuntimeAccessMode
+    teamBinding?: RuntimeTeamBinding
     rotate?: boolean
     scope?: DeviceScope
     // Persist local-only policy on grants so reconnect cannot expose every interface; other callers default to network reach (STA-2370).
@@ -234,13 +318,22 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
     try {
       const reach = args.reach ?? 'network'
       const grants = args.grants ?? []
-      const options = { offerTtlMs: args.offerTtlMs, createdByDeviceId: args.createdByDeviceId }
+      const options = {
+        offerTtlMs: args.offerTtlMs,
+        createdByDeviceId: args.createdByDeviceId,
+        ...(scope === 'runtime'
+          ? { avatar: args.avatar, accessMode: args.accessMode, teamBinding: args.teamBinding }
+          : {})
+      }
       device = args.rotate
         ? this.deviceRegistry.rotatePendingDevice(deviceName, scope, reach, grants, options)
         : this.deviceRegistry.getOrCreatePendingDevice(deviceName, scope, reach, grants, options)
     } catch (error) {
       console.error('[runtime] Failed to persist pairing credential:', error)
       return pairingUnavailable('device_registry_unavailable', DEVICE_REGISTRY_UNAVAILABLE_GUIDANCE)
+    }
+    if (scope === 'runtime') {
+      this.deviceRegistry.setPairingEndpoint(device.deviceId, endpoint)
     }
     const hostDescriptor = this.hostDescriptor
     const pairingUrl = encodePairingOffer({
@@ -250,6 +343,12 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
       publicKeyB64,
       pairedDeviceId: device.deviceId,
       scope,
+      ...(effectiveRuntimeAccessMode(device) === 'team-read'
+        ? {
+            accessMode: 'team-read' as const,
+            ...(device.teamBinding ? { teamBinding: device.teamBinding } : {})
+          }
+        : {}),
       // Runtime clients pin host identity; mobile does not need these extra QR bytes.
       ...(hostDescriptor && scope === 'runtime' ? { hostDescriptor } : {})
     })

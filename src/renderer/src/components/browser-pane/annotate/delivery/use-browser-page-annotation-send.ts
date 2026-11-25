@@ -13,14 +13,21 @@ import {
   useNotesInFlightVersion
 } from '@/components/notes/delivery/notes-send-in-flight'
 import { recomputeOn } from '@/lib/recompute-on'
+import {
+  usePrototypeReviewAnnotations,
+  type PrototypeReviewSubmit
+} from '@/workbench/pr-review-notifications/use-prototype-review-annotations'
 
 export function useBrowserPageAnnotationSend({
   browserTabId,
-  worktreeId
+  worktreeId,
+  reviewDocumentPath = null
 }: {
   browserTabId: string
   worktreeId: string
+  reviewDocumentPath?: string | null
 }): {
+  submitToHost: PrototypeReviewSubmit | null
   browserAnnotations: BrowserPageAnnotation[]
   browserAnnotationsPrompt: string
   includePageDetails: boolean
@@ -88,6 +95,11 @@ export function useBrowserPageAnnotationSend({
     (s) => s.removeDeliveredBrowserPageAnnotations
   )
   const recordFeatureInteraction = useAppStore((s) => s.recordFeatureInteraction)
+  const review = usePrototypeReviewAnnotations({
+    browserTabId,
+    worktreeId,
+    documentPath: reviewDocumentPath
+  })
 
   useLayoutEffect(() => {
     browserAnnotationsRef.current = browserAnnotations
@@ -133,8 +145,9 @@ export function useBrowserPageAnnotationSend({
     clearTimeout(annotationCopyTimerRef.current)
     setBrowserAnnotationsCopied(false)
     recordFeatureInteraction('browser-annotations')
+    review.onRemoved(browserAnnotationsRef.current)
     clearBrowserPageAnnotations(browserTabId)
-  }, [browserTabId, clearBrowserPageAnnotations, recordFeatureInteraction])
+  }, [browserTabId, clearBrowserPageAnnotations, recordFeatureInteraction, review])
 
   const openAnnotationSendTargetMode = useCallback(
     (modeId: string, prompt: string): void => {
@@ -221,10 +234,11 @@ export function useBrowserPageAnnotationSend({
         clearTimeout(annotationCopyTimerRef.current)
         setBrowserAnnotationsCopied(false)
       }
+      review.onRemoved(browserAnnotationsRef.current.filter((item) => item.id === annotationId))
       deleteBrowserPageAnnotation(browserTabId, annotationId)
       recordFeatureInteraction('browser-annotations')
     },
-    [browserTabId, deleteBrowserPageAnnotation, recordFeatureInteraction]
+    [browserTabId, deleteBrowserPageAnnotation, recordFeatureInteraction, review]
   )
 
   const handleUpdateBrowserAnnotation = useCallback(
@@ -234,13 +248,18 @@ export function useBrowserPageAnnotationSend({
       intent: BrowserAnnotationIntent,
       imagePaths: string[]
     ): void => {
+      const edited = browserAnnotationsRef.current.find((item) => item.id === annotationId)
+      if (edited?.author) {
+        review.onEdited({ ...edited, comment, intent })
+      }
       updateBrowserPageAnnotation(browserTabId, annotationId, { comment, intent, imagePaths })
       recordFeatureInteraction('browser-annotations')
     },
-    [browserTabId, recordFeatureInteraction, updateBrowserPageAnnotation]
+    [browserTabId, recordFeatureInteraction, review, updateBrowserPageAnnotation]
   )
 
   return {
+    submitToHost: review.submit,
     browserAnnotations,
     browserAnnotationsPrompt,
     includePageDetails,

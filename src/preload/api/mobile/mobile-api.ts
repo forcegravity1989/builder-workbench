@@ -1,8 +1,18 @@
+import type {
+  RuntimePairingLinkReference,
+  RuntimePairingLink,
+  RuntimeAccessGrant,
+  RuntimeAccessAuditEntry,
+  RuntimeAccessAuditResult
+} from '../../../shared/remote-runtime/host-catalog/runtime-access-grants'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import type { MobileRelayStatusDetail } from '../../../shared/remote-runtime/relay/mobile-relay-status'
 import type { MobilePairingConnectionMode } from '../../../shared/remote-runtime/pairing/mobile-pairing-connection-mode'
 import type { RuntimePairingReach } from '../../../shared/remote-runtime/pairing/runtime-pairing-reach'
 import type { MobileRelayMintFailure } from '../../../shared/remote-runtime/relay/mobile-relay-mint-failure'
-import type { RuntimeAccessGrant } from '../../../shared/remote-runtime/host-catalog/runtime-access-grants'
 
 export type MobileApi = {
   listNetworkInterfaces: () => Promise<{
@@ -54,6 +64,10 @@ export type MobileApi = {
     address?: string
     rotate?: boolean
     reach?: RuntimePairingReach
+    accessMode?: RuntimeAccessMode
+    teamBinding?: RuntimeTeamBinding
+    name?: string
+    avatar?: string
   }) => Promise<
     | {
         available: false
@@ -69,6 +83,10 @@ export type MobileApi = {
         expiresAt: number | null
       }
   >
+  restoreRuntimePairingUrl: (
+    reference: RuntimePairingLinkReference
+  ) => Promise<RuntimePairingLink | null>
+  getRuntimeAccessLinkUrl: (args: { deviceId: string }) => Promise<{ pairingUrl: string | null }>
   listDevices: () => Promise<{
     devices: {
       deviceId: string
@@ -81,6 +99,17 @@ export type MobileApi = {
   }>
   revokeDevice: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
   listRuntimeAccessGrants: () => Promise<{ grants: RuntimeAccessGrant[] }>
+  setRuntimeAccessMode: (args: {
+    deviceId: string
+    accessMode: 'team-read' | 'full'
+  }) => Promise<{ accessMode: 'team-read' | 'full' | null }>
+  listRuntimeAccessAudit: (args?: {
+    action?: string
+    result?: RuntimeAccessAuditResult
+    since?: number
+    search?: string
+  }) => Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }>
+  clearRuntimeAccessAudit: () => Promise<{ cleared: boolean }>
   revokeRuntimeAccess: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
   getRelayStatus: () => Promise<MobileRelayStatusDetail>
   onRelayStatusChanged: (callback: (detail: MobileRelayStatusDetail) => void) => () => void

@@ -1,3 +1,4 @@
+import { PrototypeReviewSubmitButton } from '@/workbench/pr-review-notifications/PrototypeReviewSubmitButton'
 import { cn } from '@/lib/class-names'
 import { CircleCheck, Copy, Crosshair, Send, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -44,7 +45,8 @@ export function BrowserGuestGrabBanner({
     handleBrowserAnnotationsHandedOff,
     handleCopyBrowserAnnotations,
     browserAnnotationsCopied,
-    handleClearBrowserAnnotations
+    handleClearBrowserAnnotations,
+    submitToHost
   } = tools.annotationSend
   const browserAnnotationsLength = browserAnnotations.length
   if (grab.state === 'idle') {
@@ -104,49 +106,53 @@ export function BrowserGuestGrabBanner({
       </span>
       {grabIntent === 'annotate' && browserAnnotationsLength > 0 ? (
         <>
-          <DropdownMenu
-            modal={false}
-            open={annotationBannerSendOpen}
-            onOpenChange={handleAnnotationBannerSendOpenChange}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    className="h-6 gap-1.5"
-                    disabled={!browserAnnotationsPrompt}
-                  >
-                    <Send className="size-3" />
-                    {t('auto.components.browser.pane.BrowserPane.ac39b9366b', 'Send')}
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6}>
-                {t(
-                  'auto.components.browser.pane.BrowserPane.95af781091',
-                  'Send feedback to an agent'
-                )}
-              </TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent
-              align="end"
-              className="min-w-[180px]"
-              onInteractOutside={preventAgentSendTargetOutsideDismiss}
-              onPointerDownOutside={preventAgentSendTargetOutsideDismiss}
+          {submitToHost ? (
+            <PrototypeReviewSubmitButton submit={submitToHost} />
+          ) : (
+            <DropdownMenu
+              modal={false}
+              open={annotationBannerSendOpen}
+              onOpenChange={handleAnnotationBannerSendOpenChange}
             >
-              <BrowserAnnotationSendMenuContent
-                worktreeId={worktreeId}
-                groupId={activeGroupId ?? worktreeId}
-                prompt={browserAnnotationsPrompt}
-                includePageDetails={includePageDetails}
-                onIncludePageDetailsChange={handleIncludePageDetailsChange}
-                onPromptDelivered={handleBrowserAnnotationsSentToAgent}
-                onPromptHandedOff={handleBrowserAnnotationsHandedOff}
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      className="h-6 gap-1.5"
+                      disabled={!browserAnnotationsPrompt}
+                    >
+                      <Send className="size-3" />
+                      {t('auto.components.browser.pane.BrowserPane.ac39b9366b', 'Send')}
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  {t(
+                    'auto.components.browser.pane.BrowserPane.95af781091',
+                    'Send feedback to an agent'
+                  )}
+                </TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent
+                align="end"
+                className="min-w-[180px]"
+                onInteractOutside={preventAgentSendTargetOutsideDismiss}
+                onPointerDownOutside={preventAgentSendTargetOutsideDismiss}
+              >
+                <BrowserAnnotationSendMenuContent
+                  worktreeId={worktreeId}
+                  groupId={activeGroupId ?? worktreeId}
+                  prompt={browserAnnotationsPrompt}
+                  includePageDetails={includePageDetails}
+                  onIncludePageDetailsChange={handleIncludePageDetailsChange}
+                  onPromptDelivered={handleBrowserAnnotationsSentToAgent}
+                  onPromptHandedOff={handleBrowserAnnotationsHandedOff}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

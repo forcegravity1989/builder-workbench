@@ -64,6 +64,7 @@ export function useBrowserGuestAnnotateTools({
   trackingContainer,
   trackingScroller,
   currentDocumentUrl,
+  reviewDocumentPath,
   transport = ipcBrowserGuestToolsTransport,
   shortcuts
 }: {
@@ -81,6 +82,7 @@ export function useBrowserGuestAnnotateTools({
   trackingScroller?: HTMLDivElement | null
   /** Browsing pages show only the badges captured on the committed document; previews show every note. */
   currentDocumentUrl?: string
+  reviewDocumentPath?: string | null
   transport?: BrowserGuestToolsTransport
   /** Wires the grab/annotate chords and C/S picks; doc previews leave the chords to the editor. */
   shortcuts?: { workspaceId: string; chromeShortcutScope: BrowserChromeShortcutScope }
@@ -100,7 +102,11 @@ export function useBrowserGuestAnnotateTools({
   const grabElementShortcut = useShortcutLabel('browser.grabElement')
   const annotateElementShortcut = useShortcutLabel('browser.annotateElement')
   const grab = useGrabMode(toolTargetId, transport)
-  const annotationSend = useBrowserPageAnnotationSend({ browserTabId: browserPageId, worktreeId })
+  const annotationSend = useBrowserPageAnnotationSend({
+    browserTabId: browserPageId,
+    worktreeId,
+    reviewDocumentPath
+  })
   const grabAnnotations = useBrowserPageGrabAnnotations({
     browserTabId: browserPageId,
     toolTargetId,

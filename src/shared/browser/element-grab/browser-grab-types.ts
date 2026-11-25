@@ -154,6 +154,10 @@ export type BrowserPageAnnotation = {
   intent: BrowserAnnotationIntent
   priority: BrowserAnnotationPriority
   createdAt: string
+  /** Pasted images saved on the worktree host, as for terminal image paste. */
+  imagePaths?: string[]
+  /** Who wrote a note a reviewer handed over; absent for notes made in this tab. */
+  author?: string
   payload: BrowserAnnotationPayload
   /** Pasted images, saved on the worktree's host like a terminal image paste. */
   imagePaths?: string[]

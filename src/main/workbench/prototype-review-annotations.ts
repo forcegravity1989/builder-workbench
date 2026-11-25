@@ -9,32 +9,44 @@ import {
 } from '../../shared/workbench/prototype-review-annotation'
 
 const AnnotationListSchema = z.array(PrototypeReviewAnnotationSchema)
+// Why: any connected member may submit, so one document's notes are bounded.
+const MAX_ANNOTATIONS_PER_DOCUMENT = 200
+// Why: a member can name any document, so the number of documents holding notes is bounded too.
+const MAX_DOCUMENTS = 500
+// Why: the same Windows file reopened through another spelling (drive-letter case, slash style)
+// must read back the notes written under the first one.
+function keyOf(documentKey: string): string {
+  return /^[a-z]:[\\/]/i.test(documentKey)
+    ? documentKey.replaceAll('\\', '/').toLowerCase()
+    : documentKey
+}
+// Notes are kept per document, so every reviewer's submissions for one file read back together.
 const annotations = new Map<string, PrototypeReviewAnnotation[]>()
-let loaded = false
+let loading: Promise<void> | undefined
 let writes: Promise<unknown> = Promise.resolve()
 const annotationsPath = () =>
-  join(getCanonicalUserDataPath(), 'workbench-prototype-review-annotations.json')
+  join(getCanonicalUserDataPath(), 'workbench-prototype-review-annotations-v2.json')
 
-function key(pageId: string, documentKey: string): string {
-  return `${pageId}:${documentKey}`
-}
-
-async function loadAnnotations(): Promise<void> {
-  if (loaded) {
-    return
-  }
-  loaded = true
-  try {
-    const stored = AnnotationListSchema.parse(JSON.parse(await readFile(annotationsPath(), 'utf8')))
-    for (const annotation of stored) {
-      const entryKey = key(annotation.pageId, annotation.documentKey)
-      annotations.set(entryKey, [...(annotations.get(entryKey) ?? []), annotation])
+function loadAnnotations(): Promise<void> {
+  loading ??= (async () => {
+    try {
+      const stored = AnnotationListSchema.parse(
+        JSON.parse(await readFile(annotationsPath(), 'utf8'))
+      )
+      for (const annotation of stored) {
+        const key = keyOf(annotation.documentKey)
+        annotations.set(key, [...(annotations.get(key) ?? []), annotation])
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error
+      }
     }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error
-    }
-  }
+  })().catch((error: unknown) => {
+    loading = undefined
+    throw error
+  })
+  return loading
 }
 
 function persistAnnotations(): Promise<void> {
@@ -50,40 +62,51 @@ function persistAnnotations(): Promise<void> {
 }
 
 export async function readPrototypeReviewAnnotations(
-  pageId: string,
   documentKey: string
 ): Promise<PrototypeReviewAnnotation[]> {
   await loadAnnotations()
-  return AnnotationListSchema.parse(annotations.get(key(pageId, documentKey)) ?? [])
+  return AnnotationListSchema.parse(annotations.get(keyOf(documentKey)) ?? [])
 }
 
 export async function addPrototypeReviewAnnotation(
   annotation: PrototypeReviewAnnotation
 ): Promise<PrototypeReviewAnnotation> {
   await loadAnnotations()
-  const entryKey = key(annotation.pageId, annotation.documentKey)
-  const current = annotations.get(entryKey) ?? []
+  const key = keyOf(annotation.documentKey)
+  const current = annotations.get(key) ?? []
+  if (current.length === 0 && annotations.size >= MAX_DOCUMENTS) {
+    throw new Error('批注的文档数已达上限')
+  }
+  if (
+    current.length >= MAX_ANNOTATIONS_PER_DOCUMENT &&
+    !current.some((item) => item.id === annotation.id)
+  ) {
+    throw new Error('该文档的批注已达上限')
+  }
   const next = current.some((item) => item.id === annotation.id)
     ? current.map((item) => (item.id === annotation.id ? annotation : item))
     : [...current, annotation]
-  annotations.set(entryKey, next)
+  annotations.set(key, next)
   await persistAnnotations()
   return annotation
 }
 
 export async function deletePrototypeReviewAnnotation(
-  pageId: string,
   documentKey: string,
   annotationId: string
 ): Promise<boolean> {
   await loadAnnotations()
-  const entryKey = key(pageId, documentKey)
-  const current = annotations.get(entryKey) ?? []
+  const key = keyOf(documentKey)
+  const current = annotations.get(key) ?? []
   const next = current.filter((annotation) => annotation.id !== annotationId)
   if (next.length === current.length) {
     return false
   }
-  annotations.set(entryKey, next)
+  if (next.length === 0) {
+    annotations.delete(key)
+  } else {
+    annotations.set(key, next)
+  }
   await persistAnnotations()
   return true
 }

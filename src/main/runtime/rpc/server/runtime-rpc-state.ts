@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { RuntimeAccessAudit } from '../../../observability/runtime-access-audit'
 import type { RuntimeTransportMetadata } from '../../../../shared/remote-runtime/bootstrap/runtime-bootstrap'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { RpcDispatcher } from '../dispatcher'
@@ -53,6 +54,12 @@ import type { ServeNetworkSourceOptions } from './serve-network-source-policy'
 import type { WebSocketSourceGuard } from '../transports/websocket/source-admission/ws-network-source-guard'
 
 export class RuntimeRpcState {
+  private readonly runtimeAccessAudit: RuntimeAccessAudit
+
+  getRuntimeAccessAudit(): RuntimeAccessAudit {
+    return this.runtimeAccessAudit
+  }
+
   protected readonly runtime: OrcaRuntimeService
   protected readonly dispatcher: RpcDispatcher
   protected readonly streamingMethods: ReadonlySet<string>
@@ -160,6 +167,7 @@ export class RuntimeRpcState {
         .map((method) => method.name)
     )
     this.userDataPath = userDataPath
+    this.runtimeAccessAudit = new RuntimeAccessAudit(userDataPath)
     this.pid = pid
     this.platform = platform
     this.enableWebSocket = enableWebSocket

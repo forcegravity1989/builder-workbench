@@ -1,3 +1,4 @@
+import { notifyTeamReadDenied } from '@/workbench/team-read-denied-toast'
 import { waitForPromiseWithSignal } from '../../../../../shared/concurrency/abort-signal-reason'
 import type {
   RuntimeRpcResponse,
@@ -100,7 +101,9 @@ export async function callRuntimeRpcResponse<TResult>(
         })
   const envelope = response as RuntimeRpcResponse<TResult>
   if (!envelope.ok) {
-    throw new RuntimeRpcCallError(envelope, target)
+    const error = new RuntimeRpcCallError(envelope, target)
+    notifyTeamReadDenied(error)
+    throw error
   }
   return envelope
 }

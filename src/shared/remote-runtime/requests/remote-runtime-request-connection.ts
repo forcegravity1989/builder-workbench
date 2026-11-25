@@ -231,7 +231,7 @@ export class RemoteRuntimeRequestConnection {
     this.state = 'awaiting_authenticated'
     void sendRemoteRuntimeTokenAuth({
       handshake,
-      deviceToken: this.connection.credential.deviceToken,
+      credential: this.connection.credential,
       clientCapabilities: remoteRuntimeClientCapabilities(this.additionalClientCapabilities),
       stillAwaiting: () => this.handshake === handshake && this.state === 'awaiting_authenticated',
       send: (authFrame) => this.ws?.send(authFrame),

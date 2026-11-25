@@ -82,7 +82,8 @@ export function BrowserGuestAnnotateOverlays({
     browserAnnotationsCopied,
     handleClearBrowserAnnotations,
     handleDeleteBrowserAnnotation,
-    handleUpdateBrowserAnnotation
+    handleUpdateBrowserAnnotation,
+    submitToHost
   } = annotationSend
 
   return (
@@ -135,6 +136,7 @@ export function BrowserGuestAnnotateOverlays({
           handleClearBrowserAnnotations={handleClearBrowserAnnotations}
           handleDeleteBrowserAnnotation={handleDeleteBrowserAnnotation}
           handleUpdateBrowserAnnotation={handleUpdateBrowserAnnotation}
+          submitToHost={submitToHost}
         />
       ) : null}
       {/* Right-click context dropdown, positioned at the grabbed element's center. */}

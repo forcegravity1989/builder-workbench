@@ -1,3 +1,14 @@
+import type {
+  RuntimePairingLinkReference,
+  RuntimePairingLink,
+  RuntimeAccessGrant,
+  RuntimeAccessAuditEntry,
+  RuntimeAccessAuditResult
+} from '../../../shared/remote-runtime/host-catalog/runtime-access-grants'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import { ipcRenderer } from 'electron'
 import type { MobileRelayStatusDetail } from '../../../shared/remote-runtime/relay/mobile-relay-status'
 import type { MobilePairingConnectionMode } from '../../../shared/remote-runtime/pairing/mobile-pairing-connection-mode'
@@ -46,6 +57,10 @@ export const mobileApi = {
     rotate?: boolean
     // Gate host-wide exposure on the chosen reach: a loopback address may front an SSH tunnel.
     reach?: RuntimePairingReach
+    accessMode?: RuntimeAccessMode
+    teamBinding?: RuntimeTeamBinding
+    name?: string
+    avatar?: string
   }): Promise<
     | { available: false; reason?: 'network_exposure_failed'; guidance?: string }
     | {
@@ -57,6 +72,14 @@ export const mobileApi = {
         expiresAt: number | null
       }
   > => ipcRenderer.invoke('mobile:getRuntimePairingUrl', args),
+
+  restoreRuntimePairingUrl: (
+    reference: RuntimePairingLinkReference
+  ): Promise<RuntimePairingLink | null> =>
+    ipcRenderer.invoke('mobile:restoreRuntimePairingUrl', reference),
+
+  getRuntimeAccessLinkUrl: (args: { deviceId: string }): Promise<{ pairingUrl: string | null }> =>
+    ipcRenderer.invoke('mobile:getRuntimeAccessLinkUrl', args),
 
   listDevices: (): Promise<{
     devices: {
@@ -73,6 +96,22 @@ export const mobileApi = {
     ipcRenderer.invoke('mobile:revokeDevice', args),
 
   listRuntimeAccessGrants: () => ipcRenderer.invoke('mobile:listRuntimeAccessGrants'),
+
+  setRuntimeAccessMode: (args: {
+    deviceId: string
+    accessMode: 'team-read' | 'full'
+  }): Promise<{ accessMode: 'team-read' | 'full' | null }> =>
+    ipcRenderer.invoke('mobile:setRuntimeAccessMode', args),
+
+  listRuntimeAccessAudit: (args?: {
+    action?: string
+    result?: RuntimeAccessAuditResult
+    since?: number
+    search?: string
+  }): Promise<{ entries: RuntimeAccessAuditEntry[]; directory: string }> =>
+    ipcRenderer.invoke('mobile:listRuntimeAccessAudit', args),
+  clearRuntimeAccessAudit: (): Promise<{ cleared: boolean }> =>
+    ipcRenderer.invoke('mobile:clearRuntimeAccessAudit'),
 
   revokeRuntimeAccess: (args: { deviceId: string }): Promise<{ revoked: boolean }> =>
     ipcRenderer.invoke('mobile:revokeRuntimeAccess', args),

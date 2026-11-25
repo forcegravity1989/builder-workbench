@@ -203,10 +203,9 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
       router = new RemoteRuntimeRequestResponseRouter({
         handshake,
         sealAuth: () =>
-          handshake.sealAuth(
-            { kind: 'token', deviceToken: connection.credential.deviceToken },
-            { clientCapabilities: remoteRuntimeClientCapabilities(clientCapabilities) }
-          ),
+          handshake.sealAuth(connection.credential, {
+            clientCapabilities: remoteRuntimeClientCapabilities(clientCapabilities)
+          }),
         isSettled: () => settled,
         serializedStatusRequest,
         requestId,

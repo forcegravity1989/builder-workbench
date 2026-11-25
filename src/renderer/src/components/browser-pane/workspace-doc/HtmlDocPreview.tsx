@@ -133,6 +133,7 @@ export function HtmlDocPreview({
   } = useDocPreviewGuestTools({
     previewId,
     worktreeId,
+    filePath,
     grantId,
     webviewRef,
     containerRef,

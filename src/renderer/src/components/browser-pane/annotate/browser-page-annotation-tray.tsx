@@ -1,3 +1,4 @@
+import { PrototypeReviewSubmitButton } from '@/workbench/pr-review-notifications/PrototypeReviewSubmitButton'
 import { ImeTextarea } from '@/lib/text-input/ime/ime-text-field'
 import { useState } from 'react'
 import {
@@ -53,7 +54,8 @@ export function BrowserPageAnnotationTray({
   browserAnnotationsCopied,
   handleClearBrowserAnnotations,
   handleDeleteBrowserAnnotation,
-  handleUpdateBrowserAnnotation
+  handleUpdateBrowserAnnotation,
+  submitToHost
 }: BrowserPageAnnotationTrayProps): React.JSX.Element {
   const t = useTranslate()
   const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null)
@@ -136,49 +138,53 @@ export function BrowserPageAnnotationTray({
                   )}
             </TooltipContent>
           </Tooltip>
-          <DropdownMenu
-            modal={false}
-            open={annotationTraySendOpen}
-            onOpenChange={handleAnnotationTraySendOpenChange}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    className="gap-1.5"
-                    disabled={!browserAnnotationsPrompt}
-                  >
-                    <Send className="size-3" />
-                    {t('auto.components.browser.pane.BrowserPane.ac39b9366b', 'Send')}
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={6}>
-                {t(
-                  'auto.components.browser.pane.BrowserPane.95af781091',
-                  'Send feedback to an agent'
-                )}
-              </TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent
-              align="end"
-              className="min-w-[180px]"
-              onInteractOutside={preventAgentSendTargetOutsideDismiss}
-              onPointerDownOutside={preventAgentSendTargetOutsideDismiss}
+          {submitToHost ? (
+            <PrototypeReviewSubmitButton submit={submitToHost} />
+          ) : (
+            <DropdownMenu
+              modal={false}
+              open={annotationTraySendOpen}
+              onOpenChange={handleAnnotationTraySendOpenChange}
             >
-              <BrowserAnnotationSendMenuContent
-                worktreeId={worktreeId}
-                groupId={activeGroupId ?? worktreeId}
-                prompt={browserAnnotationsPrompt}
-                includePageDetails={includePageDetails}
-                onIncludePageDetailsChange={handleIncludePageDetailsChange}
-                onPromptDelivered={handleBrowserAnnotationsSentToAgent}
-                onPromptHandedOff={handleBrowserAnnotationsHandedOff}
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      className="gap-1.5"
+                      disabled={!browserAnnotationsPrompt}
+                    >
+                      <Send className="size-3" />
+                      {t('auto.components.browser.pane.BrowserPane.ac39b9366b', 'Send')}
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6}>
+                  {t(
+                    'auto.components.browser.pane.BrowserPane.95af781091',
+                    'Send feedback to an agent'
+                  )}
+                </TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent
+                align="end"
+                className="min-w-[180px]"
+                onInteractOutside={preventAgentSendTargetOutsideDismiss}
+                onPointerDownOutside={preventAgentSendTargetOutsideDismiss}
+              >
+                <BrowserAnnotationSendMenuContent
+                  worktreeId={worktreeId}
+                  groupId={activeGroupId ?? worktreeId}
+                  prompt={browserAnnotationsPrompt}
+                  includePageDetails={includePageDetails}
+                  onIncludePageDetailsChange={handleIncludePageDetailsChange}
+                  onPromptDelivered={handleBrowserAnnotationsSentToAgent}
+                  onPromptHandedOff={handleBrowserAnnotationsHandedOff}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -335,7 +341,11 @@ export function BrowserPageAnnotationTray({
                           {annotation.comment}
                         </div>
                         <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <span>{annotation.intent}</span>
+                          <span>
+                            {annotation.author
+                              ? annotation.author + ' · ' + annotation.intent
+                              : annotation.intent}
+                          </span>
                           {annotation.imagePaths?.length ? (
                             <span className="flex items-center gap-0.5">
                               <ImageIcon className="size-3" />

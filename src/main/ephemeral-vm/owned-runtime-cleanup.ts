@@ -1,3 +1,12 @@
+import {
+  WorkbenchRepoRemoval,
+  findConfirmedRepoRegistration,
+  type ConfirmedRepoRegistration
+} from '../../shared/workbench/repo-removal'
+import {
+  getSshTargetIdForExecutionHost,
+  toRuntimeExecutionHostId
+} from '../../shared/execution-host/execution-host'
 import type { Store } from '../persistence/loading-store/store'
 import {
   listEphemeralVmRuntimes,
@@ -19,12 +28,32 @@ import { isEphemeralVmProvisionLive } from './runtime-provisioning-persistence'
 export async function cleanupOwnedEphemeralVmRuntime(
   store: Store,
   userDataPath: string,
-  runtimeId: string
+  runtimeId: string,
+  expectedRegistration?: ConfirmedRepoRegistration
 ): Promise<EphemeralVmRuntimeRecord> {
   const runtime = listEphemeralVmRuntimes(userDataPath).find((entry) => entry.id === runtimeId)
   if (!runtime) {
     throw new Error(`Unknown ephemeral VM runtime: ${runtimeId}`)
   }
+  const expected = expectedRegistration
+    ? WorkbenchRepoRemoval.parse(expectedRegistration)
+    : undefined
+  const assertRegistration = (): void => {
+    if (!expected) return
+    const currentRuntime = listEphemeralVmRuntimes(userDataPath).find(
+      (entry) => entry.id === runtimeId
+    )
+    const matchesHost =
+      currentRuntime &&
+      ((currentRuntime.sshTargetId !== undefined &&
+        currentRuntime.sshTargetId === getSshTargetIdForExecutionHost(expected.hostId)) ||
+        (currentRuntime.runtimeEnvironmentId !== undefined &&
+          toRuntimeExecutionHostId(currentRuntime.runtimeEnvironmentId) === expected.hostId))
+    if (!matchesHost || !findConfirmedRepoRegistration(store.getRepos(), expected)) {
+      throw new Error('The project registration changed. Refresh the project list and try again.')
+    }
+  }
+  assertRegistration()
   if (runtime.status === 'provisioning' && isEphemeralVmProvisionLive(runtime.id)) {
     // Why: don't mark a create in flight as cleanup_failed; its own outcome settles the row.
     throw new Error(`Ephemeral VM runtime is still provisioning: ${runtime.id}`)
@@ -53,10 +82,12 @@ export async function cleanupOwnedEphemeralVmRuntime(
       userDataPath,
       repoPath: resolved.repoPath,
       recipe: resolved.recipe,
-      runtimeId: runtime.id
+      runtimeId: runtime.id,
+      beforeCleanup: assertRegistration
     })
   }
   if (result.ok) {
+    assertRegistration()
     try {
       await releaseEphemeralVmRuntimeEnvironments(userDataPath, runtime, (environmentId) => {
         void retireRemovedRuntimeEnvironment(

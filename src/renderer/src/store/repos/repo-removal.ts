@@ -119,7 +119,16 @@ export function createRepoRemovalActions(
           get(),
           ownerRepo,
           ownerHostId,
-          getKnownRepoWorktreeIds(get(), projectId, ownerHostId)
+          getKnownRepoWorktreeIds(get(), projectId, ownerHostId),
+          assertSelectedRegistration,
+          expected
+            ? {
+                repoId: projectId,
+                hostId: ownerHostId,
+                path: expected.path,
+                addedAt: expected.addedAt
+              }
+            : undefined
         )
         const vmServerDestroyed = vmDestroy !== false && (await vmDestroy)
         // Why: derive the target from the owner row's host so an SSH host removal never routes repo.rm to the focused runtime.

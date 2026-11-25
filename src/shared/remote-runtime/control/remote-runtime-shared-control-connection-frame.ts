@@ -21,6 +21,7 @@ export function handleRuntimeControlFrame(args: {
   getHandshake: () => PairedE2EEClientHandshake | null
   environmentId?: string
   deviceToken: string
+  teamLink?: true
   pendingRequests: Map<string, SharedControlPendingRequest<unknown>>
   subscriptions: Map<string, SharedControlLogicalSubscription<unknown>>
   retiredRequestIds: SharedControlRetiredRequestIds
@@ -56,7 +57,7 @@ export function handleRuntimeControlFrame(args: {
     sendAuth: (handshake) =>
       void sendRemoteRuntimeTokenAuth({
         handshake,
-        deviceToken: args.deviceToken,
+        credential: { kind: 'token', deviceToken: args.deviceToken, teamLink: args.teamLink },
         clientCapabilities: args.clientCapabilities,
         stillAwaiting: () =>
           args.getHandshake() === handshake &&

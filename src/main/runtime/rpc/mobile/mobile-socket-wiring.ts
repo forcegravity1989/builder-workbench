@@ -162,6 +162,10 @@ export class MobileSocketWiring {
     return this.channels.size
   }
 
+  isDeviceConnected(deviceId: string): boolean {
+    return this.hasAuthenticatedSocket(deviceId)
+  }
+
   get connectionCount(): number {
     return this.connectionIds.size
   }
@@ -222,7 +226,7 @@ export class MobileSocketWiring {
             : { transport: 'direct' },
         requireV2: metadata.transport === 'relay',
         outboundMemoryBudget: this.outboundMemoryBudget,
-        resolveAuthenticatedDevice: (token) => {
+        resolveAuthenticatedDevice: (token, caller) => {
           const device = this.deviceRegistry.validateToken(token)
           if (!device) {
             return null
@@ -231,7 +235,21 @@ export class MobileSocketWiring {
           if (metadata.transport === 'relay' && metadata.relayDeviceId !== device.deviceId) {
             return null
           }
-          return toAuthenticatedDevice(device)
+          // Why: a shared team link authenticates with one token, but the member who used it is the
+          // identity the access log, grants and annotations must show.
+          const effective = caller
+            ? this.deviceRegistry.resolveMemberDevice(device, caller)
+            : device
+          return effective.deviceId === device.deviceId
+            ? toAuthenticatedDevice(device)
+            : {
+                ...toAuthenticatedDevice(effective),
+                deviceToken: token,
+                teamLinkPrincipal: {
+                  deviceId: device.deviceId,
+                  credentialRevision: device.credentialRevision ?? 0
+                }
+              }
         },
         resolveAuthenticatedDeviceKey: (deviceId) => {
           const lookup = this.deviceRegistry.lookupDeviceKey(deviceId)
@@ -270,6 +288,9 @@ export class MobileSocketWiring {
           }
           this.authenticatedSockets.set(ws, socket)
           transport.setClientId(ws, device.deviceId)
+          if (device.teamLinkPrincipal) {
+            this.deviceRegistry.updateLastSeenDeferred(device.teamLinkPrincipal.deviceId)
+          }
           // Do not delay e2ee_authenticated for the secure-file rewrite.
           this.deviceRegistry.updateLastSeenDeferred(
             device.deviceId,

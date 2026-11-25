@@ -27,7 +27,10 @@ export async function exchangeRemotePairingTicket(args: {
   send?: typeof sendRemoteRuntimeRequestOnSocket
   timeoutMs?: number
 }): Promise<string> {
-  if (!args.hostCapabilities?.includes(PAIRING_TICKET_EXCHANGE_RUNTIME_CAPABILITY)) {
+  if (
+    args.offer.accessMode === 'team-read' ||
+    !args.hostCapabilities?.includes(PAIRING_TICKET_EXCHANGE_RUNTIME_CAPABILITY)
+  ) {
     return args.pairingCode
   }
   const deviceToken = randomHexToken()

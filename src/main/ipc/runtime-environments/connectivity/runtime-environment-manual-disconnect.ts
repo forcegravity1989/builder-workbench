@@ -1,3 +1,4 @@
+import { readEnvironmentStoreRecords } from '../../../../shared/remote-runtime/host-store/runtime-environment-registry'
 import {
   requestDesktopBrowserBridgeReconcile,
   resetDesktopBrowserBridgeEnvironment
@@ -9,6 +10,32 @@ export const RUNTIME_MANUALLY_DISCONNECTED_MESSAGE = 'Runtime environment is man
 const manualDisconnectReasons = new Map<string, string>()
 /** Environment id → how many times the user has disconnected it; a later reconnect keeps it. */
 const manualDisconnects = new Map<string, number>()
+
+const launchHoldsByRegistry = new Map<string, Promise<void>>()
+
+/** Restore persisted holds before exposing connection handlers or running the first status probe. */
+export function hydrateRuntimeEnvironmentManualDisconnects(userDataPath: string): Promise<void> {
+  const pending = launchHoldsByRegistry.get(userDataPath)
+  if (pending) {
+    return pending
+  }
+  const load = readEnvironmentStoreRecords(userDataPath)
+    .then(({ environments }) => {
+      for (const environment of environments) {
+        if (
+          environment.reconnectOnLaunch === false &&
+          !manualDisconnectReasons.has(environment.id)
+        ) {
+          markRuntimeEnvironmentManuallyDisconnected(environment.id)
+        }
+      }
+    })
+    .catch((error: unknown) => {
+      console.warn('[runtime-environments] failed to read saved reconnect preferences:', error)
+    })
+  launchHoldsByRegistry.set(userDataPath, load)
+  return load
+}
 
 export function markRuntimeEnvironmentManuallyDisconnected(
   environmentId: string,

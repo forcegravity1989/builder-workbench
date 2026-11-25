@@ -29,6 +29,7 @@ import { connectedHostCountLabel, moreSshHostsLabel } from './ssh-status-segment
 import { SshHostFindPopover } from './SshHostFindPopover'
 import { splitSshStatusMenuRows } from './ssh-status-menu-rows'
 import { SshTargetStatusRow } from './SshTargetStatusRow'
+import { TeamHostRefreshMenuItem } from '../../../workbench/TeamHostRefreshMenuItem'
 import { syncSshConfigTargetsPassively } from '../../../runtime/hosts/ssh/ssh-config-passive-sync'
 import { connectRuntimeHostAndReloadProjects } from './runtime-environment-explicit-connect'
 import {
@@ -119,13 +120,22 @@ export function SshStatusSegment({
         snapshot: statusEntry?.snapshot,
         status: statusEntry?.status ?? null,
         active: settings?.activeRuntimeEnvironmentId === environment.id,
-        remoteControl: statusEntry?.remoteControl ?? statusEntry?.status?.remoteControl ?? null
+        remoteControl: statusEntry?.remoteControl ?? statusEntry?.status?.remoteControl ?? null,
+        heldDisconnected: environment.reconnectOnLaunch === false
       }
     })
-  const runtimeHostRows = runtimeHosts.map((host) => ({
-    ...host,
-    state: runtimeHostConnectionStateForEntry(runtimeStatusByEnvironmentId.get(host.id))
-  }))
+  const runtimeHostRows = runtimeHosts.map((host) => {
+    const entry = runtimeStatusByEnvironmentId.get(host.id)
+    const notAttempted =
+      host.heldDisconnected &&
+      !entry?.status &&
+      entry?.snapshot?.transport !== 'connecting' &&
+      entry?.snapshot?.transport !== 'ready'
+    return {
+      ...host,
+      state: notAttempted ? ('disconnected' as const) : runtimeHostConnectionStateForEntry(entry)
+    }
+  })
   // Host health is independent of active runtime selection; available remote servers remain online.
   const connectedRuntimeHosts = runtimeHostRows.filter((host) =>
     isConnectedRuntimeHostState(host.state)
@@ -319,6 +329,7 @@ export function SshStatusSegment({
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuSeparator />
+        <TeamHostRefreshMenuItem />
         <DropdownMenuItem
           onSelect={() => {
             recordFeatureInteraction('ssh')

@@ -15,7 +15,7 @@ export function mintTokenDevice(
   scope: DeviceScope,
   pairingReach: RuntimePairingReach,
   grants: readonly RuntimeDeviceGrant[],
-  { offerTtlMs, createdByDeviceId }: PendingOfferOptions = {}
+  { offerTtlMs, createdByDeviceId, accessMode, teamBinding, avatar }: PendingOfferOptions = {}
 ): TokenDeviceEntry {
   const validatedGrants = validGrants(grants, scope)
   const pairedAt = Date.now()
@@ -26,7 +26,10 @@ export function mintTokenDevice(
     pairedAt,
     lastSeenAt: 0,
     // Every new offer can be exchanged for a client-held credential; legacy clients ignore this.
-    ticket: true,
+    ...(accessMode === 'team-read' ? {} : { ticket: true }),
+    ...(accessMode ? { accessMode } : {}),
+    ...(teamBinding ? { teamBinding } : {}),
+    ...(avatar ? { avatar } : {}),
     pairingReach,
     ...(validatedGrants ? { grants: validatedGrants } : {}),
     ...(offerTtlMs !== undefined ? { offerExpiresAt: pairedAt + offerTtlMs } : {}),

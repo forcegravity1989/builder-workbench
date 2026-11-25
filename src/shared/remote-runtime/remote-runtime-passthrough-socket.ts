@@ -128,7 +128,7 @@ export function openRemoteRuntimePassthroughSocket(
         state = 'awaiting_authenticated'
         void sendRemoteRuntimeTokenAuth({
           handshake,
-          deviceToken: connection.credential.deviceToken,
+          credential: connection.credential,
           clientCapabilities,
           stillAwaiting: () => state === 'awaiting_authenticated',
           send: (authFrame) => ws.send(authFrame),

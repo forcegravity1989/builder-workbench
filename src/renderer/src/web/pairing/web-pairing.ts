@@ -4,7 +4,11 @@ import {
 } from '../../../../shared/remote-runtime/host-status/runtime-host-descriptor'
 import { normalizePairingBase64 } from '../../../../shared/remote-runtime/pairing/mobile-pairing-base64'
 import { PAIRING_INPUT_MAX_CHARACTERS } from '../../../../shared/remote-runtime/pairing/mobile-pairing-protocol-limits'
-import type { DeviceScope } from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import type {
+  DeviceScope,
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import { classifyRuntimeHostRePair } from '../../../../shared/remote-runtime/host-status/runtime-host-pairing-identity'
 import type { StoredWebRuntimeEnvironment } from './web-runtime-environment'
 
@@ -24,6 +28,8 @@ export type WebPairingOffer = {
   publicKeyB64: string
   pairedDeviceId?: string
   scope?: DeviceScope
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
   hostDescriptor?: RuntimeHostDescriptor
 }
 
@@ -148,6 +154,19 @@ function decodePairingPayload(base64url: string): WebPairingOffer | null {
     return null
   }
   const scope = parseWebPairingScope(parsed.scope)
+  const accessMode =
+    parsed.accessMode === 'team-read' || parsed.accessMode === 'full'
+      ? parsed.accessMode
+      : undefined
+  const teamBinding = parsed.teamBinding
+  const validTeamBinding =
+    accessMode === 'team-read' &&
+    typeof teamBinding?.teamGroupId === 'string' &&
+    teamBinding.teamGroupId.trim() &&
+    typeof teamBinding?.memberId === 'string' &&
+    teamBinding.memberId.trim()
+      ? { teamGroupId: teamBinding.teamGroupId.trim(), memberId: teamBinding.memberId.trim() }
+      : undefined
   const pairedDeviceId =
     typeof parsed.pairedDeviceId === 'string' && parsed.pairedDeviceId.length > 0
       ? parsed.pairedDeviceId
@@ -161,6 +180,8 @@ function decodePairingPayload(base64url: string): WebPairingOffer | null {
     publicKeyB64: parsed.publicKeyB64,
     ...(pairedDeviceId ? { pairedDeviceId } : {}),
     ...(scope ? { scope } : {}),
+    ...(accessMode ? { accessMode } : {}),
+    ...(validTeamBinding ? { teamBinding: validTeamBinding } : {}),
     ...(hostDescriptor ? { hostDescriptor } : {})
   }
 }

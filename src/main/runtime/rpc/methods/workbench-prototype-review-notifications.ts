@@ -1,4 +1,5 @@
 import { hostname, userInfo } from 'node:os'
+import { getRemoteRuntimeCallerIdentity } from '../../../../shared/remote-runtime-caller-identity'
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
   PrototypeReviewDismissSchema,
@@ -15,7 +16,11 @@ export const WORKBENCH_PROTOTYPE_REVIEW_METHODS = [
     name: 'workbench.prototypeReview.identity',
     permission: 'workspace',
     params: null,
-    handler: () => ({ sender: `${userInfo().username}@${hostname()}`.slice(0, 100) })
+    handler: () => ({
+      sender: (
+        getRemoteRuntimeCallerIdentity()?.name ?? `${userInfo().username}@${hostname()}`
+      ).slice(0, 100)
+    })
   }),
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.receive',

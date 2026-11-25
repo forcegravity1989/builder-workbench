@@ -1,3 +1,4 @@
+import { PrototypeReviewInviteButton } from '@/workbench/pr-review-notifications/PrototypeReviewInviteButton'
 import { issueBrowserGuestNavigation } from '../host-guest/metadata/browser-guest-metadata-cache'
 import { useLocalBrowserPageSiteDisplaySource } from './toolbar/browser-page-site-display-source'
 import { applyBrowserViewportPreset } from './viewport/browser-viewport-preset-apply'
@@ -248,6 +249,14 @@ export function BrowserPageToolbar({
         canShowDiscoveryHint: isActive
       }}
       notes={notes}
+      shareControl={
+        shareableArtifactFile ? (
+          <PrototypeReviewInviteButton
+            worktreeId={worktreeId}
+            filePath={shareableArtifactFile.filePath}
+          />
+        ) : null
+      }
       overflowMenu={(overflow) => (
         <BrowserToolbarMenu
           extensionDiscoveryTarget={extensionDiscoveryTarget}

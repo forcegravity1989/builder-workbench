@@ -6,8 +6,18 @@ import {
   verifyDeviceProof
 } from '../../../../../shared/remote-runtime/pairing/device-key-proof'
 
+import {
+  parseRemoteRuntimeCallerIdentity,
+  type RemoteRuntimeCallerIdentity
+} from '../../../../../shared/remote-runtime-caller-identity'
+
 export type ClassifiedE2EEAuth =
-  | { kind: 'token'; deviceToken: string; clientCapabilities?: unknown }
+  | {
+      kind: 'token'
+      deviceToken: string
+      clientCapabilities?: unknown
+      callerIdentity?: RemoteRuntimeCallerIdentity | null
+    }
   | { kind: 'device-key'; deviceId: string; deviceProofB64: string; clientCapabilities?: unknown }
   | { kind: 'invalid' }
 
@@ -45,7 +55,8 @@ export function classifyE2EEAuth(
       ? {
           kind: 'token',
           deviceToken: auth.deviceToken,
-          clientCapabilities: auth.clientCapabilities
+          clientCapabilities: auth.clientCapabilities,
+          callerIdentity: parseRemoteRuntimeCallerIdentity(auth.callerIdentity)
         }
       : { kind: 'invalid' }
   }
@@ -55,13 +66,18 @@ export function classifyE2EEAuth(
   const keys = Object.keys(auth).sort()
   // Why: runtime clients (desktop, CLI, web) carry capabilities on v2 token auth as on legacy.
   const tokenKeys = keys
-    .filter((key) => !(v2TokenCapabilities && key === 'clientCapabilities'))
+    .filter(
+      (key) => !(v2TokenCapabilities && (key === 'clientCapabilities' || key === 'callerIdentity'))
+    )
     .join(',')
   if (tokenKeys === V2_TOKEN_KEYS && typeof auth.deviceToken === 'string' && auth.deviceToken) {
     return {
       kind: 'token',
       deviceToken: auth.deviceToken,
-      ...('clientCapabilities' in auth ? { clientCapabilities: auth.clientCapabilities } : {})
+      ...('clientCapabilities' in auth ? { clientCapabilities: auth.clientCapabilities } : {}),
+      ...('callerIdentity' in auth
+        ? { callerIdentity: parseRemoteRuntimeCallerIdentity(auth.callerIdentity) }
+        : {})
     }
   }
   const rest = keys.filter((key) => key !== 'type' && key !== 'v' && key !== 'transcriptHashB64')
@@ -101,7 +117,10 @@ export function authenticateMobileE2EE<TDevice extends { deviceToken?: string }>
   plaintext: string
   v2Session: DesktopMobileE2EEV2Session | null
   v2TokenCapabilities?: boolean
-  resolveDevice: (token: string) => TDevice | null
+  resolveDevice: (
+    token: string,
+    callerIdentity: RemoteRuntimeCallerIdentity | null
+  ) => TDevice | null
   // Absent on a host that does not accept device keys: key auth is then bad_auth, as before.
   resolveDeviceKey?: (deviceId: string) => DeviceKeyResolution<TDevice>
 }):
@@ -109,7 +128,7 @@ export function authenticateMobileE2EE<TDevice extends { deviceToken?: string }>
   | { ok: false; code: MobileE2EEAuthFailureCode; deviceId?: string } {
   const auth = classifyE2EEAuth(args.plaintext, args.v2Session, args.v2TokenCapabilities)
   if (auth.kind === 'token') {
-    const device = args.resolveDevice(auth.deviceToken)
+    const device = args.resolveDevice(auth.deviceToken, auth.callerIdentity ?? null)
     // Why: a keyed row has no token, so presenting one can never match it.
     return device?.deviceToken === auth.deviceToken
       ? { ok: true, device, clientCapabilities: auth.clientCapabilities }

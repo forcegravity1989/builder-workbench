@@ -72,10 +72,9 @@ export async function subscribeRemoteRuntimeTransport<TResult>(
     const frameRouter = new RemoteRuntimeSubscriptionFrameRouter({
       handshake,
       sealAuth: () =>
-        handshake.sealAuth(
-          { kind: 'token', deviceToken: connection.credential.deviceToken },
-          { clientCapabilities: remoteRuntimeClientCapabilities(options?.clientCapabilities) }
-        ),
+        handshake.sealAuth(connection.credential, {
+          clientCapabilities: remoteRuntimeClientCapabilities(options?.clientCapabilities)
+        }),
       isSettled: () => terminalFailure || closing,
       serializedRequest,
       requestId,

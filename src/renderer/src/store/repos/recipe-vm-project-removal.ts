@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../../../shared/workbench/repo-removal'
 import {
   isRuntimeOwnedSshTargetId,
   LOCAL_EXECUTION_HOST_ID,
@@ -38,20 +39,31 @@ export function destroyRecipeVmBeforeProjectRemoval(
   state: Pick<AppState, 'runtimeEnvironments' | 'worktreesByRepo'>,
   ownerRepo: Pick<Repo, 'id' | 'connectionId'>,
   ownerHostId: ExecutionHostId,
-  workspaceIds: string[]
+  workspaceIds: string[],
+  assertSelectedRegistration: () => void,
+  expectedRegistration?: ConfirmedRepoRegistration
 ): Promise<boolean> | false {
   const targets = getRecipeVmRemovalTargets(state, ownerRepo, ownerHostId)
   if (!targets) {
     return false
   }
-  return destroyRecipeVm(ownerHostId, workspaceIds, targets.knownServerTarget, targets.directTarget)
+  return destroyRecipeVm(
+    ownerHostId,
+    workspaceIds,
+    targets.knownServerTarget,
+    targets.directTarget,
+    assertSelectedRegistration,
+    expectedRegistration
+  )
 }
 
 async function destroyRecipeVm(
   ownerHostId: ExecutionHostId,
   workspaceIds: string[],
   knownServerTarget: string | null,
-  directTarget: string | null
+  directTarget: string | null,
+  assertSelectedRegistration: () => void,
+  expectedRegistration?: ConfirmedRepoRegistration
 ): Promise<boolean> {
   const serverTarget =
     knownServerTarget ??
@@ -59,6 +71,7 @@ async function destroyRecipeVm(
     (ownerHostId.startsWith('runtime:')
       ? getRecipeVmSshTargetForHost(await window.api.runtimeEnvironments.list(), ownerHostId)
       : null)
+  assertSelectedRegistration()
   const targetId = serverTarget ?? directTarget
   if (!targetId) {
     return false
@@ -69,7 +82,9 @@ async function destroyRecipeVm(
       workspaceId,
       executionHostId: ownerHostId
     })),
-    runtimeOwnedSshTargetIds: [targetId]
+    runtimeOwnedSshTargetIds: [targetId],
+    beforeCleanup: assertSelectedRegistration,
+    expectedRegistration
   })
   if (cleanup.retainedSshTargetIds.includes(targetId)) {
     throw new Error('The cloud VM could not be destroyed. Retry cleanup before removing it.')

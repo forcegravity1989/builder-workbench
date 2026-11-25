@@ -1,3 +1,4 @@
+import { remoteRuntimeAuthCallerFields } from '../../remote-runtime-caller-identity'
 import { encodeDeviceProofMessage } from '../pairing/device-key-proof'
 import type { MobileE2EETransport } from './mobile-e2ee-v2-contract'
 import type { PairedE2EEKeyPair, PairedE2EEPrimitives } from './paired-e2ee-primitives'
@@ -6,7 +7,7 @@ import { PairedE2EEV2ClientSession } from './paired-e2ee-v2-client-session'
 export type PairedE2EEFraming = 'legacy' | 'v2'
 
 // Device-key/ticket credentials signed over the v2 transcript join this union.
-export type PairedE2EEAuthCredential = { kind: 'token'; deviceToken: string }
+export type PairedE2EEAuthCredential = { kind: 'token'; deviceToken: string; teamLink?: true }
 
 // Sign the v2 auth transcript proof asynchronously so non-extractable WebCrypto keys can participate.
 export type PairedE2EEDeviceKeyCredential = {
@@ -135,6 +136,7 @@ function createLegacyHandshake(args: PairedE2EEClientHandshakeArgs): PairedE2EEC
         serializeJson({
           type: 'e2ee_auth',
           deviceToken: credential.deviceToken,
+          ...(credential.teamLink ? remoteRuntimeAuthCallerFields() : {}),
           ...(options?.clientCapabilities ? { clientCapabilities: options.clientCapabilities } : {})
         })
       )
@@ -197,6 +199,9 @@ function createV2Handshake(args: PairedE2EEClientHandshakeArgs): PairedE2EEClien
         return session.sealText(
           serializeJson({
             ...pairedE2EEV2TokenAuth(transcriptHashB64, credential.deviceToken),
+            ...(credential.teamLink && args.v2TokenCapabilities
+              ? remoteRuntimeAuthCallerFields()
+              : {}),
             ...(capabilities ? { clientCapabilities: capabilities } : {})
           })
         )

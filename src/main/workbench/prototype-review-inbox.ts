@@ -5,12 +5,13 @@ import { getCanonicalUserDataPath } from '../persistence/loading-store/user-data
 import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
 import {
   PrototypeReviewIncomingSchema,
+  prototypeReviewEventId,
   type PrototypeReviewIncomingRequest
 } from '../../shared/workbench/prototype-review-request'
 
 const InboxSchema = z.array(PrototypeReviewIncomingSchema)
 let writes: Promise<unknown> = Promise.resolve()
-const inboxPath = () => join(getCanonicalUserDataPath(), 'workbench-prototype-review-inbox.json')
+const inboxPath = () => join(getCanonicalUserDataPath(), 'workbench-prototype-review-inbox-v2.json')
 
 async function readStoredInbox(): Promise<PrototypeReviewIncomingRequest[]> {
   try {
@@ -26,7 +27,7 @@ async function readStoredInbox(): Promise<PrototypeReviewIncomingRequest[]> {
 export async function readPrototypeReviewInbox(): Promise<PrototypeReviewIncomingRequest[]> {
   const latest = new Map<string, PrototypeReviewIncomingRequest>()
   for (const item of await readStoredInbox()) {
-    const key = `${item.cycleId}:${item.page.sourceEnvironmentId}:${item.page.browserPageId}`
+    const key = prototypeReviewEventId(item)
     const previous = latest.get(key)
     if (!previous || previous.receivedAt < item.receivedAt) {
       latest.set(key, item)
@@ -44,9 +45,7 @@ export function dismissPrototypeReviewRequest(
     .then(async () => {
       const items = await readStoredInbox()
       const remaining = items.filter(
-        (item) =>
-          `${item.cycleId}:${item.page.sourceEnvironmentId}:${item.page.browserPageId}` !==
-            eventId || item.receivedAt > seenReceivedAt
+        (item) => prototypeReviewEventId(item) !== eventId || item.receivedAt > seenReceivedAt
       )
       if (remaining.length === items.length) {
         return false
@@ -66,11 +65,9 @@ export function receivePrototypeReviewRequest(
     .catch(() => undefined)
     .then(async () => {
       const items = await readStoredInbox()
-      const key = `${request.cycleId}:${request.page.sourceEnvironmentId}:${request.page.browserPageId}`
+      const key = prototypeReviewEventId(request)
       const index = items.findIndex(
-        (item) =>
-          `${item.cycleId}:${item.page.sourceEnvironmentId}:${item.page.browserPageId}` === key &&
-          item.senderId === request.senderId
+        (item) => prototypeReviewEventId(item) === key && item.senderId === request.senderId
       )
       const previous = items[index]
       if (previous?.senderId === request.senderId) {

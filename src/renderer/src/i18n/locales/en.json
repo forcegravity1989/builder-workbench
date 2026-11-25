@@ -10088,7 +10088,16 @@
           "noActiveLinks": "No active links.",
           "createdAt": "Created {{value0}}",
           "revoke": "Revoke",
-          "legacyEncryption": "Last used with older encryption. Update Orca where this link is used."
+          "legacyEncryption": "Last used with older encryption. Update Orca where this link is used.",
+          "accessReadOnly": "Read-only",
+          "fullAccessNeedsConnection": "Full access can only be given to a connected member.",
+          "connected": "Connected",
+          "title": "Shared links",
+          "viewMembers": "Members",
+          "viewLinks": "Links",
+          "copyLink": "Copy link for {{value0}}",
+          "copyLinkTooltip": "Copy link",
+          "noMembers": "No one has connected yet."
         },
         "RuntimeEnvironmentsPane": {
           "af53761f31": "Cancel",
@@ -10193,7 +10202,10 @@
           "accessLinkHelp": "Paste this into Add server on the other Orca.",
           "staleAddressCreate": "The connection address changed. Create a new link for {{address}}.",
           "linkExpired": "Link expired",
-          "unusedLinkExpires": "Unused link expires at {{time}}"
+          "unusedLinkExpires": "Unused link expires at {{time}}",
+          "readOnlyRestored": "Read-only access restored.",
+          "accessModeChangeFailed": "Failed to change access.",
+          "linkNotRecorded": "This link was created before its address was recorded. Generate a new link to copy it."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",

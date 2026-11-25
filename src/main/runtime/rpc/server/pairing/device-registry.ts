@@ -1,5 +1,10 @@
 // Per-device revocable tokens isolate compromises; persist with hardened metadata-style permissions.
-import type { DeviceScope } from '../../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import type {
+  DeviceScope,
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import type { RemoteRuntimeCallerIdentity } from '../../../../../shared/remote-runtime-caller-identity'
 import { mintTokenDevice } from './device-credential'
 import { planDeviceKeyFork } from './device-key-fork'
 import {
@@ -30,6 +35,7 @@ import { sameOrcaAccount } from './paired-device-typist'
 import {
   mobilePairingConnectionModeOf,
   findPrincipalDevice,
+  effectiveRuntimeAccessMode,
   findTokenDevice,
   type AuthenticatedPrincipalBinding,
   lookupDeviceKeyRow,
@@ -87,7 +93,8 @@ export class DeviceRegistry extends DeviceRegistrySightings {
       scope,
       options.offerTtlMs,
       grants,
-      options.createdByDeviceId
+      options.createdByDeviceId,
+      options
     )
     if (existing) {
       // Widen advertised reach, never narrow it and break an off-host link already handed out.
@@ -116,7 +123,9 @@ export class DeviceRegistry extends DeviceRegistrySightings {
     options: PendingOfferOptions = {}
   ): TokenDeviceEntry {
     // Authentication marks seen before child sync, so pending runtime offers cannot have children.
-    const pending = new Set<DeviceEntry>(this.listPendingDevices(scope))
+    const pending = new Set<DeviceEntry>(
+      this.listPendingDevices(scope).filter((row) => sameTeamOffer(row, options))
+    )
     const retained = this.devices.filter((d) => !pending.has(d))
     return this.createAndPersistDevice(retained, name, scope, pairingReach, grants, options)
   }
@@ -160,16 +169,103 @@ export class DeviceRegistry extends DeviceRegistrySightings {
     scope: DeviceScope = 'mobile',
     offerTtlMs?: number,
     grants: readonly RuntimeDeviceGrant[] = [],
-    createdByDeviceId?: string
+    createdByDeviceId?: string,
+    options: PendingOfferOptions = {}
   ): TokenDeviceEntry | null {
     this.adoptExternalEdits({ fresh: true })
-    const offers = this.listPendingDevices(scope)
+    const offers = this.listPendingDevices(scope).filter((row) => sameTeamOffer(row, options))
     return reusablePairingOffer(
       offers,
       validGrants(grants, scope) ?? [],
       offerTtlMs,
       createdByDeviceId
     )
+  }
+
+  setAccessMode(
+    deviceId: string,
+    accessMode: RuntimeAccessMode,
+    teamBinding?: RuntimeTeamBinding
+  ): boolean {
+    return this.replaceRow(deviceId, (row) =>
+      row.scope === 'runtime'
+        ? { ...row, accessMode, ...(teamBinding ? { teamBinding } : {}) }
+        : row
+    )
+  }
+
+  setPairingEndpoint(deviceId: string, pairingEndpoint: string): boolean {
+    return this.replaceRow(deviceId, (row) =>
+      row.pairingEndpoint === pairingEndpoint ? row : { ...row, pairingEndpoint }
+    )
+  }
+
+  getAccessMode(deviceId: string): RuntimeAccessMode | null {
+    const row = this.getDevice(deviceId)
+    if (!row) {
+      return null
+    }
+    const parent =
+      row.scope === 'mobile' && row.parentDeviceId ? this.getDevice(row.parentDeviceId) : null
+    return parent ? effectiveRuntimeAccessMode(parent) : effectiveRuntimeAccessMode(row)
+  }
+
+  resolveMemberDevice(parent: DeviceEntry, identity: RemoteRuntimeCallerIdentity): DeviceEntry {
+    if (
+      parent.scope !== 'runtime' ||
+      parent.parentDeviceId ||
+      !parent.teamBinding ||
+      effectiveRuntimeAccessMode(parent) !== 'team-read'
+    ) {
+      return parent
+    }
+    const teamGroupId = parent.teamBinding.teamGroupId
+    const memberId = identity.memberId.toLowerCase()
+    try {
+      this.adoptExternalEdits({ fresh: true })
+      const existing = this.devices.find(
+        (row) =>
+          row.scope === 'runtime' &&
+          row.parentDeviceId !== undefined &&
+          row.teamBinding?.teamGroupId === teamGroupId &&
+          row.teamBinding.memberId.toLowerCase() === memberId
+      )
+      if (existing) {
+        const updated = {
+          ...existing,
+          parentDeviceId: parent.deviceId,
+          name: identity.name,
+          ...(identity.avatar ? { avatar: identity.avatar } : {})
+        }
+        if (
+          updated.name !== existing.name ||
+          updated.avatar !== existing.avatar ||
+          updated.parentDeviceId !== existing.parentDeviceId
+        ) {
+          this.replaceRow(existing.deviceId, () => updated)
+        }
+        return this.getDevice(updated.deviceId) ?? parent
+      }
+      if (this.devices.filter((row) => row.parentDeviceId === parent.deviceId).length >= 256) {
+        return parent
+      }
+      const entry = mintTokenDevice(
+        identity.name,
+        'runtime',
+        parent.pairingReach ?? 'network',
+        [],
+        {
+          accessMode: 'team-read',
+          teamBinding: { teamGroupId, memberId: identity.memberId },
+          avatar: identity.avatar
+        }
+      )
+      const member = { ...entry, parentDeviceId: parent.deviceId, lastSeenAt: Date.now() }
+      this.devices = this.save([...this.devices, member])
+      return this.getDevice(member.deviceId) ?? parent
+    } catch {
+      return parent
+    }
   }
 
   listPendingDevices(scope: DeviceScope): TokenDeviceEntry[] {
@@ -329,4 +425,12 @@ export class DeviceRegistry extends DeviceRegistrySightings {
     this.adoptExternalEdits()
     return findPrincipalDevice(this.devices, principal)
   }
+}
+
+function sameTeamOffer(row: DeviceEntry, options: PendingOfferOptions): boolean {
+  return (
+    effectiveRuntimeAccessMode(row) === (options.accessMode ?? 'full') &&
+    row.teamBinding?.teamGroupId === options.teamBinding?.teamGroupId &&
+    row.teamBinding?.memberId === options.teamBinding?.memberId
+  )
 }

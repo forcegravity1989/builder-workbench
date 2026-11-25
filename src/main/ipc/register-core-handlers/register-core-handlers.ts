@@ -33,6 +33,7 @@ import { registerMemoryHandlers } from '../memory'
 import { registerRateLimitHandlers } from '../rate-limits'
 import { registerRuntimeHandlers } from '../runtime'
 import { registerRuntimeHostHandlers } from './runtime-host-handler-registration'
+import { hydrateRuntimeEnvironmentManualDisconnects } from '../runtime-environments/connectivity/runtime-environment-manual-disconnect'
 import { registerEphemeralVmHandlers } from '../ephemeral-vm/ephemeral-vm'
 import { registerAiVaultHandlers } from '../ai-vault/ai-vault'
 import { registerAiVaultSearchHandlers } from '../ai-vault/ai-vault-search'
@@ -230,6 +231,7 @@ export async function registerCoreHandlers(
     registerFilesystemHandlers(store, commitMessageAgentEnv)
     registerFilesystemWatcherHandlers()
     registerRuntimeHandlers(runtime)
+    await hydrateRuntimeEnvironmentManualDisconnects(getRuntimeEnvironmentRegistryRoot())
     const hostsReady = registerRuntimeHostHandlers(store, lifecycleOptions.hostInitialization)
     registerWslMoveWiring(store, runtime)
     registerWslDriveProjectHandlers(store, runtime)

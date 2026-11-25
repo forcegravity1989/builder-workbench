@@ -51,6 +51,8 @@ export type AddEnvironmentArgs = {
   now?: number
   source?: RuntimeEnvironmentSource
   connectionDependency?: 'ssh-tunnel'
+  /** Applies only when adding a new record. Automatic replacements retain its current preference. */
+  reconnectOnLaunch?: boolean
   /** Recorded only when the code turns out to be for an already saved server. */
   runtimeId?: string
 }
@@ -107,7 +109,7 @@ function saveEnvironmentFromPairingCode(
   if (existing) {
     throw remoteServerPairingStoreError('nameTaken', { name: existing.name })
   }
-  const environment = createEnvironmentFromPairingOffer({
+  const environment: KnownRuntimeEnvironment = createEnvironmentFromPairingOffer({
     id: randomUUID(),
     name: args.name,
     now,
@@ -116,6 +118,9 @@ function saveEnvironmentFromPairingCode(
     ...(args.source ? { source: args.source } : {}),
     ...getPairingConnectionDependency(args.connectionDependency, offer)
   })
+  if (args.reconnectOnLaunch !== undefined) {
+    environment.reconnectOnLaunch = args.reconnectOnLaunch
+  }
   const next = {
     version: 1 as const,
     environments: [
@@ -151,13 +156,47 @@ export function removeEnvironment(userDataPath: string, selector: string): Known
   return environment
 }
 
+export function setEnvironmentReconnectOnLaunch(
+  userDataPath: string,
+  selector: string,
+  reconnectOnLaunch: boolean | undefined,
+  options?: { expectedPairingRevision?: number }
+): KnownRuntimeEnvironment | null {
+  const store = readPersistedEnvironmentStore(userDataPath)
+  const environment = resolveEnvironmentFromStore(store, selector)
+  if (
+    options?.expectedPairingRevision !== undefined &&
+    (environment.pairingRevision ?? environment.createdAt) !== options.expectedPairingRevision
+  ) {
+    return null
+  }
+  if (environment.reconnectOnLaunch === reconnectOnLaunch) {
+    return environment
+  }
+  const next: KnownRuntimeEnvironment = { ...environment, updatedAt: Date.now() }
+  if (reconnectOnLaunch === undefined) {
+    delete next.reconnectOnLaunch
+  } else {
+    next.reconnectOnLaunch = reconnectOnLaunch
+  }
+  writeEnvironmentStore(userDataPath, {
+    version: 1,
+    environments: store.environments.map((entry) => (entry.id === environment.id ? next : entry))
+  })
+  return next
+}
+
 export function updateEnvironmentFromPairingCode(
   userDataPath: string,
   selector: string,
-  args: { pairingCode: string; now?: number; runtimeId?: string }
+  args: { pairingCode: string; now?: number; runtimeId?: string; expectedPairingRevision?: number }
 ): KnownRuntimeEnvironment {
   const offer = parseRemotePairingCode(userDataPath, args.pairingCode)
   const current = resolveEnvironmentFromStore(readEnvironmentStore(userDataPath), selector)
+  if (args.expectedPairingRevision !== undefined &&
+      (current.pairingRevision ?? current.createdAt) !== args.expectedPairingRevision) {
+    throw new RuntimeEnvironmentStoreError('runtime_error', 'The saved pairing changed before it could be refreshed.')
+  }
   assertNoIndependentSshAccess(current)
   return replaceEnvironmentPairing(userDataPath, selector, offer, {
     now: args.now ?? Date.now(),
@@ -190,6 +229,7 @@ export function replaceEnvironmentPairing(
     createdAt: existing.createdAt,
     updatedAt: args.now,
     pairingRevision: Math.max(args.now, previousPairingRevision + 1),
+    reconnectOnLaunch: existing.reconnectOnLaunch,
     lastUsedAt: existing.lastUsedAt
   }
   writeEnvironmentStore(userDataPath, {

@@ -1,10 +1,60 @@
+import { z } from 'zod'
+import type {
+  RuntimeAccessMode,
+  RuntimeTeamBinding
+} from '../session-graph/runtime-session-contracts'
+
 export type RuntimeAccessGrant = {
   deviceId: string
   name: string
+  avatar?: string
   createdAt: number
   lastSeenAt: number | null
-  /** The link's last sign-in used the older E2EE framing; absent from older hosts. */
+  accessMode?: RuntimeAccessMode
+  teamBinding?: RuntimeTeamBinding
+  connected?: boolean
+  /** Set on a per-member record; names the shared team link the member connected through. */
+  parentDeviceId?: string
+  /** The link's address was recorded when it was created, so its pairing link can be copied again. */
+  canCopyLink?: boolean
   usesLegacyEncryption?: boolean
-  // Signed in with the link but never swapped it for its own credential (an older Orca).
   olderPairingMethod?: true
+}
+
+export type RuntimeAccessAuditResult = 'allowed' | 'denied' | 'error'
+
+export type RuntimeAccessAuditEntry = {
+  at: number
+  deviceId: string
+  deviceName?: string
+  accessMode: 'full' | 'team-read'
+  teamGroupId?: string
+  memberId?: string
+  method: string
+  result: RuntimeAccessAuditResult
+  requestId?: string
+  durationMs?: number
+  /** The RPC error code for a refused or failed request, to tell causes apart. */
+  errorCode?: string
+  /** The host's error text for a failed request, cut short; request parameters are never logged. */
+  errorMessage?: string
+}
+
+// Only public link metadata is retained by the renderer. Credentials stay in DeviceRegistry.
+export const RuntimePairingLinkReferenceSchema = z.object({
+  version: z.literal(1),
+  deviceId: z.string().min(1).max(128),
+  endpoint: z.string().min(1).max(4096),
+  publicKeyB64: z.string().min(1).max(128),
+  address: z.string().min(1).max(4096),
+  intent: z.enum(['another', 'local', 'custom']),
+  webClientAvailable: z.boolean()
+})
+
+export type RuntimePairingLinkReference = z.infer<typeof RuntimePairingLinkReferenceSchema>
+export type RuntimePairingLink = {
+  pairingUrl: string
+  webClientUrl: string | null
+  endpoint: string
+  deviceId: string
 }

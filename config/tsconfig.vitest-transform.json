@@ -7,7 +7,6 @@
     { "path": "../cloud/apps/push/tsconfig.json" },
     { "path": "../cloud/apps/relay-fence-broker/tsconfig.json" },
     { "path": "../cloud/apps/relay/tsconfig.json" },
-    { "path": "../cloud/packages/cloud-database/tsconfig.json" },
     { "path": "../cloud/packages/connector-contract/tsconfig.json" },
     { "path": "../cloud/packages/postgres-schema/tsconfig.json" },
     { "path": "../cloud/packages/push-contract/tsconfig.json" },

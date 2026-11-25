@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../../shared/workbench/repo-removal'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import type { Store } from '../../persistence/loading-store/store'
 import { listCredentialLikeEnvNames } from '../../../shared/remote-runtime/ephemeral-vm-recipes/ephemeral-vm-recipe-env'
@@ -140,8 +141,16 @@ export function registerEphemeralVmRuntimeHandlers(store: Store): void {
 
   ipcMain.handle(
     'ephemeralVm:cleanup',
-    async (_event, args: { runtimeId: string }): Promise<EphemeralVmRuntimeRecord> => {
-      return cleanupOwnedEphemeralVmRuntime(store, app.getPath('userData'), args.runtimeId)
+    async (
+      _event,
+      args: { runtimeId: string; expectedRegistration?: ConfirmedRepoRegistration }
+    ): Promise<EphemeralVmRuntimeRecord> => {
+      return cleanupOwnedEphemeralVmRuntime(
+        store,
+        app.getPath('userData'),
+        args.runtimeId,
+        args.expectedRegistration
+      )
     }
   )
 

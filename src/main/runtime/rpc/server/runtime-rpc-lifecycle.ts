@@ -18,6 +18,9 @@ import {
   writeWsFallbackPort
 } from '../transports/websocket/ws-fallback-port-store'
 import type { DeviceRegistry } from './pairing/device-registry'
+import { effectiveRuntimeAccessMode } from './pairing/device-entry'
+import { RuntimeAccessSocketTracker } from './runtime-access-socket-tracker'
+import type { AuthenticatedMobileSocket } from '../mobile/mobile-socket-wiring'
 import type { E2EEKeypair } from './pairing/e2ee-keypair'
 import { UnpairedDeviceAuthThrottle } from '../mobile/unpaired-device-auth-throttle'
 import { MobileSocketWiring } from '../mobile/mobile-socket-wiring'
@@ -44,6 +47,32 @@ import {
 } from '../../hosts/platform-probe/host-descriptor'
 
 export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
+  private readonly runtimeAccessSockets = new RuntimeAccessSocketTracker()
+
+  private recordTeamAccessConnection(
+    socket: AuthenticatedMobileSocket,
+    action: 'open' | 'close'
+  ): void {
+    const device = this.deviceRegistry?.getDevice(socket.device.deviceId)
+    if (device?.scope !== 'runtime') {
+      return
+    }
+    this.getRuntimeAccessAudit().record({
+      at: Date.now(),
+      deviceId: device.deviceId,
+      deviceName: device.name,
+      accessMode: effectiveRuntimeAccessMode(device),
+      ...(device.teamBinding
+        ? {
+            teamGroupId: device.teamBinding.teamGroupId,
+            memberId: device.teamBinding.memberId
+          }
+        : {}),
+      method: action === 'open' ? 'connection.open' : 'connection.close',
+      result: 'allowed'
+    })
+  }
+
   async start(): Promise<void> {
     if (this.activeTransports.length > 0) {
       return
@@ -287,6 +316,9 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
       },
       onReady: (socket) => {
         connectionLog.record('connected', socket)
+        if (this.runtimeAccessSockets.open(socket.device.deviceId, socket.connectionId)) {
+          this.recordTeamAccessConnection(socket, 'open')
+        }
         if (socket.transport.transport === 'direct') {
           this.authenticatedSourceRecorder.note(socket.transport.sourceClass)
         }
@@ -319,6 +351,9 @@ export class RuntimeRpcLifecycle extends RuntimeRpcWebSocketDispatch {
         this.binaryMessageRouter.deleteConnection(socket.connectionId)
         this.declaredDesktopClients.forget(socket.connectionId)
         connectionLog.record('disconnected', socket)
+        if (this.runtimeAccessSockets.close(socket.device.deviceId, socket.connectionId)) {
+          this.recordTeamAccessConnection(socket, 'close')
+        }
         if (!hasOtherConnections) {
           this.runtime.onClientDisconnected(socket.device.clientId)
         }

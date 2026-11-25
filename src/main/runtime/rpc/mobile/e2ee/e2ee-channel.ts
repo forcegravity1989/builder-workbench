@@ -31,12 +31,16 @@ import { createLegacyReplySenders } from './mobile-e2ee-legacy-reply-senders'
 import { RuntimeClientCapabilities } from '../../callers/runtime-client-capabilities'
 import type * as RpcBinary from '../../transports/rpc-binary-sender'
 import type { E2EEAuthenticatedDevice } from '../../server/mobile-e2ee-authenticated-device'
+import type { RemoteRuntimeCallerIdentity } from '../../../../../shared/remote-runtime-caller-identity'
 
 const MAX_CONSECUTIVE_DECRYPT_FAILURES = 5
 
 export type E2EEChannelOptions = {
   serverSecretKey: Uint8Array
-  resolveAuthenticatedDevice: (token: string) => E2EEAuthenticatedDevice | null
+  resolveAuthenticatedDevice: (
+    token: string,
+    caller: RemoteRuntimeCallerIdentity | null
+  ) => E2EEAuthenticatedDevice | null
   // Absent: key auth is refused as bad_auth, the same as before device keys existed.
   resolveAuthenticatedDeviceKey?: (deviceId: string) => DeviceKeyResolution<E2EEAuthenticatedDevice>
   onReady: (channel: E2EEChannel, device: E2EEAuthenticatedDevice) => void

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { defineWorkbenchMethod } from '../../../workbench/workbench-rpc-observability'
 import {
   PrototypeReviewAnnotationAddSchema,
@@ -16,42 +15,39 @@ export const WORKBENCH_PROTOTYPE_REVIEW_ANNOTATION_METHODS = [
     name: 'workbench.prototypeReview.annotations.list',
     permission: 'workspace',
     params: PrototypeReviewAnnotationListSchema,
-    handler: async ({ worktree, page, documentKey }, { runtime }) => {
-      // Resolve the page through the runtime before returning state so a stale notification cannot
-      // read annotations for a page that no longer exists.
-      await runtime.browserTabShow({ worktree, page })
-      return readPrototypeReviewAnnotations(page, documentKey)
-    }
+    handler: ({ documentKey }) => readPrototypeReviewAnnotations(documentKey)
   }),
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.add',
     permission: 'workspace',
     params: PrototypeReviewAnnotationAddSchema,
-    handler: async (
-      { id, worktree, page, documentKey, comment, x, y, label, hostName },
-      { runtime, authenticatedCallerFingerprint, pairedDeviceId }
-    ) => {
-      await runtime.browserTabShow({ worktree, page })
-      return addPrototypeReviewAnnotation({
-        id: id ?? randomUUID(),
-        pageId: page,
+    handler: (
+      { id, documentKey, comment, intent, priority, payload, hostName, author },
+      { authenticatedCallerFingerprint, pairedDeviceId, pairedDeviceName }
+    ) =>
+      addPrototypeReviewAnnotation({
+        id,
         documentKey,
         comment,
-        x,
-        y,
-        ...(label ? { label } : {}),
-        author: pairedDeviceId ?? authenticatedCallerFingerprint ?? 'local',
+        intent,
+        priority,
+        payload,
+        // Why: a remote member is named by what the host recorded for them and cannot claim another
+        // name; only the host's own app may keep the original author when it edits a pulled note.
+        author: (pairedDeviceId || authenticatedCallerFingerprint
+          ? (pairedDeviceName ?? pairedDeviceId ?? authenticatedCallerFingerprint ?? 'local')
+          : (author ?? 'local')
+        ).slice(0, 100),
         host: hostName ?? (pairedDeviceId ? '共享主机' : '当前主机'),
         createdAt: new Date().toISOString()
       })
-    }
   }),
   defineWorkbenchMethod({
     name: 'workbench.prototypeReview.annotations.delete',
     permission: 'workspace',
     params: PrototypeReviewAnnotationDeleteSchema,
-    handler: async ({ pageId, documentKey, annotationId }) => ({
-      deleted: await deletePrototypeReviewAnnotation(pageId, documentKey, annotationId)
+    handler: async ({ documentKey, annotationId }) => ({
+      deleted: await deletePrototypeReviewAnnotation(documentKey, annotationId)
     })
   })
 ]

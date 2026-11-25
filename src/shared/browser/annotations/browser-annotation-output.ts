@@ -204,6 +204,9 @@ export function formatBrowserAnnotationsAsMarkdown(
         lines.push(`**Browser tab id:** ${inlineCode(inlineText(annotation.browserPageId))}`)
         lines.push(`**Viewport:** ${payload.page.viewportWidth}x${payload.page.viewportHeight}`)
       }
+      if (annotation.author) {
+        lines.push(`**Reviewer:** ${inlineText(annotation.author)}`)
+      }
       lines.push(`**Intent:** ${annotation.intent}`)
       lines.push(`**Selector:** ${inlineCode(target.selector)}`)
       if (target.sourceFile) {

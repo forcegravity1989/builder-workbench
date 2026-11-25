@@ -12,6 +12,9 @@ export type RpcDispatchStreamingOptions = Pick<
   | 'signal'
   | 'clientId'
   | 'pairedDeviceId'
+  | 'pairedDeviceName'
+  | 'accessMode'
+  | 'teamBinding'
   | 'pairedDeviceParentId'
   | 'caller'
   | 'plugin'
@@ -67,6 +70,9 @@ export function rpcContextFromTransport(
         : undefined,
     clientId: options?.clientId,
     pairedDeviceId: options?.pairedDeviceId,
+    pairedDeviceName: options?.pairedDeviceName,
+    accessMode: options?.accessMode,
+    teamBinding: options?.teamBinding,
     pairedDeviceParentId: options?.pairedDeviceParentId,
     caller: resolveRpcCallerIdentity(options),
     plugin: options?.plugin,

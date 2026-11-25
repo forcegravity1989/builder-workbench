@@ -1,3 +1,4 @@
+import type { ConfirmedRepoRegistration } from '../../../../shared/workbench/repo-removal'
 import {
   isRuntimeOwnedSshTargetId,
   toRuntimeExecutionHostId,
@@ -22,6 +23,8 @@ export async function cleanupEphemeralVmRuntimesForDeleted(args: {
   }[]
   // Also destroy runtimes pinned to these raw SSH target IDs even without a matching workspace.
   runtimeOwnedSshTargetIds?: readonly string[]
+  beforeCleanup?: () => void
+  expectedRegistration?: ConfirmedRepoRegistration
 }): Promise<EphemeralVmCleanupSummary> {
   const destroyedSshTargetIds = new Set<string>()
   const retainedSshTargetIds = new Set<string>()
@@ -36,6 +39,7 @@ export async function cleanupEphemeralVmRuntimesForDeleted(args: {
       )
     )
     const runtimes = await window.api.ephemeralVm.listRuntimes()
+    args.beforeCleanup?.()
     const matchingRuntimes = runtimes.filter(
       (runtime) =>
         (runtime.cleanupStatus !== 'succeeded' || runtime.sshTargetId !== undefined) &&
@@ -59,8 +63,12 @@ export async function cleanupEphemeralVmRuntimesForDeleted(args: {
     )
     let releasedServer = false
     for (const runtime of matchingRuntimes) {
+      args.beforeCleanup?.()
       try {
-        const cleaned = await window.api.ephemeralVm.cleanup({ runtimeId: runtime.id })
+        const cleaned = await window.api.ephemeralVm.cleanup({
+          runtimeId: runtime.id,
+          expectedRegistration: args.expectedRegistration
+        })
         releasedServer ||=
           runtime.runtimeEnvironmentId !== undefined || runtime.sshTargetId !== undefined
         if (runtime.sshTargetId) {
