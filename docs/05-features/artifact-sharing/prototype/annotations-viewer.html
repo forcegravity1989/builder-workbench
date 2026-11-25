@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>产物分享 · 分享页批注高保真原型</title>
+    <!--
+  产物分享「分享页批注」可点原型（单文件、无构建，浏览器直接打开；离线可用，不发真实请求）。
+  行为正本 ../spec.md「分享页批注」，价值 ../intent.md，链状态 ../STATUS.md，Issue #760。
+  演示对象是服务端查看页（viewer）：/s/:id 返回本页，原始内容在沙箱 iframe 内经 /s/:id/content
+  （原始字节 + 批注桥）提供，/s/:id/raw 仍是与上传内容逐字节一致的原始 HTML；
+  批注面板与批注 API 同源；被分享内容保持 opaque 沙箱，够不到批注 API 与服务端 origin。
+  原型以同文档内容区演示元素选择与高亮交互——file:// 下浏览器禁止父页访问 iframe 文档，
+  真实实现的沙箱 iframe 与 postMessage 桥见 spec「分享页批注」。
+  交互对齐 spec：添加批注 → 填写文字 → 按需选择元素 → 提交；点击列表项高亮元素；
+  selector 失效在列表标注「元素已变化」（真实实现加载/刷新即主动探测）；作者凭本机删除令牌删自己的批注；轮询 30 秒可见。
+  界面文案已随实现定稿（viewer 纯中文，不进 BW i18n；先例：服务端 404 页中英双语）。
+  数据与链接地址均为示意。原型不表示能力已交付。
+-->
+    <link rel="stylesheet" href="../../../04-design-system/styles.css" />
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        background: var(--color-bg);
+        overflow: hidden;
+      }
+      [hidden] {
+        display: none !important;
+      }
+
+      /* ── 原型演示工具条（不属产品 UI） ── */
+      .demo-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 20px;
+        border-bottom: 1px solid var(--color-divider);
+        background: var(--color-card);
+        font-size: 12px;
+      }
+      .demo-bar strong {
+        font-weight: 600;
+        color: var(--color-text);
+      }
+      .demo-bar .group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted-foreground);
+      }
+      .demo-bar select,
+      .demo-bar .btn {
+        height: 26px;
+        padding: 0 8px;
+        font-size: 12px;
+      }
+      .demo-bar select {
+        border: 1px solid var(--color-divider);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg);
+        color: var(--color-text);
+        font-family: inherit;
+      }
+      .demo-note {
+        margin-left: auto;
+        max-width: 520px;
+        text-align: right;
+        color: var(--muted-foreground);
+        font-style: italic;
+        font-size: 11px;
+      }
+
+      /* ── 查看页骨架 ── */
+      .viewer {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 43px);
+      }
+      .viewer-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--color-divider);
+        background: var(--color-card);
+      }
+      .viewer-head .title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .viewer-head .meta {
+        font-size: 12px;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+      }
+      .viewer-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+      .viewer-content {
+        flex: 1;
+        min-width: 0;
+        background: var(--color-bg);
+        position: relative;
+      }
+      /* 原型以同文档内容区代替真实实现的沙箱 iframe（file:// 下父页无法访问 iframe 文档） */
+      .content-sim {
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+        border: 0;
+        display: block;
+        background: #fff;
+      }
+      .selecting .viewer-content {
+        cursor: crosshair;
+      }
+
+      /* ── 批注面板 ── */
+      .panel {
+        width: 340px;
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid var(--color-divider);
+        background: var(--color-card);
+        min-height: 0;
+      }
+      .panel-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--color-divider);
+      }
+      .panel-head .count {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--color-text);
+      }
+      .panel-head .spacer {
+        flex: 1;
+      }
+      .author-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--color-divider);
+      }
+      .author-row label {
+        font-size: 12px;
+        color: var(--muted-foreground);
+        white-space: nowrap;
+      }
+      .author-row input {
+        flex: 1;
+        min-width: 0;
+        height: 26px;
+        font-size: 12px;
+      }
+      .annotation-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+      }
+      .annotation-empty {
+        margin: 24px 0;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted-foreground);
+      }
+      .annotation-item {
+        border: 1px solid var(--color-divider);
+        border-radius: var(--radius-md);
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
+        transition: border-color 120ms ease;
+      }
+      .annotation-item:hover {
+        border-color: var(--color-accent);
+      }
+      .annotation-item .row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+      }
+      .annotation-item .author {
+        font-weight: 600;
+        color: var(--color-text);
+      }
+      .annotation-item .time {
+        color: var(--muted-foreground);
+        font-size: 11px;
+      }
+      .annotation-item .delete {
+        margin-left: auto;
+        height: 20px;
+        width: 20px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--muted-foreground);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .annotation-item .delete:hover {
+        background: var(--color-bg);
+        color: var(--color-destructive);
+      }
+      .annotation-item .text {
+        font-size: 12px;
+        color: var(--color-text);
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .annotation-item .target {
+        font-size: 11px;
+        color: var(--muted-foreground);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .annotation-item .target .tag {
+        font-size: 10px;
+      }
+      .annotation-item.stale .target .tag {
+        color: var(--color-warning, #b45309);
+      }
+      .annotation-item.mine {
+        border-left: 2px solid var(--color-accent);
+      }
+
+      /* ── 添加批注表单 ── */
+      .annotation-form {
+        border-top: 1px solid var(--color-divider);
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: var(--color-card);
+      }
+      .form-target {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--color-text);
+        min-height: 18px;
+      }
+      .form-target .tag {
+        font-size: 10px;
+      }
+      .form-target .hint {
+        color: var(--muted-foreground);
+        font-size: 11px;
+      }
+      .annotation-form textarea {
+        width: 100%;
+        min-height: 60px;
+        resize: vertical;
+        font-size: 12px;
+        font-family: inherit;
+      }
+      .form-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .form-error {
+        font-size: 11px;
+        color: var(--color-destructive);
+      }
+
+      /* ── iframe 内元素高亮（注入脚本的演示等价物；真实实现经 postMessage 桥） ── */
+      .demo-highlight {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+        background: rgba(37, 99, 235, 0.08);
+      }
+      .demo-hover {
+        outline: 2px dashed #2563eb;
+        outline-offset: 2px;
+      }
+
+      /* ── 原型注释 ── */
+      .proto-note {
+        font-size: 11px;
+        color: var(--muted-foreground);
+        font-style: italic;
+        line-height: 1.5;
+      }
+      .viewer-head .proto-note {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="demo-bar">
+      <strong>分享页批注 · 原型</strong>
+      <span class="group"
+        >阶段：
+        <select id="stage-select" aria-label="原型阶段切换">
+          <option value="annotations">有批注（默认）</option>
+          <option value="empty">空态（无批注）</option>
+          <option value="stale">内容覆盖后元素已变化</option>
+          <option value="full">批注已满（500 条上限）</option>
+          <option value="rate-limited">写入限流</option>
+        </select>
+      </span>
+      <button class="btn btn-secondary" id="peer-note-btn" type="button">模拟他人批注（演示轮询可见）</button>
+      <span class="demo-note"
+        >业界参考：查看页 + 侧栏评论沿用 Google Docs 评论面板的布局；点击内容定位评论参考 Figma
+        的评论模式（点击画布留评论钉）。两者均为异步评论，非实时协同。</span
+      >
+    </div>
+
+    <div class="viewer" id="viewer">
+      <header class="viewer-head">
+        <span class="title">benchmark-report.html</span>
+        <span class="meta">分享于 2026-11-20 · 由 张三 分享</span>
+        <span class="proto-note"
+          >原型注释：/s/:id 打开本查看页；原始内容在沙箱 iframe 内经 /s/:id/content
+          （原始字节 + 批注桥）提供，/s/:id/raw 与上传内容逐字节一致，批注面板与批注 API 同源。</span
+        >
+      </header>
+      <div class="viewer-body">
+        <div class="viewer-content" id="viewer-content">
+          <div class="content-sim" id="content-frame" title="分享内容"></div>
+        </div>
+        <aside class="panel">
+          <div class="panel-head">
+            <span class="count" id="note-count">批注 3</span>
+            <span class="spacer"></span>
+            <button class="btn btn-primary btn-sm" id="add-note-btn" type="button">添加批注</button>
+          </div>
+          <div class="author-row">
+            <label for="author-input">作者</label>
+            <input class="input" id="author-input" placeholder="留空显示「匿名」" />
+          </div>
+          <div class="annotation-list" id="note-list"></div>
+          <div class="annotation-form" id="note-form" hidden>
+            <div class="form-target" id="form-target">
+              <span class="hint">未选择元素，将作为页面级批注</span>
+            </div>
+            <textarea class="input" id="note-text" placeholder="批注内容（上限 2000 字）"></textarea>
+            <div class="form-error" id="form-error" hidden></div>
+            <div class="form-actions">
+              <button class="btn btn-ghost btn-sm" id="pick-note-btn" type="button">选择元素</button>
+              <button class="btn btn-ghost btn-sm" id="cancel-note-btn" type="button">取消</button>
+              <button class="btn btn-primary btn-sm" id="submit-note-btn" type="button">提交</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <script>
+      // ─────────────────────────────────────────────────────────────────────────
+      // 原型脚本：内存假数据驱动，不发真实请求。真实实现中本页由服务端渲染，
+      // 元素定位经 postMessage 桥与沙箱 iframe 内的注入脚本通信（见 spec「分享页批注」）。
+      // ─────────────────────────────────────────────────────────────────────────
+
+      // 示意报告页（真实实现中经 /s/:id/content 提供在沙箱 iframe 内；原型注入同文档内容区演示）
+      const DEMO_CONTENT = `
+<style>
+  .content-sim { font-family: system-ui, sans-serif; padding: 32px; color: #1a1a1a; }
+  .content-sim h1 { font-size: 22px; margin: 0 0 8px; }
+  .content-sim h2 { font-size: 15px; margin: 0 0 8px; }
+  .content-sim p { font-size: 13px; margin: 0 0 8px; }
+  .content-sim .card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .content-sim .btn-demo { background: #2563eb; color: #fff; border: 0; border-radius: 6px; padding: 8px 16px; font-size: 14px; }
+  .content-sim table { border-collapse: collapse; width: 100%; }
+  .content-sim td, .content-sim th { border: 1px solid #e5e5e5; padding: 6px 10px; font-size: 13px; text-align: left; }
+</style>
+<h1>benchmark 项目 · 第 3 轮构建报告</h1>
+<p>本轮覆盖 12 个用例，通过 11 个，1 个因环境问题跳过。以下为各模块摘要。</p>
+<div class="card">
+  <h2>构建结果</h2>
+  <table>
+    <tr><th>模块</th><th>结果</th><th>耗时</th></tr>
+    <tr><td>share-client</td><td>通过</td><td>42s</td></tr>
+    <tr><td>workbench-core</td><td>通过</td><td>3m 12s</td></tr>
+    <tr><td>e2e</td><td>跳过</td><td>—</td></tr>
+  </table>
+</div>
+<div class="card">
+  <h2>下一步</h2>
+  <p>建议先修复 e2e 环境问题，再发起第 4 轮构建。</p>
+  <button class="btn-demo" id="demo-action">发起第 4 轮构建</button>
+</div>`
+
+      const frame = document.getElementById('content-frame')
+      const list = document.getElementById('note-list')
+      const form = document.getElementById('note-form')
+      const pickBtn = document.getElementById('pick-note-btn')
+      const formTarget = document.getElementById('form-target')
+      const noteText = document.getElementById('note-text')
+      const formError = document.getElementById('form-error')
+      const addBtn = document.getElementById('add-note-btn')
+      const authorInput = document.getElementById('author-input')
+      const countEl = document.getElementById('note-count')
+      const stageSelect = document.getElementById('stage-select')
+      const peerNoteBtn = document.getElementById('peer-note-btn')
+
+      /** 原型内存数据：mine 标记「本机浏览器提交的批注」（真实实现为 localStorage 删除令牌）。 */
+      let notes = []
+      let selecting = false
+      let selectedEl = null
+      let stage = 'annotations'
+      /** 模拟内容覆盖后 selector 失效：stale 阶段把 iframe 里的表格换成不同结构。 */
+      let contentVersion = 0
+
+      const STAGES = {
+        annotations: () => {
+          contentVersion = 0
+          notes = [
+            {
+              id: 'n1',
+              author: '李四',
+              time: '10:24',
+              text: 'e2e 跳过的原因建议写清楚，是 runner 问题还是用例问题。',
+              target: { selector: 'table tr:nth-child(4)', label: 'td · “e2e / 跳过”', stale: false },
+              mine: false
+            },
+            {
+              id: 'n2',
+              author: '王五',
+              time: '10:31',
+              text: '这个按钮建议放到报告顶部，评审时更容易注意到。',
+              target: { selector: '#demo-action', label: 'button · “发起第 4 轮构建”', stale: false },
+              mine: false
+            },
+            {
+              id: 'n3',
+              author: '张三',
+              time: '10:35',
+              text: '同意，下轮我把构建入口放页头。',
+              target: null,
+              mine: true
+            }
+          ]
+        },
+        empty: () => {
+          contentVersion = 0
+          notes = []
+        },
+        stale: () => {
+          contentVersion = 1
+          notes = [
+            {
+              id: 'n1',
+              author: '李四',
+              time: '10:24',
+              text: 'e2e 跳过的原因建议写清楚，是 runner 问题还是用例问题。',
+              // 内容覆盖后表格结构变了，selector 不再命中 → 降级「元素已变化」
+              target: { selector: 'table tr:nth-child(4)', label: 'td · “e2e / 跳过”', stale: true },
+              mine: false
+            },
+            {
+              id: 'n2',
+              author: '王五',
+              time: '10:31',
+              text: '这个按钮建议放到报告顶部，评审时更容易注意到。',
+              target: { selector: '#demo-action', label: 'button · “发起第 4 轮构建”', stale: false },
+              mine: false
+            }
+          ]
+        },
+        full: () => {
+          contentVersion = 0
+          notes = Array.from({ length: 500 }, (_, i) => ({
+            id: `bulk-${i}`,
+            author: `评审者 ${(i % 9) + 1}`,
+            time: '10:2' + (i % 10),
+            text: `第 ${i + 1} 条批注：占位文字，演示 500 条上限写满后的列表与提示。`,
+            target: null,
+            mine: i === 0
+          }))
+        },
+        'rate-limited': () => {
+          contentVersion = 0
+          notes = [
+            {
+              id: 'n1',
+              author: '李四',
+              time: '10:24',
+              text: 'e2e 跳过的原因建议写清楚。',
+              target: { selector: 'table tr:nth-child(4)', label: 'td · “e2e / 跳过”', stale: false },
+              mine: false
+            }
+          ]
+        }
+      }
+
+      function demoContentHtml() {
+        if (contentVersion === 0) {
+          return DEMO_CONTENT
+        }
+        // 内容覆盖后的新版报告：表格改为三列结构，旧 selector 失效
+        return DEMO_CONTENT.replace(
+          '<tr><th>模块</th><th>结果</th><th>耗时</th></tr>',
+          '<tr><th>模块</th><th>结果</th><th>耗时</th><th>环境</th></tr>'
+        ).replace(
+          '<tr><td>e2e</td><td>跳过</td><td>—</td></tr>',
+          '<tr><td>e2e</td><td>跳过</td><td>—</td><td>runner-v2</td></tr>'
+        )
+      }
+
+      function renderContent() {
+        frame.innerHTML = demoContentHtml()
+      }
+
+      function bindFrameEvents() {
+        frame.addEventListener('mouseover', (e) => {
+          if (!selecting) return
+          clearHover()
+          if (e.target !== frame && e.target.closest('#content-frame *')) {
+            e.target.classList.add('demo-hover')
+          }
+        })
+        frame.addEventListener('mouseout', () => {
+          if (selecting) clearHover()
+        })
+        frame.addEventListener('click', (e) => {
+          if (!selecting) return
+          e.preventDefault()
+          e.stopPropagation()
+          if (e.target === frame) return
+          setPicking(false)
+          selectedEl = e.target
+          selectedEl.classList.add('demo-highlight')
+          formTarget.innerHTML = ''
+          const tag = document.createElement('span')
+          tag.className = 'tag tag-secondary'
+          tag.textContent = describeEl(selectedEl)
+          formTarget.appendChild(tag)
+          const hint = document.createElement('span')
+          hint.className = 'hint'
+          hint.textContent = '已选中元素；提交后批注定位到它'
+          formTarget.appendChild(hint)
+        })
+      }
+
+      function clearHover() {
+        frame.querySelectorAll('.demo-hover').forEach((el) => el.classList.remove('demo-hover'))
+      }
+
+      function describeEl(el) {
+        const tag = el.tagName.toLowerCase()
+        const text = (el.textContent || '').trim().slice(0, 20)
+        if (tag === 'button' || tag === 'a') return `${tag} · “${text}”`
+        if (tag === 'td' || tag === 'th') return `${tag} · “${text}”`
+        if (tag === 'h1' || tag === 'h2' || tag === 'p') return `${tag} · “${text}”`
+        return tag
+      }
+
+      function renderList() {
+        countEl.textContent = `批注 ${notes.length}`
+        list.innerHTML = ''
+        if (notes.length === 0) {
+          const empty = document.createElement('div')
+          empty.className = 'annotation-empty'
+          empty.textContent = '还没有批注。点击「添加批注」写下意见。'
+          list.appendChild(empty)
+          return
+        }
+        for (const note of notes) {
+          const item = document.createElement('div')
+          item.className = 'annotation-item' + (note.mine ? ' mine' : '') + (note.target?.stale ? ' stale' : '')
+          item.dataset.id = note.id
+
+          const row = document.createElement('div')
+          row.className = 'row'
+          const author = document.createElement('span')
+          author.className = 'author'
+          author.textContent = note.author
+          const time = document.createElement('span')
+          time.className = 'time'
+          time.textContent = note.time
+          row.appendChild(author)
+          row.appendChild(time)
+          if (note.mine) {
+            const del = document.createElement('button')
+            del.className = 'delete'
+            del.type = 'button'
+            del.title = '删除我的批注'
+            del.textContent = '×'
+            del.addEventListener('click', (e) => {
+              e.stopPropagation()
+              notes = notes.filter((n) => n.id !== note.id)
+              renderList()
+            })
+            row.appendChild(del)
+          }
+          item.appendChild(row)
+
+          const text = document.createElement('div')
+          text.className = 'text'
+          text.textContent = note.text
+          item.appendChild(text)
+
+          if (note.target) {
+            const target = document.createElement('div')
+            target.className = 'target'
+            const tag = document.createElement('span')
+            tag.className = 'tag ' + (note.target.stale ? 'tag-warning' : 'tag-secondary')
+            tag.textContent = note.target.stale ? '元素已变化' : note.target.label
+            target.appendChild(tag)
+            if (note.target.stale) {
+              const why = document.createElement('span')
+              why.textContent = '内容更新后原元素不再匹配，批注保留文字'
+              target.appendChild(why)
+            }
+            item.appendChild(target)
+          }
+
+          item.addEventListener('click', () => {
+            if (!note.target || note.target.stale) return
+            frame.querySelectorAll('.demo-highlight').forEach((el) => el.classList.remove('demo-highlight'))
+            const el = frame.querySelector(note.target.selector)
+            if (el) {
+              el.classList.add('demo-highlight')
+              el.scrollIntoView({ block: 'center' })
+            }
+          })
+          list.appendChild(item)
+        }
+        // 滚动到最新一条
+        list.scrollTop = list.scrollHeight
+      }
+
+      function setPicking(active) {
+        selecting = active
+        selectedEl = null
+        document.getElementById('viewer').classList.toggle('selecting', active)
+        pickBtn.textContent = active ? '点击内容中的元素…' : '选择元素'
+        formTarget.textContent = active ? '请点击分享内容中的元素（Esc 取消）' : '未选择元素，将作为页面级批注'
+        clearHover()
+        frame.querySelectorAll('.demo-highlight').forEach((el) => el.classList.remove('demo-highlight'))
+      }
+
+      function openForm() {
+        form.hidden = false
+        addBtn.disabled = true
+        noteText.value = ''
+        setPicking(false)
+        hideError()
+        noteText.focus()
+      }
+
+      function closeForm() {
+        setPicking(false)
+        addBtn.disabled = false
+        form.hidden = true
+        noteText.value = ''
+      }
+
+      function showError(msg) {
+        formError.textContent = msg
+        formError.hidden = false
+      }
+      function hideError() {
+        formError.hidden = true
+      }
+
+      function submitNote() {
+        const text = noteText.value.trim()
+        if (!text) {
+          showError('批注内容不能为空。')
+          return
+        }
+        if (text.length > 2000) {
+          showError(`批注超过 2000 字上限（当前 ${text.length} 字）。`)
+          return
+        }
+        if (stage === 'rate-limited') {
+          showError('写入过于频繁，请稍后再试。')
+          return
+        }
+        if (stage === 'full' || notes.length >= 500) {
+          showError('批注已满（500 条上限），无法继续添加。')
+          return
+        }
+        const author = authorInput.value.trim() || '匿名'
+        const note = {
+          id: `local-${Date.now()}`,
+          author,
+          time: new Date().toTimeString().slice(0, 5),
+          text,
+          target: selectedEl
+            ? { selector: selectorFor(selectedEl), label: describeEl(selectedEl), stale: false }
+            : null,
+          mine: true
+        }
+        notes.push(note)
+        renderList()
+        closeForm()
+      }
+
+      /** 简化 selector 生成演示：id 优先，其次 tag + nth-child 链（真实实现含文本摘要辅助匹配）。 */
+      function selectorFor(el) {
+        if (el.id) return `#${el.id}`
+        const parts = []
+        let cur = el
+        while (cur && cur !== frame) {
+          const tag = cur.tagName.toLowerCase()
+          const idx = Array.from(cur.parentElement?.children ?? []).indexOf(cur) + 1
+          parts.unshift(`${tag}:nth-child(${idx})`)
+          cur = cur.parentElement
+        }
+        return parts.join(' > ')
+      }
+
+      function applyStage(next) {
+        stage = next
+        closeForm()
+        STAGES[stage]()
+        renderContent()
+        renderList()
+        if (stage === 'rate-limited') {
+          openForm()
+        }
+      }
+
+      bindFrameEvents()
+      addBtn.addEventListener('click', openForm)
+      pickBtn.addEventListener('click', () => setPicking(!selecting))
+      document.getElementById('cancel-note-btn').addEventListener('click', closeForm)
+      document.getElementById('submit-note-btn').addEventListener('click', submitNote)
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && selecting) setPicking(false)
+      })
+      stageSelect.addEventListener('change', () => applyStage(stageSelect.value))
+      peerNoteBtn.addEventListener('click', () => {
+        // 模拟另一位查看者刚提交的批注：真实实现中本页每 30 秒轮询拉取（页面后台暂停），
+        // 这里用 2 秒延迟演示「他人提交 → 轮询周期后可见」。
+        const btn = peerNoteBtn
+        btn.disabled = true
+        btn.textContent = '轮询中…'
+        setTimeout(() => {
+          notes.push({
+            id: `peer-${Date.now()}`,
+            author: '赵六',
+            time: new Date().toTimeString().slice(0, 5),
+            text: '收到，我这边下午修 runner，第 4 轮前应该能好。',
+            target: { selector: 'table tr:nth-child(4)', label: 'td · “e2e / 跳过”', stale: false },
+            mine: false
+          })
+          renderList()
+          btn.disabled = false
+          btn.textContent = '模拟他人批注（演示轮询可见）'
+        }, 2000)
+      })
+
+      applyStage('annotations')
+    </script>
+  </body>
+</html>
