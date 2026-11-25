@@ -1,0 +1,22 @@
+.bw/metrics.toml
+  s_32f94459adc382::t_9a0b8f9e425591 7
+  s_32f94459adc382::t_954c3655142073 33,42,50,58,74,82,91
+.bw/scripts/metric-unavailable.py
+  s_32f94459adc382::t_4e81dbe57e4f80 5-7,10,15-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "9ff94b296507e0f7a56577870b955b6239cb6859",
+  "prompts": {},
+  "sessions": {
+    "s_32f94459adc382": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ab09bdae-3494-49a9-9c37-9dda6a017beb",
+        "model": "unknown"
+      },
+      "human_author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}

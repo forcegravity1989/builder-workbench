@@ -1,0 +1,22 @@
+.bw/scripts/metric-unavailable.py
+  s_32f94459adc382::t_268259648dfc22 5-7,10,13-15,18-20
+.bw/metrics.toml
+  s_32f94459adc382::t_9a0b8f9e425591 7
+  s_32f94459adc382::t_954c3655142073 33,42,50,58,74,82,91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "29bf5aac2088c0c54bd845ecaeeb4c7d3c437510",
+  "prompts": {},
+  "sessions": {
+    "s_32f94459adc382": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ab09bdae-3494-49a9-9c37-9dda6a017beb",
+        "model": "external_deepseek-v4.1-flash"
+      },
+      "human_author": null
+    }
+  }
+}

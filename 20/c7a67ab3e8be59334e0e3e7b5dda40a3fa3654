@@ -1,0 +1,37 @@
+src/renderer/src/lib/launch-agent-in-new-tab.test.ts
+  s_abaef6b3437c6f::t_8f59a9c668ade8 586-616
+src/renderer/src/lib/launch-agent-startup-prompt-plan.ts
+  s_abaef6b3437c6f::t_740535cb9818c9 47-50
+  s_abaef6b3437c6f::t_c5a16a6089faf9 30-31,33
+src/renderer/src/workbench/improvement/open-assistant.ts
+  s_abaef6b3437c6f::t_45c37f4649ac41 49
+  s_abaef6b3437c6f::t_4f43f793ccec1d 79
+src/renderer/src/lib/launch-agent-in-new-tab.ts
+  s_abaef6b3437c6f::t_dd7ea8ce05fbe8 210
+  s_abaef6b3437c6f::t_a001d8b51d4baa 110-111
+  s_abaef6b3437c6f::t_c57a7436532b32 173-174
+  s_abaef6b3437c6f::t_5a99e08307cd4e 310
+  s_abaef6b3437c6f::t_e74a66ff92ad44 58-62
+  s_abaef6b3437c6f::t_55956b50a6af9b 190-191
+src/renderer/src/lib/launch-agent-web-host-tab.ts
+  s_abaef6b3437c6f::t_270c7e1da634b4 68
+  s_abaef6b3437c6f::t_66ad0d28ffc844 92-93
+  s_abaef6b3437c6f::t_43c711d22e044a 158-159
+  s_abaef6b3437c6f::t_bf8d7062da4f8c 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "20c7a67ab3e8be59334e0e3e7b5dda40a3fa3654",
+  "prompts": {},
+  "sessions": {
+    "s_abaef6b3437c6f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "87488899-7396-4f75-ba9e-a7da2ea9737d",
+        "model": "grok-4.7"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
