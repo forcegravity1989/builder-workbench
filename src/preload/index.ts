@@ -6,6 +6,7 @@ import { installBrowserFindListener } from './renderer/renderer-runtime'
 import { appApi } from './api/app-bridge'
 import { cliInstallApi } from './api/cli-install-bridge'
 import { orcaProfilesApi } from './api/profiles/orca-profiles-bridge'
+import { w3AccountApi } from './api/w3-account-api'
 import { platformApi } from './api/platform-bridge'
 import { wslApi } from './api/wsl/wsl-bridge'
 import { wslMoveApi } from './api/wsl/wsl-move-bridge'
@@ -119,6 +120,7 @@ const telemetryGetConsentStateApi: PreloadApi['telemetryGetConsentState'] = () =
 const api = {
   app: appApi,
   orcaProfiles: orcaProfilesApi,
+  w3Account: w3AccountApi,
   platform: platformApi,
   wsl: wslApi,
   wslMove: wslMoveApi,

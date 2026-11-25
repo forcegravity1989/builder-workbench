@@ -52,6 +52,7 @@ const SETTINGS_NAV_TARGETS = [
   'automations',
   'bots',
   'orca-account',
+  'w3-account',
   'linear',
   'setup-guide',
   'servers',

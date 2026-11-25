@@ -53,7 +53,7 @@ export function registerBrowserSessionProfileHandlers(): void {
     if (!isTrustedBrowserRenderer(event.sender)) {
       return []
     }
-    return browserSessionRegistry.listProfiles()
+    return browserSessionRegistry.listUserProfiles()
   })
 
   ipcMain.handle(

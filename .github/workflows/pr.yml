@@ -194,6 +194,12 @@ jobs:
           src/main/telemetry/client-workbench-transport.test.ts
           src/main/telemetry/consent.test.ts
           src/main/telemetry/picker-accept-rollup.test.ts
+          src/main/ipc/w3-account-ipc.test.ts
+          src/main/w3-account/w3-account-config.test.ts
+          src/main/w3-account/w3-account-identity.test.ts
+          src/main/w3-account/w3-account-session-store.test.ts
+          src/main/w3-account/w3-session-bridge.test.ts
+          src/renderer/src/components/settings/navigation/settings-navigation-w3-account.test.ts
           src/main/codehub/comments.test.ts
           src/main/codehub/issue-state.test.ts
           src/main/codehub/mr-reads.test.ts

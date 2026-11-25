@@ -29,6 +29,7 @@ import { useAppChromeLayout } from './app-shell/chrome/use-app-chrome-layout'
 import { useAppSessionPersistence } from './app-shell/storage/use-app-session-persistence'
 import { useAppShellServices } from './app-shell/use-app-shell-services'
 import { useAppStartupHydration } from './app-shell/startup/use-app-startup-hydration'
+import { useW3AccountBootstrap } from './app-shell/use-w3-account-bootstrap'
 import { startNativeChatDraftLoad } from './components/native-chat/drafts/native-chat-draft-startup'
 import { runWslMoveRendererStoreRewrites } from './lib/workspace/persistence/wsl-move-renderer-store-rewrites'
 import { runWslDriveUncRendererStoreRewrites } from './lib/workspace/persistence/wsl-drive-unc-renderer-store-rewrites'
@@ -71,6 +72,7 @@ function App(): React.JSX.Element {
   // A Windows-drive conversion's own stores, after the restart that converted the project.
   useEffect(() => void runWslDriveUncRendererStoreRewrites(), [])
   useAppStartupHydration(onboardingGate.applyStartupOnboardingState)
+  useW3AccountBootstrap()
   useAppSessionPersistence()
   useRuntimeGraphSync()
   usePersistedUIWriter()

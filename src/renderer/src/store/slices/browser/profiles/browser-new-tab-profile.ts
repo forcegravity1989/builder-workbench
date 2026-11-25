@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { getW3LocalBrowserDefault } from '@/lib/w3-local-browser-default'
 import type { AppState } from '../../../types'
 import type { NewBrowserTabProfile } from '../browser-slice-contract'
 import { findFirstIndexedWorktree } from '../../../../lib/workspace/ownership/worktree-runtime-owner-index'
@@ -14,6 +15,7 @@ import {
 import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import {
   getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID,
   parseExecutionHostId,
   type ExecutionHostId
 } from '../../../../../../shared/execution-host/execution-host'
@@ -27,7 +29,8 @@ import { getRepoIdFromWorktreeId } from '../../../../../../shared/worktree/id'
 export function resolveNewBrowserTabProfile(
   state: AppState,
   worktreeId: string,
-  hostId: ExecutionHostId
+  hostId: ExecutionHostId,
+  allowW3Default = false
 ): NewBrowserTabProfile {
   const repoProfileId = getRepoBrowserProfileId(state, worktreeId, hostId)
   if (repoProfileId !== undefined) {
@@ -44,6 +47,16 @@ export function resolveNewBrowserTabProfile(
       owner,
       managedProfileLabel(state, owner, worktreeId)
     )
+  }
+  if (
+    allowW3Default &&
+    hostId === LOCAL_EXECUTION_HOST_ID &&
+    getResourceExecutionHostIdForWorktree(state, worktreeId) === LOCAL_EXECUTION_HOST_ID
+  ) {
+    const w3Default = getW3LocalBrowserDefault()
+    if (w3Default) {
+      return w3Default
+    }
   }
   return { sessionProfileId: getDefaultBrowserProfileForHost(state, hostId) }
 }

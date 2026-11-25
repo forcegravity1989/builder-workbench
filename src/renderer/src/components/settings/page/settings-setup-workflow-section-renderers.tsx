@@ -7,6 +7,7 @@ import { AutomationsSettingsPane } from '../automations/AutomationsSettingsPane'
 import { GeneralPane } from '../general/GeneralPane'
 import { IntegrationsPane } from '../integrations/IntegrationsPane'
 import { MobileSettingsPane } from '../mobile/MobileSettingsPane'
+import { W3AccountSettingsPane } from '../accounts/w3/W3AccountSettingsPane'
 import { OrcaAccountSettingsPane } from '../accounts/orca/OrcaAccountSettingsPane'
 import { ServerOrcaAccountPane } from '../accounts/orca/ServerOrcaAccountPane'
 import { SettingsHostScopeUnavailableNotice } from '../host-scope/SettingsHostScopePicker'
@@ -62,6 +63,29 @@ export function renderOrcaAccountSettingsSection(
       )}
     </SettingsSection>
   ) : null
+}
+
+export function renderW3AccountSettingsSection(
+  context: SettingsRenderContext,
+  t: Translate = translate
+): React.JSX.Element | null {
+  const { model, navigation, view } = context
+  if (!model.showDesktopOnlySettings || !isWorkbenchShell()) {
+    return null
+  }
+  return (
+    <SettingsSection
+      id="w3-account"
+      title={t('auto.components.settings.w3Account.title', 'W3 Account')}
+      description={t(
+        'auto.components.settings.w3Account.description',
+        'Sign in with your W3 account.'
+      )}
+      searchEntries={navigation.getSectionSearchEntries('w3-account')}
+    >
+      {view.isSectionMounted('w3-account') ? <W3AccountSettingsPane /> : null}
+    </SettingsSection>
+  )
 }
 
 export function renderSetupGuideSettingsSection(

@@ -71,6 +71,7 @@ import { registerEmulatorScrcpyKeyboardHandler } from '../emulator/emulator-scrc
 import { registerSpeechHandlers } from '../speech'
 import { registerTerminalRenderDesyncEvidenceHandler } from '../terminal-views/terminal-render-desync-evidence'
 import { registerOrcaProfileHandlers } from '../profiles/orca-profiles'
+import { registerW3AccountHandlers } from '../w3-account-ipc'
 import { registerCodexAccountHandlers } from '../accounts/codex-accounts'
 import { registerAgentHookHandlers } from '../agent-hooks/agent-hooks'
 import { registerCodexConfigSyncHandlers } from '../accounts/codex-config-sync'
@@ -213,6 +214,9 @@ export async function registerCoreHandlers(
     registerOrcaProfileHandlers(store, lifecycleOptions.orcaAccount, {
       onBeforeRelaunch: lifecycleOptions.onBeforeRelaunch
     })
+    if (isWorkbenchProduct()) {
+      registerW3AccountHandlers()
+    }
     registerBrowserHandlers(store)
     registerShellHandlers(store)
     registerPetHandlers()

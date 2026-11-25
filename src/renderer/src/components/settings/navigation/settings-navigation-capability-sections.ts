@@ -7,6 +7,7 @@ import { getGeneralPaneSearchEntries } from '@/components/settings/general/gener
 import { getIntegrationsPaneSearchEntries } from '@/components/settings/integrations/integrations-search'
 import { getLinearAgentSkillPaneSearchEntries } from '@/components/settings/skills/linear/linear-agent-skill-search'
 import { getMobileSettingsPaneSearchEntries } from '@/components/settings/mobile/mobile-settings-search'
+import { getW3AccountSettingsSearchEntries } from '@/components/settings/accounts/w3/w3-account-settings-search'
 import { getOrcaAccountSettingsSearchEntries } from '@/components/settings/accounts/orca/orca-account-settings-search'
 import { OrcaLogoSettingsIcon } from '@/components/settings/page/orca-logo-settings-icon'
 import { getOrchestrationPaneSearchEntries } from '@/components/settings/orchestration/orchestration-search'
@@ -124,12 +125,13 @@ export function buildCapabilitySettingsSections(
 }
 
 export function buildSetupSettingsSections(
-  { isLocalWindowsHost, isWebClient }: SettingsNavigationBuildOptions,
+  { isLocalWindowsHost, isWebClient, showWorkbenchOrcaAccount }: SettingsNavigationBuildOptions,
   t: Translate = translate
 ): SettingsNavSection[] {
   const showDesktopOnlySettings = !isWebClient
+  const workbench = isWorkbenchShell()
   return [
-    ...(showDesktopOnlySettings
+    ...(showDesktopOnlySettings && (!workbench || showWorkbenchOrcaAccount)
       ? [
           {
             id: 'orca-account',
@@ -141,6 +143,21 @@ export function buildSetupSettingsSections(
             icon: CircleUserRound,
             searchEntries: getOrcaAccountSettingsSearchEntries(),
             group: 'setup'
+          }
+        ]
+      : []),
+    ...(showDesktopOnlySettings && workbench
+      ? [
+          {
+            id: 'w3-account',
+            title: t('auto.components.settings.w3Account.title', 'W3 Account'),
+            description: t(
+              'auto.components.settings.w3Account.description',
+              'Sign in with your W3 account.'
+            ),
+            icon: CircleUserRound,
+            searchEntries: getW3AccountSettingsSearchEntries(),
+            group: 'setup' as const
           }
         ]
       : []),

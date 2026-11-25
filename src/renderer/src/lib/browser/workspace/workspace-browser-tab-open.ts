@@ -86,7 +86,12 @@ async function createClientBrowserTab(
       browserRuntimeEnvironmentId: null,
       focusAddressBar: false,
       executionHostId: ownerHostId,
-      ...resolveNewBrowserTabProfile(state, request.workspaceId, hostId),
+      ...resolveNewBrowserTabProfile(
+        state,
+        request.workspaceId,
+        hostId,
+        ownerHostId === LOCAL_EXECUTION_HOST_ID
+      ),
       targetGroupId: request.targetGroupId,
       ...(request.split ? { split: request.split } : {}),
       ...(request.afterTabId ? { afterTabId: request.afterTabId } : {}),

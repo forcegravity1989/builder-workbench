@@ -135,6 +135,10 @@ export type BrowserWorkspace = {
 
 export type BrowserSessionProfileScope = 'default' | 'isolated' | 'imported'
 
+export type BrowserSessionProfileCreateOptions = {
+  internal?: boolean
+}
+
 export type BrowserSessionProfileSource = {
   browserFamily:
     | 'chrome'
@@ -159,6 +163,7 @@ export type BrowserSessionProfile = {
   source: BrowserSessionProfileSource | null
   /** Set when Orca manages this profile for one repo or workspace; it goes when its owner is removed. */
   owner?: ManagedBrowserProfileOwner
+  internal?: boolean
 }
 
 export type LinuxCookieKeyFailure = 'secret-tool-missing' | 'keyring-locked' | 'key-unavailable'

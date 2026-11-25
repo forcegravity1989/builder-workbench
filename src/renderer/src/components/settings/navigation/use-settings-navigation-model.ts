@@ -51,7 +51,12 @@ export function useSettingsNavigationModel(
   )
 
   const displayedGitUsername = model.repos[0]?.gitUsername ?? ''
-  const baseNavSections = useSettingsNavigationMetadata()
+  const baseNavSections = useSettingsNavigationMetadata(
+    model.settingsHostScope.target.kind === 'environment' ||
+      model.settingsNavigationTarget?.pane === 'orca-account' ||
+      interactions.pendingNavSectionRef.current === 'orca-account' ||
+      model.activeSectionId === 'orca-account'
+  )
   const { installed: orchestrationSkillInstalled, loading: orchestrationSkillLoading } =
     model.orchestrationSkill
   const {

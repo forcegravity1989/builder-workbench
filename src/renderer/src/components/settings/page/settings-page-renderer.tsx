@@ -23,6 +23,7 @@ import {
   renderIntegrationsSettingsSection,
   renderMobileSettingsSection,
   renderOrcaAccountSettingsSection,
+  renderW3AccountSettingsSection,
   renderSetupGuideSettingsSection,
   renderShareSkillsSettingsSection,
   renderSharedLinksSettingsSection,
@@ -128,6 +129,7 @@ export function renderSettingsPage(
           hostPicker={
             !model.isWebClient &&
             !isBotsSettingsSection(model.activeSectionId) &&
+            model.activeSectionId !== 'w3-account' &&
             shouldShowSettingsHostScopePicker(
               model.settingsHostScope,
               model.runtimeEnvironments
@@ -174,6 +176,7 @@ export function renderSettingsPage(
                   {renderLinearSettingsSection(context, t)}
                   {renderDesktopCapabilitySettingsSections(context, t)}
                   {renderOrcaAccountSettingsSection(context, t)}
+                  {renderW3AccountSettingsSection(context, t)}
                   {renderSetupGuideSettingsSection(context, t)}
                   {renderGeneralSettingsSection(context, t)}
                   {renderWorkspaceCleanupSettingsSection(context, t)}

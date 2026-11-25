@@ -225,7 +225,7 @@ export class RuntimeBrowserProfiles {
 
   async browserProfileList(): Promise<BrowserProfileListResult> {
     return {
-      profiles: browserSessionRegistry.listProfiles(),
+      profiles: browserSessionRegistry.listUserProfiles(),
       executorRuntimeId: this.host.getRuntimeId()
     }
   }

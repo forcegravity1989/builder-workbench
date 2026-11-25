@@ -10,6 +10,7 @@ import {
 } from '../../../../shared/orca-profiles/orca-profiles'
 import type {
   BrowserSessionProfile,
+  BrowserSessionProfileCreateOptions,
   BrowserSessionProfileScope
 } from '../../../../shared/browser/workspaces/browser-workspace-types'
 import {
@@ -209,6 +210,10 @@ class BrowserSessionRegistry {
     return [...this.profiles.values()]
   }
 
+  listUserProfiles(): BrowserSessionProfile[] {
+    return this.listProfiles().filter((profile) => !profile.internal)
+  }
+
   /** Called after startup has materialized the known profile sessions. */
   profileIdForSession(candidate: Electron.Session): string | null {
     return (
@@ -253,7 +258,8 @@ class BrowserSessionRegistry {
   async createProfile(
     scope: BrowserSessionProfileScope,
     label: string,
-    owner?: BrowserSessionProfile['owner']
+    owner?: BrowserSessionProfile['owner'],
+    options?: BrowserSessionProfileCreateOptions
   ): Promise<BrowserSessionProfile | null> {
     // IPC callers can pass values outside the TypeScript scope union.
     if (scope !== 'isolated' && scope !== 'imported') {
@@ -261,7 +267,15 @@ class BrowserSessionRegistry {
     }
     const id = randomUUID()
     const partition = getOrcaProfileBrowserSessionPartition(this.activeOrcaProfileId, id)
-    const profile: BrowserSessionProfile = { id, scope, partition, label, source: null, owner }
+    const profile: BrowserSessionProfile = {
+      id,
+      scope,
+      partition,
+      label,
+      source: null,
+      owner,
+      ...(options?.internal ? { internal: true } : {})
+    }
     try {
       await installBrowserSessionPartitionPolicies(profile)
     } catch (error) {
@@ -296,7 +310,12 @@ class BrowserSessionRegistry {
 
   async deleteProfile(profileId: string): Promise<boolean> {
     const profile = this.profiles.get(profileId)
-    if (!profile || profile.scope === 'default' || !forgetBrowserProfileOwnedStores(profileId)) {
+    if (
+      !profile ||
+      profile.scope === 'default' ||
+      profile.internal ||
+      !forgetBrowserProfileOwnedStores(profileId)
+    ) {
       return false
     }
     this.profiles.delete(profileId)

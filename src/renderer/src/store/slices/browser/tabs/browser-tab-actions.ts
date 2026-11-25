@@ -1,5 +1,6 @@
 import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../../shared/identifiers/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../../../shared/execution-host/execution-host'
 import {
   assertManagedBrowserMaterializationAllowed,
   getClientCreationActionPolicy
@@ -74,7 +75,14 @@ export function createBrowserTabActions(
                 get(),
                 worktreeId,
                 options?.browserRuntimeEnvironmentId
-              )
+              ),
+              !options?.docLocation &&
+                !options?.validateLinkPlacement &&
+                !options?.browserRuntimeEnvironmentId &&
+                options?.sessionPartition === undefined &&
+                (!options?.executionHostId ||
+                  options.executionHostId === LOCAL_EXECUTION_HOST_ID) &&
+                (!url || url === 'about:blank' || /^https?:\/\//i.test(url))
             )
       const browserTab = buildWorkspaceFromPage(
         workspaceId,

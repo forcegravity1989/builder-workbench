@@ -143,7 +143,9 @@ export function buildSettingsNavigationMetadata(
     : sections
 }
 
-export function useSettingsNavigationMetadata(): SettingsNavSection[] {
+export function useSettingsNavigationMetadata(
+  showWorkbenchOrcaAccount = false
+): SettingsNavSection[] {
   const t = useTranslate()
   // The locale subscription must also invalidate the memo or labels retain the previous language.
   const languageRevision = useUiLanguageRevision()
@@ -204,6 +206,7 @@ export function useSettingsNavigationMetadata(): SettingsNavSection[] {
           isLocalWindowsHost,
           isWindowsTerminalHost,
           isWebClient,
+          showWorkbenchOrcaAccount,
           botsEnabled,
           hostQueuesMessages,
           typedChatPermissions,
@@ -228,6 +231,7 @@ export function useSettingsNavigationMetadata(): SettingsNavSection[] {
       isLocalWindowsHost,
       isWindowsTerminalHost,
       isWebClient,
+      showWorkbenchOrcaAccount,
       botsEnabled,
       hostQueuesMessages,
       typedChatPermissions,
