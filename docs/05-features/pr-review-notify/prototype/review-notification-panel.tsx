@@ -16,13 +16,7 @@ import { Button } from '@/components/ui/button'
 
 export type Host = { id: string; name: string; worktree: string; member: string; shared: boolean }
 export type Note = { id: string; target: string; text: string; member: string; host: string }
-export type PrototypeEvent = {
-  revision: string
-  sessionId: string
-  source: Host
-  notes: Note[]
-  sentToModel: boolean
-}
+export type PrototypeReviewItem = { id: string; title: string; tags: string[]; meta: string }
 
 type Props = {
   notificationCount: number
@@ -34,12 +28,10 @@ type Props = {
   setPrOutgoing: Dispatch<SetStateAction<boolean>>
   prEvent: boolean
   setPrEvent: Dispatch<SetStateAction<boolean>>
-  prototypeOutgoing: boolean
-  setPrototypeOutgoing: Dispatch<SetStateAction<boolean>>
-  prototypeNotification: boolean
-  setPrototypeNotification: Dispatch<SetStateAction<boolean>>
-  prototypeEvent: PrototypeEvent
-  jumpToPrototype: () => void
+  prototypeOutgoing: PrototypeReviewItem[]
+  prototypeIncoming: PrototypeReviewItem[]
+  dismissPrototype: (id: string) => void
+  openPrototype: () => void
 }
 
 export function ReviewNotificationPanel({
@@ -53,11 +45,9 @@ export function ReviewNotificationPanel({
   prEvent,
   setPrEvent,
   prototypeOutgoing,
-  setPrototypeOutgoing,
-  prototypeNotification,
-  setPrototypeNotification,
-  prototypeEvent,
-  jumpToPrototype
+  prototypeIncoming,
+  dismissPrototype,
+  openPrototype
 }: Props): React.JSX.Element {
   return (
     <div className="fixed right-5 bottom-5 z-40">
@@ -258,126 +248,108 @@ export function ReviewNotificationPanel({
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <section className="rounded border p-2.5">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <Send className="size-3" />
-                      我发出的评审
-                    </div>
-                    <span className="text-[11px] text-muted-foreground">
-                      {prototypeOutgoing ? 1 : 0}
-                    </span>
-                  </div>
-                  {prototypeOutgoing ? (
-                    <div className="border-b border-border/50 pb-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          className="flex min-w-0 items-center gap-1.5 text-left font-semibold text-muted-foreground hover:text-foreground"
-                          onClick={jumpToPrototype}
-                        >
-                          <FilePenLine className="size-3 shrink-0" />
-                          原型修订 3
-                        </button>
-                        <div className="flex gap-0.5">
-                          <Button
-                            size="icon-xs"
-                            variant="ghost"
-                            title="打开共享页签"
-                            onClick={jumpToPrototype}
-                          >
-                            <ExternalLink className="size-3" />
-                          </Button>
-                          <Button
-                            size="icon-xs"
-                            variant="ghost"
-                            title="删除这条评审通知"
-                            onClick={() => setPrototypeOutgoing(false)}
-                          >
-                            <Trash2 className="size-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        <span className="rounded border px-1.5 py-0.5 text-[10px]">原型</span>
-                        <span className="rounded border px-1.5 py-0.5 text-[10px]">已送达</span>
-                      </div>
-                      <div className="mt-1 text-[11px] text-muted-foreground">
-                        星图服务 · 发送于刚刚 · 林安的主机
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-muted-foreground">暂无发出的原型评审</p>
-                  )}
-                </section>
-                <section className="rounded border p-2.5">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <Inbox className="size-3" />
-                      待我评审
-                    </div>
-                    <span className="text-[11px] text-muted-foreground">
-                      {prototypeNotification ? 1 : 0}
-                    </span>
-                  </div>
-                  {prototypeNotification ? (
-                    <div className="border-b border-border/50 pb-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          className="flex min-w-0 items-center gap-1.5 text-left font-semibold text-muted-foreground hover:text-foreground"
-                          onClick={jumpToPrototype}
-                        >
-                          <FilePenLine className="size-3 shrink-0" />
-                          原型修订 3
-                        </button>
-                        <div className="flex gap-0.5">
-                          <Button
-                            size="icon-xs"
-                            variant="ghost"
-                            title="打开共享页签"
-                            onClick={jumpToPrototype}
-                          >
-                            <ExternalLink className="size-3" />
-                          </Button>
-                          <Button
-                            size="icon-xs"
-                            variant="ghost"
-                            title="删除这条评审通知"
-                            onClick={() => setPrototypeNotification(false)}
-                          >
-                            <Trash2 className="size-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="group mt-1 flex w-full flex-col gap-1.5 text-left"
-                        onClick={jumpToPrototype}
-                      >
-                        <span className="text-[13px] font-semibold group-hover:text-primary">
-                          林安的主机 · 原型修订 3
-                        </span>
-                        <span className="flex flex-wrap gap-1">
-                          <span className="rounded border px-1.5 py-0.5 text-[10px]">原型评审</span>
-                          <span className="rounded border px-1.5 py-0.5 text-[10px]">
-                            {prototypeEvent.notes.length} 条批注
-                          </span>
-                        </span>
-                        <span className="flex flex-wrap gap-x-1.5 text-[11px] text-muted-foreground">
-                          星图服务 · 林安 · 刚刚 · 共享页签
-                        </span>
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-muted-foreground">暂无待我评审的原型</p>
-                  )}
-                </section>
+                <PrototypeSection
+                  icon={Send}
+                  title="我发出的评审"
+                  empty="暂无发出的原型评审"
+                  items={prototypeOutgoing}
+                  dismissPrototype={dismissPrototype}
+                  openPrototype={openPrototype}
+                />
+                <PrototypeSection
+                  icon={Inbox}
+                  title="待我评审"
+                  empty="暂无待我评审的原型"
+                  items={prototypeIncoming}
+                  dismissPrototype={dismissPrototype}
+                  openPrototype={openPrototype}
+                />
               </div>
             )}
           </div>
         </div>
       ) : null}
     </div>
+  )
+}
+
+function PrototypeSection({
+  icon: Icon,
+  title,
+  empty,
+  items,
+  dismissPrototype,
+  openPrototype
+}: {
+  icon: typeof Send
+  title: string
+  empty: string
+  items: PrototypeReviewItem[]
+  dismissPrototype: (id: string) => void
+  openPrototype: () => void
+}): React.JSX.Element {
+  return (
+    <section className="rounded border p-2.5">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 font-medium">
+          <Icon className="size-3" />
+          {title}
+        </div>
+        <span className="text-[11px] text-muted-foreground">{items.length}</span>
+      </div>
+      {items.length ? (
+        items.map((item) => (
+          <div key={item.id} className="border-b border-border/50 pb-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                className="flex min-w-0 items-center gap-1.5 text-left font-semibold text-muted-foreground hover:text-foreground"
+                onClick={openPrototype}
+              >
+                <FilePenLine className="size-3 shrink-0" />
+                原型评审
+              </button>
+              <div className="flex gap-0.5">
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  title="在我的预览中打开文档"
+                  onClick={openPrototype}
+                >
+                  <ExternalLink className="size-3" />
+                </Button>
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  title="删除这条评审通知"
+                  onClick={() => dismissPrototype(item.id)}
+                >
+                  <Trash2 className="size-3" />
+                </Button>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="group mt-1 flex w-full flex-col gap-1.5 text-left"
+              onClick={openPrototype}
+            >
+              <span className="text-[13px] font-semibold group-hover:text-primary">
+                {item.title}
+              </span>
+              <span className="flex flex-wrap gap-1">
+                {item.tags.map((tag) => (
+                  <span key={tag} className="rounded border px-1.5 py-0.5 text-[10px]">
+                    {tag}
+                  </span>
+                ))}
+              </span>
+              <span className="text-[11px] text-muted-foreground">{item.meta}</span>
+            </button>
+          </div>
+        ))
+      ) : (
+        <p className="text-[11px] text-muted-foreground">{empty}</p>
+      )}
+    </section>
   )
 }

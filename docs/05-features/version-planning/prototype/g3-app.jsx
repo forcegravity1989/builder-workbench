@@ -1,4 +1,5 @@
 import { MilestoneReviewNav } from '../../overview-metrics/prototype/milestone-review-nav.jsx'
+import { CURRENT_BW_SHELL as shellMeta } from '../../prototype-shell-meta.js'
 const { React, createRoot, useState, useRef, useEffect } = window.BWPrototypeDependencies
 import {
   snapshot,
@@ -208,6 +209,7 @@ function App() {
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
       <div className="g3-demo-bar">
         <MilestoneReviewNav screen="plan" />
+        <small className="g3-shell-meta">{shellMeta.reviewNote}</small>
         <label className="g3-scene">
           时期
           <select
@@ -398,14 +400,14 @@ function App() {
         <aside className="g3-sidebar">
           <div className="g3-brand">
             <span>B</span>
-            <strong>Workbench</strong>
+            <strong>{shellMeta.productName}</strong>
           </div>
-          <div className="g3-project">Builder Workbench</div>
+          <div className="g3-project">{shellMeta.projectName}</div>
           <div className="g3-nav-muted">项目总览</div>
           <div className="g3-nav-muted">自动化</div>
           <div className="g3-nav-muted">知识库</div>
           <div className="g3-version">
-            <Icon name="down" size={12} /> v0.7
+            <Icon name="down" size={12} /> {shellMeta.currentVersionLabel}
           </div>
           <div className="g3-nav-muted nested">版本总览</div>
           <div className="g3-nav-selected">
@@ -448,7 +450,7 @@ function App() {
           <header className="g3-header">
             <div>
               <div className="g3-breadcrumb">
-                Builder Workbench <span>/</span> v0.7
+                {shellMeta.projectName} <span>/</span> {shellMeta.currentVersionLabel}
               </div>
               <h1>版本计划</h1>
             </div>
@@ -580,7 +582,7 @@ function App() {
                       <IconButton
                         name="arrow"
                         label="查看验收屏设计（版式示意）"
-                        href="../version-acceptance/acceptance-journey-prototype.html"
+                        href="../version-acceptance/prototype.html"
                       />
                     )}
                   </div>

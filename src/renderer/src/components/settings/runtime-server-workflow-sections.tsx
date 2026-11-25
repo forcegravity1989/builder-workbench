@@ -106,20 +106,6 @@ export function RuntimeServerShareSection({
 }): React.JSX.Element {
   return (
     <div className="space-y-3 pt-2">
-      <div className="space-y-0.5">
-        <div className="text-sm font-medium">
-          {translate(
-            'auto.components.settings.RuntimeEnvironmentsPane.advertiseThisApp',
-            'Advertise this app as a server'
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {translate(
-            'auto.components.settings.RuntimeEnvironmentsPane.advertiseThisAppHelp',
-            'Create access links for browsers, mobile clients, or another Orca client to connect back to this running app.'
-          )}
-        </p>
-      </div>
       <div className="overflow-hidden rounded-lg border border-border/50 bg-card/30">
         <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
           <div className="min-w-0 space-y-0.5">

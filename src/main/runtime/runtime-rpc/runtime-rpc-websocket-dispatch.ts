@@ -11,7 +11,15 @@ import { effectiveRuntimeAccessMode, type DeviceScope } from '../device-registry
 import { RuntimeRpcRequestAdmission } from './runtime-rpc-request-admission'
 import { classifyRuntimeLongPoll } from './runtime-rpc-long-poll'
 import { MOBILE_RPC_METHOD_ALLOWLIST } from './runtime-rpc-mobile-method-allowlist'
-import { isRoutineReadRuntimeMethod, teamReadDenialReason } from './runtime-rpc-team-read-policy'
+import {
+  isExpectedTeamReadError,
+  isQuietTeamReadDenial,
+  isRoutineReadRuntimeRequest,
+  teamReadDenialReason,
+  teamReadParamsDenialReason,
+  teamReadRequestParams,
+  teamReadTerminalStreamHandler
+} from './runtime-rpc-team-read-policy'
 
 // Why: status.get has no per-connection context in the dispatcher, so stamp the scope here at the transport boundary.
 function injectDeviceScope(response: string, scope: DeviceScope): string {
@@ -69,8 +77,29 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       reply(JSON.stringify(this.buildError(request.id, 'unauthorized', 'Missing device token')))
       return
     }
-    const device = this.deviceRegistry?.validateToken(token)
+    const tokenDevice = this.deviceRegistry?.validateToken(token)
+    // Why: a shared team link resolves to the member record chosen at authentication; every later
+    // check (access mode, audit, grants) belongs to that member rather than the shared link.
+    const device =
+      tokenDevice &&
+      authenticatedSocket &&
+      authenticatedSocket.device.deviceId !== tokenDevice.deviceId
+        ? (this.deviceRegistry?.getDevice(authenticatedSocket.device.deviceId) ?? tokenDevice)
+        : tokenDevice
     if (!device) {
+      // Why: a revoked or forged credential still got through the encrypted handshake, which is worth
+      // the host owner seeing; no device matched, so the entry carries no member. The audit's
+      // 60-second de-duplication keeps a retrying client from flooding the log.
+      this.getRuntimeAccessAudit().record({
+        at: Date.now(),
+        deviceId: 'unknown',
+        accessMode: 'team-read',
+        method: 'connection.auth',
+        result: 'denied',
+        requestId: request.id,
+        errorCode: 'unauthorized',
+        errorMessage: 'Invalid device token'
+      })
       reply(JSON.stringify(this.buildError(request.id, 'unauthorized', 'Invalid device token')))
       return
     }
@@ -87,22 +116,30 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       return
     }
     const accessMode = effectiveRuntimeAccessMode(device)
-    const teamReadDenial = teamReadDenialReason(accessMode, request.method)
+    const teamReadDenial =
+      teamReadDenialReason(accessMode, request.method) ??
+      teamReadParamsDenialReason(accessMode, request.method, request.params)
     if (teamReadDenial) {
-      this.getRuntimeAccessAudit().record({
-        at: Date.now(),
-        deviceId: device.deviceId,
-        deviceName: device.name,
-        accessMode,
-        ...(device.teamBinding
-          ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
-          : undefined),
-        method: request.method,
-        result: 'denied',
-        requestId: request.id
-      })
+      if (!isQuietTeamReadDenial(request.method)) {
+        this.getRuntimeAccessAudit().record({
+          at: Date.now(),
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          accessMode,
+          ...(device.teamBinding
+            ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+            : undefined),
+          method: request.method,
+          result: 'denied',
+          requestId: request.id
+        })
+      }
       reply(JSON.stringify(this.buildError(request.id, 'forbidden', teamReadDenial)))
       return
+    }
+    const teamReadParams = teamReadRequestParams(accessMode, request.method, request.params)
+    if (teamReadParams !== request.params) {
+      request = { ...request, params: teamReadParams }
     }
 
     // Why: bind deviceToken to this socket so ws.on('close') knows which mobile client disconnected.
@@ -128,12 +165,20 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
       if (!auditRecorded) {
         auditRecorded = true
         let result: 'allowed' | 'denied' | 'error' = 'error'
+        let errorCode: string | undefined
+        let errorMessage: string | undefined
         try {
           const parsed = JSON.parse(scopedResponse) as RpcResponse
           if (parsed.ok === true) {
             result = 'allowed'
-          } else if (parsed.error.code === 'forbidden' || parsed.error.code === 'unauthorized') {
-            result = 'denied'
+          } else {
+            errorCode = typeof parsed.error.code === 'string' ? parsed.error.code : undefined
+            if (parsed.error.code === 'forbidden' || parsed.error.code === 'unauthorized') {
+              result = 'denied'
+            } else if (typeof parsed.error.message === 'string') {
+              // Why: a bare error code cannot tell a refusal from a host-side failure.
+              errorMessage = parsed.error.message.slice(0, 200)
+            }
           }
         } catch {
           // Keep the error result when a handler emitted a malformed frame.
@@ -141,19 +186,27 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         // Project walls and sidebars hydrate repeatedly for both access modes. Keep the audit useful
         // by retaining denied/error requests and explicit writes while leaving routine successful
         // reads out.
-        if (!(isRoutineReadRuntimeMethod(request.method) && result === 'allowed')) {
+        if (
+          !(isRoutineReadRuntimeRequest(request.method, request.params) && result === 'allowed') &&
+          !isExpectedTeamReadError(request.method, errorMessage)
+        ) {
           this.getRuntimeAccessAudit().record({
             at: Date.now(),
             deviceId: device.deviceId,
             deviceName: device.name,
             accessMode,
             ...(device.teamBinding
-              ? { teamGroupId: device.teamBinding.teamGroupId, memberId: device.teamBinding.memberId }
+              ? {
+                  teamGroupId: device.teamBinding.teamGroupId,
+                  memberId: device.teamBinding.memberId
+                }
               : undefined),
             method: request.method,
             result,
             requestId: request.id,
-            durationMs: Date.now() - auditStartedAt
+            durationMs: Date.now() - auditStartedAt,
+            ...(errorCode ? { errorCode } : {}),
+            ...(errorMessage ? { errorMessage } : {})
           })
         }
       }
@@ -192,6 +245,7 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         connectionId,
         clientId: token,
         pairedDeviceId: device.deviceId,
+        pairedDeviceName: device.name,
         accessMode,
         teamBinding: device.teamBinding,
         // Why: gates the mobile-only payload diet so full-screen web/desktop clients aren't truncated.
@@ -207,7 +261,20 @@ export class RuntimeRpcWebSocketDispatch extends RuntimeRpcRequestAdmission {
         signal: abortRegistration?.signal,
         sendBinary,
         registerBinaryStreamHandler: (streamId, handler) =>
-          this.registerBinaryStreamHandler(connectionId, streamId, handler),
+          this.registerBinaryStreamHandler(
+            connectionId,
+            streamId,
+            teamReadTerminalStreamHandler(() => {
+              // Why: the host can switch a member between read-only and full access while their
+              // terminal is open, and the switch must apply to that terminal at once.
+              const latest = this.deviceRegistry?.getDevice(device.deviceId)
+              if (latest) {
+                return effectiveRuntimeAccessMode(latest)
+              }
+              // A device that vanished from the registry is revoked; do not keep its old level.
+              return this.deviceRegistry ? 'team-read' : accessMode
+            }, handler)
+          ),
         registerBinaryMessageHandler: (handler) =>
           this.registerBinaryMessageHandler(connectionId, handler)
       })

@@ -1,6 +1,7 @@
 import { OverviewSections } from './overview-sections.jsx'
 import { ExperimentalSettings, SettingsIcon } from './overview-settings.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
+import { CURRENT_BW_SHELL as shellMeta } from '../../prototype-shell-meta.js'
 import { Dialog, SourcePanel } from './overview-components.jsx'
 import { versionWorkflowProgress } from '../../../../src/renderer/src/workbench/version-workflow-progress'
 import {
@@ -208,8 +209,14 @@ function App() {
     <div className="ov-app">
       <div className="review-bar">
         <strong>
-          原型注释: #{334} · {revision}
+          {shellMeta.productName} → 版本总览 <span className="tag tag-neutral">原型评审</span>
         </strong>
+        <span title={shellMeta.source}>复用当前 BW 外壳 · 内容为版本快照示例 · {revision}</span>
+        <nav aria-label="特性文档入口">
+          <a href="../intent.md">意图</a>
+          <a href="../spec.md">规格</a>
+          <a href="../STATUS.md">状态</a>
+        </nav>
         <select
           aria-label="版本生命周期情景"
           value={scenario}
@@ -272,10 +279,10 @@ function App() {
         <aside className="ov-sidebar" aria-label="BW 项目与版本侧边栏">
           <div className="ov-brand">
             <LayoutDashboard size={22} />
-            <span>Workbench</span>
+            <span>{shellMeta.productName}</span>
           </div>
           <div className="ov-nav-group">
-            <strong>Builder Workbench</strong>
+            <strong>{shellMeta.projectName}</strong>
           </div>
           <button className="nav-row" onClick={() => native('项目总览')}>
             <LayoutDashboard size={15} />
@@ -588,7 +595,7 @@ function App() {
                 工作树分支已核对，不能由 Git 推断 BW
                 宿主登记或会话状态。落地沿原有工作树激活和任务开工：唯一匹配直接进入，多实例按宿主选择，无匹配进入原生创建器。本原型不创建或激活工作树。
               </Note>
-              <Link href="../version-workspace/version-workspace-prototype.html?rev=439-feedback">
+              <Link href="../version-workspace/prototype.html">
                 查看现有原生入口衔接
               </Link>
             </>
@@ -596,7 +603,7 @@ function App() {
           {dialog.kind === 'native' && (
             <>
               <Note>
-                沿用当前 BW 的「{dialog.route}」，带入 Builder Workbench{' '}
+                沿用当前 BW 的「{dialog.route}」，带入 {shellMeta.projectName}{' '}
                 {dialog.route === '新建版本' ? '项目' : `/ ${selected.version}`}{' '}
                 上下文。此处保留原入口与旅程，真实会话和页面由现有能力承接；不会启动或操控日常 BW。
               </Note>
@@ -629,12 +636,12 @@ function App() {
                 </p>
               </div>
               {dialog.route === '版本计划' && (
-                <Link href="../version-planning/planning-journey-prototype.html">
+                <Link href="../version-planning/prototype.html">
                   打开已有计划高保真
                 </Link>
               )}
               {dialog.route === '版本验收' && (
-                <Link href="../version-acceptance/acceptance-journey-prototype.html">
+                <Link href="../version-acceptance/prototype.html">
                   打开已有验收高保真
                 </Link>
               )}
@@ -642,7 +649,7 @@ function App() {
                 <Link href={`${repository}/pull/460`}>项目总览设计 PR #460</Link>
               )}
               {!['版本计划', '版本验收', '项目总览'].includes(dialog.route) && (
-                <Link href="../version-workspace/version-workspace-prototype.html?rev=439-feedback">
+                <Link href="../version-workspace/prototype.html">
                   打开现有壳与任务开工原型
                 </Link>
               )}

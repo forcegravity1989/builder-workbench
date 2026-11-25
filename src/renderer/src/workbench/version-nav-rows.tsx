@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   CalendarRange,
   ChevronDown,
@@ -26,6 +26,8 @@ import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbenc
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { VERSION_TASKS_ENTRY_TITLE, WORKFLOW_SCREEN_LABELS } from './version-labels'
 import { VersionWorktreeHostGlyph } from './version-worktree-host'
+import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
+import { useVersionTreeWorktreeRevealRequest } from './version-sidebar-state'
 
 /**
  * G2 侧栏版本树的行组件（P3a，高保真修订 8）：流程行=业务入口＋本树入口合一
@@ -92,6 +94,16 @@ export function WorkflowRow({
 }: WorkflowRowProps): React.JSX.Element {
   const [agentsOpen, setAgentsOpen] = useState(true)
   const trees = findVersionFlowWorktrees(worktrees, { version, workflow })
+  // #762: a reveal request aimed at one of this workflow's trees reopens the collapsed row.
+  const revealRequest = useVersionTreeWorktreeRevealRequest()
+  const revealTargetsMe =
+    revealRequest !== null &&
+    trees.some((tree) => getWorktreeHostIdentity(tree) === revealRequest.worktreeIdentity)
+  useEffect(() => {
+    if (revealTargetsMe) {
+      setAgentsOpen(true)
+    }
+  }, [revealTargetsMe])
   const Icon = workflow === 'plan' ? CalendarRange : ClipboardCheck
   const label = WORKFLOW_SCREEN_LABELS[workflow]
   const onlyTree = trees.length === 1 ? (trees[0] ?? null) : null
@@ -168,6 +180,16 @@ export function GoalDirectoryRow({
   onOpenWorkspace
 }: GoalRowProps): React.JSX.Element {
   const [expanded, setExpanded] = useState(false)
+  // #762: a reveal request aimed at a goal tree reopens the collapsed directory.
+  const revealRequest = useVersionTreeWorktreeRevealRequest()
+  const revealTargetsMe =
+    revealRequest !== null &&
+    goalTrees.some((tree) => getWorktreeHostIdentity(tree) === revealRequest.worktreeIdentity)
+  useEffect(() => {
+    if (revealTargetsMe) {
+      setExpanded(true)
+    }
+  }, [revealTargetsMe])
   return (
     <div className="min-w-0">
       <div className={cn(ROW_CLASS, active ? ROW_ACTIVE : ROW_IDLE)}>

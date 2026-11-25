@@ -3,7 +3,7 @@ import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { focusMissingMilestoneField } from './milestone-field'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { Button } from '@/components/ui/button'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowDownToLine, LoaderCircle } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
@@ -61,10 +61,6 @@ export function ProjectMilestones({
       reloadCatalog()
     }
   }, [formalHead, reloadCatalog])
-  const reviewInput = useMemo(
-    () => ({ draft: state?.draft, baseline: state?.baseline }),
-    [state?.draft, state?.baseline]
-  )
   const root = useRef<HTMLElement>(null)
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
   const [restoreKey, setRestoreKey] = useState(0)
@@ -162,6 +158,20 @@ export function ProjectMilestones({
     state.data.formal.registeredVersions ?? state.data.formal.versions
   ).concat(project?.committed.registeredVersions ?? project?.committed.versions ?? [])
   const problems = milestoneProblems(state.draft, state.baseline)
+  const busyReason = project?.workingError
+    ? '项目材料文件无法读取，见下方说明。'
+    : state.saving
+      ? '正在保存里程碑…'
+      : model.updating
+        ? '正在更新项目材料工作树…'
+        : busy
+          ? '正在读取项目材料，请稍候。'
+          : undefined
+  const reviewBlockedReason = state.fileChanged
+    ? '里程碑文件已被改动，请先复制修改或载入文件。'
+    : state.data.review.queryFailed
+      ? '评审状态未读到，请先重试读取。'
+      : busyReason
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function renameVersion(cycleId: string, version: string, previousName?: string) {
     const result = editMilestoneVersionName(
@@ -358,17 +368,22 @@ export function ProjectMilestones({
             />
           )}
           {!editing && (
-            <Button
-              size="xs"
-              className="bg-foreground text-background hover:bg-foreground/90"
-              disabled={busy || !!project?.workingError}
-              data-contextual-tour-target={
-                hasReviewAction ? 'milestone-start' : 'milestone-start milestone-submit'
-              }
-              onClick={model.beginEditing}
+            <span
+              className="inline-flex"
+              title={busy || project?.workingError ? busyReason : undefined}
             >
-              规划里程碑
-            </Button>
+              <Button
+                size="xs"
+                className="bg-foreground text-background hover:bg-foreground/90"
+                disabled={busy || !!project?.workingError}
+                data-contextual-tour-target={
+                  hasReviewAction ? 'milestone-start' : 'milestone-start milestone-submit'
+                }
+                onClick={model.beginEditing}
+              >
+                规划里程碑
+              </Button>
+            </span>
           )}
           {hasReviewAction && (
             <MilestoneReviewButton
@@ -382,7 +397,7 @@ export function ProjectMilestones({
               reviewUrl={state.data.review.pr?.url ?? undefined}
               secondary={!editing}
               changes={changes}
-              reviewInput={reviewInput}
+              blockedReason={reviewBlockedReason}
               submit={() => {
                 void model.submit()
               }}

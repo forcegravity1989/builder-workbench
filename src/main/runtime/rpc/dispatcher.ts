@@ -99,6 +99,7 @@ export class RpcDispatcher {
           requestId: request.id,
           clientId: options?.clientId,
           pairedDeviceId: options?.pairedDeviceId,
+          pairedDeviceName: options?.pairedDeviceName,
           accessMode: options?.accessMode,
           teamBinding: options?.teamBinding,
           clientKind: options?.clientKind,

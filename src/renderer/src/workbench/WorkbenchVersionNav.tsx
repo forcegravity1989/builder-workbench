@@ -46,6 +46,7 @@ import {
   publishVersionSidebarProjection,
   useVersionSidebarFocusRequest
 } from './version-sidebar-state'
+import { useVersionTreeWorktreeReveal } from './use-version-tree-worktree-reveal'
 
 type DialogState = { mode: 'create' } | { mode: 'cleanup'; version: string } | null
 
@@ -260,6 +261,24 @@ export function WorkbenchVersionNav({
     },
     [expandedVersions, setExpandedOverrideAndStore]
   )
+
+  const versions = useMemo(() => entries.map((entry) => entry.version), [entries])
+  const expandSection = useCallback(() => setCollapsed(false), [])
+  const expandVersion = useCallback(
+    (version: string) => setExpandedOverrideAndStore(new Set([...expandedVersions, version])),
+    [expandedVersions, setExpandedOverrideAndStore]
+  )
+  const treeReveal = useVersionTreeWorktreeReveal({
+    repoId,
+    worktrees: project.worktrees,
+    versions,
+    materialReady,
+    hasSourceProblems,
+    planOrderPending: project.planOrderPending,
+    expandedVersions,
+    expandVersion,
+    expandSection
+  })
 
   const activeBinding =
     activeWorktree &&
@@ -529,6 +548,7 @@ export function WorkbenchVersionNav({
             activeContextKey={`${activeView}:${activeObjectKey}`}
             versionElements={versionElements}
             renderRow={renderVersionRow}
+            forceReveal={treeReveal.forceReveal}
           />
         </>
       ) : null}
@@ -555,7 +575,11 @@ export function WorkbenchVersionNav({
     </div>
   )
   return (
-    <VersionTreeDisplayProvider value={nativeDisplay} trees={project.worktrees}>
+    <VersionTreeDisplayProvider
+      value={nativeDisplay}
+      trees={project.worktrees}
+      highlightedRevealRowKey={treeReveal.highlightedRevealRowKey}
+    >
       {project.catalogReaders}
       {content}
     </VersionTreeDisplayProvider>

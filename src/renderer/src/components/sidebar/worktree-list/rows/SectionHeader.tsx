@@ -26,7 +26,6 @@ import {
   SidebarGroupChevron
 } from '../../ProjectHeaderActions'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import SidebarWorkspaceOptionsMenu from '@/components/sidebar/SidebarWorkspaceOptionsMenu'
 import { NewWorkspaceButton } from '@/components/sidebar/sidebar-header-actions'
 import {
   getProjectGroupHeaderPaddingLeft,
@@ -383,16 +382,14 @@ export function renderWorktreeSectionHeaderRow(args: {
         </div>
 
         {isWorkbenchShell() && isAllHeader ? (
-          // Why stop propagation: these actions live inside the clickable row
-          // header; without it, clicking 选项/新建工作区 would also toggle the
+          // Why stop propagation: this action lives inside the clickable row
+          // header; without it, clicking 新建工作区 would also toggle the
           // 工作区 collapse. Keyboard too, so Enter on the button doesn't collapse.
           <div
             className="flex shrink-0 items-center gap-1"
-            data-workbench-workspace-actions=""
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
           >
-            <SidebarWorkspaceOptionsMenu />
             <NewWorkspaceButton preserveWorkspaceBoardOpen={false} />
           </div>
         ) : null}
