@@ -585,7 +585,8 @@ describe('launchAgentInNewTab', () => {
 
   it('pastes a quoted draft without prefill or submit when paste delivery is requested', async () => {
     const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
-    const prompt = '<div class="absolute inset-0" data-native-file-drop-target="terminal">\n完整读取 Skill'
+    const prompt =
+      '<div class="absolute inset-0" data-native-file-drop-target="terminal">\n完整读取 Skill'
 
     const result = launchAgentInNewTab({
       agent: 'claude',
@@ -593,6 +594,7 @@ describe('launchAgentInNewTab', () => {
       prompt,
       promptDelivery: 'draft',
       deliverDraftByPaste: true,
+      draftPasteSpawnTimeoutMs: 30_000,
       launchPlatform: 'win32'
     })
 
@@ -609,7 +611,8 @@ describe('launchAgentInNewTab', () => {
         content: prompt,
         agent: 'claude',
         submit: false,
-        forcePaste: true
+        forcePaste: true,
+        spawnTimeoutMs: 30_000
       })
     )
   })

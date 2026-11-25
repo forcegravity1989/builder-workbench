@@ -60,6 +60,8 @@ export type LaunchAgentInNewTabArgs = {
    * Skips native `--prefill`, which Windows PowerShell splits when the draft contains quotes.
    */
   deliverDraftByPaste?: boolean
+  /** PTY creation budget for local post-launch draft delivery, separate from composer readiness. */
+  draftPasteSpawnTimeoutMs?: number
 }
 
 export type LaunchAgentInNewTabResult = {
@@ -308,6 +310,9 @@ function launchAgentInNewTabInternal(
       agent,
       submit: submitPastedPrompt,
       forcePaste: promptDelivery === 'submit-after-ready' || deliverDraftByPaste === true,
+      ...(args.draftPasteSpawnTimeoutMs !== undefined
+        ? { spawnTimeoutMs: args.draftPasteSpawnTimeoutMs }
+        : {}),
       onTimeout: timeoutNotice.onTimeout
     }).then((delivered) => {
       if (delivered) {
