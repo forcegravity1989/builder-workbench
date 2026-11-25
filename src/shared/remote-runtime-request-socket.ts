@@ -10,6 +10,7 @@ import {
 } from './e2ee-crypto'
 import type { PairingOffer } from './pairing'
 import type { RuntimeCapability } from './protocol-version'
+import { remoteRuntimeAuthCallerFields } from './remote-runtime-caller-identity'
 import { remoteRuntimeClientCapabilities } from './remote-runtime-client-capabilities'
 import {
   formatRemoteRuntimeCloseMessage,
@@ -60,7 +61,8 @@ export async function sendRemoteRuntimeRequestOnSocket<TResult>(
   const serializedAuth = serializeRemoteRuntimePayload({
     type: 'e2ee_auth',
     deviceToken: pairing.deviceToken,
-    clientCapabilities: remoteRuntimeClientCapabilities(clientCapabilities)
+    clientCapabilities: remoteRuntimeClientCapabilities(clientCapabilities),
+    ...remoteRuntimeAuthCallerFields()
   })
   const pendingRequest = {
     preparedRequest: prepareRemoteRuntimeRequest(new Map(), () =>

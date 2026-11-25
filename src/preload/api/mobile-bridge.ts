@@ -79,6 +79,9 @@ export const mobileApi = {
   ): Promise<RuntimePairingLink | null> =>
     ipcRenderer.invoke('mobile:restoreRuntimePairingUrl', reference),
 
+  getRuntimeAccessLinkUrl: (args: { deviceId: string }): Promise<{ pairingUrl: string | null }> =>
+    ipcRenderer.invoke('mobile:getRuntimeAccessLinkUrl', args),
+
   listDevices: (): Promise<{
     devices: { deviceId: string; name: string; pairedAt: number; lastSeenAt: number }[]
   }> => ipcRenderer.invoke('mobile:listDevices'),
@@ -88,8 +91,11 @@ export const mobileApi = {
 
   listRuntimeAccessGrants: () => ipcRenderer.invoke('mobile:listRuntimeAccessGrants'),
 
-  grantRuntimeFullAccess: (args: { deviceIds: string[] }): Promise<{ granted: string[] }> =>
-    ipcRenderer.invoke('mobile:grantRuntimeFullAccess', args),
+  setRuntimeAccessMode: (args: {
+    deviceId: string
+    accessMode: 'team-read' | 'full'
+  }): Promise<{ accessMode: 'team-read' | 'full' | null }> =>
+    ipcRenderer.invoke('mobile:setRuntimeAccessMode', args),
 
   listRuntimeAccessAudit: (args?: {
     action?: string

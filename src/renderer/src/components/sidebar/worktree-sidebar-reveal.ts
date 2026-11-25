@@ -35,6 +35,25 @@ export function getScrollTopToRevealBounds(
   return null
 }
 
+// Why: a reveal scroll can be overridden after it lands by a native scroll correction
+// (e.g. the virtualizer's measurement adjustment while a tall content row remounts).
+// Callers re-check the row actually sits in the viewport before consuming the request.
+export function isElementRevealedInScrollContainer(
+  container: HTMLElement,
+  element: Element
+): boolean {
+  if (!container.contains(element)) {
+    return false
+  }
+  return (
+    getScrollTopToRevealBounds(
+      container,
+      getElementScrollBounds(container, element),
+      WORKTREE_SIDEBAR_REVEAL_TOP_INSET
+    ) === null
+  )
+}
+
 export function revealElementInScrollContainer(
   container: HTMLElement,
   element: Element,
