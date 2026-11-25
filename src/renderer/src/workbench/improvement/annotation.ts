@@ -24,7 +24,10 @@ async function initialize(): Promise<ReactGrabAPI> {
   const { getGlobalApi, init } = await import('react-grab')
   await import('react-grab/styles.css')
   const api = getGlobalApi() ?? init()
-  api.setOptions({ freezeReactUpdates: false })
+  api.setOptions({
+    freezeReactUpdates: false,
+    ...(!import.meta.env.DEV ? { activationKey: () => false } : {})
+  })
   api.setToolbarState({ collapsed: false, enabled: true })
   attachHandoff(api)
   return api

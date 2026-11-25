@@ -48,7 +48,7 @@ export function workbenchRepairLinkAction(
     ? {
         repair: {
           task: true,
-          label: translate('workbench.improvement.startRepair', '开始修复'),
+          label: translate('workbench.improvement.startRepair', 'Start repair'),
           run: () => openWorkbenchTaskItemLink(url, 'repair')
         }
       }

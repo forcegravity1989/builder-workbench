@@ -32,7 +32,7 @@ export function openImprovementAssistant(content: string): Promise<void> {
 async function prepareDraft(content: string): Promise<void> {
   const state = useAppStore.getState()
   const capturedAt = new Date().toISOString()
-  const sourcePage = `${state.activeView} (${location.pathname}${location.hash})`
+  const sourcePage = `${state.activeView} (${location.pathname}${location.hash})；${import.meta.env.DEV ? '开发构建' : '生产构建'}`
   const tabId = drafts.get(content)
   if (
     tabId &&
