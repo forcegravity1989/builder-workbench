@@ -16,6 +16,7 @@ import {
   buildHttpLinkActions,
   httpLinkActionDestinationsForUrl,
   openRoutedHttpLink,
+  workbenchRepairLinkAction,
   type HttpLinkActionDestinations,
   type HttpLinkDestination,
   type HttpLinkRoutingPreferenceRequester
@@ -90,7 +91,8 @@ export function handleTerminalHttpLink(
     kind: 'url',
     ...buildHttpLinkActions(destinations, (destination) =>
       openRoutedHttpLink(url, { ...deps, modifierHeld: false, forceDestination: destination })
-    )
+    ),
+    ...workbenchRepairLinkAction(url, deps.worktreeId)
   })
 }
 

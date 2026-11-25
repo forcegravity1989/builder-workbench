@@ -1,6 +1,8 @@
 import { translate } from '@/i18n/i18n'
 import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import {
+  isWorkbenchRepairIssue,
   openWorkbenchTaskItemLink,
   workbenchTaskItemLink
 } from '@/workbench/task-item-link-routing'
@@ -36,6 +38,21 @@ export type HttpLinkAction = {
   external?: boolean
   label: string
   run: () => void | Promise<void>
+}
+
+export function workbenchRepairLinkAction(
+  url: string,
+  worktreeId: string
+): { repair?: HttpLinkAction } {
+  return worktreeId === FLOATING_TERMINAL_WORKTREE_ID && isWorkbenchRepairIssue(url)
+    ? {
+        repair: {
+          task: true,
+          label: translate('workbench.improvement.startRepair', '开始修复'),
+          run: () => openWorkbenchTaskItemLink(url, 'repair')
+        }
+      }
+    : {}
 }
 
 export function canSourceOwnerOpenInOrca(

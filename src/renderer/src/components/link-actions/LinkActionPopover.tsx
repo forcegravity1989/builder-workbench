@@ -203,6 +203,14 @@ export function LinkActionPopover<TRequest extends LinkActionRequest>({
               onRun={() => runAction(request.additional!)}
             />
           ) : null}
+          {request.repair ? (
+            <ActionRow
+              action={request.repair}
+              alternate={false}
+              showShortcut={false}
+              onRun={() => runAction(request.repair!)}
+            />
+          ) : null}
         </PopoverContent>
       ) : null}
     </Popover>

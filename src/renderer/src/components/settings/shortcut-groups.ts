@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   KEYBINDING_DEFINITIONS,
   agentTabActionId,
@@ -32,7 +33,10 @@ export function groupDefinitions(
   )
   const groups = new Map<string, KeybindingDefinition[]>()
   for (const definition of [...KEYBINDING_DEFINITIONS, ...additionalDefinitions]) {
-    if (hiddenAgentActionIds.has(definition.id)) {
+    if (
+      hiddenAgentActionIds.has(definition.id) ||
+      (definition.id === 'workbench.annotate' && !isWorkbenchShell())
+    ) {
       continue
     }
     groups.set(definition.group, [...(groups.get(definition.group) ?? []), definition])

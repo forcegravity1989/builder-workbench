@@ -150,7 +150,7 @@ function App() {
   const [context, setContext] = useState('')
   const [filtered, setFiltered] = useState(false)
   const collecting = useRef(false)
-  const [active, setActive] = useState(false)
+  const [, setActive] = useState(false)
   const [workspaceOpen, setWorkspaceOpen] = useState(false)
   const [receipt, setReceipt] = useState<{ location: string; note: string } | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
@@ -200,8 +200,9 @@ function App() {
         return
       }
       sendButton = document.createElement('button')
-      sendButton.textContent = '交给改进助手'
-      sendButton.title = '将已保存的批注与元素信息交给改进助手'
+      sendButton.textContent = '↗'
+      sendButton.title = '交给改进助手'
+      sendButton.setAttribute('aria-label', '交给改进助手')
       sendButton.setAttribute('data-react-grab-ignore-events', '')
       sendButton.setAttribute('data-bw-send-improvement', '')
       sendButton.style.cssText =
@@ -261,7 +262,7 @@ function App() {
           </p>
           <p>
             React Grab
-            是开发态工具。浮窗新增按钮为本页局部适配，通过原生复制事件取得批注，不读取系统剪贴板。唤醒按钮供体验用，快捷键为目标提案。未启动模型、连接宿主或创建工作树。
+            是开发态工具。浮窗新增按钮为本页局部适配，通过原生复制事件取得批注，不读取系统剪贴板。快捷键与图标入口对应目标行为。未启动模型、连接宿主或创建工作树。
           </p>
           <a href="dist/component-manifest.json">组件来源与哈希</a>
         </details>
@@ -270,22 +271,9 @@ function App() {
         <section>
           <h1 className="text-lg font-semibold">交给改进助手</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            点「开启批注」或按 {shortcut}。点选/框选下方控件，写批注并按 Enter
+            按 {shortcut}。点选/框选下方控件，写批注并按 Enter
             保存；最后点批注浮窗里、复制旁的「交给改进助手」。Esc 退出。
           </p>
-          <Button
-            className="mt-3 mr-3"
-            onClick={() => {
-              const api = getGlobalApi()
-              if (api?.isActive()) {
-                api.deactivate()
-              } else {
-                api?.comment()
-              }
-            }}
-          >
-            {active ? '退出批注' : '开启批注'}
-          </Button>
           <Button
             className="mt-3"
             variant="outline"
