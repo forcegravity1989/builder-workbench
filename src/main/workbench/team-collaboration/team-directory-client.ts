@@ -216,6 +216,12 @@ async function queryCurrentMemberId(route: WelinkRoute): Promise<string | null> 
 
 function parseDirectory(text: string, groupId: string, spaceId: string): TeamDirectory {
   const parsed = JSON.parse(text) as Partial<TeamDirectory>
+  if (
+    (parsed.team_group_id && parsed.team_group_id !== groupId) ||
+    (parsed.team_space_id && parsed.team_space_id !== spaceId)
+  ) {
+    throw new Error('The team directory does not match the requested group and space.')
+  }
   return {
     schema_version: 1,
     team_group_id: groupId,
@@ -376,23 +382,17 @@ async function downloadDirectory(
   const root = await mkdtemp(join(tmpdir(), 'bw-team-directory-'))
   try {
     await downloadOneboxFile(route, spaceId, node.id, root)
-    const candidates = ['team.json', join(root, 'team.json')]
-    for (const candidate of candidates) {
-      try {
-        const directory = parseDirectory(await readFile(candidate, 'utf8'), groupId, spaceId)
-        return { directory, fileId: node.id }
-      } catch {
-        // The CLI may create a directory named after the file id; inspect below.
-      }
-    }
     const files = await readdir(root)
-    for (const file of files) {
-      if (file.endsWith('.json')) {
-        const directory = parseDirectory(await readFile(join(root, file), 'utf8'), groupId, spaceId)
-        return { directory, fileId: node.id }
-      }
+    const file = files.includes('team.json')
+      ? 'team.json'
+      : files.find((name) => name.endsWith('.json'))
+    if (!file) {
+      throw new Error('team.json download did not produce a JSON file')
     }
-    throw new Error('team.json download did not produce a JSON file')
+    return {
+      directory: parseDirectory(await readFile(join(root, file), 'utf8'), groupId, spaceId),
+      fileId: node.id
+    }
   } finally {
     await rm(root, { recursive: true, force: true })
   }
