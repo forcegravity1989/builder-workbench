@@ -88,7 +88,15 @@ export function TeamSettingsDialog({
   }, [open])
 
   const enterTeam = (): void => {
-    void loadDirectory(groupId, spaceId, switchingTeam).then(syncLoadedTeamHosts)
+    const remembered = rememberedTeamBinding()
+    const changingBinding =
+      Boolean(remembered.groupId && remembered.spaceId) &&
+      (groupId.trim() !== remembered.groupId || spaceId.trim() !== remembered.spaceId)
+    if (switchingTeam || changingBinding) {
+      void loadDirectory(groupId, spaceId, true)
+    } else {
+      void loadDirectory(groupId, spaceId).then(syncLoadedTeamHosts)
+    }
   }
 
   const cancelSwitch = (): void => {
@@ -150,7 +158,8 @@ export function TeamSettingsDialog({
     try {
       const result = await window.api.teamCollaboration.readDirectory({
         groupId: nextGroupId,
-        spaceId: nextSpaceId
+        spaceId: nextSpaceId,
+        ...(switching ? { switching: true } : {})
       })
       directorySnapshot = {
         directory: result.directory,
@@ -171,6 +180,7 @@ export function TeamSettingsDialog({
     } catch (cause) {
       if (switching) {
         logWorkbenchError('团队切换读取失败', cause)
+        setLoadFailed(true)
         setSwitchFailed(true)
         return false
       }
