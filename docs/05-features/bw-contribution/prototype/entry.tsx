@@ -1,22 +1,23 @@
-import React, { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Toaster } from 'sonner'
-import { i18n, setRendererUiLanguage } from '@/i18n/i18n'
-import { WorkbenchRail } from '@/workbench/WorkbenchRail'
-import { PrototypeWorkspaceChrome } from './PrototypeWorkspaceChrome'
-import { SidebarFeedbackDialog } from '@/components/sidebar/SidebarFeedbackDialog'
+import { getGlobalApi, init } from 'react-grab'
+import { setRendererUiLanguage } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import NewWorkspaceComposerCard from '@/components/NewWorkspaceComposerCard'
-import { ReviewTools, type ScenarioId } from './ReviewTools'
-import { FeedbackCaptureContext, useFeedbackCapture } from './FeedbackCapture'
-import { ChatComposer, ChatRow, ChatTranscript } from './ReviewChat'
 import { toRuntimeExecutionHostId } from '@/../../shared/execution-host'
+import { ChatRow, ChatTranscript } from './ReviewChat'
 
+const issue = 'https://github.com/example/builder-workbench/issues/401'
+const repairNote = `拉取最新代码，按项目 workbench-start 处理 Issue ${issue}。`
+const collectSkill = 'C:/Users/demo/.claude/skills/improve-workbench/SKILL.md'
+const noop = () => {}
+const projectId = 'project-group:bw'
 const projects = [
   {
     kind: 'project-group',
-    id: 'project-group:bw',
+    id: projectId,
     projectGroupId: 'bw',
     displayName: 'Builders Workbench',
     badgeColor: 'var(--muted-foreground)',
@@ -24,495 +25,273 @@ const projects = [
     parentPath: 'C:/workspaces',
     connectionId: null
   }
-]
+] satisfies NonNullable<React.ComponentProps<typeof NewWorkspaceComposerCard>['projectOptions']>
 const hosts = [
   {
     kind: 'ready',
     id: 'setup-local',
-    projectId: 'project-group:bw',
+    projectId,
     hostId: 'local',
     repoId: 'bw-local',
-    label: '处理者本机',
+    label: '本机',
     detail: '已登记 BW 仓',
     path: 'C:/workspaces/builder-workbench'
   },
   {
     kind: 'ready',
     id: 'setup-team',
-    projectId: 'project-group:bw',
+    projectId,
     hostId: toRuntimeExecutionHostId('bw-demo-dev-w02'),
     repoId: 'bw-team',
     label: '团队开发机 Dev-W02',
-    detail: '已配对 BW 执行宿主 · 已授权 · 已登记 BW 仓',
+    detail: '已配对 · 已授权',
     path: '/srv/workspaces/builder-workbench'
-  },
-  {
-    kind: 'needs-setup',
-    id: 'setup-offline',
-    projectId: 'project-group:bw',
-    hostId: toRuntimeExecutionHostId('bw-demo-dev-w08'),
-    label: '团队开发机 Dev-W08',
-    detail: '离线',
-    isAvailable: false,
-    attention: false,
-    canSetLocation: false
   }
-]
-const scenarios = {
-  A: {
-    name: 'BW 自用',
-    project: 'Builders Workbench',
-    title: '任务页 · 验收笔记',
-    draft: '核对任务筛选，补充验收记录。'
-  },
-  B: {
-    name: '其他项目',
-    project: '订单服务',
-    title: '订单查询 · 实现草稿',
-    draft: '补充订单查询失败路径的处理说明。'
-  },
-  C: {
-    name: '外部渠道',
-    project: '维护侧',
-    title: '维护工作 · 待分诊',
-    draft: '整理本轮产品反馈。'
-  }
-}
-const noop = () => {}
-const feedbackCopy = {
-  'auto.components.sidebar.SidebarFeedbackDialog.workbenchDescription':
-    '说一句问题或期望，可附已有图片。反馈送到本机改进会话，你可以继续原工作。',
-  'auto.components.sidebar.SidebarFeedbackDialog.7a46c228b8': '已交给本机改进会话。'
-}
-const originalCopy = new Map()
-function adaptFeedbackCopy(isCollector) {
-  for (const [key, value] of Object.entries(feedbackCopy)) {
-    if (!originalCopy.has(key)) {
-      originalCopy.set(key, i18n.getResource('zh', 'translation', key))
-    }
-    i18n.addResource('zh', 'translation', key, isCollector ? value : originalCopy.get(key))
-  }
-}
-const apiBridge = {}
-window.api = {
-  gh: { viewer: async () => null },
-  ui: { isMaximized: async () => false, onMaximizeChanged: () => () => {} },
-  platform: { get: () => ({ platform: 'win32', osRelease: '演示 Windows', arch: 'x64' }) },
-  updater: { getVersion: async () => '演示版本', check: async () => {} },
-  feedback: { submit: async (args) => apiBridge.submit(args) },
-  shell: { openUrl: async () => {} },
-  app: { restart: async () => {}, openCrashReport: async () => {}, showAbout: async () => {} }
+] satisfies NonNullable<
+  React.ComponentProps<typeof NewWorkspaceComposerCard>['projectHostSetupOptions']
+>
+
+function RepairWorkspace({
+  open,
+  onOpenChange,
+  onCreated
+}: {
+  open: boolean
+  onOpenChange: (value: boolean) => void
+  onCreated: (location: string, note: string) => void
+}) {
+  type ComposerProps = React.ComponentProps<typeof NewWorkspaceComposerCard>
+  const [host, setHost] = useState('setup-local')
+  const [name, setName] = useState('issue-401')
+  const [note, setNote] = useState(repairNote)
+  const [agent, setAgent] = useState<ComposerProps['quickAgent']>(null)
+  const [advanced, setAdvanced] = useState(true)
+  const [parent, setParent] = useState<string | null>(null)
+  const selected = hosts.find((item) => item.id === host)
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-auto" data-testid="repair-workspace">
+        <DialogHeader>
+          <DialogTitle>新建工作区</DialogTitle>
+        </DialogHeader>
+        <NewWorkspaceComposerCard
+          quickAgent={agent}
+          onQuickAgentChange={setAgent}
+          eligibleRepos={[]}
+          repoId={selected?.repoId || 'bw-local'}
+          projectOptions={projects}
+          selectedProjectId={projectId}
+          selectedRepoIsGit
+          onRepoChange={noop}
+          onProjectChange={noop}
+          primaryActionLabel="创建工作区"
+          name={name}
+          onNameValueChange={setName}
+          onSmartGitHubItemSelect={noop}
+          onSmartGitLabItemSelect={noop}
+          onSmartBranchSelect={noop}
+          onSmartLinearIssueSelect={noop}
+          smartNameSelection={null}
+          onClearSmartNameSelection={noop}
+          canReuseSelectedBranch={false}
+          reuseSelectedBranch={false}
+          onReuseSelectedBranchChange={noop}
+          forkPushWarning={null}
+          detectedAgentIds={null}
+          onOpenAgentSettings={noop}
+          advancedOpen={advanced}
+          onToggleAdvanced={() => setAdvanced(!advanced)}
+          parentWorktreeId={parent}
+          onParentWorktreeIdChange={setParent}
+          createDisabled={!selected || !name.trim()}
+          projectError={null}
+          creating={false}
+          onCreate={() => {
+            if (selected && name.trim()) {
+              onCreated(selected.label, note)
+            }
+          }}
+          note={note}
+          onNoteChange={setNote}
+          setupConfig={null}
+          requiresExplicitSetupChoice={false}
+          setupDecision={null}
+          onSetupDecisionChange={noop}
+          setupAgentStartupPolicy="start-immediately"
+          onSetupAgentStartupPolicyChange={noop}
+          shouldWaitForSetupCheck={false}
+          resolvedSetupDecision={null}
+          createError={null}
+          selectedRepoConnectionId={null}
+          selectedRepoSshStatus={null}
+          selectedRepoRequiresConnection={false}
+          selectedRepoConnectInProgress={false}
+          onConnectSelectedRepo={async () => {}}
+          canUseSparseCheckout={false}
+          sparsePresets={[]}
+          sparseSelectedPresetId={null}
+          onSparseSelectPreset={noop}
+          branchNameOverride={undefined}
+          onBranchNameOverrideChange={noop}
+          branchesEnabled={false}
+          setupControlsEnabled={false}
+          sparseControlsEnabled={false}
+          projectHostSetupOptions={hosts}
+          selectedProjectHostSetupId={host}
+          onProjectHostSetupChange={setHost}
+          showAddProjectButton={false}
+        />
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 function App() {
-  const [which, setWhich] = useState<ScenarioId>('A')
-  const [pane, setPane] = useState('work')
-  const [resetVersion, setResetVersion] = useState(0)
-  const [drafts, setDrafts] = useState(
-    Object.fromEntries(Object.entries(scenarios).map(([key, value]) => [key, value.draft]))
-  )
-  const [reports, setReports] = useState({})
-  const [errorNext, setErrorNext] = useState(false)
-  const [feedbackOpen, setFeedbackOpen] = useState(false)
-  const [reply, setReply] = useState('')
-  const [host, setHost] = useState(null)
-  const [project, setProject] = useState('project-group:bw')
-  const [workspaceName, setWorkspaceName] = useState('issue-d01')
-  const [quickAgent, setQuickAgent] = useState(null)
-  const [advanced, setAdvanced] = useState(false)
-  const [workerNote, setWorkerNote] = useState('')
-  const [parentWorktree, setParentWorktree] = useState(null)
-  const [workMessages, setWorkMessages] = useState({})
-  const [dark, setDark] = useState(false)
-  const capture = useFeedbackCapture(setFeedbackOpen)
-  const openFeedback = () => {
-    adaptFeedbackCopy(true)
-    setFeedbackOpen(true)
-  }
-  const report = reports[which]
-  const scene = scenarios[which]
-  const transition = (patch) =>
-    setReports((current) => ({ ...current, [which]: { ...current[which], ...patch } }))
-  const note = (text, attachments = 0) =>
-    transition({ text, attachments, stage: 'collected', additional: [] })
-  apiBridge.submit = async (args) => {
-    if (errorNext) {
-      setErrorNext(false)
-      return { ok: false, error: '演示发送失败，内容仍在表单中。' }
-    }
-    if (feedbackOpen) {
-      note(
-        capture.context ? `${args.feedback}\n\n元素现场：\n${capture.context}` : args.feedback,
-        args.images?.length ?? 0
-      )
-      capture.clear()
-    }
-    return { ok: true, imagesDelivered: true }
-  }
-  const ask = () => {
-    if (report?.stage === 'collected') {
-      transition({ stage: 'waiting' })
-    } else if (report?.stage === 'working') {
-      transition({ stage: 'review' })
-    }
-  }
-  const replySend = () => {
-    if (!reply.trim() || !report) {
-      return
-    }
-    const next = {
-      additional: [...report.additional, reply.trim()],
-      stage: report.stage === 'waiting' ? 'issue' : report.stage
-    }
-    if (report.stage === 'waiting' && which === 'A') {
-      Object.assign(next, { stage: 'working', worker: makeWorker(hosts[0]) })
-    }
-    transition(next)
-    setReply('')
-  }
-  const switchScenario = (id: ScenarioId) => {
-    capture.reset()
-    setFeedbackOpen(false)
-    adaptFeedbackCopy(false)
-    setWhich(id)
-    setPane('work')
-    setReply('')
-    setHost(null)
-  }
-  const locations = hosts.find((option) => option.id === host)
-  const makeWorker = (location) => ({
-    ...location,
-    agent: quickAgent,
-    workspaceId: `${location.hostId}:bw:issue-d01`,
-    branch: `codex/${workspaceName}`,
-    workspacePath:
-      location.hostId === 'local'
-        ? `C:/workspaces/.orca/worktrees/builder-workbench/${workspaceName}`
-        : `/srv/workspaces/.orca/worktrees/builder-workbench/${workspaceName}`
-  })
-  const receiveWorkspace = () => {
-    if (locations?.kind !== 'ready') {
-      return
-    }
-    transition({ stage: 'working', worker: makeWorker(locations) })
-    setPane('chat')
-  }
-  return (
-    <FeedbackCaptureContext.Provider value={feedbackOpen ? capture : null}>
-      <TooltipProvider>
-        <div className="min-h-screen bg-background text-foreground">
-          <ReviewTools
-            which={which}
-            scenarioNames={{ A: scenarios.A.name, B: scenarios.B.name, C: scenarios.C.name }}
-            projectName={scene.project}
-            workerLabel={report?.worker?.label}
-            workspaceOpen={pane === 'workspace'}
-            feedbackOpen={feedbackOpen}
-            errorNext={errorNext}
-            grabStatus={capture.status}
-            grabResult={capture.context}
-            onScenarioChange={switchScenario}
-            onExternalIntake={() => {
-              note('群空间反馈已人工转入：清除 BW 任务筛选后仍然只有两条。')
-              setPane('chat')
-            }}
-            onAdvance={ask}
-            onFailureChange={setErrorNext}
-            onToggleTheme={() => {
-              document.documentElement.classList.toggle('dark', !dark)
-              setDark(!dark)
-            }}
-            onReset={() => {
-              setResetVersion((value) => value + 1)
-              setReports((old) => ({ ...old, [which]: undefined }))
-              setDrafts((old) => ({ ...old, [which]: scene.draft }))
-              switchScenario(which)
-            }}
-          />
+  const [context, setContext] = useState('')
+  const [filtered, setFiltered] = useState(false)
+  const collecting = useRef(false)
+  const [workspaceOpen, setWorkspaceOpen] = useState(false)
+  const [receipt, setReceipt] = useState<{ location: string; note: string } | null>(null)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [captureError, setCaptureError] = useState(false)
+  const shortcut = /Mac/.test(navigator.userAgent) ? '⌘C' : 'Ctrl+C'
 
-          <div className="flex min-h-[80vh]">
-            <WorkbenchRail />
-            <main className="min-w-0 flex-1">
-              {which !== 'C' && (
-                <PrototypeWorkspaceChrome onFeedback={openFeedback} title={scene.title} />
+  useEffect(() => {
+    const api = getGlobalApi() ?? init()
+    api.setOptions({ freezeReactUpdates: false })
+    api.registerPlugin({
+      name: 'bw-improvement-assistant',
+      actions: [
+        {
+          id: 'send-to-bw-improvement-assistant',
+          label: '交给改进助手',
+          onAction: (selection) => {
+            if (!selection.enterPromptMode) {
+              setCaptureError(true)
+              return
+            }
+            collecting.current = true
+            setCaptureError(false)
+            selection.enterPromptMode()
+          }
+        }
+      ],
+      hooks: {
+        onDeactivate: () => {
+          collecting.current = false
+        },
+        onCopySuccess: (_elements, content) => {
+          if (collecting.current) {
+            collecting.current = false
+            setContext(content)
+            setReceipt(null)
+            setPanelOpen(true)
+          }
+        },
+        onAfterCopy: (_elements, success) => {
+          if (collecting.current && !success) {
+            collecting.current = false
+            setCaptureError(true)
+          }
+        }
+      }
+    })
+    return () => api.unregisterPlugin('bw-improvement-assistant')
+  }, [])
+
+  return (
+    <TooltipProvider>
+      <header className="border-b border-border bg-card px-4 py-2 text-xs">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <strong>改进助手</strong>
+          <span>研发保障 · 局部演示</span>
+          <a href="../intent.md">意图</a>
+          <a href="../spec.md">规格</a>
+          <a href="../STATUS.md">状态</a>
+        </div>
+        <details>
+          <summary>真实组件与拟补接线</summary>
+          <p>
+            实际加载 React Grab、原生会话消息、新建工作区组件。Skill 准备、会话打开、Issue
+            和开工均为演示接线。
+          </p>
+          <p>
+            React Grab
+            是开发态工具。本页演示独立会话片段，生产会话载体见规格。未启动模型、连接宿主或创建工作树。
+          </p>
+          <a href="dist/component-manifest.json">组件来源与哈希</a>
+        </details>
+      </header>
+      <main className="mx-auto max-w-2xl space-y-6 px-4 py-6">
+        <section>
+          <h1 className="text-lg font-semibold">交给改进助手</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            将指针移到下面的控件，按住 {shortcut} 进入 React
+            Grab。在目标上点右键，选择「交给改进助手」，用原生批注输入一句话。
+          </p>
+          <Button
+            className="mt-3"
+            variant="outline"
+            aria-pressed={filtered}
+            onClick={() => setFiltered(!filtered)}
+          >
+            {filtered ? '清除筛选' : '筛选任务'}
+          </Button>
+          {captureError && <p role="alert">选取未成功，可重新打开 React Grab。</p>}
+          {!panelOpen && context && (
+            <Button variant="ghost" className="ml-2" onClick={() => setPanelOpen(true)}>
+              回到改进会话
+            </Button>
+          )}
+        </section>
+        {panelOpen && (
+          <section
+            className="border-t border-border pt-4"
+            aria-label="改进会话"
+            data-testid="collector"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-semibold">改进会话</h2>
+              <Button variant="ghost" size="sm" onClick={() => setPanelOpen(false)}>
+                收起会话
+              </Button>
+            </div>
+            <details className="mb-4 text-sm">
+              <summary>已带入的元素与起手提示</summary>
+              <p>演示安装结果。完整读取并使用「{collectSkill}」中的 Skill，整理当前 BW 反馈。</p>
+              <pre className="max-h-36 overflow-auto whitespace-pre-wrap break-all">{context}</pre>
+            </details>
+            <ChatTranscript>
+              <ChatRow
+                id="assistant-start"
+                text={`已收到元素与原生批注。演示 Issue 已形成：[BW #401（示例链接）](${issue})。`}
+              />
+              {receipt && (
+                <ChatRow
+                  id="created"
+                  text={`演示已在${receipt.location}创建关联工作区。Issue 与备注已带入助手草稿，发送后开始修复。备注：${receipt.note}`}
+                />
               )}
-              <nav
-                className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2"
-                aria-label="工作区回看"
-              >
-                <Button
-                  variant={pane === 'work' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  aria-current={pane === 'work' ? 'page' : undefined}
-                  data-testid="back-work"
-                  onClick={() => setPane('work')}
-                >
-                  原工作
-                </Button>
-                {report && (
-                  <Button
-                    variant={pane === 'chat' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    aria-current={pane === 'chat' ? 'page' : undefined}
-                    data-testid="open-collector"
-                    onClick={() => setPane('chat')}
-                  >
-                    改进会话{['waiting', 'review'].includes(report.stage) ? ' · 待回应' : ''}
-                  </Button>
-                )}
-                {['issue', 'working', 'review', 'confirmed'].includes(report?.stage) && (
-                  <Button
-                    variant={pane === 'issue' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    aria-current={pane === 'issue' ? 'page' : undefined}
-                    data-testid="open-issue"
-                    onClick={() => setPane('issue')}
-                  >
-                    查看 Issue
-                  </Button>
-                )}
-              </nav>
-              <div className="mx-auto max-w-4xl px-4 py-6">
-                {pane === 'work' && (
-                  <section>
-                    <h1 className="mb-2 text-xl font-semibold">{scene.title}</h1>
-                    <p className="mb-4 text-muted-foreground">{scene.project} · 原工作区</p>
-                    <ChatTranscript>
-                      <ChatRow
-                        id="original-status"
-                        text="当前会话保留了原项目的上下文，你可以继续处理本次工作。"
-                      />
-                      {(workMessages[which] || []).map((text, index) => (
-                        <ChatRow key={index} id={`work-${index}`} role="user" text={text} />
-                      ))}
-                    </ChatTranscript>
-                    <div className="mt-5" data-testid="original-draft">
-                      <ChatComposer
-                        scope={`original-${which}`}
-                        value={drafts[which]}
-                        onChange={(value) => setDrafts((old) => ({ ...old, [which]: value }))}
-                        onSend={() => {
-                          if (!drafts[which].trim()) {
-                            return
-                          }
-                          setWorkMessages((old) => ({
-                            ...old,
-                            [which]: [...(old[which] || []), drafts[which]]
-                          }))
-                          setDrafts((old) => ({ ...old, [which]: '' }))
-                        }}
-                      />
-                    </div>
-                  </section>
-                )}
-                {pane === 'chat' && report && (
-                  <section data-testid="collector">
-                    <h1 className="text-xl font-semibold">改进会话</h1>
-                    <p className="mb-5 text-muted-foreground">
-                      {which === 'C' ? '维护者本机' : '报告者本机'} ·
-                      C:/workspaces/bw-feedback（演示非 Git 目录） · 独立原生会话
-                    </p>
-                    <ChatTranscript>
-                      <ChatRow id="original" role="user" text={report.text} />
-                      <ChatRow
-                        id="received"
-                        text={`收到来自 ${scene.project} 的反馈。我会核对既有问题和行为；你可以继续原工作。${report.attachments ? ` 演示收到图片附件 ${report.attachments} 张。` : ''}`}
-                      />
-                      {report.stage === 'waiting' && (
-                        <ChatRow
-                          id="question"
-                          text="我查到清除筛选后应恢复完整列表。这个问题发生在任务屏，还是在另一个列表？"
-                        />
-                      )}
-                      {report.additional.map((text, index) => (
-                        <ChatRow key={index} id={`answer-${index}`} role="user" text={text} />
-                      ))}
-                      {report.worker && (
-                        <ChatRow
-                          id="receipt"
-                          text={`派工回执 · ${report.worker.label} · ${report.worker.workspacePath} · ${report.worker.branch} · ${report.worker.workspaceId}。${report.worker.hostId === 'local' ? '按本机智能体配置启动。' : '远端使用终端会话。'}`}
-                        />
-                      )}
-                      {report.stage === 'review' && (
-                        <ChatRow id="ready" text="Worker 返回同路径的基线与修复记录。" />
-                      )}
-                      {report.stage === 'confirmed' && (
-                        <ChatRow
-                          id="confirmed"
-                          text="已记录你读过演示证据。真实验收、Issue 与 PR 后续仍沿原生授权处理。"
-                        />
-                      )}
-                    </ChatTranscript>
-                    {report.stage === 'review' && (
-                      <div className="mt-5">
-                        <Button data-testid="open-check" onClick={() => setPane('check')}>
-                          查看交付证据
-                        </Button>
-                      </div>
-                    )}
-                    <div className="mt-5">
-                      <ChatComposer value={reply} onChange={setReply} onSend={replySend} />
-                    </div>
-                  </section>
-                )}
-                {pane === 'issue' && report && (
-                  <section data-testid="issue">
-                    <h1 className="text-xl font-semibold">Issue #D01 · 清除筛选后恢复完整列表</h1>
-                    <p className="mb-5 text-muted-foreground">Builders Workbench · 演示 Issue</p>
-                    <ChatTranscript>
-                      <ChatRow id="issue-description" text={report.text} />
-                    </ChatTranscript>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {!report.worker && (
-                        <Button
-                          data-testid="open-workspace"
-                          onClick={() => {
-                            setHost('setup-local')
-                            setPane('workspace')
-                          }}
-                        >
-                          为 Issue 开始工作区
-                        </Button>
-                      )}
-                      {report.worker && (
-                        <Button data-testid="open-receipt" onClick={() => setPane('chat')}>
-                          查看派工回执
-                        </Button>
-                      )}
-                    </div>
-                  </section>
-                )}
-                {pane === 'workspace' && (
-                  <section data-testid="workspace">
-                    <h1 className="text-xl font-semibold">新建工作区</h1>
-                    <p className="mb-5 text-muted-foreground">
-                      关联 BW Issue #D01。反馈来源与执行宿主分别选择；不会共享发起人的机器。
-                    </p>
-                    <NewWorkspaceComposerCard
-                      quickAgent={quickAgent}
-                      onQuickAgentChange={setQuickAgent}
-                      eligibleRepos={[]}
-                      repoId={locations?.repoId || 'bw-local'}
-                      projectOptions={projects}
-                      selectedProjectId={project}
-                      selectedRepoIsGit
-                      onRepoChange={noop}
-                      onProjectChange={setProject}
-                      primaryActionLabel="创建关联工作区并派工"
-                      name={workspaceName}
-                      onNameValueChange={setWorkspaceName}
-                      onSmartGitHubItemSelect={noop}
-                      onSmartGitLabItemSelect={noop}
-                      onSmartBranchSelect={noop}
-                      onSmartLinearIssueSelect={noop}
-                      smartNameSelection={null}
-                      onClearSmartNameSelection={noop}
-                      canReuseSelectedBranch={false}
-                      reuseSelectedBranch={false}
-                      onReuseSelectedBranchChange={noop}
-                      forkPushWarning={null}
-                      detectedAgentIds={null}
-                      onOpenAgentSettings={noop}
-                      advancedOpen={advanced}
-                      onToggleAdvanced={() => setAdvanced(!advanced)}
-                      parentWorktreeId={parentWorktree}
-                      onParentWorktreeIdChange={setParentWorktree}
-                      createDisabled={
-                        !locations || locations.kind !== 'ready' || !workspaceName.trim()
-                      }
-                      projectError={null}
-                      creating={false}
-                      onCreate={receiveWorkspace}
-                      note={workerNote}
-                      onNoteChange={setWorkerNote}
-                      setupConfig={null}
-                      requiresExplicitSetupChoice={false}
-                      setupDecision={null}
-                      onSetupDecisionChange={noop}
-                      setupAgentStartupPolicy="start-immediately"
-                      onSetupAgentStartupPolicyChange={noop}
-                      shouldWaitForSetupCheck={false}
-                      resolvedSetupDecision={null}
-                      createError={null}
-                      selectedRepoConnectionId={null}
-                      selectedRepoSshStatus={null}
-                      selectedRepoRequiresConnection={false}
-                      selectedRepoConnectInProgress={false}
-                      onConnectSelectedRepo={async () => {}}
-                      canUseSparseCheckout={false}
-                      sparsePresets={[]}
-                      sparseSelectedPresetId={null}
-                      onSparseSelectPreset={noop}
-                      branchNameOverride={undefined}
-                      onBranchNameOverrideChange={noop}
-                      branchesEnabled={false}
-                      setupControlsEnabled={false}
-                      sparseControlsEnabled={false}
-                      projectHostSetupOptions={hosts}
-                      selectedProjectHostSetupId={host}
-                      onProjectHostSetupChange={setHost}
-                      showAddProjectButton={false}
-                    />
-                    <Button variant="ghost" onClick={() => setPane('issue')}>
-                      取消
-                    </Button>
-                  </section>
-                )}
-                {pane === 'check' && report && (
-                  <section data-testid="check">
-                    <h1 className="mb-2 text-xl font-semibold">交付证据</h1>
-                    <ChatTranscript>
-                      <ChatRow
-                        id="baseline"
-                        text="**基线证据（演示）**：选中待处理筛选，列表为 2 条。清除筛选后仍为 2 条。"
-                      />
-                      <ChatRow
-                        id="fixed"
-                        text="**修复证据（演示）**：选中后为 2 条。清除后恢复全部 6 条。"
-                      />
-                    </ChatTranscript>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <Button
-                        data-testid="confirm"
-                        onClick={() => {
-                          transition({ stage: 'confirmed' })
-                          setPane('chat')
-                        }}
-                      >
-                        确认已看懂记录
-                      </Button>
-                      <Button
-                        variant="outline"
-                        data-testid="rework"
-                        onClick={() => {
-                          transition({ stage: 'working' })
-                          setPane('chat')
-                        }}
-                      >
-                        退回修复
-                      </Button>
-                    </div>
-                  </section>
-                )}
-              </div>
-            </main>
-          </div>
-          <SidebarFeedbackDialog
-            key={`${which}-${resetVersion}`}
-            open={feedbackOpen}
-            onOpenChange={(open) => {
-              setFeedbackOpen(open)
-              if (!open) {
-                adaptFeedbackCopy(false)
-              }
+            </ChatTranscript>
+            <Button className="mt-5" onClick={() => setWorkspaceOpen(true)}>
+              开始修复
+            </Button>
+          </section>
+        )}
+        {workspaceOpen && (
+          <RepairWorkspace
+            open={workspaceOpen}
+            onOpenChange={setWorkspaceOpen}
+            onCreated={(location, note) => {
+              setReceipt({ location, note })
+              setWorkspaceOpen(false)
             }}
           />
-          <Toaster />
-        </div>
-      </TooltipProvider>
-    </FeedbackCaptureContext.Provider>
+        )}
+      </main>
+    </TooltipProvider>
   )
 }
 void setRendererUiLanguage('zh').finally(() =>
-  createRoot(document.getElementById('root')).render(<App />)
+  createRoot(document.getElementById('root')!).render(<App />)
 )

@@ -2,10 +2,14 @@
 
 > **读者与时机**：评审和交付本主题时读取。只维护认可范围、当前制品身份和验证边界；行为归 intent/spec，不存施工流水或遗留台账。认可或有效验证证据变化时更新。
 
-- 归属：研发保障。跟踪 [Issue #783](https://github.com/forcegravity1989/builder-workbench/issues/783)。
-- 状态：**draft**。[意图](intent.md)、[规格](spec.md)及[原型](prototype/index.html)待评审，不代表产品接线已实现。
-- 用户已认可：以 Builder 自用顺滑为先，A/B/C 贡献路径、现场与执行位置分离、复用 Orca/BW 原生能力及既有反哺方法；要求尽早落地 intent/spec，待办放仓外 plan。
-- 未形成整体验收：具体标题栏入口、正式版采集、自动收集和编排接线仍须按原型与规格评审。已有聊天方向不记作整篇 intent/spec 已通过 gate。
-- 原型来源：基于 `af335e3dd1920bcc427a38f3f67716fdc3619b7c` 的真实 React 组件，组件清单由原型构建生成。运行数据、宿主与结果为演示适配。
-- 证据边界：组件级交互检查不能替代完整 Electron、真实模型、真实反馈上传、宿主授权或跨机器派工。React Grab 已在离线原型完成元素选择、上下文带回和原文字草稿保留；不代表正式版采集或真壳已验收。
-- E2E：本主题尚无真实旅程通过记录。与 W03 可信交付、F01 工作区、F04 编排、F06 会话和 F08 采集有关；对应真实验收依据为 spec 的 BC-01 至 BC-08。
+- 归属：研发保障的一条贡献旅程。跟踪 [Issue #783](https://github.com/forcegravity1989/builder-workbench/issues/783) 与 [设计 PR #784](https://github.com/forcegravity1989/builder-workbench/pull/784)。
+- 当前制品：[意图](intent.md)、[规格](spec.md)、[局部体验稿](prototype/index.html)。用户已认可批注工具旁交接、独立助手加载 Skill、本机按需补采、无源码可提单、会话内复用原生开工和简短备注的旅程；局部交互与 Skill 实际效果待体验，不记为整篇通过产品验收。
+- 原型范围：批注到助手、Issue 到开工两处增量。实际组件与演示接线在评审说明和构建清单中分别标明，不代表完整工作台或安装版行为。研究报告维持原件，不作为当前交互入口。
+- 证据边界：组件原型和静态 Skill 检查不能证明目标宿主真实安装、模型实际加载、现场采集覆盖、Issue 写入、启动备注执行或跨主机交付。该旅程尚无真实 E2E 通过记录。
+- 验收依据：spec 的 BC-01 至 BC-08；承接 W03 可信交付，复用 F01 工作区、F06 会话、F08 批注以及相应原生执行能力。具体执行证据在 PR，工程遗留及独立规范反哺安排在仓外 plan。
+
+## 复用依据
+
+- Skill：沿 [计划助手短入口与完整包](../../../src/renderer/src/workbench/version-cycle/cycle-prompt.ts) 和 [安装适配](../../../src/renderer/src/workbench/workbench-skill-install.ts)。新增反馈主题不等于现有三类流程已支持它；源码 Skill 与分发接通分别验收。
+- 开工：沿 [任务页关联工作区动作](../../../src/renderer/src/components/use-task-page-workspace-actions.ts)；未纳版 Issue 不强行走版本计划专用起手。会话卡片直达同一动作是目标薄接线。
+- 备注：原 [创建弹窗](../../../src/renderer/src/components/NewWorkspaceComposerModal.tsx) 支持 `initialNote`；[关联任务提示](../../../src/renderer/src/lib/linked-work-item-context.ts) 和 [启动计划](../../../src/renderer/src/hooks/composer-state/quick-startup-plan.ts) 将备注及链接传入启动草稿。自动发送与实际模型执行不由此推断。
