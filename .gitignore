@@ -113,6 +113,8 @@ playwright-report/
 /.claude/skills/*
 !/.claude/skills/workbench-start/
 !/.claude/skills/workbench-start/**
+!/.claude/skills/improve-workbench/
+!/.claude/skills/improve-workbench/**
 !/.claude/skills/journey-review/
 !/.claude/skills/journey-review/**
 !/.claude/skills/project-knowledge/

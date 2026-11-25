@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
 import http from 'node:http'
 import { pathToFileURL } from 'node:url'
+import { createAnnotationStore } from './annotations-store.mjs'
 import { loadConfig } from './config.mjs'
 import { createClientTokenStore } from './client-tokens.mjs'
 import { createRequestHandler } from './http.mjs'
@@ -21,6 +23,9 @@ export async function startServer(options = {}) {
   await store.init()
   const clientTokens = createClientTokenStore({ dataDir: config.dataDir, log })
   await clientTokens.init()
+  const annotations = createAnnotationStore({ dataDir: config.dataDir, log })
+  const viewerHtml = readFileSync(new URL('./viewer.html', import.meta.url), 'utf8')
+  const bridgeScript = readFileSync(new URL('./bridge.js', import.meta.url), 'utf8')
   const removed = await store.sweep()
   if (removed > 0) {
     log(`removed ${removed} expired share(s) at startup`)
@@ -30,7 +35,17 @@ export async function startServer(options = {}) {
       'warning: no upload token is configured and no device has enrolled yet; uploads are open until one does.'
     )
   }
-  const server = http.createServer(createRequestHandler({ store, clientTokens, config, log }))
+  const server = http.createServer(
+    createRequestHandler({
+      store,
+      annotations,
+      clientTokens,
+      config,
+      viewerHtml,
+      bridgeScript,
+      log
+    })
+  )
   // A 10 MiB report can arrive as a 60 MiB transport body once JSON escaping is counted, so the
   // body budget needs more than a small request warrants. Headers keep the tight budget.
   server.requestTimeout = 120_000
