@@ -49,7 +49,11 @@ export function ProjectWallPage() {
   const hasProjects = repos.some(isWallRowVisible)
   const projects = useWallProjects({ location, type })
   const charters = useWallCharters(projects, refresh)
-  const { avatarByName, localAvatar } = useTeamMemberAvatars(teamSettingsOpen)
+  // Wall refresh re-reads the directory per spec; avatars follow the same reload key
+  // so a throttled mount read can recover on the next manual refresh.
+  const { avatarByName, localAvatar } = useTeamMemberAvatars(
+    `${teamSettingsOpen}|${updatedAt ?? ''}`
+  )
   const [readStatuses, setReadStatuses] = useState<Record<string, WallReadStatus>>({})
   const onReadStatus = useCallback((key: string, status: WallReadStatus | null) => {
     setReadStatuses((current) => {

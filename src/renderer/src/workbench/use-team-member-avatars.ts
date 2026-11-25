@@ -15,6 +15,9 @@ export function useTeamMemberAvatars(reloadKey?: unknown): TeamMemberAvatars {
   const [avatars, setAvatars] = useState<TeamMemberAvatars>(EMPTY)
   useEffect(() => {
     if (!hasTeamBinding()) {
+      // Unbinding cuts off the directory source; stale avatars must fall back to the
+      // silhouette instead of keeping cached team data alive past the binding.
+      setAvatars(EMPTY)
       return
     }
     let cancelled = false
