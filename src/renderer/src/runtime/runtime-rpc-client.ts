@@ -8,6 +8,7 @@ import { callRuntimeEnvironmentWithRevision } from './runtime-rpc-environment-ca
 import { RuntimeRpcCallError, unwrapRuntimeRpcResult } from './runtime-rpc-result'
 import { captureRuntimeEnvironmentRequestRevision } from './runtime-environment-revision'
 import type { RuntimeClientTarget } from './runtime-client-target'
+import { notifyTeamReadDenied } from '../workbench/team-read-denied-toast'
 
 export {
   getActiveRuntimeTarget,
@@ -92,7 +93,13 @@ export async function callRuntimeRpc<TResult>(
           expectedEnvironmentPairingRevision,
           expectedEnvironmentRuntimeId: options.expectedEnvironmentRuntimeId
         })
-  return unwrapRuntimeRpcResult<TResult>(response as RuntimeRpcResponse<TResult>)
+  try {
+    return unwrapRuntimeRpcResult<TResult>(response as RuntimeRpcResponse<TResult>)
+  } catch (error) {
+    // Why: a read-only member's refused action should say so, whichever screen made the call.
+    notifyTeamReadDenied(error)
+    throw error
+  }
 }
 
 async function ensureRuntimeEnvironmentCompatible(

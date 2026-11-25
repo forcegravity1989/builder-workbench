@@ -1,8 +1,7 @@
 import {
   prototypeReviewEventId,
   type PrototypeReviewIncomingRequest,
-  type PrototypeReviewRequest,
-  type PrototypeReviewPageRef
+  type PrototypeReviewRequest
 } from '../../../../shared/workbench/prototype-review-request'
 import type {
   ReviewPeerDelivery,
@@ -34,8 +33,16 @@ export function prototypeReviewId(
   return prototypeReviewEventId(request)
 }
 
-export function prototypePageKey(page: PrototypeReviewPageRef): string {
-  return `${page.sourceEnvironmentId}:${page.worktreeId}:${page.sessionId}:${page.browserPageId}`
+/** What a note says happened, from the point of view of the side reading it. */
+export function prototypeReviewPurposeText(
+  note: Pick<PrototypeReviewRequest, 'purpose' | 'annotationCount'>,
+  side: 'incoming' | 'outgoing'
+): string {
+  const count = note.annotationCount ?? 0
+  if (note.purpose === 'submitted') {
+    return side === 'incoming' ? `提交了 ${count} 条批注` : `已提交 ${count} 条批注`
+  }
+  return side === 'incoming' ? '邀请你评审' : '已邀请评审'
 }
 
 export function applyIncomingPrototypeReview(

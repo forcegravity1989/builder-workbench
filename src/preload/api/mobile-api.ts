@@ -81,6 +81,7 @@ export type MobileApi = {
   restoreRuntimePairingUrl: (
     reference: RuntimePairingLinkReference
   ) => Promise<RuntimePairingLink | null>
+  getRuntimeAccessLinkUrl: (args: { deviceId: string }) => Promise<{ pairingUrl: string | null }>
   listDevices: () => Promise<{
     devices: {
       deviceId: string
@@ -91,7 +92,10 @@ export type MobileApi = {
   }>
   revokeDevice: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
   listRuntimeAccessGrants: () => Promise<{ grants: RuntimeAccessGrant[] }>
-  grantRuntimeFullAccess: (args: { deviceIds: string[] }) => Promise<{ granted: string[] }>
+  setRuntimeAccessMode: (args: {
+    deviceId: string
+    accessMode: 'team-read' | 'full'
+  }) => Promise<{ accessMode: 'team-read' | 'full' | null }>
   listRuntimeAccessAudit: (args?: {
     action?: string
     result?: RuntimeAccessAuditResult

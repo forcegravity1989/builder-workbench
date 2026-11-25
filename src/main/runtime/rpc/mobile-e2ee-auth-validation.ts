@@ -1,11 +1,16 @@
 import type { DesktopMobileE2EEV2Session } from './mobile-e2ee-v2-desktop-session'
 import { publicKeyFromBase64 } from './e2ee-crypto'
 import { parseRemoteRuntimeJsonText } from '../../../shared/remote-runtime-request-frames'
+import {
+  parseRemoteRuntimeCallerIdentity,
+  type RemoteRuntimeCallerIdentity
+} from '../../../shared/remote-runtime-caller-identity'
 
 export type MobileE2EEAuth = {
   type: 'e2ee_auth'
   deviceToken: string
   clientCapabilities?: unknown
+  callerIdentity?: unknown
   v?: 2
   transcriptHashB64?: string
 }
@@ -28,7 +33,7 @@ export function isValidMobileE2EEAuthVersion(
 export function authenticateMobileE2EE<TDevice extends { deviceToken: string }>(args: {
   plaintext: string
   v2Session: DesktopMobileE2EEV2Session | null
-  resolveDevice: (token: string) => TDevice | null
+  resolveDevice: (token: string, caller: RemoteRuntimeCallerIdentity | null) => TDevice | null
 }):
   | { ok: true; device: TDevice; auth: MobileE2EEAuth }
   | { ok: false; code: 'bad_auth' | 'unauthorized' } {
@@ -45,7 +50,10 @@ export function authenticateMobileE2EE<TDevice extends { deviceToken: string }>(
   ) {
     return { ok: false, code: 'bad_auth' }
   }
-  const device = args.resolveDevice(auth.deviceToken)
+  const device = args.resolveDevice(
+    auth.deviceToken,
+    parseRemoteRuntimeCallerIdentity(auth.callerIdentity)
+  )
   return device?.deviceToken === auth.deviceToken
     ? { ok: true, device, auth }
     : { ok: false, code: 'unauthorized' }

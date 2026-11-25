@@ -12,6 +12,8 @@ import {
 import { revealMountedSidebarRowElement, revealMountedWorktreeElement } from './mounted-row-reveal'
 import { getSidebarRowRevealAncestorKeys } from './reveal-ancestors'
 import { sidebarWorkspaceStillExists } from './folder-reveal'
+import { composeWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
+import { getVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import {
   expandGroupsForWorktreeReveal,
   MAX_REVEAL_RETRIES,
@@ -98,6 +100,22 @@ export function usePendingSidebarReveal(args: PendingSidebarRevealArgs): void {
       if (outcome === 'clear') {
         pendingRevealRetryRef.current = null
         clearPendingRevealWorktreeId()
+        // Why: version-bound unpinned trees live in the version tree (#500), so the native
+        // list has no row for them even though they exist. Only toast a genuine miss; the
+        // version-tree reveal channel reports its own misses.
+        const targetIdentity = composeWorktreeHostIdentity(
+          pendingRevealWorktree.executionHostId ??
+            argsRef.current.worktreeMap.get(pendingRevealWorktree.worktreeId)?.hostId,
+          pendingRevealWorktree.worktreeId
+        )
+        if (!getVersionSidebarProjection().worktreeIdentities.has(targetIdentity)) {
+          toast.error(
+            translate(
+              'auto.components.sidebar.WorktreeList.sidebarRowMissing',
+              'Target no longer exists'
+            )
+          )
+        }
         return
       }
       if (outcome !== 'scroll-and-clear') {
