@@ -15944,6 +15944,13 @@
       "new": {
         "workspace": {
           "SmartWorkspaceNameField": {
+            "codehubMode": "CodeHub",
+            "codehubEmptyStart": "输入以搜索 CodeHub 议题。",
+            "codehubEmpty": "没有匹配的 CodeHub 议题。",
+            "codehubLoadFailed": "无法加载 CodeHub 议题，请检查登录或权限后重试。",
+            "codehubRetry": "重试",
+            "codehubMoreResults": "仅显示前几条结果，请缩小关键词查看更多。",
+            "searchCodeHub": "搜索 CodeHub 议题",
             "e57c53727c": "添加项目...",
             "6859e2896c": "取消",
             "4bd98f1091": "切换项目？",

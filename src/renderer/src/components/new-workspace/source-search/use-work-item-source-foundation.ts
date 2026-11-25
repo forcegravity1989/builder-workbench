@@ -1,3 +1,4 @@
+import { getCodeHubRepoSourceContext } from '@/lib/codehub-api'
 import { getProviderRuntimeContextKey } from '@/runtime/hosts/observations/provider-runtime-context'
 import { useLinearIssueResult } from '@/lib/work-items/linear/linear-issue-committed-state'
 import { getLinearSourceScope } from '@/store/slices/linear/linear-slice-scope'
@@ -118,6 +119,7 @@ export function useWorkItemSourceFoundation(props: NormalizedWorkItemSourceSearc
           : []
       ).map((repo) => ({
         repo,
+        codehubSourceContext: getCodeHubRepoSourceContext(repo),
         githubSourceContext:
           repo.id === selectedRepo?.id && githubSourceContext?.provider === 'github'
             ? githubSourceContext

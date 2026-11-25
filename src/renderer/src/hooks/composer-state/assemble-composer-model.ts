@@ -30,6 +30,7 @@ export function assembleComposerModel(
     ...source.branchStartPointActions,
     ...source.githubProviderSelection,
     ...source.gitlabProviderSelection,
+    ...source.codehubProviderSelection,
     ...source.workItemSourceActions,
     ...source.issueSourceActions,
     ...source.composerNavigationActions,

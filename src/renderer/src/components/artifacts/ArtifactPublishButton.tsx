@@ -10,6 +10,7 @@ import { useAppStore } from '@/store/index'
 import { useOrcaTeamFeatureBlocked } from '@/lib/orca-team-policy'
 import { ORCA_CLOUD_TEAM_POLICY_FLAGS } from '../../../../shared/orca-profiles/orca-cloud-team-policy'
 import { ArtifactPublishedLinkPanel } from './ArtifactPublishedLinkPanel'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getPublishedArtifactLink } from './artifact-published-link-client'
 import { publishArtifactFromSurface } from './artifact-publish-flow'
 import { OrcaSignInButton, OrcaSignInWaitNotice } from '../orca-profiles/OrcaSignInProgress'
@@ -60,11 +61,14 @@ export function ArtifactPublishButton({
   const openSettingsPage = useAppStore((state) => state.openSettingsPage)
   const openSettingsTarget = useAppStore((state) => state.openSettingsTarget)
   const settings = useAppStore((state) => state.settings)
-  const signedIn = authStatus?.state === 'connected'
-  const teamBlocked = useOrcaTeamFeatureBlocked(ORCA_CLOUD_TEAM_POLICY_FLAGS.artifactSharing)
-  const sharingEnabled = !teamBlocked && settings?.artifactSharingEnabled === true
-  const accountKey =
-    authStatus?.state === 'connected'
+  const workbench = isWorkbenchShell()
+  const signedIn = workbench || authStatus?.state === 'connected'
+  const cloudTeamBlocked = useOrcaTeamFeatureBlocked(ORCA_CLOUD_TEAM_POLICY_FLAGS.artifactSharing)
+  const teamBlocked = !workbench && cloudTeamBlocked
+  const sharingEnabled = workbench || (!teamBlocked && settings?.artifactSharingEnabled === true)
+  const accountKey = workbench
+    ? 'workbench-share'
+    : authStatus?.state === 'connected'
       ? JSON.stringify([
           authStatus.activeProfileId,
           authStatus.cloud?.userId ?? null,
@@ -143,7 +147,7 @@ export function ArtifactPublishButton({
       const result = await publishArtifactFromSurface(createRequest)
       if (result) {
         if (lookupKey) {
-          setLinkLookup({ key: lookupKey, status: 'loaded', shareUrl: result.item.shareUrl })
+          setLinkLookup({ key: lookupKey, status: 'loaded', shareUrl: result.shareUrl })
         }
       }
     } finally {

@@ -1,3 +1,5 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { WorkbenchArtifactsSettingsPane } from './WorkbenchArtifactsSettingsPane'
 import { ArrowRight, Files } from 'lucide-react'
 import type { GlobalSettings } from '../../../../../shared/settings/global-settings-types'
 import { Button } from '@/components/ui/button'
@@ -13,13 +15,23 @@ import { ORCA_CLOUD_TEAM_POLICY_FLAGS } from '../../../../../shared/orca-profile
 
 type HowToStep = { key: string; title: string; description: string }
 
-export function ArtifactsSettingsPane({
-  settings,
-  updateSettings
-}: {
+type ArtifactsSettingsPaneProps = {
   settings: GlobalSettings
   updateSettings: (updates: Partial<GlobalSettings>) => Promise<void>
-}): React.JSX.Element {
+}
+
+export function ArtifactsSettingsPane(props: ArtifactsSettingsPaneProps): React.JSX.Element {
+  return isWorkbenchShell() ? (
+    <WorkbenchArtifactsSettingsPane />
+  ) : (
+    <OrcaArtifactsSettingsPane {...props} />
+  )
+}
+
+function OrcaArtifactsSettingsPane({
+  settings,
+  updateSettings
+}: ArtifactsSettingsPaneProps): React.JSX.Element {
   const t = useTranslate()
   const openArtifactsPage = useAppStore((state) => state.openArtifactsPage)
   const authStatus = useAppStore((state) => state.orcaProfileAuthStatus)

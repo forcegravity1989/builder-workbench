@@ -1,3 +1,4 @@
+import { useCodeHubProviderSelection } from './codehub-provider-selection'
 import type { ComposerTargetState } from './composer-target-state-contract'
 import type { ComposerExternalSyncState } from './composer-external-sync-contract'
 import type { ComposerSourceState } from './composer-source-state-contract'
@@ -187,6 +188,27 @@ export function useComposerSourceState(
     settings: target.composerTargetStore.settings,
     smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef
   })
+  const codehubProviderSelection = useCodeHubProviderSelection({
+    branchAutoNameRef: target.asyncComposerState.branchAutoNameRef,
+    lastAutoNameRef: target.asyncComposerState.lastAutoNameRef,
+    name: target.sourceContextState.name,
+    selectedRepoCodeHubSourceContext: target.sourceContextState.selectedRepoCodeHubSourceContext,
+    smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef,
+    setBaseBranch: target.workspaceIdentityState.setBaseBranch,
+    setBranchNameOverride: target.workspaceIdentityState.setBranchNameOverride,
+    setBranchNameOverridePreservesNameEdits:
+      target.workspaceIdentityState.setBranchNameOverridePreservesNameEdits,
+    setCompareBaseRef: target.workspaceIdentityState.setCompareBaseRef,
+    setForkPushWarning: target.workspaceIdentityState.setForkPushWarning,
+    setLinkedGitLabIssue: target.workspaceIdentityState.setLinkedGitLabIssue,
+    setLinkedGitLabMR: target.workspaceIdentityState.setLinkedGitLabMR,
+    setLinkedIssue: target.workspaceIdentityState.setLinkedIssue,
+    setLinkedPR: target.workspaceIdentityState.setLinkedPR,
+    setLinkedTaskSourceContext: target.sourceContextState.setLinkedTaskSourceContext,
+    setLinkedWorkItem: target.sourceContextState.setLinkedWorkItem,
+    setName: target.sourceContextState.setName,
+    setPushTarget: target.workspaceIdentityState.setPushTarget
+  })
   const gitlabProviderSelection = useGitLabProviderSelection({
     smartSourceSelectionRef: target.asyncComposerState.smartSourceSelectionRef,
     applyLinkedGitLabWorkItem: sourceIdentityActions.applyLinkedGitLabWorkItem,
@@ -287,6 +309,7 @@ export function useComposerSourceState(
     branchStartPointActions,
     githubProviderSelection,
     gitlabProviderSelection,
+    codehubProviderSelection,
     workItemSourceActions,
     issueSourceActions,
     composerNavigationActions

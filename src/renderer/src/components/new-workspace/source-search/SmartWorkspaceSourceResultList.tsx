@@ -21,6 +21,10 @@ export function SmartWorkspaceSourceResultList({
   model: Pick<
     WorkItemSourceSearch,
     | 'mode'
+    | 'value'
+    | 'codehubError'
+    | 'codehubHasMore'
+    | 'setCodehubRefreshNonce'
     | 'mrStateFilters'
     | 'mrStateFilter'
     | 'setMrStateFilter'
@@ -46,6 +50,10 @@ export function SmartWorkspaceSourceResultList({
   const t = useTranslate()
   const {
     mode,
+    value,
+    codehubError,
+    codehubHasMore,
+    setCodehubRefreshNonce,
     mrStateFilters,
     mrStateFilter,
     setMrStateFilter,
@@ -147,6 +155,25 @@ export function SmartWorkspaceSourceResultList({
               />
             ))}
           </div>
+        ) : (mode === 'codehub' || mode === 'smart') &&
+          codehubError &&
+          searchResultRows.length === 0 ? (
+          <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+            <span className="block text-destructive">
+              {t(
+                'auto.components.new.workspace.SmartWorkspaceNameField.codehubLoadFailed',
+                'Couldn’t load CodeHub issues. Check sign-in or permissions, then retry.'
+              )}
+            </span>
+            <Button
+              type="button"
+              variant="link"
+              size="xs"
+              onClick={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
+            >
+              {t('auto.components.new.workspace.SmartWorkspaceNameField.codehubRetry', 'Retry')}
+            </Button>
+          </div>
         ) : loading && searchResultRows.length === 0 ? (
           <div className="space-y-1 p-1">
             {[0, 1, 2].map((index) => (
@@ -162,39 +189,54 @@ export function SmartWorkspaceSourceResultList({
                     'auto.components.new.workspace.SmartWorkspaceNameField.3e8bb1176a',
                     'Connect Linear in Settings to search issues.'
                   )
-                : (emptyHint ?? translateSmartWorkspaceEmptyHint(mode))}
+                : mode === 'codehub' && value.trim()
+                  ? t(
+                      'auto.components.new.workspace.SmartWorkspaceNameField.codehubEmpty',
+                      'No matching CodeHub issues.'
+                    )
+                  : (emptyHint ?? translateSmartWorkspaceEmptyHint(mode))}
           </div>
         ) : searchResultRows.length > 0 ? (
-          <CommandGroup>
-            {searchResultRows.map((row) => (
-              <CommandItem
-                selection="palette"
-                key={row.value}
-                value={row.value}
-                disabled={isLinked?.(row) || isRowDisabled?.(row)}
-                onSelect={() => onSelect(row)}
-                density="workspace"
-              >
-                <RowIcon row={row} />
-                <RowLabel
-                  row={row}
-                  jiraSite={
-                    showJiraSiteContext && row.kind === 'jira'
-                      ? (jiraConnectionStatus?.sites?.find(
-                          (site) => site.id === row.issue.siteId
-                        ) ?? null)
-                      : null
-                  }
-                  showJiraSiteContext={showJiraSiteContext}
-                />
-                {isLinked?.(row) ? (
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    {t('workspace.links.linkedResult', 'Linked')}
-                  </span>
-                ) : null}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <>
+            <CommandGroup>
+              {searchResultRows.map((row) => (
+                <CommandItem
+                  selection="palette"
+                  key={row.value}
+                  value={row.value}
+                  disabled={isLinked?.(row) || isRowDisabled?.(row)}
+                  onSelect={() => onSelect(row)}
+                  density="workspace"
+                >
+                  <RowIcon row={row} />
+                  <RowLabel
+                    row={row}
+                    jiraSite={
+                      showJiraSiteContext && row.kind === 'jira'
+                        ? (jiraConnectionStatus?.sites?.find(
+                            (site) => site.id === row.issue.siteId
+                          ) ?? null)
+                        : null
+                    }
+                    showJiraSiteContext={showJiraSiteContext}
+                  />
+                  {isLinked?.(row) ? (
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                      {t('workspace.links.linkedResult', 'Linked')}
+                    </span>
+                  ) : null}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            {mode === 'codehub' && codehubHasMore ? (
+              <div className="border-t border-border/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+                {t(
+                  'auto.components.new.workspace.SmartWorkspaceNameField.codehubMoreResults',
+                  'Showing the first results. Narrow your keywords to see more.'
+                )}
+              </div>
+            ) : null}
+          </>
         ) : null}
       </CommandList>
     </>

@@ -1,3 +1,4 @@
+import { getRepoTaskSourceContext } from '@/workbench/task-source-context'
 import type { ComposerModel } from '../composer-model'
 
 type ComposerSourceContextStateInput = Pick<
@@ -196,6 +197,10 @@ export function useComposerSourceContextState(input: ComposerSourceContextStateI
     })
   }, [projects, selectedRepo, selectedRepoIsGit, selectedWorkspaceTarget, taskSourceContext])
 
+  const selectedRepoCodeHubSourceContext = useMemo(
+    () => (selectedRepoIsGit ? getRepoTaskSourceContext(selectedRepo, 'codehub') : null),
+    [selectedRepo, selectedRepoIsGit]
+  )
   const smartNameJiraSourceContext = useMemo(() => {
     if (!selectedProjectId) {
       return null
@@ -254,6 +259,7 @@ export function useComposerSourceContextState(input: ComposerSourceContextStateI
     derivedGitHubTaskSourceContext,
     taskSourceContext,
     selectedRepoGitHubSourceContext,
+    selectedRepoCodeHubSourceContext,
     smartNameJiraSourceContext
   }
 }

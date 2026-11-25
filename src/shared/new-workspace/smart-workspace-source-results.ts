@@ -1,3 +1,4 @@
+import type { CodeHubTaskItem } from '../codehub-tasks'
 import type { GitHubWorkItem } from '../github/work-items/work-item-types'
 import type { GitLabWorkItem } from '../gitlab/gitlab-types'
 import type { JiraIssue } from '../jira/jira-types'
@@ -19,12 +20,21 @@ export {
   isSmartWorkspaceSourceQueryWithinLimit
 } from './smart-workspace-source-query'
 
-export type SmartNameMode = 'smart' | 'github' | 'gitlab' | 'branches' | 'linear' | 'jira' | 'text'
+export type SmartNameMode =
+  | 'smart'
+  | 'github'
+  | 'codehub'
+  | 'gitlab'
+  | 'branches'
+  | 'linear'
+  | 'jira'
+  | 'text'
 
 export type SmartWorkspaceSourceRow =
   | { kind: 'use-name'; value: string; name: string }
   | { kind: 'create-branch'; value: string; name: string }
   | { kind: 'github'; value: string; item: GitHubWorkItem }
+  | { kind: 'codehub'; value: string; item: CodeHubTaskItem }
   | { kind: 'gitlab'; value: string; item: GitLabWorkItem }
   | { kind: 'branch'; value: string; refName: string; localBranchName: string; label?: string }
   | { kind: 'linear'; value: string; issue: LinearIssue }
@@ -35,6 +45,7 @@ type LinearIssueSourceInput = LinearIssue[] | LinearCollectionResult<LinearIssue
 const EMPTY_HINT_BY_MODE: Record<SmartNameMode, string> = {
   smart: 'Start typing to create a name or find a source.',
   github: 'Start typing to search GitHub PRs and issues.',
+  codehub: 'Start typing to search CodeHub issues.',
   gitlab: 'Start typing to search GitLab MRs and issues.',
   branches: 'No matching branches.',
   linear: 'Start typing to search Linear issues.',
@@ -195,6 +206,8 @@ export function shouldHoldSourceResultsForQuery({
 
 export function buildSmartWorkspaceSourceRows({
   branches,
+  codehubAvailable,
+  codehubItems,
   githubItems,
   githubUrlIntent,
   gitlabAvailable,
@@ -211,6 +224,8 @@ export function buildSmartWorkspaceSourceRows({
   value
 }: {
   branches: BaseRefSearchResult[]
+  codehubAvailable?: boolean
+  codehubItems?: CodeHubTaskItem[]
   githubItems: GitHubWorkItem[]
   githubUrlIntent?: GitHubIssueOrPRLink | null
   gitlabAvailable: boolean
@@ -266,6 +281,15 @@ export function buildSmartWorkspaceSourceRows({
   }
   if (mode === 'smart' || mode === 'github') {
     nextRows.push(...githubItems.map(toGitHubSourceRow))
+  }
+  if (codehubAvailable && (mode === 'smart' || mode === 'codehub')) {
+    nextRows.push(
+      ...(codehubItems ?? []).map((item) => ({
+        kind: 'codehub' as const,
+        value: `codehub-${item.repoId ?? ''}-${item.iid}`,
+        item
+      }))
+    )
   }
   if (gitlabAvailable && (mode === 'smart' || mode === 'gitlab')) {
     nextRows.push(

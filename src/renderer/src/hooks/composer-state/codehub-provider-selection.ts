@@ -6,7 +6,7 @@ type CodeHubProviderSelectionInput = Pick<
   | 'lastAutoNameRef'
   | 'name'
   | 'selectedRepoCodeHubSourceContext'
-  | 'smartGitHubPrStartPointSelectionRef'
+  | 'smartSourceSelectionRef'
   | 'setBaseBranch'
   | 'setBranchNameOverride'
   | 'setBranchNameOverridePreservesNameEdits'
@@ -40,7 +40,7 @@ export function useCodeHubProviderSelection(input: CodeHubProviderSelectionInput
     lastAutoNameRef,
     name,
     selectedRepoCodeHubSourceContext,
-    smartGitHubPrStartPointSelectionRef,
+    smartSourceSelectionRef,
     setBaseBranch,
     setBranchNameOverride,
     setBranchNameOverridePreservesNameEdits,
@@ -60,7 +60,7 @@ export function useCodeHubProviderSelection(input: CodeHubProviderSelectionInput
     (item: CodeHubTaskItem, sourceContext: TaskSourceContext | null): void => {
       // Why: invalidate any in-flight GitHub PR start-point resolution so a late
       // result cannot overwrite this CodeHub selection's context/base branch.
-      smartGitHubPrStartPointSelectionRef.current = null
+      smartSourceSelectionRef.current = null
       const linkedItem: LinkedWorkItemSummary = {
         type: 'issue',
         provider: 'codehub',
@@ -101,7 +101,7 @@ export function useCodeHubProviderSelection(input: CodeHubProviderSelectionInput
       lastAutoNameRef,
       name,
       selectedRepoCodeHubSourceContext,
-      smartGitHubPrStartPointSelectionRef,
+      smartSourceSelectionRef,
       setBaseBranch,
       setBranchNameOverride,
       setBranchNameOverridePreservesNameEdits,

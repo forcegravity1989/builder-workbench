@@ -51,6 +51,7 @@ export function useSmartWorkspaceFieldAvailability({
   state: FieldState
   repoBackedSearchTargets: {
     gitlabSourceContext: { hostId?: ExecutionHostId | null } | null
+    codehubSourceContext: { hostId?: ExecutionHostId | null } | null
   }[]
   preflightStatus: { glab?: { installed?: boolean } } | null
   preflightStatusChecked: boolean
@@ -87,6 +88,10 @@ export function useSmartWorkspaceFieldAvailability({
       sourceHostId: target.gitlabSourceContext?.hostId
     })
   )
+  const codehubSourceAvailable =
+    !repoBackedSourcesDisabled &&
+    Boolean(props.onCodeHubIssueSelect) &&
+    repoBackedSearchTargets.some((target) => target.codehubSourceContext !== null)
   const availableTaskProviders = useMemo(
     () =>
       filterAvailableTaskProviders(['github', 'gitlab', 'linear'], {
@@ -102,6 +107,9 @@ export function useSmartWorkspaceFieldAvailability({
     }
     if (item.id === 'github') {
       return !repoBackedSourcesDisabled
+    }
+    if (item.id === 'codehub') {
+      return codehubSourceAvailable
     }
     if (item.id === 'gitlab') {
       return gitlabSourceAvailable
@@ -159,6 +167,7 @@ export function useSmartWorkspaceFieldAvailability({
   return {
     mode,
     gitlabSourceAvailable,
+    codehubSourceAvailable,
     linearAvailable,
     availableModes,
     mrStateFilters

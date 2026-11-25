@@ -28,6 +28,7 @@ export type ComposerSourceContextModel = {
   setLinkedTaskSourceContext: React.Dispatch<React.SetStateAction<TaskSourceContext | null>>
   derivedGitHubTaskSourceContext: TaskSourceContext | null
   taskSourceContext: TaskSourceContext | null
+  selectedRepoCodeHubSourceContext: TaskSourceContext | null
   selectedRepoGitHubSourceContext: TaskSourceContext | null
   smartNameJiraSourceContext: TaskSourceContext | null
 }

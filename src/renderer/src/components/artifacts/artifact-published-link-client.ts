@@ -6,7 +6,13 @@ import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 
 const LOCAL_RUNTIME = { kind: 'local' } as const
 
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { getShareLink } from './share-server-client'
+
 export async function getPublishedArtifactLink(sourceKey: string): Promise<string | null> {
+  if (isWorkbenchShell()) {
+    return getShareLink(sourceKey)
+  }
   const result = await callRuntimeRpc<ArtifactCloudOperation<ArtifactPublishedLink | null>>(
     LOCAL_RUNTIME,
     'artifacts.getPublishedLink',

@@ -54,6 +54,7 @@ jobs:
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/runtime/session-graph
+          src/main/runtime/worktree-selector-miss
           src/main/runtime/workspaces/catalog
           src/main/runtime/workspaces/creation
           src/main/runtime/workspaces/lifecycle

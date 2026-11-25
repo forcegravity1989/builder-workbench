@@ -10,6 +10,7 @@ import {
   type WorkItemSourceSearchProps
 } from '../name-field/smart-workspace-name-field-model'
 import { useWorkItemSourceFoundation } from './use-work-item-source-foundation'
+import { useSmartWorkspaceCodeHubSearch } from '../use-smart-workspace-codehub-search'
 import { useSmartWorkspaceGithubSearch } from './use-smart-workspace-github-search'
 import { useSmartWorkspaceGitlabSearch } from './use-smart-workspace-gitlab-search'
 import { useWorkItemSourcePresentation } from './use-work-item-source-presentation'
@@ -115,6 +116,17 @@ export function useWorkItemSourceSearch({
     foundation,
     sourceQueryWithinLimit,
     shouldQueryGitlab
+  })
+  useSmartWorkspaceCodeHubSearch({
+    foundation,
+    sourceQueryWithinLimit,
+    shouldQueryCodehub:
+      sourceQueryWithinLimit &&
+      !foundation.jiraSource.intent &&
+      !linearUrlIntentOwnsInput &&
+      !textOnly &&
+      foundation.codehubSourceAvailable &&
+      (foundation.mode === 'smart' || foundation.mode === 'codehub')
   })
   const presentation = useWorkItemSourcePresentation(foundation, {
     linearUrlIntent,

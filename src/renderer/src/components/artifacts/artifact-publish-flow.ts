@@ -1,8 +1,11 @@
 import { toast } from 'sonner'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { publishWorkbenchArtifact } from './workbench-artifact-publish'
 import type {
   ArtifactCloudOperation,
   ArtifactPublishResult,
-  ArtifactWriteRequest
+  ArtifactWriteRequest,
+  ArtifactPublishedLink
 } from '../../../../shared/artifacts/artifacts'
 import {
   ARTIFACT_MAX_CONTENT_BYTES,
@@ -49,10 +52,15 @@ export function validateArtifactPublishRequest(
 
 export async function publishArtifactFromSurface(
   createRequest: () => Promise<ArtifactWriteRequest>
-): Promise<ArtifactPublishResult | null> {
+): Promise<ArtifactPublishedLink | null> {
   try {
     // Why first and once: the click captures what is shared; a sign-in or retry must not re-read it.
-    const request = validateArtifactPublishRequest(await createRequest())
+    const input = await createRequest()
+    if (isWorkbenchShell()) {
+      const result = await publishWorkbenchArtifact(input)
+      return result ? { shareUrl: result.url } : null
+    }
+    const request = validateArtifactPublishRequest(input)
     if (!(await ensureArtifactAccountConnected())) {
       return null
     }
@@ -64,7 +72,7 @@ export async function publishArtifactFromSurface(
       )
       if (result.status === 'ok') {
         showArtifactPublishedToast(result.value)
-        return result.value
+        return { shareUrl: result.value.item.shareUrl }
       }
       if (result.status === 'unconfigured') {
         toast.error(

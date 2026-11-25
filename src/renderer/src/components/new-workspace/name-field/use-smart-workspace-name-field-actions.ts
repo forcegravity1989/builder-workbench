@@ -51,6 +51,8 @@ export function useSmartWorkspaceNameFieldActions(
     onBranchSelect,
     onGitHubItemSelect,
     onGitLabItemSelect,
+    onCodeHubIssueSelect,
+    repoBackedSearchTargets,
     onJiraIssueSelect,
     onLinearIssueSelect,
     onValueChange,
@@ -87,6 +89,15 @@ export function useSmartWorkspaceNameFieldActions(
         onGitHubItemSelect(row.item)
       } else if (row.kind === 'gitlab') {
         onGitLabItemSelect?.(row.item)
+      } else if (row.kind === 'codehub') {
+        const sources = repoBackedSearchTargets.filter(
+          (target) => target.repo.id === row.item.repoId && target.repo.path === row.item.repoPath
+        )
+        const source = sources.length === 1 ? sources[0]?.codehubSourceContext : null
+        if (!source) {
+          return
+        }
+        onCodeHubIssueSelect?.(row.item, source)
       } else if (row.kind === 'branch') {
         onBranchSelect(row.refName, row.localBranchName)
       } else if (row.kind === 'jira') {
@@ -111,6 +122,8 @@ export function useSmartWorkspaceNameFieldActions(
       onBranchSelect,
       onGitHubItemSelect,
       onGitLabItemSelect,
+      onCodeHubIssueSelect,
+      repoBackedSearchTargets,
       onJiraIssueSelect,
       onLinearIssueSelect,
       onValueChange,

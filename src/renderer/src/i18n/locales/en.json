@@ -13797,7 +13797,10 @@
           "sharedLinksLoadFailed": "Could not load your shared files.",
           "sharedLinksLoading": "Loading…",
           "sharedLinksRetry": "Try again",
-          "sharedLinksTitle": "Files you've shared"
+          "sharedLinksTitle": "Files you've shared",
+          "workbenchManageStepTitle": "Update or remove the link",
+          "manageStepDescriptionV2": "Reopen the same file and use Share as artifact to publish new content over the same link.",
+          "sharedLinksWebDescription": "Desktop only. Open Settings → Artifacts on the host device to see and delete your shared links."
         },
         "orcaAccount": {
           "connected": "Connected",
@@ -16888,6 +16891,13 @@
             "saveLocation": "Set location"
           },
           "SmartWorkspaceNameField": {
+            "codehubMode": "CodeHub",
+            "codehubEmptyStart": "Start typing to search CodeHub issues.",
+            "codehubEmpty": "No matching CodeHub issues.",
+            "codehubLoadFailed": "Couldn’t load CodeHub issues. Check sign-in or permissions, then retry.",
+            "codehubRetry": "Retry",
+            "codehubMoreResults": "Showing the first results. Narrow your keywords to see more.",
+            "searchCodeHub": "Search CodeHub issues",
             "e57c53727c": "Add project...",
             "6859e2896c": "Cancel",
             "4bd98f1091": "Switch project?",
@@ -20436,7 +20446,24 @@
           "e2ed5acd8c": "Orca couldn't read this file. Open it from a workspace and try again.",
           "visualUnreadable": "Couldn't read this visual to share it.",
           "6d475e9b25": "Only local HTML and Markdown files can be shared as artifacts.",
-          "29a406be09": "Artifacts must contain text."
+          "29a406be09": "Artifacts must contain text.",
+          "fileTooLarge": "File is too large to share",
+          "shareFailed": "Could not share artifact",
+          "unauthorizedDescription": "The share server rejected this device. Try sharing again.",
+          "forbiddenDescription": "This device can no longer update the link. Share the file again to create a new one.",
+          "staleRecordDescription": "This link no longer belongs to this computer. It was removed from your list, but it may still open until an administrator deletes it on the share server.",
+          "tooLargeDescription": "This artifact exceeds the 10 MiB share limit.",
+          "rateLimitedDescription": "Too many uploads. Try again in a minute.",
+          "busyDescription": "The share server is busy. Try again shortly.",
+          "notFoundDescription": "The shared link no longer exists on the server.",
+          "unsupportedDescription": "The share server only accepts HTML content.",
+          "networkDescription": "Could not reach the share server. Check your network connection.",
+          "enrollmentFullDescription": "The share server has no room left for new devices. An administrator has to clear its device list before sharing works again.",
+          "registryUnavailableDescription": "The share server cannot read its device list and is refusing new shares. An administrator has to restore it on the server.",
+          "recordsUnreadableDescription": "Your share history on this computer could not be read, so this list may be incomplete. Existing links may still work; sharing a file again creates a new link.",
+          "unknownDescription": "Something went wrong while sharing. The details are in the app logs.",
+          "workbenchTooLarge": "This file exceeds the 10 MiB share limit.",
+          "tooLargeWithSize": "This file is {{size}}; the share limit is 10 MiB."
         },
         "ArtifactPublishedLinkPanel": {
           "copyLink": "Copy link",

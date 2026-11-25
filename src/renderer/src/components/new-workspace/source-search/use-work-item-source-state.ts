@@ -1,5 +1,6 @@
 import { useGitHubTaskItems } from '@/lib/work-items/github/useGitHubTaskItems'
 import { useRef, useState } from 'react'
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type { RepoSlug } from '../../../../../shared/github/repositories/links'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-items/work-item-types'
 import type { GitLabWorkItem } from '../../../../../shared/gitlab/gitlab-types'
@@ -15,6 +16,11 @@ export function useWorkItemSourceState(textOnly: boolean, value: string) {
   const [debouncedQuery, setDebouncedQuery] = useState(value)
   const [rawGithubItems, setGithubItems] = useState<GitHubWorkItem[]>([])
   const githubItems = useGitHubTaskItems(rawGithubItems)
+  const [codehubItems, setCodehubItems] = useState<CodeHubTaskItem[]>([])
+  const [codehubHasMore, setCodehubHasMore] = useState(false)
+  const [codehubError, setCodehubError] = useState<string | null>(null)
+  const [codehubLoading, setCodehubLoading] = useState(false)
+  const [codehubRefreshNonce, setCodehubRefreshNonce] = useState(0)
   const [gitlabItems, setGitlabItems] = useState<GitLabWorkItem[]>([])
   const [branches, setBranches] = useState<BaseRefSearchResult[]>([])
   const [branchResultsSource, setBranchResultsSource] = useState<{
@@ -43,6 +49,16 @@ export function useWorkItemSourceState(textOnly: boolean, value: string) {
     setDebouncedQuery,
     githubItems,
     setGithubItems,
+    codehubItems,
+    setCodehubItems,
+    codehubHasMore,
+    setCodehubHasMore,
+    codehubError,
+    setCodehubError,
+    codehubLoading,
+    setCodehubLoading,
+    codehubRefreshNonce,
+    setCodehubRefreshNonce,
     gitlabItems,
     setGitlabItems,
     branches,

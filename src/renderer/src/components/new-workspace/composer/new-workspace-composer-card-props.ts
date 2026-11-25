@@ -1,3 +1,4 @@
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type {
   AgentPickerDraft,
   AgentPickerEntry
@@ -90,6 +91,10 @@ export type NewWorkspaceComposerCardProps = {
   selectedRepoProjectId?: string | null
   activeFolderWorkspaceId?: string | null
   onSmartGitHubItemSelect: (item: GitHubWorkItem) => void
+  onSmartCodeHubIssueSelect?: (
+    item: CodeHubTaskItem,
+    sourceContext: TaskSourceContext | null
+  ) => void
   onSmartGitLabItemSelect: (item: GitLabWorkItem) => void
   onSmartBranchSelect: (refName: string, localBranchName: string) => void
   onSmartNameModeChange?: (mode: SmartNameMode) => void

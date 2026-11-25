@@ -31,6 +31,9 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { useIntlLocale, useTranslate } from '@/i18n/use-translate'
 import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page/github/listing/task-page-github-work-item-status-badge'
 import RepoBadgeLabel from '@/components/repo/RepoBadgeLabel'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { getTaskPageGitHubItemSource } from '@/workbench/task-source-context'
+import { GHLabelsCell } from '../LabelsCell'
 import { GHAssigneesCell } from './AssigneesCell'
 import { PRReviewCell } from '../pull-requests/ReviewCell'
 import { PRChecksCell } from '../pull-requests/ChecksCell'
@@ -210,14 +213,23 @@ export function TaskPageGitHubRows({
                       <span className="truncate">{attachedWorkspaceLabel}</span>
                     </span>
                   ) : null}
-                  {item.labels.slice(0, 3).map((label) => (
-                    <span
-                      key={label}
-                      className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
-                    >
-                      {label}
-                    </span>
-                  ))}
+                  {isWorkbenchShell() && item.type === 'issue' ? (
+                    <GHLabelsCell
+                      item={item}
+                      repo={itemRepo}
+                      sourceContext={getTaskPageGitHubItemSource(itemRepo, item)}
+                      workItemMutation={githubWorkItemMutation}
+                    />
+                  ) : (
+                    item.labels.slice(0, 3).map((label) => (
+                      <span
+                        key={label}
+                        className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
+                      >
+                        {label}
+                      </span>
+                    ))
+                  )}
                 </div>
               </div>
 

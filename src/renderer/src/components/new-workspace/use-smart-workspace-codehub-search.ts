@@ -7,7 +7,7 @@ import type { TaskSourceContext } from '../../../../shared/work-items/task-sourc
 type CodeHubSearchInput = {
   debouncedQuery: string
   disabled?: boolean
-  onCodeHubIssueSelect?: (item: CodeHubTaskItem) => void
+  onCodeHubIssueSelect?: (item: CodeHubTaskItem, sourceContext: TaskSourceContext | null) => void
   repoBackedSearchTargets: readonly {
     repo: { id: string; path: string }
     codehubSourceContext: TaskSourceContext | null

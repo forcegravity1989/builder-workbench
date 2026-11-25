@@ -1,3 +1,4 @@
+import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { GitLabWorkItem } from '../../../../shared/gitlab/gitlab-types'
 import type { GitHubWorkItem } from '../../../../shared/github/work-items/work-item-types'
 import type { GitPushTarget } from '../../../../shared/worktree/types'
@@ -53,6 +54,10 @@ export type ComposerSourceModel = {
   handleSelectLinkedItem: (item: GitHubWorkItem) => void
   handleSmartBranchSelect: (refName: string, localBranchName: string) => void
   handleSmartGitHubItemSelect: (item: GitHubWorkItem) => void
+  handleSmartCodeHubIssueSelect: (
+    item: CodeHubTaskItem,
+    sourceContext: TaskSourceContext | null
+  ) => void
   handleSmartGitLabItemSelect: (item: GitLabWorkItem) => void
   handleSmartJiraIssueSelect: (issue: JiraIssue, sourceContext: TaskSourceContext) => void
   handleSmartLinearIssueSelect: (issue: LinearIssue) => void

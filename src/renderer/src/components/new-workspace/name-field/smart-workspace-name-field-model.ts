@@ -1,4 +1,5 @@
 import type React from 'react'
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type { useAppStore } from '@/store'
 import type { parseGitHubIssueOrPRLink } from '../../../../../shared/github/repositories/links'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-items/work-item-types'
@@ -23,6 +24,7 @@ export type SmartWorkspaceNameFieldProps = {
   onValueChange: (value: string) => void
   onGitHubItemSelect: (item: GitHubWorkItem) => void
   /** Optional; when omitted, GitLab paste-URL detection is silently skipped. */
+  onCodeHubIssueSelect?: (item: CodeHubTaskItem, sourceContext: TaskSourceContext | null) => void
   onGitLabItemSelect?: (item: GitLabWorkItem) => void
   onBranchSelect: (refName: string, localBranchName: string) => void
   onLinearIssueSelect: (issue: LinearIssue) => void
@@ -48,7 +50,15 @@ export type SmartWorkspaceNameFieldProps = {
 }
 
 export type SmartWorkspaceNameSelection = {
-  kind: 'github-pr' | 'github-issue' | 'gitlab-mr' | 'gitlab-issue' | 'branch' | 'linear' | 'jira'
+  kind:
+    | 'github-pr'
+    | 'github-issue'
+    | 'gitlab-mr'
+    | 'gitlab-issue'
+    | 'codehub-issue'
+    | 'branch'
+    | 'linear'
+    | 'jira'
   label: string
   url?: string
 }
@@ -61,6 +71,7 @@ export type RepoBackedSearchTarget = {
   repo: RepoOption
   githubSourceContext: TaskSourceContext | null
   gitlabSourceContext: TaskSourceContext | null
+  codehubSourceContext: TaskSourceContext | null
 }
 
 export type CrossRepoPrompt = {
@@ -100,6 +111,7 @@ export type WorkItemSourceSearchProps = Pick<
   | 'repoBackedSearchRepos'
   | 'crossRepoSwitchTarget'
   | 'githubSourceContext'
+  | 'onCodeHubIssueSelect'
   | 'gitlabSourceContext'
   | 'linearSourceContext'
   | 'jiraSourceContext'

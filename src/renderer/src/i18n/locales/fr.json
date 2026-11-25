@@ -12331,7 +12331,8 @@
           "keywordMarkdown": "Markdown",
           "keywordUpload": "télécharger",
           "09f41ce46c": "Afficher le bouton Artifacts",
-          "7b2b114099": "Ouvrir Artifacts"
+          "7b2b114099": "Ouvrir Artifacts",
+          "workbenchManageStepTitle": "Mettre à jour ou supprimer le lien"
         },
         "orcaAccount": {
           "connected": "Connecté",
@@ -18709,7 +18710,8 @@
           "e2ed5acd8c": "Orca n'a pas pu lire ce fichier. Ouvrez-le depuis un espace de travail et réessayez.",
           "visualUnreadable": "Impossible de lire cette visualisation pour la partager.",
           "6d475e9b25": "Seuls les fichiers HTML et Markdown locaux peuvent être partagés comme artifacts.",
-          "29a406be09": "Les artifacts doivent contenir du texte."
+          "29a406be09": "Les artifacts doivent contenir du texte.",
+          "workbenchTooLarge": "Ce fichier dépasse la limite de partage de 10 Mio."
         },
         "ArtifactPublishedLinkPanel": {
           "copyLink": "Copier le lien",

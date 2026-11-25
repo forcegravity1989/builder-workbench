@@ -73,6 +73,7 @@ export type ComposerCardActionProps = {
   onBranchNameOverrideChange: ComposerModel['handleBranchNameOverrideChange']
   onParentWorktreeIdChange: ComposerModel['setParentWorktreeId']
   onSmartGitHubItemSelect: ComposerModel['handleSmartGitHubItemSelect']
+  onSmartCodeHubIssueSelect?: ComposerModel['handleSmartCodeHubIssueSelect']
   onSmartGitLabItemSelect: ComposerModel['handleSmartGitLabItemSelect']
   onSmartBranchSelect: ComposerModel['handleSmartBranchSelect']
   onSmartNameModeChange?: ComposerModel['setSmartNameMode']

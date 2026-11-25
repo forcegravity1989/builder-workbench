@@ -18,6 +18,11 @@ export function translateSmartWorkspaceEmptyHint(mode: SmartNameMode): string {
         'auto.components.new.workspace.smart.workspace.empty.hint.b1418294ea',
         'Start typing to search GitLab MRs and issues.'
       )
+    case 'codehub':
+      return translate(
+        'auto.components.new.workspace.SmartWorkspaceNameField.codehubEmptyStart',
+        'Start typing to search CodeHub issues.'
+      )
     case 'branches':
       return translate(
         'auto.components.new.workspace.smart.workspace.empty.hint.80e7791c93',
