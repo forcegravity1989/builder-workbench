@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { emitBrowserCookieImportToast } from '@/lib/browser/cookies/browser-cookie-import-toast'
 import { useAppStore } from '@/store/index'
 import { useMountedRef } from '@/hooks/useMountedRef'
+import { getW3LocalBrowserDefault } from '@/lib/w3-local-browser-default'
 import { shouldShowBrowserImportHint } from '../profile-routing/browser-import-hint-visibility'
 import type {
   BrowserSessionProfile,
@@ -92,7 +93,9 @@ export function BrowserToolbarMenu({
   const profileHostId = profileEnvironmentId
     ? toRuntimeExecutionHostId(profileEnvironmentId)
     : LOCAL_EXECUTION_HOST_ID
-  const showsCookieImport = !streamedPage
+  const w3Default = profileHostId === LOCAL_EXECUTION_HOST_ID ? getW3LocalBrowserDefault() : null
+  const showsCookieImport =
+    !streamedPage && !(w3Default && currentProfileId === w3Default.sessionProfileId)
   const listedProfiles = useAppStore((s) => s.browserSessionProfilesByHostId[profileHostId])
   const browserSessionProfiles = listedProfiles ?? NO_PROFILES
   const fetchBrowserSessionProfiles = useAppStore((s) => s.fetchBrowserSessionProfiles)

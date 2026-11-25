@@ -123,7 +123,7 @@ export function registerBrowserSessionProfileHandlers(): void {
         )
       }
       const profile = browserSessionRegistry.getProfile(args.profileId)
-      if (!profile) {
+      if (!profile || profile.internal) {
         return browserCookieImportFailure('profileNotFound')
       }
 
@@ -256,7 +256,7 @@ export function registerBrowserSessionProfileHandlers(): void {
         })
       }
       const profile = browserSessionRegistry.getProfile(args.profileId)
-      if (!profile) {
+      if (!profile || profile.internal) {
         return browserCookieImportFailure('profileNotFound')
       }
       const source = browserCookieImportSource(args)

@@ -276,7 +276,7 @@ export class RuntimeBrowserProfiles {
     supportsPartitionSkippedCookies?: true
   }): Promise<BrowserProfileImportFromBrowserResult> {
     const profile = browserSessionRegistry.getProfile(params.profileId)
-    if (!profile) {
+    if (!profile || profile.internal) {
       return browserCookieImportFailure('profileNotFound')
     }
     if (
