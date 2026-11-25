@@ -37,8 +37,7 @@ function attachHandoff(api: ReactGrabAPI): void {
   let copying = false
   let copied: string | null = null
   let entries: { content: string; commentText?: string }[] = []
-  const consumed = new Set<string>()
-  let lastTransfer: string | null = null
+  const consumed = new Map<string, string>()
   let busy = false
   let button: HTMLButtonElement | null = null
   const observedRoots = new WeakSet<ShadowRoot>()
@@ -95,7 +94,7 @@ function attachHandoff(api: ReactGrabAPI): void {
                 : entry.content
             )
             .join('\n\n')
-        : lastTransfer
+        : entries.map((entry) => consumed.get(JSON.stringify(entry))).find(Boolean)
     if (!copied || !content || entries.length === 0) {
       toast.error('未取得批注，现场仍保留，请重新交接。')
       return
@@ -108,9 +107,8 @@ function attachHandoff(api: ReactGrabAPI): void {
     try {
       await openImprovementAssistant(content)
       for (const entry of batch) {
-        consumed.add(JSON.stringify(entry))
+        consumed.set(JSON.stringify(entry), content)
       }
-      lastTransfer = content
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '交接失败，批注仍保留。', {
         duration: 12000,
@@ -132,9 +130,8 @@ function attachHandoff(api: ReactGrabAPI): void {
     try {
       await openImprovementAssistant(content)
       for (const entry of batch) {
-        consumed.add(JSON.stringify(entry))
+        consumed.set(JSON.stringify(entry), content)
       }
-      lastTransfer = content
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '交接失败，请稍后重试。')
     }
