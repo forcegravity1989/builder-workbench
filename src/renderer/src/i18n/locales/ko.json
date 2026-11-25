@@ -2188,7 +2188,8 @@
         "dropPartiallyAttached_one": "{{count}} 항목 중 {{failureCount}}을(를) 첨부할 수 없습니다.",
         "dropPartiallyAttached_other": "{{count}} 항목 중 {{failureCount}}개 항목을 첨부할 수 없습니다.",
         "dropPartiallyAttached": "{{count}} 항목 중 {{failureCount}}개 항목을 첨부할 수 없습니다.",
-        "folderSetupSupportCheckFailed": "이 호스트가 폴더 설정 스크립트를 실행하는지 확인하지 못했습니다. 다시 시도하세요."
+        "folderSetupSupportCheckFailed": "이 호스트가 폴더 설정 스크립트를 실행하는지 확인하지 못했습니다. 다시 시도하세요.",
+        "7eb3f44ff7": "선택한 agent가 비활성화되었습니다. 생성하기 전에 활성화된 agent를 선택하세요."
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "드롭한 파일을 업로드하지 못했습니다.",
@@ -2561,7 +2562,10 @@
         "authorOpenedThisIssue": "<author/> 님이 이 이슈를 열었습니다",
         "middotUpdatedRelativeTime": "· {{time}} 업데이트됨",
         "resolvedThreadBy": "{{author}} 님의 해결된 스레드",
-        "resolvedCommentBy": "{{author}} 님의 해결된 댓글"
+        "resolvedCommentBy": "{{author}} 님의 해결된 댓글",
+        "8223320f8d": "업데이트됨",
+        "10ef1afb8e": "· 업데이트됨",
+        "55962099bc": "이 이슈를 열었습니다"
       },
       "GitLabItemDialog": {
         "65e784c1f1": "다시 열기",
@@ -3377,7 +3381,8 @@
           "linearViewNotFound": "저장된 Linear 보기를 찾을 수 없습니다.",
           "linearViewRestoreFailed": "저장된 Linear 보기를 복원하지 못했습니다."
         },
-        "shownCount_one": "{{count}}개 표시됨"
+        "shownCount_one": "{{count}}개 표시됨",
+        "524f095d55": "리뷰 필요"
       },
       "Terminal": {
         "73768427cf": "닫기",
@@ -9068,7 +9073,11 @@
           "noActiveLinks": "활성 링크가 없습니다.",
           "createdAt": "생성 {{value0}}",
           "revoke": "취소",
-          "legacyEncryption": "마지막으로 이전 암호화 방식으로 사용되었습니다. 이 링크를 사용하는 곳에서 Orca를 업데이트하세요."
+          "legacyEncryption": "마지막으로 이전 암호화 방식으로 사용되었습니다. 이 링크를 사용하는 곳에서 Orca를 업데이트하세요.",
+          "8b82879581": "활성화된 권한을 가진 사람은 누구나 취소할 때까지 연결할 수 있습니다. 공유 액세스를 취소하면 활성 클라이언트의 연결이 즉시 끊어집니다.",
+          "68ec21309f": "액세스 취소",
+          "fd83b94095": "아직 공유 서버에 액세스할 수 없습니다.",
+          "27cf8507ad": "공유 액세스 새로 고침"
         },
         "RuntimeEnvironmentsPane": {
           "af53761f31": "취소",
@@ -9173,7 +9182,15 @@
           "accessLinkHelp": "다른 Orca의 '서버 추가'에 붙여 넣으세요.",
           "staleAddressCreate": "연결 주소가 바뀌었습니다. {{address}}용 새 링크를 만드세요.",
           "linkExpired": "링크가 만료되었습니다",
-          "unusedLinkExpires": "사용하지 않은 링크는 {{time}}에 만료됩니다"
+          "unusedLinkExpires": "사용하지 않은 링크는 {{time}}에 만료됩니다",
+          "849825e829": "이 페어링 URL을 다른 Orca 클라이언트에 붙여넣습니다.",
+          "2e5c4e3c93": "다른 Orca 클라이언트와 페어링",
+          "6b9ca3e69b": "브라우저에서 열기",
+          "8de0f84fff": "액세스 링크 생성",
+          "intentQuestion": "이 링크를 어디에서 열 예정인가요?",
+          "localOnly": "이 컴퓨터만",
+          "recommended": "권장",
+          "staleAddress": "연결 주소가 변경되었습니다. {{address}}용 새 링크를 생성하세요."
         },
         "Settings": {
           "3bf149e873": "프로젝트 설정 > {{value0}}",
@@ -15628,7 +15645,14 @@
           "d6e5dba05a": "로그인",
           "0b4a7d23ab": "로그인 중",
           "linearWorkspacesLinkedSingular": "워크스페이스 {{count}}개가 연결되었습니다. 언제든지 다른 워크스페이스를 추가하거나 접근 권한이 제한된 API 키를 교체할 수 있습니다.",
-          "linearWorkspacesLinkedPlural": "워크스페이스 {{count}}개가 연결되었습니다. 언제든지 다른 워크스페이스를 추가하거나 접근 권한이 제한된 API 키를 교체할 수 있습니다."
+          "linearWorkspacesLinkedPlural": "워크스페이스 {{count}}개가 연결되었습니다. 언제든지 다른 워크스페이스를 추가하거나 접근 권한이 제한된 API 키를 교체할 수 있습니다.",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "이슈 및 병합 요청.",
+          "10e495afa8": "CodeHub CLI 설치",
+          "98883abe0a": "CodeHub 로그인",
+          "96d7cf755a": "CodeHub 로그인 명령",
+          "ed425b91ac": "Enter 키를 눌러 CodeHub CLI 인증을 실행하세요. 명령이 끝나면 CodeHub를 자동으로 다시 확인합니다.",
+          "110d12dbb6": "이 런타임에서는 아직 codehub-cli 상태를 사용할 수 없습니다."
         },
         "NotificationStep": {
           "3bede04483": "테스트 알림 보내기",

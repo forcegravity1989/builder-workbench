@@ -80,7 +80,7 @@ export function RuntimeAccessAuditLog({
             disabled={isLoading || entries.length === 0}
           >
             <Trash2 className="size-3.5" />
-            {translate('auto.components.settings.RuntimeAccessAuditLog.clear', '清理日志')}
+            {translate('auto.components.settings.RuntimeAccessAuditLog.clear', 'Clear log')}
           </Button>
         </div>
       </div>

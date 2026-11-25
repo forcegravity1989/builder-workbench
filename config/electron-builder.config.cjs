@@ -50,10 +50,6 @@ const {
   writeMacBuildCompatibility
 } = require('./scripts/desktop-distribution/macos/mac-build-compatibility.cjs')
 const {
-  MOBILE_WEB_BUNDLE_DIR,
-  assertMobileWebBundleBuilt
-} = require('./scripts/desktop-distribution/runtime-verification/verify-packaged-mobile-web-bundle.cjs')
-const {
   verifyPackagedPluginResources,
   verifyPackagedPluginTypings
 } = require('./scripts/desktop-distribution/runtime-verification/verify-packaged-plugin-resources.cjs')
@@ -354,7 +350,7 @@ module.exports = {
   ],
   // Node-mode CLI/daemon/foreign SQLite reader/serve entries cannot read asar; unpack their shared/main dependencies too.
   // Keep out/package.json’s CommonJS boundary and remote CLI WebSocket/E2EE deps. Electron-only workers may stay packed.
-  // Renderer/mobile-web assets need real paths: swept temporary asar extracts are not recreated (#27976).
+  // Renderer assets need real paths: swept temporary asar extracts are not recreated (#27976).
   asarUnpack: [
     'out/package.json',
     'out/cli/**',
@@ -409,7 +405,6 @@ module.exports = {
     'out/main/orcad/profile-state/orcad-host-identity-reset.js',
     'out/main/chunks/**',
     'out/renderer/**',
-    'out/mobile-web/**',
     'resources/**',
     'node_modules/ws/**',
     'node_modules/tweetnacl/**',
@@ -421,22 +416,18 @@ module.exports = {
       verifyStaticAppImagePackage(file, arch)
     }
   },
-  // electron-builder calls this with the context alone. The second parameter is the bundle root,
-  // so a test can point the guard at a scratch bundle instead of needing the repo's out/ built.
   beforePack: (
     context,
-    mobileWebBundleDir = MOBILE_WEB_BUNDLE_DIR,
     ensureWaylandClipboard = ensureBundledWaylandClipboard,
     orcadTemplateDir = join(__dirname, '..', orcadTemplateExtraResource.from),
     ensureProviderExec = ensureBundledProviderExec
   ) => {
     // The template is the server every SSH host gets, so a dark test template must never ship.
-    assertNotDarkBuild([join(__dirname, '..', 'out', 'main'), mobileWebBundleDir, orcadTemplateDir])
+    assertNotDarkBuild([join(__dirname, '..', 'out', 'main'), orcadTemplateDir])
     assertPackagedNativeVariantsInstalled(context.electronPlatformName, context.arch)
     assertBundledRipgrepInstalled()
     assertProcessHostOutputBuilt()
     assertOrcadTemplateBuilt()
-    assertMobileWebBundleBuilt(mobileWebBundleDir)
     if (context.electronPlatformName === 'linux') {
       ensureWaylandClipboard(context.arch)
     }

@@ -1,7 +1,7 @@
 import { buildExecutionHostRegistry } from '../../../shared/execution-host/execution-host-registry'
 import { resolveWorkspaceCreationTarget } from '@/lib/workspace/creation/project-host-workspace-target'
 import { getProjectHostSetupProjectionFromState } from '@/store/projects/project-host-setup-selector'
-import { repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
+import { findRepoForHost, repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
 import { selectRepoByIdForActiveWorkspace } from '@/store/repos/active-workspace-repository'
 import type { AppState } from '@/store/types'
 import {
@@ -14,7 +14,6 @@ import { readBots, readBotsEnabled } from '@/lib/bot-catalog'
 import { readBotGroups } from '@/lib/bot-group-catalog-snapshot'
 import { botOfHomeWorkspace } from '../../../shared/bots/bot-homes'
 import { resolveIndexedWorktreeOwner } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
-import { findRepoForHost } from '@/store/repos/repo-host-identity'
 import { normalizeWorkspaceSessionKeyToWorkspaceId } from '../../../shared/workspace/identity/workspace-scope'
 
 export type SidebarProjectState = Pick<

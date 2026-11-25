@@ -17,8 +17,7 @@ import {
   normalizeExecutionHostId
 } from '../../../../../../shared/execution-host/execution-host'
 import { countOpenRepoTerminalTabs } from '@/store/repos/repo-removal'
-import { worktreeBelongsToHost } from '@/store/repos/repo-host-identity'
-import { repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
+import { worktreeBelongsToHost, repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
 import { repoMatchesRemovalRegistration } from '@/store/repos/repo-removal-registration'
 import type { RepoRegistrationSnapshot } from '../../../../../../shared/workbench/repo-removal'
 import { getRecipeVmSshTargetForHost } from '@/runtime/ephemeral-vm/recipe-vm-managed-host'

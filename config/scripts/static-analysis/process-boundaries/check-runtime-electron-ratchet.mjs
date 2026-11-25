@@ -80,7 +80,8 @@ const EXTERNAL = [
   'better-sqlite3',
   'keytar',
   'fsevents',
-  'cpu-features'
+  'cpu-features',
+  'playwright-core'
 ]
 
 // Externalize every .node: optional ssh2/cpu-features prebuilds may exist locally but not CI; only the import graph matters.

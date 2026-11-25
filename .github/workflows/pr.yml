@@ -170,6 +170,7 @@ jobs:
           cache-electron-package: 'true'
 
       - name: Test DSH CLI integration contracts
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/dsh
@@ -180,12 +181,15 @@ jobs:
           src/main/agent-hooks/server/testing/persistence
 
       - name: Test Issue association calculation
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: node --test .github/scripts/pr-issue-audit.test.mjs
 
       - name: Test share service
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: node --test "services/bw-share/test/*.test.mjs"
 
       - name: Lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm run lint
 
       - name: Typecheck
@@ -251,7 +255,7 @@ jobs:
 
       - name: Build desktop application
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm run build:desktop
+        run: pnpm run build:desktop:assets
 
   e2e:
     name: Workbench Electron PR E2E

@@ -1571,7 +1571,8 @@
         "dropPartiallyAttached_one": "No se pudo adjuntar {{failureCount}} de {{count}} elemento.",
         "dropPartiallyAttached_other": "No se pudieron adjuntar {{failureCount}} de {{count}} elementos.",
         "dropPartiallyAttached_many": "No se pudieron adjuntar {{failureCount}} de {{count}} elementos.",
-        "dropPartiallyAttached": "No se pudieron adjuntar {{failureCount}} de {{count}} elementos."
+        "dropPartiallyAttached": "No se pudieron adjuntar {{failureCount}} de {{count}} elementos.",
+        "7eb3f44ff7": "El agente seleccionado está deshabilitado. Elige un agente habilitado antes de crear."
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "No se pudieron cargar los archivos soltados.",
@@ -1949,7 +1950,10 @@
         "authorOpenedThisIssue": "<author/> abrió este issue",
         "middotUpdatedRelativeTime": "· actualizado {{time}}",
         "resolvedThreadBy": "Hilo resuelto de {{author}}",
-        "resolvedCommentBy": "Comentario resuelto de {{author}}"
+        "resolvedCommentBy": "Comentario resuelto de {{author}}",
+        "8223320f8d": "actualizado",
+        "10ef1afb8e": "· actualizado",
+        "55962099bc": "abrió este issue"
       },
       "GitLabItemDialog": {
         "65e784c1f1": "Reabrir",
@@ -2773,7 +2777,8 @@
           "linearProjectRestoreFailed": "No se pudo restaurar el proyecto de Linear guardado.",
           "linearViewNotFound": "No se encontró la vista de Linear guardada.",
           "linearViewRestoreFailed": "No se pudo restaurar la vista de Linear guardada."
-        }
+        },
+        "524f095d55": "Necesita revisión"
       },
       "Terminal": {
         "73768427cf": "Cerrar",
@@ -8423,7 +8428,11 @@
           "noActiveLinks": "No hay enlaces activos.",
           "createdAt": "Creado {{value0}}",
           "revoke": "Revocar",
-          "legacyEncryption": "Se usó por última vez con un cifrado anterior. Actualiza Orca donde se use este enlace."
+          "legacyEncryption": "Se usó por última vez con un cifrado anterior. Actualiza Orca donde se use este enlace.",
+          "8b82879581": "Cualquier persona con una concesión activa puede conectarse hasta que la revoques. Revocar el acceso compartido desconecta a los clientes activos inmediatamente.",
+          "68ec21309f": "Revocar acceso",
+          "fd83b94095": "Aún no hay acceso compartido al servidor.",
+          "27cf8507ad": "Actualizar acceso compartido"
         },
         "RuntimeEnvironmentsPane": {
           "af53761f31": "Cancelar",
@@ -8528,7 +8537,15 @@
           "accessLinkHelp": "Pégalo en «Añadir servidor» en el otro Orca.",
           "staleAddressCreate": "La dirección de conexión cambió. Crea un enlace nuevo para {{address}}.",
           "linkExpired": "Enlace caducado",
-          "unusedLinkExpires": "El enlace sin usar caduca a las {{time}}"
+          "unusedLinkExpires": "El enlace sin usar caduca a las {{time}}",
+          "849825e829": "Pega esta URL de emparejamiento en otro cliente de Orca.",
+          "2e5c4e3c93": "Emparejar otro cliente de Orca",
+          "6b9ca3e69b": "Abrir en el navegador",
+          "8de0f84fff": "Generar enlace de acceso",
+          "intentQuestion": "¿Dónde se abrirá este enlace?",
+          "localOnly": "Solo este equipo",
+          "recommended": "Recomendado",
+          "staleAddress": "La dirección de conexión cambió. Genera un enlace nuevo para {{address}}."
         },
         "Settings": {
           "3bf149e873": "Configuración del proyecto > {{value0}}",
@@ -14835,7 +14852,14 @@
           "d6e5dba05a": "Iniciar sesión",
           "0b4a7d23ab": "Iniciando sesión",
           "linearWorkspacesLinkedSingular": "{{count}} workspace vinculado. Agrega otro workspace o reemplaza una clave restringida en cualquier momento.",
-          "linearWorkspacesLinkedPlural": "{{count}} workspaces vinculados. Agrega otro workspace o reemplaza una clave restringida en cualquier momento."
+          "linearWorkspacesLinkedPlural": "{{count}} workspaces vinculados. Agrega otro workspace o reemplaza una clave restringida en cualquier momento.",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "Incidencias y solicitudes de fusión.",
+          "10e495afa8": "Instalar la CLI de CodeHub",
+          "98883abe0a": "Inicio de sesión en CodeHub",
+          "96d7cf755a": "Comando de inicio de sesión en CodeHub",
+          "ed425b91ac": "Pulsa Intro para ejecutar la autenticación de la CLI de CodeHub. CodeHub se vuelve a comprobar automáticamente cuando termina el comando.",
+          "110d12dbb6": "El estado de codehub-cli aún no está disponible en este entorno de ejecución."
         },
         "NotificationStep": {
           "3bede04483": "Enviar notificación de prueba",

@@ -2025,7 +2025,8 @@
         "dropPartiallyAttached_one": "{{count}} 個のアイテムのうち {{failureCount}} 個を添付できませんでした。",
         "dropPartiallyAttached_other": "{{count}} 個のアイテムのうち {{failureCount}} 個を添付できませんでした。",
         "dropPartiallyAttached": "{{count}} 個のアイテムのうち {{failureCount}} 個を添付できませんでした。",
-        "folderSetupSupportCheckFailed": "このホストがフォルダーのセットアップスクリプトを実行するかどうかを確認できませんでした。もう一度お試しください。"
+        "folderSetupSupportCheckFailed": "このホストがフォルダーのセットアップスクリプトを実行するかどうかを確認できませんでした。もう一度お試しください。",
+        "7eb3f44ff7": "選択した Agent は無効です。作成する前に、有効な Agent を選択してください。"
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "ドロップされたファイルのアップロードに失敗しました。",
@@ -2396,7 +2397,10 @@
         "authorOpenedThisIssue": "<author/> がこの Issue を作成しました",
         "middotUpdatedRelativeTime": "· {{time}} に更新",
         "resolvedThreadBy": "{{author}} の解決済みスレッド",
-        "resolvedCommentBy": "{{author}} の解決済みコメント"
+        "resolvedCommentBy": "{{author}} の解決済みコメント",
+        "8223320f8d": "更新されました",
+        "10ef1afb8e": "· 更新されました",
+        "55962099bc": "この Issue を作成しました"
       },
       "GitLabItemDialog": {
         "65e784c1f1": "再度開く",
@@ -3203,7 +3207,8 @@
           "linearProjectRestoreFailed": "保存された Linear プロジェクトを復元できませんでした。",
           "linearViewNotFound": "保存された Linear ビューが見つかりませんでした。",
           "linearViewRestoreFailed": "保存された Linear ビューを復元できませんでした。"
-        }
+        },
+        "524f095d55": "レビュー待ち"
       },
       "Terminal": {
         "73768427cf": "閉じる",
@@ -8774,7 +8779,11 @@
           "noActiveLinks": "有効なリンクはありません。",
           "createdAt": "作成 {{value0}}",
           "revoke": "取り消す",
-          "legacyEncryption": "前回は古い暗号化方式で使用されました。このリンクを使用している環境の Orca を更新してください。"
+          "legacyEncryption": "前回は古い暗号化方式で使用されました。このリンクを使用している環境の Orca を更新してください。",
+          "8b82879581": "アクティブな許可を持っている人は誰でも、許可を取り消すまで接続できます。共有アクセスを取り消すと、アクティブなクライアントはただちに切断されます。",
+          "68ec21309f": "アクセスを取り消す",
+          "fd83b94095": "共有サーバーへのアクセスはまだありません。",
+          "27cf8507ad": "共有アクセスを更新する"
         },
         "RuntimeEnvironmentsPane": {
           "af53761f31": "キャンセル",
@@ -8879,7 +8888,15 @@
           "accessLinkHelp": "もう一方の Orca の「サーバーを追加」に貼り付けます。",
           "staleAddressCreate": "接続アドレスが変わりました。{{address}} 用の新しいリンクを作成してください。",
           "linkExpired": "リンクの有効期限が切れました",
-          "unusedLinkExpires": "未使用のリンクは {{time}} に期限切れになります"
+          "unusedLinkExpires": "未使用のリンクは {{time}} に期限切れになります",
+          "849825e829": "このペアリング URL を別の Orca クライアントに貼り付けます。",
+          "2e5c4e3c93": "別の Orca クライアントをペアリングする",
+          "6b9ca3e69b": "ブラウザで開く",
+          "8de0f84fff": "アクセスリンクの生成",
+          "intentQuestion": "このリンクはどこで開きますか？",
+          "localOnly": "このコンピュータのみ",
+          "recommended": "推奨",
+          "staleAddress": "接続アドレスが変更されました。{{address}} 用の新規リンクを生成してください。"
         },
         "Settings": {
           "3bf149e873": "プロジェクト設定 > {{value0}}",
@@ -15235,7 +15252,14 @@
           "d6e5dba05a": "サインイン",
           "0b4a7d23ab": "サインインする",
           "linearWorkspacesLinkedSingular": "{{count}} 個のワークスペースがリンクされました。いつでも別のワークスペースを追加したり、制限付きキーを置き換えたりできます。",
-          "linearWorkspacesLinkedPlural": "{{count}} 個のワークスペースがリンクされました。いつでも別のワークスペースを追加したり、制限付きキーを置き換えたりできます。"
+          "linearWorkspacesLinkedPlural": "{{count}} 個のワークスペースがリンクされました。いつでも別のワークスペースを追加したり、制限付きキーを置き換えたりできます。",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "イシューとマージリクエスト。",
+          "10e495afa8": "CodeHub CLI をインストール",
+          "98883abe0a": "CodeHub ログイン",
+          "96d7cf755a": "CodeHub サインインコマンド",
+          "ed425b91ac": "Enter キーで CodeHub CLI の認証を実行します。コマンド終了後に CodeHub を自動で再確認します。",
+          "110d12dbb6": "このランタイムではまだ codehub-cli のステータスを利用できません。"
         },
         "NotificationStep": {
           "3bede04483": "テスト通知を送信する",

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import process from 'node:process'
+import { applyExclusions, readExclusions } from './localization-coverage-exclusions.mjs'
 
 // TypeScript 7 is a native CLI; AST consumers still need the legacy JavaScript API.
 import ts from 'typescript-api'
@@ -488,6 +489,7 @@ function parseArgs(argv) {
   const options = {
     allowlistPath: path.join('config', 'localization-coverage-allowlist.json'),
     check: false,
+    exclusionsPath: path.join('config', 'localization-coverage-exclusions.json'),
     format: 'summary',
     includeNativeDialogFields: false,
     outputPath: null,
@@ -504,6 +506,9 @@ function parseArgs(argv) {
       options.includeNativeDialogFields = true
     } else if (arg === '--check') {
       options.check = true
+    } else if (arg === '--exclusions') {
+      options.exclusionsPath = argv[index + 1] ?? options.exclusionsPath
+      index += 1
     } else if (arg === '--allowlist') {
       options.allowlistPath = argv[index + 1] ?? options.allowlistPath
       index += 1
@@ -601,8 +606,10 @@ export async function main(root = process.cwd(), argv = process.argv.slice(2)) {
   }
 
   if (options.check) {
+    const exclusions = await readExclusions(root, options.exclusionsPath)
+    const checked = applyExclusions(reports, exclusions)
     const allowlist = await readAllowlist(root, options.allowlistPath)
-    const newCandidates = findNewCandidates(reports, allowlist)
+    const newCandidates = findNewCandidates(checked, allowlist)
     if (newCandidates.length > 0) {
       console.error('New unlocalized UI strings were found.')
       console.error('Localize them or add a reviewed exclusion to the localization allowlist.')
@@ -610,7 +617,9 @@ export async function main(root = process.cwd(), argv = process.argv.slice(2)) {
       console.error(formatReports(root, newCandidates))
       return 1
     }
-    console.log(`Localization coverage check passed with ${reports.length} allowlisted candidates.`)
+    console.log(
+      `Localization coverage check passed with ${checked.length} candidates (${reports.length - checked.length} excluded via ${options.exclusionsPath}).`
+    )
     return 0
   }
 

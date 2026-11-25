@@ -63,6 +63,8 @@
   "auto": {
     "components": {
       "GitHubItemDialog": {
+        "0ab4664a8b": "Start workspace",
+        "0caac1a18f": "Start workspace",
         "filesViewed_one": "{{viewed}} / {{count}} file viewed",
         "filesViewed_other": "{{viewed}} / {{count}} files viewed",
         "reactionCount_one": "{{count}} {{reaction}} reaction",
@@ -111,6 +113,7 @@
       "TaskPage": {
         "changedFileCount_one": "{{count}} file",
         "changedFileCount_other": "{{count}} files",
+        "codehubDuplicateOf": "#",
         "labelCount_one": "{{count}} label",
         "labelCount_other": "{{count}} labels",
         "memberCount_one": "{{count}} member",
@@ -1437,6 +1440,14 @@
     "runtime": {
       "githubCheckDetailsTimeout": {
         "timedOut": "Timed out loading check details."
+      }
+    },
+    "workbench": {
+      "quickLinks": {
+        "tooltip_one": "Quick Links — {{count}}",
+        "tooltip_other": "Quick Links — {{count}}",
+        "trigger_one": "Quick Links, {{count}}",
+        "trigger_other": "Quick Links, {{count}}"
       }
     }
   },

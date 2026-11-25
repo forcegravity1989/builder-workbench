@@ -119,7 +119,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
   return (
     <aside
       aria-label="Workbench 导航"
-      className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto border-r border-worktree-sidebar-border bg-worktree-sidebar py-2.5"
+      className="scrollbar-sleek flex min-h-0 flex-1 flex-col items-center overflow-y-auto border-r border-worktree-sidebar-border bg-worktree-sidebar py-2.5"
       style={{ width: WORKBENCH_RAIL_WIDTH }}
       data-workbench-rail
     >

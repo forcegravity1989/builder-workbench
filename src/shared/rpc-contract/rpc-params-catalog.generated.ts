@@ -44,6 +44,27 @@ import {
   DesktopBrowserBridgeResultChunkParams,
   DesktopBrowserBridgeResultParams
 } from '../browser/client-hosting/desktop-browser-bridge-protocol'
+import {
+  CodeHubAssignIssue,
+  CodeHubCloseMr,
+  CodeHubCreateComment,
+  CodeHubCreateIssue,
+  CodeHubDeleteComment,
+  CodeHubListComments,
+  CodeHubListLabels,
+  CodeHubListMembers,
+  CodeHubListPipelines,
+  CodeHubListTasks,
+  CodeHubMergeMr,
+  CodeHubMrChanges,
+  CodeHubMrChecks,
+  CodeHubMrForBranch,
+  CodeHubSetIssueState,
+  CodeHubSetReviewers,
+  CodeHubUpdateIssueLabels,
+  CodeHubUpdateIssueTitle,
+  CodeHubViewTask
+} from '../codehub-api'
 import { MobileWebBundleChunkParamsSchema } from '../mobile-web-bundle/bundle-rpc-contract'
 import { MobileWebBundleLocaleCatalogParamsSchema } from '../mobile-web-bundle/locale-catalog-contract'
 import { OrcadMigrationBlobChunkRequestSchema } from '../orcad-migration/orcad-migration-blob-transfer'
@@ -1082,6 +1103,64 @@ import {
   SkillUploadChunkRequestSchema,
   SkillUploadCommitRequestSchema
 } from '../skills/sharing/skill-upload-session-contract'
+import { ArchivePrStatusRequestSchema } from '../workbench/archive-pr-status'
+import {
+  CharterProbeRequestSchema,
+  CharterReadRequestSchema,
+  CharterScopeSchema,
+  CharterStatusRequestSchema,
+  CharterSubmitRequestSchema
+} from '../workbench/charter'
+import { FixedWorkspaceEnsureSchema } from '../workbench/fixed-workspace'
+import { MetricReadRequestSchema } from '../workbench/metrics'
+import {
+  PackageDownloadSchema,
+  PackageLatestSchema,
+  PackageLaunchSchema,
+  PackagePipelineListSchema
+} from '../workbench/package-pipeline'
+import { ReviewDismissSchema, ReviewRequestSchema } from '../workbench/pr-review-request'
+import {
+  MilestoneDiscardRequestSchema,
+  MilestoneReadRequestSchema,
+  MilestoneSaveRequestSchema,
+  MilestoneSubmitRequestSchema,
+  MilestoneWorkingRequestSchema
+} from '../workbench/project-milestones'
+import {
+  PrototypeReviewAnnotationAddSchema,
+  PrototypeReviewAnnotationDeleteSchema,
+  PrototypeReviewAnnotationListSchema
+} from '../workbench/prototype-review-annotation'
+import {
+  PrototypeReviewDismissSchema,
+  PrototypeReviewRequestSchema
+} from '../workbench/prototype-review-request'
+import { ReleaseStatusRequestSchema } from '../workbench/release-status'
+import { WorkbenchGuardedRepoRemoval } from '../workbench/repo-removal'
+import { ShareListSchema, SharePublishSchema, ShareSourceSchema } from '../workbench/share'
+import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
+import { TrunkUpdateSchema } from '../workbench/trunk-update'
+import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
+import {
+  VersionHistoryListSchema,
+  VersionHistoryReadPlanSchema,
+  VersionHistoryReadSchema,
+  VersionPlanEntryTimesSchema,
+  VersionTreePlansSchema
+} from '../workbench/version-history'
+import {
+  VersionMigrationApplySchema,
+  VersionMigrationReadSchema
+} from '../workbench/version-material-migration'
+import {
+  VersionMaterialAddArtifactSchema,
+  VersionMaterialReadSchema,
+  VersionMaterialSaveSchema,
+  VersionMaterialScopeSchema
+} from '../workbench/version-material-request'
+import { VersionWorkspacePrepareSchema } from '../workbench/version-workspace-prepare'
+import { WorkflowCommentsRequestSchema } from '../workbench/workflow-comments'
 
 // Why: the host parses params with these schemas, so a client that matches this map
 // matches the dispatcher. Clients must import it for types only — parsing a params
@@ -1497,6 +1576,26 @@ export const RPC_PARAMS_BY_METHOD = {
   'clipboard.commitImageUpload': CommitImageUpload,
   'clipboard.saveImageAsTempFile': SaveImageAsTempFile,
   'clipboard.startImageUpload': StartImageUpload,
+  'codehub.assignIssue': CodeHubAssignIssue,
+  'codehub.closeMr': CodeHubCloseMr,
+  'codehub.createComment': CodeHubCreateComment,
+  'codehub.createIssue': CodeHubCreateIssue,
+  'codehub.deleteComment': CodeHubDeleteComment,
+  'codehub.listComments': CodeHubListComments,
+  'codehub.listLabels': CodeHubListLabels,
+  'codehub.listMembers': CodeHubListMembers,
+  'codehub.listPipelines': CodeHubListPipelines,
+  'codehub.listTasks': CodeHubListTasks,
+  'codehub.mergeMr': CodeHubMergeMr,
+  'codehub.mrChanges': CodeHubMrChanges,
+  'codehub.mrChecks': CodeHubMrChecks,
+  'codehub.mrForBranch': CodeHubMrForBranch,
+  'codehub.setIssueState': CodeHubSetIssueState,
+  'codehub.setReviewers': CodeHubSetReviewers,
+  'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
+  'codehub.updateIssueTitle': CodeHubUpdateIssueTitle,
+  'codehub.viewTask': CodeHubViewTask,
+  'codehub.viewer': CodeHubListLabels,
   'computer.capabilities': ComputerCapabilitiesParams,
   'computer.click': Click,
   'computer.drag': DragOfComputerSchemasParams,
@@ -1681,6 +1780,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'github.removePRReviewers': RemovePrReviewers,
   'github.repoSlug': RepoSelector,
   'github.repoUpstream': RepoSelector,
+  'github.repoViewer': RepoSelector,
   'github.requestPRReviewers': RequestPrReviewers,
   'github.rerunPRChecks': RerunPullRequestChecks,
   'github.resolveReviewThread': ReviewThread,
@@ -2211,6 +2311,62 @@ export const RPC_PARAMS_BY_METHOD = {
   'webhooks.rotate': WebhookRotate,
   'webhooks.sample': WebhookSample,
   'webhooks.secret': WebhookSecret,
+  'workbench.archive.prStatus': ArchivePrStatusRequestSchema,
+  'workbench.charter.probeRemote': CharterProbeRequestSchema,
+  'workbench.charter.read': CharterReadRequestSchema,
+  'workbench.charter.status': CharterStatusRequestSchema,
+  'workbench.charter.submit': CharterSubmitRequestSchema,
+  'workbench.fixedWorkspace.ensure': FixedWorkspaceEnsureSchema,
+  'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.listPlanEntryTimes': VersionPlanEntryTimesSchema,
+  'workbench.history.listTreePlans': VersionTreePlansSchema,
+  'workbench.history.read': VersionHistoryReadSchema,
+  'workbench.history.readPlan': VersionHistoryReadPlanSchema,
+  'workbench.materials.addArtifact': VersionMaterialAddArtifactSchema,
+  'workbench.materials.context': VersionMaterialScopeSchema,
+  'workbench.materials.list': VersionMaterialScopeSchema,
+  'workbench.materials.migrate': VersionMigrationApplySchema,
+  'workbench.materials.previewMigration': VersionMigrationReadSchema,
+  'workbench.materials.read': VersionMaterialReadSchema,
+  'workbench.materials.save': VersionMaterialSaveSchema,
+  'workbench.materials.select': VersionMaterialReadSchema,
+  'workbench.metrics.list': CharterScopeSchema,
+  'workbench.metrics.read': MetricReadRequestSchema,
+  'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.milestones.discard': MilestoneDiscardRequestSchema,
+  'workbench.milestones.read': MilestoneReadRequestSchema,
+  'workbench.milestones.save': MilestoneSaveRequestSchema,
+  'workbench.milestones.submit': MilestoneSubmitRequestSchema,
+  'workbench.milestones.working': MilestoneWorkingRequestSchema,
+  'workbench.overview.pull': WorkflowCommentsRequestSchema,
+  'workbench.package.download': PackageDownloadSchema,
+  'workbench.package.latest': PackageLatestSchema,
+  'workbench.package.launch': PackageLaunchSchema,
+  'workbench.package.list': PackagePipelineListSchema,
+  'workbench.prototypeReview.annotations.add': PrototypeReviewAnnotationAddSchema,
+  'workbench.prototypeReview.annotations.delete': PrototypeReviewAnnotationDeleteSchema,
+  'workbench.prototypeReview.annotations.list': PrototypeReviewAnnotationListSchema,
+  'workbench.prototypeReview.dismiss': PrototypeReviewDismissSchema,
+  'workbench.prototypeReview.identity': null,
+  'workbench.prototypeReview.inbox': null,
+  'workbench.prototypeReview.receive': PrototypeReviewRequestSchema,
+  'workbench.release.status': ReleaseStatusRequestSchema,
+  'workbench.repo.removeRegistration': WorkbenchGuardedRepoRemoval,
+  'workbench.review.comments': PullRequest,
+  'workbench.review.dismiss': ReviewDismissSchema,
+  'workbench.review.identity': null,
+  'workbench.review.inbox': null,
+  'workbench.review.receive': ReviewRequestSchema,
+  'workbench.share.getLink': ShareSourceSchema,
+  'workbench.share.list': ShareListSchema,
+  'workbench.share.publish': SharePublishSchema,
+  'workbench.share.remove': ShareSourceSchema,
+  'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
+  'workbench.trunk.update': TrunkUpdateSchema,
+  'workbench.versionBinding.read': VersionBindingScopeSchema,
+  'workbench.versionBinding.set': VersionBindingSetSchema,
+  'workbench.versionWorkspace.prepare': VersionWorkspacePrepareSchema,
+  'workbench.workflow.comments': WorkflowCommentsRequestSchema,
   'workspaceCleanup.codexHistoryDiskUsage': WorkspaceCleanupCodexHistoryDiskUsageParams,
   'workspaceCleanup.preview': WorkspaceCleanupPreviewParams,
   'workspaceCleanup.releaseCodexHistoryDiskUsage':

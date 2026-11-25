@@ -3105,7 +3105,8 @@
         "dropPartiallyAttached_one": "{{failureCount}} of {{count}} item could not be attached.",
         "dropPartiallyAttached_other": "{{failureCount}} of {{count}} items could not be attached.",
         "dropPartiallyAttached": "{{failureCount}} of {{count}} items could not be attached.",
-        "folderSetupSupportCheckFailed": "Couldn't confirm whether this host runs folder setup scripts. Try again."
+        "folderSetupSupportCheckFailed": "Couldn't confirm whether this host runs folder setup scripts. Try again.",
+        "7eb3f44ff7": "Selected agent is disabled. Choose an enabled agent before creating."
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "Failed to upload dropped files.",
@@ -3482,7 +3483,10 @@
         "authorOpenedThisIssue": "<author/> opened this issue",
         "middotUpdatedRelativeTime": "· updated {{time}}",
         "resolvedThreadBy": "Resolved thread by {{author}}",
-        "resolvedCommentBy": "Resolved comment by {{author}}"
+        "resolvedCommentBy": "Resolved comment by {{author}}",
+        "10ef1afb8e": "· updated",
+        "55962099bc": "opened this issue",
+        "8223320f8d": "updated"
       },
       "GitLabItemDialog": {
         "65e784c1f1": "Reopen",
@@ -4313,7 +4317,44 @@
           "linearViewNotFound": "Saved Linear view was not found.",
           "linearViewRestoreFailed": "Failed to restore saved Linear view."
         },
-        "shownCount_one": "{{count}} shown"
+        "shownCount_one": "{{count}} shown",
+        "524f095d55": "Needs review",
+        "codehubAddLabel": "Add label…",
+        "codehubAssigned": "Assignee updated",
+        "codehubAssignee": "Assignee username",
+        "codehubCancelLabels": "Cancel",
+        "codehubCancelTitle": "Cancel",
+        "codehubCommentSubmit": "Comment",
+        "codehubCreateIssue": "Create issue",
+        "codehubDeleteComment": "Delete comment",
+        "codehubDuplicateOf": "#",
+        "codehubEditLabels": "Edit labels",
+        "codehubEditTitle": "Edit title",
+        "codehubEmptyIssues": "No CodeHub issues",
+        "codehubEmptyMrs": "No CodeHub merge requests",
+        "codehubIssueBody": "Description",
+        "codehubIssueClosed": "Issue closed",
+        "codehubIssueCreated": "Issue created",
+        "codehubIssueReopened": "Issue reopened",
+        "codehubIssueTitle": "New issue title",
+        "codehubLabelsSaved": "Labels updated",
+        "codehubMerge": "Merge",
+        "codehubMerged": "Merge requested",
+        "codehubMrClosed": "Merge request closed",
+        "codehubNoMembers": "No project members found.",
+        "codehubOpen": "Open in CodeHub",
+        "codehubOpenCheck": "Open in CodeHub",
+        "codehubOpenComment": "Open comment on CodeHub",
+        "codehubOpenMrChanges": "Open changes in CodeHub",
+        "codehubRefresh": "Refresh CodeHub",
+        "codehubRemoveLabel": "Remove label",
+        "codehubReviewersSet": "Reviewers updated",
+        "codehubSaveLabels": "Save",
+        "codehubSaveTitle": "Save",
+        "codehubSearchIssues": "Search CodeHub issues",
+        "codehubSearchMrs": "Search CodeHub PRs",
+        "codehubTitleSaved": "Title updated",
+        "ghLabelsUpdateFailed": "Failed to update labels."
       },
       "Terminal": {
         "73768427cf": "Close",
@@ -5809,7 +5850,8 @@
             "staleCodexSessions_one": "{{count}} Codex session is still on the old account.",
             "staleCodexSessions_other": "{{count}} Codex sessions are still on the old account.",
             "windowWeeks": "{{value0}}wk",
-            "museUsageMenu": "Muse Usage"
+            "museUsageMenu": "Muse Usage",
+            "quickLinks": "Quick Links"
           },
           "StatusBarUsageEmptyCta": {
             "828c764a79": "Connect an account",
@@ -9531,7 +9573,13 @@
           "3ba07f933b": "Connect issue trackers Orca can use to browse tasks and start workspaces with linked context.",
           "70e885705b": "Task providers",
           "1683acbac4": "Connect the source hosts Orca can use for pull requests, merge requests, checks, and review status.",
-          "298c65ecac": "Review providers"
+          "298c65ecac": "Review providers",
+          "buildGroupDescription": "CLIs for pipeline execution and package builds.",
+          "buildGroupTitle": "Build",
+          "codeHostGroupDescription": "CLIs for tasks, pull requests, merge requests, and review status.",
+          "codeHostGroupTitle": "Code hosting",
+          "imGroupDescription": "Send reports and diagnostic files to the BW user-group space.",
+          "imGroupTitle": "Reports and diagnostics"
         },
         "KagiSessionLinkForm": {
           "92f0b4e472": "Clear",
@@ -10097,7 +10145,13 @@
           "viewLinks": "Links",
           "copyLink": "Copy link for {{value0}}",
           "copyLinkTooltip": "Copy link",
-          "noMembers": "No one has connected yet."
+          "noMembers": "No one has connected yet.",
+          "27cf8507ad": "Refresh shared access",
+          "68ec21309f": "Revoke access",
+          "8b82879581": "Anyone with an active grant can connect until you revoke it. Revoking shared access disconnects active clients immediately.",
+          "fd83b94095": "No shared server access yet.",
+          "fullAccess": "Full access",
+          "teamReadonly": "Team read-only"
         },
         "RuntimeEnvironmentsPane": {
           "af53761f31": "Cancel",
@@ -10205,7 +10259,20 @@
           "unusedLinkExpires": "Unused link expires at {{time}}",
           "readOnlyRestored": "Read-only access restored.",
           "accessModeChangeFailed": "Failed to change access.",
-          "linkNotRecorded": "This link was created before its address was recorded. Generate a new link to copy it."
+          "linkNotRecorded": "This link was created before its address was recorded. Generate a new link to copy it.",
+          "2e5c4e3c93": "Pair another Orca client",
+          "6b9ca3e69b": "Open in browser",
+          "849825e829": "Paste this pairing URL into another Orca client.",
+          "8de0f84fff": "Generate Access Link",
+          "clearConfirm": "Clear this host's shared access log?",
+          "clearFailed": "Failed to clear shared access log.",
+          "failedToLoadAccessLog": "Failed to load access log.",
+          "fullAccessGranted": "Full access granted.",
+          "intentQuestion": "Where will this link be opened?",
+          "localOnly": "This computer only",
+          "recommended": "Recommended",
+          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link.",
+          "staleAddress": "The connection address changed. Generate a new link for {{address}}."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",
@@ -12735,7 +12802,35 @@
                   "statusConnected": "Connected",
                   "statusUnavailable": "Unavailable",
                   "statusNotInstalled": "Not installed",
-                  "statusNotAuthenticated": "Not authenticated"
+                  "statusNotAuthenticated": "Not authenticated",
+                  "cloudbuildAuthLoginCommand": "cb login",
+                  "cloudbuildDescription": "Pipelines and package builds via the",
+                  "cloudbuildInstallButton": "Install CloudBuild CLI",
+                  "cloudbuildLoginTerminalAriaLabel": "CloudBuild login terminal",
+                  "cloudbuildLoginTitle": "CloudBuild login",
+                  "cloudbuildMissing": "cb is not on PATH.",
+                  "cloudbuildNotAuthenticated": "cb is installed but not authenticated.",
+                  "cloudbuildUnavailable": "cb status is not available in this runtime yet.",
+                  "codehubAuthLoginCommand": "codehub-cli auth login --all",
+                  "codehubDescription": "Issues and merge requests via the",
+                  "codehubInstallButton": "Install CodeHub CLI",
+                  "codehubLoginTerminalAriaLabel": "CodeHub login terminal",
+                  "codehubLoginTitle": "CodeHub login",
+                  "codehubMissing": "codehub-cli is not on PATH. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
+                  "codehubNotAuthenticated": "codehub-cli is installed but not authenticated.",
+                  "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
+                  "installingButton": "Installing…",
+                  "installInProgressNote": "Installing in the background. You will be notified here when it finishes.",
+                  "loginButton": "Log in",
+                  "pressEnterDescription": "Press Enter to run the command.",
+                  "welinkAuthLoginCommand": "welink-cli auth login",
+                  "welinkDescription": "Reports and diagnostics via the",
+                  "welinkInstallButton": "Install WeLink CLI",
+                  "welinkLoginTerminalAriaLabel": "WeLink login terminal",
+                  "welinkLoginTitle": "WeLink login",
+                  "welinkMissing": "Install welink-cli to send reports and diagnostic files to the BW user-group space. Installation requires npm and access to the internal package registry. You can set this up later if unavailable.",
+                  "welinkNotAuthenticated": "welink-cli is installed but not authenticated.",
+                  "welinkUnavailable": "welink-cli status is not available in this runtime yet."
                 }
               }
             }
@@ -13686,7 +13781,19 @@
           "keywordMarkdown": "Markdown",
           "keywordUpload": "upload",
           "09f41ce46c": "Show artifacts button",
-          "7b2b114099": "Open artifacts"
+          "7b2b114099": "Open artifacts",
+          "sharedLinksDelete": "Delete",
+          "sharedLinksDeleteConfirm": "Delete",
+          "sharedLinksDeleteDescription": "The link stops working for everyone immediately. Share the file again to create a new one.",
+          "sharedLinksDeleteFailed": "Could not delete this shared link.",
+          "sharedLinksDeleteTitle": "Delete this shared link?",
+          "sharedLinksDeleting": "Deleting…",
+          "sharedLinksDescription": "Links this computer created. Deleting a link makes it stop working immediately.",
+          "sharedLinksEmpty": "No shared files yet. Open an HTML or Markdown file and choose Share as artifact.",
+          "sharedLinksLoadFailed": "Could not load your shared files.",
+          "sharedLinksLoading": "Loading…",
+          "sharedLinksRetry": "Try again",
+          "sharedLinksTitle": "Files you've shared"
         },
         "orcaAccount": {
           "connected": "Connected",
@@ -14949,6 +15056,25 @@
           "cancel": "Cancel",
           "confirm": "Remove",
           "unknownHost": "Unknown host"
+        },
+        "RuntimeAccessAuditLog": {
+          "action": "Filter log action",
+          "allActions": "All actions",
+          "allowed": "Allowed",
+          "allResults": "All results",
+          "clear": "Clear log",
+          "denied": "Denied",
+          "description": "Request metadata · last 14 days",
+          "empty": "No matching access records.",
+          "error": "Error",
+          "lastDay": "Last 24 hours",
+          "lastTwoWeeks": "Last 14 days",
+          "lastWeek": "Last 7 days",
+          "refresh": "Refresh shared host access log",
+          "result": "Filter log result",
+          "search": "Search device or action",
+          "time": "Filter log time",
+          "title": "Shared host access log"
         }
       },
       "right": {
@@ -16622,7 +16748,14 @@
           "d6e5dba05a": "Sign in",
           "0b4a7d23ab": "Signing in",
           "linearWorkspacesLinkedSingular": "{{count}} workspace linked. Add another workspace or replace a restricted key any time.",
-          "linearWorkspacesLinkedPlural": "{{count}} workspaces linked. Add another workspace or replace a restricted key any time."
+          "linearWorkspacesLinkedPlural": "{{count}} workspaces linked. Add another workspace or replace a restricted key any time.",
+          "10e495afa8": "Install CodeHub CLI",
+          "110d12dbb6": "codehub-cli status is not available in this runtime yet.",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "Issues and merge requests.",
+          "96d7cf755a": "CodeHub sign in command",
+          "98883abe0a": "CodeHub login",
+          "ed425b91ac": "Press Enter to run CodeHub CLI auth. CodeHub re-checks automatically when the command finishes."
         },
         "NotificationStep": {
           "3bede04483": "Send test notification",
@@ -17437,7 +17570,10 @@
             "task_step_title": "Start agents on your tasks without leaving Orca",
             "reviewConnectedSummary": "<provider>{{provider}}</provider> connected for review status",
             "tasksConnectedSummary": "<sources/> connected for tasks",
-            "codeHostTasksSummary": "<provider>{{provider}}</provider> issues available as tasks · add Linear or Jira if your team plans work there"
+            "codeHostTasksSummary": "<provider>{{provider}}</provider> issues available as tasks · add Linear or Jira if your team plans work there",
+            "bw_code_host_description": "Connect either provider to use tasks and see code review status.",
+            "reports_description": "Send reports and diagnostic files to the BW user-group space. You can skip this if the internal network is unavailable and set it up later in Settings → Integrations.",
+            "reports_title": "Reports and diagnostics (optional)"
           },
           "connect": {
             "integration": {
@@ -19704,6 +19840,9 @@
           "attention": "Needs attention",
           "active": "Active",
           "paused": "Paused"
+        },
+        "editorRequest": {
+          "unavailable": "Could not open this automation on its host. Refresh or reconnect, then try again."
         }
       },
       "agent": {
@@ -20820,6 +20959,37 @@
       "webPairingRefused": {
         "title": "Orca refused this browser",
         "retry": "Try again"
+      }
+    },
+    "app": {
+      "shell": {
+        "AppWorkspaceShell": {
+          "5920545322": "调整上下栏高度",
+          "e82b94df8a": "调整左右栏宽度"
+        }
+      }
+    },
+    "workbench": {
+      "quickLinks": {
+        "add": "Add",
+        "cancel": "Cancel",
+        "copied": "Copied {{url}}",
+        "copy": "Copy",
+        "corrupt": "Quick links file could not be read; existing file was left untouched.",
+        "delete": "Delete",
+        "edit": "Edit",
+        "empty": "No quick links yet. Click Add to create one.",
+        "namePlaceholder": "Name",
+        "save": "Save",
+        "saveFailed": "Failed to save quick links",
+        "title": "Quick Links",
+        "tooltip_one": "Quick Links — {{count}}",
+        "tooltip_other": "Quick Links — {{count}}",
+        "trigger_one": "Quick Links, {{count}}",
+        "trigger_other": "Quick Links, {{count}}",
+        "urlPlaceholder": "https://example.com",
+        "trigger": "Quick Links, {{count}}",
+        "tooltip": "Quick Links — {{count}}"
       }
     }
   },
@@ -30896,5 +31066,308 @@
     "moveLeft": "Move left",
     "moveRight": "Move right",
     "reset": "Reset tab order"
+  },
+  "guidance": {
+    "acceptance": {
+      "archive": {
+        "body": "Ask the acceptance assistant to prepare an archive PR. Review its sources and decisions before merging.",
+        "title": "Submit for archiving"
+      },
+      "decision": {
+        "body": "Open the goal and compare the fixed criteria with the evidence. Record your decision and any next step.",
+        "title": "Decide each goal"
+      },
+      "evidence": {
+        "body": "Start this version’s acceptance and open the evidence report. Keep missing evidence visible for follow-up.",
+        "title": "Check the evidence"
+      },
+      "minutes": {
+        "body": "Record the agreement and how to follow up. Read the minutes before confirming them.",
+        "title": "Confirm the minutes"
+      },
+      "readback": {
+        "body": "Once the archive is merged and project code is up to date, refresh the version overview and check the decision and PR.",
+        "title": "Read the archived result"
+      }
+    },
+    "catalog": {
+      "feature": {
+        "agent-status": {
+          "summary": "See which agents are running, waiting, or blocked.",
+          "title": "Agent status"
+        },
+        "automation": {
+          "summary": "Create, enable, and run an automation.",
+          "title": "Automation"
+        },
+        "browser": {
+          "summary": "Open a page or prototype and bring focused feedback back to the work.",
+          "title": "Browser and annotations"
+        },
+        "editor": {
+          "summary": "Open and edit files while you work.",
+          "title": "Editor"
+        },
+        "internal-integrations": {
+          "summary": "Set up connections in Getting Started and use them for tasks and collaboration.",
+          "title": "CodeHub / WeLink"
+        },
+        "metrics": {
+          "summary": "Define how to measure results and find readings or reasons they are missing.",
+          "title": "Metrics setup and collection"
+        },
+        "milestones": {
+          "summary": "Plan milestone outcomes and compare them with actual delivery.",
+          "title": "Project milestones"
+        },
+        "orchestration": {
+          "summary": "Coordinate agents across workspaces.",
+          "title": "Agent orchestration"
+        },
+        "pr-checks": {
+          "summary": "Check the status and comments on a pull request.",
+          "title": "PR checks"
+        },
+        "project-intake": {
+          "summary": "Add a project and continue working, then provide background as needed.",
+          "title": "Add a project"
+        },
+        "project-overview": {
+          "summary": "Review project direction, milestones, and actual results.",
+          "title": "Project overview"
+        },
+        "project-wall": {
+          "summary": "Find the project that needs your attention.",
+          "title": "Project wall"
+        },
+        "quick-jump": {
+          "summary": "Find and open a workspace or session.",
+          "title": "Quick jump"
+        },
+        "review": {
+          "summary": "Inspect changes, leave feedback, and continue the work.",
+          "title": "Diffs and review"
+        },
+        "review-notifications": {
+          "summary": "Connect to a shared host when needed, request review, and open the PR from the notification.",
+          "title": "Review notifications and shared hosts"
+        },
+        "ship": {
+          "summary": "Have AI prepare a commit and pull request for your review.",
+          "title": "Commits and delivery"
+        },
+        "tasks": {
+          "summary": "Find a task, start work, and return to its results.",
+          "title": "Task management"
+        },
+        "terminal": {
+          "summary": "Work in terminal splits and return to an existing session.",
+          "title": "Terminal and sessions"
+        },
+        "usage": {
+          "summary": "Check usage and limits for your account.",
+          "title": "Account usage"
+        },
+        "version-acceptance": {
+          "summary": "Check evidence against goals, confirm the result, and archive it.",
+          "title": "Version acceptance"
+        },
+        "version-navigation": {
+          "summary": "Find the workspace and session associated with a version or goal.",
+          "title": "Version and session navigation"
+        },
+        "version-overview": {
+          "summary": "See this version’s goals, tasks, and acceptance results.",
+          "title": "Version overview"
+        },
+        "version-planning": {
+          "summary": "Decide what to deliver, how to accept it, and which tasks to start.",
+          "title": "Version planning"
+        },
+        "workspace": {
+          "summary": "Keep each task in an isolated workspace.",
+          "title": "Workspace"
+        },
+        "workspace-board": {
+          "summary": "Check workspace status and switch back to active work.",
+          "title": "Workspace board"
+        }
+      },
+      "group": {
+        "acceptance": "Acceptance and version facts",
+        "agents": "Agent orchestration",
+        "automation": "Automation",
+        "browser": "Integrated browser",
+        "execution": "Tasks and execution",
+        "overview": "Project overview",
+        "planning": "Version planning and navigation",
+        "projects": "Project wall and intake",
+        "review": "Review and collaboration"
+      },
+      "journey": {
+        "acceptance": {
+          "result": "An archived acceptance decision",
+          "start": "Version commitments and delivery evidence",
+          "summary": "Check evidence against the goals and record the outcome and next actions.",
+          "title": "Verify outcomes"
+        },
+        "commitments": {
+          "result": "A reviewed version plan",
+          "start": "Project direction and new requirements",
+          "summary": "Use past results and new requirements to agree on goals, tasks, and acceptance criteria.",
+          "title": "Plan a version"
+        },
+        "delivery": {
+          "result": "A verified and merged change",
+          "start": "An issue to work on",
+          "summary": "Start from an issue, validate the change, review it with a teammate, and merge the PR.",
+          "title": "Build and deliver"
+        },
+        "direction": {
+          "result": "Shared direction and a milestone schedule",
+          "start": "An added project and an idea",
+          "summary": "Agree on what the project should accomplish and plan its milestones.",
+          "title": "Agree on direction"
+        },
+        "maintenance": {
+          "result": "A verified maintenance outcome",
+          "start": "Knowledge or technical debt to address",
+          "summary": "Review architecture and technical debt, then decide what to address or defer.",
+          "title": "Maintain the project"
+        },
+        "outcomes": {
+          "result": "A decision for the next cycle",
+          "start": "Delivery results and actual readings",
+          "summary": "Review progress and outcomes, identify gaps, and decide what to change.",
+          "title": "Review results"
+        },
+        "reuse": {
+          "result": "A method the team can reuse",
+          "start": "A proven way of working",
+          "summary": "Capture a method that worked and verify it on the next similar task.",
+          "title": "Reuse what works"
+        }
+      },
+      "labels": {
+        "building": "In development",
+        "features": "Features",
+        "journeys": "Work journeys",
+        "preparing": "Content in preparation",
+        "related": "Related features",
+        "types": "Explore categories"
+      }
+    },
+    "delivery": {
+      "browser": {
+        "action": "For new interactions, open the prototype, annotate an element, and choose the session that should receive the feedback.",
+        "title": "Review a prototype"
+      },
+      "find": {
+        "action": "Check the version on the project wall and open the goal’s issues.",
+        "title": "Find the goal’s tasks"
+      },
+      "inbox": {
+        "action": "Open the existing sample request. If the project is temporarily unavailable, reconnect to its host and open it again.",
+        "title": "Open a review request"
+      },
+      "notify": {
+        "action": "With a PR open, choose connected hosts. A reviewer can also open the PR directly.",
+        "title": "Request a review"
+      },
+      "prepare": {
+        "action": "Inspect the diff, run the project’s checks, and review the pull request form.",
+        "title": "Verify and prepare a PR"
+      },
+      "readback": {
+        "action": "Confirm the merge, close the completed sample issue, and reread the goal and version counts.",
+        "title": "Confirm and check progress"
+      },
+      "review": {
+        "action": "Open the same PR, read checks, comment on a line, and verify the author’s new revision.",
+        "title": "Review and revise"
+      },
+      "work": {
+        "action": "Start each issue in its own workspace. Switch sessions and return to the same work.",
+        "title": "Work in parallel"
+      }
+    },
+    "direction": {
+      "card": {
+        "body": "Edit the vision and check the review summary.",
+        "title": "Agree on the direction"
+      },
+      "draft": {
+        "body": "Add an outcome and adjust its schedule.",
+        "title": "Plan milestone outcomes"
+      },
+      "followAlong": "Try it in BW",
+      "nextRound": "Adjust the next cycle",
+      "pause": "Pause",
+      "playClip": "Play clip",
+      "playSequence": "Play in order",
+      "restart": "Replay",
+      "result": "Result",
+      "resume": "Resume",
+      "review": {
+        "body": "After review and merge, update the formal schedule.",
+        "title": "Review and update"
+      },
+      "sample": "Sample project",
+      "start": "Start",
+      "steps": "Journey steps",
+      "throughout": "Throughout each cycle",
+      "wall": {
+        "body": "Open the project overview from the project wall.",
+        "title": "Find the project"
+      }
+    },
+    "outcomes": {
+      "facts": {
+        "body": "Open the version overview. Check its goals and the recorded acceptance decision.",
+        "title": "Check delivery"
+      },
+      "followup": {
+        "body": "Decide what to investigate or improve, then record it in the next plan or an existing task.",
+        "title": "Plan the follow-up"
+      },
+      "read": {
+        "body": "In the project overview, select a scoreboard tab. Compare the recent reading with the plan’s target and check which week it covers.",
+        "title": "Read the metrics"
+      },
+      "recovery": {
+        "body": "Refresh to collect again. If the source needs work, use Configure metrics to open a draft session. You can keep working without readings.",
+        "title": "Handle missing readings"
+      },
+      "scoreboardHelp": "Scoreboard guide",
+      "scoreboardUnavailable": "Open a Git project overview to use the scoreboard guide."
+    },
+    "planning": {
+      "goals": {
+        "body": "Write the outcome and how the team will check it. Edits save as a draft.",
+        "title": "Define goals and criteria"
+      },
+      "review": {
+        "body": "Annotate the plan, confirm the notes if used, then archive through a reviewed PR.",
+        "title": "Review and archive"
+      },
+      "start": {
+        "body": "Start an issue from the plan. Open its existing workspace or create one with the issue prefilled.",
+        "title": "Start an issue"
+      },
+      "taskHelp": "Task help",
+      "tasks": {
+        "body": "Check existing issues with the planning assistant and confirm the tasks to include.",
+        "title": "Link work to goals"
+      },
+      "version": {
+        "body": "Start the plan and review any carryovers. The first version has no prior results.",
+        "title": "Choose the version"
+      }
+    }
+  },
+  "workbench": {
+    "projectRemoval": {
+      "registrationChanged": "The project registration changed. Close this dialog and confirm removal again."
+    }
   }
 }

@@ -1845,7 +1845,8 @@
         "dropPartiallyAttached_one": "Impossible de joindre l'élément {{failureCount}} de {{count}}.",
         "dropPartiallyAttached_other": "Impossible de joindre {{failureCount}} des {{count}} éléments.",
         "dropPartiallyAttached_many": "Impossible de joindre {{failureCount}} des {{count}} éléments.",
-        "dropPartiallyAttached": "Impossible de joindre {{failureCount}} des {{count}} éléments."
+        "dropPartiallyAttached": "Impossible de joindre {{failureCount}} des {{count}} éléments.",
+        "7eb3f44ff7": "L'agent sélectionné est désactivé. Choisissez un agent activé avant de créer."
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "Échec de l'envoi des fichiers déposés.",
@@ -2227,7 +2228,10 @@
         "authorOpenedThisIssue": "<author/> a ouvert cette issue",
         "middotUpdatedRelativeTime": "· mis à jour {{time}}",
         "resolvedThreadBy": "Discussion résolue de {{author}}",
-        "resolvedCommentBy": "Commentaire résolu de {{author}}"
+        "resolvedCommentBy": "Commentaire résolu de {{author}}",
+        "8223320f8d": "mis à jour",
+        "10ef1afb8e": "· mis à jour",
+        "55962099bc": "a ouvert cette issue"
       },
       "GitLabItemDialog": {
         "65e784c1f1": "Rouvrir",
@@ -3051,7 +3055,8 @@
           "linearProjectRestoreFailed": "Impossible de restaurer le projet Linear enregistré.",
           "linearViewNotFound": "La vue Linear enregistrée est introuvable.",
           "linearViewRestoreFailed": "Impossible de restaurer la vue Linear enregistrée."
-        }
+        },
+        "524f095d55": "En attente de relecture"
       },
       "Terminal": {
         "73768427cf": "Fermer",
@@ -8743,7 +8748,11 @@
           "noActiveLinks": "Aucun lien actif.",
           "createdAt": "Créé le {{value0}}",
           "revoke": "Révoquer",
-          "legacyEncryption": "Utilisé la dernière fois avec un ancien chiffrement. Mettez à jour Orca là où ce lien est utilisé."
+          "legacyEncryption": "Utilisé la dernière fois avec un ancien chiffrement. Mettez à jour Orca là où ce lien est utilisé.",
+          "8b82879581": "Toute personne disposant d'une autorisation active peut se connecter jusqu'à sa révocation. Révoquer l'accès partagé déconnecte immédiatement les clients actifs.",
+          "68ec21309f": "Révoquer l'accès",
+          "fd83b94095": "Aucun accès serveur partagé pour le moment.",
+          "27cf8507ad": "Actualiser l'accès partagé"
         },
         "RuntimeEnvironmentsPane": {
           "af53761f31": "Annuler",
@@ -8848,7 +8857,15 @@
           "accessLinkHelp": "Collez-le dans « Ajouter un serveur » sur l’autre Orca.",
           "staleAddressCreate": "L’adresse de connexion a changé. Créez un nouveau lien pour {{address}}.",
           "linkExpired": "Lien expiré",
-          "unusedLinkExpires": "Le lien inutilisé expire à {{time}}"
+          "unusedLinkExpires": "Le lien inutilisé expire à {{time}}",
+          "849825e829": "Collez cette URL d'appairage dans un autre client Orca.",
+          "2e5c4e3c93": "Appairer un autre client Orca",
+          "6b9ca3e69b": "Ouvrir dans le navigateur",
+          "8de0f84fff": "Générer un lien d'accès",
+          "intentQuestion": "Où ce lien sera-t-il ouvert ?",
+          "localOnly": "Cet ordinateur uniquement",
+          "recommended": "Recommandé",
+          "staleAddress": "L'adresse de connexion a changé. Générez un nouveau lien pour {{address}}."
         },
         "Settings": {
           "3bf149e873": "Paramètres du projet > {{value0}}",
@@ -15113,7 +15130,14 @@
           "d6e5dba05a": "Se connecter",
           "0b4a7d23ab": "Connexion en cours",
           "linearWorkspacesLinkedSingular": "{{count}} espace de travail associé. Ajoutez un autre espace de travail ou remplacez une clé restreinte à tout moment.",
-          "linearWorkspacesLinkedPlural": "{{count}} espaces de travail associés. Ajoutez un autre espace de travail ou remplacez une clé restreinte à tout moment."
+          "linearWorkspacesLinkedPlural": "{{count}} espaces de travail associés. Ajoutez un autre espace de travail ou remplacez une clé restreinte à tout moment.",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "Issues et demandes de fusion.",
+          "10e495afa8": "Installer la CLI CodeHub",
+          "98883abe0a": "Connexion à CodeHub",
+          "96d7cf755a": "Commande de connexion à CodeHub",
+          "ed425b91ac": "Appuyez sur Entrée pour lancer l'authentification de la CLI CodeHub. CodeHub est revérifié automatiquement à la fin de la commande.",
+          "110d12dbb6": "L'état de codehub-cli n'est pas encore disponible dans ce runtime."
         },
         "NotificationStep": {
           "3bede04483": "Envoyer une notification de test",
