@@ -1,7 +1,7 @@
 import { isShareError, ShareError } from './errors.mjs'
 import { parseSharePayload } from './payload.mjs'
 import { isValidShareId } from './store.mjs'
-import { tokenMatches } from './tokens.mjs'
+import { tokenMatches, tokenMatchesHash } from './tokens.mjs'
 
 const RATE_WINDOW_MS = 60_000
 /**
@@ -23,17 +23,40 @@ export const SHARE_PAGE_CSP =
   'sandbox allow-scripts allow-popups allow-forms allow-modals allow-downloads'
 
 /**
+ * CSP for the viewer page. Unlike the sandboxed content, the viewer is trusted service code that
+ * talks to the annotation API on this origin, so it gets a normal origin policy instead of the
+ * opaque sandbox. Inline script/style come from the server-side template, not user input.
+ * frame-ancestors 'none' stops other sites framing the viewer to clickjack an annotation submit;
+ * it does not affect the /content iframe the viewer itself embeds (that is governed by frame-src).
+ */
+export const VIEWER_CSP =
+  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'"
+
+/**
+ * Annotation payloads are tiny next to shares. readJsonBody inflates this by the JSON-escape
+ * factor plus overhead (so the wire limit lands near 1.4 MiB); the store's per-field limits are
+ * the authoritative cap on decoded content.
+ */
+const ANNOTATION_BODY_LIMIT_BYTES = 64 * 1024
+
+/**
  * @param {object} options
  * @param {ReturnType<import('./store.mjs').createShareStore>} options.store
+ * @param {ReturnType<import('./annotations-store.mjs').createAnnotationStore>} options.annotations
  * @param {ReturnType<import('./client-tokens.mjs').createClientTokenStore>} options.clientTokens
  * @param {import('./config.mjs').ShareConfig} options.config
+ * @param {string} options.viewerHtml  Template with `__BW_FILE_NAME__` / `__BW_CREATED_AT__` placeholders.
+ * @param {string} options.bridgeScript  Element-picking bridge appended to /s/:id/content.
  * @param {(line: string) => void} [options.log]
  * @param {() => number} [options.now]
  */
 export function createRequestHandler({
   store,
+  annotations,
   clientTokens,
   config,
+  viewerHtml,
+  bridgeScript,
   log = console.log,
   now = Date.now
 }) {
@@ -150,43 +173,143 @@ export function createRequestHandler({
         return
       }
 
+      const apiAnnotations = pathname.match(/^\/api\/shares\/([^/]+)\/annotations$/)
+      if (apiAnnotations) {
+        const id = apiAnnotations[1]
+        route = '/api/shares/:id/annotations'
+        if (method !== 'GET' && method !== 'POST') {
+          throw methodNotAllowed('GET, POST')
+        }
+        if (!isValidShareId(id) || !(await store.meta(id))) {
+          throw new ShareError(404, 'not_found', 'Share not found.')
+        }
+        if (method === 'GET') {
+          sendJson(response, 200, { items: await annotations.list(id) }, method)
+          return
+        }
+        if (!allowWrite(clientIp(request, config))) {
+          throw new ShareError(429, 'rate_limited', 'Too many writes; retry in a minute.')
+        }
+        // Sandboxed share content cannot send this content type without a CORS preflight (which
+        // this API never allows), so requiring it keeps untrusted shared pages from writing
+        // annotations to their own share while the same-origin viewer keeps working.
+        const contentType = headerValue(request.headers['content-type'])
+          .split(';')[0]
+          .trim()
+          .toLowerCase()
+        if (contentType !== 'application/json') {
+          throw new ShareError(415, 'unsupported_media_type', 'Use content-type: application/json.')
+        }
+        const input = await readJsonBody(request, ANNOTATION_BODY_LIMIT_BYTES, bodyBudget)
+        const created = await annotations.add(id, input)
+        sendJson(response, 201, created, method)
+        return
+      }
+
+      const apiAnnotation = pathname.match(/^\/api\/shares\/([^/]+)\/annotations\/([^/]+)$/)
+      if (apiAnnotation) {
+        const id = apiAnnotation[1]
+        const annotationId = apiAnnotation[2]
+        route = '/api/shares/:id/annotations/:annotationId'
+        if (method !== 'DELETE') {
+          throw methodNotAllowed('DELETE')
+        }
+        const shareMeta = isValidShareId(id) ? await store.meta(id) : null
+        if (!shareMeta) {
+          throw new ShareError(404, 'not_found', 'Share not found.')
+        }
+        if (!allowWrite(clientIp(request, config))) {
+          throw new ShareError(429, 'rate_limited', 'Too many writes; retry in a minute.')
+        }
+        const editToken = headerValue(request.headers['x-edit-token'])
+        if (editToken) {
+          // Share owner: the edit token authorizes deleting any annotation on this share.
+          if (!tokenMatchesHash(editToken, shareMeta.editTokenHash)) {
+            throw new ShareError(403, 'forbidden', 'Edit token does not match this share.')
+          }
+          await annotations.removeAny(id, annotationId)
+        } else {
+          const deleteToken = headerValue(request.headers['x-delete-token'])
+          if (!deleteToken) {
+            throw new ShareError(
+              403,
+              'forbidden',
+              'Missing x-delete-token (author) or x-edit-token (owner) header.'
+            )
+          }
+          await annotations.removeByAuthor(id, annotationId, deleteToken)
+        }
+        writeHeaders(response, 204, { 'cache-control': 'no-store' })
+        response.end()
+        return
+      }
+
+      const rawShare = pathname.match(/^\/s\/([^/]+)\/raw$/)
+      if (rawShare) {
+        route = '/s/:id/raw'
+        if (method !== 'GET' && method !== 'HEAD') {
+          throw methodNotAllowed('GET, HEAD')
+        }
+        const share = isValidShareId(rawShare[1]) ? await store.open(rawShare[1]) : null
+        if (!share) {
+          sendNotFoundPage(response, method)
+          return
+        }
+        sendShareContent(response, method, share, null, log)
+        return
+      }
+
+      const contentShare = pathname.match(/^\/s\/([^/]+)\/content$/)
+      if (contentShare) {
+        route = '/s/:id/content'
+        if (method !== 'GET' && method !== 'HEAD') {
+          throw methodNotAllowed('GET, HEAD')
+        }
+        const share = isValidShareId(contentShare[1]) ? await store.open(contentShare[1]) : null
+        if (!share) {
+          sendNotFoundPage(response, method)
+          return
+        }
+        // The bridge rides after the original bytes. Documents without </body> still execute a
+        // trailing script tag; documents whose own CSP blocks it degrade to page-level annotations
+        // (the viewer detects the missing handshake and says so).
+        sendShareContent(
+          response,
+          method,
+          share,
+          Buffer.from(`<script>${bridgeScript}</script>`, 'utf8'),
+          log
+        )
+        return
+      }
+
       const viewShare = pathname.match(/^\/s\/([^/]+)$/)
       if (viewShare) {
         route = '/s/:id'
         if (method !== 'GET' && method !== 'HEAD') {
           throw methodNotAllowed('GET, HEAD')
         }
-        const id = viewShare[1]
-        const share = isValidShareId(id) ? await store.open(id) : null
-        if (!share) {
+        const meta = isValidShareId(viewShare[1]) ? await store.meta(viewShare[1]) : null
+        if (!meta) {
           sendNotFoundPage(response, method)
           return
         }
+        const body = Buffer.from(
+          viewerHtml
+            // Function replacements keep `$&`-style patterns in the escaped file name literal.
+            .replaceAll('__BW_FILE_NAME__', () => escapeHtml(meta.fileName))
+            .replaceAll('__BW_CREATED_AT__', () => escapeHtml(meta.createdAt)),
+          'utf8'
+        )
         writeHeaders(response, 200, {
           'content-type': 'text/html; charset=utf-8',
-          'content-length': String(share.size),
-          'content-security-policy': SHARE_PAGE_CSP,
+          'content-length': String(body.length),
+          'content-security-policy': VIEWER_CSP,
           'x-content-type-options': 'nosniff',
           'referrer-policy': 'no-referrer',
           'cache-control': 'no-store'
         })
-        if (method === 'HEAD') {
-          share.stream.destroy()
-          response.end()
-          return
-        }
-        // Stream the file so a handful of viewers never hold whole reports in memory.
-        share.stream.on('error', (error) => {
-          log(`failed to stream share: ${error instanceof Error ? error.message : String(error)}`)
-          response.destroy()
-        })
-        // pipe() leaves the source running when the destination closes, so a viewer who closes the
-        // tab mid-download would keep the file open until GC. On Windows that held handle makes the
-        // next update of this share burn its rename retries and answer 503.
-        response.on('close', () => {
-          share.stream.destroy()
-        })
-        share.stream.pipe(response)
+        response.end(method === 'HEAD' ? undefined : body)
         return
       }
 
@@ -425,6 +548,68 @@ function sendJson(res, status, body, method, headers = {}) {
     'cache-control': 'no-store'
   })
   res.end(method === 'HEAD' ? undefined : payload)
+}
+
+/**
+ * Streams share content with the sandbox CSP. `tail` (the bridge wrapper) is written after the
+ * original bytes so the advertised length covers both; HEAD never opens the stream.
+ *
+ * @param {import('node:http').ServerResponse} res
+ * @param {string} method
+ * @param {{ size: number, stream: import('node:fs').ReadStream }} share
+ * @param {Buffer | null} tail
+ * @param {(line: string) => void} log
+ */
+function sendShareContent(res, method, share, tail, log) {
+  const totalLength = share.size + (tail?.length ?? 0)
+  writeHeaders(res, 200, {
+    'content-type': 'text/html; charset=utf-8',
+    'content-length': String(totalLength),
+    'content-security-policy': SHARE_PAGE_CSP,
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'no-referrer',
+    'cache-control': 'no-store'
+  })
+  if (method === 'HEAD') {
+    share.stream.destroy()
+    res.end()
+    return
+  }
+  // Stream the file so a handful of viewers never hold whole reports in memory.
+  share.stream.on('error', (error) => {
+    log(`failed to stream share: ${error instanceof Error ? error.message : String(error)}`)
+    res.destroy()
+  })
+  // pipe() leaves the source running when the destination closes, so a viewer who closes the
+  // tab mid-download would keep the file open until GC. On Windows that held handle makes the
+  // next update of this share burn its rename retries and answer 503.
+  res.on('close', () => {
+    share.stream.destroy()
+  })
+  if (tail) {
+    // Keep the response open past the content so the bridge lands after the original bytes.
+    share.stream.pipe(res, { end: false })
+    share.stream.on('end', () => {
+      res.end(tail)
+    })
+  } else {
+    share.stream.pipe(res)
+  }
+}
+
+/**
+ * The viewer template interpolates share metadata (user-chosen file names) into a trusted
+ * same-origin page, so it must never carry markup through.
+ *
+ * @param {string} value
+ */
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
 }
 
 /**
