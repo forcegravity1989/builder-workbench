@@ -20,6 +20,7 @@ import { installAutomationHostDiagnostic } from './components/automations/automa
 import { applyDocumentTheme } from './lib/document-theme'
 import { installTypingLatencyDiagnostic } from './lib/typing-latency/diagnostic'
 import { shouldEnableReactGrab } from './lib/react-grab-dev-gate'
+import { isWorkbenchShell } from './workbench/is-workbench-shell'
 import { I18nProvider } from './i18n/I18nProvider'
 import { translate } from './i18n/i18n'
 import { getOrCreateRendererRoot } from './lib/react-renderer-root'
@@ -39,8 +40,14 @@ if (
     enableFlag: import.meta.env.VITE_ENABLE_REACT_GRAB
   })
 ) {
-  void import('react-grab').then(({ init }) => init())
-  void import('react-grab/styles.css')
+  if (isWorkbenchShell()) {
+    void import('./workbench/improvement/annotation')
+      .then(({ prepareImprovementAnnotation }) => prepareImprovementAnnotation())
+      .catch((error) => console.warn('[react-grab] Initialization failed:', error))
+  } else {
+    void import('react-grab').then(({ init }) => init())
+    void import('react-grab/styles.css')
+  }
 }
 
 applyDocumentTheme('system', { disableTransitions: false })

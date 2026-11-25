@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs'
 import fs from 'node:fs/promises'
 import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
+import { createAnnotationStore } from '../src/annotations-store.mjs'
 import { createClientTokenStore } from '../src/client-tokens.mjs'
 import { DEFAULT_ENROLL_KEY } from '../src/config.mjs'
 import { createRequestHandler } from '../src/http.mjs'
@@ -57,7 +59,20 @@ export async function startTestServer(overrides = {}, options = {}) {
   await store.init()
   const clientTokens = createClientTokenStore({ dataDir, log })
   await clientTokens.init()
-  const server = http.createServer(createRequestHandler({ store, clientTokens, config, log }))
+  const annotations = createAnnotationStore({ dataDir, log })
+  const viewerHtml = readFileSync(new URL('../src/viewer.html', import.meta.url), 'utf8')
+  const bridgeScript = readFileSync(new URL('../src/bridge.js', import.meta.url), 'utf8')
+  const server = http.createServer(
+    createRequestHandler({
+      store,
+      annotations,
+      clientTokens,
+      config,
+      viewerHtml,
+      bridgeScript,
+      log
+    })
+  )
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const address = /** @type {import('node:net').AddressInfo} */ (server.address())
   return {

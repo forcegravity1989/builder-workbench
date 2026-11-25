@@ -5,6 +5,7 @@ import { replayPreHandlerPtyData } from '@/components/terminal-pane/pty-pre-hand
 import { isRemoteRuntimePtyId } from '@/runtime/runtime-terminal-inspection'
 import { subscribeToRuntimeTerminalData } from '@/runtime/runtime-terminal-stream'
 import { createDraftPasteReadyScanner } from '../../../shared/draft-paste-ready-scanner'
+import { parseAppSshPtyId } from '../../../shared/ssh-pty-id'
 
 const BRACKETED_PASTE_QUIET_MS = 1500
 
@@ -54,6 +55,9 @@ export function waitForAgentDraftInputReady(
     }
 
     const observeData = (data: string): void => {
+      if (settled) {
+        return
+      }
       const { ready, armQuietTimer: shouldArm } = scanner.observe(data)
       if (ready) {
         finish(true)
@@ -80,10 +84,28 @@ export function waitForAgentDraftInputReady(
         })
         .catch(() => finish(false))
     } else {
-      unsubscribe = subscribeToPtyData(ptyId, observeData)
+      let sawLiveData = false
+      unsubscribe = subscribeToPtyData(ptyId, (data) => {
+        sawLiveData = true
+        observeData(data)
+      })
       // Why: spawn can resolve after the first Codex frame was buffered. Replay
       // it to this observer without consuming the primary xterm handler's copy.
       replayPreHandlerPtyData(ptyId, observeData)
+      if (!settled && !parseAppSshPtyId(ptyId)) {
+        // A retry may start after the live composer frame has already rendered.
+        // Only use the current frame, and never replay it after newer live bytes.
+        void (async () => {
+          const snapshot = await window.api?.pty?.getMainBufferSnapshot?.(ptyId, {
+            scrollbackRows: 0
+          })
+          if (!sawLiveData && snapshot?.data && snapshot.terminalOwner !== 'shell') {
+            observeData(snapshot.data)
+          }
+        })().catch(() => {
+          // Keep observing the original PTY stream when a snapshot is unavailable.
+        })
+      }
     }
 
     if (!settled) {
