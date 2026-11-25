@@ -107,8 +107,10 @@
     event.preventDefault()
     event.stopPropagation()
     var el = event.target
-    clearHover()
     stopSelecting()
+    clearHighlight()
+    el.classList.add(HIGHLIGHT_CLASS)
+    highlighted = el
     post({
       type: 'bw-anno-select',
       selector: selectorFor(el),
@@ -144,6 +146,7 @@
 
   function startSelecting() {
     selecting = true
+    clearHighlight()
     injectStyles()
     document.addEventListener('click', onSelectionClick, true)
     document.addEventListener('mouseover', onSelectionOver, true)
@@ -191,10 +194,16 @@
         break
       case 'bw-anno-stop-select':
         stopSelecting()
+        clearHighlight()
         break
       case 'bw-anno-highlight': {
         var found = highlight(data.selector)
-        post({ type: 'bw-anno-highlight-result', id: data.id, selector: data.selector, found: found })
+        post({
+          type: 'bw-anno-highlight-result',
+          id: data.id,
+          selector: data.selector,
+          found: found
+        })
         break
       }
       case 'bw-anno-probe': {

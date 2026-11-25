@@ -379,9 +379,8 @@
                 break
               }
               picking = false
-              pickBtn.classList.remove('active')
               pickedTarget = { selector: data.selector, text: data.text, rect: data.rect }
-              renderTargetLine()
+              renderPicking()
               break
             case 'bw-anno-cancel':
               stopPicking()
@@ -471,16 +470,13 @@
           }
           picking = true
           pickedTarget = null
-          renderTargetLine()
-          pickBtn.classList.add('active')
-          pickBtn.textContent = '点击内容中的元素…'
+          renderPicking()
           postToFrame({ type: 'bw-anno-start-select' })
         }
 
         function stopPicking() {
           picking = false
-          pickBtn.classList.remove('active')
-          pickBtn.textContent = '选择元素'
+          renderPicking()
           postToFrame({ type: 'bw-anno-stop-select' })
         }
 
@@ -492,7 +488,9 @@
           }
         })
 
-        function renderTargetLine() {
+        function renderPicking() {
+          pickBtn.classList.toggle('active', picking)
+          pickBtn.textContent = picking ? '点击内容中的元素…' : '选择元素'
           if (pickedTarget) {
             targetLine.innerHTML = ''
             var picked = document.createElement('span')
@@ -501,7 +499,7 @@
             targetLine.appendChild(picked)
           } else {
             targetLine.textContent = picking
-              ? '请点击右侧内容中的元素（Esc 取消）'
+              ? '请点击分享内容中的元素（Esc 取消）'
               : '未选择元素，将作为页面级批注'
           }
         }
@@ -541,7 +539,6 @@
           // Tell the bridge to leave selection mode too; otherwise its capture-phase click handler
           // keeps swallowing the first normal click in the content after the form is cancelled.
           stopPicking()
-          renderTargetLine()
           showFormError('')
         }
 
