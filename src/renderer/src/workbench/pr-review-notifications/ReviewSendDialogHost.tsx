@@ -32,12 +32,12 @@ function SendDialog({
     let retryPr: ReviewSendInput | undefined
     if (isPrototype && prototypePage) {
       const state = getPrototypeReviewNotifications()
-      const previous = state.outgoing.find(
-        (note) => note.page.browserPageId === prototypePage.browserPageId
-      )
-      const retry = state.pending.find(
-        (attempt) => attempt.request.page.browserPageId === prototypePage.browserPageId
-      )
+      const sameInvite = (note: { purpose: string; page: typeof prototypePage }): boolean =>
+        note.purpose === 'invite' &&
+        note.page.sourceEnvironmentId === prototypePage.sourceEnvironmentId &&
+        note.page.documentKey === prototypePage.documentKey
+      const previous = state.outgoing.find(sameInvite)
+      const retry = state.pending.find((attempt) => sameInvite(attempt.request))
       defaults = retry?.targets ?? previous?.deliveries
     } else if (prRequest) {
       const state = getReviewNotifications()

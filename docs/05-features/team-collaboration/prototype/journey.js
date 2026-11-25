@@ -169,7 +169,6 @@
           screen: 'wall',
           directoryDraft: null,
           directoryBase: 'null',
-          spaceRequired: false,
           source: person === 'lead' ? 'lin' : person,
           panel: '',
           prior: 'wall',
@@ -178,7 +177,6 @@
           repoId: 'star',
           addingServer: false,
           remotePopover: false,
-          selectedAccessVisitors: [],
           notifications: false,
           tab: 'session',
           auditFilters: defaultAuditFilters()
@@ -599,11 +597,7 @@
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
     if (!draft) {
-      const desktop = current()
-      const spaceField = desktop.spaceRequired
-        ? `<label class="field"><span>群空间 ID</span><input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required><small class="field-note">首次绑定或目录还没有 team.json 时填写。</small></label>`
-        : ''
-      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="连接团队"><header class="row between"><div><small>团队资产</small><h2>连接团队</h2></div>${close}</header><p class="field-note">先输入 WeLink 群 ID。若找不到已登记的群空间，再在这里补填群空间 ID。</p><form id="team-lookup"><div class="directory-id-grid"><label class="field"><span>WeLink 群 ID</span><input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label>${spaceField}</div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">${desktop.spaceRequired ? '绑定团队' : '读取团队'}</button></footer></form></section></div>`
+      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="连接团队"><header class="row between"><h2>连接团队</h2>${close}</header><form id="team-lookup"><div class="directory-id-grid"><label class="field"><span>WeLink 群 ID</span><input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field"><span>群空间 ID</span><input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = ['lead', 'lin', 'chen']
@@ -613,10 +607,7 @@
         const fill = id === actor.value && writable
           ? iconButton('Link2', endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share')
           : ''
-        const settings = id === actor.value && writable
-          ? iconButton('Settings', '共享与授权', 'open-sharing-settings')
-          : ''
-        return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row between"><strong>${hostLabel(id)}</strong></div><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}${settings}</span></div></div></td></tr>`
+        return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}</span></div></div></td></tr>`
       })
       .join('')
 
@@ -983,23 +974,16 @@
     if (!visitors.length) {
       return '<p class="field-note">尚无共享服务器访问权限。其他团队主机连接后会出现在这里。</p>'
     }
-    const selected = new Set(current().selectedAccessVisitors ?? [])
-    const pending = visitors.filter((visitor) => accessLevel(owner, visitor) !== 'full')
-    const toolbar = pending.length
-      ? `<div class="grant-toolbar row between"><span>选择要升级的已连接主机</span>${button('授予完全访问', 'bulk-elevate-access', { value: owner, kind: 'secondary', disabled: !pending.some((visitor) => selected.has(visitor)) })}</div>`
-      : ''
-    return `${toolbar}${visitors
+    return visitors
       .map((visitor) => {
         const elevated = accessLevel(owner, visitor) === 'full'
-        const access = elevated ? '完全访问' : '只读'
         const detail = elevated ? '同一连接 · 可创建工作树与会话' : '同一连接 · 只能查看已有内容'
         const target = `${owner}|${visitor}`
-        const controls = elevated
-          ? `${button('恢复只读', 'demote-access', { value: target, kind: 'ghost' })}${iconButton('Trash2', `撤销${names[visitor]}桌面的共享连接`, 'revoke', { value: target })}`
-          : `<label class="grant-select" title="选择 ${names[visitor]} 授予完全访问"><input type="checkbox" aria-label="选择 ${names[visitor]} 授予完全访问" data-access-target="${visitor}"${selected.has(visitor) ? ' checked' : ''}></label>`
-        return `<div class="grant-row row between"><div><strong>${hostLabel(visitor)}</strong><small>${detail}</small></div><div class="row"><span class="source-access">${access}</span>${controls}</div></div>`
+        const toggle = `<span class="row">${button('只读', 'demote-access', { value: target, kind: elevated ? 'ghost' : 'primary', disabled: !elevated })}${button('完全访问', 'grant-access', { value: target, kind: elevated ? 'primary' : 'ghost', disabled: elevated })}</span>`
+        const controls = `${toggle}${iconButton('Trash2', `撤销${names[visitor]}桌面的共享连接`, 'revoke', { value: target })}`
+        return `<div class="grant-row row between"><div><strong>${hostLabel(visitor)}</strong><small>${detail}</small></div><div class="row">${controls}</div></div>`
       })
-      .join('')}`
+      .join('')
   }
   function sharingServer() {
     const owner = actor.value
@@ -1016,7 +1000,7 @@
     return `<section class="muted-frame"><h2>共享此 Orca 主机</h2>
       <p class="permission-hint">${icon('Lock')}团队主机连上后默认只读。</p>
       ${form}</section>
-      <section class="muted-frame"><header class="row between"><h3>共享服务器访问</h3>${iconButton('RefreshCw', '刷新共享访问', 'refresh')}</header>${nativeGrantRows(owner)}</section>
+      <section class="muted-frame"><header class="row between"><h3>我分享出去的链接</h3>${iconButton('RefreshCw', '刷新共享访问', 'refresh')}</header>${nativeGrantRows(owner)}</section>
       ${auditPane()}`
   }
 
@@ -1125,13 +1109,6 @@
       }
       notify(`已打开 WeLink 群空间${value ? ` · ${value}` : ''}`)
     },
-    'open-sharing-settings': () => {
-      const desktop = current()
-      desktop.server = true
-      desktop.workflow = 'share'
-      desktop.selectedAccessVisitors = []
-      show('settings')
-    },
     'fill-own-share': () => {
       const draft = current().directoryDraft
       const endpoint = state.teamEndpoints?.[actor.value] ?? addresses[actor.value] ?? `ws://192.0.2.${12 + Object.keys(names).indexOf(actor.value)}:${6770 + Object.keys(names).indexOf(actor.value)}`
@@ -1188,7 +1165,6 @@
         }
       ),
     'settings-back': () => {
-      current().selectedAccessVisitors = []
       show(current().prior)
     },
     'manage-remote': () => {
@@ -1239,9 +1215,6 @@
     },
     'server-workflow': (value) => {
       current().workflow = value
-      if (value !== 'share') {
-        current().selectedAccessVisitors = []
-      }
       render()
     },
     'generate-link': () => {
@@ -1261,31 +1234,17 @@
       current().addingServer = !current().addingServer
       render()
     },
-    'bulk-elevate-access': (ownerValue) => {
-      const owner = String(ownerValue || actor.value)
-      const selected = (current().selectedAccessVisitors ?? []).filter(
-        (visitor) => visitor !== owner && endpointFor(owner) && state.teamConnections?.[visitor]?.[owner] === endpointFor(owner) && accessLevel(owner, visitor) !== 'full'
-      )
-      if (!selected.length) {
-        notify('请先选择要授予完全访问的已连接主机。')
+    'grant-access': (value) => {
+      const [owner, visitor] = String(value || '').split('|')
+      if (!owner || !visitor) {
         return
       }
-      confirm(
-        '授予完全访问',
-        `<p>将给以下主机授予<strong>整机</strong>完全访问：${selected.map((visitor) => esc(hostLabel(visitor))).join('、')}。</p><p class="field-note">未选主机保持只读；授权沿用同一条 Orca 共享连接。</p>`,
-        '授予完全访问',
-        () => {
-          state.accessModes ??= { lead: {}, lin: {}, chen: {} }
-          for (const visitor of selected) {
-            state.accessModes[visitor] ??= {}
-            state.accessModes[visitor][owner] = 'full'
-            audit(owner, '授予完全访问', '已生效', `${hostLabel(owner)} · ${hostLabel(visitor)}`)
-          }
-          current().selectedAccessVisitors = []
-          notify(`已给 ${selected.map((visitor) => hostLabel(visitor)).join('、')} 授予完全访问`)
-          render()
-        }
-      )
+      state.accessModes ??= { lead: {}, lin: {}, chen: {} }
+      state.accessModes[visitor] ??= {}
+      state.accessModes[visitor][owner] = 'full'
+      audit(owner, '授予完全访问', '已生效', `${hostLabel(owner)} · ${hostLabel(visitor)}`)
+      notify(`已给${hostLabel(visitor)}授予完全访问，已打开的终端立即生效`)
+      render()
     },
     'demote-access': (value) => {
       const [owner, visitor] = String(value || '').split('|')
@@ -1382,19 +1341,6 @@
     actions.panel('worktree-menu')
   })
 
-  surface.addEventListener('change', (event) => {
-    if (!event.target.matches('input[data-access-target]')) {
-      return
-    }
-    current().selectedAccessVisitors = [...surface.querySelectorAll('input[data-access-target]:checked')].map(
-      (input) => input.dataset.accessTarget
-    )
-    const grant = surface.querySelector('[data-action="bulk-elevate-access"]')
-    if (grant) {
-      grant.disabled = current().selectedAccessVisitors.length === 0
-    }
-  })
-
   surface.addEventListener('input', (event) => {
     if (event.target.dataset.auditFilter === 'search') {
       updateAuditFilter(event.target)
@@ -1439,16 +1385,10 @@
         notify(`样例只支持群号 ${demoGroup}`)
         return
       }
-      if (!data.get('space')) {
-        current().spaceRequired = true
-        render()
-        return
-      }
       if (data.get('space') !== demoSpaceId) {
         notify(`样例只支持群空间 ${demoSpaceId}`)
         return
       }
-      current().spaceRequired = false
       state.bound[actor.value] = true
       state.directory = syncDirectory(
         state.directory?.team_group_id === data.get('group')
@@ -1481,7 +1421,7 @@
       state.accessModes[actor.value][owner] = 'readonly'
       current().addingServer = false
       audit(owner, '连接共享主机', '已放行', hostLabel(owner))
-      notify(`已连接${hostLabel(owner)} · 默认只读。主机持有人可在共享列表授予完全访问。`)
+      notify(`已连接${hostLabel(owner)} · 默认只读。主机持有人可在共享列表的成员行切换为完全访问。`)
       render()
     }
   })
