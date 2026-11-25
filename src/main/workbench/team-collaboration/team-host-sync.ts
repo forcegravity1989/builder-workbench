@@ -140,7 +140,11 @@ async function saveHost(
   pairingCode: string
 ): ReturnType<typeof addEnvironmentFromPairingCode> {
   try {
-    return await addEnvironmentFromPairingCode(deps.userDataPath, { name, pairingCode, reconnectOnLaunch: false })
+    return await addEnvironmentFromPairingCode(deps.userDataPath, {
+      name,
+      pairingCode,
+      reconnectOnLaunch: false
+    })
   } catch (error) {
     if (!isNameTaken(error)) {
       throw error

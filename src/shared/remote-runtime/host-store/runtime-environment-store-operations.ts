@@ -193,9 +193,14 @@ export function updateEnvironmentFromPairingCode(
 ): KnownRuntimeEnvironment {
   const offer = parseRemotePairingCode(userDataPath, args.pairingCode)
   const current = resolveEnvironmentFromStore(readEnvironmentStore(userDataPath), selector)
-  if (args.expectedPairingRevision !== undefined &&
-      (current.pairingRevision ?? current.createdAt) !== args.expectedPairingRevision) {
-    throw new RuntimeEnvironmentStoreError('runtime_error', 'The saved pairing changed before it could be refreshed.')
+  if (
+    args.expectedPairingRevision !== undefined &&
+    (current.pairingRevision ?? current.createdAt) !== args.expectedPairingRevision
+  ) {
+    throw new RuntimeEnvironmentStoreError(
+      'runtime_error',
+      'The saved pairing changed before it could be refreshed.'
+    )
   }
   assertNoIndependentSshAccess(current)
   return replaceEnvironmentPairing(userDataPath, selector, offer, {
