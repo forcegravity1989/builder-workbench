@@ -35,11 +35,8 @@ export const BRACKETED_PASTE_BEGIN = BRACKETED_PASTE_START
 export { BRACKETED_PASTE_END }
 export const POST_PASTE_SUBMIT_DELAY_MS = 50
 
-// Why: "the tab has a PTY" and "the agent's composer accepts input" are separate
-// states with separate failure modes, so they get separate budgets. A PTY that
-// hasn't appeared in 8s means the launch itself failed — waiting the (longer)
-// composer budget on top would only delay that verdict. Keeping them distinct
-// also stops one slow step from spending the other's budget (STA-3367).
+// PTY creation and composer readiness use separate budgets so a slow spawn
+// does not consume the time available for the agent to render its input.
 const PTY_SPAWN_TIMEOUT_MS = 8000
 
 export function getSettingsForAgentTabRuntimeOwner(
@@ -64,7 +61,7 @@ export function getSettingsForAgentTabRuntimeOwner(
  * Returns true when the paste was issued, false on timeout or missing
  * PTY. `onTimeout` lets the caller surface a UI hint (e.g. toast) when
  * the agent doesn't reach a ready state. `timeoutMs` overrides the
- * readiness budget only; waiting for the PTY to spawn keeps its own budget.
+ * readiness budget only; `spawnTimeoutMs` separately bounds PTY creation.
  *
  * Readiness combines DECSET 2004 with one agent-specific follow-up signal:
  *   1. `\x1b[?2004h` (DECSET 2004 — bracketed-paste-enable) on the PTY
@@ -79,6 +76,7 @@ export async function pasteDraftWhenAgentReady(args: {
   agent?: TuiAgent
   submit?: boolean
   forcePaste?: boolean
+  spawnTimeoutMs?: number
   timeoutMs?: number
   onTimeout?: () => void
 }): Promise<boolean> {
@@ -100,7 +98,7 @@ export async function pasteDraftWhenAgentReady(args: {
   const readinessTimeoutMs = resolveDraftPasteReadyTimeoutMs(agent, timeoutMs)
   const readiness = await waitForAgentDraftInputReadyOnTab({
     tabId,
-    spawnTimeoutMs: PTY_SPAWN_TIMEOUT_MS,
+    spawnTimeoutMs: args.spawnTimeoutMs ?? PTY_SPAWN_TIMEOUT_MS,
     readinessTimeoutMs,
     readySignal,
     settings

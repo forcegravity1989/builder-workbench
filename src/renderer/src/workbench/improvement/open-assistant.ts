@@ -7,6 +7,9 @@ import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
 import { deliverLaunchPromptToAgentTab } from '@/lib/agent-launch-prompt-delivery'
 
+// Cold Windows PTY creation can outlast the native paste helper's 8-second default.
+const DRAFT_PTY_SPAWN_TIMEOUT_MS = 30_000
+
 const drafts = new Map<string, string>()
 const pending = new Map<string, Promise<void>>()
 const failedDrafts = new Map<
@@ -46,7 +49,8 @@ async function prepareDraft(content: string): Promise<void> {
         agent: failed.agent,
         content: failed.prompt,
         submit: false,
-        forcePaste: false
+        forcePaste: true,
+        spawnTimeoutMs: DRAFT_PTY_SPAWN_TIMEOUT_MS
       })
       if (!delivered) {
         throw new Error('智能体输入尚未就绪，材料仍保留，请稍后重试。')
@@ -76,6 +80,8 @@ async function prepareDraft(content: string): Promise<void> {
     worktreeId: FLOATING_TERMINAL_WORKTREE_ID,
     prompt,
     promptDelivery: 'draft',
+    deliverDraftByPaste: true,
+    draftPasteSpawnTimeoutMs: DRAFT_PTY_SPAWN_TIMEOUT_MS,
     activate: false,
     quickCommandLabel: '改进 BW',
     onPromptDelivered: () =>

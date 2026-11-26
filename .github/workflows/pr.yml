@@ -66,6 +66,8 @@ jobs:
           src/renderer/src/components/tab-bar/TabBar.windows-shell-remote-runtime.test.ts
           src/renderer/src/hooks/legacy-worker-terminal-recovery-event.test.ts
           src/renderer/src/lib/launch-agent-
+          src/renderer/src/lib/agent-paste-draft.test.ts
+          src/renderer/src/lib/agent-launch-prompt-delivery.test.ts
           src/renderer/src/lib/runtime-session-mirror-targets.test.ts
           src/renderer/src/hooks/composer-state
           src/renderer/src/hooks/useComposerState
