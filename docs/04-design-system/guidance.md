@@ -9,7 +9,7 @@
 本轮旅程面向 2–3 人共同做项目、一个组有多个项目的 builder。每个人使用自己的 BW，共享项目目标、任务与交付事实。用户可以先开始一件工作，再按需要使用版本运作和高级能力。
 
 - **BW 入门**回答“怎样准备好、开始第一件事”：必要组件、智能体与按需配置，包含 BW 采用的 Orca 能力。不是必须全部打勾才能开工的清单。
-- **探索 BW**回答“怎样用 BW 工作、某个功能有什么用”：**工作旅程**用相连的步骤说明一件事的起点、动作和结果。W01 使用真实 BW 完整窗口录像；其他旅程沿既有动画。**功能**用对应录像章节或既有局部动画介绍一个能力或屏幕。两类在同一张矩阵中复用内容。
+- **探索 BW**回答“怎样用 BW 工作、某个功能有什么用”：**工作旅程**用相连的步骤说明一件事的起点、动作和结果。新制作或迁移的工作旅程使用与真实 Electron E2E 关联的完整窗口录像，现有旅程按各行登记的方式播放。**功能**用独立短演示介绍一个能力或屏幕的用途与结果。工作步骤在矩阵中关联相应功能行。
 - **操作中引导**回答“我在这个屏幕，下一步怎样做”：屏内帮助启动指向真实控件的逐步引导。空态和简短文字也可说明前提与恢复动作，各自的覆盖记录在对应功能行。
 
 通用帮助集中在左下角问号，入门和探索持续可回看。文档、变更日志、快捷键等仍沿[底部帮助](../../src/renderer/src/components/sidebar/SidebarSettingsHelpMenu.tsx)与 [BW 链接](../../src/renderer/src/workbench/help-links.ts)维护；反馈/报告通道独立维护。新功能提示是投放方式，海报/漫画是传播产物，都挂回内容行，不增加同级“旅程中心”。**旅程先成立，再按需配传播；没有海报不妨碍旅程使用。**
@@ -29,7 +29,7 @@
 
 “看过介绍”“配置可用”“实际做成”分别记录：打开演示只能说明看过；配置状态来自真实检测；工作成果来自真实任务/交付事实及必要的人确认。跳过不算完成，重看不重置业务状态，重启后按实际来源读回。[现有探索进度](../../src/renderer/src/components/feature-wall/feature-wall-completion-progress.ts)结合访问与配置状态，不能当作整条工作旅程的完成记录。
 
-探索无需用户添加项目即可观看。W01 的安全样例通过真实操作录制完整窗口，功能入口复用对应章节；录制与业务 E2E 共用操作步骤，观赏节奏独立。其他局部动画继续复用实际界面组件与样式。用户可选择步骤、播放、暂停和重播。截图可用于指南、传播和真壳验证材料。矩阵区分录像、模拟动画、屏内文字帮助和真实控件引导；观看录像也不等于用户业务完成，业务闭环与真实联动以对应版本的运行证据为准。
+探索无需用户添加项目即可观看。W01 的安全样例通过真实操作录制完整窗口，功能项分别用短演示介绍能力；录制与业务 E2E 共用操作步骤，观赏节奏独立。局部短演示复用实际界面组件与样式。用户可选择步骤、播放、暂停和重播。截图可用于指南、传播和真壳验证材料。矩阵区分录像、模拟动画、屏内文字帮助和真实控件引导；观看录像也不等于用户业务完成，业务闭环与真实联动以对应版本的运行证据为准。
 
 ## 矩阵口径
 
@@ -75,7 +75,7 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 
 | 分类 | 编号与内容 | 本期安排与核对点 | 探索 BW | 屏内帮助 | 首次进入 | 新功能提示 | 使用指南 | 海报/漫画 |
 |---|---|---|---|---|---|---|---|---|
-| 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；运营看板真实完整窗口录制；Windows 专用 GitHub 沙箱两轮提交与独立读回，人工合入及多人读回待验 | [✅ Windows 真实录像、四章播放、功能章节与重启回看][direction-content] · [当前验证](https://github.com/forcegravity1989/builder-workbench/pull/758#issuecomment-7091322345) | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
+| 工作 | W01 把产品想法变成共同方向和阶段安排：找到项目 → 明确共同方向 → 安排阶段成果 → 评审并更新 | 核心旅程；运营看板真实完整窗口录制；[登记的 Electron E2E][direction-e2e]与录制共用 UI 步骤；Windows 专用 GitHub 沙箱两轮提交与独立读回，人工合入及多人读回待验 | [✅ Windows 真实录像、四章播放与重启回看][direction-content] · [当前验证](https://github.com/forcegravity1989/builder-workbench/pull/758#issuecomment-7091322345) | 复用 F18、F19、F21 | 复用 F18、F19、F21 | — | [✅ 本机操作与失败恢复][direction-guide]；远端步骤待验 | [✅ 基于真壳截图的长图][direction-poster] · [可编辑源][direction-poster-source] |
 | 工作 | W02 制定版本计划：定版 → 定目标与验收标准 → 关联任务 → 评审归档 → 开工 | 核心旅程；本机首版建版、保存与读回已验，真实模型、归档评审和开工待验 | [✅ 五步切换、播放、暂停与重播][planning-content] | 复用 F02、F18、F22、F23 | 同左 | — | [✅ 本机建版与保存读回][planning-guide]；协作环节待验 | 待定传播样式，复用指南截图 |
 | 工作 | W03 把问题或需求推进到可信交付：找目标任务 → 并行执行 → GitHub PR 验证与评审 → 人确认完成并读回 | 核心旅程；同一目标下并行开工、原型评审、GitHub PR 返修及人工关单读回；[贡献 BW 的批注、提单与开工](../05-features/bw-contribution/spec.md)默认 `Ctrl+Alt+B`（macOS `⌘⌥B`），可在「设置 → 快捷键」调整；[✅ Windows CDP 快捷键、真实批注到浮动未发送草稿、收起找回、Issue 链接菜单与原生开工弹窗](https://github.com/forcegravity1989/builder-workbench/pull/784#issuecomment-7132540764)；带引号的多行批注先换成全角引号和 ⏎，再走计划助手同一条未发送草稿；[#797][contribution-draft-evidence] 记录的是此前粘贴交接；模型提单与共享宿主未验，复用 F01/F06/F08/F15 | [✅ Windows 空项目的六步样例播放、暂停续播和重播][delivery-content]；共享通知见 F24 | 复用 F01–F03、F06–F11、F23、F24；墙卡与目标任务见 F19/F27 | 同左 | — | [✅ 观看演示][delivery-guide]；真实业务指南待验 | ☐ |
 | 工作 | W04 把本版承诺验收清楚：对照目标核验证据 → 人确认结果 → 归档并安排遗留和下一版 | 核心旅程；沿现有四区核对，真实助手执行和远端归档待验 | [✅ 五步样例演示、选步、暂停和重播][acceptance-content] | 复用 F18、F22、F25、F27 | 同左 | — | [✅ 本机核对与保存][acceptance-guide]；真实协作待验 | — |
@@ -99,10 +99,10 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 | 功能 | F15 浮动工作区 | 暂缓专项；保留既有浮动工作区能力 | ☐ | ☐ | [待验：floating-workspace][tours] | — | ☐ | — |
 | 功能 | F16 快捷跳转 | 随屏 → F01/F23：唤起、查找、跳转及常驻回看 | ☐ | ☐ | — | [待验：cmd-j-palette][tips] | ☐ | — |
 | 功能 | F17 语音输入 | 暂缓专项；保留既有语音入口与提示 | ☐ | ☐ | — | [待验：voice-dictation][tips] | ☐ | — |
-| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、工作树保存、提交评审和项目材料更新；规划态标题列新增、特性行内追加维护；W02 复用排期参考 | [✅ 编排与评审局部动画][direction-content] | [总览页头帮助 → 里程碑引导][screen-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ Windows 排期、工作树同步、冲突保留和重启读回][direction-guide]；远端评审成功及合入待验 | 复用 W01 |
-| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)；紧凑／详情统一切换全部卡片，两种模式等高对齐；目标、主机与成员出口承载完整解释，版本与发布日期位置只保留一处，缺发布数据为“—”；新版 Windows dev 已验本机短目标预览、完整目标、来源头像展开及成员浮层，两种密度等高及缺数据展示；真实多主机和发布日期仍待真实数据验证，旧 dev 证据不代替新版验收；墙卡仅显示材料阶段，归档状态在悬停提示及版本总览查看；同仓已授权主机合并版本目录，对端来源随版本显示（#671）；[G1 一项目多主机与团队绑定设计](../05-features/team-collaboration/spec.md)待评审；[#791 只读 ID、显式切换与当前团队刷新提示原型](../05-features/team-collaboration/prototype.html?review=791)已认可，真实内网待验；按侧栏的[版本排序](../05-features/version-workspace/spec.md#版本排序)取首项；未 clone、真实双机与断线重连分别取证（#658） | [✅ 找项目局部动画][direction-content] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
+| 功能 | F18 [项目里程碑](../05-features/overview-metrics/spec.md) | 重点：阶段成果、排期、工作树保存、提交评审和项目材料更新；规划态标题列新增、特性行内追加维护；W02 复用排期参考 | [编排与评审短演示][direction-milestone-demo] | [总览页头帮助 → 里程碑引导][screen-guide] | [待验：首次自动出现、去重和保存][milestone-guide] | — | [✅ Windows 排期、工作树同步、冲突保留和重启读回][direction-guide]；远端评审成功及合入待验 | 复用 W01 |
+| 功能 | F19 [项目墙](../05-features/project-intake/spec.md) | 重点：项目可见、搜索、筛选、进入及[版本进度](../05-features/version-overview/spec.md#版本进度与归档证据)；紧凑／详情统一切换全部卡片，两种模式等高对齐；目标、主机与成员出口承载完整解释，版本与发布日期位置只保留一处，缺发布数据为“—”；新版 Windows dev 已验本机短目标预览、完整目标、来源头像展开及成员浮层，两种密度等高及缺数据展示；真实多主机和发布日期仍待真实数据验证，旧 dev 证据不代替新版验收；墙卡仅显示材料阶段，归档状态在悬停提示及版本总览查看；同仓已授权主机合并版本目录，对端来源随版本显示（#671）；[G1 一项目多主机与团队绑定设计](../05-features/team-collaboration/spec.md)待评审；[#791 只读 ID、显式切换与当前团队刷新提示原型](../05-features/team-collaboration/prototype.html?review=791)已认可，真实内网待验；按侧栏的[版本排序](../05-features/version-workspace/spec.md#版本排序)取首项；未 clone、真实双机与断线重连分别取证（#658） | [找项目短演示][direction-wall-demo] | [✅ 墙头问号、推进与回看][direction-wall] | [✅ Linux 空墙首次出现、跳过及重播][direction-evidence]；Windows 新进程读回待验，首次添加见 F20；移除确认核对目标主机与登记路径，删组时核对成员移除清单 | — | [✅ 找项目、清除搜索和筛选、进入工作区及总览][direction-guide] | 复用 W01 |
 | 功能 | F20 [项目纳入](../05-features/project-intake/spec.md) | 重点：衔接入门与项目纳入整改，核对添加后可见并能进入 | ☐；入门片段见 G07 | ☐ | 待验：空项目墙打开原生添加弹窗，首个项目成功后留墙；复用 F19 | — | ☐ | — |
-| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工与[读取来源](../architecture.md#页面读取来源)；名片直接编辑及本地保存 | [✅ 与 W01 共用名片动画][direction-content] | [总览页头帮助 → 项目名片引导][screen-guide]；里程碑见 F18；记分牌见 F28 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
+| 功能 | F21 [项目总览](../05-features/overview-metrics/spec.md) | 重点：名片、里程碑、记分牌分工与[读取来源](../architecture.md#页面读取来源)；名片直接编辑及本地保存 | [项目名片与共同方向短演示][direction-charter-demo] | [总览页头帮助 → 项目名片引导][screen-guide]；里程碑见 F18；记分牌见 F28 | [有项目时自动逐步引导及跳过记录待验][screen-guide] | — | [✅ 名片查看、编辑、保存及读回][direction-guide]；远端评审与更新待验 | 复用 W01 |
 | 功能 | F22 [版本计划](../05-features/version-planning/spec.md) | 重点：在本版目标标题栏添加目标，填写验收条件，关联任务、批注与归档 | [✅ 共用 W02 片段及跟做入口；评审片段含对象批注][planning-content] | [✅ 计划页头最右侧帮助；已有材料时指向目标、批注、归档][screen-guide] | [✅ 首步、跳过与主进程读回][tours]；新进程持久读回及其他弹窗协调待验 | — | 复用 W02，已验样例批注添加与编号回看 | — |
 | 功能 | F23 [版本会话管理](../05-features/version-workspace/spec.md) | 重点：版本/目标下进入工作并找回会话；[版本排序](../05-features/version-workspace/spec.md#版本排序)沿用既有引导入口；和项目墙共用同仓版本目录；多工作区用原生主机标识及既有选择入口（#671），失败重试待真实双机验证（#658） | [待验：与 W02 共用选版和开工片段][planning-content]；[✅ 样例目标目录和工作区][delivery-content] | [✅ 版本侧栏帮助打开引导][screen-guide] | [待验：侧栏首次出现及跳过读回][tours] | — | 复用 W02 | — |
 | 功能 | F24 [评审通知](../05-features/pr-review-notify/spec.md) | 重点：共享主机连接/配对、项目访问与断连恢复；通知送达并打开 PR 检视；待我评审手动删除与合入/关闭读回后自动移除（#699），删除入口真壳核对见[检视评论][review-inbox-cleanup] | [✅ Windows 样例选主机、项目暂不可访问及打开已有通知][delivery-content]；真实送达与双机往返待验 | ☐ | ☐ | — | ☐ | — |
@@ -149,6 +149,10 @@ W06/W07 标记“建设中”，表示完整产品闭环尚未就绪：知识库
 
 [direction-evidence]: https://github.com/forcegravity1989/builder-workbench/pull/640#issuecomment-6824962114
 [direction-content]: ../../src/renderer/src/workbench/explore/DirectionWalkthrough.tsx
+[direction-e2e]: ../../tests/e2e/workbench/journeys/w01-project-handoff.spec.ts
+[direction-wall-demo]: ../../src/renderer/src/workbench/explore/DirectionWallDemo.tsx
+[direction-charter-demo]: ../../src/renderer/src/workbench/explore/DirectionCharterDemo.tsx
+[direction-milestone-demo]: ../../src/renderer/src/workbench/explore/DirectionMilestoneDemo.tsx
 [direction-wall]: ../../src/renderer/src/workbench/ProjectWallPage.tsx
 [screen-guide]: ../../src/renderer/src/workbench/WorkbenchScreenGuide.tsx
 [direction-guide]: ../03-guide/project-direction/README.md

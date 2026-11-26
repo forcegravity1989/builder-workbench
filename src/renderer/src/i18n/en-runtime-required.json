@@ -2729,25 +2729,7 @@
   },
   "guidance": {
     "cliRegistrationDescription": "Approve the system prompt so skill setup can use the Orca CLI command.",
-    "cliRegistrationTitle": "Register the Orca CLI on PATH to continue.",
-    "direction": {
-      "card": {
-        "body": "Edit the vision and check the review summary.",
-        "title": "Agree on the direction"
-      },
-      "draft": {
-        "body": "Add an outcome and adjust its schedule.",
-        "title": "Plan milestone outcomes"
-      },
-      "review": {
-        "body": "After review and merge, update the formal schedule.",
-        "title": "Review and update"
-      },
-      "wall": {
-        "body": "Open the project overview from the project wall.",
-        "title": "Find the project"
-      }
-    }
+    "cliRegistrationTitle": "Register the Orca CLI on PATH to continue."
   },
   "runtime": {
     "remoteServerPairingErrors": {

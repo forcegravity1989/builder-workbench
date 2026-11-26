@@ -13,14 +13,12 @@ const actions = [
   '核对本次改动并更新评审，等待人确认合入。'
 ]
 
-export function DirectionRecording({ chapters = allChapters }: { chapters?: readonly number[] }) {
+export function DirectionRecording() {
   const video = useRef<HTMLVideoElement>(null)
-  const [active, setActive] = useState(chapters[0])
+  const [active, setActive] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [error, setError] = useState(false)
-  const start = recording.chapters[chapters[0]].start
-  const last = chapters.at(-1) ?? 0
-  const end = recording.chapters[last + 1]?.start ?? recording.duration
+  const end = recording.duration
 
   useEffect(() => {
     const pause = () => {
@@ -53,7 +51,7 @@ export function DirectionRecording({ chapters = allChapters }: { chapters?: read
     if (!element.paused) {
       element.pause()
     } else if (element.currentTime >= end - 0.1) {
-      seek(chapters[0], true)
+      seek(0, true)
     } else {
       void element.play().catch(() => setError(true))
     }
@@ -61,34 +59,27 @@ export function DirectionRecording({ chapters = allChapters }: { chapters?: read
 
   return (
     <div className="direction-recording">
-      {chapters.length > 1 && (
-        <ol aria-label="旅程步骤" className="direction-recording-steps">
-          {chapters.map((index) => (
-            <li key={index}>
-              <Button
-                variant="outline"
-                size="sm"
-                aria-current={active === index ? 'step' : undefined}
-                onClick={() => seek(index)}
-              >
-                {index + 1} {titles[index]}
-              </Button>
-            </li>
-          ))}
-        </ol>
-      )}
+      <ol aria-label="旅程步骤" className="direction-recording-steps">
+        {allChapters.map((index) => (
+          <li key={index}>
+            <Button
+              variant="outline"
+              size="sm"
+              aria-current={active === index ? 'step' : undefined}
+              onClick={() => seek(index)}
+            >
+              {index + 1} {titles[index]}
+            </Button>
+          </li>
+        ))}
+      </ol>
       <section aria-label={titles[active]}>
         <header className="direction-recording-toolbar">
           <p aria-live="polite">{actions[active]}</p>
           <Button size="xs" disabled={error} onClick={toggle}>
             {playing ? '暂停' : '播放'}
           </Button>
-          <Button
-            size="xs"
-            variant="outline"
-            disabled={error}
-            onClick={() => seek(chapters[0], true)}
-          >
+          <Button size="xs" variant="outline" disabled={error} onClick={() => seek(0, true)}>
             重播
           </Button>
         </header>
@@ -115,7 +106,6 @@ export function DirectionRecording({ chapters = allChapters }: { chapters?: read
           aria-label="运营看板：真实 BW 窗口录制"
           onLoadedMetadata={() => {
             if (video.current) {
-              video.current.currentTime = start
               video.current.playbackRate = 1.6
             }
           }}
@@ -142,9 +132,9 @@ export function DirectionRecording({ chapters = allChapters }: { chapters?: read
               }
             }
             setActive(
-              chapters.findLast(
+              allChapters.findLast(
                 (index) => element.currentTime >= recording.chapters[index].start
-              ) ?? chapters[0]
+              ) ?? 0
             )
           }}
         />
