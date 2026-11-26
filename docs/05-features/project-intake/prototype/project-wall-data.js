@@ -56,6 +56,7 @@
       editing: false,
       filter: 'all',
       category: 'all',
+      cardMode: 'detail',
       viewer: 'self',
       query: '',
       scenario: 'mixed',
@@ -82,6 +83,13 @@
       id: 'bw',
       name: 'Builder Workbench',
       builder: '张悦',
+      participants: [
+        { id: 'sample-2', name: '张三', online: true },
+        { id: 'sample-3', name: '李四', online: false },
+        { id: 'sample-4', name: '陈知', online: true },
+        { id: 'sample-5', name: '王宁', online: true }
+      ],
+      releaseDate: '2026-12-18',
       brief: '把项目计划、开发与验收放在同一条旅程里。',
       benchmark: '团队现有研发工作台',
       opportunity: '减少重复操作，保持项目上下文',
@@ -112,6 +120,7 @@
       hosts: ['dev'],
       sharing: { dev: 'team' },
       version: 'v1.3',
+      releaseDate: '2026-11-27',
       goals: [
         '让每条告警都能准确定位到对应服务、关联最近一次变更，并让值班同学在一次操作内找到完整排查上下文与处置记录',
         '降低日常巡检中的重复操作'
@@ -233,13 +242,15 @@
         ? [{ ...p, hosts }]
         : []
     })
-  W.sourceTags = (p) =>
-    p.hosts
-      .map(
-        (h) =>
-          `<span class="source-chip${!W.hosts[h].online ? ' offline' : ''}" title="${W.esc(W.hosts[h].name)}${h === 'local' ? '' : W.hosts[h].online ? ' · 在线' : ' · 离线'}">${W.icon('monitor')}<span>${W.esc(W.hosts[h].name)}${!W.hosts[h].online ? ' · 离线' : ''}</span></span>`
-      )
-      .join('')
+  W.sourceTags = (p) => {
+    const avatar =
+      '<svg class="source-avatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M16.8 3.3A10 10 0 1 0 21.5 9"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19c0-4 2-6 5.5-6s5.5 2 5.5 6"/></svg>'
+    const chip = (h) =>
+      `<span class="source-chip${!W.hosts[h].online ? ' offline' : ''}" title="${W.esc(W.hosts[h].name)}${h === 'local' ? '' : W.hosts[h].online ? ' · 在线' : ' · 离线'}"><span class="source-avatar-wrap">${avatar}<i class="source-status-dot${W.hosts[h].online ? ' online' : ''}"></i></span><span>${W.esc(W.hosts[h].name.replace(/的电脑$/, ''))}</span></span>`
+    const panelId = `hosts-${p.id}`
+    const [first, ...rest] = p.hosts
+    return `${chip(first)}${rest.length ? `<button class="inline-link" popovertarget="${panelId}" aria-label="查看全部 ${p.hosts.length} 台主机">+${rest.length}</button><div id="${panelId}" class="member-popover" popover="auto" aria-label="项目所在主机">${p.hosts.map(chip).join('')}</div>` : ''}`
+  }
   W.motto = '<p class="four-principles">聚焦目标 · 关注引领指标 · 建立记分表 · 保持问责节奏</p>'
   window.WallProto = W
 })()
