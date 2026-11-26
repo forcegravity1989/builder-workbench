@@ -13429,7 +13429,15 @@
             "workbenchUiErrorTitle": "Workbench 出现了可恢复的界面错误",
             "workbenchClosedTitle": "Workbench 意外关闭",
             "workbenchNotesPlaceholder": "可选：Workbench 关闭前，你正在做什么？",
-            "workbenchBrand": "Workbench"
+            "workbenchBrand": "Workbench",
+            "reportCrashTitle": "报告崩溃",
+            "crashDescription": "发送隐私安全的崩溃报告。可用时会包含最近经过删减的诊断日志。",
+            "uiErrorDescription": "发送隐私安全的诊断报告，帮助我们了解出错的界面。",
+            "processCrashDescription": "发送隐私安全的诊断报告，帮助我们了解发生了什么。",
+            "notesPlaceholder": "可选：发生了什么？",
+            "uiErrorNotesPlaceholder": "可选：出现此界面错误前，你正在做什么？",
+            "reactRenderError": "React 渲染错误",
+            "reactRenderErrorInSurface": "{{surface}} 发生 React 渲染错误"
           },
           "submit": {
             "notice": {
