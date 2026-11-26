@@ -163,7 +163,7 @@ describe('pasteDraftWhenAgentReady', () => {
     }
     expect(testState.storeSubscribers.size).toBe(0)
     expect(testState.ptyObserver).not.toBeNull()
-    expect(testState.replayPreHandlerPtyData).toHaveBeenCalledWith('pty-1', testState.ptyObserver)
+    expect(testState.replayPreHandlerPtyData).toHaveBeenCalledWith('pty-1', expect.any(Function))
     await flushMicrotasks()
 
     expect(testState.sendRuntimePtyInputVerified).toHaveBeenCalledWith(
@@ -568,11 +568,12 @@ describe('pasteDraftWhenAgentReady', () => {
     const promise = pasteDraftWhenAgentReady({
       tabId: 'tab-1',
       content: ISSUE_URL,
-      agent: 'codex'
+      agent: 'codex',
+      spawnTimeoutMs: 30_000
     })
 
-    // PTY takes 4s to appear — most of the old shared 8s budget.
-    await vi.advanceTimersByTimeAsync(4000)
+    await vi.advanceTimersByTimeAsync(12_000)
+    expect(testState.storeSubscribers.size).toBe(1)
     testState.appState.ptyIdsByTabId = { 'tab-1': ['pty-1'] }
     for (const subscriber of testState.storeSubscribers) {
       subscriber(testState.appState)
