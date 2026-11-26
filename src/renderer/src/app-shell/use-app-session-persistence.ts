@@ -7,6 +7,7 @@ import {
 import { createSessionWriteSubscriber } from '../lib/session-write-subscriber'
 import { buildActiveViewUnloadPatch } from '../lib/active-view-persist'
 import {
+  isDiscardingUnsavedSessionForUpdate,
   isIntentionalAppRestartInProgress,
   registerUpdaterBeforeUnloadBypass
 } from '../lib/updater-beforeunload'
@@ -217,7 +218,11 @@ export function useAppSessionPersistence(): void {
       shutdownCheckpointPersist.run,
       shutdownCheckpointPersist.abandonAttempt
     )
-    const persistBeforeUnload = createShutdownCheckpointBeforeUnloadHandler(shutdownCheckpoint)
+    // Why: a force update quit re-enters beforeunload. The checkpoint that already failed would cancel that quit.
+    const persistBeforeUnload = createShutdownCheckpointBeforeUnloadHandler(
+      shutdownCheckpoint,
+      isDiscardingUnsavedSessionForUpdate
+    )
     window.addEventListener('beforeunload', persistBeforeUnload)
     window.addEventListener(
       ORCA_RENDERER_SHUTDOWN_CHECKPOINT_ABORTED_EVENT,
