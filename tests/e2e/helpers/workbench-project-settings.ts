@@ -1,5 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type { Page, TestInfo } from '@playwright/test'
@@ -9,7 +17,14 @@ import { test } from './workbench-app'
 export const projectSettingsTest = test.extend({
   minimumSeededWorktreeCount: 1,
   seededRepoPath: async ({ registerPostElectronShutdownCleanup }, provideFixture) => {
-    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'bw-config-e2e-'))
+    // Why realpathSync.native: the app registers a git repo's path from
+    // `git rev-parse --show-toplevel`, so the lookup below only matches if this
+    // fixture spells its own root the same way. os.tmpdir() can return an 8.3
+    // short path (here C:\Users\A30030~1\...), which git expands. Only the
+    // .native form expands it too — plain realpathSync resolves symlinks but
+    // leaves the short name intact, so the lookup never matches (#781). On
+    // macOS the same call resolves /var → /private/var.
+    const fixtureRoot = realpathSync.native(mkdtempSync(path.join(os.tmpdir(), 'bw-config-e2e-')))
     const repoPath = path.join(fixtureRoot, 'app')
     mkdirSync(repoPath)
     mkdirSync(path.join(fixtureRoot, 'notes'))
@@ -70,7 +85,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   const card = page.locator(`[data-workbench-project-id="${repoId}"]`)
   expect(existsSync(file)).toBe(false)
   await expect(card.locator('.pcard-name')).toHaveText(registered!.displayName)
-  await expect(card.locator('.pcard-owner')).toContainText('—')
+  await expect(card.locator('.pcard-owner-name')).toHaveText('—')
   const wallGuide = page.locator('[data-contextual-tour-panel]')
   await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
   await expect(card.locator('[data-repo-header-action]')).toBeVisible()
@@ -284,7 +299,9 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await openWall()
   const folderCard = page.locator(`[data-workbench-project-id="${folderId}"]`)
   await expect(folderCard.locator('.pcard-name')).toHaveText('普通文件夹')
-  await expect(folderCard.locator('[data-workbench-open-overview]')).toHaveCount(0)
+  await expect(
+    folderCard.getByRole('button', { name: '项目总览（普通文件夹不可用）', exact: true })
+  ).toBeDisabled()
   await folderCard.locator('[data-workbench-edit-charter]').click()
   await expect(page.locator('.wb-project-settings')).toBeVisible()
   await expect(
@@ -317,13 +334,20 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
       state.worktreesByRepo[id]?.some((tree) => tree.id === state.activeWorktreeId)
     )
   }, folderId)
-  // Why: the real Workbench sidebar uses flat grouping (groupBy='none'), where the
-  // native "All" group is relabeled 工作区 and heads the workspaces region. The
-  // fresh e2e profile defaults to groupBy='repo', so switch to flat to mirror what
-  // the product actually renders before asserting the 工作区 section header.
+  // #769: the default grouping is 'repo', where no 工作区 section header exists, so
+  // ☰ must be reachable from the fixed top bar rather than from a section header.
+  await expect.poll(() => page.evaluate(() => window.__store?.getState().groupBy)).toBe('repo')
+  const topBarOptions = page.locator(
+    '[data-sidebar-header-actions] button:has(svg.lucide-sliders-horizontal)'
+  )
+  await expect(topBarOptions).toHaveCount(1)
+  // Why switch to flat: the 工作区 section header (native "All", relabeled) only renders
+  // in flat mode. Assert it there, and assert ☰ stays single-mounted at the column top.
   await page.evaluate(() => window.__store!.getState().setGroupBy('none'))
   const workspacesHeader = page.locator('[data-sidebar-original-row-key="all"]')
   await expect(workspacesHeader).toContainText('工作区')
+  await expect(workspacesHeader.locator('button:has(svg.lucide-sliders-horizontal)')).toHaveCount(0)
+  await expect(topBarOptions).toHaveCount(1)
   // A folder project has no version workflow: no 版本 section and no 新建版本 action.
   await expect(page.locator('[data-workbench-versions]')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '新建版本', exact: true })).toHaveCount(0)

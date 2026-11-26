@@ -6,7 +6,7 @@ import {
   type PrototypeReviewState
 } from './prototype-model'
 
-const STORAGE_KEY = 'bw.prototype-review-notifications.v1'
+const STORAGE_KEY = 'bw.prototype-review-notifications.v2'
 const StoredTarget = z.object({
   environmentId: z.string().min(1),
   name: z.string(),

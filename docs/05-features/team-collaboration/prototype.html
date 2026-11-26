@@ -167,8 +167,6 @@
       .demo-link { margin-top: 8px; }
       .grant-row { padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
       .grant-row + .grant-row { margin-top: 5px; }
-      .grant-toolbar { margin-bottom: 6px; padding: 2px 0; color: var(--muted-foreground); font-size: 12px; }
-      .grant-select { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 12px; }
       .audit-pane .table { min-width: 445px; }
       .audit-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 10px 0; }
       .audit-filters > .field { flex: 1 1 110px; margin: 0; }
@@ -199,12 +197,11 @@
       .team-directory .members-table th:nth-child(1) { width: 190px; }
       .team-directory .members-table th:nth-child(2) { width: auto; }
       .directory-links { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
-      .directory-links > div:first-child { display: grid; gap: 2px; }
-      .directory-links strong, .directory-links small { display: block; }
-      .directory-links .row { align-items: center; gap: 8px; }
+      .directory-links > button { flex: none; white-space: nowrap; }
       .directory-id-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-      .directory-id-field { display: grid; min-width: 0; gap: 4px; flex: 1; }
-      .directory-id-field small { color: var(--muted-foreground); }
+      .directory-identifiers { display: flex; flex-wrap: wrap; gap: 6px 24px; min-width: 0; margin: 0; }
+      .directory-identifiers dt { color: var(--muted-foreground); font-size: 12px; }
+      .directory-identifiers dd { margin: 0; font-family: var(--font-mono); overflow-wrap: anywhere; }
       .directory-tip { color: var(--muted-foreground); }
       .team-avatar { width: 32px; height: 32px; object-fit: cover; border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--border); }
       .member-person { gap: 10px; }
@@ -227,13 +224,24 @@
       .team-wall-label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
       .walkthrough { margin: 0 0 10px; font-size: 12px; }
       .walkthrough li { margin-bottom: 5px; }
+      .binding-note { color: var(--muted-foreground); font-size: 13px; line-height: 1.7; }
+      .binding-error { color: var(--destructive); font-size: 13px; }
+      .binding-error:empty { display: none; }
+      .binding-warning { color: var(--foreground); }
+      .prototype-tooltip { position: relative; display: inline-flex; }
+      .prototype-tooltip [role="tooltip"] { position: absolute; bottom: calc(100% + 4px); right: 0; z-index: 90; width: max-content; padding: 6px 12px; border-radius: var(--radius-md); font-size: 12px; color: var(--background); background: var(--foreground); opacity: 0; visibility: hidden; pointer-events: none; }
+      .prototype-tooltip:hover [role="tooltip"], .prototype-tooltip:focus-within [role="tooltip"] { opacity: 1; visibility: visible; transition-delay: 400ms; }
+      .review-links { font-size: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+      .review-tools { margin-bottom: 10px; font-size: 12px; }
+      .review-tools .input { width: auto; }
+      @media (max-width: 600px) { .directory-links { flex-wrap: wrap; } .directory-links > button { margin-left: auto; } .directory-id-grid { grid-template-columns: minmax(0, 1fr); } }
     </style>
     <script src="prototype/journey.js" defer></script>
   </head>
   <body>
     <main class="review-frame">
       <header class="review-header">
-        <div><h1>团队多人协作</h1><p><em>原型注释：</em>屏内是目标界面。未绑定的桌面看不到神盾局；群号 <code>938583054774198541</code>。绑定时通过 welink-cli 用当前 WeLink 身份匹配成员、头像和主机。项目墙沿用当前 BW 墙卡；登记项目只决定它是否是团队项目，成员项目墙上的实际来源仍由各主机提供。主机地址登记后会自动出现在成员的连接目标里，连接保持断开。</p></div>
+        <div><h1>团队多人协作</h1><p>项目墙 → 团队设置 · #791 切换团队已认可 · 静态表达 / 演示数据</p></div>
         <div class="row wrap">
           <label for="actor">模拟桌面</label>
           <select id="actor" class="input">
@@ -247,23 +255,27 @@
           <button class="btn btn-ghost" data-action="theme">明暗</button>
         </div>
       </header>
+      <nav class="review-links"><a href="intent.md">意图</a><a href="spec.md">规格</a><a href="STATUS.md">状态</a><a href="../../../src/renderer/src/workbench/TeamSettingsDialog.tsx">当前界面来源</a><span>基线 c836246117；静态参照，未加载 React 组件</span></nav>
+      <div class="row wrap review-tools"><strong>原型评审工具</strong><button class="btn btn-secondary" data-action="review-791">查看团队切换</button><label>读取结果 <select id="switch-result" class="input"><option value="success">成功</option><option value="failure">失败（保留原团队）</option></select></label><span>团队 A：938583054774198541 / 20065474；团队 B：938583054774198542 / 20065475</span></div>
       <details class="walkthrough">
         <summary>原型注释：操作路线</summary>
         <ol>
-          <li>「从头开始」。韩岚首次先输入群 ID；如果没有已登记的群空间目录，再在弹窗中补填群空间 ID。绑定后本机记住这组绑定，重新打开 BW 可直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
+          <li>#791：点「查看团队切换」，已绑定的两个 ID 只读，右侧「切换团队」打开新 ID 表单。取消或读取失败保留原团队与草稿；成功后整体切换。刷新按钮悬停或键盘聚焦显示「刷新当前团队目录」。已保存远程主机保留，群空间文件不变。底部不再放「解除绑定」。</li>
+          <li>「从头开始」。韩岚首次在弹窗中同时填写群 ID 和群空间 ID。绑定后本机记住这组绑定，重新打开 BW 直接进入团队目录。welink-cli 读取已支持的成员和群主信息，当前桌面的 WeLink 身份用于匹配主机归属，项目目录为空。</li>
           <li>林安绑定同一群号。项目墙保留当前 BW 的「添加项目」入口，团队设置也提供「登记项目」。登记星图服务后，项目身份写入群空间。</li>
           <li>陈远绑定该群后，BW 根据已登记的 repoId 和各主机项目墙上的实际来源合并成一张现有样式的项目卡。他不需要重复登记星图服务，「交付看板」仍是他的个人项目。</li>
           <li>在团队设置的本机地址栏点击「一键生成并填入」；已有 Orca 配置时按钮变为「一键填入」。群成员随后自动看到地址和连接目标，连接默认保持断开，建立连接后默认只读。</li>
           <li>项目卡保留现有 BW 的主机状态；未连接来源只显示离线状态。需要连接时，从左下角「管理远程主机」进入 Orca 远程服务器设置，建立连接后再回到项目卡查看。</li>
-          <li>陈远在自己的 Orca 共享访问列表中勾选林安等已连接设备，一次授予完全访问。未选设备仍只读；完全访问后可在该项目下新建会话或新建工作树。访问日志只由被访问主机持有人筛选查看，超过 14 天自动清理。</li>
+          <li>陈远在自己的 Orca 共享访问列表里，直接用林安行内的「只读 | 完全访问」切换，点击即生效，无需勾选或确认；切回只读随时可用，其他成员不受影响。完全访问后可在该项目下新建会话或新建工作树。访问日志只由被访问主机持有人筛选查看，记下授予与恢复只读，超过 14 天自动清理。</li>
         </ol>
       </details>
       <div class="preview"><div id="surface"></div><p class="proto-status" id="status" role="status" aria-live="polite"></p></div>
       <details class="references">
-        <summary>原型注释：复用位置与演示范围</summary>
+        <summary>原型注释：证据、来源与限制</summary>
+        <p>#791 增量为团队设置局部交互，原型已认可。沿用既有静态旅程与配色；未加载原生 React 弹窗与 Tooltip，周边页面保留已有静态参照。未连接 WeLink，未验证 Electron、双机、权限与重启读回；本原型不能证明产品能力已交付。</p>
         <p>页头动作沿用 <a href="../../../src/renderer/src/workbench/WorkbenchIconButton.tsx">WorkbenchIconButton</a> 和现有 Lucide 图标。团队设置采用同尺寸的 UsersRound 图标，放在<a href="../../../src/renderer/src/workbench/ProjectWallPage.tsx">项目墙原远程主机操作入口</a>的位置。项目卡片复用当前 ProjectWallCard 的布局和操作，不增加团队专用卡片动作。原“批量导入主机”的页头入口改为同位置的 UsersRound“团队设置”入口。</p>
         <p>窗口、墙卡右栏、评审入口与远程设置分别对应 <a href="../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx">AppWorkspaceShell</a>、<a href="../../../src/renderer/src/workbench/ProjectSettingsRail.tsx">ProjectSettingsRail</a>、<a href="../../../src/renderer/src/workbench/pr-review-notifications/ReviewSendDialog.tsx">发送评审</a>及<a href="../../../src/renderer/src/components/settings/RuntimeEnvironmentsPane.tsx">远程 Orca 服务器</a>。浅化的是这条旅程周边的原生内容。</p>
-        <p>样例在浏览器内模拟按群号查群、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。群空间跳转目标等待实际内网接口提供，不使用虚构地址。团队地址、连接和授权复用 Orca 原生共享主机设置；访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">共享服务器访问</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，存于主机的 <code>userData/logs/orca-shared-host/</code> 并按 14 天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
+        <p>样例在浏览器内模拟按群号查群、welink-cli 身份匹配、群空间目录同步、成员项目墙按 repoId 聚合、团队主机默认未连接、Orca 同连接只读与完全访问分层和 PR。群空间跳转目标等待实际内网接口提供，不使用虚构地址。团队地址、连接和授权复用 Orca 原生共享主机设置；访问日志只在被访问主机的<a href="../../../src/renderer/src/components/settings/RuntimeAccessGrantList.tsx">我分享出去的链接</a>设置中由主机持有人查看，按动作、结果、时间和访问者筛选，存于主机的 <code>userData/logs/orca-shared-host/</code> 并按 14 天自动清理。<em>原型注释：</em>业界参考 <a href="https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository">GitHub 团队仓库访问</a>。</p>
       </details>
     </main>
     <dialog id="dialog" class="dialog" aria-labelledby="dialog-title"></dialog>

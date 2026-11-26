@@ -76,7 +76,7 @@ metadata:
 
 ## 6. 从真实开发反馈改方法
 
-交付收尾完整读取 [真实任务反馈](references/workflow-feedback.md)，从原始会话提取、逐条标注，用脚本生成指标评论，再读回评论和 PR 标题前缀。Codex 按 [执行参考](references/codex.md#会话反哺) 运行脚本。人审或返工发生变化时重算并原位更新评论。反哺候选在当次任务按该规范对齐，经人确认后修回原件，每周观察实际效果。
+交付收尾完整读取 [真实任务反馈](references/workflow-feedback.md)，从原始会话提取、逐条标注，用脚本生成指标评论，再读回评论和 PR 标题前缀。Codex、Claude 与 Cursor 分别按 [Codex 执行参考](references/codex.md#会话反哺)、[Claude 执行参考](references/claude.md#会话反哺)与 [Cursor 执行参考](references/cursor.md#会话反哺)运行脚本。人审或返工发生变化时重算并原位更新评论。反哺候选在当次任务按该规范对齐，经人确认后修回原件，每周观察实际效果。
 
 修改方法沿第 1 节写作约定及上述反哺规范执行，按已确认的归属与范围写回原件。
 

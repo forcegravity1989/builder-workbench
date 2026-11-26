@@ -583,6 +583,34 @@ describe('launchAgentInNewTab', () => {
     expect(mockTrack).not.toHaveBeenCalledWith('agent_prompt_sent', expect.anything())
   })
 
+  it('puts a rewritten claude draft on prefill and does not paste', async () => {
+    const { rewritePromptForPlanningDraft } = await import('../../../shared/planning-draft-prompt')
+    const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
+    const prompt = rewritePromptForPlanningDraft(
+      '<div class="absolute inset-0" data-native-file-drop-target="terminal">\n完整读取并使用 "D:\\skills\\SKILL.md"'
+    )
+
+    const result = launchAgentInNewTab({
+      agent: 'claude',
+      worktreeId: 'wt-1',
+      prompt,
+      promptDelivery: 'draft',
+      launchPlatform: 'win32'
+    })
+
+    expect(prompt).toBe(
+      '<div class=＂absolute inset-0＂ data-native-file-drop-target=＂terminal＂>⏎完整读取并使用 ＂D:\\skills\\SKILL.md＂'
+    )
+    expect(result?.pasteDraftAfterLaunch).toBe(false)
+    expect(mockPasteDraftWhenAgentReady).not.toHaveBeenCalled()
+    expect(mockQueueTabStartupCommand).toHaveBeenCalledWith(
+      'tab-1',
+      expect.objectContaining({
+        command: `claude '--dangerously-skip-permissions' --prefill '${prompt}'`
+      })
+    )
+  })
+
   it('falls back to post-ready draft paste when a Windows inline draft would be too large', async () => {
     const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
     const prompt = 'x'.repeat(25_000)
@@ -595,7 +623,7 @@ describe('launchAgentInNewTab', () => {
       launchPlatform: 'win32'
     })
 
-    expect(result).not.toHaveProperty('promptDeliveryResult')
+    expect(result).toHaveProperty('promptDeliveryResult')
     expect(mockQueueTabStartupCommand).toHaveBeenCalledWith(
       'tab-1',
       expect.objectContaining({
@@ -613,7 +641,7 @@ describe('launchAgentInNewTab', () => {
     )
   })
 
-  it('logs rejected non-deferred prompt delivery without exposing it to callers', async () => {
+  it('exposes rejected draft delivery so callers can recover the same session', async () => {
     const error = new Error('paste failed')
     const originalConsole = console
     const consoleError = vi.fn()
@@ -631,7 +659,7 @@ describe('launchAgentInNewTab', () => {
         launchPlatform: 'win32'
       })
 
-      expect(result).not.toHaveProperty('promptDeliveryResult')
+      await expect(result?.promptDeliveryResult).rejects.toThrow('paste failed')
       await new Promise((resolve) => setTimeout(resolve, 0))
       expect(consoleError).toHaveBeenCalledWith('Prompt delivery failed after launch', error)
     } finally {

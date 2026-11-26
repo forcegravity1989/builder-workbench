@@ -11,7 +11,8 @@ const modelTags = ['ask_user', 'permission', 'hifi_review']
 
 export const feedbackSchema = {
   issueUrl: 'https://github.com/OWNER/REPO/issues/NUMBER',
-  prUrl: 'https://github.com/OWNER/REPO/pull/NUMBER',
+  scope: '可选。issue-only 表示提单阶段，省略则沿原 PR 交付口径',
+  prUrl: 'https://github.com/OWNER/REPO/pull/NUMBER（issue-only 留空）',
   workflowVersion: '实际读取的版本，未知填 unknown',
   sessionTitle: '可选，桌面会话名称',
   firstDeliveryId: '模型首次明确交付供人验收的消息 ID；尚未交付填 null',
@@ -54,8 +55,23 @@ function webUrl(value) {
 
 export function summarizeFeedback(transcript, annotations) {
   const messages = transcript.messages
+  const issueOnly = annotations.scope === 'issue-only'
   requireThat(Array.isArray(messages) && messages.length > 0, '提取结果缺消息')
-  requireThat(webUrl(annotations.issueUrl) && webUrl(annotations.prUrl), '需要实际 Issue 与 PR URL')
+  requireThat(annotations.scope === undefined || issueOnly, '未知反馈范围')
+  requireThat(webUrl(annotations.issueUrl), '需要实际 Issue URL')
+  if (issueOnly) {
+    requireThat(
+      !annotations.prUrl &&
+        !annotations.firstDeliveryId &&
+        !Object.values(annotations.coverage ?? {}).some(Boolean) &&
+        (!annotations.review || annotations.review.verdict === 'pending') &&
+        !annotations.review?.evidenceIds?.length &&
+        !annotations.reDeliveries?.length,
+      '提单阶段只记录已观察事件，交付覆盖及人审保留未知'
+    )
+  } else {
+    requireThat(webUrl(annotations.prUrl), '需要实际 Issue 与 PR URL')
+  }
   const byId = new Map(messages.map((message, index) => [message.id, { ...message, index }]))
   requireThat(byId.size === messages.length, '提取消息 ID 重复')
   const users = annotations.userEvents ?? []
@@ -142,8 +158,15 @@ export function summarizeFeedback(transcript, annotations) {
   const count = (events, tag) =>
     events.filter((event) => before(event) && event.tags.includes(tag)).length
   const observed = (event) => !delivery || before(event)
-  const observedCount = (events, tag) =>
-    events.filter((event) => observed(event) && event.tags.includes(tag)).length
+  const observedCount = (events, tag) => {
+    const count = events.filter((event) => observed(event) && event.tags.includes(tag)).length
+    return issueOnly && count === 0 ? null : count
+  }
+  const interventionCount = deduplicated.filter(
+    (event) =>
+      observed(event) &&
+      event.tags.some((tag) => ['validation_guidance', 'correction'].includes(tag))
+  ).length
   const review = annotations.review ?? { verdict: 'pending', evidenceIds: [] }
   requireThat(['pending', 'accepted', 'changes_requested'].includes(review.verdict), '未知评审结论')
   if (review.verdict !== 'pending') {
@@ -182,9 +205,11 @@ export function summarizeFeedback(transcript, annotations) {
   const process = coverage.preDelivery === true
   return {
     schemaVersion: 1,
+    ...(issueOnly ? { scope: 'issue-only' } : {}),
     issueUrl: annotations.issueUrl,
     prUrl: annotations.prUrl,
     session: transcript.session,
+    sourceLabel: transcript.sourceLabel ?? 'Codex',
     sessionTitle: annotations.sessionTitle,
     workflowVersion: annotations.workflowVersion ?? 'unknown',
     coverage,
@@ -198,17 +223,17 @@ export function summarizeFeedback(transcript, annotations) {
         ? deduplicated.length
         : null,
     observed: {
-      scope: delivery ? '首次交付前的已记录片段' : '当前已记录过程，尚未完成交付',
+      scope: issueOnly
+        ? '提单阶段已核对的记录'
+        : delivery
+          ? '首次交付前的已记录片段'
+          : '当前已记录过程，尚未完成交付',
       askUserRounds: observedCount(models, 'ask_user'),
       hifiReviewRounds: observedCount(models, 'hifi_review'),
       validationGuidanceBatches: observedCount(deduplicated, 'validation_guidance'),
       correctionBatches: observedCount(deduplicated, 'correction'),
       permissionRounds: observedCount(models, 'permission'),
-      preDeliveryInterventions: deduplicated.filter(
-        (event) =>
-          observed(event) &&
-          event.tags.some((tag) => ['validation_guidance', 'correction'].includes(tag))
-      ).length
+      preDeliveryInterventions: issueOnly && interventionCount === 0 ? null : interventionCount
     },
     metrics: {
       initialExtraInput:
@@ -224,8 +249,8 @@ export function summarizeFeedback(transcript, annotations) {
         coverage.review === true && review.verdict !== 'pending'
           ? review.verdict === 'changes_requested'
           : null,
-      rejectionBatches: rejections,
-      completedReworkRounds: completedRequests.size,
+      rejectionBatches: issueOnly ? null : rejections,
+      completedReworkRounds: issueOnly ? null : completedRequests.size,
       preDeliveryInterventions: process
         ? deduplicated.filter(
             (event) =>
@@ -245,6 +270,28 @@ export function summarizeFeedback(transcript, annotations) {
   }
 }
 
+export function assertCurrentSnapshot(snapshot, current, annotations = {}) {
+  const evidenceIds = new Set([
+    annotations.firstDeliveryId,
+    ...(annotations.modelEvents ?? []).map((item) => item.messageId),
+    ...(annotations.review?.evidenceIds ?? []),
+    ...(annotations.reDeliveries ?? []).flatMap((item) => [item.messageId, item.requestId])
+  ])
+  const evidence = (value) =>
+    value.messages
+      .filter((item) => ['user', 'question'].includes(item.role) || evidenceIds.has(item.id))
+      .map(({ id, role, text }) => [id, role, text])
+  if (
+    snapshot.session.id !== current.session.id ||
+    JSON.stringify(evidence(snapshot)) !== JSON.stringify(evidence(current)) ||
+    JSON.stringify(snapshot.issues) !== JSON.stringify(current.issues)
+  ) {
+    throw new Error(
+      '原始会话已有新输入、提问、引用证据或覆盖变化；重新 extract、更新标注并重算，不能沿用旧表追加说明'
+    )
+  }
+}
+
 function escape(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -256,11 +303,16 @@ function escape(value) {
 
 export function renderComment(report) {
   const m = report.metrics
+  const issueOnly = report.scope === 'issue-only'
   const value = (number) => (number === null ? '未知' : String(number))
-  const processValue = (key, unit) =>
-    m[key] === null
+  const processValue = (key, unit) => {
+    if (report.observed[key] === null) {
+      return '未知'
+    }
+    return m[key] === null
       ? `已观察 ${report.observed[key]} ${unit}；完整口径未知`
       : `${value(m[key])} ${unit}`
+  }
   const rounds = `退回 ${m.rejectionBatches} 批；完成返工 ${m.completedReworkRounds} 轮${m.completedReworkRounds < m.rejectionBatches ? '，尚未全部重交' : ''}`
   const rework =
     m.reworkOccurred === null
@@ -269,7 +321,7 @@ export function renderComment(report) {
         ? `已${rounds}`
         : `首次人审通过${m.rejectionBatches ? `；后续${rounds}` : ''}`
   return `<!-- bw-workflow-feedback:${escape(report.issueUrl)} -->
-## Workflow 会话反馈
+## Workflow 会话反馈${issueOnly ? '（提单阶段）' : ''}
 
 会话：${escape(report.sessionTitle ?? report.session?.id ?? '未知')} · 方法：${escape(report.workflowVersion)}。单任务计数。
 
@@ -289,6 +341,6 @@ ${report.userInputs.length ? report.userInputs.map((event) => `- ${escape(event.
 
 **反哺去向：** ${report.findings.length ? report.findings.map(escape).join('；') : '暂无已核对建议。'}
 
-来源：Codex 原始会话提取、模型逐条标注、脚本校验计数及实际人审证据。初始输入 / 交付前过程 / 人审覆盖：${report.coverage.initialInput === true ? '完整' : '未知'} / ${report.coverage.preDelivery === true ? '完整' : '未知'} / ${report.coverage.review === true ? '已核对' : '未知'}。原文与消息定位留在本地提取和标注产物中。${report.issues.length ? ` 缺口：${report.issues.map(escape).join('；')}` : ''}
+来源：${escape(report.sourceLabel ?? 'Codex')} 原始会话提取、模型逐条标注、脚本校验计数${issueOnly ? '' : '及实际人审证据'}。初始输入 / 交付前过程 / 人审覆盖：${report.coverage.initialInput === true ? '完整' : '未知'} / ${report.coverage.preDelivery === true ? '完整' : '未知'} / ${report.coverage.review === true ? '已核对' : '未知'}。原文与消息定位留在本地提取和标注产物中。${report.issues.length ? ` 缺口：${report.issues.map(escape).join('；')}` : ''}
 `
 }

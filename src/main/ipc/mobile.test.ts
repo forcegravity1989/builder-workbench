@@ -709,8 +709,12 @@ describe('registerMobileHandlers', () => {
 
   it('revokes runtime access through the runtime server', () => {
     const revokeRuntimeAccess = vi.fn().mockReturnValue(true)
+    const record = vi.fn()
     const rpcServer = {
-      getDeviceRegistry: () => ({}),
+      getDeviceRegistry: () => ({
+        getDevice: () => ({ deviceId: 'runtime-1', name: '安迪', scope: 'runtime' })
+      }),
+      getRuntimeAccessAudit: () => ({ record }),
       revokeRuntimeAccess
     }
 
@@ -720,12 +724,61 @@ describe('registerMobileHandlers', () => {
       revoked: true
     })
     expect(revokeRuntimeAccess).toHaveBeenCalledWith('runtime-1')
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({ deviceId: 'runtime-1', method: 'access.revoke', result: 'allowed' })
+    )
+  })
+
+  it('switches a connected team member between full access and read-only, and logs both', () => {
+    const teamBinding = { teamGroupId: 'team-1', memberId: 'member-1' }
+    const device = {
+      deviceId: 'runtime-1',
+      name: '安迪',
+      scope: 'runtime',
+      accessMode: 'team-read',
+      teamBinding
+    }
+    const setAccessMode = vi.fn((_id: string, mode: string) => {
+      device.accessMode = mode as 'team-read'
+      return true
+    })
+    const record = vi.fn()
+    let connected = true
+    const rpcServer = {
+      getDeviceRegistry: () => ({ getDevice: () => device, setAccessMode }),
+      getMobileSocketWiring: () => ({ isDeviceConnected: () => connected }),
+      getRuntimeAccessAudit: () => ({ record })
+    }
+    registerMobileHandlers(rpcServer as never)
+    const setMode = handlers.get('mobile:setRuntimeAccessMode')!
+
+    expect(setMode(null, { deviceId: 'runtime-1', accessMode: 'full' })).toEqual({
+      accessMode: 'full'
+    })
+    expect(record).toHaveBeenLastCalledWith(
+      expect.objectContaining({ method: 'access.grant.full', accessMode: 'full' })
+    )
+    // Going back needs no connection and keeps the member's team record.
+    connected = false
+    expect(setMode(null, { deviceId: 'runtime-1', accessMode: 'team-read' })).toEqual({
+      accessMode: 'team-read'
+    })
+    expect(setAccessMode).toHaveBeenLastCalledWith('runtime-1', 'team-read', teamBinding)
+    expect(record).toHaveBeenLastCalledWith(
+      expect.objectContaining({ method: 'access.restore.readonly', accessMode: 'team-read' })
+    )
+    // Full access is refused for a member who is not connected, and nothing is logged for it.
+    record.mockClear()
+    expect(setMode(null, { deviceId: 'runtime-1', accessMode: 'full' })).toEqual({
+      accessMode: 'team-read'
+    })
+    expect(record).not.toHaveBeenCalled()
   })
 
   it('awaits mobile device revocation before replying', async () => {
     const revokeMobileDevice = vi.fn().mockResolvedValue(true)
     const rpcServer = {
-      getDeviceRegistry: () => ({}),
+      getDeviceRegistry: () => ({ getDevice: () => undefined }),
       revokeMobileDevice
     }
 
