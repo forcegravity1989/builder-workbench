@@ -583,36 +583,30 @@ describe('launchAgentInNewTab', () => {
     expect(mockTrack).not.toHaveBeenCalledWith('agent_prompt_sent', expect.anything())
   })
 
-  it('pastes a quoted draft without prefill or submit when paste delivery is requested', async () => {
+  it('puts a rewritten claude draft on prefill and does not paste', async () => {
+    const { rewritePromptForPlanningDraft } = await import('../../../shared/planning-draft-prompt')
     const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
-    const prompt =
-      '<div class="absolute inset-0" data-native-file-drop-target="terminal">\n完整读取 Skill'
+    const prompt = rewritePromptForPlanningDraft(
+      '<div class="absolute inset-0" data-native-file-drop-target="terminal">\n完整读取并使用 "D:\\skills\\SKILL.md"'
+    )
 
     const result = launchAgentInNewTab({
       agent: 'claude',
       worktreeId: 'wt-1',
       prompt,
       promptDelivery: 'draft',
-      deliverDraftByPaste: true,
-      draftPasteSpawnTimeoutMs: 30_000,
       launchPlatform: 'win32'
     })
 
-    expect(result?.pasteDraftAfterLaunch).toBe(true)
+    expect(prompt).toBe(
+      '<div class=＂absolute inset-0＂ data-native-file-drop-target=＂terminal＂>⏎完整读取并使用 ＂D:\\skills\\SKILL.md＂'
+    )
+    expect(result?.pasteDraftAfterLaunch).toBe(false)
+    expect(mockPasteDraftWhenAgentReady).not.toHaveBeenCalled()
     expect(mockQueueTabStartupCommand).toHaveBeenCalledWith(
       'tab-1',
       expect.objectContaining({
-        command: "claude '--dangerously-skip-permissions'"
-      })
-    )
-    expect(mockPasteDraftWhenAgentReady).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tabId: 'tab-1',
-        content: prompt,
-        agent: 'claude',
-        submit: false,
-        forcePaste: true,
-        spawnTimeoutMs: 30_000
+        command: `claude '--dangerously-skip-permissions' --prefill '${prompt}'`
       })
     )
   })
