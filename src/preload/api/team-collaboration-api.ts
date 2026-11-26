@@ -1,7 +1,7 @@
 import type { TeamDirectory } from '../../shared/team-directory'
 
 export type TeamCollaborationApi = {
-  readDirectory: (args: { groupId: string; spaceId: string }) => Promise<{
+  readDirectory: (args: { groupId: string; spaceId: string; switching?: boolean }) => Promise<{
     directory: TeamDirectory
     fileId: string | null
     currentMemberId: string | null

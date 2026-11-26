@@ -583,6 +583,40 @@ describe('launchAgentInNewTab', () => {
     expect(mockTrack).not.toHaveBeenCalledWith('agent_prompt_sent', expect.anything())
   })
 
+  it('pastes a quoted draft without prefill or submit when paste delivery is requested', async () => {
+    const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
+    const prompt =
+      '<div class="absolute inset-0" data-native-file-drop-target="terminal">\n完整读取 Skill'
+
+    const result = launchAgentInNewTab({
+      agent: 'claude',
+      worktreeId: 'wt-1',
+      prompt,
+      promptDelivery: 'draft',
+      deliverDraftByPaste: true,
+      draftPasteSpawnTimeoutMs: 30_000,
+      launchPlatform: 'win32'
+    })
+
+    expect(result?.pasteDraftAfterLaunch).toBe(true)
+    expect(mockQueueTabStartupCommand).toHaveBeenCalledWith(
+      'tab-1',
+      expect.objectContaining({
+        command: "claude '--dangerously-skip-permissions'"
+      })
+    )
+    expect(mockPasteDraftWhenAgentReady).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: 'tab-1',
+        content: prompt,
+        agent: 'claude',
+        submit: false,
+        forcePaste: true,
+        spawnTimeoutMs: 30_000
+      })
+    )
+  })
+
   it('falls back to post-ready draft paste when a Windows inline draft would be too large', async () => {
     const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
     const prompt = 'x'.repeat(25_000)
