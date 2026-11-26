@@ -1,0 +1,80 @@
+src/renderer/src/workbench/version-tree-bind-dialog.tsx
+  s_20781efb6a4d62::t_f06a5674d649ee 183
+  s_20781efb6a4d62::t_b700ca2b966da1 179
+  s_20781efb6a4d62::t_ed056eb877be5f 327-331,334-348
+  s_20781efb6a4d62::t_6d497e90f42366 57-58
+  s_20781efb6a4d62::t_cdfaa44d013632 291
+  s_20781efb6a4d62::t_7ab7bbf0dc37a1 251-255,257-259
+  s_20781efb6a4d62::t_9f17fcb8ea7cab 63-64
+  s_20781efb6a4d62::t_50257d1a889256 390-420
+  s_20781efb6a4d62::t_a742cce0e1dd6d 226-250,260-269
+  s_20781efb6a4d62::t_23240ef6f30cbd 25,51-56,315
+  s_20781efb6a4d62::t_2eb038f81e5db6 61-62
+  s_20781efb6a4d62::t_9a8cf895d5d44d 216
+  s_20781efb6a4d62::t_724ac91a572b75 485-489
+  s_20781efb6a4d62::t_2fdc65ffe969ca 88-95,97-99,101-105
+  s_20781efb6a4d62::t_408c0f15d32e43 256
+  s_20781efb6a4d62::t_a30175384fc44d 128-131,135-139
+  s_20781efb6a4d62::t_88188b935d0da4 286-290,292-294,305-314
+  s_20781efb6a4d62::t_9d3be2c189c036 211-215,217-220
+  s_20781efb6a4d62::t_f9e818ecc3526d 370-372
+  s_20781efb6a4d62::t_b4ec611135b945 449-458
+src/shared/workbench/task-scope.test.ts
+  s_20781efb6a4d62::t_2be438ba2868a1 12-16
+  s_20781efb6a4d62::t_f2cd7d4fc77ef7 90-121
+  s_20781efb6a4d62::t_069e71519aec2b 122-133
+  s_20781efb6a4d62::t_be86180a02e8cb 89
+src/renderer/src/workbench/version-issue-assignment.ts
+  s_20781efb6a4d62::t_a6be39f1d54987 47-50,57
+  s_20781efb6a4d62::t_f5b0896efe046e 1-4,9-27,29-46,51-56,58-104
+  s_20781efb6a4d62::t_292526d5077e81 28
+  h_1dcaf127381c33 5-8
+  s_20781efb6a4d62::t_c918bd520f6b24 105-107
+src/shared/workbench/version-membership.ts
+  s_20781efb6a4d62::t_a5942210bcd3bf 3-4,7-35
+  s_20781efb6a4d62::t_bd19e4841b06a1 36-51
+  s_20781efb6a4d62::t_42779a5da31cd8 1-2
+docs/04-design-system/guidance.md
+  s_20781efb6a4d62::t_0732f690d31af9 107
+src/renderer/src/workbench/version-tree-bind-mode.ts
+  s_20781efb6a4d62::t_7ba61b5b7ed63a 1-48,59-71
+  s_20781efb6a4d62::t_c1d65ab46ecf0a 49-58
+src/renderer/src/components/github/github-work-item-edit-mutations.ts
+  s_20781efb6a4d62::t_01980ab10961d8 32-33,37-50,57
+docs/05-features/version-workspace/design.md
+  s_20781efb6a4d62::t_3efa0ce5ce76d9 98
+  s_20781efb6a4d62::t_f95e6fe719bc4b 116
+docs/05-features/version-workspace/prototype/g2-binding-demo.jsx
+  s_20781efb6a4d62::t_52fc0f749c502c 309,311-318,339-340
+  s_20781efb6a4d62::t_d592e5e541d6f8 125
+  s_20781efb6a4d62::t_1a63b9e1f9fa16 267-283
+  s_20781efb6a4d62::t_881da2fad66beb 292-296
+  s_20781efb6a4d62::t_7286453243c5c4 204,207-215
+  s_20781efb6a4d62::t_2f53aa86874611 1-18,310
+  s_20781efb6a4d62::t_b073bbda4c9b24 255-260
+docs/05-features/version-workspace/spec.md
+  s_20781efb6a4d62::t_394a049705f457 20
+docs/05-features/version-workspace/prototype/g2-workspace.js
+  s_20781efb6a4d62::t_d14090a88aa522 4-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "c532767236a49bbd43bf0dfb1a793e872ce5a326",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_20781efb6a4d62": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "12aa28ac-dcd7-481c-bd99-af2542197abe",
+        "model": "grok-4.7"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
