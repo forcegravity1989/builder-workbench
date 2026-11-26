@@ -1,0 +1,80 @@
+src/renderer/src/lib/shutdown-checkpoint-guard.ts
+  s_636d9982c65684::t_8e547300c6a60d 58-59,62-64
+src/renderer/src/workbench/use-project-settings.ts
+  s_636d9982c65684::t_7705320ac45ebd 378-381
+  s_636d9982c65684::t_6e83ee819e23ea 23
+src/renderer/src/app-shell/shutdown-checkpoint-restart-lifecycle.test.ts
+  s_636d9982c65684::t_90117c17c6f6e3 61-64
+  s_636d9982c65684::t_c9f916e77dec82 7
+  s_636d9982c65684::t_7b8085e5f38334 20
+  s_636d9982c65684::t_9ff3a00e6d9aaa 171-193
+src/renderer/src/app-startup-routing.test.ts
+  s_636d9982c65684::t_e6e67b4615edec 631
+  s_636d9982c65684::t_fea0ad4644711d 590
+  s_636d9982c65684::t_88bd1cd9f80f00 595
+src/renderer/src/components/maintenance/update-card/update-card-error-model.ts
+  s_636d9982c65684::t_38747eacf255da 60,66-71,77-86
+  s_636d9982c65684::t_4cd01aa6dac11c 25-26,39
+src/preload/renderer-restart-wiring.test.ts
+  s_636d9982c65684::t_24670166549e3b 81-101,105-108
+  s_636d9982c65684::t_075dceb01178ab 5
+  h_1dcaf127381c33 102-104
+src/shared/updater-renderer-events.ts
+  s_636d9982c65684::t_94fc941b571dc2 3-5
+src/renderer/src/lib/updater-beforeunload.ts
+  s_636d9982c65684::t_dc5e546fdcb20d 64
+  s_636d9982c65684::t_dd3ddee39f36bc 5,11-13
+  s_636d9982c65684::t_788ee3c6e1099a 41-44
+  s_636d9982c65684::t_fdf4c382a18abe 23-26
+  s_636d9982c65684::t_2efa072c2fc825 31-34,37
+  s_636d9982c65684::t_2737200dbd1364 52-55
+src/preload/api/updater-bridge.ts
+  s_636d9982c65684::t_9efa69147df5d4 19,24-25
+  s_636d9982c65684::t_4bcc74be1009e7 3
+src/renderer/src/lib/updater-beforeunload.test.ts
+  s_636d9982c65684::t_cf73fec013a642 72-85
+  s_636d9982c65684::t_02fe93d31a6a94 12
+  s_636d9982c65684::t_2551c1a15ca49f 3
+src/preload/renderer-restart-wiring.ts
+  s_636d9982c65684::t_0ad6f8b35a5a90 2,13
+  s_636d9982c65684::t_af307fea3f00df 39-40,42-52
+src/preload/api/updater-api.ts
+  s_636d9982c65684::t_63aee26b1fd49b 9-13,19
+src/renderer/src/components/maintenance/update-card/update-card-error-model.test.ts
+  s_636d9982c65684::t_a99b0e3230f7ea 71-93,107,110
+  s_636d9982c65684::t_c05ab8a938be71 60-61,94-106,108-109
+  s_636d9982c65684::t_aa800611f540cb 17-18
+src/renderer/src/components/UpdateCard.tsx
+  s_636d9982c65684::t_2076a6a2683bce 169-170
+  s_636d9982c65684::t_09994c9764d2b6 136-141
+src/renderer/src/app-shell/use-app-session-persistence.ts
+  s_636d9982c65684::t_c14b02727acf14 10
+  s_636d9982c65684::t_a284428446547f 221-225
+docs/06-module/客户端更新.md
+  s_636d9982c65684::t_f5a106d62ce97f 11
+src/renderer/src/i18n/locales/en.json
+  s_636d9982c65684::t_3aa0ac51020b0d 2420-2422
+src/renderer/src/i18n/locales/zh.json
+  s_636d9982c65684::t_2d0e02a0bb470b 2003-2005
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "885bea64206dc54879d5c11f5b9dc8e38c77199c",
+  "prompts": {},
+  "humans": {
+    "h_1dcaf127381c33": {
+      "author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  },
+  "sessions": {
+    "s_636d9982c65684": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f15e263d-787c-41b9-9a9b-9f0bf0722a84",
+        "model": "grok-4.7"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
