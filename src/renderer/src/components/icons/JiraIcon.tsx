@@ -3,6 +3,7 @@ export function JiraIcon({ className }: { className?: string }): React.JSX.Eleme
     <svg
       viewBox="0 -30.632388516510233 255.324 285.95638851651023"
       aria-hidden
+      data-workbench-action-icon
       className={className}
       fill="currentColor"
     >
