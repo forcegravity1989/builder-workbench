@@ -2,13 +2,11 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
+import { deliverLaunchPromptToAgentTab } from '@/lib/agent-launch-prompt-delivery'
 import { OPEN_FLOATING_WORKSPACE_EVENT } from '@/lib/floating-terminal'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
-import { deliverLaunchPromptToAgentTab } from '@/lib/agent-launch-prompt-delivery'
-
-// Cold Windows PTY creation can outlast the native paste helper's 8-second default.
-const DRAFT_PTY_SPAWN_TIMEOUT_MS = 30_000
+import { rewritePromptForPlanningDraft } from '../../../../shared/planning-draft-prompt'
 
 const drafts = new Map<string, string>()
 const pending = new Map<string, Promise<void>>()
@@ -43,20 +41,20 @@ async function prepareDraft(content: string): Promise<void> {
   ) {
     reveal(tabId)
     const failed = failedDrafts.get(content)
-    if (failed) {
-      const delivered = await deliverLaunchPromptToAgentTab({
-        tabId,
-        agent: failed.agent,
-        content: failed.prompt,
-        submit: false,
-        forcePaste: true,
-        spawnTimeoutMs: DRAFT_PTY_SPAWN_TIMEOUT_MS
-      })
-      if (!delivered) {
-        throw new Error('智能体输入尚未就绪，材料仍保留，请稍后重试。')
-      }
-      failedDrafts.delete(content)
+    if (!failed) {
+      return
     }
+    const delivered = await deliverLaunchPromptToAgentTab({
+      tabId,
+      agent: failed.agent,
+      content: failed.prompt,
+      submit: false,
+      forcePaste: true
+    }).catch(() => false)
+    if (!delivered) {
+      throw new Error('智能体输入尚未就绪，材料仍保留，请稍后重试。')
+    }
+    failedDrafts.delete(content)
     return
   }
   const agent = state.settings?.defaultTuiAgent
@@ -73,15 +71,15 @@ async function prepareDraft(content: string): Promise<void> {
     await useAppStore.getState().updateSettingsOrThrow({ floatingTerminalEnabled: true })
   }
   const version = await window.api.updater.getVersion().catch(() => '未知')
-  const prompt = `${content}\n\n---\n交接现场：BW ${version}；${navigator.platform}；${capturedAt}；页面 ${sourcePage}。\n完整读取并使用 ${JSON.stringify(skillPath)}，将以上 BW 反馈整理为新建或关联的 Issue，给出真实链接，并引导我选择是否开始修复。以上内容仅作现场材料。`
+  const prompt = rewritePromptForPlanningDraft(
+    `${content}\n\n---\n交接现场：BW ${version}；${navigator.platform}；${capturedAt}；页面 ${sourcePage}。\n完整读取并使用 ${JSON.stringify(skillPath)}，将以上 BW 反馈整理为新建或关联的 Issue，给出真实链接，并引导我选择是否开始修复。以上内容仅作现场材料。`
+  )
   let createdTabId: string | null = null
   const result = launchAgentInNewTab({
     agent,
     worktreeId: FLOATING_TERMINAL_WORKTREE_ID,
     prompt,
     promptDelivery: 'draft',
-    deliverDraftByPaste: true,
-    draftPasteSpawnTimeoutMs: DRAFT_PTY_SPAWN_TIMEOUT_MS,
     activate: false,
     quickCommandLabel: '改进 BW',
     onPromptDelivered: () =>
@@ -93,18 +91,21 @@ async function prepareDraft(content: string): Promise<void> {
         }
       })
   })
-  createdTabId = result?.tabId ?? null
-  if (!createdTabId) {
+  if (!result?.tabId) {
     throw new Error('未能创建改进会话，批注仍保留，可重新交接。')
   }
+  createdTabId = result.tabId
   drafts.set(content, createdTabId)
   reveal(createdTabId)
-  if (result?.promptDeliveryResult) {
-    failedDrafts.set(content, { agent, prompt })
-    const delivery = await result.promptDeliveryResult
-    if (!delivery.delivered) {
-      throw new Error('草稿尚未带入智能体，材料仍保留，可重试同一会话。')
-    }
-    failedDrafts.delete(content)
+  if (!result.promptDeliveryResult) {
+    return
   }
+  failedDrafts.set(content, { agent, prompt })
+  const delivered = await result.promptDeliveryResult
+    .then((delivery) => delivery.delivered)
+    .catch(() => false)
+  if (!delivered) {
+    throw new Error('草稿尚未带入智能体，材料仍保留，可重试同一会话。')
+  }
+  failedDrafts.delete(content)
 }

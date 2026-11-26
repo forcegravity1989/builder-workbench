@@ -27,10 +27,8 @@ export function planLaunchAgentStartupPrompt(args: {
   prompt: string
   promptDelivery: 'auto-submit' | 'draft' | 'submit-after-ready'
   isFollowupPath: boolean
-  /** Paste a draft after the TUI is ready instead of placing it on a native prefill flag. */
-  deliverDraftByPaste?: boolean
 }): LaunchAgentStartupPromptPlan {
-  const { base, prompt, promptDelivery, isFollowupPath, deliverDraftByPaste } = args
+  const { base, prompt, promptDelivery, isFollowupPath } = args
   const hasPrompt = prompt.length > 0
   const launchEmpty = (): AgentStartupPlan | null =>
     buildAgentStartupPlan({ ...base, prompt: '', allowEmptyPromptLaunch: true })
@@ -43,10 +41,6 @@ export function planLaunchAgentStartupPrompt(args: {
   if (hasPrompt && promptDelivery === 'submit-after-ready') {
     // Why: multi-line generated prompts are too large for a shell argv, so launch clean then paste+submit in the TUI.
     return pasteAfterReady(true)
-  }
-  if (hasPrompt && promptDelivery === 'draft' && deliverDraftByPaste) {
-    // Why: Claude's `--prefill` is re-parsed by Windows PowerShell when the draft contains `"`, and the leftover argv is submitted as the first message.
-    return pasteAfterReady(false)
   }
   if (hasPrompt && promptDelivery === 'draft') {
     const draftLaunchPlan = buildAgentDraftLaunchPlan({ ...base, draft: prompt })
