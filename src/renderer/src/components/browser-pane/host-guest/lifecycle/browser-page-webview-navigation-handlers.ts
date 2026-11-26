@@ -1,4 +1,6 @@
 import { cachedBrowserGuestMetadata } from '../metadata/browser-guest-metadata-cache'
+import { useAppStore } from '@/store'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from 'react'
 import {
   normalizeBrowserNavigationUrl,
@@ -84,6 +86,13 @@ export function createBrowserPageWebviewNavigationHandlers({
   annotationViewportBridgeTokenRef,
   setBrowserOverlayViewport
 }: BrowserPageWebviewNavigationHandlersArgs): BrowserPageWebviewNavigationHandlers {
+  const invalidateDocument = (): void => {
+    if (isWorkbenchShell()) {
+      useAppStore.getState().clearBrowserPageAnnotations(browserTabId)
+    }
+    invalidateBrowserAnnotationDocumentRef.current()
+  }
+
   const clearFaviconIfOriginChanges = (
     event: Electron.DidStartNavigationEvent | Electron.DidRedirectNavigationEvent
   ): void => {
@@ -119,7 +128,7 @@ export function createBrowserPageWebviewNavigationHandlers({
       ? (normalizeBrowserNavigationUrl(committedDocument) ?? committedDocument)
       : null
     if (normalizedCommittedDocument?.split('#')[0] !== startedUrl.split('#')[0]) {
-      invalidateBrowserAnnotationDocumentRef.current()
+      invalidateDocument()
     }
     setBrowserOverlayViewport(INITIAL_BROWSER_OVERLAY_VIEWPORT)
     const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
@@ -151,7 +160,7 @@ export function createBrowserPageWebviewNavigationHandlers({
       normalizeBrowserNavigationUrl(browserModelUrl) ?? browserModelUrl
     // In-place route changes swap content, but fragment-only updates (scroll spies, anchors) keep the layout.
     if (lastKnownWebviewUrlRef.current?.split('#')[0] !== normalizedBrowserModelUrl.split('#')[0]) {
-      invalidateBrowserAnnotationDocumentRef.current()
+      invalidateDocument()
     }
     const urlChanged = lastKnownWebviewUrlRef.current !== normalizedBrowserModelUrl
     lastKnownWebviewUrlRef.current = normalizedBrowserModelUrl

@@ -76,7 +76,18 @@ Codex 托管目录的套接字修复单独核对于 2026-11-13，来源为 Orca 
 | 共享主机 · [#592](https://github.com/forcegravity1989/builder-workbench/pull/592) · v251                            | 网络配对/重配、连接和订阅恢复、目录清理、关闭意图、宿主 Agent 配置及实际启动消费者 | 保留批量导入壳、材料草稿/回执、结构化会话关闭和浏览器防回显适配；必要接口适配单列于 PR                                 | 不迁 managed server、WSL 生命周期、process-host 或 Mobile 产品；上游该功能仍为 Beta                                            |
 | 网页批注 · [#579](https://github.com/forcegravity1989/builder-workbench/pull/579) · v250，#592 补 v251 导航截图取消 | 原生收起/展开、贴图/截图传递、精简/详情反馈、同文档 fragment 判据                  | 删除 BW #470/#511 独立折叠状态、外部 tray flag、自写图片预览与重复读取；保留必要基线适配、内层滚动定位和跨文档清理规则 | 不代表整个浏览器同步；双人实时互见和共同批注另由 [#576](https://github.com/forcegravity1989/builder-workbench/issues/576) 跟踪 |
 
-后续同步从此索引定位当前实现及其固定来源，再核对真实调用链。
+以上两行记录专项同步的固定来源。现行桌面基线见 §0.1，升级时按 §2.3 和 §2.7 核对在新版调用链上的 BW 行为。
+
+### 0.6 Orca 模块与本仓采用范围
+
+| 模块               | v1.4.272 采用范围                                                                                         | BW 改造与升级时的检查入口                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 桌面框架与公共界面 | 标题栏、菜单、状态栏、设置容器、原生工作区界面                                                            | BW 品牌、导航、帮助和引导，固定 → 版本 → 项目布局，知识库与设置挂载。见 §2.3                                               |
+| 执行与会话         | Git 工作树、终端进程、Chat、CLI/RPC、任务与自动化的公共链路                                               | 材料与固定工作区、版本绑定、计划/验收会话注入、CodeHub 任务。见 §2.3–2.4。各 Agent 的账号、恢复等专项证据见 §0.4           |
+| 远程与共享宿主     | Orca 配对、宿主目录、远端会话与路由                                                                       | BW 团队共享、访问控制、访问日志、批量纳入、材料读写落到所属主机。核对本机与已配对宿主的同名项目。见 §0.2、§0.5、§2.3、§2.7 |
+| 浏览器与批注       | 原生页面、标签、配置、浏览器同步及批注公共依赖随基线更新                                                  | W3 专用配置与退出清理、远程镜像防回显、批注定位及浮动提单交接。见 §2.3、§2.7                                               |
+| Bots 及云端能力    | Bot、连接器、跨主机群组的桌面及主进程代码采用固定版，依赖兼容的 Orca 账号和服务。服务端部署按各自服务核对 | BW 内部登录、集成、遥测及产物分享仍走原产品链路。见 §0.2、§2.1、§2.3                                                       |
+| 移动端、资源与工程 | 保留共享配对协议，按桌面依赖采用原生资源及构建组件                                                        | Orca Mobile 产品已移除，BW 文档、Skill、打包和验证按仓内规则维护。见 §2.1、§2.2、§2.6                                      |
 
 ## 1. 上游身份与 fork 基线
 
@@ -112,14 +123,14 @@ git rev-parse 'v1.4.272^{commit}'
 
 ### 2.2 目录和挂载边界
 
-| 层级                  | BW 落点                                                                     | 同步取舍                                                                   |
-| --------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Orca 执行核           | `src/main` runtime、会话与调度、terminal/PTY、worktree、宿主路由与 provider | 复用原生执行能力，按 §2.3 保留 BW 的接口与宿主适配                         |
-| Orca 原生桌面组件     | Chat、TaskPage、Automations、终端界面、Explorer/SC/Diff、Bots               | 复用原生组件，按 §2.3 接回 BW 的产品入口与交互                             |
-| BW UI 叠层            | `src/renderer/src/workbench/`                                               | 保留 BW 导航和业务板；与原生界面冲突时人工处理                             |
-| BW 业务契约与事务     | `src/shared/workbench/`、`src/main/workbench/`                              | 业务落在 BW 自有模块，不塞进 Orca 工作树、连接和调度类                     |
-| 宿主适配与 relay 组合 | `src/relay/workbench/`、原生 RPC/CLI 注册入口                               | 复用原生身份、路由和窄执行器，只登记 BW 入口                               |
-| 产品分发规范          | `standard/`                                                                 | 是给被管项目的规范正源，不与 `.claude/skills/` 或 Orca 根级 Skill 目录合并 |
+| 层级                 | BW 落点                                                                     | 同步取舍                                                                   |
+| -------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Orca 执行核          | `src/main` runtime、会话与调度、terminal/PTY、worktree、宿主路由与 provider | 复用原生执行能力，按 §2.3 保留 BW 的接口与宿主适配                         |
+| Orca 原生桌面组件    | Chat、TaskPage、Automations、终端界面、Explorer/SC/Diff、Bots               | 复用原生组件，按 §2.3 接回 BW 的产品入口与交互                             |
+| BW UI 叠层           | `src/renderer/src/workbench/`                                               | 保留 BW 导航和业务板；与原生界面冲突时人工处理                             |
+| BW 业务契约与事务    | `src/shared/workbench/`、`src/main/workbench/`                              | 业务落在 BW 自有模块，不塞进 Orca 工作树、连接和调度类                     |
+| 宿主适配与运行时组合 | `src/main/workbench/`、原生 RPC/CLI 注册入口                                | 材料由所属本机或配对 runtime 处理。普通 SSH 工作区沿原生通道               |
+| 产品分发规范         | `standard/`                                                                 | 是给被管项目的规范正源，不与 `.claude/skills/` 或 Orca 根级 Skill 目录合并 |
 
 实现位置和运行入口的细节见 [SYNC](../src/renderer/src/workbench/SYNC.md)；当前产品能力见 [architecture](../docs/architecture.md)。
 
@@ -131,11 +142,15 @@ git rev-parse 'v1.4.272^{commit}'
 
 - **桌面窗口与重复入口**。BW 标题栏用原色 20px 图标，浅色主题下也保留其原色。Windows 三点应用菜单收起原生帮助子菜单，桌面左下帮助提供「关于 BW」和「报告崩溃」。主机状态入口在 BW 左侧导航，底部状态栏只在其他壳显示同一入口。升级时核对[标题栏](../src/renderer/src/app-shell/chrome/TitlebarLeftControls.tsx)、[桌面帮助](../src/renderer/src/components/sidebar/chrome/help-menu-controller.tsx)和[底部状态栏](../src/renderer/src/components/status-bar/StatusBarSurface.tsx)的实际显示位置。
 
+- **共享主机手动断开**。桌面和 Web 保留用户的断开选择，重启或刷新后仍暂停自动重连。用户主动点连接或重新配对后才解除暂停。升级时核对当前连接状态和保存的重连偏好，Web 侧沿[设置接口](../src/renderer/src/web/preload-api/runtime/web-runtime-environments-api.ts)和[启动恢复](../src/renderer/src/web/web-preload-api.ts)检查。
+
+- **设置作用域**。BW 桌面采用 v1.4.272 的[页头主机选择](../src/renderer/src/components/settings/page/settings-page-renderer.tsx)。有已登记宿主或当前指向远端时，在多数设置页显示。Bots 和 W3 账号页保留各自的作用域。切换宿主时分别核对 Agent、终端和 Git 的读写目标，以及 BW 自有集成与隐私入口。
+
 - **批注交接与任务开工**。BW 批注复用原生 React Grab、浮动终端和草稿投递，改进 Skill 只由本机桌面准备。选中的批注带入浮窗中的未发送草稿，失败时重试同一个会话。GitHub、CodeHub 任务链接继续提供「在任务中打开」，BW 浮窗中的本仓 GitHub Issue 另有「开始修复」，沿原生工作区创建器选中实际宿主并预填草稿。升级时沿 [批注快捷键](../src/renderer/src/hooks/app-commands/use-global-keybindings.ts)、[助手入口](../src/renderer/src/workbench/improvement/open-assistant.ts)和[链接动作](../src/renderer/src/lib/browser/navigation/http-link-destinations.ts)核对。用户路径及证据见 [贡献 BW 规格](../docs/05-features/bw-contribution/spec.md)。
 
 - **左侧导航与工作区侧栏**。BW 壳由 [AppWorkspaceShell](../src/renderer/src/app-shell/AppWorkspaceShell.tsx) 挂载 [WorkbenchRail](../src/renderer/src/workbench/WorkbenchRail.tsx)，保留 BW 图标、导航和主机状态入口。[WorktreeSidebar](../src/renderer/src/app-shell/WorktreeSidebar.tsx) 将 [WorkbenchSidebarNav](../src/renderer/src/workbench/WorkbenchSidebarNav.tsx) 接入原生侧栏。[Sidebar](../src/renderer/src/components/sidebar/index.tsx) 在 BW 壳把原生 Bots 放在工作区块上方，工作区列表模式下工作区块不可折叠。[WorktreeList](../src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx) 复用原生列表，在已固定之后、项目工作区之前插入 BW 版本区。上游升级时按「Bots → 已固定 → 版本 → 项目」核对顺序，同时确认空主机状态下图标和入口仍可见，以及版本区下的新建、计划和验收入口仍可用。版本行为见 [版本工作区设计](../docs/05-features/version-workspace/design.md)。
 - **BW 侧栏筛选与项目移除**。BW 侧栏按宿主和原有工作区条件筛选，项目筛选控件及旧项目筛选值在 BW 壳内停用。项目墙、设置和主工作树的「移除项目」沿所选宿主的登记打开确认，核对宿主、路径和登记身份后只移除该登记。配对同名项目须核对工作树的逻辑宿主。见 [筛选入口](../src/renderer/src/components/sidebar/worktree-list/controls/workspace-options-menu-items.tsx)、[设置入口](../src/renderer/src/components/settings/page/settings-project-section-renderer.tsx)和[主工作树移除](../src/renderer/src/components/sidebar/workspace-actions/deletion/delete-worktree-flow.ts)。
-- **BW 的 W3 账户与浏览器会话**。设置提供 W3 登录，GitHub 继续使用现有集成。W3 专用浏览器配置可作为本机普通网页新标签的默认配置，优先尊重显式选择和已有项目配置。文档预览、配对和 SSH 工作区继续使用各自的原生路由。同步原生浏览器配置、标签创建和持久化时保留专用配置的隔离、公开列表过滤及退出清理。Orca 账户仍承接官方 Bot 的连接器授权。见 [W3 规格](../docs/05-features/w3-account/spec.md)、[浏览器配置解析](../src/renderer/src/store/slices/browser/profiles/browser-new-tab-profile.ts)和 [W3 宿主入口](../src/main/ipc/w3-account-ipc.ts)。
+- **BW 的 W3 账户与浏览器会话**。设置提供 W3 登录，GitHub 继续使用现有集成。W3 专用浏览器配置可作为本机普通网页新标签和从本机工作区终端或 Chat 打开的普通链接的默认配置，优先尊重显式选择和已有项目配置。文档预览、配对和 SSH 工作区继续使用各自的原生路由。同步原生浏览器配置、标签创建和持久化时保留专用配置的隔离、公开列表过滤及退出清理。Orca 账户仍承接官方 Bot 的连接器授权。见 [W3 规格](../docs/05-features/w3-account/spec.md)、[浏览器配置解析](../src/renderer/src/store/slices/browser/profiles/browser-new-tab-profile.ts)、[工作区链接入口](../src/renderer/src/lib/browser/workspace/workspace-browser-link-open.ts)和 [W3 宿主入口](../src/main/ipc/w3-account-ipc.ts)。
 
 - **底部帮助与首次设置**。BW 沿用原生首次设置和入门清单。[帮助菜单](../src/renderer/src/components/sidebar/chrome/help-menu-controller.tsx)提供「BW 入门」「探索 BW」，在入门里可重开初始设置（[PR #610](https://github.com/forcegravity1989/builder-workbench/pull/610)）。同步 [SetupGuideModal](../src/renderer/src/components/setup-guide/SetupGuideModal.tsx) 和 feature-wall 时保留 BW 的连接集成分流：各复用一张 GitHub 和 CodeHub 卡，当前环境任一登录即可完成任务与评审来源设置，WeLink 报告为可选，CloudBuild 在设置页；Orca 继续使用原生分步入口。保留 BW 当前项目的准备脚本目标；BW 入门撤下「启用 Orca CLI」，可见步骤、进度、默认选中与遥测共用七项定义，清单不主动探测 Orca CLI、Skills 和桌面权限。原生 Orca 清单、设置中的 CLI 管理和按需能力配置保留。首次设置完成或跳至项目设置时，无项目的 BW 从项目墙打开原生 `AddRepoDialog`；首次添加弹窗及从空墙重开的弹窗保留注册与刷新，取消或添加成功都留墙，由用户点项目卡进入工作区。常规添加保持原生工作区交接。同步 onboarding 与原生添加链时保留这一分流，见[引导矩阵](../docs/04-design-system/guidance.md)、[项目纳入规格](../docs/05-features/project-intake/spec.md)与 [PR #628](https://github.com/forcegravity1989/builder-workbench/pull/628)。
 - W03 构建交付在 BW 探索目录复用 W01/W02 播放器。同步浏览器页工具栏、源代码管理页头、差异打开和 contextual tours 时保留 BW 帮助入口及「在界面中跟做」接线。浏览器引导及其工具栏锚点随当前聚焦的本地页面挂载，已保留的后台页不能取消前台引导；离开当前页面时沿原生机制取消。探索跟做在弹窗关闭后定位可操作的浏览器。源代码管理问号在筛选展开时也可回看，打开差异完成本次引导。引导指向现有控件，样例不改变工作树、GitHub、批注或评审通知协议。见 [探索规格](../docs/05-features/explore-workbench/spec.md#w03-构建交付)。
@@ -212,7 +227,7 @@ CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也
 
 按智能体或用户旅程模块定期比较固定上游版本，同一批可以一个 PR 分多个 commit，也可拆 PR；共享依赖只保留一处实现，并检查全部消费者。每次同步覆盖更新 §0 对应行的采用范围、上游版本/SHA、BW PR 和核对日期；未重新核对的智能体保留原状态与日期。
 
-升级桌面基线时，以 BW main 和升级前的固定 Orca 版本定位 BW 对原生文件的改动，再沿新版的实际挂载和调用链逐项回看 §2.3。即使 BW 组件仍在仓内，也要确认入口能到达、参数和宿主仍正确。界面按使用者的点击路径核对，数据或分享协议核对最终写入位置，由对应 PR 留下新版证据。
+升级桌面基线时，以 BW main 和升级前的固定 Orca 版本定位 BW 对原生文件的改动，把新版改动与该差异按用户场景对照；沿重命名、拆分后的调用链继续核对 §2.3。检查范围包含自动合并的文件、BW 主动移除的入口，以及两套界面共用的样式、容器和显示条件。发现存量回退时优先恢复 BW main 原实现，接口变化处沿新版调用链做最小适配。界面按点击路径核对入口、位置和动作，数据或分享协议核对最终写入位置，由对应 PR 留下新版证据。
 
 原生差异分为上游已一致、原生代码移植、必要基线适配、BW 产品挂载/保留修正、上游有而本次未迁、固定上游无及未核对。上游已覆盖 BW 修正时，核对同一用户行为及其看护后删除被替代实现，不留双路径；每个保留改造在 PR 指明人可理解的场景、代码落点、看护用例或未验项。当前稳定边界写回本篇，逐文件对照、测试结果与取舍过程留在 PR，不新增常驻流水。
 

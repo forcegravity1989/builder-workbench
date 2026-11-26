@@ -38,9 +38,10 @@ function createPartitionResolver(
 export function resolveBrowserLinkSession(
   state: AppState,
   worktreeId: string,
-  hostId: ExecutionHostId
+  hostId: ExecutionHostId,
+  allowW3Default = false
 ): { sessionProfileId: string | null; sessionPartition: string | null } {
-  const profile = resolveNewBrowserTabProfile(state, worktreeId, hostId)
+  const profile = resolveNewBrowserTabProfile(state, worktreeId, hostId, allowW3Default)
   return {
     sessionProfileId: profile.sessionProfileId,
     sessionPartition: createPartitionResolver(state, hostId)(

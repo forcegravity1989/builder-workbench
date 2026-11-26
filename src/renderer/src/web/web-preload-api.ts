@@ -46,7 +46,10 @@ import { createWebJiraApi } from './preload-api/jira/web-jira-api'
 import { callRuntimeResult } from './runtime/client/web-runtime-calls'
 import { createWebRuntimeApi } from './preload-api/runtime/web-runtime-api'
 import { createRuntimeEnvironmentsApi } from './preload-api/runtime/web-runtime-environments-api'
-import { webRuntimeState } from './runtime/client/web-runtime-session'
+import {
+  manuallyDisconnectedEnvironmentIds,
+  webRuntimeState
+} from './runtime/client/web-runtime-session'
 import { createWebSettingsApi } from './preload-api/preferences/web-settings-api'
 import { createShellApi } from './preload-api/browser/web-shell-api'
 import { createWebSpeechApi } from './preload-api/agents/web-speech-api'
@@ -62,7 +65,11 @@ import { createWorktreesApi } from './preload-api/workspaces/web-worktrees-api'
 import { readStoredWebRuntimeEnvironment } from './pairing/web-runtime-environment'
 
 export function installWebPreloadApi(): void {
-  webRuntimeState.activeEnvironment = readStoredWebRuntimeEnvironment()
+  const environment = readStoredWebRuntimeEnvironment()
+  if (!webRuntimeState.activeEnvironment && environment?.reconnectOnLaunch === false) {
+    manuallyDisconnectedEnvironmentIds.add(environment.id)
+  }
+  webRuntimeState.activeEnvironment = environment
   const webWindow = window as unknown as { __ORCA_WEB_CLIENT__?: boolean }
   webWindow.__ORCA_WEB_CLIENT__ = true
   window.api = withFallback(createWebPreloadApi(), []) as PreloadApi

@@ -16,7 +16,8 @@ import { isWebRuntimeUnauthorizedError } from '../../runtime/client/web-runtime-
 import {
   createStoredWebRuntimeEnvironment,
   redactStoredWebRuntimeEnvironment,
-  saveStoredWebRuntimeEnvironment
+  saveStoredWebRuntimeEnvironment,
+  updateStoredEnvironmentReconnectOnLaunch
 } from '../../pairing/web-runtime-environment'
 import { translate } from '@/i18n/i18n'
 import { translateHostAccessLinkError } from '@/lib/remote-pairing/remote-pairing-copy'
@@ -192,14 +193,25 @@ export function createRuntimeEnvironmentsApi(): PreloadApi['runtimeEnvironments'
     disconnect: async ({ selector }) => {
       const environment = resolveEnvironment(selector)
       if (webRuntimeState.activeEnvironment?.id === environment.id) {
+        const disconnected = updateStoredEnvironmentReconnectOnLaunch(environment, false)
+        webRuntimeState.activeEnvironment = disconnected
         manuallyDisconnectedEnvironmentIds.add(environment.id)
         disconnectActiveRuntimeEnvironment()
+        return { disconnected: redactStoredWebRuntimeEnvironment(disconnected) }
       }
       return { disconnected: redactStoredWebRuntimeEnvironment(environment) }
     },
     connect: ({ selector, timeoutMs }) => {
       const environment = resolveEnvironment(selector)
       manuallyDisconnectedEnvironmentIds.delete(environment.id)
+      try {
+        webRuntimeState.activeEnvironment = updateStoredEnvironmentReconnectOnLaunch(
+          environment,
+          undefined
+        )
+      } catch (error) {
+        console.warn('[runtime-environments] failed to clear saved reconnect preference:', error)
+      }
       closeActiveRuntimeClients()
       return callEnvironmentEnvelope<RuntimeStatus>(
         environment.id,

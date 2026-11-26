@@ -237,6 +237,20 @@ export function updateStoredEnvironmentRuntimeId(
   return next
 }
 
+export function updateStoredEnvironmentReconnectOnLaunch(
+  environment: StoredWebRuntimeEnvironment,
+  reconnectOnLaunch: false | undefined
+): StoredWebRuntimeEnvironment {
+  const next = { ...environment }
+  if (reconnectOnLaunch === undefined) {
+    delete next.reconnectOnLaunch
+  } else {
+    next.reconnectOnLaunch = reconnectOnLaunch
+  }
+  saveStoredWebRuntimeEnvironment(next)
+  return next
+}
+
 export function isMixedContentWebSocket(endpoint: string): boolean {
   return window.location.protocol === 'https:' && endpoint.startsWith('ws://')
 }
