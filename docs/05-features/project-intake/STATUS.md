@@ -8,16 +8,18 @@ G1 的用户结果、范围和行为规格已确认。源码已接入统一原�
 
 原型和源码静态检查已完成，已有 Windows Electron 用例入口。真实远端名片评审、共享主机与多设备读回、分组多仓操作、完整进程重启和性能边界仍待对应环境验证。原型演示、renderer 重载和单机配置读回不替代这些证据。
 
+卡片按已确认原型整理信息，提供全局紧凑／详情切换、短目标预览点击展开及来源头像动画；来源明确为主机，不伪造真人名册，缺发布日期为“—”。本机真壳、组件样例及未验范围见 PR #713；主干更新后的复验与独立检视尚未完成，不以旧证据代替。
+
 ## 六环登记
 
-| 环 | 状态 | 当前依据与入口 |
-| --- | --- | --- |
-| 1 intent | ● | 用户结果、价值范围与排除见 [intent](intent.md)。 |
-| 2 spec | ● | 当前行为、PW-01—PW-09 判据及可点原型见 [spec](spec.md)。 |
-| 3 实现设计 | ◐ | 复用原生添加、项目墙、菜单、工作区和版本材料来源；多主机、分组和失败恢复尚未完整真壳验证。 |
-| 4 协议看护 | ◐ | 项目负责人 TOML 保真写入、原文冲突保护、个人／团队配置与来源过滤已有用例入口；远端评审和跨主机读回待验。 |
-| 5 验收点 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/acceptance/project-settings.spec.ts`，标题 `BW project settings: reviewed edits, conflict protection and filesystem read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目文件系统内容和 renderer 重载后的设置入口。 |
-| 6 用户旅程 E2E | ◐ | 旅程 ID W01；文件 `tests/e2e/workbench/journeys/w01-project-handoff.spec.ts`，标题 `BW first-run project handoff`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目卡留在墙上、用户点击后进入工作区。探索演示不计作真实旅程证据。 |
+| 环             | 状态 | 当前依据与入口                                                                                                                                                                                                                                                                             |
+| -------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 intent       | ●    | 用户结果、价值范围与排除见 [intent](intent.md)。                                                                                                                                                                                                                                           |
+| 2 spec         | ●    | 当前行为、PW-01—PW-09 判据及可点原型见 [spec](spec.md)。                                                                                                                                                                                                                                   |
+| 3 实现设计     | ◐    | 复用原生添加、项目墙、菜单、工作区和版本材料来源；多主机、分组和失败恢复尚未完整真壳验证。                                                                                                                                                                                                 |
+| 4 协议看护     | ◐    | 项目负责人 TOML 保真写入、原文冲突保护、个人／团队配置与来源过滤已有用例入口；远端评审和跨主机读回待验。                                                                                                                                                                                   |
+| 5 验收点 E2E   | ◐    | 旅程 ID W01；文件 `tests/e2e/workbench/acceptance/project-settings.spec.ts`，标题 `BW project settings: reviewed edits, conflict protection and filesystem read-back`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目文件系统内容和 renderer 重载后的设置入口。 |
+| 6 用户旅程 E2E | ◐    | 旅程 ID W01；文件 `tests/e2e/workbench/journeys/w01-project-handoff.spec.ts`，标题 `BW first-run project handoff`；执行项目 `electron-headless` 的真实 Electron / CI fixture；独立读回为项目卡留在墙上、用户点击后进入工作区。探索演示不计作真实旅程证据。                                 |
 
 ## W01 交叉索引
 

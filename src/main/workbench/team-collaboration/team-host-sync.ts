@@ -15,6 +15,7 @@ export type TeamHostSyncResult = { added: number; updated: number }
 
 export type TeamHostSyncDeps = {
   userDataPath: string
+  isCurrentBinding?: () => boolean
   /** Keeps a freshly saved host disconnected until the user connects it. */
   holdDisconnected: (environmentId: string) => void
   invalidateTransport: (environmentId: string) => Promise<void> | void
@@ -85,6 +86,9 @@ async function syncTeamHostsOnce(
   const managed = readManagedIds(deps.userDataPath)
   const result: TeamHostSyncResult = { added: 0, updated: 0 }
   for (const host of hosts) {
+    if (deps.isCurrentBinding?.() === false) {
+      break
+    }
     if (!host.orca_endpoint || host.member_id.toLowerCase() === currentMemberId?.toLowerCase()) {
       continue
     }

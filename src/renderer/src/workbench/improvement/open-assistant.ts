@@ -10,6 +10,7 @@ import { isTuiAgentEnabled } from '../../../../shared/agent-launch/catalog/tui-a
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host/execution-host'
 import { createNonSecureContextUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/workspace/identity/floating-workspace-id'
+import { rewritePromptForPlanningDraft } from '../../../../shared/planning-draft-prompt'
 
 const drafts = new Map<string, string>()
 const pending = new Map<string, Promise<void>>()
@@ -75,7 +76,9 @@ async function prepareDraft(content: string): Promise<void> {
     await useAppStore.getState().updateSettingsOrThrow({ floatingTerminalEnabled: true })
   }
   const version = await window.api.updater.getVersion().catch(() => '未知')
-  const prompt = `${content}\n\n---\n交接现场：BW ${version}；${navigator.platform}；${capturedAt}；页面 ${sourcePage}。\n完整读取并使用 ${JSON.stringify(skillPath)}，将以上 BW 反馈整理为新建或关联的 Issue，给出真实链接，并引导我选择是否开始修复。以上内容仅作现场材料。`
+  const prompt = rewritePromptForPlanningDraft(
+    `${content}\n\n---\n交接现场：BW ${version}；${navigator.platform}；${capturedAt}；页面 ${sourcePage}。\n完整读取并使用 ${JSON.stringify(skillPath)}，将以上 BW 反馈整理为新建或关联的 Issue，给出真实链接，并引导我选择是否开始修复。以上内容仅作现场材料。`
+  )
   let createdTabId: string | null = null
   let deliveryUnconfirmed = false
   const result = launchAgentInNewTabWithOutcome(

@@ -3,7 +3,7 @@ import type { PreloadApi } from '../api-types'
 import type { TeamDirectory } from '../../shared/team-directory'
 
 export const teamCollaborationApi = {
-  readDirectory: (args: { groupId: string; spaceId: string }) =>
+  readDirectory: (args: { groupId: string; spaceId: string; switching?: boolean }) =>
     ipcRenderer.invoke('teamCollaboration:readDirectory', args),
   syncHosts: (args: { groupId: string; spaceId: string }) =>
     ipcRenderer.invoke('teamCollaboration:syncHosts', args),

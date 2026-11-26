@@ -86,18 +86,39 @@ function requireDirectory(value: unknown): TeamDirectory {
 }
 
 export function registerTeamCollaborationHandlers(): void {
-  loadTeamIdentity(app.getPath('userData'))
+  const userDataPath = app.getPath('userData')
+  loadTeamIdentity(userDataPath)
+  let activeBinding: { groupId: string; spaceId: string } | undefined
   ipcMain.handle(
     'teamCollaboration:readDirectory',
-    async (_event, args: { groupId: string; spaceId: string }) => {
+    async (_event, args: { groupId: string; spaceId: string; switching?: boolean }) => {
       const groupId = requireId(args?.groupId, 'groupId')
       const spaceId = requireId(args?.spaceId, 'spaceId')
+      const switching = args.switching === true
+      const previousBinding = activeBinding
       const result = await readTeamDirectory({
         route: await resolveWelinkRoute(),
         groupId,
         spaceId
       })
-      rememberTeamIdentity(app.getPath('userData'), result.directory.hosts, result.currentMemberId)
+      if (activeBinding !== previousBinding) {
+        throw new Error('The team binding changed while reading the directory.')
+      }
+      if (
+        switching &&
+        !result.directory.hosts.some((host) => host.member_id === result.currentMemberId)
+      ) {
+        throw new Error('The signed-in WeLink account could not be matched to a team member.')
+      }
+      // Invalidate reads started before a successful change of binding.
+      if (
+        switching ||
+        previousBinding?.groupId !== groupId ||
+        previousBinding.spaceId !== spaceId
+      ) {
+        activeBinding = { groupId, spaceId }
+      }
+      rememberTeamIdentity(userDataPath, result.directory.hosts, result.currentMemberId)
       return result
     }
   )
@@ -107,14 +128,25 @@ export function registerTeamCollaborationHandlers(): void {
     async (_event, args: { groupId: string; spaceId: string }) => {
       const groupId = requireId(args?.groupId, 'groupId')
       const spaceId = requireId(args?.spaceId, 'spaceId')
+      const previousBinding = activeBinding
+      if (
+        previousBinding &&
+        (previousBinding.groupId !== groupId || previousBinding.spaceId !== spaceId)
+      ) {
+        return { added: 0, updated: 0 }
+      }
       const { directory, currentMemberId } = await readTeamDirectory({
         route: await resolveWelinkRoute(),
         groupId,
         spaceId
       })
-      rememberTeamIdentity(app.getPath('userData'), directory.hosts, currentMemberId)
+      if (activeBinding !== previousBinding) {
+        return { added: 0, updated: 0 }
+      }
+      rememberTeamIdentity(userDataPath, directory.hosts, currentMemberId)
       return syncTeamHosts(directory.hosts, currentMemberId, {
-        userDataPath: app.getPath('userData'),
+        userDataPath,
+        isCurrentBinding: () => activeBinding === previousBinding,
         holdDisconnected: markRuntimeEnvironmentManuallyDisconnected,
         invalidateTransport: invalidateRuntimeEnvironmentTransport
       })

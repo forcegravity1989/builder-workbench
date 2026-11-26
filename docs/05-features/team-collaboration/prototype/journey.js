@@ -51,6 +51,8 @@
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"></rect></svg>',
     FolderGit2:
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-git2 lucide-folder-git-2" aria-hidden="true" focusable="false"><path d="M18 19a5 5 0 0 1-5-5v8"></path><path d="M9 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v5"></path><circle cx="13" cy="12" r="2"></circle><circle cx="20" cy="19" r="2"></circle></svg>',
+    ArrowRightLeft:
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4M20 7H4m4 14-4-4 4-4M4 17h16"></path></svg>',
     ArrowLeft:
       '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left" aria-hidden="true" focusable="false"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>',
     Check:
@@ -85,9 +87,16 @@
   const teamName = '神盾局'
   const demoGroup = '938583054774198541'
   const demoSpaceId = '20065474'
+  const alternateGroup = '938583054774198542'
+  const alternateSpaceId = '20065475'
+  const bindingKey = (group, space) => `${group}|${space}`
   const demoProjectGroup = '300000000000000001'
   const employees = { lead: 'A0010001', lin: 'A0010002', chen: 'A0010003' }
-  const addresses = { lead: 'ws://192.0.2.9:6767', lin: 'ws://192.0.2.10:6768', chen: 'ws://192.0.2.11:6771' }
+  const addresses = {
+    lead: 'ws://192.0.2.9:6767',
+    lin: 'ws://192.0.2.10:6768',
+    chen: 'ws://192.0.2.11:6771'
+  }
   const dayMs = 86_400_000
   const auditRetentionDays = 14
   const auditLogDirectory = 'userData/logs/orca-shared-host/'
@@ -135,7 +144,7 @@
   const wallRepos = { lead: [], lin: ['star'], chen: ['star', 'board'] }
   const samplePairing = 'orca://pair?code=demo-antai'
   const charterOwner = '林安'
-  const key = 'bw-team-collaboration-342-bind-v3'
+  const key = 'bw-team-collaboration-342-bind-v4'
   const auditActionTaxonomy = [
     '连接共享主机',
     '查看工作树',
@@ -168,6 +177,10 @@
         {
           screen: 'wall',
           directoryDraft: null,
+          switchingTeam: false,
+          bindingPending: false,
+          bindingDraft: { group: '', space: '' },
+          bindingError: '',
           directoryBase: 'null',
           source: person === 'lead' ? 'lin' : person,
           panel: '',
@@ -187,7 +200,10 @@
 
   function fixture(ready = false) {
     return {
-      directory: ready ? seedDirectory() : null,
+      directories: { [bindingKey(demoGroup, demoSpaceId)]: ready ? seedDirectory() : null },
+      bindings: Object.fromEntries(
+        Object.keys(names).map((person) => [person, bindingKey(demoGroup, demoSpaceId)])
+      ),
       bound: ready
         ? { lead: true, lin: true, chen: true }
         : { lead: false, lin: false, chen: false },
@@ -236,7 +252,9 @@
         return fixture(false)
       }
       raw.bound ??= { lead: false, lin: false, chen: false }
-      raw.directory = normalizeDirectory(raw.directory)
+      for (const id of Object.keys(raw.directories)) {
+        raw.directories[id] = normalizeDirectory(raw.directories[id])
+      }
       raw.directoryEditable = { lead: true, lin: true, chen: true, ...raw.directoryEditable }
       raw.generatedLinks ??= raw.offered ? { lin: samplePairing } : {}
       raw.accessModes ??= { lead: {}, lin: {}, chen: {} }
@@ -355,11 +373,13 @@
 
   function seedDirectory() {
     const directory = blankDirectory(demoGroup, demoSpaceId)
-    directory.projects = [{
-      repo_id: catalogRepos.star.repoId,
-      name: catalogRepos.star.name,
-      repository: catalogRepos.star.repository,
-    }]
+    directory.projects = [
+      {
+        repo_id: catalogRepos.star.repoId,
+        name: catalogRepos.star.name,
+        repository: catalogRepos.star.repository
+      }
+    ]
     return syncDirectory(directory)
   }
 
@@ -370,9 +390,9 @@
     if (entry.repo_id && catalogRepos[entry.repo_id]) {
       return entry.repo_id
     }
-    return Object.keys(catalogRepos).find(
-      (id) => catalogRepos[id].repository === entry.repository
-    ) ?? ''
+    return (
+      Object.keys(catalogRepos).find((id) => catalogRepos[id].repository === entry.repository) ?? ''
+    )
   }
 
   function normalizeDirectory(directory) {
@@ -403,7 +423,7 @@
         ...entry,
         repo_id: repoId,
         name: entry.name ?? catalogRepos[repoId]?.name ?? '未命名项目',
-        repository: entry.repository ?? catalogRepos[repoId]?.repository ?? '',
+        repository: entry.repository ?? catalogRepos[repoId]?.repository ?? ''
       }
       delete normalized.sources
       return normalized
@@ -412,13 +432,23 @@
   }
 
   function localRepos(person = actor.value) {
-    return (wallRepos[person] ?? [])
-      .map((id) => [id, catalogRepos[id]])
-      .filter(([, repo]) => repo)
+    return (wallRepos[person] ?? []).map((id) => [id, catalogRepos[id]]).filter(([, repo]) => repo)
+  }
+
+  function activeDirectory(person = actor.value) {
+    return state.directories[state.bindings[person]] ?? null
+  }
+
+  function setActiveDirectory(directory, person = actor.value) {
+    state.directories[state.bindings[person]] = directory
+  }
+
+  function currentTeamName() {
+    return activeDirectory()?.team_group_id === alternateGroup ? '行星计划组' : teamName
   }
 
   function knownDirectory() {
-    return state.bound?.[actor.value] ? state.directory : null
+    return state.bound?.[actor.value] ? activeDirectory() : null
   }
 
   function directoryHostRecord(person, directory = knownDirectory()) {
@@ -433,7 +463,7 @@
     return state.teamEndpoints?.[person] ?? ''
   }
 
-  function hydrateEndpoints(directory = state.directory) {
+  function hydrateEndpoints(directory = activeDirectory()) {
     Object.keys(names).forEach((person) => {
       const endpoint = directoryHostRecord(person, directory)?.orca_endpoint
       if (endpoint) {
@@ -458,19 +488,27 @@
     if (!teamProject(repoId, directory)) {
       return []
     }
-    return Object.keys(wallRepos).filter((person) => (wallRepos[person] ?? []).includes(repoId) && hosts[person])
+    return Object.keys(wallRepos).filter(
+      (person) => (wallRepos[person] ?? []).includes(repoId) && hosts[person]
+    )
   }
 
   function accessLevel(owner, visitor = actor.value) {
     if (owner === visitor) {
       return 'owner'
     }
-    return state.accessModes?.[visitor]?.[owner] ??
+    return (
+      state.accessModes?.[visitor]?.[owner] ??
       (state.full && owner === 'lin' && visitor === 'chen' ? 'full' : 'readonly')
+    )
   }
 
   function registered(person, repoId = 'star', directory = knownDirectory()) {
-    return Boolean(teamProject(repoId, directory) && directoryHost(person, directory) && sourceOwners(repoId, directory).includes(person))
+    return Boolean(
+      teamProject(repoId, directory) &&
+      directoryHost(person, directory) &&
+      sourceOwners(repoId, directory).includes(person)
+    )
   }
 
   function canReadTeamSource(owner, visitor = actor.value, repoId = 'star') {
@@ -483,7 +521,11 @@
   }
 
   function sourceAvailable(owner, repoId = 'star') {
-    return owner === actor.value || accessLevel(owner) === 'full' || canReadTeamSource(owner, actor.value, repoId)
+    return (
+      owner === actor.value ||
+      accessLevel(owner) === 'full' ||
+      canReadTeamSource(owner, actor.value, repoId)
+    )
   }
 
   function sourceValue(value) {
@@ -533,14 +575,14 @@
       notify('请先填写群空间 ID，再同步团队目录。')
       return
     }
-    if (current().directoryBase !== JSON.stringify(state.directory)) {
+    if (current().directoryBase !== JSON.stringify(activeDirectory())) {
       notify('群空间目录已更新。保留了你的草稿，请先核对最新目录。')
       return
     }
-    state.directory = syncDirectory(structuredClone(draft))
+    setActiveDirectory(syncDirectory(structuredClone(draft)))
     hydrateEndpoints()
     state.bound[actor.value] = true
-    current().directoryBase = JSON.stringify(state.directory)
+    current().directoryBase = JSON.stringify(activeDirectory())
     notify('已刷新群成员、主机地址和团队项目')
     render()
   }
@@ -569,7 +611,7 @@
         if (!repo) {
           return
         }
-        const target = draft ?? state.directory
+        const target = draft ?? activeDirectory()
         target.projects ??= []
         if (target.projects.some((entry) => repoIdForEntry(entry) === repoId)) {
           notify('这个项目已经登记在群空间。')
@@ -578,15 +620,15 @@
         target.projects.push({
           repo_id: repo.repoId,
           name: repo.name,
-          repository: repo.repository,
+          repository: repo.repository
         })
         if (draft) {
           render()
           return
         }
-        state.directory = syncDirectory(target)
-        current().directoryDraft = structuredClone(state.directory)
-        current().directoryBase = JSON.stringify(state.directory)
+        setActiveDirectory(syncDirectory(target))
+        current().directoryDraft = structuredClone(activeDirectory())
+        current().directoryBase = JSON.stringify(activeDirectory())
         notify(`已登记${repo.name}，项目墙将显示为团队项目`)
         render()
       }
@@ -596,17 +638,30 @@
   function teamDirectory() {
     const close = iconButton('X', '关闭团队设置', 'panel')
     const draft = current().directoryDraft
-    if (!draft) {
-      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="连接团队"><header class="row between"><h2>连接团队</h2>${close}</header><form id="team-lookup"><div class="directory-id-grid"><label class="field"><span>WeLink 群 ID</span><input class="input" name="group" inputmode="numeric" pattern="[0-9]+" placeholder="${demoGroup}" required></label><label class="field"><span>群空间 ID</span><input class="input" name="space" inputmode="numeric" pattern="[0-9]+" placeholder="${demoSpaceId}" required></label></div><footer class="dialog-actions"><button type="submit" class="btn btn-primary">绑定团队</button></footer></form></section></div>`
+    if (!draft || current().switchingTeam) {
+      const switching = Boolean(draft)
+      const dirty = switching && JSON.stringify(draft) !== current().directoryBase
+      const pending = current().bindingPending
+      return `<div class="overlay"><section class="surface-dialog team-bind-dialog" role="dialog" aria-label="${switching ? '切换团队' : '连接团队'}">
+        <header class="row between"><h2>${switching ? '切换团队' : '连接团队'}</h2>${iconButton('X', switching ? '取消切换团队' : '关闭团队设置', switching ? 'cancel-team-switch' : 'panel', { disabled: pending })}</header>
+        <form id="team-lookup"><div class="directory-id-grid">
+          <label class="field"><span>WeLink 群 ID</span><input class="input" name="group" aria-label="WeLink 群 ID" inputmode="numeric" pattern="[0-9]+" autocomplete="off" value="${esc(current().bindingDraft.group)}" required ${pending ? 'disabled' : ''}></label>
+          <label class="field"><span>群空间 ID</span><input class="input" name="space" aria-label="群空间 ID" inputmode="numeric" pattern="[0-9]+" autocomplete="off" value="${esc(current().bindingDraft.space)}" required ${pending ? 'disabled' : ''}></label>
+        </div>
+        ${switching ? `<p class="binding-note">已保存的远程主机会保留，可在「管理远程主机」移除。</p>${dirty ? '<p class="binding-note binding-warning">切换后将丢弃未保存的修改。</p>' : ''}` : ''}
+        <p id="binding-error" class="binding-error" role="alert">${esc(current().bindingError)}</p>
+        <footer class="dialog-actions">${switching ? button('取消', 'cancel-team-switch', { kind: 'ghost', disabled: pending }) : ''}<button type="submit" class="btn btn-primary" ${pending ? 'disabled' : ''}>${pending ? '正在读取团队…' : switching ? '读取并切换' : '绑定团队'}</button></footer></form>
+      </section></div>`
     }
     const writable = state.directoryEditable[actor.value]
     const people = ['lead', 'lin', 'chen']
       .map((id) => {
         const member = weLinkMember(id)
         const endpoint = endpointFor(id, draft)
-        const fill = id === actor.value && writable
-          ? iconButton('Link2', endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share')
-          : ''
+        const fill =
+          id === actor.value && writable
+            ? iconButton('Link2', endpoint ? '一键填入' : '一键生成并填入', 'fill-own-share')
+            : ''
         return `<tr><td><span class="row member-person"><img class="avatar team-avatar" src="${avatarAssets[id]}" alt="${member.name}头像"><span title="${member.member_id}"><strong>${member.name}</strong><small class="member-role">${id === 'lead' ? '群主' : '成员'}</small></span></span></td><td><div class="host-cell"><div class="row wrap"><input class="input member-address" aria-label="${hostLabel(id)} Orca 共享地址" data-address="${id}" value="${esc(endpoint)}" placeholder="Orca 共享地址"${id === actor.value && writable ? '' : ' readonly'}><span class="host-actions">${fill}</span></div></div></td></tr>`
       })
       .join('')
@@ -621,9 +676,15 @@
       : '<p class="field-note">群空间还没有登记团队项目。</p>'
     return `<div class="overlay"><section class="surface-dialog team-directory" role="dialog" aria-label="团队设置">
       <header class="row between"><h2>团队设置</h2>${close}</header>
-      <div class="directory-scroll"><div class="directory-links"><label class="directory-id-field"><small>团队群 ID</small><input class="input" inputmode="numeric" data-directory-field="team_group_id" value="${esc(draft.team_group_id ?? '')}" /></label><label class="directory-id-field"><small>群空间 ID</small><input class="input" inputmode="numeric" data-directory-field="team_space_id" value="${esc(draft.team_space_id ?? '')}" /></label></div>
-       <div class="row between"><h3>成员与主机</h3><div class="row">${iconButton('RefreshCw', '刷新团队目录', 'refresh-directory')}</div></div>
-      <div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>主机与 Orca 地址</th></tr></thead><tbody>${people}</tbody></table></div>
+      <div class="directory-links">
+        <dl class="directory-identifiers">
+          <div><dt>团队群 ID</dt><dd>${esc(draft.team_group_id)}</dd></div>
+          <div><dt>群空间 ID</dt><dd>${esc(draft.team_space_id)}</dd></div>
+        </dl>
+        ${button(`${icon('ArrowRightLeft')} 切换团队`, 'switch-team', { kind: 'ghost' })}
+      </div>
+      <div class="row between"><h3>成员与主机</h3><div class="row"><span class="prototype-tooltip">${iconButton('RefreshCw', '刷新当前团队目录', 'refresh-directory').replace(' title="刷新当前团队目录"', ' aria-describedby="refresh-team-tip"')}<span role="tooltip" id="refresh-team-tip">刷新当前团队目录</span></span></div></div>
+      <div class="directory-scroll"><div class="table-scroll"><table class="table members-table" aria-label="成员与主机"><thead><tr><th>成员</th><th>主机与 Orca 地址</th></tr></thead><tbody>${people}</tbody></table></div>
       <div class="row between directory-project-head"><h3>团队项目</h3><div class="row">${writable ? button(`${icon('Plus')} 登记项目`, 'register-project', { kind: 'ghost' }) : ''}</div></div>
       ${projectTable}
       </div><footer class="row between directory-footer">${button('查看群空间文件', 'preview-directory', { kind: 'ghost' })}${writable ? button('保存到群空间', 'save-directory', { kind: 'primary' }) : '<span class="field-note">你有查看权限，编辑权限由 WeLink 群空间管理。</span>'}</footer>
@@ -694,7 +755,7 @@
     const personalCount = localRepos().filter(([repoId]) => !teamIds.has(repoId)).length
     const count = teamCount + personalCount
     const team = directory
-      ? `<p class="team-wall-label">${icon('UsersRound')} ${teamName} <small>${actor.value === 'lead' ? '群主' : '成员'}</small></p>`
+      ? `<p class="team-wall-label">${icon('UsersRound')} ${currentTeamName()} <small>${actor.value === 'lead' ? '群主' : '成员'}</small></p>`
       : ''
     const heading = `<header class="row between wall-heading"><div><h1>项目墙 <small>${count} 个项目</small></h1>${team}</div><div class="wall-actions" aria-label="项目墙操作">
       ${iconButton('CircleHelp', '项目墙帮助', 'help')}${iconButton('RefreshCw', '刷新项目目录和墙卡信息', 'refresh')}${iconButton('UsersRound', '团队设置', 'panel', { value: 'team', added: true })}${iconButton('Plus', '添加项目', 'legacy-add')}${iconButton('X', '关闭项目墙', 'open-workspace', { value: `${desktop.source}|${desktop.repoId}` })}
@@ -711,7 +772,12 @@
     return accessLevel(owner) === 'full'
   }
 
-  function audit(owner, action, result, resource = `${catalogRepos[current().repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`) {
+  function audit(
+    owner,
+    action,
+    result,
+    resource = `${catalogRepos[current().repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`
+  ) {
     const user = names[actor.value]
     state.logs[owner] ??= []
     state.logs[owner].unshift([Date.now(), `${user} · ${user}桌面`, resource, action, result])
@@ -728,9 +794,18 @@
       '结束资源订阅'
     ])
     const allowed = accessLevel(owner) === 'full' || readActions.has(action)
-    const result = allowed ? '已放行' : action === '未归类动作' ? '已拒绝 · 未知动作' : '已拒绝 · 团队只读'
+    const result = allowed
+      ? '已放行'
+      : action === '未归类动作'
+        ? '已拒绝 · 未知动作'
+        : '已拒绝 · 团队只读'
     if (!allowed || !readActions.has(action) || action === '连接共享主机') {
-      audit(owner, action, result, `${catalogRepos[repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`)
+      audit(
+        owner,
+        action,
+        result,
+        `${catalogRepos[repoId]?.name ?? project} · ${hosts[owner]?.tree ?? '共享主机'}`
+      )
     }
     return allowed
   }
@@ -755,10 +830,23 @@
   }
 
   function remoteHostPopover() {
-    const connections = Object.keys(names).filter((owner) => owner !== actor.value && state.teamConnections?.[actor.value]?.[owner])
-    const available = Object.keys(names).filter((owner) => owner !== actor.value && endpointFor(owner) && !state.teamConnections?.[actor.value]?.[owner])
-    const row = (owner, connected) => `<div class="remote-host-row"><div class="remote-host-main"><span class="remote-host-dot${connected ? ' is-connected' : ''}"></span><span><strong>${hostLabel(owner)}</strong><small>${connected ? '已连接 · 只读' : '已登记 · 未连接'}</small></span></div>${button(connected ? '断开' : '连接', connected ? 'disconnect-host' : 'quick-connect-host', { value: owner, kind: 'ghost' })}</div>`
-    return `<div class="remote-host-popover" role="dialog" aria-label="远程主机"><header class="row between"><strong>远程主机</strong>${iconButton('RefreshCw', '刷新远程主机', 'refresh-remote-hosts')}</header>${connections.concat(available).map((owner) => row(owner, connections.includes(owner))).join('') || '<p class="field-note">团队主机登记后会显示在这里。</p>'}<footer>${button('管理远程主机…', 'open-remote-settings', { kind: 'ghost' })}</footer></div>`
+    const connections = Object.keys(names).filter(
+      (owner) => owner !== actor.value && state.teamConnections?.[actor.value]?.[owner]
+    )
+    const available = Object.keys(names).filter(
+      (owner) =>
+        owner !== actor.value &&
+        endpointFor(owner) &&
+        !state.teamConnections?.[actor.value]?.[owner]
+    )
+    const row = (owner, connected) =>
+      `<div class="remote-host-row"><div class="remote-host-main"><span class="remote-host-dot${connected ? ' is-connected' : ''}"></span><span><strong>${hostLabel(owner)}</strong><small>${connected ? '已连接 · 只读' : '已登记 · 未连接'}</small></span></div>${button(connected ? '断开' : '连接', connected ? 'disconnect-host' : 'quick-connect-host', { value: owner, kind: 'ghost' })}</div>`
+    return `<div class="remote-host-popover" role="dialog" aria-label="远程主机"><header class="row between"><strong>远程主机</strong>${iconButton('RefreshCw', '刷新远程主机', 'refresh-remote-hosts')}</header>${
+      connections
+        .concat(available)
+        .map((owner) => row(owner, connections.includes(owner)))
+        .join('') || '<p class="field-note">团队主机登记后会显示在这里。</p>'
+    }<footer>${button('管理远程主机…', 'open-remote-settings', { kind: 'ghost' })}</footer></div>`
   }
 
   function rail(screen) {
@@ -969,7 +1057,8 @@
   function nativeGrantRows(owner) {
     const endpoint = endpointFor(owner)
     const visitors = Object.keys(names).filter(
-      (visitor) => visitor !== owner && endpoint && state.teamConnections?.[visitor]?.[owner] === endpoint
+      (visitor) =>
+        visitor !== owner && endpoint && state.teamConnections?.[visitor]?.[owner] === endpoint
     )
     if (!visitors.length) {
       return '<p class="field-note">尚无共享服务器访问权限。其他团队主机连接后会出现在这里。</p>'
@@ -1006,8 +1095,9 @@
 
   function connectingServer() {
     const desktop = current()
-    const targets = Object.keys(names)
-      .filter((owner) => owner !== actor.value && (endpointFor(owner) || state.generatedLinks?.[owner]))
+    const targets = Object.keys(names).filter(
+      (owner) => owner !== actor.value && (endpointFor(owner) || state.generatedLinks?.[owner])
+    )
     const target = desktop.connectionTarget ?? targets[0] ?? ''
     const targetEndpoint = target ? endpointFor(target) : ''
     const targetAccess = targetEndpoint
@@ -1017,8 +1107,13 @@
       ? `<form id="pair-form" class="pair-form"><label class="field">目标主机<select class="input" name="owner" required>${targets.map((owner) => `<option value="${owner}"${owner === target ? ' selected' : ''}>${hostLabel(owner)}</option>`).join('')}</select></label>${targetAccess}<footer class="dialog-actions">${button('取消', 'add-server', { kind: 'ghost' })}<button class="btn btn-primary" type="submit"${targets.length ? '' : ' disabled'}>连接</button></footer></form>`
       : ''
     const connected = Object.keys(names)
-      .filter((owner) => owner !== actor.value && canReadTeamSource(owner, actor.value, desktop.repoId))
-      .map((owner) => `<p>${hostLabel(owner)} · 已连接 · ${accessLevel(owner) === 'full' ? '完全访问' : '只读'} · 同一 Orca 共享连接</p>`)
+      .filter(
+        (owner) => owner !== actor.value && canReadTeamSource(owner, actor.value, desktop.repoId)
+      )
+      .map(
+        (owner) =>
+          `<p>${hostLabel(owner)} · 已连接 · ${accessLevel(owner) === 'full' ? '完全访问' : '只读'} · 同一 Orca 共享连接</p>`
+      )
       .join('')
     return `<section class="muted-frame"><header class="row between"><h2>连接到远程服务器</h2>${button(`${icon('Plus')} 添加服务器`, 'add-server')}</header>${connected || '<p class="field-note">团队主机会出现在项目墙，但默认不会自动建立连接。</p>'}${form}</section>`
   }
@@ -1037,13 +1132,14 @@
     show,
     panel: (value) => {
       const desktop = current()
+      desktop.switchingTeam = false
       if (value === 'team') {
         if (!state.bound[actor.value]) {
           desktop.directoryDraft = null
           desktop.directoryBase = 'null'
         } else {
-          desktop.directoryDraft = structuredClone(state.directory ?? blankDirectory())
-          desktop.directoryBase = JSON.stringify(state.directory)
+          desktop.directoryDraft = structuredClone(activeDirectory() ?? blankDirectory())
+          desktop.directoryBase = JSON.stringify(activeDirectory())
         }
       }
       if (
@@ -1068,6 +1164,23 @@
       notify('')
       render()
     },
+    'switch-team': () => {
+      current().switchingTeam = true
+      current().bindingDraft = { group: '', space: '' }
+      current().bindingError = ''
+      notify('')
+      render()
+      surface.querySelector('input[name="group"]')?.focus()
+    },
+    'cancel-team-switch': () => {
+      if (current().bindingPending) {
+        return
+      }
+      current().switchingTeam = false
+      notify('')
+      render()
+      surface.querySelector('[data-action="switch-team"]')?.focus()
+    },
     'open-workspace': enterSource,
     reset: () => {
       state = fixture()
@@ -1075,6 +1188,13 @@
       actor.value = 'lead'
       notify('')
       render()
+    },
+    'review-791': () => {
+      state = fixture(true)
+      desktops = resetDesktops()
+      actor.value = 'lin'
+      notify('')
+      actions.panel('team')
     },
     sample: () => {
       state = fixture(true)
@@ -1095,11 +1215,11 @@
         notify('请先保存当前目录修改。')
         return
       }
-      state.directory = syncDirectory(state.directory)
+      setActiveDirectory(syncDirectory(activeDirectory()))
       hydrateEndpoints()
-      desktop.directoryDraft = structuredClone(state.directory)
-      desktop.directoryBase = JSON.stringify(state.directory)
-      notify('已从 WeLink 群和成员项目墙刷新团队目录')
+      desktop.directoryDraft = structuredClone(activeDirectory())
+      desktop.directoryBase = JSON.stringify(activeDirectory())
+      notify('已刷新当前团队的成员、主机和项目')
       render()
     },
     'register-project': () => registerProjectDialog(current().directoryDraft),
@@ -1111,7 +1231,10 @@
     },
     'fill-own-share': () => {
       const draft = current().directoryDraft
-      const endpoint = state.teamEndpoints?.[actor.value] ?? addresses[actor.value] ?? `ws://192.0.2.${12 + Object.keys(names).indexOf(actor.value)}:${6770 + Object.keys(names).indexOf(actor.value)}`
+      const endpoint =
+        state.teamEndpoints?.[actor.value] ??
+        addresses[actor.value] ??
+        `ws://192.0.2.${12 + Object.keys(names).indexOf(actor.value)}:${6770 + Object.keys(names).indexOf(actor.value)}`
       const host = draft?.hosts?.find((entry) => entry.member_id === employees[actor.value])
       if (!draft || !host || !endpoint) {
         notify('当前主机暂时无法生成 Orca 共享地址。')
@@ -1120,11 +1243,13 @@
       host.orca_endpoint = endpoint
       state.teamEndpoints[actor.value] = endpoint
       state.generatedLinks[actor.value] ??= `orca://pair?code=demo-${actor.value}`
-      state.directory = syncDirectory(structuredClone(draft))
+      setActiveDirectory(syncDirectory(structuredClone(draft)))
       hydrateEndpoints()
-      current().directoryDraft = structuredClone(state.directory)
-      current().directoryBase = JSON.stringify(state.directory)
-      notify(`已${addresses[actor.value] ? '带入' : '生成并填入'}${hostLabel(actor.value)}的 Orca 共享地址`)
+      current().directoryDraft = structuredClone(activeDirectory())
+      current().directoryBase = JSON.stringify(activeDirectory())
+      notify(
+        `已${addresses[actor.value] ? '带入' : '生成并填入'}${hostLabel(actor.value)}的 Orca 共享地址`
+      )
       render()
     },
     'legacy-add': () => {
@@ -1146,7 +1271,11 @@
       const desktop = current()
       desktop.tab = value
       if (desktop.source !== actor.value) {
-        authorizeRemoteAction(desktop.source, value === 'terminal' ? '查看终端输出' : '查看已有会话', desktop.repoId)
+        authorizeRemoteAction(
+          desktop.source,
+          value === 'terminal' ? '查看终端输出' : '查看已有会话',
+          desktop.repoId
+        )
       }
       render()
     },
@@ -1224,7 +1353,8 @@
         return
       }
       state.generatedLinks ??= {}
-      state.generatedLinks[owner] = owner === 'lin' ? samplePairing : `orca://pair?code=demo-${owner}`
+      state.generatedLinks[owner] =
+        owner === 'lin' ? samplePairing : `orca://pair?code=demo-${owner}`
       state.offered = true
       state.teamEndpoints[owner] = addresses[owner]
       notify(`已生成${hostLabel(owner)}的 Orca 访问链接。连接建立后默认只读。`)
@@ -1294,7 +1424,8 @@
           render()
         }
       )
-    },    'new-session': () => {
+    },
+    'new-session': () => {
       if (readOnly()) {
         const owner = current().source
         const repoId = current().repoId
@@ -1342,23 +1473,19 @@
   })
 
   surface.addEventListener('input', (event) => {
+    if (event.target.matches('#team-lookup input[name]')) {
+      current().bindingDraft[event.target.name] = event.target.value
+    }
     if (event.target.dataset.auditFilter === 'search') {
       updateAuditFilter(event.target)
     }
     if (event.target.matches('input[data-address]')) {
       const person = event.target.dataset.address
-      const host = current().directoryDraft?.hosts?.find((entry) => entry.member_id === employees[person])
+      const host = current().directoryDraft?.hosts?.find(
+        (entry) => entry.member_id === employees[person]
+      )
       if (host) {
         host.orca_endpoint = event.target.value.trim()
-      }
-    }
-    if (event.target.matches('input[data-directory-field]')) {
-      const field = event.target.dataset.directoryField
-      if (field === 'team_group_id' || field === 'team_space_id') {
-        const draft = current().directoryDraft
-        if (draft) {
-          draft[field] = event.target.value.trim()
-        }
       }
     }
     if (event.target.hasAttribute('data-filter')) {
@@ -1381,26 +1508,68 @@
       dialog.close()
       confirmForm(data)
     } else if (event.target.id === 'team-lookup') {
-      if (data.get('group') !== demoGroup) {
-        notify(`样例只支持群号 ${demoGroup}`)
-        return
-      }
-      if (data.get('space') !== demoSpaceId) {
-        notify(`样例只支持群空间 ${demoSpaceId}`)
-        return
-      }
-      state.bound[actor.value] = true
-      state.directory = syncDirectory(
-        state.directory?.team_group_id === data.get('group')
-          ? state.directory
-          : blankDirectory(data.get('group'), data.get('space'))
-      )
-      hydrateEndpoints()
+      const person = actor.value
+      const submittedState = state
       const desktop = current()
-      desktop.directoryDraft = structuredClone(state.directory)
-      desktop.directoryBase = JSON.stringify(state.directory)
-      notify('')
-      render()
+      if (desktop.bindingPending) {
+        return
+      }
+      const group = String(data.get('group')).trim()
+      const space = String(data.get('space')).trim()
+      const valid =
+        (group === demoGroup && space === demoSpaceId) ||
+        (group === alternateGroup && space === alternateSpaceId)
+      const fail = document.querySelector('#switch-result').value === 'failure'
+      desktop.bindingPending = true
+      desktop.bindingError = ''
+      const form = event.target
+      for (const control of form.elements) {
+        control.disabled = true
+      }
+      form.querySelector('button[type="submit"]').textContent = '正在读取团队…'
+      form.querySelector('#binding-error').textContent = ''
+      const closeButton = surface.querySelector('[aria-label="取消切换团队"]')
+      if (closeButton) {
+        closeButton.disabled = true
+      }
+      setTimeout(() => {
+        if (state !== submittedState || desktops[person] !== desktop) {
+          return
+        }
+        desktop.bindingPending = false
+        if (!valid || fail) {
+          desktop.bindingError = desktop.switchingTeam
+            ? '未能读取新团队，当前团队保持不变。核对两个 ID 后重试。'
+            : '未能读取团队目录，核对两个 ID 后重试。'
+          if (actor.value === person) {
+            render()
+          }
+          return
+        }
+        state.bindings[person] = bindingKey(group, space)
+        if (!activeDirectory(person)) {
+          const directory = blankDirectory(group, space)
+          if (group === alternateGroup) {
+            directory.projects = [
+              {
+                repo_id: 'board',
+                name: catalogRepos.board.name,
+                repository: catalogRepos.board.repository
+              }
+            ]
+          }
+          setActiveDirectory(syncDirectory(directory), person)
+        }
+        state.bound[person] = true
+        hydrateEndpoints(activeDirectory(person))
+        desktop.directoryDraft = structuredClone(activeDirectory(person))
+        desktop.directoryBase = JSON.stringify(activeDirectory(person))
+        desktop.switchingTeam = false
+        if (actor.value === person) {
+          notify('已读取并切换团队')
+        }
+        render()
+      }, 650)
     } else if (event.target.id === 'review-form' && data.get('recipient') === 'lead') {
       state.review = { approved: false, comment: '' }
       current().panel = ''
@@ -1410,7 +1579,11 @@
       const owner = String(data.get('owner') || '')
       const link = String(data.get('link') || '')
       const endpoint = endpointFor(owner)
-      if (!owner || owner === actor.value || (!endpoint && (!state.generatedLinks?.[owner] || link !== state.generatedLinks[owner]))) {
+      if (
+        !owner ||
+        owner === actor.value ||
+        (!endpoint && (!state.generatedLinks?.[owner] || link !== state.generatedLinks[owner]))
+      ) {
         notify('群空间还没有这个主机的 Orca 地址，请让主机持有人先登记共享地址。')
         return
       }
@@ -1454,9 +1627,20 @@
     if (event.key !== 'Escape' || dialog.open) {
       return
     }
+    if (current().switchingTeam) {
+      actions['cancel-team-switch']()
+      return
+    }
     current().panel = ''
     current().notifications = false
     render()
   })
-  render()
+  const params = new URLSearchParams(location.search)
+  if (params.get('review') === '791') {
+    state = fixture(true)
+    actor.value = 'lin'
+    actions.panel('team')
+  } else {
+    render()
+  }
 })()

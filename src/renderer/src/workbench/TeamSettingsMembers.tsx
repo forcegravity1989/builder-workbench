@@ -9,6 +9,7 @@ type TeamSettingsMembersProps = {
   hosts: TeamDirectoryMember[]
   currentMemberId: string | null
   loading: boolean
+  disabled: boolean
   generatingHostId: string | null
   onRefresh: () => void
   onEndpointChange: (memberId: string, endpoint: string) => void
@@ -43,6 +44,7 @@ export function TeamSettingsMembers({
   hosts,
   currentMemberId,
   loading,
+  disabled,
   generatingHostId,
   onRefresh,
   onEndpointChange,
@@ -55,16 +57,23 @@ export function TeamSettingsMembers({
     <section className="space-y-1.5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">成员与主机</h3>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={onRefresh}
-          disabled={loading}
-          aria-label="刷新团队目录"
-        >
-          <RefreshCw className={loading ? 'size-3.5 animate-spin' : 'size-3.5'} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onRefresh}
+              disabled={disabled}
+              aria-label="刷新当前团队目录"
+            >
+              <RefreshCw className={loading ? 'size-3.5 animate-spin' : 'size-3.5'} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={4}>
+            刷新当前团队目录
+          </TooltipContent>
+        </Tooltip>
       </div>
       {orderedHosts.length === 0 ? (
         <p className="text-sm text-muted-foreground">读取目录后显示成员与主机。</p>
@@ -102,7 +111,7 @@ export function TeamSettingsMembers({
                             aria-label={`${displayName} 的 Orca 地址`}
                             value={host.orca_endpoint ?? ''}
                             placeholder="Orca 共享地址"
-                            readOnly={!isCurrent}
+                            readOnly={!isCurrent || disabled}
                             onChange={(event) =>
                               onEndpointChange(host.member_id, event.target.value)
                             }
@@ -116,7 +125,7 @@ export function TeamSettingsMembers({
                                     variant="ghost"
                                     size="icon-sm"
                                     onClick={() => onGenerateHostAddress(host.member_id)}
-                                    disabled={generatingHostId !== null}
+                                    disabled={disabled}
                                     aria-label={
                                       host.orca_endpoint
                                         ? '一键填入 Orca 地址'

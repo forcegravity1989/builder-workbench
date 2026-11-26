@@ -196,6 +196,10 @@ function DialogContent({
           if (busy) {
             event.preventDefault()
           }
+          const target = event.detail.originalEvent.target
+          if (target instanceof Element && target.closest('[data-sonner-toaster]')) {
+            event.preventDefault()
+          }
           onPointerDownOutside?.(event)
         }}
         onInteractOutside={(event) => {
