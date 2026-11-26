@@ -194,6 +194,8 @@ git rev-parse 'v1.4.272^{commit}'
 
 - **工作树悬停操作与选中状态**。BW 工作树卡片在 [默认卡片模板](../src/renderer/src/components/sidebar/workspace-card/template/default-workspace-card.json) 中接入固定、休眠和删除快捷操作，沿用既有可见条件、工作树身份和确认流程。核对普通工作树、主工作树及配对宿主上的同名工作树。打开 BW 工件整页时，[工作区列表](../src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx) 清除旧工作树卡片的高亮。
 
+- **知识库与存储检查**。BW 最左导航的[知识库入口](../src/renderer/src/workbench/project-page-state.ts)在主窗口打开 BW 文档树及正文，并保留当前项目来源。Orca 的「空间（测试版）」从[状态栏资源面板](../src/renderer/src/components/status-bar/resources/ResourceUsageStatusSegment.tsx)打开，用于检查工作区磁盘占用。升级时核对[打开动作](../src/renderer/src/store/slices/ui/ui-slice-view-actions.ts)的窗口目标、知识库返回路径和项目数据来源。
+
 ### 2.4 CodeHub 边界
 
 CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也不通过 `gh`/`glab` 降级处理。CodeHub service、`codehub:*` RPC、任务来源和 GitHub 更新路径保持分离；详细行为见 [CodeHub 特性](../docs/05-features/codehub/STATUS.md) 与 [CodeHub 指南](../docs/03-guide/codehub-cli.md)。

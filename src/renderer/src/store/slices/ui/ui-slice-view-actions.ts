@@ -74,9 +74,15 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
         worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'automations'),
         automationsPageNextVisitMode: 'push'
       })),
-    openSpacePage: () => {
-      get().recordFeatureInteraction?.('workspace-cleanup')
-      if (typeof window !== 'undefined' && window.api?.workspaceSpace?.openWindow) {
+    openSpacePage: (presentation) => {
+      if (presentation !== 'inline') {
+        get().recordFeatureInteraction?.('workspace-cleanup')
+      }
+      if (
+        presentation !== 'inline' &&
+        typeof window !== 'undefined' &&
+        window.api?.workspaceSpace?.openWindow
+      ) {
         void window.api.workspaceSpace.openWindow()
         return
       }

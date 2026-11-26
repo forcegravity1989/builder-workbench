@@ -1,7 +1,10 @@
 import type { VersionMaterialSelection } from './version-material-selection'
 import { useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host/execution-host'
+import {
+  getRepoExecutionHostId,
+  type ExecutionHostId
+} from '../../../shared/execution-host/execution-host'
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { currentProjectRepo, resolveProjectSource } from './project-source-resolution'
@@ -78,7 +81,7 @@ export function openKnowledgePage(): void {
   const state = useAppStore.getState()
   const current = currentProjectRepo(state)
   const source = current && resolveProjectSource(state, current, true)
-  state.openSpacePage()
+  state.openSpacePage('inline')
   setProjectPage({ kind: 'knowledge', options: projectSource(source) })
 }
 
