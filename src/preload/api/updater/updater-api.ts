@@ -6,12 +6,17 @@ import type {
 } from '../../../shared/updater/update-status-types'
 import type { ReleaseChannel } from '../../../shared/updater/release-channel'
 
+export type UpdaterQuitAndInstallOptions = {
+  /** Skip the session checkpoint and do not let a later unload cancel the quit. */
+  discardUnsavedSession?: boolean
+}
+
 export type UpdaterApi = {
   getVersion: () => Promise<string>
   getStatus: () => Promise<UpdateStatus>
   check: (options?: UpdateCheckOptions) => Promise<void>
   download: () => Promise<void>
-  quitAndInstall: () => Promise<void>
+  quitAndInstall: (options?: UpdaterQuitAndInstallOptions) => Promise<void>
   dismissNudge: () => Promise<void>
   dismissAvailableUpdate: () => Promise<void>
   snoozeRequiredUpdate: () => Promise<void>

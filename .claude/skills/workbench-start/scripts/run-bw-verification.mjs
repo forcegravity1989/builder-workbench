@@ -91,7 +91,7 @@ export function prepareEnvironment(root, { assistant, devProfile, machine = os.h
     machine,
     assistant: assistant ?? previous.assistant ?? 'unknown',
     network: previous.network ?? 'unknown',
-    maxConcurrentHeavyJobs: previous.maxConcurrentHeavyJobs ?? 1,
+    maxConcurrentHeavyJobs: previous.maxConcurrentHeavyJobs ?? null,
     memoryGiB: Math.round((os.totalmem() / 1024 ** 3) * 10) / 10,
     devProfile,
     projectRepo,

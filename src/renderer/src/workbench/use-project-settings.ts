@@ -20,6 +20,7 @@ import { useDefaultAgentForTarget } from './version-cycle/metrics-setup'
 import type { AgentDetectionTarget } from '@/lib/agent-session/launch/inventory/useDetectedAgents'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-session-tabs-sync/actions/web-runtime-worktree-activation'
 import { openWorkflowDraft } from './open-workflow-draft'
+import { isIntentionalAppRestartInProgress } from '@/lib/updater-beforeunload'
 
 type Draft = {
   raw: string | null
@@ -374,6 +375,10 @@ export function useProjectSettings(repo: Repo, onChanged: (charterUpdated: boole
       return
     }
     const beforeUnload = (event: BeforeUnloadEvent) => {
+      // An accepted restart already chose to leave. This form's native prompt would cancel the update.
+      if (isIntentionalAppRestartInProgress()) {
+        return
+      }
       event.preventDefault()
       event.returnValue = ''
     }

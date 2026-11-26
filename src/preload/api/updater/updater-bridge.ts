@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron'
 import type { UpdateStatus } from '../../../shared/updater/update-status-types'
+import type { UpdaterQuitAndInstallOptions } from './updater-api'
 import { prepareAndInvokeUpdaterInstall } from '../../renderer/restart/renderer-restart-wiring'
 import { awaitBeforeUnloadCheckpoint, updaterQuitAbortRelay } from '../../renderer/renderer-runtime'
 import type { PreloadApi } from '../../api-types'
@@ -11,17 +12,17 @@ export const updaterApi = {
   download: () => ipcRenderer.invoke('updater:download'),
   dismissNudge: () => ipcRenderer.invoke('updater:dismissNudge'),
   dismissAvailableUpdate: () => ipcRenderer.invoke('updater:dismissAvailableUpdate'),
-  snoozeRequiredUpdate: () => ipcRenderer.invoke('updater:snoozeRequiredUpdate'),
   getLinuxPackageInstallInstructions: () =>
     ipcRenderer.invoke('updater:getLinuxPackageInstallInstructions'),
   showLinuxPackage: () => ipcRenderer.invoke('updater:showLinuxPackage'),
-  listBuilds: (channel, options) => ipcRenderer.invoke('updater:listBuilds', channel, options),
-  quitAndInstall: (): Promise<void> =>
+  listBuilds: (channel) => ipcRenderer.invoke('updater:listBuilds', channel),
+  quitAndInstall: (options?: UpdaterQuitAndInstallOptions): Promise<void> =>
     prepareAndInvokeUpdaterInstall(
       window,
       updaterQuitAbortRelay,
       () => ipcRenderer.invoke('updater:quitAndInstall'),
-      awaitBeforeUnloadCheckpoint
+      awaitBeforeUnloadCheckpoint,
+      options
     ),
 
   onStatus: (callback) => {
