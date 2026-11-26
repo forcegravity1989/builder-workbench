@@ -87,3 +87,13 @@ BW 对 Orca 的修改集中在入口和薄挂载。已恢复或保留的路径�
 - `src/main/skills/bundled-skill-install/bundled-skill-sources.ts`
 
 最后两个文件当前只有换行差异，提交前保持未暂存。
+
+## 本轮合并后的修复记录
+
+第一次合并提交 6bf2db5f80 的远端 CI 暴露出三类合并问题。
+
+- 直接采用 origin/main 的精简 en.json / zh.json 会丢失 BW 仍在使用的目录键。已恢复上一轮绿色提交的 BW 目录，再运行目录校验脚本补入最新来源键。
+- main 的 ProjectWallCard 使用了新版 shell.openPath(path, ownerHostId)，已补上 getRepoExecutionHostId(slot.repo)。
+- 上游生成的 CLI 指南和 Workbench Skill 包需要按当前源码重新生成，已运行对应生成脚本。
+
+修复提交为 fa2fa1282f。本轮失败不是 Bot 执行逻辑失败，而是 main 合并后的生成目录和一个新接口参数没有同步。修复后需等待新的远端 CI，不把上一次失败结果作为当前结论。
