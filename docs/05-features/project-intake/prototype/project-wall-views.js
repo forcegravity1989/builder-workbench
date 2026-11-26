@@ -5,35 +5,49 @@
     W.$('app-rail').innerHTML =
       `<img class="rail-logo" src="../../../resources/icon.png" alt="Workbench" />${button('wall', 'wall', '项目墙', '', `rail-button ${s.mode === 'wall' ? 'selected' : ''}`)}${button('workspace', 'workspace', '版本工作区', '', 'rail-button')}${button('reuse', 'overview', '项目总览', 'overview', 'rail-button')}${button('reuse', 'task', '任务', 'tasks', 'rail-button')}${button('reuse', 'clock', '自动化', 'automations', 'rail-button')}${button('reuse', 'book', '知识库', 'knowledge', 'rail-button')}<span class="grow"></span>${button('reuse', 'monitor', '管理远程主机', 'hosts', 'rail-button')}${button('reuse', 'settings', '设置', 'settings', 'rail-button')}${button('reuse', 'help', '帮助', 'help', 'rail-button')}`
   }
+  const personFace =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="9" r="3"/><path d="M6.5 19c0-4 2-6 5.5-6s5.5 2 5.5 6"/></svg>'
+  const renderPeople = (p) => {
+    const people = p.participants || []
+    const count = Math.min(people.length, 4)
+    const width = 26 + Math.max(0, count - 1) * ((26 * 2) / 3)
+    return `<span class="people-avatars" aria-label="项目参与者（原型样例）" data-expanded="false" data-folded="true" data-has-more="${people.length > 4}" style="width:${width}px;--people-width:${people.length * 26}px;--people-gaps:${Math.max(0, people.length - 1)}"><span class="people-track"><span class="people-lane">${people.map((person, i) => `<span class="person-entry" style="--people-index:${i};--people-stack:${Math.min(i, 3)};--people-delay:${i * 70}ms;z-index:${i + 1}"><button type="button" class="person-avatar" data-action="people-toggle" aria-label="${esc(person.name)}，展开头像组" aria-expanded="false" title="${esc(person.name)}">${personFace}<i class="source-status-dot${person.online ? ' online' : ''}"></i></button><span class="name">${esc(person.name)}</span></span>`).join('')}${people.length > 4 ? `<button type="button" class="person-avatar people-more" data-action="people-toggle" aria-label="展开全部参与者" aria-expanded="false" style="left:52px;z-index:${people.length + 1}">+${people.length - 3}</button>` : ''}</span></span></span>`
+  }
   W.renderCard = (p) => {
     const unknown = !W.available(p) || p.version === undefined
-    const version = unknown ? '版本未知' : p.version || '未使用版本'
+    const hasVersion = Boolean(p.version) && !unknown
+    const goals = hasVersion ? p.goals || [] : []
     const taskCount = p.tasks ? `${p.tasks.completed} / ${p.tasks.total}` : '—'
-    return `<article class="project-card${s.config === p.id ? ' selected' : ''}" data-project="${esc(p.id)}">
-      <div class="card-top"><button class="project-name" data-action="open" data-id="${esc(p.id)}">${p.group ? icon('folder') : ''}${esc(p.name)}</button><div class="card-tools">${button('open-repo', 'external', p.remote ? '打开代码仓' : '打开本机文件夹', p.id)}${button('repo-settings', 'settings', '仓库设置', p.id)}${!W.project(p.id).hosts.includes('local') && p.remote ? button('clone-local', 'download', '克隆到本机', p.id) : ''}${p.kind === 'git' ? button('overview', 'overview', `项目总览 ${p.name}`, p.id) : ''}${button('config', 'edit', `项目信息 ${p.name}`, p.id)}${button('native-menu', 'more', p.group ? 'Orca 分组操作' : 'Orca 项目操作', p.id)}</div></div>
-      <div class="identity-row"><span class="owner-row"><span>项目负责人</span><span class="owner-value" title="${esc(p.builder?.trim() || '—')}">${esc(p.builder?.trim() || '—')}</span></span><span class="host-sources">${W.sourceTags(p)}</span></div>
-      ${p.group ? `<details class="wall-repositories" open><summary><span>项目分组 · ${W.repoSlots(p).length} 个代码仓</span>${icon('chevron')}</summary>${W.renderMembers(p)}</details>` : ''}
-      ${
-        p.version && !unknown
-          ? `<div class="version-goals"><div class="version-heading"><span>版本目标</span><button class="inline-link" data-action="version" data-id="${p.id}">${esc(version)}</button></div><ul class="goal-list">${p.goals
+    const membersId = `members-${p.id}`
+    const goalsId = `goals-${p.id}`
+    const status = unknown ? '无' : ''
+    const repoActionsId = `repo-actions-${p.id}`
+    return `<article class="project-card${s.config === p.id ? ' selected' : ''}" data-card-mode="${s.cardMode}" data-project="${esc(p.id)}">
+      <div class="card-top"><button class="project-name" title="${esc(p.name)}" data-action="open" data-id="${esc(p.id)}">${p.group ? icon('folder') : ''}${esc(p.name)}</button><div class="card-tools"><button type="button" class="icon-btn" aria-label="代码仓操作" popovertarget="${repoActionsId}">${icon('git')}</button><div id="${repoActionsId}" class="member-popover repo-action-popover" popover="auto"><button data-action="open-repo" data-id="${p.id}">${icon('external')}打开代码仓</button><button data-action="repo-settings" data-id="${p.id}">${icon('settings')}仓库设置</button><button data-action="clone-local" data-id="${p.id}"${W.project(p.id).hosts.includes('local') || !p.remote ? ' disabled' : ''}>${icon('download')}克隆到本机</button></div>${button('overview', 'overview', `项目总览 ${p.name}`, p.id, '', p.kind !== 'git')}${button('config', 'edit', `项目信息 ${p.name}`, p.id)}${button('native-menu', 'more', p.group ? 'Orca 分组操作' : 'Orca 项目操作', p.id)}</div></div>
+      <div class="identity-row"><span class="owner-row"><span class="person-avatar owner-avatar" title="项目负责人：${esc(p.builder?.trim() || '未设置')}" aria-label="项目负责人：${esc(p.builder?.trim() || '未设置')}">${personFace}</span><span class="owner-value">${esc(p.builder?.trim() || '—')}</span></span>${p.participants?.length ? renderPeople(p) : `<span class="host-sources">${W.sourceTags(p)}</span>`}${p.group ? `<button class="inline-link" popovertarget="${membersId}">成员</button><div id="${membersId}" class="member-popover" popover="auto">${W.renderMembers(p)}</div>` : ''}</div>
+      <div class="version-heading"><span class="version-value">${esc(p.version || '—')}</span><span class="release-month" title="发布日期（原型样例）">发布 ${esc(p.releaseDate || '—')}</span>${status ? `<span class="version-muted">${status}</span>` : ''}${p.pending ? `<span class="pending-mark">项目信息待合入</span>` : ''}</div>
+      <div class="version-goals">${
+        goals.length
+          ? `<button type="button" class="goal-preview" aria-label="查看全部 ${goals.length} 项目标" popovertarget="${goalsId}"><ul class="goal-list">${goals
               .slice(0, 2)
-              .map((g) => `<li><span>${esc(g)}</span></li>`)
+              .map((g) => `<li><span title="${esc(g)}">${esc(g)}</span></li>`)
               .join(
                 ''
-              )}</ul>${p.goals.length > 2 ? `<button class="more-goals inline-link" data-action="version" data-id="${p.id}">另 ${p.goals.length - 2} 项目标</button>` : ''}</div>
-      <div class="stage-grid" aria-label="版本进展">${[
+              )}</ul></button><div id="${goalsId}" class="member-popover goal-popover" popover="auto"><strong>${esc(p.version)} · 月度版本目标</strong><ol>${goals.map((g) => `<li>${esc(g)}</li>`).join('')}</ol><button class="inline-link" data-action="version" data-id="${p.id}">进入版本计划</button></div>`
+          : p.brief
+            ? `<p class="card-description" title="${esc(p.brief)}">${esc(p.brief)}</p>`
+            : ''
+      }</div>
+      <div class="card-footer"><div class="stage-grid" aria-label="版本进展">${[
         ['计划', p.plan || '—', 'plan', p.planArchive],
         ['任务', taskCount, 'tasks'],
         ['验收', p.acceptance || '—', 'acceptance', p.acceptanceArchive]
       ]
         .map(
           ([label, value, target, archive]) =>
-            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}" title="${target === 'tasks' ? '任务已关闭／总数' : '查看流程材料'}"><span>${label}</span><b${archive ? ` title="${esc(archive)}"` : ''}>${esc(value)}</b></button>`
+            `<button class="stage" data-action="stage" data-id="${p.id}" data-target="${target}"${!hasVersion ? ' disabled' : ''} title="${target === 'tasks' ? '任务已关闭／总数' : '查看流程材料'}"><span>${label}</span><b${archive ? ` title="${esc(archive)}"` : ''}>${hasVersion ? esc(value) : '—'}</b></button>`
         )
-        .join('')}</div>`
-          : `<div class="unversioned"><p class="card-description">${esc(p.brief || '')}</p><span class="version-muted">${version}</span></div>`
-      }
-      ${p.pending ? '<span class="pending-mark">项目信息待合入</span>' : ''}
+        .join('')}</div></div>
     </article>`
   }
   W.renderMembers = (p) =>
@@ -80,7 +94,17 @@
                 ['personal', '个人']
               ],
               s.category
-            )}<span class="wall-updated">${s.hostReadFailed ? `部分主机未更新 ${W.help('显示上次读取结果。点击刷新项目墙可重新读取；主机连接在原生主机管理中处理。')}` : s.updated}</span></div><div id="project-grid"></div>`
+            )}<div class="card-modes" role="group" aria-label="卡片显示模式">${[
+              ['compact', '紧凑模式'],
+              ['detail', '详情模式']
+            ]
+              .map(
+                ([id, label]) =>
+                  `<button class="filter" data-action="card-mode" data-id="${id}" aria-pressed="${s.cardMode === id}">${label}</button>`
+              )
+              .join(
+                ''
+              )}</div><span class="wall-updated">${s.hostReadFailed ? `部分主机未更新 ${W.help('显示上次读取结果。点击刷新项目墙可重新读取；主机连接在原生主机管理中处理。')}` : s.updated}</span></div><div id="project-grid"></div>`
           : `<div class="empty-state">${icon('folder')}<h2>从一个项目开始</h2><p>打开已有文件夹、克隆代码仓，或新建项目。</p><button class="btn btn-primary" data-action="add">添加项目</button></div>`
       }`
     if (s.projects.length) {
@@ -132,7 +156,7 @@
       ],
       version: [
         '复用 BW 版本总览',
-        '完整目标与详细进展进入已有版本页面；墙卡只显示两条目标，每条最多两行。'
+        '完整目标通过墙卡浮层展开，并可进入已有版本页面；卡片只显示两条单行预览，版本与月度发布信息只出现一处。'
       ],
       plan: ['复用 BW 版本计划', '查看当前计划材料和阶段进度。'],
       tasks: [
