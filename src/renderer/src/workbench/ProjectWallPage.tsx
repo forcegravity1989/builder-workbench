@@ -1,6 +1,6 @@
 import { notifyWorkbenchError } from './error-feedback'
 import { useCallback, useRef, useState } from 'react'
-import { LoaderCircle, Plus, RefreshCw, UsersRound, X } from 'lucide-react'
+import { List, LoaderCircle, PanelsTopLeft, Plus, RefreshCw, UsersRound, X } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,8 +16,9 @@ import { continueProjectWork } from './continue-project-work'
 import { isWallRowVisible, wallProjectVisibility } from './workbench-wall-projects'
 import { buildWallHostFact } from './wall-host-facts'
 import { useWallCharters } from './use-wall-charters'
+import { useTeamMemberAvatars } from './use-team-member-avatars'
 import { TeamSettingsDialog } from './TeamSettingsDialog'
-import type { WallCardView } from './ProjectWallCard'
+import type { WallCardMode, WallCardView } from './ProjectWallCard'
 import { LiveProjectWallCard, type WallReadStatus } from './LiveProjectWallCard'
 import { useWallProjects } from './use-wall-projects'
 import { refreshProjectWall, useWallRefresh } from './wall-refresh'
@@ -39,6 +40,7 @@ export function ProjectWallPage() {
   const [query, setQuery] = useState('')
   const [location, setLocation] = useState('all')
   const [type, setType] = useState('all')
+  const [cardMode, setCardMode] = useState<WallCardMode>('detail')
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null)
@@ -47,6 +49,11 @@ export function ProjectWallPage() {
   const hasProjects = repos.some(isWallRowVisible)
   const projects = useWallProjects({ location, type })
   const charters = useWallCharters(projects, refresh)
+  // Wall refresh re-reads the directory per spec; avatars follow the same reload key
+  // so a throttled mount read can recover on the next manual refresh.
+  const { avatarByName, localAvatar } = useTeamMemberAvatars(
+    `${teamSettingsOpen}|${updatedAt ?? ''}`
+  )
   const [readStatuses, setReadStatuses] = useState<Record<string, WallReadStatus>>({})
   const onReadStatus = useCallback((key: string, status: WallReadStatus | null) => {
     setReadStatuses((current) => {
@@ -64,17 +71,23 @@ export function ProjectWallPage() {
   const readingsRefreshing = Object.values(readStatuses).some((status) => status.refreshing)
   const cards: WallCardView[] = projects.map((project) => {
     const charter = charters.values[project.key] ?? null
+    const owner = charter?.owner?.trim()
     return {
       project,
       primaryRepo: project.rows[0],
       charter,
+      ownerAvatar: owner ? avatarByName.get(owner) : undefined,
       displayName: project.group?.name || charter?.name?.trim() || project.name,
       readings: { kind: 'loading' },
-      hostTags: project.hostIds.map((hostId) => ({
-        ...buildWallHostFact(hostId, environments, statuses, sshLabels),
-        hostId,
-        isLocal: hostId === 'local'
-      }))
+      hostTags: project.hostIds.map((hostId) => {
+        const fact = buildWallHostFact(hostId, environments, statuses, sshLabels)
+        return {
+          ...fact,
+          hostId,
+          isLocal: hostId === 'local',
+          avatar: hostId === 'local' ? localAvatar : avatarByName.get(fact.label)
+        }
+      })
     }
   })
   const selectedCard = cards.find((card) => card.project.key === selected)
@@ -177,6 +190,20 @@ export function ProjectWallPage() {
                   </Button>
                 ))}
               </div>
+              <div className="wall-display-modes" role="group" aria-label="卡片显示模式">
+                <WorkbenchIconButton
+                  label="紧凑模式"
+                  icon={List}
+                  aria-pressed={cardMode === 'compact'}
+                  onClick={() => setCardMode('compact')}
+                />
+                <WorkbenchIconButton
+                  label="详情模式"
+                  icon={PanelsTopLeft}
+                  aria-pressed={cardMode === 'detail'}
+                  onClick={() => setCardMode('detail')}
+                />
+              </div>
               <span
                 title={
                   partialRefresh
@@ -244,6 +271,7 @@ export function ProjectWallPage() {
                         <LiveProjectWallCard
                           key={card.project.key}
                           card={card}
+                          mode={cardMode}
                           refresh={refresh}
                           leave={leave}
                           onReadStatus={onReadStatus}
