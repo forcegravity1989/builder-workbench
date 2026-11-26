@@ -20,7 +20,7 @@ import { useDefaultAgentForTarget } from './version-cycle/metrics-setup'
 import type { AgentDetectionTarget } from '@/lib/agent-session/launch/inventory/useDetectedAgents'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-session-tabs-sync/actions/web-runtime-worktree-activation'
 import { openWorkflowDraft } from './open-workflow-draft'
-import { isIntentionalAppRestartInProgress } from '@/lib/updater-beforeunload'
+import { isIntentionalAppRestartInProgress } from '@/app-shell/updates/updater-beforeunload'
 
 type Draft = {
   raw: string | null
