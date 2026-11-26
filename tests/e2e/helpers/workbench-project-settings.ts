@@ -85,7 +85,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   const card = page.locator(`[data-workbench-project-id="${repoId}"]`)
   expect(existsSync(file)).toBe(false)
   await expect(card.locator('.pcard-name')).toHaveText(registered!.displayName)
-  await expect(card.locator('.pcard-owner')).toContainText('—')
+  await expect(card.locator('.pcard-owner-name')).toHaveText('—')
   const wallGuide = page.locator('[data-contextual-tour-panel]')
   await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
   await expect(card.locator('[data-repo-header-action]')).toBeVisible()
@@ -299,7 +299,9 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await openWall()
   const folderCard = page.locator(`[data-workbench-project-id="${folderId}"]`)
   await expect(folderCard.locator('.pcard-name')).toHaveText('普通文件夹')
-  await expect(folderCard.locator('[data-workbench-open-overview]')).toHaveCount(0)
+  await expect(
+    folderCard.getByRole('button', { name: '项目总览（普通文件夹不可用）', exact: true })
+  ).toBeDisabled()
   await folderCard.locator('[data-workbench-edit-charter]').click()
   await expect(page.locator('.wb-project-settings')).toBeVisible()
   await expect(
