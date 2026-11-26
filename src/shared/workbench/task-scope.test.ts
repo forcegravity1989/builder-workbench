@@ -9,7 +9,11 @@ import {
   workbenchGoalMutationQuery,
   type WorkbenchTaskScope
 } from './task-scope'
-import { resolveMemberGoalId } from './version-membership'
+import {
+  githubIssueAssignmentTarget,
+  nextIssueVersionMembership,
+  resolveMemberGoalId
+} from './version-membership'
 
 const scope: WorkbenchTaskScope = { version: 'v0.7', references: [] }
 
@@ -82,5 +86,50 @@ describe('native task entry filters', () => {
     expect(resolveMemberGoalId('【v0.8|G1】其他版本', 'v0.7', goalIds)).toBeUndefined()
     expect(resolveMemberGoalId('【v0.7|G9】未列出的目标', 'v0.7', goalIds)).toBeUndefined()
     expect(resolveMemberGoalId('【特性#334】执行', 'v0.7', goalIds)).toBeUndefined()
+
+    const moved = nextIssueVersionMembership({
+      title: '【v0.7|G1】【特性#334】执行',
+      labels: ['bug', 'bw:plan:v0.7'],
+      version: 'v1.2',
+      goalId: 'G3'
+    })
+    expect(moved).toEqual({
+      title: '【v1.2|G3】【特性#334】执行',
+      labels: ['bug', 'bw:plan:v0.7', 'bw:plan:v1.2'],
+      titleChanged: true,
+      addedLabel: 'bw:plan:v1.2'
+    })
+    expect(
+      nextIssueVersionMembership({
+        title: '绑定窗口',
+        labels: [],
+        version: 'v1.2',
+        goalId: 'G3'
+      }).title
+    ).toBe('【v1.2|G3】绑定窗口')
+    expect(
+      nextIssueVersionMembership({
+        title: '【v1.2|G3】绑定窗口',
+        labels: ['bw:plan:v0.7', 'bw:plan:v1.2'],
+        version: 'v1.2',
+        goalId: 'G3'
+      })
+    ).toMatchObject({
+      titleChanged: false,
+      addedLabel: null,
+      labels: ['bw:plan:v0.7', 'bw:plan:v1.2']
+    })
+    expect(githubIssueAssignmentTarget('https://github.com/origin/app/issues/12', 12)).toEqual({
+      owner: 'origin',
+      repo: 'app',
+      host: 'github.com'
+    })
+    expect(githubIssueAssignmentTarget('https://github.com/upstream/app/issues/12', 12)).toEqual({
+      owner: 'upstream',
+      repo: 'app',
+      host: 'github.com'
+    })
+    expect(githubIssueAssignmentTarget('https://github.com/origin/app/issues/12', 13)).toBeNull()
+    expect(githubIssueAssignmentTarget('https://github.com/origin/app/pull/12', 12)).toBeNull()
   })
 })

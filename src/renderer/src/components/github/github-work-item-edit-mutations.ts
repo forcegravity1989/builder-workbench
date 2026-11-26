@@ -29,19 +29,32 @@ export async function runIssueUpdate(args: {
   repoId?: string | null
   sourceContext?: TaskSourceContext | null
   projectOrigin: GitHubWorkItemProjectOrigin | undefined
+  /** Pins the issue just read when there is no project-board row. */
+  repository?: GitHubOwnerRepo | null
   number: number
   updates: Parameters<typeof window.api.gh.updateIssue>[0]['updates']
 }): Promise<void> {
-  if (args.projectOrigin) {
+  const slug = args.projectOrigin
+    ? {
+        owner: args.projectOrigin.owner,
+        repo: args.projectOrigin.repo,
+        host: githubProjectHost(args.projectOrigin.host)
+      }
+    : args.repository
+      ? {
+          owner: args.repository.owner,
+          repo: args.repository.repo,
+          host: githubProjectHost(args.repository.host)
+        }
+      : null
+  if (slug) {
     const targetSettings =
       args.sourceContext?.provider === 'github'
         ? getTaskSourceRuntimeSettings(args.sourceContext)
         : getGitHubMutationSettings(args.repoId)
     const target = getActiveRuntimeTarget(targetSettings)
     const updateArgs = {
-      owner: args.projectOrigin.owner,
-      repo: args.projectOrigin.repo,
-      host: githubProjectHost(args.projectOrigin.host),
+      ...slug,
       number: args.number,
       updates: args.updates
     }
