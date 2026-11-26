@@ -1,0 +1,19 @@
+tests/e2e/helpers/workbench-project-settings.ts
+  s_9402bc432a275a::t_21d31c4f218373 302-304
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "2ed4d649e6e63df5abac16efc2837969721e8344",
+  "prompts": {},
+  "sessions": {
+    "s_9402bc432a275a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "70a45e5d-226f-4f71-ac59-9634479b2b86",
+        "model": "grok-4.7"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}

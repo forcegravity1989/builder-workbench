@@ -1,0 +1,22 @@
+src/renderer/src/workbench/improvement/open-assistant.ts
+  s_abaef6b3437c6f::t_f49242855672c9 100-107,110
+  s_abaef6b3437c6f::t_a5b9893773c7d3 5
+  s_abaef6b3437c6f::t_b818b7bf56c077 13-16
+  s_abaef6b3437c6f::t_e2a448da392263 43-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "5dcb3776bb247d67e792429d60a006f5b94069cc",
+  "prompts": {},
+  "sessions": {
+    "s_abaef6b3437c6f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "87488899-7396-4f75-ba9e-a7da2ea9737d",
+        "model": "grok-4.7"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
