@@ -4,6 +4,7 @@ import { getEffectiveKeybindingsForAction } from '../../shared/keybindings/effec
 import type { KeybindingActionId, KeybindingOverrides } from '../../shared/keybindings/types'
 import type { UpdateCheckOptions } from '../../shared/updater/update-status-types'
 import { translateMain } from '../i18n/main-i18n'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { createAppMenuSelectionItem, resolveNativeEditTarget } from './app-menu-selection-item'
 import { createAppMenuQuitItems, type AppMenuQuitHandlers } from './app-menu-quit-item'
 import { createAppMenuReloadAndDevToolsItems } from './app-menu-reload-devtools-items'
@@ -300,7 +301,7 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     editMenu,
     viewMenu,
     windowMenu,
-    helpMenu
+    ...(isWorkbenchProduct() ? [] : [helpMenu])
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

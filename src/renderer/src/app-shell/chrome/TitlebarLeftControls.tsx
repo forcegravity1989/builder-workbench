@@ -69,7 +69,7 @@ export function TitlebarLeftControls({ layout }: { layout: AppChromeLayout }): R
               src={workbenchShell ? workbenchLogo : logo}
               alt=""
               aria-hidden
-              className="titlebar-logo"
+              className={workbenchShell ? 'workbench-titlebar-logo' : 'titlebar-logo'}
             />
             <Tooltip>
               <TooltipTrigger asChild>
