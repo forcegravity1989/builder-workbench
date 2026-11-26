@@ -64,7 +64,7 @@
           "phase": "Maintain",
           "timeWindow": {
             "start": "2026-11-26T00:00",
-            "end": "2026-11-29T00:00"
+            "end": "2026-12-05T00:00"
           }
         }
       ]
@@ -278,6 +278,14 @@
       "timeWindow": {
         "start": "2026-11-23",
         "end": "2026-11-27"
+      }
+    },
+    {
+      "version": "v1.3",
+      "cycleId": "b6cfbdea-66f7-4745-9eb8-d8b60f8219f1",
+      "timeWindow": {
+        "start": "2026-11-30",
+        "end": "2026-12-04"
       }
     },
     {
