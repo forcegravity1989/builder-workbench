@@ -116,6 +116,7 @@ export function buildWorkspaceCardFacts(card: WorktreeCardController): Workspace
       hideRepoBadge: card.hideRepoBadge === true,
       showProjectName: card.showProjectName === true,
       affiliateList: card.affiliateListMode,
+      workbenchShell: card.workbenchShell,
       deleteQuickAction: card.showDeleteQuickAction,
       compactLine: card.compactLine,
       lineHostLabel:

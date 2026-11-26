@@ -39,6 +39,8 @@ import {
 } from './worktree-context-menu-policy'
 import { CLOSE_ALL_CONTEXT_MENUS_EVENT } from '@/lib/overlay-interaction/close-all-context-menus'
 import { WorktreeHandToBotMenuItem } from '@/components/bots/hand-to-bot/WorktreeHandToBotMenuItem'
+import { WorkbenchSendReviewMenuItems } from '@/workbench/WorkbenchSendReviewMenuItems'
+import { WorkbenchVersionBindingMenuItems } from '@/workbench/WorkbenchVersionBindingMenuItems'
 
 export default function WorktreeContextMenuView({ model }: { model: WorktreeContextMenuModel }) {
   const {
@@ -229,7 +231,11 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
             workspaceStatuses={workspaceStatuses}
           />
           {!isMultiContext && (
-            <WorktreeHandToBotMenuItem worktree={worktree} disabled={isDeleting} />
+            <>
+              <WorktreeHandToBotMenuItem worktree={worktree} disabled={isDeleting} />
+              <WorkbenchVersionBindingMenuItems worktree={worktree} disabled={isDeleting} />
+              <WorkbenchSendReviewMenuItems worktree={worktree} disabled={isDeleting} />
+            </>
           )}
           {!isMultiContext && (
             <>

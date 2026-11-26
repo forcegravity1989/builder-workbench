@@ -28,7 +28,9 @@
     "titleIndicators": "vars.indicators && !vars.metaIndicators",
     "hasMetaRow": "vars.metaRow ? vars.metaLead || vars.metaIndicators : vars.conflict || git.cacheTimerActive",
     "star": "vars.compact && ws.isMain && !vars.folder",
-    "headerActions": "vars.star || place.deleteQuickAction",
+    "quickActions": "place.workbenchShell && !place.affiliateList && !ws.isDeleting && !ws.isRenaming",
+    "nativeDeleteQuickAction": "!place.workbenchShell && place.deleteQuickAction",
+    "headerActions": "vars.star || vars.quickActions || vars.nativeDeleteQuickAction",
     "inlineAgents": "options.show.inlineAgents && !vars.compact",
     "title": "trim(ws.title)",
     "hoverBranch": "vars.newStyle ? ws.identity : vars.compact && vars.branch ? ws.branch : null",
@@ -137,7 +139,8 @@
               },
               "children": [
                 { "el": "PrimaryStar", "when": "vars.star" },
-                { "el": "DeleteQuickAction", "when": "place.deleteQuickAction" }
+                { "el": "DeleteQuickAction", "when": "vars.nativeDeleteQuickAction" },
+                { "el": "QuickActions", "when": "vars.quickActions" }
               ]
             }
           ]

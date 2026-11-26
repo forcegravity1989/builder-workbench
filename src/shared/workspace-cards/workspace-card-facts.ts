@@ -92,6 +92,7 @@ export type WorkspaceCardFacts = {
     affiliateList: boolean
     /** The delete modifier is held over a card that may be deleted. */
     deleteQuickAction: boolean
+    workbenchShell: boolean
     /** A one-line row under a bot, which names its project at the row's end. */
     compactLine: boolean
     /** A line on another paired server than its bot's: that server's name, in place of the host mark. */

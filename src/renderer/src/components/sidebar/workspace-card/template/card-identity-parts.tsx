@@ -9,6 +9,7 @@ import {
   WorktreeCardDeleteQuickAction,
   WorktreeCardPrimaryBadge,
   WorktreeCardPrimaryStar,
+  WorktreeCardQuickActions,
   WorktreeCardRenameErrorButton,
   WorktreeCardRepoChip,
   WorktreeCardRuntimeHostMark,
@@ -143,6 +144,7 @@ export const CARD_IDENTITY_PARTS = {
       onClick={card.handleWorkspaceQuickAction}
     />
   )),
+  QuickActions: part([], (_props, _children, card) => <WorktreeCardQuickActions card={card} />),
   MetaRepoBadge: part([], (_props, _children, { repo }) =>
     repo ? <WorktreeCardMetaRepoBadge repo={repo} /> : null
   ),

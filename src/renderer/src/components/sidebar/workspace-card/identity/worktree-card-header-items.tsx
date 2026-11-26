@@ -1,5 +1,15 @@
 import React from 'react'
-import { FolderMinus, House, Server, ServerOff, Star, Trash2 } from 'lucide-react'
+import {
+  FolderMinus,
+  House,
+  Moon,
+  Pin,
+  PinOff,
+  Server,
+  ServerOff,
+  Star,
+  Trash2
+} from 'lucide-react'
 
 import { ProjectChip } from '@/components/repo/project-chip'
 import { Badge } from '@/components/ui/badge'
@@ -291,5 +301,103 @@ export function WorktreeCardDeleteQuickAction({
         {t('auto.components.sidebar.WorktreeCard.6f09f58541', 'Delete workspace')}
       </TooltipContent>
     </Tooltip>
+  )
+}
+
+function QuickAction({
+  label,
+  tooltip = label,
+  destructive = false,
+  children,
+  onPointerDown,
+  onClick
+}: {
+  label: string
+  tooltip?: string
+  destructive?: boolean
+  children: React.ReactNode
+  onPointerDown: React.PointerEventHandler<HTMLButtonElement>
+  onClick: React.MouseEventHandler<HTMLButtonElement>
+}): React.JSX.Element {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          data-workspace-board-preserve-open=""
+          onPointerDown={onPointerDown}
+          onClick={onClick}
+          className={cn(
+            'inline-flex size-4 items-center justify-center rounded bg-transparent text-muted-foreground transition-colors',
+            destructive
+              ? 'hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive'
+              : 'hover:bg-worktree-sidebar-foreground/10 hover:text-foreground focus-visible:bg-worktree-sidebar-foreground/10 focus-visible:text-foreground'
+          )}
+          aria-label={label}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8} className="max-w-[200px] text-pretty">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export function WorktreeCardQuickActions({
+  card
+}: {
+  card: WorktreeCardController
+}): React.JSX.Element {
+  const t = useTranslate()
+  const { isPinned } = card.worktree
+  return (
+    <div
+      className={cn(
+        'pointer-events-none flex items-center gap-0.5 opacity-0 transition-opacity',
+        'group-hover/worktree-card:pointer-events-auto group-hover/worktree-card:opacity-100',
+        'group-focus-within/worktree-card:pointer-events-auto group-focus-within/worktree-card:opacity-100',
+        'focus-within:pointer-events-auto focus-within:opacity-100'
+      )}
+      data-worktree-card-quick-actions=""
+      data-workspace-board-preserve-open=""
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+    >
+      <QuickAction
+        label={
+          isPinned
+            ? t('auto.components.sidebar.WorktreeContextMenu.697d0f6e1b', 'Unpin')
+            : t('auto.components.sidebar.WorktreeContextMenu.3baa7d6507', 'Pin')
+        }
+        onPointerDown={card.stopQuickActionPointerPropagation}
+        onClick={card.handleTogglePinQuickAction}
+      >
+        {isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+      </QuickAction>
+      <QuickAction
+        label={t('auto.components.sidebar.workspaceBatchActionLabels.sleep', 'Sleep')}
+        tooltip={t(
+          'auto.components.sidebar.WorktreeContextMenu.0918b35e4f',
+          'Close all active panels in this workspace to free up memory and CPU.'
+        )}
+        onPointerDown={card.stopQuickActionPointerPropagation}
+        onClick={card.handleSleepQuickAction}
+      >
+        <Moon className="size-3.5" />
+      </QuickAction>
+      {card.showDeleteQuickAction && (
+        <QuickAction
+          label={t('auto.components.sidebar.WorktreeCard.6f09f58541', 'Delete workspace')}
+          destructive
+          onPointerDown={card.stopQuickActionPointerPropagation}
+          onClick={card.handleWorkspaceQuickAction}
+        >
+          <Trash2 className="size-3.5" />
+        </QuickAction>
+      )}
+    </div>
   )
 }

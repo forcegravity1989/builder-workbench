@@ -188,6 +188,12 @@ git rev-parse 'v1.4.272^{commit}'
 
 相关行为正本分别在 `docs/05-features/`、`docs/architecture.md` 和源码契约中；本篇只保留同步时必须知道的取舍。
 
+- **设置、帮助与宿主帐户入口**。BW 的设置和帮助集中在最左侧导航，工作区列表底部保留定位当前工作区与工作区看板。宿主选择用于按主机生效的原生设置。BW 日常设置显示 W3 帐户，从 Bot 等原生入口明确进入时可打开 Orca 帐户。检查 [工作区工具栏](../src/renderer/src/components/sidebar/chrome/SidebarToolbar.tsx) 和 [设置导航](../src/renderer/src/components/settings/navigation/use-settings-navigation-model.ts)，在本机及配对宿主之间切换后核对左侧菜单。
+
+- **工作树右键的版本绑定与发送评审**。原生工作树和版本区的工作树共用 [右键菜单](../src/renderer/src/components/sidebar/workspace-actions/context-menu/WorktreeContextMenuView.tsx)，单选时挂载 BW 的绑定、更改、解除和发送评审。绑定通过 [版本绑定接口](../src/renderer/src/workbench/version-binding-port.ts) 读写工作树归属宿主，发送评审根据 [所选工作树](../src/renderer/src/workbench/WorkbenchSendReviewMenuItems.tsx) 解析宿主和代码托管来源。升级时用本机及配对宿主上有版本绑定的工作树核对菜单、读回和评审预填。
+
+- **工作树悬停操作与选中状态**。BW 工作树卡片在 [默认卡片模板](../src/renderer/src/components/sidebar/workspace-card/template/default-workspace-card.json) 中接入固定、休眠和删除快捷操作，沿用既有可见条件、工作树身份和确认流程。核对普通工作树、主工作树及配对宿主上的同名工作树。打开 BW 工件整页时，[工作区列表](../src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx) 清除旧工作树卡片的高亮。
+
 ### 2.4 CodeHub 边界
 
 CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也不通过 `gh`/`glab` 降级处理。CodeHub service、`codehub:*` RPC、任务来源和 GitHub 更新路径保持分离；详细行为见 [CodeHub 特性](../docs/05-features/codehub/STATUS.md) 与 [CodeHub 指南](../docs/03-guide/codehub-cli.md)。

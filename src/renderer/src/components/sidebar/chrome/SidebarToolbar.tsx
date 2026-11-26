@@ -8,6 +8,7 @@ import { SidebarSettingsHelpMenu } from './SidebarSettingsHelpMenu'
 import { selectAppRailVisible } from '@/components/app-rail/app-rail-layout'
 import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { hasFeatureInteraction } from '../../../../../shared/feature-education/interactions/feature-interactions'
 
 const WORKSPACE_BOARD_MOVED_HINT_STORAGE_KEY = 'orca.workspaceBoardMovedHintSeen.v1'
@@ -72,7 +73,7 @@ const SidebarToolbar = React.memo(function SidebarToolbar({
     <div className="mt-auto shrink-0">
       <div className="flex items-center justify-between border-t border-worktree-sidebar-border px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-1">
-          {appRailVisible ? null : <SidebarSettingsHelpMenu />}
+          {appRailVisible || isWorkbenchShell() ? null : <SidebarSettingsHelpMenu />}
         </div>
         <div className="flex items-center gap-1">
           <ScrollToCurrentWorkspaceToolbarButton />

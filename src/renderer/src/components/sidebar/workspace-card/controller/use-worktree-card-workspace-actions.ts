@@ -5,6 +5,8 @@ import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { runWorktreeDelete } from '../../workspace-actions/deletion/delete-worktree-flow'
 import { deleteFolderWorkspaceUnlessUnsaved } from '../../workspace-actions/deletion/folder-workspace-delete'
+import { collectTwinHostsAlsoSlept } from '../../workspace-actions/sleep/sleep-twin-confirmation'
+import { runSleepWorktrees } from '../../workspace-actions/sleep/sleep-worktree-flow'
 import { isEventTargetInsideCurrentTarget } from './worktree-card-dom-events'
 import type { ResolvedWorktreeCardProps } from './worktree-card-model'
 import '../../workspace-status/presentation/workspace-status'
@@ -64,10 +66,36 @@ export function useWorktreeCardWorkspaceActions({
           return
         }
         // Qualify deletion with the row’s host so a twin with the same repo/path ID cannot be removed.
-        runWorktreeDelete(worktree.id, worktree.hostId ? { expectedHostId: worktree.hostId } : {})
+        runWorktreeDelete(worktree.id, {
+          expectedInstanceId: worktree.instanceId,
+          ...(worktree.hostId ? { expectedHostId: worktree.hostId } : {})
+        })
       }
     },
-    [folderWorkspaceId, worktree.hostId, showDeleteQuickAction, worktree.id]
+    [folderWorkspaceId, worktree.hostId, worktree.instanceId, showDeleteQuickAction, worktree.id]
+  )
+  const handleTogglePinQuickAction = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      useAppStore.getState().setWorktreesPinnedAndReveal([worktree], !worktree.isPinned)
+    },
+    [worktree]
+  )
+  const handleSleepQuickAction = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const state = useAppStore.getState()
+      const worktreeIds = [worktree.id]
+      const hostIds = collectTwinHostsAlsoSlept(state, [worktree])
+      if (hostIds.length > 0) {
+        state.openModal('confirm-sleep-twin', { worktreeIds, hostIds })
+        return
+      }
+      void runSleepWorktrees(worktreeIds)
+    },
+    [worktree]
   )
   const handleOpenRenameErrorDialog = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -145,6 +173,8 @@ export function useWorktreeCardWorkspaceActions({
 
   return {
     handleWorkspaceQuickAction,
+    handleTogglePinQuickAction,
+    handleSleepQuickAction,
     handleOpenRenameErrorDialog,
     unreadTooltip,
     lineageChildAriaLabel,

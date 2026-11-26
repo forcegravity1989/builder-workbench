@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useWorkspaceReferenceDetails } from '../review/use-workspace-reference-details'
 import { getWorkspaceAttachments } from '../../../../../../shared/workspace-attachments/workspace-attachments'
 import { summarizeWorkspaceReviewChecks } from '../../../../../../shared/workspace-attachments/workspace-review-checks'
@@ -115,11 +116,11 @@ export function useWorktreeCardController(props: ResolvedWorktreeCardProps) {
     openModal: foundation.openModal
   })
 
-  // Why: delete is destructive, so it only appears while holding Option/Alt, not in the ordinary hover chrome.
+  const workbenchShell = isWorkbenchShell()
   const showDeleteQuickAction =
     !props.affiliateListMode &&
     canShowWorkspaceDeleteQuickAction({
-      deleteModifierPressed: linked.deleteModifierPressed,
+      deleteModifierPressed: workbenchShell || linked.deleteModifierPressed,
       isDeleting: linked.isDeleting,
       isMainWorktree: worktree.isMainWorktree
     })
@@ -193,6 +194,7 @@ export function useWorktreeCardController(props: ResolvedWorktreeCardProps) {
     showPorts,
     shouldRefreshHostedReview,
     ...activation,
+    workbenchShell,
     showDeleteQuickAction,
     ...workspaceActions,
     ...secondary
