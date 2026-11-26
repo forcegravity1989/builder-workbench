@@ -19,6 +19,7 @@ import {
   SHARE_SERVER_URL
 } from './self-hosted-share-config'
 import { createShareRecordStore } from './self-hosted-share-records'
+import { inlineLocalHtmlAssets } from './share-html-inline'
 
 export type ShareService = {
   publish: (request: {
@@ -139,12 +140,17 @@ export function createShareService(options: {
     title?: string
   }): Promise<ShareResult<SharePublishResult>> {
     try {
-      const bytes = shareContentByteLength(request.content)
+      // The service stores one HTML string: inline relative stylesheets and their assets here so
+      // the share page renders like the local file. Size is checked on the inlined bytes — that is
+      // what actually gets uploaded. Remote source keys and unexpected failures fall back to the
+      // original content inside the inliner.
+      const content = await inlineLocalHtmlAssets(request.content, request.sourceKey)
+      const bytes = shareContentByteLength(content)
       if (bytes > SHARE_MAX_CONTENT_BYTES) {
         throw new ShareServiceError('too-large', '文件超过 10 MiB，无法分享')
       }
       const payload = {
-        content: request.content,
+        content,
         fileName: request.fileName,
         ...(request.title ? { title: request.title } : {})
       }
