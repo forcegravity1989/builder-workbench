@@ -13,6 +13,7 @@
 
   var HIGHLIGHT_CLASS = 'bw-anno-highlight'
   var HOVER_CLASS = 'bw-anno-hover'
+  var SELECTING_CLASS = 'bw-anno-selecting'
   var selecting = false
   var hovered = null
   var highlighted = null
@@ -33,7 +34,11 @@
     style.id = 'bw-anno-styles'
     style.textContent =
       `.${HIGHLIGHT_CLASS} { outline: 2px solid #f59e0b; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(245,158,11,.25); }` +
-      `.${HOVER_CLASS} { outline: 2px dashed #f59e0b; outline-offset: 2px; cursor: pointer !important; }`
+      `.${HOVER_CLASS} { outline: 2px dashed #f59e0b; outline-offset: 2px; }` +
+      // The viewer's own crosshair never shows because this iframe covers it; the selection
+      // cursor has to be set inside the shared document. It outranks page rules (inline cursor,
+      // links) and the hover rule above.
+      `html.${SELECTING_CLASS}, html.${SELECTING_CLASS} body, html.${SELECTING_CLASS} body * { cursor: crosshair !important; }`
     var mount = document.head || document.documentElement
     if (mount) {
       mount.appendChild(style)
@@ -148,6 +153,7 @@
     selecting = true
     clearHighlight()
     injectStyles()
+    document.documentElement.classList.add(SELECTING_CLASS)
     document.addEventListener('click', onSelectionClick, true)
     document.addEventListener('mouseover', onSelectionOver, true)
   }
@@ -156,6 +162,7 @@
     selecting = false
     document.removeEventListener('click', onSelectionClick, true)
     document.removeEventListener('mouseover', onSelectionOver, true)
+    document.documentElement.classList.remove(SELECTING_CLASS)
     clearHover()
   }
 
