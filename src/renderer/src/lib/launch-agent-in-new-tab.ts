@@ -55,6 +55,13 @@ export type LaunchAgentInNewTabArgs = {
   onPromptDelivered?: () => void
   /** When false, create the tab without stealing the current worktree/tab selection. */
   activate?: boolean
+  /**
+   * With `promptDelivery: 'draft'`, paste the text after the input is ready and do not submit.
+   * Skips native `--prefill`, which Windows PowerShell splits when the draft contains quotes.
+   */
+  deliverDraftByPaste?: boolean
+  /** PTY creation budget for local post-launch draft delivery, separate from composer readiness. */
+  draftPasteSpawnTimeoutMs?: number
 }
 
 export type LaunchAgentInNewTabResult = {
@@ -102,7 +109,8 @@ function launchAgentInNewTabInternal(
     quickCommandLabel,
     launchPlatform,
     onPromptDelivered,
-    activate
+    activate,
+    deliverDraftByPaste
   } = args
   const store = useAppStore.getState()
   const worktree = store.allWorktrees?.().find((entry: { id: string }) => entry.id === worktreeId)
@@ -164,7 +172,8 @@ function launchAgentInNewTabInternal(
       base: startupPlanBase,
       prompt: trimmedPrompt,
       promptDelivery,
-      isFollowupPath
+      isFollowupPath,
+      deliverDraftByPaste
     })
   const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(store, worktreeId)
   const pairedRuntime = isWebRuntimeSessionActive(runtimeEnvironmentId)
@@ -180,7 +189,8 @@ function launchAgentInNewTabInternal(
         },
         prompt: trimmedPrompt,
         promptDelivery,
-        isFollowupPath
+        isFollowupPath,
+        deliverDraftByPaste
       })
     : buildLegacyStartup()
   let promptDeliveryResult: Promise<{ delivered: boolean; failureNotified: boolean }> | undefined
@@ -199,6 +209,7 @@ function launchAgentInNewTabInternal(
       buildLegacyStartup,
       prompt: trimmedPrompt,
       promptDelivery,
+      deliverDraftByPaste,
       agentArgs,
       launchPlatform,
       // Why: omission means terminal locally, but would let a paired host apply
@@ -298,7 +309,10 @@ function launchAgentInNewTabInternal(
       content: pasteDraftAfterLaunch,
       agent,
       submit: submitPastedPrompt,
-      forcePaste: promptDelivery === 'submit-after-ready',
+      forcePaste: promptDelivery === 'submit-after-ready' || deliverDraftByPaste === true,
+      ...(args.draftPasteSpawnTimeoutMs !== undefined
+        ? { spawnTimeoutMs: args.draftPasteSpawnTimeoutMs }
+        : {}),
       onTimeout: timeoutNotice.onTimeout
     }).then((delivered) => {
       if (delivered) {

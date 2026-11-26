@@ -31,6 +31,7 @@ export function deliverLaunchPromptToAgentTab(args: {
   content: string
   submit: boolean
   forcePaste: boolean
+  spawnTimeoutMs?: number
   timeoutMs?: number
   onTimeout?: () => void
 }): Promise<boolean> {
@@ -62,6 +63,7 @@ export function deliverLaunchPromptToAgentTab(args: {
     agent,
     submit,
     forcePaste,
+    ...(args.spawnTimeoutMs !== undefined ? { spawnTimeoutMs: args.spawnTimeoutMs } : {}),
     timeoutMs,
     onTimeout
   }).then(

@@ -15216,7 +15216,15 @@
             "workbenchUiErrorTitle": "Workbench hit a recoverable UI error",
             "workbenchClosedTitle": "Workbench closed unexpectedly",
             "workbenchNotesPlaceholder": "Optional: what were you doing before Workbench closed?",
-            "workbenchBrand": "Workbench"
+            "workbenchBrand": "Workbench",
+            "reactRenderErrorInSurface": "React render error in {{surface}}",
+            "reactRenderError": "React render error",
+            "reportCrashTitle": "Report a crash",
+            "crashDescription": "Send a privacy-safe crash report. Recent redacted diagnostic logs are included when available.",
+            "uiErrorDescription": "Send a privacy-safe diagnostic report to help us understand the failed UI surface.",
+            "processCrashDescription": "Send a privacy-safe diagnostic report to help us understand what happened.",
+            "notesPlaceholder": "Optional: what happened?",
+            "uiErrorNotesPlaceholder": "Optional: what were you doing before this UI error?"
           },
           "submit": {
             "notice": {

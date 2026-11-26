@@ -34,7 +34,16 @@ import { useCrashReportCopy } from './use-crash-report-copy'
 function formatSummary(report: CrashReportRecord): string {
   if (isReactErrorBoundaryReport(report)) {
     const surface = typeof report.details.surface === 'string' ? report.details.surface : null
-    return surface ? `React render error in ${surface}` : 'React render error'
+    return surface
+      ? translate(
+          'auto.components.crash.report.CrashReportDialog.reactRenderErrorInSurface',
+          'React render error in {{surface}}',
+          { surface }
+        )
+      : translate(
+          'auto.components.crash.report.CrashReportDialog.reactRenderError',
+          'React render error'
+        )
   }
   return `${report.processType} ${report.reason}${
     report.exitCode === null ? '' : ` (exit ${report.exitCode})`
@@ -43,7 +52,10 @@ function formatSummary(report: CrashReportRecord): string {
 
 function getDialogTitle(report: CrashReportRecord | null): string {
   if (!report) {
-    return 'Report a crash'
+    return translate(
+      'auto.components.crash.report.CrashReportDialog.reportCrashTitle',
+      'Report a crash'
+    )
   }
   if (isReactErrorBoundaryReport(report)) {
     return isWorkbenchShell()
@@ -63,19 +75,34 @@ function getDialogTitle(report: CrashReportRecord | null): string {
 
 function getDialogDescription(report: CrashReportRecord | null): string {
   if (!report) {
-    return 'Send a privacy-safe crash report. Recent redacted diagnostic logs are included when available.'
+    return translate(
+      'auto.components.crash.report.CrashReportDialog.crashDescription',
+      'Send a privacy-safe crash report. Recent redacted diagnostic logs are included when available.'
+    )
   }
   return report && isReactErrorBoundaryReport(report)
-    ? 'Send a privacy-safe diagnostic report to help us understand the failed UI surface.'
-    : 'Send a privacy-safe diagnostic report to help us understand what happened.'
+    ? translate(
+        'auto.components.crash.report.CrashReportDialog.uiErrorDescription',
+        'Send a privacy-safe diagnostic report to help us understand the failed UI surface.'
+      )
+    : translate(
+        'auto.components.crash.report.CrashReportDialog.processCrashDescription',
+        'Send a privacy-safe diagnostic report to help us understand what happened.'
+      )
 }
 
 function getNotesPlaceholder(report: CrashReportRecord | null): string {
   if (!report) {
-    return 'Optional: what happened?'
+    return translate(
+      'auto.components.crash.report.CrashReportDialog.notesPlaceholder',
+      'Optional: what happened?'
+    )
   }
   if (report && isReactErrorBoundaryReport(report)) {
-    return 'Optional: what were you doing before this UI error?'
+    return translate(
+      'auto.components.crash.report.CrashReportDialog.uiErrorNotesPlaceholder',
+      'Optional: what were you doing before this UI error?'
+    )
   }
   return isWorkbenchShell()
     ? translate(
