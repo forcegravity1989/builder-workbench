@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button'
 import { ExternalLink } from 'lucide-react'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
 export function TaskPageGitHubModeControls({
-  model
+  model,
+  embedded = false
 }: {
   model: TaskPageComposerActionsModel
+  embedded?: boolean
 }): React.JSX.Element | null {
   const t = useTranslate()
   const {
@@ -32,11 +34,14 @@ export function TaskPageGitHubModeControls({
     selectedGitHubRepoExternalLink,
     handleSelectGithubTaskKind
   } = model
+  const modeButtons = embedded
+    ? githubModeButtons.filter((mode) => mode.id !== 'project')
+    : githubModeButtons
   return taskSource === 'github' ? (
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
+    <div className={cn('flex min-w-0 flex-wrap items-center gap-2', embedded && 'shrink-0')}>
       {projectModeVisible ? (
         <div className="flex items-center gap-1 text-xs">
-          {githubModeButtons.map((mode) => {
+          {modeButtons.map((mode) => {
             const active =
               mode.id === 'project'
                 ? githubMode === 'project'

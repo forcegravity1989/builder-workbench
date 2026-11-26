@@ -9,7 +9,9 @@ import type { TaskPageRepoSelectionModel } from '../use-task-page-repo-selection
  * deep links and other screens — replay through the shared nav
  * history like every other provider's detail entry.
  */
-export function useCodeHubDetailItem(model: Pick<TaskPageRepoSelectionModel, 'pageData' | 'selectedRepos' | 'openTaskPage'>) {
+export function useCodeHubDetailItem(
+  model: Pick<TaskPageRepoSelectionModel, 'pageData' | 'selectedRepos' | 'openTaskPage'>
+) {
   const { pageData, selectedRepos, openTaskPage } = model
   const codehubDetailItem = pageData.openCodeHubTask ?? null
   const setCodehubDetailItem = useCallback(
@@ -25,7 +27,7 @@ export function useCodeHubDetailItem(model: Pick<TaskPageRepoSelectionModel, 'pa
         const workbenchTaskScope = state.taskPageData.workbenchTaskScope ?? null
         openTaskPage(
           {
-            taskSource: 'codehub',
+            taskSource: state.taskPageData.taskSource,
             preselectedRepoId: item.repoId,
             ...(workbenchTaskScope ? { workbenchTaskScope } : {}),
             openCodeHubTask: item,

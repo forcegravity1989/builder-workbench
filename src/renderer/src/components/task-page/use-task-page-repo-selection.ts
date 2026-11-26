@@ -32,6 +32,7 @@ import { getTaskPageRepoSourceContext } from '../../lib/work-items/task-repo-sou
 export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
   const {
     settings,
+    persistedUIReady,
     pageData,
     repos,
     updateSettings,
@@ -93,6 +94,30 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
       setRepoSelection(normalized)
     }
   }, [eligibleRepos, repoSelection, taskPickerRepos])
+
+  const hydratedRepoSelection = useRef(false)
+  const preselectedRepoRef = useRef(pageData.preselectedRepoId)
+  const detailOpen = !!(
+    pageData.openGitHubWorkItem ||
+    pageData.openGitLabWorkItem ||
+    pageData.openLinearIssue ||
+    pageData.openJiraIssue ||
+    pageData.openCodeHubTask
+  )
+  useEffect(() => {
+    const preselectionChanged = preselectedRepoRef.current !== pageData.preselectedRepoId
+    preselectedRepoRef.current = pageData.preselectedRepoId
+    if (!persistedUIReady || !settings) {
+      return
+    }
+    if (
+      !hydratedRepoSelection.current ||
+      (preselectionChanged && pageData.preselectedRepoId && !detailOpen)
+    ) {
+      hydratedRepoSelection.current = true
+      setRepoSelection(resolvedInitialSelection)
+    }
+  }, [detailOpen, pageData.preselectedRepoId, persistedUIReady, resolvedInitialSelection, settings])
   const selectedRepos = useMemo(
     () => eligibleRepos.filter((r) => repoSelection.has(r.id)),
     [eligibleRepos, repoSelection]

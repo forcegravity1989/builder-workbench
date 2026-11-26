@@ -1,3 +1,5 @@
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { WORKBENCH_GOAL_SEARCH_PLACEHOLDER } from '@/workbench/TaskScopePanel'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import {
   getGitHubPRStateChips,
@@ -21,6 +23,7 @@ import IssueSourceSelector, { issueSourceChipClass } from '@/components/github/I
 import RepoBadgeLabel from '@/components/repo/RepoBadgeLabel'
 import { repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
 import { seedWorkbenchTaskQuery } from '../../../../../../shared/workbench/task-scope'
+import { TaskPageGitHubModeControls } from './ModeControls'
 import { deriveGitHubTaskPreset } from './task-page-preset-highlight'
 import {
   deriveGitHubPRStateChip,
@@ -103,6 +106,7 @@ export function TaskPageGitHubFilters({
     handleTaskSearchKeyDown,
     githubTasksBusy
   } = model
+  const workbench = isWorkbenchShell()
   const highlightedPreset = deriveGitHubTaskPreset(activeGithubTaskKind, appliedTaskQuery)
   const prStateChip = deriveGitHubPRStateChip(appliedTaskQuery)
   const prWhoChip = deriveGitHubPRWhoChip(appliedTaskQuery)
@@ -124,168 +128,185 @@ export function TaskPageGitHubFilters({
       className="flex min-w-0 flex-col gap-2.5 rounded-md rounded-b-none border border-border/50 bg-muted/35 px-3 py-2.5"
       data-contextual-tour-target="tasks-search-presets"
     >
-      {activeGithubTaskKind === 'prs' ? (
-        // Why: each group wraps as one unit so the divider always separates state from who.
-        <div className="flex flex-wrap items-center gap-1.5">
-          <div className="flex flex-wrap gap-1.5">
-            {getGitHubPRStateChips().map(({ id, label }) => (
+      <div
+        className={cn(
+          'flex min-w-0',
+          workbench ? 'flex-row flex-wrap items-center gap-x-3 gap-y-2' : 'flex-col gap-2.5'
+        )}
+      >
+        {workbench ? <TaskPageGitHubModeControls model={model} embedded /> : null}
+        {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
+        {activeGithubTaskKind === 'prs' ? (
+          // Why: each group wraps as one unit so the divider always separates state from who.
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
+              {getGitHubPRStateChips().map(({ id, label }) => (
+                <PresetChip
+                  key={id}
+                  label={label}
+                  active={prStateChip === id}
+                  onSelect={() => {
+                    // Why: re-applying a lit chip would only rewrite the query and refetch the same rows.
+                    if (prStateChip !== id) {
+                      applyPRFilterChange({ state: id })
+                    }
+                  }}
+                  // Why: keeps main's right-click on Open, which saved the open-PRs preset.
+                  onSetDefault={id === 'open' ? () => handleSetDefaultTaskPreset('prs') : undefined}
+                />
+              ))}
+            </div>
+            <span aria-hidden className="mx-0.5 h-4 w-px bg-border/60" />
+            <div className="flex flex-wrap gap-1.5">
+              {getGitHubPRWhoChips().map(({ id, label }) => (
+                <PresetChip
+                  key={id}
+                  label={label}
+                  active={prWhoChip === id}
+                  onSelect={() => {
+                    if (prWhoChip !== id) {
+                      applyPRFilterChange(gitHubPRWhoChange(id))
+                    }
+                  }}
+                  // Why: the default view is a saved preset, and only the open-state combinations are presets.
+                  onSetDefault={
+                    prStateChip === 'open'
+                      ? () => handleSetDefaultTaskPreset(gitHubPRWhoPreset(id))
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex shrink-0 flex-wrap gap-1.5">
+            {getIssueTaskQueryPresets().map((option) => (
               <PresetChip
-                key={id}
-                label={label}
-                active={prStateChip === id}
+                key={option.id}
+                label={option.label}
+                active={highlightedPreset === option.id}
                 onSelect={() => {
-                  // Why: re-applying a lit chip would only rewrite the query and refetch the same rows.
-                  if (prStateChip !== id) {
-                    applyPRFilterChange({ state: id })
+                  const query = seedWorkbenchTaskQuery(option.query, model.workbenchScope)
+                  setTaskSearchInput(query)
+                  setAppliedTaskSearch(query)
+                  setActiveTaskPreset(option.id)
+                  if (!model.workbenchScope) {
+                    setTaskResumeState({ githubItemsPreset: option.id, githubItemsQuery: query })
+                  }
+                  if (!model.workbenchScopeActive) {
+                    setTaskRefreshNonce((current) => current + 1)
                   }
                 }}
-                // Why: keeps main's right-click on Open, which saved the open-PRs preset.
-                onSetDefault={id === 'open' ? () => handleSetDefaultTaskPreset('prs') : undefined}
+                onSetDefault={() => handleSetDefaultTaskPreset(option.id)}
               />
             ))}
           </div>
-          <span aria-hidden className="mx-0.5 h-4 w-px bg-border/60" />
-          <div className="flex flex-wrap gap-1.5">
-            {getGitHubPRWhoChips().map(({ id, label }) => (
-              <PresetChip
-                key={id}
-                label={label}
-                active={prWhoChip === id}
-                onSelect={() => {
-                  if (prWhoChip !== id) {
-                    applyPRFilterChange(gitHubPRWhoChange(id))
-                  }
-                }}
-                // Why: the default view is a saved preset, and only the open-state combinations are presets.
-                onSetDefault={
-                  prStateChip === 'open'
-                    ? () => handleSetDefaultTaskPreset(gitHubPRWhoPreset(id))
-                    : undefined
-                }
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {getIssueTaskQueryPresets().map((option) => (
-            <PresetChip
-              key={option.id}
-              label={option.label}
-              active={highlightedPreset === option.id}
-              onSelect={() => {
-                const query = seedWorkbenchTaskQuery(option.query, model.workbenchScope)
-                setTaskSearchInput(query)
-                setAppliedTaskSearch(query)
-                setActiveTaskPreset(option.id)
-                if (!model.workbenchScope) {
-                  setTaskResumeState({ githubItemsPreset: option.id, githubItemsQuery: query })
-                }
-                if (!model.workbenchScopeActive) {
-                  setTaskRefreshNonce((current) => current + 1)
-                }
-              }}
-              onSetDefault={() => handleSetDefaultTaskPreset(option.id)}
-            />
-          ))}
-        </div>
-      )}
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <PRFilterDropdowns
-          parsed={appliedTaskQuery}
-          kind={activeGithubTaskKind}
-          authorLogins={loadedGitHubAuthorLogins}
-          primarySlug={primaryGithubFilterSlug}
-          ownerTarget={primaryGithubFilterTarget}
-          onChange={(change) => applyPRFilterChange(change)}
-        />
-        <div className="relative min-w-0 flex-1 basis-64">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            ref={taskSearchInputRef}
-            data-github-items-search-input
-            value={taskSearchInput}
-            onChange={handleTaskSearchChange}
-            onKeyDown={handleTaskSearchKeyDown}
-            placeholder={
-              activeGithubTaskKind === 'prs'
-                ? t('auto.components.TaskPage.eee4df4c66', 'Search GitHub PRs...')
-                : t('auto.components.TaskPage.b15ceb409d', 'Search GitHub issues...')
-            }
-            className="h-8 rounded-md border-border/60 bg-background pl-8 pr-8 text-xs text-foreground shadow-xs"
-          />
-          {taskSearchInput || appliedTaskSearch ? (
-            <button
-              type="button"
-              aria-label={t('auto.components.TaskPage.b797bdd7c3', 'Clear search')}
-              onClick={handleResetGithubTaskSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
-            >
-              <X className="size-4" />
-            </button>
-          ) : null}
-        </div>
+        )}
+        {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
         <div
-          className="flex shrink-0 items-center gap-2"
-          data-contextual-tour-target="tasks-actions"
+          className={cn(
+            'flex min-w-0 flex-wrap items-center gap-2',
+            workbench && 'min-w-48 flex-1'
+          )}
         >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  // Why: restore a non-empty draft (accidental dismissal recoverable); empty default guards a stale draft after a repo change.
-                  const seed = resolveNewIssueOpenSeed({
-                    draft: useAppStore.getState().newIssueDraft,
-                    selectedRepoIds: selectedRepos.map((r) => r.id)
-                  })
-                  setNewIssueTitle(seed.title)
-                  setNewIssueBody(seed.body)
-                  setNewIssueLabels(seed.labels)
-                  setNewIssueAssignees(seed.assignees)
-                  setNewIssueRepoId(seed.repoId)
-                  setNewIssueOpen(true)
-                }}
-                disabled={!newIssueTargetRepo}
-                aria-label={t('auto.components.TaskPage.d3d0998b7d', 'New GitHub issue')}
-                className="size-8 border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60"
+          <PRFilterDropdowns
+            parsed={appliedTaskQuery}
+            kind={activeGithubTaskKind}
+            authorLogins={loadedGitHubAuthorLogins}
+            primarySlug={primaryGithubFilterSlug}
+            ownerTarget={primaryGithubFilterTarget}
+            onChange={(change) => applyPRFilterChange(change)}
+          />
+          <div className="relative min-w-0 flex-1 basis-64">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={taskSearchInputRef}
+              data-github-items-search-input
+              value={taskSearchInput}
+              onChange={handleTaskSearchChange}
+              onKeyDown={handleTaskSearchKeyDown}
+              placeholder={
+                model.workbenchScopeActive && activeGithubTaskKind === 'issues'
+                  ? WORKBENCH_GOAL_SEARCH_PLACEHOLDER
+                  : activeGithubTaskKind === 'prs'
+                    ? t('auto.components.TaskPage.eee4df4c66', 'Search GitHub PRs...')
+                    : t('auto.components.TaskPage.b15ceb409d', 'Search GitHub issues...')
+              }
+              className="h-8 rounded-md border-border/60 bg-background pl-8 pr-8 text-xs text-foreground shadow-xs"
+            />
+            {taskSearchInput || appliedTaskSearch ? (
+              <button
+                type="button"
+                aria-label={t('auto.components.TaskPage.b797bdd7c3', 'Clear search')}
+                onClick={handleResetGithubTaskSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
               >
-                <Plus className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={6}>
-              {t('auto.components.TaskPage.d3d0998b7d', 'New GitHub issue')}
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleRefreshGithubTasks}
-                disabled={githubTasksBusy}
-                aria-busy={githubTasksBusy}
-                aria-label={
-                  githubTasksBusy
-                    ? t('auto.components.TaskPage.6ffa6be99f', 'Refreshing GitHub work')
-                    : t('auto.components.TaskPage.ff53631e6f', 'Refresh GitHub work')
-                }
-                className="size-8 cursor-pointer border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60 disabled:pointer-events-auto disabled:cursor-wait"
-              >
-                {githubTasksBusy ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="size-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={6}>
-              {githubTasksBusy
-                ? t('auto.components.TaskPage.31f81cc334', 'Refreshing GitHub work…')
-                : t('auto.components.TaskPage.ff53631e6f', 'Refresh GitHub work')}
-            </TooltipContent>
-          </Tooltip>
+                <X className="size-4" />
+              </button>
+            ) : null}
+          </div>
+          <div
+            className="flex shrink-0 items-center gap-2"
+            data-contextual-tour-target="tasks-actions"
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    // Why: restore a non-empty draft (accidental dismissal recoverable); empty default guards a stale draft after a repo change.
+                    const seed = resolveNewIssueOpenSeed({
+                      draft: useAppStore.getState().newIssueDraft,
+                      selectedRepoIds: selectedRepos.map((r) => r.id)
+                    })
+                    setNewIssueTitle(seed.title)
+                    setNewIssueBody(seed.body)
+                    setNewIssueLabels(seed.labels)
+                    setNewIssueAssignees(seed.assignees)
+                    setNewIssueRepoId(seed.repoId)
+                    setNewIssueOpen(true)
+                  }}
+                  disabled={!newIssueTargetRepo}
+                  aria-label={t('auto.components.TaskPage.d3d0998b7d', 'New GitHub issue')}
+                  className="size-8 border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60"
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={6}>
+                {t('auto.components.TaskPage.d3d0998b7d', 'New GitHub issue')}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefreshGithubTasks}
+                  disabled={githubTasksBusy}
+                  aria-busy={githubTasksBusy}
+                  aria-label={
+                    githubTasksBusy
+                      ? t('auto.components.TaskPage.6ffa6be99f', 'Refreshing GitHub work')
+                      : t('auto.components.TaskPage.ff53631e6f', 'Refresh GitHub work')
+                  }
+                  className="size-8 cursor-pointer border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60 disabled:pointer-events-auto disabled:cursor-wait"
+                >
+                  {githubTasksBusy ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={6}>
+                {githubTasksBusy
+                  ? t('auto.components.TaskPage.31f81cc334', 'Refreshing GitHub work…')
+                  : t('auto.components.TaskPage.ff53631e6f', 'Refresh GitHub work')}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </div>
 

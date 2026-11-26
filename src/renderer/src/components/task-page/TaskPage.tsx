@@ -1,9 +1,12 @@
 import React from 'react'
-import { useAppStore } from '@/store/index'
+import { isCodeHubGitRemote } from '../../../../shared/codehub'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { CodeHubTaskPage } from './codehub/CodeHubTaskPage'
 import { useTaskPageStoreBindings } from './use-task-page-store-bindings'
-import { useTaskPageRepoSelection } from './use-task-page-repo-selection'
+import {
+  useTaskPageRepoSelection,
+  type TaskPageRepoSelectionModel
+} from './use-task-page-repo-selection'
 import { useTaskPageRuntimeHosts } from './use-task-page-runtime-hosts'
 import { useTaskPageSourceAvailability } from './use-task-page-source-availability'
 import { useTaskPageProviderState } from './use-task-page-provider-state'
@@ -46,14 +49,40 @@ import { useTaskPageComposerActions } from './use-task-page-composer-actions'
 import { TaskPageSurface } from './Surface'
 
 export default function TaskPage(): React.JSX.Element {
-  const codehub = useAppStore((state) => state.taskPageData.taskSource === 'codehub')
-  return codehub && isWorkbenchShell() ? <CodeHubTaskPage /> : <NativeTaskPage />
+  const selection = useTaskPageRepoSelection(useTaskPageStoreBindings())
+  const {
+    pageData,
+    selectedRepos,
+    preflightStatus,
+    preflightStatusCurrent,
+    preflightDescribesDesktop
+  } = selection
+  const explicitCodeHub = pageData.taskSource === 'codehub' || !!pageData.openCodeHubTask
+  const implicitCodeHub =
+    !pageData.taskSource &&
+    !pageData.workbenchTaskScope &&
+    !pageData.openGitHubWorkItem &&
+    !pageData.openGitLabWorkItem &&
+    !pageData.openLinearIssue &&
+    !pageData.openJiraIssue &&
+    preflightStatusCurrent &&
+    preflightDescribesDesktop &&
+    preflightStatus?.codehub?.installed === true &&
+    selectedRepos.length > 0 &&
+    selectedRepos.every((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
+  return isWorkbenchShell() && (explicitCodeHub || implicitCodeHub) ? (
+    <CodeHubTaskPage selection={selection} />
+  ) : (
+    <NativeTaskPage selection={selection} />
+  )
 }
 
-function NativeTaskPage(): React.JSX.Element {
-  const stage1 = useTaskPageStoreBindings()
-  const stage2 = useTaskPageRepoSelection(stage1)
-  const stage3 = useTaskPageRuntimeHosts(stage2)
+function NativeTaskPage({
+  selection
+}: {
+  selection: TaskPageRepoSelectionModel
+}): React.JSX.Element {
+  const stage3 = useTaskPageRuntimeHosts(selection)
   const stage4 = useTaskPageSourceAvailability(stage3)
   const stage5 = useTaskPageProviderState(stage4)
   const stage6 = useTaskPageGitHubListState(stage5)

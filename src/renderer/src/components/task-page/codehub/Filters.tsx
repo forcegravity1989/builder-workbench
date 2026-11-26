@@ -1,3 +1,4 @@
+import { WorkbenchTaskFilterRow } from '../WorkbenchTaskFilterRow'
 import { CodeHubFilterPopover, type CodeHubFilterModel } from './FilterPopover'
 import { CodeHubCreateIssueDialog } from './CreateIssueDialog'
 import { useEffect, useState } from 'react'
@@ -16,14 +17,24 @@ import { isCodeHubGitRemote } from '../../../../../shared/codehub'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export type CodeHubFiltersModel = CodeHubFilterModel &
-  Pick<TaskPageRepoSelectionModel, 'eligibleRepos' | 'repoSelection' | 'setRepoSelection' | 'taskPickerGroups' | 'taskPickerRepos' | 'updateSettings'> & {
+  Pick<
+    TaskPageRepoSelectionModel,
+    | 'eligibleRepos'
+    | 'repoSelection'
+    | 'setRepoSelection'
+    | 'taskPickerGroups'
+    | 'taskPickerRepos'
+    | 'updateSettings'
+  > & {
     codehubPreset: 'open' | 'mine' | 'review'
     codehubLoading: boolean
     codehubQuery: string
     setCodehubView: (view: 'issues' | 'mrs') => void
     setCodehubQuery: (query: string) => void
     setCodehubRefreshNonce: (update: (nonce: number) => number) => void
-    getTaskPickerRepoHostLabel?: ComponentProps<typeof TaskProjectSourceCombobox>['getRepoHostLabel']
+    getTaskPickerRepoHostLabel?: ComponentProps<
+      typeof TaskProjectSourceCombobox
+    >['getRepoHostLabel']
     workbenchScope: boolean
     clearWorkbenchProject: () => void
   }
@@ -84,7 +95,7 @@ export function TaskPageCodeHubFilters({
     setCodehubAssignee('')
     setCodehubLabels([])
   }
-  return (
+  const filters = (
     <div
       className="flex min-w-0 flex-col gap-2.5 rounded-md rounded-b-none border border-border/50 bg-muted/35 px-3 py-2.5"
       data-contextual-tour-target="tasks-search-presets"
@@ -294,5 +305,10 @@ export function TaskPageCodeHubFilters({
         onCreated={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
       />
     </div>
+  )
+  return workbench ? (
+    <WorkbenchTaskFilterRow helpEnabled={!createOpen}>{filters}</WorkbenchTaskFilterRow>
+  ) : (
+    filters
   )
 }

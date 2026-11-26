@@ -1,21 +1,25 @@
 import { TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { TaskPageComposerActionsModel } from './use-task-page-composer-actions'
 import { cn } from '@/lib/class-names'
 import { TaskPageSourceBar } from './SourceBar'
 import { AlertCircle } from 'lucide-react'
 import { TaskPageGitHubModeControls } from './github/listing/ModeControls'
 import { TaskPageProviderFilters } from './ProviderFilters'
+import { WorkbenchTaskFilterRow } from './WorkbenchTaskFilterRow'
+
 export function TaskPageListChrome({
   model
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
-  const { taskSourceAvailabilityNotice, taskPageListChromeHidden } = model
+  const { taskSourceAvailabilityNotice, taskPageListChromeHidden, newIssueOpen } = model
+  const workbench = isWorkbenchShell()
   return (
     <div className={cn('flex-none flex flex-col gap-2', taskPageListChromeHidden && 'hidden')}>
       <section className="flex flex-col gap-2">
         <div className="flex flex-col gap-2">
-          <TaskPageSourceBar model={model} />
+          {workbench ? null : <TaskPageSourceBar model={model} />}
 
           {taskSourceAvailabilityNotice ? (
             <div
@@ -28,9 +32,15 @@ export function TaskPageListChrome({
             </div>
           ) : null}
 
-          <TaskPageGitHubModeControls model={model} />
+          {workbench ? null : <TaskPageGitHubModeControls model={model} />}
 
-          <TaskPageProviderFilters model={model} />
+          {workbench ? (
+            <WorkbenchTaskFilterRow helpEnabled={!taskPageListChromeHidden && !newIssueOpen}>
+              <TaskPageProviderFilters model={model} />
+            </WorkbenchTaskFilterRow>
+          ) : (
+            <TaskPageProviderFilters model={model} />
+          )}
           <TaskPageScopeHeader model={model} />
         </div>
       </section>

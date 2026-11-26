@@ -4,7 +4,12 @@ import type { TaskPageGitHubWorkbenchScopeModel } from './use-task-page-github-w
 import type { GitHubWorkItem } from '../../../../../../shared/github/work-items/work-item-types'
 import { taskPageGitHubItemKey } from '@/components/task-page/github/mutations/task-page-github-work-item-mutation-keys'
 import { deriveAdvertisedTotalPages } from '../../../../../../shared/work-items/work-item-empty-page'
-import { GITHUB_PR_TASK_GRID_CLASS, GITHUB_TASK_GRID_CLASS } from '../../task-page-source-context'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import {
+  GITHUB_PR_TASK_GRID_CLASS,
+  GITHUB_TASK_GRID_CLASS,
+  WORKBENCH_GITHUB_ISSUE_GRID_CLASS
+} from '../../task-page-source-context'
 import { useTaskPageGitHubListPending } from './use-task-page-github-list-pending'
 import { useTaskPagePRCheckHydration } from '../pull-requests/use-task-page-pr-check-hydration'
 export function useTaskPageGitHubListProjection(model: TaskPageGitHubWorkbenchScopeModel) {
@@ -93,9 +98,12 @@ export function useTaskPageGitHubListProjection(model: TaskPageGitHubWorkbenchSc
     return null
   }, [activeGithubTaskKind, perRepoSourceState])
   const showPRManagementColumns = activeGithubTaskKind === 'prs'
+  const showIssueLabelsColumn = !showPRManagementColumns && isWorkbenchShell()
   const githubTaskGridClass = showPRManagementColumns
     ? GITHUB_PR_TASK_GRID_CLASS
-    : GITHUB_TASK_GRID_CLASS
+    : showIssueLabelsColumn
+      ? WORKBENCH_GITHUB_ISSUE_GRID_CLASS
+      : GITHUB_TASK_GRID_CLASS
   const ensurePRChecksLoaded = useTaskPagePRCheckHydration(
     model,
     filteredWorkItems,
@@ -138,6 +146,7 @@ export function useTaskPageGitHubListProjection(model: TaskPageGitHubWorkbenchSc
     primaryGithubFilterSlug,
     showPRManagementColumns,
     githubTaskGridClass,
+    showIssueLabelsColumn,
     ensurePRChecksLoaded,
     lastLoadedPageIndex,
     lastLoadedPageFull,

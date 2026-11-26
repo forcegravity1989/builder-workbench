@@ -48,6 +48,8 @@ export const JIRA_ITEM_LIMIT = 50
 export const PR_CHECKS_EAGER_PREFETCH_LIMIT = 20
 export const GITHUB_TASK_GRID_CLASS =
   'min-w-[790px] grid-cols-[72px_minmax(320px,1fr)_84px_100px_92px_122px]'
+export const WORKBENCH_GITHUB_ISSUE_GRID_CLASS =
+  'min-w-[914px] grid-cols-[72px_minmax(320px,1fr)_84px_112px_100px_92px_122px]'
 export const GITHUB_PR_TASK_GRID_CLASS =
   'min-w-[1020px] grid-cols-[72px_minmax(360px,2fr)_132px_128px_132px_92px_158px]'
 // Why: sticky cells need the row's opaque, animated surface to prevent bleed and hover flashes.

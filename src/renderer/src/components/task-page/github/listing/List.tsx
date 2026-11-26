@@ -50,6 +50,7 @@ export function TaskPageGitHubList({
     softHiddenVisibleCount,
     showGitHubTaskSkeletons,
     showPRManagementColumns,
+    showIssueLabelsColumn,
     githubTaskGridClass,
     totalPages,
     handleLoadNextPage
@@ -109,6 +110,9 @@ export function TaskPageGitHubList({
           </span>
           {activeGithubTaskKind === 'issues' ? (
             <span>{t('auto.components.TaskPage.8aba10579d', 'Assignees')}</span>
+          ) : null}
+          {showIssueLabelsColumn ? (
+            <span>{t('auto.components.GitHubItemDialog.217e55d87c', 'Labels')}</span>
           ) : null}
           {showPRManagementColumns ? (
             <>
@@ -250,6 +254,11 @@ export function TaskPageGitHubList({
                 {!showPRManagementColumns ? (
                   <div className="flex items-center">
                     <div className="h-3 w-24 animate-pulse rounded bg-muted/60" />
+                  </div>
+                ) : null}
+                {showIssueLabelsColumn ? (
+                  <div className="flex items-center">
+                    <div className="h-4 w-20 animate-pulse rounded-full bg-muted/70" />
                   </div>
                 ) : null}
                 {showPRManagementColumns ? (

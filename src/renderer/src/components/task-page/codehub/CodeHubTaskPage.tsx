@@ -1,9 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { GitPullRequest, X } from 'lucide-react'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { addAppKeyListener, removeAppKeyListener } from '@/lib/keyboard/app-keyboard-router'
 import { hasVisibleOverlay } from '@/lib/overlay-interaction/visible-overlay'
@@ -22,36 +17,23 @@ import {
   parseExecutionHostId
 } from '../../../../../shared/execution-host/execution-host'
 import { getLinkedWorkItemSuggestedName } from '../../../../../shared/workspace/naming/workspace-name'
-import { getTaskProjectPickerGroups } from '../../../../../shared/work-items/task-repo-selection'
-import { TaskPageSourceChip } from '../TaskPageSourceChip'
-import { useTaskPageRepoSelection } from '../use-task-page-repo-selection'
-import { useTaskPageStoreBindings } from '../use-task-page-store-bindings'
+import type { TaskPageRepoSelectionModel } from '../use-task-page-repo-selection'
 import { useTaskPageCodeHubLoading, type CodeHubTaskRow } from '../../use-task-page-codehub-loading'
 import { TaskPageCodeHubDetail } from './Detail'
 import { TaskPageCodeHubFilters } from './Filters'
 import { TaskPageCodeHubItemList } from './ItemList'
 import { useCodeHubDetailItem } from './use-codehub-detail-item'
 
-export function CodeHubTaskPage(): React.JSX.Element {
-  const t = useTranslate()
-  const selection = useTaskPageRepoSelection(useTaskPageStoreBindings())
-  const { pageData, closeTaskPage, openTaskPage, updateSettings } = selection
+export function CodeHubTaskPage({
+  selection
+}: {
+  selection: TaskPageRepoSelectionModel
+}): React.JSX.Element {
+  const { pageData, closeTaskPage, updateSettings } = selection
   const scope = pageData.workbenchTaskScope ?? null
-  const eligibleRepos = useMemo(
-    () => selection.eligibleRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity)),
-    [selection.eligibleRepos]
-  )
   const selectedRepos = useMemo(
-    () => eligibleRepos.filter((repo) => selection.repoSelection.has(repo.id)),
-    [eligibleRepos, selection.repoSelection]
-  )
-  const taskPickerGroups = useMemo(
-    () => getTaskProjectPickerGroups(eligibleRepos, selection.repoSelection),
-    [eligibleRepos, selection.repoSelection]
-  )
-  const taskPickerRepos = useMemo(
-    () => taskPickerGroups.map((group) => group.repo),
-    [taskPickerGroups]
+    () => selection.selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity)),
+    [selection.selectedRepos]
   )
   const detail = useCodeHubDetailItem({ ...selection, selectedRepos })
   const [codehubView, setCodehubView] = useState<'issues' | 'mrs'>('issues')
@@ -247,64 +229,14 @@ export function CodeHubTaskPage(): React.JSX.Element {
           />
         ) : (
           <>
-            <div
-              className="flex min-w-0 flex-wrap items-center gap-2"
-              data-contextual-tour-target="tasks-source-filters"
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 rounded-full"
-                    onClick={closeTaskPage}
-                    aria-label={t('auto.components.TaskPage.1a06219d5c', 'Close tasks')}
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={6}>
-                  {t('auto.components.TaskPage.4826fd1ad8', 'Close · Esc')}
-                </TooltipContent>
-              </Tooltip>
-              <div className="mx-1 h-5 w-px bg-border/50" aria-hidden />
-              {selection.visibleSourceOptions.map((source) => (
-                <TaskPageSourceChip
-                  key={source.id}
-                  id={source.id}
-                  label={source.label}
-                  Icon={source.Icon}
-                  active={false}
-                  disabled={source.disabled}
-                  onSelect={() => {
-                    openTaskPage({ taskSource: source.id }, { recordTasksInteraction: false })
-                    void updateSettings({ defaultTaskSource: source.id }).catch(() => {
-                      toast.error(
-                        t(
-                          'auto.components.TaskPage.609532fae7',
-                          'Failed to save default task source.'
-                        )
-                      )
-                    })
-                  }}
-                />
-              ))}
-              <TaskPageSourceChip
-                id="codehub"
-                label={t('auto.components.TaskPage.codehubProvider', 'CodeHub')}
-                Icon={GitPullRequest}
-                active
-                onSelect={() => {}}
-              />
-            </div>
             <TaskPageCodeHubFilters
               model={{
                 ...controls,
-                eligibleRepos,
+                eligibleRepos: selection.eligibleRepos,
                 repoSelection: selection.repoSelection,
                 setRepoSelection: selection.setRepoSelection,
-                taskPickerGroups,
-                taskPickerRepos,
+                taskPickerGroups: selection.taskPickerGroups,
+                taskPickerRepos: selection.taskPickerRepos,
                 getTaskPickerRepoHostLabel: (repo) => {
                   const hostId = getRepoExecutionHostId(repo)
                   const host = parseExecutionHostId(hostId)

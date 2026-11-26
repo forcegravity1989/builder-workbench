@@ -198,7 +198,9 @@ git rev-parse 'v1.4.272^{commit}'
 
 ### 2.4 CodeHub 边界
 
-CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也不通过 `gh`/`glab` 降级处理。CodeHub service、`codehub:*` RPC、任务来源和 GitHub 更新路径保持分离；详细行为见 [CodeHub 特性](../docs/05-features/codehub/STATUS.md) 与 [CodeHub 指南](../docs/03-guide/codehub-cli.md)。
+CodeHub 任务由独立页面和服务处理，使用 `codehub:*` RPC。BW 从已选项目推断 CodeHub 来源，同时保留版本范围及详情入口传入的明确任务来源。同步时从 [任务入口](../src/renderer/src/components/task-page/TaskPage.tsx)分别核对普通项目、版本任务和详情链接，再核对 CodeHub 的列表、筛选、详情、新建及项目切换。详细行为见 [CodeHub 特性](../docs/05-features/codehub/STATUS.md) 与 [CodeHub 指南](../docs/03-guide/codehub-cli.md)。
+
+BW 任务屏沿 [任务工具栏](../src/renderer/src/components/task-page/ListChrome.tsx)使用紧凑筛选、帮助和范围入口，GitHub Issue 列表的标签列可直接编辑。升级时检查头部结构、Issue 与 PR 切换、表头与数据行对齐，以及 CodeHub 筛选行上的帮助入口。
 
 ### 2.5 从旧 Rust main 吸收的内容
 
