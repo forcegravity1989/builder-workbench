@@ -1,0 +1,36 @@
+src/renderer/src/workbench/improvement/open-assistant.ts
+  s_abaef6b3437c6f::t_5dbabe5e2f8f9c 74,77
+  s_abaef6b3437c6f::t_86f5dce7f487e0 8,54-56,80-82
+docs/04-design-system/guidance.md
+  s_abaef6b3437c6f::t_4fce620495777b 80
+docs/05-features/bw-contribution/STATUS.md
+  s_abaef6b3437c6f::t_33283486e14a03 10
+docs/05-features/bw-contribution/spec.md
+  s_abaef6b3437c6f::t_18f0e893e9845a 32
+src/renderer/src/lib/launch-agent-in-new-tab.test.ts
+  s_abaef6b3437c6f::t_0dfb9530848a4a 586-587,589-591,601-605,609
+src/renderer/src/lib/launch-agent-in-new-tab.ts
+  s_abaef6b3437c6f::t_bf5f83a8614622 105,167,183,301
+src/renderer/src/lib/launch-agent-startup-prompt-plan.ts
+  s_abaef6b3437c6f::t_7e662b939c668b 31
+src/renderer/src/lib/launch-agent-web-host-tab.ts
+  s_abaef6b3437c6f::t_494bd43f542cf0 90,155
+src/shared/planning-draft-prompt.ts
+  s_abaef6b3437c6f::t_47a47ef912a523 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5+huawei.3",
+  "base_commit_sha": "f836668b0e8a2aacfc09eeca2be74e7f9890e9d2",
+  "prompts": {},
+  "sessions": {
+    "s_abaef6b3437c6f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "87488899-7396-4f75-ba9e-a7da2ea9737d",
+        "model": "grok-4.7"
+      },
+      "human_author": "z30026659 <zhuyu55@h-partners.com>"
+    }
+  }
+}
