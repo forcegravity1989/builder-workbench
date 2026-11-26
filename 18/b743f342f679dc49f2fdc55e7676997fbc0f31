@@ -1,0 +1,14 @@
+services/bw-share/src/viewer.html
+  h_d0d195a8c70989 1109-1110,1114-1115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6+huawei.3",
+  "base_commit_sha": "18b743f342f679dc49f2fdc55e7676997fbc0f31",
+  "prompts": {},
+  "humans": {
+    "h_d0d195a8c70989": {
+      "author": "forcegravity1989 <forcegravity1989@gmail.com>"
+    }
+  }
+}
