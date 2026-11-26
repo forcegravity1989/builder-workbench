@@ -89,6 +89,24 @@ Codex 托管目录的套接字修复单独核对于 2026-11-13，来源为 Orca 
 | Bots 及云端能力    | Bot、连接器、跨主机群组的桌面及主进程代码采用固定版，依赖兼容的 Orca 账号和服务。服务端部署按各自服务核对 | BW 内部登录、集成、遥测及产物分享仍走原产品链路。见 §0.2、§2.1、§2.3                                                       |
 | 移动端、资源与工程 | 保留共享配对协议，按桌面依赖采用原生资源及构建组件                                                        | Orca Mobile 产品已移除，BW 文档、Skill、打包和验证按仓内规则维护。见 §2.1、§2.2、§2.6                                      |
 
+### 0.7 BW 桌面入口核对
+
+按 Orca v1.4.272 与 #785 的 `e1e7aa3a95` 源码核对。这里的「可打开」指临时桌面包有可达入口。实际连接、安装、账号和双机结果以对应环境的验收为准。
+
+| 能力                  | BW 桌面入口和条件                                                                                                          | 后续同步取舍                                                                                                                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Agent 看板            | 设置 → 实验功能 → Agent Dashboard，开启后使用工作区侧栏入口。看板显示运行中的 Agent 状态                                   | 现有开关即可体验。工作区启动 Agent 的路径见 §0.2。[开关](../src/renderer/src/components/dashboard/settings/AgentDashboardExperimentalSetting.tsx)、[入口](../src/renderer/src/components/sidebar/chrome/SidebarNav.tsx)                                                    |
+| 工作区看板与空间检查  | 工作区侧栏底部的看板图标。磁盘占用检查从底部状态栏「资源」里的「空间」打开，资源项受状态栏显示配置控制                     | 两条路径均有原生入口。知识库继续走 BW 最左导航。[看板](../src/renderer/src/components/sidebar/chrome/SidebarToolbar.tsx)、[资源](../src/renderer/src/components/status-bar/resources/ResourceUsageStatusSegment.tsx)                                                       |
+| 浮动工作区            | 通过悬浮按钮或快捷键打开，Windows 默认 `Ctrl+Alt+A`。可在设置搜索「浮动工作区」调整按钮位置和使用方式                      | 复用原生全局终端、浏览器及 Markdown 标签页。同步时沿现有浮动入口核对 BW 的批注交接。[主窗口](../src/renderer/src/app-shell/AppWorkspaceShell.tsx)、[快捷键](../src/shared/keybindings/definitions-core-1.ts)                                                               |
+| Skills                | 设置 → 分享技能 → 打开技能。桌面主窗口可打开原生 Skills 页。分享与安装链接沿上游服务                                       | BW 最左导航没有 Skills。恢复侧栏直达可复用现有动作和「显示 Skills 按钮」开关，改动集中在导航。[设置入口](../src/renderer/src/components/settings/skills/sharing/ShareSkillsSettingsPane.tsx)、[BW 导航](../src/renderer/src/workbench/WorkbenchRail.tsx)                   |
+| 插件与浏览器设置      | 设置 → 插件（Alpha）。设置 → 浏览器可以查看本机浏览器配置的密码、CSV 导入与扩展选项                                        | 插件操作取决于来源与权限。密码区仅桌面本机浏览器会话范围显示，扩展选项也要求本机范围。[插件导航](../src/renderer/src/components/settings/navigation/settings-navigation-remote-sections.ts)、[浏览器设置](../src/renderer/src/components/settings/browser/BrowserPane.tsx) |
+| Bots 与自动化         | 工作区侧栏的 Bots，最左导航的自动化。Bots 可用性受设置及宿主能力影响                                                       | 本机 Bot 和自动化可从现有入口进入。跨主机群组与云连接器按实际宿主、Orca 账号及服务能力核对。[Bots 侧栏](../src/renderer/src/components/sidebar/index.tsx)、[BW 导航](../src/renderer/src/workbench/WorkbenchRail.tsx)                                                      |
+| GitHub Projects       | 原生任务页的 Projects 模式仍在代码中，BW 紧凑任务栏省略该模式，恢复任务状态时回到 Issue/PR 列表                            | 可局部接回模式入口，需同时接通模式恢复，并复验 GitHub 项目权限、BW 版本范围和详情返回。[任务工具栏](../src/renderer/src/components/task-page/ListChrome.tsx)、[模式恢复](../src/renderer/src/components/task-page/use-task-page-resume-restoration.ts)                     |
+| 其他原生集成          | BW 集成页列 GitHub、CodeHub、WeLink、CloudBuild。GitLab、Bitbucket、Azure DevOps、Gitea、Linear、Jira 的原生集成卡留在源码 | 单卡展示可定向接回。任务、评审、宿主账号和权限需要按平台验收，GitLab、Linear、Jira 还涉及任务来源入口。[集成页](../src/renderer/src/components/settings/integrations/IntegrationsPane.tsx)、[任务来源](../src/renderer/src/components/task-page/SourceBar.tsx)             |
+| Orca 帐户与应用导航栏 | 帐户可从需要登录的 Bot 流程打开。实验设置中的原生 App rail 开关保留，BW 主窗口始终挂载自己的最左导航                       | Orca 帐户选用对应 Bot 的宿主和连接器。恢复整条原生导航会改变 BW 已有面板位置。单个工具入口可接到 BW 导航。[Bot 登录](../src/renderer/src/components/bots/BotHostSignInButton.tsx)、[主窗口](../src/renderer/src/app-shell/AppWorkspaceShell.tsx)                           |
+
+工件云端分享与 Mobile 的取舍见 §2.1。前者同时涉及界面、运行时 RPC 和数据去向，后者涉及独立移动产品及发包。
+
 ## 1. 上游身份与 fork 基线
 
 | 项               | 值                                                                       |
