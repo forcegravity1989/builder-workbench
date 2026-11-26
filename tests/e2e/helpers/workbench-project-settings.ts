@@ -85,7 +85,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   const card = page.locator(`[data-workbench-project-id="${repoId}"]`)
   expect(existsSync(file)).toBe(false)
   await expect(card.locator('.pcard-name')).toHaveText(registered!.displayName)
-  await expect(card.locator('.pcard-owner')).toContainText('—')
+  await expect(card.locator('.pcard-owner-name')).toHaveText('—')
   const wallGuide = page.locator('[data-contextual-tour-panel]')
   await expect(wallGuide.getByText('找到项目', { exact: true })).toBeVisible()
   await expect(card.locator('[data-repo-header-action]')).toBeVisible()
