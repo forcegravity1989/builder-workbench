@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import type { ChangelogData } from '../../../../../shared/updater/update-status-types'
-import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
-import { useAppStore } from '@/store'
+import type { RetainedUpdateTarget } from '../../../store/slices/ui/retained-update-target'
+import { usePrefersReducedMotion } from '@/hooks/theme/usePrefersReducedMotion'
+import { useAppStore } from '../../../store/index'
 import { Card } from '../../ui/card'
 import { Button } from '../../ui/button'
-import { translate } from '@/i18n/i18n'
-import { UpdateCardStateContent } from './maintenance/update-card/UpdateCardStateContent'
-import { buildUpdateCardErrorModel } from './maintenance/update-card/update-card-error-model'
-import {
-  getUpdateCardAriaLabel,
-  isHttp2ProtocolError,
-  isUpdateCardVisible
-} from './maintenance/update-card/update-card-visibility'
-
-export { isHttp2ProtocolError }
+import { useTranslate } from '@/i18n/use-translate'
+import { updaterMessageText } from '@/app-shell/updates/updater-message-copy'
+import { UpdateCardStateContent } from './UpdateCardStateContent'
+import { buildUpdateCardErrorModel } from './update-card-error-model'
+import { getUpdateCardAriaLabel, isUpdateCardVisible } from './update-card-visibility'
 
 export function UpdateCard(): React.JSX.Element | null {
+  const t = useTranslate()
   const status = useAppStore((state) => state.updateStatus)
   const changelog: ChangelogData | null = useAppStore((state) => state.updateChangelog)
   const updateUserInitiatedCycle = useAppStore((state) => state.updateUserInitiatedCycle)
@@ -31,7 +28,12 @@ export function UpdateCard(): React.JSX.Element | null {
   const collapseAnimationTimerRef = useRef<number | null>(null)
   const [mediaFailed, setMediaFailed] = useState(false)
   const [mediaLoaded, setMediaLoaded] = useState(false)
-  const [installError, setInstallError] = useState<string | null>(null)
+  const installTarget = useAppStore((state) => state.retainedUpdateTarget)
+  const [installFailure, setInstallFailure] = useState<{
+    target: RetainedUpdateTarget
+    message: string
+  } | null>(null)
+  const installError = installFailure?.target === installTarget ? installFailure.message : null
   const [compatibilityRelaunching, setCompatibilityRelaunching] = useState(false)
   const [compatibilitySetupError, setCompatibilitySetupError] = useState<string | null>(null)
   const [autoDismissed, setAutoDismissed] = useState(false)
@@ -53,7 +55,6 @@ export function UpdateCard(): React.JSX.Element | null {
     hasStartedDownload.current = false
     setMediaFailed(false)
     setMediaLoaded(false)
-    setInstallError(null)
   }
   const prevStateRef = useRef(status.state)
   if (status.state !== prevStateRef.current) {
@@ -75,14 +76,39 @@ export function UpdateCard(): React.JSX.Element | null {
     const timer = window.setTimeout(() => setAutoDismissed(true), 3000)
     return () => window.clearTimeout(timer)
   }, [shouldAutoDismissLatest])
+  const installRequestPending = useRef(false)
+  const requestInstall = useCallback(
+    (target: RetainedUpdateTarget | null, discardUnsavedSession = false): void => {
+      if (installRequestPending.current) {
+        return
+      }
+      installRequestPending.current = true
+      setInstallFailure(null)
+      void window.api.updater
+        .quitAndInstall(discardUnsavedSession ? { discardUnsavedSession: true } : undefined)
+        .catch((error: unknown) => {
+          if (target) {
+            setInstallFailure({
+              target,
+              message: error instanceof Error ? error.message : String(error)
+            })
+          }
+        })
+        .finally(() => {
+          installRequestPending.current = false
+        })
+    },
+    []
+  )
   useEffect(() => {
-    if (status.state === 'downloaded' && hasStartedDownload.current) {
-      setInstallError(null)
-      void window.api.updater.quitAndInstall().catch((error) => {
-        setInstallError(String((error as Error)?.message ?? error))
-      })
+    if (status.state !== 'downloaded' || !hasStartedDownload.current) {
+      return
     }
-  }, [status.state])
+    hasStartedDownload.current = false
+    if (!status.installing && !status.automaticDownload && !status.requiredByTeam) {
+      requestInstall(installTarget)
+    }
+  }, [status, installTarget, requestInstall])
 
   const prefersReducedMotion = usePrefersReducedMotion()
   const clearAnimationTimers = useCallback(() => {
@@ -127,18 +153,6 @@ export function UpdateCard(): React.JSX.Element | null {
   const handleClose = (): void => {
     dismissUpdate()
   }
-  const handleInstallRetry = (): void => {
-    setInstallError(null)
-    void window.api.updater.quitAndInstall().catch((error) => {
-      setInstallError(String((error as Error)?.message ?? error))
-    })
-  }
-  const handleForceInstall = (): void => {
-    setInstallError(null)
-    void window.api.updater.quitAndInstall({ discardUnsavedSession: true }).catch((error) => {
-      setInstallError(String((error as Error)?.message ?? error))
-    })
-  }
   const handleEnableHttp1Compatibility = (): void => {
     if (compatibilityRelaunching) {
       return
@@ -151,27 +165,37 @@ export function UpdateCard(): React.JSX.Element | null {
       .catch((error) => {
         const message = String((error as Error)?.message ?? error)
         console.error('[updates] failed to enable HTTP/1.1 compatibility:', error)
-        setCompatibilitySetupError(`Could not enable compatibility mode. ${message}`)
+        setCompatibilitySetupError(
+          t(
+            'auto.components.UpdateCard.compatibilityModeFailed',
+            'Could not enable compatibility mode. {{message}}',
+            { message }
+          )
+        )
         setCompatibilityRelaunching(false)
       })
   }
-  const errorCard = buildUpdateCardErrorModel({
-    status,
-    isLocalBuild,
-    cachedVersion,
-    installError,
-    compatibilityRelaunching,
-    compatibilitySetupError,
-    onChooseLocalBuild: () => void window.api.updater.check({ localBuild: true }),
-    onEnableHttp1Compatibility: handleEnableHttp1Compatibility,
-    onRetryDownload: handleUpdate,
-    onRecheck: () => void window.api.updater.check({ includePrerelease: false }),
-    onInstallRetry: handleInstallRetry,
-    onForceInstall: handleForceInstall
-  })
+  const handleInstallRetry = (): void => requestInstall(installTarget)
+  const errorCard = buildUpdateCardErrorModel(
+    {
+      status,
+      isLocalBuild,
+      cachedVersion,
+      installError,
+      compatibilityRelaunching,
+      compatibilitySetupError,
+      onChooseLocalBuild: () => void window.api.updater.check({ localBuild: true }),
+      onEnableHttp1Compatibility: handleEnableHttp1Compatibility,
+      onRetryDownload: handleUpdate,
+      onRecheck: () => void window.api.updater.check({ includePrerelease: false }),
+      onInstallRetry: handleInstallRetry,
+      onForceInstall: () => requestInstall(installTarget, true)
+    },
+    t
+  )
   const linuxPackageRecovery =
     status.state === 'error' && status.recovery?.kind === 'linux-package-install'
-      ? { recovery: status.recovery, diagnostic: status.message }
+      ? { recovery: status.recovery, diagnostic: updaterMessageText(status) }
       : null
   const handleDismissWithAnimation = (): void => {
     if (prefersReducedMotion) {
@@ -203,7 +227,7 @@ export function UpdateCard(): React.JSX.Element | null {
     }, 150)
   }
   const handleKeyDown = (event: React.KeyboardEvent): void => {
-    if (event.key !== 'Escape') {
+    if (event.key !== 'Escape' || (status.state === 'downloaded' && status.requiredByTeam)) {
       return
     }
     event.preventDefault()
@@ -238,6 +262,10 @@ export function UpdateCard(): React.JSX.Element | null {
     />
   )
 
+  if (status.state === 'downloaded' && status.teamRestart?.phase === 'countdown') {
+    return cardContent
+  }
+
   const animationClass = prefersReducedMotion
     ? ''
     : exiting
@@ -253,7 +281,7 @@ export function UpdateCard(): React.JSX.Element | null {
           <div className="flex items-center gap-3 p-3">
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground">
-                {translate(
+                {t(
                   'auto.components.UpdateCard.b1d867f4fb',
                   "Your terminal sessions won't be interrupted during the update."
                 )}
@@ -264,7 +292,7 @@ export function UpdateCard(): React.JSX.Element | null {
               size="icon"
               className="size-7 shrink-0"
               onClick={markReassuranceSeen}
-              aria-label={translate('auto.components.UpdateCard.7274ef6e59', 'Dismiss tip')}
+              aria-label={t('auto.components.UpdateCard.7274ef6e59', 'Dismiss tip')}
             >
               <X className="size-3.5" />
             </Button>
@@ -273,7 +301,7 @@ export function UpdateCard(): React.JSX.Element | null {
       )}
       <Card
         role="complementary"
-        aria-label={getUpdateCardAriaLabel(status)}
+        aria-label={getUpdateCardAriaLabel(status, t)}
         aria-live="polite"
         tabIndex={-1}
         onKeyDown={handleKeyDown}

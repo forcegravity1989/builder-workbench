@@ -4454,7 +4454,7 @@
         "b3b02a9d84": "Try again",
         "sessionSaveFailed": "Session State Could Not Be Saved",
         "sessionSaveFailedNextStep": "The update is downloaded, but session state could not be saved before quitting. Retry and Restart to Update runs the save checks again, then installs the update if they pass.",
-        "installFailedNextStep": "Could not restart to install the downloaded update. Try again to restart and install it.",
+        "retrySessionSave": "Retry and Restart to Update",
         "sessionSaveFailedForceExplainer": "Force Restart to Update discards unsaved session state, then installs the downloaded update.",
         "sessionSaveFailedForceAction": "Force Restart to Update"
       },

@@ -4,7 +4,7 @@
 
 本次工作在独立工作树 `orca-bot-full-sync` 的 `codex/orca-native-bots-full` 分支进行，目标是把 Orca v1.4.272 的原生 Bot 能力和官方 UI 带入 BW，同时保留 BW `main` 已上线的工作区、版本、项目、W3、CodeHub、WeLink、网页批注和团队共享行为。
 
-PR 为 [#785](https://github.com/forcegravity1989/builder-workbench/pull/785)，关联 Issue #778。上一轮绿色提交为 `1b963e71bc`。本轮已抓取 `origin/main` 到 `4d2719115d0e77d490dbf44dbce9d37472fcc99e4` 并完成合并冲突处理，合并提交尚未推送。
+PR 为 [#785](https://github.com/forcegravity1989/builder-workbench/pull/785)，关联 Issue #778。2026-11-26 核对的 `origin/main` 为 `6a1db93382`，已随合并提交 `0df1281067` 推送。内部机器已启动 dev 体验，当前优先修复反馈确认的 BW 回归。接手时先核对 PR、本机 HEAD 和体验所用提交。
 
 ## 已锁定的产品边界
 
@@ -54,7 +54,7 @@ BW 对 Orca 的修改集中在入口和薄挂载。已恢复或保留的路径�
 | `ProjectWallCard`          | 采用 main 的来源头像和成员信息能力，修正到 BW 当前共享类型路径             |
 | `TeamSettingsDialog`       | 采用 main 的团队绑定表单，保留 BW 当前执行主机和配对代码路径               |
 | `open-assistant`           | 保留 BW 的本机执行主机、交接结果确认和失败重试，接入 main 的规划草稿重写   |
-| 翻译和生成包               | 采用 main 的翻译基线，合并后重新生成 BW Skill 包                           |
+| 翻译和生成包               | 保留与 v1.4.272 源码匹配的语言目录，合并新增键并重建生成包                 |
 
 ## 已验证证据
 
@@ -69,10 +69,9 @@ BW 对 Orca 的修改集中在入口和薄挂载。已恢复或保留的路径�
 1. `git status --short --branch` 确认仍在 `codex/orca-native-bots-full`。
 2. 检查 `git diff --cached --check` 和 `git diff --check`。
 3. 运行仓库规定的 staged 格式门禁，再提交合并结果。
-4. 推送分支并等待 PR #785 的 Workbench CI、Cloud Verify、Issue association 和 Electron E2E。
-5. 若 CI 失败，先按失败文件判断是本轮 main 合并引入，还是旧 BW / Bot 路径回归。不要顺手修无关上游测试。
-6. CI 全绿后，把 PR 保持 Ready，并用当前提交重新启动隔离前台 dev。
-7. 完成 W3、真实连接器和双机 Bot 验收后，再由人决定是否合入。
+4. 内部机器体验期间，以 dev 反馈为先。按入口、操作和实际结果定位，用 BW main 的同一路径确认预期，再把缺失的挂载或行为接到 v1.4.272 所用接口。每个小批次注明修复提交以及是否需要重启 dev。
+5. 后续同步 main 时固定要检查的远端提交。Git 报冲突的文件和自动合并的同一旅程都要核对。BW 挂载优先复用 main，Bot 四个目录对照 v1.4.272，翻译保留当前源码所需键，生成文件在格式化后重建。
+6. 恢复正式交付检查时，核对 PR 当前提交的 Workbench CI、Cloud Verify、Issue association 和 Electron E2E。取证按实际覆盖的环境记录，是否合入由人决定。
 
 ## 不要带入提交的本机文件
 
@@ -96,4 +95,6 @@ BW 对 Orca 的修改集中在入口和薄挂载。已恢复或保留的路径�
 - main 的 ProjectWallCard 使用了新版 shell.openPath(path, ownerHostId)，已补上 getRepoExecutionHostId(slot.repo)。
 - 上游生成的 CLI 指南和 Workbench Skill 包需要按当前源码重新生成，已运行对应生成脚本。
 
-修复提交为 fa2fa1282f。本轮失败不是 Bot 执行逻辑失败，而是 main 合并后的生成目录和一个新接口参数没有同步。修复后需等待新的远端 CI，不把上一次失败结果作为当前结论。
+修复提交为 `fa2fa1282f`。随后的 `bbd6babe81` 通过了 [Workbench CI](https://github.com/forcegravity1989/builder-workbench/actions/runs/45771281730)、[Cloud Verify](https://github.com/forcegravity1989/builder-workbench/actions/runs/45771281670) 和 Issue 关联检查。
+
+随后同步到 `6a1db93382`，涉及分享页批注界面、验收工具说明和更新器 #801。「会话保存失败后强制重启」接到当前的 preload、会话保存和更新卡片上。普通重试、团队更新稍后提醒和发布构建列表强制刷新沿用此前分支行为。更新器修复尚无真实安装验收。内部体验反馈优先，CI 暂不作为每次体验修复的等待项。

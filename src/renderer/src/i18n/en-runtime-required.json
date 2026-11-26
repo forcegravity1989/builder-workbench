@@ -120,16 +120,6 @@
         "shownCount_one": "{{count}} shown",
         "shownCount_other": "{{count}} shown"
       },
-      "UpdateCard": {
-        "092f09fc14": "The installer's publisher doesn't match Orca, so we stopped the update. Don't install this download; check official releases for a corrected version.",
-        "2c2d3e03ca": "Try Again",
-        "checkFailed": "Could not check for updates.",
-        "compatibilityModeFailed": "Could not enable compatibility mode. {{message}}",
-        "http1RetryAvailable": "Orca can retry through HTTP/1.1 compatibility mode.",
-        "restarting": "Restarting...",
-        "updateCheckFailed": "Update Check Failed",
-        "updateIncomplete": "Could not complete the update."
-      },
       "WorktreeJumpPalette": {
         "itemsAvailable_one": "{{count}} item available.",
         "itemsAvailable_other": "{{count}} items available.",
@@ -4027,13 +4017,6 @@
       "unknownReleaseChannel": "Unknown release channel \"{{channel}}\".",
       "unsignedDevChannel": "{{channel}} builds are unsigned, and this signed build only installs updates signed by Orca's publisher. Download the installer from the release page and run it once — updates work normally from there, including back to Stable.",
       "updateServerUnreachable": "Couldn't reach the update server. Try again in a few minutes."
-    },
-    "installBlock": {
-      "retainedDownload": "Orca stays open. No need to download again.",
-      "retryInstallation": "Retry installation"
-    },
-    "installOnQuit": {
-      "keepWorking": "Keep Working"
     }
   },
   "workspace": {

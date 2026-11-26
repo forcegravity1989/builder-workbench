@@ -1,108 +1,160 @@
+// @protected-copy scope=file
+import { getUpdateInstallBlockGuidance } from './update-install-block-guidance'
 import type { UpdateStatus } from '../../../../../shared/updater/update-status-types'
-import type { UpdateErrorCardModel } from '../../UpdateErrorCardContent'
+import type { UpdateErrorCardModel } from './UpdateErrorCardContent'
 import {
   isWindowsSignatureCheckUnavailableFailure,
   isWindowsSignatureMismatchFailure
 } from '../../../../../shared/updater/updater-windows-signature-check'
-import {
-  getReleaseNotesUrlForVersion,
-  UPDATE_PRODUCT_NAME
-} from '../../../../../shared/updater/release-channel'
+import { getReleaseNotesUrlForVersion } from '../../../../../shared/updater/release-channel'
 import { translate } from '@/i18n/i18n'
+import type { Translate } from '@/i18n/use-translate'
+import { updaterMessageText } from '@/app-shell/updates/updater-message-copy'
 import { isHttp2ProtocolError } from './update-card-visibility'
 
-export function buildUpdateCardErrorModel({
-  status,
-  isLocalBuild,
-  cachedVersion,
-  installError,
-  compatibilityRelaunching,
-  compatibilitySetupError,
-  onChooseLocalBuild,
-  onEnableHttp1Compatibility,
-  onRetryDownload,
-  onRecheck,
-  onInstallRetry,
-  onForceInstall
-}: {
-  status: UpdateStatus
-  isLocalBuild: boolean
-  cachedVersion: string | null
-  installError: string | null
-  compatibilityRelaunching: boolean
-  compatibilitySetupError: string | null
-  onChooseLocalBuild: () => void
-  onEnableHttp1Compatibility: () => void
-  onRetryDownload: () => void
-  onRecheck: () => void
-  onInstallRetry: () => void
-  onForceInstall: () => void
-}): UpdateErrorCardModel | null {
-  if (status.state !== 'error') {
-    if (!installError) {
-      return null
-    }
-    // ContextBridge preserves the native error message, not custom Error fields.
-    const checkpointFailed =
-      installError === 'Renderer shutdown checkpoint was not completed.' ||
-      installError.startsWith('Renderer shutdown checkpoint was not completed: ') ||
-      installError === 'Failed to persist renderer state before unload.'
+export function buildUpdateCardErrorModel(
+  {
+    status,
+    isLocalBuild,
+    cachedVersion,
+    installError,
+    compatibilityRelaunching,
+    compatibilitySetupError,
+    onChooseLocalBuild,
+    onEnableHttp1Compatibility,
+    onRetryDownload,
+    onRecheck,
+    onInstallRetry,
+    onForceInstall
+  }: {
+    status: UpdateStatus
+    isLocalBuild: boolean
+    cachedVersion: string | null
+    installError: string | null
+    compatibilityRelaunching: boolean
+    compatibilitySetupError: string | null
+    onChooseLocalBuild: () => void
+    onEnableHttp1Compatibility: () => void
+    onRetryDownload: () => void
+    onRecheck: () => void
+    onInstallRetry: () => void
+    onForceInstall: () => void
+  },
+  t: Translate = translate
+): UpdateErrorCardModel | null {
+  if (status.state === 'downloaded' && status.installing) {
+    return null
+  }
+  if (
+    status.state === 'downloaded' &&
+    installError &&
+    (installError.includes('Renderer shutdown checkpoint was not completed') ||
+      installError.includes('Failed to persist renderer state before unload.'))
+  ) {
     return {
-      title: checkpointFailed
-        ? translate(
-            'auto.components.UpdateCard.sessionSaveFailed',
-            'Session State Could Not Be Saved'
-          )
-        : translate('auto.components.UpdateCard.4cf109845a', 'Update Error'),
-      summary: checkpointFailed
-        ? translate(
-            'auto.components.UpdateCard.sessionSaveFailedNextStep',
-            'The update is downloaded, but session state could not be saved before quitting. Retry and Restart to Update runs the save checks again, then installs the update if they pass.'
-          )
-        : translate(
-            'auto.components.UpdateCard.installFailedNextStep',
-            'Could not restart to install the downloaded update. Try again to restart and install it.'
-          ),
-      explainer: checkpointFailed
-        ? translate(
-            'auto.components.UpdateCard.sessionSaveFailedForceExplainer',
-            'Force Restart to Update discards unsaved session state, then installs the downloaded update.'
-          )
-        : undefined,
+      title: t('auto.components.UpdateCard.sessionSaveFailed', 'Session State Could Not Be Saved'),
+      summary: t(
+        'auto.components.UpdateCard.sessionSaveFailedNextStep',
+        'The update is downloaded, but session state could not be saved before quitting. Retry and Restart to Update runs the save checks again, then installs the update if they pass.'
+      ),
+      explainer: t(
+        'auto.components.UpdateCard.sessionSaveFailedForceExplainer',
+        'Force Restart to Update discards unsaved session state, then installs the downloaded update.'
+      ),
       detail: installError,
-      releaseUrl: checkpointFailed ? undefined : getReleaseNotesUrlForVersion(cachedVersion),
       primaryAction: {
-        label: translate('auto.components.UpdateCard.2c2d3e03ca', 'Retry and Restart to Update'),
+        label: t('auto.components.UpdateCard.retrySessionSave', 'Retry and Restart to Update'),
         onClick: onInstallRetry
       },
-      secondaryAction: checkpointFailed
-        ? {
-            label: translate(
-              'auto.components.UpdateCard.sessionSaveFailedForceAction',
-              'Force Restart to Update'
-            ),
-            onClick: onForceInstall
+      secondaryAction: {
+        label: t(
+          'auto.components.UpdateCard.sessionSaveFailedForceAction',
+          'Force Restart to Update'
+        ),
+        onClick: onForceInstall
+      }
+    }
+  }
+  if (
+    (status.state === 'downloaded' || status.state === 'error') &&
+    status.installOnQuit &&
+    status.version &&
+    (status.state === 'error' || installError)
+  ) {
+    return {
+      variant: 'waiting',
+      title: t('updates.installOnQuit.title', 'Restart Orca manually'),
+      summary: t(
+        'updates.installOnQuit.summary',
+        'Orca couldn’t restart automatically. Quit Orca and let the update install before reopening it.'
+      ),
+      detail: installError ?? (status.state === 'error' ? updaterMessageText(status) : undefined),
+      deferLabel: t('updates.installOnQuit.keepWorking', 'Keep Working')
+    }
+  }
+  if (status.state !== 'error') {
+    return status.state === 'downloaded' && installError
+      ? {
+          title: t('auto.components.UpdateCard.4cf109845a', 'Update Error'),
+          summary: t(
+            'auto.components.UpdateCard.restartToInstallFailed',
+            'Could not restart to install the update.'
+          ),
+          detail: installError,
+          releaseUrl: isLocalBuild ? undefined : getReleaseNotesUrlForVersion(status.version),
+          primaryAction: {
+            label: t('auto.components.UpdateCard.2c2d3e03ca', 'Try Again'),
+            onClick: onInstallRetry
           }
-        : undefined
+        }
+      : null
+  }
+  // Raw checks below match the host's English; display text translates known codes.
+  const message = updaterMessageText(status)
+  if (status.installBlock && status.retryAction === 'install' && status.retryable !== false) {
+    return {
+      variant: 'waiting',
+      ...getUpdateInstallBlockGuidance(status.installBlock, t),
+      blockers: status.installBlock.instances,
+      detail: message,
+      deferLabel: t('updates.installBlock.later', 'Later'),
+      footnote: {
+        text: t(
+          'updates.installBlock.retainedDownload',
+          'Orca stays open. No need to download again.'
+        )
+      },
+      primaryAction: {
+        label: t('updates.installBlock.retryInstallation', 'Retry installation'),
+        onClick: onInstallRetry
+      }
+    }
+  }
+  if (status.retryAction === 'install' && status.retryable !== false) {
+    return {
+      title: t('auto.components.UpdateCard.4cf109845a', 'Update Error'),
+      summary: message,
+      detail: installError ?? message,
+      releaseUrl: isLocalBuild
+        ? undefined
+        : getReleaseNotesUrlForVersion(status.version ?? cachedVersion),
+      primaryAction: {
+        label: t('auto.components.UpdateCard.2c2d3e03ca', 'Try Again'),
+        onClick: onInstallRetry
+      }
     }
   }
   if (isLocalBuild) {
     return {
       title: cachedVersion
-        ? translate('auto.components.UpdateCard.8cf17b10af', 'Local Build Error')
-        : translate('auto.components.UpdateCard.a4650b0dc4', 'Could Not Use Local Build'),
+        ? t('auto.components.UpdateCard.8cf17b10af', 'Local Build Error')
+        : t('auto.components.UpdateCard.a4650b0dc4', 'Could Not Use Local Build'),
       summary: cachedVersion
-        ? translate(
-            'auto.components.UpdateCard.b1e390250d',
-            'Could not complete the local build switch.'
-          )
-        : translate(
-            'auto.components.UpdateCard.d29740d175',
-            'The selected build could not be used.'
-          ),
-      detail: status.message,
+        ? t('auto.components.UpdateCard.b1e390250d', 'Could not complete the local build switch.')
+        : t('auto.components.UpdateCard.d29740d175', 'The selected build could not be used.'),
+      detail: message,
       primaryAction: {
-        label: translate('auto.components.UpdateCard.37d45c9ec1', 'Choose Another Build'),
+        label: t('auto.components.UpdateCard.37d45c9ec1', 'Choose Another Build'),
         onClick: onChooseLocalBuild
       }
     }
@@ -110,17 +162,20 @@ export function buildUpdateCardErrorModel({
   if (isHttp2ProtocolError(status.message)) {
     return {
       variant: 'http1Compatibility',
-      title: translate('auto.components.UpdateCard.1339b82cee', 'HTTP/2 Download Blocked'),
-      summary: `${UPDATE_PRODUCT_NAME} can retry through HTTP/1.1 compatibility mode.`,
-      explainer: translate(
+      title: t('auto.components.UpdateCard.1339b82cee', 'HTTP/2 Download Blocked'),
+      summary: t(
+        'auto.components.UpdateCard.http1RetryAvailable',
+        'Orca can retry through HTTP/1.1 compatibility mode.'
+      ),
+      explainer: t(
         'auto.components.UpdateCard.90559b14e3',
         'This turns on a process-wide Electron networking switch after restart. Use it for corporate VPNs or proxies that reject HTTP/2 update downloads.'
       ),
-      detail: compatibilitySetupError ?? status.message,
+      detail: compatibilitySetupError ?? message,
       releaseUrl: getReleaseNotesUrlForVersion(cachedVersion),
       primaryAction: {
-        label: translate('auto.components.UpdateCard.933c6fdf5b', 'Enable & Restart'),
-        pendingLabel: 'Restarting...',
+        label: t('auto.components.UpdateCard.933c6fdf5b', 'Enable & Restart'),
+        pendingLabel: t('auto.components.UpdateCard.restarting', 'Restarting...'),
         isPending: compatibilityRelaunching,
         onClick: onEnableHttp1Compatibility
       }
@@ -129,51 +184,52 @@ export function buildUpdateCardErrorModel({
   if (isWindowsSignatureMismatchFailure(status.message)) {
     return {
       variant: 'security',
-      title: translate('auto.components.UpdateCard.5b309b19f3', "Update Wasn't Installed"),
-      summary: translate(
+      title: t('auto.components.UpdateCard.5b309b19f3', "Update Wasn't Installed"),
+      summary: t(
         'auto.components.UpdateCard.092f09fc14',
-        "The installer's publisher doesn't match {{productName}}, so we stopped the update. Don't install this download; check official releases for a corrected version.",
-        { productName: UPDATE_PRODUCT_NAME }
+        "The installer's publisher doesn't match Orca, so we stopped the update. Don't install this download; check official releases for a corrected version."
       ),
-      detail: status.message,
+      detail: message,
       releaseUrl: getReleaseNotesUrlForVersion(null),
-      manualLabel: translate('auto.components.UpdateCard.c9ff9b9ec2', 'Check official releases')
+      manualLabel: t('auto.components.UpdateCard.c9ff9b9ec2', 'Check official releases')
     }
   }
   if (isWindowsSignatureCheckUnavailableFailure(status.message)) {
     return {
-      title: translate('auto.components.UpdateCard.e944c2de43', 'Update Verification Blocked'),
-      summary: translate(
+      title: t('auto.components.UpdateCard.e944c2de43', 'Update Verification Blocked'),
+      summary: t(
         'auto.components.UpdateCard.a05992a26b',
         "The signature check couldn't run — usually because antivirus software blocked it. Retry the download, or get the installer from our official releases."
       ),
-      detail: status.message,
+      detail: message,
       releaseUrl: getReleaseNotesUrlForVersion(cachedVersion),
       primaryAction: {
-        label: translate('auto.components.UpdateCard.48565a32bc', 'Retry Download'),
+        label: t('auto.components.UpdateCard.48565a32bc', 'Retry Download'),
         onClick: onRetryDownload
       }
     }
   }
   return {
-    title: cachedVersion ? 'Update Error' : 'Update Check Failed',
+    title: cachedVersion
+      ? t('auto.components.UpdateCard.4cf109845a', 'Update Error')
+      : t('auto.components.UpdateCard.updateCheckFailed', 'Update Check Failed'),
     summary:
       cachedVersion && status.retryable === false
-        ? status.message
+        ? message
         : cachedVersion
-          ? 'Could not complete the update.'
-          : 'Could not check for updates.',
-    detail: status.message,
+          ? t('auto.components.UpdateCard.updateIncomplete', 'Could not complete the update.')
+          : t('auto.components.UpdateCard.checkFailed', 'Could not check for updates.'),
+    detail: message,
     releaseUrl: getReleaseNotesUrlForVersion(cachedVersion),
     primaryAction:
       cachedVersion && status.retryable !== false
         ? {
-            label: translate('auto.components.UpdateCard.48565a32bc', 'Retry Download'),
+            label: t('auto.components.UpdateCard.48565a32bc', 'Retry Download'),
             onClick: onRetryDownload
           }
         : !cachedVersion
           ? {
-              label: translate('auto.components.UpdateCard.6b0085010d', 'Re-check'),
+              label: t('auto.components.UpdateCard.6b0085010d', 'Re-check'),
               onClick: onRecheck
             }
           : undefined

@@ -1,4 +1,5 @@
 import type { IpcRenderer } from 'electron'
+import type { UpdaterQuitAndInstallOptions } from '../../api/updater/updater-api'
 import { ORCA_RENDERER_UNLOAD_PREVENTED_EVENT } from '../../../shared/app-lifecycle/shutdown/renderer-shutdown-events'
 import {
   prepareRendererForAppRestart,
@@ -9,6 +10,7 @@ import {
   ORCA_APP_RESTART_ABORTED_EVENT,
   ORCA_APP_RESTART_STARTED_EVENT,
   ORCA_UPDATER_QUIT_AND_INSTALL_ABORTED_EVENT,
+  ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT,
   ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT
 } from '../../../shared/updater/updater-renderer-events'
 
@@ -53,13 +55,18 @@ export async function prepareAndInvokeUpdaterInstall(
   eventTarget: EventTarget,
   relay: Pick<UpdaterQuitAbortRelay, 'markPrepared' | 'abort'>,
   invoke: () => Promise<void>,
-  awaitCheckpoint: () => Promise<void>
+  awaitCheckpoint: () => Promise<void>,
+  options?: UpdaterQuitAndInstallOptions
 ): Promise<void> {
-  await prepareRendererForAppRestart(eventTarget, {
-    startedEventName: ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT,
-    abortedEventName: ORCA_UPDATER_QUIT_AND_INSTALL_ABORTED_EVENT,
-    awaitCheckpoint
-  })
+  if (options?.discardUnsavedSession) {
+    eventTarget.dispatchEvent(new Event(ORCA_UPDATER_QUIT_AND_INSTALL_DISCARD_UNSAVED_EVENT))
+  } else {
+    await prepareRendererForAppRestart(eventTarget, {
+      startedEventName: ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT,
+      abortedEventName: ORCA_UPDATER_QUIT_AND_INSTALL_ABORTED_EVENT,
+      awaitCheckpoint
+    })
+  }
   relay.markPrepared()
   try {
     await invoke()

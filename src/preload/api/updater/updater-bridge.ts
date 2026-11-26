@@ -12,10 +12,11 @@ export const updaterApi = {
   download: () => ipcRenderer.invoke('updater:download'),
   dismissNudge: () => ipcRenderer.invoke('updater:dismissNudge'),
   dismissAvailableUpdate: () => ipcRenderer.invoke('updater:dismissAvailableUpdate'),
+  snoozeRequiredUpdate: () => ipcRenderer.invoke('updater:snoozeRequiredUpdate'),
   getLinuxPackageInstallInstructions: () =>
     ipcRenderer.invoke('updater:getLinuxPackageInstallInstructions'),
   showLinuxPackage: () => ipcRenderer.invoke('updater:showLinuxPackage'),
-  listBuilds: (channel) => ipcRenderer.invoke('updater:listBuilds', channel),
+  listBuilds: (channel, options) => ipcRenderer.invoke('updater:listBuilds', channel, options),
   quitAndInstall: (options?: UpdaterQuitAndInstallOptions): Promise<void> =>
     prepareAndInvokeUpdaterInstall(
       window,

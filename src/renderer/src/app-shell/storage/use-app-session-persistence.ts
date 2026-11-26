@@ -4,6 +4,7 @@ import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/workspace-layout/l
 import { createSessionWriteSubscriber } from '../../lib/workspace/persistence/session-write-subscriber'
 import { buildActiveViewUnloadPatch } from '../startup/active-view-persist'
 import {
+  isDiscardingUnsavedSessionForUpdate,
   isIntentionalAppRestartInProgress,
   registerUpdaterBeforeUnloadBypass
 } from '../updates/updater-beforeunload'
@@ -121,7 +122,8 @@ export function useAppSessionPersistence(): void {
     // Paired web: trusted unloads include tab close/navigation, and the browser's leave prompt already reports the veto.
     const persistBeforeUnload = createShutdownCheckpointBeforeUnloadHandler(
       shutdownCheckpoint,
-      isPairedWebClientWindow() ? undefined : () => showShutdownCheckpointFailureToast('reload')
+      isPairedWebClientWindow() ? undefined : () => showShutdownCheckpointFailureToast('reload'),
+      isDiscardingUnsavedSessionForUpdate
     )
     const reportNativeUnloadFailure = (): void => showShutdownCheckpointFailureToast('reload')
     window.addEventListener(ORCA_NATIVE_UNLOAD_FAILED_EVENT, reportNativeUnloadFailure)
