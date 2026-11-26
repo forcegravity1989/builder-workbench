@@ -22,9 +22,9 @@ const STEP_DELAY = 70
 const MOVE_DURATION = 280
 
 function SourceAvatar({ source }: { source: WallAvatarSource }) {
-  const [failed, setFailed] = useState(false)
-  if (source.avatar && !failed) {
-    return <img src={source.avatar} alt="" onError={() => setFailed(true)} />
+  const [failedUrl, setFailedUrl] = useState<string | undefined>()
+  if (source.avatar && failedUrl !== source.avatar) {
+    return <img src={source.avatar} alt="" onError={() => setFailedUrl(source.avatar)} />
   }
   return <CircleUserRound size={22} />
 }

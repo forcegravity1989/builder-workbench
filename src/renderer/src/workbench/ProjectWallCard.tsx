@@ -45,9 +45,9 @@ export type WallCardView = {
   primaryRepo: Repo
 }
 function OwnerAvatar({ avatar }: { avatar?: string }) {
-  const [failed, setFailed] = useState(false)
-  if (avatar && !failed) {
-    return <img src={avatar} alt="" onError={() => setFailed(true)} />
+  const [failedUrl, setFailedUrl] = useState<string | undefined>()
+  if (avatar && failedUrl !== avatar) {
+    return <img src={avatar} alt="" onError={() => setFailedUrl(avatar)} />
   }
   return <CircleUserRound size={22} />
 }
