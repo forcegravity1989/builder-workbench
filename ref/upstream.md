@@ -129,6 +129,8 @@ git rev-parse 'v1.4.272^{commit}'
 
 每项按用户场景记录 Orca 提供的能力、BW 保留的差异、源码挂载位置和升级时的验收依据。产品规格与验证结果沿原入口查阅。
 
+- **桌面窗口与重复入口**。BW 标题栏用原色 20px 图标，浅色主题下也保留其原色。Windows 三点应用菜单收起原生帮助子菜单，桌面左下帮助提供「关于 BW」和「报告崩溃」。主机状态入口在 BW 左侧导航，底部状态栏只在其他壳显示同一入口。升级时核对[标题栏](../src/renderer/src/app-shell/chrome/TitlebarLeftControls.tsx)、[桌面帮助](../src/renderer/src/components/sidebar/chrome/help-menu-controller.tsx)和[底部状态栏](../src/renderer/src/components/status-bar/StatusBarSurface.tsx)的实际显示位置。
+
 - **批注交接与任务开工**。BW 批注复用原生 React Grab、浮动终端和草稿投递，改进 Skill 只由本机桌面准备。选中的批注带入浮窗中的未发送草稿，失败时重试同一个会话。GitHub、CodeHub 任务链接继续提供「在任务中打开」，BW 浮窗中的本仓 GitHub Issue 另有「开始修复」，沿原生工作区创建器选中实际宿主并预填草稿。升级时沿 [批注快捷键](../src/renderer/src/hooks/app-commands/use-global-keybindings.ts)、[助手入口](../src/renderer/src/workbench/improvement/open-assistant.ts)和[链接动作](../src/renderer/src/lib/browser/navigation/http-link-destinations.ts)核对。用户路径及证据见 [贡献 BW 规格](../docs/05-features/bw-contribution/spec.md)。
 
 - **左侧导航与工作区侧栏**。BW 壳由 [AppWorkspaceShell](../src/renderer/src/app-shell/AppWorkspaceShell.tsx) 挂载 [WorkbenchRail](../src/renderer/src/workbench/WorkbenchRail.tsx)，保留 BW 图标、导航和主机状态入口。[WorktreeSidebar](../src/renderer/src/app-shell/WorktreeSidebar.tsx) 将 [WorkbenchSidebarNav](../src/renderer/src/workbench/WorkbenchSidebarNav.tsx) 接入原生侧栏。[Sidebar](../src/renderer/src/components/sidebar/index.tsx) 在 BW 壳把原生 Bots 放在工作区块上方，工作区列表模式下工作区块不可折叠。[WorktreeList](../src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx) 复用原生列表，在已固定之后、项目工作区之前插入 BW 版本区。上游升级时按「Bots → 已固定 → 版本 → 项目」核对顺序，同时确认空主机状态下图标和入口仍可见，以及版本区下的新建、计划和验收入口仍可用。版本行为见 [版本工作区设计](../docs/05-features/version-workspace/design.md)。

@@ -198,6 +198,18 @@ export function registerAppHandlers(store: Store, options: RegisterAppHandlersOp
     }
   })
 
+  ipcMain.handle('app:showAbout', (event) => {
+    if (isTrustedUIRenderer(event.sender) && event.senderFrame === event.sender.mainFrame) {
+      app.showAboutPanel()
+    }
+  })
+
+  ipcMain.handle('app:openCrashReport', (event) => {
+    if (isTrustedUIRenderer(event.sender) && event.senderFrame === event.sender.mainFrame) {
+      event.sender.send('ui:openCrashReport')
+    }
+  })
+
   ipcMain.handle('app:relaunch', async () => {
     // Delay teardown so the renderer can paint Restarting after cleanup.
     await runBeforeRelaunchCleanup(options.onBeforeRelaunch)

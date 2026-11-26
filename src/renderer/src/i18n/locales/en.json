@@ -31184,6 +31184,8 @@
     "reset": "Reset tab order"
   },
   "guidance": {
+    "about": "About BW",
+    "reportCrash": "Report Crash",
     "experiences": "Try the capabilities",
     "gettingStarted": "Getting Started with BW",
     "initialSetup": "Initial Setup",

@@ -2,9 +2,11 @@ import { DiscordIcon } from '../../icons/DiscordIcon'
 import React, { useState } from 'react'
 import {
   BookOpen,
+  Bug,
   Compass,
   ExternalLink,
   Github,
+  Info,
   Keyboard,
   Loader2,
   MessageSquareText,
@@ -30,6 +32,7 @@ import {
 import { openHelpLink } from './help-link-open'
 import { WORKBENCH_HELP_LINKS } from '@/workbench/help-links'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 
 // Keep feedback off the boot graph; menu warming and selection share the same lazy module entry.
 const loadSidebarFeedbackDialog = (): Promise<typeof SidebarFeedbackDialogModule> =>
@@ -90,6 +93,7 @@ export type HelpMenuController = {
 export function useHelpMenuController(milestones: SetupMilestones | null): HelpMenuController {
   const t = useTranslate()
   const isBW = isWorkbenchShell()
+  const showWorkbenchDesktopHelp = isBW && !isWebClientLocation()
   const openModal = useAppStore((s) => s.openModal)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
@@ -202,6 +206,12 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
           <MessageSquareText className="size-3.5" />
           {t('auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7', 'Send Feedback')}
         </DropdownMenuItem>
+        {showWorkbenchDesktopHelp && window.api.app.openCrashReport ? (
+          <DropdownMenuItem onSelect={() => void window.api.app.openCrashReport?.()}>
+            <Bug className="size-3.5" aria-hidden />
+            {t('guidance.reportCrash', 'Report Crash')}
+          </DropdownMenuItem>
+        ) : null}
         {!isBW && milestones ? (
           <DropdownMenuItem onSelect={openMilestones}>
             <img
@@ -259,6 +269,11 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
+        ) : showWorkbenchDesktopHelp && window.api.app.showAbout ? (
+          <DropdownMenuItem onSelect={() => void window.api.app.showAbout?.()}>
+            <Info className="size-3.5" aria-hidden />
+            {t('guidance.about', 'About BW')}
+          </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem
           disabled={updateStatus.state === 'checking' || updateStatus.state === 'downloading'}

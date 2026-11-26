@@ -30359,6 +30359,8 @@
     }
   },
   "guidance": {
+    "about": "关于 BW",
+    "reportCrash": "报告崩溃",
     "experiences": "能力体验",
     "gettingStarted": "BW 入门",
     "initialSetup": "初始设置",

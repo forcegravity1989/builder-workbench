@@ -24,6 +24,8 @@ export type AppApi = {
   isProfileStateSaveDelayed: () => Promise<boolean>
   onProfileStateSaveDelayChanged: (callback: (delayed: boolean) => void) => () => void
   getIdentity: () => Promise<AppIdentity>
+  showAbout?: () => Promise<void>
+  openCrashReport?: () => Promise<void>
   /** Local Windows desktop elevation; null when unavailable. Does not describe remote hosts. */
   getWindowsAdministratorStatus: () => Promise<boolean | null>
   /** Local Mac only; optional for older clients. */

@@ -1485,7 +1485,6 @@ html.native-shell .app-layout {
   height: calc(var(--browser-page-viewport-height) / var(--ui-zoom-factor, 1));
 }
 
-/* Custom titlebars hide native app identity; invert the white SVG in light mode for contrast. */
 .workbench-titlebar-logo {
   width: 20px;
   height: 20px;
@@ -1493,6 +1492,7 @@ html.native-shell .app-layout {
   margin: 0 4px 0 10px;
 }
 
+/* Custom titlebars hide native app identity; invert the white SVG in light mode for contrast. */
 .titlebar-logo {
   height: 16px;
   flex-shrink: 0;

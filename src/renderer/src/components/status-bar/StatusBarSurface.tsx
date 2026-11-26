@@ -135,7 +135,7 @@ export function StatusBarSurface({
             {showQuickLinks && isWorkbenchShell() ? (
               <QuickLinksStatusSegment iconOnly={false} />
             ) : null}
-            {showSsh ? <SshStatusSegment /> : null}
+            {showSsh && !isWorkbenchShell() ? <SshStatusSegment /> : null}
           </React.Suspense>
           {showFloatingTerminalToggle && (
             <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">
