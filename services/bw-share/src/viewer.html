@@ -1106,10 +1106,13 @@
                 })
               }
               item.tabIndex = 0
-              item.setAttribute('role', 'button')
+              // role=group 而非 button：item 内嵌删除按钮，button 嵌 button 不符 ARIA 嵌套规则
+              item.setAttribute('role', 'group')
               item.setAttribute('aria-label', '在内容中定位该批注')
               item.addEventListener('click', highlight)
               item.addEventListener('keydown', function (event) {
+                // 键盘事件只认 item 自身；聚焦删除按钮按 Enter/Space 须走按钮原生激活，不能被这里吞掉
+                if (event.target !== item) return
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
                   highlight()
