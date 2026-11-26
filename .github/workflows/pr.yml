@@ -66,6 +66,8 @@ jobs:
           src/renderer/src/components/tab-bar/TabBar.windows-shell-remote-runtime.test.ts
           src/renderer/src/hooks/legacy-worker-terminal-recovery-event.test.ts
           src/renderer/src/lib/launch-agent-
+          src/renderer/src/lib/agent-paste-draft.test.ts
+          src/renderer/src/lib/agent-launch-prompt-delivery.test.ts
           src/renderer/src/lib/runtime-session-mirror-targets.test.ts
           src/renderer/src/hooks/composer-state
           src/renderer/src/hooks/useComposerState
@@ -225,6 +227,12 @@ jobs:
 
       - name: Typecheck
         run: pnpm run typecheck
+
+      - name: Test share client protocols
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/artifacts/share-html-inline.test.ts
+          src/main/artifacts/self-hosted-share-service.test.ts
 
       - name: Test Workbench contracts and count ratchet
         run: pnpm run check:vitest-count-ratchet

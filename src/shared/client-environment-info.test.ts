@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   appendClientEnvironmentFooter,
   formatClientEnvironmentFooter,
@@ -105,5 +105,33 @@ describe('environment footer helpers', () => {
 
     expect(hasClientEnvironmentFooter(withoutFooter)).toBe(false)
     expect(stripClientEnvironmentFooter(withoutFooter)).toBe(withoutFooter)
+  })
+})
+
+// Why: the footer travels verbatim into group-space reports, so the version
+// line must carry the running product's brand (#614) while footers prefilled
+// by the other build keep stripping cleanly.
+describe('Workbench product identity', () => {
+  afterEach(() => {
+    delete process.env.WORKBENCH_SHELL
+    vi.resetModules()
+  })
+
+  it('labels the version line Workbench and still recognizes Orca footers', async () => {
+    process.env.WORKBENCH_SHELL = '1'
+    vi.resetModules()
+    const mod = await import('./client-environment-info.js')
+
+    const footer = mod.formatClientEnvironmentFooter(SAMPLE)
+    expect(footer.startsWith('---\nWorkbench:')).toBe(true)
+    expect(mod.hasClientEnvironmentFooter(`oops\n\n${footer}`)).toBe(true)
+    expect(mod.stripClientEnvironmentFooter(`please fix tabs\n\n${footer}`).trimEnd()).toBe(
+      'please fix tabs'
+    )
+    expect(mod.appendClientEnvironmentFooter({ message: footer, info: SAMPLE })).toBe(footer)
+
+    const orcaFooter = ['---', 'Orca: 1.4.178-rc.2', 'OS: win32 10.0.22631 (x64)'].join('\n')
+    expect(mod.hasClientEnvironmentFooter(orcaFooter)).toBe(true)
+    expect(mod.stripClientEnvironmentFooter(orcaFooter).trim()).toBe('')
   })
 })
