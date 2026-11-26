@@ -2,6 +2,7 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
+import { deliverLaunchPromptToAgentTab } from '@/lib/agent-launch-prompt-delivery'
 import { OPEN_FLOATING_WORKSPACE_EVENT } from '@/lib/floating-terminal'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
@@ -9,6 +10,10 @@ import { rewritePromptForPlanningDraft } from '../../../../shared/planning-draft
 
 const drafts = new Map<string, string>()
 const pending = new Map<string, Promise<void>>()
+const failedDrafts = new Map<
+  string,
+  { prompt: string; agent: Parameters<typeof launchAgentInNewTab>[0]['agent'] }
+>()
 
 function reveal(tabId: string): void {
   useAppStore.getState().activateTab(tabId)
@@ -35,6 +40,21 @@ async function prepareDraft(content: string): Promise<void> {
     state.tabsByWorktree[FLOATING_TERMINAL_WORKTREE_ID]?.some((tab) => tab.id === tabId)
   ) {
     reveal(tabId)
+    const failed = failedDrafts.get(content)
+    if (!failed) {
+      return
+    }
+    const delivered = await deliverLaunchPromptToAgentTab({
+      tabId,
+      agent: failed.agent,
+      content: failed.prompt,
+      submit: false,
+      forcePaste: true
+    }).catch(() => false)
+    if (!delivered) {
+      throw new Error('智能体输入尚未就绪，材料仍保留，请稍后重试。')
+    }
+    failedDrafts.delete(content)
     return
   }
   const agent = state.settings?.defaultTuiAgent
@@ -77,8 +97,15 @@ async function prepareDraft(content: string): Promise<void> {
   createdTabId = result.tabId
   drafts.set(content, createdTabId)
   reveal(createdTabId)
-  if (result.promptDeliveryResult && !(await result.promptDeliveryResult).delivered) {
-    drafts.delete(content)
+  if (!result.promptDeliveryResult) {
+    return
+  }
+  failedDrafts.set(content, { agent, prompt })
+  const delivered = await result.promptDeliveryResult
+    .then((delivery) => delivery.delivered)
+    .catch(() => false)
+  if (!delivered) {
     throw new Error('草稿尚未带入智能体，材料仍保留，可重试同一会话。')
   }
+  failedDrafts.delete(content)
 }
