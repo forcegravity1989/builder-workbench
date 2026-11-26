@@ -13,7 +13,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const repoRoot = resolve(import.meta.dirname, '../../../..')
   const crateRoot = join(repoRoot, 'native', 'windows-cli-launcher')
   const iconPath = join(repoRoot, 'resources', 'build', 'icon.ico')
-  const output = readArg('--output') ?? join(crateRoot, '.build', 'orca.exe')
+  const workbench = process.env.ORCA_PRODUCT_NAME === 'Workbench'
+  const buildDirectory = join(crateRoot, '.build', ...(workbench ? ['workbench'] : []))
+  const output = readArg('--output') ?? join(buildDirectory, 'orca.exe')
   for (const binName of ['orca', 'orca-administrator-restart']) {
     compileWindowsRustExecutable({
       repoRoot,
@@ -28,11 +30,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         join(repoRoot, 'config/scripts/native-build/windows/build-windows-cli-launcher.mjs')
       ],
       arch: readArg('--arch'),
+      ...(workbench ? { targetDirectory: join(crateRoot, 'target', 'workbench') } : {}),
       outputPath: binName === 'orca' ? output : join(dirname(output), `${binName}.exe`),
       buildEnv: (version) => ({
         ORCA_LAUNCHER_VERSION: version,
         ORCA_LAUNCHER_ICON: iconPath,
-        ORCA_LAUNCHER_FILENAME: `${binName}.exe`
+        ORCA_LAUNCHER_FILENAME: `${binName}.exe`,
+        ORCA_LAUNCHER_PRODUCT_NAME: workbench ? 'Workbench' : 'Orca'
       })
     })
   }

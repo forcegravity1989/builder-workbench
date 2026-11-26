@@ -55,6 +55,7 @@ export function compileWindowsRustExecutable({
   label,
   fingerprintInputs,
   arch,
+  targetDirectory = join(crateRoot, 'target'),
   outputPath,
   buildEnv
 }) {
@@ -67,6 +68,7 @@ export function compileWindowsRustExecutable({
   // Throws on a version the PE cannot represent, before anything is compiled.
   windowsRustExecutableFileVersion(version)
   const rustTarget = windowsRustExecutableTarget(arch)
+  const executableBuildEnv = buildEnv(version)
   const fingerprint = windowsRustExecutableFingerprint(
     [
       join(crateRoot, 'src', 'main.rs'),
@@ -78,7 +80,7 @@ export function compileWindowsRustExecutable({
       join(repoRoot, 'config/scripts/native-build/windows/windows-rust-executable-build.mjs'),
       ...fingerprintInputs
     ],
-    rustTarget ? `${version}\0${rustTarget}` : version
+    JSON.stringify([version, rustTarget, executableBuildEnv])
   )
 
   mkdirSync(dirname(outputPath), { recursive: true })
@@ -88,7 +90,6 @@ export function compileWindowsRustExecutable({
   }
 
   rmSync(`${outputPath}.sha256`, { force: true })
-  const targetDirectory = join(crateRoot, 'target')
   const result = spawnSync(
     'cargo',
     [
@@ -104,7 +105,7 @@ export function compileWindowsRustExecutable({
     {
       cwd: crateRoot,
       stdio: 'inherit',
-      env: { ...process.env, ...buildEnv(version) }
+      env: { ...process.env, ...executableBuildEnv }
     }
   )
 

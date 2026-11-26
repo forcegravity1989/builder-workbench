@@ -130,6 +130,7 @@ const devChannelRepo = isHourlyChannel
 const appId = process.env.ORCA_APP_ID || 'com.stablyai.orca'
 const workbench = process.env.ORCA_PRODUCT_NAME === 'Workbench'
 const productName = workbench ? 'Workbench' : 'Orca'
+const windowsCliLauncherDirectory = `native/windows-cli-launcher/.build${workbench ? '/workbench' : ''}`
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
   to: 'onboarding/feature-wall'
@@ -634,11 +635,11 @@ module.exports = {
         to: 'bin/orca.cmd'
       },
       {
-        from: 'native/windows-cli-launcher/.build/orca.exe',
+        from: `${windowsCliLauncherDirectory}/orca.exe`,
         to: 'bin/orca.exe'
       },
       {
-        from: 'native/windows-cli-launcher/.build/orca-administrator-restart.exe',
+        from: `${windowsCliLauncherDirectory}/orca-administrator-restart.exe`,
         to: 'bin/orca-administrator-restart.exe'
       },
       // Why resources/bin: SignPath signs every unsigned PE under win-unpacked, and the hook
