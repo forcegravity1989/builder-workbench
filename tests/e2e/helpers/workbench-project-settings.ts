@@ -299,7 +299,9 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await openWall()
   const folderCard = page.locator(`[data-workbench-project-id="${folderId}"]`)
   await expect(folderCard.locator('.pcard-name')).toHaveText('普通文件夹')
-  await expect(folderCard.locator('[data-workbench-open-overview]')).toHaveCount(0)
+  await expect(
+    folderCard.getByRole('button', { name: '项目总览（普通文件夹不可用）', exact: true })
+  ).toBeDisabled()
   await folderCard.locator('[data-workbench-edit-charter]').click()
   await expect(page.locator('.wb-project-settings')).toBeVisible()
   await expect(
