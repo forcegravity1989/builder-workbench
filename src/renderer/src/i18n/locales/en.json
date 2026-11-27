@@ -31453,6 +31453,18 @@
       }
     },
     "direction": {
+      "recording": {
+        "wall": "From the project wall, open the operations dashboard overview.",
+        "direction": "Edit the shared direction and check the change before submitting it for review.",
+        "milestones": "Add an outcome and feature, then save them in the project material worktree.",
+        "review": "Check and submit the changes for review. A person confirms the merge.",
+        "steps": "Journey steps",
+        "play": "Play",
+        "loadError": "Could not load the journey recording.",
+        "retry": "Retry",
+        "video": "Operations dashboard: real Workbench recording",
+        "footer": "Sample project · Real Workbench recording · Waits shortened · Review is confirmed by a person"
+      },
       "card": {
         "body": "Edit the vision and check the review summary.",
         "title": "Agree on the direction"

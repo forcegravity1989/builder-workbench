@@ -1,5 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
+import { readDirectionResult, runDirectionJourney } from '../../helpers/workbench-direction'
 import { test as baseTest, expect } from '../../helpers/workbench-app'
 import { getGoldenStubAgentLaunchEnv } from '../../helpers/golden-stub-agent'
 import { emitCodexHookStatus, readHookEndpoint } from '../../helpers/agent-hook-endpoint'
@@ -57,11 +59,12 @@ test.use({
 test.describe('BW first-run project handoff', () => {
   test.use({ dismissOnboarding: false, seedTestRepo: false })
 
-  test('stays on the project wall after cancel and first add until the user opens the project', async ({
+  test('hands off the first project, agrees on direction and prepares milestone review', async ({
     electronApp,
     seededRepoPath,
     workbenchPage
   }, testInfo) => {
+    test.setTimeout(300_000)
     const onboarding = workbenchPage.locator('[data-onboarding-modal]')
     const title = onboarding.getByRole('heading', { level: 1 })
     const next = onboarding.locator('footer').getByRole('button', { name: /^(Continue|继续)/ })
@@ -200,6 +203,8 @@ test.describe('BW first-run project handoff', () => {
       .toBe(true)
 
     const total = await workbenchPage.evaluate(async () => {
+      // This probe does not cover the persistent Codex migration notice.
+      window.__store?.getState().markCodexTerminalServerIsolationNoticeSeen()
       const { totalAgentsSpawned } = await window.api.stats.getSummary()
       await window.api.ui.setWithAck({
         starNagBaselineAgents: totalAgentsSpawned,
@@ -233,5 +238,29 @@ test.describe('BW first-run project handoff', () => {
       .split('\n')
     expect(calls).toContain('viewer')
     expect(calls).not.toContain('orca-star')
+
+    mkdirSync(path.join(seededRepoPath, '.bw'), { recursive: true })
+    writeFileSync(
+      path.join(seededRepoPath, '.bw/project.toml'),
+      'name = "运营看板"\nnorth_star = "让运营数据成为每天行动的依据"\n'
+    )
+    execFileSync('git', ['add', '.bw/project.toml'], { cwd: seededRepoPath })
+    execFileSync('git', ['commit', '-m', 'seed W01 direction'], { cwd: seededRepoPath })
+    const formalHead = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: seededRepoPath,
+      encoding: 'utf8'
+    })
+    await runDirectionJourney(workbenchPage, addedRepoId!, {
+      observer: {
+        async result(name) {
+          await workbenchPage.screenshot({ path: testInfo.outputPath(`w01-${name}.png`) })
+        }
+      }
+    })
+    const result = readDirectionResult(seededRepoPath)
+    expect(result.charter).toContain('让运营每天看清变化，及时安排跟进')
+    expect(
+      execFileSync('git', ['rev-parse', 'HEAD'], { cwd: seededRepoPath, encoding: 'utf8' })
+    ).toBe(formalHead)
   })
 })

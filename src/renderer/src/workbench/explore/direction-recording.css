@@ -1,0 +1,56 @@
+.direction-recording {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 8px 20px;
+}
+.direction-recording-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.direction-recording-steps button {
+  width: 100%;
+  height: auto;
+  min-height: 36px;
+  white-space: normal;
+}
+.direction-recording-steps [aria-current='step'] {
+  border-color: var(--foreground);
+  background: var(--accent);
+}
+.direction-recording section {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.direction-recording-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.direction-recording-toolbar p {
+  flex: 1;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.direction-recording video {
+  display: block;
+  width: 100%;
+  max-height: max(220px, calc(100vh - 410px));
+  aspect-ratio: 1540 / 818;
+  object-fit: contain;
+  background: #111;
+}
+.direction-recording footer {
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+@media (max-width: 700px) {
+  .direction-recording-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
