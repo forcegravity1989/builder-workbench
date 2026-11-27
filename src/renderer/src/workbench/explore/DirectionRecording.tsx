@@ -36,6 +36,8 @@ export function DirectionRecording() {
   const [active, setActive] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [error, setError] = useState(false)
+  const [src, setSrc] = useState<string | undefined>(import.meta.env.DEV ? undefined : videoUrl)
+  const [attempt, setAttempt] = useState(0)
   const end = recording.duration
 
   useEffect(() => {
@@ -47,6 +49,40 @@ export function DirectionRecording() {
     document.addEventListener('visibilitychange', pause)
     return () => document.removeEventListener('visibilitychange', pause)
   }, [])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return
+    }
+
+    // Vite's bundled dev server sends the recording without byte-range support.
+    const controller = new AbortController()
+    let objectUrl: string | undefined
+    void fetch(videoUrl, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Could not load the local journey recording')
+        }
+        return response.blob()
+      })
+      .then((blob) => {
+        if (!controller.signal.aborted) {
+          objectUrl = URL.createObjectURL(blob)
+          setSrc(objectUrl)
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setError(true)
+        }
+      })
+    return () => {
+      controller.abort()
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+  }, [attempt])
 
   function seek(index: number, play = false) {
     const element = video.current
@@ -86,6 +122,7 @@ export function DirectionRecording() {
             <Button
               variant="outline"
               size="sm"
+              disabled={!src || error}
               aria-current={active === index ? 'step' : undefined}
               onClick={() => seek(index)}
             >
@@ -97,12 +134,17 @@ export function DirectionRecording() {
       <section aria-label={titles[active]}>
         <header className="direction-recording-toolbar">
           <p aria-live="polite">{actions[active]}</p>
-          <Button size="xs" disabled={error} onClick={toggle}>
+          <Button size="xs" disabled={!src || error} onClick={toggle}>
             {playing
               ? translate('guidance.direction.pause', 'Pause')
               : translate('guidance.direction.recording.play', 'Play')}
           </Button>
-          <Button size="xs" variant="outline" disabled={error} onClick={() => seek(0, true)}>
+          <Button
+            size="xs"
+            variant="outline"
+            disabled={!src || error}
+            onClick={() => seek(0, true)}
+          >
             {translate('guidance.direction.restart', 'Replay')}
           </Button>
         </header>
@@ -116,7 +158,12 @@ export function DirectionRecording() {
               variant="outline"
               onClick={() => {
                 setError(false)
-                video.current?.load()
+                if (import.meta.env.DEV) {
+                  setSrc(undefined)
+                  setAttempt((current) => current + 1)
+                } else {
+                  video.current?.load()
+                }
               }}
             >
               {translate('guidance.direction.recording.retry', 'Retry')}
@@ -125,7 +172,7 @@ export function DirectionRecording() {
         )}
         <video
           ref={video}
-          src={videoUrl}
+          src={src}
           muted
           playsInline
           preload="auto"
